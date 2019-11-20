@@ -142,6 +142,10 @@ extern apple_frontend_settings_t apple_frontend_settings;
 #define UNSAFE_UNRETAINED
 #endif
 
+void *nsview_get_ptr(void);
+
+void nsview_set_ptr(CocoaView *ptr);
+
 void *get_chosen_screen(void);
 
 #endif
