@@ -26,6 +26,7 @@ ifeq ($(GRIFFIN_BUILD), 1)
 else
 
 	HAVE_NEON		:= 1
+   HAVE_MATH_NEON := 1
 	HAVE_FILTERS_BUILTIN	:= 1
 	HAVE_LANGEXTRA		:= 1
 	HAVE_RPNG		:= 1
@@ -86,7 +87,7 @@ LD      := $(CXX)
 LIBDIRS := -L.
 
 ARCHFLAGS := -march=armv7-a -mfpu=neon -mfloat-abi=hard -DVITA
-CFLAGS    += $(ARCHFLAGS) -mword-relocations -fno-optimize-sibling-calls -O2
+CFLAGS    += $(ARCHFLAGS) -mword-relocations -fno-optimize-sibling-calls -O2 -flto
 
 ifeq ($(DEBUG), 1)
    CFLAGS += -g
@@ -116,8 +117,7 @@ CXXFLAGS := $(CFLAGS) -fno-rtti -fno-exceptions
 VITA_LIBS := -lSceDisplay_stub -lSceGxm_stub -lSceNet_stub -lSceNetCtl_stub -lSceAppUtil_stub \
 	-lSceSysmodule_stub -lSceCtrl_stub -lSceHid_stub -lSceTouch_stub -lSceAudio_stub \
 	-lScePower_stub -lSceRtc_stub -lSceCommonDialog_stub -lScePgf_stub -lSceMotion_stub \
-	-lSceFiber_stub -lSceMotion_stub -lSceAppMgr_stub -lpthread -lpng -lz -lvitagl \
-	-lmathneon
+	-lSceFiber_stub -lSceMotion_stub -lSceAppMgr_stub -lpthread -lpng -lz
 
 LIBS	:= $(WHOLE_START) -lretro_vita $(WHOLE_END) $(VITA_LIBS) -lm -lc
 
