@@ -2045,6 +2045,20 @@ ifeq ($(HAVE_RPILED), 1)
    OBJ += led/drivers/led_rpi.o
 endif
 
+ifeq ($(HAVE_MATH_NEON), 1)
+   DEFINES += -DHAVE_MATH_NEON
+   INCLUDE_DIRS += -I$(DEPS_DIR)/math-neon/source
+   SOURCES := $(DEPS_DIR)/math-neon/source
+   OBJ += $(patsubst %.c,%.o,$(foreach dir,$(SOURCES), $(wildcard $(dir)/*.c)))
+endif
+
+ifeq ($(HAVE_VITAGL), 1)
+   DEFINES += -DHAVE_VITAGL
+   INCLUDE_DIRS += -I$(DEPS_DIR)/vitaGL/source
+   SOURCES := $(DEPS_DIR)/vitaGL/source $(DEPS_DIR)/vitaGL/source/utils
+   OBJ += $(patsubst %.c,%.o,$(foreach dir,$(SOURCES), $(wildcard $(dir)/*.c)))
+endif
+
 ##################################
 ### Classic Platform specifics ###
 ###############WIP################

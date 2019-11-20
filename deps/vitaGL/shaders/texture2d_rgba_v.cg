@@ -1,0 +1,47 @@
+void main(
+	float3 position,
+	float2 texcoord,
+	float4 color,
+	column_major uniform float4x4 wvp,
+	uniform int fog_mode,
+	uniform int clip_plane0,       // In the future this can turn into an array to support other planes
+	uniform float4 clip_plane0_eq, // In the future this can turn into an array to support other planes
+	uniform float4x4 modelview,
+	uniform float fog_near,
+	uniform float fog_far,
+	uniform float fog_density,
+	float4 out vPosition : POSITION,
+	float out vFog : FOG,
+	float2 out vTexcoord : TEXCOORD0,
+	float4 out vColor : COLOR,
+	float out vClip : CLP0)
+{
+	float4 pos4 = float4(position, 1.f);
+	
+	// User clip planes
+	if (clip_plane0 < 1) {
+		vClip = 1.f;
+	} else {
+		float4 modelpos = mul(modelview, pos4);
+		vClip = dot(modelpos, clip_plane0_eq);
+	}
+	
+	vPosition = mul(pos4, wvp);
+	if (fog_mode > 2) { // Fogging disabled
+		vFog = 1.0f;
+	} else {
+		float dist = length(vPosition.xyz);
+		if (fog_mode == 0) { // GL_LINEAR
+			vFog = (fog_far - dist) / (fog_far - fog_near);
+		} else if (fog_mode == 1) { // GL_EXP
+			vFog = exp(-fog_density * dist);
+		} else { // GL_EXP2
+			const float LOG2 = -1.442695;
+			float d = fog_density * dist;
+			vFog = exp(d * d * LOG2);
+		}
+		vFog = clamp(vFog, 0.0, 1.0);
+	}
+	vTexcoord = texcoord;
+	vColor = color;
+}
