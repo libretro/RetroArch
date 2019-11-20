@@ -1,0 +1,11 @@
+void main(
+	float3 aPosition,
+	float3 aColor,
+	column_major uniform float4x4 wvp,
+	float4 out vPosition: POSITION,
+	float4 out vColor: COLOR)
+{
+	vPosition = mul(float4(aPosition, 1.f), wvp);
+	vColor = float4(aColor, 1.0);
+}
+

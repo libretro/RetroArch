@@ -1,0 +1,5 @@
+float main(
+	uniform float depth_clear) : DEPTH
+{
+	return depth_clear;
+}
