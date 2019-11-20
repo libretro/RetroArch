@@ -1,0 +1,69 @@
+﻿float4 main(
+	float2 vTexcoord : TEXCOORD0,
+	float4 vColor : COLOR,
+	float vFog : FOG,
+	uniform sampler2D tex,
+	uniform float alphaCut,
+	uniform int alphaOp,
+	uniform int texEnv,
+	uniform int fog_mode,
+	uniform float4 fogColor,
+	uniform float4 texEnvColor
+	)
+{
+	float4 texColor = tex2D(tex, vTexcoord);
+	
+	// Texture Environment
+	if (texEnv < 4){
+		if (texEnv == 0){ // GL_MODULATE
+			texColor = texColor * vColor;
+		}else if (texEnv == 1){ // GL_DECAL
+			texColor.rgb = lerp(vColor.rgb, texColor.rgb, texColor.a);
+			texColor.a = vColor.a;
+		}else if (texEnv == 2){ // GL_BLEND
+			texColor.rgb = lerp(vColor.rgb, texEnvColor.rgb, texColor.rgb);
+			texColor.a = texColor.a * vColor.a;
+		}else{ // GL_ADD
+			texColor.rgb = clamp(texColor.rgb + vColor.rgb, 0.0, 1.0);
+			texColor.a = texColor.a * vColor.a;
+		}
+	}
+	
+	// Alpha Test
+	if (alphaOp < 7){
+		if (alphaOp == 0){
+			if (texColor.a < alphaCut){
+				discard;
+			}
+		}else if (alphaOp == 1){
+			if (texColor.a <= alphaCut){
+				discard;
+			}
+		}else if (alphaOp == 2){
+			if (texColor.a == alphaCut){
+				discard;
+			}
+		}else if (alphaOp == 3){
+			if (texColor.a != alphaCut){
+				discard;
+			}
+		}else if (alphaOp == 4){
+			if (texColor.a > alphaCut){
+				discard;
+			}
+		}else if (alphaOp == 5){
+			if (texColor.a >= alphaCut){
+				discard;
+			}
+		}else{
+			discard;
+		}
+	}
+	
+	// Fogging
+	if (fog_mode < 3){
+		texColor.rgb = lerp(fogColor.rgb, texColor.rgb, vFog);
+	}
+	
+	return texColor;
+}
