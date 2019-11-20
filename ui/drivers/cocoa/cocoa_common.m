@@ -38,7 +38,7 @@ void cocoagl_gfx_ctx_update(void);
 
 static CocoaView* g_instance;
 
-static CocoaView *nsview_get_ptr(void)
+static void *nsview_get_ptr(void)
 {
 #if defined(HAVE_COCOA)
     video_driver_display_type_set(RARCH_DISPLAY_OSX);
@@ -49,7 +49,7 @@ static CocoaView *nsview_get_ptr(void)
     video_driver_display_set(0);
     video_driver_display_userdata_set((uintptr_t)g_instance);
 #endif
-    return (BRIDGE CocoaView*)g_instance;
+    return (BRIDGE void*)g_instance;
 }
 
 #if defined(HAVE_COCOATOUCH)
