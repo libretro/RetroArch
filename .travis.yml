@@ -58,7 +58,8 @@ matrix:
    #    env: CXX_BUILD=1 CC=clang-6.0 CXX=clang++-6.0
    #  - os: osx
    #    env: CC=clang CXX=clang++
-    - os: osx
+    - name: iOS11
+      os: osx
       osx_image: xcode11.2
       script:
         - xcodebuild -target RetroArchiOS11 -configuration Release -project pkg/apple/RetroArch_iOS11.xcodeproj
