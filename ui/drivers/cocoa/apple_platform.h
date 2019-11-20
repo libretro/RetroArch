@@ -49,8 +49,10 @@ id apple_platform;
 }
 #endif
 
+#if defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL)
 @property(nonatomic, retain) NSWindow IBOutlet *window;
 
 @end
+#endif
 
 #endif

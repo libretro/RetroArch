@@ -63,10 +63,6 @@ typedef struct cocoa_ctx_data
 
 static enum gfx_ctx_api cocoagl_api = GFX_CTX_NONE;
 
-#if defined(HAVE_COCOATOUCH)
-static GLKView *g_view;
-#endif
-
 static GLContextClass* g_hw_ctx;
 static GLContextClass* g_context;
 

@@ -53,6 +53,8 @@ static void *nsview_get_ptr(void)
 }
 
 #if defined(HAVE_COCOATOUCH)
+static GLKView *g_view;
+
 static void *glkitview_init(void)
 {
    g_view = [GLKView new];
