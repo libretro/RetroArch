@@ -535,7 +535,6 @@
 		05F2874020F2BEEA00632D47 /* task_http.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = task_http.c; sourceTree = "<group>"; };
 		05F2874120F2BEEA00632D47 /* task_patch.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = task_patch.c; sourceTree = "<group>"; };
 		089C165DFE840E0CC02AAC07 /* InfoPlist.strings */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.strings; name = InfoPlist.strings; path = OSX/en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
-		208CD5292384D7940056E645 /* RetroArchRelease.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RetroArchRelease.entitlements; sourceTree = "<group>"; };
 		29B97324FDCFA39411CA2CEA /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = /System/Library/Frameworks/AppKit.framework; sourceTree = "<absolute>"; };
 		5061C8A31AE47E510080AE14 /* libz.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libz.dylib; path = usr/lib/libz.dylib; sourceTree = SDKROOT; };
 		509F0C9C1AA23AFC00619ECC /* griffin_objc.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = griffin_objc.m; path = ../../griffin/griffin_objc.m; sourceTree = "<group>"; };
@@ -1445,7 +1444,6 @@
 		29B97314FDCFA39411CA2CEA /* RetroArch */ = {
 			isa = PBXGroup;
 			children = (
-				208CD5292384D7940056E645 /* RetroArchRelease.entitlements */,
 				05D7753120A55D2700646447 /* BaseConfig.xcconfig */,
 				05422E5C2140CFC500F09961 /* Metal.xcconfig */,
 				A90207489289602F593626D5 /* QTConfig.xcconfig */,
@@ -1728,7 +1726,6 @@
 			baseConfigurationReference = A90207489289602F593626D5 /* QTConfig.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				CODE_SIGN_ENTITLEMENTS = RetroArchRelease.entitlements;
 				CODE_SIGN_IDENTITY = "Developer ID Application";
 				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
