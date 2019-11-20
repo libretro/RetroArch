@@ -61,6 +61,7 @@ matrix:
     - name: iOS11
       os: osx
       osx_image: xcode11.2
+      env: CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO
       script:
         - xcodebuild -target RetroArchiOS11 -configuration Release -project pkg/apple/RetroArch_iOS11.xcodeproj
    #  - os: osx
