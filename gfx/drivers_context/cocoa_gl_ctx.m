@@ -48,8 +48,6 @@
 #include "../common/metal_common.h"
 #endif
 
-#include "../../ui/drivers/cocoa/apple_platform.h"
-
 typedef struct cocoa_ctx_data
 {
    bool core_hw_context_enable;
@@ -62,6 +60,10 @@ typedef struct cocoa_ctx_data
 } cocoa_ctx_data_t;
 
 static enum gfx_ctx_api cocoagl_api = GFX_CTX_NONE;
+
+#if defined(HAVE_COCOATOUCH)
+static GLKView *g_view;
+#endif
 
 static GLContextClass* g_hw_ctx;
 static GLContextClass* g_context;
@@ -90,6 +92,27 @@ static unsigned g_major  = 0;
 - (float) scale  { return 1.0f; }
 @end
 #endif
+
+static CocoaView* g_instance;
+
+void *nsview_get_ptr(void)
+{
+#if defined(HAVE_COCOA)
+    video_driver_display_type_set(RARCH_DISPLAY_OSX);
+    video_driver_display_set(0);
+    video_driver_display_userdata_set((uintptr_t)g_instance);
+#elif defined(HAVE_COCOA_METAL)
+    video_driver_display_type_set(RARCH_DISPLAY_OSX);
+    video_driver_display_set(0);
+    video_driver_display_userdata_set((uintptr_t)g_instance);
+#endif
+    return (BRIDGE void *)g_instance;
+}
+
+void nsview_set_ptr(CocoaView *p)
+{
+    g_instance = p;
+}
 
 #if defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL)
 static NSOpenGLPixelFormat* g_format;
@@ -149,6 +172,21 @@ static void cocoagl_gfx_ctx_set_flags(void *data, uint32_t flags)
 
    if (BIT32_GET(flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT))
       cocoa_ctx->core_hw_context_enable = true;
+}
+
+void *glkitview_init(void)
+{
+#if defined(HAVE_COCOATOUCH)
+   g_view = [GLKView new];
+#if TARGET_OS_IOS
+   g_view.multipleTouchEnabled = YES;
+#endif
+   g_view.enableSetNeedsDisplay = NO;
+
+   return (BRIDGE void *)((GLKView*)g_view);
+#else
+    return nsview_get_ptr();
+#endif
 }
 
 #if defined(HAVE_COCOATOUCH)
@@ -211,7 +249,7 @@ float get_backing_scale_factor(void)
 #if defined(HAVE_COCOA_METAL)
          NSView *g_view        = apple_platform.renderView;
 #elif defined(HAVE_COCOA)
-         CocoaView *g_view     = [CocoaView get];
+         CocoaView *g_view     = g_instance;
 #endif
          backing_scale_def     = (float)get_from_selector
          ([[g_view window] class], [g_view window], selector, &ret);
@@ -332,7 +370,7 @@ float cocoagl_gfx_ctx_get_native_scale(void)
 static void cocoagl_gfx_ctx_update_title(void *data, void *data2)
 {
    const ui_window_t *window      = ui_companion_driver_get_window_ptr();
-
+   
    if (window)
    {
       char title[128];
@@ -447,15 +485,15 @@ static void cocoagl_gfx_ctx_get_video_size(void *data, unsigned* width, unsigned
 #if defined(HAVE_COCOA_METAL)
    NSView *g_view                  = apple_platform.renderView;
 #elif defined(HAVE_COCOA)
-   CocoaView *g_view               = [CocoaView get];
+   CocoaView *g_view               = g_instance;
 #endif
-   NSRect rect                     = [g_view frame];
 #if MAC_OS_X_VERSION_10_7
    SEL selector                    = NSSelectorFromString(BOXSTRING("convertRectToBacking:"));
    if ([g_view respondsToSelector:selector])
-      rect                         = [g_view convertRectToBacking:[g_view bounds]];
+      cgrect                       = NSRectToCGRect([g_view convertRectToBacking:[g_view bounds]]);
+   else
 #endif
-   cgrect                          = NSRectToCGRect(rect);
+      cgrect                       = NSRectToCGRect([g_view frame]);
    backingPixelWidth               = CGRectGetWidth(cgrect);
    backingPixelHeight              = CGRectGetHeight(cgrect);
    size                            = CGRectMake(0, 0, backingPixelWidth, backingPixelHeight);
@@ -655,7 +693,7 @@ static bool cocoagl_gfx_ctx_set_video_mode(void *data,
 #if defined(HAVE_COCOA_METAL)
    NSView *g_view              = apple_platform.renderView;
 #elif defined(HAVE_COCOA)
-   CocoaView *g_view           = [CocoaView get];
+   CocoaView *g_view           = (CocoaView*)nsview_get_ptr();
 #endif
 #if defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL)
    cocoa_ctx_data_t *cocoa_ctx = (cocoa_ctx_data_t*)data;
@@ -818,6 +856,7 @@ static void *cocoagl_gfx_ctx_init(video_frame_info_t *video_info, void *video_dr
    return cocoa_ctx;
 }
 
+#ifdef HAVE_COCOA_METAL
 static bool cocoagl_gfx_ctx_set_resize(void *data, unsigned width, unsigned height)
 {
 #ifdef HAVE_VULKAN
@@ -857,6 +896,7 @@ static bool cocoagl_gfx_ctx_set_resize(void *data, unsigned width, unsigned heig
 
    return true;
 }
+#endif
 
 const gfx_ctx_driver_t gfx_ctx_cocoagl = {
    cocoagl_gfx_ctx_init,
@@ -878,7 +918,11 @@ const gfx_ctx_driver_t gfx_ctx_cocoagl = {
    NULL, /* update_title */
 #endif
    cocoagl_gfx_ctx_check_window,
+#if defined(HAVE_COCOA_METAL)
    cocoagl_gfx_ctx_set_resize,
+#else
+   NULL, /* set_resize */
+#endif
    cocoagl_gfx_ctx_has_focus,
    cocoagl_gfx_ctx_suppress_screensaver,
 #if defined(HAVE_COCOATOUCH)

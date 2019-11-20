@@ -35,39 +35,11 @@
 
 /* forward declarations */
 void cocoagl_gfx_ctx_update(void);
+void *glkitview_init(void);
 
-static CocoaView* g_instance;
-
-static void *nsview_get_ptr(void)
-{
-#if defined(HAVE_COCOA)
-    video_driver_display_type_set(RARCH_DISPLAY_OSX);
-    video_driver_display_set(0);
-    video_driver_display_userdata_set((uintptr_t)g_instance);
-#elif defined(HAVE_COCOA_METAL)
-    video_driver_display_type_set(RARCH_DISPLAY_OSX);
-    video_driver_display_set(0);
-    video_driver_display_userdata_set((uintptr_t)g_instance);
-#endif
-    return (BRIDGE void*)g_instance;
-}
-
-#if defined(HAVE_COCOATOUCH)
-static GLKView *g_view;
-
-static void *glkitview_init(void)
-{
-   g_view = [GLKView new];
-#if TARGET_OS_IOS
-   g_view.multipleTouchEnabled = YES;
-#endif
-   g_view.enableSetNeedsDisplay = NO;
-
-   return (BRIDGE void *)((GLKView*)g_view);
-}
-
+#ifdef HAVE_COCOATOUCH
 @interface CocoaView()<GCDWebUploaderDelegate> {
-    
+
 }
 @end
 #endif
@@ -92,8 +64,8 @@ static void *glkitview_init(void)
    CocoaView *view = (BRIDGE CocoaView*)nsview_get_ptr();
    if (!view)
    {
-      view       = [CocoaView new];
-      g_instance = view;
+      view = [CocoaView new];
+      nsview_set_ptr(view);
    }
    return view;
 }
