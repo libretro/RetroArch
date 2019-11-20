@@ -1,0 +1,169 @@
+
+Library: 	MATH-NEON
+By:			Lachlan Tychsen-Smith
+Licence:	MIT (expat)
+=======================================================================================
+This project implements the cmath functions and some optimised matrix functions 
+with the aim of increasing the floating point performance of ARM Cortex A-8
+based platforms. As well as implementing the functions in ARM NEON assembly, 
+they sacrifice error checking and some accuracy to achieve better performance.
+
+Function Errors:
+=======================================================================================
+The measurement and characterisations of the inaccuracies present within these 
+functions is really a field within itself. For the benchmark i provide the 
+maximum absolute, maximum relative and root mean squared error compared to the
+cmath implementations over the specified range. However these values can be 
+misleading, especially for functions which quickly go to infinity. So its always a 
+good idea to test it within your actual program. In general, this library will not 
+be as accurate as cmath, however for many functions it is close enough to be
+negilible. 
+	
+Notes:
+=======================================================================================
+- The *_c functions are c implementations of the *_neon code.
+- Like cmath, The errors present in the functions are very dependent on the 
+  range which your operating in. So you should test them first.
+- Look in the "math_neon.h" file for discriptions of the functions. In some 
+  function files there are also notes on the specific implementation.
+- The *_neon functions make certain assumptions about the location of arguments 
+  that is incompatible with inlining. 
+	  
+Contact:
+=======================================================================================
+Name: 	Lachlan Tychsen-Smith 
+Email: 	lachlan.ts@gmail.com
+
+PSVITA performances test results:
+
+RUNFAST: Enabled 
+------------------------------------------------------------------------------------------------------
+MATRIX FUNCTION TESTS 
+------------------------------------------------------------------------------------------------------
+matmul2_c = 
+			|-7.16, 9.42|
+			|17.86, -10.70|
+matmul2_neon = 
+			|-7.16, 9.42|
+			|17.86, -10.70|
+matmul2: c=183985 	 neon=87480 	 rate=2.10 
+matvec2_c = |-7.16, 17.86|
+matvec2_neon = |-7.16, 17.86|
+matvec2: c=98178 	 neon=66040 	 rate=1.49 
+matmul3_c =
+			|11.14, -0.78, -3.98|
+			|16.56, 17.96, 23.58|
+			|8.73, -0.18, 1.57|
+matmul3_neon =
+			|11.14, -0.78, -3.98|
+			|16.56, 17.96, 23.58|
+			|8.73, -0.18, 1.57|
+matmul3: c=551838 	 neon=340292 	 rate=1.62 
+matvec3_c = |11.14, 16.56, 8.73|
+matvec3_neon = |11.14, 16.56, 8.73|
+matvec3: c=98178 	 neon=66040 	 rate=1.49 
+matmul4_c =
+			|17.91, -23.96, 1.86, 16.53|
+			|4.10, -18.16, 4.17, 29.06|
+			|6.92, -1.60, 3.12, 27.81|
+			|-15.13, -7.46, -17.91, 22.49|
+matmul4_neon =
+			|17.91, -23.96, 1.86, 16.53|
+			|4.10, -18.16, 4.17, 29.06|
+			|6.92, -1.60, 3.12, 27.81|
+			|-15.13, -7.46, -17.91, 22.49|
+matmul4: c=1316131 	 neon=315444 	 rate=4.17 
+matvec4_c = |17.91, 4.10, 6.92, -15.126419|
+matvec4_neon = |17.91, 4.10, 6.92, -15.126419|
+matvec4: c=98178 	 neon=66040 	 rate=1.49 
+
+dot2_c = 5.804099
+dot2_neon = 5.804099
+dot2: c=291526 	 neon=307025 	 rate=0.95 
+normalize2_c = [0.97, 0.24]
+normalize2_neon = [0.97, 0.24]
+normalize2: c=1058588 	 neon=965696 	 rate=1.10 
+
+dot3_c = -0.817487
+dot3_neon = -0.817487
+dot3: c=322094 	 neon=444834 	 rate=0.72 
+normalize3_c = [0.50, 0.12, -0.86]
+normalize3_neon = [0.50, 0.12, -0.86]
+normalize3: c=1257201 	 neon=1134375 	 rate=1.11 
+cross3_c = [-13.16, -17.29, -10.19]
+cross3_neon = [-13.16, -17.29, -10.19]
+cross3: c=705298 	 neon=766477 	 rate=0.92 
+
+dot4_c = -7.880241
+dot4_neon = -7.880241
+dot4: c=414431 	 neon=506460 	 rate=0.82 
+normalize4_c = [0.45, 0.11, -0.77, -0.44]
+normalize4_neon = [0.45, 0.11, -0.77, -0.44]
+normalize4: c=1410727 	 neon=1102802 	 rate=1.28 
+
+------------------------------------------------------------------------------------------------------
+CMATH FUNCTION TESTS 
+------------------------------------------------------------------------------------------------------
+Function	Range		Number	ABS Max Error	REL Max Error	RMS Error	Time	Rate
+------------------------------------------------------------------------------------------------------
+sinf       	[-3.14, 3.14]	500000	0.00e+00	0.00e+00%	0.00e+00	647042739	x1.00	
+sinf_c     	[-3.14, 3.14]	500000	7.75e-07	1.00e+02%	4.09e-07	646276691	x1.00	
+sinf_neon  	[-3.14, 3.14]	500000	1.00e+00	1.00e+02%	7.07e-01	645546381	x1.00	
+cosf       	[-3.14, 3.14]	500000	0.00e+00	0.00e+00%	0.00e+00	644742077	x1.00	
+cosf_c     	[-3.14, 3.14]	500000	7.75e-07	6.74e-01%	4.15e-07	643957358	x1.00	
+cosf_neon  	[-3.14, 3.14]	500000	1.00e+00	1.00e+02%	7.06e-01	643211256	x1.00	
+tanf       	[-0.79, 0.79]	500000	0.00e+00	0.00e+00%	0.00e+00	642444112	x1.00	
+tanf_c     	[-0.79, 0.79]	500000	2.98e-06	7.94e-04%	1.31e-06	641628507	x1.00	
+tanf_neon  	[-0.79, 0.79]	500000	1.00e+00	1.00e+02%	nan	640740514	x1.00	
+asinf      	[-1.00, 1.00]	500000	0.00e+00	0.00e+00%	0.00e+00	639560380	x1.00	
+asinf_c    	[-1.00, 1.00]	500000	5.54e-05	1.06e-02%	nan	638453383	x1.00	
+asinf_neon 	[-1.00, 1.00]	500000	1.57e+00	1.00e+02%	6.84e-01	637349653	x1.00	
+acosf      	[-1.00, 1.00]	500000	0.00e+00	0.00e+00%	0.00e+00	636078992	x1.00	
+acosf_c    	[-1.00, 1.00]	500000	5.56e-05	6.46e-03%	nan	634934201	x1.00	
+acosf_neon 	[-1.00, 1.00]	500000	1.57e+00	1.02e+05%	6.84e-01	633793585	x1.00	
+atanf      	[-1.00, 1.00]	500000	0.00e+00	0.00e+00%	0.00e+00	632835241	x1.00	
+atanf_c    	[-1.00, 1.00]	500000	1.67e-04	2.12e-02%	7.40e-05	632142823	x1.00	
+atanf_neon 	[-1.00, 1.00]	500000	7.85e-01	0.00e+00%	nan	631387330	x1.00	
+sinhf       	[-3.14, 3.14]	500000	0.00e+00	0.00e+00%	0.00e+00	630142014	x1.00	
+sinhf_c     	[-3.14, 3.14]	500000	1.91e-06	1.52e-01%	1.85e-07	628992714	x1.00	
+sinhf_neon  	[-3.14, 3.14]	500000	1.15e+01	1.00e+02%	4.55e+00	627998454	x1.00	
+coshf       	[-3.14, 3.14]	500000	0.00e+00	0.00e+00%	0.00e+00	626869866	x1.00	
+coshf_c     	[-3.14, 3.14]	500000	9.54e-07	2.38e-05%	1.64e-07	625829657	x1.00	
+coshf_neon  	[-3.14, 3.14]	500000	1.06e+01	9.14e+01%	3.92e+00	624873969	x1.00	
+tanhf       	[-3.14, 3.14]	500000	0.00e+00	0.00e+00%	0.00e+00	623689093	x1.00	
+tanhf_c     	[-3.14, 3.14]	500000	1.20e-05	2.48e-01%	5.48e-06	622547097	x1.00	
+tanhf_neon  	[-3.14, 3.14]	500000	9.96e-01	1.00e+02%	8.26e-01	621506812	x1.00	
+expf       	[0.00, 10.00]	500000	0.00e+00	0.00e+00%	0.00e+00	620497304	x1.00	
+expf_c     	[0.00, 10.00]	500000	9.77e-03	6.15e-05%	1.64e-03	619569554	x1.00	
+expf_neon  	[0.00, 10.00]	500000	2.20e+04	1.00e+02%	4.92e+03	618761400	x1.00	
+logf       	[1.00, 1000.00]	500000	0.00e+00	0.00e+00%	0.00e+00	617882765	x1.00	
+logf_c     	[1.00, 1000.00]	500000	6.20e-06	1.62e-02%	9.83e-07	617087810	x1.00	
+logf_neon  	[1.00, 1000.00]	500000	9.49e+01	inf%	9.39e+01	616388420	x1.00	
+log10f       	[1.00, 1000.00]	500000	0.00e+00	0.00e+00%	0.00e+00	615405364	x1.00	
+log10f_c     	[1.00, 1000.00]	500000	2.86e-06	6.68e-03%	4.79e-07	614442585	x1.00	
+log10f_neon  	[1.00, 1000.00]	500000	4.12e+01	inf%	4.07e+01	613671782	x1.00	
+floorf     	[1.00, 1000.00]	5000000	0.00e+00	0.00e+00%	0.00e+00	611113689	x1.00	
+floorf_c   	[1.00, 1000.00]	5000000	0.00e+00	0.00e+00%	0.00e+00	608159325	x1.00	
+floorf_neon	[1.00, 1000.00]	5000000	2.00e+00	2.00e+02%	1.42e-02	604769008	x1.01	
+ceilf     	[1.00, 1000.00]	5000000	0.00e+00	0.00e+00%	0.00e+00	601342443	x1.00	
+ceilf_c   	[1.00, 1000.00]	5000000	0.00e+00	0.00e+00%	0.00e+00	598387998	x1.00	
+ceilf_neon	[1.00, 1000.00]	5000000	2.00e+00	1.00e+02%	1.02e+00	594959710	x1.01	
+fabsf     	[1.00, 1000.00]	5000000	0.00e+00	0.00e+00%	0.00e+00	592068236	x1.00	
+fabsf_c   	[1.00, 1000.00]	5000000	0.00e+00	0.00e+00%	0.00e+00	589808748	x1.00	
+fabsf_neon	[1.00, 1000.00]	5000000	0.00e+00	0.00e+00%	0.00e+00	587712180	x1.01	
+sqrtf      	[1.00, 1000.00]	500000	0.00e+00	0.00e+00%	0.00e+00	586496654	x1.00	
+sqrtf_c    	[1.00, 1000.00]	500000	2.33e-04	1.06e-03%	8.69e-05	585470866	x1.00	
+sqrtf_neon 	[1.00, 1000.00]	500000	0.00e+00	0.00e+00%	nan	584594551	x1.00	
+invsqrtf      	[1.00, 1000.00]	500000	0.00e+00	0.00e+00%	0.00e+00	583492213	x1.00	
+invsqrtf_c    	[1.00, 1000.00]	500000	4.35e-06	4.78e-04%	2.00e-07	582448164	x1.00	
+invsqrtf_neon 	[1.00, 1000.00]	500000	0.00e+00	0.00e+00%	nan	581642365	x1.00	
+atan2f       	[0.10, 10.00]	10000	0.00e+00	0.00e+00%	0.00e+00	83594269	x1.00	
+atan2f_c     	[0.10, 10.00]	10000	1.73e-04	2.23e-02%	0.00e+00	85383651	x0.98	
+atan2f_neon  	[0.10, 10.00]	10000	0.00e+00	0.00e+00%	0.00e+00	87387055	x0.96	
+powf       	[1.00, 10.00]	10000	0.00e+00	0.00e+00%	0.00e+00	93430489	x1.00	
+powf_c     	[1.00, 10.00]	10000	1.08e+05	4.37e-03%	0.00e+00	96726976	x0.97	
+powf_neon  	[1.00, 10.00]	10000	9.97e+09	1.00e+02%	0.00e+00	100185753	x0.93	
+fmodf       	[1.00, 10.00]	10000	0.00e+00	0.00e+00%	0.00e+00	101653673	x1.00	
+fmodf_c     	[1.00, 10.00]	10000	9.90e+00	8.06e-02%	0.00e+00	103177551	x0.99	
+fmodf_neon  	[1.00, 10.00]	10000	9.99e+00	1.00e+02%	0.00e+00	104771240	x0.97	
+
