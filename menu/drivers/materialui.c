@@ -959,6 +959,7 @@ typedef struct
    float screen_fade[16];
    float missing_thumbnail_icon[16];
    float landscape_border_shadow_opacity;
+   float screen_fade_opacity;
 } materialui_colors_t;
 
 /* ==============================
@@ -1356,6 +1357,10 @@ typedef struct materialui_handle
    unsigned thumbnail_height_max;
    bool primary_thumbnail_available;
    bool secondary_thumbnail_enabled;
+   bool show_fullscreen_thumbnails;
+   size_t fullscreen_thumbnail_selection;
+   float fullscreen_thumbnail_alpha;
+   char fullscreen_thumbnail_label[255];
 
    enum materialui_list_view_type list_view_type;
 
@@ -1505,11 +1510,16 @@ static void materialui_prepare_colors(
             current_theme->divider,
             mui->colors.divider, 1.0f);
    hex32_to_rgba_normalized(
-            current_theme->screen_fade,
-            mui->colors.screen_fade, current_theme->screen_fade_opacity);
-   hex32_to_rgba_normalized(
             current_theme->missing_thumbnail_icon,
             mui->colors.missing_thumbnail_icon, 1.0f);
+
+   /* Have to record nominal screen fade opacity,
+    * since the actual value is set dynamically
+    * (based on animation transitions) */
+   mui->colors.screen_fade_opacity = current_theme->screen_fade_opacity;
+   hex32_to_rgba_normalized(
+            current_theme->screen_fade,
+            mui->colors.screen_fade, mui->colors.screen_fade_opacity);
 
    /* Shadow colours require special handling
     * (since they are gradients) */
@@ -1830,7 +1840,7 @@ static void materialui_draw_thumbnail(
           *   - Can't do this in materialui_colors_set_transition_alpha()
           *     because it's dependent upon thumbnail opacity
           *   - No need to restore the original alpha value, since it is
-          *     only used in this function */
+          *     always set 'manually' before use */
          menu_display_set_alpha(
                mui->colors.thumbnail_background,
                mui->transition_alpha * thumbnail->alpha);
@@ -1916,6 +1926,9 @@ static void materialui_render_messagebox(materialui_handle_t *mui,
    }
 
    /* Draw message box background */
+   menu_display_set_alpha(
+         mui->colors.surface_background, mui->transition_alpha);
+
    menu_display_draw_quad(
          video_info,
          x - longest_width / 2.0 - mui->margin * 2.0,
@@ -2367,9 +2380,10 @@ static void materialui_render(void *data,
          else
             mui->scroll_y = 0.0f;
       }
-      /* ...otherwise, just apply normal pointer
-       * acceleration */
-      else
+      /* If fullscreen thumbnail view is enabled,
+       * scrolling is disabled - otherwise, just apply
+       * normal pointer acceleration */
+      else if (!mui->show_fullscreen_thumbnails)
          mui->scroll_y -= mui->pointer.y_accel;
    }
 
@@ -2428,7 +2442,8 @@ static void materialui_render(void *data,
       if (first_entry_found &&
           !last_entry_found &&
           (mui->pointer.type != MENU_POINTER_DISABLED) &&
-          !mui->scrollbar.dragged)
+          !mui->scrollbar.dragged &&
+          !mui->show_fullscreen_thumbnails)
       {
          int16_t pointer_x = mui->pointer.x;
          int16_t pointer_y = mui->pointer.y;
@@ -3304,6 +3319,7 @@ static void materialui_render_menu_list(
    size_t selection            = menu_navigation_get_selection();
    bool touch_feedback_enabled =
          !mui->scrollbar.dragged &&
+         !mui->show_fullscreen_thumbnails &&
          (mui->touch_feedback_alpha >= 0.5f) &&
          (mui->touch_feedback_selection == menu_input_get_pointer_selection());
 
@@ -3577,9 +3593,8 @@ static void materialui_render_entry_touch_feedback(
    /* Check whether pointer is currently
     * held and stationary */
    bool pointer_active =
-         (!mui->scrollbar.dragged &&
-          mui->pointer.pressed &&
-          !mui->pointer.dragged);
+         (!mui->scrollbar.dragged && !mui->show_fullscreen_thumbnails &&
+          mui->pointer.pressed && !mui->pointer.dragged);
 
    /* If pointer is held and stationary, need to check
     * that current pointer selection is valid
@@ -3654,6 +3669,7 @@ static void materialui_render_header(
    bool show_switch_view_icon    = mui->is_playlist && mui->primary_thumbnail_available;
    bool use_landscape_layout     = !mui->is_portrait &&
          (mui->last_landscape_layout_optimization != MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION_DISABLED);
+   const char *menu_title        = mui->menu_title;
    char menu_title_buf[255];
 
    menu_title_buf[0]  = '\0';
@@ -3950,12 +3966,18 @@ static void materialui_render_header(
    usable_title_bar_width = (usable_title_bar_width > 0) ? usable_title_bar_width : 0;
 
    /* > Draw title string */
+
+   /* >> If fullscreen thumbnail view is enabled, title
+    *    is the label of the currently selected entry */
+   if (mui->show_fullscreen_thumbnails)
+      menu_title = mui->fullscreen_thumbnail_label;
+
    if (mui->use_smooth_ticker)
    {
       mui->ticker_smooth.font        = mui->font_data.title.font;
       mui->ticker_smooth.selected    = true;
       mui->ticker_smooth.field_width = (unsigned)usable_title_bar_width;
-      mui->ticker_smooth.src_str     = mui->menu_title;
+      mui->ticker_smooth.src_str     = menu_title;
       mui->ticker_smooth.dst_str     = menu_title_buf;
       mui->ticker_smooth.dst_str_len = sizeof(menu_title_buf);
 
@@ -3980,7 +4002,7 @@ static void materialui_render_header(
    {
       mui->ticker.s        = menu_title_buf;
       mui->ticker.len      = (unsigned)(usable_title_bar_width / mui->font_data.title.glyph_width) - 1;
-      mui->ticker.str      = mui->menu_title;
+      mui->ticker.str      = menu_title;
       mui->ticker.selected = true;
 
       /* If ticker is not active and landscape
@@ -4227,6 +4249,444 @@ static void materialui_render_nav_bar(
             mui, video_info, width, height);
 }
 
+/* Convenience function for accessing the thumbnails
+ * associated with the selected node.
+ * > Thumbnails are only valid if function returns true
+ * > Returns false if current selection is off screen,
+ *   or node is unallocated */
+static bool materialui_get_selected_thumbnails(
+      materialui_handle_t *mui, size_t selection,
+      menu_thumbnail_t **primary_thumbnail,
+      menu_thumbnail_t **secondary_thumbnail)
+{
+   file_list_t *list       = NULL;
+   materialui_node_t *node = NULL;
+
+   /* Ensure selection is on screen */
+   if (!materialui_entry_onscreen(mui, selection))
+      return false;
+
+   /* Get currently selected node */
+   list = menu_entries_get_selection_buf_ptr(0);
+   if (!list)
+      return false;
+
+   node = (materialui_node_t*)file_list_get_userdata_at_offset(list, selection);
+   if (!node)
+      return false;
+
+   /* Assign thumbnails */
+   *primary_thumbnail   = &node->thumbnails.primary;
+   *secondary_thumbnail = &node->thumbnails.secondary;
+
+   return true;
+}
+
+/* Disables the fullscreen thumbnail view, with
+ * an optional fade out animation */
+static void materialui_hide_fullscreen_thumbnails(
+      materialui_handle_t *mui, bool animate)
+{
+   menu_animation_ctx_tag alpha_tag = (uintptr_t)&mui->fullscreen_thumbnail_alpha;
+
+   /* Kill any existing fade in/out animations */
+   menu_animation_kill_by_tag(&alpha_tag);
+
+   /* Check whether animations are enabled */
+   if (animate && (mui->fullscreen_thumbnail_alpha > 0.0f))
+   {
+      menu_animation_ctx_entry_t animation_entry;
+
+      /* Configure fade out animation */
+      animation_entry.easing_enum  = EASING_OUT_QUAD;
+      animation_entry.tag          = alpha_tag;
+      animation_entry.duration     = menu_thumbnail_get_fade_duration();
+      animation_entry.target_value = 0.0f;
+      animation_entry.subject      = &mui->fullscreen_thumbnail_alpha;
+      animation_entry.cb           = NULL;
+      animation_entry.userdata     = NULL;
+
+      /* Push animation */
+      menu_animation_push(&animation_entry);
+   }
+   /* No animation - just set thumbnail alpha to zero */
+   else
+      mui->fullscreen_thumbnail_alpha = 0.0f;
+
+   /* Disable fullscreen thumbnails */
+   mui->show_fullscreen_thumbnails = false;
+}
+
+/* Enables (and triggers a fade in of) the fullscreen
+ * thumbnail view */
+static void materialui_show_fullscreen_thumbnails(
+      materialui_handle_t *mui, size_t selection)
+{
+   menu_thumbnail_t *primary_thumbnail   = NULL;
+   menu_thumbnail_t *secondary_thumbnail = NULL;
+   menu_animation_ctx_tag scroll_tag     = (uintptr_t)&mui->scroll_y;
+   menu_animation_ctx_tag alpha_tag      = (uintptr_t)&mui->fullscreen_thumbnail_alpha;
+   const char *thumbnail_label           = NULL;
+   menu_animation_ctx_entry_t animation_entry;
+   menu_entry_t selected_entry;
+
+   /* Before showing fullscreen thumbnails, must
+    * ensure that any existing fullscreen thumbnail
+    * view is disabled... */
+   materialui_hide_fullscreen_thumbnails(mui, false);
+
+   /* Sanity check: Return immediately if this is a view
+    * mode without thumbnails */
+   if ((mui->list_view_type == MUI_LIST_VIEW_DEFAULT) ||
+       (mui->list_view_type == MUI_LIST_VIEW_PLAYLIST))
+      return;
+
+   /* Get thumbnails */
+   if (!materialui_get_selected_thumbnails(
+            mui, selection, &primary_thumbnail, &secondary_thumbnail))
+      return;
+
+   /* We can only enable fullscreen thumbnails if
+    * current selection has at least one valid thumbnail
+    * and all thumbnails for current selection are already
+    * loaded/available */
+   if ((primary_thumbnail->status == MENU_THUMBNAIL_STATUS_AVAILABLE) &&
+       (mui->secondary_thumbnail_enabled &&
+            ((secondary_thumbnail->status != MENU_THUMBNAIL_STATUS_MISSING) &&
+             (secondary_thumbnail->status != MENU_THUMBNAIL_STATUS_AVAILABLE))))
+      return;
+
+   if ((primary_thumbnail->status == MENU_THUMBNAIL_STATUS_MISSING) &&
+       (!mui->secondary_thumbnail_enabled ||
+            (secondary_thumbnail->status != MENU_THUMBNAIL_STATUS_AVAILABLE)))
+      return;
+
+   /* Menu list must be stationary while fullscreen
+    * thumbnails are shown
+    * > Kill any existing scroll animations and
+    *   reset scroll acceleration */
+   menu_animation_kill_by_tag(&scroll_tag);
+   menu_input_set_pointer_y_accel(0.0f);
+
+   /* Cache selected entry label
+    * (used as menu title when fullscreen thumbnails
+    * are shown) */
+   mui->fullscreen_thumbnail_label[0] = '\0';
+
+   /* > Get menu entry */
+   menu_entry_init(&selected_entry);
+   selected_entry.path_enabled     = false;
+   selected_entry.value_enabled    = false;
+   selected_entry.sublabel_enabled = false;
+   menu_entry_get(&selected_entry, 0, selection, NULL, true);
+
+   /* > Get entry label */
+   menu_entry_get_rich_label(&selected_entry, &thumbnail_label);
+
+   /* > Sanity check */
+   if (!string_is_empty(thumbnail_label))
+      strlcpy(
+            mui->fullscreen_thumbnail_label,
+            thumbnail_label,
+            sizeof(mui->fullscreen_thumbnail_label));
+
+   /* Configure fade in animation */
+   animation_entry.easing_enum  = EASING_OUT_QUAD;
+   animation_entry.tag          = alpha_tag;
+   animation_entry.duration     = menu_thumbnail_get_fade_duration();
+   animation_entry.target_value = 1.0f;
+   animation_entry.subject      = &mui->fullscreen_thumbnail_alpha;
+   animation_entry.cb           = NULL;
+   animation_entry.userdata     = NULL;
+
+   /* Push animation */
+   menu_animation_push(&animation_entry);
+
+   /* Enable fullscreen thumbnails */
+   mui->fullscreen_thumbnail_selection = selection;
+   mui->show_fullscreen_thumbnails     = true;
+}
+
+static void materialui_render_fullscreen_thumbnails(
+      materialui_handle_t *mui, video_frame_info_t *video_info,
+      unsigned width, unsigned height, unsigned header_height,
+      size_t selection)
+{
+   /* Check whether fullscreen thumbnails are visible */
+   if (mui->fullscreen_thumbnail_alpha > 0.0f)
+   {
+      menu_thumbnail_t *primary_thumbnail   = NULL;
+      menu_thumbnail_t *secondary_thumbnail = NULL;
+      bool show_primary_thumbnail           = false;
+      bool show_secondary_thumbnail         = false;
+      unsigned num_thumbnails               = 0;
+      float primary_thumbnail_draw_width    = 0.0f;
+      float primary_thumbnail_draw_height   = 0.0f;
+      float secondary_thumbnail_draw_width  = 0.0f;
+      float secondary_thumbnail_draw_height = 0.0f;
+      int view_width;
+      int view_height;
+      int thumbnail_box_width;
+      int thumbnail_box_height;
+      int primary_thumbnail_x;
+      int primary_thumbnail_y;
+      int secondary_thumbnail_x;
+      int secondary_thumbnail_y;
+
+      /* Sanity check: Return immediately if this is a view
+       * mode without thumbnails
+       * > Note: Baring inexplicable internal errors, this
+       *   can never happen... */
+      if ((mui->list_view_type == MUI_LIST_VIEW_DEFAULT) ||
+          (mui->list_view_type == MUI_LIST_VIEW_PLAYLIST))
+         goto error;
+
+      /* Paranoid safety check: ensure that current
+       * selection matches the entry selected when
+       * fullscreen thumbnails were enabled.
+       * This can only fail in extreme cases, if
+       * the user manages to change the selection
+       * while fullscreen thumbnails are fading out */
+      if (selection != mui->fullscreen_thumbnail_selection)
+         goto error;
+
+      /* Get thumbnails */
+      if (!materialui_get_selected_thumbnails(
+               mui, selection, &primary_thumbnail, &secondary_thumbnail))
+         goto error;
+
+      /* Get number of 'active' thumbnails */
+      show_primary_thumbnail =
+            (primary_thumbnail->status != MENU_THUMBNAIL_STATUS_MISSING);
+      show_secondary_thumbnail =
+            mui->secondary_thumbnail_enabled &&
+            (secondary_thumbnail->status != MENU_THUMBNAIL_STATUS_MISSING);
+
+      if (show_primary_thumbnail)
+         num_thumbnails++;
+
+      if (show_secondary_thumbnail)
+         num_thumbnails++;
+
+      /* Do nothing if both thumbnails are missing
+       * > Note: Baring inexplicable internal errors, this
+       *   can never happen... */
+      if (num_thumbnails < 1)
+         goto error;
+
+      /* Get dimensions of list view */
+      view_width  = (int)width  - (int)mui->nav_bar_layout_width;
+      view_height = (int)height - (int)mui->nav_bar_layout_height - (int)header_height;
+
+      /* Check screen orientation
+       * > When using portrait layouts, primary is shown
+       *   at the top, secondary at the bottom
+       * > When using landscape layouts, primary is shown
+       *   on the left, secondary on the right */
+      if (mui->is_portrait)
+      {
+         /* Thumbnail bounding box width is fixed */
+         thumbnail_box_width = view_width - (int)(mui->margin * 4);
+
+         /* Thumbnail x position is fixed */
+         primary_thumbnail_x   = (int)(mui->margin * 2);
+         secondary_thumbnail_x = primary_thumbnail_x;
+
+         /* Thumbnail bounding box height and y position
+          * depend upon number of active thumbnails */
+         if (num_thumbnails == 2)
+         {
+            thumbnail_box_height  = (view_height - (int)(mui->margin * 6)) >> 1;
+            primary_thumbnail_y   = (int)header_height + (int)(mui->margin * 2);
+            secondary_thumbnail_y = primary_thumbnail_y + thumbnail_box_height + (int)(mui->margin * 2);
+         }
+         else
+         {
+            thumbnail_box_height  = view_height - (int)(mui->margin * 4);
+            primary_thumbnail_y   = (int)header_height + (int)(mui->margin * 2);
+            secondary_thumbnail_y = primary_thumbnail_y;
+         }
+      }
+      else
+      {
+         /* Thumbnail bounding box height is fixed */
+         thumbnail_box_height = view_height - (int)(mui->margin * 4);
+
+         /* Thumbnail y position is fixed */
+         primary_thumbnail_y   = (int)header_height + (int)(mui->margin * 2);
+         secondary_thumbnail_y = primary_thumbnail_y;
+
+         /* Thumbnail bounding box width and x position
+          * depend upon number of active thumbnails */
+         if (num_thumbnails == 2)
+         {
+            thumbnail_box_width   = (view_width - (int)(mui->margin * 6)) >> 1;
+            primary_thumbnail_x   = (int)(mui->margin * 2);
+            secondary_thumbnail_x = primary_thumbnail_x + thumbnail_box_width + (int)(mui->margin * 2);
+         }
+         else
+         {
+            thumbnail_box_width   = view_width - (int)(mui->margin * 4);
+            primary_thumbnail_x   = (int)(mui->margin * 2);
+            secondary_thumbnail_x = primary_thumbnail_x;
+         }
+      }
+
+      /* Sanity check */
+      if ((view_width < 1) ||
+          (view_height < 1) ||
+          (thumbnail_box_width < 1) ||
+          (thumbnail_box_height < 1))
+         goto error;
+
+      /* Get thumbnail draw dimensions
+       * > Note: The following code is a bit awkward, since
+       *   we have to do things in a very specific order
+       *   - i.e. we cannot determine proper thumbnail
+       *     layout until we have thumbnail draw dimensions.
+       *     and we cannot get draw dimensions until we have
+       *     the bounding box dimensions...  */
+      if (show_primary_thumbnail)
+      {
+         menu_thumbnail_get_draw_dimensions(
+               primary_thumbnail,
+               thumbnail_box_width, thumbnail_box_height, 1.0f,
+               &primary_thumbnail_draw_width, &primary_thumbnail_draw_height);
+
+         /* Sanity check */
+         if ((primary_thumbnail_draw_width <= 0.0f) ||
+             (primary_thumbnail_draw_height <= 0.0f))
+            goto error;
+      }
+
+      if (show_secondary_thumbnail)
+      {
+         menu_thumbnail_get_draw_dimensions(
+               secondary_thumbnail,
+               thumbnail_box_width, thumbnail_box_height, 1.0f,
+               &secondary_thumbnail_draw_width, &secondary_thumbnail_draw_height);
+
+         /* Sanity check */
+         if ((secondary_thumbnail_draw_width <= 0.0f) ||
+             (secondary_thumbnail_draw_height <= 0.0f))
+            goto error;
+      }
+
+      /* Adjust thumbnail draw positions to achieve
+       * uniform appearance (accounting for actual
+       * draw dimensions...) */
+      if (num_thumbnails == 2)
+      {
+         if (mui->is_portrait)
+         {
+            int primary_padding   = (thumbnail_box_height - (int)primary_thumbnail_draw_height)   >> 1;
+            int secondary_padding = (thumbnail_box_height - (int)secondary_thumbnail_draw_height) >> 1;
+
+            /* Move thumbnails as close together as possible,
+             * and vertically centre the resultant 'block'
+             * of images */
+            primary_thumbnail_y   += secondary_padding;
+            secondary_thumbnail_y -= primary_padding;
+         }
+         else
+         {
+            int primary_padding   = (thumbnail_box_width - (int)primary_thumbnail_draw_width)   >> 1;
+            int secondary_padding = (thumbnail_box_width - (int)secondary_thumbnail_draw_width) >> 1;
+
+            /* Move thumbnails as close together as possible,
+             * and horizontally centre the resultant 'block'
+             * of images */
+            primary_thumbnail_x   += secondary_padding;
+            secondary_thumbnail_x -= primary_padding;
+         }
+      }
+
+      /* Set colour alpha values */
+      menu_display_set_alpha(
+            mui->colors.screen_fade,
+            mui->colors.screen_fade_opacity * mui->fullscreen_thumbnail_alpha);
+
+      menu_display_set_alpha(
+            mui->colors.surface_background, mui->fullscreen_thumbnail_alpha);
+
+      /* Darken background */
+      menu_display_draw_quad(
+            video_info,
+            0,
+            header_height,
+            (unsigned)view_width,
+            (unsigned)view_height,
+            width,
+            height,
+            mui->colors.screen_fade);
+
+      /* Draw thumbnails
+       * > Primary */
+      if (show_primary_thumbnail)
+      {
+         /* Background */
+         menu_display_draw_quad(
+               video_info,
+               primary_thumbnail_x - (int)(mui->margin >> 1) +
+                     ((thumbnail_box_width - (int)primary_thumbnail_draw_width) >> 1),
+               primary_thumbnail_y - (int)(mui->margin >> 1) +
+                     ((thumbnail_box_height - (int)primary_thumbnail_draw_height) >> 1),
+               (unsigned)primary_thumbnail_draw_width + mui->margin,
+               (unsigned)primary_thumbnail_draw_height + mui->margin,
+               width,
+               height,
+               mui->colors.surface_background);
+
+         /* Thumbnail */
+         menu_thumbnail_draw(
+               video_info,
+               primary_thumbnail,
+               primary_thumbnail_x,
+               primary_thumbnail_y,
+               (unsigned)thumbnail_box_width,
+               (unsigned)thumbnail_box_height,
+               mui->fullscreen_thumbnail_alpha,
+               1.0f);
+      }
+
+      /* > Secondary */
+      if (show_secondary_thumbnail)
+      {
+         /* Background */
+         menu_display_draw_quad(
+               video_info,
+               secondary_thumbnail_x - (int)(mui->margin >> 1) +
+                     ((thumbnail_box_width - (int)secondary_thumbnail_draw_width) >> 1),
+               secondary_thumbnail_y - (int)(mui->margin >> 1) +
+                     ((thumbnail_box_height - (int)secondary_thumbnail_draw_height) >> 1),
+               (unsigned)secondary_thumbnail_draw_width + mui->margin,
+               (unsigned)secondary_thumbnail_draw_height + mui->margin,
+               width,
+               height,
+               mui->colors.surface_background);
+
+         /* Thumbnail */
+         menu_thumbnail_draw(
+               video_info,
+               secondary_thumbnail,
+               secondary_thumbnail_x,
+               secondary_thumbnail_y,
+               (unsigned)thumbnail_box_width,
+               (unsigned)thumbnail_box_height,
+               mui->fullscreen_thumbnail_alpha,
+               1.0f);
+      }
+   }
+
+   return;
+
+error:
+   /* If fullscreen thumbnails are enabled at
+    * this point, must disable them immediately... */
+   if (mui->show_fullscreen_thumbnails)
+      materialui_hide_fullscreen_thumbnails(mui, false);
+}
+
 /* Sets transparency of all menu list colours if
  * a transition animation is in process */
 static void materialui_colors_set_transition_alpha(materialui_handle_t *mui)
@@ -4250,7 +4710,6 @@ static void materialui_colors_set_transition_alpha(materialui_handle_t *mui)
       menu_display_set_alpha(mui->colors.list_switch_off,             alpha);
       menu_display_set_alpha(mui->colors.list_switch_off_background,  alpha);
       menu_display_set_alpha(mui->colors.scrollbar,                   alpha);
-      menu_display_set_alpha(mui->colors.surface_background,          alpha);
       menu_display_set_alpha(mui->colors.missing_thumbnail_icon,      alpha);
 
       /* Landscape border shadow only fades if:
@@ -4290,7 +4749,6 @@ static void materialui_colors_reset_transition_alpha(materialui_handle_t *mui)
       menu_display_set_alpha(mui->colors.list_switch_off,             1.0f);
       menu_display_set_alpha(mui->colors.list_switch_off_background,  1.0f);
       menu_display_set_alpha(mui->colors.scrollbar,                   1.0f);
-      menu_display_set_alpha(mui->colors.surface_background,          1.0f);
       menu_display_set_alpha(mui->colors.missing_thumbnail_icon,      1.0f);
 
       /* Landscape border shadow only fades if:
@@ -4433,6 +4891,12 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
    mui->font_data.list.raster_block.carr.coords.vertices = 0;
    mui->font_data.hint.raster_block.carr.coords.vertices = 0;
 
+   /* Draw fullscreen thumbnails, if currently active
+    * > Must be done *after* we flush the first layer
+    *   of text */
+   materialui_render_fullscreen_thumbnails(
+         mui, video_info, width, height, header_height, selection);
+
    /* Draw title + system bar */
    materialui_render_header(mui, video_info, width, height);
 
@@ -4457,6 +4921,8 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
       msg[0] = '\0';
 
       /* Darken screen */
+      menu_display_set_alpha(
+            mui->colors.screen_fade, mui->colors.screen_fade_opacity);
       menu_display_draw_quad(video_info,
             0, 0, width, height, width, height, mui->colors.screen_fade);
 
@@ -4482,6 +4948,8 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
    if (!string_is_empty(mui->msgbox))
    {
       /* Darken screen */
+      menu_display_set_alpha(
+            mui->colors.screen_fade, mui->colors.screen_fade_opacity);
       menu_display_draw_quad(video_info,
             0, 0, width, height, width, height, mui->colors.screen_fade);
 
@@ -5168,6 +5636,12 @@ static void *materialui_init(void **userdata, bool video_is_threaded)
    /* Set initial thumbnail stream delay */
    menu_thumbnail_set_stream_delay(MUI_THUMBNAIL_STREAM_DELAY_DEFAULT);
 
+   /* Ensure that fullscreen thumbnails are inactive */
+   mui->show_fullscreen_thumbnails     = false;
+   mui->fullscreen_thumbnail_selection = 0;
+   mui->fullscreen_thumbnail_alpha     = 0.0f;
+   mui->fullscreen_thumbnail_label[0]  = '\0';
+
    return menu;
 error:
    if (menu)
@@ -5353,7 +5827,7 @@ static void materialui_navigation_alphabet(void *data, size_t *unused)
 static void materialui_populate_nav_bar(
       materialui_handle_t *mui, const char *label, settings_t *settings)
 {
-   unsigned menu_tab_index  = 0;
+   unsigned menu_tab_index = 0;
 
    /* Cache last active menu tab index */
    mui->nav_bar.last_active_menu_tab_index = mui->nav_bar.active_menu_tab_index;
@@ -5603,8 +6077,30 @@ static void materialui_populate_entries(
    /* Initialise menu transition animation */
    materialui_init_transition_animation(mui, settings);
 
+   /* Ensure that fullscreen thumbnail view
+    * is disabled */
+   materialui_hide_fullscreen_thumbnails(mui, false);
+
    /* Reset 'menu stack flushed' state */
    mui->menu_stack_flushed = false;
+
+   /* At this point, the first and last on screen
+    * entry indices are set based on the *previous*
+    * menu list. The new updated (correct) values
+    * cannot be determined until the next call of
+    * materialui_render(). Normally this isn't an
+    * issue, but we have an annoying edge case:
+    * if the menu scale (or anything else that
+    * affects layout) changes in-between a call
+    * of materialui_populate_entries() and a call
+    * of materialui_render(), we can end up auto
+    * selecting an on screen entry using the old
+    * (wrong) first and last entry indices. A
+    * simple fix (workaround) for this is to just
+    * reset the first and last entry indices to zero
+    * whenever materialui_populate_entries() is called */
+   mui->first_onscreen_entry = 0;
+   mui->last_onscreen_entry  = 0;
 
    /* Note: mui->scroll_y position needs to be set here,
     * but we can't do this until materialui_compute_entries_box()
@@ -5834,6 +6330,8 @@ static int materialui_switch_tabs(
    return 0;
 }
 
+static void materialui_switch_list_view(materialui_handle_t *mui);
+
 /* Material UI requires special handling of certain
  * menu input functions, due to the fact that navigation
  * controls are relative to the currently selected item,
@@ -5851,6 +6349,18 @@ static enum menu_action materialui_parse_menu_entry_action(
       materialui_handle_t *mui, enum menu_action action)
 {
    enum menu_action new_action = action;
+
+   /* If fullscreen thumbnail view is active, any
+    * valid menu action will disable it (and action
+    * itself will be ignored) */
+   if (mui->show_fullscreen_thumbnails)
+   {
+      if (action != MENU_ACTION_NOOP)
+      {
+         materialui_hide_fullscreen_thumbnails(mui, true);
+         return MENU_ACTION_NOOP;
+      }
+   }
 
    /* Scan user inputs */
    switch (action)
@@ -5904,6 +6414,79 @@ static enum menu_action materialui_parse_menu_entry_action(
           * > If current selection is off screen,
           *   auto select *first* item */
          materialui_auto_select_onscreen_entry(mui, MUI_ONSCREEN_ENTRY_FIRST);
+         break;
+      case MENU_ACTION_SCAN:
+         /* 'Scan' command is used to cycle current
+          * thumbnail view mode */
+         materialui_switch_list_view(mui);
+         new_action = MENU_ACTION_NOOP;
+         break;
+      case MENU_ACTION_START:
+         /* - If this is a playlist, attempt to show
+          *   fullscreen thumbnail view
+          * - If this is not a playlist, perform default
+          *   'start' action *if* current selection is
+          *   on screen */
+         {
+            size_t selection = menu_navigation_get_selection();
+
+            if (mui->is_playlist)
+            {
+               materialui_show_fullscreen_thumbnails(mui, selection);
+               new_action = MENU_ACTION_NOOP;
+            }
+            else if (!materialui_entry_onscreen(mui, selection))
+               new_action = MENU_ACTION_NOOP;
+         }
+         break;
+      case MENU_ACTION_INFO:
+         /* Well here's a fine piece of nonsense...
+          * > Whenever an 'info' action is performed,
+          *   materialui_list_insert() gets called, which
+          *   in turn causes materialui_compute_entries_box()
+          *   to be called
+          * > For node sizes to be determined correctly by
+          *   materialui_compute_entries_box(), we need
+          *   complete menu entry sublabel text
+          * > When viewing a playlist, sublabel text is
+          *   determined by action_bind_sublabel_playlist_entry()
+          * > action_bind_sublabel_playlist_entry() skips content
+          *   runtime info if the input 'label' argument does not
+          *   correspond to a valid playlist type
+          * > ...and guess what: when showing an info box, the
+          *   'label' argument passed to action_bind_sublabel_playlist_entry()
+          *   gets changed to 'info_screen' - which isn't a valid
+          *   playlist type (obviously...)
+          * The net result is that an info action on a playlist
+          * entry completely screws up the node dimensions,
+          * because we end up measuring the height of the wrong
+          * sublabel text...
+          * Since playlist entries have no info data anyway, we
+          * avoid this foolishness by simply disabling the 'info'
+          * action when viewing playlists...
+          * In addition, an 'info' action is only valid in general
+          * if the currently selected entry is on screen */
+         {
+            size_t selection = menu_navigation_get_selection();
+
+            if (mui->is_playlist ||
+                !materialui_entry_onscreen(mui, selection))
+               new_action = MENU_ACTION_NOOP;
+         }
+         break;
+      case MENU_ACTION_SELECT:
+      case MENU_ACTION_OK:
+         /* Select/OK: Perform action on currently
+          * selected item
+          * > This only makes sense if currently
+          *   selected item is on screen. If it
+          *   is off screen, must disable input */
+         {
+            size_t selection = menu_navigation_get_selection();
+
+            if (!materialui_entry_onscreen(mui, selection))
+               new_action = MENU_ACTION_NOOP;
+         }
          break;
       default:
          /* In all other cases, pass through input
@@ -6202,8 +6785,10 @@ static int materialui_pointer_down(void *userdata,
    /* > Disable by default (saves checks later) */
    mui->scrollbar.dragged = false;
 
-   /* > Check if scrollbar is enabled */
-   if (mui->scrollbar.active)
+   /* > Check if scrollbar is enabled
+    *   (note: dragging is disabled when showing
+    *   fullscreen thumbnails) */
+   if (mui->scrollbar.active && !mui->show_fullscreen_thumbnails)
    {
       unsigned header_height     = menu_display_get_header_height();
       menu_animation_ctx_tag tag = (uintptr_t)&mui->scroll_y;
@@ -6415,6 +7000,8 @@ static int materialui_pointer_up_nav_bar(
    return 0;
 }
 
+/* If viewing a playlist with thumbnails enabled,
+ * cycles current thumbnail view mode */
 static void materialui_switch_list_view(materialui_handle_t *mui)
 {
    settings_t *settings                  = config_get_ptr();
@@ -6504,6 +7091,21 @@ static int materialui_pointer_up(void *userdata,
       menu_thumbnail_set_stream_delay(MUI_THUMBNAIL_STREAM_DELAY_DEFAULT);
 
       mui->scrollbar.dragged = false;
+      return 0;
+   }
+
+   /* If fullscreen thumbnail view is enabled,
+    * all input will disable it and otherwise
+    * be ignored */
+   if (mui->show_fullscreen_thumbnails)
+   {
+      /* Must reset scroll acceleration, in case
+       * user performed a swipe (don't want menu
+       * list to 'drift' after hiding fullscreen
+       * thumbnails...) */
+      menu_input_set_pointer_y_accel(0.0f);
+
+      materialui_hide_fullscreen_thumbnails(mui, true);
       return 0;
    }
 
@@ -7143,16 +7745,6 @@ static void materialui_get_thumbnail_system(void *userdata, char *s, size_t len)
       strlcpy(s, system, len);
 }
 
-/* Used to cycle current thumbnail view mode */
-static void materialui_update_thumbnail_image(void *userdata)
-{
-   materialui_handle_t *mui = (materialui_handle_t*)userdata;
-   if (!mui)
-      return;
-
-   materialui_switch_list_view(mui);
-}
-
 static void materialui_refresh_thumbnail_image(void *userdata, unsigned i)
 {
    materialui_handle_t *mui = (materialui_handle_t*)userdata;
@@ -7230,7 +7822,7 @@ menu_ctx_driver_t menu_ctx_mui = {
    "glui",
    materialui_environ,
    NULL,
-   materialui_update_thumbnail_image,
+   NULL,
    materialui_refresh_thumbnail_image,
    materialui_set_thumbnail_system,
    materialui_get_thumbnail_system,

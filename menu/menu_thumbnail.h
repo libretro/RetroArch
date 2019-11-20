@@ -141,6 +141,14 @@ void menu_thumbnail_process_streams(
 
 /* Thumbnail rendering */
 
+/* Determines the actual screen dimensions of a
+ * thumbnail when centred with aspect correct
+ * scaling within a rectangle of (width x height) */
+void menu_thumbnail_get_draw_dimensions(
+      menu_thumbnail_t *thumbnail,
+      unsigned width, unsigned height, float scale_factor,
+      float *draw_width, float *draw_height);
+
 /* Draws specified thumbnail centred (with aspect correct
  * scaling) within a rectangle of (width x height)
  * NOTE: Setting scale_factor > 1.0f will increase the

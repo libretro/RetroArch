@@ -46,7 +46,7 @@ RETRO_BEGIN_DECLS
 #define MENU_INPUT_HIDE_CURSOR_DELAY 4000000         /* 4 seconds */
 
 #define MENU_INPUT_PRESS_TIME_SHORT 200000           /* 200 ms */
-#define MENU_INPUT_PRESS_TIME_LONG 1500000           /* 1.5 second */
+#define MENU_INPUT_PRESS_TIME_LONG 1000000           /* 1 second */
 /* (Anything less than 'short' is considered a tap) */
 
 /* Swipe gestures must be completed within a duration
