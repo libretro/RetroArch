@@ -1710,6 +1710,7 @@
 					"-UHAVE_GLSL",
 					"-UHAVE_OPENGL",
 				);
+				OTHER_CODE_SIGN_FLAGS = "--deep --timestamp";
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(OTHER_CFLAGS)",
 					"-UHAVE_GLSL",
@@ -1747,6 +1748,7 @@
 					"-UHAVE_GLSL",
 					"-UHAVE_OPENGL",
 				);
+				OTHER_CODE_SIGN_FLAGS = "--deep --timestamp";
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(OTHER_CFLAGS)",
 					"-UHAVE_GLSL",
@@ -1782,6 +1784,7 @@
 					"-UHAVE_GLSL",
 					"-UHAVE_OPENGL",
 				);
+				OTHER_CODE_SIGN_FLAGS = "--deep --timestamp";
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(OTHER_CFLAGS)",
 					"-UHAVE_OPENGL",
@@ -1815,6 +1818,7 @@
 					"-UHAVE_GLSL",
 					"-UHAVE_OPENGL",
 				);
+				OTHER_CODE_SIGN_FLAGS = "--deep --timestamp";
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(OTHER_CFLAGS)",
 					"-UHAVE_OPENGL",
