@@ -12,90 +12,94 @@ dist: xenial
 
 matrix:
   include:
-    - compiler: mingw-x86
-      addons: true
-      env: CROSS_COMPILE=i686-w64-mingw32- CFLAGS="-D_WIN32_WINNT=0x0501"
-    - compiler: mingw-x86
-      addons: true
-      env: C89_BUILD=1 CROSS_COMPILE=i686-w64-mingw32- CFLAGS="-D_WIN32_WINNT=0x0501"
-    - compiler: mingw-x86
-      addons: true
-      env: CXX_BUILD=1 CROSS_COMPILE=i686-w64-mingw32- CFLAGS="-D_WIN32_WINNT=0x0501"
-    - compiler: mingw-x64
-      addons: true
-      env: CROSS_COMPILE=x86_64-w64-mingw32- CFLAGS="-D_WIN32_WINNT=0x0501"
-    - compiler: mingw-x64
-      addons: true
-      env: C89_BUILD=1 CROSS_COMPILE=x86_64-w64-mingw32- CFLAGS="-D_WIN32_WINNT=0x0501"
-    - compiler: mingw-x64
-      addons: true
-      env: CXX_BUILD=1 CROSS_COMPILE=x86_64-w64-mingw32- CFLAGS="-D_WIN32_WINNT=0x0501"
-    - compiler: gcc
-      env: CC=gcc-8 CXX=g++-8
-    - compiler: gcc
-      env: C89_BUILD=1 CC=gcc-8 CXX=g++-8
-    - compiler: gcc
-      env: CXX_BUILD=1 CC=gcc-8 CXX=g++-8
-    - compiler: gcc
-      env: DISABLE_MENU=1 CC=gcc-8 CXX=g++-8
-    - compiler: gcc
-      env: DISABLE_OVERLAY=1 CC=gcc-8 CXX=g++-8
-    - compiler: gcc
-      env: DISABLE_CDROM=1 CC=gcc-8 CXX=g++-8
-    - compiler: gcc
-      env: DISABLE_VIDEO_LAYOUT=1 CC=gcc-8 CXX=g++-8
-    - compiler: gcc
-      env: DISABLE_AUDIOMIXER=1 CC=gcc-8 CXX=g++-8
-    - compiler: gcc
-      env: ENABLE_GLES=1 CC=gcc-8 CXX=g++-8
-    - compiler: gcc
-      env: ENABLE_GLES=1 ENABLE_GLES3=1 CC=gcc-8 CXX=g++-8
-    - compiler: clang
-      env: CC=clang-6.0 CXX=clang++-6.0
-    - compiler: clang
-      env: C89_BUILD=1 CC=clang-6.0 CXX=clang++-6.0
-    - compiler: clang
-      env: CXX_BUILD=1 CC=clang-6.0 CXX=clang++-6.0
-    - os: osx
-      env: CC=clang CXX=clang++
-    - os: osx
-      osx_image: xcode8
-      script:
-        - xcodebuild -target RetroArch -configuration Release -project pkg/apple/RetroArch.xcodeproj
+   #  - compiler: mingw-x86
+   #    addons: true
+   #    env: CROSS_COMPILE=i686-w64-mingw32- CFLAGS="-D_WIN32_WINNT=0x0501"
+   #  - compiler: mingw-x86
+   #    addons: true
+   #    env: C89_BUILD=1 CROSS_COMPILE=i686-w64-mingw32- CFLAGS="-D_WIN32_WINNT=0x0501"
+   #  - compiler: mingw-x86
+   #    addons: true
+   #    env: CXX_BUILD=1 CROSS_COMPILE=i686-w64-mingw32- CFLAGS="-D_WIN32_WINNT=0x0501"
+   #  - compiler: mingw-x64
+   #    addons: true
+   #    env: CROSS_COMPILE=x86_64-w64-mingw32- CFLAGS="-D_WIN32_WINNT=0x0501"
+   #  - compiler: mingw-x64
+   #    addons: true
+   #    env: C89_BUILD=1 CROSS_COMPILE=x86_64-w64-mingw32- CFLAGS="-D_WIN32_WINNT=0x0501"
+   #  - compiler: mingw-x64
+   #    addons: true
+   #    env: CXX_BUILD=1 CROSS_COMPILE=x86_64-w64-mingw32- CFLAGS="-D_WIN32_WINNT=0x0501"
+   #  - compiler: gcc
+   #    env: CC=gcc-8 CXX=g++-8
+   #  - compiler: gcc
+   #    env: C89_BUILD=1 CC=gcc-8 CXX=g++-8
+   #  - compiler: gcc
+   #    env: CXX_BUILD=1 CC=gcc-8 CXX=g++-8
+   #  - compiler: gcc
+   #    env: DISABLE_MENU=1 CC=gcc-8 CXX=g++-8
+   #  - compiler: gcc
+   #    env: DISABLE_OVERLAY=1 CC=gcc-8 CXX=g++-8
+   #  - compiler: gcc
+   #    env: DISABLE_CDROM=1 CC=gcc-8 CXX=g++-8
+   #  - compiler: gcc
+   #    env: DISABLE_VIDEO_LAYOUT=1 CC=gcc-8 CXX=g++-8
+   #  - compiler: gcc
+   #    env: DISABLE_AUDIOMIXER=1 CC=gcc-8 CXX=g++-8
+   #  - compiler: gcc
+   #    env: ENABLE_GLES=1 CC=gcc-8 CXX=g++-8
+   #  - compiler: gcc
+   #    env: ENABLE_GLES=1 ENABLE_GLES3=1 CC=gcc-8 CXX=g++-8
+   #  - compiler: clang
+   #    env: CC=clang-6.0 CXX=clang++-6.0
+   #  - compiler: clang
+   #    env: C89_BUILD=1 CC=clang-6.0 CXX=clang++-6.0
+   #  - compiler: clang
+   #    env: CXX_BUILD=1 CC=clang-6.0 CXX=clang++-6.0
+   #  - os: osx
+   #    env: CC=clang CXX=clang++
     - os: osx
       osx_image: xcode11.2
       script:
-        - brew update-reset
-        - brew install --force-bottle qt5
-        - security create-keychain -p travis build.keychain
-        - security default-keychain -s build.keychain
-        - security unlock-keychain -p travis build.keychain
-        - echo $OSX_CERT | base64 --decode > dev.p12
-        - security import dev.p12 -k build.keychain -P $OSX_CERT_PASS -T /usr/bin/codesign
-        - rm dev.p12
-        - security set-key-partition-list -S "apple-tool:,apple:,codesign:" -s -k travis build.keychain
-        - xcodebuild -target RetroArchQt -configuration Release -project pkg/apple/RetroArch_Metal.xcodeproj
-      deploy:
-        skip_cleanup: true
-        provider: script
-        script: bash travis_metal_deploy.sh
-        on:
-          branch: master
-    - language: android
-      # Android builds are only supported on Trusty
-      dist: trusty
-      android:
-        components:
-          - tools
-          - build-tools-28.0.3
-          - android-28
-      install:
-        - echo y | sdkmanager "ndk-bundle"
-      before_script:
-        - export ANDROID_NDK_HOME=$ANDROID_HOME/ndk-bundle
-      script:
-        - cd pkg/android/phoenix
-        - ./gradlew assembleNormalRelease
+        - xcodebuild -target RetroArchiOS11 -configuration Release -project pkg/apple/RetroArch_iOS11.xcodeproj
+   #  - os: osx
+   #    osx_image: xcode8
+   #    script:
+   #      - xcodebuild -target RetroArch -configuration Release -project pkg/apple/RetroArch.xcodeproj
+   #  - os: osx
+   #    osx_image: xcode11.2
+   #    script:
+   #      - brew update-reset
+   #      - brew install --force-bottle qt5
+   #      - security create-keychain -p travis build.keychain
+   #      - security default-keychain -s build.keychain
+   #      - security unlock-keychain -p travis build.keychain
+   #      - echo $OSX_CERT | base64 --decode > dev.p12
+   #      - security import dev.p12 -k build.keychain -P $OSX_CERT_PASS -T /usr/bin/codesign
+   #      - rm dev.p12
+   #      - security set-key-partition-list -S "apple-tool:,apple:,codesign:" -s -k travis build.keychain
+   #      - xcodebuild -target RetroArchQt -configuration Release -project pkg/apple/RetroArch_Metal.xcodeproj
+   #    deploy:
+   #      skip_cleanup: true
+   #      provider: script
+   #      script: bash travis_metal_deploy.sh
+   #      on:
+   #        branch: master
+   #  - language: android
+   #    # Android builds are only supported on Trusty
+   #    dist: trusty
+   #    android:
+   #      components:
+   #        - tools
+   #        - build-tools-28.0.3
+   #        - android-28
+   #    install:
+   #      - echo y | sdkmanager "ndk-bundle"
+   #    before_script:
+   #      - export ANDROID_NDK_HOME=$ANDROID_HOME/ndk-bundle
+   #    script:
+   #      - cd pkg/android/phoenix
+   #      - ./gradlew assembleNormalRelease
 
 before_install:
   - |
