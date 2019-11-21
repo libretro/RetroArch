@@ -6351,14 +6351,29 @@ static enum menu_action materialui_parse_menu_entry_action(
    enum menu_action new_action = action;
 
    /* If fullscreen thumbnail view is active, any
-    * valid menu action will disable it (and action
-    * itself will be ignored) */
+    * valid menu action will disable it... */
    if (mui->show_fullscreen_thumbnails)
    {
       if (action != MENU_ACTION_NOOP)
       {
          materialui_hide_fullscreen_thumbnails(mui, true);
-         return MENU_ACTION_NOOP;
+
+         /* ...and any action other than Select/OK
+          * is ignored
+          * > We allow pass-through of Select/OK since
+          *   users may want to run content directly
+          *   after viewing fullscreen thumbnails (i.e.
+          *   the large images may pique their interest),
+          *   and having to press RetroPad A or the Return
+          *   key twice is navigationally confusing
+          * > Note that we can only do this for non-pointer
+          *   input, though (when using a mouse/touchscreen,
+          *   there just aren't enough distinct inputs types
+          *   to single out a rational Select/OK action
+          *   when fullscreen thumbnails are shown) */
+         if ((action != MENU_ACTION_SELECT) &&
+             (action != MENU_ACTION_OK))
+            return MENU_ACTION_NOOP;
       }
    }
 
