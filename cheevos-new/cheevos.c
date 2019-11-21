@@ -358,7 +358,7 @@ static const char* rcheevos_rc_error(int ret)
       case RC_MISSING_DISPLAY_STRING: return "Missing display string";
       case RC_OUT_OF_MEMORY: return "Out of memory";
       case RC_INVALID_VALUE_FLAG: return "Invalid flag in value expression";
-      case RC_MISSING_VALUE_MEASURED: return "Missing value (measured)";
+      case RC_MISSING_VALUE_MEASURED: return "Missing measured flag in value expression";
       case RC_MULTIPLE_MEASURED: return "Multiple measured targets";
       case RC_INVALID_MEASURED_TARGET: return "Invalid measured target";
 
