@@ -86,7 +86,13 @@ static bool psp_joypad_init(void *data)
    (void)data;
 
 #if defined(VITA)
-   psp2_model = sceKernelGetModelForCDialog();
+   if (!sceCtrlIsMultiControllerSupported())
+      {
+      psp2_model = SCE_KERNEL_MODEL_VITA;
+      } else if(sceCtrlIsMultiControllerSupported() > 0)
+      {
+      psp2_model = SCE_KERNEL_MODEL_VITATV;
+      }
    if (psp2_model != SCE_KERNEL_MODEL_VITATV)
    {
       sceTouchSetSamplingState(SCE_TOUCH_PORT_BACK, SCE_TOUCH_SAMPLING_STATE_START);
