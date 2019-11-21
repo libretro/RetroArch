@@ -14,6 +14,7 @@ static void rc_update_condition_pause(rc_condition_t* condition, int* in_pause) 
     case RC_CONDITION_SUB_SOURCE:
     case RC_CONDITION_ADD_HITS:
     case RC_CONDITION_AND_NEXT:
+    case RC_CONDITION_ADD_ADDRESS:
       condition->pause = *in_pause;
       break;
     
@@ -27,9 +28,10 @@ rc_condset_t* rc_parse_condset(const char** memaddr, rc_parse_state_t* parse) {
   rc_condset_t* self;
   rc_condition_t** next;
   int in_pause;
+  int in_add_address;
 
   self = RC_ALLOC(rc_condset_t, parse);
-  self->has_pause = 0;
+  self->has_pause = self->is_paused = 0;
   next = &self->conditions;
 
   if (**memaddr == 'S' || **memaddr == 's' || !**memaddr) {
@@ -38,14 +40,54 @@ rc_condset_t* rc_parse_condset(const char** memaddr, rc_parse_state_t* parse) {
     return self;
   }
 
+  in_add_address = 0;
   for (;;) {
-    *next = rc_parse_condition(memaddr, parse);
+    *next = rc_parse_condition(memaddr, parse, in_add_address);
 
     if (parse->offset < 0) {
       return 0;
     }
 
+    if ((*next)->oper == RC_CONDITION_NONE) {
+      switch ((*next)->type) {
+        case RC_CONDITION_ADD_ADDRESS:
+        case RC_CONDITION_ADD_HITS:
+        case RC_CONDITION_ADD_SOURCE:
+        case RC_CONDITION_SUB_SOURCE:
+        case RC_CONDITION_AND_NEXT:
+          break;
+
+        default:
+          parse->offset = RC_INVALID_OPERATOR;
+          return 0;
+      }
+    }
+
     self->has_pause |= (*next)->type == RC_CONDITION_PAUSE_IF;
+    in_add_address = (*next)->type == RC_CONDITION_ADD_ADDRESS;
+
+    if ((*next)->type == RC_CONDITION_MEASURED) {
+      unsigned measured_target = 0;
+      if ((*next)->required_hits == 0) {
+        if ((*next)->operand2.type != RC_OPERAND_CONST) {
+           parse->offset = RC_INVALID_MEASURED_TARGET;
+           return 0;
+        }
+
+        measured_target = (*next)->operand2.value.num;
+      }
+      else {
+        measured_target = (*next)->required_hits;
+      }
+
+      if (parse->measured_target && measured_target != parse->measured_target) {
+        parse->offset = RC_MULTIPLE_MEASURED;
+        return 0;
+      }
+
+      parse->measured_target = measured_target;
+    }
+
     next = &(*next)->next;
 
     if (**memaddr != '_') {
@@ -66,14 +108,13 @@ rc_condset_t* rc_parse_condset(const char** memaddr, rc_parse_state_t* parse) {
   return self;
 }
 
-static int rc_test_condset_internal(rc_condset_t* self, int processing_pause, int* reset, rc_peek_t peek, void* ud, lua_State* L) {
+static int rc_test_condset_internal(rc_condset_t* self, int processing_pause, rc_eval_state_t* eval_state) {
   rc_condition_t* condition;
   int set_valid, cond_valid, prev_cond;
-  unsigned add_buffer, add_hits;
 
   set_valid = 1;
   prev_cond = 1;
-  add_buffer = add_hits = 0;
+  eval_state->add_value = eval_state->add_hits = eval_state->add_address = 0;
 
   for (condition = self->conditions; condition != 0; condition = condition->next) {
     if (condition->pause != processing_pause) {
@@ -82,39 +123,60 @@ static int rc_test_condset_internal(rc_condset_t* self, int processing_pause, in
 
     switch (condition->type) {
       case RC_CONDITION_ADD_SOURCE:
-        add_buffer += rc_evaluate_operand(&condition->operand1, peek, ud, L);
+        eval_state->add_value += rc_evaluate_operand(&condition->operand1, eval_state);
+        eval_state->add_address = 0;
         continue;
       
       case RC_CONDITION_SUB_SOURCE:
-        add_buffer -= rc_evaluate_operand(&condition->operand1, peek, ud, L);
+        eval_state->add_value -= rc_evaluate_operand(&condition->operand1, eval_state);
+        eval_state->add_address = 0;
         continue;
       
       case RC_CONDITION_ADD_HITS:
-        if (rc_test_condition(condition, add_buffer, peek, ud, L)) {
+        /* always evaluate the condition to ensure everything is updated correctly */
+        cond_valid = rc_test_condition(condition, eval_state);
+
+        /* merge AndNext value and reset it for the next condition */
+        cond_valid &= prev_cond;
+        prev_cond = 1;
+
+        /* if the condition is true, tally it */
+        if (cond_valid) {
           if (condition->required_hits == 0 || condition->current_hits < condition->required_hits) {
             condition->current_hits++;
           }
+
+          condition->is_true = (condition->required_hits == 0 || condition->current_hits >= condition->required_hits);
+        }
+        else {
+          condition->is_true = 0;
         }
 
-        add_buffer = 0;
-        add_hits += condition->current_hits;
+        eval_state->add_value = 0;
+        eval_state->add_address = 0;
+        eval_state->add_hits += condition->current_hits;
         continue;
 
       case RC_CONDITION_AND_NEXT:
-        prev_cond &= rc_test_condition(condition, add_buffer, peek, ud, L);
-        add_buffer = 0;
+        prev_cond &= rc_test_condition(condition, eval_state);
+        eval_state->add_value = 0;
+        eval_state->add_address = 0;
+        continue;
+
+      case RC_CONDITION_ADD_ADDRESS:
+        eval_state->add_address = rc_evaluate_operand(&condition->operand1, eval_state);
         continue;
     }
 
-    /* always evaluate the condition to ensure delta values get tracked correctly */
-    cond_valid = rc_test_condition(condition, add_buffer, peek, ud, L);
+    /* always evaluate the condition to ensure everything is updated correctly */
+    cond_valid = rc_test_condition(condition, eval_state);
 
     /* merge AndNext value and reset it for the next condition */
     cond_valid &= prev_cond;
     prev_cond = 1;
 
     /* if the condition has a target hit count that has already been met, it's automatically true, even if not currently true. */
-    if (condition->required_hits != 0 && (condition->current_hits + add_hits) >= condition->required_hits) {
+    if (condition->required_hits != 0 && (condition->current_hits + eval_state->add_hits) >= condition->required_hits) {
       cond_valid = 1;
     }
     else if (cond_valid) {
@@ -123,14 +185,28 @@ static int rc_test_condset_internal(rc_condset_t* self, int processing_pause, in
       if (condition->required_hits == 0) {
         /* not a hit-based requirement: ignore any additional logic! */
       }
-      else if ((condition->current_hits + add_hits) < condition->required_hits) {
+      else if ((condition->current_hits + eval_state->add_hits) < condition->required_hits) {
         /* HitCount target has not yet been met, condition is not yet valid */
         cond_valid = 0;
       }
     }
+    condition->is_true = cond_valid;
+    eval_state->has_hits |= (condition->current_hits || eval_state->add_hits);
+
+    /* capture measured state */
+    if (condition->type == RC_CONDITION_MEASURED) {
+      unsigned int measured_value;
+      if (condition->required_hits > 0)
+        measured_value = condition->current_hits + eval_state->add_hits;
+      else
+        measured_value = rc_evaluate_operand(&condition->operand1, eval_state) + eval_state->add_value;
+
+      if (measured_value > eval_state->measured_value)
+        eval_state->measured_value = measured_value;
+    }
 
     /* reset AddHits and AddSource/SubSource values */
-    add_buffer = add_hits = 0;
+    eval_state->add_value = eval_state->add_hits = eval_state->add_address = 0;
 
     switch (condition->type) {
       case RC_CONDITION_PAUSE_IF:
@@ -155,7 +231,7 @@ static int rc_test_condset_internal(rc_condset_t* self, int processing_pause, in
       
       case RC_CONDITION_RESET_IF:
         if (cond_valid) {
-          *reset = 1; /* let caller know to reset all hit counts */
+          eval_state->was_reset = 1; /* let caller know to reset all hit counts */
           set_valid = 0; /* cannot be valid if we've hit a reset condition */
         }
 
@@ -170,18 +246,20 @@ static int rc_test_condset_internal(rc_condset_t* self, int processing_pause, in
   return set_valid;
 }
 
-int rc_test_condset(rc_condset_t* self, int* reset, rc_peek_t peek, void* ud, lua_State* L) {
+int rc_test_condset(rc_condset_t* self, rc_eval_state_t* eval_state) {
   if (self->conditions == 0) {
     /* important: empty group must evaluate true */
     return 1;
   }
 
-  if (self->has_pause && rc_test_condset_internal(self, 1, reset, peek, ud, L)) {
-    /* one or more Pause conditions exists, if any of them are true, stop processing this group */
-    return 0;
+  if (self->has_pause) {
+    if ((self->is_paused = rc_test_condset_internal(self, 1, eval_state))) {
+      /* one or more Pause conditions exists, if any of them are true, stop processing this group */
+      return 0;
+    }
   }
 
-  return rc_test_condset_internal(self, 0, reset, peek, ud, L);
+  return rc_test_condset_internal(self, 0, eval_state);
 }
 
 void rc_reset_condset(rc_condset_t* self) {

@@ -66,7 +66,7 @@ static int rc_parse_operand_lua(rc_operand_t* self, const char** memaddr, rc_par
   return RC_OK;
 }
 
-static int rc_parse_operand_memory(rc_operand_t* self, const char** memaddr, rc_parse_state_t* parse) {
+static int rc_parse_operand_memory(rc_operand_t* self, const char** memaddr, rc_parse_state_t* parse, int is_indirect) {
   const char* aux = *memaddr;
   char* end;
   unsigned long address;
@@ -135,7 +135,7 @@ static int rc_parse_operand_memory(rc_operand_t* self, const char** memaddr, rc_
     address = 0xffffffffU;
   }
 
-  self->value.memref = rc_alloc_memref_value(parse, (unsigned)address, size, is_bcd);
+  self->value.memref = rc_alloc_memref_value(parse, address, size, is_bcd, is_indirect);
   if (parse->offset < 0)
     return parse->offset;
 
@@ -143,7 +143,7 @@ static int rc_parse_operand_memory(rc_operand_t* self, const char** memaddr, rc_
   return RC_OK;
 }
 
-static int rc_parse_operand_trigger(rc_operand_t* self, const char** memaddr, rc_parse_state_t* parse) {
+static int rc_parse_operand_trigger(rc_operand_t* self, const char** memaddr, int is_indirect, rc_parse_state_t* parse) {
   const char* aux = *memaddr;
   char* end;
   int ret;
@@ -151,6 +151,11 @@ static int rc_parse_operand_trigger(rc_operand_t* self, const char** memaddr, rc
 
   switch (*aux) {
     case 'h': case 'H':
+      if (aux[2] == 'x' || aux[2] == 'X') {
+        /* H0x1234 is a typo - either H1234 or 0xH1234 was probably meant */
+        return RC_INVALID_CONST_OPERAND;
+      }
+
       value = strtoul(++aux, &end, 16);
 
       if (end == aux) {
@@ -171,7 +176,7 @@ static int rc_parse_operand_trigger(rc_operand_t* self, const char** memaddr, rc
       if (aux[1] == 'x' || aux[1] == 'X') {
         /* fall through */
     default:
-        ret = rc_parse_operand_memory(self, &aux, parse);
+        ret = rc_parse_operand_memory(self, &aux, parse, is_indirect);
 
         if (ret < 0) {
           return ret;
@@ -214,11 +219,12 @@ static int rc_parse_operand_trigger(rc_operand_t* self, const char** memaddr, rc
   return RC_OK;
 }
 
-static int rc_parse_operand_term(rc_operand_t* self, const char** memaddr, rc_parse_state_t* parse) {
+static int rc_parse_operand_term(rc_operand_t* self, const char** memaddr, int is_indirect, rc_parse_state_t* parse) {
   const char* aux = *memaddr;
   char* end;
   int ret;
   unsigned long value;
+  long svalue;
 
   switch (*aux) {
     case 'h': case 'H':
@@ -239,18 +245,18 @@ static int rc_parse_operand_term(rc_operand_t* self, const char** memaddr, rc_pa
       break;
     
     case 'v': case 'V':
-      value = strtoul(++aux, &end, 10);
+      svalue = strtol(++aux, &end, 10);
 
       if (end == aux) {
         return RC_INVALID_CONST_OPERAND;
       }
 
-      if (value > 0xffffffffU) {
-        value = 0xffffffffU;
+      if (svalue > 0xffffffffU) {
+        svalue = 0xffffffffU;
       }
 
       self->type = RC_OPERAND_CONST;
-      self->value.num = (unsigned)value;
+      self->value.num = (unsigned)svalue;
 
       aux = end;
       break;
@@ -259,7 +265,7 @@ static int rc_parse_operand_term(rc_operand_t* self, const char** memaddr, rc_pa
       if (aux[1] == 'x' || aux[1] == 'X') {
         /* fall through */
     default:
-        ret = rc_parse_operand_memory(self, &aux, parse);
+        ret = rc_parse_operand_memory(self, &aux, parse, is_indirect);
 
         if (ret < 0) {
           return ret;
@@ -303,12 +309,12 @@ static int rc_parse_operand_term(rc_operand_t* self, const char** memaddr, rc_pa
   return RC_OK;
 }
 
-int rc_parse_operand(rc_operand_t* self, const char** memaddr, int is_trigger, rc_parse_state_t* parse) {
+int rc_parse_operand(rc_operand_t* self, const char** memaddr, int is_trigger, int is_indirect, rc_parse_state_t* parse) {
   if (is_trigger) {
-    return rc_parse_operand_trigger(self, memaddr, parse);
+    return rc_parse_operand_trigger(self, memaddr, is_indirect, parse);
   }
   else {
-    return rc_parse_operand_term(self, memaddr, parse);
+    return rc_parse_operand_term(self, memaddr, is_indirect, parse);
   }
 }
 
@@ -333,7 +339,7 @@ static int rc_luapeek(lua_State* L) {
 
 #endif /* RC_DISABLE_LUA */
 
-unsigned rc_evaluate_operand(rc_operand_t* self, rc_peek_t peek, void* ud, lua_State* L) {
+unsigned rc_evaluate_operand(rc_operand_t* self, rc_eval_state_t* eval_state) {
 #ifndef RC_DISABLE_LUA
   rc_luapeek_t luapeek;
 #endif /* RC_DISABLE_LUA */
@@ -352,25 +358,25 @@ unsigned rc_evaluate_operand(rc_operand_t* self, rc_peek_t peek, void* ud, lua_S
     case RC_OPERAND_LUA:
 #ifndef RC_DISABLE_LUA
 
-      if (L != 0) {
-        lua_rawgeti(L, LUA_REGISTRYINDEX, self->value.luafunc);
-        lua_pushcfunction(L, rc_luapeek);
+      if (eval_state->L != 0) {
+        lua_rawgeti(eval_state->L, LUA_REGISTRYINDEX, self->value.luafunc);
+        lua_pushcfunction(eval_state->L, rc_luapeek);
 
-        luapeek.peek = peek;
-        luapeek.ud = ud;
+        luapeek.peek = eval_state->peek;
+        luapeek.ud = eval_state->peek_userdata;
 
-        lua_pushlightuserdata(L, &luapeek);
+        lua_pushlightuserdata(eval_state->L, &luapeek);
         
-        if (lua_pcall(L, 2, 1, 0) == LUA_OK) {
-          if (lua_isboolean(L, -1)) {
-            value = lua_toboolean(L, -1);
+        if (lua_pcall(eval_state->L, 2, 1, 0) == LUA_OK) {
+          if (lua_isboolean(eval_state->L, -1)) {
+            value = lua_toboolean(eval_state->L, -1);
           }
           else {
-            value = (unsigned)lua_tonumber(L, -1);
+            value = (unsigned)lua_tonumber(eval_state->L, -1);
           }
         }
 
-        lua_pop(L, 1);
+        lua_pop(eval_state->L, 1);
       }
 
 #endif /* RC_DISABLE_LUA */
@@ -378,15 +384,15 @@ unsigned rc_evaluate_operand(rc_operand_t* self, rc_peek_t peek, void* ud, lua_S
       break;
 
     case RC_OPERAND_ADDRESS:
-      value = self->value.memref->value;
+      value = rc_get_indirect_memref(self->value.memref, eval_state)->value;
       break;
 
     case RC_OPERAND_DELTA:
-      value = self->value.memref->previous;
+      value = rc_get_indirect_memref(self->value.memref, eval_state)->previous;
       break;
 
     case RC_OPERAND_PRIOR:
-      value = self->value.memref->prior;
+      value = rc_get_indirect_memref(self->value.memref, eval_state)->prior;
       break;
   }
 
