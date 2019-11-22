@@ -14000,12 +14000,12 @@ void menu_input_driver_toggle(bool on)
        * inhibit 'select' input */
       if (settings->bools.input_overlay_hide_in_menu)
          if (settings->bools.input_overlay_enable && overlay_ptr && overlay_ptr->alive)
-            menu_input->select_inhibit = true;
+            menu_input_set_pointer_inhibit(true);
    }
    else
-      menu_input->select_inhibit = false;
+      menu_input_set_pointer_inhibit(false);
 #else
-   menu_input->select_inhibit = false;
+   menu_input_set_pointer_inhibit(false);
 #endif
 }
 
@@ -14521,7 +14521,7 @@ static unsigned menu_event(
 
    /* Populate menu_input_state
     * Note: dx, dy, ptr, y_accel, etc. entries are set elsewhere */
-   if (menu_input->select_inhibit)
+   if (menu_input->select_inhibit || menu_input->cancel_inhibit)
    {
       menu_input->pointer.active  = false;
       menu_input->pointer.pressed = false;
@@ -14582,6 +14582,13 @@ void menu_input_set_pointer_y_accel(float y_accel)
 {
    menu_input_t *menu_input    = &menu_input_state;
    menu_input->pointer.y_accel = y_accel;
+}
+
+void menu_input_set_pointer_inhibit(bool inhibit)
+{
+   menu_input_t *menu_input   = &menu_input_state;
+   menu_input->select_inhibit = inhibit;
+   menu_input->cancel_inhibit = inhibit;
 }
 
 void menu_input_reset(void)
@@ -14704,6 +14711,53 @@ static float menu_input_get_dpi(void)
    return dpi;
 }
 
+/* Used to close an active message box (help or info)
+ * TODO/FIXME: The way that message boxes are handled
+ * is complete garbage. generic_menu_iterate() and
+ * message boxes in general need a total rewrite.
+ * I consider this current 'close_messagebox' a hack,
+ * but at least it prevents undefined/dangerous
+ * behaviour... */
+static void menu_input_pointer_close_messagebox(void)
+{
+   const char *label = NULL;
+   bool pop_stack    = false;
+
+   /* Determine whether this is a help or info
+    * message box */
+   menu_entries_get_last_stack(NULL, &label, NULL, NULL, NULL);
+
+   /* > Info box */
+   if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_INFO_SCREEN)))
+      pop_stack = true;
+   /* > Help box */
+   if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_HELP)) ||
+       string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_HELP_CONTROLS)) ||
+       string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_HELP_WHAT_IS_A_CORE)) ||
+       string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_HELP_LOADING_CONTENT)) ||
+       string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_HELP_SCANNING_CONTENT)) ||
+       string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_HELP_CHANGE_VIRTUAL_GAMEPAD)) ||
+       string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_HELP_AUDIO_VIDEO_TROUBLESHOOTING)) ||
+       string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_HELP_SEND_DEBUG_INFO)) ||
+       string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEEVOS_DESCRIPTION)))
+   {
+      /* Have to set this to false, apparently...
+       * (c.f. generic_menu_iterate()) */
+      menu_dialog_set_active(false);
+      pop_stack = true;
+   }
+
+   /* Pop stack, if required */
+   if (pop_stack)
+   {
+      size_t selection     = menu_navigation_get_selection();
+      size_t new_selection = selection;
+
+      menu_entries_pop_stack(&new_selection, 0, 0);
+      menu_navigation_set_selection(selection);
+   }
+}
+
 static int menu_input_pointer_post_iterate(
       retro_time_t current_time,
       menu_file_list_cbs_t *cbs,
@@ -14727,9 +14781,20 @@ static int menu_input_pointer_post_iterate(
    static retro_time_t last_press_direction_time   = 0;
    bool attenuate_y_accel                          = true;
    bool osk_active                                 = menu_input_dialog_get_display_kb_internal();
+   bool messagebox_active                          = false;
    int ret                                         = 0;
    menu_input_pointer_hw_state_t *pointer_hw_state = &menu_input_pointer_hw_state;
    menu_input_t *menu_input                        = &menu_input_state;
+   menu_handle_t *menu_data                        = menu_driver_get_ptr();
+
+   /* Check whether a message box is currently
+    * being shown
+    * > Note: This ignores input bind dialogs,
+    *   since input binding overrides normal input
+    *   and must be handled separately... */
+   if (menu_data)
+      messagebox_active = BIT64_GET(menu_data->state, MENU_STATE_RENDER_MESSAGEBOX) &&
+            !string_is_empty(menu_data->menu_state_msg);
 
    /* If onscreen keyboard is shown and we currently have
     * active mouse input, highlight key under mouse cursor */
@@ -14782,9 +14847,10 @@ static int menu_input_pointer_post_iterate(
             accel1                    = 0.0f;
             last_press_direction_time = 0;
 
-            /* If we are not currently showing the onscreen keyboard,
-             * trigger a 'pointer down' event */
-            if (!osk_active)
+            /* If we are not currently showing the onscreen
+             * keyboard or a message box, trigger a 'pointer
+             * down' event */
+            if (!osk_active && !messagebox_active)
             {
                point.x       = x;
                point.y       = y;
@@ -14802,9 +14868,8 @@ static int menu_input_pointer_post_iterate(
          }
          else
          {
-            /* Pointer is being held down (i.e. for more than one frame)
-             * Note: We do not track movement while the onscreen
-             * keyboard is displayed */
+            /* Pointer is being held down
+             * (i.e. for more than one frame) */
             float dpi = menu_input_get_dpi();
 
             /* > Update deltas + acceleration & detect press direction
@@ -14839,87 +14904,106 @@ static int menu_input_pointer_post_iterate(
                    * trigger a 'dragged' state */
                   menu_input->pointer.dragged = true;
 
-                  /* Assign current deltas */
-                  menu_input->pointer.dx = x - last_x;
-                  menu_input->pointer.dy = y - last_y;
-
-                  /* Update maximum start->current deltas */
-                  if (dx_start > 0)
-                     dx_start_right_max = (dx_start_abs > dx_start_right_max) ?
-                           dx_start_abs : dx_start_right_max;
-                  else
-                     dx_start_left_max = (dx_start_abs > dx_start_left_max) ?
-                           dx_start_abs : dx_start_left_max;
-
-                  if (dy_start > 0)
-                     dy_start_down_max = (dy_start_abs > dy_start_down_max) ?
-                           dy_start_abs : dy_start_down_max;
-                  else
-                     dy_start_up_max = (dy_start_abs > dy_start_up_max) ?
-                           dy_start_abs : dy_start_up_max;
-
-                  /* Magic numbers... */
-                  menu_input->pointer.y_accel = (accel0 + accel1 + (float)menu_input->pointer.dy) / 3.0f;
-                  accel0                      = accel1;
-                  accel1                      = menu_input->pointer.y_accel;
-
-                  /* Acceleration decays over time - but if the value
-                   * has been set on this frame, attenuation should
-                   * be skipped */
-                  attenuate_y_accel = false;
-
-                  /* Check if ponter is being held in a particular
-                   * direction */
-                  menu_input->pointer.press_direction = MENU_INPUT_PRESS_DIRECTION_NONE;
-
-                  /* > Press directions are actually triggered as a pulse train,
-                   *   since a continuous direction prevents fine control in the
-                   *   context of menu actions (i.e. it would be the same
-                   *   as always holding down a cursor key all the time - too fast
-                   *   to control). We therefore apply a low pass filter, with
-                   *   a variable frequency based upon the distance the user has
-                   *   dragged the pointer */
-
-                  /* > Horizontal */
-                  if ((dx_start_abs >= dpi_threshold_press_direction_min) &&
-                      (dy_start_abs <  dpi_threshold_press_direction_tangent))
+                  /* Here we diverge:
+                   * > If onscreen keyboard or a message box is
+                   *   active, pointer deltas, acceleration and
+                   *   press direction must be inhibited
+                   * > If not, input is processed normally */
+                  if (osk_active || messagebox_active)
                   {
-                     press_direction = (dx_start > 0) ?
-                           MENU_INPUT_PRESS_DIRECTION_RIGHT : MENU_INPUT_PRESS_DIRECTION_LEFT;
-
-                     /* Get effective amplitude of press direction offset */
-                     press_direction_amplitude =
-                           (float)(dx_start_abs - dpi_threshold_press_direction_min) /
-                           (float)(dpi_threshold_press_direction_max - dpi_threshold_press_direction_min);
+                     /* Inhibit normal pointer input */
+                     menu_input->pointer.dx              = 0;
+                     menu_input->pointer.dy              = 0;
+                     menu_input->pointer.y_accel         = 0.0f;
+                     menu_input->pointer.press_direction = MENU_INPUT_PRESS_DIRECTION_NONE;
+                     accel0                              = 0.0f;
+                     accel1                              = 0.0f;
+                     attenuate_y_accel                   = false;
                   }
-                  /* > Vertical */
-                  else if ((dy_start_abs >= dpi_threshold_press_direction_min) &&
-                           (dx_start_abs <  dpi_threshold_press_direction_tangent))
+                  else
                   {
-                     press_direction = (dy_start > 0) ?
-                           MENU_INPUT_PRESS_DIRECTION_DOWN : MENU_INPUT_PRESS_DIRECTION_UP;
+                     /* Assign current deltas */
+                     menu_input->pointer.dx = x - last_x;
+                     menu_input->pointer.dy = y - last_y;
 
-                     /* Get effective amplitude of press direction offset */
-                     press_direction_amplitude =
-                           (float)(dy_start_abs - dpi_threshold_press_direction_min) /
-                           (float)(dpi_threshold_press_direction_max - dpi_threshold_press_direction_min);
-                  }
-
-                  if (press_direction != MENU_INPUT_PRESS_DIRECTION_NONE)
-                  {
-                     /* > Update low pass filter frequency */
-                     if (press_direction_amplitude > 1.0f)
-                        press_direction_delay = MENU_INPUT_PRESS_DIRECTION_DELAY_MIN;
+                     /* Update maximum start->current deltas */
+                     if (dx_start > 0)
+                        dx_start_right_max = (dx_start_abs > dx_start_right_max) ?
+                              dx_start_abs : dx_start_right_max;
                      else
-                        press_direction_delay = MENU_INPUT_PRESS_DIRECTION_DELAY_MIN +
-                              ((MENU_INPUT_PRESS_DIRECTION_DELAY_MAX - MENU_INPUT_PRESS_DIRECTION_DELAY_MIN)*
-                               (1.0f - press_direction_amplitude));
+                        dx_start_left_max = (dx_start_abs > dx_start_left_max) ?
+                              dx_start_abs : dx_start_left_max;
 
-                     /* > Apply low pass filter */
-                     if (current_time - last_press_direction_time > press_direction_delay)
+                     if (dy_start > 0)
+                        dy_start_down_max = (dy_start_abs > dy_start_down_max) ?
+                              dy_start_abs : dy_start_down_max;
+                     else
+                        dy_start_up_max = (dy_start_abs > dy_start_up_max) ?
+                              dy_start_abs : dy_start_up_max;
+
+                     /* Magic numbers... */
+                     menu_input->pointer.y_accel = (accel0 + accel1 + (float)menu_input->pointer.dy) / 3.0f;
+                     accel0                      = accel1;
+                     accel1                      = menu_input->pointer.y_accel;
+
+                     /* Acceleration decays over time - but if the value
+                      * has been set on this frame, attenuation should
+                      * be skipped */
+                     attenuate_y_accel = false;
+
+                     /* Check if pointer is being held in a particular
+                      * direction */
+                     menu_input->pointer.press_direction = MENU_INPUT_PRESS_DIRECTION_NONE;
+
+                     /* > Press directions are actually triggered as a pulse train,
+                      *   since a continuous direction prevents fine control in the
+                      *   context of menu actions (i.e. it would be the same
+                      *   as always holding down a cursor key all the time - too fast
+                      *   to control). We therefore apply a low pass filter, with
+                      *   a variable frequency based upon the distance the user has
+                      *   dragged the pointer */
+
+                     /* > Horizontal */
+                     if ((dx_start_abs >= dpi_threshold_press_direction_min) &&
+                         (dy_start_abs <  dpi_threshold_press_direction_tangent))
                      {
-                        menu_input->pointer.press_direction = press_direction;
-                        last_press_direction_time = current_time;
+                        press_direction = (dx_start > 0) ?
+                              MENU_INPUT_PRESS_DIRECTION_RIGHT : MENU_INPUT_PRESS_DIRECTION_LEFT;
+
+                        /* Get effective amplitude of press direction offset */
+                        press_direction_amplitude =
+                              (float)(dx_start_abs - dpi_threshold_press_direction_min) /
+                              (float)(dpi_threshold_press_direction_max - dpi_threshold_press_direction_min);
+                     }
+                     /* > Vertical */
+                     else if ((dy_start_abs >= dpi_threshold_press_direction_min) &&
+                              (dx_start_abs <  dpi_threshold_press_direction_tangent))
+                     {
+                        press_direction = (dy_start > 0) ?
+                              MENU_INPUT_PRESS_DIRECTION_DOWN : MENU_INPUT_PRESS_DIRECTION_UP;
+
+                        /* Get effective amplitude of press direction offset */
+                        press_direction_amplitude =
+                              (float)(dy_start_abs - dpi_threshold_press_direction_min) /
+                              (float)(dpi_threshold_press_direction_max - dpi_threshold_press_direction_min);
+                     }
+
+                     if (press_direction != MENU_INPUT_PRESS_DIRECTION_NONE)
+                     {
+                        /* > Update low pass filter frequency */
+                        if (press_direction_amplitude > 1.0f)
+                           press_direction_delay = MENU_INPUT_PRESS_DIRECTION_DELAY_MIN;
+                        else
+                           press_direction_delay = MENU_INPUT_PRESS_DIRECTION_DELAY_MIN +
+                                 ((MENU_INPUT_PRESS_DIRECTION_DELAY_MAX - MENU_INPUT_PRESS_DIRECTION_DELAY_MIN)*
+                                  (1.0f - press_direction_amplitude));
+
+                        /* > Apply low pass filter */
+                        if (current_time - last_press_direction_time > press_direction_delay)
+                        {
+                           menu_input->pointer.press_direction = press_direction;
+                           last_press_direction_time = current_time;
+                        }
                      }
                   }
                }
@@ -14940,16 +15024,18 @@ static int menu_input_pointer_post_iterate(
                    * - Halting the scroll immediately produces a very
                    *   unpleasant 'jerky' user experience. To avoid this,
                    *   we add a small delay between detecting a pointer
-                   *   down event and forcing y acceleration to zero */
-                  if (!menu_input->pointer.dragged)
+                   *   down event and forcing y acceleration to zero
+                   * NOTE: Of course, we must also 'reset' y acceleration
+                   * whenever the onscreen keyboard or a message box is
+                   * shown */
+                  if ((!menu_input->pointer.dragged &&
+                        (menu_input->pointer.press_duration > MENU_INPUT_Y_ACCEL_RESET_DELAY)) ||
+                      (osk_active || messagebox_active))
                   {
-                     if (menu_input->pointer.press_duration > MENU_INPUT_Y_ACCEL_RESET_DELAY)
-                     {
-                        menu_input->pointer.y_accel = 0.0f;
-                        accel0                      = 0.0f;
-                        accel1                      = 0.0f;
-                        attenuate_y_accel           = false;
-                     }
+                     menu_input->pointer.y_accel = 0.0f;
+                     accel0                      = 0.0f;
+                     accel1                      = 0.0f;
+                     attenuate_y_accel           = false;
                   }
                }
             }
@@ -14980,9 +15066,9 @@ static int menu_input_pointer_post_iterate(
 
          if (menu_input->pointer.dragged)
          {
-            /* Ponter has moved.
-             * When using a touchscreen, relasing a press
-             * resets the x/y postition - so cannot use
+            /* Pointer has moved.
+             * When using a touchscreen, releasing a press
+             * resets the x/y position - so cannot use
              * current hardware x/y values. Instead, use
              * previous position from last time that a
              * press was active */
@@ -15005,7 +15091,7 @@ static int menu_input_pointer_post_iterate(
          point.action  = action;
          point.gesture = MENU_INPUT_GESTURE_NONE;
 
-         /* On screen keyboard overrides normal menu input */
+         /* On screen keyboard overrides normal menu input... */
          if (osk_active)
          {
             /* If pointer has been 'dragged', then it counts as
@@ -15021,6 +15107,12 @@ static int menu_input_pointer_post_iterate(
                }
             }
          }
+         /* Message boxes override normal menu input...
+          * > If a message box is shown, any kind of pointer
+          *   gesture should close it */
+         else if (messagebox_active)
+            menu_input_pointer_close_messagebox();
+         /* Normal menu input */
          else
          {
             /* Detect gesture type */
@@ -15116,13 +15208,9 @@ static int menu_input_pointer_post_iterate(
    last_select_pressed = pointer_hw_state->select_pressed;
 
    /* Adjust acceleration
-    * > If onscreen keyboard is shown, acceleration must
-    *   be reset to zero
-    * > Otherwise, if acceleration has not been set on
-    *   this frame, apply normal attenuation */
-   if (osk_active)
-      menu_input->pointer.y_accel = 0.0f;
-   else if (attenuate_y_accel)
+    * > If acceleration has not been set on this frame,
+    *   apply normal attenuation */
+   if (attenuate_y_accel)
       menu_input->pointer.y_accel *= MENU_INPUT_Y_ACCEL_DECAY_FACTOR;
 
    /* If select has been released, disable any existing
@@ -15131,43 +15219,64 @@ static int menu_input_pointer_post_iterate(
       menu_input->select_inhibit = false;
 
    /* Cancel */
-   if (pointer_hw_state->cancel_pressed && !last_cancel_pressed)
+   if (!menu_input->cancel_inhibit &&
+       pointer_hw_state->cancel_pressed &&
+       !last_cancel_pressed)
    {
-      size_t selection = menu_navigation_get_selection();
-      ret = menu_entry_action(entry, selection, MENU_ACTION_CANCEL);
+      /* If currently showing a message box, close it */
+      if (messagebox_active)
+         menu_input_pointer_close_messagebox();
+      /* ...otherwise, invoke standard MENU_ACTION_CANCEL
+       * action */
+      else
+      {
+         size_t selection = menu_navigation_get_selection();
+         ret = menu_entry_action(entry, selection, MENU_ACTION_CANCEL);
+      }
    }
    last_cancel_pressed = pointer_hw_state->cancel_pressed;
 
+   /* If cancel has been released, disable any existing
+    * cancel inhibit */
+   if (!pointer_hw_state->cancel_pressed)
+      menu_input->cancel_inhibit = false;
+
    /* Up/Down
-    * Note: These always correspond to a mouse wheel, which
-    * handles differently from other inputs - i.e. we don't
-    * want a 'last pressed' check */
+    * > Note 1: These always correspond to a mouse wheel, which
+    *   handles differently from other inputs - i.e. we don't
+    *   want a 'last pressed' check
+    * > Note 2: If a message box is currently shown, must
+    *   inhibit input */
 
    /* > Up */
-   if (pointer_hw_state->up_pressed)
+   if (!messagebox_active && pointer_hw_state->up_pressed)
    {
       size_t selection = menu_navigation_get_selection();
       ret = menu_entry_action(entry, selection, MENU_ACTION_UP);
    }
 
    /* > Down */
-   if (pointer_hw_state->down_pressed)
+   if (!messagebox_active && pointer_hw_state->down_pressed)
    {
       size_t selection = menu_navigation_get_selection();
       ret = menu_entry_action(entry, selection, MENU_ACTION_DOWN);
    }
 
    /* Left/Right
-    * Note: These also always correspond to a mouse wheel...
-    * In this case, it's a mouse wheel *tilt* operation, which
-    * is incredibly annoying because holding a tilt direction
-    * rapidly toggles the input state. The repeat speed is so
-    * high that any sort of useable control is impossible - so
-    * we have to apply a 'low pass' filter by ignoring inputs
-    * that occur below a certain frequency... */
+    * > Note 1: These also always correspond to a mouse wheel...
+    *   In this case, it's a mouse wheel *tilt* operation, which
+    *   is incredibly annoying because holding a tilt direction
+    *   rapidly toggles the input state. The repeat speed is so
+    *   high that any sort of useable control is impossible - so
+    *   we have to apply a 'low pass' filter by ignoring inputs
+    *   that occur below a certain frequency...
+    * > Note 2: If a message box is currently shown, must
+    *   inhibit input */
 
    /* > Left */
-   if (pointer_hw_state->left_pressed && !last_left_pressed)
+   if (!messagebox_active &&
+       pointer_hw_state->left_pressed &&
+       !last_left_pressed)
    {
       if (current_time - last_left_action_time > MENU_INPUT_HORIZ_WHEEL_DELAY)
       {
@@ -15179,7 +15288,9 @@ static int menu_input_pointer_post_iterate(
    last_left_pressed = pointer_hw_state->left_pressed;
 
    /* > Right */
-   if (pointer_hw_state->right_pressed && !last_right_pressed)
+   if (!messagebox_active &&
+       pointer_hw_state->right_pressed &&
+       !last_right_pressed)
    {
       if (current_time - last_right_action_time > MENU_INPUT_HORIZ_WHEEL_DELAY)
       {
