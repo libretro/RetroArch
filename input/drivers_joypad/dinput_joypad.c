@@ -255,9 +255,9 @@ static bool guid_is_xinput_device(const GUID* product_guid)
    for (i = 0; i < num_raw_devs; i++)
    {
       RID_DEVICE_INFO rdi;
-      char devName[128]   = {0};
-      UINT rdiSize        = sizeof(rdi);
-      UINT nameSize       = sizeof(devName);
+      char *devName   = NULL;
+      UINT rdiSize    = sizeof(rdi);
+      UINT nameSize   = 0;
 
       rdi.cbSize = sizeof (rdi);
 
@@ -266,12 +266,19 @@ static bool guid_is_xinput_device(const GUID* product_guid)
                                   RIDI_DEVICEINFO, &rdi, &rdiSize) != ((UINT)-1)) &&
           (MAKELONG(rdi.hid.dwVendorId, rdi.hid.dwProductId)
            == ((LONG)product_guid->Data1)) &&
+          (GetRawInputDeviceInfoA(raw_devs[i].hDevice, RIDI_DEVICENAME, NULL, &nameSize) != ((UINT)-1)) &&
+          ((devName = malloc(nameSize)) != NULL) &&
           (GetRawInputDeviceInfoA(raw_devs[i].hDevice, RIDI_DEVICENAME, devName, &nameSize) != ((UINT)-1)) &&
           (strstr(devName, "IG_") != NULL) )
       {
+         free(devName);
          free(raw_devs);
          raw_devs = NULL;
          return true;
+      }
+
+      if (devName) {
+         free(devName);
       }
    }
 
