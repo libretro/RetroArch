@@ -171,6 +171,7 @@ typedef struct menu_input
    menu_input_pointer_t pointer;
    unsigned ptr;
    bool select_inhibit;
+   bool cancel_inhibit;
 } menu_input_t;
 
 typedef struct menu_input_ctx_hitbox
@@ -200,6 +201,10 @@ void menu_input_set_pointer_selection(unsigned selection);
  * (typically want to set acceleration to zero when
  * calling populate entries) */
 void menu_input_set_pointer_y_accel(float y_accel);
+
+/* Inhibits pointer 'select' and 'cancel' actions
+ * (until the next time 'select'/'cancel' are released) */
+void menu_input_set_pointer_inhibit(bool inhibit);
 
 void menu_input_reset(void);
 

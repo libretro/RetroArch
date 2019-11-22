@@ -21,6 +21,7 @@
 #include "menu_input_bind_dialog.h"
 
 #include "../menu_driver.h"
+#include "../menu_input.h"
 
 #include "../../input/input_driver.h"
 
@@ -284,6 +285,13 @@ bool menu_input_key_bind_set_mode(
    keys.cb       = menu_input_key_bind_custom_bind_keyboard_cb;
 
    input_keyboard_ctl(RARCH_INPUT_KEYBOARD_CTL_START_WAIT_KEYS, &keys);
+
+   /* Upon triggering an input bind operation,
+    * pointer input must be inhibited - otherwise
+    * attempting to bind mouse buttons will cause
+    * spurious menu actions */
+   menu_input_set_pointer_inhibit(true);
+
    return true;
 }
 
@@ -658,6 +666,12 @@ bool menu_input_key_bind_iterate(menu_input_ctx_bind_t *bind)
 
       menu_input_binds = binds;
    }
+
+   /* Pointer input must be inhibited on each
+    * frame that the bind operation is active -
+    * otherwise attempting to bind mouse buttons
+    * will cause spurious menu actions */
+   menu_input_set_pointer_inhibit(true);
 
    return false;
 }
