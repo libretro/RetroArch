@@ -233,8 +233,8 @@ static void frontend_psp_deinit(void *data)
    (void)data;
 #ifndef IS_SALAMANDER
    verbosity_disable();
-#endif
    pthread_terminate();
+#endif
 }
 
 static void frontend_psp_shutdown(bool unused)
