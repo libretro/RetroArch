@@ -193,6 +193,7 @@ else
 ifeq ($(OPENGL),1)
    GL_LIB := -lopengl32
    CFLAGS += -DHAVE_OPENGL
+	HAVE_OPENGL = 1
 	HAVE_GL_FFT := 1
 	WIN32_PLATFORM := 1
 endif
