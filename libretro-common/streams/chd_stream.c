@@ -246,7 +246,7 @@ chdstream_t *chdstream_open(const char *path, int32_t track)
    }
 
    /* Only include pregap data if it was in the track file */
-   if (!strcmp(meta.type, meta.pgtype))
+   if (meta.pgtype[0] != 'V')
       pregap = meta.pregap;
    else
       pregap = 0;
