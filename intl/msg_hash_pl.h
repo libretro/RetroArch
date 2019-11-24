@@ -4659,9 +4659,6 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_AUTO_ROTATE,
 MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_OVERLAY_AUTO_ROTATE,
     "Jeśli jest obsługiwana przez bieżącą nakładkę, automatycznie obracaj układ, aby dopasować orientację ekranu/współczynnik proporcji."
     )
-MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
-    "Użytkownik %u Powiązanie"
-    )
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS,
     "Wyświetla dodatkowe informacje dla aktualnie wybranej pozycji menu."
     )
