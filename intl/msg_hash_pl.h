@@ -4648,7 +4648,7 @@ MSG_HASH(MSG_LOCALAP_ERROR_CONFIG_PARSE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
    "Format uruchomieniowy podrzędnej listy odtwarzania „ostatnio odtwarzany” format")
 MSG_HASH(MENU_ENUM_SUBLABEL_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
-    "Wybiera styl formatowania daty/godziny używany podczas wyświetlania informacji o znaczniku czasu „ostatnio odtwarzane” w rejestrze wykonawczym. Uwaga: opcje „(AM / PM)” będą miały niewielki wpływ na wydajność na niektórych platformach.")
+    "Wybiera styl formatowania daty/godziny używany podczas wyświetlania informacji o znaczniku czasu „ostatnio odtwarzane” w rejestrze wykonawczym. Uwaga: opcje „(AM/PM)” będą miały niewielki wpływ na wydajność na niektórych platformach.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DRIVER_SWITCH_ENABLE,
     "Pozwól rdzeniom przełączyć sterownik wideo")
 MSG_HASH(MENU_ENUM_SUBLABEL_DRIVER_SWITCH_ENABLE,
