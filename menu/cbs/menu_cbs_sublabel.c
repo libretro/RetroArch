@@ -833,7 +833,7 @@ static int action_bind_sublabel_remap_kbd_sublabel(
    unsigned user_idx = (type - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN) / RARCH_FIRST_CUSTOM_BIND;
 
    snprintf(s, len, "%s #%d: %s",
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_USER),
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT),
          user_idx + 1,
          input_config_get_device_display_name(user_idx) ?
          input_config_get_device_display_name(user_idx) :
@@ -895,7 +895,7 @@ static int action_bind_sublabel_remap_sublabel(
       / (RARCH_FIRST_CUSTOM_BIND + 8);
 
    snprintf(s, len, "%s #%d: %s",
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_USER),
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT),
          offset + 1,
          input_config_get_device_display_name(offset) ?
          input_config_get_device_display_name(offset) :

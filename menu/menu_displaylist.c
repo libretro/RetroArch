@@ -8120,7 +8120,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                            && !settings->bools.menu_show_sublabels)
                      {
                         snprintf(desc_label, sizeof(desc_label),
-                              "%s [%s %u]", descriptor, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_USER), p + 1);
+                              "%s [%s %u]", descriptor, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT), p + 1);
                         strlcpy(descriptor, desc_label, sizeof(descriptor));
                      }
 
@@ -8163,7 +8163,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      {
                         snprintf(desc_label, sizeof(desc_label),
                               "%s [%s %u]", descriptor,
-                              msg_hash_to_str(MENU_ENUM_LABEL_VALUE_USER), p + 1);
+                              msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT), p + 1);
                         strlcpy(descriptor, desc_label, sizeof(descriptor));
                      }
 

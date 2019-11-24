@@ -9326,7 +9326,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
                         if (!description)
                            continue;
 
-                        RARCH_LOG("\tRetroPad, User %u, Button \"%s\" => \"%s\"\n",
+                        RARCH_LOG("\tRetroPad, Port %u, Button \"%s\" => \"%s\"\n",
                               p + 1, libretro_btn_desc[retro_id], description);
                      }
                   }
