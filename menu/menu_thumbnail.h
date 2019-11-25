@@ -42,6 +42,17 @@ enum menu_thumbnail_status
    MENU_THUMBNAIL_STATUS_MISSING
 };
 
+/* Defines thumbnail alignment within
+ * menu_thumbnail_draw() bounding box */
+enum menu_thumbnail_alignment
+{
+   MENU_THUMBNAIL_ALIGN_CENTRE = 0,
+   MENU_THUMBNAIL_ALIGN_TOP,
+   MENU_THUMBNAIL_ALIGN_BOTTOM,
+   MENU_THUMBNAIL_ALIGN_LEFT,
+   MENU_THUMBNAIL_ALIGN_RIGHT
+};
+
 /* Holds all runtime parameters associated with
  * an entry thumbnail */
 typedef struct
@@ -149,15 +160,17 @@ void menu_thumbnail_get_draw_dimensions(
       unsigned width, unsigned height, float scale_factor,
       float *draw_width, float *draw_height);
 
-/* Draws specified thumbnail centred (with aspect correct
- * scaling) within a rectangle of (width x height)
+/* Draws specified thumbnail with specified alignment
+ * (and aspect correct scaling) within a rectangle of
+ * (width x height)
  * NOTE: Setting scale_factor > 1.0f will increase the
  *       size of the thumbnail beyond the limits of the
- *       (width x height) rectangle (centring + aspect
+ *       (width x height) rectangle (alignment + aspect
  *       correct scaling is preserved). Use with caution */
 void menu_thumbnail_draw(
       video_frame_info_t *video_info, menu_thumbnail_t *thumbnail,
       float x, float y, unsigned width, unsigned height,
+      enum menu_thumbnail_alignment alignment,
       float alpha, float scale_factor);
 
 RETRO_END_DECLS

@@ -391,71 +391,25 @@ static void ozone_update_thumbnail_path(void *data, unsigned i, char pos)
 
 static void ozone_update_thumbnail_image(void *data)
 {
-   settings_t *settings             = config_get_ptr();
-   ozone_handle_t *ozone            = (ozone_handle_t*)data;
-   const char *right_thumbnail_path = NULL;
-   const char *left_thumbnail_path  = NULL;
-   bool supports_rgba               = video_driver_supports_rgba();
+   ozone_handle_t *ozone = (ozone_handle_t*)data;
+   size_t selection      = menu_navigation_get_selection();
+   playlist_t *playlist  = playlist_get_cached();
 
-   /* Have to wrap `thumbnails_missing` like this to silence
-    * brain dead `set but not used` warnings when networking
-    * is disabled... */
-#ifdef HAVE_NETWORKING
-   bool thumbnails_missing          = false;
-#endif
+   /* Right thumbnail */
+   menu_thumbnail_request(
+      ozone->thumbnail_path_data,
+      MENU_THUMBNAIL_RIGHT,
+      playlist,
+      selection,
+      &ozone->thumbnails.right);
 
-   if (!ozone || !settings)
-      return;
-
-   if (menu_thumbnail_get_path(ozone->thumbnail_path_data, MENU_THUMBNAIL_RIGHT, &right_thumbnail_path))
-   {
-      if (path_is_valid(right_thumbnail_path))
-         task_push_image_load(right_thumbnail_path,
-               supports_rgba, settings->uints.menu_thumbnail_upscale_threshold,
-               menu_display_handle_thumbnail_upload, NULL);
-      else
-      {
-         video_driver_texture_unload(&ozone->thumbnail);
-#ifdef HAVE_NETWORKING
-         thumbnails_missing = true;
-#endif
-      }
-   }
-   else
-      video_driver_texture_unload(&ozone->thumbnail);
-
-   if (menu_thumbnail_get_path(ozone->thumbnail_path_data, MENU_THUMBNAIL_LEFT, &left_thumbnail_path))
-   {
-      if (path_is_valid(left_thumbnail_path))
-         task_push_image_load(left_thumbnail_path,
-               supports_rgba, settings->uints.menu_thumbnail_upscale_threshold,
-               menu_display_handle_left_thumbnail_upload, NULL);
-      else
-      {
-         video_driver_texture_unload(&ozone->left_thumbnail);
-#ifdef HAVE_NETWORKING
-         thumbnails_missing = true;
-#endif
-      }
-   }
-   else
-      video_driver_texture_unload(&ozone->left_thumbnail);
-
-#ifdef HAVE_NETWORKING
-   /* On demand thumbnail downloads */
-   if (thumbnails_missing)
-   {
-      if (settings->bools.network_on_demand_thumbnails)
-      {
-         const char *system = NULL;
-
-         if (menu_thumbnail_get_system(ozone->thumbnail_path_data, &system))
-            task_push_pl_entry_thumbnail_download(system,
-                  playlist_get_cached(), (unsigned)menu_navigation_get_selection(),
-                  false, true);
-      }
-   }
-#endif
+   /* Left thumbnail */
+   menu_thumbnail_request(
+      ozone->thumbnail_path_data,
+      MENU_THUMBNAIL_LEFT,
+      playlist,
+      selection,
+      &ozone->thumbnails.left);
 }
 
 static void ozone_refresh_thumbnail_image(void *data, unsigned i)
@@ -541,10 +495,6 @@ static void ozone_context_reset(void *data, bool is_threaded)
       ozone->dimensions.thumbnail_bar_width              = ozone->dimensions.sidebar_width_normal 
          - ozone->dimensions.sidebar_entry_icon_size
          - ozone->dimensions.sidebar_entry_icon_padding;
-
-      ozone->dimensions.thumbnail_width      = ozone->dimensions.thumbnail_bar_width - ozone->dimensions.sidebar_entry_icon_padding * 2;
-      ozone->dimensions.left_thumbnail_width = ozone->dimensions.thumbnail_width;
-
       ozone->dimensions.cursor_size = CURSOR_SIZE * scale;
 
       /* Naive font size */
@@ -711,8 +661,8 @@ static void ozone_context_destroy(void *data)
       video_driver_texture_unload(&ozone->tab_textures[i]);
 
    /* Thumbnails */
-   video_driver_texture_unload(&ozone->thumbnail);
-   video_driver_texture_unload(&ozone->left_thumbnail);
+   menu_thumbnail_reset(&ozone->thumbnails.right);
+   menu_thumbnail_reset(&ozone->thumbnails.left);
 
    video_driver_texture_unload(&menu_display_white_texture);
 
@@ -1385,10 +1335,8 @@ static void ozone_unload_thumbnail_textures(void *data)
    if (!ozone)
       return;
 
-   if (ozone->thumbnail)
-      video_driver_texture_unload(&ozone->thumbnail);
-   if (ozone->left_thumbnail)
-      video_driver_texture_unload(&ozone->left_thumbnail);
+   menu_thumbnail_reset(&ozone->thumbnails.right);
+   menu_thumbnail_reset(&ozone->thumbnails.left);
 }
 
 static void ozone_set_thumbnail_system(void *data, char*s, size_t len)
@@ -1851,11 +1799,11 @@ static void ozone_populate_entries(void *data, const char *path, const char *lab
    }
 
    /* Thumbnails */
+   ozone_unload_thumbnail_textures(ozone);
+
    if (menu_thumbnail_is_enabled(ozone->thumbnail_path_data, MENU_THUMBNAIL_RIGHT) ||
        menu_thumbnail_is_enabled(ozone->thumbnail_path_data, MENU_THUMBNAIL_LEFT))
    {
-      ozone_unload_thumbnail_textures(ozone);
-
       if (ozone->is_playlist)
       {
          ozone_set_thumbnail_content(ozone, "");
@@ -2328,123 +2276,6 @@ static int ozone_pointer_up(void *userdata,
    return 0;
 }
 
-static bool ozone_load_image(void *userdata, void *data, enum menu_image_type type)
-{
-   ozone_handle_t *ozone = (ozone_handle_t*) userdata;
-   unsigned sidebar_height;
-   unsigned height;
-   unsigned maximum_height, maximum_width;
-   float display_aspect_ratio;
-
-   if (!ozone)
-      return false;
-
-   if (!data)
-   {
-      /* If this happens, the image we attempted to load
-       * was corrupt/incorrectly formatted. If this was a
-       * thumbnail image, have unload any existing thumbnails
-       * (otherwise entry with 'corrupt' thumbnail will show
-       * thumbnail from last selected 'good' entry) */
-      if (type == MENU_IMAGE_THUMBNAIL)
-      {
-         ozone->dimensions.thumbnail_width = 0.0f;
-         ozone->dimensions.thumbnail_height = 0.0f;
-         video_driver_texture_unload(&ozone->thumbnail);
-      }
-      else if (type == MENU_IMAGE_LEFT_THUMBNAIL)
-      {
-         ozone->dimensions.left_thumbnail_width = 0.0f;
-         ozone->dimensions.left_thumbnail_height = 0.0f;
-         video_driver_texture_unload(&ozone->left_thumbnail);
-      }
-
-      return false;
-   }
-
-   video_driver_get_size(NULL, &height);
-
-   sidebar_height = height - ozone->dimensions.header_height - 55 - ozone->dimensions.footer_height;
-   maximum_height = sidebar_height / 2;
-   maximum_width  = ozone->dimensions.thumbnail_bar_width - ozone->dimensions.sidebar_entry_icon_padding * 2;
-   if (maximum_height > 0)
-      display_aspect_ratio = (float)maximum_width / (float)maximum_height;
-   else
-      display_aspect_ratio = 0.0f;
-
-   switch (type)
-   {
-      case MENU_IMAGE_THUMBNAIL:
-      {
-         struct texture_image *img = (struct texture_image*)data;
-
-         if (img->width > 0 && img->height > 0 && display_aspect_ratio > 0.0001f)
-         {
-            float thumb_aspect_ratio = (float)img->width / (float)img->height;
-
-            if (thumb_aspect_ratio > display_aspect_ratio)
-            {
-               ozone->dimensions.thumbnail_width = (float)maximum_width;
-               ozone->dimensions.thumbnail_height = (float)img->height * (float)maximum_width / (float)img->width;
-            }
-            else
-            {
-               ozone->dimensions.thumbnail_height = (float)maximum_height;
-               ozone->dimensions.thumbnail_width = (float)img->width * (float)maximum_height / (float)img->height;
-            }
-
-            video_driver_texture_unload(&ozone->thumbnail);
-            video_driver_texture_load(data,
-                  TEXTURE_FILTER_MIPMAP_LINEAR, &ozone->thumbnail);
-         }
-         else
-         {
-            ozone->dimensions.thumbnail_width = 0.0f;
-            ozone->dimensions.thumbnail_height = 0.0f;
-            video_driver_texture_unload(&ozone->thumbnail);
-         }
-
-         break;
-      }
-      case MENU_IMAGE_LEFT_THUMBNAIL:
-      {
-         struct texture_image *img = (struct texture_image*)data;
-
-         if (img->width > 0 && img->height > 0 && display_aspect_ratio > 0.0001f)
-         {
-            float thumb_aspect_ratio = (float)img->width / (float)img->height;
-
-            if (thumb_aspect_ratio > display_aspect_ratio)
-            {
-               ozone->dimensions.left_thumbnail_width = (float)maximum_width;
-               ozone->dimensions.left_thumbnail_height = (float)img->height * (float)maximum_width / (float)img->width;
-            }
-            else
-            {
-               ozone->dimensions.left_thumbnail_height = (float)maximum_height;
-               ozone->dimensions.left_thumbnail_width = (float)img->width * (float)maximum_height / (float)img->height;
-            }
-
-            video_driver_texture_unload(&ozone->left_thumbnail);
-            video_driver_texture_load(data,
-                  TEXTURE_FILTER_MIPMAP_LINEAR, &ozone->left_thumbnail);
-         }
-         else
-         {
-            ozone->dimensions.left_thumbnail_width = 0.0f;
-            ozone->dimensions.left_thumbnail_height = 0.0f;
-            video_driver_texture_unload(&ozone->left_thumbnail);
-         }
-
-         break;
-      }
-      default:
-         break;
-   }
-   return true;
-}
-
-
 menu_ctx_driver_t menu_ctx_ozone = {
    NULL,                         /* set_texture */
    ozone_messagebox,
@@ -2476,7 +2307,7 @@ menu_ctx_driver_t menu_ctx_ozone = {
    ozone_list_get_entry,
    NULL,                         /* list_set_selection */
    ozone_list_bind_init,
-   ozone_load_image,
+   NULL,
    "ozone",
    ozone_environ_cb,
    ozone_update_thumbnail_path,

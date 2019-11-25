@@ -155,18 +155,23 @@ static void menu_thumbnail_handle_upload(
    /* Update thumbnail status */
    thumbnail_tag->thumbnail->status = MENU_THUMBNAIL_STATUS_AVAILABLE;
 
-   /* Trigger 'fade in' animation */
-   thumbnail_tag->thumbnail->alpha  = 0.0f;
+   /* Trigger 'fade in' animation, if required */
+   if (menu_thumbnail_fade_duration > 0.0f)
+   {
+      thumbnail_tag->thumbnail->alpha  = 0.0f;
 
-   animation_entry.easing_enum      = EASING_OUT_QUAD;
-   animation_entry.tag              = (uintptr_t)&thumbnail_tag->thumbnail->alpha;
-   animation_entry.duration         = menu_thumbnail_fade_duration;
-   animation_entry.target_value     = 1.0f;
-   animation_entry.subject          = &thumbnail_tag->thumbnail->alpha;
-   animation_entry.cb               = NULL;
-   animation_entry.userdata         = NULL;
+      animation_entry.easing_enum      = EASING_OUT_QUAD;
+      animation_entry.tag              = (uintptr_t)&thumbnail_tag->thumbnail->alpha;
+      animation_entry.duration         = menu_thumbnail_fade_duration;
+      animation_entry.target_value     = 1.0f;
+      animation_entry.subject          = &thumbnail_tag->thumbnail->alpha;
+      animation_entry.cb               = NULL;
+      animation_entry.userdata         = NULL;
 
-   menu_animation_push(&animation_entry);
+      menu_animation_push(&animation_entry);
+   }
+   else
+      thumbnail_tag->thumbnail->alpha  = 1.0f;
 
 end:
    /* Clean up */
@@ -548,15 +553,17 @@ error:
    return;
 }
 
-/* Draws specified thumbnail centred (with aspect correct
- * scaling) within a rectangle of (width x height)
+/* Draws specified thumbnail with specified alignment
+ * (and aspect correct scaling) within a rectangle of
+ * (width x height)
  * NOTE: Setting scale_factor > 1.0f will increase the
  *       size of the thumbnail beyond the limits of the
- *       (width x height) rectangle (centring + aspect
+ *       (width x height) rectangle (alignment + aspect
  *       correct scaling is preserved). Use with caution */
 void menu_thumbnail_draw(
       video_frame_info_t *video_info, menu_thumbnail_t *thumbnail,
       float x, float y, unsigned width, unsigned height,
+      enum menu_thumbnail_alignment alignment,
       float alpha, float scale_factor)
 {
    /* Sanity check */
@@ -631,9 +638,40 @@ void menu_thumbnail_draw(
       draw.prim_type       = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
       draw.pipeline.id     = 0;
 
-      /* > Ensure thumbnail is centred */
-      draw.x               = x + ((float)width - draw_width) / 2.0f;
-      draw.y               = (float)video_info->height - y - draw_height - ((float)height - draw_height) / 2.0f;
+      /* Set thumbnail alignment within bounding box */
+      switch (alignment)
+      {
+         case MENU_THUMBNAIL_ALIGN_TOP:
+            /* Centred horizontally */
+            draw.x = x + ((float)width - draw_width) / 2.0f;
+            /* Drawn at top of bounding box */
+            draw.y = (float)video_info->height - y - draw_height;
+            break;
+         case MENU_THUMBNAIL_ALIGN_BOTTOM:
+            /* Centred horizontally */
+            draw.x = x + ((float)width - draw_width) / 2.0f;
+            /* Drawn at bottom of bounding box */
+            draw.y = (float)video_info->height - y - (float)height;
+            break;
+         case MENU_THUMBNAIL_ALIGN_LEFT:
+            /* Drawn at left side of bounding box */
+            draw.x = x;
+            /* Centred vertically */
+            draw.y = (float)video_info->height - y - draw_height - ((float)height - draw_height) / 2.0f;
+            break;
+         case MENU_THUMBNAIL_ALIGN_RIGHT:
+            /* Drawn at right side of bounding box */
+            draw.x = x + (float)width - draw_width;
+            /* Centred vertically */
+            draw.y = (float)video_info->height - y - draw_height - ((float)height - draw_height) / 2.0f;
+            break;
+         case MENU_THUMBNAIL_ALIGN_CENTRE:
+         default:
+            /* Centred both horizontally and vertically */
+            draw.x = x + ((float)width - draw_width) / 2.0f;
+            draw.y = (float)video_info->height - y - draw_height - ((float)height - draw_height) / 2.0f;
+            break;
+      }
 
       /* Draw thumbnail */
       menu_display_draw(&draw, video_info);
