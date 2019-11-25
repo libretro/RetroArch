@@ -464,6 +464,8 @@ typedef struct settings
 
       unsigned input_turbo_period;
       unsigned input_turbo_duty_cycle;
+      unsigned input_turbo_mode;
+      unsigned input_turbo_default_button;
 
       unsigned input_bind_timeout;
       unsigned input_bind_hold;

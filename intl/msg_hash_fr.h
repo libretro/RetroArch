@@ -1526,6 +1526,14 @@ MSG_HASH(
     "Délai d'activation du turbo "
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_MODE,
+    "Turbo Mode"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_DEFAULT_BUTTON,
+    "Turbo Default Button"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
     "Touches du port %u"
     )
@@ -5570,6 +5578,14 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_SUBLABEL_INPUT_DUTY_CYCLE,
     "Décrit la durée après laquelle une touche en mode turbo se répète. Les nombres sont décrits en images."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_INPUT_TURBO_MODE,
+    "Selects the general behavior of turbo mode."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_INPUT_TURBO_DEFAULT_BUTTON,
+    "Default active button for Turbo Mode 'Single Button'."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_VSYNC,

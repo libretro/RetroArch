@@ -1494,6 +1494,14 @@ MSG_HASH(
     "Turbo Aralığı"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_MODE,
+    "Turbo Mode"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_DEFAULT_BUTTON,
+    "Turbo Default Button"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS, /* TODO/FIXME - Change user to port */
     "Kullanıcı %u Atamaları"
     )
@@ -5230,6 +5238,14 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_SUBLABEL_INPUT_DUTY_CYCLE,
     "Turbo etkin bir düğmenin ne kadar sürmesi gerektiğini açıklar. Sayılar çerçevelerde açıklanmıştır."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_INPUT_TURBO_MODE,
+    "Selects the general behavior of turbo mode."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_INPUT_TURBO_DEFAULT_BUTTON,
+    "Default active button for Turbo Mode 'Single Button'."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_VSYNC,

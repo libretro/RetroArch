@@ -1674,6 +1674,20 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
                              "Os números são descritos em quadros."
             );
             break;
+        case MENU_ENUM_LABEL_INPUT_TURBO_MODE:
+            snprintf(s, len,
+                     "Turbo Mode.\n"
+                             " \n"
+                             "Selects the general behavior of turbo mode."
+            );
+            break;
+        case MENU_ENUM_LABEL_INPUT_TURBO_DEFAULT_BUTTON:
+            snprintf(s, len,
+                     "Turbo Default Button.\n"
+                             " \n"
+                             "Default active button for Turbo Mode 'Single Button'.\n"
+            );
+            break;
         case MENU_ENUM_LABEL_INPUT_TOUCH_ENABLE:
             snprintf(s, len, "Habilitar suporte a toque.");
             break;

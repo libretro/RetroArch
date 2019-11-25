@@ -2139,3 +2139,7 @@ MSG_HASH(MENU_ENUM_LABEL_ACCESSIBILITY_ENABLED,
       "accessibility_enabled")
 MSG_HASH(MENU_ENUM_LABEL_ACCESSIBILITY_NARRATOR_SPEECH_SPEED,
       "accessibility_narrator_speech_speed")
+MSG_HASH(MENU_ENUM_LABEL_INPUT_TURBO_MODE,
+      "input_turbo_mode")
+MSG_HASH(MENU_ENUM_LABEL_INPUT_TURBO_DEFAULT_BUTTON,
+      "input_turbo_default_button")

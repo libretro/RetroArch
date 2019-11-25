@@ -915,6 +915,10 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ENABLE,
       "Turbo Abilitato")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD,
       "Turbo Periodico")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_TURBO_MODE,
+      "Turbo Mode")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_TURBO_DEFAULT_BUTTON,
+      "Turbo Default Button")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS, /* TODO/FIXME - change User to Port */
       "Input utente %u Binds")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INTERNAL_STORAGE_STATUS,
@@ -2467,6 +2471,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_DUTY_CYCLE,
    "Descrive quanto tempo dovrebbe essere il periodo di un pulsante turbo-abilitato. I numeri sono descritti in fotogrammi."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_MODE,
+   "Selects the general behavior of turbo mode."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_DEFAULT_BUTTON,
+   "Default active button for Turbo Mode 'Single Button'."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VSYNC,

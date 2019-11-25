@@ -979,6 +979,8 @@ static const float analog_sensitivity     = 1.0f;
 /* Describes speed of which turbo-enabled buttons toggle. */
 static const unsigned turbo_period        = 6;
 static const unsigned turbo_duty_cycle    = 3;
+static const unsigned turbo_mode          = 0;
+static const unsigned turbo_default_btn   = RETRO_DEVICE_ID_JOYPAD_B;
 
 /* Enable input auto-detection. Will attempt to autoconfigure
  * gamepads, plug-and-play style. */
