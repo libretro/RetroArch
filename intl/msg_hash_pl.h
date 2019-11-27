@@ -4672,113 +4672,113 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_DRIVERS,
     "Pokaż sterowniki"
     )
 MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_SHOW_DRIVERS,
-    "Pokaż lub ukryj 'Ustawienia sterownika' na ekranie ustawień."
+    "Pokaż lub ukryj „Ustawienia sterownika” na ekranie ustawień."
     )
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_VIDEO,
     "Pokaż wideo"
     )
 MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_SHOW_VIDEO,
-    "Pokaż lub ukryj 'Ustawienia wideo' na ekranie ustawień."
+    "Pokaż lub ukryj „Ustawienia wideo” na ekranie ustawień."
     )
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_AUDIO,
     "Pokaż dźwięk"
     )
 MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_SHOW_AUDIO,
-    "Pokaż lub ukryj 'Ustawienia audio' na ekranie ustawień."
+    "Pokaż lub ukryj „Ustawienia audio” na ekranie ustawień."
     )
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_LATENCY,
     "Pokaż opóźnienie"
     )
 MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_SHOW_LATENCY,
-    "Pokaż lub ukryj 'Ustawienia opóźnień' na ekranie ustawień."
+    "Pokaż lub ukryj „Ustawienia opóźnień” na ekranie ustawień."
     )
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_CORE,
     "Pokaż rdzeń"
     )
 MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_SHOW_CORE,
-    "Pokaż lub ukryj 'Podstawowe ustawienia' na ekranie ustawień."
+    "Pokaż lub ukryj „Podstawowe ustawienia” na ekranie ustawień."
     )
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_CONFIGURATION,
     "Pokaż konfigurację"
     )
 MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_SHOW_CONFIGURATION,
-    "Pokaż lub ukryj 'Ustawienia konfiguracji' na ekranie Ustawienia."
+    "Pokaż lub ukryj „Ustawienia konfiguracji” na ekranie Ustawienia."
     )
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_SAVING,
     "Pokaż zapisywanie"
     )
 MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_SHOW_SAVING,
-    "Pokaż lub ukryj 'Zapisywanie ustawień' na ekranie ustawień."
+    "Pokaż lub ukryj „Zapisywanie ustawień” na ekranie ustawień."
     )
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_LOGGING,
     "Pokaż rejestrowanie"
     )
 MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_SHOW_LOGGING,
-    "Pokaż lub ukryj 'Ustawienia rejestrowania' na ekranie ustawień."
+    "Pokaż lub ukryj „Ustawienia rejestrowania” na ekranie ustawień."
     )
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_FRAME_THROTTLE,
     "Pokaż przepustnicę ramy"
     )
 MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_SHOW_FRAME_THROTTLE,
-    "Pokaż lub ukryj 'Ustawienia przepustnicy ramy' na ekranie Ustawienia."
+    "Pokaż lub ukryj „Ustawienia przepustnicy ramy” na ekranie Ustawienia."
     )
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_RECORDING,
     "Pokaż nagranie"
     )
 MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_SHOW_RECORDING,
-    "Pokaż lub ukryj 'Ustawienia nagrywania' na ekranie Ustawienia."
+    "Pokaż lub ukryj „Ustawienia nagrywania” na ekranie Ustawienia."
     )
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_ONSCREEN_DISPLAY,
     "Pokaż wyświetlanie na ekranie"
     )
 MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_SHOW_ONSCREEN_DISPLAY,
-    "Pokaż lub ukryj 'Ustawienia wyświetlania na ekranie' na ekranie ustawień."
+    "Pokaż lub ukryj „Ustawienia wyświetlania na ekranie” na ekranie ustawień."
     )
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_USER_INTERFACE,
     "Pokaż interfejs użytkownika"
     )
 MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_SHOW_USER_INTERFACE,
-    "Pokaż lub ukryj 'Ustawienia interfejsu użytkownika' na ekranie ustawień."
+    "Pokaż lub ukryj „Ustawienia interfejsu użytkownika” na ekranie ustawień."
     )
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_AI_SERVICE,
     "Pokaż usługę AI"
     )
 MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_SHOW_AI_SERVICE,
-    "Pokaż lub ukryj 'Ustawienia usługi AI' na ekranie ustawień."
+    "Pokaż lub ukryj „Ustawienia usługi AI” na ekranie ustawień."
     )
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_POWER_MANAGEMENT,
     "Pokaż zarządzanie energią"
     )
 MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_SHOW_POWER_MANAGEMENT,
-    "Pokaż lub ukryj 'Ustawienia zarządzania energią' na ekranie ustawień."
+    "Pokaż lub ukryj „Ustawienia zarządzania energią” na ekranie ustawień."
     )
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_ACHIEVEMENTS,
     "Pokaż osiągnięcia"
     )
 MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_SHOW_ACHIEVEMENTS,
-    "Pokaż lub ukryj 'Ustawienia osiągnięć' na ekranie ustawień."
+    "Pokaż lub ukryj „Ustawienia osiągnięć” na ekranie ustawień."
     )
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_NETWORK,
     "Pokaż sieć"
     )
 MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_SHOW_NETWORK,
-    "Pokaż lub ukryj 'Ustawienia sieci' na ekranie Ustawień."
+    "Pokaż lub ukryj „Ustawienia sieci” na ekranie Ustawień."
     )
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_PLAYLISTS,
     "Pokaż listy odtwarzania"
     )
 MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_SHOW_PLAYLISTS,
-    "Pokaż lub ukryj 'Ustawienia list odtwarzania' na ekranie ustawień."
+    "Pokaż lub ukryj „Ustawienia list odtwarzania” na ekranie ustawień."
     )
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_USER,
     "Pokaż użytkownika"
     )
 MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_SHOW_USER,
-    "Pokaż lub ukryj 'Ustawienia użytkownika' na ekranie ustawień."
+    "Pokaż lub ukryj „Ustawienia użytkownika” na ekranie ustawień."
     )
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_DIRECTORY,
     "Pokaż katalog"
     )
 MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_SHOW_DIRECTORY,
-    "Pokaż lub ukryj 'Ustawienia katalogu' na ekranie ustawień."
+    "Pokaż lub ukryj „Ustawienia katalogu” na ekranie ustawień."
     )
