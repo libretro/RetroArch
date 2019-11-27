@@ -2560,7 +2560,10 @@ bool rcheevos_load(const void *data)
    rcheevos_hardcore_paused = false;
 
    if (!rcheevos_locals.core_supports || !data)
+   {
+      rcheevos_hardcore_paused = true;
       return false;
+   }
 
    coro = (rcheevos_coro_t*)calloc(1, sizeof(*coro));
 

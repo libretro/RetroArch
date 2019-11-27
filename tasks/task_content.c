@@ -1087,6 +1087,12 @@ static bool content_file_load(
 
       if (type == RARCH_CONTENT_NONE && !string_is_empty(content_path))
          rcheevos_load(info);
+      else
+         rcheevos_hardcore_paused = true;
+   }
+   else
+   {
+      rcheevos_hardcore_paused = true;
    }
 #endif
 
