@@ -2500,7 +2500,6 @@ MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RESTART_RETROARCH,
     "Restart RetroArch"
     )
-#endif
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DETAIL,
     "Database Entry"

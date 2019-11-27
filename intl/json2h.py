@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
 
-# Apply template (us) updates to translations (fr, ja, chs, etc.)
-# Usage: ./template.py xx
-# xx is the language code postfix of translation files
+# Convert *.json to *.h
+# Usage: ./json2h.py msg_hash_fr.json
 
 import re
 import sys
+import json
 
 try:
-    lc = sys.argv[1]
+    json_filename = sys.argv[1]
+    h_filename = json_filename.replace('.json', '.h')
 except IndexError:
     print("Usage: ./template.py <language_postfix>")
     sys.exit(1)
@@ -24,6 +25,7 @@ header = """#if defined(_MSC_VER) && !defined(_XBOX) && (_MSC_VER >= 1500 && _MS
 #endif
 """
 
+
 def parse_message(message):
     key_start = message.find('(') + 1
     key_end = message.find(',')
@@ -33,7 +35,8 @@ def parse_message(message):
     value = message[value_start:value_end].strip()
     return key, value
 
-def messages(text):
+
+def parse_messages(text):
     result = p.findall(text)
     seen = set()
     msg_list = []
@@ -48,24 +51,29 @@ def messages(text):
 
     return msg_list
 
-def update(translation, template):
+
+def update(messages, template):
     new_translation = header + template
-    template_messages = messages(template)
-    translation_messages = messages(translation)
+    template_messages = parse_messages(template)
     for tp_msg in template_messages:
-        for ts_msg in translation_messages:
-            if tp_msg['key'] == ts_msg['key']:
-                new_translation = new_translation.replace(tp_msg['msg'], ts_msg['msg'])
+        if tp_msg['key'] in messages:
+            tp_msg_val = tp_msg['val']
+            tl_msg_val = messages[tp_msg['key']]
+            old_msg = tp_msg['msg']
+            new_msg = old_msg.replace(tp_msg_val, tl_msg_val)
+            new_translation = new_translation.replace(old_msg, new_msg)
     return new_translation
+
 
 with open('msg_hash_us.h', 'r') as template_file:
     template = template_file.read()
     try:
-        with open('msg_hash_' + lc + '.h', 'r+') as translation_file:
-            translation = translation_file.read()
-            new_translation = update(translation, template)
-            translation_file.seek(0)
-            translation_file.write(new_translation)
-            translation_file.truncate()
+        with open(json_filename, 'r+') as json_file:
+            messages = json.load(json_file)
+            new_translation = update(messages, template)
+            with open(h_filename, 'w') as h_file:
+                h_file.seek(0)
+                h_file.write(new_translation)
+                h_file.truncate()
     except EnvironmentError:
-        print('Cannot read/write "msg_hash_' + lc + '.h"')
+        print('Cannot read/write ' + json_filename)
