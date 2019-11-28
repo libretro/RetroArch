@@ -25,6 +25,7 @@ typedef struct ozone_handle ozone_handle_t;
 #include <retro_miscellaneous.h>
 
 #include "../../menu_thumbnail_path.h"
+#include "../../menu_thumbnail.h"
 #include "../../menu_driver.h"
 
 #include "../../../retroarch.h"
@@ -212,11 +213,6 @@ struct ozone_handle
       int cursor_size;
 
       int thumbnail_bar_width;
-
-      float thumbnail_width; /* set at layout time */
-      float thumbnail_height; /* set later to thumbnail_width * image aspect ratio */
-      float left_thumbnail_width; /* set at layout time */
-      float left_thumbnail_height; /* set later to left_thumbnail_width * image aspect ratio */
    } dimensions;
 
    bool show_cursor;
@@ -230,10 +226,12 @@ struct ozone_handle
    /* Thumbnails data */
    bool show_thumbnail_bar;
 
-   uintptr_t thumbnail;
-   uintptr_t left_thumbnail;
-
    menu_thumbnail_path_data_t *thumbnail_path_data;
+
+   struct {
+      menu_thumbnail_t right;
+      menu_thumbnail_t left;
+   } thumbnails;
 
    char selection_core_name[255];
    char selection_playtime[255];

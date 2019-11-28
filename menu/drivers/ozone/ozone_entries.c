@@ -729,12 +729,17 @@ static void ozone_content_metadata_line(video_frame_info_t *video_info, ozone_ha
 
 void ozone_draw_thumbnail_bar(ozone_handle_t *ozone, video_frame_info_t *video_info)
 {
-   unsigned sidebar_height = video_info->height - ozone->dimensions.header_height - 55 - ozone->dimensions.footer_height;
-   unsigned sidebar_width  = ozone->dimensions.thumbnail_bar_width;
-   unsigned x_position     = video_info->width - (unsigned) ozone->animations.thumbnail_bar_position;
+   unsigned sidebar_height           = video_info->height - ozone->dimensions.header_height - 55 - ozone->dimensions.footer_height;
+   unsigned sidebar_width            = ozone->dimensions.thumbnail_bar_width;
+   unsigned x_position               = video_info->width - (unsigned) ozone->animations.thumbnail_bar_position;
+   unsigned thumbnail_width          = sidebar_width - (ozone->dimensions.sidebar_entry_icon_padding * 2);
+   unsigned thumbnail_height         = (video_info->height - ozone->dimensions.header_height - 2 - ozone->dimensions.footer_height - (ozone->dimensions.sidebar_entry_icon_padding * 3)) / 2;
+   int thumbnail_x_position          = x_position + ozone->dimensions.sidebar_entry_icon_padding;
+   int right_thumbnail_y_position    = 0;
+   int left_thumbnail_y_position     = 0;
 
-   bool thumbnail;
-   bool left_thumbnail;
+   bool show_right_thumbnail;
+   bool show_left_thumbnail;
 
    /* Background */
    if (!video_info->libretro_running)
@@ -745,71 +750,83 @@ void ozone_draw_thumbnail_bar(ozone_handle_t *ozone, video_frame_info_t *video_i
    }
 
    /* Thumbnails */
-   thumbnail = ozone->thumbnail &&
-     menu_thumbnail_is_enabled(ozone->thumbnail_path_data, MENU_THUMBNAIL_RIGHT);
-   left_thumbnail = ozone->left_thumbnail &&
-      menu_thumbnail_is_enabled(ozone->thumbnail_path_data, MENU_THUMBNAIL_LEFT);
+   show_right_thumbnail =
+         (ozone->thumbnails.right.status != MENU_THUMBNAIL_STATUS_MISSING) &&
+         menu_thumbnail_is_enabled(ozone->thumbnail_path_data, MENU_THUMBNAIL_RIGHT);
+   show_left_thumbnail  =
+         (ozone->thumbnails.left.status != MENU_THUMBNAIL_STATUS_MISSING) &&
+         menu_thumbnail_is_enabled(ozone->thumbnail_path_data, MENU_THUMBNAIL_LEFT) &&
+         !ozone->selection_core_is_viewer;
 
    /* If user requested "left" thumbnail instead of content metadata
-    * and no thumbnails are available, show a centered message and
+    * and no thumbnails are available, show a centred message and
     * return immediately */
-   if (!thumbnail && !left_thumbnail && menu_thumbnail_is_enabled(ozone->thumbnail_path_data, MENU_THUMBNAIL_LEFT))
+   if (!show_right_thumbnail && !show_left_thumbnail && menu_thumbnail_is_enabled(ozone->thumbnail_path_data, MENU_THUMBNAIL_LEFT))
    {
       ozone_draw_no_thumbnail_available(ozone, video_info, x_position, sidebar_width, 0);
       return;
    }
 
    /* Top row : thumbnail or no thumbnail available message */
-   if (thumbnail)
+   if (show_right_thumbnail)
    {
-      unsigned thumb_x_position = x_position + sidebar_width/2 - ozone->dimensions.thumbnail_width / 2;
-      unsigned thumb_y_position = video_info->height / 2 - ozone->dimensions.thumbnail_height / 2;
+      enum menu_thumbnail_alignment alignment = MENU_THUMBNAIL_ALIGN_BOTTOM;
 
-      if (!string_is_equal(ozone->selection_core_name, "imageviewer"))
-         thumb_y_position -= ozone->dimensions.thumbnail_height / 2 + ozone->dimensions.sidebar_entry_icon_padding/2;
+      /* If this entry is associated with the image viewer
+       * core, there can be only one thumbnail and no
+       * content metadata
+       * > Centre image vertically */
+      if (ozone->selection_core_is_viewer)
+      {
+         right_thumbnail_y_position =
+               ozone->dimensions.header_height +
+               ((thumbnail_height / 2) +
+               (int)(1.5f * (float)ozone->dimensions.sidebar_entry_icon_padding));
 
-      menu_display_blend_begin(video_info);
-      ozone_draw_icon(video_info,
-         ozone->dimensions.thumbnail_width,
-         ozone->dimensions.thumbnail_height,
-         ozone->thumbnail,
-         thumb_x_position,
-         thumb_y_position,
-         video_info->width, video_info->height,
-         0, 1,
-         ozone_pure_white
-      );
-      menu_display_blend_end(video_info);
+         alignment = MENU_THUMBNAIL_ALIGN_CENTRE;
+      }
+      else
+         right_thumbnail_y_position =
+               ozone->dimensions.header_height + 1 +
+               ozone->dimensions.sidebar_entry_icon_padding;
+
+      menu_thumbnail_draw(
+            video_info,
+            &ozone->thumbnails.right,
+            (float)thumbnail_x_position,
+            (float)right_thumbnail_y_position,
+            thumbnail_width,
+            thumbnail_height,
+            alignment,
+            1.0f, 1.0f);
    }
    else
    {
       /* If thumbnails are disabled, we don't know the thumbnail
        * height but we still need to move it to leave room for the
        * content metadata panel */
-      unsigned height = video_info->height / 4;
+      unsigned y_offset = thumbnail_height / 2;
 
-      ozone_draw_no_thumbnail_available(ozone, video_info, x_position, sidebar_width,
-         height / 2 + ozone->dimensions.sidebar_entry_icon_padding/2);
+      ozone_draw_no_thumbnail_available(ozone, video_info, x_position, sidebar_width, y_offset);
    }
 
    /* Bottom row : "left" thumbnail or content metadata */
-   if (thumbnail && left_thumbnail)
-   {
-      unsigned thumb_x_position = x_position + sidebar_width/2 - ozone->dimensions.left_thumbnail_width / 2;
-      unsigned thumb_y_position = video_info->height / 2 + ozone->dimensions.sidebar_entry_icon_padding / 2;
+   left_thumbnail_y_position =
+         ozone->dimensions.header_height + 1 +
+         thumbnail_height +
+         (ozone->dimensions.sidebar_entry_icon_padding * 2);
 
-      menu_display_blend_begin(video_info);
-      ozone_draw_icon(video_info,
-         ozone->dimensions.left_thumbnail_width,
-         ozone->dimensions.left_thumbnail_height,
-         ozone->left_thumbnail,
-         thumb_x_position,
-         thumb_y_position,
-         video_info->width, video_info->height,
-         0, 1,
-         ozone_pure_white
-      );
-      menu_display_blend_end(video_info);
+   if (show_right_thumbnail && show_left_thumbnail)
+   {
+      menu_thumbnail_draw(
+            video_info,
+            &ozone->thumbnails.left,
+            (float)thumbnail_x_position,
+            (float)left_thumbnail_y_position,
+            thumbnail_width,
+            thumbnail_height,
+            MENU_THUMBNAIL_ALIGN_TOP,
+            1.0f, 1.0f);
    }
    else if (!ozone->selection_core_is_viewer)
    {
@@ -821,7 +838,7 @@ void ozone_draw_thumbnail_bar(ozone_handle_t *ozone, video_frame_info_t *video_i
       settings_t *settings                   = config_get_ptr();
       bool scroll_content_metadata           = settings->bools.ozone_scroll_content_metadata;
       bool use_smooth_ticker                 = settings->bools.menu_ticker_smooth;
-      unsigned y                             = video_info->height / 2 + ozone->dimensions.sidebar_entry_icon_padding / 2;
+      unsigned y                             = (unsigned)left_thumbnail_y_position;
       unsigned separator_padding             = ozone->dimensions.sidebar_entry_icon_padding*2;
       unsigned column_x                      = x_position + separator_padding;
 
@@ -856,7 +873,6 @@ void ozone_draw_thumbnail_bar(ozone_handle_t *ozone, video_frame_info_t *video_i
       }
 
       /* Content metadata */
-      y += 10;
 
       /* Separator */
       menu_display_draw_quad(video_info,
