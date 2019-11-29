@@ -95,9 +95,12 @@ static bool psp_joypad_init(void *data)
       }
    if (psp2_model != SCE_KERNEL_MODEL_VITATV)
    {
+      players_count = 1;
+   }
+   if (sceKernelGetModelForCDialog() != SCE_KERNEL_MODEL_VITATV)
+   {
       sceTouchSetSamplingState(SCE_TOUCH_PORT_BACK, SCE_TOUCH_SAMPLING_STATE_START);
       sceTouchSetSamplingState(SCE_TOUCH_PORT_FRONT, SCE_TOUCH_SAMPLING_STATE_START);
-      players_count = 1;
    }
    sceCtrlGetControllerPortInfo(&curr_ctrl_info);
    memcpy(&old_ctrl_info, &curr_ctrl_info, sizeof(SceCtrlPortInfo));
@@ -258,7 +261,7 @@ static void psp_joypad_poll(void)
          continue;
 #endif
 #if defined(VITA)
-      if (psp2_model == SCE_KERNEL_MODEL_VITA
+      if (sceKernelGetModelForCDialog() == SCE_KERNEL_MODEL_VITA
          && settings->bools.input_backtouch_enable)
       {
          unsigned i;
