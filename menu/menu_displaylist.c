@@ -98,6 +98,7 @@
 #include "../tasks/tasks_internal.h"
 #include "../dynamic.h"
 #include "../runtime_file.h"
+#include "../manual_content_scan.h"
 
 static char new_path_entry[4096]        = {0};
 static char new_lbl_entry[4096]         = {0};
@@ -2334,9 +2335,9 @@ static unsigned menu_displaylist_parse_playlists(
 
    if (!horizontal)
    {
-#ifdef HAVE_LIBRETRODB
       if (settings->bools.menu_content_show_add)
       {
+#ifdef HAVE_LIBRETRODB
          if (menu_entries_append_enum(info->list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_DIRECTORY),
                msg_hash_to_str(MENU_ENUM_LABEL_SCAN_DIRECTORY),
@@ -2349,8 +2350,15 @@ static unsigned menu_displaylist_parse_playlists(
                MENU_ENUM_LABEL_SCAN_FILE,
                MENU_SETTING_ACTION, 0, 0))
             count++;
-      }
 #endif
+         if (menu_entries_append_enum(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_LIST),
+               msg_hash_to_str(MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_LIST),
+               MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_LIST,
+               MENU_SETTING_ACTION, 0, 0))
+            count++;
+      }
+
      if (settings->bools.menu_content_show_favorites)
       if (menu_entries_append_enum(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES),
@@ -3667,6 +3675,64 @@ static unsigned populate_playlist_thumbnail_mode_dropdown_list(
    return count;
 }
 
+static bool menu_displaylist_parse_manual_content_scan_list(
+      menu_displaylist_info_t *info)
+{
+   unsigned count = 0;
+
+   /* Content directory */
+   if (menu_entries_append_enum(info->list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_DIR),
+         msg_hash_to_str(MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_DIR),
+         MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_DIR,
+         MENU_SETTING_MANUAL_CONTENT_SCAN_DIR, 0, 0))
+      count++;
+
+   /* System name */
+   if (menu_entries_append_enum(info->list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME),
+         msg_hash_to_str(MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME),
+         MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
+         MENU_SETTING_MANUAL_CONTENT_SCAN_SYSTEM_NAME, 0, 0))
+      count++;
+
+   /* Custom system name */
+   if (menu_displaylist_parse_settings_enum(info->list,
+         MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM, PARSE_ONLY_STRING,
+         false) == 0)
+      count++;
+
+   /* Core name */
+   if (menu_entries_append_enum(info->list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_CORE_NAME),
+         msg_hash_to_str(MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_CORE_NAME),
+         MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_CORE_NAME,
+         MENU_SETTING_MANUAL_CONTENT_SCAN_CORE_NAME, 0, 0))
+      count++;
+
+   /* File extensions */
+   if (menu_displaylist_parse_settings_enum(info->list,
+         MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_FILE_EXTS, PARSE_ONLY_STRING,
+         false) == 0)
+      count++;
+
+   /* Overwrite playlist */
+   if (menu_displaylist_parse_settings_enum(info->list,
+         MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_OVERWRITE, PARSE_ONLY_BOOL,
+         false) == 0)
+      count++;
+
+   /* Start scan */
+   if (menu_entries_append_enum(info->list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_START),
+         msg_hash_to_str(MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_START),
+         MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_START,
+         MENU_SETTING_ACTION_MANUAL_CONTENT_SCAN_START, 0, 0))
+      count++;
+
+   return (count > 0);
+}
+
 unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ctl_state type)
 {
    unsigned i;
@@ -3863,6 +3929,12 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
                MENU_SETTING_ACTION, 0, 0))
             count++;
 #endif
+         if (menu_entries_append_enum(list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_LIST),
+               msg_hash_to_str(MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_LIST),
+               MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_LIST,
+               MENU_SETTING_ACTION, 0, 0))
+            count++;
          break;
       case DISPLAYLIST_NETWORK_INFO:
 #if defined(HAVE_NETWORKING) && !defined(HAVE_SOCKET_LEGACY) && (!defined(SWITCH) || defined(SWITCH) && defined(HAVE_LIBNX))
@@ -4124,6 +4196,84 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
          break;
       case DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_LEFT_THUMBNAIL_MODE:
          count = populate_playlist_thumbnail_mode_dropdown_list(list, PLAYLIST_THUMBNAIL_LEFT);
+         break;
+      case DISPLAYLIST_DROPDOWN_LIST_MANUAL_CONTENT_SCAN_SYSTEM_NAME:
+         {
+            /* Get system name list */
+            struct string_list *system_name_list = manual_content_scan_get_menu_system_name_list();
+
+            if (system_name_list)
+            {
+               const char *current_system_name = NULL;
+               unsigned i;
+
+               /* Get currently selected system name */
+               manual_content_scan_get_menu_system_name(&current_system_name);
+
+               /* Loop through names */
+               for (i = 0; i < system_name_list->size; i++)
+               {
+                  /* Note: manual_content_scan_get_system_name_list()
+                   * ensures that system_name cannot be empty here */
+                  const char *system_name = system_name_list->elems[i].data;
+
+                  /* Add menu entry */
+                  if (menu_entries_append_enum(list,
+                        system_name,
+                        "",
+                        MENU_ENUM_LABEL_NO_ITEMS,
+                        MENU_SETTING_DROPDOWN_ITEM_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
+                        i, 0))
+                     count++;
+
+                  /* Check whether current entry is checked */
+                  if (string_is_equal(current_system_name, system_name))
+                     menu_entries_set_checked(list, i, true);
+               }
+
+               /* Clean up */
+               string_list_free(system_name_list);
+            }
+         }
+         break;
+      case DISPLAYLIST_DROPDOWN_LIST_MANUAL_CONTENT_SCAN_CORE_NAME:
+         {
+            /* Get core name list */
+            struct string_list *core_name_list = manual_content_scan_get_menu_core_name_list();
+
+            if (core_name_list)
+            {
+               const char *current_core_name = NULL;
+               unsigned i;
+
+               /* Get currently selected core name */
+               manual_content_scan_get_menu_core_name(&current_core_name);
+
+               /* Loop through names */
+               for (i = 0; i < core_name_list->size; i++)
+               {
+                  /* Note: manual_content_scan_get_core_name_list()
+                   * ensures that core_name cannot be empty here */
+                  const char *core_name = core_name_list->elems[i].data;
+
+                  /* Add menu entry */
+                  if (menu_entries_append_enum(list,
+                        core_name,
+                        "",
+                        MENU_ENUM_LABEL_NO_ITEMS,
+                        MENU_SETTING_DROPDOWN_ITEM_MANUAL_CONTENT_SCAN_CORE_NAME,
+                        i, 0))
+                     count++;
+
+                  /* Check whether current entry is checked */
+                  if (string_is_equal(current_core_name, core_name))
+                     menu_entries_set_checked(list, i, true);
+               }
+
+               /* Clean up */
+               string_list_free(core_name_list);
+            }
+         }
          break;
       case DISPLAYLIST_PERFCOUNTERS_CORE:
       case DISPLAYLIST_PERFCOUNTERS_FRONTEND:
@@ -7213,6 +7363,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
       case DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_LABEL_DISPLAY_MODE:
       case DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_RIGHT_THUMBNAIL_MODE:
       case DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_LEFT_THUMBNAIL_MODE:
+      case DISPLAYLIST_DROPDOWN_LIST_MANUAL_CONTENT_SCAN_SYSTEM_NAME:
+      case DISPLAYLIST_DROPDOWN_LIST_MANUAL_CONTENT_SCAN_CORE_NAME:
       case DISPLAYLIST_PERFCOUNTERS_CORE:
       case DISPLAYLIST_PERFCOUNTERS_FRONTEND:
       case DISPLAYLIST_MENU_SETTINGS_LIST:
@@ -7238,6 +7390,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                case DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_LABEL_DISPLAY_MODE:
                case DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_RIGHT_THUMBNAIL_MODE:
                case DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_LEFT_THUMBNAIL_MODE:
+               case DISPLAYLIST_DROPDOWN_LIST_MANUAL_CONTENT_SCAN_SYSTEM_NAME:
+               case DISPLAYLIST_DROPDOWN_LIST_MANUAL_CONTENT_SCAN_CORE_NAME:
                   menu_entries_append_enum(info->list,
                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
                         msg_hash_to_str(MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY),
@@ -7701,6 +7855,12 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                MENU_SETTING_ACTION, 0, 0))
             count++;
 #endif
+         if (menu_entries_append_enum(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_LIST),
+               msg_hash_to_str(MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_LIST),
+               MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_LIST,
+               MENU_SETTING_ACTION, 0, 0))
+            count++;
 
          if (count == 0)
             menu_entries_append_enum(info->list,
@@ -8966,6 +9126,18 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
       case DISPLAYLIST_CORES_DETECTED:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          use_filebrowser = true;
+         break;
+      case DISPLAYLIST_MANUAL_CONTENT_SCAN_LIST:
+         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+
+         if (!menu_displaylist_parse_manual_content_scan_list(info))
+            menu_entries_append_enum(info->list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
+                  msg_hash_to_str(MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY),
+                  MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
+                  FILE_TYPE_NONE, 0, 0);
+
+         info->need_push    = true;
          break;
       case DISPLAYLIST_DROPDOWN_LIST:
          {

@@ -38,6 +38,7 @@
 #include "../../retroarch.h"
 #include "../../performance_counters.h"
 #include "../../playlist.h"
+#include "../../manual_content_scan.h"
 
 #include "../../input/input_remapping.h"
 
@@ -302,6 +303,29 @@ static int action_start_playlist_left_thumbnail_mode(unsigned type, const char *
    return 0;
 }
 
+static int action_start_manual_content_scan_dir(unsigned type, const char *label)
+{
+   /* Reset content directory */
+   manual_content_scan_set_menu_content_dir("");
+   return 0;
+}
+
+static int action_start_manual_content_scan_system_name(unsigned type, const char *label)
+{
+   /* Reset system name */
+   manual_content_scan_set_menu_system_name(
+         MANUAL_CONTENT_SCAN_SYSTEM_NAME_CONTENT_DIR, "");
+   return 0;
+}
+
+static int action_start_manual_content_scan_core_name(unsigned type, const char *label)
+{
+   /* Reset core name */
+   manual_content_scan_set_menu_core_name(
+         MANUAL_CONTENT_SCAN_CORE_DETECT, "");
+   return 0;
+}
+
 static int action_start_video_resolution(unsigned type, const char *label)
 {
    unsigned width = 0, height = 0;
@@ -404,6 +428,15 @@ static int menu_cbs_init_bind_start_compare_label(menu_file_list_cbs_t *cbs)
             break;
          case MENU_ENUM_LABEL_PLAYLIST_MANAGER_LEFT_THUMBNAIL_MODE:
             BIND_ACTION_START(cbs, action_start_playlist_left_thumbnail_mode);
+            break;
+         case MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_DIR:
+            BIND_ACTION_START(cbs, action_start_manual_content_scan_dir);
+            break;
+         case MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME:
+            BIND_ACTION_START(cbs, action_start_manual_content_scan_system_name);
+            break;
+         case MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_CORE_NAME:
+            BIND_ACTION_START(cbs, action_start_manual_content_scan_core_name);
             break;
          default:
             return -1;

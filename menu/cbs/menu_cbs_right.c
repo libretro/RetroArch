@@ -42,6 +42,7 @@
 #include "../../ui/ui_companion_driver.h"
 #include "../../network/netplay/netplay.h"
 #include "../../playlist.h"
+#include "../../manual_content_scan.h"
 
 #ifndef BIND_ACTION_RIGHT
 #define BIND_ACTION_RIGHT(cbs, name) \
@@ -628,6 +629,134 @@ static int playlist_left_thumbnail_mode_right(unsigned type, const char *label,
    return 0;
 }
 
+static int manual_content_scan_system_name_right(unsigned type, const char *label,
+      bool wraparound)
+{
+   struct string_list *system_name_list                            =
+         manual_content_scan_get_menu_system_name_list();
+   const char *current_system_name                                 = NULL;
+   enum manual_content_scan_system_name_type next_system_name_type =
+         MANUAL_CONTENT_SCAN_SYSTEM_NAME_DATABASE;
+   const char *next_system_name                                    = NULL;
+   unsigned current_index                                          = 0;
+   unsigned next_index                                             = 0;
+   unsigned i;
+
+   if (!system_name_list)
+      return -1;
+
+   /* Get currently selected system name */
+   if (manual_content_scan_get_menu_system_name(&current_system_name))
+   {
+      /* Get index of currently selected system name */
+      for (i = 0; i < system_name_list->size; i++)
+      {
+         const char *system_name = system_name_list->elems[i].data;
+
+         if (string_is_equal(current_system_name, system_name))
+         {
+            current_index = i;
+            break;
+         }
+      }
+
+      /* Increment index */
+      next_index = current_index + 1;
+      if (next_index >= system_name_list->size)
+      {
+         if (wraparound)
+            next_index = 0;
+         else
+         {
+            if (system_name_list->size > 0)
+               next_index = system_name_list->size - 1;
+            else
+               next_index = 0;
+         }
+      }
+   }
+
+   /* Get new system name parameters */
+   if (next_index == (unsigned)MANUAL_CONTENT_SCAN_SYSTEM_NAME_CONTENT_DIR)
+      next_system_name_type = MANUAL_CONTENT_SCAN_SYSTEM_NAME_CONTENT_DIR;
+   else if (next_index == (unsigned)MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM)
+      next_system_name_type = MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM;
+
+   next_system_name = system_name_list->elems[next_index].data;
+
+   /* Set system name */
+   manual_content_scan_set_menu_system_name(
+         next_system_name_type, next_system_name);
+
+   /* Clean up */
+   string_list_free(system_name_list);
+
+   return 0;
+}
+
+static int manual_content_scan_core_name_right(unsigned type, const char *label,
+      bool wraparound)
+{
+   struct string_list *core_name_list                =
+         manual_content_scan_get_menu_core_name_list();
+   const char *current_core_name                     = NULL;
+   enum manual_content_scan_core_type next_core_type =
+         MANUAL_CONTENT_SCAN_CORE_SET;
+   const char *next_core_name                        = NULL;
+   unsigned current_index                            = 0;
+   unsigned next_index                               = 0;
+   unsigned i;
+
+   if (!core_name_list)
+      return -1;
+
+   /* Get currently selected core name */
+   if (manual_content_scan_get_menu_core_name(&current_core_name))
+   {
+      /* Get index of currently selected core name */
+      for (i = 0; i < core_name_list->size; i++)
+      {
+         const char *core_name = core_name_list->elems[i].data;
+
+         if (string_is_equal(current_core_name, core_name))
+         {
+            current_index = i;
+            break;
+         }
+      }
+
+      /* Increment index */
+      next_index = current_index + 1;
+      if (next_index >= core_name_list->size)
+      {
+         if (wraparound)
+            next_index = 0;
+         else
+         {
+            if (core_name_list->size > 0)
+               next_index = core_name_list->size - 1;
+            else
+               next_index = 0;
+         }
+      }
+   }
+
+   /* Get new core name parameters */
+   if (next_index == (unsigned)MANUAL_CONTENT_SCAN_CORE_DETECT)
+      next_core_type = MANUAL_CONTENT_SCAN_CORE_DETECT;
+
+   next_core_name = core_name_list->elems[next_index].data;
+
+   /* Set core name */
+   manual_content_scan_set_menu_core_name(
+         next_core_type, next_core_name);
+
+   /* Clean up */
+   string_list_free(core_name_list);
+
+   return 0;
+}
+
 int core_setting_right(unsigned type, const char *label,
       bool wraparound)
 {
@@ -735,6 +864,7 @@ static int menu_cbs_init_bind_right_compare_type(menu_file_list_cbs_t *cbs,
          case FILE_TYPE_DOWNLOAD_THUMBNAIL_CONTENT:
          case FILE_TYPE_DOWNLOAD_URL:
          case FILE_TYPE_SCAN_DIRECTORY:
+         case FILE_TYPE_MANUAL_SCAN_DIRECTORY:
          case FILE_TYPE_FONT:
          case MENU_SETTING_GROUP:
          case MENU_SETTINGS_CORE_INFO_NONE:
@@ -914,6 +1044,12 @@ static int menu_cbs_init_bind_right_compare_label(menu_file_list_cbs_t *cbs,
                break;
             case MENU_ENUM_LABEL_PLAYLIST_MANAGER_LEFT_THUMBNAIL_MODE:
                BIND_ACTION_RIGHT(cbs, playlist_left_thumbnail_mode_right);
+               break;
+            case MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME:
+               BIND_ACTION_RIGHT(cbs, manual_content_scan_system_name_right);
+               break;
+            case MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_CORE_NAME:
+               BIND_ACTION_RIGHT(cbs, manual_content_scan_core_name_right);
                break;
             default:
                return -1;

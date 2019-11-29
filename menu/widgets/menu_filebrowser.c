@@ -127,6 +127,14 @@ void filebrowser_parse(menu_displaylist_info_t *info, unsigned type_data)
                   FILE_TYPE_SCAN_DIRECTORY, 0 ,0);
 #endif
          break;
+      case FILEBROWSER_MANUAL_SCAN_DIR:
+         if (info)
+            menu_entries_prepend(info->list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_THIS_DIRECTORY),
+                  msg_hash_to_str(MENU_ENUM_LABEL_SCAN_THIS_DIRECTORY),
+                  MENU_ENUM_LABEL_SCAN_THIS_DIRECTORY,
+                  FILE_TYPE_MANUAL_SCAN_DIRECTORY, 0 ,0);
+         break;
       case FILEBROWSER_SELECT_DIR:
          if (info)
             menu_entries_prepend(info->list,
@@ -211,6 +219,8 @@ void filebrowser_parse(menu_displaylist_info_t *info, unsigned type_data)
             if (filebrowser_types == FILEBROWSER_SELECT_DIR)
                continue;
             if (filebrowser_types == FILEBROWSER_SCAN_DIR)
+               continue;
+            if (filebrowser_types == FILEBROWSER_MANUAL_SCAN_DIR)
                continue;
          }
 

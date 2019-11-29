@@ -850,7 +850,7 @@ static int database_info_list_iterate_found_match(
    fprintf(stderr, "entry path str: %s\n", entry_path_str);
 #endif
 
-   if (!playlist_entry_exists(playlist, entry_path_str, db_crc))
+   if (!playlist_entry_exists(playlist, entry_path_str))
    {
       struct playlist_entry entry;
 
@@ -1052,8 +1052,7 @@ static int task_database_iterate_playlist_lutro(
 
    free(db_playlist_path);
 
-   if (!playlist_entry_exists(playlist,
-            path, "DETECT"))
+   if (!playlist_entry_exists(playlist, path))
    {
       struct playlist_entry entry;
       char *game_title            = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));

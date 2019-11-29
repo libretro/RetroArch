@@ -65,6 +65,8 @@ static int action_get_title_action_generic(const char *path, const char *label,
    const char *title = msg_hash_to_str(lbl); \
    if (!string_is_empty(path) && !string_is_empty(title)) \
       fill_pathname_join_delim(s, title, path, ' ', len); \
+   else if (!string_is_empty(title)) \
+      strlcpy(s, title, len); \
    return 1; \
 }
 
@@ -396,10 +398,12 @@ default_title_macro(action_get_title_goto_music,                MENU_ENUM_LABEL_
 default_title_macro(action_get_title_goto_video,                MENU_ENUM_LABEL_VALUE_GOTO_VIDEO)
 default_title_macro(action_get_title_collection,                MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB)
 default_title_macro(action_get_title_deferred_core_list,        MENU_ENUM_LABEL_VALUE_SUPPORTED_CORES)
-
 default_title_macro(action_get_title_dropdown_resolution_item,  MENU_ENUM_LABEL_VALUE_SCREEN_RESOLUTION)
 default_title_macro(action_get_title_dropdown_playlist_default_core_item, MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_DEFAULT_CORE)
 default_title_macro(action_get_title_dropdown_playlist_label_display_mode_item, MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE)
+default_title_macro(action_get_title_manual_content_scan_list,  MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_LIST)
+default_title_macro(action_get_title_dropdown_manual_content_scan_system_name_item, MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME)
+default_title_macro(action_get_title_dropdown_manual_content_scan_core_name_item, MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_CORE_NAME)
 
 default_fill_title_macro(action_get_title_disk_image_append,    MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND)
 default_fill_title_macro(action_get_title_cheat_file_load,      MENU_ENUM_LABEL_VALUE_CHEAT_FILE)
@@ -444,6 +448,7 @@ default_fill_title_macro(action_get_title_extraction_directory,   MENU_ENUM_LABE
 default_fill_title_macro(action_get_title_menu,                   MENU_ENUM_LABEL_VALUE_MENU_SETTINGS)
 default_fill_title_macro(action_get_title_font_path,              MENU_ENUM_LABEL_VALUE_XMB_FONT)
 default_fill_title_macro(action_get_title_log_dir,                MENU_ENUM_LABEL_VALUE_LOG_DIR)
+default_fill_title_macro(action_get_title_manual_content_scan_dir, MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_DIR)
 
 default_title_copy_macro(action_get_title_help,                   MENU_ENUM_LABEL_VALUE_HELP_LIST)
 default_title_copy_macro(action_get_title_input_settings,         MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS)
@@ -1226,6 +1231,12 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
             BIND_ACTION_GET_TITLE(cbs, action_get_title_switch_backlight_control);
             break;
 #endif
+         case MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_LIST:
+            BIND_ACTION_GET_TITLE(cbs, action_get_title_manual_content_scan_list);
+            break;
+         case MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_DIR:
+            BIND_ACTION_GET_TITLE(cbs, action_get_title_manual_content_scan_dir);
+            break;
          default:
             return -1;
       }
@@ -1362,6 +1373,9 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_LABEL_CORE_ASSETS_DIRECTORY:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_core_assets_directory);
+            break;
+         case MENU_LABEL_THUMBNAILS_DIRECTORY:
+            BIND_ACTION_GET_TITLE(cbs, action_get_title_thumbnail_directory);
             break;
          case MENU_LABEL_RGUI_CONFIG_DIRECTORY:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_config_directory);
@@ -1543,6 +1557,12 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
             BIND_ACTION_GET_TITLE(cbs, action_get_title_switch_backlight_control);
             break;
 #endif
+         case MENU_LABEL_DEFERRED_MANUAL_CONTENT_SCAN_LIST:
+            BIND_ACTION_GET_TITLE(cbs, action_get_title_manual_content_scan_list);
+            break;
+         case MENU_LABEL_MANUAL_CONTENT_SCAN_DIR:
+            BIND_ACTION_GET_TITLE(cbs, action_get_title_manual_content_scan_dir);
+            break;
          default:
             return -1;
       }
@@ -1651,6 +1671,18 @@ int menu_cbs_init_bind_title(menu_file_list_cbs_t *cbs,
       BIND_ACTION_GET_TITLE(cbs, action_get_title_dropdown_playlist_left_thumbnail_mode_item);
       return 0;
    }
+   if (string_is_equal(label,
+            msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_MANUAL_CONTENT_SCAN_SYSTEM_NAME)))
+   {
+      BIND_ACTION_GET_TITLE(cbs, action_get_title_dropdown_manual_content_scan_system_name_item);
+      return 0;
+   }
+   if (string_is_equal(label,
+            msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_MANUAL_CONTENT_SCAN_CORE_NAME)))
+   {
+      BIND_ACTION_GET_TITLE(cbs, action_get_title_dropdown_manual_content_scan_core_name_item);
+      return 0;
+   }
    if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS)))
    {
       BIND_ACTION_GET_TITLE(cbs, action_get_quick_menu_views_settings_list);
@@ -1674,6 +1706,11 @@ int menu_cbs_init_bind_title(menu_file_list_cbs_t *cbs,
    if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB)))
    {
       BIND_ACTION_GET_TITLE(cbs, action_get_title_collection);
+      return 0;
+   }
+   if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_MANUAL_CONTENT_SCAN_LIST)))
+   {
+      BIND_ACTION_GET_TITLE(cbs, action_get_title_manual_content_scan_list);
       return 0;
    }
 
