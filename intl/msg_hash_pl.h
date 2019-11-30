@@ -4782,3 +4782,31 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_DIRECTORY,
 MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_SHOW_DIRECTORY,
     "Pokaż lub ukryj „Ustawienia katalogu” na ekranie ustawień."
     )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_XMB_ANIMATION_HORIZONTAL_HIGHLIGHT,
+    "Animacja uruchamiana podczas przewijania między kartami."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_XMB_ANIMATION_MOVE_UP_DOWN,
+    "Animacja uruchamiana podczas poruszania się w górę lub w dół."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_XMB_THUMBNAIL_SCALE_FACTOR,
+    "Zmniejsz rozmiar wyświetlanych miniatur, skalując maksymalną dozwoloną szerokość."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_UPSCALE_THRESHOLD,
+    "Automatyczne powiększanie miniatur obrazów o szerokości/wysokości mniejszej niż określona wartość. Poprawia jakość obrazu. Ma umiarkowany wpływ na wydajność."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_TICKER_SPEED,
+    "Szybkość animacji podczas przewijania długich ciągów tekstowych menu."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_TICKER_SMOOTH,
+    "Płynny tekst próbny"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_TICKER_SMOOTH,
+    "Użyj płynnej animacji przewijania podczas wyświetlania długich ciągów tekstowych menu. Ma niewielki wpływ na wydajność."
+    )
