@@ -58,6 +58,12 @@ matrix:
       env: CXX_BUILD=1 CC=clang-6.0 CXX=clang++-6.0
     - os: osx
       env: CC=clang CXX=clang++
+    - name: OSX OpenGL Make
+      os: osx
+      osx_image: xcode11.2
+      script:
+        - ./configure --enable-opengl --disable metal
+        - make
     - os: osx
       osx_image: xcode8
       script:
