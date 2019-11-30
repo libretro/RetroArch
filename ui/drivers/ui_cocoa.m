@@ -28,6 +28,7 @@
 
 #include "cocoa/cocoa_defines.h"
 #include "cocoa/cocoa_common.h"
+#include "cocoa/apple_platform.h"
 #include "../ui_companion_driver.h"
 #include "../../input/drivers/cocoa_input.h"
 #include "../../input/drivers_keyboard/keyboard_event_apple.h"
@@ -62,32 +63,6 @@
 
 @end
 #endif
-
-#if defined(HAVE_COCOA_METAL)
-id<ApplePlatform> apple_platform;
-@interface RetroArch_OSX : NSObject <ApplePlatform, NSApplicationDelegate>
-{
-   NSWindow* _window;
-   apple_view_type_t _vt;
-   NSView* _renderView;
-   id _sleepActivity;
-   WindowListener *_listener;
-}
-#elif defined(HAVE_COCOA)
-id apple_platform;
-#if (defined(__MACH__) && (defined(__ppc__) || defined(__ppc64__)))
-@interface RetroArch_OSX : NSObject
-#else
-@interface RetroArch_OSX : NSObject <NSApplicationDelegate>
-#endif
-{
-    NSWindow* _window;
-}
-#endif
-
-@property (nonatomic, retain) NSWindow IBOutlet* window;
-
-@end
 
 static void app_terminate(void)
 {
@@ -175,7 +150,7 @@ static void app_terminate(void)
             apple                        = (cocoa_input_data_t*)input_driver_get_data();
             if (!apple)
                return;
-			 
+
 			pos.x              = 0;
 			pos.y              = 0;
 
