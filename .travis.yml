@@ -62,7 +62,7 @@ matrix:
       os: osx
       osx_image: xcode11.2
       script:
-        - ./configure --enable-opengl --disable metal
+        - ./configure --enable-opengl --disable-metal
         - make
     - os: osx
       osx_image: xcode8
