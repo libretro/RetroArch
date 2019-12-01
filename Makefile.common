@@ -163,6 +163,7 @@ OBJ += frontend/frontend_driver.o \
        tasks/task_file_transfer.o \
        tasks/task_image.o \
        tasks/task_playlist_manager.o \
+       tasks/task_manual_content_scan.o \
        $(LIBRETRO_COMM_DIR)/encodings/encoding_utf.o \
        $(LIBRETRO_COMM_DIR)/encodings/encoding_crc32.o \
        $(LIBRETRO_COMM_DIR)/encodings/encoding_base64.o \
@@ -258,8 +259,8 @@ OBJ += \
        performance_counters.o \
        verbosity.o \
        midi/drivers/null_midi.o \
-       $(LIBRETRO_COMM_DIR)/playlists/label_sanitization.o
-
+       $(LIBRETRO_COMM_DIR)/playlists/label_sanitization.o \
+       manual_content_scan.o
 
 ifeq ($(HAVE_AUDIOMIXER), 1)
    DEFINES += -DHAVE_AUDIOMIXER

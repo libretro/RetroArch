@@ -217,6 +217,8 @@ generic_deferred_push(deferred_push_switch_gpu_profile,             DISPLAYLIST_
 generic_deferred_push(deferred_push_switch_backlight_control,       DISPLAYLIST_SWITCH_BACKLIGHT_CONTROL)
 #endif
 
+generic_deferred_push(deferred_push_manual_content_scan_list,       DISPLAYLIST_MANUAL_CONTENT_SCAN_LIST)
+
 static int deferred_push_cursor_manager_list_deferred(
       menu_displaylist_info_t *info)
 {
@@ -636,6 +638,8 @@ generic_deferred_push_clear_general(deferred_push_dropdown_box_list_playlist_def
 generic_deferred_push_clear_general(deferred_push_dropdown_box_list_playlist_label_display_mode, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_LABEL_DISPLAY_MODE)
 generic_deferred_push_clear_general(deferred_push_dropdown_box_list_playlist_right_thumbnail_mode, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_RIGHT_THUMBNAIL_MODE)
 generic_deferred_push_clear_general(deferred_push_dropdown_box_list_playlist_left_thumbnail_mode, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_LEFT_THUMBNAIL_MODE)
+generic_deferred_push_clear_general(deferred_push_dropdown_box_list_manual_content_scan_system_name, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_MANUAL_CONTENT_SCAN_SYSTEM_NAME)
+generic_deferred_push_clear_general(deferred_push_dropdown_box_list_manual_content_scan_core_name, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_MANUAL_CONTENT_SCAN_CORE_NAME)
 
 static int menu_cbs_init_bind_deferred_push_compare_label(
       menu_file_list_cbs_t *cbs,
@@ -745,6 +749,8 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       {MENU_ENUM_LABEL_DEFERRED_ACCOUNTS_TWITCH_LIST, deferred_push_accounts_twitch_list},
       {MENU_ENUM_LABEL_DEFERRED_VIDEO_SHADER_PRESET_SAVE_LIST, deferred_push_video_shader_preset_save},
       {MENU_ENUM_LABEL_DEFERRED_VIDEO_SHADER_PRESET_REMOVE_LIST, deferred_push_video_shader_preset_remove},
+      {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_MANUAL_CONTENT_SCAN_SYSTEM_NAME, deferred_push_dropdown_box_list_manual_content_scan_system_name},
+      {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_MANUAL_CONTENT_SCAN_CORE_NAME, deferred_push_dropdown_box_list_manual_content_scan_core_name},
    };
 
    for (i = 0; i < ARRAY_SIZE(info_list); i++)
@@ -1088,6 +1094,9 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
          case MENU_ENUM_LABEL_FAVORITES:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_detect_core_list);
             break;
+         case MENU_ENUM_LABEL_DEFERRED_MANUAL_CONTENT_SCAN_LIST:
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_manual_content_scan_list);
+            break;
          default:
             return -1;
       }
@@ -1303,6 +1312,9 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
          case MENU_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST:
          case MENU_LABEL_FAVORITES:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_detect_core_list);
+            break;
+         case MENU_LABEL_DEFERRED_MANUAL_CONTENT_SCAN_LIST:
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_manual_content_scan_list);
             break;
          default:
             return -1;

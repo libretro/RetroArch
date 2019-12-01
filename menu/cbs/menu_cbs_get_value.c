@@ -43,6 +43,7 @@
 #include "../../verbosity.h"
 #include "../../wifi/wifi_driver.h"
 #include "../../playlist.h"
+#include "../../manual_content_scan.h"
 
 #ifdef HAVE_NETWORKING
 #include "../../network/netplay/netplay.h"
@@ -1292,6 +1293,66 @@ static void menu_action_setting_disp_set_label_achievement_information(
    strlcpy(s2, path, len2);
 }
 
+static void menu_action_setting_disp_set_label_manual_content_scan_dir(file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *s, size_t len,
+      const char *path,
+      char *s2, size_t len2)
+{
+   const char *content_dir = NULL;
+
+   *s = '\0';
+   *w = 19;
+
+   strlcpy(s2, path, len2);
+
+   if (!manual_content_scan_get_menu_content_dir(&content_dir))
+      return;
+
+   strlcpy(s, content_dir, len);
+}
+
+static void menu_action_setting_disp_set_label_manual_content_scan_system_name(file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *s, size_t len,
+      const char *path,
+      char *s2, size_t len2)
+{
+   const char *system_name = NULL;
+
+   *s = '\0';
+   *w = 19;
+
+   strlcpy(s2, path, len2);
+
+   if (!manual_content_scan_get_menu_system_name(&system_name))
+      return;
+
+   strlcpy(s, system_name, len);
+}
+
+static void menu_action_setting_disp_set_label_manual_content_scan_core_name(file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *s, size_t len,
+      const char *path,
+      char *s2, size_t len2)
+{
+   const char *core_name = NULL;
+
+   *s = '\0';
+   *w = 19;
+
+   strlcpy(s2, path, len2);
+
+   if (!manual_content_scan_get_menu_core_name(&core_name))
+      return;
+
+   strlcpy(s, core_name, len);
+}
+
 static void menu_action_setting_disp_set_label_no_items(
       file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
@@ -1501,6 +1562,18 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
          case MENU_ENUM_LABEL_PLAYLIST_MANAGER_LEFT_THUMBNAIL_MODE:
             BIND_ACTION_GET_VALUE(cbs,
                   menu_action_setting_disp_set_label_playlist_left_thumbnail_mode);
+            break;
+         case MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_DIR:
+            BIND_ACTION_GET_VALUE(cbs,
+                  menu_action_setting_disp_set_label_manual_content_scan_dir);
+            break;
+         case MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME:
+            BIND_ACTION_GET_VALUE(cbs,
+                  menu_action_setting_disp_set_label_manual_content_scan_system_name);
+            break;
+         case MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_CORE_NAME:
+            BIND_ACTION_GET_VALUE(cbs,
+                  menu_action_setting_disp_set_label_manual_content_scan_core_name);
             break;
          default:
             return - 1;

@@ -95,6 +95,7 @@
 #include "../managers/cheat_manager.h"
 #include "../verbosity.h"
 #include "../playlist.h"
+#include "../manual_content_scan.h"
 
 #include "../tasks/tasks_internal.h"
 
@@ -157,7 +158,8 @@ enum settings_list_type
    SETTINGS_LIST_USER_ACCOUNTS_TWITCH,
    SETTINGS_LIST_DIRECTORY,
    SETTINGS_LIST_PRIVACY,
-   SETTINGS_LIST_MIDI
+   SETTINGS_LIST_MIDI,
+   SETTINGS_LIST_MANUAL_CONTENT_SCAN
 };
 
 struct bool_entry
@@ -6678,6 +6680,17 @@ void general_write_handler(rarch_setting_t *setting)
                rarch_favorites_init();
             }
          }
+         break;
+      case MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM:
+         /* Ensure that custom system name includes no
+          * invalid characters */
+         manual_content_scan_scrub_system_name_custom();
+         break;
+      case MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_FILE_EXTS:
+         /* Ensure that custom file extension list includes
+          * no period (full stop) characters, and converts
+          * string to lower case */
+         manual_content_scan_scrub_file_exts_custom();
          break;
       default:
          break;
@@ -16433,6 +16446,63 @@ static bool setting_append_list(
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);
          break;
+      case SETTINGS_LIST_MANUAL_CONTENT_SCAN:
+         START_GROUP(list, list_info, &group_info,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_LIST), parent_group);
+
+         parent_group = msg_hash_to_str(MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_LIST);
+
+         START_SUB_GROUP(list, list_info, "State",
+               &group_info, &subgroup_info, parent_group);
+
+         CONFIG_STRING(
+               list, list_info,
+               manual_content_scan_get_system_name_custom_ptr(),
+               manual_content_scan_get_system_name_custom_size(),
+               MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM,
+               MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM,
+               "",
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
+         (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_STRING_LINE_EDIT;
+
+         CONFIG_STRING(
+               list, list_info,
+               manual_content_scan_get_file_exts_custom_ptr(),
+               manual_content_scan_get_file_exts_custom_size(),
+               MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_FILE_EXTS,
+               MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_FILE_EXTS,
+               "",
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
+         (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_STRING_LINE_EDIT;
+
+         CONFIG_BOOL(
+               list, list_info,
+               manual_content_scan_get_overwrite_playlist_ptr(),
+               MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_OVERWRITE,
+               MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_OVERWRITE,
+               false,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+
+         END_SUB_GROUP(list, list_info, parent_group);
+         END_GROUP(list, list_info, parent_group);
+         break;
       case SETTINGS_LIST_NONE:
       default:
          break;
@@ -16566,7 +16636,8 @@ static rarch_setting_t *menu_setting_new_internal(rarch_setting_info_t *list_inf
       SETTINGS_LIST_USER_ACCOUNTS_TWITCH,
       SETTINGS_LIST_DIRECTORY,
       SETTINGS_LIST_PRIVACY,
-      SETTINGS_LIST_MIDI
+      SETTINGS_LIST_MIDI,
+      SETTINGS_LIST_MANUAL_CONTENT_SCAN
    };
    const char *root                     = msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU);
    rarch_setting_t *list                = (rarch_setting_t*)calloc(

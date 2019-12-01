@@ -368,8 +368,7 @@ void playlist_get_index_by_path(playlist_t *playlist,
 }
 
 bool playlist_entry_exists(playlist_t *playlist,
-      const char *path,
-      const char *crc32)
+      const char *path)
 {
    size_t i;
    char real_search_path[PATH_MAX_LENGTH];

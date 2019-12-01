@@ -714,6 +714,14 @@ default_sublabel_macro(action_bind_sublabel_thumbnails_updater_list,            
 default_sublabel_macro(action_bind_sublabel_pl_thumbnails_updater_list,                    MENU_ENUM_SUBLABEL_PL_THUMBNAILS_UPDATER_LIST)
 default_sublabel_macro(action_bind_sublabel_help_send_debug_info,                          MENU_ENUM_SUBLABEL_HELP_SEND_DEBUG_INFO)
 default_sublabel_macro(action_bind_sublabel_rdb_entry_detail,                              MENU_ENUM_SUBLABEL_RDB_ENTRY_DETAIL)
+default_sublabel_macro(action_bind_sublabel_manual_content_scan_list,                      MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_LIST)
+default_sublabel_macro(action_bind_sublabel_manual_content_scan_dir,                       MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_DIR)
+default_sublabel_macro(action_bind_sublabel_manual_content_scan_system_name,               MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME)
+default_sublabel_macro(action_bind_sublabel_manual_content_scan_system_name_custom,        MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM)
+default_sublabel_macro(action_bind_sublabel_manual_content_scan_core_name,                 MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_CORE_NAME)
+default_sublabel_macro(action_bind_sublabel_manual_content_scan_file_exts,                 MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_FILE_EXTS)
+default_sublabel_macro(action_bind_sublabel_manual_content_scan_overwrite,                 MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_OVERWRITE)
+default_sublabel_macro(action_bind_sublabel_manual_content_scan_start,                     MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_START)
 
 static int action_bind_sublabel_systeminfo_controller_entry(
       file_list_t *list,
@@ -3048,6 +3056,30 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_RDB_ENTRY_DETAIL:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_rdb_entry_detail);
+            break;
+         case MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_LIST:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_manual_content_scan_list);
+            break;
+         case MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_DIR:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_manual_content_scan_dir);
+            break;
+         case MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_manual_content_scan_system_name);
+            break;
+         case MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_manual_content_scan_system_name_custom);
+            break;
+         case MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_CORE_NAME:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_manual_content_scan_core_name);
+            break;
+         case MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_FILE_EXTS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_manual_content_scan_file_exts);
+            break;
+         case MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_OVERWRITE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_manual_content_scan_overwrite);
+            break;
+         case MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_START:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_manual_content_scan_start);
             break;
          default:
          case MSG_UNKNOWN:

@@ -319,6 +319,19 @@ void string_remove_all_chars(char *str, char c)
    *write_ptr = '\0';
 }
 
+/* Replaces every instance of character 'find' in 'str'
+ * with character 'replace' */
+void string_replace_all_chars(char *str, char find, char replace)
+{
+   char *str_ptr = str;
+
+   if (string_is_empty(str))
+      return;
+
+   while((str_ptr = strchr(str_ptr, find)) != NULL)
+      *str_ptr++ = replace;
+}
+
 /* Converts string to unsigned integer.
  * Returns 0 if string is invalid  */
 unsigned string_to_unsigned(const char *str)
