@@ -27,7 +27,7 @@ uint32_t g_connector_id               = 0;
 int g_drm_fd                          = 0;
 uint32_t g_crtc_id                    = 0;
 
-static drmModeCrtc *g_orig_crtc       = NULL;
+drmModeCrtc *g_orig_crtc       = NULL;
 
 static drmModeRes *g_drm_resources    = NULL;
 drmModeConnector *g_drm_connector     = NULL;
