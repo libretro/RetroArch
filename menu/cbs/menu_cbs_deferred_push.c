@@ -648,7 +648,7 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
    unsigned i;
    typedef struct deferred_info_list 
    {
-      unsigned type;
+      enum msg_hash_enums type;
       int (*cb)(menu_displaylist_info_t *info);
    } deferred_info_list_t;
 
