@@ -23,7 +23,6 @@ extern "C" {
 #include <libavutil/imgutils.h>
 #include <libavutil/time.h>
 #include <libavutil/opt.h>
-#include <libavdevice/avdevice.h>
 #ifdef HAVE_SWRESAMPLE
 #include <libswresample/swresample.h>
 #endif
@@ -59,6 +58,11 @@ extern "C" {
 #ifndef PIX_FMT_RGB32
 #define PIX_FMT_RGB32 AV_PIX_FMT_RGB32
 #endif
+
+#define PRINT_VERSION(s) log_cb(RETRO_LOG_INFO, "[FFMPEG] lib%s version:\t%d.%d.%d\n", #s, \
+   s ##_version() >> 16 & 0xFF, \
+   s ##_version() >> 8 & 0xFF, \
+   s ##_version() & 0xFF);
 
 static bool reset_triggered;
 static void fallback_log(enum retro_log_level level, const char *fmt, ...)
@@ -327,6 +331,15 @@ void CORE_PREFIX(retro_set_video_refresh)(retro_video_refresh_t cb)
 void CORE_PREFIX(retro_reset)(void)
 {
    reset_triggered = true;
+}
+
+static void print_ffmpeg_version()
+{
+   PRINT_VERSION(avformat)
+   PRINT_VERSION(avcodec)
+   PRINT_VERSION(avutil)
+   PRINT_VERSION(swresample)
+   PRINT_VERSION(swscale)
 }
 
 static void check_variables(bool firststart)
@@ -1803,6 +1816,8 @@ bool CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
       log_cb(RETRO_LOG_ERROR, "[FFMPEG] Failed to open input: %s\n", av_err2str(ret));
       goto error;
    }
+
+   print_ffmpeg_version();
 
    if ((ret = avformat_find_stream_info(fctx, NULL)) < 0)
    {
