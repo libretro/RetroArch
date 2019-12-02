@@ -21,6 +21,7 @@
  */
 
 #include <file/file_path.h>
+#include <file/archive_file.h>
 #include <string/stdstring.h>
 #include <lists/dir_list.h>
 #include <retro_miscellaneous.h>
@@ -47,6 +48,7 @@ typedef struct
    char file_exts_custom[PATH_MAX_LENGTH];
    enum manual_content_scan_system_name_type system_name_type;
    enum manual_content_scan_core_type core_type;
+   bool search_archives;
    bool overwrite_playlist;
 } scan_settings_t;
 
@@ -70,6 +72,7 @@ static scan_settings_t scan_settings = {
    "",                                          /* file_exts_custom */
    MANUAL_CONTENT_SCAN_SYSTEM_NAME_CONTENT_DIR, /* system_name_type */
    MANUAL_CONTENT_SCAN_CORE_DETECT,             /* core_type */
+   false,                                       /* search_archives */
    false                                        /* overwrite_playlist */
 };
 
@@ -105,6 +108,13 @@ char *manual_content_scan_get_file_exts_custom_ptr(void)
 size_t manual_content_scan_get_file_exts_custom_size(void)
 {
    return sizeof(scan_settings.file_exts_custom);
+}
+
+/* Returns a pointer to the internal
+ * 'search_archives' bool */
+bool *manual_content_scan_get_search_archives_ptr(void)
+{
+   return &scan_settings.search_archives;
 }
 
 /* Returns a pointer to the internal
@@ -741,39 +751,27 @@ bool manual_content_scan_get_task_config(manual_content_scan_task_config_t *task
          return false;
    }
 
-   /* Get file extensions list
-    * > Note that compressed files are included by
-    *   default, regardless of extension filter
-    *   (since these can always be handled by the
-    *   frontend) */
-   task_config->include_compressed_content = true;
-
+   /* Get file extensions list */
    if (!string_is_empty(scan_settings.file_exts_custom))
-   {
       strlcpy(
             task_config->file_exts,
             scan_settings.file_exts_custom,
             sizeof(task_config->file_exts));
-
-      /* User has explicitly specified which file
-       * types are allowed - have to exclude compressed
-       * content when calling dir_list_new() */
-      task_config->include_compressed_content = false;
-   }
    else if (scan_settings.core_type == MANUAL_CONTENT_SCAN_CORE_SET)
-   {
       if (!string_is_empty(scan_settings.file_exts_core))
          strlcpy(
                task_config->file_exts,
                scan_settings.file_exts_core,
                sizeof(task_config->file_exts));
-   }
 
    /* Our extension lists are space delimited
     * > dir_list_new() expects vertical bar
     *   delimiters, so find and replace */
    if (!string_is_empty(task_config->file_exts))
       string_replace_all_chars(task_config->file_exts, ' ', '|');
+
+   /* Copy 'search inside archives' setting */
+   task_config->search_archives = scan_settings.search_archives;
 
    /* Copy 'overwrite playlist' setting */
    task_config->overwrite_playlist = scan_settings.overwrite_playlist;
@@ -789,6 +787,7 @@ struct string_list *manual_content_scan_get_content_list(manual_content_scan_tas
 {
    struct string_list *dir_list = NULL;
    bool filter_exts;
+   bool include_compressed;
 
    /* Sanity check */
    if (!task_config)
@@ -797,15 +796,30 @@ struct string_list *manual_content_scan_get_content_list(manual_content_scan_tas
    if (string_is_empty(task_config->content_dir))
       goto error;
 
+   /* Check whether files should be filtered by
+    * extension */
+   filter_exts = !string_is_empty(task_config->file_exts);
+
+   /* Check whether compressed files should be
+    * included in the directory list
+    * > If compressed files are already listed in
+    *   the 'file_exts' string, they will be included
+    *   automatically
+    * > If we don't have a 'file_exts' list, then all
+    *   files must be included regardless of type
+    * > If user has enabled 'search inside archives',
+    *   then compressed files must of course be included */
+   include_compressed = (!filter_exts || task_config->search_archives);
+
    /* Get directory listing
     * > Exclude directories and hidden files
     * > Scan recursively */
    dir_list = dir_list_new(
          task_config->content_dir,
-         string_is_empty(task_config->file_exts) ? NULL : task_config->file_exts,
+         filter_exts ? task_config->file_exts : NULL,
          false, /* include_dirs */
          false, /* include_hidden */
-         task_config->include_compressed_content,
+         include_compressed,
          true   /* recursive */
    );
 
@@ -830,22 +844,118 @@ error:
    return NULL;
 }
 
+/* Converts specified content path string to 'real'
+ * file path for use in playlists - i.e. handles
+ * identification of content *inside* archive files.
+ * Returns false if specified content is invalid. */
+static bool manual_content_scan_get_playlist_content_path(
+      manual_content_scan_task_config_t *task_config,
+      const char *content_path, int content_type,
+      char *playlist_content_path, size_t len)
+{
+   struct string_list *archive_list = NULL;
+
+   /* Sanity check */
+   if (!task_config || string_is_empty(content_path))
+      return false;
+
+   if (!path_is_valid(content_path))
+      return false;
+
+   /* In all cases, base content path must be
+    * copied to playlist_content_path */
+   strlcpy(playlist_content_path, content_path, len);
+
+   /* Check whether this is an archive file
+    * requiring special attention... */
+   if ((content_type == RARCH_COMPRESSED_ARCHIVE) &&
+       task_config->search_archives)
+   {
+      bool filter_exts         = !string_is_empty(task_config->file_exts);
+      const char *archive_file = NULL;
+
+      /* Important note:
+       * > If an archive file of a particular type is
+       *   included in the task_config->file_exts list,
+       *   dir_list_new() will assign it a file type of
+       *   RARCH_PLAIN_FILE
+       * > Thus we will only reach this point if
+       *   (a) We are not filtering by extension
+       *   (b) This is an archive file type *not*
+       *       already included in the supported
+       *       extensions list
+       * > These guarantees substantially reduce the
+       *   complexity of the following code... */
+
+      /* Get archive file contents */
+      archive_list = file_archive_get_file_list(
+            content_path, filter_exts ? task_config->file_exts : NULL);
+
+      if (!archive_list)
+         goto error;
+
+      if (archive_list->size < 1)
+         goto error;
+
+      /* Get first file contained in archive */
+      dir_list_sort(archive_list, true);
+      archive_file = archive_list->elems[0].data;
+      if (string_is_empty(archive_file))
+         goto error;
+
+      /* Have to take care to ensure that we don't make
+       * a mess of arcade content...
+       * > If we are filtering by extension, then the
+       *   archive file itself is *not* valid content,
+       *   so link to the first file inside the archive
+       * > If we are not filtering by extension, then:
+       *   - If archive contains one valid file, assume
+       *     it is a compressed ROM
+       *   - If archive contains multiple files, have to
+       *     assume it is MAME/FBA-style content, where
+       *     only the archive itself is valid */
+      if (filter_exts || (archive_list->size == 1))
+      {
+         /* Build path to file inside archive */
+         strlcat(playlist_content_path, "#", len);
+         strlcat(playlist_content_path, archive_file, len);
+      }
+
+      string_list_free(archive_list);
+   }
+
+   return true;
+
+error:
+   if (archive_list)
+      string_list_free(archive_list);
+   return false;
+}
+
 /* Adds specified content to playlist, if not already
  * present */
 void manual_content_scan_add_content_to_playlist(
       manual_content_scan_task_config_t *task_config,
-      playlist_t *playlist, const char *content_path)
+      playlist_t *playlist, const char *content_path,
+      int content_type)
 {
+   char playlist_content_path[PATH_MAX_LENGTH];
+
+   playlist_content_path[0] = '\0';
+
    /* Sanity check */
-   if (!task_config || !playlist || string_is_empty(content_path))
+   if (!task_config || !playlist)
       return;
 
-   if (!path_is_valid(content_path))
+   /* Get 'actual' content path */
+   if (!manual_content_scan_get_playlist_content_path(
+         task_config, content_path, content_type,
+         playlist_content_path, sizeof(playlist_content_path)))
       return;
 
    /* Check whether content is already included
     * in playlist */
-   if (!playlist_entry_exists(playlist, content_path))
+   if (!playlist_entry_exists(playlist, playlist_content_path))
    {
       struct playlist_entry entry = {0};
       char label[PATH_MAX_LENGTH];
@@ -854,7 +964,7 @@ void manual_content_scan_add_content_to_playlist(
 
       /* Get entry label */
       fill_short_pathname_representation(
-            label, content_path, sizeof(label));
+            label, playlist_content_path, sizeof(label));
 
       if (string_is_empty(label))
          return;
@@ -862,7 +972,7 @@ void manual_content_scan_add_content_to_playlist(
       /* Configure playlist entry
        * > The push function reads our entry as const,
        *   so these casts are safe */
-      entry.path      = (char*)content_path;
+      entry.path      = (char*)playlist_content_path;
       entry.label     = label;
       entry.core_path = (char*)"DETECT";
       entry.core_name = (char*)"DETECT";

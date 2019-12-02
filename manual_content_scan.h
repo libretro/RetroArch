@@ -66,8 +66,8 @@ typedef struct
    char core_path[PATH_MAX_LENGTH];
    char file_exts[PATH_MAX_LENGTH];
    bool core_set;
+   bool search_archives;
    bool overwrite_playlist;
-   bool include_compressed_content;
 } manual_content_scan_task_config_t;
 
 /*****************/
@@ -95,6 +95,10 @@ char *manual_content_scan_get_file_exts_custom_ptr(void);
 /* Returns size of the internal
  * 'file_exts_custom' string */
 size_t manual_content_scan_get_file_exts_custom_size(void);
+
+/* Returns a pointer to the internal
+ * 'search_archives' bool */
+bool *manual_content_scan_get_search_archives_ptr(void);
 
 /* Returns a pointer to the internal
  * 'overwrite_playlist' bool */
@@ -194,7 +198,8 @@ struct string_list *manual_content_scan_get_content_list(manual_content_scan_tas
  * present */
 void manual_content_scan_add_content_to_playlist(
       manual_content_scan_task_config_t *task_config,
-      playlist_t *playlist, const char *content_path);
+      playlist_t *playlist, const char *content_path,
+      int content_type);
 
 RETRO_END_DECLS
 

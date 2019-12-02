@@ -2,6 +2,7 @@
  *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2014-2017 - Jean-André Santoni
  *  Copyright (C) 2016-2019 - Brad Parker
+ *  Copyright (C)      2019 - James Leaver
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -145,6 +146,8 @@ static void task_manual_content_scan_handler(retro_task_t *task)
          {
             const char *content_path =
                   manual_scan->content_list->elems[manual_scan->list_index].data;
+            int content_type         =
+                  manual_scan->content_list->elems[manual_scan->list_index].attr.i;
 
             if (!string_is_empty(content_path))
             {
@@ -169,7 +172,7 @@ static void task_manual_content_scan_handler(retro_task_t *task)
                /* Add content to playlist */
                manual_content_scan_add_content_to_playlist(
                      manual_scan->task_config, manual_scan->playlist,
-                     content_path);
+                     content_path, content_type);
             }
 
             /* Increment content index */

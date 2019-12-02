@@ -10089,6 +10089,14 @@ MSG_HASH(
     "Space-delimited list of file types to include in the scan. If empty, includes all files - or if a core is specified, all files supported by the core."
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SEARCH_ARCHIVES,
+    "Scan Inside Archives"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_SEARCH_ARCHIVES,
+    "When enabled, archive files (.zip, .7z, etc.) will be searched for valid/supported content. May have a significant impact on scan performance."
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_OVERWRITE,
     "Overwrite Existing Playlist"
     )
