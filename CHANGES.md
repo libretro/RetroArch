@@ -5,7 +5,7 @@
 - CHEEVOS: Prevent loading state while achievements are still being fetched from server
 - CHEEVOS: Pause hardcore if core doesn't support achievements
 - FFMPEG CORE: Hardware accelerated video decoding
-- FFMPEG CORE: Implement send/receive encoding API
+- FFMPEG CORE: Implement send/receive encoding API, will allow for hardware accelerated AMD video encoding
 - LOCALIZATION: Update Italian translation
 - LOCALIZATION: Update French translation
 - LOCALIZATION: Update Polish translation
