@@ -1326,6 +1326,7 @@ void menu_widgets_frame(video_frame_info_t *video_info)
 {
    size_t i;
    int top_right_x_advance = video_info->width;
+   int scissor_me_timbers = 0;
 
    settings_t *settings = config_get_ptr();
 
@@ -1520,7 +1521,8 @@ void menu_widgets_frame(video_frame_info_t *video_info)
                video_info->width, video_info->height, 0, 1, menu_widgets_pure_white);
       }
 
-      if (cheevo_unfold != 1.0f)
+      scissor_me_timbers = (fabs(cheevo_unfold - 1.0f) > 0.01); /* I _think_ cheevo_unfold changes in another thread */
+      if (scissor_me_timbers)
       {
          menu_display_scissor_begin(video_info,
             cheevo_height, 0,
@@ -1557,7 +1559,7 @@ void menu_widgets_frame(video_frame_info_t *video_info)
          1, false, 0, true
       );
 
-      if (cheevo_unfold != 1.0f)
+      if (scissor_me_timbers)
       {
          font_driver_flush(video_info->width, video_info->height, font_regular, video_info);
          font_raster_regular.carr.coords.vertices  = 0;
