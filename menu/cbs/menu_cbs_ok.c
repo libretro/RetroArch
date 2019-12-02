@@ -349,7 +349,10 @@ int generic_action_ok_displaylist_push(const char *path,
    char                  *menu_driver      = settings->arrays.menu_driver;
 
    if (!menu || string_is_equal(menu_driver, "null"))
-      goto end;
+   {
+      menu_displaylist_info_free(&info);
+      return menu_cbs_exit();
+   }
 
 #ifdef HAVE_AUDIOMIXER
    if (settings->bools.audio_enable_menu && settings->bools.audio_enable_menu_ok)
@@ -705,13 +708,6 @@ int generic_action_ok_displaylist_push(const char *path,
          }
          break;
       case ACTION_OK_DL_CHEAT_FILE:
-         filebrowser_clear_type();
-         info.type          = type;
-         info.directory_ptr = idx;
-         info_path          = settings->paths.path_cheat_database;
-         info_label         = label;
-         dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
-         break;
       case ACTION_OK_DL_CHEAT_FILE_APPEND:
          filebrowser_clear_type();
          info.type          = type;
@@ -852,7 +848,7 @@ int generic_action_ok_displaylist_push(const char *path,
             info_label         = msg_hash_to_str(
                   MENU_ENUM_LABEL_DEFERRED_DATABASE_MANAGER_LIST);
             info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_DATABASE_MANAGER_LIST;
-            dl_type                 = DISPLAYLIST_GENERIC;
+            dl_type            = DISPLAYLIST_GENERIC;
          }
          break;
       case ACTION_OK_DL_CURSOR_MANAGER_LIST:
@@ -865,8 +861,9 @@ int generic_action_ok_displaylist_push(const char *path,
          info_label         = msg_hash_to_str(
                MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST);
          info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST;
-         dl_type                 = DISPLAYLIST_GENERIC;
+         dl_type            = DISPLAYLIST_GENERIC;
          break;
+         /* Pending clear */
       case ACTION_OK_DL_CORE_UPDATER_LIST:
          info.type          = type;
          info.directory_ptr = idx;
@@ -894,17 +891,6 @@ int generic_action_ok_displaylist_push(const char *path,
          info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_PL_THUMBNAILS_UPDATER_LIST;
          dl_type            = DISPLAYLIST_PENDING_CLEAR;
          break;
-      case ACTION_OK_DL_CORE_CONTENT_DIRS_SUBDIR_LIST:
-         fill_pathname_join_delim(tmp, path, label, ';',
-               sizeof(tmp));
-         info.type          = type;
-         info.directory_ptr = idx;
-         info_path          = tmp;
-         info_label         = msg_hash_to_str(
-               MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_DIRS_SUBDIR_LIST);
-         info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_DIRS_SUBDIR_LIST;
-         dl_type            = DISPLAYLIST_GENERIC;
-         break;
       case ACTION_OK_DL_CORE_CONTENT_DIRS_LIST:
          info.type          = type;
          info.directory_ptr = idx;
@@ -930,6 +916,18 @@ int generic_action_ok_displaylist_push(const char *path,
          info_label         = msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_LAKKA_LIST);
          info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_LAKKA_LIST;
          dl_type            = DISPLAYLIST_PENDING_CLEAR;
+         break;
+
+      case ACTION_OK_DL_CORE_CONTENT_DIRS_SUBDIR_LIST:
+         fill_pathname_join_delim(tmp, path, label, ';',
+               sizeof(tmp));
+         info.type          = type;
+         info.directory_ptr = idx;
+         info_path          = tmp;
+         info_label         = msg_hash_to_str(
+               MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_DIRS_SUBDIR_LIST);
+         info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_DIRS_SUBDIR_LIST;
+         dl_type            = DISPLAYLIST_GENERIC;
          break;
       case ACTION_OK_DL_DEFERRED_CORE_LIST:
          info.directory_ptr = idx;
@@ -965,15 +963,13 @@ int generic_action_ok_displaylist_push(const char *path,
             setting->max = (int) pow(2,pow((double) 2,cheat_manager_state.working_cheat.memory_search_size))-1;
          setting = menu_setting_find_enum(MENU_ENUM_LABEL_CHEAT_ADDRESS_BIT_POSITION);
          if (setting)
-       {
+         {
             int max_bit_position = cheat_manager_state.working_cheat.memory_search_size<3 ? 7 : 0 ;
             setting->max = max_bit_position ;
          }
          setting = menu_setting_find_enum(MENU_ENUM_LABEL_CHEAT_ADDRESS);
          if (setting)
-         {
             cheat_manager_state.browse_address = *setting->value.target.unsigned_integer ;
-         }
          action_ok_dl_lbl(action_ok_dl_to_enum(action_type), DISPLAYLIST_GENERIC);
          break ;
       }
@@ -992,6 +988,12 @@ int generic_action_ok_displaylist_push(const char *path,
          break ;
       }
       case ACTION_OK_DL_MIXER_STREAM_SETTINGS_LIST:
+      {
+         unsigned player_no = type - MENU_SETTINGS_AUDIO_MIXER_STREAM_BEGIN;
+         action_ok_dl_lbl(action_ok_dl_to_enum(action_type), DISPLAYLIST_GENERIC);
+         info.type          = MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_BEGIN + player_no;
+      }
+         break;
       case ACTION_OK_DL_ACCOUNTS_LIST:
       case ACTION_OK_DL_INPUT_SETTINGS_LIST:
       case ACTION_OK_DL_LATENCY_SETTINGS_LIST:
@@ -1071,20 +1073,6 @@ int generic_action_ok_displaylist_push(const char *path,
          break;
    }
 
-   /* second pass */
-
-   switch (action_type)
-   {
-      case ACTION_OK_DL_MIXER_STREAM_SETTINGS_LIST:
-         {
-            unsigned player_no = type - MENU_SETTINGS_AUDIO_MIXER_STREAM_BEGIN;
-            info.type          = MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_BEGIN + player_no;
-         }
-         break;
-      default:
-         break;
-   }
-
    if (info_label)
       info.label = strdup(info_label);
    if (info_path)
@@ -1099,7 +1087,6 @@ int generic_action_ok_displaylist_push(const char *path,
       }
    }
 
-end:
    menu_displaylist_info_free(&info);
    return menu_cbs_exit();
 }
@@ -5427,15 +5414,6 @@ static int action_ok_push_dropdown_setting_uint_item(const char *path,
 
    value = (unsigned)(idx + setting->offset_by);
 
-#if 0
-   if (!string_is_empty(path))
-   {
-      unsigned path_value = atoi(path);
-      if (path_value != value)
-         value = path_value;
-   }
-#endif
-
    *setting->value.target.unsigned_integer = value;
 
    if (setting->change_handler)
@@ -5578,6 +5556,7 @@ static int action_ok_push_dropdown_item_playlist_default_core(const char *path,
    return action_cancel_pop_default(NULL, NULL, 0, 0);
 }
 
+
 static int action_ok_push_dropdown_item_playlist_label_display_mode(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -5591,32 +5570,29 @@ static int action_ok_push_dropdown_item_playlist_label_display_mode(const char *
    return action_cancel_pop_default(NULL, NULL, 0, 0);
 }
 
-static int action_ok_push_dropdown_item_playlist_right_thumbnail_mode(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
+static int generic_set_thumbnail_mode(enum playlist_thumbnail_id thumbnail_id, size_t idx)
 {
    playlist_t *playlist = playlist_get_cached();
 
    if (!playlist)
       return -1;
 
-   playlist_set_thumbnail_mode(playlist, PLAYLIST_THUMBNAIL_RIGHT, (enum playlist_thumbnail_mode)idx);
+   playlist_set_thumbnail_mode(playlist, thumbnail_id, (enum playlist_thumbnail_mode)idx);
    playlist_write_file(playlist);
 
    return action_cancel_pop_default(NULL, NULL, 0, 0);
 }
 
+static int action_ok_push_dropdown_item_playlist_right_thumbnail_mode(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return generic_set_thumbnail_mode(PLAYLIST_THUMBNAIL_RIGHT, idx);
+}
+
 static int action_ok_push_dropdown_item_playlist_left_thumbnail_mode(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   playlist_t *playlist = playlist_get_cached();
-
-   if (!playlist)
-      return -1;
-
-   playlist_set_thumbnail_mode(playlist, PLAYLIST_THUMBNAIL_LEFT, (enum playlist_thumbnail_mode)idx);
-   playlist_write_file(playlist);
-
-   return action_cancel_pop_default(NULL, NULL, 0, 0);
+   return generic_set_thumbnail_mode(PLAYLIST_THUMBNAIL_LEFT, idx);
 }
 
 static int action_ok_push_dropdown_item_manual_content_scan_system_name(const char *path,
@@ -5808,6 +5784,15 @@ default_action_ok_help(action_ok_help_scanning_content, MENU_ENUM_LABEL_HELP_SCA
 default_action_ok_help(action_ok_help_change_virtual_gamepad, MENU_ENUM_LABEL_HELP_CHANGE_VIRTUAL_GAMEPAD, MENU_DIALOG_HELP_CHANGE_VIRTUAL_GAMEPAD)
 default_action_ok_help(action_ok_help_load_content, MENU_ENUM_LABEL_HELP_LOADING_CONTENT, MENU_DIALOG_HELP_LOADING_CONTENT)
 
+static int generic_dropdown_box_list(size_t idx, unsigned lbl)
+{
+   generic_action_ok_displaylist_push(
+         NULL,
+         NULL, NULL, 0, idx, 0,
+         lbl);
+   return 0;
+}
+
 static int action_ok_video_resolution(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -5835,74 +5820,54 @@ static int action_ok_video_resolution(const char *path,
                width, height);
       runloop_msg_queue_push(msg, 1, 100, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }
-#else
-   generic_action_ok_displaylist_push(
-         NULL,
-         NULL, NULL, 0, idx, 0,
-         ACTION_OK_DL_DROPDOWN_BOX_LIST_RESOLUTION);
-#endif
 
    return 0;
+#else
+   return generic_dropdown_box_list(idx,
+         ACTION_OK_DL_DROPDOWN_BOX_LIST_RESOLUTION);
+#endif
 }
 
 static int action_ok_playlist_default_core(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   generic_action_ok_displaylist_push(
-         NULL,
-         NULL, NULL, 0, idx, 0,
+   return generic_dropdown_box_list(idx, 
          ACTION_OK_DL_DROPDOWN_BOX_LIST_PLAYLIST_DEFAULT_CORE);
-   return 0;
 }
 
 static int action_ok_playlist_label_display_mode(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   generic_action_ok_displaylist_push(
-         NULL,
-         NULL, NULL, 0, idx, 0,
+   return generic_dropdown_box_list(idx, 
          ACTION_OK_DL_DROPDOWN_BOX_LIST_PLAYLIST_LABEL_DISPLAY_MODE);
-   return 0;
 }
 
 static int action_ok_playlist_right_thumbnail_mode(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   generic_action_ok_displaylist_push(
-         NULL,
-         NULL, NULL, 0, idx, 0,
+   return generic_dropdown_box_list(idx, 
          ACTION_OK_DL_DROPDOWN_BOX_LIST_PLAYLIST_RIGHT_THUMBNAIL_MODE);
-   return 0;
 }
 
 static int action_ok_playlist_left_thumbnail_mode(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   generic_action_ok_displaylist_push(
-         NULL,
-         NULL, NULL, 0, idx, 0,
+   return generic_dropdown_box_list(idx, 
          ACTION_OK_DL_DROPDOWN_BOX_LIST_PLAYLIST_LEFT_THUMBNAIL_MODE);
-   return 0;
 }
 
 static int action_ok_manual_content_scan_system_name(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   generic_action_ok_displaylist_push(
-         NULL,
-         NULL, NULL, 0, idx, 0,
+   return generic_dropdown_box_list(idx, 
          ACTION_OK_DL_DROPDOWN_BOX_LIST_MANUAL_CONTENT_SCAN_SYSTEM_NAME);
-   return 0;
 }
 
 static int action_ok_manual_content_scan_core_name(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   generic_action_ok_displaylist_push(
-         NULL,
-         NULL, NULL, 0, idx, 0,
+   return generic_dropdown_box_list(idx, 
          ACTION_OK_DL_DROPDOWN_BOX_LIST_MANUAL_CONTENT_SCAN_CORE_NAME);
-   return 0;
 }
 
 static int action_ok_manual_content_scan_start(const char *path,
