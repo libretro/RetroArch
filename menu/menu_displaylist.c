@@ -1786,7 +1786,7 @@ static int menu_displaylist_parse_load_content_settings(
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RESUME_CONTENT),
                msg_hash_to_str(MENU_ENUM_LABEL_RESUME_CONTENT),
                MENU_ENUM_LABEL_RESUME_CONTENT,
-               MENU_SETTING_ACTION_RUN, 0, 0) == 0)
+               MENU_SETTING_ACTION_RUN, 0, 0))
             count++;
 
       if (settings->bools.quick_menu_show_restart_content)
@@ -1794,7 +1794,7 @@ static int menu_displaylist_parse_load_content_settings(
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RESTART_CONTENT),
                msg_hash_to_str(MENU_ENUM_LABEL_RESTART_CONTENT),
                MENU_ENUM_LABEL_RESTART_CONTENT,
-               MENU_SETTING_ACTION_RUN, 0, 0) == 0)
+               MENU_SETTING_ACTION_RUN, 0, 0))
             count++;
 
       if (settings->bools.quick_menu_show_close_content)
@@ -1802,7 +1802,7 @@ static int menu_displaylist_parse_load_content_settings(
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT),
                msg_hash_to_str(MENU_ENUM_LABEL_CLOSE_CONTENT),
                MENU_ENUM_LABEL_CLOSE_CONTENT,
-               MENU_SETTING_ACTION_CLOSE, 0, 0) == 0)
+               MENU_SETTING_ACTION_CLOSE, 0, 0))
             count++;
 
       if (settings->bools.quick_menu_show_take_screenshot)
@@ -1811,7 +1811,7 @@ static int menu_displaylist_parse_load_content_settings(
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT),
                msg_hash_to_str(MENU_ENUM_LABEL_TAKE_SCREENSHOT),
                MENU_ENUM_LABEL_TAKE_SCREENSHOT,
-               MENU_SETTING_ACTION_SCREENSHOT, 0, 0) == 0)
+               MENU_SETTING_ACTION_SCREENSHOT, 0, 0))
             count++;
       }
 
@@ -1825,7 +1825,7 @@ static int menu_displaylist_parse_load_content_settings(
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVE_STATE),
                msg_hash_to_str(MENU_ENUM_LABEL_SAVE_STATE),
                MENU_ENUM_LABEL_SAVE_STATE,
-               MENU_SETTING_ACTION_SAVESTATE, 0, 0) == 0)
+               MENU_SETTING_ACTION_SAVESTATE, 0, 0))
             count++;
 
 #ifdef HAVE_CHEEVOS
@@ -1836,7 +1836,7 @@ static int menu_displaylist_parse_load_content_settings(
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LOAD_STATE),
                   msg_hash_to_str(MENU_ENUM_LABEL_LOAD_STATE),
                   MENU_ENUM_LABEL_LOAD_STATE,
-                  MENU_SETTING_ACTION_LOADSTATE, 0, 0) == 0)
+                  MENU_SETTING_ACTION_LOADSTATE, 0, 0))
                count++;
          }
       }
@@ -1852,7 +1852,7 @@ static int menu_displaylist_parse_load_content_settings(
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNDO_LOAD_STATE),
                   msg_hash_to_str(MENU_ENUM_LABEL_UNDO_LOAD_STATE),
                   MENU_ENUM_LABEL_UNDO_LOAD_STATE,
-                  MENU_SETTING_ACTION_LOADSTATE, 0, 0) == 0)
+                  MENU_SETTING_ACTION_LOADSTATE, 0, 0))
                count++;
          }
 
@@ -1860,7 +1860,7 @@ static int menu_displaylist_parse_load_content_settings(
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNDO_SAVE_STATE),
                msg_hash_to_str(MENU_ENUM_LABEL_UNDO_SAVE_STATE),
                MENU_ENUM_LABEL_UNDO_SAVE_STATE,
-               MENU_SETTING_ACTION_LOADSTATE, 0, 0) == 0)
+               MENU_SETTING_ACTION_LOADSTATE, 0, 0))
             count++;
       }
 
@@ -1869,7 +1869,7 @@ static int menu_displaylist_parse_load_content_settings(
          if (menu_entries_append_enum(list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES),
                msg_hash_to_str(MENU_ENUM_LABEL_ADD_TO_FAVORITES),
-               MENU_ENUM_LABEL_ADD_TO_FAVORITES, FILE_TYPE_PLAYLIST_ENTRY, 0, 0) == 0)
+               MENU_ENUM_LABEL_ADD_TO_FAVORITES, FILE_TYPE_PLAYLIST_ENTRY, 0, 0) )
             count++;
       }
 
@@ -1882,7 +1882,7 @@ static int menu_displaylist_parse_load_content_settings(
                if (menu_entries_append_enum(list,
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QUICK_MENU_START_RECORDING),
                      msg_hash_to_str(MENU_ENUM_LABEL_QUICK_MENU_START_RECORDING),
-                     MENU_ENUM_LABEL_QUICK_MENU_START_RECORDING, MENU_SETTING_ACTION, 0, 0) == 0)
+                     MENU_ENUM_LABEL_QUICK_MENU_START_RECORDING, MENU_SETTING_ACTION, 0, 0))
                   count++;
             }
 
@@ -1891,7 +1891,7 @@ static int menu_displaylist_parse_load_content_settings(
                if (menu_entries_append_enum(list,
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QUICK_MENU_START_STREAMING),
                      msg_hash_to_str(MENU_ENUM_LABEL_QUICK_MENU_START_STREAMING),
-                     MENU_ENUM_LABEL_QUICK_MENU_START_STREAMING, MENU_SETTING_ACTION, 0, 0) == 0)
+                     MENU_ENUM_LABEL_QUICK_MENU_START_STREAMING, MENU_SETTING_ACTION, 0, 0))
                   count++;
             }
          }
@@ -1902,7 +1902,7 @@ static int menu_displaylist_parse_load_content_settings(
                if (menu_entries_append_enum(list,
                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QUICK_MENU_STOP_STREAMING),
                         msg_hash_to_str(MENU_ENUM_LABEL_QUICK_MENU_STOP_STREAMING),
-                        MENU_ENUM_LABEL_QUICK_MENU_STOP_STREAMING, MENU_SETTING_ACTION, 0, 0) == 0)
+                        MENU_ENUM_LABEL_QUICK_MENU_STOP_STREAMING, MENU_SETTING_ACTION, 0, 0))
                   count++;
             }
             else
@@ -1910,7 +1910,7 @@ static int menu_displaylist_parse_load_content_settings(
                if (menu_entries_append_enum(list,
                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QUICK_MENU_STOP_RECORDING),
                         msg_hash_to_str(MENU_ENUM_LABEL_QUICK_MENU_STOP_RECORDING),
-                        MENU_ENUM_LABEL_QUICK_MENU_STOP_RECORDING, MENU_SETTING_ACTION, 0, 0) == 0)
+                        MENU_ENUM_LABEL_QUICK_MENU_STOP_RECORDING, MENU_SETTING_ACTION, 0, 0))
                   count++;
             }
          }
@@ -1922,7 +1922,7 @@ static int menu_displaylist_parse_load_content_settings(
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_OPTIONS),
                msg_hash_to_str(MENU_ENUM_LABEL_CORE_OPTIONS),
                MENU_ENUM_LABEL_CORE_OPTIONS,
-               MENU_SETTING_ACTION, 0, 0) == 0)
+               MENU_SETTING_ACTION, 0, 0))
             count++;
       }
 
@@ -1932,7 +1932,7 @@ static int menu_displaylist_parse_load_content_settings(
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ONSCREEN_OVERLAY_SETTINGS),
                msg_hash_to_str(MENU_ENUM_LABEL_ONSCREEN_OVERLAY_SETTINGS),
                MENU_ENUM_LABEL_ONSCREEN_OVERLAY_SETTINGS,
-               MENU_SETTING_ACTION, 0, 0) == 0)
+               MENU_SETTING_ACTION, 0, 0))
             count++;
       }
 
@@ -1943,7 +1943,7 @@ static int menu_displaylist_parse_load_content_settings(
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ONSCREEN_VIDEO_LAYOUT_SETTINGS),
                msg_hash_to_str(MENU_ENUM_LABEL_ONSCREEN_VIDEO_LAYOUT_SETTINGS),
                MENU_ENUM_LABEL_ONSCREEN_VIDEO_LAYOUT_SETTINGS,
-               MENU_SETTING_ACTION, 0, 0) == 0)
+               MENU_SETTING_ACTION, 0, 0))
             count++;
       }
 #endif
@@ -1954,7 +1954,7 @@ static int menu_displaylist_parse_load_content_settings(
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REWIND_SETTINGS),
                msg_hash_to_str(MENU_ENUM_LABEL_REWIND_SETTINGS),
                MENU_ENUM_LABEL_REWIND_SETTINGS,
-               MENU_SETTING_ACTION, 0, 0) == 0)
+               MENU_SETTING_ACTION, 0, 0))
             count++;
       }
 
@@ -1964,7 +1964,7 @@ static int menu_displaylist_parse_load_content_settings(
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LATENCY_SETTINGS),
                msg_hash_to_str(MENU_ENUM_LABEL_LATENCY_SETTINGS),
                MENU_ENUM_LABEL_LATENCY_SETTINGS,
-               MENU_SETTING_ACTION, 0, 0) == 0)
+               MENU_SETTING_ACTION, 0, 0))
             count++;
       }
 
@@ -1973,7 +1973,7 @@ static int menu_displaylist_parse_load_content_settings(
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_SETTINGS),
             msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_SETTINGS),
             MENU_ENUM_LABEL_NETPLAY_SETTINGS,
-            MENU_SETTING_ACTION, 0, 0) == 0)
+            MENU_SETTING_ACTION, 0, 0))
          count++;
 #endif
 
@@ -1983,7 +1983,7 @@ static int menu_displaylist_parse_load_content_settings(
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS),
                msg_hash_to_str(MENU_ENUM_LABEL_CORE_INPUT_REMAPPING_OPTIONS),
                MENU_ENUM_LABEL_CORE_INPUT_REMAPPING_OPTIONS,
-               MENU_SETTING_ACTION, 0, 0) == 0)
+               MENU_SETTING_ACTION, 0, 0))
             count++;
       }
 
@@ -1993,7 +1993,7 @@ static int menu_displaylist_parse_load_content_settings(
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_CHEAT_OPTIONS),
                msg_hash_to_str(MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS),
                MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS,
-               MENU_SETTING_ACTION, 0, 0) == 0)
+               MENU_SETTING_ACTION, 0, 0))
             count++;
       }
 
@@ -2003,7 +2003,7 @@ static int menu_displaylist_parse_load_content_settings(
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISK_OPTIONS),
                msg_hash_to_str(MENU_ENUM_LABEL_DISK_OPTIONS),
                MENU_ENUM_LABEL_DISK_OPTIONS,
-               MENU_SETTING_ACTION_CORE_DISK_OPTIONS, 0, 0) == 0)
+               MENU_SETTING_ACTION_CORE_DISK_OPTIONS, 0, 0))
             count++;
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
@@ -2015,7 +2015,7 @@ static int menu_displaylist_parse_load_content_settings(
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SHADER_OPTIONS),
                   msg_hash_to_str(MENU_ENUM_LABEL_SHADER_OPTIONS),
                   MENU_ENUM_LABEL_SHADER_OPTIONS,
-                  MENU_SETTING_ACTION, 0, 0) == 0)
+                  MENU_SETTING_ACTION, 0, 0))
                count++;
          }
       }
@@ -2029,7 +2029,7 @@ static int menu_displaylist_parse_load_content_settings(
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QUICK_MENU_OVERRIDE_OPTIONS),
             msg_hash_to_str(MENU_ENUM_LABEL_QUICK_MENU_OVERRIDE_OPTIONS),
             MENU_ENUM_LABEL_QUICK_MENU_OVERRIDE_OPTIONS,
-            MENU_SETTING_ACTION, 0, 0) == 0)
+            MENU_SETTING_ACTION, 0, 0))
             count++;
       }
 
@@ -2040,7 +2040,7 @@ static int menu_displaylist_parse_load_content_settings(
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST),
             msg_hash_to_str(MENU_ENUM_LABEL_ACHIEVEMENT_LIST),
             MENU_ENUM_LABEL_ACHIEVEMENT_LIST,
-            MENU_SETTING_ACTION, 0, 0) == 0)
+            MENU_SETTING_ACTION, 0, 0))
             count++;
       }
 #endif
@@ -2051,7 +2051,7 @@ static int menu_displaylist_parse_load_content_settings(
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INFORMATION),
                msg_hash_to_str(MENU_ENUM_LABEL_INFORMATION),
                MENU_ENUM_LABEL_INFORMATION,
-               MENU_SETTING_ACTION, 0, 0) == 0)
+               MENU_SETTING_ACTION, 0, 0))
             count++;
       }
    }
