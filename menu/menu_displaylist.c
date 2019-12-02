@@ -5857,121 +5857,114 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   {
                      char title[256];
 
-                     count++;
-
                      title[0] = '\0';
 
                      strlcpy(title, "Title: ", sizeof(title));
                      strlcat(title, cd_info.title, sizeof(title));
 
-                     menu_entries_append_enum(info->list,
+                     if (menu_entries_append_enum(info->list,
                            title,
                            "",
                            MSG_UNKNOWN,
-                           FILE_TYPE_NONE, 0, 0);
+                           FILE_TYPE_NONE, 0, 0))
+                        count++;
                   }
 
                   if (!string_is_empty(cd_info.system))
                   {
                      char system[256];
 
-                     count++;
-
                      system[0] = '\0';
 
                      strlcpy(system, "System: ", sizeof(system));
                      strlcat(system, cd_info.system, sizeof(system));
 
-                     menu_entries_append_enum(info->list,
+                     if (menu_entries_append_enum(info->list,
                            system,
                            "",
                            MSG_UNKNOWN,
-                           FILE_TYPE_NONE, 0, 0);
+                           FILE_TYPE_NONE, 0, 0))
+                        count++;
                   }
 
                   if (!string_is_empty(cd_info.serial))
                   {
                      char serial[256];
 
-                     count++;
-
                      serial[0] = '\0';
 
                      strlcpy(serial, "Serial#: ", sizeof(serial));
                      strlcat(serial, cd_info.serial, sizeof(serial));
 
-                     menu_entries_append_enum(info->list,
+                     if (menu_entries_append_enum(info->list,
                            serial,
                            "",
                            MSG_UNKNOWN,
-                           FILE_TYPE_NONE, 0, 0);
+                           FILE_TYPE_NONE, 0, 0))
+                        count++;
                   }
 
                   if (!string_is_empty(cd_info.version))
                   {
                      char version[256];
 
-                     count++;
-
                      version[0] = '\0';
 
                      strlcpy(version, "Version: ", sizeof(version));
                      strlcat(version, cd_info.version, sizeof(version));
 
-                     menu_entries_append_enum(info->list,
+                     if (menu_entries_append_enum(info->list,
                            version,
                            "",
                            MSG_UNKNOWN,
-                           FILE_TYPE_NONE, 0, 0);
+                           FILE_TYPE_NONE, 0, 0))
+                        count++;
                   }
 
                   if (!string_is_empty(cd_info.release_date))
                   {
                      char release_date[256];
 
-                     count++;
-
                      release_date[0] = '\0';
 
                      strlcpy(release_date, "Release Date: ", sizeof(release_date));
                      strlcat(release_date, cd_info.release_date, sizeof(release_date));
 
-                     menu_entries_append_enum(info->list,
+                     if (menu_entries_append_enum(info->list,
                            release_date,
                            "",
                            MSG_UNKNOWN,
-                           FILE_TYPE_NONE, 0, 0);
+                           FILE_TYPE_NONE, 0, 0))
+                        count++;
                   }
 
                   {
                      char atip_string[32] = {"Genuine Disc: "};
-
-                     count++;
 
                      if (atip)
                         strlcat(atip_string, "No", sizeof(atip_string));
                      else
                         strlcat(atip_string, "Yes", sizeof(atip_string));
 
-                     menu_entries_append_enum(info->list,
+                     if (menu_entries_append_enum(info->list,
                            atip_string,
                            "",
                            MSG_UNKNOWN,
-                           FILE_TYPE_NONE, 0, 0);
+                           FILE_TYPE_NONE, 0, 0))
+                        count++;
                   }
 
                   {
                      char tracks_string[32] = {"Number of tracks: "};
 
-                     count++;
-
                      snprintf(tracks_string + strlen(tracks_string), sizeof(tracks_string) - strlen(tracks_string), "%d", toc->num_tracks);
 
-                     menu_entries_append_enum(info->list,
+                     if (menu_entries_append_enum(info->list,
                            tracks_string,
                            "",
                            MSG_UNKNOWN,
-                           FILE_TYPE_NONE, 0, 0);
+                           FILE_TYPE_NONE, 0, 0))
+                        count++;
                   }
 
                   {
@@ -5986,36 +5979,33 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                         snprintf(track_string + strlen(track_string), sizeof(track_string) - strlen(track_string), "%d:", i + 1);
 
-                        count++;
-
-                        menu_entries_append_enum(info->list,
+                        if (menu_entries_append_enum(info->list,
                               track_string,
                               "",
                               MSG_UNKNOWN,
-                              FILE_TYPE_NONE, 0, 0);
+                              FILE_TYPE_NONE, 0, 0))
+                           count++;
 
                         if (toc->track[i].audio)
                            snprintf(mode_string + strlen(mode_string), sizeof(mode_string) - strlen(mode_string), "Audio");
                         else
                            snprintf(mode_string + strlen(mode_string), sizeof(mode_string) - strlen(mode_string), "Mode %d", toc->track[i].mode);
 
-                        count++;
-
-                        menu_entries_append_enum(info->list,
+                        if (menu_entries_append_enum(info->list,
                               mode_string,
                               "",
                               MSG_UNKNOWN,
-                              FILE_TYPE_NONE, 0, 0);
+                              FILE_TYPE_NONE, 0, 0))
+                           count++;
 
                         snprintf(size_string + strlen(size_string), sizeof(size_string) - strlen(size_string), "%.1f MB", toc->track[i].track_bytes / 1000.0 / 1000.0);
 
-                        count++;
-
-                        menu_entries_append_enum(info->list,
+                        if (menu_entries_append_enum(info->list,
                               size_string,
                               "",
                               MSG_UNKNOWN,
-                              FILE_TYPE_NONE, 0, 0);
+                              FILE_TYPE_NONE, 0, 0))
+                           count++;
 
                         {
                            unsigned char min = 0;
@@ -6026,13 +6016,12 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                            snprintf(length_string + strlen(length_string), sizeof(length_string) - strlen(length_string), "%02d:%02d.%02d", min, sec, frame);
 
-                           count++;
-
-                           menu_entries_append_enum(info->list,
+                           if (menu_entries_append_enum(info->list,
                                  length_string,
                                  "",
                                  MSG_UNKNOWN,
-                                 FILE_TYPE_NONE, 0, 0);
+                                 FILE_TYPE_NONE, 0, 0))
+                              count++;
                         }
                      }
                   }
@@ -6108,9 +6097,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          snprintf(text, sizeof(text), "Current profile : %s", current_profile);
 #else
          u32 currentClock = 0;
-         if(hosversionBefore(8, 0, 0)) {
+         if(hosversionBefore(8, 0, 0))
             pcvGetClockRate(PcvModule_CpuBus, &currentClock);
-         } else {
+         else
+         {
             ClkrstSession session = {0};
             clkrstOpenSession(&session, PcvModuleId_CpuBus, 3);
             clkrstGetClockRate(&session, &currentClock);
@@ -6118,11 +6108,12 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          }
          snprintf(text, sizeof(text), "Current Clock : %i", currentClock);
 #endif
-         menu_entries_append_enum(info->list,
+         if (menu_entries_append_enum(info->list,
             text,
             "",
             0,
-            MENU_INFO_MESSAGE, 0, 0);
+            MENU_INFO_MESSAGE, 0, 0))
+            count++;
 
          for (i = 0; i < profiles_count; i++)
          {
@@ -6166,7 +6157,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
          snprintf(text, sizeof(text), "Current profile : %s", current_profile);
 
-         menu_entries_append_enum(info->list, text, "", 0, MENU_INFO_MESSAGE, 0, 0);
+         if (menu_entries_append_enum(info->list, text, "", 0, MENU_INFO_MESSAGE, 0, 0))
+            count++;
 
          for (i = 0; i < profiles_count; i++)
          {
@@ -7414,13 +7406,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          {
             switch (type)
             {
+               case DISPLAYLIST_DISC_INFO:
+               case DISPLAYLIST_DUMP_DISC:
+               case DISPLAYLIST_MENU_SETTINGS_LIST:
                case DISPLAYLIST_ADD_CONTENT_LIST:
-                  menu_entries_append_enum(info->list,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
-                        msg_hash_to_str(MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY),
-                        MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
-                        FILE_TYPE_NONE, 0, 0);
-                  break;
                case DISPLAYLIST_DROPDOWN_LIST_RESOLUTION:
                case DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_DEFAULT_CORE:
                case DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_LABEL_DISPLAY_MODE:
@@ -7441,15 +7430,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         msg_hash_to_str(MENU_ENUM_LABEL_NO_PERFORMANCE_COUNTERS),
                         MENU_ENUM_LABEL_NO_PERFORMANCE_COUNTERS,
                         0, 0, 0);
-                  break;
-               case DISPLAYLIST_DISC_INFO:
-               case DISPLAYLIST_DUMP_DISC:
-               case DISPLAYLIST_MENU_SETTINGS_LIST:
-                  menu_entries_append_enum(info->list,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
-                        msg_hash_to_str(MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY),
-                        MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
-                        FILE_TYPE_NONE, 0, 0);
                   break;
                default:
                   menu_entries_append_enum(info->list,
@@ -7725,11 +7705,11 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                char msg_lbl[128];
                snprintf(msg, sizeof(msg), "Mixer Stream #%d :\n", i+1);
                snprintf(msg_lbl, sizeof(msg_lbl), "audio_mixer_stream_%d\n", i);
-               menu_entries_append_enum(info->list, msg, msg_lbl,
-                     MSG_UNKNOWN,
-                     (MENU_SETTINGS_AUDIO_MIXER_STREAM_BEGIN  +  i),
-                     0, 0);
-               count++;
+               if (menu_entries_append_enum(info->list, msg, msg_lbl,
+                        MSG_UNKNOWN,
+                        (MENU_SETTINGS_AUDIO_MIXER_STREAM_BEGIN  +  i),
+                        0, 0))
+                  count++;
             }
 #endif
 
@@ -8791,22 +8771,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
       case DISPLAYLIST_FILE_BROWSER_SELECT_SIDELOAD_CORE:
       case DISPLAYLIST_FILE_BROWSER_SELECT_COLLECTION:
       case DISPLAYLIST_GENERIC:
-         {
-            menu_ctx_list_t list_info;
-
-            list_info.type    = MENU_LIST_PLAIN;
-            list_info.action  = 0;
-
-            menu_driver_list_cache(&list_info);
-
-            if (menu_entries_append_enum(info->list, info->path,
-                  info->label, MSG_UNKNOWN, info->type, info->directory_ptr, 0))
-               count++;
-
-            info->need_navigation_clear = true;
-            info->need_entries_refresh  = true;
-         }
-         break;
+         info->need_navigation_clear = true;
+         /* fall-through */
       case DISPLAYLIST_PENDING_CLEAR:
          {
             menu_ctx_list_t list_info;
@@ -9252,19 +9218,18 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                               else if (string_is_equal(val_label_str, msg_hash_to_str(MENU_ENUM_LABEL_DISABLED)))
                                  val_label_str = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF);
 
-                              menu_entries_append_enum(info->list,
-                                    val_label_str,
-                                    val_d,
-                                    MENU_ENUM_LABEL_NO_ITEMS,
-                                    MENU_SETTING_DROPDOWN_SETTING_CORE_OPTIONS_ITEM, k, 0);
+                              if (menu_entries_append_enum(info->list,
+                                       val_label_str,
+                                       val_d,
+                                       MENU_ENUM_LABEL_NO_ITEMS,
+                                       MENU_SETTING_DROPDOWN_SETTING_CORE_OPTIONS_ITEM, k, 0))
+                                 count++;
 
                               if (!checked_found && string_is_equal(val_str, val))
                               {
                                  checked = k;
                                  checked_found = true;
                               }
-
-                              count++;
                            }
                         }
 
@@ -9346,18 +9311,18 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                                  setting->get_string_representation(setting,
                                        val_s, sizeof(val_s));
                                  snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
-                                 menu_entries_append_enum(info->list,
+                                 if (menu_entries_append_enum(info->list,
                                        val_s,
                                        val_d,
                                        MENU_ENUM_LABEL_NO_ITEMS,
-                                       setting_type, val, 0);
+                                       setting_type, val, 0))
+                                    count++;
 
                                  if (!checked_found && val == orig_value)
                                  {
                                     checked       = count;
                                     checked_found = true;
                                  }
-                                 count++;
                               }
 
                               *setting->value.target.integer = orig_value;
@@ -9372,18 +9337,18 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                                  snprintf(val_s, sizeof(val_s), "%d", val);
                                  snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
 
-                                 menu_entries_append_enum(info->list,
+                                 if (menu_entries_append_enum(info->list,
                                        val_s,
                                        val_d,
                                        MENU_ENUM_LABEL_NO_ITEMS,
-                                       setting_type, val, 0);
+                                       setting_type, val, 0))
+                                    count++;
 
                                  if (!checked_found && val == orig_value)
                                  {
                                     checked       = count;
                                     checked_found = true;
                                  }
-                                 count++;
                               }
                            }
 
@@ -9413,18 +9378,18 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                                  setting->get_string_representation(setting,
                                        val_s, sizeof(val_s));
                                  snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
-                                 menu_entries_append_enum(info->list,
+                                 if (menu_entries_append_enum(info->list,
                                        val_s,
                                        val_d,
                                        MENU_ENUM_LABEL_NO_ITEMS,
-                                       setting_type, 0, 0);
+                                       setting_type, 0, 0))
+                                    count++;
 
                                  if (!checked_found && fabs(i - orig_value) <= 0.01f)
                                  {
                                     checked       = count;
                                     checked_found = true;
                                  }
-                                 count++;
                               }
 
                               *setting->value.target.fraction = orig_value;
@@ -9438,18 +9403,18 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                                  snprintf(val_s, sizeof(val_s), "%.2f", i);
                                  snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
 
-                                 menu_entries_append_enum(info->list,
+                                 if (menu_entries_append_enum(info->list,
                                        val_s,
                                        val_d,
                                        MENU_ENUM_LABEL_NO_ITEMS,
-                                       setting_type, 0, 0);
+                                       setting_type, 0, 0))
+                                    count++;
 
                                  if (!checked_found && fabs(i - orig_value) <= 0.01f)
                                  {
                                     checked       = count;
                                     checked_found = true;
                                  }
-                                 count++;
                               }
                            }
 
@@ -9480,18 +9445,18 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                                  setting->get_string_representation(setting,
                                        val_s, sizeof(val_s));
                                  snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
-                                 menu_entries_append_enum(info->list,
-                                       val_s,
-                                       val_d,
-                                       MENU_ENUM_LABEL_NO_ITEMS,
-                                       setting_type, val, 0);
+                                 if (menu_entries_append_enum(info->list,
+                                          val_s,
+                                          val_d,
+                                          MENU_ENUM_LABEL_NO_ITEMS,
+                                          setting_type, val, 0))
+                                    count++;
 
                                  if (!checked_found && val == orig_value)
                                  {
                                     checked       = count;
                                     checked_found = true;
                                  }
-                                 count++;
                               }
 
                               *setting->value.target.unsigned_integer = orig_value;
@@ -9506,18 +9471,18 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                                  snprintf(val_s, sizeof(val_s), "%d", val);
                                  snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
 
-                                 menu_entries_append_enum(info->list,
+                                 if (menu_entries_append_enum(info->list,
                                        val_s,
                                        val_d,
                                        MENU_ENUM_LABEL_NO_ITEMS,
-                                       setting_type, val, 0);
+                                       setting_type, val, 0))
+                                    count++;
 
                                  if (!checked_found && val == orig_value)
                                  {
                                     checked       = count;
                                     checked_found = true;
                                  }
-                                 count++;
                               }
                            }
 
@@ -9607,11 +9572,12 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                            else if (string_is_equal(val_label_str, msg_hash_to_str(MENU_ENUM_LABEL_DISABLED)))
                               val_label_str = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF);
 
-                           menu_entries_append_enum(info->list,
+                           if (menu_entries_append_enum(info->list,
                                  val_label_str,
                                  val_d,
                                  MENU_ENUM_LABEL_NO_ITEMS,
-                                 MENU_SETTING_DROPDOWN_SETTING_CORE_OPTIONS_ITEM_SPECIAL, k, 0);
+                                 MENU_SETTING_DROPDOWN_SETTING_CORE_OPTIONS_ITEM_SPECIAL, k, 0))
+                              count++;
 
                            if (!checked_found && string_is_equal(val_str, val))
                            {
@@ -9654,11 +9620,12 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                            {
                               char val_d[256];
                               snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
-                              menu_entries_append_enum(info->list,
+                              if (menu_entries_append_enum(info->list,
                                     tmp_str_list->elems[i].data,
                                     val_d,
                                     MENU_ENUM_LABEL_NO_ITEMS,
-                                    MENU_SETTING_DROPDOWN_SETTING_STRING_OPTIONS_ITEM_SPECIAL, i, 0);
+                                    MENU_SETTING_DROPDOWN_SETTING_STRING_OPTIONS_ITEM_SPECIAL, i, 0))
+                                 count++;
 
                               if (!checked_found && string_is_equal(tmp_str_list->elems[i].data, setting->value.target.string))
                               {
@@ -9698,18 +9665,18 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                               setting->get_string_representation(setting,
                                     val_s, sizeof(val_s));
                               snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
-                              menu_entries_append_enum(info->list,
+                              if (menu_entries_append_enum(info->list,
                                     val_s,
                                     val_d,
                                     MENU_ENUM_LABEL_NO_ITEMS,
-                                    setting_type, val, 0);
+                                    setting_type, val, 0))
+                                 count++;
 
                               if (!checked_found && val == orig_value)
                               {
                                  checked       = count;
                                  checked_found = true;
                               }
-                              count++;
                            }
 
                            *setting->value.target.integer = orig_value;
@@ -9724,19 +9691,18 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                               snprintf(val_s, sizeof(val_s), "%d", val);
                               snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
 
-                              menu_entries_append_enum(info->list,
+                              if (menu_entries_append_enum(info->list,
                                     val_s,
                                     val_d,
                                     MENU_ENUM_LABEL_NO_ITEMS,
-                                    setting_type, val, 0);
+                                    setting_type, val, 0))
+                                 count++;
 
                               if (!checked_found && val == orig_value)
                               {
                                  checked       = count;
                                  checked_found = true;
                               }
-
-                              count++;
                            }
                         }
 
@@ -9766,18 +9732,18 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                               setting->get_string_representation(setting,
                                     val_s, sizeof(val_s));
                               snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
-                              menu_entries_append_enum(info->list,
+                              if (menu_entries_append_enum(info->list,
                                     val_s,
                                     val_d,
                                     MENU_ENUM_LABEL_NO_ITEMS,
-                                    setting_type, 0, 0);
+                                    setting_type, 0, 0))
+                                 count++;
 
                               if (!checked_found && fabs(i - orig_value) <= 0.01f)
                               {
                                  checked       = count;
                                  checked_found = true;
                               }
-                              count++;
                            }
 
                            *setting->value.target.fraction = orig_value;
@@ -9791,18 +9757,18 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                               snprintf(val_s, sizeof(val_s), "%.2f", i);
                               snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
 
-                              menu_entries_append_enum(info->list,
+                              if (menu_entries_append_enum(info->list,
                                     val_s,
                                     val_d,
                                     MENU_ENUM_LABEL_NO_ITEMS,
-                                    setting_type, 0, 0);
+                                    setting_type, 0, 0))
+                                 count++;
 
                               if (!checked_found && fabs(i - orig_value) <= 0.01f)
                               {
                                  checked       = count;
                                  checked_found = true;
                               }
-                              count++;
                            }
                         }
 
@@ -9833,18 +9799,18 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                               setting->get_string_representation(setting,
                                     val_s, sizeof(val_s));
                               snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
-                              menu_entries_append_enum(info->list,
+                              if (menu_entries_append_enum(info->list,
                                     val_s,
                                     val_d,
                                     MENU_ENUM_LABEL_NO_ITEMS,
-                                    setting_type, val, 0);
+                                    setting_type, val, 0))
+                                 count++;
 
                               if (!checked_found && val == orig_value)
                               {
                                  checked       = count;
                                  checked_found = true;
                               }
-                              count++;
                            }
 
                            *setting->value.target.unsigned_integer = orig_value;
@@ -9859,18 +9825,18 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                               snprintf(val_s, sizeof(val_s), "%d", val);
                               snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
 
-                              menu_entries_append_enum(info->list,
+                              if (menu_entries_append_enum(info->list,
                                     val_s,
                                     val_d,
                                     MENU_ENUM_LABEL_NO_ITEMS,
-                                    setting_type, val, 0);
+                                    setting_type, val, 0))
+                                 count++;
 
                               if (!checked_found && val == orig_value)
                               {
                                  checked       = count;
                                  checked_found = true;
                               }
-                              count++;
                            }
                         }
 
@@ -9896,8 +9862,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
       if (string_is_empty(info->path))
       {
          if (frontend_driver_parse_drive_list(info->list, load_content) != 0)
-            menu_entries_append_enum(info->list, "/", "",
-                  MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
+            if (menu_entries_append_enum(info->list, "/", "",
+                  MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0))
+               count++;
       }
       else
          filebrowser_parse(info, type);
