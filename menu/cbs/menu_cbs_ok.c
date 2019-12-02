@@ -5340,44 +5340,7 @@ static int generic_action_ok_dropdown_setting(const char *path, const char *labe
    return action_cancel_pop_default(NULL, NULL, 0, 0);
 }
 
-static int action_ok_push_dropdown_setting_string_options_item_special(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   return generic_action_ok_dropdown_setting(path, label, type, idx);
-}
-
-static int action_ok_push_dropdown_setting_int_item_special(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   return generic_action_ok_dropdown_setting(path, label, type, idx);
-}
-
-
-static int action_ok_push_dropdown_setting_float_item_special(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   return generic_action_ok_dropdown_setting(path, label, type, idx);
-}
-
-static int action_ok_push_dropdown_setting_string_options_item(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   return generic_action_ok_dropdown_setting(path, label, type, idx);
-}
-
-static int action_ok_push_dropdown_setting_int_item(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   return generic_action_ok_dropdown_setting(path, label, type, idx);
-}
-
-static int action_ok_push_dropdown_setting_float_item(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   return generic_action_ok_dropdown_setting(path, label, type, idx);
-}
-
-static int action_ok_push_dropdown_setting_uint_item(const char *path,
+static int action_ok_push_dropdown_setting(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    return generic_action_ok_dropdown_setting(path, label, type, idx);
@@ -7025,29 +6988,17 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
          case MENU_SETTING_DROPDOWN_SETTING_CORE_OPTIONS_ITEM:
             BIND_ACTION_OK(cbs, action_ok_push_dropdown_setting_core_options_item);
             break;
-         case MENU_SETTING_DROPDOWN_SETTING_STRING_OPTIONS_ITEM:
-            BIND_ACTION_OK(cbs, action_ok_push_dropdown_setting_string_options_item);
-            break;
-         case MENU_SETTING_DROPDOWN_SETTING_INT_ITEM:
-            BIND_ACTION_OK(cbs, action_ok_push_dropdown_setting_int_item);
-            break;
-         case MENU_SETTING_DROPDOWN_SETTING_FLOAT_ITEM:
-            BIND_ACTION_OK(cbs, action_ok_push_dropdown_setting_float_item);
-            break;
-         case MENU_SETTING_DROPDOWN_SETTING_UINT_ITEM:
-            BIND_ACTION_OK(cbs, action_ok_push_dropdown_setting_uint_item);
-            break;
          case MENU_SETTING_DROPDOWN_SETTING_CORE_OPTIONS_ITEM_SPECIAL:
             BIND_ACTION_OK(cbs, action_ok_push_dropdown_setting_core_options_item_special);
             break;
+         case MENU_SETTING_DROPDOWN_SETTING_STRING_OPTIONS_ITEM:
+         case MENU_SETTING_DROPDOWN_SETTING_INT_ITEM:
+         case MENU_SETTING_DROPDOWN_SETTING_FLOAT_ITEM:
+         case MENU_SETTING_DROPDOWN_SETTING_UINT_ITEM:
          case MENU_SETTING_DROPDOWN_SETTING_STRING_OPTIONS_ITEM_SPECIAL:
-            BIND_ACTION_OK(cbs, action_ok_push_dropdown_setting_string_options_item_special);
-            break;
          case MENU_SETTING_DROPDOWN_SETTING_INT_ITEM_SPECIAL:
-            BIND_ACTION_OK(cbs, action_ok_push_dropdown_setting_int_item_special);
-            break;
          case MENU_SETTING_DROPDOWN_SETTING_FLOAT_ITEM_SPECIAL:
-            BIND_ACTION_OK(cbs, action_ok_push_dropdown_setting_float_item_special);
+            BIND_ACTION_OK(cbs, action_ok_push_dropdown_setting);
             break;
          case MENU_SETTING_DROPDOWN_SETTING_UINT_ITEM_SPECIAL:
             BIND_ACTION_OK(cbs, action_ok_push_dropdown_setting_uint_item_special);
