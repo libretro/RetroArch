@@ -80,17 +80,15 @@ static int action_get_title_action_generic(const char *path, const char *label,
 static int action_get_title_thumbnails(
       const char *path, const char *label, unsigned menu_type, char *s, size_t len)
 {
-   settings_t *settings = config_get_ptr();
-   const char *title    = NULL;
-   enum msg_hash_enums label_value;
+   settings_t *settings            = config_get_ptr();
+   const char *title               = NULL;
+   enum msg_hash_enums label_value = MENU_ENUM_LABEL_VALUE_THUMBNAILS;
 
    /* Get label value */
    if (string_is_equal(settings->arrays.menu_driver, "rgui"))
       label_value = MENU_ENUM_LABEL_VALUE_THUMBNAILS_RGUI;
    else if (string_is_equal(settings->arrays.menu_driver, "glui"))
       label_value = MENU_ENUM_LABEL_VALUE_THUMBNAILS_MATERIALUI;
-   else
-      label_value = MENU_ENUM_LABEL_VALUE_THUMBNAILS;
 
    title = msg_hash_to_str(label_value);
 
@@ -106,9 +104,9 @@ static int action_get_title_thumbnails(
 static int action_get_title_left_thumbnails(
       const char *path, const char *label, unsigned menu_type, char *s, size_t len)
 {
-   settings_t *settings = config_get_ptr();
-   const char *title    = NULL;
-   enum msg_hash_enums label_value;
+   settings_t *settings            = config_get_ptr();
+   const char *title               = NULL;
+   enum msg_hash_enums label_value = MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS;
 
    /* Get label value */
    if (string_is_equal(settings->arrays.menu_driver, "rgui"))
@@ -117,8 +115,6 @@ static int action_get_title_left_thumbnails(
       label_value = MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_OZONE;
    else if (string_is_equal(settings->arrays.menu_driver, "glui"))
       label_value = MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_MATERIALUI;
-   else
-      label_value = MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS;
 
    title = msg_hash_to_str(label_value);
 
@@ -219,13 +215,9 @@ static int action_get_title_dropdown_item(const char *path, const char *label, u
           * treatment, since their titles depend upon the
           * current menu driver... */
          if (enum_idx == MENU_ENUM_LABEL_VALUE_THUMBNAILS)
-         {
             return action_get_title_thumbnails(path, label, menu_type, s, len);
-         }
          else if (enum_idx == MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS)
-         {
             return action_get_title_left_thumbnails(path, label, menu_type, s, len);
-         }
          else
          {
             const char *title = msg_hash_to_str(enum_idx);
@@ -536,29 +528,36 @@ static int action_get_title_default(const char *path, const char *label,
 static int action_get_title_group_settings(const char *path, const char *label,
       unsigned menu_type, char *s, size_t len)
 {
-   if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU)))
-      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MAIN_MENU), len);
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_HISTORY_TAB)))
-      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_HISTORY_TAB), len);
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES_TAB)))
-      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FAVORITES_TAB), len);
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_IMAGES_TAB)))
-      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_IMAGES_TAB), len);
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_MUSIC_TAB)))
-      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MUSIC_TAB), len);
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_TAB)))
-      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_TAB), len);
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS_TAB)))
-      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SETTINGS_TAB), len);
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB)))
-      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB), len);
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ADD_TAB)))
-      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ADD_TAB), len);
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_TAB)))
-      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_TAB), len);
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_HORIZONTAL_MENU)))
-      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_HORIZONTAL_MENU), len);
-   else
+   unsigned i;
+   typedef struct title_info_list 
+   {
+      enum msg_hash_enums type;
+      enum msg_hash_enums val;
+   } title_info_list_t;
+
+   title_info_list_t info_list[] = {
+      {MENU_ENUM_LABEL_MAIN_MENU,         MENU_ENUM_LABEL_VALUE_MAIN_MENU}       ,
+      {MENU_ENUM_LABEL_HISTORY_TAB,       MENU_ENUM_LABEL_VALUE_HISTORY_TAB}     ,
+      {MENU_ENUM_LABEL_FAVORITES_TAB,     MENU_ENUM_LABEL_VALUE_FAVORITES_TAB}   ,
+      {MENU_ENUM_LABEL_IMAGES_TAB,        MENU_ENUM_LABEL_VALUE_IMAGES_TAB   }   ,
+      {MENU_ENUM_LABEL_MUSIC_TAB,         MENU_ENUM_LABEL_VALUE_MUSIC_TAB    }   ,
+      {MENU_ENUM_LABEL_VIDEO_TAB,         MENU_ENUM_LABEL_VALUE_VIDEO_TAB    }   ,
+      {MENU_ENUM_LABEL_SETTINGS_TAB,      MENU_ENUM_LABEL_VALUE_SETTINGS_TAB }   ,
+      {MENU_ENUM_LABEL_PLAYLISTS_TAB,     MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB}   ,
+      {MENU_ENUM_LABEL_ADD_TAB,           MENU_ENUM_LABEL_VALUE_ADD_TAB      }   ,
+      {MENU_ENUM_LABEL_NETPLAY_TAB,       MENU_ENUM_LABEL_VALUE_NETPLAY_TAB  }   ,
+      {MENU_ENUM_LABEL_HORIZONTAL_MENU,   MENU_ENUM_LABEL_VALUE_HORIZONTAL_MENU },
+   };
+
+   for (i = 0; i < ARRAY_SIZE(info_list); i++)
+   {
+      if (string_is_equal(label, msg_hash_to_str(info_list[i].type)))
+      {
+         strlcpy(s, msg_hash_to_str(info_list[i].val), len);
+         return 0;
+      }
+   }
+
    {
       char elem0[255];
       char elem1[255];
@@ -1407,6 +1406,37 @@ int menu_cbs_init_bind_title(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx,
       uint32_t label_hash)
 {
+   unsigned i;
+   typedef struct title_info_list 
+   {
+      enum msg_hash_enums type;
+      int (*cb)(const char *path, const char *label,
+            unsigned type, char *s, size_t len);
+   } title_info_list_t;
+
+   title_info_list_t info_list[] = {
+#ifdef HAVE_AUDIOMIXER
+      {MENU_ENUM_LABEL_DEFERRED_MIXER_STREAM_SETTINGS_LIST,                    action_get_title_mixer_stream_actions},
+#endif
+      {MENU_ENUM_LABEL_DEFERRED_VIDEO_SHADER_PRESET_SAVE_LIST,                 action_get_title_video_shader_preset_save_list},
+      {MENU_ENUM_LABEL_DEFERRED_VIDEO_SHADER_PRESET_REMOVE_LIST,               action_get_title_video_shader_preset_remove},
+      {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST,                             action_get_title_dropdown_item},
+      {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_SPECIAL,                     action_get_title_dropdown_item},
+      {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_RESOLUTION,                  action_get_title_dropdown_resolution_item   },
+      {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_DEFAULT_CORE,       action_get_title_dropdown_playlist_default_core_item},
+      {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_LABEL_DISPLAY_MODE, action_get_title_dropdown_playlist_label_display_mode_item},
+      {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_RIGHT_THUMBNAIL_MODE, action_get_title_dropdown_playlist_right_thumbnail_mode_item},
+      {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_LEFT_THUMBNAIL_MODE, action_get_title_dropdown_playlist_left_thumbnail_mode_item},
+      {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_MANUAL_CONTENT_SCAN_SYSTEM_NAME, action_get_title_dropdown_manual_content_scan_system_name_item},
+      {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_MANUAL_CONTENT_SCAN_CORE_NAME, action_get_title_dropdown_manual_content_scan_core_name_item},
+      {MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS, action_get_quick_menu_views_settings_list},
+      {MENU_ENUM_LABEL_DEFERRED_PLAYLIST_LIST, action_get_title_deferred_playlist_list},
+      {MENU_ENUM_LABEL_DEFERRED_PLAYLIST_MANAGER_SETTINGS, action_get_title_deferred_playlist_list},
+      {MENU_ENUM_LABEL_DEFERRED_RDB_ENTRY_DETAIL, action_get_title_list_rdb_entry_database_info},
+      {MENU_ENUM_LABEL_PLAYLISTS_TAB, action_get_title_collection},
+      {MENU_ENUM_LABEL_DEFERRED_MANUAL_CONTENT_SCAN_LIST, action_get_title_manual_content_scan_list},
+   };
+
    if (!cbs)
       return -1;
 
@@ -1419,109 +1449,13 @@ int menu_cbs_init_bind_title(menu_file_list_cbs_t *cbs,
    if (menu_cbs_init_bind_title_compare_type(cbs, type) == 0)
       return 0;
 
-#ifdef HAVE_AUDIOMIXER
-   if (string_is_equal(label,
-            msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_MIXER_STREAM_SETTINGS_LIST)))
+   for (i = 0; i < ARRAY_SIZE(info_list); i++)
    {
-      BIND_ACTION_GET_TITLE(cbs, action_get_title_mixer_stream_actions);
-      return 0;
-   }
-#endif
-   if (string_is_equal(label,
-            msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_VIDEO_SHADER_PRESET_SAVE_LIST)))
-   {
-      BIND_ACTION_GET_TITLE(cbs, action_get_title_video_shader_preset_save_list);
-      return 0;
-   }
-   if (string_is_equal(label,
-            msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_VIDEO_SHADER_PRESET_REMOVE_LIST)))
-   {
-      BIND_ACTION_GET_TITLE(cbs, action_get_title_video_shader_preset_remove);
-      return 0;
-   }
-   if (string_is_equal(label,
-            msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST)))
-   {
-      BIND_ACTION_GET_TITLE(cbs, action_get_title_dropdown_item);
-      return 0;
-   }
-   if (string_is_equal(label,
-            msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_SPECIAL)))
-   {
-      BIND_ACTION_GET_TITLE(cbs, action_get_title_dropdown_item);
-      return 0;
-   }
-   if (string_is_equal(label,
-            msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_RESOLUTION)))
-   {
-      BIND_ACTION_GET_TITLE(cbs, action_get_title_dropdown_resolution_item);
-      return 0;
-   }
-   if (string_is_equal(label,
-            msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_DEFAULT_CORE)))
-   {
-      BIND_ACTION_GET_TITLE(cbs, action_get_title_dropdown_playlist_default_core_item);
-      return 0;
-   }
-   if (string_is_equal(label,
-            msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_LABEL_DISPLAY_MODE)))
-   {
-      BIND_ACTION_GET_TITLE(cbs, action_get_title_dropdown_playlist_label_display_mode_item);
-      return 0;
-   }
-   if (string_is_equal(label,
-            msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_RIGHT_THUMBNAIL_MODE)))
-   {
-      BIND_ACTION_GET_TITLE(cbs, action_get_title_dropdown_playlist_right_thumbnail_mode_item);
-      return 0;
-   }
-   if (string_is_equal(label,
-            msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_LEFT_THUMBNAIL_MODE)))
-   {
-      BIND_ACTION_GET_TITLE(cbs, action_get_title_dropdown_playlist_left_thumbnail_mode_item);
-      return 0;
-   }
-   if (string_is_equal(label,
-            msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_MANUAL_CONTENT_SCAN_SYSTEM_NAME)))
-   {
-      BIND_ACTION_GET_TITLE(cbs, action_get_title_dropdown_manual_content_scan_system_name_item);
-      return 0;
-   }
-   if (string_is_equal(label,
-            msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_MANUAL_CONTENT_SCAN_CORE_NAME)))
-   {
-      BIND_ACTION_GET_TITLE(cbs, action_get_title_dropdown_manual_content_scan_core_name_item);
-      return 0;
-   }
-   if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS)))
-   {
-      BIND_ACTION_GET_TITLE(cbs, action_get_quick_menu_views_settings_list);
-      return 0;
-   }
-   if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_PLAYLIST_LIST)))
-   {
-      BIND_ACTION_GET_TITLE(cbs, action_get_title_deferred_playlist_list);
-      return 0;
-   }
-   if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_PLAYLIST_MANAGER_SETTINGS)))
-   {
-      BIND_ACTION_GET_TITLE(cbs, action_get_title_deferred_playlist_list);
-      return 0;
-   }
-   if (strstr(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RDB_ENTRY_DETAIL)))
-   {
-      BIND_ACTION_GET_TITLE(cbs, action_get_title_list_rdb_entry_database_info);
-      return 0;
-   }
-   if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB)))
-   {
-      BIND_ACTION_GET_TITLE(cbs, action_get_title_collection);
-      return 0;
-   }
-   if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_MANUAL_CONTENT_SCAN_LIST)))
-   {
-      BIND_ACTION_GET_TITLE(cbs, action_get_title_manual_content_scan_list);
-      return 0;
+      if (string_is_equal(label, msg_hash_to_str(info_list[i].type)))
+      {
+         BIND_ACTION_GET_TITLE(cbs, info_list[i].cb);
+         return 0;
+      }
    }
 
    return -1;
