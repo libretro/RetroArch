@@ -6154,29 +6154,32 @@ static int is_rdb_entry(enum msg_hash_enums enum_idx)
 static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
       const char *label, uint32_t hash)
 {
-   if (cbs->enum_idx != MSG_UNKNOWN && is_rdb_entry(cbs->enum_idx) == 0)
-   {
-      BIND_ACTION_OK(cbs, action_ok_rdb_entry_submenu);
-      return 0;
-   }
-
    if (cbs->enum_idx != MSG_UNKNOWN)
    {
       const char     *str = msg_hash_to_str(cbs->enum_idx);
 
-      if (str && strstr(str, "input_binds_list"))
+      if (str)
       {
-         unsigned i;
-
-         for (i = 0; i < MAX_USERS; i++)
+         if (is_rdb_entry(cbs->enum_idx) == 0)
          {
-            unsigned first_char = atoi(&str[0]);
-
-            if (first_char != ((i+1)))
-               continue;
-
-            BIND_ACTION_OK(cbs, action_ok_push_user_binds_list);
+            BIND_ACTION_OK(cbs, action_ok_rdb_entry_submenu);
             return 0;
+         }
+
+         if (strstr(str, "input_binds_list"))
+         {
+            unsigned i;
+
+            for (i = 0; i < MAX_USERS; i++)
+            {
+               unsigned first_char = atoi(&str[0]);
+
+               if (first_char != ((i+1)))
+                  continue;
+
+               BIND_ACTION_OK(cbs, action_ok_push_user_binds_list);
+               return 0;
+            }
          }
       }
    }
