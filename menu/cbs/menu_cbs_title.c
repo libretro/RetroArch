@@ -600,6 +600,76 @@ static int action_get_title_input_binds_list(const char *path, const char *label
 static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
       const char *label, uint32_t label_hash)
 {
+   unsigned i;
+   typedef struct title_info_list 
+   {
+      enum msg_hash_enums type;
+      int (*cb)(const char *path, const char *label,
+            unsigned type, char *s, size_t len);
+   } title_info_list_t;
+
+   title_info_list_t info_list[] = {
+      {MENU_ENUM_LABEL_DEFERRED_CORE_SETTINGS_LIST,                   action_get_core_settings_list},
+      {MENU_ENUM_LABEL_DEFERRED_DUMP_DISC_LIST,                       action_get_dump_disc_list},
+      {MENU_ENUM_LABEL_DEFERRED_LOAD_DISC_LIST,                       action_get_load_disc_list},
+      {MENU_ENUM_LABEL_DEFERRED_CONFIGURATION_SETTINGS_LIST,          action_get_configuration_settings_list },
+      {MENU_ENUM_LABEL_DEFERRED_SAVING_SETTINGS_LIST,                 action_get_saving_settings_list},
+      {MENU_ENUM_LABEL_DEFERRED_LOGGING_SETTINGS_LIST,                action_get_logging_settings_list},
+      {MENU_ENUM_LABEL_DEFERRED_FRAME_TIME_COUNTER_SETTINGS_LIST,     action_get_frame_time_counter_settings_list },
+      {MENU_ENUM_LABEL_DEFERRED_FRAME_THROTTLE_SETTINGS_LIST,         action_get_frame_throttle_settings_list},
+      {MENU_ENUM_LABEL_DEFERRED_REWIND_SETTINGS_LIST,                 action_get_rewind_settings_list},
+      {MENU_ENUM_LABEL_DEFERRED_CHEAT_DETAILS_SETTINGS_LIST,          action_get_cheat_details_settings_list},
+      {MENU_ENUM_LABEL_DEFERRED_CHEAT_SEARCH_SETTINGS_LIST,           action_get_cheat_search_settings_list},
+      {MENU_ENUM_LABEL_DEFERRED_ONSCREEN_DISPLAY_SETTINGS_LIST,       action_get_onscreen_display_settings_list},
+      {MENU_ENUM_LABEL_DEFERRED_ONSCREEN_NOTIFICATIONS_SETTINGS_LIST, action_get_onscreen_notifications_settings_list},
+      {MENU_ENUM_LABEL_DEFERRED_ONSCREEN_OVERLAY_SETTINGS_LIST,       action_get_onscreen_overlay_settings_list},
+#ifdef HAVE_VIDEO_LAYOUT
+      {MENU_ENUM_LABEL_DEFERRED_ONSCREEN_VIDEO_LAYOUT_SETTINGS_LIST,  action_get_onscreen_video_layout_settings_list},
+#endif
+      {MENU_ENUM_LABEL_DEFERRED_MENU_VIEWS_SETTINGS_LIST,             action_get_menu_views_settings_list},
+      {MENU_ENUM_LABEL_DEFERRED_SETTINGS_VIEWS_SETTINGS_LIST,         action_get_settings_views_settings_list},
+      {MENU_ENUM_LABEL_DEFERRED_QUICK_MENU_VIEWS_SETTINGS_LIST,       action_get_quick_menu_views_settings_list},
+      {MENU_ENUM_LABEL_DEFERRED_MENU_SETTINGS_LIST,                   action_get_menu_settings_list},
+      {MENU_ENUM_LABEL_DEFERRED_USER_INTERFACE_SETTINGS_LIST,         action_get_user_interface_settings_list},
+      {MENU_ENUM_LABEL_DEFERRED_AI_SERVICE_SETTINGS_LIST,             action_get_ai_service_settings_list},
+      {MENU_ENUM_LABEL_DEFERRED_POWER_MANAGEMENT_SETTINGS_LIST,       action_get_power_management_settings_list},
+      {MENU_ENUM_LABEL_DEFERRED_MENU_SOUNDS_LIST,                     action_get_menu_sounds_list},
+      {MENU_ENUM_LABEL_DEFERRED_MENU_FILE_BROWSER_SETTINGS_LIST,      action_get_menu_file_browser_settings_list},
+      {MENU_ENUM_LABEL_DEFERRED_RETRO_ACHIEVEMENTS_SETTINGS_LIST,     action_get_retro_achievements_settings_list},
+      {MENU_ENUM_LABEL_DEFERRED_WIFI_SETTINGS_LIST,                   action_get_wifi_settings_list},
+      {MENU_ENUM_LABEL_DEFERRED_UPDATER_SETTINGS_LIST,                action_get_updater_settings_list},
+      {MENU_ENUM_LABEL_DEFERRED_NETWORK_SETTINGS_LIST,                action_get_network_settings_list},
+      {MENU_ENUM_LABEL_DEFERRED_NETPLAY_LAN_SCAN_SETTINGS_LIST,       action_get_netplay_lan_scan_settings_list},
+#ifdef HAVE_LAKKA
+      {MENU_ENUM_LABEL_DEFERRED_LAKKA_SERVICES_LIST,                  action_get_lakka_services_list},
+#endif
+      {MENU_ENUM_LABEL_DEFERRED_USER_SETTINGS_LIST,                   action_get_user_settings_list},
+      {MENU_ENUM_LABEL_DEFERRED_DIRECTORY_SETTINGS_LIST,              action_get_directory_settings_list},
+      {MENU_ENUM_LABEL_DEFERRED_PRIVACY_SETTINGS_LIST,                action_get_privacy_settings_list},
+      {MENU_ENUM_LABEL_DEFERRED_MIDI_SETTINGS_LIST,                   action_get_midi_settings_list},
+      {MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_DIRS_LIST,               action_get_download_core_content_list},
+      {MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_DIRS_SUBDIR_LIST,        action_get_download_core_content_list},
+      {MENU_ENUM_LABEL_DEFERRED_FAVORITES_LIST,                       action_get_title_goto_favorites},
+      {MENU_ENUM_LABEL_DEFERRED_IMAGES_LIST,                          action_get_title_goto_image},
+      {MENU_ENUM_LABEL_DEFERRED_MUSIC_LIST,                           action_get_title_goto_music},
+      {MENU_ENUM_LABEL_DEFERRED_VIDEO_LIST,                           action_get_title_goto_video},
+      {MENU_ENUM_LABEL_DEFERRED_DRIVER_SETTINGS_LIST,                 action_get_driver_settings_list},
+      {MENU_ENUM_LABEL_DEFERRED_AUDIO_SETTINGS_LIST,                  action_get_audio_settings_list},
+#ifdef HAVE_AUDIOMIXER
+      {MENU_ENUM_LABEL_DEFERRED_AUDIO_MIXER_SETTINGS_LIST,            action_get_audio_mixer_settings_list},
+#endif
+      {MENU_ENUM_LABEL_DEFERRED_LATENCY_SETTINGS_LIST,                action_get_latency_settings_list},
+      {MENU_ENUM_LABEL_SYSTEM_INFORMATION,                            action_get_system_information_list},
+      {MENU_ENUM_LABEL_DISC_INFORMATION,                              action_get_disc_information_list},
+      {MENU_ENUM_LABEL_NETWORK_INFORMATION,                           action_get_network_information_list},
+      {MENU_ENUM_LABEL_DEFERRED_QUICK_MENU_OVERRIDE_OPTIONS,          action_get_quick_menu_override_options},
+      {MENU_ENUM_LABEL_DEFERRED_CRT_SWITCHRES_SETTINGS_LIST,          action_get_crt_switchres_settings_list},
+      {MENU_ENUM_LABEL_DEFERRED_ACCOUNTS_TWITCH_LIST,                 action_get_user_accounts_twitch_list},
+      {MENU_ENUM_LABEL_DEFERRED_ACCOUNTS_YOUTUBE_LIST,                action_get_user_accounts_youtube_list},
+      {MENU_ENUM_LABEL_ONLINE_UPDATER,                                action_get_online_updater_list},
+      {MENU_ENUM_LABEL_DEFERRED_RECORDING_SETTINGS_LIST,              action_get_recording_settings_list},
+   };
+
    if (cbs->setting)
    {
       const char *parent_group   = cbs->setting->parent_group;
@@ -612,279 +682,16 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
       }
    }
 
-   if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CORE_SETTINGS_LIST)))
+   for (i = 0; i < ARRAY_SIZE(info_list); i++)
    {
-      BIND_ACTION_GET_TITLE(cbs, action_get_core_settings_list);
-      return 0;
+      if (string_is_equal(label, msg_hash_to_str(info_list[i].type)))
+      {
+         BIND_ACTION_GET_TITLE(cbs, info_list[i].cb);
+         return 0;
+      }
    }
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DUMP_DISC_LIST)))
-   {
-      BIND_ACTION_GET_TITLE(cbs, action_get_dump_disc_list);
-      return 0;
-   }
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_LOAD_DISC_LIST)))
-   {
-      BIND_ACTION_GET_TITLE(cbs, action_get_load_disc_list);
-      return 0;
-   }
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CONFIGURATION_SETTINGS_LIST)))
-   {
-      BIND_ACTION_GET_TITLE(cbs, action_get_configuration_settings_list);
-      return 0;
-   }
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_SAVING_SETTINGS_LIST)))
-   {
-      BIND_ACTION_GET_TITLE(cbs, action_get_saving_settings_list);
-      return 0;
-   }
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_LOGGING_SETTINGS_LIST)))
-   {
-      BIND_ACTION_GET_TITLE(cbs, action_get_logging_settings_list);
-      return 0;
-   }
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_FRAME_TIME_COUNTER_SETTINGS_LIST)))
-   {
-      BIND_ACTION_GET_TITLE(cbs, action_get_frame_time_counter_settings_list);
-      return 0;
-   }
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_FRAME_THROTTLE_SETTINGS_LIST)))
-   {
-      BIND_ACTION_GET_TITLE(cbs, action_get_frame_throttle_settings_list);
-      return 0;
-   }
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_REWIND_SETTINGS_LIST)))
-   {
-      BIND_ACTION_GET_TITLE(cbs, action_get_rewind_settings_list);
-      return 0;
-   }
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CHEAT_DETAILS_SETTINGS_LIST)))
-   {
-      BIND_ACTION_GET_TITLE(cbs, action_get_cheat_details_settings_list);
-      return 0;
-   }
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CHEAT_SEARCH_SETTINGS_LIST)))
-   {
-      BIND_ACTION_GET_TITLE(cbs, action_get_cheat_search_settings_list);
-      return 0;
-   }
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_ONSCREEN_DISPLAY_SETTINGS_LIST)))
-   {
-      BIND_ACTION_GET_TITLE(cbs, action_get_onscreen_display_settings_list);
-      return 0;
-   }
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_ONSCREEN_NOTIFICATIONS_SETTINGS_LIST)))
-   {
-      BIND_ACTION_GET_TITLE(cbs, action_get_onscreen_notifications_settings_list);
-      return 0;
-   }
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_ONSCREEN_OVERLAY_SETTINGS_LIST)))
-   {
-      BIND_ACTION_GET_TITLE(cbs, action_get_onscreen_overlay_settings_list);
-      return 0;
-   }
-#ifdef HAVE_VIDEO_LAYOUT
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_ONSCREEN_VIDEO_LAYOUT_SETTINGS_LIST)))
-   {
-      BIND_ACTION_GET_TITLE(cbs, action_get_onscreen_video_layout_settings_list);
-      return 0;
-   }
-#endif
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_MENU_VIEWS_SETTINGS_LIST)))
-   {
-      BIND_ACTION_GET_TITLE(cbs, action_get_menu_views_settings_list);
-      return 0;
-   }
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_SETTINGS_VIEWS_SETTINGS_LIST)))
-   {
-      BIND_ACTION_GET_TITLE(cbs, action_get_settings_views_settings_list);
-      return 0;
-   }
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_QUICK_MENU_VIEWS_SETTINGS_LIST)))
-   {
-      BIND_ACTION_GET_TITLE(cbs, action_get_quick_menu_views_settings_list);
-      return 0;
-   }
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_MENU_SETTINGS_LIST)))
-   {
-      BIND_ACTION_GET_TITLE(cbs, action_get_menu_settings_list);
-      return 0;
-   }
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_USER_INTERFACE_SETTINGS_LIST)))
-   {
-      BIND_ACTION_GET_TITLE(cbs, action_get_user_interface_settings_list);
-      return 0;
-   }
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_AI_SERVICE_SETTINGS_LIST)))
-   {
-      BIND_ACTION_GET_TITLE(cbs, action_get_ai_service_settings_list);
-      return 0;
-   }
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_POWER_MANAGEMENT_SETTINGS_LIST)))
-   {
-      BIND_ACTION_GET_TITLE(cbs, action_get_power_management_settings_list);
-      return 0;
-   }
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_MENU_SOUNDS_LIST)))
-   {
-      BIND_ACTION_GET_TITLE(cbs, action_get_menu_sounds_list);
-      return 0;
-   }
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_MENU_FILE_BROWSER_SETTINGS_LIST)))
-   {
-      BIND_ACTION_GET_TITLE(cbs, action_get_menu_file_browser_settings_list);
-      return 0;
-   }
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RETRO_ACHIEVEMENTS_SETTINGS_LIST)))
-   {
-      BIND_ACTION_GET_TITLE(cbs, action_get_retro_achievements_settings_list);
-      return 0;
-   }
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_WIFI_SETTINGS_LIST)))
-   {
-      BIND_ACTION_GET_TITLE(cbs, action_get_wifi_settings_list);
-      return 0;
-   }
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_UPDATER_SETTINGS_LIST)))
-   {
-      BIND_ACTION_GET_TITLE(cbs, action_get_updater_settings_list);
-      return 0;
-   }
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_NETWORK_SETTINGS_LIST)))
-   {
-      BIND_ACTION_GET_TITLE(cbs, action_get_network_settings_list);
-      return 0;
-   }
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_NETPLAY_LAN_SCAN_SETTINGS_LIST)))
-   {
-      BIND_ACTION_GET_TITLE(cbs, action_get_netplay_lan_scan_settings_list);
-      return 0;
-   }
-#ifdef HAVE_LAKKA
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_LAKKA_SERVICES_LIST)))
-   {
-      BIND_ACTION_GET_TITLE(cbs, action_get_lakka_services_list);
-      return 0;
-   }
-#endif
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_USER_SETTINGS_LIST)))
-   {
-      BIND_ACTION_GET_TITLE(cbs, action_get_user_settings_list);
-      return 0;
-   }
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DIRECTORY_SETTINGS_LIST)))
-   {
-      BIND_ACTION_GET_TITLE(cbs, action_get_directory_settings_list);
-      return 0;
-   }
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_PRIVACY_SETTINGS_LIST)))
-   {
-      BIND_ACTION_GET_TITLE(cbs, action_get_privacy_settings_list);
-      return 0;
-   }
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_MIDI_SETTINGS_LIST)))
-   {
-      BIND_ACTION_GET_TITLE(cbs, action_get_midi_settings_list);
-      return 0;
-   }
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_DIRS_LIST)))
-   {
-      BIND_ACTION_GET_TITLE(cbs, action_get_download_core_content_list);
-      return 0;
-   }
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_DIRS_SUBDIR_LIST)))
-   {
-      BIND_ACTION_GET_TITLE(cbs, action_get_download_core_content_list);
-      return 0;
-   }
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_FAVORITES_LIST)))
-   {
-      BIND_ACTION_GET_TITLE(cbs, action_get_title_goto_favorites);
-      return 0;
-   }
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_IMAGES_LIST)))
-   {
-      BIND_ACTION_GET_TITLE(cbs, action_get_title_goto_image);
-      return 0;
-   }
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_MUSIC_LIST)))
-   {
-      BIND_ACTION_GET_TITLE(cbs, action_get_title_goto_music);
-      return 0;
-   }
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_VIDEO_LIST)))
-   {
-      BIND_ACTION_GET_TITLE(cbs, action_get_title_goto_video);
-      return 0;
-   }
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DRIVER_SETTINGS_LIST)))
-   {
-      BIND_ACTION_GET_TITLE(cbs, action_get_driver_settings_list);
-      return 0;
-   }
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_AUDIO_SETTINGS_LIST)))
-   {
-      BIND_ACTION_GET_TITLE(cbs, action_get_audio_settings_list);
-      return 0;
-   }
-#ifdef HAVE_AUDIOMIXER
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_AUDIO_MIXER_SETTINGS_LIST)))
-   {
-      BIND_ACTION_GET_TITLE(cbs, action_get_audio_mixer_settings_list);
-      return 0;
-   }
-#endif
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_LATENCY_SETTINGS_LIST)))
-   {
-      BIND_ACTION_GET_TITLE(cbs, action_get_latency_settings_list);
-      return 0;
-   }
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SYSTEM_INFORMATION)))
-   {
-      BIND_ACTION_GET_TITLE(cbs, action_get_system_information_list);
-      return 0;
-   }
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DISC_INFORMATION)))
-   {
-      BIND_ACTION_GET_TITLE(cbs, action_get_disc_information_list);
-      return 0;
-   }
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NETWORK_INFORMATION)))
-   {
-      BIND_ACTION_GET_TITLE(cbs, action_get_network_information_list);
-      return 0;
-   }
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_QUICK_MENU_OVERRIDE_OPTIONS)))
-   {
-      BIND_ACTION_GET_TITLE(cbs, action_get_quick_menu_override_options);
-      return 0;
-   }
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CRT_SWITCHRES_SETTINGS_LIST)))
-   {
-      BIND_ACTION_GET_TITLE(cbs, action_get_crt_switchres_settings_list);
-      return 0;
-   }
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_ACCOUNTS_TWITCH_LIST)))
-   {
-      BIND_ACTION_GET_TITLE(cbs, action_get_user_accounts_twitch_list);
-      return 0;
-   }
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_ACCOUNTS_YOUTUBE_LIST)))
-   {
-      BIND_ACTION_GET_TITLE(cbs, action_get_user_accounts_youtube_list);
-      return 0;
-   }
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ONLINE_UPDATER)))
-   {
-      BIND_ACTION_GET_TITLE(cbs, action_get_online_updater_list);
-      return 0;
-   }
-   else if (string_is_equal(label, msg_hash_to_str(
-         MENU_ENUM_LABEL_DEFERRED_RECORDING_SETTINGS_LIST)))
-   {
-      BIND_ACTION_GET_TITLE(cbs, action_get_recording_settings_list);
-      return 0;
-   }
-   else if (cbs->enum_idx != MSG_UNKNOWN)
+
+   if (cbs->enum_idx != MSG_UNKNOWN)
    {
       switch (cbs->enum_idx)
       {
