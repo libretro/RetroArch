@@ -751,6 +751,7 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       {MENU_ENUM_LABEL_DEFERRED_VIDEO_SHADER_PRESET_REMOVE_LIST, deferred_push_video_shader_preset_remove},
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_MANUAL_CONTENT_SCAN_SYSTEM_NAME, deferred_push_dropdown_box_list_manual_content_scan_system_name},
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_MANUAL_CONTENT_SCAN_CORE_NAME, deferred_push_dropdown_box_list_manual_content_scan_core_name},
+      {MENU_ENUM_LABEL_DEFERRED_RECORDING_SETTINGS_LIST, deferred_push_recording_settings_list},
    };
 
    for (i = 0; i < ARRAY_SIZE(info_list); i++)
@@ -1119,9 +1120,6 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
             break;
          case MENU_LABEL_DEFERRED_PLAYLIST_MANAGER_SETTINGS:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_playlist_manager_settings);
-            break;
-         case MENU_LABEL_DEFERRED_RECORDING_SETTINGS_LIST:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_recording_settings_list);
             break;
          case MENU_LABEL_DEFERRED_ACCOUNTS_CHEEVOS_LIST:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_accounts_cheevos_list);
