@@ -8,6 +8,7 @@
 - FFMPEG CORE: Implement send/receive encoding API
 - LOCALIZATION: Update Italian translation
 - LOCALIZATION: Update French translation
+- LOCALIZATION: Update Polish translation
 - LOCALIZATION: Update Portuguese Brazilian Translation
 - LOCALIZATION: Update Turkish translation
 - LINUX/LOCALIZATION: Correct Droid Sans Fallback font path in Linux. This should fix Chinese/Korean font display issues on Fedora/RHEL/CentOS/openSUSE/SLE
