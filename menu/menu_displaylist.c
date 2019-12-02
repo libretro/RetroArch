@@ -3739,6 +3739,42 @@ static bool menu_displaylist_parse_manual_content_scan_list(
    return (count > 0);
 }
 
+#ifdef HAVE_CDROM
+static int menu_displaylist_parse_disc_info(file_list_t *info_list,
+      unsigned type)
+{
+   unsigned i;
+   unsigned           count = 0;
+   struct string_list *list = cdrom_get_available_drives();
+
+   for (i = 0; list && i < list->size; i++)
+   {
+      char drive_string[256] = {0};
+      char drive[2]          = {0};
+      size_t pos             = 0;
+
+      drive[0]               = list->elems[i].attr.i;
+
+      pos += snprintf(drive_string + pos, sizeof(drive_string) - pos, msg_hash_to_str(MSG_DRIVE_NUMBER), i + 1);
+      pos += snprintf(drive_string + pos, sizeof(drive_string) - pos, ": %s", list->elems[i].data);
+
+      if (menu_entries_append_enum(info_list,
+               drive_string,
+               drive,
+               MSG_UNKNOWN,
+               type,
+               0, i))
+         count++;
+   }
+
+   if (list)
+      string_list_free(list);
+
+   return count;
+}
+#endif
+
+
 unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ctl_state type)
 {
    unsigned i;
@@ -5645,6 +5681,32 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
             }
          }
          break;
+      case DISPLAYLIST_BROWSE_URL_LIST:
+         if (menu_entries_append_enum(list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_BROWSE_URL),
+               msg_hash_to_str(MENU_ENUM_LABEL_BROWSE_URL),
+               MENU_ENUM_LABEL_BROWSE_URL,
+               0, 0, 0))
+            count++;
+         if (menu_entries_append_enum(list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_BROWSE_START),
+               msg_hash_to_str(MENU_ENUM_LABEL_BROWSE_START),
+               MENU_ENUM_LABEL_BROWSE_START,
+               0, 0, 0))
+            count++;
+         break;
+      case DISPLAYLIST_DISC_INFO:
+#ifdef HAVE_CDROM
+         count = menu_displaylist_parse_disc_info(list,
+               MENU_SET_CDROM_INFO);
+#endif
+         break;
+      case DISPLAYLIST_DUMP_DISC:
+#ifdef HAVE_CDROM
+         count = menu_displaylist_parse_disc_info(list,
+               MENU_SET_CDROM_LIST);
+#endif
+         break;
       default:
          break;
    }
@@ -5679,41 +5741,6 @@ static bool history_needs_navigation_clear(menu_handle_t *menu, playlist_t *play
    }
 
    return false;
-}
-#endif
-
-#ifdef HAVE_CDROM
-static int menu_displaylist_parse_disc_info(menu_displaylist_info_t *info,
-      unsigned type)
-{
-   unsigned i;
-   unsigned           count = 0;
-   struct string_list *list = cdrom_get_available_drives();
-
-   for (i = 0; list && i < list->size; i++)
-   {
-      char drive_string[256] = {0};
-      char drive[2]          = {0};
-      size_t pos             = 0;
-
-      drive[0]               = list->elems[i].attr.i;
-
-      pos += snprintf(drive_string + pos, sizeof(drive_string) - pos, msg_hash_to_str(MSG_DRIVE_NUMBER), i + 1);
-      pos += snprintf(drive_string + pos, sizeof(drive_string) - pos, ": %s", list->elems[i].data);
-
-      if (menu_entries_append_enum(info->list,
-               drive_string,
-               drive,
-               MSG_UNKNOWN,
-               type,
-               0, i))
-         count++;
-   }
-
-   if (list)
-      string_list_free(list);
-
-   return count;
 }
 #endif
 
@@ -6004,41 +6031,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          info->need_clear   = true;
          break;
       }
-      case DISPLAYLIST_DISC_INFO:
-         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         count = menu_displaylist_parse_disc_info(info,
-               MENU_SET_CDROM_INFO);
-
-         if (count == 0)
-            menu_entries_append_enum(info->list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
-                  msg_hash_to_str(MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY),
-                  MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
-                  FILE_TYPE_NONE, 0, 0);
-
-         info->need_push    = true;
-         info->need_refresh = true;
-         info->need_clear   = true;
-         break;
-      case DISPLAYLIST_DUMP_DISC:
-         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         count = menu_displaylist_parse_disc_info(info,
-               MENU_SET_CDROM_LIST);
-
-         if (count == 0)
-            menu_entries_append_enum(info->list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
-                  msg_hash_to_str(MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY),
-                  MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
-                  FILE_TYPE_NONE, 0, 0);
-
-         info->need_push    = true;
-         info->need_refresh = true;
-         info->need_clear   = true;
-         break;
       case DISPLAYLIST_LOAD_DISC:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         count = menu_displaylist_parse_disc_info(info,
+         count = menu_displaylist_parse_disc_info(info->list,
                MENU_SET_LOAD_CDROM_LIST);
 
          if (count == 0)
@@ -6054,9 +6049,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          break;
 #else
       case DISPLAYLIST_CDROM_DETAIL_INFO:
-      case DISPLAYLIST_DISC_INFO:
       case DISPLAYLIST_LOAD_DISC:
-      case DISPLAYLIST_DUMP_DISC:
          /* No-op */
          break;
 #endif
@@ -7377,6 +7370,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
       case DISPLAYLIST_ADD_CONTENT_LIST:
       case DISPLAYLIST_INPUT_SETTINGS_LIST:
       case DISPLAYLIST_FRAME_TIME_COUNTER_SETTINGS_LIST:
+      case DISPLAYLIST_BROWSE_URL_LIST:
+      case DISPLAYLIST_DISC_INFO:
+      case DISPLAYLIST_DUMP_DISC:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          count = menu_displaylist_build_list(info->list, type);
 
@@ -7412,6 +7408,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         MENU_ENUM_LABEL_NO_PERFORMANCE_COUNTERS,
                         0, 0, 0);
                   break;
+               case DISPLAYLIST_DISC_INFO:
+               case DISPLAYLIST_DUMP_DISC:
                case DISPLAYLIST_MENU_SETTINGS_LIST:
                   menu_entries_append_enum(info->list,
                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
@@ -7427,6 +7425,17 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         0, 0, 0);
                   break;
             }
+         }
+
+         /* Special pass */
+         switch (type)
+         {
+            case DISPLAYLIST_DISC_INFO:
+            case DISPLAYLIST_DUMP_DISC:
+               info->need_clear   = true;
+               break;
+            default:
+               break;
          }
 
          info->need_refresh = true;
@@ -8698,24 +8707,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_HELP_SEND_DEBUG_INFO),
                msg_hash_to_str(MENU_ENUM_LABEL_HELP_SEND_DEBUG_INFO),
                MENU_ENUM_LABEL_HELP_SEND_DEBUG_INFO,
-               0, 0, 0))
-            count++;
-
-         info->need_refresh = true;
-         info->need_push    = true;
-         break;
-      case DISPLAYLIST_BROWSE_URL_LIST:
-         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         if (menu_entries_append_enum(info->list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_BROWSE_URL),
-               msg_hash_to_str(MENU_ENUM_LABEL_BROWSE_URL),
-               MENU_ENUM_LABEL_BROWSE_URL,
-               0, 0, 0))
-            count++;
-         if (menu_entries_append_enum(info->list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_BROWSE_START),
-               msg_hash_to_str(MENU_ENUM_LABEL_BROWSE_START),
-               MENU_ENUM_LABEL_BROWSE_START,
                0, 0, 0))
             count++;
 
