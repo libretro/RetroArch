@@ -2723,7 +2723,6 @@ enum msg_hash_enums
 #define MENU_LABEL_DEFERRED_DRIVER_SETTINGS_LIST                               0xaa5efefcU
 #define MENU_LABEL_DEFERRED_VIDEO_SETTINGS_LIST                                0x83c65827U
 #define MENU_LABEL_DEFERRED_AUDIO_SETTINGS_LIST                                0x5bba25e2U
-#define MENU_LABEL_DEFERRED_RECORDING_SETTINGS_LIST                            0x05548d52U
 #define MENU_LABEL_DEFERRED_PLAYLIST_SETTINGS_LIST                             0x9518e0c7U
 #define MENU_LABEL_DEFERRED_PLAYLIST_MANAGER_LIST                              0xD7232C4CU
 #define MENU_LABEL_DEFERRED_PLAYLIST_MANAGER_SETTINGS                          0x16ACEF81U
