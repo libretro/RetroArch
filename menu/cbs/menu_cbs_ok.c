@@ -5252,61 +5252,22 @@ static int action_ok_push_dropdown_setting_core_options_item_special(const char 
    return action_cancel_pop_default(NULL, NULL, 0, 0);
 }
 
-/* TODO/FIXME */
-static int action_ok_push_dropdown_setting_string_options_item_special(const char *path,
+static int action_ok_push_dropdown_setting_core_options_item(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   enum msg_hash_enums enum_idx = (enum msg_hash_enums)atoi(label);
-   rarch_setting_t     *setting = menu_setting_find_enum(enum_idx);
+   core_option_manager_t *coreopts = NULL;
+   int core_option_idx             = (int)atoi(label);
 
-   if (!setting)
+   rarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts);
+
+   if (!coreopts)
       return -1;
 
-   strlcpy(setting->value.target.string, path,
-         setting->size);
-
-   if (setting->change_handler)
-      setting->change_handler(setting);
-
+   core_option_manager_set_val(coreopts, core_option_idx, idx);
    return action_cancel_pop_default(NULL, NULL, 0, 0);
 }
 
 /* TODO/FIXME */
-static int action_ok_push_dropdown_setting_int_item_special(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   enum msg_hash_enums enum_idx = (enum msg_hash_enums)atoi(label);
-   rarch_setting_t     *setting = menu_setting_find_enum(enum_idx);
-
-   if (!setting)
-      return -1;
-
-   *setting->value.target.integer = (int32_t)(idx + setting->offset_by);
-
-   if (setting->change_handler)
-      setting->change_handler(setting);
-
-   return action_cancel_pop_default(NULL, NULL, 0, 0);
-}
-
-/* TODO/FIXME */
-static int action_ok_push_dropdown_setting_float_item_special(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   enum msg_hash_enums enum_idx = (enum msg_hash_enums)atoi(label);
-   rarch_setting_t     *setting = menu_setting_find_enum(enum_idx);
-   float val                    = (float)atof(path);
-
-   if (!setting)
-      return -1;
-
-   *setting->value.target.fraction = (float)val;
-
-   if (setting->change_handler)
-      setting->change_handler(setting);
-
-   return action_cancel_pop_default(NULL, NULL, 0, 0);
-}
 
 static int action_ok_push_dropdown_setting_uint_item_special(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -5335,92 +5296,91 @@ static int action_ok_push_dropdown_setting_uint_item_special(const char *path,
    return action_cancel_pop_default(NULL, NULL, 0, 0);
 }
 
-static int action_ok_push_dropdown_setting_core_options_item(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
+
+static int generic_action_ok_dropdown_setting(const char *path, const char *label,
+      unsigned type, size_t idx)
 {
-   core_option_manager_t *coreopts = NULL;
-   int core_option_idx             = (int)atoi(label);
+   enum msg_hash_enums enum_idx = (enum msg_hash_enums)atoi(label);
+   rarch_setting_t     *setting = menu_setting_find_enum(enum_idx);
 
-   rarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts);
-
-   if (!coreopts)
+   if (!setting)
       return -1;
 
-   core_option_manager_set_val(coreopts, core_option_idx, idx);
+   switch (setting_get_type(setting))
+   {
+      case ST_INT:
+         *setting->value.target.integer = (int32_t)(idx + setting->offset_by);
+         break;
+      case ST_UINT:
+         {
+            unsigned value = (unsigned)(idx + setting->offset_by);
+            *setting->value.target.unsigned_integer = value;
+         }
+         break;
+      case ST_FLOAT:
+         {
+            float val                    = (float)atof(path);
+            *setting->value.target.fraction = (float)val;
+         }
+         break;
+      case ST_STRING:
+      case ST_STRING_OPTIONS:
+      case ST_PATH:
+      case ST_DIR:
+         strlcpy(setting->value.target.string, path,
+               setting->size);
+         break;
+      default:
+         break;
+   }
+
+   if (setting->change_handler)
+      setting->change_handler(setting);
+
    return action_cancel_pop_default(NULL, NULL, 0, 0);
+}
+
+static int action_ok_push_dropdown_setting_string_options_item_special(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return generic_action_ok_dropdown_setting(path, label, type, idx);
+}
+
+static int action_ok_push_dropdown_setting_int_item_special(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return generic_action_ok_dropdown_setting(path, label, type, idx);
+}
+
+
+static int action_ok_push_dropdown_setting_float_item_special(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return generic_action_ok_dropdown_setting(path, label, type, idx);
 }
 
 static int action_ok_push_dropdown_setting_string_options_item(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   enum msg_hash_enums enum_idx = (enum msg_hash_enums)atoi(label);
-   rarch_setting_t     *setting = menu_setting_find_enum(enum_idx);
-
-   if (!setting)
-      return -1;
-
-   strlcpy(setting->value.target.string, path,
-         setting->size);
-
-   if (setting->change_handler)
-      setting->change_handler(setting);
-
-   return action_cancel_pop_default(NULL, NULL, 0, 0);
+   return generic_action_ok_dropdown_setting(path, label, type, idx);
 }
 
 static int action_ok_push_dropdown_setting_int_item(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   enum msg_hash_enums enum_idx = (enum msg_hash_enums)atoi(label);
-   rarch_setting_t     *setting = menu_setting_find_enum(enum_idx);
-
-   if (!setting)
-      return -1;
-
-   *setting->value.target.integer = (int32_t)(idx + setting->offset_by);
-
-   if (setting->change_handler)
-      setting->change_handler(setting);
-
-   return action_cancel_pop_default(NULL, NULL, 0, 0);
+   return generic_action_ok_dropdown_setting(path, label, type, idx);
 }
 
 static int action_ok_push_dropdown_setting_float_item(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   enum msg_hash_enums enum_idx = (enum msg_hash_enums)atoi(label);
-   rarch_setting_t     *setting = menu_setting_find_enum(enum_idx);
-   float val                    = (float)atof(path);
-
-   if (!setting)
-      return -1;
-
-   *setting->value.target.fraction = (float)val;
-
-   if (setting->change_handler)
-      setting->change_handler(setting);
-
-   return action_cancel_pop_default(NULL, NULL, 0, 0);
+   return generic_action_ok_dropdown_setting(path, label, type, idx);
 }
 
 static int action_ok_push_dropdown_setting_uint_item(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   unsigned value;
-   enum msg_hash_enums enum_idx = (enum msg_hash_enums)atoi(label);
-   rarch_setting_t     *setting = menu_setting_find_enum(enum_idx);
-
-   if (!setting)
-      return -1;
-
-   value = (unsigned)(idx + setting->offset_by);
-
-   *setting->value.target.unsigned_integer = value;
-
-   if (setting->change_handler)
-      setting->change_handler(setting);
-
-   return action_cancel_pop_default(NULL, NULL, 0, 0);
+   return generic_action_ok_dropdown_setting(path, label, type, idx);
 }
 
 static int action_ok_push_dropdown_item(const char *path,
