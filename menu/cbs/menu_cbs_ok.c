@@ -4870,8 +4870,9 @@ default_action_ok_dl_push(action_ok_push_content_list, FILEBROWSER_SELECT_FILE, 
 default_action_ok_dl_push(action_ok_push_scan_file, FILEBROWSER_SCAN_FILE, ACTION_OK_DL_CONTENT_LIST, settings->paths.directory_menu_content)
 
 #ifdef HAVE_NETWORKING
-struct netplay_host_list *lan_hosts;
-int lan_room_count;
+/* TODO/FIXME - globals - remove */
+static struct netplay_host_list *lan_hosts = NULL;
+static int lan_room_count                  = 0;
 
 void netplay_refresh_rooms_menu(file_list_t *list)
 {
