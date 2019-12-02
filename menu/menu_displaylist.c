@@ -3816,6 +3816,101 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
 
    switch (type)
    {
+      case DISPLAYLIST_LOAD_CONTENT_LIST:
+      case DISPLAYLIST_LOAD_CONTENT_SPECIAL:
+         {
+            settings_t      *settings     = config_get_ptr();
+
+            if (!string_is_empty(settings->paths.directory_menu_content))
+               if (menu_entries_append_enum(list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FAVORITES),
+                     msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES),
+                     MENU_ENUM_LABEL_FAVORITES,
+                     MENU_SETTING_ACTION, 0, 0))
+                  count++;
+
+            if (settings->bools.menu_content_show_favorites)
+               if (menu_entries_append_enum(list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES),
+                     msg_hash_to_str(MENU_ENUM_LABEL_GOTO_FAVORITES),
+                     MENU_ENUM_LABEL_GOTO_FAVORITES,
+                     MENU_SETTING_ACTION, 0, 0))
+                  count++;
+
+            if (settings->bools.menu_content_show_images)
+               if (menu_entries_append_enum(list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_IMAGES),
+                     msg_hash_to_str(MENU_ENUM_LABEL_GOTO_IMAGES),
+                     MENU_ENUM_LABEL_GOTO_IMAGES,
+                     MENU_SETTING_ACTION, 0, 0))
+                  count++;
+
+            if (settings->bools.menu_content_show_music)
+               if (menu_entries_append_enum(list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_MUSIC),
+                     msg_hash_to_str(MENU_ENUM_LABEL_GOTO_MUSIC),
+                     MENU_ENUM_LABEL_GOTO_MUSIC,
+                     MENU_SETTING_ACTION, 0, 0))
+                  count++;
+
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
+            if (settings->bools.menu_content_show_video)
+               if (menu_entries_append_enum(list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_VIDEO),
+                     msg_hash_to_str(MENU_ENUM_LABEL_GOTO_VIDEO),
+                     MENU_ENUM_LABEL_GOTO_VIDEO,
+                     MENU_SETTING_ACTION, 0, 0))
+                  count++;
+#endif
+         }
+
+         {
+            core_info_list_t *info_list        = NULL;
+            core_info_get_list(&info_list);
+            if (core_info_list_num_info_files(info_list))
+            {
+               if (menu_entries_append_enum(list,
+                     msg_hash_to_str(
+                        MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST),
+                     msg_hash_to_str(
+                        MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST),
+                     MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST,
+                     MENU_SETTING_ACTION, 0, 0))
+                  count++;
+            }
+         }
+
+#ifndef HAVE_LIBRETRODB
+         {
+            settings_t *settings = config_get_ptr();
+            if (settings->bools.menu_show_advanced_settings)
+#endif
+               if (menu_entries_append_enum(list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB),
+                     msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB),
+                     MENU_ENUM_LABEL_PLAYLISTS_TAB,
+                     MENU_SETTING_ACTION, 0, 0))
+                  count++;
+#ifndef HAVE_LIBRETRODB
+         }
+#endif
+
+         if (frontend_driver_parse_drive_list(list, true) != 0)
+            if (menu_entries_append_enum(list, "/",
+                  msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+                  MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
+                  MENU_SETTING_ACTION, 0, 0))
+               count++;
+
+#if 0
+         if (menu_entries_append_enum(list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_BROWSE_URL_LIST),
+               msg_hash_to_str(MENU_ENUM_LABEL_BROWSE_URL_LIST),
+               MENU_ENUM_LABEL_BROWSE_URL_LIST,
+               MENU_SETTING_ACTION, 0, 0))
+            count++;
+#endif
+         break;
       case DISPLAYLIST_INPUT_SETTINGS_LIST:
          if (menu_displaylist_parse_settings_enum(list,
                   MENU_ENUM_LABEL_INPUT_MAX_USERS,
@@ -7399,6 +7494,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
       case DISPLAYLIST_BROWSE_URL_LIST:
       case DISPLAYLIST_DISC_INFO:
       case DISPLAYLIST_DUMP_DISC:
+      case DISPLAYLIST_LOAD_CONTENT_LIST:
+      case DISPLAYLIST_LOAD_CONTENT_SPECIAL:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          count = menu_displaylist_build_list(info->list, type);
 
@@ -7918,104 +8015,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 #endif
 
          ret                = 0;
-         info->need_push    = true;
-         info->need_refresh = true;
-         break;
-      case DISPLAYLIST_LOAD_CONTENT_LIST:
-      case DISPLAYLIST_LOAD_CONTENT_SPECIAL:
-         {
-            settings_t      *settings     = config_get_ptr();
-            menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-
-            if (!string_is_empty(settings->paths.directory_menu_content))
-               if (menu_entries_append_enum(info->list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FAVORITES),
-                     msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES),
-                     MENU_ENUM_LABEL_FAVORITES,
-                     MENU_SETTING_ACTION, 0, 0))
-                  count++;
-
-            if (settings->bools.menu_content_show_favorites)
-               if (menu_entries_append_enum(info->list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES),
-                     msg_hash_to_str(MENU_ENUM_LABEL_GOTO_FAVORITES),
-                     MENU_ENUM_LABEL_GOTO_FAVORITES,
-                     MENU_SETTING_ACTION, 0, 0))
-                  count++;
-
-            if (settings->bools.menu_content_show_images)
-               if (menu_entries_append_enum(info->list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_IMAGES),
-                     msg_hash_to_str(MENU_ENUM_LABEL_GOTO_IMAGES),
-                     MENU_ENUM_LABEL_GOTO_IMAGES,
-                     MENU_SETTING_ACTION, 0, 0))
-                  count++;
-
-            if (settings->bools.menu_content_show_music)
-               if (menu_entries_append_enum(info->list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_MUSIC),
-                     msg_hash_to_str(MENU_ENUM_LABEL_GOTO_MUSIC),
-                     MENU_ENUM_LABEL_GOTO_MUSIC,
-                     MENU_SETTING_ACTION, 0, 0))
-                  count++;
-
-#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
-            if (settings->bools.menu_content_show_video)
-               if (menu_entries_append_enum(info->list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_VIDEO),
-                     msg_hash_to_str(MENU_ENUM_LABEL_GOTO_VIDEO),
-                     MENU_ENUM_LABEL_GOTO_VIDEO,
-                     MENU_SETTING_ACTION, 0, 0))
-                  count++;
-#endif
-         }
-
-         {
-            core_info_list_t *list        = NULL;
-            core_info_get_list(&list);
-            if (core_info_list_num_info_files(list))
-            {
-               if (menu_entries_append_enum(info->list,
-                     msg_hash_to_str(
-                        MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST),
-                     msg_hash_to_str(
-                        MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST),
-                     MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST,
-                     MENU_SETTING_ACTION, 0, 0))
-                  count++;
-            }
-         }
-
-#ifndef HAVE_LIBRETRODB
-         {
-            settings_t *settings = config_get_ptr();
-            if (settings->bools.menu_show_advanced_settings)
-#endif
-               if (menu_entries_append_enum(info->list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB),
-                     msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB),
-                     MENU_ENUM_LABEL_PLAYLISTS_TAB,
-                     MENU_SETTING_ACTION, 0, 0))
-                  count++;
-#ifndef HAVE_LIBRETRODB
-         }
-#endif
-
-         if (frontend_driver_parse_drive_list(info->list, true) != 0)
-            if (menu_entries_append_enum(info->list, "/",
-                  msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
-                  MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
-                  MENU_SETTING_ACTION, 0, 0))
-               count++;
-
-#if 0
-         if (menu_entries_append_enum(info->list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_BROWSE_URL_LIST),
-               msg_hash_to_str(MENU_ENUM_LABEL_BROWSE_URL_LIST),
-               MENU_ENUM_LABEL_BROWSE_URL_LIST,
-               MENU_SETTING_ACTION, 0, 0))
-            count++;
-#endif
          info->need_push    = true;
          info->need_refresh = true;
          break;
