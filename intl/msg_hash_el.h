@@ -3639,7 +3639,7 @@ MSG_HASH(
     "Αλλαγή ρυθμίσεων χειριστηρίου, πληκτρολογίου και ποντικιού."
     )
 MSG_HASH(
-    MENU_ENUM_SUBLABEL_INPUT_USER_BINDS,
+    MENU_ENUM_SUBLABEL_INPUT_USER_BINDS, /* TODO/FIXME - change user to port */
     "Διαμόρφωση χειρισμών για αυτόν τον χρήστη."
     )
 MSG_HASH(

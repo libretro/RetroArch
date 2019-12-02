@@ -4533,7 +4533,7 @@ MSG_HASH(
     "Cambia las opciones de mando, teclado y ratón."
     )
 MSG_HASH(
-    MENU_ENUM_SUBLABEL_INPUT_USER_BINDS,
+    MENU_ENUM_SUBLABEL_INPUT_USER_BINDS, /* TODO/FIXME - change user to port */
     "Configura los controles para este usuario."
     )
 MSG_HASH(

@@ -4553,7 +4553,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_INPUT_USER_BINDS,
-    "Configure controls for this user."
+    "Configure controls for this port."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_LATENCY_SETTINGS,

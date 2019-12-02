@@ -4244,7 +4244,7 @@ MSG_HASH(
     "Joypad, klavye ve fare ayarlarını değiştirin."
     )
 MSG_HASH(
-    MENU_ENUM_SUBLABEL_INPUT_USER_BINDS,
+    MENU_ENUM_SUBLABEL_INPUT_USER_BINDS, /* TODO/FIXME - change user to port */
     "Bu kullanıcı için kontrolleri yapılandırın."
     )
 MSG_HASH(

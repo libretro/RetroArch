@@ -4357,7 +4357,7 @@ MSG_HASH(
     "조이패드, 키보드 및 마우스를 설정합니다."
     )
 MSG_HASH(
-    MENU_ENUM_SUBLABEL_INPUT_USER_BINDS,
+    MENU_ENUM_SUBLABEL_INPUT_USER_BINDS, /* TODO/FIXME - change user to port */
     "현재 사용자에 대한 입력을 설정합니다."
     )
 MSG_HASH(

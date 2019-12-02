@@ -4560,7 +4560,7 @@ MSG_HASH(
     "Modifier les réglages de manettes, clavier et souris."
     )
 MSG_HASH(
-    MENU_ENUM_SUBLABEL_INPUT_USER_BINDS,
+    MENU_ENUM_SUBLABEL_INPUT_USER_BINDS, /* TODO/FIXME - change user to port */
     "Configurer les touches pour cet utilisateur."
     )
 MSG_HASH(
