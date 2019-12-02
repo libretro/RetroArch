@@ -2123,6 +2123,8 @@ MSG_HASH(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_MANUAL_CONTENT_SCAN_CORE_NAM
       "deferred_dropdown_box_list_manual_content_scan_core_name")
 MSG_HASH(MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_FILE_EXTS,
       "manual_content_scan_file_exts")
+MSG_HASH(MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_SEARCH_ARCHIVES,
+      "manual_content_scan_search_archives")
 MSG_HASH(MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_OVERWRITE,
       "manual_content_scan_overwrite")
 MSG_HASH(MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_START,
