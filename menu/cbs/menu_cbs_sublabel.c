@@ -1130,81 +1130,85 @@ static int action_bind_sublabel_generic(
 int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx)
 {
+   unsigned i;
+   typedef struct info_range_list
+   {
+      unsigned min;
+      unsigned max;
+      int (*cb)(file_list_t *list,
+            unsigned type, unsigned i,
+            const char *label, const char *path,
+            char *s, size_t len);
+   } info_range_list_t;
+
+   info_range_list_t info_list[] = {
+      {
+         MENU_SETTINGS_INPUT_DESC_KBD_BEGIN,
+         MENU_SETTINGS_INPUT_DESC_KBD_END, 
+         action_bind_sublabel_remap_kbd_sublabel
+      },
+#ifdef HAVE_AUDIOMIXER
+      {
+         MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_PLAY_BEGIN,
+         MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_PLAY_END,
+         menu_action_sublabel_setting_audio_mixer_stream_play
+      },
+      {
+         MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_PLAY_LOOPED_BEGIN,
+         MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_PLAY_LOOPED_END,
+         menu_action_sublabel_setting_audio_mixer_stream_play_looped
+      },
+      {
+         MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_PLAY_SEQUENTIAL_BEGIN,
+         MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_PLAY_SEQUENTIAL_END,
+         menu_action_sublabel_setting_audio_mixer_stream_play_sequential
+      },
+      {
+         MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_REMOVE_BEGIN,
+         MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_REMOVE_END,
+         menu_action_sublabel_setting_audio_mixer_stream_remove
+      },
+      {
+         MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_STOP_BEGIN,
+         MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_STOP_END,
+         menu_action_sublabel_setting_audio_mixer_stream_stop
+      },
+      {
+         MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_VOLUME_BEGIN,
+         MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_VOLUME_END,
+         menu_action_sublabel_setting_audio_mixer_stream_volume
+      },
+      {
+         MENU_SETTINGS_AUDIO_MIXER_STREAM_BEGIN,
+         MENU_SETTINGS_AUDIO_MIXER_STREAM_END,
+         action_bind_sublabel_audio_mixer_stream
+      },
+#endif
+      {
+         MENU_SETTINGS_INPUT_DESC_BEGIN,
+         MENU_SETTINGS_INPUT_DESC_END,
+         action_bind_sublabel_remap_sublabel
+      },
+      {
+         MENU_SETTINGS_CHEAT_BEGIN,
+         MENU_SETTINGS_CHEAT_END,
+         action_bind_sublabel_cheat_desc
+      },
+   };
+
    if (!cbs)
       return -1;
 
    BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_generic);
 
-   if (type >= MENU_SETTINGS_INPUT_DESC_KBD_BEGIN
-      && type <= MENU_SETTINGS_INPUT_DESC_KBD_END)
+   for (i = 0; i < ARRAY_SIZE(info_list); i++)
    {
-      BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_remap_kbd_sublabel);
+      if (type >= info_list[i].min && type <= info_list[i].max)
+      {
+         BIND_ACTION_SUBLABEL(cbs, info_list[i].cb);
+         return 0;
+      }
    }
-#ifdef HAVE_AUDIOMIXER
-   else if (type >= MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_PLAY_BEGIN
-         && type <= MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_PLAY_END)
-   {
-      BIND_ACTION_SUBLABEL(cbs,
-         menu_action_sublabel_setting_audio_mixer_stream_play);
-      return 0;
-   }
-   else if (type >= MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_PLAY_LOOPED_BEGIN
-         && type <= MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_PLAY_LOOPED_END)
-   {
-      BIND_ACTION_SUBLABEL(cbs,
-         menu_action_sublabel_setting_audio_mixer_stream_play_looped);
-      return 0;
-   }
-   else if (type >= MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_PLAY_SEQUENTIAL_BEGIN
-         && type <= MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_PLAY_SEQUENTIAL_END)
-   {
-      BIND_ACTION_SUBLABEL(cbs,
-         menu_action_sublabel_setting_audio_mixer_stream_play_sequential);
-      return 0;
-   }
-   else if (type >= MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_REMOVE_BEGIN
-         && type <= MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_REMOVE_END)
-   {
-      BIND_ACTION_SUBLABEL(cbs,
-         menu_action_sublabel_setting_audio_mixer_stream_remove);
-      return 0;
-   }
-   else if (type >= MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_STOP_BEGIN
-         && type <= MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_STOP_END)
-   {
-      BIND_ACTION_SUBLABEL(cbs,
-         menu_action_sublabel_setting_audio_mixer_stream_stop);
-      return 0;
-   }
-   else if (type >= MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_VOLUME_BEGIN
-         && type <= MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_VOLUME_END)
-   {
-      BIND_ACTION_SUBLABEL(cbs,
-         menu_action_sublabel_setting_audio_mixer_stream_volume);
-      return 0;
-   }
-#endif
-
-   if (type >= MENU_SETTINGS_INPUT_DESC_BEGIN
-      && type <= MENU_SETTINGS_INPUT_DESC_END)
-   {
-      BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_remap_sublabel);
-   }
-
-   if (type >= MENU_SETTINGS_CHEAT_BEGIN
-      && type <= MENU_SETTINGS_CHEAT_END)
-   {
-      BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheat_desc);
-   }
-
-#ifdef HAVE_AUDIOMIXER
-   if (type >= MENU_SETTINGS_AUDIO_MIXER_STREAM_BEGIN
-      && type <= MENU_SETTINGS_AUDIO_MIXER_STREAM_END)
-   {
-      BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_audio_mixer_stream);
-      return 0;
-   }
-#endif
 
    if ((type >= MENU_SETTINGS_CORE_OPTION_START) &&
        (type < MENU_SETTINGS_CHEEVOS_START))
