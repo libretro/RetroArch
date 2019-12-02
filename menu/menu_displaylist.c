@@ -3816,6 +3816,179 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
 
    switch (type)
    {
+      case DISPLAYLIST_OPTIONS_REMAPPINGS:
+         {
+            unsigned p;
+            settings_t        *settings = config_get_ptr();
+            unsigned max_users          = *(input_driver_get_uint(INPUT_ACTION_MAX_USERS));
+            bool is_rgui                = string_is_equal(
+                  settings->arrays.menu_driver, "rgui");
+
+            for (p = 0; p < max_users; p++)
+            {
+               char key_type[PATH_MAX_LENGTH];
+               char key_analog[PATH_MAX_LENGTH];
+               unsigned val = p + 1;
+
+               key_type[0] = key_analog[0] = '\0';
+
+               snprintf(key_type, sizeof(key_type),
+                     msg_hash_to_str(MENU_ENUM_LABEL_INPUT_LIBRETRO_DEVICE), val);
+               snprintf(key_analog, sizeof(key_analog),
+                     msg_hash_to_str(MENU_ENUM_LABEL_INPUT_PLAYER_ANALOG_DPAD_MODE), val);
+
+               if (menu_displaylist_parse_settings(list,
+                        key_type, PARSE_ONLY_UINT, true, 0) == 0)
+                  count++;
+               if (menu_displaylist_parse_settings(list,
+                        key_analog, PARSE_ONLY_UINT, true, 0) == 0)
+                  count++;
+            }
+
+            if (menu_entries_append_enum(list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REMAP_FILE_LOAD),
+                     msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_LOAD),
+                     MENU_ENUM_LABEL_REMAP_FILE_LOAD,
+                     MENU_SETTING_ACTION, 0, 0))
+               count++;
+            if (menu_entries_append_enum(list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_CORE),
+                     msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_SAVE_CORE),
+                     MENU_ENUM_LABEL_REMAP_FILE_SAVE_CORE,
+                     MENU_SETTING_ACTION, 0, 0))
+               count++;
+            if (menu_entries_append_enum(list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_CONTENT_DIR),
+                     msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_SAVE_CONTENT_DIR),
+                     MENU_ENUM_LABEL_REMAP_FILE_SAVE_CONTENT_DIR,
+                     MENU_SETTING_ACTION, 0, 0))
+               count++;
+            if (menu_entries_append_enum(list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_GAME),
+                     msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_SAVE_GAME),
+                     MENU_ENUM_LABEL_REMAP_FILE_SAVE_GAME,
+                     MENU_SETTING_ACTION, 0, 0))
+               count++;
+
+            if (rarch_ctl(RARCH_CTL_IS_REMAPS_CORE_ACTIVE, NULL))
+               if (menu_entries_append_enum(list,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_CORE),
+                        msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_REMOVE_CORE),
+                        MENU_ENUM_LABEL_REMAP_FILE_REMOVE_CORE,
+                        MENU_SETTING_ACTION, 0, 0))
+                  count++;
+
+            if (rarch_ctl(RARCH_CTL_IS_REMAPS_GAME_ACTIVE, NULL))
+               if (menu_entries_append_enum(list,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_GAME),
+                        msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_REMOVE_GAME),
+                        MENU_ENUM_LABEL_REMAP_FILE_REMOVE_GAME,
+                        MENU_SETTING_ACTION, 0, 0))
+                  count++;
+
+            if (rarch_ctl(RARCH_CTL_IS_REMAPS_CONTENT_DIR_ACTIVE, NULL))
+               if (menu_entries_append_enum(list,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_CONTENT_DIR),
+                        msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_REMOVE_CONTENT_DIR),
+                        MENU_ENUM_LABEL_REMAP_FILE_REMOVE_CONTENT_DIR,
+                        MENU_SETTING_ACTION, 0, 0))
+                  count++;
+
+            for (p = 0; p < max_users; p++)
+            {
+               unsigned retro_id;
+               unsigned device  = settings->uints.input_libretro_device[p];
+               device &= RETRO_DEVICE_MASK;
+
+               if (device == RETRO_DEVICE_JOYPAD || device == RETRO_DEVICE_ANALOG)
+               {
+                  for (retro_id = 0; retro_id < RARCH_ANALOG_BIND_LIST_END; retro_id++)
+                  {
+                     char desc_label[400];
+                     char descriptor[300];
+                     const struct retro_keybind *keybind   =
+                        &input_config_binds[p][retro_id];
+                     const struct retro_keybind *auto_bind =
+                        (const struct retro_keybind*)
+                        input_config_get_bind_auto(p, retro_id);
+
+                     input_config_get_bind_string(descriptor,
+                           keybind, auto_bind, sizeof(descriptor));
+
+                     if (!strstr(descriptor, "Auto"))
+                     {
+                        const struct retro_keybind *keyptr =
+                           &input_config_binds[p][retro_id];
+
+                        snprintf(desc_label, sizeof(desc_label),
+                              "%s %s", msg_hash_to_str(keyptr->enum_idx), descriptor);
+                        strlcpy(descriptor, desc_label, sizeof(descriptor));
+                     }
+
+                     /* Add user index when display driver == rgui and sublabels
+                      * are disabled, but only if there is more than one user */
+                     if (     (is_rgui)
+                           && (max_users > 1)
+                           && !settings->bools.menu_show_sublabels)
+                     {
+                        snprintf(desc_label, sizeof(desc_label),
+                              "%s [%s %u]", descriptor, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT), p + 1);
+                        strlcpy(descriptor, desc_label, sizeof(descriptor));
+                     }
+
+                     if (menu_entries_append_enum(list, descriptor, "",
+                              MSG_UNKNOWN,
+                              MENU_SETTINGS_INPUT_DESC_BEGIN +
+                              (p * (RARCH_FIRST_CUSTOM_BIND + 8)) +  retro_id, 0, 0))
+                        count++;
+                  }
+               }
+               else if (device == RETRO_DEVICE_KEYBOARD)
+               {
+                  for (retro_id = 0; retro_id < RARCH_FIRST_CUSTOM_BIND; retro_id++)
+                  {
+                     char desc_label[400];
+                     char descriptor[300];
+                     const struct retro_keybind *keybind   =
+                        &input_config_binds[p][retro_id];
+                     const struct retro_keybind *auto_bind =
+                        (const struct retro_keybind*)
+                        input_config_get_bind_auto(p, retro_id);
+
+                     input_config_get_bind_string(descriptor,
+                           keybind, auto_bind, sizeof(descriptor));
+
+                     if (!strstr(descriptor, "Auto"))
+                     {
+                        const struct retro_keybind *keyptr =
+                           &input_config_binds[p][retro_id];
+
+                        strlcpy(descriptor,
+                              msg_hash_to_str(keyptr->enum_idx), sizeof(descriptor));
+                     }
+
+                     /* Add user index when display driver == rgui and sublabels
+                      * are disabled, but only if there is more than one user */
+                     if (     (is_rgui)
+                           && (max_users > 1)
+                           && !settings->bools.menu_show_sublabels)
+                     {
+                        snprintf(desc_label, sizeof(desc_label),
+                              "%s [%s %u]", descriptor,
+                              msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT), p + 1);
+                        strlcpy(descriptor, desc_label, sizeof(descriptor));
+                     }
+
+                     if (menu_entries_append_enum(list, descriptor, "",
+                              MSG_UNKNOWN,
+                              MENU_SETTINGS_INPUT_DESC_KBD_BEGIN +
+                              (p * RARCH_FIRST_CUSTOM_BIND) + retro_id, 0, 0))
+                        count++;
+                  }
+               }
+            }
+         }
+         break;
       case DISPLAYLIST_LOAD_CONTENT_LIST:
       case DISPLAYLIST_LOAD_CONTENT_SPECIAL:
          {
@@ -4686,9 +4859,12 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
             }
 
             if (cheat_manager_state.working_cheat.handler == CHEAT_HANDLER_TYPE_EMU)
-               menu_displaylist_parse_settings_enum(list,
-                     MENU_ENUM_LABEL_CHEAT_CODE,
-                     PARSE_ONLY_STRING, false);
+            {
+               if (menu_displaylist_parse_settings_enum(list,
+                        MENU_ENUM_LABEL_CHEAT_CODE,
+                        PARSE_ONLY_STRING, false) == 0)
+                  count++;
+            }
             else
             {
                menu_displaylist_build_info_t build_list[] = {
@@ -7496,6 +7672,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
       case DISPLAYLIST_DUMP_DISC:
       case DISPLAYLIST_LOAD_CONTENT_LIST:
       case DISPLAYLIST_LOAD_CONTENT_SPECIAL:
+      case DISPLAYLIST_OPTIONS_REMAPPINGS:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          count = menu_displaylist_build_list(info->list, type);
 
@@ -8196,186 +8373,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   MENU_SETTING_NO_ITEM, 0, 0);
 
          ret                = 0;
-         info->need_push    = true;
-         break;
-      case DISPLAYLIST_OPTIONS_REMAPPINGS:
-         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-
-         {
-            unsigned p;
-            settings_t        *settings = config_get_ptr();
-            unsigned max_users          = *(input_driver_get_uint(INPUT_ACTION_MAX_USERS));
-            bool is_rgui                = string_is_equal(
-                  settings->arrays.menu_driver, "rgui");
-
-            for (p = 0; p < max_users; p++)
-            {
-               char key_type[PATH_MAX_LENGTH];
-               char key_analog[PATH_MAX_LENGTH];
-               unsigned val = p + 1;
-
-               key_type[0] = key_analog[0] = '\0';
-
-               snprintf(key_type, sizeof(key_type),
-                     msg_hash_to_str(MENU_ENUM_LABEL_INPUT_LIBRETRO_DEVICE), val);
-               snprintf(key_analog, sizeof(key_analog),
-                     msg_hash_to_str(MENU_ENUM_LABEL_INPUT_PLAYER_ANALOG_DPAD_MODE), val);
-
-               if (menu_displaylist_parse_settings(info->list,
-                        key_type, PARSE_ONLY_UINT, true, 0) == 0)
-                  count++;
-               if (menu_displaylist_parse_settings(info->list,
-                        key_analog, PARSE_ONLY_UINT, true, 0) == 0)
-                  count++;
-            }
-
-            if (menu_entries_append_enum(info->list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REMAP_FILE_LOAD),
-                     msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_LOAD),
-                     MENU_ENUM_LABEL_REMAP_FILE_LOAD,
-                     MENU_SETTING_ACTION, 0, 0))
-               count++;
-            if (menu_entries_append_enum(info->list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_CORE),
-                     msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_SAVE_CORE),
-                     MENU_ENUM_LABEL_REMAP_FILE_SAVE_CORE,
-                     MENU_SETTING_ACTION, 0, 0))
-               count++;
-            if (menu_entries_append_enum(info->list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_CONTENT_DIR),
-                     msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_SAVE_CONTENT_DIR),
-                     MENU_ENUM_LABEL_REMAP_FILE_SAVE_CONTENT_DIR,
-                     MENU_SETTING_ACTION, 0, 0))
-               count++;
-            if (menu_entries_append_enum(info->list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_GAME),
-                     msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_SAVE_GAME),
-                     MENU_ENUM_LABEL_REMAP_FILE_SAVE_GAME,
-                     MENU_SETTING_ACTION, 0, 0))
-               count++;
-
-            if (rarch_ctl(RARCH_CTL_IS_REMAPS_CORE_ACTIVE, NULL))
-               if (menu_entries_append_enum(info->list,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_CORE),
-                        msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_REMOVE_CORE),
-                        MENU_ENUM_LABEL_REMAP_FILE_REMOVE_CORE,
-                        MENU_SETTING_ACTION, 0, 0))
-                  count++;
-
-            if (rarch_ctl(RARCH_CTL_IS_REMAPS_GAME_ACTIVE, NULL))
-               if (menu_entries_append_enum(info->list,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_GAME),
-                        msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_REMOVE_GAME),
-                        MENU_ENUM_LABEL_REMAP_FILE_REMOVE_GAME,
-                        MENU_SETTING_ACTION, 0, 0))
-                  count++;
-
-            if (rarch_ctl(RARCH_CTL_IS_REMAPS_CONTENT_DIR_ACTIVE, NULL))
-               if (menu_entries_append_enum(info->list,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_CONTENT_DIR),
-                        msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_REMOVE_CONTENT_DIR),
-                        MENU_ENUM_LABEL_REMAP_FILE_REMOVE_CONTENT_DIR,
-                        MENU_SETTING_ACTION, 0, 0))
-                  count++;
-
-            for (p = 0; p < max_users; p++)
-            {
-               unsigned retro_id;
-               unsigned device  = settings->uints.input_libretro_device[p];
-               device &= RETRO_DEVICE_MASK;
-
-               if (device == RETRO_DEVICE_JOYPAD || device == RETRO_DEVICE_ANALOG)
-               {
-                  for (retro_id = 0; retro_id < RARCH_ANALOG_BIND_LIST_END; retro_id++)
-                  {
-                     char desc_label[400];
-                     char descriptor[300];
-                     const struct retro_keybind *keybind   =
-                        &input_config_binds[p][retro_id];
-                     const struct retro_keybind *auto_bind =
-                        (const struct retro_keybind*)
-                        input_config_get_bind_auto(p, retro_id);
-
-                     input_config_get_bind_string(descriptor,
-                           keybind, auto_bind, sizeof(descriptor));
-
-                     if (!strstr(descriptor, "Auto"))
-                     {
-                        const struct retro_keybind *keyptr =
-                           &input_config_binds[p][retro_id];
-
-                        snprintf(desc_label, sizeof(desc_label),
-                              "%s %s", msg_hash_to_str(keyptr->enum_idx), descriptor);
-                        strlcpy(descriptor, desc_label, sizeof(descriptor));
-                     }
-
-                     /* Add user index when display driver == rgui and sublabels
-                      * are disabled, but only if there is more than one user */
-                     if (     (is_rgui)
-                           && (max_users > 1)
-                           && !settings->bools.menu_show_sublabels)
-                     {
-                        snprintf(desc_label, sizeof(desc_label),
-                              "%s [%s %u]", descriptor, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT), p + 1);
-                        strlcpy(descriptor, desc_label, sizeof(descriptor));
-                     }
-
-                     if (menu_entries_append_enum(info->list, descriptor, "",
-                              MSG_UNKNOWN,
-                              MENU_SETTINGS_INPUT_DESC_BEGIN +
-                              (p * (RARCH_FIRST_CUSTOM_BIND + 8)) +  retro_id, 0, 0))
-                        count++;
-                  }
-               }
-               else if (device == RETRO_DEVICE_KEYBOARD)
-               {
-                  for (retro_id = 0; retro_id < RARCH_FIRST_CUSTOM_BIND; retro_id++)
-                  {
-                     char desc_label[400];
-                     char descriptor[300];
-                     const struct retro_keybind *keybind   =
-                        &input_config_binds[p][retro_id];
-                     const struct retro_keybind *auto_bind =
-                        (const struct retro_keybind*)
-                        input_config_get_bind_auto(p, retro_id);
-
-                     input_config_get_bind_string(descriptor,
-                           keybind, auto_bind, sizeof(descriptor));
-
-                     if (!strstr(descriptor, "Auto"))
-                     {
-                        const struct retro_keybind *keyptr =
-                           &input_config_binds[p][retro_id];
-
-                        strlcpy(descriptor,
-                              msg_hash_to_str(keyptr->enum_idx), sizeof(descriptor));
-                     }
-
-                     /* Add user index when display driver == rgui and sublabels
-                      * are disabled, but only if there is more than one user */
-                     if (     (is_rgui)
-                           && (max_users > 1)
-                           && !settings->bools.menu_show_sublabels)
-                     {
-                        snprintf(desc_label, sizeof(desc_label),
-                              "%s [%s %u]", descriptor,
-                              msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT), p + 1);
-                        strlcpy(descriptor, desc_label, sizeof(descriptor));
-                     }
-
-                     if (menu_entries_append_enum(info->list, descriptor, "",
-                              MSG_UNKNOWN,
-                              MENU_SETTINGS_INPUT_DESC_KBD_BEGIN +
-                              (p * RARCH_FIRST_CUSTOM_BIND) + retro_id, 0, 0))
-                        count++;
-                  }
-               }
-            }
-         }
-
-         ret                = 0;
-
-         info->need_refresh = true;
          info->need_push    = true;
          break;
       case DISPLAYLIST_OPTIONS_OVERRIDES:
