@@ -1491,7 +1491,7 @@ MSG_HASH(
     "터보 간격"
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
+    MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS, /* TODO/FIXME - Change user to port */
     "사용자 %u 입력 설정"
     )
 MSG_HASH(

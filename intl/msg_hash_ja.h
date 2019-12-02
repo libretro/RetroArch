@@ -1500,7 +1500,7 @@ MSG_HASH(
    "ターボの期間"
 )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
+   MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS, /* TODO/FIXME - Change user to port */
    "入力ユーザ%uのバインド"
 )
 MSG_HASH(

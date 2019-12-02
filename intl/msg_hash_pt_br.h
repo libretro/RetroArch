@@ -1518,7 +1518,7 @@ MSG_HASH(
     "Período do Turbo"
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
+    MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS, /* TODO/FIXME - Change user to port */
     "Vínculos de Entrada do Usuário %u"
     )
 MSG_HASH(
