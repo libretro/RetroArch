@@ -40,43 +40,16 @@ extern MTLPixelFormat SelectOptimalPixelFormat(MTLPixelFormat fmt);
 @interface MetalView : MTKView
 @end
 
-#ifdef HAVE_COCOA_METAL
-
-@protocol ApplePlatform
-
-/*! @brief renderView returns the current render view based on the viewType */
-@property (readonly) id renderView;
-
-/*! @brief isActive returns true if the application has focus */
-@property (readonly) bool hasFocus;
-
-@property (readwrite) apple_view_type_t viewType;
-
-/*! @brief setVideoMode adjusts the video display to the specified mode */
-- (void)setVideoMode:(gfx_ctx_mode_t)mode;
-
-/*! @brief setCursorVisible specifies whether the cursor is visible */
-- (void)setCursorVisible:(bool)v;
-
-/*! @brief controls whether the screen saver should be disabled and
- * the displays should not sleep.
- */
-- (bool)setDisableDisplaySleep:(bool)disable;
-@end
-
-extern id<ApplePlatform> apple_platform;
-#endif
-
 @interface FrameView : NSObject
 
-@property (nonatomic, readonly) RPixelFormat format;
-@property (nonatomic, readonly) RTextureFilter filter;
-@property (nonatomic, readwrite) BOOL visible;
-@property (nonatomic, readwrite) CGRect frame;
-@property (nonatomic, readwrite) CGSize size;
-@property (nonatomic, readonly) ViewDrawState drawState;
-@property (nonatomic, readonly) struct video_shader *shader;
-@property (nonatomic, readwrite) uint64_t frameCount;
+@property(nonatomic, readonly) RPixelFormat format;
+@property(nonatomic, readonly) RTextureFilter filter;
+@property(nonatomic, readwrite) BOOL visible;
+@property(nonatomic, readwrite) CGRect frame;
+@property(nonatomic, readwrite) CGSize size;
+@property(nonatomic, readonly) ViewDrawState drawState;
+@property(nonatomic, readonly) struct video_shader *shader;
+@property(nonatomic, readwrite) uint64_t frameCount;
 
 - (void)setFilteringIndex:(int)index smooth:(bool)smooth;
 - (BOOL)setShaderFromPath:(NSString *)path;
@@ -87,21 +60,21 @@ extern id<ApplePlatform> apple_platform;
 
 @interface MetalMenu : NSObject
 
-@property (nonatomic, readonly) bool hasFrame;
-@property (nonatomic, readwrite) bool enabled;
-@property (nonatomic, readwrite) float alpha;
+@property(nonatomic, readonly) bool hasFrame;
+@property(nonatomic, readwrite) bool enabled;
+@property(nonatomic, readwrite) float alpha;
 
 - (void)updateFrame:(void const *)source;
 
 - (void)updateWidth:(int)width
-             height:(int)height
-             format:(RPixelFormat)format
-             filter:(RTextureFilter)filter;
+						 height:(int)height
+						 format:(RPixelFormat)format
+						 filter:(RTextureFilter)filter;
 @end
 
 @interface Overlay : NSObject
-@property (nonatomic, readwrite) bool enabled;
-@property (nonatomic, readwrite) bool fullscreen;
+@property(nonatomic, readwrite) bool enabled;
+@property(nonatomic, readwrite) bool fullscreen;
 
 - (bool)loadImages:(const struct texture_image *)images count:(NSUInteger)count;
 - (void)updateVertexX:(float)x y:(float)y w:(float)w h:(float)h index:(NSUInteger)index;
@@ -111,27 +84,27 @@ extern id<ApplePlatform> apple_platform;
 
 @interface MetalDriver : NSObject<MTKViewDelegate>
 
-@property (nonatomic, readonly) video_viewport_t *viewport;
-@property (nonatomic, readwrite) bool keepAspect;
-@property (nonatomic, readonly) MetalMenu *menu;
-@property (nonatomic, readonly) FrameView *frameView;
-@property (nonatomic, readonly) MenuDisplay *display;
-@property (nonatomic, readonly) Overlay *overlay;
-@property (nonatomic, readonly) Context *context;
-@property (nonatomic, readonly) Uniforms *viewportMVP;
+@property(nonatomic, readonly) video_viewport_t *viewport;
+@property(nonatomic, readwrite) bool keepAspect;
+@property(nonatomic, readonly) MetalMenu *menu;
+@property(nonatomic, readonly) FrameView *frameView;
+@property(nonatomic, readonly) MenuDisplay *display;
+@property(nonatomic, readonly) Overlay *overlay;
+@property(nonatomic, readonly) Context *context;
+@property(nonatomic, readonly) Uniforms *viewportMVP;
 
 - (instancetype)initWithVideo:(const video_info_t *)video
-                        input:(input_driver_t **)input
-                    inputData:(void **)inputData;
+												input:(input_driver_t **)input
+										inputData:(void **)inputData;
 
 - (void)setVideo:(const video_info_t *)video;
 - (bool)renderFrame:(const void *)data
-              width:(unsigned)width
-             height:(unsigned)height
-         frameCount:(uint64_t)frameCount
-              pitch:(unsigned)pitch
-                msg:(const char *)msg
-               info:(video_frame_info_t *)video_info;
+							width:(unsigned)width
+						 height:(unsigned)height
+				 frameCount:(uint64_t)frameCount
+							pitch:(unsigned)pitch
+								msg:(const char *)msg
+							 info:(video_frame_info_t *)video_info;
 
 /*! @brief setNeedsResize triggers a display resize */
 - (void)setNeedsResize;
