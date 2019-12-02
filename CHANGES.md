@@ -3,6 +3,9 @@
 - CHEEVOS: Pass RetroArch and core versions through User-Agent HTTP header
 - CHEEVOS: Use PSX.EXE if SYSTEM.CNF cannot be found
 - CHEEVOS: Prevent loading state while achievements are still being fetched from server
+- CHEEVOS: Pause hardcore if core doesn't support achievements
+- FFMPEG CORE: Hardware accelerated video decoding
+- FFMPEG CORE: Implement send/receive encoding API
 - LOCALIZATION: Update Italian translation
 - LOCALIZATION: Update French translation
 - LOCALIZATION: Update Portuguese Brazilian Translation
@@ -10,18 +13,29 @@
 - LINUX/LOCALIZATION: Correct Droid Sans Fallback font path in Linux. This should fix Chinese/Korean font display issues on Fedora/RHEL/CentOS/openSUSE/SLE
 - MENU/BUGFIX: When using a keyboard/gamepad/mouse wheel to navigate, the menu scroll position is always maintained and updated in a consistent (and expected) fashion
 - MENU/BUGFIX: When resizing the window, or changing the orientation of a mobile device, the current scroll position is correctly preserved
+- MENU/BUGFIX: All 'normal' pointer input is now inhibited when showing message boxes
+- MENU/BUGFIX: The pointer actions 'select' and 'cancel' both now properly close a message box if it is currently being shown
+- MENU/BUGFIX: Pointer 'select' and 'cancel' actions are now inhibited when an input bind dialog is active
+- MENU/INPUT: Change 'User' terminology to 'Port' for input binding
 - MENU/LINUX: Add proper drives to Load Content
 - MENU/MATERIALUI: Halt scrolling when pointer is pressed/stationary
 - MENU/MATERIALUI: Dual thumbnail view
+- MENU/MATERIALUI: Fullscreen thumbnail viewer
 - MENU/MATERIALUI: Scroll rapidly by press and holding the scrollbar
+- MENU/OZONE: Thumbnails now have a fade-in animation
+- MENU/QT/WIMP: Fix dock titles getting cut off
 - OPENGL: Shaders are now working properly (only in OpenGL) when rotating both from Core API rotation and from menu video rotation. The fix is clearly visible with crt-royale for example
 - OPENGL: 1:1 PAR is now correct when rotating (both from Core API rotation and from menu video rotation, as you said, in the latter case you currently have to change Aspect Ratio after menu video rotation for it to work)
 - OPENGL: When using Custom Aspect Ratio and rotation (both from Core API rotation and from menu video rotation), Integer Scaling is now working properly (correct multiples of internal resolution). Even when Integer Scaling is not activated, the Custom AR width / height are now correctly labeled using (1x), (2x), ... suffixes. You also have to activate Integer Scaling after menu video rotation for it to work
 - OPENGL: For all other Aspect Ratio options, Integer Scaling and rotation (both from Core API rotation and from menu video rotation) are now working properly together (correct multiples of internal resolution). You also have to activate Integer Scaling after menu video rotation for it to work
 - OPENBSD/POWERPC: Should build now on OpenBSD PowerPC
+- PSP: Solving issue exiting RetroArch by HOME button
+- SCANNER: Manual scanner, not dependent on database files
 - VIDEO: Do not reinit video driver on SET_SYSTEM_AV_INFO unless needed
 - VIDEO LAYOUT: Fixed XML parsing of attributes with spaces, should fix issues with several video layouts
 - VITA: GL1 driver support
+- WINDOWS/XINPUT: Get rid of 128 byte device name limit for XInput device discover - when device name was too long, it would not be picked up by the XInput driver and would instead fallback to DirectInput
+
 
 # (1.8.1)
 - BUGFIX/MENU: Fix menu rendering with Mali GPUs after changing video dimensions
