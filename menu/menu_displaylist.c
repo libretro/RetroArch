@@ -334,7 +334,7 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
 #define BYTES_TO_MB(bytes) ((bytes) / 1024 / 1024)
 #define BYTES_TO_GB(bytes) (((bytes) / 1024) / 1024 / 1024)
 
-static unsigned menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
+static unsigned menu_displaylist_parse_system_info(file_list_t *list)
 {
    int controller;
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGLES) || defined(HAVE_OPENGL_CORE)
@@ -354,7 +354,7 @@ static unsigned menu_displaylist_parse_system_info(menu_displaylist_info_t *info
    snprintf(tmp, sizeof(tmp), "%s: %s",
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_BUILD_DATE), __DATE__);
 
-   if (menu_entries_append_enum(info->list, tmp, "",
+   if (menu_entries_append_enum(list, tmp, "",
          MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
       count++;
 
@@ -367,13 +367,13 @@ static unsigned menu_displaylist_parse_system_info(menu_displaylist_info_t *info
          ": ",
          retroarch_git_version,
          sizeof(tmp));
-   if (menu_entries_append_enum(info->list, tmp, "",
+   if (menu_entries_append_enum(list, tmp, "",
          MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
       count++;
 #endif
 
    retroarch_get_capabilities(RARCH_CAPABILITIES_COMPILER, tmp, sizeof(tmp));
-   if (menu_entries_append_enum(info->list, tmp, "",
+   if (menu_entries_append_enum(list, tmp, "",
          MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
       count++;
 
@@ -383,7 +383,7 @@ static unsigned menu_displaylist_parse_system_info(menu_displaylist_info_t *info
    snprintf(tmp, sizeof(tmp), "%s: %s",
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INTERNAL_STORAGE_STATUS),
          perms ? "read-write" : "read-only");
-   if (menu_entries_append_enum(info->list, tmp, "",
+   if (menu_entries_append_enum(list, tmp, "",
          MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
       count++;
 
@@ -404,7 +404,7 @@ static unsigned menu_displaylist_parse_system_info(menu_displaylist_info_t *info
       else
          strlcat(cpu_str, model, sizeof(cpu_str));
 
-      if (menu_entries_append_enum(info->list, cpu_str, "",
+      if (menu_entries_append_enum(list, cpu_str, "",
             MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
          count++;
    }
@@ -421,7 +421,7 @@ static unsigned menu_displaylist_parse_system_info(menu_displaylist_info_t *info
 
       retroarch_get_capabilities(RARCH_CAPABILITIES_CPU,
             cpu_str, sizeof(cpu_str));
-      if (menu_entries_append_enum(info->list, cpu_str, "",
+      if (menu_entries_append_enum(list, cpu_str, "",
             MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
          count++;
    }
@@ -441,7 +441,7 @@ static unsigned menu_displaylist_parse_system_info(menu_displaylist_info_t *info
 
       snprintf(cpu_str, sizeof(cpu_str), "%s %s", cpu_text_str, cpu_arch_str);
 
-      if (menu_entries_append_enum(info->list, cpu_str,
+      if (menu_entries_append_enum(list, cpu_str,
             msg_hash_to_str(MENU_ENUM_LABEL_CPU_ARCHITECTURE),
             MENU_ENUM_LABEL_CPU_ARCHITECTURE, MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
          count++;
@@ -455,7 +455,7 @@ static unsigned menu_displaylist_parse_system_info(menu_displaylist_info_t *info
 
       snprintf(cpu_str, sizeof(cpu_str),
             "%s %d\n", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CPU_CORES), amount_cores);
-      if (menu_entries_append_enum(info->list, cpu_str,
+      if (menu_entries_append_enum(list, cpu_str,
             msg_hash_to_str(MENU_ENUM_LABEL_CPU_CORES),
             MENU_ENUM_LABEL_CPU_CORES, MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
          count++;
@@ -469,7 +469,7 @@ static unsigned menu_displaylist_parse_system_info(menu_displaylist_info_t *info
             controller,
             input_config_get_device_name(controller),
             input_autoconfigure_get_device_name_index(controller));
-         if (menu_entries_append_enum(info->list, tmp, "",
+         if (menu_entries_append_enum(list, tmp, "",
             MENU_ENUM_LABEL_SYSTEM_INFO_CONTROLLER_ENTRY,
             MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
             count++;
@@ -479,21 +479,21 @@ static unsigned menu_displaylist_parse_system_info(menu_displaylist_info_t *info
             snprintf(tmp, sizeof(tmp), " Device display name: %s",
                input_config_get_device_display_name(controller) ?
                input_config_get_device_display_name(controller) : "N/A");
-            if (menu_entries_append_enum(info->list, tmp, "",
+            if (menu_entries_append_enum(list, tmp, "",
                MENU_ENUM_LABEL_SYSTEM_INFO_CONTROLLER_ENTRY,
                MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
                count++;
             snprintf(tmp, sizeof(tmp), " Device config name: %s",
                input_config_get_device_display_name(controller) ?
                input_config_get_device_config_name(controller) : "N/A");
-            if (menu_entries_append_enum(info->list, tmp, "",
+            if (menu_entries_append_enum(list, tmp, "",
                MENU_ENUM_LABEL_SYSTEM_INFO_CONTROLLER_ENTRY,
                MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
                count++;
             snprintf(tmp, sizeof(tmp), " Device VID/PID: %d/%d",
                input_config_get_vid(controller),
                input_config_get_pid(controller));
-            if (menu_entries_append_enum(info->list, tmp, "",
+            if (menu_entries_append_enum(list, tmp, "",
                MENU_ENUM_LABEL_SYSTEM_INFO_CONTROLLER_ENTRY,
                MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
                count++;
@@ -515,7 +515,7 @@ static unsigned menu_displaylist_parse_system_info(menu_displaylist_info_t *info
             ": ",
             frontend->ident,
             sizeof(tmp));
-      if (menu_entries_append_enum(info->list, tmp, "",
+      if (menu_entries_append_enum(list, tmp, "",
             MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY,
             MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
          count++;
@@ -530,7 +530,7 @@ static unsigned menu_displaylist_parse_system_info(menu_displaylist_info_t *info
                ": ",
                tmp2,
                sizeof(tmp));
-         if (menu_entries_append_enum(info->list, tmp, "",
+         if (menu_entries_append_enum(list, tmp, "",
                MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY,
                MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
             count++;
@@ -546,7 +546,7 @@ static unsigned menu_displaylist_parse_system_info(menu_displaylist_info_t *info
                ": ",
                tmp2,
                sizeof(tmp));
-         if (menu_entries_append_enum(info->list, tmp, "",
+         if (menu_entries_append_enum(list, tmp, "",
                MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY,
                MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
             count++;
@@ -559,7 +559,7 @@ static unsigned menu_displaylist_parse_system_info(menu_displaylist_info_t *info
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_OS),
                tmp2,
                major, minor);
-         if (menu_entries_append_enum(info->list, tmp, "",
+         if (menu_entries_append_enum(list, tmp, "",
                MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY,
                MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
             count++;
@@ -570,7 +570,7 @@ static unsigned menu_displaylist_parse_system_info(menu_displaylist_info_t *info
          snprintf(tmp, sizeof(tmp), "%s : %d",
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RETRORATING_LEVEL),
                frontend->get_rating());
-         if (menu_entries_append_enum(info->list, tmp, "",
+         if (menu_entries_append_enum(list, tmp, "",
                MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY,
                MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
             count++;
@@ -595,7 +595,7 @@ static unsigned menu_displaylist_parse_system_info(menu_displaylist_info_t *info
                   BYTES_TO_MB(memory_total)
                   );
 
-            if (menu_entries_append_enum(info->list, tmp, "",
+            if (menu_entries_append_enum(list, tmp, "",
                   MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY,
                   MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
                count++;
@@ -661,7 +661,7 @@ static unsigned menu_displaylist_parse_system_info(menu_displaylist_info_t *info
                ": ",
                tmp2,
                sizeof(tmp));
-         if (menu_entries_append_enum(info->list, tmp, "",
+         if (menu_entries_append_enum(list, tmp, "",
                MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY,
                MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
             count++;
@@ -679,7 +679,7 @@ static unsigned menu_displaylist_parse_system_info(menu_displaylist_info_t *info
          tmp_string ? tmp_string
          : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
          sizeof(tmp));
-   if (menu_entries_append_enum(info->list, tmp, "",
+   if (menu_entries_append_enum(list, tmp, "",
          MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY,
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
       count++;
@@ -697,7 +697,7 @@ static unsigned menu_displaylist_parse_system_info(menu_displaylist_info_t *info
                msg_hash_to_str(
                   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_WIDTH),
                val);
-         if (menu_entries_append_enum(info->list, tmp, "",
+         if (menu_entries_append_enum(list, tmp, "",
                MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY,
                MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
             count++;
@@ -711,7 +711,7 @@ static unsigned menu_displaylist_parse_system_info(menu_displaylist_info_t *info
                msg_hash_to_str(
                   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_HEIGHT),
                val);
-         if (menu_entries_append_enum(info->list, tmp, "",
+         if (menu_entries_append_enum(list, tmp, "",
                MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY,
                MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
             count++;
@@ -725,7 +725,7 @@ static unsigned menu_displaylist_parse_system_info(menu_displaylist_info_t *info
                msg_hash_to_str(
                   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_DPI),
                val);
-         if (menu_entries_append_enum(info->list, tmp, "",
+         if (menu_entries_append_enum(list, tmp, "",
                MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY,
                MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
             count++;
@@ -811,7 +811,7 @@ static unsigned menu_displaylist_parse_system_info(menu_displaylist_info_t *info
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_YES) :
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO),
                sizeof(feat_str));
-         if (menu_entries_append_enum(info->list, feat_str, "",
+         if (menu_entries_append_enum(list, feat_str, "",
                MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY,
                MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
             count++;
@@ -3815,6 +3815,9 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
 
    switch (type)
    {
+      case DISPLAYLIST_SYSTEM_INFO:
+         count              = menu_displaylist_parse_system_info(list);
+         break;
       case DISPLAYLIST_SCAN_DIRECTORY_LIST:
 #ifdef HAVE_LIBRETRODB
          if (menu_entries_append_enum(list,
@@ -7548,12 +7551,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 #endif
          }
          break;
-      case DISPLAYLIST_SYSTEM_INFO:
-         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         count = menu_displaylist_parse_system_info(info);
-         info->need_push    = true;
-         info->need_refresh = true;
-         break;
       case DISPLAYLIST_ACHIEVEMENT_LIST:
 #ifdef HAVE_CHEEVOS
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
@@ -8043,6 +8040,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
       case DISPLAYLIST_HELP_SCREEN_LIST:
       case DISPLAYLIST_INFORMATION_LIST:
       case DISPLAYLIST_SCAN_DIRECTORY_LIST:
+      case DISPLAYLIST_SYSTEM_INFO:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          count = menu_displaylist_build_list(info->list, type);
 
