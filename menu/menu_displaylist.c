@@ -3816,6 +3816,21 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
 
    switch (type)
    {
+      case DISPLAYLIST_HELP_SCREEN_LIST:
+         if (menu_entries_append_enum(list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_HELP_CONTROLS),
+               msg_hash_to_str(MENU_ENUM_LABEL_HELP_CONTROLS),
+               MENU_ENUM_LABEL_HELP_CONTROLS,
+               0, 0, 0))
+            count++;
+         if (menu_entries_append_enum(list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_HELP_SEND_DEBUG_INFO),
+               msg_hash_to_str(MENU_ENUM_LABEL_HELP_SEND_DEBUG_INFO),
+               MENU_ENUM_LABEL_HELP_SEND_DEBUG_INFO,
+               0, 0, 0))
+            count++;
+         break;
+         break;
       case DISPLAYLIST_AUDIO_SETTINGS_LIST:
          if (menu_displaylist_parse_settings_enum(list,
                MENU_ENUM_LABEL_MIDI_SETTINGS,
@@ -8001,6 +8016,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
       case DISPLAYLIST_OPTIONS_REMAPPINGS:
       case DISPLAYLIST_VIDEO_SETTINGS_LIST:
       case DISPLAYLIST_AUDIO_SETTINGS_LIST:
+      case DISPLAYLIST_HELP_SCREEN_LIST:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          count = menu_displaylist_build_list(info->list, type);
 
@@ -8750,24 +8766,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                info->label, MSG_UNKNOWN, info->type, info->directory_ptr, 0))
             count++;
          menu_dialog_unset_pending_push();
-         break;
-      case DISPLAYLIST_HELP_SCREEN_LIST:
-         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         if (menu_entries_append_enum(info->list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_HELP_CONTROLS),
-               msg_hash_to_str(MENU_ENUM_LABEL_HELP_CONTROLS),
-               MENU_ENUM_LABEL_HELP_CONTROLS,
-               0, 0, 0))
-            count++;
-         if (menu_entries_append_enum(info->list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_HELP_SEND_DEBUG_INFO),
-               msg_hash_to_str(MENU_ENUM_LABEL_HELP_SEND_DEBUG_INFO),
-               MENU_ENUM_LABEL_HELP_SEND_DEBUG_INFO,
-               0, 0, 0))
-            count++;
-
-         info->need_refresh = true;
-         info->need_push    = true;
          break;
       case DISPLAYLIST_BROWSE_URL_START:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
