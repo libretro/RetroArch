@@ -29225,31 +29225,6 @@ static bool accessibility_speak_windows(
 }
 #endif
 
-bool accessibility_speak_priority(char* speak_text, int priority)
-{
-   RARCH_LOG("Spoke: %s\n", speak_text);
-   const char* voice = NULL;
-   if (accessibility_enabled)
-   {
-#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
-      voice = get_user_language_iso639_1(true);
-      return accessibility_speak_windows(speak_text, voice, priority);
-#elif defined(__APPLE__) && defined(__MACH__)
-      voice = get_user_language_iso639_1(false);
-      return accessibility_speak_macos(speak_text, voice, priority);
-#elif defined(__linux__) || defined(__unix__)
-      voice = get_user_language_iso639_1(true);
-      return accessibility_speak_linux(speak_text, voice, priority);
-#endif
-
-      if (1==0)
-      {
-         return accessibility_speak_ai_service(speak_text, voice, priority);
-      }
-   }
-   return true;
-}
-
 #if defined(__linux__) || defined(__unix__)
 static bool is_narrator_running_linux(void)
 {
@@ -29303,6 +29278,30 @@ static bool accessibility_speak_linux(
 }
 #endif
 
+bool accessibility_speak_priority(char* speak_text, int priority)
+{
+   RARCH_LOG("Spoke: %s\n", speak_text);
+   const char* voice = NULL;
+   if (accessibility_enabled)
+   {
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+      voice = get_user_language_iso639_1(true);
+      return accessibility_speak_windows(speak_text, voice, priority);
+#elif defined(__APPLE__) && defined(__MACH__)
+      voice = get_user_language_iso639_1(false);
+      return accessibility_speak_macos(speak_text, voice, priority);
+#elif defined(__linux__) || defined(__unix__)
+      voice = get_user_language_iso639_1(true);
+      return accessibility_speak_linux(speak_text, voice, priority);
+#endif
+
+      if (1==0)
+      {
+         return accessibility_speak_ai_service(speak_text, voice, priority);
+      }
+   }
+   return true;
+}
 
 bool is_narrator_running(void)
 {
