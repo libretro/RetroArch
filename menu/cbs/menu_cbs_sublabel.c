@@ -111,6 +111,10 @@ default_sublabel_macro(menu_action_sublabel_setting_audio_mixer_stream_remove,
 default_sublabel_macro(menu_action_sublabel_setting_audio_mixer_stream_volume,
       MENU_ENUM_SUBLABEL_MIXER_ACTION_VOLUME)
 #endif
+default_sublabel_macro(action_bind_sublabel_accessibility_enabled, MENU_ENUM_SUBLABEL_ACCESSIBILITY_ENABLED
+         )
+default_sublabel_macro(action_bind_sublabel_accessibility_narrator_speech_speed, MENU_ENUM_SUBLABEL_ACCESSIBILITY_NARRATOR_SPEECH_SPEED
+         )
 default_sublabel_macro(action_bind_sublabel_reset_to_default_config,             MENU_ENUM_SUBLABEL_RESET_TO_DEFAULT_CONFIG)
 default_sublabel_macro(action_bind_sublabel_quick_menu_override_options,             MENU_ENUM_SUBLABEL_QUICK_MENU_OVERRIDE_OPTIONS)
 default_sublabel_macro(action_bind_sublabel_quick_menu_start_streaming,             MENU_ENUM_SUBLABEL_QUICK_MENU_START_STREAMING)
@@ -128,7 +132,6 @@ default_sublabel_macro(action_bind_sublabel_saving_settings_list,          MENU_
 default_sublabel_macro(action_bind_sublabel_logging_settings_list,         MENU_ENUM_SUBLABEL_LOGGING_SETTINGS)
 default_sublabel_macro(action_bind_sublabel_user_interface_settings_list,  MENU_ENUM_SUBLABEL_USER_INTERFACE_SETTINGS)
 default_sublabel_macro(action_bind_sublabel_ai_service_settings_list,  MENU_ENUM_SUBLABEL_AI_SERVICE_SETTINGS)
-default_sublabel_macro(action_bind_sublabel__settings_list,  MENU_ENUM_SUBLABEL_ACCESSIBILITY_SETTINGS)
 default_sublabel_macro(action_bind_sublabel_accessibility_settings_list,  MENU_ENUM_SUBLABEL_ACCESSIBILITY_SETTINGS)
 default_sublabel_macro(action_bind_sublabel_ai_service_mode,  MENU_ENUM_SUBLABEL_AI_SERVICE_MODE)
 default_sublabel_macro(action_bind_sublabel_ai_service_pause,  MENU_ENUM_SUBLABEL_AI_SERVICE_PAUSE)
@@ -2795,11 +2798,12 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_AI_SERVICE_SETTINGS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_ai_service_settings_list);
             break;
-#if 0
+         case MENU_ENUM_LABEL_ACCESSIBILITY_ENABLED:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_accessibility_enabled);
+            break;
          case MENU_ENUM_LABEL_ACCESSIBILITY_NARRATOR_SPEECH_SPEED:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_accessibility_narrator_speech_speed);
             break;
-#endif
          case MENU_ENUM_LABEL_ACCESSIBILITY_SETTINGS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_accessibility_settings_list);
             break;

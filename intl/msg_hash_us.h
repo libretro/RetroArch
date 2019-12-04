@@ -10157,7 +10157,7 @@ MSG_HASH(
     "Scan complete: "
     )
 MSG_HASH(MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_ENABLED,
-      "Accessibility needed")
+      "Accessibility Enable")
 MSG_HASH(MENU_ENUM_SUBLABEL_ACCESSIBILITY_ENABLED,
       "Turn on/off accessibility narrator for menu navigation")
 MSG_HASH(MENU_ENUM_SUBLABEL_ACCESSIBILITY_NARRATOR_SPEECH_SPEED,

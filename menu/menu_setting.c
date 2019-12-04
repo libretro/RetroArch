@@ -13798,10 +13798,10 @@ static bool setting_append_list(
 
          CONFIG_BOOL(
                list, list_info,
-               &settings->bools.ai_service_enable,
-               MENU_ENUM_LABEL_AI_SERVICE_ENABLE,
-               MENU_ENUM_LABEL_VALUE_AI_SERVICE_ENABLE,
-               false,
+               &settings->bools.accessibility_enable,
+               MENU_ENUM_LABEL_ACCESSIBILITY_ENABLED,
+               MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_ENABLED,
+               DEFAULT_ACCESSIBILITY_ENABLE,
                MENU_ENUM_LABEL_VALUE_OFF,
                MENU_ENUM_LABEL_VALUE_ON,
                &group_info,
@@ -13816,7 +13816,7 @@ static bool setting_append_list(
                &settings->uints.accessibility_narrator_speech_speed,
                MENU_ENUM_LABEL_ACCESSIBILITY_NARRATOR_SPEECH_SPEED,
                MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_NARRATOR_SPEECH_SPEED,
-               DEFAULT_AI_SERVICE_MODE,
+               DEFAULT_ACCESSIBILITY_NARRATOR_SPEECH_SPEED,
                &group_info,
                &subgroup_info,
                parent_group,

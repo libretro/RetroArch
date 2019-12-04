@@ -4788,7 +4788,7 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
       case DISPLAYLIST_ACCESSIBILITY_SETTINGS_LIST:
          {
             menu_displaylist_build_info_selective_t build_list[] = {
-               {MENU_ENUM_LABEL_ACCESSIBILITY_NARRATOR_SPEECH_SPEED,                               PARSE_ONLY_BOOL, true  },
+               {MENU_ENUM_LABEL_ACCESSIBILITY_ENABLED,                                                 PARSE_ONLY_BOOL, true  },
                {MENU_ENUM_LABEL_ACCESSIBILITY_NARRATOR_SPEECH_SPEED,                               PARSE_ONLY_UINT, true  },
             };
 
