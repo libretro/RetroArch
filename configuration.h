@@ -110,6 +110,9 @@ typedef struct settings
       bool video_layout_enable;
 #endif
 
+      /* Accessibility */
+      bool accessibility_enable;
+
       /* Audio */
       bool audio_enable;
       bool audio_enable_menu;
@@ -517,6 +520,9 @@ typedef struct settings
       unsigned video_overscan_correction_bottom;
 #endif
       unsigned video_shader_delay;
+
+      /* Accessibility */
+      unsigned accessibility_narrator_speech_speed;
 
       unsigned menu_timedate_style;
       unsigned menu_thumbnails;
