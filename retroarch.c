@@ -29280,8 +29280,10 @@ static bool accessibility_speak_linux(
 
 bool accessibility_speak_priority(char* speak_text, int priority)
 {
-   RARCH_LOG("Spoke: %s\n", speak_text);
    const char* voice = NULL;
+
+   RARCH_LOG("Spoke: %s\n", speak_text);
+
    if (accessibility_enabled)
    {
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
@@ -29295,10 +29297,9 @@ bool accessibility_speak_priority(char* speak_text, int priority)
       return accessibility_speak_linux(speak_text, voice, priority);
 #endif
 
+      /* TODO/FIXME - ??? */
       if (1==0)
-      {
          return accessibility_speak_ai_service(speak_text, voice, priority);
-      }
    }
    return true;
 }
