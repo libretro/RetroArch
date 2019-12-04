@@ -9491,6 +9491,14 @@ MSG_HASH(
     "Show or hide 'Input Settings' on the Settings screen."
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_SETTINGS,
+    "Accessibility"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_ACCESSIBILITY_SETTINGS,
+    "Change settings for the Accessibility narrator."
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_AI_SERVICE_SETTINGS,
     "AI Service"
     )

@@ -7869,6 +7869,14 @@ static bool setting_append_list(
 
          CONFIG_ACTION(
                list, list_info,
+               MENU_ENUM_LABEL_ACCESSIBILITY_SETTINGS,
+               MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_SETTINGS,
+               &group_info,
+               &subgroup_info,
+               parent_group);
+
+         CONFIG_ACTION(
+               list, list_info,
                MENU_ENUM_LABEL_POWER_MANAGEMENT_SETTINGS,
                MENU_ENUM_LABEL_VALUE_POWER_MANAGEMENT_SETTINGS,
                &group_info,
