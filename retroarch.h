@@ -2022,4 +2022,25 @@ unsigned int retroarch_get_rotation(void);
 
 RETRO_END_DECLS
 
+bool is_input_keyboard_display_on();
+bool is_accessibility_enabled();
+bool accessibility_speak(char* speak_text);
+bool accessibility_speak_priority(char* speak_text, int priority);
+bool accessibility_startup_message();
+
+bool is_narrator_running();
+
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+bool is_narrator_running_windows();
+bool accessibility_speak_windows(char* speak_text, const char* voice, int priority);
+#elif defined(__APPLE__) && defined(__MACH__)
+bool is_narrator_running_macos();
+char* accessibility_mac_language_code(const char* language);
+bool accessibility_speak_macos(char* speak_text, const char* voice, int priority);
+#elif defined(__linux__) || defined(__unix__)
+bool is_narrator_running_linux();
+bool accessibility_speak_linux(char* speak_text, const char* voice, int priority);
+#endif
+bool accessibility_speak_ai_service(char* speak_text, const char* voice, int priority);
+
 #endif

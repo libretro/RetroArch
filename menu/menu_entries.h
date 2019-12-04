@@ -281,6 +281,10 @@ int menu_entry_action(
 
 void menu_entry_init(menu_entry_t *entry);
 
+void get_current_menu_value(char* retstr);
+void get_current_menu_label(char* retstr);
+void get_current_menu_sublabel(char* retstr);
+
 RETRO_END_DECLS
 
 #endif

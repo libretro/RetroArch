@@ -400,7 +400,6 @@ static int setting_generic_action_ok_linefeed(rarch_setting_t *setting, bool wra
 
    if (!menu_input_dialog_start(&line))
       return -1;
-
    return 0;
 }
 

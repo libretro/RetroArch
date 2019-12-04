@@ -329,6 +329,10 @@ void menu_widgets_msg_queue_push(
 {
    menu_widget_msg_t* msg_widget = NULL;
 
+   if (is_accessibility_enabled())
+   {
+      accessibility_speak_priority((char*)msg, 0);
+   }
    if (fifo_write_avail(msg_queue) > 0)
    {
       /* Get current msg if it exists */
@@ -2491,7 +2495,7 @@ void menu_widgets_set_libretro_message(const char *msg, unsigned duration)
    menu_timer_ctx_entry_t timer;
 
    strlcpy(libretro_message, msg, LIBRETRO_MESSAGE_SIZE);
-
+   
    libretro_message_alpha = DEFAULT_BACKDROP;
 
    /* Kill and restart the timer / animation */

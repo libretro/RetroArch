@@ -37,6 +37,7 @@
 
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
 #include <objbase.h>
+#include <process.h>
 #endif
 
 #include <stdio.h>
@@ -808,7 +809,8 @@ enum
    RA_OPT_MAX_FRAMES,
    RA_OPT_MAX_FRAMES_SCREENSHOT,
    RA_OPT_MAX_FRAMES_SCREENSHOT_PATH,
-   RA_OPT_SET_SHADER
+   RA_OPT_SET_SHADER,
+   RA_OPT_ACCESSIBILITY,
 };
 
 enum  runloop_state
@@ -2309,6 +2311,10 @@ static bool menu_driver_is_binding              = false;
  * it will be closed; if the menu was not running, it will be opened */
 static bool menu_driver_toggled                 = false;
 
+/* Is text-to-speech accessibility turned on? */
+static bool accessibility_enabled               = false;
+
+
 #ifdef HAVE_LIBNX
 #define LIBNX_SWKBD_LIMIT 500 /* enforced by HOS */
 extern u32 __nx_applet_type;
@@ -2405,6 +2411,11 @@ bool menu_input_dialog_start_search(void)
          sizeof(menu_input_dialog_keyboard_label));
 
    input_keyboard_ctl(RARCH_INPUT_KEYBOARD_CTL_LINE_FREE, NULL);
+  
+   if (is_accessibility_enabled())
+   {
+      accessibility_speak((char*) msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SEARCH));
+   }
 
    menu_input_dialog_keyboard_buffer   =
       input_keyboard_start_line(menu, menu_input_search_cb);
@@ -2433,6 +2444,8 @@ bool menu_input_dialog_start(menu_input_ctx_line_t *line)
    menu_input_dialog_keyboard_idx    = line->idx;
 
    input_keyboard_ctl(RARCH_INPUT_KEYBOARD_CTL_LINE_FREE, NULL);
+
+   accessibility_speak("Keyboard input:");
 
    menu_input_dialog_keyboard_buffer =
       input_keyboard_start_line(menu, line->cb);
@@ -2475,7 +2488,6 @@ bool menu_input_dialog_get_display_kb(void)
          /* In case a previous "Enter" press closed the keyboard */
          if (!menu_input_dialog_keyboard_display)
             break;
-
          if (buf[i] == '\n' || buf[i] == '\0')
             input_keyboard_event(true, '\n', '\n', 0, RETRO_DEVICE_KEYBOARD);
          else
@@ -4071,6 +4083,7 @@ static void handle_translation_cb(
    int start                         = -1;
    char* found_string                = NULL;
    char* error_string                = NULL;
+   char* text_string                 = NULL;
    int curr_state                    = 0;
 
    RARCH_LOG("RESULT FROM AI SERVICE...\n");
@@ -4098,7 +4111,6 @@ static void handle_translation_cb(
          {
             found_string = (char*)malloc(i-start+1);
             strlcpy(found_string, body_copy+start+1, i-start);
-           
             if (curr_state == 1)/*image*/
             {
                raw_image_file_data = (char*)unbase64(found_string,
@@ -4116,6 +4128,12 @@ static void handle_translation_cb(
 #endif
             else if (curr_state == 3)
             {
+               text_string = (char*)malloc(i-start+1);
+               strlcpy(text_string, body_copy+start+1, i-start);
+               curr_state = 0;
+            }
+            else if (curr_state == 4)
+            {
                error_string = (char*)malloc(i-start+1);
                strlcpy(error_string, body_copy+start+1, i-start);
                curr_state = 0;
@@ -4130,9 +4148,14 @@ static void handle_translation_cb(
                curr_state = 2;
                free(found_string);
             }
-            else if (string_is_equal(found_string, "error"))
+            else if (string_is_equal(found_string, "text"))
             {
                curr_state = 3;
+               free(found_string);
+            }
+            else if (string_is_equal(found_string, "error"))
+            {
+               curr_state = 4;
                free(found_string);
             }
             else
@@ -4149,6 +4172,7 @@ static void handle_translation_cb(
    if (string_is_equal(error_string, "No text found."))
    {
       RARCH_LOG("No text found...\n");
+      strcpy(text_string, error_string);
 #ifdef HAVE_MENU_WIDGETS
       if (menu_widgets_paused)
       {
@@ -4159,7 +4183,7 @@ static void handle_translation_cb(
 #endif
    }
 
-   if (!raw_image_file_data && !raw_sound_data)
+   if (!raw_image_file_data && !raw_sound_data && !text_string)
    {
       error = "Invalid JSON body.";
       goto finish;
@@ -4372,7 +4396,7 @@ static void handle_translation_cb(
          return;
 
       params.volume               = 1.0f;
-      params.slot_selection_type  = AUDIO_MIXER_SLOT_SELECTION_AUTOMATIC; /* user->slot_selection_type; */
+      params.slot_selection_type  = AUDIO_MIXER_SLOT_SELECTION_MANUAL; /* user->slot_selection_type; */
       params.slot_selection_idx   = 10;
       params.stream_type          = AUDIO_STREAM_TYPE_SYSTEM; /* user->stream_type; */
       params.type                 = AUDIO_MIXER_TYPE_WAV;
@@ -4391,6 +4415,11 @@ static void handle_translation_cb(
       free(img);
    }
 #endif
+
+   if (text_string && is_accessibility_enabled())
+   {
+      accessibility_speak(text_string);
+   }
 
 finish:
    if (error)
@@ -4417,8 +4446,26 @@ finish:
       free(scaler);
    if (error_string)
       free(error_string);
+   if (text_string)
+      free(text_string);
    if (raw_output_data)
       free(raw_output_data);
+}
+
+bool is_ai_service_speech_running()
+{
+   enum audio_mixer_state res = audio_driver_mixer_get_stream_state(10);
+   RARCH_LOG("TTT %d\n", res);
+   if (res == AUDIO_STREAM_STATE_NONE || res == AUDIO_STREAM_STATE_STOPPED)
+      return false;
+   return true;
+}
+
+bool ai_service_speech_stop()
+{
+   audio_driver_mixer_stop_stream(10);
+   audio_driver_mixer_remove_stream(10);
+   return false;
 }
 
 static const char *ai_service_get_str(enum translation_lang id)
@@ -4880,12 +4927,15 @@ static bool run_translation_service(void)
          else if (settings->uints.ai_service_mode == 1)
             mode_chr = "sound,wav";
          else if (settings->uints.ai_service_mode == 2)
+            mode_chr = "text";
+         else if (settings->uints.ai_service_mode == 3)
          {
             if (use_overlay)
                mode_chr = "image,png,png-a,sound,wav";
             else
                mode_chr = "image,png,sound,wav";         
          }
+
 
          snprintf(temp_string,
                sizeof(temp_string),
@@ -6266,6 +6316,8 @@ bool command_event(enum event_command cmd, void *data)
             }
             else
             {
+               if (is_accessibility_enabled())
+                   accessibility_speak((char*) msg_hash_to_str(MSG_UNPAUSED));
                command_event(CMD_EVENT_UNPAUSE, NULL);
             }
          }       
@@ -6952,6 +7004,14 @@ TODO: Add a setting for these tweaks */
       case CMD_EVENT_PAUSE_TOGGLE:
          boolean        = runloop_paused;
          boolean        = !boolean;
+         if (is_accessibility_enabled())
+         {
+            if (boolean)
+               accessibility_speak((char*) msg_hash_to_str(MSG_PAUSED));
+            else
+               accessibility_speak((char*) msg_hash_to_str(MSG_UNPAUSED));
+         }
+
          runloop_paused = boolean;
          retroarch_pause_checks();
          break;
@@ -7404,11 +7464,28 @@ TODO: Add a setting for these tweaks */
          break;
 
       case CMD_EVENT_AI_SERVICE_CALL:
+      {
 #ifdef HAVE_TRANSLATE
+         settings_t *settings = configuration_settings;
+         if (settings->uints.ai_service_mode == 1 && is_ai_service_speech_running())
+         {
+            ai_service_speech_stop();
+            if (is_accessibility_enabled())
+               accessibility_speak("stopped.");
+         }
+         else if (is_accessibility_enabled() && settings->uints.ai_service_mode == 2 &&
+                  is_narrator_running() == true)
+         {
+            accessibility_speak("stopped.");
+         }
+         else
+         {
             RARCH_LOG("AI Service Called...\n");
             run_translation_service();
+         }
 #endif
          break;
+      }
       case CMD_EVENT_NONE:
          return false;
    }
@@ -16365,6 +16442,90 @@ void input_keyboard_event(bool down, unsigned code,
       uint32_t character, uint16_t mod, unsigned device)
 {
    static bool deferred_wait_keys;
+   if (menu_input_dialog_keyboard_display && down && is_accessibility_enabled())
+   {
+      if (code != 303 && code != 0)
+      {
+         char* say_char = malloc(sizeof(char));
+         if (say_char != NULL)
+         {
+            char c = (char) character;
+            *say_char = c;
+
+            if (character == 127)
+               accessibility_speak("backspace");
+            else if (c == '`')
+               accessibility_speak("left quote");
+            else if (c == '`')
+               accessibility_speak("tilde");
+            else if (c == '!')
+               accessibility_speak("exclamation point");
+            else if (c == '@')
+               accessibility_speak("at sign");
+            else if (c == '#')
+               accessibility_speak("hash sign");
+            else if (c == '$')
+               accessibility_speak("dollar sign");
+            else if (c == '%')
+               accessibility_speak("percent sign");
+            else if (c == '^')
+               accessibility_speak("carrot");
+            else if (c == '&')
+               accessibility_speak("ampersand");
+            else if (c == '*')
+               accessibility_speak("asterisk");
+            else if (c == '(')
+               accessibility_speak("left bracket");
+            else if (c == ')')
+               accessibility_speak("right bracket");
+            else if (c == '-')
+               accessibility_speak("minus");
+            else if (c == '_')
+               accessibility_speak("underscore");
+            else if (c == '=')
+               accessibility_speak("equals");
+            else if (c == '+')
+               accessibility_speak("plus");
+            else if (c == '[')
+               accessibility_speak("left square bracket");
+            else if (c == '{')
+               accessibility_speak("left curl bracket");
+            else if (c == ']')
+               accessibility_speak("right square bracket");
+            else if (c == '}')
+               accessibility_speak("right curl bracket");
+            else if (c == '\\')
+               accessibility_speak("back slash");
+            else if (c == '|')
+               accessibility_speak("pipe");
+            else if (c == ';')
+               accessibility_speak("semicolon");
+            else if (c == ':')
+               accessibility_speak("colon");
+            else if (c == '\'')
+               accessibility_speak("single quote");
+            else if (c  == '\"')
+               accessibility_speak("double quote");
+            else if (c == ',')
+               accessibility_speak("comma");
+            else if (c == '<')
+               accessibility_speak("left angle bracket");
+            else if (c == '.')
+               accessibility_speak("period");
+            else if (c == '>')
+               accessibility_speak("right angle bracket");
+            else if (c == '/')
+               accessibility_speak("front slash");
+            else if (c == '?')
+               accessibility_speak("question mark");
+            else if (c == ' ')
+               accessibility_speak("space");
+            else if (character != 0)
+               accessibility_speak(say_char);
+            free(say_char);
+         }
+      }
+   }
 
    if (deferred_wait_keys)
    {
@@ -23850,7 +24011,7 @@ static void retroarch_print_help(const char *arg0)
    printf("Usage: %s [OPTIONS]... [FILE]\n", arg0);
 
    {
-      char buf[2048];
+      char buf[2148];
       buf[0] = '\0';
 
       strlcpy(buf, "  -h, --help            Show this help message.\n", sizeof(buf));
@@ -23927,7 +24088,7 @@ static void retroarch_print_help(const char *arg0)
           "the device (1 to %d).\n", MAX_USERS);
 
    {
-      char buf[2048];
+      char buf[2148];
       buf[0] = '\0';
       strlcpy(buf, "                        Format is PORT:ID, where ID is a number "
             "corresponding to the particular device.\n", sizeof(buf));
@@ -23983,6 +24144,8 @@ static void retroarch_print_help(const char *arg0)
             "                        Path to save the screenshot to at the end of max-frames.\n", sizeof(buf));
       puts(buf);
    }
+   printf("      --accessibility\n"
+          "                        Enables accessibilty for blind users using text-to-speech.\n");
 }
 
 #define FFMPEG_RECORD_ARG "r:"
@@ -24064,6 +24227,7 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
       { "eof-exit",           0, NULL, RA_OPT_EOF_EXIT },
       { "version",            0, NULL, RA_OPT_VERSION },
       { "log-file",           1, NULL, RA_OPT_LOG_FILE },
+      { "accessibility",      0, NULL, RA_OPT_ACCESSIBILITY},
       { NULL, 0, NULL, 0 }
    };
 
@@ -24578,7 +24742,9 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
             case '?':
                retroarch_print_help(argv[0]);
                retroarch_fail(1, "retroarch_parse_input()");
-
+            case RA_OPT_ACCESSIBILITY:
+               accessibility_enabled = true;
+               break;
             default:
                RARCH_ERR("%s\n", msg_hash_to_str(MSG_ERROR_PARSING_ARGUMENTS));
                retroarch_fail(1, "retroarch_parse_input()");
@@ -24776,6 +24942,9 @@ bool retroarch_main_init(int argc, char *argv[])
    retro_main_log_file_init(NULL, false);
 
    retroarch_parse_input_and_config(argc, argv);
+
+   if (is_accessibility_enabled())
+      accessibility_startup_message();
 
    if (verbosity_is_enabled())
    {
@@ -26083,7 +26252,8 @@ void runloop_msg_queue_push(const char *msg,
       enum message_queue_category category)
 {
    runloop_msg_queue_lock();
-
+   if (is_accessibility_enabled())
+      accessibility_speak_priority((char*) msg, 0);
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
    if (menu_widgets_inited)
    {
@@ -26608,7 +26778,6 @@ static enum runloop_state runloop_check_state(void)
 
       bits_clear_bits(trigger_input.data, old_input.data,
             ARRAY_SIZE(trigger_input.data));
-
       action                    = (enum menu_action)menu_event(&current_bits, &trigger_input, display_kb);
       focused                   = pause_nonactive ? is_focused : true;
       focused                   = focused && !main_ui_companion_is_on_foreground;
@@ -28778,3 +28947,422 @@ unsigned int retroarch_get_rotation(void)
    settings_t *settings              = configuration_settings;
    return settings->uints.video_rotation + runloop_system.rotation;
 }
+
+
+/* Accessibility */
+int speak_pid = 0;
+
+bool is_accessibility_enabled()
+{
+   return accessibility_enabled;
+}
+
+bool is_input_keyboard_display_on()
+{
+   return menu_input_dialog_keyboard_display;
+}
+
+bool accessibility_speak(char* speak_text)
+{
+   return accessibility_speak_priority(speak_text, 10);
+}
+
+bool accessibility_speak_priority(char* speak_text, int priority)
+{
+   RARCH_LOG("Spoke: %s\n", speak_text);
+   const char* voice = NULL;
+   if (accessibility_enabled)
+   {
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+      voice = get_user_language_iso639_1(true);
+      return accessibility_speak_windows(speak_text, voice, priority);
+#elif defined(__APPLE__) && defined(__MACH__)
+      voice = get_user_language_iso639_1(false);
+      return accessibility_speak_macos(speak_text, voice, priority);
+#elif defined(__linux__) || defined(__unix__)
+      voice = get_user_language_iso639_1(true);
+      return accessibility_speak_linux(speak_text, voice, priority);
+#endif
+
+      if (1==0)
+      {
+         return accessibility_speak_ai_service(speak_text, voice, priority);
+      }
+   }
+   return true;
+}
+
+
+bool is_narrator_running()
+{
+   if (accessibility_enabled)
+   {
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+      return is_narrator_running_windows();
+#elif defined(__APPLE__) && defined(__MACH__)
+      return is_narrator_running_macos();
+#elif defined(__linux__) || defined(__unix__)
+      return is_narrator_running_linux();
+#endif
+   }
+   return true;
+}
+
+
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+PROCESS_INFORMATION pi;
+bool pi_set = false;
+
+bool terminate_win32_process(PROCESS_INFORMATION pi)
+{
+   TerminateProcess(pi.hProcess,0);
+   CloseHandle(pi.hProcess);
+   CloseHandle(pi.hThread);
+   return true;
+}
+
+bool CreateWin32Process(char* cmd)
+{
+   STARTUPINFO si;
+   ZeroMemory(&si, sizeof(si));
+   si.cb = sizeof(si);
+   ZeroMemory(&pi, sizeof(pi));
+
+   if (!CreateProcess(NULL, cmd, NULL, NULL, FALSE, CREATE_NO_WINDOW,
+                      NULL, NULL, &si, &pi))
+   {
+      pi_set = false;
+      return false;
+   }
+   pi_set = true;
+   return true;
+}
+
+char* accessibility_win_language_code(const char* language)
+{
+   if (strcmp(language,"en") == 0)
+      return "Microsoft David Desktop";
+   else if (strcmp(language,"it") == 0)
+      return "Microsoft Cosimo Desktop";
+   else if (strcmp(language,"sv") == 0)
+      return "Microsoft Bengt Desktop";
+   else if (strcmp(language,"fr") == 0)
+      return "Microsoft Paul Desktop";
+   else if (strcmp(language,"de") == 0)
+      return "Microsoft Stefan Desktop";
+   else if (strcmp(language,"he") == 0)
+      return "Microsoft Hemant Desktop";
+   else if (strcmp(language,"id") == 0)
+      return "Microsoft Asaf Desktop";
+   else if (strcmp(language,"es") == 0)
+      return "Microsoft Pablo Desktop";
+   else if (strcmp(language,"nl") == 0)
+      return "Microsoft Frank Desktop";
+   else if (strcmp(language,"ro") == 0)
+      return "Microsoft Andrei Desktop";
+   else if (strcmp(language,"pt_pt") == 0)
+      return "Microsoft Helia Desktop";
+   else if (strcmp(language,"pt_bt") == 0 || strcmp(language,"pt") == 0)
+      return "Microsoft Daniel Desktop";
+   else if (strcmp(language,"th") == 0)
+      return "Microsoft Pattara Desktop";
+   else if (strcmp(language,"ja") == 0)
+      return "Microsoft Ichiro Desktop";
+   else if (strcmp(language,"sk") == 0)
+      return "Microsoft Filip Desktop";
+   else if (strcmp(language,"hi") == 0)
+      return "Microsoft Hemant Desktop";
+   else if (strcmp(language,"ar") == 0)
+      return "Microsoft Naayf Desktop";
+   else if (strcmp(language,"hu") == 0)
+      return "Microsoft Szabolcs Desktop";
+   else if (strcmp(language,"zh_tw") == 0 || strcmp(language,"zh")==0)
+      return "Microsoft Zhiwei Desktop";
+   else if (strcmp(language,"el") == 0)
+      return "Microsoft Stefanos Desktop";
+   else if (strcmp(language,"ru") == 0)
+      return "Microsoft Pavel Desktop";
+   else if (strcmp(language,"nb") == 0)
+      return "Microsoft Jon Desktop";
+   else if (strcmp(language,"da") == 0)
+      return "Microsoft Helle Desktop";
+   else if (strcmp(language,"fi") == 0)
+      return "Microsoft Heidi Desktop";
+   else if (strcmp(language,"zh_hk") == 0)
+      return "Microsoft Danny Desktop";
+   else if (strcmp(language,"zh_cn") == 0)
+      return "Microsoft Kangkang Desktop";
+   else if (strcmp(language,"tr") == 0)
+      return "Microsoft Tolga Desktop";
+   else if (strcmp(language,"ko") == 0)
+      return "Microsoft Heami Desktop";
+   else if (strcmp(language,"pl") == 0)
+      return "Microsoft Adam Desktop";
+   else if (strcmp(language,"cs") == 0) 
+      return "Microsoft Jakub Desktop";
+   else
+      return "";
+}
+
+bool is_narrator_running_windows()
+{
+   DWORD status = 0;
+   bool res;
+   if (pi_set == false)
+      return false;
+   res = GetExitCodeProcess(&pi, &status);
+   if (res == true && status == STILL_ACTIVE)
+      return true;
+   return false;
+}
+
+bool accessibility_speak_windows(char* speak_text, const char* voice, int priority)
+{
+   char cmd[1200];
+   char* language = accessibility_win_language_code(voice);
+   bool res;
+   if (priority < 10)
+   {
+      if (is_narrator_running_windows())
+         return true;
+   }
+
+   if (strlen(language) > 0) 
+      snprintf(cmd, sizeof(cmd),
+               "powershell.exe -NoProfile -WindowStyle Hidden -Command \"Add-Type -AssemblyName System.Speech; $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer; $synth.SelectVoice(\\\"%s\\\"); $synth.Speak(\\\"%s\\\");\"", language, speak_text); 
+   else
+      snprintf(cmd, sizeof(cmd),
+               "powershell.exe -NoProfile -WindowStyle Hidden -Command \"Add-Type -AssemblyName System.Speech; $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer; $synth.Speak(\\\"%s\\\");\"", speak_text); 
+   if (pi_set)
+   {
+      terminate_win32_process(pi);
+   }
+   res = CreateWin32Process(cmd);
+   if (!res)
+   {
+      RARCH_LOG("Create subprocess failed. Error: %d\n", GetLastError()); 
+   }
+   return true;
+}
+#endif
+
+#if defined(__APPLE__) && defined(__MACH__)
+char* accessibility_mac_language_code(const char* language)
+{
+   if (strcmp(language,"en") == 0)
+      return "Alex";
+   else if (strcmp(language,"it") == 0)
+      return "Alice";
+   else if (strcmp(language,"sv") == 0)
+      return "Alva";
+   else if (strcmp(language,"fr") == 0)
+      return "Amelie";
+   else if (strcmp(language,"de") == 0)
+      return "Anna";
+   else if (strcmp(language,"he") == 0)
+      return "Carmit";
+   else if (strcmp(language,"id") == 0)
+      return "Damayanti";
+   else if (strcmp(language,"es") == 0)
+      return "Diego";
+   else if (strcmp(language,"nl") == 0)
+      return "Ellen";
+   else if (strcmp(language,"ro") == 0)
+      return "Ioana";
+   else if (strcmp(language,"pt_pt") == 0)
+      return "Joana";
+   else if (strcmp(language,"pt_bt") == 0 || strcmp(language,"pt") == 0)
+      return "Luciana";
+   else if (strcmp(language,"th") == 0)
+      return "Kanya";
+   else if (strcmp(language,"ja") == 0)
+      return "Kyoko";
+   else if (strcmp(language,"sk") == 0)
+      return "Laura";
+   else if (strcmp(language,"hi") == 0)
+      return "Lekha";
+   else if (strcmp(language,"ar") == 0)
+      return "Maged";
+   else if (strcmp(language,"hu") == 0)
+      return "Mariska";
+   else if (strcmp(language,"zh_tw") == 0 || strcmp(language,"zh")==0)
+      return "Mei-Jia";
+   else if (strcmp(language,"el") == 0)
+      return "Melina";
+   else if (strcmp(language,"ru") == 0)
+      return "Milena";
+   else if (strcmp(language,"nb") == 0)
+      return "Nora";
+   else if (strcmp(language,"da") == 0)
+      return "Sara";
+   else if (strcmp(language,"fi") == 0)
+      return "Satu";
+   else if (strcmp(language,"zh_hk") == 0)
+      return "Sin-ji";
+   else if (strcmp(language,"zh_cn") == 0)
+      return "Ting-Ting";
+   else if (strcmp(language,"tr") == 0)
+      return "Yelda";
+   else if (strcmp(language,"ko") == 0)
+      return "Yuna";
+   else if (strcmp(language,"pl") == 0)
+      return "Zosia";
+   else if (strcmp(language,"cs") == 0) 
+      return "Zuzana";
+   else
+      return "";
+}
+
+bool is_narrator_running_macos()
+{
+   if (kill(speak_pid, 0) == 0)
+      return true;
+   return false;
+}
+
+bool accessibility_speak_macos(char* speak_text, const char* voice, int priority)
+{
+   int pid;
+   char* language_speaker = accessibility_mac_language_code(voice);
+
+   if (priority < 10 && speak_pid > 0)
+   {
+      /* check if old pid is running */
+      if (is_narrator_running_macos())
+         return true;
+   }
+   
+   if (speak_pid > 0)
+   {
+      /* Kill the running espeak */
+      kill(speak_pid, SIGTERM);
+      speak_pid = 0;
+   }
+
+   pid = fork();
+   if (pid < 0)
+   {
+      /* error */
+      RARCH_LOG("ERROR: could not fork for say command.\n");
+   }
+   else if (pid > 0)
+   {
+      /* parent process */
+      speak_pid = pid;
+
+      /* Tell the system that we'll ignore the exit status of the child 
+       * process.  This prevents zombie processes. */
+      signal(SIGCHLD,SIG_IGN);
+   }
+   else
+   { 
+      /* child process: replace process with the espeak command */ 
+      if (strlen(language_speaker)> 0)
+         execvp("say", (char* []) {"say", "-v", language_speaker, 
+                                   speak_text, NULL});
+      else
+         execvp("say", (char* []) {"say", speak_text, NULL});
+   }
+   return true;
+}
+#endif
+
+
+#if defined(__linux__) || defined(__unix__)
+bool is_narrator_running_linux()
+{
+   if (kill(speak_pid, 0) == 0)
+      return true;
+   return false;
+}
+
+bool accessibility_speak_linux(char* speak_text, const char* language, int priority)
+{
+   int pid;
+   char* voice_out = malloc(3+strlen(language));
+   strcpy(voice_out, "-v");
+   strcat(voice_out, language);
+   if (priority < 10 && speak_pid > 0)
+   {
+      /* check if old pid is running */
+      if (is_narrator_running_linux())
+         return true;
+   }
+
+   if (speak_pid > 0)
+   {
+      /* Kill the running espeak */
+      kill(speak_pid, SIGTERM);
+      speak_pid = 0;
+   }
+
+   pid = fork();
+   if (pid < 0)
+   {
+      /* error */
+      RARCH_LOG("ERROR: could not fork for espeak.\n");
+   }
+   else if (pid > 0)
+   {
+      /* parent process */
+      speak_pid = pid;
+
+      /* Tell the system that we'll ignore the exit status of the child 
+       * process.  This prevents zombie processes. */
+      signal(SIGCHLD,SIG_IGN);
+   }
+   else
+   { 
+      /* child process: replace process with the espeak command */ 
+      execvp("espeak", (char* []) {"espeak", voice_out, speak_text, NULL});
+   }
+   return true;
+}
+#endif
+
+bool accessibility_speak_ai_service(char* speak_text, const char* language, int priority)
+{
+   /* Call the ai service listed to do espeak for us. */ 
+   /* NOTE: This call works, but the audio mixer will not 
+    * play sound files while the core is paused, so it's
+    * not practical at the moment. */
+
+   char new_ai_service_url[PATH_MAX_LENGTH];
+   char temp_string[PATH_MAX_LENGTH];
+   char json_buffer[2048];
+   char separator            = '?';
+   settings_t *settings      = configuration_settings;
+
+   strlcpy(new_ai_service_url, settings->arrays.ai_service_url, 
+           sizeof(new_ai_service_url));
+
+   if (strrchr(new_ai_service_url, '?') != NULL)
+      separator = '&';
+   snprintf(temp_string, sizeof(temp_string),
+            "%csource_lang=%s&target_lang=%s&output=espeak", 
+            separator, language, language);
+   strlcat(new_ai_service_url, temp_string, sizeof(new_ai_service_url));
+   
+   strlcpy(temp_string, speak_text, sizeof(temp_string));
+   for (int i=0;i<strlen(temp_string);i++)
+   {
+      if (temp_string[i]=='\"')
+         temp_string[i] = ' ';
+   } 
+   snprintf(json_buffer, sizeof(json_buffer),
+            "{\"text\": \"%s\"}", speak_text);
+   RARCH_LOG("SENDING accessibilty request... %s\n", new_ai_service_url);
+   task_push_http_post_transfer(new_ai_service_url,
+            json_buffer, true, NULL, handle_translation_cb, NULL);
+
+   return true;
+}
+
+bool accessibility_startup_message()
+{
+   /* Note: for the ai service tts call, this is called too early... */
+   accessibility_speak("RetroArch accessibility on.");
+   return true;
+}
+
+

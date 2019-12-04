@@ -20,7 +20,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
-
+#include <boolean.h>
 #include <retro_common_api.h>
 
 #include "input/input_defines.h"
@@ -3018,6 +3018,8 @@ unsigned *msg_hash_get_uint(enum msg_hash_action type);
 void msg_hash_set_uint(enum msg_hash_action type, unsigned val);
 
 uint32_t msg_hash_calculate(const char *s);
+
+const char *get_user_language_iso639_1(bool limit);
 
 RETRO_END_DECLS
 
