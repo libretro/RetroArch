@@ -125,10 +125,12 @@ logiqx_dat_t *logiqx_dat_init(const char *path)
    if (string_is_empty(root_node->name))
       goto error;
 
-   /* > Logiqx XML uses:    'datafile'
-    * > MAME List XML uses: 'mame' */
+   /* > Logiqx XML uses:           'datafile'
+    * > MAME List XML uses:        'mame'
+    * > MAME 'Software List' uses: 'softwarelist' */
    if (!string_is_equal(root_node->name, "datafile") &&
-       !string_is_equal(root_node->name, "mame"))
+       !string_is_equal(root_node->name, "mame") &&
+       !string_is_equal(root_node->name, "softwarelist"))
       goto error;
 
    /* Get pointer to initial child node */
@@ -179,10 +181,12 @@ static bool logiqx_dat_is_game_node(rxml_node_t *node)
    if (string_is_empty(node_name))
       return false;
 
-   /* > Logiqx XML uses:    'game'
-    * > MAME List XML uses: 'machine' */
+   /* > Logiqx XML uses:           'game'
+    * > MAME List XML uses:        'machine'
+    * > MAME 'Software List' uses: 'software' */
    return string_is_equal(node_name, "game") ||
-          string_is_equal(node_name, "machine");
+          string_is_equal(node_name, "machine") ||
+          string_is_equal(node_name, "software");
 }
 
 /* Returns true if specified node is a game

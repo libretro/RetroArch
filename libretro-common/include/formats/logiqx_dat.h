@@ -35,9 +35,11 @@ RETRO_BEGIN_DECLS
  * functionality - predominantly concerned with obtaining
  * description text for specific arcade ROM images.
  *
- * Note: Also supports MAME List XML format, since
- * this is almost identical to Logiqx XML (or at
- * least, the parts we use are almost identical...) */
+ * Note: Also supports the following alternative DAT
+ * formats, since they are functionally identical to
+ * Logiqx XML (but with different element names):
+ * > MAME List XML
+ * > MAME 'Software List' */
 
 /* Prevent direct access to logiqx_dat_t members */
 typedef struct logiqx_dat logiqx_dat_t;
