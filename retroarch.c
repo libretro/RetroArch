@@ -14064,7 +14064,6 @@ static int16_t input_joypad_axis(const input_device_driver_t *drv,
 
 void menu_input_driver_toggle(bool on)
 {
-   menu_input_t *menu_input = &menu_input_state;
 #ifdef HAVE_OVERLAY
    settings_t *settings     = configuration_settings;
 
@@ -14078,10 +14077,8 @@ void menu_input_driver_toggle(bool on)
             menu_input_set_pointer_inhibit(true);
    }
    else
-      menu_input_set_pointer_inhibit(false);
-#else
-   menu_input_set_pointer_inhibit(false);
 #endif
+   menu_input_set_pointer_inhibit(false);
 }
 
 int16_t menu_input_read_mouse_hw(enum menu_input_mouse_hw_id id)
