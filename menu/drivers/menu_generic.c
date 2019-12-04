@@ -151,11 +151,11 @@ int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
                      menu->menu_state_msg, sizeof(menu->menu_state_msg));
                if (iterate_type != last_iterate_type && is_accessibility_enabled())
                {
-                  if (strcmp(menu->menu_state_msg, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE))==0)
+                  if (string_is_equal(menu->menu_state_msg, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE)))
                   {
                      char current_sublabel[255];
-                     get_current_menu_sublabel(current_sublabel);
-                     if (strcmp(current_sublabel, "")==0)
+                     get_current_menu_sublabel(current_sublabel, sizeof(current_sublabel));
+                     if (string_is_equal(current_sublabel, ""))
                         accessibility_speak(menu->menu_state_msg);
                      else
                         accessibility_speak(current_sublabel);
@@ -422,8 +422,7 @@ int generic_menu_entry_action(
 
       strlcpy(title_name, "", sizeof(title_name));
       strlcpy(current_label, "", sizeof(current_label));
-
-      get_current_menu_value(current_value);
+      get_current_menu_value(current_value, sizeof(current_value));
 
       switch (action)
       {
@@ -433,37 +432,36 @@ int generic_menu_entry_action(
          case MENU_ACTION_LEFT:
          case MENU_ACTION_RIGHT:
          case MENU_ACTION_CANCEL:
-            menu_entries_get_title(title_name, 255);
+            menu_entries_get_title(title_name, sizeof(title_name));
          case MENU_ACTION_UP:
          case MENU_ACTION_DOWN:
          case MENU_ACTION_SCROLL_UP:
          case MENU_ACTION_SCROLL_DOWN:
-            get_current_menu_label(current_label);
+            get_current_menu_label(current_label, sizeof(current_label));
             break;
          case MENU_ACTION_START:
          case MENU_ACTION_SELECT:
          case MENU_ACTION_SEARCH:
-            get_current_menu_label(current_label);
+            get_current_menu_label(current_label, sizeof(current_label));
          case MENU_ACTION_SCAN:
          default:
             break;
       }
 
-      /* TODO/FIXME - replace strcmp with string_is_equal */
       strlcpy(speak_string, "", sizeof(speak_string));
-      if (strcmp(title_name, "") != 0)
+      if (!string_is_equal(title_name, ""))
       {
          strlcpy(speak_string, title_name, sizeof(speak_string));
          strlcat(speak_string, " ", sizeof(speak_string));
       }
       strlcat(speak_string, current_label, sizeof(speak_string));
-      if (strcmp(current_value, "...")!=0)
+      if (!string_is_equal(current_value, "..."))
       {
          strlcat(speak_string, " ", sizeof(speak_string));
          strlcat(speak_string, current_value, sizeof(speak_string));
       }
 
-      if (strcmp(speak_string, "") != 0)
+      if (!string_is_equal(speak_string, ""))
          accessibility_speak(speak_string);
    }
    return ret;

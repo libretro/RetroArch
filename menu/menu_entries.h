@@ -281,9 +281,9 @@ int menu_entry_action(
 
 void menu_entry_init(menu_entry_t *entry);
 
-void get_current_menu_value(char* retstr);
-void get_current_menu_label(char* retstr);
-void get_current_menu_sublabel(char* retstr);
+void get_current_menu_value(char* retstr, size_t max);
+void get_current_menu_label(char* retstr, size_t max);
+void get_current_menu_sublabel(char* retstr, size_t max);
 
 RETRO_END_DECLS
 

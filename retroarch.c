@@ -4172,7 +4172,7 @@ static void handle_translation_cb(
    if (string_is_equal(error_string, "No text found."))
    {
       RARCH_LOG("No text found...\n");
-      strcpy(text_string, error_string);
+      strlcpy(text_string, error_string, 15);
 #ifdef HAVE_MENU_WIDGETS
       if (menu_widgets_paused)
       {
@@ -28949,7 +28949,10 @@ int speak_pid = 0;
 
 bool is_accessibility_enabled(void)
 {
-   return accessibility_enabled;
+   settings_t *settings              = configuration_settings;
+   if (accessibility_enabled || settings->bools.accessibility_enable)
+      return True;
+   return False;
 }
 
 bool is_input_keyboard_display_on(void)
@@ -28966,66 +28969,65 @@ bool accessibility_speak(char* speak_text)
 #if defined(__APPLE__) && defined(__MACH__)
 static char* accessibility_mac_language_code(const char* language)
 {
-   /* TODO/FIXME - replace strcmp with string_is_equal */
-   if (strcmp(language,"en") == 0)
+   if (string_is_equal(language,"en"))
       return "Alex";
-   else if (strcmp(language,"it") == 0)
+   else if (string_is_equal(language,"it"))
       return "Alice";
-   else if (strcmp(language,"sv") == 0)
+   else if (string_is_equal(language,"sv"))
       return "Alva";
-   else if (strcmp(language,"fr") == 0)
+   else if (string_is_equal(language,"fr"))
       return "Amelie";
-   else if (strcmp(language,"de") == 0)
+   else if (string_is_equal(language,"de"))
       return "Anna";
-   else if (strcmp(language,"he") == 0)
+   else if (string_is_equal(language,"he"))
       return "Carmit";
-   else if (strcmp(language,"id") == 0)
+   else if (string_is_equal(language,"id"))
       return "Damayanti";
-   else if (strcmp(language,"es") == 0)
+   else if (string_is_equal(language,"es"))
       return "Diego";
-   else if (strcmp(language,"nl") == 0)
+   else if (string_is_equal(language,"nl"))
       return "Ellen";
-   else if (strcmp(language,"ro") == 0)
+   else if (string_is_equal(language,"ro"))
       return "Ioana";
-   else if (strcmp(language,"pt_pt") == 0)
+   else if (string_is_equal(language,"pt_pt"))
       return "Joana";
-   else if (strcmp(language,"pt_bt") == 0 || strcmp(language,"pt") == 0)
+   else if (string_is_equal(language,"pt_bt") || string_is_equal(language,"pt"))
       return "Luciana";
-   else if (strcmp(language,"th") == 0)
+   else if (string_is_equal(language,"th"))
       return "Kanya";
-   else if (strcmp(language,"ja") == 0)
+   else if (string_is_equal(language,"ja"))
       return "Kyoko";
-   else if (strcmp(language,"sk") == 0)
+   else if (string_is_equal(language,"sk"))
       return "Laura";
-   else if (strcmp(language,"hi") == 0)
+   else if (string_is_equal(language,"hi"))
       return "Lekha";
-   else if (strcmp(language,"ar") == 0)
+   else if (string_is_equal(language,"ar"))
       return "Maged";
-   else if (strcmp(language,"hu") == 0)
+   else if (string_is_equal(language,"hu"))
       return "Mariska";
-   else if (strcmp(language,"zh_tw") == 0 || strcmp(language,"zh")==0)
+   else if (string_is_equal(language,"zh_tw") || string_is_equal(language,"zh"))
       return "Mei-Jia";
-   else if (strcmp(language,"el") == 0)
+   else if (string_is_equal(language,"el"))
       return "Melina";
-   else if (strcmp(language,"ru") == 0)
+   else if (string_is_equal(language,"ru"))
       return "Milena";
-   else if (strcmp(language,"nb") == 0)
+   else if (string_is_equal(language,"nb"))
       return "Nora";
-   else if (strcmp(language,"da") == 0)
+   else if (string_is_equal(language,"da"))
       return "Sara";
-   else if (strcmp(language,"fi") == 0)
+   else if (string_is_equal(language,"fi"))
       return "Satu";
-   else if (strcmp(language,"zh_hk") == 0)
+   else if (string_is_equal(language,"zh_hk"))
       return "Sin-ji";
-   else if (strcmp(language,"zh_cn") == 0)
+   else if (string_is_equal(language,"zh_cn"))
       return "Ting-Ting";
-   else if (strcmp(language,"tr") == 0)
+   else if (string_is_equal(language,"tr"))
       return "Yelda";
-   else if (strcmp(language,"ko") == 0)
+   else if (string_is_equal(language,"ko"))
       return "Yuna";
-   else if (strcmp(language,"pl") == 0)
+   else if (string_is_equal(language,"pl"))
       return "Zosia";
-   else if (strcmp(language,"cs") == 0) 
+   else if (string_is_equal(language,"cs")) 
       return "Zuzana";
    else
       return "";
@@ -29043,6 +29045,15 @@ static bool accessibility_speak_macos(
 {
    int pid;
    char* language_speaker = accessibility_mac_language_code(voice);
+   char* speed_out = malloc(4);
+
+   char* speeds[10] = {"80", "100", "125", "150", "170", "210", "260", "310", "380", "450"};
+   int speed = settings->uints.accessibility_narrator_speech_speed;
+
+   if (speed < 1)
+      speed = 1;
+   else if (speed > 10)
+      speed = 10;
 
    if (priority < 10 && speak_pid > 0)
    {
@@ -29078,9 +29089,9 @@ static bool accessibility_speak_macos(
       /* child process: replace process with the espeak command */ 
       if (strlen(language_speaker)> 0)
          execvp("say", (char* []) {"say", "-v", language_speaker, 
-               speak_text, NULL});
+               speak_text, "-r", speed_out, NULL});
       else
-         execvp("say", (char* []) {"say", speak_text, NULL});
+         execvp("say", (char* []) {"say", speak_text, "-r", speed_out,  NULL});
    }
    return true;
 }
@@ -29089,66 +29100,65 @@ static bool accessibility_speak_macos(
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
 static char *accessibility_win_language_code(const char* language)
 {
-   /* TODO/FIXME - replace strcmp with string_is_equal */
-   if (strcmp(language,"en") == 0)
+   if (string_is_equal(language,"en"))
       return "Microsoft David Desktop";
-   else if (strcmp(language,"it") == 0)
+   else if (string_is_equal(language,"it"))
       return "Microsoft Cosimo Desktop";
-   else if (strcmp(language,"sv") == 0)
+   else if (string_is_equal(language,"sv"))
       return "Microsoft Bengt Desktop";
-   else if (strcmp(language,"fr") == 0)
+   else if (string_is_equal(language,"fr"))
       return "Microsoft Paul Desktop";
-   else if (strcmp(language,"de") == 0)
+   else if (string_is_equal(language,"de"))
       return "Microsoft Stefan Desktop";
-   else if (strcmp(language,"he") == 0)
+   else if (string_is_equal(language,"he"))
       return "Microsoft Hemant Desktop";
-   else if (strcmp(language,"id") == 0)
+   else if (string_is_equal(language,"id"))
       return "Microsoft Asaf Desktop";
-   else if (strcmp(language,"es") == 0)
+   else if (string_is_equal(language,"es"))
       return "Microsoft Pablo Desktop";
-   else if (strcmp(language,"nl") == 0)
+   else if (string_is_equal(language,"nl"))
       return "Microsoft Frank Desktop";
-   else if (strcmp(language,"ro") == 0)
+   else if (string_is_equal(language,"ro"))
       return "Microsoft Andrei Desktop";
-   else if (strcmp(language,"pt_pt") == 0)
+   else if (string_is_equal(language,"pt_pt"))
       return "Microsoft Helia Desktop";
-   else if (strcmp(language,"pt_bt") == 0 || strcmp(language,"pt") == 0)
+   else if (string_is_equal(language,"pt_bt") || string_is_equal(language,"pt"))
       return "Microsoft Daniel Desktop";
-   else if (strcmp(language,"th") == 0)
+   else if (string_is_equal(language,"th"))
       return "Microsoft Pattara Desktop";
-   else if (strcmp(language,"ja") == 0)
+   else if (string_is_equal(language,"ja"))
       return "Microsoft Ichiro Desktop";
-   else if (strcmp(language,"sk") == 0)
+   else if (string_is_equal(language,"sk"))
       return "Microsoft Filip Desktop";
-   else if (strcmp(language,"hi") == 0)
+   else if (string_is_equal(language,"hi"))
       return "Microsoft Hemant Desktop";
-   else if (strcmp(language,"ar") == 0)
+   else if (string_is_equal(language,"ar"))
       return "Microsoft Naayf Desktop";
-   else if (strcmp(language,"hu") == 0)
+   else if (string_is_equal(language,"hu"))
       return "Microsoft Szabolcs Desktop";
-   else if (strcmp(language,"zh_tw") == 0 || strcmp(language,"zh")==0)
+   else if (string_is_equal(language,"zh_tw") || string_is_equal(language,"zh"))
       return "Microsoft Zhiwei Desktop";
-   else if (strcmp(language,"el") == 0)
+   else if (string_is_equal(language,"el"))
       return "Microsoft Stefanos Desktop";
-   else if (strcmp(language,"ru") == 0)
+   else if (string_is_equal(language,"ru"))
       return "Microsoft Pavel Desktop";
-   else if (strcmp(language,"nb") == 0)
+   else if (string_is_equal(language,"nb"))
       return "Microsoft Jon Desktop";
-   else if (strcmp(language,"da") == 0)
+   else if (string_is_equal(language,"da"))
       return "Microsoft Helle Desktop";
-   else if (strcmp(language,"fi") == 0)
+   else if (string_is_equal(language,"fi"))
       return "Microsoft Heidi Desktop";
-   else if (strcmp(language,"zh_hk") == 0)
+   else if (string_is_equal(language,"zh_hk"))
       return "Microsoft Danny Desktop";
-   else if (strcmp(language,"zh_cn") == 0)
+   else if (string_is_equal(language,"zh_cn"))
       return "Microsoft Kangkang Desktop";
-   else if (strcmp(language,"tr") == 0)
+   else if (string_is_equal(language,"tr"))
       return "Microsoft Tolga Desktop";
-   else if (strcmp(language,"ko") == 0)
+   else if (string_is_equal(language,"ko"))
       return "Microsoft Heami Desktop";
-   else if (strcmp(language,"pl") == 0)
+   else if (string_is_equal(language,"pl"))
       return "Microsoft Adam Desktop";
-   else if (strcmp(language,"cs") == 0) 
+   else if (string_is_equal(language,"cs")) 
       return "Microsoft Jakub Desktop";
    else
       return "";
@@ -29202,6 +29212,16 @@ static bool accessibility_speak_windows(
    char cmd[1200];
    char* language = accessibility_win_language_code(voice);
    bool res;
+
+   settings_t *settings              = configuration_settings;
+   char* speeds[10] = {"-10", "-7.5", "-5", "-2.5", "0", "2", "4", "6", "8", "10"};
+   int speed = settings->uints.accessibility_narrator_speech_speed;
+
+   if (speed < 1)
+      speed = 1;
+   else if (speed > 10)
+      speed = 10;
+
    if (priority < 10)
    {
       if (is_narrator_running_windows())
@@ -29210,10 +29230,10 @@ static bool accessibility_speak_windows(
 
    if (strlen(language) > 0) 
       snprintf(cmd, sizeof(cmd),
-               "powershell.exe -NoProfile -WindowStyle Hidden -Command \"Add-Type -AssemblyName System.Speech; $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer; $synth.SelectVoice(\\\"%s\\\"); $synth.Speak(\\\"%s\\\");\"", language, speak_text); 
+               "powershell.exe -NoProfile -WindowStyle Hidden -Command \"Add-Type -AssemblyName System.Speech; $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer; $synth.SelectVoice(\\\"%s\\\"); $synth.Rate = %s; $synth.Speak(\\\"%s\\\");\"", language, speeds[speed-1], speak_text); 
    else
       snprintf(cmd, sizeof(cmd),
-               "powershell.exe -NoProfile -WindowStyle Hidden -Command \"Add-Type -AssemblyName System.Speech; $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer; $synth.Speak(\\\"%s\\\");\"", speak_text); 
+               "powershell.exe -NoProfile -WindowStyle Hidden -Command \"Add-Type -AssemblyName System.Speech; $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer; $synth.Rate = %s; $synth.Speak(\\\"%s\\\");\"", speeds[speed-1], speak_text); 
    if (pi_set)
       terminate_win32_process(pi);
    res = create_win32_process(cmd);
@@ -29226,20 +29246,37 @@ static bool accessibility_speak_windows(
 #endif
 
 #if defined(__linux__) || defined(__unix__)
-static bool is_narrator_running_linux(void)
+bool is_narrator_running_linux(void)
 {
    if (kill(speak_pid, 0) == 0)
       return true;
    return false;
 }
 
-static bool accessibility_speak_linux(
+
+
+bool accessibility_speak_linux(
       char* speak_text, const char* language, int priority)
 {
    int pid;
    char* voice_out = malloc(3+strlen(language));
-   strcpy(voice_out, "-v");
-   strcat(voice_out, language);
+   char* speed_out = malloc(3+3);
+   settings_t *settings              = configuration_settings;
+
+   char* speeds[10] = {"80", "100", "125", "150", "170", "210", "260", "310", "380", "450"};
+   int speed = settings->uints.accessibility_narrator_speech_speed;
+
+   if (speed < 1)
+      speed = 1;
+   else if (speed > 10)
+      speed = 10;
+
+   strlcpy(voice_out, "-v", 3);
+   strlcat(voice_out, language, 5);
+
+   strlcpy(speed_out, "-s", 3);
+   strlcat(speed_out, speeds[speed-1], 6);
+   RARCH_LOG("SSS %s\n", speed_out);
    if (priority < 10 && speak_pid > 0)
    {
       /* check if old pid is running */
@@ -29272,7 +29309,7 @@ static bool accessibility_speak_linux(
    else
    { 
       /* child process: replace process with the espeak command */ 
-      execvp("espeak", (char* []) {"espeak", voice_out, speak_text, NULL});
+      execvp("espeak", (char* []) {"espeak", voice_out,speed_out, speak_text, NULL});
    }
    return true;
 }
@@ -29284,7 +29321,7 @@ bool accessibility_speak_priority(char* speak_text, int priority)
 
    RARCH_LOG("Spoke: %s\n", speak_text);
 
-   if (accessibility_enabled)
+   if (is_accessibility_enabled())
    {
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
       voice = get_user_language_iso639_1(true);
@@ -29296,17 +29333,22 @@ bool accessibility_speak_priority(char* speak_text, int priority)
       voice = get_user_language_iso639_1(true);
       return accessibility_speak_linux(speak_text, voice, priority);
 #endif
-
-      /* TODO/FIXME - ??? */
-      if (1==0)
+      /* The following method is a fallback for other platforms to use the
+         AI Service url to do the TTS.  However, since the playback is done
+         via the audio mixer, which only processes the audio while the 
+         core is running, this playback method won't work.  When the audio
+         mixer can handle playing streams while the core is paused, then 
+         we can use this. */
+      /* 
          return accessibility_speak_ai_service(speak_text, voice, priority);
+      */
    }
    return true;
 }
 
 bool is_narrator_running(void)
 {
-   if (accessibility_enabled)
+   if (is_accessibility_enabled())
    {
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
       return is_narrator_running_windows();
