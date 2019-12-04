@@ -29,6 +29,7 @@
 #include <boolean.h>
 
 #include <lists/string_list.h>
+#include <formats/logiqx_dat.h>
 
 #include "playlist.h"
 
@@ -54,6 +55,16 @@ enum manual_content_scan_core_type
    MANUAL_CONTENT_SCAN_CORE_SET
 };
 
+/* Defines all possible return values for
+ * manual_content_scan_validate_dat_file_path() */
+enum manual_content_scan_dat_file_path_status
+{
+   MANUAL_CONTENT_SCAN_DAT_FILE_UNSET = 0,
+   MANUAL_CONTENT_SCAN_DAT_FILE_OK,
+   MANUAL_CONTENT_SCAN_DAT_FILE_INVALID,
+   MANUAL_CONTENT_SCAN_DAT_FILE_TOO_LARGE
+};
+
 /* Holds all configuration parameters required
  * for a manual content scan task */
 typedef struct
@@ -65,6 +76,7 @@ typedef struct
    char core_name[PATH_MAX_LENGTH];
    char core_path[PATH_MAX_LENGTH];
    char file_exts[PATH_MAX_LENGTH];
+   char dat_file_path[PATH_MAX_LENGTH];
    bool core_set;
    bool search_archives;
    bool overwrite_playlist;
@@ -97,6 +109,14 @@ char *manual_content_scan_get_file_exts_custom_ptr(void);
 size_t manual_content_scan_get_file_exts_custom_size(void);
 
 /* Returns a pointer to the internal
+ * 'dat_file_path' string */
+char *manual_content_scan_get_dat_file_path_ptr(void);
+
+/* Returns size of the internal
+ * 'dat_file_path' string */
+size_t manual_content_scan_get_dat_file_path_size(void);
+
+/* Returns a pointer to the internal
  * 'search_archives' bool */
 bool *manual_content_scan_get_search_archives_ptr(void);
 
@@ -114,6 +134,11 @@ void manual_content_scan_scrub_system_name_custom(void);
  * 'file_exts_custom' string and converts to
  * lower case */
 void manual_content_scan_scrub_file_exts_custom(void);
+
+/* Checks 'dat_file_path' string and resets it
+ * if invalid */
+enum manual_content_scan_dat_file_path_status
+      manual_content_scan_validate_dat_file_path(void);
 
 /* Menu setters */
 
@@ -199,7 +224,7 @@ struct string_list *manual_content_scan_get_content_list(manual_content_scan_tas
 void manual_content_scan_add_content_to_playlist(
       manual_content_scan_task_config_t *task_config,
       playlist_t *playlist, const char *content_path,
-      int content_type);
+      int content_type, logiqx_dat_t *dat_file);
 
 RETRO_END_DECLS
 

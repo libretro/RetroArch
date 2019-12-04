@@ -116,7 +116,8 @@ enum
    ACTION_OK_SET_DIRECTORY,
    ACTION_OK_SHOW_WIMP,
    ACTION_OK_LOAD_CHEAT_FILE_APPEND,
-   ACTION_OK_LOAD_RGUI_MENU_THEME_PRESET
+   ACTION_OK_LOAD_RGUI_MENU_THEME_PRESET,
+   ACTION_OK_SET_MANUAL_CONTENT_SCAN_DAT_FILE
 };
 
 enum
@@ -637,6 +638,14 @@ int generic_action_ok_displaylist_push(const char *path,
          info_path          = new_path;
          info_label         = label;
          dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_DIR;
+         break;
+      case ACTION_OK_DL_MANUAL_CONTENT_SCAN_DAT_FILE:
+         filebrowser_clear_type();
+         info.type          = type;
+         info.directory_ptr = idx;
+         info_path          = settings->paths.directory_menu_content;
+         info_label         = label;
+         dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
          break;
       case ACTION_OK_DL_REMAP_FILE:
          filebrowser_clear_type();
@@ -1706,6 +1715,10 @@ static int generic_action_ok(const char *path,
          ret        = set_path_generic(menu_label, action_path);
          break;
 #endif
+      case ACTION_OK_SET_MANUAL_CONTENT_SCAN_DAT_FILE:
+         flush_char = msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_MANUAL_CONTENT_SCAN_LIST);
+         ret        = set_path_generic(menu_label, action_path);
+         break;
       case ACTION_OK_SET_PATH:
          flush_type = MENU_SETTINGS;
          ret        = set_path_generic(menu_label, action_path);
@@ -1782,6 +1795,7 @@ default_action_ok_set(action_ok_shader_preset_load,   ACTION_OK_LOAD_PRESET   , 
 default_action_ok_set(action_ok_shader_pass_load,     ACTION_OK_LOAD_SHADER_PASS,      MENU_ENUM_LABEL_SHADER_OPTIONS)
 #endif
 default_action_ok_set(action_ok_rgui_menu_theme_preset_load,  ACTION_OK_LOAD_RGUI_MENU_THEME_PRESET,  MENU_ENUM_LABEL_MENU_SETTINGS)
+default_action_ok_set(action_ok_set_manual_content_scan_dat_file, ACTION_OK_SET_MANUAL_CONTENT_SCAN_DAT_FILE, MENU_ENUM_LABEL_DEFERRED_MANUAL_CONTENT_SCAN_LIST)
 
 static int action_ok_file_load(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -4738,6 +4752,7 @@ default_action_ok_func(action_ok_open_archive, ACTION_OK_DL_OPEN_ARCHIVE)
 default_action_ok_func(action_ok_rgui_menu_theme_preset, ACTION_OK_DL_RGUI_MENU_THEME_PRESET)
 default_action_ok_func(action_ok_pl_thumbnails_updater_list, ACTION_OK_DL_PL_THUMBNAILS_UPDATER_LIST)
 default_action_ok_func(action_ok_push_manual_content_scan_list, ACTION_OK_DL_MANUAL_CONTENT_SCAN_LIST)
+default_action_ok_func(action_ok_manual_content_scan_dat_file, ACTION_OK_DL_MANUAL_CONTENT_SCAN_DAT_FILE)
 
 static int action_ok_open_uwp_permission_settings(const char *path,
    const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -6771,6 +6786,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_CORE_NAME:
             BIND_ACTION_OK(cbs, action_ok_manual_content_scan_core_name);
             break;
+         case MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_DAT_FILE:
+            BIND_ACTION_OK(cbs, action_ok_manual_content_scan_dat_file);
+            break;
          case MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_START:
             BIND_ACTION_OK(cbs, action_ok_manual_content_scan_start);
             break;
@@ -6907,6 +6925,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_LABEL_MANUAL_CONTENT_SCAN_CORE_NAME:
             BIND_ACTION_OK(cbs, action_ok_manual_content_scan_core_name);
+            break;
+         case MENU_LABEL_MANUAL_CONTENT_SCAN_DAT_FILE:
+            BIND_ACTION_OK(cbs, action_ok_manual_content_scan_dat_file);
             break;
          default:
             return -1;
@@ -7121,6 +7142,9 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
 #endif
          case FILE_TYPE_MANUAL_SCAN_DIRECTORY:
             BIND_ACTION_OK(cbs, action_ok_path_manual_scan_directory);
+            break;
+         case FILE_TYPE_MANUAL_SCAN_DAT:
+            BIND_ACTION_OK(cbs, action_ok_set_manual_content_scan_dat_file);
             break;
          case FILE_TYPE_CONFIG:
             BIND_ACTION_OK(cbs, action_ok_config_load);

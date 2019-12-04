@@ -32,6 +32,8 @@
 #include "core_info.h"
 #include "file_path_special.h"
 
+#include "frontend/frontend_driver.h"
+
 #include "manual_content_scan.h"
 
 /* Holds all configuration parameters associated
@@ -46,6 +48,7 @@ typedef struct
    char core_path[PATH_MAX_LENGTH];
    char file_exts_core[PATH_MAX_LENGTH];
    char file_exts_custom[PATH_MAX_LENGTH];
+   char dat_file_path[PATH_MAX_LENGTH];
    enum manual_content_scan_system_name_type system_name_type;
    enum manual_content_scan_core_type core_type;
    bool search_archives;
@@ -70,6 +73,7 @@ static scan_settings_t scan_settings = {
    "",                                          /* core_path */
    "",                                          /* file_exts_core */
    "",                                          /* file_exts_custom */
+   "",                                          /* dat_file_path */
    MANUAL_CONTENT_SCAN_SYSTEM_NAME_CONTENT_DIR, /* system_name_type */
    MANUAL_CONTENT_SCAN_CORE_DETECT,             /* core_type */
    false,                                       /* search_archives */
@@ -108,6 +112,20 @@ char *manual_content_scan_get_file_exts_custom_ptr(void)
 size_t manual_content_scan_get_file_exts_custom_size(void)
 {
    return sizeof(scan_settings.file_exts_custom);
+}
+
+/* Returns a pointer to the internal
+ * 'dat_file_path' string */
+char *manual_content_scan_get_dat_file_path_ptr(void)
+{
+   return scan_settings.dat_file_path;
+}
+
+/* Returns size of the internal
+ * 'dat_file_path' string */
+size_t manual_content_scan_get_dat_file_path_size(void)
+{
+   return sizeof(scan_settings.dat_file_path);
 }
 
 /* Returns a pointer to the internal
@@ -163,6 +181,61 @@ void manual_content_scan_scrub_system_name_custom(void)
 void manual_content_scan_scrub_file_exts_custom(void)
 {
    manual_content_scan_scrub_file_exts(scan_settings.file_exts_custom);
+}
+
+/* Checks 'dat_file_path' string and resets it
+ * if invalid */
+enum manual_content_scan_dat_file_path_status
+      manual_content_scan_validate_dat_file_path(void)
+{
+   enum manual_content_scan_dat_file_path_status dat_file_path_status =
+         MANUAL_CONTENT_SCAN_DAT_FILE_UNSET;
+
+   /* Check if 'dat_file_path' has been set */
+   if (!string_is_empty(scan_settings.dat_file_path))
+   {
+      uint64_t file_size;
+
+      /* Check if path itself is valid */
+      if (logiqx_dat_path_is_valid(scan_settings.dat_file_path, &file_size))
+      {
+         uint64_t free_memory = frontend_driver_get_free_memory();
+         dat_file_path_status = MANUAL_CONTENT_SCAN_DAT_FILE_OK;
+
+         /* DAT files can be *very* large...
+          * Try to enforce sane behaviour by requiring
+          * the system to have an amount of free memory
+          * at least twice the size of the DAT file...
+          * > Note that desktop (and probably mobile)
+          *   platforms should always have enough memory
+          *   for this - we're really only protecting the
+          *   console ports here */
+         if (free_memory > 0)
+         {
+            if (free_memory < (2 * file_size))
+               dat_file_path_status = MANUAL_CONTENT_SCAN_DAT_FILE_TOO_LARGE;
+         }
+         /* This is an annoying condition - it means the
+          * current platform doesn't have a 'free_memory'
+          * implementation...
+          * Have to make some assumptions in this case:
+          * > Typically the lowest system RAM of a supported
+          *   platform in 32MB
+          * > Propose that (2 * file_size) should be no more
+          *   than 1/4 of this total RAM value */
+         else if ((2 * file_size) > (8 * 1048576))
+            dat_file_path_status = MANUAL_CONTENT_SCAN_DAT_FILE_TOO_LARGE;
+      }
+      else
+         dat_file_path_status = MANUAL_CONTENT_SCAN_DAT_FILE_INVALID;
+   }
+
+   /* Reset 'dat_file_path' if status is anything other
+    * that 'OK' */
+   if (dat_file_path_status != MANUAL_CONTENT_SCAN_DAT_FILE_OK)
+      scan_settings.dat_file_path[0] = '\0';
+
+   return dat_file_path_status;
 }
 
 /* Menu setters */
@@ -646,6 +719,7 @@ bool manual_content_scan_get_task_config(manual_content_scan_task_config_t *task
    task_config->core_name[0]     = '\0';
    task_config->core_path[0]     = '\0';
    task_config->file_exts[0]     = '\0';
+   task_config->dat_file_path[0] = '\0';
 
    /* Get content directory */
    if (string_is_empty(scan_settings.content_dir))
@@ -769,6 +843,18 @@ bool manual_content_scan_get_task_config(manual_content_scan_task_config_t *task
     *   delimiters, so find and replace */
    if (!string_is_empty(task_config->file_exts))
       string_replace_all_chars(task_config->file_exts, ' ', '|');
+
+   /* Get DAT file path */
+   if (!string_is_empty(scan_settings.dat_file_path))
+   {
+      if (!logiqx_dat_path_is_valid(scan_settings.dat_file_path, NULL))
+         return false;
+
+      strlcpy(
+            task_config->dat_file_path,
+            scan_settings.dat_file_path,
+            sizeof(task_config->dat_file_path));
+   }
 
    /* Copy 'search inside archives' setting */
    task_config->search_archives = scan_settings.search_archives;
@@ -932,12 +1018,68 @@ error:
    return false;
 }
 
+/* Extracts content 'label' (name) from content path
+ * > If a DAT file is specified and content is an
+ *   archive, performs a lookup of content file name
+ *   in an attempt to find a valid 'description' string.
+ * Returns false if specified content is invalid. */
+static bool manual_content_scan_get_playlist_content_label(
+      const char *content_path, logiqx_dat_t *dat_file,
+      char *content_label, size_t len)
+{
+   /* Sanity check */
+   if (string_is_empty(content_path))
+      return false;
+
+   /* In most cases, content label is just the
+    * filename without extension */
+   fill_short_pathname_representation(
+         content_label, content_path, len);
+
+   if (string_is_empty(content_label))
+      return false;
+
+   /* Check if a DAT file has been specified */
+   if (dat_file)
+   {
+      /* DAT files are only relevant for arcade
+       * content. We have no idea what kind of
+       * content we are dealing with here, but
+       * since arcade ROMs are always archives
+       * we can at least filter by file type... */
+      if (path_is_compressed_file(content_path))
+      {
+         logiqx_dat_game_info_t game_info;
+
+         /* Search for current content
+          * > If content is not listed in DAT file,
+          *   use existing filename without extension */
+         if (logiqx_dat_search(dat_file, content_label, &game_info))
+         {
+            /* BIOS files should always be skipped */
+            if (game_info.is_bios)
+               return false;
+
+            /* Only include 'runnable' content */
+            if (!game_info.is_runnable)
+               return false;
+
+            /* Copy game description */
+            if (!string_is_empty(game_info.description))
+               strlcpy(content_label, game_info.description, len);
+         }
+      }
+   }
+
+   return true;
+}
+
 /* Adds specified content to playlist, if not already
  * present */
 void manual_content_scan_add_content_to_playlist(
       manual_content_scan_task_config_t *task_config,
       playlist_t *playlist, const char *content_path,
-      int content_type)
+      int content_type, logiqx_dat_t *dat_file)
 {
    char playlist_content_path[PATH_MAX_LENGTH];
 
@@ -963,10 +1105,9 @@ void manual_content_scan_add_content_to_playlist(
       label[0] = '\0';
 
       /* Get entry label */
-      fill_short_pathname_representation(
-            label, playlist_content_path, sizeof(label));
-
-      if (string_is_empty(label))
+      if (!manual_content_scan_get_playlist_content_label(
+            playlist_content_path, dat_file,
+            label, sizeof(label)))
          return;
 
       /* Configure playlist entry

@@ -1484,10 +1484,9 @@ DEPENDENCIES
 /*============================================================
 XML
 ============================================================ */
-#ifdef HAVE_VIDEO_LAYOUT
 #include "../libretro-common/formats/xml/rxml.c"
+#include "../libretro-common/formats/logiqx_dat/logiqx_dat.c"
 #include "../deps/yxml/yxml.c"
-#endif
 
 /*============================================================
  AUDIO UTILS

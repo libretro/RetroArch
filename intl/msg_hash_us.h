@@ -10109,6 +10109,14 @@ MSG_HASH(
     "When enabled, archive files (.zip, .7z, etc.) will be searched for valid/supported content. May have a significant impact on scan performance."
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_DAT_FILE,
+    "Arcade DAT File"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_DAT_FILE,
+    "Select a Logiqx or MAME List XML DAT file to enable automatic naming of scanned arcade content (MAME, FinalBurn Neo, etc.)."
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_OVERWRITE,
     "Overwrite Existing Playlist"
     )
@@ -10135,6 +10143,18 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_CORE_NAME_DETECT,
     "<Unspecified>"
+    )
+MSG_HASH(
+    MSG_MANUAL_CONTENT_SCAN_DAT_FILE_INVALID,
+    "Invalid arcade DAT file selected"
+    )
+MSG_HASH(
+    MSG_MANUAL_CONTENT_SCAN_DAT_FILE_TOO_LARGE,
+    "Selected arcade DAT file is too large (insufficient free memory)"
+    )
+MSG_HASH(
+    MSG_MANUAL_CONTENT_SCAN_DAT_FILE_LOAD_ERROR,
+    "Failed to load arcade DAT file (invalid format?)"
     )
 MSG_HASH(
     MSG_MANUAL_CONTENT_SCAN_INVALID_CONFIG,
