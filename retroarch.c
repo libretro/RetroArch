@@ -28962,188 +28962,11 @@ bool accessibility_speak(char* speak_text)
    return accessibility_speak_priority(speak_text, 10);
 }
 
-bool accessibility_speak_priority(char* speak_text, int priority)
-{
-   RARCH_LOG("Spoke: %s\n", speak_text);
-   const char* voice = NULL;
-   if (accessibility_enabled)
-   {
-#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
-      voice = get_user_language_iso639_1(true);
-      return accessibility_speak_windows(speak_text, voice, priority);
-#elif defined(__APPLE__) && defined(__MACH__)
-      voice = get_user_language_iso639_1(false);
-      return accessibility_speak_macos(speak_text, voice, priority);
-#elif defined(__linux__) || defined(__unix__)
-      voice = get_user_language_iso639_1(true);
-      return accessibility_speak_linux(speak_text, voice, priority);
-#endif
-
-      if (1==0)
-      {
-         return accessibility_speak_ai_service(speak_text, voice, priority);
-      }
-   }
-   return true;
-}
-
-
-bool is_narrator_running(void)
-{
-   if (accessibility_enabled)
-   {
-#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
-      return is_narrator_running_windows();
-#elif defined(__APPLE__) && defined(__MACH__)
-      return is_narrator_running_macos();
-#elif defined(__linux__) || defined(__unix__)
-      return is_narrator_running_linux();
-#endif
-   }
-   return true;
-}
-
-
-#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
-PROCESS_INFORMATION pi;
-bool pi_set = false;
-
-bool terminate_win32_process(PROCESS_INFORMATION pi)
-{
-   TerminateProcess(pi.hProcess,0);
-   CloseHandle(pi.hProcess);
-   CloseHandle(pi.hThread);
-   return true;
-}
-
-bool CreateWin32Process(char* cmd)
-{
-   STARTUPINFO si;
-   ZeroMemory(&si, sizeof(si));
-   si.cb = sizeof(si);
-   ZeroMemory(&pi, sizeof(pi));
-
-   if (!CreateProcess(NULL, cmd, NULL, NULL, FALSE, CREATE_NO_WINDOW,
-                      NULL, NULL, &si, &pi))
-   {
-      pi_set = false;
-      return false;
-   }
-   pi_set = true;
-   return true;
-}
-
-char* accessibility_win_language_code(const char* language)
-{
-   if (strcmp(language,"en") == 0)
-      return "Microsoft David Desktop";
-   else if (strcmp(language,"it") == 0)
-      return "Microsoft Cosimo Desktop";
-   else if (strcmp(language,"sv") == 0)
-      return "Microsoft Bengt Desktop";
-   else if (strcmp(language,"fr") == 0)
-      return "Microsoft Paul Desktop";
-   else if (strcmp(language,"de") == 0)
-      return "Microsoft Stefan Desktop";
-   else if (strcmp(language,"he") == 0)
-      return "Microsoft Hemant Desktop";
-   else if (strcmp(language,"id") == 0)
-      return "Microsoft Asaf Desktop";
-   else if (strcmp(language,"es") == 0)
-      return "Microsoft Pablo Desktop";
-   else if (strcmp(language,"nl") == 0)
-      return "Microsoft Frank Desktop";
-   else if (strcmp(language,"ro") == 0)
-      return "Microsoft Andrei Desktop";
-   else if (strcmp(language,"pt_pt") == 0)
-      return "Microsoft Helia Desktop";
-   else if (strcmp(language,"pt_bt") == 0 || strcmp(language,"pt") == 0)
-      return "Microsoft Daniel Desktop";
-   else if (strcmp(language,"th") == 0)
-      return "Microsoft Pattara Desktop";
-   else if (strcmp(language,"ja") == 0)
-      return "Microsoft Ichiro Desktop";
-   else if (strcmp(language,"sk") == 0)
-      return "Microsoft Filip Desktop";
-   else if (strcmp(language,"hi") == 0)
-      return "Microsoft Hemant Desktop";
-   else if (strcmp(language,"ar") == 0)
-      return "Microsoft Naayf Desktop";
-   else if (strcmp(language,"hu") == 0)
-      return "Microsoft Szabolcs Desktop";
-   else if (strcmp(language,"zh_tw") == 0 || strcmp(language,"zh")==0)
-      return "Microsoft Zhiwei Desktop";
-   else if (strcmp(language,"el") == 0)
-      return "Microsoft Stefanos Desktop";
-   else if (strcmp(language,"ru") == 0)
-      return "Microsoft Pavel Desktop";
-   else if (strcmp(language,"nb") == 0)
-      return "Microsoft Jon Desktop";
-   else if (strcmp(language,"da") == 0)
-      return "Microsoft Helle Desktop";
-   else if (strcmp(language,"fi") == 0)
-      return "Microsoft Heidi Desktop";
-   else if (strcmp(language,"zh_hk") == 0)
-      return "Microsoft Danny Desktop";
-   else if (strcmp(language,"zh_cn") == 0)
-      return "Microsoft Kangkang Desktop";
-   else if (strcmp(language,"tr") == 0)
-      return "Microsoft Tolga Desktop";
-   else if (strcmp(language,"ko") == 0)
-      return "Microsoft Heami Desktop";
-   else if (strcmp(language,"pl") == 0)
-      return "Microsoft Adam Desktop";
-   else if (strcmp(language,"cs") == 0) 
-      return "Microsoft Jakub Desktop";
-   else
-      return "";
-}
-
-bool is_narrator_running_windows(void)
-{
-   DWORD status = 0;
-   bool res;
-   if (pi_set == false)
-      return false;
-   res = GetExitCodeProcess(&pi, &status);
-   if (res == true && status == STILL_ACTIVE)
-      return true;
-   return false;
-}
-
-bool accessibility_speak_windows(char* speak_text, const char* voice, int priority)
-{
-   char cmd[1200];
-   char* language = accessibility_win_language_code(voice);
-   bool res;
-   if (priority < 10)
-   {
-      if (is_narrator_running_windows())
-         return true;
-   }
-
-   if (strlen(language) > 0) 
-      snprintf(cmd, sizeof(cmd),
-               "powershell.exe -NoProfile -WindowStyle Hidden -Command \"Add-Type -AssemblyName System.Speech; $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer; $synth.SelectVoice(\\\"%s\\\"); $synth.Speak(\\\"%s\\\");\"", language, speak_text); 
-   else
-      snprintf(cmd, sizeof(cmd),
-               "powershell.exe -NoProfile -WindowStyle Hidden -Command \"Add-Type -AssemblyName System.Speech; $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer; $synth.Speak(\\\"%s\\\");\"", speak_text); 
-   if (pi_set)
-   {
-      terminate_win32_process(pi);
-   }
-   res = CreateWin32Process(cmd);
-   if (!res)
-   {
-      RARCH_LOG("Create subprocess failed. Error: %d\n", GetLastError()); 
-   }
-   return true;
-}
-#endif
 
 #if defined(__APPLE__) && defined(__MACH__)
-char* accessibility_mac_language_code(const char* language)
+static char* accessibility_mac_language_code(const char* language)
 {
+   /* TODO/FIXME - replace strcmp with string_is_equal */
    if (strcmp(language,"en") == 0)
       return "Alex";
    else if (strcmp(language,"it") == 0)
@@ -29215,7 +29038,8 @@ bool is_narrator_running_macos(void)
    return false;
 }
 
-bool accessibility_speak_macos(char* speak_text, const char* voice, int priority)
+static bool accessibility_speak_macos(
+      char* speak_text, const char* voice, int priority)
 {
    int pid;
    char* language_speaker = accessibility_mac_language_code(voice);
@@ -29226,7 +29050,7 @@ bool accessibility_speak_macos(char* speak_text, const char* voice, int priority
       if (is_narrator_running_macos())
          return true;
    }
-   
+
    if (speak_pid > 0)
    {
       /* Kill the running espeak */
@@ -29254,7 +29078,7 @@ bool accessibility_speak_macos(char* speak_text, const char* voice, int priority
       /* child process: replace process with the espeak command */ 
       if (strlen(language_speaker)> 0)
          execvp("say", (char* []) {"say", "-v", language_speaker, 
-                                   speak_text, NULL});
+               speak_text, NULL});
       else
          execvp("say", (char* []) {"say", speak_text, NULL});
    }
@@ -29262,16 +29086,180 @@ bool accessibility_speak_macos(char* speak_text, const char* voice, int priority
 }
 #endif
 
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+static char *accessibility_win_language_code(const char* language)
+{
+   /* TODO/FIXME - replace strcmp with string_is_equal */
+   if (strcmp(language,"en") == 0)
+      return "Microsoft David Desktop";
+   else if (strcmp(language,"it") == 0)
+      return "Microsoft Cosimo Desktop";
+   else if (strcmp(language,"sv") == 0)
+      return "Microsoft Bengt Desktop";
+   else if (strcmp(language,"fr") == 0)
+      return "Microsoft Paul Desktop";
+   else if (strcmp(language,"de") == 0)
+      return "Microsoft Stefan Desktop";
+   else if (strcmp(language,"he") == 0)
+      return "Microsoft Hemant Desktop";
+   else if (strcmp(language,"id") == 0)
+      return "Microsoft Asaf Desktop";
+   else if (strcmp(language,"es") == 0)
+      return "Microsoft Pablo Desktop";
+   else if (strcmp(language,"nl") == 0)
+      return "Microsoft Frank Desktop";
+   else if (strcmp(language,"ro") == 0)
+      return "Microsoft Andrei Desktop";
+   else if (strcmp(language,"pt_pt") == 0)
+      return "Microsoft Helia Desktop";
+   else if (strcmp(language,"pt_bt") == 0 || strcmp(language,"pt") == 0)
+      return "Microsoft Daniel Desktop";
+   else if (strcmp(language,"th") == 0)
+      return "Microsoft Pattara Desktop";
+   else if (strcmp(language,"ja") == 0)
+      return "Microsoft Ichiro Desktop";
+   else if (strcmp(language,"sk") == 0)
+      return "Microsoft Filip Desktop";
+   else if (strcmp(language,"hi") == 0)
+      return "Microsoft Hemant Desktop";
+   else if (strcmp(language,"ar") == 0)
+      return "Microsoft Naayf Desktop";
+   else if (strcmp(language,"hu") == 0)
+      return "Microsoft Szabolcs Desktop";
+   else if (strcmp(language,"zh_tw") == 0 || strcmp(language,"zh")==0)
+      return "Microsoft Zhiwei Desktop";
+   else if (strcmp(language,"el") == 0)
+      return "Microsoft Stefanos Desktop";
+   else if (strcmp(language,"ru") == 0)
+      return "Microsoft Pavel Desktop";
+   else if (strcmp(language,"nb") == 0)
+      return "Microsoft Jon Desktop";
+   else if (strcmp(language,"da") == 0)
+      return "Microsoft Helle Desktop";
+   else if (strcmp(language,"fi") == 0)
+      return "Microsoft Heidi Desktop";
+   else if (strcmp(language,"zh_hk") == 0)
+      return "Microsoft Danny Desktop";
+   else if (strcmp(language,"zh_cn") == 0)
+      return "Microsoft Kangkang Desktop";
+   else if (strcmp(language,"tr") == 0)
+      return "Microsoft Tolga Desktop";
+   else if (strcmp(language,"ko") == 0)
+      return "Microsoft Heami Desktop";
+   else if (strcmp(language,"pl") == 0)
+      return "Microsoft Adam Desktop";
+   else if (strcmp(language,"cs") == 0) 
+      return "Microsoft Jakub Desktop";
+   else
+      return "";
+}
+#endif
+
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+PROCESS_INFORMATION pi;
+bool pi_set = false;
+
+static bool terminate_win32_process(PROCESS_INFORMATION pi)
+{
+   TerminateProcess(pi.hProcess,0);
+   CloseHandle(pi.hProcess);
+   CloseHandle(pi.hThread);
+   return true;
+}
+
+static bool create_win32_process(char* cmd)
+{
+   STARTUPINFO si;
+   ZeroMemory(&si, sizeof(si));
+   si.cb = sizeof(si);
+   ZeroMemory(&pi, sizeof(pi));
+
+   if (!CreateProcess(NULL, cmd, NULL, NULL, FALSE, CREATE_NO_WINDOW,
+                      NULL, NULL, &si, &pi))
+   {
+      pi_set = false;
+      return false;
+   }
+   pi_set = true;
+   return true;
+}
+
+static bool is_narrator_running_windows(void)
+{
+   DWORD status = 0;
+   bool res;
+   if (pi_set == false)
+      return false;
+   res = GetExitCodeProcess(&pi, &status);
+   if (res && status == STILL_ACTIVE)
+      return true;
+   return false;
+}
+
+static bool accessibility_speak_windows(
+      char* speak_text, const char* voice, int priority)
+{
+   char cmd[1200];
+   char* language = accessibility_win_language_code(voice);
+   bool res;
+   if (priority < 10)
+   {
+      if (is_narrator_running_windows())
+         return true;
+   }
+
+   if (strlen(language) > 0) 
+      snprintf(cmd, sizeof(cmd),
+               "powershell.exe -NoProfile -WindowStyle Hidden -Command \"Add-Type -AssemblyName System.Speech; $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer; $synth.SelectVoice(\\\"%s\\\"); $synth.Speak(\\\"%s\\\");\"", language, speak_text); 
+   else
+      snprintf(cmd, sizeof(cmd),
+               "powershell.exe -NoProfile -WindowStyle Hidden -Command \"Add-Type -AssemblyName System.Speech; $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer; $synth.Speak(\\\"%s\\\");\"", speak_text); 
+   if (pi_set)
+      terminate_win32_process(pi);
+   res = create_win32_process(cmd);
+   if (!res)
+   {
+      RARCH_LOG("Create subprocess failed. Error: %d\n", GetLastError()); 
+   }
+   return true;
+}
+#endif
+
+bool accessibility_speak_priority(char* speak_text, int priority)
+{
+   RARCH_LOG("Spoke: %s\n", speak_text);
+   const char* voice = NULL;
+   if (accessibility_enabled)
+   {
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+      voice = get_user_language_iso639_1(true);
+      return accessibility_speak_windows(speak_text, voice, priority);
+#elif defined(__APPLE__) && defined(__MACH__)
+      voice = get_user_language_iso639_1(false);
+      return accessibility_speak_macos(speak_text, voice, priority);
+#elif defined(__linux__) || defined(__unix__)
+      voice = get_user_language_iso639_1(true);
+      return accessibility_speak_linux(speak_text, voice, priority);
+#endif
+
+      if (1==0)
+      {
+         return accessibility_speak_ai_service(speak_text, voice, priority);
+      }
+   }
+   return true;
+}
 
 #if defined(__linux__) || defined(__unix__)
-bool is_narrator_running_linux(void)
+static bool is_narrator_running_linux(void)
 {
    if (kill(speak_pid, 0) == 0)
       return true;
    return false;
 }
 
-bool accessibility_speak_linux(char* speak_text, const char* language, int priority)
+static bool accessibility_speak_linux(
+      char* speak_text, const char* language, int priority)
 {
    int pid;
    char* voice_out = malloc(3+strlen(language));
@@ -29314,6 +29302,23 @@ bool accessibility_speak_linux(char* speak_text, const char* language, int prior
    return true;
 }
 #endif
+
+
+bool is_narrator_running(void)
+{
+   if (accessibility_enabled)
+   {
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+      return is_narrator_running_windows();
+#elif defined(__APPLE__) && defined(__MACH__)
+      return is_narrator_running_macos();
+#elif defined(__linux__) || defined(__unix__)
+      return is_narrator_running_linux();
+#endif
+   }
+   return true;
+}
+
 
 bool accessibility_speak_ai_service(char* speak_text, const char* language, int priority)
 {
