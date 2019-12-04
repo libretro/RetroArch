@@ -4172,7 +4172,7 @@ static void handle_translation_cb(
    if (string_is_equal(error_string, "No text found."))
    {
       RARCH_LOG("No text found...\n");
-      strcpy(text_string, error_string);
+      strlcpy(text_string, error_string, 15);
 #ifdef HAVE_MENU_WIDGETS
       if (menu_widgets_paused)
       {
@@ -29280,8 +29280,13 @@ bool accessibility_speak_linux(char* speak_text, const char* language, int prior
 {
    int pid;
    char* voice_out = malloc(3+strlen(language));
-   strcpy(voice_out, "-v");
-   strcat(voice_out, language);
+   char* speed_out = malloc(3+3);
+
+   strlcpy(voice_out, "-v", 3);
+   strlcat(voice_out, language, 5);
+
+   strlcpy(speed_out, "-s450", 6);
+  
    if (priority < 10 && speak_pid > 0)
    {
       /* check if old pid is running */
@@ -29314,7 +29319,7 @@ bool accessibility_speak_linux(char* speak_text, const char* language, int prior
    else
    { 
       /* child process: replace process with the espeak command */ 
-      execvp("espeak", (char* []) {"espeak", voice_out, speak_text, NULL});
+      execvp("espeak", (char* []) {"espeak", voice_out,speed_out, speak_text, NULL});
    }
    return true;
 }

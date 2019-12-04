@@ -154,7 +154,7 @@ int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
                   if (strcmp(menu->menu_state_msg, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE))==0)
                   {
                      char current_sublabel[255];
-                     get_current_menu_sublabel(current_sublabel);
+                     get_current_menu_sublabel(current_sublabel, 255);
                      if (strcmp(current_sublabel, "")==0)
                         accessibility_speak(menu->menu_state_msg);
                      else
@@ -420,9 +420,9 @@ int generic_menu_entry_action(
       char title_name[255];
       char speak_string[512];
 
-      strcpy(title_name, "");
-      strcpy(current_label, "");
-      get_current_menu_value(current_value);
+      strlcpy(title_name, "",1);
+      strlcpy(current_label, "",1);
+      get_current_menu_value(current_value, 255);
       switch (action)
       {
          case MENU_ACTION_INFO:
@@ -436,29 +436,29 @@ int generic_menu_entry_action(
          case MENU_ACTION_DOWN:
          case MENU_ACTION_SCROLL_UP:
          case MENU_ACTION_SCROLL_DOWN:
-            get_current_menu_label(current_label);
+            get_current_menu_label(current_label, 255);
             break;
          case MENU_ACTION_START:
          case MENU_ACTION_SELECT:
          case MENU_ACTION_SEARCH:
-            get_current_menu_label(current_label);
+            get_current_menu_label(current_label, 255);
          case MENU_ACTION_SCAN:
          default:
              break;
       }
 
       {
-         strcpy(speak_string, "");
+         strlcpy(speak_string, "",1);
          if (strcmp(title_name, "") != 0)
          {
-            strcpy(speak_string, title_name);
-            strcat(speak_string, " ");
+            strlcpy(speak_string, title_name, 255);
+            strlcat(speak_string, " ", 2);
          }
-         strcat(speak_string, current_label);
+         strlcat(speak_string, current_label, 255);
          if (strcmp(current_value, "...")!=0)
          {
-            strcat(speak_string, " ");
-            strcat(speak_string, current_value);
+            strlcat(speak_string, " ",2);
+            strlcat(speak_string, current_value, 255);
          }
 
          if (strcmp(speak_string, "") != 0)

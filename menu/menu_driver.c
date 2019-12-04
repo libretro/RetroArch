@@ -4130,7 +4130,7 @@ void menu_subsystem_populate(const struct retro_subsystem_info* subsystem, menu_
 }
 
 
-void get_current_menu_value(char* retstr)
+void get_current_menu_value(char* retstr, size_t max)
 {
    const char*      entry_label;
    menu_entry_t     entry;
@@ -4140,10 +4140,10 @@ void get_current_menu_value(char* retstr)
    menu_entry_get(&entry, 0, menu_navigation_get_selection(), NULL, true);
    menu_entry_get_value(&entry, &entry_label);
 
-   strcpy(retstr, entry_label);
+   strlcpy(retstr, entry_label, max);
 }
 
-void get_current_menu_label(char* retstr)
+void get_current_menu_label(char* retstr, size_t max)
 {
    const char*      entry_label;
    menu_entry_t     entry;
@@ -4153,10 +4153,10 @@ void get_current_menu_label(char* retstr)
    menu_entry_get(&entry, 0, menu_navigation_get_selection(), NULL, true);
    menu_entry_get_rich_label(&entry, &entry_label);
 
-   strcpy(retstr, entry_label);
+   strlcpy(retstr, entry_label, max);
 }
 
-void get_current_menu_sublabel(char* retstr)
+void get_current_menu_sublabel(char* retstr, size_t max)
 {
    const char*      entry_sublabel;
    menu_entry_t     entry;
@@ -4166,5 +4166,5 @@ void get_current_menu_sublabel(char* retstr)
    menu_entry_get(&entry, 0, menu_navigation_get_selection(), NULL, true);
  
    menu_entry_get_sublabel(&entry, &entry_sublabel);
-   strcpy(retstr, entry_sublabel);
+   strlcpy(retstr, entry_sublabel, max);
 }
