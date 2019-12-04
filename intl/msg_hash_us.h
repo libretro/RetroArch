@@ -9895,6 +9895,10 @@ MSG_HASH(
     "Speech Mode"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_AI_SERVICE_NARRATOR_MODE,
+    "Narrator Mode"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE,
     "Remove"
     )

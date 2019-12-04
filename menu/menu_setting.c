@@ -2841,6 +2841,9 @@ static void setting_get_string_representation_uint_ai_service_mode(
       case 1:
          enum_idx = MENU_ENUM_LABEL_VALUE_AI_SERVICE_SPEECH_MODE;
          break;
+      case 2:
+         enum_idx = MENU_ENUM_LABEL_VALUE_AI_SERVICE_NARRATOR_MODE;
+         break;
       default:
          break;
    }
