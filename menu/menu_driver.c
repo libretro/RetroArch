@@ -4140,6 +4140,7 @@ void get_current_menu_value(char* retstr)
    menu_entry_get(&entry, 0, menu_navigation_get_selection(), NULL, true);
    menu_entry_get_value(&entry, &entry_label);
 
+   /* TODO/FIXME - replace strcpy with strlcpy */
    strcpy(retstr, entry_label);
 }
 
@@ -4153,6 +4154,7 @@ void get_current_menu_label(char* retstr)
    menu_entry_get(&entry, 0, menu_navigation_get_selection(), NULL, true);
    menu_entry_get_rich_label(&entry, &entry_label);
 
+   /* TODO/FIXME - replace strcpy with strlcpy */
    strcpy(retstr, entry_label);
 }
 
@@ -4166,5 +4168,7 @@ void get_current_menu_sublabel(char* retstr)
    menu_entry_get(&entry, 0, menu_navigation_get_selection(), NULL, true);
  
    menu_entry_get_sublabel(&entry, &entry_sublabel);
+
+   /* TODO/FIXME - replace strcpy with strlcpy */
    strcpy(retstr, entry_sublabel);
 }

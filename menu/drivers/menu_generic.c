@@ -420,9 +420,11 @@ int generic_menu_entry_action(
       char title_name[255];
       char speak_string[512];
 
-      strcpy(title_name, "");
-      strcpy(current_label, "");
+      strlcpy(title_name, "", sizeof(title_name));
+      strlcpy(current_label, "", sizeof(current_label));
+
       get_current_menu_value(current_value);
+
       switch (action)
       {
          case MENU_ACTION_INFO:
@@ -444,28 +446,25 @@ int generic_menu_entry_action(
             get_current_menu_label(current_label);
          case MENU_ACTION_SCAN:
          default:
-             break;
+            break;
       }
 
+      /* TODO/FIXME - replace strcmp with string_is_equal */
+      strlcpy(speak_string, "", sizeof(speak_string));
+      if (strcmp(title_name, "") != 0)
       {
-         strcpy(speak_string, "");
-         if (strcmp(title_name, "") != 0)
-         {
-            strcpy(speak_string, title_name);
-            strcat(speak_string, " ");
-         }
-         strcat(speak_string, current_label);
-         if (strcmp(current_value, "...")!=0)
-         {
-            strcat(speak_string, " ");
-            strcat(speak_string, current_value);
-         }
-
-         if (strcmp(speak_string, "") != 0)
-         {
-            accessibility_speak(speak_string);
-         }
+         strlcpy(speak_string, title_name, sizeof(speak_string));
+         strlcat(speak_string, " ", sizeof(speak_string));
       }
+      strlcat(speak_string, current_label, sizeof(speak_string));
+      if (strcmp(current_value, "...")!=0)
+      {
+         strlcat(speak_string, " ", sizeof(speak_string));
+         strlcat(speak_string, current_value, sizeof(speak_string));
+      }
+
+      if (strcmp(speak_string, "") != 0)
+         accessibility_speak(speak_string);
    }
    return ret;
 }
