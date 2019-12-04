@@ -28951,8 +28951,8 @@ bool is_accessibility_enabled(void)
 {
    settings_t *settings              = configuration_settings;
    if (accessibility_enabled || settings->bools.accessibility_enable)
-      return True;
-   return False;
+      return true;
+   return false;
 }
 
 bool is_input_keyboard_display_on(void)
