@@ -2028,17 +2028,6 @@ bool accessibility_startup_message(void);
 
 bool is_narrator_running(void);
 
-#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
-bool is_narrator_running_windows(void);
-bool accessibility_speak_windows(char* speak_text, const char* voice, int priority);
-#elif defined(__APPLE__) && defined(__MACH__)
-bool is_narrator_running_macos(void);
-char* accessibility_mac_language_code(const char* language);
-bool accessibility_speak_macos(char* speak_text, const char* voice, int priority);
-#elif defined(__linux__) || defined(__unix__)
-bool is_narrator_running_linux(void);
-bool accessibility_speak_linux(char* speak_text, const char* voice, int priority);
-#endif
 bool accessibility_speak_ai_service(
       char* speak_text, const char* voice, int priority);
 
