@@ -2133,3 +2133,7 @@ MSG_HASH(MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_OVERWRITE,
       "manual_content_scan_overwrite")
 MSG_HASH(MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_START,
       "manual_content_scan_start")
+MSG_HASH(MENU_ENUM_LABEL_ACCESSIBILITY_ENABLED,
+      "accessibility_enabled")
+MSG_HASH(MENU_ENUM_LABEL_ACCESSIBILITY_NARRATOR_SPEECH_SPEED,
+      "accessibility_narrator_speech_speed")
