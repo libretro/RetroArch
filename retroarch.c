@@ -29320,8 +29320,8 @@ bool accessibility_speak_linux(char* speak_text, const char* language, int prior
 
 bool accessibility_speak_ai_service(char* speak_text, const char* language, int priority)
 {
-#ifdef HAVE_NETWORKING
-   /* Call the ai service listed to do espeak for us. */ 
+#if defined(HAVE_NETWORKING) && defined(HAVE_TRANSLATE)
+   /* Call the AI service listed to do espeak for us. */ 
    /* NOTE: This call works, but the audio mixer will not 
     * play sound files while the core is paused, so it's
     * not practical at the moment. */
