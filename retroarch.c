@@ -4452,7 +4452,7 @@ finish:
       free(raw_output_data);
 }
 
-bool is_ai_service_speech_running()
+bool is_ai_service_speech_running(void)
 {
    enum audio_mixer_state res = audio_driver_mixer_get_stream_state(10);
    RARCH_LOG("TTT %d\n", res);
@@ -4461,7 +4461,7 @@ bool is_ai_service_speech_running()
    return true;
 }
 
-bool ai_service_speech_stop()
+bool ai_service_speech_stop(void)
 {
    audio_driver_mixer_stop_stream(10);
    audio_driver_mixer_remove_stream(10);
@@ -7474,10 +7474,8 @@ TODO: Add a setting for these tweaks */
                accessibility_speak("stopped.");
          }
          else if (is_accessibility_enabled() && settings->uints.ai_service_mode == 2 &&
-                  is_narrator_running() == true)
-         {
+                  is_narrator_running())
             accessibility_speak("stopped.");
-         }
          else
          {
             RARCH_LOG("AI Service Called...\n");
@@ -28952,12 +28950,12 @@ unsigned int retroarch_get_rotation(void)
 /* Accessibility */
 int speak_pid = 0;
 
-bool is_accessibility_enabled()
+bool is_accessibility_enabled(void)
 {
    return accessibility_enabled;
 }
 
-bool is_input_keyboard_display_on()
+bool is_input_keyboard_display_on(void)
 {
    return menu_input_dialog_keyboard_display;
 }
@@ -28993,7 +28991,7 @@ bool accessibility_speak_priority(char* speak_text, int priority)
 }
 
 
-bool is_narrator_running()
+bool is_narrator_running(void)
 {
    if (accessibility_enabled)
    {
@@ -29104,7 +29102,7 @@ char* accessibility_win_language_code(const char* language)
       return "";
 }
 
-bool is_narrator_running_windows()
+bool is_narrator_running_windows(void)
 {
    DWORD status = 0;
    bool res;
@@ -29213,7 +29211,7 @@ char* accessibility_mac_language_code(const char* language)
       return "";
 }
 
-bool is_narrator_running_macos()
+bool is_narrator_running_macos(void)
 {
    if (kill(speak_pid, 0) == 0)
       return true;
@@ -29269,7 +29267,7 @@ bool accessibility_speak_macos(char* speak_text, const char* voice, int priority
 
 
 #if defined(__linux__) || defined(__unix__)
-bool is_narrator_running_linux()
+bool is_narrator_running_linux(void)
 {
    if (kill(speak_pid, 0) == 0)
       return true;
@@ -29322,11 +29320,12 @@ bool accessibility_speak_linux(char* speak_text, const char* language, int prior
 
 bool accessibility_speak_ai_service(char* speak_text, const char* language, int priority)
 {
+#ifdef HAVE_NETWORKING
    /* Call the ai service listed to do espeak for us. */ 
    /* NOTE: This call works, but the audio mixer will not 
     * play sound files while the core is paused, so it's
     * not practical at the moment. */
-
+   unsigned i;
    char new_ai_service_url[PATH_MAX_LENGTH];
    char temp_string[PATH_MAX_LENGTH];
    char json_buffer[2048];
@@ -29344,7 +29343,7 @@ bool accessibility_speak_ai_service(char* speak_text, const char* language, int 
    strlcat(new_ai_service_url, temp_string, sizeof(new_ai_service_url));
    
    strlcpy(temp_string, speak_text, sizeof(temp_string));
-   for (int i=0;i<strlen(temp_string);i++)
+   for (i = 0; i < strlen(temp_string);i++)
    {
       if (temp_string[i]=='\"')
          temp_string[i] = ' ';
@@ -29356,13 +29355,18 @@ bool accessibility_speak_ai_service(char* speak_text, const char* language, int 
             json_buffer, true, NULL, handle_translation_cb, NULL);
 
    return true;
+#else
+   return false;
+#endif
 }
 
-bool accessibility_startup_message()
+bool accessibility_startup_message(void)
 {
+#ifdef HAVE_NETWORKING
    /* Note: for the ai service tts call, this is called too early... */
    accessibility_speak("RetroArch accessibility on.");
    return true;
+#else
+   return false;
+#endif
 }
-
-
