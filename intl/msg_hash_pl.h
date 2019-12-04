@@ -945,7 +945,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ENABLE,
       "Włącz turbo")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD,
       "Okres turbo")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
+MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS, /* TODO/FIXME - Change user to port */
       "Wprowadź powiązania użytkownika %u")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LATENCY_SETTINGS,
       "Opóźnienie")
@@ -2054,7 +2054,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
       "Kombinacja przycisków gamepada do przełączania menu.")
 MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_SETTINGS,
       "Zmień ustawienia joypada, klawiatury i myszy.")
-MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_USER_BINDS,
+MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_USER_BINDS, /* TODO/FIXME - change user to port */
       "Skonfiguruj elementy sterujące dla tego użytkownika.")
 MSG_HASH(MENU_ENUM_SUBLABEL_LOG_VERBOSITY,
       "Włącz lub wyłącz rejestrowanie w terminalu.")
@@ -4648,8 +4648,165 @@ MSG_HASH(MSG_LOCALAP_ERROR_CONFIG_PARSE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
    "Format uruchomieniowy podrzędnej listy odtwarzania „ostatnio odtwarzany” format")
 MSG_HASH(MENU_ENUM_SUBLABEL_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
-    "Wybiera styl formatowania daty / godziny używany podczas wyświetlania informacji o znaczniku czasu „ostatnio odtwarzane” w rejestrze wykonawczym. Uwaga: opcje „(AM / PM)” będą miały niewielki wpływ na wydajność na niektórych platformach.")
+    "Wybiera styl formatowania daty/godziny używany podczas wyświetlania informacji o znaczniku czasu „ostatnio odtwarzane” w rejestrze wykonawczym. Uwaga: opcje „(AM/PM)” będą miały niewielki wpływ na wydajność na niektórych platformach.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DRIVER_SWITCH_ENABLE,
     "Pozwól rdzeniom przełączyć sterownik wideo")
 MSG_HASH(MENU_ENUM_SUBLABEL_DRIVER_SWITCH_ENABLE,
     "Pozwól rdzeniom wymusić przełączenie na inny sterownik wideo niż aktualnie załadowany.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_AUTO_ROTATE,
+    "Auto-Obracanie Nakładki"
+    )
+MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_OVERLAY_AUTO_ROTATE,
+    "Jeśli jest obsługiwana przez bieżącą nakładkę, automatycznie obracaj układ, aby dopasować orientację ekranu/współczynnik proporcji."
+    )
+MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS,
+    "Wyświetla dodatkowe informacje dla aktualnie wybranej pozycji menu."
+    )
+MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_VIEWS_SETTINGS,
+    "Ustawienia"
+    )
+MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_VIEWS_SETTINGS,
+    "Pokaż lub ukryj elementy na ekranie ustawień."
+    )
+MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_DRIVERS,
+    "Pokaż sterowniki"
+    )
+MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_SHOW_DRIVERS,
+    "Pokaż lub ukryj „Ustawienia sterownika” na ekranie ustawień."
+    )
+MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_VIDEO,
+    "Pokaż wideo"
+    )
+MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_SHOW_VIDEO,
+    "Pokaż lub ukryj „Ustawienia wideo” na ekranie ustawień."
+    )
+MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_AUDIO,
+    "Pokaż dźwięk"
+    )
+MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_SHOW_AUDIO,
+    "Pokaż lub ukryj „Ustawienia audio” na ekranie ustawień."
+    )
+MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_LATENCY,
+    "Pokaż opóźnienie"
+    )
+MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_SHOW_LATENCY,
+    "Pokaż lub ukryj „Ustawienia opóźnień” na ekranie ustawień."
+    )
+MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_CORE,
+    "Pokaż rdzeń"
+    )
+MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_SHOW_CORE,
+    "Pokaż lub ukryj „Podstawowe ustawienia” na ekranie ustawień."
+    )
+MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_CONFIGURATION,
+    "Pokaż konfigurację"
+    )
+MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_SHOW_CONFIGURATION,
+    "Pokaż lub ukryj „Ustawienia konfiguracji” na ekranie Ustawienia."
+    )
+MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_SAVING,
+    "Pokaż zapisywanie"
+    )
+MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_SHOW_SAVING,
+    "Pokaż lub ukryj „Zapisywanie ustawień” na ekranie ustawień."
+    )
+MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_LOGGING,
+    "Pokaż rejestrowanie"
+    )
+MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_SHOW_LOGGING,
+    "Pokaż lub ukryj „Ustawienia rejestrowania” na ekranie ustawień."
+    )
+MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_FRAME_THROTTLE,
+    "Pokaż przepustnicę ramy"
+    )
+MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_SHOW_FRAME_THROTTLE,
+    "Pokaż lub ukryj „Ustawienia przepustnicy ramy” na ekranie Ustawienia."
+    )
+MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_RECORDING,
+    "Pokaż nagranie"
+    )
+MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_SHOW_RECORDING,
+    "Pokaż lub ukryj „Ustawienia nagrywania” na ekranie Ustawienia."
+    )
+MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_ONSCREEN_DISPLAY,
+    "Pokaż wyświetlanie na ekranie"
+    )
+MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_SHOW_ONSCREEN_DISPLAY,
+    "Pokaż lub ukryj „Ustawienia wyświetlania na ekranie” na ekranie ustawień."
+    )
+MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_USER_INTERFACE,
+    "Pokaż interfejs użytkownika"
+    )
+MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_SHOW_USER_INTERFACE,
+    "Pokaż lub ukryj „Ustawienia interfejsu użytkownika” na ekranie ustawień."
+    )
+MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_AI_SERVICE,
+    "Pokaż usługę AI"
+    )
+MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_SHOW_AI_SERVICE,
+    "Pokaż lub ukryj „Ustawienia usługi AI” na ekranie ustawień."
+    )
+MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_POWER_MANAGEMENT,
+    "Pokaż zarządzanie energią"
+    )
+MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_SHOW_POWER_MANAGEMENT,
+    "Pokaż lub ukryj „Ustawienia zarządzania energią” na ekranie ustawień."
+    )
+MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_ACHIEVEMENTS,
+    "Pokaż osiągnięcia"
+    )
+MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_SHOW_ACHIEVEMENTS,
+    "Pokaż lub ukryj „Ustawienia osiągnięć” na ekranie ustawień."
+    )
+MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_NETWORK,
+    "Pokaż sieć"
+    )
+MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_SHOW_NETWORK,
+    "Pokaż lub ukryj „Ustawienia sieci” na ekranie Ustawień."
+    )
+MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_PLAYLISTS,
+    "Pokaż listy odtwarzania"
+    )
+MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_SHOW_PLAYLISTS,
+    "Pokaż lub ukryj „Ustawienia list odtwarzania” na ekranie ustawień."
+    )
+MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_USER,
+    "Pokaż użytkownika"
+    )
+MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_SHOW_USER,
+    "Pokaż lub ukryj „Ustawienia użytkownika” na ekranie ustawień."
+    )
+MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_DIRECTORY,
+    "Pokaż katalog"
+    )
+MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_SHOW_DIRECTORY,
+    "Pokaż lub ukryj „Ustawienia katalogu” na ekranie ustawień."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_XMB_ANIMATION_HORIZONTAL_HIGHLIGHT,
+    "Animacja uruchamiana podczas przewijania między kartami."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_XMB_ANIMATION_MOVE_UP_DOWN,
+    "Animacja uruchamiana podczas poruszania się w górę lub w dół."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_XMB_THUMBNAIL_SCALE_FACTOR,
+    "Zmniejsz rozmiar wyświetlanych miniatur, skalując maksymalną dozwoloną szerokość."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_UPSCALE_THRESHOLD,
+    "Automatyczne powiększanie miniatur obrazów o szerokości/wysokości mniejszej niż określona wartość. Poprawia jakość obrazu. Ma umiarkowany wpływ na wydajność."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_TICKER_SPEED,
+    "Szybkość animacji podczas przewijania długich ciągów tekstowych menu."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_TICKER_SMOOTH,
+    "Płynny tekst próbny"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_TICKER_SMOOTH,
+    "Użyj płynnej animacji przewijania podczas wyświetlania długich ciągów tekstowych menu. Ma niewielki wpływ na wydajność."
+    )

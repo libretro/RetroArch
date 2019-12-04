@@ -214,8 +214,7 @@ void playlist_get_index_by_path(playlist_t *playlist,
       const struct playlist_entry **entry);
 
 bool playlist_entry_exists(playlist_t *playlist,
-      const char *path,
-      const char *crc32);
+      const char *path);
 
 char *playlist_get_conf_path(playlist_t *playlist);
 

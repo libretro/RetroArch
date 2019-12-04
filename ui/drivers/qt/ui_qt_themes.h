@@ -215,8 +215,12 @@ static const QString qt_theme_dark_stylesheet = QStringLiteral(R"(
    }
    QMainWindow::separator:hover, QSplitter::handle:hover {
    }
+   QDockWidget {
+      font-family:"Segoe UI";
+      font-size:9pt;
+   }
    QDockWidget::title {
-      padding:4px;
+      padding:3px 4px;
       background-color:qlineargradient(x1:0,y1:1,x2:0,y2:0,stop:0 rgba(25,25,25,175),stop:1 rgba(53,53,53,75));
       border:1px solid rgba(25,25,25,75);
       border-top:1px solid rgba(175,175,175,50%);

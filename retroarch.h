@@ -2020,8 +2020,6 @@ bool menu_widgets_ready(void);
 
 unsigned int retroarch_get_rotation(void);
 
-RETRO_END_DECLS
-
 bool is_input_keyboard_display_on(void);
 bool is_accessibility_enabled(void);
 bool accessibility_speak(char* speak_text);
@@ -2041,6 +2039,9 @@ bool accessibility_speak_macos(char* speak_text, const char* voice, int priority
 bool is_narrator_running_linux(void);
 bool accessibility_speak_linux(char* speak_text, const char* voice, int priority);
 #endif
-bool accessibility_speak_ai_service(char* speak_text, const char* voice, int priority);
+bool accessibility_speak_ai_service(
+      char* speak_text, const char* voice, int priority);
+
+RETRO_END_DECLS
 
 #endif

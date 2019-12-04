@@ -95,6 +95,7 @@
 #include "../managers/cheat_manager.h"
 #include "../verbosity.h"
 #include "../playlist.h"
+#include "../manual_content_scan.h"
 
 #include "../tasks/tasks_internal.h"
 
@@ -142,6 +143,7 @@ enum settings_list_type
    SETTINGS_LIST_MENU_FILE_BROWSER,
    SETTINGS_LIST_MULTIMEDIA,
    SETTINGS_LIST_AI_SERVICE,
+   SETTINGS_LIST_ACCESSIBILITY,
    SETTINGS_LIST_USER_INTERFACE,
    SETTINGS_LIST_POWER_MANAGEMENT,
    SETTINGS_LIST_MENU_SOUNDS,
@@ -157,7 +159,8 @@ enum settings_list_type
    SETTINGS_LIST_USER_ACCOUNTS_TWITCH,
    SETTINGS_LIST_DIRECTORY,
    SETTINGS_LIST_PRIVACY,
-   SETTINGS_LIST_MIDI
+   SETTINGS_LIST_MIDI,
+   SETTINGS_LIST_MANUAL_CONTENT_SCAN
 };
 
 struct bool_entry
@@ -2838,6 +2841,9 @@ static void setting_get_string_representation_uint_ai_service_mode(
          break;
       case 1:
          enum_idx = MENU_ENUM_LABEL_VALUE_AI_SERVICE_SPEECH_MODE;
+         break;
+      case 2:
+         enum_idx = MENU_ENUM_LABEL_VALUE_AI_SERVICE_NARRATOR_MODE;
          break;
       default:
          break;
@@ -6678,6 +6684,17 @@ void general_write_handler(rarch_setting_t *setting)
             }
          }
          break;
+      case MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM:
+         /* Ensure that custom system name includes no
+          * invalid characters */
+         manual_content_scan_scrub_system_name_custom();
+         break;
+      case MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_FILE_EXTS:
+         /* Ensure that custom file extension list includes
+          * no period (full stop) characters, and converts
+          * string to lower case */
+         manual_content_scan_scrub_file_exts_custom();
+         break;
       default:
          break;
    }
@@ -6892,7 +6909,7 @@ static bool setting_append_list_input_player_options(
       ((enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_USER_1_BINDS + user));
 
    snprintf(buffer[user],    sizeof(buffer[user]),
-         "%s %u", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_USER), user + 1);
+         "%s %u", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT), user + 1);
 
    strlcpy(group_lbl[user], temp_value, sizeof(group_lbl[user]));
 
@@ -6964,25 +6981,25 @@ static bool setting_append_list_input_player_options(
                "%s %u", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_SPLIT_JOYCON), user + 1);
 
       snprintf(label[user], sizeof(label[user]),
-               "%s %u %s", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_USER), user + 1,
+               "%s %u %s", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT), user + 1,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_INDEX));
       snprintf(label_type[user], sizeof(label_type[user]),
-               "%s %u %s", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_USER), user + 1,
+               "%s %u %s", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT), user + 1,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_TYPE));
       snprintf(label_analog[user], sizeof(label_analog[user]),
-               "%s %u %s", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_USER), user + 1,
+               "%s %u %s", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT), user + 1,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_ADC_TYPE));
       snprintf(label_bind_all[user], sizeof(label_bind_all[user]),
-               "%s %u %s", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_USER), user + 1,
+               "%s %u %s", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT), user + 1,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_BIND_ALL));
       snprintf(label_bind_defaults[user], sizeof(label_bind_defaults[user]),
-               "%s %u %s", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_USER), user + 1,
+               "%s %u %s", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT), user + 1,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_BIND_DEFAULT_ALL));
       snprintf(label_bind_all_save_autoconfig[user], sizeof(label_bind_all_save_autoconfig[user]),
-               "%s %u %s", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_USER), user + 1,
+               "%s %u %s", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT), user + 1,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_SAVE_AUTOCONFIG));
       snprintf(label_mouse_index[user], sizeof(label_mouse_index[user]),
-               "%s %u %s", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_USER), user + 1,
+               "%s %u %s", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT), user + 1,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_INDEX));
 
       CONFIG_UINT_ALT(
@@ -7850,6 +7867,14 @@ static bool setting_append_list(
                list, list_info,
                MENU_ENUM_LABEL_AI_SERVICE_SETTINGS,
                MENU_ENUM_LABEL_VALUE_AI_SERVICE_SETTINGS,
+               &group_info,
+               &subgroup_info,
+               parent_group);
+
+         CONFIG_ACTION(
+               list, list_info,
+               MENU_ENUM_LABEL_ACCESSIBILITY_SETTINGS,
+               MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_SETTINGS,
                &group_info,
                &subgroup_info,
                parent_group);
@@ -13762,6 +13787,46 @@ static bool setting_append_list(
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);
          break;
+      case SETTINGS_LIST_ACCESSIBILITY:
+         START_GROUP(list, list_info, &group_info,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_SETTINGS),
+               parent_group);
+
+         parent_group = msg_hash_to_str(MENU_ENUM_LABEL_ACCESSIBILITY_SETTINGS);
+
+         START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.accessibility_enable,
+               MENU_ENUM_LABEL_ACCESSIBILITY_ENABLED,
+               MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_ENABLED,
+               DEFAULT_ACCESSIBILITY_ENABLE,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+
+         CONFIG_UINT(
+               list, list_info,
+               &settings->uints.accessibility_narrator_speech_speed,
+               MENU_ENUM_LABEL_ACCESSIBILITY_NARRATOR_SPEECH_SPEED,
+               MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_NARRATOR_SPEECH_SPEED,
+               DEFAULT_ACCESSIBILITY_NARRATOR_SPEECH_SPEED,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         menu_settings_list_current_add_range(list, list_info, 1, 10, 1, true, true);
+
+         END_SUB_GROUP(list, list_info, parent_group);
+         END_GROUP(list, list_info, parent_group);
+         break;
       case SETTINGS_LIST_AI_SERVICE:
 #ifdef HAVE_TRANSLATE
          START_GROUP(list, list_info, &group_info,
@@ -13786,7 +13851,7 @@ static bool setting_append_list(
          (*list)[list_info->index - 1].get_string_representation =
             &setting_get_string_representation_uint_ai_service_mode;
          (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
-         menu_settings_list_current_add_range(list, list_info, 0, 1, 1, true, true);
+         menu_settings_list_current_add_range(list, list_info, 0, 2, 1, true, true);
 
          CONFIG_STRING(
                list, list_info,
@@ -16432,6 +16497,78 @@ static bool setting_append_list(
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);
          break;
+      case SETTINGS_LIST_MANUAL_CONTENT_SCAN:
+         START_GROUP(list, list_info, &group_info,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_LIST), parent_group);
+
+         parent_group = msg_hash_to_str(MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_LIST);
+
+         START_SUB_GROUP(list, list_info, "State",
+               &group_info, &subgroup_info, parent_group);
+
+         CONFIG_STRING(
+               list, list_info,
+               manual_content_scan_get_system_name_custom_ptr(),
+               manual_content_scan_get_system_name_custom_size(),
+               MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM,
+               MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM,
+               "",
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
+         (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_STRING_LINE_EDIT;
+
+         CONFIG_STRING(
+               list, list_info,
+               manual_content_scan_get_file_exts_custom_ptr(),
+               manual_content_scan_get_file_exts_custom_size(),
+               MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_FILE_EXTS,
+               MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_FILE_EXTS,
+               "",
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
+         (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_STRING_LINE_EDIT;
+
+         CONFIG_BOOL(
+               list, list_info,
+               manual_content_scan_get_search_archives_ptr(),
+               MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_SEARCH_ARCHIVES,
+               MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SEARCH_ARCHIVES,
+               false,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+
+         CONFIG_BOOL(
+               list, list_info,
+               manual_content_scan_get_overwrite_playlist_ptr(),
+               MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_OVERWRITE,
+               MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_OVERWRITE,
+               false,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+
+         END_SUB_GROUP(list, list_info, parent_group);
+         END_GROUP(list, list_info, parent_group);
+         break;
       case SETTINGS_LIST_NONE:
       default:
          break;
@@ -16550,6 +16687,7 @@ static rarch_setting_t *menu_setting_new_internal(rarch_setting_info_t *list_inf
 #ifdef HAVE_TRANSLATE
       SETTINGS_LIST_AI_SERVICE,
 #endif
+      SETTINGS_LIST_ACCESSIBILITY,
       SETTINGS_LIST_USER_INTERFACE,
       SETTINGS_LIST_POWER_MANAGEMENT,
       SETTINGS_LIST_MENU_SOUNDS,
@@ -16565,7 +16703,8 @@ static rarch_setting_t *menu_setting_new_internal(rarch_setting_info_t *list_inf
       SETTINGS_LIST_USER_ACCOUNTS_TWITCH,
       SETTINGS_LIST_DIRECTORY,
       SETTINGS_LIST_PRIVACY,
-      SETTINGS_LIST_MIDI
+      SETTINGS_LIST_MIDI,
+      SETTINGS_LIST_MANUAL_CONTENT_SCAN
    };
    const char *root                     = msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU);
    rarch_setting_t *list                = (rarch_setting_t*)calloc(

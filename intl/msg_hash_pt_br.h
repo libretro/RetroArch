@@ -1518,7 +1518,7 @@ MSG_HASH(
     "Período do Turbo"
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
+    MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS, /* TODO/FIXME - Change user to port */
     "Vínculos de Entrada do Usuário %u"
     )
 MSG_HASH(
@@ -4540,7 +4540,7 @@ MSG_HASH(
     "Altera as configurações de Joypad, Teclado e Mouse."
     )
 MSG_HASH(
-    MENU_ENUM_SUBLABEL_INPUT_USER_BINDS,
+    MENU_ENUM_SUBLABEL_INPUT_USER_BINDS, /* TODO/FIXME - change user to port */
     "Configura os controles para este usuário."
     )
 MSG_HASH(

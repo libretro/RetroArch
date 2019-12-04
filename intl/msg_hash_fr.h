@@ -1526,7 +1526,7 @@ MSG_HASH(
     "Délai d'activation du turbo "
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
+    MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS, /* TODO/FIXME - Change user to port */
     "Touches de l'utilisateur %u"
     )
 MSG_HASH(
@@ -4560,7 +4560,7 @@ MSG_HASH(
     "Modifier les réglages de manettes, clavier et souris."
     )
 MSG_HASH(
-    MENU_ENUM_SUBLABEL_INPUT_USER_BINDS,
+    MENU_ENUM_SUBLABEL_INPUT_USER_BINDS, /* TODO/FIXME - change user to port */
     "Configurer les touches pour cet utilisateur."
     )
 MSG_HASH(

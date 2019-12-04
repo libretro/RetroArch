@@ -861,7 +861,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ENABLE,
       "Ativar Turbo")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD,
       "Período do turbo")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
+MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS, /* TODO/FIXME - Change user to port */
       "Associar as teclas do utilizador %u")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INTERNAL_STORAGE_STATUS,
       "Estado do armazenamento interno")
@@ -1868,7 +1868,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
       "Combinação do botão do comando para mostrar/esconder o menu.")
 MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_SETTINGS,
       "Alterar as definições de um comando, teclado ou rato.")
-MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_USER_BINDS,
+MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_USER_BINDS, /* TODO/FIXME - change user to port */
       "Configurar as teclas para este utilizador.")
 MSG_HASH(MENU_ENUM_SUBLABEL_LOG_VERBOSITY,
       "Ativar/desativar a entrada no terminal.")

@@ -98,6 +98,7 @@
 #include "../tasks/tasks_internal.h"
 #include "../dynamic.h"
 #include "../runtime_file.h"
+#include "../manual_content_scan.h"
 
 static char new_path_entry[4096]        = {0};
 static char new_lbl_entry[4096]         = {0};
@@ -120,10 +121,10 @@ static enum msg_hash_enums new_type     = MSG_UNKNOWN;
 #endif
 #endif
 
-static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
+static int menu_displaylist_parse_core_info(file_list_t *list)
 {
-   unsigned i;
    char tmp[PATH_MAX_LENGTH];
+   unsigned i, count         = 0;
    core_info_t *core_info    = NULL;
    settings_t *settings      = config_get_ptr();
 
@@ -133,18 +134,20 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
 
    if (!core_info || !core_info->config_data)
    {
-      menu_entries_append_enum(info->list,
+      if (menu_entries_append_enum(list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE_INFORMATION_AVAILABLE),
             msg_hash_to_str(MENU_ENUM_LABEL_NO_CORE_INFORMATION_AVAILABLE),
             MENU_ENUM_LABEL_NO_CORE_INFORMATION_AVAILABLE,
-            0, 0, 0);
-      menu_entries_append_enum(info->list,
+            0, 0, 0))
+         count++;
+      if (menu_entries_append_enum(list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_DELETE),
             msg_hash_to_str(MENU_ENUM_LABEL_CORE_DELETE),
             MENU_ENUM_LABEL_CORE_DELETE,
-            MENU_SETTING_ACTION_CORE_DELETE, 0, 0);
+            MENU_SETTING_ACTION_CORE_DELETE, 0, 0))
+         count++;
 
-      return 0;
+      return count;
    }
 
    {
@@ -176,9 +179,10 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
                ": ",
                info_list[i].name,
                sizeof(tmp));
-         menu_entries_append_enum(info->list, tmp, "",
+         if (menu_entries_append_enum(list, tmp, "",
                MENU_ENUM_LABEL_CORE_INFO_ENTRY,
-               MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+               MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
+            count++;
       }
    }
 
@@ -190,8 +194,9 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
             sizeof(tmp));
       string_list_join_concat(tmp, sizeof(tmp),
             core_info->categories_list, ", ");
-      menu_entries_append_enum(info->list, tmp, "",
-            MENU_ENUM_LABEL_CORE_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+      if (menu_entries_append_enum(list, tmp, "",
+            MENU_ENUM_LABEL_CORE_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
+         count++;
    }
 
    if (core_info->authors_list)
@@ -202,8 +207,9 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
             sizeof(tmp));
       string_list_join_concat(tmp, sizeof(tmp),
             core_info->authors_list, ", ");
-      menu_entries_append_enum(info->list, tmp, "",
-            MENU_ENUM_LABEL_CORE_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+      if (menu_entries_append_enum(list, tmp, "",
+            MENU_ENUM_LABEL_CORE_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
+         count++;
    }
 
    if (core_info->permissions_list)
@@ -214,8 +220,9 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
             sizeof(tmp));
       string_list_join_concat(tmp, sizeof(tmp),
             core_info->permissions_list, ", ");
-      menu_entries_append_enum(info->list, tmp, "",
-            MENU_ENUM_LABEL_CORE_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+      if (menu_entries_append_enum(list, tmp, "",
+            MENU_ENUM_LABEL_CORE_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
+         count++;
    }
 
    if (core_info->licenses_list)
@@ -226,8 +233,9 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
             sizeof(tmp));
       string_list_join_concat(tmp, sizeof(tmp),
             core_info->licenses_list, ", ");
-      menu_entries_append_enum(info->list, tmp, "",
-            MENU_ENUM_LABEL_CORE_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+      if (menu_entries_append_enum(list, tmp, "",
+            MENU_ENUM_LABEL_CORE_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
+         count++;
    }
 
    if (core_info->supported_extensions_list)
@@ -238,8 +246,9 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
             sizeof(tmp));
       string_list_join_concat(tmp, sizeof(tmp),
             core_info->supported_extensions_list, ", ");
-      menu_entries_append_enum(info->list, tmp, "",
-            MENU_ENUM_LABEL_CORE_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+      if (menu_entries_append_enum(list, tmp, "",
+            MENU_ENUM_LABEL_CORE_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
+         count++;
    }
 
    if (core_info->required_hw_api)
@@ -250,8 +259,9 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
             sizeof(tmp));
       string_list_join_concat(tmp, sizeof(tmp),
             core_info->required_hw_api_list, ", ");
-      menu_entries_append_enum(info->list, tmp, "",
-            MENU_ENUM_LABEL_CORE_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+      if (menu_entries_append_enum(list, tmp, "",
+            MENU_ENUM_LABEL_CORE_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
+         count++;
    }
 
    if (core_info->firmware_count > 0)
@@ -276,8 +286,10 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE),
                ": ",
                sizeof(tmp));
-         menu_entries_append_enum(info->list, tmp, "",
-               MENU_ENUM_LABEL_CORE_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+
+         if (menu_entries_append_enum(list, tmp, "",
+               MENU_ENUM_LABEL_CORE_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
+            count++;
 
          /* FIXME: This looks hacky and probably
           * needs to be improved for good translation support. */
@@ -299,9 +311,10 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_NAME)
                   );
 
-            menu_entries_append_enum(info->list, tmp, "",
+            if (menu_entries_append_enum(list, tmp, "",
                   MENU_ENUM_LABEL_CORE_INFO_ENTRY,
-                  MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+                  MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
+               count++;
          }
       }
    }
@@ -312,28 +325,32 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
       {
          strlcpy(tmp,
                core_info->note_list->elems[i].data, sizeof(tmp));
-         menu_entries_append_enum(info->list, tmp, "",
-               MENU_ENUM_LABEL_CORE_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+         if (menu_entries_append_enum(list, tmp, "",
+               MENU_ENUM_LABEL_CORE_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
+            count++;
       }
    }
 
 #if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
 #else
   if (settings->bools.menu_show_core_updater)
-     menu_entries_append_enum(info->list,
+  {
+     if (menu_entries_append_enum(list,
            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_DELETE),
            msg_hash_to_str(MENU_ENUM_LABEL_CORE_DELETE),
            MENU_ENUM_LABEL_CORE_DELETE,
-           MENU_SETTING_ACTION_CORE_DELETE, 0, 0);
+           MENU_SETTING_ACTION_CORE_DELETE, 0, 0))
+        count++;
+  }
 #endif
 
-   return 0;
+   return count;
 }
 
 #define BYTES_TO_MB(bytes) ((bytes) / 1024 / 1024)
 #define BYTES_TO_GB(bytes) (((bytes) / 1024) / 1024 / 1024)
 
-static unsigned menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
+static unsigned menu_displaylist_parse_system_info(file_list_t *list)
 {
    int controller;
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGLES) || defined(HAVE_OPENGL_CORE)
@@ -353,7 +370,7 @@ static unsigned menu_displaylist_parse_system_info(menu_displaylist_info_t *info
    snprintf(tmp, sizeof(tmp), "%s: %s",
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_BUILD_DATE), __DATE__);
 
-   if (menu_entries_append_enum(info->list, tmp, "",
+   if (menu_entries_append_enum(list, tmp, "",
          MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
       count++;
 
@@ -366,13 +383,13 @@ static unsigned menu_displaylist_parse_system_info(menu_displaylist_info_t *info
          ": ",
          retroarch_git_version,
          sizeof(tmp));
-   if (menu_entries_append_enum(info->list, tmp, "",
+   if (menu_entries_append_enum(list, tmp, "",
          MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
       count++;
 #endif
 
    retroarch_get_capabilities(RARCH_CAPABILITIES_COMPILER, tmp, sizeof(tmp));
-   if (menu_entries_append_enum(info->list, tmp, "",
+   if (menu_entries_append_enum(list, tmp, "",
          MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
       count++;
 
@@ -382,7 +399,7 @@ static unsigned menu_displaylist_parse_system_info(menu_displaylist_info_t *info
    snprintf(tmp, sizeof(tmp), "%s: %s",
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INTERNAL_STORAGE_STATUS),
          perms ? "read-write" : "read-only");
-   if (menu_entries_append_enum(info->list, tmp, "",
+   if (menu_entries_append_enum(list, tmp, "",
          MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
       count++;
 
@@ -403,7 +420,7 @@ static unsigned menu_displaylist_parse_system_info(menu_displaylist_info_t *info
       else
          strlcat(cpu_str, model, sizeof(cpu_str));
 
-      if (menu_entries_append_enum(info->list, cpu_str, "",
+      if (menu_entries_append_enum(list, cpu_str, "",
             MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
          count++;
    }
@@ -420,7 +437,7 @@ static unsigned menu_displaylist_parse_system_info(menu_displaylist_info_t *info
 
       retroarch_get_capabilities(RARCH_CAPABILITIES_CPU,
             cpu_str, sizeof(cpu_str));
-      if (menu_entries_append_enum(info->list, cpu_str, "",
+      if (menu_entries_append_enum(list, cpu_str, "",
             MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
          count++;
    }
@@ -440,7 +457,7 @@ static unsigned menu_displaylist_parse_system_info(menu_displaylist_info_t *info
 
       snprintf(cpu_str, sizeof(cpu_str), "%s %s", cpu_text_str, cpu_arch_str);
 
-      if (menu_entries_append_enum(info->list, cpu_str,
+      if (menu_entries_append_enum(list, cpu_str,
             msg_hash_to_str(MENU_ENUM_LABEL_CPU_ARCHITECTURE),
             MENU_ENUM_LABEL_CPU_ARCHITECTURE, MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
          count++;
@@ -454,7 +471,7 @@ static unsigned menu_displaylist_parse_system_info(menu_displaylist_info_t *info
 
       snprintf(cpu_str, sizeof(cpu_str),
             "%s %d\n", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CPU_CORES), amount_cores);
-      if (menu_entries_append_enum(info->list, cpu_str,
+      if (menu_entries_append_enum(list, cpu_str,
             msg_hash_to_str(MENU_ENUM_LABEL_CPU_CORES),
             MENU_ENUM_LABEL_CPU_CORES, MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
          count++;
@@ -468,7 +485,7 @@ static unsigned menu_displaylist_parse_system_info(menu_displaylist_info_t *info
             controller,
             input_config_get_device_name(controller),
             input_autoconfigure_get_device_name_index(controller));
-         if (menu_entries_append_enum(info->list, tmp, "",
+         if (menu_entries_append_enum(list, tmp, "",
             MENU_ENUM_LABEL_SYSTEM_INFO_CONTROLLER_ENTRY,
             MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
             count++;
@@ -478,21 +495,21 @@ static unsigned menu_displaylist_parse_system_info(menu_displaylist_info_t *info
             snprintf(tmp, sizeof(tmp), " Device display name: %s",
                input_config_get_device_display_name(controller) ?
                input_config_get_device_display_name(controller) : "N/A");
-            if (menu_entries_append_enum(info->list, tmp, "",
+            if (menu_entries_append_enum(list, tmp, "",
                MENU_ENUM_LABEL_SYSTEM_INFO_CONTROLLER_ENTRY,
                MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
                count++;
             snprintf(tmp, sizeof(tmp), " Device config name: %s",
                input_config_get_device_display_name(controller) ?
                input_config_get_device_config_name(controller) : "N/A");
-            if (menu_entries_append_enum(info->list, tmp, "",
+            if (menu_entries_append_enum(list, tmp, "",
                MENU_ENUM_LABEL_SYSTEM_INFO_CONTROLLER_ENTRY,
                MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
                count++;
             snprintf(tmp, sizeof(tmp), " Device VID/PID: %d/%d",
                input_config_get_vid(controller),
                input_config_get_pid(controller));
-            if (menu_entries_append_enum(info->list, tmp, "",
+            if (menu_entries_append_enum(list, tmp, "",
                MENU_ENUM_LABEL_SYSTEM_INFO_CONTROLLER_ENTRY,
                MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
                count++;
@@ -514,7 +531,7 @@ static unsigned menu_displaylist_parse_system_info(menu_displaylist_info_t *info
             ": ",
             frontend->ident,
             sizeof(tmp));
-      if (menu_entries_append_enum(info->list, tmp, "",
+      if (menu_entries_append_enum(list, tmp, "",
             MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY,
             MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
          count++;
@@ -529,7 +546,7 @@ static unsigned menu_displaylist_parse_system_info(menu_displaylist_info_t *info
                ": ",
                tmp2,
                sizeof(tmp));
-         if (menu_entries_append_enum(info->list, tmp, "",
+         if (menu_entries_append_enum(list, tmp, "",
                MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY,
                MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
             count++;
@@ -545,7 +562,7 @@ static unsigned menu_displaylist_parse_system_info(menu_displaylist_info_t *info
                ": ",
                tmp2,
                sizeof(tmp));
-         if (menu_entries_append_enum(info->list, tmp, "",
+         if (menu_entries_append_enum(list, tmp, "",
                MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY,
                MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
             count++;
@@ -558,7 +575,7 @@ static unsigned menu_displaylist_parse_system_info(menu_displaylist_info_t *info
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_OS),
                tmp2,
                major, minor);
-         if (menu_entries_append_enum(info->list, tmp, "",
+         if (menu_entries_append_enum(list, tmp, "",
                MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY,
                MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
             count++;
@@ -569,7 +586,7 @@ static unsigned menu_displaylist_parse_system_info(menu_displaylist_info_t *info
          snprintf(tmp, sizeof(tmp), "%s : %d",
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RETRORATING_LEVEL),
                frontend->get_rating());
-         if (menu_entries_append_enum(info->list, tmp, "",
+         if (menu_entries_append_enum(list, tmp, "",
                MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY,
                MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
             count++;
@@ -594,7 +611,7 @@ static unsigned menu_displaylist_parse_system_info(menu_displaylist_info_t *info
                   BYTES_TO_MB(memory_total)
                   );
 
-            if (menu_entries_append_enum(info->list, tmp, "",
+            if (menu_entries_append_enum(list, tmp, "",
                   MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY,
                   MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
                count++;
@@ -660,7 +677,7 @@ static unsigned menu_displaylist_parse_system_info(menu_displaylist_info_t *info
                ": ",
                tmp2,
                sizeof(tmp));
-         if (menu_entries_append_enum(info->list, tmp, "",
+         if (menu_entries_append_enum(list, tmp, "",
                MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY,
                MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
             count++;
@@ -678,7 +695,7 @@ static unsigned menu_displaylist_parse_system_info(menu_displaylist_info_t *info
          tmp_string ? tmp_string
          : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
          sizeof(tmp));
-   if (menu_entries_append_enum(info->list, tmp, "",
+   if (menu_entries_append_enum(list, tmp, "",
          MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY,
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
       count++;
@@ -696,7 +713,7 @@ static unsigned menu_displaylist_parse_system_info(menu_displaylist_info_t *info
                msg_hash_to_str(
                   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_WIDTH),
                val);
-         if (menu_entries_append_enum(info->list, tmp, "",
+         if (menu_entries_append_enum(list, tmp, "",
                MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY,
                MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
             count++;
@@ -710,7 +727,7 @@ static unsigned menu_displaylist_parse_system_info(menu_displaylist_info_t *info
                msg_hash_to_str(
                   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_HEIGHT),
                val);
-         if (menu_entries_append_enum(info->list, tmp, "",
+         if (menu_entries_append_enum(list, tmp, "",
                MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY,
                MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
             count++;
@@ -724,7 +741,7 @@ static unsigned menu_displaylist_parse_system_info(menu_displaylist_info_t *info
                msg_hash_to_str(
                   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_DPI),
                val);
-         if (menu_entries_append_enum(info->list, tmp, "",
+         if (menu_entries_append_enum(list, tmp, "",
                MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY,
                MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
             count++;
@@ -810,7 +827,7 @@ static unsigned menu_displaylist_parse_system_info(menu_displaylist_info_t *info
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_YES) :
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO),
                sizeof(feat_str));
-         if (menu_entries_append_enum(info->list, feat_str, "",
+         if (menu_entries_append_enum(list, feat_str, "",
                MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY,
                MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
             count++;
@@ -1768,9 +1785,9 @@ static int menu_displaylist_parse_horizontal_list(
 }
 
 static int menu_displaylist_parse_load_content_settings(
-      menu_handle_t *menu,
-      menu_displaylist_info_t *info)
+      file_list_t *list)
 {
+   unsigned count         = 0;
    settings_t *settings   = config_get_ptr();
 
    if (!rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
@@ -1781,54 +1798,62 @@ static int menu_displaylist_parse_load_content_settings(
       rarch_system_info_t *system    = runloop_get_system_info();
 
       if (settings->bools.quick_menu_show_resume_content)
-         menu_entries_append_enum(info->list,
+         if (menu_entries_append_enum(list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RESUME_CONTENT),
                msg_hash_to_str(MENU_ENUM_LABEL_RESUME_CONTENT),
                MENU_ENUM_LABEL_RESUME_CONTENT,
-               MENU_SETTING_ACTION_RUN, 0, 0);
+               MENU_SETTING_ACTION_RUN, 0, 0))
+            count++;
 
       if (settings->bools.quick_menu_show_restart_content)
-         menu_entries_append_enum(info->list,
+         if (menu_entries_append_enum(list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RESTART_CONTENT),
                msg_hash_to_str(MENU_ENUM_LABEL_RESTART_CONTENT),
                MENU_ENUM_LABEL_RESTART_CONTENT,
-               MENU_SETTING_ACTION_RUN, 0, 0);
+               MENU_SETTING_ACTION_RUN, 0, 0))
+            count++;
 
       if (settings->bools.quick_menu_show_close_content)
-         menu_entries_append_enum(info->list,
+         if (menu_entries_append_enum(list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT),
                msg_hash_to_str(MENU_ENUM_LABEL_CLOSE_CONTENT),
                MENU_ENUM_LABEL_CLOSE_CONTENT,
-               MENU_SETTING_ACTION_CLOSE, 0, 0);
+               MENU_SETTING_ACTION_CLOSE, 0, 0))
+            count++;
 
       if (settings->bools.quick_menu_show_take_screenshot)
       {
-         menu_entries_append_enum(info->list,
+         if (menu_entries_append_enum(list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT),
                msg_hash_to_str(MENU_ENUM_LABEL_TAKE_SCREENSHOT),
                MENU_ENUM_LABEL_TAKE_SCREENSHOT,
-               MENU_SETTING_ACTION_SCREENSHOT, 0, 0);
+               MENU_SETTING_ACTION_SCREENSHOT, 0, 0))
+            count++;
       }
 
       if (settings->bools.quick_menu_show_save_load_state)
       {
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_STATE_SLOT, PARSE_ONLY_INT, true);
+         if (menu_displaylist_parse_settings_enum(list,
+               MENU_ENUM_LABEL_STATE_SLOT, PARSE_ONLY_INT, true) == 0)
+            count++;
 
-         menu_entries_append_enum(info->list,
+         if (menu_entries_append_enum(list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVE_STATE),
                msg_hash_to_str(MENU_ENUM_LABEL_SAVE_STATE),
                MENU_ENUM_LABEL_SAVE_STATE,
-               MENU_SETTING_ACTION_SAVESTATE, 0, 0);
+               MENU_SETTING_ACTION_SAVESTATE, 0, 0))
+            count++;
+
 #ifdef HAVE_CHEEVOS
          if (!rcheevos_hardcore_active)
 #endif
          {
-            menu_entries_append_enum(info->list,
+            if (menu_entries_append_enum(list,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LOAD_STATE),
                   msg_hash_to_str(MENU_ENUM_LABEL_LOAD_STATE),
                   MENU_ENUM_LABEL_LOAD_STATE,
-                  MENU_SETTING_ACTION_LOADSTATE, 0, 0);
+                  MENU_SETTING_ACTION_LOADSTATE, 0, 0))
+               count++;
          }
       }
 
@@ -1839,26 +1864,29 @@ static int menu_displaylist_parse_load_content_settings(
          if (!rcheevos_hardcore_active)
 #endif
          {
-            menu_entries_append_enum(info->list,
+            if (menu_entries_append_enum(list,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNDO_LOAD_STATE),
                   msg_hash_to_str(MENU_ENUM_LABEL_UNDO_LOAD_STATE),
                   MENU_ENUM_LABEL_UNDO_LOAD_STATE,
-                  MENU_SETTING_ACTION_LOADSTATE, 0, 0);
+                  MENU_SETTING_ACTION_LOADSTATE, 0, 0))
+               count++;
          }
 
-         menu_entries_append_enum(info->list,
+         if (menu_entries_append_enum(list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNDO_SAVE_STATE),
                msg_hash_to_str(MENU_ENUM_LABEL_UNDO_SAVE_STATE),
                MENU_ENUM_LABEL_UNDO_SAVE_STATE,
-               MENU_SETTING_ACTION_LOADSTATE, 0, 0);
+               MENU_SETTING_ACTION_LOADSTATE, 0, 0))
+            count++;
       }
 
       if (settings->bools.quick_menu_show_add_to_favorites)
       {
-         menu_entries_append_enum(info->list,
+         if (menu_entries_append_enum(list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES),
                msg_hash_to_str(MENU_ENUM_LABEL_ADD_TO_FAVORITES),
-               MENU_ENUM_LABEL_ADD_TO_FAVORITES, FILE_TYPE_PLAYLIST_ENTRY, 0, 0);
+               MENU_ENUM_LABEL_ADD_TO_FAVORITES, FILE_TYPE_PLAYLIST_ENTRY, 0, 0) )
+            count++;
       }
 
       if (string_is_not_equal(settings->arrays.record_driver, "null"))
@@ -1867,126 +1895,144 @@ static int menu_displaylist_parse_load_content_settings(
          {
             if (settings->bools.quick_menu_show_start_recording && !settings->bools.kiosk_mode_enable)
             {
-               menu_entries_append_enum(info->list,
+               if (menu_entries_append_enum(list,
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QUICK_MENU_START_RECORDING),
                      msg_hash_to_str(MENU_ENUM_LABEL_QUICK_MENU_START_RECORDING),
-                     MENU_ENUM_LABEL_QUICK_MENU_START_RECORDING, MENU_SETTING_ACTION, 0, 0);
+                     MENU_ENUM_LABEL_QUICK_MENU_START_RECORDING, MENU_SETTING_ACTION, 0, 0))
+                  count++;
             }
 
             if (settings->bools.quick_menu_show_start_streaming && !settings->bools.kiosk_mode_enable)
             {
-               menu_entries_append_enum(info->list,
+               if (menu_entries_append_enum(list,
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QUICK_MENU_START_STREAMING),
                      msg_hash_to_str(MENU_ENUM_LABEL_QUICK_MENU_START_STREAMING),
-                     MENU_ENUM_LABEL_QUICK_MENU_START_STREAMING, MENU_SETTING_ACTION, 0, 0);
+                     MENU_ENUM_LABEL_QUICK_MENU_START_STREAMING, MENU_SETTING_ACTION, 0, 0))
+                  count++;
             }
          }
          else
          {
             if (streaming_is_enabled())
-               menu_entries_append_enum(info->list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QUICK_MENU_STOP_STREAMING),
-                     msg_hash_to_str(MENU_ENUM_LABEL_QUICK_MENU_STOP_STREAMING),
-                     MENU_ENUM_LABEL_QUICK_MENU_STOP_STREAMING, MENU_SETTING_ACTION, 0, 0);
+            {
+               if (menu_entries_append_enum(list,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QUICK_MENU_STOP_STREAMING),
+                        msg_hash_to_str(MENU_ENUM_LABEL_QUICK_MENU_STOP_STREAMING),
+                        MENU_ENUM_LABEL_QUICK_MENU_STOP_STREAMING, MENU_SETTING_ACTION, 0, 0))
+                  count++;
+            }
             else
-               menu_entries_append_enum(info->list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QUICK_MENU_STOP_RECORDING),
-                     msg_hash_to_str(MENU_ENUM_LABEL_QUICK_MENU_STOP_RECORDING),
-                     MENU_ENUM_LABEL_QUICK_MENU_STOP_RECORDING, MENU_SETTING_ACTION, 0, 0);
+            {
+               if (menu_entries_append_enum(list,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QUICK_MENU_STOP_RECORDING),
+                        msg_hash_to_str(MENU_ENUM_LABEL_QUICK_MENU_STOP_RECORDING),
+                        MENU_ENUM_LABEL_QUICK_MENU_STOP_RECORDING, MENU_SETTING_ACTION, 0, 0))
+                  count++;
+            }
          }
       }
 
       if (settings->bools.quick_menu_show_options && !settings->bools.kiosk_mode_enable)
       {
-         menu_entries_append_enum(info->list,
+         if (menu_entries_append_enum(list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_OPTIONS),
                msg_hash_to_str(MENU_ENUM_LABEL_CORE_OPTIONS),
                MENU_ENUM_LABEL_CORE_OPTIONS,
-               MENU_SETTING_ACTION, 0, 0);
+               MENU_SETTING_ACTION, 0, 0))
+            count++;
       }
 
       if (settings->bools.menu_show_overlays && !settings->bools.kiosk_mode_enable)
       {
-         menu_entries_append_enum(info->list,
+         if (menu_entries_append_enum(list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ONSCREEN_OVERLAY_SETTINGS),
                msg_hash_to_str(MENU_ENUM_LABEL_ONSCREEN_OVERLAY_SETTINGS),
                MENU_ENUM_LABEL_ONSCREEN_OVERLAY_SETTINGS,
-               MENU_SETTING_ACTION, 0, 0);
+               MENU_SETTING_ACTION, 0, 0))
+            count++;
       }
 
 #ifdef HAVE_VIDEO_LAYOUT
       if (settings->bools.menu_show_video_layout && !settings->bools.kiosk_mode_enable)
       {
-         menu_entries_append_enum(info->list,
+         if (menu_entries_append_enum(list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ONSCREEN_VIDEO_LAYOUT_SETTINGS),
                msg_hash_to_str(MENU_ENUM_LABEL_ONSCREEN_VIDEO_LAYOUT_SETTINGS),
                MENU_ENUM_LABEL_ONSCREEN_VIDEO_LAYOUT_SETTINGS,
-               MENU_SETTING_ACTION, 0, 0);
+               MENU_SETTING_ACTION, 0, 0))
+            count++;
       }
 #endif
 
       if (settings->bools.menu_show_rewind && !settings->bools.kiosk_mode_enable)
       {
-         menu_entries_append_enum(info->list,
+         if (menu_entries_append_enum(list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REWIND_SETTINGS),
                msg_hash_to_str(MENU_ENUM_LABEL_REWIND_SETTINGS),
                MENU_ENUM_LABEL_REWIND_SETTINGS,
-               MENU_SETTING_ACTION, 0, 0);
+               MENU_SETTING_ACTION, 0, 0))
+            count++;
       }
 
       if (settings->bools.menu_show_latency && !settings->bools.kiosk_mode_enable)
       {
-         menu_entries_append_enum(info->list,
+         if (menu_entries_append_enum(list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LATENCY_SETTINGS),
                msg_hash_to_str(MENU_ENUM_LABEL_LATENCY_SETTINGS),
                MENU_ENUM_LABEL_LATENCY_SETTINGS,
-               MENU_SETTING_ACTION, 0, 0);
+               MENU_SETTING_ACTION, 0, 0))
+            count++;
       }
 
 #if 0
-      menu_entries_append_enum(info->list,
+      if (menu_entries_append_enum(list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_SETTINGS),
             msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_SETTINGS),
             MENU_ENUM_LABEL_NETPLAY_SETTINGS,
-            MENU_SETTING_ACTION, 0, 0);
+            MENU_SETTING_ACTION, 0, 0))
+         count++;
 #endif
 
       if (settings->bools.quick_menu_show_controls && !settings->bools.kiosk_mode_enable)
       {
-         menu_entries_append_enum(info->list,
+         if (menu_entries_append_enum(list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS),
                msg_hash_to_str(MENU_ENUM_LABEL_CORE_INPUT_REMAPPING_OPTIONS),
                MENU_ENUM_LABEL_CORE_INPUT_REMAPPING_OPTIONS,
-               MENU_SETTING_ACTION, 0, 0);
+               MENU_SETTING_ACTION, 0, 0))
+            count++;
       }
 
       if (settings->bools.quick_menu_show_cheats)
       {
-         menu_entries_append_enum(info->list,
+         if (menu_entries_append_enum(list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_CHEAT_OPTIONS),
                msg_hash_to_str(MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS),
                MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS,
-               MENU_SETTING_ACTION, 0, 0);
+               MENU_SETTING_ACTION, 0, 0))
+            count++;
       }
 
       if ((!rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
             && system->disk_control_cb.get_num_images)
-         menu_entries_append_enum(info->list,
+         if (menu_entries_append_enum(list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISK_OPTIONS),
                msg_hash_to_str(MENU_ENUM_LABEL_DISK_OPTIONS),
                MENU_ENUM_LABEL_DISK_OPTIONS,
-               MENU_SETTING_ACTION_CORE_DISK_OPTIONS, 0, 0);
+               MENU_SETTING_ACTION_CORE_DISK_OPTIONS, 0, 0))
+            count++;
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
       if (video_shader_any_supported())
       {
          if (settings->bools.quick_menu_show_shaders && !settings->bools.kiosk_mode_enable)
          {
-            menu_entries_append_enum(info->list,
+            if (menu_entries_append_enum(list,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SHADER_OPTIONS),
                   msg_hash_to_str(MENU_ENUM_LABEL_SHADER_OPTIONS),
                   MENU_ENUM_LABEL_SHADER_OPTIONS,
-                  MENU_SETTING_ACTION, 0, 0);
+                  MENU_SETTING_ACTION, 0, 0))
+               count++;
          }
       }
 #endif
@@ -1995,40 +2041,38 @@ static int menu_displaylist_parse_load_content_settings(
          settings->bools.quick_menu_show_save_game_overrides) &&
          !settings->bools.kiosk_mode_enable)
       {
-         menu_entries_append_enum(info->list,
+         if (menu_entries_append_enum(list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QUICK_MENU_OVERRIDE_OPTIONS),
             msg_hash_to_str(MENU_ENUM_LABEL_QUICK_MENU_OVERRIDE_OPTIONS),
             MENU_ENUM_LABEL_QUICK_MENU_OVERRIDE_OPTIONS,
-            MENU_SETTING_ACTION, 0, 0);
+            MENU_SETTING_ACTION, 0, 0))
+            count++;
       }
 
 #ifdef HAVE_CHEEVOS
       if (settings->bools.cheevos_enable)
       {
-         menu_entries_append_enum(info->list,
+         if (menu_entries_append_enum(list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST),
             msg_hash_to_str(MENU_ENUM_LABEL_ACHIEVEMENT_LIST),
             MENU_ENUM_LABEL_ACHIEVEMENT_LIST,
-            MENU_SETTING_ACTION, 0, 0);
+            MENU_SETTING_ACTION, 0, 0))
+            count++;
       }
 #endif
 
       if (settings->bools.quick_menu_show_information)
       {
-         menu_entries_append_enum(info->list,
+         if (menu_entries_append_enum(list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INFORMATION),
                msg_hash_to_str(MENU_ENUM_LABEL_INFORMATION),
                MENU_ENUM_LABEL_INFORMATION,
-               MENU_SETTING_ACTION, 0, 0);
+               MENU_SETTING_ACTION, 0, 0))
+            count++;
       }
    }
-   else
-      menu_entries_append_enum(info->list,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ITEMS),
-            msg_hash_to_str(MENU_ENUM_LABEL_NO_ITEMS),
-            MENU_ENUM_LABEL_NO_ITEMS,
-            MENU_SETTING_NO_ITEM, 0, 0);
-   return 0;
+
+   return count;
 }
 
 static int menu_displaylist_parse_horizontal_content_actions(
@@ -2049,7 +2093,14 @@ static int menu_displaylist_parse_horizontal_content_actions(
          && string_is_equal(menu->deferred_path, fullpath);
 
    if (content_loaded)
-      menu_displaylist_parse_load_content_settings(menu, info);
+   {
+      if (menu_displaylist_parse_load_content_settings(info->list) == 0)
+         menu_entries_append_enum(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ITEMS),
+               msg_hash_to_str(MENU_ENUM_LABEL_NO_ITEMS),
+               MENU_ENUM_LABEL_NO_ITEMS,
+               MENU_SETTING_NO_ITEM, 0, 0);
+   }
    else
    {
 #ifdef HAVE_AUDIOMIXER
@@ -2213,8 +2264,7 @@ static int menu_displaylist_parse_horizontal_content_actions(
    return 0;
 }
 
-static unsigned menu_displaylist_parse_information_list(
-      menu_displaylist_info_t *info)
+static unsigned menu_displaylist_parse_information_list(file_list_t *info_list)
 {
    unsigned count                   = 0;
    core_info_t   *core_info         = NULL;
@@ -2229,7 +2279,7 @@ static unsigned menu_displaylist_parse_information_list(
          )
          && core_info && core_info->config_data
       )
-      if (menu_entries_append_enum(info->list,
+      if (menu_entries_append_enum(info_list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFORMATION),
             msg_hash_to_str(MENU_ENUM_LABEL_CORE_INFORMATION),
             MENU_ENUM_LABEL_CORE_INFORMATION,
@@ -2244,7 +2294,7 @@ static unsigned menu_displaylist_parse_information_list(
       {
          if (drive_list->size)
          {
-            if (menu_entries_append_enum(info->list,
+            if (menu_entries_append_enum(info_list,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISC_INFORMATION),
                   msg_hash_to_str(MENU_ENUM_LABEL_DISC_INFORMATION),
                   MENU_ENUM_LABEL_DISC_INFORMATION,
@@ -2259,7 +2309,7 @@ static unsigned menu_displaylist_parse_information_list(
 
 #ifdef HAVE_NETWORKING
 #ifndef HAVE_SOCKET_LEGACY
-   if (menu_entries_append_enum(info->list,
+   if (menu_entries_append_enum(info_list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETWORK_INFORMATION),
          msg_hash_to_str(MENU_ENUM_LABEL_NETWORK_INFORMATION),
          MENU_ENUM_LABEL_NETWORK_INFORMATION,
@@ -2268,7 +2318,7 @@ static unsigned menu_displaylist_parse_information_list(
 #endif
 #endif
 
-   if (menu_entries_append_enum(info->list,
+   if (menu_entries_append_enum(info_list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFORMATION),
          msg_hash_to_str(MENU_ENUM_LABEL_SYSTEM_INFORMATION),
          MENU_ENUM_LABEL_SYSTEM_INFORMATION,
@@ -2276,13 +2326,13 @@ static unsigned menu_displaylist_parse_information_list(
       count++;
 
 #ifdef HAVE_LIBRETRODB
-   if (menu_entries_append_enum(info->list,
+   if (menu_entries_append_enum(info_list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DATABASE_MANAGER),
          msg_hash_to_str(MENU_ENUM_LABEL_DATABASE_MANAGER_LIST),
          MENU_ENUM_LABEL_DATABASE_MANAGER_LIST,
          MENU_SETTING_ACTION, 0, 0))
       count++;
-   if (menu_entries_append_enum(info->list,
+   if (menu_entries_append_enum(info_list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CURSOR_MANAGER),
          msg_hash_to_str(MENU_ENUM_LABEL_CURSOR_MANAGER_LIST),
          MENU_ENUM_LABEL_CURSOR_MANAGER_LIST,
@@ -2292,14 +2342,14 @@ static unsigned menu_displaylist_parse_information_list(
 
    if (rarch_ctl(RARCH_CTL_IS_PERFCNT_ENABLE, NULL))
    {
-      if (menu_entries_append_enum(info->list,
+      if (menu_entries_append_enum(info_list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FRONTEND_COUNTERS),
             msg_hash_to_str(MENU_ENUM_LABEL_FRONTEND_COUNTERS),
             MENU_ENUM_LABEL_FRONTEND_COUNTERS,
             MENU_SETTING_ACTION, 0, 0))
          count++;
 
-      if (menu_entries_append_enum(info->list,
+      if (menu_entries_append_enum(info_list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_COUNTERS),
             msg_hash_to_str(MENU_ENUM_LABEL_CORE_COUNTERS),
             MENU_ENUM_LABEL_CORE_COUNTERS,
@@ -2334,9 +2384,9 @@ static unsigned menu_displaylist_parse_playlists(
 
    if (!horizontal)
    {
-#ifdef HAVE_LIBRETRODB
       if (settings->bools.menu_content_show_add)
       {
+#ifdef HAVE_LIBRETRODB
          if (menu_entries_append_enum(info->list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_DIRECTORY),
                msg_hash_to_str(MENU_ENUM_LABEL_SCAN_DIRECTORY),
@@ -2349,8 +2399,15 @@ static unsigned menu_displaylist_parse_playlists(
                MENU_ENUM_LABEL_SCAN_FILE,
                MENU_SETTING_ACTION, 0, 0))
             count++;
-      }
 #endif
+         if (menu_entries_append_enum(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_LIST),
+               msg_hash_to_str(MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_LIST),
+               MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_LIST,
+               MENU_SETTING_ACTION, 0, 0))
+            count++;
+      }
+
      if (settings->bools.menu_content_show_favorites)
       if (menu_entries_append_enum(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES),
@@ -3667,6 +3724,106 @@ static unsigned populate_playlist_thumbnail_mode_dropdown_list(
    return count;
 }
 
+static bool menu_displaylist_parse_manual_content_scan_list(
+      menu_displaylist_info_t *info)
+{
+   unsigned count = 0;
+
+   /* Content directory */
+   if (menu_entries_append_enum(info->list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_DIR),
+         msg_hash_to_str(MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_DIR),
+         MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_DIR,
+         MENU_SETTING_MANUAL_CONTENT_SCAN_DIR, 0, 0))
+      count++;
+
+   /* System name */
+   if (menu_entries_append_enum(info->list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME),
+         msg_hash_to_str(MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME),
+         MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
+         MENU_SETTING_MANUAL_CONTENT_SCAN_SYSTEM_NAME, 0, 0))
+      count++;
+
+   /* Custom system name */
+   if (menu_displaylist_parse_settings_enum(info->list,
+         MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM, PARSE_ONLY_STRING,
+         false) == 0)
+      count++;
+
+   /* Core name */
+   if (menu_entries_append_enum(info->list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_CORE_NAME),
+         msg_hash_to_str(MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_CORE_NAME),
+         MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_CORE_NAME,
+         MENU_SETTING_MANUAL_CONTENT_SCAN_CORE_NAME, 0, 0))
+      count++;
+
+   /* File extensions */
+   if (menu_displaylist_parse_settings_enum(info->list,
+         MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_FILE_EXTS, PARSE_ONLY_STRING,
+         false) == 0)
+      count++;
+
+   /* Search inside archive files */
+   if (menu_displaylist_parse_settings_enum(info->list,
+         MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_SEARCH_ARCHIVES, PARSE_ONLY_BOOL,
+         false) == 0)
+      count++;
+
+   /* Overwrite playlist */
+   if (menu_displaylist_parse_settings_enum(info->list,
+         MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_OVERWRITE, PARSE_ONLY_BOOL,
+         false) == 0)
+      count++;
+
+   /* Start scan */
+   if (menu_entries_append_enum(info->list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_START),
+         msg_hash_to_str(MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_START),
+         MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_START,
+         MENU_SETTING_ACTION_MANUAL_CONTENT_SCAN_START, 0, 0))
+      count++;
+
+   return (count > 0);
+}
+
+#ifdef HAVE_CDROM
+static int menu_displaylist_parse_disc_info(file_list_t *info_list,
+      unsigned type)
+{
+   unsigned i;
+   unsigned           count = 0;
+   struct string_list *list = cdrom_get_available_drives();
+
+   for (i = 0; list && i < list->size; i++)
+   {
+      char drive_string[256] = {0};
+      char drive[2]          = {0};
+      size_t pos             = 0;
+
+      drive[0]               = list->elems[i].attr.i;
+
+      pos += snprintf(drive_string + pos, sizeof(drive_string) - pos, msg_hash_to_str(MSG_DRIVE_NUMBER), i + 1);
+      pos += snprintf(drive_string + pos, sizeof(drive_string) - pos, ": %s", list->elems[i].data);
+
+      if (menu_entries_append_enum(info_list,
+               drive_string,
+               drive,
+               MSG_UNKNOWN,
+               type,
+               0, i))
+         count++;
+   }
+
+   if (list)
+      string_list_free(list);
+
+   return count;
+}
+#endif
+
+
 unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ctl_state type)
 {
    unsigned i;
@@ -3674,6 +3831,806 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
 
    switch (type)
    {
+      case DISPLAYLIST_SHADER_PRESET_REMOVE:
+         {
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+            if (menu_shader_manager_auto_preset_exists(SHADER_PRESET_GLOBAL))
+               if (menu_entries_append_enum(list,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_GLOBAL),
+                        msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE_GLOBAL),
+                        MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE_GLOBAL,
+                        MENU_SETTING_ACTION, 0, 0))
+                  count++;
+
+            if (menu_shader_manager_auto_preset_exists(SHADER_PRESET_CORE))
+               if (menu_entries_append_enum(list,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_CORE),
+                        msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE_CORE),
+                        MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE_CORE,
+                        MENU_SETTING_ACTION, 0, 0))
+                  count++;
+
+            if (menu_shader_manager_auto_preset_exists(SHADER_PRESET_PARENT))
+               if (menu_entries_append_enum(list,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_PARENT),
+                        msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE_PARENT),
+                        MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE_PARENT,
+                        MENU_SETTING_ACTION, 0, 0))
+                  count++;
+
+            if (menu_shader_manager_auto_preset_exists(SHADER_PRESET_GAME))
+               if (menu_entries_append_enum(list,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_GAME),
+                        msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE_GAME),
+                        MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE_GAME,
+                        MENU_SETTING_ACTION, 0, 0))
+                  count++;
+#endif
+         }
+         break;
+      case DISPLAYLIST_SHADER_PRESET_SAVE:
+         {
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+            if (menu_entries_append_enum(list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS),
+                     msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_AS),
+                     MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_AS,
+                     MENU_SETTING_ACTION, 0, 0))
+               count++;
+            if (menu_entries_append_enum(list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_GLOBAL),
+                     msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_GLOBAL),
+                     MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_GLOBAL,
+                     MENU_SETTING_ACTION, 0, 0))
+               count++;
+            if (menu_entries_append_enum(list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_CORE),
+                     msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_CORE),
+                     MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_CORE,
+                     MENU_SETTING_ACTION, 0, 0))
+               count++;
+            if (menu_entries_append_enum(list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_PARENT),
+                     msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_PARENT),
+                     MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_PARENT,
+                     MENU_SETTING_ACTION, 0, 0))
+               count++;
+            if (menu_entries_append_enum(list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_GAME),
+                     msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_GAME),
+                     MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_GAME,
+                     MENU_SETTING_ACTION, 0, 0))
+               count++;
+#endif
+         }
+         break;
+      case DISPLAYLIST_NETPLAY_ROOM_LIST:
+#ifdef HAVE_NETWORKING
+         netplay_refresh_rooms_menu(list);
+#endif
+         break;
+      case DISPLAYLIST_CONTENT_SETTINGS:
+         count = menu_displaylist_parse_load_content_settings(list);
+
+         if (count == 0)
+            if (menu_entries_append_enum(list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ITEMS),
+                     msg_hash_to_str(MENU_ENUM_LABEL_NO_ITEMS),
+                     MENU_ENUM_LABEL_NO_ITEMS,
+                     MENU_SETTING_NO_ITEM, 0, 0))
+               count++;
+         break;
+      case DISPLAYLIST_BROWSE_URL_START:
+#ifdef HAVE_NETWORKING
+         {
+            char link[1024];
+            char name[1024];
+            const char *line  = "<a href=\"http://www.test.com/somefile.zip\">Test</a>\n";
+
+            link[0] = name[0] = '\0';
+
+            string_parse_html_anchor(line, link, name, sizeof(link), sizeof(name));
+
+            if (menu_entries_append_enum(list,
+                  link,
+                  name,
+                  MSG_UNKNOWN,
+                  0, 0, 0))
+               count++;
+         }
+#endif
+         break;
+      case DISPLAYLIST_AUDIO_MIXER_SETTINGS_LIST:
+         {
+#ifdef HAVE_AUDIOMIXER
+#if 1
+            /* TODO - for developers -
+             * turn this into #if 0 if you want to be able to see
+             * the system streams as well. */
+            for (i = 0; i < AUDIO_MIXER_MAX_STREAMS; i++)
+#else
+            for (i = 0; i < AUDIO_MIXER_MAX_SYSTEM_STREAMS; i++)
+#endif
+            {
+               char msg[128];
+               char msg_lbl[128];
+               snprintf(msg, sizeof(msg), "Mixer Stream #%d :\n", i+1);
+               snprintf(msg_lbl, sizeof(msg_lbl), "audio_mixer_stream_%d\n", i);
+               if (menu_entries_append_enum(list, msg, msg_lbl,
+                        MSG_UNKNOWN,
+                        (MENU_SETTINGS_AUDIO_MIXER_STREAM_BEGIN  +  i),
+                        0, 0))
+                  count++;
+            }
+#endif
+         }
+         break;
+      case DISPLAYLIST_WIFI_SETTINGS_LIST:
+#ifdef HAVE_NETWORKING
+         {
+            settings_t      *settings     = config_get_ptr();
+            if (!string_is_equal(settings->arrays.wifi_driver, "null"))
+            {
+               struct string_list *ssid_list = string_list_new();
+               driver_wifi_get_ssids(ssid_list);
+
+               if (ssid_list->size == 0)
+                  task_push_wifi_scan(wifi_scan_callback);
+               else
+               {
+                  unsigned i;
+                  for (i = 0; i < ssid_list->size; i++)
+                  {
+                     const char *ssid = ssid_list->elems[i].data;
+                     if (menu_entries_append_enum(list,
+                              ssid,
+                              msg_hash_to_str(MENU_ENUM_LABEL_CONNECT_WIFI),
+                              MENU_ENUM_LABEL_CONNECT_WIFI,
+                              MENU_WIFI, 0, 0))
+                        count++;
+                  }
+               }
+            }
+         }
+#endif
+         break;
+      case DISPLAYLIST_SYSTEM_INFO:
+         count              = menu_displaylist_parse_system_info(list);
+         break;
+      case DISPLAYLIST_SCAN_DIRECTORY_LIST:
+#ifdef HAVE_LIBRETRODB
+         if (menu_entries_append_enum(list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_DIRECTORY),
+                  msg_hash_to_str(MENU_ENUM_LABEL_SCAN_DIRECTORY),
+                  MENU_ENUM_LABEL_SCAN_DIRECTORY,
+                  MENU_SETTING_ACTION, 0, 0))
+            count++;
+         if (menu_entries_append_enum(list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_FILE),
+                  msg_hash_to_str(MENU_ENUM_LABEL_SCAN_FILE),
+                  MENU_ENUM_LABEL_SCAN_FILE,
+                  MENU_SETTING_ACTION, 0, 0))
+            count++;
+#endif
+         if (menu_entries_append_enum(list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_LIST),
+                  msg_hash_to_str(MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_LIST),
+                  MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_LIST,
+                  MENU_SETTING_ACTION, 0, 0))
+            count++;
+         break;
+      case DISPLAYLIST_INFORMATION_LIST:
+         count              = menu_displaylist_parse_information_list(list);
+         break;
+      case DISPLAYLIST_HELP_SCREEN_LIST:
+         if (menu_entries_append_enum(list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_HELP_CONTROLS),
+                  msg_hash_to_str(MENU_ENUM_LABEL_HELP_CONTROLS),
+                  MENU_ENUM_LABEL_HELP_CONTROLS,
+                  0, 0, 0))
+            count++;
+         if (menu_entries_append_enum(list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_HELP_SEND_DEBUG_INFO),
+                  msg_hash_to_str(MENU_ENUM_LABEL_HELP_SEND_DEBUG_INFO),
+                  MENU_ENUM_LABEL_HELP_SEND_DEBUG_INFO,
+                  0, 0, 0))
+            count++;
+         break;
+         break;
+      case DISPLAYLIST_AUDIO_SETTINGS_LIST:
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_MIDI_SETTINGS,
+                  PARSE_ACTION, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_AUDIO_MIXER_SETTINGS,
+                  PARSE_ACTION, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_MENU_SOUNDS,
+                  PARSE_ACTION, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_AUDIO_ENABLE,
+                  PARSE_ONLY_BOOL, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_AUDIO_DEVICE,
+                  PARSE_ONLY_STRING, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_AUDIO_LATENCY,
+                  PARSE_ONLY_UINT, false) == 0)
+            count++;
+
+         /* Volume */
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_AUDIO_MUTE,
+                  PARSE_ONLY_BOOL, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_AUDIO_MIXER_MUTE,
+                  PARSE_ONLY_BOOL, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_AUDIO_VOLUME,
+                  PARSE_ONLY_FLOAT, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_AUDIO_MIXER_VOLUME,
+                  PARSE_ONLY_FLOAT, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_SYSTEM_BGM_ENABLE,
+                  PARSE_ONLY_BOOL, false) == 0)
+            count++;
+
+         /* Resampler */
+         {
+            settings_t *settings      = config_get_ptr();
+            if (string_is_not_equal(settings->arrays.audio_resampler, "null"))
+            {
+               if (menu_displaylist_parse_settings_enum(list,
+                        MENU_ENUM_LABEL_AUDIO_RESAMPLER_QUALITY,
+                        PARSE_ONLY_UINT, false) == 0)
+                  count++;
+            }
+         }
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_AUDIO_OUTPUT_RATE,
+                  PARSE_ONLY_UINT, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_AUDIO_BLOCK_FRAMES,
+                  PARSE_ONLY_UINT, false) == 0)
+            count++;
+
+         /* Synchronization */
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_AUDIO_SYNC,
+                  PARSE_ONLY_BOOL, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_AUDIO_MAX_TIMING_SKEW,
+                  PARSE_ONLY_FLOAT, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_AUDIO_RATE_CONTROL_DELTA,
+                  PARSE_ONLY_FLOAT, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN,
+                  PARSE_ONLY_PATH, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_AUDIO_WASAPI_EXCLUSIVE_MODE,
+                  PARSE_ONLY_BOOL, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_AUDIO_WASAPI_FLOAT_FORMAT,
+                  PARSE_ONLY_BOOL, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_AUDIO_WASAPI_SH_BUFFER_LENGTH,
+                  PARSE_ONLY_INT, false) == 0)
+            count++;
+         break;
+      case DISPLAYLIST_VIDEO_SETTINGS_LIST:
+         {
+            gfx_ctx_flags_t flags;
+
+            if (video_display_server_get_flags(&flags))
+            {
+               if (BIT32_GET(flags.flags, DISPSERV_CTX_CRT_SWITCHRES))
+                  if (menu_displaylist_parse_settings_enum(list,
+                           MENU_ENUM_LABEL_CRT_SWITCHRES_SETTINGS,
+                           PARSE_ACTION, false) == 0)
+                     count++;
+            }
+
+            if (menu_displaylist_parse_settings_enum(list,
+                     MENU_ENUM_LABEL_SUSPEND_SCREENSAVER_ENABLE,
+                     PARSE_ONLY_BOOL, false) == 0)
+               count++;
+
+#if defined(GEKKO) || defined(__CELLOS_LV2__)
+            if (true)
+#else
+               if (video_display_server_has_resolution_list())
+#endif
+               {
+                  if (menu_displaylist_parse_settings_enum(list,
+                           MENU_ENUM_LABEL_SCREEN_RESOLUTION,
+                           PARSE_ACTION, false) == 0)
+                     count++;
+               }
+
+            if (menu_displaylist_parse_settings_enum(list,
+                     MENU_ENUM_LABEL_PAL60_ENABLE,
+                     PARSE_ONLY_BOOL, false) == 0)
+               count++;
+            if (menu_displaylist_parse_settings_enum(list,
+                     MENU_ENUM_LABEL_VIDEO_GAMMA,
+                     PARSE_ONLY_UINT, false) == 0)
+               count++;
+            if (menu_displaylist_parse_settings_enum(list,
+                     MENU_ENUM_LABEL_VIDEO_SOFT_FILTER,
+                     PARSE_ONLY_BOOL, false) == 0)
+               count++;
+            if (menu_displaylist_parse_settings_enum(list,
+                     MENU_ENUM_LABEL_VIDEO_FILTER_FLICKER,
+                     PARSE_ONLY_UINT, false) == 0)
+               count++;
+            if (menu_displaylist_parse_settings_enum(list,
+                     MENU_ENUM_LABEL_VIDEO_MONITOR_INDEX,
+                     PARSE_ONLY_UINT, false) == 0)
+               count++;
+            if (menu_displaylist_parse_settings_enum(list,
+                     MENU_ENUM_LABEL_VIDEO_GPU_INDEX,
+                     PARSE_ONLY_INT, false) == 0)
+               count++;
+            if (menu_displaylist_parse_settings_enum(list,
+                     MENU_ENUM_LABEL_VIDEO_FULLSCREEN,
+                     PARSE_ONLY_BOOL, false) == 0)
+               count++;
+            if (menu_displaylist_parse_settings_enum(list,
+                     MENU_ENUM_LABEL_VIDEO_WINDOWED_FULLSCREEN,
+                     PARSE_ONLY_BOOL, false) == 0)
+               count++;
+            if (menu_displaylist_parse_settings_enum(list,
+                     MENU_ENUM_LABEL_VIDEO_FULLSCREEN_X,
+                     PARSE_ONLY_UINT, false) == 0)
+               count++;
+            if (menu_displaylist_parse_settings_enum(list,
+                     MENU_ENUM_LABEL_VIDEO_FULLSCREEN_Y,
+                     PARSE_ONLY_UINT, false) == 0)
+               count++;
+            if (menu_displaylist_parse_settings_enum(list,
+                     MENU_ENUM_LABEL_VIDEO_REFRESH_RATE,
+                     PARSE_ONLY_FLOAT, false) == 0)
+               count++;
+            if (menu_displaylist_parse_settings_enum(list,
+                     MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_AUTO,
+                     PARSE_ONLY_FLOAT, false) == 0)
+               count++;
+            if (menu_displaylist_parse_settings_enum(list,
+                     MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_POLLED,
+                     PARSE_ONLY_FLOAT, false) == 0)
+               count++;
+            if (menu_displaylist_parse_settings_enum(list,
+                     MENU_ENUM_LABEL_VIDEO_FORCE_SRGB_DISABLE,
+                     PARSE_ONLY_BOOL, false) == 0)
+               count++;
+            if (menu_displaylist_parse_settings_enum(list,
+                     MENU_ENUM_LABEL_VIDEO_ASPECT_RATIO_INDEX,
+                     PARSE_ONLY_UINT, false) == 0)
+               count++;
+            if (menu_displaylist_parse_settings_enum(list,
+                     MENU_ENUM_LABEL_VIDEO_ASPECT_RATIO,
+                     PARSE_ONLY_FLOAT, false) == 0)
+               count++;
+            if (menu_displaylist_parse_settings_enum(list,
+                     MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_X,
+                     PARSE_ONLY_INT, false) == 0)
+               count++;
+            if (menu_displaylist_parse_settings_enum(list,
+                     MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_Y,
+                     PARSE_ONLY_INT, false) == 0)
+               count++;
+            if (menu_displaylist_parse_settings_enum(list,
+                     MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH,
+                     PARSE_ONLY_UINT, false) == 0)
+               count++;
+            if (menu_displaylist_parse_settings_enum(list,
+                     MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
+                     PARSE_ONLY_UINT, false) == 0)
+               count++;
+            if (menu_displaylist_parse_settings_enum(list,
+                     MENU_ENUM_LABEL_VIDEO_SCALE,
+                     PARSE_ONLY_FLOAT, false) == 0)
+               count++;
+            if (menu_displaylist_parse_settings_enum(list,
+                     MENU_ENUM_LABEL_VIDEO_WINDOW_OPACITY,
+                     PARSE_ONLY_UINT, false) == 0)
+               count++;
+            if (menu_displaylist_parse_settings_enum(list,
+                     MENU_ENUM_LABEL_VIDEO_WINDOW_SHOW_DECORATIONS,
+                     PARSE_ONLY_BOOL, false) == 0)
+               count++;
+            if (menu_displaylist_parse_settings_enum(list,
+                     MENU_ENUM_LABEL_VIDEO_WINDOW_SAVE_POSITION,
+                     PARSE_ONLY_BOOL, false) == 0)
+               count++;
+            if (menu_displaylist_parse_settings_enum(list,
+                     MENU_ENUM_LABEL_VIDEO_WINDOW_WIDTH,
+                     PARSE_ONLY_UINT, false) == 0)
+               count++;
+            if (menu_displaylist_parse_settings_enum(list,
+                     MENU_ENUM_LABEL_VIDEO_WINDOW_HEIGHT,
+                     PARSE_ONLY_UINT, false) == 0)
+               count++;
+            if (menu_displaylist_parse_settings_enum(list,
+                     MENU_ENUM_LABEL_VIDEO_SCALE_INTEGER,
+                     PARSE_ONLY_BOOL, false) == 0)
+               count++;
+            if (menu_displaylist_parse_settings_enum(list,
+                     MENU_ENUM_LABEL_VIDEO_VI_WIDTH,
+                     PARSE_ONLY_UINT, false) == 0)
+               count++;
+            if (menu_displaylist_parse_settings_enum(list,
+                     MENU_ENUM_LABEL_VIDEO_VFILTER,
+                     PARSE_ONLY_BOOL, false) == 0)
+               count++;
+            if (menu_displaylist_parse_settings_enum(list,
+                     MENU_ENUM_LABEL_VIDEO_OVERSCAN_CORRECTION_TOP,
+                     PARSE_ONLY_UINT, false) == 0)
+               count++;
+            if (menu_displaylist_parse_settings_enum(list,
+                     MENU_ENUM_LABEL_VIDEO_OVERSCAN_CORRECTION_BOTTOM,
+                     PARSE_ONLY_UINT, false) == 0)
+               count++;
+            if (menu_displaylist_parse_settings_enum(list,
+                     MENU_ENUM_LABEL_VIDEO_ROTATION,
+                     PARSE_ONLY_UINT, false) == 0)
+               count++;
+            if (video_display_server_can_set_screen_orientation())
+               if (menu_displaylist_parse_settings_enum(list,
+                        MENU_ENUM_LABEL_SCREEN_ORIENTATION,
+                        PARSE_ONLY_UINT, false) == 0)
+                  count++;
+            if (menu_displaylist_parse_settings_enum(list,
+                     MENU_ENUM_LABEL_VIDEO_THREADED,
+                     PARSE_ONLY_BOOL, false) == 0)
+               count++;
+            if (menu_displaylist_parse_settings_enum(list,
+                     MENU_ENUM_LABEL_VIDEO_VSYNC,
+                     PARSE_ONLY_BOOL, false) == 0)
+               count++;
+            if (menu_displaylist_parse_settings_enum(list,
+                     MENU_ENUM_LABEL_VIDEO_SWAP_INTERVAL,
+                     PARSE_ONLY_UINT, false) == 0)
+               count++;
+            if (menu_displaylist_parse_settings_enum(list,
+                     MENU_ENUM_LABEL_VIDEO_ADAPTIVE_VSYNC,
+                     PARSE_ONLY_BOOL, false) == 0)
+               count++;
+            if (video_driver_test_all_flags(GFX_CTX_FLAGS_CUSTOMIZABLE_SWAPCHAIN_IMAGES))
+            {
+               if (menu_displaylist_parse_settings_enum(list,
+                        MENU_ENUM_LABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
+                        PARSE_ONLY_UINT, false) == 0)
+                  count++;
+            }
+            if (video_driver_test_all_flags(GFX_CTX_FLAGS_HARD_SYNC))
+            {
+               if (menu_displaylist_parse_settings_enum(list,
+                        MENU_ENUM_LABEL_VIDEO_HARD_SYNC,
+                        PARSE_ONLY_BOOL, false) == 0)
+                  count++;
+               if (menu_displaylist_parse_settings_enum(list,
+                        MENU_ENUM_LABEL_VIDEO_HARD_SYNC_FRAMES,
+                        PARSE_ONLY_UINT, false) == 0)
+                  count++;
+            }
+            if (menu_displaylist_parse_settings_enum(list,
+                     MENU_ENUM_LABEL_VIDEO_FRAME_DELAY,
+                     PARSE_ONLY_UINT, false) == 0)
+               count++;
+            if (menu_displaylist_parse_settings_enum(list,
+                     MENU_ENUM_LABEL_VIDEO_BLACK_FRAME_INSERTION,
+                     PARSE_ONLY_BOOL, false) == 0)
+               count++;
+            if (video_driver_supports_viewport_read())
+               if (menu_displaylist_parse_settings_enum(list,
+                        MENU_ENUM_LABEL_VIDEO_GPU_SCREENSHOT,
+                        PARSE_ONLY_BOOL, false) == 0)
+                  count++;
+            if (menu_displaylist_parse_settings_enum(list,
+                     MENU_ENUM_LABEL_VIDEO_CROP_OVERSCAN,
+                     PARSE_ONLY_BOOL, false) == 0)
+               count++;
+            if (menu_displaylist_parse_settings_enum(list,
+                     MENU_ENUM_LABEL_VIDEO_SMOOTH,
+                     PARSE_ONLY_BOOL, false) == 0)
+               count++;
+            if (menu_displaylist_parse_settings_enum(list,
+                     MENU_ENUM_LABEL_VIDEO_SHADER_DELAY,
+                     PARSE_ONLY_UINT, false) == 0)
+               count++;
+            if (menu_displaylist_parse_settings_enum(list,
+                     MENU_ENUM_LABEL_VIDEO_FILTER,
+                     PARSE_ONLY_PATH, false) == 0)
+               count++;
+         }
+         break;
+      case DISPLAYLIST_OPTIONS_REMAPPINGS:
+         {
+            unsigned p;
+            settings_t        *settings = config_get_ptr();
+            unsigned max_users          = *(input_driver_get_uint(INPUT_ACTION_MAX_USERS));
+            bool is_rgui                = string_is_equal(
+                  settings->arrays.menu_driver, "rgui");
+
+            for (p = 0; p < max_users; p++)
+            {
+               char key_type[PATH_MAX_LENGTH];
+               char key_analog[PATH_MAX_LENGTH];
+               unsigned val = p + 1;
+
+               key_type[0] = key_analog[0] = '\0';
+
+               snprintf(key_type, sizeof(key_type),
+                     msg_hash_to_str(MENU_ENUM_LABEL_INPUT_LIBRETRO_DEVICE), val);
+               snprintf(key_analog, sizeof(key_analog),
+                     msg_hash_to_str(MENU_ENUM_LABEL_INPUT_PLAYER_ANALOG_DPAD_MODE), val);
+
+               if (menu_displaylist_parse_settings(list,
+                        key_type, PARSE_ONLY_UINT, true, 0) == 0)
+                  count++;
+               if (menu_displaylist_parse_settings(list,
+                        key_analog, PARSE_ONLY_UINT, true, 0) == 0)
+                  count++;
+            }
+
+            if (menu_entries_append_enum(list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REMAP_FILE_LOAD),
+                     msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_LOAD),
+                     MENU_ENUM_LABEL_REMAP_FILE_LOAD,
+                     MENU_SETTING_ACTION, 0, 0))
+               count++;
+            if (menu_entries_append_enum(list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_CORE),
+                     msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_SAVE_CORE),
+                     MENU_ENUM_LABEL_REMAP_FILE_SAVE_CORE,
+                     MENU_SETTING_ACTION, 0, 0))
+               count++;
+            if (menu_entries_append_enum(list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_CONTENT_DIR),
+                     msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_SAVE_CONTENT_DIR),
+                     MENU_ENUM_LABEL_REMAP_FILE_SAVE_CONTENT_DIR,
+                     MENU_SETTING_ACTION, 0, 0))
+               count++;
+            if (menu_entries_append_enum(list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_GAME),
+                     msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_SAVE_GAME),
+                     MENU_ENUM_LABEL_REMAP_FILE_SAVE_GAME,
+                     MENU_SETTING_ACTION, 0, 0))
+               count++;
+
+            if (rarch_ctl(RARCH_CTL_IS_REMAPS_CORE_ACTIVE, NULL))
+               if (menu_entries_append_enum(list,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_CORE),
+                        msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_REMOVE_CORE),
+                        MENU_ENUM_LABEL_REMAP_FILE_REMOVE_CORE,
+                        MENU_SETTING_ACTION, 0, 0))
+                  count++;
+
+            if (rarch_ctl(RARCH_CTL_IS_REMAPS_GAME_ACTIVE, NULL))
+               if (menu_entries_append_enum(list,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_GAME),
+                        msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_REMOVE_GAME),
+                        MENU_ENUM_LABEL_REMAP_FILE_REMOVE_GAME,
+                        MENU_SETTING_ACTION, 0, 0))
+                  count++;
+
+            if (rarch_ctl(RARCH_CTL_IS_REMAPS_CONTENT_DIR_ACTIVE, NULL))
+               if (menu_entries_append_enum(list,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_CONTENT_DIR),
+                        msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_REMOVE_CONTENT_DIR),
+                        MENU_ENUM_LABEL_REMAP_FILE_REMOVE_CONTENT_DIR,
+                        MENU_SETTING_ACTION, 0, 0))
+                  count++;
+
+            for (p = 0; p < max_users; p++)
+            {
+               unsigned retro_id;
+               unsigned device  = settings->uints.input_libretro_device[p];
+               device &= RETRO_DEVICE_MASK;
+
+               if (device == RETRO_DEVICE_JOYPAD || device == RETRO_DEVICE_ANALOG)
+               {
+                  for (retro_id = 0; retro_id < RARCH_ANALOG_BIND_LIST_END; retro_id++)
+                  {
+                     char desc_label[400];
+                     char descriptor[300];
+                     const struct retro_keybind *keybind   =
+                        &input_config_binds[p][retro_id];
+                     const struct retro_keybind *auto_bind =
+                        (const struct retro_keybind*)
+                        input_config_get_bind_auto(p, retro_id);
+
+                     input_config_get_bind_string(descriptor,
+                           keybind, auto_bind, sizeof(descriptor));
+
+                     if (!strstr(descriptor, "Auto"))
+                     {
+                        const struct retro_keybind *keyptr =
+                           &input_config_binds[p][retro_id];
+
+                        snprintf(desc_label, sizeof(desc_label),
+                              "%s %s", msg_hash_to_str(keyptr->enum_idx), descriptor);
+                        strlcpy(descriptor, desc_label, sizeof(descriptor));
+                     }
+
+                     /* Add user index when display driver == rgui and sublabels
+                      * are disabled, but only if there is more than one user */
+                     if (     (is_rgui)
+                           && (max_users > 1)
+                           && !settings->bools.menu_show_sublabels)
+                     {
+                        snprintf(desc_label, sizeof(desc_label),
+                              "%s [%s %u]", descriptor, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT), p + 1);
+                        strlcpy(descriptor, desc_label, sizeof(descriptor));
+                     }
+
+                     if (menu_entries_append_enum(list, descriptor, "",
+                              MSG_UNKNOWN,
+                              MENU_SETTINGS_INPUT_DESC_BEGIN +
+                              (p * (RARCH_FIRST_CUSTOM_BIND + 8)) +  retro_id, 0, 0))
+                        count++;
+                  }
+               }
+               else if (device == RETRO_DEVICE_KEYBOARD)
+               {
+                  for (retro_id = 0; retro_id < RARCH_FIRST_CUSTOM_BIND; retro_id++)
+                  {
+                     char desc_label[400];
+                     char descriptor[300];
+                     const struct retro_keybind *keybind   =
+                        &input_config_binds[p][retro_id];
+                     const struct retro_keybind *auto_bind =
+                        (const struct retro_keybind*)
+                        input_config_get_bind_auto(p, retro_id);
+
+                     input_config_get_bind_string(descriptor,
+                           keybind, auto_bind, sizeof(descriptor));
+
+                     if (!strstr(descriptor, "Auto"))
+                     {
+                        const struct retro_keybind *keyptr =
+                           &input_config_binds[p][retro_id];
+
+                        strlcpy(descriptor,
+                              msg_hash_to_str(keyptr->enum_idx), sizeof(descriptor));
+                     }
+
+                     /* Add user index when display driver == rgui and sublabels
+                      * are disabled, but only if there is more than one user */
+                     if (     (is_rgui)
+                           && (max_users > 1)
+                           && !settings->bools.menu_show_sublabels)
+                     {
+                        snprintf(desc_label, sizeof(desc_label),
+                              "%s [%s %u]", descriptor,
+                              msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT), p + 1);
+                        strlcpy(descriptor, desc_label, sizeof(descriptor));
+                     }
+
+                     if (menu_entries_append_enum(list, descriptor, "",
+                              MSG_UNKNOWN,
+                              MENU_SETTINGS_INPUT_DESC_KBD_BEGIN +
+                              (p * RARCH_FIRST_CUSTOM_BIND) + retro_id, 0, 0))
+                        count++;
+                  }
+               }
+            }
+         }
+         break;
+      case DISPLAYLIST_LOAD_CONTENT_LIST:
+      case DISPLAYLIST_LOAD_CONTENT_SPECIAL:
+         {
+            settings_t      *settings     = config_get_ptr();
+
+            if (!string_is_empty(settings->paths.directory_menu_content))
+               if (menu_entries_append_enum(list,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FAVORITES),
+                        msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES),
+                        MENU_ENUM_LABEL_FAVORITES,
+                        MENU_SETTING_ACTION, 0, 0))
+                  count++;
+
+            if (settings->bools.menu_content_show_favorites)
+               if (menu_entries_append_enum(list,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES),
+                        msg_hash_to_str(MENU_ENUM_LABEL_GOTO_FAVORITES),
+                        MENU_ENUM_LABEL_GOTO_FAVORITES,
+                        MENU_SETTING_ACTION, 0, 0))
+                  count++;
+
+            if (settings->bools.menu_content_show_images)
+               if (menu_entries_append_enum(list,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_IMAGES),
+                        msg_hash_to_str(MENU_ENUM_LABEL_GOTO_IMAGES),
+                        MENU_ENUM_LABEL_GOTO_IMAGES,
+                        MENU_SETTING_ACTION, 0, 0))
+                  count++;
+
+            if (settings->bools.menu_content_show_music)
+               if (menu_entries_append_enum(list,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_MUSIC),
+                        msg_hash_to_str(MENU_ENUM_LABEL_GOTO_MUSIC),
+                        MENU_ENUM_LABEL_GOTO_MUSIC,
+                        MENU_SETTING_ACTION, 0, 0))
+                  count++;
+
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
+            if (settings->bools.menu_content_show_video)
+               if (menu_entries_append_enum(list,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_VIDEO),
+                        msg_hash_to_str(MENU_ENUM_LABEL_GOTO_VIDEO),
+                        MENU_ENUM_LABEL_GOTO_VIDEO,
+                        MENU_SETTING_ACTION, 0, 0))
+                  count++;
+#endif
+         }
+
+         {
+            core_info_list_t *info_list        = NULL;
+            core_info_get_list(&info_list);
+            if (core_info_list_num_info_files(info_list))
+            {
+               if (menu_entries_append_enum(list,
+                        msg_hash_to_str(
+                           MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST),
+                        msg_hash_to_str(
+                           MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST),
+                        MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST,
+                        MENU_SETTING_ACTION, 0, 0))
+                  count++;
+            }
+         }
+
+#ifndef HAVE_LIBRETRODB
+         {
+            settings_t *settings = config_get_ptr();
+            if (settings->bools.menu_show_advanced_settings)
+#endif
+               if (menu_entries_append_enum(list,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB),
+                        msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB),
+                        MENU_ENUM_LABEL_PLAYLISTS_TAB,
+                        MENU_SETTING_ACTION, 0, 0))
+                  count++;
+#ifndef HAVE_LIBRETRODB
+         }
+#endif
+
+         if (frontend_driver_parse_drive_list(list, true) != 0)
+            if (menu_entries_append_enum(list, "/",
+                     msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+                     MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
+                     MENU_SETTING_ACTION, 0, 0))
+               count++;
+
+#if 0
+         if (menu_entries_append_enum(list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_BROWSE_URL_LIST),
+                  msg_hash_to_str(MENU_ENUM_LABEL_BROWSE_URL_LIST),
+                  MENU_ENUM_LABEL_BROWSE_URL_LIST,
+                  MENU_SETTING_ACTION, 0, 0))
+            count++;
+#endif
+         break;
       case DISPLAYLIST_INPUT_SETTINGS_LIST:
          if (menu_displaylist_parse_settings_enum(list,
                   MENU_ENUM_LABEL_INPUT_MAX_USERS,
@@ -3828,6 +4785,22 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
 
          }
          break;
+      case DISPLAYLIST_ACCESSIBILITY_SETTINGS_LIST:
+         {
+            menu_displaylist_build_info_selective_t build_list[] = {
+               {MENU_ENUM_LABEL_ACCESSIBILITY_ENABLED,                                                 PARSE_ONLY_BOOL, true  },
+               {MENU_ENUM_LABEL_ACCESSIBILITY_NARRATOR_SPEECH_SPEED,                               PARSE_ONLY_UINT, true  },
+            };
+
+            for (i = 0; i < ARRAY_SIZE(build_list); i++)
+            {
+               if (menu_displaylist_parse_settings_enum(list,
+                        build_list[i].enum_idx,  build_list[i].parse_type,
+                        false) == 0)
+                  count++;
+            }
+         }
+         break;
       case DISPLAYLIST_AI_SERVICE_SETTINGS_LIST:
          {
             menu_displaylist_build_info_selective_t build_list[] = {
@@ -3851,18 +4824,24 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
       case DISPLAYLIST_ADD_CONTENT_LIST:
 #ifdef HAVE_LIBRETRODB
          if (menu_entries_append_enum(list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_DIRECTORY),
-               msg_hash_to_str(MENU_ENUM_LABEL_SCAN_DIRECTORY),
-               MENU_ENUM_LABEL_SCAN_DIRECTORY,
-               MENU_SETTING_ACTION, 0, 0))
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_DIRECTORY),
+                  msg_hash_to_str(MENU_ENUM_LABEL_SCAN_DIRECTORY),
+                  MENU_ENUM_LABEL_SCAN_DIRECTORY,
+                  MENU_SETTING_ACTION, 0, 0))
             count++;
          if (menu_entries_append_enum(list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_FILE),
-               msg_hash_to_str(MENU_ENUM_LABEL_SCAN_FILE),
-               MENU_ENUM_LABEL_SCAN_FILE,
-               MENU_SETTING_ACTION, 0, 0))
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_FILE),
+                  msg_hash_to_str(MENU_ENUM_LABEL_SCAN_FILE),
+                  MENU_ENUM_LABEL_SCAN_FILE,
+                  MENU_SETTING_ACTION, 0, 0))
             count++;
 #endif
+         if (menu_entries_append_enum(list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_LIST),
+                  msg_hash_to_str(MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_LIST),
+                  MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_LIST,
+                  MENU_SETTING_ACTION, 0, 0))
+            count++;
          break;
       case DISPLAYLIST_NETWORK_INFO:
 #if defined(HAVE_NETWORKING) && !defined(HAVE_SOCKET_LEGACY) && (!defined(SWITCH) || defined(SWITCH) && defined(HAVE_LIBNX))
@@ -3897,66 +4876,66 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
          if (cheat_manager_alloc_if_empty())
          {
             if (menu_entries_append_enum(list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_START_OR_CONT),
-                  msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_START_OR_CONT),
-                  MENU_ENUM_LABEL_CHEAT_START_OR_CONT,
-                  MENU_SETTING_ACTION, 0, 0))
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_START_OR_CONT),
+                     msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_START_OR_CONT),
+                     MENU_ENUM_LABEL_CHEAT_START_OR_CONT,
+                     MENU_SETTING_ACTION, 0, 0))
                count++;
             if (menu_entries_append_enum(list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD),
-                  msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_FILE_LOAD),
-                  MENU_ENUM_LABEL_CHEAT_FILE_LOAD,
-                  MENU_SETTING_ACTION, 0, 0))
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD),
+                     msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_FILE_LOAD),
+                     MENU_ENUM_LABEL_CHEAT_FILE_LOAD,
+                     MENU_SETTING_ACTION, 0, 0))
                count++;
             if (menu_entries_append_enum(list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD_APPEND),
-                  msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_FILE_LOAD_APPEND),
-                  MENU_ENUM_LABEL_CHEAT_FILE_LOAD_APPEND,
-                  MENU_SETTING_ACTION, 0, 0))
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD_APPEND),
+                     msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_FILE_LOAD_APPEND),
+                     MENU_ENUM_LABEL_CHEAT_FILE_LOAD_APPEND,
+                     MENU_SETTING_ACTION, 0, 0))
                count++;
             if (menu_entries_append_enum(list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_RELOAD_CHEATS),
-                  msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_RELOAD_CHEATS),
-                  MENU_ENUM_LABEL_CHEAT_RELOAD_CHEATS,
-                  MENU_SETTING_ACTION, 0, 0))
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_RELOAD_CHEATS),
+                     msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_RELOAD_CHEATS),
+                     MENU_ENUM_LABEL_CHEAT_RELOAD_CHEATS,
+                     MENU_SETTING_ACTION, 0, 0))
                count++;
             if (menu_entries_append_enum(list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_FILE_SAVE_AS),
-                  msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_FILE_SAVE_AS),
-                  MENU_ENUM_LABEL_CHEAT_FILE_SAVE_AS,
-                  MENU_SETTING_ACTION, 0, 0))
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_FILE_SAVE_AS),
+                     msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_FILE_SAVE_AS),
+                     MENU_ENUM_LABEL_CHEAT_FILE_SAVE_AS,
+                     MENU_SETTING_ACTION, 0, 0))
                count++;
             if (menu_entries_append_enum(list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_TOP),
-                  msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_ADD_NEW_TOP),
-                  MENU_ENUM_LABEL_CHEAT_ADD_NEW_TOP,
-                  MENU_SETTING_ACTION, 0, 0))
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_TOP),
+                     msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_ADD_NEW_TOP),
+                     MENU_ENUM_LABEL_CHEAT_ADD_NEW_TOP,
+                     MENU_SETTING_ACTION, 0, 0))
                count++;
             if (menu_entries_append_enum(list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_BOTTOM),
-                  msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_ADD_NEW_BOTTOM),
-                  MENU_ENUM_LABEL_CHEAT_ADD_NEW_BOTTOM,
-                  MENU_SETTING_ACTION, 0, 0))
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_BOTTOM),
+                     msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_ADD_NEW_BOTTOM),
+                     MENU_ENUM_LABEL_CHEAT_ADD_NEW_BOTTOM,
+                     MENU_SETTING_ACTION, 0, 0))
                count++;
             if (menu_entries_append_enum(list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_ALL),
-                  msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_DELETE_ALL),
-                  MENU_ENUM_LABEL_CHEAT_DELETE_ALL,
-                  MENU_SETTING_ACTION, 0, 0))
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_ALL),
+                     msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_DELETE_ALL),
+                     MENU_ENUM_LABEL_CHEAT_DELETE_ALL,
+                     MENU_SETTING_ACTION, 0, 0))
                count++;
             if (menu_displaylist_parse_settings_enum(list,
-                  MENU_ENUM_LABEL_CHEAT_APPLY_AFTER_LOAD,
-                  PARSE_ONLY_BOOL, false) == 0)
+                     MENU_ENUM_LABEL_CHEAT_APPLY_AFTER_LOAD,
+                     PARSE_ONLY_BOOL, false) == 0)
                count++;
             if (menu_displaylist_parse_settings_enum(list,
-                  MENU_ENUM_LABEL_CHEAT_APPLY_AFTER_TOGGLE,
-                  PARSE_ONLY_BOOL, false) == 0)
+                     MENU_ENUM_LABEL_CHEAT_APPLY_AFTER_TOGGLE,
+                     PARSE_ONLY_BOOL, false) == 0)
                count++;
             if (menu_entries_append_enum(list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_CHANGES),
-                  msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_APPLY_CHANGES),
-                  MENU_ENUM_LABEL_CHEAT_APPLY_CHANGES,
-                  MENU_SETTING_ACTION, 0, 0))
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_CHANGES),
+                     msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_APPLY_CHANGES),
+                     MENU_ENUM_LABEL_CHEAT_APPLY_CHANGES,
+                     MENU_SETTING_ACTION, 0, 0))
                count++;
 
             {
@@ -3972,8 +4951,8 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
                   if (cheat_manager_get_desc(i))
                      strlcat(cheat_label, cheat_manager_get_desc(i), sizeof(cheat_label));
                   if (menu_entries_append_enum(list,
-                        cheat_label, "", MSG_UNKNOWN,
-                        MENU_SETTINGS_CHEAT_BEGIN + i, 0, 0))
+                           cheat_label, "", MSG_UNKNOWN,
+                           MENU_SETTINGS_CHEAT_BEGIN + i, 0, 0))
                      count++;
                }
             }
@@ -3996,10 +4975,10 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
                         video_list[i].refreshrate);
                   snprintf(val_d, sizeof(val_d), "%d", i);
                   if (menu_entries_append_enum(list,
-                        str,
-                        val_d,
-                        MENU_ENUM_LABEL_NO_ITEMS,
-                        MENU_SETTING_DROPDOWN_ITEM_RESOLUTION, video_list[i].idx, 0))
+                           str,
+                           val_d,
+                           MENU_ENUM_LABEL_NO_ITEMS,
+                           MENU_SETTING_DROPDOWN_ITEM_RESOLUTION, video_list[i].idx, 0))
                      count++;
 
                   if (video_list[i].current)
@@ -4029,15 +5008,15 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
 
                /* Add N/A entry */
                if (menu_entries_append_enum(list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
-                     "",
-                     MENU_ENUM_LABEL_NO_ITEMS,
-                     MENU_SETTING_DROPDOWN_ITEM_PLAYLIST_DEFAULT_CORE,
-                     0, 0))
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
+                        "",
+                        MENU_ENUM_LABEL_NO_ITEMS,
+                        MENU_SETTING_DROPDOWN_ITEM_PLAYLIST_DEFAULT_CORE,
+                        0, 0))
                   count++;
 
                if (string_is_empty(current_core_name) ||
-                   string_is_equal(current_core_name, "DETECT"))
+                     string_is_equal(current_core_name, "DETECT"))
                   menu_entries_set_checked(list, 0, true);
 
                /* Loop through cores */
@@ -4049,11 +5028,11 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
                   if (core_info)
                   {
                      if (menu_entries_append_enum(list,
-                           core_info->display_name,
-                           "",
-                           MENU_ENUM_LABEL_NO_ITEMS,
-                           MENU_SETTING_DROPDOWN_ITEM_PLAYLIST_DEFAULT_CORE,
-                           i + 1, 0))
+                              core_info->display_name,
+                              "",
+                              MENU_ENUM_LABEL_NO_ITEMS,
+                              MENU_SETTING_DROPDOWN_ITEM_PLAYLIST_DEFAULT_CORE,
+                              i + 1, 0))
                         count++;
 
                      if (string_is_equal(current_core_name, core_info->display_name))
@@ -4071,13 +5050,13 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
             {
                size_t i;
                enum playlist_label_display_mode current_display_mode =
-                     playlist_get_label_display_mode(playlist);
+                  playlist_get_label_display_mode(playlist);
 
                for (i = 0; i <= (unsigned)LABEL_DISPLAY_MODE_KEEP_REGION_AND_DISC_INDEX; i++)
                {
                   enum msg_hash_enums label_value;
                   enum playlist_label_display_mode display_mode =
-                        (enum playlist_label_display_mode)i;
+                     (enum playlist_label_display_mode)i;
 
                   switch (display_mode)
                   {
@@ -4106,11 +5085,11 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
                   }
 
                   if (menu_entries_append_enum(list,
-                        msg_hash_to_str(label_value),
-                        "",
-                        MENU_ENUM_LABEL_NO_ITEMS,
-                        MENU_SETTING_DROPDOWN_ITEM_PLAYLIST_LABEL_DISPLAY_MODE,
-                        0, 0))
+                           msg_hash_to_str(label_value),
+                           "",
+                           MENU_ENUM_LABEL_NO_ITEMS,
+                           MENU_SETTING_DROPDOWN_ITEM_PLAYLIST_LABEL_DISPLAY_MODE,
+                           0, 0))
                      count++;
 
                   if (current_display_mode == display_mode)
@@ -4124,6 +5103,84 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
          break;
       case DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_LEFT_THUMBNAIL_MODE:
          count = populate_playlist_thumbnail_mode_dropdown_list(list, PLAYLIST_THUMBNAIL_LEFT);
+         break;
+      case DISPLAYLIST_DROPDOWN_LIST_MANUAL_CONTENT_SCAN_SYSTEM_NAME:
+         {
+            /* Get system name list */
+            struct string_list *system_name_list = manual_content_scan_get_menu_system_name_list();
+
+            if (system_name_list)
+            {
+               const char *current_system_name = NULL;
+               unsigned i;
+
+               /* Get currently selected system name */
+               manual_content_scan_get_menu_system_name(&current_system_name);
+
+               /* Loop through names */
+               for (i = 0; i < system_name_list->size; i++)
+               {
+                  /* Note: manual_content_scan_get_system_name_list()
+                   * ensures that system_name cannot be empty here */
+                  const char *system_name = system_name_list->elems[i].data;
+
+                  /* Add menu entry */
+                  if (menu_entries_append_enum(list,
+                           system_name,
+                           "",
+                           MENU_ENUM_LABEL_NO_ITEMS,
+                           MENU_SETTING_DROPDOWN_ITEM_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
+                           i, 0))
+                     count++;
+
+                  /* Check whether current entry is checked */
+                  if (string_is_equal(current_system_name, system_name))
+                     menu_entries_set_checked(list, i, true);
+               }
+
+               /* Clean up */
+               string_list_free(system_name_list);
+            }
+         }
+         break;
+      case DISPLAYLIST_DROPDOWN_LIST_MANUAL_CONTENT_SCAN_CORE_NAME:
+         {
+            /* Get core name list */
+            struct string_list *core_name_list = manual_content_scan_get_menu_core_name_list();
+
+            if (core_name_list)
+            {
+               const char *current_core_name = NULL;
+               unsigned i;
+
+               /* Get currently selected core name */
+               manual_content_scan_get_menu_core_name(&current_core_name);
+
+               /* Loop through names */
+               for (i = 0; i < core_name_list->size; i++)
+               {
+                  /* Note: manual_content_scan_get_core_name_list()
+                   * ensures that core_name cannot be empty here */
+                  const char *core_name = core_name_list->elems[i].data;
+
+                  /* Add menu entry */
+                  if (menu_entries_append_enum(list,
+                           core_name,
+                           "",
+                           MENU_ENUM_LABEL_NO_ITEMS,
+                           MENU_SETTING_DROPDOWN_ITEM_MANUAL_CONTENT_SCAN_CORE_NAME,
+                           i, 0))
+                     count++;
+
+                  /* Check whether current entry is checked */
+                  if (string_is_equal(current_core_name, core_name))
+                     menu_entries_set_checked(list, i, true);
+               }
+
+               /* Clean up */
+               string_list_free(core_name_list);
+            }
+         }
          break;
       case DISPLAYLIST_PERFCOUNTERS_CORE:
       case DISPLAYLIST_PERFCOUNTERS_FRONTEND:
@@ -4147,9 +5204,9 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
                for (i = 0; i < num; i++)
                   if (counters[i] && counters[i]->ident)
                      if (menu_entries_append_enum(list,
-                           counters[i]->ident, "",
-                           (enum msg_hash_enums)(id + i),
-                           id + i , 0, 0))
+                              counters[i]->ident, "",
+                              (enum msg_hash_enums)(id + i),
+                              id + i , 0, 0))
                         count++;
             }
          }
@@ -4273,21 +5330,21 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
                      cheat_manager_state.num_matches);
 
                if (menu_entries_append_enum(list,
-                     cheat_label,
-                     msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_ADD_MATCHES),
-                     MENU_ENUM_LABEL_CHEAT_ADD_MATCHES,
-                     MENU_SETTING_ACTION, 0, 0))
+                        cheat_label,
+                        msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_ADD_MATCHES),
+                        MENU_ENUM_LABEL_CHEAT_ADD_MATCHES,
+                        MENU_SETTING_ACTION, 0, 0))
                   count++;
             }
 
             if (menu_displaylist_parse_settings_enum(list,
-                  MENU_ENUM_LABEL_CHEAT_DELETE_MATCH,
-                  PARSE_ONLY_UINT, false) != -1)
+                     MENU_ENUM_LABEL_CHEAT_DELETE_MATCH,
+                     PARSE_ONLY_UINT, false) != -1)
                count++;
 
             if (menu_displaylist_parse_settings_enum(list,
-                  MENU_ENUM_LABEL_CHEAT_COPY_MATCH,
-                  PARSE_ONLY_UINT, false) != -1)
+                     MENU_ENUM_LABEL_CHEAT_COPY_MATCH,
+                     PARSE_ONLY_UINT, false) != -1)
                count++;
 
             {
@@ -4303,16 +5360,16 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_MATCH), address, address_mask);
 
                if (menu_entries_append_enum(list,
-                     cheat_label,
-                     "",
-                     MSG_UNKNOWN,
-                     MENU_SETTINGS_CHEAT_MATCH, 0, 0))
+                        cheat_label,
+                        "",
+                        MSG_UNKNOWN,
+                        MENU_SETTINGS_CHEAT_MATCH, 0, 0))
                   count++;
             }
 
             if (menu_displaylist_parse_settings_enum(list,
-                  MENU_ENUM_LABEL_CHEAT_BROWSE_MEMORY,
-                  PARSE_ONLY_UINT, false) != -1)
+                     MENU_ENUM_LABEL_CHEAT_BROWSE_MEMORY,
+                     PARSE_ONLY_UINT, false) != -1)
                count++;
 
             {
@@ -4365,9 +5422,12 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
             }
 
             if (cheat_manager_state.working_cheat.handler == CHEAT_HANDLER_TYPE_EMU)
-               menu_displaylist_parse_settings_enum(list,
-                     MENU_ENUM_LABEL_CHEAT_CODE,
-                     PARSE_ONLY_STRING, false);
+            {
+               if (menu_displaylist_parse_settings_enum(list,
+                        MENU_ENUM_LABEL_CHEAT_CODE,
+                        PARSE_ONLY_STRING, false) == 0)
+                  count++;
+            }
             else
             {
                menu_displaylist_build_info_t build_list[] = {
@@ -4401,34 +5461,34 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
             /* Inspect Memory At this Address */
 
             if (menu_entries_append_enum(list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_AFTER),
-                  msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_ADD_NEW_AFTER),
-                  MENU_ENUM_LABEL_CHEAT_ADD_NEW_AFTER,
-                  MENU_SETTING_ACTION, 0, 0))
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_AFTER),
+                     msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_ADD_NEW_AFTER),
+                     MENU_ENUM_LABEL_CHEAT_ADD_NEW_AFTER,
+                     MENU_SETTING_ACTION, 0, 0))
                count++;
             if (menu_entries_append_enum(list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_BEFORE),
-                  msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_ADD_NEW_BEFORE),
-                  MENU_ENUM_LABEL_CHEAT_ADD_NEW_BEFORE,
-                  MENU_SETTING_ACTION, 0, 0))
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_BEFORE),
+                     msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_ADD_NEW_BEFORE),
+                     MENU_ENUM_LABEL_CHEAT_ADD_NEW_BEFORE,
+                     MENU_SETTING_ACTION, 0, 0))
                count++;
             if (menu_entries_append_enum(list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_COPY_AFTER),
-                  msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_COPY_AFTER),
-                  MENU_ENUM_LABEL_CHEAT_COPY_AFTER,
-                  MENU_SETTING_ACTION, 0, 0))
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_COPY_AFTER),
+                     msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_COPY_AFTER),
+                     MENU_ENUM_LABEL_CHEAT_COPY_AFTER,
+                     MENU_SETTING_ACTION, 0, 0))
                count++;
             if (menu_entries_append_enum(list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_COPY_BEFORE),
-                  msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_COPY_BEFORE),
-                  MENU_ENUM_LABEL_CHEAT_COPY_BEFORE,
-                  MENU_SETTING_ACTION, 0, 0))
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_COPY_BEFORE),
+                     msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_COPY_BEFORE),
+                     MENU_ENUM_LABEL_CHEAT_COPY_BEFORE,
+                     MENU_SETTING_ACTION, 0, 0))
                count++;
             if (menu_entries_append_enum(list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_DELETE),
-                  msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_DELETE),
-                  MENU_ENUM_LABEL_CHEAT_DELETE,
-                  MENU_SETTING_ACTION, 0, 0))
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_DELETE),
+                     msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_DELETE),
+                     MENU_ENUM_LABEL_CHEAT_DELETE,
+                     MENU_SETTING_ACTION, 0, 0))
                count++;
          }
          break;
@@ -4521,8 +5581,8 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
          break;
       case DISPLAYLIST_ACCOUNTS_TWITCH_LIST:
          if (menu_displaylist_parse_settings_enum(list,
-               MENU_ENUM_LABEL_TWITCH_STREAM_KEY,
-               PARSE_ONLY_STRING, false) == 0)
+                  MENU_ENUM_LABEL_TWITCH_STREAM_KEY,
+                  PARSE_ONLY_STRING, false) == 0)
             count++;
          break;
       case DISPLAYLIST_USER_INTERFACE_SETTINGS_LIST:
@@ -4567,22 +5627,22 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
          break;
       case DISPLAYLIST_OPTIONS_DISK:
          if (menu_entries_append_enum(list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISK_INDEX),
-               msg_hash_to_str(MENU_ENUM_LABEL_DISK_INDEX),
-               MENU_ENUM_LABEL_DISK_INDEX,
-               MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_INDEX, 0, 0))
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISK_INDEX),
+                  msg_hash_to_str(MENU_ENUM_LABEL_DISK_INDEX),
+                  MENU_ENUM_LABEL_DISK_INDEX,
+                  MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_INDEX, 0, 0))
             count++;
          if (menu_entries_append_enum(list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISK_CYCLE_TRAY_STATUS),
-               msg_hash_to_str(MENU_ENUM_LABEL_DISK_CYCLE_TRAY_STATUS),
-               MENU_ENUM_LABEL_DISK_CYCLE_TRAY_STATUS,
-               MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_CYCLE_TRAY_STATUS, 0, 0))
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISK_CYCLE_TRAY_STATUS),
+                  msg_hash_to_str(MENU_ENUM_LABEL_DISK_CYCLE_TRAY_STATUS),
+                  MENU_ENUM_LABEL_DISK_CYCLE_TRAY_STATUS,
+                  MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_CYCLE_TRAY_STATUS, 0, 0))
             count++;
          if (menu_entries_append_enum(list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND),
-               msg_hash_to_str(MENU_ENUM_LABEL_DISK_IMAGE_APPEND),
-               MENU_ENUM_LABEL_DISK_IMAGE_APPEND,
-               MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_IMAGE_APPEND, 0, 0))
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND),
+                  msg_hash_to_str(MENU_ENUM_LABEL_DISK_IMAGE_APPEND),
+                  MENU_ENUM_LABEL_DISK_IMAGE_APPEND,
+                  MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_IMAGE_APPEND, 0, 0))
             count++;
          break;
       case DISPLAYLIST_MIDI_SETTINGS_LIST:
@@ -4797,21 +5857,21 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
             if (video_driver_test_all_flags(GFX_CTX_FLAGS_CUSTOMIZABLE_SWAPCHAIN_IMAGES))
             {
                menu_displaylist_parse_settings_enum(list,
-                      MENU_ENUM_LABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
-                      PARSE_ONLY_UINT, false);
-                count++;
-             }
-             if (video_driver_test_all_flags(GFX_CTX_FLAGS_HARD_SYNC))
-             {
-                menu_displaylist_parse_settings_enum(list,
-                   MENU_ENUM_LABEL_VIDEO_HARD_SYNC,
-                   PARSE_ONLY_BOOL, false);
-                count++;
-                menu_displaylist_parse_settings_enum(list,
-                   MENU_ENUM_LABEL_VIDEO_HARD_SYNC_FRAMES,
-                   PARSE_ONLY_UINT, false);
-                count++;
-             }
+                     MENU_ENUM_LABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
+                     PARSE_ONLY_UINT, false);
+               count++;
+            }
+            if (video_driver_test_all_flags(GFX_CTX_FLAGS_HARD_SYNC))
+            {
+               menu_displaylist_parse_settings_enum(list,
+                     MENU_ENUM_LABEL_VIDEO_HARD_SYNC,
+                     PARSE_ONLY_BOOL, false);
+               count++;
+               menu_displaylist_parse_settings_enum(list,
+                     MENU_ENUM_LABEL_VIDEO_HARD_SYNC_FRAMES,
+                     PARSE_ONLY_UINT, false);
+               count++;
+            }
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
             {
@@ -4856,28 +5916,28 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
          break;
       case DISPLAYLIST_CONFIGURATIONS_LIST:
          if (menu_entries_append_enum(list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONFIGURATIONS),
-               msg_hash_to_str(MENU_ENUM_LABEL_CONFIGURATIONS),
-               MENU_ENUM_LABEL_CONFIGURATIONS,
-               MENU_SETTING_ACTION, 0, 0))
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONFIGURATIONS),
+                  msg_hash_to_str(MENU_ENUM_LABEL_CONFIGURATIONS),
+                  MENU_ENUM_LABEL_CONFIGURATIONS,
+                  MENU_SETTING_ACTION, 0, 0))
             count++;
          if (menu_entries_append_enum(list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG),
-               msg_hash_to_str(MENU_ENUM_LABEL_RESET_TO_DEFAULT_CONFIG),
-               MENU_ENUM_LABEL_RESET_TO_DEFAULT_CONFIG,
-               MENU_SETTING_ACTION, 0, 0))
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG),
+                  msg_hash_to_str(MENU_ENUM_LABEL_RESET_TO_DEFAULT_CONFIG),
+                  MENU_ENUM_LABEL_RESET_TO_DEFAULT_CONFIG,
+                  MENU_SETTING_ACTION, 0, 0))
             count++;
          if (menu_entries_append_enum(list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG),
-               msg_hash_to_str(MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG),
-               MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG,
-               MENU_SETTING_ACTION, 0, 0))
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG),
+                  msg_hash_to_str(MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG),
+                  MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG,
+                  MENU_SETTING_ACTION, 0, 0))
             count++;
          if (menu_entries_append_enum(list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVE_NEW_CONFIG),
-               msg_hash_to_str(MENU_ENUM_LABEL_SAVE_NEW_CONFIG),
-               MENU_ENUM_LABEL_SAVE_NEW_CONFIG,
-               MENU_SETTING_ACTION, 0, 0))
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVE_NEW_CONFIG),
+                  msg_hash_to_str(MENU_ENUM_LABEL_SAVE_NEW_CONFIG),
+                  MENU_ENUM_LABEL_SAVE_NEW_CONFIG,
+                  MENU_SETTING_ACTION, 0, 0))
             count++;
          break;
       case DISPLAYLIST_PRIVACY_SETTINGS_LIST:
@@ -4944,6 +6004,7 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
                {MENU_ENUM_LABEL_ONSCREEN_DISPLAY_SETTINGS,PARSE_ACTION, true},
                {MENU_ENUM_LABEL_USER_INTERFACE_SETTINGS,  PARSE_ACTION, true},
                {MENU_ENUM_LABEL_AI_SERVICE_SETTINGS,  PARSE_ACTION, true},
+               {MENU_ENUM_LABEL_ACCESSIBILITY_SETTINGS,  PARSE_ACTION, true},
                {MENU_ENUM_LABEL_POWER_MANAGEMENT_SETTINGS,PARSE_ACTION, true},
                {MENU_ENUM_LABEL_RETRO_ACHIEVEMENTS_SETTINGS,PARSE_ACTION, true},
                {MENU_ENUM_LABEL_WIFI_SETTINGS,PARSE_ACTION, true},
@@ -5198,8 +6259,8 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
          if (video_shader_any_supported())
          {
             if (menu_displaylist_parse_settings_enum(list,
-                  MENU_ENUM_LABEL_QUICK_MENU_SHOW_SHADERS,
-                  PARSE_ONLY_BOOL, false) == 0)
+                     MENU_ENUM_LABEL_QUICK_MENU_SHOW_SHADERS,
+                     PARSE_ONLY_BOOL, false) == 0)
                count++;
          }
 #endif
@@ -5489,6 +6550,32 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
             }
          }
          break;
+      case DISPLAYLIST_BROWSE_URL_LIST:
+         if (menu_entries_append_enum(list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_BROWSE_URL),
+                  msg_hash_to_str(MENU_ENUM_LABEL_BROWSE_URL),
+                  MENU_ENUM_LABEL_BROWSE_URL,
+                  0, 0, 0))
+            count++;
+         if (menu_entries_append_enum(list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_BROWSE_START),
+                  msg_hash_to_str(MENU_ENUM_LABEL_BROWSE_START),
+                  MENU_ENUM_LABEL_BROWSE_START,
+                  0, 0, 0))
+            count++;
+         break;
+      case DISPLAYLIST_DISC_INFO:
+#ifdef HAVE_CDROM
+         count = menu_displaylist_parse_disc_info(list,
+               MENU_SET_CDROM_INFO);
+#endif
+         break;
+      case DISPLAYLIST_DUMP_DISC:
+#ifdef HAVE_CDROM
+         count = menu_displaylist_parse_disc_info(list,
+               MENU_SET_CDROM_LIST);
+#endif
+         break;
       default:
          break;
    }
@@ -5523,41 +6610,6 @@ static bool history_needs_navigation_clear(menu_handle_t *menu, playlist_t *play
    }
 
    return false;
-}
-#endif
-
-#ifdef HAVE_CDROM
-static int menu_displaylist_parse_disc_info(menu_displaylist_info_t *info,
-      unsigned type)
-{
-   unsigned i;
-   unsigned           count = 0;
-   struct string_list *list = cdrom_get_available_drives();
-
-   for (i = 0; list && i < list->size; i++)
-   {
-      char drive_string[256] = {0};
-      char drive[2]          = {0};
-      size_t pos             = 0;
-
-      drive[0]               = list->elems[i].attr.i;
-
-      pos += snprintf(drive_string + pos, sizeof(drive_string) - pos, msg_hash_to_str(MSG_DRIVE_NUMBER), i + 1);
-      pos += snprintf(drive_string + pos, sizeof(drive_string) - pos, ": %s", list->elems[i].data);
-
-      if (menu_entries_append_enum(info->list,
-               drive_string,
-               drive,
-               MSG_UNKNOWN,
-               type,
-               0, i))
-         count++;
-   }
-
-   if (list)
-      string_list_free(list);
-
-   return count;
 }
 #endif
 
@@ -5640,121 +6692,114 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   {
                      char title[256];
 
-                     count++;
-
                      title[0] = '\0';
 
                      strlcpy(title, "Title: ", sizeof(title));
                      strlcat(title, cd_info.title, sizeof(title));
 
-                     menu_entries_append_enum(info->list,
+                     if (menu_entries_append_enum(info->list,
                            title,
                            "",
                            MSG_UNKNOWN,
-                           FILE_TYPE_NONE, 0, 0);
+                           FILE_TYPE_NONE, 0, 0))
+                        count++;
                   }
 
                   if (!string_is_empty(cd_info.system))
                   {
                      char system[256];
 
-                     count++;
-
                      system[0] = '\0';
 
                      strlcpy(system, "System: ", sizeof(system));
                      strlcat(system, cd_info.system, sizeof(system));
 
-                     menu_entries_append_enum(info->list,
+                     if (menu_entries_append_enum(info->list,
                            system,
                            "",
                            MSG_UNKNOWN,
-                           FILE_TYPE_NONE, 0, 0);
+                           FILE_TYPE_NONE, 0, 0))
+                        count++;
                   }
 
                   if (!string_is_empty(cd_info.serial))
                   {
                      char serial[256];
 
-                     count++;
-
                      serial[0] = '\0';
 
                      strlcpy(serial, "Serial#: ", sizeof(serial));
                      strlcat(serial, cd_info.serial, sizeof(serial));
 
-                     menu_entries_append_enum(info->list,
+                     if (menu_entries_append_enum(info->list,
                            serial,
                            "",
                            MSG_UNKNOWN,
-                           FILE_TYPE_NONE, 0, 0);
+                           FILE_TYPE_NONE, 0, 0))
+                        count++;
                   }
 
                   if (!string_is_empty(cd_info.version))
                   {
                      char version[256];
 
-                     count++;
-
                      version[0] = '\0';
 
                      strlcpy(version, "Version: ", sizeof(version));
                      strlcat(version, cd_info.version, sizeof(version));
 
-                     menu_entries_append_enum(info->list,
+                     if (menu_entries_append_enum(info->list,
                            version,
                            "",
                            MSG_UNKNOWN,
-                           FILE_TYPE_NONE, 0, 0);
+                           FILE_TYPE_NONE, 0, 0))
+                        count++;
                   }
 
                   if (!string_is_empty(cd_info.release_date))
                   {
                      char release_date[256];
 
-                     count++;
-
                      release_date[0] = '\0';
 
                      strlcpy(release_date, "Release Date: ", sizeof(release_date));
                      strlcat(release_date, cd_info.release_date, sizeof(release_date));
 
-                     menu_entries_append_enum(info->list,
+                     if (menu_entries_append_enum(info->list,
                            release_date,
                            "",
                            MSG_UNKNOWN,
-                           FILE_TYPE_NONE, 0, 0);
+                           FILE_TYPE_NONE, 0, 0))
+                        count++;
                   }
 
                   {
                      char atip_string[32] = {"Genuine Disc: "};
-
-                     count++;
 
                      if (atip)
                         strlcat(atip_string, "No", sizeof(atip_string));
                      else
                         strlcat(atip_string, "Yes", sizeof(atip_string));
 
-                     menu_entries_append_enum(info->list,
+                     if (menu_entries_append_enum(info->list,
                            atip_string,
                            "",
                            MSG_UNKNOWN,
-                           FILE_TYPE_NONE, 0, 0);
+                           FILE_TYPE_NONE, 0, 0))
+                        count++;
                   }
 
                   {
                      char tracks_string[32] = {"Number of tracks: "};
 
-                     count++;
-
                      snprintf(tracks_string + strlen(tracks_string), sizeof(tracks_string) - strlen(tracks_string), "%d", toc->num_tracks);
 
-                     menu_entries_append_enum(info->list,
+                     if (menu_entries_append_enum(info->list,
                            tracks_string,
                            "",
                            MSG_UNKNOWN,
-                           FILE_TYPE_NONE, 0, 0);
+                           FILE_TYPE_NONE, 0, 0))
+                        count++;
                   }
 
                   {
@@ -5769,36 +6814,33 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                         snprintf(track_string + strlen(track_string), sizeof(track_string) - strlen(track_string), "%d:", i + 1);
 
-                        count++;
-
-                        menu_entries_append_enum(info->list,
+                        if (menu_entries_append_enum(info->list,
                               track_string,
                               "",
                               MSG_UNKNOWN,
-                              FILE_TYPE_NONE, 0, 0);
+                              FILE_TYPE_NONE, 0, 0))
+                           count++;
 
                         if (toc->track[i].audio)
                            snprintf(mode_string + strlen(mode_string), sizeof(mode_string) - strlen(mode_string), "Audio");
                         else
                            snprintf(mode_string + strlen(mode_string), sizeof(mode_string) - strlen(mode_string), "Mode %d", toc->track[i].mode);
 
-                        count++;
-
-                        menu_entries_append_enum(info->list,
+                        if (menu_entries_append_enum(info->list,
                               mode_string,
                               "",
                               MSG_UNKNOWN,
-                              FILE_TYPE_NONE, 0, 0);
+                              FILE_TYPE_NONE, 0, 0))
+                           count++;
 
                         snprintf(size_string + strlen(size_string), sizeof(size_string) - strlen(size_string), "%.1f MB", toc->track[i].track_bytes / 1000.0 / 1000.0);
 
-                        count++;
-
-                        menu_entries_append_enum(info->list,
+                        if (menu_entries_append_enum(info->list,
                               size_string,
                               "",
                               MSG_UNKNOWN,
-                              FILE_TYPE_NONE, 0, 0);
+                              FILE_TYPE_NONE, 0, 0))
+                           count++;
 
                         {
                            unsigned char min = 0;
@@ -5809,13 +6851,12 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                            snprintf(length_string + strlen(length_string), sizeof(length_string) - strlen(length_string), "%02d:%02d.%02d", min, sec, frame);
 
-                           count++;
-
-                           menu_entries_append_enum(info->list,
+                           if (menu_entries_append_enum(info->list,
                                  length_string,
                                  "",
                                  MSG_UNKNOWN,
-                                 FILE_TYPE_NONE, 0, 0);
+                                 FILE_TYPE_NONE, 0, 0))
+                              count++;
                         }
                      }
                   }
@@ -5848,41 +6889,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          info->need_clear   = true;
          break;
       }
-      case DISPLAYLIST_DISC_INFO:
-         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         count = menu_displaylist_parse_disc_info(info,
-               MENU_SET_CDROM_INFO);
-
-         if (count == 0)
-            menu_entries_append_enum(info->list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
-                  msg_hash_to_str(MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY),
-                  MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
-                  FILE_TYPE_NONE, 0, 0);
-
-         info->need_push    = true;
-         info->need_refresh = true;
-         info->need_clear   = true;
-         break;
-      case DISPLAYLIST_DUMP_DISC:
-         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         count = menu_displaylist_parse_disc_info(info,
-               MENU_SET_CDROM_LIST);
-
-         if (count == 0)
-            menu_entries_append_enum(info->list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
-                  msg_hash_to_str(MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY),
-                  MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
-                  FILE_TYPE_NONE, 0, 0);
-
-         info->need_push    = true;
-         info->need_refresh = true;
-         info->need_clear   = true;
-         break;
       case DISPLAYLIST_LOAD_DISC:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         count = menu_displaylist_parse_disc_info(info,
+         count = menu_displaylist_parse_disc_info(info->list,
                MENU_SET_LOAD_CDROM_LIST);
 
          if (count == 0)
@@ -5898,9 +6907,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          break;
 #else
       case DISPLAYLIST_CDROM_DETAIL_INFO:
-      case DISPLAYLIST_DISC_INFO:
       case DISPLAYLIST_LOAD_DISC:
-      case DISPLAYLIST_DUMP_DISC:
          /* No-op */
          break;
 #endif
@@ -5925,9 +6932,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          snprintf(text, sizeof(text), "Current profile : %s", current_profile);
 #else
          u32 currentClock = 0;
-         if(hosversionBefore(8, 0, 0)) {
+         if(hosversionBefore(8, 0, 0))
             pcvGetClockRate(PcvModule_CpuBus, &currentClock);
-         } else {
+         else
+         {
             ClkrstSession session = {0};
             clkrstOpenSession(&session, PcvModuleId_CpuBus, 3);
             clkrstGetClockRate(&session, &currentClock);
@@ -5935,11 +6943,12 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          }
          snprintf(text, sizeof(text), "Current Clock : %i", currentClock);
 #endif
-         menu_entries_append_enum(info->list,
+         if (menu_entries_append_enum(info->list,
             text,
             "",
             0,
-            MENU_INFO_MESSAGE, 0, 0);
+            MENU_INFO_MESSAGE, 0, 0))
+            count++;
 
          for (i = 0; i < profiles_count; i++)
          {
@@ -5983,7 +6992,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
          snprintf(text, sizeof(text), "Current profile : %s", current_profile);
 
-         menu_entries_append_enum(info->list, text, "", 0, MENU_INFO_MESSAGE, 0, 0);
+         if (menu_entries_append_enum(info->list, text, "", 0, MENU_INFO_MESSAGE, 0, 0))
+            count++;
 
          for (i = 0; i < profiles_count; i++)
          {
@@ -6737,12 +7747,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 #endif
          }
          break;
-      case DISPLAYLIST_SYSTEM_INFO:
-         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         count = menu_displaylist_parse_system_info(info);
-         info->need_push    = true;
-         info->need_refresh = true;
-         break;
       case DISPLAYLIST_ACHIEVEMENT_LIST:
 #ifdef HAVE_CHEEVOS
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
@@ -6952,7 +7956,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          break;
       case DISPLAYLIST_CORE_INFO:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         menu_displaylist_parse_core_info(info);
+         count           = menu_displaylist_parse_core_info(info->list);
          info->need_push = true;
          break;
       case DISPLAYLIST_CORE_OPTIONS:
@@ -7198,6 +8202,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
       case DISPLAYLIST_CRT_SWITCHRES_SETTINGS_LIST:
       case DISPLAYLIST_OPTIONS_DISK:
       case DISPLAYLIST_AI_SERVICE_SETTINGS_LIST:
+      case DISPLAYLIST_ACCESSIBILITY_SETTINGS_LIST:
       case DISPLAYLIST_USER_INTERFACE_SETTINGS_LIST:
       case DISPLAYLIST_ACCOUNTS_TWITCH_LIST:
       case DISPLAYLIST_RETRO_ACHIEVEMENTS_SETTINGS_LIST:
@@ -7213,12 +8218,33 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
       case DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_LABEL_DISPLAY_MODE:
       case DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_RIGHT_THUMBNAIL_MODE:
       case DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_LEFT_THUMBNAIL_MODE:
+      case DISPLAYLIST_DROPDOWN_LIST_MANUAL_CONTENT_SCAN_SYSTEM_NAME:
+      case DISPLAYLIST_DROPDOWN_LIST_MANUAL_CONTENT_SCAN_CORE_NAME:
       case DISPLAYLIST_PERFCOUNTERS_CORE:
       case DISPLAYLIST_PERFCOUNTERS_FRONTEND:
       case DISPLAYLIST_MENU_SETTINGS_LIST:
       case DISPLAYLIST_ADD_CONTENT_LIST:
       case DISPLAYLIST_INPUT_SETTINGS_LIST:
       case DISPLAYLIST_FRAME_TIME_COUNTER_SETTINGS_LIST:
+      case DISPLAYLIST_BROWSE_URL_LIST:
+      case DISPLAYLIST_DISC_INFO:
+      case DISPLAYLIST_DUMP_DISC:
+      case DISPLAYLIST_LOAD_CONTENT_LIST:
+      case DISPLAYLIST_LOAD_CONTENT_SPECIAL:
+      case DISPLAYLIST_OPTIONS_REMAPPINGS:
+      case DISPLAYLIST_VIDEO_SETTINGS_LIST:
+      case DISPLAYLIST_AUDIO_SETTINGS_LIST:
+      case DISPLAYLIST_HELP_SCREEN_LIST:
+      case DISPLAYLIST_INFORMATION_LIST:
+      case DISPLAYLIST_SCAN_DIRECTORY_LIST:
+      case DISPLAYLIST_SYSTEM_INFO:
+      case DISPLAYLIST_WIFI_SETTINGS_LIST:
+      case DISPLAYLIST_AUDIO_MIXER_SETTINGS_LIST:
+      case DISPLAYLIST_BROWSE_URL_START:
+      case DISPLAYLIST_CONTENT_SETTINGS:
+      case DISPLAYLIST_NETPLAY_ROOM_LIST:
+      case DISPLAYLIST_SHADER_PRESET_SAVE:
+      case DISPLAYLIST_SHADER_PRESET_REMOVE:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          count = menu_displaylist_build_list(info->list, type);
 
@@ -7226,18 +8252,26 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          {
             switch (type)
             {
-               case DISPLAYLIST_ADD_CONTENT_LIST:
+               case DISPLAYLIST_SHADER_PRESET_REMOVE:
                   menu_entries_append_enum(info->list,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
-                        msg_hash_to_str(MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY),
-                        MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
-                        FILE_TYPE_NONE, 0, 0);
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_PRESETS_FOUND),
+                        msg_hash_to_str(MENU_ENUM_LABEL_NO_PRESETS_FOUND),
+                        MENU_ENUM_LABEL_NO_PRESETS_FOUND,
+                        0, 0, 0);
                   break;
+               case DISPLAYLIST_DISC_INFO:
+               case DISPLAYLIST_DUMP_DISC:
+               case DISPLAYLIST_MENU_SETTINGS_LIST:
+               case DISPLAYLIST_ADD_CONTENT_LIST:
                case DISPLAYLIST_DROPDOWN_LIST_RESOLUTION:
                case DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_DEFAULT_CORE:
                case DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_LABEL_DISPLAY_MODE:
                case DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_RIGHT_THUMBNAIL_MODE:
                case DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_LEFT_THUMBNAIL_MODE:
+               case DISPLAYLIST_DROPDOWN_LIST_MANUAL_CONTENT_SCAN_SYSTEM_NAME:
+               case DISPLAYLIST_DROPDOWN_LIST_MANUAL_CONTENT_SCAN_CORE_NAME:
+               case DISPLAYLIST_INFORMATION_LIST:
+               case DISPLAYLIST_SCAN_DIRECTORY_LIST:
                   menu_entries_append_enum(info->list,
                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
                         msg_hash_to_str(MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY),
@@ -7252,12 +8286,12 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         MENU_ENUM_LABEL_NO_PERFORMANCE_COUNTERS,
                         0, 0, 0);
                   break;
-               case DISPLAYLIST_MENU_SETTINGS_LIST:
+               case DISPLAYLIST_WIFI_SETTINGS_LIST:
                   menu_entries_append_enum(info->list,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
-                        msg_hash_to_str(MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY),
-                        MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
-                        FILE_TYPE_NONE, 0, 0);
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_NETWORKS_FOUND),
+                        msg_hash_to_str(MENU_ENUM_LABEL_NO_NETWORKS_FOUND),
+                        MENU_ENUM_LABEL_NO_NETWORKS_FOUND,
+                        0, 0, 0);
                   break;
                default:
                   menu_entries_append_enum(info->list,
@@ -7269,369 +8303,16 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             }
          }
 
-         info->need_refresh = true;
-         info->need_push    = true;
-         break;
-      case DISPLAYLIST_WIFI_SETTINGS_LIST:
-         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-
-#ifdef HAVE_NETWORKING
+         /* Special pass */
+         switch (type)
          {
-            settings_t      *settings     = config_get_ptr();
-            if (!string_is_equal(settings->arrays.wifi_driver, "null"))
-            {
-               struct string_list *ssid_list = string_list_new();
-               driver_wifi_get_ssids(ssid_list);
-
-               if (ssid_list->size == 0)
-                  task_push_wifi_scan(wifi_scan_callback);
-               else
-               {
-                  unsigned i;
-                  for (i = 0; i < ssid_list->size; i++)
-                  {
-                     const char *ssid = ssid_list->elems[i].data;
-                     if (menu_entries_append_enum(info->list,
-                              ssid,
-                              msg_hash_to_str(MENU_ENUM_LABEL_CONNECT_WIFI),
-                              MENU_ENUM_LABEL_CONNECT_WIFI,
-                              MENU_WIFI, 0, 0))
-                        count++;
-                  }
-               }
-            }
+            case DISPLAYLIST_DISC_INFO:
+            case DISPLAYLIST_DUMP_DISC:
+               info->need_clear   = true;
+               break;
+            default:
+               break;
          }
-#endif
-
-         if (count == 0)
-            menu_entries_append_enum(info->list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_NETWORKS_FOUND),
-                  msg_hash_to_str(MENU_ENUM_LABEL_NO_NETWORKS_FOUND),
-                  MENU_ENUM_LABEL_NO_NETWORKS_FOUND,
-                  0, 0, 0);
-
-         info->need_refresh = true;
-         info->need_push    = true;
-         break;
-      case DISPLAYLIST_VIDEO_SETTINGS_LIST:
-      {
-         gfx_ctx_flags_t flags;
-
-         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-
-         if (video_display_server_get_flags(&flags))
-         {
-            if (BIT32_GET(flags.flags, DISPSERV_CTX_CRT_SWITCHRES))
-               menu_displaylist_parse_settings_enum(info->list,
-                     MENU_ENUM_LABEL_CRT_SWITCHRES_SETTINGS,
-                     PARSE_ACTION, false);
-         }
-
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_SUSPEND_SCREENSAVER_ENABLE,
-               PARSE_ONLY_BOOL, false);
-
-#if defined(GEKKO) || defined(__CELLOS_LV2__)
-         if (true)
-#else
-         if (video_display_server_has_resolution_list())
-#endif
-         {
-            menu_displaylist_parse_settings_enum(info->list,
-                  MENU_ENUM_LABEL_SCREEN_RESOLUTION,
-                  PARSE_ACTION, false);
-         }
-
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_PAL60_ENABLE,
-               PARSE_ONLY_BOOL, false);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_VIDEO_GAMMA,
-               PARSE_ONLY_UINT, false);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_VIDEO_SOFT_FILTER,
-               PARSE_ONLY_BOOL, false);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_VIDEO_FILTER_FLICKER,
-               PARSE_ONLY_UINT, false);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_VIDEO_MONITOR_INDEX,
-               PARSE_ONLY_UINT, false);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_VIDEO_GPU_INDEX,
-               PARSE_ONLY_INT, false);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_VIDEO_FULLSCREEN,
-               PARSE_ONLY_BOOL, false);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_VIDEO_WINDOWED_FULLSCREEN,
-               PARSE_ONLY_BOOL, false);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_VIDEO_FULLSCREEN_X,
-               PARSE_ONLY_UINT, false);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_VIDEO_FULLSCREEN_Y,
-               PARSE_ONLY_UINT, false);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_VIDEO_REFRESH_RATE,
-               PARSE_ONLY_FLOAT, false);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_AUTO,
-               PARSE_ONLY_FLOAT, false);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_POLLED,
-               PARSE_ONLY_FLOAT, false);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_VIDEO_FORCE_SRGB_DISABLE,
-               PARSE_ONLY_BOOL, false);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_VIDEO_ASPECT_RATIO_INDEX,
-               PARSE_ONLY_UINT, false);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_VIDEO_ASPECT_RATIO,
-               PARSE_ONLY_FLOAT, false);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_X,
-               PARSE_ONLY_INT, false);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_Y,
-               PARSE_ONLY_INT, false);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH,
-               PARSE_ONLY_UINT, false);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
-               PARSE_ONLY_UINT, false);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_VIDEO_SCALE,
-               PARSE_ONLY_FLOAT, false);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_VIDEO_WINDOW_OPACITY,
-               PARSE_ONLY_UINT, false);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_VIDEO_WINDOW_SHOW_DECORATIONS,
-               PARSE_ONLY_BOOL, false);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_VIDEO_WINDOW_SAVE_POSITION,
-               PARSE_ONLY_BOOL, false);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_VIDEO_WINDOW_WIDTH,
-               PARSE_ONLY_UINT, false);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_VIDEO_WINDOW_HEIGHT,
-               PARSE_ONLY_UINT, false);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_VIDEO_SCALE_INTEGER,
-               PARSE_ONLY_BOOL, false);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_VIDEO_VI_WIDTH,
-               PARSE_ONLY_UINT, false);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_VIDEO_VFILTER,
-               PARSE_ONLY_BOOL, false);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_VIDEO_OVERSCAN_CORRECTION_TOP,
-               PARSE_ONLY_UINT, false);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_VIDEO_OVERSCAN_CORRECTION_BOTTOM,
-               PARSE_ONLY_UINT, false);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_VIDEO_ROTATION,
-               PARSE_ONLY_UINT, false);
-         if (video_display_server_can_set_screen_orientation())
-            menu_displaylist_parse_settings_enum(info->list,
-                  MENU_ENUM_LABEL_SCREEN_ORIENTATION,
-                  PARSE_ONLY_UINT, false);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_VIDEO_THREADED,
-               PARSE_ONLY_BOOL, false);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_VIDEO_VSYNC,
-               PARSE_ONLY_BOOL, false);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_VIDEO_SWAP_INTERVAL,
-               PARSE_ONLY_UINT, false);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_VIDEO_ADAPTIVE_VSYNC,
-               PARSE_ONLY_BOOL, false);
-         if (video_driver_test_all_flags(GFX_CTX_FLAGS_CUSTOMIZABLE_SWAPCHAIN_IMAGES))
-         {
-            menu_displaylist_parse_settings_enum(info->list,
-                MENU_ENUM_LABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
-                PARSE_ONLY_UINT, false);
-            count++;
-         }
-         if (video_driver_test_all_flags(GFX_CTX_FLAGS_HARD_SYNC))
-         {
-            menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_VIDEO_HARD_SYNC,
-               PARSE_ONLY_BOOL, false);
-            count++;
-            menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_VIDEO_HARD_SYNC_FRAMES,
-               PARSE_ONLY_UINT, false);
-            count++;
-         }
-         if (menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_VIDEO_FRAME_DELAY,
-               PARSE_ONLY_UINT, false) == 0)
-            count++;
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_VIDEO_BLACK_FRAME_INSERTION,
-               PARSE_ONLY_BOOL, false);
-         if (video_driver_supports_viewport_read())
-            menu_displaylist_parse_settings_enum(info->list,
-                  MENU_ENUM_LABEL_VIDEO_GPU_SCREENSHOT,
-                  PARSE_ONLY_BOOL, false);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_VIDEO_CROP_OVERSCAN,
-               PARSE_ONLY_BOOL, false);
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_VIDEO_SMOOTH,
-               PARSE_ONLY_BOOL, false);
-         if (menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_VIDEO_SHADER_DELAY,
-               PARSE_ONLY_UINT, false) == 0)
-            count++;
-         menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_VIDEO_FILTER,
-               PARSE_ONLY_PATH, false);
-
-         info->need_refresh = true;
-         info->need_push    = true;
-         break;
-      }
-      case DISPLAYLIST_AUDIO_MIXER_SETTINGS_LIST:
-         {
-#ifdef HAVE_AUDIOMIXER
-            unsigned i;
-#endif
-            menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-
-#ifdef HAVE_AUDIOMIXER
-#if 1
-            /* TODO - for developers -
-             * turn this into #if 0 if you want to be able to see
-             * the system streams as well. */
-            for (i = 0; i < AUDIO_MIXER_MAX_STREAMS; i++)
-#else
-            for (i = 0; i < AUDIO_MIXER_MAX_SYSTEM_STREAMS; i++)
-#endif
-            {
-               char msg[128];
-               char msg_lbl[128];
-               snprintf(msg, sizeof(msg), "Mixer Stream #%d :\n", i+1);
-               snprintf(msg_lbl, sizeof(msg_lbl), "audio_mixer_stream_%d\n", i);
-               menu_entries_append_enum(info->list, msg, msg_lbl,
-                     MSG_UNKNOWN,
-                     (MENU_SETTINGS_AUDIO_MIXER_STREAM_BEGIN  +  i),
-                     0, 0);
-               count++;
-            }
-#endif
-
-            info->need_refresh = true;
-            info->need_push    = true;
-         }
-         break;
-      case DISPLAYLIST_AUDIO_SETTINGS_LIST:
-         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         if (menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_MIDI_SETTINGS,
-               PARSE_ACTION, false) == 0)
-            count++;
-         if (menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_AUDIO_MIXER_SETTINGS,
-               PARSE_ACTION, false) == 0)
-            count++;
-         if (menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_MENU_SOUNDS,
-               PARSE_ACTION, false) == 0)
-            count++;
-         if (menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_AUDIO_ENABLE,
-               PARSE_ONLY_BOOL, false) == 0)
-            count++;
-         if (menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_AUDIO_DEVICE,
-               PARSE_ONLY_STRING, false) == 0)
-            count++;
-         if (menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_AUDIO_LATENCY,
-               PARSE_ONLY_UINT, false) == 0)
-            count++;
-
-         /* Volume */
-         if (menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_AUDIO_MUTE,
-               PARSE_ONLY_BOOL, false) == 0)
-            count++;
-         if (menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_AUDIO_MIXER_MUTE,
-               PARSE_ONLY_BOOL, false) == 0)
-            count++;
-         if (menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_AUDIO_VOLUME,
-               PARSE_ONLY_FLOAT, false) == 0)
-            count++;
-         if (menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_AUDIO_MIXER_VOLUME,
-               PARSE_ONLY_FLOAT, false) == 0)
-            count++;
-         if (menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_SYSTEM_BGM_ENABLE,
-               PARSE_ONLY_BOOL, false) == 0)
-            count++;
-
-         /* Resampler */
-         {
-            settings_t *settings      = config_get_ptr();
-            if (string_is_not_equal(settings->arrays.audio_resampler, "null"))
-            {
-               if (menu_displaylist_parse_settings_enum(info->list,
-                     MENU_ENUM_LABEL_AUDIO_RESAMPLER_QUALITY,
-                     PARSE_ONLY_UINT, false) == 0)
-                  count++;
-            }
-         }
-         if (menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_AUDIO_OUTPUT_RATE,
-               PARSE_ONLY_UINT, false) == 0)
-            count++;
-         if (menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_AUDIO_BLOCK_FRAMES,
-               PARSE_ONLY_UINT, false) == 0)
-            count++;
-
-         /* Synchronization */
-         if (menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_AUDIO_SYNC,
-               PARSE_ONLY_BOOL, false) == 0)
-            count++;
-         if (menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_AUDIO_MAX_TIMING_SKEW,
-               PARSE_ONLY_FLOAT, false) == 0)
-            count++;
-         if (menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_AUDIO_RATE_CONTROL_DELTA,
-               PARSE_ONLY_FLOAT, false) == 0)
-            count++;
-         if (menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN,
-               PARSE_ONLY_PATH, false) == 0)
-            count++;
-         if (menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_AUDIO_WASAPI_EXCLUSIVE_MODE,
-               PARSE_ONLY_BOOL, false) == 0)
-            count++;
-         if (menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_AUDIO_WASAPI_FLOAT_FORMAT,
-               PARSE_ONLY_BOOL, false) == 0)
-            count++;
-         if (menu_displaylist_parse_settings_enum(info->list,
-               MENU_ENUM_LABEL_AUDIO_WASAPI_SH_BUFFER_LENGTH,
-               PARSE_ONLY_INT, false) == 0)
-            count++;
 
          info->need_refresh = true;
          info->need_push    = true;
@@ -7660,167 +8341,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             core_selected    = false;
          }
 
-         break;
-      case DISPLAYLIST_CONTENT_SETTINGS:
-         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         ret = menu_displaylist_parse_load_content_settings(menu, info);
-
-         info->need_refresh = true;
-         info->need_push    = true;
-         break;
-      case DISPLAYLIST_INFORMATION_LIST:
-         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         count              = menu_displaylist_parse_information_list(info);
-
-         if (count == 0)
-            menu_entries_append_enum(info->list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
-                  msg_hash_to_str(MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY),
-                  MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
-                  FILE_TYPE_NONE, 0, 0);
-
-         ret                = 0;
-
-         info->need_push    = true;
-         info->need_refresh = true;
-         break;
-      case DISPLAYLIST_SCAN_DIRECTORY_LIST:
-         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-
-#ifdef HAVE_LIBRETRODB
-         if (menu_entries_append_enum(info->list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_DIRECTORY),
-               msg_hash_to_str(MENU_ENUM_LABEL_SCAN_DIRECTORY),
-               MENU_ENUM_LABEL_SCAN_DIRECTORY,
-               MENU_SETTING_ACTION, 0, 0))
-            count++;
-         if (menu_entries_append_enum(info->list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_FILE),
-               msg_hash_to_str(MENU_ENUM_LABEL_SCAN_FILE),
-               MENU_ENUM_LABEL_SCAN_FILE,
-               MENU_SETTING_ACTION, 0, 0))
-            count++;
-#endif
-
-         if (count == 0)
-            menu_entries_append_enum(info->list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
-                  msg_hash_to_str(MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY),
-                  MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
-                  FILE_TYPE_NONE, 0, 0);
-
-         ret                = 0;
-         info->need_push    = true;
-         info->need_refresh = true;
-         break;
-      case DISPLAYLIST_NETPLAY_ROOM_LIST:
-         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-
-#ifdef HAVE_NETWORKING
-         netplay_refresh_rooms_menu(info->list);
-#endif
-
-         ret                = 0;
-         info->need_push    = true;
-         info->need_refresh = true;
-         break;
-      case DISPLAYLIST_LOAD_CONTENT_LIST:
-      case DISPLAYLIST_LOAD_CONTENT_SPECIAL:
-         {
-            settings_t      *settings     = config_get_ptr();
-            menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-
-            if (!string_is_empty(settings->paths.directory_menu_content))
-               if (menu_entries_append_enum(info->list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FAVORITES),
-                     msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES),
-                     MENU_ENUM_LABEL_FAVORITES,
-                     MENU_SETTING_ACTION, 0, 0))
-                  count++;
-
-            if (settings->bools.menu_content_show_favorites)
-               if (menu_entries_append_enum(info->list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES),
-                     msg_hash_to_str(MENU_ENUM_LABEL_GOTO_FAVORITES),
-                     MENU_ENUM_LABEL_GOTO_FAVORITES,
-                     MENU_SETTING_ACTION, 0, 0))
-                  count++;
-
-            if (settings->bools.menu_content_show_images)
-               if (menu_entries_append_enum(info->list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_IMAGES),
-                     msg_hash_to_str(MENU_ENUM_LABEL_GOTO_IMAGES),
-                     MENU_ENUM_LABEL_GOTO_IMAGES,
-                     MENU_SETTING_ACTION, 0, 0))
-                  count++;
-
-            if (settings->bools.menu_content_show_music)
-               if (menu_entries_append_enum(info->list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_MUSIC),
-                     msg_hash_to_str(MENU_ENUM_LABEL_GOTO_MUSIC),
-                     MENU_ENUM_LABEL_GOTO_MUSIC,
-                     MENU_SETTING_ACTION, 0, 0))
-                  count++;
-
-#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
-            if (settings->bools.menu_content_show_video)
-               if (menu_entries_append_enum(info->list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_VIDEO),
-                     msg_hash_to_str(MENU_ENUM_LABEL_GOTO_VIDEO),
-                     MENU_ENUM_LABEL_GOTO_VIDEO,
-                     MENU_SETTING_ACTION, 0, 0))
-                  count++;
-#endif
-         }
-
-         {
-            core_info_list_t *list        = NULL;
-            core_info_get_list(&list);
-            if (core_info_list_num_info_files(list))
-            {
-               if (menu_entries_append_enum(info->list,
-                     msg_hash_to_str(
-                        MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST),
-                     msg_hash_to_str(
-                        MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST),
-                     MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST,
-                     MENU_SETTING_ACTION, 0, 0))
-                  count++;
-            }
-         }
-
-#ifndef HAVE_LIBRETRODB
-         {
-            settings_t *settings = config_get_ptr();
-            if (settings->bools.menu_show_advanced_settings)
-#endif
-               if (menu_entries_append_enum(info->list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB),
-                     msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB),
-                     MENU_ENUM_LABEL_PLAYLISTS_TAB,
-                     MENU_SETTING_ACTION, 0, 0))
-                  count++;
-#ifndef HAVE_LIBRETRODB
-         }
-#endif
-
-         if (frontend_driver_parse_drive_list(info->list, true) != 0)
-            if (menu_entries_append_enum(info->list, "/",
-                  msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
-                  MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
-                  MENU_SETTING_ACTION, 0, 0))
-               count++;
-
-#if 0
-         if (menu_entries_append_enum(info->list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_BROWSE_URL_LIST),
-               msg_hash_to_str(MENU_ENUM_LABEL_BROWSE_URL_LIST),
-               MENU_ENUM_LABEL_BROWSE_URL_LIST,
-               MENU_SETTING_ACTION, 0, 0))
-            count++;
-#endif
-         info->need_push    = true;
-         info->need_refresh = true;
          break;
       case DISPLAYLIST_OPTIONS:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
@@ -8002,186 +8522,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          ret                = 0;
          info->need_push    = true;
          break;
-      case DISPLAYLIST_OPTIONS_REMAPPINGS:
-         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-
-         {
-            unsigned p;
-            settings_t        *settings = config_get_ptr();
-            unsigned max_users          = *(input_driver_get_uint(INPUT_ACTION_MAX_USERS));
-            bool is_rgui                = string_is_equal(
-                  settings->arrays.menu_driver, "rgui");
-
-            for (p = 0; p < max_users; p++)
-            {
-               char key_type[PATH_MAX_LENGTH];
-               char key_analog[PATH_MAX_LENGTH];
-               unsigned val = p + 1;
-
-               key_type[0] = key_analog[0] = '\0';
-
-               snprintf(key_type, sizeof(key_type),
-                     msg_hash_to_str(MENU_ENUM_LABEL_INPUT_LIBRETRO_DEVICE), val);
-               snprintf(key_analog, sizeof(key_analog),
-                     msg_hash_to_str(MENU_ENUM_LABEL_INPUT_PLAYER_ANALOG_DPAD_MODE), val);
-
-               if (menu_displaylist_parse_settings(info->list,
-                        key_type, PARSE_ONLY_UINT, true, 0) == 0)
-                  count++;
-               if (menu_displaylist_parse_settings(info->list,
-                        key_analog, PARSE_ONLY_UINT, true, 0) == 0)
-                  count++;
-            }
-
-            if (menu_entries_append_enum(info->list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REMAP_FILE_LOAD),
-                     msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_LOAD),
-                     MENU_ENUM_LABEL_REMAP_FILE_LOAD,
-                     MENU_SETTING_ACTION, 0, 0))
-               count++;
-            if (menu_entries_append_enum(info->list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_CORE),
-                     msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_SAVE_CORE),
-                     MENU_ENUM_LABEL_REMAP_FILE_SAVE_CORE,
-                     MENU_SETTING_ACTION, 0, 0))
-               count++;
-            if (menu_entries_append_enum(info->list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_CONTENT_DIR),
-                     msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_SAVE_CONTENT_DIR),
-                     MENU_ENUM_LABEL_REMAP_FILE_SAVE_CONTENT_DIR,
-                     MENU_SETTING_ACTION, 0, 0))
-               count++;
-            if (menu_entries_append_enum(info->list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_GAME),
-                     msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_SAVE_GAME),
-                     MENU_ENUM_LABEL_REMAP_FILE_SAVE_GAME,
-                     MENU_SETTING_ACTION, 0, 0))
-               count++;
-
-            if (rarch_ctl(RARCH_CTL_IS_REMAPS_CORE_ACTIVE, NULL))
-               if (menu_entries_append_enum(info->list,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_CORE),
-                        msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_REMOVE_CORE),
-                        MENU_ENUM_LABEL_REMAP_FILE_REMOVE_CORE,
-                        MENU_SETTING_ACTION, 0, 0))
-                  count++;
-
-            if (rarch_ctl(RARCH_CTL_IS_REMAPS_GAME_ACTIVE, NULL))
-               if (menu_entries_append_enum(info->list,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_GAME),
-                        msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_REMOVE_GAME),
-                        MENU_ENUM_LABEL_REMAP_FILE_REMOVE_GAME,
-                        MENU_SETTING_ACTION, 0, 0))
-                  count++;
-
-            if (rarch_ctl(RARCH_CTL_IS_REMAPS_CONTENT_DIR_ACTIVE, NULL))
-               if (menu_entries_append_enum(info->list,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_CONTENT_DIR),
-                        msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_REMOVE_CONTENT_DIR),
-                        MENU_ENUM_LABEL_REMAP_FILE_REMOVE_CONTENT_DIR,
-                        MENU_SETTING_ACTION, 0, 0))
-                  count++;
-
-            for (p = 0; p < max_users; p++)
-            {
-               unsigned retro_id;
-               unsigned device  = settings->uints.input_libretro_device[p];
-               device &= RETRO_DEVICE_MASK;
-
-               if (device == RETRO_DEVICE_JOYPAD || device == RETRO_DEVICE_ANALOG)
-               {
-                  for (retro_id = 0; retro_id < RARCH_ANALOG_BIND_LIST_END; retro_id++)
-                  {
-                     char desc_label[400];
-                     char descriptor[300];
-                     const struct retro_keybind *keybind   =
-                        &input_config_binds[p][retro_id];
-                     const struct retro_keybind *auto_bind =
-                        (const struct retro_keybind*)
-                        input_config_get_bind_auto(p, retro_id);
-
-                     input_config_get_bind_string(descriptor,
-                           keybind, auto_bind, sizeof(descriptor));
-
-                     if (!strstr(descriptor, "Auto"))
-                     {
-                        const struct retro_keybind *keyptr =
-                           &input_config_binds[p][retro_id];
-
-                        snprintf(desc_label, sizeof(desc_label),
-                              "%s %s", msg_hash_to_str(keyptr->enum_idx), descriptor);
-                        strlcpy(descriptor, desc_label, sizeof(descriptor));
-                     }
-
-                     /* Add user index when display driver == rgui and sublabels
-                      * are disabled, but only if there is more than one user */
-                     if (     (is_rgui)
-                           && (max_users > 1)
-                           && !settings->bools.menu_show_sublabels)
-                     {
-                        snprintf(desc_label, sizeof(desc_label),
-                              "%s [%s %u]", descriptor, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_USER), p + 1);
-                        strlcpy(descriptor, desc_label, sizeof(descriptor));
-                     }
-
-                     if (menu_entries_append_enum(info->list, descriptor, "",
-                              MSG_UNKNOWN,
-                              MENU_SETTINGS_INPUT_DESC_BEGIN +
-                              (p * (RARCH_FIRST_CUSTOM_BIND + 8)) +  retro_id, 0, 0))
-                        count++;
-                  }
-               }
-               else if (device == RETRO_DEVICE_KEYBOARD)
-               {
-                  for (retro_id = 0; retro_id < RARCH_FIRST_CUSTOM_BIND; retro_id++)
-                  {
-                     char desc_label[400];
-                     char descriptor[300];
-                     const struct retro_keybind *keybind   =
-                        &input_config_binds[p][retro_id];
-                     const struct retro_keybind *auto_bind =
-                        (const struct retro_keybind*)
-                        input_config_get_bind_auto(p, retro_id);
-
-                     input_config_get_bind_string(descriptor,
-                           keybind, auto_bind, sizeof(descriptor));
-
-                     if (!strstr(descriptor, "Auto"))
-                     {
-                        const struct retro_keybind *keyptr =
-                           &input_config_binds[p][retro_id];
-
-                        strlcpy(descriptor,
-                              msg_hash_to_str(keyptr->enum_idx), sizeof(descriptor));
-                     }
-
-                     /* Add user index when display driver == rgui and sublabels
-                      * are disabled, but only if there is more than one user */
-                     if (     (is_rgui)
-                           && (max_users > 1)
-                           && !settings->bools.menu_show_sublabels)
-                     {
-                        snprintf(desc_label, sizeof(desc_label),
-                              "%s [%s %u]", descriptor,
-                              msg_hash_to_str(MENU_ENUM_LABEL_VALUE_USER), p + 1);
-                        strlcpy(descriptor, desc_label, sizeof(descriptor));
-                     }
-
-                     if (menu_entries_append_enum(info->list, descriptor, "",
-                              MSG_UNKNOWN,
-                              MENU_SETTINGS_INPUT_DESC_KBD_BEGIN +
-                              (p * RARCH_FIRST_CUSTOM_BIND) + retro_id, 0, 0))
-                        count++;
-                  }
-               }
-            }
-         }
-
-         ret                = 0;
-
-         info->need_refresh = true;
-         info->need_push    = true;
-         break;
       case DISPLAYLIST_OPTIONS_OVERRIDES:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
 
@@ -8230,95 +8570,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   0, 0, 0);
 
          info->need_push = true;
-         break;
-      case DISPLAYLIST_SHADER_PRESET_REMOVE:
-         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         {
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-            if (menu_shader_manager_auto_preset_exists(SHADER_PRESET_GLOBAL))
-               if (menu_entries_append_enum(info->list,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_GLOBAL),
-                        msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE_GLOBAL),
-                        MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE_GLOBAL,
-                        MENU_SETTING_ACTION, 0, 0))
-                  count++;
-
-            if (menu_shader_manager_auto_preset_exists(SHADER_PRESET_CORE))
-               if (menu_entries_append_enum(info->list,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_CORE),
-                        msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE_CORE),
-                        MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE_CORE,
-                        MENU_SETTING_ACTION, 0, 0))
-                  count++;
-
-            if (menu_shader_manager_auto_preset_exists(SHADER_PRESET_PARENT))
-               if (menu_entries_append_enum(info->list,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_PARENT),
-                        msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE_PARENT),
-                        MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE_PARENT,
-                        MENU_SETTING_ACTION, 0, 0))
-                  count++;
-
-            if (menu_shader_manager_auto_preset_exists(SHADER_PRESET_GAME))
-               if (menu_entries_append_enum(info->list,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_GAME),
-                        msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE_GAME),
-                        MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE_GAME,
-                        MENU_SETTING_ACTION, 0, 0))
-                  count++;
-
-         if (count == 0)
-            menu_entries_append_enum(info->list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_PRESETS_FOUND),
-                  msg_hash_to_str(MENU_ENUM_LABEL_NO_PRESETS_FOUND),
-                  MENU_ENUM_LABEL_NO_PRESETS_FOUND,
-                  0, 0, 0);
-#endif
-         }
-
-         ret                = 0;
-         info->need_refresh = true;
-         info->need_push    = true;
-         break;
-      case DISPLAYLIST_SHADER_PRESET_SAVE:
-         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         {
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-            if (menu_entries_append_enum(info->list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS),
-                     msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_AS),
-                     MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_AS,
-                     MENU_SETTING_ACTION, 0, 0))
-               count++;
-            if (menu_entries_append_enum(info->list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_GLOBAL),
-                     msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_GLOBAL),
-                     MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_GLOBAL,
-                     MENU_SETTING_ACTION, 0, 0))
-               count++;
-            if (menu_entries_append_enum(info->list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_CORE),
-                     msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_CORE),
-                     MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_CORE,
-                     MENU_SETTING_ACTION, 0, 0))
-               count++;
-            if (menu_entries_append_enum(info->list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_PARENT),
-                     msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_PARENT),
-                     MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_PARENT,
-                     MENU_SETTING_ACTION, 0, 0))
-               count++;
-            if (menu_entries_append_enum(info->list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_GAME),
-                     msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_GAME),
-                     MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_GAME,
-                     MENU_SETTING_ACTION, 0, 0))
-               count++;
-#endif
-         }
-         ret                = 0;
-         info->need_refresh = true;
-         info->need_push    = true;
          break;
       case DISPLAYLIST_SHADER_PARAMETERS:
       case DISPLAYLIST_SHADER_PARAMETERS_PRESET:
@@ -8520,66 +8771,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             count++;
          menu_dialog_unset_pending_push();
          break;
-      case DISPLAYLIST_HELP_SCREEN_LIST:
-         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         if (menu_entries_append_enum(info->list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_HELP_CONTROLS),
-               msg_hash_to_str(MENU_ENUM_LABEL_HELP_CONTROLS),
-               MENU_ENUM_LABEL_HELP_CONTROLS,
-               0, 0, 0))
-            count++;
-         if (menu_entries_append_enum(info->list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_HELP_SEND_DEBUG_INFO),
-               msg_hash_to_str(MENU_ENUM_LABEL_HELP_SEND_DEBUG_INFO),
-               MENU_ENUM_LABEL_HELP_SEND_DEBUG_INFO,
-               0, 0, 0))
-            count++;
-
-         info->need_refresh = true;
-         info->need_push    = true;
-         break;
-      case DISPLAYLIST_BROWSE_URL_LIST:
-         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         if (menu_entries_append_enum(info->list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_BROWSE_URL),
-               msg_hash_to_str(MENU_ENUM_LABEL_BROWSE_URL),
-               MENU_ENUM_LABEL_BROWSE_URL,
-               0, 0, 0))
-            count++;
-         if (menu_entries_append_enum(info->list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_BROWSE_START),
-               msg_hash_to_str(MENU_ENUM_LABEL_BROWSE_START),
-               MENU_ENUM_LABEL_BROWSE_START,
-               0, 0, 0))
-            count++;
-
-         info->need_refresh = true;
-         info->need_push    = true;
-         break;
-      case DISPLAYLIST_BROWSE_URL_START:
-         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-#ifdef HAVE_NETWORKING
-         {
-            char link[1024];
-            char name[1024];
-            const char *line  = "<a href=\"http://www.test.com/somefile.zip\">Test</a>\n";
-
-            link[0] = name[0] = '\0';
-
-            string_parse_html_anchor(line, link, name, sizeof(link), sizeof(name));
-
-            if (menu_entries_append_enum(info->list,
-                  link,
-                  name,
-                  MSG_UNKNOWN,
-                  0, 0, 0))
-               count++;
-         }
-#endif
-
-         info->need_refresh = true;
-         info->need_push    = true;
-         break;
       case DISPLAYLIST_INFO:
          if (menu_entries_append_enum(info->list, info->path,
                info->label, MSG_UNKNOWN, info->type, info->directory_ptr, 0))
@@ -8592,22 +8783,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
       case DISPLAYLIST_FILE_BROWSER_SELECT_SIDELOAD_CORE:
       case DISPLAYLIST_FILE_BROWSER_SELECT_COLLECTION:
       case DISPLAYLIST_GENERIC:
-         {
-            menu_ctx_list_t list_info;
-
-            list_info.type    = MENU_LIST_PLAIN;
-            list_info.action  = 0;
-
-            menu_driver_list_cache(&list_info);
-
-            if (menu_entries_append_enum(info->list, info->path,
-                  info->label, MSG_UNKNOWN, info->type, info->directory_ptr, 0))
-               count++;
-
-            info->need_navigation_clear = true;
-            info->need_entries_refresh  = true;
-         }
-         break;
+         info->need_navigation_clear = true;
+         /* fall-through */
       case DISPLAYLIST_PENDING_CLEAR:
          {
             menu_ctx_list_t list_info;
@@ -8967,6 +9144,18 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          use_filebrowser = true;
          break;
+      case DISPLAYLIST_MANUAL_CONTENT_SCAN_LIST:
+         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+
+         if (!menu_displaylist_parse_manual_content_scan_list(info))
+            menu_entries_append_enum(info->list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
+                  msg_hash_to_str(MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY),
+                  MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
+                  FILE_TYPE_NONE, 0, 0);
+
+         info->need_push    = true;
+         break;
       case DISPLAYLIST_DROPDOWN_LIST:
          {
             menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
@@ -9041,19 +9230,18 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                               else if (string_is_equal(val_label_str, msg_hash_to_str(MENU_ENUM_LABEL_DISABLED)))
                                  val_label_str = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF);
 
-                              menu_entries_append_enum(info->list,
-                                    val_label_str,
-                                    val_d,
-                                    MENU_ENUM_LABEL_NO_ITEMS,
-                                    MENU_SETTING_DROPDOWN_SETTING_CORE_OPTIONS_ITEM, k, 0);
+                              if (menu_entries_append_enum(info->list,
+                                       val_label_str,
+                                       val_d,
+                                       MENU_ENUM_LABEL_NO_ITEMS,
+                                       MENU_SETTING_DROPDOWN_SETTING_CORE_OPTIONS_ITEM, k, 0))
+                                 count++;
 
                               if (!checked_found && string_is_equal(val_str, val))
                               {
                                  checked = k;
                                  checked_found = true;
                               }
-
-                              count++;
                            }
                         }
 
@@ -9135,18 +9323,18 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                                  setting->get_string_representation(setting,
                                        val_s, sizeof(val_s));
                                  snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
-                                 menu_entries_append_enum(info->list,
+                                 if (menu_entries_append_enum(info->list,
                                        val_s,
                                        val_d,
                                        MENU_ENUM_LABEL_NO_ITEMS,
-                                       setting_type, val, 0);
+                                       setting_type, val, 0))
+                                    count++;
 
                                  if (!checked_found && val == orig_value)
                                  {
                                     checked       = count;
                                     checked_found = true;
                                  }
-                                 count++;
                               }
 
                               *setting->value.target.integer = orig_value;
@@ -9161,18 +9349,18 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                                  snprintf(val_s, sizeof(val_s), "%d", val);
                                  snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
 
-                                 menu_entries_append_enum(info->list,
+                                 if (menu_entries_append_enum(info->list,
                                        val_s,
                                        val_d,
                                        MENU_ENUM_LABEL_NO_ITEMS,
-                                       setting_type, val, 0);
+                                       setting_type, val, 0))
+                                    count++;
 
                                  if (!checked_found && val == orig_value)
                                  {
                                     checked       = count;
                                     checked_found = true;
                                  }
-                                 count++;
                               }
                            }
 
@@ -9202,18 +9390,18 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                                  setting->get_string_representation(setting,
                                        val_s, sizeof(val_s));
                                  snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
-                                 menu_entries_append_enum(info->list,
+                                 if (menu_entries_append_enum(info->list,
                                        val_s,
                                        val_d,
                                        MENU_ENUM_LABEL_NO_ITEMS,
-                                       setting_type, 0, 0);
+                                       setting_type, 0, 0))
+                                    count++;
 
                                  if (!checked_found && fabs(i - orig_value) <= 0.01f)
                                  {
                                     checked       = count;
                                     checked_found = true;
                                  }
-                                 count++;
                               }
 
                               *setting->value.target.fraction = orig_value;
@@ -9227,18 +9415,18 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                                  snprintf(val_s, sizeof(val_s), "%.2f", i);
                                  snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
 
-                                 menu_entries_append_enum(info->list,
+                                 if (menu_entries_append_enum(info->list,
                                        val_s,
                                        val_d,
                                        MENU_ENUM_LABEL_NO_ITEMS,
-                                       setting_type, 0, 0);
+                                       setting_type, 0, 0))
+                                    count++;
 
                                  if (!checked_found && fabs(i - orig_value) <= 0.01f)
                                  {
                                     checked       = count;
                                     checked_found = true;
                                  }
-                                 count++;
                               }
                            }
 
@@ -9269,18 +9457,18 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                                  setting->get_string_representation(setting,
                                        val_s, sizeof(val_s));
                                  snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
-                                 menu_entries_append_enum(info->list,
-                                       val_s,
-                                       val_d,
-                                       MENU_ENUM_LABEL_NO_ITEMS,
-                                       setting_type, val, 0);
+                                 if (menu_entries_append_enum(info->list,
+                                          val_s,
+                                          val_d,
+                                          MENU_ENUM_LABEL_NO_ITEMS,
+                                          setting_type, val, 0))
+                                    count++;
 
                                  if (!checked_found && val == orig_value)
                                  {
                                     checked       = count;
                                     checked_found = true;
                                  }
-                                 count++;
                               }
 
                               *setting->value.target.unsigned_integer = orig_value;
@@ -9295,18 +9483,18 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                                  snprintf(val_s, sizeof(val_s), "%d", val);
                                  snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
 
-                                 menu_entries_append_enum(info->list,
+                                 if (menu_entries_append_enum(info->list,
                                        val_s,
                                        val_d,
                                        MENU_ENUM_LABEL_NO_ITEMS,
-                                       setting_type, val, 0);
+                                       setting_type, val, 0))
+                                    count++;
 
                                  if (!checked_found && val == orig_value)
                                  {
                                     checked       = count;
                                     checked_found = true;
                                  }
-                                 count++;
                               }
                            }
 
@@ -9396,11 +9584,12 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                            else if (string_is_equal(val_label_str, msg_hash_to_str(MENU_ENUM_LABEL_DISABLED)))
                               val_label_str = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF);
 
-                           menu_entries_append_enum(info->list,
+                           if (menu_entries_append_enum(info->list,
                                  val_label_str,
                                  val_d,
                                  MENU_ENUM_LABEL_NO_ITEMS,
-                                 MENU_SETTING_DROPDOWN_SETTING_CORE_OPTIONS_ITEM_SPECIAL, k, 0);
+                                 MENU_SETTING_DROPDOWN_SETTING_CORE_OPTIONS_ITEM_SPECIAL, k, 0))
+                              count++;
 
                            if (!checked_found && string_is_equal(val_str, val))
                            {
@@ -9443,11 +9632,12 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                            {
                               char val_d[256];
                               snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
-                              menu_entries_append_enum(info->list,
+                              if (menu_entries_append_enum(info->list,
                                     tmp_str_list->elems[i].data,
                                     val_d,
                                     MENU_ENUM_LABEL_NO_ITEMS,
-                                    MENU_SETTING_DROPDOWN_SETTING_STRING_OPTIONS_ITEM_SPECIAL, i, 0);
+                                    MENU_SETTING_DROPDOWN_SETTING_STRING_OPTIONS_ITEM_SPECIAL, i, 0))
+                                 count++;
 
                               if (!checked_found && string_is_equal(tmp_str_list->elems[i].data, setting->value.target.string))
                               {
@@ -9487,18 +9677,18 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                               setting->get_string_representation(setting,
                                     val_s, sizeof(val_s));
                               snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
-                              menu_entries_append_enum(info->list,
+                              if (menu_entries_append_enum(info->list,
                                     val_s,
                                     val_d,
                                     MENU_ENUM_LABEL_NO_ITEMS,
-                                    setting_type, val, 0);
+                                    setting_type, val, 0))
+                                 count++;
 
                               if (!checked_found && val == orig_value)
                               {
                                  checked       = count;
                                  checked_found = true;
                               }
-                              count++;
                            }
 
                            *setting->value.target.integer = orig_value;
@@ -9513,19 +9703,18 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                               snprintf(val_s, sizeof(val_s), "%d", val);
                               snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
 
-                              menu_entries_append_enum(info->list,
+                              if (menu_entries_append_enum(info->list,
                                     val_s,
                                     val_d,
                                     MENU_ENUM_LABEL_NO_ITEMS,
-                                    setting_type, val, 0);
+                                    setting_type, val, 0))
+                                 count++;
 
                               if (!checked_found && val == orig_value)
                               {
                                  checked       = count;
                                  checked_found = true;
                               }
-
-                              count++;
                            }
                         }
 
@@ -9555,18 +9744,18 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                               setting->get_string_representation(setting,
                                     val_s, sizeof(val_s));
                               snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
-                              menu_entries_append_enum(info->list,
+                              if (menu_entries_append_enum(info->list,
                                     val_s,
                                     val_d,
                                     MENU_ENUM_LABEL_NO_ITEMS,
-                                    setting_type, 0, 0);
+                                    setting_type, 0, 0))
+                                 count++;
 
                               if (!checked_found && fabs(i - orig_value) <= 0.01f)
                               {
                                  checked       = count;
                                  checked_found = true;
                               }
-                              count++;
                            }
 
                            *setting->value.target.fraction = orig_value;
@@ -9580,18 +9769,18 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                               snprintf(val_s, sizeof(val_s), "%.2f", i);
                               snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
 
-                              menu_entries_append_enum(info->list,
+                              if (menu_entries_append_enum(info->list,
                                     val_s,
                                     val_d,
                                     MENU_ENUM_LABEL_NO_ITEMS,
-                                    setting_type, 0, 0);
+                                    setting_type, 0, 0))
+                                 count++;
 
                               if (!checked_found && fabs(i - orig_value) <= 0.01f)
                               {
                                  checked       = count;
                                  checked_found = true;
                               }
-                              count++;
                            }
                         }
 
@@ -9622,18 +9811,18 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                               setting->get_string_representation(setting,
                                     val_s, sizeof(val_s));
                               snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
-                              menu_entries_append_enum(info->list,
+                              if (menu_entries_append_enum(info->list,
                                     val_s,
                                     val_d,
                                     MENU_ENUM_LABEL_NO_ITEMS,
-                                    setting_type, val, 0);
+                                    setting_type, val, 0))
+                                 count++;
 
                               if (!checked_found && val == orig_value)
                               {
                                  checked       = count;
                                  checked_found = true;
                               }
-                              count++;
                            }
 
                            *setting->value.target.unsigned_integer = orig_value;
@@ -9648,18 +9837,18 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                               snprintf(val_s, sizeof(val_s), "%d", val);
                               snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
 
-                              menu_entries_append_enum(info->list,
+                              if (menu_entries_append_enum(info->list,
                                     val_s,
                                     val_d,
                                     MENU_ENUM_LABEL_NO_ITEMS,
-                                    setting_type, val, 0);
+                                    setting_type, val, 0))
+                                 count++;
 
                               if (!checked_found && val == orig_value)
                               {
                                  checked       = count;
                                  checked_found = true;
                               }
-                              count++;
                            }
                         }
 
@@ -9685,8 +9874,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
       if (string_is_empty(info->path))
       {
          if (frontend_driver_parse_drive_list(info->list, load_content) != 0)
-            menu_entries_append_enum(info->list, "/", "",
-                  MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
+            if (menu_entries_append_enum(info->list, "/", "",
+                  MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0))
+               count++;
       }
       else
          filebrowser_parse(info, type);

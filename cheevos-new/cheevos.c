@@ -1306,7 +1306,7 @@ static int rcheevos_prepare_hash_psx(rcheevos_coro_t* coro)
    else
    {
       /* store the exe name, we're about to overwrite buffer */
-      strncpy(exe_name_buffer, exe_name, sizeof(exe_name_buffer));
+      strlcpy(exe_name_buffer, exe_name, sizeof(exe_name_buffer));
       exe_name_buffer[sizeof(exe_name_buffer) - 1] = '\0';
       exe_name_size = strlen(exe_name_buffer);
 
@@ -2560,7 +2560,10 @@ bool rcheevos_load(const void *data)
    rcheevos_hardcore_paused = false;
 
    if (!rcheevos_locals.core_supports || !data)
+   {
+      rcheevos_hardcore_paused = true;
       return false;
+   }
 
    coro = (rcheevos_coro_t*)calloc(1, sizeof(*coro));
 
@@ -2578,7 +2581,7 @@ bool rcheevos_load(const void *data)
    CORO_SETUP();
 
    info = (const struct retro_game_info*)data;
-   strncpy(buffer, path_get_extension(info->path), sizeof(buffer));
+   strlcpy(buffer, path_get_extension(info->path), sizeof(buffer));
 
    if (info->data)
    {
@@ -2633,7 +2636,7 @@ bool rcheevos_load(const void *data)
             free((void*)coro->path);
             coro->path = strdup(disc_path);
 
-            strncpy(buffer, path_get_extension(disc_path), sizeof(buffer));
+            strlcpy(buffer, path_get_extension(disc_path), sizeof(buffer));
          }
       }
    }

@@ -1190,38 +1190,51 @@ static bool ffmpeg_push_audio(void *data,
    return true;
 }
 
-static bool encode_video(ffmpeg_t *handle, AVPacket *pkt, AVFrame *frame)
+static bool encode_video(ffmpeg_t *handle, AVFrame *frame)
 {
-   int got_packet = 0;
+   AVPacket pkt;
+   int ret;
 
-   av_init_packet(pkt);
-   pkt->data = handle->video.outbuf;
-   pkt->size = handle->video.outbuf_size;
+   av_init_packet(&pkt);
+   pkt.data = handle->video.outbuf;
+   pkt.size = handle->video.outbuf_size;
 
-   if (avcodec_encode_video2(handle->video.codec, pkt, frame, &got_packet) < 0)
+   ret = avcodec_send_frame(handle->video.codec, frame);
+   if (ret < 0)
+   {
+      RARCH_ERR("[FFmpeg]: Cannot send video frame. Error code: %s.\n", av_err2str(ret));
       return false;
-
-   if (!got_packet)
-   {
-      pkt->size = 0;
-      pkt->pts = AV_NOPTS_VALUE;
-      pkt->dts = AV_NOPTS_VALUE;
-      return true;
    }
 
-   if (pkt->pts != (int64_t)AV_NOPTS_VALUE)
+   while (ret >= 0)
    {
-      pkt->pts = av_rescale_q(pkt->pts, handle->video.codec->time_base,
-            handle->muxer.vstream->time_base);
-   }
+      ret = avcodec_receive_packet(handle->video.codec, &pkt);
+      if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
+      {
+         break;
+      }
+      else if (ret < 0)
+      {
+         RARCH_ERR("[FFmpeg]: Cannot receive video packet. Error code: %s.\n", av_err2str(ret));
+         return false;
+      }
 
-   if (pkt->dts != (int64_t)AV_NOPTS_VALUE)
-   {
-      pkt->dts = av_rescale_q(pkt->dts, handle->video.codec->time_base,
-            handle->muxer.vstream->time_base);
-   }
+      pkt.pts = av_rescale_q(pkt.pts, handle->video.codec->time_base,
+         handle->muxer.vstream->time_base);
 
-   pkt->stream_index = handle->muxer.vstream->index;
+      pkt.dts = av_rescale_q(pkt.dts,
+         handle->video.codec->time_base,
+         handle->muxer.vstream->time_base);
+      
+      pkt.stream_index = handle->muxer.vstream->index;
+
+      ret = av_interleaved_write_frame(handle->muxer.ctx, &pkt);
+      if (ret < 0)
+      {
+         RARCH_ERR("[FFmpeg]: Cannot write video packet to output file. Error code: %s.\n", av_err2str(ret));
+         return false;
+      }
+   }
    return true;
 }
 
@@ -1265,21 +1278,13 @@ static void ffmpeg_scale_input(ffmpeg_t *handle,
 static bool ffmpeg_push_video_thread(ffmpeg_t *handle,
       const struct record_video_data *vid)
 {
-   AVPacket pkt;
-
    if (!vid->is_dupe)
       ffmpeg_scale_input(handle, vid);
 
    handle->video.conv_frame->pts = handle->video.frame_cnt;
 
-   if (!encode_video(handle, &pkt, handle->video.conv_frame))
+   if (!encode_video(handle, handle->video.conv_frame))
       return false;
-
-   if (pkt.size)
-   {
-      if (av_interleaved_write_frame(handle->muxer.ctx, &pkt) < 0)
-         return false;
-   }
 
    handle->video.frame_cnt++;
    return true;
@@ -1333,15 +1338,16 @@ static void planarize_audio(ffmpeg_t *handle)
             handle->audio.frames_in_buffer);
 }
 
-static bool encode_audio(ffmpeg_t *handle, AVPacket *pkt, bool dry)
+static bool encode_audio(ffmpeg_t *handle, bool dry)
 {
    AVFrame *frame;
+   AVPacket pkt;
    int samples_size;
-   int got_packet = 0;
+   int ret;
 
-   av_init_packet(pkt);
-   pkt->data = handle->audio.outbuf;
-   pkt->size = handle->audio.outbuf_size;
+   av_init_packet(&pkt);
+   pkt.data = handle->audio.outbuf;
+   pkt.size = handle->audio.outbuf_size;
 
    frame = av_frame_alloc();
    if (!frame)
@@ -1365,39 +1371,48 @@ static bool encode_audio(ffmpeg_t *handle, AVPacket *pkt, bool dry)
          handle->audio.buffer,
          samples_size, 0);
 
-   if (avcodec_encode_audio2(handle->audio.codec,
-            pkt, dry ? NULL : frame, &got_packet) < 0)
+   ret = avcodec_send_frame(handle->audio.codec, dry ? NULL : frame);
+   if (ret < 0)
    {
       av_frame_free(&frame);
+      RARCH_ERR("[FFmpeg]: Cannot send audio frame. Return code: %s.\n", av_err2str(ret));
       return false;
    }
 
-   if (!got_packet)
+   while (ret >= 0) 
    {
-      pkt->size = 0;
-      pkt->pts = AV_NOPTS_VALUE;
-      pkt->dts = AV_NOPTS_VALUE;
-      av_frame_free(&frame);
-      return true;
-   }
+      ret = avcodec_receive_packet(handle->audio.codec, &pkt);
+      if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
+      {
+         break;
+      }
+      else if (ret < 0)
+      {
+         av_frame_free(&frame);
+         RARCH_ERR("[FFmpeg]: Cannot receive audio packet. Return code: %s.\n", av_err2str(ret));
+         return false;
+      }
 
-   if (pkt->pts != (int64_t)AV_NOPTS_VALUE)
-   {
-      pkt->pts = av_rescale_q(pkt->pts,
-            handle->audio.codec->time_base,
-            handle->muxer.astream->time_base);
-   }
+      pkt.pts = av_rescale_q(pkt.pts,
+         handle->audio.codec->time_base,
+         handle->muxer.astream->time_base);
 
-   if (pkt->dts != (int64_t)AV_NOPTS_VALUE)
-   {
-      pkt->dts = av_rescale_q(pkt->dts,
-            handle->audio.codec->time_base,
-            handle->muxer.astream->time_base);
+      pkt.dts = av_rescale_q(pkt.dts,
+         handle->audio.codec->time_base,
+         handle->muxer.astream->time_base);
+
+      pkt.stream_index = handle->muxer.astream->index;
+
+      ret = av_interleaved_write_frame(handle->muxer.ctx, &pkt);
+      if (ret < 0)
+      {
+         av_frame_free(&frame);
+         RARCH_ERR("[FFmpeg]: Cannot write video packet to output file. Error code: %s.\n", av_err2str(ret));
+         return false;
+      }
    }
 
    av_frame_free(&frame);
-
-   pkt->stream_index = handle->muxer.astream->index;
    return true;
 }
 
@@ -1474,7 +1489,6 @@ static bool ffmpeg_push_audio_thread(ffmpeg_t *handle,
 
    while (written_frames < aud->frames)
    {
-      AVPacket pkt;
       size_t can_write    = handle->audio.codec->frame_size -
          handle->audio.frames_in_buffer;
       size_t write_left   = aud->frames - written_frames;
@@ -1498,19 +1512,12 @@ static bool ffmpeg_push_audio_thread(ffmpeg_t *handle,
                < (size_t)handle->audio.codec->frame_size) && require_block)
          break;
 
-      if (!encode_audio(handle, &pkt, false))
+      if (!encode_audio(handle, false))
          return false;
 
       handle->audio.frame_cnt       += handle->audio.frames_in_buffer;
       handle->audio.frames_in_buffer = 0;
-
-      if (pkt.size)
-      {
-         if (av_interleaved_write_frame(handle->muxer.ctx, &pkt) < 0)
-            return false;
-      }
    }
-
    return true;
 }
 
@@ -1531,24 +1538,13 @@ static void ffmpeg_flush_audio(ffmpeg_t *handle, void *audio_buf,
       ffmpeg_push_audio_thread(handle, &aud, false);
    }
 
-   for (;;)
-   {
-      AVPacket pkt;
-      if (!encode_audio(handle, &pkt, true) || !pkt.size ||
-            av_interleaved_write_frame(handle->muxer.ctx, &pkt) < 0)
-         break;
+   encode_audio(handle, true);
    }
-}
 
 static void ffmpeg_flush_video(ffmpeg_t *handle)
 {
-   for (;;)
-   {
-      AVPacket pkt;
-      if (!encode_video(handle, &pkt, NULL) || !pkt.size ||
-            av_interleaved_write_frame(handle->muxer.ctx, &pkt) < 0)
-         break;
-   }
+   encode_video(handle, NULL);
+
 }
 
 static void ffmpeg_flush_buffers(ffmpeg_t *handle)
@@ -1579,11 +1575,10 @@ static void ffmpeg_flush_buffers(ffmpeg_t *handle)
             struct record_audio_data aud = {0};
 
             fifo_read(handle->audio_fifo, audio_buf, audio_buf_size);
-
             aud.frames = handle->audio.codec->frame_size;
             aud.data = audio_buf;
-
             ffmpeg_push_audio_thread(handle, &aud, true);
+
             did_work = true;
          }
       }

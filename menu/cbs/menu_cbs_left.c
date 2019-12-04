@@ -41,6 +41,7 @@
 #include "../../retroarch.h"
 #include "../../network/netplay/netplay.h"
 #include "../../playlist.h"
+#include "../../manual_content_scan.h"
 
 #ifndef BIND_ACTION_LEFT
 #define BIND_ACTION_LEFT(cbs, name) \
@@ -515,6 +516,116 @@ static int playlist_left_thumbnail_mode_left(unsigned type, const char *label,
    return 0;
 }
 
+static int manual_content_scan_system_name_left(unsigned type, const char *label,
+      bool wraparound)
+{
+   struct string_list *system_name_list                            =
+         manual_content_scan_get_menu_system_name_list();
+   const char *current_system_name                                 = NULL;
+   enum manual_content_scan_system_name_type next_system_name_type =
+         MANUAL_CONTENT_SCAN_SYSTEM_NAME_DATABASE;
+   const char *next_system_name                                    = NULL;
+   unsigned current_index                                          = 0;
+   unsigned next_index                                             = 0;
+   unsigned i;
+
+   if (!system_name_list)
+      return -1;
+
+   /* Get currently selected system name */
+   if (manual_content_scan_get_menu_system_name(&current_system_name))
+   {
+      /* Get index of currently selected system name */
+      for (i = 0; i < system_name_list->size; i++)
+      {
+         const char *system_name = system_name_list->elems[i].data;
+
+         if (string_is_equal(current_system_name, system_name))
+         {
+            current_index = i;
+            break;
+         }
+      }
+
+      /* Decrement index */
+      if (current_index > 0)
+         next_index = current_index - 1;
+      else if (wraparound && (system_name_list->size > 1))
+         next_index = system_name_list->size - 1;
+   }
+
+   /* Get new system name parameters */
+   if (next_index == (unsigned)MANUAL_CONTENT_SCAN_SYSTEM_NAME_CONTENT_DIR)
+      next_system_name_type = MANUAL_CONTENT_SCAN_SYSTEM_NAME_CONTENT_DIR;
+   else if (next_index == (unsigned)MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM)
+      next_system_name_type = MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM;
+
+   next_system_name = system_name_list->elems[next_index].data;
+
+   /* Set system name */
+   manual_content_scan_set_menu_system_name(
+         next_system_name_type, next_system_name);
+
+   /* Clean up */
+   string_list_free(system_name_list);
+
+   return 0;
+}
+
+static int manual_content_scan_core_name_left(unsigned type, const char *label,
+      bool wraparound)
+{
+   struct string_list *core_name_list                =
+         manual_content_scan_get_menu_core_name_list();
+   const char *current_core_name                     = NULL;
+   enum manual_content_scan_core_type next_core_type =
+         MANUAL_CONTENT_SCAN_CORE_SET;
+   const char *next_core_name                        = NULL;
+   unsigned current_index                            = 0;
+   unsigned next_index                               = 0;
+   unsigned i;
+
+   if (!core_name_list)
+      return -1;
+
+   /* Get currently selected core name */
+   if (manual_content_scan_get_menu_core_name(&current_core_name))
+   {
+      /* Get index of currently selected core name */
+      for (i = 0; i < core_name_list->size; i++)
+      {
+         const char *core_name = core_name_list->elems[i].data;
+
+         if (string_is_equal(current_core_name, core_name))
+         {
+            current_index = i;
+            break;
+         }
+      }
+
+      /* Decrement index */
+      if (current_index > 0)
+         next_index = current_index - 1;
+      else if (wraparound && (core_name_list->size > 1))
+         next_index = core_name_list->size - 1;
+   }
+
+   /* Get new core name parameters */
+   if (next_index == (unsigned)MANUAL_CONTENT_SCAN_CORE_DETECT)
+      next_core_type = MANUAL_CONTENT_SCAN_CORE_DETECT;
+
+   next_core_name = core_name_list->elems[next_index].data;
+
+   /* Set core name */
+   manual_content_scan_set_menu_core_name(
+         next_core_type, next_core_name);
+
+   /* Clean up */
+   string_list_free(core_name_list);
+
+   return 0;
+}
+
 static int core_setting_left(unsigned type, const char *label,
       bool wraparound)
 {
@@ -766,6 +877,12 @@ static int menu_cbs_init_bind_left_compare_label(menu_file_list_cbs_t *cbs,
             case MENU_ENUM_LABEL_PLAYLIST_MANAGER_LEFT_THUMBNAIL_MODE:
                BIND_ACTION_LEFT(cbs, playlist_left_thumbnail_mode_left);
                break;
+            case MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME:
+               BIND_ACTION_LEFT(cbs, manual_content_scan_system_name_left);
+               break;
+            case MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_CORE_NAME:
+               BIND_ACTION_LEFT(cbs, manual_content_scan_core_name_left);
+               break;
             default:
                return -1;
          }
@@ -861,6 +978,7 @@ static int menu_cbs_init_bind_left_compare_type(menu_file_list_cbs_t *cbs,
          case FILE_TYPE_DOWNLOAD_THUMBNAIL_CONTENT:
          case FILE_TYPE_DOWNLOAD_URL:
          case FILE_TYPE_SCAN_DIRECTORY:
+         case FILE_TYPE_MANUAL_SCAN_DIRECTORY:
          case FILE_TYPE_FONT:
          case MENU_SETTING_GROUP:
          case MENU_SETTINGS_CORE_INFO_NONE:

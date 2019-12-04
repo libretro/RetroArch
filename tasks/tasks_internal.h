@@ -98,6 +98,8 @@ bool task_push_dbscan(
       retro_task_callback_t cb);
 #endif
 
+bool task_push_manual_content_scan(void);
+
 #ifdef HAVE_OVERLAY
 bool task_push_overlay_load_default(
       retro_task_callback_t cb,

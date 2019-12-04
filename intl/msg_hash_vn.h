@@ -883,7 +883,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ENABLE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD,
       "Turbo Period")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
-      "Input User %u Binds")
+      "Port %u Binds")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INTERNAL_STORAGE_STATUS,
       "Internal storage status")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR,
@@ -1906,7 +1906,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
 MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_SETTINGS,
       "Điều chỉnh thiết lập cho joypads, bàn phím và chuột.")
 MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_USER_BINDS,
-      "Configure controls for this user.")
+      "Configure controls for this port.")
 MSG_HASH(MENU_ENUM_SUBLABEL_LOG_VERBOSITY,
       "Kích hoạt or disable logging to the terminal.")
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY,

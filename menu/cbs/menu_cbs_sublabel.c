@@ -111,6 +111,10 @@ default_sublabel_macro(menu_action_sublabel_setting_audio_mixer_stream_remove,
 default_sublabel_macro(menu_action_sublabel_setting_audio_mixer_stream_volume,
       MENU_ENUM_SUBLABEL_MIXER_ACTION_VOLUME)
 #endif
+default_sublabel_macro(action_bind_sublabel_accessibility_enabled, MENU_ENUM_SUBLABEL_ACCESSIBILITY_ENABLED
+         )
+default_sublabel_macro(action_bind_sublabel_accessibility_narrator_speech_speed, MENU_ENUM_SUBLABEL_ACCESSIBILITY_NARRATOR_SPEECH_SPEED
+         )
 default_sublabel_macro(action_bind_sublabel_reset_to_default_config,             MENU_ENUM_SUBLABEL_RESET_TO_DEFAULT_CONFIG)
 default_sublabel_macro(action_bind_sublabel_quick_menu_override_options,             MENU_ENUM_SUBLABEL_QUICK_MENU_OVERRIDE_OPTIONS)
 default_sublabel_macro(action_bind_sublabel_quick_menu_start_streaming,             MENU_ENUM_SUBLABEL_QUICK_MENU_START_STREAMING)
@@ -128,6 +132,7 @@ default_sublabel_macro(action_bind_sublabel_saving_settings_list,          MENU_
 default_sublabel_macro(action_bind_sublabel_logging_settings_list,         MENU_ENUM_SUBLABEL_LOGGING_SETTINGS)
 default_sublabel_macro(action_bind_sublabel_user_interface_settings_list,  MENU_ENUM_SUBLABEL_USER_INTERFACE_SETTINGS)
 default_sublabel_macro(action_bind_sublabel_ai_service_settings_list,  MENU_ENUM_SUBLABEL_AI_SERVICE_SETTINGS)
+default_sublabel_macro(action_bind_sublabel_accessibility_settings_list,  MENU_ENUM_SUBLABEL_ACCESSIBILITY_SETTINGS)
 default_sublabel_macro(action_bind_sublabel_ai_service_mode,  MENU_ENUM_SUBLABEL_AI_SERVICE_MODE)
 default_sublabel_macro(action_bind_sublabel_ai_service_pause,  MENU_ENUM_SUBLABEL_AI_SERVICE_PAUSE)
 default_sublabel_macro(action_bind_sublabel_ai_service_target_lang,  MENU_ENUM_SUBLABEL_AI_SERVICE_TARGET_LANG)
@@ -714,6 +719,15 @@ default_sublabel_macro(action_bind_sublabel_thumbnails_updater_list,            
 default_sublabel_macro(action_bind_sublabel_pl_thumbnails_updater_list,                    MENU_ENUM_SUBLABEL_PL_THUMBNAILS_UPDATER_LIST)
 default_sublabel_macro(action_bind_sublabel_help_send_debug_info,                          MENU_ENUM_SUBLABEL_HELP_SEND_DEBUG_INFO)
 default_sublabel_macro(action_bind_sublabel_rdb_entry_detail,                              MENU_ENUM_SUBLABEL_RDB_ENTRY_DETAIL)
+default_sublabel_macro(action_bind_sublabel_manual_content_scan_list,                      MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_LIST)
+default_sublabel_macro(action_bind_sublabel_manual_content_scan_dir,                       MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_DIR)
+default_sublabel_macro(action_bind_sublabel_manual_content_scan_system_name,               MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME)
+default_sublabel_macro(action_bind_sublabel_manual_content_scan_system_name_custom,        MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM)
+default_sublabel_macro(action_bind_sublabel_manual_content_scan_core_name,                 MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_CORE_NAME)
+default_sublabel_macro(action_bind_sublabel_manual_content_scan_file_exts,                 MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_FILE_EXTS)
+default_sublabel_macro(action_bind_sublabel_manual_content_scan_search_archives,           MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_SEARCH_ARCHIVES)
+default_sublabel_macro(action_bind_sublabel_manual_content_scan_overwrite,                 MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_OVERWRITE)
+default_sublabel_macro(action_bind_sublabel_manual_content_scan_start,                     MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_START)
 
 static int action_bind_sublabel_systeminfo_controller_entry(
       file_list_t *list,
@@ -833,7 +847,7 @@ static int action_bind_sublabel_remap_kbd_sublabel(
    unsigned user_idx = (type - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN) / RARCH_FIRST_CUSTOM_BIND;
 
    snprintf(s, len, "%s #%d: %s",
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_USER),
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT),
          user_idx + 1,
          input_config_get_device_display_name(user_idx) ?
          input_config_get_device_display_name(user_idx) :
@@ -895,7 +909,7 @@ static int action_bind_sublabel_remap_sublabel(
       / (RARCH_FIRST_CUSTOM_BIND + 8);
 
    snprintf(s, len, "%s #%d: %s",
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_USER),
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT),
          offset + 1,
          input_config_get_device_display_name(offset) ?
          input_config_get_device_display_name(offset) :
@@ -1122,81 +1136,85 @@ static int action_bind_sublabel_generic(
 int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx)
 {
+   unsigned i;
+   typedef struct info_range_list
+   {
+      unsigned min;
+      unsigned max;
+      int (*cb)(file_list_t *list,
+            unsigned type, unsigned i,
+            const char *label, const char *path,
+            char *s, size_t len);
+   } info_range_list_t;
+
+   info_range_list_t info_list[] = {
+      {
+         MENU_SETTINGS_INPUT_DESC_KBD_BEGIN,
+         MENU_SETTINGS_INPUT_DESC_KBD_END, 
+         action_bind_sublabel_remap_kbd_sublabel
+      },
+#ifdef HAVE_AUDIOMIXER
+      {
+         MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_PLAY_BEGIN,
+         MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_PLAY_END,
+         menu_action_sublabel_setting_audio_mixer_stream_play
+      },
+      {
+         MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_PLAY_LOOPED_BEGIN,
+         MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_PLAY_LOOPED_END,
+         menu_action_sublabel_setting_audio_mixer_stream_play_looped
+      },
+      {
+         MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_PLAY_SEQUENTIAL_BEGIN,
+         MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_PLAY_SEQUENTIAL_END,
+         menu_action_sublabel_setting_audio_mixer_stream_play_sequential
+      },
+      {
+         MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_REMOVE_BEGIN,
+         MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_REMOVE_END,
+         menu_action_sublabel_setting_audio_mixer_stream_remove
+      },
+      {
+         MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_STOP_BEGIN,
+         MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_STOP_END,
+         menu_action_sublabel_setting_audio_mixer_stream_stop
+      },
+      {
+         MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_VOLUME_BEGIN,
+         MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_VOLUME_END,
+         menu_action_sublabel_setting_audio_mixer_stream_volume
+      },
+      {
+         MENU_SETTINGS_AUDIO_MIXER_STREAM_BEGIN,
+         MENU_SETTINGS_AUDIO_MIXER_STREAM_END,
+         action_bind_sublabel_audio_mixer_stream
+      },
+#endif
+      {
+         MENU_SETTINGS_INPUT_DESC_BEGIN,
+         MENU_SETTINGS_INPUT_DESC_END,
+         action_bind_sublabel_remap_sublabel
+      },
+      {
+         MENU_SETTINGS_CHEAT_BEGIN,
+         MENU_SETTINGS_CHEAT_END,
+         action_bind_sublabel_cheat_desc
+      },
+   };
+
    if (!cbs)
       return -1;
 
    BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_generic);
 
-   if (type >= MENU_SETTINGS_INPUT_DESC_KBD_BEGIN
-      && type <= MENU_SETTINGS_INPUT_DESC_KBD_END)
+   for (i = 0; i < ARRAY_SIZE(info_list); i++)
    {
-      BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_remap_kbd_sublabel);
+      if (type >= info_list[i].min && type <= info_list[i].max)
+      {
+         BIND_ACTION_SUBLABEL(cbs, info_list[i].cb);
+         return 0;
+      }
    }
-#ifdef HAVE_AUDIOMIXER
-   else if (type >= MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_PLAY_BEGIN
-         && type <= MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_PLAY_END)
-   {
-      BIND_ACTION_SUBLABEL(cbs,
-         menu_action_sublabel_setting_audio_mixer_stream_play);
-      return 0;
-   }
-   else if (type >= MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_PLAY_LOOPED_BEGIN
-         && type <= MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_PLAY_LOOPED_END)
-   {
-      BIND_ACTION_SUBLABEL(cbs,
-         menu_action_sublabel_setting_audio_mixer_stream_play_looped);
-      return 0;
-   }
-   else if (type >= MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_PLAY_SEQUENTIAL_BEGIN
-         && type <= MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_PLAY_SEQUENTIAL_END)
-   {
-      BIND_ACTION_SUBLABEL(cbs,
-         menu_action_sublabel_setting_audio_mixer_stream_play_sequential);
-      return 0;
-   }
-   else if (type >= MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_REMOVE_BEGIN
-         && type <= MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_REMOVE_END)
-   {
-      BIND_ACTION_SUBLABEL(cbs,
-         menu_action_sublabel_setting_audio_mixer_stream_remove);
-      return 0;
-   }
-   else if (type >= MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_STOP_BEGIN
-         && type <= MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_STOP_END)
-   {
-      BIND_ACTION_SUBLABEL(cbs,
-         menu_action_sublabel_setting_audio_mixer_stream_stop);
-      return 0;
-   }
-   else if (type >= MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_VOLUME_BEGIN
-         && type <= MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_VOLUME_END)
-   {
-      BIND_ACTION_SUBLABEL(cbs,
-         menu_action_sublabel_setting_audio_mixer_stream_volume);
-      return 0;
-   }
-#endif
-
-   if (type >= MENU_SETTINGS_INPUT_DESC_BEGIN
-      && type <= MENU_SETTINGS_INPUT_DESC_END)
-   {
-      BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_remap_sublabel);
-   }
-
-   if (type >= MENU_SETTINGS_CHEAT_BEGIN
-      && type <= MENU_SETTINGS_CHEAT_END)
-   {
-      BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheat_desc);
-   }
-
-#ifdef HAVE_AUDIOMIXER
-   if (type >= MENU_SETTINGS_AUDIO_MIXER_STREAM_BEGIN
-      && type <= MENU_SETTINGS_AUDIO_MIXER_STREAM_END)
-   {
-      BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_audio_mixer_stream);
-      return 0;
-   }
-#endif
 
    if ((type >= MENU_SETTINGS_CORE_OPTION_START) &&
        (type < MENU_SETTINGS_CHEEVOS_START))
@@ -2780,6 +2798,15 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_AI_SERVICE_SETTINGS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_ai_service_settings_list);
             break;
+         case MENU_ENUM_LABEL_ACCESSIBILITY_ENABLED:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_accessibility_enabled);
+            break;
+         case MENU_ENUM_LABEL_ACCESSIBILITY_NARRATOR_SPEECH_SPEED:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_accessibility_narrator_speech_speed);
+            break;
+         case MENU_ENUM_LABEL_ACCESSIBILITY_SETTINGS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_accessibility_settings_list);
+            break;
          case MENU_ENUM_LABEL_USER_INTERFACE_SETTINGS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_user_interface_settings_list);
             break;
@@ -3048,6 +3075,33 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_RDB_ENTRY_DETAIL:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_rdb_entry_detail);
+            break;
+         case MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_LIST:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_manual_content_scan_list);
+            break;
+         case MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_DIR:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_manual_content_scan_dir);
+            break;
+         case MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_manual_content_scan_system_name);
+            break;
+         case MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_manual_content_scan_system_name_custom);
+            break;
+         case MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_CORE_NAME:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_manual_content_scan_core_name);
+            break;
+         case MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_FILE_EXTS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_manual_content_scan_file_exts);
+            break;
+         case MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_SEARCH_ARCHIVES:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_manual_content_scan_search_archives);
+            break;
+         case MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_OVERWRITE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_manual_content_scan_overwrite);
+            break;
+         case MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_START:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_manual_content_scan_start);
             break;
          default:
          case MSG_UNKNOWN:

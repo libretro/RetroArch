@@ -914,7 +914,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ENABLE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD,
       "Autofeuer-Frequenz")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
-      "Belegungen für Benutzer %u")
+      "Port für Benutzer %u")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INTERNAL_STORAGE_STATUS,
       "Status des internen Speichers")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR,
@@ -1962,7 +1962,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
       "Controller-Tastenkombination, mit der das Menü aufgerufen wird.")
 MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_SETTINGS,
       "Einstellungen für Joypads, Tastaturen und Mäuse.")
-MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_USER_BINDS,
+MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_USER_BINDS, /* TODO/FIXME - change user to port */
       "Steuerung für diesen Benutzer konfigurieren.")
 MSG_HASH(MENU_ENUM_SUBLABEL_LOG_VERBOSITY,
       "Aktiviere Logging im Terminal.")

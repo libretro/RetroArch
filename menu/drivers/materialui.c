@@ -1861,6 +1861,7 @@ static void materialui_draw_thumbnail(
       menu_thumbnail_draw(
             video_info, thumbnail,
             x, y, mui->thumbnail_width_max, mui->thumbnail_height_max,
+            MENU_THUMBNAIL_ALIGN_CENTRE,
             mui->transition_alpha, scale_factor);
    }
 }
@@ -2551,7 +2552,6 @@ enum materialui_entry_value_type materialui_get_entry_value_type(
          switch (entry_file_type)
          {
             case FILE_TYPE_IN_CARCHIVE:
-            case FILE_TYPE_COMPRESSED:
             case FILE_TYPE_MORE:
             case FILE_TYPE_CORE:
             case FILE_TYPE_DIRECT_LOAD:
@@ -2562,6 +2562,15 @@ enum materialui_entry_value_type materialui_get_entry_value_type(
             case FILE_TYPE_MUSIC:
             case FILE_TYPE_IMAGE:
             case FILE_TYPE_MOVIE:
+               break;
+            case FILE_TYPE_COMPRESSED:
+               /* Note that we have to perform a backup check here,
+                * since the 'manual content scan - file extensions'
+                * setting may have a value of 'zip' or '7z' etc, which
+                * means it would otherwise get incorreclty identified as
+                * an achive file... */
+               if (entry_type != FILE_TYPE_CARCHIVE)
+                  value_type = MUI_ENTRY_VALUE_TEXT;
                break;
             default:
                value_type = MUI_ENTRY_VALUE_TEXT;
@@ -2692,7 +2701,13 @@ static void materialui_render_menu_entry_default(
       switch (entry_file_type)
       {
          case FILE_TYPE_COMPRESSED:
-            icon_texture = mui->textures.list[MUI_TEXTURE_ARCHIVE];
+            /* Note that we have to perform a backup check here,
+             * since the 'manual content scan - file extensions'
+             * setting may have a value of 'zip' or '7z' etc, which
+             * means it would otherwise get incorreclty identified as
+             * an achive file... */
+            if (entry_type == FILE_TYPE_CARCHIVE)
+               icon_texture = mui->textures.list[MUI_TEXTURE_ARCHIVE];
             break;
          case FILE_TYPE_IMAGE:
             icon_texture = mui->textures.list[MUI_TEXTURE_IMAGE];
@@ -4645,6 +4660,7 @@ static void materialui_render_fullscreen_thumbnails(
                primary_thumbnail_y,
                (unsigned)thumbnail_box_width,
                (unsigned)thumbnail_box_height,
+               MENU_THUMBNAIL_ALIGN_CENTRE,
                mui->fullscreen_thumbnail_alpha,
                1.0f);
       }
@@ -4673,6 +4689,7 @@ static void materialui_render_fullscreen_thumbnails(
                secondary_thumbnail_y,
                (unsigned)thumbnail_box_width,
                (unsigned)thumbnail_box_height,
+               MENU_THUMBNAIL_ALIGN_CENTRE,
                mui->fullscreen_thumbnail_alpha,
                1.0f);
       }
@@ -7610,7 +7627,8 @@ static void materialui_list_insert(
                      node->has_icon           = true;
                   }
             else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SCAN_DIRECTORY)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SCAN_FILE))
+                     string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SCAN_FILE)) ||
+                     string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_LIST))
                   )
             {
                node->icon_texture_index = MUI_TEXTURE_ADD;

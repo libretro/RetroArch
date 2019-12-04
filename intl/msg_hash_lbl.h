@@ -361,6 +361,8 @@ MSG_HASH(MENU_ENUM_LABEL_DEFERRED_LATENCY_SETTINGS_LIST,
       "deferred_latency_settings_list")
 MSG_HASH(MENU_ENUM_LABEL_DEFERRED_AI_SERVICE_SETTINGS_LIST,
       "deferred_ai_service_settings_list")
+MSG_HASH(MENU_ENUM_LABEL_DEFERRED_ACCESSIBILITY_SETTINGS_LIST,
+      "deferred_accessibility_settings_list")
 MSG_HASH(MENU_ENUM_LABEL_DEFERRED_LAKKA_LIST,
       "deferred_lakka_list")
 MSG_HASH(MENU_ENUM_LABEL_DEFERRED_LAKKA_SERVICES_LIST,
@@ -2039,6 +2041,8 @@ MSG_HASH(MENU_ENUM_LABEL_QUICK_MENU_SHOW_CLOSE_CONTENT,
       "quick_menu_show_close_content")
 MSG_HASH(MENU_ENUM_LABEL_SETTINGS_SHOW_INPUT,
       "settings_show_input")
+MSG_HASH(MENU_ENUM_LABEL_ACCESSIBILITY_SETTINGS,
+      "accessibility_settings")
 MSG_HASH(MENU_ENUM_LABEL_AI_SERVICE_SETTINGS,
       "ai_service_settings")
 MSG_HASH(MENU_ENUM_LABEL_AI_SERVICE_MODE,
@@ -2105,3 +2109,31 @@ MSG_HASH(MENU_ENUM_LABEL_DRIVER_SWITCH_ENABLE,
       "driver_switch_enable")
 MSG_HASH(MENU_ENUM_LABEL_AI_SERVICE_PAUSE,
       "ai_service_pause")
+MSG_HASH(MENU_ENUM_LABEL_DEFERRED_MANUAL_CONTENT_SCAN_LIST,
+      "deferred_manual_content_scan_list")
+MSG_HASH(MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_LIST,
+      "manual_content_scan_list")
+MSG_HASH(MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_DIR,
+      "manual_content_scan_dir")
+MSG_HASH(MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
+      "manual_content_scan_system_name")
+MSG_HASH(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
+      "deferred_dropdown_box_list_manual_content_scan_system_name")
+MSG_HASH(MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM,
+      "manual_content_scan_system_name_custom")
+MSG_HASH(MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_CORE_NAME,
+      "manual_content_scan_core_name")
+MSG_HASH(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_MANUAL_CONTENT_SCAN_CORE_NAME,
+      "deferred_dropdown_box_list_manual_content_scan_core_name")
+MSG_HASH(MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_FILE_EXTS,
+      "manual_content_scan_file_exts")
+MSG_HASH(MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_SEARCH_ARCHIVES,
+      "manual_content_scan_search_archives")
+MSG_HASH(MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_OVERWRITE,
+      "manual_content_scan_overwrite")
+MSG_HASH(MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_START,
+      "manual_content_scan_start")
+MSG_HASH(MENU_ENUM_LABEL_ACCESSIBILITY_ENABLED,
+      "accessibility_enabled")
+MSG_HASH(MENU_ENUM_LABEL_ACCESSIBILITY_NARRATOR_SPEECH_SPEED,
+      "accessibility_narrator_speech_speed")

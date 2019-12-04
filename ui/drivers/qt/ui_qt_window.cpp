@@ -286,7 +286,7 @@ MainWindow::MainWindow(QWidget *parent) :
    ,m_playlistViews(new FileDropWidget(this))
    ,m_searchWidget(new QWidget(this))
    ,m_searchLineEdit(new QLineEdit(this))
-   ,m_searchDock(new QDockWidget(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_EDIT_SEARCH), this))
+   ,m_searchDock(new QDockWidget(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SEARCH), this))
    ,m_playlistFiles()
    ,m_launchWithComboBox(new QComboBox(this))
    ,m_startCorePushButton(new QToolButton(this))
