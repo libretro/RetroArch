@@ -16441,7 +16441,7 @@ void input_keyboard_event(bool down, unsigned code,
    {
       if (code != 303 && code != 0)
       {
-         char* say_char = malloc(sizeof(char));
+         char* say_char = (char*) malloc(sizeof(char)+1);
          if (say_char != NULL)
          {
             char c = (char) character;
@@ -29048,6 +29048,7 @@ static bool accessibility_speak_macos(
    char* speed_out = malloc(4);
 
    char* speeds[10] = {"80", "100", "125", "150", "170", "210", "260", "310", "380", "450"};
+   settings_t *settings              = configuration_settings;
    int speed = settings->uints.accessibility_narrator_speech_speed;
 
    if (speed < 1)
@@ -29064,7 +29065,7 @@ static bool accessibility_speak_macos(
 
    if (speak_pid > 0)
    {
-      /* Kill the running espeak */
+      /* Kill the running say */
       kill(speak_pid, SIGTERM);
       speak_pid = 0;
    }
@@ -29086,12 +29087,23 @@ static bool accessibility_speak_macos(
    }
    else
    { 
-      /* child process: replace process with the espeak command */ 
+      /* child process: replace process with the say command */ 
       if (strlen(language_speaker)> 0)
-         execvp("say", (char* []) {"say", "-v", language_speaker, 
-               speak_text, "-r", speed_out, NULL});
+      {
+         char* cmd[] = {"say", "-v", NULL, 
+                        NULL, "-r", NULL, NULL};
+         cmd[2] = language_speaker;
+         cmd[3] = speak_text;
+         cmd[5] = speed_out;
+         execvp("say", cmd);
+      }
       else
-         execvp("say", (char* []) {"say", speak_text, "-r", speed_out,  NULL});
+      {
+         char* cmd[] = {"say", NULL, "-r", NULL,  NULL};
+         cmd[1] = speak_text;
+         cmd[3] = speed_out;
+         execvp("say",cmd);
+      }
    }
    return true;
 }
@@ -29276,7 +29288,7 @@ bool accessibility_speak_linux(
 
    strlcpy(speed_out, "-s", 3);
    strlcat(speed_out, speeds[speed-1], 6);
-   RARCH_LOG("SSS %s\n", speed_out);
+
    if (priority < 10 && speak_pid > 0)
    {
       /* check if old pid is running */
@@ -29309,7 +29321,11 @@ bool accessibility_speak_linux(
    else
    { 
       /* child process: replace process with the espeak command */ 
-      execvp("espeak", (char* []) {"espeak", voice_out,speed_out, speak_text, NULL});
+      char* cmd[] = {"espeak", NULL, NULL, NULL, NULL};
+      cmd[1] = voice_out;
+      cmd[2] = speed_out;
+      cmd[3] = speak_text;
+      execvp("espeak", cmd);
    }
    return true;
 }
