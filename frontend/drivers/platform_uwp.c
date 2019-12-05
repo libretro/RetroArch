@@ -390,8 +390,16 @@ static void frontend_uwp_environment_get(int *argc, char *argv[],
 
 #ifdef HAVE_MENU
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) || defined(HAVE_OPENGL_CORE)
+   if (string_is_equal(uwp_device_family, "Windows.Mobile"))
+   {
+      snprintf(g_defaults.settings.menu,
+         sizeof(g_defaults.settings.menu), "glui");
+   }
+   else
+   {
       snprintf(g_defaults.settings.menu,
          sizeof(g_defaults.settings.menu), "xmb");
+   }
 #endif
 #endif
 }
