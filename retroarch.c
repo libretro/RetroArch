@@ -4456,11 +4456,15 @@ finish:
 
 bool is_ai_service_speech_running(void)
 {
+#ifdef HAVE_AUDIOMIXER
    enum audio_mixer_state res = audio_driver_mixer_get_stream_state(10);
    RARCH_LOG("TTT %d\n", res);
    if (res == AUDIO_STREAM_STATE_NONE || res == AUDIO_STREAM_STATE_STOPPED)
       return false;
    return true;
+#else
+   return false;
+#endif
 }
 
 bool ai_service_speech_stop(void)
