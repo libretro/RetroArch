@@ -33,6 +33,7 @@
 - PSP: Solving issue exiting RetroArch by HOME button
 - SCANNER: Manual scanner, not dependent on database files
 - SCANNER/MANUAL: Add option to scan inside archives
+- SCANNER/MANUAL: Enable automatic naming of arcade content via DAT files. This is compatible with DAT files in either Logiqx XML or MAME List XML format.
 - VIDEO: Do not reinit video driver on SET_SYSTEM_AV_INFO unless needed
 - VIDEO LAYOUT: Fixed XML parsing of attributes with spaces, should fix issues with several video layouts
 - VITA: GL1 driver support
