@@ -104,7 +104,7 @@ int menu_hash_get_help_enum(enum msg_hash_enums msg, char *s, size_t len)
 
 const char *get_user_language_iso639_1(bool limit)
 {
-   char *voice;
+   const char *voice;
    voice = "en";
    switch (uint_user_language)
    {
