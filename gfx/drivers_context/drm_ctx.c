@@ -388,10 +388,16 @@ nextgpu:
 
    drm_setup(fd);
 
-   /* First mode is assumed to be the "optimal"
-    * one for get_video_size() purposes. */
-   drm->fb_width    = g_drm_connector->modes[0].hdisplay;
-   drm->fb_height   = g_drm_connector->modes[0].vdisplay;
+   /* Choose the optimal video mode for get_video_size():
+     - the current video mode from the CRTC
+     - otherwise pick first connector mode */
+   if (g_orig_crtc->mode_valid) {
+      drm->fb_width  = g_orig_crtc->mode.hdisplay;
+      drm->fb_height = g_orig_crtc->mode.vdisplay;
+   } else {
+      drm->fb_width  = g_drm_connector->modes[0].hdisplay;
+      drm->fb_height = g_drm_connector->modes[0].vdisplay;
+   }
 
    drmSetMaster(g_drm_fd);
 
