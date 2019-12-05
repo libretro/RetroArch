@@ -2289,6 +2289,9 @@ void dir_check_defaults(void)
    }
 }
 
+/* Is text-to-speech accessibility turned on? */
+static bool accessibility_enabled               = false;
+
 #ifdef HAVE_MENU
 /* MENU INPUT GLOBAL VARIABLES */
 static const char **menu_input_dialog_keyboard_buffer     = {NULL};
@@ -2310,9 +2313,6 @@ static bool menu_driver_is_binding              = false;
 /* A menu toggle has been requested; if the menu was running,
  * it will be closed; if the menu was not running, it will be opened */
 static bool menu_driver_toggled                 = false;
-
-/* Is text-to-speech accessibility turned on? */
-static bool accessibility_enabled               = false;
 
 
 #ifdef HAVE_LIBNX
@@ -4304,17 +4304,18 @@ static void handle_translation_cb(
              * image, so we have to change that to RGB first.  This should
              * probably be replaced with a scaler call.*/
             {
+               unsigned ui;
                int d,tw,th,tc;
                d=0;
                raw_image_data = malloc(image_width*image_height*3*sizeof(uint8_t));
-               for (i=0;i<image_width*image_height*4;i++)
+               for (ui=0;ui<image_width*image_height*4;ui++)
                {
-                  if (i%4 != 3)
+                  if (ui%4 != 3)
                   {
                      tc = d%3;
                      th = image_height-d/(3*image_width)-1;
                      tw = (d%(image_width*3))/3;
-                     ((uint8_t*) raw_image_data)[tw*3+th*3*image_width+tc] = ((uint8_t *)raw_image_data_alpha)[i];
+                     ((uint8_t*) raw_image_data)[tw*3+th*3*image_width+tc] = ((uint8_t *)raw_image_data_alpha)[ui];
                      d+=1;
                   }
                }
@@ -4463,8 +4464,10 @@ bool is_ai_service_speech_running(void)
 
 bool ai_service_speech_stop(void)
 {
+#ifdef HAVE_AUDIOMIXER
    audio_driver_mixer_stop_stream(10);
    audio_driver_mixer_remove_stream(10);
+#endif
    return false;
 }
 
@@ -4834,7 +4837,7 @@ static bool run_translation_service(void)
    /* Form request... */
    if (system_label)
    {
-      int i;
+      unsigned i;
       /* include game label if provided */
       rf3 = (char *) malloc(16+strlen(system_label));
       memcpy(rf3, "\", \"label\": \"", 13*sizeof(uint8_t));
@@ -4911,7 +4914,7 @@ static bool run_translation_service(void)
       /* mode */
       {
          char temp_string[PATH_MAX_LENGTH];
-         char *mode_chr                    = NULL;
+         const char *mode_chr                    = NULL;
          /*"image" is included for backwards compatability with
           * vgtranslate < 1.04 */
 
@@ -16437,7 +16440,7 @@ void input_keyboard_event(bool down, unsigned code,
       uint32_t character, uint16_t mod, unsigned device)
 {
    static bool deferred_wait_keys;
-   if (menu_input_dialog_keyboard_display && down && is_accessibility_enabled())
+   if (menu_input_dialog_get_display_kb() && down && is_accessibility_enabled())
    {
       if (code != 303 && code != 0)
       {
@@ -28956,11 +28959,11 @@ bool is_accessibility_enabled(void)
 }
 
 bool is_input_keyboard_display_on(void)
-{
-   return menu_input_dialog_keyboard_display;
+{ 
+   return menu_input_dialog_get_display_kb();
 }
 
-bool accessibility_speak(char* speak_text)
+bool accessibility_speak(const char* speak_text)
 {
    return accessibility_speak_priority(speak_text, 10);
 }
@@ -29041,11 +29044,11 @@ bool is_narrator_running_macos(void)
 }
 
 static bool accessibility_speak_macos(
-      char* speak_text, const char* voice, int priority)
+      const char* speak_text, const char* voice, int priority)
 {
    int pid;
    char* language_speaker = accessibility_mac_language_code(voice);
-   char* speed_out = malloc(4);
+   char* speed_out = (char*) malloc(4);
 
    char* speeds[10] = {"80", "100", "125", "150", "170", "210", "260", "310", "380", "450"};
    settings_t *settings              = configuration_settings;
@@ -29093,7 +29096,7 @@ static bool accessibility_speak_macos(
          char* cmd[] = {"say", "-v", NULL, 
                         NULL, "-r", NULL, NULL};
          cmd[2] = language_speaker;
-         cmd[3] = speak_text;
+         cmd[3] = (char *) speak_text;
          cmd[5] = speed_out;
          execvp("say", cmd);
       }
@@ -29219,7 +29222,7 @@ static bool is_narrator_running_windows(void)
 }
 
 static bool accessibility_speak_windows(
-      char* speak_text, const char* voice, int priority)
+      const char* speak_text, const char* voice, int priority)
 {
    char cmd[1200];
    char* language = accessibility_win_language_code(voice);
@@ -29242,10 +29245,10 @@ static bool accessibility_speak_windows(
 
    if (strlen(language) > 0) 
       snprintf(cmd, sizeof(cmd),
-               "powershell.exe -NoProfile -WindowStyle Hidden -Command \"Add-Type -AssemblyName System.Speech; $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer; $synth.SelectVoice(\\\"%s\\\"); $synth.Rate = %s; $synth.Speak(\\\"%s\\\");\"", language, speeds[speed-1], speak_text); 
+               "powershell.exe -NoProfile -WindowStyle Hidden -Command \"Add-Type -AssemblyName System.Speech; $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer; $synth.SelectVoice(\\\"%s\\\"); $synth.Rate = %s; $synth.Speak(\\\"%s\\\");\"", language, speeds[speed-1], (char*) speak_text); 
    else
       snprintf(cmd, sizeof(cmd),
-               "powershell.exe -NoProfile -WindowStyle Hidden -Command \"Add-Type -AssemblyName System.Speech; $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer; $synth.Rate = %s; $synth.Speak(\\\"%s\\\");\"", speeds[speed-1], speak_text); 
+               "powershell.exe -NoProfile -WindowStyle Hidden -Command \"Add-Type -AssemblyName System.Speech; $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer; $synth.Rate = %s; $synth.Speak(\\\"%s\\\");\"", speeds[speed-1], (char*) speak_text); 
    if (pi_set)
       terminate_win32_process(pi);
    res = create_win32_process(cmd);
@@ -29268,14 +29271,14 @@ bool is_narrator_running_linux(void)
 
 
 bool accessibility_speak_linux(
-      char* speak_text, const char* language, int priority)
+      const char* speak_text, const char* language, int priority)
 {
    int pid;
-   char* voice_out = malloc(3+strlen(language));
-   char* speed_out = malloc(3+3);
+   char* voice_out = (char *) malloc(3+strlen(language));
+   char* speed_out = (char *) malloc(3+3);
    settings_t *settings              = configuration_settings;
 
-   char* speeds[10] = {"80", "100", "125", "150", "170", "210", "260", "310", "380", "450"};
+   const char* speeds[10] = {"80", "100", "125", "150", "170", "210", "260", "310", "380", "450"};
    int speed = settings->uints.accessibility_narrator_speech_speed;
 
    if (speed < 1)
@@ -29321,17 +29324,17 @@ bool accessibility_speak_linux(
    else
    { 
       /* child process: replace process with the espeak command */ 
-      char* cmd[] = {"espeak", NULL, NULL, NULL, NULL};
+      char* cmd[] = { (char*) "espeak", NULL, NULL, NULL, NULL};
       cmd[1] = voice_out;
       cmd[2] = speed_out;
-      cmd[3] = speak_text;
+      cmd[3] = (char *) speak_text;
       execvp("espeak", cmd);
    }
    return true;
 }
 #endif
 
-bool accessibility_speak_priority(char* speak_text, int priority)
+bool accessibility_speak_priority(const char* speak_text, int priority)
 {
    const char* voice = NULL;
 
@@ -29356,7 +29359,9 @@ bool accessibility_speak_priority(char* speak_text, int priority)
          mixer can handle playing streams while the core is paused, then 
          we can use this. */
       /* 
+#if defined(HAVE_NETWORKING)
          return accessibility_speak_ai_service(speak_text, voice, priority);
+#endif
       */
    }
    return true;
@@ -29378,7 +29383,7 @@ bool is_narrator_running(void)
 }
 
 
-bool accessibility_speak_ai_service(char* speak_text, const char* language, int priority)
+bool accessibility_speak_ai_service(const char* speak_text, const char* language, int priority)
 {
 #if defined(HAVE_NETWORKING) && defined(HAVE_TRANSLATE)
    /* Call the AI service listed to do espeak for us. */ 
@@ -29422,11 +29427,6 @@ bool accessibility_speak_ai_service(char* speak_text, const char* language, int 
 
 bool accessibility_startup_message(void)
 {
-#ifdef HAVE_NETWORKING
-   /* Note: for the ai service tts call, this is called too early... */
    accessibility_speak("RetroArch accessibility on.");
    return true;
-#else
-   return false;
-#endif
 }
