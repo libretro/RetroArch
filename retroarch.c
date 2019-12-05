@@ -477,6 +477,9 @@ static const gfx_ctx_driver_t *gfx_ctx_drivers[] = {
 #if defined(_WIN32) && !defined(__WINRT__) && (defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE) || defined(HAVE_VULKAN))
    &gfx_ctx_wgl,
 #endif
+#if defined(__WINRT__) && defined(HAVE_OPENGLES)
+   &gfx_ctx_uwp,
+#endif
 #if defined(HAVE_WAYLAND)
    &gfx_ctx_wayland,
 #endif

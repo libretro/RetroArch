@@ -581,6 +581,44 @@ extern "C" {
 		CoreWindow::GetForCurrentThread()->PointerCursor = state ? ref new CoreCursor(CoreCursorType::Arrow, 0) : nullptr;
 	}
 
+
+	bool win32_get_metrics(void* data,
+		enum display_metric_types type, float* value)
+	{
+		int pixels_x = DisplayInformation::GetForCurrentView()->ScreenWidthInRawPixels;
+		int pixels_y = DisplayInformation::GetForCurrentView()->ScreenHeightInRawPixels;
+		int raw_dpi_x = DisplayInformation::GetForCurrentView()->RawDpiX;
+		int raw_dpi_y = DisplayInformation::GetForCurrentView()->RawDpiY;
+		int physical_width = pixels_x / raw_dpi_x;
+		int physical_height = pixels_y / raw_dpi_y;
+
+		switch (type)
+		{
+		case DISPLAY_METRIC_PIXEL_WIDTH:
+			*value = pixels_x;
+			return true;
+		case DISPLAY_METRIC_PIXEL_HEIGHT:
+			*value = pixels_y;
+			return true;
+		case DISPLAY_METRIC_MM_WIDTH:
+			/* 25.4 mm in an inch. */
+			*value = 254 * physical_width / 10;
+			return true;
+		case DISPLAY_METRIC_MM_HEIGHT:
+			/* 25.4 mm in an inch. */
+			*value = 254 * physical_height / 10;
+			return true;
+		case DISPLAY_METRIC_DPI:
+			*value = raw_dpi_x;
+			return true;
+		case DISPLAY_METRIC_NONE:
+		default:
+			*value = 0;
+			break;
+		}
+		return false;
+	}
+
 	void win32_check_window(bool *quit, bool *resize, unsigned *width, unsigned *height)
 	{
 		*quit   = App::GetInstance()->IsWindowClosed();
@@ -597,6 +635,37 @@ extern "C" {
 	{
 		return (void*)CoreWindow::GetForCurrentThread();
 	}
+
+#ifdef HAVE_EGL
+	/* A special version of egl_create_surface to properly handle DPI scaling. */
+	bool uwp_egl_create_surface(egl_ctx_data_t* egl)
+	{
+		EGLint window_attribs[] = {
+			EGL_RENDER_BUFFER, EGL_BACK_BUFFER,
+			EGL_NONE,
+		};
+
+		double scale = DisplayInformation::GetForCurrentView()->RawPixelsPerViewPixel;
+
+		/* Why Microsoft uses a WinRT class for sending parameters to EGL?! */
+		PropertySet^ prop = ref new PropertySet();
+		prop->Insert(L"EGLNativeWindowTypeProperty", CoreWindow::GetForCurrentThread());
+		prop->Insert(L"EGLRenderResolutionScaleProperty", PropertyValue::CreateSingle(scale));
+
+		egl->surf = eglCreateWindowSurface(egl->dpy, egl->config, (EGLNativeWindowType)(prop), window_attribs);
+
+		if (egl->surf == EGL_NO_SURFACE)
+			return false;
+
+		/* Connect the context to the surface. */
+		if (!eglMakeCurrent(egl->dpy, egl->surf, egl->surf, egl->ctx))
+			return false;
+
+		RARCH_LOG("[EGL]: Current context: %p.\n", (void*)eglGetCurrentContext());
+
+		return true;
+	}
+#endif
 
 	void uwp_fill_installed_core_packages(struct string_list *list)
 	{

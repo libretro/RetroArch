@@ -279,6 +279,10 @@ VIDEO CONTEXT
 #include "../gfx/common/angle_common.c"
 #endif
 
+#if defined(__WINRT__)
+#include "../gfx/drivers_context/uwp_egl_ctx.c"
+#endif
+
 #endif
 
 #if defined(HAVE_X11)
