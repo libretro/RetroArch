@@ -621,7 +621,8 @@ extern "C" {
 
 	bool uwp_keyboard_pressed(unsigned key)
 	{
-		unsigned sym = rarch_keysym_lut[(enum retro_key)key];
+		VirtualKey sym = (VirtualKey)rarch_keysym_lut[(enum retro_key)key];
+		if (sym == VirtualKey::None) return false;
 		CoreWindow^ window = CoreWindow::GetForCurrentThread();
 		if (!window)
 		{
@@ -629,7 +630,7 @@ extern "C" {
 			// Dolphin core runs on its own CPU thread separate from the UI-thread and so we must do a check for this.
 			return false;
 		}
-		return (window->GetKeyState((VirtualKey)sym) & CoreVirtualKeyStates::Down) == CoreVirtualKeyStates::Down;
+		return (window->GetKeyState(sym) & CoreVirtualKeyStates::Down) == CoreVirtualKeyStates::Down;
 	}
 
 	int16_t uwp_mouse_state(unsigned port, unsigned id, bool screen)
