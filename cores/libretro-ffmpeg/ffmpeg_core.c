@@ -88,12 +88,14 @@ static AVCodecContext *vctx;
 static int video_stream_index;
 static enum AVColorSpace colorspace;
 
+#if LIBAVUTIL_VERSION_MAJOR > 55
 static enum AVPixelFormat pix_fmt;
-
 static enum AVHWDeviceType hw_decoder;
-static bool force_sw_decoder;
 static int sw_decoder_threads;
+static bool force_sw_decoder;
 static bool hw_decoding_enabled;
+#endif
+
 
 #define MAX_STREAMS 8
 static AVCodecContext *actx[MAX_STREAMS];
@@ -279,9 +281,11 @@ void CORE_PREFIX(retro_get_system_av_info)(struct retro_system_av_info *info)
 void CORE_PREFIX(retro_set_environment)(retro_environment_t cb)
 {
    static const struct retro_variable vars[] = {
+#if LIBAVUTIL_VERSION_MAJOR > 55
       { "ffmpeg_hw_decoder", "Use Hardware decoder (restart); auto|off|"
          "cuda|d3d11va|drm|dxva2|mediacodec|opencl|qsv|vaapi|vdpau|videotoolbox" },
       { "ffmpeg_sw_decoder_threads", "Software decoder thread count (restart); 1|2|4|8" },
+#endif
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
       { "ffmpeg_temporal_interp", "Temporal Interpolation; disabled|enabled" },
 #ifdef HAVE_GL_FFT
@@ -408,6 +412,7 @@ static void check_variables(bool firststart)
       slock_unlock(decode_thread_lock);
    }
 
+#if LIBAVUTIL_VERSION_MAJOR > 55
    if (firststart)
    {
       hw_var.key = "ffmpeg_hw_decoder";
@@ -427,11 +432,9 @@ static void check_variables(bool firststart)
             hw_decoder = AV_HWDEVICE_TYPE_DRM;
          else if (string_is_equal(hw_var.value, "dxva2"))
             hw_decoder = AV_HWDEVICE_TYPE_DXVA2;
-#if LIBAVUTIL_VERSION_MAJOR > 55
          else if (string_is_equal(hw_var.value, "mediacodec"))
             hw_decoder = AV_HWDEVICE_TYPE_MEDIACODEC;
          else if (string_is_equal(hw_var.value, "opencl"))
-#endif
             hw_decoder = AV_HWDEVICE_TYPE_OPENCL;
          else if (string_is_equal(hw_var.value, "qsv"))
             hw_decoder = AV_HWDEVICE_TYPE_QSV;
@@ -451,6 +454,7 @@ static void check_variables(bool firststart)
       sw_decoder_threads = strtoul(sw_threads_var.value, NULL, 0);
       slock_unlock(decode_thread_lock);
    }
+#endif
 }
 
 static void seek_frame(int seek_frames)
@@ -818,6 +822,7 @@ void CORE_PREFIX(retro_run)(void)
       CORE_PREFIX(audio_batch_cb)(audio_buffer, to_read_frames);
 }
 
+#if LIBAVUTIL_VERSION_MAJOR > 55
 /* Try to initialize a specific HW decoder defined by type */
 static enum AVPixelFormat init_hw_decoder(struct AVCodecContext *ctx,
                                      const enum AVPixelFormat *pix_fmts,
@@ -934,6 +939,7 @@ static enum AVPixelFormat get_format(AVCodecContext *ctx,
 
    return pix_fmt;
 }
+#endif
 
 static bool open_codec(AVCodecContext **ctx, unsigned index)
 {
@@ -1052,8 +1058,10 @@ static bool open_codecs(void)
             {
                if (!open_codec(&vctx, i))
                   return false;
+#if LIBAVUTIL_VERSION_MAJOR > 55
                pix_fmt = AV_PIX_FMT_NONE;
                vctx->get_format  = get_format;
+#endif
                video_stream_index = i;
             }
             break;
@@ -1272,6 +1280,7 @@ static void decode_video(AVCodecContext *ctx, AVPacket *pkt, AVFrame *conv_frame
          goto fail;
       }
 
+#if LIBAVUTIL_VERSION_MAJOR > 55
       if (hw_decoding_enabled)
       {
          /* Copy data from VRAM to RAM */
@@ -1283,6 +1292,7 @@ static void decode_video(AVCodecContext *ctx, AVPacket *pkt, AVFrame *conv_frame
          tmp_frame = sw_frame;
       }
       else
+#endif
          tmp_frame = frame;
 
       *sws = sws_getCachedContext(*sws,
