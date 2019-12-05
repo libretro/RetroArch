@@ -23,6 +23,7 @@
 - MENU/MATERIALUI: Dual thumbnail view
 - MENU/MATERIALUI: Fullscreen thumbnail viewer
 - MENU/MATERIALUI: Scroll rapidly by press and holding the scrollbar
+- MENU/RGUI: New theme 'Flux'
 - MENU/OZONE: Thumbnails now have a fade-in animation
 - MENU/QT/WIMP: Fix dock titles getting cut off
 - OPENGL: Shaders are now working properly (only in OpenGL) when rotating both from Core API rotation and from menu video rotation. The fix is clearly visible with crt-royale for example
@@ -38,7 +39,6 @@
 - VIDEO LAYOUT: Fixed XML parsing of attributes with spaces, should fix issues with several video layouts
 - VITA: GL1 driver support
 - WINDOWS/XINPUT: Get rid of 128 byte device name limit for XInput device discover - when device name was too long, it would not be picked up by the XInput driver and would instead fallback to DirectInput
-
 
 # (1.8.1)
 - BUGFIX/MENU: Fix menu rendering with Mali GPUs after changing video dimensions
