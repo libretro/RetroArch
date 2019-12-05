@@ -207,7 +207,7 @@ VIDEO CONTEXT
 
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
 
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_VULKAN)
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_VULKAN) || defined(HAVE_OPENGLES)
 #include "../gfx/drivers_context/wgl_ctx.c"
 #endif
 
@@ -273,6 +273,10 @@ VIDEO CONTEXT
 
 #if defined(HAVE_VIDEOCORE)
 #include "../gfx/drivers_context/vc_egl_ctx.c"
+#endif
+
+#if defined(_WIN32)
+#include "../gfx/common/angle_common.c"
 #endif
 
 #endif
