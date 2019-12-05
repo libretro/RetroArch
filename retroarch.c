@@ -28972,7 +28972,8 @@ bool accessibility_speak(const char* speak_text)
 }
 
 
-#if defined(__APPLE__) && defined(__MACH__)
+#if defined(__APPLE__) && defined(__MACH__) && !defined(EMSCRIPTEN)
+
 static char* accessibility_mac_language_code(const char* language)
 {
    if (string_is_equal(language,"en"))
@@ -29115,7 +29116,8 @@ static bool accessibility_speak_macos(
 }
 #endif
 
-#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__) && !defined(EMSCRIPTEN)
+
 static char *accessibility_win_language_code(const char* language)
 {
    if (string_is_equal(language,"en"))
@@ -29181,9 +29183,7 @@ static char *accessibility_win_language_code(const char* language)
    else
       return "";
 }
-#endif
 
-#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
 PROCESS_INFORMATION pi;
 bool pi_set = false;
 
@@ -29263,15 +29263,15 @@ static bool accessibility_speak_windows(
 }
 #endif
 
-#if defined(__linux__) || defined(__unix__)
+#if (defined(__linux__) || defined(__unix__)) && !defined(EMSCRIPTEN)
+
+
 bool is_narrator_running_linux(void)
 {
    if (kill(speak_pid, 0) == 0)
       return true;
    return false;
 }
-
-
 
 bool accessibility_speak_linux(
       const char* speak_text, const char* language, int priority)
@@ -29345,13 +29345,13 @@ bool accessibility_speak_priority(const char* speak_text, int priority)
 
    if (is_accessibility_enabled())
    {
-#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__) && !defined(EMSCRIPTEN)
       voice = get_user_language_iso639_1(true);
       return accessibility_speak_windows(speak_text, voice, priority);
-#elif defined(__APPLE__) && defined(__MACH__)
+#elif defined(__APPLE__) && defined(__MACH__) && !defined(EMSCRIPTEN)
       voice = get_user_language_iso639_1(false);
       return accessibility_speak_macos(speak_text, voice, priority);
-#elif defined(__linux__) || defined(__unix__)
+#elif (defined(__linux__) || defined(__unix__)) && !defined(EMSCRIPTEN)
       voice = get_user_language_iso639_1(true);
       return accessibility_speak_linux(speak_text, voice, priority);
 #endif
@@ -29374,11 +29374,11 @@ bool is_narrator_running(void)
 {
    if (is_accessibility_enabled())
    {
-#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__) && !defined(EMSCRIPTEN)
       return is_narrator_running_windows();
-#elif defined(__APPLE__) && defined(__MACH__)
+#elif defined(__APPLE__) && defined(__MACH__) && !defined(EMSCRIPTEN)
       return is_narrator_running_macos();
-#elif defined(__linux__) || defined(__unix__)
+#elif (defined(__linux__) || defined(__unix__)) && !defined(EMSCRIPTEN)
       return is_narrator_running_linux();
 #endif
    }
