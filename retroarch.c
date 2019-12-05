@@ -2259,6 +2259,10 @@ void dir_check_defaults(void)
     */
 #if defined(ORBIS) || defined(ANDROID)
    if (path_is_valid("host0:app/custom.ini"))
+#elif defined(__WINRT__)
+   char path[MAX_PATH];
+   fill_pathname_expand_special(path, "~\\custom.ini", MAX_PATH);
+   if (path_is_valid(path))
 #else
    if (path_is_valid("custom.ini"))
 #endif
