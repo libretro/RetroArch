@@ -3771,6 +3771,12 @@ static bool menu_displaylist_parse_manual_content_scan_list(
          false) == 0)
       count++;
 
+   /* Arcade DAT file */
+   if (menu_displaylist_parse_settings_enum(info->list,
+         MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_DAT_FILE, PARSE_ONLY_PATH,
+         false) == 0)
+      count++;
+
    /* Overwrite playlist */
    if (menu_displaylist_parse_settings_enum(info->list,
          MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_OVERWRITE, PARSE_ONLY_BOOL,
@@ -9009,6 +9015,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
       case DISPLAYLIST_FONTS:
       case DISPLAYLIST_AUDIO_FILTERS:
       case DISPLAYLIST_CHEAT_FILES:
+      case DISPLAYLIST_MANUAL_CONTENT_SCAN_DAT_FILES:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          filebrowser_clear_type();
          if (!string_is_empty(info->exts))
@@ -9054,6 +9061,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             case DISPLAYLIST_CHEAT_FILES:
                info->type_default = FILE_TYPE_CHEAT;
                info->exts         = strdup("cht");
+               break;
+            case DISPLAYLIST_MANUAL_CONTENT_SCAN_DAT_FILES:
+               info->type_default = FILE_TYPE_MANUAL_SCAN_DAT;
+               info->exts         = strdup("dat|xml");
                break;
             default:
                break;

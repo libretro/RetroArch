@@ -6695,6 +6695,31 @@ void general_write_handler(rarch_setting_t *setting)
           * string to lower case */
          manual_content_scan_scrub_file_exts_custom();
          break;
+      case MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_DAT_FILE:
+         /* Ensure that DAT file path is valid
+          * (cannot check file contents here - DAT
+          * files are too large to load in the UI
+          * thread - have to wait until the scan task
+          * is pushed) */
+         switch (manual_content_scan_validate_dat_file_path())
+         {
+            case MANUAL_CONTENT_SCAN_DAT_FILE_INVALID:
+               runloop_msg_queue_push(
+                     msg_hash_to_str(MSG_MANUAL_CONTENT_SCAN_DAT_FILE_INVALID),
+                     1, 100, true,
+                     NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+               break;
+            case MANUAL_CONTENT_SCAN_DAT_FILE_TOO_LARGE:
+               runloop_msg_queue_push(
+                     msg_hash_to_str(MSG_MANUAL_CONTENT_SCAN_DAT_FILE_TOO_LARGE),
+                     1, 100, true,
+                     NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+               break;
+            default:
+               /* No action required */
+               break;
+         }
+         break;
       default:
          break;
    }
@@ -16550,6 +16575,20 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler,
                SD_FLAG_NONE);
+
+         CONFIG_PATH(
+               list, list_info,
+               manual_content_scan_get_dat_file_path_ptr(),
+               manual_content_scan_get_dat_file_path_size(),
+               MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_DAT_FILE,
+               MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_DAT_FILE,
+               "",
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         menu_settings_list_current_add_values(list, list_info, "dat|xml");
 
          CONFIG_BOOL(
                list, list_info,

@@ -852,9 +852,6 @@ ifeq ($(HAVE_VIDEO_LAYOUT), 1)
 			 gfx/video_layout/internal.o \
 			 gfx/video_layout/scope.o \
 			 gfx/video_layout/load.o
-	OBJ += \
-			 $(LIBRETRO_COMM_DIR)/formats/xml/rxml.o \
-			 deps/yxml/yxml.o
 endif
 
 ifeq ($(HAVE_STB_FONT), 1)
@@ -988,6 +985,12 @@ ifeq ($(HAVE_WAYLAND), 1)
  LIBS += $(WAYLAND_LIBS) $(WAYLAND_CURSOR_LIBS)
 
 endif
+
+# XML
+OBJ += \
+       $(LIBRETRO_COMM_DIR)/formats/xml/rxml.o \
+       $(LIBRETRO_COMM_DIR)/formats/logiqx_dat/logiqx_dat.o \
+       deps/yxml/yxml.o
 
 #Input
 

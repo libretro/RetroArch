@@ -25,6 +25,7 @@
 #include <string/stdstring.h>
 #include <lists/string_list.h>
 #include <file/file_path.h>
+#include <formats/logiqx_dat.h>
 
 #include "tasks_internal.h"
 
@@ -51,6 +52,7 @@ typedef struct manual_scan_handle
    manual_content_scan_task_config_t *task_config;
    playlist_t *playlist;
    struct string_list *content_list;
+   logiqx_dat_t *dat_file;
    size_t list_size;
    size_t list_index;
    enum manual_scan_status status;
@@ -78,6 +80,12 @@ static void free_manual_content_scan_handle(manual_scan_handle_t *manual_scan)
    {
       string_list_free(manual_scan->content_list);
       manual_scan->content_list = NULL;
+   }
+
+   if (manual_scan->dat_file)
+   {
+      logiqx_dat_free(manual_scan->dat_file);
+      manual_scan->dat_file = NULL;
    }
 
    free(manual_scan);
@@ -117,6 +125,22 @@ static void task_manual_content_scan_handler(retro_task_t *task)
             }
 
             manual_scan->list_size = manual_scan->content_list->size;
+
+            /* Load DAT file, if required */
+            if (!string_is_empty(manual_scan->task_config->dat_file_path))
+            {
+               manual_scan->dat_file =
+                     logiqx_dat_init(manual_scan->task_config->dat_file_path);
+
+               if (!manual_scan->dat_file)
+               {
+                  runloop_msg_queue_push(
+                        msg_hash_to_str(MSG_MANUAL_CONTENT_SCAN_DAT_FILE_LOAD_ERROR),
+                        1, 100, true,
+                        NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+                  goto task_finished;
+               }
+            }
 
             /* Open playlist */
             manual_scan->playlist = playlist_init(
@@ -172,7 +196,7 @@ static void task_manual_content_scan_handler(retro_task_t *task)
                /* Add content to playlist */
                manual_content_scan_add_content_to_playlist(
                      manual_scan->task_config, manual_scan->playlist,
-                     content_path, content_type);
+                     content_path, content_type, manual_scan->dat_file);
             }
 
             /* Increment content index */
@@ -286,6 +310,7 @@ bool task_push_manual_content_scan(void)
    manual_scan->task_config  = NULL;
    manual_scan->playlist     = NULL;
    manual_scan->content_list = NULL;
+   manual_scan->dat_file     = NULL;
    manual_scan->list_size    = 0;
    manual_scan->list_index   = 0;
    manual_scan->status       = MANUAL_SCAN_BEGIN;

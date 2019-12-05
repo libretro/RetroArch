@@ -109,6 +109,9 @@ void filebrowser_parse(menu_displaylist_info_t *info, unsigned type_data)
                   (filter_ext && info) ? subsystem->roms[content_get_subsystem_rom_id()].valid_extensions : NULL,
                   true, settings->bools.show_hidden_files, true, false);
       }
+      else if (info && (info->type_default == FILE_TYPE_MANUAL_SCAN_DAT))
+         str_list = dir_list_new(path,
+               info->exts, true, settings->bools.show_hidden_files, false, false);
       else
          str_list = dir_list_new(path,
                (filter_ext && info) ? info->exts : NULL,

@@ -66,19 +66,15 @@ static void rxml_free_node(struct rxml_node *node)
 
    for (attrib_node_head = node->attrib; attrib_node_head; )
    {
-      struct rxml_attrib_node *next_attrib = NULL;
+      struct rxml_attrib_node *next_attrib =
+            (struct rxml_attrib_node*)attrib_node_head->next;
 
-      next_attrib = (struct rxml_attrib_node*)attrib_node_head->next;
-
-      if (next_attrib)
-      {
-         if (attrib_node_head->attrib)
-            free(attrib_node_head->attrib);
-         if (attrib_node_head->value)
-            free(attrib_node_head->value);
-         if (attrib_node_head)
-            free(attrib_node_head);
-      }
+      if (attrib_node_head->attrib)
+         free(attrib_node_head->attrib);
+      if (attrib_node_head->value)
+         free(attrib_node_head->value);
+      if (attrib_node_head)
+         free(attrib_node_head);
 
       attrib_node_head = next_attrib;
    }
@@ -161,6 +157,7 @@ rxml_document_t *rxml_load_document_string(const char *str)
 
       case YXML_ELEMSTART:
          if (node) {
+
             if (level > stack_i) {
                buf->stack[stack_i] = node;
                ++stack_i;
@@ -177,7 +174,10 @@ rxml_document_t *rxml_load_document_string(const char *str)
             node = doc->root_node = (rxml_node_t*)calloc(1, sizeof(*node));
          }
 
+         if (node->name)
+            free(node->name);
          node->name = strdup(x.elem);
+
          attr = NULL;
 
          ++level;
@@ -188,7 +188,25 @@ rxml_document_t *rxml_load_document_string(const char *str)
 
          if (valptr > buf->val) {
             *valptr = '\0';
-            node->data = strdup(buf->val);
+
+            /* Original code was broken here:
+             * > If an element ended on two successive
+             *   iterations, on the second iteration
+             *   the 'data' for the *previous* node would
+             *   get overwritten
+             * > This effectively erased the data for the
+             *   previous node, *and* caused a memory leak
+             *   (due to the double strdup())
+             * It seems the correct thing to do here is
+             * only copy the data if the current 'level'
+             * and 'stack index' are the same... */
+            if (level == stack_i)
+            {
+               if (node->data)
+                  free(node->data);
+               node->data = strdup(buf->val);
+            }
+
             valptr = buf->val;
          }
 
@@ -211,7 +229,10 @@ rxml_document_t *rxml_load_document_string(const char *str)
          else
             attr = node->attrib = (struct rxml_attrib_node*)calloc(1, sizeof(*attr));
 
+         if (attr->attrib)
+            free(attr->attrib);
          attr->attrib = strdup(x.attr);
+
          valptr = buf->val;
          break;
 
@@ -225,7 +246,11 @@ rxml_document_t *rxml_load_document_string(const char *str)
       case YXML_ATTREND:
          if (valptr > buf->val) {
             *valptr = '\0';
+
+            if (attr->value)
+               free(attr->value);
             attr->value = strdup(buf->val);
+
             valptr = buf->val;
          }
          break;
