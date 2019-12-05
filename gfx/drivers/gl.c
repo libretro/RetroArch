@@ -22,7 +22,11 @@
  */
 
 #ifdef _MSC_VER
+#if defined(HAVE_OPENGLES)
+#pragma comment(lib, "libGLESv2")
+#else
 #pragma comment(lib, "opengl32")
+#endif
 #endif
 
 #include <stdio.h>
