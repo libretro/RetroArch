@@ -38,7 +38,7 @@ A pull request may be asked to fix the coding style before submission.
 In other cases, a pull request may be followed up with a "style nit commit".
 
 ## Non-obvious things:
-  - Code should be both ISO C99 and ISO C++ compatible. This dual requirement is for XBox360 and MSVC in general. Think of it as a C++ compatible subset of C99.
+  - Code should be both C89 and ISO C++ compatible. This dual requirement is for XBox360 and MSVC in general. Think of it as a C++ compatible subset of C99.
   - Warnings are not allowed (-Wall). Make sure your code is warning-free. Note that warning sensitivity differs a bit across compiler versions.
   - Using deprecated APIs is discouraged.
 
