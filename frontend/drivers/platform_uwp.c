@@ -75,6 +75,9 @@ static void frontend_uwp_get_os(char *s, size_t len, int *major, int *minor)
       case PROCESSOR_ARCHITECTURE_ARM:
          arch = "ARM";
          break;
+      case PROCESSOR_ARCHITECTURE_ARM64:
+         arch = "ARM64";
+         break;
       default:
          break;
    }
@@ -256,6 +259,9 @@ enum frontend_architecture frontend_uwp_get_architecture(void)
          break;
       case PROCESSOR_ARCHITECTURE_ARM:
          return FRONTEND_ARCH_ARM;
+         break;
+      case PROCESSOR_ARCHITECTURE_ARM64:
+         return FRONTEND_ARCH_ARMV8;
          break;
       default:
          break;
