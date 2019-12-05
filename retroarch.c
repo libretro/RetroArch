@@ -2321,12 +2321,13 @@ extern u32 __nx_applet_type;
 extern void libnx_apply_overclock(void);
 #endif
 
+#ifdef HAVE_MENU
 #ifdef HAVE_LIBNX
 #define menu_input_dialog_get_display_kb_internal() menu_input_dialog_get_display_kb()
 #else
 #define menu_input_dialog_get_display_kb_internal() menu_input_dialog_keyboard_display
 #endif
-
+#endif
 
 #ifdef HAVE_MENU_WIDGETS
 static bool menu_widgets_inited                 = false;
@@ -16440,7 +16441,9 @@ void input_keyboard_event(bool down, unsigned code,
       uint32_t character, uint16_t mod, unsigned device)
 {
    static bool deferred_wait_keys;
-   if (menu_input_dialog_get_display_kb() && down && is_accessibility_enabled())
+#ifdef HAVE_MENU
+   if (menu_input_dialog_get_display_kb() 
+         && down && is_accessibility_enabled())
    {
       if (code != 303 && code != 0)
       {
@@ -16524,6 +16527,7 @@ void input_keyboard_event(bool down, unsigned code,
          }
       }
    }
+#endif
 
    if (deferred_wait_keys)
    {
@@ -28960,7 +28964,11 @@ bool is_accessibility_enabled(void)
 
 bool is_input_keyboard_display_on(void)
 { 
+#ifdef HAVE_MENU
    return menu_input_dialog_get_display_kb();
+#else
+   return false;
+#endif
 }
 
 bool accessibility_speak(const char* speak_text)
