@@ -384,7 +384,7 @@ static void frontend_uwp_environment_get(int *argc, char *argv[],
 
 #ifdef HAVE_MENU
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) || defined(HAVE_OPENGL_CORE)
-   snprintf(g_defaults.settings.menu,
+      snprintf(g_defaults.settings.menu,
          sizeof(g_defaults.settings.menu), "xmb");
 #endif
 #endif
@@ -424,6 +424,16 @@ static uint64_t frontend_uwp_get_mem_used(void)
 #endif
 }
 
+enum retro_language frontend_uwp_get_user_language(void)
+{
+   return uwp_get_language();
+}
+
+static const char* frontend_uwp_get_cpu_model_name(void)
+{
+   return uwp_get_cpu_model_name();
+}
+
 frontend_ctx_driver_t frontend_ctx_uwp = {
    frontend_uwp_environment_get,
    frontend_uwp_init,
@@ -451,7 +461,7 @@ frontend_ctx_driver_t frontend_ctx_uwp = {
    NULL,                            /* watch_path_for_changes */
    NULL,                            /* check_for_path_changes */
    NULL,                            /* set_sustained_performance_mode */
-   NULL,                            /* get_cpu_model_name */
-   NULL,                            /* get_user_language */
+   frontend_uwp_get_cpu_model_name,
+   frontend_uwp_get_user_language,
    "uwp"
 };

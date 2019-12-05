@@ -23,9 +23,11 @@
 #include "../libretro-common/include/encodings/utf.h"
 #include "../libretro-common/include/lists/string_list.h"
 #include "uwp_func.h"
+#include "uwp_async.h"
 
 #include <ppltasks.h>
 #include <collection.h>
+#include <windows.devices.enumeration.h>
 
 using namespace RetroArchUWP;
 
@@ -42,10 +44,12 @@ using namespace Windows::System::Profile;
 using namespace Windows::Foundation;
 using namespace Windows::Foundation::Collections;
 using namespace Windows::Graphics::Display;
+using namespace Windows::Devices::Enumeration;
 
 char uwp_dir_install[PATH_MAX_LENGTH];
 char uwp_dir_data[PATH_MAX_LENGTH];
 char uwp_device_family[128];
+char win32_cpu_model_name[128] = { 0 };
 
 // Some keys are unavailable in the VirtualKey enum (wtf) but the old-style constants work
 const struct rarch_key_map rarch_key_map_uwp[] = {
@@ -633,5 +637,73 @@ extern "C" {
 	void uwp_open_broadfilesystemaccess_settings(void)
 	{
 		Windows::System::Launcher::LaunchUriAsync(ref new Uri("ms-settings:privacy-broadfilesystemaccess"));
+	}
+
+	enum retro_language uwp_get_language()
+	{
+		auto lang = Windows::System::UserProfile::GlobalizationPreferences::Languages->GetAt(0);
+		char lang_bcp[16] = { 0 };
+		char lang_iso[16] = { 0 };
+
+		wcstombs(lang_bcp, lang->Data(), 16);
+
+		/* Trying to convert BCP 47 language codes to ISO 639 ones */
+		string_list* split;
+		split = string_split(lang_bcp, "-");
+
+		strcat(lang_iso, split->elems[0].data);
+
+		if (split->size >= 2)
+		{
+			strcat(lang_iso, "_");
+			strcat(lang_iso, split->elems[split->size >= 3 ? 2 : 1].data);
+		}
+		free(split);
+		return rarch_get_language_from_iso(lang_iso);
+	}
+
+	const char *uwp_get_cpu_model_name()
+	{
+		Platform::String^ cpu_id = nullptr;
+		Platform::String^ cpu_name = nullptr;
+		
+		/* GUID_DEVICE_PROCESSOR: {97FADB10-4E33-40AE-359C-8BEF029DBDD0} */
+		Platform::String^ if_filter = L"System.Devices.InterfaceClassGuid:=\"{97FADB10-4E33-40AE-359C-8BEF029DBDD0}\"";
+
+		/* Enumerate all CPU DeviceInterfaces, and get DeviceInstanceID of the first one. */
+		cpu_id = RunAsyncAndCatchErrors<Platform::String^>([&]() {
+			return create_task(DeviceInformation::FindAllAsync(if_filter)).then(
+				[&](DeviceInformationCollection^ collection)
+				{
+					return dynamic_cast<Platform::String^>(
+						collection->GetAt(0)->Properties->Lookup(L"System.Devices.DeviceInstanceID"));
+				});
+			}, nullptr);
+
+		if (cpu_id)
+		{
+			Platform::String^ dev_filter = L"System.Devices.DeviceInstanceID:=\"" + cpu_id + L"\"";
+
+			/* Get the Device with the same ID as the DeviceInterface
+			 * Then get the name (description) of that Device
+			 * We have to do this because the DeviceInterface we get doesn't have a proper description. */
+			cpu_name = RunAsyncAndCatchErrors<Platform::String^>([&]() {
+				return create_task(
+					DeviceInformation::FindAllAsync(dev_filter, {}, DeviceInformationKind::Device)).then(
+						[&](DeviceInformationCollection^ collection)
+						{
+							return cpu_name = collection->GetAt(0)->Name;
+						});
+				}, nullptr);
+		}
+		
+		
+		if (cpu_name)
+		{
+			wcstombs(win32_cpu_model_name, cpu_name->Data(), 128);
+			return win32_cpu_model_name;
+		}
+		else
+			return "Unknown";
 	}
 }
