@@ -20,6 +20,7 @@ extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libswscale/swscale.h>
 #include <libavutil/error.h>
+#include <libavutil/hwcontext.h>
 #include <libavutil/imgutils.h>
 #include <libavutil/time.h>
 #include <libavutil/opt.h>
@@ -426,9 +427,11 @@ static void check_variables(bool firststart)
             hw_decoder = AV_HWDEVICE_TYPE_DRM;
          else if (string_is_equal(hw_var.value, "dxva2"))
             hw_decoder = AV_HWDEVICE_TYPE_DXVA2;
+#if LIBAVUTIL_VERSION_MAJOR > 55
          else if (string_is_equal(hw_var.value, "mediacodec"))
             hw_decoder = AV_HWDEVICE_TYPE_MEDIACODEC;
          else if (string_is_equal(hw_var.value, "opencl"))
+#endif
             hw_decoder = AV_HWDEVICE_TYPE_OPENCL;
          else if (string_is_equal(hw_var.value, "qsv"))
             hw_decoder = AV_HWDEVICE_TYPE_QSV;
@@ -1230,7 +1233,12 @@ static void render_ass_img(AVFrame *conv_frame, ASS_Image *img)
 }
 #endif
 
+
+#ifdef HAVE_SSA
 static void decode_video(AVCodecContext *ctx, AVPacket *pkt, AVFrame *conv_frame, size_t frame_size, struct SwsContext  **sws, ASS_Track *ass_track_active)
+#else
+static void decode_video(AVCodecContext *ctx, AVPacket *pkt, AVFrame *conv_frame, size_t frame_size, struct SwsContext  **sws)
+#endif
 {
    int ret;
    AVFrame *frame = NULL;
@@ -1536,7 +1544,11 @@ static void decode_thread(void *data)
       slock_unlock(decode_thread_lock);
 
       if (pkt.stream_index == video_stream_index)
+      #ifdef HAVE_SSA
          decode_video(vctx, &pkt, conv_frame, frame_size, &sws, ass_track_active);
+      #else
+         decode_video(vctx, &pkt, conv_frame, frame_size, &sws);
+      #endif
       else if (pkt.stream_index == audio_stream && actx_active)
       {
          audio_buffer = decode_audio(actx_active, &pkt, aud_frame,
