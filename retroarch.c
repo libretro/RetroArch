@@ -4215,9 +4215,7 @@ static void handle_translation_cb(
          else if (raw_image_file_data[1] == 'P' && 
                   raw_image_file_data[2] == 'N' &&
                   raw_image_file_data[3] == 'G')
-         {
             image_type = IMAGE_TYPE_PNG;
-         }
          else
          {
             RARCH_LOG("Invalid image type returned from server.\n");
@@ -4264,7 +4262,7 @@ static void handle_translation_cb(
                ((uint32_t) ((uint8_t)raw_image_file_data[24]) << 16) +
                ((uint32_t) ((uint8_t)raw_image_file_data[23]) << 8) +
                ((uint32_t) ((uint8_t)raw_image_file_data[22]) << 0);
-            raw_image_data = malloc(image_width*image_height*3*sizeof(uint8_t));
+            raw_image_data = (void*)malloc(image_width*image_height*3*sizeof(uint8_t));
             memcpy(raw_image_data, 
                    raw_image_file_data+54*sizeof(uint8_t), 
                    image_width*image_height*3*sizeof(uint8_t));
@@ -4298,8 +4296,7 @@ static void handle_translation_cb(
             do
             {
                retval = rpng_process_image(rpng, &raw_image_data_alpha, new_image_size, &image_width, &image_height);
-            }
-            while(retval == IMAGE_PROCESS_NEXT);
+            } while(retval == IMAGE_PROCESS_NEXT);
 
             /* Returned output from the png processor is an upside down RGBA
              * image, so we have to change that to RGB first.  This should
@@ -4308,7 +4305,7 @@ static void handle_translation_cb(
                unsigned ui;
                int d,tw,th,tc;
                d=0;
-               raw_image_data = malloc(image_width*image_height*3*sizeof(uint8_t));
+               raw_image_data = (void*)malloc(image_width*image_height*3*sizeof(uint8_t));
                for (ui=0;ui<image_width*image_height*4;ui++)
                {
                   if (ui%4 != 3)
@@ -4419,9 +4416,7 @@ static void handle_translation_cb(
 #endif
 
    if (text_string && is_accessibility_enabled())
-   {
       accessibility_speak(text_string);
-   }
 
 finish:
    if (error)
@@ -4667,7 +4662,7 @@ static bool run_translation_service(void)
    const char *rf2                       = "\"}\0";
    char *rf3                             = NULL;
    bool TRANSLATE_USE_BMP                = false;
-   bool use_overlay                      = true;
+   bool use_overlay                      = false;
 
    const char *label                     = NULL;
    char* system_label                    = NULL;
@@ -4689,14 +4684,9 @@ static bool run_translation_service(void)
 
 #ifdef HAVE_MENU_WIDGETS
    if (video_driver_poke
-       && video_driver_poke->load_texture && video_driver_poke->unload_texture)
-   {
+         && video_driver_poke->load_texture && video_driver_poke->unload_texture)
       use_overlay = true;
-   }
-   else
 #endif
-      use_overlay = false; 
-
 
    /* get the core info here so we can pass long the game name */
    core_info_get_current_core(&core_info);
@@ -4778,7 +4768,7 @@ static bool run_translation_service(void)
       scaler->out_height = height;
       scaler_ctx_gen_filter(scaler);
 
-      scaler->in_stride = vp.width*3;
+      scaler->in_stride  = vp.width*3;
       scaler->out_stride = width*3;
       scaler_ctx_scale_direct(scaler, bit24_image, bit24_image_prev);
       scaler_ctx_gen_reset(scaler);
@@ -4829,7 +4819,7 @@ static bool run_translation_service(void)
    }
    else
    {
-      pitch = width*3;
+      pitch      = width * 3;
       bmp_buffer = rpng_save_image_bgr24_string(bit24_image+width*(height-1)*3, width, height, -pitch, &buffer_bytes);
    }
 
@@ -4844,7 +4834,7 @@ static bool run_translation_service(void)
    {
       unsigned i;
       /* include game label if provided */
-      rf3 = (char *) malloc(16+strlen(system_label));
+      rf3 = (char *)malloc(16+strlen(system_label));
       memcpy(rf3, "\", \"label\": \"", 13*sizeof(uint8_t));
       memcpy(rf3+13, system_label, strlen(system_label));
       memcpy(rf3+13+strlen(system_label), "\"}\0", 3*sizeof(uint8_t));
@@ -29060,7 +29050,7 @@ static bool accessibility_speak_macos(
 {
    int pid;
    char* language_speaker = accessibility_mac_language_code(voice);
-   char* speed_out = (char*) malloc(4);
+   char* speed_out = (char*)malloc(4);
 
    char* speeds[10] = {"80", "100", "125", "150", "170", "210", "260", "310", "380", "450"};
    settings_t *settings              = configuration_settings;
@@ -29286,8 +29276,8 @@ bool accessibility_speak_linux(
       const char* speak_text, const char* language, int priority)
 {
    int pid;
-   char* voice_out = (char *) malloc(3+strlen(language));
-   char* speed_out = (char *) malloc(3+3);
+   char* voice_out = (char *)malloc(3+strlen(language));
+   char* speed_out = (char *)malloc(3+3);
    settings_t *settings              = configuration_settings;
 
    const char* speeds[10] = {"80", "100", "125", "150", "170", "210", "260", "310", "380", "450"};
