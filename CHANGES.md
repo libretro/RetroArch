@@ -40,6 +40,7 @@
 - VIDEO LAYOUT: Fixed XML parsing of attributes with spaces, should fix issues with several video layouts
 - VITA: GL1 driver support
 - WINDOWS/XINPUT: Get rid of 128 byte device name limit for XInput device discover - when device name was too long, it would not be picked up by the XInput driver and would instead fallback to DirectInput
+- WINDOWS: ANGLE OpenGL ES 2 support
 - UWP: Fix crashes on startup / prompt for folder permissions when trying to load custom.ini
 - UWP: Fix - Mouse input is offset on high DPI monitors
 - UWP: Fix - Keyboard input hangs sometimes
@@ -48,6 +49,7 @@
 - UWP: Fix - Get user language
 - UWP: Fix - Get CPU model name
 - UWP: Fix - Use GLUI instead of XMB on Windows Mobile 10
+- UWP: ANGLE OpenGL ES 2 support
 
 # (1.8.1)
 - BUGFIX/MENU: Fix menu rendering with Mali GPUs after changing video dimensions
