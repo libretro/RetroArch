@@ -1523,9 +1523,7 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
    SETTING_BOOL("content_show_netplay",          &settings->bools.menu_content_show_netplay, true, content_show_netplay, false);
 #endif
    SETTING_BOOL("content_show_history",          &settings->bools.menu_content_show_history, true, content_show_history, false);
-#ifdef HAVE_LIBRETRODB
    SETTING_BOOL("content_show_add",              &settings->bools.menu_content_show_add, true, content_show_add, false);
-#endif
    SETTING_BOOL("content_show_playlists",        &settings->bools.menu_content_show_playlists, true, content_show_playlists, false);
    SETTING_BOOL("menu_show_load_core",           &settings->bools.menu_show_load_core, true, menu_show_load_core, false);
    SETTING_BOOL("menu_show_load_content",        &settings->bools.menu_show_load_content, true, menu_show_load_content, false);

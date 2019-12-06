@@ -4606,20 +4606,16 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
             }
          }
 
-#ifndef HAVE_LIBRETRODB
          {
             settings_t *settings = config_get_ptr();
-            if (settings->bools.menu_show_advanced_settings)
-#endif
+            if (settings->bools.menu_content_show_playlists)
                if (menu_entries_append_enum(list,
                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB),
                         msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB),
                         MENU_ENUM_LABEL_PLAYLISTS_TAB,
                         MENU_SETTING_ACTION, 0, 0))
                   count++;
-#ifndef HAVE_LIBRETRODB
          }
-#endif
 
          if (frontend_driver_parse_drive_list(list, true) != 0)
             if (menu_entries_append_enum(list, "/",
@@ -8688,9 +8684,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             }
 
             if (string_is_equal(settings->arrays.menu_driver, "rgui") &&
-#ifndef HAVE_LIBRETRODB
-                settings->bools.menu_show_advanced_settings &&
-#endif
                 settings->bools.menu_content_show_playlists)
                if (menu_entries_append_enum(info->list,
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB),
