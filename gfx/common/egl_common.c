@@ -13,6 +13,10 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifdef _MSC_VER
+#pragma comment(lib, "libEGL")
+#endif
+
 #include <stdlib.h>
 
 #include <retro_assert.h>

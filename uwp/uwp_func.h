@@ -22,6 +22,17 @@
 extern "C" {
 #endif
 
+#if defined(HAVE_OPENGL) && defined(HAVE_ANGLE)
+#ifndef HAVE_EGL
+#define HAVE_EGL       1
+#endif
+#endif
+
+#ifdef HAVE_EGL
+#include "../gfx/common/egl_common.h"
+bool uwp_egl_create_surface(egl_ctx_data_t* egl);
+#endif
+
 extern char uwp_dir_install[PATH_MAX_LENGTH];
 extern char uwp_dir_data[PATH_MAX_LENGTH];
 extern char uwp_device_family[128];
