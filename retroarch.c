@@ -29057,8 +29057,6 @@ static bool accessibility_speak_macos(
 {
    int pid;
    char* language_speaker = accessibility_mac_language_code(voice);
-   char* speed_out = (char*)malloc(4);
-
    char* speeds[10] = {"80", "100", "125", "150", "170", "210", "260", "310", "380", "450"};
    settings_t *settings              = configuration_settings;
    int speed = settings->uints.accessibility_narrator_speech_speed;
@@ -29106,14 +29104,14 @@ static bool accessibility_speak_macos(
                         NULL, "-r", NULL, NULL};
          cmd[2] = language_speaker;
          cmd[3] = (char *) speak_text;
-         cmd[5] = speed_out;
+         cmd[5] = speeds[speed-1];
          execvp("say", cmd);
       }
       else
       {
          char* cmd[] = {"say", NULL, "-r", NULL,  NULL};
          cmd[1] = speak_text;
-         cmd[3] = speed_out;
+         cmd[3] = speeds[speed-1];
          execvp("say",cmd);
       }
    }
@@ -29435,6 +29433,8 @@ bool accessibility_speak_ai_service(const char* speak_text, const char* language
 
 bool accessibility_startup_message(void)
 {
-   accessibility_speak("RetroArch accessibility on.");
+   /* State that the narrator is on, and also include the first menu 
+      item we're on at startup. */
+   accessibility_speak("RetroArch accessibility on.  Main Menu Load Core.");
    return true;
 }
