@@ -27,6 +27,18 @@
 #define HAVE_COMPRESSION 1
 #endif
 
+#if defined(HAVE_OPENGL) && defined(HAVE_ANGLE)
+#ifndef HAVE_OPENGLES
+#define HAVE_OPENGLES  1
+#endif
+#if !defined(HAVE_OPENGLES3) && !defined(HAVE_OPENGLES2)
+#define HAVE_OPENGLES3 1
+#endif
+#ifndef HAVE_EGL
+#define HAVE_EGL       1
+#endif
+#endif
+
 #define JSON_STATIC 1 /* must come before runtime_file, netplay_room_parse and jsonsax_full */
 
 #if _MSC_VER && !defined(__WINRT__)
@@ -275,7 +287,7 @@ VIDEO CONTEXT
 #include "../gfx/drivers_context/vc_egl_ctx.c"
 #endif
 
-#if defined(_WIN32)
+#if defined(_WIN32) && defined(HAVE_ANGLE)
 #include "../gfx/common/angle_common.c"
 #endif
 

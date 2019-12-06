@@ -29,6 +29,12 @@
 #include <collection.h>
 #include <windows.devices.enumeration.h>
 
+#if defined(HAVE_OPENGL) && defined(HAVE_ANGLE)
+#ifndef HAVE_EGL
+#define HAVE_EGL       1
+#endif
+#endif
+
 using namespace RetroArchUWP;
 
 using namespace concurrency;

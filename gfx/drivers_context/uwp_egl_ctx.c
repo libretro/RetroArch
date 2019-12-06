@@ -46,8 +46,11 @@
 #include "../../frontend/frontend_driver.h"
 
 #include "../common/egl_common.h"
-#include "../common/angle_common.h"
 #include "../common/gl_common.h"
+
+#ifdef HAVE_ANGLE
+#include "../common/angle_common.h"
+#endif
 
 #ifdef HAVE_DYNAMIC
 static dylib_t          dll_handle = NULL; /* Handle to libGLESv2.dll */
@@ -84,8 +87,13 @@ bool create_gles_context(void* corewindow)
       EGL_NONE
    };
 
+#ifdef HAVE_ANGLE
    if (!angle_init_context(&uwp_egl, EGL_DEFAULT_DISPLAY,
       &major, &minor, &n, attribs, NULL))
+#else
+   if (!egl_init_context(&uwp_egl, EGL_NONE, EGL_DEFAULT_DISPLAY,
+      &major, &minor, &n, attribs, NULL))
+#endif
    {
       egl_report_error();
       goto error;

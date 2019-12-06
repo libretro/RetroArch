@@ -22,6 +22,12 @@
 extern "C" {
 #endif
 
+#if defined(HAVE_OPENGL) && defined(HAVE_ANGLE)
+#ifndef HAVE_EGL
+#define HAVE_EGL       1
+#endif
+#endif
+
 #ifdef HAVE_EGL
 #include "../gfx/common/egl_common.h"
 bool uwp_egl_create_surface(egl_ctx_data_t* egl);

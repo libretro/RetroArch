@@ -49,7 +49,9 @@
 
 #ifdef HAVE_EGL
 #include "../common/egl_common.h"
+#ifdef HAVE_ANGLE
 #include "../common/angle_common.h"
+#endif
 #endif
 
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
@@ -387,8 +389,13 @@ static void create_gles_context(HWND hwnd, bool *quit)
       EGL_NONE
    };
 
+#ifdef HAVE_ANGLE
    if (!angle_init_context(&win32_egl, EGL_DEFAULT_DISPLAY,
       &major, &minor, &n, attribs, NULL))
+#else
+   if (!egl_init_context(&win32_egl, EGL_NONE, EGL_DEFAULT_DISPLAY,
+      &major, &minor, &n, attribs, NULL))
+#endif
    {
       egl_report_error();
       goto error;
