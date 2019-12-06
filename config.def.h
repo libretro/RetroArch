@@ -518,9 +518,7 @@ static bool content_show_video        = true;
 static bool content_show_netplay      = true;
 #endif
 static bool content_show_history      = true;
-#ifdef HAVE_LIBRETRODB
 static bool content_show_add     	  = true;
-#endif
 static bool content_show_playlists    = true;
 
 #ifdef HAVE_XMB

@@ -3328,10 +3328,9 @@ static void *stripes_init(void **userdata, bool video_is_threaded)
    if (settings->bools.menu_content_show_netplay)
       stripes->tabs[++stripes->system_tab_end] = STRIPES_SYSTEM_TAB_NETPLAY;
 #endif
-#ifdef HAVE_LIBRETRODB
+
    if (settings->bools.menu_content_show_add && !settings->bools.kiosk_mode_enable)
       stripes->tabs[++stripes->system_tab_end] = STRIPES_SYSTEM_TAB_ADD;
-#endif
 
    menu_driver_ctl(RARCH_MENU_CTL_UNSET_PREVENT_POPULATE, NULL);
 
@@ -4144,16 +4143,12 @@ static int stripes_list_push(void *data, void *userdata,
                      MENU_SETTING_ACTION, 0, 0);
             }
 
-#ifdef HAVE_LIBRETRODB
-#if 0
-            /* TODO/FIXME - figure out what to do here */
-            menu_entries_append_enum(info->list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_COLLECTION_LIST),
-                  msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST),
-                  MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST,
-                  MENU_SETTING_ACTION, 0, 0);
-#endif
-#endif
+            if (settings->bools.menu_content_show_playlists)
+               menu_entries_append_enum(info->list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB),
+                     msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB),
+                     MENU_ENUM_LABEL_PLAYLISTS_TAB,
+                     MENU_SETTING_ACTION, 0, 0);
 
             if (frontend_driver_parse_drive_list(info->list, true) != 0)
                menu_entries_append_enum(info->list, "/",

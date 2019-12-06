@@ -13133,7 +13133,6 @@ static bool setting_append_list(
                   SD_FLAG_NONE);
 #endif
 
-#ifdef HAVE_LIBRETRODB
             CONFIG_BOOL(
                   list, list_info,
                   &settings->bools.menu_content_show_add,
@@ -13149,7 +13148,6 @@ static bool setting_append_list(
                   general_read_handler,
                   SD_FLAG_NONE);
             SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
-#endif
 
             CONFIG_BOOL(
                   list, list_info,
