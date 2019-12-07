@@ -1957,7 +1957,7 @@ ifeq ($(HAVE_ANGLE), 1)
 	OBJ += gfx/common/angle_common.o
 	DEFINES += -DHAVE_ANGLE
 	# TODO/FIXME - should perhaps set these libraries as separate CFLAG variables in qb system
-	LIBS += -lEGL -lGLESv2
+	LIBS += -lEGL
 endif
 
 # Record
