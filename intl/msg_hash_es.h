@@ -1526,8 +1526,8 @@ MSG_HASH(
     "Periodo del turbo"
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS, /* TODO/FIXME - Change user to port */
-    "Controles del usuario %u"
+    MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
+    "Controles del puerto %u"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_LATENCY_SETTINGS,
@@ -3766,6 +3766,10 @@ MSG_HASH(
     "Anti-Zenburn"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_FLUX,
+    "Flux"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_TRUE,
     "Activado"
     )
@@ -4559,8 +4563,8 @@ MSG_HASH(
     "Cambia las opciones de mando, teclado y ratón."
     )
 MSG_HASH(
-    MENU_ENUM_SUBLABEL_INPUT_USER_BINDS, /* TODO/FIXME - change user to port */
-    "Configura los controles para este usuario."
+    MENU_ENUM_SUBLABEL_INPUT_USER_BINDS,
+    "Configura los controles para este puerto."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_LATENCY_SETTINGS,
@@ -9498,6 +9502,14 @@ MSG_HASH(
     "Muestra la opción «Controles» en la pantalla de Opciones."
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_SETTINGS,
+    "Accesibilidad"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_ACCESSIBILITY_SETTINGS,
+    "Cambia la configuración del narrador de accesibilidad."
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_AI_SERVICE_SETTINGS,
     "Servicio de IA"
     )
@@ -9894,6 +9906,10 @@ MSG_HASH(
     "Modo Voz"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_AI_SERVICE_NARRATOR_MODE,
+    "Modo Narrador"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE,
     "Eliminar"
     )
@@ -10047,3 +10063,136 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_AI_SERVICE_PAUSE,
     "Pausa el núcleo mientras se traduce la pantalla."
     )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_LIST,
+    "Escaneo manual"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_LIST,
+    "Escaneado configurable mediante nombres de contenidos. No necesita que los contenidos coincidan con los de la base de datos."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_DIR,
+    "Carpeta de contenidos"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_DIR,
+    "Selecciona una carpeta a escanear."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
+    "Nombre del sistema"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
+    "Indica un «nombre del sistema» a asociar a los contenidos escaneados. Se utiliza para nombrar la lista de reproducción generada y para identificar sus miniaturas."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM,
+    "Nombre de sistema personalizado"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM,
+    "Indica un «nombre del sistema» para contenidos escaneados. Solo se utilizará si la opción Nombre del sistema está configurada a Personalizado."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_CORE_NAME,
+    "Núcleo"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_CORE_NAME,
+    "Selecciona el núcleo que se utilizará para iniciar contenidos escaneados de forma predeterminada."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_FILE_EXTS,
+    "Extensiones de archivo"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_FILE_EXTS,
+    "Una lista separada con espacios de los tipos de archivo que se incluirán en el escaneo. En caso de estar en blanco, incluirá todos los archivos; si se ha indicado un núcleo, incluirá todos los archivos compatibles con el núcleo."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SEARCH_ARCHIVES,
+    "Escanear dentro de archivos"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_SEARCH_ARCHIVES,
+    "Al activar esta opción, se buscarán contenidos válidos o compatibles dentro de archivos contenedores (.zip, .7z, etc.). Podría afectar al rendimiento del escaneado."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_DAT_FILE,
+    "Archivo DAT de arcade"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_DAT_FILE,
+    "Selecciona un archivo DAT XML de Logiqx o MAME para nombrar automáticamente los contenidos de arcade escaneados (para MAME, FinalBurn Neo, etc.)."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_OVERWRITE,
+    "Sobrescribir lista existente"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_OVERWRITE,
+    "Al activar esta opción se borrará cualquier lista de reproducción existente antes de escanear contenidos. Al desactivarla, se preservarán las listas ya existentes y solo se añadirán aquellos contenidos que no se encuentren en la lista."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_START,
+    "Comenzar escaneado"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_START,
+    "Escanea el contenido seleccionado."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_USE_CONTENT_DIR,
+    "<Carpeta de contenidos>"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_USE_CUSTOM,
+    "<Personalizado>"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_CORE_NAME_DETECT,
+    "<Sin especificar>"
+    )
+MSG_HASH(
+    MSG_MANUAL_CONTENT_SCAN_DAT_FILE_INVALID,
+    "Se ha seleccionado un archivo DAT de arcade no válido."
+    )
+MSG_HASH(
+    MSG_MANUAL_CONTENT_SCAN_DAT_FILE_TOO_LARGE,
+    "El archivo DAT de arcade es demasiado grande (no hay memoria suficiente)"
+    )
+MSG_HASH(
+    MSG_MANUAL_CONTENT_SCAN_DAT_FILE_LOAD_ERROR,
+    "Ha habido un error al cargar el archivo DAT de arcade (¿el formato no es válido?)"
+    )
+MSG_HASH(
+    MSG_MANUAL_CONTENT_SCAN_INVALID_CONFIG,
+    "La configuración del escaneo manual no es válida."
+    )
+MSG_HASH(
+    MSG_MANUAL_CONTENT_SCAN_INVALID_CONTENT,
+    "No se han detectado contenidos válidos."
+    )
+MSG_HASH(
+    MSG_MANUAL_CONTENT_SCAN_START,
+    "Escaneando contenido: "
+    )
+MSG_HASH(
+    MSG_MANUAL_CONTENT_SCAN_IN_PROGRESS,
+    "Escaneando: "
+    )
+MSG_HASH(
+    MSG_MANUAL_CONTENT_SCAN_END,
+    "Escaneo finalizado: "
+    )
+MSG_HASH(MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_ENABLED,
+      "Activar accesibilidad")
+MSG_HASH(MENU_ENUM_SUBLABEL_ACCESSIBILITY_ENABLED,
+      "Activa o desactiva el narrador de accesibilidad en los menús.")
+MSG_HASH(MENU_ENUM_SUBLABEL_ACCESSIBILITY_NARRATOR_SPEECH_SPEED,
+      "Ajusta la velocidad de lectura del narrador.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_NARRATOR_SPEECH_SPEED,
+      "Velocidad de lectura del narrador")
+
