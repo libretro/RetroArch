@@ -104,8 +104,6 @@ if [ "$HAVE_FLOATSOFTFP" = "yes" ]; then
    add_define MAKEFILE FLOATSOFTFP_CFLAGS -mfloat-abi=softfp
 fi
 
-check_platform Win32 EGL 'EGL is' false
-
 check_header EGL EGL/egl.h EGL/eglext.h
 # some systems have EGL libs, but no pkgconfig
 # https://github.com/linux-sunxi/sunxi-mali/pull/8
