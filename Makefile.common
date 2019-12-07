@@ -1953,6 +1953,13 @@ ifneq ($(findstring Win32,$(OS)),)
    LIBS += -lhid -lsetupapi
 endif
 
+ifeq ($(HAVE_ANGLE), 1)
+	OBJ += gfx/common/angle_common.o
+	DEFINES += -DHAVE_ANGLE
+	# TODO/FIXME - should perhaps set these libraries as separate CFLAG variables in qb system
+	LIBS += -lEGL -lGLESv2
+endif
+
 # Record
 
 ifeq ($(HAVE_FFMPEG), 1)

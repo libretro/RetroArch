@@ -108,6 +108,9 @@ fi
 if [ "$HAVE_ANGLE" = 'yes' ]; then
    eval "HAVE_EGL=\"yes\""
    add_dirs INCLUDE ./gfx/include/ANGLE
+   add_dirs LIBRARY ./angle-x64
+   add_opt OPENGL no
+   add_opt OPENGLES yes
 else
    check_header EGL EGL/egl.h EGL/eglext.h
 # some systems have EGL libs, but no pkgconfig
