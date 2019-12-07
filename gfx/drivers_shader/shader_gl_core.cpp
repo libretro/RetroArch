@@ -1775,7 +1775,7 @@ void Pass::build_commands(
    else
       glViewport(0, 0, size.width, size.height);
 
-#ifndef HAVE_OPENGLES3
+#if !defined(HAVE_OPENGLES)
    if (framebuffer && framebuffer->get_format() == GL_SRGB8_ALPHA8)
       glEnable(GL_FRAMEBUFFER_SRGB);
    else
@@ -1798,7 +1798,7 @@ void Pass::build_commands(
    glDisableVertexAttribArray(0);
    glDisableVertexAttribArray(1);
 
-#ifndef HAVE_OPENGLES3
+#if !defined(HAVE_OPENGLES)
    glDisable(GL_FRAMEBUFFER_SRGB);
 #endif
 
