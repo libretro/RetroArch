@@ -1311,8 +1311,10 @@ EGLAPI EGLuint64NV EGLAPIENTRY eglGetSystemTimeNV (void);
 #define EGL_NATIVE_SURFACE_TIZEN          0x32A1
 #endif /* EGL_TIZEN_image_native_surface */
 
+#ifdef HAVE_ANGLE
 /* ANGLE EGL extensions */
 #include "eglext_angle.h"
+#endif
 
 #ifdef __cplusplus
 }
