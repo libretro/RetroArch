@@ -10158,7 +10158,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_MANUAL_CONTENT_SCAN_DAT_FILE_TOO_LARGE,
-    "Le fichier arcade DAT sélectionné est trop large (mémoire libre insuffisante)"
+    "Le fichier arcade DAT sélectionné est trop lourd (mémoire libre insuffisante)"
     )
 MSG_HASH(
     MSG_MANUAL_CONTENT_SCAN_DAT_FILE_LOAD_ERROR,
