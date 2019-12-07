@@ -10180,11 +10180,19 @@ MSG_HASH(
     MSG_MANUAL_CONTENT_SCAN_END,
     "Scan complete: "
     )
-MSG_HASH(MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_ENABLED,
-      "Accessibility Enable")
-MSG_HASH(MENU_ENUM_SUBLABEL_ACCESSIBILITY_ENABLED,
-      "Turn on/off accessibility narrator for menu navigation")
-MSG_HASH(MENU_ENUM_SUBLABEL_ACCESSIBILITY_NARRATOR_SPEECH_SPEED,
-      "Set speech speed for the narrator, from fast to slow")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_NARRATOR_SPEECH_SPEED,
-      "Narrator Speech Speed")
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_ENABLED,
+    "Accessibility Enable"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_ACCESSIBILITY_ENABLED,
+    "Turn on/off accessibility narrator for menu navigation"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_ACCESSIBILITY_NARRATOR_SPEECH_SPEED,
+    "Set speech speed for the narrator, from fast to slow"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_NARRATOR_SPEECH_SPEED,
+    "Narrator Speech Speed"
+    )
