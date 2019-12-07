@@ -10194,7 +10194,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_ACCESSIBILITY_NARRATOR_SPEECH_SPEED,
-    "Défunir le débit vocal pour le narrateur, de rapide à lent"
+    "Définir le débit vocal pour le narrateur, de rapide à lent"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_NARRATOR_SPEECH_SPEED,
