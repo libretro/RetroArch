@@ -28977,7 +28977,14 @@ bool accessibility_speak(const char* speak_text)
 }
 
 
-#if defined(__APPLE__) && defined(__MACH__) && !defined(EMSCRIPTEN) && !defined(TARGET_IPHONE_SIMULATOR) && !defined(TARGET_OS_IPHONE)
+#if defined(__MACH__) && defined(__APPLE__) 
+#include <TargetConditionals.h>
+#if TARGET_OS_OSX && !defined(EMSCRIPTEN)
+#define _IS_OSX
+#endif
+#endif
+
+#if defined(_IS_OSX)
 static char* accessibility_mac_language_code(const char* language)
 {
    if (string_is_equal(language,"en"))
@@ -29109,7 +29116,7 @@ static bool accessibility_speak_macos(
       else
       {
          char* cmd[] = {"say", NULL, "-r", NULL,  NULL};
-         cmd[1] = speak_text;
+         cmd[1] = (char*) speak_text;
          cmd[3] = speeds[speed-1];
          execvp("say",cmd);
       }
@@ -29342,7 +29349,6 @@ bool accessibility_speak_linux(
 bool accessibility_speak_priority(const char* speak_text, int priority)
 {
    const char* voice = NULL;
-
    RARCH_LOG("Spoke: %s\n", speak_text);
 
    if (is_accessibility_enabled())
@@ -29350,13 +29356,14 @@ bool accessibility_speak_priority(const char* speak_text, int priority)
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__) && !defined(EMSCRIPTEN)
       voice = get_user_language_iso639_1(true);
       return accessibility_speak_windows(speak_text, voice, priority);
-#elif defined(__APPLE__) && defined(__MACH__) && !defined(EMSCRIPTEN) && !defined(TARGET_IPHONE_SIMULATOR) && !defined(TARGET_OS_IPHONE)
+#elif defined(__APPLE__) && defined(_IS_OSX) && !defined(EMSCRIPTEN)
       voice = get_user_language_iso639_1(false);
       return accessibility_speak_macos(speak_text, voice, priority);
 #elif (defined(__linux__) || defined(__unix__)) && !defined(EMSCRIPTEN)
       voice = get_user_language_iso639_1(true);
       return accessibility_speak_linux(speak_text, voice, priority);
 #endif
+      RARCH_LOG("Platform not supported for accessibility.\n");
       /* The following method is a fallback for other platforms to use the
          AI Service url to do the TTS.  However, since the playback is done
          via the audio mixer, which only processes the audio while the 
@@ -29378,7 +29385,7 @@ bool is_narrator_running(void)
    {
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__) && !defined(EMSCRIPTEN)
       return is_narrator_running_windows();
-#elif defined(__APPLE__) && defined(__MACH__) && !defined(EMSCRIPTEN) && !defined(TARGET_IPHONE_SIMULATOR) && !defined(TARGET_OS_IPHONE)
+#elif defined(__APPLE__) && defined(_IS_OSX) && !defined(EMSCRIPTEN)
       return is_narrator_running_macos();
 #elif (defined(__linux__) || defined(__unix__)) && !defined(EMSCRIPTEN)
       return is_narrator_running_linux();
