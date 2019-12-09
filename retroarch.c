@@ -15447,9 +15447,11 @@ static void input_menu_keys_pressed(input_bits_t *p_new_state,
    for (i = 0; i < max_users; i++)
    {
       struct retro_keybind *auto_binds          = input_autoconf_binds[i];
+      struct retro_keybind *general_binds       = input_config_binds[i];
       binds[i]                                  = input_config_binds[i];
 
       input_push_analog_dpad(auto_binds, ANALOG_DPAD_LSTICK);
+      input_push_analog_dpad(general_binds, ANALOG_DPAD_LSTICK);
    }
 
    for (port = 0; port < port_max; port++)
@@ -15550,7 +15552,9 @@ static void input_menu_keys_pressed(input_bits_t *p_new_state,
    for (i = 0; i < max_users; i++)
    {
       struct retro_keybind *auto_binds    = input_autoconf_binds[i];
+      struct retro_keybind *general_binds = input_config_binds[i];
       input_pop_analog_dpad(auto_binds);
+      input_pop_analog_dpad(general_binds);
    }
 
    if (!display_kb)
