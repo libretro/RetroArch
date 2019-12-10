@@ -13948,52 +13948,27 @@ static int16_t input_joypad_axis(const input_device_driver_t *drv,
 
    if (input_analog_deadzone)
    {
-      int16_t x, y;
       float normalized;
-      float normal_mag;
-      /* 2/3 are the right analog X/Y axes */
-      unsigned x_axis      = 2;
-      unsigned y_axis      = 3;
-
-      /* 0/1 are the left analog X/Y axes */
-      if (AXIS_POS_GET(joyaxis) == AXIS_DIR_NONE)
-      {
-         /* current axis is negative         */
-         /* current stick is the left        */
-         if (AXIS_NEG_GET(joyaxis) < 2)
-         {
-            x_axis = 0;
-            y_axis = 1;
-         }
-      }
-      else
-      {
-         /* current axis is positive */
-         /* current stick is the left */
-         if (AXIS_POS_GET(joyaxis) < 2)
-         {
-            x_axis = 0;
-            y_axis = 1;
-         }
-      }
-
-      x                = drv->axis(port, AXIS_POS(x_axis))
-         + drv->axis(port, AXIS_NEG(x_axis));
-      y                = drv->axis(port, AXIS_POS(y_axis))
-         + drv->axis(port, AXIS_NEG(y_axis));
-      normal_mag       = (1.0f / 0x7fff) * sqrt(x * x + y * y);
+      float factor;
 
       /* if analog value is below the deadzone, ignore it */
-      if (normal_mag <= input_analog_deadzone)
+      val = ((float)abs(val) / 0x7fff) < input_analog_deadzone ? 0 : val;
+
+      if (val == 0)
          return 0;
 
-      normalized = (1.0f / 0x7fff) * val;
+      if (val < 0)
+         factor = -1.0f;
+      else
+         factor = 1.0f;
+
+      normalized = (1.0f / 0x7fff) * ((float)abs(val));
 
       /* now scale the "good" analog range appropriately,
-       * so we don't start out way above 0 */
-      val = 0x7fff * normalized * MIN(1.0f,
-         ((normal_mag - input_analog_deadzone)
-          / (1.0f - input_analog_deadzone)));
+       * so we don't start out way above 0
+       * and keep track of the sign */
+      val = 0x7fff * (factor * (normalized - input_analog_deadzone)
+          / (1.0f - input_analog_deadzone));
    }
 
    if (input_analog_sensitivity != 1.0f)
