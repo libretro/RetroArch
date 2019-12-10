@@ -7,6 +7,7 @@
 - DRM/KMS: Better detection for the current video mode
 - FFMPEG CORE: Hardware accelerated video decoding
 - FFMPEG CORE: Implement send/receive encoding API, will allow for hardware accelerated AMD video encoding
+- INPUT: Fix 'Analog stick controls menu even if autoconfig disabled'
 - LOCALIZATION: Update Italian translation
 - LOCALIZATION: Update French translation
 - LOCALIZATION: Update Polish translation
