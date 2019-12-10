@@ -1862,7 +1862,7 @@ static void materialui_draw_thumbnail(
             video_info, thumbnail,
             x, y, mui->thumbnail_width_max, mui->thumbnail_height_max,
             MENU_THUMBNAIL_ALIGN_CENTRE,
-            mui->transition_alpha, scale_factor);
+            mui->transition_alpha, scale_factor, NULL);
    }
 }
 
@@ -4662,7 +4662,8 @@ static void materialui_render_fullscreen_thumbnails(
                (unsigned)thumbnail_box_height,
                MENU_THUMBNAIL_ALIGN_CENTRE,
                mui->fullscreen_thumbnail_alpha,
-               1.0f);
+               1.0f,
+               NULL);
       }
 
       /* > Secondary */
@@ -4691,7 +4692,8 @@ static void materialui_render_fullscreen_thumbnails(
                (unsigned)thumbnail_box_height,
                MENU_THUMBNAIL_ALIGN_CENTRE,
                mui->fullscreen_thumbnail_alpha,
-               1.0f);
+               1.0f,
+               NULL);
       }
    }
 
