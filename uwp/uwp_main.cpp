@@ -13,21 +13,22 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "uwp_main.h"
+#include <ppltasks.h>
+#include <collection.h>
+#include <windows.devices.enumeration.h>
+
+#include <encodings/utf.h>
+#include <lists/string_list.h>
 #include <queues/task_queue.h>
 #include <retro_timers.h>
+
+#include "uwp_main.h"
 #include "../retroarch.h"
 #include "../frontend/frontend.h"
 #include "../input/input_keymaps.h"
 #include "../verbosity.h"
-#include "../libretro-common/include/encodings/utf.h"
-#include "../libretro-common/include/lists/string_list.h"
 #include "uwp_func.h"
 #include "uwp_async.h"
-
-#include <ppltasks.h>
-#include <collection.h>
-#include <windows.devices.enumeration.h>
 
 #if defined(HAVE_OPENGL) && defined(HAVE_ANGLE)
 #ifndef HAVE_EGL

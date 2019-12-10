@@ -47,8 +47,8 @@ void uwp_input_next_frame(void);
 bool uwp_keyboard_pressed(unsigned key);
 int16_t uwp_mouse_state(unsigned port, unsigned id, bool screen);
 int16_t uwp_pointer_state(unsigned idx, unsigned id, bool screen);
-const char* uwp_get_cpu_model_name();
-enum retro_language uwp_get_language();
+const char* uwp_get_cpu_model_name(void);
+enum retro_language uwp_get_language(void);
 
 void uwp_fill_installed_core_packages(struct string_list *list);
 
