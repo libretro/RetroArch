@@ -798,7 +798,7 @@ void ozone_draw_thumbnail_bar(ozone_handle_t *ozone, video_frame_info_t *video_i
             thumbnail_width,
             thumbnail_height,
             alignment,
-            1.0f, 1.0f);
+            1.0f, 1.0f, NULL);
    }
    else
    {
@@ -826,7 +826,7 @@ void ozone_draw_thumbnail_bar(ozone_handle_t *ozone, video_frame_info_t *video_i
             thumbnail_width,
             thumbnail_height,
             MENU_THUMBNAIL_ALIGN_TOP,
-            1.0f, 1.0f);
+            1.0f, 1.0f, NULL);
    }
    else if (!ozone->selection_core_is_viewer)
    {
