@@ -122,6 +122,7 @@ typedef struct
 #endif
 
    bool core_supports;
+   bool invalid_peek_address;
 
    rcheevos_rapatchdata_t patchdata;
    rcheevos_cheevo_t* core;
@@ -157,6 +158,7 @@ static rcheevos_locals_t rcheevos_locals =
    NULL, /* task_lock */
 #endif
    true, /* core_supports */
+   false,/* invalid_peek_address */
    {0},  /* patchdata */
    NULL, /* core */
    NULL, /* unofficial */
@@ -655,6 +657,10 @@ static unsigned rcheevos_peek(unsigned address, unsigned num_bytes, void* ud)
          case 1: value |= data[0];
       }
    }
+   else
+   {
+      rcheevos_locals.invalid_peek_address = true;
+   }
 
    return value;
 }
@@ -680,18 +686,37 @@ static void rcheevos_test_cheevo_set(bool official)
       count = rcheevos_locals.patchdata.unofficial_count;
    }
 
+   rcheevos_locals.invalid_peek_address = false;
+
    for (i = 0; i < count; i++, cheevo++)
    {
       /* Check if the achievement is active for the current mode. */
-      if ((cheevo->active & mode) == 0)
-         continue;
-
       if (cheevo->active & mode)
       {
          int valid = rc_test_trigger(cheevo->trigger, rcheevos_peek, NULL, NULL);
 
+         /* trigger must be false for at least one frame before it can trigger. if last is true, the trigger hasn't yet been false. */
          if (cheevo->last)
+         {
+            /* if the we're still waiting for the trigger to stabilize, check to see if an error occurred */
+            if (rcheevos_locals.invalid_peek_address)
+            {
+               /* could not map one or more addresses - disable the achievement */
+               CHEEVOS_ERR(RCHEEVOS_TAG "Achievement disabled (invalid address): %s\n", cheevo->info->title);
+               cheevo->active = 0;
+
+               /* clear out the trigger so it shows up as 'Unsupported' in the menu */
+               CHEEVOS_FREE(cheevo->trigger);
+               cheevo->trigger = NULL;
+
+               /* reset the flag for the next achievement */
+               rcheevos_locals.invalid_peek_address = false;
+               continue;
+            }
+
+            /* no error, reset any hit counts for the next check */
             rc_reset_trigger(cheevo->trigger);
+         }
          else if (valid)
             rcheevos_award(cheevo, mode);
 
@@ -778,9 +803,13 @@ static void rcheevos_test_leaderboards(void)
    rcheevos_lboard_t* lboard = rcheevos_locals.lboards;
    unsigned	 i;
 
+   rcheevos_locals.invalid_peek_address = false;
+
    for (i = 0; i < rcheevos_locals.patchdata.lboard_count; i++, lboard++)
    {
-      if (!lboard->lboard) continue;
+      if (!lboard->lboard)
+         continue;
+
       switch (rc_evaluate_lboard(lboard->lboard, &lboard->last_value, rcheevos_peek, NULL, NULL))
       {
          default:
@@ -817,6 +846,18 @@ static void rcheevos_test_leaderboards(void)
             runloop_msg_queue_push(lboard->info->description, 0, 3 * 60, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
             break;
          }
+      }
+
+      if (rcheevos_locals.invalid_peek_address)
+      {
+         /* disable the leaderboard */
+         CHEEVOS_FREE(lboard->lboard);
+         lboard->lboard = NULL;
+
+         CHEEVOS_LOG(RCHEEVOS_TAG "Leaderboard disabled (invalid address): %s\n", lboard->info->title);
+
+         /* reset the flag for the next leaderboard */
+         rcheevos_locals.invalid_peek_address = false;
       }
    }
 }

@@ -168,9 +168,30 @@ const uint8_t* rcheevos_patch_address(unsigned address, int console)
       }
       else if (console == RC_CONSOLE_PC_ENGINE)
       {
-         /* RAM. */
-         CHEEVOS_LOG(RCHEEVOS_TAG "PCE memory address %X adjusted to %X\n", address, address + 0x1f0000);
-         address += 0x1f0000;
+         if (address < 0x002000)
+         {
+            /* RAM. */
+            CHEEVOS_LOG(RCHEEVOS_TAG "PCE memory address %X adjusted to %X\n", address, address + 0x1f0000);
+            address += 0x1f0000;
+         }
+         else if (address < 0x012000)
+         {
+            /* CD-ROM RAM. */
+            CHEEVOS_LOG(RCHEEVOS_TAG "PCE memory address %X adjusted to %X\n", address, address + 0x100000 - 0x002000);
+            address += 0x100000 - 0x002000;
+         }
+         else if (address < 0x042000)
+         {
+            /* Super System Card RAM. */
+            CHEEVOS_LOG(RCHEEVOS_TAG "PCE memory address %X adjusted to %X\n", address, address + 0x0d0000 - 0x012000);
+            address += 0x0d0000 - 0x012000;
+         }
+         else
+         {
+            /* CD-ROM battery backed RAM. */
+            CHEEVOS_LOG(RCHEEVOS_TAG "PCE memory address %X adjusted to %X\n", address, address + 0x1ee000 - 0x042000);
+            address += 0x1ee000 - 0x042000;
+         }
       }
       else if (console == RC_CONSOLE_SUPER_NINTENDO)
       {
