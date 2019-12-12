@@ -4180,6 +4180,11 @@ static void handle_translation_cb(
    if (string_is_equal(error_string, "No text found."))
    {
       RARCH_LOG("No text found...\n");
+      if (!text_string)
+      {
+         text_string = (char*)malloc(15);
+      }
+      
       strlcpy(text_string, error_string, 15);
 #ifdef HAVE_MENU_WIDGETS
       if (menu_widgets_paused)
