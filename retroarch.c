@@ -13962,7 +13962,7 @@ static int16_t input_joypad_axis(const input_device_driver_t *drv,
       /* due to the way normal_mag is calculated differently for buttons and
        * sticks, this results in either a radial scaled deadzone for sticks
        * or linear scaled deadzone for analog buttons */
-      val = val * MIN(1.0f,((normal_mag - input_analog_deadzone)
+      val = val * MAX(1.0f,(1.0f / normal_mag)) * MIN(1.0f,((normal_mag - input_analog_deadzone)
           / (1.0f - input_analog_deadzone)));
    }
 
