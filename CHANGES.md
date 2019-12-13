@@ -38,6 +38,7 @@
 - SCANNER/MANUAL: Add option to scan inside archives
 - SCANNER/MANUAL: Enable automatic naming of arcade content via DAT files. This is compatible with DAT files in either Logiqx XML or MAME List XML format.
 - VIDEO: Do not reinit video driver on SET_SYSTEM_AV_INFO unless needed
+- VIDEO: Support DRC even when using a vsync swap interval higher than 1
 - VIDEO LAYOUT: Fixed XML parsing of attributes with spaces, should fix issues with several video layouts
 - VITA: GL1 driver support
 - WINDOWS/XINPUT: Get rid of 128 byte device name limit for XInput device discover - when device name was too long, it would not be picked up by the XInput driver and would instead fallback to DirectInput
