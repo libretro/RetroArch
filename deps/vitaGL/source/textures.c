@@ -19,7 +19,7 @@ void glGenTextures(GLsizei n, GLuint *res) {
 #ifndef SKIP_ERROR_HANDLING
 	// Error handling
 	if (n < 0) {
-		error = GL_INVALID_VALUE;
+		_vitagl_error = GL_INVALID_VALUE;
 		return;
 	}
 #endif
@@ -49,7 +49,7 @@ void glBindTexture(GLenum target, GLuint texture) {
 		tex_unit->tex_id = texture;
 		break;
 	default:
-		error = GL_INVALID_ENUM;
+		_vitagl_error = GL_INVALID_ENUM;
 		break;
 	}
 }
@@ -58,7 +58,7 @@ void glDeleteTextures(GLsizei n, const GLuint *gl_textures) {
 #ifndef SKIP_ERROR_HANDLING
 	// Error handling
 	if (n < 0) {
-		error = GL_INVALID_VALUE;
+		_vitagl_error = GL_INVALID_VALUE;
 		return;
 	}
 #endif
@@ -119,7 +119,7 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 			data_bpp = 1;
 			break;
 		default:
-			error = GL_INVALID_ENUM;
+			_vitagl_error = GL_INVALID_ENUM;
 			break;
 		}
 		break;
@@ -131,7 +131,7 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 			data_bpp = 2;
 			break;
 		default:
-			error = GL_INVALID_ENUM;
+			_vitagl_error = GL_INVALID_ENUM;
 			break;
 		}
 		break;
@@ -142,7 +142,7 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 			read_cb = readRGB;
 			break;
 		default:
-			error = GL_INVALID_ENUM;
+			_vitagl_error = GL_INVALID_ENUM;
 			break;
 		}
 		break;
@@ -157,7 +157,7 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 			read_cb = readRGBA5551;
 			break;
 		default:
-			error = GL_INVALID_ENUM;
+			_vitagl_error = GL_INVALID_ENUM;
 			break;
 		}
 		break;
@@ -197,13 +197,13 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 			tex_format = SCE_GXM_TEXTURE_FORMAT_P8_ABGR;
 			break;
 		default:
-			error = GL_INVALID_ENUM;
+			_vitagl_error = GL_INVALID_ENUM;
 			break;
 		}
 
 		// Checking if texture is too big for sceGxm
 		if (width > GXM_TEX_MAX_SIZE || height > GXM_TEX_MAX_SIZE) {
-			error = GL_INVALID_VALUE;
+			_vitagl_error = GL_INVALID_VALUE;
 			return;
 		}
 
@@ -227,7 +227,7 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 
 		break;
 	default:
-		error = GL_INVALID_ENUM;
+		_vitagl_error = GL_INVALID_ENUM;
 		break;
 	}
 }
@@ -266,7 +266,7 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 			data_bpp = 1;
 			break;
 		default:
-			error = GL_INVALID_ENUM;
+			_vitagl_error = GL_INVALID_ENUM;
 			break;
 		}
 		break;
@@ -277,7 +277,7 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 			data_bpp = 2;
 			break;
 		default:
-			error = GL_INVALID_ENUM;
+			_vitagl_error = GL_INVALID_ENUM;
 			break;
 		}
 		break;
@@ -288,7 +288,7 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 			read_cb = readRGB;
 			break;
 		default:
-			error = GL_INVALID_ENUM;
+			_vitagl_error = GL_INVALID_ENUM;
 			break;
 		}
 		break;
@@ -303,7 +303,7 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 			read_cb = readRGBA5551;
 			break;
 		default:
-			error = GL_INVALID_ENUM;
+			_vitagl_error = GL_INVALID_ENUM;
 			break;
 		}
 		break;
@@ -349,7 +349,7 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 
 		break;
 	default:
-		error = GL_INVALID_ENUM;
+		_vitagl_error = GL_INVALID_ENUM;
 		break;
 	}
 }
@@ -370,12 +370,12 @@ void glColorTable(GLenum target, GLenum internalformat, GLsizei width, GLenum fo
 			bpp = 4;
 			break;
 		default:
-			error = GL_INVALID_ENUM;
+			_vitagl_error = GL_INVALID_ENUM;
 			break;
 		}
 		break;
 	default:
-		error = GL_INVALID_ENUM;
+		_vitagl_error = GL_INVALID_ENUM;
 		break;
 	}
 
@@ -409,7 +409,7 @@ void glTexParameteri(GLenum target, GLenum pname, GLint param) {
 			case GL_LINEAR_MIPMAP_LINEAR: // TODO: Implement this
 				break;
 			default:
-				error = GL_INVALID_ENUM;
+				_vitagl_error = GL_INVALID_ENUM;
 				break;
 			}
 			sceGxmTextureSetMinFilter(&tex->gxm_tex, tex_unit->min_filter);
@@ -431,7 +431,7 @@ void glTexParameteri(GLenum target, GLenum pname, GLint param) {
 			case GL_LINEAR_MIPMAP_LINEAR: // TODO: Implement this
 				break;
 			default:
-				error = GL_INVALID_ENUM;
+				_vitagl_error = GL_INVALID_ENUM;
 				break;
 			}
 			sceGxmTextureSetMagFilter(&tex->gxm_tex, tex_unit->mag_filter);
@@ -448,7 +448,7 @@ void glTexParameteri(GLenum target, GLenum pname, GLint param) {
 				tex_unit->u_mode = SCE_GXM_TEXTURE_ADDR_MIRROR;
 				break;
 			default:
-				error = GL_INVALID_ENUM;
+				_vitagl_error = GL_INVALID_ENUM;
 				break;
 			}
 			sceGxmTextureSetUAddrMode(&tex->gxm_tex, tex_unit->u_mode);
@@ -465,18 +465,18 @@ void glTexParameteri(GLenum target, GLenum pname, GLint param) {
 				tex_unit->v_mode = SCE_GXM_TEXTURE_ADDR_MIRROR;
 				break;
 			default:
-				error = GL_INVALID_ENUM;
+				_vitagl_error = GL_INVALID_ENUM;
 				break;
 			}
 			sceGxmTextureSetVAddrMode(&tex->gxm_tex, tex_unit->v_mode);
 			break;
 		default:
-			error = GL_INVALID_ENUM;
+			_vitagl_error = GL_INVALID_ENUM;
 			break;
 		}
 		break;
 	default:
-		error = GL_INVALID_ENUM;
+		_vitagl_error = GL_INVALID_ENUM;
 		break;
 	}
 }
@@ -523,12 +523,12 @@ void glTexParameterf(GLenum target, GLenum pname, GLfloat param) {
 			sceGxmTextureSetVAddrMode(&tex->gxm_tex, tex_unit->v_mode);
 			break;
 		default:
-			error = GL_INVALID_ENUM;
+			_vitagl_error = GL_INVALID_ENUM;
 			break;
 		}
 		break;
 	default:
-		error = GL_INVALID_ENUM;
+		_vitagl_error = GL_INVALID_ENUM;
 		break;
 	}
 }
@@ -537,7 +537,7 @@ void glActiveTexture(GLenum texture) {
 	// Changing current in use server texture unit
 #ifndef SKIP_ERROR_HANDLING
 	if ((texture < GL_TEXTURE0) && (texture > GL_TEXTURE31))
-		error = GL_INVALID_ENUM;
+		_vitagl_error = GL_INVALID_ENUM;
 	else
 #endif
 		server_texture_unit = texture - GL_TEXTURE0;
@@ -570,7 +570,7 @@ void glGenerateMipmap(GLenum target) {
 
 		break;
 	default:
-		error = GL_INVALID_ENUM;
+		_vitagl_error = GL_INVALID_ENUM;
 		break;
 	}
 }
@@ -596,12 +596,12 @@ void glTexEnvf(GLenum target, GLenum pname, GLfloat param) {
 				tex_unit->env_mode = ADD;
 			break;
 		default:
-			error = GL_INVALID_ENUM;
+			_vitagl_error = GL_INVALID_ENUM;
 			break;
 		}
 		break;
 	default:
-		error = GL_INVALID_ENUM;
+		_vitagl_error = GL_INVALID_ENUM;
 	}
 }
 
@@ -633,12 +633,12 @@ void glTexEnvi(GLenum target, GLenum pname, GLint param) {
 			}
 			break;
 		default:
-			error = GL_INVALID_ENUM;
+			_vitagl_error = GL_INVALID_ENUM;
 			break;
 		}
 		break;
 	default:
-		error = GL_INVALID_ENUM;
+		_vitagl_error = GL_INVALID_ENUM;
 		break;
 	}
 }
@@ -654,7 +654,7 @@ void *vglGetTexDataPointer(GLenum target) {
 		return tex->data;
 		break;
 	default:
-		error = GL_INVALID_ENUM;
+		_vitagl_error = GL_INVALID_ENUM;
 		break;
 	}
 

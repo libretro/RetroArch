@@ -69,7 +69,7 @@ void glVertex3f(GLfloat x, GLfloat y, GLfloat z) {
 #ifndef SKIP_ERROR_HANDLING
 	// Error handling
 	if (phase != MODEL_CREATION) {
-		error = GL_INVALID_OPERATION;
+		_vitagl_error = GL_INVALID_OPERATION;
 		return;
 	}
 #endif
@@ -100,7 +100,7 @@ void glVertex3fv(const GLfloat *v) {
 #ifndef SKIP_ERROR_HANDLING
 	// Error handling
 	if (phase != MODEL_CREATION) {
-		error = GL_INVALID_OPERATION;
+		_vitagl_error = GL_INVALID_OPERATION;
 		return;
 	}
 #endif
@@ -191,7 +191,7 @@ void glTexCoord2fv(GLfloat *f) {
 #ifndef SKIP_ERROR_HANDLING
 	// Error handling
 	if (phase != MODEL_CREATION) {
-		error = GL_INVALID_OPERATION;
+		_vitagl_error = GL_INVALID_OPERATION;
 		return;
 	}
 #endif
@@ -214,7 +214,7 @@ void glTexCoord2f(GLfloat s, GLfloat t) {
 #ifndef SKIP_ERROR_HANDLING
 	// Error handling
 	if (phase != MODEL_CREATION) {
-		error = GL_INVALID_OPERATION;
+		_vitagl_error = GL_INVALID_OPERATION;
 		return;
 	}
 #endif
@@ -237,7 +237,7 @@ void glTexCoord2i(GLint s, GLint t) {
 #ifndef SKIP_ERROR_HANDLING
 	// Error handling
 	if (phase != MODEL_CREATION) {
-		error = GL_INVALID_OPERATION;
+		_vitagl_error = GL_INVALID_OPERATION;
 		return;
 	}
 #endif
@@ -260,7 +260,7 @@ void glArrayElement(GLint i) {
 #ifndef SKIP_ERROR_HANDLING
 	// Error handling
 	if (i < 0) {
-		error = GL_INVALID_VALUE;
+		_vitagl_error = GL_INVALID_VALUE;
 		return;
 	}
 #endif
@@ -340,7 +340,7 @@ void glBegin(GLenum mode) {
 #ifndef SKIP_ERROR_HANDLING
 	// Error handling
 	if (phase == MODEL_CREATION) {
-		error = GL_INVALID_OPERATION;
+		_vitagl_error = GL_INVALID_OPERATION;
 		return;
 	}
 #endif
@@ -377,7 +377,7 @@ void glBegin(GLenum mode) {
 		np = 4;
 		break;
 	default:
-		error = GL_INVALID_ENUM;
+		_vitagl_error = GL_INVALID_ENUM;
 		break;
 	}
 
@@ -393,7 +393,7 @@ void glEnd(void) {
 
 	// Error handling
 	if (phase != MODEL_CREATION) {
-		error = GL_INVALID_OPERATION;
+		_vitagl_error = GL_INVALID_OPERATION;
 		return;
 	}
 #endif
