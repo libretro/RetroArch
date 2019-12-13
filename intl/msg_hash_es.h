@@ -10187,12 +10187,19 @@ MSG_HASH(
     MSG_MANUAL_CONTENT_SCAN_END,
     "Escaneo finalizado: "
     )
-MSG_HASH(MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_ENABLED,
-      "Activar accesibilidad")
-MSG_HASH(MENU_ENUM_SUBLABEL_ACCESSIBILITY_ENABLED,
-      "Activa o desactiva el narrador de accesibilidad en los menús.")
-MSG_HASH(MENU_ENUM_SUBLABEL_ACCESSIBILITY_NARRATOR_SPEECH_SPEED,
-      "Ajusta la velocidad de lectura del narrador.")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_NARRATOR_SPEECH_SPEED,
-      "Velocidad de lectura del narrador")
-
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_ENABLED,
+    "Activar accesibilidad"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_ACCESSIBILITY_ENABLED,
+    "Activa o desactiva el narrador de accesibilidad en los menús."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_ACCESSIBILITY_NARRATOR_SPEECH_SPEED,
+    "Ajusta la velocidad de lectura del narrador."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_NARRATOR_SPEECH_SPEED,
+    "Velocidad de lectura del narrador"
+    )
