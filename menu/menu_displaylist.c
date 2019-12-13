@@ -9314,6 +9314,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                            double max             = setting->enforce_maxrange ? setting->max : 999.00;
                            bool checked_found     = false;
                            unsigned checked       = 0;
+                           unsigned entry_index   = 0;
 
                            if (setting->get_string_representation)
                            {
@@ -9336,9 +9337,11 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                                  if (!checked_found && val == orig_value)
                                  {
-                                    checked       = count;
+                                    checked       = entry_index;
                                     checked_found = true;
                                  }
+
+                                 entry_index++;
                               }
 
                               *setting->value.target.integer = orig_value;
@@ -9362,9 +9365,11 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                                  if (!checked_found && val == orig_value)
                                  {
-                                    checked       = count;
+                                    checked       = entry_index;
                                     checked_found = true;
                                  }
+
+                                 entry_index++;
                               }
                            }
 
@@ -9382,6 +9387,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                            double max             = setting->enforce_maxrange ? setting->max : 999.00;
                            bool checked_found     = false;
                            unsigned checked       = 0;
+                           unsigned entry_index   = 0;
 
                            if (setting->get_string_representation)
                            {
@@ -9403,9 +9409,11 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                                  if (!checked_found && fabs(i - orig_value) <= 0.01f)
                                  {
-                                    checked       = count;
+                                    checked       = entry_index;
                                     checked_found = true;
                                  }
+
+                                 entry_index++;
                               }
 
                               *setting->value.target.fraction = orig_value;
@@ -9428,9 +9436,11 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                                  if (!checked_found && fabs(i - orig_value) <= 0.01f)
                                  {
-                                    checked       = count;
+                                    checked       = entry_index;
                                     checked_found = true;
                                  }
+
+                                 entry_index++;
                               }
                            }
 
@@ -9448,6 +9458,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                            double max             = setting->enforce_maxrange ? setting->max : 999.00;
                            bool checked_found     = false;
                            unsigned checked       = 0;
+                           unsigned entry_index   = 0;
 
                            if (setting->get_string_representation)
                            {
@@ -9470,9 +9481,11 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                                  if (!checked_found && val == orig_value)
                                  {
-                                    checked       = count;
+                                    checked       = entry_index;
                                     checked_found = true;
                                  }
+
+                                 entry_index++;
                               }
 
                               *setting->value.target.unsigned_integer = orig_value;
@@ -9496,15 +9509,16 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                                  if (!checked_found && val == orig_value)
                                  {
-                                    checked       = count;
+                                    checked       = entry_index;
                                     checked_found = true;
                                  }
+
+                                 entry_index++;
                               }
                            }
 
                            if (checked_found)
-                              menu_entries_set_checked(
-                                    info->list, checked, true);
+                              menu_entries_set_checked(info->list, checked, true);
                         }
                         break;
                      default:
@@ -9668,6 +9682,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         double max             = setting->enforce_maxrange ? setting->max : 999.00;
                         bool checked_found     = false;
                         unsigned checked       = 0;
+                        unsigned entry_index   = 0;
 
                         if (setting->get_string_representation)
                         {
@@ -9690,9 +9705,11 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                               if (!checked_found && val == orig_value)
                               {
-                                 checked       = count;
+                                 checked       = entry_index;
                                  checked_found = true;
                               }
+
+                              entry_index++;
                            }
 
                            *setting->value.target.integer = orig_value;
@@ -9716,9 +9733,11 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                               if (!checked_found && val == orig_value)
                               {
-                                 checked       = count;
+                                 checked       = entry_index;
                                  checked_found = true;
                               }
+
+                              entry_index++;
                            }
                         }
 
@@ -9736,6 +9755,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         double max             = setting->enforce_maxrange ? setting->max : 999.00;
                         bool checked_found     = false;
                         unsigned checked       = 0;
+                        unsigned entry_index   = 0;
 
                         if (setting->get_string_representation)
                         {
@@ -9757,9 +9777,11 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                               if (!checked_found && fabs(i - orig_value) <= 0.01f)
                               {
-                                 checked       = count;
+                                 checked       = entry_index;
                                  checked_found = true;
                               }
+
+                              entry_index++;
                            }
 
                            *setting->value.target.fraction = orig_value;
@@ -9782,9 +9804,11 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                               if (!checked_found && fabs(i - orig_value) <= 0.01f)
                               {
-                                 checked       = count;
+                                 checked       = entry_index;
                                  checked_found = true;
                               }
+
+                              entry_index++;
                            }
                         }
 
@@ -9802,6 +9826,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         double max             = setting->enforce_maxrange ? setting->max : 999.00;
                         bool checked_found     = false;
                         unsigned checked       = 0;
+                        unsigned entry_index   = 0;
 
                         if (setting->get_string_representation)
                         {
@@ -9824,9 +9849,11 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                               if (!checked_found && val == orig_value)
                               {
-                                 checked       = count;
+                                 checked       = entry_index;
                                  checked_found = true;
                               }
+
+                              entry_index++;
                            }
 
                            *setting->value.target.unsigned_integer = orig_value;
@@ -9850,9 +9877,11 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                               if (!checked_found && val == orig_value)
                               {
-                                 checked       = count;
+                                 checked       = entry_index;
                                  checked_found = true;
                               }
+
+                              entry_index++;
                            }
                         }
 
