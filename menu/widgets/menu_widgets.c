@@ -1354,6 +1354,7 @@ void menu_widgets_frame(video_frame_info_t *video_info)
       0.00, 1.00, 0.00, 1.00,
       0.00, 1.00, 0.00, 1.00,
       };
+      menu_display_set_alpha(menu_widgets_pure_white, 1.0f);
 
       menu_widgets_draw_icon_blend(video_info,
          video_info->width, video_info->height,
