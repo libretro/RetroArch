@@ -892,6 +892,7 @@ ifeq ($(HAVE_VITA2D), 1)
           $(DEPS_DIR)/libvita2d/shader/color_f_gxp.o \
           $(DEPS_DIR)/libvita2d/shader/texture_v_gxp.o \
           $(DEPS_DIR)/libvita2d/shader/texture_f_gxp.o \
+          $(DEPS_DIR)/libvita2d/shader/texture_tint_v_gxp.o \
           $(DEPS_DIR)/libvita2d/shader/texture_tint_f_gxp.o
 
    ifeq ($(HAVE_MENU_COMMON),1)

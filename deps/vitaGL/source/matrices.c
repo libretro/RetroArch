@@ -28,7 +28,7 @@ void glMatrixMode(GLenum mode) {
 		matrix = &projection_matrix;
 		break;
 	default:
-		error = GL_INVALID_ENUM;
+		_vitagl_error = GL_INVALID_ENUM;
 		break;
 	}
 }
@@ -37,10 +37,10 @@ void glOrtho(GLdouble left, GLdouble right, GLdouble bottom, GLdouble top, GLdou
 #ifndef SKIP_ERROR_HANDLING
 	// Error handling
 	if (phase == MODEL_CREATION) {
-		error = GL_INVALID_OPERATION;
+		_vitagl_error = GL_INVALID_OPERATION;
 		return;
 	} else if ((left == right) || (bottom == top) || (nearVal == farVal)) {
-		error = GL_INVALID_VALUE;
+		_vitagl_error = GL_INVALID_VALUE;
 		return;
 	}
 #endif
@@ -54,10 +54,10 @@ void glFrustum(GLdouble left, GLdouble right, GLdouble bottom, GLdouble top, GLd
 #ifndef SKIP_ERROR_HANDLING
 	// Error handling
 	if (phase == MODEL_CREATION) {
-		error = GL_INVALID_OPERATION;
+		_vitagl_error = GL_INVALID_OPERATION;
 		return;
 	} else if ((left == right) || (bottom == top) || (nearVal < 0) || (farVal < 0)) {
-		error = GL_INVALID_VALUE;
+		_vitagl_error = GL_INVALID_VALUE;
 		return;
 	}
 #endif
@@ -130,7 +130,7 @@ void glRotatef(GLfloat angle, GLfloat x, GLfloat y, GLfloat z) {
 #ifndef SKIP_ERROR_HANDLING
 	// Error handling
 	if (phase == MODEL_CREATION) {
-		error = GL_INVALID_OPERATION;
+		_vitagl_error = GL_INVALID_OPERATION;
 		return;
 	}
 #endif
@@ -153,7 +153,7 @@ void glPushMatrix(void) {
 #ifndef SKIP_ERROR_HANDLING
 	// Error handling
 	if (phase == MODEL_CREATION) {
-		error = GL_INVALID_OPERATION;
+		_vitagl_error = GL_INVALID_OPERATION;
 		return;
 	}
 #endif
@@ -162,7 +162,7 @@ void glPushMatrix(void) {
 #ifndef SKIP_ERROR_HANDLING
 		// Error handling
 		if (modelview_stack_counter >= MODELVIEW_STACK_DEPTH) {
-			error = GL_STACK_OVERFLOW;
+			_vitagl_error = GL_STACK_OVERFLOW;
 		} else
 #endif
 			// Copying current matrix into the matrix stack and increasing stack counter
@@ -172,7 +172,7 @@ void glPushMatrix(void) {
 #ifndef SKIP_ERROR_HANDLING
 		// Error handling
 		if (projection_stack_counter >= GENERIC_STACK_DEPTH) {
-			error = GL_STACK_OVERFLOW;
+			_vitagl_error = GL_STACK_OVERFLOW;
 		} else
 #endif
 			// Copying current matrix into the matrix stack and increasing stack counter
@@ -184,7 +184,7 @@ void glPopMatrix(void) {
 #ifndef SKIP_ERROR_HANDLING
 	// Error handling
 	if (phase == MODEL_CREATION) {
-		error = GL_INVALID_OPERATION;
+		_vitagl_error = GL_INVALID_OPERATION;
 		return;
 	}
 #endif
@@ -193,7 +193,7 @@ void glPopMatrix(void) {
 #ifndef SKIP_ERROR_HANDLING
 		// Error handling
 		if (modelview_stack_counter == 0)
-			error = GL_STACK_UNDERFLOW;
+			_vitagl_error = GL_STACK_UNDERFLOW;
 		else
 #endif
 			// Copying last matrix on stack into current matrix and decreasing stack counter
@@ -203,7 +203,7 @@ void glPopMatrix(void) {
 #ifndef SKIP_ERROR_HANDLING
 		// Error handling
 		if (projection_stack_counter == 0)
-			error = GL_STACK_UNDERFLOW;
+			_vitagl_error = GL_STACK_UNDERFLOW;
 		else
 #endif
 			// Copying last matrix on stack into current matrix and decreasing stack counter

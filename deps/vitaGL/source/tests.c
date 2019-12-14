@@ -282,7 +282,7 @@ void glScissor(GLint x, GLint y, GLsizei width, GLsizei height) {
 #ifndef SKIP_ERROR_HANDLING
 	// Error handling
 	if ((width < 0) || (height < 0)) {
-		error = GL_INVALID_VALUE;
+		_vitagl_error = GL_INVALID_VALUE;
 		return;
 	}
 #endif
@@ -340,7 +340,7 @@ void glDepthMask(GLboolean flag) {
 #ifndef SKIP_ERROR_HANDLING
 	// Error handling
 	if (phase == MODEL_CREATION) {
-		error = GL_INVALID_OPERATION;
+		_vitagl_error = GL_INVALID_OPERATION;
 		return;
 	}
 #endif
@@ -362,36 +362,36 @@ void glStencilOpSeparate(GLenum face, GLenum sfail, GLenum dpfail, GLenum dppass
 	switch (face) {
 	case GL_FRONT:
 		if (!change_stencil_config(&stencil_fail_front, sfail))
-			error = GL_INVALID_ENUM;
+			_vitagl_error = GL_INVALID_ENUM;
 		if (!change_stencil_config(&depth_fail_front, dpfail))
-			error = GL_INVALID_ENUM;
+			_vitagl_error = GL_INVALID_ENUM;
 		if (!change_stencil_config(&depth_pass_front, dppass))
-			error = GL_INVALID_ENUM;
+			_vitagl_error = GL_INVALID_ENUM;
 		break;
 	case GL_BACK:
 		if (!change_stencil_config(&stencil_fail_back, sfail))
-			error = GL_INVALID_ENUM;
+			_vitagl_error = GL_INVALID_ENUM;
 		if (!change_stencil_config(&depth_fail_back, dpfail))
-			error = GL_INVALID_ENUM;
+			_vitagl_error = GL_INVALID_ENUM;
 		if (!change_stencil_config(&depth_pass_front, dppass))
-			error = GL_INVALID_ENUM;
+			_vitagl_error = GL_INVALID_ENUM;
 		break;
 	case GL_FRONT_AND_BACK:
 		if (!change_stencil_config(&stencil_fail_front, sfail))
-			error = GL_INVALID_ENUM;
+			_vitagl_error = GL_INVALID_ENUM;
 		if (!change_stencil_config(&stencil_fail_back, sfail))
-			error = GL_INVALID_ENUM;
+			_vitagl_error = GL_INVALID_ENUM;
 		if (!change_stencil_config(&depth_fail_front, dpfail))
-			error = GL_INVALID_ENUM;
+			_vitagl_error = GL_INVALID_ENUM;
 		if (!change_stencil_config(&depth_fail_back, dpfail))
-			error = GL_INVALID_ENUM;
+			_vitagl_error = GL_INVALID_ENUM;
 		if (!change_stencil_config(&depth_pass_front, dppass))
-			error = GL_INVALID_ENUM;
+			_vitagl_error = GL_INVALID_ENUM;
 		if (!change_stencil_config(&depth_pass_back, dppass))
-			error = GL_INVALID_ENUM;
+			_vitagl_error = GL_INVALID_ENUM;
 		break;
 	default:
-		error = GL_INVALID_ENUM;
+		_vitagl_error = GL_INVALID_ENUM;
 		break;
 	}
 	change_stencil_settings();
@@ -406,26 +406,26 @@ void glStencilFuncSeparate(GLenum face, GLenum func, GLint ref, GLuint mask) {
 	switch (face) {
 	case GL_FRONT:
 		if (!change_stencil_func_config(&stencil_func_front, func))
-			error = GL_INVALID_ENUM;
+			_vitagl_error = GL_INVALID_ENUM;
 		stencil_mask_front = mask;
 		stencil_ref_front = ref;
 		break;
 	case GL_BACK:
 		if (!change_stencil_func_config(&stencil_func_back, func))
-			error = GL_INVALID_ENUM;
+			_vitagl_error = GL_INVALID_ENUM;
 		stencil_mask_back = mask;
 		stencil_ref_back = ref;
 		break;
 	case GL_FRONT_AND_BACK:
 		if (!change_stencil_func_config(&stencil_func_front, func))
-			error = GL_INVALID_ENUM;
+			_vitagl_error = GL_INVALID_ENUM;
 		if (!change_stencil_func_config(&stencil_func_back, func))
-			error = GL_INVALID_ENUM;
+			_vitagl_error = GL_INVALID_ENUM;
 		stencil_mask_front = stencil_mask_back = mask;
 		stencil_ref_front = stencil_ref_back = ref;
 		break;
 	default:
-		error = GL_INVALID_ENUM;
+		_vitagl_error = GL_INVALID_ENUM;
 		break;
 	}
 	change_stencil_settings();
@@ -448,7 +448,7 @@ void glStencilMaskSeparate(GLenum face, GLuint mask) {
 		stencil_mask_front_write = stencil_mask_back_write = mask;
 		break;
 	default:
-		error = GL_INVALID_ENUM;
+		_vitagl_error = GL_INVALID_ENUM;
 		return;
 	}
 	change_stencil_settings();

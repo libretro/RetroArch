@@ -41,6 +41,7 @@ else
 	HAVE_SOCKET_LEGACY	:= 1
 	HAVE_MENU		:= 1
 	HAVE_MENU_COMMON	:= 1
+   HAVE_MENU_WIDGETS = 1
 	HAVE_OVERLAY		:= 1
 	HAVE_VIDEO_LAYOUT := 0
 	HAVE_MATERIALUI		:= 1
@@ -87,7 +88,7 @@ LD      := $(CXX)
 LIBDIRS := -L.
 
 ARCHFLAGS := -march=armv7-a -mfpu=neon -mfloat-abi=hard -DVITA
-CFLAGS    += $(ARCHFLAGS) -mword-relocations -fno-optimize-sibling-calls -O2 -flto
+CFLAGS    += $(ARCHFLAGS) -mword-relocations -fno-optimize-sibling-calls -O2
 
 ifeq ($(DEBUG), 1)
    CFLAGS += -g

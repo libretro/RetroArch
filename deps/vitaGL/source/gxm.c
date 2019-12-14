@@ -27,7 +27,7 @@ static void *gxm_stencil_surface_addr; // Stencil surface memblock starting addr
 static SceGxmDepthStencilSurface gxm_depth_stencil_surface; // Depth/Stencil surfaces setup for sceGxm
 
 SceGxmContext *gxm_context; // sceGxm context instance
-GLenum error = GL_NO_ERROR; // Error returned by glGetError
+GLenum _vitagl_error = GL_NO_ERROR; // Error returned by glGetError
 SceGxmShaderPatcher *gxm_shader_patcher; // sceGxmShaderPatcher shader patcher instance
 
 matrix4x4 mvp_matrix; // ModelViewProjection Matrix

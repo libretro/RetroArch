@@ -271,6 +271,7 @@ static void vita2d_font_render_msg(
    int drop_x, drop_y;
    unsigned max_glyphs;
    enum text_alignment text_align;
+   bool full_screen                 = false ;
    unsigned color, color_dark, r, g, b,
             alpha, r_dark, g_dark, b_dark, alpha_dark;
    vita_font_t                *font = (vita_font_t *)data;
@@ -285,6 +286,7 @@ static void vita2d_font_render_msg(
       x              = params->x;
       y              = params->y;
       scale          = params->scale;
+      full_screen    = params->full_screen;
       text_align     = params->text_align;
       drop_x         = params->drop_x;
       drop_y         = params->drop_y;
@@ -301,6 +303,7 @@ static void vita2d_font_render_msg(
       x              = video_info->font_msg_pos_x;
       y              = video_info->font_msg_pos_y;
       scale          = 1.0f;
+      full_screen    = true;
       text_align     = TEXT_ALIGN_LEFT;
 
       r              = (video_info->font_msg_color_r * 255);
@@ -314,6 +317,8 @@ static void vita2d_font_render_msg(
       drop_mod       = 0.3f;
       drop_alpha     = 1.0f;
    }
+
+   video_driver_set_viewport(width, height, full_screen, false);
 
    max_glyphs        = strlen(msg);
 

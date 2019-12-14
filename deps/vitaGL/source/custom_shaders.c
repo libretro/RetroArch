@@ -127,7 +127,7 @@ GLuint glCreateShader(GLenum shaderType) {
 		shaders[res - 1].type = GL_VERTEX_SHADER;
 		break;
 	default:
-		error = GL_INVALID_ENUM;
+		_vitagl_error = GL_INVALID_ENUM;
 		break;
 	}
 	shaders[res - 1].valid = GL_TRUE;
@@ -176,7 +176,7 @@ void glAttachShader(GLuint prog, GLuint shad) {
 			break;
 		}
 	} else
-		error = GL_INVALID_VALUE;
+		_vitagl_error = GL_INVALID_VALUE;
 }
 
 GLuint glCreateProgram(void) {
@@ -365,7 +365,7 @@ void vglBindAttribLocation(GLuint prog, GLuint index, const GLchar *name, const 
 		bpe = sizeof(uint8_t);
 		break;
 	default:
-		error = GL_INVALID_ENUM;
+		_vitagl_error = GL_INVALID_ENUM;
 		break;
 	}
 
@@ -383,7 +383,7 @@ void vglVertexAttribPointer(GLuint index, GLint size, GLenum type, GLboolean nor
 #ifndef SKIP_ERROR_HANDLING
 	// Error handling
 	if (stride < 0) {
-		error = GL_INVALID_VALUE;
+		_vitagl_error = GL_INVALID_VALUE;
 		return;
 	}
 #endif
@@ -398,7 +398,7 @@ void vglVertexAttribPointer(GLuint index, GLint size, GLenum type, GLboolean nor
 		bpe = sizeof(GLshort);
 		break;
 	default:
-		error = GL_INVALID_ENUM;
+		_vitagl_error = GL_INVALID_ENUM;
 		break;
 	}
 
