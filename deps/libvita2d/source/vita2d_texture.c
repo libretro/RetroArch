@@ -873,3 +873,18 @@ void vita2d_draw_array_textured(const vita2d_texture *texture, SceGxmPrimitiveTy
 	sceGxmSetVertexStream(_vita2d_context, 0, vertices);
 	sceGxmDraw(_vita2d_context, mode, SCE_GXM_INDEX_FORMAT_U16, vita2d_get_linear_indices(), count);
 }
+
+void vita2d_draw_array_textured_mat(const vita2d_texture *texture, const vita2d_texture_tint_vertex *vertices, size_t count, float *mat)
+{
+	set_texture_tint_program();
+
+   void *vertex_wvp_buffer;
+   sceGxmReserveVertexDefaultUniformBuffer(_vita2d_context, &vertex_wvp_buffer);
+   sceGxmSetUniformDataF(vertex_wvp_buffer, _vita2d_textureWvpParam, 0, 16, mat);
+
+   // Set the texture to the TEXUNIT0
+   sceGxmSetFragmentTexture(_vita2d_context, 0, &texture->gxm_tex);
+
+   sceGxmSetVertexStream(_vita2d_context, 0, vertices);
+   sceGxmDraw(_vita2d_context, SCE_GXM_PRIMITIVE_TRIANGLE_STRIP, SCE_GXM_INDEX_FORMAT_U16, vita2d_get_linear_indices(), count);
+}
