@@ -933,12 +933,16 @@ int vita2d_get_clipping_enabled()
 
 void vita2d_set_clip_rectangle(int x_min, int y_min, int x_max, int y_max)
 {
+	vita2d_set_viewport(0,0,DISPLAY_WIDTH,DISPLAY_HEIGHT);
+	clipping_enabled = 1;
 	clip_rect_x_min = x_min;
 	clip_rect_y_min = y_min;
 	clip_rect_x_max = x_max;
 	clip_rect_y_max = y_max;
 	// we can only draw during a scene, but we can cache the values since they're not going to have any visible effect till the scene starts anyways
 	if(drawing) {
+		sceGxmSetFrontDepthWriteEnable(_vita2d_context,
+			SCE_GXM_DEPTH_WRITE_DISABLED);
 		// clear the stencil buffer to 0
 		sceGxmSetFrontStencilFunc(
 			_vita2d_context,
@@ -959,6 +963,8 @@ void vita2d_set_clip_rectangle(int x_min, int y_min, int x_max, int y_max)
 			0xFF,
 			0xFF);
 		vita2d_draw_rectangle(x_min, y_min, x_max - x_min, y_max - y_min, 0);
+		sceGxmSetFrontDepthWriteEnable(_vita2d_context,
+			SCE_GXM_DEPTH_WRITE_ENABLED);
 		if(clipping_enabled) {
 			// set the stencil function to only accept pixels where the stencil is 1
 			sceGxmSetFrontStencilFunc(
