@@ -31,6 +31,18 @@ typedef struct vita2d_texture_vertex {
 	float v;
 } vita2d_texture_vertex;
 
+typedef struct vita2d_texture_tint_vertex {
+	float x;
+	float y;
+	float z;
+	float u;
+	float v;
+	float r;
+	float g;
+	float b;
+	float a;
+} vita2d_texture_tint_vertex;
+
 typedef struct vita2d_texture {
 	SceGxmTexture gxm_tex;
 	SceUID data_UID;
@@ -120,7 +132,7 @@ void vita2d_draw_texture_part_scale_rotate(const vita2d_texture *texture, float 
 void vita2d_draw_texture_tint(const vita2d_texture *texture, float x, float y, unsigned int color);
 void vita2d_draw_texture_tint_rotate(const vita2d_texture *texture, float x, float y, float rad, unsigned int color);
 void vita2d_draw_texture_tint_rotate_hotspot(const vita2d_texture *texture, float x, float y, float rad, float center_x, float center_y, unsigned int color);
-void vita2d_draw_texture_tint_scale(const vita2d_texture *texture, float x, float y, float x_scale, float y_scale, unsigned int color);
+void vita2d_draw_texture_tint_scale(const vita2d_texture *texture, float x, float y, float x_scale, float y_scale, const float *color);
 void vita2d_draw_texture_tint_part(const vita2d_texture *texture, float x, float y, float tex_x, float tex_y, float tex_w, float tex_h, unsigned int color);
 void vita2d_draw_texture_tint_part_scale(const vita2d_texture *texture, float x, float y, float tex_x, float tex_y, float tex_w, float tex_h, float x_scale, float y_scale, unsigned int color);
 void vita2d_draw_texture_tint_scale_rotate_hotspot(const vita2d_texture *texture, float x, float y, float x_scale, float y_scale, float rad, float center_x, float center_y, unsigned int color);
