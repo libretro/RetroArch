@@ -89,6 +89,7 @@ int vita2d_get_clipping_enabled();
 void vita2d_set_clip_rectangle(int x_min, int y_min, int x_max, int y_max);
 void vita2d_get_clip_rectangle(int *x_min, int *y_min, int *x_max, int *y_max);
 void vita2d_set_blend_mode_add(int enable);
+void vita2d_set_viewport(int x, int y, int width, int height);
 
 void *vita2d_pool_malloc(unsigned int size);
 void *vita2d_pool_memalign(unsigned int size, unsigned int alignment);

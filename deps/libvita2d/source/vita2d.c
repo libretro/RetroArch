@@ -1092,3 +1092,14 @@ void vita2d_set_blend_mode_add(int enable)
 	_vita2d_textureFragmentProgram = in->texture;
 	_vita2d_textureTintFragmentProgram = in->textureTint;
 }
+
+void vita2d_set_viewport(int x, int y, int width, int height){
+   static float vh = DISPLAY_HEIGHT;
+   float sw = width  / 2.;
+   float sh = height / 2.;
+   float x_scale = sw;
+   float x_port = x + sw;
+   float y_scale = -(sh);
+   float y_port = vh - y - sh;
+   sceGxmSetViewport(_vita2d_context, x_port, x_scale, y_port, y_scale, -0.5f, 0.5f);
+}
