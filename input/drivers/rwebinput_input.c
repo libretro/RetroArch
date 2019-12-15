@@ -538,7 +538,7 @@ static int16_t rwebinput_input_state(void *data,
             for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
             {
                if (rwebinput_is_pressed(
-                        rwebinput, joypad_info, port, binds[port], i))
+                        rwebinput, joypad_info, binds[port], port, i))
                {
                   ret |= (1 << i);
                   continue;
