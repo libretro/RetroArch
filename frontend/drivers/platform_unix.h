@@ -165,6 +165,12 @@ struct android_app
    jmethodID setScreenOrientation;
    jmethodID getUserLanguageString;
    jmethodID doVibrate;
+
+   struct
+   {
+      unsigned width, height;
+      bool changed;
+   } content_rect;
 };
 
 enum

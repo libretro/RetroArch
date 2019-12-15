@@ -218,6 +218,10 @@ static void android_gfx_ctx_check_window(void *data, bool *quit,
       bool *resize, unsigned *width, unsigned *height,
       bool is_shutdown)
 {
+#ifdef HAVE_VULKAN
+   struct android_app *android_app = (struct android_app*)g_android;
+#endif
+
    unsigned new_width       = 0;
    unsigned new_height      = 0;
    android_ctx_data_t *and  = (android_ctx_data_t*)data;
@@ -234,11 +238,17 @@ static void android_gfx_ctx_check_window(void *data, bool *quit,
          break;
       case GFX_CTX_VULKAN_API:
 #ifdef HAVE_VULKAN
+         if (android_app->content_rect.changed)
+         {
+             and->vk.need_new_swapchain = true;
+             android_app->content_rect.changed = false;
+         }
+
          /* Swapchains are recreated in set_resize as a
           * central place, so use that to trigger swapchain reinit. */
          *resize    = and->vk.need_new_swapchain;
-         new_width  = and->width;
-         new_height = and->height;
+         new_width  = android_app->content_rect.width;
+         new_height = android_app->content_rect.height;
 #endif
          break;
       case GFX_CTX_NONE:
@@ -276,8 +286,8 @@ static bool android_gfx_ctx_set_resize(void *data,
    {
       case GFX_CTX_VULKAN_API:
 #ifdef HAVE_VULKAN
-         and->width  = ANativeWindow_getWidth(android_app->window);
-         and->height = ANativeWindow_getHeight(android_app->window);
+         and->width  = android_app->content_rect.width;
+         and->height = android_app->content_rect.height;
          RARCH_LOG("[Android]: Native window size: %u x %u.\n", and->width, and->height);
          if (!vulkan_create_swapchain(&and->vk, and->width, and->height, and->swap_interval))
          {
