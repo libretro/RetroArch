@@ -238,7 +238,7 @@ static void heap_free(void *addr) {
 	heap_blk_free((uintptr_t)addr);
 }
 
-void mem_term(void) {
+void vitagl_mem_term(void) {
 	heap_destroy();
 	if (mempool_addr[0] != NULL) {
 		sceKernelFreeMemBlock(mempool_id[0]);
@@ -250,9 +250,9 @@ void mem_term(void) {
 	}
 }
 
-int mem_init(size_t size_ram, size_t size_cdram, size_t size_phycont) {
+int vitagl_mem_init(size_t size_ram, size_t size_cdram, size_t size_phycont) {
 	if (mempool_addr[0] != NULL)
-		mem_term();
+		vitagl_mem_term();
 
 	mempool_size[0] = ALIGN(size_cdram, 256 * 1024);
 	mempool_size[1] = ALIGN(size_ram, 4 * 1024);
@@ -277,14 +277,14 @@ int mem_init(size_t size_ram, size_t size_cdram, size_t size_phycont) {
 	return 1;
 }
 
-void mempool_free(void *ptr, vglMemType type) {
+void vitagl_mempool_free(void *ptr, vglMemType type) {
 	if (type == VGL_MEM_EXTERNAL)
 		free(ptr);
 	else
 		heap_free(ptr); // type is already stored in heap for alloc'd blocks
 }
 
-void *mempool_alloc(size_t size, vglMemType type) {
+void *vitagl_mempool_alloc(size_t size, vglMemType type) {
 	void *res = NULL;
 	if (size <= tm_free[type])
 		res = heap_alloc(type, size, MEM_ALIGNMENT);
@@ -292,6 +292,6 @@ void *mempool_alloc(size_t size, vglMemType type) {
 }
 
 // Returns currently free space on mempool
-size_t mempool_get_free_space(vglMemType type) {
+size_t vitagl_mempool_get_free_space(vglMemType type) {
 	return tm_free[type];
 }

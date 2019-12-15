@@ -211,7 +211,7 @@ void vglInitExtended(uint32_t gpu_pool_size, int width, int height, int ram_thre
 	sceKernelGetFreeMemorySize(&info);
 
 	// Initializing memory heap for CDRAM and RAM memory
-	mem_init(info.size_user - ram_threshold, info.size_cdram - 1 * 1024 * 1024, info.size_phycont - 1 * 1024 * 1024); // leave some just in case
+	vitagl_mem_init(info.size_user - ram_threshold, info.size_cdram - 1 * 1024 * 1024, info.size_phycont - 1 * 1024 * 1024); // leave some just in case
 
 	// Initializing sceGxm context
 	initGxmContext();
@@ -642,10 +642,10 @@ void vglEnd(void) {
 	waitRenderingDone();
 
 	// Deallocating default vertices buffers
-	mempool_free(clear_vertices, VGL_MEM_RAM);
-	mempool_free(depth_vertices, VGL_MEM_RAM);
-	mempool_free(depth_clear_indices, VGL_MEM_RAM);
-	mempool_free(scissor_test_vertices, VGL_MEM_RAM);
+	vitagl_mempool_free(clear_vertices, VGL_MEM_RAM);
+	vitagl_mempool_free(depth_vertices, VGL_MEM_RAM);
+	vitagl_mempool_free(depth_clear_indices, VGL_MEM_RAM);
+	vitagl_mempool_free(scissor_test_vertices, VGL_MEM_RAM);
 
 	// Releasing shader programs from sceGxmShaderPatcher
 	sceGxmShaderPatcherReleaseFragmentProgram(gxm_shader_patcher, scissor_test_fragment_program);
@@ -744,7 +744,7 @@ void glDeleteBuffers(GLsizei n, const GLuint *gl_buffers) {
 			uint8_t idx = gl_buffers[j] - BUFFERS_ADDR;
 			buffers[idx] = gl_buffers[j];
 			if (gpu_buffers[idx].ptr != NULL) {
-				mempool_free(gpu_buffers[idx].ptr, VGL_MEM_VRAM);
+				vitagl_mempool_free(gpu_buffers[idx].ptr, VGL_MEM_VRAM);
 				gpu_buffers[idx].ptr = NULL;
 			}
 		}
@@ -2096,15 +2096,15 @@ void vglDrawObjects(GLenum mode, GLsizei count, GLboolean implicit_wvp) {
 size_t vglMemFree(vglMemType type) {
 	if (type >= VGL_MEM_TYPE_COUNT)
 		return 0;
-	return mempool_get_free_space(type);
+	return vitagl_mempool_get_free_space(type);
 }
 
 void *vglAlloc(uint32_t size, vglMemType type) {
 	if (type >= VGL_MEM_TYPE_COUNT)
 		return NULL;
-	return mempool_alloc(size, type);
+	return vitagl_mempool_alloc(size, type);
 }
 
 void vglFree(void *addr) {
-	mempool_free(addr, VGL_MEM_RAM); // Type is discarded so we just pass a random one
+	vitagl_mempool_free(addr, VGL_MEM_RAM); // Type is discarded so we just pass a random one
 }

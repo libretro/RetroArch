@@ -15,18 +15,18 @@ static unsigned int pool_size = 0;
 
 void *gpu_alloc_mapped(size_t size, vglMemType *type) {
 	// Allocating requested memblock
-	void *res = mempool_alloc(size, *type);
+	void *res = vitagl_mempool_alloc(size, *type);
 
 	// Requested memory type finished, using other one
 	if (res == NULL) {
 		*type = use_vram ? VGL_MEM_RAM : VGL_MEM_VRAM;
-		res = mempool_alloc(size, *type);
+		res = vitagl_mempool_alloc(size, *type);
 	}
 
 	// Even the other one failed, using our last resort
 	if (res == NULL) {
 		*type = VGL_MEM_SLOW;
-		res = mempool_alloc(size, *type);
+		res = vitagl_mempool_alloc(size, *type);
 	}
 
 	if (res == NULL) {
@@ -39,7 +39,7 @@ void *gpu_alloc_mapped(size_t size, vglMemType *type) {
 
 void *gpu_vertex_usse_alloc_mapped(size_t size, unsigned int *usse_offset) {
 	// Allocating memblock
-	void *addr = mempool_alloc(size, VGL_MEM_RAM);
+	void *addr = vitagl_mempool_alloc(size, VGL_MEM_RAM);
 
 	// Mapping memblock into sceGxm as vertex USSE memory
 	sceGxmMapVertexUsseMemory(addr, size, usse_offset);
@@ -53,12 +53,12 @@ void gpu_vertex_usse_free_mapped(void *addr) {
 	sceGxmUnmapVertexUsseMemory(addr);
 
 	// Deallocating memblock
-	mempool_free(addr, VGL_MEM_RAM);
+	vitagl_mempool_free(addr, VGL_MEM_RAM);
 }
 
 void *gpu_fragment_usse_alloc_mapped(size_t size, unsigned int *usse_offset) {
 	// Allocating memblock
-	void *addr = mempool_alloc(size, VGL_MEM_RAM);
+	void *addr = vitagl_mempool_alloc(size, VGL_MEM_RAM);
 
 	// Mapping memblock into sceGxm as fragment USSE memory
 	sceGxmMapFragmentUsseMemory(addr, size, usse_offset);
@@ -72,7 +72,7 @@ void gpu_fragment_usse_free_mapped(void *addr) {
 	sceGxmUnmapFragmentUsseMemory(addr);
 
 	// Deallocating memblock
-	mempool_free(addr, VGL_MEM_RAM);
+	vitagl_mempool_free(addr, VGL_MEM_RAM);
 }
 
 void *gpu_pool_malloc(unsigned int size) {
@@ -166,7 +166,7 @@ palette *gpu_alloc_palette(const void *data, uint32_t w, uint32_t bpe) {
 void gpu_free_texture(texture *tex) {
 	// Deallocating texture
 	if (tex->data != NULL)
-		mempool_free(tex->data, tex->mtype);
+		vitagl_mempool_free(tex->data, tex->mtype);
 
 	// Invalidating texture object
 	tex->valid = 0;
@@ -325,6 +325,6 @@ void gpu_free_palette(palette *pal) {
 	// Deallocating palette memblock and object
 	if (pal == NULL)
 		return;
-	mempool_free(pal->data, pal->type);
+	vitagl_mempool_free(pal->data, pal->type);
 	free(pal);
 }
