@@ -16041,7 +16041,7 @@ int16_t input_joypad_analog(const input_device_driver_t *drv,
          {
             float normal_mag = 0.0f;
             if (configuration_settings->floats.input_analog_deadzone)
-               normal_mag = abs((1.0f / 0x7fff) * drv->axis(joypad_info.joy_idx, axis));
+               normal_mag = fabs((1.0f / 0x7fff) * drv->axis(joypad_info.joy_idx, axis));
             res = abs(input_joypad_axis(drv, joypad_info.joy_idx, axis, normal_mag));
          }
          /* If the result is zero, it's got a digital button
