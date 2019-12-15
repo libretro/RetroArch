@@ -377,6 +377,18 @@ static void onInputQueueDestroyed(ANativeActivity* activity,
    android_app_set_input((struct android_app*)activity->instance, NULL);
 }
 
+static void onContentRectChanged(ANativeActivity *activity,
+      const ARect *rect)
+{
+   struct android_app *instance = (struct android_app*)activity->instance;
+   unsigned width = rect->right - rect->left;
+   unsigned height = rect->bottom - rect->top;
+   RARCH_LOG("Content rect changed: %u x %u\n", width, height);
+   instance->content_rect.changed = true;
+   instance->content_rect.width   = width;
+   instance->content_rect.height  = height;
+}
+
 JNIEnv *jni_thread_getenv(void)
 {
    JNIEnv *env;
@@ -486,6 +498,7 @@ void ANativeActivity_onCreate(ANativeActivity* activity,
    activity->callbacks->onNativeWindowDestroyed = onNativeWindowDestroyed;
    activity->callbacks->onInputQueueCreated     = onInputQueueCreated;
    activity->callbacks->onInputQueueDestroyed   = onInputQueueDestroyed;
+   activity->callbacks->onContentRectChanged    = onContentRectChanged;
 
    /* These are set only for the native activity,
     * and are reset when it ends. */
