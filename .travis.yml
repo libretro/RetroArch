@@ -117,7 +117,7 @@ before_install:
        sudo update-alternatives --set x86_64-w64-mingw32-g++ /usr/bin/x86_64-w64-mingw32-g++-posix
      fi
 
-script:
+before_script:
   - |
      if [ -n "$CROSS_COMPILE" ]; then
        ARGS="$ARGS --disable-d3d8 --disable-d3d9 --disable-d3d10 --disable-d3d11 --disable-d3d12"
@@ -150,6 +150,9 @@ script:
      if [ -n "$ENABLE_GLES3" ]; then
        ARGS="$ARGS --enable-opengles3"
      fi
+  - echo "Configure arguments = $ARGS"
+
+script:
   - ./configure $ARGS
   - |
      if [ -n "$C89_BUILD" ]; then
