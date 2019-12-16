@@ -21,6 +21,7 @@
 #include <iostream>
 #include <cstring>
 #include <cstdlib>
+#include <mutex>
 
 #include "../../verbosity.h"
 
@@ -31,18 +32,33 @@ struct SlangProcess
 {
    public:
       SlangProcess();
-
       TBuiltInResource& GetResources() { return Resources; }
-      ~SlangProcess() { FinalizeProcess(); }
 
    private:
       TBuiltInResource Resources;
 };
 
+// We don't use glslang from multiple threads, but to be sure.
+// Initializing TLS and freeing it for glslang works around a really bizarre issue
+// where the TLS key is suddenly corrupted *somehow*.
+static std::mutex glslang_global_lock;
+struct SlangProcessHolder
+{
+   SlangProcessHolder()
+   {
+      glslang_global_lock.lock();
+      InitializeProcess();
+   }
+
+   ~SlangProcessHolder()
+   {
+      FinalizeProcess();
+      glslang_global_lock.unlock();
+   }
+};
+
 SlangProcess::SlangProcess()
 {
-   InitializeProcess();
-
    char DefaultConfig[] =
       "MaxLights 32\n"
       "MaxClipPlanes 6\n"
@@ -337,6 +353,7 @@ SlangProcess::SlangProcess()
 bool glslang::compile_spirv(const string &source, Stage stage, std::vector<uint32_t> *spirv)
 {
    static SlangProcess process;
+   SlangProcessHolder process_holder;
 
    TProgram program;
    EShLanguage language;

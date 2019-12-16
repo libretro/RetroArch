@@ -158,6 +158,7 @@ bool DetachProcess()
 
     OS_FreeTLSIndex(ThreadInitializeIndex);
     ThreadInitializeIndex = OS_INVALID_TLS_INDEX;
+    DeinitializePoolIndex();
 
     return success;
 }
