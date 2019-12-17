@@ -419,3 +419,280 @@ void ozone_draw_messagebox(ozone_handle_t *ozone,
 end:
    string_list_free(list);
 }
+
+void ozone_draw_fullscreen_thumbnails(
+      ozone_handle_t *ozone, video_frame_info_t *video_info)
+{
+   /* Check whether fullscreen thumbnails are visible */
+   if (ozone->animations.fullscreen_thumbnail_alpha > 0.0f)
+   {
+      /* Note: right thumbnail is drawn at the top
+       * in the sidebar, so it becomes the *left*
+       * thumbnail when viewed fullscreen */
+      menu_thumbnail_t *right_thumbnail = &ozone->thumbnails.left;
+      menu_thumbnail_t *left_thumbnail  = &ozone->thumbnails.right;
+      unsigned width                    = video_info->width;
+      unsigned height                   = video_info->height;
+      int view_width                    = (int)width;
+      int view_height                   = (int)height - ozone->dimensions.header_height - ozone->dimensions.footer_height - 1;
+      int thumbnail_margin              = ozone->dimensions.fullscreen_thumbnail_padding;
+      bool show_right_thumbnail         = false;
+      bool show_left_thumbnail          = false;
+      unsigned num_thumbnails           = 0;
+      float right_thumbnail_draw_width  = 0.0f;
+      float right_thumbnail_draw_height = 0.0f;
+      float left_thumbnail_draw_width   = 0.0f;
+      float left_thumbnail_draw_height  = 0.0f;
+      float background_alpha            = 0.85f;
+      float background_color[16]        = {
+         0.0f, 0.0f, 0.0f, 1.0f,
+         0.0f, 0.0f, 0.0f, 1.0f,
+         0.0f, 0.0f, 0.0f, 1.0f,
+         0.0f, 0.0f, 0.0f, 1.0f,
+      };
+      int frame_width                   = (int)((float)thumbnail_margin / 3.0f);
+      float frame_color[16];
+      float separator_color[16];
+      int thumbnail_box_width;
+      int thumbnail_box_height;
+      int right_thumbnail_x;
+      int left_thumbnail_x;
+      int thumbnail_y;
+
+      /* Sanity check: Return immediately if this is
+       * a menu without thumbnails and we are not currently
+       * 'fading out' the fullscreen thumbnail view */
+      if (!ozone->fullscreen_thumbnails_available &&
+          ozone->show_fullscreen_thumbnails)
+         goto error;
+
+      /* Safety check: ensure that current
+       * selection matches the entry selected when
+       * fullscreen thumbnails were enabled
+       * > Note that we exclude this check if we are
+       *   currently viewing the quick menu and the
+       *   thumbnail view is fading out. This enables
+       *   a smooth transition if the user presses
+       *   RetroPad A or keyboard 'return' to enter the
+       *   quick menu while fullscreen thumbnails are
+       *   being displayed */
+      if (((size_t)ozone->selection != ozone->fullscreen_thumbnail_selection) &&
+          (!ozone->is_quick_menu || ozone->show_fullscreen_thumbnails))
+         goto error;
+
+      /* Sanity check: Return immediately if the view
+       * width/height is < 1 */
+      if ((view_width < 1) || (view_height < 1))
+         goto error;
+
+      /* Get number of 'active' thumbnails */
+      show_right_thumbnail = (right_thumbnail->status == MENU_THUMBNAIL_STATUS_AVAILABLE);
+      show_left_thumbnail  = (left_thumbnail->status  == MENU_THUMBNAIL_STATUS_AVAILABLE);
+
+      if (show_right_thumbnail)
+         num_thumbnails++;
+
+      if (show_left_thumbnail)
+         num_thumbnails++;
+
+      /* Do nothing if both thumbnails are missing
+       * > Note: Baring inexplicable internal errors, this
+       *   can never happen... */
+      if (num_thumbnails < 1)
+         goto error;
+
+      /* Get base thumbnail dimensions + draw positions */
+
+      /* > Thumbnail bounding box height + y position
+       *   are fixed */
+      thumbnail_box_height = view_height - (thumbnail_margin * 2);
+      thumbnail_y          = ozone->dimensions.header_height + thumbnail_margin + 1;
+
+      /* Thumbnail bounding box width and x position
+       * depend upon number of active thumbnails */
+      if (num_thumbnails == 2)
+      {
+         thumbnail_box_width = (view_width - (thumbnail_margin * 3) - frame_width) >> 1;
+         left_thumbnail_x    = thumbnail_margin;
+         right_thumbnail_x   = left_thumbnail_x + thumbnail_box_width + frame_width + thumbnail_margin;
+      }
+      else
+      {
+         thumbnail_box_width = view_width - (thumbnail_margin * 2);
+         left_thumbnail_x    = thumbnail_margin;;
+         right_thumbnail_x   = left_thumbnail_x;
+      }
+
+      /* Sanity check */
+      if ((thumbnail_box_width < 1) ||
+          (thumbnail_box_height < 1))
+         goto error;
+
+      /* Get thumbnail draw dimensions
+       * > Note: The following code is a bit awkward, since
+       *   we have to do things in a very specific order
+       *   - i.e. we cannot determine proper thumbnail
+       *     layout until we have thumbnail draw dimensions.
+       *     and we cannot get draw dimensions until we have
+       *     the bounding box dimensions...  */
+      if (show_right_thumbnail)
+      {
+         menu_thumbnail_get_draw_dimensions(
+               right_thumbnail,
+               thumbnail_box_width, thumbnail_box_height, 1.0f,
+               &right_thumbnail_draw_width, &right_thumbnail_draw_height);
+
+         /* Sanity check */
+         if ((right_thumbnail_draw_width <= 0.0f) ||
+             (right_thumbnail_draw_height <= 0.0f))
+            goto error;
+      }
+
+      if (show_left_thumbnail)
+      {
+         menu_thumbnail_get_draw_dimensions(
+               left_thumbnail,
+               thumbnail_box_width, thumbnail_box_height, 1.0f,
+               &left_thumbnail_draw_width, &left_thumbnail_draw_height);
+
+         /* Sanity check */
+         if ((left_thumbnail_draw_width <= 0.0f) ||
+             (left_thumbnail_draw_height <= 0.0f))
+            goto error;
+      }
+
+      /* Adjust thumbnail draw positions to achieve
+       * uniform appearance (accounting for actual
+       * draw dimensions...) */
+      if (num_thumbnails == 2)
+      {
+         int left_padding  = (thumbnail_box_width - (int)left_thumbnail_draw_width)  >> 1;
+         int right_padding = (thumbnail_box_width - (int)right_thumbnail_draw_width) >> 1;
+
+         /* Move thumbnails as close together as possible,
+          * and horizontally centre the resultant 'block'
+          * of images */
+         left_thumbnail_x  += right_padding;
+         right_thumbnail_x -= left_padding;
+      }
+
+      /* Set colour values */
+
+      /* > Background */
+      menu_display_set_alpha(
+            background_color,
+            background_alpha * ozone->animations.fullscreen_thumbnail_alpha);
+
+      /* > Separators */
+      memcpy(separator_color, ozone->theme->header_footer_separator, sizeof(separator_color));
+      menu_display_set_alpha(
+            separator_color, ozone->animations.fullscreen_thumbnail_alpha);
+
+      /* > Thumbnail frame */
+      memcpy(frame_color, ozone->theme->sidebar_background, sizeof(frame_color));
+      menu_display_set_alpha(
+            frame_color, ozone->animations.fullscreen_thumbnail_alpha);
+
+      /* Darken background */
+      menu_display_draw_quad(
+            video_info,
+            0,
+            ozone->dimensions.header_height + 1,
+            width,
+            (unsigned)view_height,
+            width,
+            height,
+            background_color);
+
+      /* Draw full-width separators */
+      menu_display_draw_quad(
+            video_info,
+            0,
+            ozone->dimensions.header_height,
+            width,
+            1,
+            width,
+            height,
+            separator_color);
+
+      menu_display_draw_quad(
+            video_info,
+            0,
+            height - ozone->dimensions.footer_height,
+            width,
+            1,
+            width,
+            height,
+            separator_color);
+
+      /* Draw thumbnails */
+
+      /* > Right */
+      if (show_right_thumbnail)
+      {
+         /* Background */
+         menu_display_draw_quad(
+               video_info,
+               right_thumbnail_x - frame_width +
+                     ((thumbnail_box_width - (int)right_thumbnail_draw_width) >> 1),
+               thumbnail_y - frame_width +
+                     ((thumbnail_box_height - (int)right_thumbnail_draw_height) >> 1),
+               (unsigned)right_thumbnail_draw_width + (frame_width << 1),
+               (unsigned)right_thumbnail_draw_height + (frame_width << 1),
+               width,
+               height,
+               frame_color);
+
+         /* Thumbnail */
+         menu_thumbnail_draw(
+               video_info,
+               right_thumbnail,
+               right_thumbnail_x,
+               thumbnail_y,
+               (unsigned)thumbnail_box_width,
+               (unsigned)thumbnail_box_height,
+               MENU_THUMBNAIL_ALIGN_CENTRE,
+               ozone->animations.fullscreen_thumbnail_alpha,
+               1.0f,
+               NULL);
+      }
+
+      /* > Left */
+      if (show_left_thumbnail)
+      {
+         /* Background */
+         menu_display_draw_quad(
+               video_info,
+               left_thumbnail_x - frame_width +
+                     ((thumbnail_box_width - (int)left_thumbnail_draw_width) >> 1),
+               thumbnail_y - frame_width +
+                     ((thumbnail_box_height - (int)left_thumbnail_draw_height) >> 1),
+               (unsigned)left_thumbnail_draw_width + (frame_width << 1),
+               (unsigned)left_thumbnail_draw_height + (frame_width << 1),
+               width,
+               height,
+               frame_color);
+
+         /* Thumbnail */
+         menu_thumbnail_draw(
+               video_info,
+               left_thumbnail,
+               left_thumbnail_x,
+               thumbnail_y,
+               (unsigned)thumbnail_box_width,
+               (unsigned)thumbnail_box_height,
+               MENU_THUMBNAIL_ALIGN_CENTRE,
+               ozone->animations.fullscreen_thumbnail_alpha,
+               1.0f,
+               NULL);
+      }
+   }
+
+   return;
+
+error:
+   /* If fullscreen thumbnails are enabled at
+    * this point, must disable them immediately... */
+   if (ozone->show_fullscreen_thumbnails)
+      ozone_hide_fullscreen_thumbnails(ozone, false);
+}

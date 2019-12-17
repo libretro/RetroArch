@@ -60,6 +60,8 @@ typedef struct ozone_handle ozone_handle_t;
 #define SIDEBAR_ENTRY_ICON_SIZE     46
 #define SIDEBAR_ENTRY_ICON_PADDING  15
 
+#define FULLSCREEN_THUMBNAIL_PADDING 48
+
 #define CURSOR_SIZE 64
 
 #define INTERVAL_OSK_CURSOR            (0.5f * 1000000)
@@ -127,6 +129,8 @@ struct ozone_handle
 
       float sidebar_text_alpha;
       float thumbnail_bar_position;
+
+      float fullscreen_thumbnail_alpha;
    } animations;
 
    bool fade_direction; /* false = left to right, true = right to left */
@@ -213,6 +217,7 @@ struct ozone_handle
       int cursor_size;
 
       int thumbnail_bar_width;
+      int fullscreen_thumbnail_padding;
    } dimensions;
 
    bool show_cursor;
@@ -233,6 +238,11 @@ struct ozone_handle
       menu_thumbnail_t left;
    } thumbnails;
 
+   bool fullscreen_thumbnails_available;
+   bool show_fullscreen_thumbnails;
+   size_t fullscreen_thumbnail_selection;
+   char fullscreen_thumbnail_label[255];
+
    char selection_core_name[255];
    char selection_playtime[255];
    char selection_lastplayed[255];
@@ -241,6 +251,8 @@ struct ozone_handle
    bool selection_core_is_viewer;
 
    bool is_db_manager_list;
+   bool is_file_list;
+   bool is_quick_menu;
    bool first_frame;
 };
 
@@ -307,6 +319,9 @@ void ozone_sidebar_update_collapse(ozone_handle_t *ozone, bool allow_animation);
 void ozone_entries_update_thumbnail_bar(ozone_handle_t *ozone, bool is_playlist, bool allow_animation);
 
 void ozone_draw_thumbnail_bar(ozone_handle_t *ozone, video_frame_info_t *video_info);
+
+void ozone_hide_fullscreen_thumbnails(ozone_handle_t *ozone, bool animate);
+void ozone_show_fullscreen_thumbnails(ozone_handle_t *ozone);
 
 unsigned ozone_count_lines(const char *str);
 
