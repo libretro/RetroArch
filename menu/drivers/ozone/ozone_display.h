@@ -58,3 +58,6 @@ void ozone_draw_osk(ozone_handle_t *ozone,
 void ozone_draw_messagebox(ozone_handle_t *ozone,
       video_frame_info_t *video_info,
       const char *message);
+
+void ozone_draw_fullscreen_thumbnails(
+      ozone_handle_t *ozone, video_frame_info_t *video_info);
