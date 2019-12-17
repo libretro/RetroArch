@@ -1434,7 +1434,6 @@ int menu_cbs_init_bind_title(menu_file_list_cbs_t *cbs,
       {MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS, action_get_quick_menu_views_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_PLAYLIST_LIST, action_get_title_deferred_playlist_list},
       {MENU_ENUM_LABEL_DEFERRED_PLAYLIST_MANAGER_SETTINGS, action_get_title_deferred_playlist_list},
-      {MENU_ENUM_LABEL_DEFERRED_RDB_ENTRY_DETAIL, action_get_title_list_rdb_entry_database_info},
       {MENU_ENUM_LABEL_PLAYLISTS_TAB, action_get_title_collection},
       {MENU_ENUM_LABEL_DEFERRED_MANUAL_CONTENT_SCAN_LIST, action_get_title_manual_content_scan_list},
    };
@@ -1458,6 +1457,16 @@ int menu_cbs_init_bind_title(menu_file_list_cbs_t *cbs,
          BIND_ACTION_GET_TITLE(cbs, info_list[i].cb);
          return 0;
       }
+   }
+
+   /* MENU_ENUM_LABEL_DEFERRED_RDB_ENTRY_DETAIL requires special
+    * treatment, since the label has the format:
+    *   <MENU_ENUM_LABEL_DEFERRED_RDB_ENTRY_DETAIL>|<entry_name>
+    * i.e. cannot use a normal string_is_equal() */
+   if (strstr(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RDB_ENTRY_DETAIL)))
+   {
+      BIND_ACTION_GET_TITLE(cbs, action_get_title_list_rdb_entry_database_info);
+      return 0;
    }
 
    return -1;
