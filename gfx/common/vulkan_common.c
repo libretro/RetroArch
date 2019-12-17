@@ -229,6 +229,11 @@ static void vulkan_emulated_mailbox_loop(void *userdata)
       mailbox->result = vkAcquireNextImageKHR(mailbox->device, mailbox->swapchain, UINT64_MAX,
             VK_NULL_HANDLE, fence, &mailbox->index);
 
+      /* VK_SUBOPTIMAL_KHR can be returned on Android 10 when prerotate is not dealt with.
+       * This is not an error we need to care about, and we'll treat it as SUCCESS. */
+      if (mailbox->result == VK_SUBOPTIMAL_KHR)
+         mailbox->result = VK_SUCCESS;
+
       if (mailbox->result == VK_SUCCESS)
          vkWaitForFences(mailbox->device, 1, &fence, true, UINT64_MAX);
       vkResetFences(mailbox->device, 1, &fence);
@@ -2621,6 +2626,13 @@ void vulkan_present(gfx_ctx_vulkan_data_t *vk, unsigned index)
 #endif
    err = vkQueuePresentKHR(vk->context.queue, &present);
 
+   /* VK_SUBOPTIMAL_KHR can be returned on Android 10 when prerotate is not dealt with.
+    * This is not an error we need to care about, and we'll treat it as SUCCESS. */
+   if (result == VK_SUBOPTIMAL_KHR)
+      result = VK_SUCCESS;
+   if (err == VK_SUBOPTIMAL_KHR)
+      err = VK_SUCCESS;
+
 #ifdef WSI_HARDENING_TEST
    trigger_spurious_error_vkresult(&err);
 #endif
@@ -2796,6 +2808,11 @@ retry:
       err = vkAcquireNextImageKHR(vk->context.device,
             vk->swapchain, UINT64_MAX,
             VK_NULL_HANDLE, fence, &vk->context.current_swapchain_index);
+
+      /* VK_SUBOPTIMAL_KHR can be returned on Android 10 when prerotate is not dealt with.
+       * This is not an error we need to care about, and we'll treat it as SUCCESS. */
+      if (err == VK_SUBOPTIMAL_KHR)
+         err = VK_SUCCESS;
    }
 
    if (err == VK_SUCCESS)
