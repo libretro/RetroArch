@@ -24,8 +24,7 @@
 
 #include <stdlib.h>
 #include <rthreads/rthreads.h>
-
-#include "tpool.h"
+#include <rthreads/tpool.h>
 
 /* Work object which will sit in a queue
  * waiting for the pool to process it.
