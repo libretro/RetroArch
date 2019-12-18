@@ -532,6 +532,7 @@ fi
 
 if [ "$HAVE_STEAM" = 'yes' ]; then
    add_opt ONLINE_UPDATER no
+   add_opt UPDATE_CORES no
    die : 'Notice: Steam build enabled, disabling online updater as well.'
 fi
 
