@@ -3514,11 +3514,13 @@ bool menu_displaylist_process(menu_displaylist_info_t *info)
    {
       if (info->download_core)
       {
+#ifdef HAVE_UPDATE_CORES
          menu_entries_append_enum(info->list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE),
                msg_hash_to_str(MENU_ENUM_LABEL_CORE_UPDATER_LIST),
                MENU_ENUM_LABEL_CORE_UPDATER_LIST,
                MENU_SETTING_ACTION, 0, 0);
+#endif
 
          menu_entries_append_enum(info->list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST),
