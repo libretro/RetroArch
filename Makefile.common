@@ -1965,7 +1965,9 @@ endif
 
 ifeq ($(HAVE_FFMPEG), 1)
    OBJ += record/drivers/record_ffmpeg.o \
-          cores/libretro-ffmpeg/ffmpeg_core.o
+          cores/libretro-ffmpeg/ffmpeg_core.o \
+          cores/libretro-ffmpeg/swsbuffer.o \
+          cores/libretro-ffmpeg/tpool.o
 
    LIBS += $(AVCODEC_LIBS) $(AVFORMAT_LIBS) $(AVUTIL_LIBS) $(SWSCALE_LIBS) $(SWRESAMPLE_LIBS) $(FFMPEG_LIBS)
    DEFINES += -DHAVE_FFMPEG

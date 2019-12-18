@@ -44,9 +44,13 @@ extern "C" {
 #include <glsym/glsym.h>
 #endif
 
+#include <features/features_cpu.h>
+#include <retro_miscellaneous.h>
 #include <rthreads/rthreads.h>
 #include <queues/fifo_queue.h>
 #include <string/stdstring.h>
+#include "swsbuffer.h"
+#include "tpool.h"
 
 #include <libretro.h>
 #ifdef RARCH_INTERNAL
@@ -54,10 +58,6 @@ extern "C" {
 #define CORE_PREFIX(s) libretro_ffmpeg_##s
 #else
 #define CORE_PREFIX(s) s
-#endif
-
-#ifndef PIX_FMT_RGB32
-#define PIX_FMT_RGB32 AV_PIX_FMT_RGB32
 #endif
 
 #define PRINT_VERSION(s) log_cb(RETRO_LOG_INFO, "[FFMPEG] lib%s version:\t%d.%d.%d\n", #s, \
@@ -87,7 +87,11 @@ static AVFormatContext *fctx;
 static AVCodecContext *vctx;
 static int video_stream_index;
 static enum AVColorSpace colorspace;
-static int sw_decoder_threads;
+
+static unsigned sw_decoder_threads;
+static unsigned sw_sws_threads;
+static swsbuffer_t *swsbuffer;
+static tpool_t *tpool;
 
 #if LIBAVUTIL_VERSION_MAJOR > 55
 static enum AVHWDeviceType hw_decoder;
@@ -95,7 +99,6 @@ static bool hw_decoding_enabled;
 static enum AVPixelFormat pix_fmt;
 static bool force_sw_decoder;
 #endif
-
 
 #define MAX_STREAMS 8
 static AVCodecContext *actx[MAX_STREAMS];
@@ -277,10 +280,10 @@ void CORE_PREFIX(retro_set_environment)(retro_environment_t cb)
 {
    static const struct retro_variable vars[] = {
 #if LIBAVUTIL_VERSION_MAJOR > 55
-      { "ffmpeg_hw_decoder", "Use Hardware decoder (restart); auto|off|"
+      { "ffmpeg_hw_decoder", "Use Hardware decoder (restart); off|auto|"
          "cuda|d3d11va|drm|dxva2|mediacodec|opencl|qsv|vaapi|vdpau|videotoolbox" },
 #endif
-      { "ffmpeg_sw_decoder_threads", "Software decoder thread count (restart); 1|2|4|8|16" },
+      { "ffmpeg_sw_decoder_threads", "Software decoder thread count (restart); auto|1|2|4|8|16" },
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
       { "ffmpeg_temporal_interp", "Temporal Interpolation; disabled|enabled" },
 #ifdef HAVE_GL_FFT
@@ -443,12 +446,22 @@ static void check_variables(bool firststart)
    }
 #endif
 
-   sw_threads_var.key = "ffmpeg_sw_decoder_threads";
-   if (CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &sw_threads_var) && sw_threads_var.value)
+   if (firststart)
    {
-      slock_lock(decode_thread_lock);
-      sw_decoder_threads = strtoul(sw_threads_var.value, NULL, 0);
-      slock_unlock(decode_thread_lock);
+      sw_threads_var.key = "ffmpeg_sw_decoder_threads";
+      if (CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &sw_threads_var) && sw_threads_var.value)
+      {
+         if (string_is_equal(sw_threads_var.value, "auto"))
+         {
+            sw_decoder_threads = cpu_features_get_core_amount();
+         }
+         else
+         {
+            sw_decoder_threads = strtoul(sw_threads_var.value, NULL, 0);
+         }
+         /* Scale the sws threads based on core count but use at min 2 and max 4 threads */
+         sw_sws_threads = MIN(MAX(2, sw_decoder_threads / 2), 4);
+      }
    }
 }
 
@@ -463,7 +476,6 @@ static void seek_frame(int seek_frames)
       frame_cnt += seek_frames;
 
    slock_lock(fifo_lock);
-
    do_seek        = true;
    seek_time      = frame_cnt / media.interpolate_fps;
 
@@ -487,8 +499,14 @@ static void seek_frame(int seek_frames)
    scond_signal(fifo_decode_cond);
 
    while (!decode_thread_dead && do_seek)
+   {
+      main_sleeping = true;
       scond_wait(fifo_cond, fifo_lock);
+      main_sleeping = false;
+   }
+
    slock_unlock(fifo_lock);
+
 }
 
 void CORE_PREFIX(retro_run)(void)
@@ -826,7 +844,7 @@ static enum AVPixelFormat init_hw_decoder(struct AVCodecContext *ctx,
                                     const enum AVHWDeviceType type,
                                     const enum AVPixelFormat *pix_fmts)
 {
-   int ret;
+   int ret = 0;
    enum AVPixelFormat decoder_pix_fmt = AV_PIX_FMT_NONE;
    struct AVCodec *codec = avcodec_find_decoder(fctx->streams[video_stream_index]->codec->codec_id);
 
@@ -891,7 +909,7 @@ exit:
 static enum AVPixelFormat auto_hw_decoder(AVCodecContext *ctx,
                                     const enum AVPixelFormat *pix_fmts)
 {
-   int ret;
+   int ret = 0;
    enum AVPixelFormat decoder_pix_fmt = AV_PIX_FMT_NONE;
    enum AVHWDeviceType type = AV_HWDEVICE_TYPE_NONE;
 
@@ -932,6 +950,7 @@ static enum AVPixelFormat select_decoder(AVCodecContext *ctx,
 
       ctx->thread_type = FF_THREAD_FRAME;
       ctx->thread_count = sw_decoder_threads;
+      log_cb(RETRO_LOG_INFO, "[FFMPEG] Configured software decoding threads: %d\n", sw_decoder_threads);
 
       format = fctx->streams[video_stream_index]->codec->pix_fmt;
 
@@ -965,7 +984,7 @@ static enum AVPixelFormat get_format(AVCodecContext *ctx,
 
 static bool open_codec(AVCodecContext **ctx, enum AVMediaType type, unsigned index)
 {
-   int ret;
+   int ret = 0;
 
    AVCodec *codec = avcodec_find_decoder(fctx->streams[index]->codec->codec_id);
    if (!codec)
@@ -1001,13 +1020,8 @@ static bool codec_is_image(enum AVCodecID id)
 {
    switch (id)
    {
-#ifdef OLD_FFMPEG_API
-      case CODEC_ID_MJPEG:
-      case CODEC_ID_PNG:
-#else
       case AV_CODEC_ID_MJPEG:
       case AV_CODEC_ID_PNG:
-#endif
          return true;
 
       default:
@@ -1021,11 +1035,7 @@ static bool codec_id_is_ttf(enum AVCodecID id)
 {
    switch (id)
    {
-#ifdef OLD_FFMPEG_API
-      case CODEC_ID_TTF:
-#else
       case AV_CODEC_ID_TTF:
-#endif
          return true;
 
       default:
@@ -1040,12 +1050,8 @@ static bool codec_id_is_ass(enum AVCodecID id)
 {
    switch (id)
    {
-#ifdef OLD_FFMPEG_API
-      case CODEC_ID_SSA:
-#else
       case AV_CODEC_ID_ASS:
       case AV_CODEC_ID_SSA:
-#endif
          return true;
       default:
          break;
@@ -1088,7 +1094,7 @@ static bool open_codecs(void)
             break;
 
          case AVMEDIA_TYPE_VIDEO:
-            if (     !vctx
+            if (!vctx
                   && !codec_is_image(fctx->streams[i]->codec->codec_id))
             {
                if (!open_codec(&vctx, type, i))
@@ -1098,7 +1104,7 @@ static bool open_codecs(void)
 
          case AVMEDIA_TYPE_SUBTITLE:
 #ifdef HAVE_SSA
-            if (     subtitle_streams_num < MAX_STREAMS
+            if (subtitle_streams_num < MAX_STREAMS
                   && codec_id_is_ass(fctx->streams[i]->codec->codec_id))
             {
                int size;
@@ -1271,23 +1277,114 @@ static void render_ass_img(AVFrame *conv_frame, ASS_Image *img)
 }
 #endif
 
+static void sws_worker_thread(void *arg)
+{
+   int ret = 0;
+   AVFrame *tmp_frame = NULL;
+   sws_context_t *ctx = (sws_context_t*) arg;
+
+#if LIBAVUTIL_VERSION_MAJOR > 55
+   if (hw_decoding_enabled)
+      tmp_frame = ctx->hw_source;
+   else
+#endif
+      tmp_frame = ctx->source;
+
+   ctx->sws = sws_getCachedContext(ctx->sws,
+         media.width, media.height, tmp_frame->format,
+         media.width, media.height, PIX_FMT_RGB32,
+         SWS_POINT, NULL, NULL, NULL);
+
+   set_colorspace(ctx->sws, media.width, media.height,
+         av_frame_get_colorspace(tmp_frame),
+         av_frame_get_color_range(tmp_frame));
+
+   if ((ret = sws_scale(ctx->sws, (const uint8_t *const*)tmp_frame->data,
+         tmp_frame->linesize, 0, media.height,
+         (uint8_t * const*)ctx->target->data, ctx->target->linesize)) < 0)
+   {
+      log_cb(RETRO_LOG_ERROR, "[FFMPEG] Error while scaling image: %s\n", av_err2str(ret));
+   }
+
+   swsbuffer_finish_slot(swsbuffer, ctx);
+}
 
 #ifdef HAVE_SSA
-static void decode_video(AVCodecContext *ctx, AVPacket *pkt, AVFrame *conv_frame, size_t frame_size, struct SwsContext  **sws, ASS_Track *ass_track_active)
+static void add_frame_to_fifo(size_t frame_size, ASS_Track *ass_track_active)
 #else
-static void decode_video(AVCodecContext *ctx, AVPacket *pkt, AVFrame *conv_frame, size_t frame_size, struct SwsContext  **sws)
+static void add_frame_to_fifo(size_t frame_size)
 #endif
 {
-   int ret;
-   AVFrame *frame = NULL;
-   AVFrame *sw_frame = NULL;
-   AVFrame *tmp_frame = NULL;
+   sws_context_t *ctx = NULL;
 
-   if (!(frame = av_frame_alloc()) || !(sw_frame = av_frame_alloc()))
+   swsbuffer_get_finished_slot(swsbuffer, &ctx);
+   size_t decoded_size;
+   int64_t pts = ctx->source->best_effort_timestamp;
+   double video_time = pts * av_q2d(fctx->streams[video_stream_index]->time_base);
+
+#ifdef HAVE_SSA
+   if (ass_render && ass_track_active)
    {
-      log_cb(RETRO_LOG_ERROR, "[FFMPEG] Can not alloc frames\n");
-      return;
+      int change     = 0;
+      ASS_Image *img = ass_render_frame(ass_render, ass_track_active,
+            1000 * video_time, &change);
+
+      /*
+       * Do it on CPU for now.
+       * We're in a thread anyways, so shouldn't really matter.
+       */
+      render_ass_img(ctx->target, img);
    }
+#endif
+
+   decoded_size = frame_size + sizeof(pts);
+
+   slock_lock(fifo_lock);
+   while (!decode_thread_dead && (video_decode_fifo != NULL)
+         && fifo_write_avail(video_decode_fifo) < decoded_size)
+   {
+      if (!main_sleeping)
+         scond_wait(fifo_decode_cond, fifo_lock);
+      else
+      {
+         fifo_clear(video_decode_fifo);
+         break;
+      }
+   }
+
+   decode_last_video_time = video_time;
+   if (!decode_thread_dead)
+   {
+      int stride;
+      unsigned y;
+      const uint8_t *src = NULL;
+
+      fifo_write(video_decode_fifo, &pts, sizeof(pts));
+      src    = ctx->target->data[0];
+      stride = ctx->target->linesize[0];
+
+      for (y = 0; y < media.height; y++, src += stride)
+         fifo_write(video_decode_fifo, src, media.width * sizeof(uint32_t));
+   }
+   scond_signal(fifo_cond);
+   slock_unlock(fifo_lock);
+
+   av_frame_unref(ctx->source);
+#if LIBAVUTIL_VERSION_MAJOR > 55
+   av_frame_unref(ctx->hw_source);
+#endif
+
+   swsbuffer_open_slot(swsbuffer, ctx);
+}
+
+#ifdef HAVE_SSA
+static void decode_video(AVCodecContext *ctx, AVPacket *pkt, size_t frame_size, ASS_Track *ass_track_active)
+#else
+static void decode_video(AVCodecContext *ctx, AVPacket *pkt, size_t frame_size)
+#endif
+{
+   int ret = 0;
+   sws_context_t *sws_ctx = NULL;
 
    if ((ret = avcodec_send_packet(ctx, pkt)) < 0)
    {
@@ -1295,108 +1392,64 @@ static void decode_video(AVCodecContext *ctx, AVPacket *pkt, AVFrame *conv_frame
       return;
    }
 
-   while(true)
+   /* Stop decoding thread until swsbuffer is not full again */
+   while (!swsbuffer_has_open_slot(swsbuffer))
    {
-      ret = avcodec_receive_frame(ctx, frame);
+      while(swsbuffer_has_finished_slot(swsbuffer))
+      {
+         #ifdef HAVE_SSA
+            add_frame_to_fifo(frame_size, ass_track_active);
+         #else
+            add_frame_to_fifo(frame_size);
+         #endif
+      }
+   }
+
+   while (swsbuffer_has_open_slot(swsbuffer))
+   {
+      swsbuffer_get_open_slot(swsbuffer, &sws_ctx);
+
+      ret = avcodec_receive_frame(ctx, sws_ctx->source);
       if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
       {
-         break;
+         ret = -42;
+         goto end;
       }
       else if (ret < 0)
       {
          log_cb(RETRO_LOG_ERROR, "[FFMPEG] Error while reading video frame: %s\n", av_err2str(ret));
-         goto fail;
+         goto end;
       }
 
 #if LIBAVUTIL_VERSION_MAJOR > 55
       if (hw_decoding_enabled)
-      {
          /* Copy data from VRAM to RAM */
-         if ((ret = av_hwframe_transfer_data(sw_frame, frame, 0)) < 0)
+         if ((ret = av_hwframe_transfer_data(sws_ctx->hw_source, sws_ctx->source, 0)) < 0)
          {
                log_cb(RETRO_LOG_ERROR, "[FFMPEG] Error transferring the data to system memory: %s\n", av_err2str(ret));
-               goto fail;
+               goto end;
          }
-         tmp_frame = sw_frame;
-      }
-      else
 #endif
-         tmp_frame = frame;
 
-      *sws = sws_getCachedContext(*sws,
-            media.width, media.height, tmp_frame->format,
-            media.width, media.height, PIX_FMT_RGB32,
-            SWS_BICUBIC, NULL, NULL, NULL);
+      tpool_add_work(tpool, sws_worker_thread, sws_ctx);
 
-      set_colorspace(*sws, media.width, media.height,
-           av_frame_get_colorspace(tmp_frame), av_frame_get_color_range(tmp_frame));
-
-      if ((ret = sws_scale(*sws, (const uint8_t * const*)tmp_frame->data,
-            tmp_frame->linesize, 0, media.height,
-            conv_frame->data, conv_frame->linesize)) < 0)
+      while(swsbuffer_has_finished_slot(swsbuffer))
       {
-         log_cb(RETRO_LOG_ERROR, "[FFMPEG] Error while scaling image: %s\n", av_err2str(ret));
-         goto fail;
-      }
-
-      size_t decoded_size;
-      int64_t pts = frame->best_effort_timestamp;
-      double video_time = pts * av_q2d(fctx->streams[video_stream_index]->time_base);
-
 #ifdef HAVE_SSA
-      if (ass_render && ass_track_active)
-      {
-         int change     = 0;
-         ASS_Image *img = ass_render_frame(ass_render, ass_track_active,
-               1000 * video_time, &change);
-
-         /* Do it on CPU for now.
-          * We're in a thread anyways, so shouldn't really matter. */
-         render_ass_img(conv_frame, img);
-      }
+         add_frame_to_fifo(frame_size, ass_track_active);
+#else
+         add_frame_to_fifo(frame_size);
 #endif
-
-      decoded_size = frame_size + sizeof(pts);
-      slock_lock(fifo_lock);
-
-      while (!decode_thread_dead  && (video_decode_fifo != NULL)
-            && fifo_write_avail(video_decode_fifo) < decoded_size)
-      {
-         if (!main_sleeping)
-            scond_wait(fifo_decode_cond, fifo_lock);
-         else
-         {
-            fifo_clear(video_decode_fifo);
-            break;
-         }
       }
 
-      decode_last_video_time = video_time;
-      if (!decode_thread_dead)
-      {
-         int stride;
-         unsigned y;
-         const uint8_t *src = NULL;
-
-         fifo_write(video_decode_fifo, &pts, sizeof(pts));
-         src    = conv_frame->data[0];
-         stride = conv_frame->linesize[0];
-
-         for (y = 0; y < media.height; y++, src += stride)
-            fifo_write(video_decode_fifo, src, media.width * sizeof(uint32_t));
-      }
-      scond_signal(fifo_cond);
-      slock_unlock(fifo_lock);
-
-   fail:
-      av_frame_unref(frame);
-      av_frame_unref(sw_frame);
+   end:
       if (ret < 0)
+      {
+         swsbuffer_return_open_slot(swsbuffer, sws_ctx);
          break;
+      }
    }
 
-   av_frame_free(&frame);
-   av_frame_free(&sw_frame);
    return;
 }
 
@@ -1404,9 +1457,9 @@ static int16_t *decode_audio(AVCodecContext *ctx, AVPacket *pkt,
       AVFrame *frame, int16_t *buffer, size_t *buffer_cap,
       SwrContext *swr)
 {
-   int ret;
-   int64_t pts;
-   size_t required_buffer;
+   int ret = 0;
+   int64_t pts = 0;
+   size_t required_buffer = 0;
 
    if ((ret = avcodec_send_packet(ctx, pkt)) < 0)
    {
@@ -1498,14 +1551,10 @@ static void decode_thread(void *data)
 {
    unsigned i;
    struct SwrContext *swr[audio_streams_num];
-   struct SwsContext *sws  = NULL;
    AVFrame *aud_frame      = NULL;
-   void *conv_frame_buf    = NULL;
    size_t frame_size       = 0;
    int16_t *audio_buffer   = NULL;
    size_t audio_buffer_cap = 0;
-   AVFrame *conv_frame     = NULL;
-
 
    (void)data;
 
@@ -1527,10 +1576,9 @@ static void decode_thread(void *data)
    if (video_stream_index >= 0)
    {
       frame_size = avpicture_get_size(PIX_FMT_RGB32, media.width, media.height);
-      conv_frame = av_frame_alloc();
-      conv_frame_buf = av_malloc(frame_size);
-      avpicture_fill((AVPicture*)conv_frame, (const uint8_t*)conv_frame_buf,
-            PIX_FMT_RGB32, media.width, media.height);
+      swsbuffer = swsbuffer_create(sw_sws_threads, frame_size, media.width, media.height);
+      tpool = tpool_create(sw_sws_threads);
+      log_cb(RETRO_LOG_INFO, "[FFMPEG] Configured filtering threads: %d\n", sw_sws_threads);
    }
 
    while (!decode_thread_dead)
@@ -1553,6 +1601,12 @@ static void decode_thread(void *data)
 
       if (seek)
       {
+         if (video_stream_index >= 0)
+         {
+            tpool_wait(tpool);
+            swsbuffer_clear(swsbuffer);
+         }
+
          decode_thread_seek(seek_time_thread);
 
          slock_lock(fifo_lock);
@@ -1585,9 +1639,9 @@ static void decode_thread(void *data)
 
       if (pkt.stream_index == video_stream_index)
       #ifdef HAVE_SSA
-         decode_video(vctx, &pkt, conv_frame, frame_size, &sws, ass_track_active);
+         decode_video(vctx, &pkt, frame_size, ass_track_active);
       #else
-         decode_video(vctx, &pkt, conv_frame, frame_size, &sws);
+         decode_video(vctx, &pkt, frame_size);
       #endif
       else if (pkt.stream_index == audio_stream && actx_active)
       {
@@ -1626,18 +1680,20 @@ static void decode_thread(void *data)
       av_free_packet(&pkt);
    }
 
-   sws_freeContext(sws);
-
    for (i = 0; (int)i < audio_streams_num; i++)
       swr_free(&swr[i]);
 
-   if (vctx->hw_device_ctx)
+   if (vctx && vctx->hw_device_ctx)
       av_buffer_unref(&vctx->hw_device_ctx);
 
    av_frame_free(&aud_frame);
-   av_frame_free(&conv_frame);
-   av_freep(&conv_frame_buf);
    av_freep(&audio_buffer);
+
+   if (video_stream_index >= 0)
+   {
+      tpool_destroy(tpool);
+      swsbuffer_destroy(swsbuffer);
+   }
 
    slock_lock(fifo_lock);
    decode_thread_dead = true;
@@ -1837,7 +1893,7 @@ void CORE_PREFIX(retro_unload_game)(void)
 
 bool CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
 {
-   int ret;
+   int ret = 0;
    bool is_fft = false;
    enum retro_pixel_format fmt = RETRO_PIXEL_FORMAT_XRGB8888;
 
@@ -1900,8 +1956,10 @@ bool CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
 
    if (video_stream_index >= 0 || is_fft)
    {
-      video_decode_fifo = fifo_new(media.width
-            * media.height * sizeof(uint32_t) * 32);
+      /* video fifo is 2 frames deep */
+      video_decode_fifo = fifo_new(
+         media.width * media.height * sizeof(uint32_t) * 2
+      );
 
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
       use_gl = true;
@@ -1924,8 +1982,10 @@ bool CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
    }
    if (audio_streams_num > 0)
    {
-      unsigned buffer_seconds = video_stream_index >= 0 ? 20 : 1;
-      audio_decode_fifo = fifo_new(buffer_seconds * media.sample_rate * sizeof(int16_t) * 2);
+      /* audio fifo is 1 second deep */
+      audio_decode_fifo = fifo_new(
+         media.sample_rate * sizeof(int16_t) * 2
+      );
    }
 
    fifo_cond        = scond_new();

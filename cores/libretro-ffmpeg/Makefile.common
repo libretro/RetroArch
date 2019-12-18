@@ -19,6 +19,8 @@ SWRESAMPLE_DIR 	 := $(BASE_DIR)/libswresample
 INCFLAGS           += -I$(BASE_DIR) -I$(CORE_DIR) -I$(LIBRETRO_COMM_DIR)/include -I$(LIBRETRO_COMM_DIR)/include/compat
 
 LIBRETRO_SOURCE    += $(CORE_DIR)/ffmpeg_core.c \
+							 $(CORE_DIR)/swsbuffer.c \
+							 $(CORE_DIR)/tpool.c \
 							 $(LIBRETRO_COMM_DIR)/queues/fifo_queue.c \
 							 $(LIBRETRO_COMM_DIR)/rthreads/rthreads.c
 
