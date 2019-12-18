@@ -47,10 +47,10 @@ extern "C" {
 #include <features/features_cpu.h>
 #include <retro_miscellaneous.h>
 #include <rthreads/rthreads.h>
+#include <rthreads/tpool.h>
 #include <queues/fifo_queue.h>
 #include <string/stdstring.h>
 #include "swsbuffer.h"
-#include "tpool.h"
 
 #include <libretro.h>
 #ifdef RARCH_INTERNAL

@@ -1,7 +1,10 @@
-/* The MIT License
- * 
+/*
  * Copyright (c) 2010-2019 The RetroArch team
  * Copyright (c) 2017 John Schember <john@nachtimwald.com>
+ *
+ * ---------------------------------------------------------------------------------------
+ * The following license statement only applies to this file (tpool.c).
+ * ---------------------------------------------------------------------------------------
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,9 +26,10 @@
  */
 
 #include <stdlib.h>
-#include <rthreads/rthreads.h>
+#include <boolean.h>
 
-#include "tpool.h"
+#include <rthreads/rthreads.h>
+#include <rthreads/tpool.h>
 
 /* Work object which will sit in a queue
  * waiting for the pool to process it.
