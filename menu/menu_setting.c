@@ -9657,6 +9657,14 @@ static bool setting_append_list(
             END_SUB_GROUP(list, list_info, parent_group);
             START_SUB_GROUP(list, list_info, "Scaling", &group_info, &subgroup_info, parent_group);
 
+            CONFIG_ACTION(
+                  list, list_info,
+                  MENU_ENUM_LABEL_VIDEO_SCALING_SETTINGS,
+                  MENU_ENUM_LABEL_VALUE_VIDEO_SCALING_SETTINGS,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group);
+
             if (video_driver_has_windowed())
             {
                CONFIG_FLOAT(
