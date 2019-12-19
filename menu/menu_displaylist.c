@@ -4187,14 +4187,6 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
                      PARSE_ONLY_BOOL, false) == 0)
                count++;
             if (menu_displaylist_parse_settings_enum(list,
-                     MENU_ENUM_LABEL_VIDEO_OVERSCAN_CORRECTION_TOP,
-                     PARSE_ONLY_UINT, false) == 0)
-               count++;
-            if (menu_displaylist_parse_settings_enum(list,
-                     MENU_ENUM_LABEL_VIDEO_OVERSCAN_CORRECTION_BOTTOM,
-                     PARSE_ONLY_UINT, false) == 0)
-               count++;
-            if (menu_displaylist_parse_settings_enum(list,
                      MENU_ENUM_LABEL_VIDEO_THREADED,
                      PARSE_ONLY_BOOL, false) == 0)
                count++;
@@ -4207,10 +4199,6 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
                         MENU_ENUM_LABEL_VIDEO_GPU_SCREENSHOT,
                         PARSE_ONLY_BOOL, false) == 0)
                   count++;
-            if (menu_displaylist_parse_settings_enum(list,
-                     MENU_ENUM_LABEL_VIDEO_CROP_OVERSCAN,
-                     PARSE_ONLY_BOOL, false) == 0)
-               count++;
             if (menu_displaylist_parse_settings_enum(list,
                      MENU_ENUM_LABEL_VIDEO_SMOOTH,
                      PARSE_ONLY_BOOL, false) == 0)
@@ -5662,6 +5650,11 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
                   MENU_ENUM_LABEL_VIDEO_FRAME_DELAY,
                   PARSE_ONLY_UINT, false) == 0)
             count++;
+
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_VRR_RUNLOOP_ENABLE,
+                  PARSE_ONLY_BOOL, false) == 0)
+            count++;
          break;
       case DISPLAYLIST_VIDEO_SCALING_SETTINGS_LIST:
          if (menu_displaylist_parse_settings_enum(list,
@@ -5699,6 +5692,18 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
          if (menu_displaylist_parse_settings_enum(list,
                   MENU_ENUM_LABEL_VIDEO_VFILTER,
                   PARSE_ONLY_BOOL, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_VIDEO_CROP_OVERSCAN,
+                  PARSE_ONLY_BOOL, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_VIDEO_OVERSCAN_CORRECTION_TOP,
+                  PARSE_ONLY_UINT, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_VIDEO_OVERSCAN_CORRECTION_BOTTOM,
+                  PARSE_ONLY_UINT, false) == 0)
             count++;
          break;
       case DISPLAYLIST_CRT_SWITCHRES_SETTINGS_LIST:
