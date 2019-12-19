@@ -10220,3 +10220,11 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_MODE_SETTINGS,
     "Change windowed mode settings."
     )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_OUTPUT_SETTINGS,
+    "Output"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_OUTPUT_SETTINGS,
+    "Change video output settings."
+    )

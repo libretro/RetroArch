@@ -7674,6 +7674,14 @@ static bool setting_append_list(
 
          CONFIG_ACTION(
                list, list_info,
+               MENU_ENUM_LABEL_VIDEO_OUTPUT_SETTINGS,
+               MENU_ENUM_LABEL_VALUE_VIDEO_OUTPUT_SETTINGS,
+               &group_info,
+               &subgroup_info,
+               parent_group);
+
+         CONFIG_ACTION(
+               list, list_info,
                MENU_ENUM_LABEL_AUDIO_SETTINGS,
                MENU_ENUM_LABEL_VALUE_AUDIO_SETTINGS,
                &group_info,

@@ -4157,65 +4157,13 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
             }
 
             if (menu_displaylist_parse_settings_enum(list,
-                     MENU_ENUM_LABEL_SUSPEND_SCREENSAVER_ENABLE,
-                     PARSE_ONLY_BOOL, false) == 0)
+                     MENU_ENUM_LABEL_VIDEO_OUTPUT_SETTINGS,
+                     PARSE_ACTION, false) == 0)
                count++;
 
-#if defined(GEKKO) || defined(__CELLOS_LV2__)
-            if (true)
-#else
-               if (video_display_server_has_resolution_list())
-#endif
-               {
-                  if (menu_displaylist_parse_settings_enum(list,
-                           MENU_ENUM_LABEL_SCREEN_RESOLUTION,
-                           PARSE_ACTION, false) == 0)
-                     count++;
-               }
-
-            if (menu_displaylist_parse_settings_enum(list,
-                     MENU_ENUM_LABEL_PAL60_ENABLE,
-                     PARSE_ONLY_BOOL, false) == 0)
-               count++;
-            if (menu_displaylist_parse_settings_enum(list,
-                     MENU_ENUM_LABEL_VIDEO_GAMMA,
-                     PARSE_ONLY_UINT, false) == 0)
-               count++;
-            if (menu_displaylist_parse_settings_enum(list,
-                     MENU_ENUM_LABEL_VIDEO_SOFT_FILTER,
-                     PARSE_ONLY_BOOL, false) == 0)
-               count++;
-            if (menu_displaylist_parse_settings_enum(list,
-                     MENU_ENUM_LABEL_VIDEO_FILTER_FLICKER,
-                     PARSE_ONLY_UINT, false) == 0)
-               count++;
-            if (menu_displaylist_parse_settings_enum(list,
-                     MENU_ENUM_LABEL_VIDEO_MONITOR_INDEX,
-                     PARSE_ONLY_UINT, false) == 0)
-               count++;
-            if (menu_displaylist_parse_settings_enum(list,
-                     MENU_ENUM_LABEL_VIDEO_GPU_INDEX,
-                     PARSE_ONLY_INT, false) == 0)
-               count++;
             if (menu_displaylist_parse_settings_enum(list,
                      MENU_ENUM_LABEL_VIDEO_FULLSCREEN_MODE_SETTINGS,
                      PARSE_ACTION, false) == 0)
-               count++;
-            if (menu_displaylist_parse_settings_enum(list,
-                     MENU_ENUM_LABEL_VIDEO_REFRESH_RATE,
-                     PARSE_ONLY_FLOAT, false) == 0)
-               count++;
-            if (menu_displaylist_parse_settings_enum(list,
-                     MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_AUTO,
-                     PARSE_ONLY_FLOAT, false) == 0)
-               count++;
-            if (menu_displaylist_parse_settings_enum(list,
-                     MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_POLLED,
-                     PARSE_ONLY_FLOAT, false) == 0)
-               count++;
-            if (menu_displaylist_parse_settings_enum(list,
-                     MENU_ENUM_LABEL_VIDEO_FORCE_SRGB_DISABLE,
-                     PARSE_ONLY_BOOL, false) == 0)
                count++;
             if (menu_displaylist_parse_settings_enum(list,
                      MENU_ENUM_LABEL_VIDEO_SCALING_SETTINGS,
@@ -4226,11 +4174,12 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
                      PARSE_ACTION, false) == 0)
                count++;
             if (menu_displaylist_parse_settings_enum(list,
-                     MENU_ENUM_LABEL_VIDEO_VI_WIDTH,
-                     PARSE_ONLY_UINT, false) == 0)
+                     MENU_ENUM_LABEL_SUSPEND_SCREENSAVER_ENABLE,
+                     PARSE_ONLY_BOOL, false) == 0)
                count++;
+
             if (menu_displaylist_parse_settings_enum(list,
-                     MENU_ENUM_LABEL_VIDEO_VFILTER,
+                     MENU_ENUM_LABEL_VIDEO_FORCE_SRGB_DISABLE,
                      PARSE_ONLY_BOOL, false) == 0)
                count++;
             if (menu_displaylist_parse_settings_enum(list,
@@ -4241,15 +4190,6 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
                      MENU_ENUM_LABEL_VIDEO_OVERSCAN_CORRECTION_BOTTOM,
                      PARSE_ONLY_UINT, false) == 0)
                count++;
-            if (menu_displaylist_parse_settings_enum(list,
-                     MENU_ENUM_LABEL_VIDEO_ROTATION,
-                     PARSE_ONLY_UINT, false) == 0)
-               count++;
-            if (video_display_server_can_set_screen_orientation())
-               if (menu_displaylist_parse_settings_enum(list,
-                        MENU_ENUM_LABEL_SCREEN_ORIENTATION,
-                        PARSE_ONLY_UINT, false) == 0)
-                  count++;
             if (menu_displaylist_parse_settings_enum(list,
                      MENU_ENUM_LABEL_VIDEO_THREADED,
                      PARSE_ONLY_BOOL, false) == 0)
@@ -5656,6 +5596,67 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
                   PARSE_ONLY_UINT, false) == 0)
             count++;
          break;
+      case DISPLAYLIST_VIDEO_OUTPUT_SETTINGS_LIST:
+#if defined(GEKKO) || defined(__CELLOS_LV2__)
+         if (true)
+#else
+            if (video_display_server_has_resolution_list())
+#endif
+            {
+               if (menu_displaylist_parse_settings_enum(list,
+                        MENU_ENUM_LABEL_SCREEN_RESOLUTION,
+                        PARSE_ACTION, false) == 0)
+                  count++;
+            }
+
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_PAL60_ENABLE,
+                  PARSE_ONLY_BOOL, false) == 0)
+            count++;
+
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_VIDEO_GAMMA,
+                  PARSE_ONLY_UINT, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_VIDEO_SOFT_FILTER,
+                  PARSE_ONLY_BOOL, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_VIDEO_FILTER_FLICKER,
+                  PARSE_ONLY_UINT, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_VIDEO_MONITOR_INDEX,
+                  PARSE_ONLY_UINT, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_VIDEO_ROTATION,
+                  PARSE_ONLY_UINT, false) == 0)
+            count++;
+
+         if (video_display_server_can_set_screen_orientation())
+            if (menu_displaylist_parse_settings_enum(list,
+                     MENU_ENUM_LABEL_SCREEN_ORIENTATION,
+                     PARSE_ONLY_UINT, false) == 0)
+               count++;
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_VIDEO_GPU_INDEX,
+                  PARSE_ONLY_INT, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_VIDEO_REFRESH_RATE,
+                  PARSE_ONLY_FLOAT, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_AUTO,
+                  PARSE_ONLY_FLOAT, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_POLLED,
+                  PARSE_ONLY_FLOAT, false) == 0)
+            count++;
+         break;
       case DISPLAYLIST_VIDEO_SCALING_SETTINGS_LIST:
          if (menu_displaylist_parse_settings_enum(list,
                   MENU_ENUM_LABEL_VIDEO_SCALE_INTEGER,
@@ -5684,6 +5685,14 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
          if (menu_displaylist_parse_settings_enum(list,
                   MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
                   PARSE_ONLY_UINT, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_VIDEO_VI_WIDTH,
+                  PARSE_ONLY_UINT, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_VIDEO_VFILTER,
+                  PARSE_ONLY_BOOL, false) == 0)
             count++;
          break;
       case DISPLAYLIST_CRT_SWITCHRES_SETTINGS_LIST:
@@ -8226,6 +8235,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
       case DISPLAYLIST_CRT_SWITCHRES_SETTINGS_LIST:
       case DISPLAYLIST_VIDEO_FULLSCREEN_MODE_SETTINGS_LIST:
       case DISPLAYLIST_VIDEO_WINDOWED_MODE_SETTINGS_LIST:
+      case DISPLAYLIST_VIDEO_OUTPUT_SETTINGS_LIST:
       case DISPLAYLIST_VIDEO_SCALING_SETTINGS_LIST:
       case DISPLAYLIST_OPTIONS_DISK:
       case DISPLAYLIST_AI_SERVICE_SETTINGS_LIST:
