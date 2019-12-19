@@ -29160,7 +29160,7 @@ static bool accessibility_speak_macos(
 
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__) && !defined(EMSCRIPTEN)
 
-static char *accessibility_win_language_code(const char* language)
+static const char *accessibility_win_language_code(const char* language)
 {
    if (string_is_equal(language,"en"))
       return "Microsoft David Desktop";
@@ -29270,12 +29270,12 @@ static bool accessibility_speak_windows(
       const char* speak_text, const char* voice, int priority)
 {
    char cmd[1200];
-   char* language = accessibility_win_language_code(voice);
-   bool res;
+   const char *language   = accessibility_win_language_code(voice);
+   bool res               = false;
 
-   settings_t *settings              = configuration_settings;
-   char* speeds[10] = {"-10", "-7.5", "-5", "-2.5", "0", "2", "4", "6", "8", "10"};
-   int speed = settings->uints.accessibility_narrator_speech_speed;
+   settings_t *settings   = configuration_settings;
+   const char* speeds[10] = {"-10", "-7.5", "-5", "-2.5", "0", "2", "4", "6", "8", "10"};
+   int speed              = settings->uints.accessibility_narrator_speech_speed;
 
    if (speed < 1)
       speed = 1;

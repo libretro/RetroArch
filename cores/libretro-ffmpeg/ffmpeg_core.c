@@ -895,7 +895,11 @@ exit:
       if ((ret = av_hwdevice_ctx_create(&hw_device_ctx,
                                        type, NULL, NULL, 0)) < 0)
       {
+#ifdef __cplusplus
+         log_cb(RETRO_LOG_ERROR, "[FFMPEG] Failed to create specified HW device: %d\n", ret);
+#else
          log_cb(RETRO_LOG_ERROR, "[FFMPEG] Failed to create specified HW device: %s\n", av_err2str(ret));
+#endif
          decoder_pix_fmt = AV_PIX_FMT_NONE;
       }
       else
@@ -1009,7 +1013,11 @@ static bool open_codec(AVCodecContext **ctx, enum AVMediaType type, unsigned ind
 
    if ((ret = avcodec_open2(*ctx, codec, NULL)) < 0)
    {
+#ifdef __cplusplus
+      log_cb(RETRO_LOG_ERROR, "[FFMPEG] Could not open codec: %d\n", ret);
+#else
       log_cb(RETRO_LOG_ERROR, "[FFMPEG] Could not open codec: %s\n", av_err2str(ret));
+#endif
       return false;
    }
 
@@ -1291,7 +1299,7 @@ static void sws_worker_thread(void *arg)
       tmp_frame = ctx->source;
 
    ctx->sws = sws_getCachedContext(ctx->sws,
-         media.width, media.height, tmp_frame->format,
+         media.width, media.height, (enum AVPixelFormat)tmp_frame->format,
          media.width, media.height, PIX_FMT_RGB32,
          SWS_POINT, NULL, NULL, NULL);
 
@@ -1303,7 +1311,11 @@ static void sws_worker_thread(void *arg)
          tmp_frame->linesize, 0, media.height,
          (uint8_t * const*)ctx->target->data, ctx->target->linesize)) < 0)
    {
+#ifdef __cplusplus
+      log_cb(RETRO_LOG_ERROR, "[FFMPEG] Error while scaling image: %d\n", ret);
+#else
       log_cb(RETRO_LOG_ERROR, "[FFMPEG] Error while scaling image: %s\n", av_err2str(ret));
+#endif
    }
 
    swsbuffer_finish_slot(swsbuffer, ctx);
@@ -1388,7 +1400,11 @@ static void decode_video(AVCodecContext *ctx, AVPacket *pkt, size_t frame_size)
 
    if ((ret = avcodec_send_packet(ctx, pkt)) < 0)
    {
+#ifdef __cplusplus
+      log_cb(RETRO_LOG_ERROR, "[FFMPEG] Can't decode video packet: %d\n", ret);
+#else
       log_cb(RETRO_LOG_ERROR, "[FFMPEG] Can't decode video packet: %s\n", av_err2str(ret));
+#endif
       return;
    }
 
@@ -1417,7 +1433,11 @@ static void decode_video(AVCodecContext *ctx, AVPacket *pkt, size_t frame_size)
       }
       else if (ret < 0)
       {
+#ifdef __cplusplus
+         log_cb(RETRO_LOG_ERROR, "[FFMPEG] Error while reading video frame: %d\n", ret);
+#else
          log_cb(RETRO_LOG_ERROR, "[FFMPEG] Error while reading video frame: %s\n", av_err2str(ret));
+#endif
          goto end;
       }
 
@@ -1426,7 +1446,11 @@ static void decode_video(AVCodecContext *ctx, AVPacket *pkt, size_t frame_size)
          /* Copy data from VRAM to RAM */
          if ((ret = av_hwframe_transfer_data(sws_ctx->hw_source, sws_ctx->source, 0)) < 0)
          {
+#ifdef __cplusplus
+               log_cb(RETRO_LOG_ERROR, "[FFMPEG] Error transferring the data to system memory: %d\n", ret);
+#else
                log_cb(RETRO_LOG_ERROR, "[FFMPEG] Error transferring the data to system memory: %s\n", av_err2str(ret));
+#endif
                goto end;
          }
 #endif
@@ -1463,7 +1487,11 @@ static int16_t *decode_audio(AVCodecContext *ctx, AVPacket *pkt,
 
    if ((ret = avcodec_send_packet(ctx, pkt)) < 0)
    {
+#ifdef __cplusplus
+      log_cb(RETRO_LOG_ERROR, "[FFMPEG] Can't decode audio packet: %d\n", ret);
+#else
       log_cb(RETRO_LOG_ERROR, "[FFMPEG] Can't decode audio packet: %s\n", av_err2str(ret));
+#endif
       return buffer;
    }
 
@@ -1471,12 +1499,14 @@ static int16_t *decode_audio(AVCodecContext *ctx, AVPacket *pkt,
    {
       ret = avcodec_receive_frame(ctx, frame);
       if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
-      {
          break;
-      }
       else if (ret < 0)
       {
+#ifdef __cplusplus
+         log_cb(RETRO_LOG_ERROR, "[FFMPEG] Error while reading audio frame: %d\n", ret);
+#else
          log_cb(RETRO_LOG_ERROR, "[FFMPEG] Error while reading audio frame: %s\n", av_err2str(ret));
+#endif
          break;
       }
       
@@ -1923,7 +1953,11 @@ bool CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
 
    if ((ret = avformat_open_input(&fctx, info->path, NULL, NULL)) < 0)
    {
+#ifdef __cplusplus
+      log_cb(RETRO_LOG_ERROR, "[FFMPEG] Failed to open input: %d\n", ret);
+#else
       log_cb(RETRO_LOG_ERROR, "[FFMPEG] Failed to open input: %s\n", av_err2str(ret));
+#endif
       goto error;
    }
 
@@ -1931,7 +1965,11 @@ bool CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
 
    if ((ret = avformat_find_stream_info(fctx, NULL)) < 0)
    {
+#ifdef __cplusplus
+      log_cb(RETRO_LOG_ERROR, "[FFMPEG] Failed to find stream info: %d\n", ret);
+#else
       log_cb(RETRO_LOG_ERROR, "[FFMPEG] Failed to find stream info: %s\n", av_err2str(ret));
+#endif
       goto error;
    }
 
