@@ -367,7 +367,8 @@ int generic_menu_entry_action(
          break;
       case MENU_ACTION_START:
          if (cbs && cbs->action_start)
-            ret = cbs->action_start(entry->type, entry->label);
+            ret = cbs->action_start(entry->path,
+                  entry->label, entry->type, i, entry->entry_idx);
          break;
       case MENU_ACTION_LEFT:
          if (cbs && cbs->action_left)
