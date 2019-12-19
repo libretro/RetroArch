@@ -50,7 +50,10 @@
    cbs->action_start_ident = #name;
 #endif
 
+/* Forward declarations */
 int generic_action_ok_command(enum event_command cmd);
+
+int action_ok_push_playlist_manager_settings(const char *path, const char *label, unsigned type, size_t idx, size_t entry_idx);
 
 #ifdef HAVE_AUDIOMIXER
 static int action_start_audio_mixer_stream_volume(
@@ -536,7 +539,16 @@ static int menu_cbs_init_bind_start_compare_type(menu_file_list_cbs_t *cbs,
       BIND_ACTION_START(cbs, action_start_video_resolution);
    }
    else
-      return -1;
+   {
+      switch (type)
+      {
+         case FILE_TYPE_PLAYLIST_COLLECTION:
+            BIND_ACTION_START(cbs, action_ok_push_playlist_manager_settings);
+            break;
+         default:
+            return -1;
+      }
+   }
 
    return 0;
 }
