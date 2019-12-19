@@ -10204,3 +10204,19 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_SCALING_SETTINGS,
     "Change video scaling settings."
     )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_MODE_SETTINGS,
+    "Fullscreen Mode"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_MODE_SETTINGS,
+    "Change fullscreen mode settings."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_MODE_SETTINGS,
+    "Windowed Mode"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_MODE_SETTINGS,
+    "Change windowed mode settings."
+    )
