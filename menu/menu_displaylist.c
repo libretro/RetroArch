@@ -4166,11 +4166,15 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
                      PARSE_ACTION, false) == 0)
                count++;
             if (menu_displaylist_parse_settings_enum(list,
+                     MENU_ENUM_LABEL_VIDEO_WINDOWED_MODE_SETTINGS,
+                     PARSE_ACTION, false) == 0)
+               count++;
+            if (menu_displaylist_parse_settings_enum(list,
                      MENU_ENUM_LABEL_VIDEO_SCALING_SETTINGS,
                      PARSE_ACTION, false) == 0)
                count++;
             if (menu_displaylist_parse_settings_enum(list,
-                     MENU_ENUM_LABEL_VIDEO_WINDOWED_MODE_SETTINGS,
+                     MENU_ENUM_LABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
                      PARSE_ACTION, false) == 0)
                count++;
             if (menu_displaylist_parse_settings_enum(list,
@@ -4193,40 +4197,6 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
             if (menu_displaylist_parse_settings_enum(list,
                      MENU_ENUM_LABEL_VIDEO_THREADED,
                      PARSE_ONLY_BOOL, false) == 0)
-               count++;
-            if (menu_displaylist_parse_settings_enum(list,
-                     MENU_ENUM_LABEL_VIDEO_VSYNC,
-                     PARSE_ONLY_BOOL, false) == 0)
-               count++;
-            if (menu_displaylist_parse_settings_enum(list,
-                     MENU_ENUM_LABEL_VIDEO_SWAP_INTERVAL,
-                     PARSE_ONLY_UINT, false) == 0)
-               count++;
-            if (menu_displaylist_parse_settings_enum(list,
-                     MENU_ENUM_LABEL_VIDEO_ADAPTIVE_VSYNC,
-                     PARSE_ONLY_BOOL, false) == 0)
-               count++;
-            if (video_driver_test_all_flags(GFX_CTX_FLAGS_CUSTOMIZABLE_SWAPCHAIN_IMAGES))
-            {
-               if (menu_displaylist_parse_settings_enum(list,
-                        MENU_ENUM_LABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
-                        PARSE_ONLY_UINT, false) == 0)
-                  count++;
-            }
-            if (video_driver_test_all_flags(GFX_CTX_FLAGS_HARD_SYNC))
-            {
-               if (menu_displaylist_parse_settings_enum(list,
-                        MENU_ENUM_LABEL_VIDEO_HARD_SYNC,
-                        PARSE_ONLY_BOOL, false) == 0)
-                  count++;
-               if (menu_displaylist_parse_settings_enum(list,
-                        MENU_ENUM_LABEL_VIDEO_HARD_SYNC_FRAMES,
-                        PARSE_ONLY_UINT, false) == 0)
-                  count++;
-            }
-            if (menu_displaylist_parse_settings_enum(list,
-                     MENU_ENUM_LABEL_VIDEO_FRAME_DELAY,
-                     PARSE_ONLY_UINT, false) == 0)
                count++;
             if (menu_displaylist_parse_settings_enum(list,
                      MENU_ENUM_LABEL_VIDEO_BLACK_FRAME_INSERTION,
@@ -5655,6 +5625,42 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
          if (menu_displaylist_parse_settings_enum(list,
                   MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_POLLED,
                   PARSE_ONLY_FLOAT, false) == 0)
+            count++;
+         break;
+      case DISPLAYLIST_VIDEO_SYNCHRONIZATION_SETTINGS_LIST:
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_VIDEO_VSYNC,
+                  PARSE_ONLY_BOOL, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_VIDEO_SWAP_INTERVAL,
+                  PARSE_ONLY_UINT, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_VIDEO_ADAPTIVE_VSYNC,
+                  PARSE_ONLY_BOOL, false) == 0)
+            count++;
+         if (video_driver_test_all_flags(GFX_CTX_FLAGS_CUSTOMIZABLE_SWAPCHAIN_IMAGES))
+         {
+            if (menu_displaylist_parse_settings_enum(list,
+                     MENU_ENUM_LABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
+                     PARSE_ONLY_UINT, false) == 0)
+               count++;
+         }
+         if (video_driver_test_all_flags(GFX_CTX_FLAGS_HARD_SYNC))
+         {
+            if (menu_displaylist_parse_settings_enum(list,
+                     MENU_ENUM_LABEL_VIDEO_HARD_SYNC,
+                     PARSE_ONLY_BOOL, false) == 0)
+               count++;
+            if (menu_displaylist_parse_settings_enum(list,
+                     MENU_ENUM_LABEL_VIDEO_HARD_SYNC_FRAMES,
+                     PARSE_ONLY_UINT, false) == 0)
+               count++;
+         }
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_VIDEO_FRAME_DELAY,
+                  PARSE_ONLY_UINT, false) == 0)
             count++;
          break;
       case DISPLAYLIST_VIDEO_SCALING_SETTINGS_LIST:
@@ -8236,6 +8242,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
       case DISPLAYLIST_VIDEO_FULLSCREEN_MODE_SETTINGS_LIST:
       case DISPLAYLIST_VIDEO_WINDOWED_MODE_SETTINGS_LIST:
       case DISPLAYLIST_VIDEO_OUTPUT_SETTINGS_LIST:
+      case DISPLAYLIST_VIDEO_SYNCHRONIZATION_SETTINGS_LIST:
       case DISPLAYLIST_VIDEO_SCALING_SETTINGS_LIST:
       case DISPLAYLIST_OPTIONS_DISK:
       case DISPLAYLIST_AI_SERVICE_SETTINGS_LIST:
