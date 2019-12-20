@@ -7643,11 +7643,21 @@ static void materialui_list_insert(
                node->icon_texture_index = MUI_TEXTURE_QUIT;
                node->has_icon           = true;
             }
+            /* TODO/FIXME - all this should go away and be refactored so that we don't have to do
+             * all this manually inside this menu driver */
             else if (
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_MENU_FILE_BROWSER_SETTINGS)) ||
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DRIVER_SETTINGS)) ||
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SETTINGS)) ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_OUTPUT_SETTINGS)) ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SYNCHRONIZATION_SETTINGS)) ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_FULLSCREEN_MODE_SETTINGS)) ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_WINDOWED_MODE_SETTINGS)) ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SCALING_SETTINGS)) ||
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_SETTINGS)) ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_OUTPUT_SETTINGS)) ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_RESAMPLER_SETTINGS)) ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_SYNCHRONIZATION_SETTINGS)) ||
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_MIXER_SETTINGS)) ||
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_MENU_SOUNDS)) ||
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_INPUT_SETTINGS)) ||
