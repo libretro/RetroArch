@@ -365,6 +365,8 @@ MSG_HASH(MENU_ENUM_LABEL_DEFERRED_INPUT_HOTKEY_BINDS_LIST,
       "deferred_input_hotkey_binds")
 MSG_HASH(MENU_ENUM_LABEL_DEFERRED_INPUT_SETTINGS_LIST,
       "deferred_input_settings_list")
+MSG_HASH(MENU_ENUM_LABEL_DEFERRED_INPUT_MENU_SETTINGS_LIST,
+      "deferred_input_menu_settings_list")
 MSG_HASH(MENU_ENUM_LABEL_DEFERRED_LATENCY_SETTINGS_LIST,
       "deferred_latency_settings_list")
 MSG_HASH(MENU_ENUM_LABEL_DEFERRED_AI_SERVICE_SETTINGS_LIST,
@@ -2171,3 +2173,5 @@ MSG_HASH(MENU_ENUM_LABEL_DEFERRED_AUDIO_OUTPUT_SETTINGS_LIST,
       "deferred_audio_output_settings_list")
 MSG_HASH(MENU_ENUM_LABEL_DEFERRED_AUDIO_SYNCHRONIZATION_SETTINGS_LIST,
       "deferred_audio_synchronization_settings_list")
+MSG_HASH(MENU_ENUM_LABEL_INPUT_MENU_SETTINGS,
+      "input_menu_settings")

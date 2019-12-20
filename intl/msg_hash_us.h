@@ -10260,3 +10260,11 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_SETTINGS,
     "Change audio resampler settings."
     )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_MENU_SETTINGS,
+    "Menu Controls"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_INPUT_MENU_SETTINGS,
+    "Change menu control settings."
+    )

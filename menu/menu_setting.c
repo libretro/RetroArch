@@ -11133,6 +11133,14 @@ static bool setting_append_list(
             menu_settings_list_current_add_range(list, list_info, 1, 0, 1, true, false);
             SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
 
+            CONFIG_ACTION(
+                  list, list_info,
+                  MENU_ENUM_LABEL_INPUT_MENU_SETTINGS,
+                  MENU_ENUM_LABEL_VALUE_INPUT_MENU_SETTINGS,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group);
+
             END_SUB_GROUP(list, list_info, parent_group);
 
             START_SUB_GROUP(list, list_info, "Binds", &group_info, &subgroup_info, parent_group);
