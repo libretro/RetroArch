@@ -686,6 +686,20 @@ int setting_uint_action_right_default(
    return 0;
 }
 
+int setting_bool_action_right_with_refresh(
+      rarch_setting_t *setting, bool wraparound)
+{
+   bool refresh      = false;
+
+   setting_set_with_string_representation(setting,
+         *setting->value.target.boolean ? "false" : "true");
+
+   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+
+   return 0;
+}
+
 int setting_uint_action_right_with_refresh(
       rarch_setting_t *setting, bool wraparound)
 {
@@ -696,6 +710,19 @@ int setting_uint_action_right_with_refresh(
    menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
 
    return retval;
+}
+
+int setting_bool_action_left_with_refresh(rarch_setting_t *setting, bool wraparound)
+{
+   bool refresh      = false;
+
+   setting_set_with_string_representation(setting,
+         *setting->value.target.boolean ? "false" : "true");
+
+   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+
+   return 0;
 }
 
 int setting_uint_action_left_with_refresh(rarch_setting_t *setting, bool wraparound)
@@ -11501,6 +11528,8 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_NONE
                );
+         (*list)[list_info->index - 1].action_left = setting_bool_action_left_with_refresh;
+         (*list)[list_info->index - 1].action_right = setting_bool_action_right_with_refresh;
 
          CONFIG_UINT(
             list, list_info,
