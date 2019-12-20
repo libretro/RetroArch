@@ -2252,6 +2252,9 @@ static int menu_displaylist_parse_horizontal_content_actions(
                                !string_is_equal(system, "music_history") &&
                                !string_is_equal(system, "video_history");
       }
+      
+      if (settings->bools.network_on_demand_thumbnails)
+         download_enabled = false;
 
       if (download_enabled)
          menu_entries_append_enum(info->list,
