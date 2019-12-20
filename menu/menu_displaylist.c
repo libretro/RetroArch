@@ -5953,6 +5953,7 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
 #endif
       case DISPLAYLIST_LATENCY_SETTINGS_LIST:
          {
+            settings_t      *settings     = config_get_ptr();
             menu_displaylist_build_info_selective_t build_list[] = {
                {MENU_ENUM_LABEL_VIDEO_FRAME_DELAY,                     PARSE_ONLY_UINT, true },
                {MENU_ENUM_LABEL_AUDIO_LATENCY,                         PARSE_ONLY_UINT, true },
@@ -5977,10 +5978,13 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
                      MENU_ENUM_LABEL_VIDEO_HARD_SYNC,
                      PARSE_ONLY_BOOL, false);
                count++;
-               menu_displaylist_parse_settings_enum(list,
-                     MENU_ENUM_LABEL_VIDEO_HARD_SYNC_FRAMES,
-                     PARSE_ONLY_UINT, false);
-               count++;
+               if (settings->bools.video_hard_sync)
+               {
+                  menu_displaylist_parse_settings_enum(list,
+                        MENU_ENUM_LABEL_VIDEO_HARD_SYNC_FRAMES,
+                        PARSE_ONLY_UINT, false);
+                  count++;
+               }
             }
             
             {
