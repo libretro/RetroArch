@@ -4070,6 +4070,10 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
                   PARSE_ONLY_BOOL, false) == 0)
             count++;
          if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_AUDIO_DRIVER,
+                  PARSE_ONLY_STRING_OPTIONS, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
                   MENU_ENUM_LABEL_AUDIO_DEVICE,
                   PARSE_ONLY_STRING, false) == 0)
             count++;
