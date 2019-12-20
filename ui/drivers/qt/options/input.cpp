@@ -72,27 +72,22 @@ HotkeyBindsPage::HotkeyBindsPage(QObject *parent) :
 QWidget *HotkeyBindsPage::widget()
 {
    unsigned i;
-   unsigned count          = 0;
-   unsigned half           = 40 / 2; /* TODO unhardcode */
    QWidget *widget         = new QWidget;
    QHBoxLayout *layout     = new QHBoxLayout;
    FormLayout *mainLayout  = new FormLayout;
+   file_list_t *list       = (file_list_t*)calloc(1, sizeof(*list));
 
+   menu_displaylist_build_list(list, DISPLAYLIST_INPUT_HOTKEY_BINDS_LIST);
+
+   for (i = 0; i < list->size; i++)
    {
-      unsigned i;
-      file_list_t *list     = (file_list_t*)calloc(1, sizeof(*list));
-      menu_displaylist_build_list(list, DISPLAYLIST_INPUT_HOTKEY_BINDS_LIST);
+      menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
+         file_list_get_actiondata_at_offset(list, i);
 
-      for (i = 0; i < list->size; i++)
-      {
-         menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
-            file_list_get_actiondata_at_offset(list, i);
-
-         mainLayout->add(cbs->enum_idx);
-      }
-
-      file_list_free(list);
+      mainLayout->add(cbs->enum_idx);
    }
+
+   file_list_free(list);
 
    layout->addLayout(mainLayout);
 
