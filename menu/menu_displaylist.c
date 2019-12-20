@@ -3848,6 +3848,24 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
 
    switch (type)
    {
+      case DISPLAYLIST_INPUT_HOTKEY_BINDS_LIST:
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_QUIT_PRESS_TWICE,
+                  PARSE_ONLY_BOOL, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
+                  PARSE_ONLY_UINT, false) == 0)
+            count++;
+         for (i = 0; i < RARCH_BIND_LIST_END; i++)
+         {
+            if (menu_displaylist_parse_settings_enum(list,
+                     (enum msg_hash_enums)(
+                        MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_BEGIN + i),
+                     PARSE_ONLY_BIND, false) == 0)
+               count++;
+         }
+         break;
       case DISPLAYLIST_SHADER_PRESET_REMOVE:
          {
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
@@ -4525,10 +4543,6 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
             count++;
 
          if (menu_displaylist_parse_settings_enum(list,
-                  MENU_ENUM_LABEL_QUIT_PRESS_TWICE,
-                  PARSE_ONLY_BOOL, false) == 0)
-            count++;
-         if (menu_displaylist_parse_settings_enum(list,
                   MENU_ENUM_LABEL_VIBRATE_ON_KEYPRESS,
                   PARSE_ONLY_BOOL, false) == 0)
             count++;
@@ -4555,10 +4569,6 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
          if (menu_displaylist_parse_settings_enum(list,
                   MENU_ENUM_LABEL_INPUT_PREFER_FRONT_TOUCH,
                   PARSE_ONLY_BOOL, false) == 0)
-            count++;
-         if (menu_displaylist_parse_settings_enum(list,
-                  MENU_ENUM_LABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
-                  PARSE_ONLY_UINT, false) == 0)
             count++;
          if (menu_displaylist_parse_settings_enum(list,
                   MENU_ENUM_LABEL_MENU_INPUT_SWAP_OK_CANCEL,
@@ -8232,22 +8242,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          info->need_push    = true;
 
          break;
-      case DISPLAYLIST_INPUT_HOTKEY_BINDS_LIST:
-         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         {
-            unsigned i;
-
-            for (i = 0; i < RARCH_BIND_LIST_END; i++)
-            {
-               if (menu_displaylist_parse_settings_enum(info->list,
-                     (enum msg_hash_enums)(
-                        MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_BEGIN + i),
-                     PARSE_ONLY_BIND, false) == 0)
-                  count++;
-            }
-         }
-         info->need_push    = true;
-         break;
       case DISPLAYLIST_SAVING_SETTINGS_LIST:
       case DISPLAYLIST_DRIVER_SETTINGS_LIST:
       case DISPLAYLIST_LOGGING_SETTINGS_LIST:
@@ -8332,6 +8326,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
       case DISPLAYLIST_NETPLAY_ROOM_LIST:
       case DISPLAYLIST_SHADER_PRESET_SAVE:
       case DISPLAYLIST_SHADER_PRESET_REMOVE:
+      case DISPLAYLIST_INPUT_HOTKEY_BINDS_LIST:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          count = menu_displaylist_build_list(info->list, type);
 
