@@ -8016,6 +8016,22 @@ static bool setting_append_list(
                &subgroup_info,
                parent_group);
 
+         CONFIG_ACTION(
+               list, list_info,
+               MENU_ENUM_LABEL_AUDIO_OUTPUT_SETTINGS,
+               MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_SETTINGS,
+               &group_info,
+               &subgroup_info,
+               parent_group);
+
+         CONFIG_ACTION(
+               list, list_info,
+               MENU_ENUM_LABEL_AUDIO_SYNCHRONIZATION_SETTINGS,
+               MENU_ENUM_LABEL_VALUE_AUDIO_SYNCHRONIZATION_SETTINGS,
+               &group_info,
+               &subgroup_info,
+               parent_group);
+
          if (string_is_not_equal(settings->arrays.midi_driver, "null"))
          {
             CONFIG_ACTION(

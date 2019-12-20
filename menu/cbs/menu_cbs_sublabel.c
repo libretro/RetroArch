@@ -180,6 +180,8 @@ default_sublabel_macro(action_bind_sublabel_crt_switchres_settings_list,        
 default_sublabel_macro(action_bind_sublabel_suspend_screensaver_enable,    MENU_ENUM_SUBLABEL_SUSPEND_SCREENSAVER_ENABLE)
 default_sublabel_macro(action_bind_sublabel_video_window_scale,            MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SCALE)
 default_sublabel_macro(action_bind_sublabel_audio_settings_list,           MENU_ENUM_SUBLABEL_AUDIO_SETTINGS)
+default_sublabel_macro(action_bind_sublabel_audio_output_settings_list,           MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_SETTINGS)
+default_sublabel_macro(action_bind_sublabel_audio_synchronization_settings_list,           MENU_ENUM_SUBLABEL_AUDIO_SYNCHRONIZATION_SETTINGS)
 #ifdef HAVE_AUDIOMIXER
 default_sublabel_macro(action_bind_sublabel_mixer_settings_list,           MENU_ENUM_SUBLABEL_AUDIO_MIXER_SETTINGS)
 #endif
@@ -2716,6 +2718,12 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_AUDIO_SETTINGS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_audio_settings_list);
+            break;
+         case MENU_ENUM_LABEL_AUDIO_SYNCHRONIZATION_SETTINGS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_audio_synchronization_settings_list);
+            break;
+         case MENU_ENUM_LABEL_AUDIO_OUTPUT_SETTINGS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_audio_output_settings_list);
             break;
          case MENU_ENUM_LABEL_AUDIO_MIXER_SETTINGS:
 #ifdef HAVE_AUDIOMIXER

@@ -4044,20 +4044,7 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
                   0, 0, 0))
             count++;
          break;
-         break;
-      case DISPLAYLIST_AUDIO_SETTINGS_LIST:
-         if (menu_displaylist_parse_settings_enum(list,
-                  MENU_ENUM_LABEL_MIDI_SETTINGS,
-                  PARSE_ACTION, false) == 0)
-            count++;
-         if (menu_displaylist_parse_settings_enum(list,
-                  MENU_ENUM_LABEL_AUDIO_MIXER_SETTINGS,
-                  PARSE_ACTION, false) == 0)
-            count++;
-         if (menu_displaylist_parse_settings_enum(list,
-                  MENU_ENUM_LABEL_MENU_SOUNDS,
-                  PARSE_ACTION, false) == 0)
-            count++;
+      case DISPLAYLIST_AUDIO_OUTPUT_SETTINGS_LIST:
          if (menu_displaylist_parse_settings_enum(list,
                   MENU_ENUM_LABEL_AUDIO_ENABLE,
                   PARSE_ONLY_BOOL, false) == 0)
@@ -4069,6 +4056,58 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
          if (menu_displaylist_parse_settings_enum(list,
                   MENU_ENUM_LABEL_AUDIO_LATENCY,
                   PARSE_ONLY_UINT, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_AUDIO_WASAPI_EXCLUSIVE_MODE,
+                  PARSE_ONLY_BOOL, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_AUDIO_WASAPI_FLOAT_FORMAT,
+                  PARSE_ONLY_BOOL, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_AUDIO_WASAPI_SH_BUFFER_LENGTH,
+                  PARSE_ONLY_INT, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_AUDIO_BLOCK_FRAMES,
+                  PARSE_ONLY_UINT, false) == 0)
+            count++;
+         break;
+      case DISPLAYLIST_AUDIO_SYNCHRONIZATION_SETTINGS_LIST:
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_AUDIO_SYNC,
+                  PARSE_ONLY_BOOL, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_AUDIO_MAX_TIMING_SKEW,
+                  PARSE_ONLY_FLOAT, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_AUDIO_RATE_CONTROL_DELTA,
+                  PARSE_ONLY_FLOAT, false) == 0)
+            count++;
+         break;
+      case DISPLAYLIST_AUDIO_SETTINGS_LIST:
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_AUDIO_OUTPUT_SETTINGS,
+                  PARSE_ACTION, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_AUDIO_SYNCHRONIZATION_SETTINGS,
+                  PARSE_ACTION, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_MIDI_SETTINGS,
+                  PARSE_ACTION, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_AUDIO_MIXER_SETTINGS,
+                  PARSE_ACTION, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_MENU_SOUNDS,
+                  PARSE_ACTION, false) == 0)
             count++;
 
          /* Volume */
@@ -4109,38 +4148,8 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
                   PARSE_ONLY_UINT, false) == 0)
             count++;
          if (menu_displaylist_parse_settings_enum(list,
-                  MENU_ENUM_LABEL_AUDIO_BLOCK_FRAMES,
-                  PARSE_ONLY_UINT, false) == 0)
-            count++;
-
-         /* Synchronization */
-         if (menu_displaylist_parse_settings_enum(list,
-                  MENU_ENUM_LABEL_AUDIO_SYNC,
-                  PARSE_ONLY_BOOL, false) == 0)
-            count++;
-         if (menu_displaylist_parse_settings_enum(list,
-                  MENU_ENUM_LABEL_AUDIO_MAX_TIMING_SKEW,
-                  PARSE_ONLY_FLOAT, false) == 0)
-            count++;
-         if (menu_displaylist_parse_settings_enum(list,
-                  MENU_ENUM_LABEL_AUDIO_RATE_CONTROL_DELTA,
-                  PARSE_ONLY_FLOAT, false) == 0)
-            count++;
-         if (menu_displaylist_parse_settings_enum(list,
                   MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN,
                   PARSE_ONLY_PATH, false) == 0)
-            count++;
-         if (menu_displaylist_parse_settings_enum(list,
-                  MENU_ENUM_LABEL_AUDIO_WASAPI_EXCLUSIVE_MODE,
-                  PARSE_ONLY_BOOL, false) == 0)
-            count++;
-         if (menu_displaylist_parse_settings_enum(list,
-                  MENU_ENUM_LABEL_AUDIO_WASAPI_FLOAT_FORMAT,
-                  PARSE_ONLY_BOOL, false) == 0)
-            count++;
-         if (menu_displaylist_parse_settings_enum(list,
-                  MENU_ENUM_LABEL_AUDIO_WASAPI_SH_BUFFER_LENGTH,
-                  PARSE_ONLY_INT, false) == 0)
             count++;
          break;
       case DISPLAYLIST_VIDEO_SETTINGS_LIST:
@@ -8283,6 +8292,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
       case DISPLAYLIST_OPTIONS_REMAPPINGS:
       case DISPLAYLIST_VIDEO_SETTINGS_LIST:
       case DISPLAYLIST_AUDIO_SETTINGS_LIST:
+      case DISPLAYLIST_AUDIO_OUTPUT_SETTINGS_LIST:
+      case DISPLAYLIST_AUDIO_SYNCHRONIZATION_SETTINGS_LIST:
       case DISPLAYLIST_HELP_SCREEN_LIST:
       case DISPLAYLIST_INFORMATION_LIST:
       case DISPLAYLIST_SCAN_DIRECTORY_LIST:

@@ -60,6 +60,10 @@ MSG_HASH(MENU_ENUM_LABEL_AUDIO_RESAMPLER_DRIVER,
       "audio_resampler_driver")
 MSG_HASH(MENU_ENUM_LABEL_AUDIO_SETTINGS,
       "audio_settings")
+MSG_HASH(MENU_ENUM_LABEL_AUDIO_SYNCHRONIZATION_SETTINGS,
+      "audio_synchronization_settings")
+MSG_HASH(MENU_ENUM_LABEL_AUDIO_OUTPUT_SETTINGS,
+      "audio_output_settings")
 MSG_HASH(MENU_ENUM_LABEL_AUDIO_SYNC,
       "audio_sync")
 MSG_HASH(MENU_ENUM_LABEL_AUDIO_VOLUME,
@@ -2159,3 +2163,7 @@ MSG_HASH(MENU_ENUM_LABEL_ACCESSIBILITY_ENABLED,
       "accessibility_enabled")
 MSG_HASH(MENU_ENUM_LABEL_ACCESSIBILITY_NARRATOR_SPEECH_SPEED,
       "accessibility_narrator_speech_speed")
+MSG_HASH(MENU_ENUM_LABEL_DEFERRED_AUDIO_OUTPUT_SETTINGS_LIST,
+      "deferred_audio_output_settings_list")
+MSG_HASH(MENU_ENUM_LABEL_DEFERRED_AUDIO_SYNCHRONIZATION_SETTINGS_LIST,
+      "deferred_audio_synchronization_settings_list")

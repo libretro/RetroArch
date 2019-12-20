@@ -374,6 +374,8 @@ default_title_macro(action_get_privacy_settings_list,           MENU_ENUM_LABEL_
 default_title_macro(action_get_midi_settings_list,              MENU_ENUM_LABEL_VALUE_MIDI_SETTINGS)
 default_title_macro(action_get_updater_settings_list,           MENU_ENUM_LABEL_VALUE_UPDATER_SETTINGS)
 default_title_macro(action_get_audio_settings_list,             MENU_ENUM_LABEL_VALUE_AUDIO_SETTINGS)
+default_title_macro(action_get_audio_output_settings_list,             MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_SETTINGS)
+default_title_macro(action_get_audio_synchronization_settings_list,             MENU_ENUM_LABEL_VALUE_AUDIO_SYNCHRONIZATION_SETTINGS)
 #ifdef HAVE_AUDIOMIXER
 default_title_macro(action_get_audio_mixer_settings_list,       MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_SETTINGS)
 #endif
@@ -661,6 +663,8 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
       {MENU_ENUM_LABEL_DEFERRED_VIDEO_LIST,                           action_get_title_goto_video},
       {MENU_ENUM_LABEL_DEFERRED_DRIVER_SETTINGS_LIST,                 action_get_driver_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_AUDIO_SETTINGS_LIST,                  action_get_audio_settings_list},
+      {MENU_ENUM_LABEL_DEFERRED_AUDIO_OUTPUT_SETTINGS_LIST,                  action_get_audio_output_settings_list},
+      {MENU_ENUM_LABEL_DEFERRED_AUDIO_SYNCHRONIZATION_SETTINGS_LIST,                  action_get_audio_synchronization_settings_list},
 #ifdef HAVE_AUDIOMIXER
       {MENU_ENUM_LABEL_DEFERRED_AUDIO_MIXER_SETTINGS_LIST,            action_get_audio_mixer_settings_list},
 #endif

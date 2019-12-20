@@ -10236,3 +10236,19 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
     "Change video synchronization settings."
     )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_SETTINGS,
+    "Output"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_SETTINGS,
+    "Change audio output settings."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_AUDIO_SYNCHRONIZATION_SETTINGS,
+    "Synchronization"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_AUDIO_SYNCHRONIZATION_SETTINGS,
+    "Change audio synchronization settings."
+    )
