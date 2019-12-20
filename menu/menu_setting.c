@@ -9670,6 +9670,7 @@ static bool setting_append_list(
             menu_settings_list_current_add_range(list, list_info, 0, 0, 1, true, false);
             (*list)[list_info->index - 1].get_string_representation =
                &setting_get_string_representation_uint_custom_viewport_width;
+            (*list)[list_info->index - 1].action_ok    = &setting_action_ok_uint;
             (*list)[list_info->index - 1].action_start = &setting_action_start_custom_viewport_width;
             (*list)[list_info->index - 1].action_left  = setting_uint_action_left_custom_viewport_width;
             (*list)[list_info->index - 1].action_right = setting_uint_action_right_custom_viewport_width;
@@ -9693,6 +9694,7 @@ static bool setting_append_list(
             menu_settings_list_current_add_range(list, list_info, 0, 0, 1, true, false);
             (*list)[list_info->index - 1].get_string_representation =
                &setting_get_string_representation_uint_custom_viewport_height;
+            (*list)[list_info->index - 1].action_ok    = &setting_action_ok_uint;
             (*list)[list_info->index - 1].action_start = &setting_action_start_custom_viewport_height;
             (*list)[list_info->index - 1].action_left  = setting_uint_action_left_custom_viewport_height;
             (*list)[list_info->index - 1].action_right = setting_uint_action_right_custom_viewport_height;
