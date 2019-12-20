@@ -1880,7 +1880,10 @@ static int menu_displaylist_parse_load_content_settings(
             count++;
       }
 
-      if (settings->bools.quick_menu_show_add_to_favorites)
+      if (
+            settings->bools.quick_menu_show_add_to_favorites &&
+            settings->bools.menu_content_show_favorites
+         )
       {
          if (menu_entries_append_enum(list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES),
@@ -2187,7 +2190,10 @@ static int menu_displaylist_parse_horizontal_content_actions(
                   MENU_SETTING_ACTION_DELETE_ENTRY, 0, 0);
       }
 
-      if (settings->bools.quick_menu_show_add_to_favorites)
+      if (
+            settings->bools.quick_menu_show_add_to_favorites &&
+            settings->bools.menu_content_show_favorites
+         )
       {
          menu_entries_append_enum(info->list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES_PLAYLIST),
