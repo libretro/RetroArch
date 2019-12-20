@@ -288,6 +288,8 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
          return MENU_ENUM_LABEL_DEFERRED_AUDIO_SETTINGS_LIST;
       case ACTION_OK_DL_AUDIO_OUTPUT_SETTINGS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_AUDIO_OUTPUT_SETTINGS_LIST;
+      case ACTION_OK_DL_AUDIO_RESAMPLER_SETTINGS_LIST:
+         return MENU_ENUM_LABEL_DEFERRED_AUDIO_RESAMPLER_SETTINGS_LIST;
       case ACTION_OK_DL_AUDIO_SYNCHRONIZATION_SETTINGS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_AUDIO_SYNCHRONIZATION_SETTINGS_LIST;
       case ACTION_OK_DL_AUDIO_MIXER_SETTINGS_LIST:
@@ -1068,6 +1070,7 @@ int generic_action_ok_displaylist_push(const char *path,
       case ACTION_OK_DL_AUDIO_SETTINGS_LIST:
       case ACTION_OK_DL_AUDIO_SYNCHRONIZATION_SETTINGS_LIST:
       case ACTION_OK_DL_AUDIO_OUTPUT_SETTINGS_LIST:
+      case ACTION_OK_DL_AUDIO_RESAMPLER_SETTINGS_LIST:
       case ACTION_OK_DL_AUDIO_MIXER_SETTINGS_LIST:
       case ACTION_OK_DL_INPUT_HOTKEY_BINDS_LIST:
       case ACTION_OK_DL_RECORDING_SETTINGS_LIST:
@@ -4757,6 +4760,7 @@ default_action_ok_func(action_ok_push_configuration_settings_list, ACTION_OK_DL_
 default_action_ok_func(action_ok_push_core_settings_list, ACTION_OK_DL_CORE_SETTINGS_LIST)
 default_action_ok_func(action_ok_push_audio_settings_list, ACTION_OK_DL_AUDIO_SETTINGS_LIST)
 default_action_ok_func(action_ok_push_audio_output_settings_list, ACTION_OK_DL_AUDIO_OUTPUT_SETTINGS_LIST)
+default_action_ok_func(action_ok_push_audio_resampler_settings_list, ACTION_OK_DL_AUDIO_RESAMPLER_SETTINGS_LIST)
 default_action_ok_func(action_ok_push_audio_synchronization_settings_list, ACTION_OK_DL_AUDIO_SYNCHRONIZATION_SETTINGS_LIST)
 #ifdef HAVE_AUDIOMIXER
 default_action_ok_func(action_ok_push_audio_mixer_settings_list, ACTION_OK_DL_AUDIO_MIXER_SETTINGS_LIST)
@@ -6435,6 +6439,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_AUDIO_OUTPUT_SETTINGS:
             BIND_ACTION_OK(cbs, action_ok_push_audio_output_settings_list);
+            break;
+         case MENU_ENUM_LABEL_AUDIO_RESAMPLER_SETTINGS:
+            BIND_ACTION_OK(cbs, action_ok_push_audio_resampler_settings_list);
             break;
          case MENU_ENUM_LABEL_AUDIO_MIXER_SETTINGS:
 #ifdef HAVE_AUDIOMIXER

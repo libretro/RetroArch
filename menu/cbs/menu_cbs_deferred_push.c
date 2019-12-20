@@ -184,6 +184,7 @@ generic_deferred_push(deferred_push_privacy_settings_list,          DISPLAYLIST_
 generic_deferred_push(deferred_push_midi_settings_list,             DISPLAYLIST_MIDI_SETTINGS_LIST)
 generic_deferred_push(deferred_push_audio_settings_list,            DISPLAYLIST_AUDIO_SETTINGS_LIST)
 generic_deferred_push(deferred_push_audio_output_settings_list,            DISPLAYLIST_AUDIO_OUTPUT_SETTINGS_LIST)
+generic_deferred_push(deferred_push_audio_resampler_settings_list,            DISPLAYLIST_AUDIO_RESAMPLER_SETTINGS_LIST)
 generic_deferred_push(deferred_push_audio_synchronization_settings_list,            DISPLAYLIST_AUDIO_SYNCHRONIZATION_SETTINGS_LIST)
 generic_deferred_push(deferred_push_audio_mixer_settings_list,      DISPLAYLIST_AUDIO_MIXER_SETTINGS_LIST)
 generic_deferred_push(deferred_push_input_settings_list,            DISPLAYLIST_INPUT_SETTINGS_LIST)
@@ -739,6 +740,7 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       {MENU_ENUM_LABEL_DEFERRED_AUDIO_SETTINGS_LIST, deferred_push_audio_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_AUDIO_SYNCHRONIZATION_SETTINGS_LIST, deferred_push_audio_synchronization_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_AUDIO_OUTPUT_SETTINGS_LIST, deferred_push_audio_output_settings_list},
+      {MENU_ENUM_LABEL_DEFERRED_AUDIO_RESAMPLER_SETTINGS_LIST, deferred_push_audio_resampler_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_AUDIO_MIXER_SETTINGS_LIST, deferred_push_audio_mixer_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_LATENCY_SETTINGS_LIST, deferred_push_latency_settings_list},
 #ifdef HAVE_LAKKA_SWITCH
@@ -1121,6 +1123,9 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
             break;
          case MENU_ENUM_LABEL_DEFERRED_AUDIO_OUTPUT_SETTINGS_LIST:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_audio_output_settings_list);
+            break;
+         case MENU_ENUM_LABEL_DEFERRED_AUDIO_RESAMPLER_SETTINGS_LIST:
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_audio_resampler_settings_list);
             break;
          case MENU_ENUM_LABEL_DEFERRED_AUDIO_SYNCHRONIZATION_SETTINGS_LIST:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_audio_synchronization_settings_list);

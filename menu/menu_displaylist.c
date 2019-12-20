@@ -4044,6 +4044,26 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
                   0, 0, 0))
             count++;
          break;
+      case DISPLAYLIST_AUDIO_RESAMPLER_SETTINGS_LIST:
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_AUDIO_RESAMPLER_DRIVER,
+                  PARSE_ONLY_STRING_OPTIONS, false) == 0)
+            count++;
+         {
+            settings_t *settings      = config_get_ptr();
+            if (string_is_not_equal(settings->arrays.audio_resampler, "null"))
+            {
+               if (menu_displaylist_parse_settings_enum(list,
+                        MENU_ENUM_LABEL_AUDIO_RESAMPLER_QUALITY,
+                        PARSE_ONLY_UINT, false) == 0)
+                  count++;
+            }
+         }
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_AUDIO_OUTPUT_RATE,
+                  PARSE_ONLY_UINT, false) == 0)
+            count++;
+         break;
       case DISPLAYLIST_AUDIO_OUTPUT_SETTINGS_LIST:
          if (menu_displaylist_parse_settings_enum(list,
                   MENU_ENUM_LABEL_AUDIO_ENABLE,
@@ -4094,6 +4114,10 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
                   PARSE_ACTION, false) == 0)
             count++;
          if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_AUDIO_RESAMPLER_SETTINGS,
+                  PARSE_ACTION, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
                   MENU_ENUM_LABEL_AUDIO_SYNCHRONIZATION_SETTINGS,
                   PARSE_ACTION, false) == 0)
             count++;
@@ -4132,21 +4156,6 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
                   PARSE_ONLY_BOOL, false) == 0)
             count++;
 
-         /* Resampler */
-         {
-            settings_t *settings      = config_get_ptr();
-            if (string_is_not_equal(settings->arrays.audio_resampler, "null"))
-            {
-               if (menu_displaylist_parse_settings_enum(list,
-                        MENU_ENUM_LABEL_AUDIO_RESAMPLER_QUALITY,
-                        PARSE_ONLY_UINT, false) == 0)
-                  count++;
-            }
-         }
-         if (menu_displaylist_parse_settings_enum(list,
-                  MENU_ENUM_LABEL_AUDIO_OUTPUT_RATE,
-                  PARSE_ONLY_UINT, false) == 0)
-            count++;
          if (menu_displaylist_parse_settings_enum(list,
                   MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN,
                   PARSE_ONLY_PATH, false) == 0)
@@ -5564,6 +5573,10 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
             count++;
          break;
       case DISPLAYLIST_VIDEO_OUTPUT_SETTINGS_LIST:
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_VIDEO_DRIVER,
+                  PARSE_ONLY_STRING_OPTIONS, false) == 0)
+            count++;
 #if defined(GEKKO) || defined(__CELLOS_LV2__)
          if (true)
 #else
@@ -8292,6 +8305,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
       case DISPLAYLIST_OPTIONS_REMAPPINGS:
       case DISPLAYLIST_VIDEO_SETTINGS_LIST:
       case DISPLAYLIST_AUDIO_SETTINGS_LIST:
+      case DISPLAYLIST_AUDIO_RESAMPLER_SETTINGS_LIST:
       case DISPLAYLIST_AUDIO_OUTPUT_SETTINGS_LIST:
       case DISPLAYLIST_AUDIO_SYNCHRONIZATION_SETTINGS_LIST:
       case DISPLAYLIST_HELP_SCREEN_LIST:

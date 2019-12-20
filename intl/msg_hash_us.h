@@ -10252,3 +10252,11 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_AUDIO_SYNCHRONIZATION_SETTINGS,
     "Change audio synchronization settings."
     )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_SETTINGS,
+    "Resampler"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_SETTINGS,
+    "Change audio resampler settings."
+    )
