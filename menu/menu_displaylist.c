@@ -3848,6 +3848,16 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
 
    switch (type)
    {
+      case DISPLAYLIST_INPUT_HAPTIC_FEEDBACK_SETTINGS_LIST:
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_VIBRATE_ON_KEYPRESS,
+                  PARSE_ONLY_BOOL, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_ENABLE_DEVICE_VIBRATION,
+                  PARSE_ONLY_BOOL, false) == 0)
+            count++;
+         break;
       case DISPLAYLIST_INPUT_HOTKEY_BINDS_LIST:
          if (menu_displaylist_parse_settings_enum(list,
                   MENU_ENUM_LABEL_QUIT_PRESS_TWICE,
@@ -4553,14 +4563,6 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
             count++;
 
          if (menu_displaylist_parse_settings_enum(list,
-                  MENU_ENUM_LABEL_VIBRATE_ON_KEYPRESS,
-                  PARSE_ONLY_BOOL, false) == 0)
-            count++;
-         if (menu_displaylist_parse_settings_enum(list,
-                  MENU_ENUM_LABEL_ENABLE_DEVICE_VIBRATION,
-                  PARSE_ONLY_BOOL, false) == 0)
-            count++;
-         if (menu_displaylist_parse_settings_enum(list,
                   MENU_ENUM_LABEL_INPUT_POLL_TYPE_BEHAVIOR,
                   PARSE_ONLY_UINT, false) == 0)
             count++;
@@ -4633,6 +4635,10 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
          if (menu_displaylist_parse_settings_enum(list,
                   MENU_ENUM_LABEL_INPUT_BIND_MODE,
                   PARSE_ONLY_UINT, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_INPUT_HAPTIC_FEEDBACK_SETTINGS,
+                  PARSE_ACTION, false) == 0)
             count++;
          if (menu_displaylist_parse_settings_enum(list,
                   MENU_ENUM_LABEL_INPUT_MENU_SETTINGS,
@@ -8334,6 +8340,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
       case DISPLAYLIST_SHADER_PRESET_SAVE:
       case DISPLAYLIST_SHADER_PRESET_REMOVE:
       case DISPLAYLIST_INPUT_HOTKEY_BINDS_LIST:
+      case DISPLAYLIST_INPUT_HAPTIC_FEEDBACK_SETTINGS_LIST:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          count = menu_displaylist_build_list(info->list, type);
 

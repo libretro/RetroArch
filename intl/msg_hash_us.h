@@ -10268,3 +10268,11 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_INPUT_MENU_SETTINGS,
     "Change menu control settings."
     )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_HAPTIC_FEEDBACK_SETTINGS,
+    "Haptic Feedback/Vibration"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_INPUT_HAPTIC_FEEDBACK_SETTINGS,
+    "Change haptic feedback and vibration settings."
+    )
