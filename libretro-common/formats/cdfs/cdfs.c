@@ -12,8 +12,7 @@
 static void cdfs_determine_sector_size(cdfs_track_t* track)
 {
    uint8_t buffer[32];
-   int64_t stream_size;
-   const int toc_sector = track->pregap_sectors + 16;
+   const int toc_sector = 16;
 
    /* MODE information is normally found in the CUE sheet, but we can try to determine it from the raw data.
     *
@@ -28,7 +27,7 @@ static void cdfs_determine_sector_size(cdfs_track_t* track)
     */
 
    /* The boot record or primary volume descriptor is always at sector 16 and will contain a "CD001" marker */
-   intfstream_seek(track->stream, toc_sector * 2352, SEEK_SET);
+   intfstream_seek(track->stream, toc_sector * 2352 + track->first_sector_offset, SEEK_SET);
    if (intfstream_read(track->stream, buffer, sizeof(buffer)) < sizeof(buffer))
       return;
 
@@ -59,34 +58,12 @@ static void cdfs_determine_sector_size(cdfs_track_t* track)
          track->stream_sector_size = 2352;
          track->stream_sector_header_size = 16;
       }
-      else
-      {
-         /* no recognizable header - attempt to determine sector size from stream size */
-         stream_size = intfstream_get_size(track->stream);
-
-         if ((stream_size % 2352) == 0)
-         {
-            /* audio tracks use all 2352 bytes without a header */
-            track->stream_sector_size = 2352;
-         }
-         else if ((stream_size % 2048) == 0)
-         {
-            /* cooked tracks eliminate all header/footer data */
-            track->stream_sector_size = 2048;
-         }
-         else if ((stream_size % 2336) == 0)
-         {
-            /* MODE 2 format without 16-byte sync data */
-            track->stream_sector_size = 2336;
-            track->stream_sector_header_size = 8;
-         }
-      }
    }
 }
 
 static void cdfs_seek_track_sector(cdfs_track_t* track, unsigned int sector)
 {
-   intfstream_seek(track->stream, (sector + track->pregap_sectors) * track->stream_sector_size + track->stream_sector_header_size, SEEK_SET);
+   intfstream_seek(track->stream, sector * track->stream_sector_size + track->stream_sector_header_size + track->first_sector_offset, SEEK_SET);
 }
 
 void cdfs_seek_sector(cdfs_file_t* file, unsigned int sector)
@@ -155,8 +132,7 @@ static int cdfs_find_file(cdfs_file_t* file, const char* path)
          strncasecmp((const char*)(tmp + 33), path, path_length) == 0)
       {
          /* the file size is in bytes 10-13 of the record */
-         if (!slash)
-            file->size = tmp[10] | (tmp[11] << 8) | (tmp[12] << 16) | (tmp[13] << 24);
+         file->size = tmp[10] | (tmp[11] << 8) | (tmp[12] << 16) | (tmp[13] << 24);
 
          /* the file contents are in the sector identified in bytes 2-4 of the record */
          sector = tmp[2] | (tmp[3] << 8) | (tmp[4] << 16);
@@ -342,7 +318,7 @@ static void cdfs_skip_spaces(const char** ptr)
       ++(*ptr);
 }
 
-static cdfs_track_t* cdfs_wrap_stream(intfstream_t* stream, unsigned pregap_sectors)
+static cdfs_track_t* cdfs_wrap_stream(intfstream_t* stream, unsigned first_sector_offset)
 {
    cdfs_track_t* track;
 
@@ -351,7 +327,7 @@ static cdfs_track_t* cdfs_wrap_stream(intfstream_t* stream, unsigned pregap_sect
 
    track = (cdfs_track_t*)calloc(1, sizeof(*track));
    track->stream = stream;
-   track->pregap_sectors = pregap_sectors;
+   track->first_sector_offset = first_sector_offset;
    cdfs_determine_sector_size(track);
    return track;
 }
@@ -363,11 +339,15 @@ static cdfs_track_t* cdfs_open_cue_track(const char* path, unsigned int track_in
    int found_track                          = 0;
    char current_track_path[PATH_MAX_LENGTH] = {0};
    char track_path[PATH_MAX_LENGTH]         = {0};
-   unsigned int pregap_sectors              = 0;
+   unsigned int sector_size                 = 0;
+   unsigned int previous_sector_size        = 0;
+   unsigned int previous_index_sector_offset= 0;
+   unsigned int track_offset                = 0;
    intfstream_t *cue_stream                 = intfstream_open_file(path, RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
    int64_t stream_size                      = intfstream_get_size(cue_stream);
    char *cue_contents                       = (char*)malloc(stream_size + 1);
-    
+   cdfs_track_t* track                      = NULL;
+
    if (!cue_contents)
    {
       intfstream_close(cue_stream);
@@ -410,6 +390,10 @@ static cdfs_track_t* cdfs_open_cue_track(const char* path, unsigned int track_in
             memcpy(current_track_path, file, file_end - file);
             current_track_path[file_end - file] = '\0';
          }
+
+         previous_sector_size = 0;
+         previous_index_sector_offset = 0;
+         track_offset = 0;
       }
       else if (!strncasecmp(line, "TRACK", 5))
       {
@@ -419,58 +403,60 @@ static cdfs_track_t* cdfs_open_cue_track(const char* path, unsigned int track_in
          cdfs_skip_spaces(&track);
 
          sscanf(track, "%d", &track_number);
+         while (*track && *track != ' ' && *track != '\n')
+            ++track;
 
-         if (track_index)
+         previous_sector_size = sector_size;
+
+         cdfs_skip_spaces(&track);
+
+         if (!strncasecmp(track, "MODE", 4))
          {
-            if (track_index == track_number)
+            /* track_index = 0 means find the first data track */
+            if (!track_index || track_index == track_number)
                found_track = track_number;
+
+            sector_size = atoi(track + 6);
          }
-         else /* track_index = 0 means find the first data track */
+         else
          {
-            while (track[0] && track[0] != ' ' && track[0] != '\t')
-               track++;
-
-            if (track[0])
-            {
-               cdfs_skip_spaces(&track);
-
-               if (!strncasecmp(track, "MODE", 4))
-                  found_track = track_number;
-            }
+            /* assume AUDIO */
+            sector_size = 2352;
          }
       }
-      else if (found_track && !strncasecmp(line, "INDEX", 5))
+      else if (!strncasecmp(line, "INDEX", 5))
       {
+         unsigned min = 0, sec = 0, frame = 0;
+         unsigned index_number = 0;
+         unsigned sector_offset;
          const char *index = line + 5;
+
+         cdfs_skip_spaces(&index);
+         sscanf(index, "%u", &index_number);
+         while (*index && *index != ' ' && *index != '\n')
+            ++index;
          cdfs_skip_spaces(&index);
 
-         if (index[0])
+         sscanf(index, "%u:%u:%u", &min, &sec, &frame);
+         sector_offset = ((min * 60) + sec) * 75 + frame;
+         sector_offset -= previous_index_sector_offset;
+         track_offset += sector_offset * previous_sector_size;
+         previous_sector_size = sector_size;
+         previous_index_sector_offset += sector_offset;
+
+         if (found_track && index_number == 1)
          {
-            unsigned index_number = 0;
-            sscanf(index, "%u", &index_number);
-
-            if (index_number == 1)
+            if (strstr(current_track_path, "/") || strstr(current_track_path, "\\"))
             {
-               unsigned min = 0, sec = 0, frame = 0;
-               const char* ptr = index;
-               while (*ptr && *ptr != ' ' && *ptr != '\n')
-                  ++ptr;
-               cdfs_skip_spaces(&ptr);
-               sscanf(ptr, "%u:%u:%u", &min, &sec, &frame);
-               pregap_sectors = ((min * 60) + sec) * 75 + frame;
-
-               if (strstr(current_track_path, "/") || strstr(current_track_path, "\\"))
-               {
-                  strncpy(track_path, current_track_path, sizeof(track_path));
-               }
-               else
-               {
-                  fill_pathname_basedir(track_path, path, sizeof(track_path));
-                  strlcat(track_path, current_track_path, sizeof(track_path));
-               }
-
-               break;
+               strncpy(track_path, current_track_path, sizeof(track_path));
             }
+            else
+            {
+               fill_pathname_basedir(track_path, path, sizeof(track_path));
+               strlcat(track_path, current_track_path, sizeof(track_path));
+            }
+
+            break;
          }
       }
    }
@@ -480,7 +466,18 @@ static cdfs_track_t* cdfs_open_cue_track(const char* path, unsigned int track_in
    if (string_is_empty(track_path))
       return NULL;
 
-   return cdfs_wrap_stream(intfstream_open_file(track_path, RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE), pregap_sectors);
+   track = cdfs_wrap_stream(intfstream_open_file(track_path, RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE), track_offset);
+   if (track && track->stream_sector_size == 0)
+   {
+      track->stream_sector_size = sector_size;
+
+      if (sector_size == 2352)
+         track->stream_sector_header_size = 16;
+      else if (sector_size == 2336)
+         track->stream_sector_header_size = 8;
+   }
+
+   return track;
 }
 
 #ifdef HAVE_CHD
@@ -488,19 +485,23 @@ static cdfs_track_t* cdfs_open_chd_track(const char* path, int32_t track_index)
 {
    intfstream_t* intf_stream;
    cdfs_track_t* track;
-   unsigned int pregap_sectors;
 
    intf_stream = intfstream_open_chd_track(path, RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE, track_index);
    if (!intf_stream)
       return NULL;
 
-   pregap_sectors = intfstream_get_chd_pregap(intf_stream);
+   track = cdfs_wrap_stream(intf_stream, intfstream_get_offset_to_start(intf_stream));
 
-   track = cdfs_wrap_stream(intf_stream, pregap_sectors);
+   if (track && track->stream_sector_header_size == 0)
+   {
+      track->stream_sector_size = intfstream_get_frame_size(intf_stream);
 
-   /* CHD removes the markers from the header, so we can't detect the header size, just assume its 16 bytes */
-   if (track->stream_sector_header_size == 0)
-      track->stream_sector_header_size = 16;
+      if (track->stream_sector_size == 2352)
+         track->stream_sector_header_size = 16;
+      else if (track->stream_sector_size == 2336)
+         track->stream_sector_header_size = 8;
+   }
+
    return track;
 }
 #endif

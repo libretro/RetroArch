@@ -254,9 +254,8 @@ chdstream_t *chdstream_open(const char *path, int32_t track)
    stream->chd             = chd;
    stream->frames_per_hunk = hd->hunkbytes / hd->unitbytes;
    stream->track_frame     = meta.frame_offset;
-   stream->track_start     = (size_t) pregap * stream->frame_size;
-   stream->track_end       = stream->track_start +
-      (size_t) meta.frames * stream->frame_size;
+   stream->track_start     = (size_t)pregap * stream->frame_size;
+   stream->track_end       = stream->track_start + (size_t)meta.frames * stream->frame_size;
    stream->offset          = 0;
    stream->hunknum         = -1;
 
@@ -426,10 +425,10 @@ int64_t chdstream_seek(chdstream_t *stream, int64_t offset, int whence)
 
 ssize_t chdstream_get_size(chdstream_t *stream)
 {
-   return stream->track_end;
+   return stream->track_end - stream->track_start;
 }
 
-uint32_t chdstream_get_pregap(chdstream_t *stream)
+uint32_t chdstream_get_track_start(chdstream_t *stream)
 {
    metadata_t meta;
    uint32_t frame_offset = 0;
@@ -438,10 +437,15 @@ uint32_t chdstream_get_pregap(chdstream_t *stream)
    for (i = 0; chdstream_get_meta(stream->chd, i, &meta); ++i)
    {
       if (stream->track_frame == frame_offset)
-         return meta.pregap;
+         return meta.pregap * stream->frame_size;
 
       frame_offset += meta.frames + meta.extra;
    }
 
    return 0;
+}
+
+uint32_t chdstream_get_frame_size(chdstream_t *stream)
+{
+   return stream->frame_size;
 }

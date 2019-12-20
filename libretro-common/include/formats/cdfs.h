@@ -36,7 +36,7 @@ typedef struct cdfs_track_t
    intfstream_t* stream;
    unsigned int stream_sector_size;
    unsigned int stream_sector_header_size;
-   unsigned int pregap_sectors;
+   unsigned int first_sector_offset;
 } cdfs_track_t;
 
 typedef struct cdfs_file_t
