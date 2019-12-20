@@ -8375,6 +8375,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         MENU_ENUM_LABEL_NO_NETWORKS_FOUND,
                         0, 0, 0);
                   break;
+               case DISPLAYLIST_NETPLAY_ROOM_LIST:
+                  break;
                default:
                   menu_entries_append_enum(info->list,
                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_SETTINGS_FOUND),
