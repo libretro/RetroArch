@@ -9612,6 +9612,8 @@ static bool setting_append_list(
             (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
             (*list)[list_info->index - 1].get_string_representation =
                &setting_get_string_representation_uint_aspect_ratio_index;
+            (*list)[list_info->index - 1].action_left = setting_uint_action_left_with_refresh;
+            (*list)[list_info->index - 1].action_right = setting_uint_action_right_with_refresh;
 
             CONFIG_FLOAT(
                   list, list_info,

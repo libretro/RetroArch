@@ -5723,54 +5723,67 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
          }
          break;
       case DISPLAYLIST_VIDEO_SCALING_SETTINGS_LIST:
-         if (menu_displaylist_parse_settings_enum(list,
-                  MENU_ENUM_LABEL_VIDEO_SCALE_INTEGER,
-                  PARSE_ONLY_BOOL, false) == 0)
-            count++;
-         if (menu_displaylist_parse_settings_enum(list,
-                  MENU_ENUM_LABEL_VIDEO_ASPECT_RATIO_INDEX,
-                  PARSE_ONLY_UINT, false) == 0)
-            count++;
-         if (menu_displaylist_parse_settings_enum(list,
-                  MENU_ENUM_LABEL_VIDEO_ASPECT_RATIO,
-                  PARSE_ONLY_FLOAT, false) == 0)
-            count++;
-         if (menu_displaylist_parse_settings_enum(list,
-                  MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_X,
-                  PARSE_ONLY_INT, false) == 0)
-            count++;
-         if (menu_displaylist_parse_settings_enum(list,
-                  MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_Y,
-                  PARSE_ONLY_INT, false) == 0)
-            count++;
-         if (menu_displaylist_parse_settings_enum(list,
-                  MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH,
-                  PARSE_ONLY_UINT, false) == 0)
-            count++;
-         if (menu_displaylist_parse_settings_enum(list,
-                  MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
-                  PARSE_ONLY_UINT, false) == 0)
-            count++;
-         if (menu_displaylist_parse_settings_enum(list,
-                  MENU_ENUM_LABEL_VIDEO_VI_WIDTH,
-                  PARSE_ONLY_UINT, false) == 0)
-            count++;
-         if (menu_displaylist_parse_settings_enum(list,
-                  MENU_ENUM_LABEL_VIDEO_VFILTER,
-                  PARSE_ONLY_BOOL, false) == 0)
-            count++;
-         if (menu_displaylist_parse_settings_enum(list,
-                  MENU_ENUM_LABEL_VIDEO_CROP_OVERSCAN,
-                  PARSE_ONLY_BOOL, false) == 0)
-            count++;
-         if (menu_displaylist_parse_settings_enum(list,
-                  MENU_ENUM_LABEL_VIDEO_OVERSCAN_CORRECTION_TOP,
-                  PARSE_ONLY_UINT, false) == 0)
-            count++;
-         if (menu_displaylist_parse_settings_enum(list,
-                  MENU_ENUM_LABEL_VIDEO_OVERSCAN_CORRECTION_BOTTOM,
-                  PARSE_ONLY_UINT, false) == 0)
-            count++;
+         {
+            settings_t *settings      = config_get_ptr();
+            if (menu_displaylist_parse_settings_enum(list,
+                     MENU_ENUM_LABEL_VIDEO_SCALE_INTEGER,
+                     PARSE_ONLY_BOOL, false) == 0)
+               count++;
+            if (menu_displaylist_parse_settings_enum(list,
+                     MENU_ENUM_LABEL_VIDEO_ASPECT_RATIO_INDEX,
+                     PARSE_ONLY_UINT, false) == 0)
+               count++;
+            switch (settings->uints.video_aspect_ratio_idx)
+            {
+               case ASPECT_RATIO_CONFIG:
+                  if (menu_displaylist_parse_settings_enum(list,
+                           MENU_ENUM_LABEL_VIDEO_ASPECT_RATIO,
+                           PARSE_ONLY_FLOAT, false) == 0)
+                     count++;
+                  break;
+               case ASPECT_RATIO_CUSTOM:
+                  if (menu_displaylist_parse_settings_enum(list,
+                           MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_X,
+                           PARSE_ONLY_INT, false) == 0)
+                     count++;
+                  if (menu_displaylist_parse_settings_enum(list,
+                           MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_Y,
+                           PARSE_ONLY_INT, false) == 0)
+                     count++;
+                  if (menu_displaylist_parse_settings_enum(list,
+                           MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH,
+                           PARSE_ONLY_UINT, false) == 0)
+                     count++;
+                  if (menu_displaylist_parse_settings_enum(list,
+                           MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
+                           PARSE_ONLY_UINT, false) == 0)
+                     count++;
+                  break;
+               default:
+                  break;
+            }
+
+            if (menu_displaylist_parse_settings_enum(list,
+                     MENU_ENUM_LABEL_VIDEO_VI_WIDTH,
+                     PARSE_ONLY_UINT, false) == 0)
+               count++;
+            if (menu_displaylist_parse_settings_enum(list,
+                     MENU_ENUM_LABEL_VIDEO_VFILTER,
+                     PARSE_ONLY_BOOL, false) == 0)
+               count++;
+            if (menu_displaylist_parse_settings_enum(list,
+                     MENU_ENUM_LABEL_VIDEO_CROP_OVERSCAN,
+                     PARSE_ONLY_BOOL, false) == 0)
+               count++;
+            if (menu_displaylist_parse_settings_enum(list,
+                     MENU_ENUM_LABEL_VIDEO_OVERSCAN_CORRECTION_TOP,
+                     PARSE_ONLY_UINT, false) == 0)
+               count++;
+            if (menu_displaylist_parse_settings_enum(list,
+                     MENU_ENUM_LABEL_VIDEO_OVERSCAN_CORRECTION_BOTTOM,
+                     PARSE_ONLY_UINT, false) == 0)
+               count++;
+         }
          break;
       case DISPLAYLIST_CRT_SWITCHRES_SETTINGS_LIST:
          {
