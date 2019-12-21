@@ -4746,13 +4746,30 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
          break;
       case DISPLAYLIST_ACCESSIBILITY_SETTINGS_LIST:
          {
+            settings_t      *settings      = config_get_ptr();
             menu_displaylist_build_info_selective_t build_list[] = {
-               {MENU_ENUM_LABEL_ACCESSIBILITY_ENABLED,                                                 PARSE_ONLY_BOOL, true  },
-               {MENU_ENUM_LABEL_ACCESSIBILITY_NARRATOR_SPEECH_SPEED,                               PARSE_ONLY_UINT, true  },
+               {MENU_ENUM_LABEL_ACCESSIBILITY_ENABLED,                                             PARSE_ONLY_BOOL, true  },
+               {MENU_ENUM_LABEL_ACCESSIBILITY_NARRATOR_SPEECH_SPEED,                               PARSE_ONLY_UINT, false  },
             };
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
             {
+               switch (build_list[i].enum_idx)
+               {
+                  case MENU_ENUM_LABEL_ACCESSIBILITY_NARRATOR_SPEECH_SPEED:
+                     if (settings->bools.accessibility_enable)
+                        build_list[i].checked = true;
+                     break;
+                  default:
+                     break;
+               }
+            }
+
+            for (i = 0; i < ARRAY_SIZE(build_list); i++)
+            {
+               if (!build_list[i].checked && !include_everything)
+                  continue;
+
                if (menu_displaylist_parse_settings_enum(list,
                         build_list[i].enum_idx,  build_list[i].parse_type,
                         false) == 0)
