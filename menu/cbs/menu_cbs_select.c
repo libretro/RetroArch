@@ -37,7 +37,7 @@
 #endif
 
 static int action_select_default(const char *path, const char *label, unsigned type,
-      size_t idx)
+      size_t idx, size_t entry_idx)
 {
    menu_entry_t entry;
    int ret                    = 0;
@@ -111,46 +111,46 @@ static int action_select_default(const char *path, const char *label, unsigned t
 }
 
 static int action_select_path_use_directory(const char *path,
-      const char *label, unsigned type, size_t idx)
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    return action_ok_path_use_directory(path, label, type, idx, 0 /* unused */);
 }
 
 static int action_select_core_setting(const char *path, const char *label, unsigned type,
-      size_t idx)
+      size_t idx, size_t entry_idx)
 {
    return action_ok_core_option_dropdown_list(path, label, type, idx, 0);
 }
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 static int shader_action_parameter_select(const char *path, const char *label, unsigned type,
-      size_t idx)
+      size_t idx, size_t entry_idx)
 {
    return shader_action_parameter_right(type, label, true);
 }
 
 static int shader_action_parameter_preset_select(const char *path, const char *label, unsigned type,
-      size_t idx)
+      size_t idx, size_t entry_idx)
 {
    return shader_action_parameter_right(type, label, true);
 }
 #endif
 
 static int action_select_cheat(const char *path, const char *label, unsigned type,
-      size_t idx)
+      size_t idx, size_t entry_idx)
 {
    return action_right_cheat(type, label, true);
 }
 
 static int action_select_input_desc(const char *path, const char *label, unsigned type,
-      size_t idx)
+      size_t idx, size_t entry_idx)
 {
    return action_right_input_desc(type, label, true);
 }
 
 static int action_select_input_desc_kbd(const char *path,
       const char *label, unsigned type,
-   size_t idx)
+      size_t idx, size_t entry_idx)
 {
    return action_right_input_desc_kbd(type, label, true);
 }
@@ -158,7 +158,7 @@ static int action_select_input_desc_kbd(const char *path,
 #ifdef HAVE_NETWORKING
 static int action_select_netplay_connect_room(const char *path,
       const char *label, unsigned type,
-      size_t idx)
+      size_t idx, size_t entry_idx)
 {
    char tmp_hostname[4115];
 
