@@ -5750,14 +5750,17 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
                      count++;
                   break;
                case ASPECT_RATIO_CUSTOM:
-                  if (menu_displaylist_parse_settings_enum(list,
-                           MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_X,
-                           PARSE_ONLY_INT, false) == 0)
-                     count++;
-                  if (menu_displaylist_parse_settings_enum(list,
-                           MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_Y,
-                           PARSE_ONLY_INT, false) == 0)
-                     count++;
+                  if (!settings->bools.video_scale_integer)
+                  {
+                     if (menu_displaylist_parse_settings_enum(list,
+                              MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_X,
+                              PARSE_ONLY_INT, false) == 0)
+                        count++;
+                     if (menu_displaylist_parse_settings_enum(list,
+                              MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_Y,
+                              PARSE_ONLY_INT, false) == 0)
+                        count++;
+                  }
                   if (menu_displaylist_parse_settings_enum(list,
                            MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH,
                            PARSE_ONLY_UINT, false) == 0)
