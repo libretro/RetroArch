@@ -9642,7 +9642,6 @@ static bool setting_append_list(
                   list_info,
                   CMD_EVENT_VIDEO_SET_ASPECT_RATIO);
             menu_settings_list_current_add_range(list, list_info, 0.1, 16.0, 0.01, true, false);
-            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
 
             CONFIG_INT(
                   list, list_info,
