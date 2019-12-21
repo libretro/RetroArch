@@ -111,7 +111,7 @@ QWidget *ViewsPage::widget()
       unsigned tabs_begin   = 0;
       unsigned status_begin = 0;
       file_list_t *list     = (file_list_t*)calloc(1, sizeof(*list));
-      menu_displaylist_build_list(list, DISPLAYLIST_MENU_VIEWS_SETTINGS_LIST);
+      menu_displaylist_build_list(list, DISPLAYLIST_MENU_VIEWS_SETTINGS_LIST, true);
 
       for (i = 0; i < list->size; i++)
       {
@@ -160,7 +160,7 @@ QWidget *ViewsPage::widget()
    {
       unsigned i;
       file_list_t *list = (file_list_t*)calloc(1, sizeof(*list));
-      menu_displaylist_build_list(list, DISPLAYLIST_SETTINGS_VIEWS_SETTINGS_LIST);
+      menu_displaylist_build_list(list, DISPLAYLIST_SETTINGS_VIEWS_SETTINGS_LIST, true);
 
       for (i = 0; i < list->size; i++)
       {
@@ -221,7 +221,7 @@ QWidget *AppearancePage::widget()
    file_list_t           *list = (file_list_t*)calloc(1, sizeof(*list));
 
    menu_displaylist_build_list(
-         list, DISPLAYLIST_MENU_SETTINGS_LIST);
+         list, DISPLAYLIST_MENU_SETTINGS_LIST, true);
 
    /* TODO/FIXME - we haven't yet figured out how to 
     * put a radio button setting next to another radio 

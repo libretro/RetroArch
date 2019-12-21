@@ -42,7 +42,7 @@ QWidget *InputPage::widget()
    {
       unsigned i;
       file_list_t *list     = (file_list_t*)calloc(1, sizeof(*list));
-      menu_displaylist_build_list(list, DISPLAYLIST_INPUT_SETTINGS_LIST);
+      menu_displaylist_build_list(list, DISPLAYLIST_INPUT_SETTINGS_LIST, true);
 
       for (i = 0; i < list->size; i++)
       {
@@ -77,7 +77,7 @@ QWidget *HotkeyBindsPage::widget()
    FormLayout *mainLayout  = new FormLayout;
    file_list_t *list       = (file_list_t*)calloc(1, sizeof(*list));
 
-   menu_displaylist_build_list(list, DISPLAYLIST_INPUT_HOTKEY_BINDS_LIST);
+   menu_displaylist_build_list(list, DISPLAYLIST_INPUT_HOTKEY_BINDS_LIST, true);
 
    for (i = 0; i < list->size; i++)
    {

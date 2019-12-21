@@ -31,7 +31,7 @@ QWidget *AchievementsPage::widget()
    {
       unsigned i;
       file_list_t *list = (file_list_t*)calloc(1, sizeof(*list));
-      menu_displaylist_build_list(list, DISPLAYLIST_RETRO_ACHIEVEMENTS_SETTINGS_LIST);
+      menu_displaylist_build_list(list, DISPLAYLIST_RETRO_ACHIEVEMENTS_SETTINGS_LIST, true);
 
       for (i = 0; i < list->size; i++)
       {
