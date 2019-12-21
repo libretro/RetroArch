@@ -9255,6 +9255,8 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler,
                   SD_FLAG_NONE);
+            (*list)[list_info->index - 1].action_left = &setting_bool_action_left_with_refresh;
+            (*list)[list_info->index - 1].action_right = &setting_bool_action_right_with_refresh;
 
             CONFIG_UINT(
                   list, list_info,
