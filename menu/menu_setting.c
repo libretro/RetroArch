@@ -12495,6 +12495,10 @@ static bool setting_append_list(
             (*list)[list_info->index - 1].action_left   = NULL;
             (*list)[list_info->index - 1].action_right  = NULL;
             (*list)[list_info->index - 1].action_start  = NULL;
+#else
+            (*list)[list_info->index - 1].action_ok     = setting_bool_action_left_with_refresh;
+            (*list)[list_info->index - 1].action_left   = setting_bool_action_left_with_refresh;
+            (*list)[list_info->index - 1].action_right  = setting_bool_action_right_with_refresh;
 #endif
 
             CONFIG_UINT(
