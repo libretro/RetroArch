@@ -8448,8 +8448,9 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler,
                   SD_FLAG_ADVANCED);
-            (*list)[list_info->index - 1].action_left = &setting_bool_action_left_with_refresh;
-            (*list)[list_info->index - 1].action_right = &setting_bool_action_right_with_refresh;
+            (*list)[list_info->index - 1].action_ok     = &setting_bool_action_left_with_refresh;
+            (*list)[list_info->index - 1].action_left   = &setting_bool_action_left_with_refresh;
+            (*list)[list_info->index - 1].action_right  = &setting_bool_action_right_with_refresh;
 
             CONFIG_BOOL(
                   list, list_info,
@@ -8732,8 +8733,9 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler,
                SD_FLAG_CMD_APPLY_AUTO);
-         (*list)[list_info->index - 1].action_left = &setting_bool_action_left_with_refresh;
-         (*list)[list_info->index - 1].action_right = &setting_bool_action_right_with_refresh;
+         (*list)[list_info->index - 1].action_ok     = &setting_bool_action_left_with_refresh;
+         (*list)[list_info->index - 1].action_left   = &setting_bool_action_left_with_refresh;
+         (*list)[list_info->index - 1].action_right  = &setting_bool_action_right_with_refresh;
          menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_REWIND_TOGGLE);
 
             CONFIG_UINT(
@@ -9257,8 +9259,9 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler,
                   SD_FLAG_NONE);
-            (*list)[list_info->index - 1].action_left = &setting_bool_action_left_with_refresh;
-            (*list)[list_info->index - 1].action_right = &setting_bool_action_right_with_refresh;
+            (*list)[list_info->index - 1].action_ok     = &setting_bool_action_left_with_refresh;
+            (*list)[list_info->index - 1].action_left   = &setting_bool_action_left_with_refresh;
+            (*list)[list_info->index - 1].action_right  = &setting_bool_action_right_with_refresh;
 
             CONFIG_UINT(
                   list, list_info,
@@ -9618,8 +9621,9 @@ static bool setting_append_list(
             (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
             (*list)[list_info->index - 1].get_string_representation =
                &setting_get_string_representation_uint_aspect_ratio_index;
-            (*list)[list_info->index - 1].action_left = setting_uint_action_left_with_refresh;
-            (*list)[list_info->index - 1].action_right = setting_uint_action_right_with_refresh;
+            (*list)[list_info->index - 1].action_ok     = setting_uint_action_left_with_refresh;
+            (*list)[list_info->index - 1].action_left   = setting_uint_action_left_with_refresh;
+            (*list)[list_info->index - 1].action_right  = setting_uint_action_right_with_refresh;
 
             CONFIG_FLOAT(
                   list, list_info,
@@ -9865,8 +9869,9 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler,
                   SD_FLAG_NONE);
-            (*list)[list_info->index - 1].action_left = setting_bool_action_left_with_refresh;
-            (*list)[list_info->index - 1].action_right = setting_bool_action_right_with_refresh;
+            (*list)[list_info->index - 1].action_ok     = setting_bool_action_left_with_refresh;
+            (*list)[list_info->index - 1].action_left   = setting_bool_action_left_with_refresh;
+            (*list)[list_info->index - 1].action_right  = setting_bool_action_right_with_refresh;
             menu_settings_list_current_add_cmd(
                   list,
                   list_info,
@@ -10023,8 +10028,9 @@ static bool setting_append_list(
                   general_read_handler,
                   SD_FLAG_NONE
                   );
-            (*list)[list_info->index - 1].action_left = setting_bool_action_left_with_refresh;
-            (*list)[list_info->index - 1].action_right = setting_bool_action_right_with_refresh;
+            (*list)[list_info->index - 1].action_ok     = setting_bool_action_left_with_refresh;
+            (*list)[list_info->index - 1].action_left   = setting_bool_action_left_with_refresh;
+            (*list)[list_info->index - 1].action_right  = setting_bool_action_right_with_refresh;
 
             CONFIG_UINT(
                   list, list_info,
@@ -10074,8 +10080,9 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler,
                   SD_FLAG_NONE);
-            (*list)[list_info->index - 1].action_left = setting_bool_action_left_with_refresh;
-            (*list)[list_info->index - 1].action_right = setting_bool_action_right_with_refresh;
+            (*list)[list_info->index - 1].action_ok     = setting_bool_action_left_with_refresh;
+            (*list)[list_info->index - 1].action_left   = setting_bool_action_left_with_refresh;
+            (*list)[list_info->index - 1].action_right  = setting_bool_action_right_with_refresh;
         
             CONFIG_UINT(
                   list, list_info,
@@ -11542,8 +11549,9 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_NONE
                );
-         (*list)[list_info->index - 1].action_left = setting_bool_action_left_with_refresh;
-         (*list)[list_info->index - 1].action_right = setting_bool_action_right_with_refresh;
+         (*list)[list_info->index - 1].action_ok     = setting_bool_action_left_with_refresh;
+         (*list)[list_info->index - 1].action_left   = setting_bool_action_left_with_refresh;
+         (*list)[list_info->index - 1].action_right  = setting_bool_action_right_with_refresh;
 
          CONFIG_UINT(
             list, list_info,
@@ -11658,6 +11666,9 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_NONE
                );
+         (*list)[list_info->index - 1].action_ok     = &setting_bool_action_left_with_refresh;
+         (*list)[list_info->index - 1].action_left   = &setting_bool_action_left_with_refresh;
+         (*list)[list_info->index - 1].action_right  = &setting_bool_action_right_with_refresh;
 
          CONFIG_PATH(
                list, list_info,
@@ -11784,8 +11795,9 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_NONE
                );
-         (*list)[list_info->index - 1].action_left = &setting_bool_action_left_with_refresh;
-         (*list)[list_info->index - 1].action_right = &setting_bool_action_right_with_refresh;
+         (*list)[list_info->index - 1].action_ok     = &setting_bool_action_left_with_refresh;
+         (*list)[list_info->index - 1].action_left   = &setting_bool_action_left_with_refresh;
+         (*list)[list_info->index - 1].action_right  = &setting_bool_action_right_with_refresh;
 
          CONFIG_UINT(
                list, list_info,
@@ -11870,8 +11882,9 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_NONE
                );
-         (*list)[list_info->index - 1].action_left = &setting_bool_action_left_with_refresh;
-         (*list)[list_info->index - 1].action_right = &setting_bool_action_right_with_refresh;
+         (*list)[list_info->index - 1].action_ok     = &setting_bool_action_left_with_refresh;
+         (*list)[list_info->index - 1].action_left   = &setting_bool_action_left_with_refresh;
+         (*list)[list_info->index - 1].action_right  = &setting_bool_action_right_with_refresh;
          (*list)[list_info->index - 1].change_handler = overlay_enable_toggle_change_handler;
 
          CONFIG_BOOL(
@@ -15189,8 +15202,9 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_NONE
                );
-         (*list)[list_info->index - 1].action_left = setting_bool_action_left_with_refresh;
-         (*list)[list_info->index - 1].action_right = setting_bool_action_right_with_refresh;
+         (*list)[list_info->index - 1].action_ok     = setting_bool_action_left_with_refresh;
+         (*list)[list_info->index - 1].action_left   = setting_bool_action_left_with_refresh;
+         (*list)[list_info->index - 1].action_right  = setting_bool_action_right_with_refresh;
 
          CONFIG_BOOL(
                list, list_info,
