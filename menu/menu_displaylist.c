@@ -5248,10 +5248,15 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
                      MENU_ENUM_LABEL_NETWORK_CMD_ENABLE,
                      PARSE_ONLY_BOOL, false) != -1)
                count++;
-            if (menu_displaylist_parse_settings_enum(list,
-                     MENU_ENUM_LABEL_NETWORK_CMD_PORT,
-                     PARSE_ONLY_UINT, false) != -1)
-               count++;
+
+            if (settings->bools.network_cmd_enable)
+            {
+               if (menu_displaylist_parse_settings_enum(list,
+                        MENU_ENUM_LABEL_NETWORK_CMD_PORT,
+                        PARSE_ONLY_UINT, false) != -1)
+                  count++;
+            }
+
             if (menu_displaylist_parse_settings_enum(list,
                      MENU_ENUM_LABEL_NETWORK_REMOTE_ENABLE,
                      PARSE_ONLY_BOOL, false) != -1)
