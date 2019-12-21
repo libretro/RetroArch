@@ -11870,6 +11870,8 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_NONE
                );
+         (*list)[list_info->index - 1].action_left = &setting_bool_action_left_with_refresh;
+         (*list)[list_info->index - 1].action_right = &setting_bool_action_right_with_refresh;
          (*list)[list_info->index - 1].change_handler = overlay_enable_toggle_change_handler;
 
          CONFIG_BOOL(

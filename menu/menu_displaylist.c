@@ -5935,21 +5935,43 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
          break;
       case DISPLAYLIST_ONSCREEN_OVERLAY_SETTINGS_LIST:
          {
-            menu_displaylist_build_info_t build_list[] = {
-               {MENU_ENUM_LABEL_INPUT_OVERLAY_ENABLE,                   PARSE_ONLY_BOOL  },
-               {MENU_ENUM_LABEL_INPUT_OVERLAY_HIDE_IN_MENU,             PARSE_ONLY_BOOL  },
-               {MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS,     PARSE_ONLY_BOOL  },
-               {MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS_PORT,PARSE_ONLY_BOOL  },
-               {MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_MOUSE_CURSOR,        PARSE_ONLY_BOOL  },
-               {MENU_ENUM_LABEL_INPUT_OVERLAY_AUTO_ROTATE,              PARSE_ONLY_BOOL  },
-               {MENU_ENUM_LABEL_OVERLAY_PRESET,                         PARSE_ONLY_PATH  },
-               {MENU_ENUM_LABEL_OVERLAY_OPACITY,                        PARSE_ONLY_FLOAT },
-               {MENU_ENUM_LABEL_OVERLAY_SCALE,                          PARSE_ONLY_FLOAT },
+            settings_t      *settings     = config_get_ptr();
+            menu_displaylist_build_info_selective_t build_list[] = {
+               {MENU_ENUM_LABEL_INPUT_OVERLAY_ENABLE,                   PARSE_ONLY_BOOL,  true  },
+               {MENU_ENUM_LABEL_INPUT_OVERLAY_HIDE_IN_MENU,             PARSE_ONLY_BOOL,  false  },
+               {MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS,     PARSE_ONLY_BOOL,  false  },
+               {MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS_PORT,PARSE_ONLY_BOOL,  false  },
+               {MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_MOUSE_CURSOR,        PARSE_ONLY_BOOL,  false  },
+               {MENU_ENUM_LABEL_INPUT_OVERLAY_AUTO_ROTATE,              PARSE_ONLY_BOOL,  false  },
+               {MENU_ENUM_LABEL_OVERLAY_PRESET,                         PARSE_ONLY_PATH,  false  },
+               {MENU_ENUM_LABEL_OVERLAY_OPACITY,                        PARSE_ONLY_FLOAT, false },
+               {MENU_ENUM_LABEL_OVERLAY_SCALE,                          PARSE_ONLY_FLOAT, false },
             };
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
             {
-               if (menu_displaylist_parse_settings_enum(list,
+               switch (build_list[i].enum_idx)
+               {
+                  case MENU_ENUM_LABEL_INPUT_OVERLAY_HIDE_IN_MENU:
+                  case MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS:
+                  case MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS_PORT:
+                  case MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_MOUSE_CURSOR:
+                  case MENU_ENUM_LABEL_INPUT_OVERLAY_AUTO_ROTATE:
+                  case MENU_ENUM_LABEL_OVERLAY_PRESET:
+                  case MENU_ENUM_LABEL_OVERLAY_OPACITY:
+                  case MENU_ENUM_LABEL_OVERLAY_SCALE:
+                     if (settings->bools.input_overlay_enable)
+                        build_list[i].checked = true;
+                     break;
+                  default:
+                     break;
+               }
+            }
+
+            for (i = 0; i < ARRAY_SIZE(build_list); i++)
+            {
+               if (build_list[i].checked &&
+                     menu_displaylist_parse_settings_enum(list,
                         build_list[i].enum_idx,  build_list[i].parse_type,
                         false) == 0)
                   count++;
