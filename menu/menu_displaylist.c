@@ -9884,6 +9884,33 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             info->need_push          = true;
          }
          break;
+      case DISPLAYLIST_DROPDOWN_LIST_VIDEO_SHADER_NUM_PASSES:
+         {
+            unsigned i;
+            struct video_shader *shader = menu_shader_get();
+            unsigned pass_count         = shader ? shader->passes : 0;
+
+            menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+
+            for (i = 0; i < GFX_MAX_SHADERS+1; i++)
+            {
+               char val_d[256];
+               snprintf(val_d, sizeof(val_d), "%d", i);
+               if (menu_entries_append_enum(info->list,
+                        val_d,
+                        val_d,
+                        MENU_ENUM_LABEL_NO_ITEMS,
+                        MENU_SETTING_DROPDOWN_ITEM_VIDEO_SHADER_NUM_PASS, i, 0))
+                  count++;
+
+               if (i == pass_count)
+                  menu_entries_set_checked(info->list, i, true);
+            }
+
+            info->need_refresh       = true;
+            info->need_push          = true;
+         }
+         break;
       case DISPLAYLIST_DROPDOWN_LIST_SPECIAL:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
 

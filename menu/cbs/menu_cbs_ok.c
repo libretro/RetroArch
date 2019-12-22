@@ -170,6 +170,8 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
 {
    switch (lbl)
    {
+      case ACTION_OK_DL_DROPDOWN_BOX_LIST_VIDEO_SHADER_NUM_PASSES:
+         return MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_VIDEO_SHADER_NUM_PASSES;
       case ACTION_OK_DL_DROPDOWN_BOX_LIST:
          return MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST;
       case ACTION_OK_DL_DROPDOWN_BOX_LIST_SPECIAL:
@@ -426,6 +428,15 @@ int generic_action_ok_displaylist_push(const char *path,
          info_label         = msg_hash_to_str(
                MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_SPECIAL);
          info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_SPECIAL;
+         dl_type            = DISPLAYLIST_GENERIC;
+         break;
+      case ACTION_OK_DL_DROPDOWN_BOX_LIST_VIDEO_SHADER_NUM_PASSES:
+         info.type          = type;
+         info.directory_ptr = idx;
+         info_path          = path;
+         info_label         = msg_hash_to_str(
+               MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_VIDEO_SHADER_NUM_PASSES);
+         info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_VIDEO_SHADER_NUM_PASSES;
          dl_type            = DISPLAYLIST_GENERIC;
          break;
       case ACTION_OK_DL_DROPDOWN_BOX_LIST_RESOLUTION:
@@ -5462,6 +5473,25 @@ int action_cb_push_dropdown_item_resolution(const char *path,
    return 0;
 }
 
+static int action_ok_push_dropdown_item_video_shader_num_pass(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   bool refresh                = false;
+   struct video_shader *shader = menu_shader_get();
+   unsigned pass_count         = shader ? shader->passes : 0;
+
+   if (!shader)
+      return menu_cbs_exit();
+
+   shader->passes             = idx;
+
+   video_shader_resolve_parameters(NULL, shader);
+
+   menu_shader_set_modified(true);
+
+   return action_cancel_pop_default(NULL, NULL, 0, 0);
+}
+
 static int action_ok_push_dropdown_item_resolution(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -5852,6 +5882,13 @@ static int action_ok_manual_content_scan_core_name(const char *path,
 {
    return generic_dropdown_box_list(idx, 
          ACTION_OK_DL_DROPDOWN_BOX_LIST_MANUAL_CONTENT_SCAN_CORE_NAME);
+}
+
+static int action_ok_video_shader_num_passes_dropdown_box_list(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return generic_dropdown_box_list(idx, 
+         ACTION_OK_DL_DROPDOWN_BOX_LIST_VIDEO_SHADER_NUM_PASSES);
 }
 
 static int action_ok_manual_content_scan_start(const char *path,
@@ -6860,6 +6897,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_CORE_NAME:
             BIND_ACTION_OK(cbs, action_ok_manual_content_scan_core_name);
             break;
+         case MENU_ENUM_LABEL_VIDEO_SHADER_NUM_PASSES:
+            BIND_ACTION_OK(cbs, action_ok_video_shader_num_passes_dropdown_box_list);
+            break;
          case MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_DAT_FILE:
             BIND_ACTION_OK(cbs, action_ok_manual_content_scan_dat_file);
             break;
@@ -7110,6 +7150,9 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             break;
          case MENU_SETTING_DROPDOWN_ITEM_RESOLUTION:
             BIND_ACTION_OK(cbs, action_ok_push_dropdown_item_resolution);
+            break;
+         case MENU_SETTING_DROPDOWN_ITEM_VIDEO_SHADER_NUM_PASS:
+            BIND_ACTION_OK(cbs, action_ok_push_dropdown_item_video_shader_num_pass);
             break;
          case MENU_SETTING_DROPDOWN_ITEM_PLAYLIST_DEFAULT_CORE:
             BIND_ACTION_OK(cbs, action_ok_push_dropdown_item_playlist_default_core);
