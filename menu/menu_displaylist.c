@@ -4310,10 +4310,6 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
                count++;
 
             if (menu_displaylist_parse_settings_enum(list,
-                     MENU_ENUM_LABEL_VIDEO_FORCE_SRGB_DISABLE,
-                     PARSE_ONLY_BOOL, false) == 0)
-               count++;
-            if (menu_displaylist_parse_settings_enum(list,
                      MENU_ENUM_LABEL_VIDEO_THREADED,
                      PARSE_ONLY_BOOL, false) == 0)
                count++;
@@ -5798,6 +5794,10 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
          if (menu_displaylist_parse_settings_enum(list,
                   MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_POLLED,
                   PARSE_ONLY_FLOAT, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_VIDEO_FORCE_SRGB_DISABLE,
+                  PARSE_ONLY_BOOL, false) == 0)
             count++;
          break;
       case DISPLAYLIST_VIDEO_SYNCHRONIZATION_SETTINGS_LIST:
