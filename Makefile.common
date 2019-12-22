@@ -1733,9 +1733,9 @@ OBJ += $(LIBRETRO_COMM_DIR)/formats/bmp/rbmp_encode.o \
        $(LIBRETRO_COMM_DIR)/formats/json/jsonsax_full.o \
        $(LIBRETRO_COMM_DIR)/formats/image_transfer.o
 
-# Easter Egg
-ifeq ($(HAVE_EASTEREGG),1)
-  DEFINES += -DHAVE_EASTEREGG
+# Gong embedded core
+ifeq ($(HAVE_GONG),1)
+  DEFINES += -DHAVE_GONG
   OBJ += cores/libretro-gong/gong.o
 endif
 

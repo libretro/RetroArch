@@ -3558,6 +3558,14 @@ bool menu_displaylist_process(menu_displaylist_info_t *info)
             MENU_ENUM_LABEL_START_NET_RETROPAD,
             MENU_SETTING_ACTION, 0, 0);
 #endif
+
+#ifdef HAVE_GONG
+      menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_START_GONG),
+            msg_hash_to_str(MENU_ENUM_LABEL_START_GONG),
+            MENU_ENUM_LABEL_START_GONG,
+            MENU_SETTING_ACTION, 0, 0);
+#endif
    }
 
    if (!string_is_empty(new_entry))

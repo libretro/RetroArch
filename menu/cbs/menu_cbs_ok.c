@@ -3272,6 +3272,7 @@ static int (funcname)(const char *path, const char *label, unsigned type, size_t
 }
 
 default_action_ok_start_builtin_core(action_ok_start_net_retropad_core, CORE_TYPE_NETRETROPAD)
+default_action_ok_start_builtin_core(action_ok_start_gong_core, CORE_TYPE_GONG)
 default_action_ok_start_builtin_core(action_ok_start_video_processor_core, CORE_TYPE_VIDEO_PROCESSOR)
 
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
@@ -6243,6 +6244,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_START_NET_RETROPAD:
             BIND_ACTION_OK(cbs, action_ok_start_net_retropad_core);
+            break;
+         case MENU_ENUM_LABEL_START_GONG:
+            BIND_ACTION_OK(cbs, action_ok_start_gong_core);
             break;
          case MENU_ENUM_LABEL_START_VIDEO_PROCESSOR:
             BIND_ACTION_OK(cbs, action_ok_start_video_processor_core);

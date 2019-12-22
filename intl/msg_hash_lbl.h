@@ -1243,6 +1243,8 @@ MSG_HASH(MENU_ENUM_LABEL_START_CORE,
       "start_core")
 MSG_HASH(MENU_ENUM_LABEL_START_NET_RETROPAD,
       "menu_start_net_retropad")
+MSG_HASH(MENU_ENUM_LABEL_START_GONG,
+      "menu_start_gong")
 MSG_HASH(MENU_ENUM_LABEL_START_VIDEO_PROCESSOR,
       "menu_start_video_processor")
 MSG_HASH(MENU_ENUM_LABEL_STATE_SLOT,

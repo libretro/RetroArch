@@ -10276,3 +10276,7 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_INPUT_HAPTIC_FEEDBACK_SETTINGS,
     "Change haptic feedback and vibration settings."
     )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_START_GONG,
+    "Start Gong"
+    )
