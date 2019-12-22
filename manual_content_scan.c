@@ -550,13 +550,15 @@ bool manual_content_scan_get_menu_core_name(const char **core_name)
  * > Returned string list must be free()'d */
 struct string_list *manual_content_scan_get_menu_system_name_list(void)
 {
-   settings_t *settings          = config_get_ptr();
-   struct string_list *name_list = string_list_new();
    union string_list_elem_attr attr;
+#ifdef HAVE_LIBRETRODB
+   settings_t *settings          = config_get_ptr();
+#endif
+   struct string_list *name_list = string_list_new();
 
    /* Sanity check */
    if (!name_list)
-      goto error;
+      return NULL;
 
    attr.i = 0;
 
@@ -571,7 +573,6 @@ struct string_list *manual_content_scan_get_menu_system_name_list(void)
       goto error;
 
 #ifdef HAVE_LIBRETRODB
-
    /* If platform has database support, get names
     * of all installed database files */
    if (settings)

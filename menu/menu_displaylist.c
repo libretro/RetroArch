@@ -9885,6 +9885,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          }
          break;
       case DISPLAYLIST_DROPDOWN_LIST_VIDEO_SHADER_NUM_PASSES:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
          {
             unsigned i;
             struct video_shader *shader = menu_shader_get();
@@ -9910,6 +9911,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             info->need_refresh       = true;
             info->need_push          = true;
          }
+#endif
          break;
       case DISPLAYLIST_DROPDOWN_LIST_SPECIAL:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);

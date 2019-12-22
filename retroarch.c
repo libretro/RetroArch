@@ -2691,15 +2691,14 @@ static void retroarch_set_runtime_shader_preset(const char *arg)
    else
       runtime_shader_preset[0] = '\0';
 }
+#endif
 
 static void retroarch_unset_runtime_shader_preset(void)
 {
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    runtime_shader_preset[0] = '\0';
-}
-#else
-static void retroarch_set_runtime_shader_preset(const char *arg) {}
-static void retroarch_unset_runtime_shader_preset(void) {}
 #endif
+}
 
 #define MEASURE_FRAME_TIME_SAMPLES_COUNT (2 * 1024)
 
@@ -29347,19 +29346,18 @@ bool accessibility_speak_linux(
 
 bool accessibility_speak_priority(const char* speak_text, int priority)
 {
-   const char* voice = NULL;
    RARCH_LOG("Spoke: %s\n", speak_text);
 
    if (is_accessibility_enabled())
    {
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__) && !defined(EMSCRIPTEN)
-      voice = get_user_language_iso639_1(true);
+      const char *voice = get_user_language_iso639_1(true);
       return accessibility_speak_windows(speak_text, voice, priority);
 #elif defined(__APPLE__) && defined(_IS_OSX) && !defined(EMSCRIPTEN)
-      voice = get_user_language_iso639_1(false);
+      const char *voice = get_user_language_iso639_1(false);
       return accessibility_speak_macos(speak_text, voice, priority);
 #elif (defined(__linux__) || defined(__unix__)) && !defined(EMSCRIPTEN)
-      voice = get_user_language_iso639_1(true);
+      const char *voice = get_user_language_iso639_1(true);
       return accessibility_speak_linux(speak_text, voice, priority);
 #endif
       RARCH_LOG("Platform not supported for accessibility.\n");
@@ -29375,6 +29373,7 @@ bool accessibility_speak_priority(const char* speak_text, int priority)
 #endif
       */
    }
+
    return true;
 }
 
