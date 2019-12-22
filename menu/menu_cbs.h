@@ -196,6 +196,7 @@ int action_cancel_pop_default(const char *path,
 int action_refresh_default(file_list_t *list, file_list_t *menu_list);
 
 int shader_action_parameter_right(unsigned type, const char *label, bool wraparound);
+int shader_action_preset_parameter_right(unsigned type, const char *label, bool wraparound);
 
 int action_cancel_pop_with_new_pos(const char *path,
       const char *label, unsigned type, size_t idx, size_t new_idx);

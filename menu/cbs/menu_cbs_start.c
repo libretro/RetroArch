@@ -166,13 +166,12 @@ static int action_start_input_desc(
 }
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-static int action_start_shader_action_parameter(
-      const char *path, const char *label,
-      unsigned type, size_t idx, size_t entry_idx)
+static int action_start_shader_action_parameter_generic(
+      unsigned type, unsigned offset)
 {
    video_shader_ctx_t shader_info;
    struct video_shader_parameter *param = NULL;
-   unsigned parameter = type - MENU_SETTINGS_SHADER_PARAMETER_0;
+   unsigned parameter                   = type - offset;
 
    video_shader_driver_get_current_shader(&shader_info);
 
@@ -185,6 +184,20 @@ static int action_start_shader_action_parameter(
    param->current = MIN(MAX(param->minimum, param->current), param->maximum);
 
    return menu_shader_manager_clear_parameter(menu_shader_get(), parameter);
+}
+
+static int action_start_shader_action_parameter(
+      const char *path, const char *label,
+      unsigned type, size_t idx, size_t entry_idx)
+{
+   return action_start_shader_action_parameter_generic(type, MENU_SETTINGS_SHADER_PARAMETER_0);
+}
+
+static int action_start_shader_action_preset_parameter(
+      const char *path, const char *label,
+      unsigned type, size_t idx, size_t entry_idx)
+{
+   return action_start_shader_action_parameter_generic(type, MENU_SETTINGS_SHADER_PRESET_PARAMETER_0);
 }
 
 static int action_start_shader_pass(
@@ -510,7 +523,7 @@ static int menu_cbs_init_bind_start_compare_type(menu_file_list_cbs_t *cbs,
    else if (type >= MENU_SETTINGS_SHADER_PRESET_PARAMETER_0
          && type <= MENU_SETTINGS_SHADER_PRESET_PARAMETER_LAST)
    {
-      BIND_ACTION_START(cbs, action_start_shader_action_parameter);
+      BIND_ACTION_START(cbs, action_start_shader_action_preset_parameter);
    }
    else
 #endif

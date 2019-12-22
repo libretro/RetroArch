@@ -370,13 +370,14 @@ static void menu_action_setting_disp_set_label_shader_default_filter(
       strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NEAREST), len);
 }
 
-static void menu_action_setting_disp_set_label_shader_parameter(
+static void menu_action_setting_disp_set_label_shader_parameter_internal(
       file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
       const char *label,
       char *s, size_t len,
       const char *path,
-      char *s2, size_t len2)
+      char *s2, size_t len2,
+      unsigned offset)
 {
    video_shader_ctx_t shader_info;
    const struct video_shader_parameter *param = NULL;
@@ -390,14 +391,25 @@ static void menu_action_setting_disp_set_label_shader_parameter(
    if (!shader_info.data)
       return;
 
-   param = &shader_info.data->parameters[type -
-      MENU_SETTINGS_SHADER_PARAMETER_0];
+   param = &shader_info.data->parameters[type - offset];
 
    if (!param)
       return;
 
    snprintf(s, len, "%.2f [%.2f %.2f]",
          param->current, param->minimum, param->maximum);
+}
+
+static void menu_action_setting_disp_set_label_shader_parameter(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *s, size_t len,
+      const char *path,
+      char *s2, size_t len2)
+{
+   menu_action_setting_disp_set_label_shader_parameter_internal(list, w, type, i,
+         label, s, len, path, s2, len2, MENU_SETTINGS_SHADER_PARAMETER_0);
 }
 
 static void menu_action_setting_disp_set_label_shader_preset_parameter(
@@ -408,18 +420,8 @@ static void menu_action_setting_disp_set_label_shader_preset_parameter(
       const char *path,
       char *s2, size_t len2)
 {
-   struct video_shader *shader          = menu_shader_get();
-   struct video_shader_parameter *param = shader ?
-      &shader->parameters[type - MENU_SETTINGS_SHADER_PRESET_PARAMETER_0]
-      : NULL;
-
-   *s = '\0';
-   *w = 19;
-   strlcpy(s2, path, len2);
-
-   if (param)
-      snprintf(s, len, "%.2f [%.2f %.2f]",
-            param->current, param->minimum, param->maximum);
+   menu_action_setting_disp_set_label_shader_parameter_internal(list, w, type, i,
+         label, s, len, path, s2, len2, MENU_SETTINGS_SHADER_PRESET_PARAMETER_0);
 }
 
 static void menu_action_setting_disp_set_label_shader_scale_pass(
