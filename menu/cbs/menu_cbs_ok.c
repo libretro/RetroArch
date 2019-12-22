@@ -5476,6 +5476,7 @@ int action_cb_push_dropdown_item_resolution(const char *path,
 static int action_ok_push_dropdown_item_video_shader_num_pass(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    bool refresh                = false;
    struct video_shader *shader = menu_shader_get();
    unsigned pass_count         = shader ? shader->passes : 0;
@@ -5490,6 +5491,9 @@ static int action_ok_push_dropdown_item_video_shader_num_pass(const char *path,
    menu_shader_set_modified(true);
 
    return action_cancel_pop_default(NULL, NULL, 0, 0);
+#else
+   return 0;
+#endif
 }
 
 static int action_ok_push_dropdown_item_resolution(const char *path,
