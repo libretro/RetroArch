@@ -6963,8 +6963,7 @@ static bool setting_append_list_input_player_options(
    const char *temp_value                     = msg_hash_to_str
       ((enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_USER_1_BINDS + user));
 
-   snprintf(buffer[user],    sizeof(buffer[user]),
-         "%s %u", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT), user + 1);
+   strlcat(buffer[user], "", sizeof(buffer[user]));
 
    strlcpy(group_lbl[user], temp_value, sizeof(group_lbl[user]));
 
@@ -7036,25 +7035,25 @@ static bool setting_append_list_input_player_options(
                "%s %u", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_SPLIT_JOYCON), user + 1);
 
       snprintf(label[user], sizeof(label[user]),
-               "%s %u %s", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT), user + 1,
+               "%s", 
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_INDEX));
       snprintf(label_type[user], sizeof(label_type[user]),
-               "%s %u %s", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT), user + 1,
+               "%s",
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_TYPE));
       snprintf(label_analog[user], sizeof(label_analog[user]),
-               "%s %u %s", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT), user + 1,
+               "%s",
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_ADC_TYPE));
       snprintf(label_bind_all[user], sizeof(label_bind_all[user]),
-               "%s %u %s", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT), user + 1,
+               "%s",
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_BIND_ALL));
       snprintf(label_bind_defaults[user], sizeof(label_bind_defaults[user]),
-               "%s %u %s", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT), user + 1,
+               "%s", 
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_BIND_DEFAULT_ALL));
       snprintf(label_bind_all_save_autoconfig[user], sizeof(label_bind_all_save_autoconfig[user]),
-               "%s %u %s", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT), user + 1,
+               "%s", 
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_SAVE_AUTOCONFIG));
       snprintf(label_mouse_index[user], sizeof(label_mouse_index[user]),
-               "%s %u %s", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT), user + 1,
+               "%s", 
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_INDEX));
 
       CONFIG_UINT_ALT(
