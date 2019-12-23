@@ -122,20 +122,6 @@ static int action_select_core_setting(const char *path, const char *label, unsig
    return action_ok_core_option_dropdown_list(path, label, type, idx, 0);
 }
 
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-static int shader_action_parameter_select(const char *path, const char *label, unsigned type,
-      size_t idx, size_t entry_idx)
-{
-   return shader_action_parameter_right(type, label, true);
-}
-
-static int shader_action_parameter_preset_select(const char *path, const char *label, unsigned type,
-      size_t idx, size_t entry_idx)
-{
-   return shader_action_preset_parameter_right(type, label, true);
-}
-#endif
-
 static int action_select_cheat(const char *path, const char *label, unsigned type,
       size_t idx, size_t entry_idx)
 {
@@ -197,18 +183,6 @@ static int menu_cbs_init_bind_select_compare_type(
    {
       BIND_ACTION_SELECT(cbs, action_select_cheat);
    }
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-   else if (type >= MENU_SETTINGS_SHADER_PARAMETER_0
-         && type <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
-   {
-      BIND_ACTION_SELECT(cbs, shader_action_parameter_select);
-   }
-   else if (type >= MENU_SETTINGS_SHADER_PRESET_PARAMETER_0
-         && type <= MENU_SETTINGS_SHADER_PRESET_PARAMETER_LAST)
-   {
-      BIND_ACTION_SELECT(cbs, shader_action_parameter_preset_select);
-   }
-#endif
    else if (type >= MENU_SETTINGS_INPUT_DESC_BEGIN
          && type <= MENU_SETTINGS_INPUT_DESC_END)
    {

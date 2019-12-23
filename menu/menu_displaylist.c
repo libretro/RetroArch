@@ -105,6 +105,9 @@ static char new_lbl_entry[4096]         = {0};
 static char new_entry[4096]             = {0};
 static enum msg_hash_enums new_type     = MSG_UNKNOWN;
 
+/* TODO/FIXME - global state */
+static unsigned current_entry_type      = 0;
+
 #define menu_displaylist_parse_settings_enum(list, label, parse_type, add_empty_entry) menu_displaylist_parse_settings_internal_enum(list, parse_type, add_empty_entry, menu_setting_find_enum(label), label, true)
 
 #define menu_displaylist_parse_settings(list, label, parse_type, add_empty_entry, entry_type) menu_displaylist_parse_settings_internal_enum(list, parse_type, add_empty_entry, menu_setting_find(label), entry_type, false)
@@ -7011,6 +7014,52 @@ static bool history_needs_navigation_clear(menu_handle_t *menu, playlist_t *play
 }
 #endif
 
+static unsigned menu_displaylist_build_shader_parameter(
+      menu_displaylist_info_t *info,
+      file_list_t *list,
+      unsigned entry_type, unsigned _offset,
+      unsigned setting_type)
+{
+   video_shader_ctx_t shader_info;
+   float current_value                  = 0.0f;
+   unsigned count                       = 0;
+   float    min                         = 0;
+   float    max                         = 0;
+   unsigned i                           = 0;
+   struct video_shader *shader          = menu_shader_get();
+   struct video_shader_parameter *param = NULL;
+   unsigned offset                      = entry_type - _offset;
+
+   video_shader_driver_get_current_shader(&shader_info);
+
+   param = &shader_info.data->parameters[offset];
+   if (!param)
+      return 0;
+
+   min                         = param->minimum;
+   max                         = param->maximum;
+   current_value               = min;
+
+   for (i = 0; current_value < (max + 0.0001f); i++)
+   {
+      char val_s[16], val_d[16];
+      snprintf(val_s, sizeof(val_s), "%.2f", current_value);
+      snprintf(val_d, sizeof(val_d), "%d", i);
+
+      if (menu_entries_append_enum(list,
+               val_s,
+               val_d,
+               MENU_ENUM_LABEL_NO_ITEMS,
+               setting_type,
+               i, current_entry_type))
+         count++;
+
+      current_value += param->step;
+   }
+
+   return count;
+}
+
 bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
       menu_displaylist_info_t *info)
 {
@@ -7023,19 +7072,14 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
    int ret                       = 0;
    menu_handle_t *menu           = menu_driver_get_ptr();
 
-   /* TODO/FIXME
-    * We cannot perform a:
-    *    if (!menu)
-    *       return false;
-    * sanity check here, because menu_displaylist_ctl() can be
-    * called by menu driver init functions - i.e. we can legally
-    * reach this point before the menu has been created... */
 
    disp_list.info = info;
    disp_list.type = type;
 
    if (menu_driver_push_list(&disp_list))
       return true;
+
+   current_entry_type            = info->type;
 
    switch (type)
    {
@@ -8509,6 +8553,27 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
          info->need_push    = true;
 
+         break;
+      case DISPLAYLIST_DROPDOWN_LIST_VIDEO_SHADER_PARAMETER:
+         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+
+         count = menu_displaylist_build_shader_parameter(
+               info, info->list, current_entry_type,
+               MENU_SETTINGS_SHADER_PARAMETER_0,
+               MENU_SETTING_DROPDOWN_ITEM_VIDEO_SHADER_PARAM);
+
+         info->need_refresh = true;
+         info->need_push    = true;
+         break;
+      case DISPLAYLIST_DROPDOWN_LIST_VIDEO_SHADER_PRESET_PARAMETER:
+         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+
+         count = menu_displaylist_build_shader_parameter(
+               info, info->list, current_entry_type,
+               MENU_SETTINGS_SHADER_PRESET_PARAMETER_0,
+               MENU_SETTING_DROPDOWN_ITEM_VIDEO_SHADER_PRESET_PARAM);
+         info->need_refresh = true;
+         info->need_push    = true;
          break;
       case DISPLAYLIST_SAVING_SETTINGS_LIST:
       case DISPLAYLIST_DRIVER_SETTINGS_LIST:
