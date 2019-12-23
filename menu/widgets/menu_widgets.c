@@ -384,6 +384,7 @@ void menu_widgets_msg_queue_push(
          if (task)
          {
             msg_widget->msg                  = strdup(title);
+            msg_widget->msg_new              = strdup(title);
             msg_widget->msg_len              = (unsigned)strlen(title);
 
             msg_widget->task_error           = task->error;
@@ -449,7 +450,7 @@ void menu_widgets_msg_queue_push(
             msg_widget->expiration_timer_started = false;
          }
 
-         if (task->title != msg_widget->task_title_ptr)
+         if (!string_is_equal(task->title, msg_widget->msg_new))
          {
             unsigned len         = (unsigned)strlen(task->title);
             unsigned new_width   = font_driver_get_message_width(font_regular, task->title, len, msg_queue_text_scale_factor);
@@ -608,6 +609,9 @@ static void menu_widgets_msg_queue_free(menu_widget_msg_t *msg, bool touch_list)
    /* Free it */
    if (msg->msg)
       free(msg->msg);
+
+   if (msg->msg_new)
+      free(msg->msg_new);
 
    /* Remove it from the list */
    if (touch_list)

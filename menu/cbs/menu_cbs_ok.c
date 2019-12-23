@@ -3797,11 +3797,10 @@ static void cb_decompressed(retro_task_t *task,
 
       switch (type_hash)
       {
-         case CB_CORE_UPDATER_DOWNLOAD:
-            generic_action_ok_command(CMD_EVENT_CORE_INFO_INIT);
-            break;
          case CB_UPDATE_ASSETS:
             generic_action_ok_command(CMD_EVENT_REINIT);
+            break;
+         default:
             break;
       }
    }
@@ -3819,6 +3818,37 @@ static void cb_decompressed(retro_task_t *task,
    }
 }
 #endif
+
+static int action_ok_core_updater_list(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   core_updater_list_t *core_list = NULL;
+   bool refresh                   = true;
+
+   /* Get cached core updater list, initialising
+    * it if required */
+   core_list = core_updater_list_get_cached();
+
+   if (!core_list)
+   {
+      core_updater_list_init_cached(CORE_UPDATER_LIST_SIZE);
+      core_list = core_updater_list_get_cached();
+
+      if (!core_list)
+         return menu_cbs_exit();
+   }
+
+   /* Initial setup... */
+   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+   generic_action_ok_command(CMD_EVENT_NETWORK_INIT);
+
+   /* Push core list update task */
+   task_push_get_core_updater_list(core_list, false, true);
+
+   return generic_action_ok_displaylist_push(
+         path, NULL, label, type, idx, entry_idx,
+         ACTION_OK_DL_CORE_UPDATER_LIST);
+}
 
 static int generic_action_ok_network(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx,
@@ -3859,17 +3889,6 @@ static int generic_action_ok_network(const char *path,
          type_id2  = ACTION_OK_DL_CORE_CONTENT_LIST;
          callback  = cb_net_generic;
          suppress_msg = true;
-         break;
-      case MENU_ENUM_LABEL_CB_CORE_UPDATER_LIST:
-
-         if (string_is_empty(settings->paths.network_buildbot_url))
-            return menu_cbs_exit();
-
-         fill_pathname_join(url_path, settings->paths.network_buildbot_url,
-               ".index-extended", sizeof(url_path));
-         url_label = msg_hash_to_str(enum_idx);
-         type_id2  = ACTION_OK_DL_CORE_UPDATER_LIST;
-         callback  = cb_net_generic;
          break;
       case MENU_ENUM_LABEL_CB_THUMBNAILS_UPDATER_LIST:
          fill_pathname_join(url_path,
@@ -3919,7 +3938,6 @@ static int (funcname)(const char *path, const char *label, unsigned type, size_t
 
 default_action_ok_list(action_ok_core_content_list, MENU_ENUM_LABEL_CB_CORE_CONTENT_LIST)
 default_action_ok_list(action_ok_core_content_dirs_list, MENU_ENUM_LABEL_CB_CORE_CONTENT_DIRS_LIST)
-default_action_ok_list(action_ok_core_updater_list, MENU_ENUM_LABEL_CB_CORE_UPDATER_LIST)
 default_action_ok_list(action_ok_thumbnails_updater_list, MENU_ENUM_LABEL_CB_THUMBNAILS_UPDATER_LIST)
 default_action_ok_list(action_ok_lakka_list, MENU_ENUM_LABEL_CB_LAKKA_LIST)
 
@@ -3952,7 +3970,7 @@ void cb_generic_download(retro_task_t *task,
    settings_t              *settings     = config_get_ptr();
    http_transfer_data_t        *data     = (http_transfer_data_t*)task_data;
 
-   if (!data || !data->data | !transf)
+   if (!data || !data->data || !transf)
       goto finish;
 
    output_path[0] = '\0';
@@ -3964,9 +3982,6 @@ void cb_generic_download(retro_task_t *task,
    {
       case MENU_ENUM_LABEL_CB_CORE_THUMBNAILS_DOWNLOAD:
          dir_path = settings->paths.directory_thumbnails;
-         break;
-      case MENU_ENUM_LABEL_CB_CORE_UPDATER_DOWNLOAD:
-         dir_path = settings->paths.directory_libretro;
          break;
       case MENU_ENUM_LABEL_CB_CORE_CONTENT_DOWNLOAD:
          dir_path = settings->paths.directory_core_assets;
@@ -4094,27 +4109,22 @@ void cb_generic_download(retro_task_t *task,
 
    if (path_is_compressed_file(output_path))
    {
-      void *frontend_userdata = task->frontend_userdata;
-      task->frontend_userdata = NULL;
+      retro_task_t *decompress_task = NULL;
+      void *frontend_userdata       = task->frontend_userdata;
+      task->frontend_userdata       = NULL;
 
-      if (!task_push_decompress(output_path, dir_path,
-               NULL, NULL, NULL,
-               cb_decompressed, (void*)(uintptr_t)
-               msg_hash_calculate(msg_hash_to_str(transf->enum_idx)),
-               frontend_userdata))
+      decompress_task = (retro_task_t*)task_push_decompress(
+            output_path, dir_path,
+            NULL, NULL, NULL,
+            cb_decompressed, (void*)(uintptr_t)
+            msg_hash_calculate(msg_hash_to_str(transf->enum_idx)),
+            frontend_userdata, false);
+
+      if (!decompress_task)
       {
          err = msg_hash_to_str(MSG_DECOMPRESSION_FAILED);
          goto finish;
       }
-   }
-#else
-   switch (transf->enum_idx)
-   {
-      case MENU_ENUM_LABEL_CB_CORE_UPDATER_DOWNLOAD:
-         generic_action_ok_command(CMD_EVENT_CORE_INFO_INIT);
-         break;
-      default:
-         break;
    }
 #endif
 
@@ -4249,6 +4259,36 @@ static int action_ok_core_content_download(const char *path,
          MENU_ENUM_LABEL_CB_CORE_CONTENT_DOWNLOAD);
 }
 
+static int action_ok_core_updater_download(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+#ifdef HAVE_NETWORKING
+   core_updater_list_t *core_list = core_updater_list_get_cached();
+
+   if (!core_list)
+      return menu_cbs_exit();
+
+   task_push_core_updater_download(
+      core_list, path, false, true);
+
+#endif
+   return 0;
+}
+
+static int action_ok_update_installed_cores(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+#ifdef HAVE_NETWORKING
+   /* Ensure networking is initialised */
+   generic_action_ok_command(CMD_EVENT_NETWORK_INIT);
+
+   /* Push update task */
+   task_push_update_installed_cores();
+
+#endif
+   return 0;
+}
+
 #define default_action_ok_download(funcname, _id) \
 static int (funcname)(const char *path, const char *label, unsigned type, size_t idx, size_t entry_idx) \
 { \
@@ -4258,7 +4298,6 @@ static int (funcname)(const char *path, const char *label, unsigned type, size_t
 default_action_ok_download(action_ok_core_content_thumbnails, MENU_ENUM_LABEL_CB_CORE_THUMBNAILS_DOWNLOAD)
 default_action_ok_download(action_ok_thumbnails_updater_download, MENU_ENUM_LABEL_CB_THUMBNAILS_UPDATER_DOWNLOAD)
 default_action_ok_download(action_ok_download_url, MENU_ENUM_LABEL_CB_DOWNLOAD_URL)
-default_action_ok_download(action_ok_core_updater_download, MENU_ENUM_LABEL_CB_CORE_UPDATER_DOWNLOAD)
 default_action_ok_download(action_ok_lakka_download, MENU_ENUM_LABEL_CB_LAKKA_DOWNLOAD)
 default_action_ok_download(action_ok_update_assets, MENU_ENUM_LABEL_CB_UPDATE_ASSETS)
 default_action_ok_download(action_ok_update_core_info_files, MENU_ENUM_LABEL_CB_UPDATE_CORE_INFO_FILES)
@@ -6505,6 +6544,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_CORE_UPDATER_LIST:
             BIND_ACTION_OK(cbs, action_ok_core_updater_list);
+            break;
+         case MENU_ENUM_LABEL_UPDATE_INSTALLED_CORES:
+            BIND_ACTION_OK(cbs, action_ok_update_installed_cores);
             break;
          case MENU_ENUM_LABEL_THUMBNAILS_UPDATER_LIST:
             BIND_ACTION_OK(cbs, action_ok_thumbnails_updater_list);
