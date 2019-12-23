@@ -261,7 +261,7 @@ bool task_check_decompress(const char *source_file)
    return task_queue_find(&find_data);
 }
 
-bool task_push_decompress(
+void *task_push_decompress(
       const char *source_file,
       const char *target_dir,
       const char *target_file,
@@ -269,7 +269,8 @@ bool task_push_decompress(
       const char *valid_ext,
       retro_task_callback_t cb,
       void *user_data,
-      void *frontend_userdata)
+      void *frontend_userdata,
+      bool mute)
 {
    char tmp[PATH_MAX_LENGTH];
    const char *ext            = NULL;
@@ -283,7 +284,7 @@ bool task_push_decompress(
       RARCH_WARN(
             "[decompress] Empty or null source file or"
             " target directory arguments.\n");
-      return false;
+      return NULL;
    }
 
    ext = path_get_extension(source_file);
@@ -304,7 +305,7 @@ bool task_push_decompress(
             "[decompress] File '%s' does not exist"
             " or is not a compressed file.\n",
             source_file);
-      return false;
+      return NULL;
    }
 
    if (!valid_ext || !valid_ext[0])
@@ -315,7 +316,7 @@ bool task_push_decompress(
       RARCH_LOG(
             "[decompress] File '%s' already being decompressed.\n",
             source_file);
-      return false;
+      return NULL;
    }
 
    RARCH_LOG("[decompress] File '%s.\n", source_file);
@@ -323,14 +324,14 @@ bool task_push_decompress(
    s              = (decompress_state_t*)calloc(1, sizeof(*s));
 
    if (!s)
-      return false;
+      return NULL;
 
    t                   = (retro_task_t*)calloc(1, sizeof(*t));
 
    if (!t)
    {
       free(s);
-      return false;
+      return NULL;
    }
 
    s->source_file      = strdup(source_file);
@@ -365,8 +366,9 @@ bool task_push_decompress(
          path_basename(source_file));
 
    t->title            = strdup(tmp);
+   t->mute             = mute;
 
    task_queue_push(t);
 
-   return true;
+   return t;
 }

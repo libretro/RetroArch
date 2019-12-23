@@ -1084,6 +1084,10 @@ FRONTEND
 
 #include "../core_info.c"
 
+#if defined(HAVE_NETWORKING)
+#include "../core_updater_list.c"
+#endif
+
 /*============================================================
 UI
 ============================================================ */
@@ -1235,6 +1239,7 @@ DATA RUNLOOP
 #endif
 #if defined(HAVE_NETWORKING) && defined(HAVE_MENU)
 #include "../tasks/task_pl_thumbnail_download.c"
+#include "../tasks/task_core_updater.c"
 #endif
 
 /*============================================================

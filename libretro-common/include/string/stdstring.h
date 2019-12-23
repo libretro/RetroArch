@@ -141,6 +141,11 @@ void string_replace_all_chars(char *str, char find, char replace);
  * Returns 0 if string is invalid  */
 unsigned string_to_unsigned(const char *str);
 
+/* Converts hexadecimal string to unsigned integer.
+ * Handles optional leading '0x'.
+ * Returns 0 if string is invalid  */
+unsigned string_hex_to_unsigned(const char *str);
+
 RETRO_END_DECLS
 
 #endif

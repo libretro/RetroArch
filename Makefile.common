@@ -1760,6 +1760,7 @@ ifeq ($(HAVE_NETWORKING), 1)
           $(LIBRETRO_COMM_DIR)/net/net_http_parse.o \
           $(LIBRETRO_COMM_DIR)/net/net_socket.o \
           $(LIBRETRO_COMM_DIR)/net/net_natt.o \
+          core_updater_list.o \
           network/net_http_special.o \
           tasks/task_http.o \
           tasks/task_netplay_lan_scan.o \
@@ -1769,7 +1770,8 @@ ifeq ($(HAVE_NETWORKING), 1)
 
    ifeq ($(HAVE_MENU_COMMON), 1)
       OBJ += tasks/task_pl_thumbnail_download.o \
-				 menu/menu_networking.o
+             tasks/task_core_updater.o \
+             menu/menu_networking.o
    endif
 
    ifeq ($(HAVE_SSL), 1)

@@ -833,6 +833,54 @@ MSG_HASH(
     "Content Downloader"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_UPDATE_INSTALLED_CORES,
+    "Update Installed Cores"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_UPDATE_INSTALLED_CORES,
+    "Update all installed cores to the latest version available."
+    )
+MSG_HASH(
+    MSG_FETCHING_CORE_LIST,
+    "Fetching core list..."
+    )
+MSG_HASH(
+    MSG_CORE_LIST_FAILED,
+    "Failed to retrieve core list!"
+    )
+MSG_HASH(
+    MSG_LATEST_CORE_INSTALLED,
+    "Latest version already installed: "
+    )
+MSG_HASH(
+    MSG_UPDATING_CORE,
+    "Updating core: "
+    )
+MSG_HASH(
+    MSG_DOWNLOADING_CORE,
+    "Downloading core: "
+    )
+MSG_HASH(
+    MSG_EXTRACTING_CORE,
+    "Extracting core: "
+    )
+MSG_HASH(
+    MSG_CORE_INSTALLED,
+    "Core installed: "
+    )
+MSG_HASH(
+    MSG_SCANNING_CORES,
+    "Scanning cores..."
+    )
+MSG_HASH(
+    MSG_CHECKING_CORE,
+    "Checking core: "
+    )
+MSG_HASH(
+    MSG_ALL_CORES_UPDATED,
+    "All installed cores at latest version"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_SCALE_FACTOR,
     "Menu Scale Factor"
     )

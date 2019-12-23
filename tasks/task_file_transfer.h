@@ -74,6 +74,7 @@ typedef struct
 {
    enum msg_hash_enums enum_idx;
    char path[PATH_MAX_LENGTH];
+   void *user_data;
 } file_transfer_t;
 
 RETRO_END_DECLS
