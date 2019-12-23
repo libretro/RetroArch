@@ -7023,7 +7023,6 @@ static unsigned menu_displaylist_build_shader_parameter(
    float    min                         = 0;
    float    max                         = 0;
    unsigned i                           = 0;
-   struct video_shader *shader          = menu_shader_get();
    struct video_shader_parameter *param = NULL;
    unsigned offset                      = entry_type - _offset;
 
