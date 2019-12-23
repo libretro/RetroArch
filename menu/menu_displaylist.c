@@ -105,9 +105,6 @@ static char new_lbl_entry[4096]         = {0};
 static char new_entry[4096]             = {0};
 static enum msg_hash_enums new_type     = MSG_UNKNOWN;
 
-/* TODO/FIXME - global state */
-static unsigned current_entry_type      = 0;
-
 #define menu_displaylist_parse_settings_enum(list, label, parse_type, add_empty_entry) menu_displaylist_parse_settings_internal_enum(list, parse_type, add_empty_entry, menu_setting_find_enum(label), label, true)
 
 #define menu_displaylist_parse_settings(list, label, parse_type, add_empty_entry, entry_type) menu_displaylist_parse_settings_internal_enum(list, parse_type, add_empty_entry, menu_setting_find(label), entry_type, false)
@@ -7051,7 +7048,7 @@ static unsigned menu_displaylist_build_shader_parameter(
                val_d,
                MENU_ENUM_LABEL_NO_ITEMS,
                setting_type,
-               i, current_entry_type))
+               i, entry_type))
          count++;
 
       current_value += param->step;
@@ -7078,8 +7075,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
    if (menu_driver_push_list(&disp_list))
       return true;
-
-   current_entry_type            = info->type;
 
    switch (type)
    {
@@ -8558,7 +8553,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
 
          count = menu_displaylist_build_shader_parameter(
-               info, info->list, current_entry_type,
+               info, info->list, info->type,
                MENU_SETTINGS_SHADER_PARAMETER_0,
                MENU_SETTING_DROPDOWN_ITEM_VIDEO_SHADER_PARAM);
 
@@ -8569,7 +8564,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
 
          count = menu_displaylist_build_shader_parameter(
-               info, info->list, current_entry_type,
+               info, info->list, info->type,
                MENU_SETTINGS_SHADER_PRESET_PARAMETER_0,
                MENU_SETTING_DROPDOWN_ITEM_VIDEO_SHADER_PRESET_PARAM);
          info->need_refresh = true;
