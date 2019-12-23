@@ -18,9 +18,9 @@
     <AppxManifest Include="Package.appxmanifest" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="RetroArch-UWP_TemporaryKey.pfx" />
     <None Include="cores\$(Platform)\cores\*.dll" />
     <None Include="cores\$(Platform)\*.dll" />
+    <None Include="RetroArch-msvc2017-UWP_TemporaryKey.pfx" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\uwp\uwp_func.h">
