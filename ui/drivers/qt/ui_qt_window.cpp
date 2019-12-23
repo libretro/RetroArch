@@ -3023,6 +3023,7 @@ int MainWindow::onExtractArchive(QString path, QString extractionDir, QString te
    const char *dir               = dirArray.constData();
    struct string_list *file_list = file_archive_get_file_list(file, NULL);
    bool returnerr                = true;
+   retro_task_t *decompress_task = NULL;
 
    if (!file_list || file_list->size == 0)
    {
@@ -3079,9 +3080,12 @@ int MainWindow::onExtractArchive(QString path, QString extractionDir, QString te
    m_updateProgressDialog->setCancelButtonText(QString());
    m_updateProgressDialog->show();
 
-   if (!task_push_decompress(file, dir,
-            NULL, NULL, NULL,
-            cb, this, NULL))
+   decompress_task = (retro_task_t*)task_push_decompress(
+         file, dir,
+         NULL, NULL, NULL,
+         cb, this, NULL, false);
+
+   if (!decompress_task)
    {
       m_updateProgressDialog->cancel();
       return -1;
