@@ -6756,8 +6756,8 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
             settings_t      *settings     = config_get_ptr();
             menu_displaylist_build_info_selective_t build_list[] = {
                {MENU_ENUM_LABEL_LOG_VERBOSITY,         PARSE_ONLY_BOOL, true},
-               {MENU_ENUM_LABEL_FRONTEND_LOG_LEVEL,    PARSE_ONLY_UINT, true},
-               {MENU_ENUM_LABEL_LIBRETRO_LOG_LEVEL,    PARSE_ONLY_UINT, true},
+               {MENU_ENUM_LABEL_FRONTEND_LOG_LEVEL,    PARSE_ONLY_UINT, false},
+               {MENU_ENUM_LABEL_LIBRETRO_LOG_LEVEL,    PARSE_ONLY_UINT, false},
                {MENU_ENUM_LABEL_LOG_TO_FILE,           PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_LOG_TO_FILE_TIMESTAMP, PARSE_ONLY_BOOL, false},
                {MENU_ENUM_LABEL_PERFCNT_ENABLE,        PARSE_ONLY_BOOL, true},
@@ -6765,9 +6765,23 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
             {
-               if (settings->bools.log_to_file &&
-                     build_list[i].enum_idx == MENU_ENUM_LABEL_LOG_TO_FILE_TIMESTAMP)
-                  build_list[i].checked = true;
+               switch (build_list[i].enum_idx)
+               {
+                  case MENU_ENUM_LABEL_FRONTEND_LOG_LEVEL:
+                  case MENU_ENUM_LABEL_LIBRETRO_LOG_LEVEL:
+                     {
+                        bool *verbosity = verbosity_get_ptr();
+                        if (verbosity && *verbosity)
+                           build_list[i].checked = true;
+                     }
+                     break;
+                  case MENU_ENUM_LABEL_LOG_TO_FILE_TIMESTAMP:
+                     if (settings->bools.log_to_file)
+                        build_list[i].checked = true;
+                     break;
+                  default:
+                     break;
+               }
             }
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
