@@ -841,6 +841,54 @@ MSG_HASH(
     "Téléchargement de contenu"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_UPDATE_INSTALLED_CORES,
+    "Mettre à jour les cœurs installés"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_UPDATE_INSTALLED_CORES,
+    "Met à jour les cœurs installés vers la dernière version disponible."
+    )
+MSG_HASH(
+    MSG_FETCHING_CORE_LIST,
+    "Récupération de la liste des cœurs..."
+    )
+MSG_HASH(
+    MSG_CORE_LIST_FAILED,
+    "Échec de récupération de la liste des cœurs !"
+    )
+MSG_HASH(
+    MSG_LATEST_CORE_INSTALLED,
+    "Dernière version déjà installée : "
+    )
+MSG_HASH(
+    MSG_UPDATING_CORE,
+    "Mise à jour du cœur : "
+    )
+MSG_HASH(
+    MSG_DOWNLOADING_CORE,
+    "Téléchargement du cœur : "
+    )
+MSG_HASH(
+    MSG_EXTRACTING_CORE,
+    "Extraction du cœur : "
+    )
+MSG_HASH(
+    MSG_CORE_INSTALLED,
+    "Cœur installé : "
+    )
+MSG_HASH(
+    MSG_SCANNING_CORES,
+    "Analyse des cœurs..."
+    )
+MSG_HASH(
+    MSG_CHECKING_CORE,
+    "Vérification du cœur : "
+    )
+MSG_HASH(
+    MSG_ALL_CORES_UPDATED,
+    "Tous les cœurs installés sont à jour"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_SCALE_FACTOR,
     "Facteur de mise à l'échelle du menu"
     )
