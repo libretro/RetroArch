@@ -285,30 +285,6 @@ static int action_right_mainmenu(unsigned type, const char *label,
    return 0;
 }
 
-static int action_right_cheat_delete_all(unsigned type, const char *label,
-      bool wraparound)
-{
-   bool refresh = false ;
-   char msg[256];
-
-   if ( ++cheat_manager_state.delete_state >= 5 )
-   {
-      msg[0] = '\0';
-      cheat_manager_state.delete_state = 0 ;
-      cheat_manager_realloc(0, CHEAT_HANDLER_TYPE_EMU) ;
-      menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-      menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
-
-      strlcpy(msg,
-            msg_hash_to_str(MSG_CHEAT_DELETE_ALL_SUCCESS), sizeof(msg));
-      msg[sizeof(msg) - 1] = 0;
-
-      runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-   }
-
-   return 0;
-}
-
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 static int action_right_shader_scale_pass(unsigned type, const char *label,
       bool wraparound)
@@ -964,9 +940,6 @@ static int menu_cbs_init_bind_right_compare_label(menu_file_list_cbs_t *cbs,
             case MENU_ENUM_LABEL_SUBSYSTEM_LOAD:
             case MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM:
                BIND_ACTION_RIGHT(cbs, action_right_mainmenu);
-               break;
-            case MENU_ENUM_LABEL_CHEAT_DELETE_ALL:
-               BIND_ACTION_RIGHT(cbs, action_right_cheat_delete_all);
                break;
             case MENU_ENUM_LABEL_VIDEO_SHADER_SCALE_PASS:
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
