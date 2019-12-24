@@ -64,7 +64,8 @@ static int generic_shader_action_parameter_left(
    return 0;
 }
 
-static int shader_action_parameter_left(unsigned type, const char *label, bool wraparound)
+static int shader_action_parameter_left_internal(unsigned type, const char *label, bool wraparound,
+      unsigned offset)
 {
    video_shader_ctx_t shader_info;
    struct video_shader *shader          = menu_shader_get();
@@ -75,9 +76,8 @@ static int shader_action_parameter_left(unsigned type, const char *label, bool w
 
    video_shader_driver_get_current_shader(&shader_info);
 
-   param_prev = &shader_info.data->parameters[type - MENU_SETTINGS_SHADER_PARAMETER_0];
-   param_menu = shader ? &shader->parameters[type -
-      MENU_SETTINGS_SHADER_PARAMETER_0] : NULL;
+   param_prev = &shader_info.data->parameters[type - offset];
+   param_menu = shader ? &shader->parameters [type - offset] : NULL;
 
    if (!param_prev || !param_menu)
       return menu_cbs_exit();
@@ -88,6 +88,16 @@ static int shader_action_parameter_left(unsigned type, const char *label, bool w
    menu_shader_set_modified(true);
 
    return ret;
+}
+
+static int shader_action_parameter_left(unsigned type, const char *label, bool wraparound)
+{
+   return shader_action_parameter_left_internal(type, label, wraparound, MENU_SETTINGS_SHADER_PARAMETER_0);
+}
+
+static int shader_action_preset_parameter_left(unsigned type, const char *label, bool wraparound)
+{
+   return shader_action_parameter_left_internal(type, label, wraparound, MENU_SETTINGS_SHADER_PRESET_PARAMETER_0);
 }
 #endif
 
@@ -366,14 +376,6 @@ static int action_left_shader_num_passes(unsigned type, const char *label,
 
    menu_shader_set_modified(true);
 
-   return 0;
-}
-
-static int action_left_shader_watch_for_changes(unsigned type, const char *label,
-      bool wraparound)
-{
-   settings_t *settings = config_get_ptr();
-   settings->bools.video_shader_watch_files = !settings->bools.video_shader_watch_files;
    return 0;
 }
 #endif
@@ -804,11 +806,6 @@ static int menu_cbs_init_bind_left_compare_label(menu_file_list_cbs_t *cbs,
                BIND_ACTION_LEFT(cbs, action_left_shader_filter_default);
 #endif
                break;
-            case MENU_ENUM_LABEL_SHADER_WATCH_FOR_CHANGES:
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-               BIND_ACTION_LEFT(cbs, action_left_shader_watch_for_changes);
-#endif
-               break;
             case MENU_ENUM_LABEL_VIDEO_SHADER_NUM_PASSES:
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
                BIND_ACTION_LEFT(cbs, action_left_shader_num_passes);
@@ -920,7 +917,7 @@ static int menu_cbs_init_bind_left_compare_type(menu_file_list_cbs_t *cbs,
    else if (type >= MENU_SETTINGS_SHADER_PRESET_PARAMETER_0
          && type <= MENU_SETTINGS_SHADER_PRESET_PARAMETER_LAST)
    {
-      BIND_ACTION_LEFT(cbs, shader_action_parameter_left);
+      BIND_ACTION_LEFT(cbs, shader_action_preset_parameter_left);
    }
 #endif
    else if (type >= MENU_SETTINGS_INPUT_DESC_BEGIN

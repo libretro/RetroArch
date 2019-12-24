@@ -421,12 +421,28 @@ void intfstream_putc(intfstream_internal_t *intf, int c)
    }
 }
 
-uint32_t intfstream_get_chd_pregap(intfstream_internal_t *intf)
+uint32_t intfstream_get_offset_to_start(intfstream_internal_t *intf)
 {
+   if (intf)
+   {
 #ifdef HAVE_CHD
-   if (intf->type == INTFSTREAM_CHD)
-      return chdstream_get_pregap(intf->chd.fp);
+      if (intf->type == INTFSTREAM_CHD)
+         return chdstream_get_track_start(intf->chd.fp);
 #endif
+   }
+
+   return 0;
+}
+
+uint32_t intfstream_get_frame_size(intfstream_internal_t *intf)
+{
+   if (intf)
+   {
+#ifdef HAVE_CHD
+      if (intf->type == INTFSTREAM_CHD)
+         return chdstream_get_frame_size(intf->chd.fp);
+#endif
+   }
 
    return 0;
 }

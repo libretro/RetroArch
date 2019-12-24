@@ -238,8 +238,8 @@ void lzma_codec_free(void* codec)
 	lzma_allocator* alloc = &lzma_codec->allocator;
 
 	/* free memory */
-	lzma_allocator_free(alloc);
 	LzmaDec_Free(&lzma_codec->decoder, (ISzAlloc*)&lzma_codec->allocator);
+	lzma_allocator_free(alloc);
 }
 
 /*-------------------------------------------------

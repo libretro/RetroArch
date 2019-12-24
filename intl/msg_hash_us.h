@@ -833,6 +833,54 @@ MSG_HASH(
     "Content Downloader"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_UPDATE_INSTALLED_CORES,
+    "Update Installed Cores"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_UPDATE_INSTALLED_CORES,
+    "Update all installed cores to the latest version available."
+    )
+MSG_HASH(
+    MSG_FETCHING_CORE_LIST,
+    "Fetching core list..."
+    )
+MSG_HASH(
+    MSG_CORE_LIST_FAILED,
+    "Failed to retrieve core list!"
+    )
+MSG_HASH(
+    MSG_LATEST_CORE_INSTALLED,
+    "Latest version already installed: "
+    )
+MSG_HASH(
+    MSG_UPDATING_CORE,
+    "Updating core: "
+    )
+MSG_HASH(
+    MSG_DOWNLOADING_CORE,
+    "Downloading core: "
+    )
+MSG_HASH(
+    MSG_EXTRACTING_CORE,
+    "Extracting core: "
+    )
+MSG_HASH(
+    MSG_CORE_INSTALLED,
+    "Core installed: "
+    )
+MSG_HASH(
+    MSG_SCANNING_CORES,
+    "Scanning cores..."
+    )
+MSG_HASH(
+    MSG_CHECKING_CORE,
+    "Checking core: "
+    )
+MSG_HASH(
+    MSG_ALL_CORES_UPDATED,
+    "All installed cores at latest version"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_SCALE_FACTOR,
     "Menu Scale Factor"
     )
@@ -10195,4 +10243,88 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_NARRATOR_SPEECH_SPEED,
     "Narrator Speech Speed"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_SCALING_SETTINGS,
+    "Scaling"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_SCALING_SETTINGS,
+    "Change video scaling settings."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_MODE_SETTINGS,
+    "Fullscreen Mode"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_MODE_SETTINGS,
+    "Change fullscreen mode settings."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_MODE_SETTINGS,
+    "Windowed Mode"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_MODE_SETTINGS,
+    "Change windowed mode settings."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_OUTPUT_SETTINGS,
+    "Output"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_OUTPUT_SETTINGS,
+    "Change video output settings."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
+    "Synchronization"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
+    "Change video synchronization settings."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_SETTINGS,
+    "Output"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_SETTINGS,
+    "Change audio output settings."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_AUDIO_SYNCHRONIZATION_SETTINGS,
+    "Synchronization"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_AUDIO_SYNCHRONIZATION_SETTINGS,
+    "Change audio synchronization settings."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_SETTINGS,
+    "Resampler"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_SETTINGS,
+    "Change audio resampler settings."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_MENU_SETTINGS,
+    "Menu Controls"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_INPUT_MENU_SETTINGS,
+    "Change menu control settings."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_HAPTIC_FEEDBACK_SETTINGS,
+    "Haptic Feedback/Vibration"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_INPUT_HAPTIC_FEEDBACK_SETTINGS,
+    "Change haptic feedback and vibration settings."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_START_GONG,
+    "Start Gong"
     )

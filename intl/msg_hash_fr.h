@@ -841,6 +841,54 @@ MSG_HASH(
     "Téléchargement de contenu"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_UPDATE_INSTALLED_CORES,
+    "Mettre à jour les cœurs installés"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_UPDATE_INSTALLED_CORES,
+    "Met à jour les cœurs installés vers la dernière version disponible."
+    )
+MSG_HASH(
+    MSG_FETCHING_CORE_LIST,
+    "Récupération de la liste des cœurs..."
+    )
+MSG_HASH(
+    MSG_CORE_LIST_FAILED,
+    "Échec de récupération de la liste des cœurs !"
+    )
+MSG_HASH(
+    MSG_LATEST_CORE_INSTALLED,
+    "Dernière version déjà installée : "
+    )
+MSG_HASH(
+    MSG_UPDATING_CORE,
+    "Mise à jour du cœur : "
+    )
+MSG_HASH(
+    MSG_DOWNLOADING_CORE,
+    "Téléchargement du cœur : "
+    )
+MSG_HASH(
+    MSG_EXTRACTING_CORE,
+    "Extraction du cœur : "
+    )
+MSG_HASH(
+    MSG_CORE_INSTALLED,
+    "Cœur installé : "
+    )
+MSG_HASH(
+    MSG_SCANNING_CORES,
+    "Analyse des cœurs..."
+    )
+MSG_HASH(
+    MSG_CHECKING_CORE,
+    "Vérification du cœur : "
+    )
+MSG_HASH(
+    MSG_ALL_CORES_UPDATED,
+    "Tous les cœurs installés sont à jour"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_SCALE_FACTOR,
     "Facteur de mise à l'échelle du menu"
     )
@@ -10199,4 +10247,88 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_NARRATOR_SPEECH_SPEED,
     "Débit vocal du narrateur"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_SCALING_SETTINGS,
+    "Mise à l'échelle"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_SCALING_SETTINGS,
+    "Changer les réglages de mise à l'échelle vidéo."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_MODE_SETTINGS,
+    "Mode plein écran"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_MODE_SETTINGS,
+    "Changer les réglages du mode plein écran."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_MODE_SETTINGS,
+    "Mode fenêtré"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_MODE_SETTINGS,
+    "Changer les réglages du mode fenêtré."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_OUTPUT_SETTINGS,
+    "Sortie vidéo"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_OUTPUT_SETTINGS,
+    "Changer les réglages de la sortie vidéo."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
+    "Synchronisation vidéo"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
+    "Changer les réglages de la synchronisation vidéo."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_SETTINGS,
+    "Sortie audio"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_SETTINGS,
+    "Changer les réglages de la sortie audio."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_AUDIO_SYNCHRONIZATION_SETTINGS,
+    "Synchronisation audio"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_AUDIO_SYNCHRONIZATION_SETTINGS,
+    "Changer les réglages de la synchronisation audio."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_SETTINGS,
+    "Rééchantillonneur audio"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_SETTINGS,
+    "Changer les réglages du rééchantillonneur audio."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_MENU_SETTINGS,
+    "Touches pour le menu"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_INPUT_MENU_SETTINGS,
+    "Changer les réglages des touches pour le menu."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_HAPTIC_FEEDBACK_SETTINGS,
+    "Retour haptique/vibration"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_INPUT_HAPTIC_FEEDBACK_SETTINGS,
+    "Changer les réglages du retour haptique et de la vibration."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_START_GONG,
+    "Démarrer Gong"
     )

@@ -1542,20 +1542,23 @@ void win32_get_video_output_next(
    }
 }
 
+static BOOL win32_internal_get_video_output(DWORD iModeNum, DEVMODE *dm)
+{
+#if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0500 /* 2K */
+   return EnumDisplaySettingsEx(NULL, iModeNum, dm, EDS_ROTATEDMODE);
+#else
+   return EnumDisplaySettings(NULL, iModeNum, dm);
+#endif
+}
+
 bool win32_get_video_output(DEVMODE *dm, int mode, size_t len)
 {
    memset(dm, 0, len);
    dm->dmSize  = len;
-#if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0500 /* 2K */
-   if (EnumDisplaySettingsEx(NULL,
-            (mode == -1) ? ENUM_CURRENT_SETTINGS : mode, dm, EDS_ROTATEDMODE) == 0)
-      return false;
-#else
-   if (EnumDisplaySettings(NULL,
-            (mode == -1) ? ENUM_CURRENT_SETTINGS : mode, dm) == 0)
-      return false;
-#endif
 
+   if (win32_internal_get_video_output((mode == -1) ? ENUM_CURRENT_SETTINGS : mode,
+            dm) == 0)
+      return false;
    return true;
 }
 

@@ -37,7 +37,7 @@
 #endif
 
 static int action_select_default(const char *path, const char *label, unsigned type,
-      size_t idx)
+      size_t idx, size_t entry_idx)
 {
    menu_entry_t entry;
    int ret                    = 0;
@@ -111,46 +111,26 @@ static int action_select_default(const char *path, const char *label, unsigned t
 }
 
 static int action_select_path_use_directory(const char *path,
-      const char *label, unsigned type, size_t idx)
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    return action_ok_path_use_directory(path, label, type, idx, 0 /* unused */);
 }
 
 static int action_select_core_setting(const char *path, const char *label, unsigned type,
-      size_t idx)
+      size_t idx, size_t entry_idx)
 {
    return action_ok_core_option_dropdown_list(path, label, type, idx, 0);
 }
 
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-static int shader_action_parameter_select(const char *path, const char *label, unsigned type,
-      size_t idx)
-{
-   return shader_action_parameter_right(type, label, true);
-}
-
-static int shader_action_parameter_preset_select(const char *path, const char *label, unsigned type,
-      size_t idx)
-{
-   return shader_action_parameter_right(type, label, true);
-}
-#endif
-
-static int action_select_cheat(const char *path, const char *label, unsigned type,
-      size_t idx)
-{
-   return action_right_cheat(type, label, true);
-}
-
 static int action_select_input_desc(const char *path, const char *label, unsigned type,
-      size_t idx)
+      size_t idx, size_t entry_idx)
 {
    return action_right_input_desc(type, label, true);
 }
 
 static int action_select_input_desc_kbd(const char *path,
       const char *label, unsigned type,
-   size_t idx)
+      size_t idx, size_t entry_idx)
 {
    return action_right_input_desc_kbd(type, label, true);
 }
@@ -158,7 +138,7 @@ static int action_select_input_desc_kbd(const char *path,
 #ifdef HAVE_NETWORKING
 static int action_select_netplay_connect_room(const char *path,
       const char *label, unsigned type,
-      size_t idx)
+      size_t idx, size_t entry_idx)
 {
    char tmp_hostname[4115];
 
@@ -192,24 +172,7 @@ static int action_select_netplay_connect_room(const char *path,
 static int menu_cbs_init_bind_select_compare_type(
       menu_file_list_cbs_t *cbs, unsigned type)
 {
-   if (type >= MENU_SETTINGS_CHEAT_BEGIN
-         && type <= MENU_SETTINGS_CHEAT_END)
-   {
-      BIND_ACTION_SELECT(cbs, action_select_cheat);
-   }
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-   else if (type >= MENU_SETTINGS_SHADER_PARAMETER_0
-         && type <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
-   {
-      BIND_ACTION_SELECT(cbs, shader_action_parameter_select);
-   }
-   else if (type >= MENU_SETTINGS_SHADER_PRESET_PARAMETER_0
-         && type <= MENU_SETTINGS_SHADER_PRESET_PARAMETER_LAST)
-   {
-      BIND_ACTION_SELECT(cbs, shader_action_parameter_preset_select);
-   }
-#endif
-   else if (type >= MENU_SETTINGS_INPUT_DESC_BEGIN
+   if (type >= MENU_SETTINGS_INPUT_DESC_BEGIN
          && type <= MENU_SETTINGS_INPUT_DESC_END)
    {
       BIND_ACTION_SELECT(cbs, action_select_input_desc);

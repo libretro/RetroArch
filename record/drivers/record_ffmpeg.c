@@ -1202,7 +1202,11 @@ static bool encode_video(ffmpeg_t *handle, AVFrame *frame)
    ret = avcodec_send_frame(handle->video.codec, frame);
    if (ret < 0)
    {
+#ifdef __cplusplus
+      RARCH_ERR("[FFmpeg]: Cannot send video frame. Error code: %d.\n", ret);
+#else
       RARCH_ERR("[FFmpeg]: Cannot send video frame. Error code: %s.\n", av_err2str(ret));
+#endif
       return false;
    }
 
@@ -1210,12 +1214,14 @@ static bool encode_video(ffmpeg_t *handle, AVFrame *frame)
    {
       ret = avcodec_receive_packet(handle->video.codec, &pkt);
       if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
-      {
          break;
-      }
       else if (ret < 0)
       {
+#ifdef __cplusplus
+         RARCH_ERR("[FFmpeg]: Cannot receive video packet. Error code: %d.\n", ret);
+#else
          RARCH_ERR("[FFmpeg]: Cannot receive video packet. Error code: %s.\n", av_err2str(ret));
+#endif
          return false;
       }
 
@@ -1231,7 +1237,11 @@ static bool encode_video(ffmpeg_t *handle, AVFrame *frame)
       ret = av_interleaved_write_frame(handle->muxer.ctx, &pkt);
       if (ret < 0)
       {
+#ifdef __cplusplus
+         RARCH_ERR("[FFmpeg]: Cannot write video packet to output file. Error code: %d.\n", ret);
+#else
          RARCH_ERR("[FFmpeg]: Cannot write video packet to output file. Error code: %s.\n", av_err2str(ret));
+#endif
          return false;
       }
    }
@@ -1375,7 +1385,11 @@ static bool encode_audio(ffmpeg_t *handle, bool dry)
    if (ret < 0)
    {
       av_frame_free(&frame);
+#ifdef __cplusplus
+      RARCH_ERR("[FFmpeg]: Cannot send audio frame. Return code: %d.\n", ret);
+#else
       RARCH_ERR("[FFmpeg]: Cannot send audio frame. Return code: %s.\n", av_err2str(ret));
+#endif
       return false;
    }
 
@@ -1383,13 +1397,15 @@ static bool encode_audio(ffmpeg_t *handle, bool dry)
    {
       ret = avcodec_receive_packet(handle->audio.codec, &pkt);
       if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
-      {
          break;
-      }
       else if (ret < 0)
       {
          av_frame_free(&frame);
+#ifdef __cplusplus
+         RARCH_ERR("[FFmpeg]: Cannot receive audio packet. Return code: %d.\n", ret);
+#else
          RARCH_ERR("[FFmpeg]: Cannot receive audio packet. Return code: %s.\n", av_err2str(ret));
+#endif
          return false;
       }
 
@@ -1407,7 +1423,11 @@ static bool encode_audio(ffmpeg_t *handle, bool dry)
       if (ret < 0)
       {
          av_frame_free(&frame);
+#ifdef __cplusplus
+         RARCH_ERR("[FFmpeg]: Cannot write video packet to output file. Error code: %d.\n", ret);
+#else
          RARCH_ERR("[FFmpeg]: Cannot write video packet to output file. Error code: %s.\n", av_err2str(ret));
+#endif
          return false;
       }
    }

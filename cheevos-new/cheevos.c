@@ -1910,11 +1910,27 @@ found:
    CORO_SUB(RCHEEVOS_SEGACD_MD5)
    {
       /* ignore bin files less than 16MB - they're probably a ROM, not a CD */
-      if (coro->ext_hash == 0x0b8861beU && coro->len < CHEEVOS_MB(16))
+      if (coro->ext_hash == 0x0b8861beU)
       {
-         CHEEVOS_LOG(RCHEEVOS_TAG "ignoring small BIN file - assuming not CD\n", coro->gameid);
-         coro->gameid = 0;
-         CORO_RET();
+         to_read = coro->len;
+         if (to_read == 0)
+         {
+            coro->stream = intfstream_open_file(coro->path,
+               RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
+            if (coro->stream)
+            {
+               to_read = intfstream_get_size(coro->stream);
+               intfstream_close(coro->stream);
+               CHEEVOS_FREE(coro->stream);
+            }
+         }
+
+         if (to_read < CHEEVOS_MB(16))
+         {
+            CHEEVOS_LOG(RCHEEVOS_TAG "ignoring small BIN file - assuming not CD\n", coro->gameid);
+            coro->gameid = 0;
+            CORO_RET();
+         }
       }
 
       /* find the data track - it should be the first one */

@@ -78,6 +78,11 @@ static int (name)(menu_displaylist_info_t *info) \
    return deferred_push_dlist(info, type); \
 }
 
+static int deferred_push_remappings_port(menu_displaylist_info_t *info)
+{
+   return deferred_push_dlist(info, DISPLAYLIST_OPTIONS_REMAPPINGS_PORT);
+}
+
 generic_deferred_push(deferred_push_video_shader_preset_parameters, DISPLAYLIST_SHADER_PARAMETERS_PRESET)
 generic_deferred_push(deferred_push_video_shader_parameters,        DISPLAYLIST_SHADER_PARAMETERS)
 generic_deferred_push(deferred_push_video_shader_preset_save,       DISPLAYLIST_SHADER_PRESET_SAVE)
@@ -145,6 +150,11 @@ generic_deferred_push(deferred_push_accounts_list,                  DISPLAYLIST_
 generic_deferred_push(deferred_push_driver_settings_list,           DISPLAYLIST_DRIVER_SETTINGS_LIST)
 generic_deferred_push(deferred_push_core_settings_list,             DISPLAYLIST_CORE_SETTINGS_LIST)
 generic_deferred_push(deferred_push_video_settings_list,            DISPLAYLIST_VIDEO_SETTINGS_LIST)
+generic_deferred_push(deferred_push_video_fullscreen_mode_settings_list,    DISPLAYLIST_VIDEO_FULLSCREEN_MODE_SETTINGS_LIST)
+generic_deferred_push(deferred_push_video_windowed_mode_settings_list,    DISPLAYLIST_VIDEO_WINDOWED_MODE_SETTINGS_LIST)
+generic_deferred_push(deferred_push_video_synchronization_settings_list,    DISPLAYLIST_VIDEO_SYNCHRONIZATION_SETTINGS_LIST)
+generic_deferred_push(deferred_push_video_output_settings_list,    DISPLAYLIST_VIDEO_OUTPUT_SETTINGS_LIST)
+generic_deferred_push(deferred_push_video_scaling_settings_list,    DISPLAYLIST_VIDEO_SCALING_SETTINGS_LIST)
 generic_deferred_push(deferred_push_crt_switchres_settings_list,    DISPLAYLIST_CRT_SWITCHRES_SETTINGS_LIST)
 generic_deferred_push(deferred_push_configuration_settings_list,    DISPLAYLIST_CONFIGURATION_SETTINGS_LIST)
 generic_deferred_push(deferred_push_saving_settings_list,           DISPLAYLIST_SAVING_SETTINGS_LIST)
@@ -178,8 +188,13 @@ generic_deferred_push(deferred_push_directory_settings_list,        DISPLAYLIST_
 generic_deferred_push(deferred_push_privacy_settings_list,          DISPLAYLIST_PRIVACY_SETTINGS_LIST)
 generic_deferred_push(deferred_push_midi_settings_list,             DISPLAYLIST_MIDI_SETTINGS_LIST)
 generic_deferred_push(deferred_push_audio_settings_list,            DISPLAYLIST_AUDIO_SETTINGS_LIST)
+generic_deferred_push(deferred_push_audio_output_settings_list,            DISPLAYLIST_AUDIO_OUTPUT_SETTINGS_LIST)
+generic_deferred_push(deferred_push_audio_resampler_settings_list,            DISPLAYLIST_AUDIO_RESAMPLER_SETTINGS_LIST)
+generic_deferred_push(deferred_push_audio_synchronization_settings_list,            DISPLAYLIST_AUDIO_SYNCHRONIZATION_SETTINGS_LIST)
 generic_deferred_push(deferred_push_audio_mixer_settings_list,      DISPLAYLIST_AUDIO_MIXER_SETTINGS_LIST)
 generic_deferred_push(deferred_push_input_settings_list,            DISPLAYLIST_INPUT_SETTINGS_LIST)
+generic_deferred_push(deferred_push_input_menu_settings_list,            DISPLAYLIST_INPUT_MENU_SETTINGS_LIST)
+generic_deferred_push(deferred_push_input_haptic_feedback_settings_list,            DISPLAYLIST_INPUT_HAPTIC_FEEDBACK_SETTINGS_LIST)
 generic_deferred_push(deferred_push_ai_service_settings_list,            DISPLAYLIST_AI_SERVICE_SETTINGS_LIST)
 generic_deferred_push(deferred_push_accessibility_settings_list,            DISPLAYLIST_ACCESSIBILITY_SETTINGS_LIST)
 generic_deferred_push(deferred_push_latency_settings_list,          DISPLAYLIST_LATENCY_SETTINGS_LIST)
@@ -636,6 +651,9 @@ generic_deferred_push_clear_general(deferred_video_history_list, PUSH_DEFAULT, D
 generic_deferred_push_clear_general(deferred_push_dropdown_box_list, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST)
 generic_deferred_push_clear_general(deferred_push_dropdown_box_list_special, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_SPECIAL)
 generic_deferred_push_clear_general(deferred_push_dropdown_box_list_resolution, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_RESOLUTION)
+generic_deferred_push_clear_general(deferred_push_dropdown_box_list_video_shader_num_passes, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_VIDEO_SHADER_NUM_PASSES)
+generic_deferred_push_clear_general(deferred_push_dropdown_box_list_shader_parameter, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_VIDEO_SHADER_PARAMETER)
+generic_deferred_push_clear_general(deferred_push_dropdown_box_list_shader_preset_parameter, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_VIDEO_SHADER_PRESET_PARAMETER)
 generic_deferred_push_clear_general(deferred_push_dropdown_box_list_playlist_default_core, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_DEFAULT_CORE)
 generic_deferred_push_clear_general(deferred_push_dropdown_box_list_playlist_label_display_mode, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_LABEL_DISPLAY_MODE)
 generic_deferred_push_clear_general(deferred_push_dropdown_box_list_playlist_right_thumbnail_mode, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_RIGHT_THUMBNAIL_MODE)
@@ -661,6 +679,9 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST, deferred_push_dropdown_box_list},
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_SPECIAL, deferred_push_dropdown_box_list_special},
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_RESOLUTION, deferred_push_dropdown_box_list_resolution},
+      {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_VIDEO_SHADER_NUM_PASSES, deferred_push_dropdown_box_list_video_shader_num_passes},
+      {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_VIDEO_SHADER_PARAMETER, deferred_push_dropdown_box_list_shader_parameter},
+      {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_VIDEO_SHADER_PRESET_PARAMETER, deferred_push_dropdown_box_list_shader_preset_parameter},
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_DEFAULT_CORE, deferred_push_dropdown_box_list_playlist_default_core},
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_LABEL_DISPLAY_MODE, deferred_push_dropdown_box_list_playlist_label_display_mode},
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_RIGHT_THUMBNAIL_MODE, deferred_push_dropdown_box_list_playlist_right_thumbnail_mode},
@@ -714,6 +735,8 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       {MENU_ENUM_LABEL_DEFERRED_IMAGES_LIST, deferred_image_history_list},
       {MENU_ENUM_LABEL_DEFERRED_VIDEO_LIST, deferred_video_history_list},
       {MENU_ENUM_LABEL_DEFERRED_INPUT_SETTINGS_LIST, deferred_push_input_settings_list},
+      {MENU_ENUM_LABEL_DEFERRED_INPUT_MENU_SETTINGS_LIST, deferred_push_input_menu_settings_list},
+      {MENU_ENUM_LABEL_DEFERRED_INPUT_HAPTIC_FEEDBACK_SETTINGS_LIST, deferred_push_input_haptic_feedback_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_AI_SERVICE_SETTINGS_LIST, deferred_push_ai_service_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_ACCESSIBILITY_SETTINGS_LIST, deferred_push_accessibility_settings_list},
       {MENU_ENUM_LABEL_CORE_INFORMATION, deferred_push_core_information},
@@ -723,8 +746,16 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       {MENU_ENUM_LABEL_DEFERRED_NETPLAY, deferred_push_netplay_sublist},
       {MENU_ENUM_LABEL_DEFERRED_DRIVER_SETTINGS_LIST, deferred_push_driver_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_VIDEO_SETTINGS_LIST, deferred_push_video_settings_list},
+      {MENU_ENUM_LABEL_DEFERRED_VIDEO_FULLSCREEN_MODE_SETTINGS_LIST, deferred_push_video_fullscreen_mode_settings_list},
+      {MENU_ENUM_LABEL_DEFERRED_VIDEO_WINDOWED_MODE_SETTINGS_LIST, deferred_push_video_windowed_mode_settings_list},
+      {MENU_ENUM_LABEL_DEFERRED_VIDEO_SYNCHRONIZATION_SETTINGS_LIST, deferred_push_video_synchronization_settings_list},
+      {MENU_ENUM_LABEL_DEFERRED_VIDEO_OUTPUT_SETTINGS_LIST, deferred_push_video_output_settings_list},
+      {MENU_ENUM_LABEL_DEFERRED_VIDEO_SCALING_SETTINGS_LIST, deferred_push_video_scaling_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_CRT_SWITCHRES_SETTINGS_LIST, deferred_push_crt_switchres_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_AUDIO_SETTINGS_LIST, deferred_push_audio_settings_list},
+      {MENU_ENUM_LABEL_DEFERRED_AUDIO_SYNCHRONIZATION_SETTINGS_LIST, deferred_push_audio_synchronization_settings_list},
+      {MENU_ENUM_LABEL_DEFERRED_AUDIO_OUTPUT_SETTINGS_LIST, deferred_push_audio_output_settings_list},
+      {MENU_ENUM_LABEL_DEFERRED_AUDIO_RESAMPLER_SETTINGS_LIST, deferred_push_audio_resampler_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_AUDIO_MIXER_SETTINGS_LIST, deferred_push_audio_mixer_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_LATENCY_SETTINGS_LIST, deferred_push_latency_settings_list},
 #ifdef HAVE_LAKKA_SWITCH
@@ -734,6 +765,7 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
 #if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
       {MENU_ENUM_LABEL_SWITCH_CPU_PROFILE, deferred_push_switch_cpu_profile},
 #endif
+      {MENU_ENUM_LABEL_DEFERRED_REMAPPINGS_PORT_LIST, deferred_push_remappings_port },
       {MENU_ENUM_LABEL_DEFERRED_ACCOUNTS_LIST, deferred_push_accounts_list},
       {MENU_ENUM_LABEL_CORE_LIST, deferred_push_core_list},
       {MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY, deferred_push_history_list},
@@ -1055,6 +1087,21 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
          case MENU_ENUM_LABEL_DEFERRED_VIDEO_SETTINGS_LIST:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_video_settings_list);
             break;
+         case MENU_ENUM_LABEL_DEFERRED_VIDEO_FULLSCREEN_MODE_SETTINGS_LIST:
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_video_fullscreen_mode_settings_list);
+            break;
+         case MENU_ENUM_LABEL_DEFERRED_VIDEO_WINDOWED_MODE_SETTINGS_LIST:
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_video_windowed_mode_settings_list);
+            break;
+         case MENU_ENUM_LABEL_DEFERRED_VIDEO_SYNCHRONIZATION_SETTINGS_LIST:
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_video_synchronization_settings_list);
+            break;
+         case MENU_ENUM_LABEL_DEFERRED_VIDEO_OUTPUT_SETTINGS_LIST:
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_video_output_settings_list);
+            break;
+         case MENU_ENUM_LABEL_DEFERRED_VIDEO_SCALING_SETTINGS_LIST:
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_video_scaling_settings_list);
+            break;
          case MENU_ENUM_LABEL_DEFERRED_CRT_SWITCHRES_SETTINGS_LIST:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_crt_switchres_settings_list);
             break;
@@ -1089,6 +1136,15 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
 #endif
          case MENU_ENUM_LABEL_DEFERRED_AUDIO_SETTINGS_LIST:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_audio_settings_list);
+            break;
+         case MENU_ENUM_LABEL_DEFERRED_AUDIO_OUTPUT_SETTINGS_LIST:
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_audio_output_settings_list);
+            break;
+         case MENU_ENUM_LABEL_DEFERRED_AUDIO_RESAMPLER_SETTINGS_LIST:
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_audio_resampler_settings_list);
+            break;
+         case MENU_ENUM_LABEL_DEFERRED_AUDIO_SYNCHRONIZATION_SETTINGS_LIST:
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_audio_synchronization_settings_list);
             break;
          case MENU_ENUM_LABEL_DEFERRED_LATENCY_SETTINGS_LIST:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_latency_settings_list);

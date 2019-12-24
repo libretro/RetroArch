@@ -64,7 +64,8 @@ static int generic_shader_action_parameter_right(struct video_shader_parameter *
    return 0;
 }
 
-int shader_action_parameter_right(unsigned type, const char *label, bool wraparound)
+static int generic_shader_action_parameter_right_internal(unsigned type, const char *label,
+      bool wraparound, unsigned offset)
 {
    video_shader_ctx_t shader_info;
    struct video_shader *shader          = menu_shader_get();
@@ -75,9 +76,8 @@ int shader_action_parameter_right(unsigned type, const char *label, bool wraparo
 
    video_shader_driver_get_current_shader(&shader_info);
 
-   param_prev = &shader_info.data->parameters[type - MENU_SETTINGS_SHADER_PARAMETER_0];
-   param_menu = shader ? &shader->parameters[type -
-      MENU_SETTINGS_SHADER_PARAMETER_0] : NULL;
+   param_prev = &shader_info.data->parameters[type - offset];
+   param_menu = shader ? &shader->parameters [type - offset] : NULL;
 
    if (!param_prev || !param_menu)
       return menu_cbs_exit();
@@ -88,6 +88,16 @@ int shader_action_parameter_right(unsigned type, const char *label, bool wraparo
    menu_shader_set_modified(true);
 
    return ret;
+}
+
+int shader_action_parameter_right(unsigned type, const char *label, bool wraparound)
+{
+   return generic_shader_action_parameter_right_internal(type, label, wraparound, MENU_SETTINGS_SHADER_PARAMETER_0);
+}
+
+int shader_action_preset_parameter_right(unsigned type, const char *label, bool wraparound)
+{
+   return generic_shader_action_parameter_right_internal(type, label, wraparound, MENU_SETTINGS_SHADER_PRESET_PARAMETER_0);
 }
 #endif
 
@@ -275,30 +285,6 @@ static int action_right_mainmenu(unsigned type, const char *label,
    return 0;
 }
 
-static int action_right_cheat_delete_all(unsigned type, const char *label,
-      bool wraparound)
-{
-   bool refresh = false ;
-   char msg[256];
-
-   if ( ++cheat_manager_state.delete_state >= 5 )
-   {
-      msg[0] = '\0';
-      cheat_manager_state.delete_state = 0 ;
-      cheat_manager_realloc(0, CHEAT_HANDLER_TYPE_EMU) ;
-      menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-      menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
-
-      strlcpy(msg,
-            msg_hash_to_str(MSG_CHEAT_DELETE_ALL_SUCCESS), sizeof(msg));
-      msg[sizeof(msg) - 1] = 0;
-
-      runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-   }
-
-   return 0;
-}
-
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 static int action_right_shader_scale_pass(unsigned type, const char *label,
       bool wraparound)
@@ -473,16 +459,6 @@ static int action_right_video_gpu_index(unsigned type, const char *label,
 
    return 0;
 }
-
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-static int action_right_shader_watch_for_changes(unsigned type, const char *label,
-      bool wraparound)
-{
-   settings_t *settings = config_get_ptr();
-   settings->bools.video_shader_watch_files = !settings->bools.video_shader_watch_files;
-   return 0;
-}
-#endif
 
 static int action_right_video_resolution(unsigned type, const char *label,
       bool wraparound)
@@ -805,7 +781,7 @@ static int menu_cbs_init_bind_right_compare_type(menu_file_list_cbs_t *cbs,
    else if (type >= MENU_SETTINGS_SHADER_PRESET_PARAMETER_0
          && type <= MENU_SETTINGS_SHADER_PRESET_PARAMETER_LAST)
    {
-      BIND_ACTION_RIGHT(cbs, shader_action_parameter_right);
+      BIND_ACTION_RIGHT(cbs, shader_action_preset_parameter_right);
    }
 #endif
    else if (type >= MENU_SETTINGS_INPUT_DESC_BEGIN
@@ -955,9 +931,6 @@ static int menu_cbs_init_bind_right_compare_label(menu_file_list_cbs_t *cbs,
             case MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM:
                BIND_ACTION_RIGHT(cbs, action_right_mainmenu);
                break;
-            case MENU_ENUM_LABEL_CHEAT_DELETE_ALL:
-               BIND_ACTION_RIGHT(cbs, action_right_cheat_delete_all);
-               break;
             case MENU_ENUM_LABEL_VIDEO_SHADER_SCALE_PASS:
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
                BIND_ACTION_RIGHT(cbs, action_right_shader_scale_pass);
@@ -971,11 +944,6 @@ static int menu_cbs_init_bind_right_compare_label(menu_file_list_cbs_t *cbs,
             case MENU_ENUM_LABEL_VIDEO_SHADER_DEFAULT_FILTER:
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
                BIND_ACTION_RIGHT(cbs, action_right_shader_filter_default);
-#endif
-               break;
-            case MENU_ENUM_LABEL_SHADER_WATCH_FOR_CHANGES:
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-               BIND_ACTION_RIGHT(cbs, action_right_shader_watch_for_changes);
 #endif
                break;
             case MENU_ENUM_LABEL_VIDEO_SHADER_NUM_PASSES:

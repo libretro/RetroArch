@@ -2000,7 +2000,7 @@ enum rarch_content_type path_is_media_type(const char *path)
       case FILE_TYPE_XM:
          return RARCH_CONTENT_MUSIC;
 #endif
-#ifdef HAVE_EASTEREGG
+#ifdef HAVE_GONG
       case FILE_TYPE_GONG:
          return RARCH_CONTENT_GONG;
 #endif
@@ -2691,15 +2691,14 @@ static void retroarch_set_runtime_shader_preset(const char *arg)
    else
       runtime_shader_preset[0] = '\0';
 }
+#endif
 
 static void retroarch_unset_runtime_shader_preset(void)
 {
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    runtime_shader_preset[0] = '\0';
-}
-#else
-static void retroarch_set_runtime_shader_preset(const char *arg) {}
-static void retroarch_unset_runtime_shader_preset(void) {}
 #endif
+}
 
 #define MEASURE_FRAME_TIME_SAMPLES_COUNT (2 * 1024)
 
@@ -8562,7 +8561,7 @@ static dylib_t lib_handle;
 #define SYMBOL_VIDEOPROCESSOR(x) current_core->x = libretro_videoprocessor_##x
 #endif
 
-#ifdef HAVE_EASTEREGG
+#ifdef HAVE_GONG
 #define SYMBOL_GONG(x) current_core->x = libretro_gong_##x
 #endif
 
@@ -10427,7 +10426,7 @@ static bool init_libretro_symbols_custom(enum rarch_core_type type,
 #endif
          break;
       case CORE_TYPE_GONG:
-#ifdef HAVE_EASTEREGG
+#ifdef HAVE_GONG
          CORE_SYMBOLS(SYMBOL_GONG);
 #endif
          break;
@@ -25076,7 +25075,7 @@ bool retroarch_main_init(int argc, char *argv[])
                }
                break;
 #endif
-#ifdef HAVE_EASTEREGG
+#ifdef HAVE_GONG
             case RARCH_CONTENT_GONG:
                retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO, NULL);
                retroarch_set_current_core_type(CORE_TYPE_GONG, false);
@@ -26562,9 +26561,6 @@ static enum runloop_state runloop_check_state(void)
    bool menu_is_alive                  = menu_driver_alive;
    unsigned menu_toggle_gamepad_combo  = settings->uints.input_menu_toggle_gamepad_combo;
    bool display_kb                     = menu_input_dialog_get_display_kb_internal();
-#ifdef HAVE_EASTEREGG
-   static uint64_t seq                 = 0;
-#endif
 #endif
 
 #ifdef HAVE_MENU_WIDGETS
@@ -26914,34 +26910,6 @@ static enum runloop_state runloop_check_state(void)
          if (settings->bools.audio_enable_menu &&
                !libretro_running)
             audio_driver_menu_sample();
-
-#ifdef HAVE_EASTEREGG
-         {
-            bool library_name_is_empty = string_is_empty(runloop_system.info.library_name);
-
-            if (library_name_is_empty && trigger_input.data[0])
-            {
-               seq |= trigger_input.data[0] & 0xF0;
-
-               if (seq == 1157460427127406720ULL)
-               {
-                  content_ctx_info_t content_info;
-                  content_info.argc                   = 0;
-                  content_info.argv                   = NULL;
-                  content_info.args                   = NULL;
-                  content_info.environ_get            = NULL;
-
-                  task_push_start_builtin_core(
-                        &content_info,
-                        CORE_TYPE_GONG, NULL, NULL);
-               }
-
-               seq <<= 8;
-            }
-            else if (!library_name_is_empty)
-               seq = 0;
-         }
-#endif
       }
 
       old_input                 = current_bits;
@@ -26953,9 +26921,6 @@ static enum runloop_state runloop_check_state(void)
    else
 #endif
    {
-#if defined(HAVE_MENU) && defined(HAVE_EASTEREGG)
-      seq = 0;
-#endif
       if (runloop_idle)
       {
          retro_ctx.poll_cb();
@@ -29160,7 +29125,7 @@ static bool accessibility_speak_macos(
 
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__) && !defined(EMSCRIPTEN)
 
-static char *accessibility_win_language_code(const char* language)
+static const char *accessibility_win_language_code(const char* language)
 {
    if (string_is_equal(language,"en"))
       return "Microsoft David Desktop";
@@ -29270,12 +29235,12 @@ static bool accessibility_speak_windows(
       const char* speak_text, const char* voice, int priority)
 {
    char cmd[1200];
-   char* language = accessibility_win_language_code(voice);
-   bool res;
+   const char *language   = accessibility_win_language_code(voice);
+   bool res               = false;
 
-   settings_t *settings              = configuration_settings;
-   char* speeds[10] = {"-10", "-7.5", "-5", "-2.5", "0", "2", "4", "6", "8", "10"};
-   int speed = settings->uints.accessibility_narrator_speech_speed;
+   settings_t *settings   = configuration_settings;
+   const char* speeds[10] = {"-10", "-7.5", "-5", "-2.5", "0", "2", "4", "6", "8", "10"};
+   int speed              = settings->uints.accessibility_narrator_speech_speed;
 
    if (speed < 1)
       speed = 1;
@@ -29381,19 +29346,18 @@ bool accessibility_speak_linux(
 
 bool accessibility_speak_priority(const char* speak_text, int priority)
 {
-   const char* voice = NULL;
    RARCH_LOG("Spoke: %s\n", speak_text);
 
    if (is_accessibility_enabled())
    {
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__) && !defined(EMSCRIPTEN)
-      voice = get_user_language_iso639_1(true);
+      const char *voice = get_user_language_iso639_1(true);
       return accessibility_speak_windows(speak_text, voice, priority);
 #elif defined(__APPLE__) && defined(_IS_OSX) && !defined(EMSCRIPTEN)
-      voice = get_user_language_iso639_1(false);
+      const char *voice = get_user_language_iso639_1(false);
       return accessibility_speak_macos(speak_text, voice, priority);
 #elif (defined(__linux__) || defined(__unix__)) && !defined(EMSCRIPTEN)
-      voice = get_user_language_iso639_1(true);
+      const char *voice = get_user_language_iso639_1(true);
       return accessibility_speak_linux(speak_text, voice, priority);
 #endif
       RARCH_LOG("Platform not supported for accessibility.\n");
@@ -29409,6 +29373,7 @@ bool accessibility_speak_priority(const char* speak_text, int priority)
 #endif
       */
    }
+
    return true;
 }
 

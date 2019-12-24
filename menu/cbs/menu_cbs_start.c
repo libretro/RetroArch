@@ -50,10 +50,15 @@
    cbs->action_start_ident = #name;
 #endif
 
+/* Forward declarations */
 int generic_action_ok_command(enum event_command cmd);
 
+int action_ok_push_playlist_manager_settings(const char *path, const char *label, unsigned type, size_t idx, size_t entry_idx);
+
 #ifdef HAVE_AUDIOMIXER
-static int action_start_audio_mixer_stream_volume(unsigned type, const char *label)
+static int action_start_audio_mixer_stream_volume(
+      const char *path, const char *label,
+      unsigned type, size_t idx, size_t entry_idx)
 {
    unsigned         offset      = (type - MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_VOLUME_BEGIN);
 
@@ -66,13 +71,17 @@ static int action_start_audio_mixer_stream_volume(unsigned type, const char *lab
 }
 #endif
 
-static int action_start_remap_file_load(unsigned type, const char *label)
+static int action_start_remap_file_load(
+      const char *path, const char *label,
+      unsigned type, size_t idx, size_t entry_idx)
 {
    input_remapping_set_defaults(true);
    return 0;
 }
 
-static int action_start_shader_preset(unsigned type, const char *label)
+static int action_start_shader_preset(
+      const char *path, const char *label,
+      unsigned type, size_t idx, size_t entry_idx)
 {
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    bool refresh                = false;
@@ -87,7 +96,9 @@ static int action_start_shader_preset(unsigned type, const char *label)
    return 0;
 }
 
-static int action_start_video_filter_file_load(unsigned type, const char *label)
+static int action_start_video_filter_file_load(
+      const char *path, const char *label,
+      unsigned type, size_t idx, size_t entry_idx)
 {
    settings_t *settings = config_get_ptr();
 
@@ -111,7 +122,9 @@ static int generic_action_start_performance_counters(struct retro_perf_counter *
    return 0;
 }
 
-static int action_start_performance_counters_core(unsigned type, const char *label)
+static int action_start_performance_counters_core(
+      const char *path, const char *label,
+      unsigned type, size_t idx, size_t entry_idx)
 {
    struct retro_perf_counter **counters = retro_get_perf_counter_libretro();
    unsigned offset = type - MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN;
@@ -119,15 +132,18 @@ static int action_start_performance_counters_core(unsigned type, const char *lab
    return generic_action_start_performance_counters(counters, offset, type, label);
 }
 
-static int action_start_performance_counters_frontend(unsigned type,
-      const char *label)
+static int action_start_performance_counters_frontend(
+      const char *path, const char *label,
+      unsigned type, size_t idx, size_t entry_idx)
 {
    struct retro_perf_counter **counters = retro_get_perf_counter_rarch();
    unsigned offset = type - MENU_SETTINGS_PERF_COUNTERS_BEGIN;
    return generic_action_start_performance_counters(counters, offset, type, label);
 }
 
-static int action_start_input_desc(unsigned type, const char *label)
+static int action_start_input_desc(
+      const char *path, const char *label,
+      unsigned type, size_t idx, size_t entry_idx)
 {
    settings_t           *settings = config_get_ptr();
    unsigned inp_desc_index_offset = type - MENU_SETTINGS_INPUT_DESC_BEGIN;
@@ -150,12 +166,12 @@ static int action_start_input_desc(unsigned type, const char *label)
 }
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-static int action_start_shader_action_parameter(
-      unsigned type, const char *label)
+static int action_start_shader_action_parameter_generic(
+      unsigned type, unsigned offset)
 {
    video_shader_ctx_t shader_info;
    struct video_shader_parameter *param = NULL;
-   unsigned parameter = type - MENU_SETTINGS_SHADER_PARAMETER_0;
+   unsigned parameter                   = type - offset;
 
    video_shader_driver_get_current_shader(&shader_info);
 
@@ -170,7 +186,23 @@ static int action_start_shader_action_parameter(
    return menu_shader_manager_clear_parameter(menu_shader_get(), parameter);
 }
 
-static int action_start_shader_pass(unsigned type, const char *label)
+static int action_start_shader_action_parameter(
+      const char *path, const char *label,
+      unsigned type, size_t idx, size_t entry_idx)
+{
+   return action_start_shader_action_parameter_generic(type, MENU_SETTINGS_SHADER_PARAMETER_0);
+}
+
+static int action_start_shader_action_preset_parameter(
+      const char *path, const char *label,
+      unsigned type, size_t idx, size_t entry_idx)
+{
+   return action_start_shader_action_parameter_generic(type, MENU_SETTINGS_SHADER_PRESET_PARAMETER_0);
+}
+
+static int action_start_shader_pass(
+      const char *path, const char *label,
+      unsigned type, size_t idx, size_t entry_idx)
 {
    menu_handle_t *menu       = menu_driver_get_ptr();
 
@@ -185,7 +217,9 @@ static int action_start_shader_pass(unsigned type, const char *label)
    return 0;
 }
 
-static int action_start_shader_scale_pass(unsigned type, const char *label)
+static int action_start_shader_scale_pass(
+      const char *path, const char *label,
+      unsigned type, size_t idx, size_t entry_idx)
 {
    unsigned pass                         = type - MENU_SETTINGS_SHADER_PASS_SCALE_0;
 
@@ -194,14 +228,18 @@ static int action_start_shader_scale_pass(unsigned type, const char *label)
    return 0;
 }
 
-static int action_start_shader_filter_pass(unsigned type, const char *label)
+static int action_start_shader_filter_pass(
+      const char *path, const char *label,
+      unsigned type, size_t idx, size_t entry_idx)
 {
    unsigned pass                         = type - MENU_SETTINGS_SHADER_PASS_FILTER_0;
    return menu_shader_manager_clear_pass_filter(menu_shader_get(), pass);
 }
 #endif
 
-static int action_start_netplay_mitm_server(unsigned type, const char *label)
+static int action_start_netplay_mitm_server(
+      const char *path, const char *label,
+      unsigned type, size_t idx, size_t entry_idx)
 {
    settings_t *settings = config_get_ptr();
    strlcpy(settings->arrays.netplay_mitm_server, netplay_mitm_server, sizeof(settings->arrays.netplay_mitm_server));
@@ -209,20 +247,26 @@ static int action_start_netplay_mitm_server(unsigned type, const char *label)
 }
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-static int action_start_shader_watch_for_changes(unsigned type, const char *label)
+static int action_start_shader_watch_for_changes(
+      const char *path, const char *label,
+      unsigned type, size_t idx, size_t entry_idx)
 {
    settings_t *settings = config_get_ptr();
    settings->bools.video_shader_watch_files = DEFAULT_VIDEO_SHADER_WATCH_FILES;
    return 0;
 }
 
-static int action_start_shader_num_passes(unsigned type, const char *label)
+static int action_start_shader_num_passes(
+      const char *path, const char *label,
+      unsigned type, size_t idx, size_t entry_idx)
 {
    return menu_shader_manager_clear_num_passes(menu_shader_get());
 }
 #endif
 
-static int action_start_cheat_num_passes(unsigned type, const char *label)
+static int action_start_cheat_num_passes(
+      const char *path, const char *label,
+      unsigned type, size_t idx, size_t entry_idx)
 {
    if (cheat_manager_get_size())
    {
@@ -234,19 +278,22 @@ static int action_start_cheat_num_passes(unsigned type, const char *label)
    return 0;
 }
 
-static int action_start_core_setting(unsigned type,
-      const char *label)
+static int action_start_core_setting(
+      const char *path, const char *label,
+      unsigned type, size_t idx, size_t entry_idx)
 {
-   unsigned idx                = type - MENU_SETTINGS_CORE_OPTION_START;
+   unsigned core_idx               = type - MENU_SETTINGS_CORE_OPTION_START;
    core_option_manager_t *coreopts = NULL;
 
    if (rarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts))
-      core_option_manager_set_default(coreopts, idx);
+      core_option_manager_set_default(coreopts, core_idx);
 
    return 0;
 }
 
-static int action_start_playlist_association(unsigned type, const char *label)
+static int action_start_playlist_association(
+      const char *path, const char *label,
+      unsigned type, size_t idx, size_t entry_idx)
 {
    playlist_t *playlist  = playlist_get_cached();
 
@@ -261,7 +308,9 @@ static int action_start_playlist_association(unsigned type, const char *label)
    return 0;
 }
 
-static int action_start_playlist_label_display_mode(unsigned type, const char *label)
+static int action_start_playlist_label_display_mode(
+      const char *path, const char *label,
+      unsigned type, size_t idx, size_t entry_idx)
 {
    playlist_t *playlist  = playlist_get_cached();
 
@@ -275,7 +324,9 @@ static int action_start_playlist_label_display_mode(unsigned type, const char *l
    return 0;
 }
 
-static int action_start_playlist_right_thumbnail_mode(unsigned type, const char *label)
+static int action_start_playlist_right_thumbnail_mode(
+      const char *path, const char *label,
+      unsigned type, size_t idx, size_t entry_idx)
 {
    playlist_t *playlist = playlist_get_cached();
 
@@ -289,7 +340,9 @@ static int action_start_playlist_right_thumbnail_mode(unsigned type, const char 
    return 0;
 }
 
-static int action_start_playlist_left_thumbnail_mode(unsigned type, const char *label)
+static int action_start_playlist_left_thumbnail_mode(
+      const char *path, const char *label,
+      unsigned type, size_t idx, size_t entry_idx)
 {
    playlist_t *playlist = playlist_get_cached();
 
@@ -303,14 +356,18 @@ static int action_start_playlist_left_thumbnail_mode(unsigned type, const char *
    return 0;
 }
 
-static int action_start_manual_content_scan_dir(unsigned type, const char *label)
+static int action_start_manual_content_scan_dir(
+      const char *path, const char *label,
+      unsigned type, size_t idx, size_t entry_idx)
 {
    /* Reset content directory */
    manual_content_scan_set_menu_content_dir("");
    return 0;
 }
 
-static int action_start_manual_content_scan_system_name(unsigned type, const char *label)
+static int action_start_manual_content_scan_system_name(
+      const char *path, const char *label,
+      unsigned type, size_t idx, size_t entry_idx)
 {
    /* Reset system name */
    manual_content_scan_set_menu_system_name(
@@ -318,7 +375,9 @@ static int action_start_manual_content_scan_system_name(unsigned type, const cha
    return 0;
 }
 
-static int action_start_manual_content_scan_core_name(unsigned type, const char *label)
+static int action_start_manual_content_scan_core_name(
+      const char *path, const char *label,
+      unsigned type, size_t idx, size_t entry_idx)
 {
    /* Reset core name */
    manual_content_scan_set_menu_core_name(
@@ -326,7 +385,9 @@ static int action_start_manual_content_scan_core_name(unsigned type, const char 
    return 0;
 }
 
-static int action_start_video_resolution(unsigned type, const char *label)
+static int action_start_video_resolution(
+      const char *path, const char *label,
+      unsigned type, size_t idx, size_t entry_idx)
 {
    unsigned width = 0, height = 0;
    global_t *global = global_get_ptr();
@@ -349,7 +410,9 @@ static int action_start_video_resolution(unsigned type, const char *label)
    return 0;
 }
 
-static int action_start_load_core(unsigned type, const char *label)
+static int action_start_load_core(
+      const char *path, const char *label,
+      unsigned type, size_t idx, size_t entry_idx)
 {
    int ret                     = generic_action_ok_command(
          CMD_EVENT_UNLOAD_CORE);
@@ -360,7 +423,9 @@ static int action_start_load_core(unsigned type, const char *label)
    return ret;
 }
 
-static int action_start_lookup_setting(unsigned type, const char *label)
+static int action_start_lookup_setting(
+      const char *path, const char *label,
+      unsigned type, size_t idx, size_t entry_idx)
 {
    return menu_setting_set(type, MENU_ACTION_START, false);
 }
@@ -458,7 +523,7 @@ static int menu_cbs_init_bind_start_compare_type(menu_file_list_cbs_t *cbs,
    else if (type >= MENU_SETTINGS_SHADER_PRESET_PARAMETER_0
          && type <= MENU_SETTINGS_SHADER_PRESET_PARAMETER_LAST)
    {
-      BIND_ACTION_START(cbs, action_start_shader_action_parameter);
+      BIND_ACTION_START(cbs, action_start_shader_action_preset_parameter);
    }
    else
 #endif
@@ -487,7 +552,16 @@ static int menu_cbs_init_bind_start_compare_type(menu_file_list_cbs_t *cbs,
       BIND_ACTION_START(cbs, action_start_video_resolution);
    }
    else
-      return -1;
+   {
+      switch (type)
+      {
+         case FILE_TYPE_PLAYLIST_COLLECTION:
+            BIND_ACTION_START(cbs, action_ok_push_playlist_manager_settings);
+            break;
+         default:
+            return -1;
+      }
+   }
 
    return 0;
 }

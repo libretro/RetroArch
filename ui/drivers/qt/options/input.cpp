@@ -42,7 +42,7 @@ QWidget *InputPage::widget()
    {
       unsigned i;
       file_list_t *list     = (file_list_t*)calloc(1, sizeof(*list));
-      menu_displaylist_build_list(list, DISPLAYLIST_INPUT_SETTINGS_LIST);
+      menu_displaylist_build_list(list, DISPLAYLIST_INPUT_SETTINGS_LIST, true);
 
       for (i = 0; i < list->size; i++)
       {
@@ -72,29 +72,24 @@ HotkeyBindsPage::HotkeyBindsPage(QObject *parent) :
 QWidget *HotkeyBindsPage::widget()
 {
    unsigned i;
-   unsigned count          = 0;
-   unsigned half           = 40 / 2; /* TODO unhardcode */
    QWidget *widget         = new QWidget;
    QHBoxLayout *layout     = new QHBoxLayout;
-   FormLayout *leftLayout  = new FormLayout;
-   FormLayout *rightLayout = new FormLayout;
+   FormLayout *mainLayout  = new FormLayout;
+   file_list_t *list       = (file_list_t*)calloc(1, sizeof(*list));
 
-   for (i = 0; i < RARCH_BIND_LIST_END; i++)
+   menu_displaylist_build_list(list, DISPLAYLIST_INPUT_HOTKEY_BINDS_LIST, true);
+
+   for (i = 0; i < list->size; i++)
    {
-      enum msg_hash_enums lbl = (enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_BEGIN + i);
+      menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
+         file_list_get_actiondata_at_offset(list, i);
 
-      if (count < half)
-      {
-         if (leftLayout->add(lbl))
-            count++;
-      }
-      else
-         rightLayout->add(lbl);
+      mainLayout->add(cbs->enum_idx);
    }
 
-   layout->addLayout(leftLayout);
-   layout->addSpacing(50);
-   layout->addLayout(rightLayout);
+   file_list_free(list);
+
+   layout->addLayout(mainLayout);
 
    widget->setLayout(layout);
 
