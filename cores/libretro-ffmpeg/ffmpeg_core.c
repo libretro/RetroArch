@@ -117,6 +117,7 @@ static ASS_Renderer *ass_render;
 static ASS_Track *ass_track[MAX_STREAMS];
 static uint8_t *ass_extra_data[MAX_STREAMS];
 static size_t ass_extra_data_size[MAX_STREAMS];
+static slock_t *ass_lock;
 #endif
 
 struct attachment
@@ -1322,6 +1323,7 @@ static void sws_worker_thread(void *arg)
 
 #ifdef HAVE_SSA
    double video_time = ctx->pts * av_q2d(fctx->streams[video_stream_index]->time_base);
+   slock_lock(ass_lock);
    if (ass_render && ctx->ass_track_active)
    {
       int change     = 0;
@@ -1329,6 +1331,7 @@ static void sws_worker_thread(void *arg)
             1000 * video_time, &change);
       render_ass_img(ctx->target, img);
    }
+   slock_unlock(ass_lock);
 #endif
 
    av_frame_unref(ctx->source);
@@ -1513,6 +1516,12 @@ static void decode_thread_seek(double time)
    if(avformat_seek_file(fctx, -1, INT64_MIN, seek_to, INT64_MAX, 0) < 0)
       log_cb(RETRO_LOG_ERROR, "[FFMPEG] av_seek_frame() failed.\n");
 
+   if (video_stream_index >= 0)
+   {
+      tpool_wait(tpool);
+      video_buffer_clear(video_buffer);
+   }
+
    if (actx[audio_streams_ptr])
       avcodec_flush_buffers(actx[audio_streams_ptr]);
    if (vctx)
@@ -1556,7 +1565,7 @@ static void decode_thread(void *data)
       frame_size = avpicture_get_size(PIX_FMT_RGB32, media.width, media.height);
       video_buffer = video_buffer_create(32, frame_size, media.width, media.height);
       tpool = tpool_create(sw_sws_threads);
-      log_cb(RETRO_LOG_INFO, "[FFMPEG] Configured filtering threads: %d\n", sw_sws_threads);
+      log_cb(RETRO_LOG_INFO, "[FFMPEG] Configured worker threads: %d\n", sw_sws_threads);
    }
 
    while (!decode_thread_dead)
@@ -1584,12 +1593,6 @@ static void decode_thread(void *data)
          slock_lock(fifo_lock);
          do_seek = false;
          seek_time = 0.0;
-
-         if (video_stream_index >= 0)
-         {
-            tpool_wait(tpool);
-            video_buffer_clear(video_buffer);
-         }
 
          if (audio_decode_fifo)
             fifo_clear(audio_decode_fifo);
@@ -1644,9 +1647,11 @@ static void decode_thread(void *data)
 #ifdef HAVE_SSA
          for (i = 0; i < sub.num_rects; i++)
          {
+            slock_lock(ass_lock);
             if (sub.rects[i]->ass && ass_track_active)
                ass_process_data(ass_track_active,
                      sub.rects[i]->ass, strlen(sub.rects[i]->ass));
+            slock_unlock(ass_lock);
          }
 #endif
 
@@ -1795,6 +1800,10 @@ void CORE_PREFIX(retro_unload_game)(void)
       slock_free(fifo_lock);
    if (decode_thread_lock)
       slock_free(decode_thread_lock);
+#ifdef HAVE_SSA
+   if (ass_lock)
+      slock_free(ass_lock);
+#endif
 
    if (audio_decode_fifo)
       fifo_free(audio_decode_fifo);
@@ -1804,6 +1813,9 @@ void CORE_PREFIX(retro_unload_game)(void)
    fifo_lock = NULL;
    decode_thread_lock = NULL;
    audio_decode_fifo = NULL;
+#ifdef HAVE_SSA
+   ass_lock = NULL;
+#endif
 
    decode_last_audio_time = 0.0;
 
@@ -1964,6 +1976,9 @@ bool CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
    fifo_cond        = scond_new();
    fifo_decode_cond = scond_new();
    fifo_lock        = slock_new();
+#ifdef HAVE_SSA
+   ass_lock         = slock_new();
+#endif
 
    slock_lock(fifo_lock);
    decode_thread_dead = false;
