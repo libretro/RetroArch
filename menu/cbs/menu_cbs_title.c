@@ -77,6 +77,15 @@ static int action_get_title_action_generic(const char *path, const char *label,
    return 1; \
 }
 
+static int action_get_title_remap_port(const char *path, const char *label,
+      unsigned menu_type, char *s, size_t len)
+{
+   char lbl[128];
+   snprintf(lbl, sizeof(lbl), "Port %d Controls", atoi(path) + 1);
+   sanitize_to_string(s, lbl, len);
+   return 1;
+}
+
 static int action_get_title_thumbnails(
       const char *path, const char *label, unsigned menu_type, char *s, size_t len)
 {
@@ -622,6 +631,7 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
    } title_info_list_t;
 
    title_info_list_t info_list[] = {
+      {MENU_ENUM_LABEL_DEFERRED_REMAPPINGS_PORT_LIST,                 action_get_title_remap_port},
       {MENU_ENUM_LABEL_DEFERRED_CORE_SETTINGS_LIST,                   action_get_core_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_DUMP_DISC_LIST,                       action_get_dump_disc_list},
       {MENU_ENUM_LABEL_DEFERRED_LOAD_DISC_LIST,                       action_get_load_disc_list},
