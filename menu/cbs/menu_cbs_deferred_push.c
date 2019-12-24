@@ -78,6 +78,11 @@ static int (name)(menu_displaylist_info_t *info) \
    return deferred_push_dlist(info, type); \
 }
 
+static int deferred_push_remappings_port(menu_displaylist_info_t *info)
+{
+   return deferred_push_dlist(info, DISPLAYLIST_OPTIONS_REMAPPINGS_PORT);
+}
+
 generic_deferred_push(deferred_push_video_shader_preset_parameters, DISPLAYLIST_SHADER_PARAMETERS_PRESET)
 generic_deferred_push(deferred_push_video_shader_parameters,        DISPLAYLIST_SHADER_PARAMETERS)
 generic_deferred_push(deferred_push_video_shader_preset_save,       DISPLAYLIST_SHADER_PRESET_SAVE)
@@ -760,6 +765,7 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
 #if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
       {MENU_ENUM_LABEL_SWITCH_CPU_PROFILE, deferred_push_switch_cpu_profile},
 #endif
+      {MENU_ENUM_LABEL_DEFERRED_REMAPPINGS_PORT_LIST, deferred_push_remappings_port },
       {MENU_ENUM_LABEL_DEFERRED_ACCOUNTS_LIST, deferred_push_accounts_list},
       {MENU_ENUM_LABEL_CORE_LIST, deferred_push_core_list},
       {MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY, deferred_push_history_list},

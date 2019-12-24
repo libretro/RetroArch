@@ -170,6 +170,8 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
 {
    switch (lbl)
    {
+      case ACTION_OK_DL_REMAPPINGS_PORT_LIST:
+         return MENU_ENUM_LABEL_DEFERRED_REMAPPINGS_PORT_LIST;
       case ACTION_OK_DL_DROPDOWN_BOX_LIST_SHADER_PARAMETER:
          return MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_VIDEO_SHADER_PARAMETER;
       case ACTION_OK_DL_DROPDOWN_BOX_LIST_SHADER_PRESET_PARAMETER:
@@ -415,6 +417,15 @@ int generic_action_ok_displaylist_push(const char *path,
                MENU_ENUM_LABEL_DEFERRED_VIDEO_LIST);
          info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_VIDEO_LIST;
          dl_type           = DISPLAYLIST_GENERIC;
+         break;
+      case ACTION_OK_DL_REMAPPINGS_PORT_LIST:
+         info.type          = type;
+         info.directory_ptr = idx;
+         info.path          = strdup(label);
+         info_label         = msg_hash_to_str(
+               MENU_ENUM_LABEL_DEFERRED_REMAPPINGS_PORT_LIST);
+         info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_REMAPPINGS_PORT_LIST;
+         dl_type            = DISPLAYLIST_GENERIC;
          break;
       case ACTION_OK_DL_DROPDOWN_BOX_LIST:
          info.type          = type;
@@ -5981,6 +5992,16 @@ static int action_ok_playlist_right_thumbnail_mode(const char *path,
          ACTION_OK_DL_DROPDOWN_BOX_LIST_PLAYLIST_RIGHT_THUMBNAIL_MODE);
 }
 
+static int action_ok_remappings_port_list(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   generic_action_ok_displaylist_push(
+         path,
+         NULL, label, 0, idx, 0,
+         ACTION_OK_DL_REMAPPINGS_PORT_LIST);
+   return 0;
+}
+
 static int action_ok_shader_parameter_dropdown_box_list(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -7238,6 +7259,11 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
       BIND_ACTION_OK(cbs, action_ok_mixer_stream_actions);
    }
 #endif
+   else if (type >= MENU_SETTINGS_REMAPPING_PORT_BEGIN
+         && type <= MENU_SETTINGS_REMAPPING_PORT_END)
+   {
+      BIND_ACTION_OK(cbs, action_ok_remappings_port_list);
+   }
    else if (type >= MENU_SETTINGS_SHADER_PARAMETER_0
          && type <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
    {
