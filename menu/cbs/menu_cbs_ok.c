@@ -5559,6 +5559,7 @@ static int action_ok_push_dropdown_item_video_shader_param_generic(const char *p
       const char *label, unsigned type, size_t idx, size_t entry_idx,
       size_t setting_offset)
 {
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    video_shader_ctx_t shader_info;
    unsigned offset                           = setting_offset;
    float val                                 = atof(path);
@@ -5580,6 +5581,9 @@ static int action_ok_push_dropdown_item_video_shader_param_generic(const char *p
    menu_shader_set_modified(true);
 
    return action_cancel_pop_default(NULL, NULL, 0, 0);
+#else
+   return 0;
+#endif
 }
 
 static int action_ok_push_dropdown_item_video_shader_param(const char *path,
