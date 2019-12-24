@@ -378,14 +378,6 @@ static int action_left_shader_num_passes(unsigned type, const char *label,
 
    return 0;
 }
-
-static int action_left_shader_watch_for_changes(unsigned type, const char *label,
-      bool wraparound)
-{
-   settings_t *settings = config_get_ptr();
-   settings->bools.video_shader_watch_files = !settings->bools.video_shader_watch_files;
-   return 0;
-}
 #endif
 
 static int action_left_video_resolution(unsigned type, const char *label,
@@ -812,11 +804,6 @@ static int menu_cbs_init_bind_left_compare_label(menu_file_list_cbs_t *cbs,
             case MENU_ENUM_LABEL_VIDEO_SHADER_DEFAULT_FILTER:
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
                BIND_ACTION_LEFT(cbs, action_left_shader_filter_default);
-#endif
-               break;
-            case MENU_ENUM_LABEL_SHADER_WATCH_FOR_CHANGES:
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-               BIND_ACTION_LEFT(cbs, action_left_shader_watch_for_changes);
 #endif
                break;
             case MENU_ENUM_LABEL_VIDEO_SHADER_NUM_PASSES:

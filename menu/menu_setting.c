@@ -10149,6 +10149,22 @@ static bool setting_append_list(
             menu_settings_list_current_add_range(list, list_info, 0, 0, 1, true, false);
             SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
 
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.video_shader_watch_files,
+                  MENU_ENUM_LABEL_SHADER_WATCH_FOR_CHANGES,
+                  MENU_ENUM_LABEL_VALUE_SHADER_WATCH_FOR_CHANGES,
+                  DEFAULT_VIDEO_SHADER_WATCH_FILES,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE
+                  );
+
 #if !defined(RARCH_MOBILE)
             if (video_driver_test_all_flags(GFX_CTX_FLAGS_BLACK_FRAME_INSERTION))
             {
