@@ -5515,7 +5515,7 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
                {MENU_ENUM_LABEL_UI_COMPANION_START_ON_BOOT,                            PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_UI_MENUBAR_ENABLE,                                     PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_DESKTOP_MENU_ENABLE,                                   PARSE_ONLY_BOOL,   true},
-               {MENU_ENUM_LABEL_UI_COMPANION_TOGGLE,                                   PARSE_ONLY_BOOL,   true},
+               {MENU_ENUM_LABEL_UI_COMPANION_TOGGLE,                                   PARSE_ONLY_BOOL,   false},
                {MENU_ENUM_LABEL_VIDEO_3DS_DISPLAY_MODE,                                PARSE_ONLY_UINT,   true},
                {MENU_ENUM_LABEL_VIDEO_3DS_LCD_BOTTOM,                                  PARSE_ONLY_BOOL,   true},
             };
@@ -5526,6 +5526,10 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
                {
                   case MENU_ENUM_LABEL_MENU_KIOSK_MODE_PASSWORD:
                      if (settings->bools.kiosk_mode_enable)
+                        build_list[i].checked = true;
+                     break;
+                  case MENU_ENUM_LABEL_UI_COMPANION_TOGGLE:
+                     if (settings->bools.desktop_menu_enable)
                         build_list[i].checked = true;
                      break;
                   default:
