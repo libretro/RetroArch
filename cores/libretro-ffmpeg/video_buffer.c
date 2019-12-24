@@ -70,7 +70,9 @@ video_buffer_t *video_buffer_create(size_t num, int frame_size, int width, int h
 
       if (!b->buffer[i].sws ||
           !b->buffer[i].source ||
+#if LIBAVUTIL_VERSION_MAJOR > 55
           !b->buffer[i].hw_source ||
+#endif
           !b->buffer[i].target ||
           !b->buffer[i].frame_buf)
          goto fail;
