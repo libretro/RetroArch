@@ -33,10 +33,12 @@
 #endif
 
 #define sanitize_to_string(s, label, len) \
-   char *pos = NULL; \
-   strlcpy(s, label, len); \
-   while((pos = strchr(s, '_'))) \
-      *pos = ' '
+   { \
+      char *pos = NULL; \
+      strlcpy(s, label, len); \
+      while((pos = strchr(s, '_'))) \
+         *pos = ' '; \
+   }
 
 static int action_get_title_action_generic(const char *path, const char *label,
       unsigned menu_type, char *s, size_t len)
