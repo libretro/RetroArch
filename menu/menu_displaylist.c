@@ -5099,7 +5099,7 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
                {MENU_ENUM_LABEL_NETPLAY_SPECTATE_PASSWORD,                             PARSE_ONLY_STRING, true},
                {MENU_ENUM_LABEL_NETPLAY_START_AS_SPECTATOR,                            PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_NETPLAY_ALLOW_SLAVES,                                  PARSE_ONLY_BOOL,   true},
-               {MENU_ENUM_LABEL_NETPLAY_REQUIRE_SLAVES,                                PARSE_ONLY_BOOL,   true},
+               {MENU_ENUM_LABEL_NETPLAY_REQUIRE_SLAVES,                                PARSE_ONLY_BOOL,   false},
                {MENU_ENUM_LABEL_NETPLAY_STATELESS_MODE,                                PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_NETPLAY_CHECK_FRAMES,                                  PARSE_ONLY_INT,    true},
                {MENU_ENUM_LABEL_NETPLAY_INPUT_LATENCY_FRAMES_MIN,                      PARSE_ONLY_INT,    true},
@@ -5113,6 +5113,10 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
             {
                switch (build_list[i].enum_idx)
                {
+                  case MENU_ENUM_LABEL_NETPLAY_REQUIRE_SLAVES:
+                     if (settings->bools.netplay_allow_slaves)
+                        build_list[i].checked = true;
+                     break;
                   case MENU_ENUM_LABEL_NETPLAY_MITM_SERVER:
                      if (settings->bools.netplay_use_mitm_server)
                         build_list[i].checked = true;

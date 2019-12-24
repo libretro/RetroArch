@@ -15561,6 +15561,9 @@ static bool setting_append_list(
                   general_read_handler,
                   SD_FLAG_NONE);
             SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
+            (*list)[list_info->index - 1].action_ok     = &setting_bool_action_left_with_refresh;
+            (*list)[list_info->index - 1].action_left   = &setting_bool_action_left_with_refresh;
+            (*list)[list_info->index - 1].action_right  = &setting_bool_action_right_with_refresh;
 
             CONFIG_BOOL(
                   list, list_info,
