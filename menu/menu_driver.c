@@ -67,7 +67,9 @@
 #include "../ui/ui_companion_driver.h"
 #include "../verbosity.h"
 #include "../tasks/task_powerstate.h"
+#ifdef HAVE_NETWORKING
 #include "../core_updater_list.h"
+#endif
 
 #define SCROLL_INDEX_SIZE          (2 * (26 + 2) + 1)
 
@@ -3597,7 +3599,9 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
          menu_shader_manager_free();
 #endif
+#ifdef HAVE_NETWORKING
          core_updater_list_free_cached();
+#endif
 
          if (menu_driver_data)
          {
