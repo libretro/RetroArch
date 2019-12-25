@@ -1,15 +1,28 @@
 # Future
 
 # 1.8.2
+- BUG/CRASH/GLSLANG: Fix glslang crashing error - I accidentally managed to reproduce an issue which has been plaguing
+users for a while, where glslang throws an assert after closing a game (and starting a new one). This would affect all video drivers that use Slang for shaders, such as D3D10/11/12/Vulkan/Metal
 - CHEEVOS: Display Unofficial and Unsupported achievement states
 - CHEEVOS: Pass RetroArch and core versions through User-Agent HTTP header
 - CHEEVOS: Use PSX.EXE if SYSTEM.CNF cannot be found
 - CHEEVOS: Prevent loading state while achievements are still being fetched from server
 - CHEEVOS: Pause hardcore if core doesn't support achievements
+- CHEEVOS/CRASH: Fix AddressSanitizer + CHD cause hard crash when Cheevos are enabled
+- CORE UPDATER: Only download when new core is available
+- CORE UPDATER: Add option to update all installed cores
 - DRM/KMS: Better detection for the current video mode
+- DYNAMIC RATE CONTROL: Support DRC even when using a vsync swap interval higher than 1
+- EMSCRIPTEN: Fix bug in Emscripten input code
+- EMSCRIPTEN: Changes to support upgraded emscripten SDK
 - FFMPEG CORE: Hardware accelerated video decoding
 - FFMPEG CORE: Implement send/receive encoding API, will allow for hardware accelerated AMD video encoding
+- FFMPEG CORE: The video FIFO can be removed, since we have a ring buffer in its place. This removes unneeded copy operations and as a positive side improves overall decoding speed. Makes 8k60p SW and 4k60p HW decoding feasible on many systems. For now the ring buffer is 32 images deep. This limitation will be removed, once audio and video decoder have their own packet handling.
 - INPUT: Fix 'Analog stick controls menu even if autoconfig disabled'
+- INPUT/TURBO: Added alternate Turbo-Mode 'Single Button' - For systems supporting only a single button, the turbo-button will toggle firing that button without the need to hold it. When holding the button turbo will be suspended and resumed when the button is released. Holding the button may have a different function to just tapping it.
+- INPUT/ANALOG: Fix radial analog deadzone scaling
+- INPUT/ANALOG: Implement proper analog button deadzone
+- INPUT/MENU: Analog stick controls menu even if autoconfig disabled
 - LOCALIZATION: Update Italian translation
 - LOCALIZATION: Update French translation
 - LOCALIZATION: Update Polish translation
@@ -25,11 +38,53 @@
 - MENU/LINUX: Add proper drives to Load Content
 - MENU/MATERIALUI: Halt scrolling when pointer is pressed/stationary
 - MENU/MATERIALUI: Dual thumbnail view
-- MENU/MATERIALUI: Fullscreen thumbnail viewer
+- MENU/MATERIALUI: Fullscreen thumbnail viewer for boxart
 - MENU/MATERIALUI: Scroll rapidly by press and holding the scrollbar
 - MENU/RGUI: New theme 'Flux'
 - MENU/OZONE: Thumbnails now have a fade-in animation
+- MENU/OZONE: Fullscreen thumbnail viewer for boxart and pictures
 - MENU/QT/WIMP: Fix dock titles getting cut off
+- MENU/XMB: Fullscreen thumbnail viewer for boxart and pictures
+- MENU/USABILITY: Selectively hide 'Disallow Non-Slave Mode Clients' if 'Allow Slave-Mode Clients' is disabled
+- MENU/USABILITY: Hide 'Show desktop menu on startup' if 'Desktop menu' setting itself is disabled
+- MENU/USABILITY: Reimplement Quick Menu - > Shaders -> Watch shader files for changes - can now be turned on/off through touch
+- MENU/USABILITY: Refactor Quick Menu - Controls - each port now has its own submenu
+- MENU/USABILITY: Quick Menu - Cheats - Delete All no longer requires five right button presses - this should fix this functionality for mobile touch users too
+- MENU/USABILITY: Hide Refresh Rate options when Threaded Video is enabled - these settings do nothing with Threaded Video
+- MENU/USABILITY: Hide Logging Verbosity levels behind Logging Verbosity
+- MENU/USABILITY: Get rid of 'Port Number' label for Port Binds screen
+- MENU/USABILITY/MOBILE: Should no longer crash when clicking on a cheat entry
+- MENU/USABILITY: Shader parameters now have a dropdown list
+- MENU/USABILITY: Shader passes now has a dropdown list
+- MENU/USABILITY: Video - Hide Windowed Mode settings selectively
+- MENU/USABILITY: Video - Hide Fullscreen Mode settings if windowed mode is not supported by context driver
+- MENU/USABILITY: Selectively hide Network Command Port
+- MENU/USABILITY: Selectively hide Relay Server Location
+- MENU/USABILITY: User Interface -> Appearance - Selectively hide XMB Horizontal Animation setting
+- MENU/USABILITY: Playlists - more selective hiding
+- MENU/USABILITY: Selectively hide Rewind Settings
+- MENU/USABILITY: Selectively hide Overlay Settings
+- MENU/USABILITY: Selectively hide FPS Update Interval based on Display Framerate being enabled
+- MENU/USABILITY: Selectively hide Onscreen Notifications BG Color Settings
+- MENU/USABILITY: Settings -> Logging - Hide 'Log To File Timestamp' if 'Log To File' is disabled
+- MENU/USABILITY: Video -> Scaling - Hide Custom Viewport X/Y when Integer Scale is enabled as description indicates
+- MENU/USABILITY: Achievement submenu - selectively hide
+- MENU/USABILITY: Settings -> Video -> Aspect ratio - selectively hide/show values based on whether you have Custom or Config selected
+- MENU/USABILITY: Settings -> Video -> Selectively hide Hard Sync
+- MENU/USABILITY: Settings -> Video -> Implement selective hiding for VSync and Hard Sync
+- MENU/USABILITY: Selective hiding of Runahead settings based on global setting
+- MENU/USABILITY: Add Input -> Haptic Feedback submenu
+- MENU/USABILITY: Add Input -> Menu Controls submenu
+- MENU/USABILITY: Settings -> Video -> Max Swapchain Images - Add OK action
+- MENU/USABILITY: Input - Implement OK action for Bind Hold, Turbo Period and Duty Cycle
+- MENU/USABILITY: Input - Hotkey Binds refactor
+- MENU/USABILITY: Move 'Press Quit Twice' and 'Menu Toggle Gamepad Combo' to Input -> Hotkey Binds
+- MENU/USABILITY: Video - Add sublabel for Video Output submenu
+- MENU/USABILITY:  If 'Favorites Tab' is disabled, don't show 'Add To Favorites' option in Quick Menu/Playlist menu
+- MENU/USABILITY: If On-Demand Thumbnail Downloader is enabled, hide 'Download Thumbnails' from playlist menu screen
+- MENU/USABILITY: Add Audio Driver setting to Audio -> Output
+- MENU/USABILITY: Add Audio -> Resampler settings
+- MENU/USABILITY: Add Audio -> Output and Audio -> Synchronization
 - OPENGL: Shaders are now working properly (only in OpenGL) when rotating both from Core API rotation and from menu video rotation. The fix is clearly visible with crt-royale for example
 - OPENGL: 1:1 PAR is now correct when rotating (both from Core API rotation and from menu video rotation, as you said, in the latter case you currently have to change Aspect Ratio after menu video rotation for it to work)
 - OPENGL: When using Custom Aspect Ratio and rotation (both from Core API rotation and from menu video rotation), Integer Scaling is now working properly (correct multiples of internal resolution). Even when Integer Scaling is not activated, the Custom AR width / height are now correctly labeled using (1x), (2x), ... suffixes. You also have to activate Integer Scaling after menu video rotation for it to work
@@ -43,6 +98,12 @@
 - VIDEO: Support DRC even when using a vsync swap interval higher than 1
 - VIDEO LAYOUT: Fixed XML parsing of attributes with spaces, should fix issues with several video layouts
 - VITA: GL1 driver support
+- VITA/VITA2D: Several improvements to Vita 2D driver - menu widgets implemented
+- VITA/VITA2D: Fix clipping and reduce number of calls
+- VULKAN/ANDROID: Workaround weird WSI return codes in landscape mode -  Android WSI wants you to use preTransform, and if it is not used correctly, Android 10 will return VK_SUBOPTIMAL_KHR, and we would create a new swapchain every frame. This workaround just ignores this error, since it's not really an error. A more "proper" fix is to use prerotate and modify the MVP matrices,
+which might help certain devices with crummy display processors
+- VULKAN/ANDROID: Recreate swapchain on orientation change. ANativeWindow getWidth/Height does not detect any changes when using
+Vulkan, so use the old onContentRectChanged callback to get notified when size changed. Use those values instead when figuring out how large swapchain to create
 - WINDOWS/XINPUT: Get rid of 128 byte device name limit for XInput device discover - when device name was too long, it would not be picked up by the XInput driver and would instead fallback to DirectInput
 - WINDOWS: ANGLE OpenGL ES 2 support
 - UWP: Fix crashes on startup / prompt for folder permissions when trying to load custom.ini
