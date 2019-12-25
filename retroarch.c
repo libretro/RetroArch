@@ -13676,9 +13676,11 @@ static int16_t input_state_device(
                      input_driver_turbo_btns.turbo_pressed[port] &= ~(1 << id);
                   else if (!(input_driver_turbo_btns.turbo_pressed[port] & (1 << id)))
                   {
+                     uint16_t enable_new;
                      input_driver_turbo_btns.turbo_pressed[port] |= 1 << id;
-                     /* Toggle turbo for pressed button but make sure at least one button has turbo */
-                     uint16_t enable_new = input_driver_turbo_btns.enable[port] ^ (1 << id);
+                     /* Toggle turbo for pressed button but make 
+                      * sure at least one button has turbo */
+                     enable_new = input_driver_turbo_btns.enable[port] ^ (1 << id);
                      if (enable_new)
                         input_driver_turbo_btns.enable[port] = enable_new;
                   }
