@@ -1,7 +1,7 @@
 # Future
 
 # 1.8.2
-- BUG/CRASH/GLSLANG: Fix glslang crashing error - I accidentally managed to reproduce an issue which has been plaguing
+- BUG/CRASH/GLSLANG: Fix glslang crashing error - managed to reproduce an issue which has been plaguing
 users for a while, where glslang throws an assert after closing a game (and starting a new one). This would affect all video drivers that use Slang for shaders, such as D3D10/11/12/Vulkan/Metal
 - CHEEVOS: Display Unofficial and Unsupported achievement states
 - CHEEVOS: Pass RetroArch and core versions through User-Agent HTTP header
