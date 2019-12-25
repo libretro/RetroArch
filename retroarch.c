@@ -19833,12 +19833,23 @@ static bool hw_render_context_is_gl(enum retro_hw_context_type type)
 
 bool *video_driver_get_threaded(void)
 {
+#if defined(__MACH__) && defined(__APPLE__) 
+   /* TODO/FIXME - force threaded video to disabled on Apple for now
+    * until NSWindow/UIWindow concurrency issues are taken care of */
+   video_driver_threaded = false;
+#endif
    return &video_driver_threaded;
 }
 
 void video_driver_set_threaded(bool val)
 {
+#if defined(__MACH__) && defined(__APPLE__) 
+   /* TODO/FIXME - force threaded video to disabled on Apple for now
+    * until NSWindow/UIWindow concurrency issues are taken care of */
+   video_driver_threaded = false;
+#else
    video_driver_threaded = val;
+#endif
 }
 
 const char *video_driver_get_ident(void)
