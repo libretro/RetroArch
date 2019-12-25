@@ -7590,7 +7590,13 @@ static void materialui_list_insert(
                node->icon_texture_index = MUI_TEXTURE_TAKE_SCREENSHOT;
                node->has_icon           = true;
             }
-            else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CONFIGURATIONS_LIST)))
+            else if (
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CONFIGURATIONS)) ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_RESET_TO_DEFAULT_CONFIG)) ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG)) ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SAVE_NEW_CONFIG)) ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CONFIGURATIONS_LIST))
+                  )
             {
                node->icon_texture_index = MUI_TEXTURE_CONFIGURATIONS;
                node->has_icon           = true;
