@@ -5475,6 +5475,66 @@ static void setting_get_string_representation_toggle_gamepad_combo(
    }
 }
 
+static void setting_get_string_representation_turbo_mode(
+      rarch_setting_t *setting,
+      char *s, size_t len)
+{
+   if (!setting)
+      return;
+
+   switch (*setting->value.target.unsigned_integer)
+   {
+      case INPUT_TURBO_MODE_CLASSIC:
+         strlcpy(s, "Classic", len);
+         break;
+      case INPUT_TURBO_MODE_SINGLEBUTTON:
+         strlcpy(s, "Single Button", len);
+         break;
+   }
+}
+
+static void setting_get_string_representation_turbo_default_button(
+      rarch_setting_t *setting,
+      char *s, size_t len)
+{
+   if (!setting)
+      return;
+
+   switch (*setting->value.target.unsigned_integer)
+   {
+      case INPUT_TURBO_DEFAULT_BUTTON_B:
+         strlcpy(s, "B / Fire", len);
+         break;
+      case INPUT_TURBO_DEFAULT_BUTTON_Y:
+         strlcpy(s, "Y", len);
+         break;
+      case INPUT_TURBO_DEFAULT_BUTTON_A:
+         strlcpy(s, "A", len);
+         break;
+      case INPUT_TURBO_DEFAULT_BUTTON_X:
+         strlcpy(s, "X", len);
+         break;
+      case INPUT_TURBO_DEFAULT_BUTTON_L:
+         strlcpy(s, "L", len);
+         break;
+      case INPUT_TURBO_DEFAULT_BUTTON_R:
+         strlcpy(s, "R", len);
+         break;
+      case INPUT_TURBO_DEFAULT_BUTTON_L2:
+         strlcpy(s, "L2", len);
+         break;
+      case INPUT_TURBO_DEFAULT_BUTTON_R2:
+         strlcpy(s, "R2", len);
+         break;
+      case INPUT_TURBO_DEFAULT_BUTTON_L3:
+         strlcpy(s, "L3", len);
+         break;
+      case INPUT_TURBO_DEFAULT_BUTTON_R3:
+         strlcpy(s, "R3", len);
+         break;
+   }
+}
+
 #ifdef HAVE_NETWORKING
 static void setting_get_string_representation_netplay_share_digital(
       rarch_setting_t *setting,
@@ -11214,6 +11274,40 @@ static bool setting_append_list(
                   &group_info,
                   &subgroup_info,
                   parent_group);
+
+            CONFIG_UINT(
+                  list, list_info,
+                  &settings->uints.input_turbo_mode,
+                  MENU_ENUM_LABEL_INPUT_TURBO_MODE,
+                  MENU_ENUM_LABEL_VALUE_INPUT_TURBO_MODE,
+                  turbo_mode,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+            (*list)[list_info->index - 1].get_string_representation =
+               &setting_get_string_representation_turbo_mode;
+            menu_settings_list_current_add_range(list, list_info, 0, (INPUT_TURBO_MODE_LAST-1), 1, true, true);
+
+            CONFIG_UINT(
+                  list, list_info,
+                  &settings->uints.input_turbo_default_button,
+                  MENU_ENUM_LABEL_INPUT_TURBO_DEFAULT_BUTTON,
+                  MENU_ENUM_LABEL_VALUE_INPUT_TURBO_DEFAULT_BUTTON,
+                  turbo_default_btn,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+            (*list)[list_info->index - 1].get_string_representation =
+               &setting_get_string_representation_turbo_default_button;
+            menu_settings_list_current_add_range(list, list_info, 0, (INPUT_TURBO_DEFAULT_BUTTON_LAST-1), 1, true, true);
 
             END_SUB_GROUP(list, list_info, parent_group);
 

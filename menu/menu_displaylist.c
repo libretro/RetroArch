@@ -4591,6 +4591,14 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
                   MENU_ENUM_LABEL_INPUT_DUTY_CYCLE,
                   PARSE_ONLY_UINT, false) == 0)
             count++;
+          if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_INPUT_TURBO_MODE,
+                  PARSE_ONLY_UINT, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_INPUT_TURBO_DEFAULT_BUTTON,
+                  PARSE_ONLY_UINT, false) == 0)
+            count++;
          if (menu_displaylist_parse_settings_enum(list,
                   MENU_ENUM_LABEL_INPUT_BIND_MODE,
                   PARSE_ONLY_UINT, false) == 0)

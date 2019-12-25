@@ -1566,6 +1566,14 @@ MSG_HASH(
     "Turbo Period"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_MODE,
+    "Turbo Mode"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_DEFAULT_BUTTON,
+    "Turbo Default Button"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
     "Port %u Binds"
     )
@@ -5614,6 +5622,14 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_SUBLABEL_INPUT_DUTY_CYCLE,
     "Describes how long the period of a turbo-enabled button should be. Numbers are described in frames."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_INPUT_TURBO_MODE,
+    "Selects the general behavior of turbo mode."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_INPUT_TURBO_DEFAULT_BUTTON,
+    "Default active button for Turbo Mode 'Single Button'."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_VSYNC,

@@ -2191,3 +2191,7 @@ MSG_HASH(MENU_ENUM_LABEL_INPUT_MENU_SETTINGS,
       "input_menu_settings")
 MSG_HASH(MENU_ENUM_LABEL_INPUT_HAPTIC_FEEDBACK_SETTINGS,
       "input_haptic_feedback_settings")
+MSG_HASH(MENU_ENUM_LABEL_INPUT_TURBO_MODE,
+      "input_turbo_mode")
+MSG_HASH(MENU_ENUM_LABEL_INPUT_TURBO_DEFAULT_BUTTON,
+      "input_turbo_default_button")

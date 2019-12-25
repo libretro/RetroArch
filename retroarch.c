@@ -3216,6 +3216,8 @@ struct turbo_buttons
 {
    bool frame_enable[MAX_USERS];
    uint16_t enable[MAX_USERS];
+   bool mode1_enable[MAX_USERS];
+   int32_t turbo_pressed[MAX_USERS];
    unsigned count;
 };
 
@@ -13630,23 +13632,86 @@ static int16_t input_state_device(
          {
             /*
              * Apply turbo button if activated.
-             *
-             * If turbo button is held, all buttons pressed except
-             * for D-pad will go into a turbo mode. Until the button is
-             * released again, the input state will be modulated by a
-             * periodic pulse defined by the configured duty cycle.
              */
-            if (res && input_driver_turbo_btns.frame_enable[port])
-               input_driver_turbo_btns.enable[port] |= (1 << id);
-            else if (!res)
-               input_driver_turbo_btns.enable[port] &= ~(1 << id);
-
-            if (input_driver_turbo_btns.enable[port] & (1 << id))
+            if (settings->uints.input_turbo_mode == 1)
             {
-               /* if turbo button is enabled for this key ID */
-               res = res && ((input_driver_turbo_btns.count
-                        % settings->uints.input_turbo_period)
-                     < settings->uints.input_turbo_duty_cycle);
+               /* Pressing turbo button toggles turbo mode on or off. 
+                * Holding the button will
+                * pass through, else the pressed state will be modulated by a
+                * periodic pulse defined by the configured duty cycle.
+                */
+
+               /* Avoid detecting the turbo button being held as multiple toggles */
+               if (!input_driver_turbo_btns.frame_enable[port])
+                  input_driver_turbo_btns.turbo_pressed[port] &= ~(1<<31);
+               else if (input_driver_turbo_btns.turbo_pressed[port]>=0)
+               {
+                  input_driver_turbo_btns.turbo_pressed[port] |= (1<<31);
+                  /* Toggle turbo for selected buttons. */
+                  if (!input_driver_turbo_btns.enable[port])
+                  {
+                     static const int button_map[]={
+                        RETRO_DEVICE_ID_JOYPAD_B,
+                        RETRO_DEVICE_ID_JOYPAD_Y,
+                        RETRO_DEVICE_ID_JOYPAD_A,
+                        RETRO_DEVICE_ID_JOYPAD_X,
+                        RETRO_DEVICE_ID_JOYPAD_L,
+                        RETRO_DEVICE_ID_JOYPAD_R,
+                        RETRO_DEVICE_ID_JOYPAD_L2,
+                        RETRO_DEVICE_ID_JOYPAD_R2,
+                        RETRO_DEVICE_ID_JOYPAD_L3,
+                        RETRO_DEVICE_ID_JOYPAD_R3};
+                     input_driver_turbo_btns.enable[port] = 1 << button_map[
+                        min(
+                              sizeof(button_map)/sizeof(button_map[0])-1,
+                              settings->uints.input_turbo_default_button)];
+                  }
+                  input_driver_turbo_btns.mode1_enable[port] ^= 1;
+               }
+
+               if (input_driver_turbo_btns.turbo_pressed[port] & 1<<31)
+               {
+                  /* Avoid detecting buttons being held as multiple toggles */
+                  if (!res)
+                     input_driver_turbo_btns.turbo_pressed[port] &= ~(1 << id);
+                  else if (!(input_driver_turbo_btns.turbo_pressed[port] & (1 << id)))
+                  {
+                     input_driver_turbo_btns.turbo_pressed[port] |= 1 << id;
+                     /* Toggle turbo for pressed button but make sure at least one button has turbo */
+                     uint16_t enable_new = input_driver_turbo_btns.enable[port] ^ (1 << id);
+                     if (enable_new)
+                        input_driver_turbo_btns.enable[port] = enable_new;
+                  }
+               }
+
+               if (!res && input_driver_turbo_btns.mode1_enable[port] &&
+                     input_driver_turbo_btns.enable[port] & (1 << id))
+               {
+                  /* if turbo button is enabled for this key ID */
+                  res = ((input_driver_turbo_btns.count
+                           % settings->uints.input_turbo_period)
+                        < settings->uints.input_turbo_duty_cycle);
+               }
+            }
+            else
+            {
+               /* If turbo button is held, all buttons pressed except
+                * for D-pad will go into a turbo mode. Until the button is
+                * released again, the input state will be modulated by a
+                * periodic pulse defined by the configured duty cycle.
+                */
+               if (res && input_driver_turbo_btns.frame_enable[port])
+                  input_driver_turbo_btns.enable[port] |= (1 << id);
+               else if (!res)
+                  input_driver_turbo_btns.enable[port] &= ~(1 << id);
+
+               if (input_driver_turbo_btns.enable[port] & (1 << id))
+               {
+                  /* if turbo button is enabled for this key ID */
+                  res = res && ((input_driver_turbo_btns.count
+                           % settings->uints.input_turbo_period)
+                        < settings->uints.input_turbo_duty_cycle);
+               }
             }
          }
 
