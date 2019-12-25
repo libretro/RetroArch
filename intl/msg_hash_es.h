@@ -841,6 +841,54 @@ MSG_HASH(
     "Descargador de contenido"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_UPDATE_INSTALLED_CORES,
+    "Actualizar núcleos instalados"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_UPDATE_INSTALLED_CORES,
+    "Actualiza todos los núcleos instalados a sus últimas versiones."
+    )
+MSG_HASH(
+    MSG_FETCHING_CORE_LIST,
+    "Obteniendo lista de núcleos..."
+    )
+MSG_HASH(
+    MSG_CORE_LIST_FAILED,
+    "¡Error al obtener la lista de núcleos!"
+    )
+MSG_HASH(
+    MSG_LATEST_CORE_INSTALLED,
+    "Última versión ya instalada: "
+    )
+MSG_HASH(
+    MSG_UPDATING_CORE,
+    "Actualizando núcleo: "
+    )
+MSG_HASH(
+    MSG_DOWNLOADING_CORE,
+    "Descargando núcleo: "
+    )
+MSG_HASH(
+    MSG_EXTRACTING_CORE,
+    "Extrayendo núcleo: "
+    )
+MSG_HASH(
+    MSG_CORE_INSTALLED,
+    "Núcleo instalado: "
+    )
+MSG_HASH(
+    MSG_SCANNING_CORES,
+    "Escaneando núcleos..."
+    )
+MSG_HASH(
+    MSG_CHECKING_CORE,
+    "Comprobando núcleo: "
+    )
+MSG_HASH(
+    MSG_ALL_CORES_UPDATED,
+    "Todos los núcleos instalados están al día"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_SCALE_FACTOR,
     "Escala del menú"
     )
@@ -1524,6 +1572,14 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD,
     "Periodo del turbo"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_MODE,
+    "Modo turbo"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_DEFAULT_BUTTON,
+    "Botón predeterminado del turbo"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
@@ -5573,6 +5629,14 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_SUBLABEL_INPUT_DUTY_CYCLE,
     "Describe la duración de la pulsación de los botones turbo (en fotogramas)."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_INPUT_TURBO_MODE,
+    "Selecciona el comportamiento básico del modo turbo."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_INPUT_TURBO_DEFAULT_BUTTON,
+    "El botón individual predeterminado para el modo turbo."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_VSYNC,
@@ -10203,3 +10267,88 @@ MSG_HASH(
     MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_NARRATOR_SPEECH_SPEED,
     "Velocidad de lectura del narrador"
     )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_SCALING_SETTINGS,
+    "Escalado"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_SCALING_SETTINGS,
+    "Cambia los ajustes de escalado de vídeo."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_MODE_SETTINGS,
+    "Pantalla completa"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_MODE_SETTINGS,
+    "Cambia los ajustes del modo en pantalla completa."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_MODE_SETTINGS,
+    "Ventana"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_MODE_SETTINGS,
+    "Cambia los ajustes del modo ventana."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_OUTPUT_SETTINGS,
+    "Salida"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_OUTPUT_SETTINGS,
+    "Cambia los ajustes de la salida de vídeo."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
+    "Sincronización"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
+    "Cambia los ajustes de sincronización de vídeo."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_SETTINGS,
+    "Salida"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_SETTINGS,
+    "Cambia los ajustes de la salida de audio."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_AUDIO_SYNCHRONIZATION_SETTINGS,
+    "Sincronización"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_AUDIO_SYNCHRONIZATION_SETTINGS,
+    "Cambia los ajustes de sincronización de audio."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_SETTINGS,
+    "Remuestreo"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_SETTINGS,
+    "Cambia los ajustes del remuestreo de audio."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_MENU_SETTINGS,
+    "Controles del menú"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_INPUT_MENU_SETTINGS,
+    "Cambia los ajustes de control del menú."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_HAPTIC_FEEDBACK_SETTINGS,
+    "Respuesta háptica/vibración"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_INPUT_HAPTIC_FEEDBACK_SETTINGS,
+    "Cambia los ajustes de la respuesta háptica y la vibración."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_START_GONG,
+    "Iniciar gong"
+    )
+

@@ -1720,6 +1720,22 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
                      "los botones en el modo turbo (en fotogramas)."
             );
             break;
+        case MENU_ENUM_LABEL_INPUT_TURBO_MODE:
+            snprintf(s, len,
+                  "Modo turbo.\n"
+                  " \n"
+                  "Selecciona el comportamiento básico\n"
+                  "del modo turbo."
+                  );
+            break;
+        case MENU_ENUM_LABEL_INPUT_TURBO_DEFAULT_BUTTON:
+            snprintf(s, len,
+                  "Botón predeterminado del modo turbo.\n"
+                  " \n"
+                  "El botón individual predeterminado\n"
+                  "para el modo turbo.\n"
+                  );
+            break;
         case MENU_ENUM_LABEL_INPUT_DUTY_CYCLE:
             snprintf(s, len,
                      "Cambia el ciclo de trabajo.\n"
