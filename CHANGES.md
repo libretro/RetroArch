@@ -20,6 +20,7 @@ users for a while, where glslang throws an assert after closing a game (and star
 - FFMPEG CORE: The video FIFO can be removed, since we have a ring buffer in its place. This removes unneeded copy operations and as a positive side improves overall decoding speed. Makes 8k60p SW and 4k60p HW decoding feasible on many systems. For now the ring buffer is 32 images deep. This limitation will be removed, once audio and video decoder have their own packet handling.
 - INPUT: Fix 'Analog stick controls menu even if autoconfig disabled'
 - INPUT/TURBO: Added alternate Turbo-Mode 'Single Button' - For systems supporting only a single button, the turbo-button will toggle firing that button without the need to hold it. When holding the button turbo will be suspended and resumed when the button is released. Holding the button may have a different function to just tapping it.
+- IOS: Forcibly disable Threaded Video until UIWindow concurrency issues are fixed
 - INPUT/ANALOG: Fix radial analog deadzone scaling
 - INPUT/ANALOG: Implement proper analog button deadzone
 - INPUT/MENU: Analog stick controls menu even if autoconfig disabled
@@ -90,6 +91,7 @@ users for a while, where glslang throws an assert after closing a game (and star
 - OPENGL: When using Custom Aspect Ratio and rotation (both from Core API rotation and from menu video rotation), Integer Scaling is now working properly (correct multiples of internal resolution). Even when Integer Scaling is not activated, the Custom AR width / height are now correctly labeled using (1x), (2x), ... suffixes. You also have to activate Integer Scaling after menu video rotation for it to work
 - OPENGL: For all other Aspect Ratio options, Integer Scaling and rotation (both from Core API rotation and from menu video rotation) are now working properly together (correct multiples of internal resolution). You also have to activate Integer Scaling after menu video rotation for it to work
 - OPENBSD/POWERPC: Should build now on OpenBSD PowerPC
+- OSX: Forcibly disable Threaded Video until NSWindow concurrency issues are fixed
 - PSP: Solving issue exiting RetroArch by HOME button
 - SCANNER: Manual scanner, not dependent on database files
 - SCANNER/MANUAL: Add option to scan inside archives
