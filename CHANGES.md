@@ -1,4 +1,6 @@
 # Future
+
+# 1.8.2
 - CHEEVOS: Display Unofficial and Unsupported achievement states
 - CHEEVOS: Pass RetroArch and core versions through User-Agent HTTP header
 - CHEEVOS: Use PSX.EXE if SYSTEM.CNF cannot be found

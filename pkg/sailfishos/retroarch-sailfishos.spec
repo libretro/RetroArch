@@ -1,5 +1,5 @@
 Name:           retroarch
-Version:        1.8.1
+Version:        1.8.2
 Release:        v1.2
 Summary:        Official reference frontend for libretro
 
