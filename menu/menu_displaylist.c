@@ -4340,7 +4340,6 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
       case DISPLAYLIST_OPTIONS_REMAPPINGS:
          {
             unsigned p;
-            settings_t        *settings = config_get_ptr();
             unsigned max_users          = *(input_driver_get_uint(INPUT_ACTION_MAX_USERS));
 
             if (menu_entries_append_enum(list,

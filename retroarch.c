@@ -13662,7 +13662,7 @@ static int16_t input_state_device(
                         RETRO_DEVICE_ID_JOYPAD_L3,
                         RETRO_DEVICE_ID_JOYPAD_R3};
                      input_driver_turbo_btns.enable[port] = 1 << button_map[
-                        min(
+                        MIN(
                               sizeof(button_map)/sizeof(button_map[0])-1,
                               settings->uints.input_turbo_default_button)];
                   }
