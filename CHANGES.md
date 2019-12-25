@@ -91,6 +91,7 @@ users for a while, where glslang throws an assert after closing a game (and star
 - OPENGL: When using Custom Aspect Ratio and rotation (both from Core API rotation and from menu video rotation), Integer Scaling is now working properly (correct multiples of internal resolution). Even when Integer Scaling is not activated, the Custom AR width / height are now correctly labeled using (1x), (2x), ... suffixes. You also have to activate Integer Scaling after menu video rotation for it to work
 - OPENGL: For all other Aspect Ratio options, Integer Scaling and rotation (both from Core API rotation and from menu video rotation) are now working properly together (correct multiples of internal resolution). You also have to activate Integer Scaling after menu video rotation for it to work
 - OPENBSD/POWERPC: Should build now on OpenBSD PowerPC
+- PLAYLISTS: Pressing 'Start' or long touching a playlist will bring you to a Playlist submenu where you can set a default core, setup thumbnail view, delete the playlist, etc
 - OSX: Forcibly disable Threaded Video until NSWindow concurrency issues are fixed
 - PSP: Solving issue exiting RetroArch by HOME button
 - SCANNER: Manual scanner, not dependent on database files
