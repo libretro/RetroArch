@@ -203,7 +203,7 @@ endif
 
 SYMBOL_MAP := -Wl,-Map=output.map
 
-retroarch: $(RARCH_OBJ)
+$(TARGET): $(RARCH_OBJ)
 	@$(if $(Q), $(shell echo echo LD $@),)
 	$(Q)$(LINK) -o $@ $(RARCH_OBJ) $(LIBS) $(LDFLAGS) $(LIBRARY_DIRS)
 
@@ -280,7 +280,7 @@ install: $(TARGET)
 	fi
 
 uninstall:
-	rm -f $(DESTDIR)$(BIN_DIR)/retroarch
+	rm -f $(DESTDIR)$(BIN_DIR)/$(TARGET)
 	rm -f $(DESTDIR)$(BIN_DIR)/retroarch-cg2glsl
 	rm -f $(DESTDIR)$(GLOBAL_CONFIG_DIR)/retroarch.cfg
 	rm -f $(DESTDIR)$(DATA_DIR)/applications/retroarch.desktop
