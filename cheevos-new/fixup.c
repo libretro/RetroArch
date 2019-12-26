@@ -236,6 +236,7 @@ const uint8_t* rcheevos_patch_address(unsigned address, int console)
    else
    {
       unsigned i;
+      unsigned addr = address;
 
       for (i = 0; i < 4; i++)
       {
@@ -259,9 +260,10 @@ const uint8_t* rcheevos_patch_address(unsigned address, int console)
 
          core_get_memory(&meminfo);
 
-         if (address < meminfo.size)
+         if (addr < meminfo.size)
          {
             pointer = meminfo.data;
+            address = addr;
             break;
          }
 
@@ -270,14 +272,15 @@ const uint8_t* rcheevos_patch_address(unsigned address, int console)
           * it's size is not always set correctly in the core.
           */
          if (i == 0 && console == RC_CONSOLE_NINTENDO)
-            address -= 0x6000;
+            addr -= 0x6000;
          else
-            address -= meminfo.size;
+            addr -= meminfo.size;
       }
    }
 
    if (pointer == NULL)
    {
+      CHEEVOS_LOG(RCHEEVOS_TAG "address %X not supported\n", address);
       return NULL;
    }
 
