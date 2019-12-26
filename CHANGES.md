@@ -1,4 +1,5 @@
 # Future
+- CHEEVOS: Don't disable achievement when AddAddress generates an out-of-range address 
 
 # 1.8.2
 - BUG/CRASH/GLSLANG: Fix glslang crashing error - managed to reproduce an issue which has been plaguing
