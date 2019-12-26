@@ -17,7 +17,7 @@ typedef Thread compat_thread;
 typedef CondVar compat_condvar;
 
 #define compat_thread_create(thread, func, data, stack_size, prio, cpu) \
-   threadCreate(thread, func, data, stack_size, prio, cpu)
+   threadCreate(thread, func, data, NULL, stack_size, prio, cpu)
 #define compat_thread_start(thread) \
    threadStart(thread)
 #define compat_thread_join(thread) \
