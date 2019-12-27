@@ -1,4 +1,5 @@
 # Future
+- BUG/CRASH/CORE UPDATER: Fix potential double free error
 - CHEEVOS: Don't disable achievement when AddAddress generates an out-of-range address 
 
 # 1.8.2
