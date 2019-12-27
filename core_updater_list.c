@@ -729,6 +729,7 @@ bool core_updater_list_parse_network_data(
 
    /* Temporary data buffer is no longer required */
    free(data_buf);
+   data_buf = NULL;
 
    /* Loop over lines */
    for (i = 0; i < network_core_list->size; i++)
