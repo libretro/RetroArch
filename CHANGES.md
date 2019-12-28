@@ -1,6 +1,7 @@
 # Future
 - BUG/CRASH/CORE UPDATER: Fix potential double free error
-- CHEEVOS: Don't disable achievement when AddAddress generates an out-of-range address 
+- CHEEVOS: Don't disable achievement when AddAddress generates an out-of-range address
+- CHEEVOS: Don't reset triggers/leaderboards that failed to load
 
 # 1.8.2
 - BUG/CRASH/GLSLANG: Fix glslang crashing error - managed to reproduce an issue which has been plaguing
