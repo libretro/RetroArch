@@ -897,28 +897,32 @@ void rcheevos_reset_game(void)
    cheevo = rcheevos_locals.core;
    for (i = 0; i < rcheevos_locals.patchdata.core_count; i++, cheevo++)
    {
-      rc_reset_trigger(cheevo->trigger);
+      if (cheevo->trigger)
+         rc_reset_trigger(cheevo->trigger);
       cheevo->last = 1;
    }
 
    cheevo = rcheevos_locals.unofficial;
    for (i = 0; i < rcheevos_locals.patchdata.unofficial_count; i++, cheevo++)
    {
-      rc_reset_trigger(cheevo->trigger);
+      if (cheevo->trigger)
+         rc_reset_trigger(cheevo->trigger);
       cheevo->last = 1;
    }
 
    lboard = rcheevos_locals.lboards;
    for (i = 0; i < rcheevos_locals.patchdata.lboard_count; i++, lboard++)
    {
-      rc_reset_lboard(lboard->lboard);
+      if (lboard->lboard)
+         rc_reset_lboard(lboard->lboard);
 
       if (lboard->active)
       {
          lboard->active = 0;
 
          /* this ensures the leaderboard won't restart until the start trigger is false for at least one frame */
-         lboard->lboard->submitted = 1;
+         if (lboard->lboard)
+            lboard->lboard->submitted = 1;
       }
    }
 }
