@@ -3629,7 +3629,10 @@ static void *gl2_init(const video_info_t *video,
    RARCH_LOG("[GL]: Found GL context: %s\n", ctx_driver->ident);
 
    video_context_driver_get_video_size(&mode);
-
+#if defined(DINGUX)
+   mode.width = 320;
+   mode.height = 240;
+#endif
    full_x      = mode.width;
    full_y      = mode.height;
    mode.width  = 0;
@@ -3774,6 +3777,10 @@ static void *gl2_init(const video_info_t *video,
 
    video_context_driver_get_video_size(&mode);
 
+#if defined(DINGUX)
+   mode.width = 320;
+   mode.height = 240;
+#endif
    temp_width     = mode.width;
    temp_height    = mode.height;
    mode.width     = 0;

@@ -29,6 +29,12 @@
 #endif
 #endif
 
+#if defined(DINGUX)
+#include <sys/types.h>
+#include <signal.h>
+#include <unistd.h>
+#endif
+
 #if defined(_WIN32_WINNT) && _WIN32_WINNT < 0x0500 || defined(_XBOX)
 #ifndef LEGACY_WIN32
 #define LEGACY_WIN32
@@ -389,11 +395,14 @@ static const video_driver_t *video_drivers[] = {
 #ifdef SWITCH
    &video_switch,
 #endif
-#ifdef HAVE_SDL
+#if defined(HAVE_SDL) && !defined(HAVE_SDL_DINGUX)
    &video_sdl,
 #endif
 #ifdef HAVE_SDL2
    &video_sdl2,
+#endif
+#ifdef HAVE_SDL_DINGUX
+   &video_sdl_dingux,
 #endif
 #ifdef HAVE_XVIDEO
    &video_xvideo,

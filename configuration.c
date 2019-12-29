@@ -144,6 +144,7 @@ enum video_driver_enum
    VIDEO_XVIDEO,
    VIDEO_SDL,
    VIDEO_SDL2,
+   VIDEO_SDL_DINGUX,
    VIDEO_EXT,
    VIDEO_WII,
    VIDEO_WIIU,
@@ -357,10 +358,12 @@ static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_CTR;
 static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_SWITCH;
 #elif defined(HAVE_XVIDEO)
 static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_XVIDEO;
-#elif defined(HAVE_SDL)
+#elif defined(HAVE_SDL) && !defined(HAVE_SDL_DINGUX)
 static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_SDL;
 #elif defined(HAVE_SDL2)
 static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_SDL2;
+#elif defined(HAVE_SDL_DINGUX)
+static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_SDL_DINGUX;
 #elif defined(_WIN32) && !defined(_XBOX)
 static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_GDI;
 #elif defined(DJGPP)
