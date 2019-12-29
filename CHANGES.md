@@ -2,6 +2,7 @@
 - BUG/CRASH/CORE UPDATER: Fix potential double free error
 - CHEEVOS: Don't disable achievement when AddAddress generates an out-of-range address
 - CHEEVOS: Don't reset triggers/leaderboards that failed to load
+- LOCALIZATION: Update Spanish translation
 - VITA: Re-add Online Updater
 - VULKAN: Fix font driver 'vulkan_get_message_width()' function
 
