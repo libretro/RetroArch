@@ -3,6 +3,7 @@
 - CHEEVOS: Don't disable achievement when AddAddress generates an out-of-range address
 - CHEEVOS: Don't reset triggers/leaderboards that failed to load
 - LOCALIZATION: Update Spanish translation
+- RPI: Fix BGRA8888 color inversion issues in the menu and elsewhere with VideoCore GL drivers
 - VITA: Re-add Online Updater
 - VULKAN: Fix font driver 'vulkan_get_message_width()' function
 
