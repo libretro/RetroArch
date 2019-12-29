@@ -182,7 +182,7 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
           case RARCH_DISK_PREV:
              snprintf(s, len,
                    "Cambia de imagen de disco.\n"
-                   "Utiliza esta opción tras expulsar un disco.\n"
+                   "Utilízalo tras expulsar un disco.\n"
                    " \n"
                    "Termina la operación volviendo a pulsar\n"
                    "el botón de expulsión.");
@@ -767,8 +767,8 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
             const char *t =
                      "RetroArch utiliza un formato único para\n"
                      "sincronizar el audio y el vídeo. Necesita\n"
-                     "calibrarse con la tasa de refresco del monitor\n"
-                     "para obtener los mejores resultados.\n"
+                     "calibrarse con la frecuencia de actualización\n"
+                     "del monitor para obtener los mejores resultados.\n"
                      " \n"
                      "Si notas cortes en el audio o la imagen,\n"
                      "lo normal es que necesites calibrar estos\n"
@@ -776,9 +776,9 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
                      " \n";
             snprintf(u, sizeof(u), /* can't inline this due to the printf arguments */
                      "a) Ve a «%s» -> «%s» y activa\n"
-                     "«Vídeo multihilos». En este modo la tasa\n"
-                     "de refresco es irrelevante, aumentarán los FPS\n"
-                     "pero la imagen será menos fluida.\n"
+                     "«Vídeo multihilos». En este modo la frecuencia\n"
+                     "de actualización es irrelevante, aumentarán\n"
+                     "los FPS pero la imagen será menos fluida.\n"
                      " \n"
                      "b) Ve a «%s» -> «%s» y comprueba\n"
                      "«%s».\n"
@@ -919,7 +919,7 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
                   "OpenGL de libretro, más las implementaciones\n"
                   "renderizadas por software.\n"
                   " \n"
-                  "(El rendimiento de las implementaciones\n"
+                  "El rendimiento de las implementaciones\n"
                   "libretro por software y OpenGL dependen\n"
                   "del controlador OpenGL de la tarjeta gráfica.");
             }
@@ -1719,6 +1719,22 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
                      "Indica la velocidad con la que se pulsan\n"
                      "los botones en el modo turbo (en fotogramas)."
             );
+            break;
+        case MENU_ENUM_LABEL_INPUT_TURBO_MODE:
+            snprintf(s, len,
+                  "Modo turbo.\n"
+                  " \n"
+                  "Selecciona el comportamiento básico\n"
+                  "del modo turbo."
+                  );
+            break;
+        case MENU_ENUM_LABEL_INPUT_TURBO_DEFAULT_BUTTON:
+            snprintf(s, len,
+                  "Botón predeterminado del modo turbo.\n"
+                  " \n"
+                  "El botón individual predeterminado\n"
+                  "para el modo turbo.\n"
+                  );
             break;
         case MENU_ENUM_LABEL_INPUT_DUTY_CYCLE:
             snprintf(s, len,
