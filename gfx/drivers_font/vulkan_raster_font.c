@@ -125,17 +125,21 @@ static int vulkan_get_message_width(void *data, const char *msg,
       unsigned msg_len, float scale)
 {
    vulkan_raster_t *font = (vulkan_raster_t*)data;
+   const char* msg_end   = msg + msg_len;
+   int delta_x           = 0;
 
-   unsigned i;
-   int delta_x = 0;
-
-   if (!font)
+   if (     !font
+         || !font->font_driver
+         || !font->font_driver->get_glyph
+         || !font->font_data )
       return 0;
 
-   for (i = 0; i < msg_len; i++)
+   while (msg < msg_end)
    {
-      const struct font_glyph *glyph =
-         font->font_driver->get_glyph(font->font_data, (uint8_t)msg[i]);
+      uint32_t code                  = utf8_walk(&msg);
+      const struct font_glyph *glyph = font->font_driver->get_glyph(
+            font->font_data, code);
+
       if (!glyph) /* Do something smarter here ... */
          glyph = font->font_driver->get_glyph(font->font_data, '?');
 
