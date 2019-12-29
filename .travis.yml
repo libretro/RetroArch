@@ -77,9 +77,9 @@ matrix:
         - security default-keychain -s build.keychain
         - security unlock-keychain -p travis build.keychain
         - echo $OSX_CERT | base64 --decode > dev.p12
-        - security import dev.p12 -k build.keychain -P $OSX_CERT_PASS -T /usr/bin/codesign
+        - if [[ -n "$TRAVIS_TAG" ]]; then security import dev.p12 -k build.keychain -P $OSX_CERT_PASS -T /usr/bin/codesign; fi
         - rm dev.p12
-        - security set-key-partition-list -S "apple-tool:,apple:,codesign:" -s -k travis build.keychain
+        - if [[ -n "$TRAVIS_TAG" ]]; then security set-key-partition-list -S "apple-tool:,apple:,codesign:" -s -k travis build.keychain; fi
         - xcodebuild -target RetroArchQt -configuration Release -project pkg/apple/RetroArch_Metal.xcodeproj
       deploy:
         skip_cleanup: true
