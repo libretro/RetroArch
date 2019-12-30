@@ -3,6 +3,8 @@
 - CHEEVOS: Don't disable achievement when AddAddress generates an out-of-range address
 - CHEEVOS: Don't reset triggers/leaderboards that failed to load
 - LOCALIZATION: Update Spanish translation
+- MENU: Added 'Hosting' menu under Netplay menu
+- MENU: Added 'Subsystems' menu
 - RASPBERRY PI: Fix BGRA8888 color inversion issues in the menu and elsewhere with VideoCore GL drivers
 - VITA: Re-add Online Updater
 - VULKAN: Fix font driver 'vulkan_get_message_width()' function
