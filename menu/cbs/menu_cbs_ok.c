@@ -5037,107 +5037,7 @@ default_action_ok_dl_push(action_ok_push_scan_file, FILEBROWSER_SCAN_FILE, ACTIO
 #ifdef HAVE_NETWORKING
 /* TODO/FIXME - globals - remove */
 static struct netplay_host_list *lan_hosts = NULL;
-static int lan_room_count                  = 0;
-
-void netplay_refresh_rooms_menu(file_list_t *list)
-{
-   char s[8300];
-   int i                                = 0;
-   int room_type                        = 0;
-
-   s[0]                                 = '\0';
-
-   menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, list);
-
-   menu_entries_append_enum(list,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETWORK_HOSTING_SETTINGS),
-         msg_hash_to_str(MENU_ENUM_LABEL_NETWORK_HOSTING_SETTINGS),
-         MENU_ENUM_LABEL_NETWORK_HOSTING_SETTINGS,
-         MENU_SETTING_ACTION, 0, 0);
-
-   if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL) &&
-      !netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_SERVER, NULL) &&
-      netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_CONNECTED, NULL))
-   {
-      menu_entries_append_enum(list,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_DISCONNECT),
-            msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_DISCONNECT),
-            MENU_ENUM_LABEL_NETPLAY_DISCONNECT,
-            MENU_SETTING_ACTION, 0, 0);
-   }
-
-   menu_entries_append_enum(list,
-      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_CLIENT),
-      msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_ENABLE_CLIENT),
-      MENU_ENUM_LABEL_NETPLAY_ENABLE_CLIENT,
-      MENU_SETTING_ACTION, 0, 0);
-
-   menu_entries_append_enum(list,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETWORK_SETTINGS),
-         msg_hash_to_str(MENU_ENUM_LABEL_NETWORK_SETTINGS),
-         MENU_ENUM_LABEL_NETWORK_SETTINGS,
-         MENU_SETTING_ACTION, 0, 0);
-
-
-   menu_entries_append_enum(list,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_REFRESH_ROOMS),
-         msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_REFRESH_ROOMS),
-         MENU_ENUM_LABEL_NETPLAY_REFRESH_ROOMS,
-         MENU_SETTING_ACTION, 0, 0);
-
-   if (netplay_room_count != 0)
-   {
-      for (i = 0; i < netplay_room_count; i++)
-      {
-         char country[PATH_MAX_LENGTH] = {0};
-
-         if (*netplay_room_list[i].country)
-         {
-            strlcpy(country, "(", sizeof(country));
-            strlcat(country, netplay_room_list[i].country,
-                  sizeof(country));
-            strlcat(country, ")", sizeof(country));
-         }
-
-         /* Uncomment this to debug mismatched room parameters*/
-#if 0
-         RARCH_LOG("[lobby] room Data: %d\n"
-               "Nickname:         %s\n"
-               "Address:          %s\n"
-               "Port:             %d\n"
-               "Core:             %s\n"
-               "Core Version:     %s\n"
-               "Game:             %s\n"
-               "Game CRC:         %08x\n"
-               "Timestamp:        %d\n", room_data->elems[j + 6].data,
-               netplay_room_list[i].nickname,
-               netplay_room_list[i].address,
-               netplay_room_list[i].port,
-               netplay_room_list[i].corename,
-               netplay_room_list[i].coreversion,
-               netplay_room_list[i].gamename,
-               netplay_room_list[i].gamecrc,
-               netplay_room_list[i].timestamp);
-#endif
-
-         snprintf(s, sizeof(s), "%s: %s%s",
-            netplay_room_list[i].lan ? "Local" :
-            (netplay_room_list[i].host_method == NETPLAY_HOST_METHOD_MITM ?
-            "Internet (Relay)" : "Internet"),
-            netplay_room_list[i].nickname, country);
-
-         room_type = netplay_room_list[i].lan ? MENU_ROOM_LAN : (netplay_room_list[i].host_method == NETPLAY_HOST_METHOD_MITM ? MENU_ROOM_RELAY : MENU_ROOM);
-
-         menu_entries_append_enum(list,
-               s,
-               msg_hash_to_str(MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM),
-               MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM,
-               room_type, 0, 0);
-      }
-
-      netplay_rooms_free();
-   }
-}
+extern int lan_room_count;
 
 #ifndef INET6_ADDRSTRLEN
 #define INET6_ADDRSTRLEN 46
@@ -5250,7 +5150,8 @@ static void netplay_refresh_rooms_cb(retro_task_t *task,
             }
             netplay_room_count += lan_room_count;
          }
-         netplay_refresh_rooms_menu(list);
+
+         menu_displaylist_netplay_refresh_rooms(list);
       }
    }
 
