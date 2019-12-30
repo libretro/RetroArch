@@ -7019,7 +7019,7 @@ static unsigned menu_displaylist_populate_subsystem(
     * character fallback) */
    snprintf(star_char, sizeof(star_char), "%s", is_rgui ? "*" : utf8_star_char);
    
-   if (subsystem && subsystem_current_count > 0)
+   if (menu_displaylist_has_subsystems())
    {
       for (i = 0; i < subsystem_current_count; i++, subsystem++)
       {
@@ -7275,6 +7275,19 @@ unsigned menu_displaylist_netplay_refresh_rooms(file_list_t *list)
    }
 
    return count;
+}
+
+bool menu_displaylist_has_subsystems(void)
+{
+   const struct retro_subsystem_info* subsystem = subsystem_data;
+   rarch_system_info_t *sys_info                = 
+      runloop_get_system_info();
+   /* Core not loaded completely, use the data we
+    * peeked on load core */
+   /* Core fully loaded, use the subsystem data */
+   if (sys_info && sys_info->subsystem.data)
+      subsystem = sys_info->subsystem.data;
+   return (subsystem && subsystem_current_count > 0);
 }
 
 bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
@@ -9541,11 +9554,13 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      PARSE_ACTION, false) == 0)
                   count++;
 
-               /* Core fully loaded, use the subsystem data */
-               if (sys_info && sys_info->subsystem.data)
-                     subsystem = sys_info->subsystem.data;
-
-               menu_displaylist_populate_subsystem(subsystem, info->list);
+               if (menu_displaylist_has_subsystems())
+               {
+                  if (menu_displaylist_parse_settings_enum(info->list,
+                           MENU_ENUM_LABEL_SUBSYSTEM_SETTINGS,
+                           PARSE_ACTION, false) == 0)
+                     count++;
+               }
             }
 
             if (settings->bools.menu_content_show_history)

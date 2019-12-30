@@ -306,6 +306,8 @@ bool menu_displaylist_setting(menu_displaylist_ctx_parse_entry_t *entry);
 unsigned menu_displaylist_netplay_refresh_rooms(file_list_t *list);
 #endif
 
+bool menu_displaylist_has_subsystems(void);
+
 RETRO_END_DECLS
 
 #endif

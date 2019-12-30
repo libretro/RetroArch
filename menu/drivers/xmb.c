@@ -6181,8 +6181,11 @@ static int xmb_list_push(void *data, void *userdata,
                entry.enum_idx      = MENU_ENUM_LABEL_LOAD_CONTENT_LIST;
                menu_displaylist_setting(&entry);
 
-               entry.enum_idx      = MENU_ENUM_LABEL_SUBSYSTEM_SETTINGS;
-               menu_displaylist_setting(&entry);
+               if (menu_displaylist_has_subsystems())
+               {
+                  entry.enum_idx      = MENU_ENUM_LABEL_SUBSYSTEM_SETTINGS;
+                  menu_displaylist_setting(&entry);
+               }
             }
 
 

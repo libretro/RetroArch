@@ -4211,61 +4211,13 @@ static int stripes_list_push(void *data, void *userdata,
 
             if (settings->bools.menu_show_load_content)
             {
-               const struct retro_subsystem_info* subsystem = NULL;
-
                entry.enum_idx      = MENU_ENUM_LABEL_LOAD_CONTENT_LIST;
                menu_displaylist_setting(&entry);
 
-               subsystem           = system->subsystem.data;
-
-               if (subsystem)
+               if (menu_displaylist_has_subsystems())
                {
-                  for (i = 0; i < system->subsystem.size; i++, subsystem++)
-                  {
-                     char s[PATH_MAX_LENGTH];
-                     if (content_get_subsystem() == i)
-                     {
-                        if (content_get_subsystem_rom_id() < subsystem->num_roms)
-                        {
-                           snprintf(s, sizeof(s),
-                                 "Load %s %s",
-                                 subsystem->desc,
-                                 i == content_get_subsystem()
-                                 ? "\u2605" : " ");
-                           menu_entries_append_enum(info->list,
-                                 s,
-                                 msg_hash_to_str(MENU_ENUM_LABEL_SUBSYSTEM_ADD),
-                                 MENU_ENUM_LABEL_SUBSYSTEM_ADD,
-                                 MENU_SETTINGS_SUBSYSTEM_ADD + i, 0, 0);
-                        }
-                        else
-                        {
-                           snprintf(s, sizeof(s),
-                                 "Start %s %s",
-                                 subsystem->desc,
-                                 i == content_get_subsystem()
-                                 ? "\u2605" : " ");
-                           menu_entries_append_enum(info->list,
-                                 s,
-                                 msg_hash_to_str(MENU_ENUM_LABEL_SUBSYSTEM_LOAD),
-                                 MENU_ENUM_LABEL_SUBSYSTEM_LOAD,
-                                 MENU_SETTINGS_SUBSYSTEM_LOAD, 0, 0);
-                        }
-                     }
-                     else
-                     {
-                        snprintf(s, sizeof(s),
-                              "Load %s %s",
-                              subsystem->desc,
-                              i == content_get_subsystem()
-                              ? "\u2605" : " ");
-                        menu_entries_append_enum(info->list,
-                              s,
-                              msg_hash_to_str(MENU_ENUM_LABEL_SUBSYSTEM_ADD),
-                              MENU_ENUM_LABEL_SUBSYSTEM_ADD,
-                              MENU_SETTINGS_SUBSYSTEM_ADD + i, 0, 0);
-                     }
-                  }
+                  entry.enum_idx      = MENU_ENUM_LABEL_SUBSYSTEM_SETTINGS;
+                  menu_displaylist_setting(&entry);
                }
             }
 
