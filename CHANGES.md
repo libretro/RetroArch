@@ -2,6 +2,7 @@
 - BUG/CRASH/CORE UPDATER: Fix potential double free error
 - CHEEVOS: Don't disable achievement when AddAddress generates an out-of-range address
 - CHEEVOS: Don't reset triggers/leaderboards that failed to load
+- CHEEVOS: Don't count unsupported achievements as unlocked
 - LOCALIZATION: Update Russian translation
 - LOCALIZATION: Update Spanish translation
 - MENU: Added 'Hosting' menu under Netplay menu
