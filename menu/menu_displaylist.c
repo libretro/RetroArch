@@ -7098,7 +7098,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 #endif
          info->need_push    = true;
          info->need_refresh = true;
-         info->need_clear   = true;
          break;
       case DISPLAYLIST_OPTIONS_REMAPPINGS_PORT:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);

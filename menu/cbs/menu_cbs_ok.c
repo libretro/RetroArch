@@ -4949,6 +4949,7 @@ static int action_ok_netplay_connect_room(const char *path,
 {
 #ifdef HAVE_NETWORKING
    char tmp_hostname[4115];
+   unsigned offset = idx - 4;
 
    tmp_hostname[0] = '\0';
 
@@ -4956,33 +4957,36 @@ static int action_ok_netplay_connect_room(const char *path,
       generic_action_ok_command(CMD_EVENT_NETPLAY_DEINIT);
    netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_CLIENT, NULL);
 
-   if (netplay_room_list[idx - 3].host_method == NETPLAY_HOST_METHOD_MITM)
+   if (netplay_room_list[offset].host_method == NETPLAY_HOST_METHOD_MITM)
    {
       snprintf(tmp_hostname,
             sizeof(tmp_hostname),
             "%s|%d",
-         netplay_room_list[idx - 3].mitm_address,
-         netplay_room_list[idx - 3].mitm_port);
+         netplay_room_list[offset].mitm_address,
+         netplay_room_list[offset].mitm_port);
    }
    else
    {
       snprintf(tmp_hostname,
             sizeof(tmp_hostname),
             "%s|%d",
-         netplay_room_list[idx - 3].address,
-         netplay_room_list[idx - 3].port);
+         netplay_room_list[offset].address,
+         netplay_room_list[offset].port);
    }
 
 #if 0
    RARCH_LOG("[lobby] connecting to: %s with game: %s/%08x\n",
          tmp_hostname,
-         netplay_room_list[idx - 3].gamename,
-         netplay_room_list[idx - 3].gamecrc);
+         netplay_room_list[offset].gamename,
+         netplay_room_list[offset].gamecrc);
 #endif
 
-   task_push_netplay_crc_scan(netplay_room_list[idx - 3].gamecrc,
-      netplay_room_list[idx - 3].gamename,
-      tmp_hostname, netplay_room_list[idx - 3].corename, netplay_room_list[idx - 3].subsystem_name);
+   task_push_netplay_crc_scan(
+         netplay_room_list[offset].gamecrc,
+         netplay_room_list[offset].gamename,
+         tmp_hostname,
+         netplay_room_list[offset].corename,
+         netplay_room_list[offset].subsystem_name);
 
 #else
    return -1;
