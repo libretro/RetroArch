@@ -7331,13 +7331,14 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             bool include_everything        = false;
             settings_t      *settings      = config_get_ptr();
             file_list_t *list              = info->list;
-               menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, list);
             menu_displaylist_build_info_selective_t build_list[] = {
                {MENU_ENUM_LABEL_NETPLAY_TCP_UDP_PORT,                                  PARSE_ONLY_UINT,   true},
                {MENU_ENUM_LABEL_NETPLAY_PUBLIC_ANNOUNCE,                               PARSE_ONLY_BOOL,   true  },
                {MENU_ENUM_LABEL_NETPLAY_USE_MITM_SERVER,                               PARSE_ONLY_BOOL,   true  },
                {MENU_ENUM_LABEL_NETPLAY_MITM_SERVER,                                   PARSE_ONLY_STRING, false},
             };
+
+		    menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, list);
 
             if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL) &&
                   netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_SERVER, NULL))
