@@ -713,8 +713,6 @@ void menu_driver_destroy(void);
 
 void hex32_to_rgba_normalized(uint32_t hex, float* rgba, float alpha);
 
-unsigned menu_subsystem_populate(const struct retro_subsystem_info* subsystem, void *data);
-
 menu_handle_t *menu_driver_get_ptr(void);
 
 extern uintptr_t menu_display_white_texture;
