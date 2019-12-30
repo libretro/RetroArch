@@ -278,6 +278,8 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
          return MENU_ENUM_LABEL_DEFERRED_RETRO_ACHIEVEMENTS_SETTINGS_LIST;
       case ACTION_OK_DL_UPDATER_SETTINGS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_UPDATER_SETTINGS_LIST;
+      case ACTION_OK_DL_NETWORK_HOSTING_SETTINGS_LIST:
+         return MENU_ENUM_LABEL_DEFERRED_NETWORK_HOSTING_SETTINGS_LIST;
       case ACTION_OK_DL_NETWORK_SETTINGS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_NETWORK_SETTINGS_LIST;
       case ACTION_OK_DL_WIFI_SETTINGS_LIST:
@@ -1109,6 +1111,7 @@ int generic_action_ok_displaylist_push(const char *path,
       case ACTION_OK_DL_RETRO_ACHIEVEMENTS_SETTINGS_LIST:
       case ACTION_OK_DL_UPDATER_SETTINGS_LIST:
       case ACTION_OK_DL_NETWORK_SETTINGS_LIST:
+      case ACTION_OK_DL_NETWORK_HOSTING_SETTINGS_LIST:
       case ACTION_OK_DL_WIFI_SETTINGS_LIST:
       case ACTION_OK_DL_NETPLAY:
       case ACTION_OK_DL_NETPLAY_LAN_SCAN_SETTINGS_LIST:
@@ -4789,6 +4792,7 @@ default_action_ok_func(action_ok_directory_push, ACTION_OK_DL_DIRECTORY_PUSH)
 default_action_ok_func(action_ok_configurations_list, ACTION_OK_DL_CONFIGURATIONS_LIST)
 default_action_ok_func(action_ok_saving_list, ACTION_OK_DL_SAVING_SETTINGS_LIST)
 default_action_ok_func(action_ok_network_list, ACTION_OK_DL_NETWORK_SETTINGS_LIST)
+default_action_ok_func(action_ok_network_hosting_list, ACTION_OK_DL_NETWORK_HOSTING_SETTINGS_LIST)
 default_action_ok_func(action_ok_database_manager_list, ACTION_OK_DL_DATABASE_MANAGER_LIST)
 default_action_ok_func(action_ok_wifi_list, ACTION_OK_DL_WIFI_SETTINGS_LIST)
 default_action_ok_func(action_ok_cursor_manager_list, ACTION_OK_DL_CURSOR_MANAGER_LIST)
@@ -5037,16 +5041,13 @@ void netplay_refresh_rooms_menu(file_list_t *list)
 
    menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, list);
 
+   menu_entries_append_enum(list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETWORK_HOSTING_SETTINGS),
+         msg_hash_to_str(MENU_ENUM_LABEL_NETWORK_HOSTING_SETTINGS),
+         MENU_ENUM_LABEL_NETWORK_HOSTING_SETTINGS,
+         MENU_SETTING_ACTION, 0, 0);
+
    if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL) &&
-      netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_SERVER, NULL))
-   {
-      menu_entries_append_enum(list,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_DISABLE_HOST),
-            msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_DISCONNECT),
-            MENU_ENUM_LABEL_NETPLAY_DISCONNECT,
-            MENU_SETTING_ACTION, 0, 0);
-   }
-   else if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL) &&
       !netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_SERVER, NULL) &&
       netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_CONNECTED, NULL))
    {
@@ -5055,14 +5056,6 @@ void netplay_refresh_rooms_menu(file_list_t *list)
             msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_DISCONNECT),
             MENU_ENUM_LABEL_NETPLAY_DISCONNECT,
             MENU_SETTING_ACTION, 0, 0);
-   }
-   else
-   {
-      menu_entries_append_enum(list,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_HOST),
-         msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_ENABLE_HOST),
-         MENU_ENUM_LABEL_NETPLAY_ENABLE_HOST,
-         MENU_SETTING_ACTION, 0, 0);
    }
 
    menu_entries_append_enum(list,
@@ -6953,6 +6946,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_WIFI_SETTINGS:
             BIND_ACTION_OK(cbs, action_ok_wifi_list);
+            break;
+         case MENU_ENUM_LABEL_NETWORK_HOSTING_SETTINGS:
+            BIND_ACTION_OK(cbs, action_ok_network_hosting_list);
             break;
          case MENU_ENUM_LABEL_NETWORK_SETTINGS:
             BIND_ACTION_OK(cbs, action_ok_network_list);

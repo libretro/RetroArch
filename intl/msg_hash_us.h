@@ -2168,6 +2168,10 @@ MSG_HASH(
     "Automatically download missing thumbnail images while browsing playlists. Has a severe performance impact."
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NETWORK_HOSTING_SETTINGS,
+    "Host"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NETWORK_SETTINGS,
     "Network"
     )

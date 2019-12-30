@@ -7007,6 +7007,69 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
    switch (type)
    {
+      case DISPLAYLIST_NETWORK_HOSTING_SETTINGS_LIST:
+         {
+            bool include_everything        = true;
+            settings_t      *settings      = config_get_ptr();
+            file_list_t *list              = info->list;
+               menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, list);
+            menu_displaylist_build_info_selective_t build_list[] = {
+               {MENU_ENUM_LABEL_NETPLAY_TCP_UDP_PORT,                                  PARSE_ONLY_UINT,   true},
+               {MENU_ENUM_LABEL_NETPLAY_USE_MITM_SERVER,                               PARSE_ONLY_BOOL,   true  },
+               {MENU_ENUM_LABEL_NETPLAY_MITM_SERVER,                                   PARSE_ONLY_STRING, false},
+               {MENU_ENUM_LABEL_NETPLAY_PUBLIC_ANNOUNCE,                               PARSE_ONLY_BOOL,   true  },
+            };
+
+            if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL) &&
+                  netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_SERVER, NULL))
+            {
+               menu_entries_append_enum(list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_DISABLE_HOST),
+                     msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_DISCONNECT),
+                     MENU_ENUM_LABEL_NETPLAY_DISCONNECT,
+                     MENU_SETTING_ACTION, 0, 0);
+            }
+            else if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL) &&
+                  !netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_SERVER, NULL) &&
+                  netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_CONNECTED, NULL))
+            {
+            }
+            else
+            {
+               menu_entries_append_enum(list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_HOST),
+                     msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_ENABLE_HOST),
+                     MENU_ENUM_LABEL_NETPLAY_ENABLE_HOST,
+                     MENU_SETTING_ACTION, 0, 0);
+            }
+
+            for (i = 0; i < ARRAY_SIZE(build_list); i++)
+            {
+               switch (build_list[i].enum_idx)
+               {
+                  case MENU_ENUM_LABEL_NETPLAY_MITM_SERVER:
+                     if (settings->bools.netplay_use_mitm_server)
+                        build_list[i].checked = true;
+                     break;
+                  default:
+                     break;
+               }
+            }
+
+            for (i = 0; i < ARRAY_SIZE(build_list); i++)
+            {
+               if (!build_list[i].checked && !include_everything)
+                  continue;
+               if (menu_displaylist_parse_settings_enum(list,
+                        build_list[i].enum_idx,  build_list[i].parse_type,
+                        false) == 0)
+                  count++;
+            }
+         }
+         info->need_push    = true;
+         info->need_refresh = true;
+         info->need_clear   = true;
+         break;
       case DISPLAYLIST_OPTIONS_REMAPPINGS_PORT:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
 
