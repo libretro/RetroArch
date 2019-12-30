@@ -303,7 +303,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
 bool menu_displaylist_setting(menu_displaylist_ctx_parse_entry_t *entry);
 
 #ifdef HAVE_NETWORKING
-void menu_displaylist_netplay_refresh_rooms(file_list_t *list);
+unsigned menu_displaylist_netplay_refresh_rooms(file_list_t *list);
 #endif
 
 RETRO_END_DECLS

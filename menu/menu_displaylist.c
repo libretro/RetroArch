@@ -4026,7 +4026,7 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
          break;
       case DISPLAYLIST_NETPLAY_ROOM_LIST:
 #ifdef HAVE_NETWORKING
-         menu_displaylist_netplay_refresh_rooms(list);
+         count = menu_displaylist_netplay_refresh_rooms(list);
 #endif
          break;
       case DISPLAYLIST_CONTENT_SETTINGS:
@@ -7169,51 +7169,56 @@ static unsigned menu_displaylist_populate_subsystem(
    return count;
 }
 
-void menu_displaylist_netplay_refresh_rooms(file_list_t *list)
+unsigned menu_displaylist_netplay_refresh_rooms(file_list_t *list)
 {
    char s[8300];
    int i                                = 0;
    int room_type                        = 0;
+   unsigned count                       = 0;
 
    s[0]                                 = '\0';
 
    menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, list);
 
-   menu_entries_append_enum(list,
+   if (menu_entries_append_enum(list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETWORK_HOSTING_SETTINGS),
          msg_hash_to_str(MENU_ENUM_LABEL_NETWORK_HOSTING_SETTINGS),
          MENU_ENUM_LABEL_NETWORK_HOSTING_SETTINGS,
-         MENU_SETTING_ACTION, 0, 0);
+         MENU_SETTING_ACTION, 0, 0))
+      count++;
 
    if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL) &&
       !netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_SERVER, NULL) &&
       netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_CONNECTED, NULL))
    {
-      menu_entries_append_enum(list,
+      if (menu_entries_append_enum(list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_DISCONNECT),
             msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_DISCONNECT),
             MENU_ENUM_LABEL_NETPLAY_DISCONNECT,
-            MENU_SETTING_ACTION, 0, 0);
+            MENU_SETTING_ACTION, 0, 0))
+         count++;
    }
 
-   menu_entries_append_enum(list,
+   if (menu_entries_append_enum(list,
       msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_CLIENT),
       msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_ENABLE_CLIENT),
       MENU_ENUM_LABEL_NETPLAY_ENABLE_CLIENT,
-      MENU_SETTING_ACTION, 0, 0);
+      MENU_SETTING_ACTION, 0, 0))
+      count++;
 
-   menu_entries_append_enum(list,
+   if (menu_entries_append_enum(list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETWORK_SETTINGS),
          msg_hash_to_str(MENU_ENUM_LABEL_NETWORK_SETTINGS),
          MENU_ENUM_LABEL_NETWORK_SETTINGS,
-         MENU_SETTING_ACTION, 0, 0);
+         MENU_SETTING_ACTION, 0, 0))
+      count++;
 
-
-   menu_entries_append_enum(list,
+   if (menu_entries_append_enum(list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_REFRESH_ROOMS),
          msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_REFRESH_ROOMS),
          MENU_ENUM_LABEL_NETPLAY_REFRESH_ROOMS,
-         MENU_SETTING_ACTION, 0, 0);
+         MENU_SETTING_ACTION, 0, 0))
+      count++;
 
    if (netplay_room_count != 0)
    {
@@ -7258,18 +7263,19 @@ void menu_displaylist_netplay_refresh_rooms(file_list_t *list)
 
          room_type = netplay_room_list[i].lan ? MENU_ROOM_LAN : (netplay_room_list[i].host_method == NETPLAY_HOST_METHOD_MITM ? MENU_ROOM_RELAY : MENU_ROOM);
 
-         menu_entries_append_enum(list,
+         if (menu_entries_append_enum(list,
                s,
                msg_hash_to_str(MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM),
                MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM,
-               room_type, 0, 0);
+               room_type, 0, 0))
+            count++;
       }
 
       netplay_rooms_free();
    }
+
+   return count;
 }
-
-
 
 bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
       menu_displaylist_info_t *info)
