@@ -3966,8 +3966,9 @@ void hex32_to_rgba_normalized(uint32_t hex, float* rgba, float alpha)
    rgba[3] = rgba[7] = rgba[11] = rgba[15] = alpha;
 }
 
-void menu_subsystem_populate(const struct retro_subsystem_info* subsystem, void *data)
+unsigned menu_subsystem_populate(const struct retro_subsystem_info* subsystem, void *data)
 {
+   unsigned count       = 0;
    settings_t *settings = config_get_ptr();
    file_list_t *list    = (file_list_t*)data;
    /* Note: Create this string here explicitly (rather than
@@ -4038,11 +4039,12 @@ void menu_subsystem_populate(const struct retro_subsystem_info* subsystem, void 
                   strlcpy(s, tmp, sizeof(s));
                }
                
-               menu_entries_append_enum(list,
+               if (menu_entries_append_enum(list,
                   s,
                   msg_hash_to_str(MENU_ENUM_LABEL_SUBSYSTEM_ADD),
                   MENU_ENUM_LABEL_SUBSYSTEM_ADD,
-                  MENU_SETTINGS_SUBSYSTEM_ADD + i, 0, 0);
+                  MENU_SETTINGS_SUBSYSTEM_ADD + i, 0, 0))
+                  count++;
             }
             else
             {
@@ -4085,11 +4087,12 @@ void menu_subsystem_populate(const struct retro_subsystem_info* subsystem, void 
                   }
                }
                
-               menu_entries_append_enum(list,
+               if (menu_entries_append_enum(list,
                   s,
                   msg_hash_to_str(MENU_ENUM_LABEL_SUBSYSTEM_LOAD),
                   MENU_ENUM_LABEL_SUBSYSTEM_LOAD,
-                  MENU_SETTINGS_SUBSYSTEM_LOAD, 0, 0);
+                  MENU_SETTINGS_SUBSYSTEM_LOAD, 0, 0))
+                  count++;
             }
          }
          else
@@ -4126,14 +4129,17 @@ void menu_subsystem_populate(const struct retro_subsystem_info* subsystem, void 
                }
             }
             
-            menu_entries_append_enum(list,
+            if (menu_entries_append_enum(list,
                s,
                msg_hash_to_str(MENU_ENUM_LABEL_SUBSYSTEM_ADD),
                MENU_ENUM_LABEL_SUBSYSTEM_ADD,
-               MENU_SETTINGS_SUBSYSTEM_ADD + i, 0, 0);
+               MENU_SETTINGS_SUBSYSTEM_ADD + i, 0, 0))
+               count++;
          }
       }
    }
+
+   return count;
 }
 
 

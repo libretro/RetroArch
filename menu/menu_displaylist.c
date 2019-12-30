@@ -7007,6 +7007,34 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
    switch (type)
    {
+      case DISPLAYLIST_SUBSYSTEM_SETTINGS_LIST:
+         {
+            const struct retro_subsystem_info* subsystem = subsystem_data;
+            rarch_system_info_t *sys_info                = 
+               runloop_get_system_info();
+            /* Core not loaded completely, use the data we
+             * peeked on load core */
+
+            menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+
+            /* Core fully loaded, use the subsystem data */
+            if (sys_info && sys_info->subsystem.data)
+               subsystem = sys_info->subsystem.data;
+
+            count = menu_subsystem_populate(subsystem, info->list);
+
+            if (count == 0)
+               menu_entries_append_enum(info->list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
+                     msg_hash_to_str(MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY),
+                     MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
+                     FILE_TYPE_NONE, 0, 0);
+
+            info->need_push    = true;
+            info->need_refresh = true;
+            info->need_clear   = true;
+         }
+         break;
       case DISPLAYLIST_NETWORK_HOSTING_SETTINGS_LIST:
 #ifdef HAVE_NETWORKING
          {

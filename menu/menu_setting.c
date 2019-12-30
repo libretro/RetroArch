@@ -7479,6 +7479,14 @@ static bool setting_append_list(
                &subgroup_info,
                parent_group);
 
+         CONFIG_ACTION(
+               list, list_info,
+               MENU_ENUM_LABEL_SUBSYSTEM_SETTINGS,
+               MENU_ENUM_LABEL_VALUE_SUBSYSTEM_SETTINGS,
+               &group_info,
+               &subgroup_info,
+               parent_group);
+
          if (settings->bools.history_list_enable)
          {
             CONFIG_ACTION(

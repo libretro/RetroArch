@@ -6675,19 +6675,11 @@ static int materialui_list_push(void *data, void *userdata,
 
             if (settings->bools.menu_show_load_content)
             {
-               const struct retro_subsystem_info* subsystem;
-
                entry.enum_idx      = MENU_ENUM_LABEL_LOAD_CONTENT_LIST;
                menu_displaylist_setting(&entry);
 
-               /* Core fully loaded, use the subsystem data */
-               if (system->subsystem.data)
-                     subsystem = system->subsystem.data;
-               /* Core not loaded completely, use the data we peeked on load core */
-               else
-                  subsystem = subsystem_data;
-
-               menu_subsystem_populate(subsystem, info->list);
+               entry.enum_idx      = MENU_ENUM_LABEL_SUBSYSTEM_SETTINGS;
+               menu_displaylist_setting(&entry);
             }
 
             if (settings->bools.menu_content_show_history)
