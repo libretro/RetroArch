@@ -6687,7 +6687,7 @@ static int materialui_list_push(void *data, void *userdata,
                else
                   subsystem = subsystem_data;
 
-               menu_subsystem_populate(subsystem, info);
+               menu_subsystem_populate(subsystem, info->list);
             }
 
             if (settings->bools.menu_content_show_history)

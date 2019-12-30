@@ -3966,9 +3966,10 @@ void hex32_to_rgba_normalized(uint32_t hex, float* rgba, float alpha)
    rgba[3] = rgba[7] = rgba[11] = rgba[15] = alpha;
 }
 
-void menu_subsystem_populate(const struct retro_subsystem_info* subsystem, menu_displaylist_info_t *info)
+void menu_subsystem_populate(const struct retro_subsystem_info* subsystem, void *data)
 {
    settings_t *settings = config_get_ptr();
+   file_list_t *list    = (file_list_t*)data;
    /* Note: Create this string here explicitly (rather than
     * using a #define elsewhere) since we need to be aware of
     * its length... */
@@ -4037,7 +4038,7 @@ void menu_subsystem_populate(const struct retro_subsystem_info* subsystem, menu_
                   strlcpy(s, tmp, sizeof(s));
                }
                
-               menu_entries_append_enum(info->list,
+               menu_entries_append_enum(list,
                   s,
                   msg_hash_to_str(MENU_ENUM_LABEL_SUBSYSTEM_ADD),
                   MENU_ENUM_LABEL_SUBSYSTEM_ADD,
@@ -4084,7 +4085,7 @@ void menu_subsystem_populate(const struct retro_subsystem_info* subsystem, menu_
                   }
                }
                
-               menu_entries_append_enum(info->list,
+               menu_entries_append_enum(list,
                   s,
                   msg_hash_to_str(MENU_ENUM_LABEL_SUBSYSTEM_LOAD),
                   MENU_ENUM_LABEL_SUBSYSTEM_LOAD,
@@ -4125,7 +4126,7 @@ void menu_subsystem_populate(const struct retro_subsystem_info* subsystem, menu_
                }
             }
             
-            menu_entries_append_enum(info->list,
+            menu_entries_append_enum(list,
                s,
                msg_hash_to_str(MENU_ENUM_LABEL_SUBSYSTEM_ADD),
                MENU_ENUM_LABEL_SUBSYSTEM_ADD,

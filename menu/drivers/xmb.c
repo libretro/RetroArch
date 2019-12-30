@@ -6189,7 +6189,7 @@ static int xmb_list_push(void *data, void *userdata,
                else
                   subsystem = subsystem_data;
 
-               menu_subsystem_populate(subsystem, info);
+               menu_subsystem_populate(subsystem, info->list);
             }
 
             if (settings->bools.menu_show_load_disc)

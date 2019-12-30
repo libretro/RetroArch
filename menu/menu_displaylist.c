@@ -9227,7 +9227,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                if (sys_info && sys_info->subsystem.data)
                      subsystem = sys_info->subsystem.data;
 
-               menu_subsystem_populate(subsystem, info);
+               menu_subsystem_populate(subsystem, info->list);
             }
 
             if (settings->bools.menu_content_show_history)
