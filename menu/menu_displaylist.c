@@ -7008,6 +7008,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
    switch (type)
    {
       case DISPLAYLIST_NETWORK_HOSTING_SETTINGS_LIST:
+#ifdef HAVE_NETWORKING
          {
             bool include_everything        = true;
             settings_t      *settings      = config_get_ptr();
@@ -7066,6 +7067,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   count++;
             }
          }
+#endif
          info->need_push    = true;
          info->need_refresh = true;
          info->need_clear   = true;
