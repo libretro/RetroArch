@@ -9532,7 +9532,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
             if (settings->bools.menu_show_load_content)
             {
-               const struct retro_subsystem_info* subsystem = subsystem_data;
                /* Core not loaded completely, use the data we
                 * peeked on load core */
 
