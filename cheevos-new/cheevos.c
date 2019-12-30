@@ -401,6 +401,16 @@ static int rcheevos_parse(const char* json)
       return 0;
    }
 
+   if (!rcheevos_patch_address(0, rcheevos_locals.patchdata.console_id))
+   {
+      CHEEVOS_ERR(RCHEEVOS_TAG "No memory exposed by core\n");
+
+      if (settings->bools.cheevos_verbose_enable)
+         runloop_msg_queue_push("Cannot activate achievements using this core.", 0, 4 * 60, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
+
+      goto error;
+   }
+
    /* Allocate memory. */
    rcheevos_locals.core = (rcheevos_cheevo_t*)
       calloc(rcheevos_locals.patchdata.core_count, sizeof(rcheevos_cheevo_t));
@@ -1768,17 +1778,32 @@ found:
          const rcheevos_cheevo_t* cheevo = rcheevos_locals.core;
          const rcheevos_cheevo_t* end    = cheevo + rcheevos_locals.patchdata.core_count;
          int number_of_unlocked = rcheevos_locals.patchdata.core_count;
+         int number_of_unsupported = 0;
 
          if (coro->settings->bools.cheevos_hardcore_mode_enable && !rcheevos_hardcore_paused)
             mode = RCHEEVOS_ACTIVE_HARDCORE;
 
          for (; cheevo < end; cheevo++)
-            if (cheevo->active & mode)
+         {
+            if (!cheevo->trigger)
+               number_of_unsupported++;
+            else if (cheevo->active & mode)
                number_of_unlocked--;
+         }
 
-         snprintf(msg, sizeof(msg),
+         if (!number_of_unsupported)
+         {
+            snprintf(msg, sizeof(msg),
                "You have %d of %d achievements unlocked.",
                number_of_unlocked, rcheevos_locals.patchdata.core_count);
+         }
+         else
+         {
+            snprintf(msg, sizeof(msg),
+               "You have %d of %d achievements unlocked (%d unsupported).",
+               number_of_unlocked - number_of_unsupported, rcheevos_locals.patchdata.core_count, number_of_unsupported);
+         }
+
          msg[sizeof(msg) - 1] = 0;
          runloop_msg_queue_push(msg, 0, 6 * 60, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       }
