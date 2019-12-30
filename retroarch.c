@@ -7678,6 +7678,7 @@ static void global_free(void)
    runloop_remaps_content_dir_active     = false;
 
    current_core.has_set_input_descriptors = false;
+   current_core.has_set_subsystems        = false;
 
    global = &g_extern;
    path_clear_all();
@@ -9763,6 +9764,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
             memcpy(system->subsystem.data, info,
                   i * sizeof(*system->subsystem.data));
             system->subsystem.size = i;
+            current_core.has_set_subsystems = true;
          }
          break;
       }
@@ -24474,6 +24476,7 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
    /* Flush out some states that could have been set
     * by core environment variables. */
    current_core.has_set_input_descriptors = false;
+   current_core.has_set_subsystems        = false;
 
    /* Load the config file now that we know what it is */
    if (!rarch_block_config_read)
@@ -25598,6 +25601,8 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
 {
    switch(state)
    {
+      case RARCH_CTL_HAS_SET_SUBSYSTEMS:
+         return (current_core.has_set_subsystems);
       case RARCH_CTL_CORE_IS_RUNNING:
          return runloop_core_running;
       case RARCH_CTL_BSV_MOVIE_IS_INITED:

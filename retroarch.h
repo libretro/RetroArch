@@ -113,6 +113,8 @@ enum rarch_ctl_state
    /* Username */
    RARCH_CTL_HAS_SET_USERNAME,
 
+   RARCH_CTL_HAS_SET_SUBSYSTEMS,
+
    RARCH_CTL_TASK_INIT,
 
    RARCH_CTL_SET_FRAME_TIME_LAST,
