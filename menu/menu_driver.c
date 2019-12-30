@@ -248,8 +248,6 @@ struct menu_list
    file_list_t **selection_buf;
 };
 
-#define menu_entries_need_refresh() ((!menu_entries_nonblocking_refresh) && menu_entries_need_refresh)
-
 menu_handle_t *menu_driver_get_ptr(void)
 {
    return menu_driver_data;
