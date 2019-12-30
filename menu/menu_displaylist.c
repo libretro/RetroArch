@@ -7183,6 +7183,7 @@ static unsigned menu_displaylist_build_shader_parameter(
    return count;
 }
 
+#ifdef HAVE_NETWORKING
 unsigned menu_displaylist_netplay_refresh_rooms(file_list_t *list)
 {
    char s[8300];
@@ -7290,6 +7291,7 @@ unsigned menu_displaylist_netplay_refresh_rooms(file_list_t *list)
 
    return count;
 }
+#endif
 
 bool menu_displaylist_has_subsystems(void)
 {
