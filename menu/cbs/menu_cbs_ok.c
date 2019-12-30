@@ -5072,6 +5072,13 @@ void netplay_refresh_rooms_menu(file_list_t *list)
       MENU_SETTING_ACTION, 0, 0);
 
    menu_entries_append_enum(list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETWORK_SETTINGS),
+         msg_hash_to_str(MENU_ENUM_LABEL_NETWORK_SETTINGS),
+         MENU_ENUM_LABEL_NETWORK_SETTINGS,
+         MENU_SETTING_ACTION, 0, 0);
+
+
+   menu_entries_append_enum(list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_REFRESH_ROOMS),
          msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_REFRESH_ROOMS),
          MENU_ENUM_LABEL_NETPLAY_REFRESH_ROOMS,
