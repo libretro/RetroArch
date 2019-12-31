@@ -116,7 +116,7 @@ function setupFileSystem(backend)
  * Retrieve the value of the given GET parameter.
  */
 function getParam(name) {
-  var results = new RegExp('[\?&]' + name + '=([^&#]*)').exec(window.location.href);
+  var results = new RegExp('[?&]' + name + '=([^&#]*)').exec(window.location.href);
   if (results) {
     return results[1] || null;
   }
