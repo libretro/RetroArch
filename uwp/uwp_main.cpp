@@ -652,12 +652,9 @@ extern "C" {
 			EGL_NONE,
 		};
 
-		double scale = DisplayInformation::GetForCurrentView()->RawPixelsPerViewPixel;
-
 		/* Why Microsoft uses a WinRT class for sending parameters to EGL?! */
 		PropertySet^ prop = ref new PropertySet();
 		prop->Insert(L"EGLNativeWindowTypeProperty", CoreWindow::GetForCurrentThread());
-		prop->Insert(L"EGLRenderResolutionScaleProperty", PropertyValue::CreateSingle(scale));
 
 		egl->surf = eglCreateWindowSurface(egl->dpy, egl->config, (EGLNativeWindowType)(prop), window_attribs);
 
