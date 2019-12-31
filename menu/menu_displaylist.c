@@ -2393,7 +2393,7 @@ static unsigned menu_displaylist_parse_playlists(
          count++;
       else
          if (menu_entries_append_enum(info->list, "/", "",
-               MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0))
+               MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR, FILE_TYPE_DIRECTORY, 0, 0))
             count++;
       return count;
    }
@@ -2540,7 +2540,7 @@ static unsigned menu_displaylist_parse_cores(
    {
       if (frontend_driver_parse_drive_list(info->list, true) != 0)
          menu_entries_append_enum(info->list, "/", "",
-               MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
+               MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR, FILE_TYPE_DIRECTORY, 0, 0);
       items_found++;
       return items_found;
    }
@@ -10828,7 +10828,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
       {
          if (frontend_driver_parse_drive_list(info->list, load_content) != 0)
             if (menu_entries_append_enum(info->list, "/", "",
-                  MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0))
+                  load_content ?
+                        MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR :
+                        MENU_ENUM_LABEL_FILE_BROWSER_DIRECTORY,
+                  FILE_TYPE_DIRECTORY, 0, 0))
                count++;
       }
       else

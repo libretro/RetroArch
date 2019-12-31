@@ -900,9 +900,14 @@ int generic_action_ok_displaylist_push(const char *path,
          dl_type            = DISPLAYLIST_GENERIC;
          break;
       case ACTION_OK_DL_DIRECTORY_PUSH:
-         if (path && menu_path)
-            fill_pathname_join(tmp,
-                  menu_path, path, sizeof(tmp));
+         if (!string_is_empty(path))
+         {
+            if (!string_is_empty(menu_path))
+               fill_pathname_join(
+                     tmp, menu_path, path, sizeof(tmp));
+            else
+               strlcpy(tmp, path, sizeof(tmp));
+         }
 
          info.type          = type;
          info.directory_ptr = idx;
