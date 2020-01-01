@@ -363,56 +363,6 @@ bool input_joypad_set_rumble(const input_device_driver_t *driver,
       unsigned port, enum retro_rumble_effect effect, uint16_t strength);
 
 /**
- * input_joypad_axis_raw:
- * @drv                     : Input device driver handle.
- * @port                    : Joystick number.
- * @axis                    : Identifier of axis.
- *
- * Checks if axis (@axis) was being pressed by user
- * with joystick number @port.
- *
- * Returns: true (1) if axis was pressed, otherwise
- * false (0).
- **/
-static INLINE int16_t input_joypad_axis_raw(
-      const input_device_driver_t *drv,
-      unsigned port, unsigned axis)
-{
-   if (!drv)
-      return 0;
-   return drv->axis(port, AXIS_POS(axis)) +
-      drv->axis(port, AXIS_NEG(axis));
-}
-
-/**
- * input_joypad_button_raw:
- * @drv                     : Input device driver handle.
- * @port                    : Joystick number.
- * @button                  : Identifier of key.
- *
- * Checks if key (@button) was being pressed by user
- * with joystick number @port.
- *
- * Returns: true (1) if key was pressed, otherwise
- * false (0).
- **/
-static INLINE bool input_joypad_button_raw(const input_device_driver_t *drv,
-      unsigned port, unsigned button)
-{
-   if (!drv)
-      return false;
-   return drv && drv->button(port, button);
-}
-
-static INLINE bool input_joypad_hat_raw(const input_device_driver_t *drv,
-      unsigned port, unsigned hat_dir, unsigned hat)
-{
-   if (!drv)
-      return false;
-   return drv->button(port, HAT_MAP(hat, hat_dir));
-}
-
-/**
  * input_pad_connect:
  * @port                    : Joystick number.
  * @driver                  : handle for joypad driver handling joystick's input
