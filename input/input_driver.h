@@ -259,12 +259,6 @@ void input_driver_unset_nonblock_state(void);
 
 void input_driver_set_own_driver(void);
 
-void input_driver_unset_own_driver(void);
-
-void input_driver_deinit_command(void);
-
-bool input_driver_init_command(void);
-
 float *input_driver_get_float(enum input_action action);
 
 unsigned *input_driver_get_uint(enum input_action action);

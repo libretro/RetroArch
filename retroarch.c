@@ -15830,7 +15830,7 @@ void input_driver_unset_nonblock_state(void)
    input_driver_nonblock_state = false;
 }
 
-bool input_driver_init_command(void)
+static bool input_driver_init_command(void)
 {
 #ifdef HAVE_COMMAND
    settings_t *settings          = configuration_settings;
@@ -15862,7 +15862,7 @@ bool input_driver_init_command(void)
    return false;
 }
 
-void input_driver_deinit_command(void)
+static void input_driver_deinit_command(void)
 {
 #ifdef HAVE_COMMAND
    if (input_driver_command)
