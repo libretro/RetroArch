@@ -265,10 +265,6 @@ void input_driver_deinit_command(void);
 
 bool input_driver_init_command(void);
 
-bool input_driver_grab_mouse(void);
-
-bool input_driver_ungrab_mouse(void);
-
 float *input_driver_get_float(enum input_action action);
 
 unsigned *input_driver_get_uint(enum input_action action);

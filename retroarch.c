@@ -6258,6 +6258,25 @@ static void retroarch_system_info_free(void)
 static bool libretro_get_system_info(const char *path,
       struct retro_system_info *info, bool *load_no_content);
 
+static bool input_driver_grab_mouse(void)
+{
+   if (!current_input || !current_input->grab_mouse)
+      return false;
+
+   current_input->grab_mouse(current_input_data, true);
+   return true;
+}
+
+static bool input_driver_ungrab_mouse(void)
+{
+   if (!current_input || !current_input->grab_mouse)
+      return false;
+
+   current_input->grab_mouse(current_input_data, false);
+   return true;
+}
+
+
 /**
  * command_event:
  * @cmd                  : Event command index.
@@ -15910,15 +15929,6 @@ static bool input_driver_init_mapper(void)
    return true;
 }
 
-bool input_driver_grab_mouse(void)
-{
-   if (!current_input || !current_input->grab_mouse)
-      return false;
-
-   current_input->grab_mouse(current_input_data, true);
-   return true;
-}
-
 float *input_driver_get_float(enum input_action action)
 {
    switch (action)
@@ -15945,15 +15955,6 @@ unsigned *input_driver_get_uint(enum input_action action)
    }
 
    return NULL;
-}
-
-bool input_driver_ungrab_mouse(void)
-{
-   if (!current_input || !current_input->grab_mouse)
-      return false;
-
-   current_input->grab_mouse(current_input_data, false);
-   return true;
 }
 
 /**
