@@ -20235,9 +20235,10 @@ error:
 
 static void video_driver_set_viewport_config(void)
 {
-   settings_t *settings = configuration_settings;
+   settings_t *settings     = configuration_settings;
+   float video_aspect_ratio = settings->floats.video_aspect_ratio;
 
-   if (settings->floats.video_aspect_ratio < 0.0f)
+   if (video_aspect_ratio < 0.0f)
    {
       struct retro_game_geometry *geom = &video_driver_av_info.geometry;
 
@@ -20259,8 +20260,7 @@ static void video_driver_set_viewport_config(void)
       }
    }
    else
-      aspectratio_lut[ASPECT_RATIO_CONFIG].value =
-         settings->floats.video_aspect_ratio;
+      aspectratio_lut[ASPECT_RATIO_CONFIG].value = video_aspect_ratio;
 }
 
 static void video_driver_set_viewport_square_pixel(void)
@@ -20363,16 +20363,17 @@ static bool video_driver_init_internal(bool *video_is_threaded)
       }
       else
       {
+         float video_scale = settings->floats.video_scale;
          if (settings->bools.video_force_aspect)
          {
             /* Do rounding here to simplify integer scale correctness. */
             unsigned base_width =
                roundf(geom->base_height * video_driver_aspect_ratio);
-            width  = roundf(base_width * settings->floats.video_scale);
+            width  = roundf(base_width * video_scale);
          }
          else
-            width  = roundf(geom->base_width   * settings->floats.video_scale);
-         height    = roundf(geom->base_height  * settings->floats.video_scale);
+            width  = roundf(geom->base_width   * video_scale);
+         height    = roundf(geom->base_height  * video_scale);
       }
    }
 
