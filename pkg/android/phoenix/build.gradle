@@ -58,7 +58,7 @@ android {
     }
     gold {
       applicationIdSuffix '.gold'
-      resValue "string", "app_name", "RetroArch"
+      resValue "string", "app_name", "RetroArch Gold"
 
       dimension "variant"
     }
