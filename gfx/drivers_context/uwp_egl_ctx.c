@@ -108,7 +108,7 @@ bool create_gles_context(void* corewindow)
       goto error;
    }
 
-   if (!uwp_egl_create_surface(&uwp_egl))
+   if (!egl_create_surface(&uwp_egl, uwp_get_corewindow()))
       goto error;
 
    return true;

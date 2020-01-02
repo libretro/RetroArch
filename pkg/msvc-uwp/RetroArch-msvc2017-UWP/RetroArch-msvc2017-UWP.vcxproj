@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="DebugANGLE|Win32">
+      <Configuration>DebugANGLE</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
     <ProjectConfiguration Include="Debug|Win32">
       <Configuration>Debug</Configuration>
       <Platform>Win32</Platform>
@@ -81,7 +85,17 @@
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v141</PlatformToolset>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugANGLE|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugANGLE|ARM'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v141</PlatformToolset>
@@ -92,7 +106,18 @@
     <PlatformToolset>v141</PlatformToolset>
     <UseDotNetNativeToolchain>true</UseDotNetNativeToolchain>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugANGLE|ARM64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+    <UseDotNetNativeToolchain>true</UseDotNetNativeToolchain>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugANGLE|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v141</PlatformToolset>
@@ -162,6 +187,9 @@
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='DebugANGLE|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
@@ -169,6 +197,9 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='DebugANGLE|ARM'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">
@@ -180,6 +211,9 @@
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='DebugANGLE|ARM64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
@@ -187,6 +221,9 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='DebugANGLE|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -205,6 +242,9 @@
     <AppInstallerCheckForUpdateFrequency>OnApplicationRun</AppInstallerCheckForUpdateFrequency>
     <AppxBundle>Always</AppxBundle>
     <PackageCertificateThumbprint>9B43DF279626773ACE2F840BB021FE212ABD871C</PackageCertificateThumbprint>
+    <AppxPackageSigningTimestampDigestAlgorithm>SHA256</AppxPackageSigningTimestampDigestAlgorithm>
+    <GenerateTestArtifacts>True</GenerateTestArtifacts>
+    <HoursBetweenUpdateChecks>0</HoursBetweenUpdateChecks>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">
     <Link>
@@ -239,7 +279,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseANGLE|ARM'">
     <Link>
       <AdditionalDependencies>d2d1.lib; d3d11.lib; dxgi.lib; windowscodecs.lib; dwrite.lib; dxguid.lib; %(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories); $(VCInstallDir)\lib\store\arm; $(VCInstallDir)\lib\arm</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories); $(VCInstallDir)\lib\store\arm; $(VCInstallDir)\lib\arm ;$(MSBuildProjectDirectory)\ANGLE\$(Platform)</AdditionalLibraryDirectories>
       <AdditionalOptions>/nodefaultlib:vccorlib /nodefaultlib:msvcrt vccorlib.lib msvcrt.lib %(AdditionalOptions)</AdditionalOptions>
     </Link>
     <ClCompile>
@@ -266,6 +306,21 @@
       <PreprocessorDefinitions>WIN32;HAVE_MAIN;HAVE_DYNAMIC;HAVE_XAUDIO2;RARCH_INTERNAL;HAVE_CC_RESAMPLER;WANT_GLSLANG;HAVE_GLSLANG;HAVE_SLANG;HAVE_SPIRV_CROSS;HAVE_ONLINE_UPDATER;HAVE_UPDATE_ASSETS;HAVE_UPDATE_CORES;HAVE_D3D;HAVE_D3D11;HAVE_D3D12;ENABLE_HLSL;RC_DISABLE_LUA;HAVE_CHEEVOS;HAVE_RUNAHEAD;HAVE_GRIFFIN;HAVE_LANGEXTRA;HAVE_FBO;HAVE_ZLIB;HAVE_RPNG;HAVE_RJPEG;HAVE_RBMP;HAVE_RTGA;HAVE_IMAGEVIEWER;HAVE_XMB;HAVE_OZONE;HAVE_SHADERPIPELINE;_DEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_XINPUT;HAVE_XINPUT2;HAVE_XAUDIO;HAVE_DIRECTX;HAVE_NETWORKING;HAVE_NETWORK_CMD;HAVE_NETPLAYDISCOVERY;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;_CRT_NONSTDC_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS;HAVE_OVERLAY;HAVE_RGUI;HAVE_MENU;HAVE_MENU_WIDGETS;HAVE_MATERIALUI;HAVE_LIBRETRODB;HAVE_AUDIOMIXER;HAVE_STB_FONT;HAVE_STATIC_DUMMY;HAVE_STATIC_VIDEO_FILTERS;HAVE_STATIC_AUDIO_FILTERS</PreprocessorDefinitions>
     </ClCompile>
   </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='DebugANGLE|ARM64'">
+    <Link>
+      <AdditionalDependencies>d2d1.lib; d3d11.lib; dxgi.lib; windowscodecs.lib; dwrite.lib; dxguid.lib; %(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories);$(VCInstallDir)\lib\store\arm64;$(VCInstallDir)\lib\arm64;$(MSBuildProjectDirectory)\ANGLE\$(Platform)</AdditionalLibraryDirectories>
+      <AdditionalOptions>/nodefaultlib:vccorlibd /nodefaultlib:msvcrtd vccorlibd.lib msvcrtd.lib %(AdditionalOptions)</AdditionalOptions>
+    </Link>
+    <ClCompile>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <AdditionalIncludeDirectories>$(MSBuildProjectDirectory);$(MSBuildProjectDirectory)\..\..\..\;$(MSBuildProjectDirectory)\..\..\..\deps\rcheevos\include;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include\compat\zlib;$(MSBuildProjectDirectory)\..\..\..\deps;$(MSBuildProjectDirectory)\..\..\..\deps\glslang;$(MSBuildProjectDirectory)\..\..\..\deps\SPIRV-Cross;$(MSBuildProjectDirectory)\..\..\..\deps\stb;$(MSBuildProjectDirectory)\..\..\..\gfx\include;$(MSBuildProjectDirectory)\..\..\..\gfx\include\ANGLE;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
+      <DisableSpecificWarnings>4453;28204</DisableSpecificWarnings>
+      <PreprocessorDefinitions>WIN32;HAVE_MAIN;HAVE_DYNAMIC;HAVE_XAUDIO2;RARCH_INTERNAL;HAVE_CC_RESAMPLER;WANT_GLSLANG;HAVE_GLSLANG;HAVE_SLANG;HAVE_SPIRV_CROSS;HAVE_ONLINE_UPDATER;HAVE_UPDATE_ASSETS;HAVE_UPDATE_CORES;HAVE_D3D;HAVE_D3D11;HAVE_D3D12;ENABLE_HLSL;RC_DISABLE_LUA;HAVE_CHEEVOS;HAVE_RUNAHEAD;HAVE_GRIFFIN;HAVE_LANGEXTRA;HAVE_FBO;HAVE_ZLIB;HAVE_RPNG;HAVE_RJPEG;HAVE_RBMP;HAVE_RTGA;HAVE_IMAGEVIEWER;HAVE_XMB;HAVE_OZONE;HAVE_SHADERPIPELINE;_DEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_XINPUT;HAVE_XINPUT2;HAVE_XAUDIO;HAVE_DIRECTX;HAVE_NETWORKING;HAVE_NETWORK_CMD;HAVE_NETPLAYDISCOVERY;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;_CRT_NONSTDC_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS;HAVE_OVERLAY;HAVE_RGUI;HAVE_MENU;HAVE_MENU_WIDGETS;HAVE_MATERIALUI;HAVE_LIBRETRODB;HAVE_AUDIOMIXER;HAVE_STB_FONT;HAVE_STATIC_DUMMY;HAVE_STATIC_VIDEO_FILTERS;HAVE_STATIC_AUDIO_FILTERS;HAVE_ANGLE;HAVE_OPENGL;HAVE_OPENGLES;HAVE_OPENGLES2;HAVE_GLSL</PreprocessorDefinitions>
+    </ClCompile>
+  </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
     <Link>
       <AdditionalDependencies>d2d1.lib; d3d11.lib; dxgi.lib; windowscodecs.lib; dwrite.lib; dxguid.lib; %(AdditionalDependencies)</AdditionalDependencies>
@@ -284,16 +339,16 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseANGLE|ARM64'">
     <Link>
       <AdditionalDependencies>d2d1.lib; d3d11.lib; dxgi.lib; windowscodecs.lib; dwrite.lib; dxguid.lib; %(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories); $(VCInstallDir)\lib\store\arm64; $(VCInstallDir)\lib\arm64</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories); $(VCInstallDir)\lib\store\arm64; $(VCInstallDir)\lib\arm64; $(MSBuildProjectDirectory)\ANGLE\$(Platform)</AdditionalLibraryDirectories>
       <AdditionalOptions>/nodefaultlib:vccorlib /nodefaultlib:msvcrt vccorlib.lib msvcrt.lib %(AdditionalOptions)</AdditionalOptions>
     </Link>
     <ClCompile>
       <PrecompiledHeader>
       </PrecompiledHeader>
-      <AdditionalIncludeDirectories>$(MSBuildProjectDirectory);$(MSBuildProjectDirectory)\..\..\..\;$(MSBuildProjectDirectory)\..\..\..\deps\rcheevos\include;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include\compat\zlib;$(MSBuildProjectDirectory)\..\..\..\deps;$(MSBuildProjectDirectory)\..\..\..\deps\glslang;$(MSBuildProjectDirectory)\..\..\..\deps\SPIRV-Cross;$(MSBuildProjectDirectory)\..\..\..\deps\stb;$(MSBuildProjectDirectory)\..\..\..\gfx\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(MSBuildProjectDirectory);$(MSBuildProjectDirectory)\..\..\..\;$(MSBuildProjectDirectory)\..\..\..\deps\rcheevos\include;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include\compat\zlib;$(MSBuildProjectDirectory)\..\..\..\deps;$(MSBuildProjectDirectory)\..\..\..\deps\glslang;$(MSBuildProjectDirectory)\..\..\..\deps\SPIRV-Cross;$(MSBuildProjectDirectory)\..\..\..\deps\stb;$(MSBuildProjectDirectory)\..\..\..\gfx\include;$(MSBuildProjectDirectory)\..\..\..\gfx\include\ANGLE;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
       <DisableSpecificWarnings>4453;28204</DisableSpecificWarnings>
-      <PreprocessorDefinitions>WIN32;HAVE_MAIN;HAVE_DYNAMIC;HAVE_XAUDIO2;RARCH_INTERNAL;HAVE_CC_RESAMPLER;WANT_GLSLANG;HAVE_GLSLANG;HAVE_SLANG;HAVE_SPIRV_CROSS;HAVE_ONLINE_UPDATER;HAVE_UPDATE_ASSETS;HAVE_UPDATE_CORES;HAVE_D3D;HAVE_D3D11;HAVE_D3D12;ENABLE_HLSL;RC_DISABLE_LUA;HAVE_CHEEVOS;HAVE_RUNAHEAD;HAVE_GRIFFIN;HAVE_LANGEXTRA;HAVE_FBO;HAVE_ZLIB;HAVE_XMB;HAVE_OZONE;HAVE_SHADERPIPELINE;HAVE_RPNG;HAVE_RJPEG;HAVE_RBMP;HAVE_RTGA;HAVE_IMAGEVIEWER;NDEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_XINPUT;HAVE_XINPUT2;HAVE_XAUDIO;HAVE_DIRECTX;HAVE_NETWORKING;HAVE_NETWORK_CMD;HAVE_NETPLAYDISCOVERY;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;_CRT_NONSTDC_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS;HAVE_OVERLAY;HAVE_MENU;HAVE_MENU_WIDGETS;HAVE_RGUI;HAVE_MATERIALUI;HAVE_LIBRETRODB;HAVE_AUDIOMIXER;HAVE_STB_FONT;HAVE_STATIC_DUMMY;HAVE_STATIC_VIDEO_FILTERS;HAVE_STATIC_AUDIO_FILTERS</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;HAVE_MAIN;HAVE_DYNAMIC;HAVE_XAUDIO2;RARCH_INTERNAL;HAVE_CC_RESAMPLER;WANT_GLSLANG;HAVE_GLSLANG;HAVE_SLANG;HAVE_SPIRV_CROSS;HAVE_ONLINE_UPDATER;HAVE_UPDATE_ASSETS;HAVE_UPDATE_CORES;HAVE_D3D;HAVE_D3D11;HAVE_D3D12;ENABLE_HLSL;RC_DISABLE_LUA;HAVE_CHEEVOS;HAVE_RUNAHEAD;HAVE_GRIFFIN;HAVE_LANGEXTRA;HAVE_FBO;HAVE_ZLIB;HAVE_XMB;HAVE_OZONE;HAVE_SHADERPIPELINE;HAVE_RPNG;HAVE_RJPEG;HAVE_RBMP;HAVE_RTGA;HAVE_IMAGEVIEWER;NDEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_XINPUT;HAVE_XINPUT2;HAVE_XAUDIO;HAVE_DIRECTX;HAVE_NETWORKING;HAVE_NETWORK_CMD;HAVE_NETPLAYDISCOVERY;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;_CRT_NONSTDC_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS;HAVE_OVERLAY;HAVE_MENU;HAVE_MENU_WIDGETS;HAVE_RGUI;HAVE_MATERIALUI;HAVE_LIBRETRODB;HAVE_AUDIOMIXER;HAVE_STB_FONT;HAVE_STATIC_DUMMY;HAVE_STATIC_VIDEO_FILTERS;HAVE_STATIC_AUDIO_FILTERS;HAVE_ANGLE;HAVE_OPENGL;HAVE_OPENGLES;HAVE_OPENGLES2;HAVE_GLSL</PreprocessorDefinitions>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -305,10 +360,26 @@
     <ClCompile>
       <PrecompiledHeader>
       </PrecompiledHeader>
-      <AdditionalIncludeDirectories>$(MSBuildProjectDirectory);$(MSBuildProjectDirectory)\..\..\..\;$(MSBuildProjectDirectory)\..\..\..\deps\rcheevos\include;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include\compat\zlib;$(MSBuildProjectDirectory)\..\..\..\deps;$(MSBuildProjectDirectory)\..\..\..\deps\glslang;$(MSBuildProjectDirectory)\..\..\..\deps\SPIRV-Cross;$(MSBuildProjectDirectory)\..\..\..\deps\stb;$(MSBuildProjectDirectory)\..\..\..\gfx\include;$(MSBuildProjectDirectory)\..\..\..\gfx\include\ANGLE;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(MSBuildProjectDirectory);$(MSBuildProjectDirectory)\..\..\..\;$(MSBuildProjectDirectory)\..\..\..\deps\rcheevos\include;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include\compat\zlib;$(MSBuildProjectDirectory)\..\..\..\deps;$(MSBuildProjectDirectory)\..\..\..\deps\glslang;$(MSBuildProjectDirectory)\..\..\..\deps\SPIRV-Cross;$(MSBuildProjectDirectory)\..\..\..\deps\stb;$(MSBuildProjectDirectory)\..\..\..\gfx\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
       <DisableSpecificWarnings>4453;28204</DisableSpecificWarnings>
       <PreprocessorDefinitions>WIN32;HAVE_MAIN;HAVE_DYNAMIC;HAVE_XAUDIO2;RARCH_INTERNAL;HAVE_CC_RESAMPLER;WANT_GLSLANG;HAVE_GLSLANG;HAVE_SLANG;HAVE_SPIRV_CROSS;HAVE_ONLINE_UPDATER;HAVE_UPDATE_ASSETS;HAVE_UPDATE_CORES;HAVE_D3D;HAVE_D3D11;HAVE_D3D12;ENABLE_HLSL;RC_DISABLE_LUA;HAVE_CHEEVOS;HAVE_RUNAHEAD;HAVE_GRIFFIN;HAVE_LANGEXTRA;HAVE_FBO;HAVE_ZLIB;HAVE_RPNG;HAVE_RJPEG;HAVE_RBMP;HAVE_RTGA;HAVE_IMAGEVIEWER;HAVE_XMB;HAVE_OZONE;HAVE_SHADERPIPELINE;_DEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_XINPUT;HAVE_XINPUT2;HAVE_XAUDIO;HAVE_DIRECTX;HAVE_NETWORKING;HAVE_NETWORK_CMD;HAVE_NETPLAYDISCOVERY;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;_CRT_NONSTDC_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS;HAVE_OVERLAY;HAVE_RGUI;HAVE_MENU;HAVE_MENU_WIDGETS;HAVE_MATERIALUI;HAVE_LIBRETRODB;HAVE_AUDIOMIXER;HAVE_STB_FONT;HAVE_STATIC_DUMMY;HAVE_STATIC_VIDEO_FILTERS;HAVE_STATIC_AUDIO_FILTERS</PreprocessorDefinitions>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='DebugANGLE|Win32'">
+    <Link>
+      <AdditionalDependencies>d2d1.lib; d3d11.lib; dxgi.lib; windowscodecs.lib; dwrite.lib; dxguid.lib; %(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories); $(VCInstallDir)\lib\store; $(VCInstallDir)\lib;$(MSBuildProjectDirectory)\ANGLE\$(Platform)</AdditionalLibraryDirectories>
+      <AdditionalOptions>/nodefaultlib:vccorlibd /nodefaultlib:msvcrtd vccorlibd.lib msvcrtd.lib %(AdditionalOptions)</AdditionalOptions>
+    </Link>
+    <ClCompile>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <AdditionalIncludeDirectories>$(MSBuildProjectDirectory);$(MSBuildProjectDirectory)\..\..\..\;$(MSBuildProjectDirectory)\..\..\..\deps\rcheevos\include;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include\compat\zlib;$(MSBuildProjectDirectory)\..\..\..\deps;$(MSBuildProjectDirectory)\..\..\..\deps\glslang;$(MSBuildProjectDirectory)\..\..\..\deps\SPIRV-Cross;$(MSBuildProjectDirectory)\..\..\..\deps\stb;$(MSBuildProjectDirectory)\..\..\..\gfx\include;$(MSBuildProjectDirectory)\..\..\..\gfx\include\ANGLE;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
+      <DisableSpecificWarnings>4453;28204</DisableSpecificWarnings>
+      <PreprocessorDefinitions>WIN32;HAVE_MAIN;HAVE_DYNAMIC;HAVE_XAUDIO2;RARCH_INTERNAL;HAVE_CC_RESAMPLER;WANT_GLSLANG;HAVE_GLSLANG;HAVE_SLANG;HAVE_SPIRV_CROSS;HAVE_ONLINE_UPDATER;HAVE_UPDATE_ASSETS;HAVE_UPDATE_CORES;HAVE_D3D;HAVE_D3D11;HAVE_D3D12;ENABLE_HLSL;RC_DISABLE_LUA;HAVE_CHEEVOS;HAVE_RUNAHEAD;HAVE_GRIFFIN;HAVE_LANGEXTRA;HAVE_FBO;HAVE_ZLIB;HAVE_RPNG;HAVE_RJPEG;HAVE_RBMP;HAVE_RTGA;HAVE_IMAGEVIEWER;HAVE_XMB;HAVE_OZONE;HAVE_SHADERPIPELINE;_DEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_XINPUT;HAVE_XINPUT2;HAVE_XAUDIO;HAVE_DIRECTX;HAVE_NETWORKING;HAVE_NETWORK_CMD;HAVE_NETPLAYDISCOVERY;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;_CRT_NONSTDC_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS;HAVE_OVERLAY;HAVE_RGUI;HAVE_MENU;HAVE_MENU_WIDGETS;HAVE_MATERIALUI;HAVE_LIBRETRODB;HAVE_AUDIOMIXER;HAVE_STB_FONT;HAVE_STATIC_DUMMY;HAVE_STATIC_VIDEO_FILTERS;HAVE_STATIC_AUDIO_FILTERS;HAVE_ANGLE;HAVE_OPENGL;HAVE_OPENGLES;HAVE_OPENGLES2;HAVE_GLSL</PreprocessorDefinitions>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
     </ClCompile>
   </ItemDefinitionGroup>
@@ -330,7 +401,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseANGLE|Win32'">
     <Link>
       <AdditionalDependencies>d2d1.lib; d3d11.lib; dxgi.lib; windowscodecs.lib; dwrite.lib; dxguid.lib; %(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories); $(VCInstallDir)\lib\store; $(VCInstallDir)\lib</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories); $(VCInstallDir)\lib\store; $(VCInstallDir)\lib; $(MSBuildProjectDirectory)\ANGLE\$(Platform)</AdditionalLibraryDirectories>
       <AdditionalOptions>/nodefaultlib:vccorlib /nodefaultlib:msvcrt vccorlib.lib msvcrt.lib %(AdditionalOptions)</AdditionalOptions>
     </Link>
     <ClCompile>
@@ -375,8 +446,8 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseANGLE|x64'">
     <Link>
-      <AdditionalDependencies>d2d1.lib;d3d11.lib;dxgi.lib;windowscodecs.lib;dwrite.lib;dxguid.lib;libEGL.lib;libGLESv2.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories);$(VCInstallDir)\lib\store\amd64;$(VCInstallDir)\lib\amd64;$(MSBuildProjectDirectory)\ANGLE\x64</AdditionalLibraryDirectories>
+      <AdditionalDependencies>d2d1.lib; d3d11.lib; dxgi.lib; windowscodecs.lib; dwrite.lib; dxguid.lib; %(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories);$(VCInstallDir)\lib\store\amd64;$(VCInstallDir)\lib\amd64;$(MSBuildProjectDirectory)\ANGLE\$(Platform)</AdditionalLibraryDirectories>
       <AdditionalOptions>/nodefaultlib:vccorlib /nodefaultlib:msvcrt vccorlib.lib msvcrt.lib %(AdditionalOptions)</AdditionalOptions>
     </Link>
     <ClCompile>
@@ -389,28 +460,52 @@
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='DebugANGLE|ARM'">
+    <Link>
+      <AdditionalDependencies>d2d1.lib; d3d11.lib; dxgi.lib; windowscodecs.lib; dwrite.lib; dxguid.lib; %(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories);$(VCInstallDir)\lib\store\arm;$(VCInstallDir)\lib\arm;$(MSBuildProjectDirectory)\ANGLE\$(Platform)</AdditionalLibraryDirectories>
+      <AdditionalOptions>/nodefaultlib:vccorlibd /nodefaultlib:msvcrtd vccorlibd.lib msvcrtd.lib %(AdditionalOptions)</AdditionalOptions>
+    </Link>
     <ClCompile>
-      <PreprocessorDefinitions>HAVE_ANGLE;HAVE_OPENGL;HAVE_OPENGLES;HAVE_OPENGLES2;HAVE_GLSL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <AdditionalIncludeDirectories>$(MSBuildProjectDirectory);$(MSBuildProjectDirectory)\..\..\..\;$(MSBuildProjectDirectory)\..\..\..\deps\rcheevos\include;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include\compat\zlib;$(MSBuildProjectDirectory)\..\..\..\deps;$(MSBuildProjectDirectory)\..\..\..\deps\glslang;$(MSBuildProjectDirectory)\..\..\..\deps\SPIRV-Cross;$(MSBuildProjectDirectory)\..\..\..\deps\stb;$(MSBuildProjectDirectory)\..\..\..\gfx\include;$(MSBuildProjectDirectory)\..\..\..\gfx\include\ANGLE;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
+      <DisableSpecificWarnings>4453;28204</DisableSpecificWarnings>
+      <PreprocessorDefinitions>WIN32;HAVE_MAIN;HAVE_DYNAMIC;HAVE_XAUDIO2;RARCH_INTERNAL;HAVE_CC_RESAMPLER;WANT_GLSLANG;HAVE_GLSLANG;HAVE_SLANG;HAVE_SPIRV_CROSS;HAVE_ONLINE_UPDATER;HAVE_UPDATE_ASSETS;HAVE_UPDATE_CORES;HAVE_D3D;HAVE_D3D11;HAVE_D3D12;ENABLE_HLSL;RC_DISABLE_LUA;HAVE_CHEEVOS;HAVE_RUNAHEAD;HAVE_GRIFFIN;HAVE_LANGEXTRA;HAVE_FBO;HAVE_ZLIB;HAVE_RPNG;HAVE_RJPEG;HAVE_RBMP;HAVE_RTGA;HAVE_IMAGEVIEWER;HAVE_XMB;HAVE_OZONE;HAVE_SHADERPIPELINE;_DEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_XINPUT;HAVE_XINPUT2;HAVE_XAUDIO;HAVE_DIRECTX;HAVE_NETWORKING;HAVE_NETWORK_CMD;HAVE_NETPLAYDISCOVERY;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;_CRT_NONSTDC_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS;HAVE_OVERLAY;HAVE_RGUI;HAVE_MENU;HAVE_MENU_WIDGETS;HAVE_MATERIALUI;HAVE_LIBRETRODB;HAVE_AUDIOMIXER;HAVE_STB_FONT;HAVE_STATIC_DUMMY;HAVE_STATIC_VIDEO_FILTERS;HAVE_STATIC_AUDIO_FILTERS;HAVE_ANGLE;HAVE_OPENGL;HAVE_OPENGLES;HAVE_OPENGLES2;HAVE_GLSL</PreprocessorDefinitions>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='DebugANGLE|x64'">
+    <Link>
+      <AdditionalDependencies>d2d1.lib; d3d11.lib; dxgi.lib; windowscodecs.lib; dwrite.lib; dxguid.lib; %(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories); $(VCInstallDir)\lib\store\amd64; $(VCInstallDir)\lib\amd64;$(MSBuildProjectDirectory)\ANGLE\$(Platform)</AdditionalLibraryDirectories>
+      <AdditionalOptions>/nodefaultlib:vccorlibd /nodefaultlib:msvcrtd vccorlibd.lib msvcrtd.lib %(AdditionalOptions)</AdditionalOptions>
+    </Link>
     <ClCompile>
-      <PreprocessorDefinitions>HAVE_ANGLE;HAVE_OPENGL;HAVE_OPENGLES;HAVE_OPENGLES2;HAVE_GLSL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(MSBuildProjectDirectory)\..\..\..\gfx\include\ANGLE;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <AdditionalIncludeDirectories>$(MSBuildProjectDirectory);$(MSBuildProjectDirectory)\..\..\..\;$(MSBuildProjectDirectory)\..\..\..\deps\rcheevos\include;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include\compat\zlib;$(MSBuildProjectDirectory)\..\..\..\deps;$(MSBuildProjectDirectory)\..\..\..\deps\glslang;$(MSBuildProjectDirectory)\..\..\..\deps\SPIRV-Cross;$(MSBuildProjectDirectory)\..\..\..\deps\stb;$(MSBuildProjectDirectory)\..\..\..\gfx\include;$(MSBuildProjectDirectory)\..\..\..\gfx\include\ANGLE;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
+      <DisableSpecificWarnings>4453;28204</DisableSpecificWarnings>
+      <PreprocessorDefinitions>WIN32;HAVE_MAIN;HAVE_DYNAMIC;HAVE_XAUDIO2;RARCH_INTERNAL;HAVE_CC_RESAMPLER;WANT_GLSLANG;HAVE_GLSLANG;HAVE_SLANG;HAVE_SPIRV_CROSS;HAVE_ONLINE_UPDATER;HAVE_UPDATE_ASSETS;HAVE_UPDATE_CORES;HAVE_D3D;HAVE_D3D11;HAVE_D3D12;ENABLE_HLSL;RC_DISABLE_LUA;HAVE_CHEEVOS;HAVE_RUNAHEAD;HAVE_GRIFFIN;HAVE_LANGEXTRA;HAVE_FBO;HAVE_ZLIB;HAVE_RPNG;HAVE_RJPEG;HAVE_RBMP;HAVE_RTGA;HAVE_IMAGEVIEWER;HAVE_XMB;HAVE_OZONE;HAVE_SHADERPIPELINE;_DEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_XINPUT;HAVE_XINPUT2;HAVE_XAUDIO;HAVE_DIRECTX;HAVE_NETWORKING;HAVE_NETWORK_CMD;HAVE_NETPLAYDISCOVERY;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;_CRT_NONSTDC_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS;HAVE_OVERLAY;HAVE_RGUI;HAVE_MENU;HAVE_MENU_WIDGETS;HAVE_MATERIALUI;HAVE_LIBRETRODB;HAVE_AUDIOMIXER;HAVE_STB_FONT;HAVE_STATIC_DUMMY;HAVE_STATIC_VIDEO_FILTERS;HAVE_STATIC_AUDIO_FILTERS;HAVE_ANGLE;HAVE_OPENGL;HAVE_OPENGLES;HAVE_OPENGLES2;HAVE_GLSL</PreprocessorDefinitions>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\griffin\griffin.c">
       <CompileAsWinRT Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</CompileAsWinRT>
+      <CompileAsWinRT Condition="'$(Configuration)|$(Platform)'=='DebugANGLE|x64'">false</CompileAsWinRT>
       <CompileAsWinRT Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</CompileAsWinRT>
       <CompileAsWinRT Condition="'$(Configuration)|$(Platform)'=='ReleaseANGLE|x64'">false</CompileAsWinRT>
       <CompileAsWinRT Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</CompileAsWinRT>
+      <CompileAsWinRT Condition="'$(Configuration)|$(Platform)'=='DebugANGLE|Win32'">false</CompileAsWinRT>
       <CompileAsWinRT Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</CompileAsWinRT>
       <CompileAsWinRT Condition="'$(Configuration)|$(Platform)'=='ReleaseANGLE|Win32'">false</CompileAsWinRT>
       <CompileAsWinRT Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">false</CompileAsWinRT>
+      <CompileAsWinRT Condition="'$(Configuration)|$(Platform)'=='DebugANGLE|ARM64'">false</CompileAsWinRT>
       <CompileAsWinRT Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">false</CompileAsWinRT>
       <CompileAsWinRT Condition="'$(Configuration)|$(Platform)'=='ReleaseANGLE|ARM64'">false</CompileAsWinRT>
       <CompileAsWinRT Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">false</CompileAsWinRT>
+      <CompileAsWinRT Condition="'$(Configuration)|$(Platform)'=='DebugANGLE|ARM'">false</CompileAsWinRT>
       <CompileAsWinRT Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">false</CompileAsWinRT>
       <CompileAsWinRT Condition="'$(Configuration)|$(Platform)'=='ReleaseANGLE|ARM'">false</CompileAsWinRT>
     </ClCompile>
@@ -428,12 +523,15 @@
   <ItemGroup>
     <ClCompile Include="..\..\..\libretro-common\vfs\vfs_implementation_uwp.cpp">
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">VFS_FRONTEND;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='DebugANGLE|x64'">VFS_FRONTEND;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">VFS_FRONTEND;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='ReleaseANGLE|x64'">VFS_FRONTEND;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">VFS_FRONTEND;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='DebugANGLE|ARM'">VFS_FRONTEND;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">VFS_FRONTEND;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='ReleaseANGLE|ARM'">VFS_FRONTEND;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">VFS_FRONTEND;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='DebugANGLE|Win32'">VFS_FRONTEND;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">VFS_FRONTEND;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='ReleaseANGLE|Win32'">VFS_FRONTEND;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
@@ -482,6 +580,54 @@
       <Link>%(Filename)%(Extension)</Link>
     </None>
     <None Include="RetroArch-msvc2017-UWP_TemporaryKey.pfx" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(Configuration)|$(Platform)'=='DebugANGLE|x64'">
+    <None Include="ANGLE\$(Platform)\*.dll">
+      <DeploymentContent>true</DeploymentContent>
+      <Link>%(Filename)%(Extension)</Link>
+    </None>
+  </ItemGroup>
+  <ItemGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseANGLE|x64'">
+    <None Include="ANGLE\$(Platform)\*.dll">
+      <DeploymentContent>true</DeploymentContent>
+      <Link>%(Filename)%(Extension)</Link>
+    </None>
+  </ItemGroup>
+  <ItemGroup Condition="'$(Configuration)|$(Platform)'=='DebugANGLE|Win32'">
+    <None Include="ANGLE\$(Platform)\*.dll">
+      <DeploymentContent>true</DeploymentContent>
+      <Link>%(Filename)%(Extension)</Link>
+    </None>
+  </ItemGroup>
+  <ItemGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseANGLE|Win32'">
+    <None Include="ANGLE\$(Platform)\*.dll">
+      <DeploymentContent>true</DeploymentContent>
+      <Link>%(Filename)%(Extension)</Link>
+    </None>
+  </ItemGroup>
+  <ItemGroup Condition="'$(Configuration)|$(Platform)'=='DebugANGLE|ARM'">
+    <None Include="ANGLE\$(Platform)\*.dll">
+      <DeploymentContent>true</DeploymentContent>
+      <Link>%(Filename)%(Extension)</Link>
+    </None>
+  </ItemGroup>
+  <ItemGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseANGLE|ARM'">
+    <None Include="ANGLE\$(Platform)\*.dll">
+      <DeploymentContent>true</DeploymentContent>
+      <Link>%(Filename)%(Extension)</Link>
+    </None>
+  </ItemGroup>
+  <ItemGroup Condition="'$(Configuration)|$(Platform)'=='DebugANGLE|ARM64'">
+    <None Include="ANGLE\$(Platform)\*.dll">
+      <DeploymentContent>true</DeploymentContent>
+      <Link>%(Filename)%(Extension)</Link>
+    </None>
+  </ItemGroup>
+  <ItemGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseANGLE|ARM64'">
+    <None Include="ANGLE\$(Platform)\*.dll">
+      <DeploymentContent>true</DeploymentContent>
+      <Link>%(Filename)%(Extension)</Link>
+    </None>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
