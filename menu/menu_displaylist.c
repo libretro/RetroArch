@@ -5600,47 +5600,38 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
          break;
       case DISPLAYLIST_RECORDING_SETTINGS_LIST:
          {
-            menu_displaylist_build_info_t build_list[] = {
-               {MENU_ENUM_LABEL_VIDEO_RECORD_QUALITY,                                  PARSE_ONLY_UINT  },
-               {MENU_ENUM_LABEL_RECORD_CONFIG,                                         PARSE_ONLY_PATH  },
-               {MENU_ENUM_LABEL_VIDEO_STREAM_QUALITY,                                  PARSE_ONLY_UINT  },
-               {MENU_ENUM_LABEL_STREAM_CONFIG,                                         PARSE_ONLY_PATH  },
-               {MENU_ENUM_LABEL_STREAMING_MODE,                                        PARSE_ONLY_UINT  },
-               {MENU_ENUM_LABEL_VIDEO_RECORD_THREADS,                                  PARSE_ONLY_UINT  },
-               {MENU_ENUM_LABEL_STREAMING_TITLE,                                       PARSE_ONLY_STRING},
-            };
-
-            for (i = 0; i < ARRAY_SIZE(build_list); i++)
-            {
-               if (menu_displaylist_parse_settings_enum(list,
-                        build_list[i].enum_idx,  build_list[i].parse_type,
-                        false) == 0)
-                  count++;
-            }
-         }
-
-         {
             settings_t      *settings      = config_get_ptr();
-            if (settings->uints.streaming_mode == STREAMING_MODE_LOCAL)
-            {
-               /* TODO: Refresh on settings->uints.streaming_mode change to show this parameter */
-               if (menu_displaylist_parse_settings_enum(list,
-                        MENU_ENUM_LABEL_UDP_STREAM_PORT,
-                        PARSE_ONLY_UINT, false) == 0)
-                  count++;
-            }
-         }
-
-         {
-            menu_displaylist_build_info_t build_list[] = {
-               {MENU_ENUM_LABEL_STREAMING_URL,                                         PARSE_ONLY_STRING},
-               {MENU_ENUM_LABEL_VIDEO_GPU_RECORD,                                      PARSE_ONLY_BOOL  },
-               {MENU_ENUM_LABEL_VIDEO_POST_FILTER_RECORD,                              PARSE_ONLY_BOOL  },
+            menu_displaylist_build_info_selective_t build_list[] = {
+               {MENU_ENUM_LABEL_VIDEO_RECORD_QUALITY,                                  PARSE_ONLY_UINT,   true},
+               {MENU_ENUM_LABEL_RECORD_CONFIG,                                         PARSE_ONLY_PATH,   true},
+               {MENU_ENUM_LABEL_VIDEO_RECORD_THREADS,                                  PARSE_ONLY_UINT,   true},
+               {MENU_ENUM_LABEL_VIDEO_POST_FILTER_RECORD,                              PARSE_ONLY_BOOL,   true},
+               {MENU_ENUM_LABEL_VIDEO_GPU_RECORD,                                      PARSE_ONLY_BOOL,   true},
+               {MENU_ENUM_LABEL_STREAMING_MODE,                                        PARSE_ONLY_UINT,   true},
+               {MENU_ENUM_LABEL_VIDEO_STREAM_QUALITY,                                  PARSE_ONLY_UINT,   true},
+               {MENU_ENUM_LABEL_STREAM_CONFIG,                                         PARSE_ONLY_PATH,   true},
+               {MENU_ENUM_LABEL_STREAMING_TITLE,                                       PARSE_ONLY_STRING, true},
+               {MENU_ENUM_LABEL_STREAMING_URL,                                         PARSE_ONLY_STRING, true},
+               {MENU_ENUM_LABEL_UDP_STREAM_PORT,                                       PARSE_ONLY_UINT,   true},
             };
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
             {
-               if (menu_displaylist_parse_settings_enum(list,
+               switch (build_list[i].enum_idx)
+               {
+                  case MENU_ENUM_LABEL_UDP_STREAM_PORT:
+                     if (settings->uints.streaming_mode == STREAMING_MODE_LOCAL)
+                        build_list[i].checked = true;
+                     break;
+                  default:
+                     break;
+               }
+            }
+
+            for (i = 0; i < ARRAY_SIZE(build_list); i++)
+            {
+               if (build_list[i].checked &&
+                     menu_displaylist_parse_settings_enum(list,
                         build_list[i].enum_idx,  build_list[i].parse_type,
                         false) == 0)
                   count++;
