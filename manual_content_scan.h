@@ -194,7 +194,8 @@ bool manual_content_scan_get_menu_core_name(const char **core_name);
  * lists and 'menu_cbs_left/right'
  * > Returns NULL in the event of failure
  * > Returned string list must be free()'d */
-struct string_list *manual_content_scan_get_menu_system_name_list(void);
+struct string_list *manual_content_scan_get_menu_system_name_list(
+      const char *path_content_database);
 
 /* Creates a list of all possible 'core name' menu
  * strings, for use in 'menu_displaylist' drop-down
@@ -211,7 +212,10 @@ struct string_list *manual_content_scan_get_menu_core_name_list(void);
  * and extracts all information required to configure
  * a manual content scan task.
  * Returns false if current settings are invalid. */
-bool manual_content_scan_get_task_config(manual_content_scan_task_config_t *task_config);
+bool manual_content_scan_get_task_config(
+      manual_content_scan_task_config_t *task_config,
+      const char *path_dir_playlist
+      );
 
 /* Creates a list of all valid content in the specified
  * content directory

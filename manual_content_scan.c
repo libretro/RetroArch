@@ -26,7 +26,6 @@
 #include <lists/dir_list.h>
 #include <retro_miscellaneous.h>
 
-#include "configuration.h"
 #include "msg_hash.h"
 #include "list_special.h"
 #include "core_info.h"
@@ -548,12 +547,10 @@ bool manual_content_scan_get_menu_core_name(const char **core_name)
  * lists and 'menu_cbs_left/right'
  * > Returns NULL in the event of failure
  * > Returned string list must be free()'d */
-struct string_list *manual_content_scan_get_menu_system_name_list(void)
+struct string_list *manual_content_scan_get_menu_system_name_list(
+      const char *path_content_database)
 {
    union string_list_elem_attr attr;
-#ifdef HAVE_LIBRETRODB
-   settings_t *settings          = config_get_ptr();
-#endif
    struct string_list *name_list = string_list_new();
 
    /* Sanity check */
@@ -575,14 +572,13 @@ struct string_list *manual_content_scan_get_menu_system_name_list(void)
 #ifdef HAVE_LIBRETRODB
    /* If platform has database support, get names
     * of all installed database files */
-   if (settings)
    {
       /* Note: dir_list_new_special() is well behaved - the
        * returned string list will only include database
        * files (i.e. don't have to check for directories,
        * or verify file extensions) */
       struct string_list *rdb_list = dir_list_new_special(
-            settings->paths.path_content_database,
+            path_content_database,
             DIR_LIST_DATABASES, NULL);
 
       if (rdb_list && rdb_list->size)
@@ -704,11 +700,12 @@ error:
  * and extracts all information required to configure
  * a manual content scan task.
  * Returns false if current settings are invalid. */
-bool manual_content_scan_get_task_config(manual_content_scan_task_config_t *task_config)
+bool manual_content_scan_get_task_config(
+      manual_content_scan_task_config_t *task_config,
+      const char *path_dir_playlist
+      )
 {
-   settings_t *settings = config_get_ptr();
-
-   if (!task_config || !settings)
+   if (!task_config)
       return false;
 
    /* Ensure all 'task_config' strings are
@@ -785,12 +782,12 @@ bool manual_content_scan_get_task_config(manual_content_scan_task_config_t *task
 
    /* ...which can in turn be used to generate the
     * playlist path */
-   if (string_is_empty(settings->paths.directory_playlist))
+   if (string_is_empty(path_dir_playlist))
       return false;
 
    fill_pathname_join(
          task_config->playlist_file,
-         settings->paths.directory_playlist,
+         path_dir_playlist,
          task_config->database_name,
          sizeof(task_config->playlist_file));
 

@@ -5189,7 +5189,14 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
       case DISPLAYLIST_DROPDOWN_LIST_MANUAL_CONTENT_SCAN_SYSTEM_NAME:
          {
             /* Get system name list */
-            struct string_list *system_name_list = manual_content_scan_get_menu_system_name_list();
+#ifdef HAVE_LIBRETRODB
+            settings_t *settings                 = config_get_ptr();
+            struct string_list *system_name_list = 
+               manual_content_scan_get_menu_system_name_list(settings->paths.path_content_database);
+#else
+            struct string_list *system_name_list = 
+               manual_content_scan_get_menu_system_name_list(NULL);
+#endif
 
             if (system_name_list)
             {

@@ -29,6 +29,7 @@
 
 #include "tasks_internal.h"
 
+#include "../configuration.h"
 #include "../retroarch.h"
 #include "../msg_hash.h"
 #include "../playlist.h"
@@ -297,6 +298,7 @@ bool task_push_manual_content_scan(void)
    task_finder_data_t find_data;
    char task_title[PATH_MAX_LENGTH];
    retro_task_t *task                = NULL;
+   settings_t *settings              = config_get_ptr();
    manual_scan_handle_t *manual_scan = (manual_scan_handle_t*)
          calloc(1, sizeof(manual_scan_handle_t));
 
@@ -322,7 +324,10 @@ bool task_push_manual_content_scan(void)
    if (!manual_scan->task_config)
       goto error;
 
-   if (!manual_content_scan_get_task_config(manual_scan->task_config))
+   if (!manual_content_scan_get_task_config(
+            manual_scan->task_config,
+            settings->paths.directory_playlist
+            ))
    {
       runloop_msg_queue_push(
             msg_hash_to_str(MSG_MANUAL_CONTENT_SCAN_INVALID_CONFIG),

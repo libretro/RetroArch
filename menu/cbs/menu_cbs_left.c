@@ -521,8 +521,14 @@ static int playlist_left_thumbnail_mode_left(unsigned type, const char *label,
 static int manual_content_scan_system_name_left(unsigned type, const char *label,
       bool wraparound)
 {
+#ifdef HAVE_LIBRETRODB
+   settings_t *settings                                            = config_get_ptr();
    struct string_list *system_name_list                            =
-         manual_content_scan_get_menu_system_name_list();
+      manual_content_scan_get_menu_system_name_list(settings->paths.path_content_database);
+#else
+   struct string_list *system_name_list                            =
+      manual_content_scan_get_menu_system_name_list(NULL);
+#endif
    const char *current_system_name                                 = NULL;
    enum manual_content_scan_system_name_type next_system_name_type =
          MANUAL_CONTENT_SCAN_SYSTEM_NAME_DATABASE;
