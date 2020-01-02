@@ -661,7 +661,6 @@ typedef struct settings
       char network_buildbot_assets_url[255];
       char browse_url[4096];
       char path_stream_url[8192];
-      char netplay_lobby_url[PATH_MAX_LENGTH];
 
       char path_menu_xmb_font[PATH_MAX_LENGTH];
       char menu_content_show_settings_password[PATH_MAX_LENGTH];

@@ -232,22 +232,14 @@ finish:
 
 static void handle_discord_join(const char* secret)
 {
-   settings_t *settings = config_get_ptr();
+   char url [2048] = "http://lobby.libretro.com/";
    static struct string_list *list =  NULL;
-   const char *base                = settings->paths.netplay_lobby_url;
-   char url[PATH_MAX_LENGTH];
-
-   if (string_is_empty(base))
-   {
-      RARCH_ERR("[discord] lobby URL is empty.\n");
-      return;
-   }
 
    RARCH_LOG("[discord] join secret: (%s)\n", secret);
    list = string_split(secret, "|");
 
    strlcpy(peer_party_id, list->elems[0].data, sizeof(peer_party_id));
-   fill_pathname_join(url, base, peer_party_id, sizeof(url));
+   strlcat(url, peer_party_id, sizeof(url));
    strlcat(url, "/", sizeof(url));
 
    RARCH_LOG("[discord] querying lobby id: %s at %s\n", peer_party_id, url);

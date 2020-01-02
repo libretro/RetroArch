@@ -1203,7 +1203,6 @@ static struct config_path_setting *populate_settings_path(settings_t *settings, 
    SETTING_PATH("netplay_password",           settings->paths.netplay_password, false, NULL, true);
    SETTING_PATH("netplay_spectate_password",  settings->paths.netplay_spectate_password, false, NULL, true);
 #endif
-   SETTING_PATH("netplay_lobby_url",  settings->paths.netplay_lobby_url, false, NULL, true);
    SETTING_PATH("libretro_directory",
          settings->paths.directory_libretro, false, NULL, false);
    SETTING_PATH("core_options_path",
@@ -2169,9 +2168,6 @@ void config_set_defaults(void *data)
          sizeof(settings->paths.network_buildbot_url));
    strlcpy(settings->paths.network_buildbot_assets_url, buildbot_assets_server_url,
          sizeof(settings->paths.network_buildbot_assets_url));
-   strlcpy(settings->paths.netplay_lobby_url, netplay_lobby_url,
-         sizeof(settings->paths.netplay_lobby_url));
-
 
    *settings->arrays.input_keyboard_layout                = '\0';
 
