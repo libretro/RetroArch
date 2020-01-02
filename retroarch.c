@@ -23170,6 +23170,17 @@ static void drivers_init(int flags)
          if (!menu_driver_init(video_is_threaded))
              RARCH_ERR("Unable to init menu driver.\n");
    }
+
+   /* Initialising the menu driver will also initialise
+    * core info - if we are not initialising the menu
+    * driver, must initialise core info 'by hand' */
+   if (!(flags & DRIVER_VIDEO_MASK) ||
+       !(flags & DRIVER_MENU_MASK))
+   {
+      command_event(CMD_EVENT_CORE_INFO_INIT, NULL);
+      command_event(CMD_EVENT_LOAD_CORE_PERSIST, NULL);
+   }
+
 #else
    /* Qt uses core info, even if the menu is disabled */
    command_event(CMD_EVENT_CORE_INFO_INIT, NULL);
