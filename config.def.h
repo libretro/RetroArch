@@ -1170,6 +1170,8 @@ static char buildbot_server_url[] = "http://libretro.xbins.org/libretro/nightly/
 static char buildbot_server_url[] = "";
 #endif
 
+static char netplay_lobby_url[] = "http://lobby.libretro.com/";
+
 static char buildbot_assets_server_url[] = "http://buildbot.libretro.com/assets/";
 
 static char default_discord_app_id[] = "475456035851599874";

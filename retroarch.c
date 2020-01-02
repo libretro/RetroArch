@@ -28366,7 +28366,9 @@ static void send_debug_info_cb(retro_task_t *task,
 static void rarch_send_debug_info(void)
 {
    char debug_filepath[PATH_MAX_LENGTH];
-   const char *url             = "http://lobby.libretro.com/debuginfo/add/";
+   char url[PATH_MAX_LENGTH];
+   settings_t *settings        = configuration_settings;
+   const char *base            = settings->paths.netplay_lobby_url;
    char *info_buf              = NULL;
    const size_t param_buf_size = 65535;
    char *param_buf             = (char*)malloc(param_buf_size);
@@ -28375,6 +28377,14 @@ static void rarch_send_debug_info(void)
    int64_t len                 = 0;
    const char *path_config     = path_get(RARCH_PATH_CONFIG);
    bool       info_written     = rarch_write_debug_info();
+
+   if (string_is_empty(base))
+   {
+      RARCH_ERR("[discord] lobby URL is empty.\n");
+      return;
+   }
+
+   fill_pathname_join(url, base, "debuginfo/add/", sizeof(url));
 
    debug_filepath[0]           =
       param_buf[0]             = '\0';

@@ -857,17 +857,26 @@ static void netplay_announce(void)
 {
    char buf[4600];
    char frontend_architecture[PATH_MAX_LENGTH];
-   char url[2048]                   = "http://lobby.libretro.com/add/";
+   char url[PATH_MAX_LENGTH];
+   settings_t *settings             = config_get_ptr();
+   const char *base                 = settings->paths.netplay_lobby_url;
    char *username                   = NULL;
    char *corename                   = NULL;
    char *gamename                   = NULL;
    char *subsystemname              = NULL;
    char *coreversion                = NULL;
    char *frontend_ident             = NULL;
-   settings_t *settings             = config_get_ptr();
    struct retro_system_info *system = runloop_get_libretro_system_info();
    uint32_t content_crc             = content_get_crc();
    struct string_list *subsystem    = path_get_subsystem_list();
+
+   if (string_is_empty(base))
+   {
+      RARCH_ERR("[lobby] lobby URL is empty.\n");
+      return;
+   }
+
+   fill_pathname_join(url, base, "add/", sizeof(url));
 
    buf[0] = '\0';
 

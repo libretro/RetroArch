@@ -5222,7 +5222,17 @@ static void netplay_lan_scan_callback(retro_task_t *task,
 static int action_ok_push_netplay_refresh_rooms(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   char url [2048] = "http://lobby.libretro.com/list/";
+   settings_t *settings = config_get_ptr();
+   const char *base = settings->paths.netplay_lobby_url;
+   char url[PATH_MAX_LENGTH];
+
+   if (string_is_empty(base))
+   {
+      RARCH_ERR("[lobby] lobby URL is empty.\n");
+      return 0;
+   }
+
+   fill_pathname_join(url, base, "list/", sizeof(url));
 #ifndef RARCH_CONSOLE
    task_push_netplay_lan_scan(netplay_lan_scan_callback);
 #endif
