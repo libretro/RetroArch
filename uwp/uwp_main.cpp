@@ -30,12 +30,6 @@
 #include "uwp_func.h"
 #include "uwp_async.h"
 
-#if defined(HAVE_OPENGL) && defined(HAVE_ANGLE)
-#ifndef HAVE_EGL
-#define HAVE_EGL       1
-#endif
-#endif
-
 using namespace RetroArchUWP;
 
 using namespace concurrency;
@@ -642,34 +636,6 @@ extern "C" {
 	{
 		return (void*)CoreWindow::GetForCurrentThread();
 	}
-
-#ifdef HAVE_EGL
-	/* A special version of egl_create_surface to properly handle DPI scaling. */
-	bool uwp_egl_create_surface(egl_ctx_data_t* egl)
-	{
-		EGLint window_attribs[] = {
-			EGL_RENDER_BUFFER, EGL_BACK_BUFFER,
-			EGL_NONE,
-		};
-
-		/* Why Microsoft uses a WinRT class for sending parameters to EGL?! */
-		PropertySet^ prop = ref new PropertySet();
-		prop->Insert(L"EGLNativeWindowTypeProperty", CoreWindow::GetForCurrentThread());
-
-		egl->surf = eglCreateWindowSurface(egl->dpy, egl->config, (EGLNativeWindowType)(prop), window_attribs);
-
-		if (egl->surf == EGL_NO_SURFACE)
-			return false;
-
-		/* Connect the context to the surface. */
-		if (!eglMakeCurrent(egl->dpy, egl->surf, egl->surf, egl->ctx))
-			return false;
-
-		RARCH_LOG("[EGL]: Current context: %p.\n", (void*)eglGetCurrentContext());
-
-		return true;
-	}
-#endif
 
 	void uwp_fill_installed_core_packages(struct string_list *list)
 	{
