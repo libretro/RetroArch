@@ -2917,7 +2917,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_NAVIGATION_WRAPAROUND,
-      "Wrap-around to beginning and/or end if boundary of list is reached horizontally or vertically."
+      "Spostarsi all'inizio e/o alla fine se il limite dell'elenco viene raggiunto in senso orizzontale o verticale."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_HOST,
@@ -3771,11 +3771,11 @@ MSG_HASH(MENU_ENUM_SUBLABEL_AI_SERVICE_ENABLE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_AI_SERVICE_TARGET_LANG,
       "Lingua di destinazione")
 MSG_HASH(MENU_ENUM_SUBLABEL_AI_SERVICE_TARGET_LANG,
-      "La lingua in cui verrà tradotto il servizio. Se impostato su "Non preoccuparti", verrà impostato automaticamente in inglese.")
+      "La lingua in cui verrà tradotto il servizio. Se impostato su 'Non preoccuparti', verrà impostato automaticamente in inglese.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_AI_SERVICE_SOURCE_LANG,
       "Sorgente del Linguaggio")
 MSG_HASH(MENU_ENUM_SUBLABEL_AI_SERVICE_SOURCE_LANG,
-      "La lingua da cui il servizio verrà tradotto. Se impostato su "Non preoccuparti", tenterà di rilevare automaticamente la lingua. L'impostazione su una lingua specifica renderà la traduzione più accurata.")
+      "La lingua da cui il servizio verrà tradotto. Se impostato su 'Non preoccuparti', tenterà di rilevare automaticamente la lingua. L'impostazione su una lingua specifica renderà la traduzione più accurata.")
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_LANG_CZECH,
     "Ceco"
@@ -4020,7 +4020,7 @@ MSG_HASH(MSG_LOCALAP_ALREADY_RUNNING,
 MSG_HASH(MSG_LOCALAP_NOT_RUNNING,
       "Il punto di accesso della Wi-Fi non è in esecuzione")
 MSG_HASH(MSG_LOCALAP_STARTING,
-      "Avvio del punto di accesso della Wi-Fi con SSID =%s e Passkey =%s")
+      "Avvio del punto di accesso della Wi-Fi con SSID=%s e Passkey=%s")
 MSG_HASH(MSG_LOCALAP_ERROR_CONFIG_CREATE,
       "Impossibile creare il file di configurazione del punto di accesso della Wi-Fi.")
 MSG_HASH(MSG_LOCALAP_ERROR_CONFIG_PARSE,
