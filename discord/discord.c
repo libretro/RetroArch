@@ -23,7 +23,6 @@
 #include "../deps/discord-rpc/include/discord_rpc.h"
 
 #include "../retroarch.h"
-#include "../configuration.h"
 #include "../core.h"
 #include "../core_info.h"
 #include "../paths.h"
@@ -464,11 +463,10 @@ void discord_update(enum discord_presence presence)
    discord_status = presence;
 }
 
-void discord_init(void)
+void discord_init(const char *discord_app_id)
 {
    char full_path[PATH_MAX_LENGTH];
    char command[PATH_MAX_LENGTH];
-   settings_t *settings = config_get_ptr();
 
    DiscordEventHandlers handlers;
 
@@ -483,7 +481,7 @@ void discord_init(void)
    handlers.spectateGame = handle_discord_spectate;
    handlers.joinRequest  = handle_discord_join_request;
 
-   Discord_Initialize(settings->arrays.discord_app_id, &handlers, 0, NULL);
+   Discord_Initialize(discord_app_id, &handlers, 0, NULL);
 
 #ifdef _WIN32
    GetModuleFileNameA(NULL, full_path, sizeof(full_path));
@@ -500,7 +498,7 @@ void discord_init(void)
          get_retroarch_launch_arguments());
 #endif
    RARCH_LOG("[discord] registering startup command: %s\n", command);
-   Discord_Register(settings->arrays.discord_app_id, command);
+   Discord_Register(discord_app_id, command);
    discord_ready = true;
 }
 

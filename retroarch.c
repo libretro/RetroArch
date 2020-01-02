@@ -7479,14 +7479,15 @@ TODO: Add a setting for these tweaks */
          {
             settings_t *settings      = configuration_settings;
 
-            if (settings)
-               if (!settings->bools.discord_enable)
-                  return false;
+            if (!settings)
+               return false;
+            if (!settings->bools.discord_enable)
+               return false;
 
             if (discord_is_ready())
                return true;
 
-            discord_init();
+            discord_init(settings->arrays.discord_app_id);
          }
 #endif
          break;
