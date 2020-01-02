@@ -322,7 +322,7 @@ static void *xa_init(const char *device, unsigned rate, unsigned latency,
    return xa;
 }
 
-static ssize_t xa_write(void *data, const void *buf, size_t size)
+static ssize_t xa_write_nonblock(void *data, const void *buf, size_t size)
 {
    unsigned bytes;
    xa_t *xa              = (xa_t*)data;
@@ -340,6 +340,59 @@ static ssize_t xa_write(void *data, const void *buf, size_t size)
    }
 
    bytes = size;
+
+   while (bytes)
+   {
+      unsigned need   = MIN(bytes, handle->bufsize - handle->bufptr);
+
+      memcpy(handle->buf + handle->write_buffer *
+            handle->bufsize + handle->bufptr,
+            buffer, need);
+
+      handle->bufptr += need;
+      buffer         += need;
+      bytes          -= need;
+
+      if (handle->bufptr == handle->bufsize)
+      {
+         XAUDIO2_BUFFER xa2buffer;
+
+         while (handle->buffers == MAX_BUFFERS - 1)
+            WaitForSingleObject(handle->hEvent, INFINITE);
+
+         xa2buffer.Flags      = 0;
+         xa2buffer.AudioBytes = handle->bufsize;
+         xa2buffer.pAudioData = handle->buf + handle->write_buffer * handle->bufsize;
+         xa2buffer.PlayBegin  = 0;
+         xa2buffer.PlayLength = 0;
+         xa2buffer.LoopBegin  = 0;
+         xa2buffer.LoopLength = 0;
+         xa2buffer.LoopCount  = 0;
+         xa2buffer.pContext   = NULL;
+
+         if (FAILED(IXAudio2SourceVoice_SubmitSourceBuffer(
+                     handle->pSourceVoice, &xa2buffer, NULL)))
+         {
+            if (size > 0)
+               return -1;
+            return 0;
+         }
+
+         InterlockedIncrement((LONG volatile*)&handle->buffers);
+         handle->bufptr       = 0;
+         handle->write_buffer = (handle->write_buffer + 1) & MAX_BUFFERS_MASK;
+      }
+   }
+
+   return size;
+}
+
+static ssize_t xa_write(void *data, const void *buf, size_t size)
+{
+   xa_t *xa              = (xa_t*)data;
+   xaudio2_t *handle     = xa->xa;
+   const uint8_t *buffer = (const uint8_t*)buf;
+   unsigned bytes        = size;
 
    while (bytes)
    {
@@ -406,7 +459,13 @@ static void xa_set_nonblock_state(void *data, bool state)
 {
    xa_t *xa = (xa_t*)data;
    if (xa)
-      xa->nonblock = state;
+   {
+      xa->nonblock    = state;
+      if (xa->nonblock)
+         audio_xa.write = xa_write_nonblock;
+      else
+         audio_xa.write = xa_write;
+   }
 }
 
 static bool xa_start(void *data, bool is_shutdown)
