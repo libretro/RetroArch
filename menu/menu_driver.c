@@ -1985,8 +1985,11 @@ float menu_display_get_pixel_scale(unsigned width, unsigned height)
 
    /* Apply user scaling factor */
    if (settings)
-      return scale * ((settings->floats.menu_scale_factor > 0.0001f) ?
-            settings->floats.menu_scale_factor : 1.0f);
+   {
+      float menu_scale_factor = settings->floats.menu_scale_factor;
+      return scale * ((menu_scale_factor > 0.0001f) ?
+            menu_scale_factor : 1.0f);
+   }
 
    return scale;
 }
@@ -1997,7 +2000,11 @@ float menu_display_get_dpi_scale(unsigned width, unsigned height)
    static unsigned last_height = 0;
    static float scale          = 0.0f;
    static bool scale_cached    = false;
+   float menu_scale_factor     = 0.0f;
    settings_t *settings        = config_get_ptr();
+
+   if (settings)
+      menu_scale_factor        = settings->floats.menu_scale_factor;
 
    /* Scale is based on display metrics - these are a fixed
     * hardware property. To minimise performance overheads
@@ -2028,14 +2035,14 @@ float menu_display_get_dpi_scale(unsigned width, unsigned height)
 #if defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL)
       if (true)
       {
-         scale        = (diagonal_pixels / 6.5f) / 212.0f;
-         scale_cached = true;
-         last_width   = width;
-         last_height  = height;
+         scale                   = (diagonal_pixels / 6.5f) / 212.0f;
+         scale_cached            = true;
+         last_width              = width;
+         last_height             = height;
 
          if (settings)
-            return scale * ((settings->floats.menu_scale_factor > 0.0001f) ?
-                  settings->floats.menu_scale_factor : 1.0f);
+            return scale * ((menu_scale_factor > 0.0001f) ?
+                  menu_scale_factor : 1.0f);
 
          return scale;
       }
@@ -2143,8 +2150,8 @@ float menu_display_get_dpi_scale(unsigned width, unsigned height)
 
    /* Apply user scaling factor */
    if (settings)
-      return scale * ((settings->floats.menu_scale_factor > 0.0001f) ?
-            settings->floats.menu_scale_factor : 1.0f);
+      return scale * ((menu_scale_factor > 0.0001f) ?
+            menu_scale_factor : 1.0f);
 
    return scale;
 }
