@@ -295,10 +295,15 @@ static void task_core_updater_get_list_handler(retro_task_t *task)
          break;
       case CORE_UPDATER_LIST_END:
          {
+            settings_t *settings    = config_get_ptr();
+
             /* Parse HTTP transfer data */
             if (list_handle->http_data)
                core_updater_list_parse_network_data(
                      list_handle->core_list,
+                     settings->paths.directory_libretro,
+                     settings->paths.path_libretro_info,
+                     settings->paths.network_buildbot_url,
                      list_handle->http_data->data,
                      list_handle->http_data->len);
 

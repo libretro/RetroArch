@@ -136,7 +136,11 @@ bool core_updater_list_get_core(
  * core_updater_list_t object.
  * Returns false in the event of an error. */
 bool core_updater_list_parse_network_data(
-      core_updater_list_t *core_list, const char *data, size_t len);
+      core_updater_list_t *core_list,
+      const char *path_dir_libretro,
+      const char *path_libretro_info,
+      const char *network_buildbot_url,
+      const char *data, size_t len);
 
 RETRO_END_DECLS
 

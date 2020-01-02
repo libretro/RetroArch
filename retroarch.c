@@ -5603,9 +5603,15 @@ static bool event_init_content(void)
 
 static void update_runtime_log(bool log_per_core)
 {
+   settings_t *settings           = config_get_ptr();
+
    /* Initialise runtime log file */
    runtime_log_t *runtime_log = runtime_log_init(
-         runtime_content_path, runtime_core_path, log_per_core);
+         runtime_content_path,
+         runtime_core_path,
+         settings->paths.directory_runtime_log,
+         settings->paths.directory_playlist,
+         log_per_core);
 
    if (!runtime_log)
       return;

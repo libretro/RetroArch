@@ -3168,7 +3168,10 @@ static unsigned menu_displaylist_parse_content_information(
          !settings->bools.content_runtime_log_aggregate))
    {
       runtime_log_t *runtime_log = runtime_log_init(
-            content_path, core_path,
+            content_path,
+            core_path,
+            settings->paths.directory_runtime_log,
+            settings->paths.directory_playlist,
             (settings->uints.playlist_sublabel_runtime_type == PLAYLIST_RUNTIME_PER_CORE));
 
       if (runtime_log)
