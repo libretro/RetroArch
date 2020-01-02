@@ -716,7 +716,7 @@ void netplay_load_savestate(netplay_t *netplay,
  *
  * Get the preferred share mode
  */
-uint8_t netplay_settings_share_mode(void);
+uint8_t netplay_settings_share_mode(unsigned share_digital, unsigned share_analog);
 
 /**
  * input_poll_net

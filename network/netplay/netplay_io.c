@@ -487,9 +487,8 @@ bool netplay_cmd_mode(netplay_t *netplay,
    enum rarch_netplay_connection_mode mode)
 {
    uint32_t cmd, device;
-   uint32_t payloadBuf = 0, *payload = NULL;
-   uint8_t share_mode;
-   settings_t *settings = config_get_ptr();
+   uint32_t payload_buf = 0, *payload    = NULL;
+   uint8_t share_mode                    = 0;
    struct netplay_connection *connection = NULL;
 
    if (!netplay->is_server)
@@ -502,25 +501,31 @@ bool netplay_cmd_mode(netplay_t *netplay,
          break;
 
       case NETPLAY_CONNECTION_SLAVE:
-         payloadBuf = NETPLAY_CMD_PLAY_BIT_SLAVE;
+         payload_buf = NETPLAY_CMD_PLAY_BIT_SLAVE;
          /* no break */
 
       case NETPLAY_CONNECTION_PLAYING:
-         payload = &payloadBuf;
-
-         /* Add a share mode if requested */
-         share_mode = netplay_settings_share_mode();
-         payloadBuf |= ((uint32_t) share_mode) << 16;
-
-         /* Request devices */
-         for (device = 0; device < MAX_INPUT_DEVICES; device++)
          {
-            if (settings->bools.netplay_request_devices[device])
-               payloadBuf |= 1<<device;
-         }
+            settings_t *settings = config_get_ptr();
+            payload = &payload_buf;
 
-         payloadBuf = htonl(payloadBuf);
-         cmd = NETPLAY_CMD_PLAY;
+            /* Add a share mode if requested */
+            share_mode = netplay_settings_share_mode(
+                  settings->uints.netplay_share_digital,
+                  settings->uints.netplay_share_analog
+                  );
+            payload_buf |= ((uint32_t) share_mode) << 16;
+
+            /* Request devices */
+            for (device = 0; device < MAX_INPUT_DEVICES; device++)
+            {
+               if (settings->bools.netplay_request_devices[device])
+                  payload_buf |= 1<<device;
+            }
+
+            payload_buf = htonl(payload_buf);
+            cmd         = NETPLAY_CMD_PLAY;
+         }
          break;
 
       default:

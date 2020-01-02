@@ -109,12 +109,10 @@ static JSON_Parser_HandlerResult JSON_CALL StringHandler(
       {
          if (pCtx->cur_field)
          {
+            /* CRC comes in as a string but it is stored
+             * as an unsigned casted to int. */
             if (string_is_equal(pCtx->cur_field, "game_crc"))
-            {
-               /* CRC comes in as a string but it is stored
-                * as an unsigned casted to int. */
                *((int*)pCtx->cur_member) = (int)strtoul(pValue, NULL, 16);
-            }
             else
                strlcpy((char*)pCtx->cur_member, pValue, PATH_MAX_LENGTH);
          }

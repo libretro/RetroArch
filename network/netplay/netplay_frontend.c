@@ -1328,15 +1328,13 @@ static void netplay_core_reset(netplay_t *netplay)
  *
  * Get the preferred share mode
  */
-uint8_t netplay_settings_share_mode(void)
+uint8_t netplay_settings_share_mode(unsigned share_digital, unsigned share_analog)
 {
-   settings_t *settings = config_get_ptr();
-   uint8_t share_mode = 0;
+   uint8_t share_mode     = 0;
 
-   if (settings->uints.netplay_share_digital
-         || settings->uints.netplay_share_analog)
+   if (share_digital || share_analog)
    {
-      switch (settings->uints.netplay_share_digital)
+      switch (share_digital)
       {
          case RARCH_NETPLAY_SHARE_DIGITAL_OR:
             share_mode |= NETPLAY_SHARE_DIGITAL_OR;
@@ -1350,7 +1348,7 @@ uint8_t netplay_settings_share_mode(void)
          default:
             share_mode |= NETPLAY_SHARE_NO_PREFERENCE;
       }
-      switch (settings->uints.netplay_share_analog)
+      switch (share_analog)
       {
          case RARCH_NETPLAY_SHARE_ANALOG_MAX:
             share_mode |= NETPLAY_SHARE_ANALOG_MAX;
