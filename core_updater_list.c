@@ -402,9 +402,12 @@ static bool core_updater_list_set_crc(
 static bool core_updater_list_set_paths(
       core_updater_list_entry_t *entry, const char *filename_str)
 {
-   settings_t *settings  = config_get_ptr();
-   char *last_underscore = NULL;
-   char *tmp_url         = NULL;
+   settings_t *settings                   = config_get_ptr();
+   char *last_underscore                  = NULL;
+   char *tmp_url                          = NULL;
+   const char *path_dir_libretro          = NULL;
+   const char *path_libretro_info         = NULL;
+   const char *network_buildbot_url       = NULL;
    char remote_core_path[PATH_MAX_LENGTH];
    char local_core_path[PATH_MAX_LENGTH];
    char local_info_path[PATH_MAX_LENGTH];
@@ -419,9 +422,13 @@ static bool core_updater_list_set_paths(
    if (!entry || string_is_empty(filename_str) || !settings)
       return false;
 
-   if (string_is_empty(settings->paths.directory_libretro) ||
-       string_is_empty(settings->paths.path_libretro_info) ||
-       string_is_empty(settings->paths.network_buildbot_url))
+   path_dir_libretro                      = settings->paths.directory_libretro;
+   path_libretro_info                     = settings->paths.path_libretro_info;
+   network_buildbot_url                   = settings->paths.network_buildbot_url;
+
+   if (string_is_empty(path_dir_libretro) ||
+       string_is_empty(path_libretro_info) ||
+       string_is_empty(network_buildbot_url))
       return false;
 
    /* Check whether remote file is an archive */
@@ -439,7 +446,7 @@ static bool core_updater_list_set_paths(
    /* remote_core_path */
    fill_pathname_join(
          remote_core_path,
-         settings->paths.network_buildbot_url,
+         network_buildbot_url,
          filename_str,
          sizeof(remote_core_path));
 
@@ -462,7 +469,7 @@ static bool core_updater_list_set_paths(
    /* local_core_path */
    fill_pathname_join(
          local_core_path,
-         settings->paths.directory_libretro,
+         path_dir_libretro,
          filename_str,
          sizeof(local_core_path));
 
@@ -482,7 +489,7 @@ static bool core_updater_list_set_paths(
    /* local_info_path */
    fill_pathname_join_noext(
          local_info_path,
-         settings->paths.path_libretro_info,
+         path_libretro_info,
          filename_str,
          sizeof(local_info_path));
 
