@@ -324,6 +324,14 @@ else ifeq ($(LIBRETRO), quicknes)
 	APP_ICON             = pkg/ctr/assets/quicknes.png
 	APP_BANNER           = pkg/ctr/assets/quicknes_banner.png
 
+else ifeq ($(LIBRETRO), race)
+	APP_TITLE            = RACE
+	APP_AUTHOR           = various
+	APP_PRODUCT_CODE     = RARCH-RACE
+	APP_UNIQUE_ID        = 0xBAC95
+	APP_ICON             = pkg/ctr/assets/race.png
+	APP_BANNER           = pkg/ctr/assets/race_banner.png
+
 else ifeq ($(LIBRETRO), snes9x2002)
 	APP_TITLE            = Snes9x 2002
 	APP_AUTHOR           = various
