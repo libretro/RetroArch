@@ -56,8 +56,8 @@ android {
         abiFilters 'armeabi-v7a', 'x86'
       }
     }
-    ra64 {
-      applicationIdSuffix '.ra64'
+    gold {
+      applicationIdSuffix '.gold'
       resValue "string", "app_name", "RetroArch"
 
       dimension "variant"
