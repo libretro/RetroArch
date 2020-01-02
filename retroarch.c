@@ -2033,17 +2033,12 @@ static bool dir_free_shader(void)
 }
 
 
-static bool dir_init_shader(void)
+static bool dir_init_shader(const char *path_dir_shader)
 {
    unsigned i;
    struct rarch_dir_list *dir_list = (struct rarch_dir_list*)&dir_shader_list;
-   settings_t *settings            = configuration_settings;
 
-   if (!settings || !*settings->paths.directory_video_shader)
-      return false;
-
-   dir_list->list = dir_list_new_special(
-         settings->paths.directory_video_shader, DIR_LIST_SHADERS, NULL);
+   dir_list->list = dir_list_new_special(path_dir_shader, DIR_LIST_SHADERS, NULL);
 
    if (!dir_list->list || dir_list->list->size == 0)
    {
@@ -4922,30 +4917,35 @@ static bool run_translation_service(void)
       {
          char temp_string[PATH_MAX_LENGTH];
          const char *mode_chr                    = NULL;
+         unsigned ai_service_mode                = settings->uints.ai_service_mode;
          /*"image" is included for backwards compatability with
           * vgtranslate < 1.04 */
 
          temp_string[0] = '\0';
 
-         if (settings->uints.ai_service_mode == 0)
+         switch (ai_service_mode)
          {
-            if (use_overlay)
-               mode_chr = "image,png,png-a";
-            else
-               mode_chr = "image,png";
+            case 0:
+               if (use_overlay)
+                  mode_chr = "image,png,png-a";
+               else
+                  mode_chr = "image,png";
+               break;
+            case 1:
+               mode_chr = "sound,wav";
+               break;
+            case 2:
+               mode_chr = "text";
+               break;
+            case 3:
+               if (use_overlay)
+                  mode_chr = "image,png,png-a,sound,wav";
+               else
+                  mode_chr = "image,png,sound,wav";         
+               break;
+            default:
+               break;
          }
-         else if (settings->uints.ai_service_mode == 1)
-            mode_chr = "sound,wav";
-         else if (settings->uints.ai_service_mode == 2)
-            mode_chr = "text";
-         else if (settings->uints.ai_service_mode == 3)
-         {
-            if (use_overlay)
-               mode_chr = "image,png,png-a,sound,wav";
-            else
-               mode_chr = "image,png,sound,wav";         
-         }
-
 
          snprintf(temp_string,
                sizeof(temp_string),
@@ -5409,7 +5409,6 @@ static void command_event_deinit_core(bool reinit)
 
 static void command_event_init_cheats(void)
 {
-   settings_t *settings          = configuration_settings;
    bool        allow_cheats      = true;
 
 #ifdef HAVE_NETWORKING
@@ -5424,8 +5423,11 @@ static void command_event_init_cheats(void)
    cheat_manager_alloc_if_empty();
    cheat_manager_load_game_specific_cheats();
 
-   if (settings && settings->bools.apply_cheats_after_load)
-      cheat_manager_apply_cheats();
+   {
+      settings_t *settings = configuration_settings;
+      if (settings && settings->bools.apply_cheats_after_load)
+         cheat_manager_apply_cheats();
+   }
 }
 
 static void command_event_load_auto_state(void)
@@ -5743,9 +5745,9 @@ static bool command_event_init_core(enum rarch_core_type type)
 
    /* Load auto-shaders on the next occasion */
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-   shader_presets_need_reload = true;
+   shader_presets_need_reload     = true;
    shader_delay_timer.timer_begin = false; /* not initialized */
-   shader_delay_timer.timer_end = false; /* not expired */
+   shader_delay_timer.timer_end   = false; /* not expired */
 #endif
 
    /* reset video format to libretro's default */
@@ -5857,7 +5859,7 @@ static bool command_event_save_config(
  *
  * Returns: true (1) on success, otherwise false (0).
  **/
-static bool command_event_save_core_config(void)
+static bool command_event_save_core_config(const char *dir_menu_config)
 {
    char msg[128];
    bool found_path                 = false;
@@ -5867,12 +5869,11 @@ static bool command_event_save_core_config(void)
    char *config_path               = NULL;
    char *config_dir                = NULL;
    size_t config_size              = PATH_MAX_LENGTH * sizeof(char);
-   settings_t *settings            = configuration_settings;
 
    msg[0]                          = '\0';
 
-   if (settings && !string_is_empty(settings->paths.directory_menu_config))
-      config_dir = strdup(settings->paths.directory_menu_config);
+   if (!string_is_empty(dir_menu_config))
+      config_dir = strdup(dir_menu_config);
    else if (!path_is_empty(RARCH_PATH_CONFIG)) /* Fallback */
    {
       config_dir                   = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
@@ -7016,8 +7017,11 @@ TODO: Add a setting for these tweaks */
          command_event_save_current_config(OVERRIDE_GAME);
          break;
       case CMD_EVENT_MENU_SAVE_CONFIG:
-         if (!command_event_save_core_config())
-            return false;
+         {
+            settings_t *settings            = configuration_settings;
+            if (!command_event_save_core_config(settings->paths.directory_menu_config))
+               return false;
+         }
          break;
       case CMD_EVENT_SHADER_PRESET_LOADED:
          ui_companion_event_command(cmd);
@@ -20491,7 +20495,8 @@ static bool video_driver_init_internal(bool *video_is_threaded)
       video_display_server_set_screen_orientation((enum rotation)settings->uints.screen_orientation);
 
    dir_free_shader();
-   dir_init_shader();
+   if (!string_is_empty(settings->paths.directory_video_shader))
+      dir_init_shader(settings->paths.directory_video_shader);
 
    return true;
 
