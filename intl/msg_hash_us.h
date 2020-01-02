@@ -802,15 +802,15 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DISK_CYCLE_TRAY_STATUS,
-    "Disk Cycle Tray Status"
+    "Cycle Disk Tray"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
-    "Disk Image Append"
+    "Insert Disk"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DISK_INDEX,
-    "Disk Index"
+    "Current Disk Index"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DISK_OPTIONS,
@@ -6674,7 +6674,8 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_DISK_INDEX,
-    "Change the disk index."
+    "Change the current disk if more than one is inserted. Open the tray before attempting to change disks.\n"
+    "If RetroArch is configured to pause on menu toggle the tray open/close action may not register in the core. If that's the case remember to go back to the game for a few frames after every disk control action."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_DISK_OPTIONS,
