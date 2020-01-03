@@ -1216,6 +1216,9 @@ static bool d3d9_init_internal(d3d9_video_t *d3d,
    {
 
       d3d9_fake_context.get_flags = d3d9_get_flags;
+#ifndef _XBOX_
+      d3d9_fake_context.get_metrics = win32_get_metrics;
+#endif
       video_context_driver_set(&d3d9_fake_context); 
 #if defined(HAVE_CG) || defined(HAVE_HLSL)
       {

@@ -321,7 +321,7 @@ enum midi_driver_enum
 static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_METAL;
 #elif defined(HAVE_VITA2D)
 static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_VITA2D;
-#elif defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) || defined(__CELLOS_LV2__)
+#elif (defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) || defined(__CELLOS_LV2__)) && !defined(__WINRT__)
 static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_GL;
 #elif defined(HAVE_OPENGL_CORE)
 static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_GL_CORE;
