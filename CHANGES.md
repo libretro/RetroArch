@@ -4,6 +4,8 @@
 - CHEEVOS: Don't disable achievement when AddAddress generates an out-of-range address
 - CHEEVOS: Don't reset triggers/leaderboards that failed to load
 - CHEEVOS: Don't count unsupported achievements as unlocked
+- D3D11: Block FL9_3 devices from D3D11 driver because they don't work anyway (current D3D11 driver uses SM4.0 which requires FL10_0 and up)
+- D3D11: Fallback to GL driver when D3D11 fails
 - LOCALIZATION: Update Russian translation
 - LOCALIZATION: Update Spanish translation
 - MENU: Added 'Hosting' menu under Netplay menu
@@ -13,6 +15,7 @@
 - NETPLAY/RELAY: Fix the “spectator” bug when using the relay server – When a player switches into the spectator mode (pressing “i”) while using the relay server, all players will disconnect.
 - NETPLAY/RELAY: Overall stability has improved. Fixed a memory leak that would cause the relay server to become unresponsive after some time.
 - NETPLAY/RELAY: Fixed critical bug that would cause all players to be disconnected from the relay server if one player was leaving the game. That bug had been open for one year and we were finally able to fix it.
+- UWP: Wire up get_metrics to the fake context of D3D9/10/11/12 driver, enabling proper scaling and mouse/touch gestures
 - VITA: Re-add Online Updater
 - VULKAN: Fix font driver 'vulkan_get_message_width()' function
 
