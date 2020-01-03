@@ -264,8 +264,8 @@ static EM_BOOL rwebinput_mouse_cb(int event_type,
 
    uint8_t mask = 1 << mouse_event->button;
 
-   g_rwebinput_mouse->x = mouse_event->canvasX;
-   g_rwebinput_mouse->y = mouse_event->canvasY;
+   g_rwebinput_mouse->x = mouse_event->targetX;
+   g_rwebinput_mouse->y = mouse_event->targetY;
    g_rwebinput_mouse->delta_x += mouse_event->movementX;
    g_rwebinput_mouse->delta_y += mouse_event->movementY;
 
@@ -314,7 +314,7 @@ static void *rwebinput_input_init(const char *joypad_driver)
 
       /* emscripten currently doesn't have an API to remove handlers, so make
        * once and reuse it */
-      r = emscripten_set_keydown_callback("#document", NULL, false,
+      r = emscripten_set_keydown_callback(EMSCRIPTEN_EVENT_TARGET_DOCUMENT, NULL, false,
          rwebinput_keyboard_cb);
       if (r != EMSCRIPTEN_RESULT_SUCCESS)
       {
@@ -322,7 +322,7 @@ static void *rwebinput_input_init(const char *joypad_driver)
             "[EMSCRIPTEN/INPUT] failed to create keydown callback: %d\n", r);
       }
 
-      r = emscripten_set_keyup_callback("#document", NULL, false,
+      r = emscripten_set_keyup_callback(EMSCRIPTEN_EVENT_TARGET_DOCUMENT, NULL, false,
          rwebinput_keyboard_cb);
       if (r != EMSCRIPTEN_RESULT_SUCCESS)
       {
@@ -330,7 +330,7 @@ static void *rwebinput_input_init(const char *joypad_driver)
             "[EMSCRIPTEN/INPUT] failed to create keydown callback: %d\n", r);
       }
 
-      r = emscripten_set_keypress_callback("#document", NULL, false,
+      r = emscripten_set_keypress_callback(EMSCRIPTEN_EVENT_TARGET_DOCUMENT, NULL, false,
          rwebinput_keyboard_cb);
       if (r != EMSCRIPTEN_RESULT_SUCCESS)
       {
@@ -362,7 +362,7 @@ static void *rwebinput_input_init(const char *joypad_driver)
             "[EMSCRIPTEN/INPUT] failed to create mousemove callback: %d\n", r);
       }
 
-      r = emscripten_set_wheel_callback("#document", NULL, false,
+      r = emscripten_set_wheel_callback(EMSCRIPTEN_EVENT_TARGET_DOCUMENT, NULL, false,
          rwebinput_wheel_cb);
       if (r != EMSCRIPTEN_RESULT_SUCCESS)
       {
