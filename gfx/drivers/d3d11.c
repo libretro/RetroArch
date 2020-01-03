@@ -674,8 +674,7 @@ static void *d3d11_gfx_init(const video_info_t* video,
          {
             D3D_FEATURE_LEVEL_11_0,
             D3D_FEATURE_LEVEL_10_1,
-            D3D_FEATURE_LEVEL_10_0,
-            D3D_FEATURE_LEVEL_9_3
+            D3D_FEATURE_LEVEL_10_0
          };
 #ifdef __WINRT__
       /* UWP requires the use of newer version of the factory which requires newer version of this struct */
@@ -1132,6 +1131,17 @@ static void *d3d11_gfx_init(const video_info_t* video,
 
 error:
    d3d11_gfx_free(d3d11);
+
+#ifdef HAVE_OPENGL
+   retroarch_force_video_driver_fallback("gl");
+#elif !defined(__WINRT__)
+#ifdef HAVE_OPENGL1
+   retroarch_force_video_driver_fallback("gl1");
+#else
+   retroarch_force_video_driver_fallback("gdi");
+#endif
+#endif
+
    return NULL;
 }
 
