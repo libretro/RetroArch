@@ -970,6 +970,7 @@ static void *d3d10_gfx_init(const video_info_t* video,
 
    {
       d3d10_fake_context.get_flags = d3d10_get_flags;
+      d3d10_fake_context.get_metrics = win32_get_metrics;
       video_context_driver_set(&d3d10_fake_context); 
 #ifdef HAVE_SLANG
       const char *shader_preset   = retroarch_get_shader_preset();
