@@ -25,6 +25,9 @@
     <None Include="cores\$(Platform)\cores\*.dll" />
     <None Include="ANGLE\$(Platform)\*.dll" />
     <None Include="ANGLE\$(Platform)\*.dll" />
+    <None Include="cores\$(Platform)\cores\*.dll" />
+    <None Include="ANGLE\$(Platform)\*.dll" />
+    <None Include="ANGLE\$(Platform)\*.dll" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\uwp\uwp_func.h">
