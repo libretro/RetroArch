@@ -74,8 +74,10 @@ static void *vulkan_raster_font_init_font(void *data,
          font->atlas->width, font->atlas->height, VK_FORMAT_R8_UNORM, font->atlas->buffer,
          NULL /*&swizzle*/, VULKAN_TEXTURE_STAGING);
 
-   vulkan_map_persistent_texture(
-         font->vk->context->device, &font->texture);
+   {
+      struct vk_texture *texture = &font->texture;
+      VK_MAP_PERSISTENT_TEXTURE(font->vk->context->device, texture);
+   }
 
    font->texture_optimal = vulkan_create_texture(font->vk, NULL,
          font->atlas->width, font->atlas->height, VK_FORMAT_R8_UNORM, NULL,

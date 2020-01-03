@@ -660,9 +660,10 @@ static void vulkan_init_textures(vk_t *vk)
                vk->tex_w, vk->tex_h, vk->tex_fmt,
                NULL, NULL, VULKAN_TEXTURE_STREAMED);
 
-         vulkan_map_persistent_texture(
-               vk->context->device,
-               &vk->swapchain[i].texture);
+         {
+            struct vk_texture *texture = &vk->swapchain[i].texture;
+            VK_MAP_PERSISTENT_TEXTURE(vk->context->device, texture);
+         }
 
          if (vk->swapchain[i].texture.type == VULKAN_TEXTURE_STAGING)
             vk->swapchain[i].texture_optimal = vulkan_create_texture(vk, NULL,
@@ -1684,9 +1685,19 @@ static bool vulkan_frame(void *data, const void *frame,
    chain     = &vk->swapchain[frame_index];
    vk->chain = chain;
 
-   vulkan_descriptor_manager_restart(&chain->descriptor_manager);
-   vulkan_buffer_chain_discard(&chain->vbo);
-   vulkan_buffer_chain_discard(&chain->ubo);
+   {
+      struct vk_descriptor_manager *manager = &chain->descriptor_manager;
+      VK_DESCRIPTOR_MANAGER_RESTART(manager);
+   }
+
+   {
+      struct vk_buffer_chain *buff_chain = &chain->vbo;
+      VK_BUFFER_CHAIN_DISCARD(buff_chain);
+   }
+   {
+      struct vk_buffer_chain *buff_chain = &chain->ubo;
+      VK_BUFFER_CHAIN_DISCARD(buff_chain);
+   }
 
    /* Start recording the command buffer. */
    vk->cmd          = chain->cmd;
@@ -1733,8 +1744,10 @@ static bool vulkan_frame(void *data, const void *frame,
                chain->texture_optimal.memory
                ? VULKAN_TEXTURE_STAGING : VULKAN_TEXTURE_STREAMED);
 
-         vulkan_map_persistent_texture(
-               vk->context->device, &chain->texture);
+         {
+            struct vk_texture *texture = &chain->texture;
+            VK_MAP_PERSISTENT_TEXTURE(vk->context->device, texture);
+         }
 
          if (chain->texture.type == VULKAN_TEXTURE_STAGING)
          {
@@ -2196,8 +2209,10 @@ static bool vulkan_get_current_sw_framebuffer(void *data,
       chain->texture   = vulkan_create_texture(vk, &chain->texture,
             framebuffer->width, framebuffer->height, chain->texture.format,
             NULL, NULL, VULKAN_TEXTURE_STREAMED);
-      vulkan_map_persistent_texture(
-            vk->context->device, &chain->texture);
+      {
+         struct vk_texture *texture = &chain->texture;
+         VK_MAP_PERSISTENT_TEXTURE(vk->context->device, texture);
+      }
 
       if (chain->texture.type == VULKAN_TEXTURE_STAGING)
       {
@@ -2529,8 +2544,9 @@ static bool vulkan_read_viewport(void *data, uint8_t *buffer, bool is_idle)
 #endif
 
       if (!staging->mapped)
-         vulkan_map_persistent_texture(
-               vk->context->device, staging);
+      {
+         VK_MAP_PERSISTENT_TEXTURE(vk->context->device, staging);
+      }
 
       vulkan_sync_texture_to_cpu(vk, staging);
 

@@ -250,7 +250,11 @@ struct vk_buffer_chain vulkan_buffer_chain_init(
       VkDeviceSize alignment,
       VkBufferUsageFlags usage);
 
-void vulkan_buffer_chain_discard(struct vk_buffer_chain *chain);
+#define VK_BUFFER_CHAIN_DISCARD(chain) \
+{ \
+   chain->current = chain->head; \
+   chain->offset = 0; \
+}
 
 bool vulkan_buffer_chain_alloc(const struct vulkan_context *context,
       struct vk_buffer_chain *chain, size_t size,
@@ -462,10 +466,6 @@ void vulkan_transfer_image_ownership(VkCommandBuffer cmd,
       uint32_t src_queue_family,
       uint32_t dst_queue_family);
 
-void vulkan_map_persistent_texture(
-      VkDevice device,
-      struct vk_texture *texture);
-
 void vulkan_destroy_texture(
       VkDevice device,
       struct vk_texture *tex);
@@ -552,8 +552,16 @@ VkDescriptorSet vulkan_descriptor_manager_alloc(
       VkDevice device,
       struct vk_descriptor_manager *manager);
 
-void vulkan_descriptor_manager_restart(
-      struct vk_descriptor_manager *manager);
+#define VK_DESCRIPTOR_MANAGER_RESTART(manager) \
+{ \
+   manager->current = manager->head; \
+   manager->count = 0; \
+}
+
+#define VK_MAP_PERSISTENT_TEXTURE(device, texture) \
+{ \
+   vkMapMemory(device, texture->memory, texture->offset, texture->size, 0, &texture->mapped); \
+}
 
 struct vk_descriptor_manager vulkan_create_descriptor_manager(
       VkDevice device,
