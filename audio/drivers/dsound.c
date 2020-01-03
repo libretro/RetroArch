@@ -53,6 +53,10 @@
 #pragma comment(lib, "dxguid")
 #endif
 
+/* Forward declarations */
+static ssize_t dsound_write_nonblock(void *data, const void *buf_, size_t size);
+static ssize_t dsound_write(void *data, const void *buf_, size_t size);
+
 typedef struct dsound
 {
    LPDIRECTSOUND ds;
@@ -485,6 +489,40 @@ static void dsound_set_nonblock_state(void *data, bool state)
    dsound_t *ds = (dsound_t*)data;
    if (ds)
       ds->nonblock = state;
+
+   if (ds->nonblock)
+      audio_dsound.write = dsound_write_nonblock;
+   else
+      audio_dsound.write = dsound_write;
+}
+
+static ssize_t dsound_write_nonblock(void *data, const void *buf_, size_t size)
+{
+   size_t     written = 0;
+   dsound_t       *ds = (dsound_t*)data;
+   const uint8_t *buf = (const uint8_t*)buf_;
+
+   if (!ds->thread_alive)
+      return -1;
+
+   if (size > 0)
+   {
+      size_t avail;
+
+      EnterCriticalSection(&ds->crit);
+      avail = fifo_write_avail(ds->buffer);
+      if (avail > size)
+         avail = size;
+
+      fifo_write(ds->buffer, buf, avail);
+      LeaveCriticalSection(&ds->crit);
+
+      buf     += avail;
+      size    -= avail;
+      written += avail;
+   }
+
+   return written;
 }
 
 static ssize_t dsound_write(void *data, const void *buf_, size_t size)
@@ -512,7 +550,7 @@ static ssize_t dsound_write(void *data, const void *buf_, size_t size)
       size    -= avail;
       written += avail;
 
-      if (ds->nonblock || !ds->thread_alive)
+      if (!ds->thread_alive)
          break;
 
       if (avail == 0)

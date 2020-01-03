@@ -328,16 +328,12 @@ static ssize_t xa_write_nonblock(void *data, const void *buf, size_t size)
    xa_t *xa              = (xa_t*)data;
    xaudio2_t *handle     = xa->xa;
    const uint8_t *buffer = (const uint8_t*)buf;
+   size_t avail          = XAUDIO2_WRITE_AVAILABLE(xa->xa);
 
-   if (xa->nonblock)
-   {
-      size_t avail = XAUDIO2_WRITE_AVAILABLE(xa->xa);
-
-      if (avail == 0)
-         return 0;
-      if (avail < size)
-         size = avail;
-   }
+   if (avail == 0)
+      return 0;
+   if (avail < size)
+      size = avail;
 
    bytes = size;
 
