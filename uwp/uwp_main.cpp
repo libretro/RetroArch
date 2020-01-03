@@ -18,9 +18,13 @@
 #include <windows.devices.enumeration.h>
 
 #include <encodings/utf.h>
+#include <string/stdstring.h>
 #include <lists/string_list.h>
 #include <queues/task_queue.h>
 #include <retro_timers.h>
+
+#include "configuration.h"
+#include "paths.h"
 
 #include "uwp_main.h"
 #include "../retroarch.h"
@@ -372,10 +376,32 @@ void App::OnSuspending(Platform::Object^ sender, SuspendingEventArgs^ args)
 	// aware that a deferral may not be held indefinitely. After about five seconds,
 	// the app will be forced to exit.
 	SuspendingDeferral^ deferral = args->SuspendingOperation->GetDeferral();
+	auto app = this;
 
-	create_task([this, deferral]()
+	create_task([app, deferral]()
 	{
 		// TODO: Maybe creating a save state here would be a good idea?
+		settings_t* settings = config_get_ptr();
+		if (settings->bools.config_save_on_exit) {
+			if (!path_is_empty(RARCH_PATH_CONFIG))
+			{
+				const char* config_path = path_get(RARCH_PATH_CONFIG);
+				bool path_exists = !string_is_empty(config_path);
+
+				if (path_exists && config_save_file(config_path))
+				{
+					RARCH_LOG("[config] %s \"%s\".\n",
+						msg_hash_to_str(MSG_SAVED_NEW_CONFIG_TO),
+						config_path);
+				}
+				else if (path_exists)
+				{
+					RARCH_ERR("[config] %s \"%s\".\n",
+						msg_hash_to_str(MSG_FAILED_SAVING_CONFIG_TO),
+						config_path);
+				}
+			}
+		}
 
 		deferral->Complete();
 	});
