@@ -358,7 +358,7 @@ static bool gdi_gfx_frame(void *data, const void *frame,
    free(info);
 
    if (msg)
-      font_driver_render_msg(video_info, NULL, msg, NULL);
+      font_driver_render_msg(gdi, video_info, msg, NULL, NULL);
 
    InvalidateRect(hwnd, NULL, false);
 
@@ -511,15 +511,6 @@ static void gdi_set_texture_frame(void *data,
    }
 }
 
-static void gdi_set_osd_msg(void *data,
-      video_frame_info_t *video_info,
-      const char *msg,
-      const void *params, void *font)
-{
-   font_driver_render_msg(video_info, font,
-         msg, (const struct font_params *)params);
-}
-
 static void gdi_get_video_output_size(void *data,
       unsigned *width, unsigned *height)
 {
@@ -628,7 +619,7 @@ static const video_poke_interface_t gdi_poke_interface = {
    NULL,
    gdi_set_texture_frame,
    NULL,
-   gdi_set_osd_msg,
+   font_driver_render_msg,
    NULL,
    NULL,                         /* grab_mouse_toggle */
    NULL,                         /* get_current_shader */

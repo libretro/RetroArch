@@ -861,18 +861,14 @@ static bool ctr_frame(void* data, const void* frame,
 
       if (osd_params)
       {
-         font_driver_render_msg(video_info, NULL, video_info->stat_text,
-               (const struct font_params*)&video_info->osd_stat_params);
+         font_driver_render_msg(ctr, video_info, video_info->stat_text,
+               (const struct font_params*)&video_info->osd_stat_params, NULL);
       }
    }
 #endif
 
    if (msg)
-      font_driver_render_msg(video_info, NULL, msg, NULL);
-
-#if 0
-   font_driver_render_msg(video_info, NULL, "TEST: 123 ABC àüî", NULL);
-#endif
+      font_driver_render_msg(ctr, video_info, msg, NULL, NULL);
 
    GPU_FinishDrawing();
    GPU_Finalize();
@@ -1192,7 +1188,7 @@ static void ctr_set_osd_msg(void *data,
    ctr_video_t* ctr = (ctr_video_t*)data;
 
    if (ctr && ctr->msg_rendering_enabled)
-      font_driver_render_msg(video_info, font, msg, params);
+      font_driver_render_msg(data, video_info, msg, params, font);
 }
 
 static uint32_t ctr_get_flags(void *data)

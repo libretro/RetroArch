@@ -1549,9 +1549,9 @@ static bool d3d11_gfx_frame(
          D3D11SetViewports(context, 1, &d3d11->viewport);
          D3D11SetBlendState(d3d11->context, d3d11->blend_enable, NULL, D3D11_DEFAULT_SAMPLE_MASK);
          D3D11SetVertexBuffer(context, 0, d3d11->sprites.vbo, sizeof(d3d11_sprite_t), 0);
-         font_driver_render_msg(
-               video_info, NULL, video_info->stat_text,
-               (const struct font_params*)&video_info->osd_stat_params);
+         font_driver_render_msg(d3d11,
+               video_info, video_info->stat_text,
+               (const struct font_params*)&video_info->osd_stat_params, NULL);
       }
    }
 
@@ -1588,7 +1588,7 @@ static bool d3d11_gfx_frame(
       D3D11SetViewports(context, 1, &d3d11->viewport);
       D3D11SetBlendState(d3d11->context, d3d11->blend_enable, NULL, D3D11_DEFAULT_SAMPLE_MASK);
       D3D11SetVertexBuffer(context, 0, d3d11->sprites.vbo, sizeof(d3d11_sprite_t), 0);
-      font_driver_render_msg(video_info, NULL, msg, NULL);
+      font_driver_render_msg(d3d11, video_info, msg, NULL, NULL);
       dxgi_update_title(video_info);
    }
    d3d11->sprites.enabled = false;
@@ -1718,7 +1718,7 @@ static void d3d11_gfx_set_osd_msg(
    if (d3d11)
    {
       if (d3d11->sprites.enabled)
-         font_driver_render_msg(video_info, font, msg, (const struct font_params*)params);
+         font_driver_render_msg(d3d11, video_info, msg, (const struct font_params*)params, font);
       else
          printf("OSD msg: %s\n", msg);
    }

@@ -1338,10 +1338,8 @@ static bool wiiu_gfx_frame(void *data, const void *frame,
          &video_info->osd_stat_params;
 
       if (osd_params)
-      {
-         font_driver_render_msg(video_info, NULL, video_info->stat_text,
-               (const struct font_params*)&video_info->osd_stat_params);
-      }
+         font_driver_render_msg(wiiu, video_info, video_info->stat_text,
+               (const struct font_params*)&video_info->osd_stat_params, NULL);
    }
 
 #ifdef HAVE_MENU
@@ -1352,7 +1350,7 @@ static bool wiiu_gfx_frame(void *data, const void *frame,
 #endif
 
    if (msg)
-      font_driver_render_msg(video_info, NULL, msg, NULL);
+      font_driver_render_msg(wiiu, video_info, msg, NULL, NULL);
 
    wiiu->render_msg_enabled = false;
 
@@ -1683,7 +1681,7 @@ static void wiiu_gfx_set_osd_msg(void *data,
    if (wiiu)
    {
       if (wiiu->render_msg_enabled)
-         font_driver_render_msg(video_info, font, msg, params);
+         font_driver_render_msg(wiiu, video_info, msg, params, font);
       else
          printf("OSD msg: %s\n", msg);
    }

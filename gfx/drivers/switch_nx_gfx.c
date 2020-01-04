@@ -486,12 +486,12 @@ static bool switch_frame(void *data, const void *frame,
         struct font_params *osd_params = (struct font_params *)&video_info->osd_stat_params;
 
         if (osd_params)
-            font_driver_render_msg(video_info, NULL, video_info->stat_text,
-                                   (const struct font_params *)&video_info->osd_stat_params);
+            font_driver_render_msg(sw, video_info, video_info->stat_text,
+                  (const struct font_params *)&video_info->osd_stat_params, NULL);
     }
 
     if (msg)
-        font_driver_render_msg(video_info, NULL, msg, NULL);
+        font_driver_render_msg(sw, video_info, msg, NULL, NULL);
 
    framebufferEnd(&sw->fb);
 
@@ -645,17 +645,6 @@ static void switch_set_texture_enable(void *data, bool enable, bool full_screen)
     sw->menu_texture.fullscreen = full_screen;
 }
 
-static void switch_set_osd_msg(void *data,
-            video_frame_info_t *video_info,
-            const char *msg,
-            const void *params, void *font)
-{
-    switch_video_t *sw = (switch_video_t *)data;
-
-    if (sw)
-        font_driver_render_msg(video_info, font, msg, params);
-}
-
 #ifdef HAVE_OVERLAY
 static void switch_overlay_enable(void *data, bool state)
 {
@@ -750,7 +739,7 @@ static const video_poke_interface_t switch_poke_interface = {
     switch_apply_state_changes, /* apply_state_changes */
     switch_set_texture_frame,
     switch_set_texture_enable,
-    switch_set_osd_msg,
+    font_driver_render_msg,
     NULL, /* show_mouse */
     NULL, /* grab_mouse_toggle */
     NULL, /* get_current_shader */

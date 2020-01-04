@@ -119,12 +119,13 @@ static void sdl_init_font(sdl_video_t *vid, const char *font_path, unsigned font
 }
 
 static void sdl_render_msg(sdl_video_t *vid, SDL_Surface *buffer,
-      const char *msg, unsigned width, unsigned height, const SDL_PixelFormat *fmt)
+      const char *msg, unsigned width, unsigned height,
+      const SDL_PixelFormat *fmt)
 {
    int x, y, msg_base_x, msg_base_y;
    unsigned rshift, gshift, bshift;
    const struct font_atlas *atlas = NULL;
-   settings_t *settings = config_get_ptr();
+   settings_t           *settings = config_get_ptr();
 
    if (!vid->font)
       return;

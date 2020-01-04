@@ -1517,8 +1517,8 @@ static bool d3d12_gfx_frame(
          D3D12RSSetViewports(d3d12->queue.cmd, 1, &d3d12->chain.viewport);
          D3D12RSSetScissorRects(d3d12->queue.cmd, 1, &d3d12->chain.scissorRect);
          D3D12IASetVertexBuffers(d3d12->queue.cmd, 0, 1, &d3d12->sprites.vbo_view);
-         font_driver_render_msg(video_info, NULL, video_info->stat_text,
-               (const struct font_params*)&video_info->osd_stat_params);
+         font_driver_render_msg(d3d12, video_info, video_info->stat_text,
+               (const struct font_params*)&video_info->osd_stat_params, NULL);
       }
    }
 #ifdef HAVE_OVERLAY
@@ -1571,7 +1571,7 @@ static bool d3d12_gfx_frame(
       D3D12RSSetScissorRects(d3d12->queue.cmd, 1, &d3d12->chain.scissorRect);
       D3D12IASetVertexBuffers(d3d12->queue.cmd, 0, 1, &d3d12->sprites.vbo_view);
 
-      font_driver_render_msg(video_info, NULL, msg, NULL);
+      font_driver_render_msg(d3d12, video_info, msg, NULL, NULL);
       dxgi_update_title(video_info);
    }
    d3d12->sprites.enabled = false;
@@ -1728,8 +1728,8 @@ static void d3d12_gfx_set_osd_msg(
    if (!d3d12 || !d3d12->sprites.enabled)
       return;
 
-   font_driver_render_msg(video_info, font, msg,
-         (const struct font_params*)params);
+   font_driver_render_msg(d3d12, video_info, msg,
+         (const struct font_params*)params, font);
 }
 
 static uintptr_t d3d12_gfx_load_texture(
