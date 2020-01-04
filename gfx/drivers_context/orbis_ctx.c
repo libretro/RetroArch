@@ -197,13 +197,13 @@ static enum gfx_ctx_api orbis_ctx_get_api(void *data)
 }
 
 static bool orbis_ctx_bind_api(void *data,
-                                enum gfx_ctx_api api, unsigned major, unsigned minor)
+      enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
     (void)data;
     ctx_orbis_api = api;
 
     if (api == GFX_CTX_OPENGL_ES_API)
-        if (eglBindAPI(EGL_OPENGL_ES_API) != EGL_FALSE)
+        if (egl_bind_api(EGL_OPENGL_ES_API))
             return true;
 
     return false;

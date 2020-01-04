@@ -1768,7 +1768,7 @@ static bool gfx_ctx_wl_bind_api(void *video_driver,
             return false;
 #endif
 #ifdef HAVE_EGL
-         if (eglBindAPI(EGL_OPENGL_API) == EGL_TRUE)
+         if (egl_bind_api(EGL_OPENGL_API))
             return true;
 #endif
 #endif
@@ -1780,7 +1780,7 @@ static bool gfx_ctx_wl_bind_api(void *video_driver,
             return false;
 #endif
 #ifdef HAVE_EGL
-         if (eglBindAPI(EGL_OPENGL_ES_API) == EGL_TRUE)
+         if (egl_bind_api(EGL_OPENGL_ES_API))
             return true;
 #endif
 #endif
@@ -1788,7 +1788,7 @@ static bool gfx_ctx_wl_bind_api(void *video_driver,
       case GFX_CTX_OPENVG_API:
 #ifdef HAVE_VG
 #ifdef HAVE_EGL
-         if (eglBindAPI(EGL_OPENVG_API) == EGL_TRUE)
+         if (egl_bind_api(EGL_OPENVG_API))
             return true;
 #endif
 #endif

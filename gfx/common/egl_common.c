@@ -395,6 +395,11 @@ bool egl_init_context(egl_ctx_data_t *egl,
    return true;
 }
 
+bool egl_bind_api(EGLenum egl_api)
+{
+   return eglBindAPI(egl_api);
+}
+
 bool egl_create_context(egl_ctx_data_t *egl, const EGLint *egl_attribs)
 {
    EGLContext ctx = eglCreateContext(egl->dpy, egl->config, EGL_NO_CONTEXT,

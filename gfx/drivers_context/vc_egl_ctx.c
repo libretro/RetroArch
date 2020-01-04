@@ -377,11 +377,11 @@ static bool gfx_ctx_vc_bind_api(void *data,
    switch (api)
    {
       case GFX_CTX_OPENGL_API:
-         return eglBindAPI(EGL_OPENGL_API);
+         return egl_bind_api(EGL_OPENGL_API);
       case GFX_CTX_OPENGL_ES_API:
-         return eglBindAPI(EGL_OPENGL_ES_API);
+         return egl_bind_api(EGL_OPENGL_ES_API);
       case GFX_CTX_OPENVG_API:
-         return eglBindAPI(EGL_OPENVG_API);
+         return egl_bind_api(EGL_OPENVG_API);
       default:
          break;
    }
@@ -406,7 +406,7 @@ static void gfx_ctx_vc_destroy(void *data)
       {
          if (vc->eglBuffer[i] && peglDestroyImageKHR)
          {
-            eglBindAPI(EGL_OPENVG_API);
+            egl_bind_api(EGL_OPENVG_API);
             eglMakeCurrent(vc->egl.dpy,
                   vc->pbuff_surf, vc->pbuff_surf, vc->eglimage_ctx);
             peglDestroyImageKHR(vc->egl.dpy, vc->eglBuffer[i]);
@@ -414,7 +414,7 @@ static void gfx_ctx_vc_destroy(void *data)
 
          if (vc->vgimage[i])
          {
-            eglBindAPI(EGL_OPENVG_API);
+            egl_bind_api(EGL_OPENVG_API);
             eglMakeCurrent(vc->egl.dpy,
                   vc->pbuff_surf, vc->pbuff_surf, vc->eglimage_ctx);
             vgDestroyImage(vc->vgimage[i]);
@@ -434,7 +434,7 @@ static void gfx_ctx_vc_destroy(void *data)
 
       if (vc->eglimage_ctx)
       {
-         eglBindAPI(EGL_OPENVG_API);
+         egl_bind_api(EGL_OPENVG_API);
          eglMakeCurrent(vc->egl.dpy,
                EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
          eglDestroyContext(vc->egl.dpy, vc->eglimage_ctx);
@@ -448,11 +448,11 @@ static void gfx_ctx_vc_destroy(void *data)
 
       if (vc->pbuff_surf)
       {
-         eglBindAPI(EGL_OPENVG_API);
+         egl_bind_api(EGL_OPENVG_API);
          eglDestroySurface(vc->egl.dpy, vc->pbuff_surf);
       }
 
-      eglBindAPI(EGL_OPENVG_API);
+      egl_bind_api(EGL_OPENVG_API);
       eglMakeCurrent(vc->egl.dpy,
             EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
       gfx_ctx_vc_bind_api(data, vc_api, 0, 0);
@@ -542,10 +542,12 @@ static bool gfx_ctx_vc_image_buffer_init(void *data,
       )
       return false;
 
-   vc->res = video->input_scale * RARCH_SCALE_BASE;
+   vc->res        = video->input_scale * RARCH_SCALE_BASE;
 
-   eglBindAPI(EGL_OPENVG_API);
-   vc->pbuff_surf = eglCreatePbufferSurface(vc->egl.dpy, vc->egl.config, pbufsurface_list);
+   egl_bind_api(EGL_OPENVG_API);
+   vc->pbuff_surf = eglCreatePbufferSurface(
+         vc->egl.dpy, vc->egl.config, pbufsurface_list);
+
    if (vc->pbuff_surf == EGL_NO_SURFACE)
    {
       RARCH_ERR("[VideoCore:EGLImage] failed to create PbufferSurface\n");
@@ -601,8 +603,9 @@ static bool gfx_ctx_vc_image_buffer_write(void *data, const void *frame, unsigne
    if (!vc || index >= MAX_EGLIMAGE_TEXTURES)
       goto error;
 
-   eglBindAPI(EGL_OPENVG_API);
-   eglMakeCurrent(vc->egl.dpy, vc->pbuff_surf, vc->pbuff_surf, vc->eglimage_ctx);
+   egl_bind_api(EGL_OPENVG_API);
+   eglMakeCurrent(vc->egl.dpy, vc->pbuff_surf,
+         vc->pbuff_surf, vc->eglimage_ctx);
 
    if (!vc->eglBuffer[index] || !vc->vgimage[index])
    {

@@ -839,7 +839,7 @@ static bool gfx_ctx_drm_bind_api(void *video_driver,
          if ((major * 1000 + minor) >= 3001)
             return false;
 #endif
-         return eglBindAPI(EGL_OPENGL_API);
+         return egl_bind_api(EGL_OPENGL_API);
 #else
          break;
 #endif
@@ -850,13 +850,13 @@ static bool gfx_ctx_drm_bind_api(void *video_driver,
          if (major >= 3)
             return false;
 #endif
-         return eglBindAPI(EGL_OPENGL_ES_API);
+         return egl_bind_api(EGL_OPENGL_ES_API);
 #else
          break;
 #endif
       case GFX_CTX_OPENVG_API:
 #if defined(HAVE_EGL) && defined(HAVE_VG)
-         return eglBindAPI(EGL_OPENVG_API);
+         return egl_bind_api(EGL_OPENVG_API);
 #endif
       case GFX_CTX_NONE:
       default:

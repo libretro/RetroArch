@@ -100,6 +100,8 @@ bool egl_init_context(egl_ctx_data_t *egl,
       const EGLint *attrib_ptr,
       egl_accept_config_cb_t cb);
 
+bool egl_bind_api(EGLenum egl_api);
+
 bool egl_create_context(egl_ctx_data_t *egl, const EGLint *egl_attribs);
 
 bool egl_create_surface(egl_ctx_data_t *egl, void *native_window);
