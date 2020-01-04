@@ -1,5 +1,6 @@
 # Future
 - BUG: Ensure core info is always initialised when calling 'drivers_init()'. This bug could prevent cores from doing content runtime logging
+- BUG/MENU: (XMB/OZONE) Fix 'quick menu' detection. XMB would not display savestate thumbnails in the quick menu if it was accessed via the main menu
 - BUG/CRASH/CORE UPDATER: Fix potential double free error
 - CHEEVOS: Don't disable achievement when AddAddress generates an out-of-range address
 - CHEEVOS: Don't reset triggers/leaderboards that failed to load
