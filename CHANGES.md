@@ -6,6 +6,7 @@
 - CHEEVOS: Don't count unsupported achievements as unlocked
 - D3D11: Block FL9_3 devices from D3D11 driver because they don't work anyway (current D3D11 driver uses SM4.0 which requires FL10_0 and up)
 - D3D11: Fallback to GL driver when D3D11 fails
+- LOCALIZATION: Update Polish translation
 - LOCALIZATION: Update Russian translation
 - LOCALIZATION: Update Spanish translation
 - MENU: Added 'Hosting' menu under Netplay menu
@@ -18,6 +19,7 @@
 - UWP: Wire up get_metrics to the fake context of D3D9/10/11/12 driver, enabling proper scaling and mouse/touch gestures
 - VITA: Re-add Online Updater
 - VULKAN: Fix font driver 'vulkan_get_message_width()' function
+- VIDEO FILTERS: Only use threads when the number exceeds 1. Fixes race conditions with some CPU filters on Vita
 
 # 1.8.2
 - BUG/CRASH/GLSLANG: Fix glslang crashing error - managed to reproduce an issue which has been plaguing
