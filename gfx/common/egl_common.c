@@ -109,6 +109,11 @@ gfx_ctx_proc_t egl_get_proc_address(const char *symbol)
    return eglGetProcAddress(symbol);
 }
 
+void egl_terminate(EGLDisplay dpy)
+{
+   eglTerminate(dpy);
+}
+
 void egl_destroy(egl_ctx_data_t *egl)
 {
    if (egl->dpy)
@@ -133,7 +138,7 @@ void egl_destroy(egl_ctx_data_t *egl)
 
       if (egl->surf != EGL_NO_SURFACE)
          eglDestroySurface(egl->dpy, egl->surf);
-      eglTerminate(egl->dpy);
+      egl_terminate(egl->dpy);
    }
 
    /* Be as careful as possible in deinit.
@@ -329,31 +334,17 @@ bool egl_default_accept_config_cb(void *display_data, EGLDisplay dpy, EGLConfig 
    return true;
 }
 
-bool egl_init_context(egl_ctx_data_t *egl,
-      EGLenum platform,
-      void *display_data,
-      EGLint *major, EGLint *minor,
-      EGLint *count, const EGLint *attrib_ptr,
-      egl_accept_config_cb_t cb)
+bool egl_init_context_common(
+      egl_ctx_data_t *egl, EGLint *count,
+      const EGLint *attrib_ptr,
+      egl_accept_config_cb_t cb,
+      void *display_data)
 {
    EGLint i;
-   EGLConfig *configs = NULL;
    EGLint matched     = 0;
-   int config_index   = -1;
-   EGLDisplay dpy     = get_egl_display(platform, display_data);
-
-   if (dpy == EGL_NO_DISPLAY)
-   {
-      RARCH_ERR("[EGL]: Couldn't get EGL display.\n");
+   EGLConfig *configs = NULL;
+   if (!egl)
       return false;
-   }
-
-   egl->dpy = dpy;
-
-   if (!eglInitialize(egl->dpy, major, minor))
-      return false;
-
-   RARCH_LOG("[EGL]: EGL version: %d.%d\n", *major, *minor);
 
    if (!eglGetConfigs(egl->dpy, NULL, 0, count) || *count < 1)
    {
@@ -393,6 +384,38 @@ bool egl_init_context(egl_ctx_data_t *egl,
    egl->minor = g_egl_minor;
 
    return true;
+}
+
+bool egl_initialize(EGLDisplay dpy, EGLint *major, EGLint *minor)
+{
+   return eglInitialize(dpy, major, minor);
+}
+
+bool egl_init_context(egl_ctx_data_t *egl,
+      EGLenum platform,
+      void *display_data,
+      EGLint *major, EGLint *minor,
+      EGLint *count, const EGLint *attrib_ptr,
+      egl_accept_config_cb_t cb)
+{
+   int config_index   = -1;
+   EGLDisplay dpy     = get_egl_display(platform, display_data);
+
+   if (dpy == EGL_NO_DISPLAY)
+   {
+      RARCH_ERR("[EGL]: Couldn't get EGL display.\n");
+      return false;
+   }
+
+   egl->dpy = dpy;
+
+   if (!egl_initialize(egl->dpy, major, minor))
+      return false;
+
+   RARCH_LOG("[EGL]: EGL version: %d.%d\n", *major, *minor);
+
+   return egl_init_context_common(egl, count, attrib_ptr, cb,
+         display_data);
 }
 
 bool egl_bind_api(EGLenum egl_api)

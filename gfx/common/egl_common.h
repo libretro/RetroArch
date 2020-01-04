@@ -78,6 +78,8 @@ void egl_report_error(void);
 
 void egl_destroy(egl_ctx_data_t *egl);
 
+void egl_terminate(EGLDisplay dpy);
+
 gfx_ctx_proc_t egl_get_proc_address(const char *symbol);
 
 void egl_bind_hw_render(egl_ctx_data_t *egl, bool enable);
@@ -90,6 +92,14 @@ void egl_get_video_size(egl_ctx_data_t *egl, unsigned *width, unsigned *height);
 
 typedef bool (*egl_accept_config_cb_t)(void *display_data, EGLDisplay dpy, EGLConfig config);
 bool egl_default_accept_config_cb(void *display_data, EGLDisplay dpy, EGLConfig config);
+
+bool egl_initialize(EGLDisplay dpy, EGLint *major, EGLint *minor);
+
+bool egl_init_context_common(
+      egl_ctx_data_t *egl, EGLint *count,
+      const EGLint *attrib_ptr,
+      egl_accept_config_cb_t cb,
+      void *display_data);
 
 bool egl_init_context(egl_ctx_data_t *egl,
       EGLenum platform,

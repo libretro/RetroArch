@@ -43,8 +43,9 @@
 
 RETRO_BEGIN_DECLS
 
-bool angle_init_context(egl_ctx_data_t* egl, void* display_data, EGLint* major, EGLint* minor,
-   EGLint* count, const EGLint* attrib_ptr, egl_accept_config_cb_t cb);
+bool angle_init_context(egl_ctx_data_t* egl,
+      void* display_data, EGLint* major, EGLint* minor,
+      EGLint* count, const EGLint* attrib_ptr, egl_accept_config_cb_t cb);
 
 RETRO_END_DECLS
 

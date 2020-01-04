@@ -30,7 +30,6 @@
 #include "../../verbosity.h"
 #include "../../frontend/frontend_driver.h"
 
-
  /* Normal DirectX 11 backend */
 const EGLint backendD3D11[] =
 {
@@ -87,21 +86,23 @@ const char* backendNamesList[] = {
 /* Try initializing EGL with the backend specified in display_attr. */
 static bool angle_try_initialize(egl_ctx_data_t* egl,
    void* display_data, const EGLint* display_attr,
-   EGLint* major, EGLint* minor) {
-
+   EGLint* major, EGLint* minor)
+{
    EGLDisplay dpy = EGL_NO_DISPLAY;
 
    PFNEGLGETPLATFORMDISPLAYEXTPROC ptr_eglGetPlatformDisplayEXT =
-      (PFNEGLGETPLATFORMDISPLAYEXTPROC)eglGetProcAddress("eglGetPlatformDisplayEXT");
+      (PFNEGLGETPLATFORMDISPLAYEXTPROC)egl_get_proc_address("eglGetPlatformDisplayEXT");
 
-   if (ptr_eglGetPlatformDisplayEXT == NULL)
+   if (!ptr_eglGetPlatformDisplayEXT)
       return false;
 
    dpy = ptr_eglGetPlatformDisplayEXT(EGL_PLATFORM_ANGLE_ANGLE, display_data, display_attr);
-   if (dpy == EGL_NO_DISPLAY) return false;
+   if (dpy == EGL_NO_DISPLAY)
+      return false;
 
-   if (!eglInitialize(dpy, major, minor)) {
-      eglTerminate(egl->dpy);
+   if (!egl_initialize(dpy, major, minor))
+   {
+      egl_terminate(egl->dpy);
       return false;
    }
 
@@ -117,60 +118,23 @@ bool angle_init_context(egl_ctx_data_t *egl,
       EGLint *count, const EGLint *attrib_ptr,
       egl_accept_config_cb_t cb)
 {
-   EGLint i; int j;
-   EGLConfig *configs = NULL;
-   EGLint matched     = 0;
-   int config_index   = -1;
+   int j;
    bool success       = false;
 
-   for (j = 0; backendNamesList[j] != NULL; j++) {
+   for (j = 0; backendNamesList[j] != NULL; j++)
+   {
       RARCH_LOG("[ANGLE] Trying %s...\n", backendNamesList[j]);
-      if (angle_try_initialize(egl, display_data, backendList[j], major, minor)) {
+      if (angle_try_initialize(egl, display_data, backendList[j], major, minor))
+      {
          success = true;
          break;
       }
    }
 
-   if (!success) return false;
+   if (!success)
+      return false;
 
    RARCH_LOG("[EGL]: EGL version: %d.%d\n", *major, *minor);
 
-   if (!eglGetConfigs(egl->dpy, NULL, 0, count) || *count < 1)
-   {
-      RARCH_ERR("[EGL]: No configs to choose from.\n");
-      return false;
-   }
-
-   configs = (EGLConfig*)malloc(*count * sizeof(*configs));
-   if (!configs)
-      return false;
-
-   if (!eglChooseConfig(egl->dpy, attrib_ptr,
-            configs, *count, &matched) || !matched)
-   {
-      RARCH_ERR("[EGL]: No EGL configs with appropriate attributes.\n");
-      return false;
-   }
-
-   for (i = 0; i < *count; i++)
-   {
-      if (!cb || cb(display_data, egl->dpy, configs[i]))
-      {
-         egl->config = configs[i];
-         break;
-      }
-   }
-
-   free(configs);
-
-   if (i == *count)
-   {
-      RARCH_ERR("[EGL]: No EGL config found which satifies requirements.\n");
-      return false;
-   }
-
-   egl->major = g_egl_major;
-   egl->minor = g_egl_minor;
-
-   return true;
+   return egl_init_context_common(egl, count, attrib_ptr, cb, display_data);
 }
