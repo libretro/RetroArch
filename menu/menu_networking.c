@@ -34,9 +34,6 @@
 #include "menu_cbs.h"
 #include "menu_entries.h"
 
-#include "../core_info.h"
-#include "../configuration.h"
-#include "../file_path_special.h"
 #include "../msg_hash.h"
 #include "../tasks/task_file_transfer.h"
 #include "../tasks/tasks_internal.h"
