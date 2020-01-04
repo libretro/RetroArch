@@ -737,38 +737,14 @@ static ssize_t wasapi_write_sh_nonblock(wasapi_t *w, const void * data, size_t s
    return written;
 }
 
-static ssize_t wasapi_write_ex_nonblock(wasapi_t *w, const void * data, size_t size)
+static ssize_t wasapi_write_ex(wasapi_t *w, const void * data, size_t size, DWORD ms)
 {
    ssize_t written    = 0;
    size_t write_avail = fifo_write_avail(w->buffer);
 
    if (!write_avail)
    {
-      if (WaitForSingleObject(
-               w->write_event, 0) != WAIT_OBJECT_0)
-         return 0;
-
-      if (!wasapi_flush_buffer(w, w->engine_buffer_size))
-         return -1;
-
-      write_avail = w->engine_buffer_size;
-   }
-
-   written = size < write_avail ? size : write_avail;
-   fifo_write(w->buffer, data, written);
-
-   return written;
-}
-
-static ssize_t wasapi_write_ex(wasapi_t *w, const void * data, size_t size)
-{
-   ssize_t written    = 0;
-   size_t write_avail = fifo_write_avail(w->buffer);
-
-   if (!write_avail)
-   {
-      if (WaitForSingleObject(
-               w->write_event, INFINITE) != WAIT_OBJECT_0)
+      if (WaitForSingleObject(w->write_event, ms) != WAIT_OBJECT_0)
          return -1;
 
       if (!wasapi_flush_buffer(w, w->engine_buffer_size))
@@ -791,7 +767,7 @@ static ssize_t wasapi_write(void *wh, const void *data, size_t size)
    if (w->nonblock)
    {
       if (w->exclusive)
-         return wasapi_write_ex_nonblock(w, data, size);
+         return wasapi_write_ex(w, data, size, 0);
       return wasapi_write_sh_nonblock(w, data, size);
    }
 
@@ -800,7 +776,7 @@ static ssize_t wasapi_write(void *wh, const void *data, size_t size)
       ssize_t ir;
       for (ir = -1; written < size; written += ir)
       {
-         ir = wasapi_write_ex(w, (char*)data + written, size - written);
+         ir = wasapi_write_ex(w, (char*)data + written, size - written, INFINITE);
          if (ir == -1)
             return -1;
       }
