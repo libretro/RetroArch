@@ -1624,8 +1624,6 @@ static bool d3d11_gfx_alive(void* data)
    return !quit;
 }
 
-static bool d3d11_gfx_focus(void* data) { return win32_has_focus(); }
-
 static bool d3d11_gfx_suppress_screensaver(void* data, bool enable)
 {
    (void)data;
@@ -1849,7 +1847,7 @@ video_driver_t video_d3d11 = {
    d3d11_gfx_frame,
    d3d11_gfx_set_nonblock_state,
    d3d11_gfx_alive,
-   d3d11_gfx_focus,
+   win32_has_focus,
    d3d11_gfx_suppress_screensaver,
    d3d11_gfx_has_windowed,
    d3d11_gfx_set_shader,

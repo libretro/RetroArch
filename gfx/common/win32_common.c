@@ -1373,7 +1373,7 @@ BOOL IsIconic(HWND hwnd)
 }
 #endif
 
-bool win32_has_focus(void)
+bool win32_has_focus(void *data)
 {
    if (g_win32_inited)
       if (GetForegroundWindow() == main_window.hwnd)

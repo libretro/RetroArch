@@ -568,7 +568,7 @@ void App::OnPackageInstalling(PackageCatalog^ sender, PackageInstallingEventArgs
 // Implement UWP equivalents of various win32_* functions
 extern "C" {
 
-	bool win32_has_focus(void)
+	bool win32_has_focus(void *data)
 	{
 		return App::GetInstance()->IsWindowFocused();
 	}

@@ -96,7 +96,7 @@ void win32_show_cursor(void *data, bool state);
 
 HWND win32_get_window(void);
 
-bool win32_has_focus(void);
+bool win32_has_focus(void *data);
 
 void win32_check_window(bool *quit,
       bool *resize, unsigned *width, unsigned *height);

@@ -827,11 +827,6 @@ static void gfx_ctx_wgl_input_driver(void *data,
 #endif
 }
 
-static bool gfx_ctx_wgl_has_focus(void *data)
-{
-   return win32_has_focus();
-}
-
 static enum gfx_ctx_api gfx_ctx_wgl_get_api(void *data)
 {
    return win32_api;
@@ -1001,7 +996,7 @@ const gfx_ctx_driver_t gfx_ctx_wgl = {
    gfx_ctx_wgl_update_title,
    gfx_ctx_wgl_check_window,
    gfx_ctx_wgl_set_resize,
-   gfx_ctx_wgl_has_focus,
+   win32_has_focus,
    win32_suppress_screensaver,
    true, /* has_windowed */
    gfx_ctx_wgl_swap_buffers,
