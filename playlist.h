@@ -192,10 +192,12 @@ void playlist_resolve_path(enum playlist_file_mode mode,
  * Push entry to top of playlist.
  **/
 bool playlist_push(playlist_t *playlist,
-      const struct playlist_entry *entry);
+      const struct playlist_entry *entry,
+      bool fuzzy_archive_match);
 
 bool playlist_push_runtime(playlist_t *playlist,
-      const struct playlist_entry *entry);
+      const struct playlist_entry *entry,
+      bool fuzzy_archive_match);
 
 void playlist_update(playlist_t *playlist, size_t idx,
       const struct playlist_entry *update_entry);
@@ -211,16 +213,17 @@ void playlist_update_runtime(playlist_t *playlist, size_t idx,
 
 void playlist_get_index_by_path(playlist_t *playlist,
       const char *search_path,
-      const struct playlist_entry **entry);
+      const struct playlist_entry **entry,
+      bool fuzzy_archive_match);
 
 bool playlist_entry_exists(playlist_t *playlist,
-      const char *path);
+      const char *path, bool fuzzy_archive_match);
 
 char *playlist_get_conf_path(playlist_t *playlist);
 
 uint32_t playlist_get_size(playlist_t *playlist);
 
-void playlist_write_file(playlist_t *playlist);
+void playlist_write_file(playlist_t *playlist, bool use_old_format);
 
 void playlist_write_runtime_file(playlist_t *playlist);
 
@@ -234,12 +237,15 @@ bool playlist_init_cached(const char *path, size_t size);
 
 void command_playlist_push_write(
       playlist_t *playlist,
-      const struct playlist_entry *entry);
+      const struct playlist_entry *entry,
+      bool fuzzy_archive_match,
+      bool use_old_format);
 
 void command_playlist_update_write(
       playlist_t *playlist,
       size_t idx,
-      const struct playlist_entry *entry);
+      const struct playlist_entry *entry,
+      bool use_old_format);
 
 /* Returns true if specified playlist index matches
  * specified content/core paths */

@@ -57,6 +57,8 @@ typedef struct manual_scan_handle
    size_t list_size;
    size_t list_index;
    enum manual_scan_status status;
+   bool fuzzy_archive_match;
+   bool use_old_format;
 } manual_scan_handle_t;
 
 /* Frees task handle + all constituent objects */
@@ -197,7 +199,8 @@ static void task_manual_content_scan_handler(retro_task_t *task)
                /* Add content to playlist */
                manual_content_scan_add_content_to_playlist(
                      manual_scan->task_config, manual_scan->playlist,
-                     content_path, content_type, manual_scan->dat_file);
+                     content_path, content_type, manual_scan->dat_file,
+                     manual_scan->fuzzy_archive_match);
             }
 
             /* Increment content index */
@@ -217,7 +220,7 @@ static void task_manual_content_scan_handler(retro_task_t *task)
             playlist_qsort(manual_scan->playlist);
 
             /* Save playlist changes to disk */
-            playlist_write_file(manual_scan->playlist);
+            playlist_write_file(manual_scan->playlist, manual_scan->use_old_format);
 
             /* If this is the currently cached playlist, then
              * it must be re-cached (otherwise changes will be
@@ -309,13 +312,15 @@ bool task_push_manual_content_scan(void)
       goto error;
 
    /* Configure handle */
-   manual_scan->task_config  = NULL;
-   manual_scan->playlist     = NULL;
-   manual_scan->content_list = NULL;
-   manual_scan->dat_file     = NULL;
-   manual_scan->list_size    = 0;
-   manual_scan->list_index   = 0;
-   manual_scan->status       = MANUAL_SCAN_BEGIN;
+   manual_scan->task_config         = NULL;
+   manual_scan->playlist            = NULL;
+   manual_scan->content_list        = NULL;
+   manual_scan->dat_file            = NULL;
+   manual_scan->list_size           = 0;
+   manual_scan->list_index          = 0;
+   manual_scan->status              = MANUAL_SCAN_BEGIN;
+   manual_scan->fuzzy_archive_match = settings->bools.playlist_fuzzy_archive_match;
+   manual_scan->use_old_format      = settings->bools.playlist_use_old_format;
 
    /* > Get current manual content scan configuration */
    manual_scan->task_config = (manual_content_scan_task_config_t*)

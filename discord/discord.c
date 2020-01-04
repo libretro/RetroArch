@@ -17,6 +17,11 @@
 #include <string/stdstring.h>
 #include <retro_timers.h>
 
+#include <net/net_http.h>
+#include <streams/file_stream.h>
+#include <file/file_path.h>
+#include <features/features_cpu.h>
+
 #include "discord.h"
 #include "discord_register.h"
 
@@ -46,14 +51,10 @@
 #include "../../menu/menu_cbs.h"
 #endif
 
-#include <net/net_http.h>
 #include "../network/net_http_special.h"
 #include "../tasks/tasks_internal.h"
-#include <streams/file_stream.h>
-#include <file/file_path.h>
 #include "../file_path_special.h"
 
-#include <features/features_cpu.h>
 
 static int64_t start_time         = 0;
 static int64_t pause_time         = 0;
@@ -210,7 +211,7 @@ static void handle_discord_join_cb(retro_task_t *task,
       task_push_netplay_crc_scan(room->gamecrc,
          room->gamename, join_hostname, room->corename, room->subsystem_name);
       connecting = true;
-      discord_update(DISCORD_PRESENCE_NETPLAY_CLIENT);
+      discord_update(DISCORD_PRESENCE_NETPLAY_CLIENT, false);
    }
 
 finish:
@@ -302,7 +303,9 @@ static void handle_discord_join_request(const DiscordUser* request)
 #endif
 }
 
-void discord_update(enum discord_presence presence)
+/* TODO/FIXME - replace last parameter with struct type to allow for more
+ * arguments to be passed later */
+void discord_update(enum discord_presence presence, bool fuzzy_archive_match)
 {
    core_info_t *core_info = NULL;
 
@@ -350,7 +353,8 @@ void discord_update(enum discord_presence presence)
             if (current_playlist)
             {
                playlist_get_index_by_path(
-                  current_playlist, path_get(RARCH_PATH_CONTENT), &entry);
+                     current_playlist, path_get(RARCH_PATH_CONTENT), &entry,
+                     fuzzy_archive_match);
 
                if (entry && !string_is_empty(entry->label))
                   label = entry->label;

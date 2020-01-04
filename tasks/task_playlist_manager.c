@@ -25,6 +25,7 @@
 
 #include "tasks_internal.h"
 
+#include "../configuration.h"
 #include "../msg_hash.h"
 #include "../file_path_special.h"
 #include "../playlist.h"
@@ -44,6 +45,7 @@ typedef struct pl_manager_handle
    size_t list_size;
    size_t list_index;
    enum pl_manager_status status;
+   bool use_old_format;
 } pl_manager_handle_t;
 
 /**************************/
@@ -182,7 +184,7 @@ static void task_pl_manager_reset_cores_handler(retro_task_t *task)
             task_title[0] = '\0';
             
             /* Save playlist changes to disk */
-            playlist_write_file(pl_manager->playlist);
+            playlist_write_file(pl_manager->playlist, pl_manager->use_old_format);
             
             /* If this is the currently cached playlist, then
              * it must be re-cached (otherwise changes will be
@@ -245,6 +247,7 @@ bool task_push_pl_manager_reset_cores(const char *playlist_path)
    task_finder_data_t find_data;
    char playlist_name[PATH_MAX_LENGTH];
    char task_title[PATH_MAX_LENGTH];
+   settings_t *settings            = config_get_ptr();
    retro_task_t *task              = task_init();
    pl_manager_handle_t *pl_manager = (pl_manager_handle_t*)calloc(1, sizeof(pl_manager_handle_t));
    
@@ -290,6 +293,7 @@ bool task_push_pl_manager_reset_cores(const char *playlist_path)
    pl_manager->list_size         = 0;
    pl_manager->list_index        = 0;
    pl_manager->status            = PL_MANAGER_BEGIN;
+   pl_manager->use_old_format    = settings->bools.playlist_use_old_format;
    
    task_queue_push(task);
    

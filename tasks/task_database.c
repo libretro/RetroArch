@@ -58,6 +58,8 @@ typedef struct database_state_handle
 
 typedef struct db_handle
 {
+   bool pl_fuzzy_archive_match;
+   bool pl_use_old_format;
    bool is_directory;
    bool scan_started;
    bool scan_without_core_match;
@@ -850,7 +852,8 @@ static int database_info_list_iterate_found_match(
    fprintf(stderr, "entry path str: %s\n", entry_path_str);
 #endif
 
-   if (!playlist_entry_exists(playlist, entry_path_str))
+   if (!playlist_entry_exists(playlist, entry_path_str,
+            _db->pl_fuzzy_archive_match))
    {
       struct playlist_entry entry;
 
@@ -874,10 +877,10 @@ static int database_info_list_iterate_found_match(
       entry.last_played_minute= 0;
       entry.last_played_second= 0;
 
-      playlist_push(playlist, &entry);
+      playlist_push(playlist, &entry, _db->pl_fuzzy_archive_match);
    }
 
-   playlist_write_file(playlist);
+   playlist_write_file(playlist, _db->pl_use_old_format);
    playlist_free(playlist);
 
    database_info_list_free(db_state->info);
@@ -1052,7 +1055,8 @@ static int task_database_iterate_playlist_lutro(
 
    free(db_playlist_path);
 
-   if (!playlist_entry_exists(playlist, path))
+   if (!playlist_entry_exists(playlist, path,
+            _db->pl_fuzzy_archive_match))
    {
       struct playlist_entry entry;
       char *game_title            = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
@@ -1082,12 +1086,12 @@ static int task_database_iterate_playlist_lutro(
       entry.last_played_minute= 0;
       entry.last_played_second= 0;
 
-      playlist_push(playlist, &entry);
+      playlist_push(playlist, &entry, _db->pl_fuzzy_archive_match);
 
       free(game_title);
    }
 
-   playlist_write_file(playlist);
+   playlist_write_file(playlist, _db->pl_use_old_format);
    playlist_free(playlist);
 
    return 0;
@@ -1387,27 +1391,29 @@ bool task_push_dbscan(
 #ifdef RARCH_INTERNAL
    settings_t *settings = config_get_ptr();
 #endif
-   db_handle_t *db      = (db_handle_t*)calloc(1, sizeof(db_handle_t));
+   db_handle_t *db             = (db_handle_t*)calloc(1, sizeof(db_handle_t));
 
    if (!t || !db)
       goto error;
 
-   t->handler                = task_database_handler;
-   t->state                  = db;
-   t->callback               = cb;
-   t->title                  = strdup(msg_hash_to_str(MSG_PREPARING_FOR_CONTENT_SCAN));
-   t->alternative_look       = true;
+   t->handler                  = task_database_handler;
+   t->state                    = db;
+   t->callback                 = cb;
+   t->title                    = strdup(msg_hash_to_str(MSG_PREPARING_FOR_CONTENT_SCAN));
+   t->alternative_look         = true;
 
 #ifdef RARCH_INTERNAL
-   t->progress_cb            = task_database_progress_cb;
+   t->progress_cb              = task_database_progress_cb;
    db->scan_without_core_match = settings->bools.scan_without_core_match;
 #endif
-   db->show_hidden_files     = db_dir_show_hidden_files;
-   db->is_directory          = directory;
-   db->playlist_directory    = NULL;
-   db->fullpath              = strdup(fullpath);
-   db->playlist_directory    = strdup(playlist_directory);
-   db->content_database_path = strdup(content_database);
+   db->show_hidden_files       = db_dir_show_hidden_files;
+   db->is_directory            = directory;
+   db->playlist_directory      = NULL;
+   db->fullpath                = strdup(fullpath);
+   db->playlist_directory      = strdup(playlist_directory);
+   db->content_database_path   = strdup(content_database);
+   db->pl_fuzzy_archive_match  = settings->bools.playlist_fuzzy_archive_match;
+   db->pl_use_old_format       = settings->bools.playlist_use_old_format;
 
    task_queue_push(t);
 

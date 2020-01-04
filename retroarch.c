@@ -4709,7 +4709,8 @@ static bool run_translation_service(void)
       if (current_playlist)
       {
          playlist_get_index_by_path(
-            current_playlist, path_get(RARCH_PATH_CONTENT), &entry);
+            current_playlist, path_get(RARCH_PATH_CONTENT), &entry,
+            settings->bools.playlist_fuzzy_archive_match);
 
          if (entry && !string_is_empty(entry->label))
             label = entry->label;
@@ -6765,14 +6766,18 @@ TODO: Add a setting for these tweaks */
       case CMD_EVENT_HISTORY_DEINIT:
          if (g_defaults.content_history)
          {
-            playlist_write_file(g_defaults.content_history);
+            settings_t *settings = configuration_settings;
+            playlist_write_file(g_defaults.content_history,
+                  settings->bools.playlist_use_old_format);
             playlist_free(g_defaults.content_history);
          }
          g_defaults.content_history = NULL;
 
          if (g_defaults.music_history)
          {
-            playlist_write_file(g_defaults.music_history);
+            settings_t *settings = configuration_settings;
+            playlist_write_file(g_defaults.music_history,
+                  settings->bools.playlist_use_old_format);
             playlist_free(g_defaults.music_history);
          }
          g_defaults.music_history = NULL;
@@ -6780,7 +6785,9 @@ TODO: Add a setting for these tweaks */
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
          if (g_defaults.video_history)
          {
-            playlist_write_file(g_defaults.video_history);
+            settings_t *settings = configuration_settings;
+            playlist_write_file(g_defaults.video_history,
+                  settings->bools.playlist_use_old_format);
             playlist_free(g_defaults.video_history);
          }
          g_defaults.video_history = NULL;
@@ -6790,7 +6797,9 @@ TODO: Add a setting for these tweaks */
 #ifdef HAVE_IMAGEVIEWER
          if (g_defaults.image_history)
          {
-            playlist_write_file(g_defaults.image_history);
+            settings_t *settings = configuration_settings;
+            playlist_write_file(g_defaults.image_history,
+                  settings->bools.playlist_use_old_format);
             playlist_free(g_defaults.image_history);
          }
          g_defaults.image_history = NULL;
@@ -6966,13 +6975,14 @@ TODO: Add a setting for these tweaks */
                   entry.db_name   = str_list->elems[5].data; /* db_name */
 
                   /* Write playlist entry */
-                  if (playlist_push(g_defaults.content_favorites, &entry))
+                  if (playlist_push(g_defaults.content_favorites, &entry, settings->bools.playlist_fuzzy_archive_match))
                   {
                      /* New addition - need to resort if option is enabled */
                      if (settings->bools.playlist_sort_alphabetical)
                         playlist_qsort(g_defaults.content_favorites);
 
-                     playlist_write_file(g_defaults.content_favorites);
+                     playlist_write_file(g_defaults.content_favorites,
+                           settings->bools.playlist_use_old_format);
                      runloop_msg_queue_push(msg_hash_to_str(MSG_ADDED_TO_FAVORITES), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
                   }
                }
@@ -6982,6 +6992,7 @@ TODO: Add a setting for these tweaks */
          }
       case CMD_EVENT_RESET_CORE_ASSOCIATION:
          {
+            settings_t *settings           = configuration_settings;
             const char *core_name          = "DETECT";
             const char *core_path          = "DETECT";
             size_t *playlist_index         = (size_t*)data;
@@ -6994,7 +7005,9 @@ TODO: Add a setting for these tweaks */
             command_playlist_update_write(
                   NULL,
                   *playlist_index,
-                  &entry);
+                  &entry,
+                  settings->bools.playlist_use_old_format
+                  );
 
             runloop_msg_queue_push(msg_hash_to_str(MSG_RESET_CORE_ASSOCIATION), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
             break;
@@ -7497,8 +7510,9 @@ TODO: Add a setting for these tweaks */
             return false;
 
          {
+            settings_t         *settings = configuration_settings;
             discord_userdata_t *userdata = (discord_userdata_t*)data;
-            discord_update(userdata->status);
+            discord_update(userdata->status, settings->bools.playlist_fuzzy_archive_match);
          }
 #endif
          break;
@@ -27628,7 +27642,7 @@ int runloop_iterate(void)
 
 #ifdef HAVE_DISCORD
    if (discord_is_inited && discord_is_ready())
-      discord_update(DISCORD_PRESENCE_GAME);
+      discord_update(DISCORD_PRESENCE_GAME, settings->bools.playlist_fuzzy_archive_match);
 #endif
 
    for (i = 0; i < max_users; i++)
@@ -28658,7 +28672,8 @@ void rarch_favorites_deinit(void)
 {
    if (g_defaults.content_favorites)
    {
-      playlist_write_file(g_defaults.content_favorites);
+      settings_t *settings = configuration_settings;
+      playlist_write_file(g_defaults.content_favorites, settings->bools.playlist_use_old_format);
       playlist_free(g_defaults.content_favorites);
       g_defaults.content_favorites = NULL;
    }
