@@ -29,13 +29,13 @@
 #include <file/file_path.h>
 #include <string/stdstring.h>
 
-#include "../retroarch.h"
-#include "../configuration.h"
-#include "../tasks/tasks_internal.h"
 #include "menu_animation.h"
 #include "menu_driver.h"
 
 #include "menu_thumbnail.h"
+
+#include "../retroarch.h"
+#include "../tasks/tasks_internal.h"
 
 /* When streaming thumbnails, to minimise the processing
  * of unnecessary images (i.e. when scrolling rapidly through
@@ -212,13 +212,15 @@ void menu_thumbnail_cancel_pending_requests(void)
  *         (an annoyance...) */ 
 void menu_thumbnail_request(
       menu_thumbnail_path_data_t *path_data, enum menu_thumbnail_id thumbnail_id,
-      playlist_t *playlist, size_t idx, menu_thumbnail_t *thumbnail)
+      playlist_t *playlist, size_t idx, menu_thumbnail_t *thumbnail,
+      unsigned menu_thumbnail_upscale_threshold,
+      bool network_on_demand_thumbnails
+      )
 {
-   settings_t *settings                = config_get_ptr();
    const char *thumbnail_path          = NULL;
    bool has_thumbnail                  = false;
 
-   if (!path_data || !thumbnail || !settings)
+   if (!path_data || !thumbnail)
       return;
 
    /* Reset thumbnail, then set 'missing' status by default
@@ -250,13 +252,13 @@ void menu_thumbnail_request(
           * here, but can't see how to do it... */
          if(task_push_image_load(
                thumbnail_path, video_driver_supports_rgba(),
-               settings->uints.menu_thumbnail_upscale_threshold,
+               menu_thumbnail_upscale_threshold,
                menu_thumbnail_handle_upload, thumbnail_tag))
             thumbnail->status = MENU_THUMBNAIL_STATUS_PENDING;
       }
 #ifdef HAVE_NETWORKING
       /* Handle on demand thumbnail downloads */
-      else if (settings->bools.network_on_demand_thumbnails)
+      else if (network_on_demand_thumbnails)
       {
          const char *system                         = NULL;
          const char *img_name                       = NULL;
@@ -308,12 +310,13 @@ void menu_thumbnail_request(
  * 'thumbnail' will be populated with texture info/metadata
  * once the image load is complete */
 void menu_thumbnail_request_file(
-      const char *file_path, menu_thumbnail_t *thumbnail)
+      const char *file_path, menu_thumbnail_t *thumbnail,
+      unsigned menu_thumbnail_upscale_threshold
+      )
 {
-   settings_t *settings                = config_get_ptr();
    menu_thumbnail_tag_t *thumbnail_tag = NULL;
 
-   if (!thumbnail || !settings)
+   if (!thumbnail)
       return;
 
    /* Reset thumbnail, then set 'missing' status by default
@@ -342,7 +345,7 @@ void menu_thumbnail_request_file(
     * here, but can't see how to do it... */
    if(task_push_image_load(
          file_path, video_driver_supports_rgba(),
-         settings->uints.menu_thumbnail_upscale_threshold,
+         menu_thumbnail_upscale_threshold,
          menu_thumbnail_handle_upload, thumbnail_tag))
       thumbnail->status = MENU_THUMBNAIL_STATUS_PENDING;
 }
@@ -390,7 +393,10 @@ void menu_thumbnail_reset(menu_thumbnail_t *thumbnail)
  *         performance */
 void menu_thumbnail_process_stream(
       menu_thumbnail_path_data_t *path_data, enum menu_thumbnail_id thumbnail_id,
-      playlist_t *playlist, size_t idx, menu_thumbnail_t *thumbnail, bool on_screen)
+      playlist_t *playlist, size_t idx, menu_thumbnail_t *thumbnail, bool on_screen,
+      unsigned menu_thumbnail_upscale_threshold,
+      bool network_on_demand_thumbnails
+      )
 {
    if (!thumbnail)
       return;
@@ -423,7 +429,10 @@ void menu_thumbnail_process_stream(
 
             /* Request image load */
             menu_thumbnail_request(
-                  path_data, thumbnail_id, playlist, idx, thumbnail);
+                  path_data, thumbnail_id, playlist, idx, thumbnail,
+                  menu_thumbnail_upscale_threshold,
+                  network_on_demand_thumbnails
+                  );
          }
       }
    }
@@ -457,7 +466,10 @@ void menu_thumbnail_process_streams(
       menu_thumbnail_path_data_t *path_data,
       playlist_t *playlist, size_t idx,
       menu_thumbnail_t *right_thumbnail, menu_thumbnail_t *left_thumbnail,
-      bool on_screen)
+      bool on_screen,
+      unsigned menu_thumbnail_upscale_threshold,
+      bool network_on_demand_thumbnails
+      )
 {
    if (!right_thumbnail || !left_thumbnail)
       return;
@@ -521,11 +533,15 @@ void menu_thumbnail_process_streams(
             /* Request image load */
             if (request_right)
                menu_thumbnail_request(
-                     path_data, MENU_THUMBNAIL_RIGHT, playlist, idx, right_thumbnail);
+                     path_data, MENU_THUMBNAIL_RIGHT, playlist, idx, right_thumbnail,
+                     menu_thumbnail_upscale_threshold,
+                     network_on_demand_thumbnails);
 
             if (request_left)
                menu_thumbnail_request(
-                     path_data, MENU_THUMBNAIL_LEFT, playlist, idx, left_thumbnail);
+                     path_data, MENU_THUMBNAIL_LEFT, playlist, idx, left_thumbnail,
+                     menu_thumbnail_upscale_threshold,
+                     network_on_demand_thumbnails);
          }
       }
    }

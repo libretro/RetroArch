@@ -134,7 +134,10 @@ void menu_thumbnail_cancel_pending_requests(void);
  *         (an annoyance...) */ 
 void menu_thumbnail_request(
       menu_thumbnail_path_data_t *path_data, enum menu_thumbnail_id thumbnail_id,
-      playlist_t *playlist, size_t idx, menu_thumbnail_t *thumbnail);
+      playlist_t *playlist, size_t idx, menu_thumbnail_t *thumbnail,
+      unsigned menu_thumbnail_upscale_threshold,
+      bool network_on_demand_thumbnails
+      );
 
 /* Requests loading of a specific thumbnail image file
  * (may be used, for example, to load savestate images)
@@ -145,7 +148,8 @@ void menu_thumbnail_request(
  * 'thumbnail' will be populated with texture info/metadata
  * once the image load is complete */
 void menu_thumbnail_request_file(
-      const char *file_path, menu_thumbnail_t *thumbnail);
+      const char *file_path, menu_thumbnail_t *thumbnail,
+      unsigned menu_thumbnail_upscale_threshold);
 
 /* Resets (and free()s the current texture of) the
  * specified thumbnail */
@@ -167,7 +171,10 @@ void menu_thumbnail_reset(menu_thumbnail_t *thumbnail);
  *         performance */
 void menu_thumbnail_process_stream(
       menu_thumbnail_path_data_t *path_data, enum menu_thumbnail_id thumbnail_id,
-      playlist_t *playlist, size_t idx, menu_thumbnail_t *thumbnail, bool on_screen);
+      playlist_t *playlist, size_t idx, menu_thumbnail_t *thumbnail, bool on_screen,
+      unsigned menu_thumbnail_upscale_threshold,
+      bool network_on_demand_thumbnails
+      );
 
 /* Handles streaming of the specified thumbnails as they move
  * on/off screen
@@ -185,7 +192,10 @@ void menu_thumbnail_process_streams(
       menu_thumbnail_path_data_t *path_data,
       playlist_t *playlist, size_t idx,
       menu_thumbnail_t *right_thumbnail, menu_thumbnail_t *left_thumbnail,
-      bool on_screen);
+      bool on_screen,
+      unsigned menu_thumbnail_upscale_threshold,
+      bool network_on_demand_thumbnails
+      );
 
 /* Thumbnail rendering */
 

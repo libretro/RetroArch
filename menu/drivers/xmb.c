@@ -962,10 +962,11 @@ static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
 
 static void xmb_update_thumbnail_image(void *data)
 {
+   const char *core_name = NULL;
    xmb_handle_t *xmb     = (xmb_handle_t*)data;
    size_t selection      = menu_navigation_get_selection();
    playlist_t *playlist  = playlist_get_cached();
-   const char *core_name = NULL;
+   settings_t *settings  = config_get_ptr();
 
    if (!xmb)
       return;
@@ -986,7 +987,9 @@ static void xmb_update_thumbnail_image(void *data)
             MENU_THUMBNAIL_RIGHT,
             playlist,
             selection,
-            &xmb->thumbnails.right);
+            &xmb->thumbnails.right,
+            settings->uints.menu_thumbnail_upscale_threshold,
+            settings->bools.network_on_demand_thumbnails);
       /* Left thumbnail */
       else if (menu_thumbnail_is_enabled(xmb->thumbnail_path_data, MENU_THUMBNAIL_LEFT))
          menu_thumbnail_request(
@@ -994,7 +997,9 @@ static void xmb_update_thumbnail_image(void *data)
             MENU_THUMBNAIL_LEFT,
             playlist,
             selection,
-            &xmb->thumbnails.left);
+            &xmb->thumbnails.left,
+            settings->uints.menu_thumbnail_upscale_threshold,
+            settings->bools.network_on_demand_thumbnails);
    }
    else
    {
@@ -1004,7 +1009,9 @@ static void xmb_update_thumbnail_image(void *data)
          MENU_THUMBNAIL_RIGHT,
          playlist,
          selection,
-         &xmb->thumbnails.right);
+         &xmb->thumbnails.right,
+         settings->uints.menu_thumbnail_upscale_threshold,
+         settings->bools.network_on_demand_thumbnails);
 
       /* Left thumbnail */
       menu_thumbnail_request(
@@ -1012,7 +1019,9 @@ static void xmb_update_thumbnail_image(void *data)
          MENU_THUMBNAIL_LEFT,
          playlist,
          selection,
-         &xmb->thumbnails.left);
+         &xmb->thumbnails.left,
+         settings->uints.menu_thumbnail_upscale_threshold,
+         settings->bools.network_on_demand_thumbnails);
    }
 }
 
@@ -1165,7 +1174,8 @@ static void xmb_set_thumbnail_content(void *data, const char *s)
 
 static void xmb_update_savestate_thumbnail_image(void *data)
 {
-   xmb_handle_t *xmb = (xmb_handle_t*)data;
+   xmb_handle_t *xmb    = (xmb_handle_t*)data;
+   settings_t *settings = config_get_ptr();
    if (!xmb)
       return;
 
@@ -1186,7 +1196,8 @@ static void xmb_update_savestate_thumbnail_image(void *data)
           !string_is_equal(xmb->savestate_thumbnail_file_path, xmb->prev_savestate_thumbnail_file_path))
          menu_thumbnail_request_file(
                xmb->savestate_thumbnail_file_path,
-               &xmb->thumbnails.savestate);
+               &xmb->thumbnails.savestate,
+               settings->uints.menu_thumbnail_upscale_threshold);
    }
 }
 

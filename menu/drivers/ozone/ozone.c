@@ -379,6 +379,7 @@ static void ozone_update_thumbnail_image(void *data)
 {
    ozone_handle_t *ozone = (ozone_handle_t*)data;
    size_t selection      = menu_navigation_get_selection();
+   settings_t *settings  = config_get_ptr();
    playlist_t *playlist  = playlist_get_cached();
 
    if (!ozone)
@@ -396,7 +397,10 @@ static void ozone_update_thumbnail_image(void *data)
          MENU_THUMBNAIL_RIGHT,
          playlist,
          selection,
-         &ozone->thumbnails.right);
+         &ozone->thumbnails.right,
+         settings->uints.menu_thumbnail_upscale_threshold,
+         settings->bools. network_on_demand_thumbnails
+         );
 
       /* Left thumbnail is simply reset */
       menu_thumbnail_reset(&ozone->thumbnails.left);
@@ -409,7 +413,9 @@ static void ozone_update_thumbnail_image(void *data)
          MENU_THUMBNAIL_RIGHT,
          playlist,
          selection,
-         &ozone->thumbnails.right);
+         &ozone->thumbnails.right,
+         settings->uints.menu_thumbnail_upscale_threshold,
+         settings->bools. network_on_demand_thumbnails);
 
       /* Left thumbnail */
       menu_thumbnail_request(
@@ -417,7 +423,9 @@ static void ozone_update_thumbnail_image(void *data)
          MENU_THUMBNAIL_LEFT,
          playlist,
          selection,
-         &ozone->thumbnails.left);
+         &ozone->thumbnails.left,
+         settings->uints.menu_thumbnail_upscale_threshold,
+         settings->bools. network_on_demand_thumbnails);
    }
 }
 

@@ -2505,11 +2505,15 @@ static void materialui_render(void *data,
             menu_thumbnail_process_streams(
                mui->thumbnail_path_data, mui->playlist, i,
                &node->thumbnails.primary, &node->thumbnails.secondary,
-               on_screen);
+               on_screen,
+               settings->uints.menu_thumbnail_upscale_threshold,
+               settings->bools.network_on_demand_thumbnails);
          else
             menu_thumbnail_process_stream(
                   mui->thumbnail_path_data, MENU_THUMBNAIL_RIGHT,
-                  mui->playlist, i, &node->thumbnails.primary, on_screen);
+                  mui->playlist, i, &node->thumbnails.primary, on_screen,
+                  settings->uints.menu_thumbnail_upscale_threshold,
+                  settings->bools.network_on_demand_thumbnails);
       }
       else if (last_entry_found)
          break;
