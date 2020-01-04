@@ -124,6 +124,7 @@ SOURCES_C := \
 	$(LIBRETRO_COMM_DIR)/streams/interface_stream.c \
 	$(LIBRETRO_COMM_DIR)/streams/memory_stream.c \
 	$(LIBRETRO_COMM_DIR)/streams/file_stream.c \
+	$(LIBRETRO_COMM_DIR)/string/stdstring.c \
 	$(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c
 
 DEFINES    = -DHAVE_LIBRETRODB -DHAVE_COMPRESSION

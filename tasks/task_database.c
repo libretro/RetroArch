@@ -1387,9 +1387,9 @@ bool task_push_dbscan(
       bool db_dir_show_hidden_files,
       retro_task_callback_t cb)
 {
-   retro_task_t *t      = task_init();
+   retro_task_t *t             = task_init();
 #ifdef RARCH_INTERNAL
-   settings_t *settings = config_get_ptr();
+   settings_t *settings        = config_get_ptr();
 #endif
    db_handle_t *db             = (db_handle_t*)calloc(1, sizeof(db_handle_t));
 
@@ -1405,6 +1405,11 @@ bool task_push_dbscan(
 #ifdef RARCH_INTERNAL
    t->progress_cb              = task_database_progress_cb;
    db->scan_without_core_match = settings->bools.scan_without_core_match;
+   db->pl_fuzzy_archive_match  = settings->bools.playlist_fuzzy_archive_match;
+   db->pl_use_old_format       = settings->bools.playlist_use_old_format;
+#else
+   db->pl_fuzzy_archive_match  = false;
+   db->pl_use_old_format       = false;
 #endif
    db->show_hidden_files       = db_dir_show_hidden_files;
    db->is_directory            = directory;
@@ -1412,8 +1417,6 @@ bool task_push_dbscan(
    db->fullpath                = strdup(fullpath);
    db->playlist_directory      = strdup(playlist_directory);
    db->content_database_path   = strdup(content_database);
-   db->pl_fuzzy_archive_match  = settings->bools.playlist_fuzzy_archive_match;
-   db->pl_use_old_format       = settings->bools.playlist_use_old_format;
 
    task_queue_push(t);
 
