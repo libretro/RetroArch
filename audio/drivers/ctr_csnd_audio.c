@@ -23,7 +23,7 @@
 
 typedef struct
 {
-   bool nonblocking;
+   bool nonblock;
    bool playing;
    int16_t* l;
    int16_t* r;
@@ -180,7 +180,7 @@ static ssize_t ctr_csnd_audio_write(void *data, const void *buf, size_t size)
       (((ctr->pos - ctr->playpos ) & CTR_CSND_AUDIO_COUNT_MASK) < (CTR_CSND_AUDIO_COUNT >> 4)) ||
       (((ctr->playpos  - ctr->pos) & CTR_CSND_AUDIO_COUNT_MASK) < (size >> 2)))
    {
-      if (ctr->nonblocking)
+      if (ctr->nonblock)
          ctr->pos = (ctr->playpos + (CTR_CSND_AUDIO_COUNT >> 1)) & CTR_CSND_AUDIO_COUNT_MASK;
       else
       {
@@ -189,7 +189,7 @@ static ssize_t ctr_csnd_audio_write(void *data, const void *buf, size_t size)
             retro_sleep(1);
             ctr_csnd_audio_update_playpos(ctr);
          }while (((ctr->playpos - ctr->pos) & CTR_CSND_AUDIO_COUNT_MASK) < (CTR_CSND_AUDIO_COUNT >> 1)
-                 || (((ctr->pos - ctr->playpos) & CTR_CSND_AUDIO_COUNT_MASK) < (CTR_CSND_AUDIO_COUNT >> 4)));
+               || (((ctr->pos - ctr->playpos) & CTR_CSND_AUDIO_COUNT_MASK) < (CTR_CSND_AUDIO_COUNT >> 4)));
       }
    }
 
@@ -265,7 +265,7 @@ static void ctr_csnd_audio_set_nonblock_state(void *data, bool state)
 {
    ctr_csnd_audio_t* ctr = (ctr_csnd_audio_t*)data;
    if (ctr)
-      ctr->nonblocking = state;
+      ctr->nonblock = state;
 }
 
 static bool ctr_csnd_audio_use_float(void *data)

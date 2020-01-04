@@ -165,7 +165,7 @@ static bool rs_stop(void *data)
 
 static void rs_set_nonblock_state(void *data, bool state)
 {
-   rsd_t *rsd = (rsd_t*)data;
+   rsd_t *rsd    = (rsd_t*)data;
    rsd->nonblock = state;
 }
 

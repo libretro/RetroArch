@@ -29,7 +29,8 @@
 
 typedef struct ps2_audio
 {
-   bool nonblocking;
+   /* TODO/FIXME - nonblock is not implemented */
+   bool nonblock;
    bool running;
 
 } ps2_audio_t;
@@ -39,11 +40,11 @@ static void audioConfigure(ps2_audio_t *ps2, unsigned rate)
    int err;
    struct audsrv_fmt_t format;
 
-   format.bits = AUDIO_BITS;
-   format.freq = rate;
+   format.bits     = AUDIO_BITS;
+   format.freq     = rate;
    format.channels = AUDIO_CHANNELS;
 
-   err = audsrv_set_format(&format);
+   err             = audsrv_set_format(&format);
 
    if (err)
    {
@@ -82,15 +83,12 @@ static void ps2_audio_free(void *data)
 
 static ssize_t ps2_audio_write(void *data, const void *buf, size_t size)
 {
-   int bytes_sent;
    ps2_audio_t* ps2 = (ps2_audio_t*)data;
 
    if (!ps2->running)
       return -1;
 
-   bytes_sent = audsrv_play_audio(buf, size);
-
-   return bytes_sent;
+   return audsrv_play_audio(buf, size);
 }
 
 static bool ps2_audio_alive(void *data)
@@ -134,7 +132,7 @@ static void ps2_audio_set_nonblock_state(void *data, bool toggle)
    ps2_audio_t* ps2 = (ps2_audio_t*)data;
 
    if (ps2)
-      ps2->nonblocking = toggle;
+      ps2->nonblock = toggle;
 }
 
 static bool ps2_audio_use_float(void *data)

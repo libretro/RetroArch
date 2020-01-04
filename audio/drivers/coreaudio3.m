@@ -260,22 +260,37 @@ static bool g_interrupted;
 
 - (ssize_t)writeFloat:(const float *)data samples:(size_t)samples {
    size_t written = 0;
-   while (!g_interrupted && samples > 0)
+
+   if (_nonBlock)
    {
-      size_t write_avail = rb_avail(&_rb);
-      if (write_avail > samples)
-         write_avail = samples;
+      if (!g_interrupted && samples > 0)
+      {
+         size_t write_avail = rb_avail(&_rb);
+         if (write_avail > samples)
+            write_avail = samples;
 
-      rb_write_data(&_rb, data, write_avail);
-      data    += write_avail;
-      written += write_avail;
-      samples -= write_avail;
+         rb_write_data(&_rb, data, write_avail);
+         data    += write_avail;
+         written += write_avail;
+         samples -= write_avail;
+      }
+   }
+   else
+   {
+      while (!g_interrupted && samples > 0)
+      {
+         size_t write_avail = rb_avail(&_rb);
+         if (write_avail > samples)
+            write_avail = samples;
 
-      if (_nonBlock)
-         break;
+         rb_write_data(&_rb, data, write_avail);
+         data    += write_avail;
+         written += write_avail;
+         samples -= write_avail;
 
-      if (write_avail == 0)
-         dispatch_semaphore_wait(_sema, DISPATCH_TIME_FOREVER);
+         if (write_avail == 0)
+            dispatch_semaphore_wait(_sema, DISPATCH_TIME_FOREVER);
+      }
    }
 
    return written;

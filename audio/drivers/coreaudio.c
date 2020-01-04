@@ -245,7 +245,7 @@ static void *coreaudio_init(const char *device,
 #else
    comp = AudioComponentFindNext(NULL, &desc);
 #endif
-   if (comp == NULL)
+   if (!comp)
       goto error;
 
 #if (defined(__MACH__) && (defined(__ppc__) || defined(__ppc64__)))

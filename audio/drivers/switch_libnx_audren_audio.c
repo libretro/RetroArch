@@ -42,7 +42,8 @@ static const AudioRendererConfig audio_renderer_config =
    .num_mix_buffers = 2,
 };
 
-typedef struct {
+typedef struct
+{
    AudioDriver drv;
    void* mempool;
    AudioDriverWaveBuf wavebufs[BUFFER_COUNT];
@@ -52,10 +53,11 @@ typedef struct {
    size_t buffer_size;
    size_t samples;
    Mutex update_lock;
-   bool nonblocking;
+   bool nonblock;
 } libnx_audren_t;
 
-static void *libnx_audren_audio_init(const char *device, unsigned rate, unsigned latency,
+static void *libnx_audren_audio_init(
+      const char *device, unsigned rate, unsigned latency,
       unsigned block_frames,
       unsigned *new_rate)
 {
@@ -79,14 +81,14 @@ static void *libnx_audren_audio_init(const char *device, unsigned rate, unsigned
    real_latency = MAX(5, latency);
    RARCH_LOG("[Audio]: real_latency is %u\n", real_latency);
 
-   aud->nonblocking = !block_frames;
-   aud->buffer_size = (real_latency * sample_rate / 1000);
-   aud->samples = (aud->buffer_size / num_channels / sizeof(int16_t));
+   aud->nonblock     = !block_frames;
+   aud->buffer_size  = (real_latency * sample_rate / 1000);
+   aud->samples      = (aud->buffer_size / num_channels / sizeof(int16_t));
    aud->current_size = 0;
-   *new_rate = sample_rate;
+   *new_rate         = sample_rate;
 
-   mempool_size = (aud->buffer_size * BUFFER_COUNT + (AUDREN_MEMPOOL_ALIGNMENT-1)) &~ (AUDREN_MEMPOOL_ALIGNMENT-1);
-   aud->mempool = memalign(AUDREN_MEMPOOL_ALIGNMENT, mempool_size);
+   mempool_size      = (aud->buffer_size * BUFFER_COUNT + (AUDREN_MEMPOOL_ALIGNMENT-1)) &~ (AUDREN_MEMPOOL_ALIGNMENT-1);
+   aud->mempool      = memalign(AUDREN_MEMPOOL_ALIGNMENT, mempool_size);
    if (!aud->mempool)
    {
       RARCH_ERR("[Audio]: mempool alloc failed\n");
@@ -94,14 +96,14 @@ static void *libnx_audren_audio_init(const char *device, unsigned rate, unsigned
    }
 
    rc = audrenInitialize(&audio_renderer_config);
-   if(R_FAILED(rc))
+   if (R_FAILED(rc))
    {
       RARCH_ERR("[Audio]: audrenInitialize: %x\n", rc);
       goto fail;
    }
 
    rc = audrvCreate(&aud->drv, &audio_renderer_config, num_channels);
-   if(R_FAILED(rc))
+   if (R_FAILED(rc))
    {
       RARCH_ERR("[Audio]: audrvCreate: %x\n", rc);
       goto fail_init;
@@ -123,7 +125,7 @@ static void *libnx_audren_audio_init(const char *device, unsigned rate, unsigned
    audrvDeviceSinkAdd(&aud->drv, AUDREN_DEFAULT_DEVICE_NAME, num_channels, sink_channels);
 
    rc = audrenStartAudioRenderer();
-   if(R_FAILED(rc))
+   if (R_FAILED(rc))
    {
       RARCH_ERR("[Audio]: audrenStartAudioRenderer: %x\n", rc);
    }
@@ -150,9 +152,7 @@ fail:
    if (aud)
    {
       if (aud->mempool)
-      {
          free(aud->mempool);
-      }
 
       free(aud);
    }
@@ -176,24 +176,25 @@ static ssize_t libnx_audren_audio_get_free_wavebuf_idx(libnx_audren_t* aud)
 
    for (i = 0; i < BUFFER_COUNT; i++)
    {
-      if (aud->wavebufs[i].state == AudioDriverWaveBufState_Free
+      if (
+            aud->wavebufs[i].state == AudioDriverWaveBufState_Free
          || aud->wavebufs[i].state == AudioDriverWaveBufState_Done)
-      {
          return i;
-      }
    }
 
    return -1;
 }
 
-static size_t libnx_audren_audio_append(libnx_audren_t* aud, const void *buf, size_t size)
+static size_t libnx_audren_audio_append(
+      libnx_audren_t* aud, const void *buf, size_t size)
 {
+   void *dstbuf     = NULL;
    ssize_t free_idx = -1;
 
-   if(!aud->current_wavebuf)
+   if (!aud->current_wavebuf)
    {
       free_idx = libnx_audren_audio_get_free_wavebuf_idx(aud);
-      if(free_idx == -1)
+      if (free_idx == -1)
          return 0;
 
       aud->current_wavebuf = &aud->wavebufs[free_idx];
@@ -201,18 +202,16 @@ static size_t libnx_audren_audio_append(libnx_audren_t* aud, const void *buf, si
       aud->current_size = 0;
    }
 
-   if(size > aud->buffer_size - aud->current_size)
-   {
+   if (size > aud->buffer_size - aud->current_size)
       size = aud->buffer_size - aud->current_size;
-   }
 
-   void *dstbuf = aud->current_pool_ptr + aud->current_size;
+   dstbuf = aud->current_pool_ptr + aud->current_size;
    memcpy(dstbuf, buf, size);
    armDCacheFlush(dstbuf, size);
 
    aud->current_size += size;
 
-   if(aud->current_size == aud->buffer_size)
+   if (aud->current_size == aud->buffer_size)
    {
       audrvVoiceAddWaveBuf(&aud->drv, 0, aud->current_wavebuf);
 
@@ -231,24 +230,32 @@ static size_t libnx_audren_audio_append(libnx_audren_t* aud, const void *buf, si
    return size;
 }
 
-static ssize_t libnx_audren_audio_write(void *data, const void *buf, size_t size)
+static ssize_t libnx_audren_audio_write(void *data,
+      const void *buf, size_t size)
 {
    libnx_audren_t *aud = (libnx_audren_t*)data;
-   size_t written = 0;
+   size_t written      = 0;
 
    if (!aud)
       return -1;
 
-   while(written < size)
+   if (aud->nonblock)
    {
-      written += libnx_audren_audio_append(aud, buf + written, size - written);
-      if(written != size)
+      while(written < size)
       {
-         if(aud->nonblocking)
-         {
+         written += libnx_audren_audio_append(
+               aud, buf + written, size - written);
+         if (written != size)
             break;
-         }
-         else
+      }
+   }
+   else
+   {
+      while(written < size)
+      {
+         written += libnx_audren_audio_append(
+               aud, buf + written, size - written);
+         if (written != size)
          {
             mutexLock(&aud->update_lock);
             audrvUpdate(&aud->drv);
@@ -341,7 +348,7 @@ static void libnx_audren_audio_set_nonblock_state(void *data, bool state)
    if (!aud)
       return;
 
-   aud->nonblocking = state;
+   aud->nonblock    = state;
 }
 
 audio_driver_t audio_switch_libnx_audren = {
