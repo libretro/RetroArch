@@ -603,10 +603,10 @@ extern "C" {
 		return true;
 	}
 
-	void win32_show_cursor(bool state)
-	{
-		CoreWindow::GetForCurrentThread()->PointerCursor = state ? ref new CoreCursor(CoreCursorType::Arrow, 0) : nullptr;
-	}
+	void win32_show_cursor(void *data, bool state)
+   {
+      CoreWindow::GetForCurrentThread()->PointerCursor = state ? ref new CoreCursor(CoreCursorType::Arrow, 0) : nullptr;
+   }
 
 
 	bool win32_get_metrics(void* data,

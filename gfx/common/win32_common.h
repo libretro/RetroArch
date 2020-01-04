@@ -92,7 +92,7 @@ bool win32_suppress_screensaver(void *data, bool enable);
 bool win32_get_metrics(void *data,
 	enum display_metric_types type, float *value);
 
-void win32_show_cursor(bool state);
+void win32_show_cursor(void *data, bool state);
 
 HWND win32_get_window(void);
 

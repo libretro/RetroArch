@@ -212,7 +212,7 @@ static void d3d10_overlay_enable(void* data, bool state)
       return;
 
    d3d10->overlays.enabled = state;
-   win32_show_cursor(state);
+   win32_show_cursor(d3d10, state);
 }
 
 static void d3d10_overlay_full_screen(void* data, bool enable)
@@ -1647,8 +1647,6 @@ static void d3d10_gfx_set_osd_msg(
    }
 }
 
-static void d3d10_gfx_show_mouse(void* data, bool state) { win32_show_cursor(state); }
-
 static uintptr_t d3d10_gfx_load_texture(
       void* video_data, void* data, bool threaded, enum texture_filter_type filter_type)
 {
@@ -1750,7 +1748,7 @@ static const video_poke_interface_t d3d10_poke_interface = {
    d3d10_set_menu_texture_frame,
    d3d10_set_menu_texture_enable,
    d3d10_gfx_set_osd_msg,
-   d3d10_gfx_show_mouse,
+   win32_show_cursor,
    NULL, /* grab_mouse_toggle */
    d3d10_gfx_get_current_shader,
    NULL, /* get_current_software_framebuffer */

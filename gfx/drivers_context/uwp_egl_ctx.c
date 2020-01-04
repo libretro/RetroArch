@@ -275,12 +275,6 @@ static bool gfx_ctx_uwp_has_focus(void *data)
    return win32_has_focus();
 }
 
-static void gfx_ctx_uwp_show_mouse(void* data, bool state)
-{
-   (void)data;
-   win32_show_cursor(state);
-}
-
 static enum gfx_ctx_api gfx_ctx_uwp_get_api(void *data)
 {
    return uwp_api;
@@ -359,7 +353,7 @@ const gfx_ctx_driver_t gfx_ctx_uwp = {
    gfx_ctx_uwp_get_proc_address,
    NULL,
    NULL,
-   gfx_ctx_uwp_show_mouse,
+   win32_show_cursor,
    "uwp",
    gfx_ctx_uwp_get_flags, /* get flags */
    NULL, /* set flags */

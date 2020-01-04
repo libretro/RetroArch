@@ -200,7 +200,7 @@ static void d3d12_overlay_enable(void* data, bool state)
       return;
 
    d3d12->overlays.enabled = state;
-   win32_show_cursor(state);
+   win32_show_cursor(d3d12, state);
 }
 
 static void d3d12_overlay_full_screen(void* data, bool enable)
@@ -1702,11 +1702,6 @@ static void d3d12_set_menu_texture_enable(void* data,
    d3d12->menu.fullscreen = full_screen;
 }
 
-static void d3d12_gfx_show_mouse(void* data, bool state)
-{
-   win32_show_cursor(state);
-}
-
 static void d3d12_gfx_set_aspect_ratio(void* data, unsigned aspect_ratio_idx)
 {
    d3d12_video_t* d3d12 = (d3d12_video_t*)data;
@@ -1830,7 +1825,7 @@ static const video_poke_interface_t d3d12_poke_interface = {
    d3d12_set_menu_texture_frame,
    d3d12_set_menu_texture_enable,
    d3d12_gfx_set_osd_msg,
-   d3d12_gfx_show_mouse,
+   win32_show_cursor,
    NULL, /* grab_mouse_toggle */
    d3d12_gfx_get_current_shader,
    NULL, /* get_current_software_framebuffer */

@@ -1208,13 +1208,6 @@ static void d3d8_set_rotation(void *data, unsigned rot)
    d3d->should_resize = true;
 }
 
-static void d3d8_show_mouse(void *data, bool state)
-{
-#ifndef _XBOX
-   win32_show_cursor(state);
-#endif
-}
-
 static void *d3d8_init(const video_info_t *info,
       input_driver_t **input, void **input_data)
 {
@@ -1422,7 +1415,9 @@ static void d3d8_overlay_enable(void *data, bool state)
    for (i = 0; i < d3d->overlays_size; i++)
       d3d->overlays_enabled = state;
 
-   d3d8_show_mouse(d3d, state);
+#ifndef _XBOX
+   win32_show_cursor(d3d, state);
+#endif
 }
 
 static void d3d8_overlay_full_screen(void *data, bool enable)
@@ -1781,7 +1776,7 @@ static void d3d8_set_video_mode(void *data,
       bool fullscreen)
 {
 #ifndef _XBOX
-   win32_show_cursor(!fullscreen);
+   win32_show_cursor(data, !fullscreen);
 #endif
 }
 
@@ -1818,7 +1813,7 @@ static const video_poke_interface_t d3d_poke_interface = {
    d3d8_set_menu_texture_enable,
    d3d8_set_osd_msg,
 
-   d3d8_show_mouse,
+   win32_show_cursor,
    NULL,                         /* grab_mouse_toggle */
    NULL,                         /* get_current_shader */
    NULL,                         /* get_current_software_framebuffer */

@@ -233,12 +233,6 @@ static bool gfx_ctx_gdi_bind_api(void *data,
    return true;
 }
 
-static void gfx_ctx_gdi_show_mouse(void *data, bool state)
-{
-   (void)data;
-   win32_show_cursor(state);
-}
-
 static void gfx_ctx_gdi_swap_interval(void *data, int interval)
 {
    (void)data;
@@ -299,7 +293,7 @@ const gfx_ctx_driver_t gfx_ctx_gdi = {
    NULL,
    NULL,
    NULL,
-   gfx_ctx_gdi_show_mouse,
+   win32_show_cursor,
    "gdi",
    gfx_ctx_gdi_get_flags,
    gfx_ctx_gdi_set_flags,
