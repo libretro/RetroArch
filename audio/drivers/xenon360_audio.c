@@ -66,7 +66,15 @@ static ssize_t xenon360_audio_write(void *data, const void *buf, size_t size)
    for (i = 0; i < (size >> 2); i++)
       xa->buffer[i] = bswap_32(in_buf[i]);
 
-   if (!xa->nonblock)
+   if (xa->nonblock)
+   {
+      if (xenon_sound_get_unplayed() < MAX_BUFFER)
+      {
+         xenon_sound_submit(xa->buffer, size);
+         written = size;
+      }
+   }
+   else
    {
       while (xenon_sound_get_unplayed() >= MAX_BUFFER)
       {
@@ -77,14 +85,6 @@ static ssize_t xenon360_audio_write(void *data, const void *buf, size_t size)
 
       xenon_sound_submit(xa->buffer, size);
       written = size;
-   }
-   else
-   {
-      if (xenon_sound_get_unplayed() < MAX_BUFFER)
-      {
-         xenon_sound_submit(xa->buffer, size);
-         written = size;
-      }
    }
 
    return written;
