@@ -50,7 +50,7 @@
 #define SUPPORTS_LIBUSB false
 #endif
 
-#ifdef HAVE_SDL
+#if defined(HAVE_SDL)
 #define SUPPORTS_SDL true
 #else
 #define SUPPORTS_SDL false

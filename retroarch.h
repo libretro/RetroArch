@@ -1886,6 +1886,7 @@ extern video_driver_t video_xenon360;
 extern video_driver_t video_xvideo;
 extern video_driver_t video_sdl;
 extern video_driver_t video_sdl2;
+extern video_driver_t video_sdl_dingux;
 extern video_driver_t video_vg;
 extern video_driver_t video_omap;
 extern video_driver_t video_exynos;
