@@ -15,3 +15,9 @@
 - No performance impact.
 - Don't require translators to know how to use Git, how to read C code and how to create Pull Request.
 - Translators will be informed whenever a source string changes.
+
+## Cron job setup
+
+1. [Install crowdin cli tool](https://support.crowdin.com/cli-tool/)
+2. Get the `intl/crowdin.yaml` file from someone who have crowdin admin accounts
+3. Add cron job `cd path/to/retroarch/intl && ./crowin_sync.sh`

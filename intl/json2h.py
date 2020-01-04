@@ -14,16 +14,11 @@ except IndexError:
     print("Usage: ./template.py <language_postfix>")
     sys.exit(1)
 
-p = re.compile('MSG_HASH\(\s*[A-Z0-9_]+,\s*\".*\"\s*\)')
+if json_filename == 'msg_hash_us.json':
+    print("Skip")
+    sys.exit(0)
 
-header = """#if defined(_MSC_VER) && !defined(_XBOX) && (_MSC_VER >= 1500 && _MSC_VER < 1900)
-#if (_MSC_VER >= 1700)
-/* https://support.microsoft.com/en-us/kb/980263 */
-#pragma execution_character_set("utf-8")
-#endif
-#pragma warning(disable:4566)
-#endif
-"""
+p = re.compile('MSG_HASH\(\s*[A-Z0-9_]+,\s*\".*\"\s*\)')
 
 
 def parse_message(message):
@@ -53,7 +48,7 @@ def parse_messages(text):
 
 
 def update(messages, template):
-    new_translation = header + template
+    new_translation = template
     template_messages = parse_messages(template)
     for tp_msg in template_messages:
         if tp_msg['key'] in messages:
