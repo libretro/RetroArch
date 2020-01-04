@@ -78,9 +78,9 @@ void egl_report_error(void);
 
 void egl_destroy(egl_ctx_data_t *egl);
 
-void egl_terminate(EGLDisplay dpy);
-
 gfx_ctx_proc_t egl_get_proc_address(const char *symbol);
+
+void egl_terminate(EGLDisplay dpy);
 
 void egl_bind_hw_render(egl_ctx_data_t *egl, bool enable);
 

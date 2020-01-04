@@ -114,6 +114,22 @@ void egl_terminate(EGLDisplay dpy)
    eglTerminate(dpy);
 }
 
+static bool egl_get_config_attrib(EGLDisplay dpy, EGLConfig config, EGLint attribute,
+      EGLint *value)
+{
+   return eglGetConfigAttrib(dpy, config, attribute, value);
+}
+
+bool egl_initialize(EGLDisplay dpy, EGLint *major, EGLint *minor)
+{
+   return eglInitialize(dpy, major, minor);
+}
+
+bool egl_bind_api(EGLenum egl_api)
+{
+   return eglBindAPI(egl_api);
+}
+
 void egl_destroy(egl_ctx_data_t *egl)
 {
    if (egl->dpy)
@@ -282,8 +298,9 @@ static EGLDisplay get_egl_display(EGLenum platform, void *native)
 
          RARCH_LOG("[EGL] Found EGL client version >= 1.5, trying eglGetPlatformDisplay\n");
          ptr_eglGetPlatformDisplay = (pfn_eglGetPlatformDisplay)
-            eglGetProcAddress("eglGetPlatformDisplay");
-         if (ptr_eglGetPlatformDisplay != NULL)
+            egl_get_proc_address("eglGetPlatformDisplay");
+
+         if (ptr_eglGetPlatformDisplay)
          {
             EGLDisplay dpy = ptr_eglGetPlatformDisplay(platform, native, NULL);
             if (dpy != EGL_NO_DISPLAY)
@@ -299,8 +316,9 @@ static EGLDisplay get_egl_display(EGLenum platform, void *native)
 
          RARCH_LOG("[EGL] Found EGL_EXT_platform_base, trying eglGetPlatformDisplayEXT\n");
          ptr_eglGetPlatformDisplayEXT = (PFNEGLGETPLATFORMDISPLAYEXTPROC)
-            eglGetProcAddress("eglGetPlatformDisplayEXT");
-         if (ptr_eglGetPlatformDisplayEXT != NULL)
+            egl_get_proc_address("eglGetPlatformDisplayEXT");
+
+         if (ptr_eglGetPlatformDisplayEXT)
          {
             EGLDisplay dpy = ptr_eglGetPlatformDisplayEXT(platform, native, NULL);
             if (dpy != EGL_NO_DISPLAY)
@@ -317,15 +335,27 @@ static EGLDisplay get_egl_display(EGLenum platform, void *native)
    return eglGetDisplay((EGLNativeDisplayType) native);
 }
 
+bool egl_get_native_visual_id(egl_ctx_data_t *egl, EGLint *value)
+{
+   if (!egl_get_config_attrib(egl->dpy, egl->config,
+         EGL_NATIVE_VISUAL_ID, value))
+   {
+      RARCH_ERR("[EGL]: egl_get_native_visual_id failed.\n");
+      return false;
+   }
+
+   return true;
+}
+
 bool egl_default_accept_config_cb(void *display_data, EGLDisplay dpy, EGLConfig config)
 {
    /* Makes sure we have 8 bit color. */
    EGLint r, g, b;
-   if (!eglGetConfigAttrib(dpy, config, EGL_RED_SIZE, &r))
+   if (!egl_get_config_attrib(dpy, config, EGL_RED_SIZE, &r))
       return false;
-   if (!eglGetConfigAttrib(dpy, config, EGL_GREEN_SIZE, &g))
+   if (!egl_get_config_attrib(dpy, config, EGL_GREEN_SIZE, &g))
       return false;
-   if (!eglGetConfigAttrib(dpy, config, EGL_BLUE_SIZE, &b))
+   if (!egl_get_config_attrib(dpy, config, EGL_BLUE_SIZE, &b))
       return false;
 
    if (r != 8 || g != 8 || b != 8)
@@ -386,10 +416,6 @@ bool egl_init_context_common(
    return true;
 }
 
-bool egl_initialize(EGLDisplay dpy, EGLint *major, EGLint *minor)
-{
-   return eglInitialize(dpy, major, minor);
-}
 
 bool egl_init_context(egl_ctx_data_t *egl,
       EGLenum platform,
@@ -416,11 +442,6 @@ bool egl_init_context(egl_ctx_data_t *egl,
 
    return egl_init_context_common(egl, count, attrib_ptr, cb,
          display_data);
-}
-
-bool egl_bind_api(EGLenum egl_api)
-{
-   return eglBindAPI(egl_api);
 }
 
 bool egl_create_context(egl_ctx_data_t *egl, const EGLint *egl_attribs)
@@ -464,18 +485,6 @@ bool egl_create_surface(egl_ctx_data_t *egl, void *native_window)
       return false;
 
    RARCH_LOG("[EGL]: Current context: %p.\n", (void*)eglGetCurrentContext());
-
-   return true;
-}
-
-bool egl_get_native_visual_id(egl_ctx_data_t *egl, EGLint *value)
-{
-   if (!eglGetConfigAttrib(egl->dpy, egl->config,
-         EGL_NATIVE_VISUAL_ID, value))
-   {
-      RARCH_ERR("[EGL]: egl_get_native_visual_id failed.\n");
-      return false;
-   }
 
    return true;
 }
