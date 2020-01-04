@@ -496,27 +496,49 @@ static ssize_t dsound_write(void *data, const void *buf_, size_t size)
    if (!ds->thread_alive)
       return -1;
 
-   while (size > 0)
+   if (ds->nonblock)
    {
-      size_t avail;
+      if (size > 0)
+      {
+         size_t avail;
 
-      EnterCriticalSection(&ds->crit);
-      avail = fifo_write_avail(ds->buffer);
-      if (avail > size)
-         avail = size;
+         EnterCriticalSection(&ds->crit);
+         avail = fifo_write_avail(ds->buffer);
+         if (avail > size)
+            avail = size;
 
-      fifo_write(ds->buffer, buf, avail);
-      LeaveCriticalSection(&ds->crit);
+         fifo_write(ds->buffer, buf, avail);
+         LeaveCriticalSection(&ds->crit);
 
-      buf     += avail;
-      size    -= avail;
-      written += avail;
+         buf     += avail;
+         size    -= avail;
+         written += avail;
+      }
+   }
+   else
+   {
+      while (size > 0)
+      {
+         size_t avail;
 
-      if (ds->nonblock || !ds->thread_alive)
-         break;
+         EnterCriticalSection(&ds->crit);
+         avail = fifo_write_avail(ds->buffer);
+         if (avail > size)
+            avail = size;
 
-      if (avail == 0)
-         WaitForSingleObject(ds->event, INFINITE);
+         fifo_write(ds->buffer, buf, avail);
+         LeaveCriticalSection(&ds->crit);
+
+         buf     += avail;
+         size    -= avail;
+         written += avail;
+
+         if (!ds->thread_alive)
+            break;
+
+         if (avail == 0)
+            WaitForSingleObject(ds->event, INFINITE);
+      }
    }
 
    return written;
