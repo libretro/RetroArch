@@ -14,7 +14,11 @@ include config.mk
 # (It'd be better to put this comment in that file, but .gitignore doesn't work on files that exist in the repo.)
 -include Makefile.local
 
+ifeq ($(HAVE_ANGLE), 1)
+TARGET = retroarch_angle
+else
 TARGET = retroarch
+endif
 
 OBJ :=
 LIBS :=
