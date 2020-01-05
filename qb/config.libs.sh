@@ -108,9 +108,21 @@ fi
 if [ "$HAVE_ANGLE" = 'yes' ]; then
    eval "HAVE_EGL=\"yes\""
    add_dirs INCLUDE ./gfx/include/ANGLE
-   add_dirs LIBRARY ./angle-x64
    add_opt OPENGL no
    add_opt OPENGLES yes
+   add_define MAKEFILE OPENGLES_LIBS "-lGLESv2"
+
+case "$(uname -s)" in
+   MINGW32*)
+      add_dirs LIBRARY ./pkg/windows/x86
+      ;;
+   MINGW64*)
+      add_dirs LIBRARY ./pkg/windows/x86_64
+      ;;
+   *)
+      ;;
+esac
+
 else
    check_header EGL EGL/egl.h EGL/eglext.h
 # some systems have EGL libs, but no pkgconfig
