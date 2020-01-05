@@ -328,6 +328,19 @@ static BOOL CALLBACK enumerate_cb(LPGUID guid, LPCSTR desc, LPCSTR module, LPVOI
    return TRUE;
 }
 
+static void dsound_set_wavefmt(WAVEFORMATEX *wfx,
+      unsigned channels, unsigned samplerate)
+{
+   wfx->wFormatTag        = WAVE_FORMAT_PCM;
+   wfx->nBlockAlign       = channels * sizeof(int16_t);
+   wfx->wBitsPerSample    = 16;
+
+   wfx->nChannels         = channels;
+   wfx->nSamplesPerSec    = samplerate;
+   wfx->nAvgBytesPerSec   = wfx->nSamplesPerSec * wfx->nBlockAlign;
+   wfx->cbSize            = 0;
+}
+
 static void *dsound_init(const char *dev, unsigned rate, unsigned latency,
       unsigned block_frames,
       unsigned *new_rate)
@@ -390,12 +403,7 @@ static void *dsound_init(const char *dev, unsigned rate, unsigned latency,
       goto error;
 #endif
 
-   wfx.wFormatTag        = WAVE_FORMAT_PCM;
-   wfx.nChannels         = 2;
-   wfx.nSamplesPerSec    = rate;
-   wfx.wBitsPerSample    = 16;
-   wfx.nBlockAlign       = 2 * sizeof(int16_t);
-   wfx.nAvgBytesPerSec   = rate * 2 * sizeof(int16_t);
+   dsound_set_wavefmt(&wfx, 2, rate);
 
    ds->buffer_size       = (latency * wfx.nAvgBytesPerSec) / 1000;
    ds->buffer_size      /= CHUNK_SIZE;
