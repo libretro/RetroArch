@@ -1284,8 +1284,14 @@ endif
 ifeq ($(HAVE_EGL), 1)
    DEFINES += -DHAVE_EGL
    DEF_FLAGS += $(EGL_CFLAGS)
-   LIBS += $(EGL_LIBS)
    OBJ += gfx/common/egl_common.o
+
+ifeq ($(HAVE_DYNAMIC_EGL), 1)
+	DEFINES += -DHAVE_DYNAMIC_EGL
+else
+   LIBS += $(EGL_LIBS)
+endif
+
 endif
 
 ifeq ($(HAVE_SDL2), 1)
@@ -1965,8 +1971,6 @@ endif
 ifeq ($(HAVE_ANGLE), 1)
 	OBJ += gfx/common/angle_common.o
 	DEFINES += -DHAVE_ANGLE
-	# TODO/FIXME - should perhaps set these libraries as separate CFLAG variables in qb system
-	LIBS += -lEGL
 endif
 
 # Record

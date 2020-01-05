@@ -95,6 +95,8 @@ bool egl_default_accept_config_cb(void *display_data, EGLDisplay dpy, EGLConfig 
 
 bool egl_initialize(EGLDisplay dpy, EGLint *major, EGLint *minor);
 
+bool egl_init_dll(void);
+
 bool egl_init_context_common(
       egl_ctx_data_t *egl, EGLint *count,
       const EGLint *attrib_ptr,

@@ -84,6 +84,7 @@ HAVE_SUNXI=no              # Sunxi video support
 HAVE_WAYLAND=auto          # Wayland support
 C89_WAYLAND=no
 CXX_WAYLAND=no
+HAVE_DYNAMIC_EGL=no        # Dynamic library EGL support
 HAVE_EGL=auto              # EGL context support
 HAVE_VG=auto               # OpenVG support
 HAVE_CG=auto               # Cg shader support
