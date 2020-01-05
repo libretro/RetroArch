@@ -811,6 +811,8 @@ const char *config_get_default_video(void)
          return "switch";
       case VIDEO_XVIDEO:
          return "xvideo";
+      case VIDEO_SDL_DINGUX:
+         return "sdl_dingux";
       case VIDEO_SDL:
          return "sdl";
       case VIDEO_SDL2:
