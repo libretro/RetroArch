@@ -254,7 +254,7 @@ void egl_terminate(EGLDisplay dpy)
    _egl_terminate(dpy);
 }
 
-static bool egl_get_config_attrib(EGLDisplay dpy, EGLConfig config, EGLint attribute,
+bool egl_get_config_attrib(EGLDisplay dpy, EGLConfig config, EGLint attribute,
       EGLint *value)
 {
    return _egl_get_config_attrib(dpy, config, attribute, value);
