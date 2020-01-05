@@ -94,30 +94,25 @@ struct audio_lock
    DWORD size2;
 };
 
-static INLINE bool grab_region(dsound_t *ds, uint32_t write_ptr,
-      struct audio_lock *region)
+static bool grab_region(dsound_t *ds, uint32_t write_ptr,
+      struct audio_lock *region, HRESULT res)
 {
-   HRESULT     res = IDirectSoundBuffer_Lock(ds->dsb, write_ptr, CHUNK_SIZE,
-         &region->chunk1, &region->size1, &region->chunk2, &region->size2, 0);
-
    if (res == DSERR_BUFFERLOST)
    {
+#ifdef DEBUG
+      RARCH_WARN("[DirectSound error]: %s\n", "DSERR_BUFFERLOST");
+#endif
       if ((res = IDirectSoundBuffer_Restore(ds->dsb)) != DS_OK)
          return false;
       if ((res = IDirectSoundBuffer_Lock(ds->dsb, write_ptr, CHUNK_SIZE,
                   &region->chunk1, &region->size1, &region->chunk2, &region->size2, 0)) != DS_OK)
          return false;
-   }
-
-   if (res == DS_OK)
       return true;
+   }
 
 #ifdef DEBUG
    switch (res)
    {
-      case DSERR_BUFFERLOST:
-         RARCH_WARN("[DirectSound error]: %s\n", "DSERR_BUFFERLOST");
-         break;
       case DSERR_INVALIDCALL:
          RARCH_WARN("[DirectSound error]: %s\n", "DSERR_INVALIDCALL");
          break;
@@ -151,6 +146,7 @@ static DWORD CALLBACK dsound_thread(PVOID data)
 
    while (ds->thread_alive)
    {
+      HRESULT res;
       bool is_pull = false;
       struct audio_lock region;
       DWORD read_ptr, avail, fifo_avail;
@@ -175,11 +171,15 @@ static DWORD CALLBACK dsound_thread(PVOID data)
          continue;
       }
 
-      if (!grab_region(ds, write_ptr, &region))
+      if ((res = IDirectSoundBuffer_Lock(ds->dsb, write_ptr, CHUNK_SIZE,
+                  &region.chunk1, &region.size1, &region.chunk2, &region.size2, 0)) != DS_OK)
       {
-         ds->thread_alive = false;
-         SetEvent(ds->event);
-         break;
+         if (!grab_region(ds, write_ptr, &region, res))
+         {
+            ds->thread_alive = false;
+            SetEvent(ds->event);
+            break;
+         }
       }
 
       if (fifo_avail < CHUNK_SIZE)
