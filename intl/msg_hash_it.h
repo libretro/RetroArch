@@ -2643,6 +2643,12 @@ MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_POST_FILTER_RECORD,
       "Cattura l'immagine dopo che vengono applicati i filtri (ma non shader). Il tuo video sarà simile a quello che vedi sul tuo schermo.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CORE_LIST,
       "Seleziona il core da utilizzare.")
+MSG_HASH(MENU_ENUM_SUBLABEL_START_CORE,
+    "Avvia core senza contenuto.")
+MSG_HASH(MENU_ENUM_SUBLABEL_DOWNLOAD_CORE,
+    "Installa un core dal programma di aggiornamento online.")
+MSG_HASH(MENU_ENUM_SUBLABEL_SIDELOAD_CORE_LIST,
+    "Installa o ripristina un core dalla cartella dei download.")
 MSG_HASH(MENU_ENUM_SUBLABEL_LOAD_CONTENT_LIST,
       "Seleziona il contenuto da avviare.")
 MSG_HASH(MENU_ENUM_SUBLABEL_NETWORK_INFORMATION,
