@@ -254,7 +254,7 @@
       | DRIVER_LED_MASK \
       | DRIVER_MIDI_MASK )
 
-static audio_driver_t audio_null = {
+audio_driver_t audio_null = {
    NULL, /* init */
    NULL, /* write */
    NULL, /* stop */
