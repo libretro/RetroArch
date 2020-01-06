@@ -207,6 +207,7 @@ OBJ += \
        input/common/input_hid_common.o \
        input/input_mapper.o \
        led/led_driver.o \
+       led/drivers/led_null.o \
        gfx/video_coord_array.o \
        gfx/video_display_server.o \
        gfx/video_crt_switch.o \

@@ -12,39 +12,16 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __LED_DRIVER__H
-#define __LED_DRIVER__H
+#include "../led_driver.h"
+#include "../../verbosity.h"
 
-#include <stdint.h>
-#include <stdlib.h>
-#include <stddef.h>
-#include <sys/types.h>
+static void null_led_init(void) { }
+static void null_led_free(void) { }
+static void null_led_set(int led, int state) { }
 
-#include <boolean.h>
-#include <libretro.h>
-#include <retro_common_api.h>
-#include <retro_environment.h>
-
-RETRO_BEGIN_DECLS
-
-typedef struct led_driver
-{
-   void (*init)(void);
-   void (*free)(void);
-   void (*set_led)(int led, int value);
-   const char *ident;
-} led_driver_t;
-
-bool led_driver_init(void);
-
-void led_driver_free(void);
-
-void led_driver_set_led(int led, int value);
-
-extern const led_driver_t null_led_driver;
-extern const led_driver_t overlay_led_driver;
-extern const led_driver_t rpi_led_driver;
-
-RETRO_END_DECLS
-
-#endif
+const led_driver_t null_led_driver = {
+   null_led_init,
+   null_led_free,
+   null_led_set,
+   "null"
+};
