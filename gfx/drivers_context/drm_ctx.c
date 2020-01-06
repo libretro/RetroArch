@@ -875,8 +875,6 @@ static gfx_ctx_proc_t gfx_ctx_drm_get_proc_address(const char *symbol)
       case GFX_CTX_OPENVG_API:
 #ifdef HAVE_EGL
          return egl_get_proc_address(symbol);
-#else
-         break;
 #endif
       case GFX_CTX_NONE:
       default:

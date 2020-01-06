@@ -122,16 +122,13 @@ static void *gfx_ctx_mali_fbdev_init(video_frame_info_t *video_info,
 #ifdef HAVE_EGL
    if (!egl_init_context(&mali->egl, EGL_NONE, EGL_DEFAULT_DISPLAY,
             &major, &minor, &n, attribs, NULL))
-   {
-      egl_report_error();
       goto error;
-   }
 #endif
 
    return mali;
 
 error:
-   RARCH_ERR("[Mali fbdev]: EGL error: %d.\n", eglGetError());
+   egl_report_error();
    gfx_ctx_mali_fbdev_destroy(video_driver);
    return NULL;
 }
@@ -190,10 +187,7 @@ static bool gfx_ctx_mali_fbdev_set_video_mode(void *data,
 
 #ifdef HAVE_EGL
    if (!egl_create_context(&mali->egl, attribs))
-   {
-      egl_report_error();
       goto error;
-   }
 #endif
 
 #ifdef HAVE_EGL
@@ -206,7 +200,7 @@ static bool gfx_ctx_mali_fbdev_set_video_mode(void *data,
 error:
    if (fd >= 0)
       close(fd);
-   RARCH_ERR("[Mali fbdev]: EGL error: %d.\n", eglGetError());
+   egl_report_error();
    gfx_ctx_mali_fbdev_destroy(data);
    return false;
 }

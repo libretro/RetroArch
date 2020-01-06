@@ -90,17 +90,14 @@ static void *gfx_ctx_opendingux_init(video_frame_info_t *video_info, void *video
    if (!egl_init_context(&viv->egl, EGL_NONE, EGL_DEFAULT_DISPLAY,
             &major, &minor,
             &n, attribs, NULL))
-   {
-      egl_report_error();
       goto error;
-   }
 #endif
 
    return viv;
 
 #ifdef HAVE_EGL
 error:
-   RARCH_ERR("[opendingux fbdev]: EGL error: %d.\n", eglGetError());
+   egl_report_error();
 #endif
    gfx_ctx_opendingux_destroy(viv);
    return NULL;
@@ -159,10 +156,7 @@ static bool gfx_ctx_opendingux_set_video_mode(void *data,
 
 #ifdef HAVE_EGL
    if (!egl_create_context(&viv->egl, attribs))
-   {
-      egl_report_error();
       goto error;
-   }
 
    viv->native_window = 0;
    if (!egl_create_surface(&viv->egl, viv->native_window))
@@ -173,7 +167,7 @@ static bool gfx_ctx_opendingux_set_video_mode(void *data,
 
 #ifdef HAVE_EGL
 error:
-   RARCH_ERR("[opendingux fbdev]: EGL error: %d.\n", eglGetError());
+   egl_report_error();
 #endif
    gfx_ctx_opendingux_destroy(data);
    return false;
