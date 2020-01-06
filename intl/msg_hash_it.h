@@ -610,7 +610,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_DISK_INDEX,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DISK_OPTIONS,
       "Controllo del Disco ")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DONT_CARE,
-      "Non importa")
+      "Non preoccuparti")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST,
       "Downloads")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,
@@ -915,8 +915,10 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ENABLE,
       "Turbo Abilitato")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD,
       "Turbo Periodico")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS, /* TODO/FIXME - change User to Port */
-      "Input utente %u Binds")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
+      "Porta %u Binds")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_LATENCY_SETTINGS,
+    "Latenza")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INTERNAL_STORAGE_STATUS,
       "Stato di archiviazione interna")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR,
@@ -982,9 +984,9 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
       "Carica Contenuto")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LOAD_DISC,
-      "Load Disc")
+      "Carica Disco")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DUMP_DISC,
-      "Dump Disc")
+      "Dump del Disco")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LOAD_STATE,
       "Carica Stato")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LOCATION_ALLOW,
@@ -994,7 +996,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
       "Logging")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LOG_VERBOSITY,
-      "Logging Verbosity")
+      "Registrazione dei Log")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MAIN_MENU,
       "Menu principale")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MANAGEMENT,
@@ -1201,39 +1203,39 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_PLAYLIST_SETTINGS,
       "Playlists")
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE,
-    "Label Display Mode"
+    "Modalità di visualizzazione etichetta"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE,
-    "Change how the content labels are displayed in this playlist."
+    "Modifica la modalità di visualizzazione delle etichette dei contenuti in questa playlist."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_DEFAULT,
-    "Show full labels"
+    "Mostra etichette complete"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_REMOVE_PARENS,
-    "Remove () content"
+    "Rimuovi () contenuto"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_REMOVE_BRACKETS,
-    "Remove [] content"
+    "Rimuovi [] contenuto"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_REMOVE_PARENS_AND_BRACKETS,
-    "Remove () and []"
+    "Rimuovi () e []"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_KEEP_REGION,
-    "Keep region"
+    "Mantieni regione"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_KEEP_DISC_INDEX,
-    "Keep disc index"
+    "Mantieni indice del disco"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_KEEP_REGION_AND_DISC_INDEX,
-    "Keep region and disc index"
+    "Mantieni regione e indice del disco"
     )
 MSG_HASH(MENU_ENUM_LABEL_VALUE_POINTER_ENABLE,
       "Supporto touch")
@@ -1464,6 +1466,12 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_SSH_ENABLE,
 #endif
 MSG_HASH(MENU_ENUM_LABEL_VALUE_START_CORE,
       "Avvia Core")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST,
+    "Installa o Ripristina un Core")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_ERROR,
+    "Installazione Core non riuscita")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_SUCCESS,
+    "Installazione del Core riuscita")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_START_NET_RETROPAD,
       "Avvia RetroPad Remoto")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_START_VIDEO_PROCESSOR,
@@ -1927,7 +1935,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_FRAME_THROTTLE_SETTINGS,
 MSG_HASH(MENU_ENUM_SUBLABEL_SAVING_SETTINGS,
       "Modifica le impostazioni per i salvataggi")
 MSG_HASH(MENU_ENUM_SUBLABEL_LOGGING_SETTINGS,
-      "Modifica le impostazioni per il login.")
+      "Modifica le impostazioni dei log.")
 MSG_HASH(MENU_ENUM_SUBLABEL_USER_INTERFACE_SETTINGS,
       "Modifica le impostazioni per l'interfaccia utente.")
 MSG_HASH(MENU_ENUM_SUBLABEL_USER_SETTINGS,
@@ -1964,8 +1972,10 @@ MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
       "Combinazioni dei pulsanti del Gamepad per attivare il menu.")
 MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_SETTINGS,
       "Modifica le impostazioni per joypad, tastiera e mouse")
-MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_USER_BINDS, /* TODO/FIXME - change user to port */
-      "Configura i controlli per questo utente.")
+MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_USER_BINDS,
+      "Configura i controlli per questa porta.")
+MSG_HASH(MENU_ENUM_SUBLABEL_LATENCY_SETTINGS,
+    "Modifica le impostazioni relative a video, audio e input della latenza.")
 MSG_HASH(MENU_ENUM_SUBLABEL_LOG_VERBOSITY,
       "Abilita o disabilita la registrazione al terminale.")
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY,
@@ -2639,6 +2649,12 @@ MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_POST_FILTER_RECORD,
       "Cattura l'immagine dopo che vengono applicati i filtri (ma non shader). Il tuo video sarà simile a quello che vedi sul tuo schermo.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CORE_LIST,
       "Seleziona il core da utilizzare.")
+MSG_HASH(MENU_ENUM_SUBLABEL_START_CORE,
+    "Avvia core senza contenuto.")
+MSG_HASH(MENU_ENUM_SUBLABEL_DOWNLOAD_CORE,
+    "Installa un core dal programma di aggiornamento online.")
+MSG_HASH(MENU_ENUM_SUBLABEL_SIDELOAD_CORE_LIST,
+    "Installa o ripristina un core dalla cartella dei download.")
 MSG_HASH(MENU_ENUM_SUBLABEL_LOAD_CONTENT_LIST,
       "Seleziona il contenuto da avviare.")
 MSG_HASH(MENU_ENUM_SUBLABEL_NETWORK_INFORMATION,
