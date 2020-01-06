@@ -4645,168 +4645,168 @@ MSG_HASH(MSG_LOCALAP_ERROR_CONFIG_CREATE,
 MSG_HASH(MSG_LOCALAP_ERROR_CONFIG_PARSE,
      "Niepoprawny plik konfiguracyjny - nie można znaleźć APNAME lub PASSWORD w %s")
 #endif
-MSG_HASH(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,/* FIXME */
+MSG_HASH(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,/* FIXME Does not display the translation in the menu*/
    "Format uruchomieniowy podrzędnej listy odtwarzania „ostatnio odtwarzany” format")
-MSG_HASH(MENU_ENUM_SUBLABEL_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,/* FIXME */
+MSG_HASH(MENU_ENUM_SUBLABEL_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,/* FIXME Does not display the translation in the menu*/
     "Wybiera styl formatowania daty/godziny używany podczas wyświetlania informacji o znaczniku czasu „ostatnio odtwarzane” w rejestrze wykonawczym. Uwaga: opcje „(AM/PM)” będą miały niewielki wpływ na wydajność na niektórych platformach.")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_DRIVER_SWITCH_ENABLE,/* FIXME */
+MSG_HASH(MENU_ENUM_LABEL_VALUE_DRIVER_SWITCH_ENABLE,/* FIXME Does not display the translation in the menu*/
     "Pozwól rdzeniom przełączyć sterownik wideo")
-MSG_HASH(MENU_ENUM_SUBLABEL_DRIVER_SWITCH_ENABLE,/* FIXME */
+MSG_HASH(MENU_ENUM_SUBLABEL_DRIVER_SWITCH_ENABLE,/* FIXME Does not display the translation in the menu*/
     "Pozwól rdzeniom wymusić przełączenie na inny sterownik wideo niż aktualnie załadowany.")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_AUTO_ROTATE,/* FIXME */
+MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_AUTO_ROTATE,/* FIXME Does not display the translation in the menu*/
     "Auto-Obracanie Nakładki"
     )
-MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_OVERLAY_AUTO_ROTATE,/* FIXME */
+MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_OVERLAY_AUTO_ROTATE,/* FIXME Does not display the translation in the menu*/
     "Jeśli jest obsługiwana przez bieżącą nakładkę, automatycznie obracaj układ, aby dopasować orientację ekranu/współczynnik proporcji."
     )
-MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS,/* FIXME */
+MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS,/* FIXME Does not display the translation in the menu*/
     "Wyświetla dodatkowe informacje dla aktualnie wybranej pozycji menu."
     )
-MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_VIEWS_SETTINGS,/* FIXME */
+MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_VIEWS_SETTINGS,/* FIXME Does not display the translation in the menu*/
     "Ustawienia"
     )
-MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_VIEWS_SETTINGS,/* FIXME */
+MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_VIEWS_SETTINGS,/* FIXME Does not display the translation in the menu*/
     "Pokaż lub ukryj elementy na ekranie ustawień."
     )
-MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_DRIVERS,/* FIXME */
+MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_DRIVERS,/* FIXME Does not display the translation in the menu*/
     "Pokaż sterowniki"
     )
-MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_SHOW_DRIVERS,/* FIXME */
+MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_SHOW_DRIVERS,/* FIXME Does not display the translation in the menu*/
     "Pokaż lub ukryj „Ustawienia sterownika” na ekranie ustawień."
     )
-MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_VIDEO,/* FIXME */
+MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_VIDEO,/* FIXME Does not display the translation in the menu*/
     "Pokaż wideo"
     )
-MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_SHOW_VIDEO,/* FIXME */
+MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_SHOW_VIDEO,/* FIXME Does not display the translation in the menu*/
     "Pokaż lub ukryj „Ustawienia wideo” na ekranie ustawień."
     )
-MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_AUDIO,/* FIXME */
+MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_AUDIO,/* FIXME Does not display the translation in the menu*/
     "Pokaż dźwięk"
     )
-MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_SHOW_AUDIO,/* FIXME */
+MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_SHOW_AUDIO,/* FIXME Does not display the translation in the menu*/
     "Pokaż lub ukryj „Ustawienia audio” na ekranie ustawień."
     )
-MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_LATENCY,/* FIXME */
+MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_LATENCY,/* FIXME Does not display the translation in the menu*/
     "Pokaż opóźnienie"
     )
-MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_SHOW_LATENCY,/* FIXME */
+MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_SHOW_LATENCY,/* FIXME Does not display the translation in the menu*/
     "Pokaż lub ukryj „Ustawienia opóźnień” na ekranie ustawień."
     )
-MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_CORE,/* FIXME */
+MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_CORE,/* FIXME Does not display the translation in the menu*/
     "Pokaż rdzeń"
     )
-MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_SHOW_CORE,/* FIXME */
+MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_SHOW_CORE,/* FIXME Does not display the translation in the menu*/
     "Pokaż lub ukryj „Podstawowe ustawienia” na ekranie ustawień."
     )
-MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_CONFIGURATION,/* FIXME */
+MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_CONFIGURATION,/* FIXME Does not display the translation in the menu*/
     "Pokaż konfigurację"
     )
-MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_SHOW_CONFIGURATION,/* FIXME */
+MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_SHOW_CONFIGURATION,/* FIXME Does not display the translation in the menu*/
     "Pokaż lub ukryj „Ustawienia konfiguracji” na ekranie Ustawienia."
     )
-MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_SAVING,/* FIXME */
+MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_SAVING,/* FIXME Does not display the translation in the menu*/
     "Pokaż zapisywanie"
     )
-MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_SHOW_SAVING,/* FIXME */
+MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_SHOW_SAVING,/* FIXME Does not display the translation in the menu*/
     "Pokaż lub ukryj „Zapisywanie ustawień” na ekranie ustawień."
     )
-MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_LOGGING,/* FIXME */
+MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_LOGGING,/* FIXME Does not display the translation in the menu*/
     "Pokaż rejestrowanie"
     )
-MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_SHOW_LOGGING,/* FIXME */
+MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_SHOW_LOGGING,/* FIXME Does not display the translation in the menu*/
     "Pokaż lub ukryj „Ustawienia rejestrowania” na ekranie ustawień."
     )
-MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_FRAME_THROTTLE,/* FIXME */
+MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_FRAME_THROTTLE,/* FIXME Does not display the translation in the menu*/
     "Pokaż przepustnicę ramy"
     )
-MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_SHOW_FRAME_THROTTLE,/* FIXME */
+MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_SHOW_FRAME_THROTTLE,/* FIXME Does not display the translation in the menu*/
     "Pokaż lub ukryj „Ustawienia przepustnicy ramy” na ekranie Ustawienia."
     )
-MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_RECORDING,/* FIXME */
+MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_RECORDING,/* FIXME Does not display the translation in the menu*/
     "Pokaż nagranie"
     )
-MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_SHOW_RECORDING,/* FIXME */
+MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_SHOW_RECORDING,/* FIXME Does not display the translation in the menu*/
     "Pokaż lub ukryj „Ustawienia nagrywania” na ekranie Ustawienia."
     )
-MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_ONSCREEN_DISPLAY,/* FIXME */
+MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_ONSCREEN_DISPLAY,/* FIXME Does not display the translation in the menu*/
     "Pokaż wyświetlanie na ekranie"
     )
-MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_SHOW_ONSCREEN_DISPLAY,/* FIXME */
+MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_SHOW_ONSCREEN_DISPLAY,/* FIXME Does not display the translation in the menu*/
     "Pokaż lub ukryj „Ustawienia wyświetlania na ekranie” na ekranie ustawień."
     )
-MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_USER_INTERFACE,/* FIXME */
+MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_USER_INTERFACE,/* FIXME Does not display the translation in the menu*/
     "Pokaż interfejs użytkownika"
     )
-MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_SHOW_USER_INTERFACE,/* FIXME */
+MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_SHOW_USER_INTERFACE,/* FIXME Does not display the translation in the menu*/
     "Pokaż lub ukryj „Ustawienia interfejsu użytkownika” na ekranie ustawień."
     )
-MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_AI_SERVICE,/* FIXME */
+MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_AI_SERVICE,/* FIXME Does not display the translation in the menu*/
     "Pokaż usługę AI"
     )
-MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_SHOW_AI_SERVICE,/* FIXME */
+MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_SHOW_AI_SERVICE,/* FIXME Does not display the translation in the menu*/
     "Pokaż lub ukryj „Ustawienia usługi AI” na ekranie ustawień."
     )
-MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_POWER_MANAGEMENT,/* FIXME */
+MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_POWER_MANAGEMENT,/* FIXME Does not display the translation in the menu*/
     "Pokaż zarządzanie energią"
     )
-MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_SHOW_POWER_MANAGEMENT,/* FIXME */
+MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_SHOW_POWER_MANAGEMENT,/* FIXME Does not display the translation in the menu*/
     "Pokaż lub ukryj „Ustawienia zarządzania energią” na ekranie ustawień."
     )
-MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_ACHIEVEMENTS,/* FIXME */
+MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_ACHIEVEMENTS,/* FIXME Does not display the translation in the menu*/
     "Pokaż osiągnięcia"
     )
-MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_SHOW_ACHIEVEMENTS,/* FIXME */
+MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_SHOW_ACHIEVEMENTS,/* FIXME Does not display the translation in the menu*/
     "Pokaż lub ukryj „Ustawienia osiągnięć” na ekranie ustawień."
     )
-MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_NETWORK,/* FIXME */
+MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_NETWORK,/* FIXME Does not display the translation in the menu*/
     "Pokaż sieć"
     )
-MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_SHOW_NETWORK,/* FIXME */
+MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_SHOW_NETWORK,/* FIXME Does not display the translation in the menu*/
     "Pokaż lub ukryj „Ustawienia sieci” na ekranie Ustawień."
     )
-MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_PLAYLISTS,/* FIXME */
+MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_PLAYLISTS,/* FIXME Does not display the translation in the menu*/
     "Pokaż listy odtwarzania"
     )
-MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_SHOW_PLAYLISTS,/* FIXME */
+MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_SHOW_PLAYLISTS,/* FIXME Does not display the translation in the menu*/
     "Pokaż lub ukryj „Ustawienia list odtwarzania” na ekranie ustawień."
     )
-MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_USER,/* FIXME */
+MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_USER,/* FIXME Does not display the translation in the menu*/
     "Pokaż użytkownika"
     )
-MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_SHOW_USER,/* FIXME */
+MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_SHOW_USER,/* FIXME Does not display the translation in the menu*/
     "Pokaż lub ukryj „Ustawienia użytkownika” na ekranie ustawień."
     )
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_DIRECTORY,/* FIXME */
     "Pokaż katalog"
     )
-MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_SHOW_DIRECTORY,/* FIXME */
+MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_SHOW_DIRECTORY,/* FIXME Does not display the translation in the menu*/
     "Pokaż lub ukryj „Ustawienia katalogu” na ekranie ustawień."
     )
 MSG_HASH(
-    MENU_ENUM_SUBLABEL_MENU_XMB_ANIMATION_HORIZONTAL_HIGHLIGHT,/* FIXME */
+    MENU_ENUM_SUBLABEL_MENU_XMB_ANIMATION_HORIZONTAL_HIGHLIGHT,/* FIXME Does not display the translation in the menu*/
     "Animacja uruchamiana podczas przewijania między kartami."
     )
 MSG_HASH(
-    MENU_ENUM_SUBLABEL_MENU_XMB_ANIMATION_MOVE_UP_DOWN,/* FIXME */
+    MENU_ENUM_SUBLABEL_MENU_XMB_ANIMATION_MOVE_UP_DOWN,/* FIXME Does not display the translation in the menu*/
     "Animacja uruchamiana podczas poruszania się w górę lub w dół."
     )
 MSG_HASH(
-    MENU_ENUM_SUBLABEL_MENU_XMB_THUMBNAIL_SCALE_FACTOR,/* FIXME */
+    MENU_ENUM_SUBLABEL_MENU_XMB_THUMBNAIL_SCALE_FACTOR,/* FIXME Does not display the translation in the menu*/
     "Zmniejsz rozmiar wyświetlanych miniatur, skalując maksymalną dozwoloną szerokość."
     )
 MSG_HASH(
-    MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_UPSCALE_THRESHOLD,/* FIXME */
+    MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_UPSCALE_THRESHOLD,/* FIXME Does not display the translation in the menu*/
     "Automatyczne powiększanie miniatur obrazów o szerokości/wysokości mniejszej niż określona wartość. Poprawia jakość obrazu. Ma umiarkowany wpływ na wydajność."
     )
 MSG_HASH(
-    MENU_ENUM_SUBLABEL_MENU_TICKER_SPEED,/* FIXME */
+    MENU_ENUM_SUBLABEL_MENU_TICKER_SPEED,/* FIXME Does not display the translation in the menu*/
     "Szybkość animacji podczas przewijania długich ciągów tekstowych menu."
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_MENU_TICKER_SMOOTH, /* FIXME */
+    MENU_ENUM_LABEL_VALUE_MENU_TICKER_SMOOTH, /* FIXME Does not display the translation in the menu*/
     "Płynny tekst próbny"
     )
 MSG_HASH(
-    MENU_ENUM_SUBLABEL_MENU_TICKER_SMOOTH,/* FIXME */
+    MENU_ENUM_SUBLABEL_MENU_TICKER_SMOOTH,/* FIXME  Does not display the translation in the menu*/
     "Użyj płynnej animacji przewijania podczas wyświetlania długich ciągów tekstowych menu. Ma niewielki wpływ na wydajność."
     )
