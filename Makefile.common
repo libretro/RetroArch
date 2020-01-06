@@ -245,7 +245,6 @@ OBJ += \
        $(LIBRETRO_COMM_DIR)/utils/md5.o \
        wifi/drivers/nullwifi.o \
        gfx/display_servers/dispserv_null.o \
-       input/drivers_hid/null_hid.o \
        playlist.o \
        record/drivers/record_null.o \
        $(LIBRETRO_COMM_DIR)/features/features_cpu.o \

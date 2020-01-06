@@ -758,6 +758,19 @@ static input_device_driver_t *joypad_drivers[] = {
 };
 
 #ifdef HAVE_HID
+static hid_driver_t null_hid = {
+   NULL, /* init */
+   NULL, /* joypad_query */
+   NULL, /* free */
+   NULL, /* button */
+   NULL, /* get_buttons */
+   NULL, /* axis */
+   NULL, /* poll */
+   NULL, /* rumble */
+   NULL, /* joypad_name */
+   "null",
+};
+
 static hid_driver_t *hid_drivers[] = {
 #if defined(HAVE_BTSTACK)
    &btstack_hid,
