@@ -244,8 +244,6 @@ OBJ += \
        $(LIBRETRO_COMM_DIR)/audio/resampler/drivers/nearest_resampler.o \
        $(LIBRETRO_COMM_DIR)/audio/resampler/drivers/null_resampler.o \
        $(LIBRETRO_COMM_DIR)/utils/md5.o \
-       location/drivers/nulllocation.o \
-       camera/drivers/nullcamera.o \
        wifi/drivers/nullwifi.o \
        gfx/drivers/nullgfx.o \
        gfx/display_servers/dispserv_null.o \

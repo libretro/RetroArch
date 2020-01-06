@@ -655,7 +655,6 @@ static input_device_driver_t *joypad_drivers[] = {
    &udev_joypad,
 #endif
 #if defined(__linux) && !defined(ANDROID)
-   &ui_companion_null,
    &linuxraw_joypad,
 #endif
 #ifdef HAVE_PARPORT
@@ -716,6 +715,16 @@ static const wifi_driver_t *wifi_drivers[] = {
    NULL,
 };
 
+static location_driver_t location_null = {
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   "null",
+};
+
 static const location_driver_t *location_drivers[] = {
 #ifdef ANDROID
    &location_android,
@@ -742,6 +751,7 @@ static ui_companion_driver_t ui_companion_null = {
    NULL,
    "null",
 };
+
 
 static const ui_companion_driver_t *ui_companion_drivers[] = {
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
@@ -777,6 +787,15 @@ static midi_driver_t *midi_drivers[] = {
    &midi_winmm,
 #endif
    &midi_null
+};
+
+static camera_driver_t camera_null = {
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   "null",
 };
 
 static const camera_driver_t *camera_drivers[] = {

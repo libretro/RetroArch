@@ -1958,7 +1958,6 @@ typedef struct location_driver
 
 extern location_driver_t location_corelocation;
 extern location_driver_t location_android;
-extern location_driver_t location_null;
 
 /**
  * config_get_location_driver_options:
@@ -1999,7 +1998,6 @@ extern camera_driver_t camera_v4l2;
 extern camera_driver_t camera_android;
 extern camera_driver_t camera_rwebcam;
 extern camera_driver_t camera_avfoundation;
-extern camera_driver_t camera_null;
 
 /**
  * config_get_camera_driver_options:

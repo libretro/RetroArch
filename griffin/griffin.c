@@ -798,8 +798,6 @@ CAMERA
 #include "../cores/libretro-video-processor/video_processor_v4l2.c"
 #endif
 
-#include "../camera/drivers/nullcamera.c"
-
 /*============================================================
 LEDS
 ============================================================ */
@@ -818,8 +816,6 @@ LOCATION
 #if defined(ANDROID)
 #include "../location/drivers/android.c"
 #endif
-
-#include "../location/drivers/nulllocation.c"
 
 /*============================================================
 RSOUND
