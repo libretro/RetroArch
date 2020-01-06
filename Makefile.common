@@ -814,7 +814,6 @@ ifeq ($(HAVE_MENU_COMMON), 1)
           menu/menu_displaylist.o \
           menu/menu_animation.o \
           menu/drivers/menu_generic.o \
-          menu/drivers/null.o \
           menu/menu_thumbnail_path.o \
           menu/menu_thumbnail.o
 

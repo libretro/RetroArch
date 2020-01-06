@@ -1277,7 +1277,6 @@ MENU
 #include "../menu/menu_thumbnail_path.c"
 #include "../menu/menu_thumbnail.c"
 
-#include "../menu/drivers/null.c"
 #include "../menu/drivers/menu_generic.c"
 
 #if defined(HAVE_D3D8)
