@@ -115,10 +115,6 @@ MSG_HASH(
       "使用模擬器硬體渲染私人內容時可避免硬體在各frames時的狀態改變."
       )
 MSG_HASH(
-      MENU_ENUM_SUBLABEL_MENU_HORIZONTAL_ANIMATION,
-      "Enable horizontal animation for the menu. This will have a performance hit."
-      )
-MSG_HASH(
       MENU_ENUM_SUBLABEL_MENU_SETTINGS,
       "調整選單顯示的相關設定。"
       )
@@ -732,24 +728,6 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_Y,
       "Y鍵(左側)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_KEY,
       "(鍵: %s)") /*FIXME:"(Key: %s)"*/
-MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_LEFT,
-      "Mouse 1")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_RIGHT,
-      "Mouse 2")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_MIDDLE,
-      "Mouse 3")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_BUTTON4,
-      "Mouse 4")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_BUTTON5,
-      "Mouse 5")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_WHEEL_UP,
-      "Wheel Up")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_WHEEL_DOWN,
-      "Wheel Down")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_HORIZ_WHEEL_UP,
-      "Wheel Left")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_HORIZ_WHEEL_DOWN,
-      "Wheel Right")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE,
       "鍵盤控制器映射類型")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_MAX_USERS,
@@ -1144,8 +1122,6 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CERO_RATING,
       "CERO 分級")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_COOP,
       "多人遊戲支持")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CRC32,
-      "CRC32")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DESCRIPTION,
       "描述")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DEVELOPER,
@@ -1168,8 +1144,6 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_FRANCHISE,
       "經銷商")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_GENRE,
       "類型")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_MD5,
-      "MD5")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_NAME,
       "名稱")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ORIGIN,
@@ -1303,20 +1277,12 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS,
       "設定")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_TAB,
       "設定")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_SHADER,
-      "Shader")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SHADER_APPLY_CHANGES,
       "應用Shader修改")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SHADER_OPTIONS,
       "Shader效果")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_RIBBON,
-      "Ribbon")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_RIBBON_SIMPLIFIED,
       "Ribbon (簡化)")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_SIMPLE_SNOW,
-      "Simple Snow")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_SNOW,
-      "Snow")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SHOW_ADVANCED_SETTINGS,
       "顯示高級設定")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SHOW_HIDDEN_FILES,
@@ -1511,12 +1477,6 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_TIMEDATE_ENABLE,
       "顯示時間日期")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_TRUE,
       "真")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_UI_COMPANION_ENABLE,
-      "UI Companion Enable")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_UI_COMPANION_START_ON_BOOT,
-      "UI Companion Start On Boot")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_UI_MENUBAR_ENABLE,
-      "Menubar")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_UNABLE_TO_READ_COMPRESSED_FILE,
       "無法讀取壓縮的文件。")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_UNDO_LOAD_STATE,
@@ -2110,8 +2070,6 @@ MSG_HASH(MSG_OVERRIDES_SAVED_SUCCESSFULLY,
       "覆蓋儲存成功。")
 MSG_HASH(MSG_PAUSED,
       "暫停。")
-MSG_HASH(MSG_PROGRAM,
-      "RetroArch")
 MSG_HASH(MSG_READING_FIRST_DATA_TRACK,
       "讀取第一條數據軌...")
 MSG_HASH(MSG_RECEIVED,
@@ -2212,18 +2170,10 @@ MSG_HASH(MSG_VALUE_SHUTTING_DOWN,
       "正在關機……")
 MSG_HASH(MSG_VERSION_OF_LIBRETRO_API,
       "libretro API 版本")
-MSG_HASH(MSG_VIEWPORT_SIZE_CALCULATION_FAILED,
-      "Viewport size calculation failed! Will continue using raw data. This will probably not work right ...")
-MSG_HASH(MSG_VIRTUAL_DISK_TRAY,
-      "virtual disk tray.")
 MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
       "設定您想要的聲音延遲(毫秒). 假設預設的裝置無法支援設定值時該值可能無法成功套用.")
 MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_MUTE,
       "禁音/取消禁音。")
-MSG_HASH(
-      MENU_ENUM_SUBLABEL_AUDIO_RATE_CONTROL_DELTA,
-      "Helps smooth out imperfections in timing when synchronizing audio and video at the same time. Be aware that if disabled, proper synchronization is nearly impossible to obtain."
-      )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_CAMERA_ALLOW,
       "允許或禁止核心使用攝像頭。"
@@ -2235,10 +2185,6 @@ MSG_HASH(
 MSG_HASH(
       MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
       "RetroArch 最大遊戲支援人數"
-      )
-MSG_HASH(
-      MENU_ENUM_SUBLABEL_INPUT_POLL_TYPE_BEHAVIOR,
-      "Influence how input polling is done inside RetroArch. Setting it to 'Early' or 'Late' can result in less latency, depending on your configuration."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_INPUT_ALL_USERS_CONTROL_MENU,
@@ -2253,48 +2199,16 @@ MSG_HASH(
    "同步聲音。推薦。"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_BIND_TIMEOUT,
-   "Amount of seconds to wait until proceeding to the next bind."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_BIND_HOLD,
-   "Amount of seconds to hold an input to bind it."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_TURBO_PERIOD,
-   "Describes the period of which turbo-enabled buttons toggle. Numbers are described in frames."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_DUTY_CYCLE,
-   "Describes how long the period of a turbo-enabled button should be. Numbers are described in frames."
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VSYNC,
    "同步顯卡的視訊輸出到營幕刷新率。推薦。"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_ALLOW_ROTATE,
-   "Allow cores to set rotation. When disabled, rotation requests are ignored. Useful for setups where one manually rotates the screen."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DUMMY_ON_CORE_SHUTDOWN,
-   "Some cores might have a shutdown feature. If enabled, it will prevent the core from shutting RetroArch down. Instead, it loads a dummy core."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHECK_FOR_MISSING_FIRMWARE,
    "載入遊戲前檢查必要的韌體/BIOS是否存在."
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
-   "Vertical refresh rate of your screen. Used to calculate a suitable audio input rate. NOTE: This will be ignored if 'Threaded Video' is enabled."
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_ENABLE,
    "啟用聲音輸出。"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_MAX_TIMING_SKEW,
-   "The maximum change in audio input rate. You may want to increase this to enable very large changes in timing, for example running PAL cores on NTSC displays, at the cost of inaccurate audio pitch."
    )
 MSG_HASH(
    MSG_FAILED,
@@ -2373,16 +2287,12 @@ MSG_HASH(MSG_NETPLAY_LAN_SCANNING,
       "掃瞄連線遊戲主機...")
 MSG_HASH(MENU_ENUM_SUBLABEL_PAUSE_NONACTIVE,
       "當窗口失去焦點時暫停遊戲。")
-MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_DISABLE_COMPOSITION,
-      "Enable or disable composition.")
 MSG_HASH(MENU_ENUM_SUBLABEL_HISTORY_LIST_ENABLE,
       "為遊戲、圖片、音樂和視訊啟用/禁用歷史記錄。")
 MSG_HASH(MENU_ENUM_SUBLABEL_CONTENT_HISTORY_SIZE,
       "遊戲、圖片、音樂和視訊歷史記錄的數量限制。")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_UNIFIED_MENU_CONTROLS,
       "統一選單控制")
-MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_UNIFIED_MENU_CONTROLS,
-      "Use the same controls for both the menu and the game. Applies to the keyboard.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_FONT_ENABLE,
       "顯示營幕消息。")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETWORK_USER_REMOTE_ENABLE,
@@ -2513,10 +2423,6 @@ MSG_HASH(MENU_ENUM_SUBLABEL_XMB_MAIN_MENU_ENABLE_SETTINGS,
       "開啟 Settings tab. 必需重開機")
 MSG_HASH(MENU_ENUM_SUBLABEL_CONTENT_SHOW_SETTINGS_PASSWORD,
       "請輸入隱藏 settings tab 的密碼。事後可在選項中取消")
-MSG_HASH(MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_RENAME,
-      "Allow the user to rename entries in playlists.")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,
-      "Allow to rename entries")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CORE,
       "顯示 Load Core")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CORE,
@@ -2576,18 +2482,6 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
       "顯示 Add to Favorites")
 MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
       "顯示/隱藏 the 'Add to Favorites' option.")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_START_RECORDING,
-      "Show Start Recording")
-MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_START_RECORDING,
-      "Show/hide the 'Start Recording' option.")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_START_STREAMING,
-      "Show Start Streaming")
-MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_START_STREAMING,
-      "Show/hide the 'Start Streaming' option.")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESET_CORE_ASSOCIATION,
-      "Show Reset Core Association")
-MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESET_CORE_ASSOCIATION,
-      "Show/hide the 'Reset Core Association' option.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
       "顯示 Options")
 MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_OPTIONS,
@@ -2628,26 +2522,16 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_KIOSK_MODE_PASSWORD,
       "設定取消 Kiosk 模式的密碼")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_KIOSK_MODE_PASSWORD,
       "設定開啟 Kiosk 模式的密碼.事後可在選項中取消.")
-MSG_HASH(MSG_INPUT_KIOSK_MODE_PASSWORD,
-      "Enter Password")
 MSG_HASH(MSG_INPUT_KIOSK_MODE_PASSWORD_OK,
       "密碼正確")
 MSG_HASH(MSG_INPUT_KIOSK_MODE_PASSWORD_NOK,
       "密碼錯誤")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_AUTOMATICALLY_ADD_CONTENT_TO_PLAYLIST,
       "自動增加遊戲內容至 playlist")
-MSG_HASH(MENU_ENUM_SUBLABEL_AUTOMATICALLY_ADD_CONTENT_TO_PLAYLIST,
-      "Automatically scans loaded content so they appear inside playlists.")
 MSG_HASH(MSG_SCANNING_OF_FILE_FINISHED,
       "掃瞄檔案結束")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_QUALITY,
       "聲音重採樣器品質")
-MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_QUALITY,
-      "Lower this value to favor performance/lower latency over audio quality, increase if you want better audio quality at the expense of performance/lower latency.")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_STATISTICS_SHOW,
-      "顯示統計數字")
-MSG_HASH(MENU_ENUM_SUBLABEL_STATISTICS_SHOW,
-      "在畫面中顯示技術資訊.")
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CRT_SWITCH_X_AXIS_CENTERING,
     "X-Axis 校正中"

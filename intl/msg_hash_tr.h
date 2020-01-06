@@ -7069,14 +7069,6 @@ MSG_HASH(
     "Pencere Süslemelerini Göster"
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_STATISTICS_SHOW,
-    "İstatistikleri göster"
-    )
-MSG_HASH(
-    MENU_ENUM_SUBLABEL_STATISTICS_SHOW,
-    "Ekrandaki teknik istatistikleri göster."
-    )
-MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_RGUI_BORDER_FILLER_ENABLE,
     "Border filler"
     )

@@ -3132,5 +3132,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_YIDDISH,
    "Jiddisch"
    )
-MSG_HASH(MENU_ENUM_LABEL_VALUE_DELETE_PLAYLIST,
-      "Afspeellijst verwijderen")
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DELETE_PLAYLIST,
+   "Afspeellijst verwijderen")
