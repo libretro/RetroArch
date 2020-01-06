@@ -9,6 +9,7 @@
 - DINGUX: Initial port
 - D3D11: Block FL9_3 devices from D3D11 driver because they don't work anyway (current D3D11 driver uses SM4.0 which requires FL10_0 and up)
 - D3D11: Fallback to GL driver when D3D11 fails
+- EMSCRIPTEN: Fix assets
 - LOCALIZATION: Update Italian translation
 - LOCALIZATION: Update Polish translation
 - LOCALIZATION: Update Russian translation
