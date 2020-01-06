@@ -43,6 +43,10 @@ MSG_HASH(
    "不明なコンパイラ"
 )
 MSG_HASH(
+   MSG_NATIVE,
+   "Native"
+)
+MSG_HASH(
    MSG_DEVICE_DISCONNECTED_FROM_PORT,
    "デバイスがポートから切断されました"
 )
@@ -69,6 +73,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_UPNP_FAILED,
    "ポートマッピングに失敗しました"
+)
+MSG_HASH(
+   MSG_NO_ARGUMENTS_SUPPLIED_AND_NO_MENU_BUILTIN,
+   "No arguments supplied and no menu builtin, displaying help..."
 )
 MSG_HASH(
    MSG_SETTING_DISK_IN_TRAY,
@@ -234,6 +242,10 @@ MSG_HASH(
    "接続スロット"
 )
 MSG_HASH(
+   MSG_SORRY_UNIMPLEMENTED_CORES_DONT_DEMAND_CONTENT_NETPLAY,
+   "Sorry, unimplemented: cores that don't demand content cannot participate in netplay."
+)
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_PASSWORD,
    "パスワード"
 )
@@ -248,6 +260,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACCOUNTS_LIST,
    "アカウント"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACCOUNTS_LIST_END,
+   "Accounts List Endpoint"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACCOUNTS_RETRO_ACHIEVEMENTS,
+   "RetroAchievements"
 )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST,
@@ -545,6 +565,10 @@ MSG_HASH(
    "未解除"
 )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_SETTINGS,
+   "RetroAchievements"
+)
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_TEST_UNOFFICIAL,
    "非公式実績をテスト"
 )
@@ -601,6 +625,10 @@ MSG_HASH(
    "お気に入りの保存件数"
 )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_FAVORITES_SIZE,
+   "Limit the number of entries in the favorites playlist. Once limit is reached, new additions will be prevented until old entries are removed. Setting a value of -1 allows 'unlimited' (99999) entries. WARNING: Reducing the value will delete existing entries!"
+)
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE,
    "エントリの削除を許可"
 )
@@ -619,6 +647,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_CHEAT_OPTIONS,
    "チート"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_COUNTERS,
+   "Core Counters"
 )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_ENABLE,
@@ -877,6 +909,10 @@ MSG_HASH(
    "Create game-options file"
 )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_IN_USE,
+   "Game-options file"
+)
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP,
    "ヘルプ"
 )
@@ -1067,6 +1103,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BIND_HOLD,
    "バインド設定時のホールド期間"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_BLOCK_TIMEOUT,
+   "Input Block Timeout"
 )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DESCRIPTOR_HIDE_UNBOUND,
@@ -7246,6 +7286,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SHOW_DECORATIONS,
    "ウィンドウ枠を表示"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_STATISTICS_SHOW,
+   "統計を表示"
+)
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_STATISTICS_SHOW,
+   "技術的な統計を画面に表示します。"
 )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_BORDER_FILLER_ENABLE,

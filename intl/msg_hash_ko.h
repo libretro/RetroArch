@@ -7244,6 +7244,14 @@ MSG_HASH(
     "창 꾸밈 보이기"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_STATISTICS_SHOW,
+    "통계 표시"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_STATISTICS_SHOW,
+    "화면에 표시되는 고급 사용자용 통계를 표시합니다."
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_RGUI_BORDER_FILLER_ENABLE,
     "창 테두리 채우기 설정"
     )

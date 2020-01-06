@@ -7570,6 +7570,14 @@ MSG_HASH(
     "Mostrar decoraciones de ventanas"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_STATISTICS_SHOW,
+    "Mostrar estadísticas"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_STATISTICS_SHOW,
+    "Muestra las estadísticas técnicas en pantalla."
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_RGUI_BORDER_FILLER_ENABLE,
     "Activar relleno de borde"
     )

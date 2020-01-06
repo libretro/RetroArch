@@ -265,6 +265,10 @@ MSG_HASH(
       "Trình Camera"
       )
 MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_CHEAT,
+      "Cheat"
+      )
+MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_CHANGES,
       "Áp dụng thay đổi của Cheat"
       )
@@ -556,6 +560,8 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_SHADER_APPLY_CHANGES,
       "Áp dụng Changes")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SHOW_ADVANCED_SETTINGS,
       "Show Advanced thiết lập")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_SHOW_HIDDEN_FILES,
+      "Show Hidden Files and Folders")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SHUTDOWN,
       "Tắt Máy")
 #ifdef HAVE_LAKKA

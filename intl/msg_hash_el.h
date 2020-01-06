@@ -717,6 +717,26 @@ MSG_HASH(
     "Ευρετήρια"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_DISK_CYCLE_TRAY_STATUS,
+    "Disk Cycle Tray Status"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
+    "Disk Image Append"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_DISK_INDEX,
+    "Disk Index"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_DISK_OPTIONS,
+    "Disk Control"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_DONT_CARE,
+    "Don't care"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST,
     "Λήψεις"
     )
@@ -779,6 +799,10 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_SETTINGS,
     "Περιορισμός Καρέ"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_FRONTEND_COUNTERS,
+    "Frontend Counters"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS,
@@ -973,6 +997,14 @@ MSG_HASH(
     "Κράτημα Σύνδεσης"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_DESCRIPTOR_HIDE_UNBOUND,
+    "Hide Unbound Core Input Descriptors"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_DESCRIPTOR_LABEL_SHOW,
+    "Display Input Descriptor Labels"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_INDEX,
     "Κατάλογος Συσκευών"
     )
@@ -995,6 +1027,10 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BINDS,
     "Σύνδεση Πλήκτρων Εντολών"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_ICADE_ENABLE,
+    "Keyboard Gamepad Mapping Enable"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_A,
@@ -1101,6 +1137,10 @@ MSG_HASH(
     "Ροδέλα Δεξιά"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE,
+    "Keyboard Gamepad Mapping Type"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_MAX_USERS,
     "Μέγιστοι Χρήστες"
     )
@@ -1145,6 +1185,10 @@ MSG_HASH(
     "Γρήγορη κίνηση"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_META_FRAMEADVANCE,
+    "Frameadvance"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_META_FULLSCREEN_TOGGLE_KEY,
     "Πλήρης οθόνη"
     )
@@ -1167,6 +1211,10 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_META_MENU_TOGGLE,
     "Μενού"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_META_BSV_RECORD_TOGGLE,
+    "Input replay movie record toggle"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_META_MUTE,
@@ -1281,6 +1329,18 @@ MSG_HASH(
     "Φυσιολογικά"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_PREFER_FRONT_TOUCH,
+    "Prefer Front Touch"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_REMAPPING_DIRECTORY,
+    "Input Remapping"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE,
+    "Remap Binds Enable"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_SAVE_AUTOCONFIG,
     "Αποθήκευση Αυτόματης Διαμόρφωσης"
     )
@@ -1301,12 +1361,24 @@ MSG_HASH(
     "Ενεργοποίηση Turbo"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD,
+    "Turbo Period"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS, /* TODO/FIXME - Change User to Port */
     "Σύνδεση Πλήκτρων Εισόδου Χρήστη %u"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_LATENCY_SETTINGS,
     "Καθυστέρηση"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INTERNAL_STORAGE_STATUS,
+    "Internal storage status"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR,
+    "Input Autoconfig"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER,
@@ -1426,6 +1498,10 @@ MSG_HASH(
     MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
     "Φόρτωση Περιεχομένου"
     )
+MSG_HASH(MENU_ENUM_LABEL_VALUE_LOAD_DISC,
+      "Load Disc")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_DUMP_DISC,
+      "Dump Disc")
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_LOAD_STATE,
     "Φόρτωση Κατάστασης"
@@ -1441,6 +1517,10 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
     "Αρχείο Καταγραφής"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_LOG_VERBOSITY,
+    "Logging Verbosity"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MAIN_MENU,
@@ -1471,6 +1551,10 @@ MSG_HASH(
     "Πράσινο"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_NVIDIA_SHIELD,
+    "Shield"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_RED,
     "Κόκκινο"
     )
@@ -1479,8 +1563,32 @@ MSG_HASH(
     "Κίτρινο"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_FOOTER_OPACITY,
+    "Footer Opacity"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_HEADER_OPACITY,
+    "Header Opacity"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
     "Οδηγός Μενού"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE,
+    "Throttle Menu Framerate"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
+    "File Browser"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_LINEAR_FILTER,
+    "Menu Linear Filter"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_HORIZONTAL_ANIMATION,
+    "Horizontal Animation"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_SETTINGS,
@@ -1491,8 +1599,16 @@ MSG_HASH(
     "Φόντο"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER_OPACITY,
+    "Background opacity"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MISSING,
     "Λείπει"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MORE,
+    "..."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MOUSE_ENABLE,
@@ -1511,8 +1627,40 @@ MSG_HASH(
     "Φιλτράρισμα άγνωστων επεκτάσεων"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NAVIGATION_WRAPAROUND,
+    "Navigation Wrap-Around"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NEAREST,
     "Κοντινότερο"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NETPLAY,
+    "Netplay"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_SLAVES,
+    "Allow Slave-Mode Clients"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NETPLAY_CHECK_FRAMES,
+    "Netplay Check Frames"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
+    "Input Latency Frames"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
+    "Input Latency Frames Range"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NETPLAY_DELAY_FRAMES,
+    "Netplay Delay Frames"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NETPLAY_DISCONNECT,
+    "Disconnect from netplay host"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE,
@@ -1539,6 +1687,10 @@ MSG_HASH(
     "Σάρωση τοπικού δικτύου Scan local network"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NETPLAY_MODE,
+    "Netplay Client Enable"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NETPLAY_NICKNAME,
     "Όνομα Χρήστη"
     )
@@ -1551,8 +1703,20 @@ MSG_HASH(
     "Δημόσια Ανακοίνωση Netplay"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NETPLAY_REQUEST_DEVICE_I,
+    "Request Device %u"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NETPLAY_REQUIRE_SLAVES,
+    "Disallow Non-Slave-Mode Clients"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NETPLAY_SETTINGS,
     "Ρυθμίσεις Netplay"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_ANALOG,
+    "Analog Input Sharing"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_ANALOG_MAX,
@@ -1563,8 +1727,16 @@ MSG_HASH(
     "Μέσος Όρος"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_DIGITAL,
+    "Digital Input Sharing"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_DIGITAL_OR,
     "Κοινοποίηση"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_DIGITAL_XOR,
+    "Grapple"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_DIGITAL_VOTE,
@@ -1577,6 +1749,38 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_NO_PREFERENCE,
     "Καμία προτίμηση"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NETPLAY_START_AS_SPECTATOR,
+    "Netplay Spectator Mode"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NETPLAY_STATELESS_MODE,
+    "Netplay Stateless Mode"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NETPLAY_SPECTATE_PASSWORD,
+    "Server Spectate-Only Password"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NETPLAY_SPECTATOR_MODE_ENABLE,
+    "Netplay Spectator Enable"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NETPLAY_TCP_UDP_PORT,
+    "Netplay TCP Port"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NETPLAY_NAT_TRAVERSAL,
+    "Netplay NAT Traversal"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NETWORK_CMD_ENABLE,
+    "Network Commands"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NETWORK_CMD_PORT,
+    "Network Command Port"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NETWORK_INFORMATION,
@@ -1651,6 +1855,10 @@ MSG_HASH(
     "Δεν βρέθηκαν δίκτυα."
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NO_PERFORMANCE_COUNTERS,
+    "No performance counters."
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NO_PLAYLISTS,
     "Δεν βρέθηκαν λίστες αναπαραγωγής."
     )
@@ -1665,6 +1873,18 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NO_SHADER_PARAMETERS,
     "Δεν βρέθηκαν παράμετροι σκίασης."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_OFF,
+    "OFF"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_ON,
+    "ON"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_ONLINE,
+    "Online"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER,
@@ -1743,6 +1963,10 @@ MSG_HASH(
     "Μην εκτελείτε στο παρασκήνιο"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PERFCNT_ENABLE,
+    "Performance Counters"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB,
     "Λίστες Αναπαραγωγής"
     )
@@ -1755,12 +1979,52 @@ MSG_HASH(
     "Λίστες Αναπαραγωγής"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE,
+    "Label Display Mode"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE,
+    "Change how the content labels are displayed in this playlist."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_DEFAULT,
+    "Show full labels"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_REMOVE_PARENS,
+    "Remove () content"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_REMOVE_BRACKETS,
+    "Remove [] content"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_REMOVE_PARENS_AND_BRACKETS,
+    "Remove () and []"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_KEEP_REGION,
+    "Keep region"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_KEEP_DISC_INDEX,
+    "Keep disc index"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_KEEP_REGION_AND_DISC_INDEX,
+    "Keep region and disc index"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_POINTER_ENABLE,
     "Υποστήριξη Αφής"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PORT,
     "Θύρα"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PRESENT,
+    "Present"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PRIVACY_SETTINGS,
@@ -1773,6 +2037,110 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
     "Έξοδος από RetroArch"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ANALOG,
+    "Analog supported"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_BBFC_RATING,
+    "BBFC Rating"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CERO_RATING,
+    "CERO Rating"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_COOP,
+    "Co-op supported"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CRC32,
+    "CRC32"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DESCRIPTION,
+    "Description"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DEVELOPER,
+    "Developer"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_ISSUE,
+    "Edge Magazine Issue"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_RATING,
+    "Edge Magazine Rating"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_REVIEW,
+    "Edge Magazine Review"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ELSPA_RATING,
+    "ELSPA Rating"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ENHANCEMENT_HW,
+    "Enhancement Hardware"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ESRB_RATING,
+    "ESRB Rating"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_FAMITSU_MAGAZINE_RATING,
+    "Famitsu Magazine Rating"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_FRANCHISE,
+    "Franchise"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_GENRE,
+    "Genre"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_MD5,
+    "MD5"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_NAME,
+    "Όνομα"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ORIGIN,
+    "Origin"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PEGI_RATING,
+    "PEGI Rating"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PUBLISHER,
+    "Publisher"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH,
+    "Releasedate Month"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_YEAR,
+    "Releasedate Year"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RUMBLE,
+    "Rumble supported"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SERIAL,
+    "Serial"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SHA1,
+    "SHA1"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RDB_ENTRY_START_CONTENT,
@@ -1827,6 +2195,38 @@ MSG_HASH(
     "Αποθήκευση Εγγραφών στο Ευρετήριο Εξαγωγής"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_REMAP_FILE,
+    "Remap File"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_REMAP_FILE_LOAD,
+    "Load Remap File"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_CORE,
+    "Save Core Remap File"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_CONTENT_DIR,
+    "Save Content Directory Remap File"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_GAME,
+    "Save Game Remap File"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_CORE,
+    "Delete Core Remap File"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_GAME,
+    "Delete Game Remap File"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_CONTENT_DIR,
+    "Delete Game Content Directory Remap File"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_REQUIRED,
     "Απαραίτητο"
     )
@@ -1845,6 +2245,14 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RESUME_CONTENT,
     "Συνέχιση"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RETROKEYBOARD,
+    "RetroKeyboard"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RETROPAD,
+    "RetroPad"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RETROPAD_WITH_ANALOG,
@@ -1941,8 +2349,40 @@ MSG_HASH(
     "Αρχείο Αποθήκευσης"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX,
+    "Save State Auto Index"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD,
+    "Auto Load State"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
+    "Auto Save State"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SAVESTATE_DIRECTORY,
+    "Savestate"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SAVESTATE_THUMBNAIL_ENABLE,
+    "Savestate Thumbnails"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG,
     "Αποθήκευση Τρέχουσας Διαμόρφωσης"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
+    "Save Core Overrides"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
+    "Save Content Directory Overrides"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
+    "Save Game Overrides"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SAVE_NEW_CONFIG,
@@ -2031,6 +2471,50 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SHUTDOWN,
     "Τερματισμός"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SLOWMOTION_RATIO,
+    "Slow-Motion Ratio"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_ENABLED,
+    "Run-Ahead to Reduce Latency"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_FRAMES,
+    "Number of Frames to Run Ahead"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_SECONDARY_INSTANCE,
+    "RunAhead Use Second Instance"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_HIDE_WARNINGS,
+    "RunAhead Hide Warnings"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_ENABLE,
+    "Sort Saves In Folders"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_ENABLE,
+    "Sort Savestates In Folders"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SAVESTATES_IN_CONTENT_DIR_ENABLE,
+    "Write Savestates to Content Dir"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SAVEFILES_IN_CONTENT_DIR_ENABLE,
+    "Write Saves to Content Dir"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SYSTEMFILES_IN_CONTENT_DIR_ENABLE,
+    "System Files are in Content Dir"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,
+    "Write Screenshots to Content Dir"
     )
 #ifdef HAVE_LAKKA
 MSG_HASH(
@@ -2379,6 +2863,10 @@ MSG_HASH(
     "Σκίτσα Αριστερά"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_XMB_VERTICAL_THUMBNAILS,
+    "Thumbnails Vertical Disposition"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_THUMBNAILS_DIRECTORY,
     "Σκίτσα"
     )
@@ -2445,6 +2933,14 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_TRUE,
     "Αληθές"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_UI_COMPANION_ENABLE,
+    "UI Companion Enable"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_UI_COMPANION_START_ON_BOOT,
+    "UI Companion Start On Boot"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_UI_COMPANION_TOGGLE,
@@ -2523,6 +3019,10 @@ MSG_HASH(
     "Χρήστης"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_KEYBOARD,
+    "Kbd"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_USER_INTERFACE_SETTINGS,
     "Διεπαφή Χρήστη"
     )
@@ -2569,6 +3069,10 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_CROP_OVERSCAN,
     "Περικοπή Υπερσάρωσης (Επαναφόρτωση)"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION,
+    "Disable Desktop Composition"
     )
 #if defined(_3DS)
 MSG_HASH(
@@ -2657,6 +3161,10 @@ MSG_HASH(
     "Ένδειξη Οθόνης"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_POST_FILTER_RECORD,
+    "Use Post Filter Recording"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE,
     "Κάθετος Ρυθμός Ανανέωσης"
     )
@@ -2689,6 +3197,38 @@ MSG_HASH(
     "Σκίαση Βίντεο"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_NUM_PASSES,
+    "Shader Passes"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PARAMETERS,
+    "Shader Parameters"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET,
+    "Load Shader Preset"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS,
+    "Save Shader Preset As"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_CORE,
+    "Save Core Preset"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_PARENT,
+    "Save Content Directory Preset"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_GAME,
+    "Save Game Preset"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_SHARED_CONTEXT,
+    "Enable Hardware Shared Context"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
     "Διγραμμικό Φιλτράρισμα"
     )
@@ -2703,6 +3243,14 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_TAB,
     "Βίντεο"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_THREADED,
+    "Threaded Video"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_VFILTER,
+    "Deflicker"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
@@ -2723,6 +3271,10 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_VI_WIDTH,
     "Ορισμός Πλάτους Οθόνης VI"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
+    "Vertical Sync (Vsync)"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
@@ -2749,6 +3301,14 @@ MSG_HASH(
     "Οδηγός Wi-Fi"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_WIFI_SETTINGS,
+    "Wi-Fi"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_XMB_ALPHA_FACTOR,
+    "Menu Alpha Factor"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_RED,
     "Γραμματοσειρά Μενού Κόκκινο Χρώμα"
     )
@@ -2765,12 +3325,48 @@ MSG_HASH(
     "Γραμματοσειρά Μενού"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_CUSTOM,
+    "Custom"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_FLATUI,
+    "FlatUI"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_MONOCHROME,
     "Μονόχρωμο"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_MONOCHROME_INVERTED,
     "Μονόχρωμο Ανεστραμμένο"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_SYSTEMATIC,
+    "Systematic"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_NEOACTIVE,
+    "NeoActive"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_PIXEL,
+    "Pixel"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_RETROACTIVE,
+    "RetroActive"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_RETROSYSTEM,
+    "Retrosystem"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_DOTART,
+    "Dot-Art"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_AUTOMATIC,
+    "Automatic"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME,
@@ -2825,6 +3421,18 @@ MSG_HASH(
     "Ηφαιστιακό Κόκκινο"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_SUNBEAM,
+    "Sunbeam"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_XMB_RIBBON_ENABLE,
+    "Menu Shader Pipeline"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_SCALE_FACTOR,
+    "Menu Scale Factor"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_XMB_SHADOWS_ENABLE,
     "Ενεργοποίηση Σκιών Εικονιδίων"
     )
@@ -2877,8 +3485,36 @@ MSG_HASH(
     "Ναι"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_TWO,
+    "Shader Preset"
+    )
+MSG_HASH(
     MENU_ENUM_SUBLABEL_CHEEVOS_ENABLE,
     "Ενεργοποίηση ή απενεργοποίηση επιτευγμάτων. Για περισσότερες πληροφορίες επισκεφθείτε http://retroachievements.org"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEEVOS_TEST_UNOFFICIAL,
+    "Enable or disable unofficial achievements and/or beta features for testing purposes."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEEVOS_HARDCORE_MODE_ENABLE,
+    "Enable or disable savestates, cheats, rewind, pause, and slow-motion for all games."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEEVOS_LEADERBOARDS_ENABLE,
+    "Enable or disable in-game leaderboards. Has no effect if Hardcore Mode is disabled."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEEVOS_BADGES_ENABLE,
+    "Enable or disable badge display in the Achievement List."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEEVOS_VERBOSE_ENABLE,
+    "Enable or disable OSD verbosity for achievements."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEEVOS_AUTO_SCREENSHOT,
+    "Automatically take a screenshot when an achievement is triggered."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_DRIVER_SETTINGS,
@@ -3014,6 +3650,26 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_ONLINE_UPDATER,
     "Κατεβάστε πρόσθετα, στοιχεία και περιεχόμενο για το RetroArch."
     )
+#ifdef HAVE_LAKKA
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SAMBA_ENABLE,
+    "Enable or disable network sharing of your folders."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SERVICES_SETTINGS,
+    "Manage operating system level services."
+    )
+#endif
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SHOW_HIDDEN_FILES,
+    "Show hidden files/directories inside the file browser."
+    )
+#ifdef HAVE_LAKKA
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SSH_ENABLE,
+    "Enable or disable remote command line access."
+    )
+#endif
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SUSPEND_SCREENSAVER_ENABLE,
     "Αποτρέπει την προφύλαξη οθόνης του συστήματος από το να ενεργοποιηθεί."
@@ -3099,8 +3755,136 @@ MSG_HASH(
     "Ο ήχος ενεργοποιήθηκε."
     )
 MSG_HASH(
+    MSG_AUTOCONFIG_FILE_ERROR_SAVING,
+    "Error saving autoconf file."
+    )
+MSG_HASH(
+    MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY,
+    "Autoconfig file saved successfully."
+    )
+MSG_HASH(
+    MSG_AUTOSAVE_FAILED,
+    "Could not initialize autosave."
+    )
+MSG_HASH(
+    MSG_AUTO_SAVE_STATE_TO,
+    "Auto save state to"
+    )
+MSG_HASH(
+    MSG_BLOCKING_SRAM_OVERWRITE,
+    "Blocking SRAM Overwrite"
+    )
+MSG_HASH(
+    MSG_BRINGING_UP_COMMAND_INTERFACE_ON_PORT,
+    "Bringing up command interface on port"
+    )
+MSG_HASH(
+    MSG_BYTES,
+    "bytes"
+    )
+MSG_HASH(
+    MSG_CANNOT_INFER_NEW_CONFIG_PATH,
+    "Cannot infer new config path. Use current time."
+    )
+MSG_HASH(
+    MSG_CHEEVOS_HARDCORE_MODE_ENABLE,
+    "Achievements Hardcore Mode Enabled, savestate & rewind were disabled."
+    )
+MSG_HASH(
+    MSG_COMPARING_WITH_KNOWN_MAGIC_NUMBERS,
+    "Comparing with known magic numbers..."
+    )
+MSG_HASH(
+    MSG_COMPILED_AGAINST_API,
+    "Compiled against API"
+    )
+MSG_HASH(
+    MSG_CONFIG_DIRECTORY_NOT_SET,
+    "Config directory not set. Cannot save new config."
+    )
+MSG_HASH(
     MSG_CONNECTED_TO,
     "Συνδέθηκε με"
+    )
+MSG_HASH(
+    MSG_CONTENT_CRC32S_DIFFER,
+    "Content CRC32s differ. Cannot use different games."
+    )
+MSG_HASH(
+    MSG_CONTENT_LOADING_SKIPPED_IMPLEMENTATION_WILL_DO_IT,
+    "Content loading skipped. Implementation will load it on its own."
+    )
+MSG_HASH(
+    MSG_CORE_DOES_NOT_SUPPORT_SAVESTATES,
+    "Core does not support save states."
+    )
+MSG_HASH(
+    MSG_CORE_OPTIONS_FILE_CREATED_SUCCESSFULLY,
+    "Core options file created successfully."
+    )
+MSG_HASH(
+    MSG_COULD_NOT_FIND_ANY_NEXT_DRIVER,
+    "Could not find any next driver"
+    )
+MSG_HASH(
+    MSG_COULD_NOT_FIND_COMPATIBLE_SYSTEM,
+    "Could not find compatible system."
+    )
+MSG_HASH(
+    MSG_COULD_NOT_FIND_VALID_DATA_TRACK,
+    "Could not find valid data track"
+    )
+MSG_HASH(
+    MSG_COULD_NOT_OPEN_DATA_TRACK,
+    "could not open data track"
+    )
+MSG_HASH(
+    MSG_COULD_NOT_READ_CONTENT_FILE,
+    "Could not read content file"
+    )
+MSG_HASH(
+    MSG_COULD_NOT_READ_MOVIE_HEADER,
+    "Could not read movie header."
+    )
+MSG_HASH(
+    MSG_COULD_NOT_READ_STATE_FROM_MOVIE,
+    "Could not read state from movie."
+    )
+MSG_HASH(
+    MSG_CRC32_CHECKSUM_MISMATCH,
+    "CRC32 checksum mismatch between content file and saved content checksum in replay file header. Replay highly likely to desync on playback."
+    )
+MSG_HASH(
+    MSG_CUSTOM_TIMING_GIVEN,
+    "Custom timing given"
+    )
+MSG_HASH(
+    MSG_DECOMPRESSION_ALREADY_IN_PROGRESS,
+    "Decompression already in progress."
+    )
+MSG_HASH(
+    MSG_DECOMPRESSION_FAILED,
+    "Decompression failed."
+    )
+MSG_HASH(
+    MSG_DETECTED_VIEWPORT_OF,
+    "Detected viewport of"
+    )
+MSG_HASH(
+    MSG_DID_NOT_FIND_A_VALID_CONTENT_PATCH,
+    "Did not find a valid content patch."
+    )
+MSG_HASH(
+    MSG_DISCONNECT_DEVICE_FROM_A_VALID_PORT,
+    "Disconnect device from a valid port."
+    )
+MSG_HASH(
+    MSG_DISK_CLOSED,
+    "Closed"
+    )
+MSG_HASH(
+    MSG_DISK_EJECTED,
+    "Ejected"
     )
 MSG_HASH(
     MSG_DOWNLOADING,
@@ -3171,24 +3955,204 @@ MSG_HASH(
     "σε megabytes"
     )
 MSG_HASH(
+    MSG_LIBRETRO_ABI_BREAK,
+    "is compiled against a different version of libretro than this libretro implementation."
+    )
+MSG_HASH(
+    MSG_LIBRETRO_FRONTEND,
+    "Frontend for libretro"
+    )
+MSG_HASH(
+    MSG_LOADED_STATE_FROM_SLOT,
+    "Loaded state from slot #%d."
+    )
+MSG_HASH(
+    MSG_LOADED_STATE_FROM_SLOT_AUTO,
+    "Loaded state from slot #-1 (auto)."
+    )
+MSG_HASH(
     MSG_LOADING,
     "Γίνεται φόρτωση"
+    )
+MSG_HASH(
+    MSG_FIRMWARE,
+    "One or more firmware files are missing"
+    )
+MSG_HASH(
+    MSG_LOADING_CONTENT_FILE,
+    "Loading content file"
+    )
+MSG_HASH(
+    MSG_LOADING_HISTORY_FILE,
+    "Loading history file"
+    )
+MSG_HASH(
+    MSG_LOADING_STATE,
+    "Loading state"
     )
 MSG_HASH(
     MSG_MEMORY,
     "Μνήμη"
     )
 MSG_HASH(
+    MSG_MOVIE_FILE_IS_NOT_A_VALID_BSV1_FILE,
+    "Input replay movie file is not a valid BSV1 file."
+    )
+MSG_HASH(
+    MSG_MOVIE_FORMAT_DIFFERENT_SERIALIZER_VERSION,
+    "Input replay movie format seems to have a different serializer version. Will most likely fail."
+    )
+MSG_HASH(
+    MSG_MOVIE_PLAYBACK_ENDED,
+    "Input replay movie playback ended."
+    )
+MSG_HASH(
+    MSG_MOVIE_RECORD_STOPPED,
+    "Stopping movie record."
+    )
+MSG_HASH(
+    MSG_NETPLAY_FAILED,
+    "Failed to initialize netplay."
+    )
+MSG_HASH(
+    MSG_NO_CONTENT_STARTING_DUMMY_CORE,
+    "No content, starting dummy core."
+    )
+MSG_HASH(
+    MSG_NO_SAVE_STATE_HAS_BEEN_OVERWRITTEN_YET,
+    "No save state has been overwritten yet."
+    )
+MSG_HASH(
+    MSG_NO_STATE_HAS_BEEN_LOADED_YET,
+    "No state has been loaded yet."
+    )
+MSG_HASH(
+    MSG_OVERRIDES_ERROR_SAVING,
+    "Error saving overrides."
+    )
+MSG_HASH(
+    MSG_OVERRIDES_SAVED_SUCCESSFULLY,
+    "Overrides saved successfully."
+    )
+MSG_HASH(
     MSG_PAUSED,
     "Παύση."
+    )
+MSG_HASH(
+    MSG_PROGRAM,
+    "RetroArch"
+    )
+MSG_HASH(
+    MSG_READING_FIRST_DATA_TRACK,
+    "Reading first data track..."
     )
 MSG_HASH(
     MSG_RECEIVED,
     "ελήφθη"
     )
 MSG_HASH(
+    MSG_RECORDING_TERMINATED_DUE_TO_RESIZE,
+    "Recording terminated due to resize."
+    )
+MSG_HASH(
     MSG_RECORDING_TO,
     "Εγγραφή σε"
+    )
+MSG_HASH(
+    MSG_REDIRECTING_CHEATFILE_TO,
+    "Redirecting cheat file to"
+    )
+MSG_HASH(
+    MSG_REDIRECTING_SAVEFILE_TO,
+    "Redirecting save file to"
+    )
+MSG_HASH(
+    MSG_REDIRECTING_SAVESTATE_TO,
+    "Redirecting savestate to"
+    )
+MSG_HASH(
+    MSG_REMAP_FILE_SAVED_SUCCESSFULLY,
+    "Remap file saved successfully."
+    )
+MSG_HASH(
+    MSG_REMAP_FILE_REMOVED_SUCCESSFULLY,
+    "Remap file removed successfully."
+    )
+MSG_HASH(
+    MSG_REMOVED_DISK_FROM_TRAY,
+    "Removed disk from tray."
+    )
+MSG_HASH(
+    MSG_REMOVING_TEMPORARY_CONTENT_FILE,
+    "Removing temporary content file"
+    )
+MSG_HASH(
+    MSG_RESET,
+    "Reset"
+    )
+MSG_HASH(
+    MSG_RESTARTING_RECORDING_DUE_TO_DRIVER_REINIT,
+    "Restarting recording due to driver reinit."
+    )
+MSG_HASH(
+    MSG_RESTORED_OLD_SAVE_STATE,
+    "Restored old save state."
+    )
+MSG_HASH(
+    MSG_RESTORING_DEFAULT_SHADER_PRESET_TO,
+    "Shaders: restoring default shader preset to"
+    )
+MSG_HASH(
+    MSG_REVERTING_SAVEFILE_DIRECTORY_TO,
+    "Reverting savefile directory to"
+    )
+MSG_HASH(
+    MSG_REVERTING_SAVESTATE_DIRECTORY_TO,
+    "Reverting savestate directory to"
+    )
+MSG_HASH(
+    MSG_REWINDING,
+    "Rewinding."
+    )
+MSG_HASH(
+    MSG_REWIND_INIT,
+    "Initializing rewind buffer with size"
+    )
+MSG_HASH(
+    MSG_REWIND_INIT_FAILED,
+    "Failed to initialize rewind buffer. Rewinding will be disabled."
+    )
+MSG_HASH(
+    MSG_REWIND_INIT_FAILED_THREADED_AUDIO,
+    "Implementation uses threaded audio. Cannot use rewind."
+    )
+MSG_HASH(
+    MSG_REWIND_REACHED_END,
+    "Reached end of rewind buffer."
+    )
+MSG_HASH(
+    MSG_SAVED_NEW_CONFIG_TO,
+    "Saved new config to"
+    )
+MSG_HASH(
+    MSG_SAVED_STATE_TO_SLOT,
+    "Saved state to slot #%d."
+    )
+MSG_HASH(
+    MSG_SAVED_STATE_TO_SLOT_AUTO,
+    "Saved state to slot #-1 (auto)."
+    )
+MSG_HASH(
+    MSG_SAVED_SUCCESSFULLY_TO,
+    "Saved successfully to"
+    )
+MSG_HASH(
+    MSG_SAVING_RAM_TYPE,
+    "Saving RAM type"
+    )
+MSG_HASH(
+    MSG_SAVING_STATE,
+    "Saving state"
     )
 MSG_HASH(
     MSG_SCANNING,
@@ -3203,8 +4167,20 @@ MSG_HASH(
     "Αποστολή εντολής"
     )
 MSG_HASH(
+    MSG_SEVERAL_PATCHES_ARE_EXPLICITLY_DEFINED,
+    "Several patches are explicitly defined, ignoring all..."
+    )
+MSG_HASH(
     MSG_SHADER,
     "Σκίαση"
+    )
+MSG_HASH(
+    MSG_SHADER_PRESET_SAVED_SUCCESSFULLY,
+    "Shader preset saved successfully."
+    )
+MSG_HASH(
+    MSG_SKIPPING_SRAM_LOAD,
+    "Skipping SRAM load."
     )
 MSG_HASH(
     MSG_SLOW_MOTION,
@@ -3215,8 +4191,72 @@ MSG_HASH(
     "Γρήγορη κίνηση."
     )
 MSG_HASH(
+    MSG_SLOW_MOTION_REWIND,
+    "Slow motion rewind."
+    )
+MSG_HASH(
+    MSG_SRAM_WILL_NOT_BE_SAVED,
+    "SRAM will not be saved."
+    )
+MSG_HASH(
+    MSG_STARTING_MOVIE_PLAYBACK,
+    "Starting movie playback."
+    )
+MSG_HASH(
+    MSG_STARTING_MOVIE_RECORD_TO,
+    "Starting movie record to"
+    )
+MSG_HASH(
+    MSG_STATE_SIZE,
+    "State size"
+    )
+MSG_HASH(
+    MSG_STATE_SLOT,
+    "State slot"
+    )
+MSG_HASH(
+    MSG_TAKING_SCREENSHOT,
+    "Taking screenshot."
+    )
+MSG_HASH(
+    MSG_TO,
+    "to"
+    )
+MSG_HASH(
+    MSG_UNDID_LOAD_STATE,
+    "Undid load state."
+    )
+MSG_HASH(
+    MSG_UNDOING_SAVE_STATE,
+    "Undoing save state"
+    )
+MSG_HASH(
     MSG_UNKNOWN,
     "Άγνωστο"
+    )
+MSG_HASH(
+    MSG_UNPAUSED,
+    "Unpaused."
+    )
+MSG_HASH(
+    MSG_UNRECOGNIZED_COMMAND,
+    "Unrecognized command"
+    )
+MSG_HASH(
+    MSG_USING_CORE_NAME_FOR_NEW_CONFIG,
+    "Using core name for new config."
+    )
+MSG_HASH(
+    MSG_USING_LIBRETRO_DUMMY_CORE_RECORDING_SKIPPED,
+    "Using libretro dummy core. Skipping recording."
+    )
+MSG_HASH(
+    MSG_VALUE_CONNECT_DEVICE_FROM_A_VALID_PORT,
+    "Connect device from a valid port."
+    )
+MSG_HASH(
+    MSG_VALUE_DISCONNECTING_DEVICE_FROM_PORT,
+    "Disconnecting device from port"
     )
 MSG_HASH(
     MSG_VALUE_REBOOTING,
@@ -3231,12 +4271,32 @@ MSG_HASH(
     "Έκδοση του libretro API"
     )
 MSG_HASH(
+    MSG_VIEWPORT_SIZE_CALCULATION_FAILED,
+    "Viewport size calculation failed! Will continue using raw data. This will probably not work right ..."
+    )
+MSG_HASH(
+    MSG_VIRTUAL_DISK_TRAY,
+    "virtual disk tray."
+    )
+MSG_HASH(
     MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
     "Επιθυμητή καθυστέρηση ήχου σε milliseconds. Ίσως να μην τηρηθεί εάν ο οδηγός ήχου δεν μπορεί να παρέχει την επιλεγμένη καθυστέρηση."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_AUDIO_MUTE,
     "Σίγαση/κατάργηση σίγασης ήχου."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_AUDIO_RATE_CONTROL_DELTA,
+    "Helps smooth out imperfections in timing when synchronizing audio and video. Be aware that if disabled, proper synchronization is nearly impossible to obtain."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CAMERA_ALLOW,
+    "Allow or disallow camera access by cores."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_LOCATION_ALLOW,
+    "Allow or disallow location services access by cores."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
@@ -3253,6 +4313,18 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_SUBLABEL_AUDIO_VOLUME,
     "Ένταση ήχου (σε dB). Το 0 είναι η φυσιολογική ένταση και δεν εφαρμόζεται gain."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_AUDIO_WASAPI_EXCLUSIVE_MODE,
+    "Allow the WASAPI driver to take exclusive control of the audio device. If disabled, it will use shared mode instead."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_AUDIO_WASAPI_FLOAT_FORMAT,
+    "Use float format for the WASAPI driver, if supported by your audio device."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_AUDIO_WASAPI_SH_BUFFER_LENGTH,
+    "The intermediate buffer length (in frames) when using the WASAPI driver in shared mode."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_AUDIO_SYNC,
@@ -3348,6 +4420,22 @@ MSG_HASH(
     "Κλίμακα"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NETPLAY_START_WHEN_LOADED,
+    "Netplay will start when content is loaded."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NETPLAY_LOAD_CONTENT_MANUALLY,
+    "Couldn't find a suitable core or content file, load manually."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_BROWSE_URL_LIST,
+    "Browse URL"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_BROWSE_URL,
+    "URL Path"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_BROWSE_START,
     "Έναρξη"
     )
@@ -3433,6 +4521,26 @@ MSG_HASH(
     "Ορίστε το προτιμώμενο ύψος του παραθύρου απεικόνισης. Αφήνοντας το στο 0 θα επιχειρηθεί η κλίμακα του παραθύρου να είναι όσο το δυνατόν μεγαλύτερη."
     )
 MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
+    "Set the custom width size for the non-windowed fullscreen mode. Leaving it unset will use the desktop resolution."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
+    "Set the custom height size for the non-windowed fullscreen mode. Leaving it unset will use the desktop resolution."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_POS_X,
+    "Specify custom X axis position for onscreen text."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_POS_Y,
+    "Specify custom Y axis position for onscreen text."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_FONT_SIZE,
+    "Specify the font size in points."
+    )
+MSG_HASH(
     MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_IN_MENU,
     "Απόκρυψη του επικαλλύματος μέσα στο μενού και εμφάνιση του ξανά με την έξοδο από το μενού."
     )
@@ -3453,6 +4561,18 @@ MSG_HASH(
     "Αλλαγή κλίμακας βίντεο σε ακέραια βήματα. Το βασικό μέγεθος εξαρτάται από την γεωμετρία και την κλίμακα οθόνης του συστήματος. Εάν η 'Εξαναγκασμένη Κλίμακα' δεν έχει οριστεί, οι άξωνες X/Y θα αλλάζουν κλίμακα ξεχωριστά."
     )
 MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
+    "Screenshots output of GPU shaded material if available."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_ROTATION,
+    "Forces a certain rotation of the screen. The rotation is added to rotations which the core sets."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_FORCE_SRGB_DISABLE,
+    "Forcibly disable sRGB FBO support. Some Intel OpenGL drivers on Windows have video problems with sRGB FBO support if this is enabled. Enabling this can work around it."
+    )
+MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
     "Έναρξη σε πλήρη οθόνη. Μπορεί να αλλάξει κατά την εκτέλεση. Μπορεί να παρακαμπτεί από έναν διακόπτη γραμμής τερματικού."
     )
@@ -3461,8 +4581,92 @@ MSG_HASH(
     "Εάν χρησιμοποιηθεί πλήρης οθόνη προτιμήστε την κατάσταση παραθύρου πλήρης οθόνης."
     )
 MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_GPU_RECORD,
+    "Records output of GPU shaded material if available."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_INDEX,
+    "When making a savestate, save state index is automatically increased before it is saved. When loading content, the index will be set to the highest existing index."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_BLOCK_SRAM_OVERWRITE,
+    "Block Save RAM from being overwritten when loading save states. Might potentially lead to buggy games."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_FASTFORWARD_RATIO,
+    "The maximum rate at which content will be run when using fast forward (e.g., 5.0x for 60 fps content = 300 fps cap). If set to 0.0x, fastforward ratio is unlimited (no FPS cap)."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SLOWMOTION_RATIO,
+    "When in slow motion, content will slow down by the factor specified/set."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_RUN_AHEAD_ENABLED,
+    "Run core logic one or more frames ahead then load the state back to reduce perceived input lag."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_RUN_AHEAD_FRAMES,
+    "The number of frames to run ahead. Causes gameplay issues such as jitter if you exceed the number of lag frames internal to the game."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_RUN_AHEAD_SECONDARY_INSTANCE,
+    "Use a second instance of the RetroArch core to run ahead. Prevents audio problems due to loading state."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_RUN_AHEAD_HIDE_WARNINGS,
+    "Hides the warning message that appears when using RunAhead and the core does not support savestates."
+    )
+MSG_HASH(
     MENU_ENUM_SUBLABEL_REWIND_ENABLE,
     "Ενεργοποίηση επιστροφής. Η επίδοση θα πέσει κατά το παιχνίδι."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEAT_APPLY_AFTER_TOGGLE,
+    "Apply cheat immediately after toggling."
+)
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEAT_APPLY_AFTER_LOAD,
+    "Auto-apply cheats when game loads."
+)
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEAT_REPEAT_COUNT,
+    "The number of times the cheat will be applied.  Use with the other two Iteration options to affect large areas of memory."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEAT_REPEAT_ADD_TO_ADDRESS,
+    "After each 'Number of Iterations' the Memory Address will be increased by this number times the 'Memory Search Size'."
+)
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEAT_REPEAT_ADD_TO_VALUE,
+    "After each 'Number of Iterations' the Value will be increased by this amount."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_REWIND_GRANULARITY,
+    "When rewinding a defined number of frames, you can rewind several frames at a time, increasing the rewind speed."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_REWIND_BUFFER_SIZE,
+    "The amount of memory (in MB) to reserve for the rewind buffer.  Increasing this will increase the amount of rewind history."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_REWIND_BUFFER_SIZE_STEP,
+    "Each time you increase or decrease the rewind buffer size value via this UI it will change by this amount"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEAT_IDX,
+    "Index position in list."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEAT_ADDRESS_BIT_POSITION,
+    "Address bitmask when Memory Search Size < 8-bit."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEAT_MATCH_IDX,
+    "Select the match to view."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEAT_START_OR_CONT,
+    ""
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CHEAT_START_OR_RESTART,
@@ -3473,12 +4677,105 @@ MSG_HASH(
     "Αριστερά/Δεξιά για αλλαγή τιμής"
     )
 MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEAT_SEARCH_LT,
+    ""
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEAT_SEARCH_GT,
+    ""
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEAT_SEARCH_LTE,
+    ""
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEAT_SEARCH_GTE,
+    ""
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEAT_SEARCH_EQ,
+    ""
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEAT_SEARCH_NEQ,
+    ""
+    )
+MSG_HASH(
     MENU_ENUM_SUBLABEL_CHEAT_SEARCH_EQPLUS,
     "Αριστερά/Δεξιά για αλλαγή τιμής"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CHEAT_SEARCH_EQMINUS,
     "Αριστερά/Δεξιά για αλλαγή τιμής"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEAT_ADD_MATCHES,
+    ""
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEAT_VIEW_MATCHES,
+    ""
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEAT_CREATE_OPTION,
+    ""
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEAT_DELETE_OPTION,
+    ""
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEAT_ADD_NEW_TOP,
+    ""
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEAT_ADD_NEW_BOTTOM,
+    ""
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEAT_DELETE_ALL,
+    ""
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEAT_RELOAD_CHEATS,
+    ""
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEAT_BIG_ENDIAN,
+    "Big endian  : 258 = 0x0102,\n"
+    "Little endian : 258 = 0x0201"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_LIBRETRO_LOG_LEVEL,
+    "Sets log level for cores. If a log level issued by a core is below this value, it is ignored."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_PERFCNT_ENABLE,
+    "Enable performance counters for RetroArch (and cores)."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_SAVE,
+    "Automatically makes a savestate at the end of RetroArch's runtime. RetroArch will automatically load this savestate if 'Auto Load State' is enabled."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_LOAD,
+    "Automatically load the auto save state on startup."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SAVESTATE_THUMBNAIL_ENABLE,
+    "Show thumbnails of save states inside the menu."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_AUTOSAVE_INTERVAL,
+    "Autosaves the non-volatile Save RAM at a regular interval. This is disabled by default unless set otherwise. The interval is measured in seconds. A value of 0 disables autosave."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_INPUT_REMAP_BINDS_ENABLE,
+    "If enabled, overrides the input binds with the remapped binds set for the current core."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_INPUT_AUTODETECT_ENABLE,
+    "Enable input auto-detection. Will attempt to autoconfigure joypads, Plug-and-Play style."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL,
@@ -3533,6 +4830,18 @@ MSG_HASH(
     "Οδηγός Wi-Fi προς χρήση."
     )
 MSG_HASH(
+    MENU_ENUM_SUBLABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE,
+    "Filter files being shown in filebrowser by supported extensions."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_WALLPAPER,
+    "Select an image to set as menu wallpaper."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_DYNAMIC_WALLPAPER,
+    "Dynamically load a new wallpaper depending on context."
+    )
+MSG_HASH(
     MENU_ENUM_SUBLABEL_AUDIO_DEVICE,
     "Παράκαμψη της προκαθορισμένης συσκευής ήχου που χρησιμοποιεί ο οδηγός ήχου. Αυτή η επιλογή εξαρτάται από τον οδηγό."
     )
@@ -3561,12 +4870,84 @@ MSG_HASH(
     "Επιλογή ενός επικαλλύματος από τον περιηγητή αρχείων."
     )
 MSG_HASH(
+    MENU_ENUM_SUBLABEL_NETPLAY_IP_ADDRESS,
+    "The address of the host to connect to."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_NETPLAY_TCP_UDP_PORT,
+    "The port of the host IP address. Can be either a TCP or UDP port."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_NETPLAY_PASSWORD,
+    "The password for connecting to the netplay host. Used only in host mode."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_NETPLAY_PUBLIC_ANNOUNCE,
+    "Whether to announce netplay games publicly. If unset, clients must manually connect rather than using the public lobby."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_NETPLAY_SPECTATE_PASSWORD,
+    "The password for connecting to the netplay host with only spectator privileges. Used only in host mode."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_NETPLAY_START_AS_SPECTATOR,
+    "Whether to start netplay in spectator mode."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_NETPLAY_ALLOW_SLAVES,
+    "Whether to allow connections in slave mode. Slave-mode clients require very little processing power on either side, but will suffer significantly from network latency."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_NETPLAY_REQUIRE_SLAVES,
+    "Whether to disallow connections not in slave mode. Not recommended except for very fast networks with very weak machines."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_NETPLAY_STATELESS_MODE,
+    "Whether to run netplay in a mode not requiring save states. If set to true, a very fast network is required, but no rewinding is performed, so there will be no netplay jitter."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_NETPLAY_CHECK_FRAMES,
+    "The frequency in frames with which netplay will verify that the host and client are in sync."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_NETPLAY_NAT_TRAVERSAL,
+    "When hosting, attempt to listen for connections from the public Internet, using UPnP or similar technologies to escape LANs."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_STDIN_CMD_ENABLE,
+    "Enable stdin command interface."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MOUSE_ENABLE,
+    "Enable mouse controls inside the menu."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_POINTER_ENABLE,
+    "Enable touch controls inside the menu."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_THUMBNAILS,
+    "Type of thumbnail to display."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS,
+    "Type of thumbnail to display at the left."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_XMB_VERTICAL_THUMBNAILS,
+    "Display the left thumbnail under the right one, on the right side of the screen."
+    )
+MSG_HASH(
     MENU_ENUM_SUBLABEL_TIMEDATE_ENABLE,
     "Εμφάνιση τρέχουσας ημερομηνίας ή και ώρας μέσα στο μενού."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_BATTERY_LEVEL_ENABLE,
     "Εμφάνιση τρέχουσας μπαταρίας μέσα στο μενού."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_NAVIGATION_WRAPAROUND,
+    "Wrap-around to beginning and/or end if boundary of list is reached horizontally or vertically."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_HOST,
@@ -3591,6 +4972,30 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
     "Χρησιμοποιεί ένα προτιμώμενο διάστημα αλλαγής για το Vsync. Ορίστε αυτό ώστε να μειώσεται στο μισό τον ρυθμό ανανέωσης της οθόνης αποτελεσματικά."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SORT_SAVEFILES_ENABLE,
+    "Sort save files in folders named after the core used."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SORT_SAVESTATES_ENABLE,
+    "Sort save states in folders named after the core used."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_NETPLAY_REQUEST_DEVICE_I,
+    "Request to play with the given input device."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CORE_UPDATER_BUILDBOT_URL,
+    "URL to core updater directory on the Libretro buildbot."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_BUILDBOT_ASSETS_URL,
+    "URL to assets updater directory on the Libretro buildbot."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE,
+    "After downloading, automatically extract files contained in the downloaded archives."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_NETPLAY_REFRESH_ROOMS,
@@ -3689,8 +5094,28 @@ MSG_HASH(
     "Διαχειρίζεται τις ρυθμίσεις επαναφοράς."
     )
 MSG_HASH(
+    MENU_ENUM_SUBLABEL_INPUT_META_CHEAT_DETAILS,
+    "Manages cheat details settings."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_INPUT_META_CHEAT_SEARCH,
+    "Start or continue a cheat code search."
+    )
+MSG_HASH(
     MENU_ENUM_SUBLABEL_RESTART_CONTENT,
     "Επανεκκινεί το περιεχόμενο από την αρχή."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
+    "Saves an override configuration file which will apply for all content loaded with this core. Will take precedence over the main configuration."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
+    "Saves an override configuration file which will apply for all content loaded from the same directory as the current file. Will take precedence over the main configuration."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
+    "Saves an override configuration file which will apply for the current content only. Will take precedence over the main configuration."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CORE_CHEAT_OPTIONS,
@@ -3707,6 +5132,102 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CORE_OPTIONS,
     "Αλλαγή επιλογών για το τρέχον εκτελούμενο περιεχόμενο."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SHOW_ADVANCED_SETTINGS,
+    "Show advanced settings for power users (hidden by default)."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_THREADED_DATA_RUNLOOP_ENABLE,
+    "Perform tasks on a separate thread."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SYSTEM_DIRECTORY,
+    "Sets the System directory. Cores can query for this directory to load BIOSes, system-specific configs, etc."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_RGUI_BROWSER_DIRECTORY,
+    "Sets start directory for the filebrowser."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CONTENT_DIR,
+    "Usually set by developers who bundle libretro/RetroArch apps to point to assets."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_DYNAMIC_WALLPAPERS_DIRECTORY,
+    "Directory to store wallpapers dynamically loaded by the menu depending on context."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_THUMBNAILS_DIRECTORY,
+    "Supplementary thumbnails (boxarts/misc. images, etc.) are stored here."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_RGUI_CONFIG_DIRECTORY,
+    "Sets start directory for menu configuration browser."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
+    "The number of frames of input latency for netplay to use to hide network latency. Reduces jitter and makes netplay less CPU-intensive, at the expense of noticeable input lag."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
+    "The range of frames of input latency that may be used to hide network latency. Reduces jitter and makes netplay less CPU-intensive, at the expense of unpredictable input lag."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_DISK_CYCLE_TRAY_STATUS,
+    "Cycle the current disk. If the disk is inserted, it will eject the disk. If the disk has not been inserted, it will be inserted. "
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_DISK_INDEX,
+    "Change the disk index."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_DISK_OPTIONS,
+    "Disk image management."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
+    "Select a disk image to insert."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_ENUM_THROTTLE_FRAMERATE,
+    "Makes sure the framerate is capped while inside the menu."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VRR_RUNLOOP_ENABLE,
+    "No deviation from core requested timing. Use for Variable Refresh Rate screens, G-Sync, FreeSync."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_XMB_LAYOUT,
+    "Select a different layout for the XMB interface."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_XMB_THEME,
+    "Select a different theme for the icon. Changes will take effect after you restart the program."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_XMB_SHADOWS_ENABLE,
+    "Enable drop shadows for all icons. This will have a minor performance hit."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MATERIALUI_MENU_COLOR_THEME,
+    "Select a different background color gradient theme."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_WALLPAPER_OPACITY,
+    "Modify the opacity of the background wallpaper."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_XMB_MENU_COLOR_THEME,
+    "Select a different background color gradient theme."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_XMB_RIBBON_ENABLE,
+    "Select an animated background effect. Can be GPU-intensive depending on the effect. If performance is unsatisfactory, either turn this off or revert to a simpler effect."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_XMB_FONT,
+    "Select a different main font to be used by the menu."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CONTENT_SHOW_FAVORITES,
@@ -3749,6 +5270,66 @@ MSG_HASH(
     "Προβολή οθόνης εκκίνησης στο μενού. Τίθεται αυτόματα σε αρνητικό μετά την πρώτη εκκίνηση του προγράμματος."
     )
 MSG_HASH(
+    MENU_ENUM_SUBLABEL_MATERIALUI_MENU_HEADER_OPACITY,
+    "Modify the opacity of the header graphic."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MATERIALUI_MENU_FOOTER_OPACITY,
+    "Modify the opacity of the footer graphic."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CORE_ASSETS_DIRECTORY,
+    "Save all downloaded files to this directory."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_INPUT_REMAPPING_DIRECTORY,
+    "Save all remapped controls to this directory."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_LIBRETRO_DIR_PATH,
+    "Directory where the program searches for content/cores."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_LIBRETRO_INFO_PATH,
+    "Application/core information files are stored here."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_JOYPAD_AUTOCONFIG_DIR,
+    "If a joypad is plugged in, that joypad will be autoconfigured if a config file corresponding to it is present inside this directory."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_PLAYLIST_DIRECTORY,
+    "Save all playlists to this directory."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CACHE_DIRECTORY,
+    "If set to a directory, content which is temporarily extracted (e.g. from archives) will be extracted to this directory."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CURSOR_DIRECTORY,
+    "Saved queries are stored to this directory."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CONTENT_DATABASE_DIRECTORY,
+    "Databases are stored to this directory."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_ASSETS_DIRECTORY,
+    "This location is queried by default when menu interfaces try to look for loadable assets, etc."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SAVEFILE_DIRECTORY,
+    "Save all save files to this directory. If not set, will try to save inside the content file's working directory."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SAVESTATE_DIRECTORY,
+    "Save all save states to this directory. If not set, will try to save inside the content file's working directory."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SCREENSHOT_DIRECTORY,
+    "Directory to dump screenshots to."
+    )
+MSG_HASH(
     MENU_ENUM_SUBLABEL_OVERLAY_DIRECTORY,
     "Ορίζει ένα ευρετήριο όπου τα επικαλλύματα αποθηκεύονται για εύκολη πρόσβαση."
     )
@@ -3757,8 +5338,104 @@ MSG_HASH(
     "Τα αρχεία απάτης αποθηκεύονται εδώ."
     )
 MSG_HASH(
+    MENU_ENUM_SUBLABEL_AUDIO_FILTER_DIR,
+    "Directory where audio DSP filter files are kept."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_FILTER_DIR,
+    "Directory where CPU-based video filter files are kept."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_SHADER_DIR,
+    "Defines a directory where GPU-based video shader files are kept for easy access."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_RECORDING_OUTPUT_DIRECTORY,
+    "Recordings will be dumped to this directory."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_RECORDING_CONFIG_DIRECTORY,
+    "Recording configurations will be kept here."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_FONT_PATH,
+    "Select a different font for onscreen notifications."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SHADER_APPLY_CHANGES,
+    "Changes to the shader configuration will take effect immediately. Use this if you changed the amount of shader passes, filtering, FBO scale, etc."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_SHADER_NUM_PASSES,
+    "Increase or decrease the amount of shader pipeline passes. You can bind a separate shader to each pipeline pass and configure its scale and filtering."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET,
+    "Load a shader preset. The shader pipeline will be automatically set-up."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_AS,
+    "Save the current shader settings as a new shader preset."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_CORE,
+    "Save the current shader settings as the default settings for this application/core."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_PARENT,
+    "Save the current shader settings as the default settings for all files in the current content directory."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_GAME,
+    "Save the current shader settings as the default settings for the content."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PARAMETERS,
+    "Modifies the current shader directly. Changes will not be saved to the preset file."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_PARAMETERS,
+    "Modifies the shader preset itself currently used in the menu."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEAT_NUM_PASSES,
+    "Increase or decrease the amount of cheats."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEAT_APPLY_CHANGES,
+    "Cheat changes will take effect immediately."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEAT_START_SEARCH,
+    "Start search for a new cheat.  Number of bits can be changed."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEAT_CONTINUE_SEARCH,
+    "Continue search for a new cheat."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEAT_FILE_LOAD,
+    "Load a cheat file and replace existing cheats."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEAT_FILE_LOAD_APPEND,
+    "Load a cheat file and append to existing cheats."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEAT_FILE_SAVE_AS,
+    "Save current cheats as a save file."
+    )
+MSG_HASH(
     MENU_ENUM_SUBLABEL_CONTENT_SETTINGS,
     "Γρήγορα πρόσβαση σε όλες τις σχετικές ρυθμίσεις παιχνιδιού."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CORE_INFORMATION,
+    "View information pertaining to the application/core."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO,
+    "Floating point value for video aspect ratio (width / height), used if the Aspect Ratio is set to 'Config'."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
@@ -3787,6 +5464,10 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER,
     "Τοποθεσία Εξυπηρετητή Αναμετάδοσης"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_NETPLAY_MITM_SERVER,
+    "Choose a specific relay server to use. Geographically closer locations tend to have lower latency."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER,
@@ -3863,6 +5544,14 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CORE_DELETE,
     "Κατάργηση αυτού του πυρήνα από τον δίσκο."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
+    "Framebuffer Opacity"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY,
+    "Modify the opacity of the framebuffer."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES,
@@ -4001,12 +5690,176 @@ MSG_HASH(
     "Εμφάνιση/απόκρυψη της επιλογής 'Επανεκκίνηση'."
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_SHOW_SHUTDOWN,
+    "Show Shutdown"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_SHOW_SHUTDOWN,
+    "Show/hide the 'Shutdown' option."
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QUICK_MENU_VIEWS_SETTINGS,
     "Γρήγορο Μενού"
     )
 MSG_HASH(
+    MENU_ENUM_SUBLABEL_QUICK_MENU_VIEWS_SETTINGS,
+    "Show or hide elements on the Quick Menu screen."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_TAKE_SCREENSHOT,
+    "Show Take Screenshot"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_TAKE_SCREENSHOT,
+    "Show/hide the 'Take Screenshot' option."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_LOAD_STATE,
+    "Show Save/Load State"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_LOAD_STATE,
+    "Show/hide the options for saving/loading state."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
+    "Show Undo Save/Load State"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
+    "Show/hide the options for undoing save/load state."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
+    "Show Add to Favorites"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
+    "Show/hide the 'Add to Favorites' option."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_START_RECORDING,
+    "Show Start Recording"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_START_RECORDING,
+    "Show/hide the 'Start Recording' option."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_START_STREAMING,
+    "Show Start Streaming"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_START_STREAMING,
+    "Show/hide the 'Start Streaming' option."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESET_CORE_ASSOCIATION,
+    "Show Reset Core Association"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESET_CORE_ASSOCIATION,
+    "Show/hide the 'Reset Core Association' option."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
+    "Show Options"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_OPTIONS,
+    "Show/hide the 'Options' option."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CONTROLS,
+    "Show Controls"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CONTROLS,
+    "Show/hide the 'Controls' option."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CHEATS,
+    "Show Cheats"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CHEATS,
+    "Show/hide the 'Cheats' option."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SHADERS,
+    "Show Shaders"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SHADERS,
+    "Show/hide the 'Shaders' option."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,
+    "Show Save Core Overrides"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,
+    "Show/hide the 'Save Core Overrides' option."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES,
+    "Show Save Game Overrides"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES,
+    "Show/hide the 'Save Game Overrides' option."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_INFORMATION,
+    "Show Information"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_INFORMATION,
+    "Show/hide the 'Information' option."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_ENABLE,
+    "Notification Background Enable"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_RED,
+    "Notification Background Red Color"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_GREEN,
+    "Notification Background Green Color"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_BLUE,
+    "Notification Background Blue Color"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_OPACITY,
+    "Notification Background Opacity"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
+    "Disable Kiosk Mode"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
+    "Disables kiosk mode. A restart is required for the change to take full effect."
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_ENABLE_KIOSK_MODE,
     "Ενεργοποίηση Λειτουργίας Κιόσκι"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_ENABLE_KIOSK_MODE,
+    "Protects the setup by hiding all configuration related settings."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_KIOSK_MODE_PASSWORD,
+    "Set Password For Disabling Kiosk Mode"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_KIOSK_MODE_PASSWORD,
+    "Supplying a password when enabling kiosk mode makes it possible to later disable it from the menu, by going to the Main Menu, selecting Disable Kiosk Mode and entering the password."
     )
 MSG_HASH(
     MSG_INPUT_KIOSK_MODE_PASSWORD,
@@ -4045,12 +5898,36 @@ MSG_HASH(
     "Εμφάνιση Διακοσμητικών Παραθύρου"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_STATISTICS_SHOW,
+    "Εμφάνιση Στατιστικών"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_STATISTICS_SHOW,
+    "Εμφάνιση τεχνικών στατιστικών στην οθόνη."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_RGUI_BORDER_FILLER_ENABLE,
+    "Enable border filler"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_RGUI_BORDER_FILLER_THICKNESS_ENABLE,
+    "Enable border filler thickness"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_RGUI_BACKGROUND_FILLER_THICKNESS_ENABLE,
+    "Enable background filler thickness"
+    )
+MSG_HASH(
     MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION,
     "Για οθόνες CRT μόνο. Προσπαθεί να χρησιμοποιήσει την ακριβή ανάλυση πυρήνα/παιχνιδιού και ρυθμού ανανέωσης."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION,
     "CRT SwitchRes"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_SUPER,
+    "Switch among native and ultrawide super resolutions."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_SUPER,
@@ -4384,6 +6261,10 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_META_STREAMING_TOGGLE,
     "Απευθείας Μετάδοση"
+    )
+MSG_HASH(
+    MSG_CHEEVOS_HARDCORE_MODE_DISABLED,
+    "A savestate was loaded, Achievements Hardcore Mode disabled for the current session. Restart to enable hardcore mode."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_QUALITY,
