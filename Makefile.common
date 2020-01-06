@@ -246,7 +246,6 @@ OBJ += \
        wifi/drivers/nullwifi.o \
        gfx/display_servers/dispserv_null.o \
        playlist.o \
-       record/drivers/record_null.o \
        $(LIBRETRO_COMM_DIR)/features/features_cpu.o \
        performance_counters.o \
        verbosity.o \

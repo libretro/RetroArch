@@ -849,6 +849,15 @@ static const ui_companion_driver_t *ui_companion_drivers[] = {
    NULL
 };
 
+static const record_driver_t record_null = {
+   NULL, /* new */
+   NULL, /* free */
+   NULL, /* push_video */
+   NULL, /* push_audio */
+   NULL, /* finalize */
+   "null",
+};
+
 static const record_driver_t *record_drivers[] = {
 #ifdef HAVE_FFMPEG
    &record_ffmpeg,

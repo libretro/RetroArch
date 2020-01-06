@@ -709,7 +709,6 @@ typedef struct record_driver
 } record_driver_t;
 
 extern const record_driver_t record_ffmpeg;
-extern const record_driver_t record_null;
 
 /**
  * config_get_record_driver_options:

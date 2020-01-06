@@ -1137,8 +1137,6 @@ WIFI
 /*============================================================
 RECORDING
 ============================================================ */
-#include "../record/drivers/record_null.c"
-
 #ifdef HAVE_FFMPEG
 #include "../record/drivers/record_ffmpeg.c"
 #endif
