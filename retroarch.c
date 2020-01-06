@@ -655,6 +655,7 @@ static input_device_driver_t *joypad_drivers[] = {
    &udev_joypad,
 #endif
 #if defined(__linux) && !defined(ANDROID)
+   &ui_companion_null,
    &linuxraw_joypad,
 #endif
 #ifdef HAVE_PARPORT
@@ -723,6 +724,25 @@ static const location_driver_t *location_drivers[] = {
    NULL,
 };
 
+static ui_companion_driver_t ui_companion_null = {
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   "null",
+};
+
 static const ui_companion_driver_t *ui_companion_drivers[] = {
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
    &ui_companion_win32,
@@ -733,6 +753,7 @@ static const ui_companion_driver_t *ui_companion_drivers[] = {
 #ifdef HAVE_COCOATOUCH
    &ui_companion_cocoatouch,
 #endif
+   &ui_companion_null,
    NULL
 };
 
