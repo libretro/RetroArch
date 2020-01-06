@@ -797,8 +797,6 @@ LEDS
 
 #include "../led/led_driver.c"
 
-#include "../led/drivers/led_null.c"
-
 #if defined(HAVE_RPILED)
 #include "../led/drivers/led_rpi.c"
 #endif

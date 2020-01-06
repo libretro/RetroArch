@@ -21,6 +21,17 @@
 
 static const led_driver_t *current_led_driver = NULL;
 
+static void null_led_init(void) { }
+static void null_led_free(void) { }
+static void null_led_set(int led, int state) { }
+
+static const led_driver_t null_led_driver = {
+   null_led_init,
+   null_led_free,
+   null_led_set,
+   "null"
+};
+
 bool led_driver_init(void)
 {
    settings_t *settings = config_get_ptr();
