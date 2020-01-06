@@ -254,7 +254,21 @@
       | DRIVER_LED_MASK \
       | DRIVER_MIDI_MASK )
 
-
+static audio_driver_t audio_null = {
+   NULL, /* init */
+   NULL, /* write */
+   NULL, /* stop */
+   NULL, /* start */
+   NULL, /* alive */
+   NULL, /* set_nonblock_state */
+   NULL, /* free */
+   NULL, /* use_float */
+   "null",
+   NULL,
+   NULL,
+   NULL, /* write_avail */
+   NULL
+};
 
 static const audio_driver_t *audio_drivers[] = {
 #ifdef HAVE_ALSA
@@ -345,6 +359,31 @@ static const audio_driver_t *audio_drivers[] = {
    NULL,
 };
 
+static video_driver_t video_null = {
+   NULL, /* init */
+   NULL, /* frame */
+   NULL, /* set_nonblock_state */
+   NULL, /* alive */
+   NULL, /* focus */
+   NULL, /* suppress_screensaver */
+   NULL, /* has_windowed */
+   NULL, /* set_shader */
+   NULL, /* free */
+   "null",
+   NULL, /* set_viewport */
+   NULL, /* set_rotation */
+   NULL, /* viewport_info */
+   NULL, /* read_viewport */
+   NULL, /* read_frame_raw */
+
+#ifdef HAVE_OVERLAY
+  NULL, /* overlay_interface */
+#endif
+#ifdef HAVE_VIDEO_LAYOUT
+   NULL,
+#endif
+  NULL, /* get_poke_interface */
+};
 
 static const video_driver_t *video_drivers[] = {
 #ifdef HAVE_VITA2D

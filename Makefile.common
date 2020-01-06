@@ -245,9 +245,7 @@ OBJ += \
        $(LIBRETRO_COMM_DIR)/audio/resampler/drivers/null_resampler.o \
        $(LIBRETRO_COMM_DIR)/utils/md5.o \
        wifi/drivers/nullwifi.o \
-       gfx/drivers/nullgfx.o \
        gfx/display_servers/dispserv_null.o \
-       audio/drivers/nullaudio.o \
        input/drivers/nullinput.o \
        input/drivers_hid/null_hid.o \
        input/drivers_joypad/null_joypad.o \

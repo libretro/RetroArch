@@ -610,7 +610,6 @@ extern audio_driver_t audio_switch_thread;
 extern audio_driver_t audio_switch_libnx_audren;
 extern audio_driver_t audio_switch_libnx_audren_thread;
 extern audio_driver_t audio_rwebaudio;
-extern audio_driver_t audio_null;
 
 /* Recording */
 
@@ -1900,7 +1899,6 @@ extern video_driver_t video_vga;
 extern video_driver_t video_fpga;
 extern video_driver_t video_sixel;
 extern video_driver_t video_network;
-extern video_driver_t video_null;
 
 extern const gfx_ctx_driver_t gfx_ctx_osmesa;
 extern const gfx_ctx_driver_t gfx_ctx_sdl_gl;

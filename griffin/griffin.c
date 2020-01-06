@@ -499,7 +499,6 @@ VIDEO DRIVER
 #elif defined(DJGPP)
 #include "../gfx/drivers/vga_gfx.c"
 #endif
-#include "../gfx/drivers/nullgfx.c"
 
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
 #ifdef HAVE_GDI
@@ -891,8 +890,6 @@ AUDIO
 #ifdef HAVE_COREAUDIO
 #include "../audio/drivers/coreaudio.c"
 #endif
-
-#include "../audio/drivers/nullaudio.c"
 
 #if defined(HAVE_WASAPI) || ((_WIN32_WINNT >= 0x0602) && !defined(__WINRT__))
 #include "../audio/common/mmdevice_common.c"
