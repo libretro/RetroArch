@@ -53,7 +53,12 @@
                  "text": "symbol-file ${workspaceFolder}/retroarchpsp.elf",
                  "description": "read symbols for elf file",
                  "ignoreFailures": true
-             }
+             },
+             {
+               "description": "Enable all-exceptions",
+               "text": "-exec \"catch throw\"",
+               "ignoreFailures": true
+           }
          ],
          "showDisplayString": true,
           "targetArchitecture": "mips",
