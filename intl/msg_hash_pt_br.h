@@ -8935,14 +8935,6 @@ MSG_HASH(
     "Porta da Transmissão UDP"
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_ACCOUNTS_TWITCH,
-    "Twitch"
-    )
-MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_ACCOUNTS_YOUTUBE,
-    "YouTube"
-    )
-MSG_HASH(
     MENU_ENUM_LABEL_VALUE_TWITCH_STREAM_KEY,
     "Chave da Transmissão do Twitch"
     )
@@ -8959,20 +8951,12 @@ MSG_HASH(
     "Título da Transmissão"
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_INPUT_SPLIT_JOYCON,
-    "Split Joy-Con"
-    )
-MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
     "Restaurar aos Padrões"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_RESET_TO_DEFAULT_CONFIG,
     "Restaura a configuração atual para os valores padrão."
-    )
-MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_OK,
-    "OK"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_OZONE_MENU_COLOR_THEME,
