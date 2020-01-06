@@ -445,8 +445,6 @@ VIDEO DRIVER
 #include "../gfx/drivers/drm_gfx.c"
 #endif
 
-#include "../gfx/display_servers/dispserv_null.c"
-
 #ifdef HAVE_OPENGL1
 #include "../gfx/drivers/gl1.c"
 #endif
@@ -1126,8 +1124,6 @@ RETROARCH
 /*============================================================
 WIFI
 ============================================================ */
-#include "../wifi/drivers/nullwifi.c"
-
 #ifdef HAVE_LAKKA
 #include "../wifi/drivers/connmanctl.c"
 #endif

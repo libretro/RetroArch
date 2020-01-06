@@ -242,8 +242,6 @@ OBJ += \
        $(LIBRETRO_COMM_DIR)/audio/resampler/drivers/nearest_resampler.o \
        $(LIBRETRO_COMM_DIR)/audio/resampler/drivers/null_resampler.o \
        $(LIBRETRO_COMM_DIR)/utils/md5.o \
-       wifi/drivers/nullwifi.o \
-       gfx/display_servers/dispserv_null.o \
        playlist.o \
        $(LIBRETRO_COMM_DIR)/features/features_cpu.o \
        performance_counters.o \

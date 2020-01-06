@@ -20,6 +20,21 @@
 #include "../retroarch.h"
 #include "../verbosity.h"
 
+static const video_display_server_t dispserv_null = {
+   NULL, /* init */
+   NULL, /* destroy */
+   NULL, /* set_window_opacity */
+   NULL, /* set_window_progress */
+   NULL, /* set_window_decorations */
+   NULL, /* set_resolution */
+   NULL, /* get_resolution_list */
+   NULL, /* get_output_options */
+   NULL, /* set_screen_orientation */
+   NULL, /* get_screen_orientation */
+   NULL, /* get_flags */
+   "null"
+};
+
 static const video_display_server_t *current_display_server = &dispserv_null;
 static void                    *current_display_server_data = NULL;
 static enum rotation initial_screen_orientation          = ORIENTATION_NORMAL;

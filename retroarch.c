@@ -789,6 +789,19 @@ static hid_driver_t *hid_drivers[] = {
 };
 #endif
 
+static wifi_driver_t wifi_null = {
+   NULL, /* init */
+   NULL, /* free */
+   NULL, /* start */
+   NULL, /* stop */
+   NULL, /* scan */
+   NULL, /* get_ssids */
+   NULL, /* ssid_is_online */
+   NULL, /* connect_ssid */
+   NULL, /* tether_start_stop */
+   "null",
+};
+
 static const wifi_driver_t *wifi_drivers[] = {
 #ifdef HAVE_LAKKA
    &wifi_connmanctl,
@@ -866,9 +879,9 @@ static const record_driver_t *record_drivers[] = {
    NULL,
 };
 
-extern midi_driver_t midi_null;
 extern midi_driver_t midi_winmm;
 extern midi_driver_t midi_alsa;
+extern midi_driver_t midi_null;
 
 static midi_driver_t *midi_drivers[] = {
 #if defined(HAVE_ALSA) && !defined(HAVE_HAKCHI) && !defined(HAVE_SEGAM)
