@@ -273,7 +273,6 @@
 		05A8C59420DB72F000FF7857 /* msg_hash_chs.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = msg_hash_chs.h; sourceTree = "<group>"; };
 		05A8C59620DB72F000FF7857 /* frontend.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = frontend.c; sourceTree = "<group>"; };
 		05A8C59B20DB72F000FF7857 /* platform_darwin.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = platform_darwin.m; sourceTree = "<group>"; };
-		05A8C59E20DB72F000FF7857 /* platform_null.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = platform_null.c; sourceTree = "<group>"; };
 		05A8C5A920DB72F000FF7857 /* frontend_driver.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = frontend_driver.h; sourceTree = "<group>"; };
 		05A8C5AA20DB72F000FF7857 /* frontend.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = frontend.h; sourceTree = "<group>"; };
 		05A8C5AB20DB72F000FF7857 /* frontend_driver.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = frontend_driver.c; sourceTree = "<group>"; };
@@ -927,7 +926,6 @@
 			isa = PBXGroup;
 			children = (
 				05A8C59B20DB72F000FF7857 /* platform_darwin.m */,
-				05A8C59E20DB72F000FF7857 /* platform_null.c */,
 			);
 			path = drivers;
 			sourceTree = "<group>";

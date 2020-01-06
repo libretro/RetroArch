@@ -45,7 +45,6 @@ PPU_CXXFLAGS := $(PPU_OPTIMIZE_LV) $(INCFLAGS) $(DEFINES)
 PPU_SRCS		= frontend/frontend_salamander.c \
 				  frontend/frontend_driver.c \
 				  frontend/drivers/platform_ps3.c \
-				  frontend/drivers/platform_null.c \
 				  libretro-common/file/file_path.c \
 				  libretro-common/lists/dir_list.c \
 				  libretro-common/lists/string_list.c \

@@ -1070,7 +1070,6 @@ FRONTEND
 #elif defined(DJGPP)
 #include "../frontend/drivers/platform_dos.c"
 #endif
-#include "../frontend/drivers/platform_null.c"
 
 #include "../core_info.c"
 

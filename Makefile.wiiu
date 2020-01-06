@@ -53,7 +53,6 @@ ifeq ($(SALAMANDER_BUILD),1)
    OBJ += frontend/frontend_salamander.o
    OBJ += frontend/frontend_driver.o
    OBJ += frontend/drivers/platform_wiiu.o
-   OBJ += frontend/drivers/platform_null.o
    OBJ += libretro-common/encodings/encoding_utf.o
    OBJ += libretro-common/compat/compat_strcasestr.o
    OBJ += libretro-common/compat/fopen_utf8.o

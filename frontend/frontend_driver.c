@@ -36,6 +36,41 @@
 #endif
 #endif
 
+static frontend_ctx_driver_t frontend_ctx_null = {
+   NULL,                         /* environment_get */
+   NULL,                         /* init */
+   NULL,                         /* deinit */
+   NULL,                         /* exitspawn */
+   NULL,                         /* process_args */
+   NULL,                         /* exec */
+   NULL,                         /* set_fork */
+   NULL,                         /* shutdown */
+   NULL,                         /* get_name */
+   NULL,                         /* get_os */
+   NULL,                         /* get_rating */
+   NULL,                         /* load_content */
+   NULL,                         /* get_architecture */
+   NULL,                         /* get_powerstate */
+   NULL,                         /* parse_drive_list */
+   NULL,                         /* get_mem_total */
+   NULL,                         /* get_mem_free */
+   NULL,                         /* install_signal_handler */
+   NULL,                         /* get_sighandler_state */
+   NULL,                         /* set_sighandler_state */
+   NULL,                         /* destroy_sighandler_state */
+   NULL,                         /* attach_console */
+   NULL,                         /* detach_console */
+#ifdef HAVE_LAKKA
+   NULL,                         /* get_lakka_version */
+#endif
+   NULL,                         /* watch_path_for_changes */
+   NULL,                         /* check_for_path_changes */
+   NULL,                         /* set_sustained_performance_mode */
+   NULL,                         /* get_cpu_model_name */
+   NULL,                         /* get_user_language */
+   "null",
+};
+
 static frontend_ctx_driver_t *frontend_ctx_drivers[] = {
 #if defined(EMSCRIPTEN)
    &frontend_ctx_emscripten,

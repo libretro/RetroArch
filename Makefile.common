@@ -153,7 +153,6 @@ ifeq ($(HAVE_DR_MP3), 1)
 endif
 
 OBJ += frontend/frontend_driver.o \
-       frontend/drivers/platform_null.o \
        retroarch.o \
        msg_hash.o \
        intl/msg_hash_us.o \
