@@ -125,6 +125,25 @@ static const menu_ctx_driver_t *menu_ctx_drivers[] = {
    NULL
 };
 
+static menu_display_ctx_driver_t menu_display_ctx_null = {
+   NULL, /* draw */
+   NULL, /* draw_pipeline */
+   NULL, /* viewport */
+   NULL, /* blend_begin */
+   NULL, /* blend_end   */
+   NULL, /* restore_clear_color   */
+   NULL, /* clear_color   */
+   NULL, /* get_default_mvp   */
+   NULL, /* get_default_vertices */
+   NULL, /* get_default_tex_coords */
+   NULL, /* font_init_first */
+   MENU_VIDEO_DRIVER_GENERIC,
+   "null",
+   false,
+   NULL,
+   NULL
+};
+
 /* Menu display drivers */
 static menu_display_ctx_driver_t *menu_display_ctx_drivers[] = {
 #ifdef HAVE_D3D8

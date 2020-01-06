@@ -816,8 +816,7 @@ ifeq ($(HAVE_MENU_COMMON), 1)
           menu/drivers/menu_generic.o \
           menu/drivers/null.o \
           menu/menu_thumbnail_path.o \
-          menu/menu_thumbnail.o \
-          menu/drivers_display/menu_display_null.o
+          menu/menu_thumbnail.o
 
    ifeq ($(HAVE_MENU_WIDGETS), 1)
       OBJ += menu/widgets/menu_widgets.o

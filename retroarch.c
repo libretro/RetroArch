@@ -1145,6 +1145,14 @@ static const void *input_driver_find_handle(int idx);
 static const void *joypad_driver_find_handle(int idx);
 static const void *hid_driver_find_handle(int idx);
 
+static bool midi_driver_read(uint8_t *byte);
+static bool midi_driver_write(uint8_t byte, uint32_t delta_time);
+static bool midi_driver_output_enabled(void);
+static bool midi_driver_input_enabled(void);
+static bool midi_driver_set_all_sounds_off(void);
+static const void *midi_driver_find_handle(int index);
+static bool midi_driver_flush(void);
+
 struct string_list *dir_list_new_special(const char *input_dir,
       enum dir_list_type type, const char *filter)
 {
@@ -17876,7 +17884,7 @@ static midi_driver_t *midi_driver_find_driver(const char *ident)
    return &midi_null;
 }
 
-const void *midi_driver_find_handle(int index)
+static const void *midi_driver_find_handle(int index)
 {
    if (index < 0 || index >= ARRAY_SIZE(midi_drivers))
       return NULL;
@@ -17893,7 +17901,8 @@ struct string_list *midi_driver_get_avail_outputs(void)
 {
    return midi_drv_outputs;
 }
-bool midi_driver_set_all_sounds_off(void)
+
+static bool midi_driver_set_all_sounds_off(void)
 {
    midi_event_t event;
    uint8_t i;
@@ -17952,7 +17961,7 @@ bool midi_driver_set_volume(unsigned volume)
    return true;
 }
 
-bool midi_driver_init_io_buffers(void)
+static bool midi_driver_init_io_buffers(void)
 {
    midi_drv_input_buffer  = (uint8_t*)malloc(MIDI_DRIVER_BUF_SIZE);
    midi_drv_output_buffer = (uint8_t*)malloc(MIDI_DRIVER_BUF_SIZE);
@@ -17969,7 +17978,42 @@ bool midi_driver_init_io_buffers(void)
    return true;
 }
 
-bool midi_driver_init(void)
+static void midi_driver_free(void)
+{
+   if (midi_drv_data)
+   {
+      midi_drv->free(midi_drv_data);
+      midi_drv_data = NULL;
+   }
+
+   if (midi_drv_inputs)
+   {
+      string_list_free(midi_drv_inputs);
+      midi_drv_inputs = NULL;
+   }
+   if (midi_drv_outputs)
+   {
+      string_list_free(midi_drv_outputs);
+      midi_drv_outputs = NULL;
+   }
+
+   if (midi_drv_input_buffer)
+   {
+      free(midi_drv_input_buffer);
+      midi_drv_input_buffer = NULL;
+   }
+   if (midi_drv_output_buffer)
+   {
+      free(midi_drv_output_buffer);
+      midi_drv_output_buffer = NULL;
+   }
+
+   midi_drv_input_enabled  = false;
+   midi_drv_output_enabled = false;
+}
+
+
+static bool midi_driver_init(void)
 {
    settings_t *settings             = configuration_settings;
    union string_list_elem_attr attr = {0};
@@ -18069,40 +18113,6 @@ bool midi_driver_init(void)
    return err_str == NULL;
 }
 
-void midi_driver_free(void)
-{
-   if (midi_drv_data)
-   {
-      midi_drv->free(midi_drv_data);
-      midi_drv_data = NULL;
-   }
-
-   if (midi_drv_inputs)
-   {
-      string_list_free(midi_drv_inputs);
-      midi_drv_inputs = NULL;
-   }
-   if (midi_drv_outputs)
-   {
-      string_list_free(midi_drv_outputs);
-      midi_drv_outputs = NULL;
-   }
-
-   if (midi_drv_input_buffer)
-   {
-      free(midi_drv_input_buffer);
-      midi_drv_input_buffer = NULL;
-   }
-   if (midi_drv_output_buffer)
-   {
-      free(midi_drv_output_buffer);
-      midi_drv_output_buffer = NULL;
-   }
-
-   midi_drv_input_enabled  = false;
-   midi_drv_output_enabled = false;
-}
-
 bool midi_driver_set_input(const char *input)
 {
    if (!midi_drv_data)
@@ -18178,17 +18188,17 @@ bool midi_driver_set_output(const char *output)
    return true;
 }
 
-bool midi_driver_input_enabled(void)
+static bool midi_driver_input_enabled(void)
 {
    return midi_drv_input_enabled;
 }
 
-bool midi_driver_output_enabled(void)
+static bool midi_driver_output_enabled(void)
 {
    return midi_drv_output_enabled;
 }
 
-bool midi_driver_read(uint8_t *byte)
+static bool midi_driver_read(uint8_t *byte)
 {
    static int i;
 
@@ -18241,7 +18251,7 @@ bool midi_driver_read(uint8_t *byte)
    return true;
 }
 
-bool midi_driver_write(uint8_t byte, uint32_t delta_time)
+static bool midi_driver_write(uint8_t byte, uint32_t delta_time)
 {
    static int event_size;
 
@@ -18347,7 +18357,7 @@ bool midi_driver_write(uint8_t byte, uint32_t delta_time)
    return true;
 }
 
-bool midi_driver_flush(void)
+static bool midi_driver_flush(void)
 {
    if (!midi_drv_data)
    {

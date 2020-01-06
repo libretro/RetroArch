@@ -1280,8 +1280,6 @@ MENU
 #include "../menu/drivers/null.c"
 #include "../menu/drivers/menu_generic.c"
 
-#include "../menu/drivers_display/menu_display_null.c"
-
 #if defined(HAVE_D3D8)
 #include "../menu/drivers_display/menu_display_d3d8.c"
 #endif
