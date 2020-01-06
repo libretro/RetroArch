@@ -584,6 +584,23 @@ static const gfx_ctx_driver_t *gfx_ctx_drivers[] = {
    NULL
 };
 
+static input_driver_t input_null = {
+   NULL, /* init */
+   NULL, /* poll */
+   NULL, /* input_state */
+   NULL, /* free */
+   NULL, /* set_sensor_state */
+   NULL,
+   NULL, /* get_capabilities */
+   "null",
+   NULL, /* grab_mouse */
+   NULL,
+   NULL, /* set_rumble */
+   NULL,
+   NULL,
+   false,
+};
+
 static input_driver_t *input_drivers[] = {
 #ifdef ORBIS
    &input_ps4,
@@ -654,6 +671,19 @@ static input_driver_t *input_drivers[] = {
 #endif
    &input_null,
    NULL,
+};
+
+static input_device_driver_t null_joypad = {
+   NULL, /* init */
+   NULL, /* query_pad */
+   NULL, /* destroy */
+   NULL, /* button */
+   NULL, /* get_buttons */
+   NULL, /* axis */
+   NULL, /* poll */
+   NULL,
+   NULL, /* name */
+   "null",
 };
 
 static input_device_driver_t *joypad_drivers[] = {

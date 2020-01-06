@@ -571,7 +571,6 @@ extern input_device_driver_t wiiu_joypad;
 extern input_device_driver_t hid_joypad;
 extern input_device_driver_t android_joypad;
 extern input_device_driver_t qnx_joypad;
-extern input_device_driver_t null_joypad;
 extern input_device_driver_t mfi_joypad;
 extern input_device_driver_t dos_joypad;
 extern input_device_driver_t rwebpad_joypad;
@@ -599,7 +598,6 @@ extern input_driver_t input_rwebinput;
 extern input_driver_t input_dos;
 extern input_driver_t input_winraw;
 extern input_driver_t input_wayland;
-extern input_driver_t input_null;
 
 #ifdef HAVE_HID
 extern hid_driver_t iohidmanager_hid;
