@@ -1,4 +1,6 @@
 # Future
+
+# 1.8.3
 - BUGFIX: Ensure core info is always initialised when calling 'drivers_init()'. This bug could prevent cores from doing content runtime logging
 - BUGFIX/MENU: (XMB/OZONE) Fix 'quick menu' detection. XMB would not display savestate thumbnails in the quick menu if it was accessed via the main menu
 - BUGFIX/CRASH/CORE UPDATER: Fix potential double free error
@@ -28,7 +30,6 @@
 - VULKAN: Fix font driver 'vulkan_get_message_width()' function
 - VIDEO FILTERS: Only use threads when the number exceeds 1. Fixes race conditions with some CPU filters on Vita
 - WINDOWS: Add ANGLE support for x64, separate binary (for now?)  
-
 
 # 1.8.2
 - BUG/CRASH/GLSLANG: Fix glslang crashing error - managed to reproduce an issue which has been plaguing
