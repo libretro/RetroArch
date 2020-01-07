@@ -51,7 +51,6 @@ using namespace Windows::Storage::FileProperties;
 #include <retro_miscellaneous.h>
 #include <file/file_path.h>
 #include <retro_assert.h>
-#include <verbosity.h>
 #include <string/stdstring.h>
 #include <retro_environment.h>
 #include <uwp/uwp_func.h>
@@ -301,15 +300,13 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(const char *path, uns
 
 	if (!path_is_absolute(path))
 	{
-		RARCH_WARN("Something tried to access files from current directory ('%s'). This is not allowed on UWP.\n", path);
+      /* Something tried to access files from current directory. This is not allowed on UWP. */
 		return NULL;
 	}
 
+   /* Trying to open a directory as file?! */
 	if (path_char_is_slash(path[strlen(path) - 1]))
-	{
-		RARCH_WARN("Trying to open a directory as file?! ('%s')\n", path);
 		return NULL;
-	}
 
 	char* dirpath = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
 	fill_pathname_basedir(dirpath, path, PATH_MAX_LENGTH);
