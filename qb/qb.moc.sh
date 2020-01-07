@@ -23,8 +23,8 @@ if [ "$HAVE_QT" = "yes" ]; then
 	moc_works=0
 	if [ "$MOC" ]; then
 		QT_SELECT="$QT_VERSION" \
-		"$MOC" -o "$TEMP_CPP" "$TEMP_MOC" >/dev/null 2>&1 &&
-		"$CXX" -o "$TEMP_EXE" $(printf %s "$QT_FLAGS") \
+		$MOC -o "$TEMP_CPP" "$TEMP_MOC" >/dev/null 2>&1 &&
+		$CXX -o "$TEMP_EXE" $(printf %s "$QT_FLAGS") \
 			-fPIC -c "$TEMP_CPP" >/dev/null 2>&1 &&
 		moc_works=1
 	else
@@ -32,9 +32,9 @@ if [ "$HAVE_QT" = "yes" ]; then
 			MOC="$(exists "$moc")" || MOC=""
 			if [ "$MOC" ]; then
 				QT_SELECT="$QT_VERSION" \
-				"$MOC" -o "$TEMP_CPP" "$TEMP_MOC" >/dev/null 2>&1 ||
+				$MOC -o "$TEMP_CPP" "$TEMP_MOC" >/dev/null 2>&1 ||
 					continue
-				"$CXX" -o "$TEMP_EXE" $(printf %s "$QT_FLAGS") \
+				$CXX -o "$TEMP_EXE" $(printf %s "$QT_FLAGS") \
 					-fPIC -c "$TEMP_CPP" >/dev/null 2>&1 && {
 					moc_works=1
 					break
