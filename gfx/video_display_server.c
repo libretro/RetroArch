@@ -74,7 +74,8 @@ void* video_display_server_init(void)
          break;
    }
 
-   current_display_server_data = current_display_server->init();
+   if (current_display_server->init)
+       current_display_server_data = current_display_server->init();
 
    RARCH_LOG("[Video]: Found display server: %s\n",
 		   current_display_server->ident);
@@ -90,7 +91,7 @@ void video_display_server_destroy(void)
    if (initial_screen_orientation != current_screen_orientation)
       video_display_server_set_screen_orientation(initial_screen_orientation);
 
-   if (current_display_server && current_display_server->destroy)
+   if (current_display_server)
       if (current_display_server_data)
          current_display_server->destroy(current_display_server_data);
 }
