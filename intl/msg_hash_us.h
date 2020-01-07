@@ -881,6 +881,10 @@ MSG_HASH(
     "All installed cores at latest version"
     )
 MSG_HASH(
+    MSG_NUM_CORES_UPDATED,
+    "cores updated: "
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_SCALE_FACTOR,
     "Menu Scale Factor"
     )
