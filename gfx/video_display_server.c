@@ -74,7 +74,7 @@ void* video_display_server_init(void)
          break;
    }
 
-   if (current_display_server->init && current_display_server->init)
+   if (current_display_server && current_display_server->init)
        current_display_server_data = current_display_server->init();
 
    RARCH_LOG("[Video]: Found display server: %s\n",
