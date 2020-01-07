@@ -2620,6 +2620,15 @@ bool menu_input_dialog_start(menu_input_ctx_line_t *line)
 bool menu_input_dialog_get_display_kb(void)
 {
 #ifdef HAVE_LIBNX
+   /* Indicates that we are "typing" from the swkbd
+    * result to RetroArch with repeated calls to input_keyboard_event
+    * This prevents input_keyboard_event from calling back
+    * menu_input_dialog_get_display_kb, looping indefinintely */
+   static bool typing = false;
+
+   if (typing)
+      return false;
+
    SwkbdConfig kbd;
    Result rc;
 
@@ -2647,6 +2656,7 @@ bool menu_input_dialog_get_display_kb(void)
 
       /* RetroArch uses key-by-key input
          so we need to simulate it */
+      typing = true;
       for (i = 0; i < LIBNX_SWKBD_LIMIT; i++)
       {
          /* In case a previous "Enter" press closed the keyboard */
@@ -2670,6 +2680,7 @@ bool menu_input_dialog_get_display_kb(void)
       if (menu_input_dialog_keyboard_display)
          input_keyboard_event(true, '\n', '\n', 0, RETRO_DEVICE_KEYBOARD);
 
+      typing = false;
       libnx_apply_overclock();
       return false;
    }
