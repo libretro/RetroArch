@@ -1293,7 +1293,7 @@ else ifeq ($(HAVE_SDL), 1)
    LIBS += $(SDL_LIBS)
 else ifeq ($(HAVE_SDL_DINGUX), 1)
    HAVE_SDL_COMMON = 1
-   DEFINES += -DHAVE_SDL -DHAVE_SDL_DINGUX
+   DEF_FLAGS += -DHAVE_SDL -DHAVE_SDL_DINGUX
    OBJ += gfx/drivers/sdl_dingux_gfx.o
    DEF_FLAGS += $(SDL_DINGUX_CFLAGS)
    LIBS += $(SDL_DINGUX_LIBS)

@@ -2,6 +2,8 @@ CC = /opt/gcw0-toolchain/usr/bin/mipsel-gcw0-linux-uclibc-gcc
 CXX = /opt/gcw0-toolchain/usr/bin/mipsel-gcw0-linux-uclibc-g++
 PACKAGE_NAME = retroarch
 
+DEBUG ?= 0
+
 HAVE_7ZIP = 1
 HAVE_AL = 1
 # this freezes when switching back from menu
@@ -98,13 +100,10 @@ OBJDIR_BASE := obj-unix
 
 ifeq ($(DEBUG), 1)
    OBJDIR := $(OBJDIR_BASE)/debug
-   CFLAGS ?= -O0 -g
-   CXXFLAGS ?= -O0 -g
-   DEFINES += -DDEBUG -D_DEBUG
+   DEF_FLAGS += -O0 -g -DDEBUG -D_DEBUG
 else
    OBJDIR := $(OBJDIR_BASE)/release
-   CFLAGS ?= -O2
-   CXXFLAGS ?= -O2
+   DEF_FLAGS += -O2 -DNDEBUG
 endif
 
 include Makefile.common
