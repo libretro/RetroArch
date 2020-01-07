@@ -29,6 +29,8 @@ void genode_free_secondary_stack(void *stack);
     #include "ppc.c"
   #elif defined(__aarch64__)
     #include "aarch64.c"
+  #elif defined(PSP)
+    #include "psp1.c"
   #elif defined VITA
     #include "scefiber.c"
   #elif defined(__ARM_EABI__) || defined(__arm__)
