@@ -74,7 +74,8 @@ void* video_display_server_init(void)
          break;
    }
 
-   current_display_server_data = current_display_server->init();
+   if (current_display_server && current_display_server->init)
+      current_display_server_data = current_display_server->init();
 
    RARCH_LOG("[Video]: Found display server: %s\n",
 		   current_display_server->ident);
@@ -126,7 +127,7 @@ bool video_display_server_set_resolution(unsigned width, unsigned height,
 
 bool video_display_server_has_resolution_list(void)
 {
-   return (current_display_server 
+   return (current_display_server
          && current_display_server->get_resolution_list);
 }
 
