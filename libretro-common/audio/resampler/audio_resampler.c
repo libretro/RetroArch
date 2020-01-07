@@ -28,6 +28,20 @@
 
 #include <audio/audio_resampler.h>
 
+static void resampler_null_process(void *a, struct resampler_data *b) { }
+static void resampler_null_free(void *a) { }
+static void *resampler_null_init(const struct resampler_config *a, double b,
+      enum resampler_quality c, resampler_simd_mask_t d) { return (void*)0; }
+
+retro_resampler_t null_resampler = {
+   resampler_null_init,
+   resampler_null_process,
+   resampler_null_free,
+   RESAMPLER_API_VERSION,
+   "null",
+   "null"
+};
+
 static const retro_resampler_t *resampler_drivers[] = {
    &sinc_resampler,
 #ifdef HAVE_CC_RESAMPLER

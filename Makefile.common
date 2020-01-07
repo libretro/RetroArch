@@ -240,7 +240,6 @@ OBJ += \
        $(LIBRETRO_COMM_DIR)/audio/dsp_filter.o \
        $(LIBRETRO_COMM_DIR)/audio/resampler/drivers/sinc_resampler.o \
        $(LIBRETRO_COMM_DIR)/audio/resampler/drivers/nearest_resampler.o \
-       $(LIBRETRO_COMM_DIR)/audio/resampler/drivers/null_resampler.o \
        $(LIBRETRO_COMM_DIR)/utils/md5.o \
        playlist.o \
        $(LIBRETRO_COMM_DIR)/features/features_cpu.o \
