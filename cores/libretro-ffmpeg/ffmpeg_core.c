@@ -1531,7 +1531,7 @@ static void decode_thread_seek(double time)
 }
 
 static bool earlier_or_close_enough(double p1, double p2) {
-   return (p1 <= p2 || (p1-p2) <= 0.1);
+   return (p1 <= p2 || (p1-p2) <= 0.001);
 }
 
 static void decode_thread(void *data)
