@@ -38,10 +38,10 @@ void packet_buffer_destroy(packet_buffer_t *packet_buffer)
    if (packet_buffer->head)
    {
       node = packet_buffer->head;
-      while (node->next)
+      while (node)
       {
          AVPacketNode_t *next = node->next;
-         av_packet_unref(node->data);
+         av_packet_free(&node->data);
          free(node);
          node = next;
       }
