@@ -1,6 +1,5 @@
 #include "packet_buffer.h"
 
-
 struct AVPacketNode {
    AVPacket *data;
    struct AVPacketNode *next;
@@ -12,8 +11,6 @@ struct packet_buffer
 {
    AVPacketNode_t *head;
    AVPacketNode_t *tail;
-
-   size_t capacity;
    size_t size;
 };
 
