@@ -56,20 +56,20 @@ PSP_OBJECTS = griffin/griffin.o bootstrap/psp1/kernel_functions.o
 
 OBJS = $(PSP_OBJECTS)
 
-#pspsh-debug:
-#	pspsh -e reset
-#	read -p "Start debugger in VSCode and press any key to continue... \n" -n1 -s
-#	# pspsh -e debug ./retroarchpsp.prx
-#	pspsh
-
-#pspsh-run:
-#	pspsh -e reset
-#	pspsh -e ./retroarchpsp.prx
-#	pspsh
-
-#debug: clean all pspsh-debug
-
-#run: clean all pspsh-run
-
 PSPSDK=$(shell psp-config --pspsdk-path)
 include $(PSPSDK)/lib/build.mak
+
+pspsh-debug:
+	pspsh -e reset
+	read -p "Start debugger in VSCode and press any key to continue... \n" -n1 -s
+	pspsh -e debug ./retroarchpsp.prx
+	pspsh
+
+pspsh-run:
+	pspsh -e reset
+	pspsh -e ./retroarchpsp.prx
+	pspsh
+
+debug: clean all pspsh-debug
+
+run: clean all pspsh-run
