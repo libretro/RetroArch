@@ -15,7 +15,7 @@ struct video_buffer
 {
    video_decoder_context_t *buffer;
    enum kbStatus *status;
-   size_t size;
+   size_t capacity;
    slock_t *lock;
    scond_t *open_cond;
    scond_t *finished_cond;
@@ -23,24 +23,19 @@ struct video_buffer
    int64_t tail;
 };
 
-video_buffer_t *video_buffer_create(size_t num, int frame_size, int width, int height)
+video_buffer_t *video_buffer_create(size_t capacity, int frame_size, int width, int height)
 {
-   video_buffer_t *b = malloc(sizeof (video_buffer_t));
+   video_buffer_t *b = malloc(sizeof(video_buffer_t));
    if (!b)
       return NULL;
 
-   b->lock = NULL;
-   b->open_cond = NULL;
-   b->finished_cond = NULL;
-   b->buffer = NULL;
-   b->size = num;
-   b->head = 0;
-   b->tail = 0;
+   memset(b, 0, sizeof(video_buffer_t));
+   b->capacity = capacity;
 
-   b->status = malloc(sizeof(enum kbStatus) * num);
+   b->status = malloc(sizeof(enum kbStatus) * capacity);
    if (!b->status)
       goto fail;
-   for (int i = 0; i < num; i++)
+   for (int i = 0; i < capacity; i++)
       b->status[i] = KB_OPEN;
 
    b->lock = slock_new();
@@ -49,11 +44,11 @@ video_buffer_t *video_buffer_create(size_t num, int frame_size, int width, int h
    if (!b->lock || !b->open_cond || !b->finished_cond)
       goto fail;
 
-   b->buffer = malloc(sizeof(video_decoder_context_t) * num);
+   b->buffer = malloc(sizeof(video_decoder_context_t) * capacity);
    if (!b->buffer)
       goto fail;
 
-   for (int i = 0; i < num; i++)
+   for (int i = 0; i < capacity; i++)
    {
       b->buffer[i].index = i;
       b->buffer[i].pts = 0;
@@ -94,7 +89,7 @@ void video_buffer_destroy(video_buffer_t *video_buffer)
    scond_free(video_buffer->finished_cond);
    free(video_buffer->status);
    if (video_buffer->buffer)
-      for (int i = 0; i < video_buffer->size; i++)
+      for (int i = 0; i < video_buffer->capacity; i++)
       {
    #if LIBAVUTIL_VERSION_MAJOR > 55
          av_frame_free(&video_buffer->buffer[i].hw_source);
@@ -120,7 +115,7 @@ void video_buffer_clear(video_buffer_t *video_buffer)
 
    video_buffer->head = 0;
    video_buffer->tail = 0;
-   for (int i = 0; i < video_buffer->size; i++)
+   for (int i = 0; i < video_buffer->capacity; i++)
       video_buffer->status[i] = KB_OPEN;
 
    slock_unlock(video_buffer->lock);
@@ -135,7 +130,7 @@ void video_buffer_get_open_slot(video_buffer_t *video_buffer, video_decoder_cont
       *context = &video_buffer->buffer[video_buffer->head];
       video_buffer->status[video_buffer->head] = KB_IN_PROGRESS;
       video_buffer->head++;
-      video_buffer->head %= video_buffer->size;
+      video_buffer->head %= video_buffer->capacity;
    }
 
    slock_unlock(video_buffer->lock);
@@ -149,7 +144,7 @@ void video_buffer_return_open_slot(video_buffer_t *video_buffer, video_decoder_c
    {
       video_buffer->status[context->index] = KB_OPEN;
       video_buffer->head--;
-      video_buffer->head %= video_buffer->size;
+      video_buffer->head %= video_buffer->capacity;
    }
 
    slock_unlock(video_buffer->lock);
@@ -163,7 +158,7 @@ void video_buffer_open_slot(video_buffer_t *video_buffer, video_decoder_context_
    {
       video_buffer->status[context->index] = KB_OPEN;
       video_buffer->tail++;
-      video_buffer->tail %= (video_buffer->size);
+      video_buffer->tail %= (video_buffer->capacity);
       scond_signal(video_buffer->open_cond);
    }
 
