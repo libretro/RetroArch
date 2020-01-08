@@ -53,7 +53,6 @@ using namespace Windows::Storage::FileProperties;
 #include <retro_assert.h>
 #include <string/stdstring.h>
 #include <retro_environment.h>
-#include <uwp/uwp_func.h>
 #include <uwp/uwp_async.h>
 
 namespace
