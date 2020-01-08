@@ -312,10 +312,13 @@ static void msg_widget_msg_transition_animation_done(void *userdata)
 {
    menu_widget_msg_t *msg = (menu_widget_msg_t*) userdata;
 
-   free(msg->msg);
+   if (msg->msg)
+      free(msg->msg);
+   msg->msg = NULL;
 
-   msg->msg                      = msg->msg_new;
-   msg->msg_new                  = NULL;
+   if (msg->msg_new)
+      msg->msg = strdup(msg->msg_new);
+
    msg->msg_transition_animation = 0.0f;
 }
 
@@ -1035,9 +1038,13 @@ static void menu_widgets_draw_task_msg(menu_widget_msg_t *msg, video_frame_info_
    float *msg_queue_current_background;
    float *msg_queue_current_bar;
 
+   bool draw_msg_new               = false;
    unsigned task_percentage_offset = 0;
    char task_percentage[256]       = {0};
    settings_t *settings            = config_get_ptr();
+
+   if (msg->msg_new)
+      draw_msg_new = !string_is_equal(msg->msg_new, msg->msg);
 
    task_percentage_offset = glyph_width * (msg->task_error ? 12 : 5) + simple_widget_padding * 1.25f; /*11 = strlen("Task failed")+1 */
 
@@ -1113,7 +1120,7 @@ static void menu_widgets_draw_task_msg(menu_widget_msg_t *msg, video_frame_info_
    menu_display_blend_end(video_info);
 
    /* Text */
-   if (msg->msg_new)
+   if (draw_msg_new)
    {
       font_driver_flush(video_info->width, video_info->height, font_regular, video_info);
       font_raster_regular.carr.coords.vertices  = 0;
@@ -1146,7 +1153,7 @@ static void menu_widgets_draw_task_msg(menu_widget_msg_t *msg, video_frame_info_
       true
    );
 
-   if (msg->msg_new)
+   if (draw_msg_new)
    {
       font_driver_flush(video_info->width, video_info->height, font_regular, video_info);
       font_raster_regular.carr.coords.vertices  = 0;
