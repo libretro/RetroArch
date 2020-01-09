@@ -915,11 +915,11 @@ static const bool network_on_demand_thumbnails = false;
 #endif
 
 /* Number of entries that will be kept in content history playlist file. */
-static const unsigned default_content_history_size = 100;
+static const unsigned default_content_history_size = 200;
 
 /* Number of entries that will be kept in content favorites playlist file.
  * -1 == 'unlimited' (99999) */
-static const int default_content_favorites_size = 100;
+static const int default_content_favorites_size = 200;
 
 /* Sort all playlists (apart from histories) alphabetically */
 static const bool playlist_sort_alphabetical = true;
