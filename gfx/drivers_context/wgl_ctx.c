@@ -652,9 +652,9 @@ static void *gfx_ctx_wgl_init(video_frame_info_t *video_info, void *video_driver
 
 #ifdef HAVE_DYNAMIC
 #ifdef HAVE_OPENGL
-   dll_handle = dylib_load("libGLESv2.dll");
-#else
    dll_handle = dylib_load("OpenGL32.dll");
+#else
+   dll_handle = dylib_load("libGLESv2.dll");
 #endif
 #endif
 
