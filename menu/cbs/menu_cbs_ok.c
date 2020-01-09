@@ -104,7 +104,6 @@ enum
    ACTION_OK_SUBSYSTEM_ADD,
    ACTION_OK_LOAD_CONFIG_FILE,
    ACTION_OK_LOAD_CORE,
-   ACTION_OK_SIDELOAD_CORE,
    ACTION_OK_LOAD_WALLPAPER,
    ACTION_OK_SET_PATH,
    ACTION_OK_SET_PATH_AUDIO_FILTER,
@@ -817,7 +816,7 @@ int generic_action_ok_displaylist_push(const char *path,
          info.directory_ptr = idx;
          info_path          = settings->paths.directory_core_assets;
          info_label         = label;
-         dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_SIDELOAD_CORE;
+         dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
          break;
       case ACTION_OK_DL_CONTENT_COLLECTION_LIST:
          info.type          = type;
@@ -1513,9 +1512,28 @@ int generic_action_ok_command(enum event_command cmd)
 /* TO-DO: Localization for errors */
 static bool file_copy(const char *src_path, const char *dst_path, char *msg, size_t size)
 {
+   RFILE *src = NULL;
    RFILE *dst = NULL;
    bool ret   = true;
-   RFILE *src = filestream_open(src_path,
+
+   /* Sanity check */
+   if (string_is_empty(src_path) || string_is_empty(dst_path))
+   {
+      strlcpy(msg, "invalid arguments", size);
+      ret = false;
+      goto end;
+   }
+
+   if (!path_is_valid(src_path))
+   {
+      strlcpy(msg, "source file does not exist", size);
+      ret = false;
+      goto end;
+   }
+
+   /* Open source file */
+   src = filestream_open(
+         src_path,
          RETRO_VFS_FILE_ACCESS_READ,
          RETRO_VFS_FILE_ACCESS_HINT_NONE);
 
@@ -1523,9 +1541,12 @@ static bool file_copy(const char *src_path, const char *dst_path, char *msg, siz
    {
       strlcpy(msg, "unable to open source file", size);
       ret = false;
+      goto end;
    }
 
-   dst = filestream_open(dst_path,
+   /* Open destination file */
+   dst = filestream_open(
+         dst_path,
          RETRO_VFS_FILE_ACCESS_WRITE,
          RETRO_VFS_FILE_ACCESS_HINT_NONE);
 
@@ -1533,8 +1554,10 @@ static bool file_copy(const char *src_path, const char *dst_path, char *msg, siz
    {
       strlcpy(msg, "unable to open destination file", size);
       ret = false;
+      goto end;
    }
 
+   /* Copy file contents */
    while (!filestream_eof(src))
    {
       int64_t numw;
@@ -1543,23 +1566,27 @@ static bool file_copy(const char *src_path, const char *dst_path, char *msg, siz
 
       if (filestream_error(dst) != 0)
       {
-         strlcpy(msg, "error reading file\n", size);
+         strlcpy(msg, "error reading source file", size);
          ret = false;
-         break;
+         goto end;
       }
 
       numw = filestream_write(dst, buffer, numr);
 
       if (numw != numr)
       {
-         strlcpy(msg, "error writing to file\n", size);
+         strlcpy(msg, "error writing to destination file", size);
          ret = false;
-         break;
+         goto end;
       }
    }
 
-   filestream_close(src);
-   filestream_close(dst);
+end:
+   if (src)
+      filestream_close(src);
+
+   if (dst)
+      filestream_close(dst);
 
    return ret;
 }
@@ -1633,31 +1660,6 @@ static int generic_action_ok(const char *path,
 #ifndef HAVE_DYNAMIC
                ret = -1;
 #endif
-            }
-         }
-         break;
-      case ACTION_OK_SIDELOAD_CORE:
-         {
-            settings_t            *settings = config_get_ptr();
-            char destination_path[PATH_MAX_LENGTH];
-            char message[PATH_MAX_LENGTH];
-
-            fill_pathname_join(destination_path, settings->paths.directory_libretro, path_basename(action_path), sizeof(destination_path));
-
-            if (!file_copy(
-                     action_path, destination_path, message, sizeof(message)))
-            {
-               runloop_msg_queue_push(msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_ERROR), 1, 100, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-               RARCH_LOG("[sideload] %s: %s\n", msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_ERROR), message);
-               RARCH_LOG(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_ERROR));
-            }
-            else
-            {
-               runloop_msg_queue_push(msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_SUCCESS), 1, 100, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-               RARCH_LOG("[sideload] %s\n", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_SUCCESS));
             }
          }
          break;
@@ -1866,7 +1868,6 @@ default_action_ok_set(action_ok_set_path_video_layout,ACTION_OK_SET_PATH_VIDEO_L
 #endif
 default_action_ok_set(action_ok_set_path,             ACTION_OK_SET_PATH,              MSG_UNKNOWN)
 default_action_ok_set(action_ok_load_core,            ACTION_OK_LOAD_CORE,             MSG_UNKNOWN)
-default_action_ok_set(action_ok_sideload_core,            ACTION_OK_SIDELOAD_CORE,             MSG_UNKNOWN)
 default_action_ok_set(action_ok_config_load,          ACTION_OK_LOAD_CONFIG_FILE,      MSG_UNKNOWN)
 default_action_ok_set(action_ok_disk_image_append,    ACTION_OK_APPEND_DISK_IMAGE,     MSG_UNKNOWN)
 default_action_ok_set(action_ok_subsystem_add,        ACTION_OK_SUBSYSTEM_ADD,         MSG_UNKNOWN)
@@ -4337,6 +4338,94 @@ static int action_ok_update_installed_cores(const char *path,
    return 0;
 }
 
+static int action_ok_sideload_core(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   settings_t *settings  = config_get_ptr();
+   menu_handle_t *menu   = menu_driver_get_ptr();
+   const char *menu_path = NULL;
+   const char *core_file = path;
+   int ret               = -1;
+   char src_path[PATH_MAX_LENGTH];
+   char dst_path[PATH_MAX_LENGTH];
+   char msg[PATH_MAX_LENGTH];
+
+   src_path[0] = '\0';
+   dst_path[0] = '\0';
+   msg[0]      = '\0';
+
+   /* Sanity check */
+   if (!menu)
+      return menu_cbs_exit();
+
+   if (!settings || string_is_empty(core_file))
+      goto end;
+
+   if (string_is_empty(settings->paths.directory_libretro))
+      goto end;
+
+   /* Get source core path */
+   menu_entries_get_last_stack(
+         &menu_path, NULL, NULL, NULL, NULL);
+
+   if (!string_is_empty(menu_path))
+      fill_pathname_join(
+            src_path, menu_path, core_file, sizeof(src_path));
+   else
+      strlcpy(src_path, core_file, sizeof(src_path));
+
+   /* Get destination core path */
+   fill_pathname_join(
+         dst_path, settings->paths.directory_libretro,
+         core_file, sizeof(dst_path));
+
+   /* Copy core file from source to destination */
+   if (file_copy(src_path, dst_path, msg, sizeof(msg)))
+   {
+      /* Success */
+
+      /* Reload core info files */
+      command_event(CMD_EVENT_CORE_INFO_INIT, NULL);
+
+      /* Log result */
+      runloop_msg_queue_push(
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_SUCCESS),
+            1, 100, true,
+            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+
+      RARCH_LOG(
+            "[sideload] %s\n",
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_SUCCESS));
+   }
+   else
+   {
+      /* Failure - just log result */
+      runloop_msg_queue_push(
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_ERROR),
+            1, 100, true,
+            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+
+      RARCH_LOG(
+            "[sideload] %s: %s\n",
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_ERROR), msg);
+   }
+
+   /* Regardless of file copy success/failure, function
+    * should return zero if we get this far (since a
+    * failure would correspond to a filesystem error,
+    * not a menu error...) */
+   ret = 0;
+
+end:
+   /* Flush stack
+    * > Since the 'sideload core' option is present
+    *   in several locations, can't flush to a predefined
+    *   level - just go to the top */
+   menu_entries_flush_stack(NULL, 0);
+
+   return ret;
+}
+
 #define default_action_ok_download(funcname, _id) \
 static int (funcname)(const char *path, const char *label, unsigned type, size_t idx, size_t entry_idx) \
 { \
@@ -6359,9 +6448,6 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_FILE_BROWSER_CORE:
             BIND_ACTION_OK(cbs, action_ok_load_core);
             break;
-         case MENU_ENUM_LABEL_FILE_BROWSER_SIDELOAD_CORE:
-            BIND_ACTION_OK(cbs, action_ok_sideload_core);
-            break;
          case MENU_ENUM_LABEL_FILE_BROWSER_CORE_SELECT_FROM_COLLECTION:
          case MENU_ENUM_LABEL_FILE_BROWSER_CORE_SELECT_FROM_COLLECTION_CURRENT_CORE:
             BIND_ACTION_OK(cbs, action_ok_core_deferred_set);
@@ -7025,6 +7111,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_LABEL_LOAD_ARCHIVE:
             BIND_ACTION_OK(cbs, action_ok_load_archive);
             break;
+         case MENU_LABEL_SIDELOAD_CORE_LIST:
+            BIND_ACTION_OK(cbs, action_ok_sideload_core_list);
+            break;
          case MENU_LABEL_VIDEO_SHADER_PASS:
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
             BIND_ACTION_OK(cbs, action_ok_shader_pass);
@@ -7437,9 +7526,6 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
                   case MENU_LABEL_CORE_LIST:
                      BIND_ACTION_OK(cbs, action_ok_load_core);
                      break;
-                  case MENU_LABEL_SIDELOAD_CORE_LIST:
-                     BIND_ACTION_OK(cbs, action_ok_sideload_core);
-                     break;
                }
             }
             break;
@@ -7454,6 +7540,9 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             break;
          case FILE_TYPE_DOWNLOAD_CORE:
             BIND_ACTION_OK(cbs, action_ok_core_updater_download);
+            break;
+         case FILE_TYPE_SIDELOAD_CORE:
+            BIND_ACTION_OK(cbs, action_ok_sideload_core);
             break;
          case FILE_TYPE_DOWNLOAD_URL:
             BIND_ACTION_OK(cbs, action_ok_download_url);
