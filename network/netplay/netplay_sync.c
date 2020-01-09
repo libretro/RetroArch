@@ -610,10 +610,8 @@ bool netplay_sync_pre_frame(netplay_t *netplay)
 
    if (netplay->is_server)
    {
-#if !defined(VITA)
       fd_set fds;
       struct timeval tmp_tv = {0};
-#endif
       int new_fd;
       struct sockaddr_storage their_addr;
       socklen_t addr_size;
@@ -621,13 +619,11 @@ bool netplay_sync_pre_frame(netplay_t *netplay)
       size_t connection_num;
 
       /* Check for a connection */
-#if !defined(VITA)
       FD_ZERO(&fds);
       FD_SET(netplay->listen_fd, &fds);
       if (socket_select(netplay->listen_fd + 1,
                &fds, NULL, NULL, &tmp_tv) > 0 &&
           FD_ISSET(netplay->listen_fd, &fds))
-#endif
       {
          addr_size = sizeof(their_addr);
          new_fd = accept(netplay->listen_fd,
@@ -635,10 +631,6 @@ bool netplay_sync_pre_frame(netplay_t *netplay)
 
          if (new_fd < 0)
          {
-#if defined(VITA)
-            if (new_fd != SCE_NET_ERROR_EAGAIN &&
-                new_fd != SCE_NET_ERROR_EWOULDBLOCK)
-#endif
             RARCH_ERR("%s\n", msg_hash_to_str(MSG_NETPLAY_FAILED));
             goto process;
          }

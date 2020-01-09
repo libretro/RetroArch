@@ -56,55 +56,15 @@
 
 #include <network.h>
 
-#elif defined(VITA)
-
-#include <psp2/net/net.h>
-#include <psp2/net/netctl.h>
-
-#define sockaddr_in SceNetSockaddrIn
-#define sockaddr SceNetSockaddr
-#define sendto sceNetSendto
-#define recvfrom sceNetRecvfrom
-#define socket(a,b,c) sceNetSocket("unknown",a,b,c)
-#define bind sceNetBind
-#define accept sceNetAccept
-#define setsockopt sceNetSetsockopt
-#define connect sceNetConnect
-#define listen sceNetListen
-#define send sceNetSend
-#define recv sceNetRecv
-#define MSG_DONTWAIT SCE_NET_MSG_DONTWAIT
-#define AF_INET SCE_NET_AF_INET
-#define AF_UNSPEC 0
-#define INADDR_ANY SCE_NET_INADDR_ANY
-#define INADDR_NONE 0xffffffff
-#define SOCK_STREAM SCE_NET_SOCK_STREAM
-#define SOCK_DGRAM SCE_NET_SOCK_DGRAM
-#define SOL_SOCKET SCE_NET_SOL_SOCKET
-#define SO_BROADCAST SCE_NET_SO_BROADCAST
-#define SO_REUSEADDR SCE_NET_SO_REUSEADDR
-#define SO_SNDBUF SCE_NET_SO_SNDBUF
-#define SO_SNDTIMEO SCE_NET_SO_SNDTIMEO
-#define SO_NBIO SCE_NET_SO_NBIO
-#define htonl sceNetHtonl
-#define ntohl sceNetNtohl
-#define htons sceNetHtons
-#define ntohs sceNetNtohs
-#define socklen_t unsigned int
-
-struct hostent
-{
-	char *h_name;
-	char **h_aliases;
-	int  h_addrtype;
-	int  h_length;
-	char **h_addr_list;
-	char *h_addr;
-};
-
-struct SceNetInAddr inet_aton(const char *ip_addr);
-
 #else
+
+#if defined(VITA)
+
+#include <psp2/net/netctl.h>
+#define SO_NBIO SO_NONBLOCK     
+
+#endif
+
 #include <sys/select.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -159,8 +119,6 @@ static INLINE bool isagain(int bytes)
    return true;
 #elif defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
    return (sys_net_errno == SYS_NET_EWOULDBLOCK) || (sys_net_errno == SYS_NET_EAGAIN);//35
-#elif defined(VITA)
-   return (bytes<0 && (bytes == SCE_NET_ERROR_EAGAIN || bytes == SCE_NET_ERROR_EWOULDBLOCK));
 #elif defined(WIIU)
    return (bytes == -1) && ((socketlasterr() == SO_SUCCESS) || (socketlasterr() == SO_EWOULDBLOCK));
 #else

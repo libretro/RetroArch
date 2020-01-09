@@ -110,10 +110,6 @@ bool init_netplay_discovery(void)
       goto error;
    }
 
-#if defined(VITA)
-   socket_nonblock(fd);
-#endif
-
    lan_ad_client_fd = fd;
    freeaddrinfo_retro(addr);
    return true;
@@ -223,10 +219,6 @@ static bool init_lan_ad_server_socket(netplay_t *netplay, uint16_t port)
       goto error;
    }
 
-#if defined(VITA)
-   socket_nonblock(fd);
-#endif
-
    lan_ad_server_fd = fd;
    freeaddrinfo_retro(addr);
 
@@ -248,13 +240,9 @@ bool netplay_lan_ad_server(netplay_t *netplay)
 {
 /* Todo: implement net_ifinfo and ntohs for consoles */
 #ifdef HAVE_NETPLAYDISCOVERY
-#if !defined(VITA)
    fd_set fds;
-#endif
    int ret;
-#if !defined(VITA)
    struct timeval tmp_tv = {0};
-#endif
    struct sockaddr their_addr;
    socklen_t addr_size;
    unsigned k = 0;
@@ -274,26 +262,16 @@ bool netplay_lan_ad_server(netplay_t *netplay)
    /* Check for any ad queries */
    while (1)
    {
-#if !defined(VITA)
       FD_ZERO(&fds);
       FD_SET(lan_ad_server_fd, &fds);
       if (socket_select(lan_ad_server_fd + 1, &fds, NULL, NULL, &tmp_tv) <= 0)
          break;
       if (!FD_ISSET(lan_ad_server_fd, &fds))
          break;
-#endif
       /* Somebody queried, so check that it's valid */
       addr_size = sizeof(their_addr);
-#if !defined(VITA)
       ret       = (int)recvfrom(lan_ad_server_fd, (char*)&ad_packet_buffer,
             sizeof(struct ad_packet), 0, &their_addr, &addr_size);
-#else
-      ret       = (int)recvfrom(lan_ad_server_fd, (char*)&ad_packet_buffer,
-            sizeof(struct ad_packet), MSG_DONTWAIT, &their_addr, &addr_size);
-      if (ret <= 0) {
-         break;
-      }
-#endif
       if (ret >= (ssize_t) (2 * sizeof(uint32_t)))
       {
          char s[NETPLAY_HOST_STR_LEN];
@@ -432,14 +410,10 @@ static int16_t htons_for_morons(int16_t value)
 
 static bool netplay_lan_ad_client(void)
 {
-#if !defined(VITA)
    fd_set fds;
-#endif
    socklen_t addr_size;
    struct sockaddr their_addr;
-#if !defined(VITA)
    struct timeval tmp_tv = {0};
-#endif
 
    if (lan_ad_client_fd < 0)
       return false;
@@ -447,7 +421,6 @@ static bool netplay_lan_ad_client(void)
    /* Check for any ad queries */
    while (1)
    {
-#if !defined(VITA)
       FD_ZERO(&fds);
       FD_SET(lan_ad_client_fd, &fds);
       if (socket_select(lan_ad_client_fd + 1,
@@ -456,22 +429,11 @@ static bool netplay_lan_ad_client(void)
 
       if (!FD_ISSET(lan_ad_client_fd, &fds))
          break;
-#endif
       /* Somebody queried, so check that it's valid */
       addr_size = sizeof(their_addr);
-#if !defined(VITA)
       if (recvfrom(lan_ad_client_fd, (char*)&ad_packet_buffer,
             sizeof(struct ad_packet), 0, &their_addr, &addr_size) >=
             (ssize_t) sizeof(struct ad_packet))
-#else
-      int ret = (int)recvfrom(lan_ad_client_fd, (char*)&ad_packet_buffer,
-            sizeof(struct ad_packet), MSG_DONTWAIT, &their_addr, &addr_size);
-      if (ret <= 0) {
-         break;
-      }
-
-      if (ret >= (ssize_t) (2 * sizeof(uint32_t)))
-#endif
       {
          struct netplay_host *host = NULL;
 
@@ -482,12 +444,6 @@ static bool netplay_lan_ad_client(void)
          /* For this version */
          if (ntohl(ad_packet_buffer.protocol_version) != NETPLAY_PROTOCOL_VERSION)
             continue;
-
-#if defined(VITA)
-         /* Make message is fullsize */
-         if (ret < (ssize_t) sizeof(struct ad_packet))
-            continue;
-#endif
 
          /* And that we know how to handle it */
          if (their_addr.sa_family == AF_INET)
