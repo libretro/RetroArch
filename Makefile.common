@@ -201,6 +201,7 @@ endif
 OBJ += \
        $(LIBRETRO_COMM_DIR)/file/nbio/nbio_intf.o \
        $(LIBRETRO_COMM_DIR)/file/file_path.o \
+       $(LIBRETRO_COMM_DIR)/file/file_path_io.o \
        file_path_special.o \
        file_path_str.o \
        $(LIBRETRO_COMM_DIR)/hash/rhash.o \

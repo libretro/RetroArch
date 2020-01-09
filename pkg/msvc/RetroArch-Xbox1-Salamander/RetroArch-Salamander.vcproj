@@ -335,6 +335,9 @@
 						RelativePath="..\..\..\libretro-common\file\file_path.c">
 					</File>
 					<File
+						RelativePath="..\..\..\libretro-common\file\file_path_io.c">
+					</File>
+					<File
 						RelativePath="..\..\..\libretro-common\file\retro_dirent.c">
 					</File>
 				</Filter>

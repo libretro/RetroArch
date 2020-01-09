@@ -56,6 +56,7 @@ OBJ = frontend/frontend_salamander.o \
 		frontend/drivers/platform_gx.o \
 		frontend/drivers/platform_wii.o \
 		libretro-common/file/file_path.o \
+		libretro-common/file/file_path_io.o \
 		libretro-common/hash/rhash.o \
 		libretro-common/string/stdstring.o \
 		libretro-common/lists/string_list.o \
