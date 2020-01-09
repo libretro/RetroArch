@@ -2673,10 +2673,7 @@ static unsigned menu_displaylist_parse_cores(
       else
       {
          file_type = FILE_TYPE_CORE;
-         if (string_is_equal(info->label, msg_hash_to_str(MENU_ENUM_LABEL_SIDELOAD_CORE_LIST)))
-            enum_idx  = MENU_ENUM_LABEL_FILE_BROWSER_SIDELOAD_CORE;
-         else
-            enum_idx  = MENU_ENUM_LABEL_FILE_BROWSER_CORE;
+         enum_idx  = MENU_ENUM_LABEL_FILE_BROWSER_CORE;
       }
 
       items_found++;
@@ -9676,7 +9673,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
       case DISPLAYLIST_FILE_BROWSER_SELECT_DIR:
       case DISPLAYLIST_FILE_BROWSER_SELECT_FILE:
       case DISPLAYLIST_FILE_BROWSER_SELECT_CORE:
-      case DISPLAYLIST_FILE_BROWSER_SELECT_SIDELOAD_CORE:
       case DISPLAYLIST_FILE_BROWSER_SELECT_COLLECTION:
       case DISPLAYLIST_GENERIC:
          info->need_navigation_clear = true;
@@ -9906,6 +9902,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
       case DISPLAYLIST_AUDIO_FILTERS:
       case DISPLAYLIST_CHEAT_FILES:
       case DISPLAYLIST_MANUAL_CONTENT_SCAN_DAT_FILES:
+      case DISPLAYLIST_FILE_BROWSER_SELECT_SIDELOAD_CORE:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          filebrowser_clear_type();
          if (!string_is_empty(info->exts))
@@ -9955,6 +9952,18 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             case DISPLAYLIST_MANUAL_CONTENT_SCAN_DAT_FILES:
                info->type_default = FILE_TYPE_MANUAL_SCAN_DAT;
                info->exts         = strdup("dat|xml");
+               break;
+            case DISPLAYLIST_FILE_BROWSER_SELECT_SIDELOAD_CORE:
+               {
+                  char ext_name[PATH_MAX_LENGTH];
+                  ext_name[0] = '\0';
+
+                  info->type_default = FILE_TYPE_SIDELOAD_CORE;
+
+                  if (frontend_driver_get_core_extension(
+                           ext_name, sizeof(ext_name)))
+                     info->exts      = strdup(ext_name);
+               }
                break;
             default:
                break;
