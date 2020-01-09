@@ -1,7 +1,9 @@
 # Future
 
 # 1.8.3
+- ANDROID/BUGFIX: Fix 'Install or Restore Core' regression
 - BUGFIX: Ensure core info is always initialised when calling 'drivers_init()'. This bug could prevent cores from doing content runtime logging
+- BUGFIX/MENU: History size can only be set to 1 at a minimum
 - BUGFIX/MENU: (XMB/OZONE) Fix 'quick menu' detection. XMB would not display savestate thumbnails in the quick menu if it was accessed via the main menu
 - BUGFIX/CRASH/CORE UPDATER: Fix potential double free error
 - BUGFIX/MENU/DESKTOP UI: Show desktop menu on startup does not launch Qt UI on Linux
@@ -13,6 +15,8 @@
 - D3D11: Block FL9_3 devices from D3D11 driver because they don't work anyway (current D3D11 driver uses SM4.0 which requires FL10_0 and up)
 - D3D11: Fallback to GL driver when D3D11 fails
 - EMSCRIPTEN: Fix assets
+- HISTORY/FAVORITES: Bump up default to 200 entries from 100
+- FFMPEG CORE: Implement packet buffer, fixes MP4 video playback for many files
 - LOCALIZATION: Update Italian translation
 - LOCALIZATION: Update Polish translation
 - LOCALIZATION: Update Russian translation
@@ -20,11 +24,13 @@
 - MENU: Added 'Hosting' menu under Netplay menu
 - MENU: Added 'Subsystems' menu
 - MENU/FILEBROWSER: Fix file selection issues when starting from (or navigating to) the top level directory
+- MENU/WIDGETS: Prevent looping of task title text
 - RASPBERRY PI: Fix BGRA8888 color inversion issues in the menu and elsewhere with VideoCore GL drivers
 - NETPLAY/RELAY: Add Sao Paulo (Brazil) relay server
 - NETPLAY/RELAY: Fix the “spectator” bug when using the relay server – When a player switches into the spectator mode (pressing “i”) while using the relay server, all players will disconnect.
 - NETPLAY/RELAY: Overall stability has improved. Fixed a memory leak that would cause the relay server to become unresponsive after some time.
 - NETPLAY/RELAY: Fixed critical bug that would cause all players to be disconnected from the relay server if one player was leaving the game. That bug had been open for one year and we were finally able to fix it.
+- SWITCH/LIBNX/BUGFIX: Fix onscreen keyboard input regression
 - UWP: Add ANGLE support
 - UWP: Wire up get_metrics to the fake context of D3D9/10/11/12 driver, enabling proper scaling and mouse/touch gestures
 - VITA: Re-add Online Updater

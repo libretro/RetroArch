@@ -2642,6 +2642,8 @@ bool menu_input_dialog_start(menu_input_ctx_line_t *line)
 bool menu_input_dialog_get_display_kb(void)
 {
 #ifdef HAVE_LIBNX
+   SwkbdConfig kbd;
+   Result rc;
    /* Indicates that we are "typing" from the swkbd
     * result to RetroArch with repeated calls to input_keyboard_event
     * This prevents input_keyboard_event from calling back
@@ -2651,8 +2653,6 @@ bool menu_input_dialog_get_display_kb(void)
    if (typing)
       return false;
 
-   SwkbdConfig kbd;
-   Result rc;
 
    /* swkbd only works on "real" titles */
    if (     __nx_applet_type != AppletType_Application
