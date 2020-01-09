@@ -6,6 +6,7 @@
 - BUGFIX/MENU: History size can only be set to 1 at a minimum
 - BUGFIX/MENU: (XMB/OZONE) Fix 'quick menu' detection. XMB would not display savestate thumbnails in the quick menu if it was accessed via the main menu
 - BUGFIX/CRASH/CORE UPDATER: Fix potential double free error
+- BUGFIX/CRASH/OPENGL/WINDOWS: Fix regression in 1.8.2 that would cause GL-based cores to fail because it would try to erroneously load libGLESv2.dll instead of OpenGL32.dll (cores affected: VitaQuake 2/3/Dhewm3, possibly more)
 - BUGFIX/MENU/DESKTOP UI: Show desktop menu on startup does not launch Qt UI on Linux
 - CHEEVOS: Don't disable achievement when AddAddress generates an out-of-range address
 - CHEEVOS: Don't reset triggers/leaderboards that failed to load
