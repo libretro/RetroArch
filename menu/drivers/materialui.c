@@ -7393,6 +7393,12 @@ static void materialui_list_insert(
             node->icon_texture_index = MUI_TEXTURE_FOLDER;
             node->has_icon           = true;
             break;
+         case MENU_ROOM_LAN:
+         case MENU_ROOM_RELAY:
+         case MENU_ROOM:
+            node->icon_texture_index = MUI_TEXTURE_SETTINGS;
+            node->has_icon           = true;
+            break;
          default:
             if (
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_INFORMATION_LIST))              ||
