@@ -1779,6 +1779,10 @@ ifeq ($(HAVE_NETWORKING), 1)
       OBJ += $(LIBRETRO_COMM_DIR)/net/net_ifinfo.o
    endif
 
+   ifeq ($(TARGET), retroarch_vita)
+      OBJ += $(LIBRETRO_COMM_DIR)/net/net_ifinfo.o
+   endif
+
    ifeq ($(WANT_IFADDRS), 1)
       DEFINES += -DWANT_IFADDRS
       OBJ += $(LIBRETRO_COMM_DIR)/compat/compat_ifaddrs.o

@@ -15577,7 +15577,7 @@ static bool setting_append_list(
                   sizeof(settings->paths.netplay_server),
                   MENU_ENUM_LABEL_NETPLAY_IP_ADDRESS,
                   MENU_ENUM_LABEL_VALUE_NETPLAY_IP_ADDRESS,
-                  "",
+                  settings->paths.netplay_server,
                   &group_info,
                   &subgroup_info,
                   parent_group,

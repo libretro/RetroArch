@@ -5107,7 +5107,7 @@ static void netplay_refresh_rooms_cb(retro_task_t *task,
 
          lan_room_count                       = 0;
 
-#ifndef RARCH_CONSOLE
+#if !defined(RARCH_CONSOLE) || defined(VITA)
          netplay_discovery_driver_ctl(RARCH_NETPLAY_DISCOVERY_CTL_LAN_GET_RESPONSES, &lan_hosts);
          if (lan_hosts)
             lan_room_count                    = (int)lan_hosts->size;
@@ -5240,7 +5240,7 @@ static int action_ok_push_netplay_refresh_rooms(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    char url [2048] = "http://lobby.libretro.com/list/";
-#ifndef RARCH_CONSOLE
+#if !defined(RARCH_CONSOLE) || defined(VITA)
    task_push_netplay_lan_scan(netplay_lan_scan_callback);
 #endif
    task_push_http_transfer(url, true, NULL, netplay_refresh_rooms_cb, NULL);

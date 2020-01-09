@@ -81,6 +81,7 @@
 #define SOCK_STREAM SCE_NET_SOCK_STREAM
 #define SOCK_DGRAM SCE_NET_SOCK_DGRAM
 #define SOL_SOCKET SCE_NET_SOL_SOCKET
+#define SO_BROADCAST SCE_NET_SO_BROADCAST
 #define SO_REUSEADDR SCE_NET_SO_REUSEADDR
 #define SO_SNDBUF SCE_NET_SO_SNDBUF
 #define SO_SNDTIMEO SCE_NET_SO_SNDTIMEO
@@ -88,6 +89,7 @@
 #define htonl sceNetHtonl
 #define ntohl sceNetNtohl
 #define htons sceNetHtons
+#define ntohs sceNetNtohs
 #define socklen_t unsigned int
 
 struct hostent

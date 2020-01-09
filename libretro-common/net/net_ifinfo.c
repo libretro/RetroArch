@@ -38,7 +38,7 @@
 #ifdef WANT_IFADDRS
 #include <compat/ifaddrs.h>
 #else
-#ifndef HAVE_LIBNX
+#if !defined(HAVE_LIBNX) && !defined(VITA)
 #include <ifaddrs.h>
 #endif
 #endif
@@ -48,6 +48,10 @@
 
 #if defined(BSD)
 #include <netinet/in.h>
+#endif
+
+#if defined(VITA)
+#include <psp2/net/netctl.h>
 #endif
 
 void net_ifinfo_free(net_ifinfo_t *list)
@@ -192,6 +196,20 @@ bool net_ifinfo_new(net_ifinfo_t *list)
    }
 
    free(adapter_addresses);
+#elif defined(VITA)
+   memset(list, 0, sizeof(net_ifinfo_t));
+
+   SceNetCtlInfo info;
+
+   if (sceNetCtlInetGetInfo(SCE_NETCTL_INFO_GET_IP_ADDRESS, &info) >= 0) {
+      list->entries = (struct net_ifinfo_entry*) malloc(sizeof(struct net_ifinfo_entry));
+      list->size = 1;
+      list->entries[0].name = (char*) malloc(32 + 1);
+      sprintf(list->entries[0].name, "WIFI_LAN");
+      list->entries[0].host = strdup(info.ip_address);
+   } else {
+      goto error;
+   }
 #else
    struct ifaddrs *ifa     = NULL;
    struct ifaddrs *ifaddr  = NULL;
@@ -242,7 +260,7 @@ error:
 #ifdef _WIN32
    if (adapter_addresses)
       free(adapter_addresses);
-#elif !defined(HAVE_LIBNX)
+#elif !defined(HAVE_LIBNX) && !defined(VITA)
    freeifaddrs(ifaddr);
 #endif
    net_ifinfo_free(list);
