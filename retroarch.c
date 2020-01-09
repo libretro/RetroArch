@@ -56,6 +56,7 @@
 #include <setjmp.h>
 #include <math.h>
 #include <locale.h>
+#include <signal.h>
 
 #include <boolean.h>
 #include <clamping.h>
