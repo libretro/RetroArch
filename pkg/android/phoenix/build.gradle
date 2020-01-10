@@ -56,12 +56,6 @@ android {
         abiFilters 'armeabi-v7a', 'x86'
       }
     }
-    gold {
-      applicationIdSuffix '.gold'
-      resValue "string", "app_name", "RetroArch Gold"
-
-      dimension "variant"
-    }
   }
 
   sourceSets {
