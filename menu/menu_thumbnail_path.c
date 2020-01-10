@@ -470,6 +470,9 @@ bool menu_thumbnail_set_content_playlist(menu_thumbnail_path_data_t *path_data, 
    /* Read playlist values */
    playlist_get_index(playlist, idx, &entry);
 
+   if (!entry)
+      return false;
+
    content_path  = entry->path;
    content_label = entry->label;
    core_name     = entry->core_name;

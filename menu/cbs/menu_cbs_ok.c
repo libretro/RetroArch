@@ -4094,8 +4094,6 @@ void cb_generic_download(retro_task_t *task,
          dir_path = buf;
          break;
       }
-      case MENU_ENUM_LABEL_CB_SINGLE_THUMBNAIL:
-         break;
       default:
          RARCH_WARN("Unknown transfer type '%s' bailing out.\n",
                msg_hash_to_str(transf->enum_idx));
@@ -4105,12 +4103,6 @@ void cb_generic_download(retro_task_t *task,
    if (!string_is_empty(dir_path))
       fill_pathname_join(output_path, dir_path,
             transf->path, sizeof(output_path));
-   else if (transf->enum_idx == MENU_ENUM_LABEL_CB_SINGLE_THUMBNAIL)
-   {
-      /* In this particular case we have the whole path
-       * already built from the task */
-      strlcpy(output_path, transf->path, sizeof(output_path));
-   }
 
    /* Make sure the directory exists
     * This function is horrible. It mutates the original path
@@ -4128,12 +4120,6 @@ void cb_generic_download(retro_task_t *task,
    if (!string_is_empty(dir_path))
       fill_pathname_join(output_path, dir_path,
             transf->path, sizeof(output_path));
-   else if (transf->enum_idx == MENU_ENUM_LABEL_CB_SINGLE_THUMBNAIL)
-   {
-      /* In this particular case we have the whole path
-       * already built from the task */
-      strlcpy(output_path, transf->path, sizeof(output_path));
-   }
 
 #ifdef HAVE_COMPRESSION
    if (path_is_compressed_file(output_path))
