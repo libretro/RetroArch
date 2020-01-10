@@ -23,6 +23,7 @@
 #include <string/stdstring.h>
 #include <file/file_path.h>
 #include <net/net_http.h>
+#include <streams/file_stream.h>
 
 #include "tasks_internal.h"
 #include "task_file_transfer.h"
@@ -30,6 +31,7 @@
 #include "../configuration.h"
 #include "../file_path_special.h"
 #include "../playlist.h"
+#include "../verbosity.h"
 
 #ifdef RARCH_INTERNAL
 #ifdef HAVE_MENU
@@ -55,6 +57,7 @@ typedef struct pl_thumb_handle
    playlist_t *playlist;
    menu_thumbnail_path_data_t *thumbnail_path_data;
    retro_task_t *http_task;
+   bool http_task_complete;
    size_t list_size;
    size_t list_index;
    unsigned type_idx;
@@ -162,16 +165,90 @@ static bool get_thumbnail_paths(
    return true;
 }
 
+/* Thumbnail download http task callback function
+ * > Writes thumbnail file to disk */
+void cb_http_task_download_pl_thumbnail(
+      retro_task_t *task, void *task_data,
+      void *user_data, const char *err)
+{
+   http_transfer_data_t *data  = (http_transfer_data_t*)task_data;
+   file_transfer_t *transf     = (file_transfer_t*)user_data;
+   pl_thumb_handle_t *pl_thumb = NULL;
+   char output_dir[PATH_MAX_LENGTH];
+
+   output_dir[0] = '\0';
+
+   /* Update pl_thumb task status
+    * > Do this first, to minimise the risk of hanging
+    *   the parent task in the event of an http error */
+   if (!transf)
+      goto finish;
+
+   pl_thumb = (pl_thumb_handle_t*)transf->user_data;
+
+   if (!pl_thumb)
+      goto finish;
+
+   pl_thumb->http_task_complete = true;
+
+   /* Remaining sanity checks... */
+   if (!data)
+      goto finish;
+
+   if (!data->data || string_is_empty(transf->path))
+      goto finish;
+
+   /* Create output directory, if required */
+   strlcpy(output_dir, transf->path, sizeof(output_dir));
+   path_basedir_wrapper(output_dir);
+
+   if (!path_mkdir(output_dir))
+   {
+      err = msg_hash_to_str(MSG_FAILED_TO_CREATE_THE_DIRECTORY);
+      goto finish;
+   }
+
+   /* Write thumbnail file to disk */
+   if (!filestream_write_file(transf->path, data->data, data->len))
+   {
+      err = "Write failed.";
+      goto finish;
+   }
+
+finish:
+
+   /* Log any error messages */
+   if (!string_is_empty(err))
+   {
+      RARCH_ERR("Download of '%s' failed: %s\n",
+            (transf ? transf->path: "unknown"), err);
+   }
+
+   if (data)
+   {
+      if (data->data)
+         free(data->data);
+      free(data);
+   }
+
+   if (transf)
+      free(transf);
+}
+
 /* Download thumbnail of the current type for the current
  * playlist entry */
 static void download_pl_thumbnail(pl_thumb_handle_t *pl_thumb)
 {
    char path[PATH_MAX_LENGTH];
    char url[2048];
-   
+
    path[0] = '\0';
-   url[0] = '\0';
-   
+   url[0]  = '\0';
+
+   /* Sanity check */
+   if (!pl_thumb)
+      return;
+
    /* Check if paths are valid */
    if (get_thumbnail_paths(pl_thumb, path, sizeof(path), url, sizeof(url)))
    {
@@ -181,15 +258,24 @@ static void download_pl_thumbnail(pl_thumb_handle_t *pl_thumb)
          file_transfer_t *transf = (file_transfer_t*)calloc(1, sizeof(file_transfer_t));
          if (!transf)
             return; /* If this happens then everything is broken anyway... */
-         
+
+         /* Initialise http task status */
+         pl_thumb->http_task_complete = false;
+
          /* Initialise file transfer */
-         transf->enum_idx = MENU_ENUM_LABEL_CB_SINGLE_THUMBNAIL;
+         transf->user_data = (void*)pl_thumb;
          strlcpy(transf->path, path, sizeof(transf->path));
-         
+
          /* Note: We don't actually care if this fails since that
           * just means the file is missing from the server, so it's
           * not something we can handle here... */
-         pl_thumb->http_task = (retro_task_t*)task_push_http_transfer(url, true, NULL, cb_generic_download, transf);
+         pl_thumb->http_task = (retro_task_t*)task_push_http_transfer(
+               url, true, NULL, cb_http_task_download_pl_thumbnail, transf);
+
+         /* ...if it does fail, however, we can immediately
+          * signal that the task is 'complete' */
+         if (!pl_thumb->http_task)
+            pl_thumb->http_task_complete = true;
       }
    }
 }
@@ -318,13 +404,19 @@ static void task_pl_thumbnail_download_handler(retro_task_t *task)
          {
             /* Ensure that we only enqueue one transfer
              * at a time... */
-            if (pl_thumb->http_task)
-            {
-               if (task_get_finished(pl_thumb->http_task))
-                  pl_thumb->http_task = NULL;
-               else
-                  break;
-            }
+            
+            /* > If HTTP task is NULL, then it either finished
+             *   or an error occurred - in either case,
+             *   current task is 'complete' */
+            if (!pl_thumb->http_task)
+               pl_thumb->http_task_complete = true;
+            
+            /* > Wait for task_push_http_transfer()
+             *   callback to trigger */
+            if (pl_thumb->http_task_complete)
+               pl_thumb->http_task = NULL;
+            else
+               break;
             
             /* Check whether all thumbnail types have been processed */
             if (pl_thumb->type_idx > 3)
@@ -339,8 +431,7 @@ static void task_pl_thumbnail_download_handler(retro_task_t *task)
             }
             
             /* Download current thumbnail */
-            if (pl_thumb)
-               download_pl_thumbnail(pl_thumb);
+            download_pl_thumbnail(pl_thumb);
             
             /* Increment thumbnail type */
             pl_thumb->type_idx++;
@@ -431,6 +522,7 @@ bool task_push_pl_thumbnail_download(
    pl_thumb->playlist            = NULL;
    pl_thumb->thumbnail_path_data = NULL;
    pl_thumb->http_task           = NULL;
+   pl_thumb->http_task_complete  = false;
    pl_thumb->list_size           = 0;
    pl_thumb->list_index          = 0;
    pl_thumb->type_idx            = 1;
@@ -574,6 +666,17 @@ static void task_pl_entry_thumbnail_download_handler(retro_task_t *task)
             const char *right_thumbnail_path = NULL;
             const char *left_thumbnail_path  = NULL;
             
+            /* Redundant safety check - ensure that playlist is
+             * non-NULL, and that the playlist path is the same
+             * as that recorded when task_push_pl_entry_thumbnail_download()
+             * was called... */
+            if (!pl_thumb->playlist)
+               goto task_finished;
+            
+            if (!string_is_equal(pl_thumb->playlist_path,
+                  playlist_get_conf_path(pl_thumb->playlist)))
+               goto task_finished;
+            
             /* Initialise thumbnail path data */
             pl_thumb->thumbnail_path_data = menu_thumbnail_path_init();
             
@@ -616,13 +719,19 @@ static void task_pl_entry_thumbnail_download_handler(retro_task_t *task)
          {
             /* Ensure that we only enqueue one transfer
              * at a time... */
-            if (pl_thumb->http_task)
-            {
-               if (task_get_finished(pl_thumb->http_task))
-                  pl_thumb->http_task = NULL;
-               else
-                  break;
-            }
+            
+            /* > If HTTP task is NULL, then it either finished
+             *   or an error occurred - in either case,
+             *   current task is 'complete' */
+            if (!pl_thumb->http_task)
+               pl_thumb->http_task_complete = true;
+            
+            /* > Wait for task_push_http_transfer()
+             *   callback to trigger */
+            if (pl_thumb->http_task_complete)
+               pl_thumb->http_task = NULL;
+            else
+               break;
             
             /* Check whether all thumbnail types have been processed */
             if (pl_thumb->type_idx > 3)
@@ -635,8 +744,7 @@ static void task_pl_entry_thumbnail_download_handler(retro_task_t *task)
             task_set_progress(task, ((pl_thumb->type_idx - 1) * 100) / 3);
             
             /* Download current thumbnail */
-            if (pl_thumb)
-               download_pl_thumbnail(pl_thumb);
+            download_pl_thumbnail(pl_thumb);
             
             /* Increment thumbnail type */
             pl_thumb->type_idx++;
@@ -746,6 +854,7 @@ bool task_push_pl_entry_thumbnail_download(
    pl_thumb->playlist            = playlist;
    pl_thumb->thumbnail_path_data = NULL;
    pl_thumb->http_task           = NULL;
+   pl_thumb->http_task_complete  = false;
    pl_thumb->list_size           = playlist_size(playlist);
    pl_thumb->list_index          = idx;
    pl_thumb->type_idx            = 1;

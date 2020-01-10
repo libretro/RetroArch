@@ -2974,7 +2974,7 @@ static unsigned menu_displaylist_parse_pl_thumbnail_download_list(
          menu_entries_append_enum(info->list,
                path_base,
                path,
-               MENU_ENUM_LABEL_PLAYLIST_ENTRY,
+               MENU_ENUM_LABEL_PL_THUMBNAILS_UPDATER_ENTRY,
                FILE_TYPE_DOWNLOAD_PL_THUMBNAIL_CONTENT,
                0, 0);
          count++;
