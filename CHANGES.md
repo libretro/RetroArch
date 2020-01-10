@@ -8,6 +8,7 @@
 - BUGFIX/CRASH/CORE UPDATER: Fix potential double free error
 - BUGFIX/CRASH/OPENGL/WINDOWS: Fix regression in 1.8.2 that would cause GL-based cores to fail because it would try to erroneously load libGLESv2.dll instead of OpenGL32.dll (cores affected: VitaQuake 2/3/Dhewm3, possibly more)
 - BUGFIX/MENU/DESKTOP UI: Show desktop menu on startup does not launch Qt UI on Linux
+- BUGFIX: Entries in the Playlist Thumbnails Updater list were displaying improper sublabels. I have no idea when this broke... The issue is now fixed
 - CHEEVOS: Don't disable achievement when AddAddress generates an out-of-range address
 - CHEEVOS: Don't reset triggers/leaderboards that failed to load
 - CHEEVOS: Don't count unsupported achievements as unlocked
@@ -32,6 +33,7 @@
 - NETPLAY/RELAY: Overall stability has improved. Fixed a memory leak that would cause the relay server to become unresponsive after some time.
 - NETPLAY/RELAY: Fixed critical bug that would cause all players to be disconnected from the relay server if one player was leaving the game. That bug had been open for one year and we were finally able to fix it.
 - SWITCH/LIBNX/BUGFIX: Fix onscreen keyboard input regression
+- THUMBNAIL UPDATER: When waiting for individual thumbnail file http transfers to complete, the task status checking is more accurate. This uses the same method as the new core updater - we now wait until the task is 'really' complete, instead of relying on the (slightly nebulous) 'task finished' state
 - UWP: Add ANGLE support
 - UWP: Wire up get_metrics to the fake context of D3D9/10/11/12 driver, enabling proper scaling and mouse/touch gestures
 - VITA: Re-add Online Updater
