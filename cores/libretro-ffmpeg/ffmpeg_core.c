@@ -1530,8 +1530,16 @@ static void decode_thread_seek(double time)
 #endif
 }
 
-static bool earlier_or_close_enough(double p1, double p2) {
-   return (p1 <= p2 || (p1-p2) <= 0.001);
+/**
+ * This function makes sure that we don't decode too many
+ * packets and cause stalls in our decoding pipeline.
+ * This could happen if we decode too many packets and
+ * saturate our buffers. We have a window of "still okay"
+ * to decode, that depends on the media fps.
+ **/
+static bool earlier_or_close_enough(double p1, double p2)
+{
+   return (p1 <= p2 || (p1-p2) < (1.0 / media.interpolate_fps) );
 }
 
 static void decode_thread(void *data)
@@ -1643,15 +1651,14 @@ static void decode_thread(void *data)
 
       /* 
        * Decode audio packet if:
-       *  1. there is a vido packet for in the buffer
-       *  2. it's the start of file
-       *  3. it's audio only media
-       *  4. EOF
+       *  1. it's the start of file or it's audio only media
+       *  2. there is a video packet for in the buffer
+       *  3. EOF
        **/
       if (!packet_buffer_empty(audio_packet_buffer) &&
-         ((!eof && earlier_or_close_enough(next_audio_start, next_video_end)) ||
-         next_video_end == 0.0 ||
-         eof))
+         ((next_video_end == 0.0 ||
+           !eof && earlier_or_close_enough(next_audio_start, next_video_end)) ||
+           eof))
       {
          packet_buffer_get_packet(audio_packet_buffer, pkt);
          last_audio_end = audio_timebase * (pkt->pts + pkt->duration);
