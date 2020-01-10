@@ -31,8 +31,11 @@
 
 #if defined(DINGUX)
 #include <sys/types.h>
-#include <signal.h>
 #include <unistd.h>
+#endif
+
+#if (defined(__linux__) || defined(__unix__) || defined(DINGUX)) && !defined(EMSCRIPTEN)
+#include <signal.h>
 #endif
 
 #if defined(_WIN32_WINNT) && _WIN32_WINNT < 0x0500 || defined(_XBOX)
