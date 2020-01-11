@@ -3172,13 +3172,13 @@ typedef struct input_list_element_t
    unsigned int state_size;
 } input_list_element;
 
+#ifdef HAVE_RUNAHEAD
 static size_t runahead_save_state_size          = 0;
 
 static bool runahead_save_state_size_known      = false;
 static bool request_fast_savestate              = false;
 static bool hard_disable_audio                  = false;
 
-#ifdef HAVE_RUNAHEAD
 /* Save State List for Run Ahead */
 static MyList *runahead_save_state_list         = NULL;
 static MyList *input_state_list                 = NULL;
@@ -3534,7 +3534,9 @@ static bool bsv_movie_check(void);
 static void driver_uninit(int flags);
 static void drivers_init(int flags);
 
+#if defined(HAVE_RUNAHEAD)
 static void core_free_retro_game_info(struct retro_game_info *dest);
+#endif
 static bool core_load(unsigned poll_type_behavior);
 static bool core_unload_game(void);
 
@@ -29244,6 +29246,7 @@ bool core_has_set_input_descriptor(void)
    return current_core.has_set_input_descriptors;
 }
 
+#if defined(HAVE_RUNAHEAD)
 static void core_free_retro_game_info(struct retro_game_info *dest)
 {
    if (!dest)
@@ -29258,6 +29261,7 @@ static void core_free_retro_game_info(struct retro_game_info *dest)
    dest->data = NULL;
    dest->meta = NULL;
 }
+#endif
 
 unsigned int retroarch_get_rotation(void)
 {
