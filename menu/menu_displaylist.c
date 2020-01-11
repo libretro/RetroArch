@@ -601,12 +601,10 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
 
       {
          char tmp[PATH_MAX_LENGTH];
-         char tmp2[PATH_MAX_LENGTH];
-         char tmp3[PATH_MAX_LENGTH];
          uint64_t memory_free       = frontend_driver_get_free_memory();
          uint64_t memory_total      = frontend_driver_get_total_memory();
 
-         tmp[0] = tmp2[0] = tmp3[0] = '\0';
+         tmp[0] = '\0';
 
          if (memory_free != 0 && memory_total != 0)
          {
@@ -628,6 +626,7 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
       if (frontend->get_powerstate)
       {
          int seconds    = 0, percent = 0;
+         char tmp2[PATH_MAX_LENGTH];
          enum frontend_powerstate state =
             frontend->get_powerstate(&seconds, &percent);
 
