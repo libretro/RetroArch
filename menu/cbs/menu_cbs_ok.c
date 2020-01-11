@@ -4310,19 +4310,19 @@ static int action_ok_core_updater_download(const char *path,
    return 0;
 }
 
+#ifdef HAVE_NETWORKING
 static int action_ok_update_installed_cores(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-#ifdef HAVE_NETWORKING
    /* Ensure networking is initialised */
    generic_action_ok_command(CMD_EVENT_NETWORK_INIT);
 
    /* Push update task */
    task_push_update_installed_cores();
 
-#endif
    return 0;
 }
+#endif
 
 static int action_ok_sideload_core(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
