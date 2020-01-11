@@ -1123,7 +1123,7 @@ static char runtime_content_path[PATH_MAX_LENGTH]               = {0};
 static char runtime_core_path[PATH_MAX_LENGTH]                  = {0};
 static char timestamped_log_file_name[64]                       = {0};
 static char log_file_override_path[PATH_MAX_LENGTH]             = {0};
-static char launch_arguments[4096];
+static char launch_arguments[4096]                              = {0};
 static char current_library_name[1024]                          = {0};
 static char current_library_version[1024]                       = {0};
 static char current_valid_extensions[1024]                      = {0};
@@ -1131,9 +1131,6 @@ static char error_string[255]                                   = {0};
 static char cached_video_driver[32]                             = {0};
 
 /* PATHS */
-
-#define MENU_VALUE_NO_CORE 0x7d5472cbU
-
 struct rarch_dir_list
 {
    struct string_list *list;
