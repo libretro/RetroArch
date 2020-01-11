@@ -1168,7 +1168,9 @@ static const void *wifi_driver_find_handle(int idx);
 static const void *camera_driver_find_handle(int idx);
 static const void *input_driver_find_handle(int idx);
 static const void *joypad_driver_find_handle(int idx);
+#ifdef HAVE_HID
 static const void *hid_driver_find_handle(int idx);
+#endif
 
 static bool midi_driver_read(uint8_t *byte);
 static bool midi_driver_write(uint8_t byte, uint32_t delta_time);
@@ -16503,13 +16505,6 @@ void input_pad_connect(unsigned port, input_device_driver_t *driver)
 }
 
 #ifdef HAVE_HID
-/**
- * hid_driver_find_handle:
- * @idx                : index of driver to get handle to.
- *
- * Returns: handle to HID driver at index. Can be NULL
- * if nothing found.
- **/
 static const void *hid_driver_find_handle(int idx)
 {
    const void *drv = hid_drivers[idx];
