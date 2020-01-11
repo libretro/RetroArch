@@ -1656,9 +1656,12 @@ static void decode_thread(void *data)
        *  3. EOF
        **/
       if (!packet_buffer_empty(audio_packet_buffer) &&
-         ((next_video_end == 0.0 ||
-           !eof && earlier_or_close_enough(next_audio_start, next_video_end)) ||
-           eof))
+            (
+               next_video_end == 0.0 ||
+               (!eof && earlier_or_close_enough(next_audio_start, next_video_end)) ||
+               eof
+            )
+         )
       {
          packet_buffer_get_packet(audio_packet_buffer, pkt);
          last_audio_end = audio_timebase * (pkt->pts + pkt->duration);
@@ -1675,7 +1678,12 @@ static void decode_thread(void *data)
        *  3. EOF
        **/
       if (!packet_buffer_empty(video_packet_buffer) &&
-         ((!eof && earlier_or_close_enough(next_video_end, last_audio_end)) || !actx_active || eof ))
+            (
+               (!eof && earlier_or_close_enough(next_video_end, last_audio_end)) ||
+               !actx_active ||
+               eof
+            )
+         )
       {
          packet_buffer_get_packet(video_packet_buffer, pkt);
 
