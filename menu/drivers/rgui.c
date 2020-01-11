@@ -2173,15 +2173,20 @@ static const rgui_theme_t *get_theme(rgui_t *rgui)
 
 static void load_custom_theme(rgui_t *rgui, rgui_theme_t *theme_colors, const char *theme_path)
 {
-   unsigned normal_color, hover_color, title_color,
-      bg_dark_color, bg_light_color,
-      border_dark_color, border_light_color,
-      shadow_color, particle_color;
    char wallpaper_file[PATH_MAX_LENGTH];
-   config_file_t *conf  = NULL;
-   char *wallpaper_key  = NULL;
-   settings_t *settings = config_get_ptr();
-   bool success         = false;
+   unsigned normal_color       = 0;
+   unsigned hover_color        = 0;
+   unsigned title_color        = 0;
+   unsigned bg_dark_color      = 0;
+   unsigned bg_light_color     = 0;
+   unsigned border_dark_color  = 0;
+   unsigned border_light_color = 0;
+   unsigned shadow_color       = 0;
+   unsigned particle_color     = 0;
+   config_file_t *conf         = NULL;
+   char *wallpaper_key         = NULL;
+   settings_t *settings        = config_get_ptr();
+   bool success                = false;
 
    /* Determine which type of wallpaper to load */
    switch (settings->uints.menu_rgui_aspect_ratio)
