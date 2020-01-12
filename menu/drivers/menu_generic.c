@@ -107,7 +107,7 @@ int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
 
 #ifdef HAVE_ACCESSIBILITY
          if (iterate_type != last_iterate_type && is_accessibility_enabled())
-            accessibility_speak(menu->menu_state_msg);
+            accessibility_speak_priority(menu->menu_state_msg, 10);
 #endif
 
          BIT64_SET(menu->state, MENU_STATE_RENDER_MESSAGEBOX);
@@ -163,12 +163,12 @@ int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
                      char current_sublabel[255];
                      get_current_menu_sublabel(current_sublabel, sizeof(current_sublabel));
                      if (string_is_equal(current_sublabel, ""))
-                        accessibility_speak(menu->menu_state_msg);
+                        accessibility_speak_priority(menu->menu_state_msg, 10);
                      else
-                        accessibility_speak(current_sublabel);
+                        accessibility_speak_priority(current_sublabel, 10);
                   }
                   else
-                     accessibility_speak(menu->menu_state_msg);
+                     accessibility_speak_priority(menu->menu_state_msg, 10);
                }
 #endif
             }
@@ -288,7 +288,7 @@ int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
 
 #ifdef HAVE_ACCESSIBILITY
    if ((last_iterate_type == ITERATE_TYPE_HELP || last_iterate_type == ITERATE_TYPE_INFO) && last_iterate_type != iterate_type && is_accessibility_enabled())
-      accessibility_speak("Closed dialog.");
+      accessibility_speak_priority("Closed dialog.", 10);
 #endif
 
    last_iterate_type = iterate_type;
@@ -474,7 +474,7 @@ int generic_menu_entry_action(
       }
 
       if (!string_is_equal(speak_string, ""))
-         accessibility_speak(speak_string);
+         accessibility_speak_priority(speak_string, 10);
    }
 #endif
 

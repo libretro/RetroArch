@@ -1172,6 +1172,10 @@ static const void *joypad_driver_find_handle(int idx);
 #ifdef HAVE_HID
 static const void *hid_driver_find_handle(int idx);
 #endif
+#ifdef HAVE_ACCESSIBILITY
+static bool is_narrator_running(void);
+static bool accessibility_startup_message(void);
+#endif
 
 static bool midi_driver_read(uint8_t *byte);
 static bool midi_driver_write(uint8_t byte, uint32_t delta_time);
@@ -2608,8 +2612,8 @@ bool menu_input_dialog_start_search(void)
   
 #ifdef HAVE_ACCESSIBILITY
    if (is_accessibility_enabled())
-      accessibility_speak((char*)
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SEARCH));
+      accessibility_speak_priority((char*)
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SEARCH), 10);
 #endif
 
    menu_input_dialog_keyboard_buffer   =
@@ -2641,7 +2645,7 @@ bool menu_input_dialog_start(menu_input_ctx_line_t *line)
    input_keyboard_ctl(RARCH_INPUT_KEYBOARD_CTL_LINE_FREE, NULL);
 
 #ifdef HAVE_ACCESSIBILITY
-   accessibility_speak("Keyboard input:");
+   accessibility_speak_priority("Keyboard input:", 10);
 #endif
 
    menu_input_dialog_keyboard_buffer =
@@ -4632,7 +4636,7 @@ static void handle_translation_cb(
 
 #ifdef HAVE_ACCESSIBILITY
    if (text_string && is_accessibility_enabled())
-      accessibility_speak(text_string);
+      accessibility_speak_priority(text_string, 10);
 #endif
 
 finish:
@@ -5084,7 +5088,7 @@ static bool run_translation_service(void)
             settings->arrays.ai_service_url, sizeof(new_ai_service_url));
 
       /* if query already exists in url, then use &'s instead */
-      if (strrchr(new_ai_service_url, '?') != NULL)
+      if (strrchr(new_ai_service_url, '?'))
           separator = '&';
 
       /* source lang */
@@ -6564,7 +6568,7 @@ bool command_event(enum event_command cmd, void *data)
             {
 #ifdef HAVE_ACCESSIBILITY
                if (is_accessibility_enabled())
-                   accessibility_speak((char*) msg_hash_to_str(MSG_UNPAUSED));
+                   accessibility_speak_priority((char*) msg_hash_to_str(MSG_UNPAUSED), 10);
 #endif
                command_event(CMD_EVENT_UNPAUSE, NULL);
             }
@@ -7272,9 +7276,9 @@ TODO: Add a setting for these tweaks */
          if (is_accessibility_enabled())
          {
             if (boolean)
-               accessibility_speak((char*) msg_hash_to_str(MSG_PAUSED));
+               accessibility_speak_priority((char*) msg_hash_to_str(MSG_PAUSED), 10);
             else
-               accessibility_speak((char*) msg_hash_to_str(MSG_UNPAUSED));
+               accessibility_speak_priority((char*) msg_hash_to_str(MSG_UNPAUSED), 10);
          }
 #endif
 
@@ -7740,13 +7744,13 @@ TODO: Add a setting for these tweaks */
             ai_service_speech_stop();
 #ifdef HAVE_ACCESSIBILITY
             if (is_accessibility_enabled())
-               accessibility_speak("stopped.");
+               accessibility_speak_priority("stopped.", 10);
 #endif
          }
 #ifdef HAVE_ACCESSIBILITY
          else if (is_accessibility_enabled() && settings->uints.ai_service_mode == 2 &&
                   is_narrator_running())
-            accessibility_speak("stopped.");
+            accessibility_speak_priority("stopped.", 10);
 #endif
          else
          {
@@ -16786,81 +16790,81 @@ void input_keyboard_event(bool down, unsigned code,
       if (code != 303 && code != 0)
       {
          char* say_char = (char*) malloc(sizeof(char)+1);
-         if (say_char != NULL)
+         if (say_char)
          {
             char c = (char) character;
             *say_char = c;
 
             if (character == 127)
-               accessibility_speak("backspace");
+               accessibility_speak_priority("backspace", 10);
             else if (c == '`')
-               accessibility_speak("left quote");
+               accessibility_speak_priority("left quote", 10);
             else if (c == '`')
-               accessibility_speak("tilde");
+               accessibility_speak_priority("tilde", 10);
             else if (c == '!')
-               accessibility_speak("exclamation point");
+               accessibility_speak_priority("exclamation point", 10);
             else if (c == '@')
-               accessibility_speak("at sign");
+               accessibility_speak_priority("at sign", 10);
             else if (c == '#')
-               accessibility_speak("hash sign");
+               accessibility_speak_priority("hash sign", 10);
             else if (c == '$')
-               accessibility_speak("dollar sign");
+               accessibility_speak_priority("dollar sign", 10);
             else if (c == '%')
-               accessibility_speak("percent sign");
+               accessibility_speak_priority("percent sign", 10);
             else if (c == '^')
-               accessibility_speak("carrot");
+               accessibility_speak_priority("carrot", 10);
             else if (c == '&')
-               accessibility_speak("ampersand");
+               accessibility_speak_priority("ampersand", 10);
             else if (c == '*')
-               accessibility_speak("asterisk");
+               accessibility_speak_priority("asterisk", 10);
             else if (c == '(')
-               accessibility_speak("left bracket");
+               accessibility_speak_priority("left bracket", 10);
             else if (c == ')')
-               accessibility_speak("right bracket");
+               accessibility_speak_priority("right bracket", 10);
             else if (c == '-')
-               accessibility_speak("minus");
+               accessibility_speak_priority("minus", 10);
             else if (c == '_')
-               accessibility_speak("underscore");
+               accessibility_speak_priority("underscore", 10);
             else if (c == '=')
-               accessibility_speak("equals");
+               accessibility_speak_priority("equals", 10);
             else if (c == '+')
-               accessibility_speak("plus");
+               accessibility_speak_priority("plus", 10);
             else if (c == '[')
-               accessibility_speak("left square bracket");
+               accessibility_speak_priority("left square bracket", 10);
             else if (c == '{')
-               accessibility_speak("left curl bracket");
+               accessibility_speak_priority("left curl bracket", 10);
             else if (c == ']')
-               accessibility_speak("right square bracket");
+               accessibility_speak_priority("right square bracket", 10);
             else if (c == '}')
-               accessibility_speak("right curl bracket");
+               accessibility_speak_priority("right curl bracket", 10);
             else if (c == '\\')
-               accessibility_speak("back slash");
+               accessibility_speak_priority("back slash", 10);
             else if (c == '|')
-               accessibility_speak("pipe");
+               accessibility_speak_priority("pipe", 10);
             else if (c == ';')
-               accessibility_speak("semicolon");
+               accessibility_speak_priority("semicolon", 10);
             else if (c == ':')
-               accessibility_speak("colon");
+               accessibility_speak_priority("colon", 10);
             else if (c == '\'')
-               accessibility_speak("single quote");
+               accessibility_speak_priority("single quote", 10);
             else if (c  == '\"')
-               accessibility_speak("double quote");
+               accessibility_speak_priority("double quote", 10);
             else if (c == ',')
-               accessibility_speak("comma");
+               accessibility_speak_priority("comma", 10);
             else if (c == '<')
-               accessibility_speak("left angle bracket");
+               accessibility_speak_priority("left angle bracket", 10);
             else if (c == '.')
-               accessibility_speak("period");
+               accessibility_speak_priority("period", 10);
             else if (c == '>')
-               accessibility_speak("right angle bracket");
+               accessibility_speak_priority("right angle bracket", 10);
             else if (c == '/')
-               accessibility_speak("front slash");
+               accessibility_speak_priority("front slash", 10);
             else if (c == '?')
-               accessibility_speak("question mark");
+               accessibility_speak_priority("question mark", 10);
             else if (c == ' ')
-               accessibility_speak("space");
+               accessibility_speak_priority("space", 10);
             else if (character != 0)
-               accessibility_speak(say_char);
+               accessibility_speak_priority(say_char, 10);
             free(say_char);
          }
       }
@@ -29297,7 +29301,7 @@ unsigned int retroarch_get_rotation(void)
 
 #ifdef HAVE_ACCESSIBILITY
 /* Accessibility */
-int speak_pid = 0;
+static int speak_pid = 0;
 
 bool is_accessibility_enabled(void)
 {
@@ -29316,13 +29320,6 @@ bool is_input_keyboard_display_on(void)
    return false;
 #endif
 }
-
-#ifdef HAVE_ACCESSIBILITY
-bool accessibility_speak(const char* speak_text)
-{
-   return accessibility_speak_priority(speak_text, 10);
-}
-#endif
 
 #if defined(__MACH__) && defined(__APPLE__) 
 #include <TargetConditionals.h>
@@ -29400,7 +29397,7 @@ static char* accessibility_mac_language_code(const char* language)
       return "";
 }
 
-bool is_narrator_running_macos(void)
+static bool is_narrator_running_macos(void)
 {
    if (kill(speak_pid, 0) == 0)
       return true;
@@ -29621,14 +29618,14 @@ static bool accessibility_speak_windows(
 #endif
 
 #if (defined(__linux__) || defined(__unix__)) && !defined(EMSCRIPTEN)
-bool is_narrator_running_linux(void)
+static bool is_narrator_running_linux(void)
 {
    if (kill(speak_pid, 0) == 0)
       return true;
    return false;
 }
 
-bool accessibility_speak_linux(
+static bool accessibility_speak_linux(
       const char* speak_text, const char* language, int priority)
 {
    int pid;
@@ -29725,7 +29722,8 @@ bool accessibility_speak_priority(const char* speak_text, int priority)
    return true;
 }
 
-bool is_narrator_running(void)
+#ifdef HAVE_ACCESSIBILITY
+static bool is_narrator_running(void)
 {
    if (is_accessibility_enabled())
    {
@@ -29739,8 +29737,10 @@ bool is_narrator_running(void)
    }
    return true;
 }
+#endif
 
-bool accessibility_speak_ai_service(
+#if 0
+static bool accessibility_speak_ai_service(
       const char* speak_text, const char* language, int priority)
 {
 #if defined(HAVE_NETWORKING) && defined(HAVE_TRANSLATE)
@@ -29758,7 +29758,7 @@ bool accessibility_speak_ai_service(
    strlcpy(new_ai_service_url, settings->arrays.ai_service_url, 
            sizeof(new_ai_service_url));
 
-   if (strrchr(new_ai_service_url, '?') != NULL)
+   if (strrchr(new_ai_service_url, '?'))
       separator = '&';
    snprintf(temp_string, sizeof(temp_string),
             "%csource_lang=%s&target_lang=%s&output=espeak", 
@@ -29782,12 +29782,15 @@ bool accessibility_speak_ai_service(
    return false;
 #endif
 }
+#endif
 
-bool accessibility_startup_message(void)
+static bool accessibility_startup_message(void)
 {
    /* State that the narrator is on, and also include the first menu 
       item we're on at startup. */
-   accessibility_speak("RetroArch accessibility on.  Main Menu Load Core.");
+   accessibility_speak_priority(
+         "RetroArch accessibility on.  Main Menu Load Core.",
+         10);
    return true;
 }
 #endif
