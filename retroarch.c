@@ -29556,11 +29556,7 @@ static bool create_win32_process(char* cmd)
 
    if (!CreateProcess(NULL, cmd, NULL, NULL, FALSE, CREATE_NO_WINDOW,
                       NULL, NULL, &si, &pi))
-   {
-      pi_set = false;
       return false;
-   }
-   pi_set = true;
    return true;
 }
 
@@ -29610,7 +29606,10 @@ static bool accessibility_speak_windows(
    if (!res)
    {
       RARCH_LOG("Create subprocess failed. Error: %d\n", GetLastError()); 
+      pi_set = false;
+      return true;
    }
+   pi_set = true;
    return true;
 }
 #endif
