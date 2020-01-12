@@ -15,7 +15,19 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <retro_miscellaneous.h>
+
+#include <lists/file_list.h>
+#include <queues/fifo_queue.h>
+#include <file/file_path.h>
+#include <streams/file_stream.h>
+#include <string/stdstring.h>
+
 #include "menu_widgets.h"
+
+#ifdef HAVE_ACCESSIBILITY
+#include "../../accessibility.h"
+#endif
 
 #include "../../verbosity.h"
 #include "../../retroarch.h"
@@ -29,14 +41,6 @@
 #include "../menu_animation.h"
 
 #include "../../gfx/font_driver.h"
-
-#include <lists/file_list.h>
-#include <queues/fifo_queue.h>
-#include <file/file_path.h>
-#include <streams/file_stream.h>
-#include <formats/image.h>
-#include <string/stdstring.h>
-#include <retro_miscellaneous.h>
 
 #ifndef PI
 #define PI 3.14159265359f
@@ -1341,14 +1345,14 @@ static void menu_widgets_draw_load_content_animation(video_frame_info_t *video_i
    menu_widgets_draw_backdrop(video_info, load_content_animation_final_fade_alpha);
 }
 
-
-void menu_widgets_frame(video_frame_info_t *video_info)
+void menu_widgets_frame(void *data)
 {
    size_t i;
-   int top_right_x_advance = video_info->width;
-   int scissor_me_timbers  = 0;
-   settings_t *settings    = config_get_ptr();
-   float video_font_size   = settings->floats.video_font_size;
+   video_frame_info_t *video_info = (video_frame_info_t*)data;
+   int top_right_x_advance        = video_info->width;
+   int scissor_me_timbers         = 0;
+   settings_t *settings           = config_get_ptr();
+   float video_font_size          = settings->floats.video_font_size;
 
    menu_widgets_frame_count++;
 
