@@ -2487,6 +2487,17 @@ void dir_check_defaults(void)
 #ifdef HAVE_ACCESSIBILITY
 /* Is text-to-speech accessibility turned on? */
 static bool accessibility_enabled               = false;
+
+/* Accessibility */
+static int speak_pid = 0;
+
+bool is_accessibility_enabled(void)
+{
+   settings_t *settings              = configuration_settings;
+   if (accessibility_enabled || settings->bools.accessibility_enable)
+      return true;
+   return false;
+}
 #endif
 
 #ifdef HAVE_MENU
@@ -29298,19 +29309,6 @@ unsigned int retroarch_get_rotation(void)
    return settings->uints.video_rotation + runloop_system.rotation;
 }
 
-
-#ifdef HAVE_ACCESSIBILITY
-/* Accessibility */
-static int speak_pid = 0;
-
-bool is_accessibility_enabled(void)
-{
-   settings_t *settings              = configuration_settings;
-   if (accessibility_enabled || settings->bools.accessibility_enable)
-      return true;
-   return false;
-}
-#endif
 
 bool is_input_keyboard_display_on(void)
 { 
