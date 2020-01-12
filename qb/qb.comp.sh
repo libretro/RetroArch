@@ -20,12 +20,12 @@ printf %s 'Checking for suitable working C compiler ... '
 cc_works=0
 add_opt CC no
 if [ "$CC" ]; then
-	$CC -o "$TEMP_EXE" "$TEMP_C" >/dev/null 2>&1 && cc_works=1
+	"$CC" -o "$TEMP_EXE" "$TEMP_C" >/dev/null 2>&1 && cc_works=1
 else
 	for cc in gcc cc clang; do
 		CC="$(exists "${CROSS_COMPILE}${cc}")" || CC=""
 		if [ "$CC" ]; then
-			$CC -o "$TEMP_EXE" "$TEMP_C" >/dev/null 2>&1 && {
+			"$CC" -o "$TEMP_EXE" "$TEMP_C" >/dev/null 2>&1 && {
 				cc_works=1; break
 			}
 		fi
@@ -59,12 +59,12 @@ printf %s 'Checking for suitable working C++ compiler ... '
 cxx_works=0
 add_opt CXX no
 if [ "$CXX" ]; then
-	$CXX -o "$TEMP_EXE" "$TEMP_CXX" >/dev/null 2>&1 && cxx_works=1
+	"$CXX" -o "$TEMP_EXE" "$TEMP_CXX" >/dev/null 2>&1 && cxx_works=1
 else
 	for cxx in g++ c++ clang++; do
 		CXX="$(exists "${CROSS_COMPILE}${cxx}")" || CXX=""
 		if [ "$CXX" ]; then
-			$CXX -o "$TEMP_EXE" "$TEMP_CXX" >/dev/null 2>&1 && {
+			"$CXX" -o "$TEMP_EXE" "$TEMP_CXX" >/dev/null 2>&1 && {
 				cxx_works=1; break
 			}
 		fi

@@ -340,7 +340,7 @@ check_switch()
 	printf %s\\n 'int main(void) { return 0; }' > "$TEMP_CODE"
 	answer='no'
 	printf %s "Checking for availability of switch $3 in $COMPILER ... "
-	$COMPILER -o "$TEMP_EXE" "$TEMP_CODE" "$3" >>config.log 2>&1 && answer='yes'
+	"$COMPILER" -o "$TEMP_EXE" "$TEMP_CODE" "$3" >>config.log 2>&1 && answer='yes'
 	eval "HAVE_$2=\"$answer\""
 	printf %s\\n "$answer"
 	rm -f -- "$TEMP_CODE" "$TEMP_EXE"
