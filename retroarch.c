@@ -228,6 +228,10 @@
 #include "runahead/mem_util.h"
 #endif
 
+#ifdef HAVE_ACCESSIBILITY
+#include "accessibility.h"
+#endif
+
 #ifdef HAVE_THREADS
 #include "audio/audio_thread_wrapper.h"
 #endif
@@ -2476,8 +2480,10 @@ void dir_check_defaults(void)
    }
 }
 
+#ifdef HAVE_ACCESSIBILITY
 /* Is text-to-speech accessibility turned on? */
 static bool accessibility_enabled               = false;
+#endif
 
 #ifdef HAVE_MENU
 /* MENU INPUT GLOBAL VARIABLES */
@@ -2600,10 +2606,11 @@ bool menu_input_dialog_start_search(void)
 
    input_keyboard_ctl(RARCH_INPUT_KEYBOARD_CTL_LINE_FREE, NULL);
   
+#ifdef HAVE_ACCESSIBILITY
    if (is_accessibility_enabled())
-   {
-      accessibility_speak((char*) msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SEARCH));
-   }
+      accessibility_speak((char*)
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SEARCH));
+#endif
 
    menu_input_dialog_keyboard_buffer   =
       input_keyboard_start_line(menu, menu_input_search_cb);
@@ -2633,7 +2640,9 @@ bool menu_input_dialog_start(menu_input_ctx_line_t *line)
 
    input_keyboard_ctl(RARCH_INPUT_KEYBOARD_CTL_LINE_FREE, NULL);
 
+#ifdef HAVE_ACCESSIBILITY
    accessibility_speak("Keyboard input:");
+#endif
 
    menu_input_dialog_keyboard_buffer =
       input_keyboard_start_line(menu, line->cb);
@@ -4621,8 +4630,10 @@ static void handle_translation_cb(
    }
 #endif
 
+#ifdef HAVE_ACCESSIBILITY
    if (text_string && is_accessibility_enabled())
       accessibility_speak(text_string);
+#endif
 
 finish:
    if (error)
@@ -6551,8 +6562,10 @@ bool command_event(enum event_command cmd, void *data)
             }
             else
             {
+#ifdef HAVE_ACCESSIBILITY
                if (is_accessibility_enabled())
                    accessibility_speak((char*) msg_hash_to_str(MSG_UNPAUSED));
+#endif
                command_event(CMD_EVENT_UNPAUSE, NULL);
             }
          }       
@@ -7254,6 +7267,8 @@ TODO: Add a setting for these tweaks */
       case CMD_EVENT_PAUSE_TOGGLE:
          boolean        = runloop_paused;
          boolean        = !boolean;
+
+#ifdef HAVE_ACCESSIBILITY
          if (is_accessibility_enabled())
          {
             if (boolean)
@@ -7261,6 +7276,7 @@ TODO: Add a setting for these tweaks */
             else
                accessibility_speak((char*) msg_hash_to_str(MSG_UNPAUSED));
          }
+#endif
 
          runloop_paused = boolean;
          retroarch_pause_checks();
@@ -7722,12 +7738,16 @@ TODO: Add a setting for these tweaks */
          if (settings->uints.ai_service_mode == 1 && is_ai_service_speech_running())
          {
             ai_service_speech_stop();
+#ifdef HAVE_ACCESSIBILITY
             if (is_accessibility_enabled())
                accessibility_speak("stopped.");
+#endif
          }
+#ifdef HAVE_ACCESSIBILITY
          else if (is_accessibility_enabled() && settings->uints.ai_service_mode == 2 &&
                   is_narrator_running())
             accessibility_speak("stopped.");
+#endif
          else
          {
             RARCH_LOG("AI Service Called...\n");
@@ -16758,6 +16778,7 @@ void input_keyboard_event(bool down, unsigned code,
       uint32_t character, uint16_t mod, unsigned device)
 {
    static bool deferred_wait_keys;
+#ifdef HAVE_ACCESSIBILITY
 #ifdef HAVE_MENU
    if (menu_input_dialog_get_display_kb() 
          && down && is_accessibility_enabled())
@@ -16844,6 +16865,7 @@ void input_keyboard_event(bool down, unsigned code,
          }
       }
    }
+#endif
 #endif
 
    if (deferred_wait_keys)
@@ -25090,7 +25112,9 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
                retroarch_print_help(argv[0]);
                retroarch_fail(1, "retroarch_parse_input()");
             case RA_OPT_ACCESSIBILITY:
+#ifdef HAVE_ACCESSIBILITY
                accessibility_enabled = true;
+#endif
                break;
             default:
                RARCH_ERR("%s\n", msg_hash_to_str(MSG_ERROR_PARSING_ARGUMENTS));
@@ -25290,8 +25314,10 @@ bool retroarch_main_init(int argc, char *argv[])
 
    retroarch_parse_input_and_config(argc, argv);
 
+#ifdef HAVE_ACCESSIBILITY
    if (is_accessibility_enabled())
       accessibility_startup_message();
+#endif
 
    if (verbosity_is_enabled())
    {
@@ -26601,8 +26627,10 @@ void runloop_msg_queue_push(const char *msg,
       enum message_queue_category category)
 {
    runloop_msg_queue_lock();
+#ifdef HAVE_ACCESSIBILITY
    if (is_accessibility_enabled())
       accessibility_speak_priority((char*) msg, 0);
+#endif
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
    if (menu_widgets_inited)
    {
@@ -29267,6 +29295,7 @@ unsigned int retroarch_get_rotation(void)
 }
 
 
+#ifdef HAVE_ACCESSIBILITY
 /* Accessibility */
 int speak_pid = 0;
 
@@ -29277,6 +29306,7 @@ bool is_accessibility_enabled(void)
       return true;
    return false;
 }
+#endif
 
 bool is_input_keyboard_display_on(void)
 { 
@@ -29287,11 +29317,12 @@ bool is_input_keyboard_display_on(void)
 #endif
 }
 
+#ifdef HAVE_ACCESSIBILITY
 bool accessibility_speak(const char* speak_text)
 {
    return accessibility_speak_priority(speak_text, 10);
 }
-
+#endif
 
 #if defined(__MACH__) && defined(__APPLE__) 
 #include <TargetConditionals.h>
@@ -29299,6 +29330,8 @@ bool accessibility_speak(const char* speak_text)
 #define _IS_OSX
 #endif
 #endif
+
+#ifdef HAVE_ACCESSIBILITY
 
 #if defined(_IS_OSX)
 static char* accessibility_mac_language_code(const char* language)
@@ -29442,7 +29475,6 @@ static bool accessibility_speak_macos(
 #endif
 
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__) && !defined(EMSCRIPTEN)
-
 static const char *accessibility_win_language_code(const char* language)
 {
    if (string_is_equal(language,"en"))
@@ -29589,8 +29621,6 @@ static bool accessibility_speak_windows(
 #endif
 
 #if (defined(__linux__) || defined(__unix__)) && !defined(EMSCRIPTEN)
-
-
 bool is_narrator_running_linux(void)
 {
    if (kill(speak_pid, 0) == 0)
@@ -29710,8 +29740,8 @@ bool is_narrator_running(void)
    return true;
 }
 
-
-bool accessibility_speak_ai_service(const char* speak_text, const char* language, int priority)
+bool accessibility_speak_ai_service(
+      const char* speak_text, const char* language, int priority)
 {
 #if defined(HAVE_NETWORKING) && defined(HAVE_TRANSLATE)
    /* Call the AI service listed to do espeak for us. */ 
@@ -29760,3 +29790,4 @@ bool accessibility_startup_message(void)
    accessibility_speak("RetroArch accessibility on.  Main Menu Load Core.");
    return true;
 }
+#endif

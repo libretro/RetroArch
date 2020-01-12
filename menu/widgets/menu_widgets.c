@@ -332,10 +332,10 @@ void menu_widgets_msg_queue_push(
 {
    menu_widget_msg_t* msg_widget = NULL;
 
+#ifdef HAVE_ACCESSIBILITY
    if (is_accessibility_enabled())
-   {
       accessibility_speak_priority((char*)msg, 0);
-   }
+#endif
    if (fifo_write_avail(msg_queue) > 0)
    {
       /* Get current msg if it exists */
