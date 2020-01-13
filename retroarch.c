@@ -21926,10 +21926,11 @@ static void video_driver_frame(const void *data, unsigned width,
 #endif
    }
 
-   video_driver_active = current_video->frame(
-         video_driver_data, data, width, height,
-         video_driver_frame_count,
-         (unsigned)pitch, video_driver_msg, &video_info);
+   if (current_video && current_video->frame)
+      video_driver_active = current_video->frame(
+            video_driver_data, data, width, height,
+            video_driver_frame_count,
+            (unsigned)pitch, video_driver_msg, &video_info);
 
    video_driver_frame_count++;
 
