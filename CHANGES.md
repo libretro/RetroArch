@@ -1,4 +1,5 @@
 # Future
+- (Android) Prevent crash when Android device is minimized and you go back to the app
 
 # 1.8.3
 - ANDROID/BUGFIX: Fix 'Install or Restore Core' regression
