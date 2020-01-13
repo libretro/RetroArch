@@ -58,3 +58,8 @@ match()
 	done
 	return 1
 }
+
+# next:
+# Check if the next argument starts with a dash
+# $1 = arg
+next () { case "$1" in -*) return 0 ;; *) return 1 ;; esac; }
