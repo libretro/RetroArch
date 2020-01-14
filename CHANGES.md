@@ -1,5 +1,5 @@
 # Future
-- ANDROID: Prevent crash when Android device is minimized and you go back to the app
+- ANDROID/BUGFIX: Prevent crash when Android device is minimized and you go back to the app
 - DISK CONTROL: Cycle Disk Tray now becomes Eject Disk or Insert Disk depending upon current drive state
 - DISK CONTROL: Current Disk Index is only shown when the current disk has been ejected
 - DISK CONTROL: The old Insert Disk entry has been changed to Load New Disk, and is only shown when a disk is currently inserted (this is because loading a new disk from the filesystem - i.e. bypassing the m3u playlist disk index interface - automatically ejects and inserts disks, and so cannot be done while the virtual drive is empty)
