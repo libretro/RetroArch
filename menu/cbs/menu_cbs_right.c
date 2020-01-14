@@ -755,7 +755,11 @@ int core_setting_right(unsigned type, const char *label,
 static int disk_options_disk_idx_right(unsigned type, const char *label,
       bool wraparound)
 {
-   command_event(CMD_EVENT_DISK_NEXT, NULL);
+   /* Note: Menu itself provides visual feedback - no
+    * need to print info message to screen */
+   bool print_log = false;
+
+   command_event(CMD_EVENT_DISK_NEXT, &print_log);
 
    return 0;
 }

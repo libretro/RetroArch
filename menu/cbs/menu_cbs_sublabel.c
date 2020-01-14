@@ -376,6 +376,7 @@ default_sublabel_macro(action_bind_sublabel_input_autodetect_enable,       MENU_
 default_sublabel_macro(action_bind_sublabel_input_swap_ok_cancel,          MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL)
 default_sublabel_macro(action_bind_sublabel_pause_libretro,                MENU_ENUM_SUBLABEL_PAUSE_LIBRETRO)
 default_sublabel_macro(action_bind_sublabel_menu_savestate_resume,         MENU_ENUM_SUBLABEL_MENU_SAVESTATE_RESUME)
+default_sublabel_macro(action_bind_sublabel_menu_insert_disk_resume,       MENU_ENUM_SUBLABEL_MENU_INSERT_DISK_RESUME)
 default_sublabel_macro(action_bind_sublabel_video_driver,                  MENU_ENUM_SUBLABEL_VIDEO_DRIVER)
 default_sublabel_macro(action_bind_sublabel_audio_driver,                  MENU_ENUM_SUBLABEL_AUDIO_DRIVER)
 default_sublabel_macro(action_bind_sublabel_input_driver,                  MENU_ENUM_SUBLABEL_INPUT_DRIVER)
@@ -500,7 +501,8 @@ default_sublabel_macro(action_bind_thumbnails_directory,                        
 default_sublabel_macro(action_bind_rgui_config_directory,                          MENU_ENUM_SUBLABEL_RGUI_CONFIG_DIRECTORY)
 default_sublabel_macro(action_bind_sublabel_input_latency_frames,                  MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_MIN)
 default_sublabel_macro(action_bind_sublabel_input_latency_frames_range,            MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_RANGE)
-default_sublabel_macro(action_bind_sublabel_disk_cycle_tray_status,                MENU_ENUM_SUBLABEL_DISK_CYCLE_TRAY_STATUS)
+default_sublabel_macro(action_bind_sublabel_disk_tray_eject,                       MENU_ENUM_SUBLABEL_DISK_TRAY_EJECT)
+default_sublabel_macro(action_bind_sublabel_disk_tray_insert,                      MENU_ENUM_SUBLABEL_DISK_TRAY_INSERT)
 default_sublabel_macro(action_bind_sublabel_disk_image_append,                     MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND)
 default_sublabel_macro(action_bind_sublabel_disk_index,                            MENU_ENUM_SUBLABEL_DISK_INDEX)
 default_sublabel_macro(action_bind_sublabel_disk_options,                          MENU_ENUM_SUBLABEL_DISK_OPTIONS)
@@ -1799,8 +1801,11 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_SUBSYSTEM_LOAD:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_subsystem_load);
             break;
-         case MENU_ENUM_LABEL_DISK_CYCLE_TRAY_STATUS:
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_disk_cycle_tray_status);
+         case MENU_ENUM_LABEL_DISK_TRAY_EJECT:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_disk_tray_eject);
+            break;
+         case MENU_ENUM_LABEL_DISK_TRAY_INSERT:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_disk_tray_insert);
             break;
          case MENU_ENUM_LABEL_DISK_INDEX:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_disk_index);
@@ -2176,6 +2181,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_MENU_SAVESTATE_RESUME:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_savestate_resume);
+            break;
+         case MENU_ENUM_LABEL_MENU_INSERT_DISK_RESUME:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_insert_disk_resume);
             break;
          case MENU_ENUM_LABEL_MENU_INPUT_SWAP_OK_CANCEL:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_swap_ok_cancel);

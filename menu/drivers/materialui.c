@@ -7544,7 +7544,8 @@ static void materialui_list_insert(
                node->has_icon           = true;
             }
             else if (
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DISK_CYCLE_TRAY_STATUS))
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DISK_TRAY_EJECT)) ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DISK_TRAY_INSERT))
                   )
             {
                node->icon_texture_index = MUI_TEXTURE_EJECT;
@@ -7555,7 +7556,8 @@ static void materialui_list_insert(
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_DISC)) ||
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DUMP_DISC)) ||
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DISC_INFORMATION)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DISK_OPTIONS))
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DISK_OPTIONS)) ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DISK_INDEX))
                   )
             {
                node->icon_texture_index = MUI_TEXTURE_DISK;
@@ -7700,6 +7702,7 @@ static void materialui_list_insert(
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_USER_INTERFACE_SETTINGS)) ||
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_AI_SERVICE_SETTINGS)) ||
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ACCESSIBILITY_SETTINGS)) ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_POWER_MANAGEMENT_SETTINGS)) ||
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_RETRO_ACHIEVEMENTS_SETTINGS)) ||
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ACCOUNTS_YOUTUBE)) ||
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ACCOUNTS_TWITCH)) ||
@@ -7714,6 +7717,7 @@ static void materialui_list_insert(
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_MIDI_SETTINGS)) ||
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_MENU_VIEWS_SETTINGS)) ||
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_QUICK_MENU_VIEWS_SETTINGS)) ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS_VIEWS_SETTINGS)) ||
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_MENU_SETTINGS)) ||
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ONSCREEN_OVERLAY_SETTINGS)) ||
 #ifdef HAVE_VIDEO_LAYOUT
@@ -7765,7 +7769,8 @@ static void materialui_list_insert(
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_COPY_AFTER)) ||
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_COPY_BEFORE)) ||
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_DELETE)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PARAMETERS))
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PARAMETERS)) ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_PLAYLIST_MANAGER_LIST))
                   )
                   {
                      node->icon_texture_index = MUI_TEXTURE_SETTINGS;

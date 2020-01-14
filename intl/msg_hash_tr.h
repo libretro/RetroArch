@@ -796,14 +796,6 @@ MSG_HASH(
     "Dizin"
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_DISK_CYCLE_TRAY_STATUS,
-    "Disk Döngüsü Tepsisi Durumu"
-    )
-MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
-    "Disk Görüntüsü Ekleme"
-    )
-MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DISK_INDEX,
     "Disk Dizini"
     )
@@ -6249,20 +6241,8 @@ MSG_HASH(
     "Ağ gecikmesini gizlemek için kullanılabilecek giriş gecikmesi çerçevelerinin aralığı. Jitteri azaltır ve tahmin edilemeyen girdi gecikmesi pahasına netçeyi daha az CPU yoğun yapar."
     )
 MSG_HASH(
-    MENU_ENUM_SUBLABEL_DISK_CYCLE_TRAY_STATUS,
-    "Geçerli diski değiştirin. Disk yerleştirilmişse, diski çıkaracaktır. Eğer disk yerleştirilmemişse, yerleştirilecektir. "
-    )
-MSG_HASH(
-    MENU_ENUM_SUBLABEL_DISK_INDEX,
-    "Disk indeksini değiştir."
-    )
-MSG_HASH(
     MENU_ENUM_SUBLABEL_DISK_OPTIONS,
     "Disk image management."
-    )
-MSG_HASH(
-    MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
-    "Eklenecek bir disk görüntüsü seçin."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_ENUM_THROTTLE_FRAMERATE,

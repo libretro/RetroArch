@@ -422,6 +422,7 @@ default_title_macro(action_get_title_dropdown_playlist_label_display_mode_item, 
 default_title_macro(action_get_title_manual_content_scan_list,  MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_LIST)
 default_title_macro(action_get_title_dropdown_manual_content_scan_system_name_item, MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME)
 default_title_macro(action_get_title_dropdown_manual_content_scan_core_name_item, MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_CORE_NAME)
+default_title_macro(action_get_title_dropdown_disk_index, MENU_ENUM_LABEL_VALUE_DISK_INDEX)
 
 default_fill_title_macro(action_get_title_disk_image_append,    MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND)
 default_fill_title_macro(action_get_title_cheat_file_load,      MENU_ENUM_LABEL_VALUE_CHEAT_FILE)
@@ -1438,7 +1439,7 @@ static int menu_cbs_init_bind_title_compare_type(menu_file_list_cbs_t *cbs,
          BIND_ACTION_GET_TITLE(cbs, action_get_title_input_settings);
          break;
       case MENU_SETTING_ACTION_CORE_DISK_OPTIONS:
-         BIND_ACTION_GET_TITLE(cbs, action_get_title_action_generic);
+         BIND_ACTION_GET_TITLE(cbs, action_get_disk_options_list);
          break;
       default:
          return -1;
@@ -1477,6 +1478,7 @@ int menu_cbs_init_bind_title(menu_file_list_cbs_t *cbs,
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_LEFT_THUMBNAIL_MODE, action_get_title_dropdown_playlist_left_thumbnail_mode_item},
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_MANUAL_CONTENT_SCAN_SYSTEM_NAME, action_get_title_dropdown_manual_content_scan_system_name_item},
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_MANUAL_CONTENT_SCAN_CORE_NAME, action_get_title_dropdown_manual_content_scan_core_name_item},
+      {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_DISK_INDEX, action_get_title_dropdown_disk_index},
       {MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS, action_get_quick_menu_views_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_PLAYLIST_LIST, action_get_title_deferred_playlist_list},
       {MENU_ENUM_LABEL_DEFERRED_PLAYLIST_MANAGER_SETTINGS, action_get_title_deferred_playlist_list},

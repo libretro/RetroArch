@@ -180,6 +180,8 @@ enum event_command
    CMD_EVENT_DISK_NEXT,
    /* Cycle to previous disk. */
    CMD_EVENT_DISK_PREV,
+   /* Switch to specified disk index */
+   CMD_EVENT_DISK_INDEX,
    /* Appends disk image to disk image list. */
    CMD_EVENT_DISK_APPEND_IMAGE,
    /* Stops rumbling. */
