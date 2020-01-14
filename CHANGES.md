@@ -1,5 +1,16 @@
 # Future
 - ANDROID: Prevent crash when Android device is minimized and you go back to the app
+- DISK CONTROL: Cycle Disk Tray now becomes Eject Disk or Insert Disk depending upon current drive state
+- DISK CONTROL: Current Disk Index is only shown when the current disk has been ejected
+- DISK CONTROL: The old Insert Disk entry has been changed to Load New Disk, and is only shown when a disk is currently inserted (this is because loading a new disk from the filesystem - i.e. bypassing the m3u playlist disk index interface - automatically ejects and inserts disks, and so cannot be done while the virtual drive is empty)
+- DISK CONTROL: The Current Disk Index may now be set more easily via a drop-down list.
+- DISK CONTROL: Selecting Eject Disk automatically moves the menu selection to the Current Disk Index entry
+- DISK CONTROL: Selecting an index via the Current Disk Index drop-down list automatically moves the menu selection back to Insert Disk
+- DISK CONTROL: The Disk Control entry sublabels have been changed for greater clarity
+- DISK CONTROL: All of the horrendous notification spam has been removed. Notifications are now only shown in the event of an error, or when the menu itself does not provide sufficient visual feedback (note that using hotkeys to swap disks still produces the old style notifications, since this is typically only done while content is running - i.e. no menu). The duration of disk-related info notifications has also been reduced to a more sane level.
+- DISK CONTROL: A new Resume content after changing disks option has been added under Settings > User Interface. When enabled (default setting), content is resumed automatically after selecting either Insert Disk or Load New Disk (when disabled, the menu remains open, obviously...)
+- DISK CONTROL/BUGFIX: The Disk Control menu now has the correct title
+- DISK CONTROL/BUGFIX: Selecting a disk via the Load New Disk file browser no longer flushes the user back to the top level menu (it now correctly returns to the Disk Control menu)
 
 # 1.8.3
 - ANDROID/BUGFIX: Fix 'Install or Restore Core' regression
