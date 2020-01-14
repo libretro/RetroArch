@@ -7593,10 +7593,12 @@ TODO: Add a setting for these tweaks */
 
                   command_event_disk_control_set_eject(new_state, print_log);
 
+#if defined(HAVE_MENU)
                   /* It is necessary to refresh the disk options
                    * menu when toggling the tray state */
                   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
                   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+#endif
                }
             }
             else
