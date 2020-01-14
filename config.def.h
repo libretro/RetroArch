@@ -509,6 +509,8 @@ static bool menu_savestate_resume     = true;
 static bool menu_savestate_resume     = false;
 #endif
 
+#define DEFAULT_MENU_INSERT_DISK_RESUME true
+
 static bool content_show_settings     = true;
 static bool content_show_favorites    = true;
 #ifdef HAVE_IMAGEVIEWER

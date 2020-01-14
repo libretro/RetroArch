@@ -597,10 +597,6 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_DIRECTORY_NOT_FOUND,
       "Verzeichnis nicht gefunden.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS,
       "Verzeichnisse")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_DISK_CYCLE_TRAY_STATUS,
-      "Datentägerstatus")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
-      "Füge Datenträgerabbild hinzu")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DISK_INDEX,
       "Datenträger-Nummer")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DISK_OPTIONS,
@@ -3026,14 +3022,8 @@ MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
       "Eingabeverzögerung in Einzelbildern, die im Netplay verwendet wird, um die Netzwerklatenz zu verbergen. Reduziert Bildruckeln und CPU-Last, verursacht jedoch erkennbare Eingabeverzögerung.")
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
       "Der Bereich der Eingabeverzögerung in Einzelbildern, die im Netplay verwendet werden kann, um die Netzwerklatenz zu verbergen. Reduziert Bildruckeln und CPU-Last, verursacht jedoch unvorhersehbare Eingabeverzögerungen.")
-MSG_HASH(MENU_ENUM_SUBLABEL_DISK_CYCLE_TRAY_STATUS,
-      "Datenträger auswerfen/einlegen. Wenn der Datenträger eingelegt ist, wird er ausgeworfen. Wenn er noch nicht eingelegt wurde, wird er jetzt eingelegt. ")
-MSG_HASH(MENU_ENUM_SUBLABEL_DISK_INDEX,
-      "Ändere den Datenträger-Index.")
 MSG_HASH(MENU_ENUM_SUBLABEL_DISK_OPTIONS,
       "Verwaltung von Datenträger-Abbildern.")
-MSG_HASH(MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
-      "Wähle ein Datenträger-Abbild, das eingelegt werden soll.")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_ENUM_THROTTLE_FRAMERATE,
       "Stelle sicher, dass die Bildwiederholrate im Menü begrenzt wird.")
 MSG_HASH(MENU_ENUM_SUBLABEL_XMB_LAYOUT,

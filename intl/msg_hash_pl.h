@@ -629,10 +629,6 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_DIRECTORY_NOT_FOUND,
       "Nie znaleziono katalogu.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS,
       "Szczegóły")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_DISK_CYCLE_TRAY_STATUS,
-      "Status podajnika cyklu dysku")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
-      "Dołącz obraz dysku")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DISK_INDEX,
       "Indeks dysku")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DISK_OPTIONS,
@@ -3165,14 +3161,8 @@ MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
       "Liczba klatek opóźnienia wejściowego dla netplay do wykorzystania do ukrycia opóźnień sieci. Zmniejsza drgania i sprawia, że gra jest mniej intensywna, kosztem zauważalnego opóźnienia wejścia.")
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
       "Zakres klatek opóźnień wejściowych, które można wykorzystać do ukrycia opóźnień sieci. Zmniejsza fluktuacje i sprawia, że netplay jest mniej obciążający procesor, kosztem nieprzewidywalnego opóźnienia wejściowego.")
-MSG_HASH(MENU_ENUM_SUBLABEL_DISK_CYCLE_TRAY_STATUS,
-      "Cykluj bieżący dysk. Jeśli dysk zostanie włożony, wyskoczy. Jeśli dysk nie został włożony, zostanie włożony. ")
-MSG_HASH(MENU_ENUM_SUBLABEL_DISK_INDEX,
-      "Zmień indeks dysku.")
 MSG_HASH(MENU_ENUM_SUBLABEL_DISK_OPTIONS,
       "Zarządzanie obrazem dysku.")
-MSG_HASH(MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
-      "Wybierz obraz dysku, który chcesz wstawić.")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_ENUM_THROTTLE_FRAMERATE,
       "Upewnia się, że liczba klatek na sekundę jest ograniczona w menu.")
 MSG_HASH(MENU_ENUM_SUBLABEL_XMB_LAYOUT,

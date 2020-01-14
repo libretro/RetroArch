@@ -3234,6 +3234,82 @@ static unsigned menu_displaylist_parse_content_information(
    return count;
 }
 
+static unsigned menu_displaylist_parse_disk_options(
+      file_list_t *list)
+{
+   unsigned count                                    = 0;
+   rarch_system_info_t *sys_info                     =
+         runloop_get_system_info();
+   const struct retro_disk_control_callback *control = NULL;
+   bool disk_ejected;
+
+   /* Sanity Check */
+   if (!sys_info)
+      return count;
+
+   control = (const struct retro_disk_control_callback*)
+         &sys_info->disk_control_cb;
+
+   if (!control ||
+       !control->get_num_images ||
+       !control->get_image_index ||
+       !control->get_eject_state ||
+       !control->set_eject_state)
+      return count;
+
+   /* Check whether disk is currently ejected */
+   disk_ejected = control->get_eject_state();
+
+   /* Always show a 'DISK_CYCLE_TRAY_STATUS' entry
+    * > These perform the same function, but just have
+    *   different labels/sublabels */
+   if (disk_ejected)
+   {
+      if (menu_entries_append_enum(list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT),
+               msg_hash_to_str(MENU_ENUM_LABEL_DISK_TRAY_INSERT),
+               MENU_ENUM_LABEL_DISK_TRAY_INSERT,
+               MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_CYCLE_TRAY_STATUS, 0, 0))
+         count++;
+   }
+   else
+      if (menu_entries_append_enum(list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT),
+               msg_hash_to_str(MENU_ENUM_LABEL_DISK_TRAY_EJECT),
+               MENU_ENUM_LABEL_DISK_TRAY_EJECT,
+               MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_CYCLE_TRAY_STATUS, 0, 0))
+         count++;
+
+   /* Only show disk index if disk is currently ejected */
+   if (disk_ejected)
+      if (menu_entries_append_enum(list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISK_INDEX),
+               msg_hash_to_str(MENU_ENUM_LABEL_DISK_INDEX),
+               MENU_ENUM_LABEL_DISK_INDEX,
+               MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_INDEX, 0, 0))
+         count++;
+
+   /* If replace_image_index() is undefined, can stop here */
+   if (!control->replace_image_index)
+      return count;
+
+   /* Append image does the following:
+    * > Open tray
+    * > Append disk image
+    * > Close tray
+    * It therefore only makes sense to show this option
+    * if a disk is currently inserted */
+   if (!disk_ejected)
+      if (menu_entries_append_enum(list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND),
+               msg_hash_to_str(MENU_ENUM_LABEL_DISK_IMAGE_APPEND),
+               MENU_ENUM_LABEL_DISK_IMAGE_APPEND,
+               MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_IMAGE_APPEND, 0, 0))
+         count++;
+
+   return count;
+}
+
 static bool menu_displaylist_push_internal(
       const char *label,
       menu_displaylist_ctx_entry_t *entry,
@@ -4032,7 +4108,6 @@ static unsigned menu_displaylist_populate_subsystem(
 
    return count;
 }
-
 
 unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ctl_state type,
       bool include_everything)
@@ -5270,6 +5345,57 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
             }
          }
          break;
+      case DISPLAYLIST_DROPDOWN_LIST_DISK_INDEX:
+         {
+            rarch_system_info_t *sys_info = runloop_get_system_info();
+
+            if (sys_info)
+            {
+               const struct retro_disk_control_callback *control =
+                     (const struct retro_disk_control_callback*)
+                           &sys_info->disk_control_cb;
+
+               /* Check that the required disk control interface
+                * functions are defined */
+               if (control &&
+                   control->get_num_images &&
+                   control->get_image_index)
+               {
+                  unsigned num_images    = control->get_num_images();
+                  unsigned current_image = control->get_image_index();
+                  unsigned i;
+
+                  /* Loop through disk images */
+                  for (i = 0; i < num_images; i++)
+                  {
+                     char current_image_str[256];
+
+                     current_image_str[0] = '\0';
+
+                     /* Get string representation of disk index
+                      * > Note that displayed index starts at '1',
+                      *   not '0' */
+                     snprintf(
+                           current_image_str, sizeof(current_image_str),
+                           "%u", i + 1);
+
+                     /* Add menu entry */
+                     if (menu_entries_append_enum(list,
+                              current_image_str,
+                              "",
+                              MENU_ENUM_LABEL_NO_ITEMS,
+                              MENU_SETTING_DROPDOWN_ITEM_DISK_INDEX,
+                              i, 0))
+                        count++;
+
+                     /* Check whether current disk is selected */
+                     if (i == current_image)
+                        menu_entries_set_checked(list, i, true);
+                  }
+               }
+            }
+         }
+         break;
       case DISPLAYLIST_PERFCOUNTERS_CORE:
       case DISPLAYLIST_PERFCOUNTERS_FRONTEND:
          {
@@ -5714,6 +5840,7 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
                {MENU_ENUM_LABEL_NAVIGATION_WRAPAROUND,                                 PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_PAUSE_LIBRETRO,                                        PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_MENU_SAVESTATE_RESUME,                                 PARSE_ONLY_BOOL,   true},
+               {MENU_ENUM_LABEL_MENU_INSERT_DISK_RESUME,                               PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_MOUSE_ENABLE,                                          PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_POINTER_ENABLE,                                        PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_THREADED_DATA_RUNLOOP_ENABLE,                          PARSE_ONLY_BOOL,   true},
@@ -5758,24 +5885,7 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
          }
          break;
       case DISPLAYLIST_OPTIONS_DISK:
-         if (menu_entries_append_enum(list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISK_INDEX),
-                  msg_hash_to_str(MENU_ENUM_LABEL_DISK_INDEX),
-                  MENU_ENUM_LABEL_DISK_INDEX,
-                  MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_INDEX, 0, 0))
-            count++;
-         if (menu_entries_append_enum(list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISK_CYCLE_TRAY_STATUS),
-                  msg_hash_to_str(MENU_ENUM_LABEL_DISK_CYCLE_TRAY_STATUS),
-                  MENU_ENUM_LABEL_DISK_CYCLE_TRAY_STATUS,
-                  MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_CYCLE_TRAY_STATUS, 0, 0))
-            count++;
-         if (menu_entries_append_enum(list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND),
-                  msg_hash_to_str(MENU_ENUM_LABEL_DISK_IMAGE_APPEND),
-                  MENU_ENUM_LABEL_DISK_IMAGE_APPEND,
-                  MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_IMAGE_APPEND, 0, 0))
-            count++;
+         count = menu_displaylist_parse_disk_options(list);
          break;
       case DISPLAYLIST_MIDI_SETTINGS_LIST:
          {
@@ -9097,6 +9207,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
       case DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_LEFT_THUMBNAIL_MODE:
       case DISPLAYLIST_DROPDOWN_LIST_MANUAL_CONTENT_SCAN_SYSTEM_NAME:
       case DISPLAYLIST_DROPDOWN_LIST_MANUAL_CONTENT_SCAN_CORE_NAME:
+      case DISPLAYLIST_DROPDOWN_LIST_DISK_INDEX:
       case DISPLAYLIST_PERFCOUNTERS_CORE:
       case DISPLAYLIST_PERFCOUNTERS_FRONTEND:
       case DISPLAYLIST_MENU_SETTINGS_LIST:
@@ -9155,6 +9266,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                case DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_LEFT_THUMBNAIL_MODE:
                case DISPLAYLIST_DROPDOWN_LIST_MANUAL_CONTENT_SCAN_SYSTEM_NAME:
                case DISPLAYLIST_DROPDOWN_LIST_MANUAL_CONTENT_SCAN_CORE_NAME:
+               case DISPLAYLIST_DROPDOWN_LIST_DISK_INDEX:
                case DISPLAYLIST_INFORMATION_LIST:
                case DISPLAYLIST_SCAN_DIRECTORY_LIST:
                   menu_entries_append_enum(info->list,

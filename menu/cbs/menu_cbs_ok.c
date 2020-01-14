@@ -195,6 +195,8 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
          return MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_MANUAL_CONTENT_SCAN_SYSTEM_NAME;
       case ACTION_OK_DL_DROPDOWN_BOX_LIST_MANUAL_CONTENT_SCAN_CORE_NAME:
          return MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_MANUAL_CONTENT_SCAN_CORE_NAME;
+      case ACTION_OK_DL_DROPDOWN_BOX_LIST_DISK_INDEX:
+         return MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_DISK_INDEX;
       case ACTION_OK_DL_MIXER_STREAM_SETTINGS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_MIXER_STREAM_SETTINGS_LIST;
       case ACTION_OK_DL_ACCOUNTS_LIST:
@@ -536,6 +538,15 @@ int generic_action_ok_displaylist_push(const char *path,
          info_label         = msg_hash_to_str(
                MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_MANUAL_CONTENT_SCAN_CORE_NAME);
          info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_MANUAL_CONTENT_SCAN_CORE_NAME;
+         dl_type            = DISPLAYLIST_GENERIC;
+         break;
+      case ACTION_OK_DL_DROPDOWN_BOX_LIST_DISK_INDEX:
+         info.type          = type;
+         info.directory_ptr = idx;
+         info_path          = path;
+         info_label         = msg_hash_to_str(
+               MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_DISK_INDEX);
+         info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_DISK_INDEX;
          dl_type            = DISPLAYLIST_GENERIC;
          break;
       case ACTION_OK_DL_USER_BINDS_LIST:
@@ -1763,9 +1774,16 @@ static int generic_action_ok(const char *path,
          }
          break;
       case ACTION_OK_APPEND_DISK_IMAGE:
-         flush_type = MENU_SETTINGS;
-         command_event(CMD_EVENT_DISK_APPEND_IMAGE, action_path);
-         generic_action_ok_command(CMD_EVENT_RESUME);
+         {
+            settings_t *settings = config_get_ptr();
+
+            flush_char = msg_hash_to_str(MENU_ENUM_LABEL_DISK_OPTIONS);
+            command_event(CMD_EVENT_DISK_APPEND_IMAGE, action_path);
+
+            if (settings)
+               if (settings->bools.menu_insert_disk_resume)
+                  generic_action_ok_command(CMD_EVENT_RESUME);
+         }
          break;
       case ACTION_OK_SUBSYSTEM_ADD:
          flush_type = MENU_SETTINGS;
@@ -3200,8 +3218,8 @@ static int action_ok_core_deferred_set(const char *new_core_path,
          settings->bools.show_hidden_files,
          true);
 
-    strlcpy(resolved_core_path, new_core_path, sizeof(resolved_core_path));
-    playlist_resolve_path(PLAYLIST_SAVE, resolved_core_path, sizeof(resolved_core_path));
+   strlcpy(resolved_core_path, new_core_path, sizeof(resolved_core_path));
+   playlist_resolve_path(PLAYLIST_SAVE, resolved_core_path, sizeof(resolved_core_path));
 
    /* the update function reads our entry
     * as const, so these casts are safe */
@@ -3222,7 +3240,7 @@ static int action_ok_core_deferred_set(const char *new_core_path,
    menu_entries_pop_stack(&selection, 0, 1);
    menu_navigation_set_selection(selection);
 
-   return menu_cbs_exit();
+   return 0;
 }
 
 static int action_ok_deferred_list_stub(const char *path,
@@ -4488,7 +4506,6 @@ default_action_ok_cmd_func(action_ok_save_new_config,          CMD_EVENT_MENU_SA
 default_action_ok_cmd_func(action_ok_resume_content,           CMD_EVENT_RESUME)
 default_action_ok_cmd_func(action_ok_restart_content,          CMD_EVENT_RESET)
 default_action_ok_cmd_func(action_ok_screenshot,               CMD_EVENT_TAKE_SCREENSHOT)
-default_action_ok_cmd_func(action_ok_disk_cycle_tray_status,   CMD_EVENT_DISK_EJECT_TOGGLE)
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 default_action_ok_cmd_func(action_ok_shader_apply_changes,     CMD_EVENT_SHADERS_APPLY_CHANGES)
 #endif
@@ -5798,6 +5815,22 @@ static int action_ok_push_dropdown_item_manual_content_scan_core_name(const char
    return action_cancel_pop_default(NULL, NULL, 0, 0);
 }
 
+static int action_ok_push_dropdown_item_disk_index(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   unsigned disk_index = (unsigned)idx;
+
+   command_event(CMD_EVENT_DISK_INDEX, &disk_index);
+
+   /* When choosing a disk, menu selection should
+    * automatically be reset to the 'insert disk'
+    * option */
+   menu_entries_pop_stack(NULL, 0, 1);
+   menu_navigation_set_selection(0);
+
+   return 0;
+}
+
 static int action_ok_push_default(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -6054,6 +6087,69 @@ static int action_ok_video_shader_num_passes_dropdown_box_list(const char *path,
 {
    return generic_dropdown_box_list(idx, 
          ACTION_OK_DL_DROPDOWN_BOX_LIST_VIDEO_SHADER_NUM_PASSES);
+}
+
+static int action_ok_disk_index_dropdown_box_list(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return generic_dropdown_box_list(idx,
+         ACTION_OK_DL_DROPDOWN_BOX_LIST_DISK_INDEX);
+}
+
+static int action_ok_disk_cycle_tray_status(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   bool disk_ejected              = false;
+   bool print_log                 = false;
+   rarch_system_info_t *sys_info  = runloop_get_system_info();
+   settings_t *settings           = config_get_ptr();
+
+   if (!settings)
+      return menu_cbs_exit();
+
+#ifdef HAVE_AUDIOMIXER
+   if (settings->bools.audio_enable_menu && settings->bools.audio_enable_menu_ok)
+      audio_driver_mixer_play_menu_sound(AUDIO_MIXER_SYSTEM_SLOT_OK);
+#endif
+
+   /* Get disk eject state *before* toggling drive status */
+   if (sys_info)
+   {
+      const struct retro_disk_control_callback *control =
+            (const struct retro_disk_control_callback*)
+                  &sys_info->disk_control_cb;
+
+      if (control)
+         if (control->get_eject_state)
+            disk_ejected = control->get_eject_state();
+   }
+
+   /* Only want to display a notification if we are
+    * going to resume content immediately after
+    * inserting a disk (i.e. if quick menu remains
+    * open, there is sufficient visual feedback
+    * without a notification) */
+   print_log = settings->bools.menu_insert_disk_resume && disk_ejected;
+
+   if (!command_event(CMD_EVENT_DISK_EJECT_TOGGLE, &print_log))
+      return menu_cbs_exit();
+
+   /* If we reach this point, then tray toggle
+    * was successful */
+   disk_ejected = !disk_ejected;
+
+   /* If disk is now ejected, menu selection should
+    * automatically increment to the 'current disk
+    * index' option */
+   if (disk_ejected)
+      menu_navigation_set_selection(1);
+
+   /* If disk is now inserted and user has enabled
+    * 'menu_insert_disk_resume', resume running content */
+   if (!disk_ejected && settings->bools.menu_insert_disk_resume)
+      generic_action_ok_command(CMD_EVENT_RESUME);
+
+   return 0;
 }
 
 static int action_ok_manual_content_scan_start(const char *path,
@@ -7357,6 +7453,9 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
          case MENU_SETTING_DROPDOWN_ITEM_MANUAL_CONTENT_SCAN_CORE_NAME:
             BIND_ACTION_OK(cbs, action_ok_push_dropdown_item_manual_content_scan_core_name);
             break;
+         case MENU_SETTING_DROPDOWN_ITEM_DISK_INDEX:
+            BIND_ACTION_OK(cbs, action_ok_push_dropdown_item_disk_index);
+            break;
          case MENU_SETTING_ACTION_CORE_DISK_OPTIONS:
             BIND_ACTION_OK(cbs, action_ok_push_default);
             break;
@@ -7680,6 +7779,9 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             break;
          case MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_CYCLE_TRAY_STATUS:
             BIND_ACTION_OK(cbs, action_ok_disk_cycle_tray_status);
+            break;
+         case MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_INDEX:
+            BIND_ACTION_OK(cbs, action_ok_disk_index_dropdown_box_list);
             break;
          case MENU_SETTINGS_CORE_OPTION_CREATE:
             BIND_ACTION_OK(cbs, action_ok_option_create);

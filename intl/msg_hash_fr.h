@@ -809,14 +809,6 @@ MSG_HASH(
     "Dossiers"
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_DISK_CYCLE_TRAY_STATUS,
-    "État du plateau du lecteur de disque"
-    )
-MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
-    "Ajouter une image disque"
-    )
-MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DISK_INDEX,
     "Numéro du disque"
     )
@@ -6649,20 +6641,8 @@ MSG_HASH(
     "Plage d'images de latence des entrées pouvant être utilisée pour masquer la latence du réseau. Réduit les variations de la latence et rend le jeu en réseau moins gourmand en ressources processeur, aux dépens d'une latence des entrées imprévisible."
     )
 MSG_HASH(
-    MENU_ENUM_SUBLABEL_DISK_CYCLE_TRAY_STATUS,
-    "Faire défiler l'état du disque actuel. Si le disque est inséré, il sera éjecté. Si le disque n'a pas été inséré, il sera inséré. "
-    )
-MSG_HASH(
-    MENU_ENUM_SUBLABEL_DISK_INDEX,
-    "Changer le numéro du disque."
-    )
-MSG_HASH(
     MENU_ENUM_SUBLABEL_DISK_OPTIONS,
     "Gestionnaire d'images disque."
-    )
-MSG_HASH(
-    MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
-    "Sélectionner une image disque à insérer."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_ENUM_THROTTLE_FRAMERATE,

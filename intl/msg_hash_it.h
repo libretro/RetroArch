@@ -601,10 +601,6 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_DIRECTORY_NOT_FOUND,
       "Cartella non trovata.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS,
       "Cartella")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_DISK_CYCLE_TRAY_STATUS,
-      "Stato del ciclo nel vassoio del disco")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
-      "Aggiungere Immagine disco")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DISK_INDEX,
       "Indice del Disco ")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DISK_OPTIONS,
@@ -3062,14 +3058,8 @@ MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
       "Il numero della latenza nei fotogrammi di input per il netplay da utilizzare per nascondere la latenza di rete. Riduce il jitter e rende il netplay meno intenso di CPU, a scapito di un ritardo di input notevole.")
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
       "L'intervallo della latenza nei fotogrammi di input che può essere utilizzato per nascondere la latenza di rete. Riduce il jitter e rende il netplay meno intenso di CPU, a scapito di un imprevisto ritardo di input.")
-MSG_HASH(MENU_ENUM_SUBLABEL_DISK_CYCLE_TRAY_STATUS,
-      "Cicli del disco corrente. Se il disco è inserito, espellerà il disco. Se il disco non è stato inserito, verrà inserito. ")
-MSG_HASH(MENU_ENUM_SUBLABEL_DISK_INDEX,
-      "Cambia l'indice del disco.")
 MSG_HASH(MENU_ENUM_SUBLABEL_DISK_OPTIONS,
       "Gestione delle immagini disco.")
-MSG_HASH(MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
-      "Seleziona un'immagine disco da inserire")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_ENUM_THROTTLE_FRAMERATE,
       "Assicura che i fotogrammi siano attivi all'interno del menu.")
 MSG_HASH(MENU_ENUM_SUBLABEL_XMB_LAYOUT,

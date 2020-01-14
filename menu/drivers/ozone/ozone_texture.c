@@ -51,7 +51,8 @@ menu_texture_item ozone_entries_icon_get_texture(ozone_handle_t *ozone,
       case MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS:
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_CHEAT_OPTIONS];
       case MENU_ENUM_LABEL_DISK_OPTIONS:
-      case MENU_ENUM_LABEL_DISK_CYCLE_TRAY_STATUS:
+      case MENU_ENUM_LABEL_DISK_TRAY_EJECT:
+      case MENU_ENUM_LABEL_DISK_TRAY_INSERT:
       case MENU_ENUM_LABEL_DISK_IMAGE_APPEND:
       case MENU_ENUM_LABEL_DISK_INDEX:
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_DISK_OPTIONS];

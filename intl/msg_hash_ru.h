@@ -569,10 +569,6 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_DIRECTORY_NOT_FOUND,
       "Каталог не найден.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS,
       "Директории")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_DISK_CYCLE_TRAY_STATUS,
-      "Статус диска в приводе")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
-      "Добавить образ диска")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DISK_INDEX,
       "Индекс диска")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DISK_OPTIONS,
@@ -2886,14 +2882,8 @@ MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
       "Количество кадров задержки ввода для netplay для сокрытия задержки сети. Уменьшает лаги и делает netplay менее требовательным к CPU, ценой значительной задержки ввода.")
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
       "Диапазон кадров задержки ввода для netplay для сокрытия задержки сети. Уменьшает лаги и делает netplay менее требовательным к CPU, ценой непредсказуемой задержки ввода.")
-MSG_HASH(MENU_ENUM_SUBLABEL_DISK_CYCLE_TRAY_STATUS,
-      "Зацикливать текущий диск. Если вставлен диск, он будет извлечен. Если диск не вставлен, он будет вставлен.")
-MSG_HASH(MENU_ENUM_SUBLABEL_DISK_INDEX,
-      "Изменить индекс диска.")
 MSG_HASH(MENU_ENUM_SUBLABEL_DISK_OPTIONS,
       "Управление образа диска.")
-MSG_HASH(MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
-      "Выберите образ диска для загрузки.")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_ENUM_THROTTLE_FRAMERATE,
       "Убедитесь, что частота кадров ограничена внутри меню.")
 MSG_HASH(MENU_ENUM_SUBLABEL_XMB_LAYOUT,
