@@ -407,7 +407,7 @@ check_enabled THREADS FFMPEG FFmpeg 'Threads are' false
 
 if [ "$HAVE_FFMPEG" != 'no' ]; then
    check_val '' AVCODEC -lavcodec '' libavcodec 57 '' false
-   check_val '' AVFORMAT -lavformat '' libavformat 57 '' false
+   check_val '' AVFORMAT -lavformat '' libavformat 57.80.100 '' false
    check_val '' AVDEVICE -lavdevice '' libavdevice 57 '' false
    check_val '' SWRESAMPLE -lswresample '' libswresample 2 '' false
    check_val '' AVUTIL -lavutil '' libavutil 55 '' false
