@@ -45,6 +45,8 @@ check_compiler()
 		TEMP_CODE="$TEMP_C"
 		TEST_C="void $2(void); int main(void) { $2(); return 0; }"
 	fi
+
+	BUILD_DIRS="$INCLUDE_DIRS $LIBRARY_DIRS"
 }
 
 # check_enabled:
@@ -157,43 +159,44 @@ check_lib()
 		printf %s\\n 'int main(void) { return 0; }' > "$TEMP_CODE"
 	fi
 
-	val="$2"
 	lib="${3% }"
 	include="${7:-}"
 	error="${8:-}"
 	answer='no'
+
 	printf %s "$MSG $lib ... "
-	eval "set -- $INCLUDE_DIRS $LIBRARY_DIRS $5 $FLAGS $LDFLAGS $lib"
-	$(printf %s "$COMPILER") -o "$TEMP_EXE" "$TEMP_CODE" "$@" \
+
+	$(printf %s "$COMPILER") -o "$TEMP_EXE" "$TEMP_CODE" \
+		$(printf %s "$BUILD_DIRS $5 $FLAGS $LDFLAGS $lib") \
 		>>config.log 2>&1 && answer='yes'
+
 	printf %s\\n "$answer"
 
 	if [ "$answer" = 'yes' ] && [ "$include" ]; then
 		answer='no'
-		eval "set -- $INCLUDES"
-		for dir do
+		for dir in $(printf %s "$INCLUDES"); do
 			[ "$answer" = 'yes' ] && break
 			printf %s "Checking existence of /$dir/$include ... "
 			if [ -d "/$dir/$include" ]; then
-				eval "${val}_CFLAGS=\"-I/$dir/$include\""
+				eval "${2}_CFLAGS=\"-I/$dir/$include\""
 				answer='yes'
 			fi
 			printf %s\\n "$answer"
 		done
 	fi
 
-	eval "HAVE_$val=\"$answer\""
+	eval "HAVE_$2=\"$answer\""
 	rm -f -- "$TEMP_CODE" "$TEMP_EXE"
 
 	if [ "$answer" = 'no' ]; then
 		[ "$error" ] && die 1 "$error"
-		setval="$(eval "printf %s \"\$USER_$val\"")"
+		setval="$(eval "printf %s \"\$USER_$2\"")"
 		if [ "$setval" = 'yes' ]; then
 			die 1 "Forced to build with library $lib, but cannot locate. Exiting ..."
 		fi
 	else
-		eval "${val}_LIBS=\"$lib\""
-		PKG_CONF_USED="$PKG_CONF_USED $val"
+		eval "${2}_LIBS=\"$lib\""
+		PKG_CONF_USED="$PKG_CONF_USED $2"
 	fi
 
 	return 0
@@ -225,42 +228,39 @@ check_pkgconf()
 		return 0
 	}
 
-	val="$1"
 	ver="${3:-0.0}"
 	err="${4:-}"
 	lib="${5:-}"
 	answer='no'
 	version='no'
 
-	eval "set -- ${2#* }"
-	for pkgnam do
+	for pkgnam in $(printf %s "${2#* }"); do
 		[ "$answer" = 'yes' ] && break
 		printf %s "$MSG $pkgnam$ECHOBUF ... "
-		eval "set -- $ver"
-		for pkgver do
+		for pkgver in $(printf %s "$ver"); do
 			if "$PKG_CONF_PATH" --atleast-version="$pkgver" "$pkgnam"; then
 				answer='yes'
 				version="$("$PKG_CONF_PATH" --modversion "$pkgnam")"
-				eval "${val}_CFLAGS=\"$("$PKG_CONF_PATH" --cflags "$pkgnam")\""
-				eval "${val}_LIBS=\"$("$PKG_CONF_PATH" --libs "$pkgnam")\""
-				eval "${val}_VERSION=\"$pkgver\""
+				eval "${1}_CFLAGS=\"$("$PKG_CONF_PATH" --cflags "$pkgnam")\""
+				eval "${1}_LIBS=\"$("$PKG_CONF_PATH" --libs "$pkgnam")\""
+				eval "${1}_VERSION=\"$pkgver\""
 				break
 			fi
 		done
 		printf %s\\n "$version"
 	done
 
-	eval "HAVE_$val=\"$answer\""
+	eval "HAVE_$1=\"$answer\""
 
 	if [ "$answer" = 'no' ]; then
 		[ "$lib" != 'true' ] || return 0
 		[ "$err" ] && die 1 "$err"
-		setval="$(eval "printf %s \"\$USER_$val\"")"
+		setval="$(eval "printf %s \"\$USER_$1\"")"
 		if [ "$setval" = 'yes' ]; then
 			die 1 "Forced to build with package $pkg, but cannot locate. Exiting ..."
 		fi
 	else
-		PKG_CONF_USED="$PKG_CONF_USED $val"
+		PKG_CONF_USED="$PKG_CONF_USED $1"
 	fi
 }
 
@@ -282,8 +282,8 @@ check_header()
 	printf %s\\n "int main(void) { return 0; }" >> "$TEMP_C"
 	answer='no'
 	printf %s "Checking presence of header file $CHECKHEADER ... "
-	eval "set -- $CFLAGS $INCLUDE_DIRS"
-	$(printf %s "$CC") -o "$TEMP_EXE" "$TEMP_C" "$@" >>config.log 2>&1 &&
+	$(printf %s "$CC") -o "$TEMP_EXE" "$TEMP_C" \
+		$(printf %s "$BUILD_DIRS $CFLAGS $LDFLAGS") >>config.log 2>&1 &&
 		answer='yes'
 	eval "HAVE_$val=\"$answer\""
 	printf %s\\n "$answer"
@@ -319,8 +319,8 @@ EOF
 	val="$1"
 	macro="$2"
 	printf %s "Checking presence of predefined macro $macro$ECHOBUF ... "
-	eval "set -- $CFLAGS $INCLUDE_DIRS"
-	$(printf %s "$CC") -o "$TEMP_EXE" "$TEMP_C" "$@" >>config.log 2>&1 &&
+	$(printf %s "$CC") -o "$TEMP_EXE" "$TEMP_C" \
+		$(printf %s "$BUILD_DIRS $CFLAGS $LDFLAGS") >>config.log 2>&1 &&
 		answer='yes'
 	eval "HAVE_$val=\"$answer\""
 	printf %s\\n "$answer"
@@ -412,8 +412,7 @@ create_config_header()
 			shift
 		done
 
-		eval "set -- $CONFIG_DEFINES"
-		for VAR do
+		for VAR in $(printf %s "$CONFIG_DEFINES"); do
 			printf %s\\n "#define ${VAR%%=*} ${VAR#*=}"
 		done
 
@@ -486,8 +485,8 @@ create_config_make()
 			esac
 			shift
 		done
-		eval "set -- $MAKEFILE_DEFINES"
-		for VAR do
+
+		for VAR in $(printf %s "$MAKEFILE_DEFINES"); do
 			printf %s\\n "${VAR%%=*} = ${VAR#*=}"
 		done
 
