@@ -282,7 +282,7 @@ void CORE_PREFIX(retro_set_environment)(retro_environment_t cb)
       { "ffmpeg_hw_decoder", "Use Hardware decoder (restart); off|auto|"
          "cuda|d3d11va|drm|dxva2|mediacodec|opencl|qsv|vaapi|vdpau|videotoolbox" },
 #endif
-      { "ffmpeg_sw_decoder_threads", "Software decoder thread count (restart); auto|1|2|4|8|16" },
+      { "ffmpeg_sw_decoder_threads", "Software decoder thread count (restart); auto|1|2|4|6|8|10|12|14|16" },
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
       { "ffmpeg_temporal_interp", "Temporal Interpolation; disabled|enabled" },
 #ifdef HAVE_GL_FFT
