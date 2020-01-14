@@ -1754,8 +1754,10 @@ static void decode_thread(void *data)
    for (i = 0; (int)i < audio_streams_num; i++)
       swr_free(&swr[i]);
 
+#if ENABLE_HW_ACCEL
    if (vctx && vctx->hw_device_ctx)
       av_buffer_unref(&vctx->hw_device_ctx);
+#endif
 
    packet_buffer_destroy(audio_packet_buffer);
    packet_buffer_destroy(video_packet_buffer);
