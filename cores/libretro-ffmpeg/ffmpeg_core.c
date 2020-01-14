@@ -94,7 +94,13 @@ static unsigned sw_sws_threads;
 static video_buffer_t *video_buffer;
 static tpool_t *tpool;
 
-#if LIBAVUTIL_VERSION_MAJOR > 55
+/* If libavutil is at least version 55 or higher,
+ * and if libavcodec is at least version 57.80.100 or higher,
+ * enable hardware acceleration */
+#define ENABLE_HW_ACCEL ((LIBAVUTIL_VERSION_MAJOR > 55) && ENABLE_HW_ACCEL_CHECK2())
+#define ENABLE_HW_ACCEL_CHECK2() ((LIBAVCODEC_VERSION_MAJOR == 57 && LIBAVCODEC_VERSION_MINOR >= 80 && LIBAVCODEC_VERSION_MICRO >= 100) || (LIBAVCODEC_VERSION_MAJOR > 57))
+
+#if ENABLE_HW_ACCEL
 static enum AVHWDeviceType hw_decoder;
 static bool hw_decoding_enabled;
 static enum AVPixelFormat pix_fmt;
@@ -278,7 +284,7 @@ void CORE_PREFIX(retro_get_system_av_info)(struct retro_system_av_info *info)
 void CORE_PREFIX(retro_set_environment)(retro_environment_t cb)
 {
    static const struct retro_variable vars[] = {
-#if LIBAVUTIL_VERSION_MAJOR > 55
+#if ENABLE_HW_ACCEL
       { "ffmpeg_hw_decoder", "Use Hardware decoder (restart); off|auto|"
          "cuda|d3d11va|drm|dxva2|mediacodec|opencl|qsv|vaapi|vdpau|videotoolbox" },
 #endif
@@ -409,7 +415,7 @@ static void check_variables(bool firststart)
       slock_unlock(decode_thread_lock);
    }
 
-#if LIBAVUTIL_VERSION_MAJOR > 55
+#if ENABLE_HW_ACCEL
    if (firststart)
    {
       hw_var.key = "ffmpeg_hw_decoder";
@@ -837,7 +843,7 @@ void CORE_PREFIX(retro_run)(void)
       CORE_PREFIX(audio_batch_cb)(audio_buffer, to_read_frames);
 }
 
-#if LIBAVUTIL_VERSION_MAJOR > 55
+#if ENABLE_HW_ACCEL
 /*
  * Try to initialize a specific HW decoder defined by type.
  * Optionaly tests the pixel format list for a compatible pixel format.
@@ -936,7 +942,7 @@ static enum AVPixelFormat select_decoder(AVCodecContext *ctx,
 {
    enum AVPixelFormat format = AV_PIX_FMT_NONE;
 
-#if LIBAVUTIL_VERSION_MAJOR > 55
+#if ENABLE_HW_ACCEL
    if (!force_sw_decoder)
    {
       if (hw_decoder == AV_HWDEVICE_TYPE_NONE)
@@ -960,7 +966,7 @@ static enum AVPixelFormat select_decoder(AVCodecContext *ctx,
 
       format = fctx->streams[video_stream_index]->codec->pix_fmt;
 
-#if LIBAVUTIL_VERSION_MAJOR > 55
+#if ENABLE_HW_ACCEL
       hw_decoding_enabled = false;
    }
    else
@@ -970,7 +976,7 @@ static enum AVPixelFormat select_decoder(AVCodecContext *ctx,
    return format;
 }
 
-#if LIBAVUTIL_VERSION_MAJOR > 55
+#if ENABLE_HW_ACCEL
 /* Callback used by ffmpeg to configure the pixelformat to use. */
 static enum AVPixelFormat get_format(AVCodecContext *ctx,
                                      const enum AVPixelFormat *pix_fmts)
@@ -1005,7 +1011,7 @@ static bool open_codec(AVCodecContext **ctx, enum AVMediaType type, unsigned ind
    {
       video_stream_index = index;
 
-#if LIBAVUTIL_VERSION_MAJOR > 55
+#if ENABLE_HW_ACCEL
       vctx->get_format  = get_format;
       pix_fmt = select_decoder((*ctx), NULL);
 #else
@@ -1293,7 +1299,7 @@ static void sws_worker_thread(void *arg)
    AVFrame *tmp_frame = NULL;
    video_decoder_context_t *ctx = (video_decoder_context_t*) arg;
 
-#if LIBAVUTIL_VERSION_MAJOR > 55
+#if ENABLE_HW_ACCEL
    if (hw_decoding_enabled)
       tmp_frame = ctx->hw_source;
    else
@@ -1336,7 +1342,7 @@ static void sws_worker_thread(void *arg)
 #endif
 
    av_frame_unref(ctx->source);
-#if LIBAVUTIL_VERSION_MAJOR > 55
+#if ENABLE_HW_ACCEL
    av_frame_unref(ctx->hw_source);
 #endif
 
@@ -1394,7 +1400,7 @@ static void decode_video(AVCodecContext *ctx, AVPacket *pkt, size_t frame_size)
          goto end;
       }
 
-#if LIBAVUTIL_VERSION_MAJOR > 55
+#if ENABLE_HW_ACCEL
       if (hw_decoding_enabled)
          /* Copy data from VRAM to RAM */
          if ((ret = av_hwframe_transfer_data(decoder_ctx->hw_source, decoder_ctx->source, 0)) < 0)
