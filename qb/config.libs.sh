@@ -4,7 +4,13 @@
 # Only needed when check_enabled ($2), check_platform, check_lib, check_pkgconf,
 # check_header, check_macro and check_switch are not used.
 
-check_switch '' C99 -std=gnu99 "Cannot find C99 compatible compiler."
+check_switch '' C99 -std=gnu99 ''
+
+if [ "$HAVE_C99" = 'no' ]; then
+   HAVE_C99='auto'
+   check_switch '' C99 -std=c99 'Cannot find a C99 compatible compiler.'
+fi
+
 check_switch cxx CXX11 -std=c++11 ''
 check_switch '' NOUNUSED -Wno-unused-result ''
 add_define MAKEFILE NOUNUSED "$HAVE_NOUNUSED"
