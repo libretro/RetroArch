@@ -922,12 +922,21 @@ static midi_driver_t *midi_drivers[] = {
    &midi_null
 };
 
+static void *nullcamera_init(const char *device, uint64_t caps,
+      unsigned width, unsigned height) { return (void*)-1; }
+static void nullcamera_free(void *data) { }
+static bool nullcamera_start(void *data) { return true; }
+static void nullcamera_stop(void *data) { }
+static bool nullcamera_poll(void *a,
+      retro_camera_frame_raw_framebuffer_t b,
+      retro_camera_frame_opengl_texture_t c) { return true; }
+
 static camera_driver_t camera_null = {
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-   NULL,
+   nullcamera_init,
+   nullcamera_free,
+   nullcamera_start,
+   nullcamera_stop,
+   nullcamera_poll,
    "null",
 };
 
