@@ -2869,7 +2869,7 @@ static bool menu_displaylist_parse_playlist_manager_settings(
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_RESET_CORES),
          msg_hash_to_str(MENU_ENUM_LABEL_PLAYLIST_MANAGER_RESET_CORES),
          MENU_ENUM_LABEL_PLAYLIST_MANAGER_RESET_CORES,
-         FILE_TYPE_PLAYLIST_ENTRY, 0, 0);
+         MENU_SETTING_ACTION_PLAYLIST_MANAGER_RESET_CORES, 0, 0);
 
    /* Label display mode */
    menu_entries_append_enum(info->list,
@@ -2916,9 +2916,14 @@ static bool menu_displaylist_parse_playlist_manager_settings(
          MENU_ENUM_LABEL_PLAYLIST_MANAGER_LEFT_THUMBNAIL_MODE,
          MENU_SETTING_PLAYLIST_MANAGER_LEFT_THUMBNAIL_MODE, 0, 0);
 
-   /* TODO - Add:
-    * - Remove invalid entries */
+   /* Clean playlist */
+   menu_entries_append_enum(info->list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_CLEAN_PLAYLIST),
+         msg_hash_to_str(MENU_ENUM_LABEL_PLAYLIST_MANAGER_CLEAN_PLAYLIST),
+         MENU_ENUM_LABEL_PLAYLIST_MANAGER_CLEAN_PLAYLIST,
+         MENU_SETTING_ACTION_PLAYLIST_MANAGER_CLEAN_PLAYLIST, 0, 0);
 
+   /* Delete playlist */
    menu_entries_append_enum(info->list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DELETE_PLAYLIST),
          msg_hash_to_str(MENU_ENUM_LABEL_DELETE_PLAYLIST),

@@ -974,6 +974,8 @@ MSG_HASH(MENU_ENUM_LABEL_PLAYLIST_MANAGER_RIGHT_THUMBNAIL_MODE,
       "playlist_manager_right_thumbnail_mode")
 MSG_HASH(MENU_ENUM_LABEL_PLAYLIST_MANAGER_LEFT_THUMBNAIL_MODE,
       "playlist_manager_left_thumbnail_mode")
+MSG_HASH(MENU_ENUM_LABEL_PLAYLIST_MANAGER_CLEAN_PLAYLIST,
+      "playlist_manager_clean_playlist")
 MSG_HASH(MENU_ENUM_LABEL_PLAYLIST_SETTINGS_BEGIN,
       "playlist_settings_begin")
 MSG_HASH(MENU_ENUM_LABEL_POINTER_ENABLE,
