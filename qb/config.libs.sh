@@ -113,22 +113,19 @@ if [ "$HAVE_ANGLE" = 'yes' ]; then
    add_opt OPENGLES yes
    add_define MAKEFILE OPENGLES_LIBS "-lGLESv2"
 
-case "$(uname -s)" in
-   MINGW32*)
-      add_dirs LIBRARY ./pkg/windows/x86
+   case "$PLATFORM_NAME" in
+      MINGW32* )
+         add_dirs LIBRARY ./pkg/windows/x86
       ;;
-   MINGW64*)
-      add_dirs LIBRARY ./pkg/windows/x86_64
+      MINGW64* )
+         add_dirs LIBRARY ./pkg/windows/x86_64
       ;;
-   *)
-      ;;
-esac
-
+   esac
 else
    check_header EGL EGL/egl.h EGL/eglext.h
-# some systems have EGL libs, but no pkgconfig
-# https://github.com/linux-sunxi/sunxi-mali/pull/8
-check_val '' EGL "-l${VC_PREFIX}EGL $EXTRA_GL_LIBS" '' "${VC_PREFIX}egl" '' '' true
+   # some systems have EGL libs, but no pkgconfig
+   # https://github.com/linux-sunxi/sunxi-mali/pull/8
+   check_val '' EGL "-l${VC_PREFIX}EGL $EXTRA_GL_LIBS" '' "${VC_PREFIX}egl" '' '' true
 fi
 
 if [ "$HAVE_EGL" = 'yes' ]; then
