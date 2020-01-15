@@ -15,6 +15,7 @@
 - DISK CONTROL/BUGFIX: The Disk Control menu now has the correct title
 - DISK CONTROL/BUGFIX: Selecting a disk via the Load New Disk file browser no longer flushes the user back to the top level menu (it now correctly returns to the Disk Control menu)
 - LIBNX/SWITCH: Updated libnx integration to v3.0.0. This also cherry-picks libnx commit 583d6bb92dcbb33b6bb4a0fa1a9df6e3725d6ef6, which should fix the requirement having to turn rumble off and on in the system settings once per reboot
+- PLAYLISTS: Add 'Clean Playlist' option
 
 # 1.8.3
 - ANDROID/BUGFIX: Fix 'Install or Restore Core' regression
