@@ -7,6 +7,10 @@ ifeq ($(HAVE_STACK_USAGE), 1)
    DEF_FLAGS += -fstack-usage
 endif
 
+ifeq ($(HAVE_CXX11), 1)
+   CXXFLAGS += $(CXX11_CFLAGS)
+endif
+
 ifeq ($(HAVE_GL_CONTEXT),)
    HAVE_GL_CONTEXT = 0
    HAVE_GL_MODERN  = 0
