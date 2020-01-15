@@ -1,4 +1,6 @@
 # Future
+
+# 1.8.4
 - ANDROID/BUGFIX: Prevent crash when Android device is minimized and you go back to the app
 - CAMERA/BUGFIX: Fix crash when a core requires the camera driver and the platform only has a null driver. This would crash mgba on Wii for example
 - DISK CONTROL: Cycle Disk Tray now becomes Eject Disk or Insert Disk depending upon current drive state
