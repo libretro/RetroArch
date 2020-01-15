@@ -33,7 +33,6 @@ test_compiler ()
 	$(printf %s "$1") -o "$TEMP_EXE" "$2" >/dev/null 2>&1 || return 1
 
 	compiler="${compiler# }"
-	cc_works=1
 	return 0
 }
 
