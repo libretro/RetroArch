@@ -28,6 +28,7 @@ add_dirs()
 		shift
 	done
 	eval "${ADD}_DIRS=\"\${${ADD}_DIRS# }\""
+	BUILD_DIRS="$INCLUDE_DIRS $LIBRARY_DIRS"
 }
 
 # check_compiler:
@@ -45,8 +46,6 @@ check_compiler()
 		TEMP_CODE="$TEMP_C"
 		TEST_C="void $2(void); int main(void) { $2(); return 0; }"
 	fi
-
-	BUILD_DIRS="$INCLUDE_DIRS $LIBRARY_DIRS"
 }
 
 # check_enabled:
