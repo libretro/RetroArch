@@ -343,12 +343,16 @@ check_switch()
 	printf %s\\n 'int main(void) { return 0; }' > "$TEMP_CODE"
 	answer='no'
 	printf %s "Checking for availability of switch $3 in $COMPILER ... "
-	$(printf %s "$COMPILER") -o "$TEMP_EXE" "$TEMP_CODE" "$3" \
+	$(printf %s "$COMPILER") -o "$TEMP_EXE" "$TEMP_CODE" \
+		$(printf %s "$BUILD_DIRS $CFLAGS $3 -Werror $LDFLAGS") \
 		>>config.log 2>&1 && answer='yes'
 	eval "HAVE_$2=\"$answer\""
 	printf %s\\n "$answer"
 	rm -f -- "$TEMP_CODE" "$TEMP_EXE"
-	if [ "$answer" = 'no' ] && [ "${4:-}" ]; then
+	if [ "$answer" = 'yes' ]; then
+		eval "${2}_CFLAGS=\"$3\""
+		PKG_CONF_USED="$PKG_CONF_USED $2"
+	elif [ "${4:-}" ]; then
 		die 1 "$4"
 	fi
 }
