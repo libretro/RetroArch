@@ -69,6 +69,7 @@ static frontend_ctx_driver_t frontend_ctx_null = {
    NULL,                         /* get_cpu_model_name */
    NULL,                         /* get_user_language */
    "null",
+   NULL,                         /* get_video_driver */
 };
 
 static frontend_ctx_driver_t *frontend_ctx_drivers[] = {
