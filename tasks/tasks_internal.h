@@ -95,6 +95,7 @@ bool task_push_pl_entry_thumbnail_download(
 #endif
 
 bool task_push_pl_manager_reset_cores(const char *playlist_path);
+bool task_push_pl_manager_clean_playlist(const char *playlist_path);
 
 bool task_push_image_load(const char *fullpath,
       bool supports_rgba, unsigned upscale_threshold,
