@@ -3242,17 +3242,17 @@ static unsigned menu_displaylist_parse_content_information(
 static unsigned menu_displaylist_parse_disk_options(
       file_list_t *list)
 {
-   unsigned count                                    = 0;
-   rarch_system_info_t *sys_info                     =
+   unsigned count                                        = 0;
+   rarch_system_info_t *sys_info                         =
          runloop_get_system_info();
-   const struct retro_disk_control_callback *control = NULL;
+   const struct retro_disk_control_ext_callback *control = NULL;
    bool disk_ejected;
 
    /* Sanity Check */
    if (!sys_info)
       return count;
 
-   control = (const struct retro_disk_control_callback*)
+   control = (const struct retro_disk_control_ext_callback*)
          &sys_info->disk_control_cb;
 
    if (!control ||
@@ -5356,8 +5356,8 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
 
             if (sys_info)
             {
-               const struct retro_disk_control_callback *control =
-                     (const struct retro_disk_control_callback*)
+               const struct retro_disk_control_ext_callback *control =
+                     (const struct retro_disk_control_ext_callback*)
                            &sys_info->disk_control_cb;
 
                /* Check that the required disk control interface
@@ -5368,21 +5368,56 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
                {
                   unsigned num_images    = control->get_num_images();
                   unsigned current_image = control->get_image_index();
+                  unsigned num_digits    = 0;
                   unsigned i;
+
+                  /* If core supports labels, index value string
+                   * should be padded to maximum width (otherwise
+                   * labels will be misaligned/ugly) */
+                  if (control->get_image_label)
+                  {
+                     unsigned digit_counter = num_images;
+                     do
+                     {
+                        num_digits++;
+                        digit_counter = digit_counter / 10;
+                     }
+                     while (digit_counter > 0);
+                  }
 
                   /* Loop through disk images */
                   for (i = 0; i < num_images; i++)
                   {
-                     char current_image_str[256];
+                     char current_image_str[PATH_MAX_LENGTH];
+                     char image_label[PATH_MAX_LENGTH];
 
                      current_image_str[0] = '\0';
+                     image_label[0]       = '\0';
+
+                     /* Get image label, if supported by core */
+                     if (control->get_image_label)
+                        if (!control->get_image_label(i, image_label, sizeof(image_label)))
+                           image_label[0] = '\0';
 
                      /* Get string representation of disk index
                       * > Note that displayed index starts at '1',
                       *   not '0' */
-                     snprintf(
-                           current_image_str, sizeof(current_image_str),
-                           "%u", i + 1);
+                     if (!string_is_empty(image_label))
+                     {
+                        /* Note: 2-space gap is intentional
+                         * (for clarity) */
+                        int n = snprintf(
+                              current_image_str, sizeof(current_image_str),
+                              "%0*u:  %s", num_digits, i + 1, image_label);
+
+                        /* Suppress GCC warnings... */
+                        if ((n < 0) || (n >= PATH_MAX_LENGTH))
+                           n = 0;
+                     }
+                     else
+                        snprintf(
+                              current_image_str, sizeof(current_image_str),
+                              "%0*u", num_digits, i + 1);
 
                      /* Add menu entry */
                      if (menu_entries_append_enum(list,
