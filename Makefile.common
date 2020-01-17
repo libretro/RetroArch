@@ -7,6 +7,14 @@ ifeq ($(HAVE_STACK_USAGE), 1)
    DEF_FLAGS += -fstack-usage
 endif
 
+ifeq ($(HAVE_NOUNUSED), 1)
+   DEF_FLAGS += $(NOUNUSED_CFLAGS)
+endif
+
+ifeq ($(HAVE_NOUNUSED_VARIABLE), 1)
+   DEF_FLAGS += $(NOUNUSED_VARIABLE_CFLAGS)
+endif
+
 ifeq ($(HAVE_CXX11), 1)
    CXXFLAGS += $(CXX11_CFLAGS)
 endif

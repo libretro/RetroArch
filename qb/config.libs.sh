@@ -13,9 +13,7 @@ fi
 
 check_switch cxx CXX11 -std=c++11 ''
 check_switch '' NOUNUSED -Wno-unused-result ''
-add_define MAKEFILE NOUNUSED "$HAVE_NOUNUSED"
 check_switch '' NOUNUSED_VARIABLE -Wno-unused-variable ''
-add_define MAKEFILE NOUNUSED_VARIABLE "$HAVE_NOUNUSED_VARIABLE"
 
 # There are still broken 64-bit Linux distros out there. :)
 [ -z "$CROSS_COMPILE" ] && [ -d /usr/lib64 ] && add_dirs LIBRARY /usr/lib64
