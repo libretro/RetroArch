@@ -858,13 +858,13 @@ static bool gl1_gfx_frame(void *data, const void *frame,
 
       if (osd_params)
       {
-         font_driver_render_msg(video_info, NULL, video_info->stat_text,
-               (const struct font_params*)&video_info->osd_stat_params);
+         font_driver_render_msg(gl1, video_info, video_info->stat_text,
+               (const struct font_params*)&video_info->osd_stat_params, NULL);
 #if 0
          osd_params->y               = 0.350f;
          osd_params->scale           = 0.75f;
-         font_driver_render_msg(video_info, NULL, video_info->chat_text,
-               (const struct font_params*)&video_info->osd_stat_params);
+         font_driver_render_msg(gl1, video_info, video_info->chat_text,
+               (const struct font_params*)&video_info->osd_stat_params, NULL);
 #endif
       }
    }
@@ -881,7 +881,7 @@ static bool gl1_gfx_frame(void *data, const void *frame,
 #endif
 
    if (msg)
-      font_driver_render_msg(video_info, NULL, msg, NULL);
+      font_driver_render_msg(gl1, video_info, msg, NULL, NULL);
 
    video_info->cb_update_window_title(
          video_info->context_data, video_info);
@@ -1174,15 +1174,6 @@ static void gl1_set_texture_frame(void *data,
    gl1_context_bind_hw_render(gl1, true);
 }
 
-static void gl1_set_osd_msg(void *data,
-      video_frame_info_t *video_info,
-      const char *msg,
-      const void *params, void *font)
-{
-   font_driver_render_msg(video_info, font,
-         msg, (const struct font_params *)params);
-}
-
 static void gl1_get_video_output_size(void *data,
       unsigned *width, unsigned *height)
 {
@@ -1383,7 +1374,7 @@ static const video_poke_interface_t gl1_poke_interface = {
    NULL,
    gl1_set_texture_frame,
    gl1_set_texture_enable,
-   gl1_set_osd_msg,
+   font_driver_render_msg,
    NULL,
    NULL,                         /* grab_mouse_toggle */
    NULL,                         /* get_current_shader */

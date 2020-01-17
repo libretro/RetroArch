@@ -123,38 +123,6 @@ static enum gfx_ctx_api win32_api         = GFX_CTX_NONE;
 static dylib_t          dll_handle        = NULL; /* Handle to OpenGL32.dll/libGLESv2.dll */
 #endif
 
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)
-static bool wgl_has_extension(const char *extension, const char *extensions)
-{
-   const char *start      = NULL;
-   const char *terminator = NULL;
-   const char      *where = strchr(extension, ' ');
-
-   if (where || *extension == '\0')
-      return false;
-
-   if (!extensions)
-      return false;
-
-   start = extensions;
-
-   for (;;)
-   {
-      where = strstr(start, extension);
-      if (!where)
-         break;
-
-      terminator = where + strlen(extension);
-      if (where == start || *(where - 1) == ' ')
-         if (*terminator == ' ' || *terminator == '\0')
-            return true;
-
-      start = terminator;
-   }
-   return false;
-}
-#endif
-
 typedef struct gfx_ctx_cgl_data
 {
    void *empty;
@@ -185,6 +153,36 @@ static gfx_ctx_proc_t gfx_ctx_wgl_get_proc_address(const char *symbol)
 }
 
 #if (defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)) && !defined(HAVE_OPENGLES)
+static bool wgl_has_extension(const char *extension, const char *extensions)
+{
+   const char *start      = NULL;
+   const char *terminator = NULL;
+   const char      *where = strchr(extension, ' ');
+
+   if (where || *extension == '\0')
+      return false;
+
+   if (!extensions)
+      return false;
+
+   start = extensions;
+
+   for (;;)
+   {
+      where = strstr(start, extension);
+      if (!where)
+         break;
+
+      terminator = where + strlen(extension);
+      if (where == start || *(where - 1) == ' ')
+         if (*terminator == ' ' || *terminator == '\0')
+            return true;
+
+      start = terminator;
+   }
+   return false;
+}
+
 static void create_gl_context(HWND hwnd, bool *quit)
 {
    struct retro_hw_render_callback *hwr = video_driver_get_hw_context();
@@ -654,9 +652,9 @@ static void *gfx_ctx_wgl_init(video_frame_info_t *video_info, void *video_driver
 
 #ifdef HAVE_DYNAMIC
 #ifdef HAVE_OPENGL
-   dll_handle = dylib_load("libGLESv2.dll");
-#else
    dll_handle = dylib_load("OpenGL32.dll");
+#else
+   dll_handle = dylib_load("libGLESv2.dll");
 #endif
 #endif
 

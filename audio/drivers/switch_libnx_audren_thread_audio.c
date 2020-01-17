@@ -232,7 +232,7 @@ static void *libnx_audren_thread_audio_init(const char *device, unsigned rate, u
 
    svcGetThreadPriority(&thread_priority, CUR_THREAD_HANDLE);
    rc = threadCreate(&aud->thread, &thread_job,
-         (void*)aud, thread_stack_size,
+         (void*)aud, NULL, thread_stack_size,
          thread_priority - 1, thread_preferred_cpu);
    if (R_FAILED(rc))
    {

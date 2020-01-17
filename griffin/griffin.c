@@ -445,8 +445,6 @@ VIDEO DRIVER
 #include "../gfx/drivers/drm_gfx.c"
 #endif
 
-#include "../gfx/display_servers/dispserv_null.c"
-
 #ifdef HAVE_OPENGL1
 #include "../gfx/drivers/gl1.c"
 #endif
@@ -499,7 +497,6 @@ VIDEO DRIVER
 #elif defined(DJGPP)
 #include "../gfx/drivers/vga_gfx.c"
 #endif
-#include "../gfx/drivers/nullgfx.c"
 
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
 #ifdef HAVE_GDI
@@ -713,16 +710,12 @@ INPUT
 #include "../input/drivers_joypad/udev_joypad.c"
 #endif
 
-#include "../input/drivers/nullinput.c"
-#include "../input/drivers_joypad/null_joypad.c"
-
 /*============================================================
 INPUT (HID)
 ============================================================ */
 #ifdef HAVE_HID
 #include "../input/common/input_hid_common.c"
 #include "../input/drivers_joypad/hid_joypad.c"
-#include "../input/drivers_hid/null_hid.c"
 
 #if defined(HAVE_LIBUSB) && defined(HAVE_THREADS)
 #include "../input/drivers_hid/libusb_hid.c"
@@ -776,7 +769,6 @@ AUDIO RESAMPLER
 #include "../libretro-common/audio/resampler/audio_resampler.c"
 #include "../libretro-common/audio/resampler/drivers/sinc_resampler.c"
 #include "../libretro-common/audio/resampler/drivers/nearest_resampler.c"
-#include "../libretro-common/audio/resampler/drivers/null_resampler.c"
 #ifdef HAVE_CC_RESAMPLER
 #include "../audio/drivers_resampler/cc_resampler.c"
 #endif
@@ -798,15 +790,11 @@ CAMERA
 #include "../cores/libretro-video-processor/video_processor_v4l2.c"
 #endif
 
-#include "../camera/drivers/nullcamera.c"
-
 /*============================================================
 LEDS
 ============================================================ */
 
 #include "../led/led_driver.c"
-
-#include "../led/drivers/led_null.c"
 
 #if defined(HAVE_RPILED)
 #include "../led/drivers/led_rpi.c"
@@ -818,8 +806,6 @@ LOCATION
 #if defined(ANDROID)
 #include "../location/drivers/android.c"
 #endif
-
-#include "../location/drivers/nulllocation.c"
 
 /*============================================================
 RSOUND
@@ -896,8 +882,6 @@ AUDIO
 #include "../audio/drivers/coreaudio.c"
 #endif
 
-#include "../audio/drivers/nullaudio.c"
-
 #if defined(HAVE_WASAPI) || ((_WIN32_WINNT >= 0x0602) && !defined(__WINRT__))
 #include "../audio/common/mmdevice_common.c"
 #endif
@@ -905,8 +889,6 @@ AUDIO
 /*============================================================
 MIDI
 ============================================================ */
-#include "../midi/drivers/null_midi.c"
-
 #ifdef HAVE_WINMM
 #include "../midi/drivers/winmm_midi.c"
 #endif
@@ -983,6 +965,7 @@ CORES
 FILE
 ============================================================ */
 #include "../libretro-common/file/file_path.c"
+#include "../libretro-common/file/file_path_io.c"
 #include "../file_path_special.c"
 #include "../file_path_str.c"
 #include "../libretro-common/lists/dir_list.c"
@@ -1080,7 +1063,6 @@ FRONTEND
 #elif defined(DJGPP)
 #include "../frontend/drivers/platform_dos.c"
 #endif
-#include "../frontend/drivers/platform_null.c"
 
 #include "../core_info.c"
 
@@ -1140,8 +1122,6 @@ RETROARCH
 /*============================================================
 WIFI
 ============================================================ */
-#include "../wifi/drivers/nullwifi.c"
-
 #ifdef HAVE_LAKKA
 #include "../wifi/drivers/connmanctl.c"
 #endif
@@ -1149,8 +1129,6 @@ WIFI
 /*============================================================
 RECORDING
 ============================================================ */
-#include "../record/drivers/record_null.c"
-
 #ifdef HAVE_FFMPEG
 #include "../record/drivers/record_ffmpeg.c"
 #endif
@@ -1297,10 +1275,7 @@ MENU
 #include "../menu/menu_thumbnail_path.c"
 #include "../menu/menu_thumbnail.c"
 
-#include "../menu/drivers/null.c"
 #include "../menu/drivers/menu_generic.c"
-
-#include "../menu/drivers_display/menu_display_null.c"
 
 #if defined(HAVE_D3D8)
 #include "../menu/drivers_display/menu_display_d3d8.c"

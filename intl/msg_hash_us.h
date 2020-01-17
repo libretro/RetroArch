@@ -809,16 +809,36 @@ MSG_HASH(
     "Directory"
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_DISK_CYCLE_TRAY_STATUS,
-    "Cycle Disk Tray"
+    MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
+    "Eject Disk"
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
+    MENU_ENUM_SUBLABEL_DISK_TRAY_EJECT,
+    "Opens virtual disk try and removes currently loaded disk. NOTE: If RetroArch is configured to pause while menu is active, some cores may not register changes unless content is resumed for a few seconds after each disk control action."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
     "Insert Disk"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_DISK_TRAY_INSERT,
+    "Inserts disk corresponding to 'Current Disk Index' and closes virtual disk tray. NOTE: If RetroArch is configured to pause while menu is active, some cores may not register changes unless content is resumed for a few seconds after each disk control action."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DISK_INDEX,
     "Current Disk Index"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_DISK_INDEX,
+    "Choose current disk from list of available images. Disk will be loaded when 'Insert Disk' is selected."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
+    "Load New Disk"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
+    "Eject current disk, select a new disk from the filesystem then insert it and close the virtual disk tray. NOTE: This is a legacy feature. It is instead recommended to load multi-disk titles via M3U playlists, which allow disk selection using the 'Eject/Insert Disk' and 'Current Disk Index' options."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DISK_OPTIONS,
@@ -887,6 +907,10 @@ MSG_HASH(
 MSG_HASH(
     MSG_ALL_CORES_UPDATED,
     "All installed cores at latest version"
+    )
+MSG_HASH(
+    MSG_NUM_CORES_UPDATED,
+    "cores updated: "
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_SCALE_FACTOR,
@@ -2389,6 +2413,14 @@ MSG_HASH(
     "Automatically close menu and resume current content after selecting 'Save State' or 'Load State' from the Quick Menu. Disabling this can improve save state performance on very slow devices."
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_INSERT_DISK_RESUME,
+    "Resume content after changing disks"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_INSERT_DISK_RESUME,
+    "Automatically close menu and resume current content after selecting 'Insert Disk' or 'Load New Disk' from the Disk Control menu."
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PAUSE_NONACTIVE,
     "Don't run in background"
     )
@@ -2479,6 +2511,22 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_THUMBNAIL_MODE_DEFAULT,
     "System Default"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_CLEAN_PLAYLIST,
+    "Clean Playlist"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_CLEAN_PLAYLIST,
+    "Remove invalid/duplicate entries and validate core associations."
+    )
+MSG_HASH(
+    MSG_PLAYLIST_MANAGER_CLEANING_PLAYLIST,
+    "Cleaning playlist: "
+    )
+MSG_HASH(
+    MSG_PLAYLIST_MANAGER_PLAYLIST_CLEANED,
+    "Playlist cleaned: "
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_POINTER_ENABLE,
@@ -6659,21 +6707,8 @@ MSG_HASH(
     "The range of frames of input latency that may be used to hide network latency. Reduces jitter and makes netplay less CPU-intensive, at the expense of unpredictable input lag."
     )
 MSG_HASH(
-    MENU_ENUM_SUBLABEL_DISK_CYCLE_TRAY_STATUS,
-    "Cycle the current disk. If the disk is inserted, it will eject the disk. If the disk has not been inserted, it will be inserted. "
-    )
-MSG_HASH(
-    MENU_ENUM_SUBLABEL_DISK_INDEX,
-    "Change the current disk if more than one is inserted. Open the tray before attempting to change disks.\n"
-    "If RetroArch is configured to pause on menu toggle the tray open/close action may not register in the core. If that's the case remember to go back to the game for a few frames after every disk control action."
-    )
-MSG_HASH(
     MENU_ENUM_SUBLABEL_DISK_OPTIONS,
     "Disk image management."
-    )
-MSG_HASH(
-    MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
-    "Select a disk image to insert."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_ENUM_THROTTLE_FRAMERATE,
@@ -10053,6 +10088,10 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DELETE_PLAYLIST,
     "Delete Playlist"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_DELETE_PLAYLIST,
+    "Remove playlist from filesystem."
     )
 #ifdef HAVE_LAKKA
 MSG_HASH(

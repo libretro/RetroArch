@@ -303,19 +303,19 @@ static bool ps2_gfx_frame(void *data, const void *frame,
          gsKit_texture_upload(ps2->gsGlobal, ps2->menuTexture);
          prim_texture(ps2->gsGlobal, ps2->menuTexture, 2, ps2->fullscreen, empty_ps2_insets);
       }
-   } else if (video_info->statistics_show) {
+   }
+   else if (video_info->statistics_show)
+   {
       struct font_params *osd_params = (struct font_params*)
          &video_info->osd_stat_params;
 
-      if (osd_params) {
-         font_driver_render_msg(video_info, NULL, video_info->stat_text,
-               (const struct font_params*)&video_info->osd_stat_params);
-      }
+      if (osd_params)
+         font_driver_render_msg(ps2, video_info, video_info->stat_text,
+               (const struct font_params*)&video_info->osd_stat_params, NULL);
    }
 
-   if(!string_is_empty(msg)) {
-      font_driver_render_msg(video_info, NULL, msg, NULL);
-   }
+   if(!string_is_empty(msg))
+      font_driver_render_msg(ps2, video_info, msg, NULL, NULL);
 
    refreshScreen(ps2);
 
@@ -418,14 +418,6 @@ static void ps2_set_texture_enable(void *data, bool enable, bool fullscreen)
    ps2->fullscreen = fullscreen;
 }
 
-static void ps2_set_osd_msg(void *data,
-      video_frame_info_t *video_info,
-      const char *msg,
-      const void *params, void *font)
-{
-   font_driver_render_msg(video_info, font, msg, params);
-}
-
 static bool ps2_get_hw_render_interface(void* data,
       const struct retro_hw_render_interface** iface)
 {
@@ -453,7 +445,7 @@ static const video_poke_interface_t ps2_poke_interface = {
    NULL, /* apply_state_changes */
    ps2_set_texture_frame,
    ps2_set_texture_enable,
-   ps2_set_osd_msg,             /* set_osd_msg */
+   font_driver_render_msg,             /* set_osd_msg */
    NULL,                        /* show_mouse  */
    NULL,                        /* grab_mouse_toggle */
    NULL,                        /* get_current_shader */

@@ -422,7 +422,7 @@ static bool sixel_gfx_frame(void *data, const void *frame,
    }
 
    if (msg)
-      font_driver_render_msg(video_info, NULL, msg, NULL);
+      font_driver_render_msg(sixel, video_info, msg, NULL, NULL);
 
    return true;
 }
@@ -544,14 +544,6 @@ static void sixel_set_texture_frame(void *data,
    }
 }
 
-static void sixel_set_osd_msg(void *data,
-      video_frame_info_t *video_info,
-      const char *msg,
-      const void *params, void *font)
-{
-   font_driver_render_msg(video_info, font, msg, (const struct font_params*)params);
-}
-
 static void sixel_get_video_output_size(void *data,
       unsigned *width, unsigned *height)
 {
@@ -600,7 +592,7 @@ static const video_poke_interface_t sixel_poke_interface = {
 #if defined(HAVE_MENU)
    sixel_set_texture_frame,
    NULL,
-   sixel_set_osd_msg,
+   font_driver_render_msg,
    NULL,
 #else
    NULL,

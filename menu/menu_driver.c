@@ -101,6 +101,68 @@ float osk_dark[16] =  {
    0.00, 0.00, 0.00, 0.85,
 };
 
+static void *null_menu_init(void **userdata, bool video_is_threaded)
+{
+   menu_handle_t *menu = (menu_handle_t*)calloc(1, sizeof(*menu));
+
+   if (!menu)
+      return NULL;
+
+   return menu;
+}
+
+static int null_menu_iterate(void *data, void *userdata,
+      enum menu_action action) { return 1; }
+
+static menu_ctx_driver_t menu_ctx_null = {
+  NULL,  /* set_texture */
+  NULL,  /* render_messagebox */
+  null_menu_iterate,
+  NULL,  /* render */
+  NULL,  /* frame */
+  null_menu_init,
+  NULL,  /* free */
+  NULL,  /* context_reset */
+  NULL,  /* context_destroy */
+  NULL,  /* populate_entries */
+  NULL,  /* toggle */
+  NULL,  /* navigation_clear */
+  NULL,  /* navigation_decrement */
+  NULL,  /* navigation_increment */
+  NULL,  /* navigation_set */
+  NULL,  /* navigation_set_last */
+  NULL,  /* navigation_descend_alphabet */
+  NULL,  /* navigation_ascend_alphabet */
+  NULL,  /* lists_init */
+  NULL,  /* list_insert */
+  NULL,  /* list_prepend */
+  NULL,  /* list_delete */
+  NULL,  /* list_clear */
+  NULL,  /* list_cache */
+  NULL,  /* list_push */
+  NULL,  /* list_get_selection */
+  NULL,  /* list_get_size */
+  NULL,  /* list_get_entry */
+  NULL,  /* list_set_selection */
+  NULL,  /* bind_init */
+  NULL,  /* load_image */
+  "null",
+  NULL,  /* environ */
+  NULL,  /* update_thumbnail_path */
+  NULL,  /* update_thumbnail_image */
+  NULL,  /* refresh_thumbnail_image */
+  NULL,  /* set_thumbnail_system */
+  NULL,  /* get_thumbnail_system */
+  NULL,  /* set_thumbnail_content */
+  NULL,  /* osk_ptr_at_pos */
+  NULL,  /* update_savestate_thumbnail_path */
+  NULL,  /* update_savestate_thumbnail_image */
+  NULL,  /* pointer_down */
+  NULL,  /* pointer_up   */
+  NULL,  /* get_load_content_animation_data */
+  NULL   /* entry_action */
+};
+
 /* Menu drivers */
 static const menu_ctx_driver_t *menu_ctx_drivers[] = {
 #if defined(HAVE_MATERIALUI)
@@ -122,6 +184,25 @@ static const menu_ctx_driver_t *menu_ctx_drivers[] = {
    &menu_ctx_xui,
 #endif
    &menu_ctx_null,
+   NULL
+};
+
+static menu_display_ctx_driver_t menu_display_ctx_null = {
+   NULL, /* draw */
+   NULL, /* draw_pipeline */
+   NULL, /* viewport */
+   NULL, /* blend_begin */
+   NULL, /* blend_end   */
+   NULL, /* restore_clear_color   */
+   NULL, /* clear_color   */
+   NULL, /* get_default_mvp   */
+   NULL, /* get_default_vertices */
+   NULL, /* get_default_tex_coords */
+   NULL, /* font_init_first */
+   MENU_VIDEO_DRIVER_GENERIC,
+   "null",
+   false,
+   NULL,
    NULL
 };
 

@@ -1100,7 +1100,7 @@ static void d3d8_set_osd_msg(void *data,
    d3d8_video_t          *d3d = (d3d8_video_t*)data;
 
    d3d8_begin_scene(d3d->dev);
-   font_driver_render_msg(video_info, font, msg, params);
+   font_driver_render_msg(d3d, video_info, msg, params, font);
    d3d8_end_scene(d3d->dev);
 }
 
@@ -1556,10 +1556,8 @@ static bool d3d8_frame(void *data, const void *frame,
          &video_info->osd_stat_params;
 
       if (osd_params)
-      {
-         font_driver_render_msg(video_info, NULL, video_info->stat_text,
-               (const struct font_params*)&video_info->osd_stat_params);
-      }
+         font_driver_render_msg(d3d, video_info, video_info->stat_text,
+               (const struct font_params*)&video_info->osd_stat_params, NULL);
    }
 #endif
 
@@ -1576,7 +1574,7 @@ static bool d3d8_frame(void *data, const void *frame,
    {
       d3d8_set_viewports(d3d->dev, &screen_vp);
       d3d8_begin_scene(d3d->dev);
-      font_driver_render_msg(video_info, NULL, msg, NULL);
+      font_driver_render_msg(d3d, video_info, msg, NULL, NULL);
       d3d8_end_scene(d3d->dev);
    }
 

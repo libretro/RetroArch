@@ -144,6 +144,7 @@ enum video_driver_enum
    VIDEO_XVIDEO,
    VIDEO_SDL,
    VIDEO_SDL2,
+   VIDEO_SDL_DINGUX,
    VIDEO_EXT,
    VIDEO_WII,
    VIDEO_WIIU,
@@ -357,10 +358,12 @@ static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_CTR;
 static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_SWITCH;
 #elif defined(HAVE_XVIDEO)
 static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_XVIDEO;
-#elif defined(HAVE_SDL)
+#elif defined(HAVE_SDL) && !defined(HAVE_SDL_DINGUX)
 static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_SDL;
 #elif defined(HAVE_SDL2)
 static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_SDL2;
+#elif defined(HAVE_SDL_DINGUX)
+static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_SDL_DINGUX;
 #elif defined(_WIN32) && !defined(_XBOX)
 static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_GDI;
 #elif defined(DJGPP)
@@ -808,6 +811,8 @@ const char *config_get_default_video(void)
          return "switch";
       case VIDEO_XVIDEO:
          return "xvideo";
+      case VIDEO_SDL_DINGUX:
+         return "sdl_dingux";
       case VIDEO_SDL:
          return "sdl";
       case VIDEO_SDL2:
@@ -1455,6 +1460,7 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
    SETTING_BOOL("menu_horizontal_animation",     &settings->bools.menu_horizontal_animation, true, DEFAULT_MENU_HORIZONTAL_ANIMATION, false);
    SETTING_BOOL("menu_pause_libretro",           &settings->bools.menu_pause_libretro, true, true, false);
    SETTING_BOOL("menu_savestate_resume",         &settings->bools.menu_savestate_resume, true, menu_savestate_resume, false);
+   SETTING_BOOL("menu_insert_disk_resume",       &settings->bools.menu_insert_disk_resume, true, DEFAULT_MENU_INSERT_DISK_RESUME, false);
    SETTING_BOOL("menu_mouse_enable",             &settings->bools.menu_mouse_enable, true, DEFAULT_MOUSE_ENABLE, false);
    SETTING_BOOL("menu_pointer_enable",           &settings->bools.menu_pointer_enable, true, DEFAULT_POINTER_ENABLE, false);
    SETTING_BOOL("menu_timedate_enable",          &settings->bools.menu_timedate_enable, true, true, false);

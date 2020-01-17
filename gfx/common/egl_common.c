@@ -38,9 +38,149 @@ bool g_egl_inited    = false;
 unsigned g_egl_major = 0;
 unsigned g_egl_minor = 0;
 
+#if defined(HAVE_DYNAMIC) && defined(HAVE_DYNAMIC_EGL)
+#include <dynamic/dylib.h>
+
+typedef EGLBoolean(* PFN_EGL_QUERY_SURFACE)(
+      EGLDisplay dpy,
+      EGLSurface surface,
+      EGLint attribute,
+      EGLint *value);
+typedef void *(* PFN_EGL_GET_PROC_ADDRESS)(const char *procname);
+typedef EGLSurface(*PFN_EGL_CREATE_WINDOW_SURFACE) (EGLDisplay dpy,
+					    EGLConfig config,
+					    EGLNativeWindowType win,
+					    const EGLint * attrib_list);
+typedef EGLContext(*PFN_EGL_CREATE_CONTEXT)(EGLDisplay dpy, EGLConfig config,
+				      EGLContext share_context,
+				      const EGLint * attrib_list);
+typedef EGLBoolean(*PFN_EGL_GET_CONFIGS) (EGLDisplay dpy, EGLConfig * configs,
+				   EGLint config_size, EGLint * num_config);
+typedef EGLint(*PFN_EGL_GET_ERROR) (void);
+typedef EGLDisplay(*PFN_EGL_GET_DISPLAY) (EGLNativeDisplayType display_id);
+typedef EGLBoolean(*PFN_EGL_CHOOSE_CONFIG) (EGLDisplay dpy,
+				     const EGLint * attrib_list,
+				     EGLConfig * configs,
+				     EGLint config_size, EGLint * num_config);
+typedef EGLBoolean(*PFN_EGL_TERMINATE)(EGLDisplay dpy);
+typedef EGLBoolean(*PFN_EGL_INITIALIZE)(EGLDisplay dpy, EGLint * major,
+				   EGLint * minor);
+typedef EGLBoolean(*PFN_EGL_BIND_API) (EGLenum api);
+typedef EGLBoolean(*PFN_EGL_MAKE_CURRENT) (EGLDisplay dpy, EGLSurface draw,
+				    EGLSurface read, EGLContext ctx);
+typedef EGLBoolean(*PFN_EGL_DESTROY_SURFACE) (EGLDisplay dpy, EGLSurface surface);
+typedef EGLBoolean(*PFN_EGL_DESTROY_CONTEXT) (EGLDisplay dpy, EGLContext ctx);
+typedef EGLContext(*PFN_EGL_GET_CURRENT_CONTEXT) (void);
+typedef const char *(*PFN_EGL_QUERY_STRING) (EGLDisplay dpy, EGLint name);
+typedef EGLBoolean(*PFN_EGL_GET_CONFIG_ATTRIB) (EGLDisplay dpy,
+					EGLConfig config,
+					EGLint attribute, EGLint * value);
+typedef EGLBoolean(*PFN_EGL_SWAP_BUFFERS) (EGLDisplay dpy, EGLSurface surface);
+typedef EGLBoolean(*PFN_EGL_SWAP_INTERVAL) (EGLDisplay dpy, EGLint interval);
+
+static PFN_EGL_QUERY_SURFACE             _egl_query_surface;
+static PFN_EGL_GET_PROC_ADDRESS          _egl_get_proc_address;
+static PFN_EGL_CREATE_WINDOW_SURFACE     _egl_create_window_surface;
+static PFN_EGL_CREATE_CONTEXT            _egl_create_context;
+static PFN_EGL_GET_CONFIGS               _egl_get_configs;
+static PFN_EGL_GET_ERROR                 _egl_get_error;
+static PFN_EGL_GET_DISPLAY               _egl_get_display;
+static PFN_EGL_CHOOSE_CONFIG             _egl_choose_config;
+static PFN_EGL_TERMINATE                 _egl_terminate;
+static PFN_EGL_INITIALIZE                _egl_initialize;
+static PFN_EGL_BIND_API                  _egl_bind_api;
+static PFN_EGL_MAKE_CURRENT              _egl_make_current;
+static PFN_EGL_DESTROY_SURFACE           _egl_destroy_surface;
+static PFN_EGL_DESTROY_CONTEXT           _egl_destroy_context;
+static PFN_EGL_GET_CURRENT_CONTEXT       _egl_get_current_context;
+static PFN_EGL_QUERY_STRING              _egl_query_string;
+static PFN_EGL_GET_CONFIG_ATTRIB         _egl_get_config_attrib;
+static PFN_EGL_SWAP_BUFFERS              _egl_swap_buffers;
+static PFN_EGL_SWAP_INTERVAL             _egl_swap_interval;
+
+#else
+#define _egl_query_surface(a, b, c, d) eglQuerySurface(a, b, c, d)
+#define _egl_get_proc_address(a) eglGetProcAddress(a)
+#define _egl_create_window_surface(a, b, c, d) eglCreateWindowSurface(a, b, c, d)
+#define _egl_create_context(a, b, c, d) eglCreateContext(a, b, c, d)
+#define _egl_get_configs(a, b, c, d) eglGetConfigs(a, b, c, d)
+#define _egl_get_display(a) eglGetDisplay(a)
+#define _egl_choose_config(a, b, c, d, e) eglChooseConfig(a, b, c, d, e)
+#define _egl_make_current(a, b, c, d) eglMakeCurrent(a, b, c, d)
+#define _egl_initialize(a, b, c) eglInitialize(a, b, c)
+#define _egl_destroy_surface(a, b) eglDestroySurface(a, b)
+#define _egl_destroy_context(a, b) eglDestroyContext(a, b)
+#define _egl_get_current_context() eglGetCurrentContext()
+#define _egl_get_error() eglGetError()
+#define _egl_terminate(dpy) eglTerminate(dpy)
+#define _egl_bind_api(a) eglBindAPI(a)
+#define _egl_query_string(a, b) eglQueryString(a, b)
+#define _egl_get_config_attrib(a, b, c, d) eglGetConfigAttrib(a, b, c, d)
+#define _egl_swap_buffers(a, b) eglSwapBuffers(a, b)
+#define _egl_swap_interval(a, b) eglSwapInterval(a, b)
+#endif
+
+bool egl_init_dll(void)
+{
+#if defined(HAVE_DYNAMIC) && defined(HAVE_DYNAMIC_EGL)
+   static dylib_t egl_dll;
+
+   if (!egl_dll)
+   {
+      egl_dll = dylib_load("libEGL.dll");
+      if (egl_dll)
+      {
+         /* Setup function callbacks once */
+         _egl_query_surface         = (PFN_EGL_QUERY_SURFACE)dylib_proc(
+               egl_dll, "eglQuerySurface");
+         _egl_get_proc_address      = (PFN_EGL_GET_PROC_ADDRESS)dylib_proc(
+               egl_dll, "eglGetProcAddress");
+         _egl_create_window_surface = (PFN_EGL_CREATE_WINDOW_SURFACE)dylib_proc(
+               egl_dll, "eglCreateWindowSurface");
+         _egl_create_context        = (PFN_EGL_CREATE_CONTEXT)dylib_proc(
+               egl_dll, "eglCreateContext");
+         _egl_get_configs           = (PFN_EGL_GET_CONFIGS)dylib_proc(
+               egl_dll, "eglGetConfigs");
+         _egl_get_error             = (PFN_EGL_GET_ERROR)dylib_proc(
+               egl_dll, "eglGetError");
+         _egl_get_display           = (PFN_EGL_GET_DISPLAY)dylib_proc(
+               egl_dll, "eglGetDisplay");
+         _egl_choose_config         = (PFN_EGL_CHOOSE_CONFIG)dylib_proc(
+               egl_dll, "eglChooseConfig");
+         _egl_terminate             = (PFN_EGL_TERMINATE)dylib_proc(
+               egl_dll, "eglTerminate");
+         _egl_initialize            = (PFN_EGL_INITIALIZE)dylib_proc(
+               egl_dll, "eglInitialize");
+         _egl_bind_api              = (PFN_EGL_BIND_API)dylib_proc(
+               egl_dll, "eglBindAPI");
+         _egl_make_current          = (PFN_EGL_MAKE_CURRENT)dylib_proc(
+               egl_dll, "eglMakeCurrent");
+         _egl_destroy_surface       = (PFN_EGL_DESTROY_SURFACE)dylib_proc(
+               egl_dll, "eglDestroySurface");
+         _egl_destroy_context       = (PFN_EGL_DESTROY_CONTEXT)dylib_proc(
+               egl_dll, "eglDestroyContext");
+         _egl_get_current_context   = (PFN_EGL_GET_CURRENT_CONTEXT)dylib_proc(
+               egl_dll, "eglGetCurrentContext");
+         _egl_query_string          = (PFN_EGL_QUERY_STRING)dylib_proc(
+               egl_dll, "eglQueryString");
+         _egl_get_config_attrib     = (PFN_EGL_GET_CONFIG_ATTRIB)dylib_proc(
+               egl_dll, "eglGetConfigAttrib");
+         _egl_swap_buffers          = (PFN_EGL_SWAP_BUFFERS)dylib_proc(
+               egl_dll, "eglSwapBuffers");
+         _egl_swap_interval         = (PFN_EGL_SWAP_INTERVAL)dylib_proc(
+               egl_dll, "eglSwapInterval");
+      }
+   }
+
+   if (egl_dll)
+      return true;
+#endif
+   return false;
+}
+
 void egl_report_error(void)
 {
-   EGLint    error = eglGetError();
+   EGLint    error = _egl_get_error();
    const char *str = NULL;
    switch (error)
    {
@@ -106,7 +246,28 @@ void egl_report_error(void)
 
 gfx_ctx_proc_t egl_get_proc_address(const char *symbol)
 {
-   return eglGetProcAddress(symbol);
+   return _egl_get_proc_address(symbol);
+}
+
+void egl_terminate(EGLDisplay dpy)
+{
+   _egl_terminate(dpy);
+}
+
+bool egl_get_config_attrib(EGLDisplay dpy, EGLConfig config, EGLint attribute,
+      EGLint *value)
+{
+   return _egl_get_config_attrib(dpy, config, attribute, value);
+}
+
+bool egl_initialize(EGLDisplay dpy, EGLint *major, EGLint *minor)
+{
+   return _egl_initialize(dpy, major, minor);
+}
+
+bool egl_bind_api(EGLenum egl_api)
+{
+   return _egl_bind_api(egl_api);
 }
 
 void egl_destroy(egl_ctx_data_t *egl)
@@ -123,17 +284,17 @@ void egl_destroy(egl_ctx_data_t *egl)
 #endif
 #endif
 
-      eglMakeCurrent(egl->dpy,
+      _egl_make_current(egl->dpy,
             EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
       if (egl->ctx != EGL_NO_CONTEXT)
-         eglDestroyContext(egl->dpy, egl->ctx);
+         _egl_destroy_context(egl->dpy, egl->ctx);
 
       if (egl->hw_ctx != EGL_NO_CONTEXT)
-         eglDestroyContext(egl->dpy, egl->hw_ctx);
+         _egl_destroy_context(egl->dpy, egl->hw_ctx);
 
       if (egl->surf != EGL_NO_SURFACE)
-         eglDestroySurface(egl->dpy, egl->surf);
-      eglTerminate(egl->dpy);
+         _egl_destroy_surface(egl->dpy, egl->surf);
+      egl_terminate(egl->dpy);
    }
 
    /* Be as careful as possible in deinit.
@@ -159,7 +320,7 @@ void egl_bind_hw_render(egl_ctx_data_t *egl, bool enable)
    if (egl->surf == EGL_NO_SURFACE)
       return;
 
-   eglMakeCurrent(egl->dpy, egl->surf,
+   _egl_make_current(egl->dpy, egl->surf,
          egl->surf,
          enable ? egl->hw_ctx : egl->ctx);
 }
@@ -171,7 +332,7 @@ void egl_swap_buffers(void *data)
          egl->dpy  != EGL_NO_DISPLAY &&
          egl->surf != EGL_NO_SURFACE
          )
-      eglSwapBuffers(egl->dpy, egl->surf);
+      _egl_swap_buffers(egl->dpy, egl->surf);
 }
 
 void egl_set_swap_interval(egl_ctx_data_t *egl, int interval)
@@ -184,11 +345,11 @@ void egl_set_swap_interval(egl_ctx_data_t *egl, int interval)
 
    if (egl->dpy  == EGL_NO_DISPLAY)
       return;
-   if (!(eglGetCurrentContext()))
+   if (!_egl_get_current_context())
       return;
 
    RARCH_LOG("[EGL]: eglSwapInterval(%u)\n", interval);
-   if (!eglSwapInterval(egl->dpy, interval))
+   if (!_egl_swap_interval(egl->dpy, interval))
    {
       RARCH_ERR("[EGL]: eglSwapInterval() failed.\n");
       egl_report_error();
@@ -204,8 +365,8 @@ void egl_get_video_size(egl_ctx_data_t *egl, unsigned *width, unsigned *height)
    {
       EGLint gl_width, gl_height;
 
-      eglQuerySurface(egl->dpy, egl->surf, EGL_WIDTH, &gl_width);
-      eglQuerySurface(egl->dpy, egl->surf, EGL_HEIGHT, &gl_height);
+      _egl_query_surface(egl->dpy, egl->surf, EGL_WIDTH, &gl_width);
+      _egl_query_surface(egl->dpy, egl->surf, EGL_HEIGHT, &gl_height);
       *width  = gl_width;
       *height = gl_height;
    }
@@ -215,7 +376,7 @@ bool check_egl_version(int minMajorVersion, int minMinorVersion)
 {
    int count;
    int major, minor;
-   const char *str = eglQueryString(EGL_NO_DISPLAY, EGL_VERSION);
+   const char *str = _egl_query_string(EGL_NO_DISPLAY, EGL_VERSION);
 
    if (!str)
       return false;
@@ -239,7 +400,7 @@ bool check_egl_version(int minMajorVersion, int minMinorVersion)
 bool check_egl_client_extension(const char *name)
 {
    size_t nameLen;
-   const char *str = eglQueryString(EGL_NO_DISPLAY, EGL_EXTENSIONS);
+   const char *str = _egl_query_string(EGL_NO_DISPLAY, EGL_EXTENSIONS);
 
    /* The EGL implementation doesn't support client extensions at all. */
    if (!str)
@@ -277,8 +438,9 @@ static EGLDisplay get_egl_display(EGLenum platform, void *native)
 
          RARCH_LOG("[EGL] Found EGL client version >= 1.5, trying eglGetPlatformDisplay\n");
          ptr_eglGetPlatformDisplay = (pfn_eglGetPlatformDisplay)
-            eglGetProcAddress("eglGetPlatformDisplay");
-         if (ptr_eglGetPlatformDisplay != NULL)
+            egl_get_proc_address("eglGetPlatformDisplay");
+
+         if (ptr_eglGetPlatformDisplay)
          {
             EGLDisplay dpy = ptr_eglGetPlatformDisplay(platform, native, NULL);
             if (dpy != EGL_NO_DISPLAY)
@@ -294,8 +456,9 @@ static EGLDisplay get_egl_display(EGLenum platform, void *native)
 
          RARCH_LOG("[EGL] Found EGL_EXT_platform_base, trying eglGetPlatformDisplayEXT\n");
          ptr_eglGetPlatformDisplayEXT = (PFNEGLGETPLATFORMDISPLAYEXTPROC)
-            eglGetProcAddress("eglGetPlatformDisplayEXT");
-         if (ptr_eglGetPlatformDisplayEXT != NULL)
+            egl_get_proc_address("eglGetPlatformDisplayEXT");
+
+         if (ptr_eglGetPlatformDisplayEXT)
          {
             EGLDisplay dpy = ptr_eglGetPlatformDisplayEXT(platform, native, NULL);
             if (dpy != EGL_NO_DISPLAY)
@@ -309,18 +472,30 @@ static EGLDisplay get_egl_display(EGLenum platform, void *native)
     * implementation doesn't support eglGetPlatformDisplay. In this case, try
     * eglGetDisplay and hope for the best. */
    RARCH_LOG("[EGL] Falling back to eglGetDisplay\n");
-   return eglGetDisplay((EGLNativeDisplayType) native);
+   return _egl_get_display((EGLNativeDisplayType) native);
+}
+
+bool egl_get_native_visual_id(egl_ctx_data_t *egl, EGLint *value)
+{
+   if (!egl_get_config_attrib(egl->dpy, egl->config,
+         EGL_NATIVE_VISUAL_ID, value))
+   {
+      RARCH_ERR("[EGL]: egl_get_native_visual_id failed.\n");
+      return false;
+   }
+
+   return true;
 }
 
 bool egl_default_accept_config_cb(void *display_data, EGLDisplay dpy, EGLConfig config)
 {
    /* Makes sure we have 8 bit color. */
    EGLint r, g, b;
-   if (!eglGetConfigAttrib(dpy, config, EGL_RED_SIZE, &r))
+   if (!egl_get_config_attrib(dpy, config, EGL_RED_SIZE, &r))
       return false;
-   if (!eglGetConfigAttrib(dpy, config, EGL_GREEN_SIZE, &g))
+   if (!egl_get_config_attrib(dpy, config, EGL_GREEN_SIZE, &g))
       return false;
-   if (!eglGetConfigAttrib(dpy, config, EGL_BLUE_SIZE, &b))
+   if (!egl_get_config_attrib(dpy, config, EGL_BLUE_SIZE, &b))
       return false;
 
    if (r != 8 || g != 8 || b != 8)
@@ -329,33 +504,19 @@ bool egl_default_accept_config_cb(void *display_data, EGLDisplay dpy, EGLConfig 
    return true;
 }
 
-bool egl_init_context(egl_ctx_data_t *egl,
-      EGLenum platform,
-      void *display_data,
-      EGLint *major, EGLint *minor,
-      EGLint *count, const EGLint *attrib_ptr,
-      egl_accept_config_cb_t cb)
+bool egl_init_context_common(
+      egl_ctx_data_t *egl, EGLint *count,
+      const EGLint *attrib_ptr,
+      egl_accept_config_cb_t cb,
+      void *display_data)
 {
    EGLint i;
-   EGLConfig *configs = NULL;
    EGLint matched     = 0;
-   int config_index   = -1;
-   EGLDisplay dpy     = get_egl_display(platform, display_data);
-
-   if (dpy == EGL_NO_DISPLAY)
-   {
-      RARCH_ERR("[EGL]: Couldn't get EGL display.\n");
-      return false;
-   }
-
-   egl->dpy = dpy;
-
-   if (!eglInitialize(egl->dpy, major, minor))
+   EGLConfig *configs = NULL;
+   if (!egl)
       return false;
 
-   RARCH_LOG("[EGL]: EGL version: %d.%d\n", *major, *minor);
-
-   if (!eglGetConfigs(egl->dpy, NULL, 0, count) || *count < 1)
+   if (!_egl_get_configs(egl->dpy, NULL, 0, count) || *count < 1)
    {
       RARCH_ERR("[EGL]: No configs to choose from.\n");
       return false;
@@ -365,7 +526,7 @@ bool egl_init_context(egl_ctx_data_t *egl,
    if (!configs)
       return false;
 
-   if (!eglChooseConfig(egl->dpy, attrib_ptr,
+   if (!_egl_choose_config(egl->dpy, attrib_ptr,
             configs, *count, &matched) || !matched)
    {
       RARCH_ERR("[EGL]: No EGL configs with appropriate attributes.\n");
@@ -395,14 +556,37 @@ bool egl_init_context(egl_ctx_data_t *egl,
    return true;
 }
 
-bool egl_bind_api(EGLenum egl_api)
+
+bool egl_init_context(egl_ctx_data_t *egl,
+      EGLenum platform,
+      void *display_data,
+      EGLint *major, EGLint *minor,
+      EGLint *count, const EGLint *attrib_ptr,
+      egl_accept_config_cb_t cb)
 {
-   return eglBindAPI(egl_api);
+   int config_index   = -1;
+   EGLDisplay dpy     = get_egl_display(platform, display_data);
+
+   if (dpy == EGL_NO_DISPLAY)
+   {
+      RARCH_ERR("[EGL]: Couldn't get EGL display.\n");
+      return false;
+   }
+
+   egl->dpy = dpy;
+
+   if (!egl_initialize(egl->dpy, major, minor))
+      return false;
+
+   RARCH_LOG("[EGL]: EGL version: %d.%d\n", *major, *minor);
+
+   return egl_init_context_common(egl, count, attrib_ptr, cb,
+         display_data);
 }
 
 bool egl_create_context(egl_ctx_data_t *egl, const EGLint *egl_attribs)
 {
-   EGLContext ctx = eglCreateContext(egl->dpy, egl->config, EGL_NO_CONTEXT,
+   EGLContext ctx = _egl_create_context(egl->dpy, egl->config, EGL_NO_CONTEXT,
          egl_attribs);
 
    if (ctx == EGL_NO_CONTEXT)
@@ -413,7 +597,7 @@ bool egl_create_context(egl_ctx_data_t *egl, const EGLint *egl_attribs)
 
    if (egl->use_hw_ctx)
    {
-      egl->hw_ctx = eglCreateContext(egl->dpy, egl->config, egl->ctx,
+      egl->hw_ctx = _egl_create_context(egl->dpy, egl->config, egl->ctx,
             egl_attribs);
       RARCH_LOG("[EGL]: Created shared context: %p.\n", (void*)egl->hw_ctx);
 
@@ -431,28 +615,16 @@ bool egl_create_surface(egl_ctx_data_t *egl, void *native_window)
 	   EGL_NONE,
    };
 
-   egl->surf = eglCreateWindowSurface(egl->dpy, egl->config, (NativeWindowType)native_window, window_attribs);
+   egl->surf = _egl_create_window_surface(egl->dpy, egl->config, (NativeWindowType)native_window, window_attribs);
 
    if (egl->surf == EGL_NO_SURFACE)
       return false;
 
    /* Connect the context to the surface. */
-   if (!eglMakeCurrent(egl->dpy, egl->surf, egl->surf, egl->ctx))
+   if (!_egl_make_current(egl->dpy, egl->surf, egl->surf, egl->ctx))
       return false;
 
-   RARCH_LOG("[EGL]: Current context: %p.\n", (void*)eglGetCurrentContext());
-
-   return true;
-}
-
-bool egl_get_native_visual_id(egl_ctx_data_t *egl, EGLint *value)
-{
-   if (!eglGetConfigAttrib(egl->dpy, egl->config,
-         EGL_NATIVE_VISUAL_ID, value))
-   {
-      RARCH_ERR("[EGL]: egl_get_native_visual_id failed.\n");
-      return false;
-   }
+   RARCH_LOG("[EGL]: Current context: %p.\n", (void*)_egl_get_current_context());
 
    return true;
 }

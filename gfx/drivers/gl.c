@@ -2407,14 +2407,6 @@ static void gl2_render_osd_background(
          video_info->height, false, true);
 }
 
-static void gl2_set_osd_msg(void *data,
-      video_frame_info_t *video_info,
-      const char *msg,
-      const void *params, void *font)
-{
-   font_driver_render_msg(video_info, font, msg, (const struct font_params*)params);
-}
-
 static void gl2_show_mouse(void *data, bool state)
 {
    gl_t                            *gl = (gl_t*)data;
@@ -3058,8 +3050,8 @@ static bool gl2_frame(void *data, const void *frame,
          &video_info->osd_stat_params;
 
       if (osd_params)
-         font_driver_render_msg(video_info, NULL, video_info->stat_text,
-               (const struct font_params*)&video_info->osd_stat_params);
+         font_driver_render_msg(gl, video_info, video_info->stat_text,
+               (const struct font_params*)&video_info->osd_stat_params, NULL);
    }
 #endif
 
@@ -3077,7 +3069,7 @@ static bool gl2_frame(void *data, const void *frame,
    {
       if (video_info->msg_bgcolor_enable)
          gl2_render_osd_background(gl, video_info, msg);
-      font_driver_render_msg(video_info, NULL, msg, NULL);
+      font_driver_render_msg(gl, video_info, msg, NULL, NULL);
    }
 
    if (video_info->cb_update_window_title)
@@ -3637,7 +3629,10 @@ static void *gl2_init(const video_info_t *video,
    RARCH_LOG("[GL]: Found GL context: %s\n", ctx_driver->ident);
 
    video_context_driver_get_video_size(&mode);
-
+#if defined(DINGUX)
+   mode.width = 320;
+   mode.height = 240;
+#endif
    full_x      = mode.width;
    full_y      = mode.height;
    mode.width  = 0;
@@ -3782,6 +3777,10 @@ static void *gl2_init(const video_info_t *video,
 
    video_context_driver_get_video_size(&mode);
 
+#if defined(DINGUX)
+   mode.width = 320;
+   mode.height = 240;
+#endif
    temp_width     = mode.width;
    temp_height    = mode.height;
    mode.width     = 0;
@@ -4509,7 +4508,7 @@ static const video_poke_interface_t gl2_poke_interface = {
    gl2_apply_state_changes,
    gl2_set_texture_frame,
    gl2_set_texture_enable,
-   gl2_set_osd_msg,
+   font_driver_render_msg,
    gl2_show_mouse,
    NULL,
    gl2_get_current_shader,

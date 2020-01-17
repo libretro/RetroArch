@@ -1708,8 +1708,8 @@ static bool gl_core_frame(void *data, const void *frame,
          &video_info->osd_stat_params;
 
       if (osd_params)
-         font_driver_render_msg(video_info, NULL, video_info->stat_text,
-               (const struct font_params*)&video_info->osd_stat_params);
+         font_driver_render_msg(gl, video_info, video_info->stat_text,
+               (const struct font_params*)&video_info->osd_stat_params, NULL);
    }
 #endif
 
@@ -1729,7 +1729,7 @@ static bool gl_core_frame(void *data, const void *frame,
       if (video_info->msg_bgcolor_enable)
          gl_core_render_osd_background(gl, video_info, msg);
 #endif
-      font_driver_render_msg(video_info, NULL, msg, NULL);
+      font_driver_render_msg(gl, video_info, msg, NULL, NULL);
    }
 
    video_info->cb_update_window_title(
@@ -1903,14 +1903,6 @@ static void gl_core_show_mouse(void *data, bool state)
       gl->ctx_driver->show_mouse(gl->ctx_data, state);
 }
 
-static void gl_core_set_osd_msg(void *data,
-                                video_frame_info_t *video_info,
-                                const char *msg,
-                                const void *params, void *font)
-{
-   font_driver_render_msg(video_info, font, msg, (const struct font_params *)params);
-}
-
 static void gl_core_set_texture_frame(void *data,
       const void *frame, bool rgb32, unsigned width, unsigned height,
       float alpha)
@@ -2016,7 +2008,7 @@ static const video_poke_interface_t gl_core_poke_interface = {
    gl_core_apply_state_changes,
    gl_core_set_texture_frame,
    gl_core_set_texture_enable,
-   gl_core_set_osd_msg,
+   font_driver_render_msg,
    gl_core_show_mouse,
    NULL,                               /* grab_mouse_toggle */
    gl_core_get_current_shader,

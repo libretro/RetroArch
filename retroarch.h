@@ -610,7 +610,6 @@ extern audio_driver_t audio_switch_thread;
 extern audio_driver_t audio_switch_libnx_audren;
 extern audio_driver_t audio_switch_libnx_audren_thread;
 extern audio_driver_t audio_rwebaudio;
-extern audio_driver_t audio_null;
 
 /* Recording */
 
@@ -710,7 +709,6 @@ typedef struct record_driver
 } record_driver_t;
 
 extern const record_driver_t record_ffmpeg;
-extern const record_driver_t record_null;
 
 /**
  * config_get_record_driver_options:
@@ -1886,6 +1884,7 @@ extern video_driver_t video_xenon360;
 extern video_driver_t video_xvideo;
 extern video_driver_t video_sdl;
 extern video_driver_t video_sdl2;
+extern video_driver_t video_sdl_dingux;
 extern video_driver_t video_vg;
 extern video_driver_t video_omap;
 extern video_driver_t video_exynos;
@@ -1899,7 +1898,6 @@ extern video_driver_t video_vga;
 extern video_driver_t video_fpga;
 extern video_driver_t video_sixel;
 extern video_driver_t video_network;
-extern video_driver_t video_null;
 
 extern const gfx_ctx_driver_t gfx_ctx_osmesa;
 extern const gfx_ctx_driver_t gfx_ctx_sdl_gl;
@@ -1957,7 +1955,6 @@ typedef struct location_driver
 
 extern location_driver_t location_corelocation;
 extern location_driver_t location_android;
-extern location_driver_t location_null;
 
 /**
  * config_get_location_driver_options:
@@ -1998,7 +1995,6 @@ extern camera_driver_t camera_v4l2;
 extern camera_driver_t camera_android;
 extern camera_driver_t camera_rwebcam;
 extern camera_driver_t camera_avfoundation;
-extern camera_driver_t camera_null;
 
 /**
  * config_get_camera_driver_options:
@@ -2024,15 +2020,6 @@ bool menu_widgets_ready(void);
 unsigned int retroarch_get_rotation(void);
 
 bool is_input_keyboard_display_on(void);
-bool is_accessibility_enabled(void);
-bool accessibility_speak(const char* speak_text);
-bool accessibility_speak_priority(const char* speak_text, int priority);
-bool accessibility_startup_message(void);
-
-bool is_narrator_running(void);
-
-bool accessibility_speak_ai_service(
-      const char* speak_text, const char* voice, int priority);
 
 RETRO_END_DECLS
 

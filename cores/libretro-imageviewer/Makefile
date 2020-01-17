@@ -8,6 +8,7 @@ image_core.so: image_core.c
 		../../libretro-common/compat/compat_strcasestr.c \
 		../../libretro-common/compat/compat_strl.c \
 		../../libretro-common/file/file_path.c \
+		../../libretro-common/file/file_path_io.c \
 		../../libretro-common/file/retro_dirent.c \
 		../../libretro-common/lists/dir_list.c \
 		../../libretro-common/lists/string_list.c \

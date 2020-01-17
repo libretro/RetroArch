@@ -4,11 +4,16 @@
 # Only needed when check_enabled ($2), check_platform, check_lib, check_pkgconf,
 # check_header, check_macro and check_switch are not used.
 
-check_switch '' C99 -std=gnu99 "Cannot find C99 compatible compiler."
-check_switch '' NOUNUSED -Wno-unused-result
-add_define MAKEFILE NOUNUSED "$HAVE_NOUNUSED"
-check_switch '' NOUNUSED_VARIABLE -Wno-unused-variable
-add_define MAKEFILE NOUNUSED_VARIABLE "$HAVE_NOUNUSED_VARIABLE"
+check_switch '' C99 -std=gnu99 ''
+
+if [ "$HAVE_C99" = 'no' ]; then
+   HAVE_C99='auto'
+   check_switch '' C99 -std=c99 'Cannot find a C99 compatible compiler.'
+fi
+
+check_switch cxx CXX11 -std=c++11 ''
+check_switch '' NOUNUSED -Wno-unused-result ''
+check_switch '' NOUNUSED_VARIABLE -Wno-unused-variable ''
 
 # There are still broken 64-bit Linux distros out there. :)
 [ -z "$CROSS_COMPILE" ] && [ -d /usr/lib64 ] && add_dirs LIBRARY /usr/lib64
@@ -108,14 +113,23 @@ fi
 if [ "$HAVE_ANGLE" = 'yes' ]; then
    eval "HAVE_EGL=\"yes\""
    add_dirs INCLUDE ./gfx/include/ANGLE
-   add_dirs LIBRARY ./angle-x64
    add_opt OPENGL no
    add_opt OPENGLES yes
+   add_define MAKEFILE OPENGLES_LIBS "-lGLESv2"
+
+   case "$PLATFORM_NAME" in
+      MINGW32* )
+         add_dirs LIBRARY ./pkg/windows/x86
+      ;;
+      MINGW64* )
+         add_dirs LIBRARY ./pkg/windows/x86_64
+      ;;
+   esac
 else
    check_header EGL EGL/egl.h EGL/eglext.h
-# some systems have EGL libs, but no pkgconfig
-# https://github.com/linux-sunxi/sunxi-mali/pull/8
-check_val '' EGL "-l${VC_PREFIX}EGL $EXTRA_GL_LIBS" '' "${VC_PREFIX}egl" '' '' true
+   # some systems have EGL libs, but no pkgconfig
+   # https://github.com/linux-sunxi/sunxi-mali/pull/8
+   check_val '' EGL "-l${VC_PREFIX}EGL $EXTRA_GL_LIBS" '' "${VC_PREFIX}egl" '' '' true
 fi
 
 if [ "$HAVE_EGL" = 'yes' ]; then
@@ -251,6 +265,8 @@ if [ "$HAVE_SDL2" = 'yes' ] && [ "$HAVE_SDL" = 'yes' ]; then
    die : 'Notice: SDL drivers will be replaced by SDL2 ones.'
    HAVE_SDL=no
 fi
+
+check_enabled CXX11 CXX C++ 'C++11 support is' false
 
 check_platform Haiku DISCORD 'Discord is' false
 check_enabled CXX DISCORD discord 'The C++ compiler is' false

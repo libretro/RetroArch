@@ -16,10 +16,9 @@
 #ifndef _MENU_WIDGETS_H
 #define _MENU_WIDGETS_H
 
+#include <formats/image.h>
 #include <queues/task_queue.h>
 #include <queues/message_queue.h>
-
-#include "../../retroarch.h"
 
 #define DEFAULT_BACKDROP               0.75f
 
@@ -60,11 +59,13 @@ int menu_widgets_ai_service_overlay_get_state(void);
 bool menu_widgets_ai_service_overlay_set_state(int state);
 
 bool menu_widgets_ai_service_overlay_load(
-        char* buffer, unsigned buffer_len, enum image_type_enum image_type);
+        char* buffer, unsigned buffer_len,
+        enum image_type_enum image_type);
+
 void menu_widgets_ai_service_overlay_unload(void);
 
-
-void menu_widgets_start_load_content_animation(const char *content_name, bool remove_extension);
+void menu_widgets_start_load_content_animation(
+      const char *content_name, bool remove_extension);
 
 void menu_widgets_cleanup_load_content_animation(void);
 
@@ -84,7 +85,7 @@ void menu_widgets_set_libretro_message(const char *message, unsigned duration);
 /* All the functions below should be called in
  * the video driver - once they are all added, set
  * enable_menu_widgets to true for that driver */
-void menu_widgets_frame(video_frame_info_t *video_info);
+void menu_widgets_frame(void *data);
 
 bool menu_widgets_set_fps_text(const char *new_fps_text);
 

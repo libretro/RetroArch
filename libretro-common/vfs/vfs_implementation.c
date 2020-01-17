@@ -284,9 +284,11 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
 {
    int                                flags = 0;
    const char                     *mode_str = NULL;
-   int                             path_len = (int)strlen(path);
    libretro_vfs_implementation_file *stream = (libretro_vfs_implementation_file*)
       calloc(1, sizeof(*stream));
+#if defined(VFS_FRONTEND) || defined(HAVE_CDROM)
+   int                             path_len = (int)strlen(path);
+#endif
 
 #ifdef VFS_FRONTEND
    const char                 *dumb_prefix  = "vfsonly://";

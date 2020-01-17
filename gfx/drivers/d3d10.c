@@ -1473,9 +1473,9 @@ static bool d3d10_gfx_frame(
             D3D10SetViewports(context, 1, &d3d10->viewport);
             D3D10SetBlendState(d3d10->device, d3d10->blend_enable, NULL, D3D10_DEFAULT_SAMPLE_MASK);
             D3D10SetVertexBuffer(context, 0, d3d10->sprites.vbo, sizeof(d3d10_sprite_t), 0);
-            font_driver_render_msg(
-                  video_info, NULL, video_info->stat_text,
-                  (const struct font_params*)&video_info->osd_stat_params);
+            font_driver_render_msg(d3d10,
+                  video_info, video_info->stat_text,
+                  (const struct font_params*)&video_info->osd_stat_params, NULL);
          }
       }
 
@@ -1512,7 +1512,7 @@ static bool d3d10_gfx_frame(
       D3D10SetViewports(d3d10->device, 1, &d3d10->viewport);
       D3D10SetBlendState(d3d10->device, d3d10->blend_enable, NULL, D3D10_DEFAULT_SAMPLE_MASK);
       D3D10SetVertexBuffer(d3d10->device, 0, d3d10->sprites.vbo, sizeof(d3d10_sprite_t), 0);
-      font_driver_render_msg(video_info, NULL, msg, NULL);
+      font_driver_render_msg(d3d10, video_info, msg, NULL, NULL);
       dxgi_update_title(video_info);
    }
    d3d10->sprites.enabled = false;
@@ -1639,7 +1639,7 @@ static void d3d10_gfx_set_osd_msg(
    if (d3d10)
    {
       if (d3d10->sprites.enabled)
-         font_driver_render_msg(video_info, font, msg, (const struct font_params*)params);
+         font_driver_render_msg(d3d10, video_info, msg, (const struct font_params*)params, font);
       else
          printf("OSD msg: %s\n", msg);
    }

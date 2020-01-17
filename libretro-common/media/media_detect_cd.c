@@ -334,9 +334,11 @@ bool media_detect_cd_info(const char *path, uint64_t pregap_bytes, media_detect_
 
       if (!memcmp(buf + offset, "SEGADISCSYSTEM", strlen("SEGADISCSYSTEM")))
       {
-         const char *title_pos;
-         const char *serial_pos;
-         bool title_found = false;
+         const char *title_pos  = NULL;
+         const char *serial_pos = NULL;
+#if 0
+         bool title_found       = false;
+#endif
 
          /* All discs currently in Redump for MCD start with SEGADISCSYSTEM. There are other strings mentioned elsewhere online,
           * but I have not seen any real examples of them. */
@@ -366,11 +368,13 @@ bool media_detect_cd_info(const char *path, uint64_t pregap_bytes, media_detect_
       }
       else if (!memcmp(buf + offset, "SEGA SEGASATURN", strlen("SEGA SEGASATURN")))
       {
-         const char *title_pos;
-         const char *serial_pos;
-         const char *version_pos;
-         const char *release_date_pos;
-         bool title_found = false;
+         const char *title_pos        = NULL;
+         const char *serial_pos       = NULL;
+         const char *version_pos      = NULL;
+         const char *release_date_pos = NULL;
+#if 0
+         bool title_found             = false;
+#endif
 
          info->system_id = MEDIA_CD_SYSTEM_SATURN;
 
@@ -418,11 +422,13 @@ bool media_detect_cd_info(const char *path, uint64_t pregap_bytes, media_detect_
       }
       else if (!memcmp(buf + offset, "SEGA SEGAKATANA", strlen("SEGA SEGAKATANA")))
       {
-         const char *title_pos;
-         const char *serial_pos;
-         const char *version_pos;
-         const char *release_date_pos;
-         bool title_found = false;
+         const char *title_pos        = NULL;
+         const char *serial_pos       = NULL;
+         const char *version_pos      = NULL;
+         const char *release_date_pos = NULL;
+#if 0
+         bool title_found             = false;
+#endif
 
          info->system_id = MEDIA_CD_SYSTEM_DREAMCAST;
 
@@ -472,7 +478,9 @@ bool media_detect_cd_info(const char *path, uint64_t pregap_bytes, media_detect_
       else if (!memcmp(buf + offset + (16 * sector_size), "\1CD001\1\0PLAYSTATION", 19))
       {
          const char *title_pos = NULL;
+#if 0
          bool title_found      = false;
+#endif
 
          info->system_id = MEDIA_CD_SYSTEM_PSX;
 

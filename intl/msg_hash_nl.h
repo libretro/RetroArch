@@ -15,10 +15,6 @@ MSG_HASH(
       "Onbekende compiler"
       )
 MSG_HASH(
-      MSG_NATIVE,
-      "Native"
-      )
-MSG_HASH(
       MSG_DEVICE_DISCONNECTED_FROM_PORT,
       "Apparaat ontkoppeld van port"
       )
@@ -39,10 +35,6 @@ MSG_HASH(
       "Verbonden met: \"%s (%s)\""
       )
 MSG_HASH(
-      MSG_NO_ARGUMENTS_SUPPLIED_AND_NO_MENU_BUILTIN,
-      "No arguments supplied and no menu builtin, displaying help..."
-      )
-MSG_HASH(
       MSG_WAITING_FOR_CLIENT,
       "Wachten op client ..."
       )
@@ -59,10 +51,6 @@ MSG_HASH(
       "Autodetecteren"
       )
 MSG_HASH(
-      MSG_AUTOLOADING_SAVESTATE_FROM,
-      "Auto-loading savestate from"
-      )
-MSG_HASH(
       MSG_CAPABILITIES,
       "Mogelijkheden"
       )
@@ -77,10 +65,6 @@ MSG_HASH(
 MSG_HASH(
       MSG_CONNECTION_SLOT,
       "Connectie slot"
-      )
-MSG_HASH(
-      MSG_SORRY_UNIMPLEMENTED_CORES_DONT_DEMAND_CONTENT_NETPLAY,
-      "Sorry, unimplemented: cores that don't demand content cannot participate in netplay."
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_PASSWORD,
@@ -472,10 +456,6 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_DIRECTORY_NOT_FOUND,
       "Map niet gevonden.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS,
       "Map")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_DISK_CYCLE_TRAY_STATUS,
-      "Disk Cycle Tray Status")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
-      "Disk Image Toevoegen")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DISK_INDEX,
       "Disk Index")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DISK_OPTIONS,

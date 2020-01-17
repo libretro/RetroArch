@@ -163,10 +163,7 @@ static bool orbis_ctx_set_video_mode(void *data,
 
 #ifdef HAVE_EGL
     if (!egl_create_context(&ctx_orbis->egl, contextAttributeList))
-    {
-        egl_report_error();
         goto error;
-    }
 #endif
 
 #ifdef HAVE_EGL
@@ -177,7 +174,9 @@ static bool orbis_ctx_set_video_mode(void *data,
     return true;
 
 error:
-    printf("[ctx_orbis]: EGL error: %d.\n", eglGetError());
+#ifdef HAVE_EGL
+    egl_report_error();
+#endif
     orbis_ctx_destroy(data);
 
     return false;
@@ -202,9 +201,11 @@ static bool orbis_ctx_bind_api(void *data,
     (void)data;
     ctx_orbis_api = api;
 
+#ifdef HAVE_EGL
     if (api == GFX_CTX_OPENGL_ES_API)
         if (egl_bind_api(EGL_OPENGL_ES_API))
             return true;
+#endif
 
     return false;
 }

@@ -396,6 +396,8 @@ void gfxSetFramebufferInfo(gfxScreen_t screen, u8 id);
 static void frontend_ctr_init(void* data)
 {
 #ifndef IS_SALAMANDER
+   extern audio_driver_t audio_null;
+
    (void)data;
 
    verbosity_enable();

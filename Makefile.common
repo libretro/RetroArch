@@ -7,6 +7,18 @@ ifeq ($(HAVE_STACK_USAGE), 1)
    DEF_FLAGS += -fstack-usage
 endif
 
+ifeq ($(HAVE_NOUNUSED), 1)
+   DEF_FLAGS += $(NOUNUSED_CFLAGS)
+endif
+
+ifeq ($(HAVE_NOUNUSED_VARIABLE), 1)
+   DEF_FLAGS += $(NOUNUSED_VARIABLE_CFLAGS)
+endif
+
+ifeq ($(HAVE_CXX11), 1)
+   CXXFLAGS += $(CXX11_CFLAGS)
+endif
+
 ifeq ($(HAVE_GL_CONTEXT),)
    HAVE_GL_CONTEXT = 0
    HAVE_GL_MODERN  = 0
@@ -153,7 +165,6 @@ ifeq ($(HAVE_DR_MP3), 1)
 endif
 
 OBJ += frontend/frontend_driver.o \
-       frontend/drivers/platform_null.o \
        retroarch.o \
        msg_hash.o \
        intl/msg_hash_us.o \
@@ -202,13 +213,13 @@ endif
 OBJ += \
        $(LIBRETRO_COMM_DIR)/file/nbio/nbio_intf.o \
        $(LIBRETRO_COMM_DIR)/file/file_path.o \
+       $(LIBRETRO_COMM_DIR)/file/file_path_io.o \
        file_path_special.o \
        file_path_str.o \
        $(LIBRETRO_COMM_DIR)/hash/rhash.o \
        input/common/input_hid_common.o \
        input/input_mapper.o \
        led/led_driver.o \
-       led/drivers/led_null.o \
        gfx/video_coord_array.o \
        gfx/video_display_server.o \
        gfx/video_crt_switch.o \
@@ -242,23 +253,11 @@ OBJ += \
        $(LIBRETRO_COMM_DIR)/audio/dsp_filter.o \
        $(LIBRETRO_COMM_DIR)/audio/resampler/drivers/sinc_resampler.o \
        $(LIBRETRO_COMM_DIR)/audio/resampler/drivers/nearest_resampler.o \
-       $(LIBRETRO_COMM_DIR)/audio/resampler/drivers/null_resampler.o \
        $(LIBRETRO_COMM_DIR)/utils/md5.o \
-       location/drivers/nulllocation.o \
-       camera/drivers/nullcamera.o \
-       wifi/drivers/nullwifi.o \
-       gfx/drivers/nullgfx.o \
-       gfx/display_servers/dispserv_null.o \
-       audio/drivers/nullaudio.o \
-       input/drivers/nullinput.o \
-       input/drivers_hid/null_hid.o \
-       input/drivers_joypad/null_joypad.o \
        playlist.o \
-       record/drivers/record_null.o \
        $(LIBRETRO_COMM_DIR)/features/features_cpu.o \
        performance_counters.o \
        verbosity.o \
-       midi/drivers/null_midi.o \
        $(LIBRETRO_COMM_DIR)/playlists/label_sanitization.o \
        manual_content_scan.o
 
@@ -826,10 +825,8 @@ ifeq ($(HAVE_MENU_COMMON), 1)
           menu/menu_displaylist.o \
           menu/menu_animation.o \
           menu/drivers/menu_generic.o \
-          menu/drivers/null.o \
           menu/menu_thumbnail_path.o \
-          menu/menu_thumbnail.o \
-          menu/drivers_display/menu_display_null.o
+          menu/menu_thumbnail.o
 
    ifeq ($(HAVE_MENU_WIDGETS), 1)
       OBJ += menu/widgets/menu_widgets.o
@@ -1284,8 +1281,14 @@ endif
 ifeq ($(HAVE_EGL), 1)
    DEFINES += -DHAVE_EGL
    DEF_FLAGS += $(EGL_CFLAGS)
-   LIBS += $(EGL_LIBS)
    OBJ += gfx/common/egl_common.o
+
+ifeq ($(HAVE_DYNAMIC_EGL), 1)
+	DEFINES += -DHAVE_DYNAMIC_EGL
+else
+   LIBS += $(EGL_LIBS)
+endif
+
 endif
 
 ifeq ($(HAVE_SDL2), 1)
@@ -1299,6 +1302,12 @@ else ifeq ($(HAVE_SDL), 1)
    OBJ += gfx/drivers/sdl_gfx.o
    DEF_FLAGS += $(SDL_CFLAGS)
    LIBS += $(SDL_LIBS)
+else ifeq ($(HAVE_SDL_DINGUX), 1)
+   HAVE_SDL_COMMON = 1
+   DEF_FLAGS += -DHAVE_SDL -DHAVE_SDL_DINGUX
+   OBJ += gfx/drivers/sdl_dingux_gfx.o
+   DEF_FLAGS += $(SDL_DINGUX_CFLAGS)
+   LIBS += $(SDL_DINGUX_LIBS)
 endif
 
 ifeq ($(HAVE_SDL_COMMON), 1)
@@ -1751,6 +1760,11 @@ ifeq ($(HAVE_V4L2),1)
    LIBS += $(V4L2_LIBS)
 endif
 
+# Accessibility
+ifeq ($(HAVE_ACCESSIBILITY), 1)
+   DEFINES += -DHAVE_ACCESSIBILITY
+endif
+
 # Things that depend on network availability
 
 ifeq ($(HAVE_NETWORKING), 1)
@@ -1959,8 +1973,6 @@ endif
 ifeq ($(HAVE_ANGLE), 1)
 	OBJ += gfx/common/angle_common.o
 	DEFINES += -DHAVE_ANGLE
-	# TODO/FIXME - should perhaps set these libraries as separate CFLAG variables in qb system
-	LIBS += -lEGL
 endif
 
 # Record
@@ -1968,8 +1980,9 @@ endif
 ifeq ($(HAVE_FFMPEG), 1)
    OBJ += record/drivers/record_ffmpeg.o \
           cores/libretro-ffmpeg/ffmpeg_core.o \
+          cores/libretro-ffmpeg/packet_buffer.o \
           cores/libretro-ffmpeg/video_buffer.o \
-			 $(LIBRETRO_COMM_DIR)/rthreads/tpool.o
+          $(LIBRETRO_COMM_DIR)/rthreads/tpool.o
 
    LIBS += $(AVCODEC_LIBS) $(AVFORMAT_LIBS) $(AVUTIL_LIBS) $(SWSCALE_LIBS) $(SWRESAMPLE_LIBS) $(FFMPEG_LIBS)
    DEFINES += -DHAVE_FFMPEG

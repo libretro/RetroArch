@@ -488,7 +488,7 @@ void discord_init(const char *discord_app_id)
    Discord_Initialize(discord_app_id, &handlers, 0, NULL);
 
 #ifdef _WIN32
-   GetModuleFileNameA(NULL, full_path, sizeof(full_path));
+   fill_pathname_application_path(full_path, sizeof(full_path));
    if (strstr(get_retroarch_launch_arguments(), full_path))
       strlcpy(command, get_retroarch_launch_arguments(), sizeof(command));
    else

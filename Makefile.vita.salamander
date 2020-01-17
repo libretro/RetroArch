@@ -35,8 +35,8 @@ CFLAGS += $(RARCH_DEFINES)
 OBJS = frontend/frontend_salamander.o \
 		 frontend/frontend_driver.o \
 		 frontend/drivers/platform_psp.o \
-		 frontend/drivers/platform_null.o \
 		 libretro-common/file/file_path.o \
+		 libretro-common/file/file_path_io.o \
 		 libretro-common/string/stdstring.o \
 		 libretro-common/lists/string_list.o \
 		 libretro-common/lists/dir_list.o \

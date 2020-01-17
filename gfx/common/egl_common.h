@@ -80,6 +80,8 @@ void egl_destroy(egl_ctx_data_t *egl);
 
 gfx_ctx_proc_t egl_get_proc_address(const char *symbol);
 
+void egl_terminate(EGLDisplay dpy);
+
 void egl_bind_hw_render(egl_ctx_data_t *egl, bool enable);
 
 void egl_swap_buffers(void *data);
@@ -90,6 +92,16 @@ void egl_get_video_size(egl_ctx_data_t *egl, unsigned *width, unsigned *height);
 
 typedef bool (*egl_accept_config_cb_t)(void *display_data, EGLDisplay dpy, EGLConfig config);
 bool egl_default_accept_config_cb(void *display_data, EGLDisplay dpy, EGLConfig config);
+
+bool egl_initialize(EGLDisplay dpy, EGLint *major, EGLint *minor);
+
+bool egl_init_dll(void);
+
+bool egl_init_context_common(
+      egl_ctx_data_t *egl, EGLint *count,
+      const EGLint *attrib_ptr,
+      egl_accept_config_cb_t cb,
+      void *display_data);
 
 bool egl_init_context(egl_ctx_data_t *egl,
       EGLenum platform,
@@ -107,6 +119,9 @@ bool egl_create_context(egl_ctx_data_t *egl, const EGLint *egl_attribs);
 bool egl_create_surface(egl_ctx_data_t *egl, void *native_window);
 
 bool egl_get_native_visual_id(egl_ctx_data_t *egl, EGLint *value);
+
+bool egl_get_config_attrib(EGLDisplay dpy, EGLConfig config,
+      EGLint attribute, EGLint *value);
 
 bool egl_has_config(egl_ctx_data_t *egl);
 

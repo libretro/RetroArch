@@ -376,12 +376,14 @@ static bool gfx_ctx_vc_bind_api(void *data,
 
    switch (api)
    {
+#ifdef HAVE_EGL
       case GFX_CTX_OPENGL_API:
          return egl_bind_api(EGL_OPENGL_API);
       case GFX_CTX_OPENGL_ES_API:
          return egl_bind_api(EGL_OPENGL_ES_API);
       case GFX_CTX_OPENVG_API:
          return egl_bind_api(EGL_OPENVG_API);
+#endif
       default:
          break;
    }
@@ -458,7 +460,7 @@ static void gfx_ctx_vc_destroy(void *data)
       gfx_ctx_vc_bind_api(data, vc_api, 0, 0);
       eglMakeCurrent(vc->egl.dpy,
             EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
-      eglTerminate(vc->egl.dpy);
+      egl_terminate(vc->egl.dpy);
    }
 
    vc->egl.ctx      = NULL;

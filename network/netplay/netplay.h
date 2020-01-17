@@ -38,6 +38,7 @@ static const mitm_server_t netplay_mitm_server_list[] = {
    { "nyc", "New York City, USA" },
    { "madrid", "Madrid, Spain" },
    { "montreal", "Montreal, Canada" },
+   { "saopaulo", "Sao Paulo, Brazil" },
 };
 
 enum rarch_netplay_ctl_state

@@ -555,6 +555,7 @@
 				OTHER_CFLAGS = (
 					"-DHAVE_RUNAHEAD",
                "-DHAVE_TRANSLATE",
+					"-DHAVE_ACCESSIBILITY",
 					"-DHAVE_SSL",
 					"-DHAVE_BUILTINMBEDTLS",
 					"-DHAVE_GRIFFIN",
@@ -632,6 +633,7 @@
 				OTHER_CFLAGS = (
 					"-DHAVE_RUNAHEAD",
                "-DHAVE_TRANSLATE",
+					"-DHAVE_ACCESSIBILITY",
 					"-DHAVE_SSL",
 					"-DHAVE_BUILTINMBEDTLS",
 					"-DHAVE_GRIFFIN",

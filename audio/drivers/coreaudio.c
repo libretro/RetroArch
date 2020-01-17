@@ -53,7 +53,7 @@ typedef struct coreaudio
 } coreaudio_t;
 
 #if TARGET_OS_IOS
-static bool g_interrupted = false;
+static bool g_interrupted;
 #endif
 
 static void coreaudio_free(void *data)
@@ -245,7 +245,7 @@ static void *coreaudio_init(const char *device,
 #else
    comp = AudioComponentFindNext(NULL, &desc);
 #endif
-   if (!comp)
+   if (comp == NULL)
       goto error;
 
 #if (defined(__MACH__) && (defined(__ppc__) || defined(__ppc64__)))
@@ -346,61 +346,40 @@ static ssize_t coreaudio_write(void *data, const void *buf_, size_t size)
    const uint8_t *buf = (const uint8_t*)buf_;
    size_t written     = 0;
 
-   if (dev->nonblock)
-   {
-      bool cond       = size > 0;
 #if TARGET_OS_IOS
-      cond            = cond && !g_interrupted;
-#endif
-      if (cond)
-      {
-         size_t write_avail;
-
-         slock_lock(dev->lock);
-
-         write_avail = fifo_write_avail(dev->buffer);
-         if (write_avail > size)
-            write_avail = size;
-
-         fifo_write(dev->buffer, buf, write_avail);
-         buf     += write_avail;
-         written += write_avail;
-         size    -= write_avail;
-
-         slock_unlock(dev->lock);
-      }
-   }
-   else
-   {
-#if TARGET_OS_IOS
-      while (!g_interrupted && size > 0)
+   while (!g_interrupted && size > 0)
 #else
-      while (size > 0)
+   while (size > 0)
 #endif
+   {
+      size_t write_avail;
+
+      slock_lock(dev->lock);
+
+      write_avail = fifo_write_avail(dev->buffer);
+      if (write_avail > size)
+         write_avail = size;
+
+      fifo_write(dev->buffer, buf, write_avail);
+      buf += write_avail;
+      written += write_avail;
+      size -= write_avail;
+
+      if (dev->nonblock)
       {
-         size_t write_avail;
-
-         slock_lock(dev->lock);
-
-         write_avail = fifo_write_avail(dev->buffer);
-         if (write_avail > size)
-            write_avail = size;
-
-         fifo_write(dev->buffer, buf, write_avail);
-         buf     += write_avail;
-         written += write_avail;
-         size    -= write_avail;
+         slock_unlock(dev->lock);
+         break;
+      }
 
 #if TARGET_OS_IPHONE
-         if (write_avail == 0 && !scond_wait_timeout(
-                  dev->cond, dev->lock, 3000000))
-            g_interrupted = true;
+      if (write_avail == 0 && !scond_wait_timeout(
+               dev->cond, dev->lock, 3000000))
+         g_interrupted = true;
 #else
-         if (write_avail == 0)
-            scond_wait(dev->cond, dev->lock);
+      if (write_avail == 0)
+         scond_wait(dev->cond, dev->lock);
 #endif
-         slock_unlock(dev->lock);
-      }
+      slock_unlock(dev->lock);
    }
 
    return written;

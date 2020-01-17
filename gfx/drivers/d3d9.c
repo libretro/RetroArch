@@ -1121,8 +1121,8 @@ static void d3d9_set_osd_msg(void *data,
 
    d3d9_set_font_rect(d3d, d3d_font_params);
    d3d9_begin_scene(dev);
-   font_driver_render_msg(video_info, font,
-         msg, d3d_font_params);
+   font_driver_render_msg(d3d, video_info,
+         msg, d3d_font_params, font);
    d3d9_end_scene(dev);
 }
 
@@ -1617,8 +1617,8 @@ static bool d3d9_frame(void *data, const void *frame,
       {
          d3d9_set_viewports(d3d->dev, &screen_vp);
          d3d9_begin_scene(d3d->dev);
-         font_driver_render_msg(video_info, NULL, video_info->stat_text,
-               (const struct font_params*)&video_info->osd_stat_params);
+         font_driver_render_msg(d3d, video_info, video_info->stat_text,
+               (const struct font_params*)&video_info->osd_stat_params, NULL);
          d3d9_end_scene(d3d->dev);
       }
    }
@@ -1644,7 +1644,7 @@ static bool d3d9_frame(void *data, const void *frame,
    {
       d3d9_set_viewports(d3d->dev, &screen_vp);
       d3d9_begin_scene(d3d->dev);
-      font_driver_render_msg(video_info, NULL, msg, NULL);
+      font_driver_render_msg(d3d, video_info, msg, NULL, NULL);
       d3d9_end_scene(d3d->dev);
    }
 

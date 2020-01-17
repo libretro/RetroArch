@@ -253,10 +253,8 @@ static bool vita2d_gfx_frame(void *data, const void *frame,
          &video_info->osd_stat_params;
 
       if (osd_params)
-      {
-         font_driver_render_msg(video_info, NULL, video_info->stat_text,
-               (const struct font_params*)&video_info->osd_stat_params);
-      }
+         font_driver_render_msg(vita, video_info, video_info->stat_text,
+               (const struct font_params*)&video_info->osd_stat_params, NULL);
    }
 
    #ifdef HAVE_OVERLAY
@@ -269,7 +267,7 @@ static bool vita2d_gfx_frame(void *data, const void *frame,
    #endif
 
    if(!string_is_empty(msg))
-      font_driver_render_msg(video_info, NULL, msg, NULL);
+      font_driver_render_msg(vita, video_info, msg, NULL, NULL);
 
    vita2d_end_drawing();
    vita2d_swap_buffers();
@@ -725,14 +723,6 @@ static void vita_unload_texture(void *data, uintptr_t handle)
    //free(texture);
 }
 
-static void vita_set_osd_msg(void *data,
-      video_frame_info_t *video_info,
-      const char *msg,
-      const void *params, void *font)
-{
-   font_driver_render_msg(video_info, font, msg, params);
-}
-
 static bool vita_get_current_sw_framebuffer(void *data,
       struct retro_framebuffer *framebuffer)
 {
@@ -790,7 +780,7 @@ static const video_poke_interface_t vita_poke_interface = {
    vita_apply_state_changes,
    vita_set_texture_frame,
    vita_set_texture_enable,
-   vita_set_osd_msg,
+   font_driver_render_msg,
    NULL,
    NULL,
    NULL,

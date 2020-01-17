@@ -189,8 +189,7 @@ MSG_HASH(MENU_ENUM_LABEL_COLLECTION,
 MSG_HASH(MENU_ENUM_LABEL_CONFIGURATIONS,
       "configurations")
 MSG_HASH(MENU_ENUM_LABEL_CONFIGURATION_SETTINGS,
-      "Determines how configuration files \n"
-      "are loaded and prioritized.")
+      "configuration_settings")
 MSG_HASH(MENU_ENUM_LABEL_CONFIG_SAVE_ON_EXIT,
       "config_save_on_exit")
 MSG_HASH(MENU_ENUM_LABEL_CONNECT_WIFI,
@@ -299,6 +298,8 @@ MSG_HASH(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_RIGHT_THUMBNAIL_MOD
       "deferred_dropdown_box_list_playlist_right_thumbnail_mode")
 MSG_HASH(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_LEFT_THUMBNAIL_MODE,
       "deferred_dropdown_box_list_playlist_left_thumbnail_mode")
+MSG_HASH(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_DISK_INDEX,
+      "deferred_dropdown_box_list_disk_index")
 MSG_HASH(MENU_ENUM_LABEL_DEFERRED_CONFIGURATIONS_LIST,
       "deferred_configurations_list")
 MSG_HASH(MENU_ENUM_LABEL_DEFERRED_PLAYLIST_LIST,
@@ -477,8 +478,10 @@ MSG_HASH(MENU_ENUM_LABEL_FAVORITES,
       "favorites")
 MSG_HASH(MENU_ENUM_LABEL_DIRECTORY_SETTINGS,
       "directory_settings")
-MSG_HASH(MENU_ENUM_LABEL_DISK_CYCLE_TRAY_STATUS,
-      "disk_cycle_tray_status")
+MSG_HASH(MENU_ENUM_LABEL_DISK_TRAY_EJECT,
+      "disk_tray_eject")
+MSG_HASH(MENU_ENUM_LABEL_DISK_TRAY_INSERT,
+      "disk_tray_insert")
 MSG_HASH(MENU_ENUM_LABEL_DISK_IMAGE_APPEND,
       "disk_image_append")
 MSG_HASH(MENU_ENUM_LABEL_SUBSYSTEM_ADD,
@@ -939,6 +942,8 @@ MSG_HASH(MENU_ENUM_LABEL_PAUSE_LIBRETRO,
       "menu_pause_libretro")
 MSG_HASH(MENU_ENUM_LABEL_MENU_SAVESTATE_RESUME,
       "menu_savestate_resume")
+MSG_HASH(MENU_ENUM_LABEL_MENU_INSERT_DISK_RESUME,
+      "menu_insert_disk_resume")
 MSG_HASH(MENU_ENUM_LABEL_PAUSE_NONACTIVE,
       "pause_nonactive")
 MSG_HASH(MENU_ENUM_LABEL_PERFCNT_ENABLE,
@@ -969,6 +974,8 @@ MSG_HASH(MENU_ENUM_LABEL_PLAYLIST_MANAGER_RIGHT_THUMBNAIL_MODE,
       "playlist_manager_right_thumbnail_mode")
 MSG_HASH(MENU_ENUM_LABEL_PLAYLIST_MANAGER_LEFT_THUMBNAIL_MODE,
       "playlist_manager_left_thumbnail_mode")
+MSG_HASH(MENU_ENUM_LABEL_PLAYLIST_MANAGER_CLEAN_PLAYLIST,
+      "playlist_manager_clean_playlist")
 MSG_HASH(MENU_ENUM_LABEL_PLAYLIST_SETTINGS_BEGIN,
       "playlist_settings_begin")
 MSG_HASH(MENU_ENUM_LABEL_POINTER_ENABLE,
@@ -1307,6 +1314,8 @@ MSG_HASH(MENU_ENUM_LABEL_THUMBNAILS_UPDATER_LIST,
       "thumbnails_updater_list")
 MSG_HASH(MENU_ENUM_LABEL_PL_THUMBNAILS_UPDATER_LIST,
       "pl_thumbnails_updater_list")
+MSG_HASH(MENU_ENUM_LABEL_PL_THUMBNAILS_UPDATER_ENTRY,
+      "pl_thumbnails_updater_entry")
 MSG_HASH(MENU_ENUM_LABEL_TIMEDATE_ENABLE,
       "menu_timedate_enable")
 MSG_HASH(MENU_ENUM_LABEL_TIMEDATE_STYLE,
@@ -2095,6 +2104,8 @@ MSG_HASH(MENU_ENUM_LABEL_SETTINGS_SHOW_INPUT,
       "settings_show_input")
 MSG_HASH(MENU_ENUM_LABEL_ACCESSIBILITY_SETTINGS,
       "accessibility_settings")
+MSG_HASH(MENU_ENUM_LABEL_POWER_MANAGEMENT_SETTINGS,
+      "power_management_settings")
 MSG_HASH(MENU_ENUM_LABEL_AI_SERVICE_SETTINGS,
       "ai_service_settings")
 MSG_HASH(MENU_ENUM_LABEL_AI_SERVICE_MODE,
@@ -2203,3 +2214,9 @@ MSG_HASH(MENU_ENUM_LABEL_INPUT_TURBO_MODE,
       "input_turbo_mode")
 MSG_HASH(MENU_ENUM_LABEL_INPUT_TURBO_DEFAULT_BUTTON,
       "input_turbo_default_button")
+MSG_HASH(MENU_ENUM_LABEL_MENU_VIEWS_SETTINGS,
+      "menu_views_settings")
+MSG_HASH(MENU_ENUM_LABEL_QUICK_MENU_VIEWS_SETTINGS,
+      "quick_menu_views_settings")
+MSG_HASH(MENU_ENUM_LABEL_SETTINGS_VIEWS_SETTINGS,
+      "settings_views_settings")

@@ -15,10 +15,6 @@ MSG_HASH(
       "未知的編譯器"
       )
 MSG_HASH(
-      MSG_NATIVE,
-      "Native"
-      )
-MSG_HASH(
       MSG_DEVICE_DISCONNECTED_FROM_PORT,
       "設備已從連接口上移開"
       )
@@ -568,10 +564,6 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_DIRECTORY_NOT_FOUND,
       "沒有找到文件夾。")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS,
       "目錄")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_DISK_CYCLE_TRAY_STATUS,
-      "Disk Cycle Tray Status")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
-      "追加光碟鏡像")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DISK_INDEX,
       "光碟索引")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DISK_OPTIONS,
@@ -1569,8 +1561,6 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
       "畫面比例選項")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION,
       "黑色幀補間")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_CROP_OVERSCAN,
-      "Crop Overscan (Reload)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION,
       "禁用桌面元素")
 #if defined(_3DS)
@@ -2042,8 +2032,6 @@ MSG_HASH(MSG_GAME_FOCUS_ON,
       "打開遊戲焦點")
 MSG_HASH(MSG_GAME_FOCUS_OFF,
       "取消遊戲焦點")
-MSG_HASH(MSG_HW_RENDERED_MUST_USE_POSTSHADED_RECORDING,
-      "Libretro core is hardware rendered. Must use post-shaded recording as well.")
 MSG_HASH(MSG_INFLATED_CHECKSUM_DID_NOT_MATCH_CRC32,
       "比較檔案 CRC32 錯誤.")
 MSG_HASH(MSG_INPUT_CHEAT,
@@ -2221,10 +2209,6 @@ MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
 MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_MUTE,
       "禁音/取消禁音。")
 MSG_HASH(
-      MENU_ENUM_SUBLABEL_AUDIO_RATE_CONTROL_DELTA,
-      "Helps smooth out imperfections in timing when synchronizing audio and video at the same time. Be aware that if disabled, proper synchronization is nearly impossible to obtain."
-      )
-MSG_HASH(
       MENU_ENUM_SUBLABEL_CAMERA_ALLOW,
       "允許或禁止核心使用攝像頭。"
       )
@@ -2235,10 +2219,6 @@ MSG_HASH(
 MSG_HASH(
       MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
       "RetroArch 最大遊戲支援人數"
-      )
-MSG_HASH(
-      MENU_ENUM_SUBLABEL_INPUT_POLL_TYPE_BEHAVIOR,
-      "Influence how input polling is done inside RetroArch. Setting it to 'Early' or 'Late' can result in less latency, depending on your configuration."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_INPUT_ALL_USERS_CONTROL_MENU,
@@ -2253,48 +2233,16 @@ MSG_HASH(
    "同步聲音。推薦。"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_BIND_TIMEOUT,
-   "Amount of seconds to wait until proceeding to the next bind."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_BIND_HOLD,
-   "Amount of seconds to hold an input to bind it."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_TURBO_PERIOD,
-   "Describes the period of which turbo-enabled buttons toggle. Numbers are described in frames."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_DUTY_CYCLE,
-   "Describes how long the period of a turbo-enabled button should be. Numbers are described in frames."
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VSYNC,
    "同步顯卡的視訊輸出到營幕刷新率。推薦。"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_ALLOW_ROTATE,
-   "Allow cores to set rotation. When disabled, rotation requests are ignored. Useful for setups where one manually rotates the screen."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DUMMY_ON_CORE_SHUTDOWN,
-   "Some cores might have a shutdown feature. If enabled, it will prevent the core from shutting RetroArch down. Instead, it loads a dummy core."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHECK_FOR_MISSING_FIRMWARE,
    "載入遊戲前檢查必要的韌體/BIOS是否存在."
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
-   "Vertical refresh rate of your screen. Used to calculate a suitable audio input rate. NOTE: This will be ignored if 'Threaded Video' is enabled."
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_ENABLE,
    "啟用聲音輸出。"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_MAX_TIMING_SKEW,
-   "The maximum change in audio input rate. You may want to increase this to enable very large changes in timing, for example running PAL cores on NTSC displays, at the cost of inaccurate audio pitch."
    )
 MSG_HASH(
    MSG_FAILED,
@@ -2381,8 +2329,6 @@ MSG_HASH(MENU_ENUM_SUBLABEL_CONTENT_HISTORY_SIZE,
       "遊戲、圖片、音樂和視訊歷史記錄的數量限制。")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_UNIFIED_MENU_CONTROLS,
       "統一選單控制")
-MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_UNIFIED_MENU_CONTROLS,
-      "Use the same controls for both the menu and the game. Applies to the keyboard.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_FONT_ENABLE,
       "顯示營幕消息。")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETWORK_USER_REMOTE_ENABLE,
@@ -2642,8 +2588,6 @@ MSG_HASH(MSG_SCANNING_OF_FILE_FINISHED,
       "掃瞄檔案結束")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_QUALITY,
       "聲音重採樣器品質")
-MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_QUALITY,
-      "Lower this value to favor performance/lower latency over audio quality, increase if you want better audio quality at the expense of performance/lower latency.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_STATISTICS_SHOW,
       "顯示統計數字")
 MSG_HASH(MENU_ENUM_SUBLABEL_STATISTICS_SHOW,
