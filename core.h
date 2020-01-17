@@ -67,8 +67,8 @@ typedef struct rarch_system_info
 
    bool supports_vfs;
 
-   struct retro_disk_control_callback  disk_control_cb;
-   struct retro_location_callback      location_cb;
+   struct retro_disk_control_ext_callback  disk_control_cb;
+   struct retro_location_callback          location_cb;
 
    struct
    {

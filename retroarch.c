@@ -5231,14 +5231,14 @@ finish:
 static void command_event_disk_control_set_eject(bool new_state, bool print_log)
 {
    char msg[128];
-   bool error                                        = false;
-   const struct retro_disk_control_callback *control = NULL;
-   rarch_system_info_t *info                         = &runloop_system;
+   bool error                                            = false;
+   const struct retro_disk_control_ext_callback *control = NULL;
+   rarch_system_info_t *info                             = &runloop_system;
 
    msg[0] = '\0';
 
    if (info)
-      control = (const struct retro_disk_control_callback*)&info->disk_control_cb;
+      control = (const struct retro_disk_control_ext_callback*)&info->disk_control_cb;
 
    if (!control || !control->get_num_images)
       return;
@@ -5285,14 +5285,14 @@ static void command_event_disk_control_set_index(unsigned idx, bool print_log)
 {
    unsigned num_disks;
    char msg[128];
-   bool error                                        = false;
-   const struct retro_disk_control_callback *control = NULL;
-   rarch_system_info_t *info                         = &runloop_system;
+   bool error                                            = false;
+   const struct retro_disk_control_ext_callback *control = NULL;
+   rarch_system_info_t *info                             = &runloop_system;
 
    msg[0] = '\0';
 
    if (info)
-      control = (const struct retro_disk_control_callback*)&info->disk_control_cb;
+      control = (const struct retro_disk_control_ext_callback*)&info->disk_control_cb;
 
    if (!control || !control->get_num_images)
       return;
@@ -5349,10 +5349,10 @@ static bool command_event_disk_control_append_image(const char *path)
 {
    unsigned new_idx;
    char msg[128];
-   struct retro_game_info info                        = {0};
-   const struct retro_disk_control_callback *control  = NULL;
-   rarch_system_info_t *sysinfo                       = &runloop_system;
-   const char *disk_filename                          = NULL;
+   struct retro_game_info info                           = {0};
+   const struct retro_disk_control_ext_callback *control = NULL;
+   rarch_system_info_t *sysinfo                          = &runloop_system;
+   const char *disk_filename                             = NULL;
 
    msg[0] = '\0';
 
@@ -5365,7 +5365,7 @@ static bool command_event_disk_control_append_image(const char *path)
       return false;
 
    if (sysinfo)
-      control = (const struct retro_disk_control_callback*)
+      control = (const struct retro_disk_control_ext_callback*)
          &sysinfo->disk_control_cb;
 
    if (!control)
@@ -5419,7 +5419,7 @@ static bool command_event_disk_control_append_image(const char *path)
  * Perform disk cycle to previous index action (Core Disk Options).
  **/
 static void command_event_check_disk_prev(
-      const struct retro_disk_control_callback *control, bool print_log)
+      const struct retro_disk_control_ext_callback *control, bool print_log)
 {
    unsigned num_disks    = 0;
    unsigned current      = 0;
@@ -5453,7 +5453,7 @@ static void command_event_check_disk_prev(
  * Perform disk cycle to next index action (Core Disk Options).
  **/
 static void command_event_check_disk_next(
-      const struct retro_disk_control_callback *control, bool print_log)
+      const struct retro_disk_control_ext_callback *control, bool print_log)
 {
    unsigned num_disks        = 0;
    unsigned current          = 0;
@@ -7587,8 +7587,8 @@ TODO: Add a setting for these tweaks */
 
             if (info && info->disk_control_cb.get_num_images)
             {
-               const struct retro_disk_control_callback *control =
-                  (const struct retro_disk_control_callback*)
+               const struct retro_disk_control_ext_callback *control =
+                  (const struct retro_disk_control_ext_callback*)
                   &info->disk_control_cb;
 
                if (control)
@@ -7624,8 +7624,8 @@ TODO: Add a setting for these tweaks */
 
             if (info && info->disk_control_cb.get_num_images)
             {
-               const struct retro_disk_control_callback *control =
-                  (const struct retro_disk_control_callback*)
+               const struct retro_disk_control_ext_callback *control =
+                  (const struct retro_disk_control_ext_callback*)
                   &info->disk_control_cb;
                bool print_log                                    = true;
 
@@ -7654,8 +7654,8 @@ TODO: Add a setting for these tweaks */
 
             if (info && info->disk_control_cb.get_num_images)
             {
-               const struct retro_disk_control_callback *control =
-                  (const struct retro_disk_control_callback*)
+               const struct retro_disk_control_ext_callback *control =
+                  (const struct retro_disk_control_ext_callback*)
                   &info->disk_control_cb;
                bool print_log                                    = true;
 
@@ -7687,8 +7687,8 @@ TODO: Add a setting for these tweaks */
 
             if (info && info->disk_control_cb.get_num_images)
             {
-               const struct retro_disk_control_callback *control =
-                  (const struct retro_disk_control_callback*)
+               const struct retro_disk_control_ext_callback *control =
+                  (const struct retro_disk_control_ext_callback*)
                   &info->disk_control_cb;
 
                if (!control)
@@ -9803,13 +9803,42 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
          break;
       }
 
+      case RETRO_ENVIRONMENT_GET_DISK_CONTROL_INTERFACE_VERSION:
+         /* Current API version is 1 */
+         *(unsigned *)data = 1;
+         break;
+
       case RETRO_ENVIRONMENT_SET_DISK_CONTROL_INTERFACE:
-         RARCH_LOG("[Environ]: SET_DISK_CONTROL_INTERFACE.\n");
+         {
+            const struct retro_disk_control_callback *control_cb =
+                  (const struct retro_disk_control_callback*)data;
+
+            if (control_cb && system)
+            {
+               RARCH_LOG("[Environ]: SET_DISK_CONTROL_INTERFACE.\n");
+
+               system->disk_control_cb.set_eject_state     = control_cb->set_eject_state;
+               system->disk_control_cb.get_eject_state     = control_cb->get_eject_state;
+               system->disk_control_cb.get_image_index     = control_cb->get_image_index;
+               system->disk_control_cb.set_image_index     = control_cb->set_image_index;
+               system->disk_control_cb.get_num_images      = control_cb->get_num_images;
+               system->disk_control_cb.replace_image_index = control_cb->replace_image_index;
+               system->disk_control_cb.add_image_index     = control_cb->add_image_index;
+
+               system->disk_control_cb.set_initial_image   = NULL;
+               system->disk_control_cb.get_image_path      = NULL;
+               system->disk_control_cb.get_image_label     = NULL;
+            }
+         }
+         break;
+
+      case RETRO_ENVIRONMENT_SET_DISK_CONTROL_EXT_INTERFACE:
+         RARCH_LOG("[Environ]: SET_DISK_CONTROL_EXT_INTERFACE.\n");
          if (system)
             system->disk_control_cb =
-               *(const struct retro_disk_control_callback*)data;
+               *(const struct retro_disk_control_ext_callback*)data;
          break;
-      
+
       case RETRO_ENVIRONMENT_GET_PREFERRED_HW_RENDER:
       {
          unsigned *cb = (unsigned*)data;

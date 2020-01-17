@@ -762,9 +762,9 @@ static void menu_action_setting_disp_set_label_menu_disk_index(
       const char *path,
       char *s2, size_t len2)
 {
-   unsigned images = 0, current                = 0;
-   struct retro_disk_control_callback *control = NULL;
-   rarch_system_info_t *system                 = runloop_get_system_info();
+   unsigned images = 0, current                    = 0;
+   struct retro_disk_control_ext_callback *control = NULL;
+   rarch_system_info_t *system                     = runloop_get_system_info();
 
    if (!system)
       return;

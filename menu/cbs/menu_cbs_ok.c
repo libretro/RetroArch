@@ -6115,8 +6115,8 @@ static int action_ok_disk_cycle_tray_status(const char *path,
    /* Get disk eject state *before* toggling drive status */
    if (sys_info)
    {
-      const struct retro_disk_control_callback *control =
-            (const struct retro_disk_control_callback*)
+      const struct retro_disk_control_ext_callback *control =
+            (const struct retro_disk_control_ext_callback*)
                   &sys_info->disk_control_cb;
 
       if (control)
