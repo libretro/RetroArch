@@ -500,9 +500,10 @@ bool win32_load_content_from_gui(const char *szFilename)
    {
       bool            okay = false;
       settings_t *settings = config_get_ptr();
+      bool video_is_fs     = settings->bools.video_fullscreen;
 
       /* Fullscreen: Show mouse cursor for dialog */
-      if (settings->bools.video_fullscreen)
+      if (video_is_fs)
          video_driver_show_mouse();
 
       /* Pick one core that could be compatible, ew */
@@ -515,7 +516,7 @@ bool win32_load_content_from_gui(const char *szFilename)
       }
 
       /* Fullscreen: Hide mouse cursor after dialog */
-      if (settings->bools.video_fullscreen)
+      if (video_is_fs)
          video_driver_hide_mouse();
       return okay;
    }
@@ -658,16 +659,15 @@ static bool win32_browser(
 
 static LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
 {
-   WPARAM mode         = wparam & 0xffff;
-   enum event_command cmd         = CMD_EVENT_NONE;
-   bool do_wm_close     = false;
-   settings_t *settings = config_get_ptr();
+   WPARAM mode            = wparam & 0xffff;
+   enum event_command cmd = CMD_EVENT_NONE;
 
    switch (mode)
    {
       case ID_M_LOAD_CORE:
          {
             char win32_file[PATH_MAX_LENGTH] = {0};
+            settings_t *settings    = config_get_ptr();
             char    *title_cp       = NULL;
             size_t converted        = 0;
             const char *extensions  = "Libretro core (.dll)\0*.dll\0All Files\0*.*\0\0";
@@ -711,6 +711,7 @@ static LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
             const char *extensions  = "All Files (*.*)\0*.*\0\0";
             const char *title       = msg_hash_to_str(
                   MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST);
+            settings_t *settings    = config_get_ptr();
             const char *initial_dir = settings->paths.directory_menu_content;
 
             /* Convert UTF8 to UTF16, then back to the
@@ -778,39 +779,39 @@ static LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
          cmd = CMD_EVENT_TAKE_SCREENSHOT;
          break;
       case ID_M_QUIT:
-         do_wm_close = true;
+         PostMessage(owner, WM_CLOSE, 0, 0);
          break;
       case ID_M_TOGGLE_DESKTOP:
          cmd = CMD_EVENT_UI_COMPANION_TOGGLE;
          break;
       default:
-         if (mode >= ID_M_WINDOW_SCALE_1X && mode <= ID_M_WINDOW_SCALE_10X)
          {
-            unsigned idx = (mode - (ID_M_WINDOW_SCALE_1X-1));
-            rarch_ctl(RARCH_CTL_SET_WINDOWED_SCALE, &idx);
-            cmd = CMD_EVENT_RESIZE_WINDOWED_SCALE;
-         }
-         else if (mode == ID_M_STATE_INDEX_AUTO)
-         {
-            signed idx = -1;
-            configuration_set_int(
-                  settings, settings->ints.state_slot, idx);
-         }
-         else if (mode >= (ID_M_STATE_INDEX_AUTO+1)
-               && mode <= (ID_M_STATE_INDEX_AUTO+10))
-         {
-            signed idx = (mode - (ID_M_STATE_INDEX_AUTO+1));
-            configuration_set_int(
-                  settings, settings->ints.state_slot, idx);
+            settings_t *settings    = config_get_ptr();
+            if (mode >= ID_M_WINDOW_SCALE_1X && mode <= ID_M_WINDOW_SCALE_10X)
+            {
+               unsigned idx = (mode - (ID_M_WINDOW_SCALE_1X-1));
+               rarch_ctl(RARCH_CTL_SET_WINDOWED_SCALE, &idx);
+               cmd = CMD_EVENT_RESIZE_WINDOWED_SCALE;
+            }
+            else if (mode == ID_M_STATE_INDEX_AUTO)
+            {
+               signed idx = -1;
+               configuration_set_int(
+                     settings, settings->ints.state_slot, idx);
+            }
+            else if (mode >= (ID_M_STATE_INDEX_AUTO+1)
+                  && mode <= (ID_M_STATE_INDEX_AUTO+10))
+            {
+               signed idx = (mode - (ID_M_STATE_INDEX_AUTO+1));
+               configuration_set_int(
+                     settings, settings->ints.state_slot, idx);
+            }
          }
          break;
    }
 
    if (cmd != CMD_EVENT_NONE)
       command_event(cmd, NULL);
-
-   if (do_wm_close)
-      PostMessage(owner, WM_CLOSE, 0, 0);
 
    return 0L;
 }
@@ -890,7 +891,8 @@ static LRESULT CALLBACK WndProcCommon(bool *quit, HWND hwnd, UINT message,
                mod |= RETROKMOD_META;
 
 #if _WIN32_WINNT >= 0x0501 /* XP */
-            if (settings && string_is_equal(settings->arrays.input_driver, "raw"))
+            if (settings && 
+                  string_is_equal(settings->arrays.input_driver, "raw"))
                keysym             = (unsigned)wparam;
             else
 #endif
