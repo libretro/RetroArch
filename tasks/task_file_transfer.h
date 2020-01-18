@@ -77,6 +77,9 @@ typedef struct
    void *user_data;
 } file_transfer_t;
 
+void* task_push_http_transfer_file(const char* url, bool mute, const char* type,
+      retro_task_callback_t cb, file_transfer_t* transfer_data);
+
 RETRO_END_DECLS
 
 #endif

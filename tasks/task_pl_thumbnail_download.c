@@ -269,7 +269,7 @@ static void download_pl_thumbnail(pl_thumb_handle_t *pl_thumb)
          /* Note: We don't actually care if this fails since that
           * just means the file is missing from the server, so it's
           * not something we can handle here... */
-         pl_thumb->http_task = (retro_task_t*)task_push_http_transfer(
+         pl_thumb->http_task = (retro_task_t*)task_push_http_transfer_file(
                url, true, NULL, cb_http_task_download_pl_thumbnail, transf);
 
          /* ...if it does fail, however, we can immediately
@@ -411,7 +411,7 @@ static void task_pl_thumbnail_download_handler(retro_task_t *task)
             if (!pl_thumb->http_task)
                pl_thumb->http_task_complete = true;
             
-            /* > Wait for task_push_http_transfer()
+            /* > Wait for task_push_http_transfer_file()
              *   callback to trigger */
             if (pl_thumb->http_task_complete)
                pl_thumb->http_task = NULL;
@@ -726,7 +726,7 @@ static void task_pl_entry_thumbnail_download_handler(retro_task_t *task)
             if (!pl_thumb->http_task)
                pl_thumb->http_task_complete = true;
             
-            /* > Wait for task_push_http_transfer()
+            /* > Wait for task_push_http_transfer_file()
              *   callback to trigger */
             if (pl_thumb->http_task_complete)
                pl_thumb->http_task = NULL;

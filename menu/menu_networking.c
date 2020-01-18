@@ -241,7 +241,7 @@ finish:
       strlcpy(transf->path, parent_dir, sizeof(transf->path));
 
       net_http_urlencode_full(parent_dir_encoded, parent_dir, PATH_MAX_LENGTH * sizeof(char));
-      task_push_http_transfer(parent_dir_encoded, true,
+      task_push_http_transfer_file(parent_dir_encoded, true,
             "index_dirs", cb_net_generic_subdir, transf);
 
       free(parent_dir);
