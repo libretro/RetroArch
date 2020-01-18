@@ -203,7 +203,7 @@ typedef LONG (WINAPI *GETDISPLAYCONFIGBUFFERSIZES)(UINT32, UINT32*, UINT32*);
 static bool g_win32_resized         = false;
 bool g_win32_restore_desktop        = false;
 static bool doubleclick_on_titlebar = false;
-static bool g_taskbar_is_created    = false;
+static bool taskbar_is_created      = false;
 bool g_win32_inited                 = false;
 static bool g_win32_quit            = false;
 
@@ -273,7 +273,7 @@ static HMONITOR win32_monitor_all[MAX_MONITORS];
 
 bool win32_taskbar_is_created(void)
 {
-   return g_taskbar_is_created;
+   return taskbar_is_created;
 }
 
 bool doubleclick_on_titlebar_pressed(void)
@@ -1006,7 +1006,7 @@ LRESULT CALLBACK WndProcD3D(HWND hwnd, UINT message,
 
 #if _WIN32_WINNT >= 0x0500 /* 2K */
       if (g_taskbar_message && message == g_taskbar_message)
-         g_taskbar_is_created = true;
+         taskbar_is_created = true;
 #endif
 
 #ifdef HAVE_DINPUT
@@ -1063,7 +1063,7 @@ LRESULT CALLBACK WndProcGL(HWND hwnd, UINT message,
 
 #if _WIN32_WINNT >= 0x0500 /* 2K */
       if (g_taskbar_message && message == g_taskbar_message)
-         g_taskbar_is_created = true;
+         taskbar_is_created = true;
 #endif
 
 #ifdef HAVE_DINPUT
@@ -1149,7 +1149,7 @@ LRESULT CALLBACK WndProcGDI(HWND hwnd, UINT message,
 
 #if _WIN32_WINNT >= 0x0500 /* 2K */
       if (g_taskbar_message && message == g_taskbar_message)
-         g_taskbar_is_created = true;
+         taskbar_is_created = true;
 #endif
 
 #ifdef HAVE_DINPUT

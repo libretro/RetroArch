@@ -29665,9 +29665,9 @@ static bool terminate_win32_process(PROCESS_INFORMATION pi)
 static bool create_win32_process(char* cmd)
 {
    STARTUPINFO si;
-   ZeroMemory(&si, sizeof(si));
+   memset(&si, 0, sizeof(si));
    si.cb = sizeof(si);
-   ZeroMemory(&pi, sizeof(pi));
+   memset(&pi, 0, sizeof(pi));
 
    if (!CreateProcess(NULL, cmd, NULL, NULL, FALSE, CREATE_NO_WINDOW,
                       NULL, NULL, &si, &pi))
