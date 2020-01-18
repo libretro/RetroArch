@@ -3991,7 +3991,7 @@ static int generic_action_ok_network(const char *path,
    strlcpy(transf->path, url_path, sizeof(transf->path));
 
    net_http_urlencode_full(url_path_encoded, url_path, sizeof(url_path_encoded));
-   task_push_http_transfer(url_path_encoded, suppress_msg, url_label, callback, transf);
+   task_push_http_transfer_file(url_path_encoded, suppress_msg, url_label, callback, transf);
 
    return generic_action_ok_displaylist_push(path, NULL,
          label, type, idx, entry_idx, type_id2);
@@ -4293,7 +4293,7 @@ static int action_ok_download_generic(const char *path,
    else
       net_http_urlencode_full(s3, s2, sizeof(s3));
 
-   task_push_http_transfer(s3, suppress_msg, msg_hash_to_str(enum_idx), cb, transf);
+   task_push_http_transfer_file(s3, suppress_msg, msg_hash_to_str(enum_idx), cb, transf);
 #endif
    return 0;
 }
