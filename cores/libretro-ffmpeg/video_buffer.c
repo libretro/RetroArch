@@ -25,14 +25,14 @@ struct video_buffer
 
 video_buffer_t *video_buffer_create(size_t capacity, int frame_size, int width, int height)
 {
-   video_buffer_t *b = malloc(sizeof(video_buffer_t));
+   video_buffer_t *b = (video_buffer_t*)malloc(sizeof(video_buffer_t));
    if (!b)
       return NULL;
 
    memset(b, 0, sizeof(video_buffer_t));
    b->capacity = capacity;
 
-   b->status = malloc(sizeof(enum kbStatus) * capacity);
+   b->status = (enum kbStatus*)malloc(sizeof(enum kbStatus) * capacity);
    if (!b->status)
       goto fail;
    for (int i = 0; i < capacity; i++)
@@ -44,21 +44,21 @@ video_buffer_t *video_buffer_create(size_t capacity, int frame_size, int width, 
    if (!b->lock || !b->open_cond || !b->finished_cond)
       goto fail;
 
-   b->buffer = malloc(sizeof(video_decoder_context_t) * capacity);
+   b->buffer = (video_decoder_context_t*)malloc(sizeof(video_decoder_context_t) * capacity);
    if (!b->buffer)
       goto fail;
 
    for (int i = 0; i < capacity; i++)
    {
-      b->buffer[i].index = i;
-      b->buffer[i].pts = 0;
-      b->buffer[i].sws = sws_alloc_context();
-      b->buffer[i].source = av_frame_alloc();
+      b->buffer[i].index     = i;
+      b->buffer[i].pts       = 0;
+      b->buffer[i].sws       = sws_alloc_context();
+      b->buffer[i].source    = av_frame_alloc();
 #if LIBAVUTIL_VERSION_MAJOR > 55
       b->buffer[i].hw_source = av_frame_alloc();
 #endif
-      b->buffer[i].target = av_frame_alloc();
-      b->buffer[i].frame_buf = av_malloc(frame_size);
+      b->buffer[i].target    = av_frame_alloc();
+      b->buffer[i].frame_buf = (uint8_t*)av_malloc(frame_size);
 
       avpicture_fill((AVPicture*)b->buffer[i].target, (const uint8_t*)b->buffer[i].frame_buf,
             PIX_FMT_RGB32, width, height);

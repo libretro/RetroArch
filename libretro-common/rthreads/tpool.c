@@ -101,8 +101,8 @@ static tpool_work_t *tpool_work_get(tpool_t *tp)
 
 static void tpool_worker(void *arg)
 {
-   tpool_t      *tp = arg;
-   tpool_work_t *work;
+   tpool_work_t *work = NULL;
+   tpool_t      *tp   = (tpool_t*)arg;
 
    while (true)
    {
