@@ -210,7 +210,7 @@ static void rcheevos_get_user_agent(char* buffer)
       int major, minor;
       char tmp[64];
 
-      ptr = rcheevos_user_agent_prefix + sprintf(rcheevos_user_agent_prefix, "RetroArch/" PACKAGE_VERSION);
+      ptr = rcheevos_user_agent_prefix + sprintf(rcheevos_user_agent_prefix, "RetroArch/%s", PACKAGE_VERSION);
 
       if (frontend && frontend->get_os)
       {
@@ -2486,8 +2486,6 @@ found:
     *************************************************************************/
    CORO_SUB(RCHEEVOS_HTTP_GET)
 
-      rcheevos_get_user_agent(buffer);
-
       for (coro->k = 0; coro->k < 5; coro->k++)
       {
          if (coro->k != 0)
@@ -2513,6 +2511,7 @@ found:
             continue;
          }
 
+         rcheevos_get_user_agent(buffer);
          net_http_connection_set_user_agent(coro->conn, buffer);
 
          coro->http = net_http_new(coro->conn);
