@@ -65,7 +65,7 @@ bool win32_window_init(WNDCLASSEX *wndclass,
 {
 #if _WIN32_WINNT >= 0x0501
    /* Use the language set in the config for the menubar... also changes the console language. */
-   SetThreadUILanguage(win32_get_langid_from_retro_lang(*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE)));
+   SetThreadUILanguage(win32_get_langid_from_retro_lang((enum retro_language)*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE)));
 #endif
    wndclass->cbSize        = sizeof(WNDCLASSEX);
    wndclass->style         = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;

@@ -324,14 +324,14 @@ void* task_push_http_transfer_file(const char* url, bool mute,
       const char* type,
       retro_task_callback_t cb, file_transfer_t* transfer_data)
 {
-   const char *s = NULL;
-   char tmp[255] = "";
+   const char *s   = NULL;
+   char tmp[255]   = "";
    retro_task_t *t = NULL;
 
    if (string_is_empty(url))
       return NULL;
 
-   t = task_push_http_transfer_generic(
+   t = (retro_task_t*)task_push_http_transfer_generic(
          net_http_connection_new(url, "GET", NULL),
          url, mute, type, cb, transfer_data);
 
