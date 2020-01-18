@@ -819,11 +819,11 @@ static LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
 static LRESULT CALLBACK WndProcCommon(bool *quit, HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
 {
-   if (message == WM_NCLBUTTONDBLCLK)
-      doubleclick_on_titlebar = true;
-
    switch (message)
    {
+      case WM_NCLBUTTONDBLCLK:
+         doubleclick_on_titlebar = true;
+         break;
       case WM_SYSCOMMAND:
          /* Prevent screensavers, etc, while running. */
          switch (wparam)
@@ -970,11 +970,11 @@ LRESULT CALLBACK WndProcD3D(HWND hwnd, UINT message,
    LRESULT ret;
    bool quit = false;
 
-   if (message == WM_NCLBUTTONDBLCLK)
-      doubleclick_on_titlebar = true;
-
    switch (message)
    {
+      case WM_NCLBUTTONDBLCLK:
+         doubleclick_on_titlebar = true;
+         break;
       case WM_DROPFILES:
       case WM_SYSCOMMAND:
       case WM_CHAR:
@@ -1029,11 +1029,12 @@ LRESULT CALLBACK WndProcGL(HWND hwnd, UINT message,
    LRESULT ret;
    bool quit = false;
 
-   if (message == WM_NCLBUTTONDBLCLK)
-      doubleclick_on_titlebar = true;
 
    switch (message)
    {
+      case WM_NCLBUTTONDBLCLK:
+         doubleclick_on_titlebar = true;
+         break;
       case WM_DROPFILES:
       case WM_SYSCOMMAND:
       case WM_CHAR:
@@ -1081,11 +1082,11 @@ LRESULT CALLBACK WndProcGDI(HWND hwnd, UINT message,
    LRESULT ret;
    bool quit = false;
 
-   if (message == WM_NCLBUTTONDBLCLK)
-      doubleclick_on_titlebar = true;
-
    switch (message)
    {
+      case WM_NCLBUTTONDBLCLK:
+         doubleclick_on_titlebar = true;
+         break;
       case WM_PAINT:
       {
          gdi_t *gdi = (gdi_t*)video_driver_get_ptr(false);
@@ -1192,7 +1193,7 @@ bool win32_window_create(void *data, unsigned style,
 #if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0500 /* 2K */
    g_taskbar_message = RegisterWindowMessage("TaskbarButtonCreated");
 
-   ZeroMemory(&notification_filter, sizeof(notification_filter) );
+   memset(&notification_filter, 0, sizeof(notification_filter));
    notification_filter.dbcc_size       = sizeof(DEV_BROADCAST_DEVICEINTERFACE);
    notification_filter.dbcc_devicetype = DBT_DEVTYP_DEVICEINTERFACE;
    notification_filter.dbcc_classguid  = GUID_DEVINTERFACE_HID;
