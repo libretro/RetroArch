@@ -14983,12 +14983,6 @@ static unsigned menu_event(
          ret = MENU_ACTION_TOGGLE;
    }
 
-   if (menu_keyboard_key_state[RETROK_F11])
-   {
-      command_event(CMD_EVENT_GRAB_MOUSE_TOGGLE, NULL);
-      menu_keyboard_key_state[RETROK_F11] = 0;
-   }
-
    /* Get pointer (mouse + touchscreen) input */
 
    /* > If pointer input is disabled, do nothing */
