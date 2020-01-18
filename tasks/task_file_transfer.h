@@ -21,6 +21,7 @@
 #include <retro_miscellaneous.h>
 
 #include <queues/message_queue.h>
+#include <queues/task_queue.h>
 
 #include "../msg_hash.h"
 
