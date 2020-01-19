@@ -841,6 +841,8 @@ static LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
 static LRESULT CALLBACK WndProcCommon(bool *quit, HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
 {
+   bool keydown          = true;
+
    switch (message)
    {
       case WM_NCLBUTTONDBLCLK:
@@ -887,13 +889,15 @@ static LRESULT CALLBACK WndProcCommon(bool *quit, HWND hwnd, UINT message,
          return TRUE;
       case WM_KEYUP:
       case WM_SYSKEYUP:
+         /* Key released */
+         keydown                  = false;
+         /* fall-through */
       case WM_KEYDOWN:
       case WM_SYSKEYDOWN:
          *quit = true;
          {
             uint16_t mod          = 0;
             unsigned keycode      = 0;
-            bool keydown          = true;
             unsigned keysym       = (lparam >> 16) & 0xff;
 #if _WIN32_WINNT >= 0x0501 /* XP */
             settings_t *settings  = config_get_ptr();
@@ -927,10 +931,6 @@ static LRESULT CALLBACK WndProcCommon(bool *quit, HWND hwnd, UINT message,
                /* fix key binding issues on winraw when DirectInput is not available */
 #endif
             }
-
-            /* Key released? */
-            if (message == WM_KEYUP || message == WM_SYSKEYUP)
-               keydown            = false;
 
             keycode = input_keymaps_translate_keysym_to_rk(keysym);
 
