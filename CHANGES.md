@@ -2,6 +2,7 @@
 - BUGFIX: Fix mouse capture hotkey not working
 - CHEEVOS: Support for extended Sega CD memory
 - EMSCRIPTEN: Recreate input event listeners properly
+- LIBRETRO: Add disk control interface API extension
 
 # 1.8.4
 - ANDROID/BUGFIX: Prevent crash when Android device is minimized and you go back to the app
