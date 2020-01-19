@@ -4800,6 +4800,7 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_TICKER_SMOOTH,/* FIXME */
     "Użyj płynnej animacji przewijania podczas wyświetlania długich ciągów tekstowych menu. Ma niewielki wpływ na wydajność."
     )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_LIST,
     "Skanowanie ręczne"
     )
