@@ -91,6 +91,14 @@
 
 /* These are defined in later SDKs, thus ifdeffed. */
 
+#ifndef WM_MOUSEHWHEEL
+#define WM_MOUSEHWHEEL                  0x20e
+#endif
+
+#ifndef WM_MOUSEWHEEL
+#define WM_MOUSEWHEEL                   0x020A
+#endif
+
 #ifndef WM_POINTERUPDATE
 #define WM_POINTERUPDATE                0x0245
 #endif
