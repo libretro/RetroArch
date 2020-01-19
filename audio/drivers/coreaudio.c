@@ -371,7 +371,7 @@ static ssize_t coreaudio_write(void *data, const void *buf_, size_t size)
          break;
       }
 
-#if TARGET_OS_IPHONE
+#if TARGET_OS_IOS
       if (write_avail == 0 && !scond_wait_timeout(
                dev->cond, dev->lock, 3000000))
          g_interrupted = true;
