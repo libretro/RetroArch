@@ -1,5 +1,6 @@
 # Future
 - BUGFIX: Fix mouse capture hotkey not working
+- CHEEVOS: Support for extended Sega CD memory
 - EMSCRIPTEN: Recreate input event listeners properly
 
 # 1.8.4
