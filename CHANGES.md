@@ -1,5 +1,6 @@
 # Future
 - BUGFIX: Fix mouse capture hotkey not working
+- EMSCRIPTEN: Recreate input event listeners properly
 
 # 1.8.4
 - ANDROID/BUGFIX: Prevent crash when Android device is minimized and you go back to the app
