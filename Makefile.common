@@ -230,6 +230,7 @@ OBJ += \
        managers/state_manager.o \
        gfx/drivers_font_renderer/bitmapfont.o \
        tasks/task_autodetect.o \
+       tasks/task_autodetect_blissbox.o \
        input/input_autodetect_builtin.o \
        input/input_keymaps.o \
        input/input_remapping.o \
