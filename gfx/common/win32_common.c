@@ -682,7 +682,6 @@ static bool win32_browser(
 static LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
 {
    WPARAM mode            = wparam & 0xffff;
-   enum event_command cmd = CMD_EVENT_NONE;
 
    switch (mode)
    {
@@ -722,7 +721,7 @@ static LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
             if (title_cp)
                free(title_cp);
             path_set(RARCH_PATH_CORE, win32_file);
-            cmd         = CMD_EVENT_LOAD_CORE;
+            command_event(CMD_EVENT_LOAD_CORE, NULL);
          }
          break;
       case ID_M_LOAD_CONTENT:
@@ -765,75 +764,71 @@ static LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
          }
          break;
       case ID_M_RESET:
-         cmd = CMD_EVENT_RESET;
+         command_event(CMD_EVENT_RESET, NULL);
          break;
       case ID_M_MUTE_TOGGLE:
-         cmd = CMD_EVENT_AUDIO_MUTE_TOGGLE;
+         command_event(CMD_EVENT_AUDIO_MUTE_TOGGLE, NULL);
          break;
       case ID_M_MENU_TOGGLE:
-         cmd = CMD_EVENT_MENU_TOGGLE;
+         command_event(CMD_EVENT_MENU_TOGGLE, NULL);
          break;
       case ID_M_PAUSE_TOGGLE:
-         cmd = CMD_EVENT_PAUSE_TOGGLE;
+         command_event(CMD_EVENT_PAUSE_TOGGLE, NULL);
          break;
       case ID_M_LOAD_STATE:
-         cmd = CMD_EVENT_LOAD_STATE;
+         command_event(CMD_EVENT_LOAD_STATE, NULL);
          break;
       case ID_M_SAVE_STATE:
-         cmd = CMD_EVENT_SAVE_STATE;
+         command_event(CMD_EVENT_SAVE_STATE, NULL);
          break;
       case ID_M_DISK_CYCLE:
-         cmd = CMD_EVENT_DISK_EJECT_TOGGLE;
+         command_event(CMD_EVENT_DISK_EJECT_TOGGLE, NULL);
          break;
       case ID_M_DISK_NEXT:
-         cmd = CMD_EVENT_DISK_NEXT;
+         command_event(CMD_EVENT_DISK_NEXT, NULL);
          break;
       case ID_M_DISK_PREV:
-         cmd = CMD_EVENT_DISK_PREV;
+         command_event(CMD_EVENT_DISK_PREV, NULL);
          break;
       case ID_M_FULL_SCREEN:
-         cmd = CMD_EVENT_FULLSCREEN_TOGGLE;
+         command_event(CMD_EVENT_FULLSCREEN_TOGGLE, NULL);
          break;
       case ID_M_MOUSE_GRAB:
-         cmd = CMD_EVENT_GRAB_MOUSE_TOGGLE;
+         command_event(CMD_EVENT_GRAB_MOUSE_TOGGLE, NULL);
          break;
       case ID_M_TAKE_SCREENSHOT:
-         cmd = CMD_EVENT_TAKE_SCREENSHOT;
+         command_event(CMD_EVENT_TAKE_SCREENSHOT, NULL);
          break;
       case ID_M_QUIT:
          PostMessage(owner, WM_CLOSE, 0, 0);
          break;
       case ID_M_TOGGLE_DESKTOP:
-         cmd = CMD_EVENT_UI_COMPANION_TOGGLE;
+         command_event(CMD_EVENT_UI_COMPANION_TOGGLE, NULL);
          break;
       default:
+         if (mode >= ID_M_WINDOW_SCALE_1X && mode <= ID_M_WINDOW_SCALE_10X)
          {
-            settings_t *settings    = config_get_ptr();
-            if (mode >= ID_M_WINDOW_SCALE_1X && mode <= ID_M_WINDOW_SCALE_10X)
-            {
-               unsigned idx = (mode - (ID_M_WINDOW_SCALE_1X-1));
-               rarch_ctl(RARCH_CTL_SET_WINDOWED_SCALE, &idx);
-               cmd = CMD_EVENT_RESIZE_WINDOWED_SCALE;
-            }
-            else if (mode == ID_M_STATE_INDEX_AUTO)
-            {
-               signed idx = -1;
-               configuration_set_int(
-                     settings, settings->ints.state_slot, idx);
-            }
-            else if (mode >= (ID_M_STATE_INDEX_AUTO+1)
-                  && mode <= (ID_M_STATE_INDEX_AUTO+10))
-            {
-               signed idx = (mode - (ID_M_STATE_INDEX_AUTO+1));
-               configuration_set_int(
-                     settings, settings->ints.state_slot, idx);
-            }
+            unsigned idx = (mode - (ID_M_WINDOW_SCALE_1X-1));
+            rarch_ctl(RARCH_CTL_SET_WINDOWED_SCALE, &idx);
+            command_event(CMD_EVENT_RESIZE_WINDOWED_SCALE, NULL);
+         }
+         else if (mode == ID_M_STATE_INDEX_AUTO)
+         {
+            signed           idx = -1;
+            settings_t *settings = config_get_ptr();
+            configuration_set_int(
+                  settings, settings->ints.state_slot, idx);
+         }
+         else if (mode >= (ID_M_STATE_INDEX_AUTO+1)
+               && mode <= (ID_M_STATE_INDEX_AUTO+10))
+         {
+            signed           idx = (mode - (ID_M_STATE_INDEX_AUTO+1));
+            settings_t *settings = config_get_ptr();
+            configuration_set_int(
+                  settings, settings->ints.state_slot, idx);
          }
          break;
    }
-
-   if (cmd != CMD_EVENT_NONE)
-      command_event(cmd, NULL);
 
    return 0L;
 }
