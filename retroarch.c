@@ -1120,7 +1120,9 @@ static bool runloop_autosave                                    = false;
 static bool runloop_max_frames_screenshot                       = false;
 static bool log_file_created                                    = false;
 static bool log_file_override_active                            = false;
+#ifdef HAVE_RUNAHEAD
 static bool has_variable_update                                 = false;
+#endif
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 static bool shader_presets_need_reload                          = true;
 #endif
