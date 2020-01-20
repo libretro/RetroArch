@@ -133,11 +133,11 @@ static enum patch_error bps_apply_patch(
       uint8_t **target_data, uint64_t *target_length)
 {
    size_t i;
-   uint32_t checksum;
-   size_t modify_source_size;
-   size_t modify_target_size;
-   size_t modify_markup_size;
    struct bps_data bps;
+   uint32_t checksum               = 0;
+   size_t modify_source_size       = 0;
+   size_t modify_target_size       = 0;
+   size_t modify_markup_size       = 0;
    uint32_t modify_source_checksum = 0;
    uint32_t modify_target_checksum = 0;
    uint32_t modify_modify_checksum = 0;
@@ -176,15 +176,18 @@ static enum patch_error bps_apply_patch(
 
    if (modify_source_size > bps.source_length)
       return PATCH_SOURCE_TOO_SMALL;
-   if (modify_target_size > bps.target_length){
+
+   if (modify_target_size > bps.target_length)
+   {
       uint8_t *prov=(uint8_t*)malloc((size_t)modify_target_size);
-      if (prov!=NULL){
-         free(*target_data);
-	      bps.target_data=prov;
-         *target_data=prov;
-         bps.target_length=modify_target_size;
-      }else
+
+      if (!prov)
          return PATCH_TARGET_ALLOC_FAILED;
+
+      free(*target_data);
+      bps.target_data   = prov;
+      *target_data      = prov;
+      bps.target_length = modify_target_size;
    }
 
    while (bps.modify_offset < bps.modify_length - 12)
@@ -364,14 +367,14 @@ static enum patch_error ups_apply_patch(
    *targetlength = (data.source_length == source_read_length ?
          target_read_length : source_read_length);
 
-   if (data.target_length < *targetlength){
+   if (data.target_length < *targetlength)
+   {
       uint8_t *prov=(uint8_t*)malloc((size_t)*targetlength);
-      if(prov!=NULL){
-         free(*targetdata);
-         *targetdata=prov;
-         data.target_data=prov;
-      }else
+      if (!prov)
          return PATCH_TARGET_ALLOC_FAILED;
+      free(*targetdata);
+      *targetdata      = prov;
+      data.target_data = prov;
    }
 
    data.target_length = (unsigned)*targetlength;
@@ -410,19 +413,19 @@ static enum patch_error ups_apply_patch(
    if (patch_result_checksum != patch_read_checksum)
       return PATCH_PATCH_INVALID;
 
-   if (data.source_checksum == source_read_checksum
-         && data.source_length == source_read_length)
+   if (     data.source_checksum == source_read_checksum
+         && data.source_length   == source_read_length)
    {
-      if (data.target_checksum == target_read_checksum
-            && data.target_length == target_read_length)
+      if (     data.target_checksum == target_read_checksum
+            && data.target_length   == target_read_length)
          return PATCH_SUCCESS;
       return PATCH_TARGET_INVALID;
    }
    else if (data.source_checksum == target_read_checksum
-         && data.source_length == target_read_length)
+         && data.source_length   == target_read_length)
    {
-      if (data.target_checksum == source_read_checksum
-            && data.target_length == source_read_length)
+      if (     data.target_checksum == source_read_checksum
+            && data.target_length   == source_read_length)
          return PATCH_SUCCESS;
       return PATCH_TARGET_INVALID;
    }
@@ -437,7 +440,7 @@ static enum patch_error ips_alloc_targetdata(
 {
    uint8_t *prov_alloc;
    uint32_t offset = 5;
-   *targetlength = sourcelength;
+   *targetlength   = sourcelength;
 
    for (;;)
    {
@@ -455,24 +458,25 @@ static enum patch_error ips_alloc_targetdata(
       {
          if (offset == patchlen)
          {
-            prov_alloc=(uint8_t*)malloc((size_t)*targetlength);
+            prov_alloc     = (uint8_t*)malloc((size_t)*targetlength);
             if (!prov_alloc)
                return PATCH_TARGET_ALLOC_FAILED;
             free(*targetdata);
-            *targetdata=prov_alloc;
+            *targetdata    = prov_alloc;
             return PATCH_SUCCESS;
          }
          else if (offset == patchlen - 3)
          {
-            uint32_t size = patchdata[offset++] << 16;
-            size |= patchdata[offset++] << 8;
-            size |= patchdata[offset++] << 0;
-            *targetlength = size;
-            prov_alloc=(uint8_t*)malloc((size_t)*targetlength);
+            uint32_t size  = patchdata[offset++] << 16;
+            size          |= patchdata[offset++] << 8;
+            size          |= patchdata[offset++] << 0;
+            *targetlength  = size;
+            prov_alloc     = (uint8_t*)malloc((size_t)*targetlength);
+
             if (!prov_alloc)
                return PATCH_TARGET_ALLOC_FAILED;
             free(*targetdata);
-            *targetdata=prov_alloc;
+            *targetdata    = prov_alloc;
             return PATCH_SUCCESS;
          }
       }
@@ -525,7 +529,7 @@ static enum patch_error ips_apply_patch(
 {
    uint32_t offset = 5;
    enum patch_error error_patch = PATCH_UNKNOWN;
-   if (patchlen < 8 ||
+   if (  patchlen      < 8   ||
          patchdata[0] != 'P' ||
          patchdata[1] != 'A' ||
          patchdata[2] != 'T' ||
@@ -533,10 +537,9 @@ static enum patch_error ips_apply_patch(
          patchdata[4] != 'H')
       return PATCH_PATCH_INVALID;
    
-   error_patch = ips_alloc_targetdata( patchdata,     patchlen,
-                                       sourcelength,  targetdata,
-                                                      targetlength);
-   if ( error_patch != PATCH_SUCCESS)
+   if ((error_patch = ips_alloc_targetdata(
+               patchdata, patchlen, sourcelength,
+               targetdata, targetlength)) != PATCH_SUCCESS)
       return error_patch;
 
    memcpy(*targetdata, sourcedata, (size_t)sourcelength);
@@ -557,11 +560,12 @@ static enum patch_error ips_apply_patch(
       {
          if (offset == patchlen)
             return PATCH_SUCCESS;
-         else if (offset == patchlen - 3)
+
+         if (offset == patchlen - 3)
          {
-            uint32_t size = patchdata[offset++] << 16;
-            size |= patchdata[offset++] << 8;
-            size |= patchdata[offset++] << 0;
+            uint32_t size  = patchdata[offset++] << 16;
+            size          |= patchdata[offset++] << 8;
+            size          |= patchdata[offset++] << 0;
             return PATCH_SUCCESS;
          }
       }
@@ -614,10 +618,8 @@ static bool apply_patch_content(uint8_t **buf,
    RARCH_LOG("Found %s file in \"%s\", attempting to patch ...\n",
          patch_desc, patch_path);
 
-   err = func((const uint8_t*)patch_data, patch_size, ret_buf,
-         ret_size, &patched_content, &target_size);
-
-   if (err == PATCH_SUCCESS)
+   if ((err = func((const uint8_t*)patch_data, patch_size, ret_buf,
+         ret_size, &patched_content, &target_size)) == PATCH_SUCCESS)
    {
       free(ret_buf);
       *buf  = patched_content;
@@ -636,81 +638,79 @@ static bool apply_patch_content(uint8_t **buf,
 static bool try_bps_patch(bool allow_bps, const char *name_bps,
       uint8_t **buf, ssize_t *size)
 {
-   if (allow_bps && !string_is_empty(name_bps))
-      if (path_is_valid(name_bps))
-      {
-         int64_t patch_size;
-         bool ret                 = false;
-         void *patch_data         = NULL;
+   if (     allow_bps 
+         && !string_is_empty(name_bps)
+         && path_is_valid(name_bps)
+      )
+   {
+      int64_t patch_size;
+      bool ret                 = false;
+      void *patch_data         = NULL;
 
-         if (!filestream_read_file(name_bps, &patch_data, &patch_size))
-            return false;
+      if (!filestream_read_file(name_bps, &patch_data, &patch_size))
+         return false;
 
-         if (patch_size >= 0)
-         {
-            ret                      = apply_patch_content(
-                  buf, size, "BPS", name_bps,
-                  bps_apply_patch, patch_data, patch_size);
-         }
+      if (patch_size >= 0)
+         ret = apply_patch_content(buf, size, "BPS", name_bps,
+               bps_apply_patch, patch_data, patch_size);
 
-         if (patch_data)
-            free(patch_data);
-         return ret;
-      }
+      if (patch_data)
+         free(patch_data);
+      return ret;
+   }
+
    return false;
 }
 
 static bool try_ups_patch(bool allow_ups, const char *name_ups,
       uint8_t **buf, ssize_t *size)
 {
-   if (allow_ups && !string_is_empty(name_ups))
-      if (path_is_valid(name_ups))
-      {
-         int64_t patch_size;
-         bool ret                 = false;
-         void *patch_data         = NULL;
+   if (     allow_ups
+         && !string_is_empty(name_ups)
+         && path_is_valid(name_ups)
+      )
+   {
+      int64_t patch_size;
+      bool ret                 = false;
+      void *patch_data         = NULL;
 
-         if (!filestream_read_file(name_ups, &patch_data, &patch_size))
-            return false;
+      if (!filestream_read_file(name_ups, &patch_data, &patch_size))
+         return false;
 
-         if (patch_size >= 0)
-         {
-            ret                      = apply_patch_content(
-                  buf, size, "UPS", name_ups,
-                  ups_apply_patch, patch_data, patch_size);
-         }
+      if (patch_size >= 0)
+         ret = apply_patch_content(buf, size, "UPS", name_ups,
+               ups_apply_patch, patch_data, patch_size);
 
-         if (patch_data)
-            free(patch_data);
-         return ret;
-      }
+      if (patch_data)
+         free(patch_data);
+      return ret;
+   }
    return false;
 }
 
 static bool try_ips_patch(bool allow_ips,
       const char *name_ips, uint8_t **buf, ssize_t *size)
 {
-   if (allow_ips && !string_is_empty(name_ips))
-      if (path_is_valid(name_ips))
-      {
-         int64_t patch_size;
-         bool ret                 = false;
-         void *patch_data         = NULL;
+   if (     allow_ips 
+         && !string_is_empty(name_ips)
+         && path_is_valid(name_ips)
+      )
+   {
+      int64_t patch_size;
+      bool ret                 = false;
+      void *patch_data         = NULL;
 
-         if (!filestream_read_file(name_ips, &patch_data, &patch_size))
-            return false;
+      if (!filestream_read_file(name_ips, &patch_data, &patch_size))
+         return false;
 
-         if (patch_size >= 0)
-         {
-            ret                      = apply_patch_content(
-                  buf, size, "IPS", name_ips,
-                  ips_apply_patch, patch_data, patch_size);
-         }
+      if (patch_size >= 0)
+         ret = apply_patch_content(buf, size, "IPS", name_ips,
+               ips_apply_patch, patch_data, patch_size);
 
-         if (patch_data)
-            free(patch_data);
-         return ret;
-      }
+      if (patch_data)
+         free(patch_data);
+      return ret;
+   }
    return false;
 }
 
