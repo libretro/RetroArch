@@ -722,7 +722,7 @@ static bool try_ips_patch(bool allow_ips,
  * Apply patch to the content file in-memory.
  *
  **/
-static bool patch_content(
+bool patch_content(
       bool is_ips_pref,
       bool is_bps_pref,
       bool is_ups_pref,

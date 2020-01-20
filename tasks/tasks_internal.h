@@ -136,6 +136,16 @@ bool task_push_overlay_load_default(
       void *user_data);
 #endif
 
+bool patch_content(
+      bool is_ips_pref,
+      bool is_bps_pref,
+      bool is_ups_pref,
+      const char *name_ips,
+      const char *name_bps,
+      const char *name_ups,
+      uint8_t **buf,
+      void *data);
+
 bool task_check_decompress(const char *source_file);
 
 void *task_push_decompress(

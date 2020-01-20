@@ -109,8 +109,6 @@
 
 #include "../discord/discord.h"
 
-#include "task_patch.c"
-
 extern bool discord_is_inited;
 
 #define MAX_ARGS 32

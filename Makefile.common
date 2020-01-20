@@ -170,6 +170,7 @@ OBJ += frontend/frontend_driver.o \
        intl/msg_hash_us.o \
        $(LIBRETRO_COMM_DIR)/queues/task_queue.o \
        tasks/task_content.o \
+       tasks/task_patch.o \
        tasks/task_save.o \
        tasks/task_file_transfer.o \
        tasks/task_image.o \

@@ -1204,6 +1204,7 @@ DATA RUNLOOP
 ============================================================ */
 #include "../tasks/task_powerstate.c"
 #include "../tasks/task_content.c"
+#include "../tasks/task_patch.c"
 #include "../tasks/task_save.c"
 #include "../tasks/task_image.c"
 #include "../tasks/task_file_transfer.c"
