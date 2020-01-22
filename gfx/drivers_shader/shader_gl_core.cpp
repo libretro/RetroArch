@@ -32,6 +32,8 @@
 #include "slang_reflection.hpp"
 #include "spirv_glsl.hpp"
 
+#include "../common/gl_core_common.h"
+
 #include "../../retroarch.h"
 #include "../../verbosity.h"
 #include "../../msg_hash.h"
@@ -52,82 +54,6 @@ static bool gl_core_shader_set_unique_map(unordered_map<string, P> &m,
 
    m[name] = p;
    return true;
-}
-
-static GLuint gl_core_compile_shader(GLenum stage, const char *source)
-{
-   GLint status;
-   GLuint shader   = glCreateShader(stage);
-   const char *ptr = source;
-
-   glShaderSource(shader, 1, &ptr, nullptr);
-   glCompileShader(shader);
-
-   glGetShaderiv(shader, GL_COMPILE_STATUS, &status);
-
-   if (!status)
-   {
-      GLint length;
-      glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &length);
-      if (length > 0)
-      {
-         char *info_log = (char*)malloc(length);
-
-         if (info_log)
-         {
-            glGetShaderInfoLog(shader, length, &length, info_log);
-            RARCH_ERR("[GLCore]: Failed to compile shader: %s\n", info_log);
-            free(info_log);
-            glDeleteShader(shader);
-            return 0;
-         }
-      }
-   }
-
-   return shader;
-}
-
-static uint32_t gl_core_get_cross_compiler_target_version()
-{
-   const char *version = (const char*)glGetString(GL_VERSION);
-   unsigned major = 0;
-   unsigned minor = 0;
-
-#ifdef HAVE_OPENGLES3
-   if (!version || sscanf(version, "OpenGL ES %u.%u", &major, &minor) != 2)
-      return 300;
-   
-   if (major == 2 && minor == 0)
-      return 100;
-#else
-   if (!version || sscanf(version, "%u.%u", &major, &minor) != 2)
-      return 150;
-
-   if (major == 3)
-   {
-      switch (minor)
-      {
-         case 2:
-            return 150;
-         case 1:
-            return 140;
-         case 0:
-            return 130;
-      }
-   }
-   else if (major == 2)
-   {
-      switch (minor)
-      {
-         case 1:
-            return 120;
-         case 0:
-            return 110;
-      }
-   }
-#endif
-
-   return 100 * major + 10 * minor;
 }
 
 GLuint gl_core_cross_compile_program(
@@ -345,7 +271,7 @@ GLuint gl_core_cross_compile_program(
    return program;
 }
 
-namespace gl_core
+namespace gl_core_shader
 {
 static const uint32_t opaque_vert[] =
 #include "../drivers/vulkan_shaders/opaque.vert.inc"
@@ -531,20 +457,9 @@ public:
    StaticTexture(StaticTexture&&) = delete;
    void operator=(StaticTexture&&) = delete;
 
-   void set_id(string name)
-   {
-      id = move(name);
-   }
-
-   const string &get_id() const
-   {
-      return id;
-   }
-
-   const Texture &get_texture() const
-   {
-      return texture;
-   }
+   void set_id(string name) { id = move(name); }
+   const string &get_id() const { return id; }
+   const Texture &get_texture() const { return texture; }
 
 private:
    string id;
@@ -552,8 +467,9 @@ private:
    Texture texture;
 };
 
-StaticTexture::StaticTexture(string id_, GLuint image_, unsigned width, unsigned height, bool linear, bool mipmap,
-                             GLenum address)
+StaticTexture::StaticTexture(string id_, GLuint image_,
+      unsigned width, unsigned height, bool linear, bool mipmap,
+      GLenum address)
    : id(std::move(id_)), image(image_)
 {
    texture.texture.width = width;
@@ -615,8 +531,9 @@ CommonResources::CommonResources()
    glBufferData(GL_ARRAY_BUFFER, sizeof(quad_data), quad_data, GL_STATIC_DRAW);
    glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-   quad_program = gl_core_cross_compile_program(opaque_vert, sizeof(opaque_vert),
-                                                opaque_frag, sizeof(opaque_frag), &quad_loc, true);
+   quad_program = gl_core_cross_compile_program(
+         opaque_vert, sizeof(opaque_vert),
+         opaque_frag, sizeof(opaque_frag), &quad_loc, true);
 }
 
 CommonResources::~CommonResources()
@@ -643,13 +560,9 @@ public:
    GLuint get_image() const { return image; }
    GLuint get_framebuffer() const { return framebuffer; }
 
-   void clear();
    void copy(const CommonResources &common, GLuint image);
    void copy_partial(const CommonResources &common, GLuint image, float rx, float ry);
-   bool is_complete() const
-   {
-      return complete;
-   }
+   bool is_complete() const { return complete; }
 
    unsigned get_levels() const { return levels; }
 
@@ -766,23 +679,8 @@ void Framebuffer::init()
    glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-void Framebuffer::clear()
-{
-   if (!complete)
-      return;
-
-   glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
-   glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-   glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-   glClear(GL_COLOR_BUFFER_BIT);
-   glBindFramebuffer(GL_FRAMEBUFFER, 0);
-}
-
 void Framebuffer::copy(const CommonResources &common, GLuint image)
 {
-   if (!complete)
-      return;
-
    glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
    glActiveTexture(GL_TEXTURE2);
    glBindTexture(GL_TEXTURE_2D, image);
@@ -825,8 +723,6 @@ void Framebuffer::copy(const CommonResources &common, GLuint image)
 void Framebuffer::copy_partial(const CommonResources &common, GLuint image, float rx, float ry)
 {
    GLuint vbo;
-   if (!complete)
-      return;
 
    glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
    glActiveTexture(GL_TEXTURE2);
@@ -1539,17 +1435,20 @@ void Pass::set_shader(GLenum stage,
       const uint32_t *spirv,
       size_t spirv_words)
 {
-   if (stage == GL_VERTEX_SHADER)
+   switch (stage)
    {
-      vertex_shader.clear();
-      vertex_shader.insert(end(vertex_shader),
-            spirv, spirv + spirv_words);
-   }
-   else if (stage == GL_FRAGMENT_SHADER)
-   {
-      fragment_shader.clear();
-      fragment_shader.insert(end(fragment_shader),
-            spirv, spirv + spirv_words);
+      case GL_VERTEX_SHADER:
+         vertex_shader.clear();
+         vertex_shader.insert(end(vertex_shader),
+               spirv, spirv + spirv_words);
+         break;
+      case GL_FRAGMENT_SHADER:
+         fragment_shader.clear();
+         fragment_shader.insert(end(fragment_shader),
+               spirv, spirv + spirv_words);
+         break;
+      default:
+         break;
    }
 }
 
@@ -1558,7 +1457,8 @@ void Pass::add_parameter(unsigned index, const std::string &id)
    parameters.push_back({ id, index, unsigned(parameters.size()) });
 }
 
-void Pass::set_semantic_texture(slang_texture_semantic semantic, const Texture &texture)
+void Pass::set_semantic_texture(slang_texture_semantic semantic,
+      const Texture &texture)
 {
    if (reflection.semantic_textures[semantic][0].texture)
    {
@@ -1834,23 +1734,23 @@ public:
    void set_frame_direction(int32_t direction);
    void set_pass_name(unsigned pass, const char *name);
 
-   void add_static_texture(unique_ptr<gl_core::StaticTexture> texture);
+   void add_static_texture(unique_ptr<gl_core_shader::StaticTexture> texture);
    void add_parameter(unsigned pass, unsigned parameter_index, const std::string &id);
    void set_num_passes(unsigned passes);
 
 private:
-   vector<unique_ptr<gl_core::Pass>> passes;
+   vector<unique_ptr<gl_core_shader::Pass>> passes;
    vector<gl_core_filter_chain_pass_info> pass_info;
    vector<vector<function<void ()>>> deferred_calls;
-   std::unique_ptr<gl_core::Framebuffer> copy_framebuffer;
-   gl_core::CommonResources common;
+   std::unique_ptr<gl_core_shader::Framebuffer> copy_framebuffer;
+   gl_core_shader::CommonResources common;
 
    gl_core_filter_chain_texture input_texture = {};
 
    bool init_history();
    bool init_feedback();
    bool init_alias();
-   vector<unique_ptr<gl_core::Framebuffer>> original_history;
+   vector<unique_ptr<gl_core_shader::Framebuffer>> original_history;
    void update_history();
    bool require_clear = false;
    void clear_history_and_feedback();
@@ -1865,7 +1765,7 @@ void gl_core_filter_chain::update_history_info()
 
    for (i = 0; i < original_history.size(); i++)
    {
-      gl_core::Texture *source = (gl_core::Texture*)
+      gl_core_shader::Texture *source = (gl_core_shader::Texture*)
          &common.original_history[i];
 
       if (!source)
@@ -1888,11 +1788,11 @@ void gl_core_filter_chain::update_feedback_info()
 
    for (i = 0; i < passes.size() - 1; i++)
    {
-      gl_core::Framebuffer *fb = passes[i]->get_feedback_framebuffer();
+      gl_core_shader::Framebuffer *fb = passes[i]->get_feedback_framebuffer();
       if (!fb)
          continue;
 
-      gl_core::Texture *source = (gl_core::Texture*)
+      gl_core_shader::Texture *source = (gl_core_shader::Texture*)
          &common.framebuffer_feedback[i];
 
       if (!source)
@@ -1922,19 +1822,19 @@ void gl_core_filter_chain::build_offscreen_passes(const gl_core_viewport &vp)
    update_history_info();
    update_feedback_info();
 
-   const gl_core::Texture original = {
+   const gl_core_shader::Texture original = {
          input_texture,
          passes.front()->get_source_filter(),
          passes.front()->get_mip_filter(),
          passes.front()->get_address_mode(),
    };
-   gl_core::Texture source = original;
+   gl_core_shader::Texture source = original;
 
    for (i = 0; i < passes.size() - 1; i++)
    {
       passes[i]->build_commands(original, source, vp, nullptr);
 
-      const gl_core::Framebuffer &fb   = passes[i]->get_framebuffer();
+      const gl_core_shader::Framebuffer &fb   = passes[i]->get_framebuffer();
 
       source.texture.image             = fb.get_image();
       source.texture.width             = fb.get_size().width;
@@ -1949,8 +1849,8 @@ void gl_core_filter_chain::build_offscreen_passes(const gl_core_viewport &vp)
 
 void gl_core_filter_chain::update_history()
 {
-   unique_ptr<gl_core::Framebuffer> tmp;
-   unique_ptr<gl_core::Framebuffer> &back = original_history.back();
+   unique_ptr<gl_core_shader::Framebuffer> tmp;
+   unique_ptr<gl_core_shader::Framebuffer> &back = original_history.back();
    swap(back, tmp);
 
    if (input_texture.width      != tmp->get_size().width  ||
@@ -1959,7 +1859,8 @@ void gl_core_filter_chain::update_history()
         && input_texture.format != tmp->get_format()))
       tmp->set_size({ input_texture.width, input_texture.height }, input_texture.format);
 
-   tmp->copy(common, input_texture.image);
+   if (tmp->is_complete())
+      tmp->copy(common, input_texture.image);
 
    /* Should ring buffer, but we don't have *that* many passes. */
    move_backward(begin(original_history), end(original_history) - 1, end(original_history));
@@ -1988,8 +1889,8 @@ void gl_core_filter_chain::build_viewport_pass(
       require_clear = false;
    }
 
-   gl_core::Texture source;
-   const gl_core::Texture original = {
+   gl_core_shader::Texture source;
+   const gl_core_shader::Texture original = {
          input_texture,
          passes.front()->get_source_filter(),
          passes.front()->get_mip_filter(),
@@ -2007,7 +1908,7 @@ void gl_core_filter_chain::build_viewport_pass(
    }
    else
    {
-      const gl_core::Framebuffer &fb = passes[passes.size() - 2]
+      const gl_core_shader::Framebuffer &fb = passes[passes.size() - 2]
          ->get_framebuffer();
       source.texture.image           = fb.get_image();
       source.texture.width           = fb.get_size().width;
@@ -2051,7 +1952,7 @@ bool gl_core_filter_chain::init_history()
    common.original_history.resize(required_images);
 
    for (i = 0; i < required_images; i++)
-      original_history.emplace_back(new gl_core::Framebuffer(0, 1));
+      original_history.emplace_back(new gl_core_shader::Framebuffer(0, 1));
 
    RARCH_LOG("[GLCore]: Using history of %u frames.\n", unsigned(required_images));
 
@@ -2172,7 +2073,7 @@ void gl_core_filter_chain::set_num_passes(unsigned num_passes)
 
    for (i = 0; i < num_passes; i++)
    {
-      passes.emplace_back(new gl_core::Pass(i + 1 == num_passes));
+      passes.emplace_back(new gl_core_shader::Pass(i + 1 == num_passes));
       passes.back()->set_common_resources(&common);
       passes.back()->set_pass_number(i);
    }
@@ -2221,12 +2122,15 @@ void gl_core_filter_chain::clear_history_and_feedback()
 {
    unsigned i;
    for (i = 0; i < original_history.size(); i++)
-      original_history[i]->clear();
+   {
+      if (original_history[i]->is_complete())
+         gl_core_framebuffer_clear(original_history[i]->get_framebuffer());
+   }
    for (i = 0; i < passes.size(); i++)
    {
-      gl_core::Framebuffer *fb = passes[i]->get_feedback_framebuffer();
-      if (fb)
-         fb->clear();
+      gl_core_shader::Framebuffer *fb = passes[i]->get_feedback_framebuffer();
+      if (fb && fb->is_complete())
+         gl_core_framebuffer_clear(fb->get_framebuffer());
    }
 }
 
@@ -2241,7 +2145,7 @@ void gl_core_filter_chain::set_input_texture(
        input_texture.padded_height != input_texture.height)
    {
       if (!copy_framebuffer)
-         copy_framebuffer.reset(new gl_core::Framebuffer(texture.format, 1));
+         copy_framebuffer.reset(new gl_core_shader::Framebuffer(texture.format, 1));
 
       if (input_texture.width   != copy_framebuffer->get_size().width  ||
           input_texture.height  != copy_framebuffer->get_size().height ||
@@ -2249,16 +2153,17 @@ void gl_core_filter_chain::set_input_texture(
            input_texture.format != copy_framebuffer->get_format()))
          copy_framebuffer->set_size({ input_texture.width, input_texture.height }, input_texture.format);
 
-      copy_framebuffer->copy_partial(common, input_texture.image,
-                                     float(input_texture.width) 
-                                     / input_texture.padded_width,
-                                     float(input_texture.height) 
-                                     / input_texture.padded_height);
+      if (copy_framebuffer->is_complete())
+         copy_framebuffer->copy_partial(common, input_texture.image,
+               float(input_texture.width) 
+               / input_texture.padded_width,
+               float(input_texture.height) 
+               / input_texture.padded_height);
       input_texture.image = copy_framebuffer->get_image();
    }
 }
 
-void gl_core_filter_chain::add_static_texture(unique_ptr<gl_core::StaticTexture> texture)
+void gl_core_filter_chain::add_static_texture(unique_ptr<gl_core_shader::StaticTexture> texture)
 {
    common.luts.push_back(move(texture));
 }
@@ -2287,7 +2192,7 @@ void gl_core_filter_chain::set_pass_name(unsigned pass, const char *name)
    passes[pass]->set_name(name);
 }
 
-static unique_ptr<gl_core::StaticTexture> gl_core_filter_chain_load_lut(
+static unique_ptr<gl_core_shader::StaticTexture> gl_core_filter_chain_load_lut(
       gl_core_filter_chain *chain,
       const video_shader_lut *shader)
 {
@@ -2302,7 +2207,7 @@ static unique_ptr<gl_core::StaticTexture> gl_core_filter_chain_load_lut(
    if (!image_texture_load(&image, shader->path))
       return {};
 
-   unsigned levels = shader->mipmap ? gl_core::num_miplevels(image.width, image.height) : 1;
+   unsigned levels = shader->mipmap ? gl_core_shader::num_miplevels(image.width, image.height) : 1;
 
    glGenTextures(1, &tex);
    glBindTexture(GL_TEXTURE_2D, tex);
@@ -2323,11 +2228,11 @@ static unique_ptr<gl_core::StaticTexture> gl_core_filter_chain_load_lut(
    if (image.pixels)
       image_texture_free(&image);
 
-   return unique_ptr<gl_core::StaticTexture>(new gl_core::StaticTexture(shader->id,
+   return unique_ptr<gl_core_shader::StaticTexture>(new gl_core_shader::StaticTexture(shader->id,
             tex, image.width, image.height,
             shader->filter != RARCH_FILTER_NEAREST,
             levels > 1,
-            gl_core::address_to_gl(gl_core::wrap_to_address(shader->wrap))));
+            gl_core_shader::address_to_gl(gl_core_shader::wrap_to_address(shader->wrap))));
 }
 
 static bool gl_core_filter_chain_load_luts(
@@ -2337,7 +2242,7 @@ static bool gl_core_filter_chain_load_luts(
    unsigned i;
    for (i = 0; i < shader->luts; i++)
    {
-      unique_ptr<gl_core::StaticTexture> image = gl_core_filter_chain_load_lut(chain, &shader->lut[i]);
+      unique_ptr<gl_core_shader::StaticTexture> image = gl_core_filter_chain_load_lut(chain, &shader->lut[i]);
       if (!image)
       {
          RARCH_ERR("[GLCore]: Failed to load LUT \"%s\".\n", shader->lut[i].path);
@@ -2372,11 +2277,11 @@ gl_core_filter_chain_t *gl_core_filter_chain_create_default(
    chain->set_pass_info(0, pass_info);
 
    chain->set_shader(0, GL_VERTEX_SHADER,
-         gl_core::opaque_vert,
-         sizeof(gl_core::opaque_vert) / sizeof(uint32_t));
+         gl_core_shader::opaque_vert,
+         sizeof(gl_core_shader::opaque_vert) / sizeof(uint32_t));
    chain->set_shader(0, GL_FRAGMENT_SHADER,
-         gl_core::opaque_frag,
-         sizeof(gl_core::opaque_frag) / sizeof(uint32_t));
+         gl_core_shader::opaque_frag,
+         sizeof(gl_core_shader::opaque_frag) / sizeof(uint32_t));
 
    if (!chain->init())
       return nullptr;
@@ -2510,7 +2415,7 @@ gl_core_filter_chain_t *gl_core_filter_chain_create_from_preset(
             pass->filter == RARCH_FILTER_LINEAR ? GL_CORE_FILTER_CHAIN_LINEAR :
             GL_CORE_FILTER_CHAIN_NEAREST;
       }
-      pass_info.address    = gl_core::wrap_to_address(pass->wrap);
+      pass_info.address    = gl_core_shader::wrap_to_address(pass->wrap);
       pass_info.max_levels = 1;
 
       /* TODO: Expose max_levels in slangp.
@@ -2550,7 +2455,7 @@ gl_core_filter_chain_t *gl_core_filter_chain_create_from_preset(
          }
          else
          {
-            pass_info.rt_format = gl_core::convert_glslang_format(output.meta.rt_format);
+            pass_info.rt_format = gl_core_shader::convert_glslang_format(output.meta.rt_format);
             RARCH_LOG("[slang]: Using render target format %s for pass output #%u.\n",
                   glslang_format_to_string(output.meta.rt_format), i);
          }
@@ -2564,7 +2469,7 @@ gl_core_filter_chain_t *gl_core_filter_chain_create_from_preset(
          else if (pass->fbo.fp_fbo)
             output.meta.rt_format = SLANG_FORMAT_R16G16B16A16_SFLOAT;
 
-         pass_info.rt_format = gl_core::convert_glslang_format(output.meta.rt_format);
+         pass_info.rt_format = gl_core_shader::convert_glslang_format(output.meta.rt_format);
          RARCH_LOG("[slang]: Using render target format %s for pass output #%u.\n",
                glslang_format_to_string(output.meta.rt_format), i);
 
@@ -2629,13 +2534,13 @@ gl_core_filter_chain_t *gl_core_filter_chain_create_from_preset(
 
       chain->set_shader(shader->passes,
             GL_VERTEX_SHADER,
-            gl_core::opaque_vert,
-            sizeof(gl_core::opaque_vert) / sizeof(uint32_t));
+            gl_core_shader::opaque_vert,
+            sizeof(gl_core_shader::opaque_vert) / sizeof(uint32_t));
 
       chain->set_shader(shader->passes,
             GL_FRAGMENT_SHADER,
-            gl_core::opaque_frag,
-            sizeof(gl_core::opaque_frag) / sizeof(uint32_t));
+            gl_core_shader::opaque_frag,
+            sizeof(gl_core_shader::opaque_frag) / sizeof(uint32_t));
    }
 
    if (!video_shader_resolve_current_parameters(conf, shader.get()))
@@ -2650,6 +2555,7 @@ gl_core_filter_chain_t *gl_core_filter_chain_create_from_preset(
    return chain.release();
 
 error:
+   config_file_free(conf);
    return nullptr;
 }
 
