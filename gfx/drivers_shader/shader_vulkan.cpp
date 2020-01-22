@@ -2660,15 +2660,6 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_default(
    return chain.release();
 }
 
-struct ConfigDeleter
-{
-   void operator()(config_file_t *conf)
-   {
-      if (conf)
-         config_file_free(conf);
-   }
-};
-
 static VkFormat glslang_format_to_vk(glslang_format fmt)
 {
 #undef FMT
@@ -2719,16 +2710,19 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
       const char *path, vulkan_filter_chain_filter filter)
 {
    unsigned i;
+   config_file_t *conf            = NULL;
    unique_ptr<video_shader> shader{ new video_shader() };
    if (!shader)
       return nullptr;
 
-   unique_ptr<config_file_t, ConfigDeleter> conf{ video_shader_read_preset(path) };
-   if (!conf)
+   if (!(conf = video_shader_read_preset(path)))
       return nullptr;
 
-   if (!video_shader_read_conf_preset(conf.get(), shader.get()))
+   if (!video_shader_read_conf_preset(conf, shader.get()))
+   {
+      config_file_free(conf);
       return nullptr;
+   }
 
    bool last_pass_is_fbo = shader->pass[shader->passes - 1].fbo.valid;
    auto tmpinfo          = *info;
@@ -2736,10 +2730,10 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
 
    unique_ptr<vulkan_filter_chain> chain{ new vulkan_filter_chain(tmpinfo) };
    if (!chain)
-      return nullptr;
+      goto error;
 
    if (shader->luts && !vulkan_filter_chain_load_luts(info, chain.get(), shader.get()))
-      return nullptr;
+      goto error;
 
    shader->num_parameters = 0;
 
@@ -2765,7 +2759,7 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
       {
          RARCH_ERR("Failed to compile shader: \"%s\".\n",
                pass->source.path);
-         return nullptr;
+         goto error;
       }
 
       for (auto &meta_param : output.meta.parameters)
@@ -2773,7 +2767,7 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
          if (shader->num_parameters >= GFX_MAX_PARAMETERS)
          {
             RARCH_ERR("[Vulkan]: Exceeded maximum number of parameters.\n");
-            return nullptr;
+            goto error;
          }
 
          auto itr = find_if(shader->parameters, shader->parameters + shader->num_parameters,
@@ -2794,7 +2788,7 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
             {
                RARCH_ERR("[Vulkan]: Duplicate parameters found for \"%s\", but arguments do not match.\n",
                      itr->id);
-               return nullptr;
+               goto error;
             }
             chain->add_parameter(i, itr - shader->parameters, meta_param.id);
          }
@@ -2853,11 +2847,11 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
       pass_info.mip_filter = pass->filter != RARCH_FILTER_NEAREST && pass_info.max_levels > 1
          ? VULKAN_FILTER_CHAIN_LINEAR : VULKAN_FILTER_CHAIN_NEAREST;
 
-      bool explicit_format = output.meta.rt_format != SLANG_FORMAT_UNKNOWN;
+      bool explicit_format         = output.meta.rt_format != SLANG_FORMAT_UNKNOWN;
 
       /* Set a reasonable default. */
       if (output.meta.rt_format == SLANG_FORMAT_UNKNOWN)
-         output.meta.rt_format = SLANG_FORMAT_R8G8B8A8_UNORM;
+         output.meta.rt_format     = SLANG_FORMAT_R8G8B8A8_UNORM;
 
       if (!pass->fbo.valid)
       {
@@ -2968,15 +2962,20 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
             sizeof(opaque_frag) / sizeof(uint32_t));
    }
 
-   if (!video_shader_resolve_current_parameters(conf.get(), shader.get()))
-      return nullptr;
+   if (!video_shader_resolve_current_parameters(conf, shader.get()))
+      goto error;
 
    chain->set_shader_preset(move(shader));
 
    if (!chain->init())
-      return nullptr;
+      goto error;
 
+   config_file_free(conf);
    return chain.release();
+
+error:
+   config_file_free(conf);
+   return nullptr;
 }
 
 struct video_shader *vulkan_filter_chain_get_preset(
