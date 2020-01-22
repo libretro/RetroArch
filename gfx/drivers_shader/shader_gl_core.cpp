@@ -355,15 +355,6 @@ static const uint32_t opaque_frag[] =
 #include "../drivers/vulkan_shaders/opaque.frag.inc"
 ;
 
-struct ConfigDeleter
-{
-   void operator()(config_file_t *conf)
-   {
-      if (conf)
-         config_file_free(conf);
-   }
-};
-
 static unsigned num_miplevels(unsigned width, unsigned height)
 {
    unsigned size = MAX(width, height);
@@ -2397,25 +2388,28 @@ gl_core_filter_chain_t *gl_core_filter_chain_create_from_preset(
       const char *path, gl_core_filter_chain_filter filter)
 {
    unsigned i;
+   config_file_t *conf            = NULL;
    unique_ptr<video_shader> shader{ new video_shader() };
    if (!shader)
       return nullptr;
 
-   unique_ptr<config_file_t, gl_core::ConfigDeleter> conf{ video_shader_read_preset(path) };
-   if (!conf)
+   if (!(conf = video_shader_read_preset(path)))
       return nullptr;
 
-   if (!video_shader_read_conf_preset(conf.get(), shader.get()))
+   if (!video_shader_read_conf_preset(conf, shader.get()))
+   {
+      config_file_free(conf);
       return nullptr;
+   }
 
    bool last_pass_is_fbo = shader->pass[shader->passes - 1].fbo.valid;
 
    unique_ptr<gl_core_filter_chain> chain{ new gl_core_filter_chain(shader->passes + (last_pass_is_fbo ? 1 : 0)) };
    if (!chain)
-      return nullptr;
+      goto error;
 
    if (shader->luts && !gl_core_filter_chain_load_luts(chain.get(), shader.get()))
-      return nullptr;
+      goto error;
 
    shader->num_parameters = 0;
 
@@ -2441,7 +2435,7 @@ gl_core_filter_chain_t *gl_core_filter_chain_create_from_preset(
       {
          RARCH_ERR("Failed to compile shader: \"%s\".\n",
                pass->source.path);
-         return nullptr;
+         goto error;
       }
 
       for (auto &meta_param : output.meta.parameters)
@@ -2449,7 +2443,7 @@ gl_core_filter_chain_t *gl_core_filter_chain_create_from_preset(
          if (shader->num_parameters >= GFX_MAX_PARAMETERS)
          {
             RARCH_ERR("[GLCore]: Exceeded maximum number of parameters.\n");
-            return nullptr;
+            goto error;
          }
 
          auto itr = find_if(shader->parameters, shader->parameters + shader->num_parameters,
@@ -2470,7 +2464,7 @@ gl_core_filter_chain_t *gl_core_filter_chain_create_from_preset(
             {
                RARCH_ERR("[GLCore]: Duplicate parameters found for \"%s\", but arguments do not match.\n",
                      itr->id);
-               return nullptr;
+               goto error;
             }
             chain->add_parameter(i, itr - shader->parameters, meta_param.id);
          }
@@ -2644,15 +2638,19 @@ gl_core_filter_chain_t *gl_core_filter_chain_create_from_preset(
             sizeof(gl_core::opaque_frag) / sizeof(uint32_t));
    }
 
-   if (!video_shader_resolve_current_parameters(conf.get(), shader.get()))
-      return nullptr;
+   if (!video_shader_resolve_current_parameters(conf, shader.get()))
+      goto error;
 
    chain->set_shader_preset(move(shader));
 
    if (!chain->init())
-      return nullptr;
+      goto error;
 
+   config_file_free(conf);
    return chain.release();
+
+error:
+   return nullptr;
 }
 
 struct video_shader *gl_core_filter_chain_get_preset(
