@@ -2270,14 +2270,14 @@ gl_core_filter_chain_t *gl_core_filter_chain_create_from_preset(
          }
          else
          {
-            auto &param = shader->parameters[shader->num_parameters];
-            strlcpy(param.id, meta_param.id.c_str(), sizeof(param.id));
-            strlcpy(param.desc, meta_param.desc.c_str(), sizeof(param.desc));
-            param.current = meta_param.initial;
-            param.initial = meta_param.initial;
-            param.minimum = meta_param.minimum;
-            param.maximum = meta_param.maximum;
-            param.step = meta_param.step;
+            video_shader_parameter *param = &shader->parameters[shader->num_parameters];
+            strlcpy(param->id, meta_param.id.c_str(), sizeof(param->id));
+            strlcpy(param->desc, meta_param.desc.c_str(), sizeof(param->desc));
+            param->current = meta_param.initial;
+            param->initial = meta_param.initial;
+            param->minimum = meta_param.minimum;
+            param->maximum = meta_param.maximum;
+            param->step = meta_param.step;
             chain->add_parameter(i, shader->num_parameters, meta_param.id);
             shader->num_parameters++;
          }

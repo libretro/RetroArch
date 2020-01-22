@@ -901,8 +901,9 @@ bool vulkan_filter_chain::init_feedback()
       bool use_feedback = false;
       for (auto &pass : passes)
       {
-         auto &r          = pass->get_reflection();
-         auto &feedbacks  = r.semantic_textures[SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK];
+         const slang_reflection &r = pass->get_reflection();
+         auto          &feedbacks  = r.semantic_textures[
+            SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK];
 
          if (i < feedbacks.size() && feedbacks[i].texture)
          {
@@ -2038,6 +2039,7 @@ void Pass::build_semantic_texture_array_vec4(uint8_t *data, slang_texture_semant
       unsigned index, unsigned width, unsigned height)
 {
    auto &refl = reflection.semantic_textures[semantic];
+
    if (index >= refl.size())
       return;
 
@@ -2699,14 +2701,14 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
          }
          else
          {
-            auto &param = shader->parameters[shader->num_parameters];
-            strlcpy(param.id, meta_param.id.c_str(), sizeof(param.id));
-            strlcpy(param.desc, meta_param.desc.c_str(), sizeof(param.desc));
-            param.current = meta_param.initial;
-            param.initial = meta_param.initial;
-            param.minimum = meta_param.minimum;
-            param.maximum = meta_param.maximum;
-            param.step    = meta_param.step;
+            video_shader_parameter *param = &shader->parameters[shader->num_parameters];
+            strlcpy(param->id, meta_param.id.c_str(), sizeof(param->id));
+            strlcpy(param->desc, meta_param.desc.c_str(), sizeof(param->desc));
+            param->current = meta_param.initial;
+            param->initial = meta_param.initial;
+            param->minimum = meta_param.minimum;
+            param->maximum = meta_param.maximum;
+            param->step    = meta_param.step;
             chain->add_parameter(i, shader->num_parameters, meta_param.id);
             shader->num_parameters++;
          }
