@@ -609,6 +609,13 @@ void vulkan_framebuffer_generate_mips(
       unsigned levels
       );
 
+void vulkan_framebuffer_copy(VkImage image, 
+      struct Size2D size,
+      VkCommandBuffer cmd,
+      VkImage src_image, VkImageLayout src_layout);
+
+void vulkan_framebuffer_clear(VkImage image, VkCommandBuffer cmd);
+
 void vulkan_initialize_render_pass(VkDevice device,
       VkFormat format, VkRenderPass *render_pass);
 

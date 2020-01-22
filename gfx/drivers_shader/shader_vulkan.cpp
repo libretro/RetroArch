@@ -231,9 +231,6 @@ class Framebuffer
       VkFramebuffer get_framebuffer() const { return framebuffer; }
       VkRenderPass get_render_pass() const { return render_pass; }
 
-      void clear(VkCommandBuffer cmd);
-      void copy(VkCommandBuffer cmd, VkImage image, VkImageLayout layout);
-
       unsigned get_levels() const { return levels; }
 
    private:
@@ -769,7 +766,8 @@ void vulkan_filter_chain::update_history(DeferredDisposer &disposer,
           && input_texture.format != tmp->get_format()))
       tmp->set_size(disposer, { input_texture.width, input_texture.height }, input_texture.format);
 
-   tmp->copy(cmd, input_texture.image, src_layout);
+   vulkan_framebuffer_copy(tmp->get_image(), tmp->get_size(),
+         cmd, input_texture.image, src_layout);
 
    /* Transition input texture back. */
    if (input_texture.layout != VK_IMAGE_LAYOUT_GENERAL)
@@ -1096,12 +1094,12 @@ void vulkan_filter_chain::clear_history_and_feedback(VkCommandBuffer cmd)
 {
    unsigned i;
    for (i = 0; i < original_history.size(); i++)
-      original_history[i]->clear(cmd);
+      vulkan_framebuffer_clear(original_history[i]->get_image(), cmd);
    for (i = 0; i < passes.size(); i++)
    {
       Framebuffer *fb = passes[i]->get_feedback_framebuffer();
       if (fb)
-         fb->clear(cmd);
+         vulkan_framebuffer_clear(fb->get_image(), cmd);
    }
 }
 
@@ -2399,78 +2397,6 @@ Framebuffer::Framebuffer(
          max_size.width, max_size.height, max_levels);
    vulkan_initialize_render_pass(device, format, &render_pass);
    init(nullptr);
-}
-
-void Framebuffer::clear(VkCommandBuffer cmd)
-{
-   VkClearColorValue color;
-   VkImageSubresourceRange range;
-
-   vulkan_image_layout_transition_levels(cmd,
-         image,
-         VK_REMAINING_MIP_LEVELS,
-         VK_IMAGE_LAYOUT_UNDEFINED,
-         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-         0,
-         VK_ACCESS_TRANSFER_WRITE_BIT,
-         VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-         VK_PIPELINE_STAGE_TRANSFER_BIT);
-
-   memset(&color, 0, sizeof(color));
-   memset(&range, 0, sizeof(range));
-
-   range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-   range.levelCount = 1;
-   range.layerCount = 1;
-
-   vkCmdClearColorImage(cmd,
-         image,
-         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-         &color,
-         1,
-         &range);
-
-   vulkan_image_layout_transition_levels(cmd,
-         image,
-         VK_REMAINING_MIP_LEVELS,
-         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-         VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-         VK_ACCESS_TRANSFER_WRITE_BIT,
-         VK_ACCESS_SHADER_READ_BIT,
-         VK_PIPELINE_STAGE_TRANSFER_BIT,
-         VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
-}
-
-void Framebuffer::copy(VkCommandBuffer cmd,
-      VkImage src_image, VkImageLayout src_layout)
-{
-   VkImageCopy region;
-
-   vulkan_image_layout_transition_levels(cmd, image,VK_REMAINING_MIP_LEVELS,
-         VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-         0, VK_ACCESS_TRANSFER_WRITE_BIT,
-         VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-         VK_PIPELINE_STAGE_TRANSFER_BIT);
-
-   memset(&region, 0, sizeof(region));
-
-   region.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-   region.srcSubresource.layerCount = 1;
-   region.dstSubresource            = region.srcSubresource;
-   region.extent.width              = size.width;
-   region.extent.height             = size.height;
-   region.extent.depth              = 1;
-
-   vkCmdCopyImage(cmd,
-         src_image, src_layout,
-         image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-         1, &region);
-
-   vulkan_image_layout_transition_levels(cmd, image,VK_REMAINING_MIP_LEVELS,
-         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-         VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
-         VK_PIPELINE_STAGE_TRANSFER_BIT,
-         VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
 }
 
 void Framebuffer::init(DeferredDisposer *disposer)
