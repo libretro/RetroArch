@@ -156,9 +156,10 @@ CONFIG FILE
 #include "../libretro-common/file/config_file_userdata.c"
 
 /*============================================================
-RUNTIME FILE
+CONTENT METADATA RECORDS
 ============================================================ */
 #include "../runtime_file.c"
+#include "../disk_index_file.c"
 
 /*============================================================
 ACHIEVEMENTS
@@ -1641,3 +1642,8 @@ PLAYLIST NAME SANITIZATION
 MANUAL CONTENT SCAN
 ============================================================ */
 #include "../manual_content_scan.c"
+
+/*============================================================
+DISK CONTROL INTERFACE
+============================================================ */
+#include "../disk_control_interface.c"
