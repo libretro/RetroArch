@@ -592,6 +592,9 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
       unsigned width, unsigned height,
       unsigned swap_interval);
 
+void vulkan_initialize_render_pass(VkDevice device,
+      VkFormat format, VkRenderPass *render_pass);
+
 RETRO_END_DECLS
 
 #endif

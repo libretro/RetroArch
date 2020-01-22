@@ -129,26 +129,6 @@ struct Texture
    vulkan_filter_chain_address address;
 };
 
-static vulkan_filter_chain_address wrap_to_address(gfx_wrap_type type)
-{
-   switch (type)
-   {
-      case RARCH_WRAP_BORDER:
-         return VULKAN_FILTER_CHAIN_ADDRESS_CLAMP_TO_BORDER;
-      case RARCH_WRAP_REPEAT:
-         return VULKAN_FILTER_CHAIN_ADDRESS_REPEAT;
-      case RARCH_WRAP_MIRRORED_REPEAT:
-         return VULKAN_FILTER_CHAIN_ADDRESS_MIRRORED_REPEAT;
-      case RARCH_WRAP_EDGE:
-      default:
-         break;
-   }
-
-   return VULKAN_FILTER_CHAIN_ADDRESS_CLAMP_TO_EDGE;
-}
-
-
-
 class DeferredDisposer
 {
    public:
@@ -263,14 +243,14 @@ class Framebuffer
       void generate_mips(VkCommandBuffer cmd);
 
    private:
-      const VkPhysicalDeviceMemoryProperties &memory_properties;
-      VkDevice device     = VK_NULL_HANDLE;
-      VkImage image       = VK_NULL_HANDLE;
-      VkImageView view    = VK_NULL_HANDLE;
-      VkImageView fb_view = VK_NULL_HANDLE;
       Size2D size;
       VkFormat format;
       unsigned max_levels;
+      const VkPhysicalDeviceMemoryProperties &memory_properties;
+      VkDevice device           = VK_NULL_HANDLE;
+      VkImage image             = VK_NULL_HANDLE;
+      VkImageView view          = VK_NULL_HANDLE;
+      VkImageView fb_view       = VK_NULL_HANDLE;
       unsigned levels           = 0;
 
       VkFramebuffer framebuffer = VK_NULL_HANDLE;
@@ -278,14 +258,12 @@ class Framebuffer
 
       struct
       {
-         size_t size           = 0;
-         uint32_t type         = 0;
-         VkDeviceMemory memory = VK_NULL_HANDLE;
+         size_t size            = 0;
+         uint32_t type          = 0;
+         VkDeviceMemory memory  = VK_NULL_HANDLE;
       } memory;
 
       void init(DeferredDisposer *disposer);
-      void init_framebuffer();
-      void init_render_pass();
 };
 
 struct CommonResources
@@ -296,10 +274,10 @@ struct CommonResources
 
    unique_ptr<Buffer> vbo;
    unique_ptr<Buffer> ubo;
-   uint8_t *ubo_mapped = nullptr;
+   uint8_t *ubo_mapped          = nullptr;
    size_t ubo_sync_index_stride = 0;
-   size_t ubo_offset = 0;
-   size_t ubo_alignment = 1;
+   size_t ubo_offset            = 0;
+   size_t ubo_alignment         = 1;
 
    VkSampler samplers[VULKAN_FILTER_CHAIN_COUNT][VULKAN_FILTER_CHAIN_COUNT][VULKAN_FILTER_CHAIN_ADDRESS_COUNT];
 
@@ -1192,23 +1170,25 @@ static unique_ptr<StaticTexture> vulkan_filter_chain_load_lut(
    if (!image_texture_load(&image, shader->path))
       return {};
 
-   image_info.imageType     = VK_IMAGE_TYPE_2D;
-   image_info.format        = VK_FORMAT_B8G8R8A8_UNORM;
-   image_info.extent.width  = image.width;
-   image_info.extent.height = image.height;
-   image_info.extent.depth  = 1;
-   image_info.mipLevels     = shader->mipmap ? num_miplevels(image.width, image.height) : 1;
-   image_info.arrayLayers   = 1;
-   image_info.samples       = VK_SAMPLE_COUNT_1_BIT;
-   image_info.tiling        = VK_IMAGE_TILING_OPTIMAL;
-   image_info.usage         = VK_IMAGE_USAGE_SAMPLED_BIT |
-                              VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
-                              VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-   image_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+   image_info.imageType            = VK_IMAGE_TYPE_2D;
+   image_info.format               = VK_FORMAT_B8G8R8A8_UNORM;
+   image_info.extent.width         = image.width;
+   image_info.extent.height        = image.height;
+   image_info.extent.depth         = 1;
+   image_info.mipLevels            = shader->mipmap ? num_miplevels(image.width, image.height) : 1;
+   image_info.arrayLayers          = 1;
+   image_info.samples              = VK_SAMPLE_COUNT_1_BIT;
+   image_info.tiling               = VK_IMAGE_TILING_OPTIMAL;
+   image_info.usage                = VK_IMAGE_USAGE_SAMPLED_BIT |
+                                     VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
+                                     VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+   image_info.initialLayout        = VK_IMAGE_LAYOUT_UNDEFINED;
+
    vkCreateImage(info->device, &image_info, nullptr, &tex);
    vkGetImageMemoryRequirements(info->device, tex, &mem_reqs);
-   alloc.allocationSize     = mem_reqs.size;
-   alloc.memoryTypeIndex    = vulkan_find_memory_type(
+
+   alloc.allocationSize            = mem_reqs.size;
+   alloc.memoryTypeIndex           = vulkan_find_memory_type(
          &*info->memory_properties,
          mem_reqs.memoryTypeBits,
          VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
@@ -1230,9 +1210,10 @@ static unique_ptr<StaticTexture> vulkan_filter_chain_load_lut(
    view_info.subresourceRange.layerCount = 1;
    vkCreateImageView(info->device, &view_info, nullptr, &view);
 
-   buffer = unique_ptr<Buffer>(new Buffer(info->device, *info->memory_properties,
-            image.width * image.height * sizeof(uint32_t), VK_BUFFER_USAGE_TRANSFER_SRC_BIT));
-   ptr = buffer->map();
+   buffer                                = 
+      unique_ptr<Buffer>(new Buffer(info->device, *info->memory_properties,
+               image.width * image.height * sizeof(uint32_t), VK_BUFFER_USAGE_TRANSFER_SRC_BIT));
+   ptr                                   = buffer->map();
    memcpy(ptr, image.pixels, image.width * image.height * sizeof(uint32_t));
    buffer->unmap();
 
@@ -1242,13 +1223,13 @@ static unique_ptr<StaticTexture> vulkan_filter_chain_load_lut(
          0, VK_ACCESS_TRANSFER_WRITE_BIT,
          VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
 
-   region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-   region.imageSubresource.mipLevel = 0;
+   region.imageSubresource.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+   region.imageSubresource.mipLevel       = 0;
    region.imageSubresource.baseArrayLayer = 0;
-   region.imageSubresource.layerCount = 1;
-   region.imageExtent.width = image.width;
-   region.imageExtent.height = image.height;
-   region.imageExtent.depth = 1;
+   region.imageSubresource.layerCount     = 1;
+   region.imageExtent.width               = image.width;
+   region.imageExtent.height              = image.height;
+   region.imageExtent.depth               = 1;
 
    vkCmdCopyBufferToImage(cmd, buffer->get_buffer(), tex,
          shader->mipmap ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
@@ -1256,11 +1237,11 @@ static unique_ptr<StaticTexture> vulkan_filter_chain_load_lut(
 
    for (i = 1; i < image_info.mipLevels; i++)
    {
-      VkImageBlit blit_region = {};
-      unsigned src_width      = MAX(image.width >> (i - 1), 1u);
-      unsigned src_height     = MAX(image.height >> (i - 1), 1u);
-      unsigned target_width   = MAX(image.width >> i, 1u);
-      unsigned target_height  = MAX(image.height >> i, 1u);
+      VkImageBlit blit_region                   = {};
+      unsigned src_width                        = MAX(image.width >> (i - 1), 1u);
+      unsigned src_height                       = MAX(image.height >> (i - 1), 1u);
+      unsigned target_width                     = MAX(image.width >> i, 1u);
+      unsigned target_height                    = MAX(image.height >> i, 1u);
 
       blit_region.srcSubresource.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
       blit_region.srcSubresource.mipLevel       = i - 1;
@@ -1304,7 +1285,7 @@ static unique_ptr<StaticTexture> vulkan_filter_chain_load_lut(
             tex, view, memory, move(buffer), image.width, image.height,
             shader->filter != RARCH_FILTER_NEAREST,
             image_info.mipLevels > 1,
-            wrap_to_address(shader->wrap)));
+            vk_wrap_to_address(shader->wrap)));
 
 error:
    if (image.pixels)
@@ -1317,9 +1298,6 @@ error:
       vkFreeMemory(info->device, memory, nullptr);
    return {};
 }
-
-
-
 
 static bool vulkan_filter_chain_load_luts(
       const struct vulkan_filter_chain_create_info *info,
@@ -1374,8 +1352,6 @@ error:
    return false;
 }
 
-
-
 StaticTexture::StaticTexture(string id,
       VkDevice device,
       VkImage image,
@@ -1393,15 +1369,19 @@ StaticTexture::StaticTexture(string id,
      buffer(move(buffer)),
      id(move(id))
 {
-   texture.filter = linear ? VULKAN_FILTER_CHAIN_LINEAR : VULKAN_FILTER_CHAIN_NEAREST;
-   texture.mip_filter =
-      mipmap && linear ? VULKAN_FILTER_CHAIN_LINEAR : VULKAN_FILTER_CHAIN_NEAREST;
-   texture.address = address;
-   texture.texture.image = image;
-   texture.texture.view = view;
+   texture.filter         = VULKAN_FILTER_CHAIN_NEAREST;
+   texture.mip_filter     = VULKAN_FILTER_CHAIN_NEAREST;
+   texture.address        = address;
+   texture.texture.image  = image;
+   texture.texture.view   = view;
    texture.texture.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-   texture.texture.width = width;
+   texture.texture.width  = width;
    texture.texture.height = height;
+
+   if (linear)
+      texture.filter      = VULKAN_FILTER_CHAIN_LINEAR;
+   if (mipmap && linear)
+      texture.mip_filter  = VULKAN_FILTER_CHAIN_LINEAR;
 }
 
 StaticTexture::~StaticTexture()
@@ -1420,17 +1400,17 @@ Buffer::Buffer(VkDevice device,
    device(device), size(size)
 {
    VkMemoryRequirements mem_reqs;
-   VkBufferCreateInfo info = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
-   info.size               = size;
-   info.usage              = usage;
-   info.sharingMode        = VK_SHARING_MODE_EXCLUSIVE;
+   VkMemoryAllocateInfo alloc = { VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO };
+   VkBufferCreateInfo info    = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
+
+   info.size                  = size;
+   info.usage                 = usage;
+   info.sharingMode           = VK_SHARING_MODE_EXCLUSIVE;
    vkCreateBuffer(device, &info, nullptr, &buffer);
 
    vkGetBufferMemoryRequirements(device, buffer, &mem_reqs);
 
-   VkMemoryAllocateInfo alloc = { VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO };
    alloc.allocationSize       = mem_reqs.size;
-
    alloc.memoryTypeIndex      = vulkan_find_memory_type(
          &mem_props, mem_reqs.memoryTypeBits,
          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
@@ -1444,9 +1424,8 @@ void *Buffer::map()
 {
    if (!mapped)
    {
-      if (vkMapMemory(device, memory, 0, size, 0, &mapped) == VK_SUCCESS)
-         return mapped;
-      return nullptr;
+      if (vkMapMemory(device, memory, 0, size, 0, &mapped) != VK_SUCCESS)
+         return nullptr;
    }
    return mapped;
 }
@@ -1482,17 +1461,20 @@ void Pass::set_shader(VkShaderStageFlags stage,
       const uint32_t *spirv,
       size_t spirv_words)
 {
-   if (stage == VK_SHADER_STAGE_VERTEX_BIT)
+   switch (stage)
    {
-      vertex_shader.clear();
-      vertex_shader.insert(end(vertex_shader),
-            spirv, spirv + spirv_words);
-   }
-   else if (stage == VK_SHADER_STAGE_FRAGMENT_BIT)
-   {
-      fragment_shader.clear();
-      fragment_shader.insert(end(fragment_shader),
-            spirv, spirv + spirv_words);
+      case VK_SHADER_STAGE_VERTEX_BIT:
+         vertex_shader.clear();
+         vertex_shader.insert(end(vertex_shader),
+               spirv, spirv + spirv_words);
+         break;
+      case VK_SHADER_STAGE_FRAGMENT_BIT:
+         fragment_shader.clear();
+         fragment_shader.insert(end(fragment_shader),
+               spirv, spirv + spirv_words);
+         break;
+      default:
+         break;
    }
 }
 
@@ -1555,14 +1537,15 @@ Size2D Pass::set_pass_info(
 {
    clear_vk();
 
-   current_viewport = swapchain.viewport;
-   pass_info = info;
+   current_viewport         = swapchain.viewport;
+   pass_info                = info;
 
-   num_sync_indices = swapchain.num_indices;
-   sync_index = 0;
+   num_sync_indices         = swapchain.num_indices;
+   sync_index               = 0;
 
    current_framebuffer_size = get_output_size(max_original, max_source);
-   swapchain_render_pass = swapchain.render_pass;
+   swapchain_render_pass    = swapchain.render_pass;
+
    return current_framebuffer_size;
 }
 
@@ -1587,9 +1570,19 @@ bool Pass::init_pipeline_layout()
    unsigned i;
    vector<VkDescriptorSetLayoutBinding> bindings;
    vector<VkDescriptorPoolSize> desc_counts;
+   VkPushConstantRange push_range                  = {};
+   VkDescriptorSetLayoutCreateInfo set_layout_info = {
+      VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO };
+   VkPipelineLayoutCreateInfo layout_info          = {
+      VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO };
+   VkDescriptorPoolCreateInfo pool_info            = {
+      VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO };
+   VkDescriptorSetAllocateInfo alloc_info          = {
+      VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO };
 
    /* Main UBO. */
-   VkShaderStageFlags ubo_mask = 0;
+   VkShaderStageFlags ubo_mask                     = 0;
+
    if (reflection.ubo_stage_mask & SLANG_STAGE_VERTEX_MASK)
       ubo_mask |= VK_SHADER_STAGE_VERTEX_BIT;
    if (reflection.ubo_stage_mask & SLANG_STAGE_FRAGMENT_MASK)
@@ -1608,10 +1601,11 @@ bool Pass::init_pipeline_layout()
    {
       for (auto &texture : semantic)
       {
+         VkShaderStageFlags stages = 0;
+
          if (!texture.texture)
             continue;
 
-         VkShaderStageFlags stages = 0;
          if (texture.stage_mask & SLANG_STAGE_VERTEX_MASK)
             stages |= VK_SHADER_STAGE_VERTEX_BIT;
          if (texture.stage_mask & SLANG_STAGE_FRAGMENT_MASK)
@@ -1624,22 +1618,17 @@ bool Pass::init_pipeline_layout()
       }
    }
 
-   VkDescriptorSetLayoutCreateInfo set_layout_info = {
-      VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO };
-   set_layout_info.bindingCount = bindings.size();
-   set_layout_info.pBindings    = bindings.data();
+   set_layout_info.bindingCount           = bindings.size();
+   set_layout_info.pBindings              = bindings.data();
 
    if (vkCreateDescriptorSetLayout(device,
             &set_layout_info, NULL, &set_layout) != VK_SUCCESS)
       return false;
 
-   VkPipelineLayoutCreateInfo layout_info = {
-      VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO };
    layout_info.setLayoutCount             = 1;
    layout_info.pSetLayouts                = &set_layout;
 
    /* Push constants */
-   VkPushConstantRange push_range = {};
    if (reflection.push_constant_stage_mask && reflection.push_constant_size)
    {
       if (reflection.push_constant_stage_mask & SLANG_STAGE_VERTEX_MASK)
@@ -1650,27 +1639,23 @@ bool Pass::init_pipeline_layout()
       RARCH_LOG("[Vulkan]: Push Constant Block: %u bytes.\n", (unsigned int)reflection.push_constant_size);
 
       layout_info.pushConstantRangeCount = 1;
-      layout_info.pPushConstantRanges = &push_range;
+      layout_info.pPushConstantRanges    = &push_range;
       push.buffer.resize((reflection.push_constant_size + sizeof(uint32_t) - 1) / sizeof(uint32_t));
    }
 
-   push.stages = push_range.stageFlags;
+   push.stages     = push_range.stageFlags;
    push_range.size = reflection.push_constant_size;
 
    if (vkCreatePipelineLayout(device,
             &layout_info, NULL, &pipeline_layout) != VK_SUCCESS)
       return false;
 
-   VkDescriptorPoolCreateInfo pool_info = {
-      VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO };
    pool_info.maxSets                    = num_sync_indices;
    pool_info.poolSizeCount              = desc_counts.size();
    pool_info.pPoolSizes                 = desc_counts.data();
    if (vkCreateDescriptorPool(device, &pool_info, nullptr, &pool) != VK_SUCCESS)
       return false;
 
-   VkDescriptorSetAllocateInfo alloc_info = {
-      VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO };
    alloc_info.descriptorPool     = pool;
    alloc_info.descriptorSetCount = 1;
    alloc_info.pSetLayouts        = &set_layout;
@@ -1685,18 +1670,43 @@ bool Pass::init_pipeline_layout()
 
 bool Pass::init_pipeline()
 {
+   VkPipelineInputAssemblyStateCreateInfo input_assembly = {
+      VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO };
+   VkVertexInputAttributeDescription attributes[2]       = {{0}};
+   VkVertexInputBindingDescription binding               = {0};
+   VkPipelineVertexInputStateCreateInfo vertex_input     = {
+      VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO };
+   VkPipelineRasterizationStateCreateInfo raster         = {
+      VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO };
+   VkPipelineColorBlendAttachmentState blend_attachment  = {0};
+   VkPipelineColorBlendStateCreateInfo blend             = {
+      VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO };
+   VkPipelineViewportStateCreateInfo viewport            = {
+      VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO };
+   VkPipelineDepthStencilStateCreateInfo depth_stencil   = {
+      VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO };
+   VkPipelineMultisampleStateCreateInfo multisample      = {
+      VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO };
+   VkPipelineDynamicStateCreateInfo dynamic              = {
+      VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO };
+   static const VkDynamicState dynamics[]                = {
+      VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
+   VkPipelineShaderStageCreateInfo shader_stages[2]      = {
+      { VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO },
+      { VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO },
+   };
+   VkShaderModuleCreateInfo module_info                  = {
+      VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO };
+   VkGraphicsPipelineCreateInfo pipe                     = {
+      VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO };
+
    if (!init_pipeline_layout())
       return false;
 
    /* Input assembly */
-   VkPipelineInputAssemblyStateCreateInfo input_assembly = {
-      VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO };
    input_assembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
 
    /* VAO state */
-   VkVertexInputAttributeDescription attributes[2] = {{0}};
-   VkVertexInputBindingDescription binding = {0};
-
    attributes[0].location = 0;
    attributes[0].binding  = 0;
    attributes[0].format   = VK_FORMAT_R32G32_SFLOAT;
@@ -1710,70 +1720,47 @@ bool Pass::init_pipeline()
    binding.stride         = 4 * sizeof(float);
    binding.inputRate      = VK_VERTEX_INPUT_RATE_VERTEX;
 
-   VkPipelineVertexInputStateCreateInfo vertex_input = {
-      VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO };
    vertex_input.vertexBindingDescriptionCount   = 1;
    vertex_input.pVertexBindingDescriptions      = &binding;
    vertex_input.vertexAttributeDescriptionCount = 2;
    vertex_input.pVertexAttributeDescriptions    = attributes;
 
    /* Raster state */
-   VkPipelineRasterizationStateCreateInfo raster = {
-      VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO };
-   raster.polygonMode = VK_POLYGON_MODE_FILL;
-   raster.cullMode = VK_CULL_MODE_NONE;
-   raster.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
-   raster.depthClampEnable = false;
-   raster.rasterizerDiscardEnable = false;
-   raster.depthBiasEnable = false;
-   raster.lineWidth = 1.0f;
+   raster.polygonMode                           = VK_POLYGON_MODE_FILL;
+   raster.cullMode                              = VK_CULL_MODE_NONE;
+   raster.frontFace                             = 
+      VK_FRONT_FACE_COUNTER_CLOCKWISE;
+   raster.depthClampEnable                      = false;
+   raster.rasterizerDiscardEnable               = false;
+   raster.depthBiasEnable                       = false;
+   raster.lineWidth                             = 1.0f;
 
    /* Blend state */
-   VkPipelineColorBlendAttachmentState blend_attachment = {0};
-   VkPipelineColorBlendStateCreateInfo blend = {
-      VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO };
-   blend_attachment.blendEnable    = false;
-   blend_attachment.colorWriteMask = 0xf;
-   blend.attachmentCount           = 1;
-   blend.pAttachments              = &blend_attachment;
+   blend_attachment.blendEnable                 = false;
+   blend_attachment.colorWriteMask              = 0xf;
+   blend.attachmentCount                        = 1;
+   blend.pAttachments                           = &blend_attachment;
 
    /* Viewport state */
-   VkPipelineViewportStateCreateInfo viewport = {
-      VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO };
-   viewport.viewportCount = 1;
-   viewport.scissorCount  = 1;
+   viewport.viewportCount                       = 1;
+   viewport.scissorCount                        = 1;
 
    /* Depth-stencil state */
-   VkPipelineDepthStencilStateCreateInfo depth_stencil = {
-      VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO };
-   depth_stencil.depthTestEnable       = false;
-   depth_stencil.depthWriteEnable      = false;
-   depth_stencil.depthBoundsTestEnable = false;
-   depth_stencil.stencilTestEnable     = false;
-   depth_stencil.minDepthBounds        = 0.0f;
-   depth_stencil.maxDepthBounds        = 1.0f;
+   depth_stencil.depthTestEnable                = false;
+   depth_stencil.depthWriteEnable               = false;
+   depth_stencil.depthBoundsTestEnable          = false;
+   depth_stencil.stencilTestEnable              = false;
+   depth_stencil.minDepthBounds                 = 0.0f;
+   depth_stencil.maxDepthBounds                 = 1.0f;
 
    /* Multisample state */
-   VkPipelineMultisampleStateCreateInfo multisample = {
-      VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO };
-   multisample.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+   multisample.rasterizationSamples             = VK_SAMPLE_COUNT_1_BIT;
 
    /* Dynamic state */
-   VkPipelineDynamicStateCreateInfo dynamic = {
-      VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO };
-   static const VkDynamicState dynamics[] = {
-      VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
    dynamic.pDynamicStates    = dynamics;
    dynamic.dynamicStateCount = sizeof(dynamics) / sizeof(dynamics[0]);
 
    /* Shaders */
-   VkPipelineShaderStageCreateInfo shader_stages[2] = {
-      { VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO },
-      { VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO },
-   };
-
-   VkShaderModuleCreateInfo module_info = {
-      VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO };
    module_info.codeSize     = vertex_shader.size() * sizeof(uint32_t);
    module_info.pCode        = vertex_shader.data();
    shader_stages[0].stage   = VK_SHADER_STAGE_VERTEX_BIT;
@@ -1786,8 +1773,6 @@ bool Pass::init_pipeline()
    shader_stages[1].pName   = "main";
    vkCreateShaderModule(device, &module_info, NULL, &shader_stages[1].module);
 
-   VkGraphicsPipelineCreateInfo pipe = {
-      VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO };
    pipe.stageCount          = 2;
    pipe.pStages             = shader_stages;
    pipe.pVertexInputState   = &vertex_input;
@@ -1820,6 +1805,7 @@ CommonResources::CommonResources(VkDevice device,
    : device(device)
 {
    unsigned i;
+   VkSamplerCreateInfo info     = { VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO };
    /* The final pass uses an MVP designed for [0, 1] range VBO.
     * For in-between passes, we just go with identity matrices,
     * so keep it simple.
@@ -1838,14 +1824,14 @@ CommonResources::CommonResources(VkDevice device,
       1.0f, +1.0f, 1.0f, 1.0f,
    };
 
-   vbo = unique_ptr<Buffer>(new Buffer(device,
-            memory_properties, sizeof(vbo_data), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT));
+   vbo                          = 
+      unique_ptr<Buffer>(new Buffer(device,
+               memory_properties, sizeof(vbo_data), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT));
 
-   void *ptr = vbo->map();
+   void *ptr                    = vbo->map();
    memcpy(ptr, vbo_data, sizeof(vbo_data));
    vbo->unmap();
 
-   VkSamplerCreateInfo info     = { VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO };
    info.mipLodBias              = 0.0f;
    info.maxAnisotropy           = 1.0f;
    info.compareEnable           = false;
@@ -1974,9 +1960,9 @@ bool Pass::init_feedback()
 
 bool Pass::build()
 {
-   unordered_map<string, slang_semantic_map> semantic_map;
    unsigned i;
    unsigned j = 0;
+   unordered_map<string, slang_semantic_map> semantic_map;
 
    framebuffer.reset();
    framebuffer_feedback.reset();
@@ -2026,16 +2012,17 @@ void Pass::set_uniform_buffer(VkDescriptorSet set, unsigned binding,
       VkDeviceSize range)
 {
    VkDescriptorBufferInfo buffer_info;
-   buffer_info.buffer = buffer;
-   buffer_info.offset = offset;
-   buffer_info.range = range;
-
    VkWriteDescriptorSet write = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
+
+   buffer_info.buffer         = buffer;
+   buffer_info.offset         = offset;
+   buffer_info.range          = range;
+
    write.dstSet               = set;
    write.dstBinding           = binding;
    write.descriptorCount      = 1;
    write.descriptorType       = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-   write.pBufferInfo = &buffer_info;
+   write.pBufferInfo          = &buffer_info;
 
    vkUpdateDescriptorSets(device, 1, &write, 0, NULL);
 }
@@ -2044,11 +2031,12 @@ void Pass::set_texture(VkDescriptorSet set, unsigned binding,
       const Texture &texture)
 {
    VkDescriptorImageInfo image_info;
+   VkWriteDescriptorSet write = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
+
    image_info.sampler         = common->samplers[texture.filter][texture.mip_filter][texture.address];
    image_info.imageView       = texture.texture.view;
    image_info.imageLayout     = texture.texture.layout;
 
-   VkWriteDescriptorSet write = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
    write.dstSet               = set;
    write.dstBinding           = binding;
    write.descriptorCount      = 1;
@@ -2294,6 +2282,9 @@ void Pass::build_commands(
     * the passes that end up on-screen. */
    if (!final_pass)
    {
+      VkRenderPassBeginInfo rp_info    = {
+         VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO };
+
       /* Render. */
       vulkan_image_layout_transition_levels(cmd,
             framebuffer->get_image(), 1,
@@ -2304,8 +2295,6 @@ void Pass::build_commands(
             VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
             VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
 
-      VkRenderPassBeginInfo rp_info = {
-         VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO };
       rp_info.renderPass               = framebuffer->get_render_pass();
       rp_info.framebuffer              = framebuffer->get_framebuffer();
       rp_info.renderArea.extent.width  = current_framebuffer_size.width;
@@ -2317,7 +2306,8 @@ void Pass::build_commands(
    }
 
    vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
-   vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout,
+   vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
+         pipeline_layout,
          0, 1, &sets[sync_index], 0, nullptr);
 
    if (push.stages != 0)
@@ -2327,10 +2317,12 @@ void Pass::build_commands(
             push.buffer.data());
    }
 
-   VkDeviceSize offset = final_pass ? 16 * sizeof(float) : 0;
-   vkCmdBindVertexBuffers(cmd, 0, 1,
-         &common->vbo->get_buffer(),
-         &offset);
+   {
+      VkDeviceSize offset = final_pass ? 16 * sizeof(float) : 0;
+      vkCmdBindVertexBuffers(cmd, 0, 1,
+            &common->vbo->get_buffer(),
+            &offset);
+   }
 
    if (final_pass)
    {
@@ -2404,7 +2396,7 @@ Framebuffer::Framebuffer(
 {
    RARCH_LOG("[Vulkan filter chain]: Creating framebuffer %u x %u (max %u level(s)).\n",
          max_size.width, max_size.height, max_levels);
-   init_render_pass();
+   vulkan_initialize_render_pass(device, format, &render_pass);
    init(nullptr);
 }
 
@@ -2429,9 +2421,12 @@ void Framebuffer::clear(VkCommandBuffer cmd)
    vkCmdClearColorImage(cmd, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
          &color, 1, &range);
 
-   vulkan_image_layout_transition_levels(cmd, image,VK_REMAINING_MIP_LEVELS,
-         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-         VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
+   vulkan_image_layout_transition_levels(cmd, image,
+         VK_REMAINING_MIP_LEVELS,
+         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+         VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+         VK_ACCESS_TRANSFER_WRITE_BIT,
+         VK_ACCESS_SHADER_READ_BIT,
          VK_PIPELINE_STAGE_TRANSFER_BIT,
          VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
 }
@@ -2488,6 +2483,9 @@ void Framebuffer::generate_mips(VkCommandBuffer cmd)
 
    for (i = 1; i < levels; i++)
    {
+      unsigned src_width, src_height, target_width, target_height;
+      VkImageBlit blit_region = {};
+
       /* For subsequent passes, we have to transition
        * from DST_OPTIMAL to SRC_OPTIMAL,
        * but only do so one mip-level at a time. */
@@ -2509,11 +2507,10 @@ void Framebuffer::generate_mips(VkCommandBuffer cmd)
                1, barriers);
       }
 
-      VkImageBlit blit_region = {};
-      unsigned src_width      = MAX(size.width >> (i - 1), 1u);
-      unsigned src_height     = MAX(size.height >> (i - 1), 1u);
-      unsigned target_width   = MAX(size.width >> i, 1u);
-      unsigned target_height  = MAX(size.height >> i, 1u);
+      src_width                                 = MAX(size.width >> (i - 1), 1u);
+      src_height                                = MAX(size.height >> (i - 1), 1u);
+      target_width                              = MAX(size.width >> i, 1u);
+      target_height                             = MAX(size.height >> i, 1u);
 
       blit_region.srcSubresource.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
       blit_region.srcSubresource.mipLevel       = i - 1;
@@ -2607,7 +2604,11 @@ void Framebuffer::copy(VkCommandBuffer cmd,
 void Framebuffer::init(DeferredDisposer *disposer)
 {
    VkMemoryRequirements mem_reqs;
-   VkImageCreateInfo info = { VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO };
+   VkImageCreateInfo info                    = { VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO };
+   VkMemoryAllocateInfo alloc                = { VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO };
+   VkImageViewCreateInfo view_info           = {
+      VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO };
+
    info.imageType         = VK_IMAGE_TYPE_2D;
    info.format            = format;
    info.extent.width      = size.width;
@@ -2618,19 +2619,18 @@ void Framebuffer::init(DeferredDisposer *disposer)
    info.samples           = VK_SAMPLE_COUNT_1_BIT;
    info.tiling            = VK_IMAGE_TILING_OPTIMAL;
    info.usage             = VK_IMAGE_USAGE_SAMPLED_BIT |
-      VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
-      VK_IMAGE_USAGE_TRANSFER_DST_BIT |
-      VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+                            VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
+                            VK_IMAGE_USAGE_TRANSFER_DST_BIT |
+                            VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
 
    info.sharingMode       = VK_SHARING_MODE_EXCLUSIVE;
    info.initialLayout     = VK_IMAGE_LAYOUT_UNDEFINED;
-   levels = info.mipLevels;
+   levels                 = info.mipLevels;
 
    vkCreateImage(device, &info, nullptr, &image);
 
    vkGetImageMemoryRequirements(device, image, &mem_reqs);
 
-   VkMemoryAllocateInfo alloc = { VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO };
    alloc.allocationSize   = mem_reqs.size;
    alloc.memoryTypeIndex  = find_memory_type_fallback(
          memory_properties, mem_reqs.memoryTypeBits,
@@ -2657,8 +2657,6 @@ void Framebuffer::init(DeferredDisposer *disposer)
 
    vkBindImageMemory(device, image, memory.memory, 0);
 
-   VkImageViewCreateInfo view_info           = {
-      VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO };
    view_info.viewType                        = VK_IMAGE_VIEW_TYPE_2D;
    view_info.format                          = format;
    view_info.image                           = image;
@@ -2676,54 +2674,19 @@ void Framebuffer::init(DeferredDisposer *disposer)
    view_info.subresourceRange.levelCount = 1;
    vkCreateImageView(device, &view_info, nullptr, &fb_view);
 
-   init_framebuffer();
-}
+   /* Initialize framebuffer */
+   {
+      VkFramebufferCreateInfo info = {
+         VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO };
+      info.renderPass      = render_pass;
+      info.attachmentCount = 1;
+      info.pAttachments    = &fb_view;
+      info.width           = size.width;
+      info.height          = size.height;
+      info.layers          = 1;
 
-void Framebuffer::init_render_pass()
-{
-   VkRenderPassCreateInfo rp_info = {
-      VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO };
-   VkAttachmentReference color_ref = { 0,
-      VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
-
-   /* We will always write to the entire framebuffer,
-    * so we don't really need to clear. */
-   VkAttachmentDescription attachment = {0};
-   attachment.format            = format;
-   attachment.samples           = VK_SAMPLE_COUNT_1_BIT;
-   attachment.loadOp            = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-   attachment.storeOp           = VK_ATTACHMENT_STORE_OP_STORE;
-   attachment.stencilLoadOp     = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-   attachment.stencilStoreOp    = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-
-   attachment.initialLayout     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-   attachment.finalLayout       = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-   VkSubpassDescription subpass = {0};
-   subpass.pipelineBindPoint    = VK_PIPELINE_BIND_POINT_GRAPHICS;
-   subpass.colorAttachmentCount = 1;
-   subpass.pColorAttachments    = &color_ref;
-
-   rp_info.attachmentCount      = 1;
-   rp_info.pAttachments         = &attachment;
-   rp_info.subpassCount         = 1;
-   rp_info.pSubpasses           = &subpass;
-
-   vkCreateRenderPass(device, &rp_info, nullptr, &render_pass);
-}
-
-void Framebuffer::init_framebuffer()
-{
-   VkFramebufferCreateInfo info = {
-      VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO };
-   info.renderPass      = render_pass;
-   info.attachmentCount = 1;
-   info.pAttachments    = &fb_view;
-   info.width           = size.width;
-   info.height          = size.height;
-   info.layers          = 1;
-
-   vkCreateFramebuffer(device, &info, nullptr, &framebuffer);
+      vkCreateFramebuffer(device, &info, nullptr, &framebuffer);
+   }
 }
 
 void Framebuffer::set_size(DeferredDisposer &disposer, const Size2D &size, VkFormat format)
@@ -2792,8 +2755,9 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_default(
       vulkan_filter_chain_filter filter)
 {
    struct vulkan_filter_chain_pass_info pass_info;
-   auto tmpinfo       = *info;
-   tmpinfo.num_passes = 1;
+   auto tmpinfo            = *info;
+
+   tmpinfo.num_passes      = 1;
 
    unique_ptr<vulkan_filter_chain> chain{ new vulkan_filter_chain(tmpinfo) };
    if (!chain)
@@ -2971,7 +2935,7 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
             param.initial = meta_param.initial;
             param.minimum = meta_param.minimum;
             param.maximum = meta_param.maximum;
-            param.step = meta_param.step;
+            param.step    = meta_param.step;
             chain->add_parameter(i, shader->num_parameters, meta_param.id);
             shader->num_parameters++;
          }
@@ -3004,7 +2968,7 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
             pass->filter == RARCH_FILTER_LINEAR ? VULKAN_FILTER_CHAIN_LINEAR :
             VULKAN_FILTER_CHAIN_NEAREST;
       }
-      pass_info.address    = wrap_to_address(pass->wrap);
+      pass_info.address    = vk_wrap_to_address(pass->wrap);
       pass_info.max_levels = 1;
 
       /* TODO: Expose max_levels in slangp.
@@ -3025,18 +2989,16 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
 
       if (!pass->fbo.valid)
       {
-         pass_info.scale_type_x = i + 1 == shader->passes
-            ? VULKAN_FILTER_CHAIN_SCALE_VIEWPORT
-            : VULKAN_FILTER_CHAIN_SCALE_SOURCE;
-         pass_info.scale_type_y = i + 1 == shader->passes
-            ? VULKAN_FILTER_CHAIN_SCALE_VIEWPORT
-            : VULKAN_FILTER_CHAIN_SCALE_SOURCE;
-         pass_info.scale_x = 1.0f;
-         pass_info.scale_y = 1.0f;
+         pass_info.scale_type_x    = VULKAN_FILTER_CHAIN_SCALE_SOURCE;
+         pass_info.scale_type_y    = VULKAN_FILTER_CHAIN_SCALE_SOURCE;
+         pass_info.scale_x         = 1.0f;
+         pass_info.scale_y         = 1.0f;
 
          if (i + 1 == shader->passes)
          {
-            pass_info.rt_format = tmpinfo.swapchain.format;
+            pass_info.scale_type_x = VULKAN_FILTER_CHAIN_SCALE_VIEWPORT;
+            pass_info.scale_type_y = VULKAN_FILTER_CHAIN_SCALE_VIEWPORT;
+            pass_info.rt_format    = tmpinfo.swapchain.format;
 
             if (explicit_format)
                RARCH_WARN("[slang]: Using explicit format for last pass in chain,"
@@ -3044,7 +3006,8 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
          }
          else
          {
-            pass_info.rt_format = glslang_format_to_vk(output.meta.rt_format);
+            pass_info.rt_format    = glslang_format_to_vk(
+                  output.meta.rt_format);
             RARCH_LOG("[slang]: Using render target format %s for pass output #%u.\n",
                   glslang_format_to_string(output.meta.rt_format), i);
          }
@@ -3058,24 +3021,25 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
          else if (pass->fbo.fp_fbo)
             output.meta.rt_format = SLANG_FORMAT_R16G16B16A16_SFLOAT;
 
-         pass_info.rt_format = glslang_format_to_vk(output.meta.rt_format);
+         pass_info.rt_format      = glslang_format_to_vk(output.meta.rt_format);
+
          RARCH_LOG("[slang]: Using render target format %s for pass output #%u.\n",
                glslang_format_to_string(output.meta.rt_format), i);
 
          switch (pass->fbo.type_x)
          {
             case RARCH_SCALE_INPUT:
-               pass_info.scale_x = pass->fbo.scale_x;
+               pass_info.scale_x      = pass->fbo.scale_x;
                pass_info.scale_type_x = VULKAN_FILTER_CHAIN_SCALE_SOURCE;
                break;
 
             case RARCH_SCALE_ABSOLUTE:
-               pass_info.scale_x = float(pass->fbo.abs_x);
+               pass_info.scale_x      = float(pass->fbo.abs_x);
                pass_info.scale_type_x = VULKAN_FILTER_CHAIN_SCALE_ABSOLUTE;
                break;
 
             case RARCH_SCALE_VIEWPORT:
-               pass_info.scale_x = pass->fbo.scale_x;
+               pass_info.scale_x      = pass->fbo.scale_x;
                pass_info.scale_type_x = VULKAN_FILTER_CHAIN_SCALE_VIEWPORT;
                break;
          }
@@ -3083,17 +3047,17 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
          switch (pass->fbo.type_y)
          {
             case RARCH_SCALE_INPUT:
-               pass_info.scale_y = pass->fbo.scale_y;
+               pass_info.scale_y      = pass->fbo.scale_y;
                pass_info.scale_type_y = VULKAN_FILTER_CHAIN_SCALE_SOURCE;
                break;
 
             case RARCH_SCALE_ABSOLUTE:
-               pass_info.scale_y = float(pass->fbo.abs_y);
+               pass_info.scale_y      = float(pass->fbo.abs_y);
                pass_info.scale_type_y = VULKAN_FILTER_CHAIN_SCALE_ABSOLUTE;
                break;
 
             case RARCH_SCALE_VIEWPORT:
-               pass_info.scale_y = pass->fbo.scale_y;
+               pass_info.scale_y      = pass->fbo.scale_y;
                pass_info.scale_type_y = VULKAN_FILTER_CHAIN_SCALE_VIEWPORT;
                break;
          }

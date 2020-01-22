@@ -3175,3 +3175,37 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
 
    return true;
 }
+
+void vulkan_initialize_render_pass(VkDevice device, VkFormat format,
+      VkRenderPass *render_pass)
+{
+   VkRenderPassCreateInfo rp_info     = {
+      VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO };
+   VkAttachmentReference color_ref    = { 0,
+      VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
+   VkAttachmentDescription attachment = {0};
+   VkSubpassDescription subpass       = {0};
+
+   /* We will always write to the entire framebuffer,
+    * so we don't really need to clear. */
+   attachment.format            = format;
+   attachment.samples           = VK_SAMPLE_COUNT_1_BIT;
+   attachment.loadOp            = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+   attachment.storeOp           = VK_ATTACHMENT_STORE_OP_STORE;
+   attachment.stencilLoadOp     = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+   attachment.stencilStoreOp    = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+
+   attachment.initialLayout     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+   attachment.finalLayout       = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+   subpass.pipelineBindPoint    = VK_PIPELINE_BIND_POINT_GRAPHICS;
+   subpass.colorAttachmentCount = 1;
+   subpass.pColorAttachments    = &color_ref;
+
+   rp_info.attachmentCount      = 1;
+   rp_info.pAttachments         = &attachment;
+   rp_info.subpassCount         = 1;
+   rp_info.pSubpasses           = &subpass;
+
+   vkCreateRenderPass(device, &rp_info, NULL, render_pass);
+}
