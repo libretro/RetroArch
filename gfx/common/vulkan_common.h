@@ -619,6 +619,12 @@ void vulkan_framebuffer_clear(VkImage image, VkCommandBuffer cmd);
 void vulkan_initialize_render_pass(VkDevice device,
       VkFormat format, VkRenderPass *render_pass);
 
+void vulkan_pass_set_texture(
+      VkDevice device,
+      VkDescriptorSet set, VkSampler sampler,
+      unsigned binding,
+      VkImageView imageView, VkImageLayout imageLayout);
+
 RETRO_END_DECLS
 
 #endif

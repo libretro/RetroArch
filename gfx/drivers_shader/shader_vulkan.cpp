@@ -431,9 +431,6 @@ class Pass
       bool init_pipeline();
       bool init_pipeline_layout();
 
-      void set_texture(VkDescriptorSet set, unsigned binding,
-            const Texture &texture);
-
       void set_semantic_texture(VkDescriptorSet set, slang_texture_semantic semantic,
             const Texture &texture);
       void set_semantic_texture_array(VkDescriptorSet set,
@@ -2018,36 +2015,14 @@ bool Pass::build()
          filtered_parameters.push_back(parameters[i]);
    }
 
-   if (!init_pipeline())
-      return false;
-
-   return true;
-}
-
-void Pass::set_texture(VkDescriptorSet set, unsigned binding,
-      const Texture &texture)
-{
-   VkDescriptorImageInfo image_info;
-   VkWriteDescriptorSet write = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
-
-   image_info.sampler         = common->samplers[texture.filter][texture.mip_filter][texture.address];
-   image_info.imageView       = texture.texture.view;
-   image_info.imageLayout     = texture.texture.layout;
-
-   write.dstSet               = set;
-   write.dstBinding           = binding;
-   write.descriptorCount      = 1;
-   write.descriptorType       = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-   write.pImageInfo           = &image_info;
-
-   vkUpdateDescriptorSets(device, 1, &write, 0, nullptr);
+   return init_pipeline();
 }
 
 void Pass::set_semantic_texture(VkDescriptorSet set,
       slang_texture_semantic semantic, const Texture &texture)
 {
    if (reflection.semantic_textures[semantic][0].texture)
-      set_texture(set, reflection.semantic_textures[semantic][0].binding, texture);
+      vulkan_pass_set_texture(device, set, common->samplers[texture.filter][texture.mip_filter][texture.address], reflection.semantic_textures[semantic][0].binding, texture.texture.view, texture.texture.layout);
 }
 
 void Pass::set_semantic_texture_array(VkDescriptorSet set,
@@ -2056,7 +2031,7 @@ void Pass::set_semantic_texture_array(VkDescriptorSet set,
 {
    if (index < reflection.semantic_textures[semantic].size() &&
          reflection.semantic_textures[semantic][index].texture)
-      set_texture(set, reflection.semantic_textures[semantic][index].binding, texture);
+      vulkan_pass_set_texture(device, set, common->samplers[texture.filter][texture.mip_filter][texture.address],  reflection.semantic_textures[semantic][index].binding, texture.texture.view, texture.texture.layout);
 }
 
 void Pass::build_semantic_texture_array_vec4(uint8_t *data, slang_texture_semantic semantic,

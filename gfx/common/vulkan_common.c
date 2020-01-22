@@ -3463,3 +3463,25 @@ void vulkan_framebuffer_clear(VkImage image, VkCommandBuffer cmd)
          VK_PIPELINE_STAGE_TRANSFER_BIT,
          VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
 }
+
+void vulkan_pass_set_texture(
+      VkDevice device,
+      VkDescriptorSet set, VkSampler sampler,
+      unsigned binding,
+      VkImageView imageView, VkImageLayout imageLayout)
+{
+   VkDescriptorImageInfo image_info;
+   VkWriteDescriptorSet write = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
+
+   image_info.sampler         = sampler;
+   image_info.imageView       = imageView;
+   image_info.imageLayout     = imageLayout;
+
+   write.dstSet               = set;
+   write.dstBinding           = binding;
+   write.descriptorCount      = 1;
+   write.descriptorType       = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+   write.pImageInfo           = &image_info;
+
+   vkUpdateDescriptorSets(device, 1, &write, 0, NULL);
+}
