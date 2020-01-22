@@ -42,6 +42,7 @@
 #include <libretro.h>
 #include <libretro_vulkan.h>
 
+#include "../video_defines.h"
 #include "../../driver.h"
 #include "../../retroarch.h"
 #include "../../verbosity.h"
@@ -599,6 +600,14 @@ void vulkan_set_uniform_buffer(
       VkBuffer buffer,
       VkDeviceSize offset,
       VkDeviceSize range);
+
+void vulkan_framebuffer_generate_mips(
+      VkFramebuffer framebuffer,
+      VkImage image,
+      struct Size2D size,
+      VkCommandBuffer cmd,
+      unsigned levels
+      );
 
 void vulkan_initialize_render_pass(VkDevice device,
       VkFormat format, VkRenderPass *render_pass);

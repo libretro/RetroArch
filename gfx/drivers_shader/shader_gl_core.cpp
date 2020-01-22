@@ -404,11 +404,6 @@ static void build_vec4(float *data, unsigned width, unsigned height)
    data[3] = 1.0f / float(height);
 }
 
-struct Size2D
-{
-   unsigned width, height;
-};
-
 struct Texture
 {
    gl_core_filter_chain_texture texture;

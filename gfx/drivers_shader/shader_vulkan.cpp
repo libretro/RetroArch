@@ -116,11 +116,6 @@ static void build_vec4(float *data, unsigned width, unsigned height)
    data[3] = 1.0f / float(height);
 }
 
-struct Size2D
-{
-   unsigned width, height;
-};
-
 struct Texture
 {
    vulkan_filter_chain_texture texture;
@@ -240,7 +235,6 @@ class Framebuffer
       void copy(VkCommandBuffer cmd, VkImage image, VkImageLayout layout);
 
       unsigned get_levels() const { return levels; }
-      void generate_mips(VkCommandBuffer cmd);
 
    private:
       Size2D size;
@@ -2368,7 +2362,12 @@ void Pass::build_commands(
       vkCmdEndRenderPass(cmd);
 
       if (framebuffer->get_levels() > 1)
-         framebuffer->generate_mips(cmd);
+         vulkan_framebuffer_generate_mips(
+               framebuffer->get_framebuffer(),
+               framebuffer->get_image(),
+               framebuffer->get_size(),
+               cmd,
+               framebuffer->get_levels());
       else
       {
          /* Barrier to sync with next pass. */
@@ -2440,144 +2439,6 @@ void Framebuffer::clear(VkCommandBuffer cmd)
          VK_ACCESS_SHADER_READ_BIT,
          VK_PIPELINE_STAGE_TRANSFER_BIT,
          VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
-}
-
-void Framebuffer::generate_mips(VkCommandBuffer cmd)
-{
-   unsigned i;
-   /* This is run every frame, so make sure
-    * we aren't opting into the "lazy" way of doing this. :) */
-   VkImageMemoryBarrier barriers[2] = {
-      { VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER },
-      { VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER },
-   };
-
-   /* First, transfer the input mip level to TRANSFER_SRC_OPTIMAL.
-    * This should allow the surface to stay compressed.
-    * All subsequent mip-layers are now transferred into DST_OPTIMAL from
-    * UNDEFINED at this point.
-    */
-
-   /* Input */
-   barriers[0].srcAccessMask                 = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-   barriers[0].dstAccessMask                 = VK_ACCESS_TRANSFER_READ_BIT;
-   barriers[0].oldLayout                     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-   barriers[0].newLayout                     = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-   barriers[0].srcQueueFamilyIndex           = VK_QUEUE_FAMILY_IGNORED;
-   barriers[0].dstQueueFamilyIndex           = VK_QUEUE_FAMILY_IGNORED;
-   barriers[0].image                         = image;
-   barriers[0].subresourceRange.aspectMask   = VK_IMAGE_ASPECT_COLOR_BIT;
-   barriers[0].subresourceRange.baseMipLevel = 0;
-   barriers[0].subresourceRange.levelCount   = 1;
-   barriers[0].subresourceRange.layerCount   = VK_REMAINING_ARRAY_LAYERS;
-
-   /* The rest of the mip chain */
-   barriers[1].srcAccessMask                 = 0;
-   barriers[1].dstAccessMask                 = VK_ACCESS_TRANSFER_WRITE_BIT;
-   barriers[1].oldLayout                     = VK_IMAGE_LAYOUT_UNDEFINED;
-   barriers[1].newLayout                     = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-   barriers[1].srcQueueFamilyIndex           = VK_QUEUE_FAMILY_IGNORED;
-   barriers[1].dstQueueFamilyIndex           = VK_QUEUE_FAMILY_IGNORED;
-   barriers[1].image                         = image;
-   barriers[1].subresourceRange.aspectMask   = VK_IMAGE_ASPECT_COLOR_BIT;
-   barriers[1].subresourceRange.baseMipLevel = 1;
-   barriers[1].subresourceRange.levelCount   = VK_REMAINING_MIP_LEVELS;
-   barriers[1].subresourceRange.layerCount   = VK_REMAINING_ARRAY_LAYERS;
-
-   vkCmdPipelineBarrier(cmd,
-         VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
-         VK_PIPELINE_STAGE_TRANSFER_BIT,
-         false,
-         0, nullptr,
-         0, nullptr,
-         2, barriers);
-
-   for (i = 1; i < levels; i++)
-   {
-      unsigned src_width, src_height, target_width, target_height;
-      VkImageBlit blit_region = {};
-
-      /* For subsequent passes, we have to transition
-       * from DST_OPTIMAL to SRC_OPTIMAL,
-       * but only do so one mip-level at a time. */
-      if (i > 1)
-      {
-         barriers[0].srcAccessMask                 = VK_ACCESS_TRANSFER_WRITE_BIT;
-         barriers[0].dstAccessMask                 = VK_ACCESS_TRANSFER_READ_BIT;
-         barriers[0].subresourceRange.baseMipLevel = i - 1;
-         barriers[0].subresourceRange.levelCount   = 1;
-         barriers[0].oldLayout                     = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-         barriers[0].newLayout                     = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-
-         vkCmdPipelineBarrier(cmd,
-               VK_PIPELINE_STAGE_TRANSFER_BIT,
-               VK_PIPELINE_STAGE_TRANSFER_BIT,
-               false,
-               0, nullptr,
-               0, nullptr,
-               1, barriers);
-      }
-
-      src_width                                 = MAX(size.width >> (i - 1), 1u);
-      src_height                                = MAX(size.height >> (i - 1), 1u);
-      target_width                              = MAX(size.width >> i, 1u);
-      target_height                             = MAX(size.height >> i, 1u);
-
-      blit_region.srcSubresource.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
-      blit_region.srcSubresource.mipLevel       = i - 1;
-      blit_region.srcSubresource.baseArrayLayer = 0;
-      blit_region.srcSubresource.layerCount     = 1;
-      blit_region.dstSubresource                = blit_region.srcSubresource;
-      blit_region.dstSubresource.mipLevel       = i;
-      blit_region.srcOffsets[1].x               = src_width;
-      blit_region.srcOffsets[1].y               = src_height;
-      blit_region.srcOffsets[1].z               = 1;
-      blit_region.dstOffsets[1].x               = target_width;
-      blit_region.dstOffsets[1].y               = target_height;
-      blit_region.dstOffsets[1].z               = 1;
-
-      vkCmdBlitImage(cmd,
-            image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-            image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-            1, &blit_region, VK_FILTER_LINEAR);
-   }
-
-   /* We are now done, and we have all mip-levels except
-    * the last in TRANSFER_SRC_OPTIMAL,
-    * and the last one still on TRANSFER_DST_OPTIMAL,
-    * so do a final barrier which
-    * moves everything to SHADER_READ_ONLY_OPTIMAL in
-    * one go along with the execution barrier to next pass.
-    * Read-to-read memory barrier, so only need execution
-    * barrier for first transition.
-    */
-   barriers[0].srcAccessMask                 = VK_ACCESS_TRANSFER_READ_BIT;
-   barriers[0].dstAccessMask                 = VK_ACCESS_SHADER_READ_BIT;
-   barriers[0].subresourceRange.baseMipLevel = 0;
-   barriers[0].subresourceRange.levelCount   = levels - 1;
-   barriers[0].oldLayout                     = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-   barriers[0].newLayout                     = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-
-   /* This is read-after-write barrier. */
-   barriers[1].srcAccessMask                 = VK_ACCESS_TRANSFER_WRITE_BIT;
-   barriers[1].dstAccessMask                 = VK_ACCESS_SHADER_READ_BIT;
-   barriers[1].subresourceRange.baseMipLevel = levels - 1;
-   barriers[1].subresourceRange.levelCount   = 1;
-   barriers[1].oldLayout                     = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-   barriers[1].newLayout                     = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-
-   vkCmdPipelineBarrier(cmd,
-         VK_PIPELINE_STAGE_TRANSFER_BIT,
-         VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-         false,
-         0, nullptr,
-         0, nullptr,
-         2, barriers);
-
-   /* Next pass will wait for ALL_GRAPHICS_BIT, and since
-    * we have dstStage as FRAGMENT_SHADER,
-    * the dependency chain will ensure we don't start
-    * next pass until the mipchain is complete. */
 }
 
 void Framebuffer::copy(VkCommandBuffer cmd,
