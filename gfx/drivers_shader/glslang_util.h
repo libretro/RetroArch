@@ -21,6 +21,8 @@
 
 #include <lists/string_list.h>
 
+#include "slang_reflection.h"
+
 typedef enum glslang_format
 {
    SLANG_FORMAT_UNKNOWN = 0,
@@ -74,6 +76,12 @@ enum glslang_format glslang_find_format(const char *fmt);
 
 bool glslang_read_shader_file(const char *path,
       struct string_list *output, bool root_file);
+
+bool slang_texture_semantic_is_array(enum slang_texture_semantic sem);
+
+enum slang_texture_semantic slang_name_to_texture_semantic_array(
+      const char *name, const char **names,
+      unsigned *index);
 
 RETRO_END_DECLS
 

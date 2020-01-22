@@ -20,6 +20,7 @@
 #include <algorithm>
 #include <stdio.h>
 #include <compat/strl.h>
+#include "glslang_util.h"
 #include "../../verbosity.h"
 
 using namespace std;
@@ -53,23 +54,6 @@ static const char *semantic_uniform_names[] = {
    "FrameDirection",
 };
 
-static bool slang_texture_semantic_is_array(slang_texture_semantic sem)
-{
-   switch (sem)
-   {
-      case SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY:
-      case SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT:
-      case SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK:
-      case SLANG_TEXTURE_SEMANTIC_USER:
-         return true;
-
-      default:
-         break;
-   }
-
-   return false;
-}
-
 slang_reflection::slang_reflection()
 {
    unsigned i;
@@ -79,39 +63,6 @@ slang_reflection::slang_reflection()
             slang_texture_semantic_is_array(
                static_cast<slang_texture_semantic>(i))
             ? 0 : 1);
-}
-
-static slang_texture_semantic slang_name_to_texture_semantic_array(
-      const string &name, const char **names,
-      unsigned *index)
-{
-   unsigned i = 0;
-   while (*names)
-   {
-      const char                   *n = *names;
-      slang_texture_semantic semantic = static_cast<slang_texture_semantic>(i);
-
-      if (slang_texture_semantic_is_array(semantic))
-      {
-         size_t baselen = strlen(n);
-         int        cmp = strncmp(n, name.c_str(), baselen);
-
-         if (cmp == 0)
-         {
-            *index = (unsigned)strtoul(name.c_str() + baselen, nullptr, 0);
-            return semantic;
-         }
-      }
-      else if (name == n)
-      {
-         *index = 0;
-         return semantic;
-      }
-
-      i++;
-      names++;
-   }
-   return SLANG_INVALID_TEXTURE_SEMANTIC;
 }
 
 static slang_texture_semantic slang_name_to_texture_semantic(
@@ -126,7 +77,7 @@ static slang_texture_semantic slang_name_to_texture_semantic(
    }
 
    return slang_name_to_texture_semantic_array(
-         name, texture_semantic_names, index);
+         name.c_str(), texture_semantic_names, index);
 }
 
 static slang_texture_semantic slang_uniform_name_to_texture_semantic(
@@ -140,7 +91,7 @@ static slang_texture_semantic slang_uniform_name_to_texture_semantic(
       return itr->second.semantic;
    }
 
-   return slang_name_to_texture_semantic_array(name,
+   return slang_name_to_texture_semantic_array(name.c_str(),
          texture_semantic_uniform_names, index);
 }
 
