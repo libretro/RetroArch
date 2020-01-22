@@ -25,6 +25,7 @@
 
 #include "core_type.h"
 #include "input/input_defines.h"
+#include "disk_control_interface.h"
 
 RETRO_BEGIN_DECLS
 
@@ -67,8 +68,8 @@ typedef struct rarch_system_info
 
    bool supports_vfs;
 
-   struct retro_disk_control_ext_callback  disk_control_cb;
-   struct retro_location_callback          location_cb;
+   disk_control_interface_t disk_control;
+   struct retro_location_callback location_cb;
 
    struct
    {

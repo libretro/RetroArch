@@ -6116,15 +6116,7 @@ static int action_ok_disk_cycle_tray_status(const char *path,
 
    /* Get disk eject state *before* toggling drive status */
    if (sys_info)
-   {
-      const struct retro_disk_control_ext_callback *control =
-            (const struct retro_disk_control_ext_callback*)
-                  &sys_info->disk_control_cb;
-
-      if (control)
-         if (control->get_eject_state)
-            disk_ejected = control->get_eject_state();
-   }
+      disk_ejected = disk_control_get_eject_state(&sys_info->disk_control);
 
    /* Only want to display a notification if we are
     * going to resume content immediately after
