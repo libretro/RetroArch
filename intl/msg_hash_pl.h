@@ -3531,10 +3531,6 @@ MSG_HASH(MSG_GAME_REMAP_FILE_LOADED,
       "Załadowano plik remapu gry.")
 MSG_HASH(MSG_CORE_REMAP_FILE_LOADED,
       "Załadowano plik wymiany rdzenia.")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_AUTOMATICALLY_ADD_CONTENT_TO_PLAYLIST,
-      "Automatycznie dodawaj zawartość do listy odtwarzania")
-MSG_HASH(MENU_ENUM_SUBLABEL_AUTOMATICALLY_ADD_CONTENT_TO_PLAYLIST,
-      "Automatycznie skanuje załadowaną zawartość, aby pojawiły się w listach odtwarzania.")
 MSG_HASH(MSG_SCANNING_OF_FILE_FINISHED,
       "Skanowanie pliku zakończone")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,

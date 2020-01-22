@@ -7013,14 +7013,6 @@ MSG_HASH(
     "Failed to create second instance. RunAhead will now use only one instance."
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_AUTOMATICALLY_ADD_CONTENT_TO_PLAYLIST,
-    "Oynatma listelerine otomatik olarak içerik ekleyin"
-    )
-MSG_HASH(
-    MENU_ENUM_SUBLABEL_AUTOMATICALLY_ADD_CONTENT_TO_PLAYLIST,
-    "Oynatılan tarayıcı ile yüklü içeriği otomatik olarak tarar."
-    )
-MSG_HASH(
     MSG_SCANNING_OF_FILE_FINISHED,
     "Dosyanın taranması tamamlandı"
     )

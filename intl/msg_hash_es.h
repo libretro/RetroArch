@@ -7514,14 +7514,6 @@ MSG_HASH(
     "Error al crear la segunda instancia. La reducción predictiva solo usará una a partir de este momento."
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_AUTOMATICALLY_ADD_CONTENT_TO_PLAYLIST,
-    "Autoagregar contenidos a listas de reproducción"
-    )
-MSG_HASH(
-    MENU_ENUM_SUBLABEL_AUTOMATICALLY_ADD_CONTENT_TO_PLAYLIST,
-    "Busca automáticamente los contenidos para que aparezcan en las listas de reproducción."
-    )
-MSG_HASH(
     MSG_SCANNING_OF_FILE_FINISHED,
     "Archivo escaneado"
     )

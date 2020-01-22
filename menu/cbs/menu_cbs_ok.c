@@ -1332,6 +1332,7 @@ void handle_dbscan_finished(retro_task_t *task,
 
 static void content_add_to_playlist(const char *path)
 {
+#if 0
 #ifdef HAVE_LIBRETRODB
    settings_t *settings = config_get_ptr();
    if (!settings || !settings->bools.automatically_add_content_to_playlist)
@@ -1342,6 +1343,7 @@ static void content_add_to_playlist(const char *path)
          path, false,
          settings->bools.show_hidden_files,
          handle_dbscan_finished);
+#endif
 #endif
 }
 
