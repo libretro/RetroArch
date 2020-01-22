@@ -3209,3 +3209,27 @@ void vulkan_initialize_render_pass(VkDevice device, VkFormat format,
 
    vkCreateRenderPass(device, &rp_info, NULL, render_pass);
 }
+
+void vulkan_set_uniform_buffer(
+      VkDevice device,
+      VkDescriptorSet set,
+      unsigned binding,
+      VkBuffer buffer,
+      VkDeviceSize offset,
+      VkDeviceSize range)
+{
+   VkDescriptorBufferInfo buffer_info;
+   VkWriteDescriptorSet write = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
+
+   buffer_info.buffer         = buffer;
+   buffer_info.offset         = offset;
+   buffer_info.range          = range;
+
+   write.dstSet               = set;
+   write.dstBinding           = binding;
+   write.descriptorCount      = 1;
+   write.descriptorType       = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+   write.pBufferInfo          = &buffer_info;
+
+   vkUpdateDescriptorSets(device, 1, &write, 0, NULL);
+}
