@@ -243,6 +243,7 @@ OBJ += \
        $(LIBRETRO_COMM_DIR)/file/config_file.o \
        $(LIBRETRO_COMM_DIR)/file/config_file_userdata.o \
        runtime_file.o \
+       disk_index_file.o \
        tasks/task_screenshot.o \
        tasks/task_powerstate.o \
        $(LIBRETRO_COMM_DIR)/gfx/scaler/scaler.o \
@@ -261,7 +262,8 @@ OBJ += \
        performance_counters.o \
        verbosity.o \
        $(LIBRETRO_COMM_DIR)/playlists/label_sanitization.o \
-       manual_content_scan.o
+       manual_content_scan.o \
+       disk_control_interface.o
 
 ifeq ($(HAVE_AUDIOMIXER), 1)
    DEFINES += -DHAVE_AUDIOMIXER

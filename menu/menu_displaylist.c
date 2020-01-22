@@ -2026,7 +2026,7 @@ static int menu_displaylist_parse_load_content_settings(
       }
 
       if ((!rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
-            && system->disk_control_cb.get_num_images)
+            && disk_control_enabled(&system->disk_control))
          if (menu_entries_append_enum(list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISK_OPTIONS),
                msg_hash_to_str(MENU_ENUM_LABEL_DISK_OPTIONS),
@@ -3242,28 +3242,19 @@ static unsigned menu_displaylist_parse_content_information(
 static unsigned menu_displaylist_parse_disk_options(
       file_list_t *list)
 {
-   unsigned count                                        = 0;
-   rarch_system_info_t *sys_info                         =
-         runloop_get_system_info();
-   const struct retro_disk_control_ext_callback *control = NULL;
-   bool disk_ejected;
+   unsigned count                = 0;
+   rarch_system_info_t *sys_info = runloop_get_system_info();
+   bool disk_ejected             = false;
 
    /* Sanity Check */
    if (!sys_info)
       return count;
 
-   control = (const struct retro_disk_control_ext_callback*)
-         &sys_info->disk_control_cb;
-
-   if (!control ||
-       !control->get_num_images ||
-       !control->get_image_index ||
-       !control->get_eject_state ||
-       !control->set_eject_state)
+   if (!disk_control_enabled(&sys_info->disk_control))
       return count;
 
    /* Check whether disk is currently ejected */
-   disk_ejected = control->get_eject_state();
+   disk_ejected = disk_control_get_eject_state(&sys_info->disk_control);
 
    /* Always show a 'DISK_CYCLE_TRAY_STATUS' entry
     * > These perform the same function, but just have
@@ -3294,8 +3285,9 @@ static unsigned menu_displaylist_parse_disk_options(
                MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_INDEX, 0, 0))
          count++;
 
-   /* If replace_image_index() is undefined, can stop here */
-   if (!control->replace_image_index)
+   /* If core does not support appending images,
+    * can stop here */
+   if (!disk_control_append_enabled(&sys_info->disk_control))
       return count;
 
    /* Append image does the following:
@@ -5356,25 +5348,19 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
 
             if (sys_info)
             {
-               const struct retro_disk_control_ext_callback *control =
-                     (const struct retro_disk_control_ext_callback*)
-                           &sys_info->disk_control_cb;
-
-               /* Check that the required disk control interface
-                * functions are defined */
-               if (control &&
-                   control->get_num_images &&
-                   control->get_image_index)
+               if (disk_control_enabled(&sys_info->disk_control))
                {
-                  unsigned num_images    = control->get_num_images();
-                  unsigned current_image = control->get_image_index();
+                  unsigned num_images    =
+                        disk_control_get_num_images(&sys_info->disk_control);
+                  unsigned current_image =
+                        disk_control_get_image_index(&sys_info->disk_control);
                   unsigned num_digits    = 0;
                   unsigned i;
 
                   /* If core supports labels, index value string
                    * should be padded to maximum width (otherwise
                    * labels will be misaligned/ugly) */
-                  if (control->get_image_label)
+                  if (disk_control_image_label_enabled(&sys_info->disk_control))
                   {
                      unsigned digit_counter = num_images;
                      do
@@ -5395,9 +5381,9 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
                      image_label[0]       = '\0';
 
                      /* Get image label, if supported by core */
-                     if (control->get_image_label)
-                        if (!control->get_image_label(i, image_label, sizeof(image_label)))
-                           image_label[0] = '\0';
+                     disk_control_get_image_label(
+                           &sys_info->disk_control,
+                           i, image_label, sizeof(image_label));
 
                      /* Get string representation of disk index
                       * > Note that displayed index starts at '1',

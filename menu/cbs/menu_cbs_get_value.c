@@ -762,29 +762,22 @@ static void menu_action_setting_disp_set_label_menu_disk_index(
       const char *path,
       char *s2, size_t len2)
 {
-   unsigned images = 0, current                    = 0;
-   struct retro_disk_control_ext_callback *control = NULL;
-   rarch_system_info_t *system                     = runloop_get_system_info();
+   unsigned images             = 0;
+   unsigned current            = 0;
+   rarch_system_info_t *system = runloop_get_system_info();
 
    if (!system)
       return;
 
-   control = &system->disk_control_cb;
-
-   if (!control)
+   if (!disk_control_enabled(&system->disk_control))
       return;
 
    *w = 19;
    *s = '\0';
    strlcpy(s2, path, len2);
 
-   if (!control->get_num_images)
-      return;
-   if (!control->get_image_index)
-      return;
-
-   images  = control->get_num_images();
-   current = control->get_image_index();
+   images  = disk_control_get_num_images(&system->disk_control);
+   current = disk_control_get_image_index(&system->disk_control);
 
    if (current >= images)
       strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_DISK), len);
