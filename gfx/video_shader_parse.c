@@ -1259,20 +1259,6 @@ enum rarch_shader_type video_shader_get_type_from_ext(const char *ext,
    return RARCH_SHADER_NONE;
 }
 
-/**
- * video_shader_parse_type:
- * @path              : Shader path.
- *
- * Parses type of shader.
- *
- * Returns: value of shader type if it could be determined,
- * otherwise RARCH_SHADER_NONE.
- **/
-enum rarch_shader_type video_shader_parse_type(const char *path)
-{
-   return video_shader_get_type_from_ext(path_get_extension(path), NULL);
-}
-
 bool video_shader_check_for_changes(void)
 {
    if (!file_change_data)
