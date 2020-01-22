@@ -2265,7 +2265,9 @@ void Pass::build_commands(
    build_semantics(sets[sync_index], u, mvp, original, source);
 
    if (reflection.ubo_stage_mask)
-      vulkan_set_uniform_buffer(device, sets[sync_index], reflection.ubo_binding,
+      vulkan_set_uniform_buffer(device,
+            sets[sync_index],
+            reflection.ubo_binding,
             common->ubo->get_buffer(),
             ubo_offset + sync_index * common->ubo_sync_index_stride,
             reflection.ubo_size);
@@ -2285,7 +2287,8 @@ void Pass::build_commands(
             VK_IMAGE_LAYOUT_UNDEFINED,
             VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
             0,
-            VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+            VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | 
+            VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
             VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
             VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
 
@@ -2371,7 +2374,8 @@ void Pass::build_commands(
          /* Barrier to sync with next pass. */
          vulkan_image_layout_transition_levels(
                cmd,
-               framebuffer->get_image(),VK_REMAINING_MIP_LEVELS,
+               framebuffer->get_image(),
+               VK_REMAINING_MIP_LEVELS,
                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,

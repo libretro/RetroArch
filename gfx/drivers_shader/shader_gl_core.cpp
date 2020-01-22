@@ -293,25 +293,6 @@ static unsigned num_miplevels(unsigned width, unsigned height)
    return levels;
 }
 
-static void build_default_matrix(float *data)
-{
-   data[0] = 2.0f;
-   data[1] = 0.0f;
-   data[2] = 0.0f;
-   data[3] = 0.0f;
-   data[4] = 0.0f;
-   data[5] = 2.0f;
-   data[6] = 0.0f;
-   data[7] = 0.0f;
-   data[8] = 0.0f;
-   data[9] = 0.0f;
-   data[10] = 2.0f;
-   data[11] = 0.0f;
-   data[12] = -1.0f;
-   data[13] = -1.0f;
-   data[14] = 0.0f;
-   data[15] = 1.0f;
-}
 
 static void build_vec4(float *data, unsigned width, unsigned height)
 {
@@ -560,8 +541,6 @@ public:
    GLuint get_image() const { return image; }
    GLuint get_framebuffer() const { return framebuffer; }
 
-   void copy(const CommonResources &common, GLuint image);
-   void copy_partial(const CommonResources &common, GLuint image, float rx, float ry);
    bool is_complete() const { return complete; }
 
    unsigned get_levels() const { return levels; }
@@ -677,100 +656,6 @@ void Framebuffer::init()
 
    glBindFramebuffer(GL_FRAMEBUFFER, 0);
    glBindTexture(GL_TEXTURE_2D, 0);
-}
-
-void Framebuffer::copy(const CommonResources &common, GLuint image)
-{
-   glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
-   glActiveTexture(GL_TEXTURE2);
-   glBindTexture(GL_TEXTURE_2D, image);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-   glViewport(0, 0, size.width, size.height);
-   glClear(GL_COLOR_BUFFER_BIT);
-
-   glUseProgram(common.quad_program);
-   if (common.quad_loc.flat_ubo_vertex >= 0)
-   {
-      float mvp[16];
-      build_default_matrix(mvp);
-      glUniform4fv(common.quad_loc.flat_ubo_vertex, 4, mvp);
-   }
-
-   /* Draw quad */
-   glDisable(GL_CULL_FACE);
-   glDisable(GL_BLEND);
-   glDisable(GL_DEPTH_TEST);
-   glEnableVertexAttribArray(0);
-   glEnableVertexAttribArray(1);
-   glBindBuffer(GL_ARRAY_BUFFER, common.quad_vbo);
-   glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float),
-                         reinterpret_cast<void *>(uintptr_t(0)));
-   glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float),
-                         reinterpret_cast<void *>(uintptr_t(2 * sizeof(float))));
-   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-   glBindBuffer(GL_ARRAY_BUFFER, 0);
-   glDisableVertexAttribArray(0);
-   glDisableVertexAttribArray(1);
-
-   glUseProgram(0);
-   glBindTexture(GL_TEXTURE_2D, 0);
-   glBindFramebuffer(GL_FRAMEBUFFER, 0);
-}
-
-void Framebuffer::copy_partial(const CommonResources &common, GLuint image, float rx, float ry)
-{
-   GLuint vbo;
-
-   glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
-   glActiveTexture(GL_TEXTURE2);
-   glBindTexture(GL_TEXTURE_2D, image);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-   glViewport(0, 0, size.width, size.height);
-   glClear(GL_COLOR_BUFFER_BIT);
-
-   glUseProgram(common.quad_program);
-   if (common.quad_loc.flat_ubo_vertex >= 0)
-   {
-      float mvp[16];
-      build_default_matrix(mvp);
-      glUniform4fv(common.quad_loc.flat_ubo_vertex, 4, mvp);
-   }
-   glDisable(GL_CULL_FACE);
-   glDisable(GL_BLEND);
-   glDisable(GL_DEPTH_TEST);
-   glEnableVertexAttribArray(0);
-   glEnableVertexAttribArray(1);
-
-   /* A bit crude, but heeeey. */
-   glGenBuffers(1, &vbo);
-   glBindBuffer(GL_ARRAY_BUFFER, vbo);
-
-   const float quad_data[] = {
-      0.0f, 0.0f, 0.0f, 0.0f,
-      1.0f, 0.0f, rx, 0.0f,
-      0.0f, 1.0f, 0.0f, ry,
-      1.0f, 1.0f, rx, ry,
-   };
-
-   glBufferData(GL_ARRAY_BUFFER, sizeof(quad_data), quad_data, GL_STREAM_DRAW);
-   glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float),
-                         reinterpret_cast<void *>(uintptr_t(0)));
-   glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float),
-                         reinterpret_cast<void *>(uintptr_t(2 * sizeof(float))));
-   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-   glBindBuffer(GL_ARRAY_BUFFER, 0);
-   glDeleteBuffers(1, &vbo);
-   glDisableVertexAttribArray(0);
-   glDisableVertexAttribArray(1);
-   glUseProgram(0);
-   glBindTexture(GL_TEXTURE_2D, 0);
-   glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 Framebuffer::~Framebuffer()
@@ -1505,7 +1390,7 @@ void Pass::build_semantics(uint8_t *buffer,
          memcpy(buffer + offset,
                mvp, sizeof(float) * 16);
       else
-         build_default_matrix(reinterpret_cast<float *>(
+         gl_core_build_default_matrix(reinterpret_cast<float *>(
                   buffer + offset));
    }
 
@@ -1518,7 +1403,7 @@ void Pass::build_semantics(uint8_t *buffer,
          memcpy(push_constant_buffer.data() + offset,
                mvp, sizeof(float) * 16);
       else
-         build_default_matrix(reinterpret_cast<float *>(
+         gl_core_build_default_matrix(reinterpret_cast<float *>(
                   push_constant_buffer.data() + offset));
    }
 
@@ -1860,7 +1745,13 @@ void gl_core_filter_chain::update_history()
       tmp->set_size({ input_texture.width, input_texture.height }, input_texture.format);
 
    if (tmp->is_complete())
-      tmp->copy(common, input_texture.image);
+      gl_core_framebuffer_copy(
+            tmp->get_framebuffer(),
+            common.quad_program,
+            common.quad_vbo,
+            common.quad_loc.flat_ubo_vertex,
+            tmp->get_size(),
+            input_texture.image);
 
    /* Should ring buffer, but we don't have *that* many passes. */
    move_backward(begin(original_history), end(original_history) - 1, end(original_history));
@@ -2154,7 +2045,12 @@ void gl_core_filter_chain::set_input_texture(
          copy_framebuffer->set_size({ input_texture.width, input_texture.height }, input_texture.format);
 
       if (copy_framebuffer->is_complete())
-         copy_framebuffer->copy_partial(common, input_texture.image,
+         gl_core_framebuffer_copy_partial(
+               copy_framebuffer->get_framebuffer(),
+               common.quad_program,
+               common.quad_loc.flat_ubo_vertex,
+               copy_framebuffer->get_size(),
+               input_texture.image,
                float(input_texture.width) 
                / input_texture.padded_width,
                float(input_texture.height) 
