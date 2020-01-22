@@ -1096,8 +1096,7 @@ Size2D Pass::get_output_size(const Size2D &original, const Size2D &source) const
 
 void Pass::end_frame()
 {
-   if (framebuffer_feedback)
-      swap(framebuffer, framebuffer_feedback);
+   swap(framebuffer, framebuffer_feedback);
 }
 
 void Pass::build_semantic_vec4(uint8_t *data, slang_semantic semantic,
@@ -1636,7 +1635,6 @@ private:
    bool init_feedback();
    bool init_alias();
    vector<unique_ptr<gl_core_shader::Framebuffer>> original_history;
-   void update_history();
    bool require_clear = false;
    void clear_history_and_feedback();
    void update_feedback_info();
@@ -1668,8 +1666,6 @@ void gl_core_filter_chain::update_history_info()
 void gl_core_filter_chain::update_feedback_info()
 {
    unsigned i;
-   if (common.framebuffer_feedback.empty())
-      return;
 
    for (i = 0; i < passes.size() - 1; i++)
    {
@@ -1705,7 +1701,8 @@ void gl_core_filter_chain::build_offscreen_passes(const gl_core_viewport &vp)
    }
 
    update_history_info();
-   update_feedback_info();
+   if (!common.framebuffer_feedback.empty())
+      update_feedback_info();
 
    const gl_core_shader::Texture original = {
          input_texture,
@@ -1732,32 +1729,6 @@ void gl_core_filter_chain::build_offscreen_passes(const gl_core_viewport &vp)
    }
 }
 
-void gl_core_filter_chain::update_history()
-{
-   unique_ptr<gl_core_shader::Framebuffer> tmp;
-   unique_ptr<gl_core_shader::Framebuffer> &back = original_history.back();
-   swap(back, tmp);
-
-   if (input_texture.width      != tmp->get_size().width  ||
-       input_texture.height     != tmp->get_size().height ||
-       (input_texture.format    != 0 
-        && input_texture.format != tmp->get_format()))
-      tmp->set_size({ input_texture.width, input_texture.height }, input_texture.format);
-
-   if (tmp->is_complete())
-      gl_core_framebuffer_copy(
-            tmp->get_framebuffer(),
-            common.quad_program,
-            common.quad_vbo,
-            common.quad_loc.flat_ubo_vertex,
-            tmp->get_size(),
-            input_texture.image);
-
-   /* Should ring buffer, but we don't have *that* many passes. */
-   move_backward(begin(original_history), end(original_history) - 1, end(original_history));
-   swap(original_history.front(), tmp);
-}
-
 void gl_core_filter_chain::end_frame()
 {
    /* If we need to keep old frames, copy it after fragment is complete.
@@ -1765,7 +1736,31 @@ void gl_core_filter_chain::end_frame()
     * pass is the last that reads from
     * the history and dispatch the copy earlier. */
    if (!original_history.empty())
-      update_history();
+   {
+      /* Update history */
+      unique_ptr<gl_core_shader::Framebuffer> tmp;
+      unique_ptr<gl_core_shader::Framebuffer> &back = original_history.back();
+      swap(back, tmp);
+
+      if (input_texture.width      != tmp->get_size().width  ||
+            input_texture.height     != tmp->get_size().height ||
+            (input_texture.format    != 0 
+             && input_texture.format != tmp->get_format()))
+         tmp->set_size({ input_texture.width, input_texture.height }, input_texture.format);
+
+      if (tmp->is_complete())
+         gl_core_framebuffer_copy(
+               tmp->get_framebuffer(),
+               common.quad_program,
+               common.quad_vbo,
+               common.quad_loc.flat_ubo_vertex,
+               tmp->get_size(),
+               input_texture.image);
+
+      /* Should ring buffer, but we don't have *that* many passes. */
+      move_backward(begin(original_history), end(original_history) - 1, end(original_history));
+      swap(original_history.front(), tmp);
+   }
 }
 
 void gl_core_filter_chain::build_viewport_pass(
@@ -1813,7 +1808,11 @@ void gl_core_filter_chain::build_viewport_pass(
 
    /* For feedback FBOs, swap current and previous. */
    for (i = 0; i < passes.size(); i++)
-      passes[i]->end_frame();
+   {
+      gl_core_shader::Framebuffer *fb = passes[i]->get_feedback_framebuffer();
+      if (fb)
+         passes[i]->end_frame();
+   }
 }
 
 bool gl_core_filter_chain::init_history()
