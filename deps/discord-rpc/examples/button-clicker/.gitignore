@@ -1,8 +1,0 @@
-/Library/
-/Temp/
-/obj/
-/Assets/Plugins/
-/Assets/Plugins.meta
-*.sln
-*.csproj
-*.userprefs

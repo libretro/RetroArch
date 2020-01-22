@@ -10,16 +10,7 @@
 #include <unistd.h>
 
 #include <boolean.h>
-
-static bool Mkdir(const char* path)
-{
-   int result = mkdir(path, 0755);
-   if (result == 0)
-      return true;
-   if (errno == EEXIST)
-      return true;
-   return false;
-}
+#include <file/file_path.h>
 
 /* we want to register games so we can run them from 
  * Discord client as discord-<appid>:// */
@@ -64,15 +55,15 @@ void Discord_Register(const char* applicationId, const char* command)
    snprintf(desktopFilename, sizeof(desktopFilename), "/discord-%s.desktop", applicationId);
 
    snprintf(desktopFilePath, sizeof(desktopFilePath), "%s/.local", home);
-   if (!Mkdir(desktopFilePath))
+   if (!path_mkdir(desktopFilePath))
       return;
-   strcat(desktopFilePath, "/share");
-   if (!Mkdir(desktopFilePath))
+   strlcat(desktopFilePath, "/share", sizeof(desktopFilePath));
+   if (!path_mkdir(desktopFilePath))
       return;
-   strcat(desktopFilePath, "/applications");
-   if (!Mkdir(desktopFilePath))
+   strlcat(desktopFilePath, "/applications", sizeof(desktopFilePath));
+   if (!path_mkdir(desktopFilePath))
       return;
-   strcat(desktopFilePath, desktopFilename);
+   strlcat(desktopFilePath, desktopFilename, sizeof(desktopFilePath));
 
    fp = fopen(desktopFilePath, "w");
    if (!fp)
@@ -95,6 +86,6 @@ void Discord_RegisterSteamGame(
       const char* steamId)
 {
    char command[256];
-   sprintf(command, "xdg-open steam://rungameid/%s", steamId);
+   snprintf(command, sizeof(command), "xdg-open steam://rungameid/%s", steamId);
    Discord_Register(applicationId, command);
 }

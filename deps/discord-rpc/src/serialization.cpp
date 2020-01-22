@@ -5,25 +5,30 @@
 template <typename T>
 void NumberToString(char* dest, T number)
 {
-    if (!number) {
+    char temp[32];
+    int place = 0;
+
+    if (!number)
+    {
         *dest++ = '0';
         *dest++ = 0;
         return;
     }
-    if (number < 0) {
+
+    if (number < 0)
+    {
         *dest++ = '-';
         number = -number;
     }
-    char temp[32];
-    int place = 0;
-    while (number) {
+
+    while (number)
+    {
         auto digit = number % 10;
         number = number / 10;
         temp[place++] = '0' + (char)digit;
     }
-    for (--place; place >= 0; --place) {
+    for (--place; place >= 0; --place)
         *dest++ = temp[place];
-    }
     *dest = 0;
 }
 
@@ -66,7 +71,8 @@ struct WriteArray {
 template <typename T>
 void WriteOptionalString(JsonWriter& w, T& k, const char* value)
 {
-    if (value && value[0]) {
+    if (value && value[0])
+    {
         w.Key(k, sizeof(T) - 1);
         w.String(value);
     }
@@ -74,8 +80,8 @@ void WriteOptionalString(JsonWriter& w, T& k, const char* value)
 
 static void JsonWriteNonce(JsonWriter& writer, int nonce)
 {
-    WriteKey(writer, "nonce");
     char nonceBuffer[32];
+    WriteKey(writer, "nonce");
     NumberToString(nonceBuffer, nonce);
     writer.String(nonceBuffer);
 }
@@ -102,24 +108,28 @@ size_t JsonWriteRichPresenceObj(char* dest,
             WriteKey(writer, "pid");
             writer.Int(pid);
 
-            if (presence != nullptr) {
+            if (presence)
+            {
                 WriteObject activity(writer, "activity");
 
                 WriteOptionalString(writer, "state", presence->state);
                 WriteOptionalString(writer, "details", presence->details);
 
-                if (presence->startTimestamp || presence->endTimestamp) {
-                    WriteObject timestamps(writer, "timestamps");
+                if (presence->startTimestamp || presence->endTimestamp)
+                {
+                   WriteObject timestamps(writer, "timestamps");
 
-                    if (presence->startTimestamp) {
-                        WriteKey(writer, "start");
-                        writer.Int64(presence->startTimestamp);
-                    }
+                   if (presence->startTimestamp)
+                   {
+                      WriteKey(writer, "start");
+                      writer.Int64(presence->startTimestamp);
+                   }
 
-                    if (presence->endTimestamp) {
-                        WriteKey(writer, "end");
-                        writer.Int64(presence->endTimestamp);
-                    }
+                   if (presence->endTimestamp)
+                   {
+                      WriteKey(writer, "end");
+                      writer.Int64(presence->endTimestamp);
+                   }
                 }
 
                 if ((presence->largeImageKey && presence->largeImageKey[0]) ||
@@ -133,20 +143,25 @@ size_t JsonWriteRichPresenceObj(char* dest,
                     WriteOptionalString(writer, "small_text", presence->smallImageText);
                 }
 
-                if ((presence->partyId && presence->partyId[0]) || presence->partySize ||
-                    presence->partyMax) {
-                    WriteObject party(writer, "party");
-                    WriteOptionalString(writer, "id", presence->partyId);
-                    if (presence->partySize && presence->partyMax) {
-                        WriteArray size(writer, "size");
-                        writer.Int(presence->partySize);
-                        writer.Int(presence->partyMax);
-                    }
+                if ((
+                      presence->partyId && presence->partyId[0]) || 
+                      presence->partySize                        ||
+                      presence->partyMax)
+                {
+                   WriteObject party(writer, "party");
+                   WriteOptionalString(writer, "id", presence->partyId);
+                   if (presence->partySize && presence->partyMax)
+                   {
+                      WriteArray size(writer, "size");
+                      writer.Int(presence->partySize);
+                      writer.Int(presence->partyMax);
+                   }
                 }
 
                 if ((presence->matchSecret && presence->matchSecret[0]) ||
                     (presence->joinSecret && presence->joinSecret[0]) ||
-                    (presence->spectateSecret && presence->spectateSecret[0])) {
+                    (presence->spectateSecret && presence->spectateSecret[0]))
+                {
                     WriteObject secrets(writer, "secrets");
                     WriteOptionalString(writer, "match", presence->matchSecret);
                     WriteOptionalString(writer, "join", presence->joinSecret);
@@ -223,12 +238,10 @@ size_t JsonWriteJoinReply(char* dest, size_t maxLen, const char* userId, int rep
         WriteObject obj(writer);
 
         WriteKey(writer, "cmd");
-        if (reply == DISCORD_REPLY_YES) {
+        if (reply == DISCORD_REPLY_YES)
             writer.String("SEND_ACTIVITY_JOIN_INVITE");
-        }
-        else {
+        else
             writer.String("CLOSE_ACTIVITY_JOIN_REQUEST");
-        }
 
         WriteKey(writer, "args");
         {

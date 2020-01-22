@@ -1,19 +1,20 @@
 #pragma once
 #include <stdint.h>
 
-// clang-format off
+/* clang-format off */
 
 #  define DISCORD_EXPORT
 
-// clang-format on
+/* clang-format on */
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-typedef struct DiscordRichPresence {
-    const char* state;   /* max 128 bytes */
-    const char* details; /* max 128 bytes */
+typedef struct DiscordRichPresence
+{
+    const char* state;          /* max 128 bytes */
+    const char* details;        /* max 128 bytes */
     int64_t startTimestamp;
     int64_t endTimestamp;
     const char* largeImageKey;  /* max 32 bytes */
@@ -29,14 +30,16 @@ typedef struct DiscordRichPresence {
     int8_t instance;
 } DiscordRichPresence;
 
-typedef struct DiscordUser {
+typedef struct DiscordUser
+{
     const char* userId;
     const char* username;
     const char* discriminator;
     const char* avatar;
 } DiscordUser;
 
-typedef struct DiscordEventHandlers {
+typedef struct DiscordEventHandlers
+{
     void (*ready)(const DiscordUser* request);
     void (*disconnected)(int errorCode, const char* message);
     void (*errored)(int errorCode, const char* message);
@@ -58,7 +61,8 @@ DISCORD_EXPORT void Discord_Shutdown(void);
 /* checks for incoming messages, dispatches callbacks */
 DISCORD_EXPORT void Discord_RunCallbacks(void);
 
-/* If you disable the lib starting its own io thread, you'll need to call this from your own */
+/* If you disable the lib starting its own I/O thread, 
+ * you'll need to call this from your own */
 #ifdef DISCORD_DISABLE_IO_THREAD
 DISCORD_EXPORT void Discord_UpdateConnection(void);
 #endif
@@ -66,7 +70,8 @@ DISCORD_EXPORT void Discord_UpdateConnection(void);
 DISCORD_EXPORT void Discord_UpdatePresence(const DiscordRichPresence* presence);
 DISCORD_EXPORT void Discord_ClearPresence(void);
 
-DISCORD_EXPORT void Discord_Respond(const char* userid, /* DISCORD_REPLY_ */ int reply);
+DISCORD_EXPORT void Discord_Respond(const char* userid,
+      /* DISCORD_REPLY_ */ int reply);
 
 DISCORD_EXPORT void Discord_UpdateHandlers(DiscordEventHandlers* handlers);
 
