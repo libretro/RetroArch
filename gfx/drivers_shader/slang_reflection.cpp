@@ -134,9 +134,9 @@ static bool set_ubo_texture_offset(
       size_t offset, bool push_constant)
 {
    resize_minimum(reflection->semantic_textures[semantic], index + 1);
-   auto &sem           = reflection->semantic_textures[semantic][index];
-   auto &active        = push_constant ? sem.push_constant : sem.uniform;
-   auto &active_offset = push_constant ? sem.push_constant_offset : sem.ubo_offset;
+   slang_texture_semantic_meta &sem = reflection->semantic_textures[semantic][index];
+   bool &active                     = push_constant ? sem.push_constant : sem.uniform;
+   size_t &active_offset            = push_constant ? sem.push_constant_offset : sem.ubo_offset;
 
    if (active)
    {
@@ -164,9 +164,9 @@ static bool set_ubo_float_parameter_offset(
       bool push_constant)
 {
    resize_minimum(reflection->semantic_float_parameters, index + 1);
-   auto &sem           = reflection->semantic_float_parameters[index];
-   auto &active        = push_constant ? sem.push_constant : sem.uniform;
-   auto &active_offset = push_constant ? sem.push_constant_offset : sem.ubo_offset;
+   slang_semantic_meta &sem = reflection->semantic_float_parameters[index];
+   bool   &active           = push_constant ? sem.push_constant : sem.uniform;
+   size_t &active_offset    = push_constant ? sem.push_constant_offset : sem.ubo_offset;
 
    if (active)
    {
@@ -203,9 +203,9 @@ static bool set_ubo_offset(
       slang_semantic semantic,
       size_t offset, unsigned num_components, bool push_constant)
 {
-   auto &sem           = reflection->semantics[semantic];
-   auto &active        = push_constant ? sem.push_constant : sem.uniform;
-   auto &active_offset = push_constant ? sem.push_constant_offset : sem.ubo_offset;
+   slang_semantic_meta &sem = reflection->semantics[semantic];
+   bool &active             = push_constant ? sem.push_constant : sem.uniform;
+   size_t &active_offset    = push_constant ? sem.push_constant_offset : sem.ubo_offset;
 
    if (active)
    {
@@ -288,9 +288,9 @@ static bool add_active_buffer_ranges(
    {
       unsigned sem_index             = 0;
       unsigned tex_sem_index         = 0;
-      auto &name                     = compiler.get_member_name(
+      const string &name             = compiler.get_member_name(
             resource.base_type_id, ranges[i].index);
-      auto &type                     = compiler.get_type(
+      const SPIRType &type           = compiler.get_type(
             compiler.get_type(resource.base_type_id).member_types[
             ranges[i].index]);
       slang_semantic sem             = slang_uniform_name_to_semantic(

@@ -2423,8 +2423,8 @@ void Framebuffer::init(DeferredDisposer *disposer)
        * the world for framebuffer recreation. */
       if (memory.memory != VK_NULL_HANDLE && disposer)
       {
-         auto d = device;
-         auto m = memory.memory;
+         VkDevice       d = device;
+         VkDeviceMemory m = memory.memory;
          disposer->defer([=] { vkFreeMemory(d, m, nullptr); });
       }
 
@@ -2485,11 +2485,11 @@ void Framebuffer::set_size(DeferredDisposer &disposer, const Size2D &size, VkFor
        *
        * Fake lambda init captures for C++11.
        */
-      auto d   = device;
-      auto i   = image;
-      auto v   = view;
-      auto fbv = fb_view;
-      auto fb  = framebuffer;
+      VkDevice d       = device;
+      VkImage i        = image;
+      VkImageView v    = view;
+      VkImageView fbv  = fb_view;
+      VkFramebuffer fb = framebuffer;
       disposer.defer([=]
       {
          if (fb != VK_NULL_HANDLE)
