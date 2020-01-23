@@ -11,6 +11,7 @@
 
 #include <boolean.h>
 #include <file/file_path.h>
+#include <compat/strl.h>
 
 /* we want to register games so we can run them from 
  * Discord client as discord-<appid>:// */
