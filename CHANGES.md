@@ -1,5 +1,6 @@
 # Future
 - BUGFIX: Fix mouse capture hotkey not working
+- CHEEVOS/BUGFIX: Achievement triggers could cause Retroarch to Crash
 - CHEEVOS: Support for extended Sega CD memory
 - EMSCRIPTEN: Recreate input event listeners properly
 - LIBRETRO: Add disk control interface API extension
