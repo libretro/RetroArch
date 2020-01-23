@@ -56,11 +56,15 @@ static float msg_queue_info[16]        = COLOR_HEX_TO_FLOAT(0x12ACF8, 1.0f);
 static float msg_queue_task_progress_1[16] = COLOR_HEX_TO_FLOAT(0x397869, 1.0f); /* Color of first progress bar in a task message */
 static float msg_queue_task_progress_2[16] = COLOR_HEX_TO_FLOAT(0x317198, 1.0f); /* Color of second progress bar in a task message (for multiple tasks with same message) */
 
+#if 0
 static float color_task_progress_bar[16] = COLOR_HEX_TO_FLOAT(0x22B14C, 1.0f);
+#endif
 
 static unsigned text_color_info        = 0xD8EEFFFF;
+#if 0
 static unsigned text_color_success     = 0x22B14CFF;
 static unsigned text_color_error       = 0xC23B22FF;
+#endif
 static unsigned text_color_faint       = 0x878787FF;
 
 static float volume_bar_background[16]    = COLOR_HEX_TO_FLOAT(0x1A1A1A, 1.0f);

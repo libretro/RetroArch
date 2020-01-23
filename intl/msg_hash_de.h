@@ -3388,10 +3388,6 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_BLUE,
       "Blau-Anteil der Bildschirmmeldungen")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_FRAMECOUNT_SHOW,
       "Zeige die aktuelle Anzahl an Einzelbildern an")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_AUTOMATICALLY_ADD_CONTENT_TO_PLAYLIST,
-      "Inhalt automatisch zur Playlist hinzufügen")
-MSG_HASH(MENU_ENUM_SUBLABEL_AUTOMATICALLY_ADD_CONTENT_TO_PLAYLIST,
-      "Scant automatisch den geladenen Inhalt, so dass er in Playlisten angezeigt wird.")
 MSG_HASH(MSG_SCANNING_OF_FILE_FINISHED,
       "Scannen von Datei beendet")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_QUALITY,

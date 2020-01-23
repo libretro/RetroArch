@@ -7495,14 +7495,6 @@ MSG_HASH(
     "Impossible de créer une deuxième instance. L'éxécution en avance utilisera désormais une seule instance."
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_AUTOMATICALLY_ADD_CONTENT_TO_PLAYLIST,
-    "Ajouter automatiquement aux listes de lecture"
-    )
-MSG_HASH(
-    MENU_ENUM_SUBLABEL_AUTOMATICALLY_ADD_CONTENT_TO_PLAYLIST,
-    "Analyse automatiquement le contenu chargé avec le scanner des listes de lecture."
-    )
-MSG_HASH(
     MSG_SCANNING_OF_FILE_FINISHED,
     "Analyse du fichier terminée"
     )

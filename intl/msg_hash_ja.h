@@ -7231,14 +7231,6 @@ MSG_HASH(
    "2つ目のコアをスタートに失敗しました。先読みが一つのコアを使用になります。"
 )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUTOMATICALLY_ADD_CONTENT_TO_PLAYLIST,
-   "自動的にコンテンツをプレイリストに追加"
-)
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUTOMATICALLY_ADD_CONTENT_TO_PLAYLIST,
-   "ロードされたコンテンツは自動的にスキャンされ, プレイリストに表示されます。"
-)
-MSG_HASH(
    MSG_SCANNING_OF_FILE_FINISHED,
    "ファイルのスキャンは完了しました。"
 )

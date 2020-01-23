@@ -170,6 +170,7 @@ OBJ += frontend/frontend_driver.o \
        intl/msg_hash_us.o \
        $(LIBRETRO_COMM_DIR)/queues/task_queue.o \
        tasks/task_content.o \
+       tasks/task_patch.o \
        tasks/task_save.o \
        tasks/task_file_transfer.o \
        tasks/task_image.o \
@@ -230,6 +231,7 @@ OBJ += \
        managers/state_manager.o \
        gfx/drivers_font_renderer/bitmapfont.o \
        tasks/task_autodetect.o \
+       tasks/task_autodetect_blissbox.o \
        input/input_autodetect_builtin.o \
        input/input_keymaps.o \
        input/input_remapping.o \
@@ -241,6 +243,7 @@ OBJ += \
        $(LIBRETRO_COMM_DIR)/file/config_file.o \
        $(LIBRETRO_COMM_DIR)/file/config_file_userdata.o \
        runtime_file.o \
+       disk_index_file.o \
        tasks/task_screenshot.o \
        tasks/task_powerstate.o \
        $(LIBRETRO_COMM_DIR)/gfx/scaler/scaler.o \
@@ -259,7 +262,8 @@ OBJ += \
        performance_counters.o \
        verbosity.o \
        $(LIBRETRO_COMM_DIR)/playlists/label_sanitization.o \
-       manual_content_scan.o
+       manual_content_scan.o \
+       disk_control_interface.o
 
 ifeq ($(HAVE_AUDIOMIXER), 1)
    DEFINES += -DHAVE_AUDIOMIXER

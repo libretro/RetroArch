@@ -46,6 +46,19 @@ typedef struct nbio_buf
    char *path;
 } nbio_buf_t;
 
+typedef struct autoconfig_params     autoconfig_params_t;
+
+struct autoconfig_params
+{
+   int32_t vid;
+   int32_t pid;
+   unsigned idx;
+   uint32_t max_users;
+   char  *name;
+   char  *autoconfig_directory;
+};
+
+
 #ifdef HAVE_NETWORKING
 typedef struct
 {
@@ -123,6 +136,16 @@ bool task_push_overlay_load_default(
       void *user_data);
 #endif
 
+bool patch_content(
+      bool is_ips_pref,
+      bool is_bps_pref,
+      bool is_ups_pref,
+      const char *name_ips,
+      const char *name_bps,
+      const char *name_ups,
+      uint8_t **buf,
+      void *data);
+
 bool task_check_decompress(const char *source_file);
 
 void *task_push_decompress(
@@ -158,6 +181,8 @@ bool input_is_autoconfigured(unsigned i);
 unsigned input_autoconfigure_get_device_name_index(unsigned i);
 
 void input_autoconfigure_reset(void);
+
+void input_autoconfigure_override_handler(void *data);
 
 void input_autoconfigure_connect(
       const char *name,

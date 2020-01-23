@@ -7391,14 +7391,6 @@ MSG_HASH(
     "Falha ao criar uma segunda instância. O Adiantar Quadro agora usará apenas uma instância."
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_AUTOMATICALLY_ADD_CONTENT_TO_PLAYLIST,
-    "Adicione automaticamente conteúdo à lista de reprodução"
-    )
-MSG_HASH(
-    MENU_ENUM_SUBLABEL_AUTOMATICALLY_ADD_CONTENT_TO_PLAYLIST,
-    "Verifica automaticamente o conteúdo carregado para que eles apareçam dentro das listas de reprodução."
-    )
-MSG_HASH(
     MSG_SCANNING_OF_FILE_FINISHED,
     "Verificação do arquivo terminado"
     )

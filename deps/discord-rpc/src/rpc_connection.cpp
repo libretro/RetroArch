@@ -54,7 +54,8 @@ void RpcConnection::Open()
         sendFrame.length = (uint32_t)JsonWriteHandshakeObj(
           sendFrame.message, sizeof(sendFrame.message), RpcVersion, appId);
 
-        if (connection->Write(&sendFrame, sizeof(MessageFrameHeader) + sendFrame.length))
+        if (connection->Write(&sendFrame,
+                 sizeof(MessageFrameHeader) + sendFrame.length))
             state = State::SentHandshake;
         else
             Close();
@@ -84,12 +85,16 @@ bool RpcConnection::Write(const void* data, size_t length)
 
 bool RpcConnection::Read(JsonDocument& message)
 {
+    MessageFrame readFrame;
+
     if (state != State::Connected && state != State::SentHandshake)
         return false;
-    MessageFrame readFrame;
+
     for (;;)
     {
-        bool didRead = connection->Read(&readFrame, sizeof(MessageFrameHeader));
+        bool didRead = connection->Read(
+              &readFrame, sizeof(MessageFrameHeader));
+
         if (!didRead)
         {
             if (!connection->isOpen)
@@ -117,13 +122,11 @@ bool RpcConnection::Read(JsonDocument& message)
         switch (readFrame.opcode)
         {
            case Opcode::Close:
-              {
-                 message.ParseInsitu(readFrame.message);
-                 lastErrorCode = GetIntMember(&message, "code");
-                 StringCopy(lastErrorMessage, GetStrMember(&message, "message", ""));
-                 Close();
-                 return false;
-              }
+              message.ParseInsitu(readFrame.message);
+              lastErrorCode = GetIntMember(&message, "code");
+              StringCopy(lastErrorMessage, GetStrMember(&message, "message", ""));
+              Close();
+              return false;
            case Opcode::Frame:
               message.ParseInsitu(readFrame.message);
               return true;
@@ -136,7 +139,7 @@ bool RpcConnection::Read(JsonDocument& message)
               break;
            case Opcode::Handshake:
            default:
-              // something bad happened
+              /* something bad happened */
               lastErrorCode = (int)ErrorCode::ReadCorrupt;
               StringCopy(lastErrorMessage, "Bad ipc frame");
               Close();

@@ -126,7 +126,14 @@ static int task_http_iterate_transfer(retro_task_t *task)
 
    if (!net_http_update(http->handle, &pos, &tot))
    {
-      task_set_progress(task, (tot == 0) ? -1 : (signed)pos / (tot / 100));
+      if (tot == 0)
+         task_set_progress(task, -1);
+      else if (pos < (((size_t)-1) / 100))
+         /* prefer multiply then divide for more accurate results */
+         task_set_progress(task, (signed)(pos * 100 / tot));
+      else
+         /* but invert the logic if it would cause an overflow */
+         task_set_progress(task, MAX((signed)pos / (tot / 100), 100));
       return -1;
    }
 
@@ -250,12 +257,8 @@ static void* task_push_http_transfer_generic(
       retro_task_callback_t cb, void *user_data)
 {
    task_finder_data_t find_data;
-   char tmp[255];
-   const char *s           = NULL;
    retro_task_t  *t        = NULL;
    http_handle_t *http     = NULL;
-
-   tmp[0]                  = '\0';
 
    find_data.func          = task_http_finder;
    find_data.userdata      = (void*)url;
@@ -299,22 +302,6 @@ static void* task_push_http_transfer_generic(
    t->user_data            = user_data;
    t->progress             = -1;
 
-   if (user_data)
-      s = ((file_transfer_t*)user_data)->path;
-   else
-      s = url;
-
-   strlcpy(tmp,
-         msg_hash_to_str(MSG_DOWNLOADING), sizeof(tmp));
-   strlcat(tmp, " ", sizeof(tmp));
-
-   if (strstr(s, ".index"))
-      strlcat(tmp, msg_hash_to_str(MSG_INDEX_FILE), sizeof(tmp));
-   else
-      strlcat(tmp, s, sizeof(tmp));
-
-   t->title                = strdup(tmp);
-
    task_queue_push(t);
 
    return t;
@@ -334,9 +321,45 @@ void* task_push_http_transfer(const char *url, bool mute,
 {
    if (string_is_empty(url))
       return NULL;
+
    return task_push_http_transfer_generic(
          net_http_connection_new(url, "GET", NULL),
          url, mute, type, cb, user_data);
+}
+
+void* task_push_http_transfer_file(const char* url, bool mute,
+      const char* type,
+      retro_task_callback_t cb, file_transfer_t* transfer_data)
+{
+   const char *s   = NULL;
+   char tmp[255]   = "";
+   retro_task_t *t = NULL;
+
+   if (string_is_empty(url))
+      return NULL;
+
+   t = (retro_task_t*)task_push_http_transfer_generic(
+         net_http_connection_new(url, "GET", NULL),
+         url, mute, type, cb, transfer_data);
+
+   if (!t)
+      return NULL;
+
+   if (transfer_data)
+      s = transfer_data->path;
+   else
+      s = url;
+
+   strlcpy(tmp, msg_hash_to_str(MSG_DOWNLOADING), sizeof(tmp));
+   strlcat(tmp, " ", sizeof(tmp));
+
+   if (strstr(s, ".index"))
+      strlcat(tmp, msg_hash_to_str(MSG_INDEX_FILE), sizeof(tmp));
+   else
+      strlcat(tmp, s, sizeof(tmp));
+
+   t->title = strdup(tmp);
+   return t;
 }
 
 void* task_push_http_transfer_with_user_agent(const char *url, bool mute,

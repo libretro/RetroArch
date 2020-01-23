@@ -149,7 +149,7 @@ static bool discord_download_avatar(
    strlcpy(transf->path, buf, sizeof(transf->path));
 
    RARCH_LOG("[discord] downloading avatar from: %s\n", url_encoded);
-   task_push_http_transfer(url_encoded, true, NULL, cb_generic_download, transf);
+   task_push_http_transfer_file(url_encoded, true, NULL, cb_generic_download, transf);
 
    return false;
 }

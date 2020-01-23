@@ -1332,6 +1332,7 @@ void handle_dbscan_finished(retro_task_t *task,
 
 static void content_add_to_playlist(const char *path)
 {
+#if 0
 #ifdef HAVE_LIBRETRODB
    settings_t *settings = config_get_ptr();
    if (!settings || !settings->bools.automatically_add_content_to_playlist)
@@ -1342,6 +1343,7 @@ static void content_add_to_playlist(const char *path)
          path, false,
          settings->bools.show_hidden_files,
          handle_dbscan_finished);
+#endif
 #endif
 }
 
@@ -3991,7 +3993,7 @@ static int generic_action_ok_network(const char *path,
    strlcpy(transf->path, url_path, sizeof(transf->path));
 
    net_http_urlencode_full(url_path_encoded, url_path, sizeof(url_path_encoded));
-   task_push_http_transfer(url_path_encoded, suppress_msg, url_label, callback, transf);
+   task_push_http_transfer_file(url_path_encoded, suppress_msg, url_label, callback, transf);
 
    return generic_action_ok_displaylist_push(path, NULL,
          label, type, idx, entry_idx, type_id2);
@@ -4293,7 +4295,7 @@ static int action_ok_download_generic(const char *path,
    else
       net_http_urlencode_full(s3, s2, sizeof(s3));
 
-   task_push_http_transfer(s3, suppress_msg, msg_hash_to_str(enum_idx), cb, transf);
+   task_push_http_transfer_file(s3, suppress_msg, msg_hash_to_str(enum_idx), cb, transf);
 #endif
    return 0;
 }
@@ -6114,15 +6116,7 @@ static int action_ok_disk_cycle_tray_status(const char *path,
 
    /* Get disk eject state *before* toggling drive status */
    if (sys_info)
-   {
-      const struct retro_disk_control_callback *control =
-            (const struct retro_disk_control_callback*)
-                  &sys_info->disk_control_cb;
-
-      if (control)
-         if (control->get_eject_state)
-            disk_ejected = control->get_eject_state();
-   }
+      disk_ejected = disk_control_get_eject_state(&sys_info->disk_control);
 
    /* Only want to display a notification if we are
     * going to resume content immediately after

@@ -3175,3 +3175,313 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
 
    return true;
 }
+
+void vulkan_initialize_render_pass(VkDevice device, VkFormat format,
+      VkRenderPass *render_pass)
+{
+   VkRenderPassCreateInfo rp_info     = {
+      VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO };
+   VkAttachmentReference color_ref    = { 0,
+      VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
+   VkAttachmentDescription attachment = {0};
+   VkSubpassDescription subpass       = {0};
+
+   /* We will always write to the entire framebuffer,
+    * so we don't really need to clear. */
+   attachment.format            = format;
+   attachment.samples           = VK_SAMPLE_COUNT_1_BIT;
+   attachment.loadOp            = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+   attachment.storeOp           = VK_ATTACHMENT_STORE_OP_STORE;
+   attachment.stencilLoadOp     = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+   attachment.stencilStoreOp    = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+
+   attachment.initialLayout     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+   attachment.finalLayout       = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+   subpass.pipelineBindPoint    = VK_PIPELINE_BIND_POINT_GRAPHICS;
+   subpass.colorAttachmentCount = 1;
+   subpass.pColorAttachments    = &color_ref;
+
+   rp_info.attachmentCount      = 1;
+   rp_info.pAttachments         = &attachment;
+   rp_info.subpassCount         = 1;
+   rp_info.pSubpasses           = &subpass;
+
+   vkCreateRenderPass(device, &rp_info, NULL, render_pass);
+}
+
+void vulkan_set_uniform_buffer(
+      VkDevice device,
+      VkDescriptorSet set,
+      unsigned binding,
+      VkBuffer buffer,
+      VkDeviceSize offset,
+      VkDeviceSize range)
+{
+   VkDescriptorBufferInfo buffer_info;
+   VkWriteDescriptorSet write = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
+
+   buffer_info.buffer         = buffer;
+   buffer_info.offset         = offset;
+   buffer_info.range          = range;
+
+   write.dstSet               = set;
+   write.dstBinding           = binding;
+   write.descriptorCount      = 1;
+   write.descriptorType       = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+   write.pBufferInfo          = &buffer_info;
+
+   vkUpdateDescriptorSets(device, 1, &write, 0, NULL);
+}
+
+void vulkan_framebuffer_generate_mips(
+      VkFramebuffer framebuffer,
+      VkImage image,
+      struct Size2D size,
+      VkCommandBuffer cmd,
+      unsigned levels
+      )
+{
+   unsigned i;
+   /* This is run every frame, so make sure
+    * we aren't opting into the "lazy" way of doing this. :) */
+   VkImageMemoryBarrier barriers[2] = {
+      { VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER },
+      { VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER },
+   };
+
+   /* First, transfer the input mip level to TRANSFER_SRC_OPTIMAL.
+    * This should allow the surface to stay compressed.
+    * All subsequent mip-layers are now transferred into DST_OPTIMAL from
+    * UNDEFINED at this point.
+    */
+
+   /* Input */
+   barriers[0].srcAccessMask                 = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+   barriers[0].dstAccessMask                 = VK_ACCESS_TRANSFER_READ_BIT;
+   barriers[0].oldLayout                     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+   barriers[0].newLayout                     = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+   barriers[0].srcQueueFamilyIndex           = VK_QUEUE_FAMILY_IGNORED;
+   barriers[0].dstQueueFamilyIndex           = VK_QUEUE_FAMILY_IGNORED;
+   barriers[0].image                         = image;
+   barriers[0].subresourceRange.aspectMask   = VK_IMAGE_ASPECT_COLOR_BIT;
+   barriers[0].subresourceRange.baseMipLevel = 0;
+   barriers[0].subresourceRange.levelCount   = 1;
+   barriers[0].subresourceRange.layerCount   = VK_REMAINING_ARRAY_LAYERS;
+
+   /* The rest of the mip chain */
+   barriers[1].srcAccessMask                 = 0;
+   barriers[1].dstAccessMask                 = VK_ACCESS_TRANSFER_WRITE_BIT;
+   barriers[1].oldLayout                     = VK_IMAGE_LAYOUT_UNDEFINED;
+   barriers[1].newLayout                     = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+   barriers[1].srcQueueFamilyIndex           = VK_QUEUE_FAMILY_IGNORED;
+   barriers[1].dstQueueFamilyIndex           = VK_QUEUE_FAMILY_IGNORED;
+   barriers[1].image                         = image;
+   barriers[1].subresourceRange.aspectMask   = VK_IMAGE_ASPECT_COLOR_BIT;
+   barriers[1].subresourceRange.baseMipLevel = 1;
+   barriers[1].subresourceRange.levelCount   = VK_REMAINING_MIP_LEVELS;
+   barriers[1].subresourceRange.layerCount   = VK_REMAINING_ARRAY_LAYERS;
+
+   vkCmdPipelineBarrier(cmd,
+         VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
+         VK_PIPELINE_STAGE_TRANSFER_BIT,
+         false,
+         0,
+         NULL,
+         0,
+         NULL,
+         2,
+         barriers);
+
+   for (i = 1; i < levels; i++)
+   {
+      unsigned src_width, src_height, target_width, target_height;
+      VkImageBlit blit_region = {};
+
+      /* For subsequent passes, we have to transition
+       * from DST_OPTIMAL to SRC_OPTIMAL,
+       * but only do so one mip-level at a time. */
+      if (i > 1)
+      {
+         barriers[0].srcAccessMask                 = VK_ACCESS_TRANSFER_WRITE_BIT;
+         barriers[0].dstAccessMask                 = VK_ACCESS_TRANSFER_READ_BIT;
+         barriers[0].subresourceRange.baseMipLevel = i - 1;
+         barriers[0].subresourceRange.levelCount   = 1;
+         barriers[0].oldLayout                     = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+         barriers[0].newLayout                     = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+
+         vkCmdPipelineBarrier(cmd,
+               VK_PIPELINE_STAGE_TRANSFER_BIT,
+               VK_PIPELINE_STAGE_TRANSFER_BIT,
+               false,
+               0,
+               NULL,
+               0,
+               NULL,
+               1,
+               barriers);
+      }
+
+      src_width                                 = MAX(size.width >> (i - 1), 1u);
+      src_height                                = MAX(size.height >> (i - 1), 1u);
+      target_width                              = MAX(size.width >> i, 1u);
+      target_height                             = MAX(size.height >> i, 1u);
+
+      blit_region.srcSubresource.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+      blit_region.srcSubresource.mipLevel       = i - 1;
+      blit_region.srcSubresource.baseArrayLayer = 0;
+      blit_region.srcSubresource.layerCount     = 1;
+      blit_region.dstSubresource                = blit_region.srcSubresource;
+      blit_region.dstSubresource.mipLevel       = i;
+      blit_region.srcOffsets[1].x               = src_width;
+      blit_region.srcOffsets[1].y               = src_height;
+      blit_region.srcOffsets[1].z               = 1;
+      blit_region.dstOffsets[1].x               = target_width;
+      blit_region.dstOffsets[1].y               = target_height;
+      blit_region.dstOffsets[1].z               = 1;
+
+      vkCmdBlitImage(cmd,
+            image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+            image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+            1, &blit_region, VK_FILTER_LINEAR);
+   }
+
+   /* We are now done, and we have all mip-levels except
+    * the last in TRANSFER_SRC_OPTIMAL,
+    * and the last one still on TRANSFER_DST_OPTIMAL,
+    * so do a final barrier which
+    * moves everything to SHADER_READ_ONLY_OPTIMAL in
+    * one go along with the execution barrier to next pass.
+    * Read-to-read memory barrier, so only need execution
+    * barrier for first transition.
+    */
+   barriers[0].srcAccessMask                 = VK_ACCESS_TRANSFER_READ_BIT;
+   barriers[0].dstAccessMask                 = VK_ACCESS_SHADER_READ_BIT;
+   barriers[0].subresourceRange.baseMipLevel = 0;
+   barriers[0].subresourceRange.levelCount   = levels - 1;
+   barriers[0].oldLayout                     = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+   barriers[0].newLayout                     = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+   /* This is read-after-write barrier. */
+   barriers[1].srcAccessMask                 = VK_ACCESS_TRANSFER_WRITE_BIT;
+   barriers[1].dstAccessMask                 = VK_ACCESS_SHADER_READ_BIT;
+   barriers[1].subresourceRange.baseMipLevel = levels - 1;
+   barriers[1].subresourceRange.levelCount   = 1;
+   barriers[1].oldLayout                     = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+   barriers[1].newLayout                     = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+   vkCmdPipelineBarrier(cmd,
+         VK_PIPELINE_STAGE_TRANSFER_BIT,
+         VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+         false,
+         0,
+         NULL,
+         0,
+         NULL,
+         2, barriers);
+
+   /* Next pass will wait for ALL_GRAPHICS_BIT, and since
+    * we have dstStage as FRAGMENT_SHADER,
+    * the dependency chain will ensure we don't start
+    * next pass until the mipchain is complete. */
+}
+
+void vulkan_framebuffer_copy(VkImage image,
+      struct Size2D size,
+      VkCommandBuffer cmd,
+      VkImage src_image, VkImageLayout src_layout)
+{
+   VkImageCopy region;
+
+   vulkan_image_layout_transition_levels(cmd, image,VK_REMAINING_MIP_LEVELS,
+         VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+         0, VK_ACCESS_TRANSFER_WRITE_BIT,
+         VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+         VK_PIPELINE_STAGE_TRANSFER_BIT);
+
+   memset(&region, 0, sizeof(region));
+
+   region.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+   region.srcSubresource.layerCount = 1;
+   region.dstSubresource            = region.srcSubresource;
+   region.extent.width              = size.width;
+   region.extent.height             = size.height;
+   region.extent.depth              = 1;
+
+   vkCmdCopyImage(cmd,
+         src_image, src_layout,
+         image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+         1, &region);
+
+   vulkan_image_layout_transition_levels(cmd,
+         image,
+         VK_REMAINING_MIP_LEVELS,
+         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+         VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+         VK_ACCESS_TRANSFER_WRITE_BIT,
+         VK_ACCESS_SHADER_READ_BIT,
+         VK_PIPELINE_STAGE_TRANSFER_BIT,
+         VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+}
+
+void vulkan_framebuffer_clear(VkImage image, VkCommandBuffer cmd)
+{
+   VkClearColorValue color;
+   VkImageSubresourceRange range;
+
+   vulkan_image_layout_transition_levels(cmd,
+         image,
+         VK_REMAINING_MIP_LEVELS,
+         VK_IMAGE_LAYOUT_UNDEFINED,
+         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+         0,
+         VK_ACCESS_TRANSFER_WRITE_BIT,
+         VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+         VK_PIPELINE_STAGE_TRANSFER_BIT);
+
+   memset(&color, 0, sizeof(color));
+   memset(&range, 0, sizeof(range));
+
+   range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+   range.levelCount = 1;
+   range.layerCount = 1;
+
+   vkCmdClearColorImage(cmd,
+         image,
+         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+         &color,
+         1,
+         &range);
+
+   vulkan_image_layout_transition_levels(cmd,
+         image,
+         VK_REMAINING_MIP_LEVELS,
+         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+         VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+         VK_ACCESS_TRANSFER_WRITE_BIT,
+         VK_ACCESS_SHADER_READ_BIT,
+         VK_PIPELINE_STAGE_TRANSFER_BIT,
+         VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+}
+
+void vulkan_pass_set_texture(
+      VkDevice device,
+      VkDescriptorSet set, VkSampler sampler,
+      unsigned binding,
+      VkImageView imageView, VkImageLayout imageLayout)
+{
+   VkDescriptorImageInfo image_info;
+   VkWriteDescriptorSet write = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
+
+   image_info.sampler         = sampler;
+   image_info.imageView       = imageView;
+   image_info.imageLayout     = imageLayout;
+
+   write.dstSet               = set;
+   write.dstBinding           = binding;
+   write.descriptorCount      = 1;
+   write.descriptorType       = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+   write.pImageInfo           = &image_info;
+
+   vkUpdateDescriptorSets(device, 1, &write, 0, NULL);
+}

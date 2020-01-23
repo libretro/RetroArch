@@ -138,8 +138,6 @@ LRESULT CALLBACK WndProcGDI(HWND hwnd, UINT message,
 BOOL IsIconic(HWND hwnd);
 #endif
 
-LRESULT win32_menu_loop(HWND owner, WPARAM wparam);
-
 bool win32_load_content_from_gui(const char *szFilename);
 
 void win32_setup_pixel_format(HDC hdc, bool supports_gl);

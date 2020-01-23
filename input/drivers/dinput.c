@@ -32,11 +32,11 @@
 #include <windowsx.h>
 
 #ifndef WM_MOUSEHWHEEL
-#define WM_MOUSEHWHEEL 0x20e
+#define WM_MOUSEHWHEEL                  0x20e
 #endif
 
 #ifndef WM_MOUSEWHEEL
-#define WM_MOUSEWHEEL 0x020A
+#define WM_MOUSEWHEEL                   0x020A
 #endif
 
 #ifdef HAVE_CONFIG_H

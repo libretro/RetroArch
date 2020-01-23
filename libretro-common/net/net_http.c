@@ -252,15 +252,6 @@ static void net_http_send_str(
 struct http_connection_t *net_http_connection_new(const char *url,
       const char *method, const char *data)
 {
-   char new_domain[2048];
-   bool error                     = false;
-   char **domain                  = NULL;
-   char *uri                      = NULL;
-   char *url_dup                  = NULL;
-   char *domain_port              = NULL;
-   char *domain_port2             = NULL;
-   char *url_port                 = NULL;
-
    struct http_connection_t *conn = (struct http_connection_t*)calloc(1,
          sizeof(*conn));
 
@@ -273,14 +264,13 @@ struct http_connection_t *net_http_connection_new(const char *url,
       return NULL;
    }
 
-   conn->urlcopy           = strdup(url);
-
    if (method)
       conn->methodcopy     = strdup(method);
 
    if (data)
       conn->postdatacopy   = strdup(data);
 
+   conn->urlcopy           = strdup(url);
    if (!conn->urlcopy)
       goto error;
 
@@ -292,57 +282,12 @@ struct http_connection_t *net_http_connection_new(const char *url,
       conn->sock_state.ssl = true;
    }
    else
-      error = true;
+      goto error;
 
    if (string_is_empty(conn->scan))
       goto error;
 
-   /* Get the port here from the url if it's specified.
-      does not work on username password urls: user:pass@domain.com
-
-      This code is not supposed to be needed, since the port 
-      should be gotten elsewhere when the url is being scanned
-      for ":", but for whatever reason, it's not working correctly.
-   */
-     
-   uri = strchr(conn->scan, (char) '/');
-   
-   if (strchr(conn->scan, (char) ':'))
-   {
-      size_t buf_pos;
-      url_dup       = strdup(conn->scan);
-      domain_port   = strtok(url_dup, ":");
-      domain_port2  = strtok(NULL, ":");
-      url_port      = domain_port2;
-      if (strchr(domain_port2, (char) '/'))
-         url_port   = strtok(domain_port2, "/");
-
-      if (url_port)
-         conn->port = atoi(url_port);
-
-      buf_pos = strlcpy(new_domain, domain_port, sizeof(new_domain));
-      free(url_dup);
-
-      if (uri)
-      {
-         if (!strchr(uri, (char) '/'))
-            strlcat(new_domain, uri, sizeof(new_domain));
-         else
-         {
-            new_domain[buf_pos]   = '/';
-            new_domain[buf_pos+1] = '\0';
-            strlcat(new_domain, strchr(uri, (char)'/') + sizeof(char),
-                  sizeof(new_domain));
-         }
-         strlcpy(conn->scan, new_domain, strlen(conn->scan) + 1);
-      }
-   }
-   /* end of port-fetching from url  */
-   if (error)
-      goto error;
-
-   domain        = &conn->domain;
-   *domain       = conn->scan;
+   conn->domain = conn->scan;
 
    return conn;
 
@@ -373,16 +318,11 @@ bool net_http_connection_iterate(struct http_connection_t *conn)
 
 bool net_http_connection_done(struct http_connection_t *conn)
 {
-   char **location = NULL;
-
    if (!conn)
       return false;
 
-   location     = &conn->location;
-
    if (*conn->scan == '\0')
       return false;
-   *conn->scan  = '\0';
 
    if (conn->port == 0)
    {
@@ -394,16 +334,19 @@ bool net_http_connection_done(struct http_connection_t *conn)
 
    if (*conn->scan == ':')
    {
-      if (!isdigit((int)conn->scan[1]))
+      *conn->scan++ = '\0';
+
+      if (!isdigit((int)(*conn->scan)))
          return false;
 
-      conn->port = (int)strtoul(conn->scan + 1, &conn->scan, 10);
+      conn->port = (int)strtoul(conn->scan, &conn->scan, 10);
 
       if (*conn->scan != '/')
          return false;
    }
 
-   *location = conn->scan + 1;
+   *conn->scan = '\0';
+   conn->location = conn->scan + 1;
 
    return true;
 }

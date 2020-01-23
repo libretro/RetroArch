@@ -3237,10 +3237,6 @@ MSG_HASH(MSG_INPUT_KIOSK_MODE_PASSWORD_OK,
       "Palavra-passe correta.")
 MSG_HASH(MSG_INPUT_KIOSK_MODE_PASSWORD_NOK,
       "Palavra-passe incorreta.")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_AUTOMATICALLY_ADD_CONTENT_TO_PLAYLIST,
-      "Adicionar conteúdo à lista de reprodução automaticamente")
-MSG_HASH(MENU_ENUM_SUBLABEL_AUTOMATICALLY_ADD_CONTENT_TO_PLAYLIST,
-      "Verificar automaticamente conteúdo carregado de forma a que apareça nas listas de reprodução.")
 MSG_HASH(MSG_SCANNING_OF_FILE_FINISHED,
       "Leitura do ficheiro terminada")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_QUALITY,

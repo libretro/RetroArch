@@ -139,6 +139,30 @@ typedef struct gl_core
 
 void gl_core_bind_scratch_vbo(gl_core_t *gl, const void *data, size_t size);
 
+GLuint gl_core_compile_shader(GLenum stage, const char *source);
+
+void gl_core_framebuffer_clear(GLuint id);
+
+void gl_core_framebuffer_copy(
+      GLuint fb_id,
+      GLuint quad_program,
+      GLuint quad_vbo,
+      GLint flat_ubo_vertex,
+      struct Size2D size,
+      GLuint image);
+
+void gl_core_framebuffer_copy_partial(
+      GLuint fb_id,
+      GLuint quad_program, 
+      GLint flat_ubo_vertex,
+      struct Size2D size,
+      GLuint image,
+      float rx, float ry);
+
+void gl_core_build_default_matrix(float *data);
+
+uint32_t gl_core_get_cross_compiler_target_version(void);
+
 RETRO_END_DECLS
 
 #endif

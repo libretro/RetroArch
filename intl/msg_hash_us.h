@@ -845,6 +845,10 @@ MSG_HASH(
     "Disk Control"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NO_DISK,
+    "No disk selected"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DONT_CARE,
     "Don't care"
     )
@@ -4789,6 +4793,10 @@ MSG_HASH(
     "Appended disk"
     )
 MSG_HASH(
+    MSG_FAILED_TO_APPEND_DISK,
+    "Failed to append disk"
+    )
+MSG_HASH(
     MSG_APPLICATION_DIR,
     "Application Dir"
     )
@@ -5603,6 +5611,14 @@ MSG_HASH(
 MSG_HASH(
     MSG_VIRTUAL_DISK_TRAY,
     "virtual disk tray."
+    )
+MSG_HASH(
+    MSG_VIRTUAL_DISK_TRAY_EJECT,
+    "eject"
+    )
+MSG_HASH(
+    MSG_VIRTUAL_DISK_TRAY_CLOSE,
+    "close"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
@@ -7550,14 +7566,6 @@ MSG_HASH(
     "Failed to create second instance.  RunAhead will now use only one instance."
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_AUTOMATICALLY_ADD_CONTENT_TO_PLAYLIST,
-    "Automatically add content to playlists"
-    )
-MSG_HASH(
-    MENU_ENUM_SUBLABEL_AUTOMATICALLY_ADD_CONTENT_TO_PLAYLIST,
-    "Automatically scans loaded content with the playlist scanner."
-    )
-MSG_HASH(
     MSG_SCANNING_OF_FILE_FINISHED,
     "Scanning of file finished"
     )
@@ -8963,6 +8971,10 @@ MSG_HASH(
 MSG_HASH(
     MSG_FAILED_TO_SET_DISK,
     "Failed to set disk"
+    )
+MSG_HASH(
+    MSG_FAILED_TO_SET_INITIAL_DISK,
+    "Failed to set last used disk..."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_CORE_OPTIONS,

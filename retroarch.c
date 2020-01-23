@@ -1120,7 +1120,9 @@ static bool runloop_autosave                                    = false;
 static bool runloop_max_frames_screenshot                       = false;
 static bool log_file_created                                    = false;
 static bool log_file_override_active                            = false;
+#ifdef HAVE_RUNAHEAD
 static bool has_variable_update                                 = false;
+#endif
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 static bool shader_presets_need_reload                          = true;
 #endif
@@ -1599,7 +1601,7 @@ static void path_set_redirect(void)
          fill_pathname_dir(global->name.savefile,
                !string_is_empty(path_main_basename) ? path_main_basename :
                   system && !string_is_empty(system->library_name) ? system->library_name : "",
-               ".srm",
+               file_path_str(FILE_PATH_SRM_EXTENSION),
                sizeof(global->name.savefile));
          RARCH_LOG("%s \"%s\".\n",
                msg_hash_to_str(MSG_REDIRECTING_SAVEFILE_TO),
@@ -1611,7 +1613,7 @@ static void path_set_redirect(void)
          fill_pathname_dir(global->name.savestate,
                !string_is_empty(path_main_basename) ? path_main_basename :
                   system && !string_is_empty(system->library_name) ? system->library_name : "",
-               ".state",
+               file_path_str(FILE_PATH_STATE_EXTENSION),
                sizeof(global->name.savestate));
          RARCH_LOG("%s \"%s\".\n",
                msg_hash_to_str(MSG_REDIRECTING_SAVESTATE_TO),
@@ -1623,7 +1625,7 @@ static void path_set_redirect(void)
          /* FIXME: Should this optionally use system->library_name like the others? */
          fill_pathname_dir(global->name.cheatfile,
                !string_is_empty(path_main_basename) ? path_main_basename : "",
-               ".state",
+               file_path_str(FILE_PATH_CHT_EXTENSION),
                sizeof(global->name.cheatfile));
          RARCH_LOG("%s \"%s\".\n",
                msg_hash_to_str(MSG_REDIRECTING_CHEATFILE_TO),
@@ -5224,126 +5226,6 @@ finish:
 #endif
 
 /**
- * command_event_disk_control_set_eject:
- * @new_state            : Eject or close the virtual drive tray.
- *                         false (0) : Close
- *                         true  (1) : Eject
- * @print_log            : Show message onscreen.
- *
- * Ejects/closes of the virtual drive tray.
- **/
-static void command_event_disk_control_set_eject(bool new_state, bool print_log)
-{
-   char msg[128];
-   bool error                                        = false;
-   const struct retro_disk_control_callback *control = NULL;
-   rarch_system_info_t *info                         = &runloop_system;
-
-   msg[0] = '\0';
-
-   if (info)
-      control = (const struct retro_disk_control_callback*)&info->disk_control_cb;
-
-   if (!control || !control->get_num_images)
-      return;
-
-   if (control->set_eject_state(new_state))
-      snprintf(msg, sizeof(msg), "%s %s",
-            new_state ?
-            msg_hash_to_str(MSG_DISK_EJECTED) :
-            msg_hash_to_str(MSG_DISK_CLOSED),
-            msg_hash_to_str(MSG_VIRTUAL_DISK_TRAY));
-   else
-   {
-      error = true;
-      snprintf(msg, sizeof(msg), "%s %s %s",
-            msg_hash_to_str(MSG_FAILED_TO),
-            new_state ? "eject" : "close",
-            msg_hash_to_str(MSG_VIRTUAL_DISK_TRAY));
-   }
-
-   if (!string_is_empty(msg))
-   {
-      if (error)
-         RARCH_ERR("%s\n", msg);
-      else
-         RARCH_LOG("%s\n", msg);
-
-      /* Errors should always be displayed */
-      if (print_log || error)
-         runloop_msg_queue_push(
-               msg, 1, error ? 180 : 60,
-               true, NULL,
-               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-   }
-}
-
-/**
- * command_event_disk_control_set_index:
- * @idx                : Index of disk to set as current.
- * @print_log          : Show message onscreen.
- *
- * Sets current disk to @index.
- **/
-static void command_event_disk_control_set_index(unsigned idx, bool print_log)
-{
-   unsigned num_disks;
-   char msg[128];
-   bool error                                        = false;
-   const struct retro_disk_control_callback *control = NULL;
-   rarch_system_info_t *info                         = &runloop_system;
-
-   msg[0] = '\0';
-
-   if (info)
-      control = (const struct retro_disk_control_callback*)&info->disk_control_cb;
-
-   if (!control || !control->get_num_images)
-      return;
-
-   num_disks = control->get_num_images();
-
-   if (control->set_image_index(idx))
-   {
-      if (idx < num_disks)
-         snprintf(msg, sizeof(msg), "%s: %u/%u.",
-               msg_hash_to_str(MSG_SETTING_DISK_IN_TRAY),
-               idx + 1, num_disks);
-      else
-         strlcpy(msg,
-               msg_hash_to_str(MSG_REMOVED_DISK_FROM_TRAY),
-               sizeof(msg));
-   }
-   else
-   {
-      if (idx < num_disks)
-         snprintf(msg, sizeof(msg), "%s %u/%u.",
-               msg_hash_to_str(MSG_FAILED_TO_SET_DISK),
-               idx + 1, num_disks);
-      else
-         strlcpy(msg,
-               msg_hash_to_str(MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY),
-               sizeof(msg));
-      error = true;
-   }
-
-   if (!string_is_empty(msg))
-   {
-      if (error)
-         RARCH_ERR("%s\n", msg);
-      else
-         RARCH_LOG("%s\n", msg);
-
-      /* Errors should always be displayed */
-      if (print_log || error)
-         runloop_msg_queue_push(
-               msg, 1, error ? 180 : 60,
-               true, NULL,
-               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-   }
-}
-
-/**
  * command_event_disk_control_append_image:
  * @path                 : Path to disk image.
  *
@@ -5351,47 +5233,13 @@ static void command_event_disk_control_set_index(unsigned idx, bool print_log)
  **/
 static bool command_event_disk_control_append_image(const char *path)
 {
-   unsigned new_idx;
-   char msg[128];
-   struct retro_game_info info                        = {0};
-   const struct retro_disk_control_callback *control  = NULL;
-   rarch_system_info_t *sysinfo                       = &runloop_system;
-   const char *disk_filename                          = NULL;
+   rarch_system_info_t *sys_info = &runloop_system;
 
-   msg[0] = '\0';
-
-   if (string_is_empty(path))
+   if (!sys_info)
       return false;
 
-   disk_filename = path_basename(path);
-
-   if (string_is_empty(disk_filename))
+   if (!disk_control_append_image(&sys_info->disk_control, path))
       return false;
-
-   if (sysinfo)
-      control = (const struct retro_disk_control_callback*)
-         &sysinfo->disk_control_cb;
-
-   if (!control)
-      return false;
-
-   command_event_disk_control_set_eject(true, false);
-
-   control->add_image_index();
-   new_idx = control->get_num_images();
-   if (!new_idx)
-      return false;
-   new_idx--;
-
-   info.path = path;
-   control->replace_image_index(new_idx, &info);
-
-   snprintf(msg, sizeof(msg), "%s: %s", msg_hash_to_str(MSG_APPENDED_DISK), disk_filename);
-   RARCH_LOG("%s\n", msg);
-   /* This message should always be displayed, since
-    * the menu itself does not provide sufficient
-    * visual feedback */
-   runloop_msg_queue_push(msg, 0, 120, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
 #ifdef HAVE_THREADS
    retroarch_autosave_deinit();
@@ -5409,78 +5257,8 @@ static bool command_event_disk_control_append_image(const char *path)
    }
 
    command_event(CMD_EVENT_AUTOSAVE_INIT, NULL);
-   command_event_disk_control_set_index(new_idx, false);
-   command_event_disk_control_set_eject(false, false);
 
    return true;
-}
-
-/**
- * command_event_check_disk_prev:
- * @control              : Handle to disk control handle.
- * @print_log            : Show message onscreen.
- *
- * Perform disk cycle to previous index action (Core Disk Options).
- **/
-static void command_event_check_disk_prev(
-      const struct retro_disk_control_callback *control, bool print_log)
-{
-   unsigned num_disks    = 0;
-   unsigned current      = 0;
-   bool disk_prev_enable = false;
-
-   if (!control || !control->get_num_images)
-      return;
-   if (!control->get_image_index)
-      return;
-
-   num_disks        = control->get_num_images();
-   current          = control->get_image_index();
-   disk_prev_enable = num_disks && num_disks != UINT_MAX;
-
-   if (!disk_prev_enable)
-   {
-      RARCH_ERR("%s.\n", msg_hash_to_str(MSG_GOT_INVALID_DISK_INDEX));
-      return;
-   }
-
-   if (current > 0)
-      current--;
-   command_event_disk_control_set_index(current, print_log);
-}
-
-/**
- * command_event_check_disk_next:
- * @control              : Handle to disk control handle.
- * @print_log            : Show message onscreen.
- *
- * Perform disk cycle to next index action (Core Disk Options).
- **/
-static void command_event_check_disk_next(
-      const struct retro_disk_control_callback *control, bool print_log)
-{
-   unsigned num_disks        = 0;
-   unsigned current          = 0;
-   bool     disk_next_enable = false;
-
-   if (!control || !control->get_num_images)
-      return;
-   if (!control->get_image_index)
-      return;
-
-   num_disks        = control->get_num_images();
-   current          = control->get_image_index();
-   disk_next_enable = num_disks && num_disks != UINT_MAX;
-
-   if (!disk_next_enable)
-   {
-      RARCH_ERR("%s.\n", msg_hash_to_str(MSG_GOT_INVALID_DISK_INDEX));
-      return;
-   }
-
-   if (current < num_disks - 1)
-      current++;
-   command_event_disk_control_set_index(current, print_log);
 }
 
 /**
@@ -6035,8 +5813,17 @@ static bool command_event_init_core(enum rarch_core_type type)
    current_core.retro_init();
    current_core.inited          = true;
 
+   /* Attempt to set initial disk index */
+   disk_control_set_initial_index(
+         &runloop_system.disk_control,
+         path_get(RARCH_PATH_CONTENT),
+         dir_get(RARCH_DIR_CURRENT_SAVEFILE));
+
    if (!event_init_content())
       return false;
+
+   /* Verify that initial disk index was set correctly */
+   disk_control_verify_initial_index(&runloop_system.disk_control);
 
    if (!core_load(settings->uints.input_poll_type_behavior))
       return false;
@@ -6818,10 +6605,15 @@ bool command_event(enum event_command cmd, void *data)
             bool contentless                = false;
             bool is_inited                  = false;
             content_ctx_info_t content_info = {0};
+            rarch_system_info_t *sys_info   = &runloop_system;
 
             content_get_status(&contentless, &is_inited);
 
             runloop_core_running            = false;
+
+            /* Save last selected disk index, if required */
+            if (sys_info)
+               disk_control_save_image_index(&sys_info->disk_control);
 
             command_event_runtime_log_deinit();
             command_event_save_auto_state();
@@ -7138,6 +6930,12 @@ TODO: Add a setting for these tweaks */
       case CMD_EVENT_CORE_DEINIT:
          {
             struct retro_hw_render_callback *hwr = NULL;
+            rarch_system_info_t *sys_info        = &runloop_system;
+
+            /* Save last selected disk index, if required */
+            if (sys_info)
+               disk_control_save_image_index(&sys_info->disk_control);
+
             command_event_runtime_log_deinit();
             content_reset_savestate_backups();
             hwr = video_driver_get_hw_context_internal();
@@ -7586,33 +7384,29 @@ TODO: Add a setting for these tweaks */
          break;
       case CMD_EVENT_DISK_EJECT_TOGGLE:
          {
-            rarch_system_info_t *info = &runloop_system;
-            bool *show_msg            = (bool*)data;
+            rarch_system_info_t *sys_info = &runloop_system;
+            bool *show_msg                = (bool*)data;
 
-            if (info && info->disk_control_cb.get_num_images)
+            if (!sys_info)
+               return false;
+
+            if (disk_control_enabled(&sys_info->disk_control))
             {
-               const struct retro_disk_control_callback *control =
-                  (const struct retro_disk_control_callback*)
-                  &info->disk_control_cb;
+               bool eject   = !disk_control_get_eject_state(&sys_info->disk_control);
+               bool verbose = true;
+               bool refresh = false;
 
-               if (control)
-               {
-                  bool new_state = !control->get_eject_state();
-                  bool print_log = true;
-                  bool refresh   = false;
+               if (show_msg)
+                  verbose = *show_msg;
 
-                  if (show_msg)
-                     print_log = *show_msg;
-
-                  command_event_disk_control_set_eject(new_state, print_log);
+               disk_control_set_eject_state(&sys_info->disk_control, eject, verbose);
 
 #if defined(HAVE_MENU)
-                  /* It is necessary to refresh the disk options
-                   * menu when toggling the tray state */
-                  menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-                  menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+               /* It is necessary to refresh the disk options
+                * menu when toggling the tray state */
+               menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+               menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
 #endif
-               }
             }
             else
                runloop_msg_queue_push(
@@ -7623,26 +7417,20 @@ TODO: Add a setting for these tweaks */
          break;
       case CMD_EVENT_DISK_NEXT:
          {
-            rarch_system_info_t *info = &runloop_system;
-            bool *show_msg            = (bool*)data;
+            rarch_system_info_t *sys_info = &runloop_system;
+            bool *show_msg                = (bool*)data;
 
-            if (info && info->disk_control_cb.get_num_images)
+            if (!sys_info)
+               return false;
+
+            if (disk_control_enabled(&sys_info->disk_control))
             {
-               const struct retro_disk_control_callback *control =
-                  (const struct retro_disk_control_callback*)
-                  &info->disk_control_cb;
-               bool print_log                                    = true;
-
-               if (!control)
-                  return false;
-
-               if (!control->get_eject_state())
-                  return false;
+               bool verbose = true;
 
                if (show_msg)
-                  print_log = *show_msg;
+                  verbose = *show_msg;
 
-               command_event_check_disk_next(control, print_log);
+               disk_control_set_index_next(&sys_info->disk_control, verbose);
             }
             else
                runloop_msg_queue_push(
@@ -7653,26 +7441,20 @@ TODO: Add a setting for these tweaks */
          break;
       case CMD_EVENT_DISK_PREV:
          {
-            rarch_system_info_t *info = &runloop_system;
-            bool *show_msg            = (bool*)data;
+            rarch_system_info_t *sys_info = &runloop_system;
+            bool *show_msg                = (bool*)data;
 
-            if (info && info->disk_control_cb.get_num_images)
+            if (!sys_info)
+               return false;
+
+            if (disk_control_enabled(&sys_info->disk_control))
             {
-               const struct retro_disk_control_callback *control =
-                  (const struct retro_disk_control_callback*)
-                  &info->disk_control_cb;
-               bool print_log                                    = true;
-
-               if (!control)
-                  return false;
-
-               if (!control->get_eject_state())
-                  return false;
+               bool verbose = true;
 
                if (show_msg)
-                  print_log = *show_msg;
+                  verbose = *show_msg;
 
-               command_event_check_disk_prev(control, print_log);
+               disk_control_set_index_prev(&sys_info->disk_control, verbose);
             }
             else
                runloop_msg_queue_push(
@@ -7683,25 +7465,16 @@ TODO: Add a setting for these tweaks */
          break;
       case CMD_EVENT_DISK_INDEX:
          {
-            rarch_system_info_t *info = &runloop_system;
-            unsigned *index           = (unsigned*)data;
+            rarch_system_info_t *sys_info = &runloop_system;
+            unsigned *index               = (unsigned*)data;
 
-            if (!index)
+            if (!sys_info || !index)
                return false;
 
-            if (info && info->disk_control_cb.get_num_images)
-            {
-               const struct retro_disk_control_callback *control =
-                  (const struct retro_disk_control_callback*)
-                  &info->disk_control_cb;
-
-               if (!control)
-                  return false;
-
-               /* Note: Menu itself provides visual feedback - no
-                * need to print info message to screen */
-               command_event_disk_control_set_index(*index, false);
-            }
+            /* Note: Menu itself provides visual feedback - no
+             * need to print info message to screen */
+            if (disk_control_enabled(&sys_info->disk_control))
+               disk_control_set_index(&sys_info->disk_control, *index, false);
             else
                runloop_msg_queue_push(
                      msg_hash_to_str(MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS),
@@ -9807,11 +9580,35 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
          break;
       }
 
+      case RETRO_ENVIRONMENT_GET_DISK_CONTROL_INTERFACE_VERSION:
+         /* Current API version is 1 */
+         *(unsigned *)data = 1;
+         break;
+
       case RETRO_ENVIRONMENT_SET_DISK_CONTROL_INTERFACE:
-         RARCH_LOG("[Environ]: SET_DISK_CONTROL_INTERFACE.\n");
-         if (system)
-            system->disk_control_cb =
-               *(const struct retro_disk_control_callback*)data;
+         {
+            const struct retro_disk_control_callback *control_cb =
+                  (const struct retro_disk_control_callback*)data;
+
+            if (system)
+            {
+               RARCH_LOG("[Environ]: SET_DISK_CONTROL_INTERFACE.\n");
+               disk_control_set_callback(&system->disk_control, control_cb);
+            }
+         }
+         break;
+
+      case RETRO_ENVIRONMENT_SET_DISK_CONTROL_EXT_INTERFACE:
+         {
+            const struct retro_disk_control_ext_callback *control_cb =
+                  (const struct retro_disk_control_ext_callback*)data;
+
+            if (system)
+            {
+               RARCH_LOG("[Environ]: SET_DISK_CONTROL_EXT_INTERFACE.\n");
+               disk_control_set_ext_callback(&system->disk_control, control_cb);
+            }
+         }
          break;
 
       case RETRO_ENVIRONMENT_GET_PREFERRED_HW_RENDER:
@@ -14956,12 +14753,6 @@ static unsigned menu_event(
          ret = MENU_ACTION_INFO;
       else if (BIT256_GET_PTR(p_trigger_input, RARCH_MENU_TOGGLE))
          ret = MENU_ACTION_TOGGLE;
-   }
-
-   if (menu_keyboard_key_state[RETROK_F11])
-   {
-      command_event(CMD_EVENT_GRAB_MOUSE_TOGGLE, NULL);
-      menu_keyboard_key_state[RETROK_F11] = 0;
    }
 
    /* Get pointer (mouse + touchscreen) input */
@@ -29640,9 +29431,9 @@ static bool terminate_win32_process(PROCESS_INFORMATION pi)
 static bool create_win32_process(char* cmd)
 {
    STARTUPINFO si;
-   ZeroMemory(&si, sizeof(si));
+   memset(&si, 0, sizeof(si));
    si.cb = sizeof(si);
-   ZeroMemory(&pi, sizeof(pi));
+   memset(&pi, 0, sizeof(pi));
 
    if (!CreateProcess(NULL, cmd, NULL, NULL, FALSE, CREATE_NO_WINDOW,
                       NULL, NULL, &si, &pi))

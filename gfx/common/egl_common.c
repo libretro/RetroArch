@@ -564,7 +564,6 @@ bool egl_init_context(egl_ctx_data_t *egl,
       EGLint *count, const EGLint *attrib_ptr,
       egl_accept_config_cb_t cb)
 {
-   int config_index   = -1;
    EGLDisplay dpy     = get_egl_display(platform, display_data);
 
    if (dpy == EGL_NO_DISPLAY)
