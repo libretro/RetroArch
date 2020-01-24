@@ -1631,7 +1631,7 @@ int menu_hash_get_help_fr_enum(enum msg_hash_enums msg, char *s, size_t len)
             snprintf(s, len,
                   "Touche turbo par défaut.\n"
                   " \n"
-                  "Bouton actif par défaut pour le mode turbo 'Touche unique'.\n"
+                  "Touche active par défaut pour le mode turbo 'Touche unique'.\n"
                   );
             break;
         case MENU_ENUM_LABEL_INPUT_DUTY_CYCLE:
@@ -1974,7 +1974,7 @@ int menu_hash_get_help_fr_enum(enum msg_hash_enums msg, char *s, size_t len)
                              " \n"
                              "Maintenir le turbo tout en appuyant sur une \n"
                              "autre touche permet à la touche d'entrer dans \n"
-                             "un mode turbo où l'état du bouton est modulé \n"
+                             "un mode turbo où son état est modulé \n"
                              "avec un signal périodique. \n"
                              " \n"
                              "La modulation s'arrête lorsque la touche \n"
