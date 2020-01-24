@@ -292,7 +292,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NETPLAY_TAB,
-    "Salons de jeu en réseau"
+    "Jeu en réseau"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_ASK_ARCHIVE,
@@ -809,12 +809,44 @@ MSG_HASH(
     "Dossiers"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
+    "Éjecter le disque"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_DISK_TRAY_EJECT,
+    "Ouvre le plateau du lecteur de disque virtuel et retire le disque actuellement chargé. NOTE: Si RetroArch est configuré pour se mettre en pause lorsque le menu est actif, certains cœurs peuvent ne pas enregistrer les modifications à moins que le contenu ne soit repris pendant quelques secondes après chaque action liée au contrôle du disque."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
+    "Insérer le disque"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_DISK_TRAY_INSERT,
+    "Insère le disque correspondant au 'Numéro du disque actuel' et ferme le plateau du lecteur de disque virtuel. NOTE: Si RetroArch est configuré pour se mettre en pause lorsque le menu est actif, certains cœurs peuvent ne pas enregistrer les modifications à moins que le contenu ne soit repris pendant quelques secondes après chaque action liée au contrôle du disque."
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DISK_INDEX,
-    "Numéro du disque"
+    "Numéro du disque actuel"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_DISK_INDEX,
+    "Sélectionne le disque actuel dans la liste des images disponibles. Le disque sera chargé si 'Insérer le disque' est sélectionné."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
+    "Charger un nouveau disque"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
+    "Éjecte le disque actuel, sélectionne un nouveau disque dans le système de fichiers, puis l'insère et ferme le plateau du lecteur de disque virtuel. NOTE: C'est une fonctionnalité obsolète. Il est plutôt recommandé de charger des titres multi-disques via des listes de lecture M3U, qui permettent la sélection du disque en utilisant les options 'Éjecter/Insérer le disque' et 'Numéro du disque actuel'."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DISK_OPTIONS,
-    "Contrôle de disque"
+    "Contrôle du disque"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NO_DISK,
+    "Aucun disque sélectionné"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DONT_CARE,
@@ -879,6 +911,10 @@ MSG_HASH(
 MSG_HASH(
     MSG_ALL_CORES_UPDATED,
     "Tous les cœurs installés sont à jour"
+    )
+MSG_HASH(
+    MSG_NUM_CORES_UPDATED,
+    "cœurs mis à jour : "
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_SCALE_FACTOR,
@@ -1566,6 +1602,14 @@ MSG_HASH(
     "Délai d'activation du turbo "
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_MODE,
+    "Mode turbo"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_DEFAULT_BUTTON,
+    "Touche turbo par défaut"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
     "Touches du port %u"
     )
@@ -2160,6 +2204,14 @@ MSG_HASH(
     "Télécharge automatiquement les miniatures manquantes lors de la navigation dans les listes de lecture. Affecte grandement les performances."
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NETWORK_HOSTING_SETTINGS,
+    "Hôte"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SUBSYSTEM_SETTINGS,
+    "Sous-systèmes"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NETWORK_SETTINGS,
     "Réseau"
     )
@@ -2365,7 +2417,15 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_SAVESTATE_RESUME,
-    "Ferme le menu automatiquement et reprends le contenu actuel après la sélection de 'Sauvegarde instantanée' ou 'Charger une sauvegarde instantanée' depuis le menu rapide. Désactiver cette option peut améliorer les performances de sauvegarde instantanée sur des appareils très lents."
+    "Ferme automatiquement le menu et reprends le contenu actuel après la sélection de 'Sauvegarde instantanée' ou 'Charger une sauvegarde instantanée' depuis le menu rapide. Désactiver cette option peut améliorer les performances de sauvegarde instantanée sur des appareils très lents."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_INSERT_DISK_RESUME,
+    "Reprendre le contenu après le changement de disques"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_INSERT_DISK_RESUME,
+    "Ferme automatiquement le menu et reprends le contenu actuel après la sélection de 'Insérer le disque' ou 'Charger un nouveau disque' depuis le menu de contrôle du disque."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PAUSE_NONACTIVE,
@@ -2458,6 +2518,22 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_THUMBNAIL_MODE_DEFAULT,
     "Par défaut du système"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_CLEAN_PLAYLIST,
+    "Nettoyer la liste de lecture"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_CLEAN_PLAYLIST,
+    "Supprime les entrées invalides/en double et valide les associations aux cœurs."
+    )
+MSG_HASH(
+    MSG_PLAYLIST_MANAGER_CLEANING_PLAYLIST,
+    "Nettoyage de la liste de lecture : "
+    )
+MSG_HASH(
+    MSG_PLAYLIST_MANAGER_PLAYLIST_CLEANED,
+    "Liste de lecture nettoyée : "
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_POINTER_ENABLE,
@@ -4728,6 +4804,10 @@ MSG_HASH(
     "Disque ajouté"
     )
 MSG_HASH(
+    MSG_FAILED_TO_APPEND_DISK,
+    "Échec de l'ajout du disque"
+    )
+MSG_HASH(
     MSG_APPLICATION_DIR,
     "Dossier de l'application"
     )
@@ -5540,6 +5620,14 @@ MSG_HASH(
     "Lecteur de disque virtuel."
     )
 MSG_HASH(
+    MSG_VIRTUAL_DISK_TRAY_EJECT,
+    "éjecter"
+    )
+MSG_HASH(
+    MSG_VIRTUAL_DISK_TRAY_CLOSE,
+    "fermer"
+    )
+MSG_HASH(
     MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
     "Latence audio désirée en millisecondes. Peut être ignorée si le pilote audio ne peut fournir une telle valeur."
     )
@@ -5610,6 +5698,14 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_SUBLABEL_INPUT_DUTY_CYCLE,
     "Décrit la durée après laquelle une touche en mode turbo se répète. Les nombres sont décrits en images."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_INPUT_TURBO_MODE,
+    "Sélectionne le comportement général du mode turbo."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_INPUT_TURBO_DEFAULT_BUTTON,
+    "Touche active par défaut pour le mode turbo 'Touche unique'."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_VSYNC,
@@ -8902,6 +8998,10 @@ MSG_HASH(
     "Impossible de paramétrer le disque"
     )
 MSG_HASH(
+    MSG_FAILED_TO_SET_INITIAL_DISK,
+    "Impossible de paramétrer le dernier disque utilisé..."
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_CORE_OPTIONS,
     "Options de cœur"
     )
@@ -10025,6 +10125,10 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DELETE_PLAYLIST,
     "Supprimer la liste de lecture"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_DELETE_PLAYLIST,
+    "Supprime la liste de lecture du système de fichiers."
     )
 #ifdef HAVE_LAKKA
 MSG_HASH(

@@ -806,7 +806,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_DISK_TRAY_EJECT,
-    "Opens virtual disk try and removes currently loaded disk. NOTE: If RetroArch is configured to pause while menu is active, some cores may not register changes unless content is resumed for a few seconds after each disk control action."
+    "Opens virtual disk tray and removes currently loaded disk. NOTE: If RetroArch is configured to pause while menu is active, some cores may not register changes unless content is resumed for a few seconds after each disk control action."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
