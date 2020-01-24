@@ -8995,11 +8995,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_FAILED_TO_SET_DISK,
-    "Impossible de paramétrer le disque"
+    "Impossible de sélectionner le disque"
     )
 MSG_HASH(
     MSG_FAILED_TO_SET_INITIAL_DISK,
-    "Impossible de paramétrer le dernier disque utilisé..."
+    "Impossible de sélectionner le dernier disque utilisé..."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_CORE_OPTIONS,

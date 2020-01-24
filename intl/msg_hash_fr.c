@@ -1629,7 +1629,7 @@ int menu_hash_get_help_fr_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
         case MENU_ENUM_LABEL_INPUT_TURBO_DEFAULT_BUTTON:
             snprintf(s, len,
-                  "Bouton Turbo par défaut.\n"
+                  "Touche turbo par défaut.\n"
                   " \n"
                   "Bouton actif par défaut pour le mode turbo 'Touche unique'.\n"
                   );
