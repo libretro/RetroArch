@@ -329,7 +329,11 @@
 #endif
 
 /* Smooths picture. */
+#if defined(_3DS) || defined(GEKKO) || defined(HW_RVL) || defined(PSP) || defined(VITA) || defined(SN_TARGET_PSP2) || defined(PS2) || defined(_XBOX)
 #define DEFAULT_VIDEO_SMOOTH true
+#else
+#define DEFAULT_VIDEO_SMOOTH false
+#endif
 
 /* On resize and fullscreen, rendering area will stay 4:3 */
 #define DEFAULT_FORCE_ASPECT true
