@@ -353,6 +353,14 @@ check_platform Win32 WASAPI 'WASAPI is' true
 check_platform Win32 XAUDIO 'XAudio is' true
 check_platform Win32 WINMM 'WinMM is' true
 
+if [ "$HAVE_BLISSBOX" != 'no' ]; then
+   if [ "$HAVE_LIBUSB" != 'no' ] || [ "$OS" = 'Win32' ]; then
+      add_opt BLISSBOX yes
+   else
+      add_opt BLISSBOX no
+   fi
+fi
+
 if [ "$HAVE_OPENGL" != 'no' ] && [ "$HAVE_OPENGLES" != 'yes' ]; then
    if [ "$OS" = 'Darwin' ]; then
       check_header OPENGL "OpenGL/gl.h"

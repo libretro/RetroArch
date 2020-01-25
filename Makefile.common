@@ -231,7 +231,6 @@ OBJ += \
        managers/state_manager.o \
        gfx/drivers_font_renderer/bitmapfont.o \
        tasks/task_autodetect.o \
-       tasks/task_autodetect_blissbox.o \
        input/input_autodetect_builtin.o \
        input/input_keymaps.o \
        input/input_remapping.o \
@@ -264,6 +263,11 @@ OBJ += \
        $(LIBRETRO_COMM_DIR)/playlists/label_sanitization.o \
        manual_content_scan.o \
        disk_control_interface.o
+
+ifeq ($(HAVE_BLISSBOX), 1)
+   DEFINES += -DHAVE_BLISSBOX
+	OBJ += tasks/task_autodetect_blissbox.o
+endif
 
 ifeq ($(HAVE_AUDIOMIXER), 1)
    DEFINES += -DHAVE_AUDIOMIXER

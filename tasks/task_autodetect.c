@@ -27,11 +27,12 @@
 #include "../configuration.h"
 #include "../file_path_special.h"
 #include "../list_special.h"
-#include "../verbosity.h"
 #include "../retroarch.h"
 
 #include "tasks_internal.h"
+#ifdef HAVE_BLISSBOX
 #include "../input/include/blissbox.h"
+#endif
 
 typedef struct autoconfig_disconnect autoconfig_disconnect_t;
 
@@ -101,6 +102,7 @@ static int input_autoconfigure_joypad_try_from_conf(config_file_t *conf,
    int              input_vid = 0;
    int              input_pid = 0;
    int                  score = 0;
+   bool check_pid             = false;
 
    ident[0] = input_driver[0] = '\0';
 
@@ -113,20 +115,30 @@ static int input_autoconfigure_joypad_try_from_conf(config_file_t *conf,
    if (config_get_int  (conf, "input_product_id", &tmp_int))
       input_pid = tmp_int;
 
+#ifdef HAVE_BLISSBOX
    if (params->vid == BLISSBOX_VID)
       input_pid = BLISSBOX_PID;
+#endif
+
+   check_pid = 
+         (params->vid == input_vid)
+      && (params->pid == input_pid)
+      && (params->vid != 0)
+      && (params->pid != 0);
+
+#ifdef HAVE_BLISSBOX
+   check_pid = check_pid
+         && (params->vid != BLISSBOX_VID)
+         && (params->pid != BLISSBOX_PID);
+#endif
 
    /* Check for VID/PID */
-   if (     (params->vid == input_vid)
-         && (params->pid == input_pid)
-         && (params->vid != 0)
-         && (params->pid != 0)
-         && (params->vid != BLISSBOX_VID)
-         && (params->pid != BLISSBOX_PID))
+   if (check_pid)
       score += 3;
 
    /* Check for name match */
-   if (!string_is_empty(params->name)
+   if (
+            !string_is_empty(params->name)
          && !string_is_empty(ident)
          && string_is_equal(ident, params->name))
       score += 2;
@@ -269,12 +281,7 @@ static bool input_autoconfigure_joypad_from_conf_dir(
    }
 
    if (!list)
-   {
-      RARCH_LOG("[Autoconf]: No profiles found.\n");
       return false;
-   }
-
-   RARCH_LOG("[Autoconf]: %d profiles found.\n", (int)list->size);
 
    for (i = 0; i < list->size; i++)
    {
@@ -302,7 +309,6 @@ static bool input_autoconfigure_joypad_from_conf_dir(
 
    if (index >= 0 && current_best > 0 && best_conf)
    {
-      RARCH_LOG("[Autoconf]: selected configuration: %s\n", best_path);
       input_autoconfigure_joypad_add(best_conf, params, task);
       ret = 1;
    }
@@ -368,20 +374,12 @@ static void input_autoconfigure_connect_handler(retro_task_t *task)
 
       if (input_autoconfigure_joypad_from_conf_internal(params, task))
       {
-         RARCH_LOG("[Autoconf]: no profiles found for %s (%d/%d). Using fallback\n",
-               !string_is_empty(params->name) ? params->name : "N/A",
-               params->vid, params->pid);
-
          snprintf(msg, sizeof(msg), "%s (%ld/%ld) %s.",
                !string_is_empty(params->name) ? params->name : "N/A",
                (long)params->vid, (long)params->pid,
                msg_hash_to_str(MSG_DEVICE_NOT_CONFIGURED_FALLBACK));
       }
 #else
-      RARCH_LOG("[Autoconf]: no profiles found for %s (%d/%d).\n",
-            !string_is_empty(params->name) ? params->name : "N/A",
-            params->vid, params->pid);
-
       snprintf(msg, sizeof(msg), "%s (%ld/%ld) %s.",
             !string_is_empty(params->name) ? params->name : "N/A",
             (long)params->vid, (long)params->pid,
@@ -407,8 +405,6 @@ static void input_autoconfigure_disconnect_handler(retro_task_t *task)
    task_set_title(task, strdup(params->msg));
 
    task_set_finished(task, true);
-
-   RARCH_LOG("%s: %s\n", msg_hash_to_str(MSG_AUTODETECT), params->msg);
 
    if (!string_is_empty(params->msg))
       free(params->msg);
@@ -528,8 +524,10 @@ void input_autoconfigure_connect(
    state->max_users               = *(
          input_driver_get_uint(INPUT_ACTION_MAX_USERS));
 
+#ifdef HAVE_BLISSBOX
    if (state->vid == BLISSBOX_VID)
       input_autoconfigure_override_handler(state);
+#endif
 
    if (!string_is_empty(state->name))
       input_config_set_device_name(state->idx, state->name);
