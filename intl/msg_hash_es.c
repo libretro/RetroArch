@@ -127,6 +127,13 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
                    "Muestra o no el contador de fotogramas\n"
                    "por segundo.");
              break;
+          case RARCH_SEND_DEBUG_INFO:
+             snprintf(s, len,
+                   "Envía información de diagnóstico de\n"
+                   "tu dispositivo y la configuración de RetroArch\n"
+                   "a nuestros servidores para su posterior\n"
+                   "análisis.");
+             break;
           case RARCH_NETPLAY_HOST_TOGGLE:
              snprintf(s, len,
                    "Activa o desactiva el servidor de juego en red.");

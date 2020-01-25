@@ -5960,6 +5960,12 @@ static int (funcname)(const char *path, const char *label, unsigned type, size_t
    return generic_action_ok_help(path, label, type, idx, entry_idx, _id, _id2); \
 }
 
+static int action_ok_help_send_debug_info(const char *path, const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   command_event(CMD_EVENT_SEND_DEBUG_INFO, NULL);
+   return 0;
+}
+
 default_action_ok_help(action_ok_help_audio_video_troubleshooting, MENU_ENUM_LABEL_HELP_AUDIO_VIDEO_TROUBLESHOOTING, MENU_DIALOG_HELP_AUDIO_VIDEO_TROUBLESHOOTING)
 default_action_ok_help(action_ok_help, MENU_ENUM_LABEL_HELP, MENU_DIALOG_WELCOME)
 default_action_ok_help(action_ok_help_controls, MENU_ENUM_LABEL_HELP_CONTROLS, MENU_DIALOG_HELP_CONTROLS)
@@ -6639,6 +6645,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_HELP_AUDIO_VIDEO_TROUBLESHOOTING:
             BIND_ACTION_OK(cbs, action_ok_help_audio_video_troubleshooting);
+            break;
+         case MENU_ENUM_LABEL_HELP_SEND_DEBUG_INFO:
+            BIND_ACTION_OK(cbs, action_ok_help_send_debug_info);
             break;
          case MENU_ENUM_LABEL_HELP_SCANNING_CONTENT:
             BIND_ACTION_OK(cbs, action_ok_help_scanning_content);

@@ -109,6 +109,10 @@ int menu_hash_get_help_ko_enum(enum msg_hash_enums msg, char *s, size_t len)
            snprintf(s, len,
                    "FPS 표시를 전환합니다.");
              break;
+          case RARCH_SEND_DEBUG_INFO:
+             snprintf(s, len,
+                   "기기 및 RetroArch 설정의 분적 정보를 분석을 위해 서버에 보냅니다.");
+             break;
           case RARCH_NETPLAY_HOST_TOGGLE:
              snprintf(s, len,
                    "넷플레 호스트 켜기/끄기.");

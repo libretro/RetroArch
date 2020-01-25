@@ -1280,6 +1280,10 @@ MSG_HASH(
     "Frameadvance"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_META_SEND_DEBUG_INFO,
+    "Hata Ayıklama Bilgisi Gönder"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_META_FPS_TOGGLE,
     "FPS açma-kapama"
     )
@@ -8751,6 +8755,38 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLIST_RUNTIME_AGGREGATE,
     "Toplam"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_HELP_SEND_DEBUG_INFO,
+    "Hata Ayıklama Bilgisi Gönder"
+    )
+MSG_HASH(
+    MSG_FAILED_TO_SAVE_DEBUG_INFO,
+    "Hata ayıklama bilgisi kaydedilemedi."
+    )
+MSG_HASH(
+    MSG_FAILED_TO_SEND_DEBUG_INFO,
+    "Sunucuya hata ayıklama bilgisi gönderilemedi."
+    )
+MSG_HASH(
+    MSG_SENDING_DEBUG_INFO,
+    "Hata ayıklama bilgisi gönderiliyor..."
+    )
+MSG_HASH(
+    MSG_SENT_DEBUG_INFO,
+    "Sunucuya hata ayıklama bilgisi başarıyla gönderildi. Kimlik numaranız %u."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_HELP_SEND_DEBUG_INFO,
+    "Analiz için cihazların ve RetroArch yapılandırmasına ilişkin teşhis bilgilerini gönderir."
+    )
+MSG_HASH(
+    MSG_PRESS_TWO_MORE_TIMES_TO_SEND_DEBUG_INFO,
+    "RetroArch ekibine tanılama bilgileri göndermek için iki kez daha basın."
+    )
+MSG_HASH(
+    MSG_PRESS_ONE_MORE_TIME_TO_SEND_DEBUG_INFO,
+    "RetroArch ekibine tanılama bilgileri göndermek için bir kez daha basın."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIBRATE_ON_KEYPRESS,

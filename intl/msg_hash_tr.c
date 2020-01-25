@@ -116,6 +116,10 @@ int menu_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
              snprintf(s, len,
                    "Saniye sayacındaki kareleri değiştirir.");
              break;
+          case RARCH_SEND_DEBUG_INFO:
+             snprintf(s, len,
+                   "Analiz için cihazınızın ve RetroArch yapılandırmasına ilişkin tanılama bilgilerini sunucularımıza gönderin.");
+             break;
           case RARCH_NETPLAY_HOST_TOGGLE:
              snprintf(s, len,
                    "Netplay barındırma özelliğini açar/kapatır.");

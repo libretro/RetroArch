@@ -1293,6 +1293,10 @@ MSG_HASH(
    "コマ送り"
 )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_SEND_DEBUG_INFO,
+   "デバッグ情報の送信"
+)
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FPS_TOGGLE,
    "FPS表示の切り替え"
 )
@@ -8574,6 +8578,30 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_RUNTIME_AGGREGATE,
    "総計"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_HELP_SEND_DEBUG_INFO,
+   "デバッグ情報の送信"
+)
+MSG_HASH(
+   MSG_FAILED_TO_SAVE_DEBUG_INFO,
+   "デバッグ情報の保存に失敗しました。"
+)
+MSG_HASH(
+   MSG_FAILED_TO_SEND_DEBUG_INFO,
+   "デバッグ情報のサーバへの送信に失敗しました。"
+)
+MSG_HASH(
+   MSG_SENDING_DEBUG_INFO,
+   "デバッグ情報の送信中..."
+)
+MSG_HASH(
+   MSG_SENT_DEBUG_INFO,
+   "デバッグ情報のサーバへの送信に成功しました。ID番号は %u です。"
+)
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_HELP_SEND_DEBUG_INFO,
+   "解析のため, デバイスとRetroArch設定に関する情報をサーバーに送信します。"
 )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIBRATE_ON_KEYPRESS,

@@ -1303,6 +1303,10 @@ MSG_HASH(
     "Avanço de Quadro"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_META_SEND_DEBUG_INFO,
+    "Enviar informações de depuração"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_META_FPS_TOGGLE,
     "Alternar FPS"
     )
@@ -9217,6 +9221,38 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_SUBLABEL_PLAYLIST_FUZZY_ARCHIVE_MATCH,
     "Ao pesquisar as listas de reprodução de entradas associadas a arquivos compactados, corresponde apenas ao nome do arquivo morto em vez de [nome do arquivo]+[conteúdo]. Habilite isso para evitar entradas de histórico de conteúdo duplicadas ao carregar arquivos compactados."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_HELP_SEND_DEBUG_INFO,
+    "Enviar Informação de Depuração"
+    )
+MSG_HASH(
+    MSG_FAILED_TO_SAVE_DEBUG_INFO,
+    "Falha ao salvar informações de depuração."
+    )
+MSG_HASH(
+    MSG_FAILED_TO_SEND_DEBUG_INFO,
+    "Falha ao enviar informações de depuração para o servidor."
+    )
+MSG_HASH(
+    MSG_SENDING_DEBUG_INFO,
+    "Enviando informações de depuração..."
+    )
+MSG_HASH(
+    MSG_SENT_DEBUG_INFO,
+    "Enviado informações de depuração para o servidor com sucesso. Seu ID é o número %u."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_HELP_SEND_DEBUG_INFO,
+    "Envia informações de diagnóstico sobre o seu dispositivo e a configuração do RetroArch aos nossos servidores para análise."
+    )
+MSG_HASH(
+    MSG_PRESS_TWO_MORE_TIMES_TO_SEND_DEBUG_INFO,
+    "Pressione mais duas vezes para enviar informações de diagnóstico para a equipe do RetroArch."
+    )
+MSG_HASH(
+    MSG_PRESS_ONE_MORE_TIME_TO_SEND_DEBUG_INFO,
+    "Pressione mais uma vez para enviar informações de diagnóstico para a equipe do RetroArch."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIBRATE_ON_KEYPRESS,
