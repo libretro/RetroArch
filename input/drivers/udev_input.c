@@ -844,9 +844,9 @@ static int16_t udev_lightgun_aiming_state(udev_input_t *udev, unsigned port, uns
    switch ( id )
    {
    case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X:
-      return inside ? res_x : 0;
+      return res_x;
    case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y:
-      return inside ? res_y : 0;
+      return res_y;
    case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
       return !inside;
    default:
@@ -867,9 +867,9 @@ static int16_t udev_lightgun_aiming_state(udev_input_t *udev, unsigned port, uns
    switch ( id )
    {
    case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X:
-      return inside ? abs_x : 0;
+      return abs_x;
    case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y:
-      return inside ? abs_y : 0;
+      return abs_y;
    case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
       return !inside;
    default:
