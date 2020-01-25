@@ -5,6 +5,7 @@
 - EMSCRIPTEN: Recreate input event listeners properly
 - LIBRETRO: Add disk control interface API extension
 - LOCALIZATION: Update Polish translation
+- VIDEO: Set hardware 'Bilinear filtering' off by default
 
 # 1.8.4
 - ANDROID/BUGFIX: Prevent crash when Android device is minimized and you go back to the app
