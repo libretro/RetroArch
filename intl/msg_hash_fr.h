@@ -1359,10 +1359,6 @@ MSG_HASH(
     "Avance image par image"
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_INPUT_META_SEND_DEBUG_INFO,
-    "Envoyer les informations de diagnostic"
-    )
-MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_META_FPS_TOGGLE,
     "Afficher/masquer les images/s"
     )
@@ -9341,38 +9337,6 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_SUBLABEL_PLAYLIST_FUZZY_ARCHIVE_MATCH,
     "Lors de la recherche de fichiers compressés dans les listes de lecture, faire correspondre le nom de l'archive uniquement et non [nom]+[contenu]. Activez cette option pour éviter les doublons dans l'historique lors du chargement d'archives."
-    )
-MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_HELP_SEND_DEBUG_INFO,
-    "Envoyer des informations de diagnostic"
-    )
-MSG_HASH(
-    MSG_FAILED_TO_SAVE_DEBUG_INFO,
-    "Échec d'enregistrement des informations de diagnostic."
-    )
-MSG_HASH(
-    MSG_FAILED_TO_SEND_DEBUG_INFO,
-    "Échec d'envoi des informations de diagnostic au serveur."
-    )
-MSG_HASH(
-    MSG_SENDING_DEBUG_INFO,
-    "Envoi des informations de diagnostic..."
-    )
-MSG_HASH(
-    MSG_SENT_DEBUG_INFO,
-    "Les informations de diagnostic ont été envoyées au serveur avec succès. Votre numéro d'identification est %u."
-    )
-MSG_HASH(
-    MENU_ENUM_SUBLABEL_HELP_SEND_DEBUG_INFO,
-    "Envoyer les informations de diagnostic pour votre appareil et la configuration de RetroArch à nos serveurs pour analyse."
-    )
-MSG_HASH(
-    MSG_PRESS_TWO_MORE_TIMES_TO_SEND_DEBUG_INFO,
-    "Appuyez deux fois de plus pour soumettre les informations de diagnostic à l'équipe de RetroArch."
-    )
-MSG_HASH(
-    MSG_PRESS_ONE_MORE_TIME_TO_SEND_DEBUG_INFO,
-    "Appuyez une fois de plus pour soumettre les informations de diagnostic à l'équipe de RetroArch."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIBRATE_ON_KEYPRESS,

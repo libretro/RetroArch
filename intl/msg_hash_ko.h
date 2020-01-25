@@ -1284,10 +1284,6 @@ MSG_HASH(
     "다음 프레임"
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_INPUT_META_SEND_DEBUG_INFO,
-    "디버그 정보 보내기"
-    )
-MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_META_FPS_TOGGLE,
     "FPS 켜기/끄기"
     )
@@ -8978,38 +8974,6 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLIST_RUNTIME_AGGREGATE,
     "종합"
-    )
-MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_HELP_SEND_DEBUG_INFO,
-    "디버그 정보 전송"
-    )
-MSG_HASH(
-    MSG_FAILED_TO_SAVE_DEBUG_INFO,
-    "디버그 정보 저장 실패."
-    )
-MSG_HASH(
-    MSG_FAILED_TO_SEND_DEBUG_INFO,
-    "디버그 정보를 서버에 전송하는데 실패했습니다."
-    )
-MSG_HASH(
-    MSG_SENDING_DEBUG_INFO,
-    "디버그 정보 전송 중..."
-    )
-MSG_HASH(
-    MSG_SENT_DEBUG_INFO,
-    "디버그 정보를 성공적으로 서버에 보냈습니다. ID 번호는 %u 입니다."
-    )
-MSG_HASH(
-    MENU_ENUM_SUBLABEL_HELP_SEND_DEBUG_INFO,
-    "장치 및 RetroArch 설정 분석 정보를 분석을 위해 서버로 전송합니다."
-    )
-MSG_HASH(
-    MSG_PRESS_TWO_MORE_TIMES_TO_SEND_DEBUG_INFO,
-    "분석 정보를 RetroArch 팀에게 보내려면 두 번 더 눌러주십시오."
-    )
-MSG_HASH(
-    MSG_PRESS_ONE_MORE_TIME_TO_SEND_DEBUG_INFO,
-    "분석 정보를 RetroArch 팀에게 보내려면 한 번 더 눌러주십시오."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIBRATE_ON_KEYPRESS,

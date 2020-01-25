@@ -1387,10 +1387,6 @@ MSG_HASH(
     "Frameadvance"
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_INPUT_META_SEND_DEBUG_INFO,
-    "Send Debug Info"
-    )
-MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_META_FPS_TOGGLE,
     "FPS toggle"
     )
@@ -9437,38 +9433,6 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_SUBLABEL_PLAYLIST_FUZZY_ARCHIVE_MATCH,
     "When searching playlists for entries associated with compressed files, match only the archive file name instead of [file name]+[content]. Enable this to avoid duplicate content history entries when loading compressed files."
-    )
-MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_HELP_SEND_DEBUG_INFO,
-    "Send Debug Info"
-    )
-MSG_HASH(
-    MSG_FAILED_TO_SAVE_DEBUG_INFO,
-    "Failed to save debug info."
-    )
-MSG_HASH(
-    MSG_FAILED_TO_SEND_DEBUG_INFO,
-    "Failed to send debug info to server."
-    )
-MSG_HASH(
-    MSG_SENDING_DEBUG_INFO,
-    "Sending debug info..."
-    )
-MSG_HASH(
-    MSG_SENT_DEBUG_INFO,
-    "Sent debug info to server successfully. Your ID number is %u."
-    )
-MSG_HASH(
-    MENU_ENUM_SUBLABEL_HELP_SEND_DEBUG_INFO,
-    "Sends diagnostic info about your device and RetroArch configuration to our servers for analysis."
-    )
-MSG_HASH(
-    MSG_PRESS_TWO_MORE_TIMES_TO_SEND_DEBUG_INFO,
-    "Press two more times to submit diagnostic info to the RetroArch team."
-    )
-MSG_HASH(
-    MSG_PRESS_ONE_MORE_TIME_TO_SEND_DEBUG_INFO,
-    "Press one more time to submit diagnostic info to the RetroArch team."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIBRATE_ON_KEYPRESS,

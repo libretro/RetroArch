@@ -118,10 +118,6 @@ int menu_hash_get_help_fr_enum(enum msg_hash_enums msg, char *s, size_t len)
              snprintf(s, len,
                    "Afficher/masquer le compteur d'images/s.");
              break;
-          case RARCH_SEND_DEBUG_INFO:
-             snprintf(s, len,
-                   "Envoie des informations de diagnostic sur votre appareil et la configuration de RetroArch à nos serveurs pour analyse.");
-             break;
           case RARCH_NETPLAY_HOST_TOGGLE:
              snprintf(s, len,
                    "Activer/désactiver l'hébergement du jeu en réseau.");

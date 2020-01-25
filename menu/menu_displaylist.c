@@ -4414,12 +4414,6 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
                   MENU_ENUM_LABEL_HELP_CONTROLS,
                   0, 0, 0))
             count++;
-         if (menu_entries_append_enum(list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_HELP_SEND_DEBUG_INFO),
-                  msg_hash_to_str(MENU_ENUM_LABEL_HELP_SEND_DEBUG_INFO),
-                  MENU_ENUM_LABEL_HELP_SEND_DEBUG_INFO,
-                  0, 0, 0))
-            count++;
          break;
       case DISPLAYLIST_AUDIO_RESAMPLER_SETTINGS_LIST:
          if (menu_displaylist_parse_settings_enum(list,

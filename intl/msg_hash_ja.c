@@ -115,10 +115,6 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
             snprintf(s, len,
                      "Toggles frames per second counter.");
             break;
-         case RARCH_SEND_DEBUG_INFO:
-            snprintf(s, len,
-                     "Sends diagnostic info about your device and RetroArch configuration to our servers for analysis.");
-            break;
          case RARCH_NETPLAY_HOST_TOGGLE:
             snprintf(s, len,
                      "Toggles netplay hosting on/off.");

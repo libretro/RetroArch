@@ -4031,10 +4031,6 @@ MSG_HASH(
     MENU_ENUM_LABEL_VALUE_REWIND_BUFFER_SIZE_STEP,
     "Krok zmiany rozmiaru bufora (MB)"
     )
-MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_HELP_SEND_DEBUG_INFO,
-    "Wyślij informacje o debugowaniu"
-    )
 #ifdef HAVE_LAKKA
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_SHOW_QUIT_RETROARCH,
@@ -4550,9 +4546,6 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_SHOW_WIMP,
     )
 MSG_HASH(MENU_ENUM_SUBLABEL_SHOW_WIMP,
     "Otwiera menu pulpitu, jeśli jest zamknięte."
-    )
-MSG_HASH(MENU_ENUM_SUBLABEL_HELP_SEND_DEBUG_INFO,
-    "Wysyła informacje diagnostyczne o twoim urządzeniu i konfiguracji RetroArch na nasze serwery w celu analizy."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_SOUNDS,

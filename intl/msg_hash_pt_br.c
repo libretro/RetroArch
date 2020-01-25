@@ -116,10 +116,6 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
              snprintf(s, len,
                    "Alternar contador de quadros por segundo.");
              break;
-          case RARCH_SEND_DEBUG_INFO:
-             snprintf(s, len,
-                   "Envia informações de diagnóstico sobre o seu dispositivo e a configuração do RetroArch aos nossos servidores para análise.");
-             break;
           case RARCH_NETPLAY_HOST_TOGGLE:
              snprintf(s, len,
                    "Ativar ou desativar a hospedagem de jogo em rede.");

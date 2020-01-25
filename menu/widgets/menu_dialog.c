@@ -197,11 +197,6 @@ int menu_dialog_iterate(char *s, size_t len, const char *label)
                MENU_ENUM_LABEL_VALUE_HELP_AUDIO_VIDEO_TROUBLESHOOTING_DESC,
                s, len);
          break;
-      case MENU_DIALOG_HELP_SEND_DEBUG_INFO:
-         menu_hash_get_help_enum(
-               MENU_ENUM_LABEL_VALUE_HELP_SEND_DEBUG_INFO_DESC,
-               s, len);
-         break;
       case MENU_DIALOG_HELP_SCANNING_CONTENT:
          menu_hash_get_help_enum(MENU_ENUM_LABEL_VALUE_HELP_SCANNING_CONTENT_DESC,
                s, len);
