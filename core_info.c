@@ -21,14 +21,12 @@
 #include <file/file_path.h>
 #include <lists/dir_list.h>
 #include <file/archive_file.h>
-#include <streams/file_stream.h>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
 
 #include "retroarch.h"
-#include "verbosity.h"
 
 #include "core_info.h"
 #include "file_path_special.h"
@@ -610,10 +608,7 @@ static bool core_info_list_update_missing_firmware_internal(
             info->firmware[i].path, path_size);
       info->firmware[i].missing = !path_is_valid(path);
       if (info->firmware[i].missing && !info->firmware[i].optional)
-      {
          *set_missing_bios = true;
-         RARCH_WARN("Firmware missing: %s\n", info->firmware[i].path);
-      }
    }
 
    free(path);

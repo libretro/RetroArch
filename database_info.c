@@ -29,7 +29,6 @@
 
 #include "core_info.h"
 #include "database_info.h"
-#include "verbosity.h"
 
 int database_info_build_query_enum(char *s, size_t len,
       enum database_query_type type,
@@ -105,7 +104,6 @@ int database_info_build_query_enum(char *s, size_t len,
          add_quotes = false;
          break;
       case DATABASE_QUERY_NONE:
-         RARCH_LOG("Unknown type: %d\n", type);
          break;
    }
 
@@ -121,10 +119,6 @@ int database_info_build_query_enum(char *s, size_t len,
       strlcat(s, "\"", len);
 
    strlcat(s, "}", len);
-
-#if 0
-   RARCH_LOG("query: %s\n", s);
-#endif
 
    return 0;
 }
@@ -289,10 +283,6 @@ static int database_cursor_iterate(libretrodb_cursor_t *cur,
       else if (string_is_equal(str, "md5"))
          db_info->md5 = bin_to_hex_alloc(
                (uint8_t*)val->val.binary.buff, val->val.binary.len);
-      else
-      {
-         RARCH_LOG("Unknown key: %s\n", str);
-      }
    }
 
    rmsgpack_dom_value_free(&item);
