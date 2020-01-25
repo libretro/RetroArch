@@ -304,10 +304,7 @@ static const blissbox_pad_type_t* input_autoconfigure_get_blissbox_pad_type_win3
 
          /* Check for some other error */
          if (!bResult)
-         {
-           RARCH_LOG("[Autoconf]: Error in SetupDiGetDeviceInterfaceDetail: %d.\n", GetLastError());
            goto done;
-         }
 
          /* copy device path */
          nLength      = _tcslen(pInterfaceDetailData->DevicePath) + 1;
