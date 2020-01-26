@@ -3296,7 +3296,7 @@ void vulkan_framebuffer_generate_mips(
    for (i = 1; i < levels; i++)
    {
       unsigned src_width, src_height, target_width, target_height;
-      VkImageBlit blit_region = {};
+      VkImageBlit blit_region = {0};
 
       /* For subsequent passes, we have to transition
        * from DST_OPTIMAL to SRC_OPTIMAL,
