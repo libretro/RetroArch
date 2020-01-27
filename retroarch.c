@@ -3756,9 +3756,9 @@ static bool command_get_status(const char* arg)
    if(!is_inited) {
        snprintf(reply, sizeof(reply), "GET_STATUS CONTENTLESS");
    } else {
-       // add some content info
-       //char* content_name = load_content_info->content->elems[0].data; // full path
-       const char* content_name = path_basename(path_get(RARCH_PATH_BASENAME));  // filename only without ext
+       /* add some content info */
+       /* char* content_name = load_content_info->content->elems[0].data; */  /* full path */
+       const char* content_name = path_basename(path_get(RARCH_PATH_BASENAME));  /* filename only without ext */
        int content_crc32 = content_get_crc();
        const char* system_id = NULL;
        core_info_t *core_info = NULL;
