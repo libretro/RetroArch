@@ -46,27 +46,28 @@
 #include "../../retroarch.h"
 
 /* Only used before init_netplay */
-static bool netplay_enabled = false;
-static bool netplay_is_client = false;
+static bool netplay_enabled                   = false;
+static bool netplay_is_client                 = false;
 
 /* Used while Netplay is running */
-static netplay_t *netplay_data = NULL;
+static netplay_t *netplay_data                = NULL;
 
 /* Used to avoid recursive netplay calls */
-static bool in_netplay = false;
+static bool in_netplay                        = false;
 
 /* Used for deferred netplay initialization */
-static bool      netplay_client_deferred = false;
+static bool      netplay_client_deferred      = false;
 static char      server_address_deferred[512] = "";
-static unsigned  server_port_deferred = 0;
+static unsigned  server_port_deferred         = 0;
 
 /* Used */
-static int reannounce = 0;
-static bool is_mitm = false;
+static int reannounce                         = 0;
+static bool is_mitm                           = false;
 
 static bool netplay_disconnect(netplay_t *netplay);
 
 #ifdef HAVE_DISCORD
+/* TODO/FIXME - global */
 extern bool discord_is_inited;
 #endif
 
@@ -1035,7 +1036,7 @@ static void netplay_frontend_paused(netplay_t *netplay, bool paused)
  **/
 bool netplay_pre_frame(netplay_t *netplay)
 {
-   bool sync_stalled;
+   bool sync_stalled     = false;
    settings_t *settings  = config_get_ptr();
 
    retro_assert(netplay);
@@ -1330,10 +1331,10 @@ static void netplay_core_reset(netplay_t *netplay)
  */
 uint8_t netplay_settings_share_mode(unsigned share_digital, unsigned share_analog)
 {
-   uint8_t share_mode     = 0;
-
    if (share_digital || share_analog)
    {
+      uint8_t share_mode     = 0;
+
       switch (share_digital)
       {
          case RARCH_NETPLAY_SHARE_DIGITAL_OR:
@@ -1348,6 +1349,7 @@ uint8_t netplay_settings_share_mode(unsigned share_digital, unsigned share_analo
          default:
             share_mode |= NETPLAY_SHARE_NO_PREFERENCE;
       }
+
       switch (share_analog)
       {
          case RARCH_NETPLAY_SHARE_ANALOG_MAX:
@@ -1359,9 +1361,10 @@ uint8_t netplay_settings_share_mode(unsigned share_digital, unsigned share_analo
          default:
             share_mode |= NETPLAY_SHARE_NO_PREFERENCE;
       }
-   }
 
-   return share_mode;
+      return share_mode;
+   }
+   return 0;
 }
 
 /**
@@ -1371,24 +1374,21 @@ uint8_t netplay_settings_share_mode(unsigned share_digital, unsigned share_analo
  */
 static void netplay_toggle_play_spectate(netplay_t *netplay)
 {
-   enum rarch_netplay_connection_mode mode;
-
-   if (netplay->self_mode == NETPLAY_CONNECTION_PLAYING ||
-       netplay->self_mode == NETPLAY_CONNECTION_SLAVE)
+   switch (netplay->self_mode)
    {
-      /* Switch to spectator mode immediately */
-      netplay->self_mode = NETPLAY_CONNECTION_SPECTATING;
-      mode = NETPLAY_CONNECTION_SPECTATING;
+      case NETPLAY_CONNECTION_PLAYING:
+      case NETPLAY_CONNECTION_SLAVE:
+         /* Switch to spectator mode immediately */
+         netplay->self_mode = NETPLAY_CONNECTION_SPECTATING;
+         netplay_cmd_mode(netplay, NETPLAY_CONNECTION_SPECTATING);
+         break;
+      case NETPLAY_CONNECTION_SPECTATING:
+         /* Switch only after getting permission */
+         netplay_cmd_mode(netplay, NETPLAY_CONNECTION_PLAYING);
+         break;
+      default:
+         break;
    }
-   else if (netplay->self_mode == NETPLAY_CONNECTION_SPECTATING)
-   {
-      /* Switch only after getting permission */
-      mode = NETPLAY_CONNECTION_PLAYING;
-   }
-   else
-      return;
-
-   netplay_cmd_mode(netplay, mode);
 }
 
 /**
