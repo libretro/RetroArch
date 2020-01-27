@@ -28114,24 +28114,10 @@ void rarch_favorites_deinit(void)
 
 /* Libretro core loader */
 
-static void retro_run_null(void)
-{
-}
-
+static void retro_run_null(void) { }
 static void retro_frame_null(const void *data, unsigned width,
-      unsigned height, size_t pitch)
-{
-}
-
-static void retro_input_poll_null(void)
-{
-}
-
-static int16_t core_input_state_poll(unsigned port,
-      unsigned device, unsigned idx, unsigned id)
-{
-   return input_state(port, device, idx, id);
-}
+      unsigned height, size_t pitch) { }
+static void retro_input_poll_null(void) { }
 
 static int16_t core_input_state_poll_late(unsigned port,
       unsigned device, unsigned idx, unsigned id)
@@ -28150,7 +28136,7 @@ static retro_input_state_t core_input_state_poll_return_cb(void)
       : current_core.poll_type;
    if (new_poll_type == POLL_TYPE_LATE)
       return core_input_state_poll_late;
-   return core_input_state_poll;
+   return input_state;
 }
 
 static void core_input_state_poll_maybe(void)
