@@ -3745,6 +3745,35 @@ static bool command_version(const char* arg)
    return true;
 }
 
+static bool command_get_status(const char* arg)
+{
+   char reply[4096] = {0};
+
+   bool contentless = false;
+   bool is_inited = false;
+   content_get_status(&contentless, &is_inited);
+    
+   if(!is_inited) {
+       snprintf(reply, sizeof(reply), "GET_STATUS CONTENTLESS");
+   } else {
+       // add some content info
+       //char* content_name = load_content_info->content->elems[0].data; // full path
+       const char* content_name = path_basename(path_get(RARCH_PATH_BASENAME));  // filename only without ext
+       int content_crc32 = content_get_crc();
+       const char* system_id = NULL;
+       core_info_t *core_info = NULL;
+       core_info_get_current_core(&core_info);
+       if (core_info) system_id = core_info->system_id;
+       if (!system_id) system_id = runloop_system.info.library_name;
+       
+       snprintf(reply, sizeof(reply), "GET_STATUS RUNNING %s,%s,crc32=%x\n", system_id, content_name, content_crc32);
+   }
+
+   command_reply(reply, strlen(reply));
+
+   return true;
+}
+
 #if defined(HAVE_CHEEVOS)
 static bool command_read_ram(const char *arg);
 static bool command_write_ram(const char *arg);
@@ -3753,6 +3782,7 @@ static bool command_write_ram(const char *arg);
 static const struct cmd_action_map action_map[] = {
    { "SET_SHADER",      command_set_shader,  "<shader path>" },
    { "VERSION",         command_version,     "No argument"},
+   { "GET_STATUS",      command_get_status,  "No argument" },
 #if defined(HAVE_CHEEVOS)
    { "READ_CORE_RAM",   command_read_ram,    "<address> <number of bytes>" },
    { "WRITE_CORE_RAM",  command_write_ram,   "<address> <byte1> <byte2> ..." },
