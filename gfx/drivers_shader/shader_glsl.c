@@ -28,7 +28,7 @@
 #include "../../config.h"
 #endif
 
-#ifdef HAVE_OPENGL
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
 #include <gfx/gl_capabilities.h>
 #include "../common/gl_common.h"
 #endif

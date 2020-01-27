@@ -377,6 +377,18 @@ static void onInputQueueDestroyed(ANativeActivity* activity,
    android_app_set_input((struct android_app*)activity->instance, NULL);
 }
 
+static void onContentRectChanged(ANativeActivity *activity,
+      const ARect *rect)
+{
+   struct android_app *instance = (struct android_app*)activity->instance;
+   unsigned width = rect->right - rect->left;
+   unsigned height = rect->bottom - rect->top;
+   RARCH_LOG("Content rect changed: %u x %u\n", width, height);
+   instance->content_rect.changed = true;
+   instance->content_rect.width   = width;
+   instance->content_rect.height  = height;
+}
+
 JNIEnv *jni_thread_getenv(void)
 {
    JNIEnv *env;
@@ -486,6 +498,7 @@ void ANativeActivity_onCreate(ANativeActivity* activity,
    activity->callbacks->onNativeWindowDestroyed = onNativeWindowDestroyed;
    activity->callbacks->onInputQueueCreated     = onInputQueueCreated;
    activity->callbacks->onInputQueueDestroyed   = onInputQueueDestroyed;
+   activity->callbacks->onContentRectChanged    = onContentRectChanged;
 
    /* These are set only for the native activity,
     * and are reset when it ends. */
@@ -1910,7 +1923,7 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
    file_list_t *list = (file_list_t*)data;
    enum msg_hash_enums enum_idx = load_content ?
       MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR :
-      MSG_UNKNOWN;
+      MENU_ENUM_LABEL_FILE_BROWSER_DIRECTORY;
 
 #ifdef ANDROID
    if (!string_is_empty(internal_storage_path))
@@ -1961,6 +1974,50 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
       menu_entries_append_enum(list,
             app_dir,
             msg_hash_to_str(MSG_APPLICATION_DIR),
+            enum_idx,
+            FILE_TYPE_DIRECTORY, 0, 0);
+   }
+#else
+   char base_path[PATH_MAX] = {0};
+   const char *xdg          = getenv("XDG_CONFIG_HOME");
+   const char *home         = getenv("HOME");
+
+   if (xdg)
+   {
+      strlcpy(base_path, xdg, sizeof(base_path));
+      strlcat(base_path, "/retroarch", sizeof(base_path));
+   }
+   else if (home)
+   {
+      strlcpy(base_path, home, sizeof(base_path));
+      strlcat(base_path, "/.config/retroarch", sizeof(base_path));
+   }
+
+   if(!string_is_empty(base_path))
+   {
+      menu_entries_append_enum(list, base_path,
+            msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+            enum_idx,
+            FILE_TYPE_DIRECTORY, 0, 0);
+   }
+   if (!string_is_empty(home))
+   {
+      menu_entries_append_enum(list, home,
+            msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+            enum_idx,
+            FILE_TYPE_DIRECTORY, 0, 0);
+   }
+   if (path_is_directory("/media"))
+   {
+      menu_entries_append_enum(list, "/media",
+            msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+            enum_idx,
+            FILE_TYPE_DIRECTORY, 0, 0);
+   }
+   if (path_is_directory("/mnt"))
+   {
+      menu_entries_append_enum(list, "/mnt",
+            msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
             enum_idx,
             FILE_TYPE_DIRECTORY, 0, 0);
    }

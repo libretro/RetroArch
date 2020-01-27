@@ -5,6 +5,7 @@ ifeq ($(INTERNAL_ZLIB),0)
 	HAVE_ZLIB = 1
 else
 	HAVE_ZLIB = 1
+	DEFINES     += -DWANT_ZLIB
 	INCFLAGS    += -I$(DEPS_DIR)/libz
 	DEPS_SOURCE += $(wildcard $(DEPS_DIR)/libz/*.c)
 endif

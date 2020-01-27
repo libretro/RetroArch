@@ -135,7 +135,7 @@ static retro_task_t *task_queue_get(task_queue_t *queue)
 static void retro_task_internal_gather(void)
 {
    retro_task_t *task = NULL;
-   while ((task = task_queue_get(&tasks_finished)) != NULL)
+   while ((task = task_queue_get(&tasks_finished)))
    {
       task_queue_push_progress(task);
 
@@ -172,7 +172,7 @@ static void retro_task_regular_gather(void)
    retro_task_t *queue = NULL;
    retro_task_t *next  = NULL;
 
-   while ((task = task_queue_get(&tasks_running)) != NULL)
+   while ((task = task_queue_get(&tasks_running)))
    {
       task->next = queue;
       queue = task;
@@ -387,7 +387,7 @@ static void retro_task_threaded_wait(retro_task_condition_fn_t cond, void* data)
       retro_task_threaded_gather();
 
       slock_lock(running_lock);
-      wait = (tasks_running.front != NULL) &&
+      wait = (tasks_running.front) &&
              (!cond || cond(data));
       slock_unlock(running_lock);
    } while (wait);

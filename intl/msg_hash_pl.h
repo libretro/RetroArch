@@ -489,10 +489,6 @@ MSG_HASH(
       "Odznaki osiągnięć"
       )
 MSG_HASH(
-      MENU_ENUM_LABEL_VALUE_CHEEVOS_LOCKED_ACHIEVEMENTS,
-      "Zablokowane osiągnięcia:"
-      )
-MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CHEEVOS_LOCKED_ENTRY,
       "Zablokowany"
       )
@@ -503,10 +499,6 @@ MSG_HASH(
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CHEEVOS_TEST_UNOFFICIAL,
       "Sprawdź nieoficjalne osiągnięcia"
-      )
-MSG_HASH(
-      MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ACHIEVEMENTS,
-      "Odblokowane osiągnięcia:"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ENTRY,
@@ -637,10 +629,6 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_DIRECTORY_NOT_FOUND,
       "Nie znaleziono katalogu.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS,
       "Szczegóły")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_DISK_CYCLE_TRAY_STATUS,
-      "Status podajnika cyklu dysku")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
-      "Dołącz obraz dysku")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DISK_INDEX,
       "Indeks dysku")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DISK_OPTIONS,
@@ -720,21 +708,21 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_ALL_USERS_CONTROL_MENU,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X,
       "Lewy analog X")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X_MINUS,
-      "Lewy analog X- (lewy)")
+      "Lewy analog X- (w lewo)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X_PLUS,
-      "Lewy analog X+ (po prawej)")
+      "Lewy analog X+ (w prawo)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_Y,
       "Lewy analog Y")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_Y_MINUS,
       "Lewy analog Y- (w górę)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_Y_PLUS,
-      "Lewy analog Y+ (dół)")
+      "Lewy analog Y+ (w dół)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_X,
       "Prawo analog X")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_X_MINUS,
-      "Prawy analog X- (po lewej)")
+      "Prawy analog X- (w lewo)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_X_PLUS,
-      "Prawy analog X+ (po prawej)")
+      "Prawy analog X+ (w prawo)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y,
       "Prawo analog Y")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_MINUS,
@@ -742,41 +730,41 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_MINUS,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_PLUS,
       "Prawy analog Y+ (w dół)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_TRIGGER,
-      "Spust")
+      "Spust (pistolet)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_RELOAD,
-      "Przeładowanie")
+      "Przeładowanie (pistolet)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_A,
-      "Pomocniczy A")
+      "Pomocniczy A (pistolet)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_B,
-      "Pomocniczy B")
+      "Pomocniczy B (pistolet)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_C,
-      "Pomocniczy C")
+      "Pomocniczy C (pistolet)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_START,
-      "Start pistoletu")
+      "Start (pistolet)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_SELECT,
-      "Wybierz")
+      "Select (pistolet)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_UP,
-      "D-pad góra")
+      "D-pad w górę (pistolet)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_DOWN,
-      "D-pad dół")
+      "D-pad w dół (pistolet)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_LEFT,
-      "D-pad lewo")
+      "D-pad w lewo (pistolet)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_RIGHT,
-      "D-pad prawo")
+      "D-pad w prawo (pistolet")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
       "Włącz autoconfig")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
       "Zamień przyciski menu ok i anuluj")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_BIND_ALL,
-      "Powiąż wszystko")
+      "Przypisz wszystkie przyciski")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_BIND_DEFAULT_ALL,
-      "Wszystkie domyślne powiązania")
+      "Domyślne przypisanie wszystkich przycisków")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_BIND_TIMEOUT,
-      "Limit czasu powiązania")
+      "Limit czasu przypisywania")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_BIND_HOLD,
-      "Wiązanie")
+      "Przypisanie")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_DESCRIPTOR_HIDE_UNBOUND,
-      "Ukryj niezwiązane podstawowe deskryptory wejściowe")
+      "Ukryj nieprzypisane podstawowe deskryptory wejściowe")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_DESCRIPTOR_LABEL_SHOW,
       "Wyświetl etykiety deskryptorów wejściowych")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_INDEX,
@@ -794,39 +782,39 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BINDS,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_ICADE_ENABLE,
       "Włączanie mapowania gamepada klawiatury")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_A,
-      "Przycisk (po prawej)")
+      "Przycisk A (po prawej)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_B,
-      "Przycisk B (w dół)")
+      "Przycisk B (dolny)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_DOWN,
-      "W dół D-pad")
+      "D-pad w dół")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_L2,
-      "Przycisk L2 (spust)")
+      "Przycisk L2 (trigger)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_L3,
-      "Przycisk L3")
+      "Przycisk L3 (analog)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_L,
-      "Przycisk L (ramię)")
+      "Przycisk L (bumper)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_LEFT,
-      "Lewy D-pad")
+      "D-pad w lewo")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_R2,
-      "R2 przycisk (spust)")
+      "Przycisk R2 (trigger)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_R3,
-      "R3 przycisk")
+      "Przycisk R3 (analog)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_R,
       "Przycisk R")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_RIGHT,
-      "Prawy D-pad")
+      "D-pad w prawo")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_SELECT,
-      "Wybierz przycisk")
+      "Przycisk Select")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_START,
       "Przycisk Start")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_UP,
-      "Do góry D-pad")
+      "D-pad w górę")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_X,
       "Przycisk X (u góry)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_Y,
       "Przycisk Y (po lewej)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_KEY,
-      "(Klucz: %s)")
+      "(Klawisz: %s)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_LEFT,
       "Mysz 1")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_RIGHT,
@@ -838,9 +826,9 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_BUTTON4,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_BUTTON5,
       "Mysz 5")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_WHEEL_UP,
-      "Kółko do góry")
+      "Kółko w górę")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_WHEEL_DOWN,
-      "Kółko do dołu")
+      "Kółko w dół")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_HORIZ_WHEEL_UP,
       "Kółko w lewo")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_HORIZ_WHEEL_DOWN,
@@ -954,7 +942,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ENABLE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD,
       "Okres turbo")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
-      "Wprowadź powiązania użytkownika %u")
+      "Port %u - powiązania inputów")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LATENCY_SETTINGS,
       "Opóźnienie")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_INTERNAL_STORAGE_STATUS,
@@ -1022,9 +1010,9 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
       "Załaduj zawartość")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LOAD_DISC,
-      "Load Disc")
+      "Załaduj dysk")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DUMP_DISC,
-      "Dump Disc")
+      "Zrzut dysku")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LOAD_STATE,
       "Wczytaj zapis")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LOCATION_ALLOW,
@@ -1064,7 +1052,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE,
       "Menu obrotowe przepustnicy częstotliwości wyświetlania klatek")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
-      "File Browser")
+      "Przeglądarka plików")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_LINEAR_FILTER,
       "Menu filtra liniowego")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_HORIZONTAL_ANIMATION,
@@ -1261,39 +1249,39 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_PLAYLIST_SETTINGS,
       "Listy odtwarzania")
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE,
-    "Label Display Mode"
+    "Tryb wyświetlania etykiet"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE,
-    "Change how the content labels are displayed in this playlist."
+    "Zmień sposób wyświetlania etykiet treści na tej liście odtwarzania."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_DEFAULT,
-    "Show full labels"
+    "Pokaż pełne etykiety"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_REMOVE_PARENS,
-    "Remove () content"
+    "Usuń () treść"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_REMOVE_BRACKETS,
-    "Remove [] content"
+    "Usuń [] treść"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_REMOVE_PARENS_AND_BRACKETS,
-    "Remove () and []"
+    "Usuń () i []"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_KEEP_REGION,
-    "Keep region"
+    "Zachowaj region"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_KEEP_DISC_INDEX,
-    "Keep disc index"
+    "Zachowaj indeks płyty"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_KEEP_REGION_AND_DISC_INDEX,
-    "Keep region and disc index"
+    "Zachowaj indeks regionu i dysku"
     )
 MSG_HASH(MENU_ENUM_LABEL_VALUE_POINTER_ENABLE,
       "Obsługa dotyku")
@@ -1960,6 +1948,8 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_UNDERSEA,
       "Podmorski")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_VOLCANIC_RED,
       "Czerwień wulkaniczna")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_SUNBEAM,
+    "Sunbeam")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_XMB_RIBBON_ENABLE,
       "Animowany efekt tłą")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SCALE_FACTOR,
@@ -2061,7 +2051,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
 MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_SETTINGS,
       "Zmień ustawienia joypada, klawiatury i myszy.")
 MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_USER_BINDS,
-      "Skonfiguruj elementy sterujące dla tego użytkownika.")
+      "Skonfiguruj przyciski i analogi pada.")
 MSG_HASH(MENU_ENUM_SUBLABEL_LOG_VERBOSITY,
       "Włącz lub wyłącz rejestrowanie w terminalu.")
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY,
@@ -3171,14 +3161,8 @@ MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
       "Liczba klatek opóźnienia wejściowego dla netplay do wykorzystania do ukrycia opóźnień sieci. Zmniejsza drgania i sprawia, że gra jest mniej intensywna, kosztem zauważalnego opóźnienia wejścia.")
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
       "Zakres klatek opóźnień wejściowych, które można wykorzystać do ukrycia opóźnień sieci. Zmniejsza fluktuacje i sprawia, że netplay jest mniej obciążający procesor, kosztem nieprzewidywalnego opóźnienia wejściowego.")
-MSG_HASH(MENU_ENUM_SUBLABEL_DISK_CYCLE_TRAY_STATUS,
-      "Cykluj bieżący dysk. Jeśli dysk zostanie włożony, wyskoczy. Jeśli dysk nie został włożony, zostanie włożony. ")
-MSG_HASH(MENU_ENUM_SUBLABEL_DISK_INDEX,
-      "Zmień indeks dysku.")
 MSG_HASH(MENU_ENUM_SUBLABEL_DISK_OPTIONS,
       "Zarządzanie obrazem dysku.")
-MSG_HASH(MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
-      "Wybierz obraz dysku, który chcesz wstawić.")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_ENUM_THROTTLE_FRAMERATE,
       "Upewnia się, że liczba klatek na sekundę jest ograniczona w menu.")
 MSG_HASH(MENU_ENUM_SUBLABEL_XMB_LAYOUT,
@@ -3547,10 +3531,6 @@ MSG_HASH(MSG_GAME_REMAP_FILE_LOADED,
       "Załadowano plik remapu gry.")
 MSG_HASH(MSG_CORE_REMAP_FILE_LOADED,
       "Załadowano plik wymiany rdzenia.")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_AUTOMATICALLY_ADD_CONTENT_TO_PLAYLIST,
-      "Automatycznie dodawaj zawartość do listy odtwarzania")
-MSG_HASH(MENU_ENUM_SUBLABEL_AUTOMATICALLY_ADD_CONTENT_TO_PLAYLIST,
-      "Automatycznie skanuje załadowaną zawartość, aby pojawiły się w listach odtwarzania.")
 MSG_HASH(MSG_SCANNING_OF_FILE_FINISHED,
       "Skanowanie pliku zakończone")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
@@ -4633,21 +4613,346 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_DELETE_PLAYLIST,
     )
 #ifdef HAVE_LAKKA
 MSG_HASH(MENU_ENUM_LABEL_VALUE_LOCALAP_ENABLE,
-      "Wi-Fi Access Point")
+      "Punkt dostępu Wi-Fi")
 MSG_HASH(MENU_ENUM_SUBLABEL_LOCALAP_ENABLE,
-      "Enable or disable Wi-Fi Access Point.")
+      "Włącz lub wyłącz punkt dostępu Wi-Fi.")
 MSG_HASH(MSG_LOCALAP_SWITCHING_OFF,
-      "Switching off Wi-Fi Access Point.")
+      "Wyłączanie punktu dostępu Wi-Fi.")
 MSG_HASH(MSG_WIFI_DISCONNECT_FROM,
-      "Disconnecting from Wi-Fi '%s'")
+      "Odłączanie od Wi-Fi '%s'")
 MSG_HASH(MSG_LOCALAP_ALREADY_RUNNING,
-      "Wi-Fi Access Point is already started")
+      "Punkt dostępu Wi-Fi jest już uruchomiony")
 MSG_HASH(MSG_LOCALAP_NOT_RUNNING,
-      "Wi-Fi Access Point is not running")
+      "Punkt dostępu Wi-Fi nie jest uruchomiony")
 MSG_HASH(MSG_LOCALAP_STARTING,
-      "Starting Wi-Fi Access Point with SSID=%s and Passkey=%s")
+      "Uruchamianie punktu dostępu Wi-Fi z SSID =% si kluczem dostępu=%s")
 MSG_HASH(MSG_LOCALAP_ERROR_CONFIG_CREATE,
-      "Could not create Wi-Fi Access Point configuration file.")
+      "Nie można utworzyć pliku konfiguracyjnego punktu dostępu Wi-Fi.")
 MSG_HASH(MSG_LOCALAP_ERROR_CONFIG_PARSE,
-     "Wrong configuration file - could not find APNAME or PASSWORD in %s")
+     "Niepoprawny plik konfiguracyjny - nie można znaleźć APNAME lub PASSWORD w %s")
 #endif
+MSG_HASH(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,/* FIXME */
+   "Format uruchomieniowy podrzędnej listy odtwarzania „ostatnio odtwarzany” format")
+MSG_HASH(MENU_ENUM_SUBLABEL_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,/* FIXME */
+    "Wybiera styl formatowania daty/godziny używany podczas wyświetlania informacji o znaczniku czasu „ostatnio odtwarzane” w rejestrze wykonawczym. Uwaga: opcje „(AM/PM)” będą miały niewielki wpływ na wydajność na niektórych platformach.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_DRIVER_SWITCH_ENABLE,/* FIXME */
+    "Pozwól rdzeniom przełączyć sterownik wideo")
+MSG_HASH(MENU_ENUM_SUBLABEL_DRIVER_SWITCH_ENABLE,/* FIXME */
+    "Pozwól rdzeniom wymusić przełączenie na inny sterownik wideo niż aktualnie załadowany.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_AUTO_ROTATE,/* FIXME */
+    "Auto-Obracanie Nakładki"
+    )
+MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_OVERLAY_AUTO_ROTATE,/* FIXME */
+    "Jeśli jest obsługiwana przez bieżącą nakładkę, automatycznie obracaj układ, aby dopasować orientację ekranu/współczynnik proporcji."
+    )
+MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS,/* FIXME */
+    "Wyświetla dodatkowe informacje dla aktualnie wybranej pozycji menu."
+    )
+MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_VIEWS_SETTINGS,/* FIXME */
+    "Ustawienia"
+    )
+MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_VIEWS_SETTINGS,/* FIXME */
+    "Pokaż lub ukryj elementy na ekranie ustawień."
+    )
+MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_DRIVERS,/* FIXME */
+    "Pokaż sterowniki"
+    )
+MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_SHOW_DRIVERS,/* FIXME */
+    "Pokaż lub ukryj „Ustawienia sterownika” na ekranie ustawień."
+    )
+MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_VIDEO,/* FIXME */
+    "Pokaż wideo"
+    )
+MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_SHOW_VIDEO,/* FIXME */
+    "Pokaż lub ukryj „Ustawienia wideo” na ekranie ustawień."
+    )
+MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_AUDIO,/* FIXME */
+    "Pokaż dźwięk"
+    )
+MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_SHOW_AUDIO,/* FIXME */
+    "Pokaż lub ukryj „Ustawienia audio” na ekranie ustawień."
+    )
+MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_LATENCY,/* FIXME */
+    "Pokaż opóźnienie"
+    )
+MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_SHOW_LATENCY,/* FIXME */
+    "Pokaż lub ukryj „Ustawienia opóźnień” na ekranie ustawień."
+    )
+MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_CORE,/* FIXME */
+    "Pokaż rdzeń"
+    )
+MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_SHOW_CORE,/* FIXME */
+    "Pokaż lub ukryj „Podstawowe ustawienia” na ekranie ustawień."
+    )
+MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_CONFIGURATION,/* FIXME */
+    "Pokaż konfigurację"
+    )
+MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_SHOW_CONFIGURATION,/* FIXME */
+    "Pokaż lub ukryj „Ustawienia konfiguracji” na ekranie Ustawienia."
+    )
+MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_SAVING,/* FIXME */
+    "Pokaż zapisywanie"
+    )
+MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_SHOW_SAVING,/* FIXME */
+    "Pokaż lub ukryj „Zapisywanie ustawień” na ekranie ustawień."
+    )
+MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_LOGGING,/* FIXME */
+    "Pokaż rejestrowanie"
+    )
+MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_SHOW_LOGGING,/* FIXME */
+    "Pokaż lub ukryj „Ustawienia rejestrowania” na ekranie ustawień."
+    )
+MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_FRAME_THROTTLE,/* FIXME */
+    "Pokaż przepustnicę ramy"
+    )
+MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_SHOW_FRAME_THROTTLE,/* FIXME */
+    "Pokaż lub ukryj „Ustawienia przepustnicy ramy” na ekranie Ustawienia."
+    )
+MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_RECORDING,/* FIXME */
+    "Pokaż nagranie"
+    )
+MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_SHOW_RECORDING,/* FIXME */
+    "Pokaż lub ukryj „Ustawienia nagrywania” na ekranie Ustawienia."
+    )
+MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_ONSCREEN_DISPLAY,/* FIXME */
+    "Pokaż wyświetlanie na ekranie"
+    )
+MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_SHOW_ONSCREEN_DISPLAY,/* FIXME */
+    "Pokaż lub ukryj „Ustawienia wyświetlania na ekranie” na ekranie ustawień."
+    )
+MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_USER_INTERFACE,/* FIXME */
+    "Pokaż interfejs użytkownika"
+    )
+MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_SHOW_USER_INTERFACE,/* FIXME */
+    "Pokaż lub ukryj „Ustawienia interfejsu użytkownika” na ekranie ustawień."
+    )
+MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_AI_SERVICE,/* FIXME */
+    "Pokaż usługę AI"
+    )
+MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_SHOW_AI_SERVICE,/* FIXME */
+    "Pokaż lub ukryj „Ustawienia usługi AI” na ekranie ustawień."
+    )
+MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_POWER_MANAGEMENT,/* FIXME */
+    "Pokaż zarządzanie energią"
+    )
+MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_SHOW_POWER_MANAGEMENT,/* FIXME */
+    "Pokaż lub ukryj „Ustawienia zarządzania energią” na ekranie ustawień."
+    )
+MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_ACHIEVEMENTS,/* FIXME */
+    "Pokaż osiągnięcia"
+    )
+MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_SHOW_ACHIEVEMENTS,/* FIXME */
+    "Pokaż lub ukryj „Ustawienia osiągnięć” na ekranie ustawień."
+    )
+MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_NETWORK,/* FIXME */
+    "Pokaż sieć"
+    )
+MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_SHOW_NETWORK,/* FIXME */
+    "Pokaż lub ukryj „Ustawienia sieci” na ekranie Ustawień."
+    )
+MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_PLAYLISTS,/* FIXME */
+    "Pokaż listy odtwarzania"
+    )
+MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_SHOW_PLAYLISTS,/* FIXME */
+    "Pokaż lub ukryj „Ustawienia list odtwarzania” na ekranie ustawień."
+    )
+MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_USER,/* FIXME */
+    "Pokaż użytkownika"
+    )
+MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_SHOW_USER,/* FIXME */
+    "Pokaż lub ukryj „Ustawienia użytkownika” na ekranie ustawień."
+    )
+MSG_HASH(MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_DIRECTORY,/* FIXME */
+    "Pokaż katalog"
+    )
+MSG_HASH(MENU_ENUM_SUBLABEL_SETTINGS_SHOW_DIRECTORY,/* FIXME */
+    "Pokaż lub ukryj „Ustawienia katalogu” na ekranie ustawień."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_XMB_ANIMATION_HORIZONTAL_HIGHLIGHT,/* FIXME */
+    "Animacja uruchamiana podczas przewijania między kartami."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_XMB_ANIMATION_MOVE_UP_DOWN,/* FIXME */
+    "Animacja uruchamiana podczas poruszania się w górę lub w dół."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_XMB_THUMBNAIL_SCALE_FACTOR,/* FIXME */
+    "Zmniejsz rozmiar wyświetlanych miniatur, skalując maksymalną dozwoloną szerokość."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_UPSCALE_THRESHOLD,/* FIXME */
+    "Automatyczne powiększanie miniatur obrazów o szerokości/wysokości mniejszej niż określona wartość. Poprawia jakość obrazu. Ma umiarkowany wpływ na wydajność."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_TICKER_SPEED,/* FIXME */
+    "Szybkość animacji podczas przewijania długich ciągów tekstowych menu."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_TICKER_SMOOTH, /* FIXME */
+    "Płynny tekst próbny"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_TICKER_SMOOTH,/* FIXME */
+    "Użyj płynnej animacji przewijania podczas wyświetlania długich ciągów tekstowych menu. Ma niewielki wpływ na wydajność."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_LIST,
+    "Skanowanie ręczne"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_LIST,
+    "Konfigurowalne skanowanie w oparciu o nazwy plików zawartości. Nie wymaga zawartości pasującej do bazy danych."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_DIR,
+    "Katalog treści"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_DIR,
+    "Wybiera katalog do skanowania w poszukiwaniu zawartości."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
+    "Nazwa systemu"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
+    "Podaj „nazwę systemu”, z którą chcesz powiązać zeskanowaną zawartość. Służy do nazywania wygenerowanego pliku listy odtwarzania i identyfikowania miniatur listy odtwarzania."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM,
+    "Niestandardowa nazwa systemu"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM,
+    "Ręcznie określ „nazwę systemu” dla skanowanej zawartości. Używane tylko, gdy „Nazwa Systemu” jest ustawiona na „<Custom>”."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_CORE_NAME,
+    "Rdzeń"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_CORE_NAME,
+    "Wybierz domyślny rdzeń, który będzie używany podczas uruchamiania zeskanowanej zawartości."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_FILE_EXTS,
+    "Rozszerzenia plików"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_FILE_EXTS,
+    "Rozdzielana spacjami lista typów plików, które należy uwzględnić podczas skanowania. Jeśli jest pusta, obejmuje wszystkie pliki - lub jeśli określono rdzeń, wszystkie pliki obsługiwane przez rdzeń."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SEARCH_ARCHIVES,
+    "Skanuj wewnątrz archiwów"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_SEARCH_ARCHIVES,
+    "Po włączeniu pliki archiwów (.zip, .7z itp.) Będą wyszukiwane pod kątem prawidłowej / obsługiwanej zawartości. Może mieć znaczący wpływ na wydajność skanowania."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_DAT_FILE,
+    "Plik Arcade DAT"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_DAT_FILE,
+    "ybierz plik XML DAT Logiqx lub MAME List, aby włączyć automatyczne nazywanie zeskanowanej zawartości zręcznościowej (MAME, FinalBurn Neo itp.)."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_OVERWRITE,
+    "Zastąp istniejącą listę odtwarzania"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_OVERWRITE,
+    "Po włączeniu wszelkie istniejące listy odtwarzania zostaną usunięte przed skanowaniem zawartości. Po wyłączeniu istniejące wpisy listy odtwarzania są zachowywane i dodawana jest tylko zawartość aktualnie brakująca na liście odtwarzania."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_START,
+    "Rozpocznij skanowanie"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_START,
+    "Skanuj wybraną zawartość."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_OUTPUT_SETTINGS,
+    "Wyjście"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_OUTPUT_SETTINGS,
+    "Zmień ustawienia wyjścia wideo."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_SCALING_SETTINGS,
+    "Skalowanie"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_SCALING_SETTINGS,
+    "Zmień ustawienia skalowania wideo."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
+    "Synchronizacja"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
+    "Zmień ustawienia synchronizacji wideo."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_SETTINGS,
+    "Wyjście"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_SETTINGS,
+    "Zmień ustawienia wyjścia audio."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_AUDIO_SYNCHRONIZATION_SETTINGS,
+    "Synchronization"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_AUDIO_SYNCHRONIZATION_SETTINGS,
+    "Zmień ustawienia synchronizacji dźwięku."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_SETTINGS,
+    "Resampler"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_SETTINGS,
+    "Zmień ustawienia resamplera audio."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_INPUT_TURBO_MODE,
+    "Wybiera ogólne zachowanie trybu turbo."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_DEFAULT_BUTTON,
+    "Domyślny przycisk Turbo"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_MODE,
+    "Tryb turbo"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_INPUT_TURBO_DEFAULT_BUTTON,
+    "Domyślny aktywny przycisk trybu pojedynczego „Turbo”."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_HAPTIC_FEEDBACK_SETTINGS,
+    "Haptyczne sprzężenie zwrotne / wibracje"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_INPUT_HAPTIC_FEEDBACK_SETTINGS,
+    "Zmień ustawienia dotykowego sprzężenia zwrotnego i wibracji."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_MENU_SETTINGS,
+    "Sterowanie menu"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_INPUT_MENU_SETTINGS,
+    "Zmień ustawienia sterowania menu."
+    )

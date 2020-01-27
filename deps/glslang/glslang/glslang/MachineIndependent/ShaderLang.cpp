@@ -1312,6 +1312,7 @@ int __fastcall ShFinalize()
     glslang::HlslScanContext::deleteKeywordMap();
 #endif
 
+    DetachProcess();
     return 1;
 }
 

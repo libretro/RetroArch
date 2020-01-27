@@ -21,6 +21,7 @@
 #include "menu_input_bind_dialog.h"
 
 #include "../menu_driver.h"
+#include "../menu_input.h"
 
 #include "../../input/input_driver.h"
 
@@ -67,6 +68,33 @@ struct menu_bind_state
 
 static unsigned               menu_bind_port   = 0;
 static struct menu_bind_state menu_input_binds = {0};
+
+static bool input_joypad_button_raw(const input_device_driver_t *drv,
+      unsigned port, unsigned button)
+{
+   if (!drv)
+      return false;
+   return drv && drv->button(port, button);
+}
+
+static int16_t input_joypad_axis_raw(
+      const input_device_driver_t *drv,
+      unsigned port, unsigned axis)
+{
+   if (!drv)
+      return 0;
+   return drv->axis(port, AXIS_POS(axis)) +
+      drv->axis(port, AXIS_NEG(axis));
+}
+
+static bool input_joypad_hat_raw(const input_device_driver_t *drv,
+      unsigned port, unsigned hat_dir, unsigned hat)
+{
+   if (!drv)
+      return false;
+   return drv->button(port, HAT_MAP(hat, hat_dir));
+}
+
 
 static bool menu_input_key_bind_custom_bind_keyboard_cb(
       void *data, unsigned code)
@@ -284,6 +312,13 @@ bool menu_input_key_bind_set_mode(
    keys.cb       = menu_input_key_bind_custom_bind_keyboard_cb;
 
    input_keyboard_ctl(RARCH_INPUT_KEYBOARD_CTL_START_WAIT_KEYS, &keys);
+
+   /* Upon triggering an input bind operation,
+    * pointer input must be inhibited - otherwise
+    * attempting to bind mouse buttons will cause
+    * spurious menu actions */
+   menu_input_set_pointer_inhibit(true);
+
    return true;
 }
 
@@ -658,6 +693,12 @@ bool menu_input_key_bind_iterate(menu_input_ctx_bind_t *bind)
 
       menu_input_binds = binds;
    }
+
+   /* Pointer input must be inhibited on each
+    * frame that the bind operation is active -
+    * otherwise attempting to bind mouse buttons
+    * will cause spurious menu actions */
+   menu_input_set_pointer_inhibit(true);
 
    return false;
 }

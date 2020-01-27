@@ -27,6 +27,18 @@
 #define HAVE_COMPRESSION 1
 #endif
 
+#if defined(HAVE_OPENGL) && defined(HAVE_ANGLE)
+#ifndef HAVE_OPENGLES
+#define HAVE_OPENGLES  1
+#endif
+#if !defined(HAVE_OPENGLES3) && !defined(HAVE_OPENGLES2)
+#define HAVE_OPENGLES3 1
+#endif
+#ifndef HAVE_EGL
+#define HAVE_EGL       1
+#endif
+#endif
+
 #define JSON_STATIC 1 /* must come before runtime_file, netplay_room_parse and jsonsax_full */
 
 #if _MSC_VER && !defined(__WINRT__)
@@ -144,9 +156,10 @@ CONFIG FILE
 #include "../libretro-common/file/config_file_userdata.c"
 
 /*============================================================
-RUNTIME FILE
+CONTENT METADATA RECORDS
 ============================================================ */
 #include "../runtime_file.c"
+#include "../disk_index_file.c"
 
 /*============================================================
 ACHIEVEMENTS
@@ -207,7 +220,7 @@ VIDEO CONTEXT
 
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
 
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_VULKAN)
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_VULKAN) || defined(HAVE_OPENGLES)
 #include "../gfx/drivers_context/wgl_ctx.c"
 #endif
 
@@ -273,6 +286,14 @@ VIDEO CONTEXT
 
 #if defined(HAVE_VIDEOCORE)
 #include "../gfx/drivers_context/vc_egl_ctx.c"
+#endif
+
+#if defined(_WIN32) && defined(HAVE_ANGLE)
+#include "../gfx/common/angle_common.c"
+#endif
+
+#if defined(__WINRT__)
+#include "../gfx/drivers_context/uwp_egl_ctx.c"
 #endif
 
 #endif
@@ -425,8 +446,6 @@ VIDEO DRIVER
 #include "../gfx/drivers/drm_gfx.c"
 #endif
 
-#include "../gfx/display_servers/dispserv_null.c"
-
 #ifdef HAVE_OPENGL1
 #include "../gfx/drivers/gl1.c"
 #endif
@@ -479,7 +498,6 @@ VIDEO DRIVER
 #elif defined(DJGPP)
 #include "../gfx/drivers/vga_gfx.c"
 #endif
-#include "../gfx/drivers/nullgfx.c"
 
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
 #ifdef HAVE_GDI
@@ -589,6 +607,9 @@ FONTS
 INPUT
 ============================================================ */
 #include "../tasks/task_autodetect.c"
+#ifdef HAVE_BLISSBOX
+#include "../tasks/task_autodetect_blissbox.c"
+#endif
 #ifdef HAVE_AUDIOMIXER
 #include "../tasks/task_audio_mixer.c"
 #endif
@@ -693,16 +714,12 @@ INPUT
 #include "../input/drivers_joypad/udev_joypad.c"
 #endif
 
-#include "../input/drivers/nullinput.c"
-#include "../input/drivers_joypad/null_joypad.c"
-
 /*============================================================
 INPUT (HID)
 ============================================================ */
 #ifdef HAVE_HID
 #include "../input/common/input_hid_common.c"
 #include "../input/drivers_joypad/hid_joypad.c"
-#include "../input/drivers_hid/null_hid.c"
 
 #if defined(HAVE_LIBUSB) && defined(HAVE_THREADS)
 #include "../input/drivers_hid/libusb_hid.c"
@@ -756,7 +773,6 @@ AUDIO RESAMPLER
 #include "../libretro-common/audio/resampler/audio_resampler.c"
 #include "../libretro-common/audio/resampler/drivers/sinc_resampler.c"
 #include "../libretro-common/audio/resampler/drivers/nearest_resampler.c"
-#include "../libretro-common/audio/resampler/drivers/null_resampler.c"
 #ifdef HAVE_CC_RESAMPLER
 #include "../audio/drivers_resampler/cc_resampler.c"
 #endif
@@ -778,15 +794,11 @@ CAMERA
 #include "../cores/libretro-video-processor/video_processor_v4l2.c"
 #endif
 
-#include "../camera/drivers/nullcamera.c"
-
 /*============================================================
 LEDS
 ============================================================ */
 
 #include "../led/led_driver.c"
-
-#include "../led/drivers/led_null.c"
 
 #if defined(HAVE_RPILED)
 #include "../led/drivers/led_rpi.c"
@@ -798,8 +810,6 @@ LOCATION
 #if defined(ANDROID)
 #include "../location/drivers/android.c"
 #endif
-
-#include "../location/drivers/nulllocation.c"
 
 /*============================================================
 RSOUND
@@ -876,8 +886,6 @@ AUDIO
 #include "../audio/drivers/coreaudio.c"
 #endif
 
-#include "../audio/drivers/nullaudio.c"
-
 #if defined(HAVE_WASAPI) || ((_WIN32_WINNT >= 0x0602) && !defined(__WINRT__))
 #include "../audio/common/mmdevice_common.c"
 #endif
@@ -885,8 +893,6 @@ AUDIO
 /*============================================================
 MIDI
 ============================================================ */
-#include "../midi/drivers/null_midi.c"
-
 #ifdef HAVE_WINMM
 #include "../midi/drivers/winmm_midi.c"
 #endif
@@ -963,6 +969,7 @@ CORES
 FILE
 ============================================================ */
 #include "../libretro-common/file/file_path.c"
+#include "../libretro-common/file/file_path_io.c"
 #include "../file_path_special.c"
 #include "../file_path_str.c"
 #include "../libretro-common/lists/dir_list.c"
@@ -983,7 +990,6 @@ FILE
 #include "../libretro-common/media/media_detect_cd.c"
 #endif
 
-#include "../list_special.c"
 #include "../libretro-common/string/stdstring.c"
 #include "../libretro-common/file/nbio/nbio_stdio.c"
 #if defined(__linux__)
@@ -1061,9 +1067,12 @@ FRONTEND
 #elif defined(DJGPP)
 #include "../frontend/drivers/platform_dos.c"
 #endif
-#include "../frontend/drivers/platform_null.c"
 
 #include "../core_info.c"
+
+#if defined(HAVE_NETWORKING)
+#include "../core_updater_list.c"
+#endif
 
 /*============================================================
 UI
@@ -1088,7 +1097,6 @@ GIT
 RETROARCH
 ============================================================ */
 #include "../retroarch.c"
-#include "../paths.c"
 #include "../libretro-common/queues/task_queue.c"
 
 #include "../msg_hash.c"
@@ -1118,8 +1126,6 @@ RETROARCH
 /*============================================================
 WIFI
 ============================================================ */
-#include "../wifi/drivers/nullwifi.c"
-
 #ifdef HAVE_LAKKA
 #include "../wifi/drivers/connmanctl.c"
 #endif
@@ -1127,8 +1133,6 @@ WIFI
 /*============================================================
 RECORDING
 ============================================================ */
-#include "../record/drivers/record_null.c"
-
 #ifdef HAVE_FFMPEG
 #include "../record/drivers/record_ffmpeg.c"
 #endif
@@ -1203,10 +1207,12 @@ DATA RUNLOOP
 ============================================================ */
 #include "../tasks/task_powerstate.c"
 #include "../tasks/task_content.c"
+#include "../tasks/task_patch.c"
 #include "../tasks/task_save.c"
 #include "../tasks/task_image.c"
 #include "../tasks/task_file_transfer.c"
 #include "../tasks/task_playlist_manager.c"
+#include "../tasks/task_manual_content_scan.c"
 #ifdef HAVE_ZLIB
 #include "../tasks/task_decompress.c"
 #endif
@@ -1216,6 +1222,7 @@ DATA RUNLOOP
 #endif
 #if defined(HAVE_NETWORKING) && defined(HAVE_MENU)
 #include "../tasks/task_pl_thumbnail_download.c"
+#include "../tasks/task_core_updater.c"
 #endif
 
 /*============================================================
@@ -1271,11 +1278,9 @@ MENU
 #include "../menu/menu_displaylist.c"
 #include "../menu/menu_animation.c"
 #include "../menu/menu_thumbnail_path.c"
+#include "../menu/menu_thumbnail.c"
 
-#include "../menu/drivers/null.c"
 #include "../menu/drivers/menu_generic.c"
-
-#include "../menu/drivers_display/menu_display_null.c"
 
 #if defined(HAVE_D3D8)
 #include "../menu/drivers_display/menu_display_d3d8.c"
@@ -1485,6 +1490,8 @@ DEPENDENCIES
 XML
 ============================================================ */
 #include "../libretro-common/formats/xml/rxml.c"
+#include "../libretro-common/formats/logiqx_dat/logiqx_dat.c"
+#include "../deps/yxml/yxml.c"
 
 /*============================================================
  AUDIO UTILS
@@ -1624,7 +1631,7 @@ SSL
 #endif
 #endif
 
-#ifdef HAVE_EASTEREGG
+#ifdef HAVE_GONG
 #include "../cores/libretro-gong/gong.c"
 #endif
 
@@ -1632,3 +1639,13 @@ SSL
 PLAYLIST NAME SANITIZATION
 ============================================================ */
 #include "../libretro-common/playlists/label_sanitization.c"
+
+/*============================================================
+MANUAL CONTENT SCAN
+============================================================ */
+#include "../manual_content_scan.c"
+
+/*============================================================
+DISK CONTROL INTERFACE
+============================================================ */
+#include "../disk_control_interface.c"

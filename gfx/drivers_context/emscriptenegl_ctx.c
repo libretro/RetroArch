@@ -165,7 +165,9 @@ static void gfx_ctx_emscripten_destroy(void *data)
    if (!emscripten)
       return;
 
+#ifdef HAVE_EGL
    egl_destroy(&emscripten->egl);
+#endif
 
    free(data);
 }
@@ -272,8 +274,10 @@ static bool gfx_ctx_emscripten_bind_api(void *data,
 
    switch (api)
    {
+#ifdef HAVE_EGL
       case GFX_CTX_OPENGL_ES_API:
-         return eglBindAPI(EGL_OPENGL_ES_API);
+         return egl_bind_api(EGL_OPENGL_ES_API);
+#endif
       default:
          break;
    }

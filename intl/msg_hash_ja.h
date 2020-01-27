@@ -561,10 +561,6 @@ MSG_HASH(
    "実績バッジ"
 )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_LOCKED_ACHIEVEMENTS,
-   "未解除の実績:"
-)
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_LOCKED_ENTRY,
    "未解除"
 )
@@ -575,10 +571,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_TEST_UNOFFICIAL,
    "非公式実績をテスト"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ACHIEVEMENTS,
-   "解除済みの実績:"
 )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ENTRY,
@@ -595,10 +587,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_AUTO_SCREENSHOT,
    "自動スクリーンショット"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_OLD_ENABLE,
-   "古い実装を使用する (デバック専用)"
 )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
@@ -819,14 +807,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS,
    "ディレクトリ"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DISK_CYCLE_TRAY_STATUS,
-   "ディスクトレイを開閉"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
-   "ディスクイメージを挿入"
 )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_INDEX,
@@ -1512,7 +1492,7 @@ MSG_HASH(
    "ターボの期間"
 )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
+   MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS, /* TODO/FIXME - Change user to port */
    "入力ユーザ%uのバインド"
 )
 MSG_HASH(
@@ -4173,6 +4153,10 @@ MSG_HASH(
    "ボルカニックレッド"
 )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_SUNBEAM,
+   "Sunbeam"
+)
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_RIBBON_ENABLE,
    "メニューのシェーダパイプライン"
 )
@@ -4265,11 +4249,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_AUTO_SCREENSHOT,
    "実績を獲得したときに自動でスクリーンショットを撮ります。"
-)
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_OLD_ENABLE,
-   "Use the old achievements processing implementation "
-   "(if unsure, keep it off)."
 )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DRIVER_SETTINGS,
@@ -4549,44 +4528,16 @@ MSG_HASH(
    "SRAMの上書きをブロックしています"
 )
 MSG_HASH(
-   MSG_BRINGING_UP_COMMAND_INTERFACE_ON_PORT,
-   "Bringing up command interface on port"
-)
-MSG_HASH(
    MSG_BYTES,
    "バイト"
-)
-MSG_HASH(
-   MSG_CANNOT_INFER_NEW_CONFIG_PATH,
-   "Cannot infer new config path. Use current time."
 )
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_MODE_ENABLE,
    "ハードコアモードが有効された。ステートセーブと巻き戻しは無効になった。"
 )
 MSG_HASH(
-   MSG_COMPARING_WITH_KNOWN_MAGIC_NUMBERS,
-   "Comparing with known magic numbers..."
-)
-MSG_HASH(
-   MSG_COMPILED_AGAINST_API,
-   "Compiled against API"
-)
-MSG_HASH(
-   MSG_CONFIG_DIRECTORY_NOT_SET,
-   "Config directory not set. Cannot save new config."
-)
-MSG_HASH(
    MSG_CONNECTED_TO,
    "接続しました to"
-)
-MSG_HASH(
-   MSG_CONTENT_CRC32S_DIFFER,
-   "Content CRC32s differ. Cannot use different games."
-)
-MSG_HASH(
-   MSG_CONTENT_LOADING_SKIPPED_IMPLEMENTATION_WILL_DO_IT,
-   "Content loading skipped. Implementation will load it on its own."
 )
 MSG_HASH(
    MSG_CORE_DOES_NOT_SUPPORT_SAVESTATES,
@@ -4729,20 +4680,8 @@ MSG_HASH(
    "失敗しました to"
 )
 MSG_HASH(
-   MSG_FAILED_TO_ACCEPT_INCOMING_SPECTATOR,
-   "Failed to accept incoming spectator."
-)
-MSG_HASH(
-   MSG_FAILED_TO_ALLOCATE_MEMORY_FOR_PATCHED_CONTENT,
-   "Failed to allocate memory for patched content..."
-)
-MSG_HASH(
    MSG_FAILED_TO_APPLY_SHADER,
    "シェーダの適用に失敗しました"
-)
-MSG_HASH(
-   MSG_FAILED_TO_APPLY_SHADER_PRESET,
-   "Failed to apply shader preset:"
 )
 MSG_HASH(
    MSG_FAILED_TO_BIND_SOCKET,
@@ -6470,21 +6409,8 @@ MSG_HASH(
    "予期しない入力遅延を犠牲にして, ジッタを減らし, ネットプレイのCPU使用率を減らします。"
 )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_CYCLE_TRAY_STATUS,
-   "ディスクトレイの状態を変更します。 "
-   "ディスクが挿入されていればそのディスクを排出し, 未挿入であればディスクを挿入します。"
-)
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_INDEX,
-   "ディスクのインデックスを変更します。"
-)
-MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_OPTIONS,
    "ディスクのイメージ管理"
-)
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
-   "ディスクイメージを追加します。"
 )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_ENUM_THROTTLE_FRAMERATE,
@@ -7305,14 +7231,6 @@ MSG_HASH(
    "2つ目のコアをスタートに失敗しました。先読みが一つのコアを使用になります。"
 )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUTOMATICALLY_ADD_CONTENT_TO_PLAYLIST,
-   "自動的にコンテンツをプレイリストに追加"
-)
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUTOMATICALLY_ADD_CONTENT_TO_PLAYLIST,
-   "ロードされたコンテンツは自動的にスキャンされ, プレイリストに表示されます。"
-)
-MSG_HASH(
    MSG_SCANNING_OF_FILE_FINISHED,
    "ファイルのスキャンは完了しました。"
 )
@@ -7900,34 +7818,6 @@ MSG_HASH(
    "クリア"
 )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_ACHIEVEMENT_PAUSE,
-   "Pause achievements for current session (This action will enable savestates, cheats, rewind, pause, and slow-motion)."
-)
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME,
-   "Resume achievements for current session (This action will disable savestates, cheats, rewind, pause, and slow-motion and reset the current game)."
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DISCORD_IN_MENU,
-   "In-Menu"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DISCORD_IN_GAME,
-   "In-Game"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DISCORD_IN_GAME_PAUSED,
-   "In-Game (Paused)"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PLAYING,
-   "Playing"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PAUSED,
-   "Paused"
-)
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISCORD_ALLOW,
    "Discordを有効"
 )
@@ -7977,210 +7867,6 @@ MSG_HASH(
    "mpv対応"
 )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_IDX,
-   "Index"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_MATCH_IDX,
-   "View Match #"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_MATCH,
-   "Match Address: %08X Mask: %02X"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_COPY_MATCH,
-   "Create Code Match #"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_MATCH,
-   "Delete Match #"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_BROWSE_MEMORY,
-   "Browse Address: %08X"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_DESC,
-   "Description"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_STATE,
-   "Enabled"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_CODE,
-   "Code"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_HANDLER,
-   "Handler"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_MEMORY_SEARCH_SIZE,
-   "Memory Search Size"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_TYPE,
-   "Type"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_VALUE,
-   "Value"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_ADDRESS,
-   "Memory Address"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_ADDRESS_BIT_POSITION,
-   "Memory Address Mask"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_TYPE,
-   "Rumble When Memory"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_VALUE,
-   "Rumble Value"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_PORT,
-   "Rumble Port"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_PRIMARY_STRENGTH,
-   "Rumble Primary Strength"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_PRIMARY_DURATION,
-   "Rumble Primary Duration (ms)"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_SECONDARY_STRENGTH,
-   "Rumble Secondary Strength"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_SECONDARY_DURATION,
-   "Rumble Secondary Duration (ms)"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_REPEAT_COUNT,
-   "Number of Iterations"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_REPEAT_ADD_TO_VALUE,
-   "Value Increase Each Iteration"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_REPEAT_ADD_TO_ADDRESS,
-   "Address Increase Each Iteration"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_AFTER,
-   "Add New Cheat After This One"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_BEFORE,
-   "Add New Cheat Before This One"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_COPY_AFTER,
-   "Copy This Cheat After"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_COPY_BEFORE,
-   "Copy This Cheat Before"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_DELETE,
-   "Delete This Cheat"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_CHEAT_HANDLER_TYPE_EMU,
-   "Emulator"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_CHEAT_HANDLER_TYPE_RETRO,
-   "RetroArch"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_CHEAT_TYPE_DISABLED,
-   "<Disabled>"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_CHEAT_TYPE_SET_TO_VALUE,
-   "Set To Value"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_CHEAT_TYPE_INCREASE_VALUE,
-   "Increase By Value"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_CHEAT_TYPE_DECREASE_VALUE,
-   "Decrease By Value"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_EQ,
-   "Run next cheat if value = memory"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_NEQ,
-   "Run next cheat if value != memory"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_LT,
-   "Run next cheat if value < memory"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_GT,
-   "Run next cheat if value > memory"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_RUMBLE_TYPE_DISABLED,
-   "<Disabled>"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_RUMBLE_TYPE_CHANGES,
-   "Changes"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_RUMBLE_TYPE_DOES_NOT_CHANGE,
-   "Does Not Change"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_RUMBLE_TYPE_INCREASE,
-   "Increases"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_RUMBLE_TYPE_DECREASE,
-   "Decreases"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_RUMBLE_TYPE_EQ_VALUE,
-   "= Rumble Value"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_RUMBLE_TYPE_NEQ_VALUE,
-   "!= Rumble Value"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_RUMBLE_TYPE_LT_VALUE,
-   "< Rumble Value"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_RUMBLE_TYPE_GT_VALUE,
-   "> Rumble Value"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_RUMBLE_TYPE_INCREASE_BY_VALUE,
-   "Increases by Rumble Value"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_RUMBLE_TYPE_DECREASE_BY_VALUE,
-   "Decreases by Rumble Value"
-)
-MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_1,
    "1ビット, 最大値 = 0x01"
 )
@@ -8205,132 +7891,12 @@ MSG_HASH(
    "32ビット, 最大値 = 0xFFFFFFFF"
 )
 MSG_HASH(
-   MENU_ENUM_LABEL_RUMBLE_PORT_0,
-   "1"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_RUMBLE_PORT_1,
-   "2"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_RUMBLE_PORT_2,
-   "3"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_RUMBLE_PORT_3,
-   "4"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_RUMBLE_PORT_4,
-   "5"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_RUMBLE_PORT_5,
-   "6"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_RUMBLE_PORT_6,
-   "7"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_RUMBLE_PORT_7,
-   "8"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_RUMBLE_PORT_8,
-   "9"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_RUMBLE_PORT_9,
-   "10"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_RUMBLE_PORT_10,
-   "11"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_RUMBLE_PORT_11,
-   "12"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_RUMBLE_PORT_12,
-   "13"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_RUMBLE_PORT_13,
-   "14"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_RUMBLE_PORT_14,
-   "15"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_RUMBLE_PORT_15,
-   "16"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_RUMBLE_PORT_16,
-   "All"
-)
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_START_OR_CONT,
    "チート検索を開始/再開"
 )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_START_OR_RESTART,
    "チート検索を開始/再開始"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_EXACT,
-   "Search Memory For Values"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_LT,
-   "Search Memory For Values"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_GT,
-   "Search Memory For Values"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_EQ,
-   "Search Memory For Values"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_GTE,
-   "Search Memory For Values"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_LTE,
-   "Search Memory For Values"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_NEQ,
-   "Search Memory For Values"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_EQPLUS,
-   "Search Memory For Values"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_EQMINUS,
-   "Search Memory For Values"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_ADD_MATCHES,
-   "Add the %u Matches to Your List"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_VIEW_MATCHES,
-   "View the List of %u Matches"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_CREATE_OPTION,
-   "Create Code From This Match"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_OPTION,
-   "Delete This Match"
 )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_TOP,
@@ -8349,42 +7915,6 @@ MSG_HASH(
    "ゲーム固有のチートを再ロードする"
 )
 MSG_HASH(
-   MENU_ENUM_LABEL_CHEAT_SEARCH_EXACT_VAL,
-   "Equal to %u (%X)"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_CHEAT_SEARCH_LT_VAL,
-   "Less Than Before"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_CHEAT_SEARCH_GT_VAL,
-   "Greater Than Before"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_CHEAT_SEARCH_LTE_VAL,
-   "Less Than or Equal To Before"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_CHEAT_SEARCH_GTE_VAL,
-   "Greater Than or Equal To Before"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_CHEAT_SEARCH_EQ_VAL,
-   "Equal to Before"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_CHEAT_SEARCH_NEQ_VAL,
-   "Not Equal to Before"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_CHEAT_SEARCH_EQPLUS_VAL,
-   "Equal to Before+%u (%X)"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_CHEAT_SEARCH_EQMINUS_VAL,
-   "Equal to Before-%u (%X)"
-)
-MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_SEARCH_SETTINGS,
    "チート検索を開始/再開する"
 )
@@ -8397,40 +7927,8 @@ MSG_HASH(
    "チート検索の開始に失敗しました"
 )
 MSG_HASH(
-   MSG_CHEAT_SEARCH_NOT_INITIALIZED,
-   "Searching has not been initialized/started"
-)
-MSG_HASH(
-   MSG_CHEAT_SEARCH_FOUND_MATCHES,
-   "New match count = %u"
-)
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_BIG_ENDIAN,
    "ビッグエンディアン"
-)
-MSG_HASH(
-   MSG_CHEAT_SEARCH_ADDED_MATCHES_SUCCESS,
-   "Added %u matches"
-)
-MSG_HASH(
-   MSG_CHEAT_SEARCH_ADDED_MATCHES_FAIL,
-   "Failed to add matches"
-)
-MSG_HASH(
-   MSG_CHEAT_SEARCH_ADD_MATCH_SUCCESS,
-   "Created code from match"
-)
-MSG_HASH(
-   MSG_CHEAT_SEARCH_ADD_MATCH_FAIL,
-   "Failed to create code"
-)
-MSG_HASH(
-   MSG_CHEAT_SEARCH_DELETE_MATCH_SUCCESS,
-   "Deleted match"
-)
-MSG_HASH(
-   MSG_CHEAT_SEARCH_ADDED_MATCHES_TOO_MANY,
-   "Not enough room.  The total number of cheats you can have is 100."
 )
 MSG_HASH(
    MSG_CHEAT_ADD_TOP_SUCCESS,
@@ -8447,26 +7945,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_CHEAT_DELETE_ALL_SUCCESS,
    "すべてのチートを削除しました。"
-)
-MSG_HASH(
-   MSG_CHEAT_ADD_BEFORE_SUCCESS,
-   "New cheat added before this one."
-)
-MSG_HASH(
-   MSG_CHEAT_ADD_AFTER_SUCCESS,
-   "New cheat added after this one."
-)
-MSG_HASH(
-   MSG_CHEAT_COPY_BEFORE_SUCCESS,
-   "Cheat copied before this one."
-)
-MSG_HASH(
-   MSG_CHEAT_COPY_AFTER_SUCCESS,
-   "Cheat copied after this one."
-)
-MSG_HASH(
-   MSG_CHEAT_DELETE_SUCCESS,
-   "Cheat deleted."
 )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_PROGRESS,
@@ -8958,10 +8436,6 @@ MSG_HASH(
    "ウィンドウの位置とサイズを記憶"
 )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_HOLD_START,
-   "Hold Start (2 seconds)"
-)
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_USE_OLD_FORMAT,
    "古いフォーマットで保存"
 )
@@ -9025,14 +8499,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SOUND_BGM,
    "BGMの音を有効"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DOWN_SELECT,
-   "Down + Select"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER_FALLBACK,
-   "Your graphics driver is not compatible with the current video driver in RetroArch, falling back to the %s driver. Please restart RetroArch for the changes to take effect."
 )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COREAUDIO_SUPPORT,
@@ -9136,14 +8602,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_HELP_SEND_DEBUG_INFO,
    "解析のため, デバイスとRetroArch設定に関する情報をサーバーに送信します。"
-)
-MSG_HASH(
-   MSG_PRESS_TWO_MORE_TIMES_TO_SEND_DEBUG_INFO,
-   "Press two more times to submit diagnostic info to the RetroArch team."
-)
-MSG_HASH(
-   MSG_PRESS_ONE_MORE_TIME_TO_SEND_DEBUG_INFO,
-   "Press one more time to submit diagnostic info to the RetroArch team."
 )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIBRATE_ON_KEYPRESS,
@@ -9344,186 +8802,6 @@ MSG_HASH(
    "適切に言語を設定すれば, 翻訳の精度が向上します。"
 )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_CZECH,
-   "Czech"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_DANISH,
-   "Danish"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_SWEDISH,
-   "Swedish"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_CROATIAN,
-   "Croatian"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_CATALAN,
-   "Catalan"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_BULGARIAN,
-   "Bulgarian"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_BENGALI,
-   "Bengali"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_BASQUE,
-   "Basque"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_AZERBAIJANI,
-   "Azerbaijani"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_ALBANIAN,
-   "Albanian"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_AFRIKAANS,
-   "Afrikaans"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_ESTONIAN,
-   "Estonian"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_FILIPINO,
-   "Filipino"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_FINNISH,
-   "Finnish"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_GALICIAN,
-   "Galician"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_GEORGIAN,
-   "Georgian"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_GUJARATI,
-   "Gujarati"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_HAITIAN_CREOLE,
-   "Haitian Creole"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_HEBREW,
-   "Hebrew"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_HINDI,
-   "Hindi"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_HUNGARIAN,
-   "Hungarian"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_ICELANDIC,
-   "Icelandic"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_INDONESIAN,
-   "Indonesian"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_IRISH,
-   "Irish"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_KANNADA,
-   "Kannada"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_LATIN,
-   "Latin"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_LATVIAN,
-   "Latvian"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_LITHUANIAN,
-   "Lithuanian"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_MACEDONIAN,
-   "Macedonian"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_MALAY,
-   "Malay"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_MALTESE,
-   "Maltese"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_NORWEGIAN,
-   "Norwegian"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_PERSIAN,
-   "Persian"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_ROMANIAN,
-   "Romanian"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_SERBIAN,
-   "Serbian"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_SLOVAK,
-   "Slovak"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_SLOVENIAN,
-   "Slovenian"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_SWAHILI,
-   "Swahili"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_TAMIL,
-   "Tamil"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_TELUGU,
-   "Telugu"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_THAI,
-   "Thai"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_UKRAINIAN,
-   "Ukrainian"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_URDU,
-   "Urdu"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_WELSH,
-   "Welsh"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_YIDDISH,
-   "Yiddish"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_DRIVERS,
    "[ドライバ]を表示"
 )
@@ -9698,32 +8976,16 @@ MSG_HASH(
    "取り除く"
 )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE_GLOBAL,
-   "Remove the Global Preset, used by all content and all cores."
-)
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_CORE,
    "コアのプリセットを取り除く"
-)
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE_CORE,
-   "Remove the Core Preset, used by all content ran with the currently loaded core."
 )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_PARENT,
    "コンテンツフォルダのプリセットを取り除く"
 )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE_PARENT,
-   "Remove the Content Directory Preset, used by all content inside the current working directory."
-)
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_GAME,
    "ゲームのプリセットを取り除く"
-)
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE_GAME,
-   "Remove the Game Preset, used only for the specific game in question."
 )
 MSG_HASH(
    MSG_SHADER_PRESET_REMOVED_SUCCESSFULLY,
@@ -9741,23 +9003,3 @@ MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DELETE_PLAYLIST,
     "プレイリストを削除"
     )
-#ifdef HAVE_LAKKA
-MSG_HASH(MENU_ENUM_LABEL_VALUE_LOCALAP_ENABLE,
-      "Wi-Fi Access Point")
-MSG_HASH(MENU_ENUM_SUBLABEL_LOCALAP_ENABLE,
-      "Enable or disable Wi-Fi Access Point.")
-MSG_HASH(MSG_LOCALAP_SWITCHING_OFF,
-      "Switching off Wi-Fi Access Point.")
-MSG_HASH(MSG_WIFI_DISCONNECT_FROM,
-      "Disconnecting from Wi-Fi '%s'")
-MSG_HASH(MSG_LOCALAP_ALREADY_RUNNING,
-      "Wi-Fi Access Point is already started")
-MSG_HASH(MSG_LOCALAP_NOT_RUNNING,
-      "Wi-Fi Access Point is not running")
-MSG_HASH(MSG_LOCALAP_STARTING,
-      "Starting Wi-Fi Access Point with SSID=%s and Passkey=%s")
-MSG_HASH(MSG_LOCALAP_ERROR_CONFIG_CREATE,
-      "Could not create Wi-Fi Access Point configuration file.")
-MSG_HASH(MSG_LOCALAP_ERROR_CONFIG_PARSE,
-     "Wrong configuration file - could not find APNAME or PASSWORD in %s")
-#endif

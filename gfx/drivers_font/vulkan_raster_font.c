@@ -74,8 +74,10 @@ static void *vulkan_raster_font_init_font(void *data,
          font->atlas->width, font->atlas->height, VK_FORMAT_R8_UNORM, font->atlas->buffer,
          NULL /*&swizzle*/, VULKAN_TEXTURE_STAGING);
 
-   vulkan_map_persistent_texture(
-         font->vk->context->device, &font->texture);
+   {
+      struct vk_texture *texture = &font->texture;
+      VK_MAP_PERSISTENT_TEXTURE(font->vk->context->device, texture);
+   }
 
    font->texture_optimal = vulkan_create_texture(font->vk, NULL,
          font->atlas->width, font->atlas->height, VK_FORMAT_R8_UNORM, NULL,
@@ -125,17 +127,21 @@ static int vulkan_get_message_width(void *data, const char *msg,
       unsigned msg_len, float scale)
 {
    vulkan_raster_t *font = (vulkan_raster_t*)data;
+   const char* msg_end   = msg + msg_len;
+   int delta_x           = 0;
 
-   unsigned i;
-   int delta_x = 0;
-
-   if (!font)
+   if (     !font
+         || !font->font_driver
+         || !font->font_driver->get_glyph
+         || !font->font_data )
       return 0;
 
-   for (i = 0; i < msg_len; i++)
+   while (msg < msg_end)
    {
-      const struct font_glyph *glyph =
-         font->font_driver->get_glyph(font->font_data, (uint8_t)msg[i]);
+      uint32_t code                  = utf8_walk(&msg);
+      const struct font_glyph *glyph = font->font_driver->get_glyph(
+            font->font_data, code);
+
       if (!glyph) /* Do something smarter here ... */
          glyph = font->font_driver->get_glyph(font->font_data, '?');
 

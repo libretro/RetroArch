@@ -130,8 +130,9 @@ int font_renderer_create_default(
       void **handle,
       const char *font_path, unsigned font_size);
 
-void font_driver_render_msg(video_frame_info_t *video_info,
-      void *font_data, const char *msg, const struct font_params *params);
+void font_driver_render_msg(void *data,
+      video_frame_info_t *video_info,
+      const char *msg, const void *params, void *font_data);
 
 void font_driver_bind_block(void *font_data, void *block);
 

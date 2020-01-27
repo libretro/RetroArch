@@ -334,27 +334,27 @@ static bool menu_shader_manager_operate_auto_preset(enum auto_shader_operation o
    char tmp[PATH_MAX_LENGTH];
    char directory[PATH_MAX_LENGTH];
    char file[PATH_MAX_LENGTH];
-   settings_t *settings             = config_get_ptr();
-   struct retro_system_info *system = runloop_get_libretro_system_info();
-   const char *core_name            = system ? system->library_name : NULL;
+   bool success                      = false;
+   settings_t *settings              = config_get_ptr();
+   struct retro_system_info *system  = runloop_get_libretro_system_info();
+   const char *core_name             = system ? system->library_name : NULL;
+   const char *path_dir_video_shader = settings->paths.directory_video_shader;
 
    tmp[0] = directory[0] = file[0] = '\0';
 
    if (type == SHADER_PRESET_GLOBAL)
-   {
       fill_pathname_join(
             directory,
-            settings->paths.directory_video_shader,
+            path_dir_video_shader,
             "presets",
             sizeof(directory));
-   }
    else if (string_is_empty(core_name))
       return false;
    else
    {
       fill_pathname_join(
             tmp,
-            settings->paths.directory_video_shader,
+            path_dir_video_shader,
             "presets",
             sizeof(tmp));
       fill_pathname_join(
@@ -390,55 +390,55 @@ static bool menu_shader_manager_operate_auto_preset(enum auto_shader_operation o
          return false;
    }
 
-   if (op == AUTO_SHADER_OP_SAVE)
+   switch (op)
    {
-      if (!path_is_directory(directory))
-         path_mkdir(directory);
+      case AUTO_SHADER_OP_SAVE:
+         if (!path_is_directory(directory))
+            path_mkdir(directory);
 
-      return menu_shader_manager_save_preset_internal(
-            shader, file, apply, true);
-   }
-   else if (op == AUTO_SHADER_OP_REMOVE)
-   {
-      /* remove all supported auto-shaders of given type */
-      char *end = file + strlen(file);
-      size_t i;
-      bool success = false;
+         return menu_shader_manager_save_preset_internal(
+               shader, file, apply, true);
+      case AUTO_SHADER_OP_REMOVE:
+         {
+            /* remove all supported auto-shaders of given type */
+            char *end = file + strlen(file);
+            size_t i;
+            for (i = 0; i < ARRAY_SIZE(shader_types); i++)
+            {
+               const char *preset_ext;
 
-      for (i = 0; i < ARRAY_SIZE(shader_types); i++)
-      {
-         const char *preset_ext;
+               if (!video_shader_is_supported(shader_types[i]))
+                  continue;
 
-         if (!video_shader_is_supported(shader_types[i]))
-            continue;
+               preset_ext = video_shader_get_preset_extension(shader_types[i]);
+               strlcpy(end, preset_ext, sizeof(file) - (end-file));
 
-         preset_ext = video_shader_get_preset_extension(shader_types[i]);
-         strlcpy(end, preset_ext, sizeof(file) - (end-file));
+               if (!filestream_delete(file))
+                  success = true;
+            }
+         }
+         return success;
+      case AUTO_SHADER_OP_EXISTS:
+         {
+            /* test if any supported auto-shaders of given type exists */
+            char *end = file + strlen(file);
+            size_t i;
 
-         if (!filestream_delete(file))
-            success = true;
-      }
-      return success;
-   }
-   else if (op == AUTO_SHADER_OP_EXISTS)
-   {
-      /* test if any supported auto-shaders of given type exists */
-      char *end = file + strlen(file);
-      size_t i;
+            for (i = 0; i < ARRAY_SIZE(shader_types); i++)
+            {
+               const char *preset_ext;
 
-      for (i = 0; i < ARRAY_SIZE(shader_types); i++)
-      {
-         const char *preset_ext;
+               if (!video_shader_is_supported(shader_types[i]))
+                  continue;
 
-         if (!video_shader_is_supported(shader_types[i]))
-            continue;
+               preset_ext = video_shader_get_preset_extension(shader_types[i]);
+               strlcpy(end, preset_ext, sizeof(file) - (end-file));
 
-         preset_ext = video_shader_get_preset_extension(shader_types[i]);
-         strlcpy(end, preset_ext, sizeof(file) - (end-file));
-
-         if (path_is_valid(file))
-            return true;
-      }
+               if (path_is_valid(file))
+                  return true;
+            }
+         }
+         break;
    }
 
    return false;

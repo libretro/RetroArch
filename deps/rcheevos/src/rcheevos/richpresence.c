@@ -51,8 +51,10 @@ static rc_richpresence_display_t* rc_parse_richpresence_display_internal(const c
   const char* in;
   char* out;
 
-  if (endline - line < 1)
+  if (endline - line < 1) {
+    parse->offset = RC_MISSING_DISPLAY_STRING;
     return 0;
+  }
 
   {
     self = RC_ALLOC(rc_richpresence_display_t, parse);
@@ -102,6 +104,11 @@ static rc_richpresence_display_t* rc_parse_richpresence_display_internal(const c
       line = ++ptr;
       while (ptr < endline && *ptr != '(')
         ++ptr;
+
+      if (ptr == endline) {
+        parse->offset = RC_MISSING_VALUE;
+        return 0;
+      }
 
       if (ptr > line) {
         if (!parse->buffer) {
@@ -179,6 +186,7 @@ static const char* rc_parse_richpresence_lookup(rc_richpresence_lookup_t* lookup
   const char* line;
   const char* endline;
   const char* defaultlabel = 0;
+  char* endptr = 0;
   unsigned key;
   int chars;
 
@@ -208,9 +216,14 @@ static const char* rc_parse_richpresence_lookup(rc_richpresence_lookup_t* lookup
       }
 
       if (number[0] == '0' && number[1] == 'x')
-        key = (unsigned)strtoul(&number[2], 0, 16);
+        key = strtoul(&number[2], &endptr, 16);
       else
-        key = (unsigned)strtoul(&number[0], 0, 10);
+        key = strtoul(&number[0], &endptr, 10);
+
+      if (*endptr && !isspace(*endptr)) {
+        parse->offset = RC_INVALID_CONST_OPERAND;
+        return nextline;
+      }
 
       item = RC_ALLOC(rc_richpresence_lookup_item_t, parse);
       item->value = key;
@@ -263,6 +276,8 @@ void rc_parse_richpresence_internal(rc_richpresence_t* self, const char* script,
       nextlookup = &lookup->next;
 
       nextline = rc_parse_richpresence_lookup(lookup, nextline, parse);
+      if (parse->offset < 0)
+        return;
 
     } else if (strncmp(line, "Format:", 7) == 0) {
       line += 7;
@@ -316,6 +331,8 @@ void rc_parse_richpresence_internal(rc_richpresence_t* self, const char* script,
 
       if (ptr < endline) {
         *nextdisplay = rc_parse_richpresence_display_internal(ptr + 1, endline, parse, self);
+        if (parse->offset < 0)
+          return;
         trigger = &((*nextdisplay)->trigger);
         rc_parse_trigger_internal(trigger, &line, parse);
         trigger->memrefs = 0;

@@ -18,12 +18,15 @@ EOF
 
 add_opt MOC no
 if [ "$HAVE_QT" = "yes" ]; then
+	printf %s 'Checking for moc ... '
+
 	moc_works=0
 	if [ "$MOC" ]; then
 		QT_SELECT="$QT_VERSION" \
 		"$MOC" -o "$TEMP_CPP" "$TEMP_MOC" >/dev/null 2>&1 &&
-		"$CXX" -o "$TEMP_EXE" $(printf %s "$QT_FLAGS") \
-			-fPIC -c "$TEMP_CPP" >/dev/null 2>&1 &&
+			$(printf %s "$CXX") -o "$TEMP_EXE" \
+			$(printf %s "$QT_FLAGS") -fPIC -c "$TEMP_CPP" \
+			>/dev/null 2>&1 &&
 		moc_works=1
 	else
 		for moc in "moc-$QT_VERSION" moc; do
@@ -32,11 +35,12 @@ if [ "$HAVE_QT" = "yes" ]; then
 				QT_SELECT="$QT_VERSION" \
 				"$MOC" -o "$TEMP_CPP" "$TEMP_MOC" >/dev/null 2>&1 ||
 					continue
-				"$CXX" -o "$TEMP_EXE" $(printf %s "$QT_FLAGS") \
-					-fPIC -c "$TEMP_CPP" >/dev/null 2>&1 && {
+				if $(printf %s "$CXX") -o "$TEMP_EXE" \
+						$(printf %s "$QT_FLAGS") -fPIC -c \
+						"$TEMP_CPP" >/dev/null 2>&1; then
 					moc_works=1
 					break
-				}
+				fi
 			fi
 		done
 	fi
@@ -49,7 +53,7 @@ if [ "$HAVE_QT" = "yes" ]; then
 		moc_status='not found'
 	fi
 
-	printf %s\\n "Checking for moc ... $MOC $moc_status"
+	printf %s\\n "$MOC $moc_status"
 
 	if [ "$HAVE_MOC" != 'yes' ]; then
 		HAVE_QT='no'

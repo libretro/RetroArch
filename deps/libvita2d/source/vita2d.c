@@ -39,6 +39,7 @@ extern const SceGxmProgram color_v_gxp;
 extern const SceGxmProgram color_f_gxp;
 extern const SceGxmProgram texture_v_gxp;
 extern const SceGxmProgram texture_f_gxp;
+extern const SceGxmProgram texture_tint_v_gxp;
 extern const SceGxmProgram texture_tint_f_gxp;
 
 /* Static variables */
@@ -51,6 +52,7 @@ static const SceGxmProgram *const colorVertexProgramGxp         = &color_v_gxp;
 static const SceGxmProgram *const colorFragmentProgramGxp       = &color_f_gxp;
 static const SceGxmProgram *const textureVertexProgramGxp       = &texture_v_gxp;
 static const SceGxmProgram *const textureFragmentProgramGxp     = &texture_f_gxp;
+static const SceGxmProgram *const textureTintVertexProgramGxp   = &texture_tint_v_gxp;
 static const SceGxmProgram *const textureTintFragmentProgramGxp = &texture_tint_f_gxp;
 
 static int vita2d_initialized = 0;
@@ -95,6 +97,7 @@ static SceGxmShaderPatcherId colorVertexProgramId;
 static SceGxmShaderPatcherId colorFragmentProgramId;
 static SceGxmShaderPatcherId textureVertexProgramId;
 static SceGxmShaderPatcherId textureFragmentProgramId;
+static SceGxmShaderPatcherId textureTintVertexProgramId;
 static SceGxmShaderPatcherId textureTintFragmentProgramId;
 
 static SceUID patcherBufferUid;
@@ -113,11 +116,12 @@ SceGxmVertexProgram *_vita2d_colorVertexProgram = NULL;
 SceGxmFragmentProgram *_vita2d_colorFragmentProgram = NULL;
 SceGxmVertexProgram *_vita2d_textureVertexProgram = NULL;
 SceGxmFragmentProgram *_vita2d_textureFragmentProgram = NULL;
+SceGxmVertexProgram *_vita2d_textureTintVertexProgram = NULL;
 SceGxmFragmentProgram *_vita2d_textureTintFragmentProgram = NULL;
 const SceGxmProgramParameter *_vita2d_clearClearColorParam = NULL;
 const SceGxmProgramParameter *_vita2d_colorWvpParam = NULL;
 const SceGxmProgramParameter *_vita2d_textureWvpParam = NULL;
-const SceGxmProgramParameter *_vita2d_textureTintColorParam = NULL;
+const SceGxmProgramParameter *_vita2d_textureTintWvpParam = NULL;
 
 typedef struct vita2d_fragment_programs {
 	SceGxmFragmentProgram *color;
@@ -208,7 +212,7 @@ static void _vita2d_make_fragment_programs(vita2d_fragment_programs *out,
 		SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
 		msaa,
 		blend_info,
-		textureVertexProgramGxp,
+		textureTintVertexProgramGxp,
 		&out->textureTint);
 
 	VITA2D_DEBUG("texture_tint sceGxmShaderPatcherCreateFragmentProgram(): 0x%08X\n", err);
@@ -442,6 +446,8 @@ static int vita2d_init_internal(unsigned int temp_pool_size, SceGxmMultisampleMo
 	VITA2D_DEBUG("texture_v sceGxmProgramCheck(): 0x%08X\n", err);
 	err = sceGxmProgramCheck(textureFragmentProgramGxp);
 	VITA2D_DEBUG("texture_f sceGxmProgramCheck(): 0x%08X\n", err);
+   err = sceGxmProgramCheck(textureTintVertexProgramGxp);
+	VITA2D_DEBUG("texture_v sceGxmProgramCheck(): 0x%08X\n", err);
 	err = sceGxmProgramCheck(textureTintFragmentProgramGxp);
 	VITA2D_DEBUG("texture_tint_f sceGxmProgramCheck(): 0x%08X\n", err);
 
@@ -463,6 +469,9 @@ static int vita2d_init_internal(unsigned int temp_pool_size, SceGxmMultisampleMo
 
 	err = sceGxmShaderPatcherRegisterProgram(shaderPatcher, textureFragmentProgramGxp, &textureFragmentProgramId);
 	VITA2D_DEBUG("texture_f sceGxmShaderPatcherRegisterProgram(): 0x%08X\n", err);
+
+   err = sceGxmShaderPatcherRegisterProgram(shaderPatcher, textureTintVertexProgramGxp, &textureTintVertexProgramId);
+	VITA2D_DEBUG("texture_v sceGxmShaderPatcherRegisterProgram(): 0x%08X\n", err);
 
 	err = sceGxmShaderPatcherRegisterProgram(shaderPatcher, textureTintFragmentProgramGxp, &textureTintFragmentProgramId);
 	VITA2D_DEBUG("texture_tint_f sceGxmShaderPatcherRegisterProgram(): 0x%08X\n", err);
@@ -630,6 +639,52 @@ static int vita2d_init_internal(unsigned int temp_pool_size, SceGxmMultisampleMo
 
 	VITA2D_DEBUG("texture sceGxmShaderPatcherCreateVertexProgram(): 0x%08X\n", err);
 
+   const SceGxmProgramParameter *paramTextureTintPositionAttribute = sceGxmProgramFindParameterByName(textureTintVertexProgramGxp, "aPosition");
+	VITA2D_DEBUG("aPosition sceGxmProgramFindParameterByName(): %p\n", paramTextureTintPositionAttribute);
+
+	const SceGxmProgramParameter *paramTextureTintTexcoordAttribute = sceGxmProgramFindParameterByName(textureTintVertexProgramGxp, "aTexcoord");
+	VITA2D_DEBUG("aTexcoord sceGxmProgramFindParameterByName(): %p\n", paramTextureTintTexcoordAttribute);
+
+   const SceGxmProgramParameter *paramTextureTintColorAttribute = sceGxmProgramFindParameterByName(textureTintVertexProgramGxp, "aColor");
+	VITA2D_DEBUG("aColor sceGxmProgramFindParameterByName(): %p\n", paramTextureTintColorAttribute);
+
+	// create texture vertex format
+	SceGxmVertexAttribute textureTintVertexAttributes[3];
+	SceGxmVertexStream textureTintVertexStreams[1];
+	/* x,y,z: 3 float 32 bits */
+	textureTintVertexAttributes[0].streamIndex = 0;
+	textureTintVertexAttributes[0].offset = 0;
+	textureTintVertexAttributes[0].format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
+	textureTintVertexAttributes[0].componentCount = 3; // (x, y, z)
+	textureTintVertexAttributes[0].regIndex = sceGxmProgramParameterGetResourceIndex(paramTextureTintPositionAttribute);
+	/* u,v: 2 floats 32 bits */
+	textureTintVertexAttributes[1].streamIndex = 0;
+	textureTintVertexAttributes[1].offset = 12; // (x, y, z) * 4 = 12 bytes
+	textureTintVertexAttributes[1].format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
+	textureTintVertexAttributes[1].componentCount = 2; // (u, v)
+	textureTintVertexAttributes[1].regIndex = sceGxmProgramParameterGetResourceIndex(paramTextureTintTexcoordAttribute);
+   /* r,g,b,a: 4 floats 32 bits */
+	textureTintVertexAttributes[2].streamIndex = 0;
+	textureTintVertexAttributes[2].offset = 20; // (u, v) * 4 = 8 bytes
+	textureTintVertexAttributes[2].format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
+	textureTintVertexAttributes[2].componentCount = 4; // (r, g, b, a)
+	textureTintVertexAttributes[2].regIndex = sceGxmProgramParameterGetResourceIndex(paramTextureTintColorAttribute);
+	// 16 bit (short) indices
+	textureTintVertexStreams[0].stride = sizeof(vita2d_texture_tint_vertex);
+	textureTintVertexStreams[0].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
+
+	// create texture shaders
+	err = sceGxmShaderPatcherCreateVertexProgram(
+		shaderPatcher,
+		textureTintVertexProgramId,
+		textureTintVertexAttributes,
+		3,
+		textureTintVertexStreams,
+		1,
+		&_vita2d_textureTintVertexProgram);
+
+	VITA2D_DEBUG("texture sceGxmShaderPatcherCreateVertexProgram(): 0x%08X\n", err);
+
 	// Create variations of the fragment program based on blending mode
 	_vita2d_make_fragment_programs(&_vita2d_fragmentPrograms.blend_mode_normal, &blend_info, msaa);
 	_vita2d_make_fragment_programs(&_vita2d_fragmentPrograms.blend_mode_add, &blend_info_add, msaa);
@@ -647,8 +702,8 @@ static int vita2d_init_internal(unsigned int temp_pool_size, SceGxmMultisampleMo
 	_vita2d_textureWvpParam = sceGxmProgramFindParameterByName(textureVertexProgramGxp, "wvp");
 	VITA2D_DEBUG("texture wvp sceGxmProgramFindParameterByName(): %p\n", _vita2d_textureWvpParam);
 
-	_vita2d_textureTintColorParam = sceGxmProgramFindParameterByName(textureTintFragmentProgramGxp, "uTintColor");
-	VITA2D_DEBUG("texture wvp sceGxmProgramFindParameterByName(): %p\n", _vita2d_textureWvpParam);
+   _vita2d_textureTintWvpParam = sceGxmProgramFindParameterByName(textureTintVertexProgramGxp, "wvp");
+	VITA2D_DEBUG("texture tint wvp sceGxmProgramFindParameterByName(): %p\n", _vita2d_textureTintWvpParam);
 
 	// Allocate memory for the memory pool
 	pool_size = temp_pool_size;
@@ -743,7 +798,8 @@ int vita2d_fini()
 	sceGxmShaderPatcherUnregisterProgram(shaderPatcher, colorVertexProgramId);
 	sceGxmShaderPatcherUnregisterProgram(shaderPatcher, textureFragmentProgramId);
 	sceGxmShaderPatcherUnregisterProgram(shaderPatcher, textureTintFragmentProgramId);
-	sceGxmShaderPatcherUnregisterProgram(shaderPatcher, textureVertexProgramId);
+	sceGxmShaderPatcherUnregisterProgram(shaderPatcher, textureTintVertexProgramId);
+   sceGxmShaderPatcherUnregisterProgram(shaderPatcher, textureVertexProgramId);
 
 	sceGxmShaderPatcherDestroy(shaderPatcher);
 	fragment_usse_free(patcherFragmentUsseUid);
@@ -877,12 +933,16 @@ int vita2d_get_clipping_enabled()
 
 void vita2d_set_clip_rectangle(int x_min, int y_min, int x_max, int y_max)
 {
+	vita2d_set_viewport(0,0,DISPLAY_WIDTH,DISPLAY_HEIGHT);
+	clipping_enabled = 1;
 	clip_rect_x_min = x_min;
 	clip_rect_y_min = y_min;
 	clip_rect_x_max = x_max;
 	clip_rect_y_max = y_max;
 	// we can only draw during a scene, but we can cache the values since they're not going to have any visible effect till the scene starts anyways
 	if(drawing) {
+		sceGxmSetFrontDepthWriteEnable(_vita2d_context,
+			SCE_GXM_DEPTH_WRITE_DISABLED);
 		// clear the stencil buffer to 0
 		sceGxmSetFrontStencilFunc(
 			_vita2d_context,
@@ -903,6 +963,8 @@ void vita2d_set_clip_rectangle(int x_min, int y_min, int x_max, int y_max)
 			0xFF,
 			0xFF);
 		vita2d_draw_rectangle(x_min, y_min, x_max - x_min, y_max - y_min, 0);
+		sceGxmSetFrontDepthWriteEnable(_vita2d_context,
+			SCE_GXM_DEPTH_WRITE_ENABLED);
 		if(clipping_enabled) {
 			// set the stencil function to only accept pixels where the stencil is 1
 			sceGxmSetFrontStencilFunc(
@@ -1035,4 +1097,15 @@ void vita2d_set_blend_mode_add(int enable)
 	_vita2d_colorFragmentProgram = in->color;
 	_vita2d_textureFragmentProgram = in->texture;
 	_vita2d_textureTintFragmentProgram = in->textureTint;
+}
+
+void vita2d_set_viewport(int x, int y, int width, int height){
+   static float vh = DISPLAY_HEIGHT;
+   float sw = width  / 2.;
+   float sh = height / 2.;
+   float x_scale = sw;
+   float x_port = x + sw;
+   float y_scale = -(sh);
+   float y_port = vh - y - sh;
+   sceGxmSetViewport(_vita2d_context, x_port, x_scale, y_port, y_scale, -0.5f, 0.5f);
 }

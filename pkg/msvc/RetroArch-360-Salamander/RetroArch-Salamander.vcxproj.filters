@@ -44,9 +44,6 @@
     <ClCompile Include="..\..\..\frontend\frontend_driver.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\frontend\drivers\platform_null.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\frontend\drivers\platform_xdk.c">
       <Filter>Source Files</Filter>
     </ClCompile>

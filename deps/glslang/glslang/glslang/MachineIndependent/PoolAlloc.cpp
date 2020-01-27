@@ -65,6 +65,15 @@ bool InitializePoolIndex()
     return true;
 }
 
+bool DeinitializePoolIndex()
+{
+    if (PoolIndex == OS_INVALID_TLS_INDEX)
+        return false;
+    OS_FreeTLSIndex(PoolIndex);
+    PoolIndex = OS_INVALID_TLS_INDEX;
+    return true;
+}
+
 //
 // Implement the functionality of the TPoolAllocator class, which
 // is documented in PoolAlloc.h.

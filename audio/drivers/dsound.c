@@ -94,30 +94,25 @@ struct audio_lock
    DWORD size2;
 };
 
-static INLINE bool grab_region(dsound_t *ds, uint32_t write_ptr,
-      struct audio_lock *region)
+static bool grab_region(dsound_t *ds, uint32_t write_ptr,
+      struct audio_lock *region, HRESULT res)
 {
-   HRESULT     res = IDirectSoundBuffer_Lock(ds->dsb, write_ptr, CHUNK_SIZE,
-         &region->chunk1, &region->size1, &region->chunk2, &region->size2, 0);
-
    if (res == DSERR_BUFFERLOST)
    {
+#ifdef DEBUG
+      RARCH_WARN("[DirectSound error]: %s\n", "DSERR_BUFFERLOST");
+#endif
       if ((res = IDirectSoundBuffer_Restore(ds->dsb)) != DS_OK)
          return false;
       if ((res = IDirectSoundBuffer_Lock(ds->dsb, write_ptr, CHUNK_SIZE,
                   &region->chunk1, &region->size1, &region->chunk2, &region->size2, 0)) != DS_OK)
          return false;
-   }
-
-   if (res == DS_OK)
       return true;
+   }
 
 #ifdef DEBUG
    switch (res)
    {
-      case DSERR_BUFFERLOST:
-         RARCH_WARN("[DirectSound error]: %s\n", "DSERR_BUFFERLOST");
-         break;
       case DSERR_INVALIDCALL:
          RARCH_WARN("[DirectSound error]: %s\n", "DSERR_INVALIDCALL");
          break;
@@ -151,6 +146,7 @@ static DWORD CALLBACK dsound_thread(PVOID data)
 
    while (ds->thread_alive)
    {
+      HRESULT res;
       bool is_pull = false;
       struct audio_lock region;
       DWORD read_ptr, avail, fifo_avail;
@@ -175,11 +171,15 @@ static DWORD CALLBACK dsound_thread(PVOID data)
          continue;
       }
 
-      if (!grab_region(ds, write_ptr, &region))
+      if ((res = IDirectSoundBuffer_Lock(ds->dsb, write_ptr, CHUNK_SIZE,
+                  &region.chunk1, &region.size1, &region.chunk2, &region.size2, 0)) != DS_OK)
       {
-         ds->thread_alive = false;
-         SetEvent(ds->event);
-         break;
+         if (!grab_region(ds, write_ptr, &region, res))
+         {
+            ds->thread_alive = false;
+            SetEvent(ds->event);
+            break;
+         }
       }
 
       if (fifo_avail < CHUNK_SIZE)
@@ -328,6 +328,19 @@ static BOOL CALLBACK enumerate_cb(LPGUID guid, LPCSTR desc, LPCSTR module, LPVOI
    return TRUE;
 }
 
+static void dsound_set_wavefmt(WAVEFORMATEX *wfx,
+      unsigned channels, unsigned samplerate)
+{
+   wfx->wFormatTag        = WAVE_FORMAT_PCM;
+   wfx->nBlockAlign       = channels * sizeof(int16_t);
+   wfx->wBitsPerSample    = 16;
+
+   wfx->nChannels         = channels;
+   wfx->nSamplesPerSec    = samplerate;
+   wfx->nAvgBytesPerSec   = wfx->nSamplesPerSec * wfx->nBlockAlign;
+   wfx->cbSize            = 0;
+}
+
 static void *dsound_init(const char *dev, unsigned rate, unsigned latency,
       unsigned block_frames,
       unsigned *new_rate)
@@ -390,12 +403,7 @@ static void *dsound_init(const char *dev, unsigned rate, unsigned latency,
       goto error;
 #endif
 
-   wfx.wFormatTag        = WAVE_FORMAT_PCM;
-   wfx.nChannels         = 2;
-   wfx.nSamplesPerSec    = rate;
-   wfx.wBitsPerSample    = 16;
-   wfx.nBlockAlign       = 2 * sizeof(int16_t);
-   wfx.nAvgBytesPerSec   = rate * 2 * sizeof(int16_t);
+   dsound_set_wavefmt(&wfx, 2, rate);
 
    ds->buffer_size       = (latency * wfx.nAvgBytesPerSec) / 1000;
    ds->buffer_size      /= CHUNK_SIZE;
@@ -496,27 +504,49 @@ static ssize_t dsound_write(void *data, const void *buf_, size_t size)
    if (!ds->thread_alive)
       return -1;
 
-   while (size > 0)
+   if (ds->nonblock)
    {
-      size_t avail;
+      if (size > 0)
+      {
+         size_t avail;
 
-      EnterCriticalSection(&ds->crit);
-      avail = fifo_write_avail(ds->buffer);
-      if (avail > size)
-         avail = size;
+         EnterCriticalSection(&ds->crit);
+         avail = fifo_write_avail(ds->buffer);
+         if (avail > size)
+            avail = size;
 
-      fifo_write(ds->buffer, buf, avail);
-      LeaveCriticalSection(&ds->crit);
+         fifo_write(ds->buffer, buf, avail);
+         LeaveCriticalSection(&ds->crit);
 
-      buf     += avail;
-      size    -= avail;
-      written += avail;
+         buf     += avail;
+         size    -= avail;
+         written += avail;
+      }
+   }
+   else
+   {
+      while (size > 0)
+      {
+         size_t avail;
 
-      if (ds->nonblock || !ds->thread_alive)
-         break;
+         EnterCriticalSection(&ds->crit);
+         avail = fifo_write_avail(ds->buffer);
+         if (avail > size)
+            avail = size;
 
-      if (avail == 0)
-         WaitForSingleObject(ds->event, INFINITE);
+         fifo_write(ds->buffer, buf, avail);
+         LeaveCriticalSection(&ds->crit);
+
+         buf     += avail;
+         size    -= avail;
+         written += avail;
+
+         if (!ds->thread_alive)
+            break;
+
+         if (avail == 0)
+            WaitForSingleObject(ds->event, INFINITE);
+      }
    }
 
    return written;

@@ -450,7 +450,7 @@ static config_file_t *config_file_new_internal(
 
          conf->tail = list;
 
-         if (cb != NULL && list->key != NULL && list->value != NULL)
+         if (cb && list->key && list->value)
             cb->config_file_new_entry_cb(list->key, list->value) ;
       }
 

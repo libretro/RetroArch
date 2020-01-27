@@ -1100,7 +1100,7 @@ static void d3d8_set_osd_msg(void *data,
    d3d8_video_t          *d3d = (d3d8_video_t*)data;
 
    d3d8_begin_scene(d3d->dev);
-   font_driver_render_msg(video_info, font, msg, params);
+   font_driver_render_msg(d3d, video_info, msg, params, font);
    d3d8_end_scene(d3d->dev);
 }
 
@@ -1206,13 +1206,6 @@ static void d3d8_set_rotation(void *data, unsigned rot)
 
    d3d->dev_rotation  = rot;
    d3d->should_resize = true;
-}
-
-static void d3d8_show_mouse(void *data, bool state)
-{
-#ifndef _XBOX
-   win32_show_cursor(state);
-#endif
 }
 
 static void *d3d8_init(const video_info_t *info,
@@ -1422,7 +1415,9 @@ static void d3d8_overlay_enable(void *data, bool state)
    for (i = 0; i < d3d->overlays_size; i++)
       d3d->overlays_enabled = state;
 
-   d3d8_show_mouse(d3d, state);
+#ifndef _XBOX
+   win32_show_cursor(d3d, state);
+#endif
 }
 
 static void d3d8_overlay_full_screen(void *data, bool enable)
@@ -1561,10 +1556,8 @@ static bool d3d8_frame(void *data, const void *frame,
          &video_info->osd_stat_params;
 
       if (osd_params)
-      {
-         font_driver_render_msg(video_info, NULL, video_info->stat_text,
-               (const struct font_params*)&video_info->osd_stat_params);
-      }
+         font_driver_render_msg(d3d, video_info, video_info->stat_text,
+               (const struct font_params*)&video_info->osd_stat_params, NULL);
    }
 #endif
 
@@ -1581,7 +1574,7 @@ static bool d3d8_frame(void *data, const void *frame,
    {
       d3d8_set_viewports(d3d->dev, &screen_vp);
       d3d8_begin_scene(d3d->dev);
-      font_driver_render_msg(video_info, NULL, msg, NULL);
+      font_driver_render_msg(d3d, video_info, msg, NULL, NULL);
       d3d8_end_scene(d3d->dev);
    }
 
@@ -1781,7 +1774,7 @@ static void d3d8_set_video_mode(void *data,
       bool fullscreen)
 {
 #ifndef _XBOX
-   win32_show_cursor(!fullscreen);
+   win32_show_cursor(data, !fullscreen);
 #endif
 }
 
@@ -1818,7 +1811,7 @@ static const video_poke_interface_t d3d_poke_interface = {
    d3d8_set_menu_texture_enable,
    d3d8_set_osd_msg,
 
-   d3d8_show_mouse,
+   win32_show_cursor,
    NULL,                         /* grab_mouse_toggle */
    NULL,                         /* get_current_shader */
    NULL,                         /* get_current_software_framebuffer */

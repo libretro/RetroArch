@@ -52,7 +52,9 @@ typedef struct coreaudio
    size_t buffer_size;
 } coreaudio_t;
 
+#if TARGET_OS_IOS
 static bool g_interrupted;
+#endif
 
 static void coreaudio_free(void *data)
 {
@@ -344,7 +346,11 @@ static ssize_t coreaudio_write(void *data, const void *buf_, size_t size)
    const uint8_t *buf = (const uint8_t*)buf_;
    size_t written     = 0;
 
+#if TARGET_OS_IOS
    while (!g_interrupted && size > 0)
+#else
+   while (size > 0)
+#endif
    {
       size_t write_avail;
 
@@ -365,7 +371,7 @@ static ssize_t coreaudio_write(void *data, const void *buf_, size_t size)
          break;
       }
 
-#if TARGET_OS_IPHONE
+#if TARGET_OS_IOS
       if (write_avail == 0 && !scond_wait_timeout(
                dev->cond, dev->lock, 3000000))
          g_interrupted = true;

@@ -66,6 +66,8 @@ struct screenshot_task_state
    bool is_idle;
    bool is_paused;
    bool history_list_enable;
+   bool pl_fuzzy_archive_match;
+   bool pl_use_old_format;
    int pitch;
    unsigned width;
    unsigned height;
@@ -177,7 +179,9 @@ static void task_screenshot_handler(retro_task_t *task)
       entry.core_path             = (char*)"builtin";
       entry.core_name             = (char*)"imageviewer";
 
-      command_playlist_push_write(g_defaults.image_history, &entry);
+      command_playlist_push_write(g_defaults.image_history, &entry,
+            state->pl_fuzzy_archive_match,
+            state->pl_use_old_format);
    }
 #endif
 
@@ -240,22 +244,24 @@ static bool screenshot_dump(
    if (fullpath)
       strlcpy(state->filename, name_base, sizeof(state->filename));
 
-   state->is_idle             = is_idle;
-   state->is_paused           = is_paused;
-   state->bgr24               = bgr24;
-   state->height              = height;
-   state->width               = width;
-   state->pitch               = pitch;
-   state->frame               = frame;
-   state->userbuf             = userbuf;
+   state->pl_fuzzy_archive_match = settings->bools.playlist_fuzzy_archive_match;
+   state->pl_use_old_format      = settings->bools.playlist_use_old_format;
+   state->is_idle                = is_idle;
+   state->is_paused              = is_paused;
+   state->bgr24                  = bgr24;
+   state->height                 = height;
+   state->width                  = width;
+   state->pitch                  = pitch;
+   state->frame                  = frame;
+   state->userbuf                = userbuf;
 #ifdef HAVE_MENU_WIDGETS
-   state->widgets_ready       = menu_widgets_ready();
+   state->widgets_ready          = menu_widgets_ready();
 #else
-   state->widgets_ready       = false;
+   state->widgets_ready          = false;
 #endif
-   state->silence             = savestate;
-   state->history_list_enable = settings->bools.history_list_enable;
-   state->pixel_format_type   = pixel_format_type;
+   state->silence                = savestate;
+   state->history_list_enable    = settings->bools.history_list_enable;
+   state->pixel_format_type      = pixel_format_type;
 
    if (!fullpath)
    {

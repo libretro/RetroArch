@@ -1086,7 +1086,7 @@ static void stripes_update_thumbnail_image(void *data)
       }
 }
 
-static void stripes_refresh_thumbnail_image(void *data)
+static void stripes_refresh_thumbnail_image(void *data, unsigned i)
 {
    stripes_update_thumbnail_image(data);
 }
@@ -3328,10 +3328,9 @@ static void *stripes_init(void **userdata, bool video_is_threaded)
    if (settings->bools.menu_content_show_netplay)
       stripes->tabs[++stripes->system_tab_end] = STRIPES_SYSTEM_TAB_NETPLAY;
 #endif
-#ifdef HAVE_LIBRETRODB
+
    if (settings->bools.menu_content_show_add && !settings->bools.kiosk_mode_enable)
       stripes->tabs[++stripes->system_tab_end] = STRIPES_SYSTEM_TAB_ADD;
-#endif
 
    menu_driver_ctl(RARCH_MENU_CTL_UNSET_PREVENT_POPULATE, NULL);
 
@@ -4144,16 +4143,12 @@ static int stripes_list_push(void *data, void *userdata,
                      MENU_SETTING_ACTION, 0, 0);
             }
 
-#ifdef HAVE_LIBRETRODB
-#if 0
-            /* TODO/FIXME - figure out what to do here */
-            menu_entries_append_enum(info->list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_COLLECTION_LIST),
-                  msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST),
-                  MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST,
-                  MENU_SETTING_ACTION, 0, 0);
-#endif
-#endif
+            if (settings->bools.menu_content_show_playlists)
+               menu_entries_append_enum(info->list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB),
+                     msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB),
+                     MENU_ENUM_LABEL_PLAYLISTS_TAB,
+                     MENU_SETTING_ACTION, 0, 0);
 
             if (frontend_driver_parse_drive_list(info->list, true) != 0)
                menu_entries_append_enum(info->list, "/",
@@ -4216,61 +4211,13 @@ static int stripes_list_push(void *data, void *userdata,
 
             if (settings->bools.menu_show_load_content)
             {
-               const struct retro_subsystem_info* subsystem = NULL;
-
                entry.enum_idx      = MENU_ENUM_LABEL_LOAD_CONTENT_LIST;
                menu_displaylist_setting(&entry);
 
-               subsystem           = system->subsystem.data;
-
-               if (subsystem)
+               if (menu_displaylist_has_subsystems())
                {
-                  for (i = 0; i < system->subsystem.size; i++, subsystem++)
-                  {
-                     char s[PATH_MAX_LENGTH];
-                     if (content_get_subsystem() == i)
-                     {
-                        if (content_get_subsystem_rom_id() < subsystem->num_roms)
-                        {
-                           snprintf(s, sizeof(s),
-                                 "Load %s %s",
-                                 subsystem->desc,
-                                 i == content_get_subsystem()
-                                 ? "\u2605" : " ");
-                           menu_entries_append_enum(info->list,
-                                 s,
-                                 msg_hash_to_str(MENU_ENUM_LABEL_SUBSYSTEM_ADD),
-                                 MENU_ENUM_LABEL_SUBSYSTEM_ADD,
-                                 MENU_SETTINGS_SUBSYSTEM_ADD + i, 0, 0);
-                        }
-                        else
-                        {
-                           snprintf(s, sizeof(s),
-                                 "Start %s %s",
-                                 subsystem->desc,
-                                 i == content_get_subsystem()
-                                 ? "\u2605" : " ");
-                           menu_entries_append_enum(info->list,
-                                 s,
-                                 msg_hash_to_str(MENU_ENUM_LABEL_SUBSYSTEM_LOAD),
-                                 MENU_ENUM_LABEL_SUBSYSTEM_LOAD,
-                                 MENU_SETTINGS_SUBSYSTEM_LOAD, 0, 0);
-                        }
-                     }
-                     else
-                     {
-                        snprintf(s, sizeof(s),
-                              "Load %s %s",
-                              subsystem->desc,
-                              i == content_get_subsystem()
-                              ? "\u2605" : " ");
-                        menu_entries_append_enum(info->list,
-                              s,
-                              msg_hash_to_str(MENU_ENUM_LABEL_SUBSYSTEM_ADD),
-                              MENU_ENUM_LABEL_SUBSYSTEM_ADD,
-                              MENU_SETTINGS_SUBSYSTEM_ADD + i, 0, 0);
-                     }
-                  }
+                  entry.enum_idx      = MENU_ENUM_LABEL_SUBSYSTEM_SETTINGS;
+                  menu_displaylist_setting(&entry);
                }
             }
 
@@ -4403,11 +4350,11 @@ static int stripes_pointer_up(void *userdata,
             unsigned header_height = menu_display_get_header_height();
 
             if (y < header_height)
-               return (unsigned)menu_entry_action(entry, (unsigned)selection, MENU_ACTION_CANCEL);
+               return (unsigned)menu_entry_action(entry, selection, MENU_ACTION_CANCEL);
             else if (ptr <= (menu_entries_get_size() - 1))
             {
                if (ptr == selection && cbs && cbs->action_select)
-                  return (unsigned)menu_entry_action(entry, (unsigned)selection, MENU_ACTION_SELECT);
+                  return (unsigned)menu_entry_action(entry, selection, MENU_ACTION_SELECT);
 
                menu_navigation_set_selection(ptr);
                menu_driver_navigation_set(false);
@@ -4418,7 +4365,7 @@ static int stripes_pointer_up(void *userdata,
          /* 'Reset to default' action */
          if ((ptr <= (menu_entries_get_size() - 1)) &&
              (ptr == selection))
-            return menu_entry_action(entry, (unsigned)selection, MENU_ACTION_START);
+            return menu_entry_action(entry, selection, MENU_ACTION_START);
          break;
       default:
          /* Ignore input */
@@ -4473,5 +4420,6 @@ menu_ctx_driver_t menu_ctx_stripes = {
    stripes_update_savestate_thumbnail_image,
    NULL,                                     /* pointer_down */
    stripes_pointer_up,                       /* pointer_up   */
-   NULL                                      /* get_load_content_animation_data   */
+   NULL,                                     /* get_load_content_animation_data   */
+   generic_menu_entry_action
 };

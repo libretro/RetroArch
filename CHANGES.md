@@ -1,4 +1,203 @@
 # Future
+- BUGFIX: Fix mouse capture hotkey not working
+- CHEEVOS/BUGFIX: Achievement triggers could cause Retroarch to Crash
+- CHEEVOS: Support for extended Sega CD memory
+- EMSCRIPTEN: Recreate input event listeners properly
+- LIBRETRO: Add disk control interface API extension
+- LOCALIZATION: Update Polish translation
+- VIDEO: Set hardware 'Bilinear filtering' off by default
+
+# 1.8.4
+- ANDROID/BUGFIX: Prevent crash when Android device is minimized and you go back to the app
+- CAMERA/BUGFIX: Fix crash when a core requires the camera driver and the platform only has a null driver. This would crash mgba on Wii for example
+- DISK CONTROL: Cycle Disk Tray now becomes Eject Disk or Insert Disk depending upon current drive state
+- DISK CONTROL: Current Disk Index is only shown when the current disk has been ejected
+- DISK CONTROL: The old Insert Disk entry has been changed to Load New Disk, and is only shown when a disk is currently inserted (this is because loading a new disk from the filesystem - i.e. bypassing the m3u playlist disk index interface - automatically ejects and inserts disks, and so cannot be done while the virtual drive is empty)
+- DISK CONTROL: The Current Disk Index may now be set more easily via a drop-down list.
+- DISK CONTROL: Selecting Eject Disk automatically moves the menu selection to the Current Disk Index entry
+- DISK CONTROL: Selecting an index via the Current Disk Index drop-down list automatically moves the menu selection back to Insert Disk
+- DISK CONTROL: The Disk Control entry sublabels have been changed for greater clarity
+- DISK CONTROL: All of the horrendous notification spam has been removed. Notifications are now only shown in the event of an error, or when the menu itself does not provide sufficient visual feedback (note that using hotkeys to swap disks still produces the old style notifications, since this is typically only done while content is running - i.e. no menu). The duration of disk-related info notifications has also been reduced to a more sane level.
+- DISK CONTROL: A new Resume content after changing disks option has been added under Settings > User Interface. When enabled (default setting), content is resumed automatically after selecting either Insert Disk or Load New Disk (when disabled, the menu remains open, obviously...)
+- DISK CONTROL/BUGFIX: The Disk Control menu now has the correct title
+- DISK CONTROL/BUGFIX: Selecting a disk via the Load New Disk file browser no longer flushes the user back to the top level menu (it now correctly returns to the Disk Control menu)
+- LIBNX/SWITCH: Updated libnx integration to v3.0.0. This also cherry-picks libnx commit 583d6bb92dcbb33b6bb4a0fa1a9df6e3725d6ef6, which should fix the requirement having to turn rumble off and on in the system settings once per reboot
+- PLAYLISTS: Add 'Clean Playlist' option
+
+# 1.8.3
+- ANDROID/BUGFIX: Fix 'Install or Restore Core' regression
+- BUGFIX: Ensure core info is always initialised when calling 'drivers_init()'. This bug could prevent cores from doing content runtime logging
+- BUGFIX/MENU: History size can only be set to 1 at a minimum
+- BUGFIX/MENU: (XMB/OZONE) Fix 'quick menu' detection. XMB would not display savestate thumbnails in the quick menu if it was accessed via the main menu
+- BUGFIX/CRASH/CORE UPDATER: Fix potential double free error
+- BUGFIX/CRASH/OPENGL/WINDOWS: Fix regression in 1.8.2 that would cause GL-based cores to fail because it would try to erroneously load libGLESv2.dll instead of OpenGL32.dll (cores affected: VitaQuake 2/3/Dhewm3, possibly more)
+- BUGFIX/MENU/DESKTOP UI: Show desktop menu on startup does not launch Qt UI on Linux
+- BUGFIX: Entries in the Playlist Thumbnails Updater list were displaying improper sublabels. I have no idea when this broke... The issue is now fixed
+- CHEEVOS: Don't disable achievement when AddAddress generates an out-of-range address
+- CHEEVOS: Don't reset triggers/leaderboards that failed to load
+- CHEEVOS: Don't count unsupported achievements as unlocked
+- CORE UPDATER: Display number of cores updated when updating installed cores
+- DINGUX: Initial port
+- D3D11: Block FL9_3 devices from D3D11 driver because they don't work anyway (current D3D11 driver uses SM4.0 which requires FL10_0 and up)
+- D3D11: Fallback to GL driver when D3D11 fails
+- EMSCRIPTEN: Fix assets
+- HISTORY/FAVORITES: Bump up default to 200 entries from 100
+- FFMPEG CORE: Implement packet buffer, fixes MP4 video playback for many files
+- LOCALIZATION: Update Italian translation
+- LOCALIZATION: Update Polish translation
+- LOCALIZATION: Update Russian translation
+- LOCALIZATION: Update Spanish translation
+- MENU: Added 'Hosting' menu under Netplay menu
+- MENU: Added 'Subsystems' menu
+- MENU/FILEBROWSER: Fix file selection issues when starting from (or navigating to) the top level directory
+- MENU/WIDGETS: Prevent looping of task title text
+- RASPBERRY PI: Fix BGRA8888 color inversion issues in the menu and elsewhere with VideoCore GL drivers
+- NETPLAY/RELAY: Add Sao Paulo (Brazil) relay server
+- NETPLAY/RELAY: Fix the “spectator” bug when using the relay server – When a player switches into the spectator mode (pressing “i”) while using the relay server, all players will disconnect.
+- NETPLAY/RELAY: Overall stability has improved. Fixed a memory leak that would cause the relay server to become unresponsive after some time.
+- NETPLAY/RELAY: Fixed critical bug that would cause all players to be disconnected from the relay server if one player was leaving the game. That bug had been open for one year and we were finally able to fix it.
+- SWITCH/LIBNX/BUGFIX: Fix onscreen keyboard input regression
+- THUMBNAIL UPDATER: When waiting for individual thumbnail file http transfers to complete, the task status checking is more accurate. This uses the same method as the new core updater - we now wait until the task is 'really' complete, instead of relying on the (slightly nebulous) 'task finished' state
+- UWP: Add ANGLE support
+- UWP: Wire up get_metrics to the fake context of D3D9/10/11/12 driver, enabling proper scaling and mouse/touch gestures
+- VITA: Re-add Online Updater
+- VULKAN: Fix font driver 'vulkan_get_message_width()' function
+- VIDEO FILTERS: Only use threads when the number exceeds 1. Fixes race conditions with some CPU filters on Vita
+- WINDOWS: Add ANGLE support for x64, separate binary (for now?)  
+
+# 1.8.2
+- BUG/CRASH/GLSLANG: Fix glslang crashing error - managed to reproduce an issue which has been plaguing
+users for a while, where glslang throws an assert after closing a game (and starting a new one). This would affect all video drivers that use Slang for shaders, such as D3D10/11/12/Vulkan/Metal
+- CHEEVOS: Display Unofficial and Unsupported achievement states
+- CHEEVOS: Pass RetroArch and core versions through User-Agent HTTP header
+- CHEEVOS: Use PSX.EXE if SYSTEM.CNF cannot be found
+- CHEEVOS: Prevent loading state while achievements are still being fetched from server
+- CHEEVOS: Pause hardcore if core doesn't support achievements
+- CHEEVOS/CRASH: Fix AddressSanitizer + CHD cause hard crash when Cheevos are enabled
+- CORE UPDATER: Only download when new core is available
+- CORE UPDATER: Add option to update all installed cores
+- DRM/KMS: Better detection for the current video mode
+- DYNAMIC RATE CONTROL: Support DRC even when using a vsync swap interval higher than 1
+- EMSCRIPTEN: Fix bug in Emscripten input code
+- EMSCRIPTEN: Changes to support upgraded emscripten SDK
+- FFMPEG CORE: Hardware accelerated video decoding
+- FFMPEG CORE: Implement send/receive encoding API, will allow for hardware accelerated AMD video encoding
+- FFMPEG CORE: The video FIFO can be removed, since we have a ring buffer in its place. This removes unneeded copy operations and as a positive side improves overall decoding speed. Makes 8k60p SW and 4k60p HW decoding feasible on many systems. For now the ring buffer is 32 images deep. This limitation will be removed, once audio and video decoder have their own packet handling.
+- INPUT: Fix 'Analog stick controls menu even if autoconfig disabled'
+- INPUT/TURBO: Added alternate Turbo-Mode 'Single Button' - For systems supporting only a single button, the turbo-button will toggle firing that button without the need to hold it. When holding the button turbo will be suspended and resumed when the button is released. Holding the button may have a different function to just tapping it.
+- IOS: Forcibly disable Threaded Video until UIWindow concurrency issues are fixed
+- INPUT/ANALOG: Fix radial analog deadzone scaling
+- INPUT/ANALOG: Implement proper analog button deadzone
+- INPUT/MENU: Analog stick controls menu even if autoconfig disabled
+- LOCALIZATION: Update Italian translation
+- LOCALIZATION: Update French translation
+- LOCALIZATION: Update Polish translation
+- LOCALIZATION: Update Portuguese Brazilian Translation
+- LOCALIZATION: Update Turkish translation
+- LINUX/LOCALIZATION: Correct Droid Sans Fallback font path in Linux. This should fix Chinese/Korean font display issues on Fedora/RHEL/CentOS/openSUSE/SLE
+- MENU/BUGFIX: When using a keyboard/gamepad/mouse wheel to navigate, the menu scroll position is always maintained and updated in a consistent (and expected) fashion
+- MENU/BUGFIX: When resizing the window, or changing the orientation of a mobile device, the current scroll position is correctly preserved
+- MENU/BUGFIX: All 'normal' pointer input is now inhibited when showing message boxes
+- MENU/BUGFIX: The pointer actions 'select' and 'cancel' both now properly close a message box if it is currently being shown
+- MENU/BUGFIX: Pointer 'select' and 'cancel' actions are now inhibited when an input bind dialog is active
+- MENU/INPUT: Change 'User' terminology to 'Port' for input binding
+- MENU/LINUX: Add proper drives to Load Content
+- MENU/MATERIALUI: Halt scrolling when pointer is pressed/stationary
+- MENU/MATERIALUI: Dual thumbnail view
+- MENU/MATERIALUI: Fullscreen thumbnail viewer for boxart
+- MENU/MATERIALUI: Scroll rapidly by press and holding the scrollbar
+- MENU/RGUI: New theme 'Flux'
+- MENU/OZONE: Thumbnails now have a fade-in animation
+- MENU/OZONE: Fullscreen thumbnail viewer for boxart and pictures
+- MENU/QT/WIMP: Fix dock titles getting cut off
+- MENU/XMB: Fullscreen thumbnail viewer for boxart and pictures
+- MENU/USABILITY: Selectively hide 'Disallow Non-Slave Mode Clients' if 'Allow Slave-Mode Clients' is disabled
+- MENU/USABILITY: Hide 'Show desktop menu on startup' if 'Desktop menu' setting itself is disabled
+- MENU/USABILITY: Reimplement Quick Menu - > Shaders -> Watch shader files for changes - can now be turned on/off through touch
+- MENU/USABILITY: Refactor Quick Menu - Controls - each port now has its own submenu
+- MENU/USABILITY: Quick Menu - Cheats - Delete All no longer requires five right button presses - this should fix this functionality for mobile touch users too
+- MENU/USABILITY: Hide Refresh Rate options when Threaded Video is enabled - these settings do nothing with Threaded Video
+- MENU/USABILITY: Hide Logging Verbosity levels behind Logging Verbosity
+- MENU/USABILITY: Get rid of 'Port Number' label for Port Binds screen
+- MENU/USABILITY/MOBILE: Should no longer crash when clicking on a cheat entry
+- MENU/USABILITY: Shader parameters now have a dropdown list
+- MENU/USABILITY: Shader passes now has a dropdown list
+- MENU/USABILITY: Video - Hide Windowed Mode settings selectively
+- MENU/USABILITY: Video - Hide Fullscreen Mode settings if windowed mode is not supported by context driver
+- MENU/USABILITY: Selectively hide Network Command Port
+- MENU/USABILITY: Selectively hide Relay Server Location
+- MENU/USABILITY: User Interface -> Appearance - Selectively hide XMB Horizontal Animation setting
+- MENU/USABILITY: Playlists - more selective hiding
+- MENU/USABILITY: Selectively hide Rewind Settings
+- MENU/USABILITY: Selectively hide Overlay Settings
+- MENU/USABILITY: Selectively hide FPS Update Interval based on Display Framerate being enabled
+- MENU/USABILITY: Selectively hide Onscreen Notifications BG Color Settings
+- MENU/USABILITY: Settings -> Logging - Hide 'Log To File Timestamp' if 'Log To File' is disabled
+- MENU/USABILITY: Video -> Scaling - Hide Custom Viewport X/Y when Integer Scale is enabled as description indicates
+- MENU/USABILITY: Achievement submenu - selectively hide
+- MENU/USABILITY: Settings -> Video -> Aspect ratio - selectively hide/show values based on whether you have Custom or Config selected
+- MENU/USABILITY: Settings -> Video -> Selectively hide Hard Sync
+- MENU/USABILITY: Settings -> Video -> Implement selective hiding for VSync and Hard Sync
+- MENU/USABILITY: Selective hiding of Runahead settings based on global setting
+- MENU/USABILITY: Add Input -> Haptic Feedback submenu
+- MENU/USABILITY: Add Input -> Menu Controls submenu
+- MENU/USABILITY: Settings -> Video -> Max Swapchain Images - Add OK action
+- MENU/USABILITY: Input - Implement OK action for Bind Hold, Turbo Period and Duty Cycle
+- MENU/USABILITY: Input - Hotkey Binds refactor
+- MENU/USABILITY: Move 'Press Quit Twice' and 'Menu Toggle Gamepad Combo' to Input -> Hotkey Binds
+- MENU/USABILITY: Video - Add sublabel for Video Output submenu
+- MENU/USABILITY:  If 'Favorites Tab' is disabled, don't show 'Add To Favorites' option in Quick Menu/Playlist menu
+- MENU/USABILITY: If On-Demand Thumbnail Downloader is enabled, hide 'Download Thumbnails' from playlist menu screen
+- MENU/USABILITY: Add Audio Driver setting to Audio -> Output
+- MENU/USABILITY: Add Audio -> Resampler settings
+- MENU/USABILITY: Add Audio -> Output and Audio -> Synchronization
+- OPENGL: Shaders are now working properly (only in OpenGL) when rotating both from Core API rotation and from menu video rotation. The fix is clearly visible with crt-royale for example
+- OPENGL: 1:1 PAR is now correct when rotating (both from Core API rotation and from menu video rotation, as you said, in the latter case you currently have to change Aspect Ratio after menu video rotation for it to work)
+- OPENGL: When using Custom Aspect Ratio and rotation (both from Core API rotation and from menu video rotation), Integer Scaling is now working properly (correct multiples of internal resolution). Even when Integer Scaling is not activated, the Custom AR width / height are now correctly labeled using (1x), (2x), ... suffixes. You also have to activate Integer Scaling after menu video rotation for it to work
+- OPENGL: For all other Aspect Ratio options, Integer Scaling and rotation (both from Core API rotation and from menu video rotation) are now working properly together (correct multiples of internal resolution). You also have to activate Integer Scaling after menu video rotation for it to work
+- OPENBSD/POWERPC: Should build now on OpenBSD PowerPC
+- PLAYLISTS: Pressing 'Start' or long touching a playlist will bring you to a Playlist submenu where you can set a default core, setup thumbnail view, delete the playlist, etc
+- OSX: Forcibly disable Threaded Video until NSWindow concurrency issues are fixed
+- PSP: Solving issue exiting RetroArch by HOME button
+- SCANNER: Manual scanner, not dependent on database files
+- SCANNER/MANUAL: Add option to scan inside archives
+- SCANNER/MANUAL: Enable automatic naming of arcade content via DAT files. This is compatible with DAT files in either Logiqx XML or MAME List XML format.
+- VIDEO: Do not reinit video driver on SET_SYSTEM_AV_INFO unless needed
+- VIDEO: Support DRC even when using a vsync swap interval higher than 1
+- VIDEO LAYOUT: Fixed XML parsing of attributes with spaces, should fix issues with several video layouts
+- VITA: GL1 driver support
+- VITA/VITA2D: Several improvements to Vita 2D driver - menu widgets implemented
+- VITA/VITA2D: Fix clipping and reduce number of calls
+- VULKAN/ANDROID: Workaround weird WSI return codes in landscape mode -  Android WSI wants you to use preTransform, and if it is not used correctly, Android 10 will return VK_SUBOPTIMAL_KHR, and we would create a new swapchain every frame. This workaround just ignores this error, since it's not really an error. A more "proper" fix is to use prerotate and modify the MVP matrices,
+which might help certain devices with crummy display processors
+- VULKAN/ANDROID: Recreate swapchain on orientation change. ANativeWindow getWidth/Height does not detect any changes when using
+Vulkan, so use the old onContentRectChanged callback to get notified when size changed. Use those values instead when figuring out how large swapchain to create
+- WINDOWS/XINPUT: Get rid of 128 byte device name limit for XInput device discover - when device name was too long, it would not be picked up by the XInput driver and would instead fallback to DirectInput
+- WINDOWS: ANGLE OpenGL ES 2 support
+- UWP: Fix crashes on startup / prompt for folder permissions when trying to load custom.ini
+- UWP: Fix - Mouse input is offset on high DPI monitors
+- UWP: Fix - Keyboard input hangs sometimes
+- UWP: Fix - Multi-touch support
+- UWP: Fix - Enable menu touch input by default
+- UWP: Fix - Get user language
+- UWP: Fix - Get CPU model name
+- UWP: Fix - Use GLUI instead of XMB on Windows Mobile 10
+- UWP: ANGLE OpenGL ES 2 support
+
+# (1.8.1)
+- BUGFIX/MENU: Fix menu rendering with Mali GPUs after changing video dimensions
+- CDROM: Adds pregap support to cdfs helper methods
+- CHEEVOS: Provides the new PCEngine hashing algorithm for RetroAchievements
+- LOCALIZATION: Update French translation
+- LOCALIZATION: Update Polish translation
+- LOCALIZATION: Update Spanish translation
+- MENU/MATERIALUI: Initial thumbnail support
+- MENU/MATERIALUI: Cutie / Virtual Boy theme added
+- MENU/MATERIALUI: Bugfix - Under certain extreme circumstances, entries with very long sublabel strings could have their text prematurely 'clipped' as the entry is scrolled beyond the top of the screen
+- MENU/MATERIALUI: Bugfix - Certain setting value strings were unnecessarily truncated (with a ...) when using smooth ticker text
+- MENU/XMB: Sunbeam theme added
+- SWITCH: Accelerometer, gyroscope and illuminance sensor support
+- VITA: Accelerometer and gyroscope sensor support
 
 # (1.8.0)
 - AI SERVICE: Added in fix for BMP returns to AI service. Added in label passing to AI service call

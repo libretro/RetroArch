@@ -202,6 +202,7 @@ bool netplay_handshake_init_send(netplay_t *netplay,
    struct netplay_connection *connection)
 {
    uint32_t header[6];
+   unsigned conn_salt   = 0;
    settings_t *settings = config_get_ptr();
 
    header[0] = htonl(netplay_magic);
@@ -221,12 +222,10 @@ bool netplay_handshake_init_send(netplay_t *netplay,
       connection->salt = simple_rand_uint32();
       if (connection->salt == 0)
          connection->salt = 1;
-      header[3] = htonl(connection->salt);
+      conn_salt           = connection->salt;
    }
-   else
-   {
-      header[3] = htonl(0);
-   }
+
+   header[3] = htonl(conn_salt);
 
    if (!netplay_send(&connection->send_packet_buffer, connection->fd, header,
          sizeof(header)) ||
@@ -273,7 +272,7 @@ static void handshake_password(void *ignore, const char *line)
    struct password_buf_s password_buf;
    char password[8+NETPLAY_PASS_LEN]; /* 8 for salt, 128 for password */
    char hash[NETPLAY_PASS_HASH_LEN+1]; /* + NULL terminator */
-   netplay_t *netplay = handshake_password_netplay;
+   netplay_t *netplay                    = handshake_password_netplay;
    struct netplay_connection *connection = &netplay->connections[0];
 
    snprintf(password, sizeof(password), "%08X", connection->salt);
@@ -738,7 +737,6 @@ bool netplay_handshake_pre_nick(netplay_t *netplay,
             return false;
          connection->mode = NETPLAY_CONNECTION_PRE_INFO;
       }
-
    }
    /* Client needs to wait for INFO */
    else
@@ -800,7 +798,7 @@ bool netplay_handshake_pre_password(netplay_t *netplay,
 
       if (!memcmp(password_buf.password, hash, NETPLAY_PASS_HASH_LEN))
       {
-         correct = true;
+         correct              = true;
          connection->can_play = true;
       }
    }
@@ -920,7 +918,6 @@ bool netplay_handshake_pre_info(netplay_t *netplay,
    {
       if (!netplay_handshake_sync(netplay, connection))
          return false;
-
    }
    else
    {
@@ -952,7 +949,6 @@ bool netplay_handshake_pre_sync(netplay_t *netplay,
    retro_ctx_controller_info_t pad;
    char new_nick[NETPLAY_NICK_LEN];
    retro_ctx_memory_info_t mem_info;
-   settings_t *settings = config_get_ptr();
 
    RECV(cmd, sizeof(cmd))
    {
@@ -1134,8 +1130,11 @@ bool netplay_handshake_pre_sync(netplay_t *netplay,
    netplay_recv_flush(&connection->recv_packet_buffer);
 
    /* Ask to switch to playing mode if we should */
-   if (!settings->bools.netplay_start_as_spectator)
-      return netplay_cmd_mode(netplay, NETPLAY_CONNECTION_PLAYING);
+   {
+      settings_t *settings = config_get_ptr();
+      if (!settings->bools.netplay_start_as_spectator)
+         return netplay_cmd_mode(netplay, NETPLAY_CONNECTION_PLAYING);
+   }
 
    return true;
 }

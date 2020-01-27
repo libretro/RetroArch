@@ -230,7 +230,7 @@ static void d3d11_overlay_enable(void* data, bool state)
       return;
 
    d3d11->overlays.enabled = state;
-   win32_show_cursor(state);
+   win32_show_cursor(d3d11, state);
 }
 
 static void d3d11_overlay_full_screen(void* data, bool enable)
@@ -674,8 +674,7 @@ static void *d3d11_gfx_init(const video_info_t* video,
          {
             D3D_FEATURE_LEVEL_11_0,
             D3D_FEATURE_LEVEL_10_1,
-            D3D_FEATURE_LEVEL_10_0,
-            D3D_FEATURE_LEVEL_9_3
+            D3D_FEATURE_LEVEL_10_0
          };
 #ifdef __WINRT__
       /* UWP requires the use of newer version of the factory which requires newer version of this struct */
@@ -1046,6 +1045,7 @@ static void *d3d11_gfx_init(const video_info_t* video,
 
    {
       d3d11_fake_context.get_flags = d3d11_get_flags;
+      d3d11_fake_context.get_metrics = win32_get_metrics;
       video_context_driver_set(&d3d11_fake_context); 
       const char *shader_preset   = retroarch_get_shader_preset();
       enum rarch_shader_type type = video_shader_parse_type(shader_preset);
@@ -1131,6 +1131,17 @@ static void *d3d11_gfx_init(const video_info_t* video,
 
 error:
    d3d11_gfx_free(d3d11);
+
+#ifdef HAVE_OPENGL
+   retroarch_force_video_driver_fallback("gl");
+#elif !defined(__WINRT__)
+#ifdef HAVE_OPENGL1
+   retroarch_force_video_driver_fallback("gl1");
+#else
+   retroarch_force_video_driver_fallback("gdi");
+#endif
+#endif
+
    return NULL;
 }
 
@@ -1538,9 +1549,9 @@ static bool d3d11_gfx_frame(
          D3D11SetViewports(context, 1, &d3d11->viewport);
          D3D11SetBlendState(d3d11->context, d3d11->blend_enable, NULL, D3D11_DEFAULT_SAMPLE_MASK);
          D3D11SetVertexBuffer(context, 0, d3d11->sprites.vbo, sizeof(d3d11_sprite_t), 0);
-         font_driver_render_msg(
-               video_info, NULL, video_info->stat_text,
-               (const struct font_params*)&video_info->osd_stat_params);
+         font_driver_render_msg(d3d11,
+               video_info, video_info->stat_text,
+               (const struct font_params*)&video_info->osd_stat_params, NULL);
       }
    }
 
@@ -1577,7 +1588,7 @@ static bool d3d11_gfx_frame(
       D3D11SetViewports(context, 1, &d3d11->viewport);
       D3D11SetBlendState(d3d11->context, d3d11->blend_enable, NULL, D3D11_DEFAULT_SAMPLE_MASK);
       D3D11SetVertexBuffer(context, 0, d3d11->sprites.vbo, sizeof(d3d11_sprite_t), 0);
-      font_driver_render_msg(video_info, NULL, msg, NULL);
+      font_driver_render_msg(d3d11, video_info, msg, NULL, NULL);
       dxgi_update_title(video_info);
    }
    d3d11->sprites.enabled = false;
@@ -1612,8 +1623,6 @@ static bool d3d11_gfx_alive(void* data)
 
    return !quit;
 }
-
-static bool d3d11_gfx_focus(void* data) { return win32_has_focus(); }
 
 static bool d3d11_gfx_suppress_screensaver(void* data, bool enable)
 {
@@ -1709,13 +1718,11 @@ static void d3d11_gfx_set_osd_msg(
    if (d3d11)
    {
       if (d3d11->sprites.enabled)
-         font_driver_render_msg(video_info, font, msg, (const struct font_params*)params);
+         font_driver_render_msg(d3d11, video_info, msg, (const struct font_params*)params, font);
       else
          printf("OSD msg: %s\n", msg);
    }
 }
-
-static void d3d11_gfx_show_mouse(void* data, bool state) { win32_show_cursor(state); }
 
 static uintptr_t d3d11_gfx_load_texture(
       void* video_data, void* data, bool threaded, enum texture_filter_type filter_type)
@@ -1815,7 +1822,7 @@ static const video_poke_interface_t d3d11_poke_interface = {
    d3d11_set_menu_texture_frame,
    d3d11_set_menu_texture_enable,
    d3d11_gfx_set_osd_msg,
-   d3d11_gfx_show_mouse,
+   win32_show_cursor,
    NULL, /* grab_mouse_toggle */
    d3d11_gfx_get_current_shader,
    NULL, /* get_current_software_framebuffer */
@@ -1840,7 +1847,7 @@ video_driver_t video_d3d11 = {
    d3d11_gfx_frame,
    d3d11_gfx_set_nonblock_state,
    d3d11_gfx_alive,
-   d3d11_gfx_focus,
+   win32_has_focus,
    d3d11_gfx_suppress_screensaver,
    d3d11_gfx_has_windowed,
    d3d11_gfx_set_shader,

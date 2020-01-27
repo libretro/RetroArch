@@ -1031,12 +1031,14 @@ end:
 #endif
 
 void font_driver_render_msg(
+      void *data,
       video_frame_info_t *video_info,
-      void *font_data,
       const char *msg,
-      const struct font_params *params)
+      const void *_params,
+      void *font_data)
 {
-   font_data_t *font = (font_data_t*)(font_data
+   const struct font_params *params = (const struct font_params*)_params;
+   font_data_t                *font = (font_data_t*)(font_data
          ? font_data : video_font_driver);
 
    if (msg && *msg && font && font->renderer && font->renderer->render_msg)

@@ -7,6 +7,18 @@ ifeq ($(HAVE_STACK_USAGE), 1)
    DEF_FLAGS += -fstack-usage
 endif
 
+ifeq ($(HAVE_NOUNUSED), 1)
+   DEF_FLAGS += $(NOUNUSED_CFLAGS)
+endif
+
+ifeq ($(HAVE_NOUNUSED_VARIABLE), 1)
+   DEF_FLAGS += $(NOUNUSED_VARIABLE_CFLAGS)
+endif
+
+ifeq ($(HAVE_CXX11), 1)
+   CXXFLAGS += $(CXX11_CFLAGS)
+endif
+
 ifeq ($(HAVE_GL_CONTEXT),)
    HAVE_GL_CONTEXT = 0
    HAVE_GL_MODERN  = 0
@@ -153,17 +165,17 @@ ifeq ($(HAVE_DR_MP3), 1)
 endif
 
 OBJ += frontend/frontend_driver.o \
-       frontend/drivers/platform_null.o \
        retroarch.o \
-       paths.o \
        msg_hash.o \
        intl/msg_hash_us.o \
        $(LIBRETRO_COMM_DIR)/queues/task_queue.o \
        tasks/task_content.o \
+       tasks/task_patch.o \
        tasks/task_save.o \
        tasks/task_file_transfer.o \
        tasks/task_image.o \
        tasks/task_playlist_manager.o \
+       tasks/task_manual_content_scan.o \
        $(LIBRETRO_COMM_DIR)/encodings/encoding_utf.o \
        $(LIBRETRO_COMM_DIR)/encodings/encoding_crc32.o \
        $(LIBRETRO_COMM_DIR)/encodings/encoding_base64.o \
@@ -181,7 +193,6 @@ OBJ += frontend/frontend_driver.o \
        $(LIBRETRO_COMM_DIR)/lists/string_list.o \
        $(LIBRETRO_COMM_DIR)/string/stdstring.o \
        $(LIBRETRO_COMM_DIR)/memmap/memalign.o \
-       list_special.o \
        $(LIBRETRO_COMM_DIR)/file/nbio/nbio_stdio.o
 
 ifneq ($(findstring Linux,$(OS)),)
@@ -203,13 +214,13 @@ endif
 OBJ += \
        $(LIBRETRO_COMM_DIR)/file/nbio/nbio_intf.o \
        $(LIBRETRO_COMM_DIR)/file/file_path.o \
+       $(LIBRETRO_COMM_DIR)/file/file_path_io.o \
        file_path_special.o \
        file_path_str.o \
        $(LIBRETRO_COMM_DIR)/hash/rhash.o \
        input/common/input_hid_common.o \
        input/input_mapper.o \
        led/led_driver.o \
-       led/drivers/led_null.o \
        gfx/video_coord_array.o \
        gfx/video_display_server.o \
        gfx/video_crt_switch.o \
@@ -231,6 +242,7 @@ OBJ += \
        $(LIBRETRO_COMM_DIR)/file/config_file.o \
        $(LIBRETRO_COMM_DIR)/file/config_file_userdata.o \
        runtime_file.o \
+       disk_index_file.o \
        tasks/task_screenshot.o \
        tasks/task_powerstate.o \
        $(LIBRETRO_COMM_DIR)/gfx/scaler/scaler.o \
@@ -243,25 +255,19 @@ OBJ += \
        $(LIBRETRO_COMM_DIR)/audio/dsp_filter.o \
        $(LIBRETRO_COMM_DIR)/audio/resampler/drivers/sinc_resampler.o \
        $(LIBRETRO_COMM_DIR)/audio/resampler/drivers/nearest_resampler.o \
-       $(LIBRETRO_COMM_DIR)/audio/resampler/drivers/null_resampler.o \
        $(LIBRETRO_COMM_DIR)/utils/md5.o \
-       location/drivers/nulllocation.o \
-       camera/drivers/nullcamera.o \
-       wifi/drivers/nullwifi.o \
-       gfx/drivers/nullgfx.o \
-       gfx/display_servers/dispserv_null.o \
-       audio/drivers/nullaudio.o \
-       input/drivers/nullinput.o \
-       input/drivers_hid/null_hid.o \
-       input/drivers_joypad/null_joypad.o \
        playlist.o \
-       record/drivers/record_null.o \
        $(LIBRETRO_COMM_DIR)/features/features_cpu.o \
        performance_counters.o \
        verbosity.o \
-       midi/drivers/null_midi.o \
-       $(LIBRETRO_COMM_DIR)/playlists/label_sanitization.o
+       $(LIBRETRO_COMM_DIR)/playlists/label_sanitization.o \
+       manual_content_scan.o \
+       disk_control_interface.o
 
+ifeq ($(HAVE_BLISSBOX), 1)
+   DEFINES += -DHAVE_BLISSBOX
+	OBJ += tasks/task_autodetect_blissbox.o
+endif
 
 ifeq ($(HAVE_AUDIOMIXER), 1)
    DEFINES += -DHAVE_AUDIOMIXER
@@ -827,9 +833,8 @@ ifeq ($(HAVE_MENU_COMMON), 1)
           menu/menu_displaylist.o \
           menu/menu_animation.o \
           menu/drivers/menu_generic.o \
-          menu/drivers/null.o \
           menu/menu_thumbnail_path.o \
-          menu/drivers_display/menu_display_null.o
+          menu/menu_thumbnail.o
 
    ifeq ($(HAVE_MENU_WIDGETS), 1)
       OBJ += menu/widgets/menu_widgets.o
@@ -892,6 +897,7 @@ ifeq ($(HAVE_VITA2D), 1)
           $(DEPS_DIR)/libvita2d/shader/color_f_gxp.o \
           $(DEPS_DIR)/libvita2d/shader/texture_v_gxp.o \
           $(DEPS_DIR)/libvita2d/shader/texture_f_gxp.o \
+          $(DEPS_DIR)/libvita2d/shader/texture_tint_v_gxp.o \
           $(DEPS_DIR)/libvita2d/shader/texture_tint_f_gxp.o
 
    ifeq ($(HAVE_MENU_COMMON),1)
@@ -985,6 +991,12 @@ ifeq ($(HAVE_WAYLAND), 1)
  LIBS += $(WAYLAND_LIBS) $(WAYLAND_CURSOR_LIBS)
 
 endif
+
+# XML
+OBJ += \
+       $(LIBRETRO_COMM_DIR)/formats/xml/rxml.o \
+       $(LIBRETRO_COMM_DIR)/formats/logiqx_dat/logiqx_dat.o \
+       deps/yxml/yxml.o
 
 #Input
 
@@ -1155,6 +1167,14 @@ ifeq ($(HAVE_PLAIN_DRM), 1)
    LIBS += -ldrm
 endif
 
+ifeq ($(HAVE_VITAGL), 1)
+   DEFINES += -DHAVE_OPENGL1
+   OBJ += gfx/drivers/gl1.o \
+          gfx/drivers_font/gl1_raster_font.o \
+          gfx/drivers_context/vita_ctx.o \
+          menu/drivers_display/menu_display_gl1.o
+endif
+
 ifeq ($(HAVE_GL_CONTEXT), 1)
    ifeq ($(HAVE_GL_MODERN), 1)
       DEFINES += -DHAVE_OPENGL
@@ -1269,8 +1289,14 @@ endif
 ifeq ($(HAVE_EGL), 1)
    DEFINES += -DHAVE_EGL
    DEF_FLAGS += $(EGL_CFLAGS)
-   LIBS += $(EGL_LIBS)
    OBJ += gfx/common/egl_common.o
+
+ifeq ($(HAVE_DYNAMIC_EGL), 1)
+	DEFINES += -DHAVE_DYNAMIC_EGL
+else
+   LIBS += $(EGL_LIBS)
+endif
+
 endif
 
 ifeq ($(HAVE_SDL2), 1)
@@ -1284,6 +1310,12 @@ else ifeq ($(HAVE_SDL), 1)
    OBJ += gfx/drivers/sdl_gfx.o
    DEF_FLAGS += $(SDL_CFLAGS)
    LIBS += $(SDL_LIBS)
+else ifeq ($(HAVE_SDL_DINGUX), 1)
+   HAVE_SDL_COMMON = 1
+   DEF_FLAGS += -DHAVE_SDL -DHAVE_SDL_DINGUX
+   OBJ += gfx/drivers/sdl_dingux_gfx.o
+   DEF_FLAGS += $(SDL_DINGUX_CFLAGS)
+   LIBS += $(SDL_DINGUX_LIBS)
 endif
 
 ifeq ($(HAVE_SDL_COMMON), 1)
@@ -1716,12 +1748,11 @@ endif
 OBJ += $(LIBRETRO_COMM_DIR)/formats/bmp/rbmp_encode.o \
        $(LIBRETRO_COMM_DIR)/formats/json/jsonsax.o \
        $(LIBRETRO_COMM_DIR)/formats/json/jsonsax_full.o \
-       $(LIBRETRO_COMM_DIR)/formats/xml/rxml.o \
        $(LIBRETRO_COMM_DIR)/formats/image_transfer.o
 
-# Easter Egg
-ifeq ($(HAVE_EASTEREGG),1)
-  DEFINES += -DHAVE_EASTEREGG
+# Gong embedded core
+ifeq ($(HAVE_GONG),1)
+  DEFINES += -DHAVE_GONG
   OBJ += cores/libretro-gong/gong.o
 endif
 
@@ -1737,6 +1768,11 @@ ifeq ($(HAVE_V4L2),1)
    LIBS += $(V4L2_LIBS)
 endif
 
+# Accessibility
+ifeq ($(HAVE_ACCESSIBILITY), 1)
+   DEFINES += -DHAVE_ACCESSIBILITY
+endif
+
 # Things that depend on network availability
 
 ifeq ($(HAVE_NETWORKING), 1)
@@ -1746,6 +1782,7 @@ ifeq ($(HAVE_NETWORKING), 1)
           $(LIBRETRO_COMM_DIR)/net/net_http_parse.o \
           $(LIBRETRO_COMM_DIR)/net/net_socket.o \
           $(LIBRETRO_COMM_DIR)/net/net_natt.o \
+          core_updater_list.o \
           network/net_http_special.o \
           tasks/task_http.o \
           tasks/task_netplay_lan_scan.o \
@@ -1755,7 +1792,8 @@ ifeq ($(HAVE_NETWORKING), 1)
 
    ifeq ($(HAVE_MENU_COMMON), 1)
       OBJ += tasks/task_pl_thumbnail_download.o \
-				 menu/menu_networking.o
+             tasks/task_core_updater.o \
+             menu/menu_networking.o
    endif
 
    ifeq ($(HAVE_SSL), 1)
@@ -1940,11 +1978,19 @@ ifneq ($(findstring Win32,$(OS)),)
    LIBS += -lhid -lsetupapi
 endif
 
+ifeq ($(HAVE_ANGLE), 1)
+	OBJ += gfx/common/angle_common.o
+	DEFINES += -DHAVE_ANGLE
+endif
+
 # Record
 
 ifeq ($(HAVE_FFMPEG), 1)
    OBJ += record/drivers/record_ffmpeg.o \
-          cores/libretro-ffmpeg/ffmpeg_core.o
+          cores/libretro-ffmpeg/ffmpeg_core.o \
+          cores/libretro-ffmpeg/packet_buffer.o \
+          cores/libretro-ffmpeg/video_buffer.o \
+          $(LIBRETRO_COMM_DIR)/rthreads/tpool.o
 
    LIBS += $(AVCODEC_LIBS) $(AVFORMAT_LIBS) $(AVUTIL_LIBS) $(SWSCALE_LIBS) $(SWRESAMPLE_LIBS) $(FFMPEG_LIBS)
    DEFINES += -DHAVE_FFMPEG
@@ -2034,6 +2080,20 @@ endif
 
 ifeq ($(HAVE_RPILED), 1)
    OBJ += led/drivers/led_rpi.o
+endif
+
+ifeq ($(HAVE_MATH_NEON), 1)
+   DEFINES += -DHAVE_MATH_NEON
+   INCLUDE_DIRS += -I$(DEPS_DIR)/math-neon/source
+   SOURCES := $(DEPS_DIR)/math-neon/source
+   OBJ += $(patsubst %.c,%.o,$(foreach dir,$(SOURCES), $(wildcard $(dir)/*.c)))
+endif
+
+ifeq ($(HAVE_VITAGL), 1)
+   DEFINES += -DHAVE_VITAGL -DTRANSPOSE_MATRICES
+   INCLUDE_DIRS += -I$(DEPS_DIR)/vitaGL/source
+   SOURCES := $(DEPS_DIR)/vitaGL/source $(DEPS_DIR)/vitaGL/source/utils
+   OBJ += $(patsubst %.c,%.o,$(foreach dir,$(SOURCES), $(wildcard $(dir)/*.c)))
 endif
 
 ##################################

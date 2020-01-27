@@ -27,6 +27,7 @@
 #include <boolean.h>
 #include <retro_common_api.h>
 #include <gfx/math/matrix_4x4.h>
+#include <formats/image.h>
 #include <queues/task_queue.h>
 
 #include "menu_defines.h"
@@ -86,10 +87,16 @@ enum menu_settings_type
    MENU_PLAYLISTS_TAB,
    MENU_SETTING_DROPDOWN_ITEM,
    MENU_SETTING_DROPDOWN_ITEM_RESOLUTION,
+   MENU_SETTING_DROPDOWN_ITEM_VIDEO_SHADER_PARAM,
+   MENU_SETTING_DROPDOWN_ITEM_VIDEO_SHADER_PRESET_PARAM,
+   MENU_SETTING_DROPDOWN_ITEM_VIDEO_SHADER_NUM_PASS,
    MENU_SETTING_DROPDOWN_ITEM_PLAYLIST_DEFAULT_CORE,
    MENU_SETTING_DROPDOWN_ITEM_PLAYLIST_LABEL_DISPLAY_MODE,
    MENU_SETTING_DROPDOWN_ITEM_PLAYLIST_RIGHT_THUMBNAIL_MODE,
    MENU_SETTING_DROPDOWN_ITEM_PLAYLIST_LEFT_THUMBNAIL_MODE,
+   MENU_SETTING_DROPDOWN_ITEM_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
+   MENU_SETTING_DROPDOWN_ITEM_MANUAL_CONTENT_SCAN_CORE_NAME,
+   MENU_SETTING_DROPDOWN_ITEM_DISK_INDEX,
    MENU_SETTING_DROPDOWN_SETTING_CORE_OPTIONS_ITEM,
    MENU_SETTING_DROPDOWN_SETTING_STRING_OPTIONS_ITEM,
    MENU_SETTING_DROPDOWN_SETTING_FLOAT_ITEM,
@@ -185,6 +192,8 @@ enum menu_settings_type
    MENU_SETTINGS_INPUT_DESC_END = MENU_SETTINGS_INPUT_DESC_BEGIN + ((RARCH_FIRST_CUSTOM_BIND + 8) * MAX_USERS),
    MENU_SETTINGS_INPUT_DESC_KBD_BEGIN,
    MENU_SETTINGS_INPUT_DESC_KBD_END = MENU_SETTINGS_INPUT_DESC_KBD_BEGIN + (RARCH_MAX_KEYS * MAX_USERS),
+   MENU_SETTINGS_REMAPPING_PORT_BEGIN,
+   MENU_SETTINGS_REMAPPING_PORT_END = MENU_SETTINGS_REMAPPING_PORT_BEGIN + (MAX_USERS),
 
    MENU_SETTINGS_SUBSYSTEM_LOAD,
 
@@ -204,6 +213,13 @@ enum menu_settings_type
    MENU_SET_LOAD_CDROM_LIST,
    MENU_SET_CDROM_INFO,
    MENU_SETTING_ACTION_DELETE_PLAYLIST,
+   MENU_SETTING_ACTION_PLAYLIST_MANAGER_RESET_CORES,
+   MENU_SETTING_ACTION_PLAYLIST_MANAGER_CLEAN_PLAYLIST,
+
+   MENU_SETTING_MANUAL_CONTENT_SCAN_DIR,
+   MENU_SETTING_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
+   MENU_SETTING_MANUAL_CONTENT_SCAN_CORE_NAME,
+   MENU_SETTING_ACTION_MANUAL_CONTENT_SCAN_START,
 
    MENU_SETTINGS_LAST
 };
@@ -308,7 +324,7 @@ typedef struct menu_ctx_driver
    int (*environ_cb)(enum menu_environ_cb type, void *data, void *userdata);
    void (*update_thumbnail_path)(void *data, unsigned i, char pos);
    void (*update_thumbnail_image)(void *data);
-   void (*refresh_thumbnail_image)(void *data);
+   void (*refresh_thumbnail_image)(void *data, unsigned i);
    void (*set_thumbnail_system)(void *data, char* s, size_t len);
    void (*get_thumbnail_system)(void *data, char* s, size_t len);
    void (*set_thumbnail_content)(void *data, const char *s);
@@ -323,6 +339,9 @@ typedef struct menu_ctx_driver
          menu_file_list_cbs_t *cbs,
          menu_entry_t *entry, unsigned action);
    bool (*get_load_content_animation_data)(void *userdata, menu_texture_item *icon, char **playlist_name);
+   /* This will be invoked whenever a menu entry action
+    * (menu_entry_action()) is performed */
+   int (*entry_action)(void *userdata, menu_entry_t *entry, size_t i, enum menu_action action);
 } menu_ctx_driver_t;
 
 
@@ -583,6 +602,8 @@ void menu_display_clear_color(menu_display_ctx_clearcolor_t *color,
       video_frame_info_t *video_info);
 void menu_display_draw(menu_display_ctx_draw_t *draw,
       video_frame_info_t *video_info);
+void menu_display_draw_blend(menu_display_ctx_draw_t *draw,
+      video_frame_info_t *video_info);
 void menu_display_draw_keyboard(
       uintptr_t hover_texture,
       const font_data_t *font,
@@ -680,6 +701,11 @@ bool menu_display_reset_textures_list(
       uintptr_t *item, enum texture_filter_type filter_type,
       unsigned *width, unsigned *height);
 
+bool menu_display_reset_textures_list_buffer(
+        uintptr_t *item, enum texture_filter_type filter_type,
+        void* buffer, unsigned buffer_len, enum image_type_enum image_type,
+        unsigned *width, unsigned *height);
+
 /* Returns the OSK key at a given position */
 int menu_display_osk_ptr_at_pos(void *data, int x, int y,
       unsigned width, unsigned height);
@@ -689,8 +715,6 @@ bool menu_display_driver_exists(const char *s);
 void menu_driver_destroy(void);
 
 void hex32_to_rgba_normalized(uint32_t hex, float* rgba, float alpha);
-
-void menu_subsystem_populate(const struct retro_subsystem_info* subsystem, menu_displaylist_info_t *info);
 
 menu_handle_t *menu_driver_get_ptr(void);
 
@@ -715,7 +739,6 @@ extern menu_display_ctx_driver_t menu_display_ctx_vga;
 extern menu_display_ctx_driver_t menu_display_ctx_fpga;
 extern menu_display_ctx_driver_t menu_display_ctx_switch;
 extern menu_display_ctx_driver_t menu_display_ctx_sixel;
-extern menu_display_ctx_driver_t menu_display_ctx_null;
 
 extern menu_ctx_driver_t menu_ctx_ozone;
 extern menu_ctx_driver_t menu_ctx_xui;
@@ -723,7 +746,6 @@ extern menu_ctx_driver_t menu_ctx_rgui;
 extern menu_ctx_driver_t menu_ctx_mui;
 extern menu_ctx_driver_t menu_ctx_xmb;
 extern menu_ctx_driver_t menu_ctx_stripes;
-extern menu_ctx_driver_t menu_ctx_null;
 
 RETRO_END_DECLS
 

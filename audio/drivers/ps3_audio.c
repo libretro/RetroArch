@@ -29,7 +29,7 @@
 typedef struct
 {
    uint32_t audio_port;
-   bool nonblocking;
+   bool nonblock;
    bool started;
    volatile bool quit_thread;
    fifo_buffer_t *buffer;
@@ -150,7 +150,7 @@ static ssize_t ps3_audio_write(void *data, const void *buf, size_t size)
 {
    ps3_audio_t *aud = data;
 
-   if (aud->nonblocking)
+   if (aud->nonblock)
    {
       if (fifo_write_avail(aud->buffer) < size)
          return 0;
@@ -200,7 +200,7 @@ static void ps3_audio_set_nonblock_state(void *data, bool toggle)
 {
    ps3_audio_t *aud = data;
    if (aud)
-      aud->nonblocking = toggle;
+      aud->nonblock = toggle;
 }
 
 static void ps3_audio_free(void *data)

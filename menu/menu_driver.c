@@ -67,6 +67,9 @@
 #include "../ui/ui_companion_driver.h"
 #include "../verbosity.h"
 #include "../tasks/task_powerstate.h"
+#ifdef HAVE_NETWORKING
+#include "../core_updater_list.h"
+#endif
 
 #define SCROLL_INDEX_SIZE          (2 * (26 + 2) + 1)
 
@@ -98,6 +101,68 @@ float osk_dark[16] =  {
    0.00, 0.00, 0.00, 0.85,
 };
 
+static void *null_menu_init(void **userdata, bool video_is_threaded)
+{
+   menu_handle_t *menu = (menu_handle_t*)calloc(1, sizeof(*menu));
+
+   if (!menu)
+      return NULL;
+
+   return menu;
+}
+
+static int null_menu_iterate(void *data, void *userdata,
+      enum menu_action action) { return 1; }
+
+static menu_ctx_driver_t menu_ctx_null = {
+  NULL,  /* set_texture */
+  NULL,  /* render_messagebox */
+  null_menu_iterate,
+  NULL,  /* render */
+  NULL,  /* frame */
+  null_menu_init,
+  NULL,  /* free */
+  NULL,  /* context_reset */
+  NULL,  /* context_destroy */
+  NULL,  /* populate_entries */
+  NULL,  /* toggle */
+  NULL,  /* navigation_clear */
+  NULL,  /* navigation_decrement */
+  NULL,  /* navigation_increment */
+  NULL,  /* navigation_set */
+  NULL,  /* navigation_set_last */
+  NULL,  /* navigation_descend_alphabet */
+  NULL,  /* navigation_ascend_alphabet */
+  NULL,  /* lists_init */
+  NULL,  /* list_insert */
+  NULL,  /* list_prepend */
+  NULL,  /* list_delete */
+  NULL,  /* list_clear */
+  NULL,  /* list_cache */
+  NULL,  /* list_push */
+  NULL,  /* list_get_selection */
+  NULL,  /* list_get_size */
+  NULL,  /* list_get_entry */
+  NULL,  /* list_set_selection */
+  NULL,  /* bind_init */
+  NULL,  /* load_image */
+  "null",
+  NULL,  /* environ */
+  NULL,  /* update_thumbnail_path */
+  NULL,  /* update_thumbnail_image */
+  NULL,  /* refresh_thumbnail_image */
+  NULL,  /* set_thumbnail_system */
+  NULL,  /* get_thumbnail_system */
+  NULL,  /* set_thumbnail_content */
+  NULL,  /* osk_ptr_at_pos */
+  NULL,  /* update_savestate_thumbnail_path */
+  NULL,  /* update_savestate_thumbnail_image */
+  NULL,  /* pointer_down */
+  NULL,  /* pointer_up   */
+  NULL,  /* get_load_content_animation_data */
+  NULL   /* entry_action */
+};
+
 /* Menu drivers */
 static const menu_ctx_driver_t *menu_ctx_drivers[] = {
 #if defined(HAVE_MATERIALUI)
@@ -119,6 +184,25 @@ static const menu_ctx_driver_t *menu_ctx_drivers[] = {
    &menu_ctx_xui,
 #endif
    &menu_ctx_null,
+   NULL
+};
+
+static menu_display_ctx_driver_t menu_display_ctx_null = {
+   NULL, /* draw */
+   NULL, /* draw_pipeline */
+   NULL, /* viewport */
+   NULL, /* blend_begin */
+   NULL, /* blend_end   */
+   NULL, /* restore_clear_color   */
+   NULL, /* clear_color   */
+   NULL, /* get_default_mvp   */
+   NULL, /* get_default_vertices */
+   NULL, /* get_default_tex_coords */
+   NULL, /* font_init_first */
+   MENU_VIDEO_DRIVER_GENERIC,
+   "null",
+   false,
+   NULL,
    NULL
 };
 
@@ -244,8 +328,6 @@ struct menu_list
    file_list_t **menu_stack;
    file_list_t **selection_buf;
 };
-
-#define menu_entries_need_refresh() ((!menu_entries_nonblocking_refresh) && menu_entries_need_refresh)
 
 menu_handle_t *menu_driver_get_ptr(void)
 {
@@ -537,7 +619,7 @@ void menu_entry_reset(uint32_t i)
    menu_entry_init(&entry);
    menu_entry_get(&entry, 0, i, NULL, true);
 
-   menu_entry_action(&entry, i, MENU_ACTION_START);
+   menu_entry_action(&entry, (size_t)i, MENU_ACTION_START);
 }
 
 void menu_entry_get_value(menu_entry_t *entry, const char **value)
@@ -734,96 +816,16 @@ int menu_entry_select(uint32_t i)
    menu_entry_init(&entry);
    menu_entry_get(&entry, 0, i, NULL, false);
 
-   return menu_entry_action(&entry, i, MENU_ACTION_SELECT);
+   return menu_entry_action(&entry, (size_t)i, MENU_ACTION_SELECT);
 }
 
-int menu_entry_action(menu_entry_t *entry,
-      unsigned i, enum menu_action action)
+int menu_entry_action(
+      menu_entry_t *entry, size_t i, enum menu_action action)
 {
-   int ret                    = 0;
-   file_list_t *selection_buf =
-      menu_entries_get_selection_buf_ptr_internal(0);
-   menu_file_list_cbs_t *cbs  = selection_buf ?
-      (menu_file_list_cbs_t*)selection_buf->list[i].actiondata : NULL;
-
-   switch (action)
-   {
-      case MENU_ACTION_UP:
-         if (cbs && cbs->action_up)
-            ret = cbs->action_up(entry->type, entry->label);
-         break;
-      case MENU_ACTION_DOWN:
-         if (cbs && cbs->action_down)
-            ret = cbs->action_down(entry->type, entry->label);
-         break;
-      case MENU_ACTION_SCROLL_UP:
-         menu_driver_ctl(MENU_NAVIGATION_CTL_DESCEND_ALPHABET, NULL);
-         break;
-      case MENU_ACTION_SCROLL_DOWN:
-         menu_driver_ctl(MENU_NAVIGATION_CTL_ASCEND_ALPHABET, NULL);
-         break;
-      case MENU_ACTION_CANCEL:
-         if (cbs && cbs->action_cancel)
-            ret = cbs->action_cancel(entry->path,
-                  entry->label, entry->type, i);
-         break;
-
-      case MENU_ACTION_OK:
-         if (cbs && cbs->action_ok)
-            ret = cbs->action_ok(entry->path,
-                  entry->label, entry->type, i, entry->entry_idx);
-         break;
-      case MENU_ACTION_START:
-         if (cbs && cbs->action_start)
-            ret = cbs->action_start(entry->type, entry->label);
-         break;
-      case MENU_ACTION_LEFT:
-         if (cbs && cbs->action_left)
-            ret = cbs->action_left(entry->type, entry->label, false);
-         break;
-      case MENU_ACTION_RIGHT:
-         if (cbs && cbs->action_right)
-            ret = cbs->action_right(entry->type, entry->label, false);
-         break;
-      case MENU_ACTION_INFO:
-         if (cbs && cbs->action_info)
-            ret = cbs->action_info(entry->type, entry->label);
-         break;
-      case MENU_ACTION_SELECT:
-         if (cbs && cbs->action_select)
-            ret = cbs->action_select(entry->path,
-                  entry->label, entry->type, i);
-         break;
-      case MENU_ACTION_SEARCH:
-         menu_input_dialog_start_search();
-         break;
-
-      case MENU_ACTION_SCAN:
-         if (cbs && cbs->action_scan)
-            ret = cbs->action_scan(entry->path,
-                  entry->label, entry->type, i);
-         break;
-
-      default:
-         break;
-   }
-
-   cbs = selection_buf ? (menu_file_list_cbs_t*)
-      selection_buf->list[i].actiondata : NULL;
-
-   if (cbs && cbs->action_refresh)
-   {
-      if (menu_entries_need_refresh())
-      {
-         bool refresh               = false;
-         file_list_t *menu_stack    = menu_entries_get_menu_stack_ptr(0);
-
-         cbs->action_refresh(selection_buf, menu_stack);
-         menu_entries_ctl(MENU_ENTRIES_CTL_UNSET_REFRESH, &refresh);
-      }
-   }
-
-   return ret;
+   if (menu_driver_ctx && menu_driver_ctx->entry_action)
+      return menu_driver_ctx->entry_action(
+            menu_userdata, entry, i, action);
+   return -1;
 }
 
 static void menu_list_free_list(file_list_t *list)
@@ -2064,8 +2066,11 @@ float menu_display_get_pixel_scale(unsigned width, unsigned height)
 
    /* Apply user scaling factor */
    if (settings)
-      return scale * ((settings->floats.menu_scale_factor > 0.0001f) ?
-            settings->floats.menu_scale_factor : 1.0f);
+   {
+      float menu_scale_factor = settings->floats.menu_scale_factor;
+      return scale * ((menu_scale_factor > 0.0001f) ?
+            menu_scale_factor : 1.0f);
+   }
 
    return scale;
 }
@@ -2076,7 +2081,11 @@ float menu_display_get_dpi_scale(unsigned width, unsigned height)
    static unsigned last_height = 0;
    static float scale          = 0.0f;
    static bool scale_cached    = false;
+   float menu_scale_factor     = 0.0f;
    settings_t *settings        = config_get_ptr();
+
+   if (settings)
+      menu_scale_factor        = settings->floats.menu_scale_factor;
 
    /* Scale is based on display metrics - these are a fixed
     * hardware property. To minimise performance overheads
@@ -2107,14 +2116,14 @@ float menu_display_get_dpi_scale(unsigned width, unsigned height)
 #if defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL)
       if (true)
       {
-         scale        = (diagonal_pixels / 6.5f) / 212.0f;
-         scale_cached = true;
-         last_width   = width;
-         last_height  = height;
+         scale                   = (diagonal_pixels / 6.5f) / 212.0f;
+         scale_cached            = true;
+         last_width              = width;
+         last_height             = height;
 
          if (settings)
-            return scale * ((settings->floats.menu_scale_factor > 0.0001f) ?
-                  settings->floats.menu_scale_factor : 1.0f);
+            return scale * ((menu_scale_factor > 0.0001f) ?
+                  menu_scale_factor : 1.0f);
 
          return scale;
       }
@@ -2222,8 +2231,8 @@ float menu_display_get_dpi_scale(unsigned width, unsigned height)
 
    /* Apply user scaling factor */
    if (settings)
-      return scale * ((settings->floats.menu_scale_factor > 0.0001f) ?
-            settings->floats.menu_scale_factor : 1.0f);
+      return scale * ((menu_scale_factor > 0.0001f) ?
+            menu_scale_factor : 1.0f);
 
    return scale;
 }
@@ -2284,8 +2293,22 @@ void menu_display_draw(menu_display_ctx_draw_t *draw,
       return;
    if (draw->width <= 0)
       return;
-
    menu_disp->draw(draw, video_info);
+}
+
+void menu_display_draw_blend(menu_display_ctx_draw_t *draw,
+      video_frame_info_t *video_info)
+{
+   if (!menu_disp || !draw || !menu_disp->draw)
+      return;
+
+   if (draw->height <= 0)
+      return;
+   if (draw->width <= 0)
+      return;
+   menu_display_blend_begin(video_info);
+   menu_disp->draw(draw, video_info);
+   menu_display_blend_end(video_info);
 }
 
 void menu_display_draw_pipeline(menu_display_ctx_draw_t *draw,
@@ -3185,6 +3208,35 @@ bool menu_display_reset_textures_list(
 }
 
 
+bool menu_display_reset_textures_list_buffer(
+        uintptr_t *item, enum texture_filter_type filter_type,
+        void* buffer, unsigned buffer_len, enum image_type_enum image_type,
+        unsigned *width, unsigned *height)
+{
+   struct texture_image ti;
+
+   ti.width                      = 0;
+   ti.height                     = 0;
+   ti.pixels                     = NULL;
+   ti.supports_rgba              = video_driver_supports_rgba();
+
+   if (!image_texture_load_buffer(&ti, image_type, buffer, buffer_len))
+      return false;
+
+   if (width)
+      *width = ti.width;
+
+   if (height)
+      *height = ti.height;
+
+   /* if the poke interface doesn't support texture load then return false */  
+   if (!video_driver_texture_load(&ti, filter_type, item))
+       return false;
+   image_texture_free(&ti);
+   return true;
+}
+
+
 /**
  * menu_driver_find_handle:
  * @idx              : index of driver to get handle to.
@@ -3314,7 +3366,7 @@ static bool menu_init(menu_handle_t *menu_data)
       task_push_decompress(settings->arrays.bundle_assets_src,
             settings->arrays.bundle_assets_dst,
             NULL, settings->arrays.bundle_assets_dst_subdir,
-            NULL, bundle_decompressed, NULL, NULL);
+            NULL, bundle_decompressed, NULL, NULL, false);
 #endif
    }
 
@@ -3633,6 +3685,9 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
          menu_shader_manager_free();
 #endif
+#ifdef HAVE_NETWORKING
+         core_updater_list_free_cached();
+#endif
 
          if (menu_driver_data)
          {
@@ -3802,9 +3857,11 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          break;
       case RARCH_MENU_CTL_REFRESH_THUMBNAIL_IMAGE:
          {
-            if (!menu_driver_ctx || !menu_driver_ctx->refresh_thumbnail_image)
+            unsigned *i = (unsigned*)data;
+
+            if (!i || !menu_driver_ctx || !menu_driver_ctx->refresh_thumbnail_image)
                return false;
-            menu_driver_ctx->refresh_thumbnail_image(menu_userdata);
+            menu_driver_ctx->refresh_thumbnail_image(menu_userdata, *i);
          }
          break;
       case RARCH_MENU_CTL_UPDATE_SAVESTATE_THUMBNAIL_PATH:
@@ -3995,171 +4052,41 @@ void hex32_to_rgba_normalized(uint32_t hex, float* rgba, float alpha)
    rgba[3] = rgba[7] = rgba[11] = rgba[15] = alpha;
 }
 
-void menu_subsystem_populate(const struct retro_subsystem_info* subsystem, menu_displaylist_info_t *info)
+void get_current_menu_value(char* retstr, size_t max)
 {
-   settings_t *settings = config_get_ptr();
-   /* Note: Create this string here explicitly (rather than
-    * using a #define elsewhere) since we need to be aware of
-    * its length... */
-#if defined(__APPLE__)
-   /* UTF-8 support is currently broken on Apple devices... */
-   static const char utf8_star_char[] = "*";
-#else
-   /* <BLACK STAR>
-    * UCN equivalent: "\u2605" */
-   static const char utf8_star_char[] = "\xE2\x98\x85";
-#endif
-   char star_char[16];
-   unsigned i = 0;
-   int n = 0;
-   bool is_rgui = string_is_equal(settings->arrays.menu_driver, "rgui");
-   
-   /* Select appropriate 'star' marker for subsystem menu entries
-    * (i.e. RGUI does not support unicode, so use a 'standard'
-    * character fallback) */
-   snprintf(star_char, sizeof(star_char), "%s", is_rgui ? "*" : utf8_star_char);
-   
-   if (subsystem && subsystem_current_count > 0)
-   {
-      for (i = 0; i < subsystem_current_count; i++, subsystem++)
-      {
-         char s[PATH_MAX_LENGTH];
-         if (content_get_subsystem() == i)
-         {
-            if (content_get_subsystem_rom_id() < subsystem->num_roms)
-            {
-               snprintf(s, sizeof(s),
-                  "Load %s %s",
-                  subsystem->desc,
-                  star_char);
-               
-               /* If using RGUI with sublabels disabled, add the
-                * appropriate text to the menu entry itself... */
-               if (is_rgui && !settings->bools.menu_show_sublabels)
-               {
-                  char tmp[PATH_MAX_LENGTH];
-                  
-                  n = snprintf(tmp, sizeof(tmp),
-                     "%s [%s %s]", s, "Current Content:",
-                     subsystem->roms[content_get_subsystem_rom_id()].desc);
+   const char*      entry_label;
+   menu_entry_t     entry;
 
-                  /* Stupid GCC will warn about snprintf() truncation even though
-                   * we couldn't care less about it (if the menu entry label gets
-                   * truncated then the string will already be too long to view in
-                   * any usable manner on screen, so the fact that the end is
-                   * missing is irrelevant). There are two ways to silence this noise:
-                   * 1) Make the destination buffers large enough that text cannot be
-                   *    truncated. This is a waste of memory.
-                   * 2) Check the snprintf() return value (and take action). This is
-                   *    the most harmless option, so we just print a warning if anything
-                   *    is truncated.
-                   * To reiterate: The actual warning generated here is pointless, and
-                   * should be ignored. */
-                  if ((n < 0) || (n >= PATH_MAX_LENGTH))
-                  {
-                     if (verbosity_is_enabled())
-                     {
-                        RARCH_WARN("Menu subsystem entry: Description label truncated.\n");
-                     }
-                  }
+   menu_driver_selection_ptr = menu_navigation_get_selection();
+   menu_entry_init(&entry);
+   menu_entry_get(&entry, 0, menu_navigation_get_selection(), NULL, true);
+   menu_entry_get_value(&entry, &entry_label);
 
-                  strlcpy(s, tmp, sizeof(s));
-               }
-               
-               menu_entries_append_enum(info->list,
-                  s,
-                  msg_hash_to_str(MENU_ENUM_LABEL_SUBSYSTEM_ADD),
-                  MENU_ENUM_LABEL_SUBSYSTEM_ADD,
-                  MENU_SETTINGS_SUBSYSTEM_ADD + i, 0, 0);
-            }
-            else
-            {
-               snprintf(s, sizeof(s),
-                  "Start %s %s",
-                  subsystem->desc,
-                  star_char);
-               
-               /* If using RGUI with sublabels disabled, add the
-                * appropriate text to the menu entry itself... */
-               if (is_rgui && !settings->bools.menu_show_sublabels)
-               {
-                  unsigned j = 0;
-                  char rom_buff[PATH_MAX_LENGTH];
-                  char tmp[PATH_MAX_LENGTH];
-                  rom_buff[0] = '\0';
+   strlcpy(retstr, entry_label, max);
+}
 
-                  for (j = 0; j < content_get_subsystem_rom_id(); j++)
-                  {
-                     strlcat(rom_buff,
-                           path_basename(content_get_subsystem_rom(j)), sizeof(rom_buff));
-                     if (j != content_get_subsystem_rom_id() - 1)
-                        strlcat(rom_buff, "|", sizeof(rom_buff));
-                  }
+void get_current_menu_label(char* retstr, size_t max)
+{
+   const char*      entry_label;
+   menu_entry_t     entry;
 
-                  if (!string_is_empty(rom_buff))
-                  {
-                     n = snprintf(tmp, sizeof(tmp), "%s [%s]", s, rom_buff);
-                     
-                     /* More snprintf() gcc warning suppression... */
-                     if ((n < 0) || (n >= PATH_MAX_LENGTH))
-                     {
-                        if (verbosity_is_enabled())
-                        {
-                           RARCH_WARN("Menu subsystem entry: Description label truncated.\n");
-                        }
-                     }
-                     
-                     strlcpy(s, tmp, sizeof(s));
-                  }
-               }
-               
-               menu_entries_append_enum(info->list,
-                  s,
-                  msg_hash_to_str(MENU_ENUM_LABEL_SUBSYSTEM_LOAD),
-                  MENU_ENUM_LABEL_SUBSYSTEM_LOAD,
-                  MENU_SETTINGS_SUBSYSTEM_LOAD, 0, 0);
-            }
-         }
-         else
-         {
-            snprintf(s, sizeof(s),
-               "Load %s",
-               subsystem->desc);
-            
-            /* If using RGUI with sublabels disabled, add the
-             * appropriate text to the menu entry itself... */
-            if (is_rgui && !settings->bools.menu_show_sublabels)
-            {
-               /* This check is probably not required (it's not done
-                * in menu_cbs_sublabel.c action_bind_sublabel_subsystem_add(),
-                * anyway), but no harm in being safe... */
-               if (subsystem->num_roms > 0)
-               {
-                  char tmp[PATH_MAX_LENGTH];
-                  
-                  n = snprintf(tmp, sizeof(tmp),
-                     "%s [%s %s]", s, "Current Content:",
-                     subsystem->roms[0].desc);
-                  
-                  /* More snprintf() gcc warning suppression... */
-                  if ((n < 0) || (n >= PATH_MAX_LENGTH))
-                  {
-                     if (verbosity_is_enabled())
-                     {
-                        RARCH_WARN("Menu subsystem entry: Description label truncated.\n");
-                     }
-                  }
-                  
-                  strlcpy(s, tmp, sizeof(s));
-               }
-            }
-            
-            menu_entries_append_enum(info->list,
-               s,
-               msg_hash_to_str(MENU_ENUM_LABEL_SUBSYSTEM_ADD),
-               MENU_ENUM_LABEL_SUBSYSTEM_ADD,
-               MENU_SETTINGS_SUBSYSTEM_ADD + i, 0, 0);
-         }
-      }
-   }
+   menu_driver_selection_ptr = menu_navigation_get_selection();
+   menu_entry_init(&entry);
+   menu_entry_get(&entry, 0, menu_navigation_get_selection(), NULL, true);
+   menu_entry_get_rich_label(&entry, &entry_label);
+
+   strlcpy(retstr, entry_label, max);
+}
+
+void get_current_menu_sublabel(char* retstr, size_t max)
+{
+   const char*      entry_sublabel;
+   menu_entry_t     entry;
+
+   menu_driver_selection_ptr = menu_navigation_get_selection();
+   menu_entry_init(&entry);
+   menu_entry_get(&entry, 0, menu_navigation_get_selection(), NULL, true);
+ 
+   menu_entry_get_sublabel(&entry, &entry_sublabel);
+   strlcpy(retstr, entry_sublabel, max);
 }

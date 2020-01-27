@@ -40,6 +40,31 @@
              }
          ]
       },
-
+      {
+         "name": "PSP-GDB Debugger",
+          "type": "cppdbg",
+          "request": "launch",
+          "program": "${workspaceFolder}/retroarchpsp.elf",
+          "stopAtEntry": false,
+          "cwd": "${workspaceFolder}",
+          "environment": [],
+          "setupCommands": [
+             {
+                 "text": "symbol-file ${workspaceFolder}/retroarchpsp.elf",
+                 "description": "read symbols for elf file",
+                 "ignoreFailures": true
+             },
+             {
+               "description": "Enable all-exceptions",
+               "text": "-exec \"catch throw\"",
+               "ignoreFailures": true
+           }
+         ],
+         "showDisplayString": true,
+          "targetArchitecture": "mips",
+          "MIMode": "gdb",
+          "miDebuggerPath": "/usr/local/pspdev/bin/psp-gdb",
+          "miDebuggerServerAddress": "127.0.0.1:10001",
+     }
    ]
 }

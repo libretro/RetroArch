@@ -321,7 +321,7 @@
          if (osd_params)
          {
             [rce pushDebugGroup:@"video stats"];
-            font_driver_render_msg(video_info, NULL, video_info->stat_text, osd_params);
+            font_driver_render_msg(data, video_info, video_info->stat_text, osd_params, NULL);
             [rce popDebugGroup];
          }
       }
@@ -383,7 +383,7 @@
       [_context drawQuadX:x y:y w:width h:height r:r g:g b:b a:a];
    }
 
-   font_driver_render_msg(video_info, NULL, msg, NULL);
+   font_driver_render_msg(NULL, video_info, msg, NULL, NULL);
 }
 
 - (void)_beginFrame

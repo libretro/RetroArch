@@ -37,7 +37,7 @@
 #endif
 
 static int action_select_default(const char *path, const char *label, unsigned type,
-      size_t idx)
+      size_t idx, size_t entry_idx)
 {
    menu_entry_t entry;
    int ret                    = 0;
@@ -103,7 +103,7 @@ static int action_select_default(const char *path, const char *label, unsigned t
    }
 
    if (action != MENU_ACTION_NOOP)
-       ret = menu_entry_action(&entry, (unsigned)idx, action);
+       ret = menu_entry_action(&entry, idx, action);
 
    task_queue_check();
 
@@ -111,46 +111,26 @@ static int action_select_default(const char *path, const char *label, unsigned t
 }
 
 static int action_select_path_use_directory(const char *path,
-      const char *label, unsigned type, size_t idx)
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    return action_ok_path_use_directory(path, label, type, idx, 0 /* unused */);
 }
 
 static int action_select_core_setting(const char *path, const char *label, unsigned type,
-      size_t idx)
+      size_t idx, size_t entry_idx)
 {
    return action_ok_core_option_dropdown_list(path, label, type, idx, 0);
 }
 
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-static int shader_action_parameter_select(const char *path, const char *label, unsigned type,
-      size_t idx)
-{
-   return shader_action_parameter_right(type, label, true);
-}
-
-static int shader_action_parameter_preset_select(const char *path, const char *label, unsigned type,
-      size_t idx)
-{
-   return shader_action_parameter_right(type, label, true);
-}
-#endif
-
-static int action_select_cheat(const char *path, const char *label, unsigned type,
-      size_t idx)
-{
-   return action_right_cheat(type, label, true);
-}
-
 static int action_select_input_desc(const char *path, const char *label, unsigned type,
-      size_t idx)
+      size_t idx, size_t entry_idx)
 {
    return action_right_input_desc(type, label, true);
 }
 
 static int action_select_input_desc_kbd(const char *path,
       const char *label, unsigned type,
-   size_t idx)
+      size_t idx, size_t entry_idx)
 {
    return action_right_input_desc_kbd(type, label, true);
 }
@@ -158,9 +138,10 @@ static int action_select_input_desc_kbd(const char *path,
 #ifdef HAVE_NETWORKING
 static int action_select_netplay_connect_room(const char *path,
       const char *label, unsigned type,
-      size_t idx)
+      size_t idx, size_t entry_idx)
 {
    char tmp_hostname[4115];
+   unsigned offset = idx - 4;
 
    tmp_hostname[0] = '\0';
 
@@ -168,22 +149,25 @@ static int action_select_netplay_connect_room(const char *path,
       command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
    netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_CLIENT, NULL);
 
-   if (netplay_room_list[idx - 3].host_method == NETPLAY_HOST_METHOD_MITM)
+   if (netplay_room_list[offset].host_method == NETPLAY_HOST_METHOD_MITM)
       snprintf(tmp_hostname,
             sizeof(tmp_hostname),
             "%s|%d",
-            netplay_room_list[idx - 3].mitm_address,
-            netplay_room_list[idx - 3].mitm_port);
+            netplay_room_list[offset].mitm_address,
+            netplay_room_list[offset].mitm_port);
    else
       snprintf(tmp_hostname,
             sizeof(tmp_hostname),
             "%s|%d",
-            netplay_room_list[idx - 3].address,
-            netplay_room_list[idx - 3].port);
+            netplay_room_list[offset].address,
+            netplay_room_list[offset].port);
 
-   task_push_netplay_crc_scan(netplay_room_list[idx - 3].gamecrc,
-         netplay_room_list[idx - 3].gamename,
-         tmp_hostname, netplay_room_list[idx - 3].corename, netplay_room_list[idx - 3].subsystem_name);
+   task_push_netplay_crc_scan(
+         netplay_room_list[offset].gamecrc,
+         netplay_room_list[offset].gamename,
+         tmp_hostname,
+         netplay_room_list[offset].corename,
+         netplay_room_list[offset].subsystem_name);
 
    return 0;
 }
@@ -192,24 +176,7 @@ static int action_select_netplay_connect_room(const char *path,
 static int menu_cbs_init_bind_select_compare_type(
       menu_file_list_cbs_t *cbs, unsigned type)
 {
-   if (type >= MENU_SETTINGS_CHEAT_BEGIN
-         && type <= MENU_SETTINGS_CHEAT_END)
-   {
-      BIND_ACTION_SELECT(cbs, action_select_cheat);
-   }
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-   else if (type >= MENU_SETTINGS_SHADER_PARAMETER_0
-         && type <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
-   {
-      BIND_ACTION_SELECT(cbs, shader_action_parameter_select);
-   }
-   else if (type >= MENU_SETTINGS_SHADER_PRESET_PARAMETER_0
-         && type <= MENU_SETTINGS_SHADER_PRESET_PARAMETER_LAST)
-   {
-      BIND_ACTION_SELECT(cbs, shader_action_parameter_preset_select);
-   }
-#endif
-   else if (type >= MENU_SETTINGS_INPUT_DESC_BEGIN
+   if (type >= MENU_SETTINGS_INPUT_DESC_BEGIN
          && type <= MENU_SETTINGS_INPUT_DESC_END)
    {
       BIND_ACTION_SELECT(cbs, action_select_input_desc);

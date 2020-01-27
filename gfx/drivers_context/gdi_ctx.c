@@ -211,11 +211,6 @@ static void gfx_ctx_gdi_input_driver(void *data,
    *input_data = dinput_gdi;
 }
 
-static bool gfx_ctx_gdi_has_focus(void *data)
-{
-   return win32_has_focus();
-}
-
 static enum gfx_ctx_api gfx_ctx_gdi_get_api(void *data)
 {
    return win32_gdi_api;
@@ -231,12 +226,6 @@ static bool gfx_ctx_gdi_bind_api(void *data,
    win32_gdi_api   = api;
 
    return true;
-}
-
-static void gfx_ctx_gdi_show_mouse(void *data, bool state)
-{
-   (void)data;
-   win32_show_cursor(state);
 }
 
 static void gfx_ctx_gdi_swap_interval(void *data, int interval)
@@ -291,7 +280,7 @@ const gfx_ctx_driver_t gfx_ctx_gdi = {
    gfx_ctx_gdi_update_title,
    gfx_ctx_gdi_check_window,
    gfx_ctx_gdi_set_resize,
-   gfx_ctx_gdi_has_focus,
+   win32_has_focus,
    win32_suppress_screensaver,
    true, /* has_windowed */
    gfx_ctx_gdi_swap_buffers,
@@ -299,7 +288,7 @@ const gfx_ctx_driver_t gfx_ctx_gdi = {
    NULL,
    NULL,
    NULL,
-   gfx_ctx_gdi_show_mouse,
+   win32_show_cursor,
    "gdi",
    gfx_ctx_gdi_get_flags,
    gfx_ctx_gdi_set_flags,

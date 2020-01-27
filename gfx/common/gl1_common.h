@@ -30,11 +30,22 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #endif
+#ifdef VITA
+#include <vitaGL.h>
+#else
 #include <GL/gl.h>
 #include <GL/glext.h>
 #endif
+#endif
 
 #include "../../retroarch.h"
+
+#ifdef VITA
+#define GL_RGBA8     GL_RGBA
+#define GL_RGB8      GL_RGB
+#define GL_BGRA_EXT  GL_RGBA // Currently unsupported in vitaGL
+#define GL_CLAMP     GL_CLAMP_TO_EDGE
+#endif
 
 #define RARCH_GL1_INTERNAL_FORMAT32 GL_RGBA8
 #define RARCH_GL1_TEXTURE_TYPE32 GL_BGRA_EXT

@@ -240,7 +240,7 @@ static bool vga_gfx_frame(void *data, const void *frame,
    }
 
    if (msg)
-      font_driver_render_msg(video_info, NULL, msg, NULL);
+      font_driver_render_msg(data, video_info, msg, NULL, NULL);
 
    video_info->cb_update_window_title(
          video_info->context_data, video_info);
@@ -359,14 +359,6 @@ static void vga_set_texture_frame(void *data,
    }
 }
 
-static void vga_set_osd_msg(void *data,
-      video_frame_info_t *video_info,
-      const char *msg,
-      const void *params, void *font)
-{
-   font_driver_render_msg(video_info, font, msg, params);
-}
-
 static uint32_t vga_get_flags(void *data)
 {
    uint32_t flags = 0;
@@ -390,7 +382,7 @@ static const video_poke_interface_t vga_poke_interface = {
    NULL,
    vga_set_texture_frame,
    NULL,
-   vga_set_osd_msg,
+   font_driver_render_msg,
    NULL,                   /* show_mouse */
    NULL,                   /* grab_mouse_toggle */
    NULL,                   /* get_current_shader */

@@ -30,7 +30,7 @@ HAVE_STATIC_VIDEO_FILTERS = 1
 HAVE_STATIC_AUDIO_FILTERS = 1
 HAVE_STB_FONT = 1
 
-MEMORY = 536870912
+MEMORY = 134217728
 
 PRECISE_F32 = 1
 
@@ -39,8 +39,8 @@ OBJDIR := obj-emscripten
 #if you compile with SDL2 flag add this Emscripten flag "-s USE_SDL=2" to LDFLAGS:
 
 LIBS    := -s USE_ZLIB=1
-LDFLAGS := -L. --no-heap-copy -s USE_ZLIB=1 -s TOTAL_MEMORY=$(MEMORY) -s NO_EXIT_RUNTIME=0 -s FULL_ES2=1 \
-           -s EXPORTED_FUNCTIONS="['_main', '_malloc', '_cmd_savefiles', '_cmd_save_state', '_cmd_load_state', '_cmd_take_screenshot']" \
+LDFLAGS := -L. --no-heap-copy -s $(LIBS) -s TOTAL_MEMORY=$(MEMORY) -s NO_EXIT_RUNTIME=0 -s FULL_ES2=1 -s "EXTRA_EXPORTED_RUNTIME_METHODS=['callMain']" \
+           -s ALLOW_MEMORY_GROWTH=1 -s EXPORTED_FUNCTIONS="['_main', '_malloc', '_cmd_savefiles', '_cmd_save_state', '_cmd_load_state', '_cmd_take_screenshot']" \
            --js-library emscripten/library_rwebaudio.js \
            --js-library emscripten/library_rwebcam.js \
            --js-library emscripten/library_errno_codes.js
@@ -70,16 +70,16 @@ ifeq ($(DEBUG), 1)
    LDFLAGS += -O0 -g
    CFLAGS += -O0 -g
 else
-   LDFLAGS += -O2 -s WASM=1
+   LDFLAGS += -O3 -s WASM=1
    # WARNING: some optimizations can break some cores (ex: LTO breaks tyrquake)
    LDFLAGS += -s PRECISE_F32=$(PRECISE_F32)
    ifeq ($(LTO), 1)
       LDFLAGS += --llvm-lto 3
    endif
-   CFLAGS += -O2
+   CFLAGS += -O3
 endif
 
-CFLAGS += -DHAVE_RPNG -Wall -I. -Ilibretro-common/include -std=gnu99 -s USE_ZLIB=1 \
+CFLAGS += -Wall -I. -Ilibretro-common/include -std=gnu99 $(LIBS) \
           -s EXPORTED_FUNCTIONS="['_main', '_malloc', '_cmd_savefiles', '_cmd_save_state', '_cmd_take_screenshot']"
 
 RARCH_OBJ := $(addprefix $(OBJDIR)/,$(OBJ))

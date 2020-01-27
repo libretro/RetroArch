@@ -495,16 +495,16 @@ static bool gfx_ctx_xegl_bind_api(void *video_driver,
          if ((major * 1000 + minor) >= 3001)
             break;
 #endif
-         return eglBindAPI(EGL_OPENGL_API);
+         return egl_bind_api(EGL_OPENGL_API);
       case GFX_CTX_OPENGL_ES_API:
 #ifndef EGL_KHR_create_context
          if (major >= 3)
             break;
 #endif
-         return eglBindAPI(EGL_OPENGL_ES_API);
+         return egl_bind_api(EGL_OPENGL_ES_API);
       case GFX_CTX_OPENVG_API:
 #ifdef HAVE_VG
-         return eglBindAPI(EGL_OPENVG_API);
+         return egl_bind_api(EGL_OPENVG_API);
 #endif
       default:
          break;

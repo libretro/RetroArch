@@ -286,7 +286,7 @@ MainWindow::MainWindow(QWidget *parent) :
    ,m_playlistViews(new FileDropWidget(this))
    ,m_searchWidget(new QWidget(this))
    ,m_searchLineEdit(new QLineEdit(this))
-   ,m_searchDock(new QDockWidget(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_EDIT_SEARCH), this))
+   ,m_searchDock(new QDockWidget(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SEARCH), this))
    ,m_playlistFiles()
    ,m_launchWithComboBox(new QComboBox(this))
    ,m_startCorePushButton(new QToolButton(this))
@@ -3023,6 +3023,7 @@ int MainWindow::onExtractArchive(QString path, QString extractionDir, QString te
    const char *dir               = dirArray.constData();
    struct string_list *file_list = file_archive_get_file_list(file, NULL);
    bool returnerr                = true;
+   retro_task_t *decompress_task = NULL;
 
    if (!file_list || file_list->size == 0)
    {
@@ -3079,9 +3080,12 @@ int MainWindow::onExtractArchive(QString path, QString extractionDir, QString te
    m_updateProgressDialog->setCancelButtonText(QString());
    m_updateProgressDialog->show();
 
-   if (!task_push_decompress(file, dir,
-            NULL, NULL, NULL,
-            cb, this, NULL))
+   decompress_task = (retro_task_t*)task_push_decompress(
+         file, dir,
+         NULL, NULL, NULL,
+         cb, this, NULL, false);
+
+   if (!decompress_task)
    {
       m_updateProgressDialog->cancel();
       return -1;

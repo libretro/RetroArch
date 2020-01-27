@@ -335,7 +335,7 @@ static bool fpga_gfx_frame(void *data, const void *frame,
    }
 
    if (msg)
-      font_driver_render_msg(video_info, NULL, msg, NULL);
+      font_driver_render_msg(fpga, video_info, msg, NULL, NULL);
 
    return true;
 }
@@ -479,7 +479,7 @@ static void fpga_set_osd_msg(void *data,
       const char *msg,
       const void *params, void *font)
 {
-   font_driver_render_msg(video_info, font, msg, params);
+   font_driver_render_msg(data, video_info, msg, params, font);
 }
 
 static void fpga_get_video_output_size(void *data,

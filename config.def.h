@@ -89,6 +89,8 @@
 #define DEFAULT_MAX_PADS 4
 #elif defined(HAVE_XINPUT) && !defined(HAVE_DINPUT)
 #define DEFAULT_MAX_PADS 4
+#elif defined(DINGUX)
+#define DEFAULT_MAX_PADS 2
 #else
 #define DEFAULT_MAX_PADS 16
 #endif
@@ -97,7 +99,7 @@
 #define DEFAULT_MOUSE_SCALE 1
 #endif
 
-#if defined(RARCH_MOBILE) || defined(HAVE_LIBNX)
+#if defined(RARCH_MOBILE) || defined(HAVE_LIBNX) || defined(__WINRT__)
 #define DEFAULT_POINTER_ENABLE true
 #else
 #define DEFAULT_POINTER_ENABLE false
@@ -132,14 +134,35 @@
 /* Adjust menu padding etc. to better fit the
  * screen when using landscape layouts */
 #if defined(RARCH_MOBILE)
-#define DEFAULT_MATERIALUI_OPTIMIZE_LANDSCAPE_LAYOUT false
+#define DEFAULT_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION_DISABLED
 #else
-#define DEFAULT_MATERIALUI_OPTIMIZE_LANDSCAPE_LAYOUT true
+#define DEFAULT_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION_ALWAYS
 #endif
 
 /* Reposition navigation bar to make better use
  * of screen space when using landscape layouts */
 #define DEFAULT_MATERIALUI_AUTO_ROTATE_NAV_BAR true
+
+/* Default portrait/landscape playlist view modes
+ * (when thumbnails are enabled) */
+#define DEFAULT_MATERIALUI_THUMBNAIL_VIEW_PORTRAIT MATERIALUI_THUMBNAIL_VIEW_PORTRAIT_LIST_SMALL
+#define DEFAULT_MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE_LIST_MEDIUM
+
+/* Enable second thumbnail when using 'list view'
+ * thumbnail views
+ * Note: Second thumbnail will only be drawn if
+ * display has sufficient horizontal real estate */
+#if defined(RARCH_MOBILE)
+#define DEFAULT_MATERIALUI_DUAL_THUMBNAIL_LIST_VIEW_ENABLE false
+#else
+#define DEFAULT_MATERIALUI_DUAL_THUMBNAIL_LIST_VIEW_ENABLE true
+#endif
+
+/* Draw solid colour 4:3 background when rendering
+ * thumbnails
+ * > Helps to unify menu appearance when viewing
+ *   thumbnails of different sizes */
+#define DEFAULT_MATERIALUI_THUMBNAIL_BACKGROUND_ENABLE true
 
 #define DEFAULT_CRT_SWITCH_RESOLUTION CRT_SWITCH_NONE
 
@@ -150,6 +173,10 @@
 #define DEFAULT_HISTORY_LIST_ENABLE true
 
 #define DEFAULT_PLAYLIST_ENTRY_RENAME true
+
+#define DEFAULT_ACCESSIBILITY_ENABLE false
+
+#define DEFAULT_ACCESSIBILITY_NARRATOR_SPEECH_SPEED 5
 
 #define DEFAULT_DRIVER_SWITCH_ENABLE true
 
@@ -182,7 +209,13 @@
 /* Fullscreen */
 
 /* To start in Fullscreen, or not. */
+
+#ifdef HAVE_STEAM
+/* Start in fullscreen mode for Steam build */
+#define DEFAULT_FULLSCREEN true
+#else
 #define DEFAULT_FULLSCREEN false
+#endif
 
 /* To use windowed mode or not when going fullscreen. */
 #define DEFAULT_WINDOWED_FULLSCREEN true
@@ -296,7 +329,11 @@
 #endif
 
 /* Smooths picture. */
+#if defined(_3DS) || defined(GEKKO) || defined(HW_RVL) || defined(PSP) || defined(VITA) || defined(SN_TARGET_PSP2) || defined(PS2) || defined(_XBOX)
 #define DEFAULT_VIDEO_SMOOTH true
+#else
+#define DEFAULT_VIDEO_SMOOTH false
+#endif
 
 /* On resize and fullscreen, rendering area will stay 4:3 */
 #define DEFAULT_FORCE_ASPECT true
@@ -435,7 +472,9 @@ static bool quick_menu_show_save_core_overrides         = true;
 static bool quick_menu_show_save_game_overrides         = true;
 static bool quick_menu_show_save_content_dir_overrides  = true;
 
+#ifdef HAVE_NETWORKING
 static bool quick_menu_show_download_thumbnails         = true;
+#endif
 
 static bool kiosk_mode_enable            = false;
 
@@ -474,6 +513,8 @@ static bool menu_savestate_resume     = true;
 static bool menu_savestate_resume     = false;
 #endif
 
+#define DEFAULT_MENU_INSERT_DISK_RESUME true
+
 static bool content_show_settings     = true;
 static bool content_show_favorites    = true;
 #ifdef HAVE_IMAGEVIEWER
@@ -487,9 +528,7 @@ static bool content_show_video        = true;
 static bool content_show_netplay      = true;
 #endif
 static bool content_show_history      = true;
-#ifdef HAVE_LIBRETRODB
 static bool content_show_add     	  = true;
-#endif
 static bool content_show_playlists    = true;
 
 #ifdef HAVE_XMB
@@ -563,7 +602,7 @@ static bool default_savefiles_in_content_dir = false;
 static bool default_systemfiles_in_content_dir = false;
 static bool default_screenshots_in_content_dir = false;
 
-#if defined(__CELLOS_LV2__) || defined(_XBOX1) || defined(_XBOX360)
+#if defined(__CELLOS_LV2__) || defined(_XBOX1) || defined(_XBOX360) || defined(DINGUX)
 static unsigned menu_toggle_gamepad_combo    = INPUT_TOGGLE_L3_R3;
 #elif defined(PS2) || defined(PSP)
 static unsigned menu_toggle_gamepad_combo    = INPUT_TOGGLE_HOLD_START;
@@ -602,7 +641,12 @@ static unsigned input_backtouch_toggle       = false;
 #define DEFAULT_CROP_OVERSCAN true
 
 /* Font size for on-screen messages. */
+#if defined(DINGUX)
+#define DEFAULT_FONT_SIZE 12
+#else
 #define DEFAULT_FONT_SIZE 32
+#endif
+
 
 /* Offset for where messages will be placed on-screen.
  * Values are in range [0.0, 1.0]. */
@@ -872,14 +916,18 @@ static const bool stdin_cmd_enable = false;
 
 static const uint16_t network_remote_base_port = 55400;
 
+#if defined(ANDROID) || defined(IOS)
+static const bool network_on_demand_thumbnails = true;
+#else
 static const bool network_on_demand_thumbnails = false;
+#endif
 
 /* Number of entries that will be kept in content history playlist file. */
-static const unsigned default_content_history_size = 100;
+static const unsigned default_content_history_size = 200;
 
 /* Number of entries that will be kept in content favorites playlist file.
  * -1 == 'unlimited' (99999) */
-static const int default_content_favorites_size = 100;
+static const int default_content_favorites_size = 200;
 
 /* Sort all playlists (apart from histories) alphabetically */
 static const bool playlist_sort_alphabetical = true;
@@ -946,6 +994,8 @@ static const float analog_sensitivity     = 1.0f;
 /* Describes speed of which turbo-enabled buttons toggle. */
 static const unsigned turbo_period        = 6;
 static const unsigned turbo_duty_cycle    = 3;
+static const unsigned turbo_mode          = 0;
+static const unsigned turbo_default_btn   = RETRO_DEVICE_ID_JOYPAD_B;
 
 /* Enable input auto-detection. Will attempt to autoconfigure
  * gamepads, plug-and-play style. */
@@ -1010,7 +1060,7 @@ static const bool content_runtime_log_aggregate = false;
 
 #if defined(__QNX__) || defined(_XBOX1) || defined(_XBOX360) || defined(__CELLOS_LV2__) || (defined(__MACH__) && defined(IOS)) || defined(ANDROID) || defined(WIIU) || defined(HAVE_NEON) || defined(GEKKO) || defined(__ARM_NEON__)
 static enum resampler_quality audio_resampler_quality_level = RESAMPLER_QUALITY_LOWER;
-#elif defined(PSP) || defined(_3DS) || defined(VITA) || defined(PS2)
+#elif defined(PSP) || defined(_3DS) || defined(VITA) || defined(PS2) || defined(DINGUX)
 static enum resampler_quality audio_resampler_quality_level = RESAMPLER_QUALITY_LOWEST;
 #else
 static enum resampler_quality audio_resampler_quality_level = RESAMPLER_QUALITY_NORMAL;

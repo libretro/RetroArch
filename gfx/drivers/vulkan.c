@@ -85,10 +85,10 @@ static void vulkan_init_render_pass(
 {
    VkRenderPassCreateInfo rp_info = {
       VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO };
-   VkAttachmentDescription attachment = {0};
-   VkSubpassDescription subpass       = {0};
    VkAttachmentReference color_ref    = { 0,
       VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
+   VkAttachmentDescription attachment = {0};
+   VkSubpassDescription subpass       = {0};
 
    /* Backbuffer format. */
    attachment.format            = vk->context->swapchain_format;
@@ -660,9 +660,10 @@ static void vulkan_init_textures(vk_t *vk)
                vk->tex_w, vk->tex_h, vk->tex_fmt,
                NULL, NULL, VULKAN_TEXTURE_STREAMED);
 
-         vulkan_map_persistent_texture(
-               vk->context->device,
-               &vk->swapchain[i].texture);
+         {
+            struct vk_texture *texture = &vk->swapchain[i].texture;
+            VK_MAP_PERSISTENT_TEXTURE(vk->context->device, texture);
+         }
 
          if (vk->swapchain[i].texture.type == VULKAN_TEXTURE_STAGING)
             vk->swapchain[i].texture_optimal = vulkan_create_texture(vk, NULL,
@@ -1684,9 +1685,19 @@ static bool vulkan_frame(void *data, const void *frame,
    chain     = &vk->swapchain[frame_index];
    vk->chain = chain;
 
-   vulkan_descriptor_manager_restart(&chain->descriptor_manager);
-   vulkan_buffer_chain_discard(&chain->vbo);
-   vulkan_buffer_chain_discard(&chain->ubo);
+   {
+      struct vk_descriptor_manager *manager = &chain->descriptor_manager;
+      VK_DESCRIPTOR_MANAGER_RESTART(manager);
+   }
+
+   {
+      struct vk_buffer_chain *buff_chain = &chain->vbo;
+      VK_BUFFER_CHAIN_DISCARD(buff_chain);
+   }
+   {
+      struct vk_buffer_chain *buff_chain = &chain->ubo;
+      VK_BUFFER_CHAIN_DISCARD(buff_chain);
+   }
 
    /* Start recording the command buffer. */
    vk->cmd          = chain->cmd;
@@ -1733,8 +1744,10 @@ static bool vulkan_frame(void *data, const void *frame,
                chain->texture_optimal.memory
                ? VULKAN_TEXTURE_STAGING : VULKAN_TEXTURE_STREAMED);
 
-         vulkan_map_persistent_texture(
-               vk->context->device, &chain->texture);
+         {
+            struct vk_texture *texture = &chain->texture;
+            VK_MAP_PERSISTENT_TEXTURE(vk->context->device, texture);
+         }
 
          if (chain->texture.type == VULKAN_TEXTURE_STAGING)
          {
@@ -1946,10 +1959,8 @@ static bool vulkan_frame(void *data, const void *frame,
             &video_info->osd_stat_params;
 
          if (osd_params)
-         {
-            font_driver_render_msg(video_info, NULL, video_info->stat_text,
-                  (const struct font_params*)&video_info->osd_stat_params);
-         }
+            font_driver_render_msg(vk, video_info, video_info->stat_text,
+                  &video_info->osd_stat_params, NULL);
       }
 #endif
 
@@ -1959,7 +1970,7 @@ static bool vulkan_frame(void *data, const void *frame,
 #endif
 
       if (!string_is_empty(msg))
-         font_driver_render_msg(video_info, NULL, msg, NULL);
+         font_driver_render_msg(vk, video_info, msg, NULL, NULL);
 
 #ifdef HAVE_MENU_WIDGETS
       if (video_info->widgets_inited)
@@ -2196,8 +2207,10 @@ static bool vulkan_get_current_sw_framebuffer(void *data,
       chain->texture   = vulkan_create_texture(vk, &chain->texture,
             framebuffer->width, framebuffer->height, chain->texture.format,
             NULL, NULL, VULKAN_TEXTURE_STREAMED);
-      vulkan_map_persistent_texture(
-            vk->context->device, &chain->texture);
+      {
+         struct vk_texture *texture = &chain->texture;
+         VK_MAP_PERSISTENT_TEXTURE(vk->context->device, texture);
+      }
 
       if (chain->texture.type == VULKAN_TEXTURE_STAGING)
       {
@@ -2305,14 +2318,6 @@ static void vulkan_set_texture_enable(void *data, bool state, bool full_screen)
 
    vk->menu.enable = state;
    vk->menu.full_screen = full_screen;
-}
-
-static void vulkan_set_osd_msg(void *data,
-      video_frame_info_t *video_info,
-      const char *msg,
-      const void *params, void *font)
-{
-   font_driver_render_msg(video_info, font, msg, (const struct font_params *)params);
 }
 
 static uintptr_t vulkan_load_texture(void *video_data, void *data,
@@ -2426,7 +2431,7 @@ static const video_poke_interface_t vulkan_poke_interface = {
    vulkan_apply_state_changes,
    vulkan_set_texture_frame,
    vulkan_set_texture_enable,
-   vulkan_set_osd_msg,
+   font_driver_render_msg,
    vulkan_show_mouse,
    NULL,                               /* grab_mouse_toggle */
    vulkan_get_current_shader,
@@ -2529,8 +2534,9 @@ static bool vulkan_read_viewport(void *data, uint8_t *buffer, bool is_idle)
 #endif
 
       if (!staging->mapped)
-         vulkan_map_persistent_texture(
-               vk->context->device, staging);
+      {
+         VK_MAP_PERSISTENT_TEXTURE(vk->context->device, staging);
+      }
 
       vulkan_sync_texture_to_cpu(vk, staging);
 

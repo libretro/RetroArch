@@ -41,6 +41,7 @@
 #include "../../retroarch.h"
 #include "../../network/netplay/netplay.h"
 #include "../../playlist.h"
+#include "../../manual_content_scan.h"
 
 #ifndef BIND_ACTION_LEFT
 #define BIND_ACTION_LEFT(cbs, name) \
@@ -63,7 +64,8 @@ static int generic_shader_action_parameter_left(
    return 0;
 }
 
-static int shader_action_parameter_left(unsigned type, const char *label, bool wraparound)
+static int shader_action_parameter_left_internal(unsigned type, const char *label, bool wraparound,
+      unsigned offset)
 {
    video_shader_ctx_t shader_info;
    struct video_shader *shader          = menu_shader_get();
@@ -74,9 +76,8 @@ static int shader_action_parameter_left(unsigned type, const char *label, bool w
 
    video_shader_driver_get_current_shader(&shader_info);
 
-   param_prev = &shader_info.data->parameters[type - MENU_SETTINGS_SHADER_PARAMETER_0];
-   param_menu = shader ? &shader->parameters[type -
-      MENU_SETTINGS_SHADER_PARAMETER_0] : NULL;
+   param_prev = &shader_info.data->parameters[type - offset];
+   param_menu = shader ? &shader->parameters [type - offset] : NULL;
 
    if (!param_prev || !param_menu)
       return menu_cbs_exit();
@@ -87,6 +88,16 @@ static int shader_action_parameter_left(unsigned type, const char *label, bool w
    menu_shader_set_modified(true);
 
    return ret;
+}
+
+static int shader_action_parameter_left(unsigned type, const char *label, bool wraparound)
+{
+   return shader_action_parameter_left_internal(type, label, wraparound, MENU_SETTINGS_SHADER_PARAMETER_0);
+}
+
+static int shader_action_preset_parameter_left(unsigned type, const char *label, bool wraparound)
+{
+   return shader_action_parameter_left_internal(type, label, wraparound, MENU_SETTINGS_SHADER_PRESET_PARAMETER_0);
 }
 #endif
 
@@ -367,14 +378,6 @@ static int action_left_shader_num_passes(unsigned type, const char *label,
 
    return 0;
 }
-
-static int action_left_shader_watch_for_changes(unsigned type, const char *label,
-      bool wraparound)
-{
-   settings_t *settings = config_get_ptr();
-   settings->bools.video_shader_watch_files = !settings->bools.video_shader_watch_files;
-   return 0;
-}
 #endif
 
 static int action_left_video_resolution(unsigned type, const char *label,
@@ -389,6 +392,7 @@ static int playlist_association_left(unsigned type, const char *label,
 {
    char core_path[PATH_MAX_LENGTH];
    size_t i, next, current          = 0;
+   settings_t *settings             = config_get_ptr();
    playlist_t *playlist             = playlist_get_cached();
    core_info_list_t *core_info_list = NULL;
    core_info_t *core_info           = NULL;
@@ -447,7 +451,7 @@ static int playlist_association_left(unsigned type, const char *label,
    /* Update playlist */
    playlist_set_default_core_path(playlist, core_info->path);
    playlist_set_default_core_name(playlist, core_info->display_name);
-   playlist_write_file(playlist);
+   playlist_write_file(playlist, settings->bools.playlist_use_old_format);
 
    return 0;
 }
@@ -456,6 +460,7 @@ static int playlist_label_display_mode_left(unsigned type, const char *label,
       bool wraparound)
 {
    enum playlist_label_display_mode label_display_mode;
+   settings_t *settings             = config_get_ptr();
    playlist_t *playlist             = playlist_get_cached();
 
    if (!playlist)
@@ -469,7 +474,7 @@ static int playlist_label_display_mode_left(unsigned type, const char *label,
       label_display_mode = LABEL_DISPLAY_MODE_KEEP_REGION_AND_DISC_INDEX;
 
    playlist_set_label_display_mode(playlist, label_display_mode);
-   playlist_write_file(playlist);
+   playlist_write_file(playlist, settings->bools.playlist_use_old_format);
 
    return 0;
 }
@@ -477,6 +482,7 @@ static int playlist_label_display_mode_left(unsigned type, const char *label,
 static void playlist_thumbnail_mode_left(playlist_t *playlist, enum playlist_thumbnail_id thumbnail_id,
       bool wraparound)
 {
+   settings_t *settings                        = config_get_ptr();
    enum playlist_thumbnail_mode thumbnail_mode =
          playlist_get_thumbnail_mode(playlist, thumbnail_id);
 
@@ -486,7 +492,7 @@ static void playlist_thumbnail_mode_left(playlist_t *playlist, enum playlist_thu
       thumbnail_mode = PLAYLIST_THUMBNAIL_MODE_BOXARTS;
 
    playlist_set_thumbnail_mode(playlist, thumbnail_id, thumbnail_mode);
-   playlist_write_file(playlist);
+   playlist_write_file(playlist, settings->bools.playlist_use_old_format);
 }
 
 static int playlist_right_thumbnail_mode_left(unsigned type, const char *label,
@@ -515,6 +521,122 @@ static int playlist_left_thumbnail_mode_left(unsigned type, const char *label,
    return 0;
 }
 
+static int manual_content_scan_system_name_left(unsigned type, const char *label,
+      bool wraparound)
+{
+#ifdef HAVE_LIBRETRODB
+   settings_t *settings                                            = config_get_ptr();
+   struct string_list *system_name_list                            =
+      manual_content_scan_get_menu_system_name_list(settings->paths.path_content_database);
+#else
+   struct string_list *system_name_list                            =
+      manual_content_scan_get_menu_system_name_list(NULL);
+#endif
+   const char *current_system_name                                 = NULL;
+   enum manual_content_scan_system_name_type next_system_name_type =
+         MANUAL_CONTENT_SCAN_SYSTEM_NAME_DATABASE;
+   const char *next_system_name                                    = NULL;
+   unsigned current_index                                          = 0;
+   unsigned next_index                                             = 0;
+   unsigned i;
+
+   if (!system_name_list)
+      return -1;
+
+   /* Get currently selected system name */
+   if (manual_content_scan_get_menu_system_name(&current_system_name))
+   {
+      /* Get index of currently selected system name */
+      for (i = 0; i < system_name_list->size; i++)
+      {
+         const char *system_name = system_name_list->elems[i].data;
+
+         if (string_is_equal(current_system_name, system_name))
+         {
+            current_index = i;
+            break;
+         }
+      }
+
+      /* Decrement index */
+      if (current_index > 0)
+         next_index = current_index - 1;
+      else if (wraparound && (system_name_list->size > 1))
+         next_index = system_name_list->size - 1;
+   }
+
+   /* Get new system name parameters */
+   if (next_index == (unsigned)MANUAL_CONTENT_SCAN_SYSTEM_NAME_CONTENT_DIR)
+      next_system_name_type = MANUAL_CONTENT_SCAN_SYSTEM_NAME_CONTENT_DIR;
+   else if (next_index == (unsigned)MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM)
+      next_system_name_type = MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM;
+
+   next_system_name = system_name_list->elems[next_index].data;
+
+   /* Set system name */
+   manual_content_scan_set_menu_system_name(
+         next_system_name_type, next_system_name);
+
+   /* Clean up */
+   string_list_free(system_name_list);
+
+   return 0;
+}
+
+static int manual_content_scan_core_name_left(unsigned type, const char *label,
+      bool wraparound)
+{
+   struct string_list *core_name_list                =
+         manual_content_scan_get_menu_core_name_list();
+   const char *current_core_name                     = NULL;
+   enum manual_content_scan_core_type next_core_type =
+         MANUAL_CONTENT_SCAN_CORE_SET;
+   const char *next_core_name                        = NULL;
+   unsigned current_index                            = 0;
+   unsigned next_index                               = 0;
+   unsigned i;
+
+   if (!core_name_list)
+      return -1;
+
+   /* Get currently selected core name */
+   if (manual_content_scan_get_menu_core_name(&current_core_name))
+   {
+      /* Get index of currently selected core name */
+      for (i = 0; i < core_name_list->size; i++)
+      {
+         const char *core_name = core_name_list->elems[i].data;
+
+         if (string_is_equal(current_core_name, core_name))
+         {
+            current_index = i;
+            break;
+         }
+      }
+
+      /* Decrement index */
+      if (current_index > 0)
+         next_index = current_index - 1;
+      else if (wraparound && (core_name_list->size > 1))
+         next_index = core_name_list->size - 1;
+   }
+
+   /* Get new core name parameters */
+   if (next_index == (unsigned)MANUAL_CONTENT_SCAN_CORE_DETECT)
+      next_core_type = MANUAL_CONTENT_SCAN_CORE_DETECT;
+
+   next_core_name = core_name_list->elems[next_index].data;
+
+   /* Set core name */
+   manual_content_scan_set_menu_core_name(
+         next_core_type, next_core_name);
+
+   /* Clean up */
+   string_list_free(core_name_list);
+
+   return 0;
+}
+
 static int core_setting_left(unsigned type, const char *label,
       bool wraparound)
 {
@@ -528,7 +650,12 @@ static int core_setting_left(unsigned type, const char *label,
 static int disk_options_disk_idx_left(unsigned type, const char *label,
       bool wraparound)
 {
-   command_event(CMD_EVENT_DISK_PREV, NULL);
+   /* Note: Menu itself provides visual feedback - no
+    * need to print info message to screen */
+   bool print_log = false;
+
+   command_event(CMD_EVENT_DISK_PREV, &print_log);
+
    return 0;
 }
 
@@ -693,11 +820,6 @@ static int menu_cbs_init_bind_left_compare_label(menu_file_list_cbs_t *cbs,
                BIND_ACTION_LEFT(cbs, action_left_shader_filter_default);
 #endif
                break;
-            case MENU_ENUM_LABEL_SHADER_WATCH_FOR_CHANGES:
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-               BIND_ACTION_LEFT(cbs, action_left_shader_watch_for_changes);
-#endif
-               break;
             case MENU_ENUM_LABEL_VIDEO_SHADER_NUM_PASSES:
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
                BIND_ACTION_LEFT(cbs, action_left_shader_num_passes);
@@ -766,6 +888,12 @@ static int menu_cbs_init_bind_left_compare_label(menu_file_list_cbs_t *cbs,
             case MENU_ENUM_LABEL_PLAYLIST_MANAGER_LEFT_THUMBNAIL_MODE:
                BIND_ACTION_LEFT(cbs, playlist_left_thumbnail_mode_left);
                break;
+            case MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME:
+               BIND_ACTION_LEFT(cbs, manual_content_scan_system_name_left);
+               break;
+            case MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_CORE_NAME:
+               BIND_ACTION_LEFT(cbs, manual_content_scan_core_name_left);
+               break;
             default:
                return -1;
          }
@@ -803,7 +931,7 @@ static int menu_cbs_init_bind_left_compare_type(menu_file_list_cbs_t *cbs,
    else if (type >= MENU_SETTINGS_SHADER_PRESET_PARAMETER_0
          && type <= MENU_SETTINGS_SHADER_PRESET_PARAMETER_LAST)
    {
-      BIND_ACTION_LEFT(cbs, shader_action_parameter_left);
+      BIND_ACTION_LEFT(cbs, shader_action_preset_parameter_left);
    }
 #endif
    else if (type >= MENU_SETTINGS_INPUT_DESC_BEGIN
@@ -861,6 +989,7 @@ static int menu_cbs_init_bind_left_compare_type(menu_file_list_cbs_t *cbs,
          case FILE_TYPE_DOWNLOAD_THUMBNAIL_CONTENT:
          case FILE_TYPE_DOWNLOAD_URL:
          case FILE_TYPE_SCAN_DIRECTORY:
+         case FILE_TYPE_MANUAL_SCAN_DIRECTORY:
          case FILE_TYPE_FONT:
          case MENU_SETTING_GROUP:
          case MENU_SETTINGS_CORE_INFO_NONE:

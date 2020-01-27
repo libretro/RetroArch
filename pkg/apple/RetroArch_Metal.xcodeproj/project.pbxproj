@@ -233,7 +233,6 @@
 		05A8C56220DB72F000FF7857 /* menu_display_vga.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = menu_display_vga.c; sourceTree = "<group>"; };
 		05A8C56320DB72F000FF7857 /* menu_display_gl.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = menu_display_gl.c; sourceTree = "<group>"; };
 		05A8C56420DB72F000FF7857 /* menu_display_d3d10.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = menu_display_d3d10.c; sourceTree = "<group>"; };
-		05A8C56D20DB72F000FF7857 /* menu_display_null.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = menu_display_null.c; sourceTree = "<group>"; };
 		05A8C56F20DB72F000FF7857 /* menu_display_metal.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = menu_display_metal.m; sourceTree = "<group>"; };
 		05A8C57020DB72F000FF7857 /* menu_entries.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = menu_entries.h; sourceTree = "<group>"; };
 		05A8C57220DB72F000FF7857 /* msg_hash_pl.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = msg_hash_pl.h; sourceTree = "<group>"; };
@@ -273,14 +272,12 @@
 		05A8C59420DB72F000FF7857 /* msg_hash_chs.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = msg_hash_chs.h; sourceTree = "<group>"; };
 		05A8C59620DB72F000FF7857 /* frontend.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = frontend.c; sourceTree = "<group>"; };
 		05A8C59B20DB72F000FF7857 /* platform_darwin.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = platform_darwin.m; sourceTree = "<group>"; };
-		05A8C59E20DB72F000FF7857 /* platform_null.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = platform_null.c; sourceTree = "<group>"; };
 		05A8C5A920DB72F000FF7857 /* frontend_driver.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = frontend_driver.h; sourceTree = "<group>"; };
 		05A8C5AA20DB72F000FF7857 /* frontend.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = frontend.h; sourceTree = "<group>"; };
 		05A8C5AB20DB72F000FF7857 /* frontend_driver.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = frontend_driver.c; sourceTree = "<group>"; };
 		05A8C5AC20DB72F000FF7857 /* frontend_salamander.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = frontend_salamander.c; sourceTree = "<group>"; };
 		05A8C5AF20DB72F000FF7857 /* ui_win32.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = ui_win32.c; sourceTree = "<group>"; };
 		05A8C5B820DB72F000FF7857 /* ui_win32_resource.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ui_win32_resource.h; sourceTree = "<group>"; };
-		05A8C5B920DB72F000FF7857 /* ui_null.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = ui_null.c; sourceTree = "<group>"; };
 		05A8C5BA20DB72F000FF7857 /* ui_cocoa.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = ui_cocoa.m; sourceTree = "<group>"; };
 		05A8C5BC20DB72F000FF7857 /* ui_cocoa_msg_window.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = ui_cocoa_msg_window.m; sourceTree = "<group>"; };
 		05A8C5BD20DB72F000FF7857 /* cocoa_common.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = cocoa_common.m; sourceTree = "<group>"; };
@@ -408,8 +405,7 @@
 		05A8C78820DB72F100FF7857 /* gl_raster_font.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = gl_raster_font.c; sourceTree = "<group>"; };
 		05A8C78920DB72F100FF7857 /* vulkan_raster_font.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = vulkan_raster_font.c; sourceTree = "<group>"; };
 		05A8C78D20DB72F100FF7857 /* video_filter.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = video_filter.c; sourceTree = "<group>"; };
-		05A8C79020DB72F100FF7857 /* glslang_util.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = glslang_util.h; sourceTree = "<group>"; };
-		05A8C79020DB72F100FF7857 /* glslang_util_cxx.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = glslang_util.h; sourceTree = "<group>"; };
+		05A8C79020DB72F100FF7857 /* glslang_util.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = glslang_util.h; sourceTree = "<group>"; };
 		05A8C79120DB72F100FF7857 /* shader_glsl.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = shader_glsl.c; sourceTree = "<group>"; };
 		05A8C79220DB72F100FF7857 /* slang_process.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = slang_process.h; sourceTree = "<group>"; };
 		05A8C79320DB72F100FF7857 /* slang_reflection.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = slang_reflection.h; sourceTree = "<group>"; };
@@ -417,8 +413,6 @@
 		05A8C79520DB72F100FF7857 /* shader_vulkan.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = shader_vulkan.cpp; sourceTree = "<group>"; };
 		05A8C79620DB72F100FF7857 /* slang_reflection.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = slang_reflection.cpp; sourceTree = "<group>"; };
 		05A8C79720DB72F100FF7857 /* shader_glsl.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = shader_glsl.h; sourceTree = "<group>"; };
-		05A8C79820DB72F100FF7857 /* shader_null.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = shader_null.c; sourceTree = "<group>"; };
-		05A8C79920DB72F100FF7857 /* glslang_util.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = glslang_util.c; sourceTree = "<group>"; };
 		05A8C79920DB72F100FF7857 /* glslang_util_cxx.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = glslang_util_cxx.cpp; sourceTree = "<group>"; };
 		05A8C79B20DB72F100FF7857 /* shader_gl_cg.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = shader_gl_cg.c; sourceTree = "<group>"; };
 		05A8C79C20DB72F100FF7857 /* shader_vulkan.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = shader_vulkan.h; sourceTree = "<group>"; };
@@ -462,7 +456,6 @@
 		05BF821D20ED69D100D95B19 /* configuration.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = configuration.h; path = ../../configuration.h; sourceTree = "<group>"; };
 		05C5D53320E3DD0900654EE4 /* input_types.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = input_types.h; sourceTree = "<group>"; };
 		05C5D53420E3DD0900654EE4 /* input_remote.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = input_remote.c; sourceTree = "<group>"; };
-		05C5D53720E3DD0900654EE4 /* nullinput.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = nullinput.c; sourceTree = "<group>"; };
 		05C5D53820E3DD0900654EE4 /* cocoa_input.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = cocoa_input.h; sourceTree = "<group>"; };
 		05C5D54120E3DD0900654EE4 /* sdl_input.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = sdl_input.c; sourceTree = "<group>"; };
 		05C5D54220E3DD0900654EE4 /* cocoa_input.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = cocoa_input.c; sourceTree = "<group>"; };
@@ -505,7 +498,6 @@
 		05C5D58220E3DD0900654EE4 /* input_autodetect_builtin.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = input_autodetect_builtin.c; sourceTree = "<group>"; };
 		05C5D58320E3DD0900654EE4 /* input_keymaps.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = input_keymaps.c; sourceTree = "<group>"; };
 		05C5D58720E3DD0900654EE4 /* sdl_joypad.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = sdl_joypad.c; sourceTree = "<group>"; };
-		05C5D58820E3DD0900654EE4 /* null_joypad.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = null_joypad.c; sourceTree = "<group>"; };
 		05C5D58D20E3DD0900654EE4 /* mfi_joypad.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = mfi_joypad.m; sourceTree = "<group>"; };
 		05C5D59820E3DD0A00654EE4 /* hid_joypad.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = hid_joypad.c; sourceTree = "<group>"; };
 		05C5D59F20E3DD0A00654EE4 /* input_remote.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = input_remote.h; sourceTree = "<group>"; };
@@ -861,7 +853,6 @@
 				05A8C56420DB72F000FF7857 /* menu_display_d3d10.c */,
 				05A8C56320DB72F000FF7857 /* menu_display_gl.c */,
 				05A8C56F20DB72F000FF7857 /* menu_display_metal.m */,
-				05A8C56D20DB72F000FF7857 /* menu_display_null.c */,
 				05A8C56220DB72F000FF7857 /* menu_display_vga.c */,
 				05A8C56120DB72F000FF7857 /* menu_display_vulkan.c */,
 			);
@@ -929,7 +920,6 @@
 			isa = PBXGroup;
 			children = (
 				05A8C59B20DB72F000FF7857 /* platform_darwin.m */,
-				05A8C59E20DB72F000FF7857 /* platform_null.c */,
 			);
 			path = drivers;
 			sourceTree = "<group>";
@@ -1187,14 +1177,11 @@
 		05A8C78E20DB72F100FF7857 /* drivers_shader */ = {
 			isa = PBXGroup;
 			children = (
-				05A8C79920DB72F100FF7857 /* glslang_util.c */,
 				05A8C79920DB72F100FF7857 /* glslang_util_cxx.cpp */,
 				05A8C79020DB72F100FF7857 /* glslang_util.h */,
-				05A8C79020DB72F100FF7857 /* glslang_util_cxx.h */,
 				05A8C79B20DB72F100FF7857 /* shader_gl_cg.c */,
 				05A8C79120DB72F100FF7857 /* shader_glsl.c */,
 				05A8C79720DB72F100FF7857 /* shader_glsl.h */,
-				05A8C79820DB72F100FF7857 /* shader_null.c */,
 				05A8C79520DB72F100FF7857 /* shader_vulkan.cpp */,
 				05A8C79C20DB72F100FF7857 /* shader_vulkan.h */,
 				05A8C79420DB72F100FF7857 /* slang_process.cpp */,
@@ -1296,7 +1283,6 @@
 			children = (
 				05C5D54220E3DD0900654EE4 /* cocoa_input.c */,
 				05C5D53820E3DD0900654EE4 /* cocoa_input.h */,
-				05C5D53720E3DD0900654EE4 /* nullinput.c */,
 				05C5D54120E3DD0900654EE4 /* sdl_input.c */,
 			);
 			path = drivers;
@@ -1344,7 +1330,6 @@
 			isa = PBXGroup;
 			children = (
 				05C5D56F20E3DD0900654EE4 /* btstack_hid.c */,
-				05C5D57020E3DD0900654EE4 /* null_hid.c */,
 				05C5D57320E3DD0900654EE4 /* iohidmanager_hid.c */,
 			);
 			path = drivers_hid;
@@ -1381,7 +1366,6 @@
 			children = (
 				05C5D59820E3DD0A00654EE4 /* hid_joypad.c */,
 				05C5D58D20E3DD0900654EE4 /* mfi_joypad.m */,
-				05C5D58820E3DD0900654EE4 /* null_joypad.c */,
 				05C5D58720E3DD0900654EE4 /* sdl_joypad.c */,
 			);
 			path = drivers_joypad;
@@ -1565,13 +1549,14 @@
 		29B97313FDCFA39411CA2CEA /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastUpgradeCheck = 0940;
+				LastUpgradeCheck = 1110;
 			};
 			buildConfigurationList = C01FCF4E08A954540054247B /* Build configuration list for PBXProject "RetroArch_Metal" */;
 			compatibilityVersion = "Xcode 9.3";
 			developmentRegion = English;
 			hasScannedForEncodings = 1;
 			knownRegions = (
+				English,
 				en,
 			);
 			mainGroup = 29B97314FDCFA39411CA2CEA /* RetroArch */;
@@ -1691,10 +1676,12 @@
 			baseConfigurationReference = A90207489289602F593626D5 /* QTConfig.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				CODE_SIGN_IDENTITY = "Developer ID Application";
+				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
 				COPY_PHASE_STRIP = NO;
+				DEVELOPMENT_TEAM = ZE9XE938Z2;
 				GCC_DYNAMIC_NO_PIC = NO;
-				GCC_ENABLE_FIX_AND_CONTINUE = YES;
 				GCC_MODEL_TUNING = G5;
 				GCC_OPTIMIZATION_LEVEL = 0;
 				INSTALL_PATH = "@rpath";
@@ -1709,6 +1696,7 @@
 					"-UHAVE_GLSL",
 					"-UHAVE_OPENGL",
 				);
+				OTHER_CODE_SIGN_FLAGS = "--deep --timestamp";
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(OTHER_CFLAGS)",
 					"-UHAVE_GLSL",
@@ -1717,6 +1705,7 @@
 				PRECOMPS_INCLUDE_HEADERS_FROM_BUILT_PRODUCTS_DIR = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = libretro.RetroArch;
 				PRODUCT_NAME = RetroArch;
+				PROVISIONING_PROFILE_SPECIFIER = "";
 			};
 			name = Debug;
 		};
@@ -1725,8 +1714,12 @@
 			baseConfigurationReference = A90207489289602F593626D5 /* QTConfig.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				CODE_SIGN_IDENTITY = "Developer ID Application";
+				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = ZE9XE938Z2;
+				ENABLE_HARDENED_RUNTIME = YES;
 				GCC_MODEL_TUNING = G5;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				INSTALL_PATH = "@rpath";
@@ -1740,6 +1733,7 @@
 					"-UHAVE_GLSL",
 					"-UHAVE_OPENGL",
 				);
+				OTHER_CODE_SIGN_FLAGS = "--deep --timestamp";
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(OTHER_CFLAGS)",
 					"-UHAVE_GLSL",
@@ -1748,6 +1742,7 @@
 				PRECOMPS_INCLUDE_HEADERS_FROM_BUILT_PRODUCTS_DIR = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = libretro.RetroArch;
 				PRODUCT_NAME = RetroArch;
+				PROVISIONING_PROFILE_SPECIFIER = "";
 			};
 			name = Release;
 		};
@@ -1756,10 +1751,13 @@
 			baseConfigurationReference = 05422E5C2140CFC500F09961 /* Metal.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				CODE_SIGN_IDENTITY = "Developer ID Application";
+				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
 				COPY_PHASE_STRIP = NO;
+				DEVELOPMENT_TEAM = ZE9XE938Z2;
+				ENABLE_HARDENED_RUNTIME = YES;
 				GCC_DYNAMIC_NO_PIC = NO;
-				GCC_ENABLE_FIX_AND_CONTINUE = YES;
 				GCC_MODEL_TUNING = G5;
 				GCC_OPTIMIZATION_LEVEL = 0;
 				INSTALL_PATH = "$(HOME)/Applications";
@@ -1771,6 +1769,7 @@
 					"-UHAVE_GLSL",
 					"-UHAVE_OPENGL",
 				);
+				OTHER_CODE_SIGN_FLAGS = "--deep --timestamp";
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(OTHER_CFLAGS)",
 					"-UHAVE_OPENGL",
@@ -1779,6 +1778,7 @@
 				PRECOMPS_INCLUDE_HEADERS_FROM_BUILT_PRODUCTS_DIR = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = "libretro.${PRODUCT_NAME:rfc1034identifier}";
 				PRODUCT_NAME = RetroArch;
+				PROVISIONING_PROFILE_SPECIFIER = "";
 			};
 			name = Debug;
 		};
@@ -1787,8 +1787,12 @@
 			baseConfigurationReference = 05422E5C2140CFC500F09961 /* Metal.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				CODE_SIGN_IDENTITY = "Developer ID Application";
+				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = ZE9XE938Z2;
+				ENABLE_HARDENED_RUNTIME = YES;
 				GCC_MODEL_TUNING = G5;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				INSTALL_PATH = "$(HOME)/Applications";
@@ -1799,6 +1803,7 @@
 					"-UHAVE_GLSL",
 					"-UHAVE_OPENGL",
 				);
+				OTHER_CODE_SIGN_FLAGS = "--deep --timestamp";
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(OTHER_CFLAGS)",
 					"-UHAVE_OPENGL",
@@ -1807,6 +1812,7 @@
 				PRECOMPS_INCLUDE_HEADERS_FROM_BUILT_PRODUCTS_DIR = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = "libretro.${PRODUCT_NAME:rfc1034identifier}";
 				PRODUCT_NAME = RetroArch;
+				PROVISIONING_PROFILE_SPECIFIER = "";
 			};
 			name = Release;
 		};
@@ -1814,6 +1820,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 05D7753120A55D2700646447 /* BaseConfig.xcconfig */;
 			buildSettings = {
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
 				CLANG_CXX_LIBRARY = "libc++";
 				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
 				CLANG_WARN_BOOL_CONVERSION = YES;
@@ -1863,7 +1870,6 @@
 				);
 				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				ONLY_ACTIVE_ARCH = YES;
-				PREBINDING = NO;
 				SDKROOT = macosx;
 			};
 			name = Debug;
@@ -1872,6 +1878,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 05D7753120A55D2700646447 /* BaseConfig.xcconfig */;
 			buildSettings = {
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
 				CLANG_CXX_LIBRARY = "libc++";
 				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
 				CLANG_WARN_BOOL_CONVERSION = YES;
@@ -1918,7 +1925,6 @@
 					"$(DEPS_DIR)/glslang/glslang/glslang/OSDependent/Unix",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 10.13;
-				PREBINDING = NO;
 				SDKROOT = macosx;
 			};
 			name = Release;

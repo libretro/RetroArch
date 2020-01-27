@@ -360,7 +360,7 @@ size_t libretro_videoprocessor_retro_get_memory_size(unsigned id);
 
 #endif
 
-#ifdef HAVE_EASTEREGG
+#ifdef HAVE_GONG
 /* Internal gong core. */
 
 void libretro_gong_retro_init(void);

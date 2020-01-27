@@ -31,25 +31,31 @@ RETRO_BEGIN_DECLS
  * of a CD (following the ISO-9660 directory structure definition)
  */
 
+typedef struct cdfs_track_t
+{
+   intfstream_t* stream;
+   unsigned int stream_sector_size;
+   unsigned int stream_sector_header_size;
+   unsigned int first_sector_offset;
+} cdfs_track_t;
+
 typedef struct cdfs_file_t
 {
    int first_sector;
    int current_sector;
    unsigned int current_sector_offset;
    int sector_buffer_valid;
-   unsigned int stream_sector_size;
-   unsigned int stream_sector_header_size;
    unsigned int size;
    unsigned int pos;
-   intfstream_t* stream;
    uint8_t sector_buffer[2048];
+   struct cdfs_track_t* track;
 } cdfs_file_t;
 
 /* opens the specified file within the CD or virtual CD.
  * if path is NULL, will open the raw CD (useful for reading CD without having to worry about sector sizes,
  * headers, or checksum data)
  */
-int cdfs_open_file(cdfs_file_t* file, intfstream_t* stream, const char* path);
+int cdfs_open_file(cdfs_file_t* file, cdfs_track_t* stream, const char* path);
 
 void cdfs_close_file(cdfs_file_t* file);
 
@@ -60,6 +66,8 @@ int64_t cdfs_get_size(cdfs_file_t* file);
 int64_t cdfs_tell(cdfs_file_t* file);
 
 int64_t cdfs_seek(cdfs_file_t* file, int64_t offset, int whence);
+
+void cdfs_seek_sector(cdfs_file_t* file, unsigned int sector);
 
 /* opens the specified track in a CD or virtual CD file - the resulting stream should be passed to
  * cdfs_open_file to get access to a file within the CD.
@@ -75,11 +83,11 @@ int64_t cdfs_seek(cdfs_file_t* file, int64_t offset, int whence);
  *   MODE1/2048 - untested
  *   MODE2/2336 - untested
  */
-intfstream_t* cdfs_open_track(const char* path, unsigned int track_index);
+cdfs_track_t* cdfs_open_track(const char* path, unsigned int track_index);
 
 /* opens the first data track in a CD or virtual CD file. see cdfs_open_track for supported file formats
  */
-intfstream_t* cdfs_open_data_track(const char* path);
+cdfs_track_t* cdfs_open_data_track(const char* path);
 
 /* opens a raw track file for a CD or virtual CD.
  *
@@ -89,7 +97,10 @@ intfstream_t* cdfs_open_data_track(const char* path);
  *   bin     - path will point to the bin file
  *   iso     - path will point to the iso file
  */
-intfstream_t* cdfs_open_raw_track(const char* path);
+cdfs_track_t* cdfs_open_raw_track(const char* path);
+
+/* closes the CD or virtual CD track and frees the associated memory */
+void cdfs_close_track(cdfs_track_t* track);
 
 RETRO_END_DECLS
 

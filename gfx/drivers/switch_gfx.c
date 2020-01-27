@@ -229,8 +229,8 @@ static bool switch_frame(void *data, const void *frame,
          &video_info->osd_stat_params;
 
       if (osd_params)
-         font_driver_render_msg(video_info, NULL, video_info->stat_text,
-               (const struct font_params*)&video_info->osd_stat_params);
+         font_driver_render_msg(sw, video_info, video_info->stat_text,
+               (const struct font_params*)&video_info->osd_stat_params, NULL);
    }
 #endif
 

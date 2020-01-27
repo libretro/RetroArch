@@ -39,7 +39,7 @@
 #include <windows.h>
 #endif
 
-#if defined(__CELLOS_LV2__)
+#if defined(__CELLOS_LV2__) || ( defined(__OpenBSD__) && defined(__powerpc__) )
 #ifndef _PPU_INTRINSICS_H
 #include <ppu_intrinsics.h>
 #endif
@@ -348,12 +348,12 @@ static unsigned char check_arm_cpu_feature(const char* feature)
    if (!fp)
       return 0;
 
-   while (filestream_gets(fp, line, sizeof(line)) != NULL)
+   while (filestream_gets(fp, line, sizeof(line)))
    {
       if (strncmp(line, "Features\t: ", 11))
          continue;
 
-      if (strstr(line + 11, feature) != NULL)
+      if (strstr(line + 11, feature))
          status = 1;
 
       break;

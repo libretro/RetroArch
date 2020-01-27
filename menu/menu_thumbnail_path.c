@@ -1,7 +1,7 @@
 /* Copyright  (C) 2010-2019 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
- * The following license statement only applies to this file (runtime_file.c).
+ * The following license statement only applies to this file (menu_thumbnail_path.c).
  * ---------------------------------------------------------------------------------------
  *
  * Permission is hereby granted, free of charge,
@@ -469,6 +469,9 @@ bool menu_thumbnail_set_content_playlist(menu_thumbnail_path_data_t *path_data, 
    
    /* Read playlist values */
    playlist_get_index(playlist, idx, &entry);
+
+   if (!entry)
+      return false;
 
    content_path  = entry->path;
    content_label = entry->label;

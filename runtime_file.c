@@ -264,8 +264,12 @@ end:
 /* Initialise runtime log, loading current parameters
  * if log file exists. Returned object must be free()'d.
  * Returns NULL if content_path and/or core_path are invalid */
-runtime_log_t *runtime_log_init(const char *content_path,
-      const char *core_path, bool log_per_core)
+runtime_log_t *runtime_log_init(
+      const char *content_path,
+      const char *core_path,
+      const char *dir_runtime_log,
+      const char *dir_playlist,
+      bool log_per_core)
 {
    unsigned i;
    char content_name[PATH_MAX_LENGTH];
@@ -273,7 +277,6 @@ runtime_log_t *runtime_log_init(const char *content_path,
    char log_file_dir[PATH_MAX_LENGTH];
    char log_file_path[PATH_MAX_LENGTH];
    char tmp_buf[PATH_MAX_LENGTH];
-   settings_t *settings           = config_get_ptr();
    core_info_list_t *core_info    = NULL;
    runtime_log_t *runtime_log     = NULL;
    const char *core_path_basename = NULL;
@@ -284,12 +287,8 @@ runtime_log_t *runtime_log_init(const char *content_path,
    log_file_path[0]               = '\0';
    tmp_buf[0]                     = '\0';
    
-   /* Error checking */
-   if (!settings)
-      return NULL;
-   
-   if (  string_is_empty(settings->paths.directory_runtime_log) && 
-         string_is_empty(settings->paths.directory_playlist))
+   if (  string_is_empty(dir_runtime_log) && 
+         string_is_empty(dir_playlist))
    {
       RARCH_ERR("Runtime log directory is undefined - cannot save"
             " runtime log files.\n");
@@ -334,19 +333,18 @@ runtime_log_t *runtime_log_init(const char *content_path,
       return NULL;
    
    /* Get runtime log directory */
-   if (string_is_empty(settings->paths.directory_runtime_log))
+   if (string_is_empty(dir_runtime_log))
    {
       /* If 'custom' runtime log path is undefined,
        * use default 'playlists/logs' directory... */
       fill_pathname_join(
             tmp_buf,
-            settings->paths.directory_playlist,
+            dir_playlist,
             "logs",
             sizeof(tmp_buf));
    }
    else
-      strlcpy(tmp_buf,
-            settings->paths.directory_runtime_log, sizeof(tmp_buf));
+      strlcpy(tmp_buf, dir_runtime_log, sizeof(tmp_buf));
    
    if (string_is_empty(tmp_buf))
       return NULL;
@@ -411,7 +409,7 @@ runtime_log_t *runtime_log_init(const char *content_path,
    
    /* Build final log file path */
    fill_pathname_join(log_file_path, log_file_dir, content_name, sizeof(log_file_path));
-   strlcat(log_file_path, ".lrtl", sizeof(log_file_path));
+   strlcat(log_file_path, file_path_str(FILE_PATH_RUNTIME_EXTENSION), sizeof(log_file_path));
    
    if (string_is_empty(log_file_path))
       return NULL;
@@ -694,14 +692,10 @@ static void last_played_strftime(runtime_log_t *runtime_log, char *str, size_t l
 void runtime_log_get_last_played_str(runtime_log_t *runtime_log,
       char *str, size_t len, enum playlist_sublabel_last_played_style_type timedate_style)
 {
-   settings_t *settings = config_get_ptr();
    int n                = 0;
    char tmp[64];
 
    tmp[0] = '\0';
-
-   if (!settings)
-      return;
 
    if (runtime_log)
    {
@@ -949,13 +943,14 @@ void runtime_log_convert_usec2hms(retro_time_t usec,
  * contents of associated log file */
 void runtime_update_playlist(playlist_t *playlist, size_t idx)
 {
+   char runtime_str[64];
+   char last_played_str[64];
+   enum playlist_sublabel_last_played_style_type 
+      timedate_style                  = PLAYLIST_LAST_PLAYED_STYLE_YMD_HMS;
    settings_t *settings               = config_get_ptr();
    runtime_log_t *runtime_log         = NULL;
    const struct playlist_entry *entry = NULL;
    struct playlist_entry update_entry = {0};
-   enum playlist_sublabel_last_played_style_type timedate_style;
-   char runtime_str[64];
-   char last_played_str[64];
    
    /* Sanity check */
    if (!playlist || !settings)
@@ -971,9 +966,8 @@ void runtime_update_playlist(playlist_t *playlist, size_t idx)
    /* Get current last played formatting type
     * > Have to include a 'HAVE_MENU' check here... */
 #ifdef HAVE_MENU
-   timedate_style = (enum playlist_sublabel_last_played_style_type)settings->uints.playlist_sublabel_last_played_style;
-#else
-   timedate_style = PLAYLIST_LAST_PLAYED_STYLE_YMD_HMS;
+   timedate_style               = (enum playlist_sublabel_last_played_style_type)
+      settings->uints.playlist_sublabel_last_played_style;
 #endif
 
    /* 'Attach' runtime/last played strings */
@@ -986,7 +980,11 @@ void runtime_update_playlist(playlist_t *playlist, size_t idx)
    playlist_get_index(playlist, idx, &entry);
    
    /* Attempt to open log file */
-   runtime_log = runtime_log_init(entry->path, entry->core_path,
+   runtime_log = runtime_log_init(
+         entry->path,
+         entry->core_path,
+         settings->paths.directory_runtime_log,
+         settings->paths.directory_playlist,
          (settings->uints.playlist_sublabel_runtime_type == PLAYLIST_RUNTIME_PER_CORE));
    
    if (runtime_log)
@@ -1015,6 +1013,7 @@ void runtime_update_playlist(playlist_t *playlist, size_t idx)
       free(runtime_log);
    }
    
+#ifdef HAVE_MENU
    /* Ozone requires runtime/last played strings to be
     * populated even when no runtime is recorded */
    if (string_is_equal(settings->arrays.menu_driver, "ozone"))
@@ -1025,6 +1024,7 @@ void runtime_update_playlist(playlist_t *playlist, size_t idx)
          runtime_log_get_last_played_str(NULL, last_played_str, sizeof(last_played_str), timedate_style);
       }
    }
+#endif
    
    /* Update playlist */
    playlist_update_runtime(playlist, idx, &update_entry, false);

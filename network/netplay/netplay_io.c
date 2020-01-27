@@ -31,6 +31,7 @@
 
 #include "../../discord/discord.h"
 
+/* TODO/FIXME - global */
 extern bool discord_is_inited;
 
 static void handle_play_spectate(netplay_t *netplay, uint32_t client_num,
@@ -487,9 +488,8 @@ bool netplay_cmd_mode(netplay_t *netplay,
    enum rarch_netplay_connection_mode mode)
 {
    uint32_t cmd, device;
-   uint32_t payloadBuf = 0, *payload = NULL;
-   uint8_t share_mode;
-   settings_t *settings = config_get_ptr();
+   uint32_t payload_buf = 0, *payload    = NULL;
+   uint8_t share_mode                    = 0;
    struct netplay_connection *connection = NULL;
 
    if (!netplay->is_server)
@@ -502,25 +502,31 @@ bool netplay_cmd_mode(netplay_t *netplay,
          break;
 
       case NETPLAY_CONNECTION_SLAVE:
-         payloadBuf = NETPLAY_CMD_PLAY_BIT_SLAVE;
+         payload_buf = NETPLAY_CMD_PLAY_BIT_SLAVE;
          /* no break */
 
       case NETPLAY_CONNECTION_PLAYING:
-         payload = &payloadBuf;
-
-         /* Add a share mode if requested */
-         share_mode = netplay_settings_share_mode();
-         payloadBuf |= ((uint32_t) share_mode) << 16;
-
-         /* Request devices */
-         for (device = 0; device < MAX_INPUT_DEVICES; device++)
          {
-            if (settings->bools.netplay_request_devices[device])
-               payloadBuf |= 1<<device;
-         }
+            settings_t *settings = config_get_ptr();
+            payload = &payload_buf;
 
-         payloadBuf = htonl(payloadBuf);
-         cmd = NETPLAY_CMD_PLAY;
+            /* Add a share mode if requested */
+            share_mode = netplay_settings_share_mode(
+                  settings->uints.netplay_share_digital,
+                  settings->uints.netplay_share_analog
+                  );
+            payload_buf |= ((uint32_t) share_mode) << 16;
+
+            /* Request devices */
+            for (device = 0; device < MAX_INPUT_DEVICES; device++)
+            {
+               if (settings->bools.netplay_request_devices[device])
+                  payload_buf |= 1<<device;
+            }
+
+            payload_buf = htonl(payload_buf);
+            cmd         = NETPLAY_CMD_PLAY;
+         }
          break;
 
       default:
@@ -531,13 +537,10 @@ bool netplay_cmd_mode(netplay_t *netplay,
    {
       handle_play_spectate(netplay, 0, NULL, cmd, payload ? sizeof(uint32_t) : 0, payload);
       return true;
+   }
 
-   }
-   else
-   {
-      return netplay_send_raw_cmd(netplay, connection, cmd, payload,
-            payload ? sizeof(uint32_t) : 0);
-   }
+   return netplay_send_raw_cmd(netplay, connection, cmd, payload,
+         payload ? sizeof(uint32_t) : 0);
 }
 
 /**
@@ -685,9 +688,7 @@ static void handle_play_spectate(netplay_t *netplay, uint32_t client_num,
 
          /* Mark them as not playing anymore */
          if (connection)
-         {
             connection->mode = NETPLAY_CONNECTION_SPECTATING;
-         }
          else
          {
             netplay->self_devices = 0;
@@ -854,10 +855,8 @@ static void handle_play_spectate(netplay_t *netplay, uint32_t client_num,
 
          /* Mark them as playing */
          if (connection)
-         {
             connection->mode =
                   slave ? NETPLAY_CONNECTION_SLAVE : NETPLAY_CONNECTION_PLAYING;
-         }
          else
          {
             netplay->self_devices = devices;
@@ -1106,11 +1105,9 @@ static bool netplay_get_cmd(netplay_t *netplay,
 
             frame = ntohl(frame);
 
+            /* We already had this, so ignore the new transmission */
             if (frame < netplay->server_frame_count)
-            {
-               /* We already had this, so ignore the new transmission */
                break;
-            }
 
             if (frame != netplay->server_frame_count)
             {
@@ -1194,12 +1191,11 @@ static bool netplay_get_cmd(netplay_t *netplay,
             break;
          }
 
-         if (connection->mode == NETPLAY_CONNECTION_PLAYING
+         /* They were obviously confused */
+         if (
+                  connection->mode == NETPLAY_CONNECTION_PLAYING
                || connection->mode == NETPLAY_CONNECTION_SLAVE)
-         {
-            /* They were obviously confused */
             return netplay_cmd_nak(netplay, connection);
-         }
 
          client_num = (unsigned)(connection - netplay->connections + 1);
 
@@ -1535,11 +1531,9 @@ static bool netplay_get_cmd(netplay_t *netplay,
                tmp_ptr = PREV_PTR(tmp_ptr);
             } while (tmp_ptr != netplay->run_ptr);
 
+            /* Oh well, we got rid of it! */
             if (!found)
-            {
-               /* Oh well, we got rid of it! */
                break;
-            }
 
             if (buffer[0] <= netplay->other_frame_count)
             {
@@ -1548,11 +1542,9 @@ static bool netplay_get_cmd(netplay_t *netplay,
                uint32_t local_crc = netplay_delta_frame_crc(
                      netplay, &netplay->buffer[tmp_ptr]);
 
+               /* Problem! */
                if (buffer[1] != local_crc)
-               {
-                  /* Problem! */
                   netplay_cmd_request_savestate(netplay);
-               }
             }
             else
             {
@@ -1587,16 +1579,14 @@ static bool netplay_get_cmd(netplay_t *netplay,
             {
                if (!netplay->is_replay)
                {
-                  netplay->is_replay = true;
-                  netplay->replay_ptr = netplay->run_ptr;
+                  netplay->is_replay          = true;
+                  netplay->replay_ptr         = netplay->run_ptr;
                   netplay->replay_frame_count = netplay->run_frame_count;
                   netplay_wait_and_init_serialization(netplay);
-                  netplay->is_replay = false;
+                  netplay->is_replay         = false;
                }
                else
-               {
                   netplay_wait_and_init_serialization(netplay);
-               }
             }
 
             /* Only players may load states */

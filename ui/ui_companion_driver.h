@@ -159,7 +159,6 @@ extern ui_application_t      ui_application_cocoa;
 extern ui_application_t      ui_application_qt;
 extern ui_application_t      ui_application_win32;
 
-extern ui_companion_driver_t ui_companion_null;
 extern ui_companion_driver_t ui_companion_cocoa;
 extern ui_companion_driver_t ui_companion_cocoatouch;
 extern ui_companion_driver_t ui_companion_qt;

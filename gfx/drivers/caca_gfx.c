@@ -160,7 +160,7 @@ static bool caca_gfx_frame(void *data, const void *frame,
 #endif
 
    if (msg)
-      font_driver_render_msg(video_info, NULL, msg, NULL);
+      font_driver_render_msg(data, video_info, msg, NULL, NULL);
 
    if (draw)
    {
@@ -281,14 +281,6 @@ static void caca_set_texture_frame(void *data,
       memcpy(caca_menu_frame, frame, pitch * height);
 }
 
-static void caca_set_osd_msg(void *data,
-      video_frame_info_t *video_info,
-      const char *msg,
-      const void *params, void *font)
-{
-   font_driver_render_msg(video_info, font, msg, (const struct font_params*)params);
-}
-
 static const video_poke_interface_t caca_poke_interface = {
    NULL, /* get_flags */
    NULL,
@@ -305,7 +297,7 @@ static const video_poke_interface_t caca_poke_interface = {
    NULL,
    caca_set_texture_frame,
    NULL,
-   caca_set_osd_msg,
+   font_driver_render_msg,
    NULL,                   /* show_mouse */
    NULL,                   /* grab_mouse_toggle */
    NULL,                   /* get_current_shader */

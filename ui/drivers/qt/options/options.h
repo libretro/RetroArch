@@ -559,7 +559,7 @@ static inline QWidget *create_widget(enum menu_displaylist_ctl_state name)
    FormLayout          *layout = new FormLayout;
    file_list_t           *list = (file_list_t*)calloc(1, sizeof(*list));
 
-   menu_displaylist_build_list(list, name);
+   menu_displaylist_build_list(list, name, true);
 
    for (i = 0; i < list->size; i++)
    {

@@ -134,7 +134,6 @@ extern frontend_ctx_driver_t frontend_ctx_emscripten;
 extern frontend_ctx_driver_t frontend_ctx_dos;
 extern frontend_ctx_driver_t frontend_ctx_switch;
 extern frontend_ctx_driver_t frontend_ctx_orbis;
-extern frontend_ctx_driver_t frontend_ctx_null;
 
 /**
  * frontend_ctx_find_driver:
@@ -172,6 +171,9 @@ void frontend_driver_init_first(void *args);
 void frontend_driver_free(void);
 
 enum frontend_architecture frontend_driver_get_cpu_architecture(void);
+
+void frontend_driver_get_cpu_architecture_str(
+      char *frontend_architecture, size_t size);
 
 environment_get_t frontend_driver_environment_get_ptr(void);
 

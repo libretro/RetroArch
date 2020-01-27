@@ -237,26 +237,28 @@ static bool create_softfilter_graph(rarch_softfilter_t *filt,
    }
 
 #ifdef HAVE_THREADS
-   filt->thread_data = (struct filter_thread_data*)
-      calloc(threads, sizeof(*filt->thread_data));
-   if (!filt->thread_data)
-      return false;
+   if(filt->threads>1){
+      filt->thread_data = (struct filter_thread_data*)
+         calloc(threads, sizeof(*filt->thread_data));
+      if (!filt->thread_data)
+         return false;
 
-   for (i = 0; i < threads; i++)
-   {
-      filt->thread_data[i].userdata = filt->impl_data;
-      filt->thread_data[i].done = true;
+      for (i = 0; i < threads; i++)
+      {
+         filt->thread_data[i].userdata = filt->impl_data;
+         filt->thread_data[i].done = true;
 
-      filt->thread_data[i].lock = slock_new();
-      if (!filt->thread_data[i].lock)
-         return false;
-      filt->thread_data[i].cond = scond_new();
-      if (!filt->thread_data[i].cond)
-         return false;
-      filt->thread_data[i].thread = sthread_create(
-            filter_thread_loop, &filt->thread_data[i]);
-      if (!filt->thread_data[i].thread)
-         return false;
+         filt->thread_data[i].lock = slock_new();
+         if (!filt->thread_data[i].lock)
+            return false;
+         filt->thread_data[i].cond = scond_new();
+         if (!filt->thread_data[i].cond)
+            return false;
+         filt->thread_data[i].thread = sthread_create(
+               filter_thread_loop, &filt->thread_data[i]);
+         if (!filt->thread_data[i].thread)
+            return false;
+      }
    }
 #endif
 
@@ -475,19 +477,21 @@ void rarch_softfilter_free(rarch_softfilter_t *filt)
 #endif
 
 #ifdef HAVE_THREADS
-   for (i = 0; i < filt->threads; i++)
-   {
-      if (!filt->thread_data[i].thread)
-         continue;
-      slock_lock(filt->thread_data[i].lock);
-      filt->thread_data[i].die = true;
-      scond_signal(filt->thread_data[i].cond);
-      slock_unlock(filt->thread_data[i].lock);
-      sthread_join(filt->thread_data[i].thread);
-      slock_free(filt->thread_data[i].lock);
-      scond_free(filt->thread_data[i].cond);
+   if(filt->threads>1){
+      for (i = 0; i < filt->threads; i++)
+      {
+         if (!filt->thread_data[i].thread)
+            continue;
+         slock_lock(filt->thread_data[i].lock);
+         filt->thread_data[i].die = true;
+         scond_signal(filt->thread_data[i].cond);
+         slock_unlock(filt->thread_data[i].lock);
+         sthread_join(filt->thread_data[i].thread);
+         slock_free(filt->thread_data[i].lock);
+         scond_free(filt->thread_data[i].cond);
+      }
+      free(filt->thread_data);
    }
-   free(filt->thread_data);
 #endif
 
    if (filt->conf)
@@ -533,29 +537,34 @@ void rarch_softfilter_process(rarch_softfilter_t *filt,
             output, output_stride, input, width, height, input_stride);
 
 #ifdef HAVE_THREADS
-   /* Fire off workers */
-   for (i = 0; i < filt->threads; i++)
-   {
+   if(filt->threads>1){
+      /* Fire off workers */
+      for (i = 0; i < filt->threads; i++)
+      {
 #if 0
-      RARCH_LOG("Firing off filter thread %u ...\n", i);
+         RARCH_LOG("Firing off filter thread %u ...\n", i);
 #endif
-      filt->thread_data[i].packet = &filt->packets[i];
-      slock_lock(filt->thread_data[i].lock);
-      filt->thread_data[i].done = false;
-      scond_signal(filt->thread_data[i].cond);
-      slock_unlock(filt->thread_data[i].lock);
-   }
+         filt->thread_data[i].packet = &filt->packets[i];
+         slock_lock(filt->thread_data[i].lock);
+         filt->thread_data[i].done = false;
+         scond_signal(filt->thread_data[i].cond);
+         slock_unlock(filt->thread_data[i].lock);
+      }
 
-   /* Wait for workers */
-   for (i = 0; i < filt->threads; i++)
-   {
+      /* Wait for workers */
+      for (i = 0; i < filt->threads; i++)
+      {
 #if 0
-      RARCH_LOG("Waiting for filter thread %u ...\n", i);
+         RARCH_LOG("Waiting for filter thread %u ...\n", i);
 #endif
-      slock_lock(filt->thread_data[i].lock);
-      while (!filt->thread_data[i].done)
-         scond_wait(filt->thread_data[i].cond, filt->thread_data[i].lock);
-      slock_unlock(filt->thread_data[i].lock);
+         slock_lock(filt->thread_data[i].lock);
+         while (!filt->thread_data[i].done)
+            scond_wait(filt->thread_data[i].cond, filt->thread_data[i].lock);
+         slock_unlock(filt->thread_data[i].lock);
+      }
+   } else {
+      for (i = 0; i < filt->threads; i++)
+         filt->packets[i].work(filt->impl_data, filt->packets[i].thread_data);
    }
 #else
    for (i = 0; i < filt->threads; i++)

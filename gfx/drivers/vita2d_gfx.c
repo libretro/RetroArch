@@ -26,6 +26,9 @@
 
 #ifdef HAVE_MENU
 #include "../../menu/menu_driver.h"
+#ifdef HAVE_MENU_WIDGETS
+#include "../../menu/widgets/menu_widgets.h"
+#endif
 #endif
 
 #include "../font_driver.h"
@@ -210,11 +213,6 @@ static bool vita2d_gfx_frame(void *data, const void *frame,
       }
    }
 
-#ifdef HAVE_OVERLAY
-   if (vita->overlay_enable)
-      vita2d_render_overlay(vita);
-#endif
-
    if (vita->menu.active)
    {
 #ifdef HAVE_MENU
@@ -255,14 +253,21 @@ static bool vita2d_gfx_frame(void *data, const void *frame,
          &video_info->osd_stat_params;
 
       if (osd_params)
-      {
-         font_driver_render_msg(video_info, NULL, video_info->stat_text,
-               (const struct font_params*)&video_info->osd_stat_params);
-      }
+         font_driver_render_msg(vita, video_info, video_info->stat_text,
+               (const struct font_params*)&video_info->osd_stat_params, NULL);
    }
 
+   #ifdef HAVE_OVERLAY
+   if (vita->overlay_enable)
+      vita2d_render_overlay(vita);
+   #endif
+
+   #ifdef HAVE_MENU_WIDGETS
+      menu_widgets_frame(video_info);
+   #endif
+
    if(!string_is_empty(msg))
-      font_driver_render_msg(video_info, NULL, msg, NULL);
+      font_driver_render_msg(vita, video_info, msg, NULL, NULL);
 
    vita2d_end_drawing();
    vita2d_swap_buffers();
@@ -447,7 +452,7 @@ static void vita2d_gfx_set_viewport(void *data, unsigned viewport_width,
    int x                    = 0;
    int y                    = 0;
    float device_aspect      = (float)viewport_width / viewport_height;
-   struct video_ortho ortho = {0, 1, 1, 0, -1, 1};
+   struct video_ortho ortho = {0, 1, 0, 1, -1, 1};
    settings_t *settings     = config_get_ptr();
    vita_video_t *vita       = (vita_video_t*)data;
 
@@ -518,6 +523,7 @@ static void vita2d_gfx_set_viewport(void *data, unsigned viewport_width,
       vita->vp.height = viewport_height;
    }
 
+   vita2d_set_viewport(vita->vp.x, vita->vp.y, vita->vp.width, vita->vp.height);
    vita2d_set_projection(vita, &ortho, allow_rotate);
 
    /* Set last backbuffer viewport. */
@@ -543,12 +549,15 @@ static void vita2d_gfx_set_rotation(void *data,
       unsigned rotation)
 {
   vita_video_t *vita = (vita_video_t*)data;
+  struct video_ortho ortho = {0, 1, 0, 1, -1, 1};
 
   if (!vita)
      return;
 
   vita->rotation = rotation;
   vita->should_resize = true;
+  vita2d_set_projection(vita, &ortho, true);
+
 }
 
 static void vita2d_gfx_viewport_info(void *data,
@@ -714,14 +723,6 @@ static void vita_unload_texture(void *data, uintptr_t handle)
    //free(texture);
 }
 
-static void vita_set_osd_msg(void *data,
-      video_frame_info_t *video_info,
-      const char *msg,
-      const void *params, void *font)
-{
-   font_driver_render_msg(video_info, font, msg, params);
-}
-
 static bool vita_get_current_sw_framebuffer(void *data,
       struct retro_framebuffer *framebuffer)
 {
@@ -779,7 +780,7 @@ static const video_poke_interface_t vita_poke_interface = {
    vita_apply_state_changes,
    vita_set_texture_frame,
    vita_set_texture_enable,
-   vita_set_osd_msg,
+   font_driver_render_msg,
    NULL,
    NULL,
    NULL,
@@ -793,6 +794,14 @@ static void vita2d_gfx_get_poke_interface(void *data,
    (void)data;
    *iface = &vita_poke_interface;
 }
+
+#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+static bool vita2d_gfx_menu_widgets_enabled(void *data)
+{
+   (void)data;
+   return true;
+}
+#endif
 
 #ifdef HAVE_OVERLAY
 static void vita2d_overlay_tex_geom(void *data, unsigned image, float x, float y, float w, float h);
@@ -954,4 +963,8 @@ video_driver_t video_vita2d = {
   NULL,
 #endif
    vita2d_gfx_get_poke_interface,
+   NULL,
+#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+   vita2d_gfx_menu_widgets_enabled
+#endif
 };

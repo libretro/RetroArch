@@ -140,7 +140,6 @@ QWidget *VideoPage::widget()
    miscGroup->add(MENU_ENUM_LABEL_VIDEO_THREADED);
    miscGroup->add(MENU_ENUM_LABEL_VIDEO_BLACK_FRAME_INSERTION);
    miscGroup->add(MENU_ENUM_LABEL_VIDEO_GPU_SCREENSHOT);
-   miscGroup->add(MENU_ENUM_LABEL_VIDEO_CROP_OVERSCAN);
    miscGroup->add(MENU_ENUM_LABEL_VIDEO_SMOOTH);
    miscGroup->add(MENU_ENUM_LABEL_VIDEO_SHADER_DELAY);
 
@@ -151,6 +150,8 @@ QWidget *VideoPage::widget()
 
    modeLayout->addWidget(fullscreenGroup);
    modeLayout->addWidget(windowedGroup);
+
+   aspectGroup->add(MENU_ENUM_LABEL_VIDEO_CROP_OVERSCAN);
 
    outputScalingLayout->addWidget(outputGroup);
    outputScalingLayout->addWidget(aspectGroup);

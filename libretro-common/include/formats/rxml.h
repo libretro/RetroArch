@@ -64,4 +64,6 @@ struct rxml_node *rxml_root_node(rxml_document_t *doc);
 
 const char *rxml_node_attrib(struct rxml_node *node, const char *attrib);
 
+RETRO_END_DECLS
+
 #endif

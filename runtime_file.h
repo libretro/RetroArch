@@ -63,7 +63,12 @@ typedef struct
 /* Initialise runtime log, loading current parameters
  * if log file exists. Returned object must be free()'d.
  * Returns NULL if content_path and/or core_path are invalid */
-runtime_log_t *runtime_log_init(const char *content_path, const char *core_path, bool log_per_core);
+runtime_log_t *runtime_log_init(
+      const char *content_path,
+      const char *core_path,
+      const char *dir_runtime_log,
+      const char *dir_playlist,
+      bool log_per_core);
 
 /* Setters */
 

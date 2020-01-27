@@ -26,8 +26,8 @@ else ifeq ($(LIBRETRO), cap32)
 	APP_AUTHOR           = various
 	APP_PRODUCT_CODE     = CAP32-DOSBOX
 	APP_UNIQUE_ID        = 0xBAC3E
-	APP_ICON             = pkg/ctr/assets/default.png
-	APP_BANNER           = pkg/ctr/assets/libretro_banner.png
+	APP_ICON             = pkg/ctr/assets/Caprice32.png
+	APP_BANNER           = pkg/ctr/assets/Caprice32_banner.png
 
 else ifeq ($(LIBRETRO), dosbox)
 	APP_TITLE            = DosBox
@@ -94,8 +94,8 @@ else ifeq ($(LIBRETRO), fbneo)
 	APP_AUTHOR           = Team FBNeo
 	APP_PRODUCT_CODE     = RARCH-FBNEO
 	APP_UNIQUE_ID        = 0xBAC93
-	APP_ICON             = pkg/ctr/assets/default.png
-	APP_BANNER           = pkg/ctr/assets/libretro_banner.png
+	APP_ICON             = pkg/ctr/assets/FBNEO.png
+	APP_BANNER           = pkg/ctr/assets/FBNEO_banner.png
 
 else ifeq ($(LIBRETRO), fceumm)
 	APP_TITLE            = FCeumm Libretro
@@ -237,6 +237,8 @@ else ifeq ($(LIBRETRO), mu)
 	APP_TITLE            = Mu Palm Emulator
 	APP_PRODUCT_CODE     = RARCH-MU
 	APP_UNIQUE_ID        = 0xBAC2F
+	APP_ICON             = pkg/ctr/assets/MU.png
+	APP_BANNER           = pkg/ctr/assets/MU_banner.png
 
 else ifeq ($(LIBRETRO), nestopia)
 	APP_TITLE            = Nestopia Libretro
@@ -311,8 +313,8 @@ else ifeq ($(LIBRETRO), quasi88)
 	APP_TITLE            = Quasi88 Libretro
 	APP_PRODUCT_CODE     = RARCH-QUASI88
 	APP_UNIQUE_ID        = 0xBAC41
-	APP_ICON             = pkg/ctr/assets/default.png
-	APP_BANNER           = pkg/ctr/assets/libretro_banner.png
+	APP_ICON             = pkg/ctr/assets/quasi88.png
+	APP_BANNER           = pkg/ctr/assets/quasi88_banner.png
 
 else ifeq ($(LIBRETRO), quicknes)
 	APP_TITLE            = QuickNES Libretro
@@ -321,6 +323,14 @@ else ifeq ($(LIBRETRO), quicknes)
 	APP_UNIQUE_ID        = 0xBAC0F
 	APP_ICON             = pkg/ctr/assets/quicknes.png
 	APP_BANNER           = pkg/ctr/assets/quicknes_banner.png
+
+else ifeq ($(LIBRETRO), race)
+	APP_TITLE            = RACE
+	APP_AUTHOR           = various
+	APP_PRODUCT_CODE     = RARCH-RACE
+	APP_UNIQUE_ID        = 0xBAC95
+	APP_ICON             = pkg/ctr/assets/race.png
+	APP_BANNER           = pkg/ctr/assets/race_banner.png
 
 else ifeq ($(LIBRETRO), snes9x2002)
 	APP_TITLE            = Snes9x 2002
@@ -356,8 +366,8 @@ else ifeq ($(LIBRETRO), squirreljme)
 	APP_AUTHOR           = XerTheSquirrel
 	APP_PRODUCT_CODE     = RARCH-SQUIRRELJME
 	APP_UNIQUE_ID        = 0xBAC94
-	APP_ICON             = pkg/ctr/assets/default.png
-	APP_BANNER           = pkg/ctr/assets/libretro_banner.png
+	APP_ICON             = pkg/ctr/assets/SquirrelJME.png
+	APP_BANNER           = pkg/ctr/assets/SquirrelJME_banner.png
 
 else ifeq ($(LIBRETRO), stella2014)
 	APP_TITLE            = Stella2014 Libretro
@@ -377,6 +387,8 @@ else ifeq ($(LIBRETRO), theodore)
 	APP_TITLE            = Theodore
 	APP_PRODUCT_CODE     = RARCH-THEODORE
 	APP_UNIQUE_ID        = 0xBAC2E
+	APP_ICON             = pkg/ctr/assets/ThomsonMOTO.png
+	APP_BANNER           = pkg/ctr/assets/ThomsonMOTO_banner.png
 
 else ifeq ($(LIBRETRO), vecx)
 	APP_TITLE            = VecX Libretro

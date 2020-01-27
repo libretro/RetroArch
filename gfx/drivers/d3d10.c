@@ -212,7 +212,7 @@ static void d3d10_overlay_enable(void* data, bool state)
       return;
 
    d3d10->overlays.enabled = state;
-   win32_show_cursor(state);
+   win32_show_cursor(d3d10, state);
 }
 
 static void d3d10_overlay_full_screen(void* data, bool enable)
@@ -970,6 +970,7 @@ static void *d3d10_gfx_init(const video_info_t* video,
 
    {
       d3d10_fake_context.get_flags = d3d10_get_flags;
+      d3d10_fake_context.get_metrics = win32_get_metrics;
       video_context_driver_set(&d3d10_fake_context); 
 #ifdef HAVE_SLANG
       const char *shader_preset   = retroarch_get_shader_preset();
@@ -1472,9 +1473,9 @@ static bool d3d10_gfx_frame(
             D3D10SetViewports(context, 1, &d3d10->viewport);
             D3D10SetBlendState(d3d10->device, d3d10->blend_enable, NULL, D3D10_DEFAULT_SAMPLE_MASK);
             D3D10SetVertexBuffer(context, 0, d3d10->sprites.vbo, sizeof(d3d10_sprite_t), 0);
-            font_driver_render_msg(
-                  video_info, NULL, video_info->stat_text,
-                  (const struct font_params*)&video_info->osd_stat_params);
+            font_driver_render_msg(d3d10,
+                  video_info, video_info->stat_text,
+                  (const struct font_params*)&video_info->osd_stat_params, NULL);
          }
       }
 
@@ -1511,7 +1512,7 @@ static bool d3d10_gfx_frame(
       D3D10SetViewports(d3d10->device, 1, &d3d10->viewport);
       D3D10SetBlendState(d3d10->device, d3d10->blend_enable, NULL, D3D10_DEFAULT_SAMPLE_MASK);
       D3D10SetVertexBuffer(d3d10->device, 0, d3d10->sprites.vbo, sizeof(d3d10_sprite_t), 0);
-      font_driver_render_msg(video_info, NULL, msg, NULL);
+      font_driver_render_msg(d3d10, video_info, msg, NULL, NULL);
       dxgi_update_title(video_info);
    }
    d3d10->sprites.enabled = false;
@@ -1544,8 +1545,6 @@ static bool d3d10_gfx_alive(void* data)
 
    return !quit;
 }
-
-static bool d3d10_gfx_focus(void* data) { return win32_has_focus(); }
 
 static bool d3d10_gfx_suppress_screensaver(void* data, bool enable)
 {
@@ -1640,13 +1639,11 @@ static void d3d10_gfx_set_osd_msg(
    if (d3d10)
    {
       if (d3d10->sprites.enabled)
-         font_driver_render_msg(video_info, font, msg, (const struct font_params*)params);
+         font_driver_render_msg(d3d10, video_info, msg, (const struct font_params*)params, font);
       else
          printf("OSD msg: %s\n", msg);
    }
 }
-
-static void d3d10_gfx_show_mouse(void* data, bool state) { win32_show_cursor(state); }
 
 static uintptr_t d3d10_gfx_load_texture(
       void* video_data, void* data, bool threaded, enum texture_filter_type filter_type)
@@ -1749,7 +1746,7 @@ static const video_poke_interface_t d3d10_poke_interface = {
    d3d10_set_menu_texture_frame,
    d3d10_set_menu_texture_enable,
    d3d10_gfx_set_osd_msg,
-   d3d10_gfx_show_mouse,
+   win32_show_cursor,
    NULL, /* grab_mouse_toggle */
    d3d10_gfx_get_current_shader,
    NULL, /* get_current_software_framebuffer */
@@ -1778,7 +1775,7 @@ video_driver_t video_d3d10 = {
    d3d10_gfx_frame,
    d3d10_gfx_set_nonblock_state,
    d3d10_gfx_alive,
-   d3d10_gfx_focus,
+   win32_has_focus,
    d3d10_gfx_suppress_screensaver,
    d3d10_gfx_has_windowed,
    d3d10_gfx_set_shader,

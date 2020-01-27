@@ -124,6 +124,7 @@ const uint8_t* rcheevos_patch_address(unsigned address, int console)
 {
    rarch_system_info_t* system = runloop_get_system_info();
    const void* pointer = NULL;
+   unsigned original_address = address;
 
    if (console == RC_CONSOLE_NINTENDO)
    {
@@ -168,9 +169,30 @@ const uint8_t* rcheevos_patch_address(unsigned address, int console)
       }
       else if (console == RC_CONSOLE_PC_ENGINE)
       {
-         /* RAM. */
-         CHEEVOS_LOG(RCHEEVOS_TAG "PCE memory address %X adjusted to %X\n", address, address + 0x1f0000);
-         address += 0x1f0000;
+         if (address < 0x002000)
+         {
+            /* RAM. */
+            CHEEVOS_LOG(RCHEEVOS_TAG "PCE memory address %X adjusted to %X\n", address, address + 0x1f0000);
+            address += 0x1f0000;
+         }
+         else if (address < 0x012000)
+         {
+            /* CD-ROM RAM. */
+            CHEEVOS_LOG(RCHEEVOS_TAG "PCE memory address %X adjusted to %X\n", address, address + 0x100000 - 0x002000);
+            address += 0x100000 - 0x002000;
+         }
+         else if (address < 0x042000)
+         {
+            /* Super System Card RAM. */
+            CHEEVOS_LOG(RCHEEVOS_TAG "PCE memory address %X adjusted to %X\n", address, address + 0x0d0000 - 0x012000);
+            address += 0x0d0000 - 0x012000;
+         }
+         else
+         {
+            /* CD-ROM battery backed RAM. */
+            CHEEVOS_LOG(RCHEEVOS_TAG "PCE memory address %X adjusted to %X\n", address, address + 0x1ee000 - 0x042000);
+            address += 0x1ee000 - 0x042000;
+         }
       }
       else if (console == RC_CONSOLE_SUPER_NINTENDO)
       {
@@ -187,6 +209,21 @@ const uint8_t* rcheevos_patch_address(unsigned address, int console)
             address += 0x006000 - 0x020000;
          }
       }
+      else if (console == RC_CONSOLE_SEGA_CD)
+      {
+         if (address < 0x010000)
+         {
+            /* Work RAM. */
+            address += 0xFF0000;
+            CHEEVOS_LOG(RCHEEVOS_TAG "Sega CD memory address %X adjusted to %X\n", original_address, address);
+         }
+         else
+         {
+            /* CD-ROM peripheral RAM - exposed at virtual address to avoid banking */
+            address += 0x80020000 - 0x010000;
+            CHEEVOS_LOG(RCHEEVOS_TAG "Sega CD memory address %X adjusted to %X\n", original_address, address);
+         }
+      }
 
       desc = system->mmaps.descriptors;
       end  = desc + system->mmaps.num_descriptors;
@@ -195,19 +232,18 @@ const uint8_t* rcheevos_patch_address(unsigned address, int console)
       {
          if (((desc->core.start ^ address) & desc->core.select) == 0)
          {
-            unsigned addr = address;
-            pointer       = desc->core.ptr;
+            pointer = desc->core.ptr;
+            address -= desc->core.start;
 
-            address       = (unsigned)rcheevos_var_reduce(
-               (addr - desc->core.start) & desc->disconnect_mask,
-               desc->core.disconnect);
+            if (desc->disconnect_mask)
+               address = (unsigned)rcheevos_var_reduce(address & desc->disconnect_mask, desc->core.disconnect);
 
             if (address >= desc->core.len)
                address -= rcheevos_var_highest_bit(address);
 
             address += desc->core.offset;
 
-            CHEEVOS_LOG(RCHEEVOS_TAG "address %X set to descriptor %d at offset %X\n", addr, (int)((desc - system->mmaps.descriptors) + 1), address);
+            CHEEVOS_LOG(RCHEEVOS_TAG "address %X set to descriptor %d at offset %X\n", original_address, (int)((desc - system->mmaps.descriptors) + 1), address);
             break;
          }
       }
@@ -257,6 +293,7 @@ const uint8_t* rcheevos_patch_address(unsigned address, int console)
 
    if (pointer == NULL)
    {
+      CHEEVOS_LOG(RCHEEVOS_TAG "address %X not supported\n", original_address);
       return NULL;
    }
 

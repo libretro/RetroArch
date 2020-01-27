@@ -89,18 +89,6 @@ static void frontend_psp_get_environment_settings(int *argc, char *argv[],
 
    (void)args;
 
-#ifndef IS_SALAMANDER
-#if defined(HAVE_LOGGER)
-   logger_init();
-#elif defined(HAVE_FILE_LOGGER)
-#ifndef VITA
-   retro_main_log_file_init("ms0:/temp/retroarch-log.txt", false);
-#else
-   retro_main_log_file_init("ux0:/temp/retroarch-log.txt", false);
-#endif
-#endif
-#endif
-
 #ifdef VITA
    strlcpy(eboot_path, "app0:/", sizeof(eboot_path));
    strlcpy(g_defaults.dirs[DEFAULT_DIR_PORT], eboot_path, sizeof(g_defaults.dirs[DEFAULT_DIR_PORT]));
@@ -245,10 +233,7 @@ static void frontend_psp_deinit(void *data)
    (void)data;
 #ifndef IS_SALAMANDER
    verbosity_disable();
-#ifdef HAVE_FILE_LOGGER
-   command_event(CMD_EVENT_LOG_FILE_DEINIT, NULL);
-#endif
-
+   pthread_terminate();
 #endif
 }
 
@@ -464,7 +449,7 @@ static int frontend_psp_parse_drive_list(void *data, bool load_content)
    file_list_t *list = (file_list_t*)data;
    enum msg_hash_enums enum_idx = load_content ?
       MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR :
-      MSG_UNKNOWN;
+      MENU_ENUM_LABEL_FILE_BROWSER_DIRECTORY;
 
 #ifdef VITA
    menu_entries_append_enum(list,

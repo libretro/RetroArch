@@ -1,0 +1,188 @@
+CC = /opt/gcw0-toolchain/usr/bin/mipsel-gcw0-linux-uclibc-gcc
+CXX = /opt/gcw0-toolchain/usr/bin/mipsel-gcw0-linux-uclibc-g++
+PACKAGE_NAME = retroarch
+
+DEBUG ?= 0
+
+HAVE_7ZIP = 1
+HAVE_AL = 1
+# this freezes when switching back from menu
+HAVE_ALSA = 0
+HAVE_BUILTINMBEDTLS = 1
+HAVE_BUILTINZLIB = 1
+HAVE_C99 = 1
+HAVE_CC = 1
+HAVE_CC_RESAMPLER = 1
+HAVE_CHD = 1
+HAVE_CHEEVOS = 1
+HAVE_COMMAND = 1
+HAVE_CXX = 1
+HAVE_DR_MP3 = 1
+HAVE_DYNAMIC = 1
+HAVE_EGL = 1
+HAVE_FREETYPE = 1
+HAVE_GDI = 1
+HAVE_GETADDRINFO = 1
+HAVE_GETOPT_LONG = 1
+HAVE_GLSL = 1
+HAVE_HID = 1
+HAVE_IBXM = 1
+HAVE_IMAGEVIEWER = 1
+HAVE_LANGEXTRA = 1
+HAVE_LIBRETRODB = 1
+HAVE_MENU = 1
+HAVE_MENU_COMMON = 1
+HAVE_MENU_WIDGETS = 1
+HAVE_MMAP = 1
+HAVE_NETWORKING = 1
+HAVE_OPENDINGUX_FBDEV = 1
+HAVE_OPENGL = 1
+HAVE_OPENGL1 = 0
+HAVE_OPENGLES = 1
+HAVE_OPENGLES3 = 0
+HAVE_OPENGL_CORE = 0
+HAVE_OPENSSL = 1
+HAVE_OVERLAY = 1
+HAVE_RBMP = 1
+HAVE_RJPEG = 1
+HAVE_RPILED = 1
+HAVE_RPNG = 1
+HAVE_RUNAHEAD = 1
+HAVE_SDL_DINGUX = 1
+HAVE_SHADERPIPELINE = 1
+HAVE_STB_FONT = 1
+HAVE_STB_IMAGE = 1
+HAVE_STB_VORBIS = 1
+HAVE_STDIN_CMD = 1
+HAVE_STRCASESTR = 1
+HAVE_THREADS = 1
+HAVE_TRANSLATE = 1
+HAVE_UDEV = 1
+HAVE_VIDEO_LAYOUT = 1
+HAVE_XMB = 1
+HAVE_ZLIB = 1
+
+OS = Linux
+TARGET = retroarch
+OPK_NAME = retroarch.opk
+
+OBJ :=
+LINK := $(CXX)
+DEF_FLAGS := -march=mips32 -mtune=mips32r2 -mhard-float -ffast-math -fomit-frame-pointer -fdata-sections
+DEF_FLAGS += -I. -Ideps -Ideps/stb -DDINGUX=1 -MMD
+DEF_FLAGS += -Wall -Wno-unused-variable
+DEF_FLAGS += -std=gnu99 -D_GNU_SOURCE
+LIBS := -ldl -lz -lrt -lcrypto -lssl -ludev -pthread
+CFLAGS :=
+CXXFLAGS := -fno-exceptions -fno-rtti -std=c++11 -D__STDC_CONSTANT_MACROS
+ASFLAGS :=
+LDFLAGS := -flto
+INCLUDE_DIRS = -I/opt/gcw0-toolchain/usr/mipsel-gcw0-linux-uclibc/sysroot/usr/include
+LIBRARY_DIRS = -L/opt/gcw0-toolchain/usr/mipsel-gcw0-linux-uclibc/sysroot/usr/lib
+DEFINES := -DRARCH_INTERNAL -D_FILE_OFFSET_BITS=64 -UHAVE_STATIC_DUMMY
+DEFINES += -DHAVE_C99=1 -DHAVE_CXX=1 -DHAVE_OPENDINGUX_FBDEV=1
+DEFINES += -DHAVE_GETOPT_LONG=1 -DHAVE_STRCASESTR=1 -DHAVE_DYNAMIC=1
+DEFINES += -DHAVE_AL=1
+DEFINES += -DHAVE_ONLINE_UPDATER=1
+DEFINES += -DHAVE_UPDATE_ASSETS=1
+DEFINES += -DHAVE_UDEV=1
+
+SDL_DINGUX_CFLAGS := $(shell /opt/gcw0-toolchain/usr/mipsel-gcw0-linux-uclibc/sysroot/usr/bin/sdl-config --cflags)
+SDL_DINGUX_LIBS := $(shell /opt/gcw0-toolchain/usr/mipsel-gcw0-linux-uclibc/sysroot/usr/bin/sdl-config --libs)
+FREETYPE_CFLAGS := $(shell /opt/gcw0-toolchain/usr/mipsel-gcw0-linux-uclibc/sysroot/usr/bin/freetype-config --cflags)
+FREETYPE_LIBS := $(shell /opt/gcw0-toolchain/usr/mipsel-gcw0-linux-uclibc/sysroot/usr/bin/freetype-config --libs)
+AL_LIBS := -lopenal
+OPENGLES_CFLAGS := -DMESA_EGL_NO_X11_HEADERS
+OPENGLES_LIBS := -lGLESv2 -lEGL
+MMAP_LIBS = -lc
+
+OBJDIR_BASE := obj-unix
+
+ifeq ($(DEBUG), 1)
+   OBJDIR := $(OBJDIR_BASE)/debug
+   DEF_FLAGS += -O0 -g -DDEBUG -D_DEBUG
+else
+   OBJDIR := $(OBJDIR_BASE)/release
+   DEF_FLAGS += -O2 -DNDEBUG
+endif
+
+include Makefile.common
+
+DEF_FLAGS += $(INCLUDE_DIRS)
+CFLAGS += $(DEF_FLAGS)
+CXXFLAGS += $(DEF_FLAGS)
+
+HEADERS = $(wildcard */*/*.h) $(wildcard */*.h) $(wildcard *.h)
+
+Q := @
+
+RARCH_OBJ := $(addprefix $(OBJDIR)/,$(OBJ))
+
+define DESKTOP_ENTRY
+[Desktop Entry]
+Name=retroarch
+Comment=Retroarch
+Exec=retroarch
+Terminal=false
+Type=Application
+StartupNotify=true
+Icon=retroarch
+Categories=emulators;
+X-OD-NeedsDownscaling=true
+endef
+export DESKTOP_ENTRY
+
+all: $(TARGET) opk
+
+-include $(RARCH_OBJ:.o=.d)
+
+SYMBOL_MAP := -Wl,-Map=output.map
+
+$(TARGET): $(RARCH_OBJ)
+	@$(if $(Q), $(shell echo echo LD $@),)
+	$(LINK) -o $@ $(RARCH_OBJ) $(LIBS) $(LDFLAGS) $(LIBRARY_DIRS)
+
+$(OBJDIR)/%.o: %.c
+	@mkdir -p $(dir $@)
+	@$(if $(Q), $(shell echo echo CC $<),)
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(DEFINES) -c -o $@ $<
+
+$(OBJDIR)/%.o: %.cpp
+	@mkdir -p $(dir $@)
+	@$(if $(Q), $(shell echo echo CXX $<),)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(DEFINES) -MMD -c -o $@ $<
+
+$(OBJDIR)/%.o: %.m
+	@mkdir -p $(dir $@)
+	@$(if $(Q), $(shell echo echo OBJC $<),)
+	$(CXX) $(OBJCFLAGS) $(DEFINES) -MMD -c -o $@ $<
+
+.FORCE:
+
+$(OBJDIR)/git_version.o: git_version.c .FORCE
+	@mkdir -p $(dir $@)
+	@$(if $(Q), $(shell echo echo CC $<),)
+	$(CC) $(CFLAGS) $(DEFINES) -MMD -c -o $@ $<
+
+$(OBJDIR)/%.o: %.S $(HEADERS)
+	@mkdir -p $(dir $@)
+	@$(if $(Q), $(shell echo echo AS $<),)
+	$(CC) $(CFLAGS) $(ASFLAGS) $(DEFINES) -c -o $@ $<
+
+clean:
+	rm -rf $(OBJDIR_BASE)
+	rm -f $(TARGET)
+	rm -f *.d
+	rm -rf $(OPK_NAME)
+
+opk: $(TARGET)
+	echo "$$DESKTOP_ENTRY" > default.gcw0.desktop
+	rm -f $(OPK_NAME)
+	cp media/ico_src/icon32.png retroarch.png
+	mksquashfs retroarch default.gcw0.desktop retroarch.png $(OPK_NAME) -all-root -no-xattrs -noappend -no-exports
+	rm -f default.gcw0.desktop retroarch.png
+
+.PHONY: all clean opk
+
+print-%:
+	@echo '$*=$($*)'

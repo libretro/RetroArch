@@ -101,9 +101,6 @@ enum rarch_ctl_state
    RARCH_CTL_UNSET_IPS_PREF,
 
    RARCH_CTL_IS_SRAM_USED,
-   RARCH_CTL_SET_SRAM_ENABLE,
-   RARCH_CTL_SET_SRAM_ENABLE_FORCE,
-   RARCH_CTL_UNSET_SRAM_ENABLE,
 
    RARCH_CTL_IS_SRAM_LOAD_DISABLED,
    RARCH_CTL_IS_SRAM_SAVE_DISABLED,
@@ -115,6 +112,8 @@ enum rarch_ctl_state
 
    /* Username */
    RARCH_CTL_HAS_SET_USERNAME,
+
+   RARCH_CTL_HAS_SET_SUBSYSTEMS,
 
    RARCH_CTL_TASK_INIT,
 
@@ -518,24 +517,6 @@ bool audio_driver_enable_callback(void);
 bool audio_driver_disable_callback(void);
 
 /**
- * audio_driver_find_handle:
- * @index              : index of driver to get handle to.
- *
- * Returns: handle to audio driver at index. Can be NULL
- * if nothing found.
- **/
-const void *audio_driver_find_handle(int index);
-
-/**
- * audio_driver_find_ident:
- * @index              : index of driver to get handle to.
- *
- * Returns: Human-readable identifier of audio driver at index. Can be NULL
- * if nothing found.
- **/
-const char *audio_driver_find_ident(int index);
-
-/**
  * config_get_audio_driver_options:
  *
  * Get an enumerated list of all audio driver names, separated by '|'.
@@ -629,7 +610,6 @@ extern audio_driver_t audio_switch_thread;
 extern audio_driver_t audio_switch_libnx_audren;
 extern audio_driver_t audio_switch_libnx_audren_thread;
 extern audio_driver_t audio_rwebaudio;
-extern audio_driver_t audio_null;
 
 /* Recording */
 
@@ -729,7 +709,6 @@ typedef struct record_driver
 } record_driver_t;
 
 extern const record_driver_t record_ffmpeg;
-extern const record_driver_t record_null;
 
 /**
  * config_get_record_driver_options:
@@ -739,24 +718,6 @@ extern const record_driver_t record_null;
  * Returns: string listing of all record driver names, separated by '|'.
  **/
 const char* config_get_record_driver_options(void);
-
-/**
- * record_driver_find_handle:
- * @idx                : index of driver to get handle to.
- *
- * Returns: handle to record driver at index. Can be NULL
- * if nothing found.
- **/
-const void *record_driver_find_handle(int idx);
-
-/**
- * record_driver_find_ident:
- * @idx                : index of driver to get handle to.
- *
- * Returns: Human-readable identifier of record driver at index. Can be NULL
- * if nothing found.
- **/
-const char *record_driver_find_ident(int idx);
 
 bool recording_is_enabled(void);
 
@@ -1626,24 +1587,6 @@ void video_driver_set_video_cache_context_ack(void);
 bool video_driver_get_viewport_info(struct video_viewport *viewport);
 
 /**
- * video_driver_find_handle:
- * @index              : index of driver to get handle to.
- *
- * Returns: handle to video driver at index. Can be NULL
- * if nothing found.
- **/
-const void *video_driver_find_handle(int index);
-
-/**
- * video_driver_find_ident:
- * @index              : index of driver to get handle to.
- *
- * Returns: Human-readable identifier of video driver at index.
- * Can be NULL if nothing found.
- **/
-const char *video_driver_find_ident(int index);
-
-/**
  * config_get_video_driver_options:
  *
  * Get an enumerated list of all video driver names, separated by '|'.
@@ -1813,7 +1756,7 @@ bool video_driver_texture_unload(uintptr_t *id);
 
 void video_driver_build_info(video_frame_info_t *video_info);
 
-void video_driver_reinit(void);
+void video_driver_reinit(int flags);
 
 void video_driver_get_window_title(char *buf, unsigned len);
 
@@ -1941,6 +1884,7 @@ extern video_driver_t video_xenon360;
 extern video_driver_t video_xvideo;
 extern video_driver_t video_sdl;
 extern video_driver_t video_sdl2;
+extern video_driver_t video_sdl_dingux;
 extern video_driver_t video_vg;
 extern video_driver_t video_omap;
 extern video_driver_t video_exynos;
@@ -1954,11 +1898,11 @@ extern video_driver_t video_vga;
 extern video_driver_t video_fpga;
 extern video_driver_t video_sixel;
 extern video_driver_t video_network;
-extern video_driver_t video_null;
 
 extern const gfx_ctx_driver_t gfx_ctx_osmesa;
 extern const gfx_ctx_driver_t gfx_ctx_sdl_gl;
 extern const gfx_ctx_driver_t gfx_ctx_x_egl;
+extern const gfx_ctx_driver_t gfx_ctx_uwp;
 extern const gfx_ctx_driver_t gfx_ctx_wayland;
 extern const gfx_ctx_driver_t gfx_ctx_x;
 extern const gfx_ctx_driver_t gfx_ctx_drm;
@@ -1980,6 +1924,7 @@ extern const gfx_ctx_driver_t gfx_ctx_sixel;
 extern const gfx_ctx_driver_t gfx_ctx_network;
 extern const gfx_ctx_driver_t switch_ctx;
 extern const gfx_ctx_driver_t orbis_ctx;
+extern const gfx_ctx_driver_t vita_ctx;
 extern const gfx_ctx_driver_t gfx_ctx_null;
 
 extern const shader_backend_t gl_glsl_backend;
@@ -2010,7 +1955,6 @@ typedef struct location_driver
 
 extern location_driver_t location_corelocation;
 extern location_driver_t location_android;
-extern location_driver_t location_null;
 
 /**
  * config_get_location_driver_options:
@@ -2022,24 +1966,6 @@ extern location_driver_t location_null;
  * separated by '|'.
  **/
 const char* config_get_location_driver_options(void);
-
-/**
- * location_driver_find_handle:
- * @index              : index of driver to get handle to.
- *
- * Returns: handle to location driver at index. Can be NULL
- * if nothing found.
- **/
-const void *location_driver_find_handle(int index);
-
-/**
- * location_driver_find_ident:
- * @index              : index of driver to get handle to.
- *
- * Returns: Human-readable identifier of location driver at index. Can be NULL
- * if nothing found.
- **/
-const char *location_driver_find_ident(int index);
 
 /* Camera */
 
@@ -2069,7 +1995,6 @@ extern camera_driver_t camera_v4l2;
 extern camera_driver_t camera_android;
 extern camera_driver_t camera_rwebcam;
 extern camera_driver_t camera_avfoundation;
-extern camera_driver_t camera_null;
 
 /**
  * config_get_camera_driver_options:
@@ -2082,24 +2007,6 @@ extern camera_driver_t camera_null;
  **/
 const char* config_get_camera_driver_options(void);
 
-/**
- * camera_driver_find_handle:
- * @index              : index of driver to get handle to.
- *
- * Returns: handle to camera driver at index. Can be NULL
- * if nothing found.
- **/
-const void *camera_driver_find_handle(int index);
-
-/**
- * camera_driver_find_ident:
- * @index              : index of driver to get handle to.
- *
- * Returns: Human-readable identifier of camera driver at index. Can be NULL
- * if nothing found.
- **/
-const char *camera_driver_find_ident(int index);
-
 bool menu_driver_is_alive(void);
 
 void menu_driver_set_binding_state(bool on);
@@ -2109,6 +2016,10 @@ bool menu_driver_is_toggled(void);
 bool menu_driver_is_toggled(void);
 
 bool menu_widgets_ready(void);
+
+unsigned int retroarch_get_rotation(void);
+
+bool is_input_keyboard_display_on(void);
 
 RETRO_END_DECLS
 

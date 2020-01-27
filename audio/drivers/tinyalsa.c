@@ -808,7 +808,7 @@ static unsigned int pcm_get_channels(const struct pcm *pcm)
  * */
 static const struct pcm_config * pcm_get_config(const struct pcm *pcm)
 {
-   if (pcm == NULL)
+   if (!pcm)
       return NULL;
    return &pcm->config;
 }
@@ -929,7 +929,7 @@ static int pcm_set_config(struct pcm *pcm, const struct pcm_config *config)
     struct snd_pcm_sw_params sparams;
     struct snd_pcm_hw_params params;
 
-    if (pcm == NULL)
+    if (!pcm)
         return -EFAULT;
 
     if (config)
@@ -1293,7 +1293,7 @@ static int pcm_get_htimestamp(struct pcm *pcm, unsigned int *avail,
  */
 static int pcm_is_ready(const struct pcm *pcm)
 {
-   if (pcm != NULL)
+   if (pcm)
       return pcm->fd >= 0;
    return 0;
 }
@@ -1582,7 +1582,7 @@ static const struct pcm_mask *pcm_params_get_mask(const struct pcm_params *pcm_p
 {
     int p;
     struct snd_pcm_hw_params *params = (struct snd_pcm_hw_params *)pcm_params;
-    if (params == NULL)
+    if (!params)
         return NULL;
 
     p = pcm_param_to_alsa(param);
@@ -2185,7 +2185,7 @@ static void * tinyalsa_init(const char *devicestr, unsigned rate,
    RARCH_LOG("[TINYALSA]: Using card: %u, device: %u.\n", card, device);
 
    tinyalsa->params = pcm_params_get(card, device, PCM_OUT);
-   if (tinyalsa->params == NULL)
+   if (!tinyalsa->params)
    {
       RARCH_ERR("[TINYALSA]: params: Cannot open audio device.\n");
       goto error;
@@ -2224,7 +2224,7 @@ static void * tinyalsa_init(const char *devicestr, unsigned rate,
 
    tinyalsa->pcm = pcm_open(card, device, PCM_OUT, &config);
 
-   if (tinyalsa->pcm == NULL)
+   if (!tinyalsa->pcm)
    {
       RARCH_ERR("[TINYALSA]: Failed to allocate memory for pcm.\n");
       goto error;

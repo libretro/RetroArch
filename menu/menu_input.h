@@ -46,7 +46,7 @@ RETRO_BEGIN_DECLS
 #define MENU_INPUT_HIDE_CURSOR_DELAY 4000000         /* 4 seconds */
 
 #define MENU_INPUT_PRESS_TIME_SHORT 200000           /* 200 ms */
-#define MENU_INPUT_PRESS_TIME_LONG 1500000           /* 1.5 second */
+#define MENU_INPUT_PRESS_TIME_LONG 1000000           /* 1 second */
 /* (Anything less than 'short' is considered a tap) */
 
 /* Swipe gestures must be completed within a duration
@@ -54,6 +54,13 @@ RETRO_BEGIN_DECLS
  * unwanted input if user 'zones out' and meanders on
  * a touchscreen) */
 #define MENU_INPUT_SWIPE_TIMEOUT 500000              /* 500 ms */
+
+/* Standard behaviour (on Android, at least) is to stop
+ * scrolling when the user touches the screen. To prevent
+ * jerky stop/start scrolling, we wait MENU_INPUT_Y_ACCEL_RESET_DELAY
+ * ms before resetting y acceleration after a stationary
+ * pointer down event is detected */
+#define MENU_INPUT_Y_ACCEL_RESET_DELAY 50000         /* 50 ms */
 
 #define MENU_INPUT_Y_ACCEL_DECAY_FACTOR 0.96f
 
@@ -164,6 +171,7 @@ typedef struct menu_input
    menu_input_pointer_t pointer;
    unsigned ptr;
    bool select_inhibit;
+   bool cancel_inhibit;
 } menu_input_t;
 
 typedef struct menu_input_ctx_hitbox
@@ -193,6 +201,10 @@ void menu_input_set_pointer_selection(unsigned selection);
  * (typically want to set acceleration to zero when
  * calling populate entries) */
 void menu_input_set_pointer_y_accel(float y_accel);
+
+/* Inhibits pointer 'select' and 'cancel' actions
+ * (until the next time 'select'/'cancel' are released) */
+void menu_input_set_pointer_inhibit(bool inhibit);
 
 void menu_input_reset(void);
 

@@ -552,10 +552,6 @@ MSG_HASH(
     "도전과제 뱃지"
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_CHEEVOS_LOCKED_ACHIEVEMENTS,
-    "해제한 도전과제:"
-    )
-MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEEVOS_LOCKED_ENTRY,
     "잠김"
     )
@@ -566,10 +562,6 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEEVOS_TEST_UNOFFICIAL,
     "비공식 도전과제 테스트"
-    )
-MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ACHIEVEMENTS,
-    "해제한 도전과제:"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ENTRY,
@@ -586,10 +578,6 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEEVOS_AUTO_SCREENSHOT,
     "자동 스크린샷 저장"
-    )
-MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_CHEEVOS_OLD_ENABLE,
-    "이전 방법 사용 (디버그 전용)"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
@@ -810,14 +798,6 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS,
     "디렉토리"
-    )
-MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_DISK_CYCLE_TRAY_STATUS,
-    "디스크 사이클 트레이 상태"
-    )
-MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
-    "디스크 이미지 추가"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DISK_INDEX,
@@ -1503,7 +1483,7 @@ MSG_HASH(
     "터보 간격"
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
+    MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS, /* TODO/FIXME - Change user to port */
     "사용자 %u 입력 설정"
     )
 MSG_HASH(
@@ -4155,6 +4135,10 @@ MSG_HASH(
     "볼캐닉 빨강"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_SUNBEAM,
+    "Sunbeam"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_XMB_RIBBON_ENABLE,
     "메뉴 쉐이더 파이프라인"
     )
@@ -4249,11 +4233,6 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CHEEVOS_AUTO_SCREENSHOT,
     "도전과제 달성 시 자동으로 스크린샷을 저장합니다."
-    )
-MSG_HASH(
-    MENU_ENUM_SUBLABEL_CHEEVOS_OLD_ENABLE,
-    "이전 도전과제 처리 방법을 적용합니다\n"
-    "(사용하지 않을 것을 권장합니다)."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_DRIVER_SETTINGS,
@@ -4370,7 +4349,7 @@ MSG_HASH(
     "조이패드, 키보드 및 마우스를 설정합니다."
     )
 MSG_HASH(
-    MENU_ENUM_SUBLABEL_INPUT_USER_BINDS,
+    MENU_ENUM_SUBLABEL_INPUT_USER_BINDS, /* TODO/FIXME - change user to port */
     "현재 사용자에 대한 입력을 설정합니다."
     )
 MSG_HASH(
@@ -6399,20 +6378,8 @@ MSG_HASH(
     "네트워크 지연을 숨기기 위해 사용하는 입력 대기 프레임 범위입니다. 예측 불가능한 입력 지연으로 지터를 줄이고 넷플레이의 CPU 사용을 줄입니다."
     )
 MSG_HASH(
-    MENU_ENUM_SUBLABEL_DISK_CYCLE_TRAY_STATUS,
-    "현재 디스크를 전환합니다. 삽입된 디스크가 있으면 꺼내지고 디스크가 없으면 디스크를 삽입합니다. "
-    )
-MSG_HASH(
-    MENU_ENUM_SUBLABEL_DISK_INDEX,
-    "디스크 인덱스를 변경합니다."
-    )
-MSG_HASH(
     MENU_ENUM_SUBLABEL_DISK_OPTIONS,
     "디스크 이미지를 관리합니다."
-    )
-MSG_HASH(
-    MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
-    "삽입할 디스크 이미지를 선택하십시오."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_ENUM_THROTTLE_FRAMERATE,
@@ -7219,14 +7186,6 @@ MSG_HASH(
 MSG_HASH(
     MSG_RUNAHEAD_FAILED_TO_CREATE_SECONDARY_INSTANCE,
     "두 번째 인스턴스를 생성하는데 실패했습니다. 미리 실행 기능에서 하나의 인스턴스만 사용됩니다."
-    )
-MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_AUTOMATICALLY_ADD_CONTENT_TO_PLAYLIST,
-    "재생 목록에 컨텐츠 검색 후 자동 추가"
-    )
-MSG_HASH(
-    MENU_ENUM_SUBLABEL_AUTOMATICALLY_ADD_CONTENT_TO_PLAYLIST,
-    "컨텐츠를 자동으로 검색해 재생 목록에 표시합니다."
     )
 MSG_HASH(
     MSG_SCANNING_OF_FILE_FINISHED,
@@ -9598,23 +9557,3 @@ MSG_HASH(MENU_ENUM_SUBLABEL_MENU_XMB_ANIMATION_OPENING_MAIN_MENU,
       "메뉴를 열때 발생하는 애니메이션입니다.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DELETE_PLAYLIST,
       "재생목록 삭제")
-#ifdef HAVE_LAKKA
-MSG_HASH(MENU_ENUM_LABEL_VALUE_LOCALAP_ENABLE,
-      "Wi-Fi Access Point")
-MSG_HASH(MENU_ENUM_SUBLABEL_LOCALAP_ENABLE,
-      "Enable or disable Wi-Fi Access Point.")
-MSG_HASH(MSG_LOCALAP_SWITCHING_OFF,
-      "Switching off Wi-Fi Access Point.")
-MSG_HASH(MSG_WIFI_DISCONNECT_FROM,
-      "Disconnecting from Wi-Fi '%s'")
-MSG_HASH(MSG_LOCALAP_ALREADY_RUNNING,
-      "Wi-Fi Access Point is already started")
-MSG_HASH(MSG_LOCALAP_NOT_RUNNING,
-      "Wi-Fi Access Point is not running")
-MSG_HASH(MSG_LOCALAP_STARTING,
-      "Starting Wi-Fi Access Point with SSID=%s and Passkey=%s")
-MSG_HASH(MSG_LOCALAP_ERROR_CONFIG_CREATE,
-      "Could not create Wi-Fi Access Point configuration file.")
-MSG_HASH(MSG_LOCALAP_ERROR_CONFIG_PARSE,
-     "Wrong configuration file - could not find APNAME or PASSWORD in %s")
-#endif

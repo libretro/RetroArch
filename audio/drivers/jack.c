@@ -166,7 +166,7 @@ static void *ja_init(const char *device, unsigned rate, unsigned latency,
 #endif
 
    jd->client = jack_client_open("RetroArch", JackNullOption, NULL);
-   if (jd->client == NULL)
+   if (!jd->client)
       goto error;
 
    *new_rate = jack_get_sample_rate(jd->client);
@@ -176,14 +176,14 @@ static void *ja_init(const char *device, unsigned rate, unsigned latency,
 
    jd->ports[0] = jack_port_register(jd->client, "left", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput, 0);
    jd->ports[1] = jack_port_register(jd->client, "right", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput, 0);
-   if (jd->ports[0] == NULL || jd->ports[1] == NULL)
+   if (!jd->ports[0] || !jd->ports[1])
    {
       RARCH_ERR("[JACK]: Failed to register ports.\n");
       goto error;
    }
 
    jports = jack_get_ports(jd->client, NULL, NULL, JackPortIsPhysical | JackPortIsInput);
-   if (jports == NULL)
+   if (!jports)
    {
       RARCH_ERR("[JACK]: Failed to get ports.\n");
       goto error;
@@ -196,7 +196,7 @@ static void *ja_init(const char *device, unsigned rate, unsigned latency,
    for (i = 0; i < 2; i++)
    {
       jd->buffer[i] = jack_ringbuffer_create(bufsize);
-      if (jd->buffer[i] == NULL)
+      if (!jd->buffer[i])
       {
          RARCH_ERR("[JACK]: Failed to create buffers.\n");
          goto error;
@@ -229,7 +229,7 @@ static void *ja_init(const char *device, unsigned rate, unsigned latency,
 error:
    for (i = 0; i < parsed; i++)
       free(dest_ports[i]);
-   if (jports != NULL)
+   if (jports)
       jack_free(jports);
    free(jd);
    return NULL;
@@ -334,14 +334,14 @@ static void ja_free(void *data)
 
    jd->shutdown = true;
 
-   if (jd->client != NULL)
+   if (jd->client)
    {
       jack_deactivate(jd->client);
       jack_client_close(jd->client);
    }
 
    for (i = 0; i < 2; i++)
-      if (jd->buffer[i] != NULL)
+      if (jd->buffer[i])
          jack_ringbuffer_free(jd->buffer[i]);
 
 #ifdef HAVE_THREADS

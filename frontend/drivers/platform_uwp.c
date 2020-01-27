@@ -75,6 +75,9 @@ static void frontend_uwp_get_os(char *s, size_t len, int *major, int *minor)
       case PROCESSOR_ARCHITECTURE_ARM:
          arch = "ARM";
          break;
+      case PROCESSOR_ARCHITECTURE_ARM64:
+         arch = "ARM64";
+         break;
       default:
          break;
    }
@@ -257,6 +260,9 @@ enum frontend_architecture frontend_uwp_get_architecture(void)
       case PROCESSOR_ARCHITECTURE_ARM:
          return FRONTEND_ARCH_ARM;
          break;
+      case PROCESSOR_ARCHITECTURE_ARM64:
+         return FRONTEND_ARCH_ARMV8;
+         break;
       default:
          break;
    }
@@ -271,7 +277,7 @@ static int frontend_uwp_parse_drive_list(void *data, bool load_content)
    file_list_t            *list = (file_list_t*)data;
    enum msg_hash_enums enum_idx = load_content ?
          MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR :
-         MSG_UNKNOWN;
+         MENU_ENUM_LABEL_FILE_BROWSER_DIRECTORY;
    char drive[]                 = " :\\";
    char *home_dir               = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
    bool have_any_drives         = false;
@@ -327,65 +333,73 @@ static void frontend_uwp_environment_get(int *argc, char *argv[],
    /* On UWP, we have to use the writable directory
     * instead of the install directory. */
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_ASSETS],
-      "~\\assets", sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]));
+      "~\\assets\\", sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]));
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER],
-      "~\\filters\\audio", sizeof(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER]));
+      "~\\filters\\audio\\", sizeof(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER]));
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER],
-      "~\\filters\\video", sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER]));
+      "~\\filters\\video\\", sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER]));
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_CHEATS],
-      "~\\cheats", sizeof(g_defaults.dirs[DEFAULT_DIR_CHEATS]));
+      "~\\cheats\\", sizeof(g_defaults.dirs[DEFAULT_DIR_CHEATS]));
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_DATABASE],
-      "~\\database\\rdb", sizeof(g_defaults.dirs[DEFAULT_DIR_DATABASE]));
+      "~\\database\\rdb\\", sizeof(g_defaults.dirs[DEFAULT_DIR_DATABASE]));
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_CURSOR],
-      "~\\database\\cursors", sizeof(g_defaults.dirs[DEFAULT_DIR_CURSOR]));
+      "~\\database\\cursors\\", sizeof(g_defaults.dirs[DEFAULT_DIR_CURSOR]));
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_PLAYLIST],
-      "~\\playlists", sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]));
+      "~\\playlists\\", sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]));
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_RECORD_CONFIG],
-      "~\\config\\record", sizeof(g_defaults.dirs[DEFAULT_DIR_RECORD_CONFIG]));
+      "~\\config\\record\\", sizeof(g_defaults.dirs[DEFAULT_DIR_RECORD_CONFIG]));
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_RECORD_OUTPUT],
-      "~\\recordings", sizeof(g_defaults.dirs[DEFAULT_DIR_RECORD_OUTPUT]));
+      "~\\recordings\\", sizeof(g_defaults.dirs[DEFAULT_DIR_RECORD_OUTPUT]));
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG],
-      "~\\config", sizeof(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG]));
+      "~\\config\\", sizeof(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG]));
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_REMAP],
-      "~\\config\\remaps", sizeof(g_defaults.dirs[DEFAULT_DIR_REMAP]));
+      "~\\config\\remaps\\", sizeof(g_defaults.dirs[DEFAULT_DIR_REMAP]));
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_WALLPAPERS],
-      "~\\assets\\wallpapers", sizeof(g_defaults.dirs[DEFAULT_DIR_WALLPAPERS]));
+      "~\\assets\\wallpapers\\", sizeof(g_defaults.dirs[DEFAULT_DIR_WALLPAPERS]));
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS],
-      "~\\thumbnails", sizeof(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS]));
+      "~\\thumbnails\\", sizeof(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS]));
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_OVERLAY],
-      "~\\overlays", sizeof(g_defaults.dirs[DEFAULT_DIR_OVERLAY]));
+      "~\\overlays\\", sizeof(g_defaults.dirs[DEFAULT_DIR_OVERLAY]));
 #ifdef HAVE_VIDEO_LAYOUT
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_VIDEO_LAYOUT],
-      "~\\layouts", sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_LAYOUT]));
+      "~\\layouts\\", sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_LAYOUT]));
 #endif
    /* This one is an exception: cores have to be loaded from
     * the install directory,
     * since this is the only place UWP apps can take .dlls from */
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_CORE],
-      ":\\cores", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
+      ":\\cores\\", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_CORE_INFO],
-      "~\\info", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]));
+      "~\\info\\", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]));
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG],
-      "~\\autoconfig", sizeof(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG]));
+      "~\\autoconfig\\", sizeof(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG]));
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_SHADER],
-      "~\\shaders", sizeof(g_defaults.dirs[DEFAULT_DIR_SHADER]));
+      "~\\shaders\\", sizeof(g_defaults.dirs[DEFAULT_DIR_SHADER]));
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS],
-      "~\\downloads", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]));
+      "~\\downloads\\", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]));
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT],
-      "~\\screenshots", sizeof(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT]));
+      "~\\screenshots\\", sizeof(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT]));
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_SRAM],
-      "~\\saves", sizeof(g_defaults.dirs[DEFAULT_DIR_SRAM]));
+      "~\\saves\\", sizeof(g_defaults.dirs[DEFAULT_DIR_SRAM]));
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_SAVESTATE],
-      "~\\states", sizeof(g_defaults.dirs[DEFAULT_DIR_SAVESTATE]));
+      "~\\states\\", sizeof(g_defaults.dirs[DEFAULT_DIR_SAVESTATE]));
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_SYSTEM],
-      "~\\system", sizeof(g_defaults.dirs[DEFAULT_DIR_SYSTEM]));
+      "~\\system\\", sizeof(g_defaults.dirs[DEFAULT_DIR_SYSTEM]));
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_LOGS],
-      "~\\logs", sizeof(g_defaults.dirs[DEFAULT_DIR_LOGS]));
+      "~\\logs\\", sizeof(g_defaults.dirs[DEFAULT_DIR_LOGS]));
 
 #ifdef HAVE_MENU
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) || defined(HAVE_OPENGL_CORE)
-   snprintf(g_defaults.settings.menu,
+   if (string_is_equal(uwp_device_family, "Windows.Mobile"))
+   {
+      snprintf(g_defaults.settings.menu,
+         sizeof(g_defaults.settings.menu), "glui");
+   }
+   else
+   {
+      snprintf(g_defaults.settings.menu,
          sizeof(g_defaults.settings.menu), "xmb");
+   }
 #endif
 #endif
 }
@@ -424,6 +438,16 @@ static uint64_t frontend_uwp_get_mem_used(void)
 #endif
 }
 
+enum retro_language frontend_uwp_get_user_language(void)
+{
+   return uwp_get_language();
+}
+
+static const char* frontend_uwp_get_cpu_model_name(void)
+{
+   return uwp_get_cpu_model_name();
+}
+
 frontend_ctx_driver_t frontend_ctx_uwp = {
    frontend_uwp_environment_get,
    frontend_uwp_init,
@@ -451,7 +475,7 @@ frontend_ctx_driver_t frontend_ctx_uwp = {
    NULL,                            /* watch_path_for_changes */
    NULL,                            /* check_for_path_changes */
    NULL,                            /* set_sustained_performance_mode */
-   NULL,                            /* get_cpu_model_name */
-   NULL,                            /* get_user_language */
+   frontend_uwp_get_cpu_model_name,
+   frontend_uwp_get_user_language,
    "uwp"
 };

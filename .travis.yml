@@ -1,3 +1,9 @@
+# This setting is to prevent travis to launch duplicate builds on PRs
+branches:
+  only:
+    - master
+    - /^v.*$/
+
 # Use 'generic' to be able to override CC/CXX for clang
 language: generic
 
@@ -27,6 +33,8 @@ matrix:
     - compiler: gcc
       env: CC=gcc-8 CXX=g++-8
     - compiler: gcc
+      env: CC="gcc-8 --sysroot=/" CXX="g++-8 --sysroot=/"
+    - compiler: gcc
       env: C89_BUILD=1 CC=gcc-8 CXX=g++-8
     - compiler: gcc
       env: CXX_BUILD=1 CC=gcc-8 CXX=g++-8
@@ -52,15 +60,28 @@ matrix:
       env: CXX_BUILD=1 CC=clang-6.0 CXX=clang++-6.0
     - os: osx
       env: CC=clang CXX=clang++
+    - name: OSX OpenGL Make
+      os: osx
+      osx_image: xcode11.2
+      script:
+        - ./configure --enable-opengl --disable-metal
+        - make
     - os: osx
       osx_image: xcode8
       script:
         - xcodebuild -target RetroArch -configuration Release -project pkg/apple/RetroArch.xcodeproj
     - os: osx
-      osx_image: xcode10.1
+      osx_image: xcode11.2
       script:
         - brew update-reset
         - brew install --force-bottle qt5
+        - security create-keychain -p travis build.keychain
+        - security default-keychain -s build.keychain
+        - security unlock-keychain -p travis build.keychain
+        - echo $OSX_CERT | base64 --decode > dev.p12
+        - security import dev.p12 -k build.keychain -P $OSX_CERT_PASS -T /usr/bin/codesign
+        - rm dev.p12
+        - security set-key-partition-list -S "apple-tool:,apple:,codesign:" -s -k travis build.keychain
         - xcodebuild -target RetroArchQt -configuration Release -project pkg/apple/RetroArch_Metal.xcodeproj
       deploy:
         skip_cleanup: true
@@ -86,7 +107,7 @@ matrix:
 
 before_install:
   - |
-     if [ "$CC" = gcc-8 ]; then
+     if [[ "$CC" =~ ^gcc-8.* ]]; then
        # Install a more recent gcc than the default
        sudo apt-get install -y g++-8
      elif [ "$CC" = clang-6.0 ]; then
@@ -98,7 +119,7 @@ before_install:
        sudo update-alternatives --set x86_64-w64-mingw32-g++ /usr/bin/x86_64-w64-mingw32-g++-posix
      fi
 
-script:
+before_script:
   - |
      if [ -n "$CROSS_COMPILE" ]; then
        ARGS="$ARGS --disable-d3d8 --disable-d3d9 --disable-d3d10 --disable-d3d11 --disable-d3d12"
@@ -131,6 +152,9 @@ script:
      if [ -n "$ENABLE_GLES3" ]; then
        ARGS="$ARGS --enable-opengles3"
      fi
+  - echo "Configure arguments = $ARGS"
+
+script:
   - ./configure $ARGS
   - |
      if [ -n "$C89_BUILD" ]; then

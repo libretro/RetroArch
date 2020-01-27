@@ -281,14 +281,6 @@ static void metal_set_texture_enable(void *data, bool state, bool full_screen)
 #endif
 }
 
-static void metal_set_osd_msg(void *data,
-                              video_frame_info_t *video_info,
-                              const char *msg,
-                              const void *params, void *font)
-{
-   font_driver_render_msg(video_info, font, msg, (const struct font_params *)params);
-}
-
 static void metal_show_mouse(void *data, bool state)
 {
    [apple_platform setCursorVisible:state];
@@ -330,7 +322,7 @@ static const video_poke_interface_t metal_poke_interface = {
    .apply_state_changes = metal_apply_state_changes,
    .set_texture_frame   = metal_set_texture_frame,
    .set_texture_enable  = metal_set_texture_enable,
-   .set_osd_msg         = metal_set_osd_msg,
+   .set_osd_msg         = font_driver_render_msg,
    .show_mouse          = metal_show_mouse,
    .get_current_shader  = metal_get_current_shader,
 };

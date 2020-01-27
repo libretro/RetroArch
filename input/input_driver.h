@@ -64,6 +64,28 @@ enum input_toggle_type
    INPUT_TOGGLE_LAST
 };
 
+enum input_turbo_mode
+{
+   INPUT_TURBO_MODE_CLASSIC = 0,
+   INPUT_TURBO_MODE_SINGLEBUTTON,
+   INPUT_TURBO_MODE_LAST
+};
+
+enum input_turbo_default_button
+{
+   INPUT_TURBO_DEFAULT_BUTTON_B = 0,
+   INPUT_TURBO_DEFAULT_BUTTON_Y,
+   INPUT_TURBO_DEFAULT_BUTTON_A,
+   INPUT_TURBO_DEFAULT_BUTTON_X,
+   INPUT_TURBO_DEFAULT_BUTTON_L,
+   INPUT_TURBO_DEFAULT_BUTTON_R,
+   INPUT_TURBO_DEFAULT_BUTTON_L2,
+   INPUT_TURBO_DEFAULT_BUTTON_R2,
+   INPUT_TURBO_DEFAULT_BUTTON_L3,
+   INPUT_TURBO_DEFAULT_BUTTON_R3,
+   INPUT_TURBO_DEFAULT_BUTTON_LAST
+};
+
 enum input_action
 {
    INPUT_ACTION_NONE = 0,
@@ -181,24 +203,6 @@ struct rarch_joypad_driver
 };
 
 /**
- * input_driver_find_handle:
- * @index              : index of driver to get handle to.
- *
- * Returns: handle to input driver at index. Can be NULL
- * if nothing found.
- **/
-const void *input_driver_find_handle(int index);
-
-/**
- * input_driver_find_ident:
- * @index              : index of driver to get handle to.
- *
- * Returns: Human-readable identifier of input driver at index. Can be NULL
- * if nothing found.
- **/
-const char *input_driver_find_ident(int index);
-
-/**
  * config_get_input_driver_options:
  *
  * Get an enumerated list of all input driver names, separated by '|'.
@@ -255,37 +259,9 @@ void input_driver_unset_nonblock_state(void);
 
 void input_driver_set_own_driver(void);
 
-void input_driver_unset_own_driver(void);
-
-void input_driver_deinit_command(void);
-
-bool input_driver_init_command(void);
-
-bool input_driver_grab_mouse(void);
-
-bool input_driver_ungrab_mouse(void);
-
 float *input_driver_get_float(enum input_action action);
 
 unsigned *input_driver_get_uint(enum input_action action);
-
-/**
- * joypad_driver_find_handle:
- * @index              : index of driver to get handle to.
- *
- * Returns: handle to joypad driver at index. Can be NULL
- * if nothing found.
- **/
-const void *joypad_driver_find_handle(int index);
-
-/**
- * joypad_driver_find_ident:
- * @index              : index of driver to get handle to.
- *
- * Returns: Human-readable identifier of joypad driver at index. Can be NULL
- * if nothing found.
- **/
-const char *joypad_driver_find_ident(int index);
 
 /**
  * config_get_joypad_driver_options:
@@ -387,56 +363,6 @@ bool input_joypad_set_rumble(const input_device_driver_t *driver,
       unsigned port, enum retro_rumble_effect effect, uint16_t strength);
 
 /**
- * input_joypad_axis_raw:
- * @drv                     : Input device driver handle.
- * @port                    : Joystick number.
- * @axis                    : Identifier of axis.
- *
- * Checks if axis (@axis) was being pressed by user
- * with joystick number @port.
- *
- * Returns: true (1) if axis was pressed, otherwise
- * false (0).
- **/
-static INLINE int16_t input_joypad_axis_raw(
-      const input_device_driver_t *drv,
-      unsigned port, unsigned axis)
-{
-   if (!drv)
-      return 0;
-   return drv->axis(port, AXIS_POS(axis)) +
-      drv->axis(port, AXIS_NEG(axis));
-}
-
-/**
- * input_joypad_button_raw:
- * @drv                     : Input device driver handle.
- * @port                    : Joystick number.
- * @button                  : Identifier of key.
- *
- * Checks if key (@button) was being pressed by user
- * with joystick number @port.
- *
- * Returns: true (1) if key was pressed, otherwise
- * false (0).
- **/
-static INLINE bool input_joypad_button_raw(const input_device_driver_t *drv,
-      unsigned port, unsigned button)
-{
-   if (!drv)
-      return false;
-   return drv && drv->button(port, button);
-}
-
-static INLINE bool input_joypad_hat_raw(const input_device_driver_t *drv,
-      unsigned port, unsigned hat_dir, unsigned hat)
-{
-   if (!drv)
-      return false;
-   return drv->button(port, HAT_MAP(hat, hat_dir));
-}
-
-/**
  * input_pad_connect:
  * @port                    : Joystick number.
  * @driver                  : handle for joypad driver handling joystick's input
@@ -461,24 +387,6 @@ bool input_mouse_button_raw(unsigned port, unsigned button);
 #ifdef HAVE_HID
 
 #include "include/hid_driver.h"
-
-/**
- * hid_driver_find_handle:
- * @index              : index of driver to get handle to.
- *
- * Returns: handle to HID driver at index. Can be NULL
- * if nothing found.
- **/
-const void *hid_driver_find_handle(int index);
-
-/**
- * hid_driver_find_ident:
- * @index              : index of driver to get handle to.
- *
- * Returns: Human-readable identifier of HID driver at index. Can be NULL
- * if nothing found.
- **/
-const char *hid_driver_find_ident(int index);
 
 /**
  * config_get_hid_driver_options:
@@ -663,7 +571,6 @@ extern input_device_driver_t wiiu_joypad;
 extern input_device_driver_t hid_joypad;
 extern input_device_driver_t android_joypad;
 extern input_device_driver_t qnx_joypad;
-extern input_device_driver_t null_joypad;
 extern input_device_driver_t mfi_joypad;
 extern input_device_driver_t dos_joypad;
 extern input_device_driver_t rwebpad_joypad;
@@ -691,14 +598,12 @@ extern input_driver_t input_rwebinput;
 extern input_driver_t input_dos;
 extern input_driver_t input_winraw;
 extern input_driver_t input_wayland;
-extern input_driver_t input_null;
 
 #ifdef HAVE_HID
 extern hid_driver_t iohidmanager_hid;
 extern hid_driver_t btstack_hid;
 extern hid_driver_t libusb_hid;
 extern hid_driver_t wiiusb_hid;
-extern hid_driver_t null_hid;
 #endif
 
 typedef struct menu_input_ctx_line

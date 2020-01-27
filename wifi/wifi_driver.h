@@ -60,7 +60,6 @@ typedef struct wifi_driver
 } wifi_driver_t;
 
 extern wifi_driver_t wifi_connmanctl;
-extern wifi_driver_t wifi_null;
 
 /**
  * config_get_wifi_driver_options:
@@ -72,24 +71,6 @@ extern wifi_driver_t wifi_null;
  * separated by '|'.
  **/
 const char* config_get_wifi_driver_options(void);
-
-/**
- * wifi_driver_find_handle:
- * @index              : index of driver to get handle to.
- *
- * Returns: handle to wifi driver at index. Can be NULL
- * if nothing found.
- **/
-const void *wifi_driver_find_handle(int index);
-
-/**
- * wifi_driver_find_ident:
- * @index              : index of driver to get handle to.
- *
- * Returns: Human-readable identifier of wifi driver at index. Can be NULL
- * if nothing found.
- **/
-const char *wifi_driver_find_ident(int index);
 
 void driver_wifi_stop(void);
 

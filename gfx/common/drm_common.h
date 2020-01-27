@@ -39,6 +39,7 @@ extern struct pollfd g_drm_fds;
 
 extern drmModeConnector *g_drm_connector;
 extern drmModeModeInfo *g_drm_mode;
+extern drmModeCrtc *g_orig_crtc;
 
 extern drmEventContext g_drm_evctx;
 

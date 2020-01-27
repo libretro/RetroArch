@@ -57,18 +57,9 @@ enum rarch_path_type
    RARCH_PATH_SUBSYSTEM
 };
 
-
-bool dir_init_shader(void);
-
-bool dir_free_shader(void);
-
-void dir_check_shader(bool pressed_next, bool pressed_prev);
-
 bool dir_is_empty(enum rarch_dir_type type);
 
 void dir_clear(enum rarch_dir_type type);
-
-void dir_clear_all(void);
 
 size_t dir_get_size(enum rarch_dir_type type);
 
@@ -86,11 +77,7 @@ void path_deinit_savefile(void);
 
 void path_init_savefile(void);
 
-void path_fill_names(void);
-
 bool path_set(enum rarch_path_type type, const char *path);
-
-void path_set_redirect(void);
 
 void path_set_special(char **argv, unsigned num_content);
 
@@ -103,8 +90,6 @@ char *path_get_ptr(enum rarch_path_type type);
 const char *path_get(enum rarch_path_type type);
 
 void path_clear(enum rarch_path_type type);
-
-void path_clear_all(void);
 
 bool path_is_empty(enum rarch_path_type type);
 

@@ -46,27 +46,28 @@
 #include "../../retroarch.h"
 
 /* Only used before init_netplay */
-static bool netplay_enabled = false;
-static bool netplay_is_client = false;
+static bool netplay_enabled                   = false;
+static bool netplay_is_client                 = false;
 
 /* Used while Netplay is running */
-static netplay_t *netplay_data = NULL;
+static netplay_t *netplay_data                = NULL;
 
 /* Used to avoid recursive netplay calls */
-static bool in_netplay = false;
+static bool in_netplay                        = false;
 
 /* Used for deferred netplay initialization */
-static bool      netplay_client_deferred = false;
+static bool      netplay_client_deferred      = false;
 static char      server_address_deferred[512] = "";
-static unsigned  server_port_deferred = 0;
+static unsigned  server_port_deferred         = 0;
 
 /* Used */
-static int reannounce = 0;
-static bool is_mitm = false;
+static int reannounce                         = 0;
+static bool is_mitm                           = false;
 
 static bool netplay_disconnect(netplay_t *netplay);
 
 #ifdef HAVE_DISCORD
+/* TODO/FIXME - global */
 extern bool discord_is_inited;
 #endif
 
@@ -642,8 +643,6 @@ static int16_t netplay_input_state(netplay_t *netplay,
 static void netplay_announce_cb(retro_task_t *task,
       void *task_data, void *user_data, const char *error)
 {
-   RARCH_LOG("[netplay] announcing netplay game... \n");
-
    if (task_data)
    {
       unsigned i, ip_len, port_len;
@@ -761,8 +760,6 @@ static void netplay_announce_cb(retro_task_t *task,
 
       if (mitm_ip && mitm_port)
       {
-         RARCH_LOG("[netplay] joining relay server: %s:%s\n", mitm_ip, mitm_port);
-
          ip_len   = (unsigned)strlen(mitm_ip);
          port_len = (unsigned)strlen(mitm_port);
 
@@ -810,49 +807,6 @@ static void netplay_announce_cb(retro_task_t *task,
    return;
 }
 
-void netplay_get_architecture(char *frontend_architecture, size_t size)
-{
-   const frontend_ctx_driver_t
-      *frontend                  = frontend_get_ptr();
-   enum frontend_architecture arch = frontend_driver_get_cpu_architecture();
-   char architecture[PATH_MAX_LENGTH];
-
-   switch (arch)
-   {
-      case FRONTEND_ARCH_X86:
-         strlcpy(architecture, "x86", sizeof(architecture));
-         break;
-      case FRONTEND_ARCH_X86_64:
-         strlcpy(architecture, "x64", sizeof(architecture));
-         break;
-      case FRONTEND_ARCH_PPC:
-         strlcpy(architecture, "PPC", sizeof(architecture));
-         break;
-      case FRONTEND_ARCH_ARM:
-         strlcpy(architecture, "ARM", sizeof(architecture));
-         break;
-      case FRONTEND_ARCH_ARMV7:
-         strlcpy(architecture, "ARMv7", sizeof(architecture));
-         break;
-      case FRONTEND_ARCH_ARMV8:
-         strlcpy(architecture, "ARMv8", sizeof(architecture));
-         break;
-      case FRONTEND_ARCH_MIPS:
-         strlcpy(architecture, "MIPS", sizeof(architecture));
-         break;
-      case FRONTEND_ARCH_TILE:
-         strlcpy(architecture, "Tilera", sizeof(architecture));
-         break;
-      case FRONTEND_ARCH_NONE:
-      default:
-         strlcpy(architecture,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
-               sizeof(architecture));
-         break;
-   }
-   snprintf(frontend_architecture, size, "%s %s", frontend->ident, architecture);
-}
-
 static void netplay_announce(void)
 {
    char buf[4600];
@@ -893,7 +847,8 @@ static void netplay_announce(void)
       net_http_urlencode(&subsystemname, "N/A");
    }
 
-   netplay_get_architecture(frontend_architecture, sizeof(frontend_architecture));
+   frontend_driver_get_cpu_architecture_str(
+         frontend_architecture, sizeof(frontend_architecture));
 
 #ifdef HAVE_DISCORD
    if(discord_is_ready())
@@ -918,9 +873,6 @@ static void netplay_announce(void)
       *settings->paths.netplay_spectate_password ? 1 : 0,
       settings->bools.netplay_use_mitm_server,
       PACKAGE_VERSION, frontend_architecture, subsystemname);
-#if 0
-   RARCH_LOG("[netplay] announcement URL: %s\n", buf);
-#endif
    task_push_http_post_transfer(url, buf, true, NULL, netplay_announce_cb, NULL);
 
    if (username)
@@ -1035,7 +987,7 @@ static void netplay_frontend_paused(netplay_t *netplay, bool paused)
  **/
 bool netplay_pre_frame(netplay_t *netplay)
 {
-   bool sync_stalled;
+   bool sync_stalled     = false;
    settings_t *settings  = config_get_ptr();
 
    retro_assert(netplay);
@@ -1328,15 +1280,13 @@ static void netplay_core_reset(netplay_t *netplay)
  *
  * Get the preferred share mode
  */
-uint8_t netplay_settings_share_mode(void)
+uint8_t netplay_settings_share_mode(unsigned share_digital, unsigned share_analog)
 {
-   settings_t *settings = config_get_ptr();
-   uint8_t share_mode = 0;
-
-   if (settings->uints.netplay_share_digital
-         || settings->uints.netplay_share_analog)
+   if (share_digital || share_analog)
    {
-      switch (settings->uints.netplay_share_digital)
+      uint8_t share_mode     = 0;
+
+      switch (share_digital)
       {
          case RARCH_NETPLAY_SHARE_DIGITAL_OR:
             share_mode |= NETPLAY_SHARE_DIGITAL_OR;
@@ -1350,7 +1300,8 @@ uint8_t netplay_settings_share_mode(void)
          default:
             share_mode |= NETPLAY_SHARE_NO_PREFERENCE;
       }
-      switch (settings->uints.netplay_share_analog)
+
+      switch (share_analog)
       {
          case RARCH_NETPLAY_SHARE_ANALOG_MAX:
             share_mode |= NETPLAY_SHARE_ANALOG_MAX;
@@ -1361,9 +1312,10 @@ uint8_t netplay_settings_share_mode(void)
          default:
             share_mode |= NETPLAY_SHARE_NO_PREFERENCE;
       }
-   }
 
-   return share_mode;
+      return share_mode;
+   }
+   return 0;
 }
 
 /**
@@ -1373,24 +1325,21 @@ uint8_t netplay_settings_share_mode(void)
  */
 static void netplay_toggle_play_spectate(netplay_t *netplay)
 {
-   enum rarch_netplay_connection_mode mode;
-
-   if (netplay->self_mode == NETPLAY_CONNECTION_PLAYING ||
-       netplay->self_mode == NETPLAY_CONNECTION_SLAVE)
+   switch (netplay->self_mode)
    {
-      /* Switch to spectator mode immediately */
-      netplay->self_mode = NETPLAY_CONNECTION_SPECTATING;
-      mode = NETPLAY_CONNECTION_SPECTATING;
+      case NETPLAY_CONNECTION_PLAYING:
+      case NETPLAY_CONNECTION_SLAVE:
+         /* Switch to spectator mode immediately */
+         netplay->self_mode = NETPLAY_CONNECTION_SPECTATING;
+         netplay_cmd_mode(netplay, NETPLAY_CONNECTION_SPECTATING);
+         break;
+      case NETPLAY_CONNECTION_SPECTATING:
+         /* Switch only after getting permission */
+         netplay_cmd_mode(netplay, NETPLAY_CONNECTION_PLAYING);
+         break;
+      default:
+         break;
    }
-   else if (netplay->self_mode == NETPLAY_CONNECTION_SPECTATING)
-   {
-      /* Switch only after getting permission */
-      mode = NETPLAY_CONNECTION_PLAYING;
-   }
-   else
-      return;
-
-   netplay_cmd_mode(netplay, mode);
 }
 
 /**

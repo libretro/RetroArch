@@ -372,7 +372,7 @@ static void *alsa_device_list_new(void *data)
 
    n      = hints;
 
-   while (*n != NULL)
+   while (*n)
    {
       char *name = snd_device_name_get_hint(*n, "NAME");
       char *io   = snd_device_name_get_hint(*n, "IOID");

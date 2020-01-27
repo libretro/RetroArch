@@ -30,7 +30,7 @@
 
 #if defined(HAVE_VIDEOCORE)
 #include "include/userland/interface/vmcs_host/vc_vchi_gencmd.h"
-static void crt_rpi_switch(int width, int height, float hz);
+static void crt_rpi_switch(int width, int height, float hz, int xoffset);
 #endif
 
 static unsigned ra_core_width     = 0;
@@ -99,7 +99,7 @@ static void switch_res_crt(unsigned width, unsigned height)
    video_display_server_set_resolution(width, height,
          ra_set_core_hz, ra_core_hz, crt_center_adjust, crt_index, crt_center_adjust);
 #if defined(HAVE_VIDEOCORE)
-   crt_rpi_switch(width, height, ra_core_hz);
+   crt_rpi_switch(width, height, ra_core_hz, crt_center_adjust);
    video_monitor_set_refresh_rate(ra_core_hz);
    crt_switch_driver_reinit();
 #endif
@@ -259,7 +259,7 @@ int crt_compute_dynamic_width(int width)
 }
 
 #if defined(HAVE_VIDEOCORE)
-static void crt_rpi_switch(int width, int height, float hz)
+static void crt_rpi_switch(int width, int height, float hz, int xoffset)
 {
    char buffer[1024];
    VCHI_INSTANCE_T vchi_instance;
@@ -289,27 +289,18 @@ static void crt_rpi_switch(int width, int height, float hz)
    video_monitor_set_refresh_rate(hz);
 
    /* following code is the mode line generator */
-
-   pwidth = width;
-
-   if (height < 400 && width > 400)
-      pwidth = width / 2;
-
-   roundw = roundf((float)pwidth / (float)height * 100) / 100;
-
-   if (height > width)
-      roundw = roundf((float)height / (float)width * 100) / 100;
-
-   if (roundw > 1.35)
-      roundw = 1.25;
-
-   if (roundw < 1.20)
-      roundw = 1.34;
-   hfp = width * 0.065;
-
-   hsp = width * 0.1433-hfp+(crt_center_adjust*4);
-
-   hbp = width * 0.3-hsp-hfp;
+   hsp    = (width * 0.117) - (xoffset*4);
+   if (width < 700)
+   {
+      hfp    = (width * 0.065);
+      hbp  = width * 0.35-hsp-hfp;
+   }else {
+      hfp  = (width * 0.033) + (width / 112);
+      hbp  = (width * 0.225) + (width /58);
+      xoffset = xoffset*2;
+   }
+   
+   hmax = hbp;
 
    if (height < 241)
       vmax = 261;

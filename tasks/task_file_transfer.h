@@ -21,6 +21,7 @@
 #include <retro_miscellaneous.h>
 
 #include <queues/message_queue.h>
+#include <queues/task_queue.h>
 
 #include "../msg_hash.h"
 
@@ -74,7 +75,11 @@ typedef struct
 {
    enum msg_hash_enums enum_idx;
    char path[PATH_MAX_LENGTH];
+   void *user_data;
 } file_transfer_t;
+
+void* task_push_http_transfer_file(const char* url, bool mute, const char* type,
+      retro_task_callback_t cb, file_transfer_t* transfer_data);
 
 RETRO_END_DECLS
 

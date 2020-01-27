@@ -23,6 +23,7 @@
 #include <libretro.h>
 #include <boolean.h>
 #include <retro_assert.h>
+#include <retro_miscellaneous.h>
 #include <compat/posix_string.h>
 #include <string/stdstring.h>
 #include <streams/interface_stream.h>
@@ -33,7 +34,6 @@
 
 #include "playlist.h"
 #include "verbosity.h"
-#include "configuration.h"
 #include "file_path_special.h"
 
 #ifndef PLAYLIST_ENTRIES
@@ -94,14 +94,12 @@ typedef int (playlist_sort_fun_t)(
  * (Taking into account relative paths, case insensitive
  * filesystems, 'incomplete' archive paths)
  **/
-static bool playlist_path_equal(const char *real_path, const char *entry_path)
+static bool playlist_path_equal(const char *real_path,
+      const char *entry_path, bool fuzzy_archive_match)
 {
    bool real_path_is_compressed;
    bool entry_real_path_is_compressed;
    char entry_real_path[PATH_MAX_LENGTH];
-#ifdef RARCH_INTERNAL
-   settings_t *settings = config_get_ptr();
-#endif
 
    entry_real_path[0] = '\0';
 
@@ -128,7 +126,7 @@ static bool playlist_path_equal(const char *real_path, const char *entry_path)
 
 #ifdef RARCH_INTERNAL
    /* If fuzzy matching is disabled, we can give up now */
-   if (!settings || !settings->bools.playlist_fuzzy_archive_match)
+   if (!fuzzy_archive_match)
       return false;
 #endif
 
@@ -342,7 +340,8 @@ void playlist_delete_index(playlist_t *playlist,
 
 void playlist_get_index_by_path(playlist_t *playlist,
       const char *search_path,
-      const struct playlist_entry **entry)
+      const struct playlist_entry **entry,
+      bool fuzzy_archive_match)
 {
    size_t i;
    char real_search_path[PATH_MAX_LENGTH];
@@ -358,7 +357,8 @@ void playlist_get_index_by_path(playlist_t *playlist,
 
    for (i = 0; i < playlist->size; i++)
    {
-      if (!playlist_path_equal(real_search_path, playlist->entries[i].path))
+      if (!playlist_path_equal(real_search_path, playlist->entries[i].path,
+               fuzzy_archive_match))
          continue;
 
       *entry = &playlist->entries[i];
@@ -368,8 +368,7 @@ void playlist_get_index_by_path(playlist_t *playlist,
 }
 
 bool playlist_entry_exists(playlist_t *playlist,
-      const char *path,
-      const char *crc32)
+      const char *path, bool fuzzy_archive_match)
 {
    size_t i;
    char real_search_path[PATH_MAX_LENGTH];
@@ -384,7 +383,8 @@ bool playlist_entry_exists(playlist_t *playlist,
    path_resolve_realpath(real_search_path, sizeof(real_search_path), true);
 
    for (i = 0; i < playlist->size; i++)
-      if (playlist_path_equal(real_search_path, playlist->entries[i].path))
+      if (playlist_path_equal(real_search_path, playlist->entries[i].path,
+               fuzzy_archive_match))
          return true;
 
    return false;
@@ -559,7 +559,8 @@ void playlist_update_runtime(playlist_t *playlist, size_t idx,
 }
 
 bool playlist_push_runtime(playlist_t *playlist,
-      const struct playlist_entry *entry)
+      const struct playlist_entry *entry,
+      bool fuzzy_archive_match)
 {
    size_t i;
    char real_path[PATH_MAX_LENGTH];
@@ -601,7 +602,7 @@ bool playlist_push_runtime(playlist_t *playlist,
       const char *entry_path = playlist->entries[i].path;
       bool equal_path        =
          (string_is_empty(real_path) && string_is_empty(entry_path)) ||
-         playlist_path_equal(real_path, entry_path);
+         playlist_path_equal(real_path, entry_path, fuzzy_archive_match);
 
       /* Core name can have changed while still being the same core.
        * Differentiate based on the core path only. */
@@ -726,7 +727,8 @@ void playlist_resolve_path(enum playlist_file_mode mode,
  * Push entry to top of playlist.
  **/
 bool playlist_push(playlist_t *playlist,
-      const struct playlist_entry *entry)
+      const struct playlist_entry *entry,
+      bool fuzzy_archive_match)
 {
    size_t i;
    char real_path[PATH_MAX_LENGTH];
@@ -783,7 +785,7 @@ bool playlist_push(playlist_t *playlist,
       const char *entry_path = playlist->entries[i].path;
       bool equal_path        =
          (string_is_empty(real_path) && string_is_empty(entry_path)) ||
-         playlist_path_equal(real_path, entry_path);
+         playlist_path_equal(real_path, entry_path, fuzzy_archive_match);
 
       /* Core name can have changed while still being the same core.
        * Differentiate based on the core path only. */
@@ -840,7 +842,8 @@ bool playlist_push(playlist_t *playlist,
                path_resolve_realpath(real_rom_path, sizeof(real_rom_path), true);
             }
 
-            if (!playlist_path_equal(real_rom_path, roms->elems[j].data))
+            if (!playlist_path_equal(real_rom_path, roms->elems[j].data,
+                     fuzzy_archive_match))
             {
                unequal = true;
                break;
@@ -1215,13 +1218,10 @@ end:
    filestream_close(file);
 }
 
-void playlist_write_file(playlist_t *playlist)
+void playlist_write_file(playlist_t *playlist, bool use_old_format)
 {
    size_t i;
    RFILE          *file = NULL;
-#ifdef RARCH_INTERNAL
-   settings_t *settings = config_get_ptr();
-#endif
 
    if (!playlist || !playlist->modified)
       return;
@@ -1236,7 +1236,7 @@ void playlist_write_file(playlist_t *playlist)
    }
 
 #ifdef RARCH_INTERNAL
-   if (settings->bools.playlist_use_old_format)
+   if (use_old_format)
    {
       for (i = 0; i < playlist->size; i++)
          filestream_printf(file, "%s\n%s\n%s\n%s\n%s\n%s\n",
@@ -2455,22 +2455,22 @@ void playlist_qsort(playlist_t *playlist)
 
 void command_playlist_push_write(
       playlist_t *playlist,
-      const struct playlist_entry *entry)
+      const struct playlist_entry *entry,
+      bool fuzzy_archive_match,
+      bool use_old_format)
 {
    if (!playlist)
       return;
 
-   if (playlist_push(
-         playlist,
-         entry
-         ))
-      playlist_write_file(playlist);
+   if (playlist_push(playlist, entry, fuzzy_archive_match))
+      playlist_write_file(playlist, use_old_format);
 }
 
 void command_playlist_update_write(
       playlist_t *plist,
       size_t idx,
-      const struct playlist_entry *entry)
+      const struct playlist_entry *entry,
+      bool use_old_format)
 {
    playlist_t *playlist = plist ? plist : playlist_get_cached();
 
@@ -2482,7 +2482,7 @@ void command_playlist_update_write(
          idx,
          entry);
 
-   playlist_write_file(playlist);
+   playlist_write_file(playlist, use_old_format);
 }
 
 bool playlist_index_is_valid(playlist_t *playlist, size_t idx,
@@ -2496,6 +2496,49 @@ bool playlist_index_is_valid(playlist_t *playlist, size_t idx,
 
    return string_is_equal(playlist->entries[idx].path, path) &&
           string_is_equal(path_basename(playlist->entries[idx].core_path), path_basename(core_path));
+}
+
+bool playlist_entries_are_equal(
+      const struct playlist_entry *entry_a,
+      const struct playlist_entry *entry_b,
+      bool fuzzy_archive_match)
+{
+   char real_path_a[PATH_MAX_LENGTH];
+   char real_core_path_a[PATH_MAX_LENGTH];
+
+   real_path_a[0]      = '\0';
+   real_core_path_a[0] = '\0';
+
+   /* Sanity check */
+   if (!entry_a || !entry_b)
+      return false;
+
+   if (string_is_empty(entry_a->path) &&
+       string_is_empty(entry_a->core_path) &&
+       string_is_empty(entry_b->path) &&
+       string_is_empty(entry_b->core_path))
+      return true;
+
+   /* Check content paths */
+   if (!string_is_empty(entry_a->path))
+   {
+      strlcpy(real_path_a, entry_a->path, sizeof(real_path_a));
+      path_resolve_realpath(real_path_a, sizeof(real_path_a), true);
+   }
+
+   if (!playlist_path_equal(
+         real_path_a, entry_b->path, fuzzy_archive_match))
+      return false;
+
+   /* Check core paths */
+   if (!string_is_empty(entry_a->core_path))
+   {
+      strlcpy(real_core_path_a, entry_a->core_path, sizeof(real_core_path_a));
+      if (!string_is_equal(real_core_path_a, "DETECT"))
+         path_resolve_realpath(real_core_path_a, sizeof(real_core_path_a), true);
+   }
+
+   return playlist_core_path_equal(real_core_path_a, entry_b->core_path);
 }
 
 void playlist_get_crc32(playlist_t *playlist, size_t idx,

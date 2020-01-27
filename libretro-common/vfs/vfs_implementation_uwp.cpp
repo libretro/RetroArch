@@ -51,66 +51,12 @@ using namespace Windows::Storage::FileProperties;
 #include <retro_miscellaneous.h>
 #include <file/file_path.h>
 #include <retro_assert.h>
-#include <verbosity.h>
 #include <string/stdstring.h>
 #include <retro_environment.h>
-#include <uwp/uwp_func.h>
+#include <uwp/uwp_async.h>
 
 namespace
 {
-	/* Dear Microsoft
-	 * I really appreciate all the effort you took to not provide any
-	 * synchronous file APIs and block all attempts to synchronously
-	 * wait for the results of async tasks for "smooth user experience",
-	 * but I'm not going to run and rewrite all RetroArch cores for
-	 * async I/O. I hope you like this hack I made instead.
-	 */
-	template<typename T>
-	T RunAsync(std::function<concurrency::task<T>()> func)
-	{
-		volatile bool finished = false;
-		Platform::Exception^ exception = nullptr;
-		T result;
-
-		func().then([&finished, &exception, &result](concurrency::task<T> t) {
-			try
-			{
-				result = t.get();
-			}
-			catch (Platform::Exception^ exception_)
-			{
-				exception = exception_;
-			}
-			finished = true;
-		});
-
-		/* Don't stall the UI thread - prevents a deadlock */
-		Windows::UI::Core::CoreWindow^ corewindow = Windows::UI::Core::CoreWindow::GetForCurrentThread();
-		while (!finished)
-		{
-			if (corewindow) {
-				corewindow->Dispatcher->ProcessEvents(Windows::UI::Core::CoreProcessEventsOption::ProcessAllIfPresent);
-			}
-		}
-
-		if (exception != nullptr)
-			throw exception;
-		return result;
-	}
-
-	template<typename T>
-	T RunAsyncAndCatchErrors(std::function<concurrency::task<T>()> func, T valueOnError)
-	{
-		try
-		{
-			return RunAsync<T>(func);
-		}
-		catch (Platform::Exception^ e)
-		{
-			return valueOnError;
-		}
-	}
-
 	void windowsize_path(wchar_t* path)
 	{
 		/* UWP deals with paths containing / instead of \ way worse than normal Windows */
@@ -353,15 +299,13 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(const char *path, uns
 
 	if (!path_is_absolute(path))
 	{
-		RARCH_WARN("Something tried to access files from current directory ('%s'). This is not allowed on UWP.\n", path);
+      /* Something tried to access files from current directory. This is not allowed on UWP. */
 		return NULL;
 	}
 
+   /* Trying to open a directory as file?! */
 	if (path_char_is_slash(path[strlen(path) - 1]))
-	{
-		RARCH_WARN("Trying to open a directory as file?! ('%s')\n", path);
 		return NULL;
-	}
 
 	char* dirpath = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
 	fill_pathname_basedir(dirpath, path, PATH_MAX_LENGTH);

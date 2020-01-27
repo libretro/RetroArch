@@ -47,7 +47,14 @@
 
 #include "../common/win32_common.h"
 
-#if defined(HAVE_OPENGL) 
+#ifdef HAVE_EGL
+#include "../common/egl_common.h"
+#ifdef HAVE_ANGLE
+#include "../common/angle_common.h"
+#endif
+#endif
+
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
 #include "../common/gl_common.h"
 #elif defined(HAVE_OPENGL_CORE)
 #include "../common/gl_core_common.h"
@@ -103,6 +110,9 @@ static bool  wgl_adaptive_vsync           = false;
 #ifdef HAVE_VULKAN
 static gfx_ctx_vulkan_data_t win32_vk;
 #endif
+#ifdef HAVE_EGL
+static egl_ctx_data_t win32_egl;
+#endif
 
 static unsigned         win32_major       = 0;
 static unsigned         win32_minor       = 0;
@@ -110,10 +120,39 @@ static int              win32_interval    = 0;
 static enum gfx_ctx_api win32_api         = GFX_CTX_NONE;
 
 #ifdef HAVE_DYNAMIC
-static dylib_t          dll_handle        = NULL; /* Handle to OpenGL32.dll */
+static dylib_t          dll_handle        = NULL; /* Handle to OpenGL32.dll/libGLESv2.dll */
 #endif
 
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)
+typedef struct gfx_ctx_cgl_data
+{
+   void *empty;
+} gfx_ctx_wgl_data_t;
+
+static gfx_ctx_proc_t gfx_ctx_wgl_get_proc_address(const char *symbol)
+{
+   switch (win32_api)
+   {
+      case GFX_CTX_OPENGL_API:
+#if (defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)) && !defined(HAVE_OPENGLES)
+         {
+            gfx_ctx_proc_t func = (gfx_ctx_proc_t)wglGetProcAddress(symbol);
+            if (func)
+               return func;
+         }
+#endif
+         break;
+      default:
+         break;
+   }
+
+#ifdef HAVE_DYNAMIC
+   return (gfx_ctx_proc_t)GetProcAddress((HINSTANCE)dll_handle, symbol);
+#else
+   return NULL;
+#endif
+}
+
+#if (defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)) && !defined(HAVE_OPENGLES)
 static bool wgl_has_extension(const char *extension, const char *extensions)
 {
    const char *start      = NULL;
@@ -143,38 +182,7 @@ static bool wgl_has_extension(const char *extension, const char *extensions)
    }
    return false;
 }
-#endif
 
-typedef struct gfx_ctx_cgl_data
-{
-   void *empty;
-} gfx_ctx_wgl_data_t;
-
-static gfx_ctx_proc_t gfx_ctx_wgl_get_proc_address(const char *symbol)
-{
-   switch (win32_api)
-   {
-      case GFX_CTX_OPENGL_API:
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)
-         {
-            gfx_ctx_proc_t func = (gfx_ctx_proc_t)wglGetProcAddress(symbol);
-            if (func)
-               return func;
-         }
-#endif
-         break;
-      default:
-         break;
-   }
-
-#ifdef HAVE_DYNAMIC
-   return (gfx_ctx_proc_t)GetProcAddress((HINSTANCE)dll_handle, symbol);
-#else
-   return NULL;
-#endif
-}
-
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)
 static void create_gl_context(HWND hwnd, bool *quit)
 {
    struct retro_hw_render_callback *hwr = video_driver_get_hw_context();
@@ -357,13 +365,74 @@ static void create_gl_context(HWND hwnd, bool *quit)
 }
 #endif
 
+#if defined(HAVE_OPENGLES) && defined(HAVE_EGL)
+static void create_gles_context(HWND hwnd, bool *quit)
+{
+
+   EGLint n, major, minor;
+   EGLint format;
+   EGLint attribs[] = {
+   EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
+   EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
+   EGL_BLUE_SIZE, 8,
+   EGL_GREEN_SIZE, 8,
+   EGL_RED_SIZE, 8,
+   EGL_ALPHA_SIZE, 8,
+   EGL_DEPTH_SIZE, 16,
+   EGL_NONE
+   };
+
+   EGLint context_attributes[] = {
+      EGL_CONTEXT_CLIENT_VERSION, 2,
+      EGL_NONE
+   };
+
+#ifdef HAVE_ANGLE
+   if (!angle_init_context(&win32_egl, EGL_DEFAULT_DISPLAY,
+      &major, &minor, &n, attribs, NULL))
+#else
+   if (!egl_init_context(&win32_egl, EGL_NONE, EGL_DEFAULT_DISPLAY,
+      &major, &minor, &n, attribs, NULL))
+#endif
+   {
+      egl_report_error();
+      goto error;
+   }
+
+   if (!egl_get_native_visual_id(&win32_egl, &format))
+      goto error;
+
+   if (!egl_create_context(&win32_egl, context_attributes))
+   {
+      egl_report_error();
+      goto error;
+   }
+
+   if (!egl_create_surface(&win32_egl, hwnd))
+      goto error;
+
+   g_win32_inited = true;
+   return;
+
+error:
+   *quit = true;
+   return;
+}
+#endif
+
 void create_graphics_context(HWND hwnd, bool *quit)
 {
    switch (win32_api)
    {
       case GFX_CTX_OPENGL_API:
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)
+#if (defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)) && !defined(HAVE_OPENGLES)
          create_gl_context(hwnd, quit);
+#endif
+         break;
+
+      case GFX_CTX_OPENGL_ES_API:
+#if defined (HAVE_OPENGLES)
+         create_gles_context(hwnd, quit);
 #endif
          break;
 
@@ -406,7 +475,7 @@ static void gfx_ctx_wgl_swap_interval(void *data, int interval)
    switch (win32_api)
    {
       case GFX_CTX_OPENGL_API:
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)
+#if (defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)) && !defined(HAVE_OPENGLES)
          win32_interval = interval;
          if (!win32_hrc)
             return;
@@ -416,6 +485,16 @@ static void gfx_ctx_wgl_swap_interval(void *data, int interval)
          RARCH_LOG("[WGL]: wglSwapInterval(%i)\n", win32_interval);
          if (!p_swap_interval(win32_interval))
             RARCH_WARN("[WGL]: wglSwapInterval() failed.\n");
+#endif
+         break;
+
+      case GFX_CTX_OPENGL_ES_API:
+#ifdef HAVE_EGL
+         if (win32_interval != interval)
+         {
+            win32_interval = interval;
+            egl_set_swap_interval(&win32_egl, win32_interval);
+         }
 #endif
          break;
 
@@ -473,7 +552,11 @@ static void gfx_ctx_wgl_swap_buffers(void *data, void *data2)
          vulkan_acquire_next_image(&win32_vk);
 #endif
          break;
-
+      case GFX_CTX_OPENGL_ES_API:
+#if defined(HAVE_EGL)
+         egl_swap_buffers(&win32_egl);
+#endif
+         break;
       case GFX_CTX_NONE:
       default:
          break;
@@ -568,7 +651,11 @@ static void *gfx_ctx_wgl_init(video_frame_info_t *video_info, void *video_driver
       gfx_ctx_wgl_destroy(NULL);
 
 #ifdef HAVE_DYNAMIC
+#ifdef HAVE_OPENGL
    dll_handle = dylib_load("OpenGL32.dll");
+#else
+   dll_handle = dylib_load("libGLESv2.dll");
+#endif
 #endif
 
    win32_window_reset();
@@ -607,7 +694,7 @@ static void gfx_ctx_wgl_destroy(void *data)
    switch (win32_api)
    {
       case GFX_CTX_OPENGL_API:
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)
+#if (defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)) && !defined(HAVE_OPENGLES)
          if (win32_hrc)
          {
             glFinish();
@@ -631,6 +718,12 @@ static void gfx_ctx_wgl_destroy(void *data)
          if (win32_vk.context.queue_lock)
             slock_free(win32_vk.context.queue_lock);
          memset(&win32_vk, 0, sizeof(win32_vk));
+#endif
+         break;
+
+      case GFX_CTX_OPENGL_ES_API:
+#ifdef HAVE_EGL
+         egl_destroy(&win32_egl);
 #endif
          break;
 
@@ -732,11 +825,6 @@ static void gfx_ctx_wgl_input_driver(void *data,
 #endif
 }
 
-static bool gfx_ctx_wgl_has_focus(void *data)
-{
-   return win32_has_focus();
-}
-
 static enum gfx_ctx_api gfx_ctx_wgl_get_api(void *data)
 {
    return win32_api;
@@ -755,6 +843,10 @@ static bool gfx_ctx_wgl_bind_api(void *data,
    if (api == GFX_CTX_OPENGL_API)
       return true;
 #endif
+#if defined(HAVE_OPENGLES)
+   if (api == GFX_CTX_OPENGL_ES_API)
+      return true;
+#endif
 #if defined(HAVE_VULKAN)
    if (api == GFX_CTX_VULKAN_API)
       return true;
@@ -763,22 +855,22 @@ static bool gfx_ctx_wgl_bind_api(void *data,
    return false;
 }
 
-static void gfx_ctx_wgl_show_mouse(void *data, bool state)
-{
-   (void)data;
-   win32_show_cursor(state);
-}
-
 static void gfx_ctx_wgl_bind_hw_render(void *data, bool enable)
 {
    switch (win32_api)
    {
       case GFX_CTX_OPENGL_API:
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)
+#if (defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)) && !defined(HAVE_OPENGLES)
          win32_use_hw_ctx = enable;
 
          if (win32_hdc)
             wglMakeCurrent(win32_hdc, enable ? win32_hw_hrc : win32_hrc);
+#endif
+         break;
+
+      case GFX_CTX_OPENGL_ES_API:
+#ifdef HAVE_EGL
+         egl_bind_hw_render(&win32_egl, enable);
 #endif
          break;
 
@@ -833,6 +925,16 @@ static uint32_t gfx_ctx_wgl_get_flags(void *data)
          BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
 #endif
          break;
+
+      case GFX_CTX_OPENGL_ES_API:
+#if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
+         BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
+#endif
+#ifdef HAVE_GLSL
+            BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_GLSL);
+#endif
+         break;
+
       case GFX_CTX_NONE:
       default:
          break;
@@ -892,7 +994,7 @@ const gfx_ctx_driver_t gfx_ctx_wgl = {
    gfx_ctx_wgl_update_title,
    gfx_ctx_wgl_check_window,
    gfx_ctx_wgl_set_resize,
-   gfx_ctx_wgl_has_focus,
+   win32_has_focus,
    win32_suppress_screensaver,
    true, /* has_windowed */
    gfx_ctx_wgl_swap_buffers,
@@ -900,7 +1002,7 @@ const gfx_ctx_driver_t gfx_ctx_wgl = {
    gfx_ctx_wgl_get_proc_address,
    NULL,
    NULL,
-   gfx_ctx_wgl_show_mouse,
+   win32_show_cursor,
    "wgl",
    gfx_ctx_wgl_get_flags,
    gfx_ctx_wgl_set_flags,

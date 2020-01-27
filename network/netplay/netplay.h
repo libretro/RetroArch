@@ -38,6 +38,7 @@ static const mitm_server_t netplay_mitm_server_list[] = {
    { "nyc", "New York City, USA" },
    { "madrid", "Madrid, Spain" },
    { "montreal", "Montreal, Canada" },
+   { "saopaulo", "Sao Paulo, Brazil" },
 };
 
 enum rarch_netplay_ctl_state
@@ -122,7 +123,5 @@ struct netplay_room* netplay_room_get(int index);
 int netplay_rooms_get_count(void);
 
 void netplay_rooms_free(void);
-
-void netplay_get_architecture(char *frontend_architecture, size_t size);
 
 #endif

@@ -44,7 +44,7 @@
 
 typedef struct psp_audio
 {
-   bool nonblocking;
+   bool nonblock;
 
    uint32_t* buffer;
    uint32_t* zeroBuffer;
@@ -167,7 +167,7 @@ static void *psp_audio_init(const char *device,
    psp->cond_lock = slock_new();
    psp->cond = scond_new();
 
-   psp->nonblocking = false;
+   psp->nonblock    = false;
    psp->running     = true;
    psp->worker_thread = sthread_create(audioMainLoop, psp);
 
@@ -202,18 +202,18 @@ static void psp_audio_free(void *data)
 
 static ssize_t psp_audio_write(void *data, const void *buf, size_t size)
 {
-   psp_audio_t* psp = (psp_audio_t*)data;
+   psp_audio_t* psp     = (psp_audio_t*)data;
    uint16_t write_pos   = psp->write_pos;
    uint16_t sampleCount = size / sizeof(uint32_t);
 
    if (!psp->running)
       return -1;
 
-   if (psp->nonblocking)
+   if (psp->nonblock)
    {
       if (AUDIO_BUFFER_SIZE - ((uint16_t)
-            (psp->write_pos - psp->read_pos) & AUDIO_BUFFER_SIZE_MASK) < size)
-      return 0;
+               (psp->write_pos - psp->read_pos) & AUDIO_BUFFER_SIZE_MASK) < size)
+         return 0;
    }
 
    slock_lock(psp->cond_lock);
@@ -287,7 +287,7 @@ static void psp_audio_set_nonblock_state(void *data, bool toggle)
 {
    psp_audio_t* psp = (psp_audio_t*)data;
    if (psp)
-      psp->nonblocking = toggle;
+      psp->nonblock = toggle;
 }
 
 static bool psp_audio_use_float(void *data)

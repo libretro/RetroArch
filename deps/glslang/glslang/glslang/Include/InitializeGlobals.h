@@ -38,6 +38,7 @@
 namespace glslang {
 
 bool InitializePoolIndex();
+bool DeinitializePoolIndex();
 
 } // end namespace glslang
 

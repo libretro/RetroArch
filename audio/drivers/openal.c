@@ -115,7 +115,7 @@ static void *al_init(const char *device, unsigned rate, unsigned latency,
 
    al->buffers = (ALuint*)calloc(al->num_buffers, sizeof(ALuint));
    al->res_buf = (ALuint*)calloc(al->num_buffers, sizeof(ALuint));
-   if (al->buffers == NULL || al->res_buf == NULL)
+   if (!al->buffers || !al->res_buf)
       goto error;
 
    alGenSources(1, &al->source);

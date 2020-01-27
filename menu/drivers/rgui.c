@@ -496,6 +496,20 @@ static const rgui_theme_t rgui_theme_anti_zenburn = {
    0xE0B090B0  /* particle_color */
 };
 
+#if 0
+static const rgui_theme_t rgui_theme_flux = {
+   0xFF6FCB9F, /* hover_color */
+   0xFF666547, /* normal_color */
+   0xFFFB2E01, /* title_color */
+   0xE0FFFEB3, /* bg_dark_color */
+   0xE0FFFEB3, /* bg_light_color */
+   0xE0FFE28A, /* border_dark_color */
+   0xE0FFE28A, /* border_light_color */
+   0xE0FFE28A, /* shadow_color */
+   0xE0FB2E01  /* particle_color */
+};
+#endif
+
 typedef struct
 {
    uint16_t hover_color;
@@ -2159,15 +2173,20 @@ static const rgui_theme_t *get_theme(rgui_t *rgui)
 
 static void load_custom_theme(rgui_t *rgui, rgui_theme_t *theme_colors, const char *theme_path)
 {
-   unsigned normal_color, hover_color, title_color,
-      bg_dark_color, bg_light_color,
-      border_dark_color, border_light_color,
-      shadow_color, particle_color;
    char wallpaper_file[PATH_MAX_LENGTH];
-   config_file_t *conf  = NULL;
-   char *wallpaper_key  = NULL;
-   settings_t *settings = config_get_ptr();
-   bool success         = false;
+   unsigned normal_color       = 0;
+   unsigned hover_color        = 0;
+   unsigned title_color        = 0;
+   unsigned bg_dark_color      = 0;
+   unsigned bg_light_color     = 0;
+   unsigned border_dark_color  = 0;
+   unsigned border_light_color = 0;
+   unsigned shadow_color       = 0;
+   unsigned particle_color     = 0;
+   config_file_t *conf         = NULL;
+   char *wallpaper_key         = NULL;
+   settings_t *settings        = config_get_ptr();
+   bool success                = false;
 
    /* Determine which type of wallpaper to load */
    switch (settings->uints.menu_rgui_aspect_ratio)
@@ -4635,7 +4654,7 @@ static void rgui_update_thumbnail_image(void *userdata)
    rgui_scan_selected_entry_thumbnail(rgui, true);
 }
 
-static void rgui_refresh_thumbnail_image(void *userdata)
+static void rgui_refresh_thumbnail_image(void *userdata, unsigned i)
 {
    rgui_t *rgui         = (rgui_t*)userdata;
    settings_t *settings = config_get_ptr();
@@ -4885,18 +4904,18 @@ static int rgui_pointer_up(void *data,
                if (y < header_height)
                   rgui_update_thumbnail_image(rgui);
                else
-                  return menu_entry_action(entry, (unsigned)selection, MENU_ACTION_SELECT);
+                  return menu_entry_action(entry, selection, MENU_ACTION_SELECT);
             }
             else
             {
                if (y < header_height)
-                  return menu_entry_action(entry, (unsigned)selection, MENU_ACTION_CANCEL);
+                  return menu_entry_action(entry, selection, MENU_ACTION_CANCEL);
                else if (ptr <= (menu_entries_get_size() - 1))
                {
                   /* If currently selected item matches 'pointer' value,
                    * perform a MENU_ACTION_SELECT on it */
                   if (ptr == selection)
-                     return menu_entry_action(entry, (unsigned)selection, MENU_ACTION_SELECT);
+                     return menu_entry_action(entry, selection, MENU_ACTION_SELECT);
 
                   /* Otherwise, just move the current selection to the
                    * 'pointer' value */
@@ -4910,7 +4929,7 @@ static int rgui_pointer_up(void *data,
          /* 'Reset to default' action */
          if ((ptr <= (menu_entries_get_size() - 1)) &&
              (ptr == selection))
-            return menu_entry_action(entry, (unsigned)selection, MENU_ACTION_START);
+            return menu_entry_action(entry, selection, MENU_ACTION_START);
          break;
       default:
          /* Ignore input */
@@ -5201,4 +5220,5 @@ menu_ctx_driver_t menu_ctx_rgui = {
    NULL,                               /* pointer_down */
    rgui_pointer_up,
    NULL,                               /* get_load_content_animation_data */
+   generic_menu_entry_action
 };

@@ -31,7 +31,11 @@ enum {
   RC_MISSING_VALUE = -16,
   RC_INVALID_LBOARD_FIELD = -17,
   RC_MISSING_DISPLAY_STRING = -18,
-  RC_OUT_OF_MEMORY = -19
+  RC_OUT_OF_MEMORY = -19,
+  RC_INVALID_VALUE_FLAG = -20,
+  RC_MISSING_VALUE_MEASURED = -21,
+  RC_MULTIPLE_MEASURED = -22,
+  RC_INVALID_MEASURED_TARGET = -23
 };
 
 /*****************************************************************************\
@@ -112,6 +116,8 @@ typedef struct {
   char size;
   /* True if the value is in BCD. */
   char is_bcd;
+  /* True if the reference will be used in indirection */
+  char is_indirect;
 } rc_memref_t;
 
 typedef struct rc_memref_value_t rc_memref_value_t;
@@ -176,7 +182,9 @@ enum {
   RC_CONDITION_ADD_SOURCE,
   RC_CONDITION_SUB_SOURCE,
   RC_CONDITION_ADD_HITS,
-  RC_CONDITION_AND_NEXT
+  RC_CONDITION_AND_NEXT,
+  RC_CONDITION_MEASURED,
+  RC_CONDITION_ADD_ADDRESS
 };
 
 /* operators */
@@ -186,7 +194,8 @@ enum {
   RC_CONDITION_LE,
   RC_CONDITION_GT,
   RC_CONDITION_GE,
-  RC_CONDITION_NE
+  RC_CONDITION_NE,
+  RC_CONDITION_NONE
 };
 
 typedef struct rc_condition_t rc_condition_t;
@@ -204,16 +213,17 @@ struct rc_condition_t {
   /* The next condition in the chain. */
   rc_condition_t* next;
 
-  /**
-   * Set if the condition needs to processed as part of the "check if paused"
-   * pass
-   */
-  char pause;
-
   /* The type of the condition. */
   char type;
+
   /* The comparison operator to use. */
   char oper; /* operator is a reserved word in C++. */
+
+  /* Set if the condition needs to processed as part of the "check if paused" pass. */
+  char pause;
+
+  /* Whether or not the condition evaluated true on the last check */
+  char is_true;
 };
 
 /*****************************************************************************\
@@ -231,11 +241,23 @@ struct rc_condset_t {
 
   /* True if any condition in the set is a pause condition. */
   char has_pause;
+
+  /* True if the set is currently paused. */
+  char is_paused;
 };
 
 /*****************************************************************************\
 | Trigger                                                                     |
 \*****************************************************************************/
+
+enum {
+  RC_TRIGGER_STATE_INACTIVE,   /* achievement is not being processed */
+  RC_TRIGGER_STATE_WAITING,    /* achievement cannot trigger until it has been false for at least one frame */
+  RC_TRIGGER_STATE_ACTIVE,     /* achievement is active and may trigger */
+  RC_TRIGGER_STATE_PAUSED,     /* achievement is currently paused and will not trigger */
+  RC_TRIGGER_STATE_RESET,      /* achievement hit counts were reset */
+  RC_TRIGGER_STATE_TRIGGERED   /* achievement has triggered */
+};
 
 typedef struct {
   /* The main condition set. */
@@ -246,11 +268,24 @@ typedef struct {
 
   /* The memory references required by the trigger. */
   rc_memref_value_t* memrefs;
+
+  /* The current state of the MEASURED condition. */
+  unsigned measured_value;
+
+  /* The target state of the MEASURED condition */
+  unsigned measured_target;
+
+  /* The current state of the trigger */
+  char state;
+
+  /* True if at least one condition has a non-zero hit count */
+  char has_hits;
 }
 rc_trigger_t;
 
 int rc_trigger_size(const char* memaddr);
 rc_trigger_t* rc_parse_trigger(void* buffer, const char* memaddr, lua_State* L, int funcs_ndx);
+int rc_evaluate_trigger(rc_trigger_t* trigger, rc_peek_t peek, void* ud, lua_State* L);
 int rc_test_trigger(rc_trigger_t* trigger, rc_peek_t peek, void* ud, lua_State* L);
 void rc_reset_trigger(rc_trigger_t* self);
 
@@ -287,6 +322,9 @@ typedef struct {
   /* The list of expression to evaluate. */
   rc_expression_t* expressions;
 
+  /* The list of conditions to evaluate. */
+  rc_condset_t* conditions;
+
   /* The memory references required by the value. */
   rc_memref_value_t* memrefs;
 }
@@ -294,7 +332,7 @@ rc_value_t;
 
 int rc_value_size(const char* memaddr);
 rc_value_t* rc_parse_value(void* buffer, const char* memaddr, lua_State* L, int funcs_ndx);
-unsigned rc_evaluate_value(rc_value_t* value, rc_peek_t peek, void* ud, lua_State* L);
+int rc_evaluate_value(rc_value_t* value, rc_peek_t peek, void* ud, lua_State* L);
 
 /*****************************************************************************\
 | Leaderboards                                                                |
@@ -324,7 +362,7 @@ rc_lboard_t;
 
 int rc_lboard_size(const char* memaddr);
 rc_lboard_t* rc_parse_lboard(void* buffer, const char* memaddr, lua_State* L, int funcs_ndx);
-int rc_evaluate_lboard(rc_lboard_t* lboard, unsigned* value, rc_peek_t peek, void* peek_ud, lua_State* L);
+int rc_evaluate_lboard(rc_lboard_t* lboard, int* value, rc_peek_t peek, void* peek_ud, lua_State* L);
 void rc_reset_lboard(rc_lboard_t* lboard);
 
 /*****************************************************************************\
@@ -338,11 +376,12 @@ enum {
   RC_FORMAT_CENTISECS,
   RC_FORMAT_SCORE,
   RC_FORMAT_VALUE,
-  RC_FORMAT_OTHER
+  RC_FORMAT_MINUTES,
+  RC_FORMAT_SECONDS_AS_MINUTES
 };
 
 int rc_parse_format(const char* format_str);
-int rc_format_value(char* buffer, int size, unsigned value, int format);
+int rc_format_value(char* buffer, int size, int value, int format);
 
 /*****************************************************************************\
 | Rich Presence                                                               |

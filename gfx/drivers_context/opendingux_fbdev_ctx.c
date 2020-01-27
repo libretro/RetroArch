@@ -15,6 +15,7 @@
  */
 
 #include <signal.h>
+#include <retroarch.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -89,17 +90,14 @@ static void *gfx_ctx_opendingux_init(video_frame_info_t *video_info, void *video
    if (!egl_init_context(&viv->egl, EGL_NONE, EGL_DEFAULT_DISPLAY,
             &major, &minor,
             &n, attribs, NULL))
-   {
-      egl_report_error();
       goto error;
-   }
 #endif
 
    return viv;
 
-error:
 #ifdef HAVE_EGL
-   RARCH_ERR("[opendingux fbdev]: EGL error: %d.\n", eglGetError());
+error:
+   egl_report_error();
 #endif
    gfx_ctx_opendingux_destroy(viv);
    return NULL;
@@ -122,7 +120,6 @@ static void gfx_ctx_opendingux_check_window(void *data, bool *quit,
 
 #ifdef HAVE_EGL
    egl_get_video_size(&viv->egl, &new_width, &new_height);
-#endif
 
    if (new_width != *width || new_height != *height)
    {
@@ -130,6 +127,7 @@ static void gfx_ctx_opendingux_check_window(void *data, bool *quit,
       *height = new_height;
       *resize = true;
    }
+#endif
 
    *quit   = (bool)frontend_driver_get_signal_handler_state();
 }
@@ -158,10 +156,7 @@ static bool gfx_ctx_opendingux_set_video_mode(void *data,
 
 #ifdef HAVE_EGL
    if (!egl_create_context(&viv->egl, attribs))
-   {
-      egl_report_error();
       goto error;
-   }
 
    viv->native_window = 0;
    if (!egl_create_surface(&viv->egl, viv->native_window))
@@ -170,9 +165,9 @@ static bool gfx_ctx_opendingux_set_video_mode(void *data,
 
    return true;
 
-error:
 #ifdef HAVE_EGL
-   RARCH_ERR("[opendingux fbdev]: EGL error: %d.\n", eglGetError());
+error:
+   egl_report_error();
 #endif
    gfx_ctx_opendingux_destroy(data);
    return false;
@@ -235,12 +230,12 @@ static void gfx_ctx_opendingux_set_swap_interval(
 #endif
 }
 
+#ifdef HAVE_EGL
 static gfx_ctx_proc_t gfx_ctx_opendingux_get_proc_address(const char *symbol)
 {
-#ifdef HAVE_EGL
    return egl_get_proc_address(symbol);
-#endif
 }
+#endif
 
 static void gfx_ctx_opendingux_bind_hw_render(void *data, bool enable)
 {
@@ -287,7 +282,11 @@ const gfx_ctx_driver_t gfx_ctx_opendingux_fbdev = {
    false, /* has_windowed */
    gfx_ctx_opendingux_swap_buffers,
    gfx_ctx_opendingux_input_driver,
+#ifdef HAVE_EGL
    gfx_ctx_opendingux_get_proc_address,
+#else
+   NULL,
+#endif
    NULL,
    NULL,
    NULL,

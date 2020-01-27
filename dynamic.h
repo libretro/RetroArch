@@ -87,6 +87,7 @@ struct retro_core_t
    bool symbols_inited;
    bool game_loaded;
    bool input_polled;
+   bool has_set_subsystems;
    bool has_set_input_descriptors;
    uint64_t serialization_quirks_v;
 };

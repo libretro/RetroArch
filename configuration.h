@@ -110,6 +110,9 @@ typedef struct settings
       bool video_layout_enable;
 #endif
 
+      /* Accessibility */
+      bool accessibility_enable;
+
       /* Audio */
       bool audio_enable;
       bool audio_enable_menu;
@@ -151,6 +154,7 @@ typedef struct settings
       bool menu_show_start_screen;
       bool menu_pause_libretro;
       bool menu_savestate_resume;
+      bool menu_insert_disk_resume;
       bool menu_timedate_enable;
       bool menu_battery_level_enable;
       bool menu_core_enable;
@@ -186,8 +190,9 @@ typedef struct settings
       bool menu_show_video_layout;
 #endif
       bool menu_materialui_icons_enable;
-      bool menu_materialui_optimize_landscape_layout;
       bool menu_materialui_auto_rotate_nav_bar;
+      bool menu_materialui_dual_thumbnail_list_view_enable;
+      bool menu_materialui_thumbnail_background_enable;
       bool menu_rgui_background_filler_thickness_enable;
       bool menu_rgui_border_filler_thickness_enable;
       bool menu_rgui_border_filler_enable;
@@ -356,7 +361,6 @@ typedef struct settings
       bool bluetooth_enable;
       bool localap_enable;
 
-      bool automatically_add_content_to_playlist;
       bool video_window_show_decorations;
       bool video_window_save_positions;
 
@@ -460,6 +464,8 @@ typedef struct settings
 
       unsigned input_turbo_period;
       unsigned input_turbo_duty_cycle;
+      unsigned input_turbo_mode;
+      unsigned input_turbo_default_button;
 
       unsigned input_bind_timeout;
       unsigned input_bind_hold;
@@ -517,6 +523,9 @@ typedef struct settings
 #endif
       unsigned video_shader_delay;
 
+      /* Accessibility */
+      unsigned accessibility_narrator_speech_speed;
+
       unsigned menu_timedate_style;
       unsigned menu_thumbnails;
       unsigned menu_left_thumbnails;
@@ -535,6 +544,9 @@ typedef struct settings
       unsigned menu_xmb_thumbnail_scale_factor;
       unsigned menu_materialui_color_theme;
       unsigned menu_materialui_transition_animation;
+      unsigned menu_materialui_thumbnail_view_portrait;
+      unsigned menu_materialui_thumbnail_view_landscape;
+      unsigned menu_materialui_landscape_layout_optimization;
       unsigned menu_ozone_color_theme;
       unsigned menu_font_color_red;
       unsigned menu_font_color_green;
@@ -803,7 +815,7 @@ const char *config_get_default_record(void);
  * Loads a config file and reads all the values into memory.
  *
  */
-void config_parse_file(void);
+void config_parse_file(void *data);
 
 /**
  * config_load_override:
@@ -872,7 +884,7 @@ bool config_replace(bool config_save_on_exit, char *path);
 
 bool config_overlay_enable_default(void);
 
-void config_set_defaults(void);
+void config_set_defaults(void *data);
 
 settings_t *config_get_ptr(void);
 

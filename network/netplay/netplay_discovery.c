@@ -71,15 +71,15 @@ struct ad_packet
    char subsystem_name[NETPLAY_HOST_STR_LEN];
 };
 
+/* TODO/FIXME - globals - remove to make code thread-safe */
+int netplay_room_count                 = 0;
+struct netplay_room *netplay_room_list = NULL;
+
 static bool netplay_lan_ad_client(void);
 
 /* LAN discovery sockets */
 static int lan_ad_server_fd            = -1;
 static int lan_ad_client_fd            = -1;
-
-int netplay_room_count                 = 0;
-
-struct netplay_room *netplay_room_list = NULL;
 
 /* Packet buffer for advertisement and responses */
 static struct ad_packet ad_packet_buffer;
@@ -301,7 +301,8 @@ bool netplay_lan_ad_server(netplay_t *netplay)
             char *p;
             char sub[NETPLAY_HOST_STR_LEN];
             char frontend[NETPLAY_HOST_STR_LEN];
-            netplay_get_architecture(frontend, sizeof(frontend));
+            frontend_driver_get_cpu_architecture_str(
+                  frontend, sizeof(frontend));
 
             p=strrchr(reply_addr,'.');
             if (p)

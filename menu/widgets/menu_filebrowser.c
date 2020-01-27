@@ -109,6 +109,9 @@ void filebrowser_parse(menu_displaylist_info_t *info, unsigned type_data)
                   (filter_ext && info) ? subsystem->roms[content_get_subsystem_rom_id()].valid_extensions : NULL,
                   true, settings->bools.show_hidden_files, true, false);
       }
+      else if (info && ((info->type_default == FILE_TYPE_MANUAL_SCAN_DAT) || (info->type_default == FILE_TYPE_SIDELOAD_CORE)))
+         str_list = dir_list_new(path,
+               info->exts, true, settings->bools.show_hidden_files, false, false);
       else
          str_list = dir_list_new(path,
                (filter_ext && info) ? info->exts : NULL,
@@ -126,6 +129,14 @@ void filebrowser_parse(menu_displaylist_info_t *info, unsigned type_data)
                   MENU_ENUM_LABEL_SCAN_THIS_DIRECTORY,
                   FILE_TYPE_SCAN_DIRECTORY, 0 ,0);
 #endif
+         break;
+      case FILEBROWSER_MANUAL_SCAN_DIR:
+         if (info)
+            menu_entries_prepend(info->list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_THIS_DIRECTORY),
+                  msg_hash_to_str(MENU_ENUM_LABEL_SCAN_THIS_DIRECTORY),
+                  MENU_ENUM_LABEL_SCAN_THIS_DIRECTORY,
+                  FILE_TYPE_MANUAL_SCAN_DIRECTORY, 0 ,0);
          break;
       case FILEBROWSER_SELECT_DIR:
          if (info)
@@ -211,6 +222,8 @@ void filebrowser_parse(menu_displaylist_info_t *info, unsigned type_data)
             if (filebrowser_types == FILEBROWSER_SELECT_DIR)
                continue;
             if (filebrowser_types == FILEBROWSER_SCAN_DIR)
+               continue;
+            if (filebrowser_types == FILEBROWSER_MANUAL_SCAN_DIR)
                continue;
          }
 

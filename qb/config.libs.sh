@@ -4,11 +4,16 @@
 # Only needed when check_enabled ($2), check_platform, check_lib, check_pkgconf,
 # check_header, check_macro and check_switch are not used.
 
-check_switch '' C99 -std=gnu99 "Cannot find C99 compatible compiler."
-check_switch '' NOUNUSED -Wno-unused-result
-add_define MAKEFILE NOUNUSED "$HAVE_NOUNUSED"
-check_switch '' NOUNUSED_VARIABLE -Wno-unused-variable
-add_define MAKEFILE NOUNUSED_VARIABLE "$HAVE_NOUNUSED_VARIABLE"
+check_switch '' C99 -std=gnu99 ''
+
+if [ "$HAVE_C99" = 'no' ]; then
+   HAVE_C99='auto'
+   check_switch '' C99 -std=c99 'Cannot find a C99 compatible compiler.'
+fi
+
+check_switch cxx CXX11 -std=c++11 ''
+check_switch '' NOUNUSED -Wno-unused-result ''
+check_switch '' NOUNUSED_VARIABLE -Wno-unused-variable ''
 
 # There are still broken 64-bit Linux distros out there. :)
 [ -z "$CROSS_COMPILE" ] && [ -d /usr/lib64 ] && add_dirs LIBRARY /usr/lib64
@@ -104,12 +109,28 @@ if [ "$HAVE_FLOATSOFTFP" = "yes" ]; then
    add_define MAKEFILE FLOATSOFTFP_CFLAGS -mfloat-abi=softfp
 fi
 
-check_platform Win32 EGL 'EGL is' false
 
-check_header EGL EGL/egl.h EGL/eglext.h
-# some systems have EGL libs, but no pkgconfig
-# https://github.com/linux-sunxi/sunxi-mali/pull/8
-check_val '' EGL "-l${VC_PREFIX}EGL $EXTRA_GL_LIBS" '' "${VC_PREFIX}egl" '' '' true
+if [ "$HAVE_ANGLE" = 'yes' ]; then
+   eval "HAVE_EGL=\"yes\""
+   add_dirs INCLUDE ./gfx/include/ANGLE
+   add_opt OPENGL no
+   add_opt OPENGLES yes
+   add_define MAKEFILE OPENGLES_LIBS "-lGLESv2"
+
+   case "$PLATFORM_NAME" in
+      MINGW32* )
+         add_dirs LIBRARY ./pkg/windows/x86
+      ;;
+      MINGW64* )
+         add_dirs LIBRARY ./pkg/windows/x86_64
+      ;;
+   esac
+else
+   check_header EGL EGL/egl.h EGL/eglext.h
+   # some systems have EGL libs, but no pkgconfig
+   # https://github.com/linux-sunxi/sunxi-mali/pull/8
+   check_val '' EGL "-l${VC_PREFIX}EGL $EXTRA_GL_LIBS" '' "${VC_PREFIX}egl" '' '' true
+fi
 
 if [ "$HAVE_EGL" = 'yes' ]; then
    EGL_LIBS="$EGL_LIBS $EXTRA_GL_LIBS"
@@ -245,6 +266,8 @@ if [ "$HAVE_SDL2" = 'yes' ] && [ "$HAVE_SDL" = 'yes' ]; then
    HAVE_SDL=no
 fi
 
+check_enabled CXX11 CXX C++ 'C++11 support is' false
+
 check_platform Haiku DISCORD 'Discord is' false
 check_enabled CXX DISCORD discord 'The C++ compiler is' false
 check_enabled CXX QT 'Qt companion' 'The C++ compiler is' false
@@ -330,6 +353,14 @@ check_platform Win32 WASAPI 'WASAPI is' true
 check_platform Win32 XAUDIO 'XAudio is' true
 check_platform Win32 WINMM 'WinMM is' true
 
+if [ "$HAVE_BLISSBOX" != 'no' ]; then
+   if [ "$HAVE_LIBUSB" != 'no' ] || [ "$OS" = 'Win32' ]; then
+      add_opt BLISSBOX yes
+   else
+      add_opt BLISSBOX no
+   fi
+fi
+
 if [ "$HAVE_OPENGL" != 'no' ] && [ "$HAVE_OPENGLES" != 'yes' ]; then
    if [ "$OS" = 'Darwin' ]; then
       check_header OPENGL "OpenGL/gl.h"
@@ -387,13 +418,12 @@ check_lib '' DRMINGW -lexchndl
 check_enabled THREADS FFMPEG FFmpeg 'Threads are' false
 
 if [ "$HAVE_FFMPEG" != 'no' ]; then
-   check_val '' AVCODEC -lavcodec '' libavcodec 54 '' false
-   check_val '' AVFORMAT -lavformat '' libavformat 54 '' false
-   check_val '' AVDEVICE -lavdevice '' libavdevice '' '' false
-   check_val '' SWRESAMPLE -lswresample '' libswresample '' '' false
-   check_val '' AVRESAMPLE -lavresample '' libavresample '' '' false
-   check_val '' AVUTIL -lavutil '' libavutil 51 '' false
-   check_val '' SWSCALE -lswscale '' libswscale 2.1 '' false
+   check_val '' AVCODEC -lavcodec '' libavcodec 57 '' false
+   check_val '' AVFORMAT -lavformat '' libavformat 57 '' false
+   check_val '' AVDEVICE -lavdevice '' libavdevice 57 '' false
+   check_val '' SWRESAMPLE -lswresample '' libswresample 2 '' false
+   check_val '' AVUTIL -lavutil '' libavutil 55 '' false
+   check_val '' SWSCALE -lswscale '' libswscale 4 '' false
 
    check_header AV_CHANNEL_LAYOUT libavutil/channel_layout.h
 
@@ -522,6 +552,12 @@ if [ "$HAVE_MENU" != 'no' ]; then
       fi
       die : 'Notice: Hardware rendering context not available.'
    fi
+fi
+
+if [ "$HAVE_STEAM" = 'yes' ]; then
+   add_opt ONLINE_UPDATER no
+   add_opt UPDATE_CORES no
+   die : 'Notice: Steam build enabled, disabling online updater as well.'
 fi
 
 check_enabled CXX SLANG slang 'The C++ compiler is' false

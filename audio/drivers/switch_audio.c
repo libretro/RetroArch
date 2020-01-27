@@ -92,27 +92,25 @@ static ssize_t switch_audio_write(void *data, const void *buf, size_t size)
 
       if (!swa->current_buffer)
       {
-         if (swa->blocking)
+         /* no buffer, nonblocking... */
+         if (!swa->blocking)
+            return 0;
+
+         while (!swa->current_buffer)
          {
-            while(swa->current_buffer == NULL)
-            {
-               uint32_t handle_idx = 0;
-               num                 = 0;
+            uint32_t handle_idx = 0;
+            num                 = 0;
 
 #ifdef HAVE_LIBNX
-               if (audoutWaitPlayFinish(&swa->current_buffer, &num, U64_MAX) != 0) { }
+            if (audoutWaitPlayFinish(&swa->current_buffer, &num, U64_MAX) != 0) { }
 #else
-               svcWaitSynchronization(&handle_idx, &swa->event, 1, 33333333);
-               svcResetSignal(swa->event);
+            svcWaitSynchronization(&handle_idx, &swa->event, 1, 33333333);
+            svcResetSignal(swa->event);
 
-               if (switch_audio_ipc_output_get_released_buffer(swa, num) != 0)
-                  return -1;
+            if (switch_audio_ipc_output_get_released_buffer(swa, num) != 0)
+               return -1;
 #endif
-            }
          }
-         else
-            /* no buffer, nonblocking... */
-            return 0;
       }
 
       swa->current_buffer->data_size = 0;
@@ -297,7 +295,7 @@ static void *switch_audio_init(const char *device,
       swa->buffers[i].data_offset = 0;
       swa->buffers[i].buffer      = memalign(0x1000, switch_audio_buffer_size(NULL));
 
-      if (swa->buffers[i].buffer == NULL)
+      if (!swa->buffers[i].buffer)
          goto fail_audio_output;
 
       memset(swa->buffers[i].buffer, 0, switch_audio_buffer_size(NULL));
@@ -306,7 +304,7 @@ static void *switch_audio_init(const char *device,
       swa->buffers[i].unknown     = 0;
       swa->buffers[i].sample_data = alloc_pages(sample_buffer_size, switch_audio_buffer_size(NULL), NULL);
 
-      if (swa->buffers[i].sample_data == NULL)
+      if (!swa->buffers[i].sample_data)
 	      goto fail_audio_output;
 #endif
 

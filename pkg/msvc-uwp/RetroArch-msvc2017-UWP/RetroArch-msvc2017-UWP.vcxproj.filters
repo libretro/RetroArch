@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <Filter Include="uwp">
@@ -18,15 +18,25 @@
     <AppxManifest Include="Package.appxmanifest" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="RetroArch-UWP_TemporaryKey.pfx" />
     <None Include="cores\$(Platform)\cores\*.dll" />
     <None Include="cores\$(Platform)\*.dll" />
+    <None Include="RetroArch-msvc2017-UWP_TemporaryKey.pfx" />
+    <None Include="cores\$(Platform)\cores\*.dll" />
+    <None Include="cores\$(Platform)\cores\*.dll" />
+    <None Include="ANGLE\$(Platform)\*.dll" />
+    <None Include="ANGLE\$(Platform)\*.dll" />
+    <None Include="cores\$(Platform)\cores\*.dll" />
+    <None Include="ANGLE\$(Platform)\*.dll" />
+    <None Include="ANGLE\$(Platform)\*.dll" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\uwp\uwp_func.h">
       <Filter>uwp</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\uwp\uwp_main.h">
+      <Filter>uwp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\uwp\uwp_async.h">
       <Filter>uwp</Filter>
     </ClInclude>
   </ItemGroup>

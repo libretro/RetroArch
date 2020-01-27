@@ -27,8 +27,6 @@
 
 #define CLAMPDOUBLE(x) MIN(1.0, MAX(-1.0, (x)))
 
-static bool g_rwebpad_initialized;
-
 static EM_BOOL rwebpad_gamepad_cb(int event_type,
    const EmscriptenGamepadEvent *gamepad_event, void *user_data)
 {
@@ -64,34 +62,28 @@ static EM_BOOL rwebpad_gamepad_cb(int event_type,
 
 static bool rwebpad_joypad_init(void *data)
 {
-   EMSCRIPTEN_RESULT supported;
+   EMSCRIPTEN_RESULT r;
    (void)data;
 
-   supported = emscripten_sample_gamepad_data();
-   if (supported == EMSCRIPTEN_RESULT_NOT_SUPPORTED)
+   r = emscripten_sample_gamepad_data();
+   if (r == EMSCRIPTEN_RESULT_NOT_SUPPORTED)
       return false;
 
-   if (!g_rwebpad_initialized)
+   /* callbacks needs to be registered for gamepads to connect */
+   r = emscripten_set_gamepadconnected_callback(NULL, false,
+      rwebpad_gamepad_cb);
+   if (r != EMSCRIPTEN_RESULT_SUCCESS)
    {
-      EMSCRIPTEN_RESULT r;
-      g_rwebpad_initialized = true;
+      RARCH_ERR(
+         "[EMSCRIPTEN/PAD] failed to create connect callback: %d\n", r);
+   }
 
-      /* callbacks needs to be registered for gamepads to connect */
-      r = emscripten_set_gamepadconnected_callback(NULL, false,
-         rwebpad_gamepad_cb);
-      if (r != EMSCRIPTEN_RESULT_SUCCESS)
-      {
-         RARCH_ERR(
-            "[EMSCRIPTEN/PAD] failed to create connect callback: %d\n", r);
-      }
-
-      r = emscripten_set_gamepaddisconnected_callback(NULL, false,
-         rwebpad_gamepad_cb);
-      if (r != EMSCRIPTEN_RESULT_SUCCESS)
-      {
-         RARCH_ERR(
-            "[EMSCRIPTEN/PAD] failed to create disconnect callback: %d\n", r);
-      }
+   r = emscripten_set_gamepaddisconnected_callback(NULL, false,
+      rwebpad_gamepad_cb);
+   if (r != EMSCRIPTEN_RESULT_SUCCESS)
+   {
+      RARCH_ERR(
+         "[EMSCRIPTEN/PAD] failed to create disconnect callback: %d\n", r);
    }
 
    return true;

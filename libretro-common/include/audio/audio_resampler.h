@@ -155,7 +155,6 @@ extern retro_resampler_t sinc_resampler;
 extern retro_resampler_t CC_resampler;
 #endif
 extern retro_resampler_t nearest_resampler;
-extern retro_resampler_t null_resampler;
 
 /**
  * audio_resampler_driver_find_handle:

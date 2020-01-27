@@ -46,6 +46,7 @@
 #include "../menu_entries.h"
 #include "../menu_input.h"
 #include "../menu_thumbnail_path.h"
+#include "../menu_thumbnail.h"
 
 #include "../../core_info.h"
 #include "../../core.h"
@@ -69,7 +70,7 @@
 #define XMB_RIBBON_VERTICES 2*XMB_RIBBON_COLS*XMB_RIBBON_ROWS-2*XMB_RIBBON_COLS
 
 #ifndef XMB_DELAY
-#define XMB_DELAY 166
+#define XMB_DELAY 166.66667f
 #endif
 
 #if 0
@@ -248,6 +249,7 @@ typedef struct xmb_handle
    bool assets_missing;
    bool is_playlist;
    bool is_db_manager_list;
+   bool is_file_list;
    bool is_quick_menu;
 
    uint8_t system_tab_end;
@@ -264,18 +266,9 @@ typedef struct xmb_handle
 
    unsigned categories_active_idx;
    unsigned categories_active_idx_old;
-   uintptr_t thumbnail;
-   uintptr_t left_thumbnail;
-   uintptr_t savestate_thumbnail;
 
    float x;
    float alpha;
-   float thumbnail_width;
-   float thumbnail_height;
-   float left_thumbnail_width;
-   float left_thumbnail_height;
-   float savestate_thumbnail_width;
-   float savestate_thumbnail_height;
    float above_subitem_offset;
    float above_item_offset;
    float active_item_factor;
@@ -310,7 +303,6 @@ typedef struct xmb_handle
 
    char title_name[255];
    char *box_message;
-   char *savestate_thumbnail_file_path;
    char *bg_file_path;
 
    file_list_t *selection_buf_old;
@@ -342,6 +334,23 @@ typedef struct xmb_handle
    video_font_raster_block_t raster_block2;
 
    menu_thumbnail_path_data_t *thumbnail_path_data;
+   struct {
+      menu_thumbnail_t right;
+      menu_thumbnail_t left;
+      menu_thumbnail_t savestate;
+   } thumbnails;
+   /* These have to be huge, because global->name.savestate
+    * has a hard-coded size of 8192...
+    * (the extra space here is required to silence compiler
+    * warnings...) */
+   char savestate_thumbnail_file_path[8204];
+   char prev_savestate_thumbnail_file_path[8204];
+   bool fullscreen_thumbnails_available;
+   bool show_fullscreen_thumbnails;
+   float fullscreen_thumbnail_alpha;
+   size_t fullscreen_thumbnail_selection;
+   char fullscreen_thumbnail_label[255];
+
 } xmb_handle_t;
 
 float scale_mod[8] = {
@@ -452,6 +461,13 @@ float gradient_morning_blue[16] = {
    135/255.0, 206/255.0, 250/255.0, 1.00,
    1.0, 1.0, 1.0, 1.00,
    170/255.0, 200/255.0, 252/255.0, 1.00,
+};
+
+float gradient_sunbeam[16] = {
+   20/255.0,  13/255.0,  20/255.0, 1.0,
+   30/255.0,  72/255.0, 114/255.0, 1.0,
+   1.0, 1.0, 1.0, 1.00,
+   0.1, 0.0, 0.1, 1.00,
 };
 
 static void xmb_calculate_visible_range(const xmb_handle_t *xmb,
@@ -585,6 +601,8 @@ static float *xmb_gradient_ident(video_frame_info_t *video_info)
          return &gradient_light[0];
       case XMB_THEME_MORNING_BLUE:
          return &gradient_morning_blue[0];
+      case XMB_THEME_SUNBEAM:
+         return &gradient_sunbeam[0];         
       case XMB_THEME_LEGACY_RED:
       default:
          break;
@@ -746,60 +764,6 @@ static void xmb_draw_icon(
    menu_display_draw(&draw, video_info);
 }
 
-static void xmb_draw_thumbnail(
-      video_frame_info_t *video_info,
-      xmb_handle_t *xmb, float *color,
-      unsigned width, unsigned height,
-      float x, float y,
-      float w, float h, uintptr_t texture)
-{
-   menu_display_ctx_rotate_draw_t rotate_draw;
-   menu_display_ctx_draw_t draw;
-   struct video_coords coords;
-   math_matrix_4x4 mymat;
-
-   rotate_draw.matrix       = &mymat;
-   rotate_draw.rotation     = 0;
-   rotate_draw.scale_x      = 1;
-   rotate_draw.scale_y      = 1;
-   rotate_draw.scale_z      = 1;
-   rotate_draw.scale_enable = true;
-
-   menu_display_rotate_z(&rotate_draw, video_info);
-
-   coords.vertices          = 4;
-   coords.vertex            = NULL;
-   coords.tex_coord         = NULL;
-   coords.lut_tex_coord     = NULL;
-
-   draw.width               = w;
-   draw.height              = h;
-   draw.coords              = &coords;
-   draw.matrix_data         = &mymat;
-   draw.texture             = texture;
-   draw.prim_type           = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
-   draw.pipeline.id         = 0;
-
-   if (video_info->xmb_shadows_enable)
-   {
-      menu_display_set_alpha(coord_shadow, color[3] * 0.35f);
-
-      coords.color          = coord_shadow;
-      draw.x                = x + xmb->shadow_offset;
-      draw.y                = height - y - xmb->shadow_offset;
-
-      menu_display_draw(&draw, video_info);
-   }
-
-   coords.color             = (const float*)color;
-   draw.x                   = x;
-   draw.y                   = height - y;
-
-   menu_display_set_alpha(color, 1.0f);
-
-   menu_display_draw(&draw, video_info);
-}
-
 static void xmb_draw_text(
       video_frame_info_t *video_info,
       xmb_handle_t *xmb,
@@ -926,153 +890,139 @@ end:
    string_list_free(list);
 }
 
-static void xmb_update_thumbnail_path(void *data, unsigned i, char pos)
-{
-   xmb_handle_t *xmb     = (xmb_handle_t*)data;
-   const char *core_name = NULL;
-
-   if (!xmb)
-      return;
-
-   /* imageviewer content requires special treatment... */
-   menu_thumbnail_get_core_name(xmb->thumbnail_path_data, &core_name);
-   if (string_is_equal(core_name, "imageviewer"))
-   {
-      if ((pos == 'R') || (pos == 'L' && !menu_thumbnail_is_enabled(xmb->thumbnail_path_data, MENU_THUMBNAIL_RIGHT)))
-         menu_thumbnail_update_path(xmb->thumbnail_path_data, pos == 'R' ? MENU_THUMBNAIL_RIGHT : MENU_THUMBNAIL_LEFT);
-   }
-   else
-      menu_thumbnail_update_path(xmb->thumbnail_path_data, pos == 'R' ? MENU_THUMBNAIL_RIGHT : MENU_THUMBNAIL_LEFT);
-}
-
 static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
 {
-   menu_entry_t entry;
-   settings_t     *settings = config_get_ptr();
-   xmb_handle_t     *xmb    = (xmb_handle_t*)data;
+   settings_t *settings = config_get_ptr();
+   xmb_handle_t *xmb    = (xmb_handle_t*)data;
 
    if (!xmb)
       return;
 
-   menu_entry_init(&entry);
-   entry.path_enabled       = false;
-   entry.rich_label_enabled = false;
-   entry.value_enabled      = false;
-   entry.sublabel_enabled   = false;
-   menu_entry_get(&entry, 0, i, NULL, true);
+   /* Cache previous savestate thumbnail path */
+   strlcpy(
+         xmb->prev_savestate_thumbnail_file_path,
+         xmb->savestate_thumbnail_file_path,
+         sizeof(xmb->prev_savestate_thumbnail_file_path));
 
-   if (!string_is_empty(xmb->savestate_thumbnail_file_path))
-      free(xmb->savestate_thumbnail_file_path);
-   xmb->savestate_thumbnail_file_path = NULL;
+   xmb->savestate_thumbnail_file_path[0] = '\0';
 
-   if (!string_is_empty(entry.label))
+   /* Savestate thumbnails are only relevant
+    * when viewing the quick menu */
+   if (!xmb->is_quick_menu)
+      return;
+
+   if (settings->bools.savestate_thumbnail_enable)
    {
-      if (     (settings->bools.savestate_thumbnail_enable)
-            && ((string_is_equal(entry.label, "state_slot"))
-               || (string_is_equal(entry.label, "loadstate"))
-               || (string_is_equal(entry.label, "savestate"))))
+      menu_entry_t entry;
+
+      menu_entry_init(&entry);
+      entry.path_enabled       = false;
+      entry.rich_label_enabled = false;
+      entry.value_enabled      = false;
+      entry.sublabel_enabled   = false;
+      menu_entry_get(&entry, 0, i, NULL, true);
+
+      if (!string_is_empty(entry.label))
       {
-         size_t path_size         = 8204 * sizeof(char);
-         char             *path   = (char*)malloc(path_size);
-         global_t         *global = global_get_ptr();
-
-         path[0] = '\0';
-
-         if (global)
+         if (string_is_equal(entry.label, "state_slot") ||
+             string_is_equal(entry.label, "loadstate") ||
+             string_is_equal(entry.label, "savestate"))
          {
-            int state_slot = settings->ints.state_slot;
+            char path[8204];
+            global_t *global = global_get_ptr();
 
-            if (state_slot > 0)
-               snprintf(path, path_size, "%s%d",
-                     global->name.savestate, state_slot);
-            else if (state_slot < 0)
-               fill_pathname_join_delim(path,
-                     global->name.savestate, "auto", '.', path_size);
-            else
-               strlcpy(path, global->name.savestate, path_size);
+            path[0] = '\0';
+
+            if (global)
+            {
+               int state_slot = settings->ints.state_slot;
+
+               if (state_slot > 0)
+                  snprintf(path, sizeof(path), "%s%d",
+                        global->name.savestate, state_slot);
+               else if (state_slot < 0)
+                  fill_pathname_join_delim(path,
+                        global->name.savestate, "auto", '.', sizeof(path));
+               else
+                  strlcpy(path, global->name.savestate, sizeof(path));
+            }
+
+            strlcat(path, ".png", sizeof(path));
+
+            if (path_is_valid(path))
+            {
+               strlcpy(
+                     xmb->savestate_thumbnail_file_path, path,
+                     sizeof(xmb->savestate_thumbnail_file_path));
+            }
          }
-
-         strlcat(path, ".png", path_size);
-
-         if (path_is_valid(path))
-         {
-            if (!string_is_empty(xmb->savestate_thumbnail_file_path))
-               free(xmb->savestate_thumbnail_file_path);
-            xmb->savestate_thumbnail_file_path = strdup(path);
-         }
-
-         free(path);
       }
    }
 }
 
 static void xmb_update_thumbnail_image(void *data)
 {
-   settings_t *settings             = config_get_ptr();
-   xmb_handle_t *xmb                = (xmb_handle_t*)data;
-   const char *right_thumbnail_path = NULL;
-   const char *left_thumbnail_path  = NULL;
-   bool supports_rgba               = video_driver_supports_rgba();
+   const char *core_name = NULL;
+   xmb_handle_t *xmb     = (xmb_handle_t*)data;
+   size_t selection      = menu_navigation_get_selection();
+   playlist_t *playlist  = playlist_get_cached();
+   settings_t *settings  = config_get_ptr();
 
-   /* Have to wrap `thumbnails_missing` like this to silence
-    * brain dead `set but not used` warnings when networking
-    * is disabled... */
-#ifdef HAVE_NETWORKING
-   bool thumbnails_missing          = false;
-#endif
-
-   if (!xmb || !settings)
+   if (!xmb)
       return;
 
-   if (menu_thumbnail_get_path(xmb->thumbnail_path_data, MENU_THUMBNAIL_RIGHT, &right_thumbnail_path))
+   menu_thumbnail_cancel_pending_requests();
+
+   /* imageviewer content requires special treatment... */
+   menu_thumbnail_get_core_name(xmb->thumbnail_path_data, &core_name);
+   if (string_is_equal(core_name, "imageviewer"))
    {
-      if (path_is_valid(right_thumbnail_path))
-         task_push_image_load(right_thumbnail_path,
-               supports_rgba, settings->uints.menu_thumbnail_upscale_threshold,
-               menu_display_handle_thumbnail_upload, NULL);
-      else
-      {
-         video_driver_texture_unload(&xmb->thumbnail);
-#ifdef HAVE_NETWORKING
-         thumbnails_missing = true;
-#endif
-      }
+      menu_thumbnail_reset(&xmb->thumbnails.right);
+      menu_thumbnail_reset(&xmb->thumbnails.left);
+
+      /* Right thumbnail */
+      if (menu_thumbnail_is_enabled(xmb->thumbnail_path_data, MENU_THUMBNAIL_RIGHT))
+         menu_thumbnail_request(
+            xmb->thumbnail_path_data,
+            MENU_THUMBNAIL_RIGHT,
+            playlist,
+            selection,
+            &xmb->thumbnails.right,
+            settings->uints.menu_thumbnail_upscale_threshold,
+            settings->bools.network_on_demand_thumbnails);
+      /* Left thumbnail */
+      else if (menu_thumbnail_is_enabled(xmb->thumbnail_path_data, MENU_THUMBNAIL_LEFT))
+         menu_thumbnail_request(
+            xmb->thumbnail_path_data,
+            MENU_THUMBNAIL_LEFT,
+            playlist,
+            selection,
+            &xmb->thumbnails.left,
+            settings->uints.menu_thumbnail_upscale_threshold,
+            settings->bools.network_on_demand_thumbnails);
    }
    else
-      video_driver_texture_unload(&xmb->thumbnail);
-
-   if (menu_thumbnail_get_path(xmb->thumbnail_path_data, MENU_THUMBNAIL_LEFT, &left_thumbnail_path))
    {
-      if (path_is_valid(left_thumbnail_path))
-         task_push_image_load(left_thumbnail_path,
-               supports_rgba, settings->uints.menu_thumbnail_upscale_threshold,
-               menu_display_handle_left_thumbnail_upload, NULL);
-      else
-      {
-         video_driver_texture_unload(&xmb->left_thumbnail);
-#ifdef HAVE_NETWORKING
-         thumbnails_missing = true;
-#endif
-      }
-   }
-   else
-      video_driver_texture_unload(&xmb->left_thumbnail);
+      /* Right thumbnail */
+      menu_thumbnail_request(
+         xmb->thumbnail_path_data,
+         MENU_THUMBNAIL_RIGHT,
+         playlist,
+         selection,
+         &xmb->thumbnails.right,
+         settings->uints.menu_thumbnail_upscale_threshold,
+         settings->bools.network_on_demand_thumbnails);
 
-#ifdef HAVE_NETWORKING
-   /* On demand thumbnail downloads */
-   if (thumbnails_missing)
-   {
-      if (settings->bools.network_on_demand_thumbnails)
-      {
-         const char *system = NULL;
-
-         if (menu_thumbnail_get_system(xmb->thumbnail_path_data, &system))
-            task_push_pl_entry_thumbnail_download(system,
-                  playlist_get_cached(), (unsigned)menu_navigation_get_selection(),
-                  false, true);
-      }
+      /* Left thumbnail */
+      menu_thumbnail_request(
+         xmb->thumbnail_path_data,
+         MENU_THUMBNAIL_LEFT,
+         playlist,
+         selection,
+         &xmb->thumbnails.left,
+         settings->uints.menu_thumbnail_upscale_threshold,
+         settings->bools.network_on_demand_thumbnails);
    }
-#endif
 }
 
 static unsigned xmb_get_system_tab(xmb_handle_t *xmb, unsigned i)
@@ -1082,7 +1032,7 @@ static unsigned xmb_get_system_tab(xmb_handle_t *xmb, unsigned i)
    return UINT_MAX;
 }
 
-static void xmb_refresh_thumbnail_image(void *data)
+static void xmb_refresh_thumbnail_image(void *data, unsigned i)
 {
    xmb_handle_t *xmb                = (xmb_handle_t*)data;
 
@@ -1098,32 +1048,11 @@ static void xmb_refresh_thumbnail_image(void *data)
 
       /* Only refresh thumbnails if we are viewing a playlist or
        * the quick menu... */
-
-      /* If we are currently viewing a playlist, then it's almost inevitable
-       * that we've just gone up a level from the quick menu. In this case,
-       * xmb_set_thumbnail_system() will have been called, which resets
-       * thumbnail path data. We therefore have to regenerate the thumbnail
-       * paths... */
-      if (((xmb_system_tab > XMB_SYSTEM_TAB_SETTINGS && depth == 1) ||
-           (xmb_system_tab < XMB_SYSTEM_TAB_SETTINGS && depth == 4)) &&
-          xmb->is_playlist)
-      {
-         if (menu_thumbnail_is_enabled(xmb->thumbnail_path_data, MENU_THUMBNAIL_RIGHT))
-            xmb_update_thumbnail_path(xmb, 0 /* will be ignored */, 'R');
-
-         if (menu_thumbnail_is_enabled(xmb->thumbnail_path_data, MENU_THUMBNAIL_LEFT))
-            xmb_update_thumbnail_path(xmb, 0 /* will be ignored */, 'L');
-
+      if (((((xmb_system_tab > XMB_SYSTEM_TAB_SETTINGS && depth == 1) ||
+             (xmb_system_tab < XMB_SYSTEM_TAB_SETTINGS && depth == 4)) &&
+              xmb->is_playlist)) ||
+            xmb->is_quick_menu)
          xmb_update_thumbnail_image(xmb);
-      }
-      else if (xmb->is_quick_menu)
-      {
-         /* If this is the quick menu (most likely, since this is
-          * where the 'download thumbnails' option is located),
-          * then thumbnail paths are already valid - just need to
-          * update images */
-         xmb_update_thumbnail_image(xmb);
-      }
    }
 }
 
@@ -1154,10 +1083,10 @@ static void xmb_unload_thumbnail_textures(void *data)
    if (!xmb)
       return;
 
-   if (xmb->thumbnail)
-      video_driver_texture_unload(&xmb->thumbnail);
-   if (xmb->left_thumbnail)
-      video_driver_texture_unload(&xmb->left_thumbnail);
+   menu_thumbnail_cancel_pending_requests();
+   menu_thumbnail_reset(&xmb->thumbnails.right);
+   menu_thumbnail_reset(&xmb->thumbnails.left);
+   menu_thumbnail_reset(&xmb->thumbnails.savestate);
 }
 
 static void xmb_set_thumbnail_content(void *data, const char *s)
@@ -1167,12 +1096,23 @@ static void xmb_set_thumbnail_content(void *data, const char *s)
    if (!xmb)
       return;
 
+   /* Disable fullscreen thumbnails by default,
+    * and only enable if thumbnail content is
+    * actually set
+    * > This is the easiest method for verifying
+    *   that we are currently viewing a relevant
+    *   menu type */
+   xmb->fullscreen_thumbnails_available = false;
+
    if (xmb->is_playlist)
    {
       /* Playlist content */
       if (string_is_empty(s))
+      {
          menu_thumbnail_set_content_playlist(xmb->thumbnail_path_data,
                playlist_get_cached(), selection);
+         xmb->fullscreen_thumbnails_available = true;
+      }
    }
    else if (xmb->is_db_manager_list)
    {
@@ -1189,7 +1129,10 @@ static void xmb_set_thumbnail_content(void *data, const char *s)
          menu_entry_get(&entry, 0, selection, NULL, true);
 
          if (!string_is_empty(entry.path))
+         {
             menu_thumbnail_set_content(xmb->thumbnail_path_data, entry.path);
+            xmb->fullscreen_thumbnails_available = true;
+         }
       }
    }
    else if (string_is_equal(s, "imageviewer"))
@@ -1207,9 +1150,14 @@ static void xmb_set_thumbnail_content(void *data, const char *s)
       menu_entry_get(&entry, 0, selection, NULL, true);
 
       if (node)
+      {
          if (  !string_is_empty(entry.path) && 
                !string_is_empty(node->fullpath))
+         {
             menu_thumbnail_set_content_image(xmb->thumbnail_path_data, node->fullpath, entry.path);
+            xmb->fullscreen_thumbnails_available = true;
+         }
+      }
    }
    else if (!string_is_empty(s))
    {
@@ -1220,21 +1168,37 @@ static void xmb_set_thumbnail_content(void *data, const char *s)
        * Showing thumbnails on database entries is a
        * pointless nuisance and a waste of CPU cycles, IMHO... */
       menu_thumbnail_set_content(xmb->thumbnail_path_data, s);
+      xmb->fullscreen_thumbnails_available = true;
    }
 }
 
 static void xmb_update_savestate_thumbnail_image(void *data)
 {
-   xmb_handle_t *xmb = (xmb_handle_t*)data;
+   xmb_handle_t *xmb    = (xmb_handle_t*)data;
+   settings_t *settings = config_get_ptr();
    if (!xmb)
       return;
 
-   if (path_is_valid(xmb->savestate_thumbnail_file_path))
-      task_push_image_load(xmb->savestate_thumbnail_file_path,
-            video_driver_supports_rgba(), 0,
-            menu_display_handle_savestate_thumbnail_upload, NULL);
+   /* Savestate thumbnails are only relevant
+    * when viewing the quick menu */
+   if (!xmb->is_quick_menu)
+      return;
+
+   /* If path is empty, just reset thumbnail */
+   if (string_is_empty(xmb->savestate_thumbnail_file_path))
+      menu_thumbnail_reset(&xmb->thumbnails.savestate);
    else
-      video_driver_texture_unload(&xmb->savestate_thumbnail);
+   {
+      /* Only request thumbnail if:
+       * > Thumbnail has never been loaded *OR*
+       * > Thumbnail path has changed */
+      if ((xmb->thumbnails.savestate.status == MENU_THUMBNAIL_STATUS_UNKNOWN) ||
+          !string_is_equal(xmb->savestate_thumbnail_file_path, xmb->prev_savestate_thumbnail_file_path))
+         menu_thumbnail_request_file(
+               xmb->savestate_thumbnail_file_path,
+               &xmb->thumbnails.savestate,
+               settings->uints.menu_thumbnail_upscale_threshold);
+   }
 }
 
 static void xmb_selection_pointer_changed(
@@ -1317,24 +1281,30 @@ static void xmb_selection_pointer_changed(
                update_thumbnails = true;
             }
             /* Filebrowser image updates */
-            else if (
-                  entry_type == FILE_TYPE_IMAGEVIEWER || 
-                  entry_type == FILE_TYPE_IMAGE)
+            else if (xmb->is_file_list)
             {
-               xmb_set_thumbnail_content(xmb, "imageviewer");
-               update_thumbnails = true;
+               if ((entry_type == FILE_TYPE_IMAGEVIEWER) ||
+                   (entry_type == FILE_TYPE_IMAGE))
+               {
+                  xmb_set_thumbnail_content(xmb, "imageviewer");
+                  update_thumbnails = true;
+               }
+               else
+               {
+                  /* If this is a file list and current
+                   * entry is not an image, have to 'reset'
+                   * content + right/left thumbnails
+                   * (otherwise last loaded thumbnail will
+                   * persist, and be shown on the wrong entry) */
+                  menu_thumbnail_set_content(xmb->thumbnail_path_data, NULL);
+                  menu_thumbnail_cancel_pending_requests();
+                  menu_thumbnail_reset(&xmb->thumbnails.right);
+                  menu_thumbnail_reset(&xmb->thumbnails.left);
+               }
             }
 
             if (update_thumbnails)
-            {
-               if (menu_thumbnail_is_enabled(xmb->thumbnail_path_data, MENU_THUMBNAIL_RIGHT))
-                  xmb_update_thumbnail_path(xmb, i /* will be ignored */, 'R');
-
-               if (menu_thumbnail_is_enabled(xmb->thumbnail_path_data, MENU_THUMBNAIL_LEFT))
-                  xmb_update_thumbnail_path(xmb, i /* will be ignored */, 'L');
-
                xmb_update_thumbnail_image(xmb);
-            }
          }
 
          xmb_update_savestate_thumbnail_path(xmb, i);
@@ -1549,13 +1519,6 @@ static void xmb_list_open_new(xmb_handle_t *xmb,
          if (xmb->is_playlist || xmb->is_db_manager_list)
          {
             xmb_set_thumbnail_content(xmb, NULL);
-
-            if (menu_thumbnail_is_enabled(xmb->thumbnail_path_data, MENU_THUMBNAIL_RIGHT))
-               xmb_update_thumbnail_path(xmb, 0 /* will be ignored */, 'R');
-
-            if (menu_thumbnail_is_enabled(xmb->thumbnail_path_data, MENU_THUMBNAIL_LEFT))
-               xmb_update_thumbnail_path(xmb, 0 /* will be ignored */, 'L');
-
             xmb_update_thumbnail_image(xmb);
          }
       }
@@ -1894,13 +1857,6 @@ static void xmb_list_switch(xmb_handle_t *xmb)
       if (xmb->is_playlist)
       {
          xmb_set_thumbnail_content(xmb, NULL);
-
-         if (menu_thumbnail_is_enabled(xmb->thumbnail_path_data, MENU_THUMBNAIL_RIGHT))
-            xmb_update_thumbnail_path(xmb, 0 /* will be ignored */, 'R');
-
-         if (menu_thumbnail_is_enabled(xmb->thumbnail_path_data, MENU_THUMBNAIL_LEFT))
-            xmb_update_thumbnail_path(xmb, 0 /* will be ignored */, 'L');
-
          xmb_update_thumbnail_image(xmb);
       }
    }
@@ -2287,8 +2243,17 @@ static void xmb_populate_entries(void *data,
    /* Determine whether this is a database manager list */
    xmb->is_db_manager_list = string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DATABASE_MANAGER_LIST));
 
+   /* Determine whether this is a 'file list'
+    * (needed for handling thumbnails when viewing images
+    * via 'load content')
+    * > Note: MENU_ENUM_LABEL_FAVORITES is always set
+    *   as the 'label' when navigating directories after
+    *   selecting 'load content' */
+   xmb->is_file_list = string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES));
+
    /* Determine whether this is the quick menu */
-   xmb->is_quick_menu = string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS));
+   xmb->is_quick_menu = string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS)) ||
+                        string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_SETTINGS));
 
    if (menu_driver_ctl(RARCH_MENU_CTL_IS_PREVENT_POPULATE, NULL))
    {
@@ -2303,6 +2268,30 @@ static void xmb_populate_entries(void *data,
       xmb_list_switch(xmb);
    else
       xmb_list_open(xmb);
+
+   /* By default, fullscreen thumbnails are only
+    * enabled on playlists, database manager
+    * lists and file lists, in cases where ordinary
+    * thumbnails would normally be shown
+    * > This is refined on a case-by-case basis
+    *   inside xmb_set_thumbnail_content() */
+   xmb->fullscreen_thumbnails_available =
+         (xmb->is_playlist || xmb->is_db_manager_list || xmb->is_file_list) &&
+         !xmb->is_quick_menu &&
+         !((xmb_system_tab > XMB_SYSTEM_TAB_SETTINGS) && (xmb->depth > 2));
+
+   /* Hack: XMB gets into complete muddle when
+    * performing 'complex' directory navigation
+    * via 'load content'. We have to work around
+    * this by resetting thumbnails whenever a
+    * file list is populated... */
+   if (xmb->is_file_list)
+   {
+      menu_thumbnail_set_content(xmb->thumbnail_path_data, NULL);
+      menu_thumbnail_cancel_pending_requests();
+      menu_thumbnail_reset(&xmb->thumbnails.right);
+      menu_thumbnail_reset(&xmb->thumbnails.left);
+   }
 }
 
 static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
@@ -2328,7 +2317,8 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS:
          return xmb->textures.list[XMB_TEXTURE_CHEAT_OPTIONS];
       case MENU_ENUM_LABEL_DISK_OPTIONS:
-      case MENU_ENUM_LABEL_DISK_CYCLE_TRAY_STATUS:
+      case MENU_ENUM_LABEL_DISK_TRAY_EJECT:
+      case MENU_ENUM_LABEL_DISK_TRAY_INSERT:
       case MENU_ENUM_LABEL_DISK_IMAGE_APPEND:
       case MENU_ENUM_LABEL_DISK_INDEX:
          return xmb->textures.list[XMB_TEXTURE_DISK_OPTIONS];
@@ -2363,6 +2353,7 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_VRR_RUNLOOP_ENABLE:
       case MENU_ENUM_LABEL_AUTOSAVE_INTERVAL:
       case MENU_ENUM_LABEL_FRAME_TIME_COUNTER_SETTINGS:
+      case MENU_ENUM_LABEL_PLAYLIST_MANAGER_CLEAN_PLAYLIST:
          return xmb->textures.list[XMB_TEXTURE_RELOAD];
       case MENU_ENUM_LABEL_RENAME_ENTRY:
          return xmb->textures.list[XMB_TEXTURE_RENAME];
@@ -2370,6 +2361,7 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
          return xmb->textures.list[XMB_TEXTURE_RESUME];
       case MENU_ENUM_LABEL_DIRECTORY_SETTINGS:
       case MENU_ENUM_LABEL_SCAN_DIRECTORY:
+      case MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_LIST:
       case MENU_ENUM_LABEL_REMAP_FILE_SAVE_CONTENT_DIR:
       case MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR:
       case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_PARENT:
@@ -2410,12 +2402,14 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_SIDELOAD_CORE_LIST:
       case MENU_ENUM_LABEL_CORE_SETTINGS:
       case MENU_ENUM_LABEL_CORE_UPDATER_LIST:
+      case MENU_ENUM_LABEL_UPDATE_INSTALLED_CORES:
       case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_CORE:
       case MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE:
       case MENU_ENUM_LABEL_REMAP_FILE_SAVE_CORE:
       case MENU_ENUM_LABEL_SET_CORE_ASSOCIATION:
          return xmb->textures.list[XMB_TEXTURE_CORE];
       case MENU_ENUM_LABEL_LOAD_CONTENT_LIST:
+      case MENU_ENUM_LABEL_SUBSYSTEM_SETTINGS:
       case MENU_ENUM_LABEL_SCAN_FILE:
          return xmb->textures.list[XMB_TEXTURE_FILE];
       case MENU_ENUM_LABEL_ONLINE_UPDATER:
@@ -2561,6 +2555,7 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_NETWORK_SETTINGS:
       case MENU_ENUM_LABEL_WIFI_SETTINGS:
       case MENU_ENUM_LABEL_NETWORK_INFO_ENTRY:
+      case MENU_ENUM_LABEL_NETWORK_HOSTING_SETTINGS:
          return xmb->textures.list[XMB_TEXTURE_NETWORK];
 #endif
       case MENU_ENUM_LABEL_SHUTDOWN:
@@ -2971,12 +2966,14 @@ static int xmb_draw_item(
 
    if (string_is_empty(entry->value))
    {
-      if (xmb->savestate_thumbnail ||
+      if ((xmb->thumbnails.savestate.status == MENU_THUMBNAIL_STATUS_AVAILABLE) ||
             !xmb->use_ps3_layout ||
             (menu_thumbnail_is_enabled(xmb->thumbnail_path_data, MENU_THUMBNAIL_RIGHT)
-             && xmb->thumbnail) ||
+             && ((xmb->thumbnails.right.status == MENU_THUMBNAIL_STATUS_AVAILABLE)
+                  || (xmb->thumbnails.right.status == MENU_THUMBNAIL_STATUS_PENDING))) ||
             (menu_thumbnail_is_enabled(xmb->thumbnail_path_data, MENU_THUMBNAIL_LEFT)
-             && xmb->left_thumbnail
+             && ((xmb->thumbnails.left.status == MENU_THUMBNAIL_STATUS_AVAILABLE)
+                  || (xmb->thumbnails.left.status == MENU_THUMBNAIL_STATUS_PENDING))
              && settings->bools.menu_xmb_vertical_thumbnails)
          )
       {
@@ -3417,13 +3414,13 @@ static void xmb_render(void *data,
                /* Note: Direction is inverted, since 'up' should
                 * move list upwards */
                if (pointer_x > margin_right)
-                  menu_entry_action(&entry, (unsigned)selection, MENU_ACTION_DOWN);
+                  menu_entry_action(&entry, selection, MENU_ACTION_DOWN);
                break;
             case MENU_INPUT_PRESS_DIRECTION_DOWN:
                /* Note: Direction is inverted, since 'down' should
                 * move list downwards */
                if (pointer_x > margin_right)
-                  menu_entry_action(&entry, (unsigned)selection, MENU_ACTION_UP);
+                  menu_entry_action(&entry, selection, MENU_ACTION_UP);
                break;
             case MENU_INPUT_PRESS_DIRECTION_LEFT:
                /* Navigate left
@@ -3432,7 +3429,7 @@ static void xmb_render(void *data,
                 * which is actually a movement to the *right* */
                if (pointer_y < margin_top)
                   menu_entry_action(
-                        &entry, (unsigned)selection, (xmb->depth == 1) ? MENU_ACTION_RIGHT : MENU_ACTION_LEFT);
+                        &entry, selection, (xmb->depth == 1) ? MENU_ACTION_RIGHT : MENU_ACTION_LEFT);
                break;
             case MENU_INPUT_PRESS_DIRECTION_RIGHT:
                /* Navigate right
@@ -3441,7 +3438,7 @@ static void xmb_render(void *data,
                 * which is actually a movement to the *left* */
                if (pointer_y < margin_top)
                   menu_entry_action(
-                        &entry, (unsigned)selection, (xmb->depth == 1) ? MENU_ACTION_LEFT : MENU_ACTION_RIGHT);
+                        &entry, selection, (xmb->depth == 1) ? MENU_ACTION_LEFT : MENU_ACTION_RIGHT);
                break;
             default:
                /* Do nothing */
@@ -3614,6 +3611,526 @@ static void xmb_draw_dark_layer(
    menu_display_blend_end(video_info);
 }
 
+/* Disables the fullscreen thumbnail view, with
+ * an optional fade out animation */
+static void xmb_hide_fullscreen_thumbnails(
+      xmb_handle_t *xmb, bool animate)
+{
+   menu_animation_ctx_tag alpha_tag = (uintptr_t)&xmb->fullscreen_thumbnail_alpha;
+
+   /* Kill any existing fade in/out animations */
+   menu_animation_kill_by_tag(&alpha_tag);
+
+   /* Check whether animations are enabled */
+   if (animate && (xmb->fullscreen_thumbnail_alpha > 0.0f))
+   {
+      menu_animation_ctx_entry_t animation_entry;
+
+      /* Configure fade out animation */
+      animation_entry.easing_enum  = EASING_OUT_QUAD;
+      animation_entry.tag          = alpha_tag;
+      animation_entry.duration     = menu_thumbnail_get_fade_duration();
+      animation_entry.target_value = 0.0f;
+      animation_entry.subject      = &xmb->fullscreen_thumbnail_alpha;
+      animation_entry.cb           = NULL;
+      animation_entry.userdata     = NULL;
+
+      /* Push animation */
+      menu_animation_push(&animation_entry);
+   }
+   /* No animation - just set thumbnail alpha to zero */
+   else
+      xmb->fullscreen_thumbnail_alpha = 0.0f;
+
+   /* Disable fullscreen thumbnails */
+   xmb->show_fullscreen_thumbnails = false;
+}
+
+/* Enables (and triggers a fade in of) the fullscreen
+ * thumbnail view */
+static void xmb_show_fullscreen_thumbnails(
+      xmb_handle_t *xmb, size_t selection)
+{
+   const char *core_name            = NULL;
+   const char *thumbnail_label      = NULL;
+   menu_animation_ctx_tag alpha_tag = (uintptr_t)&xmb->fullscreen_thumbnail_alpha;
+   menu_animation_ctx_entry_t animation_entry;
+   menu_entry_t selected_entry;
+
+   /* Before showing fullscreen thumbnails, must
+    * ensure that any existing fullscreen thumbnail
+    * view is disabled... */
+   xmb_hide_fullscreen_thumbnails(xmb, false);
+
+   /* Sanity check: Return immediately if this is
+    * a menu without thumbnail support */
+   if (!xmb->fullscreen_thumbnails_available)
+      return;
+
+   /* We can only enable fullscreen thumbnails if
+    * current selection has at least one valid thumbnail
+    * and all thumbnails for current selection are already
+    * loaded/available */
+   menu_thumbnail_get_core_name(xmb->thumbnail_path_data, &core_name);
+   if (string_is_equal(core_name, "imageviewer"))
+   {
+      /* imageviewer content requires special treatment,
+       * since only one thumbnail can ever be loaded
+       * at a time */
+      if (menu_thumbnail_is_enabled(xmb->thumbnail_path_data, MENU_THUMBNAIL_RIGHT))
+      {
+         if (xmb->thumbnails.right.status != MENU_THUMBNAIL_STATUS_AVAILABLE)
+            return;
+      }
+      else if (menu_thumbnail_is_enabled(xmb->thumbnail_path_data, MENU_THUMBNAIL_LEFT))
+      {
+         if (xmb->thumbnails.left.status != MENU_THUMBNAIL_STATUS_AVAILABLE)
+            return;
+      }
+      else
+         return;
+   }
+   else
+   {
+      bool left_thumbnail_enabled = menu_thumbnail_is_enabled(
+            xmb->thumbnail_path_data, MENU_THUMBNAIL_LEFT);
+
+      if ((xmb->thumbnails.right.status == MENU_THUMBNAIL_STATUS_AVAILABLE) &&
+          (left_thumbnail_enabled &&
+               ((xmb->thumbnails.left.status != MENU_THUMBNAIL_STATUS_MISSING) &&
+                (xmb->thumbnails.left.status != MENU_THUMBNAIL_STATUS_AVAILABLE))))
+         return;
+
+      if ((xmb->thumbnails.right.status == MENU_THUMBNAIL_STATUS_MISSING) &&
+          (!left_thumbnail_enabled ||
+               (xmb->thumbnails.left.status != MENU_THUMBNAIL_STATUS_AVAILABLE)))
+         return;
+   }
+
+   /* Cache selected entry label
+    * (used as title when fullscreen thumbnails
+    * are shown) */
+   xmb->fullscreen_thumbnail_label[0] = '\0';
+
+   /* > Get menu entry */
+   menu_entry_init(&selected_entry);
+   selected_entry.path_enabled     = false;
+   selected_entry.value_enabled    = false;
+   selected_entry.sublabel_enabled = false;
+   menu_entry_get(&selected_entry, 0, selection, NULL, true);
+
+   /* > Get entry label */
+   menu_entry_get_rich_label(&selected_entry, &thumbnail_label);
+
+   /* > Sanity check */
+   if (!string_is_empty(thumbnail_label))
+      strlcpy(
+            xmb->fullscreen_thumbnail_label,
+            thumbnail_label,
+            sizeof(xmb->fullscreen_thumbnail_label));
+
+   /* Configure fade in animation */
+   animation_entry.easing_enum  = EASING_OUT_QUAD;
+   animation_entry.tag          = alpha_tag;
+   animation_entry.duration     = menu_thumbnail_get_fade_duration();
+   animation_entry.target_value = 1.0f;
+   animation_entry.subject      = &xmb->fullscreen_thumbnail_alpha;
+   animation_entry.cb           = NULL;
+   animation_entry.userdata     = NULL;
+
+   /* Push animation */
+   menu_animation_push(&animation_entry);
+
+   /* Enable fullscreen thumbnails */
+   xmb->fullscreen_thumbnail_selection = selection;
+   xmb->show_fullscreen_thumbnails     = true;
+}
+
+static void xmb_draw_fullscreen_thumbnails(
+      xmb_handle_t *xmb, video_frame_info_t *video_info,
+      settings_t *settings, size_t selection)
+{
+   /* Check whether fullscreen thumbnails are visible */
+   if (xmb->fullscreen_thumbnail_alpha > 0.0f)
+   {
+      menu_thumbnail_t *right_thumbnail = NULL;
+      menu_thumbnail_t *left_thumbnail  = NULL;
+      int view_width                    = (int)video_info->width;
+      int view_height                   = (int)video_info->height;
+      int thumbnail_margin              = (int)(xmb->icon_size / 2.0f);
+      bool show_right_thumbnail         = false;
+      bool show_left_thumbnail          = false;
+      unsigned num_thumbnails           = 0;
+      float right_thumbnail_draw_width  = 0.0f;
+      float right_thumbnail_draw_height = 0.0f;
+      float left_thumbnail_draw_width   = 0.0f;
+      float left_thumbnail_draw_height  = 0.0f;
+      float *menu_color                 = xmb_gradient_ident(video_info);
+      /* XMB doesn't have a proper theme interface, so
+       * hard-code this alpha value for now... */
+      float background_alpha            = 0.75f;
+      float background_color[16]        = {
+         0.0f, 0.0f, 0.0f, 1.0f,
+         0.0f, 0.0f, 0.0f, 1.0f,
+         0.0f, 0.0f, 0.0f, 1.0f,
+         0.0f, 0.0f, 0.0f, 1.0f,
+      };
+      uint32_t title_color              = 0xFFFFFF00;
+      float header_alpha                = 0.6f;
+      float header_color[16]            = {
+         0.0f, 0.0f, 0.0f, 0.0f,
+         0.0f, 0.0f, 0.0f, 0.0f,
+         0.0f, 0.0f, 0.0f, 0.0f,
+         0.0f, 0.0f, 0.0f, 0.0f,
+      };
+      int frame_width                   = (int)(xmb->icon_size / 6.0f);
+      float frame_color[16]             = {
+         1.0f, 1.0f, 1.0f, 1.0f,
+         1.0f, 1.0f, 1.0f, 1.0f,
+         1.0f, 1.0f, 1.0f, 1.0f,
+         1.0f, 1.0f, 1.0f, 1.0f,
+      };
+      bool show_header                  = !string_is_empty(xmb->fullscreen_thumbnail_label);
+      int header_height                 = show_header ? (int)((float)xmb->font_size * 1.2f) + (frame_width * 2) : 0;
+      int header_margin;
+      int thumbnail_box_width;
+      int thumbnail_box_height;
+      int right_thumbnail_x;
+      int left_thumbnail_x;
+      int thumbnail_y;
+      menu_thumbnail_shadow_t thumbnail_shadow;
+
+      /* Sanity check: Return immediately if this is
+       * a menu without thumbnails and we are not currently
+       * 'fading out' the fullscreen thumbnail view */
+      if (!xmb->fullscreen_thumbnails_available &&
+          xmb->show_fullscreen_thumbnails)
+         goto error;
+
+      /* Safety check: ensure that current
+       * selection matches the entry selected when
+       * fullscreen thumbnails were enabled
+       * > Note that we exclude this check if we are
+       *   currently viewing the quick menu and the
+       *   thumbnail view is fading out. This enables
+       *   a smooth transition if the user presses
+       *   RetroPad A or keyboard 'return' to enter the
+       *   quick menu while fullscreen thumbnails are
+       *   being displayed */
+      if ((selection != xmb->fullscreen_thumbnail_selection) &&
+          (!xmb->is_quick_menu || xmb->show_fullscreen_thumbnails))
+         goto error;
+
+      /* Get thumbnail pointers
+       * > Order is swapped when using 'vertical disposition' */
+      if (settings->bools.menu_xmb_vertical_thumbnails)
+      {
+         right_thumbnail = &xmb->thumbnails.left;
+         left_thumbnail  = &xmb->thumbnails.right;
+      }
+      else
+      {
+         right_thumbnail = &xmb->thumbnails.right;
+         left_thumbnail  = &xmb->thumbnails.left;
+      }
+
+      /* Get number of 'active' thumbnails */
+      show_right_thumbnail = (right_thumbnail->status == MENU_THUMBNAIL_STATUS_AVAILABLE);
+      show_left_thumbnail  = (left_thumbnail->status  == MENU_THUMBNAIL_STATUS_AVAILABLE);
+
+      if (show_right_thumbnail)
+         num_thumbnails++;
+
+      if (show_left_thumbnail)
+         num_thumbnails++;
+
+      /* Do nothing if both thumbnails are missing
+       * > Note: Baring inexplicable internal errors, this
+       *   can never happen... */
+      if (num_thumbnails < 1)
+         goto error;
+
+      /* Get base thumbnail dimensions + draw positions */
+
+      /* > Thumbnail bounding box height + y position
+       *   are fixed */
+      header_margin = (header_height > thumbnail_margin) ?
+            header_height : thumbnail_margin;
+      thumbnail_box_height = view_height - header_margin - thumbnail_margin;
+      thumbnail_y          = header_margin;
+
+      /* Thumbnail bounding box width and x position
+       * depend upon number of active thumbnails */
+      if (num_thumbnails == 2)
+      {
+         thumbnail_box_width = (view_width - (thumbnail_margin * 3) - frame_width) >> 1;
+         left_thumbnail_x    = thumbnail_margin;
+         right_thumbnail_x   = left_thumbnail_x + thumbnail_box_width + frame_width + thumbnail_margin;
+      }
+      else
+      {
+         thumbnail_box_width = view_width - (thumbnail_margin * 2);
+         left_thumbnail_x    = thumbnail_margin;
+         right_thumbnail_x   = left_thumbnail_x;
+      }
+
+      /* Sanity check */
+      if ((thumbnail_box_width < 1) ||
+          (thumbnail_box_height < 1))
+         goto error;
+
+      /* Get thumbnail draw dimensions
+       * > Note: The following code is a bit awkward, since
+       *   we have to do things in a very specific order
+       *   - i.e. we cannot determine proper thumbnail
+       *     layout until we have thumbnail draw dimensions.
+       *     and we cannot get draw dimensions until we have
+       *     the bounding box dimensions...  */
+      if (show_right_thumbnail)
+      {
+         menu_thumbnail_get_draw_dimensions(
+               right_thumbnail,
+               thumbnail_box_width, thumbnail_box_height, 1.0f,
+               &right_thumbnail_draw_width, &right_thumbnail_draw_height);
+
+         /* Sanity check */
+         if ((right_thumbnail_draw_width <= 0.0f) ||
+             (right_thumbnail_draw_height <= 0.0f))
+            goto error;
+      }
+
+      if (show_left_thumbnail)
+      {
+         menu_thumbnail_get_draw_dimensions(
+               left_thumbnail,
+               thumbnail_box_width, thumbnail_box_height, 1.0f,
+               &left_thumbnail_draw_width, &left_thumbnail_draw_height);
+
+         /* Sanity check */
+         if ((left_thumbnail_draw_width <= 0.0f) ||
+             (left_thumbnail_draw_height <= 0.0f))
+            goto error;
+      }
+
+      /* Adjust thumbnail draw positions to achieve
+       * uniform appearance (accounting for actual
+       * draw dimensions...) */
+      if (num_thumbnails == 2)
+      {
+         int left_padding  = (thumbnail_box_width - (int)left_thumbnail_draw_width)  >> 1;
+         int right_padding = (thumbnail_box_width - (int)right_thumbnail_draw_width) >> 1;
+
+         /* Move thumbnails as close together as possible,
+          * and horizontally centre the resultant 'block'
+          * of images */
+         left_thumbnail_x  += right_padding;
+         right_thumbnail_x -= left_padding;
+      }
+
+      /* Set colour values */
+
+      /* > Background */
+      menu_display_set_alpha(
+            background_color, background_alpha * xmb->fullscreen_thumbnail_alpha);
+
+      /* > Header background */
+      header_color[11] = header_alpha * xmb->fullscreen_thumbnail_alpha;
+      header_color[15] = header_color[11];
+
+      /* > Title text */
+      title_color |= (unsigned)((255.0f * xmb->fullscreen_thumbnail_alpha) + 0.5f);
+
+      /* > Thumbnail frame */
+      if (menu_color)
+      {
+         float mean_menu_color[3];
+
+         /* The menu gradients are not entirely consistent...
+          * The best we can do here is take the mean of the
+          * first and last vertex colours... */
+         mean_menu_color[0] = (menu_color[0] + menu_color[12]) / 2.0f;
+         mean_menu_color[1] = (menu_color[1] + menu_color[13]) / 2.0f;
+         mean_menu_color[2] = (menu_color[2] + menu_color[14]) / 2.0f;
+
+         memcpy(frame_color,      mean_menu_color, sizeof(mean_menu_color));
+         memcpy(frame_color + 4,  mean_menu_color, sizeof(mean_menu_color));
+         memcpy(frame_color + 8,  mean_menu_color, sizeof(mean_menu_color));
+         memcpy(frame_color + 12, mean_menu_color, sizeof(mean_menu_color));
+      }
+      menu_display_set_alpha(
+            frame_color, xmb->fullscreen_thumbnail_alpha);
+
+      /* Darken background */
+      menu_display_draw_quad(
+            video_info,
+            0,
+            0,
+            (unsigned)view_width,
+            (unsigned)view_height,
+            (unsigned)view_width,
+            (unsigned)view_height,
+            background_color);
+
+      /* Draw header */
+      if (show_header)
+      {
+         /* Background */
+         menu_display_draw_quad(
+               video_info,
+               0,
+               0,
+               (unsigned)view_width,
+               (unsigned)(header_height - frame_width),
+               (unsigned)view_width,
+               (unsigned)view_height,
+               header_color);
+
+         /* Title text */
+         if (settings->bools.menu_ticker_smooth)
+         {
+            int title_x               = 0;
+            unsigned ticker_x_offset  = 0;
+            unsigned ticker_str_width = 0;
+            menu_animation_ctx_ticker_smooth_t ticker_smooth;
+            char title_buf[255];
+
+            title_buf[0] = '\0';
+
+            ticker_smooth.idx           = menu_animation_get_ticker_pixel_idx();
+            ticker_smooth.font          = xmb->font;
+            ticker_smooth.font_scale    = 1.0f;
+            ticker_smooth.type_enum     = (enum menu_animation_ticker_type)settings->uints.menu_ticker_type;
+            ticker_smooth.spacer        = NULL;
+            ticker_smooth.x_offset      = &ticker_x_offset;
+            ticker_smooth.dst_str_width = &ticker_str_width;
+            ticker_smooth.selected      = true;
+            ticker_smooth.field_width   = (unsigned)view_width;
+            ticker_smooth.src_str       = xmb->fullscreen_thumbnail_label;
+            ticker_smooth.dst_str       = title_buf;
+            ticker_smooth.dst_str_len   = sizeof(title_buf);
+
+            /* If ticker is not active, centre the title text */
+            if (!menu_animation_ticker_smooth(&ticker_smooth))
+               title_x = (view_width - (int)ticker_str_width) >> 1;
+
+            title_x += (int)ticker_x_offset;
+
+            menu_display_draw_text(
+                  xmb->font,
+                  title_buf,
+                  title_x,
+                  xmb->font_size,
+                  (unsigned)view_width,
+                  (unsigned)view_height,
+                  title_color,
+                  TEXT_ALIGN_LEFT,
+                  1.0f, false, 0.0f, false);
+         }
+         /* Note: The non-smooth ticker is a complete failure
+          * here, since actual text width is unknown. This
+          * causes the text to be horizontally offset - we
+          * cannot fix this.
+          * All we can do in this case is just draw the text
+          * as-is, horizontally centred, and if the ends get
+          * clipped than so be it... */
+         else
+            menu_display_draw_text(
+                  xmb->font,
+                  xmb->fullscreen_thumbnail_label,
+                  view_width >> 1,
+                  xmb->font_size,
+                  (unsigned)view_width,
+                  (unsigned)view_height,
+                  title_color,
+                  TEXT_ALIGN_CENTER,
+                  1.0f, false, 0.0f, false);
+      }
+
+      /* Draw thumbnails */
+
+      /* > Configure shadow effect */
+      if (video_info->xmb_shadows_enable)
+      {
+         float shadow_offset            = xmb->icon_size / 24.0f;
+
+         thumbnail_shadow.type          = MENU_THUMBNAIL_SHADOW_DROP;
+         thumbnail_shadow.alpha         = 0.35f;
+         thumbnail_shadow.drop.x_offset = shadow_offset;
+         thumbnail_shadow.drop.y_offset = shadow_offset;
+      }
+      else
+         thumbnail_shadow.type = MENU_THUMBNAIL_SHADOW_NONE;
+
+      /* > Right */
+      if (show_right_thumbnail)
+      {
+         /* Background */
+         menu_display_draw_quad(
+               video_info,
+               right_thumbnail_x - frame_width +
+                     ((thumbnail_box_width - (int)right_thumbnail_draw_width) >> 1),
+               thumbnail_y - frame_width +
+                     ((thumbnail_box_height - (int)right_thumbnail_draw_height) >> 1),
+               (unsigned)right_thumbnail_draw_width + (frame_width << 1),
+               (unsigned)right_thumbnail_draw_height + (frame_width << 1),
+               (unsigned)view_width,
+               (unsigned)view_height,
+               frame_color);
+
+         /* Thumbnail */
+         menu_thumbnail_draw(
+               video_info,
+               right_thumbnail,
+               right_thumbnail_x,
+               thumbnail_y,
+               (unsigned)thumbnail_box_width,
+               (unsigned)thumbnail_box_height,
+               MENU_THUMBNAIL_ALIGN_CENTRE,
+               xmb->fullscreen_thumbnail_alpha,
+               1.0f,
+               &thumbnail_shadow);
+      }
+
+      /* > Left */
+      if (show_left_thumbnail)
+      {
+         /* Background */
+         menu_display_draw_quad(
+               video_info,
+               left_thumbnail_x - frame_width +
+                     ((thumbnail_box_width - (int)left_thumbnail_draw_width) >> 1),
+               thumbnail_y - frame_width +
+                     ((thumbnail_box_height - (int)left_thumbnail_draw_height) >> 1),
+               (unsigned)left_thumbnail_draw_width + (frame_width << 1),
+               (unsigned)left_thumbnail_draw_height + (frame_width << 1),
+               (unsigned)view_width,
+               (unsigned)view_height,
+               frame_color);
+
+         /* Thumbnail */
+         menu_thumbnail_draw(
+               video_info,
+               left_thumbnail,
+               left_thumbnail_x,
+               thumbnail_y,
+               (unsigned)thumbnail_box_width,
+               (unsigned)thumbnail_box_height,
+               MENU_THUMBNAIL_ALIGN_CENTRE,
+               xmb->fullscreen_thumbnail_alpha,
+               1.0f,
+               &thumbnail_shadow);
+      }
+   }
+
+   return;
+
+error:
+   /* If fullscreen thumbnails are enabled at
+    * this point, must disable them immediately... */
+   if (xmb->show_fullscreen_thumbnails)
+      xmb_hide_fullscreen_thumbnails(xmb, false);
+}
+
 static void xmb_frame(void *data, video_frame_info_t *video_info)
 {
    math_matrix_4x4 mymat;
@@ -3622,32 +4139,63 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    char msg[1024];
    char title_msg[255];
    char title_truncated[255];
+   menu_thumbnail_shadow_t thumbnail_shadow;
    size_t selection                        = 0;
    size_t percent_width                    = 0;
-   const int min_thumb_size                = 50;
    bool render_background                  = false;
    file_list_t *selection_buf              = NULL;
    unsigned width                          = video_info->width;
    unsigned height                         = video_info->height;
-   const float under_thumb_margin          = 0.96;
-   float scale_factor                      = 0.0f;
+   const float under_thumb_margin          = 0.96f;
    float thumbnail_scale_factor            = 0.0f;
+   float left_thumbnail_margin_width       = 0.0f;
+   float right_thumbnail_margin_width      = 0.0f;
+   float thumbnail_margin_height_under     = 0.0f;
+   float thumbnail_margin_height_full      = 0.0f;
+   float left_thumbnail_margin_x           = 0.0f;
+   float right_thumbnail_margin_x          = 0.0f;
    float pseudo_font_length                = 0.0f;
    xmb_handle_t *xmb                       = (xmb_handle_t*)data;
    settings_t *settings                    = config_get_ptr();
    unsigned xmb_system_tab                 = xmb_get_system_tab(xmb, (unsigned)xmb->categories_selection_ptr);
-   bool hide_thumbnails                    = false;
+   bool fade_tab_icons                     = false;
+   float fade_tab_icons_x_threshold        = 0.0f;
 
    if (!xmb)
       return;
 
-   scale_factor                            = (settings->floats.menu_scale_factor * (float)width) / 1920.0f;
-   thumbnail_scale_factor                  = ((float)settings->uints.menu_xmb_thumbnail_scale_factor / 100.0f);
-   pseudo_font_length                      = xmb->icon_spacing_horizontal * 4 - xmb->icon_size / 4;
-
    msg[0]             = '\0';
    title_msg[0]       = '\0';
    title_truncated[0] = '\0';
+
+   pseudo_font_length                      = xmb->icon_spacing_horizontal * 4 - xmb->icon_size / 4.0f;
+   thumbnail_scale_factor                  = (float)settings->uints.menu_xmb_thumbnail_scale_factor / 100.0f;
+   left_thumbnail_margin_width             = xmb->icon_size * 3.4f;
+   right_thumbnail_margin_width            =
+         (float)width - (xmb->icon_size / 6) -
+         (xmb->margins_screen_left * scale_mod[5]) -
+         xmb->icon_spacing_horizontal - pseudo_font_length;
+   thumbnail_margin_height_under           = ((float)height * under_thumb_margin) - xmb->margins_screen_top - xmb->icon_size;
+   thumbnail_margin_height_full            = (float)height - xmb->margins_title_top - ((xmb->icon_size / 4.0f) * 2.0f);
+   left_thumbnail_margin_x                 = xmb->icon_size / 6.0f;
+   right_thumbnail_margin_x                = (float)width - (xmb->icon_size / 6.0f) - right_thumbnail_margin_width;
+
+   /* Configure shadow effect */
+   if (video_info->xmb_shadows_enable)
+   {
+      /* Drop shadow for thumbnails needs to be larger
+       * than for text/icons, and also needs to scale
+       * with screen dimensions */
+      float shadow_offset = xmb->shadow_offset * 1.5f * (settings->floats.menu_scale_factor * (float)width) / 1920.0f;
+      shadow_offset = (shadow_offset > xmb->shadow_offset) ? shadow_offset : xmb->shadow_offset;
+
+      thumbnail_shadow.type          = MENU_THUMBNAIL_SHADOW_DROP;
+      thumbnail_shadow.alpha         = 0.35f;
+      thumbnail_shadow.drop.x_offset = shadow_offset;
+      thumbnail_shadow.drop.y_offset = shadow_offset;
+   }
+   else
+      thumbnail_shadow.type = MENU_THUMBNAIL_SHADOW_NONE;
 
    font_driver_bind_block(xmb->font,  &xmb->raster_block);
    font_driver_bind_block(xmb->font2, &xmb->raster_block2);
@@ -3712,321 +4260,196 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    rotate_draw.scale_enable = true;
 
    menu_display_rotate_z(&rotate_draw, video_info);
-   menu_display_blend_begin(video_info);
 
-   /* Save State thumbnail, right side */
-   if (xmb->savestate_thumbnail)
+   /**************************/
+   /* Draw thumbnails: START */
+   /**************************/
+
+   /* Note: This is incredibly ugly, but there are
+    * so many combinations here that we would go insane
+    * trying to rationalise this any further... */
+
+   /* Save state thumbnail, right side */
+   if (xmb->is_quick_menu &&
+         ((xmb->thumbnails.savestate.status == MENU_THUMBNAIL_STATUS_AVAILABLE) ||
+         (xmb->thumbnails.savestate.status == MENU_THUMBNAIL_STATUS_PENDING)))
    {
-      float thumb_width     = 0.0f;
-      float thumb_height    = 0.0f;
-      float thumb_max_width = (float)width - (xmb->icon_size / 6)
-         - (xmb->margins_screen_left * scale_mod[5]) -
-         xmb->icon_spacing_horizontal - pseudo_font_length;
-      float thumb_max_width_scaled = thumb_max_width * thumbnail_scale_factor;
+      float thumb_width         = right_thumbnail_margin_width;
+      float thumb_height        = thumbnail_margin_height_full;
+      float scaled_thumb_width  = thumb_width * thumbnail_scale_factor;
+      float scaled_thumb_height = thumb_height * thumbnail_scale_factor;
+      float thumb_x             = right_thumbnail_margin_x + ((thumb_width - scaled_thumb_width) / 2.0f);
+      float thumb_y             = xmb->margins_title_top + (xmb->icon_size / 4.0f) + ((thumb_height - scaled_thumb_height) / 2.0f);
 
-      /* Limit thumbnail width */
-      if (xmb->savestate_thumbnail_width * scale_mod[4] > thumb_max_width_scaled)
-      {
-         thumb_width  = (xmb->savestate_thumbnail_width * scale_mod[4]) *
-            (thumb_max_width_scaled / (xmb->savestate_thumbnail_width * scale_mod[4]));
-         thumb_height = (xmb->savestate_thumbnail_height * scale_mod[4]) *
-            (thumb_max_width_scaled / (xmb->savestate_thumbnail_width * scale_mod[4]));
-      }
-      else
-      {
-         thumb_width  = xmb->savestate_thumbnail_width * scale_mod[4];
-         thumb_height = xmb->savestate_thumbnail_height * scale_mod[4];
-      }
-
-      /* Limit thumbnail height to screen height + margin. */
-      if (xmb->margins_screen_top + xmb->icon_size + thumb_height >=
-            ((float)height * under_thumb_margin))
-      {
-         thumb_width = thumb_width *
-            ((((float)height * under_thumb_margin) -
-              xmb->margins_screen_top - xmb->icon_size) /
-             thumb_height);
-         thumb_height = thumb_height *
-            ((((float)height * under_thumb_margin) -
-              xmb->margins_screen_top - xmb->icon_size) /
-             thumb_height);
-      }
-
-      xmb_draw_thumbnail(video_info,
-            xmb, &coord_white[0], width, height,
-            (float)width - (xmb->icon_size / 6) - thumb_max_width +
-            ((thumb_max_width - thumb_width) / 2),
-            xmb->margins_screen_top + xmb->icon_size + thumb_height,
-            thumb_width, thumb_height,
-            xmb->savestate_thumbnail);
+      menu_thumbnail_draw(
+            video_info,
+            &xmb->thumbnails.savestate,
+            thumb_x,
+            thumb_y,
+            scaled_thumb_width  > 0.0f ? (unsigned)scaled_thumb_width  : 0,
+            scaled_thumb_height > 0.0f ? (unsigned)scaled_thumb_height : 0,
+            MENU_THUMBNAIL_ALIGN_CENTRE,
+            1.0f, 1.0f, &thumbnail_shadow);
    }
-
    /* This is used for hiding thumbnails when going into sub-levels in the
     * Quick Menu as well as when selecting "Information" for a playlist entry.
     * NOTE: This is currently a pretty crude check, simply going by menu depth
     * and not specifically identifying which menu we're actually in. */
-   hide_thumbnails = xmb_system_tab > XMB_SYSTEM_TAB_SETTINGS && xmb->depth > 2;
-
-   /* Right thumbnail big size */
-   if (!hide_thumbnails && !xmb->savestate_thumbnail && xmb->use_ps3_layout &&
-         (!settings->bools.menu_xmb_vertical_thumbnails ||
-         (settings->bools.menu_xmb_vertical_thumbnails && !xmb->left_thumbnail)))
+   else if (!((xmb_system_tab > XMB_SYSTEM_TAB_SETTINGS) && (xmb->depth > 2)))
    {
-      /* Do not draw the right thumbnail if there is no space available */
+      bool show_right_thumbnail =
+            (xmb->thumbnails.right.status == MENU_THUMBNAIL_STATUS_AVAILABLE) ||
+            (xmb->thumbnails.right.status == MENU_THUMBNAIL_STATUS_PENDING);
+      bool show_left_thumbnail  =
+            (xmb->thumbnails.left.status == MENU_THUMBNAIL_STATUS_AVAILABLE) ||
+            (xmb->thumbnails.left.status == MENU_THUMBNAIL_STATUS_PENDING);
 
-      if (((xmb->margins_screen_top +
-                  xmb->icon_size + min_thumb_size) <= height) &&
-            ((xmb->margins_screen_left * scale_mod[5] +
-              xmb->icon_spacing_horizontal +
-              pseudo_font_length + min_thumb_size) <= width))
+      /* Check if we are using the proper PS3 layout,
+       * or the aborted PSP layout */
+      if (xmb->use_ps3_layout)
       {
-         if (xmb->thumbnail && menu_thumbnail_is_enabled(xmb->thumbnail_path_data, MENU_THUMBNAIL_RIGHT))
+         /* Check if user has selected vertically
+          * stacked thumbnails */
+         if (settings->bools.menu_xmb_vertical_thumbnails)
          {
-            /* Limit thumbnail width */
-
-            float thumb_width     = 0.0f;
-            float thumb_height    = 0.0f;
-            float thumb_max_width = (float)width - (xmb->icon_size / 6)
-               - (xmb->margins_screen_left * scale_mod[5]) -
-               xmb->icon_spacing_horizontal - pseudo_font_length;
-            float thumb_max_width_scaled = thumb_max_width * thumbnail_scale_factor;
-
-#ifdef XMB_DEBUG
-            RARCH_LOG("[XMB thumbnail] width: %.2f, height: %.2f\n",
-                  xmb->thumbnail_width, xmb->thumbnail_height);
-            RARCH_LOG("[XMB thumbnail] w: %.2f, h: %.2f\n", width, height);
-#endif
-
-            if (xmb->thumbnail_width * scale_mod[4] > thumb_max_width_scaled)
+            /* Right + left thumbnails, right side */
+            if (show_right_thumbnail && show_left_thumbnail)
             {
-               thumb_width  = (xmb->thumbnail_width * scale_mod[4]) *
-                  (thumb_max_width_scaled / (xmb->thumbnail_width * scale_mod[4]));
-               thumb_height = (xmb->thumbnail_height * scale_mod[4]) *
-                  (thumb_max_width_scaled / (xmb->thumbnail_width * scale_mod[4]));
+               float thumb_width         = right_thumbnail_margin_width;
+               float thumb_height        = (thumbnail_margin_height_full - (xmb->icon_size / 4.0f)) / 2.0f;
+               float scaled_thumb_width  = thumb_width * thumbnail_scale_factor;
+               float scaled_thumb_height = thumb_height * thumbnail_scale_factor;
+               float thumb_x             = right_thumbnail_margin_x + ((thumb_width - scaled_thumb_width) / 2.0f);
+               float thumb_y_base        = xmb->margins_title_top + (xmb->icon_size / 4.0f);
+               float thumb_y_offset      = (thumb_height - scaled_thumb_height) / 2.0f;
+               float right_thumb_y       = thumb_y_base + thumb_y_offset;
+               float left_thumb_y        = thumb_y_base + thumb_height + (xmb->icon_size / 4) + thumb_y_offset;
+
+               menu_thumbnail_draw(
+                     video_info,
+                     &xmb->thumbnails.right,
+                     thumb_x,
+                     right_thumb_y,
+                     scaled_thumb_width  > 0.0f ? (unsigned)scaled_thumb_width  : 0,
+                     scaled_thumb_height > 0.0f ? (unsigned)scaled_thumb_height : 0,
+                     MENU_THUMBNAIL_ALIGN_CENTRE,
+                     1.0f, 1.0f, &thumbnail_shadow);
+
+               menu_thumbnail_draw(
+                     video_info,
+                     &xmb->thumbnails.left,
+                     thumb_x,
+                     left_thumb_y,
+                     scaled_thumb_width  > 0.0f ? (unsigned)scaled_thumb_width  : 0,
+                     scaled_thumb_height > 0.0f ? (unsigned)scaled_thumb_height : 0,
+                     MENU_THUMBNAIL_ALIGN_CENTRE,
+                     1.0f, 1.0f, &thumbnail_shadow);
+
+               /* Horizontal tab icons overlapping the top
+                * right image must be faded out */
+               fade_tab_icons             = true;
+               fade_tab_icons_x_threshold = thumb_x;
             }
-            else
+            /* Right *or* left, right side */
+            else if (show_right_thumbnail || show_left_thumbnail)
             {
-               thumb_width  = xmb->thumbnail_width * scale_mod[4];
-               thumb_height = xmb->thumbnail_height * scale_mod[4];
+               float thumb_width         = right_thumbnail_margin_width;
+               float thumb_height        = thumbnail_margin_height_under;
+               float scaled_thumb_width  = thumb_width * thumbnail_scale_factor;
+               float scaled_thumb_height = thumb_height * thumbnail_scale_factor;
+               float thumb_x             = right_thumbnail_margin_x + ((thumb_width - scaled_thumb_width) / 2.0f);
+               float thumb_y             = xmb->margins_screen_top + xmb->icon_size;
+
+               menu_thumbnail_draw(
+                     video_info,
+                     show_right_thumbnail ? &xmb->thumbnails.right : &xmb->thumbnails.left,
+                     thumb_x,
+                     thumb_y,
+                     scaled_thumb_width  > 0.0f ? (unsigned)scaled_thumb_width  : 0,
+                     scaled_thumb_height > 0.0f ? (unsigned)scaled_thumb_height : 0,
+                     MENU_THUMBNAIL_ALIGN_TOP,
+                     1.0f, 1.0f, &thumbnail_shadow);
             }
-
-            /* Limit thumbnail height to screen height + margin. */
-
-            if (xmb->margins_screen_top + xmb->icon_size + thumb_height >=
-                  ((float)height * under_thumb_margin))
-            {
-               thumb_width = thumb_width *
-                  ((((float)height * under_thumb_margin) -
-                    xmb->margins_screen_top - xmb->icon_size) /
-                   thumb_height);
-               thumb_height = thumb_height *
-                  ((((float)height * under_thumb_margin) -
-                    xmb->margins_screen_top - xmb->icon_size) /
-                   thumb_height);
-            }
-
-            xmb_draw_thumbnail(video_info,
-                  xmb, &coord_white[0], width, height,
-                  (float)width - (xmb->icon_size / 6) - thumb_max_width +
-                  ((thumb_max_width - thumb_width) / 2),
-                  xmb->margins_screen_top + xmb->icon_size + thumb_height,
-                  thumb_width, thumb_height,
-                  xmb->thumbnail);
-         }
-      }
-   }
-
-   /* Left thumbnail in the left margin */
-   /* Do not draw the left thumbnail if there is no space available */
-   if (!hide_thumbnails && xmb->use_ps3_layout &&
-         !settings->bools.menu_xmb_vertical_thumbnails &&
-         (xmb->margins_screen_top + xmb->icon_size *
-         (!(xmb->depth == 1)? 2.1 : 1) + min_thumb_size)
-         <= (float)height)
-   {
-      /* Left Thumbnail in the left margin */
-
-      if (xmb->left_thumbnail && menu_thumbnail_is_enabled(xmb->thumbnail_path_data, MENU_THUMBNAIL_LEFT))
-      {
-         /* Limit left thumbnail width */
-
-         float left_thumb_width     = 0.0f;
-         float left_thumb_height    = 0.0f;
-         float thumb_max_width      = xmb->icon_size * 3.4;
-         float thumb_max_width_scaled = thumb_max_width * thumbnail_scale_factor;
-         float y_offset_factor      = !(xmb->depth == 1) ? 2.1 : 1;
-         float thumb_max_height     = ((float)height - (96.0 * scale_factor)) -
-                                      xmb->margins_screen_top -
-                                      (xmb->icon_size * y_offset_factor);
-
-#ifdef XMB_DEBUG
-         RARCH_LOG("[XMB left thumbnail] width: %.2f, height: %.2f\n",
-               xmb->left_thumbnail_width, xmb->left_thumbnail_height);
-         RARCH_LOG("[XMB left thumbnail] w: %.2f, h: %.2f\n", width, height);
-#endif
-
-         if (xmb->left_thumbnail_width * scale_mod[4] > thumb_max_width_scaled)
-         {
-            left_thumb_width  = (xmb->left_thumbnail_width * scale_mod[4]) *
-               (thumb_max_width_scaled / (xmb->left_thumbnail_width * scale_mod[4]));
-            left_thumb_height = (xmb->left_thumbnail_height * scale_mod[4]) *
-               (thumb_max_width_scaled / (xmb->left_thumbnail_width * scale_mod[4]));
          }
          else
          {
-            left_thumb_width  = xmb->left_thumbnail_width * scale_mod[4];
-            left_thumb_height = xmb->left_thumbnail_height * scale_mod[4];
+            /* Right thumbnail, right side */
+            if (show_right_thumbnail)
+            {
+               float thumb_width         = right_thumbnail_margin_width;
+               float thumb_height        = thumbnail_margin_height_under;
+               float scaled_thumb_width  = thumb_width * thumbnail_scale_factor;
+               float scaled_thumb_height = thumb_height * thumbnail_scale_factor;
+               float thumb_x             = right_thumbnail_margin_x + ((thumb_width - scaled_thumb_width) / 2.0f);
+               float thumb_y             = xmb->margins_screen_top + xmb->icon_size;
+
+               menu_thumbnail_draw(
+                     video_info,
+                     &xmb->thumbnails.right,
+                     thumb_x,
+                     thumb_y,
+                     scaled_thumb_width  > 0.0f ? (unsigned)scaled_thumb_width  : 0,
+                     scaled_thumb_height > 0.0f ? (unsigned)scaled_thumb_height : 0,
+                     MENU_THUMBNAIL_ALIGN_TOP,
+                     1.0f, 1.0f, &thumbnail_shadow);
+            }
+
+            /* Left thumbnail, left side */
+            if (show_left_thumbnail)
+            {
+               float y_offset            = ((xmb->depth != 1) ? 1.2f : 0.0f) * xmb->icon_size;
+               float thumb_width         = left_thumbnail_margin_width;
+               float thumb_height        = thumbnail_margin_height_under - xmb->margins_title_bottom - y_offset;
+               float scaled_thumb_width  = thumb_width * thumbnail_scale_factor;
+               float scaled_thumb_height = thumb_height * thumbnail_scale_factor;
+               float thumb_x             = left_thumbnail_margin_x + ((thumb_width - scaled_thumb_width) / 2.0f);
+               float thumb_y             = xmb->margins_screen_top + xmb->icon_size + y_offset;
+
+               menu_thumbnail_draw(
+                     video_info,
+                     &xmb->thumbnails.left,
+                     thumb_x,
+                     thumb_y,
+                     scaled_thumb_width  > 0.0f ? (unsigned)scaled_thumb_width  : 0,
+                     scaled_thumb_height > 0.0f ? (unsigned)scaled_thumb_height : 0,
+                     MENU_THUMBNAIL_ALIGN_TOP,
+                     1.0f, 1.0f, &thumbnail_shadow);
+            }
          }
-
-         /* Limit left thumbnail height to screen height + margin. */
-         if (left_thumb_height >= thumb_max_height)
-         {
-            left_thumb_width = left_thumb_width *
-               (thumb_max_height / left_thumb_height);
-
-            left_thumb_height = thumb_max_height;
-         }
-
-         xmb_draw_thumbnail(video_info,
-               xmb, &coord_white[0], width, height,
-               (xmb->icon_size / 6) +
-               ((thumb_max_width - left_thumb_width) / 2),
-               xmb->margins_screen_top + (xmb->icon_size * y_offset_factor) +
-               left_thumb_height + (!(xmb->depth == 1) ?
-               (1.0f - thumbnail_scale_factor) * 0.5f * (thumb_max_height - left_thumb_height) : 0),
-               left_thumb_width, left_thumb_height,
-               xmb->left_thumbnail);
       }
-   }
-
-   /* No Right Thumbnail, draw only the left one big size */
-   if (!hide_thumbnails && !xmb->savestate_thumbnail && xmb->use_ps3_layout &&
-      settings->bools.menu_xmb_vertical_thumbnails && !xmb->thumbnail)
-   {
-      /* Do not draw the left thumbnail if there is no space available */
-
-      if (((xmb->margins_screen_top +
-                  xmb->icon_size + min_thumb_size) <= height) &&
-            ((xmb->margins_screen_left * scale_mod[5] +
-              xmb->icon_spacing_horizontal +
-              pseudo_font_length + min_thumb_size) <= width))
+      /* This is the PSP layout - thumbnails are only
+       * drawn on the left hand side
+       * > If left thumbnail is available, show it
+       * > If not, show right thumbnail instead
+       *   (if available) */
+      else if (show_right_thumbnail || show_left_thumbnail)
       {
-         if (xmb->left_thumbnail && menu_thumbnail_is_enabled(xmb->thumbnail_path_data, MENU_THUMBNAIL_LEFT))
-         {
-            /* Limit left thumbnail width */
+         float y_offset            = ((xmb->depth != 1) ? 1.2f : -0.25f) * xmb->icon_size;
+         float thumb_width         = xmb->icon_size * 2.4f;
+         float thumb_height        = thumbnail_margin_height_under - xmb->margins_title_bottom - (xmb->icon_size / 6.0f) - y_offset;
+         float scaled_thumb_width  = thumb_width * thumbnail_scale_factor;
+         float scaled_thumb_height = thumb_height * thumbnail_scale_factor;
+         float thumb_x             = (thumb_width - scaled_thumb_width) / 2.0f;
+         float thumb_y             = xmb->margins_screen_top + xmb->icon_size + y_offset;
 
-            float left_thumb_width     = 0.0f;
-            float left_thumb_height    = 0.0f;
-            float thumb_max_width = (float)width - (xmb->icon_size / 6)
-               - (xmb->margins_screen_left * scale_mod[5]) -
-               xmb->icon_spacing_horizontal - pseudo_font_length;
-            float thumb_max_width_scaled = thumb_max_width * thumbnail_scale_factor;
-
-#ifdef XMB_DEBUG
-            RARCH_LOG("[XMB thumbnail] width: %.2f, height: %.2f\n",
-                  xmb->thumbnail_width, xmb->thumbnail_height);
-            RARCH_LOG("[XMB thumbnail] w: %.2f, h: %.2f\n", width, height);
-#endif
-
-            if (xmb->left_thumbnail_width * scale_mod[4] > thumb_max_width_scaled)
-            {
-               left_thumb_width  = (xmb->left_thumbnail_width * scale_mod[4]) *
-                  (thumb_max_width_scaled / (xmb->left_thumbnail_width * scale_mod[4]));
-               left_thumb_height = (xmb->left_thumbnail_height * scale_mod[4]) *
-                  (thumb_max_width_scaled / (xmb->left_thumbnail_width * scale_mod[4]));
-            }
-            else
-            {
-               left_thumb_width  = xmb->left_thumbnail_width * scale_mod[4];
-               left_thumb_height = xmb->left_thumbnail_height * scale_mod[4];
-            }
-
-            /* Limit left thumbnail height to screen height + margin. */
-
-            if (xmb->margins_screen_top + xmb->icon_size + left_thumb_height >=
-                  ((float)height * under_thumb_margin))
-            {
-               left_thumb_width = left_thumb_width *
-                  ((((float)height * under_thumb_margin) -
-                    xmb->margins_screen_top - xmb->icon_size) /
-                   left_thumb_height);
-               left_thumb_height = left_thumb_height *
-                  ((((float)height * under_thumb_margin) -
-                    xmb->margins_screen_top - xmb->icon_size) /
-                   left_thumb_height);
-            }
-
-            xmb_draw_thumbnail(video_info,
-                  xmb, &coord_white[0], width, height,
-                  (float)width - (xmb->icon_size / 6) - thumb_max_width +
-                  ((thumb_max_width - left_thumb_width) / 2),
-                  xmb->margins_screen_top + xmb->icon_size + left_thumb_height,
-                  left_thumb_width, left_thumb_height,
-                  xmb->left_thumbnail);
-         }
+         /* Very small thumbnails look ridiculous
+          * > Impose a minimum size limit */
+         if (thumb_height > xmb->icon_size)
+            menu_thumbnail_draw(
+                  video_info,
+                  show_left_thumbnail ? &xmb->thumbnails.left : &xmb->thumbnails.right,
+                  thumb_x,
+                  thumb_y,
+                  scaled_thumb_width  > 0.0f ? (unsigned)scaled_thumb_width  : 0,
+                  scaled_thumb_height > 0.0f ? (unsigned)scaled_thumb_height : 0,
+                  MENU_THUMBNAIL_ALIGN_TOP,
+                  1.0f, 1.0f, &thumbnail_shadow);
       }
    }
 
-   /* PSP Layout Only - Left thumbnail in the left margin */
-   /* Do not draw the left thumbnail if there is no space available */
-   if (!hide_thumbnails && !xmb->use_ps3_layout &&
-         (xmb->margins_screen_top + xmb->icon_size * 1.5)
-         <= (float)height)
-   {
-      /* Left Thumbnail in the left margin */
-
-      if (xmb->left_thumbnail && menu_thumbnail_is_enabled(xmb->thumbnail_path_data, MENU_THUMBNAIL_LEFT))
-      {
-         /* Limit left thumbnail width */
-
-         float left_thumb_width     = 0.0f;
-         float left_thumb_height    = 0.0f;
-         float thumb_max_width = xmb->icon_size * 2.4;
-         float thumb_max_width_scaled = thumb_max_width * thumbnail_scale_factor;
-
-#ifdef XMB_DEBUG
-         RARCH_LOG("[XMB left thumbnail] width: %.2f, height: %.2f\n",
-               xmb->left_thumbnail_width, xmb->left_thumbnail_height);
-         RARCH_LOG("[XMB left thumbnail] w: %.2f, h: %.2f\n", width, height);
-#endif
-
-         if (xmb->left_thumbnail_width > thumb_max_width_scaled)
-         {
-            left_thumb_width  = xmb->left_thumbnail_width *
-               (thumb_max_width_scaled / xmb->left_thumbnail_width);
-            left_thumb_height = xmb->left_thumbnail_height *
-               (thumb_max_width_scaled / xmb->left_thumbnail_width);
-         }
-         else
-         {
-            left_thumb_width  = xmb->left_thumbnail_width;
-            left_thumb_height = xmb->left_thumbnail_height;
-         }
-
-         /* Limit left thumbnail height to screen height + margin. */
-         if (xmb->margins_screen_top + xmb->icon_size +
-               left_thumb_height >= ((float)height - (xmb->icon_size * 0.5)))
-         {
-            left_thumb_width = left_thumb_width *
-               (((float)height - (xmb->icon_size * 0.5) -
-               xmb->margins_screen_top - xmb->icon_size) /
-               left_thumb_height);
-
-            left_thumb_height = left_thumb_height *
-               (((float)height - (xmb->icon_size * 0.5) -
-               xmb->margins_screen_top - xmb->icon_size) /
-               left_thumb_height);
-         }
-
-         xmb_draw_thumbnail(video_info,
-               xmb, &coord_white[0], width, height,
-               ((thumb_max_width - left_thumb_width) / 2),
-               xmb->margins_screen_top + (xmb->icon_size * (!(xmb->depth == 1)? 2.2 : 0.75)) +
-               left_thumb_height,
-               left_thumb_width, left_thumb_height,
-               xmb->left_thumbnail);
-      }
-   }
+   /**************************/
+   /* Draw thumbnails: END   */
+   /**************************/
 
    /* Clock image */
    menu_display_set_alpha(item_color, MIN(xmb->alpha, 1.00f));
@@ -4049,6 +4472,8 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          size_t x_pos_icon = xmb->margins_title_left;
 
          if (coord_white[3] != 0 &&  !xmb->assets_missing)
+         {
+            menu_display_blend_begin(video_info);
             xmb_draw_icon(video_info,
                   xmb->icon_size,
                   &mymat,
@@ -4069,6 +4494,8 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                   1,
                   &item_color[0],
                   xmb->shadow_offset);
+            menu_display_blend_end(video_info);
+         }
 
          percent_width = (unsigned)
             font_driver_get_message_width(
@@ -4094,6 +4521,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          if (percent_width)
             x_pos = percent_width + (xmb->icon_size / 2.5);
 
+         menu_display_blend_begin(video_info);
          xmb_draw_icon(video_info,
                xmb->icon_size,
                &mymat,
@@ -4107,6 +4535,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                1,
                &item_color[0],
                xmb->shadow_offset);
+         menu_display_blend_end(video_info);
       }
 
       timedate[0]        = '\0';
@@ -4131,6 +4560,8 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          MIN(xmb->textures_arrow_alpha, xmb->alpha));
 
    if (coord_white[3] != 0 && !xmb->assets_missing)
+   {
+      menu_display_blend_begin(video_info);
       xmb_draw_icon(video_info,
             xmb->icon_size,
             &mymat,
@@ -4148,12 +4579,14 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             1,
             &item_color[0],
             xmb->shadow_offset);
-
-   menu_display_blend_begin(video_info);
+      menu_display_blend_end(video_info);
+   }
 
    /* Horizontal tab icons */
    if (!xmb->assets_missing)
    {
+      menu_display_blend_begin(video_info);
+
       for (i = 0; i <= xmb_list_get_size(xmb, MENU_LIST_HORIZONTAL)
             + xmb->system_tab_end; i++)
       {
@@ -4177,6 +4610,27 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                + xmb->icon_size / 2.0;
             float rotation           = 0;
             float scale_factor       = node->zoom;
+
+            /* Check whether we need to fade out icons
+             * overlapping the top right thumbnail image */
+            if (fade_tab_icons)
+            {
+               float x_threshold = fade_tab_icons_x_threshold - (xmb->icon_size * 1.5f);
+
+               if (x > x_threshold)
+               {
+                  float fade_alpha      = item_color[3];
+                  float fade_offset     = (x - x_threshold) * 2.0f;
+
+                  fade_offset = (fade_offset > xmb->icon_size) ? xmb->icon_size : fade_offset;
+                  fade_alpha *= 1.0f - (fade_offset / xmb->icon_size);
+
+                  if (fade_alpha <= 0.0f)
+                     continue;
+
+                  menu_display_set_alpha(item_color, fade_alpha);
+               }
+            }
 
             rotate_draw.matrix       = &mymat;
             rotate_draw.rotation     = rotation;
@@ -4202,142 +4656,9 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                   xmb->shadow_offset);
          }
       }
+
+      menu_display_blend_end(video_info);
    }
-
-   /* Right side 2 thumbnails on top of each other */
-   /* here to be displayed above the horizontal icons */
-   if (!hide_thumbnails && !xmb->savestate_thumbnail && xmb->use_ps3_layout &&
-      xmb->left_thumbnail && xmb->thumbnail &&
-      settings->bools.menu_xmb_vertical_thumbnails)
-   {
-      /* Do not draw the right thumbnail if there is no space available */
-      if (((xmb->margins_screen_top +
-                  xmb->icon_size + min_thumb_size) <= height) &&
-            ((xmb->margins_screen_left * scale_mod[5] +
-              xmb->icon_spacing_horizontal +
-              pseudo_font_length + min_thumb_size) <= width))
-      {
-         if (xmb->thumbnail && menu_thumbnail_is_enabled(xmb->thumbnail_path_data, MENU_THUMBNAIL_RIGHT))
-         {
-            /* Limit right thumbnail width */
-
-            float thumb_width     = 0.0f;
-            float thumb_height    = 0.0f;
-            float thumb_max_width = (float)width - (xmb->icon_size / 6) -
-               (xmb->margins_screen_left * scale_mod[5]) -
-               xmb->icon_spacing_horizontal - pseudo_font_length;
-            float thumb_max_width_scaled = thumb_max_width * thumbnail_scale_factor;
-
-#ifdef XMB_DEBUG
-            RARCH_LOG("[XMB thumbnail] width: %.2f, height: %.2f\n",
-                  xmb->thumbnail_width, xmb->thumbnail_height);
-            RARCH_LOG("[XMB thumbnail] w: %.2f, h: %.2f\n", width, height);
-#endif
-
-            if (xmb->thumbnail_width * scale_mod[4] > thumb_max_width_scaled)
-            {
-               thumb_width  = (xmb->thumbnail_width * scale_mod[4]) *
-                  (thumb_max_width_scaled / (xmb->thumbnail_width * scale_mod[4]));
-               thumb_height = (xmb->thumbnail_height * scale_mod[4]) *
-                  (thumb_max_width_scaled / (xmb->thumbnail_width * scale_mod[4]));
-            }
-            else
-            {
-               thumb_width  = xmb->thumbnail_width * scale_mod[4];
-               thumb_height = xmb->thumbnail_height * scale_mod[4];
-            }
-
-            /* Limit right thumbnail height to usable area. */
-
-            if (thumb_height >=
-                  ((float)height - ((xmb->icon_size / 6) * 2) - xmb->icon_size) / 2)
-            {
-               thumb_width = thumb_width *
-                  ((((float)height - ((xmb->icon_size / 6) * 2) - xmb->icon_size) / 2) /
-                   thumb_height);
-               thumb_height = thumb_height *
-                  ((((float)height - ((xmb->icon_size / 6) * 2) - xmb->icon_size) / 2) /
-                   thumb_height);
-            }
-
-            xmb_draw_thumbnail(video_info,
-                  xmb, &coord_white[0], width, height,
-                  (float)width - (xmb->icon_size / 6) - thumb_max_width +
-                  ((thumb_max_width - thumb_width) / 2),
-                  xmb->icon_size + ((((float)height / 2 -
-                           (xmb->icon_size + (xmb->icon_size/12))) - thumb_height) / 2) +
-                  thumb_height,
-                  thumb_width, thumb_height,
-                  xmb->thumbnail);
-         }
-      }
-
-      /* Do not draw the left thumbnail if there is no space available */
-
-      if (((xmb->margins_screen_top +
-                  xmb->icon_size + min_thumb_size) <= height) &&
-            ((xmb->margins_screen_left * scale_mod[5] +
-              xmb->icon_spacing_horizontal +
-              pseudo_font_length + min_thumb_size) <= width))
-      {
-         if (xmb->left_thumbnail && menu_thumbnail_is_enabled(xmb->thumbnail_path_data, MENU_THUMBNAIL_LEFT))
-         {
-            /* Limit left thumbnail width */
-
-            float left_thumb_width  = 0.0f;
-            float left_thumb_height = 0.0f;
-            float thumb_max_width = (float)width - (xmb->icon_size / 6) -
-               (xmb->margins_screen_left * scale_mod[5]) -
-               xmb->icon_spacing_horizontal - pseudo_font_length;
-            float thumb_max_width_scaled = thumb_max_width * thumbnail_scale_factor;
-
-#ifdef XMB_DEBUG
-            RARCH_LOG("[XMB left thumbnail] width: %.2f, height: %.2f\n",
-                  xmb->left_thumbnail_width, xmb->left_thumbnail_height);
-            RARCH_LOG("[XMB left thumbnail] w: %.2f, h: %.2f\n", width, height);
-#endif
-
-            if (xmb->left_thumbnail_width * scale_mod[4] > thumb_max_width_scaled)
-            {
-               left_thumb_width  = (xmb->left_thumbnail_width * scale_mod[4]) *
-                  (thumb_max_width_scaled / (xmb->left_thumbnail_width * scale_mod[4]));
-               left_thumb_height = (xmb->left_thumbnail_height * scale_mod[4]) *
-                  (thumb_max_width_scaled / (xmb->left_thumbnail_width * scale_mod[4]));
-            }
-            else
-            {
-               left_thumb_width  = xmb->left_thumbnail_width * scale_mod[4];
-               left_thumb_height = xmb->left_thumbnail_height * scale_mod[4];
-            }
-
-            /* Limit left thumbnail height to usable area. */
-
-            if (left_thumb_height >=
-                  ((float)height - ((xmb->icon_size / 6) * 2) - xmb->icon_size) / 2)
-            {
-               left_thumb_width = left_thumb_width *
-                  ((((float)height - ((xmb->icon_size / 6) * 2) - xmb->icon_size) / 2) /
-                   left_thumb_height);
-               left_thumb_height = left_thumb_height *
-                  ((((float)height - ((xmb->icon_size / 6) * 2) - xmb->icon_size) / 2) /
-                   left_thumb_height);
-            }
-
-            xmb_draw_thumbnail(video_info,
-                  xmb, &coord_white[0], width, height,
-                  (float)width - (xmb->icon_size / 6) - thumb_max_width +
-                  ((thumb_max_width - left_thumb_width) / 2),
-                  xmb->icon_size +
-                  (((float)height - ((xmb->icon_size / 6) * 2) - xmb->icon_size) / 2) +
-                  (((((float)height - ((xmb->icon_size / 6) * 2) - xmb->icon_size) / 2) -
-                    left_thumb_height) / 2) + left_thumb_height,
-                  left_thumb_width, left_thumb_height,
-                  xmb->left_thumbnail);
-         }
-      }
-   }
-
-   menu_display_blend_end(video_info);
 
    /* Vertical icons */
    xmb_draw_items(
@@ -4371,6 +4692,10 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    font_driver_flush(video_info->width, video_info->height, xmb->font2,
          video_info);
    font_driver_bind_block(xmb->font2, NULL);
+
+   /* Draw fullscreen thumbnails, if required */
+   xmb_draw_fullscreen_thumbnails(
+         xmb, video_info, settings, selection);
 
    if (menu_input_dialog_get_display_kb())
    {
@@ -4447,9 +4772,6 @@ static void xmb_layout_ps3(xmb_handle_t *xmb, int width)
    xmb->font2_size               = 24.0  * scale_factor;
    new_header_height             = 128.0 * scale_factor;
 
-   xmb->thumbnail_width          = 1024.0 * scale_factor;
-   xmb->left_thumbnail_width     = 1024.0 * scale_factor;
-   xmb->savestate_thumbnail_width= 460.0 * scale_factor;
    xmb->cursor_size              = 64.0 * scale_factor;
 
    xmb->icon_spacing_horizontal  = 200.0 * scale_factor;
@@ -4509,9 +4831,6 @@ static void xmb_layout_psp(xmb_handle_t *xmb, int width)
    new_header_height             = 128.0 * scale_factor;
    xmb->margins_screen_top       = (256+32) * scale_factor;
 
-   xmb->thumbnail_width          = 460.0 * scale_factor;
-   xmb->left_thumbnail_width     = 400.0 * scale_factor;
-   xmb->savestate_thumbnail_width= 460.0 * scale_factor;
    xmb->cursor_size              = 64.0;
 
    xmb->icon_spacing_horizontal  = 250.0 * scale_factor;
@@ -4772,10 +5091,9 @@ static void *xmb_init(void **userdata, bool video_is_threaded)
    if (settings->bools.menu_content_show_netplay)
       xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_NETPLAY;
 #endif
-#ifdef HAVE_LIBRETRODB
+
    if (settings->bools.menu_content_show_add && !settings->bools.kiosk_mode_enable)
       xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_ADD;
-#endif
 
    menu_driver_ctl(RARCH_MENU_CTL_UNSET_PREVENT_POPULATE, NULL);
 
@@ -4795,9 +5113,19 @@ static void *xmb_init(void **userdata, bool video_is_threaded)
 
    xmb_init_ribbon(xmb);
 
+   /* Thumbnail initialisation */
    xmb->thumbnail_path_data = menu_thumbnail_path_init();
    if (!xmb->thumbnail_path_data)
       goto error;
+
+   xmb->savestate_thumbnail_file_path[0]      = '\0';
+   xmb->prev_savestate_thumbnail_file_path[0] = '\0';
+
+   xmb->fullscreen_thumbnails_available = false;
+   xmb->show_fullscreen_thumbnails      = false;
+   xmb->fullscreen_thumbnail_alpha      = 0.0f;
+   xmb->fullscreen_thumbnail_selection  = 0;
+   xmb->fullscreen_thumbnail_label[0]   = '\0';
 
    return menu;
 
@@ -4842,8 +5170,6 @@ static void xmb_free(void *data)
 
       if (!string_is_empty(xmb->box_message))
          free(xmb->box_message);
-      if (!string_is_empty(xmb->savestate_thumbnail_file_path))
-         free(xmb->savestate_thumbnail_file_path);
       if (!string_is_empty(xmb->bg_file_path))
          free(xmb->bg_file_path);
 
@@ -4869,25 +5195,8 @@ static bool xmb_load_image(void *userdata, void *data, enum menu_image_type type
    if (!xmb)
       return false;
 
-   if (!data)
-   {
-      /* If this happens, the image we attempted to load
-       * was corrupt/incorrectly formatted. If this was a
-       * thumbnail image, have unload any existing thumbnails
-       * (otherwise entry with 'corrupt' thumbnail will show
-       * thumbnail from last selected 'good' entry) */
-      if (type == MENU_IMAGE_THUMBNAIL)
-         video_driver_texture_unload(&xmb->thumbnail);
-      else if (type == MENU_IMAGE_LEFT_THUMBNAIL)
-         video_driver_texture_unload(&xmb->left_thumbnail);
-
-      return false;
-   }
-
    switch (type)
    {
-      case MENU_IMAGE_NONE:
-         break;
       case MENU_IMAGE_WALLPAPER:
          xmb_context_bg_destroy(xmb);
          video_driver_texture_unload(&xmb->textures.bg);
@@ -4896,35 +5205,8 @@ static bool xmb_load_image(void *userdata, void *data, enum menu_image_type type
                &xmb->textures.bg);
          menu_display_allocate_white_texture();
          break;
-      case MENU_IMAGE_THUMBNAIL:
-         {
-            struct texture_image *img  = (struct texture_image*)data;
-            xmb->thumbnail_height      = xmb->thumbnail_width
-               * (float)img->height / (float)img->width;
-            video_driver_texture_unload(&xmb->thumbnail);
-            video_driver_texture_load(data,
-                  TEXTURE_FILTER_MIPMAP_LINEAR, &xmb->thumbnail);
-         }
-         break;
-      case MENU_IMAGE_LEFT_THUMBNAIL:
-         {
-            struct texture_image *img  = (struct texture_image*)data;
-            xmb->left_thumbnail_height      = xmb->left_thumbnail_width
-               * (float)img->height / (float)img->width;
-            video_driver_texture_unload(&xmb->left_thumbnail);
-            video_driver_texture_load(data,
-                  TEXTURE_FILTER_MIPMAP_LINEAR, &xmb->left_thumbnail);
-         }
-         break;
-      case MENU_IMAGE_SAVESTATE_THUMBNAIL:
-         {
-            struct texture_image *img       = (struct texture_image*)data;
-            xmb->savestate_thumbnail_height = xmb->savestate_thumbnail_width
-               * (float)img->height / (float)img->width;
-            video_driver_texture_unload(&xmb->savestate_thumbnail);
-            video_driver_texture_load(data,
-                  TEXTURE_FILTER_MIPMAP_LINEAR, &xmb->savestate_thumbnail);
-         }
+      case MENU_IMAGE_NONE:
+      default:
          break;
    }
 
@@ -5393,17 +5675,25 @@ static void xmb_context_reset_internal(xmb_handle_t *xmb,
 
    xmb_context_reset_horizontal_list(xmb);
 
+   /* Only reload thumbnails if:
+    * > Thumbnails are enabled
+    * > This is a playlist, a database list, a file list
+    *   or the quick menu */
    if (menu_thumbnail_is_enabled(xmb->thumbnail_path_data, MENU_THUMBNAIL_RIGHT) ||
        menu_thumbnail_is_enabled(xmb->thumbnail_path_data, MENU_THUMBNAIL_LEFT))
    {
-      if (menu_thumbnail_is_enabled(xmb->thumbnail_path_data, MENU_THUMBNAIL_RIGHT))
-         xmb_update_thumbnail_path(xmb, 0, 'R');
+      unsigned depth          = (unsigned)xmb_list_get_size(xmb, MENU_LIST_PLAIN);
+      unsigned xmb_system_tab = xmb_get_system_tab(xmb, (unsigned)xmb->categories_selection_ptr);
 
-      if (menu_thumbnail_is_enabled(xmb->thumbnail_path_data, MENU_THUMBNAIL_LEFT))
-         xmb_update_thumbnail_path(xmb, 0, 'L');
-
-      xmb_update_thumbnail_image(xmb);
+      if (((((xmb_system_tab > XMB_SYSTEM_TAB_SETTINGS && depth == 1) ||
+             (xmb_system_tab < XMB_SYSTEM_TAB_SETTINGS && depth == 4)) &&
+              xmb->is_playlist)) ||
+            xmb->is_db_manager_list ||
+            xmb->is_file_list ||
+            xmb->is_quick_menu)
+         xmb_update_thumbnail_image(xmb);
    }
+
    xmb_update_savestate_thumbnail_image(xmb);
 
    free(iconpath);
@@ -5714,9 +6004,7 @@ static void xmb_context_destroy(void *data)
    for (i = 0; i < XMB_TEXTURE_LAST; i++)
       video_driver_texture_unload(&xmb->textures.list[i]);
 
-   video_driver_texture_unload(&xmb->thumbnail);
-   video_driver_texture_unload(&xmb->left_thumbnail);
-   video_driver_texture_unload(&xmb->savestate_thumbnail);
+   xmb_unload_thumbnail_textures(xmb);
 
    xmb_context_destroy_horizontal_list(xmb);
    xmb_context_bg_destroy(xmb);
@@ -5744,6 +6032,11 @@ static void xmb_toggle(void *userdata, bool menu_on)
       xmb->alpha = 0;
       return;
    }
+
+   /* Have to reset this, otherwise savestate
+    * thumbnail won't update after selecting
+    * 'save state' option */
+   menu_thumbnail_reset(&xmb->thumbnails.savestate);
 
    entry.duration     = XMB_DELAY * 2;
    entry.target_value = 1.0f;
@@ -5808,7 +6101,6 @@ static int xmb_list_push(void *data, void *userdata,
    int ret                = -1;
    core_info_list_t *list = NULL;
    menu_handle_t *menu    = (menu_handle_t*)data;
-   const struct retro_subsystem_info* subsystem;
 
    switch (type)
    {
@@ -5834,13 +6126,12 @@ static int xmb_list_push(void *data, void *userdata,
                      MENU_SETTING_ACTION, 0, 0);
             }
 
-#ifdef HAVE_LIBRETRODB
-            menu_entries_append_enum(info->list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB),
-                  msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB),
-                  MENU_ENUM_LABEL_PLAYLISTS_TAB,
-                  MENU_SETTING_ACTION, 0, 0);
-#endif
+            if (settings->bools.menu_content_show_playlists)
+               menu_entries_append_enum(info->list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB),
+                     msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB),
+                     MENU_ENUM_LABEL_PLAYLISTS_TAB,
+                     MENU_SETTING_ACTION, 0, 0);
 
             if (frontend_driver_parse_drive_list(info->list, true) != 0)
                menu_entries_append_enum(info->list, "/",
@@ -5903,18 +6194,16 @@ static int xmb_list_push(void *data, void *userdata,
 
             if (settings->bools.menu_show_load_content)
             {
-
                entry.enum_idx      = MENU_ENUM_LABEL_LOAD_CONTENT_LIST;
                menu_displaylist_setting(&entry);
-               /* Core fully loaded, use the subsystem data */
-               if (system->subsystem.data)
-                     subsystem = system->subsystem.data;
-               /* Core not loaded completely, use the data we peeked on load core */
-               else
-                  subsystem = subsystem_data;
 
-               menu_subsystem_populate(subsystem, info);
+               if (menu_displaylist_has_subsystems())
+               {
+                  entry.enum_idx      = MENU_ENUM_LABEL_SUBSYSTEM_SETTINGS;
+                  menu_displaylist_setting(&entry);
+               }
             }
+
 
             if (settings->bools.menu_show_load_disc)
             {
@@ -5938,11 +6227,13 @@ static int xmb_list_push(void *data, void *userdata,
             }
 #endif
 #if defined(HAVE_NETWORKING)
+#if defined(HAVE_ONLINE_UPDATER)
             if (settings->bools.menu_show_online_updater && !settings->bools.kiosk_mode_enable)
             {
                entry.enum_idx      = MENU_ENUM_LABEL_ONLINE_UPDATER;
                menu_displaylist_setting(&entry);
             }
+#endif
 #endif
             if (!settings->bools.menu_content_show_settings && !string_is_empty(settings->paths.menu_content_show_settings_password))
             {
@@ -6076,6 +6367,15 @@ static int xmb_pointer_up(void *userdata,
    if (!xmb)
       return -1;
 
+   /* If fullscreen thumbnail view is enabled,
+    * all input will disable it and otherwise
+    * be ignored */
+   if (xmb->show_fullscreen_thumbnails)
+   {
+      xmb_hide_fullscreen_thumbnails(xmb, true);
+      return 0;
+   }
+
    video_driver_get_size(&width, &height);
    margin_top   = (int16_t)xmb->margins_screen_top;
    margin_left  = (int16_t)xmb->margins_screen_left;
@@ -6094,17 +6394,17 @@ static int xmb_pointer_up(void *userdata,
          if (x < margin_left)
          {
             if (y >= margin_top)
-               return menu_entry_action(entry, (unsigned)selection, MENU_ACTION_CANCEL);
+               return menu_entry_action(entry, selection, MENU_ACTION_CANCEL);
             else
                return menu_input_dialog_start_search() ? 0 : -1;
          }
          else if (x > margin_right)
-            return menu_entry_action(entry, (unsigned)selection, MENU_ACTION_SELECT);
+            return menu_entry_action(entry, selection, MENU_ACTION_SELECT);
          else if (ptr <= (end - 1))
          {
             /* If pointer item is already 'active', perform 'select' action */
             if (ptr == selection)
-               return menu_entry_action(entry, (unsigned)selection, MENU_ACTION_SELECT);
+               return menu_entry_action(entry, selection, MENU_ACTION_SELECT);
 
             /* ...otherwise navigate to the current pointer item */
             menu_navigation_set_selection(ptr);
@@ -6114,7 +6414,7 @@ static int xmb_pointer_up(void *userdata,
       case MENU_INPUT_GESTURE_LONG_PRESS:
          /* 'Reset to default' action */
          if ((ptr <= end - 1) && (ptr == selection))
-            return menu_entry_action(entry, (unsigned)selection, MENU_ACTION_START);
+            return menu_entry_action(entry, selection, MENU_ACTION_START);
          break;
       case MENU_INPUT_GESTURE_SWIPE_LEFT:
          /* Navigate left
@@ -6123,7 +6423,7 @@ static int xmb_pointer_up(void *userdata,
           * which is actually a movement to the *right* */
          if (y > margin_top)
             menu_entry_action(
-                  entry, (unsigned)selection, (xmb->depth == 1) ? MENU_ACTION_RIGHT : MENU_ACTION_LEFT);
+                  entry, selection, (xmb->depth == 1) ? MENU_ACTION_RIGHT : MENU_ACTION_LEFT);
          break;
       case MENU_INPUT_GESTURE_SWIPE_RIGHT:
          /* Navigate right
@@ -6132,12 +6432,12 @@ static int xmb_pointer_up(void *userdata,
           * which is actually a movement to the *left* */
          if (y > margin_top)
             menu_entry_action(
-                  entry, (unsigned)selection, (xmb->depth == 1) ? MENU_ACTION_LEFT : MENU_ACTION_RIGHT);
+                  entry, selection, (xmb->depth == 1) ? MENU_ACTION_LEFT : MENU_ACTION_RIGHT);
          break;
       case MENU_INPUT_GESTURE_SWIPE_UP:
          /* Swipe up in left margin: ascend alphabet */
          if (x < margin_left)
-            menu_entry_action(entry, (unsigned)selection, MENU_ACTION_SCROLL_DOWN);
+            menu_entry_action(entry, selection, MENU_ACTION_SCROLL_DOWN);
          else if (x < margin_right)
          {
             /* Swipe up between left and right margins:
@@ -6161,7 +6461,7 @@ static int xmb_pointer_up(void *userdata,
       case MENU_INPUT_GESTURE_SWIPE_DOWN:
          /* Swipe down in left margin: descend alphabet */
          if (x < margin_left)
-            menu_entry_action(entry, (unsigned)selection, MENU_ACTION_SCROLL_UP);
+            menu_entry_action(entry, selection, MENU_ACTION_SCROLL_UP);
          else if (x < margin_right)
          {
             /* Swipe down between left and right margins:
@@ -6213,6 +6513,81 @@ static int xmb_pointer_up(void *userdata,
    }
 
    return 0;
+}
+
+static enum menu_action xmb_parse_menu_entry_action(
+      xmb_handle_t *xmb, enum menu_action action)
+{
+   enum menu_action new_action = action;
+
+   /* If fullscreen thumbnail view is active, any
+    * valid menu action will disable it... */
+   if (xmb->show_fullscreen_thumbnails)
+   {
+      if (action != MENU_ACTION_NOOP)
+      {
+         xmb_hide_fullscreen_thumbnails(xmb, true);
+
+         /* ...and any action other than Select/OK
+          * is ignored
+          * > We allow pass-through of Select/OK since
+          *   users may want to run content directly
+          *   after viewing fullscreen thumbnails,
+          *   and having to press RetroPad A or the Return
+          *   key twice is navigationally confusing
+          * > Note that we can only do this for non-pointer
+          *   input
+          * > Note that we don't do this when viewing a
+          *   file list, since there is no quick menu
+          *   in this case - i.e. content loads directly,
+          *   and a sudden transition from fullscreen
+          *   thumbnail to content is jarring... */
+         if (xmb->is_file_list ||
+               ((action != MENU_ACTION_SELECT) &&
+                (action != MENU_ACTION_OK)))
+            return MENU_ACTION_NOOP;
+      }
+   }
+
+   /* Scan user inputs */
+   switch (action)
+   {
+      case MENU_ACTION_START:
+         /* If this is a menu with thumbnails, attempt
+          * to show fullscreen thumbnail view */
+         if (xmb->fullscreen_thumbnails_available)
+         {
+            size_t selection = menu_navigation_get_selection();
+
+            xmb_show_fullscreen_thumbnails(xmb, selection);
+            new_action = MENU_ACTION_NOOP;
+         }
+         break;
+      default:
+         /* In all other cases, pass through input
+          * menu action without intervention */
+         break;
+   }
+
+   return new_action;
+}
+
+/* Menu entry action callback */
+static int xmb_menu_entry_action(
+      void *userdata, menu_entry_t *entry,
+      size_t i, enum menu_action action)
+{
+   xmb_handle_t *xmb = (xmb_handle_t*)userdata;
+   enum menu_action new_action;
+
+   if (!xmb)
+      generic_menu_entry_action(userdata, entry, i, action);
+
+   /* Process input action */
+   new_action = xmb_parse_menu_entry_action(xmb, action);
+
+   /* Call standard generic_menu_entry_action() function */
+   return generic_menu_entry_action(userdata, entry, i, new_action);
 }
 
 #ifdef HAVE_MENU_WIDGETS
@@ -6271,7 +6646,7 @@ menu_ctx_driver_t menu_ctx_xmb = {
    xmb_load_image,
    "xmb",
    xmb_environ,
-   xmb_update_thumbnail_path,
+   NULL,
    xmb_update_thumbnail_image,
    xmb_refresh_thumbnail_image,
    xmb_set_thumbnail_system,
@@ -6283,8 +6658,9 @@ menu_ctx_driver_t menu_ctx_xmb = {
    NULL, /* pointer_down */
    xmb_pointer_up,
 #ifdef HAVE_MENU_WIDGETS
-   xmb_get_load_content_animation_data
+   xmb_get_load_content_animation_data,
 #else
-   NULL
+   NULL,
 #endif
+   xmb_menu_entry_action
 };
