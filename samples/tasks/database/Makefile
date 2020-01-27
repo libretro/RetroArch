@@ -107,6 +107,7 @@ SOURCES_C := \
 	$(LIBRETRO_COMM_DIR)/file/archive_file.c \
 	$(LIBRETRO_COMM_DIR)/file/config_file.c \
 	$(LIBRETRO_COMM_DIR)/file/file_path.c \
+	$(LIBRETRO_COMM_DIR)/file/file_path_io.c \
 	$(LIBRETRO_COMM_DIR)/file/retro_dirent.c \
 	$(LIBRETRO_COMM_DIR)/hash/rhash.c \
 	$(LIBRETRO_COMM_DIR)/compat/compat_fnmatch.c \

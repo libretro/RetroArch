@@ -46,6 +46,19 @@ typedef struct nbio_buf
    char *path;
 } nbio_buf_t;
 
+typedef struct autoconfig_params     autoconfig_params_t;
+
+struct autoconfig_params
+{
+   int32_t vid;
+   int32_t pid;
+   unsigned idx;
+   uint32_t max_users;
+   char  *name;
+   char  *autoconfig_directory;
+};
+
+
 #ifdef HAVE_NETWORKING
 typedef struct
 {
@@ -95,6 +108,7 @@ bool task_push_pl_entry_thumbnail_download(
 #endif
 
 bool task_push_pl_manager_reset_cores(const char *playlist_path);
+bool task_push_pl_manager_clean_playlist(const char *playlist_path);
 
 bool task_push_image_load(const char *fullpath,
       bool supports_rgba, unsigned upscale_threshold,
@@ -121,6 +135,16 @@ bool task_push_overlay_load_default(
       float input_overlay_scale,
       void *user_data);
 #endif
+
+bool patch_content(
+      bool is_ips_pref,
+      bool is_bps_pref,
+      bool is_ups_pref,
+      const char *name_ips,
+      const char *name_bps,
+      const char *name_ups,
+      uint8_t **buf,
+      void *data);
 
 bool task_check_decompress(const char *source_file);
 
@@ -157,6 +181,8 @@ bool input_is_autoconfigured(unsigned i);
 unsigned input_autoconfigure_get_device_name_index(unsigned i);
 
 void input_autoconfigure_reset(void);
+
+void input_autoconfigure_override_handler(void *data);
 
 void input_autoconfigure_connect(
       const char *name,

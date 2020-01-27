@@ -808,14 +808,6 @@ MSG_HASH(
     "디렉토리"
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_DISK_CYCLE_TRAY_STATUS,
-    "디스크 사이클 트레이 상태"
-    )
-MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
-    "디스크 이미지 추가"
-    )
-MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DISK_INDEX,
     "디스크 인덱스"
     )
@@ -6690,10 +6682,6 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_SUBLABEL_DISK_OPTIONS,
     "디스크 이미지를 관리합니다."
-    )
-MSG_HASH(
-    MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
-    "삽입할 디스크 이미지를 선택하십시오."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_ENUM_THROTTLE_FRAMERATE,

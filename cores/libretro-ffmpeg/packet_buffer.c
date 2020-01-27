@@ -16,7 +16,7 @@ struct packet_buffer
 
 packet_buffer_t *packet_buffer_create()
 {
-   packet_buffer_t *b = malloc(sizeof(packet_buffer_t));
+   packet_buffer_t *b = (packet_buffer_t*)malloc(sizeof(packet_buffer_t));
    if (!b)
       return NULL;
 

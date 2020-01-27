@@ -21,6 +21,7 @@
 #include <retro_common_api.h>
 #include <retro_miscellaneous.h>
 #include <file/config_file.h>
+#include <file/file_path.h>
 
 RETRO_BEGIN_DECLS
 
@@ -246,6 +247,9 @@ bool video_shader_resolve_current_parameters(config_file_t *conf,
 bool video_shader_resolve_parameters(config_file_t *conf,
       struct video_shader *shader);
 
+enum rarch_shader_type video_shader_get_type_from_ext(const char *ext,
+      bool *is_preset);
+
 /**
  * video_shader_parse_type:
  * @path              : Shader path.
@@ -255,10 +259,7 @@ bool video_shader_resolve_parameters(config_file_t *conf,
  * Returns: value of shader type if it could be determined,
  * otherwise RARCH_SHADER_NONE.
  **/
-enum rarch_shader_type video_shader_parse_type(const char *path);
-
-enum rarch_shader_type video_shader_get_type_from_ext(const char *ext,
-      bool *is_preset);
+#define video_shader_parse_type(path) video_shader_get_type_from_ext(path_get_extension((path)), NULL)
 
 bool video_shader_is_supported(enum rarch_shader_type type);
 

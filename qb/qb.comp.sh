@@ -15,19 +15,42 @@ cat << EOF > "$TEMP_C"
 int main(void) { puts("Hai world!"); return 0; }
 EOF
 
+# test_compiler:
+# Check that the compiler exists in the $PATH and works
+# $1 = compiler
+# $2 = temporary build file
+test_compiler ()
+{
+	compiler=
+
+	for comp in $(printf %s "$1"); do
+		if ! next "$comp"; then
+			compiler="${compiler} $(exists "${comp}")" ||
+				return 1
+		fi
+	done
+
+	$(printf %s "$1") -o "$TEMP_EXE" "$2" >/dev/null 2>&1 || return 1
+
+	compiler="${compiler# }"
+	return 0
+}
+
 printf %s 'Checking for suitable working C compiler ... '
 
 cc_works=0
 add_opt CC no
+
 if [ "$CC" ]; then
-	$CC -o "$TEMP_EXE" "$TEMP_C" >/dev/null 2>&1 && cc_works=1
+	if test_compiler "$CC" "$TEMP_C"; then
+		cc_works=1
+	fi
 else
 	for cc in gcc cc clang; do
-		CC="$(exists "${CROSS_COMPILE}${cc}")" || CC=""
-		if [ "$CC" ]; then
-			$CC -o "$TEMP_EXE" "$TEMP_C" >/dev/null 2>&1 && {
-				cc_works=1; break
-			}
+		if test_compiler "${CROSS_COMPILE}${cc}" "$TEMP_C"; then
+			CC="$compiler"
+			cc_works=1
+			break
 		fi
 	done
 fi
@@ -58,15 +81,17 @@ printf %s 'Checking for suitable working C++ compiler ... '
 
 cxx_works=0
 add_opt CXX no
+
 if [ "$CXX" ]; then
-	$CXX -o "$TEMP_EXE" "$TEMP_CXX" >/dev/null 2>&1 && cxx_works=1
+	if test_compiler "$CXX" "$TEMP_CXX"; then
+		cxx_works=1
+	fi
 else
 	for cxx in g++ c++ clang++; do
-		CXX="$(exists "${CROSS_COMPILE}${cxx}")" || CXX=""
-		if [ "$CXX" ]; then
-			$CXX -o "$TEMP_EXE" "$TEMP_CXX" >/dev/null 2>&1 && {
-				cxx_works=1; break
-			}
+		if test_compiler "${CROSS_COMPILE}${cxx}" "$TEMP_CXX"; then
+			CXX="$compiler"
+			cxx_works=1
+			break
 		fi
 	done
 fi

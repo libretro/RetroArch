@@ -557,10 +557,6 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_DIRECTORY_NOT_FOUND,
       "Pasta não encontrada.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS,
       "Pasta")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_DISK_CYCLE_TRAY_STATUS,
-      "Estado do ciclo do disco na área de notificação")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
-      "Adicionar imagem de disco")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DISK_INDEX,
       "Índice do disco")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DISK_OPTIONS,
@@ -2903,14 +2899,8 @@ MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
       "O número de fotogramas de latência de entrada para o Netplay utilizar para ocultar a latência da rede. Reduz a instabilidade e faz com que a funcionalidade de Netplay seja menos exigente para o processador, com um custo perceptível de tempo de atraso.")
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
       "O intervalo de latência entre fotogramas pode ser usado para ocultar a latência da rede. Reduz a instabilidade e faz com que a funcionalidade de Netplay seja menos exigente para o processador, com um custo de latência imprevisível.")
-MSG_HASH(MENU_ENUM_SUBLABEL_DISK_CYCLE_TRAY_STATUS,
-      "Ciclo do disco atual. Se o disco estiver inserido, o mesmo será ejetado. Caso contrário, ele será inserido. ")
-MSG_HASH(MENU_ENUM_SUBLABEL_DISK_INDEX,
-      "Alterar o índice do disco.")
 MSG_HASH(MENU_ENUM_SUBLABEL_DISK_OPTIONS,
       "Gestão de imagens de disco.")
-MSG_HASH(MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
-      "Selecione uma imagem de disco para inserir.")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_ENUM_THROTTLE_FRAMERATE,
       "Certifique-se de que a taxa de fotogramas atingida enquanto estiver dentro do menu.")
 MSG_HASH(MENU_ENUM_SUBLABEL_XMB_LAYOUT,
@@ -3247,10 +3237,6 @@ MSG_HASH(MSG_INPUT_KIOSK_MODE_PASSWORD_OK,
       "Palavra-passe correta.")
 MSG_HASH(MSG_INPUT_KIOSK_MODE_PASSWORD_NOK,
       "Palavra-passe incorreta.")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_AUTOMATICALLY_ADD_CONTENT_TO_PLAYLIST,
-      "Adicionar conteúdo à lista de reprodução automaticamente")
-MSG_HASH(MENU_ENUM_SUBLABEL_AUTOMATICALLY_ADD_CONTENT_TO_PLAYLIST,
-      "Verificar automaticamente conteúdo carregado de forma a que apareça nas listas de reprodução.")
 MSG_HASH(MSG_SCANNING_OF_FILE_FINISHED,
       "Leitura do ficheiro terminada")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_QUALITY,

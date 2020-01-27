@@ -85,10 +85,10 @@ static void vulkan_init_render_pass(
 {
    VkRenderPassCreateInfo rp_info = {
       VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO };
-   VkAttachmentDescription attachment = {0};
-   VkSubpassDescription subpass       = {0};
    VkAttachmentReference color_ref    = { 0,
       VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
+   VkAttachmentDescription attachment = {0};
+   VkSubpassDescription subpass       = {0};
 
    /* Backbuffer format. */
    attachment.format            = vk->context->swapchain_format;

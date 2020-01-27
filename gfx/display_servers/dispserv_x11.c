@@ -36,7 +36,6 @@
 
 #include "../video_display_server.h"
 #include "../common/x11_common.h"
-#include "../../configuration.h"
 #include "../../retroarch.h"
 #include "../video_crt_switch.h" /* needed to set aspect for low res in linux */
 

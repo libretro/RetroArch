@@ -650,7 +650,12 @@ static int core_setting_left(unsigned type, const char *label,
 static int disk_options_disk_idx_left(unsigned type, const char *label,
       bool wraparound)
 {
-   command_event(CMD_EVENT_DISK_PREV, NULL);
+   /* Note: Menu itself provides visual feedback - no
+    * need to print info message to screen */
+   bool print_log = false;
+
+   command_event(CMD_EVENT_DISK_PREV, &print_log);
+
    return 0;
 }
 

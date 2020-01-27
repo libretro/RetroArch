@@ -27,6 +27,9 @@
 
 #include "../../verbosity.h"
 #include "../../content.h"
+#ifdef HAVE_ACCESSIBILITY
+#include "../../accessibility.h"
+#endif
 #include "../../retroarch.h"
 
 static enum action_iterate_type action_iterate_type(const char *label)
@@ -77,6 +80,8 @@ int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
    const char *label              = NULL;
    menu_handle_t *menu            = (menu_handle_t*)data;
 
+   (void)last_iterate_type;
+
    if (!menu)
       return 0;
 
@@ -100,10 +105,10 @@ int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
          ret = menu_dialog_iterate(
                menu->menu_state_msg, sizeof(menu->menu_state_msg), label);
 
+#ifdef HAVE_ACCESSIBILITY
          if (iterate_type != last_iterate_type && is_accessibility_enabled())
-         {
-            accessibility_speak(menu->menu_state_msg);
-         }
+            accessibility_speak_priority(menu->menu_state_msg, 10);
+#endif
 
          BIT64_SET(menu->state, MENU_STATE_RENDER_MESSAGEBOX);
          BIT64_SET(menu->state, MENU_STATE_POST_ITERATE);
@@ -149,6 +154,8 @@ int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
             {
                ret = menu_hash_get_help_enum(cbs->enum_idx,
                      menu->menu_state_msg, sizeof(menu->menu_state_msg));
+
+#ifdef HAVE_ACCESSIBILITY
                if (iterate_type != last_iterate_type && is_accessibility_enabled())
                {
                   if (string_is_equal(menu->menu_state_msg, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE)))
@@ -156,13 +163,14 @@ int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
                      char current_sublabel[255];
                      get_current_menu_sublabel(current_sublabel, sizeof(current_sublabel));
                      if (string_is_equal(current_sublabel, ""))
-                        accessibility_speak(menu->menu_state_msg);
+                        accessibility_speak_priority(menu->menu_state_msg, 10);
                      else
-                        accessibility_speak(current_sublabel);
+                        accessibility_speak_priority(current_sublabel, 10);
                   }
                   else
-                     accessibility_speak(menu->menu_state_msg);
+                     accessibility_speak_priority(menu->menu_state_msg, 10);
                }
+#endif
             }
             else
             {
@@ -278,10 +286,10 @@ int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
          break;
    }
 
+#ifdef HAVE_ACCESSIBILITY
    if ((last_iterate_type == ITERATE_TYPE_HELP || last_iterate_type == ITERATE_TYPE_INFO) && last_iterate_type != iterate_type && is_accessibility_enabled())
-   {
-      accessibility_speak("Closed dialog.");
-   }
+      accessibility_speak_priority("Closed dialog.", 10);
+#endif
 
    last_iterate_type = iterate_type;
    BIT64_SET(menu->state, MENU_STATE_BLIT);
@@ -414,7 +422,10 @@ int generic_menu_entry_action(
       }
    }
 
-   if (action != 0 && is_accessibility_enabled() && !is_input_keyboard_display_on())
+#ifdef HAVE_ACCESSIBILITY
+   if (     action != 0 
+         && is_accessibility_enabled() 
+         && !is_input_keyboard_display_on())
    {
       char current_label[255];
       char current_value[255];
@@ -463,7 +474,9 @@ int generic_menu_entry_action(
       }
 
       if (!string_is_equal(speak_string, ""))
-         accessibility_speak(speak_string);
+         accessibility_speak_priority(speak_string, 10);
    }
+#endif
+
    return ret;
 }

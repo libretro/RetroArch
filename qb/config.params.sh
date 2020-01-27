@@ -1,5 +1,6 @@
 HAVE_LIBRETRO=             # Libretro library used
 HAVE_ASSETS_DIR=           # Assets install directory
+HAVE_BLISSBOX=auto         # Blissbox support
 HAVE_ANGLE=no              # ANGLE support (OpenGL wrapper)
 HAVE_GDI=yes               # GDI support (Win32-only)
 HAVE_OPENGLES_LIBS=        # Link flags for custom GLES library
@@ -135,6 +136,7 @@ HAVE_CHEEVOS=yes           # Retro Achievements
 HAVE_LUA=no                # Lua support (for Retro Achievements)
 HAVE_DISCORD=yes           # Discord Integration
 C89_DISCORD=no
+HAVE_ACCESSIBILITY=yes     # Accessibility Integration
 HAVE_TRANSLATE=yes         # OCR and Translation Server Integration
 HAVE_SHADERPIPELINE=yes    # Additional shader-based pipelines
 C89_SHADERPIPELINE=no

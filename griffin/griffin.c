@@ -156,9 +156,10 @@ CONFIG FILE
 #include "../libretro-common/file/config_file_userdata.c"
 
 /*============================================================
-RUNTIME FILE
+CONTENT METADATA RECORDS
 ============================================================ */
 #include "../runtime_file.c"
+#include "../disk_index_file.c"
 
 /*============================================================
 ACHIEVEMENTS
@@ -606,6 +607,9 @@ FONTS
 INPUT
 ============================================================ */
 #include "../tasks/task_autodetect.c"
+#ifdef HAVE_BLISSBOX
+#include "../tasks/task_autodetect_blissbox.c"
+#endif
 #ifdef HAVE_AUDIOMIXER
 #include "../tasks/task_audio_mixer.c"
 #endif
@@ -889,8 +893,6 @@ AUDIO
 /*============================================================
 MIDI
 ============================================================ */
-#include "../midi/drivers/null_midi.c"
-
 #ifdef HAVE_WINMM
 #include "../midi/drivers/winmm_midi.c"
 #endif
@@ -967,6 +969,7 @@ CORES
 FILE
 ============================================================ */
 #include "../libretro-common/file/file_path.c"
+#include "../libretro-common/file/file_path_io.c"
 #include "../file_path_special.c"
 #include "../file_path_str.c"
 #include "../libretro-common/lists/dir_list.c"
@@ -1204,6 +1207,7 @@ DATA RUNLOOP
 ============================================================ */
 #include "../tasks/task_powerstate.c"
 #include "../tasks/task_content.c"
+#include "../tasks/task_patch.c"
 #include "../tasks/task_save.c"
 #include "../tasks/task_image.c"
 #include "../tasks/task_file_transfer.c"
@@ -1640,3 +1644,8 @@ PLAYLIST NAME SANITIZATION
 MANUAL CONTENT SCAN
 ============================================================ */
 #include "../manual_content_scan.c"
+
+/*============================================================
+DISK CONTROL INTERFACE
+============================================================ */
+#include "../disk_control_interface.c"

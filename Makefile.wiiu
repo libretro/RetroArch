@@ -57,6 +57,7 @@ ifeq ($(SALAMANDER_BUILD),1)
    OBJ += libretro-common/compat/compat_strcasestr.o
    OBJ += libretro-common/compat/fopen_utf8.o
    OBJ += libretro-common/file/file_path.o
+   OBJ += libretro-common/file/file_path_io.o
    OBJ += libretro-common/string/stdstring.o
    OBJ += libretro-common/lists/string_list.o
    OBJ += libretro-common/lists/dir_list.o

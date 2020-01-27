@@ -111,6 +111,25 @@ struct vulkan_filter_chain_create_info
    struct vulkan_filter_chain_swapchain_info swapchain;
 };
 
+static INLINE enum vulkan_filter_chain_address vk_wrap_to_address(enum gfx_wrap_type type)
+{
+   switch (type)
+   {
+      case RARCH_WRAP_BORDER:
+         return VULKAN_FILTER_CHAIN_ADDRESS_CLAMP_TO_BORDER;
+      case RARCH_WRAP_REPEAT:
+         return VULKAN_FILTER_CHAIN_ADDRESS_REPEAT;
+      case RARCH_WRAP_MIRRORED_REPEAT:
+         return VULKAN_FILTER_CHAIN_ADDRESS_MIRRORED_REPEAT;
+      case RARCH_WRAP_EDGE:
+      default:
+         break;
+   }
+
+   return VULKAN_FILTER_CHAIN_ADDRESS_CLAMP_TO_EDGE;
+}
+
+
 vulkan_filter_chain_t *vulkan_filter_chain_new(
       const struct vulkan_filter_chain_create_info *info);
 void vulkan_filter_chain_free(vulkan_filter_chain_t *chain);

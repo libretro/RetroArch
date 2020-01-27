@@ -7,6 +7,18 @@ ifeq ($(HAVE_STACK_USAGE), 1)
    DEF_FLAGS += -fstack-usage
 endif
 
+ifeq ($(HAVE_NOUNUSED), 1)
+   DEF_FLAGS += $(NOUNUSED_CFLAGS)
+endif
+
+ifeq ($(HAVE_NOUNUSED_VARIABLE), 1)
+   DEF_FLAGS += $(NOUNUSED_VARIABLE_CFLAGS)
+endif
+
+ifeq ($(HAVE_CXX11), 1)
+   CXXFLAGS += $(CXX11_CFLAGS)
+endif
+
 ifeq ($(HAVE_GL_CONTEXT),)
    HAVE_GL_CONTEXT = 0
    HAVE_GL_MODERN  = 0
@@ -158,6 +170,7 @@ OBJ += frontend/frontend_driver.o \
        intl/msg_hash_us.o \
        $(LIBRETRO_COMM_DIR)/queues/task_queue.o \
        tasks/task_content.o \
+       tasks/task_patch.o \
        tasks/task_save.o \
        tasks/task_file_transfer.o \
        tasks/task_image.o \
@@ -201,6 +214,7 @@ endif
 OBJ += \
        $(LIBRETRO_COMM_DIR)/file/nbio/nbio_intf.o \
        $(LIBRETRO_COMM_DIR)/file/file_path.o \
+       $(LIBRETRO_COMM_DIR)/file/file_path_io.o \
        file_path_special.o \
        file_path_str.o \
        $(LIBRETRO_COMM_DIR)/hash/rhash.o \
@@ -228,6 +242,7 @@ OBJ += \
        $(LIBRETRO_COMM_DIR)/file/config_file.o \
        $(LIBRETRO_COMM_DIR)/file/config_file_userdata.o \
        runtime_file.o \
+       disk_index_file.o \
        tasks/task_screenshot.o \
        tasks/task_powerstate.o \
        $(LIBRETRO_COMM_DIR)/gfx/scaler/scaler.o \
@@ -245,9 +260,14 @@ OBJ += \
        $(LIBRETRO_COMM_DIR)/features/features_cpu.o \
        performance_counters.o \
        verbosity.o \
-       midi/drivers/null_midi.o \
        $(LIBRETRO_COMM_DIR)/playlists/label_sanitization.o \
-       manual_content_scan.o
+       manual_content_scan.o \
+       disk_control_interface.o
+
+ifeq ($(HAVE_BLISSBOX), 1)
+   DEFINES += -DHAVE_BLISSBOX
+	OBJ += tasks/task_autodetect_blissbox.o
+endif
 
 ifeq ($(HAVE_AUDIOMIXER), 1)
    DEFINES += -DHAVE_AUDIOMIXER
@@ -1746,6 +1766,11 @@ ifeq ($(HAVE_V4L2),1)
    endif
    DEFINES += -DHAVE_V4L2
    LIBS += $(V4L2_LIBS)
+endif
+
+# Accessibility
+ifeq ($(HAVE_ACCESSIBILITY), 1)
+   DEFINES += -DHAVE_ACCESSIBILITY
 endif
 
 # Things that depend on network availability

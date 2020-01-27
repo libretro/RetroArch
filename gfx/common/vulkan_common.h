@@ -42,6 +42,7 @@
 #include <libretro.h>
 #include <libretro_vulkan.h>
 
+#include "../video_defines.h"
 #include "../../driver.h"
 #include "../../retroarch.h"
 #include "../../verbosity.h"
@@ -591,6 +592,38 @@ void vulkan_acquire_next_image(gfx_ctx_vulkan_data_t *vk);
 bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
       unsigned width, unsigned height,
       unsigned swap_interval);
+
+void vulkan_set_uniform_buffer(
+      VkDevice device,
+      VkDescriptorSet set,
+      unsigned binding,
+      VkBuffer buffer,
+      VkDeviceSize offset,
+      VkDeviceSize range);
+
+void vulkan_framebuffer_generate_mips(
+      VkFramebuffer framebuffer,
+      VkImage image,
+      struct Size2D size,
+      VkCommandBuffer cmd,
+      unsigned levels
+      );
+
+void vulkan_framebuffer_copy(VkImage image, 
+      struct Size2D size,
+      VkCommandBuffer cmd,
+      VkImage src_image, VkImageLayout src_layout);
+
+void vulkan_framebuffer_clear(VkImage image, VkCommandBuffer cmd);
+
+void vulkan_initialize_render_pass(VkDevice device,
+      VkFormat format, VkRenderPass *render_pass);
+
+void vulkan_pass_set_texture(
+      VkDevice device,
+      VkDescriptorSet set, VkSampler sampler,
+      unsigned binding,
+      VkImageView imageView, VkImageLayout imageLayout);
 
 RETRO_END_DECLS
 

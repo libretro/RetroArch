@@ -1,10 +1,38 @@
 # Future
+- BUGFIX: Fix mouse capture hotkey not working
+- CHEEVOS/BUGFIX: Achievement triggers could cause Retroarch to Crash
+- CHEEVOS: Support for extended Sega CD memory
+- EMSCRIPTEN: Recreate input event listeners properly
+- LIBRETRO: Add disk control interface API extension
+- LOCALIZATION: Update Polish translation
+- VIDEO: Set hardware 'Bilinear filtering' off by default
+
+# 1.8.4
+- ANDROID/BUGFIX: Prevent crash when Android device is minimized and you go back to the app
+- CAMERA/BUGFIX: Fix crash when a core requires the camera driver and the platform only has a null driver. This would crash mgba on Wii for example
+- DISK CONTROL: Cycle Disk Tray now becomes Eject Disk or Insert Disk depending upon current drive state
+- DISK CONTROL: Current Disk Index is only shown when the current disk has been ejected
+- DISK CONTROL: The old Insert Disk entry has been changed to Load New Disk, and is only shown when a disk is currently inserted (this is because loading a new disk from the filesystem - i.e. bypassing the m3u playlist disk index interface - automatically ejects and inserts disks, and so cannot be done while the virtual drive is empty)
+- DISK CONTROL: The Current Disk Index may now be set more easily via a drop-down list.
+- DISK CONTROL: Selecting Eject Disk automatically moves the menu selection to the Current Disk Index entry
+- DISK CONTROL: Selecting an index via the Current Disk Index drop-down list automatically moves the menu selection back to Insert Disk
+- DISK CONTROL: The Disk Control entry sublabels have been changed for greater clarity
+- DISK CONTROL: All of the horrendous notification spam has been removed. Notifications are now only shown in the event of an error, or when the menu itself does not provide sufficient visual feedback (note that using hotkeys to swap disks still produces the old style notifications, since this is typically only done while content is running - i.e. no menu). The duration of disk-related info notifications has also been reduced to a more sane level.
+- DISK CONTROL: A new Resume content after changing disks option has been added under Settings > User Interface. When enabled (default setting), content is resumed automatically after selecting either Insert Disk or Load New Disk (when disabled, the menu remains open, obviously...)
+- DISK CONTROL/BUGFIX: The Disk Control menu now has the correct title
+- DISK CONTROL/BUGFIX: Selecting a disk via the Load New Disk file browser no longer flushes the user back to the top level menu (it now correctly returns to the Disk Control menu)
+- LIBNX/SWITCH: Updated libnx integration to v3.0.0. This also cherry-picks libnx commit 583d6bb92dcbb33b6bb4a0fa1a9df6e3725d6ef6, which should fix the requirement having to turn rumble off and on in the system settings once per reboot
+- PLAYLISTS: Add 'Clean Playlist' option
 
 # 1.8.3
+- ANDROID/BUGFIX: Fix 'Install or Restore Core' regression
 - BUGFIX: Ensure core info is always initialised when calling 'drivers_init()'. This bug could prevent cores from doing content runtime logging
+- BUGFIX/MENU: History size can only be set to 1 at a minimum
 - BUGFIX/MENU: (XMB/OZONE) Fix 'quick menu' detection. XMB would not display savestate thumbnails in the quick menu if it was accessed via the main menu
 - BUGFIX/CRASH/CORE UPDATER: Fix potential double free error
+- BUGFIX/CRASH/OPENGL/WINDOWS: Fix regression in 1.8.2 that would cause GL-based cores to fail because it would try to erroneously load libGLESv2.dll instead of OpenGL32.dll (cores affected: VitaQuake 2/3/Dhewm3, possibly more)
 - BUGFIX/MENU/DESKTOP UI: Show desktop menu on startup does not launch Qt UI on Linux
+- BUGFIX: Entries in the Playlist Thumbnails Updater list were displaying improper sublabels. I have no idea when this broke... The issue is now fixed
 - CHEEVOS: Don't disable achievement when AddAddress generates an out-of-range address
 - CHEEVOS: Don't reset triggers/leaderboards that failed to load
 - CHEEVOS: Don't count unsupported achievements as unlocked
@@ -13,6 +41,8 @@
 - D3D11: Block FL9_3 devices from D3D11 driver because they don't work anyway (current D3D11 driver uses SM4.0 which requires FL10_0 and up)
 - D3D11: Fallback to GL driver when D3D11 fails
 - EMSCRIPTEN: Fix assets
+- HISTORY/FAVORITES: Bump up default to 200 entries from 100
+- FFMPEG CORE: Implement packet buffer, fixes MP4 video playback for many files
 - LOCALIZATION: Update Italian translation
 - LOCALIZATION: Update Polish translation
 - LOCALIZATION: Update Russian translation
@@ -20,11 +50,14 @@
 - MENU: Added 'Hosting' menu under Netplay menu
 - MENU: Added 'Subsystems' menu
 - MENU/FILEBROWSER: Fix file selection issues when starting from (or navigating to) the top level directory
+- MENU/WIDGETS: Prevent looping of task title text
 - RASPBERRY PI: Fix BGRA8888 color inversion issues in the menu and elsewhere with VideoCore GL drivers
 - NETPLAY/RELAY: Add Sao Paulo (Brazil) relay server
 - NETPLAY/RELAY: Fix the “spectator” bug when using the relay server – When a player switches into the spectator mode (pressing “i”) while using the relay server, all players will disconnect.
 - NETPLAY/RELAY: Overall stability has improved. Fixed a memory leak that would cause the relay server to become unresponsive after some time.
 - NETPLAY/RELAY: Fixed critical bug that would cause all players to be disconnected from the relay server if one player was leaving the game. That bug had been open for one year and we were finally able to fix it.
+- SWITCH/LIBNX/BUGFIX: Fix onscreen keyboard input regression
+- THUMBNAIL UPDATER: When waiting for individual thumbnail file http transfers to complete, the task status checking is more accurate. This uses the same method as the new core updater - we now wait until the task is 'really' complete, instead of relying on the (slightly nebulous) 'task finished' state
 - UWP: Add ANGLE support
 - UWP: Wire up get_metrics to the fake context of D3D9/10/11/12 driver, enabling proper scaling and mouse/touch gestures
 - VITA: Re-add Online Updater

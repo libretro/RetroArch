@@ -1,6 +1,9 @@
 #include "internal.h"
 
+#if !defined( __CELLOS_LV2__) && !defined(__MWERKS__)
 #include <memory.h>
+#endif
+#include <string.h>
 
 static void rc_parse_cond_value(rc_value_t* self, const char** memaddr, rc_parse_state_t* parse) {
   rc_condition_t** next;

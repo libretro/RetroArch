@@ -809,14 +809,6 @@ MSG_HASH(
     "Carpeta"
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_DISK_CYCLE_TRAY_STATUS,
-    "Abrir/Cerrar la bandeja de disco"
-    )
-MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
-    "Asignar imagen de disco"
-    )
-MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DISK_INDEX,
     "Índice de disco"
     )
@@ -6668,20 +6660,8 @@ MSG_HASH(
     "Indica el rango de fotogramas de entrada a usar para ocultar la latencia durante el juego en red. Reduce los tirones y el uso de la CPU a costa de incrementar la latencia de entrada."
     )
 MSG_HASH(
-    MENU_ENUM_SUBLABEL_DISK_CYCLE_TRAY_STATUS,
-    "Cambia de disco. Si hay un disco introducido, será expulsado. De lo contrario, se introducirá."
-    )
-MSG_HASH(
-    MENU_ENUM_SUBLABEL_DISK_INDEX,
-    "Cambia el índice del disco."
-    )
-MSG_HASH(
     MENU_ENUM_SUBLABEL_DISK_OPTIONS,
     "Administra las imágenes de disco."
-    )
-MSG_HASH(
-    MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
-    "Selecciona una imagen de disco a insertar."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_ENUM_THROTTLE_FRAMERATE,
@@ -7532,14 +7512,6 @@ MSG_HASH(
 MSG_HASH(
     MSG_RUNAHEAD_FAILED_TO_CREATE_SECONDARY_INSTANCE,
     "Error al crear la segunda instancia. La reducción predictiva solo usará una a partir de este momento."
-    )
-MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_AUTOMATICALLY_ADD_CONTENT_TO_PLAYLIST,
-    "Autoagregar contenidos a listas de reproducción"
-    )
-MSG_HASH(
-    MENU_ENUM_SUBLABEL_AUTOMATICALLY_ADD_CONTENT_TO_PLAYLIST,
-    "Busca automáticamente los contenidos para que aparezcan en las listas de reproducción."
     )
 MSG_HASH(
     MSG_SCANNING_OF_FILE_FINISHED,

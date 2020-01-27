@@ -124,6 +124,7 @@ const uint8_t* rcheevos_patch_address(unsigned address, int console)
 {
    rarch_system_info_t* system = runloop_get_system_info();
    const void* pointer = NULL;
+   unsigned original_address = address;
 
    if (console == RC_CONSOLE_NINTENDO)
    {
@@ -208,6 +209,21 @@ const uint8_t* rcheevos_patch_address(unsigned address, int console)
             address += 0x006000 - 0x020000;
          }
       }
+      else if (console == RC_CONSOLE_SEGA_CD)
+      {
+         if (address < 0x010000)
+         {
+            /* Work RAM. */
+            address += 0xFF0000;
+            CHEEVOS_LOG(RCHEEVOS_TAG "Sega CD memory address %X adjusted to %X\n", original_address, address);
+         }
+         else
+         {
+            /* CD-ROM peripheral RAM - exposed at virtual address to avoid banking */
+            address += 0x80020000 - 0x010000;
+            CHEEVOS_LOG(RCHEEVOS_TAG "Sega CD memory address %X adjusted to %X\n", original_address, address);
+         }
+      }
 
       desc = system->mmaps.descriptors;
       end  = desc + system->mmaps.num_descriptors;
@@ -216,19 +232,18 @@ const uint8_t* rcheevos_patch_address(unsigned address, int console)
       {
          if (((desc->core.start ^ address) & desc->core.select) == 0)
          {
-            unsigned addr = address;
-            pointer       = desc->core.ptr;
+            pointer = desc->core.ptr;
+            address -= desc->core.start;
 
-            address       = (unsigned)rcheevos_var_reduce(
-               (addr - desc->core.start) & desc->disconnect_mask,
-               desc->core.disconnect);
+            if (desc->disconnect_mask)
+               address = (unsigned)rcheevos_var_reduce(address & desc->disconnect_mask, desc->core.disconnect);
 
             if (address >= desc->core.len)
                address -= rcheevos_var_highest_bit(address);
 
             address += desc->core.offset;
 
-            CHEEVOS_LOG(RCHEEVOS_TAG "address %X set to descriptor %d at offset %X\n", addr, (int)((desc - system->mmaps.descriptors) + 1), address);
+            CHEEVOS_LOG(RCHEEVOS_TAG "address %X set to descriptor %d at offset %X\n", original_address, (int)((desc - system->mmaps.descriptors) + 1), address);
             break;
          }
       }
@@ -236,7 +251,6 @@ const uint8_t* rcheevos_patch_address(unsigned address, int console)
    else
    {
       unsigned i;
-      unsigned addr = address;
 
       for (i = 0; i < 4; i++)
       {
@@ -260,10 +274,9 @@ const uint8_t* rcheevos_patch_address(unsigned address, int console)
 
          core_get_memory(&meminfo);
 
-         if (addr < meminfo.size)
+         if (address < meminfo.size)
          {
             pointer = meminfo.data;
-            address = addr;
             break;
          }
 
@@ -272,15 +285,15 @@ const uint8_t* rcheevos_patch_address(unsigned address, int console)
           * it's size is not always set correctly in the core.
           */
          if (i == 0 && console == RC_CONSOLE_NINTENDO)
-            addr -= 0x6000;
+            address -= 0x6000;
          else
-            addr -= meminfo.size;
+            address -= meminfo.size;
       }
    }
 
    if (pointer == NULL)
    {
-      CHEEVOS_LOG(RCHEEVOS_TAG "address %X not supported\n", address);
+      CHEEVOS_LOG(RCHEEVOS_TAG "address %X not supported\n", original_address);
       return NULL;
    }
 

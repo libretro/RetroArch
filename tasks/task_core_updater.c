@@ -260,7 +260,7 @@ static void task_core_updater_get_list_handler(retro_task_t *task)
             transf->user_data = (void*)list_handle;
 
             /* Push HTTP transfer task */
-            list_handle->http_task = (retro_task_t*)task_push_http_transfer(
+            list_handle->http_task = (retro_task_t*)task_push_http_transfer_file(
                   buildbot_url, true, NULL,
                   cb_http_task_core_updater_get_list, transf);
 
@@ -288,7 +288,7 @@ static void task_core_updater_get_list_handler(retro_task_t *task)
                      task, task_get_progress(list_handle->http_task));
             }
 
-            /* Wait for task_push_http_transfer()
+            /* Wait for task_push_http_transfer_file()
              * callback to trigger */
             if (list_handle->http_task_complete)
                list_handle->status = CORE_UPDATER_LIST_END;
@@ -626,7 +626,7 @@ static void task_core_updater_download_handler(retro_task_t *task)
             transf->user_data = (void*)download_handle;
 
             /* Push HTTP transfer task */
-            download_handle->http_task = (retro_task_t*)task_push_http_transfer(
+            download_handle->http_task = (retro_task_t*)task_push_http_transfer_file(
                   download_handle->remote_core_path, true, NULL,
                   cb_http_task_core_updater_download, transf);
 
@@ -673,7 +673,7 @@ static void task_core_updater_download_handler(retro_task_t *task)
                }
             }
 
-            /* Wait for task_push_http_transfer()
+            /* Wait for task_push_http_transfer_file()
              * callback to trigger */
             if (download_handle->http_task_complete)
                download_handle->status = CORE_UPDATER_DOWNLOAD_WAIT_DECOMPRESS;

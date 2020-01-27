@@ -28,6 +28,7 @@ OBJ := ctr/ctr_system.o \
 		 libretro-common/compat/compat_strcasestr.o \
 		 libretro-common/compat/fopen_utf8.o \
 		 libretro-common/file/file_path.o \
+		 libretro-common/file/file_path_io.o \
 		 libretro-common/string/stdstring.o \
 		 libretro-common/lists/string_list.o \
 		 libretro-common/lists/dir_list.o \

@@ -154,6 +154,7 @@ typedef struct settings
       bool menu_show_start_screen;
       bool menu_pause_libretro;
       bool menu_savestate_resume;
+      bool menu_insert_disk_resume;
       bool menu_timedate_enable;
       bool menu_battery_level_enable;
       bool menu_core_enable;
@@ -360,7 +361,6 @@ typedef struct settings
       bool bluetooth_enable;
       bool localap_enable;
 
-      bool automatically_add_content_to_playlist;
       bool video_window_show_decorations;
       bool video_window_save_positions;
 

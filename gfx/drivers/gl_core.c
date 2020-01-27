@@ -53,6 +53,131 @@
 
 static const struct video_ortho gl_core_default_ortho = {0, 1, 0, 1, -1, 1};
 
+void gl_core_build_default_matrix(float *data)
+{
+   data[0] = 2.0f;
+   data[1] = 0.0f;
+   data[2] = 0.0f;
+   data[3] = 0.0f;
+   data[4] = 0.0f;
+   data[5] = 2.0f;
+   data[6] = 0.0f;
+   data[7] = 0.0f;
+   data[8] = 0.0f;
+   data[9] = 0.0f;
+   data[10] = 2.0f;
+   data[11] = 0.0f;
+   data[12] = -1.0f;
+   data[13] = -1.0f;
+   data[14] = 0.0f;
+   data[15] = 1.0f;
+}
+
+void gl_core_framebuffer_copy(
+      GLuint fb_id,
+      GLuint quad_program,
+      GLuint quad_vbo,
+      GLint flat_ubo_vertex,
+      struct Size2D size,
+      GLuint image)
+{
+   glBindFramebuffer(GL_FRAMEBUFFER, fb_id);
+   glActiveTexture(GL_TEXTURE2);
+   glBindTexture(GL_TEXTURE_2D, image);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+   glViewport(0, 0, size.width, size.height);
+   glClear(GL_COLOR_BUFFER_BIT);
+
+   glUseProgram(quad_program);
+   if (flat_ubo_vertex >= 0)
+   {
+      float mvp[16];
+      gl_core_build_default_matrix(mvp);
+      glUniform4fv(flat_ubo_vertex, 4, mvp);
+   }
+
+   /* Draw quad */
+   glDisable(GL_CULL_FACE);
+   glDisable(GL_BLEND);
+   glDisable(GL_DEPTH_TEST);
+   glEnableVertexAttribArray(0);
+   glEnableVertexAttribArray(1);
+   glBindBuffer(GL_ARRAY_BUFFER, quad_vbo);
+   glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float),
+                         (void *)((uintptr_t)(0)));
+   glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float),
+                         (void *)((uintptr_t)(2 * sizeof(float))));
+   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+   glBindBuffer(GL_ARRAY_BUFFER, 0);
+   glDisableVertexAttribArray(0);
+   glDisableVertexAttribArray(1);
+
+   glUseProgram(0);
+   glBindTexture(GL_TEXTURE_2D, 0);
+   glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+void gl_core_framebuffer_copy_partial(
+      GLuint fb_id,
+      GLuint quad_program, 
+      GLint flat_ubo_vertex,
+      struct Size2D size,
+      GLuint image,
+      float rx, float ry)
+{
+   GLuint vbo;
+   const float quad_data[] = {
+      0.0f, 0.0f, 0.0f, 0.0f,
+      1.0f, 0.0f, rx, 0.0f,
+      0.0f, 1.0f, 0.0f, ry,
+      1.0f, 1.0f, rx, ry,
+   };
+
+   glBindFramebuffer(GL_FRAMEBUFFER, fb_id);
+   glActiveTexture(GL_TEXTURE2);
+   glBindTexture(GL_TEXTURE_2D, image);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+   glViewport(0, 0, size.width, size.height);
+   glClear(GL_COLOR_BUFFER_BIT);
+
+   glUseProgram(quad_program);
+   if (flat_ubo_vertex >= 0)
+   {
+      float mvp[16];
+      gl_core_build_default_matrix(mvp);
+      glUniform4fv(flat_ubo_vertex, 4, mvp);
+   }
+   glDisable(GL_CULL_FACE);
+   glDisable(GL_BLEND);
+   glDisable(GL_DEPTH_TEST);
+   glEnableVertexAttribArray(0);
+   glEnableVertexAttribArray(1);
+
+   /* A bit crude, but heeeey. */
+   glGenBuffers(1, &vbo);
+   glBindBuffer(GL_ARRAY_BUFFER, vbo);
+
+   glBufferData(GL_ARRAY_BUFFER, sizeof(quad_data), quad_data, GL_STREAM_DRAW);
+   glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float),
+                         (void *)((uintptr_t)(0)));
+   glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float),
+                         (void *)((uintptr_t)(2 * sizeof(float))));
+   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+   glBindBuffer(GL_ARRAY_BUFFER, 0);
+   glDeleteBuffers(1, &vbo);
+   glDisableVertexAttribArray(0);
+   glDisableVertexAttribArray(1);
+   glUseProgram(0);
+   glBindTexture(GL_TEXTURE_2D, 0);
+   glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
 static void gl_core_deinit_fences(gl_core_t *gl)
 {
    unsigned i;
@@ -169,6 +294,92 @@ static void gl_core_fence_iterate(gl_core_t *gl, unsigned hard_sync_frames)
       gl->fence_count--;
       memmove(gl->fences, gl->fences + 1, gl->fence_count * sizeof(GLsync));
    }
+}
+
+uint32_t gl_core_get_cross_compiler_target_version(void)
+{
+   const char *version = (const char*)glGetString(GL_VERSION);
+   unsigned major = 0;
+   unsigned minor = 0;
+
+#ifdef HAVE_OPENGLES3
+   if (!version || sscanf(version, "OpenGL ES %u.%u", &major, &minor) != 2)
+      return 300;
+   
+   if (major == 2 && minor == 0)
+      return 100;
+#else
+   if (!version || sscanf(version, "%u.%u", &major, &minor) != 2)
+      return 150;
+
+   if (major == 3)
+   {
+      switch (minor)
+      {
+         case 2:
+            return 150;
+         case 1:
+            return 140;
+         case 0:
+            return 130;
+      }
+   }
+   else if (major == 2)
+   {
+      switch (minor)
+      {
+         case 1:
+            return 120;
+         case 0:
+            return 110;
+      }
+   }
+#endif
+
+   return 100 * major + 10 * minor;
+}
+
+GLuint gl_core_compile_shader(GLenum stage, const char *source)
+{
+   GLint status;
+   GLuint shader   = glCreateShader(stage);
+   const char *ptr = source;
+
+   glShaderSource(shader, 1, &ptr, NULL);
+   glCompileShader(shader);
+
+   glGetShaderiv(shader, GL_COMPILE_STATUS, &status);
+
+   if (!status)
+   {
+      GLint length;
+      glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &length);
+      if (length > 0)
+      {
+         char *info_log = (char*)malloc(length);
+
+         if (info_log)
+         {
+            glGetShaderInfoLog(shader, length, &length, info_log);
+            RARCH_ERR("[GLCore]: Failed to compile shader: %s\n", info_log);
+            free(info_log);
+            glDeleteShader(shader);
+            return 0;
+         }
+      }
+   }
+
+   return shader;
+}
+
+
+void gl_core_framebuffer_clear(GLuint id)
+{
+   glBindFramebuffer(GL_FRAMEBUFFER, id);
+   glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+   glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+   glClear(GL_COLOR_BUFFER_BIT);
+   glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 void gl_core_bind_scratch_vbo(gl_core_t *gl, const void *data, size_t size)

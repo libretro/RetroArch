@@ -629,10 +629,6 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_DIRECTORY_NOT_FOUND,
       "Nie znaleziono katalogu.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS,
       "Szczegóły")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_DISK_CYCLE_TRAY_STATUS,
-      "Status podajnika cyklu dysku")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
-      "Dołącz obraz dysku")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DISK_INDEX,
       "Indeks dysku")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DISK_OPTIONS,
@@ -3165,14 +3161,8 @@ MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
       "Liczba klatek opóźnienia wejściowego dla netplay do wykorzystania do ukrycia opóźnień sieci. Zmniejsza drgania i sprawia, że gra jest mniej intensywna, kosztem zauważalnego opóźnienia wejścia.")
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
       "Zakres klatek opóźnień wejściowych, które można wykorzystać do ukrycia opóźnień sieci. Zmniejsza fluktuacje i sprawia, że netplay jest mniej obciążający procesor, kosztem nieprzewidywalnego opóźnienia wejściowego.")
-MSG_HASH(MENU_ENUM_SUBLABEL_DISK_CYCLE_TRAY_STATUS,
-      "Cykluj bieżący dysk. Jeśli dysk zostanie włożony, wyskoczy. Jeśli dysk nie został włożony, zostanie włożony. ")
-MSG_HASH(MENU_ENUM_SUBLABEL_DISK_INDEX,
-      "Zmień indeks dysku.")
 MSG_HASH(MENU_ENUM_SUBLABEL_DISK_OPTIONS,
       "Zarządzanie obrazem dysku.")
-MSG_HASH(MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
-      "Wybierz obraz dysku, który chcesz wstawić.")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_ENUM_THROTTLE_FRAMERATE,
       "Upewnia się, że liczba klatek na sekundę jest ograniczona w menu.")
 MSG_HASH(MENU_ENUM_SUBLABEL_XMB_LAYOUT,
@@ -3541,10 +3531,6 @@ MSG_HASH(MSG_GAME_REMAP_FILE_LOADED,
       "Załadowano plik remapu gry.")
 MSG_HASH(MSG_CORE_REMAP_FILE_LOADED,
       "Załadowano plik wymiany rdzenia.")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_AUTOMATICALLY_ADD_CONTENT_TO_PLAYLIST,
-      "Automatycznie dodawaj zawartość do listy odtwarzania")
-MSG_HASH(MENU_ENUM_SUBLABEL_AUTOMATICALLY_ADD_CONTENT_TO_PLAYLIST,
-      "Automatycznie skanuje załadowaną zawartość, aby pojawiły się w listach odtwarzania.")
 MSG_HASH(MSG_SCANNING_OF_FILE_FINISHED,
       "Skanowanie pliku zakończone")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
@@ -4809,4 +4795,164 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_TICKER_SMOOTH,/* FIXME */
     "Użyj płynnej animacji przewijania podczas wyświetlania długich ciągów tekstowych menu. Ma niewielki wpływ na wydajność."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_LIST,
+    "Skanowanie ręczne"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_LIST,
+    "Konfigurowalne skanowanie w oparciu o nazwy plików zawartości. Nie wymaga zawartości pasującej do bazy danych."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_DIR,
+    "Katalog treści"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_DIR,
+    "Wybiera katalog do skanowania w poszukiwaniu zawartości."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
+    "Nazwa systemu"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
+    "Podaj „nazwę systemu”, z którą chcesz powiązać zeskanowaną zawartość. Służy do nazywania wygenerowanego pliku listy odtwarzania i identyfikowania miniatur listy odtwarzania."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM,
+    "Niestandardowa nazwa systemu"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM,
+    "Ręcznie określ „nazwę systemu” dla skanowanej zawartości. Używane tylko, gdy „Nazwa Systemu” jest ustawiona na „<Custom>”."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_CORE_NAME,
+    "Rdzeń"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_CORE_NAME,
+    "Wybierz domyślny rdzeń, który będzie używany podczas uruchamiania zeskanowanej zawartości."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_FILE_EXTS,
+    "Rozszerzenia plików"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_FILE_EXTS,
+    "Rozdzielana spacjami lista typów plików, które należy uwzględnić podczas skanowania. Jeśli jest pusta, obejmuje wszystkie pliki - lub jeśli określono rdzeń, wszystkie pliki obsługiwane przez rdzeń."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SEARCH_ARCHIVES,
+    "Skanuj wewnątrz archiwów"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_SEARCH_ARCHIVES,
+    "Po włączeniu pliki archiwów (.zip, .7z itp.) Będą wyszukiwane pod kątem prawidłowej / obsługiwanej zawartości. Może mieć znaczący wpływ na wydajność skanowania."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_DAT_FILE,
+    "Plik Arcade DAT"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_DAT_FILE,
+    "ybierz plik XML DAT Logiqx lub MAME List, aby włączyć automatyczne nazywanie zeskanowanej zawartości zręcznościowej (MAME, FinalBurn Neo itp.)."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_OVERWRITE,
+    "Zastąp istniejącą listę odtwarzania"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_OVERWRITE,
+    "Po włączeniu wszelkie istniejące listy odtwarzania zostaną usunięte przed skanowaniem zawartości. Po wyłączeniu istniejące wpisy listy odtwarzania są zachowywane i dodawana jest tylko zawartość aktualnie brakująca na liście odtwarzania."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_START,
+    "Rozpocznij skanowanie"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_START,
+    "Skanuj wybraną zawartość."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_OUTPUT_SETTINGS,
+    "Wyjście"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_OUTPUT_SETTINGS,
+    "Zmień ustawienia wyjścia wideo."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_SCALING_SETTINGS,
+    "Skalowanie"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_SCALING_SETTINGS,
+    "Zmień ustawienia skalowania wideo."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
+    "Synchronizacja"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
+    "Zmień ustawienia synchronizacji wideo."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_SETTINGS,
+    "Wyjście"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_SETTINGS,
+    "Zmień ustawienia wyjścia audio."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_AUDIO_SYNCHRONIZATION_SETTINGS,
+    "Synchronization"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_AUDIO_SYNCHRONIZATION_SETTINGS,
+    "Zmień ustawienia synchronizacji dźwięku."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_SETTINGS,
+    "Resampler"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_SETTINGS,
+    "Zmień ustawienia resamplera audio."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_INPUT_TURBO_MODE,
+    "Wybiera ogólne zachowanie trybu turbo."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_DEFAULT_BUTTON,
+    "Domyślny przycisk Turbo"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_MODE,
+    "Tryb turbo"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_INPUT_TURBO_DEFAULT_BUTTON,
+    "Domyślny aktywny przycisk trybu pojedynczego „Turbo”."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_HAPTIC_FEEDBACK_SETTINGS,
+    "Haptyczne sprzężenie zwrotne / wibracje"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_INPUT_HAPTIC_FEEDBACK_SETTINGS,
+    "Zmień ustawienia dotykowego sprzężenia zwrotnego i wibracji."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_MENU_SETTINGS,
+    "Sterowanie menu"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_INPUT_MENU_SETTINGS,
+    "Zmień ustawienia sterowania menu."
     )

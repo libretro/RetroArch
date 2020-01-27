@@ -2020,15 +2020,6 @@ bool menu_widgets_ready(void);
 unsigned int retroarch_get_rotation(void);
 
 bool is_input_keyboard_display_on(void);
-bool is_accessibility_enabled(void);
-bool accessibility_speak(const char* speak_text);
-bool accessibility_speak_priority(const char* speak_text, int priority);
-bool accessibility_startup_message(void);
-
-bool is_narrator_running(void);
-
-bool accessibility_speak_ai_service(
-      const char* speak_text, const char* voice, int priority);
 
 RETRO_END_DECLS
 

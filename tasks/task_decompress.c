@@ -23,7 +23,6 @@
 
 #include "tasks_internal.h"
 #include "../file_path_special.h"
-#include "../verbosity.h"
 #include "../msg_hash.h"
 
 #define CALLBACK_ERROR_SIZE 4200
@@ -72,10 +71,6 @@ static int file_decompressed_subdir(const char *name,
             cdata, cmode, csize, size, crc32, userdata))
       goto error;
 
-#if 0
-   RARCH_LOG("[deflate subdir] Path: %s, CRC32: 0x%x\n", name, crc32);
-#endif
-
    return 1;
 
 error:
@@ -114,9 +109,6 @@ static int file_decompressed(const char *name, const char *valid_exts,
             cdata, cmode, csize, size, crc32, userdata))
       goto error;
 
-#if 0
-   RARCH_LOG("[deflate] Path: %s, CRC32: 0x%x\n", name, crc32);
-#endif
    return 1;
 
 error:
@@ -280,12 +272,7 @@ void *task_push_decompress(
    tmp[0] = '\0';
 
    if (string_is_empty(target_dir) || string_is_empty(source_file))
-   {
-      RARCH_WARN(
-            "[decompress] Empty or null source file or"
-            " target directory arguments.\n");
       return NULL;
-   }
 
    ext = path_get_extension(source_file);
 
@@ -300,26 +287,13 @@ void *task_push_decompress(
 #endif
          )
       )
-   {
-      RARCH_WARN(
-            "[decompress] File '%s' does not exist"
-            " or is not a compressed file.\n",
-            source_file);
       return NULL;
-   }
 
    if (!valid_ext || !valid_ext[0])
       valid_ext   = NULL;
 
    if (task_check_decompress(source_file))
-   {
-      RARCH_LOG(
-            "[decompress] File '%s' already being decompressed.\n",
-            source_file);
       return NULL;
-   }
-
-   RARCH_LOG("[decompress] File '%s.\n", source_file);
 
    s              = (decompress_state_t*)calloc(1, sizeof(*s));
 

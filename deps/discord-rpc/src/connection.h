@@ -1,11 +1,11 @@
 #pragma once
 
-// This is to wrap the platform specific kinds of connect/read/write.
+/* This is to wrap the platform specific kinds of connect/read/write. */
 
 #include <stdint.h>
 #include <stdlib.h>
 
-// not really connectiony, but need per-platform
+/* not really connectiony, but need per-platform */
 int GetProcessId();
 
 struct BaseConnection {

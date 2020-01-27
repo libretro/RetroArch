@@ -809,14 +809,6 @@ MSG_HASH(
    "ディレクトリ"
 )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DISK_CYCLE_TRAY_STATUS,
-   "ディスクトレイを開閉"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
-   "ディスクイメージを挿入"
-)
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_INDEX,
    "ディスクインデックス"
 )
@@ -6417,21 +6409,8 @@ MSG_HASH(
    "予期しない入力遅延を犠牲にして, ジッタを減らし, ネットプレイのCPU使用率を減らします。"
 )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_CYCLE_TRAY_STATUS,
-   "ディスクトレイの状態を変更します。 "
-   "ディスクが挿入されていればそのディスクを排出し, 未挿入であればディスクを挿入します。"
-)
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_INDEX,
-   "ディスクのインデックスを変更します。"
-)
-MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_OPTIONS,
    "ディスクのイメージ管理"
-)
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
-   "ディスクイメージを追加します。"
 )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_ENUM_THROTTLE_FRAMERATE,
@@ -7250,14 +7229,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_RUNAHEAD_FAILED_TO_CREATE_SECONDARY_INSTANCE,
    "2つ目のコアをスタートに失敗しました。先読みが一つのコアを使用になります。"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUTOMATICALLY_ADD_CONTENT_TO_PLAYLIST,
-   "自動的にコンテンツをプレイリストに追加"
-)
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUTOMATICALLY_ADD_CONTENT_TO_PLAYLIST,
-   "ロードされたコンテンツは自動的にスキャンされ, プレイリストに表示されます。"
 )
 MSG_HASH(
    MSG_SCANNING_OF_FILE_FINISHED,

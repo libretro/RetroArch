@@ -31,8 +31,11 @@
 
 #if defined(DINGUX)
 #include <sys/types.h>
-#include <signal.h>
 #include <unistd.h>
+#endif
+
+#if (defined(__linux__) || defined(__unix__) || defined(DINGUX)) && !defined(EMSCRIPTEN)
+#include <signal.h>
 #endif
 
 #if defined(_WIN32_WINNT) && _WIN32_WINNT < 0x0500 || defined(_XBOX)
@@ -223,6 +226,10 @@
 #ifdef HAVE_RUNAHEAD
 #include "runahead/mylist.h"
 #include "runahead/mem_util.h"
+#endif
+
+#ifdef HAVE_ACCESSIBILITY
+#include "accessibility.h"
 #endif
 
 #ifdef HAVE_THREADS
@@ -881,7 +888,29 @@ static const record_driver_t *record_drivers[] = {
 
 extern midi_driver_t midi_winmm;
 extern midi_driver_t midi_alsa;
-extern midi_driver_t midi_null;
+
+static void null_midi_free(void *p) { }
+static bool null_midi_get_avail_inputs(struct string_list *inputs) { union string_list_elem_attr attr = {0}; return string_list_append(inputs, "Null", attr); }
+static bool null_midi_get_avail_outputs(struct string_list *outputs) { union string_list_elem_attr attr = {0}; return string_list_append(outputs, "Null", attr); }
+static void *null_midi_init(const char *input, const char *output) { return (void*)-1; }
+static bool null_midi_set_input(void *p, const char *input) { return input == NULL || string_is_equal(input, "Null"); }
+static bool null_midi_set_output(void *p, const char *output) { return output == NULL || string_is_equal(output, "Null"); }
+static bool null_midi_read(void *p, midi_event_t *event) { return false; }
+static bool null_midi_write(void *p, const midi_event_t *event) { return true; }
+static bool null_midi_flush(void *p) { return true; }
+
+static midi_driver_t midi_null = {
+   "null",
+   null_midi_get_avail_inputs,
+   null_midi_get_avail_outputs,
+   null_midi_init,
+   null_midi_free,
+   null_midi_set_input,
+   null_midi_set_output,
+   null_midi_read,
+   null_midi_write,
+   null_midi_flush
+};
 
 static midi_driver_t *midi_drivers[] = {
 #if defined(HAVE_ALSA) && !defined(HAVE_HAKCHI) && !defined(HAVE_SEGAM)
@@ -893,12 +922,21 @@ static midi_driver_t *midi_drivers[] = {
    &midi_null
 };
 
+static void *nullcamera_init(const char *device, uint64_t caps,
+      unsigned width, unsigned height) { return (void*)-1; }
+static void nullcamera_free(void *data) { }
+static bool nullcamera_start(void *data) { return true; }
+static void nullcamera_stop(void *data) { }
+static bool nullcamera_poll(void *a,
+      retro_camera_frame_raw_framebuffer_t b,
+      retro_camera_frame_opengl_texture_t c) { return true; }
+
 static camera_driver_t camera_null = {
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-   NULL,
+   nullcamera_init,
+   nullcamera_free,
+   nullcamera_start,
+   nullcamera_stop,
+   nullcamera_poll,
    "null",
 };
 
@@ -1082,7 +1120,9 @@ static bool runloop_autosave                                    = false;
 static bool runloop_max_frames_screenshot                       = false;
 static bool log_file_created                                    = false;
 static bool log_file_override_active                            = false;
+#ifdef HAVE_RUNAHEAD
 static bool has_variable_update                                 = false;
+#endif
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 static bool shader_presets_need_reload                          = true;
 #endif
@@ -1098,7 +1138,7 @@ static char runtime_content_path[PATH_MAX_LENGTH]               = {0};
 static char runtime_core_path[PATH_MAX_LENGTH]                  = {0};
 static char timestamped_log_file_name[64]                       = {0};
 static char log_file_override_path[PATH_MAX_LENGTH]             = {0};
-static char launch_arguments[4096];
+static char launch_arguments[4096]                              = {0};
 static char current_library_name[1024]                          = {0};
 static char current_library_version[1024]                       = {0};
 static char current_valid_extensions[1024]                      = {0};
@@ -1106,9 +1146,6 @@ static char error_string[255]                                   = {0};
 static char cached_video_driver[32]                             = {0};
 
 /* PATHS */
-
-#define MENU_VALUE_NO_CORE 0x7d5472cbU
-
 struct rarch_dir_list
 {
    struct string_list *list;
@@ -1143,7 +1180,13 @@ static const void *wifi_driver_find_handle(int idx);
 static const void *camera_driver_find_handle(int idx);
 static const void *input_driver_find_handle(int idx);
 static const void *joypad_driver_find_handle(int idx);
+#ifdef HAVE_HID
 static const void *hid_driver_find_handle(int idx);
+#endif
+#ifdef HAVE_ACCESSIBILITY
+static bool is_narrator_running(void);
+static bool accessibility_startup_message(void);
+#endif
 
 static bool midi_driver_read(uint8_t *byte);
 static bool midi_driver_write(uint8_t byte, uint32_t delta_time);
@@ -1558,7 +1601,7 @@ static void path_set_redirect(void)
          fill_pathname_dir(global->name.savefile,
                !string_is_empty(path_main_basename) ? path_main_basename :
                   system && !string_is_empty(system->library_name) ? system->library_name : "",
-               ".srm",
+               file_path_str(FILE_PATH_SRM_EXTENSION),
                sizeof(global->name.savefile));
          RARCH_LOG("%s \"%s\".\n",
                msg_hash_to_str(MSG_REDIRECTING_SAVEFILE_TO),
@@ -1570,7 +1613,7 @@ static void path_set_redirect(void)
          fill_pathname_dir(global->name.savestate,
                !string_is_empty(path_main_basename) ? path_main_basename :
                   system && !string_is_empty(system->library_name) ? system->library_name : "",
-               ".state",
+               file_path_str(FILE_PATH_STATE_EXTENSION),
                sizeof(global->name.savestate));
          RARCH_LOG("%s \"%s\".\n",
                msg_hash_to_str(MSG_REDIRECTING_SAVESTATE_TO),
@@ -1582,7 +1625,7 @@ static void path_set_redirect(void)
          /* FIXME: Should this optionally use system->library_name like the others? */
          fill_pathname_dir(global->name.cheatfile,
                !string_is_empty(path_main_basename) ? path_main_basename : "",
-               ".state",
+               file_path_str(FILE_PATH_CHT_EXTENSION),
                sizeof(global->name.cheatfile));
          RARCH_LOG("%s \"%s\".\n",
                msg_hash_to_str(MSG_REDIRECTING_CHEATFILE_TO),
@@ -2452,8 +2495,21 @@ void dir_check_defaults(void)
    }
 }
 
+#ifdef HAVE_ACCESSIBILITY
 /* Is text-to-speech accessibility turned on? */
 static bool accessibility_enabled               = false;
+
+/* Accessibility */
+static int speak_pid = 0;
+
+bool is_accessibility_enabled(void)
+{
+   settings_t *settings              = configuration_settings;
+   if (accessibility_enabled || settings->bools.accessibility_enable)
+      return true;
+   return false;
+}
+#endif
 
 #ifdef HAVE_MENU
 /* MENU INPUT GLOBAL VARIABLES */
@@ -2576,10 +2632,11 @@ bool menu_input_dialog_start_search(void)
 
    input_keyboard_ctl(RARCH_INPUT_KEYBOARD_CTL_LINE_FREE, NULL);
   
+#ifdef HAVE_ACCESSIBILITY
    if (is_accessibility_enabled())
-   {
-      accessibility_speak((char*) msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SEARCH));
-   }
+      accessibility_speak_priority((char*)
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SEARCH), 10);
+#endif
 
    menu_input_dialog_keyboard_buffer   =
       input_keyboard_start_line(menu, menu_input_search_cb);
@@ -2609,7 +2666,9 @@ bool menu_input_dialog_start(menu_input_ctx_line_t *line)
 
    input_keyboard_ctl(RARCH_INPUT_KEYBOARD_CTL_LINE_FREE, NULL);
 
-   accessibility_speak("Keyboard input:");
+#ifdef HAVE_ACCESSIBILITY
+   accessibility_speak_priority("Keyboard input:", 10);
+#endif
 
    menu_input_dialog_keyboard_buffer =
       input_keyboard_start_line(menu, line->cb);
@@ -2620,6 +2679,8 @@ bool menu_input_dialog_start(menu_input_ctx_line_t *line)
 bool menu_input_dialog_get_display_kb(void)
 {
 #ifdef HAVE_LIBNX
+   SwkbdConfig kbd;
+   Result rc;
    /* Indicates that we are "typing" from the swkbd
     * result to RetroArch with repeated calls to input_keyboard_event
     * This prevents input_keyboard_event from calling back
@@ -2629,8 +2690,6 @@ bool menu_input_dialog_get_display_kb(void)
    if (typing)
       return false;
 
-   SwkbdConfig kbd;
-   Result rc;
 
    /* swkbd only works on "real" titles */
    if (     __nx_applet_type != AppletType_Application
@@ -3145,13 +3204,13 @@ typedef struct input_list_element_t
    unsigned int state_size;
 } input_list_element;
 
+#ifdef HAVE_RUNAHEAD
 static size_t runahead_save_state_size          = 0;
 
 static bool runahead_save_state_size_known      = false;
 static bool request_fast_savestate              = false;
 static bool hard_disable_audio                  = false;
 
-#ifdef HAVE_RUNAHEAD
 /* Save State List for Run Ahead */
 static MyList *runahead_save_state_list         = NULL;
 static MyList *input_state_list                 = NULL;
@@ -3507,13 +3566,12 @@ static bool bsv_movie_check(void);
 static void driver_uninit(int flags);
 static void drivers_init(int flags);
 
+#if defined(HAVE_RUNAHEAD)
 static void core_free_retro_game_info(struct retro_game_info *dest);
+#endif
 static bool core_load(unsigned poll_type_behavior);
 static bool core_unload_game(void);
 
-#ifdef HAVE_NETWORKING
-static void rarch_send_debug_info(void);
-#endif
 static bool rarch_environment_cb(unsigned cmd, void *data);
 
 static bool driver_location_get_position(double *lat, double *lon,
@@ -4595,8 +4653,10 @@ static void handle_translation_cb(
    }
 #endif
 
+#ifdef HAVE_ACCESSIBILITY
    if (text_string && is_accessibility_enabled())
-      accessibility_speak(text_string);
+      accessibility_speak_priority(text_string, 10);
+#endif
 
 finish:
    if (error)
@@ -5047,7 +5107,7 @@ static bool run_translation_service(void)
             settings->arrays.ai_service_url, sizeof(new_ai_service_url));
 
       /* if query already exists in url, then use &'s instead */
-      if (strrchr(new_ai_service_url, '?') != NULL)
+      if (strrchr(new_ai_service_url, '?'))
           separator = '&';
 
       /* source lang */
@@ -5159,116 +5219,6 @@ finish:
 #endif
 
 /**
- * command_event_disk_control_set_eject:
- * @new_state            : Eject or close the virtual drive tray.
- *                         false (0) : Close
- *                         true  (1) : Eject
- * @print_log            : Show message onscreen.
- *
- * Ejects/closes of the virtual drive tray.
- **/
-static void command_event_disk_control_set_eject(bool new_state, bool print_log)
-{
-   char msg[128];
-   bool error                                        = false;
-   const struct retro_disk_control_callback *control = NULL;
-   rarch_system_info_t *info                         = &runloop_system;
-
-   msg[0] = '\0';
-
-   if (info)
-      control = (const struct retro_disk_control_callback*)&info->disk_control_cb;
-
-   if (!control || !control->get_num_images)
-      return;
-
-   if (control->set_eject_state(new_state))
-      snprintf(msg, sizeof(msg), "%s %s",
-            new_state ?
-            msg_hash_to_str(MSG_DISK_EJECTED) :
-            msg_hash_to_str(MSG_DISK_CLOSED),
-            msg_hash_to_str(MSG_VIRTUAL_DISK_TRAY));
-   else
-   {
-      error = true;
-      snprintf(msg, sizeof(msg), "%s %s %s",
-            msg_hash_to_str(MSG_FAILED_TO),
-            new_state ? "eject" : "close",
-            msg_hash_to_str(MSG_VIRTUAL_DISK_TRAY));
-   }
-
-   if (!string_is_empty(msg))
-   {
-      if (error)
-         RARCH_ERR("%s\n", msg);
-      else
-         RARCH_LOG("%s\n", msg);
-
-      /* Only noise in menu. */
-      if (print_log)
-         runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-   }
-}
-
-/**
- * command_event_disk_control_set_index:
- * @idx                : Index of disk to set as current.
- *
- * Sets current disk to @index.
- **/
-static void command_event_disk_control_set_index(unsigned idx)
-{
-   unsigned num_disks;
-   char msg[128];
-   bool error                                        = false;
-   const struct retro_disk_control_callback *control = NULL;
-   rarch_system_info_t *info                         = &runloop_system;
-
-   msg[0] = '\0';
-
-   if (info)
-      control = (const struct retro_disk_control_callback*)&info->disk_control_cb;
-
-   if (!control || !control->get_num_images)
-      return;
-
-   num_disks = control->get_num_images();
-
-   if (control->set_image_index(idx))
-   {
-      if (idx < num_disks)
-         snprintf(msg, sizeof(msg), "%s: %u/%u.",
-               msg_hash_to_str(MSG_SETTING_DISK_IN_TRAY),
-               idx + 1, num_disks);
-      else
-         strlcpy(msg,
-               msg_hash_to_str(MSG_REMOVED_DISK_FROM_TRAY),
-               sizeof(msg));
-   }
-   else
-   {
-      if (idx < num_disks)
-         snprintf(msg, sizeof(msg), "%s %u/%u.",
-               msg_hash_to_str(MSG_FAILED_TO_SET_DISK),
-               idx + 1, num_disks);
-      else
-         strlcpy(msg,
-               msg_hash_to_str(MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY),
-               sizeof(msg));
-      error = true;
-   }
-
-   if (!string_is_empty(msg))
-   {
-      if (error)
-         RARCH_ERR("%s\n", msg);
-      else
-         RARCH_LOG("%s\n", msg);
-      runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-   }
-}
-
-/**
  * command_event_disk_control_append_image:
  * @path                 : Path to disk image.
  *
@@ -5276,35 +5226,13 @@ static void command_event_disk_control_set_index(unsigned idx)
  **/
 static bool command_event_disk_control_append_image(const char *path)
 {
-   unsigned new_idx;
-   char msg[128];
-   struct retro_game_info info                        = {0};
-   const struct retro_disk_control_callback *control  = NULL;
-   rarch_system_info_t *sysinfo                       = &runloop_system;
+   rarch_system_info_t *sys_info = &runloop_system;
 
-   msg[0] = '\0';
-
-   if (sysinfo)
-      control = (const struct retro_disk_control_callback*)
-         &sysinfo->disk_control_cb;
-
-   if (!control)
+   if (!sys_info)
       return false;
 
-   command_event_disk_control_set_eject(true, false);
-
-   control->add_image_index();
-   new_idx = control->get_num_images();
-   if (!new_idx)
+   if (!disk_control_append_image(&sys_info->disk_control, path))
       return false;
-   new_idx--;
-
-   info.path = path;
-   control->replace_image_index(new_idx, &info);
-
-   snprintf(msg, sizeof(msg), "%s: %s", msg_hash_to_str(MSG_APPENDED_DISK), path);
-   RARCH_LOG("%s\n", msg);
-   runloop_msg_queue_push(msg, 0, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
 #ifdef HAVE_THREADS
    retroarch_autosave_deinit();
@@ -5322,76 +5250,8 @@ static bool command_event_disk_control_append_image(const char *path)
    }
 
    command_event(CMD_EVENT_AUTOSAVE_INIT, NULL);
-   command_event_disk_control_set_index(new_idx);
-   command_event_disk_control_set_eject(false, false);
 
    return true;
-}
-
-/**
- * command_event_check_disk_prev:
- * @control              : Handle to disk control handle.
- *
- * Perform disk cycle to previous index action (Core Disk Options).
- **/
-static void command_event_check_disk_prev(
-      const struct retro_disk_control_callback *control)
-{
-   unsigned num_disks    = 0;
-   unsigned current      = 0;
-   bool disk_prev_enable = false;
-
-   if (!control || !control->get_num_images)
-      return;
-   if (!control->get_image_index)
-      return;
-
-   num_disks        = control->get_num_images();
-   current          = control->get_image_index();
-   disk_prev_enable = num_disks && num_disks != UINT_MAX;
-
-   if (!disk_prev_enable)
-   {
-      RARCH_ERR("%s.\n", msg_hash_to_str(MSG_GOT_INVALID_DISK_INDEX));
-      return;
-   }
-
-   if (current > 0)
-      current--;
-   command_event_disk_control_set_index(current);
-}
-
-/**
- * command_event_check_disk_next:
- * @control              : Handle to disk control handle.
- *
- * Perform disk cycle to next index action (Core Disk Options).
- **/
-static void command_event_check_disk_next(
-      const struct retro_disk_control_callback *control)
-{
-   unsigned num_disks        = 0;
-   unsigned current          = 0;
-   bool     disk_next_enable = false;
-
-   if (!control || !control->get_num_images)
-      return;
-   if (!control->get_image_index)
-      return;
-
-   num_disks        = control->get_num_images();
-   current          = control->get_image_index();
-   disk_next_enable = num_disks && num_disks != UINT_MAX;
-
-   if (!disk_next_enable)
-   {
-      RARCH_ERR("%s.\n", msg_hash_to_str(MSG_GOT_INVALID_DISK_INDEX));
-      return;
-   }
-
-   if (current < num_disks - 1)
-      current++;
-   command_event_disk_control_set_index(current);
 }
 
 /**
@@ -5946,8 +5806,17 @@ static bool command_event_init_core(enum rarch_core_type type)
    current_core.retro_init();
    current_core.inited          = true;
 
+   /* Attempt to set initial disk index */
+   disk_control_set_initial_index(
+         &runloop_system.disk_control,
+         path_get(RARCH_PATH_CONTENT),
+         dir_get(RARCH_DIR_CURRENT_SAVEFILE));
+
    if (!event_init_content())
       return false;
+
+   /* Verify that initial disk index was set correctly */
+   disk_control_verify_initial_index(&runloop_system.disk_control);
 
    if (!core_load(settings->uints.input_poll_type_behavior))
       return false;
@@ -6525,8 +6394,10 @@ bool command_event(enum event_command cmd, void *data)
             }
             else
             {
+#ifdef HAVE_ACCESSIBILITY
                if (is_accessibility_enabled())
-                   accessibility_speak((char*) msg_hash_to_str(MSG_UNPAUSED));
+                   accessibility_speak_priority((char*) msg_hash_to_str(MSG_UNPAUSED), 10);
+#endif
                command_event(CMD_EVENT_UNPAUSE, NULL);
             }
          }       
@@ -6727,10 +6598,15 @@ bool command_event(enum event_command cmd, void *data)
             bool contentless                = false;
             bool is_inited                  = false;
             content_ctx_info_t content_info = {0};
+            rarch_system_info_t *sys_info   = &runloop_system;
 
             content_get_status(&contentless, &is_inited);
 
             runloop_core_running            = false;
+
+            /* Save last selected disk index, if required */
+            if (sys_info)
+               disk_control_save_image_index(&sys_info->disk_control);
 
             command_event_runtime_log_deinit();
             command_event_save_auto_state();
@@ -6871,9 +6747,6 @@ TODO: Add a setting for these tweaks */
          }
          break;
       case CMD_EVENT_SEND_DEBUG_INFO:
-#ifdef HAVE_NETWORKING
-         rarch_send_debug_info();
-#endif
          break;
       case CMD_EVENT_FPS_TOGGLE:
          {
@@ -7047,6 +6920,12 @@ TODO: Add a setting for these tweaks */
       case CMD_EVENT_CORE_DEINIT:
          {
             struct retro_hw_render_callback *hwr = NULL;
+            rarch_system_info_t *sys_info        = &runloop_system;
+
+            /* Save last selected disk index, if required */
+            if (sys_info)
+               disk_control_save_image_index(&sys_info->disk_control);
+
             command_event_runtime_log_deinit();
             content_reset_savestate_backups();
             hwr = video_driver_get_hw_context_internal();
@@ -7228,13 +7107,16 @@ TODO: Add a setting for these tweaks */
       case CMD_EVENT_PAUSE_TOGGLE:
          boolean        = runloop_paused;
          boolean        = !boolean;
+
+#ifdef HAVE_ACCESSIBILITY
          if (is_accessibility_enabled())
          {
             if (boolean)
-               accessibility_speak((char*) msg_hash_to_str(MSG_PAUSED));
+               accessibility_speak_priority((char*) msg_hash_to_str(MSG_PAUSED), 10);
             else
-               accessibility_speak((char*) msg_hash_to_str(MSG_UNPAUSED));
+               accessibility_speak_priority((char*) msg_hash_to_str(MSG_UNPAUSED), 10);
          }
+#endif
 
          runloop_paused = boolean;
          retroarch_pause_checks();
@@ -7492,19 +7374,29 @@ TODO: Add a setting for these tweaks */
          break;
       case CMD_EVENT_DISK_EJECT_TOGGLE:
          {
-            rarch_system_info_t *info = &runloop_system;
+            rarch_system_info_t *sys_info = &runloop_system;
+            bool *show_msg                = (bool*)data;
 
-            if (info && info->disk_control_cb.get_num_images)
+            if (!sys_info)
+               return false;
+
+            if (disk_control_enabled(&sys_info->disk_control))
             {
-               const struct retro_disk_control_callback *control =
-                  (const struct retro_disk_control_callback*)
-                  &info->disk_control_cb;
+               bool eject   = !disk_control_get_eject_state(&sys_info->disk_control);
+               bool verbose = true;
+               bool refresh = false;
 
-               if (control)
-               {
-                  bool new_state = !control->get_eject_state();
-                  command_event_disk_control_set_eject(new_state, true);
-               }
+               if (show_msg)
+                  verbose = *show_msg;
+
+               disk_control_set_eject_state(&sys_info->disk_control, eject, verbose);
+
+#if defined(HAVE_MENU)
+               /* It is necessary to refresh the disk options
+                * menu when toggling the tray state */
+               menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+               menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+#endif
             }
             else
                runloop_msg_queue_push(
@@ -7515,21 +7407,20 @@ TODO: Add a setting for these tweaks */
          break;
       case CMD_EVENT_DISK_NEXT:
          {
-            rarch_system_info_t *info = &runloop_system;
+            rarch_system_info_t *sys_info = &runloop_system;
+            bool *show_msg                = (bool*)data;
 
-            if (info && info->disk_control_cb.get_num_images)
+            if (!sys_info)
+               return false;
+
+            if (disk_control_enabled(&sys_info->disk_control))
             {
-               const struct retro_disk_control_callback *control =
-                  (const struct retro_disk_control_callback*)
-                  &info->disk_control_cb;
+               bool verbose = true;
 
-               if (!control)
-                  return false;
+               if (show_msg)
+                  verbose = *show_msg;
 
-               if (!control->get_eject_state())
-                  return false;
-
-               command_event_check_disk_next(control);
+               disk_control_set_index_next(&sys_info->disk_control, verbose);
             }
             else
                runloop_msg_queue_push(
@@ -7540,22 +7431,40 @@ TODO: Add a setting for these tweaks */
          break;
       case CMD_EVENT_DISK_PREV:
          {
-            rarch_system_info_t *info = &runloop_system;
+            rarch_system_info_t *sys_info = &runloop_system;
+            bool *show_msg                = (bool*)data;
 
-            if (info && info->disk_control_cb.get_num_images)
+            if (!sys_info)
+               return false;
+
+            if (disk_control_enabled(&sys_info->disk_control))
             {
-               const struct retro_disk_control_callback *control =
-                  (const struct retro_disk_control_callback*)
-                  &info->disk_control_cb;
+               bool verbose = true;
 
-               if (!control)
-                  return false;
+               if (show_msg)
+                  verbose = *show_msg;
 
-               if (!control->get_eject_state())
-                  return false;
-
-               command_event_check_disk_prev(control);
+               disk_control_set_index_prev(&sys_info->disk_control, verbose);
             }
+            else
+               runloop_msg_queue_push(
+                     msg_hash_to_str(MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS),
+                     1, 120, true,
+                     NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         }
+         break;
+      case CMD_EVENT_DISK_INDEX:
+         {
+            rarch_system_info_t *sys_info = &runloop_system;
+            unsigned *index               = (unsigned*)data;
+
+            if (!sys_info || !index)
+               return false;
+
+            /* Note: Menu itself provides visual feedback - no
+             * need to print info message to screen */
+            if (disk_control_enabled(&sys_info->disk_control))
+               disk_control_set_index(&sys_info->disk_control, *index, false);
             else
                runloop_msg_queue_push(
                      msg_hash_to_str(MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS),
@@ -7696,12 +7605,16 @@ TODO: Add a setting for these tweaks */
          if (settings->uints.ai_service_mode == 1 && is_ai_service_speech_running())
          {
             ai_service_speech_stop();
+#ifdef HAVE_ACCESSIBILITY
             if (is_accessibility_enabled())
-               accessibility_speak("stopped.");
+               accessibility_speak_priority("stopped.", 10);
+#endif
          }
+#ifdef HAVE_ACCESSIBILITY
          else if (is_accessibility_enabled() && settings->uints.ai_service_mode == 2 &&
                   is_narrator_running())
-            accessibility_speak("stopped.");
+            accessibility_speak_priority("stopped.", 10);
+#endif
          else
          {
             RARCH_LOG("AI Service Called...\n");
@@ -9657,13 +9570,37 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
          break;
       }
 
-      case RETRO_ENVIRONMENT_SET_DISK_CONTROL_INTERFACE:
-         RARCH_LOG("[Environ]: SET_DISK_CONTROL_INTERFACE.\n");
-         if (system)
-            system->disk_control_cb =
-               *(const struct retro_disk_control_callback*)data;
+      case RETRO_ENVIRONMENT_GET_DISK_CONTROL_INTERFACE_VERSION:
+         /* Current API version is 1 */
+         *(unsigned *)data = 1;
          break;
-      
+
+      case RETRO_ENVIRONMENT_SET_DISK_CONTROL_INTERFACE:
+         {
+            const struct retro_disk_control_callback *control_cb =
+                  (const struct retro_disk_control_callback*)data;
+
+            if (system)
+            {
+               RARCH_LOG("[Environ]: SET_DISK_CONTROL_INTERFACE.\n");
+               disk_control_set_callback(&system->disk_control, control_cb);
+            }
+         }
+         break;
+
+      case RETRO_ENVIRONMENT_SET_DISK_CONTROL_EXT_INTERFACE:
+         {
+            const struct retro_disk_control_ext_callback *control_cb =
+                  (const struct retro_disk_control_ext_callback*)data;
+
+            if (system)
+            {
+               RARCH_LOG("[Environ]: SET_DISK_CONTROL_EXT_INTERFACE.\n");
+               disk_control_set_ext_callback(&system->disk_control, control_cb);
+            }
+         }
+         break;
+
       case RETRO_ENVIRONMENT_GET_PREFERRED_HW_RENDER:
       {
          unsigned *cb = (unsigned*)data;
@@ -14808,12 +14745,6 @@ static unsigned menu_event(
          ret = MENU_ACTION_TOGGLE;
    }
 
-   if (menu_keyboard_key_state[RETROK_F11])
-   {
-      command_event(CMD_EVENT_GRAB_MOUSE_TOGGLE, NULL);
-      menu_keyboard_key_state[RETROK_F11] = 0;
-   }
-
    /* Get pointer (mouse + touchscreen) input */
 
    /* > If pointer input is disabled, do nothing */
@@ -16478,13 +16409,6 @@ void input_pad_connect(unsigned port, input_device_driver_t *driver)
 }
 
 #ifdef HAVE_HID
-/**
- * hid_driver_find_handle:
- * @idx                : index of driver to get handle to.
- *
- * Returns: handle to HID driver at index. Can be NULL
- * if nothing found.
- **/
 static const void *hid_driver_find_handle(int idx)
 {
    const void *drv = hid_drivers[idx];
@@ -16739,6 +16663,7 @@ void input_keyboard_event(bool down, unsigned code,
       uint32_t character, uint16_t mod, unsigned device)
 {
    static bool deferred_wait_keys;
+#ifdef HAVE_ACCESSIBILITY
 #ifdef HAVE_MENU
    if (menu_input_dialog_get_display_kb() 
          && down && is_accessibility_enabled())
@@ -16746,85 +16671,86 @@ void input_keyboard_event(bool down, unsigned code,
       if (code != 303 && code != 0)
       {
          char* say_char = (char*) malloc(sizeof(char)+1);
-         if (say_char != NULL)
+         if (say_char)
          {
             char c = (char) character;
             *say_char = c;
 
             if (character == 127)
-               accessibility_speak("backspace");
+               accessibility_speak_priority("backspace", 10);
             else if (c == '`')
-               accessibility_speak("left quote");
+               accessibility_speak_priority("left quote", 10);
             else if (c == '`')
-               accessibility_speak("tilde");
+               accessibility_speak_priority("tilde", 10);
             else if (c == '!')
-               accessibility_speak("exclamation point");
+               accessibility_speak_priority("exclamation point", 10);
             else if (c == '@')
-               accessibility_speak("at sign");
+               accessibility_speak_priority("at sign", 10);
             else if (c == '#')
-               accessibility_speak("hash sign");
+               accessibility_speak_priority("hash sign", 10);
             else if (c == '$')
-               accessibility_speak("dollar sign");
+               accessibility_speak_priority("dollar sign", 10);
             else if (c == '%')
-               accessibility_speak("percent sign");
+               accessibility_speak_priority("percent sign", 10);
             else if (c == '^')
-               accessibility_speak("carrot");
+               accessibility_speak_priority("carrot", 10);
             else if (c == '&')
-               accessibility_speak("ampersand");
+               accessibility_speak_priority("ampersand", 10);
             else if (c == '*')
-               accessibility_speak("asterisk");
+               accessibility_speak_priority("asterisk", 10);
             else if (c == '(')
-               accessibility_speak("left bracket");
+               accessibility_speak_priority("left bracket", 10);
             else if (c == ')')
-               accessibility_speak("right bracket");
+               accessibility_speak_priority("right bracket", 10);
             else if (c == '-')
-               accessibility_speak("minus");
+               accessibility_speak_priority("minus", 10);
             else if (c == '_')
-               accessibility_speak("underscore");
+               accessibility_speak_priority("underscore", 10);
             else if (c == '=')
-               accessibility_speak("equals");
+               accessibility_speak_priority("equals", 10);
             else if (c == '+')
-               accessibility_speak("plus");
+               accessibility_speak_priority("plus", 10);
             else if (c == '[')
-               accessibility_speak("left square bracket");
+               accessibility_speak_priority("left square bracket", 10);
             else if (c == '{')
-               accessibility_speak("left curl bracket");
+               accessibility_speak_priority("left curl bracket", 10);
             else if (c == ']')
-               accessibility_speak("right square bracket");
+               accessibility_speak_priority("right square bracket", 10);
             else if (c == '}')
-               accessibility_speak("right curl bracket");
+               accessibility_speak_priority("right curl bracket", 10);
             else if (c == '\\')
-               accessibility_speak("back slash");
+               accessibility_speak_priority("back slash", 10);
             else if (c == '|')
-               accessibility_speak("pipe");
+               accessibility_speak_priority("pipe", 10);
             else if (c == ';')
-               accessibility_speak("semicolon");
+               accessibility_speak_priority("semicolon", 10);
             else if (c == ':')
-               accessibility_speak("colon");
+               accessibility_speak_priority("colon", 10);
             else if (c == '\'')
-               accessibility_speak("single quote");
+               accessibility_speak_priority("single quote", 10);
             else if (c  == '\"')
-               accessibility_speak("double quote");
+               accessibility_speak_priority("double quote", 10);
             else if (c == ',')
-               accessibility_speak("comma");
+               accessibility_speak_priority("comma", 10);
             else if (c == '<')
-               accessibility_speak("left angle bracket");
+               accessibility_speak_priority("left angle bracket", 10);
             else if (c == '.')
-               accessibility_speak("period");
+               accessibility_speak_priority("period", 10);
             else if (c == '>')
-               accessibility_speak("right angle bracket");
+               accessibility_speak_priority("right angle bracket", 10);
             else if (c == '/')
-               accessibility_speak("front slash");
+               accessibility_speak_priority("front slash", 10);
             else if (c == '?')
-               accessibility_speak("question mark");
+               accessibility_speak_priority("question mark", 10);
             else if (c == ' ')
-               accessibility_speak("space");
+               accessibility_speak_priority("space", 10);
             else if (character != 0)
-               accessibility_speak(say_char);
+               accessibility_speak_priority(say_char, 10);
             free(say_char);
          }
       }
    }
+#endif
 #endif
 
    if (deferred_wait_keys)
@@ -21870,10 +21796,11 @@ static void video_driver_frame(const void *data, unsigned width,
 #endif
    }
 
-   video_driver_active = current_video->frame(
-         video_driver_data, data, width, height,
-         video_driver_frame_count,
-         (unsigned)pitch, video_driver_msg, &video_info);
+   if (current_video && current_video->frame)
+      video_driver_active = current_video->frame(
+            video_driver_data, data, width, height,
+            video_driver_frame_count,
+            (unsigned)pitch, video_driver_msg, &video_info);
 
    video_driver_frame_count++;
 
@@ -25071,7 +24998,9 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
                retroarch_print_help(argv[0]);
                retroarch_fail(1, "retroarch_parse_input()");
             case RA_OPT_ACCESSIBILITY:
+#ifdef HAVE_ACCESSIBILITY
                accessibility_enabled = true;
+#endif
                break;
             default:
                RARCH_ERR("%s\n", msg_hash_to_str(MSG_ERROR_PARSING_ARGUMENTS));
@@ -25271,8 +25200,10 @@ bool retroarch_main_init(int argc, char *argv[])
 
    retroarch_parse_input_and_config(argc, argv);
 
+#ifdef HAVE_ACCESSIBILITY
    if (is_accessibility_enabled())
       accessibility_startup_message();
+#endif
 
    if (verbosity_is_enabled())
    {
@@ -26582,8 +26513,10 @@ void runloop_msg_queue_push(const char *msg,
       enum message_queue_category category)
 {
    runloop_msg_queue_lock();
+#ifdef HAVE_ACCESSIBILITY
    if (is_accessibility_enabled())
       accessibility_speak_priority((char*) msg, 0);
+#endif
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
    if (menu_widgets_inited)
    {
@@ -27268,61 +27201,6 @@ static enum runloop_state runloop_check_state(void)
          menu_keyboard_key_state[RETROK_F1] = ((menu_keyboard_key_state[RETROK_F1] & 1) << 1) | false;
 
       old_pressed             = pressed;
-   }
-
-   /* Check if we have pressed the "send debug info" button.
-    * Must press 3 times in a row to activate, but it will
-    * alert the user of this with each press of the hotkey. */
-   {
-      int any_i;
-      static uint32_t debug_seq   = 0;
-      static bool old_pressed     = false;
-      static bool old_any_pressed = false;
-      bool any_pressed            = false;
-      bool pressed                = BIT256_GET(current_bits, RARCH_SEND_DEBUG_INFO);
-
-      for (any_i = 0; any_i < ARRAY_SIZE(current_bits.data); any_i++)
-      {
-         if (current_bits.data[any_i])
-         {
-            any_pressed = true;
-            break;
-         }
-      }
-
-      if (pressed && !old_pressed)
-         debug_seq |= pressed ? 1 : 0;
-
-      switch (debug_seq)
-      {
-         case 1: /* pressed hotkey one time */
-            runloop_msg_queue_push(
-                  msg_hash_to_str(MSG_PRESS_TWO_MORE_TIMES_TO_SEND_DEBUG_INFO),
-                  2, 180, true,
-                  NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-            break;
-         case 3: /* pressed hotkey two times */
-            runloop_msg_queue_push(
-                  msg_hash_to_str(MSG_PRESS_ONE_MORE_TIME_TO_SEND_DEBUG_INFO),
-                  2, 180, true,
-                  NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-            break;
-         case 7: /* pressed hotkey third and final time */
-            debug_seq = 0;
-            command_event(CMD_EVENT_SEND_DEBUG_INFO, NULL);
-            break;
-      }
-
-      if (any_pressed && !old_any_pressed)
-      {
-         debug_seq <<= 1;
-
-         if (debug_seq > 7)
-            debug_seq = 0;
-      }
-
-      old_pressed     = pressed;
-      old_any_pressed = any_pressed;
    }
 
    /* Check if we have pressed the FPS toggle button */
@@ -28012,625 +27890,6 @@ void rarch_get_cpu_architecture_string(char *cpu_arch_str, size_t len)
    }
 }
 
-#ifdef HAVE_NETWORKING
-static bool rarch_write_debug_info(void)
-{
-   int i;
-   char str[PATH_MAX_LENGTH];
-   char debug_filepath[PATH_MAX_LENGTH];
-   gfx_ctx_mode_t mode_info              = {0};
-   settings_t *settings                  = configuration_settings;
-   RFILE *file                           = NULL;
-   const frontend_ctx_driver_t *frontend = frontend_get_ptr();
-   const char *cpu_model                 = NULL;
-   const char *path_config               = path_get(RARCH_PATH_CONFIG);
-   unsigned lang                         =
-      *msg_hash_get_uint(MSG_HASH_USER_LANGUAGE);
-
-   str[0]                                =
-      debug_filepath[0]                  = '\0';
-
-   /* Only print our debug info in English */
-   if (lang != RETRO_LANGUAGE_ENGLISH)
-      msg_hash_set_uint(MSG_HASH_USER_LANGUAGE, RETRO_LANGUAGE_ENGLISH);
-
-   fill_pathname_resolve_relative(
-         debug_filepath,
-         path_config,
-         DEBUG_INFO_FILENAME,
-         sizeof(debug_filepath));
-
-   file = filestream_open(debug_filepath,
-         RETRO_VFS_FILE_ACCESS_WRITE, RETRO_VFS_FILE_ACCESS_HINT_NONE);
-
-   if (!file)
-   {
-      RARCH_ERR("Could not open debug info file for writing: %s\n", debug_filepath);
-      goto error;
-   }
-
-#ifdef HAVE_MENU
-   {
-      time_t time_;
-      char timedate[255];
-
-      timedate[0] = '\0';
-
-      time(&time_);
-
-      setlocale(LC_TIME, "");
-
-      strftime(timedate, sizeof(timedate),
-            "%Y-%m-%d %H:%M:%S", localtime(&time_));
-
-      filestream_printf(file, "Log Date/Time: %s\n", timedate);
-   }
-#endif
-   filestream_printf(file, "RetroArch Version: %s\n", PACKAGE_VERSION);
-
-#ifdef HAVE_LAKKA
-   if (frontend->get_lakka_version)
-   {
-      frontend->get_lakka_version(str, sizeof(str));
-      filestream_printf(file, "Lakka Version: %s\n", str);
-      str[0] = '\0';
-   }
-#endif
-
-   filestream_printf(file, "RetroArch Build Date: %s\n", __DATE__);
-#ifdef HAVE_GIT_VERSION
-   filestream_printf(file, "RetroArch Git Commit: %s\n", retroarch_git_version);
-#endif
-
-   filestream_printf(file, "\n");
-
-   cpu_model = frontend_driver_get_cpu_model_name();
-
-   if (!string_is_empty(cpu_model))
-      filestream_printf(file, "CPU Model Name: %s\n", cpu_model);
-
-   retroarch_get_capabilities(RARCH_CAPABILITIES_CPU, str, sizeof(str));
-   filestream_printf(file, "CPU Capabilities: %s\n", str);
-
-   str[0] = '\0';
-
-   rarch_get_cpu_architecture_string(str, sizeof(str));
-
-   filestream_printf(file, "CPU Architecture: %s\n", str);
-   filestream_printf(file, "CPU Cores: %u\n", cpu_features_get_core_amount());
-
-   {
-      uint64_t memory_free  = frontend_driver_get_free_memory();
-      uint64_t memory_total = frontend_driver_get_total_memory();
-
-      filestream_printf(file, "Memory: %" PRIu64 "/%" PRIu64 " MB\n", memory_free / 1024 / 1024, memory_total / 1024 / 1024);
-   }
-
-   filestream_printf(file, "GPU Device: %s\n", !string_is_empty(video_driver_get_gpu_device_string()) ?
-         video_driver_get_gpu_device_string() : "n/a");
-   filestream_printf(file, "GPU API/Driver Version: %s\n", !string_is_empty(video_driver_get_gpu_api_version_string()) ?
-         video_driver_get_gpu_api_version_string() : "n/a");
-
-   filestream_printf(file, "\n");
-
-   video_context_driver_get_video_size(&mode_info);
-
-   filestream_printf(file, "Window Resolution: %u x %u\n", mode_info.width, mode_info.height);
-
-   {
-      float width = 0, height = 0, refresh = 0.0f;
-      gfx_ctx_metrics_t metrics;
-
-      metrics.type  = DISPLAY_METRIC_PIXEL_WIDTH;
-      metrics.value = &width;
-
-      video_context_driver_get_metrics(&metrics);
-
-      metrics.type = DISPLAY_METRIC_PIXEL_HEIGHT;
-      metrics.value = &height;
-      video_context_driver_get_metrics(&metrics);
-
-      video_context_driver_get_refresh_rate(&refresh);
-
-      filestream_printf(file, "Monitor Resolution: %d x %d @ %.2f Hz (configured for %.2f Hz)\n", (int)width, (int)height, refresh, settings->floats.video_refresh_rate);
-   }
-
-   filestream_printf(file, "\n");
-
-   str[0] = '\0';
-
-   retroarch_get_capabilities(RARCH_CAPABILITIES_COMPILER, str, sizeof(str));
-   filestream_printf(file, "%s\n", str);
-
-   str[0] = '\0';
-
-   filestream_printf(file, "Frontend Identifier: %s\n", frontend->ident);
-
-   if (frontend->get_name)
-   {
-      frontend->get_name(str, sizeof(str));
-      filestream_printf(file, "Frontend Name: %s\n", str);
-      str[0] = '\0';
-   }
-
-   if (frontend->get_os)
-   {
-      int major = 0, minor = 0;
-      const char *warning = "";
-
-      frontend->get_os(str, sizeof(str), &major, &minor);
-
-      if (strstr(str, "Build 16299"))
-         warning = " (WARNING: Fall Creator's Update detected... OpenGL performance may be low)";
-
-      filestream_printf(file, "Frontend OS: %s (v%d.%d)%s\n", str, major, minor, warning);
-
-      str[0] = '\0';
-   }
-
-   filestream_printf(file, "\n");
-   filestream_printf(file, "Input Devices (autoconfig is %s):\n", settings->bools.input_autodetect_enable ? "enabled" : "disabled");
-
-   for (i = 0; i < 4; i++)
-   {
-      if (input_is_autoconfigured(i))
-      {
-         unsigned retro_id;
-         unsigned rebind  = 0;
-         unsigned device  = settings->uints.input_libretro_device[i];
-
-         device          &= RETRO_DEVICE_MASK;
-
-         if (device == RETRO_DEVICE_JOYPAD || device == RETRO_DEVICE_ANALOG)
-         {
-            for (retro_id = 0; retro_id < RARCH_ANALOG_BIND_LIST_END; retro_id++)
-            {
-               char descriptor[300];
-               const struct retro_keybind *keybind   = &input_config_binds[i][retro_id];
-               const struct retro_keybind *auto_bind = (const struct retro_keybind*)
-                  input_config_get_bind_auto(i, retro_id);
-
-               input_config_get_bind_string(descriptor,
-                     keybind, auto_bind, sizeof(descriptor));
-
-               if (!strstr(descriptor, "Auto")
-                     && auto_bind
-                     && !auto_bind->valid
-                     && (auto_bind->joykey != 0xFFFF)
-                     && !string_is_empty(auto_bind->joykey_label))
-                  rebind++;
-            }
-         }
-
-         if (rebind)
-            filestream_printf(file, "  - Port #%d autoconfigured (WARNING: %u keys rebinded):\n", i, rebind);
-         else
-            filestream_printf(file, "  - Port #%d autoconfigured:\n", i);
-
-         filestream_printf(file, "      - Device name: %s (#%d)\n",
-            input_config_get_device_name(i),
-            input_autoconfigure_get_device_name_index(i));
-         filestream_printf(file, "      - Display name: %s\n",
-            input_config_get_device_display_name(i) ?
-            input_config_get_device_display_name(i) : "N/A");
-         filestream_printf(file, "      - Config path: %s\n",
-            input_config_get_device_display_name(i) ?
-            input_config_get_device_config_path(i) : "N/A");
-         filestream_printf(file, "      - VID/PID: %d/%d (0x%04X/0x%04X)\n",
-            input_config_get_vid(i), input_config_get_pid(i),
-            input_config_get_vid(i), input_config_get_pid(i));
-      }
-      else
-         filestream_printf(file, "  - Port #%d not autoconfigured\n", i);
-   }
-
-   filestream_printf(file, "\n");
-
-   filestream_printf(file, "Drivers:\n");
-
-   {
-      gfx_ctx_ident_t ident_info                 = {0};
-      input_driver_t *input_driver               = NULL;
-      const input_device_driver_t *joypad_driver = NULL;
-      const char *driver                         = NULL;
-#ifdef HAVE_MENU
-      driver = menu_driver_ident();
-
-      if (string_is_equal(driver, settings->arrays.menu_driver))
-         filestream_printf(file, "  - Menu: %s\n",
-               !string_is_empty(driver) ? driver : "n/a");
-      else
-         filestream_printf(file, "  - Menu: %s (configured for %s)\n",
-               !string_is_empty(driver)
-               ? driver
-               : "n/a",
-               !string_is_empty(settings->arrays.menu_driver)
-               ? settings->arrays.menu_driver
-               : "n/a");
-#endif
-      driver = video_driver_get_ident();
-
-      if (string_is_equal(driver, settings->arrays.video_driver))
-         filestream_printf(file, "  - Video: %s\n",
-               !string_is_empty(driver)
-               ? driver
-               : "n/a");
-      else
-         filestream_printf(file, "  - Video: %s (configured for %s)\n",
-               !string_is_empty(driver)
-               ? driver
-               : "n/a",
-               !string_is_empty(settings->arrays.video_driver)
-               ? settings->arrays.video_driver
-               : "n/a");
-
-      video_context_driver_get_ident(&ident_info);
-      filestream_printf(file, "  - Video Context: %s\n",
-            ident_info.ident ? ident_info.ident : "n/a");
-
-      driver    = NULL;
-      if (current_audio)
-         driver = current_audio->ident;
-
-      if (string_is_equal(driver, settings->arrays.audio_driver))
-         filestream_printf(file, "  - Audio: %s\n",
-               !string_is_empty(driver) ? driver : "n/a");
-      else
-         filestream_printf(file, "  - Audio: %s (configured for %s)\n",
-               !string_is_empty(driver) ? driver : "n/a",
-               !string_is_empty(settings->arrays.audio_driver) ? settings->arrays.audio_driver : "n/a");
-
-      input_driver = current_input;
-
-      if (input_driver && string_is_equal(input_driver->ident, settings->arrays.input_driver))
-         filestream_printf(file, "  - Input: %s\n", !string_is_empty(input_driver->ident) ? input_driver->ident : "n/a");
-      else
-         filestream_printf(file, "  - Input: %s (configured for %s)\n", !string_is_empty(input_driver->ident) ? input_driver->ident : "n/a", !string_is_empty(settings->arrays.input_driver) ? settings->arrays.input_driver : "n/a");
-
-      joypad_driver = (input_driver->get_joypad_driver ? input_driver->get_joypad_driver(current_input_data) : NULL);
-
-      if (joypad_driver && string_is_equal(joypad_driver->ident, settings->arrays.input_joypad_driver))
-         filestream_printf(file, "  - Joypad: %s\n", !string_is_empty(joypad_driver->ident) ? joypad_driver->ident : "n/a");
-      else
-         filestream_printf(file, "  - Joypad: %s (configured for %s)\n", !string_is_empty(joypad_driver->ident) ? joypad_driver->ident : "n/a", !string_is_empty(settings->arrays.input_joypad_driver) ? settings->arrays.input_joypad_driver : "n/a");
-   }
-
-   filestream_printf(file, "\n");
-
-   filestream_printf(file, "Configuration related settings:\n");
-   filestream_printf(file, "  - Save on exit: %s\n", settings->bools.config_save_on_exit ? "yes" : "no");
-   filestream_printf(file, "  - Load content-specific core options automatically: %s\n", settings->bools.game_specific_options ? "yes" : "no");
-   filestream_printf(file, "  - Load override files automatically: %s\n", settings->bools.auto_overrides_enable ? "yes" : "no");
-   filestream_printf(file, "  - Load remap files automatically: %s\n", settings->bools.auto_remaps_enable ? "yes" : "no");
-   filestream_printf(file, "  - Sort saves in folders: %s\n", settings->bools.sort_savefiles_enable ? "yes" : "no");
-   filestream_printf(file, "  - Sort states in folders: %s\n", settings->bools.sort_savestates_enable ? "yes" : "no");
-   filestream_printf(file, "  - Write saves in content dir: %s\n", settings->bools.savefiles_in_content_dir ? "yes" : "no");
-   filestream_printf(file, "  - Write savestates in content dir: %s\n", settings->bools.savestates_in_content_dir ? "yes" : "no");
-
-   filestream_printf(file, "\n");
-
-   filestream_printf(file, "Auto load state: %s\n", settings->bools.savestate_auto_load ? "yes (WARNING: not compatible with all cores)" : "no");
-   filestream_printf(file, "Auto save state: %s\n", settings->bools.savestate_auto_save ? "yes" : "no");
-
-   filestream_printf(file, "\n");
-
-   filestream_printf(file, "Buildbot cores URL: %s\n", settings->paths.network_buildbot_url);
-   filestream_printf(file, "Auto-extract downloaded archives: %s\n", settings->bools.network_buildbot_auto_extract_archive ? "yes" : "no");
-
-   {
-      size_t count                     = 0;
-      core_info_list_t *core_info_list = NULL;
-      struct string_list *list         = NULL;
-      const char *ext                  = ".rdb";
-
-      /* remove dot */
-      if (!string_is_empty(ext) && ext[0] == '.' && strlen(ext) > 1)
-         ext++;
-
-      core_info_get_list(&core_info_list);
-
-      if (core_info_list)
-         count = core_info_list->count;
-
-      filestream_printf(file, "Core info: %u entries\n", count);
-
-      count = 0;
-
-      list = dir_list_new(settings->paths.path_content_database, ext, false, true, false, true);
-
-      if (list)
-      {
-         count = list->size;
-         string_list_free(list);
-      }
-
-      filestream_printf(file, "Databases: %u entries\n", count);
-   }
-
-   filestream_printf(file, "\n");
-
-   filestream_printf(file, "Performance and latency-sensitive features (may have a large impact depending on the core):\n");
-   filestream_printf(file, "  - Video:\n");
-   filestream_printf(file, "      - Runahead: %s\n", settings->bools.run_ahead_enabled ? "yes (WARNING: not compatible with all cores)" : "no");
-   filestream_printf(file, "      - Rewind: %s\n", settings->bools.rewind_enable ? "yes (WARNING: not compatible with all cores)" : "no");
-   filestream_printf(file, "      - Hard GPU Sync: %s\n", settings->bools.video_hard_sync ? "yes" : "no");
-   filestream_printf(file, "      - Frame Delay: %u frames\n", settings->uints.video_frame_delay);
-   filestream_printf(file, "      - Max Swapchain Images: %u\n", settings->uints.video_max_swapchain_images);
-   filestream_printf(file, "      - Max Run Speed: %.1f x\n", settings->floats.fastforward_ratio);
-   filestream_printf(file, "      - Sync to exact content framerate: %s\n", settings->bools.vrr_runloop_enable ? "yes (note: designed for G-Sync/FreeSync displays only)" : "no");
-   filestream_printf(file, "      - Fullscreen: %s\n", settings->bools.video_fullscreen ? "yes" : "no");
-   filestream_printf(file, "      - Windowed Fullscreen: %s\n", settings->bools.video_windowed_fullscreen ? "yes" : "no");
-   filestream_printf(file, "      - Threaded Video: %s\n", settings->bools.video_threaded ? "yes" : "no");
-   filestream_printf(file, "      - Vsync: %s\n", settings->bools.video_vsync ? "yes" : "no");
-   filestream_printf(file, "      - Vsync Swap Interval: %u frames\n", settings->uints.video_swap_interval);
-   filestream_printf(file, "      - Black Frame Insertion: %s\n", settings->bools.video_black_frame_insertion ? "yes" : "no");
-   filestream_printf(file, "      - Bilinear Filtering: %s\n", settings->bools.video_smooth ? "yes" : "no");
-   filestream_printf(file, "      - Video CPU Filter: %s\n", !string_is_empty(settings->paths.path_softfilter_plugin) ? settings->paths.path_softfilter_plugin : "n/a");
-   filestream_printf(file, "      - CRT SwitchRes: %s\n", (settings->uints.crt_switch_resolution > CRT_SWITCH_NONE) ? "yes" : "no");
-   filestream_printf(file, "      - Video Shared Context: %s\n", settings->bools.video_shared_context ? "yes" : "no");
-
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-   {
-      video_shader_ctx_t shader_info = {0};
-
-      video_shader_driver_get_current_shader(&shader_info);
-
-      if (shader_info.data)
-      {
-         if (string_is_equal(shader_info.data->path, runtime_shader_preset))
-            filestream_printf(file, "      - Video Shader: %s\n", !string_is_empty(runtime_shader_preset) ? runtime_shader_preset : "n/a");
-         else
-            filestream_printf(file, "      - Video Shader: %s (configured for %s)\n", !string_is_empty(shader_info.data->path) ? shader_info.data->path : "n/a", !string_is_empty(runtime_shader_preset) ? runtime_shader_preset : "n/a");
-      }
-      else
-         filestream_printf(file, "      - Video Shader: n/a\n");
-   }
-#endif
-
-   filestream_printf(file, "  - Audio:\n");
-   filestream_printf(file, "      - Audio Enabled: %s\n", settings->bools.audio_enable ? "yes" : "no (WARNING: content framerate will be incorrect)");
-   filestream_printf(file, "      - Audio Sync: %s\n", settings->bools.audio_sync ? "yes" : "no (WARNING: content framerate will be incorrect)");
-
-   {
-      const char *s = NULL;
-
-      switch (settings->uints.audio_resampler_quality)
-      {
-         case RESAMPLER_QUALITY_DONTCARE:
-            s = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DONT_CARE);
-            break;
-         case RESAMPLER_QUALITY_LOWEST:
-            s = msg_hash_to_str(MSG_RESAMPLER_QUALITY_LOWEST);
-            break;
-         case RESAMPLER_QUALITY_LOWER:
-            s = msg_hash_to_str(MSG_RESAMPLER_QUALITY_LOWER);
-            break;
-         case RESAMPLER_QUALITY_HIGHER:
-            s = msg_hash_to_str(MSG_RESAMPLER_QUALITY_HIGHER);
-            break;
-         case RESAMPLER_QUALITY_HIGHEST:
-            s = msg_hash_to_str(MSG_RESAMPLER_QUALITY_HIGHEST);
-            break;
-         case RESAMPLER_QUALITY_NORMAL:
-            s = msg_hash_to_str(MSG_RESAMPLER_QUALITY_NORMAL);
-            break;
-      }
-
-      filestream_printf(file, "      - Resampler Quality: %s\n", !string_is_empty(s) ? s : "n/a");
-   }
-
-   filestream_printf(file, "      - Audio Latency: %u ms\n", settings->uints.audio_latency);
-   filestream_printf(file, "      - Dynamic Rate Control (DRC): %.3f\n", *audio_get_float_ptr(AUDIO_ACTION_RATE_CONTROL_DELTA));
-   filestream_printf(file, "      - Max Timing Skew: %.2f\n", settings->floats.audio_max_timing_skew);
-   filestream_printf(file, "      - Output Rate: %u Hz\n", settings->uints.audio_out_rate);
-   filestream_printf(file, "      - DSP Plugin: %s\n", !string_is_empty(settings->paths.path_audio_dsp_plugin) ? settings->paths.path_audio_dsp_plugin : "n/a");
-
-   {
-      core_info_list_t *core_info_list = NULL;
-      bool                       found = false;
-
-      filestream_printf(file, "\n");
-      filestream_printf(file, "Firmware files found:\n");
-
-      core_info_get_list(&core_info_list);
-
-      if (core_info_list)
-      {
-         unsigned i;
-
-         for (i = 0; i < core_info_list->count; i++)
-         {
-            core_info_t *info = &core_info_list->list[i];
-
-            if (!info)
-               continue;
-
-            if (info->firmware_count)
-            {
-               unsigned j;
-               bool core_found = false;
-
-               for (j = 0; j < info->firmware_count; j++)
-               {
-                  core_info_firmware_t *firmware = &info->firmware[j];
-                  char path[PATH_MAX_LENGTH];
-
-                  if (!firmware)
-                     continue;
-
-                  path[0] = '\0';
-
-                  fill_pathname_join(
-                        path,
-                        settings->paths.directory_system,
-                        firmware->path,
-                        sizeof(path));
-
-                  if (filestream_exists(path))
-                  {
-                     found = true;
-
-                     if (!core_found)
-                     {
-                        core_found = true;
-                        filestream_printf(file, "  - %s:\n", !string_is_empty(info->core_name) ? info->core_name : path_basename(info->path));
-                     }
-
-                     filestream_printf(file, "      - %s (%s)\n", firmware->path, firmware->optional ? "optional" : "required");
-                  }
-               }
-            }
-         }
-      }
-
-      if (!found)
-         filestream_printf(file, "  - n/a\n");
-   }
-
-   filestream_close(file);
-
-   RARCH_LOG("Wrote debug info to %s\n", debug_filepath);
-
-   msg_hash_set_uint(MSG_HASH_USER_LANGUAGE, lang);
-
-   return true;
-
-error:
-   return false;
-}
-
-static void send_debug_info_cb(retro_task_t *task,
-      void *task_data, void *user_data, const char *error)
-{
-   if (task_data)
-   {
-      http_transfer_data_t *data = (http_transfer_data_t*)task_data;
-
-      if (!data || data->len == 0)
-      {
-         RARCH_LOG("%s\n", msg_hash_to_str(MSG_FAILED_TO_SEND_DEBUG_INFO));
-
-         runloop_msg_queue_push(
-               msg_hash_to_str(MSG_FAILED_TO_SEND_DEBUG_INFO),
-               2, 180, true,
-               NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
-         free(task_data);
-         return;
-      }
-
-      /* don't use string_is_equal() here instead of the memcmp() because the data isn't NULL-terminated */
-      if (!string_is_empty(data->data) && data->len >= 2 && !memcmp(data->data, "OK", 2))
-      {
-         char buf[32] = {0};
-         struct string_list *list;
-
-         memcpy(buf, data->data, data->len);
-
-         list = string_split(buf, " ");
-
-         if (list && list->size > 1)
-         {
-            unsigned id = 0;
-            char msg[PATH_MAX_LENGTH];
-
-            msg[0] = '\0';
-
-            sscanf(list->elems[1].data, "%u", &id);
-
-            snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_SENT_DEBUG_INFO), id);
-
-            RARCH_LOG("%s\n", msg);
-
-            runloop_msg_queue_push(
-                  msg,
-                  2, 600, true,
-                  NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-        }
-
-        if (list)
-           string_list_free(list);
-      }
-      else
-      {
-         RARCH_LOG("%s\n", msg_hash_to_str(MSG_FAILED_TO_SEND_DEBUG_INFO));
-
-         runloop_msg_queue_push(
-               msg_hash_to_str(MSG_FAILED_TO_SEND_DEBUG_INFO),
-               2, 180, true,
-               NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
-      }
-
-      free(task_data);
-   }
-   else
-   {
-      RARCH_LOG("%s\n", msg_hash_to_str(MSG_FAILED_TO_SEND_DEBUG_INFO));
-
-      runloop_msg_queue_push(
-            msg_hash_to_str(MSG_FAILED_TO_SEND_DEBUG_INFO),
-            2, 180, true,
-            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
-   }
-}
-
-static void rarch_send_debug_info(void)
-{
-   char debug_filepath[PATH_MAX_LENGTH];
-   const char *url             = "http://lobby.libretro.com/debuginfo/add/";
-   char *info_buf              = NULL;
-   const size_t param_buf_size = 65535;
-   char *param_buf             = (char*)malloc(param_buf_size);
-   char *param_buf_tmp         = NULL;
-   int param_buf_pos           = 0;
-   int64_t len                 = 0;
-   const char *path_config     = path_get(RARCH_PATH_CONFIG);
-   bool       info_written     = rarch_write_debug_info();
-
-   debug_filepath[0]           =
-      param_buf[0]             = '\0';
-
-   fill_pathname_resolve_relative(
-         debug_filepath,
-         path_config,
-         DEBUG_INFO_FILENAME,
-         sizeof(debug_filepath));
-
-   if (info_written)
-      filestream_read_file(debug_filepath, (void**)&info_buf, &len);
-
-   if (string_is_empty(info_buf) || len == 0 || !info_written)
-   {
-      runloop_msg_queue_push(
-            msg_hash_to_str(MSG_FAILED_TO_SAVE_DEBUG_INFO),
-            2, 180, true,
-            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
-      goto finish;
-   }
-
-   RARCH_LOG("%s\n", msg_hash_to_str(MSG_SENDING_DEBUG_INFO));
-
-   runloop_msg_queue_push(
-         msg_hash_to_str(MSG_SENDING_DEBUG_INFO),
-         2, 180, true,
-         NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-
-   param_buf_pos = (int)strlcpy(param_buf, "info=", param_buf_size);
-   param_buf_tmp = param_buf + param_buf_pos;
-
-   net_http_urlencode(&param_buf_tmp, info_buf);
-
-   strlcat(param_buf, param_buf_tmp, param_buf_size - param_buf_pos);
-
-   task_push_http_post_transfer(url, param_buf, true, NULL, send_debug_info_cb, NULL);
-
-finish:
-   if (param_buf)
-      free(param_buf);
-   if (info_buf)
-      free(info_buf);
-}
-#endif
-
 void rarch_log_file_init(void)
 {
    char log_directory[PATH_MAX_LENGTH];
@@ -29224,6 +28483,7 @@ bool core_has_set_input_descriptor(void)
    return current_core.has_set_input_descriptors;
 }
 
+#if defined(HAVE_RUNAHEAD)
 static void core_free_retro_game_info(struct retro_game_info *dest)
 {
    if (!dest)
@@ -29238,6 +28498,7 @@ static void core_free_retro_game_info(struct retro_game_info *dest)
    dest->data = NULL;
    dest->meta = NULL;
 }
+#endif
 
 unsigned int retroarch_get_rotation(void)
 {
@@ -29245,17 +28506,6 @@ unsigned int retroarch_get_rotation(void)
    return settings->uints.video_rotation + runloop_system.rotation;
 }
 
-
-/* Accessibility */
-int speak_pid = 0;
-
-bool is_accessibility_enabled(void)
-{
-   settings_t *settings              = configuration_settings;
-   if (accessibility_enabled || settings->bools.accessibility_enable)
-      return true;
-   return false;
-}
 
 bool is_input_keyboard_display_on(void)
 { 
@@ -29266,18 +28516,14 @@ bool is_input_keyboard_display_on(void)
 #endif
 }
 
-bool accessibility_speak(const char* speak_text)
-{
-   return accessibility_speak_priority(speak_text, 10);
-}
-
-
 #if defined(__MACH__) && defined(__APPLE__) 
 #include <TargetConditionals.h>
 #if TARGET_OS_OSX && !defined(EMSCRIPTEN)
 #define _IS_OSX
 #endif
 #endif
+
+#ifdef HAVE_ACCESSIBILITY
 
 #if defined(_IS_OSX)
 static char* accessibility_mac_language_code(const char* language)
@@ -29346,7 +28592,7 @@ static char* accessibility_mac_language_code(const char* language)
       return "";
 }
 
-bool is_narrator_running_macos(void)
+static bool is_narrator_running_macos(void)
 {
    if (kill(speak_pid, 0) == 0)
       return true;
@@ -29421,7 +28667,6 @@ static bool accessibility_speak_macos(
 #endif
 
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__) && !defined(EMSCRIPTEN)
-
 static const char *accessibility_win_language_code(const char* language)
 {
    if (string_is_equal(language,"en"))
@@ -29502,17 +28747,13 @@ static bool terminate_win32_process(PROCESS_INFORMATION pi)
 static bool create_win32_process(char* cmd)
 {
    STARTUPINFO si;
-   ZeroMemory(&si, sizeof(si));
+   memset(&si, 0, sizeof(si));
    si.cb = sizeof(si);
-   ZeroMemory(&pi, sizeof(pi));
+   memset(&pi, 0, sizeof(pi));
 
    if (!CreateProcess(NULL, cmd, NULL, NULL, FALSE, CREATE_NO_WINDOW,
                       NULL, NULL, &si, &pi))
-   {
-      pi_set = false;
       return false;
-   }
-   pi_set = true;
    return true;
 }
 
@@ -29562,22 +28803,23 @@ static bool accessibility_speak_windows(
    if (!res)
    {
       RARCH_LOG("Create subprocess failed. Error: %d\n", GetLastError()); 
+      pi_set = false;
+      return true;
    }
+   pi_set = true;
    return true;
 }
 #endif
 
 #if (defined(__linux__) || defined(__unix__)) && !defined(EMSCRIPTEN)
-
-
-bool is_narrator_running_linux(void)
+static bool is_narrator_running_linux(void)
 {
    if (kill(speak_pid, 0) == 0)
       return true;
    return false;
 }
 
-bool accessibility_speak_linux(
+static bool accessibility_speak_linux(
       const char* speak_text, const char* language, int priority)
 {
    int pid;
@@ -29674,7 +28916,8 @@ bool accessibility_speak_priority(const char* speak_text, int priority)
    return true;
 }
 
-bool is_narrator_running(void)
+#ifdef HAVE_ACCESSIBILITY
+static bool is_narrator_running(void)
 {
    if (is_accessibility_enabled())
    {
@@ -29688,9 +28931,11 @@ bool is_narrator_running(void)
    }
    return true;
 }
+#endif
 
-
-bool accessibility_speak_ai_service(const char* speak_text, const char* language, int priority)
+#if 0
+static bool accessibility_speak_ai_service(
+      const char* speak_text, const char* language, int priority)
 {
 #if defined(HAVE_NETWORKING) && defined(HAVE_TRANSLATE)
    /* Call the AI service listed to do espeak for us. */ 
@@ -29707,7 +28952,7 @@ bool accessibility_speak_ai_service(const char* speak_text, const char* language
    strlcpy(new_ai_service_url, settings->arrays.ai_service_url, 
            sizeof(new_ai_service_url));
 
-   if (strrchr(new_ai_service_url, '?') != NULL)
+   if (strrchr(new_ai_service_url, '?'))
       separator = '&';
    snprintf(temp_string, sizeof(temp_string),
             "%csource_lang=%s&target_lang=%s&output=espeak", 
@@ -29731,11 +28976,15 @@ bool accessibility_speak_ai_service(const char* speak_text, const char* language
    return false;
 #endif
 }
+#endif
 
-bool accessibility_startup_message(void)
+static bool accessibility_startup_message(void)
 {
    /* State that the narrator is on, and also include the first menu 
       item we're on at startup. */
-   accessibility_speak("RetroArch accessibility on.  Main Menu Load Core.");
+   accessibility_speak_priority(
+         "RetroArch accessibility on.  Main Menu Load Core.",
+         10);
    return true;
 }
+#endif

@@ -2498,6 +2498,49 @@ bool playlist_index_is_valid(playlist_t *playlist, size_t idx,
           string_is_equal(path_basename(playlist->entries[idx].core_path), path_basename(core_path));
 }
 
+bool playlist_entries_are_equal(
+      const struct playlist_entry *entry_a,
+      const struct playlist_entry *entry_b,
+      bool fuzzy_archive_match)
+{
+   char real_path_a[PATH_MAX_LENGTH];
+   char real_core_path_a[PATH_MAX_LENGTH];
+
+   real_path_a[0]      = '\0';
+   real_core_path_a[0] = '\0';
+
+   /* Sanity check */
+   if (!entry_a || !entry_b)
+      return false;
+
+   if (string_is_empty(entry_a->path) &&
+       string_is_empty(entry_a->core_path) &&
+       string_is_empty(entry_b->path) &&
+       string_is_empty(entry_b->core_path))
+      return true;
+
+   /* Check content paths */
+   if (!string_is_empty(entry_a->path))
+   {
+      strlcpy(real_path_a, entry_a->path, sizeof(real_path_a));
+      path_resolve_realpath(real_path_a, sizeof(real_path_a), true);
+   }
+
+   if (!playlist_path_equal(
+         real_path_a, entry_b->path, fuzzy_archive_match))
+      return false;
+
+   /* Check core paths */
+   if (!string_is_empty(entry_a->core_path))
+   {
+      strlcpy(real_core_path_a, entry_a->core_path, sizeof(real_core_path_a));
+      if (!string_is_equal(real_core_path_a, "DETECT"))
+         path_resolve_realpath(real_core_path_a, sizeof(real_core_path_a), true);
+   }
+
+   return playlist_core_path_equal(real_core_path_a, entry_b->core_path);
+}
+
 void playlist_get_crc32(playlist_t *playlist, size_t idx,
       const char **crc32)
 {

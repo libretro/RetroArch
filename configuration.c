@@ -1341,7 +1341,6 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
    SETTING_BOOL("frame_time_counter_reset_after_load_state", &settings->bools.frame_time_counter_reset_after_load_state, true, false, false);
    SETTING_BOOL("frame_time_counter_reset_after_save_state", &settings->bools.frame_time_counter_reset_after_save_state, true, false, false);
    SETTING_BOOL("crt_switch_resolution_use_custom_refresh_rate", &settings->bools.crt_switch_custom_refresh_enable, true, false, false);
-   SETTING_BOOL("automatically_add_content_to_playlist", &settings->bools.automatically_add_content_to_playlist, true, DEFAULT_AUTOMATICALLY_ADD_CONTENT_TO_PLAYLIST, false);
    SETTING_BOOL("ui_companion_start_on_boot",    &settings->bools.ui_companion_start_on_boot, true, ui_companion_start_on_boot, false);
    SETTING_BOOL("ui_companion_enable",           &settings->bools.ui_companion_enable, true, ui_companion_enable, false);
    SETTING_BOOL("ui_companion_toggle",           &settings->bools.ui_companion_toggle, false, ui_companion_toggle, false);
@@ -1460,6 +1459,7 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
    SETTING_BOOL("menu_horizontal_animation",     &settings->bools.menu_horizontal_animation, true, DEFAULT_MENU_HORIZONTAL_ANIMATION, false);
    SETTING_BOOL("menu_pause_libretro",           &settings->bools.menu_pause_libretro, true, true, false);
    SETTING_BOOL("menu_savestate_resume",         &settings->bools.menu_savestate_resume, true, menu_savestate_resume, false);
+   SETTING_BOOL("menu_insert_disk_resume",       &settings->bools.menu_insert_disk_resume, true, DEFAULT_MENU_INSERT_DISK_RESUME, false);
    SETTING_BOOL("menu_mouse_enable",             &settings->bools.menu_mouse_enable, true, DEFAULT_MOUSE_ENABLE, false);
    SETTING_BOOL("menu_pointer_enable",           &settings->bools.menu_pointer_enable, true, DEFAULT_POINTER_ENABLE, false);
    SETTING_BOOL("menu_timedate_enable",          &settings->bools.menu_timedate_enable, true, true, false);

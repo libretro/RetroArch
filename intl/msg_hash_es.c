@@ -1348,6 +1348,8 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
                      "o similar a 60 Hz, desactiva la sincronía\n"
                      "vertical y deja esta opción en su valor\n"
                      "predeterminado.");
+            strlcpy(s, t, len);
+            strlcat(s, u, len);
         }
             break;
         case MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_POLLED:
@@ -1860,6 +1862,8 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
                      "Selecciona cero para no hacer comprobaciones.\n"
                      "Este valor es usado únicamente por el servidor\n"
                      "de juego en red.");
+            strlcpy(s, t, len);
+            strlcat(s, u, len);
         }
             break;
         case MENU_ENUM_LABEL_NETPLAY_INPUT_LATENCY_FRAMES_MIN:

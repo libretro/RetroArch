@@ -267,7 +267,7 @@ static bool guid_is_xinput_device(const GUID* product_guid)
           (MAKELONG(rdi.hid.dwVendorId, rdi.hid.dwProductId)
            == ((LONG)product_guid->Data1)) &&
           (GetRawInputDeviceInfoA(raw_devs[i].hDevice, RIDI_DEVICENAME, NULL, &nameSize) != ((UINT)-1)) &&
-          ((devName = malloc(nameSize)) != NULL) &&
+          ((devName = (char*)malloc(nameSize)) != NULL) &&
           (GetRawInputDeviceInfoA(raw_devs[i].hDevice, RIDI_DEVICENAME, devName, &nameSize) != ((UINT)-1)) &&
           (strstr(devName, "IG_") != NULL) )
       {
