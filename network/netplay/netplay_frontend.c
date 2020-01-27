@@ -811,49 +811,6 @@ static void netplay_announce_cb(retro_task_t *task,
    return;
 }
 
-void netplay_get_architecture(char *frontend_architecture, size_t size)
-{
-   const frontend_ctx_driver_t
-      *frontend                  = frontend_get_ptr();
-   enum frontend_architecture arch = frontend_driver_get_cpu_architecture();
-   char architecture[PATH_MAX_LENGTH];
-
-   switch (arch)
-   {
-      case FRONTEND_ARCH_X86:
-         strlcpy(architecture, "x86", sizeof(architecture));
-         break;
-      case FRONTEND_ARCH_X86_64:
-         strlcpy(architecture, "x64", sizeof(architecture));
-         break;
-      case FRONTEND_ARCH_PPC:
-         strlcpy(architecture, "PPC", sizeof(architecture));
-         break;
-      case FRONTEND_ARCH_ARM:
-         strlcpy(architecture, "ARM", sizeof(architecture));
-         break;
-      case FRONTEND_ARCH_ARMV7:
-         strlcpy(architecture, "ARMv7", sizeof(architecture));
-         break;
-      case FRONTEND_ARCH_ARMV8:
-         strlcpy(architecture, "ARMv8", sizeof(architecture));
-         break;
-      case FRONTEND_ARCH_MIPS:
-         strlcpy(architecture, "MIPS", sizeof(architecture));
-         break;
-      case FRONTEND_ARCH_TILE:
-         strlcpy(architecture, "Tilera", sizeof(architecture));
-         break;
-      case FRONTEND_ARCH_NONE:
-      default:
-         strlcpy(architecture,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
-               sizeof(architecture));
-         break;
-   }
-   snprintf(frontend_architecture, size, "%s %s", frontend->ident, architecture);
-}
-
 static void netplay_announce(void)
 {
    char buf[4600];
@@ -894,7 +851,8 @@ static void netplay_announce(void)
       net_http_urlencode(&subsystemname, "N/A");
    }
 
-   netplay_get_architecture(frontend_architecture, sizeof(frontend_architecture));
+   frontend_driver_get_cpu_architecture_str(
+         frontend_architecture, sizeof(frontend_architecture));
 
 #ifdef HAVE_DISCORD
    if(discord_is_ready())

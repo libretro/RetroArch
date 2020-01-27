@@ -14,10 +14,12 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdio.h>
 #include <string.h>
 
 #include <compat/strl.h>
 #include <string/stdstring.h>
+#include <retro_miscellaneous.h>
 #include <libretro.h>
 
 #if defined(_3DS)
@@ -396,6 +398,49 @@ enum frontend_architecture frontend_driver_get_cpu_architecture(void)
    if (!frontend || !frontend->get_architecture)
       return FRONTEND_ARCH_NONE;
    return frontend->get_architecture();
+}
+
+void frontend_driver_get_cpu_architecture_str(
+      char *frontend_architecture, size_t size)
+{
+   const frontend_ctx_driver_t
+      *frontend                    = frontend_get_ptr();
+   enum frontend_architecture arch = frontend_driver_get_cpu_architecture();
+   char architecture[PATH_MAX_LENGTH];
+
+   switch (arch)
+   {
+      case FRONTEND_ARCH_X86:
+         strlcpy(architecture, "x86", sizeof(architecture));
+         break;
+      case FRONTEND_ARCH_X86_64:
+         strlcpy(architecture, "x64", sizeof(architecture));
+         break;
+      case FRONTEND_ARCH_PPC:
+         strlcpy(architecture, "PPC", sizeof(architecture));
+         break;
+      case FRONTEND_ARCH_ARM:
+         strlcpy(architecture, "ARM", sizeof(architecture));
+         break;
+      case FRONTEND_ARCH_ARMV7:
+         strlcpy(architecture, "ARMv7", sizeof(architecture));
+         break;
+      case FRONTEND_ARCH_ARMV8:
+         strlcpy(architecture, "ARMv8", sizeof(architecture));
+         break;
+      case FRONTEND_ARCH_MIPS:
+         strlcpy(architecture, "MIPS", sizeof(architecture));
+         break;
+      case FRONTEND_ARCH_TILE:
+         strlcpy(architecture, "Tilera", sizeof(architecture));
+         break;
+      case FRONTEND_ARCH_NONE:
+      default:
+         strlcpy(architecture, "N/A", sizeof(architecture));
+         break;
+   }
+   snprintf(frontend_architecture, size, "%s %s",
+         frontend->ident, architecture);
 }
 
 uint64_t frontend_driver_get_total_memory(void)

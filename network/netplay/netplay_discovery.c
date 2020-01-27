@@ -301,7 +301,8 @@ bool netplay_lan_ad_server(netplay_t *netplay)
             char *p;
             char sub[NETPLAY_HOST_STR_LEN];
             char frontend[NETPLAY_HOST_STR_LEN];
-            netplay_get_architecture(frontend, sizeof(frontend));
+            frontend_driver_get_cpu_architecture_str(
+                  frontend, sizeof(frontend));
 
             p=strrchr(reply_addr,'.');
             if (p)

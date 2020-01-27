@@ -124,6 +124,4 @@ int netplay_rooms_get_count(void);
 
 void netplay_rooms_free(void);
 
-void netplay_get_architecture(char *frontend_architecture, size_t size);
-
 #endif
