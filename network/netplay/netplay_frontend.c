@@ -643,8 +643,6 @@ static int16_t netplay_input_state(netplay_t *netplay,
 static void netplay_announce_cb(retro_task_t *task,
       void *task_data, void *user_data, const char *error)
 {
-   RARCH_LOG("[netplay] announcing netplay game... \n");
-
    if (task_data)
    {
       unsigned i, ip_len, port_len;
@@ -762,8 +760,6 @@ static void netplay_announce_cb(retro_task_t *task,
 
       if (mitm_ip && mitm_port)
       {
-         RARCH_LOG("[netplay] joining relay server: %s:%s\n", mitm_ip, mitm_port);
-
          ip_len   = (unsigned)strlen(mitm_ip);
          port_len = (unsigned)strlen(mitm_port);
 
@@ -877,9 +873,6 @@ static void netplay_announce(void)
       *settings->paths.netplay_spectate_password ? 1 : 0,
       settings->bools.netplay_use_mitm_server,
       PACKAGE_VERSION, frontend_architecture, subsystemname);
-#if 0
-   RARCH_LOG("[netplay] announcement URL: %s\n", buf);
-#endif
    task_push_http_post_transfer(url, buf, true, NULL, netplay_announce_cb, NULL);
 
    if (username)

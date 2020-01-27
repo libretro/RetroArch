@@ -156,19 +156,15 @@ int cdfs_open_file(cdfs_file_t* file, cdfs_track_t* track, const char* path)
    file->track = track;
 
    file->current_sector = -1;
-   if (path != NULL)
-   {
+   if (path)
       file->first_sector = cdfs_find_file(file, path);
-   }
    else if (file->track->stream_sector_size)
    {
       file->first_sector = 0;
       file->size = (intfstream_get_size(file->track->stream) / file->track->stream_sector_size) * 2048;
    }
    else
-   {
       file->first_sector = -1;
-   }
 
    return (file->first_sector >= 0);
 }

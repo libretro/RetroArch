@@ -256,7 +256,7 @@ static int sevenzip_file_read(
 
             outsize = outSizeProcessed;
 
-            if (optional_outfile != NULL)
+            if (optional_outfile)
             {
                const void *ptr = (const void*)(output + offset);
 

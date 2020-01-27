@@ -328,7 +328,7 @@ void string_replace_all_chars(char *str, char find, char replace)
    if (string_is_empty(str))
       return;
 
-   while((str_ptr = strchr(str_ptr, find)) != NULL)
+   while ((str_ptr = strchr(str_ptr, find)))
       *str_ptr++ = replace;
 }
 
