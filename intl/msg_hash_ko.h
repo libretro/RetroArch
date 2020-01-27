@@ -7534,14 +7534,6 @@ MSG_HASH(
     "두 번째 인스턴스를 생성하는데 실패했습니다. 미리 실행에 하나의 인스턴스만 사용됩니다."
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_AUTOMATICALLY_ADD_CONTENT_TO_PLAYLIST,
-    "컨텐츠 검색 후 실행목록에 자동 추가"
-    )
-MSG_HASH(
-    MENU_ENUM_SUBLABEL_AUTOMATICALLY_ADD_CONTENT_TO_PLAYLIST,
-    "컨텐츠를 자동으로 검색해 실행목록에 표시합니다."
-    )
-MSG_HASH(
     MSG_SCANNING_OF_FILE_FINISHED,
     "파일 스캔 완료"
     )
