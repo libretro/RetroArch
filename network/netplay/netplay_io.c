@@ -31,6 +31,7 @@
 
 #include "../../discord/discord.h"
 
+/* TODO/FIXME - global */
 extern bool discord_is_inited;
 
 static void handle_play_spectate(netplay_t *netplay, uint32_t client_num,
