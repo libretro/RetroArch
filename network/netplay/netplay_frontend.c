@@ -811,6 +811,8 @@ static void netplay_announce(void)
 {
    char buf[4600];
    char frontend_architecture[PATH_MAX_LENGTH];
+   char frontend_architecture_tmp[PATH_MAX_LENGTH];
+   const frontend_ctx_driver_t *frontend_drv =  NULL;
    char url[2048]                   = "http://lobby.libretro.com/add/";
    char *username                   = NULL;
    char *corename                   = NULL;
@@ -847,8 +849,11 @@ static void netplay_announce(void)
       net_http_urlencode(&subsystemname, "N/A");
    }
 
-   frontend_driver_get_cpu_architecture_str(
-         frontend_architecture, sizeof(frontend_architecture));
+   frontend_drv =  
+      (const frontend_ctx_driver_t*)frontend_driver_get_cpu_architecture_str(
+            frontend_architecture_tmp, sizeof(frontend_architecture_tmp));
+   snprintf(frontend_architecture, sizeof(frontend_architecture), "%s %s",
+         frontend_drv->ident, frontend_architecture_tmp);
 
 #ifdef HAVE_DISCORD
    if(discord_is_ready())

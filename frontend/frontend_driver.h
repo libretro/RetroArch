@@ -172,7 +172,7 @@ void frontend_driver_free(void);
 
 enum frontend_architecture frontend_driver_get_cpu_architecture(void);
 
-void frontend_driver_get_cpu_architecture_str(
+const void *frontend_driver_get_cpu_architecture_str(
       char *frontend_architecture, size_t size);
 
 environment_get_t frontend_driver_environment_get_ptr(void);

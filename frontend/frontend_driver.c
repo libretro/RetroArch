@@ -400,47 +400,46 @@ enum frontend_architecture frontend_driver_get_cpu_architecture(void)
    return frontend->get_architecture();
 }
 
-void frontend_driver_get_cpu_architecture_str(
-      char *frontend_architecture, size_t size)
+const void *frontend_driver_get_cpu_architecture_str(
+      char *architecture, size_t size)
 {
    const frontend_ctx_driver_t
       *frontend                    = frontend_get_ptr();
    enum frontend_architecture arch = frontend_driver_get_cpu_architecture();
-   char architecture[PATH_MAX_LENGTH];
 
    switch (arch)
    {
       case FRONTEND_ARCH_X86:
-         strlcpy(architecture, "x86", sizeof(architecture));
+         strlcpy(architecture, "x86", size);
          break;
       case FRONTEND_ARCH_X86_64:
-         strlcpy(architecture, "x64", sizeof(architecture));
+         strlcpy(architecture, "x64", size);
          break;
       case FRONTEND_ARCH_PPC:
-         strlcpy(architecture, "PPC", sizeof(architecture));
+         strlcpy(architecture, "PPC", size);
          break;
       case FRONTEND_ARCH_ARM:
-         strlcpy(architecture, "ARM", sizeof(architecture));
+         strlcpy(architecture, "ARM", size);
          break;
       case FRONTEND_ARCH_ARMV7:
-         strlcpy(architecture, "ARMv7", sizeof(architecture));
+         strlcpy(architecture, "ARMv7", size);
          break;
       case FRONTEND_ARCH_ARMV8:
-         strlcpy(architecture, "ARMv8", sizeof(architecture));
+         strlcpy(architecture, "ARMv8", size);
          break;
       case FRONTEND_ARCH_MIPS:
-         strlcpy(architecture, "MIPS", sizeof(architecture));
+         strlcpy(architecture, "MIPS", size);
          break;
       case FRONTEND_ARCH_TILE:
-         strlcpy(architecture, "Tilera", sizeof(architecture));
+         strlcpy(architecture, "Tilera", size);
          break;
       case FRONTEND_ARCH_NONE:
       default:
-         strlcpy(architecture, "N/A", sizeof(architecture));
+         strlcpy(architecture, "N/A", size);
          break;
    }
-   snprintf(frontend_architecture, size, "%s %s",
-         frontend->ident, architecture);
+
+   return frontend;
 }
 
 uint64_t frontend_driver_get_total_memory(void)

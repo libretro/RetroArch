@@ -386,8 +386,6 @@ struct retro_system_info *runloop_get_libretro_system_info(void);
 
 void retroarch_force_video_driver_fallback(const char *driver);
 
-void rarch_get_cpu_architecture_string(char *cpu_arch_str, size_t len);
-
 void rarch_log_file_init(void);
 
 void rarch_log_file_deinit(void);

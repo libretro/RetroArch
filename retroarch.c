@@ -27848,48 +27848,6 @@ void retroarch_force_video_driver_fallback(const char *driver)
    exit(1);
 }
 
-void rarch_get_cpu_architecture_string(char *cpu_arch_str, size_t len)
-{
-   enum frontend_architecture arch = frontend_driver_get_cpu_architecture();
-
-   if (!cpu_arch_str || !len)
-      return;
-
-   switch (arch)
-   {
-      case FRONTEND_ARCH_X86:
-         strlcpy(cpu_arch_str, "x86", len);
-         break;
-      case FRONTEND_ARCH_X86_64:
-         strlcpy(cpu_arch_str, "x64", len);
-         break;
-      case FRONTEND_ARCH_PPC:
-         strlcpy(cpu_arch_str, "PPC", len);
-         break;
-      case FRONTEND_ARCH_ARM:
-         strlcpy(cpu_arch_str, "ARM", len);
-         break;
-      case FRONTEND_ARCH_ARMV7:
-         strlcpy(cpu_arch_str, "ARMv7", len);
-         break;
-      case FRONTEND_ARCH_ARMV8:
-         strlcpy(cpu_arch_str, "ARMv8", len);
-         break;
-      case FRONTEND_ARCH_MIPS:
-         strlcpy(cpu_arch_str, "MIPS", len);
-         break;
-      case FRONTEND_ARCH_TILE:
-         strlcpy(cpu_arch_str, "Tilera", len);
-         break;
-      case FRONTEND_ARCH_NONE:
-      default:
-         strlcpy(cpu_arch_str,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
-               len);
-         break;
-   }
-}
-
 void rarch_log_file_init(void)
 {
    char log_directory[PATH_MAX_LENGTH];
