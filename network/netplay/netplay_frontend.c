@@ -123,26 +123,19 @@ static bool netplay_can_poll(netplay_t *netplay)
  *
  * Returns: true (1) if successful, otherwise false (0).
  */
-static bool get_self_input_state(netplay_t *netplay)
+static bool get_self_input_state(netplay_t *netplay, struct delta_frame *ptr)
 {
    unsigned i;
-   struct delta_frame *ptr        = &netplay->buffer[netplay->self_ptr];
    netplay_input_state_t istate   = NULL;
-   uint32_t devices, used_devices = 0, devi, dev_type, local_device;
-
-   if (!netplay_delta_frame_ready(netplay, ptr, netplay->self_frame_count))
-      return false;
-
-   /* We've already read this frame! */
-   if (ptr->have_local)
-      return true;
-
-   devices      = netplay->self_devices;
-   used_devices = 0;
+   uint32_t devi, dev_type;
+   uint32_t devices               = netplay->self_devices;
+   uint32_t used_devices          = 0;
 
    for (devi = 0; devi < MAX_INPUT_DEVICES; devi++)
    {
-      if (!(devices & (1<<devi)))
+      uint32_t local_device;
+
+      if (!(devices & (1 << devi)))
          continue;
 
       /* Find an appropriate local device */
@@ -150,7 +143,7 @@ static bool get_self_input_state(netplay_t *netplay)
 
       for (local_device = 0; local_device < MAX_INPUT_DEVICES; local_device++)
       {
-         if (used_devices & (1<<local_device))
+         if (used_devices & (1 << local_device))
             continue;
          if ((netplay->config_devices[local_device]&RETRO_DEVICE_MASK) == dev_type)
             break;
@@ -158,19 +151,22 @@ static bool get_self_input_state(netplay_t *netplay)
 
       if (local_device == MAX_INPUT_DEVICES)
          local_device = 0;
-      used_devices |= (1<<local_device);
+      used_devices |= (1 << local_device);
 
-      istate = netplay_input_state_for(&ptr->real_input[devi],
-            /* If we're a slave, we write our own input to MAX_CLIENTS to keep it separate */
-            (netplay->self_mode==NETPLAY_CONNECTION_SLAVE)?MAX_CLIENTS:netplay->self_client_num,
+      /* If we're a slave, we write our own input to MAX_CLIENTS 
+       * to keep it separate */
+      if (!(istate = netplay_input_state_for(&ptr->real_input[devi],
+            (netplay->self_mode == NETPLAY_CONNECTION_SLAVE) 
+            ? MAX_CLIENTS 
+            : netplay->self_client_num,
             netplay_expected_input_size(netplay, 1 << devi),
-            true, false);
-      if (!istate)
+            true, false)))
          continue; /* FIXME: More severe? */
 
       /* First frame we always give zero input since relying on
        * input from first frame screws up when we use -F 0. */
-      if (!input_driver_is_libretro_input_blocked() && netplay->self_frame_count > 0)
+      if (!input_driver_is_libretro_input_blocked() 
+            && netplay->self_frame_count > 0)
       {
          uint32_t *state        = istate->data;
          retro_input_state_t cb = netplay->cbs.state_cb;
@@ -289,20 +285,23 @@ bool init_netplay_deferred(const char* server, unsigned port)
 static bool netplay_poll(netplay_t *netplay)
 {
    int res;
-   uint32_t client;
    size_t i;
+   uint32_t client;
+   struct delta_frame *ptr = &netplay->buffer[netplay->self_ptr];
 
-   netplay->can_poll = false;
+   netplay->can_poll       = false;
 
-   if (!get_self_input_state(netplay))
-      goto catastrophe;
+   if (netplay_delta_frame_ready(netplay, ptr, netplay->self_frame_count))
+      if (!ptr->have_local) /* if true, we have already read this frame */
+         if (!get_self_input_state(netplay, ptr))
+            goto catastrophe;
 
    /* If we're not connected, we're done */
    if (netplay->self_mode == NETPLAY_CONNECTION_NONE)
       return true;
 
-   /* Read Netplay input, block if we're configured to stall for input every
-    * frame */
+   /* Read Netplay input, block if we're configured 
+    * to stall for input every frame */
    netplay_update_unread_ptr(netplay);
    if (netplay->stateless_mode &&
        (netplay->connected_players>1) &&
@@ -448,7 +447,7 @@ static bool netplay_poll(netplay_t *netplay)
             for (client = 1; client < MAX_CLIENTS; client++)
             {
                struct netplay_connection *connection;
-               if (!(netplay->connected_players & (1<<client)))
+               if (!(netplay->connected_players & (1 << client)))
                   continue;
                if (netplay->read_frame_count[client] > netplay->unread_frame_count)
                   continue;
@@ -932,11 +931,7 @@ bool netplay_command(netplay_t* netplay, struct netplay_connection *connection,
 static void netplay_frontend_paused(netplay_t *netplay, bool paused)
 {
    size_t i;
-   uint32_t paused_ct;
-
-   /* Nothing to do if we already knew this */
-   if (netplay->local_paused == paused)
-      return;
+   uint32_t paused_ct    = 0;
 
    netplay->local_paused = paused;
 
@@ -944,22 +939,26 @@ static void netplay_frontend_paused(netplay_t *netplay, bool paused)
     * paused, then we must tell them that we're unpaused, as from their
     * perspective we are. If more than one other connection is paused, then our
     * status as proxy means we are NOT unpaused to either of them. */
-   paused_ct = 0;
+
    for (i = 0; i < netplay->connections_size; i++)
    {
       struct netplay_connection *connection = &netplay->connections[i];
       if (connection->active && connection->paused)
          paused_ct++;
    }
+
    if (paused_ct > 1)
       return;
 
-   /* Send our unpaused status. Must send manually because we must immediately
-    * flush the buffer: If we're paused, we won't be polled. */
+   /* Send our unpaused status. Must send manually because 
+    * we must immediately flush the buffer: If we're paused, 
+    * we won't be polled. */
    for (i = 0; i < netplay->connections_size; i++)
    {
       struct netplay_connection *connection = &netplay->connections[i];
-      if (connection->active && connection->mode >= NETPLAY_CONNECTION_CONNECTED)
+
+      if (  connection->active && 
+            connection->mode >= NETPLAY_CONNECTION_CONNECTED)
       {
          if (paused)
             netplay_send_raw_cmd(netplay, connection, NETPLAY_CMD_PAUSE,
@@ -968,8 +967,10 @@ static void netplay_frontend_paused(netplay_t *netplay, bool paused)
             netplay_send_raw_cmd(netplay, connection, NETPLAY_CMD_RESUME,
                NULL, 0);
 
-         /* We're not going to be polled, so we need to flush this command now */
-         netplay_send_flush(&connection->send_packet_buffer, connection->fd, true);
+         /* We're not going to be polled, so we need to 
+          * flush this command now */
+         netplay_send_flush(&connection->send_packet_buffer,
+               connection->fd, true);
       }
    }
 }
@@ -1105,7 +1106,7 @@ static void netplay_force_future(netplay_t *netplay)
       uint32_t client;
       for (client = 0; client < MAX_CLIENTS; client++)
       {
-         if (!(netplay->connected_players & (1<<client)))
+         if (!(netplay->connected_players & (1 << client)))
             continue;
 
          if (netplay->read_frame_count[client] < netplay->run_frame_count)
@@ -1201,28 +1202,25 @@ void netplay_load_savestate(netplay_t *netplay,
    /* Record it in our own buffer */
    if (save || !serial_info)
    {
-      if (netplay_delta_frame_ready(netplay,
+      if (!netplay_delta_frame_ready(netplay,
                &netplay->buffer[netplay->run_ptr], netplay->run_frame_count))
+         return; /* FIXME: This is a critical failure! */
+
+      if (serial_info)
       {
-         if (!serial_info)
-         {
-            tmp_serial_info.size = netplay->state_size;
-            tmp_serial_info.data = netplay->buffer[netplay->run_ptr].state;
-            if (!core_serialize(&tmp_serial_info))
-               return;
-            tmp_serial_info.data_const = tmp_serial_info.data;
-            serial_info = &tmp_serial_info;
-         }
-         else
-         {
-            if (serial_info->size <= netplay->state_size)
-               memcpy(netplay->buffer[netplay->run_ptr].state,
-                     serial_info->data_const, serial_info->size);
-         }
+         if (serial_info->size <= netplay->state_size)
+            memcpy(netplay->buffer[netplay->run_ptr].state,
+                  serial_info->data_const, serial_info->size);
       }
-      /* FIXME: This is a critical failure! */
       else
-         return;
+      {
+         tmp_serial_info.size = netplay->state_size;
+         tmp_serial_info.data = netplay->buffer[netplay->run_ptr].state;
+         if (!core_serialize(&tmp_serial_info))
+            return;
+         tmp_serial_info.data_const = tmp_serial_info.data;
+         serial_info = &tmp_serial_info;
+      }
    }
 
    /* Don't send it if we're expected to be desynced */
@@ -1279,7 +1277,8 @@ static void netplay_core_reset(netplay_t *netplay)
  *
  * Get the preferred share mode
  */
-uint8_t netplay_settings_share_mode(unsigned share_digital, unsigned share_analog)
+uint8_t netplay_settings_share_mode(
+      unsigned share_digital, unsigned share_analog)
 {
    if (share_digital || share_analog)
    {
@@ -1570,10 +1569,12 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
          netplay_toggle_play_spectate(netplay);
          break;
       case RARCH_NETPLAY_CTL_PAUSE:
-         netplay_frontend_paused(netplay, true);
+         if (!netplay->local_paused)
+            netplay_frontend_paused(netplay, true);
          break;
       case RARCH_NETPLAY_CTL_UNPAUSE:
-         netplay_frontend_paused(netplay, false);
+         if (netplay->local_paused)
+            netplay_frontend_paused(netplay, false);
          break;
       case RARCH_NETPLAY_CTL_LOAD_SAVESTATE:
          netplay_load_savestate(netplay, (retro_ctx_serialize_info_t*)data, true);
