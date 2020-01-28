@@ -107,11 +107,6 @@ static char new_lbl_entry[4096]         = {0};
 static char new_entry[4096]             = {0};
 static enum msg_hash_enums new_type     = MSG_UNKNOWN;
 
-#ifdef HAVE_NETWORKING
-/* TODO/FIXME - globals - remove */
-int lan_room_count                  = 0;
-#endif
-
 #define menu_displaylist_parse_settings_enum(list, label, parse_type, add_empty_entry) menu_displaylist_parse_settings_internal_enum(list, parse_type, add_empty_entry, menu_setting_find_enum(label), label, true)
 
 #define menu_displaylist_parse_settings(list, label, parse_type, add_empty_entry, entry_type) menu_displaylist_parse_settings_internal_enum(list, parse_type, add_empty_entry, menu_setting_find(label), entry_type, false)
@@ -7318,7 +7313,6 @@ unsigned menu_displaylist_netplay_refresh_rooms(file_list_t *list)
 {
    char s[8300];
    int i                                = 0;
-   int room_type                        = 0;
    unsigned count                       = 0;
 
    s[0]                                 = '\0';
@@ -7406,13 +7400,11 @@ unsigned menu_displaylist_netplay_refresh_rooms(file_list_t *list)
             "Internet (Relay)" : "Internet"),
             netplay_room_list[i].nickname, country);
 
-         room_type = netplay_room_list[i].lan ? MENU_ROOM_LAN : (netplay_room_list[i].host_method == NETPLAY_HOST_METHOD_MITM ? MENU_ROOM_RELAY : MENU_ROOM);
-
          if (menu_entries_append_enum(list,
                s,
                msg_hash_to_str(MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM),
                MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM,
-               room_type, 0, 0))
+               (unsigned)(MENU_SETTINGS_NETPLAY_ROOMS_START + i), 0, 0))
             count++;
       }
 
