@@ -522,7 +522,7 @@ static bool android_input_init_handle(void)
 #ifdef HAVE_DYNAMIC
    if (libandroid_handle != NULL) /* already initialized */
       return true;
-#ifdef ANDROID_AARCH64
+#if defined (ANDROID_AARCH64) || defined(ANDROID_X64)
    if ((libandroid_handle = dlopen("/system/lib64/libandroid.so",
                RTLD_LOCAL | RTLD_LAZY)) == 0)
       return false;
@@ -687,7 +687,7 @@ static INLINE void android_mouse_calculate_deltas(android_input_t *android,
    }
 
    /* This axis is only available on Android Nougat and on Android devices with NVIDIA extensions */
-   if (AMotionEvent_getAxisValue)
+   if (p_AMotionEvent_getAxisValue)
    {
      x = AMotionEvent_getAxisValue(event,AMOTION_EVENT_AXIS_RELATIVE_X, motion_ptr);
      y = AMotionEvent_getAxisValue(event,AMOTION_EVENT_AXIS_RELATIVE_Y, motion_ptr);
@@ -698,7 +698,7 @@ static INLINE void android_mouse_calculate_deltas(android_input_t *android,
     * compared to AXIS_RELATIVE because once the Android mouse cursor hits the edge of the screen it is
     * not possible to move the in-game mouse any further in that direction.
     */
-   if (!x && !y && AMotionEvent_getX && AMotionEvent_getX)
+   if (!x && !y)
    {
       x = (AMotionEvent_getX(event, motion_ptr) - android->mouse_x_prev);
       y = (AMotionEvent_getY(event, motion_ptr) - android->mouse_y_prev);
