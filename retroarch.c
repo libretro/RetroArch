@@ -3758,6 +3758,8 @@ static bool command_get_status(const char* arg)
    } else {
        /* add some content info */
        /* char* content_name = load_content_info->content->elems[0].data; */  /* full path */
+       const char* status = "RUNNING";
+       if( runloop_paused ) status = "PAUSED";
        const char* content_name = path_basename(path_get(RARCH_PATH_BASENAME));  /* filename only without ext */
        int content_crc32 = content_get_crc();
        const char* system_id = NULL;
@@ -3766,7 +3768,7 @@ static bool command_get_status(const char* arg)
        if (core_info) system_id = core_info->system_id;
        if (!system_id) system_id = runloop_system.info.library_name;
        
-       snprintf(reply, sizeof(reply), "GET_STATUS RUNNING %s,%s,crc32=%x\n", system_id, content_name, content_crc32);
+       snprintf(reply, sizeof(reply), "GET_STATUS %s %s,%s,crc32=%x\n", status, system_id, content_name, content_crc32);
    }
 
    command_reply(reply, strlen(reply));
