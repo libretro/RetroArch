@@ -522,7 +522,7 @@ static bool android_input_init_handle(void)
 #ifdef HAVE_DYNAMIC
    if (libandroid_handle != NULL) /* already initialized */
       return true;
-#ifdef ANDROID_AARCH64
+#if defined (ANDROID_AARCH64) || defined(ANDROID_X64)
    if ((libandroid_handle = dlopen("/system/lib64/libandroid.so",
                RTLD_LOCAL | RTLD_LAZY)) == 0)
       return false;
