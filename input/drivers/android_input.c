@@ -687,7 +687,7 @@ static INLINE void android_mouse_calculate_deltas(android_input_t *android,
    }
 
    /* This axis is only available on Android Nougat and on Android devices with NVIDIA extensions */
-   if (AMotionEvent_getAxisValue)
+   if (p_AMotionEvent_getAxisValue)
    {
      x = AMotionEvent_getAxisValue(event,AMOTION_EVENT_AXIS_RELATIVE_X, motion_ptr);
      y = AMotionEvent_getAxisValue(event,AMOTION_EVENT_AXIS_RELATIVE_Y, motion_ptr);
