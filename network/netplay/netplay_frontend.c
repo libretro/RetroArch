@@ -81,8 +81,10 @@ extern bool discord_is_inited;
  **/
 static bool netplay_is_alive(netplay_t *netplay)
 {
+   if (!netplay)
+      return false;
    return (netplay->is_server) ||
-          (netplay->self_mode >= NETPLAY_CONNECTION_CONNECTED);
+          (!netplay->is_server && netplay->self_mode >= NETPLAY_CONNECTION_CONNECTED);
 }
 
 /**
@@ -97,9 +99,9 @@ static bool netplay_is_alive(netplay_t *netplay)
  **/
 static bool netplay_should_skip(netplay_t *netplay)
 {
-   if (netplay)
-      return netplay->is_replay && (netplay->self_mode >= NETPLAY_CONNECTION_CONNECTED);
-   return false;
+   if (!netplay)
+      return false;
+   return netplay->is_replay && (netplay->self_mode >= NETPLAY_CONNECTION_CONNECTED);
 }
 
 /**
@@ -109,9 +111,9 @@ static bool netplay_should_skip(netplay_t *netplay)
  */
 static bool netplay_can_poll(netplay_t *netplay)
 {
-   if (netplay)
-      return netplay->can_poll;
-   return false;
+   if (!netplay)
+      return false;
+   return netplay->can_poll;
 }
 
 /**
@@ -564,11 +566,15 @@ static int16_t netplay_input_state(netplay_t *netplay,
       unsigned port, unsigned device,
       unsigned idx, unsigned id)
 {
-   netplay_input_state_t istate;
-   size_t ptr                       = netplay->is_replay ?
+   size_t ptr = netplay->is_replay ?
       netplay->replay_ptr : netplay->run_ptr;
-   struct delta_frame *delta        = NULL;
+   struct delta_frame *delta;
+   netplay_input_state_t istate;
+
    const uint32_t *curr_input_state = NULL;
+
+   if (port >= MAX_INPUT_DEVICES)
+      return 0;
 
    /* If the port doesn't seem to correspond to the device, "correct" it. This
     * is common with devices that typically only have one instance, such as
@@ -890,7 +896,7 @@ int16_t input_state_net(unsigned port, unsigned device,
       unsigned idx, unsigned id)
 {
    netplay_t *netplay = netplay_data;
-   if (netplay && netplay_is_alive(netplay) && port < MAX_INPUT_DEVICES)
+   if (netplay_is_alive(netplay))
       return netplay_input_state(netplay, port, device, idx, id);
    return netplay->cbs.state_cb(port, device, idx, id);
 }
