@@ -970,20 +970,18 @@ static int action_bind_sublabel_netplay_room(
    const char *frontend   = NULL;
    const char *na         = NULL;
    const char *subsystem  = NULL;
+   unsigned room_index    = type - MENU_SETTINGS_NETPLAY_ROOMS_START;
 
-   /* This offset may cause issues if any entries are added to this menu */
-   unsigned offset        = i - 4;
+   if (room_index >= (unsigned)netplay_room_count)
+      return menu_cbs_exit();
 
-   if (i < 1 || offset > (unsigned)netplay_room_count)
-      return -1;
-
-   ra_version = netplay_room_list[offset].retroarch_version;
-   corename   = netplay_room_list[offset].corename;
-   gamename   = netplay_room_list[offset].gamename;
-   core_ver   = netplay_room_list[offset].coreversion;
-   gamecrc    = netplay_room_list[offset].gamecrc;
-   frontend   = netplay_room_list[offset].frontend;
-   subsystem  = netplay_room_list[offset].subsystem_name;
+   ra_version = netplay_room_list[room_index].retroarch_version;
+   corename   = netplay_room_list[room_index].corename;
+   gamename   = netplay_room_list[room_index].gamename;
+   core_ver   = netplay_room_list[room_index].coreversion;
+   gamecrc    = netplay_room_list[room_index].gamecrc;
+   frontend   = netplay_room_list[room_index].frontend;
+   subsystem  = netplay_room_list[room_index].subsystem_name;
    na         = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE);
 
    if (string_is_empty(subsystem) || string_is_equal(subsystem, "N/A"))
