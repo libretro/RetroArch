@@ -37,7 +37,7 @@
 #include "../../retroarch.h"
 #include "../../version.h"
 
-#define NETPLAY_MAGIC 0x52414E50 /* RANP */
+const uint32_t netplay_magic = 0x52414E50; /* RANP */
 
 /* TODO/FIXME - replace netplay_log_connection with calls
  * to inet_ntop_compat and move runloop message queue pushing
@@ -205,7 +205,7 @@ bool netplay_handshake_init_send(netplay_t *netplay,
    unsigned conn_salt   = 0;
    settings_t *settings = config_get_ptr();
 
-   header[0] = htonl(NETPLAY_MAGIC);
+   header[0] = htonl(netplay_magic);
    header[1] = htonl(netplay_platform_magic());
    header[2] = htonl(NETPLAY_COMPRESSION_SUPPORTED);
    header[3] = 0;
@@ -322,7 +322,7 @@ bool netplay_handshake_init(netplay_t *netplay,
       goto error;
    }
 
-   if (ntohl(header[0]) != NETPLAY_MAGIC)
+   if (ntohl(header[0]) != netplay_magic)
    {
       dmsg = msg_hash_to_str(MSG_NETPLAY_NOT_RETROARCH);
       goto error;
@@ -388,8 +388,10 @@ bool netplay_handshake_init(netplay_t *netplay,
    {
       ctrans = &netplay->compress_nil;
       if (!ctrans->compression_backend)
+      {
          ctrans->compression_backend =
             trans_stream_get_pipe_backend();
+      }
       connection->compression_supported = 0;
    }
 
@@ -846,6 +848,7 @@ bool netplay_handshake_pre_info(netplay_t *netplay,
    if (recvd < 0 ||
        ntohl(info_buf.cmd[0]) != NETPLAY_CMD_INFO)
    {
+      RARCH_ERR("Failed to receive netplay info.\n");
       return false;
    }
 
@@ -1144,22 +1147,33 @@ bool netplay_handshake_pre_sync(netplay_t *netplay,
 bool netplay_handshake(netplay_t *netplay,
    struct netplay_connection *connection, bool *had_input)
 {
+   bool ret = false;
+
    switch (connection->mode)
    {
       case NETPLAY_CONNECTION_INIT:
-         return netplay_handshake_init(netplay, connection, had_input);
+         ret = netplay_handshake_init(netplay, connection, had_input);
+         break;
       case NETPLAY_CONNECTION_PRE_NICK:
-         return netplay_handshake_pre_nick(netplay, connection, had_input);
+         ret = netplay_handshake_pre_nick(netplay, connection, had_input);
+         break;
       case NETPLAY_CONNECTION_PRE_PASSWORD:
-         return netplay_handshake_pre_password(netplay, connection, had_input);
+         ret = netplay_handshake_pre_password(netplay, connection, had_input);
+         break;
       case NETPLAY_CONNECTION_PRE_INFO:
-         return netplay_handshake_pre_info(netplay, connection, had_input);
+         ret = netplay_handshake_pre_info(netplay, connection, had_input);
+         break;
       case NETPLAY_CONNECTION_PRE_SYNC:
-         return netplay_handshake_pre_sync(netplay, connection, had_input);
+         ret = netplay_handshake_pre_sync(netplay, connection, had_input);
+         break;
       case NETPLAY_CONNECTION_NONE:
       default:
-         break;
+         return false;
    }
 
-   return false;
+   if (connection->mode >= NETPLAY_CONNECTION_CONNECTED &&
+         !netplay_send_cur_input(netplay, connection))
+      return false;
+
+   return ret;
 }
