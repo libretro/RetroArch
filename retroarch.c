@@ -2497,10 +2497,14 @@ void dir_check_defaults(void)
 
 #ifdef HAVE_ACCESSIBILITY
 /* Is text-to-speech accessibility turned on? */
+static PROCESS_INFORMATION pi;
+
 static bool accessibility_enabled               = false;
 
+static bool pi_set                              = false;
+
 /* Accessibility */
-static int speak_pid = 0;
+static int speak_pid                            = 0;
 
 bool is_accessibility_enabled(void)
 {
@@ -28706,9 +28710,6 @@ static const char *accessibility_win_language_code(const char* language)
    else
       return "";
 }
-
-static PROCESS_INFORMATION pi;
-static bool pi_set = false;
 
 static bool terminate_win32_process(PROCESS_INFORMATION pi)
 {
