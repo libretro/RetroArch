@@ -401,14 +401,28 @@ static int rcheevos_parse(const char* json)
       return 0;
    }
 
+   /* Achievement memory accesses are 0-based, regardless of where the memory is accessed by the
+    * emulated code. As such, address 0 should always be accessible and serves as an indicator that
+    * other addresses will also be accessible. Individual achievements will be "Unsupported" if
+    * they contain addresses that cannot be resolved. This check gives the user immediate feedback
+    * if the core they're trying to use will disable all achievements as "Unsupported".
+    */
    if (!rcheevos_patch_address(0, rcheevos_locals.patchdata.console_id))
    {
-      CHEEVOS_ERR(RCHEEVOS_TAG "No memory exposed by core\n");
+      /* Special case: the sameboy core exposes the RAM at $8000, but not the ROM at $0000. NES and
+       * Gameboy achievements do attempt to map the entire bus, and it's unlikely that an achievement
+       * will reference the ROM data, so if the RAM is still present, allow the core to load. If any
+       * achievements do reference the ROM data, they'll be marked "Unsupported" individually.
+       */
+      if (!rcheevos_patch_address(0x8000, rcheevos_locals.patchdata.console_id))
+      {
+         CHEEVOS_ERR(RCHEEVOS_TAG "No memory exposed by core\n");
 
-      if (settings->bools.cheevos_verbose_enable)
-         runloop_msg_queue_push("Cannot activate achievements using this core.", 0, 4 * 60, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
+         if (settings->bools.cheevos_verbose_enable)
+            runloop_msg_queue_push("Cannot activate achievements using this core.", 0, 4 * 60, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
 
-      goto error;
+         goto error;
+      }
    }
 
    /* Allocate memory. */
