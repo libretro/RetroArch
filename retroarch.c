@@ -28570,9 +28570,7 @@ static char* accessibility_mac_language_code(const char* language)
 
 static bool is_narrator_running_macos(void)
 {
-   if (kill(speak_pid, 0) == 0)
-      return true;
-   return false;
+   return (kill(speak_pid, 0) == 0);
 }
 
 static bool accessibility_speak_macos(
@@ -28581,8 +28579,8 @@ static bool accessibility_speak_macos(
    int pid;
    char* language_speaker = accessibility_mac_language_code(voice);
    char* speeds[10] = {"80", "100", "125", "150", "170", "210", "260", "310", "380", "450"};
-   settings_t *settings              = configuration_settings;
-   int speed = settings->uints.accessibility_narrator_speech_speed;
+   settings_t *settings   = configuration_settings;
+   int speed              = settings->uints.accessibility_narrator_speech_speed;
 
    if (speed < 1)
       speed = 1;
@@ -28709,8 +28707,8 @@ static const char *accessibility_win_language_code(const char* language)
       return "";
 }
 
-PROCESS_INFORMATION pi;
-bool pi_set = false;
+static PROCESS_INFORMATION pi;
+static bool pi_set = false;
 
 static bool terminate_win32_process(PROCESS_INFORMATION pi)
 {
@@ -28736,11 +28734,9 @@ static bool create_win32_process(char* cmd)
 static bool is_narrator_running_windows(void)
 {
    DWORD status = 0;
-   bool res;
    if (pi_set == false)
       return false;
-   res = GetExitCodeProcess(&pi, &status);
-   if (res && status == STILL_ACTIVE)
+   if (GetExitCodeProcess(&pi, &status) && status == STILL_ACTIVE)
       return true;
    return false;
 }
@@ -28790,9 +28786,7 @@ static bool accessibility_speak_windows(
 #if (defined(__linux__) || defined(__unix__)) && !defined(EMSCRIPTEN)
 static bool is_narrator_running_linux(void)
 {
-   if (kill(speak_pid, 0) == 0)
-      return true;
-   return false;
+   return (kill(speak_pid, 0) == 0);
 }
 
 static bool accessibility_speak_linux(
