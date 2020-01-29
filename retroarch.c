@@ -2497,8 +2497,6 @@ void dir_check_defaults(void)
 
 #ifdef HAVE_ACCESSIBILITY
 /* Is text-to-speech accessibility turned on? */
-static PROCESS_INFORMATION pi;
-
 static bool accessibility_enabled               = false;
 
 static bool pi_set                              = false;
@@ -28724,15 +28722,17 @@ static bool terminate_win32_process(PROCESS_INFORMATION pi)
    return true;
 }
 
+static PROCESS_INFORMATION g_pi;
+
 static bool create_win32_process(char* cmd)
 {
    STARTUPINFO si;
    memset(&si, 0, sizeof(si));
    si.cb = sizeof(si);
-   memset(&pi, 0, sizeof(pi));
+   memset(&g_pi, 0, sizeof(g_pi));
 
    if (!CreateProcess(NULL, cmd, NULL, NULL, FALSE, CREATE_NO_WINDOW,
-                      NULL, NULL, &si, &pi))
+                      NULL, NULL, &si, &g_pi))
       return false;
    return true;
 }
@@ -28742,7 +28742,7 @@ static bool is_narrator_running_windows(void)
    DWORD status = 0;
    if (pi_set == false)
       return false;
-   if (GetExitCodeProcess(&pi, &status) && status == STILL_ACTIVE)
+   if (GetExitCodeProcess(&g_pi, &status) && status == STILL_ACTIVE)
       return true;
    return false;
 }
@@ -28776,7 +28776,7 @@ static bool accessibility_speak_windows(
       snprintf(cmd, sizeof(cmd),
                "powershell.exe -NoProfile -WindowStyle Hidden -Command \"Add-Type -AssemblyName System.Speech; $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer; $synth.Rate = %s; $synth.Speak(\\\"%s\\\");\"", speeds[speed-1], (char*) speak_text); 
    if (pi_set)
-      terminate_win32_process(pi);
+      terminate_win32_process(g_pi);
    res = create_win32_process(cmd);
    if (!res)
    {
