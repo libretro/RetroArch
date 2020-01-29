@@ -3752,25 +3752,30 @@ static bool command_version(const char* arg)
 static bool command_get_status(const char* arg)
 {
    char reply[4096] = {0};
-
    bool contentless = false;
-   bool is_inited = false;
+   bool is_inited   = false;
+
    content_get_status(&contentless, &is_inited);
     
-   if(!is_inited) {
+   if (!is_inited)
        snprintf(reply, sizeof(reply), "GET_STATUS CONTENTLESS");
-   } else {
+   else
+   {
        /* add some content info */
-       /* char* content_name = load_content_info->content->elems[0].data; */  /* full path */
-       const char* status = "RUNNING";
-       if( runloop_paused ) status = "PAUSED";
-       const char* content_name = path_basename(path_get(RARCH_PATH_BASENAME));  /* filename only without ext */
-       int content_crc32 = content_get_crc();
-       const char* system_id = NULL;
-       core_info_t *core_info = NULL;
+       const char *status       = "RUNNING";
+       const char *content_name = path_basename(path_get(RARCH_PATH_BASENAME));  /* filename only without ext */
+       int content_crc32        = content_get_crc();
+       const char* system_id    = NULL;
+       core_info_t *core_info   = NULL;
+
        core_info_get_current_core(&core_info);
-       if (core_info) system_id = core_info->system_id;
-       if (!system_id) system_id = runloop_system.info.library_name;
+
+	   if( runloop_paused )
+          status                = "PAUSED";
+       if (core_info)
+          system_id             = core_info->system_id;
+       if (!system_id)
+          system_id             = runloop_system.info.library_name;
        
        snprintf(reply, sizeof(reply), "GET_STATUS %s %s,%s,crc32=%x\n", status, system_id, content_name, content_crc32);
    }
