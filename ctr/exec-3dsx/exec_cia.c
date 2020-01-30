@@ -127,7 +127,7 @@ int exec_cia(const char* path, const char** args){
 		return -1;
 	}
 	else if(S_ISDIR(sBuff.st_mode)){
-		errno = EINVAL;;
+		errno = EINVAL;
 		return -1;
 	}
 

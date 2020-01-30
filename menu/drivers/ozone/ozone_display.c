@@ -519,7 +519,7 @@ void ozone_draw_fullscreen_thumbnails(
       else
       {
          thumbnail_box_width = view_width - (thumbnail_margin * 2);
-         left_thumbnail_x    = thumbnail_margin;;
+         left_thumbnail_x    = thumbnail_margin;
          right_thumbnail_x   = left_thumbnail_x;
       }
 

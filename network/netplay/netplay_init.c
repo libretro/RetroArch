@@ -428,7 +428,7 @@ netplay_t *netplay_new(void *direct_host, const char *server, uint16_t port,
    netplay->tcp_port             = port;
    netplay->cbs                  = *cb;
    netplay->is_server            = (direct_host == NULL && server == NULL);
-   netplay->is_connected         = false;;
+   netplay->is_connected         = false;
    netplay->nat_traversal        = netplay->is_server ? nat_traversal : false;
    netplay->stateless_mode       = stateless_mode;
    netplay->check_frames         = check_frames;
