@@ -2392,14 +2392,10 @@ MSG_HASH(MSG_UNDOING_SAVE_STATE,
       "Annullamento del salvataggio")
 MSG_HASH(MSG_UNKNOWN,
       "Sconosciuto")
-MSG_HASH(MSG_UNPAUSED,
-      "Unpaused.")
 MSG_HASH(MSG_UNRECOGNIZED_COMMAND,
       "Comando non riconosciuto")
 MSG_HASH(MSG_USING_CORE_NAME_FOR_NEW_CONFIG,
       "Utilizzo del nome di un core per la nuova configurazione.")
-MSG_HASH(MSG_USING_LIBRETRO_DUMMY_CORE_RECORDING_SKIPPED,
-      "Using libretro dummy core. Skipping recording.")
 MSG_HASH(MSG_VALUE_CONNECT_DEVICE_FROM_A_VALID_PORT,
       "Collegare il dispositivo a una porta valida.")
 MSG_HASH(MSG_VALUE_DISCONNECTING_DEVICE_FROM_PORT,
