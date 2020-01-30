@@ -814,7 +814,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_DISK_TRAY_EJECT,
-    "Ouvre le plateau du lecteur de disque virtuel et retire le disque actuellement chargé. NOTE: Si RetroArch est configuré pour se mettre en pause lorsque le menu est actif, certains cœurs peuvent ne pas enregistrer les modifications à moins que le contenu ne soit repris pendant quelques secondes après chaque action liée au contrôle du disque."
+    "Ouvre le plateau du lecteur de disque virtuel et retire le disque actuellement chargé. REMARQUE : Si RetroArch est configuré pour se mettre en pause lorsque le menu est actif, certains cœurs peuvent ne pas enregistrer les modifications à moins que le contenu ne soit repris pendant quelques secondes après chaque action liée au contrôle du disque."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
@@ -822,7 +822,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_DISK_TRAY_INSERT,
-    "Insère le disque correspondant au 'Numéro du disque actuel' et ferme le plateau du lecteur de disque virtuel. NOTE: Si RetroArch est configuré pour se mettre en pause lorsque le menu est actif, certains cœurs peuvent ne pas enregistrer les modifications à moins que le contenu ne soit repris pendant quelques secondes après chaque action liée au contrôle du disque."
+    "Insère le disque correspondant au 'Numéro du disque actuel' et ferme le plateau du lecteur de disque virtuel. REMARQUE : Si RetroArch est configuré pour se mettre en pause lorsque le menu est actif, certains cœurs peuvent ne pas enregistrer les modifications à moins que le contenu ne soit repris pendant quelques secondes après chaque action liée au contrôle du disque."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DISK_INDEX,
@@ -838,7 +838,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
-    "Éjecte le disque actuel, sélectionne un nouveau disque dans le système de fichiers, puis l'insère et ferme le plateau du lecteur de disque virtuel. NOTE: C'est une fonctionnalité obsolète. Il est plutôt recommandé de charger des titres multi-disques via des listes de lecture M3U, qui permettent la sélection du disque en utilisant les options 'Éjecter/Insérer le disque' et 'Numéro du disque actuel'."
+    "Éjecte le disque actuel, sélectionne un nouveau disque dans le système de fichiers, puis l'insère et ferme le plateau du lecteur de disque virtuel. REMARQUE : C'est une fonctionnalité obsolète. Il est plutôt recommandé de charger des titres multi-disques via des listes de lecture M3U, qui permettent la sélection du disque en utilisant les options 'Éjecter/Insérer le disque' et 'Numéro du disque actuel'."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DISK_OPTIONS,
