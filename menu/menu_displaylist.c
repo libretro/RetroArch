@@ -7006,11 +7006,8 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
                {
                   case MENU_ENUM_LABEL_FRONTEND_LOG_LEVEL:
                   case MENU_ENUM_LABEL_LIBRETRO_LOG_LEVEL:
-                     {
-                        bool *verbosity = verbosity_get_ptr();
-                        if (verbosity && *verbosity)
-                           build_list[i].checked = true;
-                     }
+                     if (verbosity_is_enabled())
+                        build_list[i].checked = true;
                      break;
                   case MENU_ENUM_LABEL_LOG_TO_FILE_TIMESTAMP:
                      if (settings->bools.log_to_file)
