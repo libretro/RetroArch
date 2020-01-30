@@ -70,7 +70,8 @@ endif
 
 DJB2_OBJS := $(CORE_DIR)/djb2.o
 
-MD5_OBJS  := $(CORE_DIR)/md5.o
+MD5_OBJS  := $(CORE_DIR)/md5.o \
+				 $(PWD_DIR)/md5_test.o
 
 SHA1_OBJS := $(CORE_DIR)/sha1.o \
 				 $(PWD_DIR)/sha1_main.o
