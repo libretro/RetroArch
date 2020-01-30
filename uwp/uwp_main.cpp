@@ -757,22 +757,23 @@ extern "C" {
 
 	enum retro_language uwp_get_language()
 	{
-		auto lang = Windows::System::UserProfile::GlobalizationPreferences::Languages->GetAt(0);
-		char lang_bcp[16] = { 0 };
-		char lang_iso[16] = { 0 };
+      string_list* split = NULL;
+		auto lang          = Windows::System::UserProfile::GlobalizationPreferences::Languages->GetAt(0);
+		char lang_bcp[16]  = { 0 };
+		char lang_iso[16]  = { 0 };
 
 		wcstombs(lang_bcp, lang->Data(), 16);
 
 		/* Trying to convert BCP 47 language codes to ISO 639 ones */
-		string_list* split;
 		split = string_split(lang_bcp, "-");
 
-		strcat(lang_iso, split->elems[0].data);
+		strlcat(lang_iso, split->elems[0].data, sizeof(lang_iso));
 
 		if (split->size >= 2)
 		{
-			strcat(lang_iso, "_");
-			strcat(lang_iso, split->elems[split->size >= 3 ? 2 : 1].data);
+			strlcat(lang_iso, "_", sizeof(lang_iso));
+			strlcat(lang_iso, split->elems[split->size >= 3 ? 2 : 1].data,
+               sizeof(lang_iso));
 		}
 		free(split);
 		return rarch_get_language_from_iso(lang_iso);
