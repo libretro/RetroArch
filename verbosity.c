@@ -141,7 +141,7 @@ void retro_main_log_file_init(const char *path, bool append)
 #endif
 
    log_file_fp          = stderr;
-   if (path == NULL)
+   if (!path)
       return;
 
    log_file_fp          = (FILE*)fopen_utf8(path, append ? "ab" : "wb");

@@ -417,7 +417,7 @@ static void android_input_poll_main_cmd(void)
 
             if ((android_app->sensor_state_mask
                      & (UINT64_C(1) << RETRO_SENSOR_ACCELEROMETER_ENABLE))
-                  && android_app->accelerometerSensor == NULL)
+                  && !android_app->accelerometerSensor)
                input_sensor_set_state(0,
                      RETRO_SENSOR_ACCELEROMETER_ENABLE,
                      android_app->accelerometer_event_rate);

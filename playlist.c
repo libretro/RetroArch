@@ -858,17 +858,17 @@ bool playlist_push(playlist_t *playlist,
        * or command line, certain entry values will be missing.
        * If we are now loading the same content from a playlist,
        * fill in any blanks */
-      if ((playlist->entries[i].label == NULL) && !string_is_empty(entry->label))
+      if (!playlist->entries[i].label && !string_is_empty(entry->label))
       {
          playlist->entries[i].label   = strdup(entry->label);
          entry_updated                = true;
       }
-      if ((playlist->entries[i].crc32 == NULL) && !string_is_empty(entry->crc32))
+      if (!playlist->entries[i].crc32 && !string_is_empty(entry->crc32))
       {
          playlist->entries[i].crc32   = strdup(entry->crc32);
          entry_updated                = true;
       }
-      if ((playlist->entries[i].db_name == NULL) && !string_is_empty(entry->db_name))
+      if (!playlist->entries[i].db_name && !string_is_empty(entry->db_name))
       {
          playlist->entries[i].db_name = strdup(entry->db_name);
          entry_updated                = true;
