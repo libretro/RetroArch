@@ -1118,7 +1118,6 @@ static bool runloop_remaps_content_dir_active                   = false;
 static bool runloop_game_options_active                         = false;
 static bool runloop_autosave                                    = false;
 static bool runloop_max_frames_screenshot                       = false;
-static bool log_file_created                                    = false;
 static bool log_file_override_active                            = false;
 #ifdef HAVE_RUNAHEAD
 static bool has_variable_update                                 = false;
@@ -1136,7 +1135,6 @@ static rarch_timer_t shader_delay_timer                         = {0};
 static char runloop_max_frames_screenshot_path[PATH_MAX_LENGTH] = {0};
 static char runtime_content_path[PATH_MAX_LENGTH]               = {0};
 static char runtime_core_path[PATH_MAX_LENGTH]                  = {0};
-static char timestamped_log_file_name[64]                       = {0};
 static char log_file_override_path[PATH_MAX_LENGTH]             = {0};
 static char launch_arguments[4096]                              = {0};
 static char current_library_name[1024]                          = {0};
@@ -27891,11 +27889,13 @@ void rarch_log_file_init(
 {
    char log_directory[PATH_MAX_LENGTH];
    char log_file_path[PATH_MAX_LENGTH];
-   FILE             *fp       = NULL;
-   bool logging_to_file       = is_logging_to_file();
+   static bool log_file_created              = false;
+   static char timestamped_log_file_name[64] = {0};
+   FILE             *fp                      = NULL;
+   bool logging_to_file                      = is_logging_to_file();
 
-   log_directory[0]           = '\0';
-   log_file_path[0]           = '\0';
+   log_directory[0]                          = '\0';
+   log_file_path[0]                          = '\0';
 
    /* If this is the first run, generate a timestamped log
     * file name (do this even when not outputting timestamped
