@@ -1,7 +1,7 @@
 /* Copyright  (C) 2010-2019 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
- * The following license statement only applies to this file (file_path.h).
+ * The following license statement only applies to this file (label_sanitization.h).
  * ---------------------------------------------------------------------------------------
  *
  * Permission is hereby granted, free of charge,
