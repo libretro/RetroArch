@@ -10931,17 +10931,11 @@ static char *copy_core_to_temp_file(void)
    const char *core_base_name = path_basename(core_path);
 
    if (strlen(core_base_name) == 0)
-   {
-      failed = true;
-      goto end;
-   }
+      return NULL;
 
    temp_directory = get_temp_directory_alloc();
    if (!temp_directory)
-   {
-      failed = true;
-      goto end;
-   }
+      return NULL;
 
    strcat_alloc(&retroarch_temp_path, temp_directory);
    strcat_alloc(&retroarch_temp_path, path_default_slash());
