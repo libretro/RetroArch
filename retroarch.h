@@ -117,8 +117,6 @@ enum rarch_ctl_state
 
    RARCH_CTL_TASK_INIT,
 
-   RARCH_CTL_SET_FRAME_TIME_LAST,
-
    RARCH_CTL_IS_IDLE,
    RARCH_CTL_SET_IDLE,
 

@@ -25881,9 +25881,6 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
             *coreopts = runloop_core_options;
          }
          break;
-      case RARCH_CTL_SET_FRAME_TIME_LAST:
-         runloop_frame_time_last        = 0;
-         break;
       case RARCH_CTL_IS_OVERRIDES_ACTIVE:
          return runloop_overrides_active;
       case RARCH_CTL_SET_REMAPS_CORE_ACTIVE:
