@@ -52,9 +52,8 @@ extern pad_connection_interface_t wiiu_gca_pad_connection;
 
 static void *wiiu_gca_init(void *handle)
 {
-   RARCH_LOG("[gca]: allocating driver instance...\n");
    hid_wiiu_gca_instance_t *instance = calloc(1, sizeof(hid_wiiu_gca_instance_t));
-   if(instance == NULL)
+   if (!instance)
       return NULL;
    memset(instance, 0, sizeof(hid_wiiu_gca_instance_t));
    instance->handle = handle;
@@ -129,12 +128,12 @@ static void wiiu_gca_update_pad_state(hid_wiiu_gca_instance_t *instance)
 
       if(port_connected > GCA_PORT_POWERED)
       {
-         if(pad == NULL)
+         if (!pad)
          {
             RARCH_LOG("[gca]: Gamepad at port %d connected.\n", port+1);
             instance->pads[port] = hid_pad_register(instance, &wiiu_gca_pad_connection);
             pad = instance->pads[port];
-            if(pad == NULL)
+            if (!pad)
             {
                RARCH_ERR("[gca]: Failed to register pad.\n");
                break;
@@ -153,11 +152,12 @@ static void wiiu_gca_update_pad_state(hid_wiiu_gca_instance_t *instance)
 
 static void wiiu_gca_unregister_pad(hid_wiiu_gca_instance_t *instance, int slot)
 {
-   if(!instance || slot < 0 || slot >= 4 || instance->pads[slot] == NULL)
+   joypad_connection_t *pad = NULL;
+   if(!instance || slot < 0 || slot >= 4 || !instance->pads[slot])
       return;
 
-   joypad_connection_t *pad = instance->pads[slot];
-   instance->pads[slot] = NULL;
+   pad                      = instance->pads[slot];
+   instance->pads[slot]     = NULL;
 
    hid_pad_deregister(pad);
 }

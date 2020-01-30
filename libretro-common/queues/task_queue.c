@@ -451,7 +451,7 @@ static void threaded_worker(void *userdata)
 
       /* Get first task to run */
       task = tasks_running.front;
-      if (task == NULL)
+      if (!task)
       {
          scond_wait(worker_cond, running_lock);
          slock_unlock(running_lock);

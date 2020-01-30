@@ -144,7 +144,7 @@ static void tpool_worker(void *arg)
        * Also, the working_cnt can't be changed (except the thread holding the lock).
        * At this point if there isn't any work processing and if there is no work
        * signal this is the case. */
-      if (!tp->stop && tp->working_cnt == 0 && tp->work_first == NULL)
+      if (!tp->stop && tp->working_cnt == 0 && !tp->work_first)
          scond_signal(tp->working_cond);
       slock_unlock(tp->work_mutex);
    }

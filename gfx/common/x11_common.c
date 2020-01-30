@@ -176,7 +176,7 @@ static void x11_set_window_pid(Display *dpy, Window win)
     errno = 0;
     if ((scret = sysconf(_SC_HOST_NAME_MAX)) == -1 && errno)
         return;
-    if ((hostname = (char*)malloc(scret + 1)) == NULL)
+    if (!(hostname = (char*)malloc(scret + 1)))
         return;
 
     if (gethostname(hostname, scret + 1) == -1)

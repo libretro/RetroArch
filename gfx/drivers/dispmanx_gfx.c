@@ -507,7 +507,7 @@ static void dispmanx_set_texture_frame(void *data, const void *frame, bool rgb32
       return;
 
    /* If menu is active in this frame but our menu surface is NULL, we allocate a new one.*/
-   if (_dispvars->menu_surface == NULL)
+   if (!_dispvars->menu_surface)
    {
       _dispvars->menu_width  = width;
       _dispvars->menu_height = height;

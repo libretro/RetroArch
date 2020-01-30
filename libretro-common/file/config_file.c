@@ -1162,7 +1162,7 @@ static void test_config_file_parse_contains(
    if (!val)
       return;
 
-   if (out == NULL)
+   if (!out)
       out = strdup("");
    if (strcmp(out, val) != 0)
       abort();
