@@ -6651,7 +6651,8 @@ bool command_event(enum event_command cmd, void *data)
             if (cached_video_driver[0])
             {
                settings_t *settings = configuration_settings;
-               strcpy(settings->arrays.video_driver, cached_video_driver);
+               strlcpy(settings->arrays.video_driver, cached_video_driver,
+                     sizeof(settings->arrays.video_driver));
                cached_video_driver[0] = 0;
                RARCH_LOG("[Video]: Restored video driver to \"%s\".\n", settings->arrays.video_driver);
             }
@@ -7872,7 +7873,8 @@ void main_exit(void *args)
    
    if (cached_video_driver[0])
    {
-      strcpy(settings->arrays.video_driver, cached_video_driver);
+      strlcpy(settings->arrays.video_driver, cached_video_driver,
+            sizeof(settings->arrays.video_driver));
       cached_video_driver[0] = 0;
       RARCH_LOG("[Video]: Restored video driver to \"%s\".\n", settings->arrays.video_driver);
    }
@@ -10707,7 +10709,6 @@ static void free_retro_ctx_load_content_info(struct
 static struct retro_game_info* clone_retro_game_info(const
       struct retro_game_info *src)
 {
-   void *data                   = NULL;
    struct retro_game_info *dest = NULL;
 
    if (!src)
@@ -10719,11 +10720,22 @@ static struct retro_game_info* clone_retro_game_info(const
       return NULL;
 
    dest->data    = NULL;
-   dest->path    = strcpy_alloc(src->path);
+
+   if (src->path)
+   {
+      size_t   len  = strlen(src->path);
+      
+      if (len > 0)
+      {
+         char *result = (char*)malloc(len+1);
+         strcpy(result, src->path);
+         dest->path = result;
+      }
+   }
 
    if (src->size && src->data)
    {
-      data = malloc(src->size);
+      void *data = malloc(src->size);
 
       if (data)
       {
@@ -10733,7 +10745,18 @@ static struct retro_game_info* clone_retro_game_info(const
    }
 
    dest->size    = src->size;
-   dest->meta    = strcpy_alloc(src->meta);
+
+   if (src->meta)
+   {
+      size_t len    = strlen(src->meta);
+
+      if (len > 0)
+      {
+         char *result = (char*)malloc(len+1);
+         strcpy(result, src->meta);
+         dest->meta   = result;
+      }
+   }
 
    return dest;
 }
@@ -21251,8 +21274,10 @@ static bool video_driver_find_driver(void)
          if (!string_is_equal(settings->arrays.video_driver, "vulkan"))
          {
             RARCH_LOG("[Video]: \"%s\" saved as cached driver.\n", settings->arrays.video_driver);
-            strcpy(cached_video_driver, settings->arrays.video_driver);
-            strcpy(settings->arrays.video_driver, "vulkan");
+            strlcpy(cached_video_driver, settings->arrays.video_driver,
+                  sizeof(cached_video_driver));
+            strlcpy(settings->arrays.video_driver, "vulkan",
+                  sizeof(settings->arrays.video_driver));
          }
          current_video = &video_vulkan;
       }
@@ -21268,14 +21293,17 @@ static bool video_driver_find_driver(void)
                !string_is_equal(settings->arrays.video_driver, "glcore"))
          {
             RARCH_LOG("[Video]: \"%s\" saved as cached driver.\n", settings->arrays.video_driver);
-            strcpy(cached_video_driver, settings->arrays.video_driver);
+            strlcpy(cached_video_driver, settings->arrays.video_driver,
+                  sizeof(cached_video_driver));
 #if defined(HAVE_OPENGL_CORE)
             RARCH_LOG("[Video]: Forcing \"glcore\" driver.\n");
-            strcpy(settings->arrays.video_driver, "glcore");
+            strlcpy(settings->arrays.video_driver, "glcore",
+                  sizeof(settings->arrays.video_driver));
             current_video = &video_gl_core;
 #else
             RARCH_LOG("[Video]: Forcing \"gl\" driver.\n");
-            strcpy(settings->arrays.video_driver, "gl");
+            strlcpy(settings->arrays.video_driver, "gl",
+                  sizeof(settings->arrays.video_driver));
             current_video = &video_gl2;
 #endif
          }

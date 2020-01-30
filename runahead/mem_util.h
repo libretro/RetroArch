@@ -10,8 +10,8 @@
 
 RETRO_BEGIN_DECLS
 
-char *strcpy_alloc(const char *sourceStr);
 char *strcpy_alloc_force(const char *sourceStr);
+
 void strcat_alloc(char ** destStr_p, const char *appendStr);
 
 RETRO_END_DECLS

@@ -2,7 +2,7 @@
 
 #include "mem_util.h"
 
-char *strcpy_alloc(const char *src)
+static char *strcpy_alloc(const char *src)
 {
    char *result = NULL;
    size_t   len = src ? strlen(src) : 0;
