@@ -11050,46 +11050,28 @@ static bool secondary_core_create(void)
    secondary_core.inited = is_inited;
 
    /* Load Content */
+   /* disabled due to crashes */
    if (!load_content_info || load_content_info->special)
-   {
-      /* disabled due to crashes */
       return false;
-#if 0
-      secondary_core.game_loaded = secondary_core.retro_load_game_special(
-            loadContentInfo.special->id, loadContentInfo.info, loadContentInfo.content->size);
-      if (!secondary_core.game_loaded)
-      {
-         secondary_core_destroy();
-         return false;
-      }
-#endif
-   }
-   else if (load_content_info->content->size > 0 && load_content_info->content->elems[0].data)
+
+   if (load_content_info->content->size > 0 && load_content_info->content->elems[0].data)
    {
-      secondary_core.game_loaded = secondary_core.retro_load_game(load_content_info->info);
+      secondary_core.game_loaded = secondary_core.retro_load_game(
+            load_content_info->info);
       if (!secondary_core.game_loaded)
-      {
-         secondary_core_destroy();
-         return false;
-      }
+         goto error;
    }
    else if (contentless)
    {
       secondary_core.game_loaded = secondary_core.retro_load_game(NULL);
       if (!secondary_core.game_loaded)
-      {
-         secondary_core_destroy();
-         return false;
-      }
+         goto error;
    }
    else
       secondary_core.game_loaded = false;
 
    if (!secondary_core.inited)
-   {
-      secondary_core_destroy();
-      return false;
-   }
+      goto error;
 
    core_set_default_callbacks(&secondary_callbacks);
    secondary_core.retro_set_video_refresh(secondary_callbacks.frame_cb);
@@ -11108,6 +11090,10 @@ static bool secondary_core_create(void)
    clear_controller_port_map();
 
    return true;
+
+error:
+   secondary_core_destroy();
+   return false;
 }
 
 static void secondary_core_input_poll_null(void) { }
@@ -11139,24 +11125,11 @@ bool secondary_core_run_use_last_input(void)
 
    return true;
 }
-
 #else
-bool secondary_core_deserialize(const void *buffer, int size)
-{
-   return false;
-}
-
-static void secondary_core_destroy(void)
-{
-}
-
-static void remember_controller_port_device(long port, long device)
-{
-}
-
-static void clear_controller_port_map(void)
-{
-}
+bool secondary_core_deserialize(const void *buffer, int size) { return false; }
+static void secondary_core_destroy(void) { }
+static void remember_controller_port_device(long port, long device) { }
+static void clear_controller_port_map(void) { }
 #endif
 
 #endif
