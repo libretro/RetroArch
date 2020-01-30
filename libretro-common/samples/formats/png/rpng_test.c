@@ -65,7 +65,7 @@ static bool rpng_load_image_argb(const char *path, uint32_t **data,
       goto end;
    }
 
-   if (!rpng_set_buf_ptr(rpng, (uint8_t*)ptr))
+   if (!rpng_set_buf_ptr(rpng, (uint8_t*)ptr, file_len))
    {
       ret = false;
       goto end;
