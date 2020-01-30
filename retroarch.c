@@ -10709,29 +10709,11 @@ static void free_retro_ctx_load_content_info(struct
 static struct retro_game_info* clone_retro_game_info(const
       struct retro_game_info *src)
 {
-   struct retro_game_info *dest = NULL;
-
-   if (!src)
-      return NULL;
-
-   dest       = (struct retro_game_info*)calloc(1,
+   struct retro_game_info *dest = (struct retro_game_info*)calloc(1,
          sizeof(struct retro_game_info));
+
    if (!dest)
       return NULL;
-
-   dest->data    = NULL;
-
-   if (src->path)
-   {
-      size_t   len  = strlen(src->path);
-      
-      if (len > 0)
-      {
-         char *result = (char*)malloc(len+1);
-         strcpy(result, src->path);
-         dest->path = result;
-      }
-   }
 
    if (src->size && src->data)
    {
@@ -10744,19 +10726,12 @@ static struct retro_game_info* clone_retro_game_info(const
       }
    }
 
+   if (!string_is_empty(src->path))
+      dest->path = strdup(src->path);
+   if (!string_is_empty(src->meta))
+      dest->meta = strdup(src->meta);
+
    dest->size    = src->size;
-
-   if (src->meta)
-   {
-      size_t len    = strlen(src->meta);
-
-      if (len > 0)
-      {
-         char *result = (char*)malloc(len+1);
-         strcpy(result, src->meta);
-         dest->meta   = result;
-      }
-   }
 
    return dest;
 }
@@ -10776,12 +10751,11 @@ static struct retro_ctx_load_content_info
    if (!dest)
       return NULL;
 
-   dest->info       = clone_retro_game_info(src->info);
-   dest->content    = NULL;
-   dest->special    = NULL;
-
+   if (src->info)
+      dest->info    = clone_retro_game_info(src->info);
    if (src->content)
       dest->content = string_list_clone(src->content);
+
    return dest;
 }
 
