@@ -423,7 +423,7 @@ static int wiimote_handshake(struct connect_wii_wiimote_t* wm,
    if (!wm)
       return 0;
 
-   do
+   for (;;)
    {
       switch (wm->handshake_state)
       {
@@ -605,7 +605,7 @@ static int wiimote_handshake(struct connect_wii_wiimote_t* wm,
          default:
             break;
       }
-   }while(1);
+   }
 }
 
 static void hidpad_wii_deinit(void *data)

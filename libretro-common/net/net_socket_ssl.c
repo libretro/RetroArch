@@ -189,7 +189,7 @@ int ssl_socket_receive_all_blocking(void *state_data, void *data_, size_t size)
 
    mbedtls_net_set_block(&state->net_ctx);
 
-   while (1)
+   for (;;)
    {
       /* mbedtls_ssl_read wants non-const data but it only reads it, so this cast is safe */
       int ret = mbedtls_ssl_read(&state->ctx, (unsigned char*)data, size);

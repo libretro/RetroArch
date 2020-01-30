@@ -3639,7 +3639,7 @@ bool config_save_autoconf_profile(const char *path, unsigned user)
 
    for (i = 0; invalid_filename_chars[i]; i++)
    {
-      while (1)
+      for (;;)
       {
          char *tmp = strstr(path_new, invalid_filename_chars[i]);
 

@@ -70,7 +70,7 @@ static int64_t get_token(intfstream_t *fd, char *token, uint64_t max_len)
    int64_t len   = 0;
    int in_string = 0;
 
-   while (1)
+   for (;;)
    {
       int64_t rv = (int64_t)intfstream_read(fd, c, 1);
       if (rv == 0)

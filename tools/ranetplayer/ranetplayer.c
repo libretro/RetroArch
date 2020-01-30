@@ -135,7 +135,7 @@ uint32_t frame_offset_cmd(bool ntoh)
 /* Send a bit of our input */
 bool send_input(uint32_t cur_frame)
 {
-   while (1)
+   for (;;)
    {
       uint32_t rd_frame = 0;
 
@@ -190,7 +190,7 @@ int main(int argc, char **argv)
       {"ahead",      1, NULL, 'a'}
    };
 
-   while (1)
+   for (;;)
    {
       int c;
 
@@ -345,7 +345,7 @@ int main(int argc, char **argv)
    }
 
    /* Now handle netplay commands */
-   while (1)
+   for (;;)
    {
       RECV();
 

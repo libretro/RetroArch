@@ -8002,7 +8002,7 @@ int rarch_main(int argc, char *argv[], void *data)
    ui_companion_driver_init_first();
 
 #if !defined(HAVE_MAIN) || defined(HAVE_QT)
-   do
+   for (;;)
    {
       int ret;
       bool app_exit     = false;
@@ -8024,7 +8024,7 @@ int rarch_main(int argc, char *argv[], void *data)
 #endif
          break;
       }
-   }while(1);
+   }
 
    main_exit(data);
 #endif

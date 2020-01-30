@@ -260,7 +260,7 @@ bool netplay_lan_ad_server(netplay_t *netplay)
       return false;
 
    /* Check for any ad queries */
-   while (1)
+   for (;;)
    {
       FD_ZERO(&fds);
       FD_SET(lan_ad_server_fd, &fds);
@@ -426,7 +426,7 @@ static bool netplay_lan_ad_client(void)
       return false;
 
    /* Check for any ad queries */
-   while (1)
+   for (;;)
    {
       FD_ZERO(&fds);
       FD_SET(lan_ad_client_fd, &fds);
