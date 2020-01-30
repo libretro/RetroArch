@@ -10827,7 +10827,7 @@ static void clear_controller_port_map(void)
       port_map[port] = -1;
 }
 
-static char *get_temp_directory_alloc(void)
+static char *get_temp_directory_alloc(const char *override_dir)
 {
    const char *src;
    char *path             = NULL;
@@ -10855,7 +10855,7 @@ static char *get_temp_directory_alloc(void)
 #endif
 #else
 #if defined ANDROID
-   src     = configuration_settings->paths.directory_libretro;
+   src     = override_dir;
 #else
    if (getenv("TMPDIR"))
       src  = getenv("TMPDIR");
@@ -10933,7 +10933,8 @@ static char *copy_core_to_temp_file(void)
    if (strlen(core_base_name) == 0)
       return NULL;
 
-   temp_directory = get_temp_directory_alloc();
+   temp_directory             = get_temp_directory_alloc(
+         configuration_settings->paths.directory_libretro);
    if (!temp_directory)
       return NULL;
 
