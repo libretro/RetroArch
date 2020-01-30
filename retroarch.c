@@ -25010,20 +25010,16 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
                exit(0);
 
             case RA_OPT_LOG_FILE:
-               {
-                  settings_t *settings = configuration_settings;
+               /* Enable 'log to file' */
+               configuration_set_bool(configuration_settings,
+                     configuration_settings->bools.log_to_file, true);
 
-                  /* Enable 'log to file' */
-                  configuration_set_bool(settings,
-                        settings->bools.log_to_file, true);
+               retroarch_override_setting_set(
+                     RARCH_OVERRIDE_SETTING_LOG_TO_FILE, NULL);
 
-                  retroarch_override_setting_set(
-                        RARCH_OVERRIDE_SETTING_LOG_TO_FILE, NULL);
-
-                  /* Cache log file path override */
-                  log_file_override_active = true;
-                  strlcpy(log_file_override_path, optarg, sizeof(log_file_override_path));
-               }
+               /* Cache log file path override */
+               log_file_override_active = true;
+               strlcpy(log_file_override_path, optarg, sizeof(log_file_override_path));
                break;
 
             case 'c':
@@ -25049,7 +25045,10 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
    }
 
    if (verbosity_is_enabled())
-      rarch_log_file_init();
+      rarch_log_file_init(
+            configuration_settings->bools.log_to_file,
+            configuration_settings->bools.log_to_file_timestamp,
+            configuration_settings->paths.log_dir);
 
 #ifdef HAVE_GIT_VERSION
    RARCH_LOG("RetroArch %s (Git %s)\n",
@@ -27884,14 +27883,15 @@ void retroarch_force_video_driver_fallback(const char *driver)
    exit(1);
 }
 
-void rarch_log_file_init(void)
+void rarch_log_file_init(
+      bool log_to_file,
+      bool log_to_file_timestamp,
+      const char *log_dir
+      )
 {
    char log_directory[PATH_MAX_LENGTH];
    char log_file_path[PATH_MAX_LENGTH];
    FILE             *fp       = NULL;
-   settings_t *settings       = configuration_settings;
-   bool log_to_file           = settings->bools.log_to_file;
-   bool log_to_file_timestamp = settings->bools.log_to_file_timestamp;
    bool logging_to_file       = is_logging_to_file();
 
    log_directory[0]           = '\0';
@@ -27941,7 +27941,8 @@ void rarch_log_file_init(void)
    if (log_file_override_active)
    {
       /* Get log directory */
-      const char *last_slash        = find_last_slash(log_file_override_path);
+      const char *last_slash           = 
+         find_last_slash(log_file_override_path);
 
       if (last_slash)
       {
@@ -27956,13 +27957,13 @@ void rarch_log_file_init(void)
       /* Get log file path */
       strlcpy(log_file_path, log_file_override_path, sizeof(log_file_path));
    }
-   else if (!string_is_empty(settings->paths.log_dir))
+   else if (!string_is_empty(log_dir))
    {
       /* Get log directory */
-      strlcpy(log_directory, settings->paths.log_dir, sizeof(log_directory));
+      strlcpy(log_directory, log_dir, sizeof(log_directory));
 
       /* Get log file path */
-      fill_pathname_join(log_file_path, settings->paths.log_dir,
+      fill_pathname_join(log_file_path, log_dir,
             log_to_file_timestamp
             ? timestamped_log_file_name
             : "retroarch.log",

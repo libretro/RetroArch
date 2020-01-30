@@ -1249,8 +1249,8 @@ void fill_pathname_home_dir(char *s, size_t len)
 
 bool is_path_accessible_using_standard_io(const char *path)
 {
+   bool result                = true;
 #ifdef __WINRT__
-   bool result;
    size_t         path_sizeof = PATH_MAX_LENGTH * sizeof(char);
    char *relative_path_abbrev = (char*)malloc(path_sizeof);
    fill_pathname_abbreviate_special(relative_path_abbrev, path, path_sizeof);
@@ -1258,8 +1258,6 @@ bool is_path_accessible_using_standard_io(const char *path)
    result = strlen(relative_path_abbrev) >= 2 && (relative_path_abbrev[0] == ':' || relative_path_abbrev[0] == '~') && path_char_is_slash(relative_path_abbrev[1]);
 
    free(relative_path_abbrev);
-   return result;
-#else
-   return true;
 #endif
+   return result;
 }

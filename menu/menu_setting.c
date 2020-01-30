@@ -6514,7 +6514,10 @@ void general_write_handler(rarch_setting_t *setting)
       case MENU_ENUM_LABEL_LOG_VERBOSITY:
          if (!verbosity_is_enabled())
          {
-            rarch_log_file_init();
+            rarch_log_file_init(
+                  settings->bools.log_to_file,
+                  settings->bools.log_to_file_timestamp,
+                  settings->paths.log_dir);
             verbosity_enable();
          }
          else
@@ -6528,7 +6531,10 @@ void general_write_handler(rarch_setting_t *setting)
          if (verbosity_is_enabled())
          {
             if (settings->bools.log_to_file && !is_logging_to_file())
-               rarch_log_file_init();
+               rarch_log_file_init(
+                     settings->bools.log_to_file,
+                     settings->bools.log_to_file_timestamp,
+                     settings->paths.log_dir);
             else if (!settings->bools.log_to_file && is_logging_to_file())
                rarch_log_file_deinit();
          }
@@ -6539,7 +6545,10 @@ void general_write_handler(rarch_setting_t *setting)
          if (verbosity_is_enabled() && is_logging_to_file())
          {
             rarch_log_file_deinit();
-            rarch_log_file_init();
+            rarch_log_file_init(
+                  settings->bools.log_to_file,
+                  settings->bools.log_to_file_timestamp,
+                  settings->paths.log_dir);
          }
          break;
       case MENU_ENUM_LABEL_VIDEO_SMOOTH:
