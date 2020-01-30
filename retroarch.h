@@ -384,13 +384,6 @@ struct retro_system_info *runloop_get_libretro_system_info(void);
 
 void retroarch_force_video_driver_fallback(const char *driver);
 
-void rarch_log_file_init(
-      bool log_to_file,
-      bool log_to_file_timestamp,
-      const char *log_dir);
-
-void rarch_log_file_deinit(void);
-
 enum retro_language rarch_get_language_from_iso(const char *lang);
 
 void rarch_favorites_init(void);

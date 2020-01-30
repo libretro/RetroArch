@@ -1118,7 +1118,6 @@ static bool runloop_remaps_content_dir_active                   = false;
 static bool runloop_game_options_active                         = false;
 static bool runloop_autosave                                    = false;
 static bool runloop_max_frames_screenshot                       = false;
-static bool log_file_override_active                            = false;
 #ifdef HAVE_RUNAHEAD
 static bool has_variable_update                                 = false;
 #endif
@@ -1135,7 +1134,6 @@ static rarch_timer_t shader_delay_timer                         = {0};
 static char runloop_max_frames_screenshot_path[PATH_MAX_LENGTH] = {0};
 static char runtime_content_path[PATH_MAX_LENGTH]               = {0};
 static char runtime_core_path[PATH_MAX_LENGTH]                  = {0};
-static char log_file_override_path[PATH_MAX_LENGTH]             = {0};
 static char launch_arguments[4096]                              = {0};
 static char current_library_name[1024]                          = {0};
 static char current_library_version[1024]                       = {0};
@@ -25016,8 +25014,7 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
                      RARCH_OVERRIDE_SETTING_LOG_TO_FILE, NULL);
 
                /* Cache log file path override */
-               log_file_override_active = true;
-               strlcpy(log_file_override_path, optarg, sizeof(log_file_override_path));
+               rarch_log_file_set_override(optarg);
                break;
 
             case 'c':
@@ -27879,141 +27876,6 @@ void retroarch_force_video_driver_fallback(const char *driver)
       free(title);
    }
    exit(1);
-}
-
-void rarch_log_file_init(
-      bool log_to_file,
-      bool log_to_file_timestamp,
-      const char *log_dir
-      )
-{
-   char log_directory[PATH_MAX_LENGTH];
-   char log_file_path[PATH_MAX_LENGTH];
-   static bool log_file_created              = false;
-   static char timestamped_log_file_name[64] = {0};
-   FILE             *fp                      = NULL;
-   bool logging_to_file                      = is_logging_to_file();
-
-   log_directory[0]                          = '\0';
-   log_file_path[0]                          = '\0';
-
-   /* If this is the first run, generate a timestamped log
-    * file name (do this even when not outputting timestamped
-    * log files, since user may decide to switch at any moment...) */
-   if (string_is_empty(timestamped_log_file_name))
-   {
-      char format[256];
-      time_t cur_time      = time(NULL);
-      const struct tm *tm_ = localtime(&cur_time);
-
-      format[0] = '\0';
-      strftime(format, sizeof(format), "retroarch__%Y_%m_%d__%H_%M_%S", tm_);
-      fill_pathname_noext(timestamped_log_file_name, format,
-            ".log",
-            sizeof(timestamped_log_file_name));
-   }
-
-   /* If nothing has changed, do nothing */
-   if ((!log_to_file && !logging_to_file) ||
-       (log_to_file && logging_to_file))
-      return;
-
-   /* If we are currently logging to file and wish to stop,
-    * de-initialise existing logger... */
-   if (!log_to_file && logging_to_file)
-   {
-      retro_main_log_file_deinit();
-      /* ...and revert to console */
-      retro_main_log_file_init(NULL, false);
-      return;
-   }
-
-   /* If we reach this point, then we are not currently
-    * logging to file, and wish to do so */
-
-   /* > Check whether we are already logging to console */
-   fp = (FILE*)retro_main_log_file();
-   /* De-initialise existing logger */
-   if (fp)
-      retro_main_log_file_deinit();
-
-   /* > Get directory/file paths */
-   if (log_file_override_active)
-   {
-      /* Get log directory */
-      const char *last_slash           = 
-         find_last_slash(log_file_override_path);
-
-      if (last_slash)
-      {
-         char tmp_buf[PATH_MAX_LENGTH] = {0};
-         size_t path_length            = last_slash + 1 - log_file_override_path;
-
-         if ((path_length > 1) && (path_length < PATH_MAX_LENGTH))
-            strlcpy(tmp_buf, log_file_override_path, path_length * sizeof(char));
-         strlcpy(log_directory, tmp_buf, sizeof(log_directory));
-      }
-
-      /* Get log file path */
-      strlcpy(log_file_path, log_file_override_path, sizeof(log_file_path));
-   }
-   else if (!string_is_empty(log_dir))
-   {
-      /* Get log directory */
-      strlcpy(log_directory, log_dir, sizeof(log_directory));
-
-      /* Get log file path */
-      fill_pathname_join(log_file_path, log_dir,
-            log_to_file_timestamp
-            ? timestamped_log_file_name
-            : "retroarch.log",
-            sizeof(log_file_path));
-   }
-
-   /* > Attempt to initialise log file */
-   if (!string_is_empty(log_file_path))
-   {
-      /* Create log directory, if required */
-      if (!string_is_empty(log_directory))
-      {
-         if (!path_is_directory(log_directory))
-         {
-            if (!path_mkdir(log_directory))
-            {
-               /* Re-enable console logging and output error message */
-               retro_main_log_file_init(NULL, false);
-               RARCH_ERR("Failed to create system event log directory: %s\n", log_directory);
-               return;
-            }
-         }
-      }
-
-      /* When RetroArch is launched, log file is overwritten.
-       * On subsequent calls within the same session, it is appended to. */
-      retro_main_log_file_init(log_file_path, log_file_created);
-      if (is_logging_to_file())
-         log_file_created = true;
-      return;
-   }
-
-   /* If we reach this point, then something went wrong...
-    * Just fall back to console logging */
-   retro_main_log_file_init(NULL, false);
-   RARCH_ERR("Failed to initialise system event file logging...\n");
-}
-
-void rarch_log_file_deinit(void)
-{
-   FILE *fp = NULL;
-
-   /* De-initialise existing logger, if currently logging to file */
-   if (is_logging_to_file())
-      retro_main_log_file_deinit();
-
-   /* If logging is currently disabled... */
-   fp = (FILE*)retro_main_log_file();
-   if (!fp) /* ...initialise logging to console */
-      retro_main_log_file_init(NULL, false);
 }
 
 enum retro_language rarch_get_language_from_iso(const char *iso639)
