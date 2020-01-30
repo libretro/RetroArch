@@ -10832,13 +10832,13 @@ static void clear_controller_port_map(void)
 
 static char *get_temp_directory_alloc(void)
 {
+   const char *src;
    char *path             = NULL;
 #ifdef _WIN32
 #ifdef LEGACY_WIN32
    DWORD path_length      = GetTempPath(0, NULL) + 1;
-   path                   = (char*)malloc(path_length * sizeof(char));
 
-   if (!path)
+   if (!(path = (char*)malloc(path_length * sizeof(char))))
       return NULL;
 
    path[path_length - 1]   = 0;
@@ -10856,17 +10856,16 @@ static char *get_temp_directory_alloc(void)
    path = utf16_to_utf8_string_alloc(wide_str);
    free(wide_str);
 #endif
-#elif defined ANDROID
-   {
-      settings_t *settings = configuration_settings;
-      path = strcpy_alloc_force(settings->paths.directory_libretro);
-   }
+#else
+#if defined ANDROID
+   src     = configuration_settings->paths.directory_libretro;
 #else
    if (getenv("TMPDIR"))
-      path = strcpy_alloc_force(getenv("TMPDIR"));
-   else
-      path = strcpy_alloc_force("/tmp");
-
+      src  = getenv("TMPDIR");
+   else 
+      src  = "/tmp";
+#endif
+   path = strcpy_alloc_force(src);
 #endif
    return path;
 }
