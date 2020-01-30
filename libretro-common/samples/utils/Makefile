@@ -75,7 +75,7 @@ MD5_OBJS  := $(CORE_DIR)/md5.o
 SHA1_OBJS := $(CORE_DIR)/sha1.o \
 				 $(PWD_DIR)/sha1_main.o
 
-CRC32_OBJS := $(CORE_DIR)/crc32.o \
+CRC32_OBJS := $(PWD_DIR)/crc32.o \
 				  $(LIBRETRO_COMM_DIR)/compat/fopen_utf8.o \
 				  $(LIBRETRO_COMM_DIR)/compat/compat_strl.o \
 				  $(LIBRETRO_COMM_DIR)/encodings/encoding_utf.o \
