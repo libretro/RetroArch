@@ -699,7 +699,7 @@ static void d3d8_make_d3dpp(void *data,
       unsigned height             = 0;
 
       d3d8_get_video_size(d3d, &width, &height);
-      video_driver_set_size(&width, &height);
+      video_driver_set_size(width, height);
 #endif
       video_driver_get_size(&d3dpp->BackBufferWidth,
             &d3dpp->BackBufferHeight);
@@ -1026,7 +1026,7 @@ static bool d3d8_set_resize(d3d8_video_t *d3d,
    RARCH_LOG("[D3D8]: Resize %ux%u.\n", new_width, new_height);
    d3d->video_info.width  = new_width;
    d3d->video_info.height = new_height;
-   video_driver_set_size(&new_width, &new_height);
+   video_driver_set_size(new_width, new_height);
 
    return true;
 }
@@ -1060,7 +1060,7 @@ static bool d3d8_alive(void *data)
    ret = !quit;
 
    if (temp_width != 0 && temp_height != 0)
-      video_driver_set_size(&temp_width, &temp_height);
+      video_driver_set_size(temp_width, temp_height);
 
    return ret;
 }
@@ -1168,7 +1168,7 @@ static bool d3d8_init_internal(d3d8_video_t *d3d,
    {
       unsigned new_width  = info->fullscreen ? full_x : info->width;
       unsigned new_height = info->fullscreen ? full_y : info->height;
-      video_driver_set_size(&new_width, &new_height);
+      video_driver_set_size(new_width, new_height);
    }
 
 #ifdef HAVE_WINDOW

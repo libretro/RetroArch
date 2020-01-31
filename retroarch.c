@@ -20814,16 +20814,14 @@ void video_driver_get_size(unsigned *width, unsigned *height)
 #endif
 }
 
-void video_driver_set_size(unsigned *width, unsigned *height)
+void video_driver_set_size(unsigned width, unsigned height)
 {
 #ifdef HAVE_THREADS
    bool is_threaded = video_driver_is_threaded_internal();
    video_driver_threaded_lock(is_threaded);
 #endif
-   if (width)
-      video_driver_width  = *width;
-   if (height)
-      video_driver_height = *height;
+   video_driver_width  = width;
+   video_driver_height = height;
 #ifdef HAVE_THREADS
    video_driver_threaded_unlock(is_threaded);
 #endif

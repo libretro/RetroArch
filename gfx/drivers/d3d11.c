@@ -777,7 +777,7 @@ static void *d3d11_gfx_init(const video_info_t* video,
 
    D3D11SetRenderTargets(d3d11->context, 1, &d3d11->renderTargetView, NULL);
 
-   video_driver_set_size(&d3d11->vp.full_width, &d3d11->vp.full_height);
+   video_driver_set_size(d3d11->vp.full_width, d3d11->vp.full_height);
    d3d11->viewport.Width  = d3d11->vp.full_width;
    d3d11->viewport.Height = d3d11->vp.full_height;
    d3d11->resize_viewport = true;
@@ -1303,7 +1303,7 @@ static bool d3d11_gfx_frame(
 
       d3d11->resize_chain    = false;
       d3d11->resize_viewport = true;
-      video_driver_set_size(&video_info->width, &video_info->height);
+      video_driver_set_size(video_info->width, video_info->height);
    }
 
 #ifdef __WINRT__
@@ -1619,7 +1619,7 @@ static bool d3d11_gfx_alive(void* data)
    win32_check_window(&quit, &d3d11->resize_chain, &d3d11->vp.full_width, &d3d11->vp.full_height);
 
    if (d3d11->resize_chain && d3d11->vp.full_width != 0 && d3d11->vp.full_height != 0)
-      video_driver_set_size(&d3d11->vp.full_width, &d3d11->vp.full_height);
+      video_driver_set_size(d3d11->vp.full_width, d3d11->vp.full_height);
 
    return !quit;
 }
