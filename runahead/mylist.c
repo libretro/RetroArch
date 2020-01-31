@@ -2,7 +2,6 @@
 #include <string.h>
 
 #include "mylist.h"
-#include "mem_util.h"
 
 void mylist_resize(MyList *list, int new_size, bool run_constructor)
 {

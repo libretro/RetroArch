@@ -278,8 +278,7 @@ endif
 
 ifeq ($(HAVE_RUNAHEAD), 1)
    DEFINES += -DHAVE_RUNAHEAD
-   OBJ += runahead/mem_util.o \
-          runahead/mylist.o
+   OBJ     += runahead/mylist.o
 endif
 
 ifeq ($(HAVE_CC_RESAMPLER), 1)

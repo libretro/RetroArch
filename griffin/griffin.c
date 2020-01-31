@@ -1386,7 +1386,6 @@ MENU
 #endif
 
 #ifdef HAVE_RUNAHEAD
-#include "../runahead/mem_util.c"
 #include "../runahead/mylist.c"
 #endif
 
