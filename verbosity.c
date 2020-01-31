@@ -44,6 +44,7 @@
 #include <windows.h>
 #endif
 
+#include <file/file_path.h>
 #include <string/stdstring.h>
 #include <streams/file_stream.h>
 #include <compat/fopen_utf8.h>
