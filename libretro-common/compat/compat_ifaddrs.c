@@ -322,7 +322,7 @@ static int interpretLink(struct nlmsghdr *p_hdr, struct ifaddrs **p_resultList)
       }
    }
 
-   l_entry = (sruct ifaddrs*)malloc(sizeof(struct ifaddrs) + sizeof(int) + l_nameSize + l_addrSize + l_dataSize);
+   l_entry = (struct ifaddrs*)malloc(sizeof(struct ifaddrs) + sizeof(int) + l_nameSize + l_addrSize + l_dataSize);
    if (!l_entry)
       return -1;
 
