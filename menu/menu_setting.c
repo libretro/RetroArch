@@ -6639,32 +6639,6 @@ void general_write_handler(rarch_setting_t *setting)
 #endif
          }
          break;
-      case MENU_ENUM_LABEL_NETPLAY_IP_ADDRESS:
-#ifdef HAVE_NETWORKING
-         {
-            bool val = (!string_is_empty(setting->value.target.string));
-            if (val)
-               retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_NETPLAY_IP_ADDRESS, NULL);
-            else
-               retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_NETPLAY_IP_ADDRESS, NULL);
-         }
-#endif
-         break;
-      case MENU_ENUM_LABEL_NETPLAY_MODE:
-#ifdef HAVE_NETWORKING
-         retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_NETPLAY_MODE, NULL);
-#endif
-         break;
-      case MENU_ENUM_LABEL_NETPLAY_STATELESS_MODE:
-#ifdef HAVE_NETWORKING
-         retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_NETPLAY_STATELESS_MODE, NULL);
-#endif
-         break;
-      case MENU_ENUM_LABEL_NETPLAY_CHECK_FRAMES:
-#ifdef HAVE_NETWORKING
-         retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_NETPLAY_CHECK_FRAMES, NULL);
-#endif
-         break;
       case MENU_ENUM_LABEL_AUDIO_ENABLE_MENU:
 #ifdef HAVE_AUDIOMIXER
          if (settings->bools.audio_enable_menu)
