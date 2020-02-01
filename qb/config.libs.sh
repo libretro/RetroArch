@@ -564,6 +564,39 @@ check_enabled CXX SLANG slang 'The C++ compiler is' false
 check_enabled CXX GLSLANG glslang 'The C++ compiler is' false
 check_enabled CXX SPIRV_CROSS SPIRV-Cross 'The C++ compiler is' false
 
+check_enabled GLSLANG BUILTINGLSLANG 'builtin glslang' 'glslang is' true
+
+if [ "$HAVE_GLSLANG" != no ]; then
+   check_header cxx GLSLANG \
+      glslang/Public/ShaderLang.h \
+      glslang/SPIRV/GlslangToSpv.h
+
+   check_lib cxx GLSLANG -lglslang
+   check_lib cxx GLSLANG_OSDEPENDENT -lOSDependent
+   check_lib cxx GLSLANG_OGLCOMPILER -lOGLCompiler
+   check_lib cxx GLSLANG_HLSL -lHLSL
+   check_lib cxx GLSLANG_SPIRV -lSPIRV
+   check_lib cxx GLSLANG_SPIRV_TOOLS_OPT -lSPIRV-Tools-opt
+   check_lib cxx GLSLANG_SPIRV_TOOLS -lSPIRV-Tools
+
+   if [ "$HAVE_GLSLANG" = no ] ||
+      [ "$HAVE_GLSLANG_OSDEPENDENT" = no ] ||
+      [ "$HAVE_GLSLANG_OGLCOMPILER" = no ] ||
+      [ "$HAVE_GLSLANG_HLSL" = no ] ||
+      [ "$HAVE_GLSLANG_SPIRV" = no ] ||
+      [ "$HAVE_GLSLANG_SPIRV_TOOLS_OPT" = no ] ||
+      [ "$HAVE_GLSLANG_SPIRV_TOOLS" = no ]; then
+      if [ "$HAVE_BUILTINGLSLANG" != yes ]; then
+         die : 'Notice: System glslang libraries not found, disabling glslang support.'
+         HAVE_GLSLANG=no
+      else
+         HAVE_GLSLANG=yes
+      fi
+   else
+      HAVE_GLSLANG=yes
+   fi
+fi
+
 check_enabled SLANG GLSLANG glslang 'slang is' false
 check_enabled SLANG SPIRV_CROSS SPIRV-Cross 'slang is' false
 check_enabled SLANG OPENGL_CORE 'OpenGL core' 'slang is' false
