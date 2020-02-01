@@ -4,6 +4,7 @@
 - CHEEVOS/BUGFIX: Achievement triggers could cause Retroarch to Crash
 - CHEEVOS: Don't block Sameboy core because it only exposes some memory
 - CHEEVOS: Support for extended Sega CD memory
+- CHEEVOS: Show RetroAchievements Hash in content information list
 - EMSCRIPTEN: Recreate input event listeners properly
 - LIBRETRO: Add disk control interface API extension
 - LOCALIZATION: Update Polish translation
