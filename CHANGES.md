@@ -7,7 +7,7 @@
 - EMSCRIPTEN: Recreate input event listeners properly
 - LIBRETRO: Add disk control interface API extension
 - LOCALIZATION: Update Polish translation
-- NETPLAY/MENU/BUGFIX: Netplay Stateless Mode doesn't save. Affects other netplay settings which can be overridden by commandline option
+- NETPLAY/MENU/BUGFIX: Fix Netplay Stateless Mode doesn't save. Affects other netplay settings which can be overridden by commandline option
 - NETPLAY/ROOMS/BUGFIX: Prevent out-of-bounds array indexing when displaying/selecting netplay rooms in menus
 - VIDEO: Set hardware 'Bilinear filtering' off by default
 
