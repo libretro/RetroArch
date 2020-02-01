@@ -1008,7 +1008,7 @@ static void *d3d10_gfx_init(const video_info_t* video,
 
       d3d10_gpu_list = string_list_new();
 
-      while (true)
+      for (;;)
       {
          DXGI_ADAPTER_DESC desc = {0};
          union string_list_elem_attr attr = {0};

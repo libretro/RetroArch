@@ -6476,7 +6476,7 @@ static int xmb_pointer_up(void *userdata,
              * to reach the bottom of the screen - i.e. we just
              * want an index offset to subtract from the current
              * selection... */
-            while (true)
+            for (;;)
             {
                float top = xmb_item_y(xmb, bottom_idx, selection) + xmb->margins_screen_top;
 

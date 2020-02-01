@@ -182,7 +182,7 @@ bool d3d12_init_base(d3d12_video_t* d3d12)
 
       d3d12->gpu_list = string_list_new();
 
-      while (true)
+      for (;;)
       {
          char str[128];
          union string_list_elem_attr attr = {0};

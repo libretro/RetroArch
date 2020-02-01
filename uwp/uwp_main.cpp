@@ -325,18 +325,20 @@ void App::Load(Platform::String^ entryPoint)
 // This method is called after the window becomes active.
 void App::Run()
 {
+   bool x = false;
 	if (!m_initialized)
 	{
 		RARCH_WARN("Initialization failed, so not running\n");
 		return;
 	}
 
-	bool x = false;
-	while (true)
+
+   for (;;)
 	{
+      int ret;
 		CoreWindow::GetForCurrentThread()->Dispatcher->ProcessEvents(CoreProcessEventsOption::ProcessAllIfPresent);
 
-		int           ret = runloop_iterate();
+		ret = runloop_iterate();
 
 		task_queue_check();
 

@@ -104,7 +104,7 @@ static void tpool_worker(void *arg)
    tpool_work_t *work = NULL;
    tpool_t      *tp   = (tpool_t*)arg;
 
-   while (true)
+   for (;;)
    {
       slock_lock(tp->work_mutex);
       /* Keep running until told to stop. */
@@ -252,7 +252,8 @@ void tpool_wait(tpool_t *tp)
       return;
 
    slock_lock(tp->work_mutex);
-   while (true)
+
+   for (;;)
    {
       /* working_cond is dual use. It signals when we're not stopping but the
        * working_cnt is 0 indicating there isn't any work processing. If we
@@ -262,5 +263,6 @@ void tpool_wait(tpool_t *tp)
       else
          break;
    }
+
    slock_unlock(tp->work_mutex);
 }

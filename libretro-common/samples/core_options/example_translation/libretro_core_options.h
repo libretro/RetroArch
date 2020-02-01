@@ -166,12 +166,11 @@ static INLINE void libretro_set_core_options(retro_environment_t environ_cb)
       char **values_buf                = NULL;
 
       /* Determine number of options */
-      while (true)
+      for (;;)
       {
-         if (option_defs_us[num_options].key)
-            num_options++;
-         else
+         if (!option_defs_us[num_options].key)
             break;
+         num_options++;
       }
 
       /* Allocate arrays */
@@ -198,20 +197,18 @@ static INLINE void libretro_set_core_options(retro_environment_t environ_cb)
             size_t num_values = 0;
 
             /* Determine number of values */
-            while (true)
+            for (;;)
             {
-               if (values[num_values].value)
-               {
-                  /* Check if this is the default value */
-                  if (default_value)
-                     if (strcmp(values[num_values].value, default_value) == 0)
-                        default_index = num_values;
-
-                  buf_len += strlen(values[num_values].value);
-                  num_values++;
-               }
-               else
+               if (!values[num_values].value)
                   break;
+
+               /* Check if this is the default value */
+               if (default_value)
+                  if (strcmp(values[num_values].value, default_value) == 0)
+                     default_index = num_values;
+
+               buf_len += strlen(values[num_values].value);
+               num_values++;
             }
 
             /* Build values string */

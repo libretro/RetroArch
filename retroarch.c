@@ -4415,7 +4415,8 @@ static void handle_translation_cb(
 
    /* Parse JSON body for the image and sound data */
    body_copy = strdup(data->data);
-   while (true)
+
+   for (;;)
    {
       curr = (char)*(body_copy+i);
       if (curr == '\0')
@@ -8191,12 +8192,11 @@ static bool core_option_manager_parse_option(
       option->info            = strdup(option_def->info);
 
    /* Get number of values */
-   while (true)
+   for (;;)
    {
-      if (!string_is_empty(values[num_vals].value))
-         num_vals++;
-      else
+      if (string_is_empty(values[num_vals].value))
          break;
+      num_vals++;
    }
 
    if (num_vals < 1)
@@ -8605,12 +8605,11 @@ static struct retro_core_option_definition *core_option_manager_get_definitions(
       return NULL;
 
    /* Determine number of options */
-   while (true)
+   for (;;)
    {
-      if (!string_is_empty(option_defs_us[num_options].key))
-         num_options++;
-      else
+      if (string_is_empty(option_defs_us[num_options].key))
          break;
+      num_options++;
    }
 
    if (num_options < 1)
@@ -8647,24 +8646,22 @@ static struct retro_core_option_definition *core_option_manager_get_definitions(
       {
          size_t index = 0;
 
-         while (true)
+         for (;;)
          {
             const char *local_key = option_defs_local[index].key;
 
-            if (!string_is_empty(local_key))
-            {
-               if (string_is_equal(key, local_key))
-               {
-                  local_desc   = option_defs_local[index].desc;
-                  local_info   = option_defs_local[index].info;
-                  local_values = option_defs_local[index].values;
-                  break;
-               }
-               else
-                  index++;
-            }
-            else
+            if (string_is_empty(local_key))
                break;
+
+            if (string_is_equal(key, local_key))
+            {
+               local_desc   = option_defs_local[index].desc;
+               local_info   = option_defs_local[index].info;
+               local_values = option_defs_local[index].values;
+               break;
+            }
+
+            index++;
          }
       }
 
@@ -8674,12 +8671,11 @@ static struct retro_core_option_definition *core_option_manager_get_definitions(
 
       /* Determine number of values
        * (always taken from us english defs) */
-      while (true)
+      for (;;)
       {
-         if (!string_is_empty(option_defs_us[i].values[num_values].value))
-            num_values++;
-         else
+         if (string_is_empty(option_defs_us[i].values[num_values].value))
             break;
+         num_values++;
       }
 
       /* Copy values */
@@ -8696,22 +8692,20 @@ static struct retro_core_option_definition *core_option_manager_get_definitions(
          {
             size_t value_index = 0;
 
-            while (true)
+            for (;;)
             {
                const char *local_value = local_values[value_index].value;
 
-               if (!string_is_empty(local_value))
-               {
-                  if (string_is_equal(value, local_value))
-                  {
-                     local_label = local_values[value_index].label;
-                     break;
-                  }
-                  else
-                     value_index++;
-               }
-               else
+               if (string_is_empty(local_value))
                   break;
+
+               if (string_is_equal(value, local_value))
+               {
+                  local_label = local_values[value_index].label;
+                  break;
+               }
+
+               value_index++;
             }
          }
 
@@ -9098,9 +9092,7 @@ static bool dynamic_verify_hw_context(enum retro_hw_context_type type,
       case RETRO_HW_CONTEXT_OPENGL_CORE:
          if (!string_is_equal(video_ident, "gl") &&
              !string_is_equal(video_ident, "glcore"))
-         {
             return false;
-         }
          break;
       case RETRO_HW_CONTEXT_DIRECT3D:
          if (!(string_is_equal(video_ident, "d3d11") && major == 11))
@@ -9175,7 +9167,8 @@ static size_t mmap_add_bits_down(size_t n)
    n |= n >>  8;
    n |= n >> 16;
 
-   /* double shift to avoid warnings on 32bit (it's dead code, but compilers suck) */
+   /* double shift to avoid warnings on 32bit (it's dead code, 
+    * but compilers suck) */
    if (sizeof(size_t) > 4)
       n |= n >> 16 >> 16;
 

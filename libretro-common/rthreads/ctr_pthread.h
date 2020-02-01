@@ -145,7 +145,7 @@ static INLINE int pthread_cond_wait(pthread_cond_t *cond,
 static INLINE int pthread_cond_timedwait(pthread_cond_t *cond,
       pthread_mutex_t *mutex, const struct timespec *abstime)
 {
-   while (true)
+   for (;;)
    {
        struct timespec now = {0};
 	    /* Missing clock_gettime*/
