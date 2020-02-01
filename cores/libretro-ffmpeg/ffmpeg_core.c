@@ -1449,7 +1449,7 @@ static int16_t *decode_audio(AVCodecContext *ctx, AVPacket *pkt,
       return buffer;
    }
 
-   while(true)
+   for (;;)
    {
       ret = avcodec_receive_frame(ctx, frame);
       if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)

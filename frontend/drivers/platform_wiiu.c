@@ -69,10 +69,11 @@
 static enum frontend_fork wiiu_fork_mode = FRONTEND_FORK_NONE;
 static const char *elf_path_cst = WIIU_SD_PATH "retroarch/retroarch.elf";
 
-static bool exists(char *path) {
+static bool exists(char *path)
+{
    struct stat stat_buf = {0};
 
-   if(!path)
+   if (!path)
       return false;
 
    return (stat(path, &stat_buf) == 0);
@@ -85,7 +86,7 @@ static void fix_asset_directory(void) {
    fill_pathname_join(src_path_buf, g_defaults.dirs[DEFAULT_DIR_PORT], "media", sizeof(g_defaults.dirs[DEFAULT_DIR_PORT]));
    fill_pathname_join(dst_path_buf, g_defaults.dirs[DEFAULT_DIR_PORT], "assets", sizeof(g_defaults.dirs[DEFAULT_DIR_PORT]));
 
-   if(exists(dst_path_buf) || !exists(src_path_buf))
+   if (exists(dst_path_buf) || !exists(src_path_buf))
       return;
 
    rename(src_path_buf, dst_path_buf);
@@ -204,7 +205,7 @@ static void frontend_wiiu_exec(const char *path, bool should_load_game)
    int len     = 0;
    param->argc = 0;
 
-   if(!path || !*path)
+   if (!path || !*path)
    {
       RARCH_LOG("No executable path provided, cannot Restart\n");
    }
@@ -389,7 +390,7 @@ int main(int argc, char **argv)
 static void get_arguments(int *argc, char ***argv)
 {
    DEBUG_VAR(ARGV_PTR);
-   if(ARGV_PTR && ((u32)ARGV_PTR < 0x01000000))
+   if (ARGV_PTR && ((u32)ARGV_PTR < 0x01000000))
    {
       struct
       {
@@ -397,7 +398,8 @@ static void get_arguments(int *argc, char ***argv)
          u32 argc;
          char *argv[3];
       } *param = ARGV_PTR;
-      if(param->magic == ARGV_MAGIC)
+
+      if (param->magic == ARGV_MAGIC)
       {
         *argc = param->argc;
         *argv = param->argv;
@@ -435,9 +437,9 @@ static void main_loop(void)
    OSTime start_time;
    int status;
 
-   do
+   for (;;)
    {
-      if(video_driver_get_ptr(false))
+      if (video_driver_get_ptr(false))
       {
          start_time = OSGetSystemTime();
          task_queue_wait(swap_is_pending, &start_time);
@@ -449,7 +451,7 @@ static void main_loop(void)
 
       if (status == -1)
          break;
-   } while(true);
+   }
 }
 
 static void SaveCallback(void)
@@ -488,14 +490,14 @@ int getBroadcastAddress(ACIpAddress *broadcast)
    ACIpAddress myIp, mySubnet;
    ACResult result;
 
-   if(broadcast == NULL)
+   if (!broadcast)
       return -1;
 
    result = ACGetAssignedAddress(&myIp);
-   if(result < 0)
+   if (result < 0)
       return -1;
    result = ACGetAssignedSubnet(&mySubnet);
-   if(result < 0)
+   if (result < 0)
       return -1;
 
    *broadcast = myIp | (~mySubnet);
@@ -520,7 +522,7 @@ static void deinit_logging(void)
 static int broadcast_init(int port)
 {
    ACIpAddress broadcast_ip;
-   if(getBroadcastAddress(&broadcast_ip) < 0)
+   if (getBroadcastAddress(&broadcast_ip) < 0)
       return -1;
 
    memset(&broadcast, 0, sizeof(broadcast));
@@ -535,15 +537,15 @@ static void wiiu_log_init(int port)
 {
    wiiu_log_lock = 0;
 
-   if(wiiu_log_socket >= 0)
+   if (wiiu_log_socket >= 0)
       return;
 
-   if(broadcast_init(port) < 0)
+   if (broadcast_init(port) < 0)
       return;
 
    wiiu_log_socket = socket(AF_INET, SOCK_DGRAM, 0);
 
-   if(wiiu_log_socket < 0)
+   if (wiiu_log_socket < 0)
       return;
 
    struct sockaddr_in connect_addr;
@@ -552,7 +554,7 @@ static void wiiu_log_init(int port)
    connect_addr.sin_port = 0;
    connect_addr.sin_addr.s_addr = htonl(INADDR_ANY);
 
-   if( bind(wiiu_log_socket, (struct sockaddr *)&connect_addr, sizeof(connect_addr)) < 0)
+   if ( bind(wiiu_log_socket, (struct sockaddr *)&connect_addr, sizeof(connect_addr)) < 0)
    {
       socketclose(wiiu_log_socket);
       wiiu_log_socket = -1;
@@ -562,7 +564,7 @@ static void wiiu_log_init(int port)
 
 static void wiiu_log_deinit(void)
 {
-   if(wiiu_log_socket >= 0)
+   if (wiiu_log_socket >= 0)
    {
       socketclose(wiiu_log_socket);
       wiiu_log_socket = -1;
@@ -604,7 +606,7 @@ void net_print_exp(const char *str)
 
 static ssize_t wiiu_log_write(struct _reent *r, void *fd, const char *ptr, size_t len)
 {
-   if( wiiu_log_socket < 0)
+   if (wiiu_log_socket < 0)
       return len;
 
    while(wiiu_log_lock)
@@ -620,7 +622,7 @@ static ssize_t wiiu_log_write(struct _reent *r, void *fd, const char *ptr, size_
       int block = remaining < DGRAM_SIZE ? remaining : DGRAM_SIZE;
       sent = sendto(wiiu_log_socket, ptr, block, 0, (struct sockaddr *)&broadcast, sizeof(broadcast));
 
-      if(sent < 0)
+      if (sent < 0)
          break;
 
       remaining -= sent;
