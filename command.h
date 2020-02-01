@@ -214,8 +214,6 @@ enum event_command
    CMD_EVENT_SAVE_FILES
 };
 
-bool command_set_shader(const char *arg);
-
 /**
  * command_event:
  * @cmd                  : Command index.

@@ -1183,6 +1183,8 @@ static bool is_narrator_running(void);
 static bool accessibility_startup_message(void);
 #endif
 
+static bool command_set_shader(const char *arg);
+
 static bool midi_driver_read(uint8_t *byte);
 static bool midi_driver_write(uint8_t byte, uint32_t delta_time);
 static bool midi_driver_output_enabled(void);
@@ -3968,7 +3970,7 @@ bool retroarch_apply_shader(enum rarch_shader_type type, const char *preset_path
 #endif
 }
 
-bool command_set_shader(const char *arg)
+static bool command_set_shader(const char *arg)
 {
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    enum rarch_shader_type type = video_shader_parse_type(arg);
