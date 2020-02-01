@@ -132,6 +132,7 @@ typedef struct
    rcheevos_fixups_t fixups;
 
    char token[32];
+   char hash[33];
 } rcheevos_locals_t;
 
 typedef struct
@@ -165,6 +166,7 @@ static rcheevos_locals_t rcheevos_locals =
    NULL, /* lboards */
    {0},  /* fixups */
    {0},  /* token */
+   "N/A",/* hash */
 };
 
 bool rcheevos_loaded = false;
@@ -1198,6 +1200,11 @@ int rcheevos_get_console(void)
    return rcheevos_locals.patchdata.console_id;
 }
 
+const char* rcheevos_get_hash(void)
+{
+   return rcheevos_locals.hash;
+}
+
 static void rcheevos_unlock_cb(unsigned id, void* userdata)
 {
    rcheevos_cheevo_t* cheevo = NULL;
@@ -1698,6 +1705,7 @@ static int rcheevos_iterate(rcheevos_coro_t* coro)
       }
 
       CHEEVOS_LOG(RCHEEVOS_TAG "this game doesn't feature achievements\n");
+      strcpy(rcheevos_locals.hash, "N/A");
       rcheevos_hardcore_paused = true;
       CORO_STOP();
 
@@ -2219,11 +2227,13 @@ found:
             CORO_RET();
          }
 
-         CHEEVOS_LOG(RCHEEVOS_TAG "checking %02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x\n",
+         sprintf(rcheevos_locals.hash, "%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x",
             coro->hash[0], coro->hash[1], coro->hash[2], coro->hash[3],
             coro->hash[4], coro->hash[5], coro->hash[6], coro->hash[7],
             coro->hash[8], coro->hash[9], coro->hash[10], coro->hash[11],
             coro->hash[12], coro->hash[13], coro->hash[14], coro->hash[15]);
+
+         CHEEVOS_LOG(RCHEEVOS_TAG "checking %s\n", rcheevos_locals.hash);
          rcheevos_log_url(RCHEEVOS_TAG "rc_url_get_gameid: %s\n", coro->url);
          CORO_GOSUB(RCHEEVOS_HTTP_GET);
 

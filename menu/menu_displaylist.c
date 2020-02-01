@@ -3126,41 +3126,6 @@ static unsigned menu_displaylist_parse_content_information(
          count++;
    }
 
-   /* Database */
-   if (!string_is_empty(db_name))
-   {
-      char *db_name_no_ext = NULL;
-      char db_name_no_ext_buff[PATH_MAX_LENGTH];
-
-      db_name_no_ext_buff[0] = '\0';
-
-      /* Remove .lpl extension
-       * > path_remove_extension() requires a char * (not const)
-       *   so have to use a temporary buffer... */
-      strlcpy(db_name_no_ext_buff, db_name, sizeof(db_name_no_ext_buff));
-      db_name_no_ext = path_remove_extension(db_name_no_ext_buff);
-
-      if (!string_is_empty(db_name_no_ext))
-      {
-         tmp[0]   = '\0';
-
-         n        = strlcpy(tmp, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_DATABASE), sizeof(tmp));
-         n        = strlcat(tmp, ": ", sizeof(tmp));
-         n        = strlcat(tmp, db_name_no_ext, sizeof(tmp));
-
-         /* Silence gcc compiler warning
-          * (getting so sick of these...) */
-         if ((n < 0) || (n >= PATH_MAX_LENGTH))
-            n = 0;
-
-         if (menu_entries_append_enum(info->list, tmp,
-               msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_INFO_DATABASE),
-               MENU_ENUM_LABEL_CONTENT_INFO_DATABASE,
-               0, 0, 0))
-            count++;
-      }
-   }
-
    /* Runtime */
    if (((settings->uints.playlist_sublabel_runtime_type == PLAYLIST_RUNTIME_PER_CORE) &&
          settings->bools.content_runtime_log) ||
@@ -3203,6 +3168,65 @@ static unsigned menu_displaylist_parse_content_information(
          }
 
          free(runtime_log);
+      }
+   }
+
+#ifdef HAVE_CHEEVOS
+   /* RetroAchievements Hash */
+   if (settings->bools.cheevos_enable && settings->arrays.cheevos_token[0] &&
+      !string_is_empty(loaded_content_path))
+   {
+      tmp[0]   = '\0';
+
+      n        = strlcpy(tmp, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CHEEVOS_HASH), sizeof(tmp));
+      n        = strlcat(tmp, ": ", sizeof(tmp));
+      n        = strlcat(tmp, rcheevos_get_hash(), sizeof(tmp));
+
+      /* Silence gcc compiler warning
+      * (getting so sick of these...) */
+      if ((n < 0) || (n >= PATH_MAX_LENGTH))
+         n = 0;
+
+      if (menu_entries_append_enum(info->list, tmp,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CHEEVOS_HASH),
+            MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CHEEVOS_HASH,
+            0, 0, 0))
+         count++;
+   }
+#endif
+
+   /* Database */
+   if (!string_is_empty(db_name))
+   {
+      char *db_name_no_ext = NULL;
+      char db_name_no_ext_buff[PATH_MAX_LENGTH];
+
+      db_name_no_ext_buff[0] = '\0';
+
+      /* Remove .lpl extension
+      * > path_remove_extension() requires a char * (not const)
+      *   so have to use a temporary buffer... */
+      strlcpy(db_name_no_ext_buff, db_name, sizeof(db_name_no_ext_buff));
+      db_name_no_ext = path_remove_extension(db_name_no_ext_buff);
+
+      if (!string_is_empty(db_name_no_ext))
+      {
+         tmp[0]   = '\0';
+
+         n        = strlcpy(tmp, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_DATABASE), sizeof(tmp));
+         n        = strlcat(tmp, ": ", sizeof(tmp));
+         n        = strlcat(tmp, db_name_no_ext, sizeof(tmp));
+
+         /* Silence gcc compiler warning
+         * (getting so sick of these...) */
+         if ((n < 0) || (n >= PATH_MAX_LENGTH))
+            n = 0;
+
+         if (menu_entries_append_enum(info->list, tmp,
+               msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_INFO_DATABASE),
+               MENU_ENUM_LABEL_CONTENT_INFO_DATABASE,
+               0, 0, 0))
+            count++;
       }
    }
 
