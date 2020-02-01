@@ -211,13 +211,13 @@ static bool slang_process_reflection(
       slang_semantic_meta& src = sl_reflection.semantics[semantic];
       if (src.push_constant || src.uniform)
       {
-         uniform_sem_t uniform = { map->uniforms[semantic],
+         uniform_sem_t uniform  = { map->uniforms[semantic],
                                    src.num_components
                                       * (unsigned)sizeof(float) };
-         string uniform_id     = get_semantic_name(
-               sl_reflection, (slang_semantic)semantic, 0);
+         const char *uniform_id = get_semantic_name(
+               sl_reflection, (slang_semantic)semantic, 0).c_str();
 
-         strlcpy(uniform.id, uniform_id.c_str(), sizeof(uniform.id));
+         strlcpy(uniform.id, uniform_id, sizeof(uniform.id));
 
          if (src.push_constant)
          {
@@ -241,9 +241,9 @@ static bool slang_process_reflection(
          uniform_sem_t uniform = {
             &shader_info->parameters[i].current, sizeof(float) };
 
-         string uniform_id = get_semantic_name(
-               sl_reflection, SLANG_SEMANTIC_FLOAT_PARAMETER, i);
-         strlcpy(uniform.id, uniform_id.c_str(), sizeof(uniform.id));
+         const char *uniform_id = get_semantic_name(
+               sl_reflection, SLANG_SEMANTIC_FLOAT_PARAMETER, i).c_str();
+         strlcpy(uniform.id, uniform_id, sizeof(uniform.id));
 
          if (src.push_constant)
          {
@@ -309,12 +309,12 @@ static bool slang_process_reflection(
                4 * sizeof(float)
             };
 
-            string uniform_id =
+            const char *uniform_id =
                   get_size_semantic_name(
                         sl_reflection,
-                        (slang_texture_semantic)semantic, index);
+                        (slang_texture_semantic)semantic, index).c_str();
 
-            strlcpy(uniform.id, uniform_id.c_str(), sizeof(uniform.id));
+            strlcpy(uniform.id, uniform_id, sizeof(uniform.id));
 
             if (src.push_constant)
             {
