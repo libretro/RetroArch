@@ -41,7 +41,7 @@ typedef struct discord_userdata
    enum discord_presence status;
 } discord_userdata_t;
 
-void discord_init(const char *discord_app_id);
+void discord_init(const char *discord_app_id, char *args);
 
 void discord_shutdown(void);
 

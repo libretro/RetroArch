@@ -7669,7 +7669,8 @@ TODO: Add a setting for these tweaks */
             if (discord_is_ready())
                return true;
 
-            discord_init(settings->arrays.discord_app_id);
+            discord_init(settings->arrays.discord_app_id,
+                  launch_arguments);
          }
 #endif
          break;
@@ -7950,7 +7951,7 @@ void main_exit(void *args)
    frontend_driver_exitspawn(
          path_get_ptr(RARCH_PATH_CORE),
          path_get_realsize(RARCH_PATH_CORE),
-         retroarch_get_launch_arguments());
+         launch_arguments);
 
    has_set_username        = false;
    rarch_is_inited         = false;
@@ -27794,11 +27795,6 @@ rarch_system_info_t *runloop_get_system_info(void)
 struct retro_system_info *runloop_get_libretro_system_info(void)
 {
    return &runloop_system.info;
-}
-
-char *retroarch_get_launch_arguments(void)
-{
-   return launch_arguments;
 }
 
 void retroarch_force_video_driver_fallback(const char *driver)

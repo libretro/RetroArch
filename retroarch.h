@@ -371,8 +371,6 @@ void retroarch_menu_running(void);
 
 void retroarch_menu_running_finished(bool quit);
 
-char *retroarch_get_launch_arguments(void);
-
 rarch_system_info_t *runloop_get_system_info(void);
 
 struct retro_system_info *runloop_get_libretro_system_info(void);
@@ -1992,8 +1990,6 @@ const char* config_get_camera_driver_options(void);
 bool menu_driver_is_alive(void);
 
 void menu_driver_set_binding_state(bool on);
-
-bool menu_driver_is_toggled(void);
 
 bool menu_driver_is_toggled(void);
 
