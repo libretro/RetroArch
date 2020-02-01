@@ -132,11 +132,6 @@ bool *verbosity_get_ptr(void)
    return &main_verbosity;
 }
 
-void *retro_main_log_file(void)
-{
-   return log_file_fp;
-}
-
 void retro_main_log_file_init(const char *path, bool append)
 {
    if (log_file_initialized)
