@@ -700,7 +700,6 @@ static void frontend_win32_respawn(char *s, size_t len)
    {
       RARCH_LOG("Failed to restart RetroArch\n");
    }
-   return;
 }
 
 static bool frontend_win32_set_fork(enum frontend_fork fork_mode)
