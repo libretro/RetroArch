@@ -1820,7 +1820,7 @@ static bool path_init_subsystem(void)
 static void path_init_savefile(void)
 {
    bool should_sram_be_used = rarch_use_sram
-      && !rarch_ctl(RARCH_CTL_IS_SRAM_SAVE_DISABLED, NULL);
+      && !rarch_is_sram_save_disabled;
 
    rarch_use_sram    = should_sram_be_used;
 
@@ -5688,7 +5688,7 @@ static bool event_init_content(void)
 
    command_event_set_savestate_auto_index();
 
-   if (event_load_save_files())
+   if (event_load_save_files(rarch_is_sram_load_disabled))
       RARCH_LOG("%s.\n",
             msg_hash_to_str(MSG_SKIPPING_SRAM_LOAD));
 
@@ -25812,10 +25812,6 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          sthread_tls_delete(&rarch_tls);
 #endif
          break;
-      case RARCH_CTL_IS_SRAM_LOAD_DISABLED:
-         return rarch_is_sram_load_disabled;
-      case RARCH_CTL_IS_SRAM_SAVE_DISABLED:
-         return rarch_is_sram_save_disabled;
       case RARCH_CTL_SET_BLOCK_CONFIG_READ:
          rarch_block_config_read = true;
          break;

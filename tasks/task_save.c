@@ -1567,12 +1567,11 @@ bool event_save_files(bool is_sram_used)
    return true;
 }
 
-bool event_load_save_files(void)
+bool event_load_save_files(bool is_sram_load_disabled)
 {
    unsigned i;
 
-   if (!task_save_files ||
-         rarch_ctl(RARCH_CTL_IS_SRAM_LOAD_DISABLED, NULL))
+   if (!task_save_files || is_sram_load_disabled)
       return false;
 
    for (i = 0; i < task_save_files->size; i++)
