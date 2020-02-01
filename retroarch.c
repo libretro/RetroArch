@@ -3892,10 +3892,10 @@ static const struct cmd_map map[] = {
 bool retroarch_apply_shader(enum rarch_shader_type type, const char *preset_path, bool message)
 {
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-   settings_t *settings  = configuration_settings;
-   const char *core_name = runloop_system.info.library_name;
-   bool ret;
    char msg[256];
+   settings_t *settings    = configuration_settings;
+   const char *core_name   = runloop_system.info.library_name;
+   bool ret                = false;
    const char *preset_file = NULL;
 
    /* disallow loading shaders when no core is loaded */
@@ -3905,7 +3905,8 @@ bool retroarch_apply_shader(enum rarch_shader_type type, const char *preset_path
    if (!string_is_empty(preset_path))
       preset_file = path_basename(preset_path);
 
-   ret = video_driver_set_shader(type, preset_path);
+   if (current_video->set_shader)
+      ret = current_video->set_shader(video_driver_data, type, preset_path);
 
    if (ret)
    {
@@ -12137,12 +12138,6 @@ static bool bsv_movie_init_record(
    state_size               = (unsigned)info.size;
 
    header[STATE_SIZE_INDEX] = swap_if_big32(state_size);
-#if 0
-   RARCH_ERR("----- debug %u -----\n", header[0]);
-   RARCH_ERR("----- debug %u -----\n", header[1]);
-   RARCH_ERR("----- debug %u -----\n", header[2]);
-   RARCH_ERR("----- debug %u -----\n", header[3]);
-#endif
 
    intfstream_write(handle->file, header, 4 * sizeof(uint32_t));
 
@@ -19928,24 +19923,11 @@ bool video_driver_started_fullscreen(void)
 
 /* Stub functions */
 
-static void update_window_title_null(void *data, void *data2)
-{
-}
-
-static void swap_buffers_null(void *data, void *data2)
-{
-}
-
+static void update_window_title_null(void *data, void *data2) { }
+static void swap_buffers_null(void *data, void *data2) { }
 static bool get_metrics_null(void *data, enum display_metric_types type,
-      float *value)
-{
-   return false;
-}
-
-static bool set_resize_null(void *a, unsigned b, unsigned c)
-{
-   return false;
-}
+      float *value) { return false; }
+static bool set_resize_null(void *a, unsigned b, unsigned c) { return false; }
 
 /**
  * video_driver_find_handle:
@@ -20113,14 +20095,6 @@ static retro_proc_address_t video_driver_get_proc_address(const char *sym)
    if (video_driver_poke && video_driver_poke->get_proc_address)
       return video_driver_poke->get_proc_address(video_driver_data, sym);
    return NULL;
-}
-
-bool video_driver_set_shader(enum rarch_shader_type type,
-      const char *path)
-{
-   if (current_video->set_shader)
-      return current_video->set_shader(video_driver_data, type, path);
-   return false;
 }
 
 static void video_driver_filter_free(void)
@@ -20934,7 +20908,7 @@ enum retro_pixel_format video_driver_get_pixel_format(void)
  *
  * Renders the current video frame.
  **/
-bool video_driver_cached_frame(void)
+void video_driver_cached_frame(void)
 {
    void *recording  = recording_data;
 
@@ -20949,8 +20923,6 @@ bool video_driver_cached_frame(void)
             frame_cache_height, frame_cache_pitch);
 
    recording_data   = recording;
-
-   return true;
 }
 
 static void video_driver_monitor_adjust_system_rates(void)
@@ -23815,21 +23787,6 @@ static void runahead_save_state_list_init(size_t saveStateSize)
    mylist_create(&runahead_save_state_list, 16,
          runahead_save_state_alloc, runahead_save_state_free);
 }
-
-#if 0
-static void runahead_save_state_list_rotate(void)
-{
-   unsigned i;
-   void *element      = NULL;
-   void *firstElement = runahead_save_state_list->data[0];
-
-   for (i = 1; i < runahead_save_state_list->size; i++)
-      runahead_save_state_list->data[i - 1] =
-         runahead_save_state_list->data[i];
-   runahead_save_state_list->data[runahead_save_state_list->size - 1] =
-      firstElement;
-}
-#endif
 
 /* Hooks - Hooks to cleanup, and add dirty input hooks */
 static void runahead_remove_hooks(void)
@@ -26766,7 +26723,9 @@ static bool menu_display_libretro(void)
 #endif
       return false; /* Return false here for indication of idleness */
    }
-   return video_driver_cached_frame();
+
+   video_driver_cached_frame();
+   return true;
 }
 #endif
 
@@ -28778,51 +28737,6 @@ static bool is_narrator_running(void)
 #endif
    }
    return true;
-}
-#endif
-
-#if 0
-static bool accessibility_speak_ai_service(
-      const char* speak_text, const char* language, int priority)
-{
-#if defined(HAVE_NETWORKING) && defined(HAVE_TRANSLATE)
-   /* Call the AI service listed to do espeak for us. */ 
-   /* NOTE: This call works, but the audio mixer will not 
-    * play sound files while the core is paused, so it's
-    * not practical at the moment. */
-   unsigned i;
-   char new_ai_service_url[PATH_MAX_LENGTH];
-   char temp_string[PATH_MAX_LENGTH];
-   char json_buffer[2048];
-   char separator            = '?';
-   settings_t *settings      = configuration_settings;
-
-   strlcpy(new_ai_service_url, settings->arrays.ai_service_url, 
-           sizeof(new_ai_service_url));
-
-   if (strrchr(new_ai_service_url, '?'))
-      separator = '&';
-   snprintf(temp_string, sizeof(temp_string),
-            "%csource_lang=%s&target_lang=%s&output=espeak", 
-            separator, language, language);
-   strlcat(new_ai_service_url, temp_string, sizeof(new_ai_service_url));
-   
-   strlcpy(temp_string, speak_text, sizeof(temp_string));
-   for (i = 0; i < strlen(temp_string);i++)
-   {
-      if (temp_string[i]=='\"')
-         temp_string[i] = ' ';
-   } 
-   snprintf(json_buffer, sizeof(json_buffer),
-            "{\"text\": \"%s\"}", speak_text);
-   RARCH_LOG("SENDING accessibilty request... %s\n", new_ai_service_url);
-   task_push_http_post_transfer(new_ai_service_url,
-            json_buffer, true, NULL, handle_translation_cb, NULL);
-
-   return true;
-#else
-   return false;
-#endif
 }
 #endif
 

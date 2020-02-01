@@ -1557,7 +1557,7 @@ void video_driver_apply_state_changes(void);
 
 bool video_driver_read_viewport(uint8_t *buffer, bool is_idle);
 
-bool video_driver_cached_frame(void);
+void video_driver_cached_frame(void);
 
 void video_driver_default_settings(void);
 
@@ -1596,9 +1596,6 @@ const char* config_get_video_driver_options(void);
  * Returns: video driver's userdata.
  **/
 void *video_driver_get_ptr(bool force_nonthreaded_data);
-
-bool video_driver_set_shader(enum rarch_shader_type type,
-      const char *shader);
 
 bool video_driver_set_rotation(unsigned rotation);
 
