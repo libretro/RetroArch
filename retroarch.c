@@ -1191,6 +1191,8 @@ static bool midi_driver_set_all_sounds_off(void);
 static const void *midi_driver_find_handle(int index);
 static bool midi_driver_flush(void);
 
+static void bsv_movie_set_path(const char *path);
+
 struct string_list *dir_list_new_special(const char *input_dir,
       enum dir_list_type type, const char *filter)
 {
@@ -1815,14 +1817,14 @@ static bool path_init_subsystem(void)
    return true;
 }
 
-void path_init_savefile(void)
+static void path_init_savefile(void)
 {
-   bool should_sram_be_used = rarch_ctl(RARCH_CTL_IS_SRAM_USED, NULL)
+   bool should_sram_be_used = rarch_use_sram
       && !rarch_ctl(RARCH_CTL_IS_SRAM_SAVE_DISABLED, NULL);
 
    rarch_use_sram    = should_sram_be_used;
 
-   if (!rarch_ctl(RARCH_CTL_IS_SRAM_USED, NULL))
+   if (!rarch_use_sram)
    {
       RARCH_LOG("%s\n",
             msg_hash_to_str(MSG_SRAM_WILL_NOT_BE_SAVED));
@@ -6421,6 +6423,9 @@ bool command_event(enum event_command cmd, void *data)
 
    switch (cmd)
    {
+      case CMD_EVENT_SAVE_FILES:
+         event_save_files(rarch_use_sram);
+         break;
       case CMD_EVENT_OVERLAY_DEINIT:
 #ifdef HAVE_OVERLAY
          retroarch_overlay_deinit();
@@ -12340,7 +12345,7 @@ static bool bsv_movie_init(void)
    return true;
 }
 
-void bsv_movie_set_path(const char *path)
+static void bsv_movie_set_path(const char *path)
 {
    strlcpy(bsv_movie_state.movie_path,
          path, sizeof(bsv_movie_state.movie_path));
@@ -13436,12 +13441,10 @@ void set_connection_listener(pad_connection_listener_t *listener)
    pad_connection_listener = listener;
 }
 
-void fire_connection_listener(unsigned port, input_device_driver_t *driver)
+static void fire_connection_listener(unsigned port, input_device_driver_t *driver)
 {
-   if (!pad_connection_listener)
-      return;
-
-   pad_connection_listener->connected(port, driver);
+   if (pad_connection_listener)
+      pad_connection_listener->connected(port, driver);
 }
 
 
@@ -13781,7 +13784,7 @@ static int16_t input_state_device(
          if (id < RARCH_FIRST_META_KEY
 #ifdef HAVE_NETWORKGAMEPAD
                /* Don't process binds if input is coming from Remote RetroPad */
-               && remote_input == false
+               && !remote_input
 #endif
             )
          {
@@ -14026,7 +14029,7 @@ static int16_t input_state_device(
 
             if (id < RARCH_FIRST_META_KEY
 #ifdef HAVE_NETWORKGAMEPAD
-                  && remote_input == false
+                  && !remote_input
 #endif
                 )
             {
@@ -25790,7 +25793,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
 
          command_event(CMD_EVENT_RECORD_DEINIT, NULL);
 
-         event_save_files();
+         command_event(CMD_EVENT_SAVE_FILES, NULL);
 
          command_event(CMD_EVENT_REWIND_DEINIT, NULL);
          cheat_manager_state_free();
@@ -25813,8 +25816,6 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          return rarch_is_sram_load_disabled;
       case RARCH_CTL_IS_SRAM_SAVE_DISABLED:
          return rarch_is_sram_save_disabled;
-      case RARCH_CTL_IS_SRAM_USED:
-         return rarch_use_sram;
       case RARCH_CTL_SET_BLOCK_CONFIG_READ:
          rarch_block_config_read = true;
          break;

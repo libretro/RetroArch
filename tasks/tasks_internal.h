@@ -168,7 +168,7 @@ bool take_screenshot(
 
 bool event_load_save_files(void);
 
-bool event_save_files(void);
+bool event_save_files(bool sram_used);
 
 void path_init_savefile_rtc(const char *savefile_path);
 

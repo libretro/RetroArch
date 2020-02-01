@@ -100,8 +100,6 @@ enum rarch_ctl_state
    RARCH_CTL_IS_IPS_PREF,
    RARCH_CTL_UNSET_IPS_PREF,
 
-   RARCH_CTL_IS_SRAM_USED,
-
    RARCH_CTL_IS_SRAM_LOAD_DISABLED,
    RARCH_CTL_IS_SRAM_SAVE_DISABLED,
 
@@ -1922,8 +1920,6 @@ extern const shader_backend_t gl_cg_backend;
 /* BSV Movie */
 
 void bsv_movie_frame_rewind(void);
-
-void bsv_movie_set_path(const char *path);
 
 /* Location */
 

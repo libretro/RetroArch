@@ -551,7 +551,6 @@ void input_config_save_keybind(void *data, const char *prefix,
 void input_config_reset(void);
 
 void set_connection_listener(pad_connection_listener_t *listener);
-void fire_connection_listener(unsigned port, input_device_driver_t *driver);
 
 extern input_device_driver_t dinput_joypad;
 extern input_device_driver_t linuxraw_joypad;

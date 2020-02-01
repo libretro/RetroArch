@@ -1553,13 +1553,12 @@ bool content_save_ram_file(unsigned slot)
    return true;
 }
 
-bool event_save_files(void)
+bool event_save_files(bool is_sram_used)
 {
    unsigned i;
 
    cheat_manager_save_game_specific_cheats();
-   if (!task_save_files ||
-         !rarch_ctl(RARCH_CTL_IS_SRAM_USED, NULL))
+   if (!task_save_files || !is_sram_used)
       return false;
 
    for (i = 0; i < task_save_files->size; i++)

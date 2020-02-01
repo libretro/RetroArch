@@ -210,7 +210,8 @@ enum event_command
    CMD_EVENT_CHEAT_INDEX_PLUS,
    CMD_EVENT_CHEAT_INDEX_MINUS,
    CMD_EVENT_CHEAT_TOGGLE,
-   CMD_EVENT_AI_SERVICE_CALL
+   CMD_EVENT_AI_SERVICE_CALL,
+   CMD_EVENT_SAVE_FILES
 };
 
 bool command_set_shader(const char *arg);
