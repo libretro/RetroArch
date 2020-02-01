@@ -192,7 +192,7 @@ static int frontend_wiiu_parse_drive_list(void *data, bool load_content)
    return 0;
 }
 
-static void frontend_wiiu_exec(const char *path, bool should_load_game)
+static void frontend_wiiu_exec(const char *path, bool should_load_content)
 {
 
    struct
@@ -219,7 +219,7 @@ static void frontend_wiiu_exec(const char *path, bool should_load_game)
 
    RARCH_LOG("Attempt to load core: [%s].\n", path);
 #ifndef IS_SALAMANDER
-   if (should_load_game && !path_is_empty(RARCH_PATH_CONTENT))
+   if (should_load_content && !path_is_empty(RARCH_PATH_CONTENT))
    {
       strcpy(param->args + len, path_get(RARCH_PATH_CONTENT));
       param->argv[param->argc] = param->args + len;
@@ -273,9 +273,9 @@ static bool frontend_wiiu_set_fork(enum frontend_fork fork_mode)
 }
 #endif
 
-static void frontend_wiiu_exitspawn(char *s, size_t len)
+static void frontend_wiiu_exitspawn(char *s, size_t len, char *args)
 {
-   bool should_load_game = false;
+   bool should_load_content = false;
 #ifndef IS_SALAMANDER
    if (wiiu_fork_mode == FRONTEND_FORK_NONE)
       return;
@@ -283,13 +283,13 @@ static void frontend_wiiu_exitspawn(char *s, size_t len)
    switch (wiiu_fork_mode)
    {
       case FRONTEND_FORK_CORE_WITH_ARGS:
-         should_load_game = true;
+         should_load_content = true;
          break;
       default:
          break;
    }
 #endif
-   frontend_wiiu_exec(s, should_load_game);
+   frontend_wiiu_exec(s, should_load_content);
 }
 
 frontend_ctx_driver_t frontend_ctx_wiiu =

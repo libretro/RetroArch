@@ -81,7 +81,7 @@ typedef struct frontend_ctx_driver
    environment_get_t environment_get;
    void (*init)(void *data);
    void (*deinit)(void *data);
-   void (*exitspawn)(char *s, size_t len);
+   void (*exitspawn)(char *s, size_t len, char *args);
 
    process_args_t process_args;
    void (*exec)(const char *, bool);
@@ -185,7 +185,7 @@ void frontend_driver_shutdown(bool a);
 
 void frontend_driver_deinit(void *args);
 
-void frontend_driver_exitspawn(char *s, size_t len);
+void frontend_driver_exitspawn(char *s, size_t len, char *args);
 
 bool frontend_driver_has_fork(void);
 

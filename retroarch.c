@@ -7949,7 +7949,8 @@ void main_exit(void *args)
    frontend_driver_deinit(args);
    frontend_driver_exitspawn(
          path_get_ptr(RARCH_PATH_CORE),
-         path_get_realsize(RARCH_PATH_CORE));
+         path_get_realsize(RARCH_PATH_CORE),
+         retroarch_get_launch_arguments());
 
    has_set_username        = false;
    rarch_is_inited         = false;
@@ -27795,7 +27796,7 @@ struct retro_system_info *runloop_get_libretro_system_info(void)
    return &runloop_system.info;
 }
 
-char *get_retroarch_launch_arguments(void)
+char *retroarch_get_launch_arguments(void)
 {
    return launch_arguments;
 }

@@ -368,12 +368,12 @@ const struct video_driver *frontend_driver_get_video_driver(void)
    return frontend->get_video_driver();
 }
 
-void frontend_driver_exitspawn(char *s, size_t len)
+void frontend_driver_exitspawn(char *s, size_t len, char *args)
 {
    frontend_ctx_driver_t *frontend = frontend_get_ptr();
    if (!frontend || !frontend->exitspawn)
       return;
-   frontend->exitspawn(s, len);
+   frontend->exitspawn(s, len, args);
 }
 
 void frontend_driver_deinit(void *args)

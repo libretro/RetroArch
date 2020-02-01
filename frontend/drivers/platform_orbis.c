@@ -293,7 +293,7 @@ static bool frontend_orbis_set_fork(enum frontend_fork fork_mode)
 }
 #endif
 
-static void frontend_orbis_exitspawn(char *s, size_t len)
+static void frontend_orbis_exitspawn(char *s, size_t len, char *args)
 {
    bool should_load_game = false;
 #ifndef IS_SALAMANDER

@@ -371,7 +371,7 @@ void retroarch_menu_running(void);
 
 void retroarch_menu_running_finished(bool quit);
 
-char *get_retroarch_launch_arguments(void);
+char *retroarch_get_launch_arguments(void);
 
 rarch_system_info_t *runloop_get_system_info(void);
 

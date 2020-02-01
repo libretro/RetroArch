@@ -395,9 +395,9 @@ static bool frontend_switch_set_fork(enum frontend_fork fork_mode)
 }
 #endif
 
-static void frontend_switch_exitspawn(char *s, size_t len)
+static void frontend_switch_exitspawn(char *s, size_t len, char *args)
 {
-   bool should_load_game = false;
+   bool should_load_content = false;
 #ifndef IS_SALAMANDER
    if (switch_fork_mode == FRONTEND_FORK_NONE)
       return;
@@ -405,13 +405,13 @@ static void frontend_switch_exitspawn(char *s, size_t len)
    switch (switch_fork_mode)
    {
    case FRONTEND_FORK_CORE_WITH_ARGS:
-      should_load_game = true;
+      should_load_content = true;
       break;
    default:
       break;
    }
 #endif
-   frontend_switch_exec(s, should_load_game);
+   frontend_switch_exec(s, should_load_content);
 }
 
 #if 0

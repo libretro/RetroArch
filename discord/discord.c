@@ -489,17 +489,17 @@ void discord_init(const char *discord_app_id)
 
 #ifdef _WIN32
    fill_pathname_application_path(full_path, sizeof(full_path));
-   if (strstr(get_retroarch_launch_arguments(), full_path))
-      strlcpy(command, get_retroarch_launch_arguments(), sizeof(command));
+   if (strstr(retroarch_get_launch_arguments(), full_path))
+      strlcpy(command, retroarch_get_launch_arguments(), sizeof(command));
    else
    {
       path_basedir(full_path);
       snprintf(command, sizeof(command), "%s%s",
-            full_path, get_retroarch_launch_arguments());
+            full_path, retroarch_get_launch_arguments());
    }
 #else
    snprintf(command, sizeof(command), "sh -c %s",
-         get_retroarch_launch_arguments());
+         retroarch_get_launch_arguments());
 #endif
    RARCH_LOG("[discord] registering startup command: %s\n", command);
    Discord_Register(discord_app_id, command);

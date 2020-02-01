@@ -366,7 +366,7 @@ static void frontend_gx_exec(const char *path, bool should_load_game)
 #endif
 }
 
-static void frontend_gx_exitspawn(char *s, size_t len)
+static void frontend_gx_exitspawn(char *s, size_t len, char *args)
 {
    bool should_load_game = false;
 #if defined(IS_SALAMANDER)
