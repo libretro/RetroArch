@@ -1547,8 +1547,8 @@ ifeq ($(HAVE_SHADERS_COMMON), 1)
    OBJ += gfx/video_shader_parse.o
 endif
 
-ifeq ($(HAVE_GLSLANG), 1)
-   DEFINES += -DHAVE_GLSLANG
+ifeq ($(HAVE_BUILTINGLSLANG), 1)
+   HAVE_GLSLANG_COMMON = 1
 
    ifneq ($(findstring Win32,$(OS)),)
       GLSLANG_PLATFORM := Windows
@@ -1562,8 +1562,7 @@ ifeq ($(HAVE_GLSLANG), 1)
       -I$(DEPS_DIR)/glslang/glslang \
       -I$(DEPS_DIR)/glslang/glslang/glslang/MachineIndependent \
       -I$(DEPS_DIR)/glslang/glslang/glslang/Public \
-      -I$(DEPS_DIR)/glslang/glslang/SPIRV \
-      -I$(DEPS_DIR)/glslang
+      -I$(DEPS_DIR)/glslang/glslang/SPIRV
 
    GLSLANG_SOURCES := \
       $(wildcard $(DEPS_DIR)/glslang/*.cpp) \
@@ -1578,7 +1577,23 @@ ifeq ($(HAVE_GLSLANG), 1)
       DEFINES += -DENABLE_HLSL
       GLSLANG_SOURCES += $(wildcard $(DEPS_DIR)/glslang/glslang/hlsl/*.cpp)
    endif
+else ifeq ($(HAVE_GLSLANG),1)
+   HAVE_GLSLANG_COMMON = 1
+   GLSLANG_SOURCES := $(DEPS_DIR)/glslang/glslang.cpp
 
+   # The order of these libs are somewhat specific
+   LIBS += $(GLSLANG_LIBS) \
+           $(GLSLANG_OSDEPENDENT_LIBS) \
+           $(GLSLANG_OGLCOMPILER_LIBS) \
+           $(GLSLANG_HLSL_LIBS) \
+           $(GLSLANG_SPIRV_LIBS) \
+           $(GLSLANG_SPIRV_TOOLS_OPT_LIBS) \
+           $(GLSLANG_SPIRV_TOOLS_LIBS)
+endif
+
+ifeq ($(HAVE_GLSLANG_COMMON), 1)
+   DEFINES += -DHAVE_GLSLANG
+   INCLUDE_DIRS += -I$(DEPS_DIR)/glslang
    OBJ += $(GLSLANG_SOURCES:.cpp=.o)
 endif
 
