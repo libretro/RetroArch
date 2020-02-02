@@ -1677,6 +1677,7 @@ static int generic_action_ok(const char *path,
          }
          break;
       case ACTION_OK_LOAD_CONFIG_FILE:
+#ifdef HAVE_CONFIGFILE
          {
             settings_t            *settings = config_get_ptr();
             flush_type                      = MENU_SETTINGS;
@@ -1690,6 +1691,7 @@ static int generic_action_ok(const char *path,
                ret = -1;
             }
          }
+#endif
          break;
       case ACTION_OK_LOAD_PRESET:
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
@@ -1744,13 +1746,16 @@ static int generic_action_ok(const char *path,
          }
          break;
       case ACTION_OK_LOAD_REMAPPING_FILE:
+#ifdef HAVE_CONFIGFILE
          {
-            config_file_t *conf = config_file_new_from_path_to_string(action_path);
+            config_file_t *conf = config_file_new_from_path_to_string(
+                  action_path);
             flush_char          = msg_hash_to_str(flush_id);
 
             if (conf)
                input_remapping_load_file(conf, action_path);
          }
+#endif
          break;
       case ACTION_OK_LOAD_CHEAT_FILE:
          flush_char = msg_hash_to_str(flush_id);
@@ -2980,6 +2985,7 @@ static int generic_action_ok_remap_file_operation(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx,
       unsigned action_type)
 {
+#ifdef HAVE_CONFIGFILE
    char directory[PATH_MAX_LENGTH];
    char file[PATH_MAX_LENGTH];
    char content_dir[PATH_MAX_LENGTH];
@@ -3027,12 +3033,20 @@ static int generic_action_ok_remap_file_operation(const char *path,
    {
       if (input_remapping_save_file(file))
       {
-         if (action_type == ACTION_OK_REMAP_FILE_SAVE_CORE)
-            rarch_ctl(RARCH_CTL_SET_REMAPS_CORE_ACTIVE, NULL);
-         else if (action_type == ACTION_OK_REMAP_FILE_SAVE_GAME)
-            rarch_ctl(RARCH_CTL_SET_REMAPS_GAME_ACTIVE, NULL);
-         else if (action_type == ACTION_OK_REMAP_FILE_SAVE_CONTENT_DIR)
-            rarch_ctl(RARCH_CTL_SET_REMAPS_CONTENT_DIR_ACTIVE, NULL);
+#ifdef HAVE_CONFIGFILE
+         switch (action_type)
+         {
+            case ACTION_OK_REMAP_FILE_SAVE_CORE:
+               rarch_ctl(RARCH_CTL_SET_REMAPS_CORE_ACTIVE, NULL);
+               break;
+            case ACTION_OK_REMAP_FILE_SAVE_GAME:
+               rarch_ctl(RARCH_CTL_SET_REMAPS_GAME_ACTIVE, NULL);
+               break;
+            case ACTION_OK_REMAP_FILE_SAVE_CONTENT_DIR:
+               rarch_ctl(RARCH_CTL_SET_REMAPS_CONTENT_DIR_ACTIVE, NULL);
+               break;
+         }
+#endif
 
          runloop_msg_queue_push(
                msg_hash_to_str(MSG_REMAP_FILE_SAVED_SUCCESSFULLY),
@@ -3049,26 +3063,32 @@ static int generic_action_ok_remap_file_operation(const char *path,
    {
       if (input_remapping_remove_file(file))
       {
-         if (action_type == ACTION_OK_REMAP_FILE_REMOVE_CORE &&
-               rarch_ctl(RARCH_CTL_IS_REMAPS_CORE_ACTIVE, NULL))
+#ifdef HAVE_CONFIGFILE
+         switch (action_type)
          {
-            rarch_ctl(RARCH_CTL_UNSET_REMAPS_CORE_ACTIVE, NULL);
-            input_remapping_set_defaults(true);
+            case ACTION_OK_REMAP_FILE_REMOVE_CORE:
+               if (rarch_ctl(RARCH_CTL_IS_REMAPS_CORE_ACTIVE, NULL))
+               {
+                  rarch_ctl(RARCH_CTL_UNSET_REMAPS_CORE_ACTIVE, NULL);
+                  input_remapping_set_defaults(true);
+               }
+               break;
+            case ACTION_OK_REMAP_FILE_REMOVE_GAME:
+               if (rarch_ctl(RARCH_CTL_IS_REMAPS_GAME_ACTIVE, NULL))
+               {
+                  rarch_ctl(RARCH_CTL_UNSET_REMAPS_GAME_ACTIVE, NULL);
+                  input_remapping_set_defaults(true);
+               }
+               break;
+            case ACTION_OK_REMAP_FILE_REMOVE_CONTENT_DIR:
+               if (rarch_ctl(RARCH_CTL_IS_REMAPS_CONTENT_DIR_ACTIVE, NULL))
+               {
+                  rarch_ctl(RARCH_CTL_UNSET_REMAPS_CONTENT_DIR_ACTIVE, NULL);
+                  input_remapping_set_defaults(true);
+               }
+               break;
          }
-
-         else if (action_type == ACTION_OK_REMAP_FILE_REMOVE_GAME &&
-               rarch_ctl(RARCH_CTL_IS_REMAPS_GAME_ACTIVE, NULL))
-         {
-            rarch_ctl(RARCH_CTL_UNSET_REMAPS_GAME_ACTIVE, NULL);
-            input_remapping_set_defaults(true);
-         }
-
-         else if (action_type == ACTION_OK_REMAP_FILE_REMOVE_CONTENT_DIR &&
-               rarch_ctl(RARCH_CTL_IS_REMAPS_CONTENT_DIR_ACTIVE, NULL))
-         {
-            rarch_ctl(RARCH_CTL_UNSET_REMAPS_CONTENT_DIR_ACTIVE, NULL);
-            input_remapping_set_defaults(true);
-         }
+#endif
 
          runloop_msg_queue_push(
                msg_hash_to_str(MSG_REMAP_FILE_REMOVED_SUCCESSFULLY),
@@ -3081,6 +3101,7 @@ static int generic_action_ok_remap_file_operation(const char *path,
                1, 100, true,
                NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }
+#endif
    return 0;
 }
 

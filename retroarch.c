@@ -1110,10 +1110,12 @@ static bool runloop_shutdown_initiated                          = false;
 static bool runloop_core_shutdown_initiated                     = false;
 static bool runloop_core_running                                = false;
 static bool runloop_perfcnt_enable                              = false;
+#ifdef HAVE_CONFIGFILE
 static bool runloop_overrides_active                            = false;
 static bool runloop_remaps_core_active                          = false;
 static bool runloop_remaps_game_active                          = false;
 static bool runloop_remaps_content_dir_active                   = false;
+#endif
 static bool runloop_game_options_active                         = false;
 static bool runloop_autosave                                    = false;
 static bool runloop_max_frames_screenshot                       = false;
@@ -1182,6 +1184,8 @@ static const void *hid_driver_find_handle(int idx);
 static bool is_narrator_running(void);
 static bool accessibility_startup_message(void);
 #endif
+
+static void retroarch_deinit_drivers(void);
 
 static bool command_set_shader(const char *arg);
 
@@ -5478,6 +5482,7 @@ static void command_event_init_controllers(void)
    }
 }
 
+#ifdef HAVE_CONFIGFILE
 static void command_event_disable_overrides(void)
 {
    if (!runloop_overrides_active)
@@ -5487,7 +5492,7 @@ static void command_event_disable_overrides(void)
    config_unload_override();
    runloop_overrides_active = false;
 }
-
+#endif
 
 static void command_event_deinit_core(bool reinit)
 {
@@ -5512,14 +5517,18 @@ static void command_event_deinit_core(bool reinit)
    if (reinit)
       driver_uninit(DRIVERS_CMD_ALL);
 
+#ifdef HAVE_CONFIGFILE
    command_event_disable_overrides();
+#endif
    retroarch_unset_runtime_shader_preset();
 
+#ifdef HAVE_CONFIGFILE
    if (     runloop_remaps_core_active
          || runloop_remaps_content_dir_active
          || runloop_remaps_game_active
       )
       input_remapping_set_defaults(true);
+#endif
 }
 
 static void command_event_init_cheats(void)
@@ -5860,9 +5869,11 @@ static bool command_event_init_core(enum rarch_core_type type)
          runloop_system.info.valid_extensions : DEFAULT_EXT,
          sizeof(runloop_system.valid_extensions));
 
+#ifdef HAVE_CONFIGFILE
    /* auto overrides: apply overrides */
    if(settings->bools.auto_overrides_enable)
       runloop_overrides_active = config_load_override();
+#endif
 
    /* Load auto-shaders on the next occasion */
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
@@ -5876,9 +5887,11 @@ static bool command_event_init_core(enum rarch_core_type type)
 
    current_core.retro_set_environment(rarch_environment_cb);
 
+#ifdef HAVE_CONFIGFILE
    /* Auto-remap: apply remap files */
    if(settings->bools.auto_remaps_enable)
       config_load_remap(settings->paths.directory_input_remapping);
+#endif
 
    /* Per-core saves: reset redirection paths */
    path_set_redirect();
@@ -5946,6 +5959,7 @@ static bool command_event_save_auto_state(void)
    return true;
 }
 
+#ifdef HAVE_CONFIGFILE
 static bool command_event_save_config(
       const char *config_path,
       char *s, size_t len)
@@ -6078,7 +6092,9 @@ static bool command_event_save_core_config(const char *dir_menu_config)
       overrides_active         = true;
    }
 
+#ifdef HAVE_CONFIGFILE
    command_event_save_config(config_path, msg, sizeof(msg));
+#endif
 
    if (!string_is_empty(msg))
       runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
@@ -6138,6 +6154,7 @@ static void command_event_save_current_config(enum override_type type)
    if (!string_is_empty(msg))
       runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 }
+#endif
 
 static void command_event_undo_save_state(char *s, size_t len)
 {
@@ -6695,7 +6712,9 @@ bool command_event(enum event_command cmd, void *data)
 
             command_event_runtime_log_deinit();
             command_event_save_auto_state();
+#ifdef HAVE_CONFIGFILE
             command_event_disable_overrides();
+#endif
             retroarch_unset_runtime_shader_preset();
 
             if (cached_video_driver[0])
@@ -6707,11 +6726,13 @@ bool command_event(enum event_command cmd, void *data)
                RARCH_LOG("[Video]: Restored video driver to \"%s\".\n", settings->arrays.video_driver);
             }
 
+#ifdef HAVE_CONFIGFILE
             if (     runloop_remaps_core_active
                   || runloop_remaps_content_dir_active
                   || runloop_remaps_game_active
                )
                input_remapping_set_defaults(true);
+#endif
 
             if (is_inited)
             {
@@ -7161,23 +7182,31 @@ TODO: Add a setting for these tweaks */
          config_set_defaults(&g_extern);
          break;
       case CMD_EVENT_MENU_SAVE_CURRENT_CONFIG:
+#ifdef HAVE_CONFIGFILE
          command_event_save_current_config(OVERRIDE_NONE);
+#endif
          break;
       case CMD_EVENT_MENU_SAVE_CURRENT_CONFIG_OVERRIDE_CORE:
+#ifdef HAVE_CONFIGFILE
          command_event_save_current_config(OVERRIDE_CORE);
+#endif
          break;
       case CMD_EVENT_MENU_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR:
+#ifdef HAVE_CONFIGFILE
          command_event_save_current_config(OVERRIDE_CONTENT_DIR);
+#endif
          break;
       case CMD_EVENT_MENU_SAVE_CURRENT_CONFIG_OVERRIDE_GAME:
+#ifdef HAVE_CONFIGFILE
          command_event_save_current_config(OVERRIDE_GAME);
+#endif
          break;
       case CMD_EVENT_MENU_SAVE_CONFIG:
-         {
-            settings_t *settings            = configuration_settings;
-            if (!command_event_save_core_config(settings->paths.directory_menu_config))
-               return false;
-         }
+#ifdef HAVE_CONFIGFILE
+         if (!command_event_save_core_config(
+                  configuration_settings->paths.directory_menu_config))
+            return false;
+#endif
          break;
       case CMD_EVENT_SHADER_PRESET_LOADED:
          ui_companion_event_command(cmd);
@@ -7888,10 +7917,12 @@ static void global_free(void)
    rarch_ctl(RARCH_CTL_UNSET_IPS_PREF, NULL);
    rarch_ctl(RARCH_CTL_UNSET_UPS_PREF, NULL);
    rarch_patch_blocked                   = false;
+#ifdef HAVE_CONFIGFILE
    runloop_overrides_active              = false;
    runloop_remaps_core_active            = false;
    runloop_remaps_game_active            = false;
    runloop_remaps_content_dir_active     = false;
+#endif
 
    current_core.has_set_input_descriptors = false;
    current_core.has_set_subsystems        = false;
@@ -7972,7 +8003,7 @@ void main_exit(void *args)
 
    frontend_driver_shutdown(false);
 
-   driver_ctl(RARCH_DRIVER_CTL_DEINIT, NULL);
+   retroarch_deinit_drivers();
    ui_companion_driver_free();
    frontend_driver_free();
 
@@ -8008,7 +8039,7 @@ int rarch_main(int argc, char *argv[], void *data)
 
    configuration_settings = (settings_t*)calloc(1, sizeof(settings_t));
 
-   driver_ctl(RARCH_DRIVER_CTL_DEINIT,  NULL);
+   retroarch_deinit_drivers();
    rarch_ctl(RARCH_CTL_STATE_FREE,  NULL);
    global_free();
 
@@ -11232,7 +11263,6 @@ void driver_wifi_tether_start_stop(bool start, char* configfile)
 
 bool wifi_driver_ctl(enum rarch_wifi_ctl_state state, void *data)
 {
-
    switch (state)
    {
       case RARCH_WIFI_CTL_DESTROY:
@@ -23433,71 +23463,73 @@ static void driver_uninit(int flags)
       midi_driver_free();
 }
 
+static void retroarch_deinit_drivers(void)
+{
+#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+   /* Tear down menu widgets no matter what
+    * in case the handle is lost in the threaded
+    * video driver in the meantime
+    * (breaking video_driver_has_widgets) */
+   if (menu_widgets_inited)
+   {
+      menu_widgets_context_destroy();
+      menu_widgets_free();
+      menu_widgets_inited = false;
+   }
+#endif
+
+   /* Video */
+   video_display_server_destroy();
+   crt_video_restore();
+
+   video_driver_use_rgba          = false;
+   video_driver_active            = false;
+   video_driver_cache_context     = false;
+   video_driver_cache_context_ack = false;
+   video_driver_record_gpu_buffer = NULL;
+   current_video                  = NULL;
+   video_driver_set_cached_frame_ptr(NULL);
+
+   /* Audio */
+   audio_driver_active   = false;
+   current_audio         = NULL;
+
+   /* Input */
+   input_driver_keyboard_linefeed_enable = false;
+   input_driver_block_hotkey             = false;
+   input_driver_block_libretro_input     = false;
+   input_driver_nonblock_state           = false;
+   input_driver_flushing_input           = false;
+   memset(&input_driver_turbo_btns, 0, sizeof(turbo_buttons_t));
+   current_input                         = NULL;
+
+#ifdef HAVE_MENU
+   menu_driver_destroy();
+   menu_driver_alive         = false;
+#endif
+   location_driver_active    = false;
+   location_driver           = NULL;
+
+   /* Camera */
+   camera_driver_active   = false;
+   camera_driver          = NULL;
+   camera_data            = NULL;
+
+   wifi_driver_ctl(RARCH_WIFI_CTL_DESTROY, NULL);
+
+   retro_ctx.frame_cb        = retro_frame_null;
+   retro_ctx.sample_cb       = NULL;
+   retro_ctx.sample_batch_cb = NULL;
+   retro_ctx.state_cb        = NULL;
+   retro_ctx.poll_cb         = retro_input_poll_null;
+
+   current_core.inited       = false;
+}
+
 bool driver_ctl(enum driver_ctl_state state, void *data)
 {
    switch (state)
    {
-      case RARCH_DRIVER_CTL_DEINIT:
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-         /* Tear down menu widgets no matter what
-          * in case the handle is lost in the threaded
-          * video driver in the meantime
-          * (breaking video_driver_has_widgets) */
-         if (menu_widgets_inited)
-         {
-            menu_widgets_context_destroy();
-            menu_widgets_free();
-            menu_widgets_inited = false;
-         }
-#endif
-
-         /* Video */
-         video_display_server_destroy();
-         crt_video_restore();
-
-         video_driver_use_rgba          = false;
-         video_driver_active            = false;
-         video_driver_cache_context     = false;
-         video_driver_cache_context_ack = false;
-         video_driver_record_gpu_buffer = NULL;
-         current_video                  = NULL;
-         video_driver_set_cached_frame_ptr(NULL);
-
-         /* Audio */
-         audio_driver_active   = false;
-         current_audio         = NULL;
-
-         /* Input */
-         input_driver_keyboard_linefeed_enable = false;
-         input_driver_block_hotkey             = false;
-         input_driver_block_libretro_input     = false;
-         input_driver_nonblock_state           = false;
-         input_driver_flushing_input           = false;
-         memset(&input_driver_turbo_btns, 0, sizeof(turbo_buttons_t));
-         current_input                         = NULL;
-
-#ifdef HAVE_MENU
-         menu_driver_destroy();
-         menu_driver_alive         = false;
-#endif
-         location_driver_active    = false;
-         location_driver           = NULL;
-
-         /* Camera */
-         camera_driver_active   = false;
-         camera_driver          = NULL;
-         camera_data            = NULL;
-
-         wifi_driver_ctl(RARCH_WIFI_CTL_DESTROY, NULL);
-
-         retro_ctx.frame_cb        = retro_frame_null;
-         retro_ctx.sample_cb       = NULL;
-         retro_ctx.sample_batch_cb = NULL;
-         retro_ctx.state_cb        = NULL;
-         retro_ctx.poll_cb         = retro_input_poll_null;
-
-         current_core.inited       = false;
-         break;
       case RARCH_DRIVER_CTL_SET_REFRESH_RATE:
          {
             float *hz = (float*)data;
@@ -23582,12 +23614,12 @@ static void input_list_element_realloc(
 }
 
 static void input_list_element_expand(
-      input_list_element *element, unsigned int newIndex)
+      input_list_element *element, unsigned int new_index)
 {
    unsigned int new_size = element->state_size;
    if (new_size == 0)
       new_size = 32;
-   while (newIndex >= new_size)
+   while (new_index >= new_size)
       new_size *= 2;
    input_list_element_realloc(element, new_size);
 }
@@ -24292,6 +24324,7 @@ static void retroarch_print_help(const char *arg0)
             "                        An empty argument \"\" will disable automatic shader presets.\n", sizeof(buf));
       strlcat(buf, "  -f, --fullscreen      Start the program in fullscreen regardless "
             "of config settings.\n", sizeof(buf));
+#ifdef HAVE_CONFIGFILE
 #ifdef _WIN32
       strlcat(buf, "  -c, --config=FILE     Path for config file."
             "\n\t\tDefaults to retroarch.cfg in same directory as retroarch.exe."
@@ -24306,6 +24339,7 @@ static void retroarch_print_help(const char *arg0)
             "the program will attempt to create one based on the \n\t\t"
             "skeleton config (" GLOBAL_CONFIG_DIR "/retroarch.cfg). \n"
             , sizeof(buf));
+#endif
 #endif
       strlcat(buf, "      --appendconfig=FILE\n"
             "                        Extra config files are loaded in, "
@@ -24417,6 +24451,12 @@ static void retroarch_print_help(const char *arg0)
 #define NETPLAY_ARG
 #endif
 
+#ifdef HAVE_CONFIGFILE
+#define CONFIG_FILE_ARG "c:"
+#else
+#define CONFIG_FILE_ARG
+#endif
+
 #define BSV_MOVIE_ARG "P:R:M:"
 
 /**
@@ -24448,8 +24488,10 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
       { "recordconfig",       1, NULL, RA_OPT_RECORDCONFIG },
       { "size",               1, NULL, RA_OPT_SIZE },
       { "verbose",            0, NULL, 'v' },
+#ifdef HAVE_CONFIGFILE
       { "config",             1, NULL, 'c' },
       { "appendconfig",       1, NULL, RA_OPT_APPENDCONFIG },
+#endif
       { "nodevice",           1, NULL, 'N' },
       { "dualanalog",         1, NULL, 'A' },
       { "device",             1, NULL, 'd' },
@@ -24539,12 +24581,14 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
    *global->name.bps                     = '\0';
    *global->name.ips                     = '\0';
 
+#ifdef HAVE_CONFIGFILE
    runloop_overrides_active              = false;
+#endif
 
    /* Make sure we can call retroarch_parse_input several times ... */
    optind    = 0;
-   optstring = "hs:fvS:A:c:U:DN:d:"
-      BSV_MOVIE_ARG NETPLAY_ARG DYNAMIC_ARG FFMPEG_RECORD_ARG;
+   optstring = "hs:fvS:A:U:DN:d:"
+      BSV_MOVIE_ARG NETPLAY_ARG DYNAMIC_ARG FFMPEG_RECORD_ARG CONFIG_FILE_ARG;
 
 #ifdef ORBIS
    argv = &(argv[2]);
@@ -24581,10 +24625,11 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
                retroarch_print_help(argv[0]);
                exit(0);
 
+#ifdef HAVE_CONFIGFILE
             case 'c':
-               RARCH_LOG("Set config file to : %s\n", optarg);
                path_set(RARCH_PATH_CONFIG, optarg);
                break;
+#endif
 
             case RA_OPT_APPENDCONFIG:
                path_set(RARCH_PATH_CONFIG_APPEND, optarg);
@@ -24623,7 +24668,9 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
    if (!rarch_block_config_read)
    {
       config_set_defaults(&g_extern);
+#ifdef HAVE_CONFIGFILE
       config_parse_file(&g_extern);
+#endif
    }
 
    /* Second pass: All other arguments override the config file */
@@ -25849,6 +25896,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
             *coreopts = runloop_core_options;
          }
          break;
+#ifdef HAVE_CONFIGFILE
       case RARCH_CTL_IS_OVERRIDES_ACTIVE:
          return runloop_overrides_active;
       case RARCH_CTL_SET_REMAPS_CORE_ACTIVE:
@@ -25875,6 +25923,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          break;
       case RARCH_CTL_IS_REMAPS_CONTENT_DIR_ACTIVE:
          return runloop_remaps_content_dir_active;
+#endif
       case RARCH_CTL_SET_MISSING_BIOS:
          runloop_missing_bios = true;
          break;
@@ -25914,7 +25963,9 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          runloop_idle                      = false;
          runloop_paused                    = false;
          runloop_slowmotion                = false;
+#ifdef HAVE_CONFIGFILE
          runloop_overrides_active          = false;
+#endif
          runloop_autosave                  = false;
          retroarch_frame_time_free();
          break;
@@ -26464,14 +26515,18 @@ bool retroarch_main_quit(void)
    if (!runloop_shutdown_initiated)
    {
       command_event_save_auto_state();
+#ifdef HAVE_CONFIGFILE
       command_event_disable_overrides();
+#endif
       retroarch_unset_runtime_shader_preset();
 
+#ifdef HAVE_CONFIGFILE
       if (     runloop_remaps_core_active
             || runloop_remaps_content_dir_active
             || runloop_remaps_game_active
          )
          input_remapping_set_defaults(true);
+#endif
    }
 
    runloop_shutdown_initiated = true;

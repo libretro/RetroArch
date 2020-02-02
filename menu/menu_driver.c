@@ -3334,6 +3334,7 @@ static bool menu_init(menu_handle_t *menu_data)
    if (!menu_entries_init())
       return false;
 
+#ifdef HAVE_CONFIGFILE
    if (settings->bools.menu_show_start_screen)
    {
       /* We don't want the welcome dialog screen to show up
@@ -3349,6 +3350,7 @@ static bool menu_init(menu_handle_t *menu_data)
          command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
 #endif
    }
+#endif
 
    if (      settings->bools.bundle_assets_extract_enable
          && !string_is_empty(settings->arrays.bundle_assets_src)

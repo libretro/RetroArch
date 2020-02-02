@@ -2552,6 +2552,7 @@ static int setting_action_ok_bind_all(rarch_setting_t *setting, bool wraparound)
    return 0;
 }
 
+#ifdef HAVE_CONFIGFILE
 static int setting_action_ok_bind_all_save_autoconfig(rarch_setting_t *setting,
       bool wraparound)
 {
@@ -2577,6 +2578,7 @@ static int setting_action_ok_bind_all_save_autoconfig(rarch_setting_t *setting,
 
    return 0;
 }
+#endif
 
 static int setting_action_ok_bind_defaults(rarch_setting_t *setting, bool wraparound)
 {
@@ -7209,6 +7211,7 @@ static bool setting_append_list_input_player_options(
       (*list)[list_info->index - 1].action_ok      = &setting_action_ok_bind_defaults;
       (*list)[list_info->index - 1].action_cancel  = NULL;
 
+#ifdef HAVE_CONFIGFILE
       CONFIG_ACTION_ALT(
             list, list_info,
             key_bind_all_save_autoconfig[user],
@@ -7220,6 +7223,7 @@ static bool setting_append_list_input_player_options(
       (*list)[list_info->index - 1].index_offset   = user;
       (*list)[list_info->index - 1].action_ok      = &setting_action_ok_bind_all_save_autoconfig;
       (*list)[list_info->index - 1].action_cancel  = NULL;
+#endif
 
       CONFIG_UINT_ALT(
             list, list_info,

@@ -2155,7 +2155,9 @@ void config_set_defaults(void *data)
 #endif
 
    input_config_reset();
+#ifdef HAVE_CONFIGFILE
    input_remapping_set_defaults(true);
+#endif
    input_autoconfigure_reset();
 
    /* Verify that binds are in proper order. */
@@ -2441,6 +2443,42 @@ void config_set_defaults(void *data)
 #endif
 }
 
+
+#ifdef HAVE_CONFIGFILE
+
+#if defined(HAVE_MENU) && defined(HAVE_RGUI)
+static bool check_menu_driver_compatibility(void)
+{
+   settings_t *settings = config_get_ptr();
+   char *video_driver   = settings->arrays.video_driver;
+   char *menu_driver    = settings->arrays.menu_driver;
+
+   if (string_is_equal  (menu_driver, "rgui") ||
+         string_is_equal(menu_driver, "null") ||
+         string_is_equal(video_driver, "null"))
+      return true;
+
+   /* TODO/FIXME - maintenance hazard */
+   if (string_is_equal(video_driver, "d3d9")   ||
+         string_is_equal(video_driver, "d3d10")  ||
+         string_is_equal(video_driver, "d3d11")  ||
+         string_is_equal(video_driver, "d3d12")  ||
+         string_is_equal(video_driver, "caca")   ||
+         string_is_equal(video_driver, "gdi")    ||
+         string_is_equal(video_driver, "gl")     ||
+         string_is_equal(video_driver, "gl1")    ||
+         string_is_equal(video_driver, "gx2")    ||
+         string_is_equal(video_driver, "vulkan") ||
+         string_is_equal(video_driver, "glcore") ||
+         string_is_equal(video_driver, "metal")  ||
+         string_is_equal(video_driver, "ctr")    ||
+         string_is_equal(video_driver, "vita2d"))
+      return true;
+
+   return false;
+}
+#endif
+
 /**
  * open_default_config_file
  *
@@ -2650,40 +2688,6 @@ error:
    free(app_path);
    return NULL;
 }
-
-#if defined(HAVE_MENU) && defined(HAVE_RGUI)
-static bool check_menu_driver_compatibility(void)
-{
-   settings_t *settings = config_get_ptr();
-   char *video_driver   = settings->arrays.video_driver;
-   char *menu_driver    = settings->arrays.menu_driver;
-
-   if (string_is_equal  (menu_driver, "rgui") ||
-         string_is_equal(menu_driver, "null") ||
-         string_is_equal(video_driver, "null"))
-      return true;
-
-   /* TODO/FIXME - maintenance hazard */
-   if (string_is_equal(video_driver, "d3d9")   ||
-         string_is_equal(video_driver, "d3d10")  ||
-         string_is_equal(video_driver, "d3d11")  ||
-         string_is_equal(video_driver, "d3d12")  ||
-         string_is_equal(video_driver, "caca")   ||
-         string_is_equal(video_driver, "gdi")    ||
-         string_is_equal(video_driver, "gl")     ||
-         string_is_equal(video_driver, "gl1")    ||
-         string_is_equal(video_driver, "gx2")    ||
-         string_is_equal(video_driver, "vulkan") ||
-         string_is_equal(video_driver, "glcore") ||
-         string_is_equal(video_driver, "metal")  ||
-         string_is_equal(video_driver, "ctr")    ||
-         string_is_equal(video_driver, "vita2d"))
-      return true;
-
-   return false;
-}
-#endif
-
 /**
  * config_load:
  * @path                : path to be read from.
@@ -3520,7 +3524,9 @@ bool config_load_remap(const char *directory_input_remapping)
          ".rmp",
          path_size);
 
+#ifdef HAVE_CONFIGFILE
    input_remapping_set_defaults(false);
+#endif
 
    /* If a game remap file exists, load it. */
    if ((new_conf = config_file_new_from_path_to_string(game_path)))
@@ -3599,6 +3605,7 @@ void config_parse_file(void *data)
       }
    }
 }
+#endif
 
 /**
  * config_load:
@@ -3610,9 +3617,12 @@ void config_load(void *data)
 {
    global_t *global = (global_t*)data;
    config_set_defaults(global);
+#ifdef HAVE_CONFIGFILE
    config_parse_file(global);
+#endif
 }
 
+#ifdef HAVE_CONFIGFILE
 /**
  * config_save_autoconf_profile:
  * @path            : Path that shall be written to.
@@ -4229,3 +4239,4 @@ bool config_replace(bool config_replace_save_on_exit, char *path)
 
    return task_push_start_dummy_core(&content_info);
 }
+#endif

@@ -4627,6 +4627,7 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
             unsigned p;
             unsigned max_users          = *(input_driver_get_uint(INPUT_ACTION_MAX_USERS));
 
+#ifdef HAVE_CONFIGFILE
             if (menu_entries_append_enum(list,
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REMAP_FILE_LOAD),
                      msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_LOAD),
@@ -4686,6 +4687,7 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
                         MENU_SETTINGS_REMAPPING_PORT_BEGIN + p, p, 0))
                   count++;
             }
+#endif
          }
          break;
       case DISPLAYLIST_LOAD_CONTENT_LIST:

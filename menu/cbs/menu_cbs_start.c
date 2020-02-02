@@ -75,7 +75,9 @@ static int action_start_remap_file_load(
       const char *path, const char *label,
       unsigned type, size_t idx, size_t entry_idx)
 {
+#ifdef HAVE_CONFIGFILE
    input_remapping_set_defaults(true);
+#endif
    return 0;
 }
 

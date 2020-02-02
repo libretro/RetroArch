@@ -817,6 +817,7 @@ const char *config_get_default_record(void);
  */
 void config_parse_file(void *data);
 
+#ifdef HAVE_CONFIGFILE
 /**
  * config_load_override:
  *
@@ -881,6 +882,7 @@ bool config_save_overrides(int override_type);
  * another one. Will load a dummy core to flush state
  * properly. */
 bool config_replace(bool config_save_on_exit, char *path);
+#endif
 
 bool config_overlay_enable_default(void);
 
