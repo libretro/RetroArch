@@ -8,11 +8,11 @@ Popular examples of implementations for this API includes video game system emul
 more generalized 3D programs.
 These programs are instantiated as dynamic libraries. We refer to these as "libretro cores".
 
-![XMB menu driver](http://i.imgur.com/BMR1xxr.png "XMB menu driver")
+![XMB menu driver](https://github.com/libretro/retroarch-scene/blob/master/Scratcpad/images/Versions/1.8.4/XMB-main-menu.jpg?raw=true "XMB menu driver")
 
-![rgui menu driver](http://i.imgur.com/X3CbBKa.png "rgui menu driver")
+![rgui menu driver](https://github.com/libretro/retroarch-scene/blob/master/Scratcpad/images/Versions/1.8.4/rgui-main-menu.jpg?raw=true "rgui menu driver")
 
-![glui menu driver](http://i.imgur.com/ooqv8rw.png "glui menu driver")
+![glui menu driver](https://github.com/libretro/retroarch-scene/blob/master/Scratcpad/images/Versions/1.8.4/glui-main-menu.jpg?raw=true "glui menu driver")
 
 ## libretro
 
@@ -31,7 +31,7 @@ Latest binaries are currently hosted on the [buildbot](http://buildbot.libretro.
 
 ## Support
 
-To reach developers, either make an issue here on GitHub, make a thread on the [forum](http://www.libretro.com/forums/), chat on [discord](https://discord.gg/C4amCeV), or visit our IRC channel: #retroarch @ irc.freenode.org.
+To reach developers, either make an issue here on GitHub, make a thread on the [forum](http://www.libretro.com/forums/), chat on [discord](https://discord.gg/C4amCeV), or visit our IRC channel: #retroarch @ irc.freenode.org. You could create a post in [Reddit](https://www.reddit.com/r/RetroArch/) with *Technical Support* flair.
 
 ## Documentation
 
@@ -256,3 +256,21 @@ These modelines are more accurate giving exact hz. However, some games may have 
 Some arcade resolutions can be very different from consumer CRTs. There is resolution detection to ensure MAME games will be displayed in the closest available resolution but drawn at their native resolution within this resolution. Meaning that the MAME game will look just like the original hardware.
 
 MAME ROMs that run in a vertical aspect like DoDonPachi need to be rotated within MAME before resolution switching and aspect correction will work. Do this before enabling CRT SwitchRes so that RetroArch will run in your desktop resolution. Once you have rotated any games that may need it turn CRT SwitchRes on.
+
+## Socials
+
+The links below belong to our official channels. Links other than this may have been created by fans, independent members or followers. We seriously recommend using our original resources.
+
+- Website: https://www.retroarch.com/
+- Blog: http://libretro.com/
+- Facebook: https://www.facebook.com/libretro
+- Twitter: https://twitter.com/libretro
+- Reddit: https://www.reddit.com/r/RetroArch/
+- YouTube: https://www.youtube.com/Libretro
+- Google Post: https://posts.google.com/share/55Nhs2jG
+- Steam: https://store.steampowered.com/app/1118310/RetroArch/
+- YouTube Topic: https://www.youtube.com/channel/UC5q007PYyQPgin0HHbzF0zQ
+- Patreon: https://www.patreon.com/libretro
+- BOUNTYSOURCE: https://www.bountysource.com/teams/libretro/issues
+- Discord: https://discord.gg/27Xxm2h
+- Teespring: https://teespring.com/stores/retroarch
