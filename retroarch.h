@@ -698,8 +698,6 @@ bool recording_is_enabled(void);
 
 void streaming_set_state(bool state);
 
-bool recording_is_enabled(void);
-
 bool streaming_is_enabled(void);
 
 void recording_driver_update_streaming_url(void);
