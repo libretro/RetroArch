@@ -8,13 +8,13 @@ Popular examples of implementations for this API includes video game system emul
 more generalized 3D programs.
 These programs are instantiated as dynamic libraries. We refer to these as "libretro cores".
 
-![XMB menu driver](https://github.com/libretro/retroarch-scene/blob/master/Scratcpad/images/Versions/1.8.4/XMB-main-menu.jpg?raw=true "XMB menu driver")
+![XMB menu driver](https://github.com/libretro/retroarch-scene/blob/master/Scratchpad/images/Versions/1.8.4/XMB-main-menu.jpg?raw=true "XMB menu driver")
 
-![rgui menu driver](https://github.com/libretro/retroarch-scene/blob/master/Scratcpad/images/Versions/1.8.4/rgui-main-menu.jpg?raw=true "rgui menu driver")
+![rgui menu driver](https://github.com/libretro/retroarch-scene/blob/master/Scratchpad/images/Versions/1.8.4/rgui-main-menu.jpg?raw=true "rgui menu driver")
 
-![glui menu driver](https://github.com/libretro/retroarch-scene/blob/master/Scratcpad/images/Versions/1.8.4/glui-main-menu.jpg?raw=true "glui menu driver")
+![glui menu driver](https://github.com/libretro/retroarch-scene/blob/master/Scratchpad/images/Versions/1.8.4/glui-main-menu.jpg?raw=true "glui menu driver")
 
-![ozone menu driver](https://github.com/libretro/retroarch-scene/blob/master/Scratcpad/images/Versions/1.8.4/ozone-main-menu.jpg?raw=true "ozone menu driver")
+![ozone menu driver](https://github.com/libretro/retroarch-scene/blob/master/Scratchpad/images/Versions/1.8.4/ozone-main-menu.jpg?raw=true "ozone menu driver")
 
 ## libretro
 
@@ -277,3 +277,4 @@ The links below belong to our official channels. Links other than this may have 
 - BOUNTYSOURCE: https://www.bountysource.com/teams/libretro/issues
 - Discord: https://discord.gg/27Xxm2h
 - Teespring: https://teespring.com/stores/retroarch
+- Documentation: http://docs.libretro.com/
