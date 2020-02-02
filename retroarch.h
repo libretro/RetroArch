@@ -100,9 +100,11 @@ enum rarch_ctl_state
    RARCH_CTL_IS_IPS_PREF,
    RARCH_CTL_UNSET_IPS_PREF,
 
+#ifdef HAVE_CONFIGFILE
    /* Block config read */
    RARCH_CTL_SET_BLOCK_CONFIG_READ,
    RARCH_CTL_UNSET_BLOCK_CONFIG_READ,
+#endif
 
    /* Username */
    RARCH_CTL_HAS_SET_USERNAME,

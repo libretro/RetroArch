@@ -2432,11 +2432,13 @@ void config_set_defaults(void *data)
       strlcpy(settings->arrays.midi_output,
             midi_output, sizeof(settings->arrays.midi_output));
 
+#ifdef HAVE_CONFIGFILE
    /* Avoid reloading config on every content load */
    if (DEFAULT_BLOCK_CONFIG_READ)
       rarch_ctl(RARCH_CTL_SET_BLOCK_CONFIG_READ, NULL);
    else
       rarch_ctl(RARCH_CTL_UNSET_BLOCK_CONFIG_READ, NULL);
+#endif
 
 #ifdef HAVE_MENU
    first_initialized = false;

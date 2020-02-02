@@ -1074,7 +1074,6 @@ static bool has_set_core                                        = false;
 #ifdef HAVE_DISCORD
 bool discord_is_inited                                          = false;
 #endif
-static bool rarch_block_config_read                             = false;
 static bool rarch_is_inited                                     = false;
 static bool rarch_error_on_init                                 = false;
 static bool rarch_force_fullscreen                              = false;
@@ -1111,6 +1110,7 @@ static bool runloop_core_shutdown_initiated                     = false;
 static bool runloop_core_running                                = false;
 static bool runloop_perfcnt_enable                              = false;
 #ifdef HAVE_CONFIGFILE
+static bool rarch_block_config_read                             = false;
 static bool runloop_overrides_active                            = false;
 static bool runloop_remaps_core_active                          = false;
 static bool runloop_remaps_game_active                          = false;
@@ -7909,7 +7909,6 @@ static void global_free(void)
    command_event(CMD_EVENT_RECORD_DEINIT, NULL);
    command_event(CMD_EVENT_LOG_FILE_DEINIT, NULL);
 
-   rarch_block_config_read               = false;
    rarch_is_sram_load_disabled           = false;
    rarch_is_sram_save_disabled           = false;
    rarch_use_sram                        = false;
@@ -7918,6 +7917,7 @@ static void global_free(void)
    rarch_ctl(RARCH_CTL_UNSET_UPS_PREF, NULL);
    rarch_patch_blocked                   = false;
 #ifdef HAVE_CONFIGFILE
+   rarch_block_config_read               = false;
    runloop_overrides_active              = false;
    runloop_remaps_core_active            = false;
    runloop_remaps_game_active            = false;
@@ -7985,7 +7985,9 @@ void main_exit(void *args)
    has_set_username        = false;
    rarch_is_inited         = false;
    rarch_error_on_init     = false;
+#ifdef HAVE_CONFIGFILE
    rarch_block_config_read = false;
+#endif
 
    retroarch_msg_queue_deinit();
    driver_uninit(DRIVERS_CMD_ALL);
@@ -24665,7 +24667,9 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
    current_core.has_set_subsystems        = false;
 
    /* Load the config file now that we know what it is */
+#ifdef HAVE_CONFIGFILE
    if (!rarch_block_config_read)
+#endif
    {
       config_set_defaults(&g_extern);
 #ifdef HAVE_CONFIGFILE
@@ -25869,12 +25873,14 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          sthread_tls_delete(&rarch_tls);
 #endif
          break;
+#ifdef HAVE_CONFIGFILE
       case RARCH_CTL_SET_BLOCK_CONFIG_READ:
          rarch_block_config_read = true;
          break;
       case RARCH_CTL_UNSET_BLOCK_CONFIG_READ:
          rarch_block_config_read = false;
          break;
+#endif
       case RARCH_CTL_GET_CORE_OPTION_SIZE:
          {
             unsigned *idx = (unsigned*)data;
