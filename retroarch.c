@@ -1193,6 +1193,13 @@ static bool midi_driver_set_all_sounds_off(void);
 static const void *midi_driver_find_handle(int index);
 static bool midi_driver_flush(void);
 
+static void retroarch_deinit_core_options(void);
+static void retroarch_init_core_variables(const struct retro_variable *vars);
+static void rarch_init_core_options(
+      const struct retro_core_option_definition *option_defs);
+static void retroarch_core_options_display(const struct 
+      retro_core_option_display *core_options_display);
+
 static void bsv_movie_set_path(const char *path);
 
 struct string_list *dir_list_new_special(const char *input_dir,
@@ -7964,7 +7971,7 @@ void main_exit(void *args)
 
    rarch_ctl(RARCH_CTL_STATE_FREE,  NULL);
    global_free();
-   rarch_ctl(RARCH_CTL_DATA_DEINIT, NULL);
+   task_queue_deinit();
 
    if (configuration_settings)
       free(configuration_settings);
@@ -9370,23 +9377,24 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
       case RETRO_ENVIRONMENT_SET_VARIABLES:
          RARCH_LOG("[Environ]: SET_VARIABLES.\n");
 
-         rarch_ctl(RARCH_CTL_CORE_OPTIONS_DEINIT, NULL);
-         rarch_ctl(RARCH_CTL_CORE_VARIABLES_INIT, data);
+         retroarch_deinit_core_options();
+         retroarch_init_core_variables((const struct retro_variable *)data);
 
          break;
 
       case RETRO_ENVIRONMENT_SET_CORE_OPTIONS:
          RARCH_LOG("[Environ]: SET_CORE_OPTIONS.\n");
 
-         rarch_ctl(RARCH_CTL_CORE_OPTIONS_DEINIT, NULL);
-         rarch_ctl(RARCH_CTL_CORE_OPTIONS_INIT,   data);
+         retroarch_deinit_core_options();
+         rarch_init_core_options(
+               (const struct retro_core_option_definition*)data);
 
          break;
 
       case RETRO_ENVIRONMENT_SET_CORE_OPTIONS_INTL:
          RARCH_LOG("[Environ]: RETRO_ENVIRONMENT_SET_CORE_OPTIONS_INTL.\n");
 
-         rarch_ctl(RARCH_CTL_CORE_OPTIONS_DEINIT,    NULL);
+         retroarch_deinit_core_options();
          rarch_ctl(RARCH_CTL_CORE_OPTIONS_INTL_INIT, data);
 
          break;
@@ -9394,7 +9402,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
       case RETRO_ENVIRONMENT_SET_CORE_OPTIONS_DISPLAY:
          RARCH_LOG("[Environ]: RETRO_ENVIRONMENT_SET_CORE_OPTIONS_DISPLAY.\n");
 
-         rarch_ctl(RARCH_CTL_CORE_OPTIONS_DISPLAY, data);
+         retroarch_core_options_display((const struct retro_core_option_display *)data);
 
          break;
 
@@ -10726,7 +10734,7 @@ static void uninit_libretro_symbols(struct retro_core_t *current_core)
 
    core_set_shared_context = false;
 
-   rarch_ctl(RARCH_CTL_CORE_OPTIONS_DEINIT, NULL);
+   retroarch_deinit_core_options();
    retroarch_system_info_free();
    retroarch_frame_time_free();
    camera_driver_active      = false;
@@ -25645,7 +25653,7 @@ static void rarch_init_core_options_path(
 
    /* Ensure that 'input' strings are null terminated */
    if (len > 0)
-      path[0] = '\0';
+      path[0]     = '\0';
    if (src_len > 0)
       src_path[0] = '\0';
 
@@ -25939,9 +25947,6 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          break;
       case RARCH_CTL_IS_SHUTDOWN:
          return runloop_shutdown_initiated;
-      case RARCH_CTL_DATA_DEINIT:
-         task_queue_deinit();
-         break;
       case RARCH_CTL_CORE_OPTION_PREV:
          /*
           * Get previous value for core option specified by @idx.
@@ -25987,35 +25992,6 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
             }
          }
          break;
-      case RARCH_CTL_CORE_VARIABLES_INIT:
-         {
-            char options_path[PATH_MAX_LENGTH];
-            char src_options_path[PATH_MAX_LENGTH];
-            const struct retro_variable *vars =
-               (const struct retro_variable*)data;
-
-            options_path[0] = '\0';
-            src_options_path[0] = '\0';
-
-            /* Get core options file path */
-            rarch_init_core_options_path(
-               options_path, sizeof(options_path),
-               src_options_path, sizeof(src_options_path));
-
-            if (!string_is_empty(options_path))
-               runloop_core_options =
-                     core_option_manager_new_vars(options_path, src_options_path, vars);
-         }
-         break;
-      case RARCH_CTL_CORE_OPTIONS_INIT:
-         {
-            const struct retro_core_option_definition *option_defs =
-               (const struct retro_core_option_definition*)data;
-
-            rarch_init_core_options(option_defs);
-         }
-         break;
-
       case RARCH_CTL_CORE_OPTIONS_INTL_INIT:
          {
             const struct retro_core_options_intl *core_options_intl =
@@ -26036,64 +26012,6 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          }
          break;
 
-      case RARCH_CTL_CORE_OPTIONS_DEINIT:
-         if (!runloop_core_options)
-            return false;
-
-         /* check if game options file was just created and flush
-            to that file instead */
-         if (!path_is_empty(RARCH_PATH_CORE_OPTIONS))
-         {
-            /* We only need to save configuration settings for
-             * the current core, so create a temporary config_file
-             * object and populate the required values. */
-            config_file_t *conf_tmp = config_file_new_alloc();
-
-            if (conf_tmp)
-            {
-               const char *path = path_get(RARCH_PATH_CORE_OPTIONS);
-               core_option_manager_flush(
-                     conf_tmp,
-                     runloop_core_options, path);
-               RARCH_LOG("[Core Options]: Saved game-specific core options to \"%s\"\n", path);
-               config_file_write(conf_tmp, path, true);
-               config_file_free(conf_tmp);
-               conf_tmp = NULL;
-            }
-            path_clear(RARCH_PATH_CORE_OPTIONS);
-         }
-         else
-         {
-            const char *path = runloop_core_options->conf_path;
-            core_option_manager_flush(
-                  runloop_core_options->conf,
-                  runloop_core_options, path);
-            RARCH_LOG("[Core Options]: Saved core options file to \"%s\"\n", path);
-            config_file_write(runloop_core_options->conf, path, true);
-         }
-
-         if (runloop_game_options_active)
-            runloop_game_options_active = false;
-
-         if (runloop_core_options)
-            core_option_manager_free(runloop_core_options);
-         runloop_core_options          = NULL;
-         break;
-
-      case RARCH_CTL_CORE_OPTIONS_DISPLAY:
-         {
-            const struct retro_core_option_display *core_options_display =
-               (const struct retro_core_option_display*)data;
-
-            if (!runloop_core_options || !core_options_display)
-               return false;
-
-            core_option_manager_set_display(
-                  runloop_core_options,
-                  core_options_display->key,
-                  core_options_display->visible);
-         }
-         break;
 
       case RARCH_CTL_NONE:
       default:
@@ -26101,6 +26019,79 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
    }
 
    return true;
+}
+
+static void retroarch_deinit_core_options(void)
+{
+   if (!runloop_core_options)
+      return;
+
+   /* check if game options file was just created and flush
+      to that file instead */
+   if (!path_is_empty(RARCH_PATH_CORE_OPTIONS))
+   {
+      /* We only need to save configuration settings for
+       * the current core, so create a temporary config_file
+       * object and populate the required values. */
+      config_file_t *conf_tmp = config_file_new_alloc();
+
+      if (conf_tmp)
+      {
+         const char *path = path_get(RARCH_PATH_CORE_OPTIONS);
+         core_option_manager_flush(
+               conf_tmp,
+               runloop_core_options, path);
+         RARCH_LOG("[Core Options]: Saved game-specific core options to \"%s\"\n", path);
+         config_file_write(conf_tmp, path, true);
+         config_file_free(conf_tmp);
+         conf_tmp = NULL;
+      }
+      path_clear(RARCH_PATH_CORE_OPTIONS);
+   }
+   else
+   {
+      const char *path = runloop_core_options->conf_path;
+      core_option_manager_flush(
+            runloop_core_options->conf,
+            runloop_core_options, path);
+      RARCH_LOG("[Core Options]: Saved core options file to \"%s\"\n", path);
+      config_file_write(runloop_core_options->conf, path, true);
+   }
+
+   if (runloop_game_options_active)
+      runloop_game_options_active = false;
+
+   if (runloop_core_options)
+      core_option_manager_free(runloop_core_options);
+   runloop_core_options          = NULL;
+}
+
+static void retroarch_core_options_display(
+      const struct retro_core_option_display *core_options_display)
+{
+   if (runloop_core_options && core_options_display)
+      core_option_manager_set_display(
+            runloop_core_options,
+            core_options_display->key,
+            core_options_display->visible);
+}
+
+static void retroarch_init_core_variables(const struct retro_variable *vars)
+{
+   char options_path[PATH_MAX_LENGTH];
+   char src_options_path[PATH_MAX_LENGTH];
+
+   options_path[0]     = '\0';
+   src_options_path[0] = '\0';
+
+   /* Get core options file path */
+   rarch_init_core_options_path(
+         options_path, sizeof(options_path),
+         src_options_path, sizeof(src_options_path));
+
+   if (!string_is_empty(options_path))
+      runloop_core_options =
+         core_option_manager_new_vars(options_path, src_options_path, vars);
 }
 
 bool retroarch_is_forced_fullscreen(void)
