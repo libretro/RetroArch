@@ -67,8 +67,8 @@ typedef unsigned resampler_simd_mask_t;
 
 struct resampler_data
 {
-   const float *data_in;
-   float *data_out;
+   const void *data_in;
+   void *data_out;
 
    size_t input_frames;
    size_t output_frames;
