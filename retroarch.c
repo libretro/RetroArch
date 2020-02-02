@@ -18678,7 +18678,7 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
 {
    unsigned new_rate     = 0;
    float   *aud_inp_data = NULL;
-   float *samples_buf    = NULL;
+   void  *samples_buf    = NULL;
    int16_t *rewind_buf   = NULL;
    size_t max_bufsamples = AUDIO_CHUNK_SIZE_NONBLOCKING * 2;
    settings_t *settings  = configuration_settings;
@@ -18815,7 +18815,7 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
    if (!samples_buf)
       goto error;
 
-   audio_driver_output_samples_buf = samples_buf;
+   audio_driver_output_samples_buf = (float*)samples_buf;
    audio_driver_control            = false;
 
    if (
