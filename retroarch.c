@@ -2537,10 +2537,6 @@ static menu_input_t menu_input_state;
 static bool menu_driver_alive                   = false;
 /* Are we binding a button inside the menu? */
 static bool menu_driver_is_binding              = false;
-/* A menu toggle has been requested; if the menu was running,
- * it will be closed; if the menu was not running, it will be opened */
-static bool menu_driver_toggled                 = false;
-
 
 #ifdef HAVE_LIBNX
 #define LIBNX_SWKBD_LIMIT 500 /* enforced by HOS */
@@ -2754,11 +2750,6 @@ bool menu_input_dialog_get_display_kb(void)
    libnx_apply_overclock();
 #endif
    return menu_input_dialog_keyboard_display;
-}
-
-bool menu_driver_is_toggled(void)
-{
-   return menu_driver_toggled;
 }
 
 /* Checks if the menu is still running */
@@ -25464,8 +25455,6 @@ static void menu_driver_toggle(bool on)
    if (!menu_data)
       return;
 
-   menu_driver_toggled = on;
-
    if (menu_data->driver_ctx && menu_data->driver_ctx->toggle)
       menu_data->driver_ctx->toggle(menu_data->userdata, on);
 
@@ -25496,8 +25485,11 @@ static void menu_driver_toggle(bool on)
       if (pause_libretro && !enable_menu_sound)
          command_event(CMD_EVENT_AUDIO_STOP, NULL);
 
-      /*if (settings->bools.audio_enable_menu && settings->bools.audio_enable_menu_bgm)
-         audio_driver_mixer_play_menu_sound_looped(AUDIO_MIXER_SYSTEM_SLOT_BGM);*/
+#if 0
+      if (     settings->bools.audio_enable_menu 
+            && settings->bools.audio_enable_menu_bgm)
+         audio_driver_mixer_play_menu_sound_looped(AUDIO_MIXER_SYSTEM_SLOT_BGM);
+#endif
 
       /* Override keyboard callback to redirect to menu instead.
        * We'll use this later for something ... */
@@ -25525,8 +25517,12 @@ static void menu_driver_toggle(bool on)
       if (pause_libretro && !enable_menu_sound)
          command_event(CMD_EVENT_AUDIO_START, NULL);
 
-      /*if (settings->bools.audio_enable_menu && settings->bools.audio_enable_menu_bgm)
-         audio_driver_mixer_stop_stream(AUDIO_MIXER_SYSTEM_SLOT_BGM);*/
+#if 0
+      if (
+            settings->bools.audio_enable_menu && 
+            settings->bools.audio_enable_menu_bgm)
+         audio_driver_mixer_stop_stream(AUDIO_MIXER_SYSTEM_SLOT_BGM);
+#endif
 
       /* Restore libretro keyboard callback. */
       if (key_event && frontend_key_event)
@@ -25573,7 +25569,10 @@ void retroarch_menu_running_finished(bool quit)
 #ifdef HAVE_AUDIOMIXER
    if (!quit)
       /* Stop menu background music before we exit the menu */
-      if (settings && settings->bools.audio_enable_menu && settings->bools.audio_enable_menu_bgm)
+      if (  settings && 
+            settings->bools.audio_enable_menu && 
+            settings->bools.audio_enable_menu_bgm
+         )
          audio_driver_mixer_stop_stream(AUDIO_MIXER_SYSTEM_SLOT_BGM);
 #endif
 
@@ -25601,10 +25600,11 @@ static bool rarch_game_specific_options(char **output)
    game_path[0] ='\0';
 
    if (!retroarch_validate_game_options(game_path,
-            game_path_size, false))
-      goto error;
-   if (!path_is_valid(game_path))
-      goto error;
+            game_path_size, false) || !path_is_valid(game_path))
+   {
+      free(game_path);
+      return false;
+   }
 
    RARCH_LOG("%s %s\n",
          msg_hash_to_str(MSG_GAME_SPECIFIC_CORE_OPTIONS_FOUND_AT),
@@ -25612,10 +25612,6 @@ static bool rarch_game_specific_options(char **output)
    *output = strdup(game_path);
    free(game_path);
    return true;
-
-error:
-   free(game_path);
-   return false;
 }
 
 static void runloop_task_msg_queue_push(

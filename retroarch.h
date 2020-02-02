@@ -1981,8 +1981,6 @@ bool menu_driver_is_alive(void);
 
 void menu_driver_set_binding_state(bool on);
 
-bool menu_driver_is_toggled(void);
-
 bool menu_widgets_ready(void);
 
 unsigned int retroarch_get_rotation(void);
