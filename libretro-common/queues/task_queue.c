@@ -126,7 +126,7 @@ static retro_task_t *task_queue_get(task_queue_t *queue)
    if (task)
    {
       queue->front = task->next;
-      task->next = NULL;
+      task->next   = NULL;
    }
 
    return task;
@@ -208,13 +208,8 @@ static void retro_task_regular_reset(void)
       task->cancelled = true;
 }
 
-static void retro_task_regular_init(void)
-{
-}
-
-static void retro_task_regular_deinit(void)
-{
-}
+static void retro_task_regular_init(void) { }
+static void retro_task_regular_deinit(void) { }
 
 static bool retro_task_regular_find(retro_task_finder_t func, void *user_data)
 {
@@ -407,7 +402,7 @@ static bool retro_task_threaded_find(
       retro_task_finder_t func, void *user_data)
 {
    retro_task_t *task = NULL;
-   bool result = false;
+   bool        result = false;
 
    slock_lock(running_lock);
    for (task = tasks_running.front; task; task = task->next)
@@ -442,7 +437,7 @@ static void threaded_worker(void *userdata)
    for (;;)
    {
       retro_task_t *task  = NULL;
-      bool finished = false;
+      bool       finished = false;
 
       if (!worker_continue)
          break; /* should we keep running until all tasks finished? */
@@ -598,7 +593,7 @@ void task_queue_check(void)
 {
 #ifdef HAVE_THREADS
    bool current_threaded = (impl_current == &impl_threaded);
-   bool want_threaded    = task_queue_is_threaded();
+   bool want_threaded    = task_threaded_enable;
 
    if (want_threaded != current_threaded)
       task_queue_deinit();
@@ -616,7 +611,7 @@ bool task_queue_push(retro_task_t *task)
    if (task->type == TASK_TYPE_BLOCKING)
    {
       retro_task_t *running = NULL;
-      bool found = false;
+      bool            found = false;
 
       SLOCK_LOCK(queue_lock);
       running = tasks_running.front;
@@ -669,7 +664,7 @@ void *task_queue_retriever_info_next(task_retriever_info_t **link)
    /* Grab data and move to next link */
    if (*link)
    {
-      data = (*link)->data;
+      data  = (*link)->data;
       *link = (*link)->next;
    }
 
