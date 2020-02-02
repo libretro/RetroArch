@@ -28382,14 +28382,12 @@ static bool is_narrator_running_macos(void)
    return (kill(speak_pid, 0) == 0);
 }
 
-static bool accessibility_speak_macos(
+static bool accessibility_speak_macos(int speed,
       const char* speak_text, const char* voice, int priority)
 {
    int pid;
    char* language_speaker = accessibility_mac_language_code(voice);
-   char* speeds[10] = {"80", "100", "125", "150", "170", "210", "260", "310", "380", "450"};
-   settings_t *settings   = configuration_settings;
-   int speed              = settings->uints.accessibility_narrator_speech_speed;
+   char* speeds[10]       = {"80", "100", "125", "150", "170", "210", "260", "310", "380", "450"};
 
    if (speed < 1)
       speed = 1;
@@ -28549,16 +28547,13 @@ static bool is_narrator_running_windows(void)
    return false;
 }
 
-static bool accessibility_speak_windows(
+static bool accessibility_speak_windows(int speed,
       const char* speak_text, const char* voice, int priority)
 {
    char cmd[1200];
    const char *language   = accessibility_win_language_code(voice);
    bool res               = false;
-
-   settings_t *settings   = configuration_settings;
    const char* speeds[10] = {"-10", "-7.5", "-5", "-2.5", "0", "2", "4", "6", "8", "10"};
-   int speed              = settings->uints.accessibility_narrator_speech_speed;
 
    if (speed < 1)
       speed = 1;
@@ -28597,16 +28592,13 @@ static bool is_narrator_running_linux(void)
    return (kill(speak_pid, 0) == 0);
 }
 
-static bool accessibility_speak_linux(
+static bool accessibility_speak_linux(int speed,
       const char* speak_text, const char* language, int priority)
 {
    int pid;
-   char* voice_out = (char *)malloc(3+strlen(language));
-   char* speed_out = (char *)malloc(3+3);
-   settings_t *settings              = configuration_settings;
-
+   char* voice_out        = (char *)malloc(3+strlen(language));
+   char* speed_out        = (char *)malloc(3+3);
    const char* speeds[10] = {"80", "100", "125", "150", "170", "210", "260", "310", "380", "450"};
-   int speed = settings->uints.accessibility_narrator_speech_speed;
 
    if (speed < 1)
       speed = 1;
@@ -28667,15 +28659,16 @@ bool accessibility_speak_priority(const char* speak_text, int priority)
 
    if (is_accessibility_enabled())
    {
+      int speed         = configuration_settings->uints.accessibility_narrator_speech_speed;
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__) && !defined(EMSCRIPTEN)
       const char *voice = get_user_language_iso639_1(true);
-      return accessibility_speak_windows(speak_text, voice, priority);
+      return accessibility_speak_windows(speed, speak_text, voice, priority);
 #elif defined(__APPLE__) && defined(_IS_OSX) && !defined(EMSCRIPTEN)
       const char *voice = get_user_language_iso639_1(false);
-      return accessibility_speak_macos(speak_text, voice, priority);
+      return accessibility_speak_macos(speed, speak_text, voice, priority);
 #elif (defined(__linux__) || defined(__unix__)) && !defined(EMSCRIPTEN)
       const char *voice = get_user_language_iso639_1(true);
-      return accessibility_speak_linux(speak_text, voice, priority);
+      return accessibility_speak_linux(speed, speak_text, voice, priority);
 #endif
       RARCH_LOG("Platform not supported for accessibility.\n");
       /* The following method is a fallback for other platforms to use the
