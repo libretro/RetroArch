@@ -103,7 +103,6 @@ enum rarch_ctl_state
    /* Block config read */
    RARCH_CTL_SET_BLOCK_CONFIG_READ,
    RARCH_CTL_UNSET_BLOCK_CONFIG_READ,
-   RARCH_CTL_IS_BLOCK_CONFIG_READ,
 
    /* Username */
    RARCH_CTL_HAS_SET_USERNAME,

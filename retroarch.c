@@ -25824,8 +25824,6 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
       case RARCH_CTL_UNSET_BLOCK_CONFIG_READ:
          rarch_block_config_read = false;
          break;
-      case RARCH_CTL_IS_BLOCK_CONFIG_READ:
-         return rarch_block_config_read;
       case RARCH_CTL_GET_CORE_OPTION_SIZE:
          {
             unsigned *idx = (unsigned*)data;
