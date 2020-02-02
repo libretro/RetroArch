@@ -14,6 +14,8 @@ These programs are instantiated as dynamic libraries. We refer to these as "libr
 
 ![glui menu driver](https://github.com/libretro/retroarch-scene/blob/master/Scratcpad/images/Versions/1.8.4/glui-main-menu.jpg?raw=true "glui menu driver")
 
+![ozone menu driver](https://github.com/libretro/retroarch-scene/blob/master/Scratcpad/images/Versions/1.8.4/ozone-main-menu.jpg?raw=true "ozone menu driver")
+
 ## libretro
 
 [libretro](http://libretro.com) is an API that exposes generic audio/video/input callbacks.
@@ -36,7 +38,7 @@ To reach developers, either make an issue here on GitHub, make a thread on the [
 ## Documentation
 
 See our [Documentation Center](https://docs.libretro.com/). On Unix, man-pages are provided.
-More developer-centric stuff is found [here](https://github.com/libretro/libretro.github.com/wiki/Documentation-devs).
+More developer-centric stuff is found [here](https://docs.libretro.com/development/libretro-overview/).
 
 ## Related projects
 
@@ -72,6 +74,7 @@ RetroArch has been ported to the following platforms:
    - Haiku
    - Solaris
    - macOS (PPC, x86-32 and x86-64)
+   - PlayStation 2
    - PlayStation 3
    - PlayStation Portable
    - PlayStation Vita
@@ -80,7 +83,7 @@ RetroArch has been ported to the following platforms:
    - Nintendo GameCube
    - Nintendo Wii
    - Nintendo Wii U
-   - Nintendo 3DS
+   - Nintendo 3DS/2DS
    - Nintendo Switch
    - Nintendo NES/SNES Classic Edition
    - Raspberry Pi
