@@ -278,3 +278,4 @@ The links below belong to our official channels. Links other than this may have 
 - Discord: https://discord.gg/27Xxm2h
 - Teespring: https://teespring.com/stores/retroarch
 - Documentation: http://docs.libretro.com/
+- Forums: https://forums.libretro.com/
