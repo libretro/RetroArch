@@ -7,6 +7,10 @@ branches:
 # Use 'generic' to be able to override CC/CXX for clang
 language: generic
 
+# Cache: Make use of Ccache to cache compilation
+# https://docs.travis-ci.com/user/caching/
+cache: ccache
+
 # Use a release with a longer normal LTS
 dist: xenial
 
