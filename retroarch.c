@@ -25259,8 +25259,7 @@ bool retroarch_main_init(int argc, char *argv[])
 #endif
 
    retroarch_validate_cpu_features();
-
-   rarch_ctl(RARCH_CTL_TASK_INIT, NULL);
+   retroarch_init_task_queue();
 
    {
       const char    *fullpath  = path_get(RARCH_PATH_CONTENT);
@@ -25741,6 +25740,18 @@ static void rarch_init_core_options(
             core_option_manager_new(options_path, src_options_path, option_defs);
 }
 
+void retroarch_init_task_queue(void)
+{
+#ifdef HAVE_THREADS
+   settings_t *settings       = configuration_settings;
+   bool threaded_enable       = settings->bools.threaded_data_runloop_enable;
+#else
+   bool threaded_enable       = false;
+#endif
+   task_queue_deinit();
+   task_queue_init(threaded_enable, runloop_task_msg_queue_push);
+}
+
 bool rarch_ctl(enum rarch_ctl_state state, void *data)
 {
    switch(state)
@@ -25925,18 +25936,6 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          break;
       case RARCH_CTL_IS_PAUSED:
          return runloop_paused;
-      case RARCH_CTL_TASK_INIT:
-         {
-#ifdef HAVE_THREADS
-            settings_t *settings       = configuration_settings;
-            bool threaded_enable       = settings->bools.threaded_data_runloop_enable;
-#else
-            bool threaded_enable = false;
-#endif
-            task_queue_deinit();
-            task_queue_init(threaded_enable, runloop_task_msg_queue_push);
-         }
-         break;
       case RARCH_CTL_SET_SHUTDOWN:
          runloop_shutdown_initiated = true;
          break;

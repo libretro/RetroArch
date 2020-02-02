@@ -110,8 +110,6 @@ enum rarch_ctl_state
 
    RARCH_CTL_HAS_SET_SUBSYSTEMS,
 
-   RARCH_CTL_TASK_INIT,
-
    RARCH_CTL_IS_IDLE,
    RARCH_CTL_SET_IDLE,
 
@@ -1996,6 +1994,8 @@ bool menu_driver_is_toggled(void);
 bool menu_widgets_ready(void);
 
 unsigned int retroarch_get_rotation(void);
+
+void retroarch_init_task_queue(void);
 
 bool is_input_keyboard_display_on(void);
 

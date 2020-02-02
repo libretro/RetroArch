@@ -1578,7 +1578,7 @@ bool task_push_start_dummy_core(content_ctx_info_t *content_info)
    sys_info->load_no_content = false;
    rarch_ctl(RARCH_CTL_STATE_FREE, NULL);
    rarch_ctl(RARCH_CTL_DATA_DEINIT, NULL);
-   rarch_ctl(RARCH_CTL_TASK_INIT, NULL);
+   retroarch_init_task_queue();
 
    /* Loads content into currently selected core. */
    if (!content_load(content_info))
