@@ -2148,7 +2148,7 @@ json_cleanup:
       /* > Exclude trailing newline */
       metadata_char = filestream_getc(file);
 
-      while((metadata_char == '\n') ||
+      while ((metadata_char == '\n') ||
             (metadata_char == '\r'))
       {
          filestream_seek(file, -2, SEEK_CUR);
