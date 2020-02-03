@@ -1227,8 +1227,6 @@ static void retroarch_deinit_core_options(void);
 static void retroarch_init_core_variables(const struct retro_variable *vars);
 static void rarch_init_core_options(
       const struct retro_core_option_definition *option_defs);
-static void retroarch_core_options_display(const struct 
-      retro_core_option_display *core_options_display);
 
 static void bsv_movie_set_path(const char *path);
 
@@ -9452,7 +9450,15 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
       case RETRO_ENVIRONMENT_SET_CORE_OPTIONS_DISPLAY:
          RARCH_LOG("[Environ]: RETRO_ENVIRONMENT_SET_CORE_OPTIONS_DISPLAY.\n");
 
-         retroarch_core_options_display((const struct retro_core_option_display *)data);
+         {
+            const struct retro_core_option_display *core_options_display = (const struct retro_core_option_display *)data;
+
+            if (runloop_core_options && core_options_display)
+               core_option_manager_set_display(
+                     runloop_core_options,
+                     core_options_display->key,
+                     core_options_display->visible);
+         }
 
          break;
 
@@ -9462,10 +9468,13 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
          RARCH_LOG("[Environ]: SET_MESSAGE: %s\n", msg->msg);
 #ifdef HAVE_MENU_WIDGETS
          if (menu_widgets_inited)
-            menu_widgets_set_libretro_message(msg->msg, roundf((float)msg->frames / 60.0f * 1000.0f));
+            menu_widgets_set_libretro_message(msg->msg,
+                  roundf((float)msg->frames / 60.0f * 1000.0f));
          else
 #endif
-            runloop_msg_queue_push(msg->msg, 3, msg->frames, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            runloop_msg_queue_push(msg->msg, 3, msg->frames,
+                  true, NULL, MESSAGE_QUEUE_ICON_DEFAULT,
+                  MESSAGE_QUEUE_CATEGORY_INFO);
          break;
       }
 
@@ -9508,7 +9517,8 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
          break;
 
       case RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY:
-         if (string_is_empty(settings->paths.directory_system) || settings->bools.systemfiles_in_content_dir)
+         if (     string_is_empty(settings->paths.directory_system) 
+               || settings->bools.systemfiles_in_content_dir)
          {
             const char *fullpath = path_get(RARCH_PATH_CONTENT);
             if (!string_is_empty(fullpath))
@@ -9516,7 +9526,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
                size_t path_size = PATH_MAX_LENGTH * sizeof(char);
                char *temp_path  = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
 
-               temp_path[0] = '\0';
+               temp_path[0]     = '\0';
 
                if (string_is_empty(settings->paths.directory_system))
                   RARCH_WARN("SYSTEM DIR is empty, assume CONTENT DIR %s\n",
@@ -26146,16 +26156,6 @@ static void retroarch_deinit_core_options(void)
    if (runloop_core_options)
       core_option_manager_free(runloop_core_options);
    runloop_core_options          = NULL;
-}
-
-static void retroarch_core_options_display(
-      const struct retro_core_option_display *core_options_display)
-{
-   if (runloop_core_options && core_options_display)
-      core_option_manager_set_display(
-            runloop_core_options,
-            core_options_display->key,
-            core_options_display->visible);
 }
 
 static void retroarch_init_core_variables(const struct retro_variable *vars)
