@@ -1685,10 +1685,6 @@ static bool menu_display_check_compatibility(
          if (string_is_equal(video_driver, "gdi"))
             return true;
          break;
-      case MENU_VIDEO_DRIVER_VGA:
-         if (string_is_equal(video_driver, "vga"))
-            return true;
-         break;
       case MENU_VIDEO_DRIVER_FPGA:
          if (string_is_equal(video_driver, "fpga"))
             return true;

@@ -1334,10 +1334,6 @@ MENU
 #include "../menu/drivers_display/menu_display_switch.c"
 #endif
 
-#ifdef DJGPP
-#include "../menu/drivers_display/menu_display_vga.c"
-#endif
-
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
 #ifdef HAVE_GDI
 #include "../menu/drivers_display/menu_display_gdi.c"

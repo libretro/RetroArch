@@ -2037,10 +2037,6 @@ ifneq ($(findstring DOS,$(OS)),)
           input/drivers/dos_input.o \
           input/drivers_joypad/dos_joypad.o \
           frontend/drivers/platform_dos.o
-
-   ifeq ($(HAVE_MENU_COMMON), 1)
-      OBJ += menu/drivers_display/menu_display_vga.o
-   endif
 endif
 
 ifeq ($(HAVE_STATIC_VIDEO_FILTERS), 1)
