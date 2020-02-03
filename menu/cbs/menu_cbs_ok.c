@@ -6349,7 +6349,7 @@ static int action_ok_pl_content_thumbnails(const char *path,
          settings->paths.directory_playlist, label,
          sizeof(playlist_path));
 
-   task_push_pl_thumbnail_download(path, playlist_path);
+   task_push_pl_thumbnail_download(path, playlist_path, settings->paths.directory_thumbnails);
    return 0;
 #else
    return -1;

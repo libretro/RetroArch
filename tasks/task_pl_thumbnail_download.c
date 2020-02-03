@@ -471,22 +471,22 @@ static bool task_pl_thumbnail_finder(retro_task_t *task, void *user_data)
 }
 
 bool task_push_pl_thumbnail_download(
-      const char *system, const char *playlist_path)
+      const char *system, const char *playlist_path,
+      const char *dir_thumbnails)
 {
    task_finder_data_t find_data;
-   settings_t *settings          = config_get_ptr();
    retro_task_t *task            = task_init();
    pl_thumb_handle_t *pl_thumb   = (pl_thumb_handle_t*)calloc(1, sizeof(pl_thumb_handle_t));
    const char *playlist_file     = path_basename(playlist_path);
    
    /* Sanity check */
-   if (!settings || !task || !pl_thumb)
+   if (!task || !pl_thumb)
       goto error;
    
    if (string_is_empty(system) ||
        string_is_empty(playlist_path) ||
        string_is_empty(playlist_file) ||
-       string_is_empty(settings->paths.directory_thumbnails))
+       string_is_empty(dir_thumbnails))
       goto error;
    
    /* Only parse supported playlist types */
@@ -518,7 +518,7 @@ bool task_push_pl_thumbnail_download(
    /* Configure handle */
    pl_thumb->system              = strdup(system);
    pl_thumb->playlist_path       = strdup(playlist_path);
-   pl_thumb->dir_thumbnails      = strdup(settings->paths.directory_thumbnails);
+   pl_thumb->dir_thumbnails      = strdup(dir_thumbnails);
    pl_thumb->playlist            = NULL;
    pl_thumb->thumbnail_path_data = NULL;
    pl_thumb->http_task           = NULL;
@@ -591,6 +591,7 @@ static void cb_task_pl_entry_thumbnail_refresh_menu(
    if (string_is_empty(playlist_get_conf_path(current_playlist)))
       return;
    
+#ifdef HAVE_MATERIALUI
    if (string_is_equal(settings->arrays.menu_driver, "glui"))
    {
       if (!string_is_equal(pl_thumb->playlist_path,
@@ -598,6 +599,7 @@ static void cb_task_pl_entry_thumbnail_refresh_menu(
          return;
    }
    else
+#endif
    {
       if (((pl_thumb->list_index != menu_navigation_get_selection()) &&
            (pl_thumb->list_index != menu->rpl_entry_selection_ptr)) ||
