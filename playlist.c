@@ -2626,7 +2626,8 @@ void playlist_set_default_core_path(playlist_t *playlist, const char *core_path)
    /* Get 'real' core path */
    strlcpy(real_core_path, core_path, sizeof(real_core_path));
    if (!string_is_equal(real_core_path, "DETECT"))
-       playlist_resolve_path(PLAYLIST_SAVE, real_core_path, sizeof(real_core_path));
+       playlist_resolve_path(PLAYLIST_SAVE,
+             real_core_path, sizeof(real_core_path));
 
    if (string_is_empty(real_core_path))
       return;
@@ -2654,31 +2655,35 @@ void playlist_set_default_core_name(playlist_t *playlist, const char *core_name)
    }
 }
 
-void playlist_set_label_display_mode(playlist_t *playlist, enum playlist_label_display_mode label_display_mode)
+void playlist_set_label_display_mode(playlist_t *playlist,
+      enum playlist_label_display_mode label_display_mode)
 {
    if (!playlist)
       return;
 
-   if (playlist->label_display_mode != label_display_mode) {
+   if (playlist->label_display_mode != label_display_mode)
+   {
       playlist->label_display_mode = label_display_mode;
       playlist->modified = true;
    }
 }
 
 void playlist_set_thumbnail_mode(
-      playlist_t *playlist, enum playlist_thumbnail_id thumbnail_id, enum playlist_thumbnail_mode thumbnail_mode)
+      playlist_t *playlist, enum playlist_thumbnail_id thumbnail_id,
+      enum playlist_thumbnail_mode thumbnail_mode)
 {
    if (!playlist)
       return;
 
-   if (thumbnail_id == PLAYLIST_THUMBNAIL_RIGHT)
+   switch (thumbnail_id)
    {
-      playlist->right_thumbnail_mode = thumbnail_mode;
-      playlist->modified = true;
-   }
-   else if (thumbnail_id == PLAYLIST_THUMBNAIL_LEFT)
-   {
-      playlist->left_thumbnail_mode = thumbnail_mode;
-      playlist->modified = true;
+      case PLAYLIST_THUMBNAIL_RIGHT:
+         playlist->right_thumbnail_mode = thumbnail_mode;
+         playlist->modified             = true;
+         break;
+      case PLAYLIST_THUMBNAIL_LEFT:
+         playlist->left_thumbnail_mode = thumbnail_mode;
+         playlist->modified            = true;
+         break;
    }
 }
