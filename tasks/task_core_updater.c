@@ -221,6 +221,8 @@ static void task_core_updater_get_list_handler(retro_task_t *task)
             file_transfer_t *transf = NULL;
             char *tmp_url           = NULL;
             char buildbot_url[PATH_MAX_LENGTH];
+            const char *net_buildbot_url = 
+               settings->paths.network_buildbot_url;
 
             buildbot_url[0] = '\0';
 
@@ -231,12 +233,12 @@ static void task_core_updater_get_list_handler(retro_task_t *task)
             if (!settings)
                goto task_finished;
 
-            if (string_is_empty(settings->paths.network_buildbot_url))
+            if (string_is_empty(net_buildbot_url))
                goto task_finished;
 
             fill_pathname_join(
                   buildbot_url,
-                  settings->paths.network_buildbot_url,
+                  net_buildbot_url,
                   ".index-extended",
                   sizeof(buildbot_url));
 
