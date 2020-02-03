@@ -197,6 +197,7 @@ else ifeq ($(libogc_platform), 1)
    HAVE_VIDEO_LAYOUT        := 0
    HAVE_ZLIB                := 1
    HAVE_7ZIP                := 1
+	HAVE_CONFIGFILE          := 1
    RARCH_CONSOLE             = 1
 
    ifeq ($(platform), wii)
@@ -260,6 +261,7 @@ else ifeq ($(platform), psp1)
    HAVE_KERNEL_PRX          := 1
    #HAVE_LANGEXTRA          := 1
    RARCH_CONSOLE             = 1
+	HAVE_CONFIGFILE          := 1
 
    ifeq ($(BUILD_PRX), 1)
       LDFLAGS += $(addprefix -L,$(PSPSDK)/lib) -specs=$(PSPSDK)/lib/prxspecs -Wl,-q,-T$(PSPSDK)/lib/linkfile.prx $(LDFLAGS)
@@ -317,6 +319,7 @@ else ifeq ($(platform), vita)
    HAVE_THREADS             := 1
    HAVE_LIBRETRODB          := 1
    RARCH_CONSOLE             = 1
+	HAVE_CONFIGFILE          := 1
 else ifeq ($(platform), windows_msvc6_x86)
    HAVE_RPNG                := 1
    HAVE_RJPEG               := 1
@@ -340,6 +343,7 @@ else ifeq ($(platform), windows_msvc6_x86)
    HAVE_DYLIB               := 1
    HAVE_DYNAMIC             := 1
    HAVE_GRIFFIN_CPP         := 1
+	HAVE_CONFIGFILE          := 1
 
    EXT_TARGET := $(TARGET_NAME).exe
    EXT_INTER_TARGET := $(TARGET_NAME).exe
@@ -383,6 +387,7 @@ else ifeq ($(platform), windows_msvc2003_x86)
    HAVE_DYLIB               := 1
    HAVE_DYNAMIC             := 1
    HAVE_GRIFFIN_CPP         := 1
+	HAVE_CONFIGFILE          := 1
 
    EXT_TARGET := $(TARGET_NAME).exe
    EXT_INTER_TARGET := $(TARGET_NAME).exe
@@ -432,6 +437,7 @@ else ifeq ($(platform), windows_msvc2005_x86)
    HAVE_DYNAMIC             := 1
    HAVE_GRIFFIN_CPP         := 1
    HAVE_DIRECTX             ?= 1
+	HAVE_CONFIGFILE          := 1
 
    EXT_TARGET := $(TARGET_NAME).exe
    EXT_INTER_TARGET := $(TARGET_NAME).exe
@@ -483,6 +489,7 @@ else ifneq (,$(findstring windows_msvc2010,$(platform)))
    HAVE_GRIFFIN_CPP         := 1
    HAVE_RUNAHEAD            := 1
    HAVE_DIRECTX             ?= 1
+	HAVE_CONFIGFILE          := 1
 
    EXT_TARGET := $(TARGET_NAME).exe
    EXT_INTER_TARGET := $(TARGET_NAME).exe
@@ -557,6 +564,7 @@ else ifneq (,$(findstring windows_msvc2012,$(platform)))
    HAVE_GRIFFIN_CPP         := 1
    HAVE_RUNAHEAD            := 1
    HAVE_DIRECTX             ?= 1
+	HAVE_CONFIGFILE          := 1
 
    EXT_TARGET := $(TARGET_NAME).exe
    EXT_INTER_TARGET := $(TARGET_NAME).exe
@@ -635,6 +643,7 @@ else ifneq (,$(findstring windows_msvc2013,$(platform)))
    HAVE_GRIFFIN_CPP         := 1
    HAVE_RUNAHEAD            := 1
    HAVE_DIRECTX             ?= 1
+	HAVE_CONFIGFILE          := 1
 
    EXT_TARGET := $(TARGET_NAME).exe
    EXT_INTER_TARGET := $(TARGET_NAME).exe
@@ -713,6 +722,7 @@ else ifneq (,$(findstring windows_msvc2015,$(platform)))
    HAVE_GRIFFIN_CPP         := 1
    HAVE_RUNAHEAD            := 1
    HAVE_DIRECTX             ?= 1
+	HAVE_CONFIGFILE          := 1
 
    EXT_TARGET := $(TARGET_NAME).exe
    EXT_INTER_TARGET := $(TARGET_NAME).exe
@@ -971,6 +981,10 @@ ifeq ($(HAVE_THREADS), 1)
    ifeq ($(platform), vita)
       LIBS += -lpthread
    endif
+endif
+
+ifeq ($(HAVE_CONFIGFILE), 1)
+   CFLAGS += -DHAVE_CONFIGFILE
 endif
 
 ifeq ($(HAVE_RSOUND), 1)

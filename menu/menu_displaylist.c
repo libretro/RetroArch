@@ -4676,6 +4676,7 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
                         MENU_ENUM_LABEL_REMAP_FILE_REMOVE_CONTENT_DIR,
                         MENU_SETTING_ACTION, 0, 0))
                   count++;
+#endif
 
             for (p = 0; p < max_users; p++)
             {
@@ -4687,7 +4688,6 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
                         MENU_SETTINGS_REMAPPING_PORT_BEGIN + p, p, 0))
                   count++;
             }
-#endif
          }
          break;
       case DISPLAYLIST_LOAD_CONTENT_LIST:

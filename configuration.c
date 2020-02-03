@@ -56,12 +56,6 @@
 #include "uwp/uwp_func.h"
 #endif
 
-static const char* invalid_filename_chars[] = {
-   /* https://support.microsoft.com/en-us/help/905231/information-about-the-characters-that-you-cannot-use-in-site-names--fo */
-   "~", "#", "%", "&", "*", "{", "}", "\\", ":", "[", "]", "?", "/", "|", "\'", "\"",
-   NULL
-};
-
 /* All config related settings go here. */
 
 struct config_bool_setting
@@ -3633,6 +3627,11 @@ void config_load(void *data)
  **/
 bool config_save_autoconf_profile(const char *path, unsigned user)
 {
+   static const char* invalid_filename_chars[] = {
+      /* https://support.microsoft.com/en-us/help/905231/information-about-the-characters-that-you-cannot-use-in-site-names--fo */
+      "~", "#", "%", "&", "*", "{", "}", "\\", ":", "[", "]", "?", "/", "|", "\'", "\"",
+      NULL
+   };
    unsigned i;
    config_file_t *conf                  = NULL;
    size_t path_size                     = PATH_MAX_LENGTH * sizeof(char);
