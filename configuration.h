@@ -53,6 +53,10 @@
    var = newvar; \
 }
 
+#ifndef EXPLICIT_NULL
+#define EXPLICIT_NULL "nul"
+#endif
+
 enum crt_switch_type
 {
    CRT_SWITCH_NONE = 0,

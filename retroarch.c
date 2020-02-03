@@ -17731,9 +17731,12 @@ void input_config_save_keybinds_user(void *data, unsigned user)
       fill_pathname_join_delim(key, prefix, base, '_', sizeof(key));
 
       input_keymaps_translate_rk_to_str(bind->key, btn, sizeof(btn));
-      config_set_string(conf, key, btn);
 
-      input_config_save_keybind(conf, prefix, base, bind, true);
+      if (!string_is_equal(btn, EXPLICIT_NULL))
+      {
+         config_set_string(conf, key, btn);
+         input_config_save_keybind(conf, prefix, base, bind);
+      }
    }
 }
 
@@ -17775,7 +17778,7 @@ static void save_keybind_hat(config_file_t *conf, const char *key,
 static void save_keybind_joykey(config_file_t *conf,
       const char *prefix,
       const char *base,
-      const struct retro_keybind *bind, bool save_empty)
+      const struct retro_keybind *bind)
 {
    char key[64];
 
@@ -17784,12 +17787,7 @@ static void save_keybind_joykey(config_file_t *conf,
    fill_pathname_join_delim_concat(key, prefix,
          base, '_', "_btn", sizeof(key));
 
-   if (bind->joykey == NO_BTN)
-   {
-       if (save_empty)
-         config_set_string(conf, key, "nul");
-   }
-   else if (GET_HAT_DIR(bind->joykey))
+   if (GET_HAT_DIR(bind->joykey))
       save_keybind_hat(conf, key, bind);
    else
       config_set_uint64(conf, key, bind->joykey);
@@ -17798,7 +17796,7 @@ static void save_keybind_joykey(config_file_t *conf,
 static void save_keybind_axis(config_file_t *conf,
       const char *prefix,
       const char *base,
-      const struct retro_keybind *bind, bool save_empty)
+      const struct retro_keybind *bind)
 {
    char key[64];
    unsigned axis   = 0;
@@ -17811,12 +17809,7 @@ static void save_keybind_axis(config_file_t *conf,
          "_axis",
          sizeof(key));
 
-   if (bind->joyaxis == AXIS_NONE)
-   {
-      if (save_empty)
-         config_set_string(conf, key, "nul");
-   }
-   else if (AXIS_NEG_GET(bind->joyaxis) != AXIS_DIR_NONE)
+   if (AXIS_NEG_GET(bind->joyaxis) != AXIS_DIR_NONE)
    {
       dir = '-';
       axis = AXIS_NEG_GET(bind->joyaxis);
@@ -17841,7 +17834,7 @@ static void save_keybind_axis(config_file_t *conf,
 static void save_keybind_mbutton(config_file_t *conf,
       const char *prefix,
       const char *base,
-      const struct retro_keybind *bind, bool save_empty)
+      const struct retro_keybind *bind)
 {
    char key[64];
 
@@ -17880,8 +17873,6 @@ static void save_keybind_mbutton(config_file_t *conf,
          config_set_string(conf, key, "whd");
          break;
       default:
-         if (save_empty)
-            config_set_string(conf, key, "nul");
          break;
    }
 }
@@ -17897,14 +17888,17 @@ static void save_keybind_mbutton(config_file_t *conf,
  * Save a key binding to the config file.
  */
 void input_config_save_keybind(void *data, const char *prefix,
-      const char *base, const struct retro_keybind *bind,
-      bool save_empty)
+      const char *base, const struct retro_keybind *bind)
 {
    config_file_t *conf = (config_file_t*)data;
 
-   save_keybind_joykey (conf, prefix, base, bind, save_empty);
-   save_keybind_axis   (conf, prefix, base, bind, save_empty);
-   save_keybind_mbutton(conf, prefix, base, bind, save_empty);
+
+   if (bind->joykey != NO_BTN)
+      save_keybind_joykey(conf, prefix, base, bind);
+   if (bind->joyaxis != AXIS_NONE)
+      save_keybind_axis(conf, prefix, base, bind);
+   if (bind->mbutton != NO_BTN)
+      save_keybind_mbutton(conf, prefix, base, bind);
 }
 
 /* MIDI */

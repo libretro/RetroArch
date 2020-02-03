@@ -3725,7 +3725,7 @@ bool config_save_autoconf_profile(const char *path, unsigned user)
       if (bind->valid)
          input_config_save_keybind(
                conf, "input", input_config_bind_map_get_base(i),
-               bind, false);
+               bind);
    }
 
    ret = config_file_write(conf, autoconf_file, false);

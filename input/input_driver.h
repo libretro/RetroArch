@@ -545,8 +545,7 @@ uint16_t input_config_get_vid(unsigned port);
 void input_config_save_keybinds_user(void *data, unsigned user);
 
 void input_config_save_keybind(void *data, const char *prefix,
-      const char *base, const struct retro_keybind *bind,
-      bool save_empty);
+      const char *base, const struct retro_keybind *bind);
 
 void input_config_reset(void);
 
