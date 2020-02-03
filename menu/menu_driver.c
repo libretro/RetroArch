@@ -288,15 +288,6 @@ static menu_display_ctx_driver_t *menu_display_ctx_drivers[] = {
    &menu_display_ctx_gdi,
 #endif
 #endif
-#ifdef DJGPP
-   &menu_display_ctx_vga,
-#endif
-#ifdef HAVE_SIXEL
-   &menu_display_ctx_sixel,
-#endif
-#ifdef HAVE_FPGA
-   &menu_display_ctx_fpga,
-#endif
    &menu_display_ctx_null,
    NULL,
 };
@@ -1677,16 +1668,8 @@ static bool menu_display_check_compatibility(
          if (string_is_equal(video_driver, "gx2"))
             return true;
          break;
-      case MENU_VIDEO_DRIVER_SIXEL:
-         if (string_is_equal(video_driver, "sixel"))
-            return true;
-         break;
       case MENU_VIDEO_DRIVER_GDI:
          if (string_is_equal(video_driver, "gdi"))
-            return true;
-         break;
-      case MENU_VIDEO_DRIVER_FPGA:
-         if (string_is_equal(video_driver, "fpga"))
             return true;
          break;
       case MENU_VIDEO_DRIVER_SWITCH:

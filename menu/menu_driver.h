@@ -734,9 +734,7 @@ extern menu_display_ctx_driver_t menu_display_ctx_vita2d;
 extern menu_display_ctx_driver_t menu_display_ctx_ctr;
 extern menu_display_ctx_driver_t menu_display_ctx_wiiu;
 extern menu_display_ctx_driver_t menu_display_ctx_gdi;
-extern menu_display_ctx_driver_t menu_display_ctx_fpga;
 extern menu_display_ctx_driver_t menu_display_ctx_switch;
-extern menu_display_ctx_driver_t menu_display_ctx_sixel;
 
 extern menu_ctx_driver_t menu_ctx_ozone;
 extern menu_ctx_driver_t menu_ctx_xui;

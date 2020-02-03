@@ -1136,10 +1136,6 @@ ifeq ($(HAVE_SIXEL), 1)
           gfx/drivers_context/sixel_ctx.o
    LIBS += $(SIXEL_LIBS)
    DEF_FLAGS += $(SIXEL_CFLAGS)
-
-   ifeq ($(HAVE_MENU_COMMON), 1)
-      OBJ += menu/drivers_display/menu_display_sixel.o
-   endif
 endif
 
 ifeq ($(HAVE_NETWORK_VIDEO), 1)
@@ -1970,8 +1966,7 @@ endif
 ifneq ($(findstring FPGA,$(OS)),)
    OBJ += gfx/drivers/fpga_gfx.o \
           gfx/drivers_context/fpga_ctx.o \
-          gfx/drivers_font/fpga_font.o \
-          menu/drivers_display/menu_display_fpga.o
+          gfx/drivers_font/fpga_font.o
 endif
 
 ifneq ($(findstring Win32,$(OS)),)
