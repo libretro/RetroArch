@@ -92,8 +92,9 @@ bool task_push_netplay_nat_traversal(void *nat_traversal_state, uint16_t port);
 void *task_push_get_core_updater_list(
       core_updater_list_t* core_list, bool mute, bool refresh_menu);
 void *task_push_core_updater_download(
-      core_updater_list_t* core_list, const char *filename, bool mute, bool check_crc);
-void task_push_update_installed_cores(void);
+      core_updater_list_t* core_list, const char *filename,
+      bool mute, bool check_crc, const char *path_dir_libretro);
+void task_push_update_installed_cores(const char *path_dir_libretro);
 
 #ifdef HAVE_MENU
 bool task_push_pl_thumbnail_download(const char *system, const char *playlist_path);

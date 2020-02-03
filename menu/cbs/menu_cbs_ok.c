@@ -4340,12 +4340,14 @@ static int action_ok_core_updater_download(const char *path,
 {
 #ifdef HAVE_NETWORKING
    core_updater_list_t *core_list = core_updater_list_get_cached();
+   settings_t          *settings  = config_get_ptr();
 
    if (!core_list)
       return menu_cbs_exit();
 
    task_push_core_updater_download(
-      core_list, path, false, true);
+      core_list, path, false, true,
+      settings->paths.directory_libretro);
 
 #endif
    return 0;
@@ -4355,11 +4357,13 @@ static int action_ok_core_updater_download(const char *path,
 static int action_ok_update_installed_cores(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
+   settings_t *settings  = config_get_ptr();
+
    /* Ensure networking is initialised */
    generic_action_ok_command(CMD_EVENT_NETWORK_INIT);
 
    /* Push update task */
-   task_push_update_installed_cores();
+   task_push_update_installed_cores(settings->paths.directory_libretro);
 
    return 0;
 }
