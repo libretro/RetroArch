@@ -237,6 +237,7 @@ else ifeq ($(platform), xenon360)
    HAVE_THREADS             := 1
    HAVE_GETOPT_LONG         := 1
    RARCH_CONSOLE             = 1
+	HAVE_CONFIGFILE          := 1
 
 # PSP
 else ifeq ($(platform), psp1)
