@@ -21912,24 +21912,26 @@ static void video_driver_frame(const void *data, unsigned width,
    {
       video_driver_crt_switching_active = true;
 
-      if (video_info.crt_switch_resolution_super == 2560)
-         width = 2560;
-      if (video_info.crt_switch_resolution_super == 3840)
-         width = 3840;
-      if (video_info.crt_switch_resolution_super == 1920)
-         width = 1920;
-
-      if (video_info.crt_switch_resolution_super == 1)
-         video_driver_crt_dynamic_super_width = true;
-      else
-         video_driver_crt_dynamic_super_width = false;
+      switch (video_info.crt_switch_resolution_super)
+      {
+         case 2560:
+         case 3840:
+         case 1920:
+            width = video_info.crt_switch_resolution_super;
+            video_driver_crt_dynamic_super_width = false;
+            break;
+         case 1:
+            video_driver_crt_dynamic_super_width = true;
+            break;
+         default:
+            video_driver_crt_dynamic_super_width = false;
+            break;
+      }
 
       crt_switch_res_core(width, height, video_driver_core_hz, video_info.crt_switch_resolution, video_info.crt_switch_center_adjust, video_info.monitor_index, video_driver_crt_dynamic_super_width);
    }
    else if (!video_info.crt_switch_resolution)
       video_driver_crt_switching_active = false;
-
-   /* trigger set resolution*/
 }
 
 void crt_switch_driver_reinit(void)
@@ -22454,24 +22456,25 @@ bool video_context_driver_get_metrics(gfx_ctx_metrics_t *metrics)
 
 bool video_context_driver_get_refresh_rate(float *refresh_rate)
 {
-   float refresh_holder      = 0;
-
    if (!current_video_context.get_refresh_rate || !refresh_rate)
       return false;
    if (!video_context_data)
       return false;
 
    if (!video_driver_crt_switching_active)
+   {
       if (refresh_rate)
          *refresh_rate =
              current_video_context.get_refresh_rate(video_context_data);
-
-   if (video_driver_crt_switching_active)
+   }
+   else
    {
+      float refresh_holder      = 0;
       if (refresh_rate)
          refresh_holder  =
              current_video_context.get_refresh_rate(video_context_data);
-      /* Fix for incorrect interlacing detection -- HARD SET VSNC TO REQUIRED REFRESH FOR CRT*/
+      /* Fix for incorrect interlacing detection -- 
+       * HARD SET VSNC TO REQUIRED REFRESH FOR CRT*/
       if (refresh_holder != video_driver_core_hz)
          *refresh_rate = video_driver_core_hz;
    }
@@ -22509,11 +22512,9 @@ bool video_context_driver_set_video_mode(gfx_ctx_mode_t *mode_info)
 
    video_driver_build_info(&video_info);
 
-   if (!current_video_context.set_video_mode(
-            video_context_data, &video_info, mode_info->width,
-            mode_info->height, mode_info->fullscreen))
-      return false;
-   return true;
+   return current_video_context.set_video_mode(
+         video_context_data, &video_info, mode_info->width,
+         mode_info->height, mode_info->fullscreen);
 }
 
 bool video_context_driver_get_video_size(gfx_ctx_mode_t *mode_info)
