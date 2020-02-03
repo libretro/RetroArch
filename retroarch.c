@@ -10909,13 +10909,8 @@ static void secondary_core_destroy(void)
 static bool secondary_core_ensure_exists(void)
 {
    if (!secondary_module)
-   {
       if (!secondary_core_create())
-      {
-         secondary_core_destroy();
          return false;
-      }
-   }
    return true;
 }
 
@@ -10923,6 +10918,7 @@ static bool secondary_core_deserialize(const void *buffer, int size)
 {
    if (secondary_core_ensure_exists())
       return secondary_core.retro_unserialize(buffer, size);
+   secondary_core_destroy();
    return false;
 }
 
@@ -11213,7 +11209,10 @@ bool secondary_core_run_use_last_input(void)
    retro_input_state_t old_input_function;
 
    if (!secondary_core_ensure_exists())
+   {
+      secondary_core_destroy();
       return false;
+   }
 
    old_poll_function            = secondary_callbacks.poll_cb;
    old_input_function           = secondary_callbacks.state_cb;
@@ -24147,6 +24146,7 @@ static void do_runahead(int runahead_count, bool use_secondary)
 #if HAVE_DYNAMIC
       if (!secondary_core_ensure_exists())
       {
+         secondary_core_destroy();
          runahead_secondary_core_available = false;
          runloop_msg_queue_push(msg_hash_to_str(MSG_RUNAHEAD_FAILED_TO_CREATE_SECONDARY_INSTANCE), 0, 3 * 60, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          goto force_input_dirty;
