@@ -187,18 +187,54 @@ static const menu_ctx_driver_t *menu_ctx_drivers[] = {
    NULL
 };
 
-static menu_display_ctx_driver_t menu_display_ctx_null = {
-   NULL, /* draw */
-   NULL, /* draw_pipeline */
-   NULL, /* viewport */
-   NULL, /* blend_begin */
-   NULL, /* blend_end   */
-   NULL, /* restore_clear_color   */
-   NULL, /* clear_color   */
-   NULL, /* get_default_mvp   */
-   NULL, /* get_default_vertices */
-   NULL, /* get_default_tex_coords */
-   NULL, /* font_init_first */
+static void *menu_display_null_get_default_mvp(video_frame_info_t *video_info) { return NULL; }
+static void menu_display_null_blend_begin(video_frame_info_t *video_info) { }
+static void menu_display_null_blend_end(video_frame_info_t *video_info) { }
+static void menu_display_null_draw(menu_display_ctx_draw_t *draw,
+      video_frame_info_t *video_info) { }
+static void menu_display_null_draw_pipeline(menu_display_ctx_draw_t *draw,
+      video_frame_info_t *video_info) { }
+static void menu_display_null_viewport(menu_display_ctx_draw_t *draw,
+      video_frame_info_t *video_info) { }
+static void menu_display_null_restore_clear_color(void) { }
+static void menu_display_null_clear_color(menu_display_ctx_clearcolor_t *clearcolor, video_frame_info_t *video_info) { }
+static bool menu_display_null_font_init_first(
+      void **font_handle, void *video_data,
+      const char *font_path, float font_size,
+      bool is_threaded)
+{
+   font_data_t **handle = (font_data_t**)font_handle;
+   *handle = font_driver_init_first(video_data,
+         font_path, font_size, true,
+         is_threaded,
+         FONT_DRIVER_RENDER_DONT_CARE);
+   return *handle;
+}
+
+static const float *menu_display_null_get_default_vertices(void)
+{
+   static float dummy[16] = {0.0f};
+   return &dummy[0];
+}
+
+static const float *menu_display_null_get_default_tex_coords(void)
+{
+   static float dummy[16] = {0.0f};
+   return &dummy[0];
+}
+
+menu_display_ctx_driver_t menu_display_ctx_null = {
+   menu_display_null_draw,
+   menu_display_null_draw_pipeline,
+   menu_display_null_viewport,
+   menu_display_null_blend_begin,
+   menu_display_null_blend_end,
+   menu_display_null_restore_clear_color,
+   menu_display_null_clear_color,
+   menu_display_null_get_default_mvp,
+   menu_display_null_get_default_vertices,
+   menu_display_null_get_default_tex_coords,
+   menu_display_null_font_init_first,
    MENU_VIDEO_DRIVER_GENERIC,
    "null",
    false,
@@ -257,9 +293,6 @@ static menu_display_ctx_driver_t *menu_display_ctx_drivers[] = {
 #endif
 #ifdef HAVE_SIXEL
    &menu_display_ctx_sixel,
-#endif
-#ifdef HAVE_CACA
-   &menu_display_ctx_caca,
 #endif
 #ifdef HAVE_FPGA
    &menu_display_ctx_fpga,
@@ -1646,10 +1679,6 @@ static bool menu_display_check_compatibility(
          break;
       case MENU_VIDEO_DRIVER_SIXEL:
          if (string_is_equal(video_driver, "sixel"))
-            return true;
-         break;
-      case MENU_VIDEO_DRIVER_CACA:
-         if (string_is_equal(video_driver, "caca"))
             return true;
          break;
       case MENU_VIDEO_DRIVER_GDI:

@@ -1334,10 +1334,6 @@ MENU
 #include "../menu/drivers_display/menu_display_switch.c"
 #endif
 
-#ifdef HAVE_CACA
-#include "../menu/drivers_display/menu_display_caca.c"
-#endif
-
 #ifdef DJGPP
 #include "../menu/drivers_display/menu_display_vga.c"
 #endif

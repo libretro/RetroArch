@@ -1127,10 +1127,6 @@ ifeq ($(HAVE_CACA), 1)
    OBJ += gfx/drivers/caca_gfx.o gfx/drivers_font/caca_font.o
    LIBS += $(CACA_LIBS)
    DEF_FLAGS += $(CACA_CFLAGS)
-
-   ifeq ($(HAVE_MENU_COMMON), 1)
-      OBJ += menu/drivers_display/menu_display_caca.o
-   endif
 endif
 
 ifeq ($(HAVE_SIXEL), 1)

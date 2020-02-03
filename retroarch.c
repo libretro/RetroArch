@@ -365,16 +365,42 @@ static const audio_driver_t *audio_drivers[] = {
    NULL,
 };
 
+static void video_null_free(void *data) { }
+
+static void *video_null_init(const video_info_t *video,
+      input_driver_t **input, void **input_data)
+{
+   *input       = NULL;
+   *input_data = NULL;
+
+   return (void*)-1;
+}
+
+static bool video_null_frame(void *data, const void *frame,
+      unsigned frame_width, unsigned frame_height, uint64_t frame_count,
+      unsigned pitch, const char *msg, video_frame_info_t *video_info)
+{
+   return true;
+}
+
+static void video_null_set_nonblock_state(void *data, bool toggle) { }
+static bool video_null_alive(void *data) { return true; }
+static bool video_null_focus(void *data) { return true; }
+static bool video_null_has_windowed(void *data) { return true; }
+static bool video_null_suppress_screensaver(void *data, bool enable) { return false; }
+static bool video_null_set_shader(void *data,
+      enum rarch_shader_type type, const char *path) { return false; }
+
 static video_driver_t video_null = {
-   NULL, /* init */
-   NULL, /* frame */
-   NULL, /* set_nonblock_state */
-   NULL, /* alive */
-   NULL, /* focus */
-   NULL, /* suppress_screensaver */
-   NULL, /* has_windowed */
-   NULL, /* set_shader */
-   NULL, /* free */
+   video_null_init,
+   video_null_frame,
+   video_null_set_nonblock_state,
+   video_null_alive,
+   video_null_focus,
+   video_null_suppress_screensaver,
+   video_null_has_windowed,
+   video_null_set_shader,
+   video_null_free,
    "null",
    NULL, /* set_viewport */
    NULL, /* set_rotation */
