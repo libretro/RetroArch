@@ -608,12 +608,13 @@ static void resampler_sinc_free(void *data)
 
 static void sinc_init_table_kaiser(rarch_sinc_resampler_t *resamp,
       double cutoff,
-      float *phase_table, int phases, int taps, bool calculate_delta)
+      void *phase_table, int phases, int taps, bool calculate_delta)
 {
    int i, j;
    double    window_mod = kaiser_window_function(0.0, resamp->kaiser_beta); /* Need to normalize w(0) to 1.0. */
    int           stride = calculate_delta ? 2 : 1;
    double     sidelobes = taps / 2.0;
+   float *phase_table_f = (float*)phase_table;
 
    for (i = 0; i < phases; i++)
    {
@@ -627,22 +628,21 @@ static void sinc_init_table_kaiser(rarch_sinc_resampler_t *resamp,
          sinc_phase          = sidelobes * window_phase;
          val                 = cutoff * sinc(M_PI * sinc_phase * cutoff) *
             kaiser_window_function(window_phase, resamp->kaiser_beta) / window_mod;
-         phase_table[i * stride * taps + j] = val;
+         phase_table_f[i * stride * taps + j] = val;
       }
    }
 
    if (calculate_delta)
    {
-      int phase;
-      int p;
+      int phase, p;
 
       for (p = 0; p < phases - 1; p++)
       {
          for (j = 0; j < taps; j++)
          {
-            float delta = phase_table[(p + 1) * stride * taps + j] -
-               phase_table[p * stride * taps + j];
-            phase_table[(p * stride + 1) * taps + j] = delta;
+            float delta = phase_table_f[(p + 1) * stride * taps + j] -
+               phase_table_f[p * stride * taps + j];
+            phase_table_f[(p * stride + 1) * taps + j] = delta;
          }
       }
 
@@ -658,19 +658,21 @@ static void sinc_init_table_kaiser(rarch_sinc_resampler_t *resamp,
 
          val                 = cutoff * sinc(M_PI * sinc_phase * cutoff) *
             kaiser_window_function(window_phase, resamp->kaiser_beta) / window_mod;
-         delta = (val - phase_table[phase * stride * taps + j]);
-         phase_table[(phase * stride + 1) * taps + j] = delta;
+         delta = (val - phase_table_f[phase * stride * taps + j]);
+         phase_table_f[(phase * stride + 1) * taps + j] = delta;
       }
    }
 }
 
-static void sinc_init_table_lanczos(rarch_sinc_resampler_t *resamp, double cutoff,
-      float *phase_table, int phases, int taps, bool calculate_delta)
+static void sinc_init_table_lanczos(rarch_sinc_resampler_t *resamp,
+      double cutoff,
+      void *_phase_table, int phases, int taps, bool calculate_delta)
 {
    int i, j;
    double    window_mod = lanzcos_window_function(0.0); /* Need to normalize w(0) to 1.0. */
    int           stride = calculate_delta ? 2 : 1;
    double     sidelobes = taps / 2.0;
+   float *phase_table_f = (float*)_phase_table;
 
    for (i = 0; i < phases; i++)
    {
@@ -684,7 +686,7 @@ static void sinc_init_table_lanczos(rarch_sinc_resampler_t *resamp, double cutof
          sinc_phase          = sidelobes * window_phase;
          val                 = cutoff * sinc(M_PI * sinc_phase * cutoff) *
             lanzcos_window_function(window_phase) / window_mod;
-         phase_table[i * stride * taps + j] = val;
+         phase_table_f[i * stride * taps + j] = val;
       }
    }
 
@@ -697,9 +699,9 @@ static void sinc_init_table_lanczos(rarch_sinc_resampler_t *resamp, double cutof
       {
          for (j = 0; j < taps; j++)
          {
-            float delta = phase_table[(p + 1) * stride * taps + j] -
-               phase_table[p * stride * taps + j];
-            phase_table[(p * stride + 1) * taps + j] = delta;
+            float delta = phase_table_f[(p + 1) * stride * taps + j] -
+               phase_table_f[p * stride * taps + j];
+            phase_table_f[(p * stride + 1) * taps + j] = delta;
          }
       }
 
@@ -709,14 +711,14 @@ static void sinc_init_table_lanczos(rarch_sinc_resampler_t *resamp, double cutof
          float val, delta;
          double sinc_phase;
          int n               = j * phases + (phase + 1);
-         double window_phase = (double)n / (phases * taps); /* (0, 1]. */
-         window_phase        = 2.0 * window_phase - 1.0; /* (-1, 1] */
+         double window_phase = (double)n / (phases * taps); /* ( 0, 1]. */
+         window_phase        = 2.0 * window_phase - 1.0;    /* (-1, 1] */
          sinc_phase          = sidelobes * window_phase;
 
          val                 = cutoff * sinc(M_PI * sinc_phase * cutoff) *
             lanzcos_window_function(window_phase) / window_mod;
-         delta = (val - phase_table[phase * stride * taps + j]);
-         phase_table[(phase * stride + 1) * taps + j] = delta;
+         delta = (val - phase_table_f[phase * stride * taps + j]);
+         phase_table_f[(phase * stride + 1) * taps + j] = delta;
       }
    }
 }
