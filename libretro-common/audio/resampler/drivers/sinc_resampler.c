@@ -114,18 +114,21 @@ static void resampler_sinc_process_neon(void *re_, struct resampler_data *data)
    {
       while (frames && resamp->time >= phases)
       {
+         float *buffer_l    = (float*)resamp->buffer_l;
+         float *buffer_r    = (float*)resamp->buffer_r;
+
          /* Push in reverse to make filter more obvious. */
          if (!resamp->ptr)
             resamp->ptr = resamp->taps;
          resamp->ptr--;
 
-         resamp->buffer_l[resamp->ptr + resamp->taps] =
-         resamp->buffer_l[resamp->ptr]                = *input++;
+         buffer_l[resamp->ptr + resamp->taps] =
+         buffer_l[resamp->ptr]                = *input++;
 
-         resamp->buffer_r[resamp->ptr + resamp->taps] =
-         resamp->buffer_r[resamp->ptr]                = *input++;
+         buffer_r[resamp->ptr + resamp->taps] =
+         buffer_r[resamp->ptr]                = *input++;
 
-         resamp->time                                -= phases;
+         resamp->time                        -= phases;
          frames--;
       }
 
@@ -167,18 +170,21 @@ static void resampler_sinc_process_avx(void *re_, struct resampler_data *data)
       {
          while (frames && resamp->time >= phases)
          {
+            float *buffer_l    = resamp->buffer_l;
+            float *buffer_r    = resamp->buffer_r;
+
             /* Push in reverse to make filter more obvious. */
             if (!resamp->ptr)
                resamp->ptr = resamp->taps;
             resamp->ptr--;
 
-            resamp->buffer_l[resamp->ptr + resamp->taps] =
-               resamp->buffer_l[resamp->ptr]                = *input++;
+            buffer_l[resamp->ptr + resamp->taps] =
+               buffer_l[resamp->ptr]             = *input++;
 
-            resamp->buffer_r[resamp->ptr + resamp->taps] =
-               resamp->buffer_r[resamp->ptr]                = *input++;
+            buffer_r[resamp->ptr + resamp->taps] =
+               buffer_r[resamp->ptr]             = *input++;
 
-            resamp->time                                -= phases;
+            resamp->time                        -= phases;
             frames--;
          }
 
@@ -236,18 +242,20 @@ static void resampler_sinc_process_avx(void *re_, struct resampler_data *data)
       {
          while (frames && resamp->time >= phases)
          {
+            float *buffer_l = (float*)resamp->buffer_l;
+            float *buffer_r = (float*)resamp->buffer_r;
             /* Push in reverse to make filter more obvious. */
             if (!resamp->ptr)
                resamp->ptr = resamp->taps;
             resamp->ptr--;
 
-            resamp->buffer_l[resamp->ptr + resamp->taps] =
-               resamp->buffer_l[resamp->ptr]                = *input++;
+            buffer_l[resamp->ptr + resamp->taps] =
+               buffer_l[resamp->ptr]             = *input++;
 
-            resamp->buffer_r[resamp->ptr + resamp->taps] =
-               resamp->buffer_r[resamp->ptr]                = *input++;
+            buffer_r[resamp->ptr + resamp->taps] =
+               buffer_r[resamp->ptr]             = *input++;
 
-            resamp->time                                -= phases;
+            resamp->time                        -= phases;
             frames--;
          }
 
