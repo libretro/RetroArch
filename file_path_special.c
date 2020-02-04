@@ -453,7 +453,7 @@ void fill_short_pathname_representation_wrapper(char* out_rep,
 
    last_slash  = find_last_slash(path_short);
 
-   if (last_slash)
+   if (last_slash != NULL)
    {
       /* We handle paths like:
        * /path/to/file.7z#mygame.img
