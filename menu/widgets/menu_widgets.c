@@ -298,7 +298,6 @@ static unsigned msg_queue_height;
 static unsigned msg_queue_icon_size_x;
 static unsigned msg_queue_icon_size_y;
 static float msg_queue_text_scale_factor;
-static unsigned msg_queue_base_width;
 static unsigned msg_queue_spacing;
 static unsigned msg_queue_glyph_width;
 static unsigned msg_queue_rect_start_x;
@@ -306,6 +305,7 @@ static unsigned msg_queue_internal_icon_size;
 static unsigned msg_queue_internal_icon_offset;
 static unsigned msg_queue_icon_offset_y;
 static unsigned msg_queue_scissor_start_x;
+static unsigned msg_queue_default_rect_width_menu_alive;
 static unsigned msg_queue_default_rect_width;
 static unsigned msg_queue_task_text_start_x;
 static unsigned msg_queue_regular_padding_x;
@@ -420,7 +420,8 @@ void menu_widgets_msg_queue_push(
             /* Single line text > two lines text > two lines text with expanded width */
             unsigned title_length   = (unsigned)strlen(title);
             char *msg               = strdup(title);
-            unsigned width          = msg_queue_default_rect_width;
+            unsigned width          = menu_driver_is_alive() ?
+                  msg_queue_default_rect_width_menu_alive : msg_queue_default_rect_width;
             unsigned text_width     = font_driver_get_message_width(font_regular, title, title_length, msg_queue_text_scale_factor);
             settings_t *settings    = config_get_ptr();
 
@@ -429,13 +430,13 @@ void menu_widgets_msg_queue_push(
             /* Text is too wide, split it into two lines */
             if (text_width > width)
             {
-               if (text_width/2 > width)
-               {
-                  width = text_width/2;
-                  width += 10 * msg_queue_glyph_width;
-               }
+               /* If the second line is too short, the widget may
+                * look unappealing - ensure that second line is at
+                * least 25% of the total width */
+               if ((text_width - (text_width >> 2)) < width)
+                  width = text_width - (text_width >> 2);
 
-               word_wrap(msg, msg, title_length/2 + 10, false, 2);
+               word_wrap(msg, msg, (title_length * width) / text_width, false, 2);
 
                msg_widget->text_height *= 2.5f;
             }
@@ -1962,7 +1963,6 @@ void menu_widgets_context_reset(bool is_threaded,
    }
 
    msg_queue_text_scale_factor      = 0.69f;
-   msg_queue_base_width             = width / 4;
    msg_queue_spacing                = msg_queue_height / 3;
    msg_queue_glyph_width            = glyph_width * msg_queue_text_scale_factor;
    msg_queue_rect_start_x           = msg_queue_spacing + msg_queue_icon_size_x;
@@ -1970,7 +1970,6 @@ void menu_widgets_context_reset(bool is_threaded,
    msg_queue_internal_icon_offset   = (msg_queue_icon_size_y - msg_queue_internal_icon_size)/2;
    msg_queue_icon_offset_y          = (msg_queue_icon_size_y - msg_queue_height)/2;
    msg_queue_scissor_start_x        = msg_queue_spacing + msg_queue_icon_size_x - (msg_queue_icon_size_x * 0.28928571428f);
-   msg_queue_default_rect_width     = msg_queue_glyph_width * 40;
 
    if (msg_queue_has_icons)
       msg_queue_regular_padding_x   = simple_widget_padding/2;
@@ -1990,6 +1989,9 @@ void menu_widgets_context_reset(bool is_threaded,
    msg_queue_task_hourglass_x       = msg_queue_rect_start_x - msg_queue_icon_size_x;
 
    generic_message_height           = video_font_size * 2;
+
+   msg_queue_default_rect_width_menu_alive = msg_queue_glyph_width * 40;
+   msg_queue_default_rect_width            = width - msg_queue_regular_text_start - (2 * simple_widget_padding);
 }
 
 void menu_widgets_context_destroy(void)
