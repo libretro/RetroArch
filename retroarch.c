@@ -5751,7 +5751,7 @@ static bool event_init_content(void)
 
 static void update_runtime_log(bool log_per_core)
 {
-   settings_t *settings           = config_get_ptr();
+   settings_t *settings = configuration_settings;
 
    /* Initialise runtime log file */
    runtime_log_t *runtime_log = runtime_log_init(
