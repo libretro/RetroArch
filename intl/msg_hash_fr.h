@@ -2421,7 +2421,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_INSERT_DISK_RESUME,
-    "Reprendre le contenu après le changement de disques"
+    "Reprendre le contenu après le changement du disque"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_INSERT_DISK_RESUME,
