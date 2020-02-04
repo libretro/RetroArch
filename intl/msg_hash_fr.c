@@ -1620,6 +1620,20 @@ int menu_hash_get_help_fr_enum(enum msg_hash_enums msg, char *s, size_t len)
                              "Les nombres sont décrits en images."
             );
             break;
+        case MENU_ENUM_LABEL_INPUT_TURBO_MODE:
+            snprintf(s, len,
+                  "Mode turbo.\n"
+                  " \n"
+                  "Sélectionne le comportement général du mode turbo."
+                  );
+            break;
+        case MENU_ENUM_LABEL_INPUT_TURBO_DEFAULT_BUTTON:
+            snprintf(s, len,
+                  "Touche turbo par défaut.\n"
+                  " \n"
+                  "Touche active par défaut pour le mode turbo 'Touche unique'.\n"
+                  );
+            break;
         case MENU_ENUM_LABEL_INPUT_DUTY_CYCLE:
             snprintf(s, len,
                      "Cycle de répétition des touches.\n"
