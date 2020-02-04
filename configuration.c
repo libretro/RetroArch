@@ -3458,7 +3458,8 @@ bool config_unload_override(void)
  *
  * Returns: false if there was an error or no action was performed.
  */
-bool config_load_remap(const char *directory_input_remapping)
+bool config_load_remap(const char *directory_input_remapping,
+      void *data)
 {
    size_t path_size                       = PATH_MAX_LENGTH * sizeof(char);
    config_file_t *new_conf                = NULL;
@@ -3466,7 +3467,7 @@ bool config_load_remap(const char *directory_input_remapping)
    char *core_path                        = NULL;
    char *game_path                        = NULL;
    char *content_path                     = NULL;
-   rarch_system_info_t *system            = runloop_get_system_info();
+   rarch_system_info_t *system            = (rarch_system_info_t*)data;
    const char *core_name                  = system ? system->info.library_name : NULL;
    const char *rarch_path_basename        = path_get(RARCH_PATH_BASENAME);
    const char *game_name                  = path_basename(rarch_path_basename);
@@ -3964,7 +3965,7 @@ bool config_save_file(const char *path)
  *
  * Returns: true (1) on success, otherwise returns false (0).
  **/
-bool config_save_overrides(enum override_type type)
+bool config_save_overrides(enum override_type type, void *data)
 {
    size_t path_size                            = PATH_MAX_LENGTH * sizeof(char);
    int tmp_i                                   = 0;
@@ -3999,7 +4000,7 @@ bool config_save_overrides(enum override_type type)
    int size_settings_size                      = sizeof(settings->sizes)  / sizeof(settings->sizes.placeholder);
    int array_settings_size                     = sizeof(settings->arrays) / sizeof(settings->arrays.placeholder);
    int path_settings_size                      = sizeof(settings->paths)  / sizeof(settings->paths.placeholder);
-   rarch_system_info_t *system                 = runloop_get_system_info();
+   rarch_system_info_t *system                 = (rarch_system_info_t*)data;
    const char *core_name                       = system ? system->info.library_name : NULL;
    const char *rarch_path_basename             = path_get(RARCH_PATH_BASENAME);
    const char *game_name                       = path_basename(rarch_path_basename);

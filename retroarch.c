@@ -5912,9 +5912,9 @@ static bool command_event_init_core(enum rarch_core_type type)
    current_core.retro_set_environment(rarch_environment_cb);
 
 #ifdef HAVE_CONFIGFILE
-   /* Auto-remap: apply remap files */
    if (settings->bools.auto_remaps_enable)
-      config_load_remap(settings->paths.directory_input_remapping);
+      config_load_remap(settings->paths.directory_input_remapping,
+            &runloop_system);
 #endif
 
    /* Per-core saves: reset redirection paths */
@@ -6158,7 +6158,7 @@ static void command_event_save_current_config(enum override_type type)
       case OVERRIDE_GAME:
       case OVERRIDE_CORE:
       case OVERRIDE_CONTENT_DIR:
-         if (config_save_overrides(type))
+         if (config_save_overrides(type, &runloop_system))
          {
             strlcpy(msg, msg_hash_to_str(MSG_OVERRIDES_SAVED_SUCCESSFULLY), sizeof(msg));
             RARCH_LOG("[config] [overrides] %s\n", msg);

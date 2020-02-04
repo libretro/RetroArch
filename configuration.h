@@ -848,7 +848,8 @@ bool config_unload_override(void);
  * Returns: false if there was an error or no action was performed.
  *
  */
-bool config_load_remap(const char *directory_input_remapping);
+bool config_load_remap(const char *directory_input_remapping,
+      void *data);
 
 /**
  * config_save_autoconf_profile:
@@ -876,7 +877,7 @@ bool config_save_file(const char *path);
  *
  * Returns: true (1) on success, otherwise returns false (0).
  **/
-bool config_save_overrides(enum override_type type);
+bool config_save_overrides(enum override_type type, void *data);
 
 /* Replaces currently loaded configuration file with
  * another one. Will load a dummy core to flush state
