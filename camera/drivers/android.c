@@ -57,7 +57,7 @@ static void *android_camera_init(const char *device, uint64_t caps,
       goto dealloc;
 
    GET_OBJECT_CLASS(env, class, android_app->activity->clazz);
-   if (class == NULL)
+   if (!class)
       goto dealloc;
 
    GET_METHOD_ID(env, androidcamera->onCameraInit, class,

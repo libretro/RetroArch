@@ -166,7 +166,7 @@ static void frontend_gx_get_environment_settings(
 
    /* This situation can happen on some loaders so we really need some
       fake args or else retroarch will just crash on parsing NULL pointers */
-   if(*argc == 0 || argv == NULL)
+   if(*argc == 0 || !argv)
    {
       struct rarch_main_wrap *args = (struct rarch_main_wrap*)params_data;
       if (args)

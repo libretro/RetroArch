@@ -35,7 +35,7 @@ static int isCiaInstalled(u64 titleId, u16 version){
 		return -1;
 
 	titleIds = malloc(titlesToRetrieve * sizeof(uint64_t));
-	if(titleIds == NULL)
+	if (!titleIds)
 		return -1;
 
 	failed = AM_GetTitleList(&titlesRetrieved, MEDIATYPE_SD, titlesToRetrieve, titleIds);
@@ -116,10 +116,11 @@ int exec_cia(const char* path, const char** args){
 	bool fileExists;
 	bool inited;
 
-	if(path == NULL || path[0] == '\0'){
-		errno = EINVAL;
-		return -1;
-	}
+	if (!path || path[0] == '\0')
+   {
+      errno = EINVAL;
+      return -1;
+   }
 
 	fileExists = stat(path, &sBuff) == 0;
 	if(!fileExists){

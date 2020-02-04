@@ -148,7 +148,7 @@ void system_exec_wii(const char *_path, bool should_load_game)
    RARCH_LOG("Attempt to load executable: [%s]\n", path);
 
    fp = fopen(path, "rb");
-   if (fp == NULL)
+   if (!fp)
    {
       RARCH_ERR("Could not open DOL file %s.\n", path);
       goto exit;
