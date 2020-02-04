@@ -452,93 +452,96 @@
 
 #define DEFAULT_QUICK_MENU_SHOW_CLOSE_CONTENT true
 
-static bool quick_menu_show_take_screenshot             = true;
-static bool quick_menu_show_save_load_state             = true;
-static bool quick_menu_show_undo_save_load_state        = true;
-static bool quick_menu_show_add_to_favorites            = true;
-static bool quick_menu_show_start_recording             = true;
-static bool quick_menu_show_start_streaming             = true;
-static bool quick_menu_show_set_core_association        = true;
-static bool quick_menu_show_reset_core_association      = true;
-static bool quick_menu_show_options                     = true;
-static bool quick_menu_show_controls                    = true;
-static bool quick_menu_show_cheats                      = true;
-static bool quick_menu_show_shaders                     = true;
-static bool quick_menu_show_information                 = true;
-static bool quick_menu_show_recording                   = true;
-static bool quick_menu_show_streaming                   = true;
+#define DEFAULT_QUICK_MENU_SHOW_TAKE_SCREENSHOT true
 
-static bool quick_menu_show_save_core_overrides         = true;
-static bool quick_menu_show_save_game_overrides         = true;
-static bool quick_menu_show_save_content_dir_overrides  = true;
+#define DEFAULT_QUICK_MENU_SHOW_SAVE_LOAD_STATE true
+
+#define DEFAULT_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE true
+
+static const bool quick_menu_show_add_to_favorites            = true;
+static const bool quick_menu_show_start_recording             = true;
+static const bool quick_menu_show_start_streaming             = true;
+static const bool quick_menu_show_set_core_association        = true;
+static const bool quick_menu_show_reset_core_association      = true;
+static const bool quick_menu_show_options                     = true;
+static const bool quick_menu_show_controls                    = true;
+static const bool quick_menu_show_cheats                      = true;
+static const bool quick_menu_show_shaders                     = true;
+static const bool quick_menu_show_information                 = true;
+static const bool quick_menu_show_recording                   = true;
+static const bool quick_menu_show_streaming                   = true;
+
+static const bool quick_menu_show_save_core_overrides         = true;
+static const bool quick_menu_show_save_game_overrides         = true;
+static const bool quick_menu_show_save_content_dir_overrides  = true;
 
 #ifdef HAVE_NETWORKING
-static bool quick_menu_show_download_thumbnails         = true;
+static const bool quick_menu_show_download_thumbnails         = true;
 #endif
 
-static bool kiosk_mode_enable            = false;
+#define DEFAULT_KIOSK_MODE_ENABLE false
 
 #define DEFAULT_MENU_HORIZONTAL_ANIMATION true
 
-static bool menu_show_online_updater     = true;
-static bool menu_show_load_core          = true;
-static bool menu_show_load_content       = true;
+static const bool menu_show_online_updater     = true;
+static const bool menu_show_load_core          = true;
+static const bool menu_show_load_content       = true;
 #ifdef HAVE_CDROM
-static bool menu_show_load_disc          = true;
-static bool menu_show_dump_disc          = true;
+static const bool menu_show_load_disc          = true;
+static const bool menu_show_dump_disc          = true;
 #endif
-static bool menu_show_information        = true;
-static bool menu_show_configurations     = true;
-static bool menu_show_help               = true;
-static bool menu_show_quit_retroarch     = true;
-static bool menu_show_restart_retroarch  = true;
-static bool menu_show_reboot             = true;
-static bool menu_show_shutdown           = true;
+static const bool menu_show_information        = true;
+static const bool menu_show_configurations     = true;
+static const bool menu_show_help               = true;
+static const bool menu_show_quit_retroarch     = true;
+static const bool menu_show_restart_retroarch  = true;
+static const bool menu_show_reboot             = true;
+static const bool menu_show_shutdown           = true;
 #if defined(HAVE_LAKKA) || defined(VITA) || defined(_3DS)
-static bool menu_show_core_updater       = false;
+static const bool menu_show_core_updater       = false;
 #else
-static bool menu_show_core_updater       = true;
+static const bool menu_show_core_updater       = true;
 #endif
-static bool menu_show_legacy_thumbnail_updater = false;
-static bool menu_show_sublabels          = true;
+static const bool menu_show_legacy_thumbnail_updater = false;
+static const bool menu_show_sublabels          = true;
 
-static unsigned menu_ticker_type         = TICKER_TYPE_BOUNCE;
-static float menu_ticker_speed           = 1.0f;
+static const unsigned menu_ticker_type         = TICKER_TYPE_BOUNCE;
+static const float menu_ticker_speed           = 1.0f;
 
 #define DEFAULT_MENU_TICKER_SMOOTH true
 
 #if defined(HAVE_THREADS)
-static bool menu_savestate_resume     = true;
+static const bool menu_savestate_resume     = true;
 #else
-static bool menu_savestate_resume     = false;
+static const bool menu_savestate_resume     = false;
 #endif
 
 #define DEFAULT_MENU_INSERT_DISK_RESUME true
 
-static bool content_show_settings     = true;
-static bool content_show_favorites    = true;
+static const bool content_show_settings     = true;
+static const bool content_show_favorites    = true;
 #ifdef HAVE_IMAGEVIEWER
-static bool content_show_images       = true;
+static const bool content_show_images       = true;
 #endif
-static bool content_show_music        = true;
+static const bool content_show_music        = true;
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
-static bool content_show_video        = true;
+static const bool content_show_video        = true;
 #endif
 #ifdef HAVE_NETWORKING
-static bool content_show_netplay      = true;
+static const bool content_show_netplay      = true;
 #endif
-static bool content_show_history      = true;
-static bool content_show_add     	  = true;
-static bool content_show_playlists    = true;
+static const bool content_show_history      = true;
+static const bool content_show_add     	  = true;
+static const bool content_show_playlists    = true;
 
 #ifdef HAVE_XMB
-static unsigned xmb_alpha_factor      = 75;
-static unsigned menu_font_color_red   = 255;
-static unsigned menu_font_color_green = 255;
-static unsigned menu_font_color_blue  = 255;
-static unsigned xmb_menu_layout       = 0;
-static unsigned xmb_icon_theme        = XMB_ICON_THEME_MONOCHROME;
-static unsigned xmb_theme             = XMB_THEME_ELECTRIC_BLUE;
+static const unsigned xmb_alpha_factor      = 75;
+static const unsigned menu_font_color_red   = 255;
+static const unsigned menu_font_color_green = 255;
+static const unsigned menu_font_color_blue  = 255;
+static const unsigned xmb_menu_layout       = 0;
+static const unsigned xmb_icon_theme        = XMB_ICON_THEME_MONOCHROME;
+static const unsigned xmb_theme             = XMB_THEME_ELECTRIC_BLUE;
 
 #if defined(HAVE_LAKKA) || defined(__arm__) || defined(__PPC64__) || defined(__ppc64__) || defined(__powerpc64__) || defined(__powerpc__) || defined(__ppc__) || defined(__POWERPC__)
 #define DEFAULT_XMB_SHADOWS_ENABLE false
@@ -547,13 +550,13 @@ static unsigned xmb_theme             = XMB_THEME_ELECTRIC_BLUE;
 #endif
 #endif
 
-static float menu_framebuffer_opacity = 0.900;
+static const float menu_framebuffer_opacity = 0.900;
 
-static float menu_wallpaper_opacity = 0.300;
+static const float menu_wallpaper_opacity = 0.300;
 
-static float menu_footer_opacity = 1.000;
+static const float menu_footer_opacity = 1.000;
 
-static float menu_header_opacity = 1.000;
+static const float menu_header_opacity = 1.000;
 
 #if defined(HAVE_OPENGLES2) || (defined(__MACH__) && (defined(__ppc__) || defined(__ppc64__)))
 #define DEFAULT_MENU_SHADER_PIPELINE 1
@@ -565,18 +568,18 @@ static float menu_header_opacity = 1.000;
 
 #define DEFAULT_RGUI_COLOR_THEME RGUI_THEME_CLASSIC_GREEN
 
-static bool rgui_inline_thumbnails = false;
-static bool rgui_swap_thumbnails = false;
-static unsigned rgui_thumbnail_downscaler = RGUI_THUMB_SCALE_POINT;
-static unsigned rgui_thumbnail_delay = 0;
-static unsigned rgui_internal_upscale_level = RGUI_UPSCALE_NONE;
-static bool rgui_full_width_layout = true;
-static unsigned rgui_aspect = RGUI_ASPECT_RATIO_4_3;
-static unsigned rgui_aspect_lock = RGUI_ASPECT_RATIO_LOCK_NONE;
-static bool rgui_shadows = false;
-static unsigned rgui_particle_effect = RGUI_PARTICLE_EFFECT_NONE;
+static const bool rgui_inline_thumbnails = false;
+static const bool rgui_swap_thumbnails = false;
+static const unsigned rgui_thumbnail_downscaler = RGUI_THUMB_SCALE_POINT;
+static const unsigned rgui_thumbnail_delay = 0;
+static const unsigned rgui_internal_upscale_level = RGUI_UPSCALE_NONE;
+static const bool rgui_full_width_layout = true;
+static const unsigned rgui_aspect = RGUI_ASPECT_RATIO_4_3;
+static const unsigned rgui_aspect_lock = RGUI_ASPECT_RATIO_LOCK_NONE;
+static const bool rgui_shadows = false;
+static const unsigned rgui_particle_effect = RGUI_PARTICLE_EFFECT_NONE;
 #define DEFAULT_RGUI_PARTICLE_EFFECT_SPEED 1.0f
-static bool rgui_extended_ascii = false;
+static const bool rgui_extended_ascii = false;
 #endif
 
 #ifdef HAVE_MENU
@@ -588,37 +591,37 @@ static bool rgui_extended_ascii = false;
 /* TODO/FIXME - this setting is thread-unsafe right now and can corrupt the stack - default to off */
 #define DEFAULT_AUTOMATICALLY_ADD_CONTENT_TO_PLAYLIST false
 
-static bool default_game_specific_options = true;
-static bool default_auto_overrides_enable = true;
-static bool default_auto_remaps_enable = true;
-static bool default_global_core_options = true;
-static bool default_auto_shaders_enable = true;
+static const bool default_game_specific_options = true;
+static const bool default_auto_overrides_enable = true;
+static const bool default_auto_remaps_enable = true;
+static const bool default_global_core_options = true;
+static const bool default_auto_shaders_enable = true;
 
-static bool default_sort_savefiles_enable = false;
-static bool default_sort_savestates_enable = false;
+static const bool default_sort_savefiles_enable = false;
+static const bool default_sort_savestates_enable = false;
 
-static bool default_savestates_in_content_dir = false;
-static bool default_savefiles_in_content_dir = false;
-static bool default_systemfiles_in_content_dir = false;
-static bool default_screenshots_in_content_dir = false;
+static const bool default_savestates_in_content_dir = false;
+static const bool default_savefiles_in_content_dir = false;
+static const bool default_systemfiles_in_content_dir = false;
+static const bool default_screenshots_in_content_dir = false;
 
 #if defined(__CELLOS_LV2__) || defined(_XBOX1) || defined(_XBOX360) || defined(DINGUX)
-static unsigned menu_toggle_gamepad_combo    = INPUT_TOGGLE_L3_R3;
+static const unsigned menu_toggle_gamepad_combo    = INPUT_TOGGLE_L3_R3;
 #elif defined(PS2) || defined(PSP)
-static unsigned menu_toggle_gamepad_combo    = INPUT_TOGGLE_HOLD_START;
+static const unsigned menu_toggle_gamepad_combo    = INPUT_TOGGLE_HOLD_START;
 #elif defined(VITA)
-static unsigned menu_toggle_gamepad_combo    = INPUT_TOGGLE_L1_R1_START_SELECT;
+static const unsigned menu_toggle_gamepad_combo    = INPUT_TOGGLE_L1_R1_START_SELECT;
 #elif defined(SWITCH) || defined(ORBIS)
-static unsigned menu_toggle_gamepad_combo    = INPUT_TOGGLE_START_SELECT;
+static const unsigned menu_toggle_gamepad_combo    = INPUT_TOGGLE_START_SELECT;
 #elif TARGET_OS_TV
-static unsigned menu_toggle_gamepad_combo    = INPUT_TOGGLE_DOWN_Y_L_R;
+static const unsigned menu_toggle_gamepad_combo    = INPUT_TOGGLE_DOWN_Y_L_R;
 #else
-static unsigned menu_toggle_gamepad_combo    = INPUT_TOGGLE_NONE;
+static const unsigned menu_toggle_gamepad_combo    = INPUT_TOGGLE_NONE;
 #endif
 
 #if defined(VITA)
-static unsigned input_backtouch_enable       = false;
-static unsigned input_backtouch_toggle       = false;
+static const unsigned input_backtouch_enable       = false;
+static const unsigned input_backtouch_toggle       = false;
 #endif
 
 #define DEFAULT_SHOW_PHYSICAL_INPUTS true
@@ -778,9 +781,10 @@ static const bool audio_enable_menu_bgm    = false;
 
 #ifdef HAVE_WASAPI
 /* WASAPI defaults */
-static const bool wasapi_exclusive_mode  = true;
-static const bool wasapi_float_format    = false;
-static const int wasapi_sh_buffer_length = -16; /* auto */
+#define DEFAULT_WASAPI_EXCLUSIVE_MODE true
+#define DEFAULT_WASAPI_FLOAT_FORMAT false
+/* auto */
+#define DEFAULT_WASAPI_SH_BUFFER_LENGTH -16
 #endif
 
 /* MISC */
@@ -904,10 +908,10 @@ static const bool savestate_thumbnail_enable = false;
 #define DEFAULT_RUN_AHEAD_FRAMES 1
 
 /* When using the Run Ahead feature, use a secondary instance of the core. */
-static const bool run_ahead_secondary_instance = true;
+#define DEFAULT_RUN_AHEAD_SECONDARY_INSTANCE true
 
 /* Hide warning messages when using the Run Ahead feature. */
-static const bool run_ahead_hide_warnings = false;
+#define DEFAULT_RUN_AHEAD_HIDE_WARNINGS false
 
 /* Enable stdin/network command interface. */
 static const bool network_cmd_enable = false;
@@ -948,7 +952,7 @@ static const unsigned playlist_sublabel_runtime_type = PLAYLIST_RUNTIME_PER_CORE
 static const unsigned playlist_entry_remove_enable = PLAYLIST_ENTRY_REMOVE_ENABLE_ALL;
 #endif
 
-static const bool scan_without_core_match      = false;
+#define DEFAULT_SCAN_WITHOUT_CORE_MATCH false
 
 #ifdef __WINRT__
 /* Be paranoid about WinRT file I/O performance, and leave this disabled by
@@ -958,10 +962,10 @@ static const bool scan_without_core_match      = false;
 #define DEFAULT_PLAYLIST_SHOW_SUBLABELS true
 #endif
 
-static const bool playlist_fuzzy_archive_match = false;
+#define DEFAULT_PLAYLIST_FUZZY_ARCHIVE_MATCH false
 
 /* Show Menu start-up screen on boot. */
-static const bool default_menu_show_start_screen = true;
+#define DEFAULT_MENU_SHOW_START_SCREEN true
 
 /* Default scale factor for non-frambuffer-based menu
  * drivers and menu widgets */
@@ -985,11 +989,11 @@ static const bool default_menu_show_start_screen = true;
 
 /* Axis threshold (between 0.0 and 1.0)
  * How far an axis must be tilted to result in a button press. */
-static const float axis_threshold         = 0.5f;
+#define DEFAULT_AXIS_THRESHOLD 0.5f
 
-static const float analog_deadzone        = 0.0f;
+#define DEFAULT_ANALOG_DEADZONE 0.0f
 
-static const float analog_sensitivity     = 1.0f;
+#define DEFAULT_ANALOG_SENSITIVITY 1.0f
 
 /* Describes speed of which turbo-enabled buttons toggle. */
 static const unsigned turbo_period        = 6;
@@ -1041,7 +1045,7 @@ static const bool ui_companion_enable = false;
 static const bool ui_companion_toggle = false;
 
 /* Only init the WIMP UI for this session if this is enabled */
-static const bool desktop_menu_enable = true;
+#define DEFAULT_DESKTOP_MENU_ENABLE true
 
 /* Keep track of how long each core+content has been running for over time */
 
@@ -1053,17 +1057,18 @@ static const bool desktop_menu_enable = true;
 #define DEFAULT_CONTENT_RUNTIME_LOG true
 #endif
 
-/* Keep track of how long each content has been running for over time (ignores core) */
-static const bool content_runtime_log_aggregate = false;
+/* Keep track of how long each content has been running 
+ * for over time (ignores core) */
+#define DEFAULT_CONTENT_RUNTIME_LOG_AGGREGATE false
 
 #define DEFAULT_UI_MENUBAR_ENABLE true
 
 #if defined(__QNX__) || defined(_XBOX1) || defined(_XBOX360) || defined(__CELLOS_LV2__) || (defined(__MACH__) && defined(IOS)) || defined(ANDROID) || defined(WIIU) || defined(HAVE_NEON) || defined(GEKKO) || defined(__ARM_NEON__)
-static enum resampler_quality audio_resampler_quality_level = RESAMPLER_QUALITY_LOWER;
+static const enum resampler_quality audio_resampler_quality_level = RESAMPLER_QUALITY_LOWER;
 #elif defined(PSP) || defined(_3DS) || defined(VITA) || defined(PS2) || defined(DINGUX)
-static enum resampler_quality audio_resampler_quality_level = RESAMPLER_QUALITY_LOWEST;
+static const enum resampler_quality audio_resampler_quality_level = RESAMPLER_QUALITY_LOWEST;
 #else
-static enum resampler_quality audio_resampler_quality_level = RESAMPLER_QUALITY_NORMAL;
+static const enum resampler_quality audio_resampler_quality_level = RESAMPLER_QUALITY_NORMAL;
 #endif
 
 /* MIDI */
@@ -1094,100 +1099,100 @@ static const bool enable_device_vibration    = false;
 #endif
 
 #if defined(HAKCHI)
-static char buildbot_server_url[] = "http://hakchicloud.com/Libretro_Cores/";
+static const char buildbot_server_url[] = "http://hakchicloud.com/Libretro_Cores/";
 #elif defined(ANDROID)
 #if defined(ANDROID_ARM_V7)
-static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/android/latest/armeabi-v7a/";
+static const char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/android/latest/armeabi-v7a/";
 #elif defined(ANDROID_ARM)
-static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/android/latest/armeabi/";
+static const char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/android/latest/armeabi/";
 #elif defined(ANDROID_AARCH64)
-static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/android/latest/arm64-v8a/";
+static const char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/android/latest/arm64-v8a/";
 #elif defined(ANDROID_X86)
-static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/android/latest/x86/";
+static const char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/android/latest/x86/";
 #elif defined(ANDROID_X64)
-static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/android/latest/x86_64/";
+static const char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/android/latest/x86_64/";
 #else
-static char buildbot_server_url[] = "";
+static const char buildbot_server_url[] = "";
 #endif
 #elif defined(__QNX__)
-static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/blackberry/latest/";
+static const char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/blackberry/latest/";
 #elif defined(IOS)
-static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/apple/ios/latest/";
+static const char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/apple/ios/latest/";
 #elif defined(OSX)
 #if defined(__x86_64__)
-static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/apple/osx/x86_64/latest/";
+static const char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/apple/osx/x86_64/latest/";
 #elif defined(__i386__) || defined(__i486__) || defined(__i686__)
-static char buildbot_server_url[] = "http://bot.libretro.com/nightly/apple/osx/x86/latest/";
+static const char buildbot_server_url[] = "http://bot.libretro.com/nightly/apple/osx/x86/latest/";
 #else
-static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/apple/osx/ppc/latest/";
+static const char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/apple/osx/ppc/latest/";
 #endif
 #elif defined(_WIN32) && !defined(_XBOX)
 #if _MSC_VER >= 1910
 #ifndef __WINRT__
 #if defined(__x86_64__) || defined(_M_X64)
-static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/windows-msvc2017-desktop/x64/latest/";
+static const char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/windows-msvc2017-desktop/x64/latest/";
 #elif defined(__i386__) || defined(__i486__) || defined(__i686__) || defined(_M_IX86) || defined(_M_IA64)
-static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/windows-msvc2017-desktop/x86/latest/";
+static const char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/windows-msvc2017-desktop/x86/latest/";
 #elif defined(__arm__) || defined(_M_ARM)
-static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/windows-msvc2017-desktop/arm/latest/";
+static const char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/windows-msvc2017-desktop/arm/latest/";
 #elif defined(__aarch64__) || defined(_M_ARM64)
-static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/windows-msvc2017-desktop/arm64/latest/";
+static const char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/windows-msvc2017-desktop/arm64/latest/";
 #endif
 #else
 #if defined(__x86_64__) || defined(_M_X64)
-static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/windows-msvc2017-uwp/x64/latest/";
+static const char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/windows-msvc2017-uwp/x64/latest/";
 #elif defined(__i386__) || defined(__i486__) || defined(__i686__) || defined(_M_IX86) || defined(_M_IA64)
-static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/windows-msvc2017-uwp/x86/latest/";
+static const char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/windows-msvc2017-uwp/x86/latest/";
 #elif defined(__arm__) || defined(_M_ARM)
-static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/windows-msvc2017-uwp/arm/latest/";
+static const char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/windows-msvc2017-uwp/arm/latest/";
 #elif defined(__aarch64__) || defined(_M_ARM64)
-static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/windows-msvc2017-uwp/arm64/latest/";
+static const char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/windows-msvc2017-uwp/arm64/latest/";
 #endif
 #endif
 #elif _MSC_VER == 1600
 #if defined(__x86_64__) || defined(_M_X64)
-static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/windows-msvc2010/x86_64/latest/";
+static const char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/windows-msvc2010/x86_64/latest/";
 #elif defined(__i386__) || defined(__i486__) || defined(__i686__) || defined(_M_IX86) || defined(_M_IA64)
-static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/windows-msvc2010/x86/latest/";
+static const char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/windows-msvc2010/x86/latest/";
 #endif
 #elif _MSC_VER == 1400
-static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/windows-msvc2005/x86/latest/";
+static const char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/windows-msvc2005/x86/latest/";
 #elif _MSC_VER == 1310
-static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/windows-msvc2003/x86/latest/";
+static const char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/windows-msvc2003/x86/latest/";
 #else
 #if defined(__x86_64__) || defined(_M_X64)
-static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/windows/x86_64/latest/";
+static const char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/windows/x86_64/latest/";
 #elif defined(__i386__) || defined(__i486__) || defined(__i686__) || defined(_M_IX86) || defined(_M_IA64)
-static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/windows/x86/latest/";
+static const char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/windows/x86/latest/";
 #endif
 #endif
 #elif defined(__linux__)
 #if defined(__x86_64__)
-static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/linux/x86_64/latest/";
+static const char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/linux/x86_64/latest/";
 #elif defined(__i386__) || defined(__i486__) || defined(__i686__)
-static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/linux/x86/latest/";
+static const char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/linux/x86/latest/";
 #elif defined(__arm__) && __ARM_ARCH == 7 && defined(__ARM_PCS_VFP)
-static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/linux/armhf/latest/";
+static const char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/linux/armhf/latest/";
 #else
-static char buildbot_server_url[] = "";
+static const char buildbot_server_url[] = "";
 #endif
 #elif defined(WIIU)
-static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/nintendo/wiiu/latest/";
+static const char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/nintendo/wiiu/latest/";
 #elif defined(HAVE_LIBNX)
-static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/nintendo/switch/libnx/latest/";
+static const char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/nintendo/switch/libnx/latest/";
 #elif defined(__CELLOS_LV2__) && defined(DEX_BUILD)
-static char buildbot_server_url[] = "http://libretro.xbins.org/libretro/nightly/playstation/ps3/latest/dex-ps3/";
+static const char buildbot_server_url[] = "http://libretro.xbins.org/libretro/nightly/playstation/ps3/latest/dex-ps3/";
 #elif defined(__CELLOS_LV2__) && defined(CEX_BUILD)
-static char buildbot_server_url[] = "http://libretro.xbins.org/libretro/nightly/playstation/ps3/latest/cex-ps3/";
+static const char buildbot_server_url[] = "http://libretro.xbins.org/libretro/nightly/playstation/ps3/latest/cex-ps3/";
 #elif defined(__CELLOS_LV2__) && defined(ODE_BUILD)
-static char buildbot_server_url[] = "http://libretro.xbins.org/libretro/nightly/playstation/ps3/latest/ode-ps3/";
+static const char buildbot_server_url[] = "http://libretro.xbins.org/libretro/nightly/playstation/ps3/latest/ode-ps3/";
 #else
-static char buildbot_server_url[] = "";
+static const char buildbot_server_url[] = "";
 #endif
 
-static char buildbot_assets_server_url[] = "http://buildbot.libretro.com/assets/";
+#define DEFAULT_BUILDBOT_ASSETS_SERVER_URL "http://buildbot.libretro.com/assets/"
 
-static char default_discord_app_id[] = "475456035851599874";
+#define DEFAULT_DISCORD_APP_ID "475456035851599874"
 
 #define DEFAULT_AI_SERVICE_SOURCE_LANG 0
 
