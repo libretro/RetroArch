@@ -2440,6 +2440,20 @@ void config_set_defaults(void *data)
 #endif
 }
 
+/**
+ * config_load:
+ *
+ * Loads a config file and reads all the values into memory.
+ *
+ */
+void config_load(void *data)
+{
+   global_t *global = (global_t*)data;
+   config_set_defaults(global);
+#ifdef HAVE_CONFIGFILE
+   config_parse_file(global);
+#endif
+}
 
 #ifdef HAVE_CONFIGFILE
 
@@ -3602,24 +3616,6 @@ void config_parse_file(void *data)
       }
    }
 }
-#endif
-
-/**
- * config_load:
- *
- * Loads a config file and reads all the values into memory.
- *
- */
-void config_load(void *data)
-{
-   global_t *global = (global_t*)data;
-   config_set_defaults(global);
-#ifdef HAVE_CONFIGFILE
-   config_parse_file(global);
-#endif
-}
-
-#ifdef HAVE_CONFIGFILE
 /**
  * config_save_autoconf_profile:
  * @path            : Path that shall be written to.

@@ -24671,11 +24671,10 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
             case 'c':
                path_set(RARCH_PATH_CONFIG, optarg);
                break;
-#endif
-
             case RA_OPT_APPENDCONFIG:
                path_set(RARCH_PATH_CONFIG_APPEND, optarg);
                break;
+#endif
 
             case 's':
                strlcpy(global->name.savefile, optarg,
@@ -24873,19 +24872,18 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
                break;
    #endif
             case 'P':
+               strlcpy(bsv_movie_state.movie_start_path, optarg,
+                     sizeof(bsv_movie_state.movie_start_path));
+
+               bsv_movie_state.movie_start_playback  = true;
+               bsv_movie_state.movie_start_recording = false;
+               break;
             case 'R':
                strlcpy(bsv_movie_state.movie_start_path, optarg,
                      sizeof(bsv_movie_state.movie_start_path));
 
-               if (c == 'P')
-                  bsv_movie_state.movie_start_playback = true;
-               else
-                  bsv_movie_state.movie_start_playback = false;
-
-               if (c == 'R')
-                  bsv_movie_state.movie_start_recording = true;
-               else
-                  bsv_movie_state.movie_start_recording = false;
+               bsv_movie_state.movie_start_playback  = false;
+               bsv_movie_state.movie_start_recording = true;
                break;
 
             case 'M':
@@ -25074,9 +25072,11 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
                rarch_log_file_set_override(optarg);
                break;
 
-            case 'c':
             case 'h':
+#ifdef HAVE_CONFIGFILE
+            case 'c':
             case RA_OPT_APPENDCONFIG:
+#endif
             case 's':
             case 'S':
                break; /* Handled in the first pass */
