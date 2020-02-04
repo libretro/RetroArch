@@ -3831,7 +3831,7 @@ static bool command_get_status(const char* arg)
    else
    {
        /* add some content info */
-       const char *status       = "RUNNING";
+       const char *status       = "PLAYING";
        const char *content_name = path_basename(path_get(RARCH_PATH_BASENAME));  /* filename only without ext */
        int content_crc32        = content_get_crc();
        const char* system_id    = NULL;
@@ -3854,15 +3854,58 @@ static bool command_get_status(const char* arg)
    return true;
 }
 
+
+static bool command_show_osd_msg(const char* arg)
+{
+    runloop_msg_queue_push(arg, 1, 180, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+    return true;    
+}
+
+
+static bool command_get_config_param(const char* arg)
+{
+       char reply[4096]     = {0};
+       const char* value    = "unsupported";
+       settings_t* settings = config_get_ptr();
+              
+       if (!strcmp(arg, "video_fullscreen")) {
+           if(configuration_settings->bools.video_fullscreen)
+            value = "true";
+           else
+            value = "false";
+        }
+       else if (!strcmp(arg, "savefile_directory"))
+           value = dir_get(RARCH_DIR_SAVEFILE);
+       else if (!strcmp(arg, "savestate_directory"))
+           value = dir_get(RARCH_DIR_SAVESTATE);
+       else if (!strcmp(arg, "runtime_log_directory"))
+           value = settings->paths.directory_runtime_log;
+       else if (!strcmp(arg, "log_dir"))
+           value = settings->paths.log_dir;
+       else if (!strcmp(arg, "cache_directory"))
+           value = settings->paths.directory_cache;
+       else if (!strcmp(arg, "system_directory"))
+           value = settings->paths.directory_system;
+       else if (!strcmp(arg, "netplay_nickname"))
+           value = settings->paths.username;
+       /* TODO: query any string */
+       
+       snprintf(reply, sizeof(reply), "GET_CONFIG_PARAM %s %s\n", arg, value);
+       command_reply(reply, strlen(reply));
+       return true;
+}
+
 #if defined(HAVE_CHEEVOS)
 static bool command_read_ram(const char *arg);
 static bool command_write_ram(const char *arg);
 #endif
 
 static const struct cmd_action_map action_map[] = {
-   { "SET_SHADER",      command_set_shader,  "<shader path>" },
-   { "VERSION",         command_version,     "No argument"},
-   { "GET_STATUS",      command_get_status,  "No argument" },
+   { "SET_SHADER",       command_set_shader,       "<shader path>" },
+   { "VERSION",          command_version,          "No argument"},
+   { "GET_STATUS",       command_get_status,       "No argument" },
+   { "GET_CONFIG_PARAM", command_get_config_param, "<param name>" },
+   { "SHOW_MSG",         command_show_osd_msg,     "No argument" },
 #if defined(HAVE_CHEEVOS)
    { "READ_CORE_RAM",   command_read_ram,    "<address> <number of bytes>" },
    { "WRITE_CORE_RAM",  command_write_ram,   "<address> <byte1> <byte2> ..." },
