@@ -2444,14 +2444,13 @@ void config_set_defaults(void *data)
 #ifdef HAVE_CONFIGFILE
 
 #if defined(HAVE_MENU) && defined(HAVE_RGUI)
-static bool check_menu_driver_compatibility(void)
+static bool check_menu_driver_compatibility(settings_t *settings)
 {
-   settings_t *settings = config_get_ptr();
    char *video_driver   = settings->arrays.video_driver;
    char *menu_driver    = settings->arrays.menu_driver;
 
-   if (string_is_equal  (menu_driver, "rgui") ||
-         string_is_equal(menu_driver, "null") ||
+   if (  string_is_equal(menu_driver,  "rgui") ||
+         string_is_equal(menu_driver,  "null") ||
          string_is_equal(video_driver, "null"))
       return true;
 
@@ -3163,7 +3162,7 @@ static bool config_load_file(global_t *global,
    config_read_keybinds_conf(conf);
 
 #if defined(HAVE_MENU) && defined(HAVE_RGUI)
-   if (!check_menu_driver_compatibility())
+   if (!check_menu_driver_compatibility(settings))
       strlcpy(settings->arrays.menu_driver, "rgui", sizeof(settings->arrays.menu_driver));
 #endif
 
