@@ -5513,7 +5513,7 @@ static void command_event_disable_overrides(void)
       return;
 
    /* reload the original config */
-   config_unload_override(&configuration_settings);
+   config_unload_override();
    runloop_overrides_active = false;
 }
 #endif
@@ -5896,8 +5896,7 @@ static bool command_event_init_core(enum rarch_core_type type)
 #ifdef HAVE_CONFIGFILE
    /* auto overrides: apply overrides */
    if (settings->bools.auto_overrides_enable)
-      runloop_overrides_active = config_load_override(&runloop_system,
-            settings);
+      runloop_overrides_active = config_load_override(&runloop_system);
 #endif
 
    /* Load auto-shaders on the next occasion */
@@ -5994,8 +5993,7 @@ static bool command_event_save_config(
    const char *str  = path_exists ? config_path :
       path_get(RARCH_PATH_CONFIG);
 
-   if (path_exists && config_save_file(&configuration_settings,
-            config_path))
+   if (path_exists && config_save_file(config_path))
    {
       snprintf(s, len, "%s \"%s\".",
             msg_hash_to_str(MSG_SAVED_NEW_CONFIG_TO),
@@ -6160,12 +6158,9 @@ static void command_event_save_current_config(enum override_type type)
       case OVERRIDE_GAME:
       case OVERRIDE_CORE:
       case OVERRIDE_CONTENT_DIR:
-         if (config_save_overrides(type,
-                  &runloop_system, &configuration_settings))
+         if (config_save_overrides(type, &runloop_system))
          {
-            strlcpy(msg,
-                  msg_hash_to_str(MSG_OVERRIDES_SAVED_SUCCESSFULLY),
-                  sizeof(msg));
+            strlcpy(msg, msg_hash_to_str(MSG_OVERRIDES_SAVED_SUCCESSFULLY), sizeof(msg));
             RARCH_LOG("[config] [overrides] %s\n", msg);
 
             /* set overrides to active so the original config can be
@@ -7208,7 +7203,7 @@ TODO: Add a setting for these tweaks */
 #endif
          break;
       case CMD_EVENT_MENU_RESET_TO_DEFAULT_CONFIG:
-         config_set_defaults(&g_extern, &configuration_settings);
+         config_set_defaults(&g_extern);
          break;
       case CMD_EVENT_MENU_SAVE_CURRENT_CONFIG:
 #ifdef HAVE_CONFIGFILE
@@ -24716,9 +24711,9 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
    if (!rarch_block_config_read)
 #endif
    {
-      config_set_defaults(&g_extern, &configuration_settings);
+      config_set_defaults(&g_extern);
 #ifdef HAVE_CONFIGFILE
-      config_parse_file(&g_extern, &configuration_settings);
+      config_parse_file(&g_extern);
 #endif
    }
 

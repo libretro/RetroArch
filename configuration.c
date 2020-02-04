@@ -41,7 +41,9 @@
 #include "input/input_remapping.h"
 #include "led/led_defines.h"
 #include "defaults.h"
+#include "core.h"
 #include "paths.h"
+#include "retroarch.h"
 #include "verbosity.h"
 #include "lakka.h"
 
@@ -1950,14 +1952,14 @@ static struct config_int_setting *populate_settings_int(settings_t *settings, in
  *
  * Set 'default' configuration values.
  **/
-void config_set_defaults(void *data, void *settings_data)
+void config_set_defaults(void *data)
 {
    unsigned i, j;
 #ifdef HAVE_MENU
    static bool first_initialized   = true;
 #endif
    global_t *global                = (global_t*)data;
-   settings_t *settings            = (settings_t*)settings_data;
+   settings_t *settings            = config_get_ptr();
    int bool_settings_size          = sizeof(settings->bools)   / sizeof(settings->bools.placeholder);
    int float_settings_size         = sizeof(settings->floats)  / sizeof(settings->floats.placeholder);
    int int_settings_size           = sizeof(settings->ints)    / sizeof(settings->ints.placeholder);
@@ -2442,8 +2444,9 @@ void config_set_defaults(void *data, void *settings_data)
 #ifdef HAVE_CONFIGFILE
 
 #if defined(HAVE_MENU) && defined(HAVE_RGUI)
-static bool check_menu_driver_compatibility(settings_t *settings)
+static bool check_menu_driver_compatibility(void)
 {
+   settings_t *settings = config_get_ptr();
    char *video_driver   = settings->arrays.video_driver;
    char *menu_driver    = settings->arrays.menu_driver;
 
@@ -3160,7 +3163,7 @@ static bool config_load_file(global_t *global,
    config_read_keybinds_conf(conf);
 
 #if defined(HAVE_MENU) && defined(HAVE_RGUI)
-   if (!check_menu_driver_compatibility(settings))
+   if (!check_menu_driver_compatibility())
       strlcpy(settings->arrays.menu_driver, "rgui", sizeof(settings->arrays.menu_driver));
 #endif
 
@@ -3232,7 +3235,7 @@ end:
  * Returns: false if there was an error or no action was performed.
  *
  */
-bool config_load_override(void *data, void *settings_data)
+bool config_load_override(void *data)
 {
    size_t path_size                       = PATH_MAX_LENGTH * sizeof(char);
    char *buf                              = NULL;
@@ -3384,8 +3387,7 @@ bool config_load_override(void *data, void *settings_data)
    retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_SAVE_PATH,  NULL);
 
    if (!config_load_file(global_get_ptr(),
-            path_get(RARCH_PATH_CONFIG),
-            (settings_t*)settings_data))
+            path_get(RARCH_PATH_CONFIG), config_get_ptr()))
       goto error;
 
    /* Restore the libretro_path we're using
@@ -3423,7 +3425,7 @@ error:
  *
  * Returns: false if there was an error.
  */
-bool config_unload_override(void *settings_data)
+bool config_unload_override(void)
 {
    path_clear(RARCH_PATH_CONFIG_APPEND);
 
@@ -3432,8 +3434,7 @@ bool config_unload_override(void *settings_data)
    retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_SAVE_PATH,  NULL);
 
    if (!config_load_file(global_get_ptr(),
-            path_get(RARCH_PATH_CONFIG),
-            (settings_t*)settings_data))
+            path_get(RARCH_PATH_CONFIG), config_get_ptr()))
       return false;
 
    RARCH_LOG("[Overrides] configuration overrides unloaded, original configuration restored.\n");
@@ -3583,10 +3584,9 @@ success:
  * Loads a config file and reads all the values into memory.
  *
  */
-void config_parse_file(void *data, void *settings_data)
+void config_parse_file(void *data)
 {
    global_t *global = (global_t*)data;
-
    if (path_is_empty(RARCH_PATH_CONFIG))
    {
       RARCH_LOG("[config] Loading default config.\n");
@@ -3596,7 +3596,7 @@ void config_parse_file(void *data, void *settings_data)
       const char *config_path = path_get(RARCH_PATH_CONFIG);
       RARCH_LOG("[config] loading config from: %s.\n", config_path);
 
-      if (!config_load_file(global, config_path, (settings_t *)settings_data))
+      if (!config_load_file(global, config_path, config_get_ptr()))
       {
          RARCH_ERR("[config] couldn't find config at path: \"%s\"\n",
                config_path);
@@ -3611,12 +3611,12 @@ void config_parse_file(void *data, void *settings_data)
  * Loads a config file and reads all the values into memory.
  *
  */
-void config_load(void *data, void *settings_data)
+void config_load(void *data)
 {
    global_t *global = (global_t*)data;
-   config_set_defaults(global, settings_data);
+   config_set_defaults(global);
 #ifdef HAVE_CONFIGFILE
-   config_parse_file(global, settings_data);
+   config_parse_file(global);
 #endif
 }
 
@@ -3627,8 +3627,7 @@ void config_load(void *data, void *settings_data)
  * @user              : Controller number to save
  * Writes a controller autoconf file to disk.
  **/
-bool config_save_autoconf_profile(void *settings_data,
-      const char *path, unsigned user)
+bool config_save_autoconf_profile(const char *path, unsigned user)
 {
    static const char* invalid_filename_chars[] = {
       /* https://support.microsoft.com/en-us/help/905231/information-about-the-characters-that-you-cannot-use-in-site-names--fo */
@@ -3641,7 +3640,7 @@ bool config_save_autoconf_profile(void *settings_data,
    int32_t pid_user                     = 0;
    int32_t vid_user                     = 0;
    bool ret                             = false;
-   settings_t *settings                 = (settings_t*)settings_data;
+   settings_t *settings                 = config_get_ptr();
    const char *autoconf_dir             = settings->paths.directory_autoconfig;
    const char *joypad_ident             = settings->arrays.input_joypad_driver;
    char *buf                            = (char*)
@@ -3746,8 +3745,7 @@ bool config_save_autoconf_profile(void *settings_data,
  *
  * Returns: true (1) on success, otherwise returns false (0).
  **/
-bool config_save_file(void *settings_data,
-      const char *path)
+bool config_save_file(const char *path)
 {
    float msg_color;
    unsigned i                                        = 0;
@@ -3760,7 +3758,7 @@ bool config_save_file(void *settings_data,
    struct config_array_setting     *array_settings   = NULL;
    struct config_path_setting     *path_settings     = NULL;
    config_file_t                              *conf  = config_file_new_from_path_to_string(path);
-   settings_t                              *settings = (settings_t*)settings_data;
+   settings_t                              *settings = config_get_ptr();
    int bool_settings_size                            = sizeof(settings->bools) / sizeof(settings->bools.placeholder);
    int float_settings_size                           = sizeof(settings->floats)/ sizeof(settings->floats.placeholder);
    int int_settings_size                             = sizeof(settings->ints)  / sizeof(settings->ints.placeholder);
@@ -3968,8 +3966,7 @@ bool config_save_file(void *settings_data,
  *
  * Returns: true (1) on success, otherwise returns false (0).
  **/
-bool config_save_overrides(enum override_type type, void *data,
-      void *settings_data)
+bool config_save_overrides(enum override_type type, void *data)
 {
    size_t path_size                            = PATH_MAX_LENGTH * sizeof(char);
    int tmp_i                                   = 0;
@@ -3996,7 +3993,7 @@ bool config_save_overrides(enum override_type type, void *data,
    char *core_path                             = NULL;
    char *game_path                             = NULL;
    char *content_path                          = NULL;
-   settings_t *overrides                       = (settings_t*)settings_data;
+   settings_t *overrides                       = config_get_ptr();
    int bool_settings_size                      = sizeof(settings->bools)  / sizeof(settings->bools.placeholder);
    int float_settings_size                     = sizeof(settings->floats) / sizeof(settings->floats.placeholder);
    int int_settings_size                       = sizeof(settings->ints)   / sizeof(settings->ints.placeholder);
@@ -4221,8 +4218,7 @@ bool config_save_overrides(enum override_type type, void *data,
 /* Replaces currently loaded configuration file with
  * another one. Will load a dummy core to flush state
  * properly. */
-bool config_replace(void *settings_data,
-      bool config_replace_save_on_exit, char *path)
+bool config_replace(bool config_replace_save_on_exit, char *path)
 {
    content_ctx_info_t content_info = {0};
    const char *rarch_path_config   = path_get(RARCH_PATH_CONFIG);
@@ -4233,7 +4229,7 @@ bool config_replace(void *settings_data,
       return false;
 
    if (config_replace_save_on_exit && !path_is_empty(RARCH_PATH_CONFIG))
-      config_save_file(settings_data, rarch_path_config);
+      config_save_file(rarch_path_config);
 
    path_set(RARCH_PATH_CONFIG, path);
 

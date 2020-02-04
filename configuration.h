@@ -815,7 +815,7 @@ const char *config_get_default_record(void);
  * Loads a config file and reads all the values into memory.
  *
  */
-void config_parse_file(void *data, void *settings_data);
+void config_parse_file(void *data);
 
 #ifdef HAVE_CONFIGFILE
 /**
@@ -828,7 +828,7 @@ void config_parse_file(void *data, void *settings_data);
  * Returns: false if there was an error or no action was performed.
  *
  */
-bool config_load_override(void *data, void *settings_data);
+bool config_load_override(void *data);
 
 /**
  * config_unload_override:
@@ -838,7 +838,7 @@ bool config_load_override(void *data, void *settings_data);
  *
  * Returns: false if there was an error.
  */
-bool config_unload_override(void *settings_data);
+bool config_unload_override(void);
 
 /**
  * config_load_remap:
@@ -857,8 +857,7 @@ bool config_load_remap(const char *directory_input_remapping,
  * @user              : Controller number to save
  * Writes a controller autoconf file to disk.
  **/
-bool config_save_autoconf_profile(void *settings_data,
-      const char *path, unsigned user);
+bool config_save_autoconf_profile(const char *path, unsigned user);
 
 /**
  * config_save_file:
@@ -868,8 +867,7 @@ bool config_save_autoconf_profile(void *settings_data,
  *
  * Returns: true (1) on success, otherwise returns false (0).
  **/
-bool config_save_file(void *settings_data,
-      const char *path);
+bool config_save_file(const char *path);
 
 /**
  * config_save_overrides:
@@ -879,19 +877,17 @@ bool config_save_file(void *settings_data,
  *
  * Returns: true (1) on success, otherwise returns false (0).
  **/
-bool config_save_overrides(enum override_type type, void *data,
-      void *settings_data);
+bool config_save_overrides(enum override_type type, void *data);
 
 /* Replaces currently loaded configuration file with
  * another one. Will load a dummy core to flush state
  * properly. */
-bool config_replace(void *settings_data,
-      bool config_save_on_exit, char *path);
+bool config_replace(bool config_save_on_exit, char *path);
 #endif
 
 bool config_overlay_enable_default(void);
 
-void config_set_defaults(void *data, void *settings_data);
+void config_set_defaults(void *data);
 
 settings_t *config_get_ptr(void);
 

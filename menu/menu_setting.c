@@ -2567,8 +2567,7 @@ static int setting_action_ok_bind_all_save_autoconfig(rarch_setting_t *setting,
    index_offset = setting->index_offset;
    name         = input_config_get_device_name(index_offset);
 
-   if(!string_is_empty(name) && config_save_autoconf_profile(config_get_ptr(),
-            name, index_offset))
+   if(!string_is_empty(name) && config_save_autoconf_profile(name, index_offset))
       runloop_msg_queue_push(
             msg_hash_to_str(MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY), 1, 100, true,
             NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);

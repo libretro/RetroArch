@@ -1684,8 +1684,7 @@ static int generic_action_ok(const char *path,
 
             menu_display_set_msg_force(true);
 
-            if (config_replace(settings,
-                     settings->bools.config_save_on_exit, action_path))
+            if (config_replace(settings->bools.config_save_on_exit, action_path))
             {
                bool pending_push = false;
                menu_driver_ctl(MENU_NAVIGATION_CTL_CLEAR, &pending_push);
