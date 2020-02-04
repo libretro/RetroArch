@@ -3234,7 +3234,7 @@ end:
  * Returns: false if there was an error or no action was performed.
  *
  */
-bool config_load_override(void)
+bool config_load_override(void *data)
 {
    size_t path_size                       = PATH_MAX_LENGTH * sizeof(char);
    char *buf                              = NULL;
@@ -3243,7 +3243,7 @@ bool config_load_override(void)
    char *content_path                     = NULL;
    char *config_directory                 = NULL;
    bool should_append                     = false;
-   rarch_system_info_t *system            = runloop_get_system_info();
+   rarch_system_info_t *system            = (rarch_system_info_t*)data;
    const char *core_name                  = system ?
       system->info.library_name : NULL;
    const char *rarch_path_basename        = path_get(RARCH_PATH_BASENAME);
@@ -3964,7 +3964,7 @@ bool config_save_file(const char *path)
  *
  * Returns: true (1) on success, otherwise returns false (0).
  **/
-bool config_save_overrides(int override_type)
+bool config_save_overrides(enum override_type type)
 {
    size_t path_size                            = PATH_MAX_LENGTH * sizeof(char);
    int tmp_i                                   = 0;
@@ -4154,23 +4154,21 @@ bool config_save_overrides(int override_type)
 
       ret = false;
 
-      switch (override_type)
+      switch (type)
       {
          case OVERRIDE_CORE:
-            /* Create a new config file from core_path */
             RARCH_LOG ("[Overrides] path %s\n", core_path);
             ret = config_file_write(conf, core_path, true);
             break;
          case OVERRIDE_GAME:
-            /* Create a new config file from core_path */
             RARCH_LOG ("[Overrides] path %s\n", game_path);
             ret = config_file_write(conf, game_path, true);
             break;
          case OVERRIDE_CONTENT_DIR:
-            /* Create a new config file from content_path */
             RARCH_LOG ("[Overrides] path %s\n", content_path);
             ret = config_file_write(conf, content_path, true);
             break;
+         case OVERRIDE_NONE:
          default:
             break;
       }

@@ -828,7 +828,7 @@ void config_parse_file(void *data);
  * Returns: false if there was an error or no action was performed.
  *
  */
-bool config_load_override(void);
+bool config_load_override(void *data);
 
 /**
  * config_unload_override:
@@ -876,7 +876,7 @@ bool config_save_file(const char *path);
  *
  * Returns: true (1) on success, otherwise returns false (0).
  **/
-bool config_save_overrides(int override_type);
+bool config_save_overrides(enum override_type type);
 
 /* Replaces currently loaded configuration file with
  * another one. Will load a dummy core to flush state

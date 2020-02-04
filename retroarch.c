@@ -5896,7 +5896,7 @@ static bool command_event_init_core(enum rarch_core_type type)
 #ifdef HAVE_CONFIGFILE
    /* auto overrides: apply overrides */
    if (settings->bools.auto_overrides_enable)
-      runloop_overrides_active = config_load_override();
+      runloop_overrides_active = config_load_override(&runloop_system);
 #endif
 
    /* Load auto-shaders on the next occasion */
