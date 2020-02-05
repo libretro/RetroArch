@@ -6,6 +6,7 @@
 - CHEEVOS: Support for extended Sega CD memory
 - CHEEVOS: Show RetroAchievements Hash in content information list
 - EMSCRIPTEN: Recreate input event listeners properly
+- FFMPEG CORE: Fix crash on seeking when using HW decoding in some cases
 - LIBRETRO: Add disk control interface API extension
 - LOCALIZATION: Update Polish translation
 - NETPLAY/MENU/BUGFIX: Fix Netplay Stateless Mode doesn't save. Affects other netplay settings which can be overridden by commandline option
