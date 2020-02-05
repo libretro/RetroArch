@@ -5218,7 +5218,6 @@ static void netplay_refresh_rooms_cb(retro_task_t *task,
          char s[PATH_MAX_LENGTH];
          unsigned i                           = 0;
          unsigned j                           = 0;
-         file_list_t *list                    = menu_entries_get_selection_buf_ptr(0);
          struct netplay_host_list *lan_hosts  = NULL;
          int lan_room_count                   = 0;
          bool refresh                         = false;
