@@ -238,75 +238,45 @@ static ssize_t sl_write(void *data, const void *buf_, size_t size)
    size_t     written = 0;
    const uint8_t *buf = (const uint8_t*)buf_;
 
-   if (sl->nonblock)
+   while (size)
    {
-      while (size)
-      {
-         size_t avail_write;
+      size_t avail_write;
 
+      if (sl->nonblock)
+      {
          if (sl->buffered_blocks == sl->buf_count)
             break;
-
-         avail_write = MIN(sl->buf_size - sl->buffer_ptr, size);
-
-         if (avail_write)
-         {
-            memcpy(sl->buffer[sl->buffer_index] + sl->buffer_ptr, buf, avail_write);
-            sl->buffer_ptr += avail_write;
-            buf            += avail_write;
-            size           -= avail_write;
-            written        += avail_write;
-         }
-
-         if (sl->buffer_ptr >= sl->buf_size)
-         {
-            SLresult res     = (*sl->buffer_queue)->Enqueue(sl->buffer_queue, sl->buffer[sl->buffer_index], sl->buf_size);
-            sl->buffer_index = (sl->buffer_index + 1) % sl->buf_count;
-            __sync_fetch_and_add(&sl->buffered_blocks, 1);
-            sl->buffer_ptr   = 0;
-
-            if (res != SL_RESULT_SUCCESS)
-            {
-               RARCH_ERR("[OpenSL]: Failed to write! (Error: 0x%x)\n", (unsigned)res);
-               return -1;
-            }
-         }
       }
-   }
-   else
-   {
-      while (size)
+      else
       {
-         size_t avail_write;
-
          slock_lock(sl->lock);
          while (sl->buffered_blocks == sl->buf_count)
             scond_wait(sl->cond, sl->lock);
          slock_unlock(sl->lock);
+      }
 
-         avail_write = MIN(sl->buf_size - sl->buffer_ptr, size);
+      avail_write = MIN(sl->buf_size - sl->buffer_ptr, size);
 
-         if (avail_write)
+      if (avail_write)
+      {
+         memcpy(sl->buffer[sl->buffer_index] + sl->buffer_ptr, buf, avail_write);
+         sl->buffer_ptr += avail_write;
+         buf            += avail_write;
+         size           -= avail_write;
+         written        += avail_write;
+      }
+
+      if (sl->buffer_ptr >= sl->buf_size)
+      {
+         SLresult res     = (*sl->buffer_queue)->Enqueue(sl->buffer_queue, sl->buffer[sl->buffer_index], sl->buf_size);
+         sl->buffer_index = (sl->buffer_index + 1) % sl->buf_count;
+         __sync_fetch_and_add(&sl->buffered_blocks, 1);
+         sl->buffer_ptr   = 0;
+
+         if (res != SL_RESULT_SUCCESS)
          {
-            memcpy(sl->buffer[sl->buffer_index] + sl->buffer_ptr, buf, avail_write);
-            sl->buffer_ptr += avail_write;
-            buf            += avail_write;
-            size           -= avail_write;
-            written        += avail_write;
-         }
-
-         if (sl->buffer_ptr >= sl->buf_size)
-         {
-            SLresult res     = (*sl->buffer_queue)->Enqueue(sl->buffer_queue, sl->buffer[sl->buffer_index], sl->buf_size);
-            sl->buffer_index = (sl->buffer_index + 1) % sl->buf_count;
-            __sync_fetch_and_add(&sl->buffered_blocks, 1);
-            sl->buffer_ptr   = 0;
-
-            if (res != SL_RESULT_SUCCESS)
-            {
-               RARCH_ERR("[OpenSL]: Failed to write! (Error: 0x%x)\n", (unsigned)res);
-               return -1;
-            }
+            RARCH_ERR("[OpenSL]: Failed to write! (Error: 0x%x)\n", (unsigned)res);
+            return -1;
          }
       }
    }
