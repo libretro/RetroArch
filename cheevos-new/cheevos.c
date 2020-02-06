@@ -411,12 +411,32 @@ static int rcheevos_parse(const char* json)
     */
    if (!rcheevos_patch_address(0, rcheevos_locals.patchdata.console_id))
    {
-      /* Special case: the sameboy core exposes the RAM at $8000, but not the ROM at $0000. NES and
-       * Gameboy achievements do attempt to map the entire bus, and it's unlikely that an achievement
-       * will reference the ROM data, so if the RAM is still present, allow the core to load. If any
-       * achievements do reference the ROM data, they'll be marked "Unsupported" individually.
-       */
-      if (!rcheevos_patch_address(0x8000, rcheevos_locals.patchdata.console_id))
+      int delay_judgment = 0;
+
+      rarch_system_info_t* system = runloop_get_system_info();
+      if (system->mmaps.num_descriptors == 0)
+      {
+         /* Special case: the mupen64plus-nx core doesn't initialize the RAM immediately. To avoid a race
+          * condition - if the core says there's SYSTEM_RAM, but the pointer is NULL, proceed. If the memory
+          * isn't exposed when the achievements start processing, they'll be marked "Unsupported" individually.
+          */
+         retro_ctx_memory_info_t meminfo;
+         meminfo.id = RETRO_MEMORY_SYSTEM_RAM;
+         core_get_memory(&meminfo);
+
+         delay_judgment |= (meminfo.size > 0);
+      }
+      else
+      {
+         /* Special case: the sameboy core exposes the RAM at $8000, but not the ROM at $0000. NES and
+          * Gameboy achievements do attempt to map the entire bus, and it's unlikely that an achievement
+          * will reference the ROM data, so if the RAM is still present, allow the core to load. If any
+          * achievements do reference the ROM data, they'll be marked "Unsupported" individually.
+          */
+         delay_judgment |= (rcheevos_patch_address(0x8000, rcheevos_locals.patchdata.console_id) != NULL);
+      }
+
+      if (!delay_judgment)
       {
          CHEEVOS_ERR(RCHEEVOS_TAG "No memory exposed by core\n");
 
