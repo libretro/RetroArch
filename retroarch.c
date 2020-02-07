@@ -3201,8 +3201,8 @@ static float audio_driver_rate_control_delta             = 0.0f;
 static float audio_driver_input                          = 0.0f;
 static float audio_driver_volume_gain                    = 0.0f;
 
-static void  *audio_driver_input_data                    = NULL;
-static void  *audio_driver_output_samples_buf            = NULL;
+static float *audio_driver_input_data                    = NULL;
+static float *audio_driver_output_samples_buf            = NULL;
 
 static double audio_source_ratio_original                = 0.0f;
 static double audio_source_ratio_current                 = 0.0f;
@@ -18756,7 +18756,7 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
 {
    unsigned new_rate     = 0;
    float   *aud_inp_data = NULL;
-   void  *samples_buf    = NULL;
+   float  *samples_buf   = NULL;
    int16_t *rewind_buf   = NULL;
    size_t max_bufsamples = AUDIO_CHUNK_SIZE_NONBLOCKING * 2;
    settings_t *settings  = configuration_settings;
@@ -18880,7 +18880,7 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
    if (!aud_inp_data)
       goto error;
 
-   audio_driver_input_data = (float*)aud_inp_data;
+   audio_driver_input_data = aud_inp_data;
    audio_driver_data_ptr   = 0;
 
    retro_assert(settings->uints.audio_out_rate <
@@ -18953,10 +18953,10 @@ static void audio_driver_flush(const int16_t *data, size_t samples,
    src_data.data_out                 = NULL;
    src_data.output_frames            = 0;
 
-   convert_s16_to_float((float*)audio_driver_input_data, data, samples,
+   convert_s16_to_float(audio_driver_input_data, data, samples,
          audio_volume_gain);
 
-   src_data.data_in                  = (float*)audio_driver_input_data;
+   src_data.data_in                  = audio_driver_input_data;
    src_data.input_frames             = samples >> 1;
 
    /* TODO/FIXME - not available in fixed integer mode */
@@ -18969,7 +18969,7 @@ static void audio_driver_flush(const int16_t *data, size_t samples,
       dsp_data.output                = NULL;
       dsp_data.output_frames         = 0;
 
-      dsp_data.input                 = (float*)audio_driver_input_data;
+      dsp_data.input                 = audio_driver_input_data;
       dsp_data.input_frames          = (unsigned)(samples >> 1);
 
       retro_dsp_filter_process(audio_driver_dsp, &dsp_data);
@@ -18981,7 +18981,7 @@ static void audio_driver_flush(const int16_t *data, size_t samples,
       }
    }
 
-   src_data.data_out                 = (float*)audio_driver_output_samples_buf;
+   src_data.data_out                 = audio_driver_output_samples_buf;
 
    if (audio_driver_control)
    {
@@ -19028,7 +19028,7 @@ static void audio_driver_flush(const int16_t *data, size_t samples,
          (audio_driver_mixer_volume_gain != 1.0f) ? true : false;
       float mixer_gain  = !audio_driver_mixer_mute_enable ?
          audio_driver_mixer_volume_gain : 0.0f;
-      audio_mixer_mix((float*)audio_driver_output_samples_buf,
+      audio_mixer_mix(audio_driver_output_samples_buf,
             src_data.output_frames, mixer_gain, override);
    }
 #endif
