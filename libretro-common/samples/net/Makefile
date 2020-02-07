@@ -1,4 +1,4 @@
-TARGETS  = http_test net_ifinfo
+TARGETS  = http_test http_parse_test net_ifinfo
 
 LIBRETRO_COMM_DIR := ../..
 
@@ -37,6 +37,19 @@ HTTP_TEST_C = \
 
 HTTP_TEST_OBJS := $(HTTP_TEST_C:.c=.o)
 
+HTTP_PARSE_TEST_C = \
+				  $(LIBRETRO_COMM_DIR)/net/net_http.c \
+				  $(LIBRETRO_COMM_DIR)/net/net_http_parse.c \
+				  $(LIBRETRO_COMM_DIR)/net/net_compat.c \
+				  $(LIBRETRO_COMM_DIR)/net/net_socket.c \
+				  $(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
+				  $(LIBRETRO_COMM_DIR)/compat/compat_strcasestr.c \
+				  $(LIBRETRO_COMM_DIR)/encodings/encoding_utf.c \
+				  $(LIBRETRO_COMM_DIR)/string/stdstring.c \
+				  net_http_parse_test.c
+
+HTTP_PARSE_TEST_OBJS := $(HTTP_PARSE_TEST_C:.c=.o)
+
 NET_IFINFO_C = \
 					$(LIBRETRO_COMM_DIR)/net/net_ifinfo.c \
 					net_ifinfo_test.c
@@ -54,6 +67,9 @@ all: $(TARGETS)
 %.o: %.c
 	$(CC) $(INCFLAGS) $< -c $(CFLAGS) -o $@
 
+http_parse_test: $(HTTP_PARSE_TEST_OBJS)
+	$(CC) $(INCFLAGS) $(HTTP_PARSE_TEST_OBJS) $(CFLAGS) -o $@
+
 http_test: $(HTTP_TEST_OBJS)
 	$(CC) $(INCFLAGS) $(HTTP_TEST_OBJS) $(CFLAGS) -o $@
 
@@ -61,4 +77,4 @@ net_ifinfo: $(NET_IFINFO_OBJS)
 	$(CC) $(INCFLAGS) $(NET_IFINFO_OBJS) $(CFLAGS) -o $@
 
 clean:
-	rm -rf $(TARGETS) $(HTTP_TEST_OBJS) $(NET_IFINFO_OBJS)
+	rm -rf $(TARGETS) $(HTTP_TEST_OBJS) $(HTTP_PARSE_TEST_OBJS) $(NET_IFINFO_OBJS)

@@ -187,18 +187,54 @@ static const menu_ctx_driver_t *menu_ctx_drivers[] = {
    NULL
 };
 
-static menu_display_ctx_driver_t menu_display_ctx_null = {
-   NULL, /* draw */
-   NULL, /* draw_pipeline */
-   NULL, /* viewport */
-   NULL, /* blend_begin */
-   NULL, /* blend_end   */
-   NULL, /* restore_clear_color   */
-   NULL, /* clear_color   */
-   NULL, /* get_default_mvp   */
-   NULL, /* get_default_vertices */
-   NULL, /* get_default_tex_coords */
-   NULL, /* font_init_first */
+static void *menu_display_null_get_default_mvp(video_frame_info_t *video_info) { return NULL; }
+static void menu_display_null_blend_begin(video_frame_info_t *video_info) { }
+static void menu_display_null_blend_end(video_frame_info_t *video_info) { }
+static void menu_display_null_draw(menu_display_ctx_draw_t *draw,
+      video_frame_info_t *video_info) { }
+static void menu_display_null_draw_pipeline(menu_display_ctx_draw_t *draw,
+      video_frame_info_t *video_info) { }
+static void menu_display_null_viewport(menu_display_ctx_draw_t *draw,
+      video_frame_info_t *video_info) { }
+static void menu_display_null_restore_clear_color(void) { }
+static void menu_display_null_clear_color(menu_display_ctx_clearcolor_t *clearcolor, video_frame_info_t *video_info) { }
+static bool menu_display_null_font_init_first(
+      void **font_handle, void *video_data,
+      const char *font_path, float font_size,
+      bool is_threaded)
+{
+   font_data_t **handle = (font_data_t**)font_handle;
+   *handle = font_driver_init_first(video_data,
+         font_path, font_size, true,
+         is_threaded,
+         FONT_DRIVER_RENDER_DONT_CARE);
+   return *handle;
+}
+
+static const float *menu_display_null_get_default_vertices(void)
+{
+   static float dummy[16] = {0.0f};
+   return &dummy[0];
+}
+
+static const float *menu_display_null_get_default_tex_coords(void)
+{
+   static float dummy[16] = {0.0f};
+   return &dummy[0];
+}
+
+menu_display_ctx_driver_t menu_display_ctx_null = {
+   menu_display_null_draw,
+   menu_display_null_draw_pipeline,
+   menu_display_null_viewport,
+   menu_display_null_blend_begin,
+   menu_display_null_blend_end,
+   menu_display_null_restore_clear_color,
+   menu_display_null_clear_color,
+   menu_display_null_get_default_mvp,
+   menu_display_null_get_default_vertices,
+   menu_display_null_get_default_tex_coords,
+   menu_display_null_font_init_first,
    MENU_VIDEO_DRIVER_GENERIC,
    "null",
    false,
@@ -251,18 +287,6 @@ static menu_display_ctx_driver_t *menu_display_ctx_drivers[] = {
 #ifdef HAVE_GDI
    &menu_display_ctx_gdi,
 #endif
-#endif
-#ifdef DJGPP
-   &menu_display_ctx_vga,
-#endif
-#ifdef HAVE_SIXEL
-   &menu_display_ctx_sixel,
-#endif
-#ifdef HAVE_CACA
-   &menu_display_ctx_caca,
-#endif
-#ifdef HAVE_FPGA
-   &menu_display_ctx_fpga,
 #endif
    &menu_display_ctx_null,
    NULL,
@@ -1644,24 +1668,8 @@ static bool menu_display_check_compatibility(
          if (string_is_equal(video_driver, "gx2"))
             return true;
          break;
-      case MENU_VIDEO_DRIVER_SIXEL:
-         if (string_is_equal(video_driver, "sixel"))
-            return true;
-         break;
-      case MENU_VIDEO_DRIVER_CACA:
-         if (string_is_equal(video_driver, "caca"))
-            return true;
-         break;
       case MENU_VIDEO_DRIVER_GDI:
          if (string_is_equal(video_driver, "gdi"))
-            return true;
-         break;
-      case MENU_VIDEO_DRIVER_VGA:
-         if (string_is_equal(video_driver, "vga"))
-            return true;
-         break;
-      case MENU_VIDEO_DRIVER_FPGA:
-         if (string_is_equal(video_driver, "fpga"))
             return true;
          break;
       case MENU_VIDEO_DRIVER_SWITCH:
@@ -2034,45 +2042,6 @@ void menu_display_set_framebuffer_dirty_flag(void)
 void menu_display_unset_framebuffer_dirty_flag(void)
 {
    menu_display_framebuf_dirty = false;
-}
-
-float menu_display_get_pixel_scale(unsigned width, unsigned height)
-{
-   static unsigned last_width  = 0;
-   static unsigned last_height = 0;
-   static float scale          = 0.0f;
-   static bool scale_cached    = false;
-   settings_t *settings        = config_get_ptr();
-
-   /* We need to perform a square root here, which
-    * can be slow on some platforms (not *slow*, but
-    * it involves enough work that it's worth trying
-    * to optimise). We therefore cache the pixel scale,
-    * and only update on first run or when the video
-    * size changes */
-   if (!scale_cached ||
-       (width  != last_width) ||
-       (height != last_height))
-   {
-      /* Baseline reference is a 1080p display */
-      scale = (float)(
-            sqrt((double)((width * width) + (height * height))) /
-            DIAGONAL_PIXELS_1080P);
-
-      scale_cached = true;
-      last_width   = width;
-      last_height  = height;
-   }
-
-   /* Apply user scaling factor */
-   if (settings)
-   {
-      float menu_scale_factor = settings->floats.menu_scale_factor;
-      return scale * ((menu_scale_factor > 0.0001f) ?
-            menu_scale_factor : 1.0f);
-   }
-
-   return scale;
 }
 
 float menu_display_get_dpi_scale(unsigned width, unsigned height)
@@ -3334,6 +3303,7 @@ static bool menu_init(menu_handle_t *menu_data)
    if (!menu_entries_init())
       return false;
 
+#ifdef HAVE_CONFIGFILE
    if (settings->bools.menu_show_start_screen)
    {
       /* We don't want the welcome dialog screen to show up
@@ -3349,6 +3319,7 @@ static bool menu_init(menu_handle_t *menu_data)
          command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
 #endif
    }
+#endif
 
    if (      settings->bools.bundle_assets_extract_enable
          && !string_is_empty(settings->arrays.bundle_assets_src)

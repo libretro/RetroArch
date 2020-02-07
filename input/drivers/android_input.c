@@ -417,7 +417,7 @@ static void android_input_poll_main_cmd(void)
 
             if ((android_app->sensor_state_mask
                      & (UINT64_C(1) << RETRO_SENSOR_ACCELEROMETER_ENABLE))
-                  && android_app->accelerometerSensor == NULL)
+                  && !android_app->accelerometerSensor)
                input_sensor_set_state(0,
                      RETRO_SENSOR_ACCELEROMETER_ENABLE,
                      android_app->accelerometer_event_rate);
@@ -522,7 +522,7 @@ static bool android_input_init_handle(void)
 #ifdef HAVE_DYNAMIC
    if (libandroid_handle != NULL) /* already initialized */
       return true;
-#ifdef ANDROID_AARCH64
+#if defined (ANDROID_AARCH64) || defined(ANDROID_X64)
    if ((libandroid_handle = dlopen("/system/lib64/libandroid.so",
                RTLD_LOCAL | RTLD_LAZY)) == 0)
       return false;
@@ -673,7 +673,7 @@ static INLINE void android_mouse_calculate_deltas(android_input_t *android,
 {
    /* Adjust mouse speed based on ratio
     * between core resolution and system resolution */
-   float x, y;
+   float x = 0, y = 0;
    float                        x_scale = 1;
    float                        y_scale = 1;
    struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
@@ -687,8 +687,11 @@ static INLINE void android_mouse_calculate_deltas(android_input_t *android,
    }
 
    /* This axis is only available on Android Nougat and on Android devices with NVIDIA extensions */
-   x = AMotionEvent_getAxisValue(event,AMOTION_EVENT_AXIS_RELATIVE_X, motion_ptr);
-   y = AMotionEvent_getAxisValue(event,AMOTION_EVENT_AXIS_RELATIVE_Y, motion_ptr);
+   if (p_AMotionEvent_getAxisValue)
+   {
+     x = AMotionEvent_getAxisValue(event,AMOTION_EVENT_AXIS_RELATIVE_X, motion_ptr);
+     y = AMotionEvent_getAxisValue(event,AMOTION_EVENT_AXIS_RELATIVE_Y, motion_ptr);
+   }
 
    /* If AXIS_RELATIVE had 0 values it might be because we're not running Android Nougat or on a device
     * with NVIDIA extension, so re-calculate deltas based on AXIS_X and AXIS_Y. This has limitations

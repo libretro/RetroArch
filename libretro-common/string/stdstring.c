@@ -1,4 +1,4 @@
-/* Copyright  (C) 2010-2018 The RetroArch team
+/* Copyright  (C) 2010-2020 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
  * The following license statement only applies to this file (stdstring.c).
@@ -328,7 +328,7 @@ void string_replace_all_chars(char *str, char find, char replace)
    if (string_is_empty(str))
       return;
 
-   while((str_ptr = strchr(str_ptr, find)) != NULL)
+   while ((str_ptr = strchr(str_ptr, find)))
       *str_ptr++ = replace;
 }
 

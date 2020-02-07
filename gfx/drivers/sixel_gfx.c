@@ -450,7 +450,7 @@ static bool sixel_gfx_alive(void *data)
             &quit, &resize, &temp_width, &temp_height, is_shutdown);
 
    if (temp_width != 0 && temp_height != 0)
-      video_driver_set_size(&temp_width, &temp_height);
+      video_driver_set_size(temp_width, temp_height);
 
    return true;
 }

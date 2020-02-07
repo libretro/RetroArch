@@ -126,7 +126,7 @@ static const char *database_info_get_current_element_name(
    if (!handle || !handle->list)
       return NULL;
    /* Skip pruned entries */
-   while (handle->list->elems[handle->list_ptr].data == NULL)
+   while (!handle->list->elems[handle->list_ptr].data)
    {
       if (++handle->list_ptr >= handle->list->size)
          return NULL;

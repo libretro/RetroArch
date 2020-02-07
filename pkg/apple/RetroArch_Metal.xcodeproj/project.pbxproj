@@ -1618,7 +1618,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "make -C ${SRCBASE} -f Makefile.apple HAVE_MENU=1 HAVE_MENU_WIDGETS=1 HAVE_QT=1 HAVE_SLANG=1 MOC=${QT_INSTALL}/bin/moc generate\n";
+			shellScript = "make -C ${SRCBASE} -f Makefile.apple HAVE_MENU=1 HAVE_CONFIGFILE=1 HAVE_MENU_WIDGETS=1 HAVE_QT=1 HAVE_SLANG=1 MOC=${QT_INSTALL}/bin/moc generate\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 

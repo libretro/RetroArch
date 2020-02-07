@@ -86,14 +86,13 @@ static bool connmanctl_tether_status(void)
 
    pclose(command_file);
 
-   if (ln == NULL)
+   if (!ln)
       return false;
-   else if (ln[0] == '0')
+   if (ln[0] == '0')
       return false;
-   else if (ln[0] == '1')
+   if (ln[0] == '1')
       return true;
-   else
-      return false;
+   return false;
 }
 
 static void connmanctl_tether_toggle(bool switch_on, char* apname, char* passkey)
@@ -582,7 +581,7 @@ static void connmanctl_tether_start_stop(bool start, char* configfile)
          pclose(command_file);
       }
 
-      if (apname == NULL || passkey == NULL)
+      if (!apname || !passkey)
       {
          RARCH_ERR("[CONNMANCTL] Tether start stop: APNAME or PASSWORD missing\n");
 

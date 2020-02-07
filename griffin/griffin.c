@@ -607,12 +607,16 @@ FONTS
 INPUT
 ============================================================ */
 #include "../tasks/task_autodetect.c"
+#ifdef HAVE_BLISSBOX
 #include "../tasks/task_autodetect_blissbox.c"
+#endif
 #ifdef HAVE_AUDIOMIXER
 #include "../tasks/task_audio_mixer.c"
 #endif
 #include "../input/input_keymaps.c"
+#ifdef HAVE_CONFIGFILE
 #include "../input/input_remapping.c"
+#endif
 
 #ifdef HAVE_OVERLAY
 #include "../led/drivers/led_overlay.c"
@@ -1332,14 +1336,6 @@ MENU
 #include "../menu/drivers_display/menu_display_switch.c"
 #endif
 
-#ifdef HAVE_CACA
-#include "../menu/drivers_display/menu_display_caca.c"
-#endif
-
-#ifdef DJGPP
-#include "../menu/drivers_display/menu_display_vga.c"
-#endif
-
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
 #ifdef HAVE_GDI
 #include "../menu/drivers_display/menu_display_gdi.c"
@@ -1384,7 +1380,6 @@ MENU
 #endif
 
 #ifdef HAVE_RUNAHEAD
-#include "../runahead/mem_util.c"
 #include "../runahead/mylist.c"
 #endif
 

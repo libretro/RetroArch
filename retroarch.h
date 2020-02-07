@@ -100,30 +100,23 @@ enum rarch_ctl_state
    RARCH_CTL_IS_IPS_PREF,
    RARCH_CTL_UNSET_IPS_PREF,
 
-   RARCH_CTL_IS_SRAM_USED,
-
-   RARCH_CTL_IS_SRAM_LOAD_DISABLED,
-   RARCH_CTL_IS_SRAM_SAVE_DISABLED,
-
+#ifdef HAVE_CONFIGFILE
    /* Block config read */
    RARCH_CTL_SET_BLOCK_CONFIG_READ,
    RARCH_CTL_UNSET_BLOCK_CONFIG_READ,
-   RARCH_CTL_IS_BLOCK_CONFIG_READ,
+#endif
 
    /* Username */
    RARCH_CTL_HAS_SET_USERNAME,
 
    RARCH_CTL_HAS_SET_SUBSYSTEMS,
 
-   RARCH_CTL_TASK_INIT,
-
-   RARCH_CTL_SET_FRAME_TIME_LAST,
-
    RARCH_CTL_IS_IDLE,
    RARCH_CTL_SET_IDLE,
 
    RARCH_CTL_SET_WINDOWED_SCALE,
 
+#ifdef HAVE_CONFIGFILE
    RARCH_CTL_IS_OVERRIDES_ACTIVE,
 
    RARCH_CTL_IS_REMAPS_CORE_ACTIVE,
@@ -137,6 +130,7 @@ enum rarch_ctl_state
    RARCH_CTL_IS_REMAPS_GAME_ACTIVE,
    RARCH_CTL_SET_REMAPS_GAME_ACTIVE,
    RARCH_CTL_UNSET_REMAPS_GAME_ACTIVE,
+#endif
 
    RARCH_CTL_IS_MISSING_BIOS,
    RARCH_CTL_SET_MISSING_BIOS,
@@ -159,20 +153,13 @@ enum rarch_ctl_state
    RARCH_CTL_UNSET_PERFCNT_ENABLE,
    RARCH_CTL_IS_PERFCNT_ENABLE,
 
-   /* Key event */
-   RARCH_CTL_DATA_DEINIT,
-
    /* Core options */
    RARCH_CTL_HAS_CORE_OPTIONS,
    RARCH_CTL_GET_CORE_OPTION_SIZE,
    RARCH_CTL_CORE_OPTIONS_LIST_GET,
    RARCH_CTL_CORE_OPTION_PREV,
    RARCH_CTL_CORE_OPTION_NEXT,
-   RARCH_CTL_CORE_VARIABLES_INIT,
-   RARCH_CTL_CORE_OPTIONS_INIT,
    RARCH_CTL_CORE_OPTIONS_INTL_INIT,
-   RARCH_CTL_CORE_OPTIONS_DEINIT,
-   RARCH_CTL_CORE_OPTIONS_DISPLAY,
    RARCH_CTL_CORE_IS_RUNNING,
 
    /* BSV Movie */
@@ -378,19 +365,11 @@ void retroarch_menu_running(void);
 
 void retroarch_menu_running_finished(bool quit);
 
-char *get_retroarch_launch_arguments(void);
-
 rarch_system_info_t *runloop_get_system_info(void);
 
 struct retro_system_info *runloop_get_libretro_system_info(void);
 
 void retroarch_force_video_driver_fallback(const char *driver);
-
-void rarch_get_cpu_architecture_string(char *cpu_arch_str, size_t len);
-
-void rarch_log_file_init(void);
-
-void rarch_log_file_deinit(void);
 
 enum retro_language rarch_get_language_from_iso(const char *lang);
 
@@ -722,8 +701,6 @@ const char* config_get_record_driver_options(void);
 bool recording_is_enabled(void);
 
 void streaming_set_state(bool state);
-
-bool recording_is_enabled(void);
 
 bool streaming_is_enabled(void);
 
@@ -1565,7 +1542,7 @@ void video_driver_apply_state_changes(void);
 
 bool video_driver_read_viewport(uint8_t *buffer, bool is_idle);
 
-bool video_driver_cached_frame(void);
+void video_driver_cached_frame(void);
 
 void video_driver_default_settings(void);
 
@@ -1605,9 +1582,6 @@ const char* config_get_video_driver_options(void);
  **/
 void *video_driver_get_ptr(bool force_nonthreaded_data);
 
-bool video_driver_set_shader(enum rarch_shader_type type,
-      const char *shader);
-
 bool video_driver_set_rotation(unsigned rotation);
 
 bool video_driver_set_video_mode(unsigned width,
@@ -1640,7 +1614,7 @@ bool video_driver_set_viewport(unsigned width, unsigned height,
 
 void video_driver_get_size(unsigned *width, unsigned *height);
 
-void video_driver_set_size(unsigned *width, unsigned *height);
+void video_driver_set_size(unsigned width, unsigned height);
 
 float video_driver_get_aspect_ratio(void);
 
@@ -1934,8 +1908,6 @@ extern const shader_backend_t gl_cg_backend;
 
 void bsv_movie_frame_rewind(void);
 
-void bsv_movie_set_path(const char *path);
-
 /* Location */
 
 typedef struct location_driver
@@ -2011,13 +1983,11 @@ bool menu_driver_is_alive(void);
 
 void menu_driver_set_binding_state(bool on);
 
-bool menu_driver_is_toggled(void);
-
-bool menu_driver_is_toggled(void);
-
 bool menu_widgets_ready(void);
 
 unsigned int retroarch_get_rotation(void);
+
+void retroarch_init_task_queue(void);
 
 bool is_input_keyboard_display_on(void);
 

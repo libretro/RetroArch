@@ -45,7 +45,6 @@
 #include "../frontend_driver.h"
 #include "../../configuration.h"
 #include "../../defaults.h"
-#include "../../retroarch.h"
 #include "../../verbosity.h"
 #include "../../ui/drivers/ui_win32.h"
 #include "../../paths.h"
@@ -69,9 +68,8 @@ static char win32_cpu_model_name[64] = {0};
 
 VOID (WINAPI *DragAcceptFiles_func)(HWND, BOOL);
 
-static bool dwm_composition_disabled;
-
-static bool console_needs_free;
+static bool dwm_composition_disabled = false;
+static bool console_needs_free       = false;
 
 #if defined(HAVE_LANGEXTRA) && !defined(_XBOX)
 #if (defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0500) || !defined(_MSC_VER)
@@ -676,7 +674,7 @@ enum retro_language frontend_win32_get_user_language(void)
 #if defined(_WIN32) && !defined(_XBOX)
 enum frontend_fork win32_fork_mode;
 
-static void frontend_win32_respawn(char *s, size_t len)
+static void frontend_win32_respawn(char *s, size_t len, char *args)
 {
    STARTUPINFO si;
    PROCESS_INFORMATION pi;
@@ -685,22 +683,21 @@ static void frontend_win32_respawn(char *s, size_t len)
    if (win32_fork_mode != FRONTEND_FORK_RESTART)
       return;
 
-   memset(&si, 0, sizeof(si));
-   si.cb = sizeof(si);
-   memset(&pi, 0, sizeof(pi));
-
    fill_pathname_application_path(executable_path,
          sizeof(executable_path));
    path_set(RARCH_PATH_CORE, executable_path);
    RARCH_LOG("Restarting RetroArch with commandline: %s and %s\n",
-      executable_path, get_retroarch_launch_arguments());
+      executable_path, args);
 
-   if(!CreateProcess( executable_path, get_retroarch_launch_arguments(),
+   memset(&si, 0, sizeof(si));
+   si.cb = sizeof(si);
+   memset(&pi, 0, sizeof(pi));
+
+   if(!CreateProcess( executable_path, args,
       NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi))
    {
       RARCH_LOG("Failed to restart RetroArch\n");
    }
-   return;
 }
 
 static bool frontend_win32_set_fork(enum frontend_fork fork_mode)

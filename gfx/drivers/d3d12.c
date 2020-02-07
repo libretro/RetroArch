@@ -992,7 +992,7 @@ static void *d3d12_gfx_init(const video_info_t* video,
    }
 
    d3d12_gfx_set_rotation(d3d12, 0);
-   video_driver_set_size(&d3d12->vp.full_width, &d3d12->vp.full_height);
+   video_driver_set_size(d3d12->vp.full_width, d3d12->vp.full_height);
    d3d12->chain.viewport.Width  = d3d12->vp.full_width;
    d3d12->chain.viewport.Height = d3d12->vp.full_height;
    d3d12->resize_viewport       = true;
@@ -1194,7 +1194,7 @@ static bool d3d12_gfx_frame(
       d3d12->ubo_values.OutputSize.width  = d3d12->chain.viewport.Width;
       d3d12->ubo_values.OutputSize.height = d3d12->chain.viewport.Height;
 
-      video_driver_set_size(&video_info->width, &video_info->height);
+      video_driver_set_size(video_info->width, video_info->height);
    }
 
    D3D12ResetCommandAllocator(d3d12->queue.allocator);
@@ -1608,8 +1608,10 @@ static bool d3d12_gfx_alive(void* data)
 
    win32_check_window(&quit, &d3d12->resize_chain, &d3d12->vp.full_width, &d3d12->vp.full_height);
 
-   if (d3d12->resize_chain && d3d12->vp.full_width != 0 && d3d12->vp.full_height != 0)
-      video_driver_set_size(&d3d12->vp.full_width, &d3d12->vp.full_height);
+   if (     d3d12->resize_chain 
+         && d3d12->vp.full_width  != 0
+         && d3d12->vp.full_height != 0)
+      video_driver_set_size(d3d12->vp.full_width, d3d12->vp.full_height);
 
    return !quit;
 }

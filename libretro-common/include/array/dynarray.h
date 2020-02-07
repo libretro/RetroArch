@@ -782,10 +782,12 @@ dg__dynarr_grow(void** arr, dg__dynarr_md* md, size_t itemsize, size_t min_neede
 DG_DYNARR_INLINE void
 dg__dynarr_init(void** p, dg__dynarr_md* md, void* buf, size_t buf_cap)
 {
-	*p = buf;
-	md->cnt = 0;
-	if(buf == NULL)  md->cap = 0;
-	else md->cap = (DG__DYNARR_SIZE_T_MSB | buf_cap);
+	*p         = buf;
+	md->cnt    = 0;
+	if(!buf)
+      md->cap = 0;
+	else
+      md->cap = (DG__DYNARR_SIZE_T_MSB | buf_cap);
 }
 
 DG_DYNARR_INLINE int
@@ -952,7 +954,7 @@ dg__dynarr_grow(void** arr, dg__dynarr_md* md, size_t itemsize, size_t min_neede
 		else
 		{
 			void* p = DG_DYNARR_REALLOC(*arr, itemsize, md->cnt, newcap);
-			if(p == NULL)  DG_DYNARR_FREE(*arr); /* realloc failed, at least don't leak memory */
+			if (!p) DG_DYNARR_FREE(*arr); /* realloc failed, at least don't leak memory */
 			*arr = p;
 		}
 

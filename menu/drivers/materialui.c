@@ -6546,13 +6546,9 @@ static int materialui_menu_entry_action(
    menu_entry_t *entry_ptr  = entry;
    size_t selection         = i;
    size_t new_selection;
-   enum menu_action new_action;
-
-   if (!mui)
-      generic_menu_entry_action(userdata, entry, i, action);
-
    /* Process input action */
-   new_action = materialui_parse_menu_entry_action(mui, action);
+   enum menu_action new_action = materialui_parse_menu_entry_action(
+         mui, action);
 
    /* NOTE: It would make sense to stop here if the
     * resultant action is a NOOP (MENU_ACTION_NOOP),

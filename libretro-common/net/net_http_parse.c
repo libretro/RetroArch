@@ -1,4 +1,4 @@
-/* Copyright  (C) 2010-2018 The RetroArch team
+/* Copyright  (C) 2010-2020 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
  * The following license statement only applies to this file (net_http_parse.c).
@@ -84,20 +84,3 @@ int string_parse_html_anchor(const char *line, char *link, char *name,
 
    return 0;
 }
-
-#ifndef RARCH_INTERNAL
-int main(int argc, char *argv[])
-{
-   char link[1024];
-   char name[1024];
-   const char *line  = "<a href=\"http://www.test.com/somefile.zip\">Test</a>\n";
-
-   link[0] = name[0] = '\0';
-
-   string_parse_html_anchor(line, link, name, sizeof(link), sizeof(name));
-
-   printf("link: %s\nname: %s\n", link, name);
-
-   return 1;
-}
-#endif

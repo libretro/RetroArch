@@ -1704,7 +1704,8 @@ bool menu_animation_ticker_smooth(menu_animation_ctx_ticker_smooth_t *ticker)
 
       /* Determine number of characters to copy */
       text_width = ticker->field_width - (3 * period_width);
-      while (true)
+
+      for (;;)
       {
          current_width += src_char_widths[num_chars];
 

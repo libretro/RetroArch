@@ -448,7 +448,7 @@ static void *xv_init(const video_info_t *video,
 
    g_x11_dpy = XOpenDisplay(NULL);
 
-   if (g_x11_dpy == NULL)
+   if (!g_x11_dpy)
    {
       RARCH_ERR("[XVideo]: Cannot connect to the X server.\n");
       RARCH_ERR("[XVideo]: Check DISPLAY variable and if X is running.\n");

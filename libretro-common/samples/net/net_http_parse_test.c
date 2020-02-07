@@ -1,7 +1,7 @@
-/* Copyright  (C) 2010-2018 The RetroArch team
+/* Copyright  (C) 2010-2020 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
- * The following license statement only applies to this file (rxml_test.c).
+ * The following license statement only applies to this file (net_http_parse_test.c).
  * ---------------------------------------------------------------------------------------
  *
  * Permission is hereby granted, free of charge,
@@ -20,47 +20,20 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include <formats/rxml.h>
 #include <stdio.h>
-
-static void print_siblings(struct rxml_node *node, unsigned level)
-{
-   fprintf(stderr, "\n%*sName: %s\n", level * 4, "", node->name);
-   if (node->data)
-      fprintf(stderr, "%*sData: %s\n", level * 4, "", node->data);
-
-   for (const struct rxml_attrib_node *attrib =
-         node->attrib; attrib; attrib = attrib->next)
-      fprintf(stderr, "%*s  Attrib: %s = %s\n", level * 4, "",
-            attrib->attrib, attrib->value);
-
-   if (node->children)
-      print_siblings(node->children, level + 1);
-
-   if (node->next)
-      print_siblings(node->next, level);
-}
-
-static void rxml_log_document(const char *path)
-{
-   rxml_document_t *doc = rxml_load_document(path);
-   if (!doc)
-   {
-      fprintf(stderr, "rxml: Failed to load document: %s\n", path);
-      return;
-   }
-
-   print_siblings(rxml_root_node(doc), 0);
-   rxml_free_document(doc);
-}
+#include <compat/strcasestr.h>
 
 int main(int argc, char *argv[])
 {
-   if (argc != 2)
-   {
-      fprintf(stderr, "Usage: %s <path>\n", argv[0]);
-      return 1;
-   }
+   char link[1024];
+   char name[1024];
+   const char *line  = "<a href=\"http://www.test.com/somefile.zip\">Test</a>\n";
 
-   rxml_log_document(argv[1]);
+   link[0] = name[0] = '\0';
+
+   string_parse_html_anchor(line, link, name, sizeof(link), sizeof(name));
+
+   printf("link: %s\nname: %s\n", link, name);
+
+   return 1;
 }

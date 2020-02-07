@@ -6476,7 +6476,7 @@ static int xmb_pointer_up(void *userdata,
              * to reach the bottom of the screen - i.e. we just
              * want an index offset to subtract from the current
              * selection... */
-            while (true)
+            for (;;)
             {
                float top = xmb_item_y(xmb, bottom_idx, selection) + xmb->margins_screen_top;
 
@@ -6577,14 +6577,9 @@ static int xmb_menu_entry_action(
       void *userdata, menu_entry_t *entry,
       size_t i, enum menu_action action)
 {
-   xmb_handle_t *xmb = (xmb_handle_t*)userdata;
-   enum menu_action new_action;
-
-   if (!xmb)
-      generic_menu_entry_action(userdata, entry, i, action);
-
+   xmb_handle_t *xmb           = (xmb_handle_t*)userdata;
    /* Process input action */
-   new_action = xmb_parse_menu_entry_action(xmb, action);
+   enum menu_action new_action = xmb_parse_menu_entry_action(xmb, action);
 
    /* Call standard generic_menu_entry_action() function */
    return generic_menu_entry_action(userdata, entry, i, new_action);

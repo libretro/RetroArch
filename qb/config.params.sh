@@ -1,6 +1,8 @@
 HAVE_LIBRETRO=             # Libretro library used
 HAVE_ASSETS_DIR=           # Assets install directory
+HAVE_BLISSBOX=auto         # Blissbox support
 HAVE_ANGLE=no              # ANGLE support (OpenGL wrapper)
+HAVE_CONFIGFILE=yes        # Config file support
 HAVE_GDI=yes               # GDI support (Win32-only)
 HAVE_OPENGLES_LIBS=        # Link flags for custom GLES library
 HAVE_OPENGLES_CFLAGS=      # C-flags for custom GLES library
@@ -160,6 +162,8 @@ HAVE_SLANG=auto            # slang support
 C89_SLANG=no
 HAVE_GLSLANG=auto          # glslang support (requires C++11)
 C89_GLSLANG=no
+HAVE_BUILTINGLSLANG=auto   # Bake in glslang support
+C89_BUILTINGLSLANG=no
 HAVE_SPIRV_CROSS=auto      # SPIRV-Cross support (requires C++11)
 C89_SPIRV_CROSS=no
 HAVE_METAL=no              # Metal support (macOS-only)

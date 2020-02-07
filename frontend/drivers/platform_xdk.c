@@ -251,7 +251,7 @@ static void frontend_xdk_init(void *data)
 #endif
 }
 
-static void frontend_xdk_exec(const char *path, bool should_load_game)
+static void frontend_xdk_exec(const char *path, bool should_load_content)
 {
 #ifndef IS_SALAMANDER
    bool original_verbose       = verbosity_is_enabled();
@@ -261,7 +261,6 @@ static void frontend_xdk_exec(const char *path, bool should_load_game)
 #elif defined(_XBOX360)
    char game_path[1024]        = {0};
 #endif
-   (void)should_load_game;
 
 #ifdef IS_SALAMANDER
    if (!string_is_empty(path))
@@ -270,13 +269,13 @@ static void frontend_xdk_exec(const char *path, bool should_load_game)
 #if defined(_XBOX1)
    memset(&ptr, 0, sizeof(ptr));
 
-   if (should_load_game && !path_is_empty(RARCH_PATH_CONTENT))
+   if (should_load_content && !path_is_empty(RARCH_PATH_CONTENT))
       snprintf((char*)ptr.Data, sizeof(ptr.Data), "%s", path_get(RARCH_PATH_CONTENT));
 
    if (!string_is_empty(path))
       XLaunchNewImage(path, !string_is_empty((const char*)ptr.Data) ? &ptr : NULL);
 #elif defined(_XBOX360)
-   if (should_load_game && !path_is_empty(RARCH_PATH_CONTENT))
+   if (should_load_content && !path_is_empty(RARCH_PATH_CONTENT))
    {
       strlcpy(game_path, path_get(RARCH_PATH_CONTENT), sizeof(game_path));
       XSetLaunchData(game_path, MAX_LAUNCH_DATA_SIZE);
@@ -322,9 +321,9 @@ static bool frontend_xdk_set_fork(enum frontend_fork fork_mode)
 }
 #endif
 
-static void frontend_xdk_exitspawn(char *s, size_t len)
+static void frontend_xdk_exitspawn(char *s, size_t len, char *args)
 {
-   bool should_load_game = false;
+   bool should_load_content = false;
 #ifndef IS_SALAMANDER
    if (xdk_fork_mode == FRONTEND_FORK_NONE)
       return;
@@ -332,14 +331,14 @@ static void frontend_xdk_exitspawn(char *s, size_t len)
    switch (xdk_fork_mode)
    {
       case FRONTEND_FORK_CORE_WITH_ARGS:
-         should_load_game = true;
+         should_load_content = true;
          break;
       case FRONTEND_FORK_NONE:
       default:
          break;
    }
 #endif
-   frontend_xdk_exec(s, should_load_game);
+   frontend_xdk_exec(s, should_load_content);
 }
 
 static int frontend_xdk_get_rating(void)

@@ -858,17 +858,17 @@ bool playlist_push(playlist_t *playlist,
        * or command line, certain entry values will be missing.
        * If we are now loading the same content from a playlist,
        * fill in any blanks */
-      if ((playlist->entries[i].label == NULL) && !string_is_empty(entry->label))
+      if (!playlist->entries[i].label && !string_is_empty(entry->label))
       {
          playlist->entries[i].label   = strdup(entry->label);
          entry_updated                = true;
       }
-      if ((playlist->entries[i].crc32 == NULL) && !string_is_empty(entry->crc32))
+      if (!playlist->entries[i].crc32 && !string_is_empty(entry->crc32))
       {
          playlist->entries[i].crc32   = strdup(entry->crc32);
          entry_updated                = true;
       }
-      if ((playlist->entries[i].db_name == NULL) && !string_is_empty(entry->db_name))
+      if (!playlist->entries[i].db_name && !string_is_empty(entry->db_name))
       {
          playlist->entries[i].db_name = strdup(entry->db_name);
          entry_updated                = true;
@@ -2148,7 +2148,7 @@ json_cleanup:
       /* > Exclude trailing newline */
       metadata_char = filestream_getc(file);
 
-      while((metadata_char == '\n') ||
+      while ((metadata_char == '\n') ||
             (metadata_char == '\r'))
       {
          filestream_seek(file, -2, SEEK_CUR);
@@ -2626,7 +2626,8 @@ void playlist_set_default_core_path(playlist_t *playlist, const char *core_path)
    /* Get 'real' core path */
    strlcpy(real_core_path, core_path, sizeof(real_core_path));
    if (!string_is_equal(real_core_path, "DETECT"))
-       playlist_resolve_path(PLAYLIST_SAVE, real_core_path, sizeof(real_core_path));
+       playlist_resolve_path(PLAYLIST_SAVE,
+             real_core_path, sizeof(real_core_path));
 
    if (string_is_empty(real_core_path))
       return;
@@ -2654,31 +2655,35 @@ void playlist_set_default_core_name(playlist_t *playlist, const char *core_name)
    }
 }
 
-void playlist_set_label_display_mode(playlist_t *playlist, enum playlist_label_display_mode label_display_mode)
+void playlist_set_label_display_mode(playlist_t *playlist,
+      enum playlist_label_display_mode label_display_mode)
 {
    if (!playlist)
       return;
 
-   if (playlist->label_display_mode != label_display_mode) {
+   if (playlist->label_display_mode != label_display_mode)
+   {
       playlist->label_display_mode = label_display_mode;
       playlist->modified = true;
    }
 }
 
 void playlist_set_thumbnail_mode(
-      playlist_t *playlist, enum playlist_thumbnail_id thumbnail_id, enum playlist_thumbnail_mode thumbnail_mode)
+      playlist_t *playlist, enum playlist_thumbnail_id thumbnail_id,
+      enum playlist_thumbnail_mode thumbnail_mode)
 {
    if (!playlist)
       return;
 
-   if (thumbnail_id == PLAYLIST_THUMBNAIL_RIGHT)
+   switch (thumbnail_id)
    {
-      playlist->right_thumbnail_mode = thumbnail_mode;
-      playlist->modified = true;
-   }
-   else if (thumbnail_id == PLAYLIST_THUMBNAIL_LEFT)
-   {
-      playlist->left_thumbnail_mode = thumbnail_mode;
-      playlist->modified = true;
+      case PLAYLIST_THUMBNAIL_RIGHT:
+         playlist->right_thumbnail_mode = thumbnail_mode;
+         playlist->modified             = true;
+         break;
+      case PLAYLIST_THUMBNAIL_LEFT:
+         playlist->left_thumbnail_mode = thumbnail_mode;
+         playlist->modified            = true;
+         break;
    }
 }

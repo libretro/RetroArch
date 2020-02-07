@@ -62,7 +62,7 @@ static void caca_gfx_create(void)
       caca_dither = caca_create_dither(16, caca_video_width, caca_video_height, caca_video_pitch,
                             0xf800, 0x7e0, 0x1f, 0x0);
 
-   video_driver_set_size(&caca_video_width, &caca_video_height);
+   video_driver_set_size(caca_video_width, caca_video_height);
 }
 
 static void *caca_gfx_init(const video_info_t *video,
@@ -192,7 +192,7 @@ static void caca_gfx_set_nonblock_state(void *data, bool toggle)
 static bool caca_gfx_alive(void *data)
 {
    (void)data;
-   video_driver_set_size(&caca_video_width, &caca_video_height);
+   video_driver_set_size(caca_video_width, caca_video_height);
    return true;
 }
 

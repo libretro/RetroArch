@@ -448,7 +448,7 @@ int rmsgpack_dom_read_into(RFILE *fd, ...)
    if (map.type != RDT_MAP)
       goto clean;
 
-   while (1)
+   for (;;)
    {
       key_name = va_arg(ap, const char *);
 

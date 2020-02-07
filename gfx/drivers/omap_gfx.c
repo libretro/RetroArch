@@ -337,8 +337,6 @@ static int omapfb_setup_pages(omapfb_data_t *pdata)
 
 static int omapfb_mmap(omapfb_data_t *pdata)
 {
-   retro_assert(pdata->fb_mem == NULL);
-
    pdata->fb_mem = mmap(NULL, pdata->current_state->mi.size, PROT_WRITE,
          MAP_SHARED, pdata->fd, 0);
 
@@ -356,8 +354,6 @@ static int omapfb_mmap(omapfb_data_t *pdata)
 static int omapfb_backup_state(omapfb_data_t *pdata)
 {
    void* mem = NULL;
-
-   retro_assert(pdata->saved_state == NULL);
 
    pdata->saved_state = calloc(1, sizeof(omapfb_state_t));
    if (!pdata->saved_state) return -1;
@@ -383,7 +379,7 @@ static int omapfb_backup_state(omapfb_data_t *pdata)
    pdata->saved_state->mem = malloc(pdata->saved_state->mi.size);
    mem = mmap(NULL, pdata->saved_state->mi.size, PROT_WRITE|PROT_READ,
          MAP_SHARED, pdata->fd, 0);
-   if (pdata->saved_state->mem == NULL || mem == MAP_FAILED)
+   if (!pdata->saved_state->mem || mem == MAP_FAILED)
    {
       RARCH_ERR("[video_omap]: backup layer (mem backup) failed\n");
       munmap(mem, pdata->saved_state->mi.size);
@@ -403,8 +399,6 @@ static int omapfb_alloc_mem(omapfb_data_t *pdata)
    void                              *mem = NULL;
    const struct retro_game_geometry *geom = NULL;
    struct retro_system_av_info *av_info   = NULL;
-
-   retro_assert(pdata->current_state == NULL);
 
    pdata->current_state = (omapfb_state_t*)calloc(1, sizeof(omapfb_state_t));
 

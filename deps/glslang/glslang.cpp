@@ -15,8 +15,13 @@
 
 #include "glslang.hpp"
 
+#ifdef HAVE_BUILTINGLSLANG
 #include "glslang/glslang/Public/ShaderLang.h"
 #include "glslang/SPIRV/GlslangToSpv.h"
+#elif HAVE_GLSLANG
+#include <glslang/Public/ShaderLang.h>
+#include <glslang/SPIRV/GlslangToSpv.h>
+#endif
 #include <vector>
 #include <iostream>
 #include <cstring>

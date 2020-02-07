@@ -49,7 +49,7 @@ typedef struct tag_Context
    void *cur_member;
 } Context;
 
-static struct netplay_rooms *rooms;
+static struct netplay_rooms *netplay_rooms_data;
 
 static void parse_context_init(Context* pCtx)
 {
@@ -157,15 +157,15 @@ static JSON_Parser_HandlerResult JSON_CALL StartObjectHandler(JSON_Parser parser
    {
       pCtx->state = STATE_FIELDS_OBJECT_START;
 
-      if (!rooms->head)
+      if (!netplay_rooms_data->head)
       {
-         rooms->head      = (struct netplay_room*)calloc(1, sizeof(*rooms->head));
-         rooms->cur       = rooms->head;
+         netplay_rooms_data->head      = (struct netplay_room*)calloc(1, sizeof(*netplay_rooms_data->head));
+         netplay_rooms_data->cur       = netplay_rooms_data->head;
       }
-      else if (!rooms->cur->next)
+      else if (!netplay_rooms_data->cur->next)
       {
-         rooms->cur->next = (struct netplay_room*)calloc(1, sizeof(*rooms->cur->next));
-         rooms->cur       = rooms->cur->next;
+         netplay_rooms_data->cur->next = (struct netplay_room*)calloc(1, sizeof(*netplay_rooms_data->cur->next));
+         netplay_rooms_data->cur       = netplay_rooms_data->cur->next;
       }
    }
    else if (pCtx->state == STATE_ARRAY_START)
@@ -209,87 +209,87 @@ static JSON_Parser_HandlerResult JSON_CALL ObjectMemberHandler(JSON_Parser parse
          if (string_is_equal(pValue, "username"))
          {
             pCtx->cur_field       = strdup(pValue);
-            pCtx->cur_member      = &rooms->cur->nickname;
+            pCtx->cur_member      = &netplay_rooms_data->cur->nickname;
          }
          else if (string_is_equal(pValue, "game_name"))
          {
             pCtx->cur_field       = strdup(pValue);
-            pCtx->cur_member      = &rooms->cur->gamename;
+            pCtx->cur_member      = &netplay_rooms_data->cur->gamename;
          }
          else if (string_is_equal(pValue, "core_name"))
          {
             pCtx->cur_field       = strdup(pValue);
-            pCtx->cur_member      = &rooms->cur->corename;
+            pCtx->cur_member      = &netplay_rooms_data->cur->corename;
          }
          else if (string_is_equal(pValue, "ip"))
          {
             pCtx->cur_field       = strdup(pValue);
-            pCtx->cur_member      = &rooms->cur->address;
+            pCtx->cur_member      = &netplay_rooms_data->cur->address;
          }
          else if (string_is_equal(pValue, "port"))
          {
             pCtx->cur_field       = strdup(pValue);
-            pCtx->cur_member      = &rooms->cur->port;
+            pCtx->cur_member      = &netplay_rooms_data->cur->port;
          }
          else if (string_is_equal(pValue, "game_crc"))
          {
             pCtx->cur_field       = strdup(pValue);
-            pCtx->cur_member      = &rooms->cur->gamecrc;
+            pCtx->cur_member      = &netplay_rooms_data->cur->gamecrc;
          }
          else if (string_is_equal(pValue, "core_version"))
          {
             pCtx->cur_field       = strdup(pValue);
-            pCtx->cur_member      = &rooms->cur->coreversion;
+            pCtx->cur_member      = &netplay_rooms_data->cur->coreversion;
          }
          else if (string_is_equal(pValue, "has_password"))
          {
             pCtx->cur_field       = strdup(pValue);
-            pCtx->cur_member      = &rooms->cur->has_password;
+            pCtx->cur_member      = &netplay_rooms_data->cur->has_password;
          }
          else if (string_is_equal(pValue, "has_spectate_password"))
          {
             pCtx->cur_field       = strdup(pValue);
-            pCtx->cur_member      = &rooms->cur->has_spectate_password;
+            pCtx->cur_member      = &netplay_rooms_data->cur->has_spectate_password;
          }
          else if (string_is_equal(pValue, "fixed"))
          {
             pCtx->cur_field       = strdup(pValue);
-            pCtx->cur_member      = &rooms->cur->fixed;
+            pCtx->cur_member      = &netplay_rooms_data->cur->fixed;
          }
          else if (string_is_equal(pValue, "mitm_ip"))
          {
             pCtx->cur_field       = strdup(pValue);
-            pCtx->cur_member      = &rooms->cur->mitm_address;
+            pCtx->cur_member      = &netplay_rooms_data->cur->mitm_address;
          }
          else if (string_is_equal(pValue, "mitm_port"))
          {
             pCtx->cur_field       = strdup(pValue);
-            pCtx->cur_member      = &rooms->cur->mitm_port;
+            pCtx->cur_member      = &netplay_rooms_data->cur->mitm_port;
          }
          else if (string_is_equal(pValue, "host_method"))
          {
             pCtx->cur_field       = strdup(pValue);
-            pCtx->cur_member      = &rooms->cur->host_method;
+            pCtx->cur_member      = &netplay_rooms_data->cur->host_method;
          }
          else if (string_is_equal(pValue, "retroarch_version"))
          {
             pCtx->cur_field       = strdup(pValue);
-            pCtx->cur_member      = &rooms->cur->retroarch_version;
+            pCtx->cur_member      = &netplay_rooms_data->cur->retroarch_version;
          }
          else if (string_is_equal(pValue, "country"))
          {
             pCtx->cur_field       = strdup(pValue);
-            pCtx->cur_member      = &rooms->cur->country;
+            pCtx->cur_member      = &netplay_rooms_data->cur->country;
          }
          else if (string_is_equal(pValue, "frontend"))
          {
             pCtx->cur_field       = strdup(pValue);
-            pCtx->cur_member      = &rooms->cur->frontend;
+            pCtx->cur_member      = &netplay_rooms_data->cur->frontend;
          }
          else if (string_is_equal(pValue, "subsystem_name"))
          {
             pCtx->cur_field       = strdup(pValue);
-            pCtx->cur_member      = &rooms->cur->subsystem_name;
+            pCtx->cur_member      = &netplay_rooms_data->cur->subsystem_name;
          }
       }
    }
@@ -377,13 +377,13 @@ static int json_parse(Context* pCtx, const char *buf)
 
 void netplay_rooms_free(void)
 {
-   if (rooms)
+   if (netplay_rooms_data)
    {
-      struct netplay_room *room = rooms->head;
+      struct netplay_room *room = netplay_rooms_data->head;
 
       if (room)
       {
-         while (room != NULL)
+         while (room)
          {
             struct netplay_room *next = room->next;
 
@@ -392,9 +392,9 @@ void netplay_rooms_free(void)
          }
       }
 
-      free(rooms);
-      rooms = NULL;
+      free(netplay_rooms_data);
    }
+   netplay_rooms_data = NULL;
 }
 
 int netplay_rooms_parse(const char *buf)
@@ -408,7 +408,8 @@ int netplay_rooms_parse(const char *buf)
    /* delete any previous rooms */
    netplay_rooms_free();
 
-   rooms = (struct netplay_rooms*)calloc(1, sizeof(*rooms));
+   netplay_rooms_data = (struct netplay_rooms*)
+      calloc(1, sizeof(*netplay_rooms_data));
 
    parse_context_init(&ctx);
 
@@ -429,8 +430,8 @@ int netplay_rooms_parse(const char *buf)
 
 struct netplay_room* netplay_room_get(int index)
 {
-   int cur = 0;
-   struct netplay_room *room = rooms->head;
+   int                   cur = 0;
+   struct netplay_room *room = netplay_rooms_data->head;
 
    if (index < 0)
       return NULL;
@@ -452,10 +453,10 @@ int netplay_rooms_get_count(void)
    int count = 0;
    struct netplay_room *room;
 
-   if (!rooms)
+   if (!netplay_rooms_data)
       return count;
 
-   room = rooms->head;
+   room = netplay_rooms_data->head;
 
    if (!room)
       return count;

@@ -1,4 +1,4 @@
-/* Copyright  (C) 2010-2018 The RetroArch team
+/* Copyright  (C) 2010-2020 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
  * The following license statement only applies to this file (rwav.c).
@@ -100,7 +100,7 @@ enum rwav_state rwav_iterate(rwav_iterator_t *iter)
 
          samples = malloc(rwav->subchunk2size);
 
-         if (samples == NULL)
+         if (!samples)
             return RWAV_ITERATE_ERROR;
 
          rwav->numchannels = data[22] | data[23] << 8;

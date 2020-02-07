@@ -91,7 +91,7 @@ static void emscripten_mainloop(void)
 
 void cmd_savefiles(void)
 {
-   event_save_files();
+   command_event(CMD_EVENT_SAVE_FILES, NULL);
 }
 
 void cmd_save_state(void)

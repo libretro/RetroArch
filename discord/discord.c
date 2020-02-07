@@ -467,7 +467,7 @@ void discord_update(enum discord_presence presence, bool fuzzy_archive_match)
    discord_status = presence;
 }
 
-void discord_init(const char *discord_app_id)
+void discord_init(const char *discord_app_id, char *args)
 {
    char full_path[PATH_MAX_LENGTH];
    char command[PATH_MAX_LENGTH];
@@ -489,17 +489,15 @@ void discord_init(const char *discord_app_id)
 
 #ifdef _WIN32
    fill_pathname_application_path(full_path, sizeof(full_path));
-   if (strstr(get_retroarch_launch_arguments(), full_path))
-      strlcpy(command, get_retroarch_launch_arguments(), sizeof(command));
+   if (strstr(args, full_path))
+      strlcpy(command, args, sizeof(command));
    else
    {
       path_basedir(full_path);
-      snprintf(command, sizeof(command), "%s%s",
-            full_path, get_retroarch_launch_arguments());
+      snprintf(command, sizeof(command), "%s%s", full_path, args);
    }
 #else
-   snprintf(command, sizeof(command), "sh -c %s",
-         get_retroarch_launch_arguments());
+   snprintf(command, sizeof(command), "sh -c %s", args);
 #endif
    RARCH_LOG("[discord] registering startup command: %s\n", command);
    Discord_Register(discord_app_id, command);

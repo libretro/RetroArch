@@ -2066,7 +2066,7 @@ static bool frontend_unix_set_fork(enum frontend_fork fork_mode)
    return true;
 }
 
-static void frontend_unix_exec(const char *path, bool should_load_game)
+static void frontend_unix_exec(const char *path, bool should_load_content)
 {
    char *newargv[]    = { NULL, NULL };
    size_t len         = strlen(path);
@@ -2078,9 +2078,9 @@ static void frontend_unix_exec(const char *path, bool should_load_game)
    execv(path, newargv);
 }
 
-static void frontend_unix_exitspawn(char *core_path, size_t core_path_size)
+static void frontend_unix_exitspawn(char *s, size_t len, char *args)
 {
-   bool should_load_game = false;
+   bool should_load_content = false;
 
    if (unix_fork_mode == FRONTEND_FORK_NONE)
       return;
@@ -2088,14 +2088,14 @@ static void frontend_unix_exitspawn(char *core_path, size_t core_path_size)
    switch (unix_fork_mode)
    {
       case FRONTEND_FORK_CORE_WITH_ARGS:
-         should_load_game = true;
+         should_load_content = true;
          break;
       case FRONTEND_FORK_NONE:
       default:
          break;
    }
 
-   frontend_unix_exec(core_path, should_load_game);
+   frontend_unix_exec(s, should_load_content);
 }
 #endif
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2019 The RetroArch team
+ * Copyright (c) 2010-2020 The RetroArch team
  * Copyright (c) 2017 John Schember <john@nachtimwald.com>
  *
  * ---------------------------------------------------------------------------------------
@@ -104,7 +104,7 @@ static void tpool_worker(void *arg)
    tpool_work_t *work = NULL;
    tpool_t      *tp   = (tpool_t*)arg;
 
-   while (true)
+   for (;;)
    {
       slock_lock(tp->work_mutex);
       /* Keep running until told to stop. */
@@ -144,7 +144,7 @@ static void tpool_worker(void *arg)
        * Also, the working_cnt can't be changed (except the thread holding the lock).
        * At this point if there isn't any work processing and if there is no work
        * signal this is the case. */
-      if (!tp->stop && tp->working_cnt == 0 && tp->work_first == NULL)
+      if (!tp->stop && tp->working_cnt == 0 && !tp->work_first)
          scond_signal(tp->working_cond);
       slock_unlock(tp->work_mutex);
    }
@@ -252,7 +252,8 @@ void tpool_wait(tpool_t *tp)
       return;
 
    slock_lock(tp->work_mutex);
-   while (true)
+
+   for (;;)
    {
       /* working_cond is dual use. It signals when we're not stopping but the
        * working_cnt is 0 indicating there isn't any work processing. If we
@@ -262,5 +263,6 @@ void tpool_wait(tpool_t *tp)
       else
          break;
    }
+
    slock_unlock(tp->work_mutex);
 }

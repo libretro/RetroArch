@@ -107,11 +107,6 @@ static char new_lbl_entry[4096]         = {0};
 static char new_entry[4096]             = {0};
 static enum msg_hash_enums new_type     = MSG_UNKNOWN;
 
-#ifdef HAVE_NETWORKING
-/* TODO/FIXME - globals - remove */
-int lan_room_count                  = 0;
-#endif
-
 #define menu_displaylist_parse_settings_enum(list, label, parse_type, add_empty_entry) menu_displaylist_parse_settings_internal_enum(list, parse_type, add_empty_entry, menu_setting_find_enum(label), label, true)
 
 #define menu_displaylist_parse_settings(list, label, parse_type, add_empty_entry, entry_type) menu_displaylist_parse_settings_internal_enum(list, parse_type, add_empty_entry, menu_setting_find(label), entry_type, false)
@@ -460,7 +455,8 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CPU_ARCHITECTURE),
             sizeof(cpu_text_str));
 
-      rarch_get_cpu_architecture_string(cpu_arch_str, sizeof(cpu_arch_str));
+      frontend_driver_get_cpu_architecture_str(
+            cpu_arch_str, sizeof(cpu_arch_str));
 
       snprintf(cpu_str, sizeof(cpu_str), "%s %s", cpu_text_str, cpu_arch_str);
 
@@ -3130,41 +3126,6 @@ static unsigned menu_displaylist_parse_content_information(
          count++;
    }
 
-   /* Database */
-   if (!string_is_empty(db_name))
-   {
-      char *db_name_no_ext = NULL;
-      char db_name_no_ext_buff[PATH_MAX_LENGTH];
-
-      db_name_no_ext_buff[0] = '\0';
-
-      /* Remove .lpl extension
-       * > path_remove_extension() requires a char * (not const)
-       *   so have to use a temporary buffer... */
-      strlcpy(db_name_no_ext_buff, db_name, sizeof(db_name_no_ext_buff));
-      db_name_no_ext = path_remove_extension(db_name_no_ext_buff);
-
-      if (!string_is_empty(db_name_no_ext))
-      {
-         tmp[0]   = '\0';
-
-         n        = strlcpy(tmp, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_DATABASE), sizeof(tmp));
-         n        = strlcat(tmp, ": ", sizeof(tmp));
-         n        = strlcat(tmp, db_name_no_ext, sizeof(tmp));
-
-         /* Silence gcc compiler warning
-          * (getting so sick of these...) */
-         if ((n < 0) || (n >= PATH_MAX_LENGTH))
-            n = 0;
-
-         if (menu_entries_append_enum(info->list, tmp,
-               msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_INFO_DATABASE),
-               MENU_ENUM_LABEL_CONTENT_INFO_DATABASE,
-               0, 0, 0))
-            count++;
-      }
-   }
-
    /* Runtime */
    if (((settings->uints.playlist_sublabel_runtime_type == PLAYLIST_RUNTIME_PER_CORE) &&
          settings->bools.content_runtime_log) ||
@@ -3207,6 +3168,65 @@ static unsigned menu_displaylist_parse_content_information(
          }
 
          free(runtime_log);
+      }
+   }
+
+#ifdef HAVE_CHEEVOS
+   /* RetroAchievements Hash */
+   if (settings->bools.cheevos_enable && settings->arrays.cheevos_token[0] &&
+      !string_is_empty(loaded_content_path))
+   {
+      tmp[0]   = '\0';
+
+      n        = strlcpy(tmp, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CHEEVOS_HASH), sizeof(tmp));
+      n        = strlcat(tmp, ": ", sizeof(tmp));
+      n        = strlcat(tmp, rcheevos_get_hash(), sizeof(tmp));
+
+      /* Silence gcc compiler warning
+      * (getting so sick of these...) */
+      if ((n < 0) || (n >= PATH_MAX_LENGTH))
+         n = 0;
+
+      if (menu_entries_append_enum(info->list, tmp,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CHEEVOS_HASH),
+            MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CHEEVOS_HASH,
+            0, 0, 0))
+         count++;
+   }
+#endif
+
+   /* Database */
+   if (!string_is_empty(db_name))
+   {
+      char *db_name_no_ext = NULL;
+      char db_name_no_ext_buff[PATH_MAX_LENGTH];
+
+      db_name_no_ext_buff[0] = '\0';
+
+      /* Remove .lpl extension
+      * > path_remove_extension() requires a char * (not const)
+      *   so have to use a temporary buffer... */
+      strlcpy(db_name_no_ext_buff, db_name, sizeof(db_name_no_ext_buff));
+      db_name_no_ext = path_remove_extension(db_name_no_ext_buff);
+
+      if (!string_is_empty(db_name_no_ext))
+      {
+         tmp[0]   = '\0';
+
+         n        = strlcpy(tmp, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_DATABASE), sizeof(tmp));
+         n        = strlcat(tmp, ": ", sizeof(tmp));
+         n        = strlcat(tmp, db_name_no_ext, sizeof(tmp));
+
+         /* Silence gcc compiler warning
+         * (getting so sick of these...) */
+         if ((n < 0) || (n >= PATH_MAX_LENGTH))
+            n = 0;
+
+         if (menu_entries_append_enum(info->list, tmp,
+               msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_INFO_DATABASE),
+               MENU_ENUM_LABEL_CONTENT_INFO_DATABASE,
+               0, 0, 0))
+            count++;
       }
    }
 
@@ -4414,12 +4434,6 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
                   MENU_ENUM_LABEL_HELP_CONTROLS,
                   0, 0, 0))
             count++;
-         if (menu_entries_append_enum(list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_HELP_SEND_DEBUG_INFO),
-                  msg_hash_to_str(MENU_ENUM_LABEL_HELP_SEND_DEBUG_INFO),
-                  MENU_ENUM_LABEL_HELP_SEND_DEBUG_INFO,
-                  0, 0, 0))
-            count++;
          break;
       case DISPLAYLIST_AUDIO_RESAMPLER_SETTINGS_LIST:
          if (menu_displaylist_parse_settings_enum(list,
@@ -4613,6 +4627,7 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
             unsigned p;
             unsigned max_users          = *(input_driver_get_uint(INPUT_ACTION_MAX_USERS));
 
+#ifdef HAVE_CONFIGFILE
             if (menu_entries_append_enum(list,
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REMAP_FILE_LOAD),
                      msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_LOAD),
@@ -4661,6 +4676,7 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
                         MENU_ENUM_LABEL_REMAP_FILE_REMOVE_CONTENT_DIR,
                         MENU_SETTING_ACTION, 0, 0))
                   count++;
+#endif
 
             for (p = 0; p < max_users; p++)
             {
@@ -7016,11 +7032,8 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
                {
                   case MENU_ENUM_LABEL_FRONTEND_LOG_LEVEL:
                   case MENU_ENUM_LABEL_LIBRETRO_LOG_LEVEL:
-                     {
-                        bool *verbosity = verbosity_get_ptr();
-                        if (verbosity && *verbosity)
-                           build_list[i].checked = true;
-                     }
+                     if (verbosity_is_enabled())
+                        build_list[i].checked = true;
                      break;
                   case MENU_ENUM_LABEL_LOG_TO_FILE_TIMESTAMP:
                      if (settings->bools.log_to_file)
@@ -7323,7 +7336,6 @@ unsigned menu_displaylist_netplay_refresh_rooms(file_list_t *list)
 {
    char s[8300];
    int i                                = 0;
-   int room_type                        = 0;
    unsigned count                       = 0;
 
    s[0]                                 = '\0';
@@ -7411,13 +7423,11 @@ unsigned menu_displaylist_netplay_refresh_rooms(file_list_t *list)
             "Internet (Relay)" : "Internet"),
             netplay_room_list[i].nickname, country);
 
-         room_type = netplay_room_list[i].lan ? MENU_ROOM_LAN : (netplay_room_list[i].host_method == NETPLAY_HOST_METHOD_MITM ? MENU_ROOM_RELAY : MENU_ROOM);
-
          if (menu_entries_append_enum(list,
                s,
                msg_hash_to_str(MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM),
                MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM,
-               room_type, 0, 0))
+               (unsigned)(MENU_SETTINGS_NETPLAY_ROOMS_START + i), 0, 0))
             count++;
       }
 

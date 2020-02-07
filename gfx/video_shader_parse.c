@@ -947,19 +947,16 @@ static void shader_write_fbo(config_file_t *conf,
          fbo->scale_y, fbo->abs_y, i);
 }
 
+#ifdef _WIN32
 static void make_relative_path_portable(char *path)
 {
-#ifdef _WIN32
    /* use '/' instead of '\' for maximum portability */
-   if (!path_is_absolute(path))
-   {
-      char *p;
-      for (p = path; *p; p++)
-         if (*p == '\\')
-            *p = '/';
-   }
-#endif
+   char *p;
+   for (p = path; *p; p++)
+      if (*p == '\\')
+         *p = '/';
 }
+#endif
 
 /**
  * video_shader_write_conf_preset:
@@ -1008,7 +1005,10 @@ void video_shader_write_conf_preset(config_file_t *conf,
       {
          strlcpy(tmp, pass->source.path, tmp_size);
          path_relative_to(tmp_rel, tmp, tmp_base, tmp_size);
-         make_relative_path_portable(tmp_rel);
+#ifdef _WIN32
+         if (!path_is_absolute(tmp_rel))
+            make_relative_path_portable(tmp_rel);
+#endif
 
          config_set_path(conf, key, tmp_rel);
       }
@@ -1096,7 +1096,10 @@ void video_shader_write_conf_preset(config_file_t *conf,
             {
                strlcpy(tmp, shader->lut[i].path, tmp_size);
                path_relative_to(tmp_rel, tmp, tmp_base, tmp_size);
-               make_relative_path_portable(tmp_rel);
+#ifdef _WIN32
+               if (!path_is_absolute(tmp_rel))
+                  make_relative_path_portable(tmp_rel);
+#endif
 
                config_set_path(conf, shader->lut[i].id, tmp_rel);
             }

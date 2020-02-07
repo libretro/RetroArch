@@ -234,7 +234,7 @@ static int rsnd_connect_server( rsound_t *rd )
    if (!isdigit(rd->host[0]))
    {
       struct hostent *host = gethostbyname(rd->host);
-      if (host == NULL)
+      if (!host)
          return -1;
 
       addr.sin_addr.s_addr = inet_addr(host->h_addr_list[0]);
@@ -295,7 +295,7 @@ static int rsnd_send_header_info(rsound_t *rd)
    /* Defines the size of a wave header */
 #define HEADER_SIZE 44
    char *header = calloc(1, HEADER_SIZE);
-   if (header == NULL)
+   if (!header)
    {
       RSD_ERR("[RSound] Could not allocate memory.");
       return -1;
@@ -472,7 +472,7 @@ static int rsnd_get_backend_info ( rsound_t *rd )
    if ( rd->fifo_buffer != NULL )
       fifo_free(rd->fifo_buffer);
    rd->fifo_buffer = fifo_new (rd->buffer_size);
-   if ( rd->fifo_buffer == NULL )
+   if (!rd->fifo_buffer)
    {
       RSD_ERR("[RSound] Failed to create FIFO buffer.\n");
       return -1;
@@ -963,7 +963,7 @@ static int rsnd_close_ctl(rsound_t *rd)
             return -1;
 
          subchar = strrchr(buf, 'R');
-         if ( subchar == NULL )
+         if (!subchar)
             index = 0;
          else
          {
@@ -1023,7 +1023,7 @@ static int rsnd_update_server_info(rsound_t *rd)
 
       temp[RSD_PROTO_CHUNKSIZE] = '\0';
 
-      if ( (substr = strstr(temp, "RSD")) == NULL )
+      if (!(substr = strstr(temp, "RSD")))
          return -1;
 
       // Jump over "RSD" in header
@@ -1038,7 +1038,7 @@ static int rsnd_update_server_info(rsound_t *rd)
 
       // We only bother if this is an INFO message.
       substr = strstr(temp, "INFO");
-      if ( substr == NULL )
+      if (!substr)
          continue;
 
       // Jump over "INFO" in header
@@ -1548,7 +1548,7 @@ int rsd_pause(rsound_t* rsound, int enable)
 int rsd_init(rsound_t** rsound)
 {
    *rsound = calloc(1, sizeof(rsound_t));
-   if ( *rsound == NULL )
+   if (*rsound == NULL)
       return -1;
 
    retro_assert(rsound != NULL);

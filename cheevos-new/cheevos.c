@@ -132,6 +132,7 @@ typedef struct
    rcheevos_fixups_t fixups;
 
    char token[32];
+   char hash[33];
 } rcheevos_locals_t;
 
 typedef struct
@@ -165,6 +166,7 @@ static rcheevos_locals_t rcheevos_locals =
    NULL, /* lboards */
    {0},  /* fixups */
    {0},  /* token */
+   "N/A",/* hash */
 };
 
 bool rcheevos_loaded = false;
@@ -401,14 +403,28 @@ static int rcheevos_parse(const char* json)
       return 0;
    }
 
+   /* Achievement memory accesses are 0-based, regardless of where the memory is accessed by the
+    * emulated code. As such, address 0 should always be accessible and serves as an indicator that
+    * other addresses will also be accessible. Individual achievements will be "Unsupported" if
+    * they contain addresses that cannot be resolved. This check gives the user immediate feedback
+    * if the core they're trying to use will disable all achievements as "Unsupported".
+    */
    if (!rcheevos_patch_address(0, rcheevos_locals.patchdata.console_id))
    {
-      CHEEVOS_ERR(RCHEEVOS_TAG "No memory exposed by core\n");
+      /* Special case: the sameboy core exposes the RAM at $8000, but not the ROM at $0000. NES and
+       * Gameboy achievements do attempt to map the entire bus, and it's unlikely that an achievement
+       * will reference the ROM data, so if the RAM is still present, allow the core to load. If any
+       * achievements do reference the ROM data, they'll be marked "Unsupported" individually.
+       */
+      if (!rcheevos_patch_address(0x8000, rcheevos_locals.patchdata.console_id))
+      {
+         CHEEVOS_ERR(RCHEEVOS_TAG "No memory exposed by core\n");
 
-      if (settings->bools.cheevos_verbose_enable)
-         runloop_msg_queue_push("Cannot activate achievements using this core.", 0, 4 * 60, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
+         if (settings->bools.cheevos_verbose_enable)
+            runloop_msg_queue_push("Cannot activate achievements using this core.", 0, 4 * 60, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
 
-      goto error;
+         goto error;
+      }
    }
 
    /* Allocate memory. */
@@ -1198,6 +1214,11 @@ int rcheevos_get_console(void)
    return rcheevos_locals.patchdata.console_id;
 }
 
+const char* rcheevos_get_hash(void)
+{
+   return rcheevos_locals.hash;
+}
+
 static void rcheevos_unlock_cb(unsigned id, void* userdata)
 {
    rcheevos_cheevo_t* cheevo = NULL;
@@ -1698,6 +1719,7 @@ static int rcheevos_iterate(rcheevos_coro_t* coro)
       }
 
       CHEEVOS_LOG(RCHEEVOS_TAG "this game doesn't feature achievements\n");
+      strcpy(rcheevos_locals.hash, "N/A");
       rcheevos_hardcore_paused = true;
       CORO_STOP();
 
@@ -2219,11 +2241,13 @@ found:
             CORO_RET();
          }
 
-         CHEEVOS_LOG(RCHEEVOS_TAG "checking %02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x\n",
+         sprintf(rcheevos_locals.hash, "%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x",
             coro->hash[0], coro->hash[1], coro->hash[2], coro->hash[3],
             coro->hash[4], coro->hash[5], coro->hash[6], coro->hash[7],
             coro->hash[8], coro->hash[9], coro->hash[10], coro->hash[11],
             coro->hash[12], coro->hash[13], coro->hash[14], coro->hash[15]);
+
+         CHEEVOS_LOG(RCHEEVOS_TAG "checking %s\n", rcheevos_locals.hash);
          rcheevos_log_url(RCHEEVOS_TAG "rc_url_get_gameid: %s\n", coro->url);
          CORO_GOSUB(RCHEEVOS_HTTP_GET);
 

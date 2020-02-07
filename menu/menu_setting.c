@@ -2552,6 +2552,7 @@ static int setting_action_ok_bind_all(rarch_setting_t *setting, bool wraparound)
    return 0;
 }
 
+#ifdef HAVE_CONFIGFILE
 static int setting_action_ok_bind_all_save_autoconfig(rarch_setting_t *setting,
       bool wraparound)
 {
@@ -2577,6 +2578,7 @@ static int setting_action_ok_bind_all_save_autoconfig(rarch_setting_t *setting,
 
    return 0;
 }
+#endif
 
 static int setting_action_ok_bind_defaults(rarch_setting_t *setting, bool wraparound)
 {
@@ -6514,7 +6516,10 @@ void general_write_handler(rarch_setting_t *setting)
       case MENU_ENUM_LABEL_LOG_VERBOSITY:
          if (!verbosity_is_enabled())
          {
-            rarch_log_file_init();
+            rarch_log_file_init(
+                  settings->bools.log_to_file,
+                  settings->bools.log_to_file_timestamp,
+                  settings->paths.log_dir);
             verbosity_enable();
          }
          else
@@ -6528,7 +6533,10 @@ void general_write_handler(rarch_setting_t *setting)
          if (verbosity_is_enabled())
          {
             if (settings->bools.log_to_file && !is_logging_to_file())
-               rarch_log_file_init();
+               rarch_log_file_init(
+                     settings->bools.log_to_file,
+                     settings->bools.log_to_file_timestamp,
+                     settings->paths.log_dir);
             else if (!settings->bools.log_to_file && is_logging_to_file())
                rarch_log_file_deinit();
          }
@@ -6539,7 +6547,10 @@ void general_write_handler(rarch_setting_t *setting)
          if (verbosity_is_enabled() && is_logging_to_file())
          {
             rarch_log_file_deinit();
-            rarch_log_file_init();
+            rarch_log_file_init(
+                  settings->bools.log_to_file,
+                  settings->bools.log_to_file_timestamp,
+                  settings->paths.log_dir);
          }
          break;
       case MENU_ENUM_LABEL_VIDEO_SMOOTH:
@@ -6629,32 +6640,6 @@ void general_write_handler(rarch_setting_t *setting)
             cellSysutilDisableBgmPlayback();
 #endif
          }
-         break;
-      case MENU_ENUM_LABEL_NETPLAY_IP_ADDRESS:
-#ifdef HAVE_NETWORKING
-         {
-            bool val = (!string_is_empty(setting->value.target.string));
-            if (val)
-               retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_NETPLAY_IP_ADDRESS, NULL);
-            else
-               retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_NETPLAY_IP_ADDRESS, NULL);
-         }
-#endif
-         break;
-      case MENU_ENUM_LABEL_NETPLAY_MODE:
-#ifdef HAVE_NETWORKING
-         retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_NETPLAY_MODE, NULL);
-#endif
-         break;
-      case MENU_ENUM_LABEL_NETPLAY_STATELESS_MODE:
-#ifdef HAVE_NETWORKING
-         retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_NETPLAY_STATELESS_MODE, NULL);
-#endif
-         break;
-      case MENU_ENUM_LABEL_NETPLAY_CHECK_FRAMES:
-#ifdef HAVE_NETWORKING
-         retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_NETPLAY_CHECK_FRAMES, NULL);
-#endif
          break;
       case MENU_ENUM_LABEL_AUDIO_ENABLE_MENU:
 #ifdef HAVE_AUDIOMIXER
@@ -7226,6 +7211,7 @@ static bool setting_append_list_input_player_options(
       (*list)[list_info->index - 1].action_ok      = &setting_action_ok_bind_defaults;
       (*list)[list_info->index - 1].action_cancel  = NULL;
 
+#ifdef HAVE_CONFIGFILE
       CONFIG_ACTION_ALT(
             list, list_info,
             key_bind_all_save_autoconfig[user],
@@ -7237,6 +7223,7 @@ static bool setting_append_list_input_player_options(
       (*list)[list_info->index - 1].index_offset   = user;
       (*list)[list_info->index - 1].action_ok      = &setting_action_ok_bind_all_save_autoconfig;
       (*list)[list_info->index - 1].action_cancel  = NULL;
+#endif
 
       CONFIG_UINT_ALT(
             list, list_info,
@@ -8719,7 +8706,7 @@ static bool setting_append_list(
                   &settings->bools.content_runtime_log_aggregate,
                   MENU_ENUM_LABEL_CONTENT_RUNTIME_LOG_AGGREGATE,
                   MENU_ENUM_LABEL_VALUE_CONTENT_RUNTIME_LOG_AGGREGATE,
-                  content_runtime_log_aggregate,
+                  DEFAULT_CONTENT_RUNTIME_LOG_AGGREGATE,
                   MENU_ENUM_LABEL_VALUE_OFF,
                   MENU_ENUM_LABEL_VALUE_ON,
                   &group_info,
@@ -8734,7 +8721,7 @@ static bool setting_append_list(
                   &settings->bools.scan_without_core_match,
                   MENU_ENUM_LABEL_SCAN_WITHOUT_CORE_MATCH,
                   MENU_ENUM_LABEL_VALUE_SCAN_WITHOUT_CORE_MATCH,
-                  scan_without_core_match,
+                  DEFAULT_SCAN_WITHOUT_CORE_MATCH,
                   MENU_ENUM_LABEL_VALUE_OFF,
                   MENU_ENUM_LABEL_VALUE_ON,
                   &group_info,
@@ -10796,7 +10783,7 @@ static bool setting_append_list(
                   &settings->bools.audio_wasapi_exclusive_mode,
                   MENU_ENUM_LABEL_AUDIO_WASAPI_EXCLUSIVE_MODE,
                   MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_EXCLUSIVE_MODE,
-                  wasapi_exclusive_mode,
+                  DEFAULT_WASAPI_EXCLUSIVE_MODE,
                   MENU_ENUM_LABEL_VALUE_OFF,
                   MENU_ENUM_LABEL_VALUE_ON,
                   &group_info,
@@ -10812,7 +10799,7 @@ static bool setting_append_list(
                   &settings->bools.audio_wasapi_float_format,
                   MENU_ENUM_LABEL_AUDIO_WASAPI_FLOAT_FORMAT,
                   MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_FLOAT_FORMAT,
-                  wasapi_float_format,
+                  DEFAULT_WASAPI_FLOAT_FORMAT,
                   MENU_ENUM_LABEL_VALUE_OFF,
                   MENU_ENUM_LABEL_VALUE_ON,
                   &group_info,
@@ -10828,7 +10815,7 @@ static bool setting_append_list(
                   &settings->ints.audio_wasapi_sh_buffer_length,
                   MENU_ENUM_LABEL_AUDIO_WASAPI_SH_BUFFER_LENGTH,
                   MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_SH_BUFFER_LENGTH,
-                  wasapi_sh_buffer_length,
+                  DEFAULT_WASAPI_SH_BUFFER_LENGTH,
                   &group_info,
                   &subgroup_info,
                   parent_group,
@@ -11186,7 +11173,7 @@ static bool setting_append_list(
                   input_driver_get_float(INPUT_ACTION_AXIS_THRESHOLD),
                   MENU_ENUM_LABEL_INPUT_BUTTON_AXIS_THRESHOLD,
                   MENU_ENUM_LABEL_VALUE_INPUT_BUTTON_AXIS_THRESHOLD,
-                  axis_threshold,
+                  DEFAULT_AXIS_THRESHOLD,
                   "%.3f",
                   &group_info,
                   &subgroup_info,
@@ -11202,7 +11189,7 @@ static bool setting_append_list(
                   &settings->floats.input_analog_deadzone,
                   MENU_ENUM_LABEL_INPUT_ANALOG_DEADZONE,
                   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_DEADZONE,
-                  analog_deadzone,
+                  DEFAULT_ANALOG_DEADZONE,
                   "%.1f",
                   &group_info,
                   &subgroup_info,
@@ -11217,7 +11204,7 @@ static bool setting_append_list(
                   &settings->floats.input_analog_sensitivity,
                   MENU_ENUM_LABEL_INPUT_ANALOG_SENSITIVITY,
                   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_SENSITIVITY,
-                  analog_sensitivity,
+                  DEFAULT_ANALOG_SENSITIVITY,
                   "%.1f",
                   &group_info,
                   &subgroup_info,
@@ -11717,7 +11704,7 @@ static bool setting_append_list(
                &settings->bools.run_ahead_secondary_instance,
                MENU_ENUM_LABEL_RUN_AHEAD_SECONDARY_INSTANCE,
                MENU_ENUM_LABEL_VALUE_RUN_AHEAD_SECONDARY_INSTANCE,
-               false,
+               DEFAULT_RUN_AHEAD_SECONDARY_INSTANCE,
                MENU_ENUM_LABEL_VALUE_OFF,
                MENU_ENUM_LABEL_VALUE_ON,
                &group_info,
@@ -11734,7 +11721,7 @@ static bool setting_append_list(
                &settings->bools.run_ahead_hide_warnings,
                MENU_ENUM_LABEL_RUN_AHEAD_HIDE_WARNINGS,
                MENU_ENUM_LABEL_VALUE_RUN_AHEAD_HIDE_WARNINGS,
-               false,
+               DEFAULT_RUN_AHEAD_HIDE_WARNINGS,
                MENU_ENUM_LABEL_VALUE_OFF,
                MENU_ENUM_LABEL_VALUE_ON,
                &group_info,
@@ -12825,7 +12812,7 @@ static bool setting_append_list(
                   &settings->bools.kiosk_mode_enable,
                   MENU_ENUM_LABEL_MENU_ENABLE_KIOSK_MODE,
                   MENU_ENUM_LABEL_VALUE_MENU_ENABLE_KIOSK_MODE,
-                  kiosk_mode_enable,
+                  DEFAULT_KIOSK_MODE_ENABLE,
                   MENU_ENUM_LABEL_VALUE_OFF,
                   MENU_ENUM_LABEL_VALUE_ON,
                   &group_info,
@@ -13743,7 +13730,7 @@ static bool setting_append_list(
                &settings->bools.menu_show_start_screen,
                MENU_ENUM_LABEL_RGUI_SHOW_START_SCREEN,
                MENU_ENUM_LABEL_VALUE_RGUI_SHOW_START_SCREEN,
-               default_menu_show_start_screen,
+               DEFAULT_MENU_SHOW_START_SCREEN,
                MENU_ENUM_LABEL_VALUE_OFF,
                MENU_ENUM_LABEL_VALUE_ON,
                &group_info,
@@ -14721,7 +14708,7 @@ static bool setting_append_list(
                &settings->bools.quick_menu_show_take_screenshot,
                MENU_ENUM_LABEL_QUICK_MENU_SHOW_TAKE_SCREENSHOT,
                MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_TAKE_SCREENSHOT,
-               quick_menu_show_take_screenshot,
+               DEFAULT_QUICK_MENU_SHOW_TAKE_SCREENSHOT,
                MENU_ENUM_LABEL_VALUE_OFF,
                MENU_ENUM_LABEL_VALUE_ON,
                &group_info,
@@ -14736,7 +14723,7 @@ static bool setting_append_list(
                &settings->bools.quick_menu_show_save_load_state,
                MENU_ENUM_LABEL_QUICK_MENU_SHOW_SAVE_LOAD_STATE,
                MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_LOAD_STATE,
-               quick_menu_show_save_load_state,
+               DEFAULT_QUICK_MENU_SHOW_SAVE_LOAD_STATE,
                MENU_ENUM_LABEL_VALUE_OFF,
                MENU_ENUM_LABEL_VALUE_ON,
                &group_info,
@@ -14751,7 +14738,7 @@ static bool setting_append_list(
                &settings->bools.quick_menu_show_undo_save_load_state,
                MENU_ENUM_LABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
                MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
-               quick_menu_show_undo_save_load_state,
+               DEFAULT_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
                MENU_ENUM_LABEL_VALUE_OFF,
                MENU_ENUM_LABEL_VALUE_ON,
                &group_info,
@@ -15091,7 +15078,7 @@ static bool setting_append_list(
                &settings->bools.desktop_menu_enable,
                MENU_ENUM_LABEL_DESKTOP_MENU_ENABLE,
                MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_ENABLE,
-               desktop_menu_enable,
+               DEFAULT_DESKTOP_MENU_ENABLE,
                MENU_ENUM_LABEL_VALUE_OFF,
                MENU_ENUM_LABEL_VALUE_ON,
                &group_info,
@@ -15324,7 +15311,7 @@ static bool setting_append_list(
                &settings->bools.playlist_fuzzy_archive_match,
                MENU_ENUM_LABEL_PLAYLIST_FUZZY_ARCHIVE_MATCH,
                MENU_ENUM_LABEL_VALUE_PLAYLIST_FUZZY_ARCHIVE_MATCH,
-               playlist_fuzzy_archive_match,
+               DEFAULT_PLAYLIST_FUZZY_ARCHIVE_MATCH,
                MENU_ENUM_LABEL_VALUE_OFF,
                MENU_ENUM_LABEL_VALUE_ON,
                &group_info,
@@ -15516,7 +15503,7 @@ static bool setting_append_list(
                sizeof(settings->paths.network_buildbot_assets_url),
                MENU_ENUM_LABEL_BUILDBOT_ASSETS_URL,
                MENU_ENUM_LABEL_VALUE_BUILDBOT_ASSETS_URL,
-               buildbot_assets_server_url,
+               DEFAULT_BUILDBOT_ASSETS_SERVER_URL,
                &group_info,
                &subgroup_info,
                parent_group,

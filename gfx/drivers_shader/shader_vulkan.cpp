@@ -2368,11 +2368,11 @@ Framebuffer::Framebuffer(
       const VkPhysicalDeviceMemoryProperties &mem_props,
       const Size2D &max_size, VkFormat format,
       unsigned max_levels) :
-   memory_properties(mem_props),
-   device(device),
    size(max_size),
    format(format),
-   max_levels(max(max_levels, 1u))
+   max_levels(max(max_levels, 1u)),
+   memory_properties(mem_props),
+   device(device)
 {
    RARCH_LOG("[Vulkan filter chain]: Creating framebuffer %u x %u (max %u level(s)).\n",
          max_size.width, max_size.height, max_levels);

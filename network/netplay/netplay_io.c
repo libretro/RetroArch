@@ -31,6 +31,7 @@
 
 #include "../../discord/discord.h"
 
+/* TODO/FIXME - global */
 extern bool discord_is_inited;
 
 static void handle_play_spectate(netplay_t *netplay, uint32_t client_num,
@@ -1327,7 +1328,8 @@ static bool netplay_get_cmd(netplay_t *netplay,
                   /* It wants future frames, make sure we don't capture or send intermediate ones */
                   START(netplay->self_ptr);
                   frame_count = netplay->self_frame_count;
-                  while (true)
+
+                  for (;;)
                   {
                      if (!dframe->used)
                      {

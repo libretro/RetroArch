@@ -1,4 +1,4 @@
-/* Copyright  (C) 2010-2018 The RetroArch team
+/* Copyright  (C) 2010-2020 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
  * The following license statement only applies to this file (net_socket.c).
@@ -189,7 +189,7 @@ int ssl_socket_receive_all_blocking(void *state_data, void *data_, size_t size)
 
    mbedtls_net_set_block(&state->net_ctx);
 
-   while (1)
+   for (;;)
    {
       /* mbedtls_ssl_read wants non-const data but it only reads it, so this cast is safe */
       int ret = mbedtls_ssl_read(&state->ctx, (unsigned char*)data, size);

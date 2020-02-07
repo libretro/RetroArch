@@ -257,7 +257,7 @@ static void vga_gfx_set_nonblock_state(void *data, bool toggle)
 static bool vga_gfx_alive(void *data)
 {
    (void)data;
-   video_driver_set_size(&vga_video_width, &vga_video_height);
+   video_driver_set_size(vga_video_width, vga_video_height);
    return true;
 }
 

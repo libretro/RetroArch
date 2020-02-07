@@ -198,7 +198,7 @@ static void *fpga_gfx_init(const video_info_t *video,
    /* Get real known video size, which might have been altered by context. */
 
    if (temp_width != 0 && temp_height != 0)
-      video_driver_set_size(&temp_width, &temp_height);
+      video_driver_set_size(temp_width, temp_height);
 
    video_driver_get_size(&temp_width, &temp_height);
 
@@ -365,7 +365,7 @@ static bool fpga_gfx_alive(void *data)
    video_context_driver_check_window(&size_data);
 
    if (temp_width != 0 && temp_height != 0)
-      video_driver_set_size(&temp_width, &temp_height);
+      video_driver_set_size(temp_width, temp_height);
 
    return true;
 }

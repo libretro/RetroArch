@@ -1,4 +1,4 @@
-/* Copyright  (C) 2010-2019 The RetroArch team
+/* Copyright  (C) 2010-2020 The RetroArch team
 *
 * ---------------------------------------------------------------------------------------
 * The following license statement only applies to this file (cdrom.c).
@@ -96,6 +96,7 @@ void increment_msf(unsigned char *min, unsigned char *sec, unsigned char *frame)
    *frame = (*frame < 74) ? (*frame + 1) : 0;
 }
 
+#ifdef CDROM_DEBUG
 static void cdrom_print_sense_data(const unsigned char *sense, size_t len)
 {
    unsigned i;
@@ -252,6 +253,7 @@ static void cdrom_print_sense_data(const unsigned char *sense, size_t len)
 
    fflush(stdout);
 }
+#endif
 
 #if defined(_WIN32) && !defined(_XBOX)
 static int cdrom_send_command_win32(const libretro_vfs_implementation_file *stream, CDROM_CMD_Direction dir, void *buf, size_t len, unsigned char *cmd, size_t cmd_len, unsigned char *sense, size_t sense_len)
@@ -519,7 +521,9 @@ retry:
       }
       else
       {
+#ifdef CDROM_DEBUG
          cdrom_print_sense_data(sense, sizeof(sense));
+#endif
 
          /* INQUIRY/TEST/SENSE should never fail, don't retry. */
          /* READ ATIP seems to fail outright on some drives with pressed discs, skip retries. */
@@ -672,7 +676,9 @@ int cdrom_get_sense(libretro_vfs_implementation_file *stream, unsigned char *sen
    if (rv)
       return 1;
 
+#ifdef CDROM_DEBUG
    cdrom_print_sense_data(buf, sizeof(buf));
+#endif
 
    return 0;
 }

@@ -377,7 +377,7 @@ static char** waiting_argv;
 
 - (void) rarch_main
 {
-    do
+    for (;;)
     {
        int ret;
 #ifdef HAVE_QT
@@ -400,7 +400,7 @@ static char** waiting_argv;
 #endif
           break;
        }
-    }while(1);
+    }
 
     main_exit(NULL);
 }

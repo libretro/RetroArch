@@ -306,7 +306,8 @@ static void ups_target_write(struct ups_data *data, uint8_t n)
 static uint64_t ups_decode(struct ups_data *data)
 {
    uint64_t offset = 0, shift = 1;
-   while (true)
+
+   for (;;)
    {
       uint8_t x = ups_patch_read(data);
       offset   += (x & 0x7f) * shift;
@@ -384,7 +385,8 @@ static enum patch_error ups_apply_patch(
       unsigned length = (unsigned)ups_decode(&data);
       while (length--)
          ups_target_write(&data, ups_source_read(&data));
-      while (true)
+
+      for (;;)
       {
          uint8_t patch_xor = ups_patch_read(&data);
          ups_target_write(&data, patch_xor ^ ups_source_read(&data));

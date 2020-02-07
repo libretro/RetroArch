@@ -2498,14 +2498,9 @@ static int ozone_menu_entry_action(
       void *userdata, menu_entry_t *entry,
       size_t i, enum menu_action action)
 {
-   ozone_handle_t *ozone = (ozone_handle_t*)userdata;
-   enum menu_action new_action;
-
-   if (!ozone)
-      generic_menu_entry_action(userdata, entry, i, action);
-
+   ozone_handle_t *ozone       = (ozone_handle_t*)userdata;
    /* Process input action */
-   new_action = ozone_parse_menu_entry_action(ozone, action);
+   enum menu_action new_action = ozone_parse_menu_entry_action(ozone, action);
 
    /* Call standard generic_menu_entry_action() function */
    return generic_menu_entry_action(userdata, entry, i, new_action);

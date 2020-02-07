@@ -145,7 +145,7 @@ static void on_applet_hook(AppletHookType hook, void *param)
 #endif /* HAVE_LIBNX */
 
 #ifdef IS_SALAMANDER
-static void get_first_valid_core(char *path_return)
+static void get_first_valid_core(char *path_return, size_t len)
 {
    DIR *dir;
    struct dirent *ent;
@@ -162,9 +162,9 @@ static void get_first_valid_core(char *path_return)
             break;
          if (strlen(ent->d_name) > strlen(extension) && !strcmp(ent->d_name + strlen(ent->d_name) - strlen(extension), extension))
          {
-            strcpy(path_return, SD_PREFIX "/retroarch/cores");
-            strcat(path_return, "/");
-            strcat(path_return, ent->d_name);
+            strlcpy(path_return, SD_PREFIX "/retroarch/cores", len);
+            strlcat(path_return, "/", len);
+            strlcat(path_return, ent->d_name, len);
             break;
          }
       }
@@ -332,7 +332,7 @@ static void frontend_switch_exec(const char *path, bool should_load_game)
 #ifndef IS_SALAMANDER
    if (should_load_game && !path_is_empty(RARCH_PATH_CONTENT))
    {
-      strcpy(game_path, path_get(RARCH_PATH_CONTENT));
+      strlcpy(game_path, path_get(RARCH_PATH_CONTENT), sizeof(game_path));
       arg_data[args] = game_path;
       arg_data[args + 1] = NULL;
       args++;
@@ -351,7 +351,7 @@ static void frontend_switch_exec(const char *path, bool should_load_game)
          char core_path[PATH_MAX];
 
          /* find first valid core and load it if the target core doesnt exist */
-         get_first_valid_core(&core_path[0]);
+         get_first_valid_core(&core_path[0], PATH_MAX);
 
          if (core_path[0] == '\0')
             svcExitProcess();
@@ -395,9 +395,9 @@ static bool frontend_switch_set_fork(enum frontend_fork fork_mode)
 }
 #endif
 
-static void frontend_switch_exitspawn(char *s, size_t len)
+static void frontend_switch_exitspawn(char *s, size_t len, char *args)
 {
-   bool should_load_game = false;
+   bool should_load_content = false;
 #ifndef IS_SALAMANDER
    if (switch_fork_mode == FRONTEND_FORK_NONE)
       return;
@@ -405,13 +405,13 @@ static void frontend_switch_exitspawn(char *s, size_t len)
    switch (switch_fork_mode)
    {
    case FRONTEND_FORK_CORE_WITH_ARGS:
-      should_load_game = true;
+      should_load_content = true;
       break;
    default:
       break;
    }
 #endif
-   frontend_switch_exec(s, should_load_game);
+   frontend_switch_exec(s, should_load_content);
 }
 
 #if 0

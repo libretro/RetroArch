@@ -1,4 +1,4 @@
-/* Copyright  (C) 2010-2018 The RetroArch team
+/* Copyright  (C) 2010-2020 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
  * The following license statement only applies to this file (features_cpu.c).
@@ -348,12 +348,12 @@ static unsigned char check_arm_cpu_feature(const char* feature)
    if (!fp)
       return 0;
 
-   while (filestream_gets(fp, line, sizeof(line)) != NULL)
+   while (filestream_gets(fp, line, sizeof(line)))
    {
       if (strncmp(line, "Features\t: ", 11))
          continue;
 
-      if (strstr(line + 11, feature) != NULL)
+      if (strstr(line + 11, feature))
          status = 1;
 
       break;
@@ -424,8 +424,7 @@ static void cpulist_parse(CpuList* list, char **buf, ssize_t length)
          q = end;
 
       /* Get first value */
-      p = parse_decimal(p, q, &start_value);
-      if (p == NULL)
+      if (!(p = parse_decimal(p, q, &start_value)))
          return;
 
       end_value = start_value;
@@ -435,8 +434,7 @@ static void cpulist_parse(CpuList* list, char **buf, ssize_t length)
        */
       if (p < q && *p == '-')
       {
-         p = parse_decimal(p+1, q, &end_value);
-         if (p == NULL)
+         if (!(p = parse_decimal(p+1, q, &end_value)))
             return;
       }
 

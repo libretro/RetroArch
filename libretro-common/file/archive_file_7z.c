@@ -1,4 +1,4 @@
-/* Copyright  (C) 2010-2018 The RetroArch team
+/* Copyright  (C) 2010-2020 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
  * The following license statement only applies to this file (archive_file_sevenzip.c).
@@ -256,7 +256,7 @@ static int sevenzip_file_read(
 
             outsize = outSizeProcessed;
 
-            if (optional_outfile != NULL)
+            if (optional_outfile)
             {
                const void *ptr = (const void*)(output + offset);
 

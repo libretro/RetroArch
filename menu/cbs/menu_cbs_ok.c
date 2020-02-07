@@ -1677,6 +1677,7 @@ static int generic_action_ok(const char *path,
          }
          break;
       case ACTION_OK_LOAD_CONFIG_FILE:
+#ifdef HAVE_CONFIGFILE
          {
             settings_t            *settings = config_get_ptr();
             flush_type                      = MENU_SETTINGS;
@@ -1690,6 +1691,7 @@ static int generic_action_ok(const char *path,
                ret = -1;
             }
          }
+#endif
          break;
       case ACTION_OK_LOAD_PRESET:
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
@@ -1744,13 +1746,16 @@ static int generic_action_ok(const char *path,
          }
          break;
       case ACTION_OK_LOAD_REMAPPING_FILE:
+#ifdef HAVE_CONFIGFILE
          {
-            config_file_t *conf = config_file_new_from_path_to_string(action_path);
+            config_file_t *conf = config_file_new_from_path_to_string(
+                  action_path);
             flush_char          = msg_hash_to_str(flush_id);
 
             if (conf)
                input_remapping_load_file(conf, action_path);
          }
+#endif
          break;
       case ACTION_OK_LOAD_CHEAT_FILE:
          flush_char = msg_hash_to_str(flush_id);
@@ -2980,6 +2985,7 @@ static int generic_action_ok_remap_file_operation(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx,
       unsigned action_type)
 {
+#ifdef HAVE_CONFIGFILE
    char directory[PATH_MAX_LENGTH];
    char file[PATH_MAX_LENGTH];
    char content_dir[PATH_MAX_LENGTH];
@@ -3027,12 +3033,20 @@ static int generic_action_ok_remap_file_operation(const char *path,
    {
       if (input_remapping_save_file(file))
       {
-         if (action_type == ACTION_OK_REMAP_FILE_SAVE_CORE)
-            rarch_ctl(RARCH_CTL_SET_REMAPS_CORE_ACTIVE, NULL);
-         else if (action_type == ACTION_OK_REMAP_FILE_SAVE_GAME)
-            rarch_ctl(RARCH_CTL_SET_REMAPS_GAME_ACTIVE, NULL);
-         else if (action_type == ACTION_OK_REMAP_FILE_SAVE_CONTENT_DIR)
-            rarch_ctl(RARCH_CTL_SET_REMAPS_CONTENT_DIR_ACTIVE, NULL);
+#ifdef HAVE_CONFIGFILE
+         switch (action_type)
+         {
+            case ACTION_OK_REMAP_FILE_SAVE_CORE:
+               rarch_ctl(RARCH_CTL_SET_REMAPS_CORE_ACTIVE, NULL);
+               break;
+            case ACTION_OK_REMAP_FILE_SAVE_GAME:
+               rarch_ctl(RARCH_CTL_SET_REMAPS_GAME_ACTIVE, NULL);
+               break;
+            case ACTION_OK_REMAP_FILE_SAVE_CONTENT_DIR:
+               rarch_ctl(RARCH_CTL_SET_REMAPS_CONTENT_DIR_ACTIVE, NULL);
+               break;
+         }
+#endif
 
          runloop_msg_queue_push(
                msg_hash_to_str(MSG_REMAP_FILE_SAVED_SUCCESSFULLY),
@@ -3049,26 +3063,32 @@ static int generic_action_ok_remap_file_operation(const char *path,
    {
       if (input_remapping_remove_file(file))
       {
-         if (action_type == ACTION_OK_REMAP_FILE_REMOVE_CORE &&
-               rarch_ctl(RARCH_CTL_IS_REMAPS_CORE_ACTIVE, NULL))
+#ifdef HAVE_CONFIGFILE
+         switch (action_type)
          {
-            rarch_ctl(RARCH_CTL_UNSET_REMAPS_CORE_ACTIVE, NULL);
-            input_remapping_set_defaults(true);
+            case ACTION_OK_REMAP_FILE_REMOVE_CORE:
+               if (rarch_ctl(RARCH_CTL_IS_REMAPS_CORE_ACTIVE, NULL))
+               {
+                  rarch_ctl(RARCH_CTL_UNSET_REMAPS_CORE_ACTIVE, NULL);
+                  input_remapping_set_defaults(true);
+               }
+               break;
+            case ACTION_OK_REMAP_FILE_REMOVE_GAME:
+               if (rarch_ctl(RARCH_CTL_IS_REMAPS_GAME_ACTIVE, NULL))
+               {
+                  rarch_ctl(RARCH_CTL_UNSET_REMAPS_GAME_ACTIVE, NULL);
+                  input_remapping_set_defaults(true);
+               }
+               break;
+            case ACTION_OK_REMAP_FILE_REMOVE_CONTENT_DIR:
+               if (rarch_ctl(RARCH_CTL_IS_REMAPS_CONTENT_DIR_ACTIVE, NULL))
+               {
+                  rarch_ctl(RARCH_CTL_UNSET_REMAPS_CONTENT_DIR_ACTIVE, NULL);
+                  input_remapping_set_defaults(true);
+               }
+               break;
          }
-
-         else if (action_type == ACTION_OK_REMAP_FILE_REMOVE_GAME &&
-               rarch_ctl(RARCH_CTL_IS_REMAPS_GAME_ACTIVE, NULL))
-         {
-            rarch_ctl(RARCH_CTL_UNSET_REMAPS_GAME_ACTIVE, NULL);
-            input_remapping_set_defaults(true);
-         }
-
-         else if (action_type == ACTION_OK_REMAP_FILE_REMOVE_CONTENT_DIR &&
-               rarch_ctl(RARCH_CTL_IS_REMAPS_CONTENT_DIR_ACTIVE, NULL))
-         {
-            rarch_ctl(RARCH_CTL_UNSET_REMAPS_CONTENT_DIR_ACTIVE, NULL);
-            input_remapping_set_defaults(true);
-         }
+#endif
 
          runloop_msg_queue_push(
                msg_hash_to_str(MSG_REMAP_FILE_REMOVED_SUCCESSFULLY),
@@ -3081,6 +3101,7 @@ static int generic_action_ok_remap_file_operation(const char *path,
                1, 100, true,
                NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }
+#endif
    return 0;
 }
 
@@ -4319,12 +4340,14 @@ static int action_ok_core_updater_download(const char *path,
 {
 #ifdef HAVE_NETWORKING
    core_updater_list_t *core_list = core_updater_list_get_cached();
+   settings_t          *settings  = config_get_ptr();
 
    if (!core_list)
       return menu_cbs_exit();
 
    task_push_core_updater_download(
-      core_list, path, false, true);
+      core_list, path, false, true,
+      settings->paths.directory_libretro);
 
 #endif
    return 0;
@@ -4334,11 +4357,13 @@ static int action_ok_core_updater_download(const char *path,
 static int action_ok_update_installed_cores(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
+   settings_t *settings  = config_get_ptr();
+
    /* Ensure networking is initialised */
    generic_action_ok_command(CMD_EVENT_NETWORK_INIT);
 
    /* Push update task */
-   task_push_update_installed_cores();
+   task_push_update_installed_cores(settings->paths.directory_libretro);
 
    return 0;
 }
@@ -5065,44 +5090,43 @@ static int action_ok_netplay_connect_room(const char *path,
 {
 #ifdef HAVE_NETWORKING
    char tmp_hostname[4115];
-   unsigned offset = idx - 4;
+   unsigned room_index = type - MENU_SETTINGS_NETPLAY_ROOMS_START;
 
    tmp_hostname[0] = '\0';
+
+   if (room_index >= (unsigned)netplay_room_count)
+      return menu_cbs_exit();
 
    if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
       generic_action_ok_command(CMD_EVENT_NETPLAY_DEINIT);
    netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_CLIENT, NULL);
 
-   if (netplay_room_list[offset].host_method == NETPLAY_HOST_METHOD_MITM)
-   {
+   if (netplay_room_list[room_index].host_method == NETPLAY_HOST_METHOD_MITM)
       snprintf(tmp_hostname,
             sizeof(tmp_hostname),
             "%s|%d",
-         netplay_room_list[offset].mitm_address,
-         netplay_room_list[offset].mitm_port);
-   }
+         netplay_room_list[room_index].mitm_address,
+         netplay_room_list[room_index].mitm_port);
    else
-   {
       snprintf(tmp_hostname,
             sizeof(tmp_hostname),
             "%s|%d",
-         netplay_room_list[offset].address,
-         netplay_room_list[offset].port);
-   }
+         netplay_room_list[room_index].address,
+         netplay_room_list[room_index].port);
 
 #if 0
    RARCH_LOG("[lobby] connecting to: %s with game: %s/%08x\n",
          tmp_hostname,
-         netplay_room_list[offset].gamename,
-         netplay_room_list[offset].gamecrc);
+         netplay_room_list[room_index].gamename,
+         netplay_room_list[room_index].gamecrc);
 #endif
 
    task_push_netplay_crc_scan(
-         netplay_room_list[offset].gamecrc,
-         netplay_room_list[offset].gamename,
+         netplay_room_list[room_index].gamecrc,
+         netplay_room_list[room_index].gamename,
          tmp_hostname,
-         netplay_room_list[offset].corename,
-         netplay_room_list[offset].subsystem_name);
+         netplay_room_list[room_index].corename,
+         netplay_room_list[room_index].subsystem_name);
 
 #else
    return -1;
@@ -5151,9 +5175,6 @@ default_action_ok_dl_push(action_ok_push_content_list, FILEBROWSER_SELECT_FILE, 
 default_action_ok_dl_push(action_ok_push_scan_file, FILEBROWSER_SCAN_FILE, ACTION_OK_DL_CONTENT_LIST, settings->paths.directory_menu_content)
 
 #ifdef HAVE_NETWORKING
-/* TODO/FIXME - globals - remove */
-static struct netplay_host_list *lan_hosts = NULL;
-extern int lan_room_count;
 
 #ifndef INET6_ADDRSTRLEN
 #define INET6_ADDRSTRLEN 46
@@ -5197,9 +5218,9 @@ static void netplay_refresh_rooms_cb(retro_task_t *task,
          char s[PATH_MAX_LENGTH];
          unsigned i                           = 0;
          unsigned j                           = 0;
-         file_list_t *list                    = menu_entries_get_selection_buf_ptr(0);
-
-         lan_room_count                       = 0;
+         struct netplay_host_list *lan_hosts  = NULL;
+         int lan_room_count                   = 0;
+         bool refresh                         = false;
 
 #ifndef RARCH_CONSOLE
          netplay_discovery_driver_ctl(RARCH_NETPLAY_DISCOVERY_CTL_LAN_GET_RESPONSES, &lan_hosts);
@@ -5267,7 +5288,8 @@ static void netplay_refresh_rooms_cb(retro_task_t *task,
             netplay_room_count += lan_room_count;
          }
 
-         menu_displaylist_netplay_refresh_rooms(list);
+         menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+         menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
       }
    }
 
@@ -5297,6 +5319,20 @@ static void netplay_lan_scan_callback(retro_task_t *task,
    unsigned menu_type                      = 0;
    const char *label                       = NULL;
    const char *path                        = NULL;
+
+   /* TODO/FIXME: I have no idea what this is supposed to be
+    * doing...
+    * As it stands, this function will never get past the
+    * following sanity check (i.e. netplay_lan_scan_callback()
+    * will never be called when we are viewing the 'lan scan
+    * settings' list, since this list doesn't even exist...).
+    * Moreover, any menu entries that get added here
+    * (menu_entries_append_enum()) will be erased by the
+    * subsequent netplay_refresh_rooms_cb() callback - and
+    * menu entries should never be added outside of
+    * menu_displaylist.c anyway.
+    * This is some legacy garbage, and someone who understands
+    * netplay needs to rip it all out. */
 
    menu_entries_get_last_stack(&path, &label, &menu_type, &enum_idx, NULL);
 
@@ -6312,7 +6348,7 @@ static int action_ok_pl_content_thumbnails(const char *path,
          settings->paths.directory_playlist, label,
          sizeof(playlist_path));
 
-   task_push_pl_thumbnail_download(path, playlist_path);
+   task_push_pl_thumbnail_download(path, playlist_path, settings->paths.directory_thumbnails);
    return 0;
 #else
    return -1;

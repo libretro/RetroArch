@@ -31,6 +31,7 @@ HAVE_WINMM               := 1
 
 HAVE_RPNG                := 1
 HAVE_ZLIB                := 1
+HAVE_CONFIGFILE          := 1
 HAVE_MENU                := 1
 HAVE_RGUI                := 1
 HAVE_XMB                 := 1
