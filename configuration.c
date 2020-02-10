@@ -1979,7 +1979,7 @@ void config_set_defaults(void *data)
    const char *def_location        = config_get_default_location();
    const char *def_record          = config_get_default_record();
    const char *def_midi            = config_get_default_midi();
-   const char *def_mitm            = netplay_mitm_server;
+   const char *def_mitm            = DEFAULT_NETPLAY_MITM_SERVER;
    struct config_float_setting      *float_settings = populate_settings_float  (settings, &float_settings_size);
    struct config_bool_setting       *bool_settings  = populate_settings_bool  (settings, &bool_settings_size);
    struct config_int_setting        *int_settings   = populate_settings_int   (settings, &int_settings_size);

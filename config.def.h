@@ -868,7 +868,7 @@ static const int netplay_check_frames = 600;
 
 static const bool netplay_use_mitm_server = false;
 
-static const char *netplay_mitm_server = "nyc";
+#define DEFAULT_NETPLAY_MITM_SERVER "nyc"
 
 #ifdef HAVE_NETWORKING
 static const unsigned netplay_share_digital = RARCH_NETPLAY_SHARE_DIGITAL_NO_PREFERENCE;

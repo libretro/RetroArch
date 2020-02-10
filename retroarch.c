@@ -3551,31 +3551,6 @@ static char *strcpy_alloc_force(const char *src)
    return result;
 }
 
-static void strcat_alloc(char **dst, const char *s)
-{
-   size_t len1;
-   char *src  = *dst;
-
-   if (!src)
-   {
-      src     = strcpy_alloc_force(s);
-      *dst    = src;
-      return;
-   }
-
-   if (!s)
-      return;
-
-   len1       = strlen(src);
-   src        = (char*)realloc(src, len1 + strlen(s) + 1);
-
-   if (!src)
-      return;
-
-   *dst       = src;
-   strcpy(src + len1, s);
-}
-
 #if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
 /* Forward declarations */
 static bool secondary_core_create(void);
@@ -10926,6 +10901,31 @@ static void set_load_content_info(const retro_ctx_load_content_info_t *ctx)
 
 /* RUNAHEAD - SECONDARY CORE  */
 #if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
+static void strcat_alloc(char **dst, const char *s)
+{
+   size_t len1;
+   char *src  = *dst;
+
+   if (!src)
+   {
+      src     = strcpy_alloc_force(s);
+      *dst    = src;
+      return;
+   }
+
+   if (!s)
+      return;
+
+   len1       = strlen(src);
+   src        = (char*)realloc(src, len1 + strlen(s) + 1);
+
+   if (!src)
+      return;
+
+   *dst       = src;
+   strcpy(src + len1, s);
+}
+
 static void secondary_core_destroy(void)
 {
    if (!secondary_module)

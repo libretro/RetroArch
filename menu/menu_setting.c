@@ -15548,7 +15548,7 @@ static bool setting_append_list(
                   sizeof(settings->arrays.netplay_mitm_server),
                   MENU_ENUM_LABEL_NETPLAY_MITM_SERVER,
                   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER,
-                  netplay_mitm_server,
+                  DEFAULT_NETPLAY_MITM_SERVER,
                   &group_info,
                   &subgroup_info,
                   parent_group,
