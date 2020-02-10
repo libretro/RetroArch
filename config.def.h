@@ -1072,8 +1072,10 @@ static const enum resampler_quality audio_resampler_quality_level = RESAMPLER_QU
 #endif
 
 /* MIDI */
-static const char *midi_input     = "Off";
-static const char *midi_output    = "Off";
+#define DEFAULT_MIDI_INPUT  "Off"
+
+#define DEFAULT_MIDI_OUTPUT "Off"
+
 static const unsigned midi_volume = 100;
 
 /* Only applies to Android 7.0 (API 24) and up */

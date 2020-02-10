@@ -1166,8 +1166,8 @@ static struct config_array_setting *populate_settings_array(settings_t *settings
    SETTING_ARRAY("led_driver",               settings->arrays.led_driver, false, NULL, true);
    SETTING_ARRAY("netplay_mitm_server",      settings->arrays.netplay_mitm_server, false, NULL, true);
    SETTING_ARRAY("midi_driver",              settings->arrays.midi_driver, false, NULL, true);
-   SETTING_ARRAY("midi_input",               settings->arrays.midi_input, true, midi_input, true);
-   SETTING_ARRAY("midi_output",              settings->arrays.midi_output, true, midi_output, true);
+   SETTING_ARRAY("midi_input",               settings->arrays.midi_input, true, DEFAULT_MIDI_INPUT, true);
+   SETTING_ARRAY("midi_output",              settings->arrays.midi_output, true, DEFAULT_MIDI_OUTPUT, true);
    SETTING_ARRAY("youtube_stream_key",       settings->arrays.youtube_stream_key, true, NULL, true);
    SETTING_ARRAY("twitch_stream_key",       settings->arrays.twitch_stream_key, true, NULL, true);
    SETTING_ARRAY("discord_app_id",           settings->arrays.discord_app_id, true, DEFAULT_DISCORD_APP_ID, true);
@@ -2420,12 +2420,10 @@ void config_set_defaults(void *data)
       free(temp_str);
    }
 
-   if (midi_input)
-      strlcpy(settings->arrays.midi_input,
-            midi_input, sizeof(settings->arrays.midi_input));
-   if (midi_output)
-      strlcpy(settings->arrays.midi_output,
-            midi_output, sizeof(settings->arrays.midi_output));
+   strlcpy(settings->arrays.midi_input,
+         DEFAULT_MIDI_INPUT, sizeof(settings->arrays.midi_input));
+   strlcpy(settings->arrays.midi_output,
+         DEFAULT_MIDI_OUTPUT, sizeof(settings->arrays.midi_output));
 
 #ifdef HAVE_CONFIGFILE
    /* Avoid reloading config on every content load */
