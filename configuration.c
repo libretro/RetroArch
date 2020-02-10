@@ -623,6 +623,11 @@ static enum menu_driver_enum MENU_DEFAULT_DRIVER = MENU_NULL;
 #define SETTING_OVERRIDE(override_setting) \
    tmp[count-1].override = override_setting
 
+/* Forward declarations */
+#ifdef HAVE_CONFIGFILE
+static void config_parse_file(global_t *global);
+#endif
+
 struct defaults g_defaults;
 
 /**
@@ -3595,9 +3600,8 @@ success:
  * Loads a config file and reads all the values into memory.
  *
  */
-void config_parse_file(void *data)
+static void config_parse_file(global_t *global)
 {
-   global_t *global = (global_t*)data;
    if (path_is_empty(RARCH_PATH_CONFIG))
    {
       RARCH_LOG("[config] Loading default config.\n");

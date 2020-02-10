@@ -24753,12 +24753,7 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
 #ifdef HAVE_CONFIGFILE
    if (!rarch_block_config_read)
 #endif
-   {
-      config_set_defaults(&g_extern);
-#ifdef HAVE_CONFIGFILE
-      config_parse_file(&g_extern);
-#endif
-   }
+      config_load(&g_extern);
 
    /* Second pass: All other arguments override the config file */
    optind = 1;
