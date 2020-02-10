@@ -181,7 +181,7 @@ static void frontend_xdk_get_environment_settings(int *argc, char *argv[],
 
       if (
             !string_is_empty(extracted_path)
-            && (strstr(extracted_path, "Pool") == NULL)
+            && (!strstr(extracted_path, "Pool"))
             /* Hack. Unknown problem */)
       {
          /* Auto-start game */
