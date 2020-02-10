@@ -3839,35 +3839,36 @@ static bool command_show_osd_msg(const char* arg)
 
 static bool command_get_config_param(const char* arg)
 {
-       char reply[4096]     = {0};
-       const char* value    = "unsupported";
-       settings_t* settings = config_get_ptr();
-              
-       if (!strcmp(arg, "video_fullscreen")) {
-           if(configuration_settings->bools.video_fullscreen)
-            value = "true";
-           else
-            value = "false";
-        }
-       else if (!strcmp(arg, "savefile_directory"))
-           value = dir_get(RARCH_DIR_SAVEFILE);
-       else if (!strcmp(arg, "savestate_directory"))
-           value = dir_get(RARCH_DIR_SAVESTATE);
-       else if (!strcmp(arg, "runtime_log_directory"))
-           value = settings->paths.directory_runtime_log;
-       else if (!strcmp(arg, "log_dir"))
-           value = settings->paths.log_dir;
-       else if (!strcmp(arg, "cache_directory"))
-           value = settings->paths.directory_cache;
-       else if (!strcmp(arg, "system_directory"))
-           value = settings->paths.directory_system;
-       else if (!strcmp(arg, "netplay_nickname"))
-           value = settings->paths.username;
-       /* TODO: query any string */
-       
-       snprintf(reply, sizeof(reply), "GET_CONFIG_PARAM %s %s\n", arg, value);
-       command_reply(reply, strlen(reply));
-       return true;
+   char reply[4096]     = {0};
+   const char* value    = "unsupported";
+   settings_t* settings = configuration_settings;
+
+   if (!strcmp(arg, "video_fullscreen"))
+   {
+      if(configuration_settings->bools.video_fullscreen)
+         value = "true";
+      else
+         value = "false";
+   }
+   else if (!strcmp(arg, "savefile_directory"))
+      value = dir_get(RARCH_DIR_SAVEFILE);
+   else if (!strcmp(arg, "savestate_directory"))
+      value = dir_get(RARCH_DIR_SAVESTATE);
+   else if (!strcmp(arg, "runtime_log_directory"))
+      value = settings->paths.directory_runtime_log;
+   else if (!strcmp(arg, "log_dir"))
+      value = settings->paths.log_dir;
+   else if (!strcmp(arg, "cache_directory"))
+      value = settings->paths.directory_cache;
+   else if (!strcmp(arg, "system_directory"))
+      value = settings->paths.directory_system;
+   else if (!strcmp(arg, "netplay_nickname"))
+      value = settings->paths.username;
+   /* TODO: query any string */
+
+   snprintf(reply, sizeof(reply), "GET_CONFIG_PARAM %s %s\n", arg, value);
+   command_reply(reply, strlen(reply));
+   return true;
 }
 
 #if defined(HAVE_CHEEVOS)
