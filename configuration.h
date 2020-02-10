@@ -881,6 +881,8 @@ bool config_overlay_enable_default(void);
 
 void config_set_defaults(void *data);
 
+void config_load(void *data);
+
 settings_t *config_get_ptr(void);
 
 RETRO_END_DECLS
