@@ -15452,7 +15452,7 @@ static bool setting_append_list(
                sizeof(settings->paths.network_buildbot_url),
                MENU_ENUM_LABEL_CORE_UPDATER_BUILDBOT_URL,
                MENU_ENUM_LABEL_VALUE_CORE_UPDATER_BUILDBOT_URL,
-               buildbot_server_url,
+               DEFAULT_BUILDBOT_SERVER_URL,
                &group_info,
                &subgroup_info,
                parent_group,

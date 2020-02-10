@@ -1101,95 +1101,95 @@ static const bool enable_device_vibration    = false;
 #endif
 
 #if defined(HAKCHI)
-static const char buildbot_server_url[] = "http://hakchicloud.com/Libretro_Cores/";
+#define DEFAULT_BUILDBOT_SERVER_URL "http://hakchicloud.com/Libretro_Cores/"
 #elif defined(ANDROID)
 #if defined(ANDROID_ARM_V7)
-static const char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/android/latest/armeabi-v7a/";
+#define DEFAULT_BUILDBOT_SERVER_URL "http://buildbot.libretro.com/nightly/android/latest/armeabi-v7a/"
 #elif defined(ANDROID_ARM)
-static const char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/android/latest/armeabi/";
+#define DEFAULT_BUILDBOT_SERVER_URL "http://buildbot.libretro.com/nightly/android/latest/armeabi/"
 #elif defined(ANDROID_AARCH64)
-static const char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/android/latest/arm64-v8a/";
+#define DEFAULT_BUILDBOT_SERVER_URL "http://buildbot.libretro.com/nightly/android/latest/arm64-v8a/"
 #elif defined(ANDROID_X86)
-static const char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/android/latest/x86/";
+#define DEFAULT_BUILDBOT_SERVER_URL "http://buildbot.libretro.com/nightly/android/latest/x86/"
 #elif defined(ANDROID_X64)
-static const char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/android/latest/x86_64/";
+#define DEFAULT_BUILDBOT_SERVER_URL "http://buildbot.libretro.com/nightly/android/latest/x86_64/"
 #else
-static const char buildbot_server_url[] = "";
+#define DEFAULT_BUILDBOT_SERVER_URL ""
 #endif
 #elif defined(__QNX__)
-static const char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/blackberry/latest/";
+#define DEFAULT_BUILDBOT_SERVER_URL "http://buildbot.libretro.com/nightly/blackberry/latest/"
 #elif defined(IOS)
-static const char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/apple/ios/latest/";
+#define DEFAULT_BUILDBOT_SERVER_URL "http://buildbot.libretro.com/nightly/apple/ios/latest/"
 #elif defined(OSX)
 #if defined(__x86_64__)
-static const char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/apple/osx/x86_64/latest/";
+#define DEFAULT_BUILDBOT_SERVER_URL "http://buildbot.libretro.com/nightly/apple/osx/x86_64/latest/"
 #elif defined(__i386__) || defined(__i486__) || defined(__i686__)
-static const char buildbot_server_url[] = "http://bot.libretro.com/nightly/apple/osx/x86/latest/";
+#define DEFAULT_BUILDBOT_SERVER_URL "http://bot.libretro.com/nightly/apple/osx/x86/latest/"
 #else
-static const char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/apple/osx/ppc/latest/";
+#define DEFAULT_BUILDBOT_SERVER_URL "http://buildbot.libretro.com/nightly/apple/osx/ppc/latest/"
 #endif
 #elif defined(_WIN32) && !defined(_XBOX)
 #if _MSC_VER >= 1910
 #ifndef __WINRT__
 #if defined(__x86_64__) || defined(_M_X64)
-static const char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/windows-msvc2017-desktop/x64/latest/";
+#define DEFAULT_BUILDBOT_SERVER_URL "http://buildbot.libretro.com/nightly/windows-msvc2017-desktop/x64/latest/"
 #elif defined(__i386__) || defined(__i486__) || defined(__i686__) || defined(_M_IX86) || defined(_M_IA64)
-static const char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/windows-msvc2017-desktop/x86/latest/";
+#define DEFAULT_BUILDBOT_SERVER_URL "http://buildbot.libretro.com/nightly/windows-msvc2017-desktop/x86/latest/"
 #elif defined(__arm__) || defined(_M_ARM)
-static const char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/windows-msvc2017-desktop/arm/latest/";
+#define DEFAULT_BUILDBOT_SERVER_URL "http://buildbot.libretro.com/nightly/windows-msvc2017-desktop/arm/latest/"
 #elif defined(__aarch64__) || defined(_M_ARM64)
-static const char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/windows-msvc2017-desktop/arm64/latest/";
+#define DEFAULT_BUILDBOT_SERVER_URL "http://buildbot.libretro.com/nightly/windows-msvc2017-desktop/arm64/latest/"
 #endif
 #else
 #if defined(__x86_64__) || defined(_M_X64)
-static const char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/windows-msvc2017-uwp/x64/latest/";
+#define DEFAULT_BUILDBOT_SERVER_URL "http://buildbot.libretro.com/nightly/windows-msvc2017-uwp/x64/latest/"
 #elif defined(__i386__) || defined(__i486__) || defined(__i686__) || defined(_M_IX86) || defined(_M_IA64)
-static const char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/windows-msvc2017-uwp/x86/latest/";
+#define DEFAULT_BUILDBOT_SERVER_URL "http://buildbot.libretro.com/nightly/windows-msvc2017-uwp/x86/latest/"
 #elif defined(__arm__) || defined(_M_ARM)
-static const char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/windows-msvc2017-uwp/arm/latest/";
+#define DEFAULT_BUILDBOT_SERVER_URL "http://buildbot.libretro.com/nightly/windows-msvc2017-uwp/arm/latest/"
 #elif defined(__aarch64__) || defined(_M_ARM64)
-static const char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/windows-msvc2017-uwp/arm64/latest/";
+#define DEFAULT_BUILDBOT_SERVER_URL "http://buildbot.libretro.com/nightly/windows-msvc2017-uwp/arm64/latest/"
 #endif
 #endif
 #elif _MSC_VER == 1600
 #if defined(__x86_64__) || defined(_M_X64)
-static const char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/windows-msvc2010/x86_64/latest/";
+#define DEFAULT_BUILDBOT_SERVER_URL "http://buildbot.libretro.com/nightly/windows-msvc2010/x86_64/latest/"
 #elif defined(__i386__) || defined(__i486__) || defined(__i686__) || defined(_M_IX86) || defined(_M_IA64)
-static const char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/windows-msvc2010/x86/latest/";
+#define DEFAULT_BUILDBOT_SERVER_URL "http://buildbot.libretro.com/nightly/windows-msvc2010/x86/latest/"
 #endif
 #elif _MSC_VER == 1400
-static const char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/windows-msvc2005/x86/latest/";
+#define DEFAULT_BUILDBOT_SERVER_URL "http://buildbot.libretro.com/nightly/windows-msvc2005/x86/latest/"
 #elif _MSC_VER == 1310
-static const char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/windows-msvc2003/x86/latest/";
+#define DEFAULT_BUILDBOT_SERVER_URL "http://buildbot.libretro.com/nightly/windows-msvc2003/x86/latest/"
 #else
 #if defined(__x86_64__) || defined(_M_X64)
-static const char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/windows/x86_64/latest/";
+#define DEFAULT_BUILDBOT_SERVER_URL "http://buildbot.libretro.com/nightly/windows/x86_64/latest/"
 #elif defined(__i386__) || defined(__i486__) || defined(__i686__) || defined(_M_IX86) || defined(_M_IA64)
-static const char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/windows/x86/latest/";
+#define DEFAULT_BUILDBOT_SERVER_URL "http://buildbot.libretro.com/nightly/windows/x86/latest/"
 #endif
 #endif
 #elif defined(__linux__)
 #if defined(__x86_64__)
-static const char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/linux/x86_64/latest/";
+#define DEFAULT_BUILDBOT_SERVER_URL "http://buildbot.libretro.com/nightly/linux/x86_64/latest/"
 #elif defined(__i386__) || defined(__i486__) || defined(__i686__)
-static const char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/linux/x86/latest/";
+#define DEFAULT_BUILDBOT_SERVER_URL "http://buildbot.libretro.com/nightly/linux/x86/latest/"
 #elif defined(__arm__) && __ARM_ARCH == 7 && defined(__ARM_PCS_VFP)
-static const char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/linux/armhf/latest/";
+#define DEFAULT_BUILDBOT_SERVER_URL "http://buildbot.libretro.com/nightly/linux/armhf/latest/"
 #else
-static const char buildbot_server_url[] = "";
+#define DEFAULT_BUILDBOT_SERVER_URL ""
 #endif
 #elif defined(WIIU)
-static const char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/nintendo/wiiu/latest/";
+#define DEFAULT_BUILDBOT_SERVER_URL "http://buildbot.libretro.com/nightly/nintendo/wiiu/latest/"
 #elif defined(HAVE_LIBNX)
-static const char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/nintendo/switch/libnx/latest/";
+#define DEFAULT_BUILDBOT_SERVER_URL "http://buildbot.libretro.com/nightly/nintendo/switch/libnx/latest/"
 #elif defined(__CELLOS_LV2__) && defined(DEX_BUILD)
-static const char buildbot_server_url[] = "http://libretro.xbins.org/libretro/nightly/playstation/ps3/latest/dex-ps3/";
+#define DEFAULT_BUILDBOT_SERVER_URL "http://libretro.xbins.org/libretro/nightly/playstation/ps3/latest/dex-ps3/"
 #elif defined(__CELLOS_LV2__) && defined(CEX_BUILD)
-static const char buildbot_server_url[] = "http://libretro.xbins.org/libretro/nightly/playstation/ps3/latest/cex-ps3/";
+#define DEFAULT_BUILDBOT_SERVER_URL "http://libretro.xbins.org/libretro/nightly/playstation/ps3/latest/cex-ps3/"
 #elif defined(__CELLOS_LV2__) && defined(ODE_BUILD)
-static const char buildbot_server_url[] = "http://libretro.xbins.org/libretro/nightly/playstation/ps3/latest/ode-ps3/";
+#define DEFAULT_BUILDBOT_SERVER_URL "http://libretro.xbins.org/libretro/nightly/playstation/ps3/latest/ode-ps3/"
 #else
-static const char buildbot_server_url[] = "";
+#define DEFAULT_BUILDBOT_SERVER_URL ""
 #endif
 
 #define DEFAULT_BUILDBOT_ASSETS_SERVER_URL "http://buildbot.libretro.com/assets/"

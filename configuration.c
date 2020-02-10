@@ -2165,7 +2165,7 @@ void config_set_defaults(void *data)
       }
    }
 
-   strlcpy(settings->paths.network_buildbot_url, buildbot_server_url,
+   strlcpy(settings->paths.network_buildbot_url, DEFAULT_BUILDBOT_SERVER_URL,
          sizeof(settings->paths.network_buildbot_url));
    strlcpy(settings->paths.network_buildbot_assets_url,
          DEFAULT_BUILDBOT_ASSETS_SERVER_URL,
