@@ -236,7 +236,6 @@ void disk_control_get_image_label(
 
 error:
    label[0] = '\0';
-   return;
 }
 
 /***********/

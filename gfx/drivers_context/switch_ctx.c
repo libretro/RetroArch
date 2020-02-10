@@ -47,10 +47,8 @@ void switch_ctx_destroy(void *data)
 }
 
 static void switch_ctx_get_video_size(void *data,
-                                      unsigned *width, unsigned *height)
+      unsigned *width, unsigned *height)
 {
-   switch_ctx_data_t *ctx_nx = (switch_ctx_data_t *)data;
-
    switch (appletGetOperationMode())
       {
          default:

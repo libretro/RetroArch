@@ -7944,7 +7944,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          unsigned i;
          char text[PATH_MAX_LENGTH];
          char current_profile[PATH_MAX_LENGTH];
+#ifdef HAVE_LAKKA_SWITCH
          FILE               *profile = NULL;
+#endif
          const size_t profiles_count = sizeof(SWITCH_CPU_PROFILES)/sizeof(SWITCH_CPU_PROFILES[1]);
 
          runloop_msg_queue_push("Warning : extended overclocking can damage the Switch", 1, 90, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);

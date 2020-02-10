@@ -3276,18 +3276,18 @@ static int action_ok_deferred_list_stub(const char *path,
 static int action_ok_set_switch_cpu_profile(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   char* profile_name = SWITCH_CPU_PROFILES[entry_idx];
    char command[PATH_MAX_LENGTH] = {0};
-
 #ifdef HAVE_LAKKA_SWITCH
+   char* profile_name            = SWITCH_CPU_PROFILES[entry_idx];
+
    snprintf(command, sizeof(command), "cpu-profile set '%s'", profile_name);
 
    system(command);
    snprintf(command, sizeof(command), "Current profile set to %s", profile_name);
 #else
+   unsigned profile_clock = SWITCH_CPU_SPEEDS_VALUES[entry_idx];
    config_get_ptr()->uints.libnx_overclock = entry_idx;
 
-   unsigned profile_clock = SWITCH_CPU_SPEEDS_VALUES[entry_idx];
    if (hosversionBefore(8, 0, 0))
       pcvSetClockRate(PcvModule_CpuBus, (u32)profile_clock);
    else

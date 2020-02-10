@@ -963,6 +963,8 @@ static bool switch_input_set_sensor_state(void *data, unsigned port,
             sw->sixaxis_handles_count[port] = handles_count;
          }
          return true;
+      case RETRO_SENSOR_DUMMY:
+         break;
    }
 #endif
 
