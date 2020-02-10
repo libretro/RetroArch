@@ -250,7 +250,7 @@ void menu_thumbnail_request(
 
          /* Would like to cancel any existing image load tasks
           * here, but can't see how to do it... */
-         if(task_push_image_load(
+         if (task_push_image_load(
                thumbnail_path, video_driver_supports_rgba(),
                menu_thumbnail_upscale_threshold,
                menu_thumbnail_handle_upload, thumbnail_tag))
@@ -343,7 +343,7 @@ void menu_thumbnail_request_file(
 
    /* Would like to cancel any existing image load tasks
     * here, but can't see how to do it... */
-   if(task_push_image_load(
+   if (task_push_image_load(
          file_path, video_driver_supports_rgba(),
          menu_thumbnail_upscale_threshold,
          menu_thumbnail_handle_upload, thumbnail_tag))

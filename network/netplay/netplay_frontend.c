@@ -856,7 +856,7 @@ static void netplay_announce(void)
          frontend_drv->ident, frontend_architecture_tmp);
 
 #ifdef HAVE_DISCORD
-   if(discord_is_ready())
+   if (discord_is_ready())
       net_http_urlencode(&username, discord_get_own_username());
    else
 #endif

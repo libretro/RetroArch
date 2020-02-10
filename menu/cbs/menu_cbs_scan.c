@@ -113,7 +113,7 @@ int action_switch_thumbnail(const char *path,
        * changing thumbnail view mode.
        * For other menu drivers, we cycle through available thumbnail
        * types. */
-      if(!string_is_equal(settings->arrays.menu_driver, "rgui") &&
+      if (!string_is_equal(settings->arrays.menu_driver, "rgui") &&
          !string_is_equal(settings->arrays.menu_driver, "glui"))
       {
 			settings->uints.menu_left_thumbnails++;
@@ -131,7 +131,7 @@ int action_switch_thumbnail(const char *path,
        * changing thumbnail view mode.
        * For other menu drivers, we cycle through available thumbnail
        * types. */
-      if(!string_is_equal(settings->arrays.menu_driver, "rgui") &&
+      if (!string_is_equal(settings->arrays.menu_driver, "rgui") &&
          !string_is_equal(settings->arrays.menu_driver, "glui"))
       {
          settings->uints.menu_thumbnails++;

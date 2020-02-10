@@ -5874,7 +5874,7 @@ static void materialui_populate_nav_bar(
    mui->nav_bar.menu_tabs[menu_tab_index].active        =
          string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU));
 
-   if(mui->nav_bar.menu_tabs[menu_tab_index].active)
+   if (mui->nav_bar.menu_tabs[menu_tab_index].active)
       mui->nav_bar.active_menu_tab_index = menu_tab_index;
 
    menu_tab_index++;
@@ -5889,7 +5889,7 @@ static void materialui_populate_nav_bar(
       mui->nav_bar.menu_tabs[menu_tab_index].active        =
             string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB));
 
-      if(mui->nav_bar.menu_tabs[menu_tab_index].active)
+      if (mui->nav_bar.menu_tabs[menu_tab_index].active)
          mui->nav_bar.active_menu_tab_index = menu_tab_index;
 
       menu_tab_index++;
@@ -5903,7 +5903,7 @@ static void materialui_populate_nav_bar(
    mui->nav_bar.menu_tabs[menu_tab_index].active        =
          string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS_TAB));
 
-   if(mui->nav_bar.menu_tabs[menu_tab_index].active)
+   if (mui->nav_bar.menu_tabs[menu_tab_index].active)
       mui->nav_bar.active_menu_tab_index = menu_tab_index;
 
    menu_tab_index++;
