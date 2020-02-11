@@ -12844,9 +12844,10 @@ static bool setting_append_list(
 
          START_SUB_GROUP(list, list_info, "Display", &group_info, &subgroup_info, parent_group);
 
-         /* Only implemented for GLUI and XMB at present */
+         /* Only implemented for GLUI, XMB and Ozone at present */
          if (string_is_equal(settings->arrays.menu_driver, "glui") ||
-             string_is_equal(settings->arrays.menu_driver, "xmb"))
+             string_is_equal(settings->arrays.menu_driver, "xmb") ||
+             string_is_equal(settings->arrays.menu_driver, "ozone"))
             CONFIG_FLOAT(
                   list, list_info,
                   &settings->floats.menu_scale_factor,
