@@ -1039,7 +1039,10 @@ bool netplay_pre_frame(netplay_t *netplay)
       }
    }
 
-   sync_stalled = !netplay_sync_pre_frame(netplay);
+   sync_stalled = !netplay_sync_pre_frame(netplay,
+         settings->paths.netplay_password,
+         settings->paths.netplay_spectate_password
+         );
 
    /* If we're disconnected, deinitialize */
    if (!netplay->is_server && !netplay->connections[0].active)
@@ -1466,6 +1469,8 @@ bool init_netplay(void *direct_host, const char *server, unsigned port)
          discord_get_own_username() ? discord_get_own_username() :
 #endif
          settings->paths.username,
+         settings->paths.netplay_password,
+         settings->paths.netplay_spectate_password,
          quirks);
 
    if (netplay_data)
