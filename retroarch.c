@@ -5865,18 +5865,16 @@ static void command_event_runtime_log_init(void)
       strlcpy(runtime_core_path, core_path, sizeof(runtime_core_path));
 }
 
-static void retroarch_set_frame_limit(void)
+static void retroarch_set_frame_limit(float fastforward_ratio_orig)
 {
-   settings_t                 *settings = configuration_settings;
    struct retro_system_av_info *av_info = &video_driver_av_info;
-   float fastforward_ratio_orig         = settings->floats.fastforward_ratio;
-   float fastforward_ratio              = (fastforward_ratio_orig == 0.0f) ? 1.0f : fastforward_ratio_orig;
+   float fastforward_ratio              = (fastforward_ratio_orig == 0.0f) 
+      ? 1.0f : fastforward_ratio_orig;
 
    frame_limit_last_time                = cpu_features_get_time_usec();
    frame_limit_minimum_time             = (retro_time_t)roundf(1000000.0f
          / (av_info->timing.fps * fastforward_ratio));
 }
-
 
 static bool command_event_init_core(enum rarch_core_type type)
 {
@@ -5958,7 +5956,7 @@ static bool command_event_init_core(enum rarch_core_type type)
    if (!core_load(settings->uints.input_poll_type_behavior))
       return false;
 
-   retroarch_set_frame_limit();
+   retroarch_set_frame_limit(configuration_settings->floats.fastforward_ratio);
    command_event_runtime_log_init();
    return true;
 }
@@ -7724,7 +7722,8 @@ TODO: Add a setting for these tweaks */
          command_event_set_mixer_volume(-0.5f);
          break;
       case CMD_EVENT_SET_FRAME_LIMIT:
-         retroarch_set_frame_limit();
+         retroarch_set_frame_limit(
+               configuration_settings->floats.fastforward_ratio);
          break;
       case CMD_EVENT_DISCORD_INIT:
 #ifdef HAVE_DISCORD
@@ -9774,17 +9773,20 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
       case RETRO_ENVIRONMENT_GET_PREFERRED_HW_RENDER:
       {
          unsigned *cb = (unsigned*)data;
-         settings_t *settings  = configuration_settings;
+         settings_t *settings          = configuration_settings;
+         const char *video_driver_name = settings->arrays.video_driver;
+
          RARCH_LOG("[Environ]: GET_PREFERRED_HW_RENDER.\n");
+
          if (!settings->bools.driver_switch_enable)
              return false;
-         else if (!strcmp(settings->arrays.video_driver, "glcore"))
+         else if (!strcmp(video_driver_name, "glcore"))
              *cb = RETRO_HW_CONTEXT_OPENGL_CORE;
-         else if (!strcmp(settings->arrays.video_driver, "gl"))
+         else if (!strcmp(video_driver_name, "gl"))
              *cb = RETRO_HW_CONTEXT_OPENGL;
-         else if (!strcmp(settings->arrays.video_driver, "vulkan"))
+         else if (!strcmp(video_driver_name, "vulkan"))
              *cb = RETRO_HW_CONTEXT_VULKAN;
-         else if (!strncmp(settings->arrays.video_driver, "d3d", 3))
+         else if (!strncmp(video_driver_name, "d3d", 3))
              *cb = RETRO_HW_CONTEXT_DIRECT3D;
          else
              *cb = RETRO_HW_CONTEXT_NONE;
@@ -9979,12 +9981,13 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
 
       case RETRO_ENVIRONMENT_GET_CORE_ASSETS_DIRECTORY:
       {
-         const char **dir = (const char**)data;
+         const char **dir            = (const char**)data;
+         const char *dir_core_assets = settings->paths.directory_core_assets;
 
-         *dir = *settings->paths.directory_core_assets ?
-            settings->paths.directory_core_assets : NULL;
+         *dir = *dir_core_assets ?
+            dir_core_assets : NULL;
          RARCH_LOG("[Environ]: CORE_ASSETS_DIRECTORY: \"%s\".\n",
-               settings->paths.directory_core_assets);
+               dir_core_assets);
          break;
       }
 
