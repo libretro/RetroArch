@@ -229,6 +229,7 @@ static bool menu_shader_manager_save_preset_internal(
 {
    bool ret                       = false;
    enum rarch_shader_type type    = RARCH_SHADER_NONE;
+   settings_t *settings           = config_get_ptr();
    char *preset_path              = NULL;
    size_t i                       = 0;
    char fullname[PATH_MAX_LENGTH];
@@ -271,7 +272,9 @@ static bool menu_shader_manager_save_preset_internal(
    {
       preset_path = fullname;
 
-      ret = video_shader_write_preset(preset_path, shader, save_reference);
+      ret = video_shader_write_preset(preset_path,
+            settings->paths.directory_video_shader,
+            shader, save_reference);
 
       if (ret)
          RARCH_LOG("Saved shader preset to %s.\n", preset_path);
@@ -281,7 +284,6 @@ static bool menu_shader_manager_save_preset_internal(
    else
    {
       const char *dirs[3]  = {0};
-      settings_t *settings = config_get_ptr();
       char config_directory[PATH_MAX_LENGTH];
 
       config_directory[0] = '\0';
@@ -306,7 +308,9 @@ static bool menu_shader_manager_save_preset_internal(
 
          preset_path = buffer;
 
-         ret = video_shader_write_preset(preset_path, shader, save_reference);
+         ret = video_shader_write_preset(preset_path,
+               settings->paths.directory_video_shader,
+               shader, save_reference);
 
          if (ret)
          {
