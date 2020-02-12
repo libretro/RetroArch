@@ -34,7 +34,6 @@
 
 #include "menu_animation.h"
 #include "menu_driver.h"
-#include "../configuration.h"
 #include "../performance_counters.h"
 
 struct tween
@@ -1186,7 +1185,11 @@ bool menu_animation_push(menu_animation_ctx_entry_t *entry)
    return true;
 }
 
-static void menu_animation_update_time(bool timedate_enable, unsigned video_width, unsigned video_height)
+static void menu_animation_update_time(
+      const char *menu_driver,
+      bool timedate_enable,
+      unsigned video_width, unsigned video_height,
+      float menu_ticker_speed)
 {
    static retro_time_t
       last_clock_update       = 0;
@@ -1198,12 +1201,13 @@ static void menu_animation_update_time(bool timedate_enable, unsigned video_widt
    static float ticker_pixel_accumulator  = 0.0f;
    unsigned ticker_pixel_accumulator_uint = 0;
    float ticker_pixel_increment           = 0.0f;
-
    /* Adjust ticker speed */
-   settings_t *settings       = config_get_ptr();
-   float speed_factor         = settings->floats.menu_ticker_speed > 0.0001f ? settings->floats.menu_ticker_speed : 1.0f;
-   unsigned ticker_speed      = (unsigned)(((float)TICKER_SPEED / speed_factor) + 0.5);
-   unsigned ticker_slow_speed = (unsigned)(((float)TICKER_SLOW_SPEED / speed_factor) + 0.5);
+   float speed_factor                     = (menu_ticker_speed > 0.0001f)
+      ? menu_ticker_speed : 1.0f;
+   unsigned ticker_speed                  = 
+      (unsigned)(((float)TICKER_SPEED / speed_factor) + 0.5);
+   unsigned ticker_slow_speed             = 
+      (unsigned)(((float)TICKER_SLOW_SPEED / speed_factor) + 0.5);
 
    /* Note: cur_time & old_time are in us, delta_time is in ms */
    cur_time   = cpu_features_get_time_usec();
@@ -1262,13 +1266,13 @@ static void menu_animation_update_time(bool timedate_enable, unsigned video_widt
        *   multiplied by a small correction factor (since the
        *   default 1.0x speed is just a little faster than the
        *   non-smooth ticker) */
-      if (string_is_equal(settings->arrays.menu_driver, "rgui"))
+      if (string_is_equal(menu_driver, "rgui"))
          ticker_pixel_increment *= 0.25f;
       /* TODO/FIXME: Remove this Ozone special case if/when
        * Ozone gets proper DPI scaling */
-      else if (string_is_equal(settings->arrays.menu_driver, "ozone"))
+      else if (string_is_equal(menu_driver, "ozone"))
          ticker_pixel_increment *= 0.5f;
-      else if (string_is_equal(settings->arrays.menu_driver, "glui"))
+      else if (string_is_equal(menu_driver, "glui"))
          ticker_pixel_increment *= (menu_display_get_dpi_scale(video_width, video_height) * 0.8f);
       else if (video_width > 0)
          ticker_pixel_increment *= ((float)video_width / 1920.0f);
@@ -1286,12 +1290,20 @@ static void menu_animation_update_time(bool timedate_enable, unsigned video_widt
    }
 }
 
-bool menu_animation_update(unsigned video_width, unsigned video_height)
+bool menu_animation_update(
+      const char *menu_driver,
+      bool menu_timedate_enable,
+      float menu_ticker_speed,
+      unsigned video_width,
+      unsigned video_height)
 {
    unsigned i;
-   settings_t *settings = config_get_ptr();
 
-   menu_animation_update_time(settings->bools.menu_timedate_enable, video_width, video_height);
+   menu_animation_update_time(
+         menu_driver,
+         menu_timedate_enable,
+         video_width, video_height,
+         menu_ticker_speed);
 
    anim.in_update       = true;
    anim.pending_deletes = false;
@@ -1305,7 +1317,7 @@ bool menu_animation_update(unsigned video_width, unsigned video_height)
 
       tween->running_since += delta_time;
 
-      *tween->subject = tween->easing(
+      *tween->subject       = tween->easing(
             tween->running_since,
             tween->initial_value,
             tween->target_value - tween->initial_value,

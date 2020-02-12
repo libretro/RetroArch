@@ -27117,7 +27117,11 @@ static enum runloop_state runloop_check_state(void)
    }
 
 #if defined(HAVE_MENU)
-   menu_animation_update(video_driver_width, video_driver_height);
+   menu_animation_update(
+         settings->arrays.menu_driver,
+         settings->bools.menu_timedate_enable,
+         settings->floats.menu_ticker_speed,
+         video_driver_width, video_driver_height);
 
 #ifdef HAVE_MENU_WIDGETS
    if (menu_widgets_inited)
