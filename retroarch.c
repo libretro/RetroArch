@@ -14746,7 +14746,16 @@ static unsigned menu_event(
                RETRO_DEVICE_ID_JOYPAD_A : RETRO_DEVICE_ID_JOYPAD_B;
    unsigned ok_current                             = BIT256_GET_PTR(p_input, menu_ok_btn);
    unsigned ok_trigger                             = ok_current & ~ok_old;
-   bool is_rgui                                    = string_is_equal(settings->arrays.menu_driver, "rgui");
+#ifdef HAVE_RGUI
+   /* TODO/FIXME - instead of looking explicitly for the name rgui, instead 
+    * perhaps check if set_texture is set - I assume we want to check if
+    * a menu driver is framebuffer-based instead of specifically looking if 
+    * it's RGUI */
+   bool is_rgui                                    = string_is_equal(
+         settings->arrays.menu_driver, "rgui");
+#else
+   bool is_rgui                                    = false;
+#endif
 
    ok_old                                          = ok_current;
 
@@ -14829,26 +14838,29 @@ static unsigned menu_event(
 
       if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_L))
       {
-         if (menu_event_get_osk_idx() > OSK_TYPE_UNKNOWN + 1)
+         enum osk_type osk_type_idx = menu_event_get_osk_idx();
+         if (osk_type_idx > OSK_TYPE_UNKNOWN + 1)
             menu_event_set_osk_idx((enum osk_type)(
-                     menu_event_get_osk_idx() - 1));
+                     osk_type_idx - 1));
          else
             menu_event_set_osk_idx((enum osk_type)(is_rgui ? OSK_SYMBOLS_PAGE1 : OSK_TYPE_LAST - 1));
       }
 
       if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_R))
       {
-         if (menu_event_get_osk_idx() < (is_rgui ? OSK_SYMBOLS_PAGE1 : OSK_TYPE_LAST - 1))
+         enum osk_type osk_type_idx = menu_event_get_osk_idx();
+         if (osk_type_idx < (is_rgui ? OSK_SYMBOLS_PAGE1 : OSK_TYPE_LAST - 1))
             menu_event_set_osk_idx((enum osk_type)(
-                     menu_event_get_osk_idx() + 1));
+                     osk_type_idx + 1));
          else
             menu_event_set_osk_idx((enum osk_type)(OSK_TYPE_UNKNOWN + 1));
       }
 
       if (BIT256_GET_PTR(p_trigger_input, menu_ok_btn))
       {
-         if (menu_event_get_osk_ptr() >= 0)
-            menu_event_osk_append(menu_event_get_osk_ptr());
+         int ptr = menu_event_get_osk_ptr();
+         if (ptr >= 0)
+            menu_event_osk_append(ptr, is_rgui);
       }
 
       if (BIT256_GET_PTR(p_trigger_input, menu_cancel_btn))
@@ -15510,7 +15522,9 @@ static int menu_input_pointer_post_iterate(
                if (point.retcode > -1)
                {
                   menu_event_set_osk_ptr(point.retcode);
-                  menu_event_osk_append(point.retcode);
+                  menu_event_osk_append(point.retcode,
+                  string_is_equal(
+                     configuration_settings->arrays.menu_driver, "rgui"));
                }
             }
          }
