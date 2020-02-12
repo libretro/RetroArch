@@ -34,7 +34,6 @@
 
 #include "../video_shader_parse.h"
 #include "../../managers/state_manager.h"
-#include "../../configuration.h"
 #include "../../retroarch.h"
 #include "../../verbosity.h"
 
