@@ -5407,7 +5407,7 @@ static void command_event_set_volume(float gain)
 
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
    if (menu_widgets_inited)
-      menu_widgets_volume_update_and_show();
+      menu_widgets_volume_update_and_show(settings->floats.audio_volume);
    else
 #endif
       runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
@@ -6889,7 +6889,8 @@ TODO: Add a setting for these tweaks */
 
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
             if (menu_widgets_inited)
-               menu_widgets_volume_update_and_show();
+               menu_widgets_volume_update_and_show(
+                     configuration_settings->floats.audio_volume);
             else
 #endif
                runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
@@ -23425,7 +23426,11 @@ static void drivers_init(int flags)
 
       if (menu_widgets_inited)
          menu_widgets_context_reset(video_is_threaded,
-               video_driver_width, video_driver_height);
+               video_driver_width, video_driver_height,
+               settings->floats.video_font_size,
+               settings->paths.directory_assets,
+               settings->paths.path_font
+               );
    }
    else
    {
@@ -25768,7 +25773,12 @@ static void runloop_task_msg_queue_push(
       runloop_msg_queue_lock();
       ui_companion_driver_msg_queue_push(msg,
             prio, task ? duration : duration * 60 / 1000, flush);
-      menu_widgets_msg_queue_push(task, msg, duration, NULL, (enum message_queue_icon)MESSAGE_QUEUE_CATEGORY_INFO, (enum message_queue_category)MESSAGE_QUEUE_ICON_DEFAULT, prio, flush);
+      menu_widgets_msg_queue_push(task, msg, duration, NULL,
+            (enum message_queue_icon)MESSAGE_QUEUE_CATEGORY_INFO,
+            (enum message_queue_category)MESSAGE_QUEUE_ICON_DEFAULT,
+            prio, flush,
+            configuration_settings->floats.video_font_size
+            );
       runloop_msg_queue_unlock();
    }
    else
@@ -26640,7 +26650,8 @@ void runloop_msg_queue_push(const char *msg,
    {
       menu_widgets_msg_queue_push(NULL, msg,
             roundf((float)duration / 60.0f * 1000.0f),
-            title, icon, category, prio, flush);
+            title, icon, category, prio, flush,
+            configuration_settings->floats.video_font_size);
       duration = duration * 60 / 1000;
    }
    else
@@ -27141,7 +27152,9 @@ static enum runloop_state runloop_check_state(void)
    if (menu_widgets_inited)
    {
       runloop_msg_queue_lock();
-      menu_widgets_iterate(video_driver_width, video_driver_height);
+      menu_widgets_iterate(
+            settings->floats.video_font_size,
+            video_driver_width, video_driver_height);
       runloop_msg_queue_unlock();
    }
 #endif
