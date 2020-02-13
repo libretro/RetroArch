@@ -111,6 +111,10 @@ typedef enum
    CFAllDomainsMask     = 0x0ffff  /* All domains: all of the above and future items */
 } CFDomainMask;
 
+#if (defined(OSX) && !(defined(__ppc__) || defined(__ppc64__)))
+static int speak_pid                            = 0;
+#endif
+
 static char darwin_cpu_model_name[64] = {0};
 
 static NSSearchPathDirectory NSConvertFlagsCF(unsigned flags)
