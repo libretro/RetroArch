@@ -12,7 +12,7 @@ These programs are instantiated as dynamic libraries. We refer to these as "libr
 
 ![rgui menu driver](docs/rgui-main-menu.jpg "rgui menu driver")
 
-![glui menu driver](docs/glui-main-menu.jpge "glui menu driver")
+![glui menu driver](docs/glui-main-menu.jpg "glui menu driver")
 
 ![ozone menu driver](docs/ozone-main-menu.jpg "ozone menu driver")
 
