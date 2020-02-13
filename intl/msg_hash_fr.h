@@ -43,10 +43,6 @@ MSG_HASH(
     "Compilateur inconnu"
     )
 MSG_HASH(
-    MSG_NATIVE,
-    "Native"
-    )
-MSG_HASH(
     MSG_DEVICE_DISCONNECTED_FROM_PORT,
     "Périphérique déconnecté du port"
     )
@@ -7731,10 +7727,6 @@ MSG_HASH(
     "Vitesse de l'animation en arrière-plan"
     )
 MSG_HASH(
-    MENU_ENUM_SUBLABEL_MENU_RGUI_PARTICLE_EFFECT_SPEED,
-    "Adjust speed of background particle animation effects."
-    )
-MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_RGUI_EXTENDED_ASCII,
     "Prise en charge de l'ASCII étendu"
     )
@@ -8274,10 +8266,6 @@ MSG_HASH(
     "Parcourir l'adresse : %08X"
     )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_CHEAT_DESC,
-    "Description"
-    )
-MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEAT_STATE,
     "Activé"
     )
@@ -8476,70 +8464,6 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_32,
     "32-bit, valeur max = 0xFFFFFFFF"
-    )
-MSG_HASH(
-    MENU_ENUM_LABEL_RUMBLE_PORT_0,
-    "1"
-    )
-MSG_HASH(
-    MENU_ENUM_LABEL_RUMBLE_PORT_1,
-    "2"
-    )
-MSG_HASH(
-    MENU_ENUM_LABEL_RUMBLE_PORT_2,
-    "3"
-    )
-MSG_HASH(
-    MENU_ENUM_LABEL_RUMBLE_PORT_3,
-    "4"
-    )
-MSG_HASH(
-    MENU_ENUM_LABEL_RUMBLE_PORT_4,
-    "5"
-    )
-MSG_HASH(
-    MENU_ENUM_LABEL_RUMBLE_PORT_5,
-    "6"
-    )
-MSG_HASH(
-    MENU_ENUM_LABEL_RUMBLE_PORT_6,
-    "7"
-    )
-MSG_HASH(
-    MENU_ENUM_LABEL_RUMBLE_PORT_7,
-    "8"
-    )
-MSG_HASH(
-    MENU_ENUM_LABEL_RUMBLE_PORT_8,
-    "9"
-    )
-MSG_HASH(
-    MENU_ENUM_LABEL_RUMBLE_PORT_9,
-    "10"
-    )
-MSG_HASH(
-    MENU_ENUM_LABEL_RUMBLE_PORT_10,
-    "11"
-    )
-MSG_HASH(
-    MENU_ENUM_LABEL_RUMBLE_PORT_11,
-    "12"
-    )
-MSG_HASH(
-    MENU_ENUM_LABEL_RUMBLE_PORT_12,
-    "13"
-    )
-MSG_HASH(
-    MENU_ENUM_LABEL_RUMBLE_PORT_13,
-    "14"
-    )
-MSG_HASH(
-    MENU_ENUM_LABEL_RUMBLE_PORT_14,
-    "15"
-    )
-MSG_HASH(
-    MENU_ENUM_LABEL_RUMBLE_PORT_15,
-    "16"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_RUMBLE_PORT_16,
@@ -8776,10 +8700,6 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_CONFIRM_DELETE_PLAYLIST,
     "Êtes-vous sûr de vouloir supprimer la liste de lecture \"%1\"?"
-    )
-MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_QT_QUESTION,
-    "Question"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_DELETE_FILE,
