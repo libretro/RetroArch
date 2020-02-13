@@ -59,6 +59,7 @@ typedef struct ozone_handle ozone_handle_t;
 #define SIDEBAR_ENTRY_Y_PADDING     10
 #define SIDEBAR_ENTRY_ICON_SIZE     46
 #define SIDEBAR_ENTRY_ICON_PADDING  15
+#define SIDEBAR_GRADIENT_HEIGHT     28
 
 #define FULLSCREEN_THUMBNAIL_PADDING 48
 
@@ -151,6 +152,14 @@ struct ozone_handle
    unsigned sublabel_font_glyph_width;
    unsigned footer_font_glyph_width;
    unsigned sidebar_font_glyph_width;
+   unsigned time_font_glyph_width;
+
+   unsigned title_font_glyph_height;
+   unsigned entry_font_glyph_height;
+   unsigned sublabel_font_glyph_height;
+   unsigned footer_font_glyph_height;
+   unsigned sidebar_font_glyph_height;
+   unsigned time_font_glyph_height;
 
    ozone_theme_t *theme;
 
@@ -166,6 +175,11 @@ struct ozone_handle
       float cursor_border[16];
       float message_background[16];
    } theme_dynamic;
+
+   unsigned last_width;
+   unsigned last_height;
+   float last_scale_factor;
+   float capped_scale_factor;
 
    bool need_compute;
 
@@ -213,11 +227,17 @@ struct ozone_handle
       int sidebar_entry_height;
       int sidebar_entry_icon_size;
       int sidebar_entry_icon_padding;
+      int sidebar_gradient_height;
 
       int cursor_size;
 
       int thumbnail_bar_width;
       int fullscreen_thumbnail_padding;
+
+      int spacer_1px;
+      int spacer_2px;
+      int spacer_3px;
+      int spacer_5px;
    } dimensions;
 
    bool show_cursor;
@@ -315,6 +335,8 @@ void ozone_compute_entries_position(ozone_handle_t *ozone);
 void ozone_update_scroll(ozone_handle_t *ozone, bool allow_animation, ozone_node_t *node);
 
 void ozone_sidebar_update_collapse(ozone_handle_t *ozone, bool allow_animation);
+
+void ozone_refresh_sidebars(ozone_handle_t *ozone, unsigned video_height);
 
 void ozone_entries_update_thumbnail_bar(ozone_handle_t *ozone, bool is_playlist, bool allow_animation);
 

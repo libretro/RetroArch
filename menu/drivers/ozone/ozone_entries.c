@@ -53,8 +53,9 @@ static void ozone_draw_entry_value(ozone_handle_t *ozone,
       uint32_t alpha_uint32,
       menu_entry_t *entry)
 {
-   bool switch_is_on = true;
-   bool do_draw_text = false;
+   bool switch_is_on  = true;
+   bool do_draw_text  = false;
+   float scale_factor = ozone->capped_scale_factor;
 
    if (!entry->checked && string_is_empty(value))
       return;
@@ -63,7 +64,7 @@ static void ozone_draw_entry_value(ozone_handle_t *ozone,
    if (entry->checked)
    {
       menu_display_blend_begin(video_info);
-      ozone_draw_icon(video_info, 30, 30, ozone->theme->textures[OZONE_THEME_TEXTURE_CHECK], x - 20, y - 22, video_info->width, video_info->height, 0, 1, ozone->theme_dynamic.entries_checkmark);
+      ozone_draw_icon(video_info, 30 * scale_factor, 30 * scale_factor, ozone->theme->textures[OZONE_THEME_TEXTURE_CHECK], x - 20 * scale_factor, y - 22 * scale_factor, video_info->width, video_info->height, 0, 1, ozone->theme_dynamic.entries_checkmark);
       menu_display_blend_end(video_info);
       return;
    }
@@ -145,7 +146,7 @@ void ozone_update_scroll(ozone_handle_t *ozone, bool allow_animation, ozone_node
       node->position_y +
       node->height / 2;
 
-   bottom_boundary                      = video_info_height - ozone->dimensions.header_height - 1 - ozone->dimensions.footer_height;
+   bottom_boundary                      = video_info_height - ozone->dimensions.header_height - ozone->dimensions.spacer_1px - ozone->dimensions.footer_height;
    entries_middle                       = video_info_height/2;
 
    new_scroll = ozone->animations.scroll_y - (current_selection_middle_onscreen - entries_middle);
@@ -199,7 +200,7 @@ void ozone_compute_entries_position(ozone_handle_t *ozone)
 
    file_list_t *selection_buf    = NULL;
    int entry_padding             = ozone_get_entries_padding(ozone, false);
-   unsigned sublabel_line_height = font_driver_get_line_height(ozone->fonts.entries_sublabel, 1.0f);
+   float scale_factor            = ozone->capped_scale_factor;
 
    menu_entries_ctl(MENU_ENTRIES_CTL_START_GET, &i);
 
@@ -254,7 +255,7 @@ void ozone_compute_entries_position(ozone_handle_t *ozone)
          char wrapped_sublabel_str[MENU_SUBLABEL_MAX_LENGTH];
          wrapped_sublabel_str[0] = '\0';
 
-         node->height += ozone->dimensions.entry_spacing + 40;
+         node->height += ozone->dimensions.entry_spacing + 40 * scale_factor;
 
          sublabel_max_width = video_info_width -
             entry_padding * 2 - ozone->dimensions.entry_icon_padding * 2;
@@ -271,7 +272,7 @@ void ozone_compute_entries_position(ozone_handle_t *ozone)
 
          if (lines > 1)
          {
-            node->height += (lines - 1) * sublabel_line_height;
+            node->height += (lines - 1) * ozone->sublabel_font_glyph_height;
             node->wrap = true;
          }
       }
@@ -363,6 +364,8 @@ void ozone_draw_entries(ozone_handle_t *ozone, video_frame_info_t *video_info,
    int16_t cursor_x        = 0;
    int16_t cursor_y        = 0;
 
+   float scale_factor      = ozone->capped_scale_factor;
+
    menu_input_get_pointer_state(&pointer);
 
    if (pointer.type != MENU_POINTER_DISABLED)
@@ -385,7 +388,7 @@ void ozone_draw_entries(ozone_handle_t *ozone, video_frame_info_t *video_info,
    menu_entries_ctl(MENU_ENTRIES_CTL_START_GET, &i);
 
    entries_end    = file_list_get_size(selection_buf);
-   y              = ozone->dimensions.header_height + 1 + ozone->dimensions.entry_padding_vertical;
+   y              = ozone->dimensions.header_height + ozone->dimensions.spacer_1px + ozone->dimensions.entry_padding_vertical;
    sidebar_offset = ozone->sidebar_offset;
    entry_width    = video_info->width - (unsigned) ozone->dimensions.sidebar_width - ozone->sidebar_offset - entry_padding * 2 - ozone->animations.thumbnail_bar_position;
    button_height  = ozone->dimensions.entry_height; /* height of the button (entry minus sublabel) */
@@ -402,9 +405,9 @@ void ozone_draw_entries(ozone_handle_t *ozone, video_frame_info_t *video_info,
    if (alpha != 1.0f)
    {
       if (old_list)
-         x_offset += invert * -(alpha_anim * 120); /* left */
+         x_offset += invert * -(alpha_anim * 120 * scale_factor); /* left */
       else
-         x_offset += invert * (alpha_anim * 120);  /* right */
+         x_offset += invert * (alpha_anim * 120 * scale_factor);  /* right */
    }
 
    x_offset     += (int) sidebar_offset;
@@ -431,9 +434,9 @@ void ozone_draw_entries(ozone_handle_t *ozone, video_frame_info_t *video_info,
       if (!node || ozone->empty_playlist)
          goto border_iterate;
 
-      if (y + scroll_y + node->height + 20 < ozone->dimensions.header_height + ozone->dimensions.entry_padding_vertical)
+      if (y + scroll_y + node->height + 20 * scale_factor < ozone->dimensions.header_height + ozone->dimensions.entry_padding_vertical)
          goto border_iterate;
-      else if (y + scroll_y - node->height - 20 > bottom_boundary)
+      else if (y + scroll_y - node->height - 20 * scale_factor > bottom_boundary)
          goto border_iterate;
 
       border_start_x = (unsigned) ozone->dimensions.sidebar_width + x_offset + entry_padding;
@@ -444,9 +447,9 @@ void ozone_draw_entries(ozone_handle_t *ozone, video_frame_info_t *video_info,
 
       /* Borders */
       menu_display_draw_quad(video_info, border_start_x,
-         border_start_y, entry_width, 1, video_info->width, video_info->height, ozone->theme_dynamic.entries_border);
+         border_start_y, entry_width, ozone->dimensions.spacer_1px, video_info->width, video_info->height, ozone->theme_dynamic.entries_border);
       menu_display_draw_quad(video_info, border_start_x,
-         border_start_y + button_height, entry_width, 1, video_info->width, video_info->height, ozone->theme_dynamic.entries_border);
+         border_start_y + button_height, entry_width, ozone->dimensions.spacer_1px, video_info->width, video_info->height, ozone->theme_dynamic.entries_border);
 
       /* Cursor */
       if (!old_list && ozone->cursor_mode)
@@ -461,16 +464,16 @@ border_iterate:
 
    /* Cursor(s) layer - current */
    if (!ozone->cursor_in_sidebar)
-      ozone_draw_cursor(ozone, video_info, (unsigned) ozone->dimensions.sidebar_width + x_offset + entry_padding + 3,
-         entry_width - 5, button_height + 2, selection_y + scroll_y + 1, ozone->animations.cursor_alpha * alpha);
+      ozone_draw_cursor(ozone, video_info, (unsigned) ozone->dimensions.sidebar_width + x_offset + entry_padding + ozone->dimensions.spacer_3px,
+         entry_width - ozone->dimensions.spacer_5px, button_height + ozone->dimensions.spacer_2px, selection_y + scroll_y + ozone->dimensions.spacer_1px, ozone->animations.cursor_alpha * alpha);
 
    /* Old*/
    if (!ozone->cursor_in_sidebar_old)
-      ozone_draw_cursor(ozone, video_info, (unsigned) ozone->dimensions.sidebar_width + x_offset + entry_padding + 3,
-         entry_width - 5, button_height + 2, old_selection_y + scroll_y + 1, (1-ozone->animations.cursor_alpha) * alpha);
+      ozone_draw_cursor(ozone, video_info, (unsigned) ozone->dimensions.sidebar_width + x_offset + entry_padding + ozone->dimensions.spacer_3px,
+         entry_width - ozone->dimensions.spacer_5px, button_height + ozone->dimensions.spacer_2px, old_selection_y + scroll_y + ozone->dimensions.spacer_1px, (1-ozone->animations.cursor_alpha) * alpha);
 
    /* Icons + text */
-   y = ozone->dimensions.header_height + 1 + ozone->dimensions.entry_padding_vertical;
+   y = ozone->dimensions.header_height + ozone->dimensions.spacer_1px + ozone->dimensions.entry_padding_vertical;
 
    if (old_list)
       y += ozone->old_list_offset_y;
@@ -527,9 +530,9 @@ border_iterate:
       if (!node)
          continue;
 
-      if (y + scroll_y + node->height + 20 < ozone->dimensions.header_height + ozone->dimensions.entry_padding_vertical)
+      if (y + scroll_y + node->height + 20 * scale_factor < ozone->dimensions.header_height + ozone->dimensions.entry_padding_vertical)
          goto icons_iterate;
-      else if (y + scroll_y - node->height - 20 > bottom_boundary)
+      else if (y + scroll_y - node->height - 20 * scale_factor > bottom_boundary)
          goto icons_iterate;
 
       /* Prepare text */
@@ -538,7 +541,7 @@ border_iterate:
       if (use_smooth_ticker)
       {
          ticker_smooth.selected    = entry_selected && !ozone->cursor_in_sidebar;
-         ticker_smooth.field_width = entry_width - entry_padding - 10 - ozone->dimensions.entry_icon_padding;
+         ticker_smooth.field_width = entry_width - entry_padding - (10 * scale_factor) - ozone->dimensions.entry_icon_padding;
          ticker_smooth.src_str     = entry_rich_label;
          ticker_smooth.dst_str     = rich_label;
          ticker_smooth.dst_str_len = sizeof(rich_label);
@@ -550,7 +553,7 @@ border_iterate:
          ticker.s        = rich_label;
          ticker.str      = entry_rich_label;
          ticker.selected = entry_selected && !ozone->cursor_in_sidebar;
-         ticker.len      = (entry_width - entry_padding - 10 - ozone->dimensions.entry_icon_padding) / ozone->entry_font_glyph_width;
+         ticker.len      = (entry_width - entry_padding - (10 * scale_factor) - ozone->dimensions.entry_icon_padding) / ozone->entry_font_glyph_width;
 
          menu_animation_ticker(&ticker);
       }
@@ -560,8 +563,8 @@ border_iterate:
          /* Note: This entry can never be selected, so ticker_x_offset
           * is irrelevant here (i.e. this text will never scroll) */
          unsigned text_width = font_driver_get_message_width(ozone->fonts.entries_label, rich_label, (unsigned)strlen(rich_label), 1);
-         x_offset = (video_info_width - (unsigned) ozone->dimensions.sidebar_width - entry_padding * 2) / 2 - text_width / 2 - 60;
-         y = video_info_height / 2 - 60;
+         x_offset = (video_info_width - (unsigned) ozone->dimensions.sidebar_width - entry_padding * 2) / 2 - text_width / 2 - 60 * scale_factor;
+         y = video_info_height / 2 - 60 * scale_factor;
       }
 
       menu_entry_get_sublabel(&entry, &sublabel_str);
@@ -628,10 +631,10 @@ border_iterate:
 
       /* Draw text */
       ozone_draw_text(video_info, ozone, rich_label, ticker_x_offset + text_offset + (unsigned) ozone->dimensions.sidebar_width + x_offset + entry_padding + ozone->dimensions.entry_icon_size + ozone->dimensions.entry_icon_padding * 2,
-         y + ozone->dimensions.entry_height / 2 + FONT_SIZE_ENTRIES_LABEL * 3/8 + scroll_y, TEXT_ALIGN_LEFT, video_info->width, video_info->height, ozone->fonts.entries_label, COLOR_TEXT_ALPHA(ozone->theme->text_rgba, alpha_uint32), false);
+         y + ozone->dimensions.entry_height / 2 + ozone->entry_font_glyph_height * 3.0f/10.0f + scroll_y, TEXT_ALIGN_LEFT, video_info->width, video_info->height, ozone->fonts.entries_label, COLOR_TEXT_ALPHA(ozone->theme->text_rgba, alpha_uint32), false);
       if (!string_is_empty(sublabel_str))
          ozone_draw_text(video_info, ozone, sublabel_str, (unsigned) ozone->dimensions.sidebar_width + x_offset + entry_padding + ozone->dimensions.entry_icon_padding,
-            y + ozone->dimensions.entry_height + 1 + 5 + FONT_SIZE_ENTRIES_SUBLABEL + scroll_y, TEXT_ALIGN_LEFT, video_info->width, video_info->height, ozone->fonts.entries_sublabel, COLOR_TEXT_ALPHA(ozone->theme->text_sublabel_rgba, alpha_uint32), false);
+            y + ozone->dimensions.entry_height + ozone->dimensions.spacer_1px + ozone->dimensions.spacer_5px + ozone->sublabel_font_glyph_height + scroll_y, TEXT_ALIGN_LEFT, video_info->width, video_info->height, ozone->fonts.entries_sublabel, COLOR_TEXT_ALPHA(ozone->theme->text_sublabel_rgba, alpha_uint32), false);
 
       /* Value */
       if (use_smooth_ticker)
@@ -661,7 +664,7 @@ border_iterate:
 
       ozone_draw_entry_value(ozone, video_info, entry_value_ticker,
             value_x_offset + (unsigned) ozone->dimensions.sidebar_width + entry_padding + x_offset + entry_width - ozone->dimensions.entry_icon_padding,
-            y + ozone->dimensions.entry_height / 2 + FONT_SIZE_ENTRIES_LABEL * 3/8 + scroll_y, alpha_uint32, &entry);
+            y + ozone->dimensions.entry_height / 2 + ozone->entry_font_glyph_height * 3.0f/10.0f + scroll_y, alpha_uint32, &entry);
 
 icons_iterate:
       y += node->height;
@@ -680,7 +683,6 @@ static void ozone_draw_no_thumbnail_available(ozone_handle_t *ozone,
 {
    unsigned icon        = OZONE_ENTRIES_ICONS_TEXTURE_CORE_INFO;
    unsigned icon_size   = (unsigned)((float)ozone->dimensions.sidebar_entry_icon_size * 1.5f);
-   unsigned text_height = font_driver_get_line_height(ozone->fonts.footer, 1.0f);
 
    menu_display_blend_begin(video_info);
    ozone_draw_icon(video_info,
@@ -698,7 +700,7 @@ static void ozone_draw_no_thumbnail_available(ozone_handle_t *ozone,
       ozone,
       msg_hash_to_str(MSG_NO_THUMBNAIL_AVAILABLE),
       x_position + sidebar_width/2,
-      video_info->height / 2 - icon_size/2 + text_height * 3 + FONT_SIZE_FOOTER - y_offset,
+      video_info->height / 2 - icon_size/2 + ozone->footer_font_glyph_height * 4 - y_offset,
       TEXT_ALIGN_CENTER,
       video_info->width, video_info->height,
       ozone->fonts.footer,
@@ -710,12 +712,10 @@ static void ozone_draw_no_thumbnail_available(ozone_handle_t *ozone,
 static void ozone_content_metadata_line(video_frame_info_t *video_info, ozone_handle_t *ozone,
    unsigned *y, unsigned column_x, const char *text, unsigned lines_count)
 {
-   int line_height = font_driver_get_line_height(ozone->fonts.footer, 1);
-
    ozone_draw_text(video_info, ozone,
       text,
       column_x,
-      *y + FONT_SIZE_FOOTER,
+      *y + ozone->footer_font_glyph_height,
       TEXT_ALIGN_LEFT,
       video_info->width, video_info->height,
       ozone->fonts.footer,
@@ -724,16 +724,16 @@ static void ozone_content_metadata_line(video_frame_info_t *video_info, ozone_ha
    );
 
    if (lines_count > 0)
-      *y += (unsigned)(line_height * (lines_count - 1)) + (unsigned)((float)line_height * 1.5f);
+      *y += (unsigned)(ozone->footer_font_glyph_height * (lines_count - 1)) + (unsigned)((float)ozone->footer_font_glyph_height * 1.5f);
 }
 
 void ozone_draw_thumbnail_bar(ozone_handle_t *ozone, video_frame_info_t *video_info)
 {
-   unsigned sidebar_height           = video_info->height - ozone->dimensions.header_height - 55 - ozone->dimensions.footer_height;
+   unsigned sidebar_height           = video_info->height - ozone->dimensions.header_height - ozone->dimensions.sidebar_gradient_height * 2 - ozone->dimensions.footer_height;
    unsigned sidebar_width            = ozone->dimensions.thumbnail_bar_width;
    unsigned x_position               = video_info->width - (unsigned) ozone->animations.thumbnail_bar_position;
    unsigned thumbnail_width          = sidebar_width - (ozone->dimensions.sidebar_entry_icon_padding * 2);
-   unsigned thumbnail_height         = (video_info->height - ozone->dimensions.header_height - 2 - ozone->dimensions.footer_height - (ozone->dimensions.sidebar_entry_icon_padding * 3)) / 2;
+   unsigned thumbnail_height         = (video_info->height - ozone->dimensions.header_height - ozone->dimensions.spacer_2px - ozone->dimensions.footer_height - (ozone->dimensions.sidebar_entry_icon_padding * 3)) / 2;
    int thumbnail_x_position          = x_position + ozone->dimensions.sidebar_entry_icon_padding;
    int right_thumbnail_y_position    = 0;
    int left_thumbnail_y_position     = 0;
@@ -744,9 +744,9 @@ void ozone_draw_thumbnail_bar(ozone_handle_t *ozone, video_frame_info_t *video_i
    /* Background */
    if (!video_info->libretro_running)
    {
-      menu_display_draw_quad(video_info, x_position, ozone->dimensions.header_height + 1, (unsigned) ozone->animations.thumbnail_bar_position, 55/2, video_info->width, video_info->height, ozone->theme->sidebar_top_gradient);
-      menu_display_draw_quad(video_info, x_position, ozone->dimensions.header_height + 1 + 55/2, (unsigned) ozone->animations.thumbnail_bar_position, sidebar_height, video_info->width, video_info->height, ozone->theme->sidebar_background);
-      menu_display_draw_quad(video_info, x_position, video_info->height - ozone->dimensions.footer_height - 55/2 - 1, (unsigned) ozone->animations.thumbnail_bar_position, 55/2 + 1, video_info->width, video_info->height, ozone->theme->sidebar_bottom_gradient);
+      menu_display_draw_quad(video_info, x_position, ozone->dimensions.header_height + ozone->dimensions.spacer_1px, (unsigned) ozone->animations.thumbnail_bar_position, ozone->dimensions.sidebar_gradient_height, video_info->width, video_info->height, ozone->theme->sidebar_top_gradient);
+      menu_display_draw_quad(video_info, x_position, ozone->dimensions.header_height + ozone->dimensions.spacer_1px + ozone->dimensions.sidebar_gradient_height, (unsigned) ozone->animations.thumbnail_bar_position, sidebar_height, video_info->width, video_info->height, ozone->theme->sidebar_background);
+      menu_display_draw_quad(video_info, x_position, video_info->height - ozone->dimensions.footer_height - ozone->dimensions.sidebar_gradient_height - ozone->dimensions.spacer_1px, (unsigned) ozone->animations.thumbnail_bar_position, ozone->dimensions.sidebar_gradient_height + ozone->dimensions.spacer_1px, video_info->width, video_info->height, ozone->theme->sidebar_bottom_gradient);
    }
 
    /* Thumbnails */
@@ -787,7 +787,7 @@ void ozone_draw_thumbnail_bar(ozone_handle_t *ozone, video_frame_info_t *video_i
       }
       else
          right_thumbnail_y_position =
-               ozone->dimensions.header_height + 1 +
+               ozone->dimensions.header_height + ozone->dimensions.spacer_1px +
                ozone->dimensions.sidebar_entry_icon_padding;
 
       menu_thumbnail_draw(
@@ -812,7 +812,7 @@ void ozone_draw_thumbnail_bar(ozone_handle_t *ozone, video_frame_info_t *video_i
 
    /* Bottom row : "left" thumbnail or content metadata */
    left_thumbnail_y_position =
-         ozone->dimensions.header_height + 1 +
+         ozone->dimensions.header_height + ozone->dimensions.spacer_1px +
          thumbnail_height +
          (ozone->dimensions.sidebar_entry_icon_padding * 2);
 
@@ -877,7 +877,7 @@ void ozone_draw_thumbnail_bar(ozone_handle_t *ozone, video_frame_info_t *video_i
       /* Separator */
       menu_display_draw_quad(video_info,
          x_position + separator_padding, y,
-         sidebar_width - separator_padding*2, 1,
+         sidebar_width - separator_padding*2, ozone->dimensions.spacer_1px,
          video_info->width, video_info->height,
          ozone->theme_dynamic.entries_border);
 
