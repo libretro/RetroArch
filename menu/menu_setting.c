@@ -12844,15 +12844,29 @@ static bool setting_append_list(
 
          START_SUB_GROUP(list, list_info, "Display", &group_info, &subgroup_info, parent_group);
 
-         /* Only implemented for GLUI, XMB and Ozone at present */
+         /* > MaterialUI, XMB and Ozone all support menu scaling
+          * > RGUI does not, but since scale factor is also used
+          *   for menu widgets, show the setting if widgets are
+          *   enabled */
          if (string_is_equal(settings->arrays.menu_driver, "glui") ||
              string_is_equal(settings->arrays.menu_driver, "xmb") ||
+#ifdef HAVE_MENU_WIDGETS
+             string_is_equal(settings->arrays.menu_driver, "ozone") ||
+             (string_is_equal(settings->arrays.menu_driver, "rgui") &&
+                  settings->bools.menu_enable_widgets))
+#else
              string_is_equal(settings->arrays.menu_driver, "ozone"))
+#endif
+         {
+            enum msg_hash_enums menu_scale_factor_label_value =
+                  string_is_equal(settings->arrays.menu_driver, "rgui") ?
+                        MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_FACTOR : MENU_ENUM_LABEL_VALUE_MENU_SCALE_FACTOR;
+
             CONFIG_FLOAT(
                   list, list_info,
                   &settings->floats.menu_scale_factor,
                   MENU_ENUM_LABEL_MENU_SCALE_FACTOR,
-                  MENU_ENUM_LABEL_VALUE_MENU_SCALE_FACTOR,
+                  menu_scale_factor_label_value,
                   DEFAULT_MENU_SCALE_FACTOR,
                   "%.2fx",
                   &group_info,
@@ -12862,6 +12876,7 @@ static bool setting_append_list(
                   general_read_handler);
             (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
             menu_settings_list_current_add_range(list, list_info, 0.2, 5.0, 0.01, true, true);
+         }
 
 #ifdef HAVE_XMB
          if (string_is_equal(settings->arrays.menu_driver, "xmb"))

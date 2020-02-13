@@ -917,6 +917,14 @@ MSG_HASH(
     "Applies a global scaling factor when drawing the menu. Can be used to increase or decrease the size of the user interface."
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_FACTOR,
+    "Menu Widget Scale Factor"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_FACTOR,
+    "Applies a scaling factor when drawing menu widgets. Can be used to increase or decrease the size of decorated notifications, indicators and controls."
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS,
     "Drivers"
     )

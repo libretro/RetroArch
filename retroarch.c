@@ -5415,7 +5415,7 @@ static void command_event_set_volume(float gain)
 
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
    if (menu_widgets_inited)
-      menu_widgets_volume_update_and_show();
+      menu_widgets_volume_update_and_show(settings->floats.audio_volume);
    else
 #endif
       runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
@@ -6895,7 +6895,7 @@ TODO: Add a setting for these tweaks */
 
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
             if (menu_widgets_inited)
-               menu_widgets_volume_update_and_show();
+               menu_widgets_volume_update_and_show(configuration_settings->floats.audio_volume);
             else
 #endif
                runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
@@ -23435,11 +23435,14 @@ static void drivers_init(int flags)
       && video_driver_has_widgets())
    {
       if (!menu_widgets_inited)
-         menu_widgets_inited = menu_widgets_init(video_is_threaded);
+         menu_widgets_inited = menu_widgets_init(
+               video_is_threaded, settings->arrays.menu_driver);
 
       if (menu_widgets_inited)
          menu_widgets_context_reset(video_is_threaded,
-               video_driver_width, video_driver_height);
+               video_driver_width, video_driver_height,
+               settings->paths.directory_assets,
+               settings->paths.path_font);
    }
    else
    {
@@ -27274,7 +27277,10 @@ static enum runloop_state runloop_check_state(void)
    if (menu_widgets_inited)
    {
       runloop_msg_queue_lock();
-      menu_widgets_iterate(video_driver_width, video_driver_height);
+      menu_widgets_iterate(
+            video_driver_width, video_driver_height,
+            settings->paths.directory_assets,
+            settings->paths.path_font);
       runloop_msg_queue_unlock();
    }
 #endif
