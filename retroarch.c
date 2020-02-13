@@ -2531,10 +2531,7 @@ void dir_check_defaults(void)
 /* Is text-to-speech accessibility turned on? */
 static bool accessibility_enabled               = false;
 
-static bool pi_set                              = false;
-
 /* Accessibility */
-static int speak_pid                            = 0;
 
 bool is_accessibility_enabled(void)
 {
@@ -28588,375 +28585,18 @@ bool is_input_keyboard_display_on(void)
 #endif
 }
 
-#if defined(__MACH__) && defined(__APPLE__) 
-#include <TargetConditionals.h>
-#if TARGET_OS_OSX && !defined(EMSCRIPTEN)
-#define _IS_OSX
-#endif
-#endif
-
 #ifdef HAVE_ACCESSIBILITY
-
-#if defined(_IS_OSX)
-static char* accessibility_mac_language_code(const char* language)
-{
-   if (string_is_equal(language,"en"))
-      return "Alex";
-   else if (string_is_equal(language,"it"))
-      return "Alice";
-   else if (string_is_equal(language,"sv"))
-      return "Alva";
-   else if (string_is_equal(language,"fr"))
-      return "Amelie";
-   else if (string_is_equal(language,"de"))
-      return "Anna";
-   else if (string_is_equal(language,"he"))
-      return "Carmit";
-   else if (string_is_equal(language,"id"))
-      return "Damayanti";
-   else if (string_is_equal(language,"es"))
-      return "Diego";
-   else if (string_is_equal(language,"nl"))
-      return "Ellen";
-   else if (string_is_equal(language,"ro"))
-      return "Ioana";
-   else if (string_is_equal(language,"pt_pt"))
-      return "Joana";
-   else if (string_is_equal(language,"pt_bt") || string_is_equal(language,"pt"))
-      return "Luciana";
-   else if (string_is_equal(language,"th"))
-      return "Kanya";
-   else if (string_is_equal(language,"ja"))
-      return "Kyoko";
-   else if (string_is_equal(language,"sk"))
-      return "Laura";
-   else if (string_is_equal(language,"hi"))
-      return "Lekha";
-   else if (string_is_equal(language,"ar"))
-      return "Maged";
-   else if (string_is_equal(language,"hu"))
-      return "Mariska";
-   else if (string_is_equal(language,"zh_tw") || string_is_equal(language,"zh"))
-      return "Mei-Jia";
-   else if (string_is_equal(language,"el"))
-      return "Melina";
-   else if (string_is_equal(language,"ru"))
-      return "Milena";
-   else if (string_is_equal(language,"nb"))
-      return "Nora";
-   else if (string_is_equal(language,"da"))
-      return "Sara";
-   else if (string_is_equal(language,"fi"))
-      return "Satu";
-   else if (string_is_equal(language,"zh_hk"))
-      return "Sin-ji";
-   else if (string_is_equal(language,"zh_cn"))
-      return "Ting-Ting";
-   else if (string_is_equal(language,"tr"))
-      return "Yelda";
-   else if (string_is_equal(language,"ko"))
-      return "Yuna";
-   else if (string_is_equal(language,"pl"))
-      return "Zosia";
-   else if (string_is_equal(language,"cs")) 
-      return "Zuzana";
-   else
-      return "";
-}
-
-static bool is_narrator_running_macos(void)
-{
-   return (kill(speak_pid, 0) == 0);
-}
-
-static bool accessibility_speak_macos(int speed,
-      const char* speak_text, const char* voice, int priority)
-{
-   int pid;
-   char* language_speaker = accessibility_mac_language_code(voice);
-   char* speeds[10]       = {"80", "100", "125", "150", "170", "210", "260", "310", "380", "450"};
-
-   if (speed < 1)
-      speed = 1;
-   else if (speed > 10)
-      speed = 10;
-
-   if (priority < 10 && speak_pid > 0)
-   {
-      /* check if old pid is running */
-      if (is_narrator_running_macos())
-         return true;
-   }
-
-   if (speak_pid > 0)
-   {
-      /* Kill the running say */
-      kill(speak_pid, SIGTERM);
-      speak_pid = 0;
-   }
-
-   pid = fork();
-   if (pid < 0)
-   {
-      /* error */
-      RARCH_LOG("ERROR: could not fork for say command.\n");
-   }
-   else if (pid > 0)
-   {
-      /* parent process */
-      speak_pid = pid;
-
-      /* Tell the system that we'll ignore the exit status of the child 
-       * process.  This prevents zombie processes. */
-      signal(SIGCHLD,SIG_IGN);
-   }
-   else
-   { 
-      /* child process: replace process with the say command */ 
-      if (strlen(language_speaker)> 0)
-      {
-         char* cmd[] = {"say", "-v", NULL, 
-                        NULL, "-r", NULL, NULL};
-         cmd[2] = language_speaker;
-         cmd[3] = (char *) speak_text;
-         cmd[5] = speeds[speed-1];
-         execvp("say", cmd);
-      }
-      else
-      {
-         char* cmd[] = {"say", NULL, "-r", NULL,  NULL};
-         cmd[1] = (char*) speak_text;
-         cmd[3] = speeds[speed-1];
-         execvp("say",cmd);
-      }
-   }
-   return true;
-}
-#endif
-
-#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__) && !defined(EMSCRIPTEN)
-static const char *accessibility_win_language_code(const char* language)
-{
-   if (string_is_equal(language,"en"))
-      return "Microsoft David Desktop";
-   else if (string_is_equal(language,"it"))
-      return "Microsoft Cosimo Desktop";
-   else if (string_is_equal(language,"sv"))
-      return "Microsoft Bengt Desktop";
-   else if (string_is_equal(language,"fr"))
-      return "Microsoft Paul Desktop";
-   else if (string_is_equal(language,"de"))
-      return "Microsoft Stefan Desktop";
-   else if (string_is_equal(language,"he"))
-      return "Microsoft Hemant Desktop";
-   else if (string_is_equal(language,"id"))
-      return "Microsoft Asaf Desktop";
-   else if (string_is_equal(language,"es"))
-      return "Microsoft Pablo Desktop";
-   else if (string_is_equal(language,"nl"))
-      return "Microsoft Frank Desktop";
-   else if (string_is_equal(language,"ro"))
-      return "Microsoft Andrei Desktop";
-   else if (string_is_equal(language,"pt_pt"))
-      return "Microsoft Helia Desktop";
-   else if (string_is_equal(language,"pt_bt") || string_is_equal(language,"pt"))
-      return "Microsoft Daniel Desktop";
-   else if (string_is_equal(language,"th"))
-      return "Microsoft Pattara Desktop";
-   else if (string_is_equal(language,"ja"))
-      return "Microsoft Ichiro Desktop";
-   else if (string_is_equal(language,"sk"))
-      return "Microsoft Filip Desktop";
-   else if (string_is_equal(language,"hi"))
-      return "Microsoft Hemant Desktop";
-   else if (string_is_equal(language,"ar"))
-      return "Microsoft Naayf Desktop";
-   else if (string_is_equal(language,"hu"))
-      return "Microsoft Szabolcs Desktop";
-   else if (string_is_equal(language,"zh_tw") || string_is_equal(language,"zh"))
-      return "Microsoft Zhiwei Desktop";
-   else if (string_is_equal(language,"el"))
-      return "Microsoft Stefanos Desktop";
-   else if (string_is_equal(language,"ru"))
-      return "Microsoft Pavel Desktop";
-   else if (string_is_equal(language,"nb"))
-      return "Microsoft Jon Desktop";
-   else if (string_is_equal(language,"da"))
-      return "Microsoft Helle Desktop";
-   else if (string_is_equal(language,"fi"))
-      return "Microsoft Heidi Desktop";
-   else if (string_is_equal(language,"zh_hk"))
-      return "Microsoft Danny Desktop";
-   else if (string_is_equal(language,"zh_cn"))
-      return "Microsoft Kangkang Desktop";
-   else if (string_is_equal(language,"tr"))
-      return "Microsoft Tolga Desktop";
-   else if (string_is_equal(language,"ko"))
-      return "Microsoft Heami Desktop";
-   else if (string_is_equal(language,"pl"))
-      return "Microsoft Adam Desktop";
-   else if (string_is_equal(language,"cs")) 
-      return "Microsoft Jakub Desktop";
-   else
-      return "";
-}
-
-static bool terminate_win32_process(PROCESS_INFORMATION pi)
-{
-   TerminateProcess(pi.hProcess,0);
-   CloseHandle(pi.hProcess);
-   CloseHandle(pi.hThread);
-   return true;
-}
-
-static PROCESS_INFORMATION g_pi;
-
-static bool create_win32_process(char* cmd)
-{
-   STARTUPINFO si;
-   memset(&si, 0, sizeof(si));
-   si.cb = sizeof(si);
-   memset(&g_pi, 0, sizeof(g_pi));
-
-   if (!CreateProcess(NULL, cmd, NULL, NULL, FALSE, CREATE_NO_WINDOW,
-                      NULL, NULL, &si, &g_pi))
-      return false;
-   return true;
-}
-
-static bool is_narrator_running_windows(void)
-{
-   DWORD status = 0;
-   if (pi_set == false)
-      return false;
-   if (GetExitCodeProcess(&g_pi, &status) && status == STILL_ACTIVE)
-      return true;
-   return false;
-}
-
-static bool accessibility_speak_windows(int speed,
-      const char* speak_text, const char* voice, int priority)
-{
-   char cmd[1200];
-   const char *language   = accessibility_win_language_code(voice);
-   bool res               = false;
-   const char* speeds[10] = {"-10", "-7.5", "-5", "-2.5", "0", "2", "4", "6", "8", "10"};
-
-   if (speed < 1)
-      speed = 1;
-   else if (speed > 10)
-      speed = 10;
-
-   if (priority < 10)
-   {
-      if (is_narrator_running_windows())
-         return true;
-   }
-
-   if (strlen(language) > 0) 
-      snprintf(cmd, sizeof(cmd),
-               "powershell.exe -NoProfile -WindowStyle Hidden -Command \"Add-Type -AssemblyName System.Speech; $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer; $synth.SelectVoice(\\\"%s\\\"); $synth.Rate = %s; $synth.Speak(\\\"%s\\\");\"", language, speeds[speed-1], (char*) speak_text); 
-   else
-      snprintf(cmd, sizeof(cmd),
-               "powershell.exe -NoProfile -WindowStyle Hidden -Command \"Add-Type -AssemblyName System.Speech; $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer; $synth.Rate = %s; $synth.Speak(\\\"%s\\\");\"", speeds[speed-1], (char*) speak_text); 
-   if (pi_set)
-      terminate_win32_process(g_pi);
-   res = create_win32_process(cmd);
-   if (!res)
-   {
-      RARCH_LOG("Create subprocess failed. Error: %d\n", GetLastError()); 
-      pi_set = false;
-      return true;
-   }
-   pi_set = true;
-   return true;
-}
-#endif
-
-#if (defined(__linux__) || defined(__unix__)) && !defined(EMSCRIPTEN)
-static bool is_narrator_running_linux(void)
-{
-   return (kill(speak_pid, 0) == 0);
-}
-
-static bool accessibility_speak_linux(int speed,
-      const char* speak_text, const char* language, int priority)
-{
-   int pid;
-   char* voice_out        = (char *)malloc(3+strlen(language));
-   char* speed_out        = (char *)malloc(3+3);
-   const char* speeds[10] = {"80", "100", "125", "150", "170", "210", "260", "310", "380", "450"};
-
-   if (speed < 1)
-      speed = 1;
-   else if (speed > 10)
-      speed = 10;
-
-   strlcpy(voice_out, "-v", 3);
-   strlcat(voice_out, language, 5);
-
-   strlcpy(speed_out, "-s", 3);
-   strlcat(speed_out, speeds[speed-1], 6);
-
-   if (priority < 10 && speak_pid > 0)
-   {
-      /* check if old pid is running */
-      if (is_narrator_running_linux())
-         return true;
-   }
-
-   if (speak_pid > 0)
-   {
-      /* Kill the running espeak */
-      kill(speak_pid, SIGTERM);
-      speak_pid = 0;
-   }
-
-   pid = fork();
-   if (pid < 0)
-   {
-      /* error */
-      RARCH_LOG("ERROR: could not fork for espeak.\n");
-   }
-   else if (pid > 0)
-   {
-      /* parent process */
-      speak_pid = pid;
-
-      /* Tell the system that we'll ignore the exit status of the child 
-       * process.  This prevents zombie processes. */
-      signal(SIGCHLD,SIG_IGN);
-   }
-   else
-   { 
-      /* child process: replace process with the espeak command */ 
-      char* cmd[] = { (char*) "espeak", NULL, NULL, NULL, NULL};
-      cmd[1] = voice_out;
-      cmd[2] = speed_out;
-      cmd[3] = (char *) speak_text;
-      execvp("espeak", cmd);
-   }
-   return true;
-}
-#endif
-
 bool accessibility_speak_priority(const char* speak_text, int priority)
 {
    RARCH_LOG("Spoke: %s\n", speak_text);
 
    if (is_accessibility_enabled())
    {
-      int speed         = configuration_settings->uints.accessibility_narrator_speech_speed;
-#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__) && !defined(EMSCRIPTEN)
-      const char *voice = get_user_language_iso639_1(true);
-      return accessibility_speak_windows(speed, speak_text, voice, priority);
-#elif defined(__APPLE__) && defined(_IS_OSX) && !defined(EMSCRIPTEN)
-      const char *voice = get_user_language_iso639_1(false);
-      return accessibility_speak_macos(speed, speak_text, voice, priority);
-#elif (defined(__linux__) || defined(__unix__)) && !defined(EMSCRIPTEN)
-      const char *voice = get_user_language_iso639_1(true);
-      return accessibility_speak_linux(speed, speak_text, voice, priority);
-#endif
+      int speed                       = configuration_settings->uints.accessibility_narrator_speech_speed;
+      frontend_ctx_driver_t *frontend = frontend_get_ptr();
+      if (frontend && frontend->accessibility_speak)
+         return frontend->accessibility_speak(speed, speak_text,
+               priority);
       RARCH_LOG("Platform not supported for accessibility.\n");
       /* The following method is a fallback for other platforms to use the
          AI Service url to do the TTS.  However, since the playback is done
@@ -28974,22 +28614,16 @@ bool accessibility_speak_priority(const char* speak_text, int priority)
    return true;
 }
 
-#ifdef HAVE_ACCESSIBILITY
 static bool is_narrator_running(void)
 {
    if (is_accessibility_enabled())
    {
-#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__) && !defined(EMSCRIPTEN)
-      return is_narrator_running_windows();
-#elif defined(__APPLE__) && defined(_IS_OSX) && !defined(EMSCRIPTEN)
-      return is_narrator_running_macos();
-#elif (defined(__linux__) || defined(__unix__)) && !defined(EMSCRIPTEN)
-      return is_narrator_running_linux();
-#endif
+      frontend_ctx_driver_t *frontend = frontend_get_ptr();
+      if (frontend && frontend->is_narrator_running)
+         return frontend->is_narrator_running();
    }
    return true;
 }
-#endif
 
 static bool accessibility_startup_message(void)
 {

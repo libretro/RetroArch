@@ -477,5 +477,7 @@ frontend_ctx_driver_t frontend_ctx_uwp = {
    NULL,                            /* set_sustained_performance_mode */
    frontend_uwp_get_cpu_model_name,
    frontend_uwp_get_user_language,
+   NULL,                            /* is_narrator_running */
+   NULL,                            /* accessibility_speak */
    "uwp"
 };
