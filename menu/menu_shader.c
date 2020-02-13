@@ -225,11 +225,12 @@ end:
 
 static bool menu_shader_manager_save_preset_internal(
       const struct video_shader *shader, const char *basename,
+      const char *dir_video_shader,
+      const char *dir_menu_config,
       bool apply, bool save_reference)
 {
    bool ret                       = false;
    enum rarch_shader_type type    = RARCH_SHADER_NONE;
-   settings_t *settings           = config_get_ptr();
    char *preset_path              = NULL;
    size_t i                       = 0;
    char fullname[PATH_MAX_LENGTH];
@@ -273,7 +274,7 @@ static bool menu_shader_manager_save_preset_internal(
       preset_path = fullname;
 
       ret = video_shader_write_preset(preset_path,
-            settings->paths.directory_video_shader,
+            dir_video_shader,
             shader, save_reference);
 
       if (ret)
@@ -294,8 +295,8 @@ static bool menu_shader_manager_save_preset_internal(
                path_get(RARCH_PATH_CONFIG),
                sizeof(config_directory));
 
-      dirs[0] = settings->paths.directory_video_shader;
-      dirs[1] = settings->paths.directory_menu_config;
+      dirs[0] = dir_video_shader;
+      dirs[1] = dir_menu_config;
       dirs[2] = config_directory;
 
       for (i = 0; i < ARRAY_SIZE(dirs); i++)
@@ -309,7 +310,7 @@ static bool menu_shader_manager_save_preset_internal(
          preset_path = buffer;
 
          ret = video_shader_write_preset(preset_path,
-               settings->paths.directory_video_shader,
+               dir_video_shader,
                shader, save_reference);
 
          if (ret)
@@ -332,24 +333,26 @@ static bool menu_shader_manager_save_preset_internal(
    return ret;
 }
 
-static bool menu_shader_manager_operate_auto_preset(enum auto_shader_operation op,
-      const struct video_shader *shader, enum auto_shader_type type, bool apply)
+static bool menu_shader_manager_operate_auto_preset(
+      enum auto_shader_operation op,
+      const struct video_shader *shader,
+      const char *dir_video_shader,
+      const char *dir_menu_config,
+      enum auto_shader_type type, bool apply)
 {
    char tmp[PATH_MAX_LENGTH];
    char directory[PATH_MAX_LENGTH];
    char file[PATH_MAX_LENGTH];
    bool success                      = false;
-   settings_t *settings              = config_get_ptr();
    struct retro_system_info *system  = runloop_get_libretro_system_info();
    const char *core_name             = system ? system->library_name : NULL;
-   const char *path_dir_video_shader = settings->paths.directory_video_shader;
 
    tmp[0] = directory[0] = file[0] = '\0';
 
    if (type == SHADER_PRESET_GLOBAL)
       fill_pathname_join(
             directory,
-            path_dir_video_shader,
+            dir_video_shader,
             "presets",
             sizeof(directory));
    else if (string_is_empty(core_name))
@@ -358,7 +361,7 @@ static bool menu_shader_manager_operate_auto_preset(enum auto_shader_operation o
    {
       fill_pathname_join(
             tmp,
-            path_dir_video_shader,
+            dir_video_shader,
             "presets",
             sizeof(tmp));
       fill_pathname_join(
@@ -401,7 +404,10 @@ static bool menu_shader_manager_operate_auto_preset(enum auto_shader_operation o
             path_mkdir(directory);
 
          return menu_shader_manager_save_preset_internal(
-               shader, file, apply, true);
+               shader, file,
+               dir_video_shader,
+               dir_menu_config,
+               apply, true);
       case AUTO_SHADER_OP_REMOVE:
          {
             /* remove all supported auto-shaders of given type */
@@ -465,8 +471,12 @@ static bool menu_shader_manager_operate_auto_preset(enum auto_shader_operation o
 bool menu_shader_manager_save_auto_preset(const struct video_shader *shader,
       enum auto_shader_type type, bool apply)
 {
+   settings_t *settings = config_get_ptr();
    return menu_shader_manager_operate_auto_preset(
-         AUTO_SHADER_OP_SAVE, shader, type, apply);
+         AUTO_SHADER_OP_SAVE, shader, 
+         settings->paths.directory_video_shader,
+         settings->paths.directory_menu_config,
+         type, apply);
 }
 
 /**
@@ -481,8 +491,12 @@ bool menu_shader_manager_save_auto_preset(const struct video_shader *shader,
 bool menu_shader_manager_save_preset(const struct video_shader *shader,
       const char *basename, bool apply)
 {
+   settings_t *settings = config_get_ptr();
    return menu_shader_manager_save_preset_internal(
-         shader, basename, apply, false);
+         shader, basename,
+         settings->paths.directory_video_shader,
+         settings->paths.directory_menu_config,
+         apply, false);
 }
 
 /**
@@ -493,8 +507,12 @@ bool menu_shader_manager_save_preset(const struct video_shader *shader,
  **/
 bool menu_shader_manager_remove_auto_preset(enum auto_shader_type type)
 {
+   settings_t *settings = config_get_ptr();
    return menu_shader_manager_operate_auto_preset(
-         AUTO_SHADER_OP_REMOVE, NULL, type, false);
+         AUTO_SHADER_OP_REMOVE, NULL,
+         settings->paths.directory_video_shader,
+         settings->paths.directory_menu_config,
+         type, false);
 }
 
 /**
@@ -505,8 +523,12 @@ bool menu_shader_manager_remove_auto_preset(enum auto_shader_type type)
  **/
 bool menu_shader_manager_auto_preset_exists(enum auto_shader_type type)
 {
+   settings_t *settings = config_get_ptr();
    return menu_shader_manager_operate_auto_preset(
-         AUTO_SHADER_OP_EXISTS, NULL, type, false);
+         AUTO_SHADER_OP_EXISTS, NULL,
+         settings->paths.directory_video_shader,
+         settings->paths.directory_menu_config,
+         type, false);
 }
 
 int menu_shader_manager_clear_num_passes(struct video_shader *shader)
