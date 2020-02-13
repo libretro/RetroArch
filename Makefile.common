@@ -1543,6 +1543,7 @@ ifeq ($(HAVE_SHADERS_COMMON), 1)
 endif
 
 ifeq ($(HAVE_BUILTINGLSLANG), 1)
+   NEED_CXX_LINKER = 1
    HAVE_GLSLANG_COMMON = 1
 
    ifneq ($(findstring Win32,$(OS)),)
