@@ -7255,7 +7255,10 @@ TODO: Add a setting for these tweaks */
       case CMD_EVENT_SHADERS_APPLY_CHANGES:
 #ifdef HAVE_MENU
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-         menu_shader_manager_apply_changes(menu_shader_get());
+         menu_shader_manager_apply_changes(menu_shader_get(),
+               configuration_settings->paths.directory_video_shader,
+               configuration_settings->paths.directory_menu_config
+               );
 #endif
 #endif
          ui_companion_event_command(cmd);

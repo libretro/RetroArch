@@ -4239,7 +4239,11 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
       case DISPLAYLIST_SHADER_PRESET_REMOVE:
          {
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-            if (menu_shader_manager_auto_preset_exists(SHADER_PRESET_GLOBAL))
+            settings_t      *settings     = config_get_ptr();
+            if (menu_shader_manager_auto_preset_exists(SHADER_PRESET_GLOBAL,
+                     settings->paths.directory_video_shader,
+                     settings->paths.directory_menu_config
+                     ))
                if (menu_entries_append_enum(list,
                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_GLOBAL),
                         msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE_GLOBAL),
@@ -4247,7 +4251,10 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
                         MENU_SETTING_ACTION, 0, 0))
                   count++;
 
-            if (menu_shader_manager_auto_preset_exists(SHADER_PRESET_CORE))
+            if (menu_shader_manager_auto_preset_exists(SHADER_PRESET_CORE,
+                     settings->paths.directory_video_shader,
+                     settings->paths.directory_menu_config
+                     ))
                if (menu_entries_append_enum(list,
                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_CORE),
                         msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE_CORE),
@@ -4255,7 +4262,10 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
                         MENU_SETTING_ACTION, 0, 0))
                   count++;
 
-            if (menu_shader_manager_auto_preset_exists(SHADER_PRESET_PARENT))
+            if (menu_shader_manager_auto_preset_exists(SHADER_PRESET_PARENT,
+                     settings->paths.directory_video_shader,
+                     settings->paths.directory_menu_config
+                     ))
                if (menu_entries_append_enum(list,
                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_PARENT),
                         msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE_PARENT),
@@ -4263,7 +4273,10 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
                         MENU_SETTING_ACTION, 0, 0))
                   count++;
 
-            if (menu_shader_manager_auto_preset_exists(SHADER_PRESET_GAME))
+            if (menu_shader_manager_auto_preset_exists(SHADER_PRESET_GAME,
+                     settings->paths.directory_video_shader,
+                     settings->paths.directory_menu_config
+                     ))
                if (menu_entries_append_enum(list,
                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_GAME),
                         msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE_GAME),

@@ -29,7 +29,6 @@
 #include "menu_driver.h"
 #include "menu_shader.h"
 #include "../file_path_special.h"
-#include "../configuration.h"
 #include "../paths.h"
 #include "../retroarch.h"
 #include "../verbosity.h"
@@ -468,14 +467,17 @@ static bool menu_shader_manager_operate_auto_preset(
  * Needs to be consistent with retroarch_load_shader_preset()
  * Auto-shaders will be saved as a reference if possible
  **/
-bool menu_shader_manager_save_auto_preset(const struct video_shader *shader,
-      enum auto_shader_type type, bool apply)
+bool menu_shader_manager_save_auto_preset(
+      const struct video_shader *shader,
+      enum auto_shader_type type,
+      const char *dir_video_shader,
+      const char *dir_menu_config,
+      bool apply)
 {
-   settings_t *settings = config_get_ptr();
    return menu_shader_manager_operate_auto_preset(
          AUTO_SHADER_OP_SAVE, shader, 
-         settings->paths.directory_video_shader,
-         settings->paths.directory_menu_config,
+         dir_video_shader,
+         dir_menu_config,
          type, apply);
 }
 
@@ -489,13 +491,15 @@ bool menu_shader_manager_save_auto_preset(const struct video_shader *shader,
  * Save a shader preset to disk.
  **/
 bool menu_shader_manager_save_preset(const struct video_shader *shader,
-      const char *basename, bool apply)
+      const char *basename,
+      const char *dir_video_shader,
+      const char *dir_menu_config,
+      bool apply)
 {
-   settings_t *settings = config_get_ptr();
    return menu_shader_manager_save_preset_internal(
          shader, basename,
-         settings->paths.directory_video_shader,
-         settings->paths.directory_menu_config,
+         dir_video_shader,
+         dir_menu_config,
          apply, false);
 }
 
@@ -505,13 +509,15 @@ bool menu_shader_manager_save_preset(const struct video_shader *shader,
  *
  * Deletes an auto-shader.
  **/
-bool menu_shader_manager_remove_auto_preset(enum auto_shader_type type)
+bool menu_shader_manager_remove_auto_preset(
+      enum auto_shader_type type,
+      const char *dir_video_shader,
+      const char *dir_menu_config)
 {
-   settings_t *settings = config_get_ptr();
    return menu_shader_manager_operate_auto_preset(
          AUTO_SHADER_OP_REMOVE, NULL,
-         settings->paths.directory_video_shader,
-         settings->paths.directory_menu_config,
+         dir_video_shader,
+         dir_menu_config,
          type, false);
 }
 
@@ -521,13 +527,15 @@ bool menu_shader_manager_remove_auto_preset(enum auto_shader_type type)
  *
  * Tests if an auto-shader of the given type exists.
  **/
-bool menu_shader_manager_auto_preset_exists(enum auto_shader_type type)
+bool menu_shader_manager_auto_preset_exists(
+      enum auto_shader_type type,
+      const char *dir_video_shader,
+      const char *dir_menu_config)
 {
-   settings_t *settings = config_get_ptr();
    return menu_shader_manager_operate_auto_preset(
          AUTO_SHADER_OP_EXISTS, NULL,
-         settings->paths.directory_video_shader,
-         settings->paths.directory_menu_config,
+         dir_video_shader,
+         dir_menu_config,
          type, false);
 }
 
@@ -668,7 +676,10 @@ enum rarch_shader_type menu_shader_manager_get_type(
  *
  * Apply shader state changes.
  **/
-void menu_shader_manager_apply_changes(struct video_shader *shader)
+void menu_shader_manager_apply_changes(
+      struct video_shader *shader,
+      const char *dir_video_shader,
+      const char *dir_menu_config)
 {
    enum rarch_shader_type type = RARCH_SHADER_NONE;
 
@@ -679,7 +690,8 @@ void menu_shader_manager_apply_changes(struct video_shader *shader)
 
    if (shader->passes && type != RARCH_SHADER_NONE)
    {
-      menu_shader_manager_save_preset(shader, NULL, true);
+      menu_shader_manager_save_preset(shader, NULL,
+            dir_video_shader, dir_menu_config, true);
       return;
    }
 

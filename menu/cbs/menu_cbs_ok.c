@@ -2731,6 +2731,7 @@ static void menu_input_st_string_cb_save_preset(void *userdata,
    if (!string_is_empty(str))
    {
       rarch_setting_t *setting = NULL;
+      settings_t *settings     = config_get_ptr();
       bool                 ret = false;
       const char        *label = menu_input_dialog_get_label_buffer();
 
@@ -2744,7 +2745,10 @@ static void menu_input_st_string_cb_save_preset(void *userdata,
       }
       else if (!string_is_empty(label))
          ret = menu_shader_manager_save_preset(menu_shader_get(),
-               str, true);
+               str,
+               settings->paths.directory_video_shader,
+               settings->paths.directory_menu_config,
+               true);
 
       if (ret)
          runloop_msg_queue_push(
@@ -2849,6 +2853,8 @@ static int generic_action_ok_shader_preset_remove(const char *path,
       unsigned action_type)
 {
    enum auto_shader_type preset_type;
+   settings_t *settings = config_get_ptr();
+
    switch (action_type)
    {
       case ACTION_OK_SHADER_PRESET_REMOVE_GLOBAL:
@@ -2867,7 +2873,9 @@ static int generic_action_ok_shader_preset_remove(const char *path,
          return 0;
    }
 
-   if (menu_shader_manager_remove_auto_preset(preset_type))
+   if (menu_shader_manager_remove_auto_preset(preset_type,
+         settings->paths.directory_video_shader,
+         settings->paths.directory_menu_config))
    {
       bool refresh = false;
 
@@ -2892,6 +2900,8 @@ static int generic_action_ok_shader_preset_save(const char *path,
       unsigned action_type)
 {
    enum auto_shader_type preset_type;
+   settings_t      *settings     = config_get_ptr();
+
    switch (action_type)
    {
       case ACTION_OK_SHADER_PRESET_SAVE_GLOBAL:
@@ -2910,7 +2920,10 @@ static int generic_action_ok_shader_preset_save(const char *path,
          return 0;
    }
 
-   if (menu_shader_manager_save_auto_preset(menu_shader_get(), preset_type, true))
+   if (menu_shader_manager_save_auto_preset(menu_shader_get(), preset_type,
+            settings->paths.directory_video_shader,
+            settings->paths.directory_menu_config,
+            true))
       runloop_msg_queue_push(
             msg_hash_to_str(MSG_SHADER_PRESET_SAVED_SUCCESSFULLY),
             1, 100, true,
