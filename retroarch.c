@@ -11988,6 +11988,13 @@ static bool recording_init(void)
       }
    }
 
+   params.audio_resampler           = settings->arrays.audio_resampler;
+   params.video_gpu_record          = settings->bools.video_gpu_record;
+   params.video_record_scale_factor = settings->uints.video_record_scale_factor;
+   params.video_stream_scale_factor = settings->uints.video_stream_scale_factor;
+   params.video_record_threads      = settings->uints.video_record_threads;
+   params.streaming_mode            = settings->uints.streaming_mode;
+
    params.out_width  = av_info->geometry.base_width;
    params.out_height = av_info->geometry.base_height;
    params.fb_width   = av_info->geometry.max_width;

@@ -65,7 +65,6 @@ extern "C" {
 }
 #endif
 
-#include "../../configuration.h"
 #include "../../retroarch.h"
 #include "../../verbosity.h"
 
@@ -1042,7 +1041,6 @@ static void ffmpeg_free(void *data)
 
 static void *ffmpeg_new(const struct record_params *params)
 {
-   settings_t *settings = config_get_ptr();
    ffmpeg_t *handle     = (ffmpeg_t*)calloc(1, sizeof(*handle));
    if (!handle)
       return NULL;
@@ -1065,11 +1063,11 @@ static void *ffmpeg_new(const struct record_params *params)
          ffmpeg_init_config_common(
                &handle->config,
                params->preset,
-               settings->bools.video_gpu_record,
-               settings->uints.video_record_scale_factor,
-               settings->uints.video_stream_scale_factor,
-               settings->uints.streaming_mode,
-               settings->uints.video_record_threads
+               params->video_gpu_record,
+               params->video_record_scale_factor,
+               params->video_stream_scale_factor,
+               params->streaming_mode,
+               params->video_record_threads
                );
          break;
    }
@@ -1082,7 +1080,7 @@ static void *ffmpeg_new(const struct record_params *params)
 
    if (handle->config.audio_enable && 
          !ffmpeg_init_audio(handle,
-            settings->arrays.audio_resampler))
+            params->audio_resampler))
       goto error;
 
    if (!ffmpeg_init_muxer_post(handle))
