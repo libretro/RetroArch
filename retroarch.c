@@ -1191,6 +1191,8 @@ static char current_savestate_dir[PATH_MAX_LENGTH]      = {0};
 static char dir_savestate[PATH_MAX_LENGTH]              = {0};
 
 /* Forward declarations */
+static void ui_companion_driver_toggle(bool force);
+
 static const void *location_driver_find_handle(int idx);
 static const void *audio_driver_find_handle(int idx);
 static const void *video_driver_find_handle(int idx);
@@ -11532,7 +11534,7 @@ void ui_companion_driver_init_first(void)
    }
 }
 
-void ui_companion_driver_toggle(bool force)
+static void ui_companion_driver_toggle(bool force)
 {
 #ifdef HAVE_QT
    settings_t *settings = configuration_settings;
@@ -11547,7 +11549,7 @@ void ui_companion_driver_toggle(bool force)
       if ((settings->bools.ui_companion_toggle || force) && !qt_is_inited)
       {
          ui_companion_qt_data = ui_companion_qt.init();
-         qt_is_inited = true;
+         qt_is_inited         = true;
       }
 
       if (ui_companion_qt.toggle && qt_is_inited)
