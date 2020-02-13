@@ -2018,34 +2018,47 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_THUMBNAILS:
             settings = config_get_ptr();
+#ifdef HAVE_RGUI
             if (string_is_equal(settings->arrays.menu_driver, "rgui"))
             {
                BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_thumbnails_rgui);
             }
-            else if (string_is_equal(settings->arrays.menu_driver, "glui"))
+            else
+#endif
+#ifdef HAVE_MATERIALUI
+            if (string_is_equal(settings->arrays.menu_driver, "glui"))
             {
                BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_thumbnails_materialui);
             }
             else
+#endif
             {
                BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_thumbnails);
             }
             break;
          case MENU_ENUM_LABEL_LEFT_THUMBNAILS:
             settings = config_get_ptr();
+#ifdef HAVE_RGUI
             if (string_is_equal(settings->arrays.menu_driver, "rgui"))
             {
                BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_left_thumbnails_rgui);
             }
-            else if (string_is_equal(settings->arrays.menu_driver, "ozone"))
+            else
+#endif
+#ifdef HAVE_OZONE
+               if (string_is_equal(settings->arrays.menu_driver, "ozone"))
             {
                BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_left_thumbnails_ozone);
             }
-            else if (string_is_equal(settings->arrays.menu_driver, "glui"))
+            else
+#endif
+#ifdef HAVE_MATERIALUI
+               if (string_is_equal(settings->arrays.menu_driver, "glui"))
             {
                BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_left_thumbnails_materialui);
             }
             else
+#endif
             {
                BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_left_thumbnails);
             }
@@ -2798,15 +2811,20 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_PLAYLIST_MANAGER_RIGHT_THUMBNAIL_MODE:
             settings = config_get_ptr();
             /* Uses same sublabels as MENU_ENUM_LABEL_THUMBNAILS */
+#ifdef HAVE_RGUI
             if (string_is_equal(settings->arrays.menu_driver, "rgui"))
             {
                BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_thumbnails_rgui);
             }
-            else if (string_is_equal(settings->arrays.menu_driver, "glui"))
+            else
+#endif
+#ifdef HAVE_MATERIALUI
+               if (string_is_equal(settings->arrays.menu_driver, "glui"))
             {
                BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_thumbnails_materialui);
             }
             else
+#endif
             {
                BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_thumbnails);
             }
@@ -2814,19 +2832,27 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_PLAYLIST_MANAGER_LEFT_THUMBNAIL_MODE:
             settings = config_get_ptr();
             /* Uses same sublabels as MENU_ENUM_LABEL_LEFT_THUMBNAILS */
+#ifdef HAVE_RGUI
             if (string_is_equal(settings->arrays.menu_driver, "rgui"))
             {
                BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_left_thumbnails_rgui);
             }
-            else if (string_is_equal(settings->arrays.menu_driver, "ozone"))
+            else
+#endif
+#ifdef HAVE_OZONE
+               if (string_is_equal(settings->arrays.menu_driver, "ozone"))
             {
                BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_left_thumbnails_ozone);
             }
-            else if (string_is_equal(settings->arrays.menu_driver, "glui"))
+            else
+#endif
+#ifdef HAVE_MATERIALUI
+               if (string_is_equal(settings->arrays.menu_driver, "glui"))
             {
                BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_left_thumbnails_materialui);
             }
             else
+#endif
             {
                BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_left_thumbnails);
             }
