@@ -168,24 +168,12 @@ bool menu_shader_manager_set_preset(struct video_shader *shader,
    bool ret                      = false;
 
    if (apply && !retroarch_apply_shader(type, preset_path, true))
-   {
-      /* We don't want to disable shaders entirely here,
-       * just reset number of passes
-       * > Note: Disabling shaders at this point would in
-       *   fact be dangerous, since it changes the number of
-       *   entries in the shader options menu which can in
-       *   turn lead to the menu selection pointer going out
-       *   of bounds. This causes undefined behaviour/segfaults */
-      menu_shader_manager_clear_num_passes(shader);
-      command_event(CMD_EVENT_SHADER_PRESET_LOADED, NULL);
-      return false;
-   }
+      goto clear;
 
    if (string_is_empty(preset_path))
    {
-      menu_shader_manager_clear_num_passes(shader);
-      command_event(CMD_EVENT_SHADER_PRESET_LOADED, NULL);
-      return true;
+      ret = true;
+      goto clear;
    }
 
    if (!shader)
@@ -219,6 +207,18 @@ end:
 #ifdef HAVE_MENU
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
 #endif
+   return ret;
+
+clear:
+   /* We don't want to disable shaders entirely here,
+    * just reset number of passes
+    * > Note: Disabling shaders at this point would in
+    *   fact be dangerous, since it changes the number of
+    *   entries in the shader options menu which can in
+    *   turn lead to the menu selection pointer going out
+    *   of bounds. This causes undefined behaviour/segfaults */
+   menu_shader_manager_clear_num_passes(shader);
+   command_event(CMD_EVENT_SHADER_PRESET_LOADED, NULL);
    return ret;
 }
 
