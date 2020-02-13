@@ -223,10 +223,6 @@
 
 #include "retroarch.h"
 
-#ifdef HAVE_RUNAHEAD
-#include "runahead/mylist.h"
-#endif
-
 #ifdef HAVE_ACCESSIBILITY
 #include "accessibility.h"
 #endif
@@ -3239,6 +3235,18 @@ static bool request_fast_savestate              = false;
 static bool hard_disable_audio                  = false;
 
 /* Save State List for Run Ahead */
+typedef void *(*constructor_t)(void);
+typedef void  (*destructor_t )(void*);
+
+typedef struct MyList_t
+{
+   void **data;
+   int capacity;
+   int size;
+   constructor_t constructor;
+   destructor_t destructor;
+} MyList;
+
 static MyList *runahead_save_state_list         = NULL;
 static MyList *input_state_list                 = NULL;
 
@@ -23690,14 +23698,133 @@ bool driver_ctl(enum driver_ctl_state state, void *data)
 /* RUNAHEAD */
 
 #ifdef HAVE_RUNAHEAD
+static void mylist_resize(MyList *list, int new_size, bool run_constructor)
+{
+   int i;
+   int new_capacity;
+   int old_size;
+   void *element    = NULL;
+   if (new_size < 0)
+      new_size  = 0;
+   if (!list)
+      return;
+   new_capacity = new_size;
+   old_size     = list->size;
+
+   if (new_size == old_size)
+      return;
+
+   if (new_size > list->capacity)
+   {
+      if (new_capacity < list->capacity * 2)
+         new_capacity = list->capacity * 2;
+
+      /* try to realloc */
+      list->data = (void**)realloc(
+            (void*)list->data, new_capacity * sizeof(void*));
+
+      for (i = list->capacity; i < new_capacity; i++)
+         list->data[i] = NULL;
+
+      list->capacity = new_capacity;
+   }
+
+   if (new_size <= list->size)
+   {
+      for (i = new_size; i < list->size; i++)
+      {
+         element = list->data[i];
+
+         if (element)
+         {
+            list->destructor(element);
+            list->data[i] = NULL;
+         }
+      }
+   }
+   else
+   {
+      for (i = list->size; i < new_size; i++)
+      {
+         list->data[i] = NULL;
+         if (run_constructor)
+            list->data[i] = list->constructor();
+      }
+   }
+
+   list->size = new_size;
+}
+
+static void *mylist_add_element(MyList *list)
+{
+   int old_size;
+
+   if (!list)
+      return NULL;
+
+   old_size = list->size;
+   mylist_resize(list, old_size + 1, true);
+   return list->data[old_size];
+}
+
+static void mylist_destroy(MyList **list_p)
+{
+   MyList *list = NULL;
+   if (!list_p)
+      return;
+
+   list = *list_p;
+
+   if (list)
+   {
+      mylist_resize(list, 0, false);
+      free(list->data);
+      free(list);
+      *list_p = NULL;
+   }
+}
+
+
+static void mylist_create(MyList **list_p, int initial_capacity,
+      constructor_t constructor, destructor_t destructor)
+{
+   MyList *list        = NULL;
+
+   if (!list_p)
+      return;
+
+   if (initial_capacity < 0)
+      initial_capacity = 0;
+
+   list                = *list_p;
+   if (list)
+      mylist_destroy(list_p);
+
+   list               = (MyList*)malloc(sizeof(MyList));
+   *list_p            = list;
+   list->size         = 0;
+   list->constructor  = constructor;
+   list->destructor   = destructor;
+
+   if (initial_capacity > 0)
+   {
+      list->data      = (void**)calloc(initial_capacity, sizeof(void*));
+      list->capacity  = initial_capacity;
+   }
+   else
+   {
+      list->data      = NULL;
+      list->capacity  = 0;
+   }
+}
 
 static void *input_list_element_constructor(void)
 {
-   void *ptr                          = calloc(1, sizeof(input_list_element));
-   input_list_element *element        = (input_list_element*)ptr;
+   void *ptr                   = calloc(1, sizeof(input_list_element));
+   input_list_element *element = (input_list_element*)ptr;
 
-   element->state_size                = 256;
-   element->state                     = (int16_t*)calloc(
+   element->state_size         = 256;
+   element->state              = (int16_t*)calloc(
          element->state_size, sizeof(int16_t));
 
    return ptr;
@@ -24028,7 +24155,7 @@ static bool runahead_create(void)
 static bool runahead_save_state(void)
 {
    retro_ctx_serialize_info_t *serialize_info;
-   bool okay                                  = false;
+   bool okay              = false;
 
    if (!runahead_save_state_list)
       return false;

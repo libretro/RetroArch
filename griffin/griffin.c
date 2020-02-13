@@ -1379,10 +1379,6 @@ MENU
 #include "../libretro-common/net/net_http_parse.c"
 #endif
 
-#ifdef HAVE_RUNAHEAD
-#include "../runahead/mylist.c"
-#endif
-
 /*============================================================
 DEPENDENCIES
 ============================================================ */
