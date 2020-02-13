@@ -1377,11 +1377,9 @@ static void build_ticker_loop_string(
 
    /* Copy 'trailing' chunk of source string, if required */
    if (num_chars1 > 0)
-   {
       utf8cpy(
             dest_str, dest_str_len,
             utf8skip(src_str, char_offset1), num_chars1);
-   }
 
    /* Copy chunk of spacer string, if required */
    if (num_chars2 > 0)
@@ -1484,7 +1482,6 @@ bool menu_animation_ticker(menu_animation_ctx_ticker_t *ticker)
 /* 'Fixed width' font version of menu_animation_ticker_smooth() */
 bool menu_animation_ticker_smooth_fw(menu_animation_ctx_ticker_smooth_t *ticker)
 {
-   size_t src_str_len           = 0;
    size_t spacer_len            = 0;
    unsigned glyph_width         = ticker->glyph_width;
    unsigned src_str_width       = 0;
@@ -1497,7 +1494,7 @@ bool menu_animation_ticker_smooth_fw(menu_animation_ctx_ticker_smooth_t *ticker)
     * repeat */
 
    /* Get length + width of src string */
-   src_str_len = utf8len(ticker->src_str);
+   size_t src_str_len           = utf8len(ticker->src_str);
    if (src_str_len < 1)
       goto end;
 
@@ -1507,8 +1504,8 @@ bool menu_animation_ticker_smooth_fw(menu_animation_ctx_ticker_smooth_t *ticker)
     * can just copy the entire string */
    if (src_str_width <= ticker->field_width)
    {
-      utf8cpy(ticker->dst_str, ticker->dst_str_len, ticker->src_str, src_str_len);
-
+      utf8cpy(ticker->dst_str, ticker->dst_str_len,
+            ticker->src_str, src_str_len);
       if (ticker->dst_str_width)
          *ticker->dst_str_width = src_str_width;
       *ticker->x_offset = 0;
@@ -1604,11 +1601,9 @@ bool menu_animation_ticker_smooth_fw(menu_animation_ctx_ticker_smooth_t *ticker)
 
          /* Copy required substring */
          if (num_chars > 0)
-         {
             utf8cpy(
                   ticker->dst_str, ticker->dst_str_len,
                   utf8skip(ticker->src_str, char_offset), num_chars);
-         }
 
          if (ticker->dst_str_width)
             *ticker->dst_str_width = num_chars * glyph_width;
@@ -1678,17 +1673,18 @@ bool menu_animation_ticker_smooth(menu_animation_ctx_ticker_smooth_t *ticker)
       if (glyph_width < 0)
          goto end;
 
-      src_char_widths[i] = (unsigned)glyph_width;
-      src_str_width += (unsigned)glyph_width;
+      src_char_widths[i]  = (unsigned)glyph_width;
+      src_str_width      += (unsigned)glyph_width;
 
-      str_ptr = utf8skip(str_ptr, 1);
+      str_ptr             = utf8skip(str_ptr, 1);
    }
 
    /* If total src string width is <= text field width, we
     * can just copy the entire string */
    if (src_str_width <= ticker->field_width)
    {
-      utf8cpy(ticker->dst_str, ticker->dst_str_len, ticker->src_str, src_str_len);
+      utf8cpy(ticker->dst_str, ticker->dst_str_len,
+            ticker->src_str, src_str_len);
 
       if (ticker->dst_str_width)
          *ticker->dst_str_width = src_str_width;
@@ -1705,7 +1701,8 @@ bool menu_animation_ticker_smooth(menu_animation_ctx_ticker_smooth_t *ticker)
       unsigned current_width = 0;
       unsigned num_chars     = 0;
       int period_width       =
-            font_driver_get_message_width(ticker->font, ".", 1, ticker->font_scale);
+            font_driver_get_message_width(ticker->font,
+                  ".", 1, ticker->font_scale);
 
       /* Sanity check */
       if (period_width < 0)
@@ -1733,7 +1730,8 @@ bool menu_animation_ticker_smooth(menu_animation_ctx_ticker_smooth_t *ticker)
       }
 
       /* Copy string segment + add suffix */
-      utf8cpy(ticker->dst_str, ticker->dst_str_len, ticker->src_str, num_chars);
+      utf8cpy(ticker->dst_str, ticker->dst_str_len,
+            ticker->src_str, num_chars);
       strlcat(ticker->dst_str, "...", ticker->dst_str_len);
 
       if (ticker->dst_str_width)
@@ -1816,16 +1814,16 @@ bool menu_animation_ticker_smooth(menu_animation_ctx_ticker_smooth_t *ticker)
 
          menu_animation_ticker_smooth_generic(
                ticker->idx,
-               src_char_widths, src_str_len, src_str_width, ticker->field_width,
-               &char_offset, &num_chars, ticker->x_offset, ticker->dst_str_width);
+               src_char_widths, src_str_len,
+               src_str_width, ticker->field_width,
+               &char_offset, &num_chars,
+               ticker->x_offset, ticker->dst_str_width);
 
          /* Copy required substring */
          if (num_chars > 0)
-         {
             utf8cpy(
                   ticker->dst_str, ticker->dst_str_len,
                   utf8skip(ticker->src_str, char_offset), num_chars);
-         }
 
          break;
       }
@@ -1861,7 +1859,8 @@ end:
 }
 
 static void build_line_ticker_string(
-      size_t num_display_lines, size_t line_offset, struct string_list *lines,
+      size_t num_display_lines, size_t line_offset,
+      struct string_list *lines,
       char *dest_str, size_t dest_str_len)
 {
    size_t i;
