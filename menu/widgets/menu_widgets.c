@@ -290,6 +290,8 @@ static char libretro_message[LIBRETRO_MESSAGE_SIZE] = {'\0'};
 
 /* Metrics */
 #define BASE_FONT_SIZE 32.0f
+/* > 'OZONE_SIDEBAR_WIDTH' must be kept in sync
+ *   with ozone menu driver metrics */
 #define OZONE_SIDEBAR_WIDTH 408
 
 static bool is_ozone;
