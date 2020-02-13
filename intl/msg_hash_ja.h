@@ -2195,24 +2195,12 @@ MSG_HASH(
    "デフォルトのコア"
 )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_DEFAULT_CORE,
-   "Specify core to use when launching content via a playlist entry that does not have an existing core association."
-)
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_RESET_CORES,
    "コアの関連付けのリセット"
 )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_RESET_CORES,
    "全エントリーのコアの関連付けをリセット"
-)
-MSG_HASH(
-   MSG_PLAYLIST_MANAGER_RESETTING_CORES,
-   "Resetting cores: "
-)
-MSG_HASH(
-   MSG_PLAYLIST_MANAGER_CORES_RESET,
-   "Cores reset: "
 )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE,
@@ -3200,122 +3188,6 @@ MSG_HASH(
    "中程度のパフォーマンスへの影響があります。"
 )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_RGUI_INLINE_THUMBNAILS,
-   "Show Playlist Thumbnails"
-)
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_RGUI_INLINE_THUMBNAILS,
-   "Enable display of inline downscaled thumbnails while viewing playlists. When disabled, 'Top Thumbnail' may still be toggled fullscreen by pressing RetroPad Y."
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_RGUI_SWAP_THUMBNAILS,
-   "Swap Thumbnails"
-)
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_RGUI_SWAP_THUMBNAILS,
-   "Swaps the display positions of 'Top Thumbnail' and 'Bottom Thumbnail'."
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_RGUI_THUMBNAIL_DELAY,
-   "Thumbnail Delay (ms)"
-)
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_RGUI_THUMBNAIL_DELAY,
-   "Applies a time delay between selecting a playlist entry and loading its associated thumbnails. Setting this to a value of at least 256 ms enables fast lag-free scrolling on even the slowest devices."
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_RGUI_THUMBNAIL_DOWNSCALER,
-   "Thumbnail Downscaling Method"
-)
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_RGUI_THUMBNAIL_DOWNSCALER,
-   "Resampling method used when shrinking large thumbnails to fit the display."
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_THUMB_SCALE_POINT,
-   "Nearest Neighbour (Fast)"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_THUMB_SCALE_BILINEAR,
-   "Bilinear"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_THUMB_SCALE_SINC,
-   "Sinc/Lanczos3 (Slow)"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_NONE,
-   "None"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_AUTO,
-   "Auto"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_X2,
-   "x2"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_X3,
-   "x3"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_X4,
-   "x4"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_X5,
-   "x5"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_X6,
-   "x6"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_X7,
-   "x7"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_X8,
-   "x8"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_X9,
-   "x9"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_4_3,
-   "4:3"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_16_9,
-   "16:9"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_16_9_CENTRE,
-   "16:9 (Centered)"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_16_10,
-   "16:10"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_16_10_CENTRE,
-   "16:10 (Centered)"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_NONE,
-   "OFF"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_FIT_SCREEN,
-   "Fit Screen"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_INTEGER,
-   "Integer Scale"
-)
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS_DIRECTORY,
    "サムネイル"
 )
@@ -3423,154 +3295,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_TICKER_SMOOTH,
    "長いテキスト文字列を表示するときのスクロールをスムーズにします。 "
    "パフォーマンスに少し影響します。"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME,
-   "Menu Color Theme"
-)
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RGUI_MENU_COLOR_THEME,
-   "Select a different color theme. Choosing 'Custom' enables the use of menu theme preset files."
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_MENU_THEME_PRESET,
-   "Custom Menu Theme Preset"
-)
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RGUI_MENU_THEME_PRESET,
-   "Select a menu theme preset from the file browser."
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CUSTOM,
-   "Custom"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CLASSIC_RED,
-   "Classic Red"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CLASSIC_ORANGE,
-   "Classic Orange"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CLASSIC_YELLOW,
-   "Classic Yellow"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CLASSIC_GREEN,
-   "Classic Green"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CLASSIC_BLUE,
-   "Classic Blue"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CLASSIC_VIOLET,
-   "Classic Violet"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CLASSIC_GREY,
-   "Classic Grey"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_LEGACY_RED,
-   "Legacy Red"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_DARK_PURPLE,
-   "Dark Purple"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_MIDNIGHT_BLUE,
-   "Midnight Blue"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_GOLDEN,
-   "Golden"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_ELECTRIC_BLUE,
-   "Electric Blue"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_APPLE_GREEN,
-   "Apple Green"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_VOLCANIC_RED,
-   "Volcanic Red"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_LAGOON,
-   "Lagoon"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_BROGRAMMER,
-   "Brogrammer"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_DRACULA,
-   "Dracula"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_FAIRYFLOSS,
-   "Fairy Floss"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_FLATUI,
-   "Flat UI"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_GRUVBOX_DARK,
-   "Gruvbox Dark"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_GRUVBOX_LIGHT,
-   "Gruvbox Light"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_HACKING_THE_KERNEL,
-   "Hacking the Kernel"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_NORD,
-   "Nord"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_NOVA,
-   "Nova"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_ONE_DARK,
-   "One Dark"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_PALENIGHT,
-   "Palenight"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_SOLARIZED_DARK,
-   "Solarized Dark"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_SOLARIZED_LIGHT,
-   "Solarized Light"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_TANGO_DARK,
-   "Tango Dark"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_TANGO_LIGHT,
-   "Tango Light"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_ZENBURN,
-   "Zenburn"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_ANTI_ZENBURN,
-   "Anti-Zenburn"
 )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TRUE,
@@ -3721,34 +3445,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_3DS_LCD_BOTTOM,
    "3DSボトム画面"
 )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_3DS_LCD_BOTTOM,
-   "Enable display of status information on bottom screen. Disable to increase battery life and improve performance."
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_3DS_DISPLAY_MODE,
-   "3DS Display Mode"
-)
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_3DS_DISPLAY_MODE,
-   "Selects between 3D and 2D display modes. In '3D' mode, pixels are square and a depth effect is applied when viewing the Quick Menu. '2D' mode provides the best performance."
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CTR_VIDEO_MODE_3D,
-   "3D"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CTR_VIDEO_MODE_2D,
-   "2D"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CTR_VIDEO_MODE_2D_400x240,
-   "2D (Pixel Grid Effect)"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CTR_VIDEO_MODE_2D_800x240,
-   "2D (High Resolution)"
-)
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER,
@@ -3887,16 +3583,8 @@ MSG_HASH(
    "シェーダのプリセットをロード"
 )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE,
-   "Save ..."
-)
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS,
    "シェーダのプリセットに名前を付けて保存"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_GLOBAL,
-   "Save Global Preset"
 )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_CORE,
@@ -3955,26 +3643,6 @@ MSG_HASH(
    "カスタム表示領域のY位置"
 )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_VI_WIDTH,
-   "Set VI Screen Width"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_OVERSCAN_CORRECTION_TOP,
-   "Overscan Correction (Top)"
-)
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_OVERSCAN_CORRECTION_TOP,
-   "Adjust display overscan cropping by reducing image size by specified number of scanlines (taken from top of screen). Note: May introduce scaling artefacts."
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_OVERSCAN_CORRECTION_BOTTOM,
-   "Overscan Correction (Bottom)"
-)
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_OVERSCAN_CORRECTION_BOTTOM,
-   "Adjust display overscan cropping by reducing image size by specified number of scanlines (taken from bottom of screen). Note: May introduce scaling artefacts."
-)
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
    "垂直同期"
 )
@@ -3998,32 +3666,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
    "フルスクリーンの高さ"
 )
-#ifdef HAVE_VIDEO_LAYOUT
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_ENABLE,
-   "Enable Video Layout"
-)
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_ENABLE,
-   "Video layouts are used for bezels and other artwork."
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_PATH,
-   "Video Layout Path"
-)
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_PATH,
-   "Select a video layout from the file browser."
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_SELECTED_VIEW,
-   "Selected View"
-)
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_SELECTED_VIEW,
-   "Select a view within the loaded layout."
-)
-#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_WIFI_DRIVER,
    "Wi-Fiのドライバ"
@@ -4093,14 +3735,6 @@ MSG_HASH(
    "ドットアート"
 )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_AUTOMATIC,
-   "Automatic"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_AUTOMATIC_INVERTED,
-   "Automatic Inverted"
-)
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME,
    "メニューの色テーマ"
 )
@@ -4151,10 +3785,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_VOLCANIC_RED,
    "ボルカニックレッド"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_SUNBEAM,
-   "Sunbeam"
 )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_RIBBON_ENABLE,
@@ -4472,14 +4102,6 @@ MSG_HASH(
    "お気に入りに追加しました"
 )
 MSG_HASH(
-   MSG_ADD_TO_FAVORITES_FAILED,
-   "Failed to add favorite: playlist full"
-)
-MSG_HASH(
-   MSG_SET_CORE_ASSOCIATION,
-   "Core set: "
-)
-MSG_HASH(
    MSG_RESET_CORE_ASSOCIATION,
    "プレイリストエントリのコアの関連付けがリセットされました"
 )
@@ -4576,14 +4198,6 @@ MSG_HASH(
    "動画から状態を読み込むことができませんでした"
 )
 MSG_HASH(
-   MSG_CRC32_CHECKSUM_MISMATCH,
-   "CRC32 checksum mismatch between content file and saved content checksum in replay file header) replay highly likely to desync on playback."
-)
-MSG_HASH(
-   MSG_CUSTOM_TIMING_GIVEN,
-   "Custom timing given"
-)
-MSG_HASH(
    MSG_DECOMPRESSION_ALREADY_IN_PROGRESS,
    "解凍は既に進行中です"
 )
@@ -4626,22 +4240,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_ERROR,
    "エラー"
-)
-MSG_HASH(
-   MSG_ERROR_LIBRETRO_CORE_REQUIRES_CONTENT,
-   "Libretro core requires content, but nothing was provided."
-)
-MSG_HASH(
-   MSG_ERROR_LIBRETRO_CORE_REQUIRES_SPECIAL_CONTENT,
-   "Libretro core requires special content, but none were provided."
-)
-MSG_HASH(
-   MSG_ERROR_LIBRETRO_CORE_REQUIRES_VFS,
-   "Core does not support VFS, and loading from a local copy failed"
-)
-MSG_HASH(
-   MSG_ERROR_PARSING_ARGUMENTS,
-   "Error parsing arguments."
 )
 MSG_HASH(
    MSG_ERROR_SAVING_CORE_OPTIONS_FILE,
@@ -4844,10 +4442,6 @@ MSG_HASH(
    "フレーム"
 )
 MSG_HASH(
-   MSG_GAME_SPECIFIC_CORE_OPTIONS_FOUND_AT,
-   "Per-Game Options: game-specific core options found at"
-)
-MSG_HASH(
    MSG_GOT_INVALID_DISK_INDEX,
    "無効なディスクインデックスです"
 )
@@ -4862,14 +4456,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_GAME_FOCUS_OFF,
    "ゲームフォーカスをオフにしました。"
-)
-MSG_HASH(
-   MSG_HW_RENDERED_MUST_USE_POSTSHADED_RECORDING,
-   "Libretro core is hardware rendered. Must use post-shaded recording as well."
-)
-MSG_HASH(
-   MSG_INFLATED_CHECKSUM_DID_NOT_MATCH_CRC32,
-   "Inflated checksum did not match CRC32."
 )
 MSG_HASH(
    MSG_INPUT_CHEAT,
@@ -4916,10 +4502,6 @@ MSG_HASH(
    "(メガバイト)"
 )
 MSG_HASH(
-   MSG_LIBRETRO_ABI_BREAK,
-   "is compiled against a different version of libretro than this libretro implementation."
-)
-MSG_HASH(
    MSG_LIBRETRO_FRONTEND,
    "libretroのフロントエンド"
 )
@@ -4960,14 +4542,6 @@ MSG_HASH(
    "メモリ"
 )
 MSG_HASH(
-   MSG_MOVIE_FILE_IS_NOT_A_VALID_BSV1_FILE,
-   "Movie file is not a valid BSV1 file."
-)
-MSG_HASH(
-   MSG_MOVIE_FORMAT_DIFFERENT_SERIALIZER_VERSION,
-   "Movie format seems to have a different serializer version. Will most likely fail."
-)
-MSG_HASH(
    MSG_MOVIE_PLAYBACK_ENDED,
    "動画の再生を終了しました"
 )
@@ -4978,10 +4552,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_NETPLAY_FAILED,
    "ネットプレイの初期化に失敗しました"
-)
-MSG_HASH(
-   MSG_NO_CONTENT_STARTING_DUMMY_CORE,
-   "No content, starting dummy core."
 )
 MSG_HASH(
    MSG_NO_SAVE_STATE_HAS_BEEN_OVERWRITTEN_YET,
@@ -5004,24 +4574,8 @@ MSG_HASH(
    "一時停止"
 )
 MSG_HASH(
-   MSG_PROGRAM,
-   "RetroArch"
-)
-MSG_HASH(
    MSG_READING_FIRST_DATA_TRACK,
    "最初のデータトラックを読み込んでいます..."
-)
-MSG_HASH(
-   MSG_RECEIVED,
-   "received"
-)
-MSG_HASH(
-   MSG_RECORDING_TERMINATED_DUE_TO_RESIZE,
-   "Recording terminated due to resize."
-)
-MSG_HASH(
-   MSG_RECORDING_TO,
-   "Recording to"
 )
 MSG_HASH(
    MSG_REDIRECTING_CHEATFILE_TO,
@@ -5056,16 +4610,8 @@ MSG_HASH(
    "リセット"
 )
 MSG_HASH(
-   MSG_RESTARTING_RECORDING_DUE_TO_DRIVER_REINIT,
-   "Restarting recording due to driver reinit."
-)
-MSG_HASH(
    MSG_RESTORED_OLD_SAVE_STATE,
    "以前のステートセーブを復元しました"
-)
-MSG_HASH(
-   MSG_RESTORING_DEFAULT_SHADER_PRESET_TO,
-   "Shaders: restoring default shader preset to"
 )
 MSG_HASH(
    MSG_REVERTING_SAVEFILE_DIRECTORY_TO,
@@ -5080,16 +4626,8 @@ MSG_HASH(
    "巻き戻しています"
 )
 MSG_HASH(
-   MSG_REWIND_INIT,
-   "Initializing rewind buffer with size"
-)
-MSG_HASH(
    MSG_REWIND_INIT_FAILED,
    "巻き戻しバッファの初期化に失敗しました。巻き戻しが無効になります"
-)
-MSG_HASH(
-   MSG_REWIND_INIT_FAILED_THREADED_AUDIO,
-   "Implementation uses threaded audio. Cannot use rewind."
 )
 MSG_HASH(
    MSG_REWIND_REACHED_END,
@@ -5130,10 +4668,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_SENDING_COMMAND,
    "コマンドを送信中"
-)
-MSG_HASH(
-   MSG_SEVERAL_PATCHES_ARE_EXPLICITLY_DEFINED,
-   "Several patches are explicitly defined, ignoring all..."
 )
 MSG_HASH(
    MSG_SHADER,
@@ -5184,30 +4718,6 @@ MSG_HASH(
    "スクリーンショットを撮影中"
 )
 MSG_HASH(
-   MSG_SCREENSHOT_SAVED,
-   "Screenshot saved"
-)
-MSG_HASH(
-   MSG_ACHIEVEMENT_UNLOCKED,
-   "Achievement Unlocked"
-)
-MSG_HASH(
-   MSG_CHANGE_THUMBNAIL_TYPE,
-   "Change thumbnail type"
-)
-MSG_HASH(
-   MSG_NO_THUMBNAIL_AVAILABLE,
-   "No thumbnail available"
-)
-MSG_HASH(
-   MSG_PRESS_AGAIN_TO_QUIT,
-   "Press again to quit..."
-)
-MSG_HASH(
-   MSG_TO,
-   "to"
-)
-MSG_HASH(
    MSG_UNDID_LOAD_STATE,
    "ステートロードを取り消しました"
 )
@@ -5224,18 +4734,6 @@ MSG_HASH(
    "一時停止解除"
 )
 MSG_HASH(
-   MSG_UNRECOGNIZED_COMMAND,
-   "Unrecognized command"
-)
-MSG_HASH(
-   MSG_USING_CORE_NAME_FOR_NEW_CONFIG,
-   "Using core name for new config."
-)
-MSG_HASH(
-   MSG_USING_LIBRETRO_DUMMY_CORE_RECORDING_SKIPPED,
-   "Using libretro dummy core. Skipping recording."
-)
-MSG_HASH(
    MSG_VALUE_CONNECT_DEVICE_FROM_A_VALID_PORT,
    "デバイスを有効なポートから接続してください"
 )
@@ -5250,18 +4748,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_VALUE_SHUTTING_DOWN,
    "シャットダウンしています..."
-)
-MSG_HASH(
-   MSG_VERSION_OF_LIBRETRO_API,
-   "Version of libretro API"
-)
-MSG_HASH(
-   MSG_VIEWPORT_SIZE_CALCULATION_FAILED,
-   "Viewport size calculation failed! Will continue using raw data. This will probably not work right ..."
-)
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY,
-   "virtual disk tray."
 )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
@@ -5302,18 +4788,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_VOLUME,
    "オーディオの音量(dB)です。 "
    "0dB は通常の音量で, 増幅されません。"
-)
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_WASAPI_EXCLUSIVE_MODE,
-   "Allow the WASAPI driver to take exclusive control of the audio device. If disabled, it will use shared mode instead."
-)
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_WASAPI_FLOAT_FORMAT,
-   "Use float format for the WASAPI driver, if supported by your audio device."
-)
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_WASAPI_SH_BUFFER_LENGTH,
-   "The intermediate buffer length (in frames) when using the WASAPI driver in shared mode."
 )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_SYNC,
@@ -5385,10 +4859,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_DEVICE_NOT_CONFIGURED,
    "設定されていません"
-)
-MSG_HASH(
-   MSG_DEVICE_NOT_CONFIGURED_FALLBACK,
-   "not configured, using fallback"
 )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST,
@@ -5633,10 +5103,6 @@ MSG_HASH(
    "使用するコアを選択します。"
 )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_START_CORE,
-   "Start core without content."
-)
-MSG_HASH(
    MENU_ENUM_SUBLABEL_DOWNLOAD_CORE,
    "オンラインアップデータからコアをインストールします。"
 )
@@ -5715,10 +5181,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS,
    "オーバーレイにキーボード/コントローラ入力を表示します。"
-)
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS_PORT,
-   "Select the port for the overlay to listen to if Show Inputs On Overlay is enabled."
 )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_MOUSE_CURSOR,
@@ -5822,19 +5284,6 @@ MSG_HASH(
    "ゲームをロードしたときにチートを自動で適用します。"
 )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEAT_REPEAT_COUNT,
-   "The number of times the cheat will be applied. "
-   "Use with the other two Iteration options to affect large areas of memory."
-)
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEAT_REPEAT_ADD_TO_ADDRESS,
-   "After each 'Number of Iterations' the Memory Address will be increased by this number times the 'Memory Search Size'."
-)
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEAT_REPEAT_ADD_TO_VALUE,
-   "After each 'Number of Iterations' the Value will be increased by this amount."
-)
-MSG_HASH(
    MENU_ENUM_SUBLABEL_REWIND_GRANULARITY,
    "定義した数のフレームを巻き戻すときは, 一度に複数のフレームを巻き戻すことができ, 巻き戻し速度が速くなります。"
 )
@@ -5847,22 +5296,6 @@ MSG_HASH(
    "このUIで巻き戻しバッファサイズの値を増減するたびに, この量だけ変化します。"
 )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEAT_IDX,
-   "Index position in list."
-)
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEAT_ADDRESS_BIT_POSITION,
-   "Address bitmask when Memory Search Size < 8-bit."
-)
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEAT_MATCH_IDX,
-   "Select the match to view."
-)
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEAT_START_OR_CONT,
-   ""
-)
-MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_START_OR_RESTART,
    "左/右でビット幅を変更します。"
 )
@@ -5871,68 +5304,12 @@ MSG_HASH(
    "左/右で値を変更します。"
 )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEAT_SEARCH_LT,
-   ""
-)
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEAT_SEARCH_GT,
-   ""
-)
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEAT_SEARCH_LTE,
-   ""
-)
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEAT_SEARCH_GTE,
-   ""
-)
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEAT_SEARCH_EQ,
-   ""
-)
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEAT_SEARCH_NEQ,
-   ""
-)
-MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_SEARCH_EQPLUS,
    "左/右で値を変更します。"
 )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_SEARCH_EQMINUS,
    "左/右で値を変更します。"
-)
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEAT_ADD_MATCHES,
-   ""
-)
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEAT_VIEW_MATCHES,
-   ""
-)
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEAT_CREATE_OPTION,
-   ""
-)
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEAT_DELETE_OPTION,
-   ""
-)
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEAT_ADD_NEW_TOP,
-   ""
-)
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEAT_ADD_NEW_BOTTOM,
-   ""
-)
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEAT_DELETE_ALL,
-   ""
-)
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEAT_RELOAD_CHEATS,
-   ""
 )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_BIG_ENDIAN,
@@ -6138,20 +5515,8 @@ MSG_HASH(
    "表示するサムネイルの種類です。"
 )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_THUMBNAILS_RGUI,
-   "Type of thumbnail to display at the top right of playlists. This thumbnail may be toggled fullscreen by pressing RetroPad Y."
-)
-MSG_HASH(
    MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS,
    "左側に表示するサムネイルの種類です。"
-)
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_RGUI,
-   "Type of thumbnail to display at the bottom right of playlists."
-)
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_OZONE,
-   "Replace the content metadata panel by another thumbnail."
 )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_VERTICAL_THUMBNAILS,
@@ -6320,14 +5685,6 @@ MSG_HASH(
    "巻き戻しの設定を管理します。"
 )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_CHEAT_DETAILS,
-   "Manages cheat details settings."
-)
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_CHEAT_SEARCH,
-   "Start or continue a cheat code search."
-)
-MSG_HASH(
    MENU_ENUM_SUBLABEL_RESTART_CONTENT,
    "コンテンツを最初から再起動します。"
 )
@@ -6335,10 +5692,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
    "このコアでロードされたすべてのコンテンツに適用するオーバーライド設定ファイルを保存します。 "
    "メイン設定より優先されます。"
-)
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
-   "Saves an override configuration file which will apply for all content loaded from the same directory as the current file. Will take precedence over the main configuration."
 )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
@@ -6605,56 +5958,8 @@ MSG_HASH(
    "各パイプラインに別々のシェーダをバインドし, フィルタリングとスケールを設定することができます。"
 )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET,
-   "Load a shader preset. The shader pipeline will be automatically set-up."
-)
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE,
-   "Save shader preset as ..."
-)
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_AS,
-   "Save the current shader settings as a new shader preset."
-)
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_CORE,
-   "Save the current shader settings as the default settings for this application/core."
-)
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_PARENT,
-   "Save the current shader settings as the default settings for all files in the current content directory."
-)
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_GAME,
-   "Save the current shader settings as the default settings for the content."
-)
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_GLOBAL,
-   "Save the current shader settings as the default global setting."
-)
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PARAMETERS,
-   "Modifies the current shader directly. Changes will not be saved to the preset file."
-)
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_PARAMETERS,
-   "Modifies the shader preset itself currently used in the menu."
-)
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEAT_NUM_PASSES,
-   "Increase or decrease the amount of cheats."
-)
-MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_APPLY_CHANGES,
    "チートの変更はただちに適用されます。"
-)
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEAT_START_SEARCH,
-   "Start search for a new cheat.  Number of bits can be changed."
-)
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEAT_CONTINUE_SEARCH,
-   "Continue search for a new cheat."
 )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_FILE_LOAD,
@@ -7267,118 +6572,6 @@ MSG_HASH(
    "技術的な統計を画面に表示します。"
 )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_RGUI_BORDER_FILLER_ENABLE,
-   "Border filler"
-)
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_RGUI_BORDER_FILLER_ENABLE,
-   "Display menu border."
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_RGUI_BORDER_FILLER_THICKNESS_ENABLE,
-   "Border filler thickness"
-)
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_RGUI_BORDER_FILLER_THICKNESS_ENABLE,
-   "Increase coarseness of menu border chequerboard pattern."
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_RGUI_BACKGROUND_FILLER_THICKNESS_ENABLE,
-   "Background filler thickness"
-)
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_RGUI_BACKGROUND_FILLER_THICKNESS_ENABLE,
-   "Increase coarseness of menu background chequerboard pattern."
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO_LOCK,
-   "Lock Menu Aspect Ratio"
-)
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_RGUI_ASPECT_RATIO_LOCK,
-   "Ensures that the menu is always displayed with the correct aspect ratio. If disabled, the quick menu will be stretched to match the currently loaded content."
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_RGUI_INTERNAL_UPSCALE_LEVEL,
-   "Internal Upscaling"
-)
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_RGUI_INTERNAL_UPSCALE_LEVEL,
-   "Upscale menu interface before drawing to screen. When used with 'Menu Linear Filter' enabled, removes scaling artefacts (uneven pixels) while maintaining a sharp image. Has a significant performance impact that increases with upscaling level."
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO,
-   "Menu Aspect Ratio"
-)
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_RGUI_ASPECT_RATIO,
-   "Select menu aspect ratio. Widescreen ratios increase the horizontal resolution of the menu interface. (May require a restart if 'Lock Menu Aspect Ratio' is disabled)"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_RGUI_FULL_WIDTH_LAYOUT,
-   "Use Full-Width Layout"
-)
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_RGUI_FULL_WIDTH_LAYOUT,
-   "Resize and position menu entries to make best use of available screen space. Disable this to use classic fixed-width two column layout."
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_RGUI_SHADOWS,
-   "Shadow Effects"
-)
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_RGUI_SHADOWS,
-   "Enable drop shadows for menu text, borders and thumbnails. Has a modest performance impact."
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_RGUI_PARTICLE_EFFECT,
-   "Background Animation"
-)
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_RGUI_PARTICLE_EFFECT,
-   "Enable background particle animation effect. Has a significant performance impact."
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_NONE,
-   "OFF"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_SNOW,
-   "Snow (Light)"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_SNOW_ALT,
-   "Snow (Heavy)"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_RAIN,
-   "Rain"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_VORTEX,
-   "Vortex"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_STARFIELD,
-   "Star Field"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_RGUI_PARTICLE_EFFECT_SPEED,
-   "Background Animation Speed"
-)
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_RGUI_PARTICLE_EFFECT_SPEED,
-   "Adjust speed of background particle animation effects."
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_RGUI_EXTENDED_ASCII,
-   "Extended ASCII Support"
-)
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_RGUI_EXTENDED_ASCII,
-   "Enable display of non-standard ASCII characters. Required for compatibility with certain non-English Western languages. Has a moderate performance impact."
-)
-MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION,
    "CRTディスプレイ専用です。 "
    "コア/ゲームの正確な解像度とリフレッシュレートを使用するよう試みます。"
@@ -7419,16 +6612,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_OVERLAYS,
    "[OSDオーバーレイ]を表示"
 )
-#ifdef HAVE_VIDEO_LAYOUT
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_VIDEO_LAYOUT,
-   "Show Video Layout Settings"
-)
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_VIDEO_LAYOUT,
-   "Show/hide Video Layout options."
-)
-#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE_MENU,
    "メニューのオーディオを有効"
@@ -7628,14 +6811,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_LOG,
    "ログ"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_ITEMS_COUNT,
-   "%1 items"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_DROP_IMAGE_HERE,
-   "Drop image here"
 )
 #ifdef HAVE_QT
 MSG_HASH(
@@ -8167,14 +7342,6 @@ MSG_HASH(
    "起動時に表示するプレイリスト:"
 )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THUMBNAIL_TYPE,
-   "Thumbnail"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THUMBNAIL_CACHE_LIMIT,
-   "Thumbnail cache limit:"
-)
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS,
    "すべてのサムネイルをダウンロード"
 )
@@ -8193,14 +7360,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_PLAYLIST_THUMBNAIL_PROGRESS,
    "成功した数: %1 失敗した数: %2"
-)
-MSG_HASH(
-   MSG_DEVICE_CONFIGURED_IN_PORT,
-   "Configured in port:"
-)
-MSG_HASH(
-   MSG_FAILED_TO_SET_DISK,
-   "Failed to set disk"
 )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_CORE_OPTIONS,
@@ -8292,10 +7451,6 @@ MSG_HASH(
    "AIサービス"
 )
 MSG_HASH(
-   MSG_CHEEVOS_HARDCORE_MODE_DISABLED,
-   "A savestate was loaded, Achievements Hardcore Mode disabled for the current session. Restart to enable hardcore mode."
-)
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_QUALITY,
    "録画の品質"
 )
@@ -8310,14 +7465,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UDP_STREAM_PORT,
    "UDP配信ポート"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ACCOUNTS_TWITCH,
-   "Twitch"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ACCOUNTS_YOUTUBE,
-   "YouTube"
 )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TWITCH_STREAM_KEY,
@@ -8368,28 +7515,8 @@ MSG_HASH(
    "色テーマを選択します。"
 )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_COLLAPSE_SIDEBAR,
-   "Collapse the sidebar"
-)
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OZONE_COLLAPSE_SIDEBAR,
-   "Have the left sidebar always collapsed."
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_TRUNCATE_PLAYLIST_NAME,
-   "Truncate Playlist names"
-)
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OZONE_TRUNCATE_PLAYLIST_NAME,
-   "When enabled, will remove the system names from the playlists. For example, display 'PlayStation' instead of 'Sony - PlayStation'. Changes require a restart to take effect."
-)
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
    "システムの優先色テーマを使用"
-)
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
-   "Use your operating system's color theme (if any) - overrides theme settings."
 )
 MSG_HASH(
    MSG_RESAMPLER_QUALITY_LOWEST,
@@ -8426,10 +7553,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_FAVORITES_AVAILABLE,
    "お気に入りがありません。"
-)
-MSG_HASH(
-   MSG_MISSING_ASSETS,
-   "Warning: Missing assets, use the Online Updater if available"
 )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SAVE_POSITION,
