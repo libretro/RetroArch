@@ -335,9 +335,8 @@ static void ffmpeg_audio_resolve_sample_rate(ffmpeg_t *handle,
    }
 }
 
-static bool ffmpeg_init_audio(ffmpeg_t *handle)
+static bool ffmpeg_init_audio(ffmpeg_t *handle, const char *audio_resampler)
 {
-   settings_t *settings            = config_get_ptr();
    struct ff_config_param *params  = &handle->config;
    struct ff_audio_info *audio     = &handle->audio;
    struct record_params *param     = &handle->params;
@@ -369,9 +368,10 @@ static bool ffmpeg_init_audio(ffmpeg_t *handle)
       audio->codec->sample_rate = params->sample_rate;
       audio->codec->time_base   = av_d2q(1.0 / params->sample_rate, 1000000);
 
-      retro_resampler_realloc(&audio->resampler_data,
+      retro_resampler_realloc(
+            &audio->resampler_data,
             &audio->resampler,
-            settings->arrays.audio_resampler,
+            audio_resampler,
             RESAMPLER_QUALITY_DONTCARE,
             audio->ratio);
    }
@@ -1080,7 +1080,9 @@ static void *ffmpeg_new(const struct record_params *params)
    if (!ffmpeg_init_video(handle))
       goto error;
 
-   if (handle->config.audio_enable && !ffmpeg_init_audio(handle))
+   if (handle->config.audio_enable && 
+         !ffmpeg_init_audio(handle,
+            settings->arrays.audio_resampler))
       goto error;
 
    if (!ffmpeg_init_muxer_post(handle))
