@@ -1159,13 +1159,15 @@ void font_driver_init_osd(
       bool is_threaded,
       enum font_driver_render_api api)
 {
-   settings_t *settings = config_get_ptr();
+   settings_t *settings  = config_get_ptr();
+   const char *path_font = settings->paths.path_font;
+   float video_font_size = settings->floats.video_font_size;
    if (video_font_driver)
       return;
 
    video_font_driver = font_driver_init_first(video_data,
-         *settings->paths.path_font ? settings->paths.path_font : NULL,
-         settings->floats.video_font_size, threading_hint, is_threaded, api);
+         *path_font ? path_font : NULL,
+         video_font_size, threading_hint, is_threaded, api);
 
    if (!video_font_driver)
       RARCH_ERR("[font]: Failed to initialize OSD font.\n");
