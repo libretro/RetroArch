@@ -204,9 +204,7 @@ bool menu_shader_manager_set_preset(struct video_shader *shader,
 
 end:
    command_event(CMD_EVENT_SHADER_PRESET_LOADED, NULL);
-#ifdef HAVE_MENU
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-#endif
    return ret;
 
 clear:
@@ -548,9 +546,7 @@ int menu_shader_manager_clear_num_passes(struct video_shader *shader)
 
    shader->passes = 0;
 
-#ifdef HAVE_MENU
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-#endif
 
    video_shader_resolve_parameters(NULL, shader);
 
@@ -647,7 +643,7 @@ enum rarch_shader_type menu_shader_manager_get_type(
    if (type == RARCH_SHADER_NONE)
    {
       type = video_shader_parse_type(shader->pass[0].source.path);
-      i = 1;
+      i    = 1;
    }
 
    for (; i < shader->passes; i++)
