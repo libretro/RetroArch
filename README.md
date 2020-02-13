@@ -8,13 +8,13 @@ Popular examples of implementations for this API includes video game system emul
 more generalized 3D programs.
 These programs are instantiated as dynamic libraries. We refer to these as "libretro cores".
 
-![XMB menu driver](https://github.com/libretro/retroarch-scene/blob/master/Scratchpad/images/Versions/1.8.4/XMB-main-menu.jpg?raw=true "XMB menu driver")
+![XMB menu driver](docs/XMB-main-menu.jpg "XMB menu driver")
 
-![rgui menu driver](https://github.com/libretro/retroarch-scene/blob/master/Scratchpad/images/Versions/1.8.4/rgui-main-menu.jpg?raw=true "rgui menu driver")
+![rgui menu driver](docs/rgui-main-menu.jpg "rgui menu driver")
 
-![glui menu driver](https://github.com/libretro/retroarch-scene/blob/master/Scratchpad/images/Versions/1.8.4/glui-main-menu.jpg?raw=true "glui menu driver")
+![glui menu driver](docs/glui-main-menu.jpge "glui menu driver")
 
-![ozone menu driver](https://github.com/libretro/retroarch-scene/blob/master/Scratchpad/images/Versions/1.8.4/ozone-main-menu.jpg?raw=true "ozone menu driver")
+![ozone menu driver](docs/ozone-main-menu.jpg "ozone menu driver")
 
 ## libretro
 
