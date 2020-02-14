@@ -66,6 +66,8 @@ int rcheevos_get_console(void);
 
 const char* rcheevos_get_hash(void);
 
+const char *rcheevos_get_richpresence(void);
+
 extern bool rcheevos_loaded;
 extern bool rcheevos_hardcore_active;
 extern bool rcheevos_hardcore_paused;

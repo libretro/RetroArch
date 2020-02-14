@@ -23,6 +23,7 @@
 #define CHEEVOS_JSON_KEY_TOKEN        0x0e2dbd26U
 #define CHEEVOS_JSON_KEY_FLAGS        0x0d2e96b2U
 #define CHEEVOS_JSON_KEY_LEADERBOARDS 0xf1247d2dU
+#define CHEEVOS_JSON_KEY_RICHPRESENCE 0xf18dd230U
 #define CHEEVOS_JSON_KEY_MEM          0x0b8807e4U
 #define CHEEVOS_JSON_KEY_FORMAT       0xb341208eU
 #define CHEEVOS_JSON_KEY_SUCCESS      0x110461deU
@@ -261,7 +262,9 @@ typedef struct
 {
    int      in_cheevos;
    int      in_lboards;
+   int      is_game_id;
    int      is_console_id;
+   int      is_richpresence;
    unsigned core_count;
    unsigned unofficial_count;
    unsigned lboard_count;
@@ -386,9 +389,14 @@ static int rcheevos_read_key(void* userdata,
       case CHEEVOS_JSON_KEY_CONSOLE_ID:
          ud->is_console_id = 1;
          break;
+      case CHEEVOS_JSON_KEY_RICHPRESENCE:
+         ud->is_richpresence = 1;
+         break;
       case CHEEVOS_JSON_KEY_ID:
          if (common)
             ud->field = &ud->id;
+         else
+            ud->is_game_id = 1;
          break;
       case CHEEVOS_JSON_KEY_MEMADDR:
          if (ud->in_cheevos)
@@ -451,6 +459,13 @@ static int rcheevos_read_string(void* userdata,
       ud->field->string = string;
       ud->field->length = length;
    }
+   else if (ud->is_richpresence)
+   {
+      ud->patchdata->richpresence_script = (char*)malloc(length + 1);
+      memcpy(ud->patchdata->richpresence_script, string, length);
+      ud->patchdata->richpresence_script[length] = '\0';
+      ud->is_richpresence = 0;
+   }
 
    return 0;
 }
@@ -464,6 +479,11 @@ static int rcheevos_read_number(void* userdata,
    {
       ud->field->string = number;
       ud->field->length = length;
+   }
+   else if (ud->is_game_id)
+   {
+      ud->patchdata->game_id = (unsigned)strtol(number, NULL, 10);
+      ud->is_game_id         = 0;
    }
    else if (ud->is_console_id)
    {
@@ -527,7 +547,9 @@ int rcheevos_get_patchdata(const char* json, rcheevos_rapatchdata_t* patchdata)
    /* Load the achievements. */
    ud.in_cheevos       = 0;
    ud.in_lboards       = 0;
+   ud.is_game_id       = 0;
    ud.is_console_id    = 0;
+   ud.is_richpresence  = 0;
    ud.field            = NULL;
    ud.core_count       = 0;
    ud.unofficial_count = 0;
@@ -586,7 +608,9 @@ void rcheevos_free_patchdata(rcheevos_rapatchdata_t* patchdata)
    CHEEVOS_FREE(patchdata->core);
    CHEEVOS_FREE(patchdata->unofficial);
    CHEEVOS_FREE(patchdata->lboards);
+   CHEEVOS_FREE(patchdata->richpresence_script);
 
+   patchdata->game_id          = 0;
    patchdata->console_id       = 0;
    patchdata->core             = NULL;
    patchdata->unofficial       = NULL;

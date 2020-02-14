@@ -27,6 +27,7 @@
 #include <retro_miscellaneous.h>
 #include <retro_math.h>
 #include <net/net_http.h>
+#include <encodings/utf.h>
 #include <libretro.h>
 
 #ifdef HAVE_CONFIG_H
@@ -43,6 +44,10 @@
 
 #ifdef HAVE_THREADS
 #include <rthreads/rthreads.h>
+#endif
+
+#ifdef HAVE_DISCORD
+#include "../discord/discord.h"
 #endif
 
 #include "badges.h"
@@ -97,6 +102,10 @@
 /* Define this macro to log downloaded badge images. */
 #undef CHEEVOS_LOG_BADGES
 
+/* Number of usecs to wait between posting rich presence to the site. */
+/* Keep consistent with SERVER_PING_FREQUENCY from RAIntegration. */
+#define CHEEVOS_PING_FREQUENCY 2 * 60 * 1000000
+
 typedef struct
 {
    rc_trigger_t* trigger;
@@ -116,6 +125,13 @@ typedef struct
 
 typedef struct
 {
+   rc_richpresence_t* richpresence;
+   char evaluation[256];
+   retro_time_t last_update;
+} rcheevos_richpresence_t;
+
+typedef struct
+{
    retro_task_t* task;
 #ifdef HAVE_THREADS
    slock_t* task_lock;
@@ -128,6 +144,7 @@ typedef struct
    rcheevos_cheevo_t* core;
    rcheevos_cheevo_t* unofficial;
    rcheevos_lboard_t* lboards;
+   rcheevos_richpresence_t richpresence;
 
    rcheevos_fixups_t fixups;
 
@@ -164,6 +181,7 @@ static rcheevos_locals_t rcheevos_locals =
    NULL, /* core */
    NULL, /* unofficial */
    NULL, /* lboards */
+   {0},  /* rich presence */
    {0},  /* fixups */
    {0},  /* token */
    "N/A",/* hash */
@@ -373,11 +391,11 @@ static const char* rcheevos_rc_error(int ret)
 static int rcheevos_parse(const char* json)
 {
    char buffer[256];
-   settings_t *settings     = config_get_ptr();
-   int res                  = 0;
-   int i                    = 0;
-   unsigned j               = 0;
-   unsigned count           = 0;
+   settings_t *settings      = config_get_ptr();
+   int res                   = 0;
+   int i                     = 0;
+   unsigned j                = 0;
+   unsigned count            = 0;
    rcheevos_cheevo_t* cheevo = NULL;
    rcheevos_lboard_t* lboard = NULL;
    rcheevos_racheevo_t* rac  = NULL;
@@ -399,6 +417,7 @@ static int rcheevos_parse(const char* json)
       rcheevos_locals.core = NULL;
       rcheevos_locals.unofficial = NULL;
       rcheevos_locals.lboards = NULL;
+      rcheevos_locals.richpresence.richpresence = NULL;
       rcheevos_free_patchdata(&rcheevos_locals.patchdata);
       return 0;
    }
@@ -549,6 +568,98 @@ static int rcheevos_parse(const char* json)
       lboard->active = false;
       lboard->last_value = 0;
       lboard->format = rc_parse_format(lboard->info->format);
+   }
+
+   if (rcheevos_locals.patchdata.richpresence_script)
+   {
+      char *script          = rcheevos_locals.patchdata.richpresence_script;
+      char *buffer_it       = &script[0];
+      const char *script_it = &script[0];
+      unsigned buffer_size;
+
+      while (*script_it != '\0')
+      {
+         if (*script_it == '\\')
+         {
+            char escaped_char = *(script_it + 1);
+
+            switch (escaped_char)
+            {
+            /* Ignore carriage return */
+            case 'r':
+               script_it += 2;
+               break;
+
+            /* Accept newlines */
+            case 'n':
+               *buffer_it = '\n';
+               buffer_it++;
+               script_it += 2;
+               break;
+
+            /* Accept UTF-16 unicode characters */
+            case 'u':
+               {
+                  uint16_t *utf16;
+                  char     *utf8;
+                  uint8_t   i, j;
+
+                  for (i = 1; i < 16; i++)
+                     if (strncmp((script_it + 6 * i), "\\u", 2))
+                        break;
+
+                  utf16 = (uint16_t*)calloc(i, sizeof(uint16_t));
+                  utf8  = (char*)    calloc(i * 4, sizeof(char));
+
+                  /* Get escaped hex values and add them to the string */
+                  for (j = 0; j < i; j++)
+                  {
+                     char temp[5];
+
+                     script_it += 2;
+                     memcpy(temp, script_it, 4);
+                     temp[4] = '\0';
+                     utf16[j] = string_hex_to_unsigned(temp);
+                     script_it += 4;
+                  }
+
+                  if (utf16_to_char_string(utf16, utf8, i * 4))
+                  {
+                     memcpy(buffer_it, utf8, strlen(utf8));
+                     buffer_it += strlen(utf8);
+                  }
+
+                  free(utf16);
+                  free(utf8);
+               }
+               break;
+            default:
+               *buffer_it = *script_it;
+               buffer_it++;
+               script_it++;
+            };
+         }
+         else
+         {
+            *buffer_it = *script_it;
+            buffer_it++;
+            script_it++;
+         }
+      }
+      *buffer_it = '\0';
+
+      buffer_size = rc_richpresence_size(rcheevos_locals.patchdata.richpresence_script);
+      if (buffer_size == 0)
+      {
+         rcheevos_locals.richpresence.richpresence = NULL;
+         CHEEVOS_ERR(RCHEEVOS_TAG "Error reading rich presence");
+      }
+      else
+      {
+         char *buffer = (char*)malloc(buffer_size);
+         rcheevos_locals.richpresence.richpresence = rc_parse_richpresence(buffer, script, NULL, 0);
+         rcheevos_locals.richpresence.last_update  = cpu_features_get_time_usec();
+      }
    }
 
    return 0;
@@ -934,6 +1045,49 @@ static void rcheevos_test_leaderboards(void)
    }
 }
 
+const char* rcheevos_get_richpresence(void)
+{
+   if (!rcheevos_locals.richpresence.richpresence)
+      return NULL;
+   else
+      return rcheevos_locals.richpresence.evaluation;
+}
+
+static void rcheevos_test_richpresence(void)
+{
+   if (!rcheevos_locals.richpresence.richpresence || 
+       cpu_features_get_time_usec() < rcheevos_locals.richpresence.last_update + CHEEVOS_PING_FREQUENCY)
+      return;
+   else
+   { 
+      settings_t* settings = config_get_ptr();
+      char url[256], post_data[1024];
+
+      rcheevos_locals.richpresence.last_update = cpu_features_get_time_usec();
+
+      rc_evaluate_richpresence(rcheevos_locals.richpresence.richpresence, 
+       rcheevos_locals.richpresence.evaluation, 
+       sizeof(rcheevos_locals.richpresence.evaluation), rcheevos_peek, NULL, NULL);
+
+      /* Form URL */
+      snprintf(url, 256, "http://retroachievements.org/dorequest.php?r=ping&u=%s&t=%s", 
+       settings->arrays.cheevos_username,
+       rcheevos_locals.token);
+
+      /* Form POST data */
+      snprintf(post_data, 1024, "g=%u&m=%s", 
+       rcheevos_locals.patchdata.game_id, 
+       rcheevos_get_richpresence());
+
+#ifdef HAVE_DISCORD
+      if (settings->bools.discord_enable)
+         discord_update(DISCORD_PRESENCE_RETROACHIEVEMENTS);
+#endif
+
+      task_push_http_post_transfer(url, post_data, true, "POST", NULL, NULL);
+   }
+}
+
 void rcheevos_reset_game(void)
 {
    rcheevos_cheevo_t* cheevo;
@@ -971,6 +1125,8 @@ void rcheevos_reset_game(void)
             lboard->lboard->submitted = 1;
       }
    }
+
+   rcheevos_locals.richpresence.last_update = cpu_features_get_time_usec();
 }
 
 #ifdef HAVE_MENU
@@ -1143,12 +1299,14 @@ bool rcheevos_unload(void)
       CHEEVOS_FREE(rcheevos_locals.core);
       CHEEVOS_FREE(rcheevos_locals.unofficial);
       CHEEVOS_FREE(rcheevos_locals.lboards);
+      CHEEVOS_FREE(rcheevos_locals.richpresence.richpresence);
       rcheevos_free_patchdata(&rcheevos_locals.patchdata);
       rcheevos_fixup_destroy(&rcheevos_locals.fixups);
 
-      rcheevos_locals.core       = NULL;
-      rcheevos_locals.unofficial = NULL;
-      rcheevos_locals.lboards    = NULL;
+      rcheevos_locals.core                      = NULL;
+      rcheevos_locals.unofficial                = NULL;
+      rcheevos_locals.lboards                   = NULL;
+      rcheevos_locals.richpresence.richpresence = NULL;
 
       rcheevos_loaded            = false;
       rcheevos_hardcore_active   = false;
@@ -1210,6 +1368,9 @@ void rcheevos_test(void)
           settings->bools.cheevos_leaderboards_enable  &&
           !rcheevos_hardcore_paused)
          rcheevos_test_leaderboards();
+
+      if (settings->bools.cheevos_richpresence_enable)
+         rcheevos_test_richpresence();
    }
 }
 

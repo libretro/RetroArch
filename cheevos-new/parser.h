@@ -42,11 +42,13 @@ typedef struct {
 } rcheevos_ralboard_t;
 
 typedef struct {
+   unsigned game_id;
    unsigned console_id;
 
    rcheevos_racheevo_t* core;
    rcheevos_racheevo_t* unofficial;
    rcheevos_ralboard_t* lboards;
+   char* richpresence_script;
 
    unsigned core_count;
    unsigned unofficial_count;
