@@ -21,7 +21,7 @@
 
 #include <libretro.h>
 
-#if defined(HAVE_MENU) && defined(HAVE_RGUI)
+#ifdef HAVE_RGUI
 #include <string/stdstring.h>
 #include "../configuration.h"
 #include "../menu/menu_defines.h"
@@ -64,7 +64,7 @@ void retro_cheat_set(unsigned idx, bool enabled, const char *code) { libretro_du
 
 void libretro_dummy_retro_init(void)
 {
-#if defined(HAVE_MENU) && defined(HAVE_RGUI)
+#ifdef HAVE_RGUI
    settings_t *settings = config_get_ptr();
 #endif
    unsigned i;
@@ -73,7 +73,7 @@ void libretro_dummy_retro_init(void)
    frame_buf_width = 320;
    frame_buf_height = 240;
 
-#if defined(HAVE_MENU) && defined(HAVE_RGUI)
+#ifdef HAVE_RGUI
    if (string_is_equal(settings->arrays.menu_driver, "rgui"))
    {
       switch (settings->uints.menu_rgui_aspect_ratio)

@@ -43,7 +43,7 @@
 #define IMG_EXT "bmp"
 #endif
 
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+#ifdef HAVE_MENU_WIDGETS
 #include "../../menu/widgets/menu_widgets.h"
 #endif
 
@@ -336,7 +336,7 @@ static bool screenshot_dump(
 #ifdef HAVE_MENU_WIDGETS
       task->callback    = task_screenshot_callback;
 #endif
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+#ifdef HAVE_MENU_WIDGETS
       if (state->widgets_ready && !savestate)
          task_free_title(task);
       else

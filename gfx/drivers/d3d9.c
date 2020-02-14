@@ -1633,11 +1633,9 @@ static bool d3d9_frame(void *data, const void *frame,
    }
 #endif
 
-#ifdef HAVE_MENU
 #ifdef HAVE_MENU_WIDGETS
    if (video_info->widgets_inited)
       menu_widgets_frame(video_info);
-#endif
 #endif
 
    if (msg && *msg)
@@ -2019,7 +2017,7 @@ static bool d3d9_has_windowed(void *data)
 #endif
 }
 
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+#ifdef HAVE_MENU_WIDGETS
 static bool d3d9_menu_widgets_enabled(void *data)
 {
    (void)data;
@@ -2051,7 +2049,7 @@ video_driver_t video_d3d9 = {
 #endif
    d3d9_get_poke_interface,
    NULL, /* wrap_type_to_enum */
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+#ifdef HAVE_MENU_WIDGETS
    d3d9_menu_widgets_enabled
 #endif
 };

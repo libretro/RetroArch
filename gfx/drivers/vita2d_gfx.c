@@ -795,7 +795,7 @@ static void vita2d_gfx_get_poke_interface(void *data,
    *iface = &vita_poke_interface;
 }
 
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+#ifdef HAVE_MENU_WIDGETS
 static bool vita2d_gfx_menu_widgets_enabled(void *data)
 {
    (void)data;
@@ -964,7 +964,7 @@ video_driver_t video_vita2d = {
 #endif
    vita2d_gfx_get_poke_interface,
    NULL,
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+#ifdef HAVE_MENU_WIDGETS
    vita2d_gfx_menu_widgets_enabled
 #endif
 };

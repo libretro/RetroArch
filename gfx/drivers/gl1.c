@@ -1389,7 +1389,7 @@ static void gl1_gfx_get_poke_interface(void *data,
    *iface = &gl1_poke_interface;
 }
 
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+#ifdef HAVE_MENU_WIDGETS
 static bool gl1_menu_widgets_enabled(void *data)
 {
    (void)data;
@@ -1555,7 +1555,7 @@ video_driver_t video_gl1 = {
 #endif
   gl1_gfx_get_poke_interface,
   gl1_wrap_type_to_enum,
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+#ifdef HAVE_MENU_WIDGETS
   gl1_menu_widgets_enabled
 #endif
 };

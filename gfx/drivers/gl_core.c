@@ -2234,7 +2234,7 @@ static void gl_core_get_poke_interface(void *data,
    *iface = &gl_core_poke_interface;
 }
 
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+#ifdef HAVE_MENU_WIDGETS
 static bool gl_core_menu_widgets_enabled(void *data)
 {
    (void)data;
@@ -2301,7 +2301,7 @@ video_driver_t video_gl_core = {
 #endif
    gl_core_get_poke_interface,
    gl_core_wrap_type_to_enum,
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+#ifdef HAVE_MENU_WIDGETS
    gl_core_menu_widgets_enabled
 #endif
 };

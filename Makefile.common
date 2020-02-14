@@ -378,9 +378,11 @@ ifeq ($(HAVE_QT), 1)
           ui/drivers/qt/thumbnaildownload.o \
           ui/drivers/qt/thumbnailpackdownload.o \
           ui/drivers/qt/playlistthumbnaildownload.o
+
     ifeq ($(HAVE_SHADERS_COMMON), 1)
        OBJ += ui/drivers/qt/shaderparamsdialog.o
     endif
+
     ifeq ($(HAVE_MENU), 1)
        OBJ += ui/drivers/qt/settingswidgets.o \
               ui/drivers/qt/options/achievements.o \
@@ -710,46 +712,6 @@ OBJ += $(LIBRETRO_COMM_DIR)/audio/conversion/s16_to_float.o \
 ifeq ($(HAVE_NEON),1)
    OBJ += $(LIBRETRO_COMM_DIR)/audio/conversion/s16_to_float_neon.o \
           $(LIBRETRO_COMM_DIR)/audio/conversion/float_to_s16_neon.o
-endif
-
-HW_CONTEXT_MENU_DRIVERS=$(HAVE_MENU)
-
-ifeq ($(HW_CONTEXT_MENU_DRIVERS),0)
-   ifeq ($(HAVE_GL_CONTEXT),1)
-      HW_CONTEXT_MENU_DRIVERS=1
-   endif
-   ifeq ($(HAVE_VULKAN),1)
-      HW_CONTEXT_MENU_DRIVERS=1
-   endif
-endif
-
-# XMB and MaterialUI are always enabled if supported and not explicitly disabled
-ifeq ($(HW_CONTEXT_MENU_DRIVERS), 1)
-   ifeq ($(HAVE_RGUI),)
-      HAVE_RGUI = 1
-   endif
-
-   ifeq ($(HAVE_MATERIALUI),)
-      HAVE_MATERIALUI = 1
-   endif
-
-   ifeq ($(HAVE_XMB),)
-      HAVE_XMB = 1
-   endif
-
-   ifeq ($(HAVE_STRIPES),)
-      HAVE_STRIPES = 0
-   endif
-
-   ifeq ($(HAVE_OZONE),)
-      HAVE_OZONE = 1
-   endif
-else
-   HAVE_RGUI        ?= 0
-   HAVE_MATERIALUI  ?= 0
-   HAVE_XMB         ?= 0
-   HAVE_STRIPES     ?= 0
-   HAVE_OZONE       ?= 0
 endif
 
 ifeq ($(HAVE_MENU), 1)

@@ -2460,7 +2460,7 @@ void config_load(void *data)
 
 #ifdef HAVE_CONFIGFILE
 
-#if defined(HAVE_MENU) && defined(HAVE_RGUI)
+#ifdef HAVE_RGUI
 static bool check_menu_driver_compatibility(settings_t *settings)
 {
    char *video_driver   = settings->arrays.video_driver;
@@ -3178,7 +3178,7 @@ static bool config_load_file(global_t *global,
 
    config_read_keybinds_conf(conf);
 
-#if defined(HAVE_MENU) && defined(HAVE_RGUI)
+#ifdef HAVE_RGUI
    if (!check_menu_driver_compatibility(settings))
       strlcpy(settings->arrays.menu_driver, "rgui", sizeof(settings->arrays.menu_driver));
 #endif

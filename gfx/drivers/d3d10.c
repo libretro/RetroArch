@@ -1500,11 +1500,9 @@ static bool d3d10_gfx_frame(
    }
 #endif
 
-#ifdef HAVE_MENU
 #ifdef HAVE_MENU_WIDGETS
    if (video_info->widgets_inited)
       menu_widgets_frame(video_info);
-#endif
 #endif
 
    if (msg && *msg)
@@ -1764,7 +1762,7 @@ static void d3d10_gfx_get_poke_interface(void* data, const video_poke_interface_
    *iface = &d3d10_poke_interface;
 }
 
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+#ifdef HAVE_MENU_WIDGETS
 static bool d3d10_menu_widgets_enabled(void *data)
 {
    (void)data;
@@ -1797,7 +1795,7 @@ video_driver_t video_d3d10 = {
 #endif
    d3d10_gfx_get_poke_interface,
    NULL, /* d3d10_wrap_type_to_enum */
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+#ifdef HAVE_MENU_WIDGETS
    d3d10_menu_widgets_enabled
 #endif
 };

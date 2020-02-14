@@ -2799,7 +2799,7 @@ static void vulkan_get_overlay_interface(void *data,
 }
 #endif
 
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+#ifdef HAVE_MENU_WIDGETS
 static bool vulkan_menu_widgets_enabled(void *data)
 {
    (void)data;
@@ -2832,7 +2832,7 @@ video_driver_t video_vulkan = {
 #endif
    vulkan_get_poke_interface,
    NULL,                         /* vulkan_wrap_type_to_enum */
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+#ifdef HAVE_MENU_WIDGETS
    vulkan_menu_widgets_enabled
 #endif
 };

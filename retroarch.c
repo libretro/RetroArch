@@ -5413,7 +5413,7 @@ static void command_event_set_volume(float gain)
          msg_hash_to_str(MSG_AUDIO_VOLUME),
          new_volume);
 
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+#ifdef HAVE_MENU_WIDGETS
    if (menu_widgets_inited)
       menu_widgets_volume_update_and_show();
    else
@@ -6377,7 +6377,7 @@ static void retroarch_pause_checks(void)
    {
       RARCH_LOG("%s\n", msg_hash_to_str(MSG_PAUSED));
 
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+#ifdef HAVE_MENU_WIDGETS
       if (menu_widgets_inited)
          menu_widgets_paused = is_paused;
       else
@@ -6397,7 +6397,7 @@ static void retroarch_pause_checks(void)
    }
    else
    {
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+#ifdef HAVE_MENU_WIDGETS
       if (menu_widgets_inited)
          menu_widgets_paused = is_paused;
 #endif
@@ -6893,7 +6893,7 @@ TODO: Add a setting for these tweaks */
 
             audio_driver_mute_enable  = !audio_driver_mute_enable;
 
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+#ifdef HAVE_MENU_WIDGETS
             if (menu_widgets_inited)
                menu_widgets_volume_update_and_show();
             else
@@ -7557,7 +7557,7 @@ TODO: Add a setting for these tweaks */
 
                disk_control_set_eject_state(&sys_info->disk_control, eject, verbose);
 
-#if defined(HAVE_MENU)
+#ifdef HAVE_MENU
                /* It is necessary to refresh the disk options
                 * menu when toggling the tray state */
                menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
@@ -21293,7 +21293,7 @@ void video_driver_update_viewport(
    {
       float desired_aspect = video_driver_aspect_ratio;
 
-#if defined(HAVE_MENU)
+#ifdef HAVE_MENU
       if (settings->uints.video_aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
       {
          const struct video_viewport* custom = video_viewport_get_custom();
@@ -21972,7 +21972,7 @@ static void video_driver_frame(const void *data, unsigned width,
          || video_info.memory_show
          )
    {
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+#ifdef HAVE_MENU_WIDGETS
       if (menu_widgets_inited)
          menu_widgets_set_fps_text(video_info.fps_text);
       else
@@ -22740,7 +22740,7 @@ float video_driver_get_refresh_rate(void)
    return 0.0f;
 }
 
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+#ifdef HAVE_MENU_WIDGETS
 static bool video_driver_has_widgets(void)
 {
    return current_video && current_video->menu_widgets_enabled
@@ -23514,7 +23514,7 @@ static void driver_uninit(int flags)
 #ifdef HAVE_MENU
    if (flags & DRIVER_MENU_MASK)
    {
-#if defined(HAVE_MENU_WIDGETS)
+#ifdef HAVE_MENU_WIDGETS
       /* This absolutely has to be done before video_driver_free()
        * is called/completes, otherwise certain menu drivers
        * (e.g. Vulkan) will segfault */
@@ -23582,7 +23582,7 @@ static void driver_uninit(int flags)
 
 static void retroarch_deinit_drivers(void)
 {
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+#ifdef HAVE_MENU_WIDGETS
    /* Tear down menu widgets no matter what
     * in case the handle is lost in the threaded
     * video driver in the meantime
@@ -25900,7 +25900,7 @@ static void runloop_task_msg_queue_push(
       unsigned prio, unsigned duration,
       bool flush)
 {
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+#ifdef HAVE_MENU_WIDGETS
    if (menu_widgets_inited && task->title && !task->mute)
    {
       runloop_msg_queue_lock();
@@ -26773,7 +26773,7 @@ void runloop_msg_queue_push(const char *msg,
    if (is_accessibility_enabled())
       accessibility_speak_priority((char*) msg, 0);
 #endif
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+#ifdef HAVE_MENU_WIDGETS
    if (menu_widgets_inited)
    {
       menu_widgets_msg_queue_push(NULL, msg,
@@ -27007,12 +27007,12 @@ static void update_fastforwarding_state(void)
 {
    if (runloop_fastmotion)
    {
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+#ifdef HAVE_MENU_WIDGETS
       if (menu_widgets_inited)
          menu_widgets_fast_forward = true;
 #endif
    }
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+#ifdef HAVE_MENU_WIDGETS
    else
    {
       if (menu_widgets_inited)
@@ -27598,7 +27598,7 @@ static enum runloop_state runloop_check_state(void)
       old_hold_button_state             = new_hold_button_state;
 
       /* Show the fast-forward OSD for 1 frame every frame if menu widgets are disabled */
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+#ifdef HAVE_MENU_WIDGETS
       if (!menu_widgets_inited && runloop_fastmotion)
 #else
       if (runloop_fastmotion)
@@ -27670,7 +27670,7 @@ static enum runloop_state runloop_check_state(void)
       rewinding      = state_manager_check_rewind(BIT256_GET(current_bits, RARCH_REWIND),
             settings->uints.rewind_granularity, runloop_paused, s, sizeof(s), &t);
 
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+#ifdef HAVE_MENU_WIDGETS
       if (menu_widgets_inited)
          menu_widgets_rewinding = rewinding;
       else
@@ -27705,7 +27705,7 @@ static enum runloop_state runloop_check_state(void)
             if (!runloop_idle)
                video_driver_cached_frame();
 
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+#ifdef HAVE_MENU_WIDGETS
          if (!menu_widgets_inited)
 #endif
          {

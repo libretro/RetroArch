@@ -554,6 +554,13 @@ if [ "$HAVE_MENU" != 'no' ]; then
    fi
 fi
 
+check_enabled MENU RGUI rgui 'The menu is' true
+check_enabled MENU MATERIALUI glui 'The menu is' true
+check_enabled MENU OZONE ozone 'The menu is' true
+check_enabled MENU XMB xmb 'The menu is' true
+check_enabled MENU STRIPES stripes 'The menu is' true
+check_enabled MENU MENU_WIDGETS 'menu widgets' 'The menu is' true
+
 if [ "$HAVE_STEAM" = 'yes' ]; then
    add_opt ONLINE_UPDATER no
    add_opt UPDATE_CORES no
@@ -636,6 +643,5 @@ if [ "$HAVE_DEBUG" = 'yes' ]; then
    fi
 fi
 
-check_enabled MENU MENU_WIDGETS 'menu widgets' 'The menu is' false
 check_enabled 'ZLIB BUILTINZLIB' RPNG RPNG 'zlib is' false
 check_enabled V4L2 VIDEOPROCESSOR 'video processor' 'Video4linux2 is' true
