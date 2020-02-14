@@ -1347,8 +1347,6 @@ bool menu_display_reset_textures_list_buffer(
    return true;
 }
 
-
-
 /* Teardown; deinitializes and frees all
  * fonts associated to the menu driver */
 void menu_display_font_free(font_data_t *font)
