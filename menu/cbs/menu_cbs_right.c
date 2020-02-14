@@ -611,8 +611,8 @@ static int playlist_left_thumbnail_mode_right(unsigned type, const char *label,
 static int manual_content_scan_system_name_right(unsigned type, const char *label,
       bool wraparound)
 {
-#ifdef HAVE_LIBRETRODB
    settings_t *settings                                            = config_get_ptr();
+#ifdef HAVE_LIBRETRODB
    struct string_list *system_name_list                            =
       manual_content_scan_get_menu_system_name_list(
             settings->paths.path_content_database,
