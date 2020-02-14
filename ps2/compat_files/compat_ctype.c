@@ -40,10 +40,9 @@ int islower(int c)
 
 int tolower(int ch)
 {
-        if(ch >= 'A' && ch <= 'Z')
-                return ('a' + ch - 'A');
-        else
-                return ch;
+   if(ch >= 'A' && ch <= 'Z')
+      return ('a' + ch - 'A');
+   return ch;
 }
 
 int toupper(int c)
@@ -107,16 +106,17 @@ char * strcat(char *dest, const char *src)
 
 char *strchr(const char *string, int c)
 {
-    while (*string) {
-        if (*string == c)
-            return (char *)string;
-        string++;
-    }
+   while (*string)
+   {
+      if (*string == c)
+         return (char *)string;
+      string++;
+   }
 
-    if (*string == c)
-        return (char *)string;
+   if (*string == c)
+      return (char *)string;
 
-    return NULL;
+   return NULL;
 }
 
 int strcmp(const char *s1, const char *s2)
@@ -144,14 +144,16 @@ size_t strcspn(const char *s1, const char *s2)
 	 * Stop as soon as we find any character from s2.  Note that there
 	 * must be a NUL in s2; it suffices to stop when we find that, too.
 	 */
-	for (p = s1;;) {
-		c = *p++;
-		spanp = s2;
-		do {
-			if ((sc = *spanp++) == c)
-				return (p - 1 - s1);
-		} while (sc != 0);
-	}
+	for (p = s1;;)
+   {
+      c = *p++;
+      spanp = s2;
+      do
+      {
+         if ((sc = *spanp++) == c)
+            return (p - 1 - s1);
+      }while(sc != 0);
+   }
 	/* NOTREACHED */
 }
 
@@ -166,51 +168,59 @@ size_t strlen(const char *str)
 
 char * strncat(char *dst, const char *src, size_t n)
 {
-   if (n != 0) {
-		char *d = dst;
-		const char *s = src;
+   if (n != 0)
+   {
+      char       *d = dst;
+      const char *s = src;
 
-		while (*d != 0)
-			d++;
-		do {
-			if ((*d = *s++) == 0)
-				break;
-			d++;
-		} while (--n != 0);
-		*d = 0;
-	}
-	return (dst);
+      while (*d != 0)
+         d++;
+      do
+      {
+         if ((*d = *s++) == 0)
+            break;
+         d++;
+      }while(--n != 0);
+      *d = 0;
+   }
+   return (dst);
 }
 
 int strncmp(const char *s1, const char *s2, size_t n)
 {
    if (n == 0)
 		return (0);
-	do {
+
+	do
+   {
 		if (*s1 != *s2++)
 			return (*(unsigned char *)s1 - *(unsigned char *)--s2);
 		if (*s1++ == 0)
 			break;
-	} while (--n != 0);
+	}while (--n != 0);
+
 	return (0);
 }
 
 char * strncpy(char *dst, const char *src, size_t n)
 {
-	if (n != 0) {
-		char *d = dst;
-		const char *s = src;
+   if (n != 0)
+   {
+      char *d = dst;
+      const char *s = src;
 
-		do {
-			if ((*d++ = *s++) == 0) {
-				/* NUL pad the remaining n-1 bytes */
-				while (--n != 0)
-					*d++ = 0;
-				break;
-			}
-		} while (--n != 0);
-	}
-	return (dst);
+      do
+      {
+         if ((*d++ = *s++) == 0)
+         {
+            /* NUL pad the remaining n-1 bytes */
+            while (--n != 0)
+               *d++ = 0;
+            break;
+         }
+      }while(--n != 0);
+   }
+   return (dst);
 }
 
 char * strpbrk(const char *s1, const char *s2)
@@ -218,11 +228,12 @@ char * strpbrk(const char *s1, const char *s2)
 	const char *scanp;
 	int c, sc;
 
-	while ((c = *s1++) != 0) {
-		for (scanp = s2; (sc = *scanp++) != 0;)
-			if (sc == c)
-				return ((char *)(s1 - 1));
-	}
+	while ((c = *s1++) != 0)
+   {
+      for (scanp = s2; (sc = *scanp++) != 0;)
+         if (sc == c)
+            return ((char *)(s1 - 1));
+   }
 	return (NULL);
 }
 
@@ -231,13 +242,13 @@ char * strrchr(const char *p, int ch)
 {
 	char *save;
 
-	for (save = NULL;; ++p) {
-		if (*p == (char) ch)
-			save = (char *)p;
-		if (!*p)
-			return(save);
-	}
-	/* NOTREACHED */
+	for (save = NULL;; ++p)
+   {
+      if (*p == (char) ch)
+         save = (char *)p;
+      if (!*p)
+         return(save);
+   }
 }
 
 size_t strspn(const char *s1, const char *s2)
@@ -268,11 +279,12 @@ char *strstr(const char *string, const char *substring)
 
     strpos = (char *)string;
 
-    while (*strpos != 0) {
-        if (strncmp(strpos, substring, strlen(substring)) == 0)
-            return strpos;
+    while (*strpos != 0)
+    {
+       if (strncmp(strpos, substring, strlen(substring)) == 0)
+          return strpos;
 
-        strpos++;
+       strpos++;
     }
 
     return 0;
@@ -280,123 +292,132 @@ char *strstr(const char *string, const char *substring)
 
 size_t strnlen(const char *str, size_t maxlen)
 {
-	const char *cp;
+   const char *cp;
 
-	for (cp = str; maxlen != 0 && *cp != '\0'; cp++, maxlen--)
-		;
+   for (cp = str; maxlen != 0 && *cp != '\0'; cp++, maxlen--)
+      ;
 
-	return (size_t)(cp - str);
+   return (size_t)(cp - str);
 }
 
 char *strtok(char *strToken, const char *strDelimit)
 {
-    static char *start;
-    static char *end;
+   static char *start;
+   static char *end;
 
-    if (strToken != NULL)
-        start = strToken;
-    else {
-        if (*end == 0)
-            return 0;
+   if (strToken)
+      start = strToken;
+   else
+   {
+      if (*end == 0)
+         return 0;
 
-        start = end;
-    }
+      start = end;
+   }
 
-    if (*start == 0)
-        return 0;
+   if (*start == 0)
+      return 0;
 
-    // Strip out any leading delimiters
-    while (strchr(strDelimit, *start)) {
-        // If a character from the delimiting string
-        // then skip past it
+   /* Strip out any leading delimiters */
+   while (strchr(strDelimit, *start))
+   {
+      /* If a character from the delimiting string
+       * then skip past it */
+      start++;
 
-        start++;
+      if (*start == 0)
+         return 0;
+   }
 
-        if (*start == 0)
-            return 0;
-    }
+   if (*start == 0)
+      return 0;
 
-    if (*start == 0)
-        return 0;
+   end = start;
 
-    end = start;
+   while (*end != 0)
+   {
+      if (strchr(strDelimit, *end))
+      {
+         /* if we find a delimiting character
+          * before the end of the string, then
+          * terminate the token and move the end
+          * pointer to the next character
+          */
+         *end = 0;
+         end++;
+         return start;
+      }
+      end++;
+   }
 
-    while (*end != 0) {
-        if (strchr(strDelimit, *end)) {
-            // if we find a delimiting character
-            // before the end of the string, then
-            // terminate the token and move the end
-            // pointer to the next character
-            *end = 0;
-            end++;
-            return start;
-        }
-        end++;
-    }
-
-    // reached the end of the string before finding a delimiter
-    // so dont move on to the next character
-    return start;
+   /* reached the end of the string before finding a delimiter
+    * so dont move on to the next character */
+   return start;
 }
 
 char * strtok_r (char *s, const char *delim, char **save_ptr)
 {
-  char *end;
-  if (s == NULL)
-    s = *save_ptr;
-  if (*s == '\0')
-    {
+   char *end;
+   if (!s)
+      s = *save_ptr;
+   if (*s == '\0')
+   {
       *save_ptr = s;
       return NULL;
-    }
-  /* Scan leading delimiters.  */
-  s += strspn (s, delim);
-  if (*s == '\0')
-    {
+   }
+   /* Scan leading delimiters.  */
+   s += strspn (s, delim);
+   if (*s == '\0')
+   {
       *save_ptr = s;
       return NULL;
-    }
-  /* Find the end of the token.  */
-  end = s + strcspn (s, delim);
-  if (*end == '\0')
-    {
+   }
+   /* Find the end of the token.  */
+   end = s + strcspn (s, delim);
+   if (*end == '\0')
+   {
       *save_ptr = end;
       return s;
-    }
-  /* Terminate the token and make *SAVE_PTR point past it.  */
-  *end = '\0';
-  *save_ptr = end + 1;
-  return s;
+   }
+   /* Terminate the token and make *SAVE_PTR point past it.  */
+   *end = '\0';
+   *save_ptr = end + 1;
+   return s;
 }
 
-unsigned long long strtoull(const char * __restrict nptr, char ** __restrict endptr, int base)
+unsigned long long strtoull(const char * __restrict nptr,
+      char ** __restrict endptr, int base)
 {
-	const char *s;
-	unsigned long long acc;
 	char c;
+	unsigned long long acc;
 	unsigned long long cutoff;
 	int neg, any, cutlim;
-
 	/*
 	 * See strtoq for comments as to the logic used.
 	 */
-	s = nptr;
-	do {
+	const char *s = nptr;
+
+	do
+   {
 		c = *s++;
-	} while (isspace((unsigned char)c));
-	if (c == '-') {
+	}while(isspace((unsigned char)c));
+	if (c == '-')
+   {
 		neg = 1;
-		c = *s++;
-	} else {
+		c   = *s++;
+	}
+   else
+   {
 		neg = 0;
 		if (c == '+')
 			c = *s++;
 	}
 	if ((base == 0 || base == 16) &&
-	    c == '0' && (*s == 'x' || *s == 'X')) {
-		c = s[1];
-		s += 2;
-		base = 16;
+	    c == '0' && (*s == 'x' || *s == 'X'))
+   {
+		c     = s[1];
+		s    += 2;
+		base  = 16;
 	}
 	if (base == 0)
 		base = c == '0' ? 8 : 10;
@@ -406,34 +427,40 @@ unsigned long long strtoull(const char * __restrict nptr, char ** __restrict end
 
 	cutoff = ULLONG_MAX / base;
 	cutlim = ULLONG_MAX % base;
-	for ( ; ; c = *s++) {
-		if (c >= '0' && c <= '9')
-			c -= '0';
-		else if (c >= 'A' && c <= 'Z')
-			c -= 'A' - 10;
-		else if (c >= 'a' && c <= 'z')
-			c -= 'a' - 10;
-		else
-			break;
-		if (c >= base)
-			break;
-		if (any < 0 || acc > cutoff || (acc == cutoff && c > cutlim))
-			any = -1;
-		else {
-			any = 1;
-			acc *= base;
-			acc += c;
-		}
-	}
-	if (any < 0) {
-		acc = ULLONG_MAX;
+	for ( ; ; c = *s++)
+   {
+      if (c >= '0' && c <= '9')
+         c -= '0';
+      else if (c >= 'A' && c <= 'Z')
+         c -= 'A' - 10;
+      else if (c >= 'a' && c <= 'z')
+         c -= 'a' - 10;
+      else
+         break;
+      if (c >= base)
+         break;
+      if (any < 0 || acc > cutoff || (acc == cutoff && c > cutlim))
+         any = -1;
+      else
+      {
+         any = 1;
+         acc *= base;
+         acc += c;
+      }
+   }
+	if (any < 0)
+   {
+		acc   = ULLONG_MAX;
 		errno = ERANGE;
-	} else if (!any) {
+	}
+   else if (!any)
+   {
 noconv:
 		errno = EINVAL;
-	} else if (neg)
+	}
+   else if (neg)
 		acc = -acc;
-	if (endptr != NULL)
+	if (endptr)
 		*endptr = (char *)(any ? s - 1 : nptr);
 	return (acc);
 }
@@ -443,17 +470,6 @@ float strtof(const char* str, char** endptr)
    return (float) strtod(str, endptr);
 }
 
-int link(const char *oldpath, const char *newpath)
-{
-	return fileXioSymlink(oldpath, newpath);
-}
-
-int unlink(const char *path)
-{
-	return fileXioRemove(path);
-}
-
-int rename(const char *source, const char *dest)
-{
-   return fileXioRename(source, dest);
-}
+int link(const char *oldpath, const char *newpath) { return fileXioSymlink(oldpath, newpath); }
+int unlink(const char *path) { return fileXioRemove(path); }
+int rename(const char *source, const char *dest) { return fileXioRename(source, dest); }
