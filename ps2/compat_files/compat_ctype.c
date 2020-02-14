@@ -33,75 +33,76 @@ int islower(int c)
     if ((c < 'a') || (c > 'z'))
         return 0;
 
-    // passed both criteria, so it
-    // is a lower case alpha char
+    /* passed both criteria, so it
+     * is a lower case alpha char */
     return 1;
 }
 
 int tolower(int ch)
 {
-   if(ch >= 'A' && ch <= 'Z')
+   if (ch >= 'A' && ch <= 'Z')
       return ('a' + ch - 'A');
    return ch;
 }
 
 int toupper(int c)
 {
-    if (islower(c))
-        c -= 32;
+   if (islower(c))
+      c -= 32;
 
-    return c;
+   return c;
 }
 
 int memcmp(const void *s1, const void *s2, unsigned int length)
 {
-    const char *a = s1;
-    const char *b = s2;
+   const char *a = s1;
+   const char *b = s2;
 
-    while (length--) {
-        if (*a++ != *b++)
-            return 1;
-    }
+   while (length--)
+   {
+      if (*a++ != *b++)
+         return 1;
+   }
 
-    return 0;
+   return 0;
 }
 
 void * memcpy (void *dest, const void *src, size_t len)
 {
-  char *d = dest;
-  const char *s = src;
-  while (len--)
-    *d++ = *s++;
-  return dest;
+   char *d = dest;
+   const char *s = src;
+   while (len--)
+      *d++ = *s++;
+   return dest;
 }
 
 void * memset (void *dest, int val, size_t len)
 {
-  unsigned char *ptr = dest;
-  while (len-- > 0)
-    *ptr++ = val;
-  return dest;
+   unsigned char *ptr = dest;
+   while (len-- > 0)
+      *ptr++ = val;
+   return dest;
 }
 
 int sprintf (char *s, const char *format, ...)
 {
-  va_list arg;
-  int done;
-  va_start (arg, format);
-  done = vsprintf (s, format, arg);
-  va_end (arg);
-  return done;
+   va_list arg;
+   int done;
+   va_start (arg, format);
+   done = vsprintf (s, format, arg);
+   va_end (arg);
+   return done;
 }
 
 char * strcat(char *dest, const char *src)
 {
-    size_t i,j;
-    for (i = 0; dest[i] != '\0'; i++)
-        ;
-    for (j = 0; src[j] != '\0'; j++)
-        dest[i+j] = src[j];
-    dest[i+j] = '\0';
-    return dest;
+   size_t i,j;
+   for (i = 0; dest[i] != '\0'; i++)
+      ;
+   for (j = 0; src[j] != '\0'; j++)
+      dest[i+j] = src[j];
+   dest[i+j] = '\0';
+   return dest;
 }
 
 char *strchr(const char *string, int c)
@@ -121,32 +122,32 @@ char *strchr(const char *string, int c)
 
 int strcmp(const char *s1, const char *s2)
 {
-	while (*s1 == *s2++)
-		if (*s1++ == 0)
-			return (0);
-	return (*(unsigned char *)s1 - *(unsigned char *)--s2);
+   while (*s1 == *s2++)
+      if (*s1++ == 0)
+         return (0);
+   return (*(unsigned char *)s1 - *(unsigned char *)--s2);
 }
 
 char * strcpy(char *to, const char *from)
 {
-	char *save = to;
+   char *save = to;
 
-	for (; (*to = *from) != '\0'; ++from, ++to);
-	return(save);
+   for (; (*to = *from) != '\0'; ++from, ++to);
+   return(save);
 }
 
 size_t strcspn(const char *s1, const char *s2)
 {
-	const char *p, *spanp;
-	char c, sc;
+   const char *p, *spanp;
+   char c, sc;
 
-	/*
-	 * Stop as soon as we find any character from s2.  Note that there
-	 * must be a NUL in s2; it suffices to stop when we find that, too.
-	 */
-	for (p = s1;;)
+   /*
+    * Stop as soon as we find any character from s2.  Note that there
+    * must be a NUL in s2; it suffices to stop when we find that, too.
+    */
+   for (p = s1;;)
    {
-      c = *p++;
+      c     = *p++;
       spanp = s2;
       do
       {
@@ -154,16 +155,16 @@ size_t strcspn(const char *s1, const char *s2)
             return (p - 1 - s1);
       }while(sc != 0);
    }
-	/* NOTREACHED */
+   /* NOTREACHED */
 }
 
 size_t strlen(const char *str)
 {
    const char *s;
 
-	for (s = str; *s; ++s)
-		;
-	return (s - str);
+   for (s = str; *s; ++s)
+      ;
+   return (s - str);
 }
 
 char * strncat(char *dst, const char *src, size_t n)
@@ -206,7 +207,7 @@ char * strncpy(char *dst, const char *src, size_t n)
 {
    if (n != 0)
    {
-      char *d = dst;
+      char       *d = dst;
       const char *s = src;
 
       do
@@ -225,16 +226,16 @@ char * strncpy(char *dst, const char *src, size_t n)
 
 char * strpbrk(const char *s1, const char *s2)
 {
-	const char *scanp;
-	int c, sc;
+   const char *scanp;
+   int c, sc;
 
-	while ((c = *s1++) != 0)
+   while ((c = *s1++) != 0)
    {
       for (scanp = s2; (sc = *scanp++) != 0;)
          if (sc == c)
             return ((char *)(s1 - 1));
    }
-	return (NULL);
+   return (NULL);
 }
 
 /* Do not link to strrchr() from libc */
@@ -388,46 +389,46 @@ char * strtok_r (char *s, const char *delim, char **save_ptr)
 unsigned long long strtoull(const char * __restrict nptr,
       char ** __restrict endptr, int base)
 {
-	char c;
-	unsigned long long acc;
-	unsigned long long cutoff;
-	int neg, any, cutlim;
-	/*
-	 * See strtoq for comments as to the logic used.
-	 */
-	const char *s = nptr;
+   char c;
+   unsigned long long acc;
+   unsigned long long cutoff;
+   int neg, any, cutlim;
+   /*
+    * See strtoq for comments as to the logic used.
+    */
+   const char *s = nptr;
 
-	do
+   do
    {
-		c = *s++;
-	}while(isspace((unsigned char)c));
-	if (c == '-')
+      c = *s++;
+   }while(isspace((unsigned char)c));
+   if (c == '-')
    {
-		neg = 1;
-		c   = *s++;
-	}
+      neg = 1;
+      c   = *s++;
+   }
    else
    {
-		neg = 0;
-		if (c == '+')
-			c = *s++;
-	}
-	if ((base == 0 || base == 16) &&
-	    c == '0' && (*s == 'x' || *s == 'X'))
+      neg = 0;
+      if (c == '+')
+         c = *s++;
+   }
+   if ((base == 0 || base == 16) &&
+         c == '0' && (*s == 'x' || *s == 'X'))
    {
-		c     = s[1];
-		s    += 2;
-		base  = 16;
-	}
-	if (base == 0)
-		base = c == '0' ? 8 : 10;
-	acc = any = 0;
-	if (base < 2 || base > 36)
-		goto noconv;
+      c     = s[1];
+      s    += 2;
+      base  = 16;
+   }
+   if (base == 0)
+      base = c == '0' ? 8 : 10;
+   acc = any = 0;
+   if (base < 2 || base > 36)
+      goto noconv;
 
-	cutoff = ULLONG_MAX / base;
-	cutlim = ULLONG_MAX % base;
-	for ( ; ; c = *s++)
+   cutoff = ULLONG_MAX / base;
+   cutlim = ULLONG_MAX % base;
+   for ( ; ; c = *s++)
    {
       if (c >= '0' && c <= '9')
          c -= '0';
@@ -448,21 +449,21 @@ unsigned long long strtoull(const char * __restrict nptr,
          acc += c;
       }
    }
-	if (any < 0)
+   if (any < 0)
    {
-		acc   = ULLONG_MAX;
-		errno = ERANGE;
-	}
+      acc   = ULLONG_MAX;
+      errno = ERANGE;
+   }
    else if (!any)
    {
 noconv:
-		errno = EINVAL;
-	}
+      errno = EINVAL;
+   }
    else if (neg)
-		acc = -acc;
-	if (endptr)
-		*endptr = (char *)(any ? s - 1 : nptr);
-	return (acc);
+      acc = -acc;
+   if (endptr)
+      *endptr = (char *)(any ? s - 1 : nptr);
+   return (acc);
 }
 
 float strtof(const char* str, char** endptr)

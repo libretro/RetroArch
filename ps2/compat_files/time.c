@@ -49,22 +49,22 @@ static time_t _gmtotime_t (
         int sc
         )
 {
-   int passed_years;
-   long passed_days;
-   long passed_seconds_current_day;
    time_t seconds_from_1970 = -1;
 
    if ((yr >= MIN_SUPPORTED_YEAR) || (yr <= MAX_SUPPORTED_YEAR)) 
    {
-      passed_years = (long)yr - MIN_SUPPORTED_YEAR; /* Years after 1970 */
+      long passed_seconds_current_day;
+      int passed_years  = (long)yr - MIN_SUPPORTED_YEAR; /* Years after 1970 */
       /* Calculate days for these years */
-      passed_days = passed_years * DAYS_YEAR;
-      passed_days += (passed_years >> 2) * (DAYS_YEAR + 1); /* passed leap years */
-      passed_days += dy + _days[mo - 1]; /* passed days in the year */
-      if ( !(yr & 3) && (mo > 2) )
+      long passed_days  = passed_years * DAYS_YEAR;
+      passed_days      += (passed_years >> 2) * (DAYS_YEAR + 1); /* passed leap years */
+      passed_days      += dy + _days[mo - 1]; /* passed days in the year */
+
+      if (!(yr & 3) && (mo > 2))
          passed_days++; /* if current year, is a leap year */
+
       passed_seconds_current_day = (((hr * MINS_HOUR) + mn) * SECS_MIN) + sc;
-      seconds_from_1970 = (passed_days * HOURS_DAY * MINS_HOUR * SECS_MIN) + passed_seconds_current_day;
+      seconds_from_1970          = (passed_days * HOURS_DAY * MINS_HOUR * SECS_MIN) + passed_seconds_current_day;
    }
 
    return seconds_from_1970;
