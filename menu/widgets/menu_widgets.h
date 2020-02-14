@@ -36,7 +36,7 @@
 #define HOURGLASS_DURATION                1000
 #define GENERIC_MESSAGE_DURATION          3000
 
-bool menu_widgets_init(bool video_is_threaded, const char *menu_driver);
+bool menu_widgets_init(bool video_is_threaded);
 
 void menu_widgets_free(void);
 

@@ -290,12 +290,6 @@ static char libretro_message[LIBRETRO_MESSAGE_SIZE] = {'\0'};
 
 /* Metrics */
 #define BASE_FONT_SIZE 32.0f
-/* > 'OZONE_SIDEBAR_WIDTH' must be kept in sync
- *   with ozone menu driver metrics */
-#define OZONE_SIDEBAR_WIDTH 408
-
-static bool is_ozone;
-static bool is_xmb;
 
 static float widget_font_size;
 static unsigned simple_widget_padding = 0;
@@ -332,7 +326,6 @@ static unsigned divider_width_1px;
 static unsigned last_video_width;
 static unsigned last_video_height;
 static float last_scale_factor;
-static float capped_scale_factor;
 
 static void msg_widget_msg_transition_animation_done(void *userdata)
 {
@@ -892,9 +885,9 @@ void menu_widgets_iterate(
 
    /* Check whether screen dimensions or menu scale
     * factor have changed */
-   float scale_factor = is_xmb ?
-         menu_display_get_pixel_scale(width, height) :
-               menu_display_get_dpi_scale(width, height);
+   float scale_factor = (menu_driver_ident_id() == MENU_DRIVER_ID_XMB) ?
+         menu_display_get_widget_pixel_scale(width, height) :
+               menu_display_get_widget_dpi_scale(width, height);
 
    if ((scale_factor != last_scale_factor) ||
        (width != last_video_width) ||
@@ -1343,7 +1336,7 @@ static void menu_widgets_draw_load_content_animation(video_frame_info_t *video_i
    int icon_size        = (int) load_content_animation_icon_size;
    uint32_t text_alpha  = load_content_animation_fade_alpha * 255.0f;
    uint32_t text_color  = COLOR_TEXT_ALPHA(0xB8B8B800, text_alpha);
-   unsigned text_offset = -25 * capped_scale_factor * load_content_animation_fade_alpha;
+   unsigned text_offset = -25 * last_scale_factor * load_content_animation_fade_alpha;
    float *icon_color    = load_content_animation_icon_color;
 
    /* Fade out */
@@ -1366,7 +1359,7 @@ static void menu_widgets_draw_load_content_animation(video_frame_info_t *video_i
    menu_display_draw_text(font_bold,
       load_content_animation_content_name,
       video_info->width/2,
-      video_info->height/2 + (175 + 25) * capped_scale_factor + text_offset,
+      video_info->height/2 + (175 + 25) * last_scale_factor + text_offset,
       video_info->width,
       video_info->height,
       text_color,
@@ -1804,6 +1797,11 @@ void menu_widgets_frame(void *data)
       int text_width        = font_driver_get_message_width(font_regular, text, (unsigned)strlen(text), 1.0f);
       int total_width       = text_width + simple_widget_padding * 2;
 
+      int fps_text_x        = top_right_x_advance - simple_widget_padding - text_width;
+      /* Ensure that left hand side of text does
+       * not bleed off the edge of the screen */
+      fps_text_x            = (fps_text_x < 0) ? 0 : fps_text_x;
+
       menu_display_set_alpha(menu_widgets_backdrop_orig, DEFAULT_BACKDROP);
 
       menu_display_draw_quad(video_info,
@@ -1815,7 +1813,7 @@ void menu_widgets_frame(void *data)
 
       menu_display_draw_text(font_regular,
          text,
-         top_right_x_advance - simple_widget_padding - text_width, widget_font_size + simple_widget_padding/4,
+         fps_text_x, widget_font_size + simple_widget_padding/4,
          video_info->width, video_info->height,
          0xFFFFFFFF,
          TEXT_ALIGN_LEFT,
@@ -1871,7 +1869,7 @@ void menu_widgets_frame(void *data)
    menu_display_unset_viewport(video_info->width, video_info->height);
 }
 
-bool menu_widgets_init(bool video_is_threaded, const char *menu_driver)
+bool menu_widgets_init(bool video_is_threaded)
 {
    if (!menu_display_init_first_driver(video_is_threaded))
       goto error;
@@ -1896,13 +1894,10 @@ bool menu_widgets_init(bool video_is_threaded, const char *menu_driver)
     * > Ozone has a capped scale factor
     * > XMB uses pixel based scaling - all other drivers
     *   use DPI based scaling */
-   is_ozone = string_is_equal(menu_driver, "ozone");
-   is_xmb   = string_is_equal(menu_driver, "xmb");
-
    video_driver_get_size(&last_video_width, &last_video_height);
-   last_scale_factor = is_xmb ?
-         menu_display_get_pixel_scale(last_video_width, last_video_height) :
-               menu_display_get_dpi_scale(last_video_width, last_video_height);
+   last_scale_factor = (menu_driver_ident_id() == MENU_DRIVER_ID_XMB) ?
+         menu_display_get_widget_pixel_scale(last_video_width, last_video_height) :
+               menu_display_get_widget_dpi_scale(last_video_width, last_video_height);
 
    return true;
 
@@ -1917,17 +1912,8 @@ static void menu_widgets_layout(
 {
    int font_height = 0;
 
-   /* Ozone is a unique case, in that it has a capped
-    * scale factor */
-   if (is_ozone)
-      capped_scale_factor =
-            (OZONE_SIDEBAR_WIDTH * last_scale_factor) > (last_video_width * 0.3333333f) ?
-                  ((float)last_video_width * 0.3333333f / (float)OZONE_SIDEBAR_WIDTH) : last_scale_factor;
-   else
-      capped_scale_factor = last_scale_factor;
-
    /* Base font size must be determined first */
-   widget_font_size = BASE_FONT_SIZE * capped_scale_factor;
+   widget_font_size = BASE_FONT_SIZE * last_scale_factor;
 
    /* Initialise fonts */
 
@@ -2024,10 +2010,10 @@ static void menu_widgets_layout(
    msg_queue_default_rect_width_menu_alive = msg_queue_glyph_width * 40;
    msg_queue_default_rect_width            = last_video_width - msg_queue_regular_text_start - (2 * simple_widget_padding);
 
-   load_content_animation_icon_size_initial = LOAD_CONTENT_ANIMATION_INITIAL_ICON_SIZE * capped_scale_factor;
-   load_content_animation_icon_size_target  = LOAD_CONTENT_ANIMATION_TARGET_ICON_SIZE * capped_scale_factor;
+   load_content_animation_icon_size_initial = LOAD_CONTENT_ANIMATION_INITIAL_ICON_SIZE * last_scale_factor;
+   load_content_animation_icon_size_target  = LOAD_CONTENT_ANIMATION_TARGET_ICON_SIZE * last_scale_factor;
 
-   divider_width_1px = (capped_scale_factor > 1.0f) ? (unsigned)(capped_scale_factor + 0.5f) : 1;
+   divider_width_1px = (last_scale_factor > 1.0f) ? (unsigned)(last_scale_factor + 0.5f) : 1;
 }
 
 void menu_widgets_context_reset(bool is_threaded,
@@ -2092,9 +2078,9 @@ void menu_widgets_context_reset(bool is_threaded,
    /* Update scaling/dimensions */
    last_video_width  = width;
    last_video_height = height;
-   last_scale_factor = is_xmb ?
-         menu_display_get_pixel_scale(last_video_width, last_video_height) :
-               menu_display_get_dpi_scale(last_video_width, last_video_height);
+   last_scale_factor = (menu_driver_ident_id() == MENU_DRIVER_ID_XMB) ?
+         menu_display_get_widget_pixel_scale(last_video_width, last_video_height) :
+               menu_display_get_widget_dpi_scale(last_video_width, last_video_height);
    menu_widgets_layout(is_threaded, dir_assets, font_path);
 
    video_driver_monitor_reset();

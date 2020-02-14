@@ -460,16 +460,7 @@ static void ozone_set_layout(ozone_handle_t *ozone, bool is_threaded)
    if (!ozone)
       return;
 
-   /* Due to the 'multi-column' menu layout
-    * (i.e. sidebars + entries), actual scale factor
-    * must be capped to a sensible upper limit
-    * > Normal left hand sidebar width must be no
-    *   more than 1/3 of the total screen width,
-    *   otherwise menu becomes unusable */
-   ozone->capped_scale_factor =
-         (SIDEBAR_WIDTH * ozone->last_scale_factor) > (ozone->last_width * 0.3333333f) ?
-               ((float)ozone->last_width * 0.3333333f / (float)SIDEBAR_WIDTH) : ozone->last_scale_factor;
-   scale_factor = ozone->capped_scale_factor;
+   scale_factor = ozone->last_scale_factor;
 
    /* Calculate dimensions */
    ozone->dimensions.header_height = HEADER_HEIGHT * scale_factor;
@@ -1146,7 +1137,7 @@ static void ozone_draw_header(ozone_handle_t *ozone, video_frame_info_t *video_i
    settings_t *settings      = config_get_ptr();
    unsigned timedate_offset  = 0;
    bool use_smooth_ticker    = settings->bools.menu_ticker_smooth;
-   float scale_factor        = ozone->capped_scale_factor;
+   float scale_factor        = ozone->last_scale_factor;
    unsigned logo_icon_size   = 60 * scale_factor;
    unsigned status_icon_size = 92 * scale_factor;
    unsigned seperator_margin = 30 * scale_factor;
@@ -1290,7 +1281,7 @@ static void ozone_draw_header(ozone_handle_t *ozone, video_frame_info_t *video_i
 
 static void ozone_draw_footer(ozone_handle_t *ozone, video_frame_info_t *video_info, settings_t *settings)
 {
-   float scale_factor        = ozone->capped_scale_factor;
+   float scale_factor        = ozone->last_scale_factor;
    unsigned seperator_margin = 30 * scale_factor;
 
    /* Separator */
@@ -2196,7 +2187,7 @@ static void ozone_list_cache(void *data,
    if (!ozone)
       return;
 
-   scale_factor               = ozone->capped_scale_factor;
+   scale_factor               = ozone->last_scale_factor;
    ozone->need_compute        = true;
    ozone->selection_old_list  = ozone->selection;
    ozone->scroll_old          = ozone->animations.scroll_y;

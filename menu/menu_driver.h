@@ -224,6 +224,17 @@ enum menu_settings_type
    MENU_SETTINGS_LAST
 };
 
+enum menu_driver_id_type
+{
+   MENU_DRIVER_ID_UNKNOWN = 0,
+   MENU_DRIVER_ID_RGUI,
+   MENU_DRIVER_ID_OZONE,
+   MENU_DRIVER_ID_GLUI,
+   MENU_DRIVER_ID_XMB,
+   MENU_DRIVER_ID_XUI,
+   MENU_DRIVER_ID_STRIPES
+};
+
 typedef struct menu_display_ctx_driver
 {
    /* Draw graphics to the screen. */
@@ -526,6 +537,8 @@ const char* config_get_menu_driver_options(void);
 
 const char *menu_driver_ident(void);
 
+enum menu_driver_id_type menu_driver_ident_id(void);
+
 bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data);
 
 void menu_driver_frame(video_frame_info_t *video_info);
@@ -596,6 +609,10 @@ void menu_display_set_framebuffer_dirty_flag(void);
 void menu_display_unset_framebuffer_dirty_flag(void);
 float menu_display_get_pixel_scale(unsigned width, unsigned height);
 float menu_display_get_dpi_scale(unsigned width, unsigned height);
+#ifdef HAVE_MENU_WIDGETS
+float menu_display_get_widget_pixel_scale(unsigned width, unsigned height);
+float menu_display_get_widget_dpi_scale(unsigned width, unsigned height);
+#endif
 bool menu_display_init_first_driver(bool video_is_threaded);
 bool menu_display_restore_clear_color(void);
 void menu_display_clear_color(menu_display_ctx_clearcolor_t *color,

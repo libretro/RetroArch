@@ -970,6 +970,12 @@ static const unsigned playlist_entry_remove_enable = PLAYLIST_ENTRY_REMOVE_ENABL
 /* Default scale factor for non-frambuffer-based menu
  * drivers and menu widgets */
 #define DEFAULT_MENU_SCALE_FACTOR 1.0f
+/* Specifies whether menu widgets should be scaled
+ * automatically using the default menu scale factor */
+#define DEFAULT_MENU_WIDGET_SCALE_AUTO true
+/* Default scale factor for menu widgets when widget
+ * auto scaling is disabled */
+#define DEFAULT_MENU_WIDGET_SCALE_FACTOR 1.0f
 
 /* Log level for the frontend */
 #define DEFAULT_FRONTEND_LOG_LEVEL 1

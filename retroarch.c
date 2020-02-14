@@ -23435,8 +23435,7 @@ static void drivers_init(int flags)
       && video_driver_has_widgets())
    {
       if (!menu_widgets_inited)
-         menu_widgets_inited = menu_widgets_init(
-               video_is_threaded, settings->arrays.menu_driver);
+         menu_widgets_inited = menu_widgets_init(video_is_threaded);
 
       if (menu_widgets_inited)
          menu_widgets_context_reset(video_is_threaded,
@@ -27268,7 +27267,6 @@ static enum runloop_state runloop_check_state(void)
 
 #if defined(HAVE_MENU)
    menu_animation_update(
-         settings->arrays.menu_driver,
          settings->bools.menu_timedate_enable,
          settings->floats.menu_ticker_speed,
          video_driver_width, video_driver_height);

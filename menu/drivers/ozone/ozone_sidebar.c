@@ -116,7 +116,7 @@ void ozone_draw_sidebar(ozone_handle_t *ozone, video_frame_info_t *video_info)
    settings_t *settings = config_get_ptr();
    uint32_t text_alpha  = ozone->animations.sidebar_text_alpha * 255.0f;
    bool use_smooth_ticker = settings->bools.menu_ticker_smooth;
-   float scale_factor = ozone->capped_scale_factor;
+   float scale_factor = ozone->last_scale_factor;
 
    /* Initial ticker configuration */
    if (use_smooth_ticker)
