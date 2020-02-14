@@ -199,6 +199,7 @@ void menu_timer_start(menu_timer_t *timer, menu_timer_ctx_entry_t *timer_entry);
 void menu_timer_kill(menu_timer_t *timer);
 
 bool menu_animation_update(
+      unsigned type,
       bool menu_timedate_enable,
       float menu_ticker_speed,
       unsigned video_width,

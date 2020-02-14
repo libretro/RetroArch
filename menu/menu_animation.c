@@ -1186,16 +1186,15 @@ bool menu_animation_push(menu_animation_ctx_entry_t *entry)
 }
 
 static void menu_animation_update_time(
+      unsigned type,
       bool timedate_enable,
       unsigned video_width, unsigned video_height,
       float menu_ticker_speed)
 {
+   static retro_time_t last_clock_update  = 0;
+   static retro_time_t last_ticker_update = 0;
    static retro_time_t
-      last_clock_update       = 0;
-   static retro_time_t
-      last_ticker_update      = 0;
-   static retro_time_t
-      last_ticker_slow_update = 0;
+      last_ticker_slow_update             = 0;
 
    static float ticker_pixel_accumulator  = 0.0f;
    unsigned ticker_pixel_accumulator_uint = 0;
@@ -1263,7 +1262,7 @@ static void menu_animation_update_time(
        *   system. We therefore take the same approach as GLUI,
        *   but with a different correction factor (expected
        *   scroll speed is somewhat lower for Ozone) */
-      switch (menu_driver_ident_id())
+      switch (type)
       {
          case MENU_DRIVER_ID_RGUI:
             ticker_pixel_increment *= 0.25f;
@@ -1295,6 +1294,7 @@ static void menu_animation_update_time(
 }
 
 bool menu_animation_update(
+      unsigned type,
       bool menu_timedate_enable,
       float menu_ticker_speed,
       unsigned video_width,
@@ -1303,6 +1303,7 @@ bool menu_animation_update(
    unsigned i;
 
    menu_animation_update_time(
+         type,
          menu_timedate_enable,
          video_width, video_height,
          menu_ticker_speed);
