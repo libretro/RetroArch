@@ -1229,7 +1229,8 @@ static void rarch_init_core_options(
 static void bsv_movie_set_path(const char *path);
 
 struct string_list *dir_list_new_special(const char *input_dir,
-      enum dir_list_type type, const char *filter)
+      enum dir_list_type type, const char *filter,
+      bool show_hidden_files)
 {
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    char ext_shaders[255];
@@ -1237,7 +1238,6 @@ struct string_list *dir_list_new_special(const char *input_dir,
    char ext_name[255];
    const char *exts                  = NULL;
    bool recursive                    = false;
-   settings_t *settings              = configuration_settings;
 
    switch (type)
    {
@@ -1318,7 +1318,7 @@ struct string_list *dir_list_new_special(const char *input_dir,
    }
 
    return dir_list_new(input_dir, exts, false,
-         settings->bools.show_hidden_files,
+         show_hidden_files,
          type == DIR_LIST_CORE_INFO, recursive);
 }
 
@@ -2273,8 +2273,9 @@ static bool dir_init_shader(const char *path_dir_shader)
 {
    unsigned i;
    struct rarch_dir_list *dir_list = (struct rarch_dir_list*)&dir_shader_list;
+   settings_t *settings            = configuration_settings;
 
-   dir_list->list = dir_list_new_special(path_dir_shader, DIR_LIST_SHADERS, NULL);
+   dir_list->list = dir_list_new_special(path_dir_shader, DIR_LIST_SHADERS, NULL, settings->bools.show_hidden_files);
 
    if (!dir_list->list || dir_list->list->size == 0)
    {
@@ -5673,7 +5674,8 @@ static void command_event_set_savestate_auto_index(void)
    fill_pathname_basedir(state_dir, global->name.savestate,
          state_size);
 
-   dir_list = dir_list_new_special(state_dir, DIR_LIST_PLAIN, NULL);
+   dir_list = dir_list_new_special(state_dir, DIR_LIST_PLAIN, NULL,
+         settings->bools.show_hidden_files);
 
    free(state_dir);
 

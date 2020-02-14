@@ -548,7 +548,7 @@ bool manual_content_scan_get_menu_core_name(const char **core_name)
  * > Returns NULL in the event of failure
  * > Returned string list must be free()'d */
 struct string_list *manual_content_scan_get_menu_system_name_list(
-      const char *path_content_database)
+      const char *path_content_database, bool show_hidden_files)
 {
    union string_list_elem_attr attr;
    struct string_list *name_list = string_list_new();
@@ -579,7 +579,7 @@ struct string_list *manual_content_scan_get_menu_system_name_list(
        * or verify file extensions) */
       struct string_list *rdb_list = dir_list_new_special(
             path_content_database,
-            DIR_LIST_DATABASES, NULL);
+            DIR_LIST_DATABASES, NULL, show_hidden_files);
 
       if (rdb_list && rdb_list->size)
       {

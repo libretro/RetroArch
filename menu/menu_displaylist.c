@@ -2739,7 +2739,8 @@ static unsigned menu_displaylist_parse_playlist_manager_list(
    /* Add collection playlists */
    str_list = dir_list_new_special(
          settings->paths.directory_playlist,
-         DIR_LIST_COLLECTIONS, NULL);
+         DIR_LIST_COLLECTIONS, NULL,
+         settings->bools.show_hidden_files);
 
    if (str_list && str_list->size)
    {
@@ -2942,7 +2943,8 @@ static unsigned menu_displaylist_parse_pl_thumbnail_download_list(
 
    str_list = dir_list_new_special(
          settings->paths.directory_playlist,
-         DIR_LIST_COLLECTIONS, NULL);
+         DIR_LIST_COLLECTIONS, NULL,
+         settings->bools.show_hidden_files);
 
    if (str_list && str_list->size)
    {
@@ -5292,10 +5294,10 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
 #ifdef HAVE_LIBRETRODB
             settings_t *settings                 = config_get_ptr();
             struct string_list *system_name_list = 
-               manual_content_scan_get_menu_system_name_list(settings->paths.path_content_database);
+               manual_content_scan_get_menu_system_name_list(settings->paths.path_content_database, settings->bools.show_hidden_files);
 #else
             struct string_list *system_name_list = 
-               manual_content_scan_get_menu_system_name_list(NULL);
+               manual_content_scan_get_menu_system_name_list(NULL, settings->bools.show_hidden_files);
 #endif
 
             if (system_name_list)

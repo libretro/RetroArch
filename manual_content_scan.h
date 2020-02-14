@@ -195,7 +195,7 @@ bool manual_content_scan_get_menu_core_name(const char **core_name);
  * > Returns NULL in the event of failure
  * > Returned string list must be free()'d */
 struct string_list *manual_content_scan_get_menu_system_name_list(
-      const char *path_content_database);
+      const char *path_content_database, bool show_hidden_files);
 
 /* Creates a list of all possible 'core name' menu
  * strings, for use in 'menu_displaylist' drop-down

@@ -527,7 +527,7 @@ static int manual_content_scan_system_name_left(unsigned type, const char *label
 #ifdef HAVE_LIBRETRODB
    settings_t *settings                                            = config_get_ptr();
    struct string_list *system_name_list                            =
-      manual_content_scan_get_menu_system_name_list(settings->paths.path_content_database);
+      manual_content_scan_get_menu_system_name_list(settings->paths.path_content_database, settings->bools.show_hidden_files);
 #else
    struct string_list *system_name_list                            =
       manual_content_scan_get_menu_system_name_list(NULL);
