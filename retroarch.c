@@ -3851,26 +3851,26 @@ static bool command_get_config_param(const char* arg)
    const char* value    = "unsupported";
    settings_t* settings = configuration_settings;
 
-   if (!strcmp(arg, "video_fullscreen"))
+   if (string_is_equal(arg, "video_fullscreen"))
    {
       if (configuration_settings->bools.video_fullscreen)
          value = "true";
       else
          value = "false";
    }
-   else if (!strcmp(arg, "savefile_directory"))
+   else if (string_is_equal(arg, "savefile_directory"))
       value = dir_get(RARCH_DIR_SAVEFILE);
-   else if (!strcmp(arg, "savestate_directory"))
+   else if (string_is_equal(arg, "savestate_directory"))
       value = dir_get(RARCH_DIR_SAVESTATE);
-   else if (!strcmp(arg, "runtime_log_directory"))
+   else if (string_is_equal(arg, "runtime_log_directory"))
       value = settings->paths.directory_runtime_log;
-   else if (!strcmp(arg, "log_dir"))
+   else if (string_is_equal(arg, "log_dir"))
       value = settings->paths.log_dir;
-   else if (!strcmp(arg, "cache_directory"))
+   else if (string_is_equal(arg, "cache_directory"))
       value = settings->paths.directory_cache;
-   else if (!strcmp(arg, "system_directory"))
+   else if (string_is_equal(arg, "system_directory"))
       value = settings->paths.directory_system;
-   else if (!strcmp(arg, "netplay_nickname"))
+   else if (string_is_equal(arg, "netplay_nickname"))
       value = settings->paths.username;
    /* TODO: query any string */
 
@@ -9790,11 +9790,12 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
 
          if (!settings->bools.driver_switch_enable)
              return false;
-         else if (!strcmp(video_driver_name, "glcore"))
+
+         if (string_is_equal(video_driver_name, "glcore"))
              *cb = RETRO_HW_CONTEXT_OPENGL_CORE;
-         else if (!strcmp(video_driver_name, "gl"))
+         else if (string_is_equal(video_driver_name, "gl"))
              *cb = RETRO_HW_CONTEXT_OPENGL;
-         else if (!strcmp(video_driver_name, "vulkan"))
+         else if (string_is_equal(video_driver_name, "vulkan"))
              *cb = RETRO_HW_CONTEXT_VULKAN;
          else if (!strncmp(video_driver_name, "d3d", 3))
              *cb = RETRO_HW_CONTEXT_DIRECT3D;
@@ -16512,13 +16513,12 @@ int16_t input_joypad_analog(const input_device_driver_t *drv,
             uint32_t y_axis_plus     = (bind_y_plus->joyaxis  == AXIS_NONE)
                ? joypad_info.auto_binds[ident_y_plus].joyaxis
                : bind_y_plus->joyaxis;
-            float x                  = 0.0f;
-            float y                  = 0.0f;
-
             /* normalized magnitude for radial scaled analog deadzone */
-            x          = drv->axis(joypad_info.joy_idx, x_axis_plus)
+            float x                  = drv->axis(
+                  joypad_info.joy_idx, x_axis_plus)
                + drv->axis(joypad_info.joy_idx, x_axis_minus);
-            y          = drv->axis(joypad_info.joy_idx, y_axis_plus)
+            float y                  = drv->axis(
+                  joypad_info.joy_idx, y_axis_plus)
                + drv->axis(joypad_info.joy_idx, y_axis_minus);
             normal_mag = (1.0f / 0x7fff) * sqrt(x * x + y * y);
          }
