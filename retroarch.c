@@ -23486,7 +23486,7 @@ static void drivers_init(int flags)
 
    /* Initialize LED driver */
    if (flags & DRIVER_LED_MASK)
-      led_driver_init();
+      led_driver_init(settings->arrays.led_driver);
 
    /* Initialize MIDI  driver */
    if (flags & DRIVER_MIDI_MASK)
