@@ -33,7 +33,6 @@
 #undef DG_DYNARR_IMPLEMENTATION
 
 #include "menu_animation.h"
-#include "menu_driver.h"
 #include "../performance_counters.h"
 
 struct tween
@@ -1263,6 +1262,7 @@ static void menu_animation_update_time(
        *   system. We therefore take the same approach as GLUI,
        *   but with a different correction factor (expected
        *   scroll speed is somewhat lower for Ozone) */
+#if 0
       switch (menu_driver_ident_id())
       {
          case MENU_DRIVER_ID_RGUI:
@@ -1280,6 +1280,10 @@ static void menu_animation_update_time(
                ticker_pixel_increment *= ((float)video_width / 1920.0f);
             break;
       }
+#else
+      if (video_width > 0)
+         ticker_pixel_increment *= ((float)video_width / 1920.0f);
+#endif
 
       /* > Update accumulator */
       ticker_pixel_accumulator += ticker_pixel_increment;

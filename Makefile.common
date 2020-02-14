@@ -808,6 +808,7 @@ ifeq ($(HAVE_SHADERS_COMMON), 1)
 endif
 
 ifeq ($(HAVE_MENU_COMMON), 1)
+   OBJ += menu/gfx_display.o
    OBJ += menu/menu_driver.o \
           menu/menu_setting.o \
           menu/widgets/menu_filebrowser.o \
