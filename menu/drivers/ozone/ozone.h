@@ -52,6 +52,8 @@ typedef struct ozone_handle ozone_handle_t;
 #define ENTRY_ICON_SIZE                46
 #define ENTRY_ICON_PADDING             15
 
+/* > 'SIDEBAR_WIDTH' must be kept in sync with
+ *   menu driver metrics */
 #define SIDEBAR_WIDTH               408
 #define SIDEBAR_X_PADDING           40
 #define SIDEBAR_Y_PADDING           20
@@ -179,7 +181,6 @@ struct ozone_handle
    unsigned last_width;
    unsigned last_height;
    float last_scale_factor;
-   float capped_scale_factor;
 
    bool need_compute;
 

@@ -1186,7 +1186,6 @@ bool menu_animation_push(menu_animation_ctx_entry_t *entry)
 }
 
 static void menu_animation_update_time(
-      const char *menu_driver,
       bool timedate_enable,
       unsigned video_width, unsigned video_height,
       float menu_ticker_speed)
@@ -1255,27 +1254,32 @@ static void menu_animation_update_time(
        *   every 2 frames is optimal, but may be too fast
        *   for some users - so play it safe. Users can always
        *   set ticker speed to 2x if they prefer)
-       *   Note 2: It turns out that resolution adjustment
-       *   also fails for Ozone, because it doesn't implement
-       *   any kind of DPI scaling - i.e. text gets smaller
-       *   as resolution increases. This is annoying. It
-       *   means we have to use a fixed multiplier for
-       *   Ozone as well...
-       *   Note 3: GLUI uses the new DPI scaling system,
+       *   Note 2: GLUI uses the new DPI scaling system,
        *   so scaling multiplier is menu_display_get_dpi_scale()
        *   multiplied by a small correction factor (since the
        *   default 1.0x speed is just a little faster than the
-       *   non-smooth ticker) */
-      if (string_is_equal(menu_driver, "rgui"))
-         ticker_pixel_increment *= 0.25f;
-      /* TODO/FIXME: Remove this Ozone special case if/when
-       * Ozone gets proper DPI scaling */
-      else if (string_is_equal(menu_driver, "ozone"))
-         ticker_pixel_increment *= 0.5f;
-      else if (string_is_equal(menu_driver, "glui"))
-         ticker_pixel_increment *= (menu_display_get_dpi_scale(video_width, video_height) * 0.8f);
-      else if (video_width > 0)
-         ticker_pixel_increment *= ((float)video_width / 1920.0f);
+       *   non-smooth ticker)
+       *   Note 3: Ozone now also uses the new DPI scaling
+       *   system. We therefore take the same approach as GLUI,
+       *   but with a different correction factor (expected
+       *   scroll speed is somewhat lower for Ozone) */
+      switch (menu_driver_ident_id())
+      {
+         case MENU_DRIVER_ID_RGUI:
+            ticker_pixel_increment *= 0.25f;
+            break;
+         case MENU_DRIVER_ID_OZONE:
+            ticker_pixel_increment *= (menu_display_get_dpi_scale(video_width, video_height) * 0.5f);
+            break;
+         case MENU_DRIVER_ID_GLUI:
+            ticker_pixel_increment *= (menu_display_get_dpi_scale(video_width, video_height) * 0.8f);
+            break;
+         case MENU_DRIVER_ID_XMB:
+         default:
+            if (video_width > 0)
+               ticker_pixel_increment *= ((float)video_width / 1920.0f);
+            break;
+      }
 
       /* > Update accumulator */
       ticker_pixel_accumulator += ticker_pixel_increment;
@@ -1291,7 +1295,6 @@ static void menu_animation_update_time(
 }
 
 bool menu_animation_update(
-      const char *menu_driver,
       bool menu_timedate_enable,
       float menu_ticker_speed,
       unsigned video_width,
@@ -1300,7 +1303,6 @@ bool menu_animation_update(
    unsigned i;
 
    menu_animation_update_time(
-         menu_driver,
          menu_timedate_enable,
          video_width, video_height,
          menu_ticker_speed);

@@ -151,6 +151,7 @@ typedef struct settings
       /* Menu */
       bool filter_by_current_core;
       bool menu_enable_widgets;
+      bool menu_widget_scale_auto;
       bool menu_show_start_screen;
       bool menu_pause_libretro;
       bool menu_savestate_resume;
@@ -405,6 +406,7 @@ typedef struct settings
       float video_msg_bgcolor_opacity;
 
       float menu_scale_factor;
+      float menu_widget_scale_factor;
       float menu_wallpaper_opacity;
       float menu_framebuffer_opacity;
       float menu_footer_opacity;

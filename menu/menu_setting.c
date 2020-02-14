@@ -11761,6 +11761,48 @@ static bool setting_append_list(
                &subgroup_info,
                parent_group);
 
+         /* This is the SETTINGS_LIST_FONT category, but the
+          * parent group is ONSCREEN_DISPLAY_SETTINGS.
+          * Menu widget settings don't belong in the SETTINGS_LIST_FONT
+          * category, but they *do* belong in the ONSCREEN_DISPLAY_SETTINGS
+          * group. I don't want to refactor these names, so we'll assume
+          * group trumps category, and just place the widget settings here */
+#ifdef HAVE_MENU_WIDGETS
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.menu_widget_scale_auto,
+               MENU_ENUM_LABEL_MENU_WIDGET_SCALE_AUTO,
+               MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_AUTO,
+               DEFAULT_MENU_WIDGET_SCALE_AUTO,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE
+               );
+         (*list)[list_info->index - 1].action_ok     = &setting_bool_action_left_with_refresh;
+         (*list)[list_info->index - 1].action_left   = &setting_bool_action_left_with_refresh;
+         (*list)[list_info->index - 1].action_right  = &setting_bool_action_right_with_refresh;
+
+         CONFIG_FLOAT(
+               list, list_info,
+               &settings->floats.menu_widget_scale_factor,
+               MENU_ENUM_LABEL_MENU_WIDGET_SCALE_FACTOR,
+               MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_FACTOR,
+               DEFAULT_MENU_WIDGET_SCALE_FACTOR,
+               "%.2fx",
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+         menu_settings_list_current_add_range(list, list_info, 0.2, 5.0, 0.01, true, true);
+#endif
+
          CONFIG_BOOL(
                list, list_info,
                &settings->bools.video_font_enable,
@@ -12844,10 +12886,11 @@ static bool setting_append_list(
 
          START_SUB_GROUP(list, list_info, "Display", &group_info, &subgroup_info, parent_group);
 
-         /* Only implemented for GLUI, XMB and Ozone at present */
+         /* > MaterialUI, XMB and Ozone all support menu scaling */
          if (string_is_equal(settings->arrays.menu_driver, "glui") ||
              string_is_equal(settings->arrays.menu_driver, "xmb") ||
              string_is_equal(settings->arrays.menu_driver, "ozone"))
+         {
             CONFIG_FLOAT(
                   list, list_info,
                   &settings->floats.menu_scale_factor,
@@ -12862,6 +12905,7 @@ static bool setting_append_list(
                   general_read_handler);
             (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
             menu_settings_list_current_add_range(list, list_info, 0.2, 5.0, 0.01, true, true);
+         }
 
 #ifdef HAVE_XMB
          if (string_is_equal(settings->arrays.menu_driver, "xmb"))

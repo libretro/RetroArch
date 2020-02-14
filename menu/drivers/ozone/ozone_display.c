@@ -118,7 +118,7 @@ static void ozone_draw_cursor_slice(ozone_handle_t *ozone,
       unsigned width, unsigned height,
       size_t y, float alpha)
 {
-   float scale_factor   = ozone->capped_scale_factor;
+   float scale_factor   = ozone->last_scale_factor;
    int slice_x          = x_offset - 14 * scale_factor;
    int slice_y          = (int)y + 8 * scale_factor;
    unsigned slice_new_w = width + (3 + 28 - 4) * scale_factor;
@@ -261,7 +261,7 @@ void ozone_draw_osk(ozone_handle_t *ozone,
    unsigned text_color;
    struct string_list *list;
 
-   float scale_factor      = ozone->capped_scale_factor;
+   float scale_factor      = ozone->last_scale_factor;
    unsigned margin         = 75 * scale_factor;
    unsigned padding        = 10 * scale_factor;
    unsigned bottom_end     = video_info->height/2;
@@ -353,7 +353,7 @@ void ozone_draw_messagebox(ozone_handle_t *ozone,
    unsigned height          = video_info->height;
    struct string_list *list = !string_is_empty(message)
       ? string_split(message, "\n") : NULL;
-   float scale_factor       = ozone->capped_scale_factor;
+   float scale_factor       = ozone->last_scale_factor;
 
    if (!list || !ozone || !ozone->fonts.footer)
    {

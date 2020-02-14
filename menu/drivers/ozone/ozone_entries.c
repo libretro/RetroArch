@@ -55,7 +55,7 @@ static void ozone_draw_entry_value(ozone_handle_t *ozone,
 {
    bool switch_is_on  = true;
    bool do_draw_text  = false;
-   float scale_factor = ozone->capped_scale_factor;
+   float scale_factor = ozone->last_scale_factor;
 
    if (!entry->checked && string_is_empty(value))
       return;
@@ -200,7 +200,7 @@ void ozone_compute_entries_position(ozone_handle_t *ozone)
 
    file_list_t *selection_buf    = NULL;
    int entry_padding             = ozone_get_entries_padding(ozone, false);
-   float scale_factor            = ozone->capped_scale_factor;
+   float scale_factor            = ozone->last_scale_factor;
 
    menu_entries_ctl(MENU_ENTRIES_CTL_START_GET, &i);
 
@@ -364,7 +364,7 @@ void ozone_draw_entries(ozone_handle_t *ozone, video_frame_info_t *video_info,
    int16_t cursor_x        = 0;
    int16_t cursor_y        = 0;
 
-   float scale_factor      = ozone->capped_scale_factor;
+   float scale_factor      = ozone->last_scale_factor;
 
    menu_input_get_pointer_state(&pointer);
 
