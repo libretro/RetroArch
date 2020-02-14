@@ -5584,7 +5584,8 @@ static void command_event_deinit_core(bool reinit)
 
 static void command_event_init_cheats(void)
 {
-   bool        allow_cheats      = true;
+   settings_t     *settings = configuration_settings;
+   bool        allow_cheats = true;
 
 #ifdef HAVE_NETWORKING
    allow_cheats &= !netplay_driver_ctl(
@@ -5596,13 +5597,11 @@ static void command_event_init_cheats(void)
       return;
 
    cheat_manager_alloc_if_empty();
-   cheat_manager_load_game_specific_cheats();
+   cheat_manager_load_game_specific_cheats(
+         settings->paths.path_cheat_database);
 
-   {
-      settings_t *settings = configuration_settings;
-      if (settings && settings->bools.apply_cheats_after_load)
-         cheat_manager_apply_cheats();
-   }
+   if (settings->bools.apply_cheats_after_load)
+      cheat_manager_apply_cheats();
 }
 
 static void command_event_load_auto_state(void)

@@ -104,7 +104,10 @@ int shader_action_preset_parameter_right(unsigned type, const char *label, bool 
 int generic_action_cheat_toggle(size_t idx, unsigned type, const char *label,
       bool wraparound)
 {
-   cheat_manager_toggle_index((unsigned)idx);
+   settings_t *settings = config_get_ptr();
+   cheat_manager_toggle_index(
+         settings->bools.apply_cheats_after_toggle,
+         (unsigned)idx);
 
    return 0;
 }

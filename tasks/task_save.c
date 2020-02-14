@@ -1556,8 +1556,10 @@ bool content_save_ram_file(unsigned slot)
 bool event_save_files(bool is_sram_used)
 {
    unsigned i;
+   settings_t *settings    = config_get_ptr();
 
-   cheat_manager_save_game_specific_cheats();
+   cheat_manager_save_game_specific_cheats(
+         settings->paths.path_cheat_database);
    if (!task_save_files || !is_sram_used)
       return false;
 

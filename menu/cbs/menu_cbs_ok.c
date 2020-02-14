@@ -3469,9 +3469,14 @@ int action_ok_core_option_dropdown_list(const char *path,
 static int action_ok_cheat_reload_cheats(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   bool          refresh = false ;
+   bool          refresh = false;
+   settings_t *settings  = config_get_ptr();
+
    cheat_manager_realloc(0, CHEAT_HANDLER_TYPE_EMU);
-   cheat_manager_load_game_specific_cheats();
+
+   cheat_manager_load_game_specific_cheats(
+         settings->paths.path_cheat_database);
+
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
    menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
    return 0 ;
