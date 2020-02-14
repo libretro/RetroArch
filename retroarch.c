@@ -11950,30 +11950,34 @@ static bool recording_init(void)
       strlcpy(output, global->record.path, sizeof(output));
    else
    {
+      const char *stream_url        = settings->paths.path_stream_url;
+      unsigned video_record_quality = settings->uints.video_record_quality;
+      unsigned video_stream_port    = settings->uints.video_stream_port;
       if (streaming_enable)
-         if (!string_is_empty(settings->paths.path_stream_url))
-            strlcpy(output, settings->paths.path_stream_url, sizeof(output));
+         if (!string_is_empty(stream_url))
+            strlcpy(output, stream_url, sizeof(output));
          else
             /* Fallback, stream locally to 127.0.0.1 */
-            snprintf(output, sizeof(output), "udp://127.0.0.1:%u", settings->uints.video_stream_port);
+            snprintf(output, sizeof(output), "udp://127.0.0.1:%u",
+                  video_stream_port);
       else
       {
          const char *game_name = path_basename(path_get(RARCH_PATH_BASENAME));
-         if (settings->uints.video_record_quality < RECORD_CONFIG_TYPE_RECORDING_WEBM_FAST)
+         if (video_record_quality < RECORD_CONFIG_TYPE_RECORDING_WEBM_FAST)
          {
             fill_str_dated_filename(buf, game_name,
                      "mkv", sizeof(buf));
             fill_pathname_join(output, global->record.output_dir, buf, sizeof(output));
          }
-         else if (settings->uints.video_record_quality >= RECORD_CONFIG_TYPE_RECORDING_WEBM_FAST
-               && settings->uints.video_record_quality < RECORD_CONFIG_TYPE_RECORDING_GIF)
+         else if (video_record_quality >= RECORD_CONFIG_TYPE_RECORDING_WEBM_FAST
+               && video_record_quality < RECORD_CONFIG_TYPE_RECORDING_GIF)
          {
             fill_str_dated_filename(buf, game_name,
                      "webm", sizeof(buf));
             fill_pathname_join(output, global->record.output_dir, buf, sizeof(output));
          }
-         else if (settings->uints.video_record_quality >= RECORD_CONFIG_TYPE_RECORDING_GIF
-               && settings->uints.video_record_quality < RECORD_CONFIG_TYPE_RECORDING_APNG)
+         else if (video_record_quality >= RECORD_CONFIG_TYPE_RECORDING_GIF
+               && video_record_quality < RECORD_CONFIG_TYPE_RECORDING_APNG)
          {
             fill_str_dated_filename(buf, game_name,
                      "gif", sizeof(buf));
@@ -12489,15 +12493,16 @@ static bool runloop_check_movie_init(void)
 {
    char msg[16384], path[8192];
    settings_t *settings       = configuration_settings;
+   int state_slot             = settings->ints.state_slot;
 
    msg[0] = path[0]           = '\0';
 
    configuration_set_uint(settings, settings->uints.rewind_granularity, 1);
 
-   if (settings->ints.state_slot > 0)
+   if (state_slot > 0)
       snprintf(path, sizeof(path), "%s%d.bsv",
             bsv_movie_state.movie_path,
-            settings->ints.state_slot);
+            state_slot);
    else
    {
       strlcpy(path, bsv_movie_state.movie_path, sizeof(path));
@@ -14487,14 +14492,14 @@ int16_t menu_input_read_mouse_hw(enum menu_input_mouse_hw_id id)
          NULL, 0, device, 0, type);
 }
 
-static void menu_input_get_mouse_hw_state(menu_input_pointer_hw_state_t *hw_state)
+static void menu_input_get_mouse_hw_state(
+      menu_input_pointer_hw_state_t *hw_state)
 {
    settings_t *settings            = configuration_settings;
    static int16_t last_x           = 0;
    static int16_t last_y           = 0;
    static bool last_select_pressed = false;
    static bool last_cancel_pressed = false;
-   bool overlay_active             = false;
    bool mouse_enabled              = settings->bools.menu_mouse_enable;
    /* Note: RGUI requires special treatment, but we can't just
     * check settings->arrays.menu_driver because this may change
@@ -14505,17 +14510,17 @@ static void menu_input_get_mouse_hw_state(menu_input_pointer_hw_state_t *hw_stat
    menu_handle_t *menu_data        = menu_driver_get_ptr();
    bool is_rgui                    =
          (menu_data && menu_data->driver_ctx && menu_data->driver_ctx->set_texture);
+#ifdef HAVE_OVERLAY
+   /* Menu pointer controls are ignored when overlays are enabled. */
+   bool overlay_active = settings->bools.input_overlay_enable && overlay_ptr && overlay_ptr->alive;
+   if (overlay_active)
+      mouse_enabled = false;
+#endif
 
    /* Easiest to set inactive by default, and toggle
     * when input is detected */
    hw_state->active  = false;
 
-#ifdef HAVE_OVERLAY
-   /* Menu pointer controls are ignored when overlays are enabled. */
-   overlay_active = settings->bools.input_overlay_enable && overlay_ptr && overlay_ptr->alive;
-   if (overlay_active)
-      mouse_enabled = false;
-#endif
 
    if (!mouse_enabled)
    {
@@ -14602,7 +14607,8 @@ static void menu_input_get_mouse_hw_state(menu_input_pointer_hw_state_t *hw_stat
       hw_state->active = true;
 }
 
-static void menu_input_get_touchscreen_hw_state(menu_input_pointer_hw_state_t *hw_state)
+static void menu_input_get_touchscreen_hw_state(
+      menu_input_pointer_hw_state_t *hw_state)
 {
    rarch_joypad_info_t joypad_info;
    int pointer_x, pointer_y;
@@ -14627,7 +14633,7 @@ static void menu_input_get_touchscreen_hw_state(menu_input_pointer_hw_state_t *h
 
    /* Easiest to set inactive by default, and toggle
     * when input is detected */
-   hw_state->active  = false;
+   hw_state->active        = false;
 
    /* Touch screens don't have mouse wheels, so these
     * are always disabled */
@@ -14638,7 +14644,8 @@ static void menu_input_get_touchscreen_hw_state(menu_input_pointer_hw_state_t *h
 
 #ifdef HAVE_OVERLAY
    /* Menu pointer controls are ignored when overlays are enabled. */
-   overlay_active = settings->bools.input_overlay_enable && overlay_ptr && overlay_ptr->alive;
+   overlay_active          = settings->bools.input_overlay_enable 
+      && overlay_ptr && overlay_ptr->alive;
    if (overlay_active)
       pointer_enabled = false;
 #endif
