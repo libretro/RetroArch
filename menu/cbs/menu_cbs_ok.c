@@ -3074,7 +3074,9 @@ static int generic_action_ok_remap_file_operation(const char *path,
    }
    else
    {
-      if (input_remapping_remove_file(file))
+      if (input_remapping_remove_file(file,
+               settings->paths.directory_input_remapping
+               ))
       {
 #ifdef HAVE_CONFIGFILE
          switch (action_type)

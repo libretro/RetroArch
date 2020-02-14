@@ -45,7 +45,8 @@ bool input_remapping_load_file(void *data, const char *path);
  **/
 bool input_remapping_save_file(const char *path);
 
-bool input_remapping_remove_file(const char *path);
+bool input_remapping_remove_file(const char *path,
+      const char *dir_input_remapping);
 
 void input_remapping_set_defaults(bool deinit);
 
