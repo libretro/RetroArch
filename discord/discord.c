@@ -451,6 +451,12 @@ void discord_update(enum discord_presence presence, bool fuzzy_archive_match)
             }
          }
          break;
+#ifdef HAVE_CHEEVOS
+      case DISCORD_PRESENCE_RETROACHIEVEMENTS:
+         discord_presence.details = rcheevos_get_richpresence();
+         presence = DISCORD_PRESENCE_GAME;
+         break;
+#endif
       case DISCORD_PRESENCE_SHUTDOWN:
             discord_presence.partyId    = NULL;
             discord_presence.partyMax   = 0;

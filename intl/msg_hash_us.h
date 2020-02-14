@@ -541,6 +541,10 @@ MSG_HASH(
     "Leaderboards"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEEVOS_RICHPRESENCE_ENABLE,
+    "Rich Presence"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEEVOS_BADGES_ENABLE,
     "Achievement Badges"
     )
@@ -4564,6 +4568,10 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_CHEEVOS_LEADERBOARDS_ENABLE,
     "Game specific leaderboards.\n"
     "Has no effect if Hardcore Mode is disabled."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEEVOS_RICHPRESENCE_ENABLE,
+    "Sends detailed play status to the RetroAchievements website."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CHEEVOS_BADGES_ENABLE,
