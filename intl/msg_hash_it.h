@@ -3811,32 +3811,8 @@ MSG_HASH(
    "Azerbaijani"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_ALBANIAN,
-   "Albanese"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_AFRIKAANS,
-   "Afrikaans"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_ESTONIAN,
    "Estone"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_FILIPINO,
-   "Filippino"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_FINNISH,
-   "Finnish"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_GALICIAN,
-   "Galician"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_GEORGIAN,
-   "Georgian"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_GUJARATI,
@@ -3859,16 +3835,8 @@ MSG_HASH(
    "Ungherese"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_ICELANDIC,
-   "Icelandic"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_INDONESIAN,
    "Indonesiano"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_IRISH,
-   "Irish"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_KANNADA,
@@ -3945,14 +3913,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_URDU,
    "Urdu"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_WELSH,
-   "Welsh"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_YIDDISH,
-   "Yiddish"
    )
 MSG_HASH(MENU_ENUM_SUBLABEL_LOAD_DISC,
       "Carica un disco fisico multimediale. Dovresti prima selezionare il core (Carica Core) che intendi utilizzare con il disco.")

@@ -47,10 +47,8 @@ void switch_ctx_destroy(void *data)
 }
 
 static void switch_ctx_get_video_size(void *data,
-                                      unsigned *width, unsigned *height)
+      unsigned *width, unsigned *height)
 {
-   switch_ctx_data_t *ctx_nx = (switch_ctx_data_t *)data;
-
    switch (appletGetOperationMode())
       {
          default:
@@ -305,7 +303,42 @@ bool switch_ctx_get_metrics(void *data,
    switch (type)
    {
       case DISPLAY_METRIC_DPI:
-         *value = 236.87; /* FIXME: Don't hardcode this value */
+         /* FIXME: DPI values should be obtained by querying
+          * the hardware - these hard-coded values are a kludge */
+         switch (appletGetOperationMode())
+         {
+            case AppletOperationMode_Docked:
+               /* Docked mode
+                * > Resolution:  1920x1080
+                * > Screen Size: 39 inch
+                *   - Have to make an assumption here. We select
+                *     a 'default' screen size of 39 inches which
+                *     corresponds to the optimal diagonal screen
+                *     size for HD television as reported in:
+                *       "HDTV displays: subjective effects of scanning
+                *       standards and domestic picture sizes,"
+                *       N. E. Tanton and M. A. Stone,
+                *       BBC Research Department Report 1989/09,
+                *       January 1989
+                *     This agrees with the median recorded TV
+                *     size in:
+                *       "A Survey of UK Television Viewing Conditions,"
+                *       Katy C. Noland and Louise H. Truong,
+                *       BBC R&D White Paper WHP 287 January 2015
+                * > DPI:         sqrt((1920 * 1920) + (1080 * 1080)) / 39
+                */
+               *value = 56.48480f;
+               break;
+            case AppletOperationMode_Handheld:
+            default:
+               /* Handheld mode
+                * > Resolution:  1280x720
+                * > Screen size: 6.2 inch
+                * > DPI:         sqrt((1280 * 1280) + (720 * 720)) / 6.2
+                */
+               *value = 236.8717f;
+               break;
+         }
          return true;
       default:
          break;

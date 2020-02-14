@@ -106,31 +106,12 @@ static void *ui_companion_win32_init(void)
    return handle;
 }
 
-static void ui_companion_win32_notify_content_loaded(void *data)
-{
-   (void)data;
-}
-
-static void ui_companion_win32_toggle(void *data, bool force)
-{
-   (void)data;
-   (void)force;
-}
-
+static void ui_companion_win32_notify_content_loaded(void *data) { }
+static void ui_companion_win32_toggle(void *data, bool force) { }
 static void ui_companion_win32_event_command(
-      void *data, enum event_command cmd)
-{
-   (void)data;
-   (void)cmd;
-}
-
+      void *data, enum event_command cmd) { }
 static void ui_companion_win32_notify_list_pushed(void *data,
-        file_list_t *list, file_list_t *menu_list)
-{
-    (void)data;
-    (void)list;
-    (void)menu_list;
-}
+        file_list_t *list, file_list_t *menu_list) { }
 
 ui_companion_driver_t ui_companion_win32 = {
    ui_companion_win32_init,

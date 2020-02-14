@@ -575,23 +575,6 @@ static bool win32_drag_query_file(HWND hwnd, WPARAM wparam)
    return false;
 }
 
-static void win32_set_position_from_config(void)
-{
-   settings_t *settings  = config_get_ptr();
-   int border_thickness  = GetSystemMetrics(SM_CXSIZEFRAME);
-   int title_bar_height  = GetSystemMetrics(SM_CYCAPTION);
-
-   if (!settings->bools.video_window_save_positions)
-      return;
-
-   g_win32_pos_x         = settings->uints.window_position_x;
-   g_win32_pos_y         = settings->uints.window_position_y;
-   g_win32_pos_width     = settings->uints.window_position_width
-      + border_thickness * 2;
-   g_win32_pos_height    = settings->uints.window_position_height
-      + border_thickness * 2 + title_bar_height;
-}
-
 static void win32_save_position(void)
 {
    RECT rect;
@@ -943,16 +926,15 @@ static LRESULT CALLBACK WndProcCommon(bool *quit, HWND hwnd, UINT message,
                return 0;
          }
          return DefWindowProc(hwnd, message, wparam, lparam);
-      case WM_MOVE:
-         win32_save_position();
-         break;
+
       case WM_CLOSE:
       case WM_DESTROY:
       case WM_QUIT:
-         win32_save_position();
-
          g_win32_quit  = true;
          *quit         = true;
+         /* fall-through */
+      case WM_MOVE:
+         win32_save_position();
          break;
       case WM_SIZE:
          /* Do not send resize message if we minimize. */
@@ -1515,7 +1497,17 @@ void win32_set_style(MONITORINFOEX *current_mon, HMONITOR *hm_to_use,
 
       if (settings->bools.video_window_save_positions)
       {
-         win32_set_position_from_config();
+         /* Set position from config */
+         int border_thickness  = GetSystemMetrics(SM_CXSIZEFRAME);
+         int title_bar_height  = GetSystemMetrics(SM_CYCAPTION);
+
+         g_win32_pos_x         = settings->uints.window_position_x;
+         g_win32_pos_y         = settings->uints.window_position_y;
+         g_win32_pos_width     = settings->uints.window_position_width
+            + border_thickness * 2;
+         g_win32_pos_height    = settings->uints.window_position_height
+            + border_thickness * 2 + title_bar_height;
+
          if (g_win32_pos_width != 0 && g_win32_pos_height != 0)
             position_set_from_config = true;
       }

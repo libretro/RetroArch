@@ -2567,7 +2567,8 @@ static int setting_action_ok_bind_all_save_autoconfig(rarch_setting_t *setting,
    index_offset = setting->index_offset;
    name         = input_config_get_device_name(index_offset);
 
-   if(!string_is_empty(name) && config_save_autoconf_profile(name, index_offset))
+   if (!string_is_empty(name) && 
+         config_save_autoconf_profile(name, index_offset))
       runloop_msg_queue_push(
             msg_hash_to_str(MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY), 1, 100, true,
             NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
@@ -6861,7 +6862,7 @@ static void overlay_auto_rotate_toggle_change_handler(rarch_setting_t *setting)
 #ifdef HAVE_VIDEO_LAYOUT
 static void change_handler_video_layout_enable(rarch_setting_t *setting)
 {
-   if(*setting->value.target.boolean)
+   if (*setting->value.target.boolean)
    {
       settings_t *settings = config_get_ptr();
       void *driver = video_driver_get_ptr(false);
@@ -11780,6 +11781,48 @@ static bool setting_append_list(
                &subgroup_info,
                parent_group);
 
+         /* This is the SETTINGS_LIST_FONT category, but the
+          * parent group is ONSCREEN_DISPLAY_SETTINGS.
+          * Menu widget settings don't belong in the SETTINGS_LIST_FONT
+          * category, but they *do* belong in the ONSCREEN_DISPLAY_SETTINGS
+          * group. I don't want to refactor these names, so we'll assume
+          * group trumps category, and just place the widget settings here */
+#ifdef HAVE_MENU_WIDGETS
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.menu_widget_scale_auto,
+               MENU_ENUM_LABEL_MENU_WIDGET_SCALE_AUTO,
+               MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_AUTO,
+               DEFAULT_MENU_WIDGET_SCALE_AUTO,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE
+               );
+         (*list)[list_info->index - 1].action_ok     = &setting_bool_action_left_with_refresh;
+         (*list)[list_info->index - 1].action_left   = &setting_bool_action_left_with_refresh;
+         (*list)[list_info->index - 1].action_right  = &setting_bool_action_right_with_refresh;
+
+         CONFIG_FLOAT(
+               list, list_info,
+               &settings->floats.menu_widget_scale_factor,
+               MENU_ENUM_LABEL_MENU_WIDGET_SCALE_FACTOR,
+               MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_FACTOR,
+               DEFAULT_MENU_WIDGET_SCALE_FACTOR,
+               "%.2fx",
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+         menu_settings_list_current_add_range(list, list_info, 0.2, 5.0, 0.01, true, true);
+#endif
+
          CONFIG_BOOL(
                list, list_info,
                &settings->bools.video_font_enable,
@@ -12863,9 +12906,11 @@ static bool setting_append_list(
 
          START_SUB_GROUP(list, list_info, "Display", &group_info, &subgroup_info, parent_group);
 
-         /* Only implemented for GLUI and XMB at present */
+         /* > MaterialUI, XMB and Ozone all support menu scaling */
          if (string_is_equal(settings->arrays.menu_driver, "glui") ||
-             string_is_equal(settings->arrays.menu_driver, "xmb"))
+             string_is_equal(settings->arrays.menu_driver, "xmb") ||
+             string_is_equal(settings->arrays.menu_driver, "ozone"))
+         {
             CONFIG_FLOAT(
                   list, list_info,
                   &settings->floats.menu_scale_factor,
@@ -12880,6 +12925,7 @@ static bool setting_append_list(
                   general_read_handler);
             (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
             menu_settings_list_current_add_range(list, list_info, 0.2, 5.0, 0.01, true, true);
+         }
 
 #ifdef HAVE_XMB
          if (string_is_equal(settings->arrays.menu_driver, "xmb"))
@@ -15488,7 +15534,7 @@ static bool setting_append_list(
                sizeof(settings->paths.network_buildbot_url),
                MENU_ENUM_LABEL_CORE_UPDATER_BUILDBOT_URL,
                MENU_ENUM_LABEL_VALUE_CORE_UPDATER_BUILDBOT_URL,
-               buildbot_server_url,
+               DEFAULT_BUILDBOT_SERVER_URL,
                &group_info,
                &subgroup_info,
                parent_group,
@@ -15585,7 +15631,7 @@ static bool setting_append_list(
                   sizeof(settings->arrays.netplay_mitm_server),
                   MENU_ENUM_LABEL_NETPLAY_MITM_SERVER,
                   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER,
-                  netplay_mitm_server,
+                  DEFAULT_NETPLAY_MITM_SERVER,
                   &group_info,
                   &subgroup_info,
                   parent_group,
@@ -16806,7 +16852,7 @@ static bool setting_append_list(
                sizeof(settings->arrays.midi_input),
                MENU_ENUM_LABEL_MIDI_INPUT,
                MENU_ENUM_LABEL_VALUE_MIDI_INPUT,
-               midi_input,
+               DEFAULT_MIDI_INPUT,
                &group_info,
                &subgroup_info,
                parent_group,
@@ -16822,7 +16868,7 @@ static bool setting_append_list(
                sizeof(settings->arrays.midi_output),
                MENU_ENUM_LABEL_MIDI_OUTPUT,
                MENU_ENUM_LABEL_VALUE_MIDI_OUTPUT,
-               midi_output,
+               DEFAULT_MIDI_OUTPUT,
                &group_info,
                &subgroup_info,
                parent_group,

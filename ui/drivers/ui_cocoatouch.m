@@ -45,6 +45,8 @@ static id apple_platform;
 #endif
 static CFRunLoopObserverRef iterate_observer;
 
+static size_t old_size = 0;
+
 /* forward declaration */
 static void apple_rarch_exited(void);
 
@@ -71,10 +73,7 @@ static void rarch_disable_ui(void)
 }
 
 static void ui_companion_cocoatouch_event_command(
-      void *data, enum event_command cmd)
-{
-    (void)data;
-}
+      void *data, enum event_command cmd) { }
 
 static void rarch_draw_observer(CFRunLoopObserverRef observer,
     CFRunLoopActivity activity, void *info)
@@ -530,18 +529,6 @@ int main(int argc, char *argv[])
    }
 }
 
-#if 0
-static void apple_display_alert(const char *message, const char *title)
-{
-   UIAlertView* alert = [[UIAlertView alloc] initWithTitle:BOXSTRING(title)
-                                             message:BOXSTRING(message)
-                                             delegate:nil
-                                             cancelButtonTitle:BOXSTRING("OK")
-                                             otherButtonTitles:nil];
-   [alert show];
-}
-#endif
-
 static void apple_rarch_exited(void)
 {
     RetroArch_iOS *ap = (RetroArch_iOS *)apple_platform;
@@ -598,8 +585,6 @@ static void *ui_companion_cocoatouch_init(void)
 
    return handle;
 }
-
-static size_t old_size = 0;
 
 static void ui_companion_cocoatouch_notify_list_pushed(void *data,
    file_list_t *list, file_list_t *menu_list)

@@ -623,6 +623,11 @@ static enum menu_driver_enum MENU_DEFAULT_DRIVER = MENU_NULL;
 #define SETTING_OVERRIDE(override_setting) \
    tmp[count-1].override = override_setting
 
+/* Forward declarations */
+#ifdef HAVE_CONFIGFILE
+static void config_parse_file(global_t *global);
+#endif
+
 struct defaults g_defaults;
 
 /**
@@ -1166,8 +1171,8 @@ static struct config_array_setting *populate_settings_array(settings_t *settings
    SETTING_ARRAY("led_driver",               settings->arrays.led_driver, false, NULL, true);
    SETTING_ARRAY("netplay_mitm_server",      settings->arrays.netplay_mitm_server, false, NULL, true);
    SETTING_ARRAY("midi_driver",              settings->arrays.midi_driver, false, NULL, true);
-   SETTING_ARRAY("midi_input",               settings->arrays.midi_input, true, midi_input, true);
-   SETTING_ARRAY("midi_output",              settings->arrays.midi_output, true, midi_output, true);
+   SETTING_ARRAY("midi_input",               settings->arrays.midi_input, true, DEFAULT_MIDI_INPUT, true);
+   SETTING_ARRAY("midi_output",              settings->arrays.midi_output, true, DEFAULT_MIDI_OUTPUT, true);
    SETTING_ARRAY("youtube_stream_key",       settings->arrays.youtube_stream_key, true, NULL, true);
    SETTING_ARRAY("twitch_stream_key",       settings->arrays.twitch_stream_key, true, NULL, true);
    SETTING_ARRAY("discord_app_id",           settings->arrays.discord_app_id, true, DEFAULT_DISCORD_APP_ID, true);
@@ -1418,7 +1423,8 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
    SETTING_BOOL("keyboard_gamepad_enable",       &settings->bools.input_keyboard_gamepad_enable, true, true, false);
    SETTING_BOOL("core_set_supports_no_game_enable", &settings->bools.set_supports_no_game_enable, true, true, false);
    SETTING_BOOL("audio_enable",                  &settings->bools.audio_enable, true, DEFAULT_AUDIO_ENABLE, false);
-   SETTING_BOOL("menu_enable_widgets",             &settings->bools.menu_enable_widgets, true, DEFAULT_MENU_ENABLE_WIDGETS, false);
+   SETTING_BOOL("menu_enable_widgets",           &settings->bools.menu_enable_widgets, true, DEFAULT_MENU_ENABLE_WIDGETS, false);
+   SETTING_BOOL("menu_widget_scale_auto",        &settings->bools.menu_widget_scale_auto, true, DEFAULT_MENU_WIDGET_SCALE_AUTO, false);
    SETTING_BOOL("audio_enable_menu",             &settings->bools.audio_enable_menu, true, audio_enable_menu, false);
    SETTING_BOOL("audio_enable_menu_ok",          &settings->bools.audio_enable_menu_ok, true, audio_enable_menu_ok, false);
    SETTING_BOOL("audio_enable_menu_cancel",      &settings->bools.audio_enable_menu_cancel, true, audio_enable_menu_cancel, false);
@@ -1694,6 +1700,7 @@ static struct config_float_setting *populate_settings_float(settings_t *settings
 #endif
 #ifdef HAVE_MENU
    SETTING_FLOAT("menu_scale_factor",        &settings->floats.menu_scale_factor, true, DEFAULT_MENU_SCALE_FACTOR, false);
+   SETTING_FLOAT("menu_widget_scale_factor", &settings->floats.menu_widget_scale_factor, true, DEFAULT_MENU_WIDGET_SCALE_FACTOR, false);
    SETTING_FLOAT("menu_wallpaper_opacity",   &settings->floats.menu_wallpaper_opacity, true, menu_wallpaper_opacity, false);
    SETTING_FLOAT("menu_framebuffer_opacity", &settings->floats.menu_framebuffer_opacity, true, menu_framebuffer_opacity, false);
    SETTING_FLOAT("menu_footer_opacity",      &settings->floats.menu_footer_opacity,    true, menu_footer_opacity, false);
@@ -1979,7 +1986,7 @@ void config_set_defaults(void *data)
    const char *def_location        = config_get_default_location();
    const char *def_record          = config_get_default_record();
    const char *def_midi            = config_get_default_midi();
-   const char *def_mitm            = netplay_mitm_server;
+   const char *def_mitm            = DEFAULT_NETPLAY_MITM_SERVER;
    struct config_float_setting      *float_settings = populate_settings_float  (settings, &float_settings_size);
    struct config_bool_setting       *bool_settings  = populate_settings_bool  (settings, &bool_settings_size);
    struct config_int_setting        *int_settings   = populate_settings_int   (settings, &int_settings_size);
@@ -2165,7 +2172,7 @@ void config_set_defaults(void *data)
       }
    }
 
-   strlcpy(settings->paths.network_buildbot_url, buildbot_server_url,
+   strlcpy(settings->paths.network_buildbot_url, DEFAULT_BUILDBOT_SERVER_URL,
          sizeof(settings->paths.network_buildbot_url));
    strlcpy(settings->paths.network_buildbot_assets_url,
          DEFAULT_BUILDBOT_ASSETS_SERVER_URL,
@@ -2420,12 +2427,10 @@ void config_set_defaults(void *data)
       free(temp_str);
    }
 
-   if (midi_input)
-      strlcpy(settings->arrays.midi_input,
-            midi_input, sizeof(settings->arrays.midi_input));
-   if (midi_output)
-      strlcpy(settings->arrays.midi_output,
-            midi_output, sizeof(settings->arrays.midi_output));
+   strlcpy(settings->arrays.midi_input,
+         DEFAULT_MIDI_INPUT, sizeof(settings->arrays.midi_input));
+   strlcpy(settings->arrays.midi_output,
+         DEFAULT_MIDI_OUTPUT, sizeof(settings->arrays.midi_output));
 
 #ifdef HAVE_CONFIGFILE
    /* Avoid reloading config on every content load */
@@ -3597,9 +3602,8 @@ success:
  * Loads a config file and reads all the values into memory.
  *
  */
-void config_parse_file(void *data)
+static void config_parse_file(global_t *global)
 {
-   global_t *global = (global_t*)data;
    if (path_is_empty(RARCH_PATH_CONFIG))
    {
       RARCH_LOG("[config] Loading default config.\n");

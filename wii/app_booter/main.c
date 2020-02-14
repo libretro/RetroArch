@@ -73,10 +73,10 @@ static uint32_t load_elf_image (void *elfstart)
    Elf32_Phdr *phdrs = NULL;
    Elf32_Ehdr *ehdr  = (Elf32_Ehdr*) elfstart;
 
-   if(ehdr->e_phoff == 0 || ehdr->e_phnum == 0)
+   if (ehdr->e_phoff == 0 || ehdr->e_phnum == 0)
       return 0;
 
-   if(ehdr->e_phentsize != sizeof(Elf32_Phdr))
+   if (ehdr->e_phentsize != sizeof(Elf32_Phdr))
       return 0;
 
    phdrs = (Elf32_Phdr*)(elfstart + ehdr->e_phoff);
@@ -85,16 +85,16 @@ static uint32_t load_elf_image (void *elfstart)
    {
       uint8_t *image;
 
-      if(phdrs[i].p_type != PT_LOAD)
+      if (phdrs[i].p_type != PT_LOAD)
          continue;
 
       phdrs[i].p_paddr &= 0x3FFFFFFF;
       phdrs[i].p_paddr |= 0x80000000;
 
-      if(phdrs[i].p_filesz > phdrs[i].p_memsz)
+      if (phdrs[i].p_filesz > phdrs[i].p_memsz)
          return 0;
 
-      if(!phdrs[i].p_filesz)
+      if (!phdrs[i].p_filesz)
          continue;
 
       image = (uint8_t*)(elfstart + phdrs[i].p_offset);
@@ -111,7 +111,7 @@ static uint32_t load_dol_image(const void *dolstart)
 	uint32_t i;
    dolheader *dolfile = NULL;
 
-	if(!dolstart)
+	if (!dolstart)
 		return 0;
 
 	dolfile = (dolheader *) dolstart;

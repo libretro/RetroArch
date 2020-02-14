@@ -252,6 +252,7 @@ static bool connmanctl_ssid_is_online(unsigned i)
 
 static bool connmanctl_connect_ssid(unsigned i, const char* passphrase)
 {
+   unsigned i;
    char ln[512]                        = {0};
    char name[64]                       = {0};
    char service[128]                   = {0};
@@ -279,7 +280,7 @@ static bool connmanctl_connect_ssid(unsigned i, const char* passphrase)
       return false;
    }
 
-   for (int i = 0; i < list->size-1; i++)
+   for (i = 0; i < list->size-1; i++)
    {
       strlcat(name, list->elems[i].data, sizeof(name));
       strlcat(name, " ", sizeof(name));
@@ -301,7 +302,7 @@ static bool connmanctl_connect_ssid(unsigned i, const char* passphrase)
    fprintf(settings_file, "Name=%s\n", name);
    fprintf(settings_file, "SSID=");
 
-   for (int i=0; i < strlen(name); i++)
+   for (i = 0; i < strlen(name); i++)
       fprintf(settings_file, "%02x", (unsigned int) name[i]);
    fprintf(settings_file, "\n");
 

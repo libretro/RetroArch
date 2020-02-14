@@ -223,10 +223,6 @@
 
 #include "retroarch.h"
 
-#ifdef HAVE_RUNAHEAD
-#include "runahead/mylist.h"
-#endif
-
 #ifdef HAVE_ACCESSIBILITY
 #include "accessibility.h"
 #endif
@@ -1195,6 +1191,8 @@ static char current_savestate_dir[PATH_MAX_LENGTH]      = {0};
 static char dir_savestate[PATH_MAX_LENGTH]              = {0};
 
 /* Forward declarations */
+static void ui_companion_driver_toggle(bool force);
+
 static const void *location_driver_find_handle(int idx);
 static const void *audio_driver_find_handle(int idx);
 static const void *video_driver_find_handle(int idx);
@@ -1231,7 +1229,8 @@ static void rarch_init_core_options(
 static void bsv_movie_set_path(const char *path);
 
 struct string_list *dir_list_new_special(const char *input_dir,
-      enum dir_list_type type, const char *filter)
+      enum dir_list_type type, const char *filter,
+      bool show_hidden_files)
 {
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    char ext_shaders[255];
@@ -1239,7 +1238,6 @@ struct string_list *dir_list_new_special(const char *input_dir,
    char ext_name[255];
    const char *exts                  = NULL;
    bool recursive                    = false;
-   settings_t *settings              = configuration_settings;
 
    switch (type)
    {
@@ -1320,7 +1318,7 @@ struct string_list *dir_list_new_special(const char *input_dir,
    }
 
    return dir_list_new(input_dir, exts, false,
-         settings->bools.show_hidden_files,
+         show_hidden_files,
          type == DIR_LIST_CORE_INFO, recursive);
 }
 
@@ -2275,8 +2273,9 @@ static bool dir_init_shader(const char *path_dir_shader)
 {
    unsigned i;
    struct rarch_dir_list *dir_list = (struct rarch_dir_list*)&dir_shader_list;
+   settings_t *settings            = configuration_settings;
 
-   dir_list->list = dir_list_new_special(path_dir_shader, DIR_LIST_SHADERS, NULL);
+   dir_list->list = dir_list_new_special(path_dir_shader, DIR_LIST_SHADERS, NULL, settings->bools.show_hidden_files);
 
    if (!dir_list->list || dir_list->list->size == 0)
    {
@@ -2533,10 +2532,7 @@ void dir_check_defaults(void)
 /* Is text-to-speech accessibility turned on? */
 static bool accessibility_enabled               = false;
 
-static bool pi_set                              = false;
-
 /* Accessibility */
-static int speak_pid                            = 0;
 
 bool is_accessibility_enabled(void)
 {
@@ -3239,6 +3235,18 @@ static bool request_fast_savestate              = false;
 static bool hard_disable_audio                  = false;
 
 /* Save State List for Run Ahead */
+typedef void *(*constructor_t)(void);
+typedef void  (*destructor_t )(void*);
+
+typedef struct MyList_t
+{
+   void **data;
+   int capacity;
+   int size;
+   constructor_t constructor;
+   destructor_t destructor;
+} MyList;
+
 static MyList *runahead_save_state_list         = NULL;
 static MyList *input_state_list                 = NULL;
 
@@ -3555,31 +3563,6 @@ static char *strcpy_alloc_force(const char *src)
    return result;
 }
 
-static void strcat_alloc(char **dst, const char *s)
-{
-   size_t len1;
-   char *src  = *dst;
-
-   if (!src)
-   {
-      src     = strcpy_alloc_force(s);
-      *dst    = src;
-      return;
-   }
-
-   if (!s)
-      return;
-
-   len1       = strlen(src);
-   src        = (char*)realloc(src, len1 + strlen(s) + 1);
-
-   if (!src)
-      return;
-
-   *dst       = src;
-   strcpy(src + len1, s);
-}
-
 #if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
 /* Forward declarations */
 static bool secondary_core_create(void);
@@ -3868,35 +3851,36 @@ static bool command_show_osd_msg(const char* arg)
 
 static bool command_get_config_param(const char* arg)
 {
-       char reply[4096]     = {0};
-       const char* value    = "unsupported";
-       settings_t* settings = config_get_ptr();
-              
-       if (!strcmp(arg, "video_fullscreen")) {
-           if(configuration_settings->bools.video_fullscreen)
-            value = "true";
-           else
-            value = "false";
-        }
-       else if (!strcmp(arg, "savefile_directory"))
-           value = dir_get(RARCH_DIR_SAVEFILE);
-       else if (!strcmp(arg, "savestate_directory"))
-           value = dir_get(RARCH_DIR_SAVESTATE);
-       else if (!strcmp(arg, "runtime_log_directory"))
-           value = settings->paths.directory_runtime_log;
-       else if (!strcmp(arg, "log_dir"))
-           value = settings->paths.log_dir;
-       else if (!strcmp(arg, "cache_directory"))
-           value = settings->paths.directory_cache;
-       else if (!strcmp(arg, "system_directory"))
-           value = settings->paths.directory_system;
-       else if (!strcmp(arg, "netplay_nickname"))
-           value = settings->paths.username;
-       /* TODO: query any string */
-       
-       snprintf(reply, sizeof(reply), "GET_CONFIG_PARAM %s %s\n", arg, value);
-       command_reply(reply, strlen(reply));
-       return true;
+   char reply[4096]     = {0};
+   const char* value    = "unsupported";
+   settings_t* settings = configuration_settings;
+
+   if (string_is_equal(arg, "video_fullscreen"))
+   {
+      if (configuration_settings->bools.video_fullscreen)
+         value = "true";
+      else
+         value = "false";
+   }
+   else if (string_is_equal(arg, "savefile_directory"))
+      value = dir_get(RARCH_DIR_SAVEFILE);
+   else if (string_is_equal(arg, "savestate_directory"))
+      value = dir_get(RARCH_DIR_SAVESTATE);
+   else if (string_is_equal(arg, "runtime_log_directory"))
+      value = settings->paths.directory_runtime_log;
+   else if (string_is_equal(arg, "log_dir"))
+      value = settings->paths.log_dir;
+   else if (string_is_equal(arg, "cache_directory"))
+      value = settings->paths.directory_cache;
+   else if (string_is_equal(arg, "system_directory"))
+      value = settings->paths.directory_system;
+   else if (string_is_equal(arg, "netplay_nickname"))
+      value = settings->paths.username;
+   /* TODO: query any string */
+
+   snprintf(reply, sizeof(reply), "GET_CONFIG_PARAM %s %s\n", arg, value);
+   command_reply(reply, strlen(reply));
+   return true;
 }
 
 #if defined(HAVE_CHEEVOS)
@@ -5435,7 +5419,7 @@ static void command_event_set_volume(float gain)
 
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
    if (menu_widgets_inited)
-      menu_widgets_volume_update_and_show();
+      menu_widgets_volume_update_and_show(settings->floats.audio_volume);
    else
 #endif
       runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
@@ -5604,7 +5588,8 @@ static void command_event_deinit_core(bool reinit)
 
 static void command_event_init_cheats(void)
 {
-   bool        allow_cheats      = true;
+   settings_t     *settings = configuration_settings;
+   bool        allow_cheats = true;
 
 #ifdef HAVE_NETWORKING
    allow_cheats &= !netplay_driver_ctl(
@@ -5616,13 +5601,11 @@ static void command_event_init_cheats(void)
       return;
 
    cheat_manager_alloc_if_empty();
-   cheat_manager_load_game_specific_cheats();
+   cheat_manager_load_game_specific_cheats(
+         settings->paths.path_cheat_database);
 
-   {
-      settings_t *settings = configuration_settings;
-      if (settings && settings->bools.apply_cheats_after_load)
-         cheat_manager_apply_cheats();
-   }
+   if (settings->bools.apply_cheats_after_load)
+      cheat_manager_apply_cheats();
 }
 
 static void command_event_load_auto_state(void)
@@ -5694,7 +5677,8 @@ static void command_event_set_savestate_auto_index(void)
    fill_pathname_basedir(state_dir, global->name.savestate,
          state_size);
 
-   dir_list = dir_list_new_special(state_dir, DIR_LIST_PLAIN, NULL);
+   dir_list = dir_list_new_special(state_dir, DIR_LIST_PLAIN, NULL,
+         settings->bools.show_hidden_files);
 
    free(state_dir);
 
@@ -5893,18 +5877,16 @@ static void command_event_runtime_log_init(void)
       strlcpy(runtime_core_path, core_path, sizeof(runtime_core_path));
 }
 
-static void retroarch_set_frame_limit(void)
+static void retroarch_set_frame_limit(float fastforward_ratio_orig)
 {
-   settings_t                 *settings = configuration_settings;
    struct retro_system_av_info *av_info = &video_driver_av_info;
-   float fastforward_ratio_orig         = settings->floats.fastforward_ratio;
-   float fastforward_ratio              = (fastforward_ratio_orig == 0.0f) ? 1.0f : fastforward_ratio_orig;
+   float fastforward_ratio              = (fastforward_ratio_orig == 0.0f) 
+      ? 1.0f : fastforward_ratio_orig;
 
    frame_limit_last_time                = cpu_features_get_time_usec();
    frame_limit_minimum_time             = (retro_time_t)roundf(1000000.0f
          / (av_info->timing.fps * fastforward_ratio));
 }
-
 
 static bool command_event_init_core(enum rarch_core_type type)
 {
@@ -5941,7 +5923,6 @@ static bool command_event_init_core(enum rarch_core_type type)
          sizeof(runloop_system.valid_extensions));
 
 #ifdef HAVE_CONFIGFILE
-   /* auto overrides: apply overrides */
    if (settings->bools.auto_overrides_enable)
       runloop_overrides_active = config_load_override(&runloop_system);
 #endif
@@ -5987,7 +5968,7 @@ static bool command_event_init_core(enum rarch_core_type type)
    if (!core_load(settings->uints.input_poll_type_behavior))
       return false;
 
-   retroarch_set_frame_limit();
+   retroarch_set_frame_limit(configuration_settings->floats.fastforward_ratio);
    command_event_runtime_log_init();
    return true;
 }
@@ -6918,7 +6899,7 @@ TODO: Add a setting for these tweaks */
 
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
             if (menu_widgets_inited)
-               menu_widgets_volume_update_and_show();
+               menu_widgets_volume_update_and_show(configuration_settings->floats.audio_volume);
             else
 #endif
                runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
@@ -7285,7 +7266,10 @@ TODO: Add a setting for these tweaks */
       case CMD_EVENT_SHADERS_APPLY_CHANGES:
 #ifdef HAVE_MENU
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-         menu_shader_manager_apply_changes(menu_shader_get());
+         menu_shader_manager_apply_changes(menu_shader_get(),
+               configuration_settings->paths.directory_video_shader,
+               configuration_settings->paths.directory_menu_config
+               );
 #endif
 #endif
          ui_companion_event_command(cmd);
@@ -7752,7 +7736,8 @@ TODO: Add a setting for these tweaks */
          command_event_set_mixer_volume(-0.5f);
          break;
       case CMD_EVENT_SET_FRAME_LIMIT:
-         retroarch_set_frame_limit();
+         retroarch_set_frame_limit(
+               configuration_settings->floats.fastforward_ratio);
          break;
       case CMD_EVENT_DISCORD_INIT:
 #ifdef HAVE_DISCORD
@@ -9802,17 +9787,21 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
       case RETRO_ENVIRONMENT_GET_PREFERRED_HW_RENDER:
       {
          unsigned *cb = (unsigned*)data;
-         settings_t *settings  = configuration_settings;
+         settings_t *settings          = configuration_settings;
+         const char *video_driver_name = settings->arrays.video_driver;
+
          RARCH_LOG("[Environ]: GET_PREFERRED_HW_RENDER.\n");
+
          if (!settings->bools.driver_switch_enable)
              return false;
-         else if (!strcmp(settings->arrays.video_driver, "glcore"))
+
+         if (string_is_equal(video_driver_name, "glcore"))
              *cb = RETRO_HW_CONTEXT_OPENGL_CORE;
-         else if (!strcmp(settings->arrays.video_driver, "gl"))
+         else if (string_is_equal(video_driver_name, "gl"))
              *cb = RETRO_HW_CONTEXT_OPENGL;
-         else if (!strcmp(settings->arrays.video_driver, "vulkan"))
+         else if (string_is_equal(video_driver_name, "vulkan"))
              *cb = RETRO_HW_CONTEXT_VULKAN;
-         else if (!strncmp(settings->arrays.video_driver, "d3d", 3))
+         else if (!strncmp(video_driver_name, "d3d", 3))
              *cb = RETRO_HW_CONTEXT_DIRECT3D;
          else
              *cb = RETRO_HW_CONTEXT_NONE;
@@ -10007,12 +9996,13 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
 
       case RETRO_ENVIRONMENT_GET_CORE_ASSETS_DIRECTORY:
       {
-         const char **dir = (const char**)data;
+         const char **dir            = (const char**)data;
+         const char *dir_core_assets = settings->paths.directory_core_assets;
 
-         *dir = *settings->paths.directory_core_assets ?
-            settings->paths.directory_core_assets : NULL;
+         *dir = *dir_core_assets ?
+            dir_core_assets : NULL;
          RARCH_LOG("[Environ]: CORE_ASSETS_DIRECTORY: \"%s\".\n",
-               settings->paths.directory_core_assets);
+               dir_core_assets);
          break;
       }
 
@@ -10930,6 +10920,31 @@ static void set_load_content_info(const retro_ctx_load_content_info_t *ctx)
 
 /* RUNAHEAD - SECONDARY CORE  */
 #if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
+static void strcat_alloc(char **dst, const char *s)
+{
+   size_t len1;
+   char *src  = *dst;
+
+   if (!src)
+   {
+      src     = strcpy_alloc_force(s);
+      *dst    = src;
+      return;
+   }
+
+   if (!s)
+      return;
+
+   len1       = strlen(src);
+   src        = (char*)realloc(src, len1 + strlen(s) + 1);
+
+   if (!src)
+      return;
+
+   *dst       = src;
+   strcpy(src + len1, s);
+}
+
 static void secondary_core_destroy(void)
 {
    if (!secondary_module)
@@ -11522,7 +11537,7 @@ void ui_companion_driver_init_first(void)
    }
 }
 
-void ui_companion_driver_toggle(bool force)
+static void ui_companion_driver_toggle(bool force)
 {
 #ifdef HAVE_QT
    settings_t *settings = configuration_settings;
@@ -11537,7 +11552,7 @@ void ui_companion_driver_toggle(bool force)
       if ((settings->bools.ui_companion_toggle || force) && !qt_is_inited)
       {
          ui_companion_qt_data = ui_companion_qt.init();
-         qt_is_inited = true;
+         qt_is_inited         = true;
       }
 
       if (ui_companion_qt.toggle && qt_is_inited)
@@ -11940,30 +11955,34 @@ static bool recording_init(void)
       strlcpy(output, global->record.path, sizeof(output));
    else
    {
+      const char *stream_url        = settings->paths.path_stream_url;
+      unsigned video_record_quality = settings->uints.video_record_quality;
+      unsigned video_stream_port    = settings->uints.video_stream_port;
       if (streaming_enable)
-         if (!string_is_empty(settings->paths.path_stream_url))
-            strlcpy(output, settings->paths.path_stream_url, sizeof(output));
+         if (!string_is_empty(stream_url))
+            strlcpy(output, stream_url, sizeof(output));
          else
             /* Fallback, stream locally to 127.0.0.1 */
-            snprintf(output, sizeof(output), "udp://127.0.0.1:%u", settings->uints.video_stream_port);
+            snprintf(output, sizeof(output), "udp://127.0.0.1:%u",
+                  video_stream_port);
       else
       {
          const char *game_name = path_basename(path_get(RARCH_PATH_BASENAME));
-         if (settings->uints.video_record_quality < RECORD_CONFIG_TYPE_RECORDING_WEBM_FAST)
+         if (video_record_quality < RECORD_CONFIG_TYPE_RECORDING_WEBM_FAST)
          {
             fill_str_dated_filename(buf, game_name,
                      "mkv", sizeof(buf));
             fill_pathname_join(output, global->record.output_dir, buf, sizeof(output));
          }
-         else if (settings->uints.video_record_quality >= RECORD_CONFIG_TYPE_RECORDING_WEBM_FAST
-               && settings->uints.video_record_quality < RECORD_CONFIG_TYPE_RECORDING_GIF)
+         else if (video_record_quality >= RECORD_CONFIG_TYPE_RECORDING_WEBM_FAST
+               && video_record_quality < RECORD_CONFIG_TYPE_RECORDING_GIF)
          {
             fill_str_dated_filename(buf, game_name,
                      "webm", sizeof(buf));
             fill_pathname_join(output, global->record.output_dir, buf, sizeof(output));
          }
-         else if (settings->uints.video_record_quality >= RECORD_CONFIG_TYPE_RECORDING_GIF
-               && settings->uints.video_record_quality < RECORD_CONFIG_TYPE_RECORDING_APNG)
+         else if (video_record_quality >= RECORD_CONFIG_TYPE_RECORDING_GIF
+               && video_record_quality < RECORD_CONFIG_TYPE_RECORDING_APNG)
          {
             fill_str_dated_filename(buf, game_name,
                      "gif", sizeof(buf));
@@ -11977,6 +11996,13 @@ static bool recording_init(void)
          }
       }
    }
+
+   params.audio_resampler           = settings->arrays.audio_resampler;
+   params.video_gpu_record          = settings->bools.video_gpu_record;
+   params.video_record_scale_factor = settings->uints.video_record_scale_factor;
+   params.video_stream_scale_factor = settings->uints.video_stream_scale_factor;
+   params.video_record_threads      = settings->uints.video_record_threads;
+   params.streaming_mode            = settings->uints.streaming_mode;
 
    params.out_width  = av_info->geometry.base_width;
    params.out_height = av_info->geometry.base_height;
@@ -12472,15 +12498,16 @@ static bool runloop_check_movie_init(void)
 {
    char msg[16384], path[8192];
    settings_t *settings       = configuration_settings;
+   int state_slot             = settings->ints.state_slot;
 
    msg[0] = path[0]           = '\0';
 
    configuration_set_uint(settings, settings->uints.rewind_granularity, 1);
 
-   if (settings->ints.state_slot > 0)
+   if (state_slot > 0)
       snprintf(path, sizeof(path), "%s%d.bsv",
             bsv_movie_state.movie_path,
-            settings->ints.state_slot);
+            state_slot);
    else
    {
       strlcpy(path, bsv_movie_state.movie_path, sizeof(path));
@@ -14470,14 +14497,14 @@ int16_t menu_input_read_mouse_hw(enum menu_input_mouse_hw_id id)
          NULL, 0, device, 0, type);
 }
 
-static void menu_input_get_mouse_hw_state(menu_input_pointer_hw_state_t *hw_state)
+static void menu_input_get_mouse_hw_state(
+      menu_input_pointer_hw_state_t *hw_state)
 {
    settings_t *settings            = configuration_settings;
    static int16_t last_x           = 0;
    static int16_t last_y           = 0;
    static bool last_select_pressed = false;
    static bool last_cancel_pressed = false;
-   bool overlay_active             = false;
    bool mouse_enabled              = settings->bools.menu_mouse_enable;
    /* Note: RGUI requires special treatment, but we can't just
     * check settings->arrays.menu_driver because this may change
@@ -14488,17 +14515,17 @@ static void menu_input_get_mouse_hw_state(menu_input_pointer_hw_state_t *hw_stat
    menu_handle_t *menu_data        = menu_driver_get_ptr();
    bool is_rgui                    =
          (menu_data && menu_data->driver_ctx && menu_data->driver_ctx->set_texture);
+#ifdef HAVE_OVERLAY
+   /* Menu pointer controls are ignored when overlays are enabled. */
+   bool overlay_active = settings->bools.input_overlay_enable && overlay_ptr && overlay_ptr->alive;
+   if (overlay_active)
+      mouse_enabled = false;
+#endif
 
    /* Easiest to set inactive by default, and toggle
     * when input is detected */
    hw_state->active  = false;
 
-#ifdef HAVE_OVERLAY
-   /* Menu pointer controls are ignored when overlays are enabled. */
-   overlay_active = settings->bools.input_overlay_enable && overlay_ptr && overlay_ptr->alive;
-   if (overlay_active)
-      mouse_enabled = false;
-#endif
 
    if (!mouse_enabled)
    {
@@ -14585,7 +14612,8 @@ static void menu_input_get_mouse_hw_state(menu_input_pointer_hw_state_t *hw_stat
       hw_state->active = true;
 }
 
-static void menu_input_get_touchscreen_hw_state(menu_input_pointer_hw_state_t *hw_state)
+static void menu_input_get_touchscreen_hw_state(
+      menu_input_pointer_hw_state_t *hw_state)
 {
    rarch_joypad_info_t joypad_info;
    int pointer_x, pointer_y;
@@ -14610,7 +14638,7 @@ static void menu_input_get_touchscreen_hw_state(menu_input_pointer_hw_state_t *h
 
    /* Easiest to set inactive by default, and toggle
     * when input is detected */
-   hw_state->active  = false;
+   hw_state->active        = false;
 
    /* Touch screens don't have mouse wheels, so these
     * are always disabled */
@@ -14621,7 +14649,8 @@ static void menu_input_get_touchscreen_hw_state(menu_input_pointer_hw_state_t *h
 
 #ifdef HAVE_OVERLAY
    /* Menu pointer controls are ignored when overlays are enabled. */
-   overlay_active = settings->bools.input_overlay_enable && overlay_ptr && overlay_ptr->alive;
+   overlay_active          = settings->bools.input_overlay_enable 
+      && overlay_ptr && overlay_ptr->alive;
    if (overlay_active)
       pointer_enabled = false;
 #endif
@@ -14750,7 +14779,16 @@ static unsigned menu_event(
                RETRO_DEVICE_ID_JOYPAD_A : RETRO_DEVICE_ID_JOYPAD_B;
    unsigned ok_current                             = BIT256_GET_PTR(p_input, menu_ok_btn);
    unsigned ok_trigger                             = ok_current & ~ok_old;
-   bool is_rgui                                    = string_is_equal(settings->arrays.menu_driver, "rgui");
+#ifdef HAVE_RGUI
+   /* TODO/FIXME - instead of looking explicitly for the name rgui, instead 
+    * perhaps check if set_texture is set - I assume we want to check if
+    * a menu driver is framebuffer-based instead of specifically looking if 
+    * it's RGUI */
+   bool is_rgui                                    = string_is_equal(
+         settings->arrays.menu_driver, "rgui");
+#else
+   bool is_rgui                                    = false;
+#endif
 
    ok_old                                          = ok_current;
 
@@ -14833,26 +14871,29 @@ static unsigned menu_event(
 
       if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_L))
       {
-         if (menu_event_get_osk_idx() > OSK_TYPE_UNKNOWN + 1)
+         enum osk_type osk_type_idx = menu_event_get_osk_idx();
+         if (osk_type_idx > OSK_TYPE_UNKNOWN + 1)
             menu_event_set_osk_idx((enum osk_type)(
-                     menu_event_get_osk_idx() - 1));
+                     osk_type_idx - 1));
          else
             menu_event_set_osk_idx((enum osk_type)(is_rgui ? OSK_SYMBOLS_PAGE1 : OSK_TYPE_LAST - 1));
       }
 
       if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_R))
       {
-         if (menu_event_get_osk_idx() < (is_rgui ? OSK_SYMBOLS_PAGE1 : OSK_TYPE_LAST - 1))
+         enum osk_type osk_type_idx = menu_event_get_osk_idx();
+         if (osk_type_idx < (is_rgui ? OSK_SYMBOLS_PAGE1 : OSK_TYPE_LAST - 1))
             menu_event_set_osk_idx((enum osk_type)(
-                     menu_event_get_osk_idx() + 1));
+                     osk_type_idx + 1));
          else
             menu_event_set_osk_idx((enum osk_type)(OSK_TYPE_UNKNOWN + 1));
       }
 
       if (BIT256_GET_PTR(p_trigger_input, menu_ok_btn))
       {
-         if (menu_event_get_osk_ptr() >= 0)
-            menu_event_osk_append(menu_event_get_osk_ptr());
+         int ptr = menu_event_get_osk_ptr();
+         if (ptr >= 0)
+            menu_event_osk_append(ptr, is_rgui);
       }
 
       if (BIT256_GET_PTR(p_trigger_input, menu_cancel_btn))
@@ -15514,7 +15555,9 @@ static int menu_input_pointer_post_iterate(
                if (point.retcode > -1)
                {
                   menu_event_set_osk_ptr(point.retcode);
-                  menu_event_osk_append(point.retcode);
+                  menu_event_osk_append(point.retcode,
+                  string_is_equal(
+                     configuration_settings->arrays.menu_driver, "rgui"));
                }
             }
          }
@@ -16474,13 +16517,12 @@ int16_t input_joypad_analog(const input_device_driver_t *drv,
             uint32_t y_axis_plus     = (bind_y_plus->joyaxis  == AXIS_NONE)
                ? joypad_info.auto_binds[ident_y_plus].joyaxis
                : bind_y_plus->joyaxis;
-            float x                  = 0.0f;
-            float y                  = 0.0f;
-
             /* normalized magnitude for radial scaled analog deadzone */
-            x          = drv->axis(joypad_info.joy_idx, x_axis_plus)
+            float x                  = drv->axis(
+                  joypad_info.joy_idx, x_axis_plus)
                + drv->axis(joypad_info.joy_idx, x_axis_minus);
-            y          = drv->axis(joypad_info.joy_idx, y_axis_plus)
+            float y                  = drv->axis(
+                  joypad_info.joy_idx, y_axis_plus)
                + drv->axis(joypad_info.joy_idx, y_axis_minus);
             normal_mag = (1.0f / 0x7fff) * sqrt(x * x + y * y);
          }
@@ -21624,12 +21666,10 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
       unsigned base_width;
       /* Use system reported sizes as these define the
        * geometry for the "normal" case. */
-      unsigned base_height;
-
+      unsigned base_height = video_driver_av_info.geometry.base_height;
+      
       if (retroarch_get_rotation() % 2)
          base_height = video_driver_av_info.geometry.base_width;
-      else
-         base_height = video_driver_av_info.geometry.base_height;
 
       if (base_height == 0)
          base_height = 1;
@@ -23415,7 +23455,9 @@ static void drivers_init(int flags)
 
       if (menu_widgets_inited)
          menu_widgets_context_reset(video_is_threaded,
-               video_driver_width, video_driver_height);
+               video_driver_width, video_driver_height,
+               settings->paths.directory_assets,
+               settings->paths.path_font);
    }
    else
    {
@@ -23456,7 +23498,7 @@ static void drivers_init(int flags)
 
    /* Initialize LED driver */
    if (flags & DRIVER_LED_MASK)
-      led_driver_init();
+      led_driver_init(settings->arrays.led_driver);
 
    /* Initialize MIDI  driver */
    if (flags & DRIVER_MIDI_MASK)
@@ -23674,14 +23716,133 @@ bool driver_ctl(enum driver_ctl_state state, void *data)
 /* RUNAHEAD */
 
 #ifdef HAVE_RUNAHEAD
+static void mylist_resize(MyList *list, int new_size, bool run_constructor)
+{
+   int i;
+   int new_capacity;
+   int old_size;
+   void *element    = NULL;
+   if (new_size < 0)
+      new_size  = 0;
+   if (!list)
+      return;
+   new_capacity = new_size;
+   old_size     = list->size;
+
+   if (new_size == old_size)
+      return;
+
+   if (new_size > list->capacity)
+   {
+      if (new_capacity < list->capacity * 2)
+         new_capacity = list->capacity * 2;
+
+      /* try to realloc */
+      list->data = (void**)realloc(
+            (void*)list->data, new_capacity * sizeof(void*));
+
+      for (i = list->capacity; i < new_capacity; i++)
+         list->data[i] = NULL;
+
+      list->capacity = new_capacity;
+   }
+
+   if (new_size <= list->size)
+   {
+      for (i = new_size; i < list->size; i++)
+      {
+         element = list->data[i];
+
+         if (element)
+         {
+            list->destructor(element);
+            list->data[i] = NULL;
+         }
+      }
+   }
+   else
+   {
+      for (i = list->size; i < new_size; i++)
+      {
+         list->data[i] = NULL;
+         if (run_constructor)
+            list->data[i] = list->constructor();
+      }
+   }
+
+   list->size = new_size;
+}
+
+static void *mylist_add_element(MyList *list)
+{
+   int old_size;
+
+   if (!list)
+      return NULL;
+
+   old_size = list->size;
+   mylist_resize(list, old_size + 1, true);
+   return list->data[old_size];
+}
+
+static void mylist_destroy(MyList **list_p)
+{
+   MyList *list = NULL;
+   if (!list_p)
+      return;
+
+   list = *list_p;
+
+   if (list)
+   {
+      mylist_resize(list, 0, false);
+      free(list->data);
+      free(list);
+      *list_p = NULL;
+   }
+}
+
+
+static void mylist_create(MyList **list_p, int initial_capacity,
+      constructor_t constructor, destructor_t destructor)
+{
+   MyList *list        = NULL;
+
+   if (!list_p)
+      return;
+
+   if (initial_capacity < 0)
+      initial_capacity = 0;
+
+   list                = *list_p;
+   if (list)
+      mylist_destroy(list_p);
+
+   list               = (MyList*)malloc(sizeof(MyList));
+   *list_p            = list;
+   list->size         = 0;
+   list->constructor  = constructor;
+   list->destructor   = destructor;
+
+   if (initial_capacity > 0)
+   {
+      list->data      = (void**)calloc(initial_capacity, sizeof(void*));
+      list->capacity  = initial_capacity;
+   }
+   else
+   {
+      list->data      = NULL;
+      list->capacity  = 0;
+   }
+}
 
 static void *input_list_element_constructor(void)
 {
-   void *ptr                          = calloc(1, sizeof(input_list_element));
-   input_list_element *element        = (input_list_element*)ptr;
+   void *ptr                   = calloc(1, sizeof(input_list_element));
+   input_list_element *element = (input_list_element*)ptr;
 
-   element->state_size                = 256;
-   element->state                     = (int16_t*)calloc(
+   element->state_size         = 256;
+   element->state              = (int16_t*)calloc(
          element->state_size, sizeof(int16_t));
 
    return ptr;
@@ -24012,7 +24173,7 @@ static bool runahead_create(void)
 static bool runahead_save_state(void)
 {
    retro_ctx_serialize_info_t *serialize_info;
-   bool okay                                  = false;
+   bool okay              = false;
 
    if (!runahead_save_state_list)
       return false;
@@ -24756,12 +24917,7 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
 #ifdef HAVE_CONFIGFILE
    if (!rarch_block_config_read)
 #endif
-   {
-      config_set_defaults(&g_extern);
-#ifdef HAVE_CONFIGFILE
-      config_parse_file(&g_extern);
-#endif
-   }
+      config_load(&g_extern);
 
    /* Second pass: All other arguments override the config file */
    optind = 1;
@@ -27126,13 +27282,19 @@ static enum runloop_state runloop_check_state(void)
    }
 
 #if defined(HAVE_MENU)
-   menu_animation_update(video_driver_width, video_driver_height);
+   menu_animation_update(
+         settings->bools.menu_timedate_enable,
+         settings->floats.menu_ticker_speed,
+         video_driver_width, video_driver_height);
 
 #ifdef HAVE_MENU_WIDGETS
    if (menu_widgets_inited)
    {
       runloop_msg_queue_lock();
-      menu_widgets_iterate(video_driver_width, video_driver_height);
+      menu_widgets_iterate(
+            video_driver_width, video_driver_height,
+            settings->paths.directory_assets,
+            settings->paths.path_font);
       runloop_msg_queue_unlock();
    }
 #endif
@@ -28439,357 +28601,7 @@ bool is_input_keyboard_display_on(void)
 #endif
 }
 
-#if defined(__MACH__) && defined(__APPLE__) 
-#include <TargetConditionals.h>
-#if TARGET_OS_OSX && !defined(EMSCRIPTEN)
-#define _IS_OSX
-#endif
-#endif
-
 #ifdef HAVE_ACCESSIBILITY
-
-#if defined(_IS_OSX)
-static char* accessibility_mac_language_code(const char* language)
-{
-   if (string_is_equal(language,"en"))
-      return "Alex";
-   else if (string_is_equal(language,"it"))
-      return "Alice";
-   else if (string_is_equal(language,"sv"))
-      return "Alva";
-   else if (string_is_equal(language,"fr"))
-      return "Amelie";
-   else if (string_is_equal(language,"de"))
-      return "Anna";
-   else if (string_is_equal(language,"he"))
-      return "Carmit";
-   else if (string_is_equal(language,"id"))
-      return "Damayanti";
-   else if (string_is_equal(language,"es"))
-      return "Diego";
-   else if (string_is_equal(language,"nl"))
-      return "Ellen";
-   else if (string_is_equal(language,"ro"))
-      return "Ioana";
-   else if (string_is_equal(language,"pt_pt"))
-      return "Joana";
-   else if (string_is_equal(language,"pt_bt") || string_is_equal(language,"pt"))
-      return "Luciana";
-   else if (string_is_equal(language,"th"))
-      return "Kanya";
-   else if (string_is_equal(language,"ja"))
-      return "Kyoko";
-   else if (string_is_equal(language,"sk"))
-      return "Laura";
-   else if (string_is_equal(language,"hi"))
-      return "Lekha";
-   else if (string_is_equal(language,"ar"))
-      return "Maged";
-   else if (string_is_equal(language,"hu"))
-      return "Mariska";
-   else if (string_is_equal(language,"zh_tw") || string_is_equal(language,"zh"))
-      return "Mei-Jia";
-   else if (string_is_equal(language,"el"))
-      return "Melina";
-   else if (string_is_equal(language,"ru"))
-      return "Milena";
-   else if (string_is_equal(language,"nb"))
-      return "Nora";
-   else if (string_is_equal(language,"da"))
-      return "Sara";
-   else if (string_is_equal(language,"fi"))
-      return "Satu";
-   else if (string_is_equal(language,"zh_hk"))
-      return "Sin-ji";
-   else if (string_is_equal(language,"zh_cn"))
-      return "Ting-Ting";
-   else if (string_is_equal(language,"tr"))
-      return "Yelda";
-   else if (string_is_equal(language,"ko"))
-      return "Yuna";
-   else if (string_is_equal(language,"pl"))
-      return "Zosia";
-   else if (string_is_equal(language,"cs"))
-      return "Zuzana";
-   else
-      return "";
-}
-
-static bool is_narrator_running_macos(void)
-{
-   return (kill(speak_pid, 0) == 0);
-}
-
-static bool accessibility_speak_macos(int speed,
-      const char* speak_text, const char* voice, int priority)
-{
-   int pid;
-   char* language_speaker = accessibility_mac_language_code(voice);
-   char* speeds[10]       = {"80", "100", "125", "150", "170", "210", "260", "310", "380", "450"};
-
-   if (speed < 1)
-      speed = 1;
-   else if (speed > 10)
-      speed = 10;
-
-   if (priority < 10 && speak_pid > 0)
-   {
-      /* check if old pid is running */
-      if (is_narrator_running_macos())
-         return true;
-   }
-
-   if (speak_pid > 0)
-   {
-      /* Kill the running say */
-      kill(speak_pid, SIGTERM);
-      speak_pid = 0;
-   }
-
-   pid = fork();
-   if (pid < 0)
-   {
-      /* error */
-      RARCH_LOG("ERROR: could not fork for say command.\n");
-   }
-   else if (pid > 0)
-   {
-      /* parent process */
-      speak_pid = pid;
-
-      /* Tell the system that we'll ignore the exit status of the child
-       * process.  This prevents zombie processes. */
-      signal(SIGCHLD,SIG_IGN);
-   }
-   else
-   {
-      /* child process: replace process with the say command */
-      if (strlen(language_speaker)> 0)
-      {
-         char* cmd[] = {"say", "-v", NULL,
-                        NULL, "-r", NULL, NULL};
-         cmd[2] = language_speaker;
-         cmd[3] = (char *) speak_text;
-         cmd[5] = speeds[speed-1];
-         execvp("say", cmd);
-      }
-      else
-      {
-         char* cmd[] = {"say", NULL, "-r", NULL,  NULL};
-         cmd[1] = (char*) speak_text;
-         cmd[3] = speeds[speed-1];
-         execvp("say",cmd);
-      }
-   }
-   return true;
-}
-#endif
-
-#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__) && !defined(EMSCRIPTEN)
-static const char *accessibility_win_language_code(const char* language)
-{
-   if (string_is_equal(language,"en"))
-      return "Microsoft David Desktop";
-   else if (string_is_equal(language,"it"))
-      return "Microsoft Cosimo Desktop";
-   else if (string_is_equal(language,"sv"))
-      return "Microsoft Bengt Desktop";
-   else if (string_is_equal(language,"fr"))
-      return "Microsoft Paul Desktop";
-   else if (string_is_equal(language,"de"))
-      return "Microsoft Stefan Desktop";
-   else if (string_is_equal(language,"he"))
-      return "Microsoft Hemant Desktop";
-   else if (string_is_equal(language,"id"))
-      return "Microsoft Asaf Desktop";
-   else if (string_is_equal(language,"es"))
-      return "Microsoft Pablo Desktop";
-   else if (string_is_equal(language,"nl"))
-      return "Microsoft Frank Desktop";
-   else if (string_is_equal(language,"ro"))
-      return "Microsoft Andrei Desktop";
-   else if (string_is_equal(language,"pt_pt"))
-      return "Microsoft Helia Desktop";
-   else if (string_is_equal(language,"pt_bt") || string_is_equal(language,"pt"))
-      return "Microsoft Daniel Desktop";
-   else if (string_is_equal(language,"th"))
-      return "Microsoft Pattara Desktop";
-   else if (string_is_equal(language,"ja"))
-      return "Microsoft Ichiro Desktop";
-   else if (string_is_equal(language,"sk"))
-      return "Microsoft Filip Desktop";
-   else if (string_is_equal(language,"hi"))
-      return "Microsoft Hemant Desktop";
-   else if (string_is_equal(language,"ar"))
-      return "Microsoft Naayf Desktop";
-   else if (string_is_equal(language,"hu"))
-      return "Microsoft Szabolcs Desktop";
-   else if (string_is_equal(language,"zh_tw") || string_is_equal(language,"zh"))
-      return "Microsoft Zhiwei Desktop";
-   else if (string_is_equal(language,"el"))
-      return "Microsoft Stefanos Desktop";
-   else if (string_is_equal(language,"ru"))
-      return "Microsoft Pavel Desktop";
-   else if (string_is_equal(language,"nb"))
-      return "Microsoft Jon Desktop";
-   else if (string_is_equal(language,"da"))
-      return "Microsoft Helle Desktop";
-   else if (string_is_equal(language,"fi"))
-      return "Microsoft Heidi Desktop";
-   else if (string_is_equal(language,"zh_hk"))
-      return "Microsoft Danny Desktop";
-   else if (string_is_equal(language,"zh_cn"))
-      return "Microsoft Kangkang Desktop";
-   else if (string_is_equal(language,"tr"))
-      return "Microsoft Tolga Desktop";
-   else if (string_is_equal(language,"ko"))
-      return "Microsoft Heami Desktop";
-   else if (string_is_equal(language,"pl"))
-      return "Microsoft Adam Desktop";
-   else if (string_is_equal(language,"cs"))
-      return "Microsoft Jakub Desktop";
-   else
-      return "";
-}
-
-static bool terminate_win32_process(PROCESS_INFORMATION pi)
-{
-   TerminateProcess(pi.hProcess,0);
-   CloseHandle(pi.hProcess);
-   CloseHandle(pi.hThread);
-   return true;
-}
-
-static PROCESS_INFORMATION g_pi;
-
-static bool create_win32_process(char* cmd)
-{
-   STARTUPINFO si;
-   memset(&si, 0, sizeof(si));
-   si.cb = sizeof(si);
-   memset(&g_pi, 0, sizeof(g_pi));
-
-   if (!CreateProcess(NULL, cmd, NULL, NULL, FALSE, CREATE_NO_WINDOW,
-                      NULL, NULL, &si, &g_pi))
-      return false;
-   return true;
-}
-
-static bool is_narrator_running_windows(void)
-{
-   DWORD status = 0;
-   if (pi_set == false)
-      return false;
-   if (GetExitCodeProcess(&g_pi, &status) && status == STILL_ACTIVE)
-      return true;
-   return false;
-}
-
-static bool accessibility_speak_windows(int speed,
-      const char* speak_text, const char* voice, int priority)
-{
-   char cmd[1200];
-   const char *language   = accessibility_win_language_code(voice);
-   bool res               = false;
-   const char* speeds[10] = {"-10", "-7.5", "-5", "-2.5", "0", "2", "4", "6", "8", "10"};
-
-   if (speed < 1)
-      speed = 1;
-   else if (speed > 10)
-      speed = 10;
-
-   if (priority < 10)
-   {
-      if (is_narrator_running_windows())
-         return true;
-   }
-
-   if (strlen(language) > 0)
-      snprintf(cmd, sizeof(cmd),
-               "powershell.exe -NoProfile -WindowStyle Hidden -Command \"Add-Type -AssemblyName System.Speech; $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer; $synth.SelectVoice(\\\"%s\\\"); $synth.Rate = %s; $synth.Speak(\\\"%s\\\");\"", language, speeds[speed-1], (char*) speak_text);
-   else
-      snprintf(cmd, sizeof(cmd),
-               "powershell.exe -NoProfile -WindowStyle Hidden -Command \"Add-Type -AssemblyName System.Speech; $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer; $synth.Rate = %s; $synth.Speak(\\\"%s\\\");\"", speeds[speed-1], (char*) speak_text);
-   if (pi_set)
-      terminate_win32_process(g_pi);
-   res = create_win32_process(cmd);
-   if (!res)
-   {
-      RARCH_LOG("Create subprocess failed. Error: %d\n", GetLastError()); 
-      pi_set = false;
-      return true;
-   }
-   pi_set = true;
-   return true;
-}
-#endif
-
-#if (defined(__linux__) || defined(__unix__)) && !defined(EMSCRIPTEN)
-static bool is_narrator_running_linux(void)
-{
-   return (kill(speak_pid, 0) == 0);
-}
-
-static bool accessibility_speak_linux(int speed,
-      const char* speak_text, const char* language, int priority)
-{
-   int pid;
-   char* voice_out        = (char *)malloc(3+strlen(language));
-   char* speed_out        = (char *)malloc(3+3);
-   const char* speeds[10] = {"80", "100", "125", "150", "170", "210", "260", "310", "380", "450"};
-
-   if (speed < 1)
-      speed = 1;
-   else if (speed > 10)
-      speed = 10;
-
-   strlcpy(voice_out, "-v", 3);
-   strlcat(voice_out, language, 5);
-
-   strlcpy(speed_out, "-s", 3);
-   strlcat(speed_out, speeds[speed-1], 6);
-
-   if (priority < 10 && speak_pid > 0)
-   {
-      /* check if old pid is running */
-      if (is_narrator_running_linux())
-         return true;
-   }
-
-   if (speak_pid > 0)
-   {
-      /* Kill the running espeak */
-      kill(speak_pid, SIGTERM);
-      speak_pid = 0;
-   }
-
-   pid = fork();
-   if (pid < 0)
-   {
-      /* error */
-      RARCH_LOG("ERROR: could not fork for espeak.\n");
-   }
-   else if (pid > 0)
-   {
-      /* parent process */
-      speak_pid = pid;
-
-      /* Tell the system that we'll ignore the exit status of the child
-       * process.  This prevents zombie processes. */
-      signal(SIGCHLD,SIG_IGN);
-   }
-   else
-   {
-      /* child process: replace process with the espeak command */
-      char* cmd[] = { (char*) "espeak", NULL, NULL, NULL, NULL};
-      cmd[1] = voice_out;
-      cmd[2] = speed_out;
-      cmd[3] = (char *) speak_text;
-      execvp("espeak", cmd);
-   }
-   return true;
-}
-#endif
 
 bool accessibility_speak_priority(const char* speak_text, int priority)
 {
@@ -28797,17 +28609,11 @@ bool accessibility_speak_priority(const char* speak_text, int priority)
 
    if (is_accessibility_enabled())
    {
-      int speed         = configuration_settings->uints.accessibility_narrator_speech_speed;
-#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__) && !defined(EMSCRIPTEN)
-      const char *voice = get_user_language_iso639_1(true);
-      return accessibility_speak_windows(speed, speak_text, voice, priority);
-#elif defined(__APPLE__) && defined(_IS_OSX) && !defined(EMSCRIPTEN)
-      const char *voice = get_user_language_iso639_1(false);
-      return accessibility_speak_macos(speed, speak_text, voice, priority);
-#elif (defined(__linux__) || defined(__unix__)) && !defined(EMSCRIPTEN)
-      const char *voice = get_user_language_iso639_1(true);
-      return accessibility_speak_linux(speed, speak_text, voice, priority);
-#endif
+      int speed                       = configuration_settings->uints.accessibility_narrator_speech_speed;
+      frontend_ctx_driver_t *frontend = frontend_get_ptr();
+      if (frontend && frontend->accessibility_speak)
+         return frontend->accessibility_speak(speed, speak_text,
+               priority);
       RARCH_LOG("Platform not supported for accessibility.\n");
       /* The following method is a fallback for other platforms to use the
          AI Service url to do the TTS.  However, since the playback is done
@@ -28825,22 +28631,16 @@ bool accessibility_speak_priority(const char* speak_text, int priority)
    return true;
 }
 
-#ifdef HAVE_ACCESSIBILITY
 static bool is_narrator_running(void)
 {
    if (is_accessibility_enabled())
    {
-#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__) && !defined(EMSCRIPTEN)
-      return is_narrator_running_windows();
-#elif defined(__APPLE__) && defined(_IS_OSX) && !defined(EMSCRIPTEN)
-      return is_narrator_running_macos();
-#elif (defined(__linux__) || defined(__unix__)) && !defined(EMSCRIPTEN)
-      return is_narrator_running_linux();
-#endif
+      frontend_ctx_driver_t *frontend = frontend_get_ptr();
+      if (frontend && frontend->is_narrator_running)
+         return frontend->is_narrator_running();
    }
    return true;
 }
-#endif
 
 static bool accessibility_startup_message(void)
 {

@@ -856,7 +856,7 @@ static void netplay_announce(void)
          frontend_drv->ident, frontend_architecture_tmp);
 
 #ifdef HAVE_DISCORD
-   if(discord_is_ready())
+   if (discord_is_ready())
       net_http_urlencode(&username, discord_get_own_username());
    else
 #endif
@@ -990,7 +990,7 @@ static void netplay_frontend_paused(netplay_t *netplay, bool paused)
  * Returns: true (1) if the frontend is cleared to emulate the frame, false (0)
  * if we're stalled or paused
  **/
-bool netplay_pre_frame(netplay_t *netplay)
+static bool netplay_pre_frame(netplay_t *netplay)
 {
    bool sync_stalled     = false;
    settings_t *settings  = config_get_ptr();
@@ -1039,7 +1039,10 @@ bool netplay_pre_frame(netplay_t *netplay)
       }
    }
 
-   sync_stalled = !netplay_sync_pre_frame(netplay);
+   sync_stalled = !netplay_sync_pre_frame(netplay,
+         settings->paths.netplay_password,
+         settings->paths.netplay_spectate_password
+         );
 
    /* If we're disconnected, deinitialize */
    if (!netplay->is_server && !netplay->connections[0].active)
@@ -1068,7 +1071,7 @@ bool netplay_pre_frame(netplay_t *netplay)
  * We check if we have new input and replay from recorded input.
  * Call this after running retro_run().
  **/
-void netplay_post_frame(netplay_t *netplay)
+static void netplay_post_frame(netplay_t *netplay)
 {
    size_t i;
    retro_assert(netplay);
@@ -1144,7 +1147,7 @@ static void netplay_force_future(netplay_t *netplay)
  * Send a loaded savestate to those connected peers using the given compression
  * scheme.
  */
-void netplay_send_savestate(netplay_t *netplay,
+static void netplay_send_savestate(netplay_t *netplay,
    retro_ctx_serialize_info_t *serial_info, uint32_t cx,
    struct compression_transcoder *z)
 {
@@ -1285,7 +1288,8 @@ static void netplay_core_reset(netplay_t *netplay)
  *
  * Get the preferred share mode
  */
-uint8_t netplay_settings_share_mode(unsigned share_digital, unsigned share_analog)
+uint8_t netplay_settings_share_mode(unsigned share_digital,
+      unsigned share_analog)
 {
    if (share_digital || share_analog)
    {
@@ -1466,6 +1470,8 @@ bool init_netplay(void *direct_host, const char *server, unsigned port)
          discord_get_own_username() ? discord_get_own_username() :
 #endif
          settings->paths.username,
+         settings->paths.netplay_password,
+         settings->paths.netplay_spectate_password,
          quirks);
 
    if (netplay_data)

@@ -151,6 +151,7 @@ typedef struct settings
       /* Menu */
       bool filter_by_current_core;
       bool menu_enable_widgets;
+      bool menu_widget_scale_auto;
       bool menu_show_start_screen;
       bool menu_pause_libretro;
       bool menu_savestate_resume;
@@ -405,6 +406,7 @@ typedef struct settings
       float video_msg_bgcolor_opacity;
 
       float menu_scale_factor;
+      float menu_widget_scale_factor;
       float menu_wallpaper_opacity;
       float menu_framebuffer_opacity;
       float menu_footer_opacity;
@@ -809,14 +811,6 @@ const char *config_get_midi_driver_options(void);
 
 const char *config_get_default_record(void);
 
-/**
- * config_parse_file:
- *
- * Loads a config file and reads all the values into memory.
- *
- */
-void config_parse_file(void *data);
-
 #ifdef HAVE_CONFIGFILE
 /**
  * config_load_override:
@@ -888,6 +882,8 @@ bool config_replace(bool config_save_on_exit, char *path);
 bool config_overlay_enable_default(void);
 
 void config_set_defaults(void *data);
+
+void config_load(void *data);
 
 settings_t *config_get_ptr(void);
 

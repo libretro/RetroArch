@@ -133,7 +133,7 @@ static void menu_display_d3d9_draw(menu_display_ctx_draw_t *draw,
 
    dev                           = d3d->dev;
 
-   if((d3d->menu_display.offset + draw->coords->vertices )
+   if ((d3d->menu_display.offset + draw->coords->vertices )
          > (unsigned)d3d->menu_display.size)
       return;
 
@@ -180,7 +180,7 @@ static void menu_display_d3d9_draw(menu_display_ctx_draw_t *draw,
    d3d9_vertex_buffer_unlock((LPDIRECT3DVERTEXBUFFER9)
          d3d->menu_display.buffer);
 
-   if(!draw->matrix_data)
+   if (!draw->matrix_data)
       draw->matrix_data = menu_display_d3d9_get_default_mvp(video_info);
 
    /* ugh */

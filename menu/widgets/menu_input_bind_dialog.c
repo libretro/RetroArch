@@ -628,7 +628,7 @@ bool menu_input_key_bind_iterate(menu_input_ctx_bind_t *bind)
 	  /*keep resetting bind during the hold period, or we'll potentially bind joystick and mouse, etc.*/
 	  binds.buffer = *( binds.output );
 
-      if ( menu_input_key_bind_poll_find_hold( &binds, &binds.buffer ) )
+      if (menu_input_key_bind_poll_find_hold(&binds, &binds.buffer))
       {
          /*inhibit timeout*/
          rarch_timer_begin_new_time( &binds.timer_timeout, settings->uints.input_bind_timeout );
@@ -642,10 +642,8 @@ bool menu_input_key_bind_iterate(menu_input_ctx_bind_t *bind)
                    menu_input_binds.begin - MENU_SETTINGS_BIND_BEGIN ) );
 
          /*hold complete?*/
-         if ( rarch_timer_has_expired( &binds.timer_hold ) )
-         {
+         if (rarch_timer_has_expired(&binds.timer_hold))
             complete = true;
-         }
       }
       else
       {
@@ -655,7 +653,7 @@ bool menu_input_key_bind_iterate(menu_input_ctx_bind_t *bind)
 
 #else
 
-      if ( ( binds.skip && !menu_input_binds.skip ) ||
+      if ((binds.skip && !menu_input_binds.skip) ||
          menu_input_key_bind_poll_find_trigger( &menu_input_binds, &binds, &( binds.buffer ) ) )
       {
          complete = true;
@@ -663,7 +661,7 @@ bool menu_input_key_bind_iterate(menu_input_ctx_bind_t *bind)
 
 #endif
 
-      if ( complete )
+      if (complete)
       {
          input_driver_t *input_drv    = input_get_ptr();
 
@@ -678,7 +676,7 @@ bool menu_input_key_bind_iterate(menu_input_ctx_bind_t *bind)
 
          binds.begin++;
 
-         if ( binds.begin > binds.last )
+         if (binds.begin > binds.last)
          {
             input_keyboard_ctl( RARCH_INPUT_KEYBOARD_CTL_CANCEL_WAIT_KEYS, NULL );
             return true;

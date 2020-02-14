@@ -46,7 +46,7 @@ static void *switch_font_init_font(void *data, const char *font_path,
       if (!font)
             return NULL;
 
-      if (!font_renderer_create_default((const void **)&font->font_driver,
+      if (!font_renderer_create_default(&font->font_driver,
                                         &font->font_data, font_path, font_size))
       {
             RARCH_WARN("Couldn't initialize font renderer.\n");
@@ -250,73 +250,83 @@ static void switch_font_render_msg(
     void *data, const char *msg,
     const struct font_params *params)
 {
-      float x, y, scale, drop_mod, drop_alpha;
-      int drop_x, drop_y;
-      unsigned max_glyphs;
+      float x, y, scale;
       enum text_alignment text_align;
-      unsigned color, color_dark, r, g, b,
-          alpha, r_dark, g_dark, b_dark, alpha_dark;
+      unsigned color, r, g, b, alpha;
       switch_font_t *font = (switch_font_t *)data;
-      unsigned width = video_info->width;
-      unsigned height = video_info->height;
+#if 0
+      int drop_x, drop_y;
+      float drop_mod, drop_alpha;
+      unsigned max_glyphs;
+      unsigned color_dark, r_dark, g_dark, b_dark, alpha_dark;
+      unsigned width      = video_info->width;
+      unsigned height     = video_info->height;
+#endif
 
-      if (!font || !msg || msg && !*msg)
+      if (!font || !msg || (msg && !*msg))
             return;
 
       if (params)
       {
-            x = params->x;
-            y = params->y;
-            scale = params->scale;
+            x          = params->x;
+            y          = params->y;
+            scale      = params->scale;
             text_align = params->text_align;
-            drop_x = params->drop_x;
-            drop_y = params->drop_y;
-            drop_mod = params->drop_mod;
+
+#if 0
+            drop_x     = params->drop_x;
+            drop_y     = params->drop_y;
             drop_alpha = params->drop_alpha;
+            drop_mod   = params->drop_mod;
+#endif
 
-            r = FONT_COLOR_GET_RED(params->color);
-            g = FONT_COLOR_GET_GREEN(params->color);
-            b = FONT_COLOR_GET_BLUE(params->color);
-            alpha = FONT_COLOR_GET_ALPHA(params->color);
+            r          = FONT_COLOR_GET_RED(params->color);
+            g          = FONT_COLOR_GET_GREEN(params->color);
+            b          = FONT_COLOR_GET_BLUE(params->color);
+            alpha      = FONT_COLOR_GET_ALPHA(params->color);
 
-            color = params->color;
+            color      = params->color;
       }
       else
       {
-            x = 0.0f;
-            y = 0.0f;
-            scale = 1.0f;
+            x          = 0.0f;
+            y          = 0.0f;
+            scale      = 1.0f;
             text_align = TEXT_ALIGN_LEFT;
 
-            r = (video_info->font_msg_color_r * 255);
-            g = (video_info->font_msg_color_g * 255);
-            b = (video_info->font_msg_color_b * 255);
-            alpha = 255;
-            color = COLOR_ABGR(r, g, b, alpha);
+            r          = (video_info->font_msg_color_r * 255);
+            g          = (video_info->font_msg_color_g * 255);
+            b          = (video_info->font_msg_color_b * 255);
+            alpha      = 255;
+            color      = COLOR_ABGR(r, g, b, alpha);
 
-            drop_x = -2;
-            drop_y = -2;
-            drop_mod = 0.3f;
+#if 0
+            drop_x     = -2;
+            drop_y     = -2;
+            drop_mod   = 0.3f;
             drop_alpha = 1.0f;
+#endif
       }
 
+#if 0
       max_glyphs = strlen(msg);
 
-      /*if (drop_x || drop_y)
-      max_glyphs    *= 2;
+      if (drop_x || drop_y)
+         max_glyphs    *= 2;
 
-   if (drop_x || drop_y)
-   {
-      r_dark         = r * drop_mod;
-      g_dark         = g * drop_mod;
-      b_dark         = b * drop_mod;
-      alpha_dark     = alpha * drop_alpha;
-      color_dark     = COLOR_ABGR(r_dark, g_dark, b_dark, alpha_dark);
+      if (drop_x || drop_y)
+      {
+         r_dark         = r * drop_mod;
+         g_dark         = g * drop_mod;
+         b_dark         = b * drop_mod;
+         alpha_dark     = alpha * drop_alpha;
+         color_dark     = COLOR_ABGR(r_dark, g_dark, b_dark, alpha_dark);
 
-      switch_font_render_message(video_info, font, msg, scale, color_dark,
-                              x + scale * drop_x / width, y +
-                              scale * drop_y / height, text_align);
-   }*/
+         switch_font_render_message(video_info, font, msg, scale, color_dark,
+               x + scale * drop_x / width, y +
+               scale * drop_y / height, text_align);
+      }
+#endif
 
       switch_font_render_message(video_info, font, msg, scale,
                                  color, x, y, text_align);

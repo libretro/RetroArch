@@ -55,7 +55,7 @@ int menu_event_get_osk_ptr(void);
 
 void menu_event_set_osk_ptr(int a);
 
-void menu_event_osk_append(int a);
+void menu_event_osk_append(int a, bool is_rgui);
 
 void menu_event_osk_iterate(void);
 

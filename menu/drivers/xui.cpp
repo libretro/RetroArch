@@ -219,7 +219,7 @@ HRESULT XuiTextureLoader(IXuiDevice *pDevice, LPCWSTR szFileName,
 
    /* Cast our d3d device into our IDirect3DDevice9* interface */
    d3dDevice = (IDirect3DDevice9*)pDevice->GetD3DDevice();
-   if(!d3dDevice)
+   if (!d3dDevice)
       goto cleanup;
 
    /* Create our texture based on our conditions */
@@ -241,7 +241,7 @@ HRESULT XuiTextureLoader(IXuiDevice *pDevice, LPCWSTR szFileName,
          ppTex
          );
 
-   if(hr != D3DXERR_INVALIDDATA )
+   if (hr != D3DXERR_INVALIDDATA )
    {
       pImageInfo->Depth           = pSrc.Depth;
       pImageInfo->Format          = pSrc.Format;
@@ -477,7 +477,7 @@ static void xui_set_list_text(int index, const wchar_t* leftText,
    if (XuiHandleIsValid(hControl))
       XuiControlGetVisual(hControl, &hVisual);
 
-   if(!XuiHandleIsValid(hVisual))
+   if (!XuiHandleIsValid(hVisual))
       return;
 
    XuiElementGetChildById(hVisual, L"LeftText", &hTextLeft);
@@ -497,7 +497,7 @@ static void xui_set_list_text(int index, const wchar_t* leftText,
    XuiTextElementSetText(hTextLeft, leftText);
    XuiElementGetChildById(hVisual, L"RightText", &hTextRight);
 
-   if(XuiHandleIsValid(hTextRight))
+   if (XuiHandleIsValid(hTextRight))
    {
       currText = XuiTextElementGetText(hTextRight);
       XuiElementGetBounds(hTextRight, &width, &height);

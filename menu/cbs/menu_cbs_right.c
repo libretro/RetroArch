@@ -104,7 +104,10 @@ int shader_action_preset_parameter_right(unsigned type, const char *label, bool 
 int generic_action_cheat_toggle(size_t idx, unsigned type, const char *label,
       bool wraparound)
 {
-   cheat_manager_toggle_index((unsigned)idx);
+   settings_t *settings = config_get_ptr();
+   cheat_manager_toggle_index(
+         settings->bools.apply_cheats_after_toggle,
+         (unsigned)idx);
 
    return 0;
 }
@@ -611,13 +614,16 @@ static int playlist_left_thumbnail_mode_right(unsigned type, const char *label,
 static int manual_content_scan_system_name_right(unsigned type, const char *label,
       bool wraparound)
 {
-#ifdef HAVE_LIBRETRODB
    settings_t *settings                                            = config_get_ptr();
+#ifdef HAVE_LIBRETRODB
    struct string_list *system_name_list                            =
-      manual_content_scan_get_menu_system_name_list(settings->paths.path_content_database);
+      manual_content_scan_get_menu_system_name_list(
+            settings->paths.path_content_database,
+            settings->bools.show_hidden_files);
 #else
    struct string_list *system_name_list                            =
-      manual_content_scan_get_menu_system_name_list(NULL);
+      manual_content_scan_get_menu_system_name_list(NULL,
+            settings->bools.show_hidden_files);
 #endif
    const char *current_system_name                                 = NULL;
    enum manual_content_scan_system_name_type next_system_name_type =

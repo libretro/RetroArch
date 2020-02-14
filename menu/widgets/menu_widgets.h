@@ -48,9 +48,11 @@ void menu_widgets_msg_queue_push(
       enum message_queue_category category,
       unsigned prio, bool flush);
 
-void menu_widgets_volume_update_and_show(void);
+void menu_widgets_volume_update_and_show(float new_volume);
 
-void menu_widgets_iterate(unsigned width, unsigned height);
+void menu_widgets_iterate(
+      unsigned width, unsigned height,
+      const char *dir_assets, char *font_path);
 
 void menu_widgets_screenshot_taken(const char *shotname, const char *filename);
 
@@ -70,7 +72,8 @@ void menu_widgets_start_load_content_animation(
 void menu_widgets_cleanup_load_content_animation(void);
 
 void menu_widgets_context_reset(bool is_threaded,
-      unsigned width, unsigned height);
+      unsigned width, unsigned height,
+      const char *dir_assets, char *font_path);
 
 void menu_widgets_context_destroy(void);
 

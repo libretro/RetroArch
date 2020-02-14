@@ -660,6 +660,14 @@ struct record_params
 
    /* Path to config. Optional. */
    const char *config;
+
+   bool video_gpu_record;
+   unsigned video_record_scale_factor;
+   unsigned video_stream_scale_factor;
+   unsigned video_record_threads;
+   unsigned streaming_mode;
+
+   const char *audio_resampler;
 };
 
 struct record_video_data

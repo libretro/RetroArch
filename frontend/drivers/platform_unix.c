@@ -119,6 +119,10 @@ static const char *proc_acpi_ac_adapter_path       = "/proc/acpi/ac_adapter";
 static char unix_cpu_model_name[64] = {0};
 #endif
 
+#if (defined(__linux__) || defined(__unix__)) && !defined(ANDROID)
+static int speak_pid                            = 0;
+#endif
+
 static volatile sig_atomic_t unix_sighandler_quit;
 
 #ifndef ANDROID
@@ -2431,6 +2435,74 @@ enum retro_language frontend_unix_get_user_language(void)
    return lang;
 }
 
+#if (defined(__linux__) || defined(__unix__)) && !defined(ANDROID)
+static bool is_narrator_running_unix(void)
+{
+   return (kill(speak_pid, 0) == 0);
+}
+
+static bool accessibility_speak_unix(int speed,
+      const char* speak_text, int priority)
+{
+   int pid;
+   const char *language   = get_user_language_iso639_1(true);
+   char* voice_out        = (char *)malloc(3+strlen(language));
+   char* speed_out        = (char *)malloc(3+3);
+   const char* speeds[10] = {"80", "100", "125", "150", "170", "210", "260", "310", "380", "450"};
+
+   if (speed < 1)
+      speed = 1;
+   else if (speed > 10)
+      speed = 10;
+
+   strlcpy(voice_out, "-v", 3);
+   strlcat(voice_out, language, 5);
+
+   strlcpy(speed_out, "-s", 3);
+   strlcat(speed_out, speeds[speed-1], 6);
+
+   if (priority < 10 && speak_pid > 0)
+   {
+      /* check if old pid is running */
+      if (is_narrator_running_unix())
+         return true;
+   }
+
+   if (speak_pid > 0)
+   {
+      /* Kill the running espeak */
+      kill(speak_pid, SIGTERM);
+      speak_pid = 0;
+   }
+
+   pid = fork();
+   if (pid < 0)
+   {
+      /* error */
+      RARCH_LOG("ERROR: could not fork for espeak.\n");
+   }
+   else if (pid > 0)
+   {
+      /* parent process */
+      speak_pid = pid;
+
+      /* Tell the system that we'll ignore the exit status of the child 
+       * process.  This prevents zombie processes. */
+      signal(SIGCHLD,SIG_IGN);
+   }
+   else
+   { 
+      /* child process: replace process with the espeak command */ 
+      char* cmd[] = { (char*) "espeak", NULL, NULL, NULL, NULL};
+      cmd[1] = voice_out;
+      cmd[2] = speed_out;
+      cmd[3] = (char *) speak_text;
+      execvp("espeak", cmd);
+   }
+   return true;
+}
+#endif
+
 frontend_ctx_driver_t frontend_ctx_unix = {
    frontend_unix_get_env,       /* environment_get */
    frontend_unix_init,          /* init */
@@ -2477,6 +2549,13 @@ frontend_ctx_driver_t frontend_ctx_unix = {
    frontend_unix_set_sustained_performance_mode,
    frontend_unix_get_cpu_model_name,
    frontend_unix_get_user_language,
+#if (defined(__linux__) || defined(__unix__)) && !defined(ANDROID)
+   is_narrator_running_unix,
+   accessibility_speak_unix,
+#else
+   NULL,                         /* is_narrator_running */
+   NULL,                         /* accessibility_speak */
+#endif
 #ifdef ANDROID
    "android"
 #else

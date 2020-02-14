@@ -2739,7 +2739,8 @@ static unsigned menu_displaylist_parse_playlist_manager_list(
    /* Add collection playlists */
    str_list = dir_list_new_special(
          settings->paths.directory_playlist,
-         DIR_LIST_COLLECTIONS, NULL);
+         DIR_LIST_COLLECTIONS, NULL,
+         settings->bools.show_hidden_files);
 
    if (str_list && str_list->size)
    {
@@ -2942,7 +2943,8 @@ static unsigned menu_displaylist_parse_pl_thumbnail_download_list(
 
    str_list = dir_list_new_special(
          settings->paths.directory_playlist,
-         DIR_LIST_COLLECTIONS, NULL);
+         DIR_LIST_COLLECTIONS, NULL,
+         settings->bools.show_hidden_files);
 
    if (str_list && str_list->size)
    {
@@ -4239,7 +4241,11 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
       case DISPLAYLIST_SHADER_PRESET_REMOVE:
          {
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-            if (menu_shader_manager_auto_preset_exists(SHADER_PRESET_GLOBAL))
+            settings_t      *settings     = config_get_ptr();
+            if (menu_shader_manager_auto_preset_exists(SHADER_PRESET_GLOBAL,
+                     settings->paths.directory_video_shader,
+                     settings->paths.directory_menu_config
+                     ))
                if (menu_entries_append_enum(list,
                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_GLOBAL),
                         msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE_GLOBAL),
@@ -4247,7 +4253,10 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
                         MENU_SETTING_ACTION, 0, 0))
                   count++;
 
-            if (menu_shader_manager_auto_preset_exists(SHADER_PRESET_CORE))
+            if (menu_shader_manager_auto_preset_exists(SHADER_PRESET_CORE,
+                     settings->paths.directory_video_shader,
+                     settings->paths.directory_menu_config
+                     ))
                if (menu_entries_append_enum(list,
                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_CORE),
                         msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE_CORE),
@@ -4255,7 +4264,10 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
                         MENU_SETTING_ACTION, 0, 0))
                   count++;
 
-            if (menu_shader_manager_auto_preset_exists(SHADER_PRESET_PARENT))
+            if (menu_shader_manager_auto_preset_exists(SHADER_PRESET_PARENT,
+                     settings->paths.directory_video_shader,
+                     settings->paths.directory_menu_config
+                     ))
                if (menu_entries_append_enum(list,
                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_PARENT),
                         msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE_PARENT),
@@ -4263,7 +4275,10 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
                         MENU_SETTING_ACTION, 0, 0))
                   count++;
 
-            if (menu_shader_manager_auto_preset_exists(SHADER_PRESET_GAME))
+            if (menu_shader_manager_auto_preset_exists(SHADER_PRESET_GAME,
+                     settings->paths.directory_video_shader,
+                     settings->paths.directory_menu_config
+                     ))
                if (menu_entries_append_enum(list,
                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_GAME),
                         msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE_GAME),
@@ -5274,15 +5289,18 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
          count = populate_playlist_thumbnail_mode_dropdown_list(list, PLAYLIST_THUMBNAIL_LEFT);
          break;
       case DISPLAYLIST_DROPDOWN_LIST_MANUAL_CONTENT_SCAN_SYSTEM_NAME:
+         /* Get system name list */
          {
-            /* Get system name list */
-#ifdef HAVE_LIBRETRODB
             settings_t *settings                 = config_get_ptr();
+#ifdef HAVE_LIBRETRODB
             struct string_list *system_name_list = 
-               manual_content_scan_get_menu_system_name_list(settings->paths.path_content_database);
+               manual_content_scan_get_menu_system_name_list(
+                     settings->paths.path_content_database,
+                     settings->bools.show_hidden_files);
 #else
             struct string_list *system_name_list = 
-               manual_content_scan_get_menu_system_name_list(NULL);
+               manual_content_scan_get_menu_system_name_list(NULL,
+                     settings->bools.show_hidden_files);
 #endif
 
             if (system_name_list)
@@ -6473,6 +6491,8 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
          {
             settings_t      *settings     = config_get_ptr();
             menu_displaylist_build_info_selective_t build_list[] = {
+               {MENU_ENUM_LABEL_MENU_WIDGET_SCALE_AUTO,       PARSE_ONLY_BOOL,   false },
+               {MENU_ENUM_LABEL_MENU_WIDGET_SCALE_FACTOR,     PARSE_ONLY_FLOAT,  false },
                {MENU_ENUM_LABEL_VIDEO_FONT_ENABLE,            PARSE_ONLY_BOOL,   true },
                {MENU_ENUM_LABEL_FPS_SHOW,                     PARSE_ONLY_BOOL,   false },
                {MENU_ENUM_LABEL_FPS_UPDATE_INTERVAL,          PARSE_ONLY_UINT,   false },
@@ -6508,6 +6528,15 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
                   case MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_OPACITY:
                      if (settings->bools.video_font_enable)
                         if (settings->bools.video_msg_bgcolor_enable)
+                           build_list[i].checked = true;
+                     break;
+                  case MENU_ENUM_LABEL_MENU_WIDGET_SCALE_AUTO:
+                     if (menu_widgets_ready())
+                        build_list[i].checked = true;
+                     break;
+                  case MENU_ENUM_LABEL_MENU_WIDGET_SCALE_FACTOR:
+                     if (menu_widgets_ready())
+                        if (!settings->bools.menu_widget_scale_auto)
                            build_list[i].checked = true;
                      break;
                   default:
@@ -7944,7 +7973,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          unsigned i;
          char text[PATH_MAX_LENGTH];
          char current_profile[PATH_MAX_LENGTH];
+#ifdef HAVE_LAKKA_SWITCH
          FILE               *profile = NULL;
+#endif
          const size_t profiles_count = sizeof(SWITCH_CPU_PROFILES)/sizeof(SWITCH_CPU_PROFILES[1]);
 
          runloop_msg_queue_push("Warning : extended overclocking can damage the Switch", 1, 90, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
@@ -7959,7 +7990,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          snprintf(text, sizeof(text), "Current profile : %s", current_profile);
 #else
          u32 currentClock = 0;
-         if(hosversionBefore(8, 0, 0))
+         if (hosversionBefore(8, 0, 0))
             pcvGetClockRate(PcvModule_CpuBus, &currentClock);
          else
          {

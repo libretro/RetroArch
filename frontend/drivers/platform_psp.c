@@ -596,9 +596,13 @@ frontend_ctx_driver_t frontend_ctx_psp = {
    NULL,                         /* get_cpu_model_name */
 #ifdef VITA
    frontend_psp_get_user_language,
+   NULL,                         /* is_narrator_running */
+   NULL,                         /* accessibility_speak */
    "vita",
 #else
    NULL,                         /* get_user_language */
+   NULL,                         /* is_narrator_running */
+   NULL,                         /* accessibility_speak */
    "psp",
 #endif
 };

@@ -5,6 +5,7 @@
 - CHEEVOS: Don't block Sameboy core because it only exposes some memory
 - CHEEVOS: Support for extended Sega CD memory
 - CHEEVOS: Show RetroAchievements Hash in content information list
+- CHEEVOS: If the core says it's exposing SYSTEM_RAM, give it the benefit of the doubt
 - DISK CONTROL: Add disk labels to 'disk inserted' notifications
 - EMSCRIPTEN: Recreate input event listeners properly
 - FFMPEG CORE: Fix crash on seeking when using HW decoding in some cases
@@ -12,6 +13,8 @@
 - LOCALIZATION: Update Polish translation
 - LOCALIZATION: Update Spanish translation
 - MENU/WIDGETS: Allow notifications to use full screen width when not displaying menu
+- MENU/WIDGETS: DPI-based scaling
+- MENU/OZONE: Add DPI-based scaling
 - NETPLAY/MENU/BUGFIX: Fix Netplay Stateless Mode doesn't save. Affects other netplay settings which can be overridden by commandline option
 - NETPLAY/ROOMS/BUGFIX: Prevent out-of-bounds array indexing when displaying/selecting netplay rooms in menus
 - VIDEO: Set hardware 'Bilinear filtering' off by default

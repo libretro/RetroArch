@@ -814,7 +814,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_DISK_TRAY_EJECT,
-    "Opens virtual disk try and removes currently loaded disk. NOTE: If RetroArch is configured to pause while menu is active, some cores may not register changes unless content is resumed for a few seconds after each disk control action."
+    "Opens virtual disk tray and removes currently loaded disk. NOTE: If RetroArch is configured to pause while menu is active, some cores may not register changes unless content is resumed for a few seconds after each disk control action."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
@@ -923,6 +923,22 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_SCALE_FACTOR,
     "Applies a global scaling factor when drawing the menu. Can be used to increase or decrease the size of the user interface."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_AUTO,
+    "Auto Scale Menu Widgets"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_AUTO,
+    "Automatically resize decorated notifications, indicators and controls based on current menu scale."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_FACTOR,
+    "Menu Widget Scale Override"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_FACTOR,
+    "Applies a manual scaling factor override when drawing menu widgets. Only applies when 'Auto Scale Menu Widgets' is disabled. Can be used to increase or decrease the size of decorated notifications, indicators and controls independently from the menu itself."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS,

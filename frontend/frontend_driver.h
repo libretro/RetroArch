@@ -110,6 +110,9 @@ typedef struct frontend_ctx_driver
    void (*set_sustained_performance_mode)(bool on);
    const char* (*get_cpu_model_name)(void);
    enum retro_language (*get_user_language)(void);
+   bool (*is_narrator_running)(void);
+   bool (*accessibility_speak)(int speed,
+         const char* speak_text, int priority);
 
    const char *ident;
 

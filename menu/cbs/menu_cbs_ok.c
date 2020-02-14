@@ -2731,6 +2731,7 @@ static void menu_input_st_string_cb_save_preset(void *userdata,
    if (!string_is_empty(str))
    {
       rarch_setting_t *setting = NULL;
+      settings_t *settings     = config_get_ptr();
       bool                 ret = false;
       const char        *label = menu_input_dialog_get_label_buffer();
 
@@ -2744,7 +2745,10 @@ static void menu_input_st_string_cb_save_preset(void *userdata,
       }
       else if (!string_is_empty(label))
          ret = menu_shader_manager_save_preset(menu_shader_get(),
-               str, true);
+               str,
+               settings->paths.directory_video_shader,
+               settings->paths.directory_menu_config,
+               true);
 
       if (ret)
          runloop_msg_queue_push(
@@ -2849,6 +2853,8 @@ static int generic_action_ok_shader_preset_remove(const char *path,
       unsigned action_type)
 {
    enum auto_shader_type preset_type;
+   settings_t *settings = config_get_ptr();
+
    switch (action_type)
    {
       case ACTION_OK_SHADER_PRESET_REMOVE_GLOBAL:
@@ -2867,7 +2873,9 @@ static int generic_action_ok_shader_preset_remove(const char *path,
          return 0;
    }
 
-   if (menu_shader_manager_remove_auto_preset(preset_type))
+   if (menu_shader_manager_remove_auto_preset(preset_type,
+         settings->paths.directory_video_shader,
+         settings->paths.directory_menu_config))
    {
       bool refresh = false;
 
@@ -2892,6 +2900,8 @@ static int generic_action_ok_shader_preset_save(const char *path,
       unsigned action_type)
 {
    enum auto_shader_type preset_type;
+   settings_t      *settings     = config_get_ptr();
+
    switch (action_type)
    {
       case ACTION_OK_SHADER_PRESET_SAVE_GLOBAL:
@@ -2910,7 +2920,10 @@ static int generic_action_ok_shader_preset_save(const char *path,
          return 0;
    }
 
-   if (menu_shader_manager_save_auto_preset(menu_shader_get(), preset_type, true))
+   if (menu_shader_manager_save_auto_preset(menu_shader_get(), preset_type,
+            settings->paths.directory_video_shader,
+            settings->paths.directory_menu_config,
+            true))
       runloop_msg_queue_push(
             msg_hash_to_str(MSG_SHADER_PRESET_SAVED_SUCCESSFULLY),
             1, 100, true,
@@ -3061,7 +3074,9 @@ static int generic_action_ok_remap_file_operation(const char *path,
    }
    else
    {
-      if (input_remapping_remove_file(file))
+      if (input_remapping_remove_file(file,
+               settings->paths.directory_input_remapping
+               ))
       {
 #ifdef HAVE_CONFIGFILE
          switch (action_type)
@@ -3276,18 +3291,18 @@ static int action_ok_deferred_list_stub(const char *path,
 static int action_ok_set_switch_cpu_profile(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   char* profile_name = SWITCH_CPU_PROFILES[entry_idx];
    char command[PATH_MAX_LENGTH] = {0};
-
 #ifdef HAVE_LAKKA_SWITCH
+   char* profile_name            = SWITCH_CPU_PROFILES[entry_idx];
+
    snprintf(command, sizeof(command), "cpu-profile set '%s'", profile_name);
 
    system(command);
    snprintf(command, sizeof(command), "Current profile set to %s", profile_name);
 #else
+   unsigned profile_clock = SWITCH_CPU_SPEEDS_VALUES[entry_idx];
    config_get_ptr()->uints.libnx_overclock = entry_idx;
 
-   unsigned profile_clock = SWITCH_CPU_SPEEDS_VALUES[entry_idx];
    if (hosversionBefore(8, 0, 0))
       pcvSetClockRate(PcvModule_CpuBus, (u32)profile_clock);
    else
@@ -3454,9 +3469,14 @@ int action_ok_core_option_dropdown_list(const char *path,
 static int action_ok_cheat_reload_cheats(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   bool          refresh = false ;
+   bool          refresh = false;
+   settings_t *settings  = config_get_ptr();
+
    cheat_manager_realloc(0, CHEAT_HANDLER_TYPE_EMU);
-   cheat_manager_load_game_specific_cheats();
+
+   cheat_manager_load_game_specific_cheats(
+         settings->paths.path_cheat_database);
+
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
    menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
    return 0 ;

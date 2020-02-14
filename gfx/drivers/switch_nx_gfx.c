@@ -580,7 +580,7 @@ static void switch_set_texture_frame(
         struct scaler_ctx *sctx = NULL;
 
         if (sw->menu_texture.pixels)
-            realloc(sw->menu_texture.pixels, sz);
+            sw->menu_texture.pixels = realloc(sw->menu_texture.pixels, sz);
         else
             sw->menu_texture.pixels = malloc(sz);
 

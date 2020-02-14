@@ -31,7 +31,6 @@
 #include "menu_osk.h"
 
 #include "../../input/input_driver.h"
-#include "../../configuration.h"
 
 static char *osk_grid[45]        = {NULL};
 
@@ -82,16 +81,8 @@ void menu_event_set_osk_ptr(int i)
    osk_ptr = i;
 }
 
-void menu_event_osk_append(int ptr)
+void menu_event_osk_append(int ptr, bool is_rgui)
 {
-   settings_t *settings = config_get_ptr();
-   bool is_rgui;
-
-   if (ptr < 0 || !settings)
-      return;
-
-   is_rgui = string_is_equal(settings->arrays.menu_driver, "rgui");
-
 #ifdef HAVE_LANGEXTRA
    if (string_is_equal(osk_grid[ptr],"\xe2\x87\xa6")) /* backspace character */
       input_keyboard_event(true, '\x7f', '\x7f', 0, RETRO_DEVICE_KEYBOARD);
@@ -99,9 +90,9 @@ void menu_event_osk_append(int ptr)
       input_keyboard_event(true, '\n', '\n', 0, RETRO_DEVICE_KEYBOARD);
    else
    if (string_is_equal(osk_grid[ptr],"\xe2\x87\xa7")) /* up arrow */
-      menu_event_set_osk_idx(OSK_UPPERCASE_LATIN);
+      osk_idx = OSK_UPPERCASE_LATIN;
    else if (string_is_equal(osk_grid[ptr],"\xe2\x87\xa9")) /* down arrow */
-      menu_event_set_osk_idx(OSK_LOWERCASE_LATIN);
+      osk_idx = OSK_LOWERCASE_LATIN;
    else if (string_is_equal(osk_grid[ptr],"\xe2\x8a\x95")) /* plus sign (next button) */
 #else
    if (string_is_equal(osk_grid[ptr], "Bksp"))
@@ -110,22 +101,22 @@ void menu_event_osk_append(int ptr)
       input_keyboard_event(true, '\n', '\n', 0, RETRO_DEVICE_KEYBOARD);
    else
    if (string_is_equal(osk_grid[ptr], "Upper"))
-      menu_event_set_osk_idx(OSK_UPPERCASE_LATIN);
+      osk_idx = OSK_UPPERCASE_LATIN;
    else if (string_is_equal(osk_grid[ptr], "Lower"))
-      menu_event_set_osk_idx(OSK_LOWERCASE_LATIN);
+      osk_idx = OSK_LOWERCASE_LATIN;
    else if (string_is_equal(osk_grid[ptr], "Next"))
 #endif
-      if (menu_event_get_osk_idx() < (is_rgui ? OSK_SYMBOLS_PAGE1 : OSK_TYPE_LAST - 1))
-         menu_event_set_osk_idx((enum osk_type)(menu_event_get_osk_idx() + 1));
+      if (osk_idx < (is_rgui ? OSK_SYMBOLS_PAGE1 : OSK_TYPE_LAST - 1))
+         osk_idx = (enum osk_type)(osk_idx + 1);
       else
-         menu_event_set_osk_idx((enum osk_type)(OSK_TYPE_UNKNOWN + 1));
+         osk_idx = ((enum osk_type)(OSK_TYPE_UNKNOWN + 1));
    else
       input_keyboard_line_append(osk_grid[ptr]);
 }
 
 void menu_event_osk_iterate(void)
 {
-   switch (menu_event_get_osk_idx())
+   switch (osk_idx)
    {
 #ifdef HAVE_LANGEXTRA
       case OSK_HIRAGANA_PAGE1:

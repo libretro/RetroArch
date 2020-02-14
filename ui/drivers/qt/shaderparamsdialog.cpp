@@ -697,6 +697,7 @@ void ShaderParamsDialog::operateShaderPreset(bool save, const char *path, unsign
 {
    bool ret;
    enum auto_shader_type preset_type;
+   settings_t *settings = config_get_ptr();
 
    switch (action_type)
    {
@@ -721,9 +722,16 @@ void ShaderParamsDialog::operateShaderPreset(bool save, const char *path, unsign
    if (save)
    {
       if (action_type == QT_SHADER_PRESET_NORMAL)
-         ret = menu_shader_manager_save_preset(menu_shader_get(), path, true);
+         ret = menu_shader_manager_save_preset(menu_shader_get(), path,
+               settings->paths.directory_video_shader,
+               settings->paths.directory_menu_config,
+               true);
       else
-         ret = menu_shader_manager_save_auto_preset(menu_shader_get(), preset_type, true);
+         ret = menu_shader_manager_save_auto_preset(menu_shader_get(),
+               preset_type,
+               settings->paths.directory_video_shader,
+               settings->paths.directory_menu_config,
+               true);
 
       if (ret)
          runloop_msg_queue_push(
@@ -743,7 +751,9 @@ void ShaderParamsDialog::operateShaderPreset(bool save, const char *path, unsign
    else
    {
       if (action_type != QT_SHADER_PRESET_NORMAL &&
-            menu_shader_manager_remove_auto_preset(preset_type))
+            menu_shader_manager_remove_auto_preset(preset_type,
+               settings->paths.directory_video_shader,
+               settings->paths.directory_menu_config))
       {
 #ifdef HAVE_MENU
          bool refresh = false;
@@ -881,14 +891,27 @@ void ShaderParamsDialog::onShaderApplyClicked()
 
 void ShaderParamsDialog::updateRemovePresetButtonsState()
 {
+   settings_t      *settings     = config_get_ptr();
    if (removeGlobalPresetAction)
-      removeGlobalPresetAction->setEnabled(menu_shader_manager_auto_preset_exists(SHADER_PRESET_GLOBAL));
+      removeGlobalPresetAction->setEnabled(menu_shader_manager_auto_preset_exists(SHADER_PRESET_GLOBAL,
+               settings->paths.directory_video_shader,
+               settings->paths.directory_menu_config
+               ));
    if (removeCorePresetAction)
-      removeCorePresetAction->setEnabled(menu_shader_manager_auto_preset_exists(SHADER_PRESET_CORE));
+      removeCorePresetAction->setEnabled(menu_shader_manager_auto_preset_exists(SHADER_PRESET_CORE,
+               settings->paths.directory_video_shader,
+               settings->paths.directory_menu_config
+               ));
    if (removeParentPresetAction)
-      removeParentPresetAction->setEnabled(menu_shader_manager_auto_preset_exists(SHADER_PRESET_PARENT));
+      removeParentPresetAction->setEnabled(menu_shader_manager_auto_preset_exists(SHADER_PRESET_PARENT,
+               settings->paths.directory_video_shader,
+               settings->paths.directory_menu_config
+               ));
    if (removeGamePresetAction)
-      removeGamePresetAction->setEnabled(menu_shader_manager_auto_preset_exists(SHADER_PRESET_GAME));
+      removeGamePresetAction->setEnabled(menu_shader_manager_auto_preset_exists(SHADER_PRESET_GAME,
+               settings->paths.directory_video_shader,
+               settings->paths.directory_menu_config
+               ));
 }
 
 void ShaderParamsDialog::reload()

@@ -170,6 +170,7 @@ struct video_shader
  * See: video_shader_read_preset
  **/
 bool video_shader_write_preset(const char *path,
+      const char *shader_dir,
       const struct video_shader *shader, bool reference);
 
 /**

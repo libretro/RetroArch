@@ -19,30 +19,11 @@
 #include "../video_display_server.h"
 #include "../../frontend/drivers/platform_unix.h"
 
-static void* android_display_server_init(void)
-{
-   return NULL;
-}
-
-static void android_display_server_destroy(void *data)
-{
-   (void)data;
-}
-
-static bool android_display_server_set_window_opacity(void *data, unsigned opacity)
-{
-   (void)data;
-   (void)opacity;
-   return true;
-}
-
-static bool android_display_server_set_window_progress(void *data, int progress, bool finished)
-{
-   (void)data;
-   (void)progress;
-   (void)finished;
-   return true;
-}
+static void* android_display_server_init(void) { return NULL; }
+static void android_display_server_destroy(void *data) { }
+static bool android_display_server_set_window_opacity(void *data, unsigned opacity) { return true; }
+static bool android_display_server_set_window_progress(void *data, int progress, bool finished) { return true; }
+static uint32_t android_display_server_get_flags(void *data) { return 0; }
 
 static void android_display_server_set_screen_orientation(enum rotation rotation)
 {
@@ -54,13 +35,6 @@ static void android_display_server_set_screen_orientation(enum rotation rotation
    if (g_android->setScreenOrientation)
       CALL_VOID_METHOD_PARAM(env, g_android->activity->clazz,
             g_android->setScreenOrientation, rotation);
-}
-
-static uint32_t android_display_server_get_flags(void *data)
-{
-   uint32_t             flags   = 0;
-
-   return flags;
 }
 
 const video_display_server_t dispserv_android = {

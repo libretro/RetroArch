@@ -120,16 +120,16 @@ static void app_terminate(void)
         case NSEventTypeMouseMoved:
         case NSEventTypeLeftMouseDragged:
         case NSEventTypeRightMouseDragged:
-	    case NSEventTypeOtherMouseDragged:
+        case NSEventTypeOtherMouseDragged:
          {
             NSPoint pos;
             NSPoint mouse_pos;
-            apple                        = (cocoa_input_data_t*)input_driver_get_data();
+            apple              = (cocoa_input_data_t*)input_driver_get_data();
             if (!apple)
                return;
 
-			pos.x              = 0;
-			pos.y              = 0;
+            pos.x              = 0;
+            pos.y              = 0;
 
             /* Relative */
             apple->mouse_rel_x = (int16_t)event.deltaX;
@@ -662,17 +662,6 @@ typedef struct ui_companion_cocoa
    void *empty;
 } ui_companion_cocoa_t;
 
-static void ui_companion_cocoa_notify_content_loaded(void *data)
-{
-    (void)data;
-}
-
-static void ui_companion_cocoa_toggle(void *data, bool force)
-{
-   (void)data;
-   (void)force;
-}
-
 static void ui_companion_cocoa_deinit(void *data)
 {
    ui_companion_cocoa_t *handle = (ui_companion_cocoa_t*)data;
@@ -693,19 +682,12 @@ static void *ui_companion_cocoa_init(void)
    return handle;
 }
 
+static void ui_companion_cocoa_notify_content_loaded(void *data) { }
+static void ui_companion_cocoa_toggle(void *data, bool force) { }
 static void ui_companion_cocoa_event_command(void *data, enum event_command cmd)
-{
-   (void)data;
-   (void)cmd;
-}
-
+{ }
 static void ui_companion_cocoa_notify_list_pushed(void *data,
-    file_list_t *list, file_list_t *menu_list)
-{
-    (void)data;
-    (void)list;
-    (void)menu_list;
-}
+    file_list_t *list, file_list_t *menu_list) { }
 
 static void *ui_companion_cocoa_get_main_window(void *data)
 {

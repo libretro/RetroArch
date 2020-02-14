@@ -1676,7 +1676,7 @@ static bool request_thumbnail(
       {
          /* Would like to cancel any existing image load tasks
           * here, but can't see how to do it... */
-         if(task_push_image_load(thumbnail->path,
+         if (task_push_image_load(thumbnail->path,
                   video_driver_supports_rgba(), 0,
                   (thumbnail_id == MENU_THUMBNAIL_LEFT) ?
             menu_display_handle_left_thumbnail_upload : menu_display_handle_thumbnail_upload, NULL))
@@ -1768,7 +1768,7 @@ static bool downscale_thumbnail(rgui_t *rgui, unsigned max_width, unsigned max_h
        * calls it - but do it anyway in case the
        * scaler_ctx_gen_filter() internals ever change... */
       scaler_ctx_gen_reset(&rgui->image_scaler);
-      if(!scaler_ctx_gen_filter(&rgui->image_scaler))
+      if (!scaler_ctx_gen_filter(&rgui->image_scaler))
       {
          /* Could be leftovers if scaler_ctx_gen_filter()
           * fails, so reset just in case... */
@@ -2218,36 +2218,36 @@ static void load_custom_theme(rgui_t *rgui, rgui_theme_t *theme_colors, const ch
       goto end;
 
    /* Parse config file */
-   if(!config_get_hex(conf, "rgui_entry_normal_color", &normal_color))
+   if (!config_get_hex(conf, "rgui_entry_normal_color", &normal_color))
       goto end;
 
-   if(!config_get_hex(conf, "rgui_entry_hover_color", &hover_color))
+   if (!config_get_hex(conf, "rgui_entry_hover_color", &hover_color))
       goto end;
 
-   if(!config_get_hex(conf, "rgui_title_color", &title_color))
+   if (!config_get_hex(conf, "rgui_title_color", &title_color))
       goto end;
 
-   if(!config_get_hex(conf, "rgui_bg_dark_color", &bg_dark_color))
+   if (!config_get_hex(conf, "rgui_bg_dark_color", &bg_dark_color))
       goto end;
 
-   if(!config_get_hex(conf, "rgui_bg_light_color", &bg_light_color))
+   if (!config_get_hex(conf, "rgui_bg_light_color", &bg_light_color))
       goto end;
 
-   if(!config_get_hex(conf, "rgui_border_dark_color", &border_dark_color))
+   if (!config_get_hex(conf, "rgui_border_dark_color", &border_dark_color))
       goto end;
 
-   if(!config_get_hex(conf, "rgui_border_light_color", &border_light_color))
+   if (!config_get_hex(conf, "rgui_border_light_color", &border_light_color))
       goto end;
 
    /* Make shadow colour optional (fallback to fully opaque black)
     * - i.e. if user has no intention of enabling shadows, they
     * should not have to include this entry */
-   if(!config_get_hex(conf, "rgui_shadow_color", &shadow_color))
+   if (!config_get_hex(conf, "rgui_shadow_color", &shadow_color))
       shadow_color = 0xFF000000;
 
    /* Make particle colour optional too (fallback to normal
     * rgb with bg_light alpha) */
-   if(!config_get_hex(conf, "rgui_particle_color", &particle_color))
+   if (!config_get_hex(conf, "rgui_particle_color", &particle_color))
       particle_color = (normal_color & 0x00FFFFFF) |
                        (bg_light_color & 0xFF000000);
 
@@ -3643,7 +3643,7 @@ static void rgui_render(void *data,
              * standard layout (even though it always will...),
              * so have to check whether there are an odd or even
              * number of entries... */
-            if((rgui_term_layout.height & 1) == 0)
+            if ((rgui_term_layout.height & 1) == 0)
             {
                /* Even number of entries */
                if ((show_thumbnail      && (term_offset <= term_mid_point)) ||

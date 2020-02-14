@@ -2271,6 +2271,9 @@ static void materialui_render(void *data,
       unsigned width, unsigned height,
       bool is_idle)
 {
+   size_t i;
+   float bottom;
+   float scale_factor;
    settings_t *settings     = config_get_ptr();
    materialui_handle_t *mui = (materialui_handle_t*)data;
    unsigned header_height   = menu_display_get_header_height();
@@ -2278,9 +2281,6 @@ static void materialui_render(void *data,
    file_list_t *list        = menu_entries_get_selection_buf_ptr(0);
    bool first_entry_found   = false;
    bool last_entry_found    = false;
-   size_t i;
-   float bottom;
-   float scale_factor;
 
    if (!settings || !mui || !list)
       return;
@@ -2499,21 +2499,26 @@ static void materialui_render(void *data,
       if ((mui->list_view_type != MUI_LIST_VIEW_DEFAULT) &&
           (mui->list_view_type != MUI_LIST_VIEW_PLAYLIST))
       {
-         bool on_screen = first_entry_found && !last_entry_found;
+         bool on_screen                       = 
+            first_entry_found && !last_entry_found;
+         unsigned thumbnail_upscale_threshold = 
+            settings->uints.menu_thumbnail_upscale_threshold;
+         bool network_on_demand_thumbnails    = 
+            settings->bools.network_on_demand_thumbnails;
 
          if (mui->secondary_thumbnail_enabled)
             menu_thumbnail_process_streams(
                mui->thumbnail_path_data, mui->playlist, i,
                &node->thumbnails.primary, &node->thumbnails.secondary,
                on_screen,
-               settings->uints.menu_thumbnail_upscale_threshold,
-               settings->bools.network_on_demand_thumbnails);
+               thumbnail_upscale_threshold,
+               network_on_demand_thumbnails);
          else
             menu_thumbnail_process_stream(
                   mui->thumbnail_path_data, MENU_THUMBNAIL_RIGHT,
                   mui->playlist, i, &node->thumbnails.primary, on_screen,
-                  settings->uints.menu_thumbnail_upscale_threshold,
-                  settings->bools.network_on_demand_thumbnails);
+                  thumbnail_upscale_threshold,
+                  network_on_demand_thumbnails);
       }
       else if (last_entry_found)
          break;
@@ -5874,7 +5879,7 @@ static void materialui_populate_nav_bar(
    mui->nav_bar.menu_tabs[menu_tab_index].active        =
          string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU));
 
-   if(mui->nav_bar.menu_tabs[menu_tab_index].active)
+   if (mui->nav_bar.menu_tabs[menu_tab_index].active)
       mui->nav_bar.active_menu_tab_index = menu_tab_index;
 
    menu_tab_index++;
@@ -5889,7 +5894,7 @@ static void materialui_populate_nav_bar(
       mui->nav_bar.menu_tabs[menu_tab_index].active        =
             string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB));
 
-      if(mui->nav_bar.menu_tabs[menu_tab_index].active)
+      if (mui->nav_bar.menu_tabs[menu_tab_index].active)
          mui->nav_bar.active_menu_tab_index = menu_tab_index;
 
       menu_tab_index++;
@@ -5903,7 +5908,7 @@ static void materialui_populate_nav_bar(
    mui->nav_bar.menu_tabs[menu_tab_index].active        =
          string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS_TAB));
 
-   if(mui->nav_bar.menu_tabs[menu_tab_index].active)
+   if (mui->nav_bar.menu_tabs[menu_tab_index].active)
       mui->nav_bar.active_menu_tab_index = menu_tab_index;
 
    menu_tab_index++;
@@ -5915,16 +5920,16 @@ static void materialui_populate_nav_bar(
 static void materialui_init_transition_animation(
       materialui_handle_t *mui, settings_t *settings)
 {
+   menu_animation_ctx_entry_t alpha_entry;
+   menu_animation_ctx_entry_t x_offset_entry;
    size_t stack_size                   = materialui_list_get_size(mui, MENU_LIST_PLAIN);
    menu_animation_ctx_tag alpha_tag    = (uintptr_t)&mui->transition_alpha;
    menu_animation_ctx_tag x_offset_tag = (uintptr_t)&mui->transition_x_offset;
-   menu_animation_ctx_entry_t alpha_entry;
-   menu_animation_ctx_entry_t x_offset_entry;
+   unsigned transition_animation       = settings->uints.menu_materialui_transition_animation;
 
    /* If animations are disabled, reset alpha/x offset
     * values and return immediately */
-   if (settings->uints.menu_materialui_transition_animation ==
-         MATERIALUI_TRANSITION_ANIM_NONE)
+   if (transition_animation == MATERIALUI_TRANSITION_ANIM_NONE)
    {
       mui->transition_alpha    = 1.0f;
       mui->transition_x_offset = 0.0f;
@@ -5966,29 +5971,25 @@ static void materialui_init_transition_animation(
     *    - We apply a standard 'back' animation here */
    if (mui->menu_stack_flushed)
    {
-      if (settings->uints.menu_materialui_transition_animation !=
-               MATERIALUI_TRANSITION_ANIM_FADE)
+      if (transition_animation != MATERIALUI_TRANSITION_ANIM_FADE)
          mui->transition_x_offset = -1.0f;
    }
    /* >> Menu 'forward' action */
    else if (stack_size > mui->last_stack_size)
    {
-      if (settings->uints.menu_materialui_transition_animation ==
-               MATERIALUI_TRANSITION_ANIM_SLIDE)
+      if (transition_animation == MATERIALUI_TRANSITION_ANIM_SLIDE)
          mui->transition_x_offset = 1.0f;
    }
    /* >> Menu 'back' action */
    else if (stack_size < mui->last_stack_size)
    {
-      if (settings->uints.menu_materialui_transition_animation ==
-               MATERIALUI_TRANSITION_ANIM_SLIDE)
+      if (transition_animation == MATERIALUI_TRANSITION_ANIM_SLIDE)
          mui->transition_x_offset = -1.0f;
    }
    /* >> Menu tab 'switch' action - using navigation
     *    bar to switch between top level menus */
    else if ((stack_size == 1) &&
-            (settings->uints.menu_materialui_transition_animation !=
-                  MATERIALUI_TRANSITION_ANIM_FADE))
+            (transition_animation != MATERIALUI_TRANSITION_ANIM_FADE))
    {
       /* We're not changing menu levels here, so set
        * slide to match horizontal list 'movement'

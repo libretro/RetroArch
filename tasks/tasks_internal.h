@@ -56,6 +56,7 @@ struct autoconfig_params
    uint32_t max_users;
    char  *name;
    char  *autoconfig_directory;
+   bool show_hidden_files;
 };
 
 

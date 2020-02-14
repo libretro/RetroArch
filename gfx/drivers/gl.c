@@ -785,8 +785,9 @@ static void gl2_create_fbo_texture(gl_t *gl,
    bool fp_fbo                   = false;
    bool smooth                   = false;
    settings_t *settings          = config_get_ptr();
-   GLuint base_filt              = settings->bools.video_smooth ? GL_LINEAR : GL_NEAREST;
-   GLuint base_mip_filt          = settings->bools.video_smooth ?
+   bool video_smooth             = settings->bools.video_smooth;
+   GLuint base_filt              = video_smooth ? GL_LINEAR : GL_NEAREST;
+   GLuint base_mip_filt          = video_smooth ?
       GL_LINEAR_MIPMAP_LINEAR : GL_NEAREST_MIPMAP_NEAREST;
    unsigned mip_level            = i + 2;
    bool mipmapped                = gl->shader->mipmap_input(gl->shader_data, mip_level);

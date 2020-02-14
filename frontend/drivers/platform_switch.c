@@ -94,7 +94,6 @@ void libnx_apply_overclock(void)
 
 static void on_applet_hook(AppletHookType hook, void *param)
 {
-   u32 performance_mode;
    AppletFocusState focus_state;
 
    /* Exit request */
@@ -131,9 +130,11 @@ static void on_applet_hook(AppletHookType hook, void *param)
 
          /* Performance mode */
       case AppletHookType_OnPerformanceMode:
-         /* 0 == Handheld, 1 == Docked
-          * Since CPU doesn't change we just re-apply */
-         performance_mode = appletGetPerformanceMode();
+         {
+            /* 0 == Handheld, 1 == Docked
+             * Since CPU doesn't change we just re-apply */
+            u32 performance_mode = appletGetPerformanceMode();
+         }
          libnx_apply_overclock();
          break;
 
@@ -318,17 +319,20 @@ static void frontend_switch_deinit(void *data)
 static void frontend_switch_exec(const char *path, bool should_load_game)
 {
    char game_path[PATH_MAX-4];
+#ifndef IS_SALAMANDER
    const char *arg_data[3];
    int args           = 0;
-
-   game_path[0]       = NULL;
    arg_data[0]        = NULL;
 
    arg_data[args]     = elf_path_cst;
    arg_data[args + 1] = NULL;
    args++;
+#endif
+
+   game_path[0]       = NULL;
 
    RARCH_LOG("Attempt to load core: [%s].\n", path);
+
 #ifndef IS_SALAMANDER
    if (should_load_game && !path_is_empty(RARCH_PATH_CONTENT))
    {
@@ -618,8 +622,6 @@ char *realpath(const char *name, char *resolved)
 
    for (start = end = name; *start; start = end)
    {
-      int n;
-
       /* Skip sequence of multiple path-separators.  */
       while (*start == '/')
          ++start;
@@ -921,5 +923,7 @@ frontend_ctx_driver_t frontend_ctx_switch =
         NULL, /* set_sustained_performance_mode */
         NULL, /* get_cpu_model_name */
         NULL, /* get_user_language */
+        NULL, /* is_narrator_running */
+        NULL, /* accessibility_speak */
         "switch",
 };
