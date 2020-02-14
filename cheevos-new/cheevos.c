@@ -1058,7 +1058,7 @@ static void rcheevos_test_richpresence(void)
    if (!rcheevos_locals.richpresence.richpresence || 
        cpu_features_get_time_usec() < rcheevos_locals.richpresence.last_update + CHEEVOS_PING_FREQUENCY)
       return;
-   else
+
    { 
       settings_t* settings = config_get_ptr();
       char url[256], post_data[1024];
@@ -1081,7 +1081,8 @@ static void rcheevos_test_richpresence(void)
 
 #ifdef HAVE_DISCORD
       if (settings->bools.discord_enable)
-         discord_update(DISCORD_PRESENCE_RETROACHIEVEMENTS);
+         discord_update(DISCORD_PRESENCE_RETROACHIEVEMENTS,
+               false);
 #endif
 
       task_push_http_post_transfer(url, post_data, true, "POST", NULL, NULL);
