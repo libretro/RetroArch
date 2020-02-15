@@ -15419,7 +15419,7 @@ static bool setting_append_list(
                &settings->bools.cheevos_richpresence_enable,
                MENU_ENUM_LABEL_CHEEVOS_RICHPRESENCE_ENABLE,
                MENU_ENUM_LABEL_VALUE_CHEEVOS_RICHPRESENCE_ENABLE,
-               false,
+               true,
                MENU_ENUM_LABEL_VALUE_OFF,
                MENU_ENUM_LABEL_VALUE_ON,
                &group_info,

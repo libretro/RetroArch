@@ -44,6 +44,7 @@ typedef struct {
 typedef struct {
    unsigned game_id;
    unsigned console_id;
+   char* title;
 
    rcheevos_racheevo_t* core;
    rcheevos_racheevo_t* unofficial;
