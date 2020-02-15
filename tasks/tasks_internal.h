@@ -76,6 +76,9 @@ void *task_push_http_transfer_with_user_agent(const char *url, bool mute, const 
 void *task_push_http_post_transfer(const char *url, const char *post_data, bool mute, const char *type,
       retro_task_callback_t cb, void *userdata);
 
+void *task_push_http_post_transfer_with_user_agent(const char* url, const char* post_data, bool mute,
+   const char* type, const char* user_agent, retro_task_callback_t cb, void* user_data);
+
 task_retriever_info_t *http_task_get_transfer_list(void);
 
 bool task_push_wifi_scan(retro_task_callback_t cb);
