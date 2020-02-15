@@ -545,6 +545,10 @@ MSG_HASH(
     "Classements"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEEVOS_RICHPRESENCE_ENABLE,
+    "Présence enrichie"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEEVOS_BADGES_ENABLE,
     "Badges de succès"
     )
@@ -919,6 +923,22 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_SCALE_FACTOR,
     "Applique un facteur de mise à l'échelle global lors de l'affichage du menu. Peut être utile pour augmenter ou réduire la taille de l'interface utilisateur."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_AUTO,
+    "Mise à l'échelle automatique des widgets du menu"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_AUTO,
+    "Redimensionne automatiquement les notifications améliorées, indicateurs et commandes en fonction de l'échelle actuelle du menu."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_FACTOR,
+    "Remplacement de l'échelle des widgets du menu"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_FACTOR,
+    "Applique une valeur manuelle de remplacement du facteur d'échelle pour l'affichage des widgets du menu. Cette valeur est appliquée uniquement si l'option 'Mise à l'échelle automatique des widgets du menu' est désactivée. Peut être utile pour augmenter ou réduire la taille des notifications améliorées, indicateurs et commandes indépendamment du menu lui-même."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS,
@@ -3723,7 +3743,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_TICKER_SPEED,
-    "Vitesse de l'animation lors de l'affichage du texte trop long dans le menu."
+    "Vitesse de l'animation pour l'affichage de texte trop long dans le menu."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_TICKER_SMOOTH,
@@ -3731,7 +3751,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_TICKER_SMOOTH,
-    "Utiliser une animation lisse lors de l'affichage du texte trop long dans le menu. A un faible impact sur les performances."
+    "Utiliser une animation lisse pour l'affichage de texte trop long dans le menu. A un faible impact sur les performances."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME,
@@ -4552,6 +4572,10 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_CHEEVOS_LEADERBOARDS_ENABLE,
     "Classements spécifiques au jeu.\n"
     "N'a aucun effet si le mode Hardcore est désactivé."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEEVOS_RICHPRESENCE_ENABLE,
+    "Envoie les détails sur l'état de jeu au site web des RetroSuccès (RetroAchievements)."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CHEEVOS_BADGES_ENABLE,
@@ -7727,6 +7751,10 @@ MSG_HASH(
     "Vitesse de l'animation en arrière-plan"
     )
 MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_RGUI_PARTICLE_EFFECT_SPEED,
+    "Ajuste la vitesse des effets d'animation de particules en arrière-plan."
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_RGUI_EXTENDED_ASCII,
     "Prise en charge de l'ASCII étendu"
     )
@@ -8299,7 +8327,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_TYPE,
-    "Vibrer lors de la mémoire"
+    "Vibrer pour la mémoire"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_VALUE,
