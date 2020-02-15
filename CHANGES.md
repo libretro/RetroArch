@@ -11,6 +11,8 @@
 - EMSCRIPTEN: Recreate input event listeners properly
 - FFMPEG CORE: Fix crash on seeking when using HW decoding in some cases
 - LIBRETRO: Add disk control interface API extension
+- LOCALIZATION: Update French translation
+- LOCALIZATION: Update Korean translation
 - LOCALIZATION: Update Polish translation
 - LOCALIZATION: Update Spanish translation
 - MENU/WIDGETS: Allow notifications to use full screen width when not displaying menu
