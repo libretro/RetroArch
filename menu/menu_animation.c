@@ -2093,7 +2093,6 @@ bool menu_animation_line_ticker_smooth(menu_animation_ctx_line_ticker_smooth_t *
    switch (line_ticker->type_enum)
    {
       case TICKER_TYPE_LOOP:
-      {
          menu_animation_line_ticker_smooth_loop(
                line_ticker->idx,
                line_ticker->fade_enabled,
@@ -2105,10 +2104,8 @@ bool menu_animation_line_ticker_smooth(menu_animation_ctx_line_ticker_smooth_t *
                &bottom_fade_line_offset, line_ticker->bottom_fade_y_offset, line_ticker->bottom_fade_alpha);
 
          break;
-      }
       case TICKER_TYPE_BOUNCE:
       default:
-      {
          menu_animation_line_ticker_smooth_generic(
                line_ticker->idx,
                line_ticker->fade_enabled,
@@ -2120,7 +2117,6 @@ bool menu_animation_line_ticker_smooth(menu_animation_ctx_line_ticker_smooth_t *
                &bottom_fade_line_offset, line_ticker->bottom_fade_y_offset, line_ticker->bottom_fade_alpha);
 
          break;
-      }
    }
 
    /* Build output string from required lines */
