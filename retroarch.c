@@ -1190,6 +1190,64 @@ static char current_savefile_dir[PATH_MAX_LENGTH]       = {0};
 static char current_savestate_dir[PATH_MAX_LENGTH]      = {0};
 static char dir_savestate[PATH_MAX_LENGTH]              = {0};
 
+/* BSV MOVIE GLOBAL VARIABLES */
+
+enum rarch_movie_type
+{
+   RARCH_MOVIE_PLAYBACK = 0,
+   RARCH_MOVIE_RECORD
+};
+
+struct bsv_state
+{
+   bool movie_start_recording;
+   bool movie_start_playback;
+   bool movie_playback;
+   bool eof_exit;
+   bool movie_end;
+
+   /* Movie playback/recording support. */
+   char movie_path[PATH_MAX_LENGTH];
+   /* Immediate playback/recording. */
+   char movie_start_path[PATH_MAX_LENGTH];
+};
+
+struct bsv_movie
+{
+   intfstream_t *file;
+
+   /* A ring buffer keeping track of positions
+    * in the file for each frame. */
+   size_t *frame_pos;
+   size_t frame_mask;
+   size_t frame_ptr;
+
+   size_t min_file_pos;
+
+   size_t state_size;
+   uint8_t *state;
+
+   bool playback;
+   bool first_rewind;
+   bool did_rewind;
+};
+
+#define BSV_MAGIC          0x42535631
+
+#define MAGIC_INDEX        0
+#define SERIALIZER_INDEX   1
+#define CRC_INDEX          2
+#define STATE_SIZE_INDEX   3
+
+#define BSV_MOVIE_IS_PLAYBACK_ON() (bsv_movie_state_handle && bsv_movie_state.movie_playback)
+#define BSV_MOVIE_IS_PLAYBACK_OFF() (bsv_movie_state_handle && !bsv_movie_state.movie_playback)
+
+typedef struct bsv_movie bsv_movie_t;
+
+static bsv_movie_t     *bsv_movie_state_handle = NULL;
+static struct bsv_state bsv_movie_state;
+
+
 /* Forward declarations */
 static void ui_companion_driver_toggle(bool force);
 
@@ -1225,8 +1283,6 @@ static void retroarch_deinit_core_options(void);
 static void retroarch_init_core_variables(const struct retro_variable *vars);
 static void rarch_init_core_options(
       const struct retro_core_option_definition *option_defs);
-
-static void bsv_movie_set_path(const char *path);
 
 struct string_list *dir_list_new_special(const char *input_dir,
       enum dir_list_type type, const char *filter,
@@ -1889,7 +1945,9 @@ static void path_fill_names(void)
    path_init_savefile_internal();
 
    if (global)
-      bsv_movie_set_path(global->name.savefile);
+      strlcpy(bsv_movie_state.movie_path,
+            global->name.savefile,
+            sizeof(bsv_movie_state.movie_path));
 
    if (string_is_empty(path_main_basename))
       return;
@@ -2269,27 +2327,28 @@ static bool dir_free_shader(void)
 }
 
 
-static bool dir_init_shader(const char *path_dir_shader)
+static bool dir_init_shader(const char *path_dir_shader,
+      bool show_hidden_files)
 {
    unsigned i;
-   struct rarch_dir_list *dir_list = (struct rarch_dir_list*)&dir_shader_list;
-   settings_t *settings            = configuration_settings;
+   struct rarch_dir_list *dir_list = NULL;
+   struct string_list *new_list    = dir_list_new_special(path_dir_shader,
+         DIR_LIST_SHADERS, NULL, show_hidden_files);
 
-   dir_list->list = dir_list_new_special(path_dir_shader, DIR_LIST_SHADERS, NULL, settings->bools.show_hidden_files);
-
-   if (!dir_list->list || dir_list->list->size == 0)
-   {
-      dir_free_shader();
+   if (!new_list || new_list->size == 0)
       return false;
-   }
 
-   dir_list->ptr  = 0;
-   dir_list_sort(dir_list->list, false);
+   dir_list_sort(new_list, false);
 
-   for (i = 0; i < dir_list->list->size; i++)
+   for (i = 0; i < new_list->size; i++)
       RARCH_LOG("%s \"%s\"\n",
             msg_hash_to_str(MSG_FOUND_SHADER),
-            dir_list->list->elems[i].data);
+            new_list->elems[i].data);
+
+   dir_list       = (struct rarch_dir_list*)&dir_shader_list;
+   dir_list->list = new_list;
+   dir_list->ptr  = 0;
+
    return true;
 }
 
@@ -2813,64 +2872,6 @@ static slock_t *_runloop_msg_queue_lock                         = NULL;
 #define runloop_msg_queue_lock()
 #define runloop_msg_queue_unlock()
 #endif
-
-/* BSV MOVIE GLOBAL VARIABLES */
-
-enum rarch_movie_type
-{
-   RARCH_MOVIE_PLAYBACK = 0,
-   RARCH_MOVIE_RECORD
-};
-
-struct bsv_state
-{
-   bool movie_start_recording;
-   bool movie_start_playback;
-   bool movie_playback;
-   bool eof_exit;
-   bool movie_end;
-
-   /* Movie playback/recording support. */
-   char movie_path[PATH_MAX_LENGTH];
-   /* Immediate playback/recording. */
-   char movie_start_path[PATH_MAX_LENGTH];
-};
-
-struct bsv_movie
-{
-   intfstream_t *file;
-
-   /* A ring buffer keeping track of positions
-    * in the file for each frame. */
-   size_t *frame_pos;
-   size_t frame_mask;
-   size_t frame_ptr;
-
-   size_t min_file_pos;
-
-   size_t state_size;
-   uint8_t *state;
-
-   bool playback;
-   bool first_rewind;
-   bool did_rewind;
-};
-
-#define BSV_MAGIC          0x42535631
-
-#define MAGIC_INDEX        0
-#define SERIALIZER_INDEX   1
-#define CRC_INDEX          2
-#define STATE_SIZE_INDEX   3
-
-#define BSV_MOVIE_IS_PLAYBACK_ON() (bsv_movie_state_handle && bsv_movie_state.movie_playback)
-#define BSV_MOVIE_IS_PLAYBACK_OFF() (bsv_movie_state_handle && !bsv_movie_state.movie_playback)
-
-typedef struct bsv_movie bsv_movie_t;
-
-static bsv_movie_t     *bsv_movie_state_handle = NULL;
-static struct bsv_state bsv_movie_state;
-
 
 /* CAMERA GLOBAL VARIABLES */
 
@@ -12479,12 +12480,6 @@ static bool bsv_movie_init(void)
    return true;
 }
 
-static void bsv_movie_set_path(const char *path)
-{
-   strlcpy(bsv_movie_state.movie_path,
-         path, sizeof(bsv_movie_state.movie_path));
-}
-
 static void bsv_movie_deinit(void)
 {
    if (!bsv_movie_state_handle)
@@ -20791,8 +20786,10 @@ static bool video_driver_init_internal(bool *video_is_threaded)
       video_display_server_set_screen_orientation((enum rotation)settings->uints.screen_orientation);
 
    dir_free_shader();
+
    if (!string_is_empty(settings->paths.directory_video_shader))
-      dir_init_shader(settings->paths.directory_video_shader);
+      dir_init_shader(settings->paths.directory_video_shader,
+            settings->bools.show_hidden_files);
 
    return true;
 
