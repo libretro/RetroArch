@@ -57,19 +57,19 @@ static float msg_queue_task_progress_2[16] = COLOR_HEX_TO_FLOAT(0x317198, 1.0f);
 static float color_task_progress_bar[16] = COLOR_HEX_TO_FLOAT(0x22B14C, 1.0f);
 #endif
 
-static unsigned text_color_info        = 0xD8EEFFFF;
+#define TEXT_COLOR_INFO 0xD8EEFFFF
 #if 0
-static unsigned text_color_success     = 0x22B14CFF;
-static unsigned text_color_error       = 0xC23B22FF;
+#define TEXT_COLOR_SUCCESS 0x22B14CFF
+#define TEXT_COLOR_ERROR 0xC23B22FF
 #endif
-static unsigned text_color_faint       = 0x878787FF;
+#define TEXT_COLOR_FAINT 0x878787FF
 
 static float volume_bar_background[16]    = COLOR_HEX_TO_FLOAT(0x1A1A1A, 1.0f);
 static float volume_bar_normal[16]        = COLOR_HEX_TO_FLOAT(0x198AC6, 1.0f);
 static float volume_bar_loud[16]          = COLOR_HEX_TO_FLOAT(0xF5DD19, 1.0f);
 static float volume_bar_loudest[16]       = COLOR_HEX_TO_FLOAT(0xC23B22, 1.0f);
 
-static uint64_t menu_widgets_frame_count     = 0;
+static uint64_t menu_widgets_frame_count  = 0;
 
 /* Font data */
 static font_data_t *font_regular;
@@ -1516,7 +1516,7 @@ void menu_widgets_frame(void *data)
          msg_hash_to_str(MSG_SCREENSHOT_SAVED),
          screenshot_thumbnail_width + simple_widget_padding, widget_font_size * 1.9f + screenshot_y,
          video_info->width, video_info->height,
-         text_color_faint,
+         TEXT_COLOR_FAINT,
          TEXT_ALIGN_LEFT,
          1, false, 0, true
       );
@@ -1533,7 +1533,7 @@ void menu_widgets_frame(void *data)
          shotname,
          screenshot_thumbnail_width + simple_widget_padding, widget_font_size * 2.9f + screenshot_y,
          video_info->width, video_info->height,
-         text_color_info,
+         TEXT_COLOR_INFO,
          TEXT_ALIGN_LEFT,
          1, false, 0, true
       );
@@ -1597,7 +1597,7 @@ void menu_widgets_frame(void *data)
          msg_hash_to_str(MSG_ACHIEVEMENT_UNLOCKED),
          cheevo_height + simple_widget_padding - unfold_offet, widget_font_size * 1.9f + cheevo_y,
          video_info->width, video_info->height,
-         text_color_faint,
+         TEXT_COLOR_FAINT,
          TEXT_ALIGN_LEFT,
          1, false, 0, true
       );
@@ -1610,7 +1610,7 @@ void menu_widgets_frame(void *data)
          cheevo_title,
          cheevo_height + simple_widget_padding - unfold_offet, widget_font_size * 2.9f + cheevo_y,
          video_info->width, video_info->height,
-         text_color_info,
+         TEXT_COLOR_INFO,
          TEXT_ALIGN_LEFT,
          1, false, 0, true
       );
@@ -1635,7 +1635,7 @@ void menu_widgets_frame(void *data)
       unsigned volume_height        = widget_font_size * 4;
       unsigned icon_size            = menu_widgets_icons_textures[MENU_WIDGETS_ICON_VOLUME_MED] ? volume_height : simple_widget_padding;
       unsigned text_color           = COLOR_TEXT_ALPHA(0xffffffff, (unsigned)(volume_text_alpha*255.0f));
-      unsigned text_color_db        = COLOR_TEXT_ALPHA(text_color_faint, (unsigned)(volume_text_alpha*255.0f));
+      unsigned text_color_db        = COLOR_TEXT_ALPHA(TEXT_COLOR_FAINT, (unsigned)(volume_text_alpha*255.0f));
 
       unsigned bar_x                = icon_size;
       unsigned bar_height           = widget_font_size / 2;

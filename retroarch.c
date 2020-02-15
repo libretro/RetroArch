@@ -3858,7 +3858,7 @@ static bool command_get_config_param(const char* arg)
 
    if (string_is_equal(arg, "video_fullscreen"))
    {
-      if (configuration_settings->bools.video_fullscreen)
+      if (settings->bools.video_fullscreen)
          value = "true";
       else
          value = "false";
