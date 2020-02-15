@@ -15821,7 +15821,7 @@ static void input_menu_keys_pressed(input_bits_t *p_new_state,
 
    joypad_info.joy_idx                          = 0;
    joypad_info.auto_binds                       = NULL;
-
+  
    for (i = 0; i < max_users; i++)
    {
       struct retro_keybind *auto_binds          = input_autoconf_binds[i];
@@ -15900,7 +15900,8 @@ static void input_menu_keys_pressed(input_bits_t *p_new_state,
       {
          bool bit_pressed    = false;
 
-         if (!input_driver_block_hotkey)
+         // Modification: Prevent hotkeys from triggering in menus, before: if(!input_driver_block_hotkey)
+         if (!menu_driver_alive)
          {
             for (port = 0; port < port_max; port++)
             {
@@ -15981,7 +15982,10 @@ static void input_menu_keys_pressed(input_bits_t *p_new_state,
                   RETRO_DEVICE_KEYBOARD, 0, ids[i][0]))
             BIT256_SET_PTR(p_new_state, ids[i][1]);
       }
+
    }
+
+
 }
 #endif
 
@@ -15995,51 +15999,51 @@ static void input_menu_keys_pressed(input_bits_t *p_new_state,
 static void input_keys_pressed(input_bits_t *p_new_state)
 {
    rarch_joypad_info_t joypad_info;
-   unsigned i, port                             = 0;
-   settings_t              *settings            = configuration_settings;
-   const struct retro_keybind *binds            = input_config_binds[0];
+   unsigned i, port = 0;
+   settings_t              *settings = configuration_settings;
+   const struct retro_keybind *binds = input_config_binds[0];
 
-   joypad_info.joy_idx                          = 0;
-   joypad_info.auto_binds                       = NULL;
+   joypad_info.joy_idx = 0;
+   joypad_info.auto_binds = NULL;
 
    {
       const struct retro_keybind *binds_norm = &input_config_binds[port][RARCH_ENABLE_HOTKEY];
       const struct retro_keybind *binds_auto = &input_autoconf_binds[port][RARCH_ENABLE_HOTKEY];
 
-      joypad_info.joy_idx                    = settings->uints.input_joypad_map[port];
-      joypad_info.auto_binds                 = input_autoconf_binds[joypad_info.joy_idx];
-      joypad_info.axis_threshold             = input_driver_axis_threshold;
+      joypad_info.joy_idx = settings->uints.input_joypad_map[port];
+      joypad_info.auto_binds = input_autoconf_binds[joypad_info.joy_idx];
+      joypad_info.axis_threshold = input_driver_axis_threshold;
 
       if (check_input_driver_block_hotkey(binds_norm, binds_auto))
       {
-         const struct retro_keybind *enable_hotkey    =
+         const struct retro_keybind *enable_hotkey =
             &input_config_binds[port][RARCH_ENABLE_HOTKEY];
 
-         if (     enable_hotkey && enable_hotkey->valid
-               && current_input->input_state(
-                  current_input_data, joypad_info,
-                  &binds, port,
-                  RETRO_DEVICE_JOYPAD, 0, RARCH_ENABLE_HOTKEY))
+         if (enable_hotkey && enable_hotkey->valid
+            && current_input->input_state(
+               current_input_data, joypad_info,
+               &binds, port,
+               RETRO_DEVICE_JOYPAD, 0, RARCH_ENABLE_HOTKEY))
             input_driver_block_libretro_input = true;
          else
-            input_driver_block_hotkey         = true;
+            input_driver_block_hotkey = true;
       }
 
       if (binds[RARCH_GAME_FOCUS_TOGGLE].valid)
       {
          const struct retro_keybind *focus_binds_auto =
             &input_autoconf_binds[port][RARCH_GAME_FOCUS_TOGGLE];
-         const struct retro_keybind *focus_normal     =
+         const struct retro_keybind *focus_normal =
             &binds[RARCH_GAME_FOCUS_TOGGLE];
 
          /* Allows rarch_focus_toggle hotkey to still work
           * even though every hotkey is blocked */
          if (check_input_driver_block_hotkey(
-                  focus_normal, focus_binds_auto))
+            focus_normal, focus_binds_auto))
          {
             if (current_input->input_state(current_input_data, joypad_info,
-                     &binds, port,
-                     RETRO_DEVICE_JOYPAD, 0, RARCH_GAME_FOCUS_TOGGLE))
+               &binds, port,
+               RETRO_DEVICE_JOYPAD, 0, RARCH_GAME_FOCUS_TOGGLE))
                input_driver_block_hotkey = false;
          }
       }
@@ -16048,12 +16052,12 @@ static void input_keys_pressed(input_bits_t *p_new_state)
    /* Check the libretro input first */
    {
       int16_t ret = current_input->input_state(current_input_data,
-            joypad_info, &binds, 0, RETRO_DEVICE_JOYPAD, 0,
-            RETRO_DEVICE_ID_JOYPAD_MASK);
+         joypad_info, &binds, 0, RETRO_DEVICE_JOYPAD, 0,
+         RETRO_DEVICE_ID_JOYPAD_MASK);
       for (i = 0; i < RARCH_FIRST_META_KEY; i++)
       {
          bool bit_pressed = !input_driver_block_libretro_input
-            && binds[i].valid && (ret & (UINT64_C(1) <<  i));
+            && binds[i].valid && (ret & (UINT64_C(1) << i));
          if (bit_pressed || input_keys_pressed_other_sources(i, p_new_state))
          {
             BIT256_SET_PTR(p_new_state, i);
@@ -16066,10 +16070,10 @@ static void input_keys_pressed(input_bits_t *p_new_state)
    {
       bool bit_pressed = !input_driver_block_hotkey && binds[i].valid
          && current_input->input_state(current_input_data, joypad_info,
-               &binds, 0, RETRO_DEVICE_JOYPAD, 0, i);
-      if (     bit_pressed
-            || BIT64_GET(lifecycle_state, i)
-            || input_keys_pressed_other_sources(i, p_new_state))
+            &binds, 0, RETRO_DEVICE_JOYPAD, 0, i);
+      if (bit_pressed
+         || BIT64_GET(lifecycle_state, i)
+         || input_keys_pressed_other_sources(i, p_new_state))
       {
          BIT256_SET_PTR(p_new_state, i);
       }
@@ -27045,22 +27049,22 @@ static enum runloop_state runloop_check_state(void)
 {
    input_bits_t current_bits;
 #ifdef HAVE_MENU
-   static input_bits_t last_input      = {{0}};
+   static input_bits_t last_input = { {0} };
 #endif
-   static bool old_focus               = true;
-   settings_t *settings                = configuration_settings;
-   float fastforward_ratio             = settings->floats.fastforward_ratio;
-   bool is_focused                     = false;
-   bool is_alive                       = false;
-   uint64_t frame_count                = 0;
-   bool focused                        = true;
-   bool pause_nonactive                = settings->bools.pause_nonactive;
-   bool rarch_is_initialized           = rarch_is_inited;
+   static bool old_focus = true;
+   settings_t *settings = configuration_settings;
+   float fastforward_ratio = settings->floats.fastforward_ratio;
+   bool is_focused = false;
+   bool is_alive = false;
+   uint64_t frame_count = 0;
+   bool focused = true;
+   bool pause_nonactive = settings->bools.pause_nonactive;
+   bool rarch_is_initialized = rarch_is_inited;
 #ifdef HAVE_MENU
-   bool menu_driver_binding_state      = menu_driver_is_binding;
-   bool menu_is_alive                  = menu_driver_alive;
-   unsigned menu_toggle_gamepad_combo  = settings->uints.input_menu_toggle_gamepad_combo;
-   bool display_kb                     = menu_input_dialog_get_display_kb_internal();
+   bool menu_driver_binding_state = menu_driver_is_binding;
+   bool menu_is_alive = menu_driver_alive;
+   unsigned menu_toggle_gamepad_combo = settings->uints.input_menu_toggle_gamepad_combo;
+   bool display_kb = menu_input_dialog_get_display_kb_internal();
 #endif
 
 #ifdef HAVE_MENU_WIDGETS
@@ -27079,19 +27083,22 @@ static enum runloop_state runloop_check_state(void)
 
    BIT256_CLEAR_ALL_PTR(&current_bits);
 
-   input_driver_block_libretro_input            = false;
-   input_driver_block_hotkey                    = false;
+   input_driver_block_libretro_input = false;
+   input_driver_block_hotkey = false;
 
    if (current_input->keyboard_mapping_blocked)
       input_driver_block_hotkey = true;
 
 #ifdef HAVE_MENU
    if (menu_is_alive && !(settings->bools.menu_unified_controls && !display_kb))
-      input_menu_keys_pressed(&current_bits, display_kb);
+   {
+      input_menu_keys_pressed(&current_bits, display_kb);      
+   }
    else
 #endif
-      input_keys_pressed(&current_bits);
-
+   {
+      input_menu_keys_pressed(&current_bits, display_kb); // use input_menu_keys_pressed function twice instead of input_keys_pressed
+   }
 #ifdef HAVE_MENU
    last_input                       = current_bits;
    if (
@@ -27100,6 +27107,8 @@ static enum runloop_state runloop_check_state(void)
              menu_toggle_gamepad_combo, &last_input)))
       BIT256_SET(current_bits, RARCH_MENU_TOGGLE);
 #endif
+
+
 
    if (input_driver_flushing_input)
    {

@@ -7080,9 +7080,10 @@ static bool setting_append_list_input_player_options(
       snprintf(split_joycon_lbl[user], sizeof(label[user]),
                "%s %u", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_SPLIT_JOYCON), user + 1);
 
+      // Changed label MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_INDEX "Device Index" to "Port %u Binds" - useful for label to be visible in Quick Menu
       snprintf(label[user], sizeof(label[user]),
-               "%s",
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_INDEX));
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS), user + 1);
+
       snprintf(label_type[user], sizeof(label_type[user]),
                "%s",
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_TYPE));
@@ -7187,6 +7188,9 @@ static bool setting_append_list_input_player_options(
       (*list)[list_info->index - 1].action_right  = &setting_action_right_bind_device;
       (*list)[list_info->index - 1].action_select = &setting_action_right_bind_device;
       (*list)[list_info->index - 1].get_string_representation = &get_string_representation_bind_device;
+      // Creating list with Device Index menu settings - used in Quick Menu for quick swapping
+      MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info,
+         (enum msg_hash_enums)(MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_INDEX + user));
 
       CONFIG_ACTION_ALT(
             list, list_info,
