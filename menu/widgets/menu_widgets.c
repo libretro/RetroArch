@@ -22,6 +22,7 @@
 #include <file/file_path.h>
 #include <streams/file_stream.h>
 #include <string/stdstring.h>
+#include <retro_math.h>
 
 #include "menu_widgets.h"
 
@@ -41,10 +42,6 @@
 #include "../menu_animation.h"
 
 #include "../../gfx/font_driver.h"
-
-#ifndef PI
-#define PI 3.14159265359f
-#endif
 
 /* TODO: Fix context reset freezing everything in place (probably kills animations when it shouldn't anymore) */
 
@@ -865,7 +862,7 @@ static void menu_widgets_hourglass_tick(void *userdata)
    entry.easing_enum    = EASING_OUT_QUAD;
    entry.tag            = tag;
    entry.duration       = HOURGLASS_DURATION;
-   entry.target_value   = -(2 * PI);
+   entry.target_value   = -(2 * M_PI);
    entry.subject        = &msg->hourglass_rotation;
    entry.cb             = menu_widgets_hourglass_end;
    entry.userdata       = msg;
