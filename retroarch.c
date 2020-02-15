@@ -2659,7 +2659,7 @@ bool menu_input_dialog_start_search(void)
          sizeof(menu_input_dialog_keyboard_label));
 
    input_keyboard_ctl(RARCH_INPUT_KEYBOARD_CTL_LINE_FREE, NULL);
-  
+
 #ifdef HAVE_ACCESSIBILITY
    if (is_accessibility_enabled())
       accessibility_speak_priority((char*)
@@ -3432,7 +3432,11 @@ const struct input_bind_map input_config_bind_map[RARCH_BIND_LIST_END_NULL] = {
       DECLARE_META_BIND(1, load_state,            RARCH_LOAD_STATE_KEY,        MENU_ENUM_LABEL_VALUE_INPUT_META_LOAD_STATE_KEY),
       DECLARE_META_BIND(1, save_state,            RARCH_SAVE_STATE_KEY,        MENU_ENUM_LABEL_VALUE_INPUT_META_SAVE_STATE_KEY),
       DECLARE_META_BIND(2, toggle_fullscreen,     RARCH_FULLSCREEN_TOGGLE_KEY, MENU_ENUM_LABEL_VALUE_INPUT_META_FULLSCREEN_TOGGLE_KEY),
+#ifdef HAVE_LAKKA
+      DECLARE_META_BIND(2, exit_emulator,         RARCH_QUIT_KEY,              MENU_ENUM_LABEL_VALUE_INPUT_META_RESTART_KEY),
+#else
       DECLARE_META_BIND(2, exit_emulator,         RARCH_QUIT_KEY,              MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY),
+#endif
       DECLARE_META_BIND(2, state_slot_increase,   RARCH_STATE_SLOT_PLUS,       MENU_ENUM_LABEL_VALUE_INPUT_META_STATE_SLOT_PLUS),
       DECLARE_META_BIND(2, state_slot_decrease,   RARCH_STATE_SLOT_MINUS,      MENU_ENUM_LABEL_VALUE_INPUT_META_STATE_SLOT_MINUS),
       DECLARE_META_BIND(1, rewind,                RARCH_REWIND,                MENU_ENUM_LABEL_VALUE_INPUT_META_REWIND),
@@ -4541,7 +4545,7 @@ static void handle_translation_cb(
       }
       i++;
    }
-   
+
    if (string_is_equal(error_string, "No text found."))
    {
       RARCH_LOG("No text found...\n");
@@ -4549,14 +4553,14 @@ static void handle_translation_cb(
       {
          text_string = (char*)malloc(15);
       }
-      
+
       strlcpy(text_string, error_string, 15);
 #ifdef HAVE_MENU_WIDGETS
       if (menu_widgets_paused)
       {
          /* In this case we have to unpause and then repause for a frame */
          menu_widgets_ai_service_overlay_set_state(2);
-         command_event(CMD_EVENT_UNPAUSE, NULL);        
+         command_event(CMD_EVENT_UNPAUSE, NULL);
       }
 #endif
    }
@@ -4589,7 +4593,7 @@ static void handle_translation_cb(
          {
              image_type = IMAGE_TYPE_BMP;
          }
-         else if (raw_image_file_data[1] == 'P' && 
+         else if (raw_image_file_data[1] == 'P' &&
                   raw_image_file_data[2] == 'N' &&
                   raw_image_file_data[3] == 'G')
             image_type = IMAGE_TYPE_PNG;
@@ -4598,11 +4602,11 @@ static void handle_translation_cb(
             RARCH_LOG("Invalid image type returned from server.\n");
             goto finish;
          }
-         
+
          ai_res = menu_widgets_ai_service_overlay_load(
-                     raw_image_file_data, (unsigned) new_image_size, 
+                     raw_image_file_data, (unsigned) new_image_size,
                      image_type);
-         
+
          if (!ai_res)
          {
             RARCH_LOG("Video driver not supported for AI Service.");
@@ -4619,7 +4623,7 @@ static void handle_translation_cb(
             command_event(CMD_EVENT_UNPAUSE, NULL);
          }
       }
-      else 
+      else
 #endif
       /* Can't use menu widget overlays, so try writing to video buffer */
       {
@@ -4640,8 +4644,8 @@ static void handle_translation_cb(
                ((uint32_t) ((uint8_t)raw_image_file_data[23]) << 8) +
                ((uint32_t) ((uint8_t)raw_image_file_data[22]) << 0);
             raw_image_data = (void*)malloc(image_width*image_height*3*sizeof(uint8_t));
-            memcpy(raw_image_data, 
-                   raw_image_file_data+54*sizeof(uint8_t), 
+            memcpy(raw_image_data,
+                   raw_image_file_data+54*sizeof(uint8_t),
                    image_width*image_height*3*sizeof(uint8_t));
          }
          else if (raw_image_file_data[1] == 'P' && raw_image_file_data[2] == 'N' &&
@@ -4660,7 +4664,7 @@ static void handle_translation_cb(
                 ((uint32_t) ((uint8_t)raw_image_file_data[22])<<8)+
                 ((uint32_t) ((uint8_t)raw_image_file_data[23])<<0);
             rpng = rpng_alloc();
-         
+
             if (!rpng)
             {
                error = "Can't allocate memory.";
@@ -4701,7 +4705,7 @@ static void handle_translation_cb(
          {
             RARCH_LOG("Output from URL not a valid file type, or is not supported.\n");
             goto finish;
-         }    
+         }
 
          scaler = (struct scaler_ctx*)calloc(1, sizeof(struct scaler_ctx));
          if (!scaler)
@@ -4756,7 +4760,7 @@ static void handle_translation_cb(
          video_driver_frame(raw_output_data, image_width, image_height, pitch);
       }
    }
-  
+
 #ifdef HAVE_AUDIOMIXER
    if (raw_sound_data)
    {
@@ -5007,9 +5011,9 @@ static const char *ai_service_get_str(enum translation_lang id)
 
    To make your own server, it must listen for a POST request, which
    will consist of a JSON body, with the "image" field as a base64
-   encoded string of a 24bit-BMP/PNG that the will be translated.  
-   The server must output the translated image in the form of a 
-   JSON body, with the "image" field also as a base64 encoded 
+   encoded string of a 24bit-BMP/PNG that the will be translated.
+   The server must output the translated image in the form of a
+   JSON body, with the "image" field also as a base64 encoded
    24bit-BMP, or as an alpha channel png.
    */
 static bool run_translation_service(void)
@@ -5044,7 +5048,7 @@ static bool run_translation_service(void)
    char* system_label                    = NULL;
    core_info_t *core_info                = NULL;
 
-#ifdef HAVE_MENU_WIDGETS   
+#ifdef HAVE_MENU_WIDGETS
    if (menu_widgets_ai_service_overlay_get_state() != 0)
    {
       /* For the case when ai service pause is disabled. */
@@ -5071,7 +5075,7 @@ static bool run_translation_service(void)
    {
       const char *system_id        = core_info->system_id
          ? core_info->system_id : "core";
-      
+
       const struct playlist_entry *entry  = NULL;
       playlist_t *current_playlist = playlist_get_cached();
 
@@ -5232,7 +5236,7 @@ static bool run_translation_service(void)
    memcpy(json_buffer, (const void*)rf1, 11*sizeof(uint8_t));
    memcpy(json_buffer+11, bmp64_buffer, (out_length)*sizeof(uint8_t));
    if (rf3)
-      memcpy(json_buffer+11+out_length, (const void*)rf3, (16+strlen(system_label))*sizeof(uint8_t));   
+      memcpy(json_buffer+11+out_length, (const void*)rf3, (16+strlen(system_label))*sizeof(uint8_t));
    else
       memcpy(json_buffer+11+out_length, (const void*)rf2, 3*sizeof(uint8_t));
    RARCH_LOG("Request size: %d\n", out_length);
@@ -5311,7 +5315,7 @@ static bool run_translation_service(void)
                if (use_overlay)
                   mode_chr = "image,png,png-a,sound,wav";
                else
-                  mode_chr = "image,png,sound,wav";         
+                  mode_chr = "image,png,sound,wav";
                break;
             default:
                break;
@@ -6550,13 +6554,13 @@ bool command_event(enum event_command cmd, void *data)
 #endif
                command_event(CMD_EVENT_UNPAUSE, NULL);
             }
-         }       
+         }
          else
          {
            /* Don't pause - useful for Text-To-Speech since
             * the audio can't currently play while paused.
             * Also useful for cases when users don't want the
-            * core's sound to stop while translating. */       
+            * core's sound to stop while translating. */
             command_event(CMD_EVENT_AI_SERVICE_CALL, NULL);
          }
 #endif
@@ -8004,7 +8008,7 @@ static void global_free(void)
 void main_exit(void *args)
 {
    settings_t *settings = configuration_settings;
-   
+
    if (cached_video_driver[0])
    {
       strlcpy(settings->arrays.video_driver, cached_video_driver,
@@ -9813,7 +9817,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
             video_driver_get_hw_context_internal();
 
          RARCH_LOG("[Environ]: SET_HW_RENDER.\n");
-         
+
          if (!dynamic_request_hw_context(
                   cb->context_type, cb->version_minor, cb->version_major))
             return false;
@@ -10313,7 +10317,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
 
       case RETRO_ENVIRONMENT_SET_HW_SHARED_CONTEXT:
 #ifdef HAVE_LIBNX
-         /* TODO/FIXME - Force this off for now for Switch 
+         /* TODO/FIXME - Force this off for now for Switch
           * until shared HW context can work there */
          return false;
 #else
@@ -13963,7 +13967,7 @@ static int16_t input_state_device(
              */
             if (settings->uints.input_turbo_mode == 1)
             {
-               /* Pressing turbo button toggles turbo mode on or off. 
+               /* Pressing turbo button toggles turbo mode on or off.
                 * Holding the button will
                 * pass through, else the pressed state will be modulated by a
                 * periodic pulse defined by the configured duty cycle.
@@ -14006,7 +14010,7 @@ static int16_t input_state_device(
                   {
                      uint16_t enable_new;
                      input_driver_turbo_btns.turbo_pressed[port] |= 1 << id;
-                     /* Toggle turbo for pressed button but make 
+                     /* Toggle turbo for pressed button but make
                       * sure at least one button has turbo */
                      enable_new = input_driver_turbo_btns.enable[port] ^ (1 << id);
                      if (enable_new)
@@ -16853,7 +16857,7 @@ void input_keyboard_event(bool down, unsigned code,
    static bool deferred_wait_keys;
 #ifdef HAVE_ACCESSIBILITY
 #ifdef HAVE_MENU
-   if (menu_input_dialog_get_display_kb() 
+   if (menu_input_dialog_get_display_kb()
          && down && is_accessibility_enabled())
    {
       if (code != 303 && code != 0)
@@ -20141,7 +20145,7 @@ static bool hw_render_context_is_gl(enum retro_hw_context_type type)
 
 bool *video_driver_get_threaded(void)
 {
-#if defined(__MACH__) && defined(__APPLE__) 
+#if defined(__MACH__) && defined(__APPLE__)
    /* TODO/FIXME - force threaded video to disabled on Apple for now
     * until NSWindow/UIWindow concurrency issues are taken care of */
    video_driver_threaded = false;
@@ -20151,7 +20155,7 @@ bool *video_driver_get_threaded(void)
 
 void video_driver_set_threaded(bool val)
 {
-#if defined(__MACH__) && defined(__APPLE__) 
+#if defined(__MACH__) && defined(__APPLE__)
    /* TODO/FIXME - force threaded video to disabled on Apple for now
     * until NSWindow/UIWindow concurrency issues are taken care of */
    video_driver_threaded = false;
@@ -21752,7 +21756,7 @@ static void video_driver_frame(const void *data, unsigned width,
    frame_cache_width   = width;
    frame_cache_height  = height;
    frame_cache_pitch   = pitch;
-   
+
    if (
          video_driver_scaler_ptr
          && data
@@ -28590,7 +28594,7 @@ unsigned int retroarch_get_rotation(void)
 
 
 bool is_input_keyboard_display_on(void)
-{ 
+{
 #ifdef HAVE_MENU
    return menu_input_dialog_get_display_kb();
 #else
@@ -28599,6 +28603,7 @@ bool is_input_keyboard_display_on(void)
 }
 
 #ifdef HAVE_ACCESSIBILITY
+
 bool accessibility_speak_priority(const char* speak_text, int priority)
 {
    RARCH_LOG("Spoke: %s\n", speak_text);
@@ -28613,11 +28618,11 @@ bool accessibility_speak_priority(const char* speak_text, int priority)
       RARCH_LOG("Platform not supported for accessibility.\n");
       /* The following method is a fallback for other platforms to use the
          AI Service url to do the TTS.  However, since the playback is done
-         via the audio mixer, which only processes the audio while the 
+         via the audio mixer, which only processes the audio while the
          core is running, this playback method won't work.  When the audio
-         mixer can handle playing streams while the core is paused, then 
+         mixer can handle playing streams while the core is paused, then
          we can use this. */
-      /* 
+      /*
 #if defined(HAVE_NETWORKING)
          return accessibility_speak_ai_service(speak_text, voice, priority);
 #endif
@@ -28640,7 +28645,7 @@ static bool is_narrator_running(void)
 
 static bool accessibility_startup_message(void)
 {
-   /* State that the narrator is on, and also include the first menu 
+   /* State that the narrator is on, and also include the first menu
       item we're on at startup. */
    accessibility_speak_priority(
          "RetroArch accessibility on.  Main Menu Load Core.",
