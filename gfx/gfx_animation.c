@@ -1023,27 +1023,30 @@ static void gfx_animation_line_ticker_smooth_loop(uint64_t idx,
             bottom_fade_line_offset, bottom_fade_y_offset, bottom_fade_alpha);
 }
 
-static void menu_delayed_animation_cb(void *userdata)
+static void gfx_delayed_animation_cb(void *userdata)
 {
-   menu_delayed_animation_t *delayed_animation = (menu_delayed_animation_t*) userdata;
+   gfx_delayed_animation_t *delayed_animation = 
+      (gfx_delayed_animation_t*) userdata;
 
    gfx_animation_push(&delayed_animation->entry);
 
    free(delayed_animation);
 }
 
-void gfx_animation_push_delayed(unsigned delay, gfx_animation_ctx_entry_t *entry)
+void gfx_animation_push_delayed(
+      unsigned delay, gfx_animation_ctx_entry_t *entry)
 {
-   menu_timer_ctx_entry_t timer_entry;
-   menu_delayed_animation_t *delayed_animation  = (menu_delayed_animation_t*) malloc(sizeof(menu_delayed_animation_t));
+   gfx_timer_ctx_entry_t timer_entry;
+   gfx_delayed_animation_t *delayed_animation  = (gfx_delayed_animation_t*)
+      malloc(sizeof(gfx_delayed_animation_t));
 
    memcpy(&delayed_animation->entry, entry, sizeof(gfx_animation_ctx_entry_t));
 
-   timer_entry.cb       = menu_delayed_animation_cb;
+   timer_entry.cb       = gfx_delayed_animation_cb;
    timer_entry.duration = delay;
    timer_entry.userdata = delayed_animation;
 
-   menu_timer_start(&delayed_animation->timer, &timer_entry);
+   gfx_timer_start(&delayed_animation->timer, &timer_entry);
 }
 
 bool gfx_animation_push(gfx_animation_ctx_entry_t *entry)
@@ -1214,7 +1217,7 @@ void gfx_animation_unset_update_time_cb(void)
 static void gfx_animation_update_time(
       bool timedate_enable,
       unsigned video_width, unsigned video_height,
-      float menu_ticker_speed)
+      float _ticker_speed)
 {
    static retro_time_t last_clock_update  = 0;
    static retro_time_t last_ticker_update = 0;
@@ -1225,8 +1228,8 @@ static void gfx_animation_update_time(
    unsigned ticker_pixel_accumulator_uint = 0;
    float ticker_pixel_increment           = 0.0f;
    /* Adjust ticker speed */
-   float speed_factor                     = (menu_ticker_speed > 0.0001f)
-      ? menu_ticker_speed : 1.0f;
+   float speed_factor                     = (_ticker_speed > 0.0001f)
+      ? _ticker_speed : 1.0f;
    unsigned ticker_speed                  = 
       (unsigned)(((float)TICKER_SPEED / speed_factor) + 0.5);
    unsigned ticker_slow_speed             = 
@@ -1304,17 +1307,17 @@ static void gfx_animation_update_time(
 }
 
 bool gfx_animation_update(
-      bool menu_timedate_enable,
-      float menu_ticker_speed,
+      bool timedate_enable,
+      float ticker_speed,
       unsigned video_width,
       unsigned video_height)
 {
    unsigned i;
 
    gfx_animation_update_time(
-         menu_timedate_enable,
+         timedate_enable,
          video_width, video_height,
-         menu_ticker_speed);
+         ticker_speed);
 
    anim.in_update       = true;
    anim.pending_deletes = false;
@@ -2300,12 +2303,12 @@ bool gfx_animation_ctl(enum gfx_animation_ctl_state state, void *data)
    return true;
 }
 
-void menu_timer_start(menu_timer_t *timer, menu_timer_ctx_entry_t *timer_entry)
+void gfx_timer_start(gfx_timer_t *timer, gfx_timer_ctx_entry_t *timer_entry)
 {
    gfx_animation_ctx_entry_t entry;
    gfx_animation_ctx_tag tag = (uintptr_t) timer;
 
-   menu_timer_kill(timer);
+   gfx_timer_kill(timer);
 
    *timer = 0.0f;
 
@@ -2320,7 +2323,7 @@ void menu_timer_start(menu_timer_t *timer, menu_timer_ctx_entry_t *timer_entry)
    gfx_animation_push(&entry);
 }
 
-void menu_timer_kill(menu_timer_t *timer)
+void gfx_timer_kill(gfx_timer_t *timer)
 {
    gfx_animation_ctx_tag tag = (uintptr_t) timer;
    gfx_animation_kill_by_tag(&tag);

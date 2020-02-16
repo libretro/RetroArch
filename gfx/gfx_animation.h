@@ -181,28 +181,28 @@ typedef struct gfx_animation_ctx_line_ticker_smooth
    float *bottom_fade_alpha;
 } gfx_animation_ctx_line_ticker_smooth_t;
 
-typedef float menu_timer_t;
+typedef float gfx_timer_t;
 
-typedef struct menu_timer_ctx_entry
+typedef struct gfx_timer_ctx_entry
 {
    float duration;
    tween_cb cb;
    void *userdata;
-} menu_timer_ctx_entry_t;
+} gfx_timer_ctx_entry_t;
 
-typedef struct menu_delayed_animation
+typedef struct gfx_delayed_animation
 {
-   menu_timer_t timer;
+   gfx_timer_t timer;
    gfx_animation_ctx_entry_t entry;
-} menu_delayed_animation_t;
+} gfx_delayed_animation_t;
 
-void menu_timer_start(menu_timer_t *timer, menu_timer_ctx_entry_t *timer_entry);
+void gfx_timer_start(gfx_timer_t *timer, gfx_timer_ctx_entry_t *timer_entry);
 
-void menu_timer_kill(menu_timer_t *timer);
+void gfx_timer_kill(gfx_timer_t *timer);
 
 bool gfx_animation_update(
-      bool menu_timedate_enable,
-      float menu_ticker_speed,
+      bool timedate_enable,
+      float ticker_speed,
       unsigned video_width,
       unsigned video_height);
 

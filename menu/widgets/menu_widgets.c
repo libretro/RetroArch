@@ -92,7 +92,7 @@ static char *cheevo_title              = NULL;
 static menu_texture_item cheevo_badge  = 0;
 static float cheevo_unfold             = 0.0f;
 
-static menu_timer_t cheevo_timer;
+static gfx_timer_t cheevo_timer;
 
 static float cheevo_y           = 0.0f;
 static unsigned cheevo_width    = 0;
@@ -116,7 +116,7 @@ static float load_content_animation_icon_alpha;
 static float load_content_animation_fade_alpha;
 static float load_content_animation_final_fade_alpha;
 
-static menu_timer_t load_content_animation_end_timer;
+static gfx_timer_t load_content_animation_end_timer;
 
 static float menu_widgets_backdrop_orig[16] = {
    0.00, 0.00, 0.00, 0.75,
@@ -153,7 +153,7 @@ typedef struct menu_widget_msg
    unsigned width;
    bool expired; /* has the timer expired ? if so, should be set to dying */
 
-   menu_timer_t expiration_timer;
+   gfx_timer_t expiration_timer;
    bool expiration_timer_started;
 
    retro_task_t *task_ptr;
@@ -171,7 +171,7 @@ typedef struct menu_widget_msg
    float unfold;
 
    float hourglass_rotation;
-   menu_timer_t hourglass_timer;
+   gfx_timer_t hourglass_timer;
 } menu_widget_msg_t;
 
 static fifo_buffer_t *msg_queue       = NULL;
@@ -239,7 +239,7 @@ static menu_texture_item menu_widgets_icons_textures[MENU_WIDGETS_ICON_LAST] = {
 /* Volume */
 static float volume_db              = 0.0f;
 static float volume_percent         = 1.0f;
-static menu_timer_t volume_timer    = 0.0f;
+static gfx_timer_t volume_timer    = 0.0f;
 
 static float volume_alpha                  = 0.0f;
 static float volume_text_alpha             = 0.0f;
@@ -262,7 +262,7 @@ static float screenshot_scale_factor;
 static unsigned screenshot_thumbnail_width;
 static unsigned screenshot_thumbnail_height;
 static float screenshot_y;
-static menu_timer_t screenshot_timer;
+static gfx_timer_t screenshot_timer;
 
 static unsigned screenshot_shotname_length;
 
@@ -273,13 +273,13 @@ static unsigned ai_service_overlay_height            = 0;
 static menu_texture_item ai_service_overlay_texture  = 0;
 
 /* Generic message */
-static menu_timer_t generic_message_timer;
+static gfx_timer_t generic_message_timer;
 static float generic_message_alpha = 0.0f;
 #define GENERIC_MESSAGE_SIZE 256
 static char generic_message[GENERIC_MESSAGE_SIZE] = {'\0'};
 
 /* Libretro message */
-static menu_timer_t libretro_message_timer;
+static gfx_timer_t libretro_message_timer;
 static float libretro_message_alpha = 0.0f;
 static unsigned libretro_message_width = 0;
 #define LIBRETRO_MESSAGE_SIZE 512
@@ -465,7 +465,7 @@ void menu_widgets_msg_queue_push(
       {
          if (msg_widget->expiration_timer_started)
          {
-            menu_timer_kill(&msg_widget->expiration_timer);
+            gfx_timer_kill(&msg_widget->expiration_timer);
             msg_widget->expiration_timer_started = false;
          }
 
@@ -618,12 +618,12 @@ static void menu_widgets_msg_queue_free(menu_widget_msg_t *msg, bool touch_list)
    }
 
    /* Kill all animations */
-   menu_timer_kill(&msg->hourglass_timer);
+   gfx_timer_kill(&msg->hourglass_timer);
    gfx_animation_kill_by_tag(&tag);
 
    /* Kill all timers */
    if (msg->expiration_timer_started)
-      menu_timer_kill(&msg->expiration_timer);
+      gfx_timer_kill(&msg->expiration_timer);
 
    /* Free it */
    if (msg->msg)
@@ -822,7 +822,7 @@ static void menu_widgets_screenshot_end(void *userdata)
 
 static void menu_widgets_start_msg_expiration_timer(menu_widget_msg_t *msg_widget, unsigned duration)
 {
-   menu_timer_ctx_entry_t timer;
+   gfx_timer_ctx_entry_t timer;
    if (msg_widget->expiration_timer_started)
       return;
 
@@ -830,7 +830,7 @@ static void menu_widgets_start_msg_expiration_timer(menu_widget_msg_t *msg_widge
    timer.duration = duration;
    timer.userdata = msg_widget;
 
-   menu_timer_start(&msg_widget->expiration_timer, &timer);
+   gfx_timer_start(&msg_widget->expiration_timer, &timer);
 
    msg_widget->expiration_timer_started = true;
 }
@@ -839,7 +839,7 @@ static void menu_widgets_hourglass_tick(void *userdata);
 
 static void menu_widgets_hourglass_end(void *userdata)
 {
-   menu_timer_ctx_entry_t timer;
+   gfx_timer_ctx_entry_t timer;
    menu_widget_msg_t *msg  = (menu_widget_msg_t*) userdata;
 
    msg->hourglass_rotation = 0.0f;
@@ -848,7 +848,7 @@ static void menu_widgets_hourglass_end(void *userdata)
    timer.duration          = HOURGLASS_INTERVAL;
    timer.userdata          = msg;
 
-   menu_timer_start(&msg->hourglass_timer, &timer);
+   gfx_timer_start(&msg->hourglass_timer, &timer);
 }
 
 static void menu_widgets_hourglass_tick(void *userdata)
@@ -976,7 +976,7 @@ void menu_widgets_iterate(
    /* Load screenshot and start its animation */
    if (screenshot_filename[0] != '\0')
    {
-      menu_timer_ctx_entry_t timer;
+      gfx_timer_ctx_entry_t timer;
 
       video_driver_texture_unload(&screenshot_texture);
 
@@ -1003,7 +1003,7 @@ void menu_widgets_iterate(
       timer.duration = SCREENSHOT_NOTIFICATION_DURATION;
       timer.userdata = NULL;
 
-      menu_timer_start(&screenshot_timer, &timer);
+      gfx_timer_start(&screenshot_timer, &timer);
 
       screenshot_loaded       = true;
       screenshot_filename[0]  = '\0';
@@ -2185,7 +2185,7 @@ void menu_widgets_free(void)
    /* Libretro message */
    libretro_tag = (uintptr_t) &libretro_message_timer;
    libretro_message_alpha = 0.0f;
-   menu_timer_kill(&libretro_message_timer);
+   gfx_timer_kill(&libretro_message_timer);
    gfx_animation_kill_by_tag(&libretro_tag);
 
    /* AI Service overlay */
@@ -2220,7 +2220,7 @@ static void menu_widgets_volume_timer_end(void *userdata)
 
 void menu_widgets_volume_update_and_show(float new_volume)
 {
-   menu_timer_ctx_entry_t entry;
+   gfx_timer_ctx_entry_t entry;
    bool mute = *(audio_get_bool_ptr(AUDIO_ACTION_MUTE_ENABLE));
 
    gfx_animation_kill_by_tag(&volume_tag);
@@ -2235,7 +2235,7 @@ void menu_widgets_volume_update_and_show(float new_volume)
    entry.duration    = VOLUME_DURATION;
    entry.userdata    = NULL;
 
-   menu_timer_start(&volume_timer, &entry);
+   gfx_timer_start(&volume_timer, &entry);
 }
 
 bool menu_widgets_set_fps_text(const char *new_fps_text)
@@ -2340,7 +2340,7 @@ void menu_widgets_start_load_content_animation(const char *content_name, bool re
 {
    /* TODO: finish the animation based on design, correct all timings */
    gfx_animation_ctx_entry_t entry;
-   menu_timer_ctx_entry_t timer_entry;
+   gfx_timer_ctx_entry_t timer_entry;
    int i;
 
    float icon_color[16] = COLOR_HEX_TO_FLOAT(0x0473C9, 1.0f); /* TODO: random color */
@@ -2432,7 +2432,7 @@ void menu_widgets_start_load_content_animation(const char *content_name, bool re
    timer_entry.duration = timing;
    timer_entry.userdata = NULL;
 
-   menu_timer_start(&load_content_animation_end_timer, &timer_entry);
+   gfx_timer_start(&load_content_animation_end_timer, &timer_entry);
 
    /* Draw all the things */
    load_content_animation_running = true;
@@ -2474,7 +2474,7 @@ static void menu_widgets_achievement_fold(void *userdata)
 static void menu_widgets_achievement_unfold(void *userdata)
 {
    gfx_animation_ctx_entry_t entry;
-   menu_timer_ctx_entry_t timer;
+   gfx_timer_ctx_entry_t timer;
 
    /* Unfold */
    entry.cb             = NULL;
@@ -2492,7 +2492,7 @@ static void menu_widgets_achievement_unfold(void *userdata)
    timer.duration = MSG_QUEUE_ANIMATION_DURATION + CHEEVO_NOTIFICATION_DURATION;
    timer.userdata = NULL;
 
-   menu_timer_start(&cheevo_timer, &timer);
+   gfx_timer_start(&cheevo_timer, &timer);
 }
 
 static void menu_widgets_start_achievement_notification(void)
@@ -2573,7 +2573,7 @@ static void menu_widgets_generic_message_fadeout(void *userdata)
 
 void menu_widgets_set_message(char *msg)
 {
-   menu_timer_ctx_entry_t timer;
+   gfx_timer_ctx_entry_t timer;
    gfx_animation_ctx_tag tag = (uintptr_t) &generic_message_timer;
 
    strlcpy(generic_message, msg, GENERIC_MESSAGE_SIZE);
@@ -2581,14 +2581,14 @@ void menu_widgets_set_message(char *msg)
    generic_message_alpha = DEFAULT_BACKDROP;
 
    /* Kill and restart the timer / animation */
-   menu_timer_kill(&generic_message_timer);
+   gfx_timer_kill(&generic_message_timer);
    gfx_animation_kill_by_tag(&tag);
 
    timer.cb       = menu_widgets_generic_message_fadeout;
    timer.duration = GENERIC_MESSAGE_DURATION;
    timer.userdata = NULL;
 
-   menu_timer_start(&generic_message_timer, &timer);
+   gfx_timer_start(&generic_message_timer, &timer);
 }
 
 static void menu_widgets_libretro_message_fadeout(void *userdata)
@@ -2610,7 +2610,7 @@ static void menu_widgets_libretro_message_fadeout(void *userdata)
 
 void menu_widgets_set_libretro_message(const char *msg, unsigned duration)
 {
-   menu_timer_ctx_entry_t timer;
+   gfx_timer_ctx_entry_t timer;
    gfx_animation_ctx_tag tag = (uintptr_t) &libretro_message_timer;
 
    strlcpy(libretro_message, msg, LIBRETRO_MESSAGE_SIZE);
@@ -2618,14 +2618,14 @@ void menu_widgets_set_libretro_message(const char *msg, unsigned duration)
    libretro_message_alpha = DEFAULT_BACKDROP;
 
    /* Kill and restart the timer / animation */
-   menu_timer_kill(&libretro_message_timer);
+   gfx_timer_kill(&libretro_message_timer);
    gfx_animation_kill_by_tag(&tag);
 
    timer.cb       = menu_widgets_libretro_message_fadeout;
    timer.duration = duration;
    timer.userdata = NULL;
 
-   menu_timer_start(&libretro_message_timer, &timer);
+   gfx_timer_start(&libretro_message_timer, &timer);
 
    /* Compute text width */
    libretro_message_width = font_driver_get_message_width(font_regular, msg, (unsigned)strlen(msg), 1) + simple_widget_padding * 2;
