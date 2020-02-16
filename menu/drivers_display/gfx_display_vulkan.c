@@ -20,7 +20,7 @@
 #include "../../config.h"
 #endif
 
-#include "../menu_driver.h"
+#include "../gfx_display.h"
 
 #include "../../gfx/font_driver.h"
 #include "../../retroarch.h"
@@ -48,7 +48,7 @@ static const float vk_colors[] = {
    1.0f, 1.0f, 1.0f, 1.0f,
 };
 
-static void *menu_display_vk_get_default_mvp(video_frame_info_t *video_info)
+static void *gfx_display_vk_get_default_mvp(video_frame_info_t *video_info)
 {
    vk_t *vk = (vk_t*)video_info->userdata;
    if (!vk)
@@ -56,50 +56,50 @@ static void *menu_display_vk_get_default_mvp(video_frame_info_t *video_info)
    return &vk->mvp_no_rot;
 }
 
-static const float *menu_display_vk_get_default_vertices(void)
+static const float *gfx_display_vk_get_default_vertices(void)
 {
    return &vk_vertexes[0];
 }
 
-static const float *menu_display_vk_get_default_color(void)
+static const float *gfx_display_vk_get_default_color(void)
 {
    return &vk_colors[0];
 }
 
-static const float *menu_display_vk_get_default_tex_coords(void)
+static const float *gfx_display_vk_get_default_tex_coords(void)
 {
    return &vk_tex_coords[0];
 }
 
 static unsigned to_display_pipeline(
-      enum menu_display_prim_type type, bool blend)
+      enum gfx_display_prim_type type, bool blend)
 {
-   return ((type == MENU_DISPLAY_PRIM_TRIANGLESTRIP) << 1) | (blend << 0);
+   return ((type == GFX_DISPLAY_PRIM_TRIANGLESTRIP) << 1) | (blend << 0);
 }
 
 #ifdef HAVE_SHADERPIPELINE
 static unsigned to_menu_pipeline(
-      enum menu_display_prim_type type, unsigned pipeline)
+      enum gfx_display_prim_type type, unsigned pipeline)
 {
    switch (pipeline)
    {
       case VIDEO_SHADER_MENU:
-         return 4 + (type == MENU_DISPLAY_PRIM_TRIANGLESTRIP);
+         return 4 + (type == GFX_DISPLAY_PRIM_TRIANGLESTRIP);
       case VIDEO_SHADER_MENU_2:
-         return 6 + (type == MENU_DISPLAY_PRIM_TRIANGLESTRIP);
+         return 6 + (type == GFX_DISPLAY_PRIM_TRIANGLESTRIP);
       case VIDEO_SHADER_MENU_3:
-         return 8 + (type == MENU_DISPLAY_PRIM_TRIANGLESTRIP);
+         return 8 + (type == GFX_DISPLAY_PRIM_TRIANGLESTRIP);
       case VIDEO_SHADER_MENU_4:
-         return 10 + (type == MENU_DISPLAY_PRIM_TRIANGLESTRIP);
+         return 10 + (type == GFX_DISPLAY_PRIM_TRIANGLESTRIP);
       case VIDEO_SHADER_MENU_5:
-         return 12 + (type == MENU_DISPLAY_PRIM_TRIANGLESTRIP);
+         return 12 + (type == GFX_DISPLAY_PRIM_TRIANGLESTRIP);
       default:
          return 0;
    }
 }
 #endif
 
-static void menu_display_vk_viewport(menu_display_ctx_draw_t *draw,
+static void gfx_display_vk_viewport(gfx_display_ctx_draw_t *draw,
       video_frame_info_t *video_info)
 {
    vk_t *vk                      = (vk_t*)video_info->userdata;
@@ -115,7 +115,7 @@ static void menu_display_vk_viewport(menu_display_ctx_draw_t *draw,
    vk->vk_vp.maxDepth = 1.0f;
 }
 
-static void menu_display_vk_draw_pipeline(menu_display_ctx_draw_t *draw,
+static void gfx_display_vk_draw_pipeline(gfx_display_ctx_draw_t *draw,
       video_frame_info_t *video_info)
 {
 #ifdef HAVE_SHADERPIPELINE
@@ -143,7 +143,7 @@ static void menu_display_vk_draw_pipeline(menu_display_ctx_draw_t *draw,
       default:
       case VIDEO_SHADER_MENU:
       case VIDEO_SHADER_MENU_2:
-         ca = menu_display_get_coords_array();
+         ca = gfx_display_get_coords_array();
          draw->coords                     = (struct video_coords*)&ca->coords;
          draw->pipeline.backend_data      = ubo_scratch_data;
          draw->pipeline.backend_data_size = 2 * sizeof(float);
@@ -164,7 +164,7 @@ static void menu_display_vk_draw_pipeline(menu_display_ctx_draw_t *draw,
 
          /* Match UBO layout in shader. */
          memcpy(ubo_scratch_data,
-               menu_display_vk_get_default_mvp(video_info),
+               gfx_display_vk_get_default_mvp(video_info),
                sizeof(math_matrix_4x4));
          memcpy(ubo_scratch_data + sizeof(math_matrix_4x4),
                output_size,
@@ -182,7 +182,7 @@ static void menu_display_vk_draw_pipeline(menu_display_ctx_draw_t *draw,
                + 3 * sizeof(float), &yflip, sizeof(yflip));
          draw->coords          = &blank_coords;
          blank_coords.vertices = 4;
-         draw->prim_type       = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
+         draw->prim_type       = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
          break;
    }
 
@@ -190,7 +190,7 @@ static void menu_display_vk_draw_pipeline(menu_display_ctx_draw_t *draw,
 #endif
 }
 
-static void menu_display_vk_draw(menu_display_ctx_draw_t *draw,
+static void gfx_display_vk_draw(gfx_display_ctx_draw_t *draw,
       video_frame_info_t *video_info)
 {
    unsigned i;
@@ -211,17 +211,17 @@ static void menu_display_vk_draw(menu_display_ctx_draw_t *draw,
    color              = draw->coords->color;
 
    if (!vertex)
-      vertex          = menu_display_vk_get_default_vertices();
+      vertex          = gfx_display_vk_get_default_vertices();
    if (!tex_coord)
-      tex_coord       = menu_display_vk_get_default_tex_coords();
+      tex_coord       = gfx_display_vk_get_default_tex_coords();
    if (!draw->coords->lut_tex_coord)
-      draw->coords->lut_tex_coord = menu_display_vk_get_default_tex_coords();
+      draw->coords->lut_tex_coord = gfx_display_vk_get_default_tex_coords();
    if (!texture)
       texture         = &vk->display.blank_texture;
    if (!color)
-      color           = menu_display_vk_get_default_color();
+      color           = gfx_display_vk_get_default_color();
 
-   menu_display_vk_viewport(draw, video_info);
+   gfx_display_vk_viewport(draw, video_info);
 
    vk->tracker.dirty |= VULKAN_DIRTY_DYNAMIC_BIT;
 
@@ -284,7 +284,7 @@ static void menu_display_vk_draw(menu_display_ctx_draw_t *draw,
             (texture->default_smooth ? vk->samplers.linear
              : vk->samplers.nearest);
          call.uniform      = draw->matrix_data
-            ? draw->matrix_data : menu_display_vk_get_default_mvp(video_info);
+            ? draw->matrix_data : gfx_display_vk_get_default_mvp(video_info);
          call.uniform_size = sizeof(math_matrix_4x4);
          call.vbo          = &range;
          call.vertices     = draw->coords->vertices;
@@ -295,12 +295,12 @@ static void menu_display_vk_draw(menu_display_ctx_draw_t *draw,
    }
 }
 
-static void menu_display_vk_restore_clear_color(void)
+static void gfx_display_vk_restore_clear_color(void)
 {
 }
 
-static void menu_display_vk_clear_color(
-      menu_display_ctx_clearcolor_t *clearcolor,
+static void gfx_display_vk_clear_color(
+      gfx_display_ctx_clearcolor_t *clearcolor,
       video_frame_info_t *video_info)
 {
    VkClearRect rect;
@@ -325,7 +325,7 @@ static void menu_display_vk_clear_color(
    vkCmdClearAttachments(vk->cmd, 1, &attachment, 1, &rect);
 }
 
-static void menu_display_vk_blend_begin(video_frame_info_t *video_info)
+static void gfx_display_vk_blend_begin(video_frame_info_t *video_info)
 {
    vk_t *vk = (vk_t*)video_info->userdata;
 
@@ -333,7 +333,7 @@ static void menu_display_vk_blend_begin(video_frame_info_t *video_info)
       vk->display.blend = true;
 }
 
-static void menu_display_vk_blend_end(video_frame_info_t *video_info)
+static void gfx_display_vk_blend_end(video_frame_info_t *video_info)
 {
    vk_t *vk = (vk_t*)video_info->userdata;
 
@@ -341,7 +341,7 @@ static void menu_display_vk_blend_end(video_frame_info_t *video_info)
       vk->display.blend = false;
 }
 
-static bool menu_display_vk_font_init_first(
+static bool gfx_display_vk_font_init_first(
       void **font_handle, void *video_data, const char *font_path,
       float menu_font_size, bool is_threaded)
 {
@@ -357,7 +357,7 @@ static bool menu_display_vk_font_init_first(
    return false;
 }
 
-static void menu_display_vk_scissor_begin(video_frame_info_t *video_info,
+static void gfx_display_vk_scissor_begin(video_frame_info_t *video_info,
       int x, int y, unsigned width, unsigned height)
 {
    vk_t *vk                          = (vk_t*)video_info->userdata;
@@ -370,7 +370,7 @@ static void menu_display_vk_scissor_begin(video_frame_info_t *video_info,
    vk->tracker.dirty                |= VULKAN_DIRTY_DYNAMIC_BIT;
 }
 
-static void menu_display_vk_scissor_end(video_frame_info_t *video_info)
+static void gfx_display_vk_scissor_end(video_frame_info_t *video_info)
 {
    vk_t *vk                 = (vk_t*)video_info->userdata;
 
@@ -378,21 +378,21 @@ static void menu_display_vk_scissor_end(video_frame_info_t *video_info)
    vk->tracker.dirty       |= VULKAN_DIRTY_DYNAMIC_BIT;
 }
 
-menu_display_ctx_driver_t menu_display_ctx_vulkan = {
-   menu_display_vk_draw,
-   menu_display_vk_draw_pipeline,
-   menu_display_vk_viewport,
-   menu_display_vk_blend_begin,
-   menu_display_vk_blend_end,
-   menu_display_vk_restore_clear_color,
-   menu_display_vk_clear_color,
-   menu_display_vk_get_default_mvp,
-   menu_display_vk_get_default_vertices,
-   menu_display_vk_get_default_tex_coords,
-   menu_display_vk_font_init_first,
-   MENU_VIDEO_DRIVER_VULKAN,
+gfx_display_ctx_driver_t gfx_display_ctx_vulkan = {
+   gfx_display_vk_draw,
+   gfx_display_vk_draw_pipeline,
+   gfx_display_vk_viewport,
+   gfx_display_vk_blend_begin,
+   gfx_display_vk_blend_end,
+   gfx_display_vk_restore_clear_color,
+   gfx_display_vk_clear_color,
+   gfx_display_vk_get_default_mvp,
+   gfx_display_vk_get_default_vertices,
+   gfx_display_vk_get_default_tex_coords,
+   gfx_display_vk_font_init_first,
+   GFX_VIDEO_DRIVER_VULKAN,
    "vulkan",
    false,
-   menu_display_vk_scissor_begin,
-   menu_display_vk_scissor_end
+   gfx_display_vk_scissor_begin,
+   gfx_display_vk_scissor_end
 };

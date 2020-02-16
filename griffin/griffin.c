@@ -1286,60 +1286,60 @@ MENU
 #include "../menu/drivers/menu_generic.c"
 
 #if defined(HAVE_D3D8)
-#include "../menu/drivers_display/menu_display_d3d8.c"
+#include "../menu/drivers_display/gfx_display_d3d8.c"
 #endif
 
 #if defined(HAVE_D3D9)
-#include "../menu/drivers_display/menu_display_d3d9.c"
+#include "../menu/drivers_display/gfx_display_d3d9.c"
 #endif
 
 #if defined(HAVE_D3D10)
-#include "../menu/drivers_display/menu_display_d3d10.c"
+#include "../menu/drivers_display/gfx_display_d3d10.c"
 #endif
 
 #if defined(HAVE_D3D11)
-#include "../menu/drivers_display/menu_display_d3d11.c"
+#include "../menu/drivers_display/gfx_display_d3d11.c"
 #endif
 
 #if defined(HAVE_D3D12)
-#include "../menu/drivers_display/menu_display_d3d12.c"
+#include "../menu/drivers_display/gfx_display_d3d12.c"
 #endif
 
 #ifdef HAVE_OPENGL1
-#include "../menu/drivers_display/menu_display_gl1.c"
+#include "../menu/drivers_display/gfx_display_gl1.c"
 #endif
 
 #ifdef HAVE_OPENGL
-#include "../menu/drivers_display/menu_display_gl.c"
+#include "../menu/drivers_display/gfx_display_gl.c"
 #endif
 
 #ifdef HAVE_OPENGL_CORE
-#include "../menu/drivers_display/menu_display_gl_core.c"
+#include "../menu/drivers_display/gfx_display_gl_core.c"
 #endif
 
 #ifdef HAVE_VULKAN
-#include "../menu/drivers_display/menu_display_vulkan.c"
+#include "../menu/drivers_display/gfx_display_vulkan.c"
 #endif
 
 #ifdef HAVE_VITA2D
-#include "../menu/drivers_display/menu_display_vita2d.c"
+#include "../menu/drivers_display/gfx_display_vita2d.c"
 #endif
 
 #ifdef _3DS
-#include "../menu/drivers_display/menu_display_ctr.c"
+#include "../menu/drivers_display/gfx_display_ctr.c"
 #endif
 
 #ifdef WIIU
-#include "../menu/drivers_display/menu_display_wiiu.c"
+#include "../menu/drivers_display/gfx_display_wiiu.c"
 #endif
 
 #if defined(HAVE_LIBNX)
-#include "../menu/drivers_display/menu_display_switch.c"
+#include "../menu/drivers_display/gfx_display_switch.c"
 #endif
 
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
 #ifdef HAVE_GDI
-#include "../menu/drivers_display/menu_display_gdi.c"
+#include "../menu/drivers_display/gfx_display_gdi.c"
 #endif
 #endif
 

@@ -20,7 +20,7 @@
 #include "config.h"
 #endif
 
-#include "../menu_driver.h"
+#include "../gfx_display.h"
 
 #include "../../retroarch.h"
 #include "../../gfx/font_driver.h"
@@ -28,38 +28,38 @@
 #include "../../wiiu/system/memory.h"
 #include "../../wiiu/wiiu_dbg.h"
 
-static const float *menu_display_wiiu_get_default_vertices(void)
+static const float *gfx_display_wiiu_get_default_vertices(void)
 {
    return NULL;
 }
 
-static const float *menu_display_wiiu_get_default_tex_coords(void)
+static const float *gfx_display_wiiu_get_default_tex_coords(void)
 {
    return NULL;
 }
 
-static void *menu_display_wiiu_get_default_mvp(video_frame_info_t *video_info)
+static void *gfx_display_wiiu_get_default_mvp(video_frame_info_t *video_info)
 {
    return NULL;
 }
 
-static void menu_display_wiiu_blend_begin(video_frame_info_t *video_info)
+static void gfx_display_wiiu_blend_begin(video_frame_info_t *video_info)
 {
 
 }
 
-static void menu_display_wiiu_blend_end(video_frame_info_t *video_info)
+static void gfx_display_wiiu_blend_end(video_frame_info_t *video_info)
 {
 
 }
 
-static void menu_display_wiiu_viewport(menu_display_ctx_draw_t *draw,
+static void gfx_display_wiiu_viewport(gfx_display_ctx_draw_t *draw,
       video_frame_info_t *video_info)
 {
 
 }
 
-static void menu_display_wiiu_draw(menu_display_ctx_draw_t *draw,
+static void gfx_display_wiiu_draw(gfx_display_ctx_draw_t *draw,
       video_frame_info_t *video_info)
 {
    wiiu_video_t             *wiiu  = (wiiu_video_t*)video_info->userdata;
@@ -228,7 +228,7 @@ static void menu_display_wiiu_draw(menu_display_ctx_draw_t *draw,
                       sizeof(*wiiu->vertex_cache.v), wiiu->vertex_cache.v);
 }
 
-static void menu_display_wiiu_draw_pipeline(menu_display_ctx_draw_t *draw,
+static void gfx_display_wiiu_draw_pipeline(gfx_display_ctx_draw_t *draw,
       video_frame_info_t *video_info)
 {
    video_coord_array_t *ca        = NULL;
@@ -241,7 +241,7 @@ static void menu_display_wiiu_draw_pipeline(menu_display_ctx_draw_t *draw,
    {
       case VIDEO_SHADER_MENU:
       case VIDEO_SHADER_MENU_2:
-         ca = menu_display_get_coords_array();
+         ca = gfx_display_get_coords_array();
          if (!wiiu->menu_shader_vbo)
          {
             wiiu->menu_shader_vbo = MEM2_alloc(ca->coords.vertices * 2 * sizeof(float), GX2_VERTEX_BUFFER_ALIGNMENT);
@@ -282,15 +282,15 @@ static void menu_display_wiiu_draw_pipeline(menu_display_ctx_draw_t *draw,
    GX2SetPixelUniformBlock(1, sizeof(*wiiu->menu_shader_ubo), wiiu->menu_shader_ubo);
 }
 
-static void menu_display_wiiu_restore_clear_color(void)
+static void gfx_display_wiiu_restore_clear_color(void)
 {
 #if 0
    wiiu_set_clear_color(RGBA8(0x00, 0x00, 0x00, 0xFF));
 #endif
 }
 
-static void menu_display_wiiu_clear_color(
-      menu_display_ctx_clearcolor_t *clearcolor,
+static void gfx_display_wiiu_clear_color(
+      gfx_display_ctx_clearcolor_t *clearcolor,
       video_frame_info_t *video_info)
 {
    if (!clearcolor)
@@ -304,7 +304,7 @@ static void menu_display_wiiu_clear_color(
 #endif
 }
 
-static bool menu_display_wiiu_font_init_first(
+static bool gfx_display_wiiu_font_init_first(
       void **font_handle, void *video_data,
       const char *font_path, float font_size,
       bool is_threaded)
@@ -317,32 +317,32 @@ static bool menu_display_wiiu_font_init_first(
    return *handle;
 }
 
-static void menu_display_wiiu_scissor_begin(video_frame_info_t *video_info, int x, int y,
+static void gfx_display_wiiu_scissor_begin(video_frame_info_t *video_info, int x, int y,
       unsigned width, unsigned height)
 {
    GX2SetScissor(MAX(x, 0), MAX(video_info->height - y - height, 0), MIN(width, video_info->width), MIN(height, video_info->height));
 }
 
-static void menu_display_wiiu_scissor_end(video_frame_info_t *video_info)
+static void gfx_display_wiiu_scissor_end(video_frame_info_t *video_info)
 {
    GX2SetScissor(0, 0, video_info->width, video_info->height);
 }
 
-menu_display_ctx_driver_t menu_display_ctx_wiiu = {
-   menu_display_wiiu_draw,
-   menu_display_wiiu_draw_pipeline,
-   menu_display_wiiu_viewport,
-   menu_display_wiiu_blend_begin,
-   menu_display_wiiu_blend_end,
-   menu_display_wiiu_restore_clear_color,
-   menu_display_wiiu_clear_color,
-   menu_display_wiiu_get_default_mvp,
-   menu_display_wiiu_get_default_vertices,
-   menu_display_wiiu_get_default_tex_coords,
-   menu_display_wiiu_font_init_first,
-   MENU_VIDEO_DRIVER_WIIU,
+gfx_display_ctx_driver_t gfx_display_ctx_wiiu = {
+   gfx_display_wiiu_draw,
+   gfx_display_wiiu_draw_pipeline,
+   gfx_display_wiiu_viewport,
+   gfx_display_wiiu_blend_begin,
+   gfx_display_wiiu_blend_end,
+   gfx_display_wiiu_restore_clear_color,
+   gfx_display_wiiu_clear_color,
+   gfx_display_wiiu_get_default_mvp,
+   gfx_display_wiiu_get_default_vertices,
+   gfx_display_wiiu_get_default_tex_coords,
+   gfx_display_wiiu_font_init_first,
+   GFX_VIDEO_DRIVER_WIIU,
    "gx2",
    true,
-   menu_display_wiiu_scissor_begin,
-   menu_display_wiiu_scissor_end
+   gfx_display_wiiu_scissor_begin,
+   gfx_display_wiiu_scissor_end
 };

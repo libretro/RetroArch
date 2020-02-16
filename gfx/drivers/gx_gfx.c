@@ -504,9 +504,9 @@ static void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines,
 
    new_fb_pitch = new_fb_width * 2;
 
-   menu_display_set_width(new_fb_width);
-   menu_display_set_height(new_fb_height);
-   menu_display_set_framebuffer_pitch(new_fb_pitch);
+   gfx_display_set_width(new_fb_width);
+   gfx_display_set_height(new_fb_height);
+   gfx_display_set_framebuffer_pitch(new_fb_pitch);
 
    GX_SetViewportJitter(0, 0, gx_mode.fbWidth, gx_mode.efbHeight, 0, 1, 1);
    GX_SetDispCopySrc(0, 0, gx_mode.fbWidth, gx_mode.efbHeight);
@@ -618,7 +618,7 @@ static void init_texture(void *data, unsigned width, unsigned height)
    width               &= ~3;
    height              &= ~3;
 
-   menu_display_get_fb_size(&fb_width, &fb_height,
+   gfx_display_get_fb_size(&fb_width, &fb_height,
          &fb_pitch);
 
    GX_InitTexObj(fb_ptr, g_tex.data, width, height,
@@ -1593,7 +1593,7 @@ static bool gx_frame(void *data, const void *frame,
       size_t fb_pitch;
       unsigned fb_width, fb_height;
 
-      menu_display_get_fb_size(&fb_width, &fb_height,
+      gfx_display_get_fb_size(&fb_width, &fb_height,
             &fb_pitch);
 
       convert_texture16(

@@ -23,7 +23,7 @@
 #include "../../config.h"
 #endif
 
-#include "../menu_driver.h"
+#include "../gfx_display.h"
 
 #include "../../retroarch.h"
 #include "../../gfx/common/d3d_common.h"
@@ -43,17 +43,17 @@ static const float d3d8_tex_coords[] = {
    1, 0
 };
 
-static const float *menu_display_d3d8_get_default_vertices(void)
+static const float *gfx_display_d3d8_get_default_vertices(void)
 {
    return &d3d8_vertexes[0];
 }
 
-static const float *menu_display_d3d8_get_default_tex_coords(void)
+static const float *gfx_display_d3d8_get_default_tex_coords(void)
 {
    return &d3d8_tex_coords[0];
 }
 
-static void *menu_display_d3d8_get_default_mvp(video_frame_info_t *video_info)
+static void *gfx_display_d3d8_get_default_mvp(video_frame_info_t *video_info)
 {
    static math_matrix_4x4 id;
    matrix_4x4_identity(id);
@@ -61,15 +61,15 @@ static void *menu_display_d3d8_get_default_mvp(video_frame_info_t *video_info)
    return &id;
 }
 
-static INT32 menu_display_prim_to_d3d8_enum(
-      enum menu_display_prim_type prim_type)
+static INT32 gfx_display_prim_to_d3d8_enum(
+      enum gfx_display_prim_type prim_type)
 {
    switch (prim_type)
    {
-      case MENU_DISPLAY_PRIM_TRIANGLES:
-      case MENU_DISPLAY_PRIM_TRIANGLESTRIP:
+      case GFX_DISPLAY_PRIM_TRIANGLES:
+      case GFX_DISPLAY_PRIM_TRIANGLESTRIP:
          return D3DPT_COMM_TRIANGLESTRIP;
-      case MENU_DISPLAY_PRIM_NONE:
+      case GFX_DISPLAY_PRIM_NONE:
       default:
          break;
    }
@@ -78,7 +78,7 @@ static INT32 menu_display_prim_to_d3d8_enum(
    return 0;
 }
 
-static void menu_display_d3d8_blend_begin(video_frame_info_t *video_info)
+static void gfx_display_d3d8_blend_begin(video_frame_info_t *video_info)
 {
    d3d8_video_t *d3d             = (d3d8_video_t*)video_info->userdata;
 
@@ -88,7 +88,7 @@ static void menu_display_d3d8_blend_begin(video_frame_info_t *video_info)
    d3d8_enable_blend_func(d3d->dev);
 }
 
-static void menu_display_d3d8_blend_end(video_frame_info_t *video_info)
+static void gfx_display_d3d8_blend_end(video_frame_info_t *video_info)
 {
    d3d8_video_t *d3d             = (d3d8_video_t*)video_info->userdata;
 
@@ -98,12 +98,12 @@ static void menu_display_d3d8_blend_end(video_frame_info_t *video_info)
    d3d8_disable_blend_func(d3d->dev);
 }
 
-static void menu_display_d3d8_viewport(menu_display_ctx_draw_t *draw,
+static void gfx_display_d3d8_viewport(gfx_display_ctx_draw_t *draw,
       video_frame_info_t *video_info)
 {
 }
 
-static void menu_display_d3d8_bind_texture(menu_display_ctx_draw_t *draw,
+static void gfx_display_d3d8_bind_texture(gfx_display_ctx_draw_t *draw,
       d3d8_video_t *d3d)
 {
    LPDIRECT3DDEVICE8 dev = d3d->dev;
@@ -115,7 +115,7 @@ static void menu_display_d3d8_bind_texture(menu_display_ctx_draw_t *draw,
    d3d8_set_sampler_magfilter(d3d->dev, 0, D3DTEXF_COMM_LINEAR);
 }
 
-static void menu_display_d3d8_draw(menu_display_ctx_draw_t *draw,
+static void gfx_display_d3d8_draw(gfx_display_ctx_draw_t *draw,
       video_frame_info_t *video_info)
 {
    unsigned i;
@@ -144,9 +144,9 @@ static void menu_display_d3d8_draw(menu_display_ctx_draw_t *draw,
    color        = draw->coords->color;
 
    if (!vertex)
-      vertex    = menu_display_d3d8_get_default_vertices();
+      vertex    = gfx_display_d3d8_get_default_vertices();
    if (!tex_coord)
-      tex_coord = menu_display_d3d8_get_default_tex_coords();
+      tex_coord = gfx_display_d3d8_get_default_tex_coords();
 
    for (i = 0; i < draw->coords->vertices; i++)
    {
@@ -186,7 +186,7 @@ static void menu_display_d3d8_draw(menu_display_ctx_draw_t *draw,
    d3d8_vertex_buffer_unlock(d3d->menu_display.buffer);
 
    if (!draw->matrix_data)
-      draw->matrix_data = menu_display_d3d8_get_default_mvp(video_info);
+      draw->matrix_data = gfx_display_d3d8_get_default_mvp(video_info);
 
    /* ugh */
    matrix_4x4_scale(m1,       2.0,  2.0, 0);
@@ -209,30 +209,30 @@ static void menu_display_d3d8_draw(menu_display_ctx_draw_t *draw,
    d3d8_set_mvp(d3d->dev, &m1);
 
    if (draw && draw->texture)
-      menu_display_d3d8_bind_texture(draw, d3d);
+      gfx_display_d3d8_bind_texture(draw, d3d);
 
    d3d8_draw_primitive(d3d->dev,
-         menu_display_prim_to_d3d8_enum(draw->prim_type),
+         gfx_display_prim_to_d3d8_enum(draw->prim_type),
          d3d->menu_display.offset,
          draw->coords->vertices -
-         ((draw->prim_type == MENU_DISPLAY_PRIM_TRIANGLESTRIP)
+         ((draw->prim_type == GFX_DISPLAY_PRIM_TRIANGLESTRIP)
           ? 2 : 0));
 
    d3d->menu_display.offset += draw->coords->vertices;
 }
 
-static void menu_display_d3d8_draw_pipeline(menu_display_ctx_draw_t *draw,
+static void gfx_display_d3d8_draw_pipeline(gfx_display_ctx_draw_t *draw,
       video_frame_info_t *video_info)
 {
 }
 
-static void menu_display_d3d8_restore_clear_color(void)
+static void gfx_display_d3d8_restore_clear_color(void)
 {
    /* not needed */
 }
 
-static void menu_display_d3d8_clear_color(
-      menu_display_ctx_clearcolor_t *clearcolor, video_frame_info_t *video_info)
+static void gfx_display_d3d8_clear_color(
+      gfx_display_ctx_clearcolor_t *clearcolor, video_frame_info_t *video_info)
 {
    DWORD    clear_color  = 0;
    d3d8_video_t     *d3d = (d3d8_video_t*)video_info->userdata;
@@ -250,7 +250,7 @@ static void menu_display_d3d8_clear_color(
    d3d8_clear(d3d->dev, 0, NULL, D3D_COMM_CLEAR_TARGET, clear_color, 0, 0);
 }
 
-static bool menu_display_d3d8_font_init_first(
+static bool gfx_display_d3d8_font_init_first(
       void **font_handle, void *video_data,
       const char *font_path, float font_size,
       bool is_threaded)
@@ -264,19 +264,19 @@ static bool menu_display_d3d8_font_init_first(
    return true;
 }
 
-menu_display_ctx_driver_t menu_display_ctx_d3d8 = {
-   menu_display_d3d8_draw,
-   menu_display_d3d8_draw_pipeline,
-   menu_display_d3d8_viewport,
-   menu_display_d3d8_blend_begin,
-   menu_display_d3d8_blend_end,
-   menu_display_d3d8_restore_clear_color,
-   menu_display_d3d8_clear_color,
-   menu_display_d3d8_get_default_mvp,
-   menu_display_d3d8_get_default_vertices,
-   menu_display_d3d8_get_default_tex_coords,
-   menu_display_d3d8_font_init_first,
-   MENU_VIDEO_DRIVER_DIRECT3D8,
+gfx_display_ctx_driver_t gfx_display_ctx_d3d8 = {
+   gfx_display_d3d8_draw,
+   gfx_display_d3d8_draw_pipeline,
+   gfx_display_d3d8_viewport,
+   gfx_display_d3d8_blend_begin,
+   gfx_display_d3d8_blend_end,
+   gfx_display_d3d8_restore_clear_color,
+   gfx_display_d3d8_clear_color,
+   gfx_display_d3d8_get_default_mvp,
+   gfx_display_d3d8_get_default_vertices,
+   gfx_display_d3d8_get_default_tex_coords,
+   gfx_display_d3d8_font_init_first,
+   GFX_VIDEO_DRIVER_DIRECT3D8,
    "d3d8",
    false,
    NULL,

@@ -19,7 +19,7 @@
 #include "../../config.h"
 #endif
 
-#include "../menu_driver.h"
+#include "../gfx_display.h"
 
 #include "../../retroarch.h"
 #include "../../gfx/font_driver.h"
@@ -27,40 +27,24 @@
 #include "../../gfx/drivers/ctr_gu.h"
 #include "../../ctr/gpu_old.h"
 
-static const float *menu_display_ctr_get_default_vertices(void)
+static const float *gfx_display_ctr_get_default_vertices(void) { return NULL; }
+
+static const float *gfx_display_ctr_get_default_tex_coords(void) { return NULL; }
+
+static void *gfx_display_ctr_get_default_mvp(video_frame_info_t *video_info)
 {
    return NULL;
 }
 
-static const float *menu_display_ctr_get_default_tex_coords(void)
-{
-   return NULL;
-}
+static void gfx_display_ctr_blend_begin(video_frame_info_t *video_info) { }
+static void gfx_display_ctr_blend_end(video_frame_info_t *video_info) { }
+static void gfx_display_ctr_viewport(gfx_display_ctx_draw_t *draw,
+      video_frame_info_t *video_info) { }
 
-static void *menu_display_ctr_get_default_mvp(video_frame_info_t *video_info)
-{
-   return NULL;
-}
-
-static void menu_display_ctr_blend_begin(video_frame_info_t *video_info)
-{
-
-}
-
-static void menu_display_ctr_blend_end(video_frame_info_t *video_info)
-{
-
-}
-
-static void menu_display_ctr_viewport(menu_display_ctx_draw_t *draw,
+static void gfx_display_ctr_draw(gfx_display_ctx_draw_t *draw,
       video_frame_info_t *video_info)
 {
-
-}
-
-static void menu_display_ctr_draw(menu_display_ctx_draw_t *draw,
-      video_frame_info_t *video_info)
-{
+   int colorR, colorG, colorB, colorA;
    struct ctr_texture *texture      = NULL;
    const float *color               = NULL;
    ctr_video_t             *ctr     = (ctr_video_t*)video_info->userdata;
@@ -100,11 +84,11 @@ static void menu_display_ctr_draw(menu_display_ctx_draw_t *draw,
          CTRGU_ATTRIBFMT(GPU_SHORT, 4) << 4,
          sizeof(ctr_vertex_t));
 
-   color = draw->coords->color;
-   int colorR = (int)((*color++)*255.f);
-   int colorG = (int)((*color++)*255.f);
-   int colorB = (int)((*color++)*255.f);
-   int colorA = (int)((*color++)*255.f);
+   color  = draw->coords->color;
+   colorR = (int)((*color++)*255.f);
+   colorG = (int)((*color++)*255.f);
+   colorB = (int)((*color++)*255.f);
+   colorA = (int)((*color++)*255.f);
 
    GPU_SetTexEnv(0,
          GPU_TEVSOURCES(GPU_TEXTURE0, GPU_CONSTANT, 0),
@@ -155,19 +139,19 @@ static void menu_display_ctr_draw(menu_display_ctx_draw_t *draw,
 #endif
 }
 
-static void menu_display_ctr_draw_pipeline(menu_display_ctx_draw_t *draw,
+static void gfx_display_ctr_draw_pipeline(gfx_display_ctx_draw_t *draw,
       video_frame_info_t *video_info)
 {
 }
 
-static void menu_display_ctr_restore_clear_color(void)
+static void gfx_display_ctr_restore_clear_color(void)
 {
 #if 0
    ctr_set_clear_color(RGBA8(0x00, 0x00, 0x00, 0xFF));
 #endif
 }
 
-static void menu_display_ctr_clear_color(menu_display_ctx_clearcolor_t *clearcolor, video_frame_info_t *video_info)
+static void gfx_display_ctr_clear_color(gfx_display_ctx_clearcolor_t *clearcolor, video_frame_info_t *video_info)
 {
    if (!clearcolor)
       return;
@@ -180,7 +164,7 @@ static void menu_display_ctr_clear_color(menu_display_ctx_clearcolor_t *clearcol
 #endif
 }
 
-static bool menu_display_ctr_font_init_first(
+static bool gfx_display_ctr_font_init_first(
       void **font_handle, void *video_data,
       const char *font_path, float font_size,
       bool is_threaded)
@@ -193,19 +177,19 @@ static bool menu_display_ctr_font_init_first(
    return *handle;
 }
 
-menu_display_ctx_driver_t menu_display_ctx_ctr = {
-   menu_display_ctr_draw,
-   menu_display_ctr_draw_pipeline,
-   menu_display_ctr_viewport,
-   menu_display_ctr_blend_begin,
-   menu_display_ctr_blend_end,
-   menu_display_ctr_restore_clear_color,
-   menu_display_ctr_clear_color,
-   menu_display_ctr_get_default_mvp,
-   menu_display_ctr_get_default_vertices,
-   menu_display_ctr_get_default_tex_coords,
-   menu_display_ctr_font_init_first,
-   MENU_VIDEO_DRIVER_CTR,
+gfx_display_ctx_driver_t gfx_display_ctx_ctr = {
+   gfx_display_ctr_draw,
+   gfx_display_ctr_draw_pipeline,
+   gfx_display_ctr_viewport,
+   gfx_display_ctr_blend_begin,
+   gfx_display_ctr_blend_end,
+   gfx_display_ctr_restore_clear_color,
+   gfx_display_ctr_clear_color,
+   gfx_display_ctr_get_default_mvp,
+   gfx_display_ctr_get_default_vertices,
+   gfx_display_ctr_get_default_tex_coords,
+   gfx_display_ctr_font_init_first,
+   GFX_VIDEO_DRIVER_CTR,
    "ctr",
    true,
    NULL,

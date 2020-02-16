@@ -702,7 +702,7 @@ static void xmb_draw_icon(
       float *color,
       float shadow_offset)
 {
-   menu_display_ctx_draw_t draw;
+   gfx_display_ctx_draw_t draw;
    struct video_coords coords;
 
    if (
@@ -729,12 +729,12 @@ static void xmb_draw_icon(
    draw.coords          = &coords;
    draw.matrix_data     = mymat;
    draw.texture         = texture;
-   draw.prim_type       = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
+   draw.prim_type       = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
    draw.pipeline.id     = 0;
 
    if (video_info->xmb_shadows_enable)
    {
-      menu_display_set_alpha(coord_shadow, color[3] * 0.35f);
+      gfx_display_set_alpha(coord_shadow, color[3] * 0.35f);
 
       coords.color      = coord_shadow;
       draw.x            = x + shadow_offset;
@@ -747,7 +747,7 @@ static void xmb_draw_icon(
          draw.y         = draw.y + (icon_size-draw.width)/2;
       }
 #endif
-      menu_display_draw(&draw, video_info);
+      gfx_display_draw(&draw, video_info);
    }
 
    coords.color         = (const float*)color;
@@ -761,7 +761,7 @@ static void xmb_draw_icon(
       draw.y            = draw.y + (icon_size-draw.width)/2;
    }
 #endif
-   menu_display_draw(&draw, video_info);
+   gfx_display_draw(&draw, video_info);
 }
 
 static void xmb_draw_text(
@@ -791,7 +791,7 @@ static void xmb_draw_text(
          settings->uints.menu_font_color_green,
          settings->uints.menu_font_color_blue, a8);
 
-   menu_display_draw_text(font, str, x, y,
+   gfx_display_draw_text(font, str, x, y,
          width, height, color, text_align, scale_factor,
          video_info->xmb_shadows_enable,
          xmb->shadow_offset, false);
@@ -852,9 +852,9 @@ static void xmb_render_messagebox_internal(
       }
    }
 
-   menu_display_blend_begin(video_info);
+   gfx_display_blend_begin(video_info);
 
-   menu_display_draw_texture_slice(
+   gfx_display_draw_texture_slice(
          video_info,
          x - longest_width/2 - xmb->margins_dialog,
          y + xmb->margins_slice - xmb->margins_dialog,
@@ -871,14 +871,14 @@ static void xmb_render_messagebox_internal(
       const char *msg = list->elems[i].data;
 
       if (msg)
-         menu_display_draw_text(xmb->font, msg,
+         gfx_display_draw_text(xmb->font, msg,
                x - longest_width/2.0,
                y + (i+0.75) * line_height,
                width, height, 0x444444ff, TEXT_ALIGN_LEFT, 1.0f, false, 0, false);
    }
 
    if (menu_input_dialog_get_display_kb())
-      menu_display_draw_keyboard(
+      gfx_display_draw_keyboard(
             xmb->textures.list[XMB_TEXTURE_KEY_HOVER],
             xmb->font,
             video_info,
@@ -3175,7 +3175,7 @@ static int xmb_draw_item(
             TEXT_ALIGN_LEFT,
             width, height, xmb->font);
 
-   menu_display_set_alpha(color, MIN(node->alpha, xmb->alpha));
+   gfx_display_set_alpha(color, MIN(node->alpha, xmb->alpha));
 
    if (
          (!xmb->assets_missing) &&
@@ -3187,7 +3187,7 @@ static int xmb_draw_item(
       )
    {
       math_matrix_4x4 mymat_tmp;
-      menu_display_ctx_rotate_draw_t rotate_draw;
+      gfx_display_ctx_rotate_draw_t rotate_draw;
       uintptr_t texture        = xmb_icon_get_id(xmb, core_node, node,
             entry->enum_idx, entry_type, (i == current), entry->checked);
       float x                  = icon_x;
@@ -3202,7 +3202,7 @@ static int xmb_draw_item(
       rotate_draw.scale_z      = 1;
       rotate_draw.scale_enable = true;
 
-      menu_display_rotate_z(&rotate_draw, video_info);
+      gfx_display_rotate_z(&rotate_draw, video_info);
 
       xmb_draw_icon(video_info,
          xmb->icon_size,
@@ -3219,7 +3219,7 @@ static int xmb_draw_item(
          xmb->shadow_offset);
    }
 
-   menu_display_set_alpha(color, MIN(node->alpha, xmb->alpha));
+   gfx_display_set_alpha(color, MIN(node->alpha, xmb->alpha));
 
    if (texture_switch != 0 && color[3] != 0 && !xmb->assets_missing)
       xmb_draw_icon(video_info,
@@ -3250,7 +3250,7 @@ static void xmb_draw_items(
    size_t i;
    unsigned first, last;
    math_matrix_4x4 mymat;
-   menu_display_ctx_rotate_draw_t rotate_draw;
+   gfx_display_ctx_rotate_draw_t rotate_draw;
    xmb_node_t *core_node       = NULL;
    size_t end                  = 0;
 
@@ -3270,7 +3270,7 @@ static void xmb_draw_items(
    rotate_draw.scale_z      = 1;
    rotate_draw.scale_enable = true;
 
-   menu_display_rotate_z(&rotate_draw, video_info);
+   gfx_display_rotate_z(&rotate_draw, video_info);
 
    menu_entries_ctl(MENU_ENTRIES_CTL_START_GET, &i);
 
@@ -3290,7 +3290,7 @@ static void xmb_draw_items(
 
    xmb_calculate_visible_range(xmb, height, end, (unsigned)current, &first, &last);
 
-   menu_display_blend_begin(video_info);
+   gfx_display_blend_begin(video_info);
 
    for (i = first; i <= last; i++)
    {
@@ -3311,7 +3311,7 @@ static void xmb_draw_items(
          break;
    }
 
-   menu_display_blend_end(video_info);
+   gfx_display_blend_end(video_info);
 }
 
 static void xmb_context_reset_internal(xmb_handle_t *xmb,
@@ -3352,8 +3352,8 @@ static void xmb_render(void *data,
       /* This must be set every frame when using a pointer,
        * otherwise touchscreen input breaks when changing
        * orientation */
-      menu_display_set_width(width);
-      menu_display_set_height(height);
+      gfx_display_set_width(width);
+      gfx_display_set_height(height);
 
       /* When determining current pointer selection, we
        * only track pointer movements between the left
@@ -3477,7 +3477,7 @@ static void xmb_draw_bg(
       float *coord_black,
       float *coord_white)
 {
-   menu_display_ctx_draw_t draw;
+   gfx_display_ctx_draw_t draw;
 
    bool running              = video_info->libretro_running;
 
@@ -3490,12 +3490,12 @@ static void xmb_draw_bg(
    draw.vertex               = NULL;
    draw.tex_coord            = NULL;
    draw.vertex_count         = 4;
-   draw.prim_type            = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
+   draw.prim_type            = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
    draw.pipeline.id          = 0;
    draw.pipeline.active      = xmb_shader_pipeline_active(video_info);
 
-   menu_display_blend_begin(video_info);
-   menu_display_set_viewport(video_info->width, video_info->height);
+   gfx_display_blend_begin(video_info);
+   gfx_display_set_viewport(video_info->width, video_info->height);
 
 #ifdef HAVE_SHADERPIPELINE
    if (video_info->menu_shader_pipeline > XMB_SHADER_PIPELINE_WALLPAPER
@@ -3505,11 +3505,11 @@ static void xmb_draw_bg(
       draw.color = xmb_gradient_ident(video_info);
 
       if (running)
-         menu_display_set_alpha(draw.color, coord_black[3]);
+         gfx_display_set_alpha(draw.color, coord_black[3]);
       else
-         menu_display_set_alpha(draw.color, coord_white[3]);
+         gfx_display_set_alpha(draw.color, coord_white[3]);
 
-      menu_display_draw_gradient(&draw, video_info);
+      gfx_display_draw_gradient(&draw, video_info);
 
       draw.pipeline.id = VIDEO_SHADER_MENU_2;
 
@@ -3534,7 +3534,7 @@ static void xmb_draw_bg(
             break;
       }
 
-      menu_display_draw_pipeline(&draw, video_info);
+      gfx_display_draw_pipeline(&draw, video_info);
    }
    else
 #endif
@@ -3545,19 +3545,19 @@ static void xmb_draw_bg(
          draw.color = xmb_gradient_ident(video_info);
 
       if (running)
-         menu_display_set_alpha(draw.color, coord_black[3]);
+         gfx_display_set_alpha(draw.color, coord_black[3]);
       else
-         menu_display_set_alpha(draw.color, coord_white[3]);
+         gfx_display_set_alpha(draw.color, coord_white[3]);
 
       if (video_info->xmb_color_theme != XMB_THEME_WALLPAPER)
-         menu_display_draw_gradient(&draw, video_info);
+         gfx_display_draw_gradient(&draw, video_info);
 
       {
          float override_opacity = video_info->menu_wallpaper_opacity;
          bool add_opacity       = false;
 
          draw.texture           = texture;
-         menu_display_set_alpha(draw.color, coord_white[3]);
+         gfx_display_set_alpha(draw.color, coord_white[3]);
 
          if (draw.texture)
             draw.color = &coord_white[0];
@@ -3565,12 +3565,12 @@ static void xmb_draw_bg(
          if (running || video_info->xmb_color_theme == XMB_THEME_WALLPAPER)
             add_opacity = true;
 
-         menu_display_draw_bg(&draw, video_info, add_opacity, override_opacity);
+         gfx_display_draw_bg(&draw, video_info, add_opacity, override_opacity);
       }
    }
 
-   menu_display_draw(&draw, video_info);
-   menu_display_blend_end(video_info);
+   gfx_display_draw(&draw, video_info);
+   gfx_display_blend_end(video_info);
 }
 
 static void xmb_draw_dark_layer(
@@ -3579,7 +3579,7 @@ static void xmb_draw_dark_layer(
       unsigned width,
       unsigned height)
 {
-   menu_display_ctx_draw_t draw;
+   gfx_display_ctx_draw_t draw;
    struct video_coords coords;
    float black[16] = {
       0, 0, 0, 1,
@@ -3588,7 +3588,7 @@ static void xmb_draw_dark_layer(
       0, 0, 0, 1,
    };
 
-   menu_display_set_alpha(black, MIN(xmb->alpha, 0.75));
+   gfx_display_set_alpha(black, MIN(xmb->alpha, 0.75));
 
    coords.vertices      = 4;
    coords.vertex        = NULL;
@@ -3602,13 +3602,13 @@ static void xmb_draw_dark_layer(
    draw.height      = height;
    draw.coords      = &coords;
    draw.matrix_data = NULL;
-   draw.texture     = menu_display_white_texture;
-   draw.prim_type   = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
+   draw.texture     = gfx_display_white_texture;
+   draw.prim_type   = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
    draw.pipeline.id = 0;
 
-   menu_display_blend_begin(video_info);
-   menu_display_draw(&draw, video_info);
-   menu_display_blend_end(video_info);
+   gfx_display_blend_begin(video_info);
+   gfx_display_draw(&draw, video_info);
+   gfx_display_blend_end(video_info);
 }
 
 /* Disables the fullscreen thumbnail view, with
@@ -3930,7 +3930,7 @@ static void xmb_draw_fullscreen_thumbnails(
       /* Set colour values */
 
       /* > Background */
-      menu_display_set_alpha(
+      gfx_display_set_alpha(
             background_color, background_alpha * xmb->fullscreen_thumbnail_alpha);
 
       /* > Header background */
@@ -3957,11 +3957,11 @@ static void xmb_draw_fullscreen_thumbnails(
          memcpy(frame_color + 8,  mean_menu_color, sizeof(mean_menu_color));
          memcpy(frame_color + 12, mean_menu_color, sizeof(mean_menu_color));
       }
-      menu_display_set_alpha(
+      gfx_display_set_alpha(
             frame_color, xmb->fullscreen_thumbnail_alpha);
 
       /* Darken background */
-      menu_display_draw_quad(
+      gfx_display_draw_quad(
             video_info,
             0,
             0,
@@ -3975,7 +3975,7 @@ static void xmb_draw_fullscreen_thumbnails(
       if (show_header)
       {
          /* Background */
-         menu_display_draw_quad(
+         gfx_display_draw_quad(
                video_info,
                0,
                0,
@@ -4015,7 +4015,7 @@ static void xmb_draw_fullscreen_thumbnails(
 
             title_x += (int)ticker_x_offset;
 
-            menu_display_draw_text(
+            gfx_display_draw_text(
                   xmb->font,
                   title_buf,
                   title_x,
@@ -4034,7 +4034,7 @@ static void xmb_draw_fullscreen_thumbnails(
           * as-is, horizontally centred, and if the ends get
           * clipped than so be it... */
          else
-            menu_display_draw_text(
+            gfx_display_draw_text(
                   xmb->font,
                   xmb->fullscreen_thumbnail_label,
                   view_width >> 1,
@@ -4065,7 +4065,7 @@ static void xmb_draw_fullscreen_thumbnails(
       if (show_right_thumbnail)
       {
          /* Background */
-         menu_display_draw_quad(
+         gfx_display_draw_quad(
                video_info,
                right_thumbnail_x - frame_width +
                      ((thumbnail_box_width - (int)right_thumbnail_draw_width) >> 1),
@@ -4095,7 +4095,7 @@ static void xmb_draw_fullscreen_thumbnails(
       if (show_left_thumbnail)
       {
          /* Background */
-         menu_display_draw_quad(
+         gfx_display_draw_quad(
                video_info,
                left_thumbnail_x - frame_width +
                      ((thumbnail_box_width - (int)left_thumbnail_draw_width) >> 1),
@@ -4135,7 +4135,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 {
    math_matrix_4x4 mymat;
    unsigned i;
-   menu_display_ctx_rotate_draw_t rotate_draw;
+   gfx_display_ctx_rotate_draw_t rotate_draw;
    char msg[1024];
    char title_msg[255];
    char title_truncated[255];
@@ -4203,9 +4203,9 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    xmb->raster_block.carr.coords.vertices  = 0;
    xmb->raster_block2.carr.coords.vertices = 0;
 
-   menu_display_set_alpha(coord_black, MIN(
+   gfx_display_set_alpha(coord_black, MIN(
             (float)video_info->xmb_alpha_factor/100, xmb->alpha));
-   menu_display_set_alpha(coord_white, xmb->alpha);
+   gfx_display_set_alpha(coord_white, xmb->alpha);
 
    xmb_draw_bg(
          xmb,
@@ -4259,7 +4259,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    rotate_draw.scale_z      = 1;
    rotate_draw.scale_enable = true;
 
-   menu_display_rotate_z(&rotate_draw, video_info);
+   gfx_display_rotate_z(&rotate_draw, video_info);
 
    /**************************/
    /* Draw thumbnails: START */
@@ -4452,11 +4452,11 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    /**************************/
 
    /* Clock image */
-   menu_display_set_alpha(item_color, MIN(xmb->alpha, 1.00f));
+   gfx_display_set_alpha(item_color, MIN(xmb->alpha, 1.00f));
 
    if (video_info->battery_level_enable)
    {
-      menu_display_ctx_powerstate_t powerstate;
+      gfx_display_ctx_powerstate_t powerstate;
       char msg[12];
 
       msg[0] = '\0';
@@ -4473,7 +4473,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
          if (coord_white[3] != 0 &&  !xmb->assets_missing)
          {
-            menu_display_blend_begin(video_info);
+            gfx_display_blend_begin(video_info);
             xmb_draw_icon(video_info,
                   xmb->icon_size,
                   &mymat,
@@ -4494,7 +4494,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                   1,
                   &item_color[0],
                   xmb->shadow_offset);
-            menu_display_blend_end(video_info);
+            gfx_display_blend_end(video_info);
          }
 
          percent_width = (unsigned)
@@ -4510,7 +4510,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
    if (video_info->timedate_enable)
    {
-      menu_display_ctx_datetime_t datetime;
+      gfx_display_ctx_datetime_t datetime;
       char timedate[255];
       int x_pos = 0;
 
@@ -4521,7 +4521,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          if (percent_width)
             x_pos = percent_width + (xmb->icon_size / 2.5);
 
-         menu_display_blend_begin(video_info);
+         gfx_display_blend_begin(video_info);
          xmb_draw_icon(video_info,
                xmb->icon_size,
                &mymat,
@@ -4535,7 +4535,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                1,
                &item_color[0],
                xmb->shadow_offset);
-         menu_display_blend_end(video_info);
+         gfx_display_blend_end(video_info);
       }
 
       timedate[0]        = '\0';
@@ -4556,12 +4556,12 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    }
 
    /* Arrow image */
-   menu_display_set_alpha(item_color,
+   gfx_display_set_alpha(item_color,
          MIN(xmb->textures_arrow_alpha, xmb->alpha));
 
    if (coord_white[3] != 0 && !xmb->assets_missing)
    {
-      menu_display_blend_begin(video_info);
+      gfx_display_blend_begin(video_info);
       xmb_draw_icon(video_info,
             xmb->icon_size,
             &mymat,
@@ -4579,13 +4579,13 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             1,
             &item_color[0],
             xmb->shadow_offset);
-      menu_display_blend_end(video_info);
+      gfx_display_blend_end(video_info);
    }
 
    /* Horizontal tab icons */
    if (!xmb->assets_missing)
    {
-      menu_display_blend_begin(video_info);
+      gfx_display_blend_begin(video_info);
 
       for (i = 0; i <= xmb_list_get_size(xmb, MENU_LIST_HORIZONTAL)
             + xmb->system_tab_end; i++)
@@ -4595,11 +4595,11 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          if (!node)
             continue;
 
-         menu_display_set_alpha(item_color, MIN(node->alpha, xmb->alpha));
+         gfx_display_set_alpha(item_color, MIN(node->alpha, xmb->alpha));
 
          if (item_color[3] != 0)
          {
-            menu_display_ctx_rotate_draw_t rotate_draw;
+            gfx_display_ctx_rotate_draw_t rotate_draw;
             math_matrix_4x4 mymat;
             uintptr_t texture        = node->icon;
             float x                  = xmb->x + xmb->categories_x_pos +
@@ -4628,7 +4628,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                   if (fade_alpha <= 0.0f)
                      continue;
 
-                  menu_display_set_alpha(item_color, fade_alpha);
+                  gfx_display_set_alpha(item_color, fade_alpha);
                }
             }
 
@@ -4639,7 +4639,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             rotate_draw.scale_z      = 1;
             rotate_draw.scale_enable = true;
 
-            menu_display_rotate_z(&rotate_draw, video_info);
+            gfx_display_rotate_z(&rotate_draw, video_info);
 
             xmb_draw_icon(video_info,
                   xmb->icon_size,
@@ -4657,7 +4657,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          }
       }
 
-      menu_display_blend_end(video_info);
+      gfx_display_blend_end(video_info);
    }
 
    /* Vertical icons */
@@ -4728,8 +4728,8 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
       menu_input_pointer_t pointer;
       menu_input_get_pointer_state(&pointer);
 
-      menu_display_set_alpha(coord_white, MIN(xmb->alpha, 1.00f));
-      menu_display_draw_cursor(
+      gfx_display_set_alpha(coord_white, MIN(xmb->alpha, 1.00f));
+      gfx_display_draw_cursor(
             video_info,
             &coord_white[0],
             xmb->cursor_size,
@@ -4740,7 +4740,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             height);
    }
 
-   menu_display_unset_viewport(video_info->width, video_info->height);
+   gfx_display_unset_viewport(video_info->width, video_info->height);
 }
 
 static void xmb_layout_ps3(xmb_handle_t *xmb, int width)
@@ -4795,7 +4795,7 @@ static void xmb_layout_ps3(xmb_handle_t *xmb, int width)
    xmb->icon_size                = 128.0 * scale_factor;
    xmb->font_size                = new_font_size;
 
-   menu_display_set_header_height(new_header_height);
+   gfx_display_set_header_height(new_header_height);
 }
 
 static void xmb_layout_psp(xmb_handle_t *xmb, int width)
@@ -4848,7 +4848,7 @@ static void xmb_layout_psp(xmb_handle_t *xmb, int width)
    xmb->icon_size                = 128.0 * scale_factor;
    xmb->font_size                = new_font_size;
 
-   menu_display_set_header_height(new_header_height);
+   gfx_display_set_header_height(new_header_height);
 }
 
 static void xmb_layout(xmb_handle_t *xmb)
@@ -4968,7 +4968,7 @@ static void xmb_init_ribbon(xmb_handle_t * xmb)
    video_coords_t coords;
    unsigned r, c, col;
    unsigned i                = 0;
-   video_coord_array_t *ca   = menu_display_get_coords_array();
+   video_coord_array_t *ca   = gfx_display_get_coords_array();
    unsigned   vertices_total = XMB_RIBBON_VERTICES;
    float *dummy              = (float*)calloc(4 * vertices_total, sizeof(float));
    float *ribbon_verts       = (float*)calloc(2 * vertices_total, sizeof(float));
@@ -5037,7 +5037,7 @@ static void *xmb_init(void **userdata, bool video_is_threaded)
    if (!menu)
       return NULL;
 
-   if (!menu_display_init_first_driver(video_is_threaded))
+   if (!gfx_display_init_first_driver(video_is_threaded))
    {
       free(menu);
       return NULL;
@@ -5101,10 +5101,10 @@ static void *xmb_init(void **userdata, bool video_is_threaded)
     * for XMB, we should refactor this dependency
     * away. */
 
-   menu_display_set_width(width);
-   menu_display_set_height(height);
+   gfx_display_set_width(width);
+   gfx_display_set_height(height);
 
-   menu_display_allocate_white_texture();
+   gfx_display_allocate_white_texture();
 
    xmb->horizontal_list         = (file_list_t*)calloc(1, sizeof(file_list_t));
 
@@ -5185,7 +5185,7 @@ static void xmb_context_bg_destroy(xmb_handle_t *xmb)
    if (!xmb)
       return;
    video_driver_texture_unload(&xmb->textures.bg);
-   video_driver_texture_unload(&menu_display_white_texture);
+   video_driver_texture_unload(&gfx_display_white_texture);
 }
 
 static bool xmb_load_image(void *userdata, void *data, enum menu_image_type type)
@@ -5203,7 +5203,7 @@ static bool xmb_load_image(void *userdata, void *data, enum menu_image_type type
          video_driver_texture_load(data,
                TEXTURE_FILTER_MIPMAP_LINEAR,
                &xmb->textures.bg);
-         menu_display_allocate_white_texture();
+         gfx_display_allocate_white_texture();
          break;
       case MENU_IMAGE_NONE:
       default:
@@ -5474,18 +5474,18 @@ static void xmb_context_reset_textures(
    settings_t *settings = config_get_ptr();
    xmb->assets_missing = false;
 
-   menu_display_allocate_white_texture();
+   gfx_display_allocate_white_texture();
 
    for (i = 0; i < XMB_TEXTURE_LAST; i++)
    {
-      if (!menu_display_reset_textures_list(xmb_texture_path(i), iconpath, &xmb->textures.list[i], TEXTURE_FILTER_MIPMAP_LINEAR, NULL, NULL))
+      if (!gfx_display_reset_textures_list(xmb_texture_path(i), iconpath, &xmb->textures.list[i], TEXTURE_FILTER_MIPMAP_LINEAR, NULL, NULL))
       {
          RARCH_WARN("[XMB] Asset missing: %s%s\n", iconpath, xmb_texture_path(i));
          /* New extra battery icons could be missing */
          if (i == XMB_TEXTURE_BATTERY_80 || i == XMB_TEXTURE_BATTERY_60 || i == XMB_TEXTURE_BATTERY_40 || i == XMB_TEXTURE_BATTERY_20)
          {
             if (  /* If there are no extra battery icons revert to the old behaviour */
-                  !menu_display_reset_textures_list(xmb_texture_path(XMB_TEXTURE_BATTERY_FULL), iconpath, &xmb->textures.list[i], TEXTURE_FILTER_MIPMAP_LINEAR, NULL, NULL)
+                  !gfx_display_reset_textures_list(xmb_texture_path(XMB_TEXTURE_BATTERY_FULL), iconpath, &xmb->textures.list[i], TEXTURE_FILTER_MIPMAP_LINEAR, NULL, NULL)
                   && !(settings->uints.menu_xmb_theme == XMB_ICON_THEME_CUSTOM)
                )
                goto error;
@@ -5496,7 +5496,7 @@ static void xmb_context_reset_textures(
          {
             /* OSD Warning only if subsetting icon is missing */
             if (
-                  !menu_display_reset_textures_list(xmb_texture_path(XMB_TEXTURE_SUBSETTING), iconpath, &xmb->textures.list[i], TEXTURE_FILTER_MIPMAP_LINEAR, NULL, NULL)
+                  !gfx_display_reset_textures_list(xmb_texture_path(XMB_TEXTURE_SUBSETTING), iconpath, &xmb->textures.list[i], TEXTURE_FILTER_MIPMAP_LINEAR, NULL, NULL)
                   && !(settings->uints.menu_xmb_theme == XMB_ICON_THEME_CUSTOM)
                )
             {
@@ -5652,18 +5652,18 @@ static void xmb_context_reset_internal(xmb_handle_t *xmb,
    xmb_layout(xmb);
    if (xmb->font)
    {
-      menu_display_font_free(xmb->font);
+      gfx_display_font_free(xmb->font);
       xmb->font = NULL;
    }
    if (xmb->font2)
    {
-      menu_display_font_free(xmb->font2);
+      gfx_display_font_free(xmb->font2);
       xmb->font2 = NULL;
    }
-   xmb->font = menu_display_font(APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_FONT,
+   xmb->font = gfx_display_font(APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_FONT,
          xmb->font_size,
          is_threaded);
-   xmb->font2 = menu_display_font(APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_FONT,
+   xmb->font2 = gfx_display_font(APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_FONT,
          xmb->font2_size,
          is_threaded);
 
@@ -6009,8 +6009,8 @@ static void xmb_context_destroy(void *data)
    xmb_context_destroy_horizontal_list(xmb);
    xmb_context_bg_destroy(xmb);
 
-   menu_display_font_free(xmb->font);
-   menu_display_font_free(xmb->font2);
+   gfx_display_font_free(xmb->font);
+   gfx_display_font_free(xmb->font2);
 
    xmb->font = NULL;
    xmb->font2 = NULL;
@@ -6647,7 +6647,7 @@ menu_ctx_driver_t menu_ctx_xmb = {
    xmb_set_thumbnail_system,
    xmb_get_thumbnail_system,
    xmb_set_thumbnail_content,
-   menu_display_osk_ptr_at_pos,
+   gfx_display_osk_ptr_at_pos,
    xmb_update_savestate_thumbnail_path,
    xmb_update_savestate_thumbnail_image,
    NULL, /* pointer_down */

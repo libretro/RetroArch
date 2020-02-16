@@ -1682,7 +1682,7 @@ static int generic_action_ok(const char *path,
             settings_t            *settings = config_get_ptr();
             flush_type                      = MENU_SETTINGS;
 
-            menu_display_set_msg_force(true);
+            gfx_display_set_msg_force(true);
 
             if (config_replace(settings->bools.config_save_on_exit, action_path))
             {

@@ -22,47 +22,47 @@
 #include "config.h"
 #endif
 
-#include "../menu_driver.h"
+#include "../gfx_display.h"
 
 #include "../../retroarch.h"
 #include "../../gfx/font_driver.h"
 #include "../../gfx/common/d3d10_common.h"
 
-static const float* menu_display_d3d10_get_default_vertices(void)
+static const float* gfx_display_d3d10_get_default_vertices(void)
 {
    return NULL;
 }
 
-static const float* menu_display_d3d10_get_default_tex_coords(void)
+static const float* gfx_display_d3d10_get_default_tex_coords(void)
 {
    return NULL;
 }
 
-static void* menu_display_d3d10_get_default_mvp(video_frame_info_t *video_info)
+static void* gfx_display_d3d10_get_default_mvp(video_frame_info_t *video_info)
 {
    return NULL;
 }
 
-static void menu_display_d3d10_blend_begin(video_frame_info_t *video_info)
+static void gfx_display_d3d10_blend_begin(video_frame_info_t *video_info)
 {
    d3d10_video_t* d3d10 = (d3d10_video_t*)video_info->userdata;
    D3D10SetBlendState(d3d10->device,
          d3d10->blend_enable, NULL, D3D10_DEFAULT_SAMPLE_MASK);
 }
 
-static void menu_display_d3d10_blend_end(video_frame_info_t *video_info)
+static void gfx_display_d3d10_blend_end(video_frame_info_t *video_info)
 {
    d3d10_video_t* d3d10 = (d3d10_video_t*)video_info->userdata;
    D3D10SetBlendState(d3d10->device,
          d3d10->blend_disable, NULL, D3D10_DEFAULT_SAMPLE_MASK);
 }
 
-static void menu_display_d3d10_viewport(menu_display_ctx_draw_t *draw,
+static void gfx_display_d3d10_viewport(gfx_display_ctx_draw_t *draw,
       video_frame_info_t *video_info)
 {
 }
 
-static void menu_display_d3d10_draw(menu_display_ctx_draw_t *draw,
+static void gfx_display_d3d10_draw(gfx_display_ctx_draw_t *draw,
       video_frame_info_t *video_info)
 {
    int vertex_count;
@@ -184,7 +184,7 @@ static void menu_display_d3d10_draw(menu_display_ctx_draw_t *draw,
    return;
 }
 
-static void menu_display_d3d10_draw_pipeline(menu_display_ctx_draw_t* draw,
+static void gfx_display_d3d10_draw_pipeline(gfx_display_ctx_draw_t* draw,
       video_frame_info_t *video_info)
 {
    d3d10_video_t* d3d10 = (d3d10_video_t*)video_info->userdata;
@@ -197,7 +197,7 @@ static void menu_display_d3d10_draw_pipeline(menu_display_ctx_draw_t* draw,
       case VIDEO_SHADER_MENU:
       case VIDEO_SHADER_MENU_2:
       {
-         video_coord_array_t* ca = menu_display_get_coords_array();
+         video_coord_array_t* ca = gfx_display_get_coords_array();
 
          if (!d3d10->menu_pipeline_vbo)
          {
@@ -240,10 +240,10 @@ static void menu_display_d3d10_draw_pipeline(menu_display_ctx_draw_t* draw,
    }
 }
 
-static void menu_display_d3d10_restore_clear_color(void) {}
+static void gfx_display_d3d10_restore_clear_color(void) {}
 
-static void menu_display_d3d10_clear_color(
-      menu_display_ctx_clearcolor_t* clearcolor,
+static void gfx_display_d3d10_clear_color(
+      gfx_display_ctx_clearcolor_t* clearcolor,
       video_frame_info_t *video_info)
 {
    d3d10_video_t* d3d10 = (d3d10_video_t*)video_info->userdata;
@@ -255,7 +255,7 @@ static void menu_display_d3d10_clear_color(
          d3d10->renderTargetView, (float*)clearcolor);
 }
 
-static bool menu_display_d3d10_font_init_first(
+static bool gfx_display_d3d10_font_init_first(
       void**      font_handle,
       void*       video_data,
       const char* font_path,
@@ -272,7 +272,7 @@ static bool menu_display_d3d10_font_init_first(
    return true;
 }
 
-void menu_display_d3d10_scissor_begin(video_frame_info_t *video_info, int x, int y, unsigned width, unsigned height)
+void gfx_display_d3d10_scissor_begin(video_frame_info_t *video_info, int x, int y, unsigned width, unsigned height)
 {
    D3D10_RECT rect;
    d3d10_video_t *d3d10 = (d3d10_video_t*)video_info->userdata;
@@ -288,7 +288,7 @@ void menu_display_d3d10_scissor_begin(video_frame_info_t *video_info, int x, int
    D3D10SetScissorRects(d3d10->device, 1, &rect);
 }
 
-void menu_display_d3d10_scissor_end(video_frame_info_t *video_info)
+void gfx_display_d3d10_scissor_end(video_frame_info_t *video_info)
 {
    D3D10_RECT rect;
    d3d10_video_t *d3d10 = (d3d10_video_t*)video_info->userdata;
@@ -304,21 +304,21 @@ void menu_display_d3d10_scissor_end(video_frame_info_t *video_info)
    D3D10SetScissorRects(d3d10->device, 1, &rect);
 }
 
-menu_display_ctx_driver_t menu_display_ctx_d3d10 = {
-   menu_display_d3d10_draw,
-   menu_display_d3d10_draw_pipeline,
-   menu_display_d3d10_viewport,
-   menu_display_d3d10_blend_begin,
-   menu_display_d3d10_blend_end,
-   menu_display_d3d10_restore_clear_color,
-   menu_display_d3d10_clear_color,
-   menu_display_d3d10_get_default_mvp,
-   menu_display_d3d10_get_default_vertices,
-   menu_display_d3d10_get_default_tex_coords,
-   menu_display_d3d10_font_init_first,
-   MENU_VIDEO_DRIVER_DIRECT3D10,
+gfx_display_ctx_driver_t gfx_display_ctx_d3d10 = {
+   gfx_display_d3d10_draw,
+   gfx_display_d3d10_draw_pipeline,
+   gfx_display_d3d10_viewport,
+   gfx_display_d3d10_blend_begin,
+   gfx_display_d3d10_blend_end,
+   gfx_display_d3d10_restore_clear_color,
+   gfx_display_d3d10_clear_color,
+   gfx_display_d3d10_get_default_mvp,
+   gfx_display_d3d10_get_default_vertices,
+   gfx_display_d3d10_get_default_tex_coords,
+   gfx_display_d3d10_font_init_first,
+   GFX_VIDEO_DRIVER_DIRECT3D10,
    "d3d10",
    true,
-   menu_display_d3d10_scissor_begin,
-   menu_display_d3d10_scissor_end
+   gfx_display_d3d10_scissor_begin,
+   gfx_display_d3d10_scissor_end
 };

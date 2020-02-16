@@ -21,47 +21,47 @@
 #include "config.h"
 #endif
 
-#include "../menu_driver.h"
+#include "../gfx_display.h"
 
 #include "../../retroarch.h"
 #include "../../gfx/font_driver.h"
 #include "../../gfx/common/d3d11_common.h"
 
-static const float* menu_display_d3d11_get_default_vertices(void)
+static const float* gfx_display_d3d11_get_default_vertices(void)
 {
    return NULL;
 }
 
-static const float* menu_display_d3d11_get_default_tex_coords(void)
+static const float* gfx_display_d3d11_get_default_tex_coords(void)
 {
    return NULL;
 }
 
-static void* menu_display_d3d11_get_default_mvp(video_frame_info_t *video_info)
+static void* gfx_display_d3d11_get_default_mvp(video_frame_info_t *video_info)
 {
    return NULL;
 }
 
-static void menu_display_d3d11_blend_begin(video_frame_info_t *video_info)
+static void gfx_display_d3d11_blend_begin(video_frame_info_t *video_info)
 {
    d3d11_video_t* d3d11 = (d3d11_video_t*)video_info->userdata;
    D3D11SetBlendState(d3d11->context,
          d3d11->blend_enable, NULL, D3D11_DEFAULT_SAMPLE_MASK);
 }
 
-static void menu_display_d3d11_blend_end(video_frame_info_t *video_info)
+static void gfx_display_d3d11_blend_end(video_frame_info_t *video_info)
 {
    d3d11_video_t* d3d11 = (d3d11_video_t*)video_info->userdata;
    D3D11SetBlendState(d3d11->context,
          d3d11->blend_disable, NULL, D3D11_DEFAULT_SAMPLE_MASK);
 }
 
-static void menu_display_d3d11_viewport(menu_display_ctx_draw_t *draw,
+static void gfx_display_d3d11_viewport(gfx_display_ctx_draw_t *draw,
       video_frame_info_t *video_info)
 {
 }
 
-static void menu_display_d3d11_draw(menu_display_ctx_draw_t *draw,
+static void gfx_display_d3d11_draw(gfx_display_ctx_draw_t *draw,
       video_frame_info_t *video_info)
 {
    int vertex_count;
@@ -183,7 +183,7 @@ static void menu_display_d3d11_draw(menu_display_ctx_draw_t *draw,
    return;
 }
 
-static void menu_display_d3d11_draw_pipeline(menu_display_ctx_draw_t *draw,
+static void gfx_display_d3d11_draw_pipeline(gfx_display_ctx_draw_t *draw,
       video_frame_info_t *video_info)
 {
    d3d11_video_t *d3d11 = (d3d11_video_t*)video_info->userdata;
@@ -196,7 +196,7 @@ static void menu_display_d3d11_draw_pipeline(menu_display_ctx_draw_t *draw,
       case VIDEO_SHADER_MENU:
       case VIDEO_SHADER_MENU_2:
       {
-         video_coord_array_t* ca = menu_display_get_coords_array();
+         video_coord_array_t* ca = gfx_display_get_coords_array();
 
          if (!d3d11->menu_pipeline_vbo)
          {
@@ -239,10 +239,10 @@ static void menu_display_d3d11_draw_pipeline(menu_display_ctx_draw_t *draw,
    }
 }
 
-static void menu_display_d3d11_restore_clear_color(void) {}
+static void gfx_display_d3d11_restore_clear_color(void) {}
 
-static void menu_display_d3d11_clear_color(
-      menu_display_ctx_clearcolor_t* clearcolor,
+static void gfx_display_d3d11_clear_color(
+      gfx_display_ctx_clearcolor_t* clearcolor,
       video_frame_info_t *video_info)
 {
    d3d11_video_t *d3d11 = (d3d11_video_t*)video_info->userdata;
@@ -254,7 +254,7 @@ static void menu_display_d3d11_clear_color(
          d3d11->renderTargetView, (float*)clearcolor);
 }
 
-static bool menu_display_d3d11_font_init_first(
+static bool gfx_display_d3d11_font_init_first(
       void**      font_handle,
       void*       video_data,
       const char* font_path,
@@ -271,7 +271,7 @@ static bool menu_display_d3d11_font_init_first(
    return true;
 }
 
-void menu_display_d3d11_scissor_begin(video_frame_info_t *video_info, int x, int y, unsigned width, unsigned height)
+void gfx_display_d3d11_scissor_begin(video_frame_info_t *video_info, int x, int y, unsigned width, unsigned height)
 {
    D3D11_RECT rect;
    d3d11_video_t *d3d11 = (d3d11_video_t*)video_info->userdata;
@@ -287,7 +287,7 @@ void menu_display_d3d11_scissor_begin(video_frame_info_t *video_info, int x, int
    D3D11SetScissorRects(d3d11->context, 1, &rect);
 }
 
-void menu_display_d3d11_scissor_end(video_frame_info_t *video_info)
+void gfx_display_d3d11_scissor_end(video_frame_info_t *video_info)
 {
    D3D11_RECT rect;
    d3d11_video_t *d3d11 = (d3d11_video_t*)video_info->userdata;
@@ -303,21 +303,21 @@ void menu_display_d3d11_scissor_end(video_frame_info_t *video_info)
    D3D11SetScissorRects(d3d11->context, 1, &rect);
 }
 
-menu_display_ctx_driver_t menu_display_ctx_d3d11 = {
-   menu_display_d3d11_draw,
-   menu_display_d3d11_draw_pipeline,
-   menu_display_d3d11_viewport,
-   menu_display_d3d11_blend_begin,
-   menu_display_d3d11_blend_end,
-   menu_display_d3d11_restore_clear_color,
-   menu_display_d3d11_clear_color,
-   menu_display_d3d11_get_default_mvp,
-   menu_display_d3d11_get_default_vertices,
-   menu_display_d3d11_get_default_tex_coords,
-   menu_display_d3d11_font_init_first,
-   MENU_VIDEO_DRIVER_DIRECT3D11,
+gfx_display_ctx_driver_t gfx_display_ctx_d3d11 = {
+   gfx_display_d3d11_draw,
+   gfx_display_d3d11_draw_pipeline,
+   gfx_display_d3d11_viewport,
+   gfx_display_d3d11_blend_begin,
+   gfx_display_d3d11_blend_end,
+   gfx_display_d3d11_restore_clear_color,
+   gfx_display_d3d11_clear_color,
+   gfx_display_d3d11_get_default_mvp,
+   gfx_display_d3d11_get_default_vertices,
+   gfx_display_d3d11_get_default_tex_coords,
+   gfx_display_d3d11_font_init_first,
+   GFX_VIDEO_DRIVER_DIRECT3D11,
    "d3d11",
    true,
-   menu_display_d3d11_scissor_begin,
-   menu_display_d3d11_scissor_end
+   gfx_display_d3d11_scissor_begin,
+   gfx_display_d3d11_scissor_end
 };

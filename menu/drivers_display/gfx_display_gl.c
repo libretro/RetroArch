@@ -23,7 +23,7 @@
 #include "../../gfx/font_driver.h"
 #include "../../gfx/common/gl_common.h"
 
-#include "../menu_driver.h"
+#include "../gfx_display.h"
 
 #if defined(__arm__) || defined(__aarch64__)
 static int scx0, scx1, scy0, scy1;
@@ -81,17 +81,17 @@ static const GLfloat gl_tex_coords[] = {
    1, 0
 };
 
-static const float *menu_display_gl_get_default_vertices(void)
+static const float *gfx_display_gl_get_default_vertices(void)
 {
    return &gl_vertexes[0];
 }
 
-static const float *menu_display_gl_get_default_tex_coords(void)
+static const float *gfx_display_gl_get_default_tex_coords(void)
 {
    return &gl_tex_coords[0];
 }
 
-static void *menu_display_gl_get_default_mvp(video_frame_info_t *video_info)
+static void *gfx_display_gl_get_default_mvp(video_frame_info_t *video_info)
 {
    gl_t *gl = (gl_t*)video_info->userdata;
 
@@ -101,16 +101,16 @@ static void *menu_display_gl_get_default_mvp(video_frame_info_t *video_info)
    return &gl->mvp_no_rot;
 }
 
-static GLenum menu_display_prim_to_gl_enum(
-      enum menu_display_prim_type type)
+static GLenum gfx_display_prim_to_gl_enum(
+      enum gfx_display_prim_type type)
 {
    switch (type)
    {
-      case MENU_DISPLAY_PRIM_TRIANGLESTRIP:
+      case GFX_DISPLAY_PRIM_TRIANGLESTRIP:
          return GL_TRIANGLE_STRIP;
-      case MENU_DISPLAY_PRIM_TRIANGLES:
+      case GFX_DISPLAY_PRIM_TRIANGLES:
          return GL_TRIANGLES;
-      case MENU_DISPLAY_PRIM_NONE:
+      case GFX_DISPLAY_PRIM_NONE:
       default:
          break;
    }
@@ -118,7 +118,7 @@ static GLenum menu_display_prim_to_gl_enum(
    return 0;
 }
 
-static void menu_display_gl_blend_begin(video_frame_info_t *video_info)
+static void gfx_display_gl_blend_begin(video_frame_info_t *video_info)
 {
    gl_t             *gl          = (gl_t*)video_info->userdata;
 
@@ -129,12 +129,12 @@ static void menu_display_gl_blend_begin(video_frame_info_t *video_info)
          true);
 }
 
-static void menu_display_gl_blend_end(video_frame_info_t *video_info)
+static void gfx_display_gl_blend_end(video_frame_info_t *video_info)
 {
    glDisable(GL_BLEND);
 }
 
-static void menu_display_gl_viewport(menu_display_ctx_draw_t *draw,
+static void gfx_display_gl_viewport(gfx_display_ctx_draw_t *draw,
       video_frame_info_t *video_info)
 {
    if (draw)
@@ -143,7 +143,7 @@ static void menu_display_gl_viewport(menu_display_ctx_draw_t *draw,
 
 #ifdef MALI_BUG
 static bool 
-menu_display_gl_discard_draw_rectangle(menu_display_ctx_draw_t *draw,
+gfx_display_gl_discard_draw_rectangle(gfx_display_ctx_draw_t *draw,
       video_frame_info_t *video_info
       )
 {
@@ -218,7 +218,7 @@ menu_display_gl_discard_draw_rectangle(menu_display_ctx_draw_t *draw,
 }
 #endif
 
-static void menu_display_gl_draw(menu_display_ctx_draw_t *draw,
+static void gfx_display_gl_draw(gfx_display_ctx_draw_t *draw,
       video_frame_info_t *video_info)
 {
    gl_t             *gl          = (gl_t*)video_info->userdata;
@@ -227,7 +227,7 @@ static void menu_display_gl_draw(menu_display_ctx_draw_t *draw,
       return;
 
 #ifdef MALI_BUG
-   if (menu_display_gl_discard_draw_rectangle(draw, video_info))
+   if (gfx_display_gl_discard_draw_rectangle(draw, video_info))
    {
       /*RARCH_WARN("[Menu]: discarded draw rect: %.4i %.4i %.4i %.4i\n",
         (int)draw->x, (int)draw->y, (int)draw->width, (int)draw->height);*/
@@ -236,35 +236,35 @@ static void menu_display_gl_draw(menu_display_ctx_draw_t *draw,
 #endif
 
    if (!draw->coords->vertex)
-      draw->coords->vertex = menu_display_gl_get_default_vertices();
+      draw->coords->vertex = gfx_display_gl_get_default_vertices();
    if (!draw->coords->tex_coord)
-      draw->coords->tex_coord = menu_display_gl_get_default_tex_coords();
+      draw->coords->tex_coord = gfx_display_gl_get_default_tex_coords();
    if (!draw->coords->lut_tex_coord)
-      draw->coords->lut_tex_coord = menu_display_gl_get_default_tex_coords();
+      draw->coords->lut_tex_coord = gfx_display_gl_get_default_tex_coords();
 
-   menu_display_gl_viewport(draw, video_info);
+   gfx_display_gl_viewport(draw, video_info);
    glBindTexture(GL_TEXTURE_2D, (GLuint)draw->texture);
 
    gl->shader->set_coords(gl->shader_data, draw->coords);
    gl->shader->set_mvp(gl->shader_data,
          draw->matrix_data ? (math_matrix_4x4*)draw->matrix_data
-      : (math_matrix_4x4*)menu_display_gl_get_default_mvp(video_info));
+      : (math_matrix_4x4*)gfx_display_gl_get_default_mvp(video_info));
 
 
-   glDrawArrays(menu_display_prim_to_gl_enum(
+   glDrawArrays(gfx_display_prim_to_gl_enum(
             draw->prim_type), 0, draw->coords->vertices);
 
    gl->coords.color     = gl->white_color_ptr;
 }
 
-static void menu_display_gl_draw_pipeline(menu_display_ctx_draw_t *draw,
+static void gfx_display_gl_draw_pipeline(gfx_display_ctx_draw_t *draw,
       video_frame_info_t *video_info)
 {
 #ifdef HAVE_SHADERPIPELINE
    struct uniform_info uniform_param;
    gl_t             *gl             = (gl_t*)video_info->userdata;
    static float t                   = 0;
-   video_coord_array_t *ca          = menu_display_get_coords_array();
+   video_coord_array_t *ca          = gfx_display_get_coords_array();
 
    draw->x                          = 0;
    draw->y                          = 0;
@@ -333,13 +333,13 @@ static void menu_display_gl_draw_pipeline(menu_display_ctx_draw_t *draw,
 #endif
 }
 
-static void menu_display_gl_restore_clear_color(void)
+static void gfx_display_gl_restore_clear_color(void)
 {
    glClearColor(0.0f, 0.0f, 0.0f, 0.00f);
 }
 
-static void menu_display_gl_clear_color(
-      menu_display_ctx_clearcolor_t *clearcolor,
+static void gfx_display_gl_clear_color(
+      gfx_display_ctx_clearcolor_t *clearcolor,
       video_frame_info_t *video_info)
 {
    if (!clearcolor)
@@ -350,7 +350,7 @@ static void menu_display_gl_clear_color(
    glClear(GL_COLOR_BUFFER_BIT);
 }
 
-static bool menu_display_gl_font_init_first(
+static bool gfx_display_gl_font_init_first(
       void **font_handle, void *video_data,
       const char *font_path, float menu_font_size,
       bool is_threaded)
@@ -364,7 +364,7 @@ static bool menu_display_gl_font_init_first(
    return true;
 }
 
-static void menu_display_gl_scissor_begin(
+static void gfx_display_gl_scissor_begin(
       video_frame_info_t *video_info, int x, int y,
       unsigned width, unsigned height)
 {
@@ -372,18 +372,18 @@ static void menu_display_gl_scissor_begin(
    glEnable(GL_SCISSOR_TEST);
 #ifdef MALI_BUG
    /* TODO/FIXME: If video width/height changes between
-    * a call of menu_display_gl_scissor_begin() and the
-    * next call of menu_display_gl_draw() (or if
-    * menu_display_gl_scissor_begin() is called before the
-    * first call of menu_display_gl_draw()), the scissor
+    * a call of gfx_display_gl_scissor_begin() and the
+    * next call of gfx_display_gl_draw() (or if
+    * gfx_display_gl_scissor_begin() is called before the
+    * first call of gfx_display_gl_draw()), the scissor
     * rectangle set here will be overwritten by the initialisation
-    * procedure inside menu_display_gl_discard_draw_rectangle(),
+    * procedure inside gfx_display_gl_discard_draw_rectangle(),
     * causing the next frame to render glitched content */
    scissor_set_rectangle(x, x + width - 1, y, y + height - 1, 1);
 #endif
 }
 
-static void menu_display_gl_scissor_end(video_frame_info_t *video_info)
+static void gfx_display_gl_scissor_end(video_frame_info_t *video_info)
 {
    glScissor(0, 0, video_info->width, video_info->height);
    glDisable(GL_SCISSOR_TEST);
@@ -392,21 +392,21 @@ static void menu_display_gl_scissor_end(video_frame_info_t *video_info)
 #endif
 }
 
-menu_display_ctx_driver_t menu_display_ctx_gl = {
-   menu_display_gl_draw,
-   menu_display_gl_draw_pipeline,
-   menu_display_gl_viewport,
-   menu_display_gl_blend_begin,
-   menu_display_gl_blend_end,
-   menu_display_gl_restore_clear_color,
-   menu_display_gl_clear_color,
-   menu_display_gl_get_default_mvp,
-   menu_display_gl_get_default_vertices,
-   menu_display_gl_get_default_tex_coords,
-   menu_display_gl_font_init_first,
-   MENU_VIDEO_DRIVER_OPENGL,
+gfx_display_ctx_driver_t gfx_display_ctx_gl = {
+   gfx_display_gl_draw,
+   gfx_display_gl_draw_pipeline,
+   gfx_display_gl_viewport,
+   gfx_display_gl_blend_begin,
+   gfx_display_gl_blend_end,
+   gfx_display_gl_restore_clear_color,
+   gfx_display_gl_clear_color,
+   gfx_display_gl_get_default_mvp,
+   gfx_display_gl_get_default_vertices,
+   gfx_display_gl_get_default_tex_coords,
+   gfx_display_gl_font_init_first,
+   GFX_VIDEO_DRIVER_OPENGL,
    "gl",
    false,
-   menu_display_gl_scissor_begin,
-   menu_display_gl_scissor_end
+   gfx_display_gl_scissor_begin,
+   gfx_display_gl_scissor_end
 };

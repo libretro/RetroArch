@@ -251,33 +251,6 @@ enum xmb_shader_pipeline
    XMB_SHADER_PIPELINE_LAST
 };
 
-enum menu_display_prim_type
-{
-   MENU_DISPLAY_PRIM_NONE = 0,
-   MENU_DISPLAY_PRIM_TRIANGLESTRIP,
-   MENU_DISPLAY_PRIM_TRIANGLES
-};
-
-enum menu_display_driver_type
-{
-   MENU_VIDEO_DRIVER_GENERIC = 0,
-   MENU_VIDEO_DRIVER_OPENGL,
-   MENU_VIDEO_DRIVER_OPENGL1,
-   MENU_VIDEO_DRIVER_OPENGL_CORE,
-   MENU_VIDEO_DRIVER_VULKAN,
-   MENU_VIDEO_DRIVER_METAL,
-   MENU_VIDEO_DRIVER_DIRECT3D8,
-   MENU_VIDEO_DRIVER_DIRECT3D9,
-   MENU_VIDEO_DRIVER_DIRECT3D10,
-   MENU_VIDEO_DRIVER_DIRECT3D11,
-   MENU_VIDEO_DRIVER_DIRECT3D12,
-   MENU_VIDEO_DRIVER_VITA2D,
-   MENU_VIDEO_DRIVER_CTR,
-   MENU_VIDEO_DRIVER_WIIU,
-   MENU_VIDEO_DRIVER_GDI,
-   MENU_VIDEO_DRIVER_SWITCH
-};
-
 enum rgui_thumbnail_scaler
 {
    RGUI_THUMB_SCALE_POINT = 0,
@@ -390,21 +363,6 @@ enum playlist_entry_remove_enable_type
 };
 
 typedef uintptr_t menu_texture_item;
-
-typedef struct menu_display_ctx_clearcolor
-{
-   float r;
-   float g;
-   float b;
-   float a;
-} menu_display_ctx_clearcolor_t;
-
-typedef struct menu_display_frame_info
-{
-   bool shadows_enable;
-} menu_display_frame_info_t;
-
-typedef struct menu_display_ctx_draw menu_display_ctx_draw_t;
 
 RETRO_END_DECLS
 

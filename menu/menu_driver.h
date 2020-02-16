@@ -486,9 +486,14 @@ void menu_display_handle_savestate_thumbnail_upload(retro_task_t *task,
       void *task_data,
       void *user_data, const char *err);
 
-void menu_display_timedate(menu_display_ctx_datetime_t *datetime);
+void menu_display_timedate(gfx_display_ctx_datetime_t *datetime);
 
-void menu_display_powerstate(menu_display_ctx_powerstate_t *powerstate);
+void menu_display_powerstate(gfx_display_ctx_powerstate_t *powerstate);
+
+void menu_display_handle_wallpaper_upload(retro_task_t *task,
+      void *task_data,
+      void *user_data, const char *err);
+
 
 void menu_driver_destroy(void);
 

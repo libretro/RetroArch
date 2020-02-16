@@ -19,23 +19,23 @@
 #include "../../config.h"
 #endif
 
-#include "../menu_driver.h"
+#include "../gfx_display.h"
 
 #include "../../gfx/font_driver.h"
 #include "../../retroarch.h"
 #import "../../gfx/common/metal_common.h"
 
-static const float *menu_display_metal_get_default_vertices(void)
+static const float *gfx_display_metal_get_default_vertices(void)
 {
    return [MenuDisplay defaultVertices];
 }
 
-static const float *menu_display_metal_get_default_tex_coords(void)
+static const float *gfx_display_metal_get_default_tex_coords(void)
 {
    return [MenuDisplay defaultTexCoords];
 }
 
-static void *menu_display_metal_get_default_mvp(video_frame_info_t *video_info)
+static void *gfx_display_metal_get_default_mvp(video_frame_info_t *video_info)
 {
    MetalDriver *md = (__bridge MetalDriver *)video_info->userdata;
    if (!md)
@@ -44,7 +44,7 @@ static void *menu_display_metal_get_default_mvp(video_frame_info_t *video_info)
    return (void *)&md.viewportMVP->projectionMatrix;
 }
 
-static void menu_display_metal_blend_begin(video_frame_info_t *video_info)
+static void gfx_display_metal_blend_begin(video_frame_info_t *video_info)
 {
    MetalDriver *md = (__bridge MetalDriver *)video_info->userdata;
    if (!md)
@@ -53,7 +53,7 @@ static void menu_display_metal_blend_begin(video_frame_info_t *video_info)
    md.display.blend = YES;
 }
 
-static void menu_display_metal_blend_end(video_frame_info_t *video_info)
+static void gfx_display_metal_blend_end(video_frame_info_t *video_info)
 {
    MetalDriver *md = (__bridge MetalDriver *)video_info->userdata;
    if (!md)
@@ -62,7 +62,7 @@ static void menu_display_metal_blend_end(video_frame_info_t *video_info)
    md.display.blend = NO;
 }
 
-static void menu_display_metal_draw(menu_display_ctx_draw_t *draw,
+static void gfx_display_metal_draw(gfx_display_ctx_draw_t *draw,
                                     video_frame_info_t *video_info)
 {
    MetalDriver *md = (__bridge MetalDriver *)video_info->userdata;
@@ -72,7 +72,7 @@ static void menu_display_metal_draw(menu_display_ctx_draw_t *draw,
    [md.display draw:draw video:video_info];
 }
 
-static void menu_display_metal_draw_pipeline(menu_display_ctx_draw_t *draw, video_frame_info_t *video_info)
+static void gfx_display_metal_draw_pipeline(gfx_display_ctx_draw_t *draw, video_frame_info_t *video_info)
 {
    MetalDriver *md = (__bridge MetalDriver *)video_info->userdata;
    if (!md || !draw)
@@ -81,12 +81,12 @@ static void menu_display_metal_draw_pipeline(menu_display_ctx_draw_t *draw, vide
    [md.display drawPipeline:draw video:video_info];
 }
 
-static void menu_display_metal_viewport(menu_display_ctx_draw_t *draw,
+static void gfx_display_metal_viewport(gfx_display_ctx_draw_t *draw,
                                         video_frame_info_t *video_info)
 {
 }
 
-static void menu_display_metal_scissor_begin(video_frame_info_t *video_info, int x, int y, unsigned width, unsigned height)
+static void gfx_display_metal_scissor_begin(video_frame_info_t *video_info, int x, int y, unsigned width, unsigned height)
 {
    MetalDriver *md = (__bridge MetalDriver *)video_info->userdata;
    if (!md)
@@ -96,7 +96,7 @@ static void menu_display_metal_scissor_begin(video_frame_info_t *video_info, int
    [md.display setScissorRect:r];
 }
 
-static void menu_display_metal_scissor_end(video_frame_info_t *video_info)
+static void gfx_display_metal_scissor_end(video_frame_info_t *video_info)
 {
    MetalDriver *md = (__bridge MetalDriver *)video_info->userdata;
    if (!md)
@@ -105,12 +105,12 @@ static void menu_display_metal_scissor_end(video_frame_info_t *video_info)
    [md.display clearScissorRect];
 }
 
-static void menu_display_metal_restore_clear_color(void)
+static void gfx_display_metal_restore_clear_color(void)
 {
    /* nothing to do */
 }
 
-static void menu_display_metal_clear_color(menu_display_ctx_clearcolor_t *clearcolor,
+static void gfx_display_metal_clear_color(gfx_display_ctx_clearcolor_t *clearcolor,
                                            video_frame_info_t *video_info)
 {
    MetalDriver *md = (__bridge MetalDriver *)video_info->userdata;
@@ -120,7 +120,7 @@ static void menu_display_metal_clear_color(menu_display_ctx_clearcolor_t *clearc
    md.display.clearColor = MTLClearColorMake(clearcolor->r, clearcolor->g, clearcolor->b, clearcolor->a);
 }
 
-static bool menu_display_metal_font_init_first(
+static bool gfx_display_metal_font_init_first(
    void **font_handle, void *video_data,
    const char *font_path, float font_size,
    bool is_threaded)
@@ -137,21 +137,21 @@ static bool menu_display_metal_font_init_first(
    return false;
 }
 
-menu_display_ctx_driver_t menu_display_ctx_metal = {
-   .draw                   = menu_display_metal_draw,
-   .draw_pipeline          = menu_display_metal_draw_pipeline,
-   .viewport               = menu_display_metal_viewport,
-   .blend_begin            = menu_display_metal_blend_begin,
-   .blend_end              = menu_display_metal_blend_end,
-   .restore_clear_color    = menu_display_metal_restore_clear_color,
-   .clear_color            = menu_display_metal_clear_color,
-   .get_default_mvp        = menu_display_metal_get_default_mvp,
-   .get_default_vertices   = menu_display_metal_get_default_vertices,
-   .get_default_tex_coords = menu_display_metal_get_default_tex_coords,
-   .font_init_first        = menu_display_metal_font_init_first,
-   .type                   = MENU_VIDEO_DRIVER_METAL,
-   .ident                  = "menu_display_metal",
+gfx_display_ctx_driver_t gfx_display_ctx_metal = {
+   .draw                   = gfx_display_metal_draw,
+   .draw_pipeline          = gfx_display_metal_draw_pipeline,
+   .viewport               = gfx_display_metal_viewport,
+   .blend_begin            = gfx_display_metal_blend_begin,
+   .blend_end              = gfx_display_metal_blend_end,
+   .restore_clear_color    = gfx_display_metal_restore_clear_color,
+   .clear_color            = gfx_display_metal_clear_color,
+   .get_default_mvp        = gfx_display_metal_get_default_mvp,
+   .get_default_vertices   = gfx_display_metal_get_default_vertices,
+   .get_default_tex_coords = gfx_display_metal_get_default_tex_coords,
+   .font_init_first        = gfx_display_metal_font_init_first,
+   .type                   = GFX_VIDEO_DRIVER_METAL,
+   .ident                  = "gfx_display_metal",
    .handles_transform      = NO,
-   .scissor_begin          = menu_display_metal_scissor_begin,
-   .scissor_end            = menu_display_metal_scissor_end
+   .scissor_begin          = gfx_display_metal_scissor_begin,
+   .scissor_end            = gfx_display_metal_scissor_end
 };

@@ -12,8 +12,8 @@
 @property (nonatomic, readwrite) MTLClearColor clearColor;
 
 - (instancetype)initWithContext:(Context *)context;
-- (void)drawPipeline:(menu_display_ctx_draw_t *)draw video:(video_frame_info_t *)video;
-- (void)draw:(menu_display_ctx_draw_t *)draw video:(video_frame_info_t *)video;
+- (void)drawPipeline:(gfx_display_ctx_draw_t *)draw video:(video_frame_info_t *)video;
+- (void)draw:(gfx_display_ctx_draw_t *)draw video:(video_frame_info_t *)video;
 - (void)setScissorRect:(MTLScissorRect)rect;
 - (void)clearScissorRect;
 

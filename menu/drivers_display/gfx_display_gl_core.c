@@ -21,7 +21,7 @@
 #include "../../config.h"
 #endif
 
-#include "../menu_driver.h"
+#include "../gfx_display.h"
 
 #include "../../gfx/font_driver.h"
 #include "../../retroarch.h"
@@ -48,7 +48,7 @@ static const float gl_core_colors[] = {
    1.0f, 1.0f, 1.0f, 1.0f,
 };
 
-static void *menu_display_gl_core_get_default_mvp(video_frame_info_t *video_info)
+static void *gfx_display_gl_core_get_default_mvp(video_frame_info_t *video_info)
 {
    gl_core_t *gl_core = (gl_core_t*)video_info->userdata;
    if (!gl_core)
@@ -56,29 +56,29 @@ static void *menu_display_gl_core_get_default_mvp(video_frame_info_t *video_info
    return &gl_core->mvp_no_rot;
 }
 
-static const float *menu_display_gl_core_get_default_vertices(void)
+static const float *gfx_display_gl_core_get_default_vertices(void)
 {
    return &gl_core_vertexes[0];
 }
 
-static const float *menu_display_gl_core_get_default_color(void)
+static const float *gfx_display_gl_core_get_default_color(void)
 {
    return &gl_core_colors[0];
 }
 
-static const float *menu_display_gl_core_get_default_tex_coords(void)
+static const float *gfx_display_gl_core_get_default_tex_coords(void)
 {
    return &gl_core_tex_coords[0];
 }
 
-static void menu_display_gl_core_viewport(menu_display_ctx_draw_t *draw,
+static void gfx_display_gl_core_viewport(gfx_display_ctx_draw_t *draw,
       video_frame_info_t *video_info)
 {
    if (draw)
       glViewport(draw->x, draw->y, draw->width, draw->height);
 }
 
-static void menu_display_gl_core_draw_pipeline(menu_display_ctx_draw_t *draw,
+static void gfx_display_gl_core_draw_pipeline(gfx_display_ctx_draw_t *draw,
       video_frame_info_t *video_info)
 {
 #ifdef HAVE_SHADERPIPELINE
@@ -106,7 +106,7 @@ static void menu_display_gl_core_draw_pipeline(menu_display_ctx_draw_t *draw,
       default:
       case VIDEO_SHADER_MENU:
       case VIDEO_SHADER_MENU_2:
-         ca = menu_display_get_coords_array();
+         ca = gfx_display_get_coords_array();
          draw->coords                     = (struct video_coords*)&ca->coords;
          draw->pipeline.backend_data      = ubo_scratch_data;
          draw->pipeline.backend_data_size = 2 * sizeof(float);
@@ -127,7 +127,7 @@ static void menu_display_gl_core_draw_pipeline(menu_display_ctx_draw_t *draw,
 
          /* Match UBO layout in shader. */
          memcpy(ubo_scratch_data,
-               menu_display_gl_core_get_default_mvp(video_info),
+               gfx_display_gl_core_get_default_mvp(video_info),
                sizeof(math_matrix_4x4));
          memcpy(ubo_scratch_data + sizeof(math_matrix_4x4),
                output_size,
@@ -140,9 +140,9 @@ static void menu_display_gl_core_draw_pipeline(menu_display_ctx_draw_t *draw,
                + 2 * sizeof(float), &t, sizeof(t));
          memcpy(ubo_scratch_data + sizeof(math_matrix_4x4) 
                + 3 * sizeof(float), &yflip, sizeof(yflip));
-         draw->coords = &blank_coords;
+         draw->coords          = &blank_coords;
          blank_coords.vertices = 4;
-         draw->prim_type = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
+         draw->prim_type       = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
          break;
    }
 
@@ -150,7 +150,7 @@ static void menu_display_gl_core_draw_pipeline(menu_display_ctx_draw_t *draw,
 #endif
 }
 
-static void menu_display_gl_core_draw(menu_display_ctx_draw_t *draw,
+static void gfx_display_gl_core_draw(gfx_display_ctx_draw_t *draw,
       video_frame_info_t *video_info)
 {
    const float *vertex       = NULL;
@@ -169,13 +169,13 @@ static void menu_display_gl_core_draw(menu_display_ctx_draw_t *draw,
    color              = draw->coords->color;
 
    if (!vertex)
-      vertex          = menu_display_gl_core_get_default_vertices();
+      vertex          = gfx_display_gl_core_get_default_vertices();
    if (!tex_coord)
-      tex_coord       = menu_display_gl_core_get_default_tex_coords();
+      tex_coord       = gfx_display_gl_core_get_default_tex_coords();
    if (!color)
-      color           = menu_display_gl_core_get_default_color();
+      color           = gfx_display_gl_core_get_default_color();
 
-   menu_display_gl_core_viewport(draw, video_info);
+   gfx_display_gl_core_viewport(draw, video_info);
 
    glActiveTexture(GL_TEXTURE1);
    glBindTexture(GL_TEXTURE_2D, texture);
@@ -239,7 +239,7 @@ static void menu_display_gl_core_draw(menu_display_ctx_draw_t *draw,
    if (!loc)
    {
       const math_matrix_4x4 *mat = draw->matrix_data
-                     ? (const math_matrix_4x4*)draw->matrix_data : (const math_matrix_4x4*)menu_display_gl_core_get_default_mvp(video_info);
+                     ? (const math_matrix_4x4*)draw->matrix_data : (const math_matrix_4x4*)gfx_display_gl_core_get_default_mvp(video_info);
       if (gl->pipelines.alpha_blend_loc.flat_ubo_vertex >= 0)
          glUniform4fv(gl->pipelines.alpha_blend_loc.flat_ubo_vertex,
                       4, mat->data);
@@ -262,10 +262,18 @@ static void menu_display_gl_core_draw(menu_display_ctx_draw_t *draw,
    glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE,
          4 * sizeof(float), (void *)(uintptr_t)0);
 
-   if (draw->prim_type == MENU_DISPLAY_PRIM_TRIANGLESTRIP)
-      glDrawArrays(GL_TRIANGLE_STRIP, 0, draw->coords->vertices);
-   else if (draw->prim_type == MENU_DISPLAY_PRIM_TRIANGLES)
-      glDrawArrays(GL_TRIANGLES, 0, draw->coords->vertices);
+   switch (draw->prim_type)
+   {
+      case GFX_DISPLAY_PRIM_TRIANGLESTRIP:
+         glDrawArrays(GL_TRIANGLE_STRIP, 0, draw->coords->vertices);
+         break;
+      case GFX_DISPLAY_PRIM_TRIANGLES:
+         glDrawArrays(GL_TRIANGLES, 0, draw->coords->vertices);
+         break;
+      case GFX_DISPLAY_PRIM_NONE:
+      default:
+         break;
+   }
 
    glDisableVertexAttribArray(0);
    glDisableVertexAttribArray(1);
@@ -275,13 +283,13 @@ static void menu_display_gl_core_draw(menu_display_ctx_draw_t *draw,
    glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-static void menu_display_gl_core_restore_clear_color(void)
+static void gfx_display_gl_core_restore_clear_color(void)
 {
    glClearColor(0.0f, 0.0f, 0.0f, 0.00f);
 }
 
-static void menu_display_gl_core_clear_color(
-      menu_display_ctx_clearcolor_t *clearcolor,
+static void gfx_display_gl_core_clear_color(
+      gfx_display_ctx_clearcolor_t *clearcolor,
       video_frame_info_t *video_info)
 {
    if (!clearcolor)
@@ -291,7 +299,7 @@ static void menu_display_gl_core_clear_color(
    glClear(GL_COLOR_BUFFER_BIT);
 }
 
-static void menu_display_gl_core_blend_begin(video_frame_info_t *video_info)
+static void gfx_display_gl_core_blend_begin(video_frame_info_t *video_info)
 {
    gl_core_t *gl = (gl_core_t*)video_info->userdata;
 
@@ -300,12 +308,12 @@ static void menu_display_gl_core_blend_begin(video_frame_info_t *video_info)
    glUseProgram(gl->pipelines.alpha_blend);
 }
 
-static void menu_display_gl_core_blend_end(video_frame_info_t *video_info)
+static void gfx_display_gl_core_blend_end(video_frame_info_t *video_info)
 {
    glDisable(GL_BLEND);
 }
 
-static bool menu_display_gl_core_font_init_first(
+static bool gfx_display_gl_core_font_init_first(
       void **font_handle, void *video_data, const char *font_path,
       float menu_font_size, bool is_threaded)
 {
@@ -321,33 +329,33 @@ static bool menu_display_gl_core_font_init_first(
    return false;
 }
 
-static void menu_display_gl_core_scissor_begin(video_frame_info_t *video_info,
+static void gfx_display_gl_core_scissor_begin(video_frame_info_t *video_info,
       int x, int y, unsigned width, unsigned height)
 {
    glScissor(x, video_info->height - y - height, width, height);
    glEnable(GL_SCISSOR_TEST);
 }
 
-static void menu_display_gl_core_scissor_end(video_frame_info_t *video_info)
+static void gfx_display_gl_core_scissor_end(video_frame_info_t *video_info)
 {
    glDisable(GL_SCISSOR_TEST);
 }
 
-menu_display_ctx_driver_t menu_display_ctx_gl_core = {
-   menu_display_gl_core_draw,
-   menu_display_gl_core_draw_pipeline,
-   menu_display_gl_core_viewport,
-   menu_display_gl_core_blend_begin,
-   menu_display_gl_core_blend_end,
-   menu_display_gl_core_restore_clear_color,
-   menu_display_gl_core_clear_color,
-   menu_display_gl_core_get_default_mvp,
-   menu_display_gl_core_get_default_vertices,
-   menu_display_gl_core_get_default_tex_coords,
-   menu_display_gl_core_font_init_first,
-   MENU_VIDEO_DRIVER_OPENGL_CORE,
+gfx_display_ctx_driver_t gfx_display_ctx_gl_core = {
+   gfx_display_gl_core_draw,
+   gfx_display_gl_core_draw_pipeline,
+   gfx_display_gl_core_viewport,
+   gfx_display_gl_core_blend_begin,
+   gfx_display_gl_core_blend_end,
+   gfx_display_gl_core_restore_clear_color,
+   gfx_display_gl_core_clear_color,
+   gfx_display_gl_core_get_default_mvp,
+   gfx_display_gl_core_get_default_vertices,
+   gfx_display_gl_core_get_default_tex_coords,
+   gfx_display_gl_core_font_init_first,
+   GFX_VIDEO_DRIVER_OPENGL_CORE,
    "glcore",
    false,
-   menu_display_gl_core_scissor_begin,
-   menu_display_gl_core_scissor_end
+   gfx_display_gl_core_scissor_begin,
+   gfx_display_gl_core_scissor_end
 };

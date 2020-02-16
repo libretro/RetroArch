@@ -6362,7 +6362,7 @@ static void command_event_reinit(const int flags)
    command_event(CMD_EVENT_GAME_FOCUS_TOGGLE, (void*)(intptr_t)-1);
 
 #ifdef HAVE_MENU
-   menu_display_set_framebuffer_dirty_flag();
+   gfx_display_set_framebuffer_dirty_flag();
    if (configuration_settings->bools.video_fullscreen)
       video_driver_hide_mouse();
    if (menu_driver_alive && current_video->set_nonblock_state)
@@ -14558,7 +14558,7 @@ static void menu_input_get_mouse_hw_state(
       struct video_viewport vp = {0};
 
       /* Read display/framebuffer info */
-      menu_display_get_fb_size(&fb_width, &fb_height, &fb_pitch);
+      gfx_display_get_fb_size(&fb_width, &fb_height, &fb_pitch);
       video_driver_get_viewport_info(&vp);
 
       /* Adjust X pos */
@@ -14660,7 +14660,7 @@ static void menu_input_get_touchscreen_hw_state(
       return;
    }
 
-   menu_display_get_fb_size(&fb_width, &fb_height, &fb_pitch);
+   gfx_display_get_fb_size(&fb_width, &fb_height, &fb_pitch);
 
    joypad_info.joy_idx        = 0;
    joypad_info.auto_binds     = NULL;
@@ -15143,7 +15143,7 @@ static float menu_input_get_dpi(void)
       unsigned fb_width, fb_height;
 
       /* Read framebuffer info */
-      menu_display_get_fb_size(&fb_width, &fb_height, &fb_pitch);
+      gfx_display_get_fb_size(&fb_width, &fb_height, &fb_pitch);
 
       /* Rationale for current 'DPI' determination method:
        * - Divide screen height by DPI, to get number of vertical
@@ -23458,7 +23458,7 @@ static void drivers_init(int flags)
    }
    else
    {
-      menu_display_init_first_driver(video_is_threaded);
+      gfx_display_init_first_driver(video_is_threaded);
    }
 #endif
 
@@ -27374,7 +27374,7 @@ static enum runloop_state runloop_check_state(void)
                BIT64_SET(menu_data->state, MENU_STATE_RENDER_FRAMEBUFFER);
 
             if (BIT64_GET(menu_data->state, MENU_STATE_RENDER_FRAMEBUFFER))
-               menu_display_set_framebuffer_dirty_flag();
+               gfx_display_set_framebuffer_dirty_flag();
 
             if (BIT64_GET(menu_data->state, MENU_STATE_RENDER_MESSAGEBOX)
                   && !string_is_empty(menu_data->menu_state_msg))

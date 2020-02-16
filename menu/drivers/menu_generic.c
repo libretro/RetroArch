@@ -95,7 +95,7 @@ int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
 
    if (     action != MENU_ACTION_NOOP
          || menu_entries_ctl(MENU_ENTRIES_CTL_NEEDS_REFRESH, NULL)
-         || menu_display_get_update_pending())
+         || gfx_display_get_update_pending())
    {
       BIT64_SET(menu->state, MENU_STATE_RENDER_FRAMEBUFFER);
    }

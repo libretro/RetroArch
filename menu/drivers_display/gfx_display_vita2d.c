@@ -21,7 +21,7 @@
 #include "../../config.h"
 #endif
 
-#include "../menu_driver.h"
+#include "../gfx_display.h"
 
 #include "../../retroarch.h"
 #include "../../gfx/font_driver.h"
@@ -49,22 +49,22 @@ static const float vita2d_colors[] = {
    1.0f, 1.0f, 1.0f, 1.0f,
 };
 
-static const float *menu_display_vita2d_get_default_vertices(void)
+static const float *gfx_display_vita2d_get_default_vertices(void)
 {
    return &vita2d_vertexes[0];
 }
 
-static const float *menu_display_vita2d_get_default_color(void)
+static const float *gfx_display_vita2d_get_default_color(void)
 {
    return &vita2d_colors[0];
 }
 
-static const float *menu_display_vita2d_get_default_tex_coords(void)
+static const float *gfx_display_vita2d_get_default_tex_coords(void)
 {
    return &vita2d_tex_coords[0];
 }
 
-static void *menu_display_vita2d_get_default_mvp(
+static void *gfx_display_vita2d_get_default_mvp(
       video_frame_info_t *video_info)
 {
    vita_video_t *vita2d = (vita_video_t*)video_info->userdata;
@@ -75,17 +75,17 @@ static void *menu_display_vita2d_get_default_mvp(
    return &vita2d->mvp_no_rot;
 }
 
-static void menu_display_vita2d_blend_begin(video_frame_info_t *video_info)
+static void gfx_display_vita2d_blend_begin(video_frame_info_t *video_info)
 {
 
 }
 
-static void menu_display_vita2d_blend_end(video_frame_info_t *video_info)
+static void gfx_display_vita2d_blend_end(video_frame_info_t *video_info)
 {
 
 }
 
-static void menu_display_vita2d_viewport(menu_display_ctx_draw_t *draw,
+static void gfx_display_vita2d_viewport(gfx_display_ctx_draw_t *draw,
       video_frame_info_t *video_info)
 {
    if (draw){
@@ -93,7 +93,7 @@ static void menu_display_vita2d_viewport(menu_display_ctx_draw_t *draw,
    }
 }
 
-static void menu_display_vita2d_draw(menu_display_ctx_draw_t *draw,
+static void gfx_display_vita2d_draw(gfx_display_ctx_draw_t *draw,
       video_frame_info_t *video_info)
 {
     unsigned i;
@@ -112,17 +112,17 @@ static void menu_display_vita2d_draw(menu_display_ctx_draw_t *draw,
     color              = draw->coords->color;
 
     if (!vertex)
-       vertex          = menu_display_vita2d_get_default_vertices();
+       vertex          = gfx_display_vita2d_get_default_vertices();
     if (!tex_coord)
-       tex_coord       = menu_display_vita2d_get_default_tex_coords();
+       tex_coord       = gfx_display_vita2d_get_default_tex_coords();
     if (!draw->coords->lut_tex_coord)
-       draw->coords->lut_tex_coord = menu_display_vita2d_get_default_tex_coords();
+       draw->coords->lut_tex_coord = gfx_display_vita2d_get_default_tex_coords();
     if (!texture)
        return;
     if (!color)
-       color           = menu_display_vita2d_get_default_color();
+       color           = gfx_display_vita2d_get_default_color();
 
-    menu_display_vita2d_viewport(draw, video_info);
+    gfx_display_vita2d_viewport(draw, video_info);
    
     vita2d_texture_tint_vertex *vertices = (vita2d_texture_tint_vertex *)vita2d_pool_memalign(
 	   draw->coords->vertices * sizeof(vita2d_texture_tint_vertex),
@@ -141,30 +141,30 @@ static void menu_display_vita2d_draw(menu_display_ctx_draw_t *draw,
     }
 
     const math_matrix_4x4 *mat = draw->matrix_data
-                     ? (const math_matrix_4x4*)draw->matrix_data : (const math_matrix_4x4*)menu_display_vita2d_get_default_mvp(video_info);
+                     ? (const math_matrix_4x4*)draw->matrix_data : (const math_matrix_4x4*)gfx_display_vita2d_get_default_mvp(video_info);
 
    switch (draw->pipeline.id)
    {
      default:
      {
-        vita2d_draw_array_textured_mat(texture, vertices, draw->coords->vertices, menu_display_vita2d_get_default_mvp(video_info));
+        vita2d_draw_array_textured_mat(texture, vertices, draw->coords->vertices, gfx_display_vita2d_get_default_mvp(video_info));
         break;
      }
   }
 }
 
-static void menu_display_vita2d_draw_pipeline(menu_display_ctx_draw_t *draw,
+static void gfx_display_vita2d_draw_pipeline(gfx_display_ctx_draw_t *draw,
       video_frame_info_t *video_info)
 {
 }
 
-static void menu_display_vita2d_restore_clear_color(void)
+static void gfx_display_vita2d_restore_clear_color(void)
 {
    vita2d_set_clear_color(RGBA8(0x00, 0x00, 0x00, 0xFF));
 }
 
-static void menu_display_vita2d_clear_color(
-      menu_display_ctx_clearcolor_t *clearcolor,
+static void gfx_display_vita2d_clear_color(
+      gfx_display_ctx_clearcolor_t *clearcolor,
       video_frame_info_t *video_info)
 {
    if (!clearcolor)
@@ -176,7 +176,7 @@ static void menu_display_vita2d_clear_color(
    vita2d_draw_rectangle(0,0,PSP_FB_WIDTH,PSP_FB_HEIGHT, vita2d_get_clear_color());
 }
 
-static bool menu_display_vita2d_font_init_first(
+static bool gfx_display_vita2d_font_init_first(
       void **font_handle, void *video_data,
       const char *font_path, float font_size,
       bool is_threaded)
@@ -189,34 +189,34 @@ static bool menu_display_vita2d_font_init_first(
    return *handle;
 }
 
-static void menu_display_vita2d_scissor_end(video_frame_info_t *video_info)
+static void gfx_display_vita2d_scissor_end(video_frame_info_t *video_info)
 {
    vita2d_set_region_clip(SCE_GXM_REGION_CLIP_NONE, 0, 0, video_info->width, video_info->height);
    vita2d_disable_clipping();
 }
 
-static void menu_display_vita2d_scissor_begin(video_frame_info_t *video_info, int x, int y,
+static void gfx_display_vita2d_scissor_begin(video_frame_info_t *video_info, int x, int y,
       unsigned width, unsigned height)
 {
    vita2d_set_clip_rectangle(x, y, x + width, y + height);  
    vita2d_set_region_clip(SCE_GXM_REGION_CLIP_OUTSIDE, x, y, x + width, y + height);
 }
 
-menu_display_ctx_driver_t menu_display_ctx_vita2d = {
-   menu_display_vita2d_draw,
-   menu_display_vita2d_draw_pipeline,
-   menu_display_vita2d_viewport,
-   menu_display_vita2d_blend_begin,
-   menu_display_vita2d_blend_end,
-   menu_display_vita2d_restore_clear_color,
-   menu_display_vita2d_clear_color,
-   menu_display_vita2d_get_default_mvp,
-   menu_display_vita2d_get_default_vertices,
-   menu_display_vita2d_get_default_tex_coords,
-   menu_display_vita2d_font_init_first,
-   MENU_VIDEO_DRIVER_VITA2D,
+gfx_display_ctx_driver_t gfx_display_ctx_vita2d = {
+   gfx_display_vita2d_draw,
+   gfx_display_vita2d_draw_pipeline,
+   gfx_display_vita2d_viewport,
+   gfx_display_vita2d_blend_begin,
+   gfx_display_vita2d_blend_end,
+   gfx_display_vita2d_restore_clear_color,
+   gfx_display_vita2d_clear_color,
+   gfx_display_vita2d_get_default_mvp,
+   gfx_display_vita2d_get_default_vertices,
+   gfx_display_vita2d_get_default_tex_coords,
+   gfx_display_vita2d_font_init_first,
+   GFX_VIDEO_DRIVER_VITA2D,
    "vita2d",
    true,
-   menu_display_vita2d_scissor_begin,
-   menu_display_vita2d_scissor_end
+   gfx_display_vita2d_scissor_begin,
+   gfx_display_vita2d_scissor_end
 };

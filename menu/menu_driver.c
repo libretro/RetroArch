@@ -1733,7 +1733,7 @@ static void strftime_am_pm(char* ptr, size_t maxsize, const char* format,
 /* Display the date and time - time_mode will influence how
  * the time representation will look like.
  * */
-void menu_display_timedate(menu_display_ctx_datetime_t *datetime)
+void menu_display_timedate(gfx_display_ctx_datetime_t *datetime)
 {
    if (!datetime)
       return;
@@ -1823,7 +1823,7 @@ void menu_display_timedate(menu_display_ctx_datetime_t *datetime)
 
 
 /* Display current (battery) power state */
-void menu_display_powerstate(menu_display_ctx_powerstate_t *powerstate)
+void menu_display_powerstate(gfx_display_ctx_powerstate_t *powerstate)
 {
    int percent                    = 0;
    enum frontend_powerstate state = FRONTEND_POWERSTATE_NONE;
@@ -1842,7 +1842,7 @@ void menu_display_powerstate(menu_display_ctx_powerstate_t *powerstate)
    /* Get last recorded state */
    state = get_last_powerstate(&percent);
 
-   /* Populate menu_display_ctx_powerstate_t */
+   /* Populate gfx_display_ctx_powerstate_t */
    powerstate->battery_enabled = (state != FRONTEND_POWERSTATE_NONE) &&
                                  (state != FRONTEND_POWERSTATE_NO_SOURCE);
 
@@ -1875,7 +1875,7 @@ bool menu_driver_iterate(menu_ctx_iterate_t *iterate)
 
       menu_driver_pending_quick_menu = false;
       menu_entries_flush_stack(NULL, MENU_SETTINGS);
-      menu_display_set_msg_force(true);
+      gfx_display_set_msg_force(true);
 
       generic_action_ok_displaylist_push("", NULL,
             "", 0, 0, 0, ACTION_OK_DL_CONTENT_SETTINGS);

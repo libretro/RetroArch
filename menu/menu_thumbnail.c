@@ -601,7 +601,7 @@ void menu_thumbnail_get_draw_dimensions(
    }
 
    /* Account for scale factor
-    * > Side note: We cannot use the menu_display_ctx_draw_t
+    * > Side note: We cannot use the gfx_display_ctx_draw_t
     *   'scale_factor' parameter for scaling thumbnails,
     *   since this clips off any part of the expanded image
     *   that extends beyond the bounding box. But even if
@@ -641,8 +641,8 @@ void menu_thumbnail_draw(
    /* Only draw thumbnail if it is available... */
    if (thumbnail->status == MENU_THUMBNAIL_STATUS_AVAILABLE)
    {
-      menu_display_ctx_rotate_draw_t rotate_draw;
-      menu_display_ctx_draw_t draw;
+      gfx_display_ctx_rotate_draw_t rotate_draw;
+      gfx_display_ctx_draw_t draw;
       struct video_coords coords;
       math_matrix_4x4 mymat;
       float draw_width;
@@ -661,14 +661,14 @@ void menu_thumbnail_draw(
       if (thumbnail_alpha <= 0.0f)
          return;
       else if (thumbnail_alpha < 1.0f)
-         menu_display_set_alpha(thumbnail_color, thumbnail_alpha);
+         gfx_display_set_alpha(thumbnail_color, thumbnail_alpha);
 
       /* Get thumbnail dimensions */
       menu_thumbnail_get_draw_dimensions(
             thumbnail, width, height, scale_factor,
             &draw_width, &draw_height);
 
-      menu_display_blend_begin(video_info);
+      gfx_display_blend_begin(video_info);
 
       /* Perform 'rotation' step
        * > Note that rotation does not actually work...
@@ -677,7 +677,7 @@ void menu_thumbnail_draw(
        *   off any 'corners' that extend beyond the bounding box
        * > Since the result is visual garbage, we disable
        *   rotation entirely
-       * > But we still have to call menu_display_rotate_z(),
+       * > But we still have to call gfx_display_rotate_z(),
        *   or nothing will be drawn...
        * Note that we also disable scaling here (scale_enable),
        * since we handle scaling internally... */
@@ -688,7 +688,7 @@ void menu_thumbnail_draw(
       rotate_draw.scale_z      = 1.0f;
       rotate_draw.scale_enable = false;
 
-      menu_display_rotate_z(&rotate_draw, video_info);
+      gfx_display_rotate_z(&rotate_draw, video_info);
 
       /* Configure draw object
        * > Note: Colour, width/height and position must
@@ -703,7 +703,7 @@ void menu_thumbnail_draw(
       draw.coords          = &coords;
       draw.matrix_data     = &mymat;
       draw.texture         = thumbnail->texture;
-      draw.prim_type       = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
+      draw.prim_type       = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
       draw.pipeline.id     = 0;
 
       /* Set thumbnail alignment within bounding box */
@@ -764,7 +764,7 @@ void menu_thumbnail_draw(
             if (shadow->alpha < 1.0f)
                shadow_alpha *= shadow->alpha;
 
-            menu_display_set_alpha(shadow_color, shadow_alpha);
+            gfx_display_set_alpha(shadow_color, shadow_alpha);
 
             /* Configure shadow based on effect type
              * > Not using a switch() here, since we've
@@ -793,7 +793,7 @@ void menu_thumbnail_draw(
             draw.y       = shadow_y;
 
             /* Draw shadow */
-            menu_display_draw(&draw, video_info);
+            gfx_display_draw(&draw, video_info);
          }
       }
 
@@ -805,7 +805,7 @@ void menu_thumbnail_draw(
       draw.y       = draw_y;
 
       /* Draw thumbnail */
-      menu_display_draw(&draw, video_info);
-      menu_display_blend_end(video_info);
+      gfx_display_draw(&draw, video_info);
+      gfx_display_blend_end(video_info);
    }
 }

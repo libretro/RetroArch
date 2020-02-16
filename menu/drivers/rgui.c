@@ -1253,7 +1253,7 @@ static void rgui_init_particle_effect(rgui_t *rgui)
    if (!rgui)
       return;
    
-   menu_display_get_fb_size(&fb_width, &fb_height, &fb_pitch);
+   gfx_display_get_fb_size(&fb_width, &fb_height, &fb_pitch);
    
    switch (rgui->particle_effect)
    {
@@ -1360,7 +1360,7 @@ static void rgui_render_particle_effect(rgui_t *rgui)
    if (!rgui || !rgui_frame_buf.data || !settings)
       return;
    
-   menu_display_get_fb_size(&fb_width, &fb_height, &fb_pitch);
+   gfx_display_get_fb_size(&fb_width, &fb_height, &fb_pitch);
    
    /* Adjust global animation speed */
    /* > Apply user configured speed multiplier */
@@ -1679,7 +1679,8 @@ static bool request_thumbnail(
          if (task_push_image_load(thumbnail->path,
                   video_driver_supports_rgba(), 0,
                   (thumbnail_id == MENU_THUMBNAIL_LEFT) ?
-            menu_display_handle_left_thumbnail_upload : menu_display_handle_thumbnail_upload, NULL))
+            menu_display_handle_left_thumbnail_upload 
+            : menu_display_handle_thumbnail_upload, NULL))
          {
             *queue_size = *queue_size + 1;
             return true;
@@ -1923,7 +1924,7 @@ static void rgui_render_background(void)
 
    if (rgui_frame_buf.data && rgui_background_buf.data)
    {
-      menu_display_get_fb_size(&fb_width, &fb_height, &fb_pitch);
+      gfx_display_get_fb_size(&fb_width, &fb_height, &fb_pitch);
 
       /* Sanity check */
       if ((fb_width != rgui_frame_buf.width) || (fb_height != rgui_frame_buf.height) || (fb_pitch != rgui_frame_buf.width << 1))
@@ -1947,7 +1948,7 @@ static void rgui_render_fs_thumbnail(rgui_t *rgui)
       uint16_t *src  = NULL;
       uint16_t *dst  = NULL;
 
-      menu_display_get_fb_size(&fb_width, &fb_height, &fb_pitch);
+      gfx_display_get_fb_size(&fb_width, &fb_height, &fb_pitch);
 
       /* Ensure that thumbnail is centred
        * > Have to perform some stupid tests here because we
@@ -2052,7 +2053,7 @@ static void rgui_render_mini_thumbnail(rgui_t *rgui, thumbnail_t *thumbnail, enu
       uint16_t *src  = NULL;
       uint16_t *dst  = NULL;
 
-      menu_display_get_fb_size(&fb_width, &fb_height, &fb_pitch);
+      gfx_display_get_fb_size(&fb_width, &fb_height, &fb_pitch);
 
       term_width = rgui_term_layout.width * FONT_WIDTH_STRIDE;
       term_height = rgui_term_layout.height * FONT_HEIGHT_STRIDE;
@@ -2316,7 +2317,7 @@ static void rgui_cache_background(rgui_t *rgui)
    if (rgui->show_wallpaper)
       return;
 
-   menu_display_get_fb_size(&fb_width, &fb_height, &fb_pitch);
+   gfx_display_get_fb_size(&fb_width, &fb_height, &fb_pitch);
 
    /* Sanity check */
    if ((fb_width  != rgui_background_buf.width)      ||
@@ -2758,7 +2759,7 @@ static void rgui_render_messagebox(rgui_t *rgui, const char *message)
    width        = 0;
    glyphs_width = 0;
 
-   menu_display_get_fb_size(&fb_width, &fb_height,
+   gfx_display_get_fb_size(&fb_width, &fb_height,
          &fb_pitch);
 
    for (i = 0; i < list->size; i++)
@@ -2849,7 +2850,7 @@ static void rgui_blit_cursor(rgui_t *rgui)
    size_t fb_pitch;
    unsigned fb_width, fb_height;
 
-   menu_display_get_fb_size(&fb_width, &fb_height,
+   gfx_display_get_fb_size(&fb_width, &fb_height,
          &fb_pitch);
 
    if (rgui_frame_buf.data)
@@ -2880,7 +2881,7 @@ int rgui_osk_ptr_at_pos(void *data, int x, int y,
    unsigned osk_x, osk_y;
 
    /* Get dimensions/layout */
-   menu_display_get_fb_size(&fb_width, &fb_height, &fb_pitch);
+   gfx_display_get_fb_size(&fb_width, &fb_height, &fb_pitch);
 
    key_text_offset_x      = 8;
    key_text_offset_y      = 6;
@@ -2950,7 +2951,7 @@ static void rgui_render_osk(
       return;
    
    /* Get dimensions/layout */
-   menu_display_get_fb_size(&fb_width, &fb_height, &fb_pitch);
+   gfx_display_get_fb_size(&fb_width, &fb_height, &fb_pitch);
    
    key_text_offset_x      = 8;
    key_text_offset_y      = 6;
@@ -3239,19 +3240,19 @@ static void rgui_render(void *data,
 
    if (!rgui->force_redraw)
    {
-      msg_force = menu_display_get_msg_force();
+      msg_force = gfx_display_get_msg_force();
 
       if (menu_entries_ctl(MENU_ENTRIES_CTL_NEEDS_REFRESH, NULL)
             && !msg_force)
          return;
 
-      if (!display_kb && !current_display_cb && (is_idle || !menu_display_get_update_pending()))
+      if (!display_kb && !current_display_cb && (is_idle || !gfx_display_get_update_pending()))
          return;
    }
 
    display_kb = current_display_cb;
 
-   menu_display_get_fb_size(&fb_width, &fb_height,
+   gfx_display_get_fb_size(&fb_width, &fb_height,
          &fb_pitch);
 
    /* If the framebuffer changed size, or the background config has
@@ -3282,7 +3283,7 @@ static void rgui_render(void *data,
    if (rgui->bg_modified)
       rgui->bg_modified = false;
 
-   menu_display_set_framebuffer_dirty_flag();
+   gfx_display_set_framebuffer_dirty_flag();
    gfx_animation_ctl(MENU_ANIMATION_CTL_CLEAR_ACTIVE, NULL);
 
    rgui->force_redraw        = false;
@@ -3482,7 +3483,7 @@ static void rgui_render(void *data,
       /* Show battery indicator, if required */
       if (settings->bools.menu_battery_level_enable)
       {
-         menu_display_ctx_powerstate_t powerstate;
+         gfx_display_ctx_powerstate_t powerstate;
          char percent_str[12];
 
          percent_str[0] = '\0';
@@ -3835,7 +3836,7 @@ static void rgui_render(void *data,
       /* Print clock (if required) */
       if (settings->bools.menu_timedate_enable)
       {
-         menu_display_ctx_datetime_t datetime;
+         gfx_display_ctx_datetime_t datetime;
          char timedate[16];
 
          timedate[0] = '\0';
@@ -3975,7 +3976,7 @@ static void rgui_update_menu_viewport(rgui_t *rgui)
    if (!settings)
       return;
    
-   menu_display_get_fb_size(&fb_width, &fb_height, &fb_pitch);
+   gfx_display_get_fb_size(&fb_width, &fb_height, &fb_pitch);
    video_driver_get_viewport_info(&vp);
    
    /* Could do this once in rgui_init(), but seems cleaner to
@@ -4082,7 +4083,7 @@ static bool rgui_set_aspect_ratio(rgui_t *rgui, bool delay_update)
       size_t fb_pitch;
       unsigned fb_width, fb_height;
       
-      menu_display_get_fb_size(&fb_width, &fb_height, &fb_pitch);
+      gfx_display_get_fb_size(&fb_width, &fb_height, &fb_pitch);
       
       /* Set frame buffer dimensions */
       rgui_frame_buf.height = fb_height;
@@ -4176,9 +4177,9 @@ static bool rgui_set_aspect_ratio(rgui_t *rgui, bool delay_update)
       return false;
    
    /* Configure 'menu display' settings */
-   menu_display_set_width(rgui_frame_buf.width);
-   menu_display_set_height(rgui_frame_buf.height);
-   menu_display_set_framebuffer_pitch(rgui_frame_buf.width * sizeof(uint16_t));
+   gfx_display_set_width(rgui_frame_buf.width);
+   gfx_display_set_height(rgui_frame_buf.height);
+   gfx_display_set_framebuffer_pitch(rgui_frame_buf.width * sizeof(uint16_t));
    
    /* Determine terminal layout */
    rgui_term_layout.start_x = (3 * 5) + 1;
@@ -4280,10 +4281,10 @@ static void *rgui_init(void **userdata, bool video_is_threaded)
 
    if (rgui->widgets_supported)
    {
-      if (!menu_display_init_first_driver(video_is_threaded))
+      if (!gfx_display_init_first_driver(video_is_threaded))
          goto error;
 
-      menu_display_allocate_white_texture();
+      gfx_display_allocate_white_texture();
    }
 #endif
 
@@ -4306,7 +4307,7 @@ static void *rgui_init(void **userdata, bool video_is_threaded)
 
    /* Fixed 'menu display' settings */
    new_font_height = FONT_HEIGHT_STRIDE * 2;
-   menu_display_set_header_height(new_font_height);
+   gfx_display_set_header_height(new_font_height);
 
    /* Prepare RGUI colors, to improve performance */
    rgui->theme_preset_path[0] = '\0';
@@ -4405,13 +4406,13 @@ static void rgui_set_texture(void)
    unsigned fb_width, fb_height;
    settings_t *settings = config_get_ptr();
 
-   if (!menu_display_get_framebuffer_dirty_flag())
+   if (!gfx_display_get_framebuffer_dirty_flag())
       return;
 
-   menu_display_get_fb_size(&fb_width, &fb_height,
+   gfx_display_get_fb_size(&fb_width, &fb_height,
          &fb_pitch);
 
-   menu_display_unset_framebuffer_dirty_flag();
+   gfx_display_unset_framebuffer_dirty_flag();
 
    if (settings->uints.menu_rgui_internal_upscale_level == RGUI_UPSCALE_NONE)
    {
@@ -4868,13 +4869,13 @@ static int rgui_environ(enum menu_environ_cb type,
          if (!rgui)
             return -1;
          rgui->mouse_show = true;
-         menu_display_set_framebuffer_dirty_flag();
+         gfx_display_set_framebuffer_dirty_flag();
          break;
       case MENU_ENVIRON_DISABLE_MOUSE_CURSOR:
          if (!rgui)
             return -1;
          rgui->mouse_show = false;
-         menu_display_unset_framebuffer_dirty_flag();
+         gfx_display_unset_framebuffer_dirty_flag();
          break;
       case 0:
       default:
@@ -4891,7 +4892,7 @@ static int rgui_pointer_up(void *data,
       menu_entry_t *entry, unsigned action)
 {
    rgui_t *rgui           = (rgui_t*)data;
-   unsigned header_height = menu_display_get_header_height();
+   unsigned header_height = gfx_display_get_header_height();
    size_t selection       = menu_navigation_get_selection();
    bool show_fs_thumbnail = false;
 
@@ -5167,7 +5168,7 @@ static void rgui_context_reset(void *data, bool is_threaded)
       return;
 
    if (rgui->widgets_supported)
-      menu_display_allocate_white_texture();
+      gfx_display_allocate_white_texture();
    video_driver_monitor_reset();
 }
 
@@ -5179,7 +5180,7 @@ static void rgui_context_destroy(void *data)
       return;
 
    if (rgui->widgets_supported)
-      video_driver_texture_unload(&menu_display_white_texture);
+      video_driver_texture_unload(&gfx_display_white_texture);
 }
 #endif
 
