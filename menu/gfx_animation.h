@@ -14,8 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _MENU_ANIMATION_H
-#define _MENU_ANIMATION_H
+#ifndef _GFX_ANIMATION_H
+#define _GFX_ANIMATION_H
 
 #include <stdint.h>
 #include <stdlib.h>
@@ -34,7 +34,7 @@ typedef void  (*tween_cb)  (void*);
 typedef void (*update_time_cb) (float *dst,
       unsigned width, unsigned height);
 
-enum menu_animation_ctl_state
+enum gfx_animation_ctl_state
 {
    MENU_ANIMATION_CTL_NONE = 0,
    MENU_ANIMATION_CTL_DEINIT,
@@ -42,7 +42,7 @@ enum menu_animation_ctl_state
    MENU_ANIMATION_CTL_SET_ACTIVE
 };
 
-enum menu_animation_easing_type
+enum gfx_animation_easing_type
 {
    /* Linear */
    EASING_LINEAR    = 0,
@@ -93,51 +93,51 @@ enum menu_animation_easing_type
 /* TODO:
  * Add a reverse loop ticker for languages
  * that read right to left */
-enum menu_animation_ticker_type
+enum gfx_animation_ticker_type
 {
    TICKER_TYPE_BOUNCE = 0,
    TICKER_TYPE_LOOP,
    TICKER_TYPE_LAST
 };
 
-typedef uintptr_t menu_animation_ctx_tag;
+typedef uintptr_t gfx_animation_ctx_tag;
 
-typedef struct menu_animation_ctx_subject
+typedef struct gfx_animation_ctx_subject
 {
    size_t count;
    const void *data;
-} menu_animation_ctx_subject_t;
+} gfx_animation_ctx_subject_t;
 
-typedef struct menu_animation_ctx_entry
+typedef struct gfx_animation_ctx_entry
 {
-   enum menu_animation_easing_type easing_enum;
+   enum gfx_animation_easing_type easing_enum;
    uintptr_t tag;
    float duration;
    float target_value;
    float *subject;
    tween_cb cb;
    void *userdata;
-} menu_animation_ctx_entry_t;
+} gfx_animation_ctx_entry_t;
 
-typedef struct menu_animation_ctx_ticker
+typedef struct gfx_animation_ctx_ticker
 {
    bool selected;
    size_t len;
    uint64_t idx;
-   enum menu_animation_ticker_type type_enum;
+   enum gfx_animation_ticker_type type_enum;
    char *s;
    const char *str;
    const char *spacer;
-} menu_animation_ctx_ticker_t;
+} gfx_animation_ctx_ticker_t;
 
-typedef struct menu_animation_ctx_ticker_smooth
+typedef struct gfx_animation_ctx_ticker_smooth
 {
    bool selected;
    font_data_t *font;
    float font_scale;
    unsigned glyph_width; /* Fallback if font == NULL */
    unsigned field_width;
-   enum menu_animation_ticker_type type_enum;
+   enum gfx_animation_ticker_type type_enum;
    uint64_t idx;
    const char *src_str;
    const char *spacer;
@@ -145,27 +145,27 @@ typedef struct menu_animation_ctx_ticker_smooth
    size_t dst_str_len;
    unsigned *dst_str_width; /* May be set to NULL (RGUI + XMB do not require this info) */
    unsigned *x_offset;
-} menu_animation_ctx_ticker_smooth_t;
+} gfx_animation_ctx_ticker_smooth_t;
 
-typedef struct menu_animation_ctx_line_ticker
+typedef struct gfx_animation_ctx_line_ticker
 {
    size_t line_len;
    size_t max_lines;
    uint64_t idx;
-   enum menu_animation_ticker_type type_enum;
+   enum gfx_animation_ticker_type type_enum;
    char *s;
    size_t len;
    const char *str;
-} menu_animation_ctx_line_ticker_t;
+} gfx_animation_ctx_line_ticker_t;
 
-typedef struct menu_animation_ctx_line_ticker_smooth
+typedef struct gfx_animation_ctx_line_ticker_smooth
 {
    bool fade_enabled;
    font_data_t *font;
    float font_scale;
    unsigned field_width;
    unsigned field_height;
-   enum menu_animation_ticker_type type_enum;
+   enum gfx_animation_ticker_type type_enum;
    uint64_t idx;
    const char *src_str;
    char *dst_str;
@@ -179,7 +179,7 @@ typedef struct menu_animation_ctx_line_ticker_smooth
    size_t bottom_fade_str_len;
    float *bottom_fade_y_offset;
    float *bottom_fade_alpha;
-} menu_animation_ctx_line_ticker_smooth_t;
+} gfx_animation_ctx_line_ticker_smooth_t;
 
 typedef float menu_timer_t;
 
@@ -193,50 +193,50 @@ typedef struct menu_timer_ctx_entry
 typedef struct menu_delayed_animation
 {
    menu_timer_t timer;
-   menu_animation_ctx_entry_t entry;
+   gfx_animation_ctx_entry_t entry;
 } menu_delayed_animation_t;
 
 void menu_timer_start(menu_timer_t *timer, menu_timer_ctx_entry_t *timer_entry);
 
 void menu_timer_kill(menu_timer_t *timer);
 
-bool menu_animation_update(
+bool gfx_animation_update(
       bool menu_timedate_enable,
       float menu_ticker_speed,
       unsigned video_width,
       unsigned video_height);
 
-bool menu_animation_ticker(menu_animation_ctx_ticker_t *ticker);
+bool gfx_animation_ticker(gfx_animation_ctx_ticker_t *ticker);
 
-bool menu_animation_ticker_smooth(menu_animation_ctx_ticker_smooth_t *ticker);
+bool gfx_animation_ticker_smooth(gfx_animation_ctx_ticker_smooth_t *ticker);
 
-bool menu_animation_line_ticker(menu_animation_ctx_line_ticker_t *line_ticker);
+bool gfx_animation_line_ticker(gfx_animation_ctx_line_ticker_t *line_ticker);
 
-bool menu_animation_line_ticker_smooth(menu_animation_ctx_line_ticker_smooth_t *line_ticker);
+bool gfx_animation_line_ticker_smooth(gfx_animation_ctx_line_ticker_smooth_t *line_ticker);
 
-float menu_animation_get_delta_time(void);
+float gfx_animation_get_delta_time(void);
 
-bool menu_animation_is_active(void);
+bool gfx_animation_is_active(void);
 
-bool menu_animation_kill_by_tag(menu_animation_ctx_tag *tag);
+bool gfx_animation_kill_by_tag(gfx_animation_ctx_tag *tag);
 
-void menu_animation_kill_by_subject(menu_animation_ctx_subject_t *subject);
+void gfx_animation_kill_by_subject(gfx_animation_ctx_subject_t *subject);
 
-bool menu_animation_push(menu_animation_ctx_entry_t *entry);
+bool gfx_animation_push(gfx_animation_ctx_entry_t *entry);
 
-void menu_animation_push_delayed(unsigned delay, menu_animation_ctx_entry_t *entry);
+void gfx_animation_push_delayed(unsigned delay, gfx_animation_ctx_entry_t *entry);
 
-bool menu_animation_ctl(enum menu_animation_ctl_state state, void *data);
+bool gfx_animation_ctl(enum gfx_animation_ctl_state state, void *data);
 
-uint64_t menu_animation_get_ticker_idx(void);
+uint64_t gfx_animation_get_ticker_idx(void);
 
-uint64_t menu_animation_get_ticker_slow_idx(void);
+uint64_t gfx_animation_get_ticker_slow_idx(void);
 
-uint64_t menu_animation_get_ticker_pixel_idx(void);
+uint64_t gfx_animation_get_ticker_pixel_idx(void);
 
-void menu_animation_set_update_time_cb(update_time_cb cb);
+void gfx_animation_set_update_time_cb(update_time_cb cb);
 
-void menu_animation_unset_update_time_cb(void);
+void gfx_animation_unset_update_time_cb(void);
 
 RETRO_END_DECLS
 

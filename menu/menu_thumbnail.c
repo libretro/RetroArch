@@ -29,7 +29,7 @@
 #include <file/file_path.h>
 #include <string/stdstring.h>
 
-#include "menu_animation.h"
+#include "gfx_animation.h"
 #include "menu_driver.h"
 
 #include "menu_thumbnail.h"
@@ -108,9 +108,9 @@ float menu_thumbnail_get_fade_duration(void)
 static void menu_thumbnail_handle_upload(
       retro_task_t *task, void *task_data, void *user_data, const char *err)
 {
+   gfx_animation_ctx_entry_t animation_entry;
    struct texture_image *img           = (struct texture_image*)task_data;
    menu_thumbnail_tag_t *thumbnail_tag = (menu_thumbnail_tag_t*)user_data;
-   menu_animation_ctx_entry_t animation_entry;
 
    /* Sanity check */
    if (!thumbnail_tag)
@@ -168,7 +168,7 @@ static void menu_thumbnail_handle_upload(
       animation_entry.cb               = NULL;
       animation_entry.userdata         = NULL;
 
-      menu_animation_push(&animation_entry);
+      gfx_animation_push(&animation_entry);
    }
    else
       thumbnail_tag->thumbnail->alpha  = 1.0f;
@@ -359,13 +359,13 @@ void menu_thumbnail_reset(menu_thumbnail_t *thumbnail)
 
    if (thumbnail->texture)
    {
-      menu_animation_ctx_tag tag = (uintptr_t)&thumbnail->alpha;
+      gfx_animation_ctx_tag tag = (uintptr_t)&thumbnail->alpha;
 
       /* Unload texture */
       video_driver_texture_unload(&thumbnail->texture);
 
       /* Ensure any 'fade in' animation is killed */
-      menu_animation_kill_by_tag(&tag);
+      gfx_animation_kill_by_tag(&tag);
    }
 
    /* Reset all parameters */
@@ -409,7 +409,7 @@ void menu_thumbnail_process_stream(
       if (thumbnail->status == MENU_THUMBNAIL_STATUS_UNKNOWN)
       {
          /* Check if stream delay timer has elapsed */
-         thumbnail->delay_timer += menu_animation_get_delta_time();
+         thumbnail->delay_timer += gfx_animation_get_delta_time();
 
          if (thumbnail->delay_timer > menu_thumbnail_stream_delay)
          {
@@ -485,7 +485,7 @@ void menu_thumbnail_process_streams(
       if (process_right || process_left)
       {
          /* Check if stream delay timer has elapsed */
-         float delta_time   = menu_animation_get_delta_time();
+         float delta_time   = gfx_animation_get_delta_time();
          bool request_right = false;
          bool request_left  = false;
 

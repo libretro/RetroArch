@@ -52,7 +52,7 @@
       "ozone_display.h": "c",
       "verbosity.h": "c",
       "retroarch.h": "c",
-      "menu_animation.h": "c",
+      "gfx_animation.h": "c",
       "netplay.h": "c",
       "scaler.h": "c",
       "deque": "c",

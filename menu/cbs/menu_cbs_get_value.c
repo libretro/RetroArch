@@ -23,7 +23,7 @@
 #endif
 
 #include "../menu_driver.h"
-#include "../menu_animation.h"
+#include "../gfx_animation.h"
 #include "../menu_cbs.h"
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 #include "../menu_shader.h"
@@ -647,7 +647,7 @@ static void general_disp_set_label_perf_counters(
 
    menu_action_setting_disp_set_label_perf_counters_common(
          counters, offset, s, len);
-   menu_animation_ctl(MENU_ANIMATION_CTL_SET_ACTIVE, NULL);
+   gfx_animation_ctl(MENU_ANIMATION_CTL_SET_ACTIVE, NULL);
 }
 
 static void menu_action_setting_disp_set_label_perf_counters(

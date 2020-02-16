@@ -42,7 +42,7 @@
 #include "menu_generic.h"
 
 #include "../menu_driver.h"
-#include "../menu_animation.h"
+#include "../gfx_animation.h"
 #include "../menu_entries.h"
 #include "../menu_input.h"
 #include "../menu_thumbnail_path.h"
@@ -1205,7 +1205,7 @@ static void xmb_selection_pointer_changed(
       xmb_handle_t *xmb, bool allow_animations)
 {
    unsigned i, end, height;
-   menu_animation_ctx_tag tag;
+   gfx_animation_ctx_tag tag;
    menu_entry_t entry;
    size_t num                 = 0;
    int threshold              = 0;
@@ -1233,7 +1233,7 @@ static void xmb_selection_pointer_changed(
 
    tag       = (uintptr_t)selection_buf;
 
-   menu_animation_kill_by_tag(&tag);
+   gfx_animation_kill_by_tag(&tag);
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_START, &num);
 
    for (i = 0; i < end; i++)
@@ -1324,7 +1324,7 @@ static void xmb_selection_pointer_changed(
          settings_t *settings = config_get_ptr();
 
          /* Move up/down animation */
-         menu_animation_ctx_entry_t anim_entry;
+         gfx_animation_ctx_entry_t anim_entry;
 
          anim_entry.target_value = ia;
          anim_entry.subject      = &node->alpha;
@@ -1343,21 +1343,21 @@ static void xmb_selection_pointer_changed(
                break;
          }
 
-         menu_animation_push(&anim_entry);
+         gfx_animation_push(&anim_entry);
 
          anim_entry.subject      = &node->label_alpha;
 
-         menu_animation_push(&anim_entry);
+         gfx_animation_push(&anim_entry);
 
          anim_entry.target_value = iz;
          anim_entry.subject      = &node->zoom;
 
-         menu_animation_push(&anim_entry);
+         gfx_animation_push(&anim_entry);
 
          anim_entry.target_value = iy;
          anim_entry.subject      = &node->y;
 
-         menu_animation_push(&anim_entry);
+         gfx_animation_push(&anim_entry);
       }
    }
 }
@@ -1398,7 +1398,7 @@ static void xmb_list_open_old(xmb_handle_t *xmb,
       }
       else
       {
-         menu_animation_ctx_entry_t anim_entry;
+         gfx_animation_ctx_entry_t anim_entry;
 
          anim_entry.duration     = XMB_DELAY;
          anim_entry.target_value = ia;
@@ -1407,17 +1407,17 @@ static void xmb_list_open_old(xmb_handle_t *xmb,
          anim_entry.tag          = (uintptr_t)list;
          anim_entry.cb           = NULL;
 
-         menu_animation_push(&anim_entry);
+         gfx_animation_push(&anim_entry);
 
          anim_entry.target_value = 0;
          anim_entry.subject      = &node->label_alpha;
 
-         menu_animation_push(&anim_entry);
+         gfx_animation_push(&anim_entry);
 
          anim_entry.target_value = xmb->icon_size * dir * -2;
          anim_entry.subject      = &node->x;
 
-         menu_animation_push(&anim_entry);
+         gfx_animation_push(&anim_entry);
       }
    }
 }
@@ -1476,7 +1476,7 @@ static void xmb_list_open_new(xmb_handle_t *xmb,
       }
       else
       {
-         menu_animation_ctx_entry_t anim_entry;
+         gfx_animation_ctx_entry_t anim_entry;
 
          anim_entry.duration     = XMB_DELAY;
          anim_entry.target_value = ia;
@@ -1485,16 +1485,16 @@ static void xmb_list_open_new(xmb_handle_t *xmb,
          anim_entry.tag          = (uintptr_t)list;
          anim_entry.cb           = NULL;
 
-         menu_animation_push(&anim_entry);
+         gfx_animation_push(&anim_entry);
 
          anim_entry.subject      = &node->label_alpha;
 
-         menu_animation_push(&anim_entry);
+         gfx_animation_push(&anim_entry);
 
          anim_entry.target_value = 0;
          anim_entry.subject      = &node->x;
 
-         menu_animation_push(&anim_entry);
+         gfx_animation_push(&anim_entry);
       }
    }
 
@@ -1565,7 +1565,7 @@ static xmb_node_t* xmb_get_userdata_from_horizontal_list(
 static void xmb_push_animations(xmb_node_t *node,
       uintptr_t tag, float ia, float ix)
 {
-   menu_animation_ctx_entry_t anim_entry;
+   gfx_animation_ctx_entry_t anim_entry;
 
    anim_entry.duration     = XMB_DELAY;
    anim_entry.target_value = ia;
@@ -1574,16 +1574,16 @@ static void xmb_push_animations(xmb_node_t *node,
    anim_entry.tag          = tag;
    anim_entry.cb           = NULL;
 
-   menu_animation_push(&anim_entry);
+   gfx_animation_push(&anim_entry);
 
    anim_entry.subject      = &node->label_alpha;
 
-   menu_animation_push(&anim_entry);
+   gfx_animation_push(&anim_entry);
 
    anim_entry.target_value = ix;
    anim_entry.subject      = &node->x;
 
-   menu_animation_push(&anim_entry);
+   gfx_animation_push(&anim_entry);
 }
 
 static void xmb_list_switch_old(xmb_handle_t *xmb,
@@ -1762,7 +1762,7 @@ static void xmb_list_switch_horizontal_list(xmb_handle_t *xmb)
 
    for (j = 0; j <= list_size; j++)
    {
-      menu_animation_ctx_entry_t entry;
+      gfx_animation_ctx_entry_t entry;
       settings_t *settings        = config_get_ptr();
       float ia                    = xmb->categories_passive_alpha;
       float iz                    = xmb->categories_passive_zoom;
@@ -1801,18 +1801,18 @@ static void xmb_list_switch_horizontal_list(xmb_handle_t *xmb)
             break;
       }
 
-      menu_animation_push(&entry);
+      gfx_animation_push(&entry);
 
       entry.target_value = iz;
       entry.subject      = &node->zoom;
 
-      menu_animation_push(&entry);
+      gfx_animation_push(&entry);
    }
 }
 
 static void xmb_list_switch(xmb_handle_t *xmb)
 {
-   menu_animation_ctx_entry_t anim_entry;
+   gfx_animation_ctx_entry_t anim_entry;
    int dir                    = -1;
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
    size_t selection           = menu_navigation_get_selection();
@@ -1835,7 +1835,7 @@ static void xmb_list_switch(xmb_handle_t *xmb)
    anim_entry.cb           = NULL;
 
    if (anim_entry.subject)
-      menu_animation_push(&anim_entry);
+      gfx_animation_push(&anim_entry);
 
    dir = -1;
    if (xmb->categories_selection_ptr > xmb->categories_selection_ptr_old)
@@ -1870,7 +1870,7 @@ static void xmb_list_open_horizontal_list(xmb_handle_t *xmb)
 
    for (j = 0; j <= list_size; j++)
    {
-      menu_animation_ctx_entry_t anim_entry;
+      gfx_animation_ctx_entry_t anim_entry;
       float ia          = 0;
       xmb_node_t *node  = xmb_get_node(xmb, j);
 
@@ -1891,7 +1891,7 @@ static void xmb_list_open_horizontal_list(xmb_handle_t *xmb)
       anim_entry.cb           = NULL;
 
       if (anim_entry.subject)
-         menu_animation_push(&anim_entry);
+         gfx_animation_push(&anim_entry);
    }
 }
 
@@ -2150,7 +2150,7 @@ static int xmb_environ(enum menu_environ_cb type, void *data, void *userdata)
 
 static void xmb_list_open(xmb_handle_t *xmb)
 {
-   menu_animation_ctx_entry_t entry;
+   gfx_animation_ctx_entry_t entry;
 
    settings_t *settings       = config_get_ptr();
    int                    dir = 0;
@@ -2205,12 +2205,12 @@ static void xmb_list_open(xmb_handle_t *xmb)
    {
       case 1:
       case 2:
-         menu_animation_push(&entry);
+         gfx_animation_push(&entry);
 
          entry.target_value = xmb->depth - 1;
          entry.subject      = &xmb->textures_arrow_alpha;
 
-         menu_animation_push(&entry);
+         gfx_animation_push(&entry);
          break;
    }
 
@@ -2848,8 +2848,8 @@ static int xmb_draw_item(
       )
 {
    float icon_x, icon_y, label_offset;
-   menu_animation_ctx_ticker_t ticker;
-   menu_animation_ctx_ticker_smooth_t ticker_smooth;
+   gfx_animation_ctx_ticker_t ticker;
+   gfx_animation_ctx_ticker_smooth_t ticker_smooth;
    char tmp[255];
    unsigned ticker_x_offset          = 0;
    const char *ticker_str            = NULL;
@@ -2867,18 +2867,18 @@ static int xmb_draw_item(
    /* Initial ticker configuration */
    if (use_smooth_ticker)
    {
-      ticker_smooth.idx           = menu_animation_get_ticker_pixel_idx();
+      ticker_smooth.idx           = gfx_animation_get_ticker_pixel_idx();
       ticker_smooth.font          = xmb->font;
       ticker_smooth.font_scale    = 1.0f;
-      ticker_smooth.type_enum     = (enum menu_animation_ticker_type)settings->uints.menu_ticker_type;
+      ticker_smooth.type_enum     = (enum gfx_animation_ticker_type)settings->uints.menu_ticker_type;
       ticker_smooth.spacer        = NULL;
       ticker_smooth.x_offset      = &ticker_x_offset;
       ticker_smooth.dst_str_width = NULL;
    }
    else
    {
-      ticker.idx       = menu_animation_get_ticker_idx();
-      ticker.type_enum = (enum menu_animation_ticker_type)settings->uints.menu_ticker_type;
+      ticker.idx       = gfx_animation_get_ticker_idx();
+      ticker.type_enum = (enum gfx_animation_ticker_type)settings->uints.menu_ticker_type;
       ticker.spacer    = NULL;
    }
 
@@ -3011,7 +3011,7 @@ static int xmb_draw_item(
       ticker_smooth.dst_str_len = sizeof(tmp);
 
       if (ticker_smooth.src_str)
-         menu_animation_ticker_smooth(&ticker_smooth);
+         gfx_animation_ticker_smooth(&ticker_smooth);
    }
    else
    {
@@ -3021,7 +3021,7 @@ static int xmb_draw_item(
       ticker.selected = (i == current);
 
       if (ticker.str)
-         menu_animation_ticker(&ticker);
+         gfx_animation_ticker(&ticker);
    }
 
    label_offset = xmb->margins_label_top;
@@ -3034,8 +3034,8 @@ static int xmb_draw_item(
          char entry_sublabel[MENU_SUBLABEL_MAX_LENGTH];
          char entry_sublabel_top_fade[MENU_SUBLABEL_MAX_LENGTH >> 2];
          char entry_sublabel_bottom_fade[MENU_SUBLABEL_MAX_LENGTH >> 2];
-         menu_animation_ctx_line_ticker_t line_ticker;
-         menu_animation_ctx_line_ticker_smooth_t line_ticker_smooth;
+         gfx_animation_ctx_line_ticker_t line_ticker;
+         gfx_animation_ctx_line_ticker_smooth_t line_ticker_smooth;
          float ticker_y_offset             = 0.0f;
          float ticker_top_fade_y_offset    = 0.0f;
          float ticker_bottom_fade_y_offset = 0.0f;
@@ -3053,8 +3053,8 @@ static int xmb_draw_item(
          if (use_smooth_ticker)
          {
             line_ticker_smooth.fade_enabled         = true;
-            line_ticker_smooth.type_enum            = (enum menu_animation_ticker_type)settings->uints.menu_ticker_type;
-            line_ticker_smooth.idx                  = menu_animation_get_ticker_pixel_idx();
+            line_ticker_smooth.type_enum            = (enum gfx_animation_ticker_type)settings->uints.menu_ticker_type;
+            line_ticker_smooth.idx                  = gfx_animation_get_ticker_pixel_idx();
 
             line_ticker_smooth.font                 = xmb->font2;
             line_ticker_smooth.font_scale           = 1.0f;
@@ -3082,12 +3082,12 @@ static int xmb_draw_item(
             line_ticker_smooth.bottom_fade_y_offset = &ticker_bottom_fade_y_offset;
             line_ticker_smooth.bottom_fade_alpha    = &ticker_bottom_fade_alpha;
 
-            menu_animation_line_ticker_smooth(&line_ticker_smooth);
+            gfx_animation_line_ticker_smooth(&line_ticker_smooth);
          }
          else
          {
-            line_ticker.type_enum = (enum menu_animation_ticker_type)settings->uints.menu_ticker_type;
-            line_ticker.idx       = menu_animation_get_ticker_idx();
+            line_ticker.type_enum = (enum gfx_animation_ticker_type)settings->uints.menu_ticker_type;
+            line_ticker.idx       = gfx_animation_get_ticker_idx();
 
             line_ticker.line_len  = (size_t)(line_ticker_width);
             /* Note: max_lines should be calculated at runtime,
@@ -3100,7 +3100,7 @@ static int xmb_draw_item(
             line_ticker.len       = sizeof(entry_sublabel);
             line_ticker.str       = entry->sublabel;
 
-            menu_animation_line_ticker(&line_ticker);
+            gfx_animation_line_ticker(&line_ticker);
          }
 
          label_offset = - xmb->margins_label_top;
@@ -3149,7 +3149,7 @@ static int xmb_draw_item(
       ticker_smooth.dst_str_len = sizeof(tmp);
 
       if (!string_is_empty(entry->value))
-         menu_animation_ticker_smooth(&ticker_smooth);
+         gfx_animation_ticker_smooth(&ticker_smooth);
    }
    else
    {
@@ -3159,7 +3159,7 @@ static int xmb_draw_item(
       ticker.str      = entry->value;
 
       if (!string_is_empty(entry->value))
-         menu_animation_ticker(&ticker);
+         gfx_animation_ticker(&ticker);
    }
 
    if (do_draw_text)
@@ -3455,7 +3455,7 @@ static void xmb_render(void *data,
       menu_entries_ctl(MENU_ENTRIES_CTL_SET_START, &i);
    }
 
-   menu_animation_ctl(MENU_ANIMATION_CTL_CLEAR_ACTIVE, NULL);
+   gfx_animation_ctl(MENU_ANIMATION_CTL_CLEAR_ACTIVE, NULL);
 }
 
 static bool xmb_shader_pipeline_active(video_frame_info_t *video_info)
@@ -3616,15 +3616,15 @@ static void xmb_draw_dark_layer(
 static void xmb_hide_fullscreen_thumbnails(
       xmb_handle_t *xmb, bool animate)
 {
-   menu_animation_ctx_tag alpha_tag = (uintptr_t)&xmb->fullscreen_thumbnail_alpha;
+   gfx_animation_ctx_tag alpha_tag = (uintptr_t)&xmb->fullscreen_thumbnail_alpha;
 
    /* Kill any existing fade in/out animations */
-   menu_animation_kill_by_tag(&alpha_tag);
+   gfx_animation_kill_by_tag(&alpha_tag);
 
    /* Check whether animations are enabled */
    if (animate && (xmb->fullscreen_thumbnail_alpha > 0.0f))
    {
-      menu_animation_ctx_entry_t animation_entry;
+      gfx_animation_ctx_entry_t animation_entry;
 
       /* Configure fade out animation */
       animation_entry.easing_enum  = EASING_OUT_QUAD;
@@ -3636,7 +3636,7 @@ static void xmb_hide_fullscreen_thumbnails(
       animation_entry.userdata     = NULL;
 
       /* Push animation */
-      menu_animation_push(&animation_entry);
+      gfx_animation_push(&animation_entry);
    }
    /* No animation - just set thumbnail alpha to zero */
    else
@@ -3653,8 +3653,8 @@ static void xmb_show_fullscreen_thumbnails(
 {
    const char *core_name            = NULL;
    const char *thumbnail_label      = NULL;
-   menu_animation_ctx_tag alpha_tag = (uintptr_t)&xmb->fullscreen_thumbnail_alpha;
-   menu_animation_ctx_entry_t animation_entry;
+   gfx_animation_ctx_tag alpha_tag = (uintptr_t)&xmb->fullscreen_thumbnail_alpha;
+   gfx_animation_ctx_entry_t animation_entry;
    menu_entry_t selected_entry;
 
    /* Before showing fullscreen thumbnails, must
@@ -3739,7 +3739,7 @@ static void xmb_show_fullscreen_thumbnails(
    animation_entry.userdata     = NULL;
 
    /* Push animation */
-   menu_animation_push(&animation_entry);
+   gfx_animation_push(&animation_entry);
 
    /* Enable fullscreen thumbnails */
    xmb->fullscreen_thumbnail_selection = selection;
@@ -3991,15 +3991,15 @@ static void xmb_draw_fullscreen_thumbnails(
             int title_x               = 0;
             unsigned ticker_x_offset  = 0;
             unsigned ticker_str_width = 0;
-            menu_animation_ctx_ticker_smooth_t ticker_smooth;
+            gfx_animation_ctx_ticker_smooth_t ticker_smooth;
             char title_buf[255];
 
             title_buf[0] = '\0';
 
-            ticker_smooth.idx           = menu_animation_get_ticker_pixel_idx();
+            ticker_smooth.idx           = gfx_animation_get_ticker_pixel_idx();
             ticker_smooth.font          = xmb->font;
             ticker_smooth.font_scale    = 1.0f;
-            ticker_smooth.type_enum     = (enum menu_animation_ticker_type)settings->uints.menu_ticker_type;
+            ticker_smooth.type_enum     = (enum gfx_animation_ticker_type)settings->uints.menu_ticker_type;
             ticker_smooth.spacer        = NULL;
             ticker_smooth.x_offset      = &ticker_x_offset;
             ticker_smooth.dst_str_width = &ticker_str_width;
@@ -4010,7 +4010,7 @@ static void xmb_draw_fullscreen_thumbnails(
             ticker_smooth.dst_str_len   = sizeof(title_buf);
 
             /* If ticker is not active, centre the title text */
-            if (!menu_animation_ticker_smooth(&ticker_smooth))
+            if (!gfx_animation_ticker_smooth(&ticker_smooth))
                title_x = (view_width - (int)ticker_str_width) >> 1;
 
             title_x += (int)ticker_x_offset;
@@ -5789,9 +5789,9 @@ static void xmb_list_insert(void *userdata,
 
 static void xmb_list_clear(file_list_t *list)
 {
-   menu_animation_ctx_tag tag = (uintptr_t)list;
+   gfx_animation_ctx_tag tag = (uintptr_t)list;
 
-   menu_animation_kill_by_tag(&tag);
+   gfx_animation_kill_by_tag(&tag);
 
    xmb_free_list_nodes(list, false);
 }
@@ -5805,9 +5805,9 @@ static void xmb_list_deep_copy(const file_list_t *src, file_list_t *dst,
       size_t first, size_t last)
 {
    size_t i, j = 0;
-   menu_animation_ctx_tag tag = (uintptr_t)dst;
+   gfx_animation_ctx_tag tag = (uintptr_t)dst;
 
-   menu_animation_kill_by_tag(&tag);
+   gfx_animation_kill_by_tag(&tag);
 
    xmb_free_list_nodes(dst, true);
 
@@ -6018,7 +6018,7 @@ static void xmb_context_destroy(void *data)
 
 static void xmb_toggle(void *userdata, bool menu_on)
 {
-   menu_animation_ctx_entry_t entry;
+   gfx_animation_ctx_entry_t entry;
    bool tmp             = false;
    xmb_handle_t *xmb    = (xmb_handle_t*)userdata;
 
@@ -6046,7 +6046,7 @@ static void xmb_toggle(void *userdata, bool menu_on)
    entry.tag          = -1;
    entry.cb           = NULL;
 
-   menu_animation_push(&entry);
+   gfx_animation_push(&entry);
 
    tmp = !menu_entries_ctl(MENU_ENTRIES_CTL_NEEDS_REFRESH, NULL);
 

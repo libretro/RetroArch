@@ -133,7 +133,7 @@
 
 #ifdef HAVE_MENU
 #include "menu/menu_driver.h"
-#include "menu/menu_animation.h"
+#include "menu/gfx_animation.h"
 #include "menu/menu_input.h"
 #include "menu/widgets/menu_dialog.h"
 #include "menu/widgets/menu_input_bind_dialog.h"
@@ -2637,7 +2637,7 @@ extern void libnx_apply_overclock(void);
 
 #ifdef HAVE_MENU_WIDGETS
 static bool menu_widgets_inited                 = false;
-menu_animation_ctx_tag menu_widgets_generic_tag = (uintptr_t) &menu_widgets_inited;
+gfx_animation_ctx_tag menu_widgets_generic_tag = (uintptr_t) &menu_widgets_inited;
 
 /* Status icons */
 static bool menu_widgets_paused              = false;
@@ -14832,7 +14832,7 @@ static unsigned menu_event(
       menu_driver_ctl(MENU_NAVIGATION_CTL_SET_SCROLL_ACCEL,
             &new_scroll_accel);
 
-   delay_count += menu_animation_get_delta_time();
+   delay_count += gfx_animation_get_delta_time();
 
    if (display_kb)
    {
@@ -27279,7 +27279,7 @@ static enum runloop_state runloop_check_state(void)
    }
 
 #if defined(HAVE_MENU)
-   menu_animation_update(
+   gfx_animation_update(
          settings->bools.menu_timedate_enable,
          settings->floats.menu_ticker_speed,
          video_driver_width, video_driver_height);

@@ -27,7 +27,7 @@
 #include <file/file_path.h>
 #include <formats/image.h>
 
-#include "../../menu_animation.h"
+#include "../../gfx_animation.h"
 
 #include "../../../configuration.h"
 
@@ -109,8 +109,8 @@ void ozone_draw_sidebar(ozone_handle_t *ozone, video_frame_info_t *video_info)
    int entry_width;
    unsigned i, sidebar_height, selection_y, selection_old_y, horizontal_list_size;
    char console_title[255];
-   menu_animation_ctx_ticker_t ticker;
-   menu_animation_ctx_ticker_smooth_t ticker_smooth;
+   gfx_animation_ctx_ticker_t ticker;
+   gfx_animation_ctx_ticker_smooth_t ticker_smooth;
    static const char* const ticker_spacer = OZONE_TICKER_SPACER;
    unsigned ticker_x_offset = 0;
    settings_t *settings = config_get_ptr();
@@ -121,19 +121,19 @@ void ozone_draw_sidebar(ozone_handle_t *ozone, video_frame_info_t *video_info)
    /* Initial ticker configuration */
    if (use_smooth_ticker)
    {
-      ticker_smooth.idx           = menu_animation_get_ticker_pixel_idx();
+      ticker_smooth.idx           = gfx_animation_get_ticker_pixel_idx();
       ticker_smooth.font          = ozone->fonts.sidebar;
       ticker_smooth.font_scale    = 1.0f;
-      ticker_smooth.type_enum     = (enum menu_animation_ticker_type)settings->uints.menu_ticker_type;
+      ticker_smooth.type_enum     = (enum gfx_animation_ticker_type)settings->uints.menu_ticker_type;
       ticker_smooth.spacer        = ticker_spacer;
       ticker_smooth.x_offset      = &ticker_x_offset;
       ticker_smooth.dst_str_width = NULL;
    }
    else
    {
-      ticker.idx       = menu_animation_get_ticker_idx();
-      ticker.type_enum = (enum menu_animation_ticker_type)settings->uints.menu_ticker_type;
-      ticker.spacer    = ticker_spacer;
+      ticker.idx                  = gfx_animation_get_ticker_idx();
+      ticker.type_enum            = (enum gfx_animation_ticker_type)settings->uints.menu_ticker_type;
+      ticker.spacer               = ticker_spacer;
    }
 
    selection_y          = 0;
@@ -259,7 +259,7 @@ void ozone_draw_sidebar(ozone_handle_t *ozone, video_frame_info_t *video_info)
             ticker_smooth.dst_str     = console_title;
             ticker_smooth.dst_str_len = sizeof(console_title);
 
-            menu_animation_ticker_smooth(&ticker_smooth);
+            gfx_animation_ticker_smooth(&ticker_smooth);
          }
          else
          {
@@ -268,7 +268,7 @@ void ozone_draw_sidebar(ozone_handle_t *ozone, video_frame_info_t *video_info)
             ticker.selected = selected;
             ticker.str      = node->console_name;
 
-            menu_animation_ticker(&ticker);
+            gfx_animation_ticker(&ticker);
          }
 
          ozone_draw_text(video_info, ozone, console_title, ticker_x_offset + ozone->sidebar_offset + ozone->dimensions.sidebar_padding_horizontal + ozone->dimensions.sidebar_entry_icon_padding * 2 + ozone->dimensions.sidebar_entry_icon_size,
@@ -290,7 +290,7 @@ console_iterate:
 
 void ozone_go_to_sidebar(ozone_handle_t *ozone, uintptr_t tag)
 {
-   struct menu_animation_ctx_entry entry;
+   struct gfx_animation_ctx_entry entry;
 
    ozone->selection_old           = ozone->selection;
    ozone->cursor_in_sidebar_old   = ozone->cursor_in_sidebar;
@@ -307,14 +307,14 @@ void ozone_go_to_sidebar(ozone_handle_t *ozone, uintptr_t tag)
    entry.target_value   = 1.0f;
    entry.userdata       = NULL;
 
-   menu_animation_push(&entry);
+   gfx_animation_push(&entry);
 
    ozone_sidebar_update_collapse(ozone, true);
 }
 
 void ozone_leave_sidebar(ozone_handle_t *ozone, uintptr_t tag)
 {
-   struct menu_animation_ctx_entry entry;
+   struct gfx_animation_ctx_entry entry;
 
    if (ozone->empty_playlist)
       return;
@@ -336,7 +336,7 @@ void ozone_leave_sidebar(ozone_handle_t *ozone, uintptr_t tag)
    entry.target_value   = 1.0f;
    entry.userdata       = NULL;
 
-   menu_animation_push(&entry);
+   gfx_animation_push(&entry);
 
    ozone_sidebar_update_collapse(ozone, true);
 }
@@ -365,18 +365,17 @@ static void ozone_sidebar_collapse_end(void *userdata)
 void ozone_sidebar_update_collapse(ozone_handle_t *ozone, bool allow_animation)
 {
    /* Collapse sidebar if needed */
-   settings_t *settings = config_get_ptr();
-   bool is_playlist = ozone_is_playlist(ozone, false);
-   menu_animation_ctx_tag tag = (uintptr_t) &ozone->sidebar_collapsed;
-
-   struct menu_animation_ctx_entry entry;
+   struct gfx_animation_ctx_entry entry;
+   settings_t *settings      = config_get_ptr();
+   bool is_playlist          = ozone_is_playlist(ozone, false);
+   gfx_animation_ctx_tag tag = (uintptr_t) &ozone->sidebar_collapsed;
 
    entry.easing_enum    = EASING_OUT_QUAD;
    entry.tag            = tag;
    entry.userdata       = ozone;
    entry.duration       = ANIMATION_CURSOR_DURATION;
 
-   menu_animation_kill_by_tag(&tag);
+   gfx_animation_kill_by_tag(&tag);
 
    /* Collapse it */
    if (settings->bools.ozone_collapse_sidebar || (is_playlist && !ozone->cursor_in_sidebar))
@@ -389,13 +388,13 @@ void ozone_sidebar_update_collapse(ozone_handle_t *ozone, bool allow_animation)
          entry.subject        = &ozone->animations.sidebar_text_alpha;
          entry.target_value   = 0.0f;
 
-         menu_animation_push(&entry);
+         gfx_animation_push(&entry);
 
          /* Collapse */
          entry.subject        = &ozone->dimensions.sidebar_width;
          entry.target_value   = ozone->dimensions.sidebar_width_collapsed;
 
-         menu_animation_push(&entry);
+         gfx_animation_push(&entry);
       }
       else
       {
@@ -417,13 +416,13 @@ void ozone_sidebar_update_collapse(ozone_handle_t *ozone, bool allow_animation)
          entry.subject        = &ozone->animations.sidebar_text_alpha;
          entry.target_value   = 1.0f;
 
-         menu_animation_push(&entry);
+         gfx_animation_push(&entry);
 
          /* Collapse */
          entry.subject        = &ozone->dimensions.sidebar_width;
          entry.target_value   = ozone->dimensions.sidebar_width_normal;
 
-         menu_animation_push(&entry);
+         gfx_animation_push(&entry);
       }
       else
       {
@@ -466,10 +465,8 @@ static float ozone_sidebar_get_scroll_y(ozone_handle_t *ozone, unsigned video_he
 void ozone_sidebar_goto(ozone_handle_t *ozone, unsigned new_selection)
 {
    unsigned video_info_height;
-
-   struct menu_animation_ctx_entry entry;
-
-   menu_animation_ctx_tag tag;
+   struct gfx_animation_ctx_entry entry;
+   gfx_animation_ctx_tag tag;
 
    video_driver_get_size(NULL, &video_info_height);
 
@@ -482,7 +479,7 @@ void ozone_sidebar_goto(ozone_handle_t *ozone, unsigned new_selection)
 
       ozone->cursor_in_sidebar_old = ozone->cursor_in_sidebar;
 
-      menu_animation_kill_by_tag(&tag);
+      gfx_animation_kill_by_tag(&tag);
    }
 
    /* Cursor animation */
@@ -496,7 +493,7 @@ void ozone_sidebar_goto(ozone_handle_t *ozone, unsigned new_selection)
    entry.target_value   = 1.0f;
    entry.userdata       = NULL;
 
-   menu_animation_push(&entry);
+   gfx_animation_push(&entry);
 
    /* Scroll animation */
    entry.cb           = NULL;
@@ -507,7 +504,7 @@ void ozone_sidebar_goto(ozone_handle_t *ozone, unsigned new_selection)
    entry.target_value = ozone_sidebar_get_scroll_y(ozone, video_info_height);
    entry.userdata     = NULL;
 
-   menu_animation_push(&entry);
+   gfx_animation_push(&entry);
 
    if (new_selection > ozone->system_tab_end)
    {
@@ -522,18 +519,18 @@ void ozone_sidebar_goto(ozone_handle_t *ozone, unsigned new_selection)
 void ozone_refresh_sidebars(ozone_handle_t *ozone, unsigned video_height)
 {
    settings_t *settings                 = config_get_ptr();
-   menu_animation_ctx_tag collapsed_tag = (uintptr_t)&ozone->sidebar_collapsed;
-   menu_animation_ctx_tag offset_tag    = (uintptr_t)&ozone->sidebar_offset;
-   menu_animation_ctx_tag thumbnail_tag = (uintptr_t)&ozone->show_thumbnail_bar;
-   menu_animation_ctx_tag scroll_tag    = (uintptr_t)ozone;
+   gfx_animation_ctx_tag collapsed_tag  = (uintptr_t)&ozone->sidebar_collapsed;
+   gfx_animation_ctx_tag offset_tag     = (uintptr_t)&ozone->sidebar_offset;
+   gfx_animation_ctx_tag thumbnail_tag  = (uintptr_t)&ozone->show_thumbnail_bar;
+   gfx_animation_ctx_tag scroll_tag     = (uintptr_t)ozone;
    bool is_playlist                     = ozone_is_playlist(ozone, false);
 
    /* Kill any existing animations */
-   menu_animation_kill_by_tag(&collapsed_tag);
-   menu_animation_kill_by_tag(&offset_tag);
-   menu_animation_kill_by_tag(&thumbnail_tag);
+   gfx_animation_kill_by_tag(&collapsed_tag);
+   gfx_animation_kill_by_tag(&offset_tag);
+   gfx_animation_kill_by_tag(&thumbnail_tag);
    if (ozone->depth == 1)
-      menu_animation_kill_by_tag(&scroll_tag);
+      gfx_animation_kill_by_tag(&scroll_tag);
 
    /* Set sidebar width */
    if (settings->bools.ozone_collapse_sidebar || (is_playlist && !ozone->cursor_in_sidebar))

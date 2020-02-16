@@ -1279,7 +1279,7 @@ MENU
 #include "../menu/cbs/menu_cbs_down.c"
 #include "../menu/cbs/menu_cbs_contentlist_switch.c"
 #include "../menu/menu_displaylist.c"
-#include "../menu/menu_animation.c"
+#include "../menu/gfx_animation.c"
 #include "../menu/menu_thumbnail_path.c"
 #include "../menu/menu_thumbnail.c"
 

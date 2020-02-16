@@ -28,7 +28,7 @@
 #include <features/features_cpu.h>
 
 #include "../../menu_input.h"
-#include "../../menu_animation.h"
+#include "../../gfx_animation.h"
 
 #include "../../widgets/menu_osk.h"
 
@@ -36,7 +36,7 @@ static void ozone_cursor_animation_cb(void *userdata);
 
 static void ozone_animate_cursor(ozone_handle_t *ozone, float *dst, float *target)
 {
-   menu_animation_ctx_entry_t entry;
+   gfx_animation_ctx_entry_t entry;
    int i;
 
    entry.easing_enum = EASING_OUT_QUAD;
@@ -57,7 +57,7 @@ static void ozone_animate_cursor(ozone_handle_t *ozone, float *dst, float *targe
       entry.subject        = &dst[i];
       entry.target_value   = target[i];
 
-      menu_animation_push(&entry);
+      gfx_animation_push(&entry);
    }
 }
 
@@ -84,14 +84,14 @@ static void ozone_cursor_animation_cb(void *userdata)
 
 void ozone_restart_cursor_animation(ozone_handle_t *ozone)
 {
-   menu_animation_ctx_tag tag = (uintptr_t) &ozone_default_theme;
+   gfx_animation_ctx_tag tag = (uintptr_t) &ozone_default_theme;
 
    if (!ozone->has_all_assets)
       return;
 
    ozone->theme_dynamic.cursor_state = 1;
    memcpy(ozone->theme_dynamic.cursor_border, ozone->theme->cursor_border_0, sizeof(ozone->theme_dynamic.cursor_border));
-   menu_animation_kill_by_tag(&tag);
+   gfx_animation_kill_by_tag(&tag);
 
    ozone_animate_cursor(ozone, ozone->theme_dynamic.cursor_border, ozone->theme->cursor_border_1);
 }

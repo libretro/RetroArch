@@ -42,7 +42,7 @@
 #include "menu_generic.h"
 
 #include "../menu_driver.h"
-#include "../menu_animation.h"
+#include "../gfx_animation.h"
 #include "../menu_input.h"
 #include "../menu_thumbnail_path.h"
 #include "../menu_thumbnail.h"
@@ -1336,8 +1336,8 @@ typedef struct materialui_handle
     * > Simplifies configuration and
     *   improves performance */
    bool use_smooth_ticker;
-   menu_animation_ctx_ticker_t ticker;
-   menu_animation_ctx_ticker_smooth_t ticker_smooth;
+   gfx_animation_ctx_ticker_t ticker;
+   gfx_animation_ctx_ticker_smooth_t ticker_smooth;
    unsigned ticker_x_offset;
    unsigned ticker_str_width;
 
@@ -2323,7 +2323,7 @@ static void materialui_render(void *data,
 
    if (mui->need_compute)
    {
-      menu_animation_ctx_tag tag = (uintptr_t)&mui->scroll_y;
+      gfx_animation_ctx_tag tag = (uintptr_t)&mui->scroll_y;
 
       if (mui->font_data.list.font && mui->font_data.hint.font)
          materialui_compute_entries_box(mui, width, height, header_height);
@@ -2336,7 +2336,7 @@ static void materialui_render(void *data,
        * mui->need_compute is acted upon. */
 
       /* Kill any existing scroll animation */
-      menu_animation_kill_by_tag(&tag);
+      gfx_animation_kill_by_tag(&tag);
 
       /* Reset scroll acceleration */
       menu_input_set_pointer_y_accel(0.0f);
@@ -2810,7 +2810,7 @@ static void materialui_render_menu_entry_default(
                mui->ticker_smooth.dst_str     = value_buf;
                mui->ticker_smooth.dst_str_len = sizeof(value_buf);
 
-               if (menu_animation_ticker_smooth(&mui->ticker_smooth))
+               if (gfx_animation_ticker_smooth(&mui->ticker_smooth))
                {
                   /* If ticker is active, then value text is effectively
                    * entry_value_width_max pixels wide... */
@@ -2844,7 +2844,7 @@ static void materialui_render_menu_entry_default(
                mui->ticker.len      = entry_value_len;
                mui->ticker.str      = entry_value;
 
-               menu_animation_ticker(&mui->ticker);
+               gfx_animation_ticker(&mui->ticker);
 
                /* Get effective width of value string
                 * > Approximate value - only the smooth ticker
@@ -2927,7 +2927,7 @@ static void materialui_render_menu_entry_default(
             mui->ticker_smooth.dst_str     = label_buf;
             mui->ticker_smooth.dst_str_len = sizeof(label_buf);
 
-            menu_animation_ticker_smooth(&mui->ticker_smooth);
+            gfx_animation_ticker_smooth(&mui->ticker_smooth);
          }
          else
          {
@@ -2936,7 +2936,7 @@ static void materialui_render_menu_entry_default(
             mui->ticker.len      = (size_t)(label_width / mui->font_data.list.glyph_width);
             mui->ticker.str      = entry_label;
 
-            menu_animation_ticker(&mui->ticker);
+            gfx_animation_ticker(&mui->ticker);
          }
 
          /* Draw label string */
@@ -3090,7 +3090,7 @@ static void materialui_render_menu_entry_playlist_list(
             mui->ticker_smooth.dst_str     = label_buf;
             mui->ticker_smooth.dst_str_len = sizeof(label_buf);
 
-            menu_animation_ticker_smooth(&mui->ticker_smooth);
+            gfx_animation_ticker_smooth(&mui->ticker_smooth);
          }
          else
          {
@@ -3099,7 +3099,7 @@ static void materialui_render_menu_entry_playlist_list(
             mui->ticker.len      = (size_t)(usable_width / mui->font_data.list.glyph_width);
             mui->ticker.str      = entry_label;
 
-            menu_animation_ticker(&mui->ticker);
+            gfx_animation_ticker(&mui->ticker);
          }
 
          /* Draw label string */
@@ -3258,7 +3258,7 @@ static void materialui_render_menu_entry_playlist_dual_icon(
             mui->ticker_smooth.dst_str_len = sizeof(label_buf);
 
             /* If ticker is inactive, centre the text */
-            if (!menu_animation_ticker_smooth(&mui->ticker_smooth))
+            if (!gfx_animation_ticker_smooth(&mui->ticker_smooth))
                label_x = (float)(usable_width - mui->ticker_str_width) / 2.0f;
          }
          else
@@ -3269,7 +3269,7 @@ static void materialui_render_menu_entry_playlist_dual_icon(
             mui->ticker.str = entry_label;
 
             /* If ticker is inactive, centre the text */
-            if (!menu_animation_ticker(&mui->ticker))
+            if (!gfx_animation_ticker(&mui->ticker))
             {
                int str_width = (int)(utf8len(label_buf) *
                   mui->font_data.list.glyph_width);
@@ -3655,7 +3655,7 @@ static void materialui_render_entry_touch_feedback(
     * fade out */
    else if (mui->touch_feedback_alpha > 0.0f)
    {
-      mui->touch_feedback_alpha -= (menu_animation_get_delta_time() * 1000.0f) / (float)MENU_INPUT_PRESS_TIME_SHORT;
+      mui->touch_feedback_alpha -= (gfx_animation_get_delta_time() * 1000.0f) / (float)MENU_INPUT_PRESS_TIME_SHORT;
       mui->touch_feedback_alpha = (mui->touch_feedback_alpha < 0.0f) ? 0.0f : mui->touch_feedback_alpha;
    }
 
@@ -3898,7 +3898,7 @@ static void materialui_render_header(
          mui->ticker_smooth.dst_str     = core_title_buf;
          mui->ticker_smooth.dst_str_len = sizeof(core_title_buf);
 
-         menu_animation_ticker_smooth(&mui->ticker_smooth);
+         gfx_animation_ticker_smooth(&mui->ticker_smooth);
       }
       else
       {
@@ -3907,7 +3907,7 @@ static void materialui_render_header(
          mui->ticker.str      = core_title;
          mui->ticker.selected = true;
 
-         menu_animation_ticker(&mui->ticker);
+         gfx_animation_ticker(&mui->ticker);
       }
 
       menu_display_draw_text(mui->font_data.hint.font, core_title_buf,
@@ -4007,7 +4007,7 @@ static void materialui_render_header(
 
       /* If ticker is not active and landscape
        * optimisation is enabled, centre the title text */
-      if (!menu_animation_ticker_smooth(&mui->ticker_smooth))
+      if (!gfx_animation_ticker_smooth(&mui->ticker_smooth))
       {
          if (use_landscape_layout)
          {
@@ -4031,7 +4031,7 @@ static void materialui_render_header(
 
       /* If ticker is not active and landscape
        * optimisation is enabled, centre the title text */
-      if (!menu_animation_ticker(&mui->ticker))
+      if (!gfx_animation_ticker(&mui->ticker))
       {
          if (use_landscape_layout)
          {
@@ -4311,15 +4311,15 @@ static bool materialui_get_selected_thumbnails(
 static void materialui_hide_fullscreen_thumbnails(
       materialui_handle_t *mui, bool animate)
 {
-   menu_animation_ctx_tag alpha_tag = (uintptr_t)&mui->fullscreen_thumbnail_alpha;
+   gfx_animation_ctx_tag alpha_tag = (uintptr_t)&mui->fullscreen_thumbnail_alpha;
 
    /* Kill any existing fade in/out animations */
-   menu_animation_kill_by_tag(&alpha_tag);
+   gfx_animation_kill_by_tag(&alpha_tag);
 
    /* Check whether animations are enabled */
    if (animate && (mui->fullscreen_thumbnail_alpha > 0.0f))
    {
-      menu_animation_ctx_entry_t animation_entry;
+      gfx_animation_ctx_entry_t animation_entry;
 
       /* Configure fade out animation */
       animation_entry.easing_enum  = EASING_OUT_QUAD;
@@ -4331,7 +4331,7 @@ static void materialui_hide_fullscreen_thumbnails(
       animation_entry.userdata     = NULL;
 
       /* Push animation */
-      menu_animation_push(&animation_entry);
+      gfx_animation_push(&animation_entry);
    }
    /* No animation - just set thumbnail alpha to zero */
    else
@@ -4346,13 +4346,13 @@ static void materialui_hide_fullscreen_thumbnails(
 static void materialui_show_fullscreen_thumbnails(
       materialui_handle_t *mui, size_t selection)
 {
+   menu_entry_t selected_entry;
+   gfx_animation_ctx_entry_t animation_entry;
    menu_thumbnail_t *primary_thumbnail   = NULL;
    menu_thumbnail_t *secondary_thumbnail = NULL;
-   menu_animation_ctx_tag scroll_tag     = (uintptr_t)&mui->scroll_y;
-   menu_animation_ctx_tag alpha_tag      = (uintptr_t)&mui->fullscreen_thumbnail_alpha;
+   gfx_animation_ctx_tag scroll_tag      = (uintptr_t)&mui->scroll_y;
+   gfx_animation_ctx_tag alpha_tag       = (uintptr_t)&mui->fullscreen_thumbnail_alpha;
    const char *thumbnail_label           = NULL;
-   menu_animation_ctx_entry_t animation_entry;
-   menu_entry_t selected_entry;
 
    /* Before showing fullscreen thumbnails, must
     * ensure that any existing fullscreen thumbnail
@@ -4389,7 +4389,7 @@ static void materialui_show_fullscreen_thumbnails(
     * thumbnails are shown
     * > Kill any existing scroll animations and
     *   reset scroll acceleration */
-   menu_animation_kill_by_tag(&scroll_tag);
+   gfx_animation_kill_by_tag(&scroll_tag);
    menu_input_set_pointer_y_accel(0.0f);
 
    /* Cache selected entry label
@@ -4424,7 +4424,7 @@ static void materialui_show_fullscreen_thumbnails(
    animation_entry.userdata     = NULL;
 
    /* Push animation */
-   menu_animation_push(&animation_entry);
+   gfx_animation_push(&animation_entry);
 
    /* Enable fullscreen thumbnails */
    mui->fullscreen_thumbnail_selection = selection;
@@ -4866,13 +4866,13 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
 
    if (mui->use_smooth_ticker)
    {
-      mui->ticker_smooth.idx       = menu_animation_get_ticker_pixel_idx();
-      mui->ticker_smooth.type_enum = (enum menu_animation_ticker_type)settings->uints.menu_ticker_type;
+      mui->ticker_smooth.idx       = gfx_animation_get_ticker_pixel_idx();
+      mui->ticker_smooth.type_enum = (enum gfx_animation_ticker_type)settings->uints.menu_ticker_type;
    }
    else
    {
-      mui->ticker.idx       = menu_animation_get_ticker_idx();
-      mui->ticker.type_enum = (enum menu_animation_ticker_type)settings->uints.menu_ticker_type;
+      mui->ticker.idx       = gfx_animation_get_ticker_idx();
+      mui->ticker.type_enum = (enum gfx_animation_ticker_type)settings->uints.menu_ticker_type;
    }
 
    /* Handle any transparency adjustments required
@@ -5677,13 +5677,13 @@ static void *materialui_init(void **userdata, bool video_is_threaded)
    mui->fullscreen_thumbnail_alpha     = 0.0f;
    mui->fullscreen_thumbnail_label[0]  = '\0';
 
-   menu_animation_set_update_time_cb(materialui_menu_animation_update_time);
+   gfx_animation_set_update_time_cb(materialui_menu_animation_update_time);
 
    return menu;
 error:
    if (menu)
       free(menu);
-   menu_animation_unset_update_time_cb();
+   gfx_animation_unset_update_time_cb();
    return NULL;
 }
 
@@ -5702,7 +5702,7 @@ static void materialui_free(void *data)
 
    if (mui->thumbnail_path_data)
       free(mui->thumbnail_path_data);
-   menu_animation_unset_update_time_cb();
+   gfx_animation_unset_update_time_cb();
 }
 
 static void materialui_context_bg_destroy(materialui_handle_t *mui)
@@ -5789,11 +5789,11 @@ static bool materialui_load_image(void *userdata, void *data, enum menu_image_ty
 static void materialui_animate_scroll(
       materialui_handle_t *mui, float scroll_pos, float duration)
 {
-   menu_animation_ctx_tag animation_tag = (uintptr_t)&mui->scroll_y;
-   menu_animation_ctx_entry_t animation_entry;
+   gfx_animation_ctx_tag animation_tag = (uintptr_t)&mui->scroll_y;
+   gfx_animation_ctx_entry_t animation_entry;
 
    /* Kill any existing scroll animation */
-   menu_animation_kill_by_tag(&animation_tag);
+   gfx_animation_kill_by_tag(&animation_tag);
 
    /* mui->scroll_y will be modified by the animation
     * > Set scroll acceleration to zero to minimise
@@ -5810,7 +5810,7 @@ static void materialui_animate_scroll(
    animation_entry.userdata     = NULL;
 
    /* Push animation */
-   menu_animation_push(&animation_entry);
+   gfx_animation_push(&animation_entry);
 }
 
 /* The navigation pointer has been updated (for example by pressing up or down
@@ -5931,11 +5931,11 @@ static void materialui_populate_nav_bar(
 static void materialui_init_transition_animation(
       materialui_handle_t *mui, settings_t *settings)
 {
-   menu_animation_ctx_entry_t alpha_entry;
-   menu_animation_ctx_entry_t x_offset_entry;
+   gfx_animation_ctx_entry_t alpha_entry;
+   gfx_animation_ctx_entry_t x_offset_entry;
    size_t stack_size                   = materialui_list_get_size(mui, MENU_LIST_PLAIN);
-   menu_animation_ctx_tag alpha_tag    = (uintptr_t)&mui->transition_alpha;
-   menu_animation_ctx_tag x_offset_tag = (uintptr_t)&mui->transition_x_offset;
+   gfx_animation_ctx_tag alpha_tag     = (uintptr_t)&mui->transition_alpha;
+   gfx_animation_ctx_tag x_offset_tag  = (uintptr_t)&mui->transition_x_offset;
    unsigned transition_animation       = settings->uints.menu_materialui_transition_animation;
 
    /* If animations are disabled, reset alpha/x offset
@@ -5954,7 +5954,7 @@ static void materialui_init_transition_animation(
 
    /* > Kill any existing animations and set
     *   initial alpha value */
-   menu_animation_kill_by_tag(&alpha_tag);
+   gfx_animation_kill_by_tag(&alpha_tag);
    mui->transition_alpha = 0.0f;
 
    /* > Configure animation */
@@ -5967,13 +5967,13 @@ static void materialui_init_transition_animation(
    alpha_entry.userdata     = NULL;
 
    /* > Push animation */
-   menu_animation_push(&alpha_entry);
+   gfx_animation_push(&alpha_entry);
 
    /* Slide animation (x offset) */
 
    /* > Kill any existing animations and set
     *   initial x offset value */
-   menu_animation_kill_by_tag(&x_offset_tag);
+   gfx_animation_kill_by_tag(&x_offset_tag);
    mui->transition_x_offset = 0.0f;
 
    /* >> Menu tab 'reset' action - using navigation
@@ -6035,7 +6035,7 @@ static void materialui_init_transition_animation(
       x_offset_entry.userdata     = NULL;
 
       /* > Push animation */
-      menu_animation_push(&x_offset_entry);
+      gfx_animation_push(&x_offset_entry);
    }
 }
 
@@ -6832,7 +6832,7 @@ static int materialui_pointer_down(void *userdata,
    if (mui->scrollbar.active && !mui->show_fullscreen_thumbnails)
    {
       unsigned header_height     = menu_display_get_header_height();
-      menu_animation_ctx_tag tag = (uintptr_t)&mui->scroll_y;
+      gfx_animation_ctx_tag tag  = (uintptr_t)&mui->scroll_y;
       unsigned width;
       unsigned height;
       int drag_margin_horz;
@@ -6887,7 +6887,7 @@ static int materialui_pointer_down(void *userdata,
 
       /* > Kill any existing scroll animations
        *   and reset scroll acceleration */
-      menu_animation_kill_by_tag(&tag);
+      gfx_animation_kill_by_tag(&tag);
       menu_input_set_pointer_y_accel(0.0f);
 
       /* > Enable dragging */

@@ -42,7 +42,7 @@
 #include "menu_generic.h"
 
 #include "../menu_driver.h"
-#include "../menu_animation.h"
+#include "../gfx_animation.h"
 #include "../menu_entries.h"
 #include "../menu_input.h"
 
@@ -1159,7 +1159,7 @@ static void stripes_selection_pointer_changed(
       stripes_handle_t *stripes, bool allow_animations)
 {
    unsigned i, end, height;
-   menu_animation_ctx_tag tag;
+   gfx_animation_ctx_tag tag;
    menu_entry_t entry;
    size_t num                 = 0;
    int threshold              = 0;
@@ -1184,7 +1184,7 @@ static void stripes_selection_pointer_changed(
 
    tag       = (uintptr_t)selection_buf;
 
-   menu_animation_kill_by_tag(&tag);
+   gfx_animation_kill_by_tag(&tag);
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_START, &num);
 
    for (i = 0; i < end; i++)
@@ -1211,7 +1211,7 @@ static void stripes_selection_pointer_changed(
       }
       else
       {
-         menu_animation_ctx_entry_t anim_entry;
+         gfx_animation_ctx_entry_t anim_entry;
 
          anim_entry.duration     = STRIPES_DELAY;
          anim_entry.target_value = ia;
@@ -1220,21 +1220,21 @@ static void stripes_selection_pointer_changed(
          anim_entry.tag          = tag;
          anim_entry.cb           = NULL;
 
-         menu_animation_push(&anim_entry);
+         gfx_animation_push(&anim_entry);
 
          anim_entry.subject      = &node->label_alpha;
 
-         menu_animation_push(&anim_entry);
+         gfx_animation_push(&anim_entry);
 
          anim_entry.target_value = iz;
          anim_entry.subject      = &node->zoom;
 
-         menu_animation_push(&anim_entry);
+         gfx_animation_push(&anim_entry);
 
          anim_entry.target_value = iy;
          anim_entry.subject      = &node->y;
 
-         menu_animation_push(&anim_entry);
+         gfx_animation_push(&anim_entry);
       }
    }
 }
@@ -1275,7 +1275,7 @@ static void stripes_list_open_old(stripes_handle_t *stripes,
       }
       else
       {
-         menu_animation_ctx_entry_t anim_entry;
+         gfx_animation_ctx_entry_t anim_entry;
 
          anim_entry.duration     = STRIPES_DELAY;
          anim_entry.target_value = ia;
@@ -1284,17 +1284,17 @@ static void stripes_list_open_old(stripes_handle_t *stripes,
          anim_entry.tag          = (uintptr_t)list;
          anim_entry.cb           = NULL;
 
-         menu_animation_push(&anim_entry);
+         gfx_animation_push(&anim_entry);
 
          anim_entry.target_value = 0;
          anim_entry.subject      = &node->label_alpha;
 
-         menu_animation_push(&anim_entry);
+         gfx_animation_push(&anim_entry);
 
          anim_entry.target_value = stripes->icon_size * dir * -2;
          anim_entry.subject      = &node->x;
 
-         menu_animation_push(&anim_entry);
+         gfx_animation_push(&anim_entry);
       }
    }
 }
@@ -1346,7 +1346,7 @@ static void stripes_list_open_new(stripes_handle_t *stripes,
       }
       else
       {
-         menu_animation_ctx_entry_t anim_entry;
+         gfx_animation_ctx_entry_t anim_entry;
 
          anim_entry.duration     = STRIPES_DELAY;
          anim_entry.target_value = ia;
@@ -1355,16 +1355,16 @@ static void stripes_list_open_new(stripes_handle_t *stripes,
          anim_entry.tag          = (uintptr_t)list;
          anim_entry.cb           = NULL;
 
-         menu_animation_push(&anim_entry);
+         gfx_animation_push(&anim_entry);
 
          anim_entry.subject      = &node->label_alpha;
 
-         menu_animation_push(&anim_entry);
+         gfx_animation_push(&anim_entry);
 
          anim_entry.target_value = 0;
          anim_entry.subject      = &node->x;
 
-         menu_animation_push(&anim_entry);
+         gfx_animation_push(&anim_entry);
       }
    }
 
@@ -1425,7 +1425,7 @@ static stripes_node_t* stripes_get_userdata_from_horizontal_list(
 static void stripes_push_animations(stripes_node_t *node,
       uintptr_t tag, float ia, float ix)
 {
-   menu_animation_ctx_entry_t anim_entry;
+   gfx_animation_ctx_entry_t anim_entry;
 
    anim_entry.duration     = STRIPES_DELAY;
    anim_entry.target_value = ia;
@@ -1434,16 +1434,16 @@ static void stripes_push_animations(stripes_node_t *node,
    anim_entry.tag          = tag;
    anim_entry.cb           = NULL;
 
-   menu_animation_push(&anim_entry);
+   gfx_animation_push(&anim_entry);
 
    anim_entry.subject      = &node->label_alpha;
 
-   menu_animation_push(&anim_entry);
+   gfx_animation_push(&anim_entry);
 
    anim_entry.target_value = ix;
    anim_entry.subject      = &node->x;
 
-   menu_animation_push(&anim_entry);
+   gfx_animation_push(&anim_entry);
 }
 
 static void stripes_list_switch_old(stripes_handle_t *stripes,
@@ -1625,7 +1625,7 @@ static void stripes_list_switch_horizontal_list(stripes_handle_t *stripes)
 
    for (j = 0; j <= list_size; j++)
    {
-      menu_animation_ctx_entry_t entry;
+      gfx_animation_ctx_entry_t entry;
       float ia                    = stripes->categories_passive_alpha;
       float iz                    = stripes->categories_passive_zoom;
       float iw                    = stripes->categories_passive_width;
@@ -1663,33 +1663,33 @@ static void stripes_list_switch_horizontal_list(stripes_handle_t *stripes)
       entry.tag          = -1;
       entry.cb           = NULL;
 
-      menu_animation_push(&entry);
+      gfx_animation_push(&entry);
 
       entry.target_value = iz;
       entry.subject      = &node->zoom;
 
-      menu_animation_push(&entry);
+      gfx_animation_push(&entry);
 
       entry.target_value = iy;
       entry.subject      = &node->y;
 
-      menu_animation_push(&entry);
+      gfx_animation_push(&entry);
 
       entry.target_value = ix;
       entry.subject      = &node->x;
 
-      menu_animation_push(&entry);
+      gfx_animation_push(&entry);
 
       entry.target_value = iw;
       entry.subject      = &node->width;
 
-      menu_animation_push(&entry);
+      gfx_animation_push(&entry);
    }
 }
 
 static void stripes_list_switch(stripes_handle_t *stripes)
 {
-   menu_animation_ctx_entry_t anim_entry;
+   gfx_animation_ctx_entry_t anim_entry;
    int dir                    = -1;
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
    size_t selection           = menu_navigation_get_selection();
@@ -1712,7 +1712,7 @@ static void stripes_list_switch(stripes_handle_t *stripes)
    anim_entry.cb           = NULL;
 
    if (anim_entry.subject)
-      menu_animation_push(&anim_entry);
+      gfx_animation_push(&anim_entry);
 
    dir = -1;
    if (stripes->categories_selection_ptr > stripes->categories_selection_ptr_old)
@@ -1764,7 +1764,7 @@ static void stripes_list_open_horizontal_list(stripes_handle_t *stripes)
 
    for (j = 0; j <= list_size; j++)
    {
-      menu_animation_ctx_entry_t anim_entry;
+      gfx_animation_ctx_entry_t anim_entry;
       float ia          = 0;
       stripes_node_t *node  = stripes_get_node(stripes, j);
 
@@ -1785,7 +1785,7 @@ static void stripes_list_open_horizontal_list(stripes_handle_t *stripes)
       anim_entry.cb           = NULL;
 
       if (anim_entry.subject)
-         menu_animation_push(&anim_entry);
+         gfx_animation_push(&anim_entry);
    }
 }
 
@@ -2027,7 +2027,7 @@ static int stripes_environ(enum menu_environ_cb type, void *data, void *userdata
 
 static void stripes_list_open(stripes_handle_t *stripes)
 {
-   menu_animation_ctx_entry_t entry;
+   gfx_animation_ctx_entry_t entry;
 
    int                    dir = 0;
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
@@ -2058,20 +2058,20 @@ static void stripes_list_open(stripes_handle_t *stripes)
    switch (stripes->depth)
    {
       case 1:
-         menu_animation_push(&entry);
+         gfx_animation_push(&entry);
 
          entry.target_value = 0;
          entry.subject      = &stripes->textures_arrow_alpha;
 
-         menu_animation_push(&entry);
+         gfx_animation_push(&entry);
          break;
       case 2:
-         menu_animation_push(&entry);
+         gfx_animation_push(&entry);
 
          entry.target_value = 1;
          entry.subject      = &stripes->textures_arrow_alpha;
 
-         menu_animation_push(&entry);
+         gfx_animation_push(&entry);
          break;
    }
 
@@ -2333,7 +2333,7 @@ static int stripes_draw_item(
       )
 {
    float icon_x, icon_y, label_offset;
-   menu_animation_ctx_ticker_t ticker;
+   gfx_animation_ctx_ticker_t ticker;
    char tmp[255];
    const char *ticker_str            = NULL;
    unsigned entry_type               = 0;
@@ -2456,12 +2456,12 @@ static int stripes_draw_item(
 
    ticker.s        = tmp;
    ticker.len      = ticker_limit;
-   ticker.idx      = menu_animation_get_ticker_idx();
+   ticker.idx      = gfx_animation_get_ticker_idx();
    ticker.str      = ticker_str;
    ticker.selected = (i == current);
 
    if (ticker.str)
-      menu_animation_ticker(&ticker);
+      gfx_animation_ticker(&ticker);
 
    label_offset = stripes->margins_label_top;
    if (i == current && width > 320 && height > 240
@@ -2492,13 +2492,13 @@ static int stripes_draw_item(
 
    ticker.s        = tmp;
    ticker.len      = 35 * stripes_scale_mod[7];
-   ticker.idx      = menu_animation_get_ticker_idx();
+   ticker.idx      = gfx_animation_get_ticker_idx();
    ticker.selected = (i == current);
 
    if (!string_is_empty(entry->value))
    {
       ticker.str   = entry->value;
-      menu_animation_ticker(&ticker);
+      gfx_animation_ticker(&ticker);
    }
 
    if (do_draw_text)
@@ -2697,7 +2697,7 @@ static void stripes_render(void *data,
       menu_entries_ctl(MENU_ENTRIES_CTL_SET_START, &i);
    }
 
-   menu_animation_ctl(MENU_ANIMATION_CTL_CLEAR_ACTIVE, NULL);
+   gfx_animation_ctl(MENU_ANIMATION_CTL_CLEAR_ACTIVE, NULL);
 }
 
 static bool stripes_shader_pipeline_active(video_frame_info_t *video_info)
@@ -3808,9 +3808,9 @@ static void stripes_list_insert(void *userdata,
 
 static void stripes_list_clear(file_list_t *list)
 {
-   menu_animation_ctx_tag tag = (uintptr_t)list;
+   gfx_animation_ctx_tag tag = (uintptr_t)list;
 
-   menu_animation_kill_by_tag(&tag);
+   gfx_animation_kill_by_tag(&tag);
 
    stripes_free_list_nodes(list, false);
 }
@@ -3824,9 +3824,9 @@ static void stripes_list_deep_copy(const file_list_t *src, file_list_t *dst,
       size_t first, size_t last)
 {
    size_t i, j = 0;
-   menu_animation_ctx_tag tag = (uintptr_t)dst;
+   gfx_animation_ctx_tag tag = (uintptr_t)dst;
 
-   menu_animation_kill_by_tag(&tag);
+   gfx_animation_kill_by_tag(&tag);
 
    stripes_free_list_nodes(dst, true);
 
@@ -4039,7 +4039,7 @@ static void stripes_context_destroy(void *data)
 
 static void stripes_toggle(void *userdata, bool menu_on)
 {
-   menu_animation_ctx_entry_t entry;
+   gfx_animation_ctx_entry_t entry;
    bool tmp             = false;
    stripes_handle_t *stripes    = (stripes_handle_t*)userdata;
 
@@ -4062,7 +4062,7 @@ static void stripes_toggle(void *userdata, bool menu_on)
    entry.tag          = -1;
    entry.cb           = NULL;
 
-   menu_animation_push(&entry);
+   gfx_animation_push(&entry);
 
    tmp = !menu_entries_ctl(MENU_ENTRIES_CTL_NEEDS_REFRESH, NULL);
 

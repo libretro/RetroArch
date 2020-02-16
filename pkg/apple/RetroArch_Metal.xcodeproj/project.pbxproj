@@ -191,7 +191,7 @@
 		05A8C52B20DB72F000FF7857 /* menu_cbs_label.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = menu_cbs_label.c; sourceTree = "<group>"; };
 		05A8C52C20DB72F000FF7857 /* menu_cbs_title.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = menu_cbs_title.c; sourceTree = "<group>"; };
 		05A8C52D20DB72F000FF7857 /* menu_cbs_up.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = menu_cbs_up.c; sourceTree = "<group>"; };
-		05A8C52E20DB72F000FF7857 /* menu_animation.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = menu_animation.c; sourceTree = "<group>"; };
+		05A8C52E20DB72F000FF7857 /* gfx_animation.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = gfx_animation.c; sourceTree = "<group>"; };
 		05A8C52F20DB72F000FF7857 /* menu_displaylist.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = menu_displaylist.h; sourceTree = "<group>"; };
 		05A8C53020DB72F000FF7857 /* menu_content.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = menu_content.h; sourceTree = "<group>"; };
 		05A8C53220DB72F000FF7857 /* xmb.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = xmb.c; sourceTree = "<group>"; };
@@ -210,7 +210,7 @@
 		05A8C54820DB72F000FF7857 /* menu_content.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = menu_content.c; sourceTree = "<group>"; };
 		05A8C54920DB72F000FF7857 /* menu_displaylist.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = menu_displaylist.c; sourceTree = "<group>"; };
 		05A8C54A20DB72F000FF7857 /* menu_shader.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = menu_shader.c; sourceTree = "<group>"; };
-		05A8C54B20DB72F000FF7857 /* menu_animation.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = menu_animation.h; sourceTree = "<group>"; };
+		05A8C54B20DB72F000FF7857 /* gfx_animation.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = gfx_animation.h; sourceTree = "<group>"; };
 		05A8C54C20DB72F000FF7857 /* menu_cbs.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = menu_cbs.h; sourceTree = "<group>"; };
 		05A8C54D20DB72F000FF7857 /* menu_driver.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = menu_driver.c; sourceTree = "<group>"; };
 		05A8C54F20DB72F000FF7857 /* menu_networking.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = menu_networking.c; sourceTree = "<group>"; };
@@ -761,8 +761,8 @@
 				05A8C51C20DB72F000FF7857 /* cbs */,
 				05A8C53120DB72F000FF7857 /* drivers */,
 				05A8C56020DB72F000FF7857 /* drivers_display */,
-				05A8C52E20DB72F000FF7857 /* menu_animation.c */,
-				05A8C54B20DB72F000FF7857 /* menu_animation.h */,
+				05A8C52E20DB72F000FF7857 /* gfx_animation.c */,
+				05A8C54B20DB72F000FF7857 /* gfx_animation.h */,
 				05A8C54120DB72F000FF7857 /* menu_cbs.c */,
 				05A8C54C20DB72F000FF7857 /* menu_cbs.h */,
 				05A8C54820DB72F000FF7857 /* menu_content.c */,

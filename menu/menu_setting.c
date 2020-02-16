@@ -67,7 +67,7 @@
 #include "menu_setting.h"
 #include "menu_cbs.h"
 #include "menu_driver.h"
-#include "menu_animation.h"
+#include "gfx_animation.h"
 #include "menu_input.h"
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 #include "menu_shader.h"
@@ -6210,7 +6210,7 @@ setting_get_string_representation_st_float_video_refresh_rate_auto(
    {
       snprintf(s, len, "%.3f Hz (%.1f%% dev, %u samples)",
             video_refresh_rate, 100.0 * deviation, sample_points);
-      menu_animation_ctl(MENU_ANIMATION_CTL_SET_ACTIVE, NULL);
+      gfx_animation_ctl(MENU_ANIMATION_CTL_SET_ACTIVE, NULL);
    }
    else
       strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), len);

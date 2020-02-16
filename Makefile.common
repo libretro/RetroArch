@@ -834,7 +834,7 @@ ifeq ($(HAVE_MENU_COMMON), 1)
           menu/cbs/menu_cbs_down.o \
           menu/cbs/menu_cbs_contentlist_switch.o \
           menu/menu_displaylist.o \
-          menu/menu_animation.o \
+          menu/gfx_animation.o \
           menu/drivers/menu_generic.o \
           menu/menu_thumbnail_path.o \
           menu/menu_thumbnail.o

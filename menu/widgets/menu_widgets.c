@@ -39,7 +39,7 @@
 #include "../../ui/ui_companion_driver.h"
 
 #include "../menu_driver.h"
-#include "../menu_animation.h"
+#include "../gfx_animation.h"
 
 #include "../../gfx/font_driver.h"
 
@@ -187,7 +187,7 @@ static menu_texture_item msg_queue_icon_outline  = 0;
 static menu_texture_item msg_queue_icon_rect     = 0;
 static bool msg_queue_has_icons                  = false;
 
-extern menu_animation_ctx_tag menu_widgets_generic_tag;
+extern gfx_animation_ctx_tag menu_widgets_generic_tag;
 
 /* there can only be one message animation at a time to avoid confusing users */
 static bool widgets_moving   = false;
@@ -243,7 +243,7 @@ static menu_timer_t volume_timer    = 0.0f;
 
 static float volume_alpha                  = 0.0f;
 static float volume_text_alpha             = 0.0f;
-static menu_animation_ctx_tag volume_tag   = (uintptr_t) &volume_alpha;
+static gfx_animation_ctx_tag volume_tag    = (uintptr_t) &volume_alpha;
 static bool volume_mute                    = false;
 
 
@@ -487,7 +487,7 @@ void menu_widgets_msg_queue_push(
 
             if (!task->alternative_look)
             {
-               menu_animation_ctx_entry_t entry;
+               gfx_animation_ctx_entry_t entry;
 
                entry.easing_enum    = EASING_OUT_QUAD;
                entry.tag            = (uintptr_t) msg_widget;
@@ -497,7 +497,7 @@ void menu_widgets_msg_queue_push(
                entry.cb             = msg_widget_msg_transition_animation_done;
                entry.userdata       = msg_widget;
 
-               menu_animation_push(&entry);
+               gfx_animation_push(&entry);
             }
             else
             {
@@ -531,7 +531,7 @@ static void menu_widgets_move_end(void *userdata)
    {
       menu_widget_msg_t *unfold = (menu_widget_msg_t*) userdata;
 
-      menu_animation_ctx_entry_t entry;
+      gfx_animation_ctx_entry_t entry;
 
       entry.cb             = menu_widgets_unfold_end;
       entry.duration       = MSG_QUEUE_ANIMATION_DURATION;
@@ -541,7 +541,7 @@ static void menu_widgets_move_end(void *userdata)
       entry.target_value   = 1.0f;
       entry.userdata       = unfold;
 
-      menu_animation_push(&entry);
+      gfx_animation_push(&entry);
 
       unfold->unfolded  = true;
       unfold->unfolding = true;
@@ -583,7 +583,7 @@ static void menu_widgets_msg_queue_move(void)
 
       if (msg->offset_y != y)
       {
-         menu_animation_ctx_entry_t entry;
+         gfx_animation_ctx_entry_t entry;
 
          entry.cb             = i == 0 ? menu_widgets_move_end : NULL;
          entry.duration       = MSG_QUEUE_ANIMATION_DURATION;
@@ -593,7 +593,7 @@ static void menu_widgets_msg_queue_move(void)
          entry.target_value   = y;
          entry.userdata       = unfold;
 
-         menu_animation_push(&entry);
+         gfx_animation_push(&entry);
 
          widgets_moving = true;
       }
@@ -603,7 +603,7 @@ static void menu_widgets_msg_queue_move(void)
 static void menu_widgets_msg_queue_free(menu_widget_msg_t *msg, bool touch_list)
 {
    size_t i;
-   menu_animation_ctx_tag tag = (uintptr_t) msg;
+   gfx_animation_ctx_tag tag = (uintptr_t) msg;
 
    if (msg->task_ptr)
    {
@@ -619,7 +619,7 @@ static void menu_widgets_msg_queue_free(menu_widget_msg_t *msg, bool touch_list)
 
    /* Kill all animations */
    menu_timer_kill(&msg->hourglass_timer);
-   menu_animation_kill_by_tag(&tag);
+   gfx_animation_kill_by_tag(&tag);
 
    /* Kill all timers */
    if (msg->expiration_timer_started)
@@ -659,7 +659,7 @@ static void menu_widgets_msg_queue_kill_end(void *userdata)
 
 static void menu_widgets_msg_queue_kill(unsigned idx)
 {
-   menu_animation_ctx_entry_t entry;
+   gfx_animation_ctx_entry_t entry;
 
    menu_widget_msg_t *msg = (menu_widget_msg_t*)
       file_list_get_userdata_at_offset(current_msgs, idx);
@@ -681,14 +681,14 @@ static void menu_widgets_msg_queue_kill(unsigned idx)
    entry.subject        = &msg->offset_y;
    entry.target_value   = msg->offset_y - msg_queue_height/4;
 
-   menu_animation_push(&entry);
+   gfx_animation_push(&entry);
 
    /* Fade out */
    entry.cb             = menu_widgets_msg_queue_kill_end;
    entry.subject        = &msg->alpha;
    entry.target_value   = 0.0f;
 
-   menu_animation_push(&entry);
+   gfx_animation_push(&entry);
 
    /* Move all messages back to their correct position */
    menu_widgets_msg_queue_move();
@@ -808,7 +808,7 @@ static void menu_widgets_screenshot_dispose(void *userdata)
 
 static void menu_widgets_screenshot_end(void *userdata)
 {
-   menu_animation_ctx_entry_t entry;
+   gfx_animation_ctx_entry_t entry;
 
    entry.cb             = menu_widgets_screenshot_dispose;
    entry.duration       = MSG_QUEUE_ANIMATION_DURATION;
@@ -818,7 +818,7 @@ static void menu_widgets_screenshot_end(void *userdata)
    entry.target_value   = -((float)screenshot_height);
    entry.userdata       = NULL;
 
-   menu_animation_push(&entry);
+   gfx_animation_push(&entry);
 }
 
 static void menu_widgets_start_msg_expiration_timer(menu_widget_msg_t *msg_widget, unsigned duration)
@@ -854,10 +854,9 @@ static void menu_widgets_hourglass_end(void *userdata)
 
 static void menu_widgets_hourglass_tick(void *userdata)
 {
-   menu_widget_msg_t *msg = (menu_widget_msg_t*) userdata;
-   menu_animation_ctx_tag tag = (uintptr_t) msg;
-
-   menu_animation_ctx_entry_t entry;
+   gfx_animation_ctx_entry_t entry;
+   menu_widget_msg_t    *msg = (menu_widget_msg_t*) userdata;
+   gfx_animation_ctx_tag tag = (uintptr_t) msg;
 
    entry.easing_enum    = EASING_OUT_QUAD;
    entry.tag            = tag;
@@ -867,7 +866,7 @@ static void menu_widgets_hourglass_tick(void *userdata)
    entry.cb             = menu_widgets_hourglass_end;
    entry.userdata       = msg;
 
-   menu_animation_push(&entry);
+   gfx_animation_push(&entry);
 }
 
 /* Forward declaration */
@@ -1492,7 +1491,7 @@ void menu_widgets_frame(void *data)
    if (screenshot_loaded)
    {
       char shotname[256];
-      menu_animation_ctx_ticker_t ticker;
+      gfx_animation_ctx_ticker_t ticker;
 
       menu_display_set_alpha(menu_widgets_backdrop_orig, DEFAULT_BACKDROP);
 
@@ -1521,13 +1520,13 @@ void menu_widgets_frame(void *data)
          1, false, 0, true
       );
 
-      ticker.idx        = menu_animation_get_ticker_idx();
+      ticker.idx        = gfx_animation_get_ticker_idx();
       ticker.len        = screenshot_shotname_length;
       ticker.s          = shotname;
       ticker.selected   = true;
       ticker.str        = screenshot_shotname;
 
-      menu_animation_ticker(&ticker);
+      gfx_animation_ticker(&ticker);
 
       menu_display_draw_text(font_regular,
          shotname,
@@ -2125,11 +2124,11 @@ static void menu_widgets_achievement_free(void *userdata)
 void menu_widgets_free(void)
 {
    size_t i;
-   menu_animation_ctx_tag libretro_tag;
+   gfx_animation_ctx_tag libretro_tag;
 
    /* Kill any pending animation */
-   menu_animation_kill_by_tag(&volume_tag);
-   menu_animation_kill_by_tag(&menu_widgets_generic_tag);
+   gfx_animation_kill_by_tag(&volume_tag);
+   gfx_animation_kill_by_tag(&menu_widgets_generic_tag);
 
    /* Purge everything from the fifo */
    if (msg_queue)
@@ -2181,7 +2180,7 @@ void menu_widgets_free(void)
    libretro_tag = (uintptr_t) &libretro_message_timer;
    libretro_message_alpha = 0.0f;
    menu_timer_kill(&libretro_message_timer);
-   menu_animation_kill_by_tag(&libretro_tag);
+   gfx_animation_kill_by_tag(&libretro_tag);
 
    /* AI Service overlay */
    /* ... */
@@ -2196,7 +2195,7 @@ void menu_widgets_free(void)
 
 static void menu_widgets_volume_timer_end(void *userdata)
 {
-   menu_animation_ctx_entry_t entry;
+   gfx_animation_ctx_entry_t entry;
 
    entry.cb             = NULL;
    entry.duration       = MSG_QUEUE_ANIMATION_DURATION;
@@ -2206,11 +2205,11 @@ static void menu_widgets_volume_timer_end(void *userdata)
    entry.target_value   = 0.0f;
    entry.userdata       = NULL;
 
-   menu_animation_push(&entry);
+   gfx_animation_push(&entry);
 
    entry.subject        = &volume_text_alpha;
 
-   menu_animation_push(&entry);
+   gfx_animation_push(&entry);
 }
 
 void menu_widgets_volume_update_and_show(float new_volume)
@@ -2218,7 +2217,7 @@ void menu_widgets_volume_update_and_show(float new_volume)
    menu_timer_ctx_entry_t entry;
    bool mute = *(audio_get_bool_ptr(AUDIO_ACTION_MUTE_ENABLE));
 
-   menu_animation_kill_by_tag(&volume_tag);
+   gfx_animation_kill_by_tag(&volume_tag);
 
    volume_db         = new_volume;
    volume_percent    = pow(10, new_volume/20);
@@ -2283,7 +2282,7 @@ void menu_widgets_ai_service_overlay_unload()
 
 static void menu_widgets_screenshot_fadeout(void *userdata)
 {
-   menu_animation_ctx_entry_t entry;
+   gfx_animation_ctx_entry_t entry;
 
    entry.cb             = NULL;
    entry.duration       = SCREENSHOT_DURATION_OUT;
@@ -2293,12 +2292,12 @@ static void menu_widgets_screenshot_fadeout(void *userdata)
    entry.target_value   = 0.0f;
    entry.userdata       = NULL;
 
-   menu_animation_push(&entry);
+   gfx_animation_push(&entry);
 }
 
 static void menu_widgets_play_screenshot_flash(void)
 {
-   menu_animation_ctx_entry_t entry;
+   gfx_animation_ctx_entry_t entry;
 
    entry.cb             = menu_widgets_screenshot_fadeout;
    entry.duration       = SCREENSHOT_DURATION_IN;
@@ -2308,7 +2307,7 @@ static void menu_widgets_play_screenshot_flash(void)
    entry.target_value   = 1.0f;
    entry.userdata       = NULL;
 
-   menu_animation_push(&entry);
+   gfx_animation_push(&entry);
 }
 
 void menu_widgets_screenshot_taken(const char *shotname, const char *filename)
@@ -2334,7 +2333,7 @@ void menu_widgets_cleanup_load_content_animation(void)
 void menu_widgets_start_load_content_animation(const char *content_name, bool remove_extension)
 {
    /* TODO: finish the animation based on design, correct all timings */
-   menu_animation_ctx_entry_t entry;
+   gfx_animation_ctx_entry_t entry;
    menu_timer_ctx_entry_t timer_entry;
    int i;
 
@@ -2377,13 +2376,13 @@ void menu_widgets_start_load_content_animation(const char *content_name, bool re
    entry.subject        = &load_content_animation_icon_size;
    entry.target_value   = load_content_animation_icon_size_target;
 
-   menu_animation_push(&entry);
+   gfx_animation_push(&entry);
 
    /* Alpha */
    entry.subject        = &load_content_animation_icon_alpha;
    entry.target_value   = 1.0f;
 
-   menu_animation_push(&entry);
+   gfx_animation_push(&entry);
    timing += entry.duration;
 
    /* Stage two: backdrop + text */
@@ -2391,7 +2390,7 @@ void menu_widgets_start_load_content_animation(const char *content_name, bool re
    entry.subject        = &load_content_animation_fade_alpha;
    entry.target_value   = 1.0f;
 
-   menu_animation_push_delayed(timing, &entry);
+   gfx_animation_push_delayed(timing, &entry);
    timing += entry.duration;
 
    /* Stage three: wait then color transition */
@@ -2407,7 +2406,7 @@ void menu_widgets_start_load_content_animation(const char *content_name, bool re
       entry.subject        = &load_content_animation_icon_color[i];
       entry.target_value   = menu_widgets_pure_white[i];
 
-      menu_animation_push_delayed(timing, &entry);
+      gfx_animation_push_delayed(timing, &entry);
    }
 
    timing += entry.duration;
@@ -2419,7 +2418,7 @@ void menu_widgets_start_load_content_animation(const char *content_name, bool re
    entry.subject        = &load_content_animation_final_fade_alpha;
    entry.target_value   = 1.0f;
 
-   menu_animation_push_delayed(timing, &entry);
+   gfx_animation_push_delayed(timing, &entry);
    timing += entry.duration;
 
    /* Setup end */
@@ -2435,7 +2434,7 @@ void menu_widgets_start_load_content_animation(const char *content_name, bool re
 
 static void menu_widgets_achievement_dismiss(void *userdata)
 {
-   menu_animation_ctx_entry_t entry;
+   gfx_animation_ctx_entry_t entry;
 
    /* Slide up animation */
    entry.cb             = menu_widgets_achievement_free;
@@ -2446,12 +2445,12 @@ static void menu_widgets_achievement_dismiss(void *userdata)
    entry.target_value   = (float)(-(int)(cheevo_height));
    entry.userdata       = NULL;
 
-   menu_animation_push(&entry);
+   gfx_animation_push(&entry);
 }
 
 static void menu_widgets_achievement_fold(void *userdata)
 {
-   menu_animation_ctx_entry_t entry;
+   gfx_animation_ctx_entry_t entry;
 
    /* Fold */
    entry.cb             = menu_widgets_achievement_dismiss;
@@ -2462,12 +2461,12 @@ static void menu_widgets_achievement_fold(void *userdata)
    entry.target_value   = 0.0f;
    entry.userdata       = NULL;
 
-   menu_animation_push(&entry);
+   gfx_animation_push(&entry);
 }
 
 static void menu_widgets_achievement_unfold(void *userdata)
 {
-   menu_animation_ctx_entry_t entry;
+   gfx_animation_ctx_entry_t entry;
    menu_timer_ctx_entry_t timer;
 
    /* Unfold */
@@ -2479,7 +2478,7 @@ static void menu_widgets_achievement_unfold(void *userdata)
    entry.target_value   = 1.0f;
    entry.userdata       = NULL;
 
-   menu_animation_push(&entry);
+   gfx_animation_push(&entry);
 
    /* Wait before dismissing */
    timer.cb       = menu_widgets_achievement_fold;
@@ -2491,7 +2490,7 @@ static void menu_widgets_achievement_unfold(void *userdata)
 
 static void menu_widgets_start_achievement_notification(void)
 {
-   menu_animation_ctx_entry_t entry;
+   gfx_animation_ctx_entry_t entry;
    cheevo_height        = widget_font_size * 4;
    cheevo_width         = MAX(
          font_driver_get_message_width(font_regular, msg_hash_to_str(MSG_ACHIEVEMENT_UNLOCKED), 0, 1),
@@ -2510,7 +2509,7 @@ static void menu_widgets_start_achievement_notification(void)
    entry.target_value   = 0.0f;
    entry.userdata       = NULL;
 
-   menu_animation_push(&entry);
+   gfx_animation_push(&entry);
 }
 
 static void menu_widgets_get_badge_texture(menu_texture_item *tex, const char *badge)
@@ -2548,8 +2547,8 @@ void menu_widgets_push_achievement(const char *title, const char *badge)
 
 static void menu_widgets_generic_message_fadeout(void *userdata)
 {
-   menu_animation_ctx_entry_t entry;
-   menu_animation_ctx_tag tag = (uintptr_t) &generic_message_timer;
+   gfx_animation_ctx_entry_t entry;
+   gfx_animation_ctx_tag tag = (uintptr_t) &generic_message_timer;
 
    /* Start fade out animation */
    entry.cb             = NULL;
@@ -2560,13 +2559,13 @@ static void menu_widgets_generic_message_fadeout(void *userdata)
    entry.target_value   = 0.0f;
    entry.userdata       = NULL;
 
-   menu_animation_push(&entry);
+   gfx_animation_push(&entry);
 }
 
 void menu_widgets_set_message(char *msg)
 {
    menu_timer_ctx_entry_t timer;
-   menu_animation_ctx_tag tag = (uintptr_t) &generic_message_timer;
+   gfx_animation_ctx_tag tag = (uintptr_t) &generic_message_timer;
 
    strlcpy(generic_message, msg, GENERIC_MESSAGE_SIZE);
 
@@ -2574,7 +2573,7 @@ void menu_widgets_set_message(char *msg)
 
    /* Kill and restart the timer / animation */
    menu_timer_kill(&generic_message_timer);
-   menu_animation_kill_by_tag(&tag);
+   gfx_animation_kill_by_tag(&tag);
 
    timer.cb       = menu_widgets_generic_message_fadeout;
    timer.duration = GENERIC_MESSAGE_DURATION;
@@ -2585,8 +2584,8 @@ void menu_widgets_set_message(char *msg)
 
 static void menu_widgets_libretro_message_fadeout(void *userdata)
 {
-   menu_animation_ctx_entry_t entry;
-   menu_animation_ctx_tag tag = (uintptr_t) &libretro_message_timer;
+   gfx_animation_ctx_entry_t entry;
+   gfx_animation_ctx_tag tag = (uintptr_t) &libretro_message_timer;
 
    /* Start fade out animation */
    entry.cb             = NULL;
@@ -2597,13 +2596,13 @@ static void menu_widgets_libretro_message_fadeout(void *userdata)
    entry.target_value   = 0.0f;
    entry.userdata       = NULL;
 
-   menu_animation_push(&entry);
+   gfx_animation_push(&entry);
 }
 
 void menu_widgets_set_libretro_message(const char *msg, unsigned duration)
 {
    menu_timer_ctx_entry_t timer;
-   menu_animation_ctx_tag tag = (uintptr_t) &libretro_message_timer;
+   gfx_animation_ctx_tag tag = (uintptr_t) &libretro_message_timer;
 
    strlcpy(libretro_message, msg, LIBRETRO_MESSAGE_SIZE);
    
@@ -2611,7 +2610,7 @@ void menu_widgets_set_libretro_message(const char *msg, unsigned duration)
 
    /* Kill and restart the timer / animation */
    menu_timer_kill(&libretro_message_timer);
-   menu_animation_kill_by_tag(&tag);
+   gfx_animation_kill_by_tag(&tag);
 
    timer.cb       = menu_widgets_libretro_message_fadeout;
    timer.duration = duration;

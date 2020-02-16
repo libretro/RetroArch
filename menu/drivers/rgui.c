@@ -49,7 +49,7 @@
 #include "menu_generic.h"
 
 #include "../menu_driver.h"
-#include "../menu_animation.h"
+#include "../gfx_animation.h"
 
 #include "../widgets/menu_osk.h"
 
@@ -1369,7 +1369,7 @@ static void rgui_render_particle_effect(rgui_t *rgui)
                settings->floats.menu_rgui_particle_effect_speed : 1.0f;
    /* > Account for non-standard frame times
     *   (high/low refresh rates, or frame drops) */
-   global_speed_factor *= menu_animation_get_delta_time() / particle_effect_period;
+   global_speed_factor *= gfx_animation_get_delta_time() / particle_effect_period;
    
    /* Note: It would be more elegant to have 'update' and 'draw'
     * as separate functions, since 'update' is the part that
@@ -2917,7 +2917,8 @@ int rgui_osk_ptr_at_pos(void *data, int x, int y,
 
 static void rgui_render_osk(
       rgui_t *rgui,
-      menu_animation_ctx_ticker_t *ticker, menu_animation_ctx_ticker_smooth_t *ticker_smooth,
+      gfx_animation_ctx_ticker_t *ticker,
+      gfx_animation_ctx_ticker_smooth_t *ticker_smooth,
       bool use_smooth_ticker)
 {
    size_t fb_pitch;
@@ -3056,7 +3057,7 @@ static void rgui_render_osk(
          ticker_smooth->dst_str_len = sizeof(input_label_buf);
          ticker_smooth->x_offset    = &ticker_x_offset;
          
-         menu_animation_ticker_smooth(ticker_smooth);
+         gfx_animation_ticker_smooth(ticker_smooth);
       }
       else
       {
@@ -3065,7 +3066,7 @@ static void rgui_render_osk(
          ticker->str      = input_label;
          ticker->selected = true;
          
-         menu_animation_ticker(ticker);
+         gfx_animation_ticker(ticker);
       }
 
       input_label_length = (unsigned)(utf8len(input_label_buf) * FONT_WIDTH_STRIDE);
@@ -3200,8 +3201,8 @@ static void rgui_render(void *data,
       unsigned width, unsigned height,
       bool is_idle)
 {
-   menu_animation_ctx_ticker_t ticker;
-   menu_animation_ctx_ticker_smooth_t ticker_smooth;
+   gfx_animation_ctx_ticker_t ticker;
+   gfx_animation_ctx_ticker_smooth_t ticker_smooth;
    static const char* const ticker_spacer = RGUI_TICKER_SPACER;
    bool use_smooth_ticker;
    unsigned x, y;
@@ -3282,7 +3283,7 @@ static void rgui_render(void *data,
       rgui->bg_modified = false;
 
    menu_display_set_framebuffer_dirty_flag();
-   menu_animation_ctl(MENU_ANIMATION_CTL_CLEAR_ACTIVE, NULL);
+   gfx_animation_ctl(MENU_ANIMATION_CTL_CLEAR_ACTIVE, NULL);
 
    rgui->force_redraw        = false;
 
@@ -3356,17 +3357,18 @@ static void rgui_render(void *data,
    use_smooth_ticker = settings->bools.menu_ticker_smooth;
    if (use_smooth_ticker)
    {
-      ticker_smooth.idx           = menu_animation_get_ticker_pixel_idx();
+      ticker_smooth.idx           = gfx_animation_get_ticker_pixel_idx();
       ticker_smooth.font          = NULL;
       ticker_smooth.glyph_width   = FONT_WIDTH_STRIDE;
-      ticker_smooth.type_enum     = (enum menu_animation_ticker_type)settings->uints.menu_ticker_type;
+      ticker_smooth.type_enum     = (enum gfx_animation_ticker_type)
+         settings->uints.menu_ticker_type;
       ticker_smooth.spacer        = ticker_spacer;
       ticker_smooth.dst_str_width = NULL;
    }
    else
    {
-      ticker.idx       = menu_animation_get_ticker_idx();
-      ticker.type_enum = (enum menu_animation_ticker_type)settings->uints.menu_ticker_type;
+      ticker.idx       = gfx_animation_get_ticker_idx();
+      ticker.type_enum = (enum gfx_animation_ticker_type)settings->uints.menu_ticker_type;
       ticker.spacer    = ticker_spacer;
    }
 
@@ -3405,7 +3407,7 @@ static void rgui_render(void *data,
             ticker_smooth.x_offset    = &ticker_x_offset;
 
             /* If title is scrolling, then width == field_width */
-            if (menu_animation_ticker_smooth(&ticker_smooth))
+            if (gfx_animation_ticker_smooth(&ticker_smooth))
                title_width            = ticker_smooth.field_width;
             else
                title_width            = (unsigned)(utf8len(thumbnail_title_buf) * FONT_WIDTH_STRIDE);
@@ -3417,7 +3419,7 @@ static void rgui_render(void *data,
             ticker.str      = thumbnail_title;
             ticker.selected = true;
 
-            menu_animation_ticker(&ticker);
+            gfx_animation_ticker(&ticker);
 
             title_width     = (unsigned)(utf8len(thumbnail_title_buf) * FONT_WIDTH_STRIDE);
          }
@@ -3555,7 +3557,7 @@ static void rgui_render(void *data,
          ticker_smooth.x_offset    = &ticker_x_offset;
 
          /* If title is scrolling, then title_len == title_max_len */
-         if (menu_animation_ticker_smooth(&ticker_smooth))
+         if (gfx_animation_ticker_smooth(&ticker_smooth))
             title_len = title_max_len;
          else
             title_len = utf8len(title_buf);
@@ -3567,7 +3569,7 @@ static void rgui_render(void *data,
          ticker.str      = rgui->menu_title;
          ticker.selected = true;
 
-         menu_animation_ticker(&ticker);
+         gfx_animation_ticker(&ticker);
 
          title_len = utf8len(title_buf);
       }
@@ -3692,7 +3694,7 @@ static void rgui_render(void *data,
             ticker_smooth.dst_str_len = sizeof(entry_title_buf);
             ticker_smooth.x_offset    = &ticker_x_offset;
 
-            menu_animation_ticker_smooth(&ticker_smooth);
+            gfx_animation_ticker_smooth(&ticker_smooth);
          }
          else
          {
@@ -3701,7 +3703,7 @@ static void rgui_render(void *data,
             ticker.str      = entry_label;
             ticker.selected = entry_selected;
 
-            menu_animation_ticker(&ticker);
+            gfx_animation_ticker(&ticker);
          }
 
          /* Print entry title */
@@ -3721,7 +3723,7 @@ static void rgui_render(void *data,
                ticker_smooth.dst_str_len = sizeof(type_str_buf);
                ticker_smooth.x_offset    = &ticker_x_offset;
 
-               menu_animation_ticker_smooth(&ticker_smooth);
+               gfx_animation_ticker_smooth(&ticker_smooth);
             }
             else
             {
@@ -3729,7 +3731,7 @@ static void rgui_render(void *data,
                ticker.len      = entry_value_len;
                ticker.str      = entry_value;
 
-               menu_animation_ticker(&ticker);
+               gfx_animation_ticker(&ticker);
             }
 
             /* Print entry value */
@@ -3774,7 +3776,7 @@ static void rgui_render(void *data,
             ticker_smooth.dst_str_len = sizeof(sublabel_buf);
             ticker_smooth.x_offset    = &ticker_x_offset;
 
-            menu_animation_ticker_smooth(&ticker_smooth);
+            gfx_animation_ticker_smooth(&ticker_smooth);
          }
          else
          {
@@ -3783,7 +3785,7 @@ static void rgui_render(void *data,
             ticker.str      = rgui->menu_sublabel;
             ticker.selected = true;
 
-            menu_animation_ticker(&ticker);
+            gfx_animation_ticker(&ticker);
          }
 
          blit_line(
@@ -3810,7 +3812,7 @@ static void rgui_render(void *data,
             ticker_smooth.dst_str_len = sizeof(core_title_buf);
             ticker_smooth.x_offset    = &ticker_x_offset;
 
-            menu_animation_ticker_smooth(&ticker_smooth);
+            gfx_animation_ticker_smooth(&ticker_smooth);
          }
          else
          {
@@ -3819,7 +3821,7 @@ static void rgui_render(void *data,
             ticker.str      = core_title;
             ticker.selected = true;
 
-            menu_animation_ticker(&ticker);
+            gfx_animation_ticker(&ticker);
          }
 
          blit_line(
@@ -4356,7 +4358,7 @@ static void *rgui_init(void **userdata, bool video_is_threaded)
     * not handle struct initialisation correctly...) */
    memset(&rgui->pointer, 0, sizeof(menu_input_pointer_t));
    
-   menu_animation_set_update_time_cb(rgui_menu_animation_update_time);
+   gfx_animation_set_update_time_cb(rgui_menu_animation_update_time);
 
    return menu;
 
@@ -4368,7 +4370,7 @@ error:
    rgui_thumbnail_free(&mini_left_thumbnail);
    if (menu)
       free(menu);
-   menu_animation_unset_update_time_cb();
+   gfx_animation_unset_update_time_cb();
    return NULL;
 }
 
@@ -4394,7 +4396,7 @@ static void rgui_free(void *data)
       rgui_upscale_buf.data = NULL;
    }
 
-   menu_animation_unset_update_time_cb();
+   gfx_animation_unset_update_time_cb();
 }
 
 static void rgui_set_texture(void)

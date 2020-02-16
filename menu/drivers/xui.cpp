@@ -34,7 +34,7 @@
 #include "menu_generic.h"
 
 #include "../menu_driver.h"
-#include "../menu_animation.h"
+#include "../gfx_animation.h"
 #include "../menu_entries.h"
 #include "../menu_input.h"
 #include "../menu_setting.h"
@@ -542,13 +542,13 @@ static void xui_render(void *data,
       return;
 
    menu_display_unset_framebuffer_dirty_flag();
-   menu_animation_ctl(MENU_ANIMATION_CTL_CLEAR_ACTIVE, NULL);
+   gfx_animation_ctl(MENU_ANIMATION_CTL_CLEAR_ACTIVE, NULL);
 
    xui_render_background();
 
    if (XuiHandleIsValid(m_menutitle))
    {
-      menu_animation_ctx_ticker_t ticker;
+      gfx_animation_ctx_ticker_t ticker;
       menu_entries_get_title(title, sizeof(title));
       mbstowcs(strw_buffer, title, sizeof(strw_buffer) / sizeof(wchar_t));
       XuiTextElementSetText(m_menutitle, strw_buffer);
@@ -559,11 +559,11 @@ static void xui_render(void *data,
 
 	  ticker.s        = title;
 	  ticker.len      = RXUI_TERM_WIDTH(fb_width) - 3;
-	  ticker.idx      = menu_animation_get_ticker_idx();
+	  ticker.idx      = gfx_animation_get_ticker_idx();
 	  ticker.str      = title;
 	  ticker.selected = true;
 
-      menu_animation_ticker(&ticker);
+      gfx_animation_ticker(&ticker);
    }
 
    if (XuiHandleIsValid(m_menutitle))

@@ -15,8 +15,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "gfx_display.h"
-
-#include "menu_animation.h"
+#include "gfx_animation.h"
 
 #include "../configuration.h"
 #include "../frontend/frontend.h"
@@ -1142,7 +1141,7 @@ void menu_display_set_msg_force(bool state)
  * */
 bool menu_display_get_update_pending(void)
 {
-   if (menu_animation_is_active() || menu_display_framebuf_dirty)
+   if (gfx_animation_is_active() || menu_display_framebuf_dirty)
       return true;
    return false;
 }
@@ -1375,7 +1374,7 @@ void menu_display_allocate_white_texture(void)
 void gfx_display_free(void)
 {
    video_coord_array_free(&menu_disp_ca);
-   menu_animation_ctl(MENU_ANIMATION_CTL_DEINIT, NULL);
+   gfx_animation_ctl(MENU_ANIMATION_CTL_DEINIT, NULL);
 
    menu_display_msg_force       = false;
    menu_display_header_height   = 0;
