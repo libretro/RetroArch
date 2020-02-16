@@ -1091,6 +1091,7 @@ typedef struct video_info
 
 typedef struct video_frame_info
 {
+   bool menu_mouse_enable;
    bool widgets_inited;
    bool widgets_is_paused;
    bool widgets_is_fast_forwarding;

@@ -17,8 +17,6 @@
 #include "gfx_display.h"
 #include "gfx_animation.h"
 
-#include "../configuration.h"
-#include "../frontend/frontend.h"
 #include "video_coord_array.h"
 #include "../verbosity.h"
 
@@ -887,10 +885,8 @@ void gfx_display_draw_cursor(
 {
    gfx_display_ctx_draw_t draw;
    struct video_coords coords;
-   settings_t *settings = config_get_ptr();
-   bool cursor_visible  = settings->bools.video_fullscreen ||
-       !gfx_display_has_windowed;
-   if (!settings->bools.menu_mouse_enable || !cursor_visible)
+   bool cursor_visible  = video_info->fullscreen;
+   if (!video_info->menu_mouse_enable || !cursor_visible)
       return;
 
    coords.vertices      = 4;
