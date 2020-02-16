@@ -2113,7 +2113,7 @@ static uint64_t frontend_unix_get_mem_total(void)
 
 static uint64_t frontend_unix_get_mem_free(void)
 {
-#ifdef ANDROID
+#if defined(ANDROID) || (!defined(__linux__) && !defined(__OpenBSD__))
    char line[256];
    uint64_t total    = 0;
    uint64_t freemem  = 0;

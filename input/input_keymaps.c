@@ -46,7 +46,7 @@
 #include "SDL.h"
 #endif
 
-#if defined(__linux__) || defined(HAVE_WAYLAND)
+#if defined(__linux__) || defined(__linux__) && defined(HAVE_WAYLAND)
 #include <linux/input.h>
 #include <linux/kd.h>
 #endif
