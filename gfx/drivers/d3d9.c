@@ -1021,20 +1021,24 @@ static bool d3d9_restore(void *data)
    return true;
 }
 
-static void d3d9_set_nonblock_state(void *data, bool state)
+static void d3d9_set_nonblock_state(void *data, bool state,
+      bool adaptive_vsync_enabled,
+      unsigned swap_interval)
 {
+#ifdef _XBOX
    int interval                 = 0;
+#endif
    d3d9_video_t            *d3d = (d3d9_video_t*)data;
 
    if (!d3d)
       return;
 
+#ifdef _XBOX
    if (!state)
       interval           = 1;
+#endif
 
    d3d->video_info.vsync = !state;
-
-   (void)interval;
 
 #ifdef _XBOX
    d3d9_set_render_state(d3d->dev,

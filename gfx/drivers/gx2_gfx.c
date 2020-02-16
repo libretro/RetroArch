@@ -1373,7 +1373,8 @@ static bool wiiu_gfx_frame(void *data, const void *frame,
    return true;
 }
 
-static void wiiu_gfx_set_nonblock_state(void *data, bool toggle)
+static void wiiu_gfx_set_nonblock_state(void *data, bool toggle,
+      bool adaptive_vsync_enabled, unsigned swap_interval)
 {
    wiiu_video_t *wiiu = (wiiu_video_t *) data;
 

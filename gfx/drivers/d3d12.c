@@ -1599,7 +1599,9 @@ static bool d3d12_gfx_frame(
    return true;
 }
 
-static void d3d12_gfx_set_nonblock_state(void* data, bool toggle)
+static void d3d12_gfx_set_nonblock_state(void* data, bool toggle,
+      bool adaptive_vsync_enabled,
+      unsigned swap_interval)
 {
    d3d12_video_t* d3d12 = (d3d12_video_t*)data;
    d3d12->chain.vsync   = !toggle;

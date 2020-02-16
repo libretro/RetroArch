@@ -935,7 +935,8 @@ static bool ctr_frame(void* data, const void* frame,
    return true;
 }
 
-static void ctr_set_nonblock_state(void* data, bool toggle)
+static void ctr_set_nonblock_state(void* data, bool toggle,
+      bool a, unsigned b)
 {
    ctr_video_t* ctr = (ctr_video_t*)data;
 

@@ -85,7 +85,7 @@ typedef struct xv
          unsigned width, unsigned height, unsigned pitch);
 } xv_t;
 
-static void xv_set_nonblock_state(void *data, bool state)
+static void xv_set_nonblock_state(void *data, bool state, bool c, unsigned d)
 {
    xv_t *xv  = (xv_t*)data;
    Atom atom = XInternAtom(g_x11_dpy, "XV_SYNC_TO_VBLANK", true);

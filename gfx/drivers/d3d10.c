@@ -1527,7 +1527,9 @@ static bool d3d10_gfx_frame(
    return true;
 }
 
-static void d3d10_gfx_set_nonblock_state(void* data, bool toggle)
+static void d3d10_gfx_set_nonblock_state(void* data, bool toggle,
+      bool adaptive_vsync_enabled,
+      unsigned swap_interval)
 {
    d3d10_video_t* d3d10 = (d3d10_video_t*)data;
 

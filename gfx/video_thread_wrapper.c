@@ -784,7 +784,9 @@ static bool video_thread_frame(void *data, const void *frame_,
    return true;
 }
 
-static void video_thread_set_nonblock_state(void *data, bool state)
+static void video_thread_set_nonblock_state(void *data, bool state,
+      bool adaptive_vsync_enabled,
+      unsigned swap_interval)
 {
    thread_video_t *thr = (thread_video_t*)data;
    if (thr)

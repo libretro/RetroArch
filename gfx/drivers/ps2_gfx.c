@@ -365,7 +365,8 @@ static bool ps2_gfx_frame(void *data, const void *frame,
    return true;
 }
 
-static void ps2_gfx_set_nonblock_state(void *data, bool toggle)
+static void ps2_gfx_set_nonblock_state(void *data, bool toggle,
+      bool adaptive_vsync_enabled, unsigned swap_interval)
 {
    ps2_video_t *ps2 = (ps2_video_t*)data;
 

@@ -277,7 +277,7 @@ static bool vita2d_gfx_frame(void *data, const void *frame,
    return true;
 }
 
-static void vita2d_gfx_set_nonblock_state(void *data, bool toggle)
+static void vita2d_gfx_set_nonblock_state(void *data, bool toggle, bool c, unsigned d)
 {
    vita_video_t *vita = (vita_video_t *)data;
 

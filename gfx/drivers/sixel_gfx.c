@@ -429,11 +429,7 @@ static bool sixel_gfx_frame(void *data, const void *frame,
    return true;
 }
 
-static void sixel_gfx_set_nonblock_state(void *data, bool toggle)
-{
-   (void)data;
-   (void)toggle;
-}
+static void sixel_gfx_set_nonblock_state(void *a, bool b, bool c, unsigned d) { }
 
 static bool sixel_gfx_alive(void *data)
 {

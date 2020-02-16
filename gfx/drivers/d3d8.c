@@ -993,7 +993,9 @@ static bool d3d8_restore(void *data)
    return true;
 }
 
-static void d3d8_set_nonblock_state(void *data, bool state)
+static void d3d8_set_nonblock_state(void *data, bool state,
+      bool adaptive_vsync_enabled,
+      unsigned swap_interval)
 {
    int      interval            = 0;
    d3d8_video_t            *d3d = (d3d8_video_t*)data;

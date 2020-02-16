@@ -500,7 +500,7 @@ static bool switch_frame(void *data, const void *frame,
     return true;
 }
 
-static void switch_set_nonblock_state(void *data, bool toggle)
+static void switch_set_nonblock_state(void *data, bool toggle, bool c, unsigned d)
 {
     switch_video_t *sw = data;
     sw->vsync = !toggle;

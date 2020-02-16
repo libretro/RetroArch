@@ -1575,11 +1575,12 @@ static bool gl_core_alive(void *data)
    return ret;
 }
 
-static void gl_core_set_nonblock_state(void *data, bool state)
+static void gl_core_set_nonblock_state(void *data, bool state,
+      bool adaptive_vsync_enabled,
+      unsigned swap_interval)
 {
    int interval                = 0;
    gl_core_t         *gl       = (gl_core_t*)data;
-   settings_t        *settings = config_get_ptr();
 
    if (!gl)
       return;
@@ -1588,13 +1589,10 @@ static void gl_core_set_nonblock_state(void *data, bool state)
 
    gl_core_context_bind_hw_render(gl, false);
    if (!state)
-      interval = settings->uints.video_swap_interval;
+      interval = swap_interval;
 
    if (gl->ctx_driver->swap_interval)
    {
-      bool adaptive_vsync_enabled            = video_driver_test_all_flags(
-            GFX_CTX_FLAGS_ADAPTIVE_VSYNC) && settings->bools.
-         video_adaptive_vsync;
       if (adaptive_vsync_enabled && interval == 1)
          interval = -1;
       gl->ctx_driver->swap_interval(gl->ctx_data, interval);

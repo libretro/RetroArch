@@ -515,7 +515,8 @@ static bool sdl2_gfx_frame(void *data, const void *frame, unsigned width,
    return true;
 }
 
-static void sdl2_gfx_set_nonblock_state(void *data, bool toggle)
+static void sdl2_gfx_set_nonblock_state(void *data, bool toggle,
+      bool adaptive_vsync_enabled, unsigned swap_interval)
 {
    sdl2_video_t *vid = (sdl2_video_t*)data;
 

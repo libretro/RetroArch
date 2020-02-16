@@ -386,11 +386,7 @@ static bool sdl_gfx_frame(void *data, const void *frame, unsigned width,
    return true;
 }
 
-static void sdl_gfx_set_nonblock_state(void *data, bool state)
-{
-   (void)data; /* Can SDL even do this? */
-   (void)state;
-}
+static void sdl_gfx_set_nonblock_state(void *a, bool b, bool c, unsigned d) { }
 
 static bool sdl_gfx_alive(void *data)
 {

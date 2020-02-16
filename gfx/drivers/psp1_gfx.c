@@ -547,7 +547,8 @@ static bool psp_frame(void *data, const void *frame,
    return true;
 }
 
-static void psp_set_nonblock_state(void *data, bool toggle)
+static void psp_set_nonblock_state(void *data, bool toggle,
+      bool adaptive_vsync_enabled, unsigned swap_interval)
 {
    psp1_video_t *psp = (psp1_video_t*)data;
 

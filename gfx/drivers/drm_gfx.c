@@ -879,27 +879,11 @@ static void drm_set_texture_frame(void *data, const void *frame, bool rgb32,
    drm_surface_update(_drmvars, frame_output, _drmvars->menu_surface);
 }
 
-static void drm_gfx_set_nonblock_state(void *data, bool state)
-{
-   struct drm_video *vid = data;
+static void drm_gfx_set_nonblock_state(void *a, bool b, bool c, unsigned d) { }
 
-   (void)data;
-   (void)vid;
+static bool drm_gfx_alive(void *data) { return true; }
 
-   /* TODO */
-}
-
-static bool drm_gfx_alive(void *data)
-{
-   (void)data;
-   return true; /* always alive */
-}
-
-static bool drm_gfx_focus(void *data)
-{
-   (void)data;
-   return true; /* fb device always has focus */
-}
+static bool drm_gfx_focus(void *data) { return true; }
 
 static void drm_gfx_viewport_info(void *data, struct video_viewport *vp)
 {

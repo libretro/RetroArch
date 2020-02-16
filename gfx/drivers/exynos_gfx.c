@@ -1355,7 +1355,8 @@ fail:
    return false;
 }
 
-static void exynos_gfx_set_nonblock_state(void *data, bool state)
+static void exynos_gfx_set_nonblock_state(void *data, bool state,
+      bool adaptive_vsync_enabled, unsigned swap_interval)
 {
    struct exynos_video *vid = data;
    if (vid && vid->data)

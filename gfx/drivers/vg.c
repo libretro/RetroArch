@@ -77,16 +77,14 @@ typedef struct
 
 static PFNVGCREATEEGLIMAGETARGETKHRPROC pvgCreateEGLImageTargetKHR;
 
-static void vg_set_nonblock_state(void *data, bool state)
+static void vg_set_nonblock_state(void *data, bool state,
+      bool adaptive_vsync_enabled, unsigned swap_interval)
 {
    vg_t *vg     = (vg_t*)data;
    int interval = state ? 0 : 1;
 
    if (vg->ctx_driver && vg->ctx_driver->swap_interval)
    {
-      settings_t *settings                   = config_get_ptr();
-      bool adaptive_vsync_enabled            = video_driver_test_all_flags(
-            GFX_CTX_FLAGS_ADAPTIVE_VSYNC) && settings->bools.video_adaptive_vsync;
       if (adaptive_vsync_enabled && interval == 1)
          interval = -1;
       vg->ctx_driver->swap_interval(vg->ctx_data, interval);

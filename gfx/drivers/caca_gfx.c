@@ -184,11 +184,8 @@ static bool caca_gfx_frame(void *data, const void *frame,
    return true;
 }
 
-static void caca_gfx_set_nonblock_state(void *data, bool toggle)
-{
-   (void)data;
-   (void)toggle;
-}
+static void caca_gfx_set_nonblock_state(void *data, bool a,
+      bool b, unsigned c) { }
 
 static bool caca_gfx_alive(void *data)
 {

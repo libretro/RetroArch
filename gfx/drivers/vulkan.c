@@ -1309,13 +1309,12 @@ static void vulkan_check_swapchain(vk_t *vk)
    }
 }
 
-static void vulkan_set_nonblock_state(void *data, bool state)
+static void vulkan_set_nonblock_state(void *data, bool state,
+      bool adaptive_vsync_enabled,
+      unsigned swap_interval)
 {
    int interval                = 0;
    vk_t *vk                    = (vk_t*)data;
-   settings_t *settings        = config_get_ptr();
-   bool adaptive_vsync_enabled = video_driver_test_all_flags(
-         GFX_CTX_FLAGS_ADAPTIVE_VSYNC) && settings->bools.video_adaptive_vsync;
 
    if (!vk)
       return;
@@ -1323,7 +1322,7 @@ static void vulkan_set_nonblock_state(void *data, bool state)
    RARCH_LOG("[Vulkan]: VSync => %s\n", state ? "off" : "on");
 
    if (!state)
-      interval = settings->uints.video_swap_interval;
+      interval = swap_interval;
 
    if (vk->ctx_driver->swap_interval)
    {
@@ -1332,8 +1331,8 @@ static void vulkan_set_nonblock_state(void *data, bool state)
       vk->ctx_driver->swap_interval(vk->ctx_data, interval);
    }
 
-   /* Changing vsync might require recreating the swapchain, which means new VkImages
-    * to render into. */
+   /* Changing vsync might require recreating the swapchain,
+    * which means new VkImages to render into. */
    vulkan_check_swapchain(vk);
 }
 

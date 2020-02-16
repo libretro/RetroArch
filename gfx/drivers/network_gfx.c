@@ -327,11 +327,7 @@ static bool network_gfx_frame(void *data, const void *frame,
    return true;
 }
 
-static void network_gfx_set_nonblock_state(void *data, bool toggle)
-{
-   (void)data;
-   (void)toggle;
-}
+static void network_gfx_set_nonblock_state(void *a, bool b, bool c, unsigned d) { }
 
 static bool network_gfx_alive(void *data)
 {

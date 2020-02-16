@@ -1017,14 +1017,15 @@ static bool omap_gfx_frame(void *data, const void *frame, unsigned width,
    return true;
 }
 
-static void omap_gfx_set_nonblock_state(void *data, bool state)
+static void omap_gfx_set_nonblock_state(void *data, bool state, 
+      bool adaptive_vsync_enabled, unsigned swap_interval)
 {
    omap_video_t *vid;
 
    if (!data)
       return;
 
-   vid = data;
+   vid             = data;
    vid->omap->sync = !state;
 }
 

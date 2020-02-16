@@ -104,7 +104,8 @@ static bool metal_frame(void *data, const void *frame,
                      info:video_info];
 }
 
-static void metal_set_nonblock_state(void *data, bool non_block)
+static void metal_set_nonblock_state(void *data, bool non_block,
+      bool adaptive_vsync_enabled, unsigned swap_interval)
 {
    MetalDriver *md = (__bridge MetalDriver *)data;
    md.context.displaySyncEnabled = !non_block;

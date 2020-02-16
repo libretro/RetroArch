@@ -1180,9 +1180,9 @@ static void gx_blit_line(gx_video_t *gx,
    }
 }
 
-static void gx_set_nonblock_state(void *data, bool state)
+static void gx_set_nonblock_state(void *data, bool state,
+      bool adaptive_vsync_enabled, unsigned swap_interval)
 {
-   (void)data;
    g_vsync = !state;
 }
 

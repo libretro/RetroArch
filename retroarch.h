@@ -1449,7 +1449,9 @@ typedef struct video_driver
     * True = VSync is turned off.
     * False = VSync is turned on.
     * */
-   void (*set_nonblock_state)(void *data, bool toggle);
+   void (*set_nonblock_state)(void *data, bool toggle,
+         bool adaptive_vsync_enabled,
+         unsigned swap_interval);
 
    /* Is the window still active? */
    bool (*alive)(void *data);

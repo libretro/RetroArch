@@ -381,7 +381,7 @@ static bool video_null_frame(void *data, const void *frame,
    return true;
 }
 
-static void video_null_set_nonblock_state(void *data, bool toggle) { }
+static void video_null_set_nonblock_state(void *a, bool b, bool c, unsigned d) { }
 static bool video_null_alive(void *data) { return true; }
 static bool video_null_focus(void *data) { return true; }
 static bool video_null_has_windowed(void *data) { return true; }
@@ -6363,6 +6363,7 @@ static bool command_event_resize_windowed_scale(void)
 
 static void command_event_reinit(const int flags)
 {
+   settings_t *settings      = configuration_settings;
    video_driver_reinit(flags);
    /* Poll input to avoid possibly stale data to corrupt things. */
    if (current_input && current_input->poll)
@@ -6371,10 +6372,13 @@ static void command_event_reinit(const int flags)
 
 #ifdef HAVE_MENU
    gfx_display_set_framebuffer_dirty_flag();
-   if (configuration_settings->bools.video_fullscreen)
+   if (settings->bools.video_fullscreen)
       video_driver_hide_mouse();
    if (menu_driver_alive && current_video->set_nonblock_state)
-      current_video->set_nonblock_state(video_driver_data, false);
+      current_video->set_nonblock_state(video_driver_data, false,
+               video_driver_test_all_flags(GFX_CTX_FLAGS_ADAPTIVE_VSYNC) &&
+               settings->bools.video_adaptive_vsync,
+               settings->uints.video_swap_interval);
 #endif
 }
 
@@ -7116,8 +7120,15 @@ TODO: Add a setting for these tweaks */
          video_driver_apply_state_changes();
          break;
       case CMD_EVENT_VIDEO_SET_BLOCKING_STATE:
-         if (current_video->set_nonblock_state)
-            current_video->set_nonblock_state(video_driver_data, false);
+         {
+            settings_t *settings      = configuration_settings;
+            if (current_video->set_nonblock_state)
+               current_video->set_nonblock_state(video_driver_data, false,
+                     video_driver_test_all_flags(GFX_CTX_FLAGS_ADAPTIVE_VSYNC) &&
+                     settings->bools.video_adaptive_vsync,
+                     settings->uints.video_swap_interval
+                     );
+         }
          break;
       case CMD_EVENT_VIDEO_SET_ASPECT_RATIO:
          video_driver_set_aspect_ratio();
@@ -23322,8 +23333,13 @@ static void driver_adjust_system_rates(void)
 
    if (runloop_force_nonblock)
    {
+      settings_t *settings      = configuration_settings;
       if (current_video->set_nonblock_state)
-         current_video->set_nonblock_state(video_driver_data, true);
+         current_video->set_nonblock_state(video_driver_data, true,
+               video_driver_test_all_flags(GFX_CTX_FLAGS_ADAPTIVE_VSYNC) &&
+               settings->bools.video_adaptive_vsync,
+               settings->uints.video_swap_interval
+               );
    }
    else
       driver_set_nonblock_state();
@@ -23350,7 +23366,11 @@ void driver_set_nonblock_state(void)
          bool video_nonblock        = enable;
          if (!settings->bools.video_vsync || runloop_force_nonblock)
             video_nonblock = true;
-         current_video->set_nonblock_state(video_driver_data, video_nonblock);
+         current_video->set_nonblock_state(video_driver_data, video_nonblock,
+               video_driver_test_all_flags(GFX_CTX_FLAGS_ADAPTIVE_VSYNC) &&
+               settings->bools.video_adaptive_vsync,
+               settings->uints.video_swap_interval
+               );
       }
    }
 
@@ -25782,7 +25802,11 @@ static void menu_driver_toggle(bool on)
 
       /* Menu should always run with vsync on. */
       if (current_video->set_nonblock_state)
-         current_video->set_nonblock_state(video_driver_data, false);
+         current_video->set_nonblock_state(video_driver_data, false,
+               video_driver_test_all_flags(GFX_CTX_FLAGS_ADAPTIVE_VSYNC) &&
+               settings->bools.video_adaptive_vsync,
+               settings->uints.video_swap_interval
+               );
       /* Stop all rumbling before entering the menu. */
       command_event(CMD_EVENT_RUMBLE_STOP, NULL);
 
