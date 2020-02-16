@@ -32,7 +32,7 @@
 #include "../core_updater_list.h"
 #endif
 
-#if defined(HAVE_NETWORKING) && defined(HAVE_MENU)
+#if defined(HAVE_NETWORKING)
 /* Required for task_push_pl_entry_thumbnail_download() */
 #include "../playlist.h"
 #endif
@@ -100,17 +100,17 @@ void *task_push_core_updater_download(
       bool mute, bool check_crc, const char *path_dir_libretro);
 void task_push_update_installed_cores(const char *path_dir_libretro);
 
-#ifdef HAVE_MENU
-bool task_push_pl_thumbnail_download(
-      const char *system, const char *playlist_path,
-      const char *dir_thumbnails);
-
 bool task_push_pl_entry_thumbnail_download(
       const char *system,
       playlist_t *playlist,
       unsigned idx,
       bool overwrite,
       bool mute);
+
+#ifdef HAVE_MENU
+bool task_push_pl_thumbnail_download(
+      const char *system, const char *playlist_path,
+      const char *dir_thumbnails);
 #endif
 
 #endif
