@@ -206,16 +206,6 @@ enum menu_settings_type
    MENU_SETTINGS_LAST
 };
 
-enum menu_driver_id_type
-{
-   MENU_DRIVER_ID_UNKNOWN = 0,
-   MENU_DRIVER_ID_RGUI,
-   MENU_DRIVER_ID_OZONE,
-   MENU_DRIVER_ID_GLUI,
-   MENU_DRIVER_ID_XMB,
-   MENU_DRIVER_ID_XUI,
-   MENU_DRIVER_ID_STRIPES
-};
 
 typedef struct menu_ctx_driver
 {
@@ -425,8 +415,6 @@ const char* config_get_menu_driver_options(void);
 
 const char *menu_driver_ident(void);
 
-enum menu_driver_id_type menu_driver_ident_id(void);
-
 bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data);
 
 void menu_driver_frame(video_frame_info_t *video_info);
@@ -466,13 +454,6 @@ bool menu_driver_list_get_size(menu_ctx_list_t *list);
 size_t menu_navigation_get_selection(void);
 
 void menu_navigation_set_selection(size_t val);
-
-float menu_display_get_dpi_scale(unsigned width, unsigned height);
-float menu_display_get_pixel_scale(unsigned width, unsigned height);
-#ifdef HAVE_MENU_WIDGETS
-float menu_display_get_widget_pixel_scale(unsigned width, unsigned height);
-float menu_display_get_widget_dpi_scale(unsigned width, unsigned height);
-#endif
 
 void menu_display_handle_thumbnail_upload(retro_task_t *task,
       void *task_data,
