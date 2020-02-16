@@ -27280,7 +27280,6 @@ static enum runloop_state runloop_check_state(void)
 
 #if defined(HAVE_MENU)
    menu_animation_update(
-         menu_driver_ident_id(),
          settings->bools.menu_timedate_enable,
          settings->floats.menu_ticker_speed,
          video_driver_width, video_driver_height);

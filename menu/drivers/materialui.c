@@ -5588,6 +5588,13 @@ static void materialui_init_nav_bar(materialui_handle_t *mui)
    mui->nav_bar.location                   = MUI_NAV_BAR_LOCATION_BOTTOM;
 }
 
+static void materialui_menu_animation_update_time(
+      float *dst,
+      unsigned video_width, unsigned video_height)
+{
+   *(dst) *= menu_display_get_dpi_scale(video_width, video_height) * 0.8f;
+}
+
 static void *materialui_init(void **userdata, bool video_is_threaded)
 {
    unsigned width, height;
@@ -5670,10 +5677,13 @@ static void *materialui_init(void **userdata, bool video_is_threaded)
    mui->fullscreen_thumbnail_alpha     = 0.0f;
    mui->fullscreen_thumbnail_label[0]  = '\0';
 
+   menu_animation_set_update_time_cb(materialui_menu_animation_update_time);
+
    return menu;
 error:
    if (menu)
       free(menu);
+   menu_animation_unset_update_time_cb();
    return NULL;
 }
 
@@ -5692,6 +5702,7 @@ static void materialui_free(void *data)
 
    if (mui->thumbnail_path_data)
       free(mui->thumbnail_path_data);
+   menu_animation_unset_update_time_cb();
 }
 
 static void materialui_context_bg_destroy(materialui_handle_t *mui)

@@ -124,6 +124,14 @@ void ozone_free_list_nodes(file_list_t *list, bool actiondata)
    }
 }
 
+static void ozone_menu_animation_update_time(
+      float *dst,
+      unsigned video_width, unsigned video_height)
+{
+   *(dst) *= menu_display_get_dpi_scale(video_width, video_height) * 0.5f;
+}
+
+
 static void *ozone_init(void **userdata, bool video_is_threaded)
 {
    bool fallback_color_theme           = false;
@@ -303,6 +311,7 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
    );
 
    last_use_preferred_system_color_theme = settings->bools.menu_use_preferred_system_color_theme;
+   menu_animation_set_update_time_cb(ozone_menu_animation_update_time);
 
    return menu;
 
@@ -327,6 +336,7 @@ error:
 
    if (menu)
       free(menu);
+   menu_animation_unset_update_time_cb();
 
    return NULL;
 }
@@ -367,6 +377,7 @@ static void ozone_free(void *data)
       if (ozone->thumbnail_path_data)
          free(ozone->thumbnail_path_data);
    }
+   menu_animation_unset_update_time_cb();
 }
 
 unsigned ozone_count_lines(const char *str)

@@ -33,7 +33,6 @@
 #undef DG_DYNARR_IMPLEMENTATION
 
 #include "menu_animation.h"
-#include "menu_driver.h"
 #include "../performance_counters.h"
 
 typedef float (*easing_cb) (float, float, float, float);
@@ -84,6 +83,13 @@ static uint64_t ticker_pixel_idx = 0; /* updated every frame */
 static float delta_time          = 0.0f;
 static bool animation_is_active  = false;
 static bool ticker_is_active     = false;
+
+/* Forward declarations */
+static void menu_animation_update_time_default(
+      float *dst,
+      unsigned video_width, unsigned video_height);
+
+static update_time_cb update_time_callback = menu_animation_update_time_default;
 
 /* from https://github.com/kikito/tween.lua/blob/master/tween.lua */
 
@@ -1187,27 +1193,6 @@ bool menu_animation_push(menu_animation_ctx_entry_t *entry)
    return true;
 }
 
-static void menu_animation_update_time_rgui(
-      float *dst,
-      unsigned video_width, unsigned height)
-{
-   *(dst) *= 0.25f;
-}
-
-static void menu_animation_update_time_ozone(
-      float *dst,
-      unsigned video_width, unsigned video_height)
-{
-   *(dst) *= menu_display_get_dpi_scale(video_width, video_height) * 0.5f;
-}
-
-static void menu_animation_update_time_materialui(
-      float *dst,
-      unsigned video_width, unsigned video_height)
-{
-   *(dst) *= menu_display_get_dpi_scale(video_width, video_height) * 0.8f;
-}
-
 static void menu_animation_update_time_default(
       float *dst,
       unsigned video_width, unsigned video_height)
@@ -1215,9 +1200,18 @@ static void menu_animation_update_time_default(
    if (video_width > 0)
       *(dst) *= ((float)video_width / 1920.0f);
 }
+
+void menu_animation_set_update_time_cb(update_time_cb cb)
+{
+   update_time_callback = cb;
+}
+
+void menu_animation_unset_update_time_cb(void)
+{
+   update_time_callback = menu_animation_update_time_default;
+}
       
 static void menu_animation_update_time(
-      unsigned type,
       bool timedate_enable,
       unsigned video_width, unsigned video_height,
       float menu_ticker_speed)
@@ -1293,24 +1287,8 @@ static void menu_animation_update_time(
        *   system. We therefore take the same approach as GLUI,
        *   but with a different correction factor (expected
        *   scroll speed is somewhat lower for Ozone) */
-      switch (type)
-      {
-         case MENU_DRIVER_ID_RGUI:
-            menu_animation_update_time_rgui(&ticker_pixel_increment, video_width, video_height);
-            break;
-         case MENU_DRIVER_ID_OZONE:
-            menu_animation_update_time_ozone(&ticker_pixel_increment, video_width, video_height);
-            break;
-         case MENU_DRIVER_ID_GLUI:
-            menu_animation_update_time_materialui(
-                  &ticker_pixel_increment, video_width, video_height);
-            break;
-         case MENU_DRIVER_ID_XMB:
-         default:
-            menu_animation_update_time_default(
-                  &ticker_pixel_increment, video_width, video_height);
-            break;
-      }
+      update_time_callback(&ticker_pixel_increment,
+            video_width, video_height);
 
       /* > Update accumulator */
       ticker_pixel_accumulator += ticker_pixel_increment;
@@ -1326,7 +1304,6 @@ static void menu_animation_update_time(
 }
 
 bool menu_animation_update(
-      unsigned type,
       bool menu_timedate_enable,
       float menu_ticker_speed,
       unsigned video_width,
@@ -1335,7 +1312,6 @@ bool menu_animation_update(
    unsigned i;
 
    menu_animation_update_time(
-         type,
          menu_timedate_enable,
          video_width, video_height,
          menu_ticker_speed);

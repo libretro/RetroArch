@@ -4240,6 +4240,13 @@ static bool rgui_set_aspect_ratio(rgui_t *rgui, bool delay_update)
    return true;
 }
 
+static void rgui_menu_animation_update_time(
+      float *dst,
+      unsigned video_width, unsigned height)
+{
+   *(dst) *= 0.25f;
+}
+
 static void *rgui_init(void **userdata, bool video_is_threaded)
 {
    unsigned new_font_height;
@@ -4348,6 +4355,8 @@ static void *rgui_init(void **userdata, bool video_is_threaded)
     * values (shoult not be necessary, but some platforms may
     * not handle struct initialisation correctly...) */
    memset(&rgui->pointer, 0, sizeof(menu_input_pointer_t));
+   
+   menu_animation_set_update_time_cb(rgui_menu_animation_update_time);
 
    return menu;
 
@@ -4359,6 +4368,7 @@ error:
    rgui_thumbnail_free(&mini_left_thumbnail);
    if (menu)
       free(menu);
+   menu_animation_unset_update_time_cb();
    return NULL;
 }
 
@@ -4383,6 +4393,8 @@ static void rgui_free(void *data)
       free(rgui_upscale_buf.data);
       rgui_upscale_buf.data = NULL;
    }
+
+   menu_animation_unset_update_time_cb();
 }
 
 static void rgui_set_texture(void)

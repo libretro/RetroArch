@@ -31,6 +31,9 @@ RETRO_BEGIN_DECLS
 
 typedef void  (*tween_cb)  (void*);
 
+typedef void (*update_time_cb) (float *dst,
+      unsigned width, unsigned height);
+
 enum menu_animation_ctl_state
 {
    MENU_ANIMATION_CTL_NONE = 0,
@@ -198,7 +201,6 @@ void menu_timer_start(menu_timer_t *timer, menu_timer_ctx_entry_t *timer_entry);
 void menu_timer_kill(menu_timer_t *timer);
 
 bool menu_animation_update(
-      unsigned type,
       bool menu_timedate_enable,
       float menu_ticker_speed,
       unsigned video_width,
@@ -231,6 +233,10 @@ uint64_t menu_animation_get_ticker_idx(void);
 uint64_t menu_animation_get_ticker_slow_idx(void);
 
 uint64_t menu_animation_get_ticker_pixel_idx(void);
+
+void menu_animation_set_update_time_cb(update_time_cb cb);
+
+void menu_animation_unset_update_time_cb(void);
 
 RETRO_END_DECLS
 
