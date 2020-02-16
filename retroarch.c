@@ -131,10 +131,11 @@
 
 #include <audio/audio_resampler.h>
 
-#ifdef HAVE_MENU
-#include "menu/menu_driver.h"
 #include "gfx/gfx_animation.h"
 #include "gfx/gfx_display.h"
+
+#ifdef HAVE_MENU
+#include "menu/menu_driver.h"
 #include "menu/menu_input.h"
 #include "menu/widgets/menu_dialog.h"
 #include "menu/widgets/menu_input_bind_dialog.h"

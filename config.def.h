@@ -392,7 +392,6 @@
 
 #ifdef HAVE_MENU
 #include "menu/menu_driver.h"
-#include "gfx/gfx_animation.h"
 
 #ifdef HAVE_LIBNX
 #define DEFAULT_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME true
@@ -505,7 +504,7 @@ static const bool menu_show_core_updater       = true;
 static const bool menu_show_legacy_thumbnail_updater = false;
 static const bool menu_show_sublabels          = true;
 
-static const unsigned menu_ticker_type         = TICKER_TYPE_BOUNCE;
+#define DEFAULT_MENU_TICKER_TYPE                 (TICKER_TYPE_BOUNCE)
 static const float menu_ticker_speed           = 1.0f;
 
 #define DEFAULT_MENU_TICKER_SMOOTH true
