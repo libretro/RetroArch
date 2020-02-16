@@ -11,6 +11,7 @@
 - EMSCRIPTEN: Recreate input event listeners properly
 - FFMPEG CORE: Fix crash on seeking when using HW decoding in some cases
 - LIBRETRO: Add disk control interface API extension
+- LINUX: Avoid possible crash when running retroarch at startup
 - LOCALIZATION: Update French translation
 - LOCALIZATION: Update Korean translation
 - LOCALIZATION: Update Polish translation
