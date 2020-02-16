@@ -19,7 +19,6 @@
 
 #include <retro_common_api.h>
 
-#include "../retroarch.h"
 #include "../gfx/video_shader_parse.h"
 
 RETRO_BEGIN_DECLS

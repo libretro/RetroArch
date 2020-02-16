@@ -39,7 +39,6 @@
 #include "../../managers/cheat_manager.h"
 #include "../../performance_counters.h"
 #include "../../paths.h"
-#include "../../retroarch.h"
 #include "../../verbosity.h"
 #include "../../wifi/wifi_driver.h"
 #include "../../playlist.h"

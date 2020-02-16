@@ -30,16 +30,8 @@
 #include <encodings/utf.h>
 #include <features/features_cpu.h>
 
-#ifdef HAVE_DISCORD
-#include "discord/discord.h"
-#endif
-
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
-#endif
-
-#ifdef HAVE_THREADS
-#include "../gfx/video_thread_wrapper.h"
 #endif
 
 #include "menu_driver.h"
@@ -59,11 +51,8 @@
 #include "../driver.h"
 #include "../retroarch.h"
 #include "../version.h"
-#include "../defaults.h"
-#include "../frontend/frontend.h"
 #include "../list_special.h"
 #include "../tasks/tasks_internal.h"
-#include "../ui/ui_companion_driver.h"
 #include "../verbosity.h"
 #include "../tasks/task_powerstate.h"
 #ifdef HAVE_NETWORKING

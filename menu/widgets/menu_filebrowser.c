@@ -36,10 +36,7 @@
 #include "../../configuration.h"
 #include "../../paths.h"
 
-#include "../../retroarch.h"
-#include "../../core.h"
 #include "../../content.h"
-#include "../../verbosity.h"
 #include "../../dynamic.h"
 
 static enum filebrowser_enums filebrowser_types = FILEBROWSER_NONE;

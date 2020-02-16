@@ -58,7 +58,6 @@
 #include "../../dynamic.h"
 #include "../../configuration.h"
 #include "../../playlist.h"
-#include "../../retroarch.h"
 
 #include "../../tasks/tasks_internal.h"
 

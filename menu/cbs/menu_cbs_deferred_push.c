@@ -33,7 +33,6 @@
 #include "../../configuration.h"
 #include "../../core.h"
 #include "../../core_info.h"
-#include "../../retroarch.h"
 #include "../../verbosity.h"
 
 #ifndef BIND_ACTION_DEFERRED_PUSH
