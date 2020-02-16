@@ -44,8 +44,8 @@
 #include "../menu_driver.h"
 #include "../../gfx/gfx_animation.h"
 #include "../menu_input.h"
-#include "../menu_thumbnail_path.h"
-#include "../menu_thumbnail.h"
+#include "../gfx_thumbnail_path.h"
+#include "../gfx_thumbnail.h"
 
 #include "../widgets/menu_osk.h"
 #include "../widgets/menu_filebrowser.h"
@@ -1022,8 +1022,8 @@ typedef struct
    /* Thumbnail containers */
    struct
    {
-      menu_thumbnail_t primary;
-      menu_thumbnail_t secondary;
+      gfx_thumbnail_t primary;
+      gfx_thumbnail_t secondary;
    } thumbnails;
 
 } materialui_node_t;
@@ -1352,7 +1352,7 @@ typedef struct materialui_handle
    size_t last_stack_size;
 
    /* Thumbnail helpers */
-   menu_thumbnail_path_data_t *thumbnail_path_data;
+   gfx_thumbnail_path_data_t *thumbnail_path_data;
    unsigned thumbnail_width_max;
    unsigned thumbnail_height_max;
    bool primary_thumbnail_available;
@@ -1756,7 +1756,7 @@ static void materialui_draw_icon(
 static void materialui_draw_thumbnail(
       materialui_handle_t *mui,
       video_frame_info_t *video_info,
-      menu_thumbnail_t *thumbnail,
+      gfx_thumbnail_t *thumbnail,
       float x, float y,
       unsigned width, unsigned height,
       float scale_factor)
@@ -1778,7 +1778,7 @@ static void materialui_draw_thumbnail(
    bg_y      = y - (bg_height - (float)mui->thumbnail_height_max) / 2.0f;
 
    /* If thumbnail is missing, draw fallback image... */
-   if (thumbnail->status == MENU_THUMBNAIL_STATUS_MISSING)
+   if (thumbnail->status == GFX_THUMBNAIL_STATUS_MISSING)
    {
       float icon_size;
 
@@ -1819,7 +1819,7 @@ static void materialui_draw_thumbnail(
     * > Note that other conditions are ignored - i.e. we
     *   we draw nothing if thumbnail status is unknown,
     *   or we are waiting for a thumbnail to load) */
-   else if (thumbnail->status == MENU_THUMBNAIL_STATUS_AVAILABLE)
+   else if (thumbnail->status == GFX_THUMBNAIL_STATUS_AVAILABLE)
    {
       settings_t *settings = config_get_ptr();
 
@@ -1858,10 +1858,10 @@ static void materialui_draw_thumbnail(
       }
 
       /* Thumbnail */
-      menu_thumbnail_draw(
+      gfx_thumbnail_draw(
             video_info, thumbnail,
             x, y, mui->thumbnail_width_max, mui->thumbnail_height_max,
-            MENU_THUMBNAIL_ALIGN_CENTRE,
+            GFX_THUMBNAIL_ALIGN_CENTRE,
             mui->transition_alpha, scale_factor, NULL);
    }
 }
@@ -2502,20 +2502,20 @@ static void materialui_render(void *data,
          bool on_screen                       = 
             first_entry_found && !last_entry_found;
          unsigned thumbnail_upscale_threshold = 
-            settings->uints.menu_thumbnail_upscale_threshold;
+            settings->uints.gfx_thumbnail_upscale_threshold;
          bool network_on_demand_thumbnails    = 
             settings->bools.network_on_demand_thumbnails;
 
          if (mui->secondary_thumbnail_enabled)
-            menu_thumbnail_process_streams(
+            gfx_thumbnail_process_streams(
                mui->thumbnail_path_data, mui->playlist, i,
                &node->thumbnails.primary, &node->thumbnails.secondary,
                on_screen,
                thumbnail_upscale_threshold,
                network_on_demand_thumbnails);
          else
-            menu_thumbnail_process_stream(
-                  mui->thumbnail_path_data, MENU_THUMBNAIL_RIGHT,
+            gfx_thumbnail_process_stream(
+                  mui->thumbnail_path_data, GFX_THUMBNAIL_RIGHT,
                   mui->playlist, i, &node->thumbnails.primary, on_screen,
                   thumbnail_upscale_threshold,
                   network_on_demand_thumbnails);
@@ -4280,8 +4280,8 @@ static void materialui_render_nav_bar(
  *   or node is unallocated */
 static bool materialui_get_selected_thumbnails(
       materialui_handle_t *mui, size_t selection,
-      menu_thumbnail_t **primary_thumbnail,
-      menu_thumbnail_t **secondary_thumbnail)
+      gfx_thumbnail_t **primary_thumbnail,
+      gfx_thumbnail_t **secondary_thumbnail)
 {
    file_list_t *list       = NULL;
    materialui_node_t *node = NULL;
@@ -4324,7 +4324,7 @@ static void materialui_hide_fullscreen_thumbnails(
       /* Configure fade out animation */
       animation_entry.easing_enum  = EASING_OUT_QUAD;
       animation_entry.tag          = alpha_tag;
-      animation_entry.duration     = menu_thumbnail_get_fade_duration();
+      animation_entry.duration     = gfx_thumbnail_get_fade_duration();
       animation_entry.target_value = 0.0f;
       animation_entry.subject      = &mui->fullscreen_thumbnail_alpha;
       animation_entry.cb           = NULL;
@@ -4348,8 +4348,8 @@ static void materialui_show_fullscreen_thumbnails(
 {
    menu_entry_t selected_entry;
    gfx_animation_ctx_entry_t animation_entry;
-   menu_thumbnail_t *primary_thumbnail   = NULL;
-   menu_thumbnail_t *secondary_thumbnail = NULL;
+   gfx_thumbnail_t *primary_thumbnail   = NULL;
+   gfx_thumbnail_t *secondary_thumbnail = NULL;
    gfx_animation_ctx_tag scroll_tag      = (uintptr_t)&mui->scroll_y;
    gfx_animation_ctx_tag alpha_tag       = (uintptr_t)&mui->fullscreen_thumbnail_alpha;
    const char *thumbnail_label           = NULL;
@@ -4374,15 +4374,15 @@ static void materialui_show_fullscreen_thumbnails(
     * current selection has at least one valid thumbnail
     * and all thumbnails for current selection are already
     * loaded/available */
-   if ((primary_thumbnail->status == MENU_THUMBNAIL_STATUS_AVAILABLE) &&
+   if ((primary_thumbnail->status == GFX_THUMBNAIL_STATUS_AVAILABLE) &&
        (mui->secondary_thumbnail_enabled &&
-            ((secondary_thumbnail->status != MENU_THUMBNAIL_STATUS_MISSING) &&
-             (secondary_thumbnail->status != MENU_THUMBNAIL_STATUS_AVAILABLE))))
+            ((secondary_thumbnail->status != GFX_THUMBNAIL_STATUS_MISSING) &&
+             (secondary_thumbnail->status != GFX_THUMBNAIL_STATUS_AVAILABLE))))
       return;
 
-   if ((primary_thumbnail->status == MENU_THUMBNAIL_STATUS_MISSING) &&
+   if ((primary_thumbnail->status == GFX_THUMBNAIL_STATUS_MISSING) &&
        (!mui->secondary_thumbnail_enabled ||
-            (secondary_thumbnail->status != MENU_THUMBNAIL_STATUS_AVAILABLE)))
+            (secondary_thumbnail->status != GFX_THUMBNAIL_STATUS_AVAILABLE)))
       return;
 
    /* Menu list must be stationary while fullscreen
@@ -4417,7 +4417,7 @@ static void materialui_show_fullscreen_thumbnails(
    /* Configure fade in animation */
    animation_entry.easing_enum  = EASING_OUT_QUAD;
    animation_entry.tag          = alpha_tag;
-   animation_entry.duration     = menu_thumbnail_get_fade_duration();
+   animation_entry.duration     = gfx_thumbnail_get_fade_duration();
    animation_entry.target_value = 1.0f;
    animation_entry.subject      = &mui->fullscreen_thumbnail_alpha;
    animation_entry.cb           = NULL;
@@ -4439,8 +4439,8 @@ static void materialui_render_fullscreen_thumbnails(
    /* Check whether fullscreen thumbnails are visible */
    if (mui->fullscreen_thumbnail_alpha > 0.0f)
    {
-      menu_thumbnail_t *primary_thumbnail   = NULL;
-      menu_thumbnail_t *secondary_thumbnail = NULL;
+      gfx_thumbnail_t *primary_thumbnail   = NULL;
+      gfx_thumbnail_t *secondary_thumbnail = NULL;
       bool show_primary_thumbnail           = false;
       bool show_secondary_thumbnail         = false;
       unsigned num_thumbnails               = 0;
@@ -4481,10 +4481,10 @@ static void materialui_render_fullscreen_thumbnails(
 
       /* Get number of 'active' thumbnails */
       show_primary_thumbnail =
-            (primary_thumbnail->status != MENU_THUMBNAIL_STATUS_MISSING);
+            (primary_thumbnail->status != GFX_THUMBNAIL_STATUS_MISSING);
       show_secondary_thumbnail =
             mui->secondary_thumbnail_enabled &&
-            (secondary_thumbnail->status != MENU_THUMBNAIL_STATUS_MISSING);
+            (secondary_thumbnail->status != GFX_THUMBNAIL_STATUS_MISSING);
 
       if (show_primary_thumbnail)
          num_thumbnails++;
@@ -4572,7 +4572,7 @@ static void materialui_render_fullscreen_thumbnails(
        *     the bounding box dimensions...  */
       if (show_primary_thumbnail)
       {
-         menu_thumbnail_get_draw_dimensions(
+         gfx_thumbnail_get_draw_dimensions(
                primary_thumbnail,
                thumbnail_box_width, thumbnail_box_height, 1.0f,
                &primary_thumbnail_draw_width, &primary_thumbnail_draw_height);
@@ -4585,7 +4585,7 @@ static void materialui_render_fullscreen_thumbnails(
 
       if (show_secondary_thumbnail)
       {
-         menu_thumbnail_get_draw_dimensions(
+         gfx_thumbnail_get_draw_dimensions(
                secondary_thumbnail,
                thumbnail_box_width, thumbnail_box_height, 1.0f,
                &secondary_thumbnail_draw_width, &secondary_thumbnail_draw_height);
@@ -4662,14 +4662,14 @@ static void materialui_render_fullscreen_thumbnails(
                mui->colors.surface_background);
 
          /* Thumbnail */
-         menu_thumbnail_draw(
+         gfx_thumbnail_draw(
                video_info,
                primary_thumbnail,
                primary_thumbnail_x,
                primary_thumbnail_y,
                (unsigned)thumbnail_box_width,
                (unsigned)thumbnail_box_height,
-               MENU_THUMBNAIL_ALIGN_CENTRE,
+               GFX_THUMBNAIL_ALIGN_CENTRE,
                mui->fullscreen_thumbnail_alpha,
                1.0f,
                NULL);
@@ -4692,14 +4692,14 @@ static void materialui_render_fullscreen_thumbnails(
                mui->colors.surface_background);
 
          /* Thumbnail */
-         menu_thumbnail_draw(
+         gfx_thumbnail_draw(
                video_info,
                secondary_thumbnail,
                secondary_thumbnail_x,
                secondary_thumbnail_y,
                (unsigned)thumbnail_box_width,
                (unsigned)thumbnail_box_height,
-               MENU_THUMBNAIL_ALIGN_CENTRE,
+               GFX_THUMBNAIL_ALIGN_CENTRE,
                mui->fullscreen_thumbnail_alpha,
                1.0f,
                NULL);
@@ -5046,7 +5046,7 @@ static void materialui_set_list_view_type(
 
       /* Check whether primary thumbnail is enabled */
       mui->primary_thumbnail_available =
-            menu_thumbnail_is_enabled(mui->thumbnail_path_data, MENU_THUMBNAIL_RIGHT);
+            gfx_thumbnail_is_enabled(mui->thumbnail_path_data, GFX_THUMBNAIL_RIGHT);
 
       if (mui->primary_thumbnail_available)
       {
@@ -5283,8 +5283,8 @@ static bool materialui_force_enable_secondary_thumbnail(
 {
    /* If secondary thumbnail is already enabled,
     * do nothing */
-   if (menu_thumbnail_is_enabled(
-         mui->thumbnail_path_data, MENU_THUMBNAIL_LEFT))
+   if (gfx_thumbnail_is_enabled(
+         mui->thumbnail_path_data, GFX_THUMBNAIL_LEFT))
       return true;
 
    /* Secondary thumbnail is disabled
@@ -5297,7 +5297,7 @@ static bool materialui_force_enable_secondary_thumbnail(
        *   MUI_DEFAULT_SECONDARY_THUMBNAIL_TYPE, use
        *   MUI_DEFAULT_SECONDARY_THUMBNAIL_FALLBACK_TYPE
        *   instead */
-      if (settings->uints.menu_thumbnails ==
+      if (settings->uints.gfx_thumbnails ==
             MUI_DEFAULT_SECONDARY_THUMBNAIL_TYPE)
          settings->uints.menu_left_thumbnails =
                MUI_DEFAULT_SECONDARY_THUMBNAIL_FALLBACK_TYPE;
@@ -5308,8 +5308,8 @@ static bool materialui_force_enable_secondary_thumbnail(
 
    /* Final check - this will return true unless a
     * per-playlist override is in place */
-   return menu_thumbnail_is_enabled(
-         mui->thumbnail_path_data, MENU_THUMBNAIL_LEFT);
+   return gfx_thumbnail_is_enabled(
+         mui->thumbnail_path_data, GFX_THUMBNAIL_LEFT);
 }
 
 /* Determines whether dual thumbnails should be enabled
@@ -5617,7 +5617,7 @@ static void *materialui_init(void **userdata, bool video_is_threaded)
    *userdata = mui;
 
    /* Initialise thumbnail path data */
-   mui->thumbnail_path_data = menu_thumbnail_path_init();
+   mui->thumbnail_path_data = gfx_thumbnail_path_init();
    if (!mui->thumbnail_path_data)
       goto error;
 
@@ -5669,7 +5669,7 @@ static void *materialui_init(void **userdata, bool video_is_threaded)
    materialui_init_nav_bar(mui);
 
    /* Set initial thumbnail stream delay */
-   menu_thumbnail_set_stream_delay(MUI_THUMBNAIL_STREAM_DELAY_DEFAULT);
+   gfx_thumbnail_set_stream_delay(MUI_THUMBNAIL_STREAM_DELAY_DEFAULT);
 
    /* Ensure that fullscreen thumbnails are inactive */
    mui->show_fullscreen_thumbnails     = false;
@@ -5731,8 +5731,8 @@ static void materialui_reset_thumbnails(void)
       if (!node)
          continue;
 
-      menu_thumbnail_reset(&node->thumbnails.primary);
-      menu_thumbnail_reset(&node->thumbnails.secondary);
+      gfx_thumbnail_reset(&node->thumbnails.primary);
+      gfx_thumbnail_reset(&node->thumbnails.secondary);
    }
 }
 
@@ -6896,7 +6896,7 @@ static int materialui_pointer_down(void *userdata,
       /* Increase thumbnail stream delay
        * (prevents overloading the system with
        * hundreds of image requests...) */
-      menu_thumbnail_set_stream_delay(MUI_THUMBNAIL_STREAM_DELAY_SCROLLBAR_DRAG);
+      gfx_thumbnail_set_stream_delay(MUI_THUMBNAIL_STREAM_DELAY_SCROLLBAR_DRAG);
    }
 
    return 0;
@@ -7129,7 +7129,7 @@ static int materialui_pointer_up(void *userdata,
       menu_input_set_pointer_y_accel(0.0f);
 
       /* Reset thumbnail stream delay to default */
-      menu_thumbnail_set_stream_delay(MUI_THUMBNAIL_STREAM_DELAY_DEFAULT);
+      gfx_thumbnail_set_stream_delay(MUI_THUMBNAIL_STREAM_DELAY_DEFAULT);
 
       mui->scrollbar.dragged = false;
       return 0;
@@ -7323,8 +7323,8 @@ static void materialui_list_insert(
    {
       /* If node already exists, must free any
        * existing thumbnail */
-      menu_thumbnail_reset(&node->thumbnails.primary);
-      menu_thumbnail_reset(&node->thumbnails.secondary);
+      gfx_thumbnail_reset(&node->thumbnails.primary);
+      gfx_thumbnail_reset(&node->thumbnails.secondary);
       thumbnail_reset = true;
    }
 
@@ -7342,8 +7342,8 @@ static void materialui_list_insert(
 
    if (!thumbnail_reset)
    {
-      menu_thumbnail_reset(&node->thumbnails.primary);
-      menu_thumbnail_reset(&node->thumbnails.secondary);
+      gfx_thumbnail_reset(&node->thumbnails.primary);
+      gfx_thumbnail_reset(&node->thumbnails.secondary);
    }
 
    if (settings->bools.menu_materialui_icons_enable)
@@ -7830,7 +7830,7 @@ static void materialui_list_clear(file_list_t *list)
 
    /* Must cancel pending thumbnail requests before
     * freeing node->thumbnails objects */
-   menu_thumbnail_cancel_pending_requests();
+   gfx_thumbnail_cancel_pending_requests();
 
    for (i = 0; i < size; i++)
    {
@@ -7840,8 +7840,8 @@ static void materialui_list_clear(file_list_t *list)
       if (!node)
          continue;
 
-      menu_thumbnail_reset(&node->thumbnails.primary);
-      menu_thumbnail_reset(&node->thumbnails.secondary);
+      gfx_thumbnail_reset(&node->thumbnails.primary);
+      gfx_thumbnail_reset(&node->thumbnails.secondary);
       file_list_free_userdata(list, i);
    }
 }
@@ -7851,7 +7851,7 @@ static void materialui_set_thumbnail_system(void *userdata, char *s, size_t len)
    materialui_handle_t *mui = (materialui_handle_t*)userdata;
    if (!mui)
       return;
-   menu_thumbnail_set_system(
+   gfx_thumbnail_set_system(
          mui->thumbnail_path_data, s, playlist_get_cached());
 }
 
@@ -7861,7 +7861,7 @@ static void materialui_get_thumbnail_system(void *userdata, char *s, size_t len)
    const char *system       = NULL;
    if (!mui)
       return;
-   if (menu_thumbnail_get_system(mui->thumbnail_path_data, &system))
+   if (gfx_thumbnail_get_system(mui->thumbnail_path_data, &system))
       strlcpy(s, system, len);
 }
 
@@ -7884,7 +7884,7 @@ static void materialui_refresh_thumbnail_image(void *userdata, unsigned i)
    {
       file_list_t *list       = menu_entries_get_selection_buf_ptr(0);
       materialui_node_t *node = NULL;
-      float stream_delay      = menu_thumbnail_get_stream_delay();
+      float stream_delay      = gfx_thumbnail_get_stream_delay();
 
       if (!list)
          return;
@@ -7895,8 +7895,8 @@ static void materialui_refresh_thumbnail_image(void *userdata, unsigned i)
          return;
 
       /* Reset existing thumbnails */
-      menu_thumbnail_reset(&node->thumbnails.primary);
-      menu_thumbnail_reset(&node->thumbnails.secondary);
+      gfx_thumbnail_reset(&node->thumbnails.primary);
+      gfx_thumbnail_reset(&node->thumbnails.secondary);
 
       /* No need to actually request thumbnails here
        * > Just set delay timer to the current maximum

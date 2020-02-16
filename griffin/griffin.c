@@ -918,6 +918,8 @@ DRIVERS
 #include "../gfx/video_crt_switch.c"
 #include "../gfx/gfx_animation.c"
 #include "../gfx/gfx_display.c"
+#include "../gfx/gfx_thumbnail_path.c"
+#include "../gfx/gfx_thumbnail.c"
 #include "../gfx/video_display_server.c"
 #include "../gfx/video_coord_array.c"
 #ifdef HAVE_AUDIOMIXER
@@ -1293,8 +1295,6 @@ MENU
 #include "../menu/cbs/menu_cbs_down.c"
 #include "../menu/cbs/menu_cbs_contentlist_switch.c"
 #include "../menu/menu_displaylist.c"
-#include "../menu/menu_thumbnail_path.c"
-#include "../menu/menu_thumbnail.c"
 #include "../menu/drivers/menu_generic.c"
 #endif
 

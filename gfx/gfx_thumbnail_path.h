@@ -1,7 +1,7 @@
 /* Copyright  (C) 2010-2019 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
- * The following license statement only applies to this file (menu_thumbnail_path.c).
+ * The following license statement only applies to this file (gfx_thumbnail_path.c).
  * ---------------------------------------------------------------------------------------
  *
  * Permission is hereby granted, free of charge,
@@ -20,8 +20,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef __MENU_THUMBNAIL_PATH_H
-#define __MENU_THUMBNAIL_PATH_H
+#ifndef __GFX_THUMBNAIL_PATH_H
+#define __GFX_THUMBNAIL_PATH_H
 
 #include <retro_common_api.h>
 #include <libretro.h>
@@ -41,26 +41,26 @@ RETRO_BEGIN_DECLS
  * but I have no interest in rewriting the existing
  * menu code... */
 
-enum menu_thumbnail_id
+enum gfx_thumbnail_id
 {
-   MENU_THUMBNAIL_RIGHT = 0,
-   MENU_THUMBNAIL_LEFT
+   GFX_THUMBNAIL_RIGHT = 0,
+   GFX_THUMBNAIL_LEFT
 };
 
-/* Prevent direct access to menu_thumbnail_path_data_t members */
-typedef struct menu_thumbnail_path_data menu_thumbnail_path_data_t;
+/* Prevent direct access to gfx_thumbnail_path_data_t members */
+typedef struct gfx_thumbnail_path_data gfx_thumbnail_path_data_t;
 
 /* Initialisation */
 
 /* Creates new thumbnail path data container.
- * Returns handle to new menu_thumbnail_path_data_t object.
+ * Returns handle to new gfx_thumbnail_path_data_t object.
  * on success, otherwise NULL.
  * Note: Returned object must be free()d */
-menu_thumbnail_path_data_t *menu_thumbnail_path_init(void);
+gfx_thumbnail_path_data_t *gfx_thumbnail_path_init(void);
 
 /* Resets thumbnail path data
  * (blanks all internal string containers) */
-void menu_thumbnail_path_reset(menu_thumbnail_path_data_t *path_data);
+void gfx_thumbnail_path_reset(gfx_thumbnail_path_data_t *path_data);
 
 /* Utility Functions */
 
@@ -68,16 +68,16 @@ void menu_thumbnail_path_reset(menu_thumbnail_path_data_t *path_data);
  * Named_Titles, Named_Boxarts) corresponding to the
  * specified 'type index' (1, 2, 3).
  * Returns true if 'type index' is valid */
-bool menu_thumbnail_get_sub_directory(unsigned type_idx, const char **sub_directory);
+bool gfx_thumbnail_get_sub_directory(unsigned type_idx, const char **sub_directory);
 
 /* Returns currently set thumbnail 'type' (Named_Snaps,
  * Named_Titles, Named_Boxarts) for specified thumbnail
  * identifier (right, left) */
-const char *menu_thumbnail_get_type(menu_thumbnail_path_data_t *path_data, enum menu_thumbnail_id thumbnail_id);
+const char *gfx_thumbnail_get_type(gfx_thumbnail_path_data_t *path_data, enum gfx_thumbnail_id thumbnail_id);
 
 /* Returns true if specified thumbnail is enabled
  * (i.e. if 'type' is not equal to MENU_ENUM_LABEL_VALUE_OFF) */
-bool menu_thumbnail_is_enabled(menu_thumbnail_path_data_t *path_data, enum menu_thumbnail_id thumbnail_id);
+bool gfx_thumbnail_is_enabled(gfx_thumbnail_path_data_t *path_data, enum gfx_thumbnail_id thumbnail_id);
 
 /* Setters */
 
@@ -85,18 +85,18 @@ bool menu_thumbnail_is_enabled(menu_thumbnail_path_data_t *path_data, enum menu_
  * Returns true if 'system' is valid.
  * If playlist is provided, extracts system-specific
  * thumbnail assignment metadata (required for accurate
- * usage of menu_thumbnail_is_enabled())
+ * usage of gfx_thumbnail_is_enabled())
  * > Used as a fallback when individual content lacks an
  *   associated database name */
-bool menu_thumbnail_set_system(menu_thumbnail_path_data_t *path_data, const char *system, playlist_t *playlist);
+bool gfx_thumbnail_set_system(gfx_thumbnail_path_data_t *path_data, const char *system, playlist_t *playlist);
 
 /* Sets current thumbnail content according to the specified label.
  * Returns true if content is valid */
-bool menu_thumbnail_set_content(menu_thumbnail_path_data_t *path_data, const char *label);
+bool gfx_thumbnail_set_content(gfx_thumbnail_path_data_t *path_data, const char *label);
 
 /* Sets current thumbnail content to the specified image.
  * Returns true if content is valid */
-bool menu_thumbnail_set_content_image(menu_thumbnail_path_data_t *path_data, const char *img_dir, const char *img_name);
+bool gfx_thumbnail_set_content_image(gfx_thumbnail_path_data_t *path_data, const char *img_dir, const char *img_name);
 
 /* Sets current thumbnail content to the specified playlist entry.
  * Returns true if content is valid.
@@ -105,54 +105,54 @@ bool menu_thumbnail_set_content_image(menu_thumbnail_path_data_t *path_data, con
  *   corresponding menu entry label will contain a useful
  *   identifier (it may be 'tainted', e.g. with the current
  *   core name). 'Real' labels should be extracted from source */
-bool menu_thumbnail_set_content_playlist(menu_thumbnail_path_data_t *path_data, playlist_t *playlist, size_t idx);
+bool gfx_thumbnail_set_content_playlist(gfx_thumbnail_path_data_t *path_data, playlist_t *playlist, size_t idx);
 
 /* Updaters */
 
 /* Updates path for specified thumbnail identifier (right, left).
  * Must be called after:
- * - menu_thumbnail_set_system()
- * - menu_thumbnail_set_content*()
+ * - gfx_thumbnail_set_system()
+ * - gfx_thumbnail_set_content*()
  * ...and before:
- * - menu_thumbnail_get_path()
+ * - gfx_thumbnail_get_path()
  * Returns true if generated path is valid */
-bool menu_thumbnail_update_path(menu_thumbnail_path_data_t *path_data, enum menu_thumbnail_id thumbnail_id);
+bool gfx_thumbnail_update_path(gfx_thumbnail_path_data_t *path_data, enum gfx_thumbnail_id thumbnail_id);
 
 /* Getters */
 
 /* Fetches the current thumbnail file path of the
  * specified thumbnail 'type'.
  * Returns true if path is valid. */
-bool menu_thumbnail_get_path(menu_thumbnail_path_data_t *path_data, enum menu_thumbnail_id thumbnail_id, const char **path);
+bool gfx_thumbnail_get_path(gfx_thumbnail_path_data_t *path_data, enum gfx_thumbnail_id thumbnail_id, const char **path);
 
 /* Fetches current 'system' (default database name).
  * Returns true if 'system' is valid. */
-bool menu_thumbnail_get_system(menu_thumbnail_path_data_t *path_data, const char **system);
+bool gfx_thumbnail_get_system(gfx_thumbnail_path_data_t *path_data, const char **system);
 
 /* Fetches current content path.
  * Returns true if content path is valid. */
-bool menu_thumbnail_get_content_path(menu_thumbnail_path_data_t *path_data, const char **content_path);
+bool gfx_thumbnail_get_content_path(gfx_thumbnail_path_data_t *path_data, const char **content_path);
 
 /* Fetches current thumbnail label.
  * Returns true if label is valid. */
-bool menu_thumbnail_get_label(menu_thumbnail_path_data_t *path_data, const char **label);
+bool gfx_thumbnail_get_label(gfx_thumbnail_path_data_t *path_data, const char **label);
 
 /* Fetches current thumbnail core name.
  * Returns true if core name is valid. */
-bool menu_thumbnail_get_core_name(menu_thumbnail_path_data_t *path_data, const char **core_name);
+bool gfx_thumbnail_get_core_name(gfx_thumbnail_path_data_t *path_data, const char **core_name);
 
 /* Fetches current database name.
  * Returns true if database name is valid. */
-bool menu_thumbnail_get_db_name(menu_thumbnail_path_data_t *path_data, const char **db_name);
+bool gfx_thumbnail_get_db_name(gfx_thumbnail_path_data_t *path_data, const char **db_name);
 
 /* Fetches current thumbnail image name
  * (name is the same for all thumbnail types).
  * Returns true if image name is valid. */
-bool menu_thumbnail_get_img_name(menu_thumbnail_path_data_t *path_data, const char **img_name);
+bool gfx_thumbnail_get_img_name(gfx_thumbnail_path_data_t *path_data, const char **img_name);
 
 /* Fetches current content directory.
  * Returns true if content directory is valid. */
-bool menu_thumbnail_get_content_dir(menu_thumbnail_path_data_t *path_data, char *content_dir, size_t len);
+bool gfx_thumbnail_get_content_dir(gfx_thumbnail_path_data_t *path_data, char *content_dir, size_t len);
 
 RETRO_END_DECLS
 

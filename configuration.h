@@ -530,9 +530,9 @@ typedef struct settings
       unsigned accessibility_narrator_speech_speed;
 
       unsigned menu_timedate_style;
-      unsigned menu_thumbnails;
+      unsigned gfx_thumbnails;
       unsigned menu_left_thumbnails;
-      unsigned menu_thumbnail_upscale_threshold;
+      unsigned gfx_thumbnail_upscale_threshold;
       unsigned menu_rgui_thumbnail_downscaler;
       unsigned menu_rgui_thumbnail_delay;
       unsigned menu_rgui_color_theme;

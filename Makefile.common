@@ -226,6 +226,8 @@ OBJ += \
        gfx/video_crt_switch.o \
 		 gfx/gfx_display.o \
        gfx/gfx_animation.o \
+		 gfx/gfx_thumbnail_path.o \
+		 gfx/gfx_thumbnail.o \
        configuration.o \
        $(LIBRETRO_COMM_DIR)/dynamic/dylib.o \
        cores/dynamic_dummy.o \
@@ -836,8 +838,6 @@ ifeq ($(HAVE_MENU_COMMON), 1)
           menu/cbs/menu_cbs_contentlist_switch.o \
           menu/menu_displaylist.o \
           menu/drivers/menu_generic.o \
-          menu/menu_thumbnail_path.o \
-          menu/menu_thumbnail.o
 
    ifeq ($(HAVE_MENU_WIDGETS), 1)
       OBJ += menu/widgets/menu_widgets.o

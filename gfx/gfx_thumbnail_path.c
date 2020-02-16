@@ -1,7 +1,7 @@
 /* Copyright  (C) 2010-2019 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
- * The following license statement only applies to this file (menu_thumbnail_path.c).
+ * The following license statement only applies to this file (gfx_thumbnail_path.c).
  * ---------------------------------------------------------------------------------------
  *
  * Permission is hereby granted, free of charge,
@@ -34,14 +34,12 @@
 #include "../paths.h"
 #include "../file_path_special.h"
 
-#include "menu_driver.h"
-
-#include "menu_thumbnail_path.h"
+#include "gfx_thumbnail_path.h"
 
 /* Used fixed size char arrays here, just to avoid
  * the inconvenience of having to calloc()/free()
  * each individual entry by hand... */
-struct menu_thumbnail_path_data
+struct gfx_thumbnail_path_data
 {
    char system[PATH_MAX_LENGTH];
    char content_path[PATH_MAX_LENGTH];
@@ -58,12 +56,12 @@ struct menu_thumbnail_path_data
 /* Initialisation */
 
 /* Creates new thumbnail path data container.
- * Returns handle to new menu_thumbnail_path_data_t object.
+ * Returns handle to new gfx_thumbnail_path_data_t object.
  * on success, otherwise NULL.
  * Note: Returned object must be free()d */
-menu_thumbnail_path_data_t *menu_thumbnail_path_init(void)
+gfx_thumbnail_path_data_t *gfx_thumbnail_path_init(void)
 {
-   menu_thumbnail_path_data_t *path_data = (menu_thumbnail_path_data_t*)
+   gfx_thumbnail_path_data_t *path_data = (gfx_thumbnail_path_data_t*)
       calloc(1, sizeof(*path_data));
    if (!path_data)
       return NULL;
@@ -78,7 +76,7 @@ menu_thumbnail_path_data_t *menu_thumbnail_path_init(void)
 
 /* Resets thumbnail path data
  * (blanks all internal string containers) */
-void menu_thumbnail_path_reset(menu_thumbnail_path_data_t *path_data)
+void gfx_thumbnail_path_reset(gfx_thumbnail_path_data_t *path_data)
 {
    if (!path_data)
       return;
@@ -102,7 +100,8 @@ void menu_thumbnail_path_reset(menu_thumbnail_path_data_t *path_data)
  * Named_Titles, Named_Boxarts) corresponding to the
  * specified 'type index' (1, 2, 3).
  * Returns true if 'type index' is valid */
-bool menu_thumbnail_get_sub_directory(unsigned type_idx, const char **sub_directory)
+bool gfx_thumbnail_get_sub_directory(
+      unsigned type_idx, const char **sub_directory)
 {
    if (!sub_directory)
       return false;
@@ -129,7 +128,8 @@ bool menu_thumbnail_get_sub_directory(unsigned type_idx, const char **sub_direct
 /* Returns currently set thumbnail 'type' (Named_Snaps,
  * Named_Titles, Named_Boxarts) for specified thumbnail
  * identifier (right, left) */
-const char *menu_thumbnail_get_type(menu_thumbnail_path_data_t *path_data, enum menu_thumbnail_id thumbnail_id)
+const char *gfx_thumbnail_get_type(
+      gfx_thumbnail_path_data_t *path_data, enum gfx_thumbnail_id thumbnail_id)
 {
    settings_t *settings = config_get_ptr();
    unsigned type = 0;
@@ -139,13 +139,13 @@ const char *menu_thumbnail_get_type(menu_thumbnail_path_data_t *path_data, enum 
    
    switch (thumbnail_id)
    {
-      case MENU_THUMBNAIL_RIGHT:
+      case GFX_THUMBNAIL_RIGHT:
          if (path_data->playlist_right_mode != PLAYLIST_THUMBNAIL_MODE_DEFAULT)
             type = (unsigned)path_data->playlist_right_mode - 1;
          else
-            type = settings->uints.menu_thumbnails;
+            type = settings->uints.gfx_thumbnails;
          break;
-      case MENU_THUMBNAIL_LEFT:
+      case GFX_THUMBNAIL_LEFT:
          if (path_data->playlist_left_mode != PLAYLIST_THUMBNAIL_MODE_DEFAULT)
             type = (unsigned)path_data->playlist_left_mode - 1;
          else
@@ -173,7 +173,7 @@ const char *menu_thumbnail_get_type(menu_thumbnail_path_data_t *path_data, enum 
 
 /* Returns true if specified thumbnail is enabled
  * (i.e. if 'type' is not equal to MENU_ENUM_LABEL_VALUE_OFF) */
-bool menu_thumbnail_is_enabled(menu_thumbnail_path_data_t *path_data, enum menu_thumbnail_id thumbnail_id)
+bool gfx_thumbnail_is_enabled(gfx_thumbnail_path_data_t *path_data, enum gfx_thumbnail_id thumbnail_id)
 {
    settings_t *settings = config_get_ptr();
    
@@ -182,11 +182,11 @@ bool menu_thumbnail_is_enabled(menu_thumbnail_path_data_t *path_data, enum menu_
    
    switch (thumbnail_id)
    {
-      case MENU_THUMBNAIL_RIGHT:
+      case GFX_THUMBNAIL_RIGHT:
          if (path_data->playlist_right_mode != PLAYLIST_THUMBNAIL_MODE_DEFAULT)
             return path_data->playlist_right_mode != PLAYLIST_THUMBNAIL_MODE_OFF;
-         return settings->uints.menu_thumbnails != 0;
-      case MENU_THUMBNAIL_LEFT:
+         return settings->uints.gfx_thumbnails != 0;
+      case GFX_THUMBNAIL_LEFT:
          if (path_data->playlist_left_mode != PLAYLIST_THUMBNAIL_MODE_DEFAULT)
             return path_data->playlist_left_mode != PLAYLIST_THUMBNAIL_MODE_OFF;
          return settings->uints.menu_left_thumbnails != 0;
@@ -201,7 +201,7 @@ bool menu_thumbnail_is_enabled(menu_thumbnail_path_data_t *path_data, enum menu_
 
 /* Fills content_img field of path_data using existing
  * content_label field (for internal use only) */
-static void fill_content_img(menu_thumbnail_path_data_t *path_data)
+static void fill_content_img(gfx_thumbnail_path_data_t *path_data)
 {
    char *scrub_char_pointer = NULL;
    
@@ -224,10 +224,10 @@ static void fill_content_img(menu_thumbnail_path_data_t *path_data)
  * Returns true if 'system' is valid.
  * If playlist is provided, extracts system-specific
  * thumbnail assignment metadata (required for accurate
- * usage of menu_thumbnail_is_enabled())
+ * usage of gfx_thumbnail_is_enabled())
  * > Used as a fallback when individual content lacks an
  *   associated database name */
-bool menu_thumbnail_set_system(menu_thumbnail_path_data_t *path_data,
+bool gfx_thumbnail_set_system(gfx_thumbnail_path_data_t *path_data,
       const char *system, playlist_t *playlist)
 {
    if (!path_data)
@@ -257,7 +257,7 @@ bool menu_thumbnail_set_system(menu_thumbnail_path_data_t *path_data,
    
    /* Addendum: Now that we have per-playlist thumbnail display
     * modes, we must extract them here - otherwise
-    * menu_thumbnail_is_enabled() will go out of sync */
+    * gfx_thumbnail_is_enabled() will go out of sync */
    if (playlist)
    {
       const char *playlist_path = playlist_get_conf_path(playlist);
@@ -315,7 +315,7 @@ bool menu_thumbnail_set_system(menu_thumbnail_path_data_t *path_data,
 
 /* Sets current thumbnail content according to the specified label.
  * Returns true if content is valid */
-bool menu_thumbnail_set_content(menu_thumbnail_path_data_t *path_data, const char *label)
+bool gfx_thumbnail_set_content(gfx_thumbnail_path_data_t *path_data, const char *label)
 {
    if (!path_data)
       return false;
@@ -358,8 +358,8 @@ bool menu_thumbnail_set_content(menu_thumbnail_path_data_t *path_data, const cha
 
 /* Sets current thumbnail content to the specified image.
  * Returns true if content is valid */
-bool menu_thumbnail_set_content_image(
-      menu_thumbnail_path_data_t *path_data,
+bool gfx_thumbnail_set_content_image(
+      gfx_thumbnail_path_data_t *path_data,
       const char *img_dir, const char *img_name)
 {
    char *content_img_no_ext = NULL;
@@ -415,7 +415,7 @@ bool menu_thumbnail_set_content_image(
          "imageviewer", sizeof(path_data->content_core_name));
    
    /* Set database name (arbitrarily) to "_images_"
-    * (required for compatibility with menu_thumbnail_update_path(),
+    * (required for compatibility with gfx_thumbnail_update_path(),
     * but not actually used...) */
    strlcpy(path_data->content_db_name,
          "_images_", sizeof(path_data->content_db_name));
@@ -434,7 +434,8 @@ bool menu_thumbnail_set_content_image(
  *   corresponding menu entry label will contain a useful
  *   identifier (it may be 'tainted', e.g. with the current
  *   core name). 'Real' labels should be extracted from source */
-bool menu_thumbnail_set_content_playlist(menu_thumbnail_path_data_t *path_data, playlist_t *playlist, size_t idx)
+bool gfx_thumbnail_set_content_playlist(
+      gfx_thumbnail_path_data_t *path_data, playlist_t *playlist, size_t idx)
 {
    const char *content_path  = NULL;
    const char *content_label = NULL;
@@ -553,18 +554,20 @@ bool menu_thumbnail_set_content_playlist(menu_thumbnail_path_data_t *path_data, 
 
 /* Updates path for specified thumbnail identifier (right, left).
  * Must be called after:
- * - menu_thumbnail_set_system()
- * - menu_thumbnail_set_content*()
+ * - gfx_thumbnail_set_system()
+ * - gfx_thumbnail_set_content*()
  * ...and before:
- * - menu_thumbnail_get_path()
+ * - gfx_thumbnail_get_path()
  * Returns true if generated path is valid */
-bool menu_thumbnail_update_path(menu_thumbnail_path_data_t *path_data, enum menu_thumbnail_id thumbnail_id)
+bool gfx_thumbnail_update_path(
+      gfx_thumbnail_path_data_t *path_data, enum gfx_thumbnail_id thumbnail_id)
 {
-   settings_t *settings    = config_get_ptr();
-   const char *type        = menu_thumbnail_get_type(path_data, thumbnail_id);
-   const char *system_name = NULL;
-   char *thumbnail_path    = NULL;
    char content_dir[PATH_MAX_LENGTH];
+   settings_t *settings       = config_get_ptr();
+   const char *type           = gfx_thumbnail_get_type(path_data, thumbnail_id);
+   const char *system_name    = NULL;
+   char *thumbnail_path       = NULL;
+   const char *dir_thumbnails = settings ? settings->paths.directory_thumbnails : NULL;
    
    if (!path_data)
       return false;
@@ -572,10 +575,10 @@ bool menu_thumbnail_update_path(menu_thumbnail_path_data_t *path_data, enum menu
    /* Determine which path we are updating... */
    switch (thumbnail_id)
    {
-      case MENU_THUMBNAIL_RIGHT:
+      case GFX_THUMBNAIL_RIGHT:
          thumbnail_path = path_data->right_path;
          break;
-      case MENU_THUMBNAIL_LEFT:
+      case GFX_THUMBNAIL_LEFT:
          thumbnail_path = path_data->left_path;
          break;
       default:
@@ -589,10 +592,10 @@ bool menu_thumbnail_update_path(menu_thumbnail_path_data_t *path_data, enum menu
    if (!settings)
       return false;
    
-   if (string_is_empty(settings->paths.directory_thumbnails))
+   if (string_is_empty(dir_thumbnails))
       return false;
    
-   if (!menu_thumbnail_is_enabled(path_data, thumbnail_id))
+   if (!gfx_thumbnail_is_enabled(path_data, thumbnail_id))
       return false;
    
    /* Generate new path */
@@ -614,7 +617,7 @@ bool menu_thumbnail_update_path(menu_thumbnail_path_data_t *path_data, enum menu
       if (string_is_equal(path_data->system, "history") ||
           string_is_equal(path_data->system, "favorites"))
       {
-         if (!menu_thumbnail_get_content_dir(
+         if (!gfx_thumbnail_get_content_dir(
                   path_data, content_dir, sizeof(content_dir)))
             return false;
          
@@ -644,7 +647,7 @@ bool menu_thumbnail_update_path(menu_thumbnail_path_data_t *path_data, enum menu
       /* > Normal content: assemble path */
       
       /* >> Base + system name */
-      fill_pathname_join(thumbnail_path, settings->paths.directory_thumbnails,
+      fill_pathname_join(thumbnail_path, dir_thumbnails,
             system_name, PATH_MAX_LENGTH * sizeof(char));
       
       /* >> Add type */
@@ -668,9 +671,9 @@ bool menu_thumbnail_update_path(menu_thumbnail_path_data_t *path_data, enum menu
 /* Fetches the current thumbnail file path of the
  * specified thumbnail 'type'.
  * Returns true if path is valid. */
-bool menu_thumbnail_get_path(
-      menu_thumbnail_path_data_t *path_data,
-      enum menu_thumbnail_id thumbnail_id, const char **path)
+bool gfx_thumbnail_get_path(
+      gfx_thumbnail_path_data_t *path_data,
+      enum gfx_thumbnail_id thumbnail_id, const char **path)
 {
    char *thumbnail_path = NULL;
    
@@ -682,10 +685,10 @@ bool menu_thumbnail_get_path(
    
    switch (thumbnail_id)
    {
-      case MENU_THUMBNAIL_RIGHT:
+      case GFX_THUMBNAIL_RIGHT:
          thumbnail_path = path_data->right_path;
          break;
-      case MENU_THUMBNAIL_LEFT:
+      case GFX_THUMBNAIL_LEFT:
          thumbnail_path = path_data->left_path;
          break;
       default:
@@ -702,8 +705,8 @@ bool menu_thumbnail_get_path(
 
 /* Fetches current 'system' (default database name).
  * Returns true if 'system' is valid. */
-bool menu_thumbnail_get_system(
-      menu_thumbnail_path_data_t *path_data, const char **system)
+bool gfx_thumbnail_get_system(
+      gfx_thumbnail_path_data_t *path_data, const char **system)
 {
    if (!path_data)
       return false;
@@ -721,8 +724,8 @@ bool menu_thumbnail_get_system(
 
 /* Fetches current content path.
  * Returns true if content path is valid. */
-bool menu_thumbnail_get_content_path(
-      menu_thumbnail_path_data_t *path_data, const char **content_path)
+bool gfx_thumbnail_get_content_path(
+      gfx_thumbnail_path_data_t *path_data, const char **content_path)
 {
    if (!path_data)
       return false;
@@ -740,8 +743,8 @@ bool menu_thumbnail_get_content_path(
 
 /* Fetches current thumbnail label.
  * Returns true if label is valid. */
-bool menu_thumbnail_get_label(
-      menu_thumbnail_path_data_t *path_data, const char **label)
+bool gfx_thumbnail_get_label(
+      gfx_thumbnail_path_data_t *path_data, const char **label)
 {
    if (!path_data)
       return false;
@@ -759,8 +762,8 @@ bool menu_thumbnail_get_label(
 
 /* Fetches current thumbnail core name.
  * Returns true if core name is valid. */
-bool menu_thumbnail_get_core_name(
-      menu_thumbnail_path_data_t *path_data, const char **core_name)
+bool gfx_thumbnail_get_core_name(
+      gfx_thumbnail_path_data_t *path_data, const char **core_name)
 {
    if (!path_data)
       return false;
@@ -778,8 +781,8 @@ bool menu_thumbnail_get_core_name(
 
 /* Fetches current database name.
  * Returns true if database name is valid. */
-bool menu_thumbnail_get_db_name(
-      menu_thumbnail_path_data_t *path_data, const char **db_name)
+bool gfx_thumbnail_get_db_name(
+      gfx_thumbnail_path_data_t *path_data, const char **db_name)
 {
    if (!path_data)
       return false;
@@ -798,8 +801,8 @@ bool menu_thumbnail_get_db_name(
 /* Fetches current thumbnail image name
  * (name is the same for all thumbnail types).
  * Returns true if image name is valid. */
-bool menu_thumbnail_get_img_name(
-      menu_thumbnail_path_data_t *path_data, const char **img_name)
+bool gfx_thumbnail_get_img_name(
+      gfx_thumbnail_path_data_t *path_data, const char **img_name)
 {
    if (!path_data)
       return false;
@@ -817,8 +820,8 @@ bool menu_thumbnail_get_img_name(
 
 /* Fetches current content directory.
  * Returns true if content directory is valid. */
-bool menu_thumbnail_get_content_dir(
-      menu_thumbnail_path_data_t *path_data, char *content_dir, size_t len)
+bool gfx_thumbnail_get_content_dir(
+      gfx_thumbnail_path_data_t *path_data, char *content_dir, size_t len)
 {
    const char *last_slash        = NULL;
    char tmp_buf[PATH_MAX_LENGTH] = {0};

@@ -24,8 +24,8 @@ typedef struct ozone_handle ozone_handle_t;
 
 #include <retro_miscellaneous.h>
 
-#include "../../menu_thumbnail_path.h"
-#include "../../menu_thumbnail.h"
+#include "../../gfx/gfx_thumbnail_path.h"
+#include "../../gfx/gfx_thumbnail.h"
 #include "../../menu_driver.h"
 
 #include "../../../retroarch.h"
@@ -252,11 +252,11 @@ struct ozone_handle
    /* Thumbnails data */
    bool show_thumbnail_bar;
 
-   menu_thumbnail_path_data_t *thumbnail_path_data;
+   gfx_thumbnail_path_data_t *thumbnail_path_data;
 
    struct {
-      menu_thumbnail_t right;
-      menu_thumbnail_t left;
+      gfx_thumbnail_t right;
+      gfx_thumbnail_t left;
    } thumbnails;
 
    bool fullscreen_thumbnails_available;

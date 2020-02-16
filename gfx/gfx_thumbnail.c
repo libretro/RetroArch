@@ -1,7 +1,7 @@
 /* Copyright  (C) 2010-2019 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
- * The following license statement only applies to this file (menu_thumbnail.c).
+ * The following license statement only applies to this file (gfx_thumbnail.c).
  * ---------------------------------------------------------------------------------------
  *
  * Permission is hereby granted, free of charge,
@@ -29,24 +29,23 @@
 #include <file/file_path.h>
 #include <string/stdstring.h>
 
-#include "../gfx/gfx_animation.h"
-#include "menu_driver.h"
+#include "gfx_display.h"
+#include "gfx_animation.h"
 
-#include "menu_thumbnail.h"
+#include "gfx_thumbnail.h"
 
-#include "../retroarch.h"
 #include "../tasks/tasks_internal.h"
 
 /* When streaming thumbnails, to minimise the processing
  * of unnecessary images (i.e. when scrolling rapidly through
  * playlists), we delay loading until an entry has been on screen
- * for at least menu_thumbnail_delay ms */
-#define DEFAULT_MENU_THUMBNAIL_STREAM_DELAY 83.333333f
-static float menu_thumbnail_stream_delay = DEFAULT_MENU_THUMBNAIL_STREAM_DELAY;
+ * for at least gfx_thumbnail_delay ms */
+#define DEFAULT_GFX_THUMBNAIL_STREAM_DELAY 83.333333f
+static float gfx_thumbnail_stream_delay = DEFAULT_GFX_THUMBNAIL_STREAM_DELAY;
 
 /* Duration in ms of the thumbnail 'fade in' animation */
-#define DEFAULT_MENU_THUMBNAIL_FADE_DURATION 166.66667f
-static float menu_thumbnail_fade_duration = DEFAULT_MENU_THUMBNAIL_FADE_DURATION;
+#define DEFAULT_GFX_THUMBNAIL_FADE_DURATION 166.66667f
+static float gfx_thumbnail_fade_duration = DEFAULT_GFX_THUMBNAIL_FADE_DURATION;
 
 /* Due to the asynchronous nature of thumbnail
  * loading, it is quite possible to trigger a load
@@ -58,59 +57,59 @@ static float menu_thumbnail_fade_duration = DEFAULT_MENU_THUMBNAIL_FADE_DURATION
  * requesting a thumbnail, and the upload is only
  * handled if the tag matches the most recent value
  * at the time when the load completes */
-static uint64_t menu_thumbnail_list_id = 0;
+static uint64_t gfx_thumbnail_list_id = 0;
 
 /* Utility structure, sent as userdata when pushing
  * an image load */
 typedef struct
 {
-   menu_thumbnail_t *thumbnail;
+   gfx_thumbnail_t *thumbnail;
    retro_time_t list_id;
-} menu_thumbnail_tag_t;
+} gfx_thumbnail_tag_t;
 
 /* Setters */
 
 /* When streaming thumbnails, sets time in ms that an
  * entry must be on screen before an image load is
  * requested */
-void menu_thumbnail_set_stream_delay(float delay)
+void gfx_thumbnail_set_stream_delay(float delay)
 {
-   menu_thumbnail_stream_delay = (delay >= 0.0f) ?
-         delay : DEFAULT_MENU_THUMBNAIL_STREAM_DELAY;
+   gfx_thumbnail_stream_delay = (delay >= 0.0f) ?
+         delay : DEFAULT_GFX_THUMBNAIL_STREAM_DELAY;
 }
 
 /* Sets duration in ms of the thumbnail 'fade in'
  * animation */
-void menu_thumbnail_set_fade_duration(float duration)
+void gfx_thumbnail_set_fade_duration(float duration)
 {
-   menu_thumbnail_fade_duration = (duration >= 0.0f) ?
-         duration : DEFAULT_MENU_THUMBNAIL_FADE_DURATION;
+   gfx_thumbnail_fade_duration = (duration >= 0.0f) ?
+         duration : DEFAULT_GFX_THUMBNAIL_FADE_DURATION;
 }
 
 /* Getters */
 
 /* Fetches current streaming thumbnails request delay */
-float menu_thumbnail_get_stream_delay(void)
+float gfx_thumbnail_get_stream_delay(void)
 {
-   return menu_thumbnail_stream_delay;
+   return gfx_thumbnail_stream_delay;
 }
 
 /* Fetches current 'fade in' animation duration */
-float menu_thumbnail_get_fade_duration(void)
+float gfx_thumbnail_get_fade_duration(void)
 {
-   return menu_thumbnail_fade_duration;
+   return gfx_thumbnail_fade_duration;
 }
 
 /* Callbacks */
 
 /* Used to process thumbnail data following completion
  * of image load task */
-static void menu_thumbnail_handle_upload(
+static void gfx_thumbnail_handle_upload(
       retro_task_t *task, void *task_data, void *user_data, const char *err)
 {
    gfx_animation_ctx_entry_t animation_entry;
    struct texture_image *img           = (struct texture_image*)task_data;
-   menu_thumbnail_tag_t *thumbnail_tag = (menu_thumbnail_tag_t*)user_data;
+   gfx_thumbnail_tag_t *thumbnail_tag = (gfx_thumbnail_tag_t*)user_data;
 
    /* Sanity check */
    if (!thumbnail_tag)
@@ -118,11 +117,11 @@ static void menu_thumbnail_handle_upload(
 
    /* Ensure that we are operating on the correct
     * thumbnail... */
-   if (thumbnail_tag->list_id != menu_thumbnail_list_id)
+   if (thumbnail_tag->list_id != gfx_thumbnail_list_id)
       goto end;
 
    /* Only process image if we are waiting for it */
-   if (thumbnail_tag->thumbnail->status != MENU_THUMBNAIL_STATUS_PENDING)
+   if (thumbnail_tag->thumbnail->status != GFX_THUMBNAIL_STATUS_PENDING)
       goto end;
 
    /* Sanity check: if thumbnail already has a texture,
@@ -130,11 +129,11 @@ static void menu_thumbnail_handle_upload(
     * case, the best course of action is to just reset
     * the thumbnail... */
    if (thumbnail_tag->thumbnail->texture)
-      menu_thumbnail_reset(thumbnail_tag->thumbnail);
+      gfx_thumbnail_reset(thumbnail_tag->thumbnail);
 
    /* Set thumbnail 'missing' status by default
     * (saves a number of checks later) */
-   thumbnail_tag->thumbnail->status = MENU_THUMBNAIL_STATUS_MISSING;
+   thumbnail_tag->thumbnail->status = GFX_THUMBNAIL_STATUS_MISSING;
 
    /* Check we have a valid image */
    if (!img)
@@ -153,16 +152,16 @@ static void menu_thumbnail_handle_upload(
    thumbnail_tag->thumbnail->height = img->height;
 
    /* Update thumbnail status */
-   thumbnail_tag->thumbnail->status = MENU_THUMBNAIL_STATUS_AVAILABLE;
+   thumbnail_tag->thumbnail->status = GFX_THUMBNAIL_STATUS_AVAILABLE;
 
    /* Trigger 'fade in' animation, if required */
-   if (menu_thumbnail_fade_duration > 0.0f)
+   if (gfx_thumbnail_fade_duration > 0.0f)
    {
       thumbnail_tag->thumbnail->alpha  = 0.0f;
 
       animation_entry.easing_enum      = EASING_OUT_QUAD;
       animation_entry.tag              = (uintptr_t)&thumbnail_tag->thumbnail->alpha;
-      animation_entry.duration         = menu_thumbnail_fade_duration;
+      animation_entry.duration         = gfx_thumbnail_fade_duration;
       animation_entry.target_value     = 1.0f;
       animation_entry.subject          = &thumbnail_tag->thumbnail->alpha;
       animation_entry.cb               = NULL;
@@ -189,31 +188,31 @@ end:
 
 /* When called, prevents the handling of any pending
  * thumbnail load requests
- * >> **MUST** be called before deleting any menu_thumbnail_t
- *    objects passed to menu_thumbnail_request() or
- *    menu_thumbnail_process_stream(), otherwise
+ * >> **MUST** be called before deleting any gfx_thumbnail_t
+ *    objects passed to gfx_thumbnail_request() or
+ *    gfx_thumbnail_process_stream(), otherwise
  *    heap-use-after-free errors *will* occur */
-void menu_thumbnail_cancel_pending_requests(void)
+void gfx_thumbnail_cancel_pending_requests(void)
 {
-   menu_thumbnail_list_id++;
+   gfx_thumbnail_list_id++;
 }
 
 /* Requests loading of the specified thumbnail
  * - If operation fails, 'thumbnail->status' will be set to
- *   MENU_THUMBNAIL_STATUS_MISSING
+ *   GFX_THUMBNAIL_STATUS_MISSING
  * - If operation is successful, 'thumbnail->status' will be
- *   set to MENU_THUMBNAIL_STATUS_PENDING
+ *   set to GFX_THUMBNAIL_STATUS_PENDING
  * 'thumbnail' will be populated with texture info/metadata
  * once the image load is complete
- * NOTE 1: Must be called *after* menu_thumbnail_set_system()
- *         and menu_thumbnail_set_content*()
+ * NOTE 1: Must be called *after* gfx_thumbnail_set_system()
+ *         and gfx_thumbnail_set_content*()
  * NOTE 2: 'playlist' and 'idx' are only required here for
  *         on-demand thumbnail download support
  *         (an annoyance...) */ 
-void menu_thumbnail_request(
-      menu_thumbnail_path_data_t *path_data, enum menu_thumbnail_id thumbnail_id,
-      playlist_t *playlist, size_t idx, menu_thumbnail_t *thumbnail,
-      unsigned menu_thumbnail_upscale_threshold,
+void gfx_thumbnail_request(
+      gfx_thumbnail_path_data_t *path_data, enum gfx_thumbnail_id thumbnail_id,
+      playlist_t *playlist, size_t idx, gfx_thumbnail_t *thumbnail,
+      unsigned gfx_thumbnail_upscale_threshold,
       bool network_on_demand_thumbnails
       )
 {
@@ -225,36 +224,36 @@ void menu_thumbnail_request(
 
    /* Reset thumbnail, then set 'missing' status by default
     * (saves a number of checks later) */
-   menu_thumbnail_reset(thumbnail);
-   thumbnail->status = MENU_THUMBNAIL_STATUS_MISSING;
+   gfx_thumbnail_reset(thumbnail);
+   thumbnail->status = GFX_THUMBNAIL_STATUS_MISSING;
 
    /* Update/extract thumbnail path */
-   if (menu_thumbnail_is_enabled(path_data, thumbnail_id))
-      if (menu_thumbnail_update_path(path_data, thumbnail_id))
-         has_thumbnail = menu_thumbnail_get_path(path_data, thumbnail_id, &thumbnail_path);
+   if (gfx_thumbnail_is_enabled(path_data, thumbnail_id))
+      if (gfx_thumbnail_update_path(path_data, thumbnail_id))
+         has_thumbnail = gfx_thumbnail_get_path(path_data, thumbnail_id, &thumbnail_path);
 
    /* Load thumbnail, if required */
    if (has_thumbnail)
    {
       if (path_is_valid(thumbnail_path))
       {
-         menu_thumbnail_tag_t *thumbnail_tag =
-               (menu_thumbnail_tag_t*)calloc(1, sizeof(menu_thumbnail_tag_t));
+         gfx_thumbnail_tag_t *thumbnail_tag =
+               (gfx_thumbnail_tag_t*)calloc(1, sizeof(gfx_thumbnail_tag_t));
 
          if (!thumbnail_tag)
             return;
 
          /* Configure user data */
          thumbnail_tag->thumbnail = thumbnail;
-         thumbnail_tag->list_id   = menu_thumbnail_list_id;
+         thumbnail_tag->list_id   = gfx_thumbnail_list_id;
 
          /* Would like to cancel any existing image load tasks
           * here, but can't see how to do it... */
          if (task_push_image_load(
                thumbnail_path, video_driver_supports_rgba(),
-               menu_thumbnail_upscale_threshold,
-               menu_thumbnail_handle_upload, thumbnail_tag))
-            thumbnail->status = MENU_THUMBNAIL_STATUS_PENDING;
+               gfx_thumbnail_upscale_threshold,
+               gfx_thumbnail_handle_upload, thumbnail_tag))
+            thumbnail->status = GFX_THUMBNAIL_STATUS_PENDING;
       }
 #ifdef HAVE_NETWORKING
       /* Handle on demand thumbnail downloads */
@@ -268,13 +267,13 @@ void menu_thumbnail_request(
             return;
 
          /* Get current image name */
-         if (!menu_thumbnail_get_img_name(path_data, &img_name))
+         if (!gfx_thumbnail_get_img_name(path_data, &img_name))
             return;
 
          /* Only trigger a thumbnail download if image
           * name has changed since the last call of
-          * menu_thumbnail_request()
-          * > Allows menu_thumbnail_request() to be used
+          * gfx_thumbnail_request()
+          * > Allows gfx_thumbnail_request() to be used
           *   for successive right/left thumbnail requests
           *   with minimal duplication of effort
           *   (i.e. task_push_pl_entry_thumbnail_download()
@@ -289,7 +288,7 @@ void menu_thumbnail_request(
          strlcpy(last_img_name, img_name, sizeof(last_img_name));
 
          /* Get system name */
-         if (!menu_thumbnail_get_system(path_data, &system))
+         if (!gfx_thumbnail_get_system(path_data, &system))
             return;
 
          /* Trigger thumbnail download */
@@ -309,20 +308,20 @@ void menu_thumbnail_request(
  *   set to MUI_THUMBNAIL_STATUS_PENDING
  * 'thumbnail' will be populated with texture info/metadata
  * once the image load is complete */
-void menu_thumbnail_request_file(
-      const char *file_path, menu_thumbnail_t *thumbnail,
-      unsigned menu_thumbnail_upscale_threshold
+void gfx_thumbnail_request_file(
+      const char *file_path, gfx_thumbnail_t *thumbnail,
+      unsigned gfx_thumbnail_upscale_threshold
       )
 {
-   menu_thumbnail_tag_t *thumbnail_tag = NULL;
+   gfx_thumbnail_tag_t *thumbnail_tag = NULL;
 
    if (!thumbnail)
       return;
 
    /* Reset thumbnail, then set 'missing' status by default
     * (saves a number of checks later) */
-   menu_thumbnail_reset(thumbnail);
-   thumbnail->status = MENU_THUMBNAIL_STATUS_MISSING;
+   gfx_thumbnail_reset(thumbnail);
+   thumbnail->status = GFX_THUMBNAIL_STATUS_MISSING;
 
    /* Check if file path is valid */
    if (string_is_empty(file_path))
@@ -332,27 +331,27 @@ void menu_thumbnail_request_file(
       return;
 
    /* Load thumbnail */
-   thumbnail_tag = (menu_thumbnail_tag_t*)calloc(1, sizeof(menu_thumbnail_tag_t));
+   thumbnail_tag = (gfx_thumbnail_tag_t*)calloc(1, sizeof(gfx_thumbnail_tag_t));
 
    if (!thumbnail_tag)
       return;
 
    /* Configure user data */
    thumbnail_tag->thumbnail = thumbnail;
-   thumbnail_tag->list_id   = menu_thumbnail_list_id;
+   thumbnail_tag->list_id   = gfx_thumbnail_list_id;
 
    /* Would like to cancel any existing image load tasks
     * here, but can't see how to do it... */
    if (task_push_image_load(
          file_path, video_driver_supports_rgba(),
-         menu_thumbnail_upscale_threshold,
-         menu_thumbnail_handle_upload, thumbnail_tag))
-      thumbnail->status = MENU_THUMBNAIL_STATUS_PENDING;
+         gfx_thumbnail_upscale_threshold,
+         gfx_thumbnail_handle_upload, thumbnail_tag))
+      thumbnail->status = GFX_THUMBNAIL_STATUS_PENDING;
 }
 
 /* Resets (and free()s the current texture of) the
  * specified thumbnail */
-void menu_thumbnail_reset(menu_thumbnail_t *thumbnail)
+void gfx_thumbnail_reset(gfx_thumbnail_t *thumbnail)
 {
    if (!thumbnail)
       return;
@@ -369,7 +368,7 @@ void menu_thumbnail_reset(menu_thumbnail_t *thumbnail)
    }
 
    /* Reset all parameters */
-   thumbnail->status      = MENU_THUMBNAIL_STATUS_UNKNOWN;
+   thumbnail->status      = GFX_THUMBNAIL_STATUS_UNKNOWN;
    thumbnail->texture     = 0;
    thumbnail->width       = 0;
    thumbnail->height      = 0;
@@ -384,17 +383,17 @@ void menu_thumbnail_reset(menu_thumbnail_t *thumbnail)
  * - Must be called each frame for every on-screen entry
  * - Must be called once for each entry as it moves off-screen
  *   (or can be called each frame - overheads are small)
- * NOTE 1: Must be called *after* menu_thumbnail_set_system()
- * NOTE 2: This function calls menu_thumbnail_set_content*()
+ * NOTE 1: Must be called *after* gfx_thumbnail_set_system()
+ * NOTE 2: This function calls gfx_thumbnail_set_content*()
  * NOTE 3: This function is intended for use in situations
  *         where each menu entry has a *single* thumbnail.
  *         If each entry has two thumbnails, use
- *         menu_thumbnail_process_streams() for improved
+ *         gfx_thumbnail_process_streams() for improved
  *         performance */
-void menu_thumbnail_process_stream(
-      menu_thumbnail_path_data_t *path_data, enum menu_thumbnail_id thumbnail_id,
-      playlist_t *playlist, size_t idx, menu_thumbnail_t *thumbnail, bool on_screen,
-      unsigned menu_thumbnail_upscale_threshold,
+void gfx_thumbnail_process_stream(
+      gfx_thumbnail_path_data_t *path_data, enum gfx_thumbnail_id thumbnail_id,
+      playlist_t *playlist, size_t idx, gfx_thumbnail_t *thumbnail, bool on_screen,
+      unsigned gfx_thumbnail_upscale_threshold,
       bool network_on_demand_thumbnails
       )
 {
@@ -405,32 +404,32 @@ void menu_thumbnail_process_stream(
    {
       /* Entry is on-screen
        * > Only process if current status is
-       *   MENU_THUMBNAIL_STATUS_UNKNOWN */
-      if (thumbnail->status == MENU_THUMBNAIL_STATUS_UNKNOWN)
+       *   GFX_THUMBNAIL_STATUS_UNKNOWN */
+      if (thumbnail->status == GFX_THUMBNAIL_STATUS_UNKNOWN)
       {
          /* Check if stream delay timer has elapsed */
          thumbnail->delay_timer += gfx_animation_get_delta_time();
 
-         if (thumbnail->delay_timer > menu_thumbnail_stream_delay)
+         if (thumbnail->delay_timer > gfx_thumbnail_stream_delay)
          {
             /* Sanity check */
             if (!path_data || !playlist)
                return;
 
             /* Update thumbnail content */
-            if (!menu_thumbnail_set_content_playlist(path_data, playlist, idx))
+            if (!gfx_thumbnail_set_content_playlist(path_data, playlist, idx))
             {
                /* Content is invalid
                 * > Reset thumbnail and set missing status */
-               menu_thumbnail_reset(thumbnail);
-               thumbnail->status = MENU_THUMBNAIL_STATUS_MISSING;
+               gfx_thumbnail_reset(thumbnail);
+               thumbnail->status = GFX_THUMBNAIL_STATUS_MISSING;
                return;
             }
 
             /* Request image load */
-            menu_thumbnail_request(
+            gfx_thumbnail_request(
                   path_data, thumbnail_id, playlist, idx, thumbnail,
-                  menu_thumbnail_upscale_threshold,
+                  gfx_thumbnail_upscale_threshold,
                   network_on_demand_thumbnails
                   );
          }
@@ -439,14 +438,14 @@ void menu_thumbnail_process_stream(
    else
    {
       /* Entry is off-screen
-       * > If status is MENU_THUMBNAIL_STATUS_UNKNOWN,
+       * > If status is GFX_THUMBNAIL_STATUS_UNKNOWN,
        *   thumbnail is already in a blank state - but we
        *   must ensure that delay timer is set to zero */
-      if (thumbnail->status == MENU_THUMBNAIL_STATUS_UNKNOWN)
+      if (thumbnail->status == GFX_THUMBNAIL_STATUS_UNKNOWN)
          thumbnail->delay_timer = 0.0f;
       /* In all other cases, reset thumbnail */
       else
-         menu_thumbnail_reset(thumbnail);
+         gfx_thumbnail_reset(thumbnail);
    }
 }
 
@@ -455,19 +454,19 @@ void menu_thumbnail_process_stream(
  * - Must be called each frame for every on-screen entry
  * - Must be called once for each entry as it moves off-screen
  *   (or can be called each frame - overheads are small)
- * NOTE 1: Must be called *after* menu_thumbnail_set_system()
- * NOTE 2: This function calls menu_thumbnail_set_content*()
+ * NOTE 1: Must be called *after* gfx_thumbnail_set_system()
+ * NOTE 2: This function calls gfx_thumbnail_set_content*()
  * NOTE 3: This function is intended for use in situations
  *         where each menu entry has *two* thumbnails.
  *         If each entry only has a single thumbnail, use
- *         menu_thumbnail_process_stream() for improved
+ *         gfx_thumbnail_process_stream() for improved
  *         performance */
-void menu_thumbnail_process_streams(
-      menu_thumbnail_path_data_t *path_data,
+void gfx_thumbnail_process_streams(
+      gfx_thumbnail_path_data_t *path_data,
       playlist_t *playlist, size_t idx,
-      menu_thumbnail_t *right_thumbnail, menu_thumbnail_t *left_thumbnail,
+      gfx_thumbnail_t *right_thumbnail, gfx_thumbnail_t *left_thumbnail,
       bool on_screen,
-      unsigned menu_thumbnail_upscale_threshold,
+      unsigned gfx_thumbnail_upscale_threshold,
       bool network_on_demand_thumbnails
       )
 {
@@ -478,9 +477,9 @@ void menu_thumbnail_process_streams(
    {
       /* Entry is on-screen
        * > Only process if current status is
-       *   MENU_THUMBNAIL_STATUS_UNKNOWN */
-      bool process_right = (right_thumbnail->status == MENU_THUMBNAIL_STATUS_UNKNOWN);
-      bool process_left  = (left_thumbnail->status  == MENU_THUMBNAIL_STATUS_UNKNOWN);
+       *   GFX_THUMBNAIL_STATUS_UNKNOWN */
+      bool process_right = (right_thumbnail->status == GFX_THUMBNAIL_STATUS_UNKNOWN);
+      bool process_left  = (left_thumbnail->status  == GFX_THUMBNAIL_STATUS_UNKNOWN);
 
       if (process_right || process_left)
       {
@@ -493,14 +492,14 @@ void menu_thumbnail_process_streams(
          {
             right_thumbnail->delay_timer += delta_time;
             request_right                 =
-                  (right_thumbnail->delay_timer > menu_thumbnail_stream_delay);
+                  (right_thumbnail->delay_timer > gfx_thumbnail_stream_delay);
          }
 
          if (process_left)
          {
             left_thumbnail->delay_timer  += delta_time;
             request_left                  =
-                  (left_thumbnail->delay_timer > menu_thumbnail_stream_delay);
+                  (left_thumbnail->delay_timer > gfx_thumbnail_stream_delay);
          }
 
          /* Check if one or more thumbnails should be requested */
@@ -511,20 +510,20 @@ void menu_thumbnail_process_streams(
                return;
 
             /* Update thumbnail content */
-            if (!menu_thumbnail_set_content_playlist(path_data, playlist, idx))
+            if (!gfx_thumbnail_set_content_playlist(path_data, playlist, idx))
             {
                /* Content is invalid
                 * > Reset thumbnail and set missing status */
                if (request_right)
                {
-                  menu_thumbnail_reset(right_thumbnail);
-                  right_thumbnail->status = MENU_THUMBNAIL_STATUS_MISSING;
+                  gfx_thumbnail_reset(right_thumbnail);
+                  right_thumbnail->status = GFX_THUMBNAIL_STATUS_MISSING;
                }
 
                if (request_left)
                {
-                  menu_thumbnail_reset(left_thumbnail);
-                  left_thumbnail->status  = MENU_THUMBNAIL_STATUS_MISSING;
+                  gfx_thumbnail_reset(left_thumbnail);
+                  left_thumbnail->status  = GFX_THUMBNAIL_STATUS_MISSING;
                }
 
                return;
@@ -532,15 +531,15 @@ void menu_thumbnail_process_streams(
 
             /* Request image load */
             if (request_right)
-               menu_thumbnail_request(
-                     path_data, MENU_THUMBNAIL_RIGHT, playlist, idx, right_thumbnail,
-                     menu_thumbnail_upscale_threshold,
+               gfx_thumbnail_request(
+                     path_data, GFX_THUMBNAIL_RIGHT, playlist, idx, right_thumbnail,
+                     gfx_thumbnail_upscale_threshold,
                      network_on_demand_thumbnails);
 
             if (request_left)
-               menu_thumbnail_request(
-                     path_data, MENU_THUMBNAIL_LEFT, playlist, idx, left_thumbnail,
-                     menu_thumbnail_upscale_threshold,
+               gfx_thumbnail_request(
+                     path_data, GFX_THUMBNAIL_LEFT, playlist, idx, left_thumbnail,
+                     gfx_thumbnail_upscale_threshold,
                      network_on_demand_thumbnails);
          }
       }
@@ -548,19 +547,19 @@ void menu_thumbnail_process_streams(
    else
    {
       /* Entry is off-screen
-       * > If status is MENU_THUMBNAIL_STATUS_UNKNOWN,
+       * > If status is GFX_THUMBNAIL_STATUS_UNKNOWN,
        *   thumbnail is already in a blank state - but we
        *   must ensure that delay timer is set to zero
        * > In all other cases, reset thumbnail */
-      if (right_thumbnail->status == MENU_THUMBNAIL_STATUS_UNKNOWN)
+      if (right_thumbnail->status == GFX_THUMBNAIL_STATUS_UNKNOWN)
          right_thumbnail->delay_timer = 0.0f;
       else
-         menu_thumbnail_reset(right_thumbnail);
+         gfx_thumbnail_reset(right_thumbnail);
 
-      if (left_thumbnail->status == MENU_THUMBNAIL_STATUS_UNKNOWN)
+      if (left_thumbnail->status == GFX_THUMBNAIL_STATUS_UNKNOWN)
          left_thumbnail->delay_timer = 0.0f;
       else
-         menu_thumbnail_reset(left_thumbnail);
+         gfx_thumbnail_reset(left_thumbnail);
    }
 }
 
@@ -569,8 +568,8 @@ void menu_thumbnail_process_streams(
 /* Determines the actual screen dimensions of a
  * thumbnail when centred with aspect correct
  * scaling within a rectangle of (width x height) */
-void menu_thumbnail_get_draw_dimensions(
-      menu_thumbnail_t *thumbnail,
+void gfx_thumbnail_get_draw_dimensions(
+      gfx_thumbnail_t *thumbnail,
       unsigned width, unsigned height, float scale_factor,
       float *draw_width, float *draw_height)
 {
@@ -626,12 +625,12 @@ error:
  *       size of the thumbnail beyond the limits of the
  *       (width x height) rectangle (alignment + aspect
  *       correct scaling is preserved). Use with caution */
-void menu_thumbnail_draw(
-      video_frame_info_t *video_info, menu_thumbnail_t *thumbnail,
+void gfx_thumbnail_draw(
+      video_frame_info_t *video_info, gfx_thumbnail_t *thumbnail,
       float x, float y, unsigned width, unsigned height,
-      enum menu_thumbnail_alignment alignment,
+      enum gfx_thumbnail_alignment alignment,
       float alpha, float scale_factor,
-      menu_thumbnail_shadow_t *shadow)
+      gfx_thumbnail_shadow_t *shadow)
 {
    /* Sanity check */
    if (!video_info || !thumbnail ||
@@ -639,7 +638,7 @@ void menu_thumbnail_draw(
       return;
 
    /* Only draw thumbnail if it is available... */
-   if (thumbnail->status == MENU_THUMBNAIL_STATUS_AVAILABLE)
+   if (thumbnail->status == GFX_THUMBNAIL_STATUS_AVAILABLE)
    {
       gfx_display_ctx_rotate_draw_t rotate_draw;
       gfx_display_ctx_draw_t draw;
@@ -664,7 +663,7 @@ void menu_thumbnail_draw(
          gfx_display_set_alpha(thumbnail_color, thumbnail_alpha);
 
       /* Get thumbnail dimensions */
-      menu_thumbnail_get_draw_dimensions(
+      gfx_thumbnail_get_draw_dimensions(
             thumbnail, width, height, scale_factor,
             &draw_width, &draw_height);
 
@@ -709,31 +708,31 @@ void menu_thumbnail_draw(
       /* Set thumbnail alignment within bounding box */
       switch (alignment)
       {
-         case MENU_THUMBNAIL_ALIGN_TOP:
+         case GFX_THUMBNAIL_ALIGN_TOP:
             /* Centred horizontally */
             draw_x = x + ((float)width - draw_width) / 2.0f;
             /* Drawn at top of bounding box */
             draw_y = (float)video_info->height - y - draw_height;
             break;
-         case MENU_THUMBNAIL_ALIGN_BOTTOM:
+         case GFX_THUMBNAIL_ALIGN_BOTTOM:
             /* Centred horizontally */
             draw_x = x + ((float)width - draw_width) / 2.0f;
             /* Drawn at bottom of bounding box */
             draw_y = (float)video_info->height - y - (float)height;
             break;
-         case MENU_THUMBNAIL_ALIGN_LEFT:
+         case GFX_THUMBNAIL_ALIGN_LEFT:
             /* Drawn at left side of bounding box */
             draw_x = x;
             /* Centred vertically */
             draw_y = (float)video_info->height - y - draw_height - ((float)height - draw_height) / 2.0f;
             break;
-         case MENU_THUMBNAIL_ALIGN_RIGHT:
+         case GFX_THUMBNAIL_ALIGN_RIGHT:
             /* Drawn at right side of bounding box */
             draw_x = x + (float)width - draw_width;
             /* Centred vertically */
             draw_y = (float)video_info->height - y - draw_height - ((float)height - draw_height) / 2.0f;
             break;
-         case MENU_THUMBNAIL_ALIGN_CENTRE:
+         case GFX_THUMBNAIL_ALIGN_CENTRE:
          default:
             /* Centred both horizontally and vertically */
             draw_x = x + ((float)width - draw_width) / 2.0f;
@@ -745,7 +744,7 @@ void menu_thumbnail_draw(
       if (shadow)
       {
          /* Sanity check */
-         if ((shadow->type != MENU_THUMBNAIL_SHADOW_NONE) &&
+         if ((shadow->type != GFX_THUMBNAIL_SHADOW_NONE) &&
              (shadow->alpha > 0.0f))
          {
             float shadow_width;
@@ -768,15 +767,15 @@ void menu_thumbnail_draw(
 
             /* Configure shadow based on effect type
              * > Not using a switch() here, since we've
-             *   already eliminated MENU_THUMBNAIL_SHADOW_NONE */
-            if (shadow->type == MENU_THUMBNAIL_SHADOW_OUTLINE)
+             *   already eliminated GFX_THUMBNAIL_SHADOW_NONE */
+            if (shadow->type == GFX_THUMBNAIL_SHADOW_OUTLINE)
             {
                shadow_width  = draw_width  + (float)(shadow->outline.width * 2);
                shadow_height = draw_height + (float)(shadow->outline.width * 2);
                shadow_x      = draw_x - (float)shadow->outline.width;
                shadow_y      = draw_y - (float)shadow->outline.width;
             }
-            /* Default: MENU_THUMBNAIL_SHADOW_DROP */
+            /* Default: GFX_THUMBNAIL_SHADOW_DROP */
             else
             {
                shadow_width  = draw_width;

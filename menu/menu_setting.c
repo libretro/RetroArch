@@ -13850,10 +13850,10 @@ static bool setting_append_list(
 
             CONFIG_UINT(
                   list, list_info,
-                  &settings->uints.menu_thumbnails,
+                  &settings->uints.gfx_thumbnails,
                   MENU_ENUM_LABEL_THUMBNAILS,
                   thumbnails_label_value,
-                  menu_thumbnails_default,
+                  gfx_thumbnails_default,
                   &group_info,
                   &subgroup_info,
                   parent_group,
@@ -13922,10 +13922,10 @@ static bool setting_append_list(
          {
             CONFIG_UINT(
                   list, list_info,
-                  &settings->uints.menu_thumbnail_upscale_threshold,
+                  &settings->uints.gfx_thumbnail_upscale_threshold,
                   MENU_ENUM_LABEL_MENU_THUMBNAIL_UPSCALE_THRESHOLD,
                   MENU_ENUM_LABEL_VALUE_MENU_THUMBNAIL_UPSCALE_THRESHOLD,
-                  menu_thumbnail_upscale_threshold,
+                  gfx_thumbnail_upscale_threshold,
                   &group_info,
                   &subgroup_info,
                   parent_group,

@@ -462,7 +462,7 @@ static const char *stripes_thumbnails_ident(char pos)
    settings_t *settings = config_get_ptr();
 
    if (pos == 'R')
-      folder = settings->uints.menu_thumbnails;
+      folder = settings->uints.gfx_thumbnails;
    if (pos == 'L')
       folder = settings->uints.menu_left_thumbnails;
 

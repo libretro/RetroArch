@@ -59,7 +59,7 @@
 #include <file/config_file.h>
 
 /* Thumbnail additions */
-#include "../menu_thumbnail_path.h"
+#include "../gfx_thumbnail_path.h"
 #include "../../tasks/tasks_internal.h"
 #include <gfx/scaler/scaler.h>
 #include <features/features_cpu.h>
@@ -553,7 +553,7 @@ typedef struct
    bool entry_has_thumbnail;
    bool entry_has_left_thumbnail;
    bool show_fs_thumbnail;
-   menu_thumbnail_path_data_t *thumbnail_path_data;
+   gfx_thumbnail_path_data_t *thumbnail_path_data;
    uint32_t thumbnail_queue_size;
    uint32_t left_thumbnail_queue_size;
    bool thumbnail_load_pending;
@@ -1652,7 +1652,7 @@ static void process_wallpaper(rgui_t *rgui, struct texture_image *image)
 
 static bool request_thumbnail(
       thumbnail_t *thumbnail,
-      enum menu_thumbnail_id thumbnail_id,
+      enum gfx_thumbnail_id thumbnail_id,
       uint32_t *queue_size,
       const char *path,
       bool *file_missing)
@@ -1678,7 +1678,7 @@ static bool request_thumbnail(
           * here, but can't see how to do it... */
          if (task_push_image_load(thumbnail->path,
                   video_driver_supports_rgba(), 0,
-                  (thumbnail_id == MENU_THUMBNAIL_LEFT) ?
+                  (thumbnail_id == GFX_THUMBNAIL_LEFT) ?
             menu_display_handle_left_thumbnail_upload 
             : menu_display_handle_thumbnail_upload, NULL))
          {
@@ -2035,7 +2035,7 @@ static unsigned INLINE rgui_get_mini_thumbnail_fullwidth(void)
    return width >= left_width ? width : left_width;
 }
 
-static void rgui_render_mini_thumbnail(rgui_t *rgui, thumbnail_t *thumbnail, enum menu_thumbnail_id thumbnail_id)
+static void rgui_render_mini_thumbnail(rgui_t *rgui, thumbnail_t *thumbnail, enum gfx_thumbnail_id thumbnail_id)
 {
    settings_t *settings = config_get_ptr();
 
@@ -2066,8 +2066,8 @@ static void rgui_render_mini_thumbnail(rgui_t *rgui, thumbnail_t *thumbnail, enu
       fb_x_offset = (rgui_term_layout.start_x + term_width) -
             (thumbnail->width + ((thumbnail_fullwidth - thumbnail->width) >> 1));
       
-      if (((thumbnail_id == MENU_THUMBNAIL_RIGHT) && !settings->bools.menu_rgui_swap_thumbnails) ||
-          ((thumbnail_id == MENU_THUMBNAIL_LEFT)  && settings->bools.menu_rgui_swap_thumbnails))
+      if (((thumbnail_id == GFX_THUMBNAIL_RIGHT) && !settings->bools.menu_rgui_swap_thumbnails) ||
+          ((thumbnail_id == GFX_THUMBNAIL_LEFT)  && settings->bools.menu_rgui_swap_thumbnails))
       {
          fb_y_offset = rgui_term_layout.start_y + ((thumbnail->max_height - thumbnail->height) >> 1);
       }
@@ -3395,7 +3395,7 @@ static void rgui_render(void *data,
       rgui_render_fs_thumbnail(rgui);
 
       /* Get thumbnail title */
-      if (menu_thumbnail_get_label(rgui->thumbnail_path_data, &thumbnail_title))
+      if (gfx_thumbnail_get_label(rgui->thumbnail_path_data, &thumbnail_title))
       {
          /* Format thumbnail title */
          if (use_smooth_ticker)
@@ -3756,10 +3756,10 @@ static void rgui_render(void *data,
       if (show_mini_thumbnails)
       {
          if (show_thumbnail)
-            rgui_render_mini_thumbnail(rgui, &mini_thumbnail, MENU_THUMBNAIL_RIGHT);
+            rgui_render_mini_thumbnail(rgui, &mini_thumbnail, GFX_THUMBNAIL_RIGHT);
          
          if (show_left_thumbnail)
-            rgui_render_mini_thumbnail(rgui, &mini_left_thumbnail, MENU_THUMBNAIL_LEFT);
+            rgui_render_mini_thumbnail(rgui, &mini_left_thumbnail, GFX_THUMBNAIL_LEFT);
       }
 
       /* Print menu sublabel/core name (if required) */
@@ -4343,7 +4343,7 @@ static void *rgui_init(void **userdata, bool video_is_threaded)
    rgui_set_blit_functions(
          settings->bools.menu_rgui_shadows, settings->bools.menu_rgui_extended_ascii);
 
-   rgui->thumbnail_path_data = menu_thumbnail_path_init();
+   rgui->thumbnail_path_data = gfx_thumbnail_path_init();
    if (!rgui->thumbnail_path_data)
       goto error;
 
@@ -4517,7 +4517,7 @@ static void rgui_set_thumbnail_system(void *userdata, char *s, size_t len)
    rgui_t *rgui = (rgui_t*)userdata;
    if (!rgui)
       return;
-   menu_thumbnail_set_system(
+   gfx_thumbnail_set_system(
          rgui->thumbnail_path_data, s, playlist_get_cached());
 }
 
@@ -4527,7 +4527,7 @@ static void rgui_get_thumbnail_system(void *userdata, char *s, size_t len)
    const char *system = NULL;
    if (!rgui)
       return;
-   if (menu_thumbnail_get_system(rgui->thumbnail_path_data, &system))
+   if (gfx_thumbnail_get_system(rgui->thumbnail_path_data, &system))
       strlcpy(s, system, len);
 }
 
@@ -4538,12 +4538,12 @@ static void rgui_load_current_thumbnails(rgui_t *rgui, bool download_missing)
    bool thumbnails_missing         = false;
    
    /* Right (or fullscreen) thumbnail */
-   if (menu_thumbnail_get_path(rgui->thumbnail_path_data,
-         MENU_THUMBNAIL_RIGHT, &thumbnail_path))
+   if (gfx_thumbnail_get_path(rgui->thumbnail_path_data,
+         GFX_THUMBNAIL_RIGHT, &thumbnail_path))
    {
       rgui->entry_has_thumbnail = request_thumbnail(
             rgui->show_fs_thumbnail ? &fs_thumbnail : &mini_thumbnail,
-            MENU_THUMBNAIL_RIGHT,
+            GFX_THUMBNAIL_RIGHT,
             &rgui->thumbnail_queue_size,
             thumbnail_path,
             &thumbnails_missing);
@@ -4554,12 +4554,12 @@ static void rgui_load_current_thumbnails(rgui_t *rgui, bool download_missing)
     * fullscreen thumbnails) */
    if (!rgui->show_fs_thumbnail)
    {
-      if (menu_thumbnail_get_path(rgui->thumbnail_path_data,
-            MENU_THUMBNAIL_LEFT, &left_thumbnail_path))
+      if (gfx_thumbnail_get_path(rgui->thumbnail_path_data,
+            GFX_THUMBNAIL_LEFT, &left_thumbnail_path))
       {
          rgui->entry_has_left_thumbnail = request_thumbnail(
                &mini_left_thumbnail,
-               MENU_THUMBNAIL_LEFT,
+               GFX_THUMBNAIL_LEFT,
                &rgui->left_thumbnail_queue_size,
                left_thumbnail_path,
                &thumbnails_missing);
@@ -4579,7 +4579,7 @@ static void rgui_load_current_thumbnails(rgui_t *rgui, bool download_missing)
    {
       const char *system = NULL;
 
-      if (menu_thumbnail_get_system(rgui->thumbnail_path_data, &system))
+      if (gfx_thumbnail_get_system(rgui->thumbnail_path_data, &system))
          task_push_pl_entry_thumbnail_download(system,
                playlist_get_cached(), (unsigned)menu_navigation_get_selection(),
                false, true);
@@ -4602,15 +4602,15 @@ static void rgui_scan_selected_entry_thumbnail(rgui_t *rgui, bool force_load)
    /* Update thumbnail content/path */
    if ((rgui->show_fs_thumbnail || settings->bools.menu_rgui_inline_thumbnails) && rgui->is_playlist)
    {
-      if (menu_thumbnail_set_content_playlist(rgui->thumbnail_path_data,
+      if (gfx_thumbnail_set_content_playlist(rgui->thumbnail_path_data,
             playlist_get_cached(), menu_navigation_get_selection()))
       {
-         if (menu_thumbnail_is_enabled(rgui->thumbnail_path_data, MENU_THUMBNAIL_RIGHT))
-            has_thumbnail = menu_thumbnail_update_path(rgui->thumbnail_path_data, MENU_THUMBNAIL_RIGHT);
+         if (gfx_thumbnail_is_enabled(rgui->thumbnail_path_data, GFX_THUMBNAIL_RIGHT))
+            has_thumbnail = gfx_thumbnail_update_path(rgui->thumbnail_path_data, GFX_THUMBNAIL_RIGHT);
          
          if (settings->bools.menu_rgui_inline_thumbnails &&
-             menu_thumbnail_is_enabled(rgui->thumbnail_path_data, MENU_THUMBNAIL_LEFT))
-            has_thumbnail = menu_thumbnail_update_path(rgui->thumbnail_path_data, MENU_THUMBNAIL_LEFT) ||
+             gfx_thumbnail_is_enabled(rgui->thumbnail_path_data, GFX_THUMBNAIL_LEFT))
+            has_thumbnail = gfx_thumbnail_update_path(rgui->thumbnail_path_data, GFX_THUMBNAIL_LEFT) ||
                             has_thumbnail;
       }
    }
@@ -4678,8 +4678,8 @@ static void rgui_refresh_thumbnail_image(void *userdata, unsigned i)
 
    /* Only refresh thumbnails if thumbnails are enabled */
    if ((rgui->show_fs_thumbnail || settings->bools.menu_rgui_inline_thumbnails) &&
-       (menu_thumbnail_is_enabled(rgui->thumbnail_path_data, MENU_THUMBNAIL_RIGHT) ||
-        menu_thumbnail_is_enabled(rgui->thumbnail_path_data, MENU_THUMBNAIL_LEFT)))
+       (gfx_thumbnail_is_enabled(rgui->thumbnail_path_data, GFX_THUMBNAIL_RIGHT) ||
+        gfx_thumbnail_is_enabled(rgui->thumbnail_path_data, GFX_THUMBNAIL_LEFT)))
    {
       /* In all cases, reset current thumbnails */
       fs_thumbnail.width = 0;

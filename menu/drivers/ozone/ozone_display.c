@@ -440,8 +440,8 @@ void ozone_draw_fullscreen_thumbnails(
       /* Note: right thumbnail is drawn at the top
        * in the sidebar, so it becomes the *left*
        * thumbnail when viewed fullscreen */
-      menu_thumbnail_t *right_thumbnail = &ozone->thumbnails.left;
-      menu_thumbnail_t *left_thumbnail  = &ozone->thumbnails.right;
+      gfx_thumbnail_t *right_thumbnail = &ozone->thumbnails.left;
+      gfx_thumbnail_t *left_thumbnail  = &ozone->thumbnails.right;
       unsigned width                    = video_info->width;
       unsigned height                   = video_info->height;
       int view_width                    = (int)width;
@@ -497,8 +497,8 @@ void ozone_draw_fullscreen_thumbnails(
          goto error;
 
       /* Get number of 'active' thumbnails */
-      show_right_thumbnail = (right_thumbnail->status == MENU_THUMBNAIL_STATUS_AVAILABLE);
-      show_left_thumbnail  = (left_thumbnail->status  == MENU_THUMBNAIL_STATUS_AVAILABLE);
+      show_right_thumbnail = (right_thumbnail->status == GFX_THUMBNAIL_STATUS_AVAILABLE);
+      show_left_thumbnail  = (left_thumbnail->status  == GFX_THUMBNAIL_STATUS_AVAILABLE);
 
       if (show_right_thumbnail)
          num_thumbnails++;
@@ -548,7 +548,7 @@ void ozone_draw_fullscreen_thumbnails(
        *     the bounding box dimensions...  */
       if (show_right_thumbnail)
       {
-         menu_thumbnail_get_draw_dimensions(
+         gfx_thumbnail_get_draw_dimensions(
                right_thumbnail,
                thumbnail_box_width, thumbnail_box_height, 1.0f,
                &right_thumbnail_draw_width, &right_thumbnail_draw_height);
@@ -561,7 +561,7 @@ void ozone_draw_fullscreen_thumbnails(
 
       if (show_left_thumbnail)
       {
-         menu_thumbnail_get_draw_dimensions(
+         gfx_thumbnail_get_draw_dimensions(
                left_thumbnail,
                thumbnail_box_width, thumbnail_box_height, 1.0f,
                &left_thumbnail_draw_width, &left_thumbnail_draw_height);
@@ -655,14 +655,14 @@ void ozone_draw_fullscreen_thumbnails(
                frame_color);
 
          /* Thumbnail */
-         menu_thumbnail_draw(
+         gfx_thumbnail_draw(
                video_info,
                right_thumbnail,
                right_thumbnail_x,
                thumbnail_y,
                (unsigned)thumbnail_box_width,
                (unsigned)thumbnail_box_height,
-               MENU_THUMBNAIL_ALIGN_CENTRE,
+               GFX_THUMBNAIL_ALIGN_CENTRE,
                ozone->animations.fullscreen_thumbnail_alpha,
                1.0f,
                NULL);
@@ -685,14 +685,14 @@ void ozone_draw_fullscreen_thumbnails(
                frame_color);
 
          /* Thumbnail */
-         menu_thumbnail_draw(
+         gfx_thumbnail_draw(
                video_info,
                left_thumbnail,
                left_thumbnail_x,
                thumbnail_y,
                (unsigned)thumbnail_box_width,
                (unsigned)thumbnail_box_height,
-               MENU_THUMBNAIL_ALIGN_CENTRE,
+               GFX_THUMBNAIL_ALIGN_CENTRE,
                ozone->animations.fullscreen_thumbnail_alpha,
                1.0f,
                NULL);
