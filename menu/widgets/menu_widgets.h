@@ -53,7 +53,8 @@ void menu_widgets_volume_update_and_show(float new_volume,
 
 void menu_widgets_iterate(
       unsigned width, unsigned height,
-      const char *dir_assets, char *font_path);
+      const char *dir_assets, char *font_path,
+      bool is_threaded);
 
 void menu_widgets_screenshot_taken(const char *shotname, const char *filename);
 

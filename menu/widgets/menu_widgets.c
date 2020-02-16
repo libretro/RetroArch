@@ -883,7 +883,8 @@ static void menu_widgets_layout(
 
 void menu_widgets_iterate(
       unsigned width, unsigned height,
-      const char *dir_assets, char *font_path)
+      const char *dir_assets, char *font_path,
+      bool is_threaded)
 {
    size_t i;
 
@@ -903,16 +904,16 @@ void menu_widgets_iterate(
 
       /* Note: We don't need a full context reset here
        * > Just rescale layout, and reset frame time counter */
-      menu_widgets_layout(
-            video_driver_is_threaded(),
-            dir_assets, font_path);
+      menu_widgets_layout(is_threaded, dir_assets, font_path);
       video_driver_monitor_reset();
    }
 
    /* Messages queue */
 
    /* Consume one message if available */
-   if (fifo_read_avail(msg_queue) > 0 && !widgets_moving && current_msgs->size < MSG_QUEUE_ONSCREEN_MAX)
+   if ((fifo_read_avail(msg_queue) > 0) 
+         && !widgets_moving 
+         && (current_msgs->size < MSG_QUEUE_ONSCREEN_MAX))
    {
       menu_widget_msg_t *msg_widget;
 
@@ -929,7 +930,8 @@ void menu_widgets_iterate(
             0
          );
 
-         file_list_set_userdata(current_msgs, current_msgs->size-1, msg_widget);
+         file_list_set_userdata(current_msgs,
+               current_msgs->size-1, msg_widget);
       }
       /* Regular messages are always above tasks */
       else
@@ -950,7 +952,9 @@ void menu_widgets_iterate(
       /* Start expiration timer if not associated to a task */
       if (!msg_widget->task_ptr)
       {
-         menu_widgets_start_msg_expiration_timer(msg_widget, MSG_QUEUE_ANIMATION_DURATION*2 + msg_widget->duration);
+         menu_widgets_start_msg_expiration_timer(
+               msg_widget, MSG_QUEUE_ANIMATION_DURATION * 2 
+               + msg_widget->duration);
       }
       /* Else, start hourglass animation timer */
       else

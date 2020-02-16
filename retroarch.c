@@ -27333,7 +27333,8 @@ static enum runloop_state runloop_check_state(void)
       menu_widgets_iterate(
             video_driver_width, video_driver_height,
             settings->paths.directory_assets,
-            settings->paths.path_font);
+            settings->paths.path_font,
+            video_driver_is_threaded_internal());
       runloop_msg_queue_unlock();
    }
 #endif
