@@ -47,10 +47,8 @@ const char *video_display_server_get_ident(void)
    return current_display_server->ident;
 }
 
-void* video_display_server_init(void)
+void* video_display_server_init(enum rarch_display_type type)
 {
-   enum rarch_display_type type = video_driver_display_type_get();
-
    video_display_server_destroy();
 
    switch (type)

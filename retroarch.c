@@ -20782,7 +20782,7 @@ static bool video_driver_init_internal(bool *video_is_threaded)
 
    video_context_driver_reset();
 
-   video_display_server_init();
+   video_display_server_init(video_driver_display_type);
 
    if ((enum rotation)settings->uints.screen_orientation != ORIENTATION_NORMAL)
       video_display_server_set_screen_orientation((enum rotation)settings->uints.screen_orientation);

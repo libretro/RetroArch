@@ -59,7 +59,7 @@ typedef struct video_display_server
    const char *ident;
 } video_display_server_t;
 
-void* video_display_server_init(void);
+void* video_display_server_init(enum rarch_display_type type);
 
 void video_display_server_destroy(void);
 
