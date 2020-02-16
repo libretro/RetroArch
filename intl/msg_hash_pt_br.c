@@ -197,13 +197,13 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
              break;
           case RARCH_QUIT_KEY:
              snprintf(s, len,
-                         "Tecla para sair do RetroArch de modo limpo. \n"
+                   "Tecla para sair do RetroArch de modo limpo. \n"
                    " \n"
-                                "Encerrá-lo de forma brusca (SIGKILL, etc.) irá \n"
-                                "terminar o RetroArch sem salvar RAM, etc."
+                   "Encerrá-lo de forma brusca (SIGKILL, etc.) irá \n"
+                   "terminar o RetroArch sem salvar RAM, etc."
 #ifdef __unix__
-                        "\nEm Unix-likes, SIGINT/SIGTERM permitem \n"
-                        "uma desinicialização limpa."
+                   "\nEm Unix-likes, SIGINT/SIGTERM permitem \n"
+                   "uma desinicialização limpa."
 #endif
                    "");
              break;
@@ -1663,6 +1663,20 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
                              " \n"
                              "Os números são descritos em quadros."
             );
+            break;
+        case MENU_ENUM_LABEL_INPUT_TURBO_MODE:
+            snprintf(s, len,
+                  "Modo Turbo.\n"
+                  " \n"
+                  "Seleciona o comportamento geral do modo turbo."
+                  );
+            break;
+        case MENU_ENUM_LABEL_INPUT_TURBO_DEFAULT_BUTTON:
+            snprintf(s, len,
+                  "Botão Padrão de Turbo.\n"
+                  " \n"
+                  "O Botão individual para o Modo Turbo.\n"
+                  );
             break;
         case MENU_ENUM_LABEL_INPUT_DUTY_CYCLE:
             snprintf(s, len,
