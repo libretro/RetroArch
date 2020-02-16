@@ -1282,7 +1282,7 @@ static void gfx_animation_update_time(
        *   for some users - so play it safe. Users can always
        *   set ticker speed to 2x if they prefer)
        *   Note 2: GLUI uses the new DPI scaling system,
-       *   so scaling multiplier is menu_display_get_dpi_scale()
+       *   so scaling multiplier is gfx_display_get_dpi_scale()
        *   multiplied by a small correction factor (since the
        *   default 1.0x speed is just a little faster than the
        *   non-smooth ticker)

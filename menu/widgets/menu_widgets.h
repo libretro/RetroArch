@@ -36,17 +36,6 @@
 #define HOURGLASS_DURATION                1000
 #define GENERIC_MESSAGE_DURATION          3000
 
-enum menu_driver_id_type
-{
-   MENU_DRIVER_ID_UNKNOWN = 0,
-   MENU_DRIVER_ID_RGUI,
-   MENU_DRIVER_ID_OZONE,
-   MENU_DRIVER_ID_GLUI,
-   MENU_DRIVER_ID_XMB,
-   MENU_DRIVER_ID_XUI,
-   MENU_DRIVER_ID_STRIPES
-};
-
 bool menu_widgets_init(bool video_is_threaded);
 
 void menu_widgets_free(void);
@@ -104,10 +93,6 @@ void menu_widgets_set_libretro_message(const char *message, unsigned duration);
 void menu_widgets_frame(void *data);
 
 bool menu_widgets_set_fps_text(const char *new_fps_text);
-
-void menu_widgets_set_driver_id(enum menu_driver_id_type type);
-
-float menu_display_get_dpi_scale(unsigned width, unsigned height);
 
 enum menu_driver_id_type menu_driver_ident_id(void);
 

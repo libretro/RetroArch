@@ -129,7 +129,7 @@ static void ozone_menu_animation_update_time(
       float *dst,
       unsigned video_width, unsigned video_height)
 {
-   *(dst) *= menu_display_get_dpi_scale(video_width, video_height) * 0.5f;
+   *(dst) *= gfx_display_get_dpi_scale(video_width, video_height) * 0.5f;
 }
 
 
@@ -161,7 +161,7 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
 
    ozone->last_width        = width;
    ozone->last_height       = height;
-   ozone->last_scale_factor = menu_display_get_dpi_scale(width, height);
+   ozone->last_scale_factor = gfx_display_get_dpi_scale(width, height);
 
    ozone->selection_buf_old = (file_list_t*)calloc(1, sizeof(file_list_t));
 
@@ -1102,7 +1102,7 @@ static void ozone_render(void *data,
 
    /* Check whether screen dimensions or menu scale
     * factor have changed */
-   scale_factor = menu_display_get_dpi_scale(width, height);
+   scale_factor = gfx_display_get_dpi_scale(width, height);
 
    if ((scale_factor != ozone->last_scale_factor) ||
        (width != ozone->last_width) ||

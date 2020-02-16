@@ -1913,9 +1913,7 @@ static void menu_driver_set_id(void)
 {
    const char *driver_name = NULL;
 
-#ifdef HAVE_MENU_WIDGETS
-   menu_widgets_set_driver_id(MENU_DRIVER_ID_UNKNOWN);
-#endif
+   gfx_display_set_driver_id(MENU_DRIVER_ID_UNKNOWN);
 
    if (!menu_driver_ctx || !menu_driver_ctx->ident)
       return;
@@ -1925,27 +1923,23 @@ static void menu_driver_set_id(void)
    if (string_is_empty(driver_name))
       return;
 
-#ifdef HAVE_MENU_WIDGETS
    if (string_is_equal(driver_name, "rgui"))
-      menu_widgets_set_driver_id(MENU_DRIVER_ID_RGUI);
+      gfx_display_set_driver_id(MENU_DRIVER_ID_RGUI);
    else if (string_is_equal(driver_name, "ozone"))
-      menu_widgets_set_driver_id(MENU_DRIVER_ID_OZONE);
+      gfx_display_set_driver_id(MENU_DRIVER_ID_OZONE);
    else if (string_is_equal(driver_name, "glui"))
-      menu_widgets_set_driver_id(MENU_DRIVER_ID_GLUI);
+      gfx_display_set_driver_id(MENU_DRIVER_ID_GLUI);
    else if (string_is_equal(driver_name, "xmb"))
-      menu_widgets_set_driver_id(MENU_DRIVER_ID_XMB);
+      gfx_display_set_driver_id(MENU_DRIVER_ID_XMB);
    else if (string_is_equal(driver_name, "xui"))
-      menu_widgets_set_driver_id(MENU_DRIVER_ID_XUI);
+      gfx_display_set_driver_id(MENU_DRIVER_ID_XUI);
    else if (string_is_equal(driver_name, "stripes"))
-      menu_widgets_set_driver_id(MENU_DRIVER_ID_STRIPES);
-#endif
+      gfx_display_set_driver_id(MENU_DRIVER_ID_STRIPES);
 }
 
 static bool menu_driver_init_internal(bool video_is_threaded)
 {
-#ifdef HAVE_MENU_WIDGETS
-   menu_widgets_set_driver_id(MENU_DRIVER_ID_UNKNOWN);
-#endif
+   gfx_display_set_driver_id(MENU_DRIVER_ID_UNKNOWN);
 
    if (menu_driver_ctx->init)
    {
@@ -2177,9 +2171,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
                free(menu_userdata);
             menu_userdata = NULL;
 
-#ifdef HAVE_MENU_WIDGETS
-            menu_widgets_set_driver_id(MENU_DRIVER_ID_UNKNOWN);
-#endif
+            gfx_display_set_driver_id(MENU_DRIVER_ID_UNKNOWN);
 
 #ifndef HAVE_DYNAMIC
             if (frontend_driver_has_fork())

@@ -2287,7 +2287,7 @@ static void materialui_render(void *data,
 
    /* Check whether screen dimensions, menu scale
     * factor or layout optimisation settings have changed */
-   scale_factor = menu_display_get_dpi_scale(width, height);
+   scale_factor = gfx_display_get_dpi_scale(width, height);
 
    if ((scale_factor != mui->last_scale_factor) ||
        (width != mui->last_width) ||
@@ -5592,7 +5592,7 @@ static void materialui_menu_animation_update_time(
       float *dst,
       unsigned video_width, unsigned video_height)
 {
-   *(dst) *= menu_display_get_dpi_scale(video_width, video_height) * 0.8f;
+   *(dst) *= gfx_display_get_dpi_scale(video_width, video_height) * 0.8f;
 }
 
 static void *materialui_init(void **userdata, bool video_is_threaded)
@@ -5627,7 +5627,7 @@ static void *materialui_init(void **userdata, bool video_is_threaded)
 
    mui->last_width           = width;
    mui->last_height          = height;
-   mui->last_scale_factor    = menu_display_get_dpi_scale(width, height);
+   mui->last_scale_factor    = gfx_display_get_dpi_scale(width, height);
    mui->dip_base_unit_size   = mui->last_scale_factor * MUI_DIP_BASE_UNIT_SIZE;
 
    mui->need_compute         = false;

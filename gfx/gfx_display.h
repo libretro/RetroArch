@@ -50,6 +50,18 @@ RETRO_BEGIN_DECLS
 /* TODO/FIXME - global, not thread-safe */
 extern float osk_dark[16];
 
+enum menu_driver_id_type
+{
+   MENU_DRIVER_ID_UNKNOWN = 0,
+   MENU_DRIVER_ID_RGUI,
+   MENU_DRIVER_ID_OZONE,
+   MENU_DRIVER_ID_GLUI,
+   MENU_DRIVER_ID_XMB,
+   MENU_DRIVER_ID_XUI,
+   MENU_DRIVER_ID_STRIPES
+};
+
+
 enum gfx_display_prim_type
 {
    GFX_DISPLAY_PRIM_NONE = 0,
@@ -316,6 +328,15 @@ bool gfx_display_reset_textures_list_buffer(
 int gfx_display_osk_ptr_at_pos(void *data, int x, int y,
       unsigned width, unsigned height);
 
+enum menu_driver_id_type gfx_display_get_driver_id(void);
+
+void gfx_display_set_driver_id(enum menu_driver_id_type type);
+
+float gfx_display_get_dpi_scale(unsigned width, unsigned height);
+
+float gfx_display_get_widget_dpi_scale(unsigned width, unsigned height);
+
+float gfx_display_get_widget_pixel_scale(unsigned width, unsigned height);
 
 void gfx_display_allocate_white_texture(void);
 
