@@ -86,6 +86,7 @@ static float menu_widgets_pure_white[16] = {
 /* FPS */
 static char menu_widgets_fps_text[255] = {0};
 
+#ifdef HAVE_CHEEVOS
 /* Achievement notification */
 static char *cheevo_title              = NULL;
 static menu_texture_item cheevo_badge  = 0;
@@ -96,6 +97,7 @@ static menu_timer_t cheevo_timer;
 static float cheevo_y           = 0.0f;
 static unsigned cheevo_width    = 0;
 static unsigned cheevo_height   = 0;
+#endif
 
 /* Load content animation */
 #define ANIMATION_LOAD_CONTENT_DURATION            333
@@ -560,8 +562,8 @@ static void menu_widgets_msg_queue_move(void)
 {
    int i;
    float y = 0;
-
-   menu_widget_msg_t *unfold  = NULL; /* there should always be one and only one unfolded message */
+   /* there should always be one and only one unfolded message */
+   menu_widget_msg_t *unfold  = NULL; 
 
    if (current_msgs->size == 0)
       return;
@@ -739,7 +741,6 @@ static void menu_widgets_draw_icon(
 
    gfx_display_draw(&draw, video_info);
 }
-
 
 static void menu_widgets_draw_icon_blend(
       video_frame_info_t *video_info,
@@ -1536,6 +1537,7 @@ void menu_widgets_frame(void *data)
       );
    }
 
+#ifdef HAVE_CHEEVOS
    /* Achievement notification */
    if (cheevo_title)
    {
@@ -1574,13 +1576,13 @@ void menu_widgets_frame(void *data)
                video_info->width, video_info->height, 0, 1, menu_widgets_pure_white);
       }
 
-      scissor_me_timbers = (fabs(cheevo_unfold - 1.0f) > 0.01); /* I _think_ cheevo_unfold changes in another thread */
+      /* I _think_ cheevo_unfold changes in another thread */
+      scissor_me_timbers = (fabs(cheevo_unfold - 1.0f) > 0.01); 
       if (scissor_me_timbers)
-      {
          gfx_display_scissor_begin(video_info,
             cheevo_height, 0,
-            (unsigned)((float)(cheevo_width) * cheevo_unfold), cheevo_height);
-      }
+            (unsigned)((float)(cheevo_width) * cheevo_unfold),
+            cheevo_height);
 
       /* Backdrop */
       gfx_display_draw_quad(video_info,
@@ -1592,7 +1594,8 @@ void menu_widgets_frame(void *data)
       /* Title */
       gfx_display_draw_text(font_regular,
          msg_hash_to_str(MSG_ACHIEVEMENT_UNLOCKED),
-         cheevo_height + simple_widget_padding - unfold_offet, widget_font_size * 1.9f + cheevo_y,
+         cheevo_height + simple_widget_padding - unfold_offet,
+         widget_font_size * 1.9f + cheevo_y,
          video_info->width, video_info->height,
          TEXT_COLOR_FAINT,
          TEXT_ALIGN_LEFT,
@@ -1619,6 +1622,7 @@ void menu_widgets_frame(void *data)
          gfx_display_scissor_end(video_info);
       }
    }
+#endif
 
    /* Volume */
    if (volume_alpha > 0.0f)
@@ -2104,6 +2108,7 @@ void menu_widgets_context_destroy(void)
    font_bold = NULL;
 }
 
+#ifdef HAVE_CHEEVOS
 static void menu_widgets_achievement_free(void *userdata)
 {
    if (cheevo_title)
@@ -2118,6 +2123,7 @@ static void menu_widgets_achievement_free(void *userdata)
       cheevo_badge = 0;
    }
 }
+#endif
 
 void menu_widgets_free(void)
 {
@@ -2161,8 +2167,10 @@ void menu_widgets_free(void)
 
    msg_queue_tasks_count = 0;
 
+#ifdef HAVE_CHEEVOS
    /* Achievement notification */
    menu_widgets_achievement_free(NULL);
+#endif
 
    /* Font */
    video_coord_array_free(&font_raster_regular.carr);
@@ -2238,7 +2246,7 @@ bool menu_widgets_set_fps_text(const char *new_fps_text)
    return true;
 }
 
-int menu_widgets_ai_service_overlay_get_state()
+int menu_widgets_ai_service_overlay_get_state(void)
 {
    return ai_service_overlay_state;
 }
@@ -2269,7 +2277,7 @@ bool menu_widgets_ai_service_overlay_load(
    return true;
 }
 
-void menu_widgets_ai_service_overlay_unload()
+void menu_widgets_ai_service_overlay_unload(void)
 {
    if (ai_service_overlay_state == 1)
    {
@@ -2430,6 +2438,7 @@ void menu_widgets_start_load_content_animation(const char *content_name, bool re
    load_content_animation_running = true;
 }
 
+#ifdef HAVE_CHEEVOS
 static void menu_widgets_achievement_dismiss(void *userdata)
 {
    gfx_animation_ctx_entry_t entry;
@@ -2510,7 +2519,8 @@ static void menu_widgets_start_achievement_notification(void)
    gfx_animation_push(&entry);
 }
 
-static void menu_widgets_get_badge_texture(menu_texture_item *tex, const char *badge)
+static void menu_widgets_get_badge_texture(
+      menu_texture_item *tex, const char *badge)
 {
    char badge_file[16];
    char fullpath[PATH_MAX_LENGTH];
@@ -2542,6 +2552,7 @@ void menu_widgets_push_achievement(const char *title, const char *badge)
 
    menu_widgets_start_achievement_notification();
 }
+#endif
 
 static void menu_widgets_generic_message_fadeout(void *userdata)
 {
