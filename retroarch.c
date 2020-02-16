@@ -4465,7 +4465,9 @@ static void handle_translation_cb(
    char* text_string                 = NULL;
    int curr_state                    = 0;
 
+#ifdef DEBUG
    RARCH_LOG("RESULT FROM AI SERVICE...\n");
+#endif
    if (!data || error)
       goto finish;
 
@@ -4551,11 +4553,11 @@ static void handle_translation_cb(
 
    if (string_is_equal(error_string, "No text found."))
    {
+#ifdef DEBUG
       RARCH_LOG("No text found...\n");
+#endif
       if (!text_string)
-      {
          text_string = (char*)malloc(15);
-      }
 
       strlcpy(text_string, error_string, 15);
 #ifdef HAVE_MENU_WIDGETS
@@ -5242,7 +5244,9 @@ static bool run_translation_service(void)
       memcpy(json_buffer+11+out_length, (const void*)rf3, (16+strlen(system_label))*sizeof(uint8_t));
    else
       memcpy(json_buffer+11+out_length, (const void*)rf2, 3*sizeof(uint8_t));
+#ifdef DEBUG
    RARCH_LOG("Request size: %d\n", out_length);
+#endif
    {
       char separator  = '?';
       char new_ai_service_url[PATH_MAX_LENGTH];
@@ -5332,7 +5336,9 @@ static bool run_translation_service(void)
          strlcat(new_ai_service_url, temp_string,
                  sizeof(new_ai_service_url));
       }
+#ifdef DEBUG
       RARCH_LOG("SENDING... %s\n", new_ai_service_url);
+#endif
       task_push_http_post_transfer(new_ai_service_url,
             json_buffer, true, NULL, handle_translation_cb, NULL);
    }
