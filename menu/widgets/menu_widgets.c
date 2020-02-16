@@ -38,8 +38,9 @@
 #include "../../tasks/task_content.h"
 #include "../../ui/ui_companion_driver.h"
 
-#include "../menu_driver.h"
 #include "../gfx_animation.h"
+#include "../gfx_display.h"
+#include "../menu_driver.h"
 
 #include "../../gfx/font_driver.h"
 

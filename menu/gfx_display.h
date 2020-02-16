@@ -34,6 +34,22 @@
 
 RETRO_BEGIN_DECLS
 
+#define COLOR_TEXT_ALPHA(color, alpha) (color & 0xFFFFFF00) | alpha
+
+#define HEX_R(hex) ((hex >> 16) & 0xFF) * (1.0f / 255.0f)
+#define HEX_G(hex) ((hex >> 8 ) & 0xFF) * (1.0f / 255.0f)
+#define HEX_B(hex) ((hex >> 0 ) & 0xFF) * (1.0f / 255.0f)
+
+#define COLOR_HEX_TO_FLOAT(hex, alpha) { \
+   HEX_R(hex), HEX_G(hex), HEX_B(hex), alpha, \
+   HEX_R(hex), HEX_G(hex), HEX_B(hex), alpha, \
+   HEX_R(hex), HEX_G(hex), HEX_B(hex), alpha, \
+   HEX_R(hex), HEX_G(hex), HEX_B(hex), alpha  \
+}
+
+extern float osk_dark[16];
+
+
 typedef struct menu_display_ctx_driver
 {
    /* Draw graphics to the screen. */

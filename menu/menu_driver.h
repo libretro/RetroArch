@@ -54,21 +54,6 @@ RETRO_BEGIN_DECLS
 #define MENU_SETTINGS_CHEEVOS_START              0x40000
 #define MENU_SETTINGS_NETPLAY_ROOMS_START        0x80000
 
-#define COLOR_TEXT_ALPHA(color, alpha) (color & 0xFFFFFF00) | alpha
-
-#define HEX_R(hex) ((hex >> 16) & 0xFF) * (1.0f / 255.0f)
-#define HEX_G(hex) ((hex >> 8 ) & 0xFF) * (1.0f / 255.0f)
-#define HEX_B(hex) ((hex >> 0 ) & 0xFF) * (1.0f / 255.0f)
-
-#define COLOR_HEX_TO_FLOAT(hex, alpha) { \
-   HEX_R(hex), HEX_G(hex), HEX_B(hex), alpha, \
-   HEX_R(hex), HEX_G(hex), HEX_B(hex), alpha, \
-   HEX_R(hex), HEX_G(hex), HEX_B(hex), alpha, \
-   HEX_R(hex), HEX_G(hex), HEX_B(hex), alpha  \
-}
-
-extern float osk_dark[16];
-
 enum menu_settings_type
 {
    MENU_SETTINGS_NONE       = FILE_TYPE_LAST + 1,
