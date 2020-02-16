@@ -48,7 +48,8 @@ void menu_widgets_msg_queue_push(
       enum message_queue_category category,
       unsigned prio, bool flush);
 
-void menu_widgets_volume_update_and_show(float new_volume);
+void menu_widgets_volume_update_and_show(float new_volume,
+      bool mute);
 
 void menu_widgets_iterate(
       unsigned width, unsigned height,

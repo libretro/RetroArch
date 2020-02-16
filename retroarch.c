@@ -5428,7 +5428,9 @@ static void command_event_set_volume(float gain)
 
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
    if (menu_widgets_inited)
-      menu_widgets_volume_update_and_show(settings->floats.audio_volume);
+      menu_widgets_volume_update_and_show(settings->floats.audio_volume,
+            audio_driver_mute_enable
+            );
    else
 #endif
       runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
@@ -6912,7 +6914,9 @@ TODO: Add a setting for these tweaks */
 
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
             if (menu_widgets_inited)
-               menu_widgets_volume_update_and_show(configuration_settings->floats.audio_volume);
+               menu_widgets_volume_update_and_show(
+                     configuration_settings->floats.audio_volume,
+                     audio_driver_mute_enable);
             else
 #endif
                runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);

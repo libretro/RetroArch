@@ -2227,10 +2227,9 @@ static void menu_widgets_volume_timer_end(void *userdata)
    gfx_animation_push(&entry);
 }
 
-void menu_widgets_volume_update_and_show(float new_volume)
+void menu_widgets_volume_update_and_show(float new_volume, bool mute)
 {
    gfx_timer_ctx_entry_t entry;
-   bool mute = *(audio_get_bool_ptr(AUDIO_ACTION_MUTE_ENABLE));
 
    gfx_animation_kill_by_tag(&volume_tag);
 
@@ -2273,8 +2272,7 @@ bool menu_widgets_ai_service_overlay_load(
 {
    if (ai_service_overlay_state == 0)
    {
-      bool res;
-      res = gfx_display_reset_textures_list_buffer(
+      bool res = gfx_display_reset_textures_list_buffer(
                &ai_service_overlay_texture, 
                TEXTURE_FILTER_MIPMAP_LINEAR, 
                (void *) buffer, buffer_len, image_type,
