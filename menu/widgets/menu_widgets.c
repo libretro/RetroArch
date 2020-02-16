@@ -30,9 +30,6 @@
 #include "../../accessibility.h"
 #endif
 
-#include "../../verbosity.h"
-#include "../../retroarch.h"
-#include "../../configuration.h"
 #include "../../msg_hash.h"
 
 #include "../../tasks/task_content.h"
@@ -40,9 +37,9 @@
 
 #include "../../gfx/gfx_animation.h"
 #include "../../gfx/gfx_display.h"
-#include "../menu_driver.h"
-
 #include "../../gfx/font_driver.h"
+
+#include "../menu_driver.h"
 
 /* TODO: Fix context reset freezing everything in place (probably kills animations when it shouldn't anymore) */
 

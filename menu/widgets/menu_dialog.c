@@ -29,7 +29,6 @@
 
 #include "../menu_driver.h"
 
-#include "../../retroarch.h"
 #include "../../configuration.h"
 
 #include "../../tasks/tasks_internal.h"
