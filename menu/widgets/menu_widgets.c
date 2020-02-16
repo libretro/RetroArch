@@ -33,7 +33,6 @@
 #include "../../msg_hash.h"
 
 #include "../../tasks/task_content.h"
-#include "../../ui/ui_companion_driver.h"
 
 #include "../../gfx/gfx_animation.h"
 #include "../../gfx/gfx_display.h"
@@ -190,7 +189,7 @@ static bool msg_queue_has_icons                  = false;
 extern gfx_animation_ctx_tag menu_widgets_generic_tag;
 
 /* there can only be one message animation at a time to avoid confusing users */
-static bool widgets_moving   = false;
+static bool widgets_moving                       = false;
 
 /* Icons */
 enum menu_widgets_icon
@@ -237,14 +236,14 @@ static const char *menu_widgets_icons_names[MENU_WIDGETS_ICON_LAST] = {
 static menu_texture_item menu_widgets_icons_textures[MENU_WIDGETS_ICON_LAST] = {0};
 
 /* Volume */
-static float volume_db              = 0.0f;
-static float volume_percent         = 1.0f;
-static gfx_timer_t volume_timer    = 0.0f;
+static float volume_db                       = 0.0f;
+static float volume_percent                  = 1.0f;
+static gfx_timer_t volume_timer              = 0.0f;
 
-static float volume_alpha                  = 0.0f;
-static float volume_text_alpha             = 0.0f;
-static gfx_animation_ctx_tag volume_tag    = (uintptr_t) &volume_alpha;
-static bool volume_mute                    = false;
+static float volume_alpha                    = 0.0f;
+static float volume_text_alpha               = 0.0f;
+static gfx_animation_ctx_tag volume_tag      = (uintptr_t) &volume_alpha;
+static bool volume_mute                      = false;
 
 
 /* Screenshot */
@@ -256,12 +255,12 @@ static char screenshot_shotname[256]         = {0};
 static char screenshot_filename[256]         = {0};
 static bool screenshot_loaded                = false;
 
-static unsigned screenshot_height;
-static unsigned screenshot_width;
-static float screenshot_scale_factor;
-static unsigned screenshot_thumbnail_width;
-static unsigned screenshot_thumbnail_height;
-static float screenshot_y;
+static float screenshot_scale_factor         = 0.0f;
+static float screenshot_y                    = 0.0f;
+static unsigned screenshot_height            = 0;
+static unsigned screenshot_width             = 0;
+static unsigned screenshot_thumbnail_width   = 0;
+static unsigned screenshot_thumbnail_height  = 0;
 static gfx_timer_t screenshot_timer;
 
 static unsigned screenshot_shotname_length;
@@ -273,25 +272,27 @@ static unsigned ai_service_overlay_height            = 0;
 static menu_texture_item ai_service_overlay_texture  = 0;
 
 /* Generic message */
-static gfx_timer_t generic_message_timer;
-static float generic_message_alpha = 0.0f;
 #define GENERIC_MESSAGE_SIZE 256
+
+static gfx_timer_t generic_message_timer;
+static float generic_message_alpha                = 0.0f;
 static char generic_message[GENERIC_MESSAGE_SIZE] = {'\0'};
 
 /* Libretro message */
-static gfx_timer_t libretro_message_timer;
-static float libretro_message_alpha = 0.0f;
-static unsigned libretro_message_width = 0;
 #define LIBRETRO_MESSAGE_SIZE 512
+
+static gfx_timer_t libretro_message_timer;
+static float libretro_message_alpha                 = 0.0f;
+static unsigned libretro_message_width              = 0;
 static char libretro_message[LIBRETRO_MESSAGE_SIZE] = {'\0'};
 
 /* Metrics */
 #define BASE_FONT_SIZE 32.0f
 
-static float widget_font_size;
-static unsigned simple_widget_padding = 0;
-static unsigned simple_widget_height;
-static unsigned glyph_width;
+static float widget_font_size             = 0.0f;
+static unsigned simple_widget_padding     = 0;
+static unsigned simple_widget_height      = 0;
+static unsigned glyph_width               = 0;
 
 static unsigned msg_queue_height;
 static unsigned msg_queue_icon_size_x;
@@ -313,7 +314,8 @@ static unsigned msg_queue_regular_text_base_y;
 static unsigned msg_queue_task_rect_start_x;
 static unsigned msg_queue_task_hourglass_x;
 
-static unsigned generic_message_height; /* used for both generic and libretro messages */
+/* Used for both generic and libretro messages */
+static unsigned generic_message_height; 
 
 static unsigned load_content_animation_icon_size_initial;
 static unsigned load_content_animation_icon_size_target;
@@ -358,7 +360,8 @@ void menu_widgets_msg_queue_push(
       if (task && task->frontend_userdata)
       {
          msg_widget           = (menu_widget_msg_t*) task->frontend_userdata;
-         msg_widget->task_ptr = task; /* msg_widgets can be passed between tasks */
+         /* msg_widgets can be passed between tasks */
+         msg_widget->task_ptr = task;
       }
 
       /* Spawn a new notification */
@@ -416,7 +419,9 @@ void menu_widgets_msg_queue_push(
 
             msg_widget->unfolded             = true;
 
-            msg_widget->width                = font_driver_get_message_width(font_regular, title, msg_widget->msg_len, msg_queue_text_scale_factor) + simple_widget_padding/2;
+            msg_widget->width                = font_driver_get_message_width(
+                  font_regular, title, msg_widget->msg_len,
+                  msg_queue_text_scale_factor) + simple_widget_padding/2;
 
             task->frontend_userdata          = msg_widget;
 
@@ -425,14 +430,17 @@ void menu_widgets_msg_queue_push(
          else
          {
             /* Compute rect width, wrap if necessary */
-            /* Single line text > two lines text > two lines text with expanded width */
+            /* Single line text > two lines text > two lines 
+             * text with expanded width */
             unsigned title_length   = (unsigned)strlen(title);
             char *msg               = strdup(title);
-            unsigned width          = menu_driver_is_alive() ?
-                  msg_queue_default_rect_width_menu_alive : msg_queue_default_rect_width;
-            unsigned text_width     = font_driver_get_message_width(font_regular, title, title_length, msg_queue_text_scale_factor);
-
-            msg_widget->text_height = msg_queue_text_scale_factor * widget_font_size;
+            unsigned width          = menu_driver_is_alive() 
+               ? msg_queue_default_rect_width_menu_alive 
+               : msg_queue_default_rect_width;
+            unsigned text_width     = font_driver_get_message_width(
+                  font_regular, title, title_length, msg_queue_text_scale_factor);
+            msg_widget->text_height = msg_queue_text_scale_factor 
+               * widget_font_size;
 
             /* Text is too wide, split it into two lines */
             if (text_width > width)
@@ -443,7 +451,8 @@ void menu_widgets_msg_queue_push(
                if ((text_width - (text_width >> 2)) < width)
                   width = text_width - (text_width >> 2);
 
-               word_wrap(msg, msg, (title_length * width) / text_width, false, 2);
+               word_wrap(msg, msg, (title_length * width) / text_width,
+                     false, 2);
 
                msg_widget->text_height *= 2.5f;
             }
@@ -472,7 +481,8 @@ void menu_widgets_msg_queue_push(
          if (!string_is_equal(task->title, msg_widget->msg_new))
          {
             unsigned len         = (unsigned)strlen(task->title);
-            unsigned new_width   = font_driver_get_message_width(font_regular, task->title, len, msg_queue_text_scale_factor);
+            unsigned new_width   = font_driver_get_message_width(
+                  font_regular, task->title, len, msg_queue_text_scale_factor);
 
             if (msg_widget->msg_new)
             {
@@ -529,9 +539,8 @@ static void menu_widgets_move_end(void *userdata)
 {
    if (userdata)
    {
-      menu_widget_msg_t *unfold = (menu_widget_msg_t*) userdata;
-
       gfx_animation_ctx_entry_t entry;
+      menu_widget_msg_t *unfold = (menu_widget_msg_t*) userdata;
 
       entry.cb             = menu_widgets_unfold_end;
       entry.duration       = MSG_QUEUE_ANIMATION_DURATION;
@@ -585,7 +594,7 @@ static void menu_widgets_msg_queue_move(void)
       {
          gfx_animation_ctx_entry_t entry;
 
-         entry.cb             = i == 0 ? menu_widgets_move_end : NULL;
+         entry.cb             = (i == 0) ? menu_widgets_move_end : NULL;
          entry.duration       = MSG_QUEUE_ANIMATION_DURATION;
          entry.easing_enum    = EASING_OUT_QUAD;
          entry.subject        = &msg->offset_y;
