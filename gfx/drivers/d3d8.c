@@ -948,7 +948,8 @@ static bool d3d8_initialize(d3d8_video_t *d3d, const video_info_t *info)
    d3d8_set_viewport(d3d,
 	   width, height, false, true);
 
-   font_driver_init_osd(d3d, false,
+   font_driver_init_osd(d3d, info,
+         false,
          info->is_threaded,
          FONT_DRIVER_RENDER_D3D8_API);
 

@@ -176,7 +176,11 @@
       // overlay view
       _overlay = [[Overlay alloc] initWithContext:_context];
 
-      font_driver_init_osd((__bridge void *)self, false, video->is_threaded, FONT_DRIVER_RENDER_METAL_API);
+      font_driver_init_osd((__bridge void *)self,
+            video,
+            false,
+            video->is_threaded,
+            FONT_DRIVER_RENDER_METAL_API);
    }
    return self;
 }

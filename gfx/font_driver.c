@@ -24,7 +24,6 @@
 #include "font_driver.h"
 #include "video_thread_wrapper.h"
 
-#include "../configuration.h"
 #include "../retroarch.h"
 #include "../verbosity.h"
 
@@ -1155,19 +1154,18 @@ font_data_t *font_driver_init_first(
 
 void font_driver_init_osd(
       void *video_data,
+      const void *video_info_data,
       bool threading_hint,
       bool is_threaded,
       enum font_driver_render_api api)
 {
-   settings_t *settings  = config_get_ptr();
-   const char *path_font = settings->paths.path_font;
-   float video_font_size = settings->floats.video_font_size;
-   if (video_font_driver)
+   const video_info_t *video_info = (const video_info_t*)video_info_data;
+   if (video_font_driver || !video_info)
       return;
 
    video_font_driver = font_driver_init_first(video_data,
-         *path_font ? path_font : NULL,
-         video_font_size, threading_hint, is_threaded, api);
+         *video_info->path_font ? video_info->path_font : NULL,
+         video_info->font_size, threading_hint, is_threaded, api);
 
    if (!video_font_driver)
       RARCH_ERR("[font]: Failed to initialize OSD font.\n");

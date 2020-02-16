@@ -20699,6 +20699,8 @@ static bool video_driver_init_internal(bool *video_is_threaded)
 #endif
    video.smooth        = settings->bools.video_smooth;
    video.input_scale   = scale;
+   video.font_size     = settings->floats.video_font_size;
+   video.path_font     = settings->paths.path_font;
    video.rgb32         = video_driver_state_filter ?
       video_driver_state_out_rgb32 :
       (video_driver_pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888);
@@ -20719,13 +20721,15 @@ static bool video_driver_init_internal(bool *video_is_threaded)
 
    if (video.is_threaded)
    {
+      bool ret;
       /* Can't do hardware rendering with threaded driver currently. */
       RARCH_LOG("[Video]: Starting threaded video driver ...\n");
 
-      if (!video_init_thread((const video_driver_t**)&current_video,
+      ret = video_init_thread((const video_driver_t**)&current_video,
                &video_driver_data,
                &current_input, (void**)&current_input_data,
-               current_video, video))
+               current_video, video);
+      if (!ret)
       {
          RARCH_ERR("[Video]: Cannot open threaded video driver ... Exiting ...\n");
          goto error;

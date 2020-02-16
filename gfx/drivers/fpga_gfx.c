@@ -210,7 +210,9 @@ static void *fpga_gfx_init(const video_info_t *video,
    video_context_driver_input_driver(&inp);
 
    if (settings->bools.video_font_enable)
-      font_driver_init_osd(NULL, false,
+      font_driver_init_osd(NULL,
+            video,
+            false,
             video->is_threaded,
             FONT_DRIVER_RENDER_FPGA);
 

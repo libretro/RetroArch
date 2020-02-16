@@ -137,7 +137,9 @@ static void *vga_gfx_init(const video_info_t *video,
    vga_gfx_create();
 
    if (video->font_enable)
-      font_driver_init_osd(NULL, false,
+      font_driver_init_osd(NULL,
+            video,
+            false,
             video->is_threaded, FONT_DRIVER_RENDER_VGA);
 
    return vga;

@@ -446,9 +446,11 @@ static void *wiiu_gfx_init(const video_info_t *video,
 
    driver_ctl(RARCH_DRIVER_CTL_SET_REFRESH_RATE, &refresh_rate);
 
-   font_driver_init_osd(wiiu, false,
-                        video->is_threaded,
-                        FONT_DRIVER_RENDER_WIIU);
+   font_driver_init_osd(wiiu,
+         video,
+         false,
+         video->is_threaded,
+         FONT_DRIVER_RENDER_WIIU);
 
    {
       enum rarch_shader_type type;

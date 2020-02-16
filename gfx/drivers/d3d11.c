@@ -1041,7 +1041,11 @@ static void *d3d11_gfx_init(const video_info_t* video,
    }
    D3D11SetState(d3d11->context, d3d11->state);
 
-   font_driver_init_osd(d3d11, false, video->is_threaded, FONT_DRIVER_RENDER_D3D11_API);
+   font_driver_init_osd(d3d11,
+         video,
+         false,
+         video->is_threaded,
+         FONT_DRIVER_RENDER_D3D11_API);
 
    {
       d3d11_fake_context.get_flags = d3d11_get_flags;

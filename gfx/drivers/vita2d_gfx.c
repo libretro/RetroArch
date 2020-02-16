@@ -108,7 +108,9 @@ static void *vita2d_gfx_init(const video_info_t *video,
 #ifdef HAVE_OVERLAY
    vita->overlay_enable     = false;
 #endif
-   font_driver_init_osd(vita, false,
+   font_driver_init_osd(vita,
+         video,
+         false,
          video->is_threaded,
          FONT_DRIVER_RENDER_VITA2D);
 

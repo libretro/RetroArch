@@ -956,7 +956,8 @@ static bool d3d9_initialize(d3d9_video_t *d3d, const video_info_t *info)
    strlcpy(settings->paths.path_font, "game:\\media\\Arial_12.xpr",
          sizeof(settings->paths.path_font));
 #endif
-   font_driver_init_osd(d3d, false,
+   font_driver_init_osd(d3d, info,
+         false,
          info->is_threaded,
          FONT_DRIVER_RENDER_D3D9_API);
 

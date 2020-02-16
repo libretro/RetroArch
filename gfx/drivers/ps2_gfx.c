@@ -261,7 +261,11 @@ static void *ps2_gfx_init(const video_info_t *video,
 
    init_ps2_video(ps2);
    if (video->font_enable)
-      font_driver_init_osd(ps2, false, video->is_threaded, FONT_DRIVER_RENDER_PS2);
+      font_driver_init_osd(ps2,
+            video,
+            false,
+            video->is_threaded,
+            FONT_DRIVER_RENDER_PS2);
 
    ps2->PSM          = (video->rgb32 ? GS_PSM_CT32 : GS_PSM_CT16);
    ps2->fullscreen   = video->fullscreen;

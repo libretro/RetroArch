@@ -1322,9 +1322,11 @@ static void *gl_core_init(const video_info_t *video,
 
    if (video->font_enable)
    {
-      font_driver_init_osd(gl, false,
-                           video->is_threaded,
-                           FONT_DRIVER_RENDER_OPENGL_CORE_API);
+      font_driver_init_osd(gl,
+            video,
+            false,
+            video->is_threaded,
+            FONT_DRIVER_RENDER_OPENGL_CORE_API);
    }
 
    gl->pbo_readback_enable = settings->bools.video_gpu_record

@@ -1086,6 +1086,10 @@ typedef struct video_info
     */
    unsigned input_scale;
 
+   const char *path_font;
+
+   float font_size;
+
    uintptr_t parent;
 } video_info_t;
 

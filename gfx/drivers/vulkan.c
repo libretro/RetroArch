@@ -1262,7 +1262,9 @@ static void *vulkan_init(const video_info_t *video,
    video_context_driver_input_driver(&inp);
 
    if (video->font_enable)
-      font_driver_init_osd(vk, false,
+      font_driver_init_osd(vk,
+            video,
+            false,
             video->is_threaded,
             FONT_DRIVER_RENDER_VULKAN_API);
 

@@ -220,9 +220,11 @@ static void *switch_init(const video_info_t *video,
         *input_data = switchinput;
     }
 
-    font_driver_init_osd(sw, false,
-                         video->is_threaded,
-                         FONT_DRIVER_RENDER_SWITCH);
+    font_driver_init_osd(sw,
+          video,
+          false,
+          video->is_threaded,
+          FONT_DRIVER_RENDER_SWITCH);
 
     clear_screen(sw);
 

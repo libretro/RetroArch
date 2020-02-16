@@ -153,9 +153,11 @@ font_data_t *font_driver_init_first(
 
 void font_driver_init_osd(
       void *video_data,
+      const void *video_info_data,
       bool threading_hint,
       bool is_threaded,
       enum font_driver_render_api api);
+
 void font_driver_free_osd(void);
 
 int font_driver_get_line_height(void *font_data, float scale);

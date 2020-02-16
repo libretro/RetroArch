@@ -966,7 +966,11 @@ static void *d3d10_gfx_init(const video_info_t* video,
 
    D3D10SetState(d3d10->device, d3d10->state);
 
-   font_driver_init_osd(d3d10, false, video->is_threaded, FONT_DRIVER_RENDER_D3D10_API);
+   font_driver_init_osd(d3d10,
+         video,
+         false,
+         video->is_threaded,
+         FONT_DRIVER_RENDER_D3D10_API);
 
    {
       d3d10_fake_context.get_flags = d3d10_get_flags;

@@ -1005,7 +1005,11 @@ static void *d3d12_gfx_init(const video_info_t* video,
    d3d12->frame.texture[0].srv_heap    = &d3d12->desc.srv_heap;
    d3d12_init_texture(d3d12->device, &d3d12->frame.texture[0]);
 
-   font_driver_init_osd(d3d12, false, video->is_threaded, FONT_DRIVER_RENDER_D3D12_API);
+   font_driver_init_osd(d3d12,
+         video,
+         false,
+         video->is_threaded,
+         FONT_DRIVER_RENDER_D3D12_API);
 
    {
       d3d12_fake_context.get_flags = d3d12_get_flags;
