@@ -26,8 +26,10 @@
 #include "../config.h"
 #endif
 
-#include "menu_driver.h"
+#include "menu_entries.h"
 #include "menu_shader.h"
+
+#include "../command.h"
 #include "../file_path_special.h"
 #include "../paths.h"
 #include "../retroarch.h"
