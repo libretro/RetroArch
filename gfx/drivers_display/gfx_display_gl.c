@@ -20,8 +20,8 @@
 #endif
 
 #include "../../retroarch.h"
-#include "../../gfx/font_driver.h"
-#include "../../gfx/common/gl_common.h"
+#include "../font_driver.h"
+#include "../common/gl_common.h"
 
 #include "../gfx_display.h"
 

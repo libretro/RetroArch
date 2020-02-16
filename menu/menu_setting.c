@@ -67,7 +67,7 @@
 #include "menu_setting.h"
 #include "menu_cbs.h"
 #include "menu_driver.h"
-#include "gfx_animation.h"
+#include "../gfx/gfx_animation.h"
 #include "menu_input.h"
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 #include "menu_shader.h"

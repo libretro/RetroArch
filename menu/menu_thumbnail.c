@@ -29,7 +29,7 @@
 #include <file/file_path.h>
 #include <string/stdstring.h>
 
-#include "gfx_animation.h"
+#include "../gfx/gfx_animation.h"
 #include "menu_driver.h"
 
 #include "menu_thumbnail.h"

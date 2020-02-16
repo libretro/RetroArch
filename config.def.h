@@ -392,7 +392,7 @@
 
 #ifdef HAVE_MENU
 #include "menu/menu_driver.h"
-#include "menu/gfx_animation.h"
+#include "gfx/gfx_animation.h"
 
 #ifdef HAVE_LIBNX
 #define DEFAULT_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME true

@@ -34,7 +34,7 @@
 #include "menu_generic.h"
 
 #include "../menu_driver.h"
-#include "../gfx_animation.h"
+#include "../../gfx/gfx_animation.h"
 #include "../menu_entries.h"
 #include "../menu_input.h"
 #include "../menu_setting.h"

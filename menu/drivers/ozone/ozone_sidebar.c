@@ -27,7 +27,7 @@
 #include <file/file_path.h>
 #include <formats/image.h>
 
-#include "../../gfx_animation.h"
+#include "../../../gfx/gfx_animation.h"
 
 #include "../../../configuration.h"
 

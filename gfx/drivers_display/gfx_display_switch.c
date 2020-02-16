@@ -17,7 +17,7 @@
 #include <queues/message_queue.h>
 #include <retro_miscellaneous.h>
 
-#include "../../gfx/font_driver.h"
+#include "../font_driver.h"
 #include "../../retroarch.h"
 
 #include "../gfx_display.h"

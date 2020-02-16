@@ -26,7 +26,7 @@
 #include <encodings/utf.h>
 
 #include "../../menu_driver.h"
-#include "../../gfx_animation.h"
+#include "../../../gfx/gfx_animation.h"
 
 #include "../../../configuration.h"
 

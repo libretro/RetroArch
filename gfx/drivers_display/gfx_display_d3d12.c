@@ -24,8 +24,8 @@
 #include "../gfx_display.h"
 
 #include "../../retroarch.h"
-#include "../../gfx/font_driver.h"
-#include "../../gfx/common/d3d12_common.h"
+#include "../font_driver.h"
+#include "../common/d3d12_common.h"
 
 static const float* gfx_display_d3d12_get_default_vertices(void)
 {

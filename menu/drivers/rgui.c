@@ -49,7 +49,7 @@
 #include "menu_generic.h"
 
 #include "../menu_driver.h"
-#include "../gfx_animation.h"
+#include "../../gfx/gfx_animation.h"
 
 #include "../widgets/menu_osk.h"
 

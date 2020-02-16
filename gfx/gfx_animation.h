@@ -23,7 +23,7 @@
 #include <boolean.h>
 #include <retro_common_api.h>
 
-#include "../gfx/font_driver.h"
+#include "font_driver.h"
 
 RETRO_BEGIN_DECLS
 

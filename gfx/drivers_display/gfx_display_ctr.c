@@ -22,9 +22,9 @@
 #include "../gfx_display.h"
 
 #include "../../retroarch.h"
-#include "../../gfx/font_driver.h"
-#include "../../gfx/common/ctr_common.h"
-#include "../../gfx/drivers/ctr_gu.h"
+#include "../font_driver.h"
+#include "../common/ctr_common.h"
+#include "../drivers/ctr_gu.h"
 #include "../../ctr/gpu_old.h"
 
 static const float *gfx_display_ctr_get_default_vertices(void) { return NULL; }

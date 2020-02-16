@@ -28,7 +28,7 @@
 #include <features/features_cpu.h>
 
 #include "../../menu_input.h"
-#include "../../gfx_animation.h"
+#include "../../../gfx/gfx_animation.h"
 
 #include "../../widgets/menu_osk.h"
 

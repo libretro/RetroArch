@@ -32,7 +32,7 @@
 #include "menu_defines.h"
 #include "menu_input.h"
 #include "menu_entries.h"
-#include "gfx_display.h"
+#include "../gfx/gfx_display.h"
 
 #include "../gfx/font_driver.h"
 

@@ -19,7 +19,7 @@
 
 #include "../configuration.h"
 #include "../frontend/frontend.h"
-#include "../gfx/video_coord_array.h"
+#include "video_coord_array.h"
 #include "../verbosity.h"
 
 #define PARTICLES_COUNT            100

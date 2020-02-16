@@ -23,8 +23,8 @@
 #include "../gfx_display.h"
 
 #include "../../retroarch.h"
-#include "../../gfx/font_driver.h"
-#include "../../gfx/common/gx2_common.h"
+#include "../font_driver.h"
+#include "../common/gx2_common.h"
 #include "../../wiiu/system/memory.h"
 #include "../../wiiu/wiiu_dbg.h"
 

@@ -38,7 +38,8 @@
 #include "../menu_generic.h"
 
 #include "../../menu_driver.h"
-#include "../../gfx_animation.h"
+#include "../../../gfx/gfx_animation.h"
+#include "../../../gfx/gfx_display.h"
 #include "../../menu_input.h"
 #include "../../playlist.h"
 #include "../../runtime_file.h"

@@ -23,9 +23,9 @@
 
 #include "../gfx_display.h"
 
-#include "../../gfx/font_driver.h"
+#include "../font_driver.h"
 #include "../../retroarch.h"
-#include "../../gfx/common/gl_core_common.h"
+#include "../common/gl_core_common.h"
 
 static const float gl_core_vertexes[] = {
    0, 0,

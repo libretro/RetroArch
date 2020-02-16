@@ -1245,7 +1245,7 @@ MENU
 #endif
 
 #ifdef HAVE_MENU
-#include "../menu/gfx_display.c"
+#include "../gfx/gfx_display.c"
 #include "../menu/menu_driver.c"
 #include "../menu/menu_setting.c"
 #include "../menu/menu_cbs.c"
@@ -1279,67 +1279,67 @@ MENU
 #include "../menu/cbs/menu_cbs_down.c"
 #include "../menu/cbs/menu_cbs_contentlist_switch.c"
 #include "../menu/menu_displaylist.c"
-#include "../menu/gfx_animation.c"
+#include "../gfx/gfx_animation.c"
 #include "../menu/menu_thumbnail_path.c"
 #include "../menu/menu_thumbnail.c"
 
 #include "../menu/drivers/menu_generic.c"
 
 #if defined(HAVE_D3D8)
-#include "../menu/drivers_display/gfx_display_d3d8.c"
+#include "../gfx/drivers_display/gfx_display_d3d8.c"
 #endif
 
 #if defined(HAVE_D3D9)
-#include "../menu/drivers_display/gfx_display_d3d9.c"
+#include "../gfx/drivers_display/gfx_display_d3d9.c"
 #endif
 
 #if defined(HAVE_D3D10)
-#include "../menu/drivers_display/gfx_display_d3d10.c"
+#include "../gfx/drivers_display/gfx_display_d3d10.c"
 #endif
 
 #if defined(HAVE_D3D11)
-#include "../menu/drivers_display/gfx_display_d3d11.c"
+#include "../gfx/drivers_display/gfx_display_d3d11.c"
 #endif
 
 #if defined(HAVE_D3D12)
-#include "../menu/drivers_display/gfx_display_d3d12.c"
+#include "../gfx/drivers_display/gfx_display_d3d12.c"
 #endif
 
 #ifdef HAVE_OPENGL1
-#include "../menu/drivers_display/gfx_display_gl1.c"
+#include "../gfx/drivers_display/gfx_display_gl1.c"
 #endif
 
 #ifdef HAVE_OPENGL
-#include "../menu/drivers_display/gfx_display_gl.c"
+#include "../gfx/drivers_display/gfx_display_gl.c"
 #endif
 
 #ifdef HAVE_OPENGL_CORE
-#include "../menu/drivers_display/gfx_display_gl_core.c"
+#include "../gfx/drivers_display/gfx_display_gl_core.c"
 #endif
 
 #ifdef HAVE_VULKAN
-#include "../menu/drivers_display/gfx_display_vulkan.c"
+#include "../gfx/drivers_display/gfx_display_vulkan.c"
 #endif
 
 #ifdef HAVE_VITA2D
-#include "../menu/drivers_display/gfx_display_vita2d.c"
+#include "../gfx/drivers_display/gfx_display_vita2d.c"
 #endif
 
 #ifdef _3DS
-#include "../menu/drivers_display/gfx_display_ctr.c"
+#include "../gfx/drivers_display/gfx_display_ctr.c"
 #endif
 
 #ifdef WIIU
-#include "../menu/drivers_display/gfx_display_wiiu.c"
+#include "../gfx/drivers_display/gfx_display_wiiu.c"
 #endif
 
 #if defined(HAVE_LIBNX)
-#include "../menu/drivers_display/gfx_display_switch.c"
+#include "../gfx/drivers_display/gfx_display_switch.c"
 #endif
 
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
 #ifdef HAVE_GDI
-#include "../menu/drivers_display/gfx_display_gdi.c"
+#include "../gfx/drivers_display/gfx_display_gdi.c"
 #endif
 #endif
 

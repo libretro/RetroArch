@@ -21,15 +21,15 @@
 #include <retro_miscellaneous.h>
 
 #include "../../config.def.h"
-#include "../../gfx/font_driver.h"
+#include "../font_driver.h"
 #include "../../retroarch.h"
 #include "../../verbosity.h"
 
 #include "../gfx_display.h"
 
 #if defined(_WIN32) && !defined(_XBOX)
-#include "../../gfx/common/win32_common.h"
-#include "../../gfx/common/gdi_common.h"
+#include "../common/win32_common.h"
+#include "../common/gdi_common.h"
 #endif
 
 static void *gfx_display_gdi_get_default_mvp(video_frame_info_t *video_info)

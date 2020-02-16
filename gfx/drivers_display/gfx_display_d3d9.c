@@ -26,8 +26,8 @@
 #include "../gfx_display.h"
 
 #include "../../retroarch.h"
-#include "../../gfx/common/d3d_common.h"
-#include "../../gfx/common/d3d9_common.h"
+#include "../common/d3d_common.h"
+#include "../common/d3d9_common.h"
 
 static const float d3d9_vertexes[] = {
    0, 0,

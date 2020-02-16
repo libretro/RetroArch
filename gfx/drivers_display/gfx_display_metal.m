@@ -21,9 +21,9 @@
 
 #include "../gfx_display.h"
 
-#include "../../gfx/font_driver.h"
+#include "../font_driver.h"
 #include "../../retroarch.h"
-#import "../../gfx/common/metal_common.h"
+#import "../common/metal_common.h"
 
 static const float *gfx_display_metal_get_default_vertices(void)
 {

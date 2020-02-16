@@ -21,10 +21,10 @@
 #endif
 
 #include "../../retroarch.h"
-#include "../../gfx/font_driver.h"
-#include "../../gfx/common/gl1_common.h"
+#include "../font_driver.h"
+#include "../common/gl1_common.h"
 
-#include "../menu_driver.h"
+#include "../gfx_display.h"
 
 #ifdef VITA
 static float *vertices3 = NULL;
