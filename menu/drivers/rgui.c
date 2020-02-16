@@ -57,12 +57,12 @@
 #include "../../gfx/drivers_font_renderer/bitmap.h"
 
 #include <file/config_file.h>
-
-/* Thumbnail additions */
-#include "../gfx_thumbnail_path.h"
-#include "../../tasks/tasks_internal.h"
 #include <gfx/scaler/scaler.h>
 #include <features/features_cpu.h>
+
+/* Thumbnail additions */
+#include "../../gfx/gfx_thumbnail_path.h"
+#include "../../tasks/tasks_internal.h"
 
 #if defined(GEKKO)
 /* Required for the Wii build, since we have

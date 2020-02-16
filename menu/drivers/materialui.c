@@ -42,10 +42,11 @@
 #include "menu_generic.h"
 
 #include "../menu_driver.h"
-#include "../../gfx/gfx_animation.h"
 #include "../menu_input.h"
-#include "../gfx_thumbnail_path.h"
-#include "../gfx_thumbnail.h"
+
+#include "../../gfx/gfx_animation.h"
+#include "../../gfx/gfx_thumbnail_path.h"
+#include "../../gfx/gfx_thumbnail.h"
 
 #include "../widgets/menu_osk.h"
 #include "../widgets/menu_filebrowser.h"
