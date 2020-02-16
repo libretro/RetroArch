@@ -36,6 +36,8 @@
 #include "menu_driver.h"
 #include "../performance_counters.h"
 
+typedef float (*easing_cb) (float, float, float, float);
+
 struct tween
 {
    float       duration;
@@ -1185,6 +1187,35 @@ bool menu_animation_push(menu_animation_ctx_entry_t *entry)
    return true;
 }
 
+static void menu_animation_update_time_rgui(
+      float *dst,
+      unsigned video_width, unsigned height)
+{
+   *(dst) *= 0.25f;
+}
+
+static void menu_animation_update_time_ozone(
+      float *dst,
+      unsigned video_width, unsigned video_height)
+{
+   *(dst) *= menu_display_get_dpi_scale(video_width, video_height) * 0.5f;
+}
+
+static void menu_animation_update_time_materialui(
+      float *dst,
+      unsigned video_width, unsigned video_height)
+{
+   *(dst) *= menu_display_get_dpi_scale(video_width, video_height) * 0.8f;
+}
+
+static void menu_animation_update_time_default(
+      float *dst,
+      unsigned video_width, unsigned video_height)
+{
+   if (video_width > 0)
+      *(dst) *= ((float)video_width / 1920.0f);
+}
+      
 static void menu_animation_update_time(
       unsigned type,
       bool timedate_enable,
@@ -1265,18 +1296,19 @@ static void menu_animation_update_time(
       switch (type)
       {
          case MENU_DRIVER_ID_RGUI:
-            ticker_pixel_increment *= 0.25f;
+            menu_animation_update_time_rgui(&ticker_pixel_increment, video_width, video_height);
             break;
          case MENU_DRIVER_ID_OZONE:
-            ticker_pixel_increment *= (menu_display_get_dpi_scale(video_width, video_height) * 0.5f);
+            menu_animation_update_time_ozone(&ticker_pixel_increment, video_width, video_height);
             break;
          case MENU_DRIVER_ID_GLUI:
-            ticker_pixel_increment *= (menu_display_get_dpi_scale(video_width, video_height) * 0.8f);
+            menu_animation_update_time_materialui(
+                  &ticker_pixel_increment, video_width, video_height);
             break;
          case MENU_DRIVER_ID_XMB:
          default:
-            if (video_width > 0)
-               ticker_pixel_increment *= ((float)video_width / 1920.0f);
+            menu_animation_update_time_default(
+                  &ticker_pixel_increment, video_width, video_height);
             break;
       }
 

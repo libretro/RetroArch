@@ -29,7 +29,6 @@ RETRO_BEGIN_DECLS
 
 #define TICKER_SPACER_DEFAULT "   |   "
 
-typedef float (*easing_cb) (float, float, float, float);
 typedef void  (*tween_cb)  (void*);
 
 enum menu_animation_ctl_state
