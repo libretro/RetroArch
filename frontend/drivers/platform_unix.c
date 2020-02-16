@@ -76,6 +76,7 @@
 #include "../../retroarch.h"
 #include "../../verbosity.h"
 #include "../../paths.h"
+#include "../../msg_hash.h"
 #include "platform_unix.h"
 
 #ifdef HAVE_MENU

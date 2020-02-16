@@ -271,6 +271,7 @@ VIDEO CONTEXT
 
 #ifdef HAVE_VULKAN
 #include "../gfx/common/vulkan_common.c"
+#include "../gfx/drivers_display/gfx_display_vulkan.c"
 #include "../libretro-common/vulkan/vulkan_symbol_wrapper.c"
 #ifdef HAVE_VULKAN_DISPLAY
 #include "../gfx/drivers_context/khr_display_ctx.c"
@@ -376,11 +377,13 @@ VIDEO DRIVER
 #if defined(HAVE_D3D8)
 #include "../gfx/drivers/d3d8.c"
 #include "../gfx/common/d3d8_common.c"
+#include "../gfx/drivers_display/gfx_display_d3d8.c"
 #endif
 
 #if defined(HAVE_D3D9)
 #include "../gfx/drivers/d3d9.c"
 #include "../gfx/common/d3d9_common.c"
+#include "../gfx/drivers_display/gfx_display_d3d9.c"
 
 #ifdef HAVE_HLSL
 #include "../gfx/drivers_renderchain/d3d9_hlsl_renderchain.c"
@@ -397,16 +400,19 @@ VIDEO DRIVER
 #if defined(HAVE_D3D11)
 #include "../gfx/drivers/d3d11.c"
 #include "../gfx/common/d3d11_common.c"
+#include "../gfx/drivers_display/gfx_display_d3d11.c"
 #endif
 
 #if defined(HAVE_D3D12)
 #include "../gfx/drivers/d3d12.c"
 #include "../gfx/common/d3d12_common.c"
+#include "../gfx/drivers_display/gfx_display_d3d12.c"
 #endif
 
 #if defined(HAVE_D3D10)
 #include "../gfx/drivers/d3d10.c"
 #include "../gfx/common/d3d10_common.c"
+#include "../gfx/drivers_display/gfx_display_d3d10.c"
 #endif
 
 #if defined(HAVE_D3D10) || defined(HAVE_D3D11) || defined(HAVE_D3D12)
@@ -423,6 +429,7 @@ VIDEO DRIVER
 
 #if defined(__wiiu__)
 #include "../gfx/drivers/gx2_gfx.c"
+#include "../gfx/drivers_display/gfx_display_wiiu.c"
 #endif
 
 #ifdef HAVE_SDL2
@@ -448,14 +455,17 @@ VIDEO DRIVER
 
 #ifdef HAVE_OPENGL1
 #include "../gfx/drivers/gl1.c"
+#include "../gfx/drivers_display/gfx_display_gl1.c"
 #endif
 
 #ifdef HAVE_OPENGL_CORE
 #include "../gfx/drivers/gl_core.c"
+#include "../gfx/drivers_display/gfx_display_gl_core.c"
 #endif
 
 #ifdef HAVE_OPENGL
 #include "../gfx/drivers/gl.c"
+#include "../gfx/drivers_display/gfx_display_gl.c"
 #endif
 
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGL_CORE)
@@ -491,8 +501,10 @@ VIDEO DRIVER
 #include "../deps/libvita2d/source/utils.c"
 
 #include "../gfx/drivers/vita2d_gfx.c"
+#include "../gfx/drivers_display/gfx_display_vita2d.c"
 #elif defined(_3DS)
 #include "../gfx/drivers/ctr_gfx.c"
+#include "../gfx/drivers_display/gfx_display_ctr.c"
 #elif defined(XENON)
 #include "../gfx/drivers/xenon360_gfx.c"
 #elif defined(DJGPP)
@@ -502,6 +514,7 @@ VIDEO DRIVER
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
 #ifdef HAVE_GDI
 #include "../gfx/drivers/gdi_gfx.c"
+#include "../gfx/drivers_display/gfx_display_gdi.c"
 #endif
 #endif
 
@@ -903,6 +916,8 @@ MIDI
 DRIVERS
 ============================================================ */
 #include "../gfx/video_crt_switch.c"
+#include "../gfx/gfx_animation.c"
+#include "../gfx/gfx_display.c"
 #include "../gfx/video_display_server.c"
 #include "../gfx/video_coord_array.c"
 #ifdef HAVE_AUDIOMIXER
@@ -1245,7 +1260,6 @@ MENU
 #endif
 
 #ifdef HAVE_MENU
-#include "../gfx/gfx_display.c"
 #include "../menu/menu_driver.c"
 #include "../menu/menu_setting.c"
 #include "../menu/menu_cbs.c"
@@ -1279,70 +1293,13 @@ MENU
 #include "../menu/cbs/menu_cbs_down.c"
 #include "../menu/cbs/menu_cbs_contentlist_switch.c"
 #include "../menu/menu_displaylist.c"
-#include "../gfx/gfx_animation.c"
 #include "../menu/menu_thumbnail_path.c"
 #include "../menu/menu_thumbnail.c"
-
 #include "../menu/drivers/menu_generic.c"
-
-#if defined(HAVE_D3D8)
-#include "../gfx/drivers_display/gfx_display_d3d8.c"
-#endif
-
-#if defined(HAVE_D3D9)
-#include "../gfx/drivers_display/gfx_display_d3d9.c"
-#endif
-
-#if defined(HAVE_D3D10)
-#include "../gfx/drivers_display/gfx_display_d3d10.c"
-#endif
-
-#if defined(HAVE_D3D11)
-#include "../gfx/drivers_display/gfx_display_d3d11.c"
-#endif
-
-#if defined(HAVE_D3D12)
-#include "../gfx/drivers_display/gfx_display_d3d12.c"
-#endif
-
-#ifdef HAVE_OPENGL1
-#include "../gfx/drivers_display/gfx_display_gl1.c"
-#endif
-
-#ifdef HAVE_OPENGL
-#include "../gfx/drivers_display/gfx_display_gl.c"
-#endif
-
-#ifdef HAVE_OPENGL_CORE
-#include "../gfx/drivers_display/gfx_display_gl_core.c"
-#endif
-
-#ifdef HAVE_VULKAN
-#include "../gfx/drivers_display/gfx_display_vulkan.c"
-#endif
-
-#ifdef HAVE_VITA2D
-#include "../gfx/drivers_display/gfx_display_vita2d.c"
-#endif
-
-#ifdef _3DS
-#include "../gfx/drivers_display/gfx_display_ctr.c"
-#endif
-
-#ifdef WIIU
-#include "../gfx/drivers_display/gfx_display_wiiu.c"
 #endif
 
 #if defined(HAVE_LIBNX)
 #include "../gfx/drivers_display/gfx_display_switch.c"
-#endif
-
-#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
-#ifdef HAVE_GDI
-#include "../gfx/drivers_display/gfx_display_gdi.c"
-#endif
-#endif
-
 #endif
 
 #ifdef HAVE_RGUI

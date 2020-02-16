@@ -48,6 +48,7 @@
 #include "../../verbosity.h"
 #include "../../ui/drivers/ui_win32.h"
 #include "../../paths.h"
+#include "../../msg_hash.h"
 #include "platform_win32.h"
 
 #ifndef SM_SERVERR2

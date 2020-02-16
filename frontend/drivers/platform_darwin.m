@@ -66,6 +66,7 @@
 #include "../../defaults.h"
 #include "../../retroarch.h"
 #include "../../verbosity.h"
+#include "../../msg_hash.h"
 #include "../../ui/ui_companion_driver.h"
 
 #if 1
