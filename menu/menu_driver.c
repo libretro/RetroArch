@@ -1936,7 +1936,11 @@ static void menu_driver_set_id(void)
 
 static bool menu_driver_init_internal(bool video_is_threaded)
 {
-   gfx_display_set_driver_id(MENU_DRIVER_ID_UNKNOWN);
+   /* ID must be set first, since it is required for
+    * the proper determination of pixel/dpi scaling
+    * parameters (and some menu drivers fetch the
+    * current pixel/dpi scale during 'menu_driver_ctx->init()') */
+   menu_driver_set_id();
 
    if (menu_driver_ctx->init)
    {
@@ -1959,8 +1963,6 @@ static bool menu_driver_init_internal(bool video_is_threaded)
       if (!menu_driver_ctx->lists_init(menu_driver_data))
          return false;
 
-   menu_driver_set_id();
-
    return true;
 }
 
@@ -1978,6 +1980,10 @@ bool menu_driver_init(bool video_is_threaded)
          return true;
       }
    }
+
+   /* If driver initialisation failed, must reset
+    * driver id to 'unknown' */
+   gfx_display_set_driver_id(MENU_DRIVER_ID_UNKNOWN);
 
    return false;
 }
