@@ -23493,6 +23493,8 @@ static void drivers_init(int flags)
                video_driver_width, video_driver_height,
                settings->paths.directory_assets,
                settings->paths.path_font);
+      else
+         gfx_widgets_free();
    }
    else
    {

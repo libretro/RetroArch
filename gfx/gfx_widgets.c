@@ -1914,8 +1914,6 @@ bool gfx_widgets_init(bool video_is_threaded)
    return true;
 
 error:
-   if (gfx_widgets_ready())
-      gfx_widgets_free();
    return false;
 }
 
