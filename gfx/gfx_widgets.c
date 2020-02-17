@@ -803,8 +803,9 @@ static float gfx_widgets_get_thumbnail_scale_factor(const float dst_width, const
 
 static void gfx_widgets_screenshot_dispose(void *userdata)
 {
-   screenshot_loaded = false;
+   screenshot_loaded  = false;
    video_driver_texture_unload(&screenshot_texture);
+   screenshot_texture = 0;
 }
 
 static void gfx_widgets_screenshot_end(void *userdata)
@@ -988,6 +989,8 @@ void gfx_widgets_iterate(
       gfx_timer_ctx_entry_t timer;
 
       video_driver_texture_unload(&screenshot_texture);
+
+      screenshot_texture = 0;
 
       gfx_display_reset_textures_list(screenshot_filename,
             "", &screenshot_texture, TEXTURE_FILTER_MIPMAP_LINEAR,
@@ -2112,6 +2115,10 @@ static void gfx_widgets_context_destroy(void)
    video_driver_texture_unload(&msg_queue_icon_outline);
    video_driver_texture_unload(&msg_queue_icon_rect);
 
+   msg_queue_icon         = 0;
+   msg_queue_icon_outline = 0;
+   msg_queue_icon_rect    = 0;
+
    /* Fonts */
    if (font_regular)
       gfx_display_font_free(font_regular);
@@ -2126,16 +2133,12 @@ static void gfx_widgets_context_destroy(void)
 static void gfx_widgets_achievement_free(void *userdata)
 {
    if (cheevo_title)
-   {
       free(cheevo_title);
-      cheevo_title = NULL;
-   }
+   cheevo_title = NULL;
 
    if (cheevo_badge)
-   {
       video_driver_texture_unload(&cheevo_badge);
-      cheevo_badge = 0;
-   }
+   cheevo_badge = 0;
 }
 #endif
 
@@ -2164,8 +2167,8 @@ void gfx_widgets_free(void)
       }
 
       fifo_free(msg_queue);
-      msg_queue = NULL;
    }
+   msg_queue = NULL;
 
    /* Purge everything from the list */
    if (current_msgs)
@@ -2178,8 +2181,8 @@ void gfx_widgets_free(void)
          gfx_widgets_msg_queue_free(msg, false);
       }
       file_list_free(current_msgs);
-      current_msgs = NULL;
    }
+   current_msgs = NULL;
 
    msg_queue_tasks_count = 0;
 
@@ -2196,10 +2199,10 @@ void gfx_widgets_free(void)
 
    /* Reset state of all other widgets */
    /* Generic message*/
-   generic_message_alpha = 0.0f;
+   generic_message_alpha  = 0.0f;
 
    /* Libretro message */
-   libretro_tag = (uintptr_t) &libretro_message_timer;
+   libretro_tag           = (uintptr_t) &libretro_message_timer;
    libretro_message_alpha = 0.0f;
    gfx_timer_kill(&libretro_message_timer);
    gfx_animation_kill_by_tag(&libretro_tag);
@@ -2208,10 +2211,10 @@ void gfx_widgets_free(void)
    /* ... */
 
    /* Volume */
-   volume_alpha = 0.0f;
+   volume_alpha           = 0.0f;
 
    /* Screenshot */
-   screenshot_alpha = 0.0f;
+   screenshot_alpha       = 0.0f;
    gfx_widgets_screenshot_dispose(NULL);
 }
 
@@ -2296,7 +2299,8 @@ void gfx_widgets_ai_service_overlay_unload(void)
    if (ai_service_overlay_state == 1)
    {
       video_driver_texture_unload(&ai_service_overlay_texture);
-      ai_service_overlay_state = 0;
+      ai_service_overlay_texture = 0;
+      ai_service_overlay_state   = 0;
    }
 }
 
