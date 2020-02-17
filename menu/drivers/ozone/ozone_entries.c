@@ -470,7 +470,12 @@ border_iterate:
    /* Old*/
    if (!ozone->cursor_in_sidebar_old)
       ozone_draw_cursor(ozone, video_info, (unsigned) ozone->dimensions.sidebar_width + x_offset + entry_padding + ozone->dimensions.spacer_3px,
-         entry_width - ozone->dimensions.spacer_5px, button_height + ozone->dimensions.spacer_2px, old_selection_y + scroll_y + ozone->dimensions.spacer_1px, (1-ozone->animations.cursor_alpha) * alpha);
+            /* TODO/FIXME - undefined behavior reported by ASAN -
+             *-35.2358 is outside the range of representable values
+             of type 'unsigned int'
+             * */
+         entry_width - ozone->dimensions.spacer_5px,
+         button_height + ozone->dimensions.spacer_2px, old_selection_y + scroll_y + ozone->dimensions.spacer_1px, (1-ozone->animations.cursor_alpha) * alpha);
 
    /* Icons + text */
    y = ozone->dimensions.header_height + ozone->dimensions.spacer_1px + ozone->dimensions.entry_padding_vertical;

@@ -254,6 +254,10 @@ void ozone_draw_sidebar(ozone_handle_t *ozone, video_frame_info_t *video_info)
          if (use_smooth_ticker)
          {
             ticker_smooth.selected    = selected;
+            /* TODO/FIXME - undefined behavior reported by ASAN -
+             *-12.549 is outside the range of representable values
+             of type 'unsigned int'
+             * */
             ticker_smooth.field_width = (entry_width - ozone->dimensions.sidebar_entry_icon_size - 40 * scale_factor);
             ticker_smooth.src_str     = node->console_name;
             ticker_smooth.dst_str     = console_title;
