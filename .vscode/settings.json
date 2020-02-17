@@ -42,7 +42,7 @@
       "core_info.h": "c",
       "thread": "c",
       "xlocale": "c",
-      "menu_widgets.h": "c",
+      "gfx_widgets.h": "c",
       "message_queue.h": "c",
       "task_queue.h": "c",
       "fifo_queue.h": "c",

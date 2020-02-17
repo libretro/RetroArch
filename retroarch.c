@@ -140,7 +140,7 @@
 #include "menu/widgets/menu_dialog.h"
 #include "menu/widgets/menu_input_bind_dialog.h"
 #ifdef HAVE_MENU_WIDGETS
-#include "menu/widgets/menu_widgets.h"
+#include "gfx/gfx_widgets.h"
 #endif
 #include "menu/widgets/menu_osk.h"
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)

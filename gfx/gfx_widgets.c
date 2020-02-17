@@ -24,19 +24,19 @@
 #include <string/stdstring.h>
 #include <retro_math.h>
 
-#include "menu_widgets.h"
+#include "gfx_widgets.h"
+
+#include "gfx_animation.h"
+#include "gfx_display.h"
+#include "font_driver.h"
 
 #ifdef HAVE_ACCESSIBILITY
-#include "../../accessibility.h"
+#include "../accessibility.h"
 #endif
 
-#include "../../msg_hash.h"
+#include "../msg_hash.h"
 
-#include "../../tasks/task_content.h"
-
-#include "../../gfx/gfx_animation.h"
-#include "../../gfx/gfx_display.h"
-#include "../../gfx/font_driver.h"
+#include "../tasks/task_content.h"
 
 /* TODO: Fix context reset freezing everything in place (probably kills animations when it shouldn't anymore) */
 

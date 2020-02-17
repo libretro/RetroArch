@@ -40,7 +40,7 @@
 #include "menu_entries.h"
 #include "widgets/menu_dialog.h"
 #ifdef HAVE_MENU_WIDGETS
-#include "widgets/menu_widgets.h"
+#include "../gfx/gfx_widgets.h"
 #endif
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 #include "menu_shader.h"

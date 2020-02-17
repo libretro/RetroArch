@@ -37,7 +37,7 @@
 #include "../menu/menu_driver.h"
 #include "../menu/menu_entries.h"
 #ifdef HAVE_MENU_WIDGETS
-#include "../menu/widgets/menu_widgets.h"
+#include "../gfx/gfx_widgets.h"
 #endif
 #endif
 

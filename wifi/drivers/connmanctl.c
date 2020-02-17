@@ -24,7 +24,7 @@
 #include "../../retroarch.h"
 #include "../../lakka.h"
 #ifdef HAVE_MENU_WIDGETS
-#include "../../menu/widgets/menu_widgets.h"
+#include "../../gfx/gfx_widgets.h"
 #endif
 
 static bool connman_cache[256]   = {0};

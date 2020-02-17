@@ -27,7 +27,7 @@
 #ifdef HAVE_MENU
 #include "../../menu/menu_driver.h"
 #ifdef HAVE_MENU_WIDGETS
-#include "../../menu/widgets/menu_widgets.h"
+#include "../gfx_widgets.h"
 #endif
 #endif
 

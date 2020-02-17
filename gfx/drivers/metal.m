@@ -38,7 +38,7 @@
 #ifdef HAVE_MENU
 #import "../../menu/menu_driver.h"
 #ifdef HAVE_MENU_WIDGETS
-#import "../../menu/widgets/menu_widgets.h"
+#import "../gfx_widgets.h"
 #endif
 #endif
 

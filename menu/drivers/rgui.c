@@ -40,7 +40,7 @@
 #endif
 
 #if defined(HAVE_MENU_WIDGETS)
-#include "../widgets/menu_widgets.h"
+#include "../../gfx/gfx_widgets.h"
 #endif
 
 #include "../../playlist.h"
