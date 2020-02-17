@@ -3527,7 +3527,7 @@ static void *current_input_data                   = NULL;
 static bool input_driver_block_hotkey             = false;
 static bool input_driver_block_libretro_input     = false;
 static bool input_driver_nonblock_state           = false;
-static bool input_driver_flushing_input           = false;
+static unsigned input_driver_flushing_input       = 0;
 static float input_driver_axis_threshold          = 0.0f;
 static unsigned input_driver_max_users            = 0;
 
@@ -14306,7 +14306,7 @@ static int16_t input_state(unsigned port, unsigned device,
          current_input_data, joypad_info,
          libretro_input_binds, port, device, idx, id);
 
-   if (     !input_driver_flushing_input
+   if (     (input_driver_flushing_input == 0)
          && !input_driver_block_libretro_input)
    {
       if (  (device == RETRO_DEVICE_JOYPAD) &&
@@ -16151,7 +16151,10 @@ static bool input_driver_find_driver(void)
 
 void input_driver_set_flushing_input(void)
 {
-   input_driver_flushing_input = true;
+   /* Inhibits input for 2 frames
+    * > Required, since input is ignored for 1 frame
+    *   after certain events - e.g. closing the OSK */
+   input_driver_flushing_input = 2;
 }
 
 bool input_driver_is_libretro_input_blocked(void)
@@ -23664,7 +23667,7 @@ static void retroarch_deinit_drivers(void)
    input_driver_block_hotkey             = false;
    input_driver_block_libretro_input     = false;
    input_driver_nonblock_state           = false;
-   input_driver_flushing_input           = false;
+   input_driver_flushing_input           = 0;
    memset(&input_driver_turbo_btns, 0, sizeof(turbo_buttons_t));
    current_input                         = NULL;
 
@@ -25872,8 +25875,9 @@ void retroarch_menu_running(void)
 #ifdef HAVE_MENU
    menu_driver_toggle(true);
 
-   /* Prevent stray input */
-   input_driver_flushing_input = true;
+   /* Prevent stray input
+    * (for a single frame) */
+   input_driver_flushing_input = 1;
 
 #ifdef HAVE_AUDIOMIXER
    if (settings->bools.audio_enable_menu
@@ -25896,8 +25900,9 @@ void retroarch_menu_running_finished(bool quit)
 #ifdef HAVE_MENU
    menu_driver_toggle(false);
 
-   /* Prevent stray input */
-   input_driver_flushing_input = true;
+   /* Prevent stray input
+    * (for a single frame) */
+   input_driver_flushing_input = 1;
 
 #ifdef HAVE_AUDIOMIXER
    if (!quit)
@@ -27148,15 +27153,18 @@ static enum runloop_state runloop_check_state(void)
       BIT256_SET(current_bits, RARCH_MENU_TOGGLE);
 #endif
 
-   if (input_driver_flushing_input)
+   if (input_driver_flushing_input > 0)
    {
-      input_driver_flushing_input = false;
-      if (bits_any_set(current_bits.data, ARRAY_SIZE(current_bits.data)))
+      bool input_active = bits_any_set(current_bits.data, ARRAY_SIZE(current_bits.data));
+
+      input_driver_flushing_input = input_active ?
+            input_driver_flushing_input : (input_driver_flushing_input - 1);
+
+      if (input_active || (input_driver_flushing_input > 0))
       {
          BIT256_CLEAR_ALL(current_bits);
          if (runloop_paused)
             BIT256_SET(current_bits, RARCH_PAUSE_TOGGLE);
-         input_driver_flushing_input = true;
       }
    }
 
