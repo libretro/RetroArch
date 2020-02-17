@@ -32,7 +32,6 @@
 #include <lists/string_list.h>
 
 #include "../configuration.h"
-#include "../retroarch.h"
 #include "../verbosity.h"
 #include "../frontend/frontend_driver.h"
 #include "../command.h"
