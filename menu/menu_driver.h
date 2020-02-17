@@ -284,7 +284,7 @@ typedef struct menu_ctx_driver
          enum menu_input_pointer_gesture gesture,
          menu_file_list_cbs_t *cbs,
          menu_entry_t *entry, unsigned action);
-   bool (*get_load_content_animation_data)(void *userdata, menu_texture_item *icon, char **playlist_name);
+   bool (*get_load_content_animation_data)(void *userdata, uintptr_t *icon, char **playlist_name);
    /* This will be invoked whenever a menu entry action
     * (menu_entry_action()) is performed */
    int (*entry_action)(void *userdata, menu_entry_t *entry, size_t i, enum menu_action action);
@@ -419,7 +419,8 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data);
 
 void menu_driver_frame(video_frame_info_t *video_info);
 
-bool menu_driver_get_load_content_animation_data(menu_texture_item *icon, char **playlist_name);
+bool menu_driver_get_load_content_animation_data(
+      uintptr_t *icon, char **playlist_name);
 
 bool menu_driver_iterate(menu_ctx_iterate_t *iterate);
 

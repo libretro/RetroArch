@@ -28,7 +28,7 @@
 #include "../../../cheevos-new/badges.h"
 #include "../../../verbosity.h"
 
-menu_texture_item ozone_entries_icon_get_texture(ozone_handle_t *ozone,
+uintptr_t ozone_entries_icon_get_texture(ozone_handle_t *ozone,
       enum msg_hash_enums enum_idx, unsigned type, bool active)
 {
    switch (enum_idx)

@@ -262,8 +262,8 @@ typedef struct stripes_handle
 
    struct
    {
-      menu_texture_item bg;
-      menu_texture_item list[STRIPES_TEXTURE_LAST];
+      uintptr_t bg;
+      uintptr_t list[STRIPES_TEXTURE_LAST];
    } textures;
 
    stripes_node_t main_menu_node;

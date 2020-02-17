@@ -137,7 +137,7 @@ typedef struct ozone_theme
    float *cursor_border_0;
    float *cursor_border_1;
 
-   menu_texture_item textures[OZONE_THEME_TEXTURE_LAST];
+   uintptr_t textures[OZONE_THEME_TEXTURE_LAST];
 
    const char *name;
 } ozone_theme_t;

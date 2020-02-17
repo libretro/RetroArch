@@ -2324,7 +2324,7 @@ static int ozone_list_bind_init(menu_file_list_cbs_t *cbs,
 }
 
 #ifdef HAVE_GFX_WIDGETS
-static bool ozone_get_load_content_animation_data(void *userdata, menu_texture_item *icon, char **playlist_name)
+static bool ozone_get_load_content_animation_data(void *userdata, uintptr_t *icon, char **playlist_name)
 {
    ozone_handle_t *ozone = (ozone_handle_t*) userdata;
 

@@ -230,7 +230,7 @@ void ozone_compute_entries_position(ozone_handle_t *ozone)
          OZONE_ENTRIES_ICONS_TEXTURE_CORE_INFO */
       if (ozone->is_playlist && entries_end == 1)
       {
-         menu_texture_item tex = ozone_entries_icon_get_texture(ozone, entry.enum_idx, entry.type, false);
+         uintptr_t         tex = ozone_entries_icon_get_texture(ozone, entry.enum_idx, entry.type, false);
          ozone->empty_playlist = tex == ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_CORE_INFO];
       }
       else
@@ -480,7 +480,7 @@ border_iterate:
 
    for (i = 0; i < entries_end; i++)
    {
-      menu_texture_item tex;
+      uintptr_t tex;
       menu_entry_t entry;
       gfx_animation_ctx_ticker_t ticker;
       gfx_animation_ctx_ticker_smooth_t ticker_smooth;

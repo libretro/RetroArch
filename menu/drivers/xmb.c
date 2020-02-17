@@ -310,8 +310,8 @@ typedef struct xmb_handle
 
    struct
    {
-      menu_texture_item bg;
-      menu_texture_item list[XMB_TEXTURE_LAST];
+      uintptr_t bg;
+      uintptr_t list[XMB_TEXTURE_LAST];
    } textures;
 
    xmb_node_t main_menu_node;
@@ -6588,7 +6588,7 @@ static int xmb_menu_entry_action(
 }
 
 #ifdef HAVE_GFX_WIDGETS
-static bool xmb_get_load_content_animation_data(void *userdata, menu_texture_item *icon, char **playlist_name)
+static bool xmb_get_load_content_animation_data(void *userdata, uintptr_t *icon, char **playlist_name)
 {
    xmb_handle_t *xmb = (xmb_handle_t*) userdata;
 

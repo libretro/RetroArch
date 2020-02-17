@@ -100,9 +100,9 @@ struct ozone_handle
       video_font_raster_block_t sidebar;
    } raster_blocks;
 
-   menu_texture_item textures[OZONE_THEME_TEXTURE_LAST];
-   menu_texture_item icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_LAST];
-   menu_texture_item tab_textures[OZONE_TAB_TEXTURE_LAST];
+   uintptr_t textures[OZONE_THEME_TEXTURE_LAST];
+   uintptr_t icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_LAST];
+   uintptr_t tab_textures[OZONE_TAB_TEXTURE_LAST];
 
    char title[PATH_MAX_LENGTH];
 

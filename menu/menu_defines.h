@@ -340,8 +340,6 @@ enum playlist_entry_remove_enable_type
    PLAYLIST_ENTRY_REMOVE_ENABLE_LAST
 };
 
-typedef uintptr_t menu_texture_item;
-
 RETRO_END_DECLS
 
 #endif

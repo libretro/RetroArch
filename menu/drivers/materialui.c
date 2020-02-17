@@ -1307,8 +1307,8 @@ typedef struct materialui_handle
 
    struct
    {
-      menu_texture_item bg;
-      menu_texture_item list[MUI_TEXTURE_LAST];
+      uintptr_t bg;
+      uintptr_t list[MUI_TEXTURE_LAST];
    } textures;
 
    /* Font data */
