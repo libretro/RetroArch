@@ -1790,17 +1790,61 @@ static int menu_displaylist_parse_horizontal_list(
 }
 
 static int menu_displaylist_parse_load_content_settings(
-      file_list_t *list)
+   file_list_t *list)
 {
-   unsigned count         = 0;
-   settings_t *settings   = config_get_ptr();
+   unsigned count = 0;
+   settings_t *settings = config_get_ptr();
+
+   // Declare new vars used in printing "Paused by <device name>"
+   char str[100];
+   unsigned i, port = 0;
+   rarch_joypad_info_t joypad_info;
+   const struct retro_keybind *binds[MAX_USERS] = { NULL };
+   unsigned max_users = *(input_driver_get_uint(INPUT_ACTION_MAX_USERS));
 
    if (!rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
    {
 #ifdef HAVE_LAKKA
-      bool show_advanced_settings    = settings->bools.menu_show_advanced_settings;
+      bool show_advanced_settings = settings->bools.menu_show_advanced_settings;
 #endif
-      rarch_system_info_t *system    = runloop_get_system_info();
+      rarch_system_info_t *system = runloop_get_system_info();
+
+
+      // Print "Paused by <device name>"
+      for (i = 0; i < max_users; i++)
+      {
+         struct retro_keybind *auto_binds = input_autoconf_binds[i];
+         struct retro_keybind *general_binds = input_config_binds[i];
+         binds[i] = input_config_binds[i];
+      }
+
+      int16_t ret[MAX_USERS];
+      for (port = 0; port < max_users; port++)
+      {
+         joypad_info.joy_idx = settings->uints.input_joypad_map[port];
+         joypad_info.auto_binds = input_autoconf_binds[joypad_info.joy_idx];
+         joypad_info.axis_threshold = input_driver_axis_threshold;
+         ret[port] = current_input->input_state(current_input_data,
+            joypad_info, &binds[0], port, RETRO_DEVICE_JOYPAD, 0,
+            RETRO_DEVICE_ID_JOYPAD_MASK);
+      }
+
+      for (i = 0; i < RARCH_FIRST_META_KEY; i++)
+      {
+
+            for (port = 0; port < max_users; port++)
+            {
+               if (binds[port][i].valid && ret[port] && ret[port] == 12 & (UINT64_C(1) << i))
+               {
+                  sprintf(str, "%s %s", "Paused by", input_config_get_device_name(port));
+                  runloop_msg_queue_push(
+                        str,
+                        1, 100, false,
+                        NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+                  break;
+               }
+            }
+      }
 
       if (settings->bools.quick_menu_show_resume_content)
          if (menu_entries_append_enum(list,
@@ -1810,21 +1854,16 @@ static int menu_displaylist_parse_load_content_settings(
                MENU_SETTING_ACTION_RUN, 0, 0))
             count++;
 
-      if (settings->bools.quick_menu_show_restart_content)
+      // Raised Controls in the Quick Menu order
+      if (settings->bools.quick_menu_show_controls && !settings->bools.kiosk_mode_enable)
+      {
          if (menu_entries_append_enum(list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RESTART_CONTENT),
-               msg_hash_to_str(MENU_ENUM_LABEL_RESTART_CONTENT),
-               MENU_ENUM_LABEL_RESTART_CONTENT,
-               MENU_SETTING_ACTION_RUN, 0, 0))
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS),
+            msg_hash_to_str(MENU_ENUM_LABEL_CORE_INPUT_REMAPPING_OPTIONS),
+            MENU_ENUM_LABEL_CORE_INPUT_REMAPPING_OPTIONS,
+            MENU_SETTING_ACTION, 0, 0))
             count++;
-
-      if (settings->bools.quick_menu_show_close_content)
-         if (menu_entries_append_enum(list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT),
-               msg_hash_to_str(MENU_ENUM_LABEL_CLOSE_CONTENT),
-               MENU_ENUM_LABEL_CLOSE_CONTENT,
-               MENU_SETTING_ACTION_CLOSE, 0, 0))
-            count++;
+      }
 
       if (settings->bools.quick_menu_show_take_screenshot)
       {
@@ -2001,16 +2040,6 @@ static int menu_displaylist_parse_load_content_settings(
          count++;
 #endif
 
-      if (settings->bools.quick_menu_show_controls && !settings->bools.kiosk_mode_enable)
-      {
-         if (menu_entries_append_enum(list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS),
-               msg_hash_to_str(MENU_ENUM_LABEL_CORE_INPUT_REMAPPING_OPTIONS),
-               MENU_ENUM_LABEL_CORE_INPUT_REMAPPING_OPTIONS,
-               MENU_SETTING_ACTION, 0, 0))
-            count++;
-      }
-
       if (settings->bools.quick_menu_show_cheats)
       {
          if (menu_entries_append_enum(list,
@@ -2079,6 +2108,23 @@ static int menu_displaylist_parse_load_content_settings(
             count++;
       }
    }
+
+   //Lowered Restart & Close in the Quick Menu order
+   if (settings->bools.quick_menu_show_restart_content)
+      if (menu_entries_append_enum(list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RESTART_CONTENT),
+         msg_hash_to_str(MENU_ENUM_LABEL_RESTART_CONTENT),
+         MENU_ENUM_LABEL_RESTART_CONTENT,
+         MENU_SETTING_ACTION_RUN, 0, 0))
+         count++;
+
+   if (settings->bools.quick_menu_show_close_content)
+      if (menu_entries_append_enum(list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT),
+         msg_hash_to_str(MENU_ENUM_LABEL_CLOSE_CONTENT),
+         MENU_ENUM_LABEL_CLOSE_CONTENT,
+         MENU_SETTING_ACTION_CLOSE, 0, 0))
+         count++;
 
    return count;
 }
@@ -4693,6 +4739,16 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
                   count++;
 #endif
 
+            // Listing Device Index settings for each active controller
+            for (p = 0; p < max_users; p++)
+            {
+               if (input_config_get_device_name(p) != NULL)
+                  if (menu_displaylist_parse_settings_enum(list,
+                     (enum msg_hash_enums)(MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_INDEX + p),
+                     PARSE_ACTION, true) != -1)
+                     count++;
+            }
+
             for (p = 0; p < max_users; p++)
             {
                char val_s[16], val_d[16];
@@ -4703,6 +4759,7 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
                         MENU_SETTINGS_REMAPPING_PORT_BEGIN + p, p, 0))
                   count++;
             }
+            
          }
          break;
       case DISPLAYLIST_LOAD_CONTENT_LIST:
