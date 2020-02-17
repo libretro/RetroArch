@@ -478,8 +478,6 @@ void menu_display_handle_wallpaper_upload(retro_task_t *task,
 
 void menu_driver_destroy(void);
 
-void hex32_to_rgba_normalized(uint32_t hex, float* rgba, float alpha);
-
 menu_handle_t *menu_driver_get_ptr(void);
 
 extern menu_ctx_driver_t menu_ctx_ozone;
