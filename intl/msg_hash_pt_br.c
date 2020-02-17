@@ -1761,7 +1761,7 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
                              " \n"
                              "Clientes em modo escravo requerem muito pouco \n"
                              "poder de processamento em ambos os lados, mas \n"
-                             "irão sofrer significamente da latência de rede.");
+                             "irão sofrer significativamente da latência de rede.");
             break;
         case MENU_ENUM_LABEL_NETPLAY_REQUIRE_SLAVES:
             snprintf(s, len,
