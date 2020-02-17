@@ -195,7 +195,7 @@ static void connmanctl_get_ssids(struct string_list* ssids)
 
    for (i = 0; i < lines->size; i++)
    {
-      char ssid[20];
+      char ssid[32];
       const char *line = lines->elems[i].data;
 
       strlcpy(ssid, line+4, sizeof(ssid));
