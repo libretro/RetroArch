@@ -628,8 +628,6 @@ static void *xv_init(const video_info_t *video,
 
    frontend_driver_install_signal_handler();
 
-   xv_set_nonblock_state(xv, !video->vsync);
-
    if (input && input_data)
    {
       xinput = input_x.init(settings->arrays.input_joypad_driver);
