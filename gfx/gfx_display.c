@@ -37,9 +37,7 @@
  * with ozone menu driver metrics */
 #define OZONE_SIDEBAR_WIDTH 408
 
-
-
-float osk_dark[16] =  {
+static float osk_dark[16] =  {
    0.00, 0.00, 0.00, 0.85,
    0.00, 0.00, 0.00, 0.85,
    0.00, 0.00, 0.00, 0.85,

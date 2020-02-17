@@ -47,9 +47,6 @@ RETRO_BEGIN_DECLS
    HEX_R(hex), HEX_G(hex), HEX_B(hex), alpha  \
 }
 
-/* TODO/FIXME - global, not thread-safe */
-extern float osk_dark[16];
-
 enum menu_driver_id_type
 {
    MENU_DRIVER_ID_UNKNOWN = 0,
