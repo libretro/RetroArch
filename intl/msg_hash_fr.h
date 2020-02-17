@@ -1470,17 +1470,14 @@ MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_META_PAUSE_TOGGLE,
     "Mettre en pause/reprendre"
     )
-#ifdef HAVE_LAKKA
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY,
+    MENU_ENUM_LABEL_VALUE_INPUT_META_RESTART_KEY,
     "Redémarrer RetroArch"
     )
-#else
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY,
     "Quitter RetroArch"
     )
-#endif
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_META_RESET,
     "Redémarrer le jeu"
@@ -2571,12 +2568,6 @@ MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MIDI_SETTINGS,
     "MIDI"
     )
-#ifdef HAVE_LAKKA
-MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
-    "Redémarrer RetroArch"
-    )
-#else
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
     "Quitter RetroArch"
@@ -2585,7 +2576,6 @@ MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RESTART_RETROARCH,
     "Redémarrer RetroArch"
     )
-#endif
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DETAIL,
     "Entrée de base de données"
@@ -2736,15 +2726,14 @@ MSG_HASH(
    )
 #ifdef HAVE_LAKKA_SWITCH
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_REBOOT,
+    MENU_ENUM_LABEL_VALUE_REBOOT_RCM,
     "Redémarrer en mode RCM"
     )
-#else
+#endif
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_REBOOT,
     "Redémarrer"
     )
-#endif
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RECORDING_CONFIG_DIRECTORY,
     "Configuration d'enregistrement"
@@ -6037,12 +6026,6 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_SYSTEM_INFORMATION,
     "Affiche les informations spécifiques à l'appareil."
     )
-#ifdef HAVE_LAKKA
-MSG_HASH(
-    MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
-    "Redémarrer le programme."
-    )
-#else
 MSG_HASH(
     MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
     "Quitter le programme."
@@ -6051,7 +6034,6 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_RESTART_RETROARCH,
     "Restart the program."
     )
-#endif
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH,
     "Définir une largeur personnalisée pour la fenêtre d'affichage."
@@ -7335,16 +7317,6 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_SHOW_HELP,
     "Afficher/masquer l'option 'Aide'."
     )
-#ifdef HAVE_LAKKA
-MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_MENU_SHOW_QUIT_RETROARCH,
-    "Afficher 'Redémarrer RetroArch'"
-    )
-MSG_HASH(
-    MENU_ENUM_SUBLABEL_MENU_SHOW_QUIT_RETROARCH,
-    "Afficher/masquer l'option 'Redémarrer RetroArch'."
-    )
-#else
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_SHOW_QUIT_RETROARCH,
     "Afficher 'Quitter RetroArch'"
@@ -7361,7 +7333,6 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_SHOW_RESTART_RETROARCH,
     "Afficher/masquer l'option 'Redémarrer RetroArch'."
     )
-#endif
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_SHOW_REBOOT,
     "Afficher 'Redémarrer'"
