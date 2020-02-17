@@ -390,6 +390,7 @@
 #define DEFAULT_OVERLAY_AUTO_ROTATE false
 #endif
 
+#include "runtime_file.h"
 #ifdef HAVE_MENU
 #include "menu/menu_driver.h"
 
