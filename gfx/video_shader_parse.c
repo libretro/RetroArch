@@ -36,6 +36,7 @@
 #include "../frontend/frontend_driver.h"
 #include "../command.h"
 #include "../file_path_special.h"
+#include "../retroarch.h"
 #include "video_shader_parse.h"
 
 #if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
