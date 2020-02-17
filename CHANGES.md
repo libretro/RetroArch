@@ -23,6 +23,7 @@
 - NETPLAY/MENU/BUGFIX: Fix Netplay Stateless Mode doesn't save. Affects other netplay settings which can be overridden by commandline option
 - NETPLAY/ROOMS/BUGFIX: Prevent out-of-bounds array indexing when displaying/selecting netplay rooms in menus
 - VIDEO: Set hardware 'Bilinear filtering' off by default
+- WIFI/CONNMANCTL: Display more characters from SSID
 
 # 1.8.4
 - ANDROID/BUGFIX: Prevent crash when Android device is minimized and you go back to the app
