@@ -72,7 +72,7 @@
 
 #ifdef HAVE_MENU
 #include "../menu/menu_driver.h"
-#ifdef HAVE_MENU_WIDGETS
+#ifdef HAVE_GFX_WIDGETS
 #include "../gfx/gfx_widgets.h"
 #endif
 #endif

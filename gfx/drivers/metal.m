@@ -37,9 +37,9 @@
 
 #ifdef HAVE_MENU
 #import "../../menu/menu_driver.h"
-#ifdef HAVE_MENU_WIDGETS
-#import "../gfx_widgets.h"
 #endif
+#ifdef HAVE_GFX_WIDGETS
+#import "../gfx_widgets.h"
 #endif
 
 #import "../font_driver.h"
@@ -411,7 +411,7 @@ static void metal_get_overlay_interface(void *data,
 
 #endif
 
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+#ifdef HAVE_GFX_WIDGETS
 static bool metal_gfx_widgets_enabled(void *data)
 {
    (void)data;
@@ -443,7 +443,7 @@ video_driver_t video_metal = {
 #endif
    metal_get_poke_interface,
    NULL, /* metal_wrap_type_to_enum */
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+#ifdef HAVE_GFX_WIDGETS
    metal_gfx_widgets_enabled
 #endif
 };

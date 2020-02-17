@@ -728,7 +728,7 @@ static const bool audio_enable_menu_cancel = false;
 static const bool audio_enable_menu_notice = false;
 static const bool audio_enable_menu_bgm    = false;
 
-#ifdef HAVE_MENU_WIDGETS
+#ifdef HAVE_GFX_WIDGETS
 #define DEFAULT_MENU_ENABLE_WIDGETS true
 #else
 #define DEFAULT_MENU_ENABLE_WIDGETS false

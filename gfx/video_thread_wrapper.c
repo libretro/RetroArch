@@ -1283,7 +1283,7 @@ static void video_thread_get_poke_interface(
       *iface = NULL;
 }
 
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+#ifdef HAVE_GFX_WIDGETS
 static bool video_thread_wrapper_gfx_widgets_enabled(void *data)
 {
    thread_video_t *thr = (thread_video_t*)data;
@@ -1319,7 +1319,7 @@ static const video_driver_t video_thread = {
 #endif
    video_thread_get_poke_interface,
    NULL,
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+#ifdef HAVE_GFX_WIDGETS
    video_thread_wrapper_gfx_widgets_enabled
 #endif
 };

@@ -548,7 +548,6 @@ if [ "$HAVE_MENU" != 'no' ]; then
          add_opt OZONE no
          add_opt XMB no
          add_opt STRIPES no
-         add_opt MENU_WIDGETS no
       fi
       die : 'Notice: Hardware rendering context not available.'
    fi
@@ -636,6 +635,5 @@ if [ "$HAVE_DEBUG" = 'yes' ]; then
    fi
 fi
 
-check_enabled MENU MENU_WIDGETS 'menu widgets' 'The menu is' false
 check_enabled 'ZLIB BUILTINZLIB' RPNG RPNG 'zlib is' false
 check_enabled V4L2 VIDEOPROCESSOR 'video processor' 'Video4linux2 is' true

@@ -36,9 +36,9 @@
 
 #ifdef HAVE_MENU
 #include "../../menu/menu_driver.h"
-#ifdef HAVE_MENU_WIDGETS
-#include "../gfx_widgets.h"
 #endif
+#ifdef HAVE_GFX_WIDGETS
+#include "../gfx_widgets.h"
 #endif
 
 #include "../font_driver.h"
@@ -1973,7 +1973,7 @@ static bool vulkan_frame(void *data, const void *frame,
       if (!string_is_empty(msg))
          font_driver_render_msg(vk, video_info, msg, NULL, NULL);
 
-#ifdef HAVE_MENU_WIDGETS
+#ifdef HAVE_GFX_WIDGETS
       if (video_info->widgets_inited)
          gfx_widgets_frame(video_info);
 #endif
@@ -2800,7 +2800,7 @@ static void vulkan_get_overlay_interface(void *data,
 }
 #endif
 
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+#ifdef HAVE_GFX_WIDGETS
 static bool vulkan_gfx_widgets_enabled(void *data)
 {
    (void)data;
@@ -2833,7 +2833,7 @@ video_driver_t video_vulkan = {
 #endif
    vulkan_get_poke_interface,
    NULL,                         /* vulkan_wrap_type_to_enum */
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+#ifdef HAVE_GFX_WIDGETS
    vulkan_gfx_widgets_enabled
 #endif
 };

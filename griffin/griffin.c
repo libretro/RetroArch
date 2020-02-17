@@ -1261,6 +1261,10 @@ MENU
 #include "../menu/menu_shader.c"
 #endif
 
+#ifdef HAVE_GFX_WIDGETS
+#include "../gfx/gfx_widgets.c"
+#endif
+
 #ifdef HAVE_MENU
 #include "../menu/menu_driver.c"
 #include "../menu/menu_setting.c"
@@ -1273,9 +1277,6 @@ MENU
 #include "../menu/widgets/menu_filebrowser.c"
 #include "../menu/widgets/menu_dialog.c"
 #include "../menu/widgets/menu_input_bind_dialog.c"
-#ifdef HAVE_MENU_WIDGETS
-#include "../gfx/gfx_widgets.c"
-#endif
 #include "../menu/widgets/menu_osk.c"
 #include "../menu/cbs/menu_cbs_ok.c"
 #include "../menu/cbs/menu_cbs_cancel.c"

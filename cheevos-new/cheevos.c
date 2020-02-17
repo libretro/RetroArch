@@ -36,7 +36,7 @@
 #ifdef HAVE_MENU
 #include "../menu/menu_driver.h"
 #include "../menu/menu_entries.h"
-#ifdef HAVE_MENU_WIDGETS
+#ifdef HAVE_GFX_WIDGETS
 #include "../gfx/gfx_widgets.h"
 #endif
 #endif
@@ -696,7 +696,7 @@ static void rcheevos_award(rcheevos_cheevo_t* cheevo, int mode)
 
    /* Show the OSD message. */
    {
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+#if defined(HAVE_GFX_WIDGETS)
       bool widgets_ready = gfx_widgets_ready();
       if (widgets_ready)
          gfx_widgets_push_achievement(cheevo->info->title, cheevo->info->badge);
@@ -2440,7 +2440,7 @@ found:
 
       badges_ctx = new_badges_ctx;
 
-#ifdef HAVE_MENU_WIDGETS
+#if defined(HAVE_GFX_WIDGETS)
       if (false) /* we always want badges if menu widgets are enabled */
 #endif
       {

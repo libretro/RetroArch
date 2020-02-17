@@ -82,7 +82,7 @@ static char gfx_widgets_fps_text[255] = {0};
 #ifdef HAVE_CHEEVOS
 /* Achievement notification */
 static char *cheevo_title              = NULL;
-static menu_texture_item cheevo_badge  = 0;
+static uintptr_t cheevo_badge          = 0;
 static float cheevo_unfold             = 0.0f;
 
 static gfx_timer_t cheevo_timer;
@@ -102,7 +102,7 @@ static unsigned cheevo_height   = 0;
 static bool load_content_animation_running            = false;
 static char *load_content_animation_content_name      = NULL;
 static char *load_content_animation_playlist_name     = NULL;
-static menu_texture_item load_content_animation_icon  = 0;
+static uintptr_t load_content_animation_icon          = 0;
 
 static float load_content_animation_icon_color[16];
 static float load_content_animation_icon_size;
@@ -180,9 +180,9 @@ static unsigned msg_queue_tasks_count = 0; /* count of messages bound to a taski
 
 /* TODO: Don't display icons if assets are missing */
 
-static menu_texture_item msg_queue_icon          = 0;
-static menu_texture_item msg_queue_icon_outline  = 0;
-static menu_texture_item msg_queue_icon_rect     = 0;
+static uintptr_t msg_queue_icon                  = 0;
+static uintptr_t msg_queue_icon_outline          = 0;
+static uintptr_t msg_queue_icon_rect             = 0;
 static bool msg_queue_has_icons                  = false;
 
 extern gfx_animation_ctx_tag gfx_widgets_generic_tag;
@@ -232,7 +232,7 @@ static const char *gfx_widgets_icons_names[MENU_WIDGETS_ICON_LAST] = {
    "menu_achievements.png"
 };
 
-static menu_texture_item gfx_widgets_icons_textures[MENU_WIDGETS_ICON_LAST] = {0};
+static uintptr_t gfx_widgets_icons_textures[MENU_WIDGETS_ICON_LAST] = {0};
 
 /* Volume */
 static float volume_db                       = 0.0f;
@@ -247,7 +247,7 @@ static bool volume_mute                      = false;
 
 /* Screenshot */
 static float screenshot_alpha                = 0.0f;
-static menu_texture_item screenshot_texture  = 0;
+static uintptr_t screenshot_texture          = 0;
 static unsigned screenshot_texture_width     = 0;
 static unsigned screenshot_texture_height    = 0;
 static char screenshot_shotname[256]         = {0};
@@ -265,10 +265,10 @@ static gfx_timer_t screenshot_timer;
 static unsigned screenshot_shotname_length;
 
 /* AI Service Overlay */
-static int ai_service_overlay_state                  = 0;
-static unsigned ai_service_overlay_width             = 0;
-static unsigned ai_service_overlay_height            = 0;
-static menu_texture_item ai_service_overlay_texture  = 0;
+static int ai_service_overlay_state               = 0;
+static unsigned ai_service_overlay_width          = 0;
+static unsigned ai_service_overlay_height         = 0;
+static uintptr_t ai_service_overlay_texture       = 0;
 
 /* Generic message */
 #define GENERIC_MESSAGE_SIZE 256
@@ -875,7 +875,8 @@ static void gfx_widgets_hourglass_tick(void *userdata)
 static void gfx_widgets_layout(
       bool is_threaded, const char *dir_assets, char *font_path);
 #ifdef HAVE_MENU
-bool menu_driver_get_load_content_animation_data(menu_texture_item *icon, char **playlist_name);
+bool menu_driver_get_load_content_animation_data(
+      uintptr_t *icon, char **playlist_name);
 #endif
 
 void gfx_widgets_iterate(
@@ -1023,7 +1024,7 @@ void gfx_widgets_iterate(
 }
 
 static int gfx_widgets_draw_indicator(video_frame_info_t *video_info, 
-      menu_texture_item icon, int y, int top_right_x_advance, 
+      uintptr_t icon, int y, int top_right_x_advance, 
       enum msg_hash_enums msg)
 {
    unsigned width;
@@ -1232,10 +1233,9 @@ static void gfx_widgets_draw_task_msg(menu_widget_msg_t *msg, video_frame_info_t
 
 static void gfx_widgets_draw_regular_msg(menu_widget_msg_t *msg, video_frame_info_t *video_info)
 {
-   menu_texture_item icon     = 0;
-
    unsigned bar_width;
    unsigned text_color;
+   uintptr_t icon     = 0;
 
    if (!icon)
       icon = gfx_widgets_icons_textures[MENU_WIDGETS_ICON_INFO]; /* TODO: Real icon logic here */
@@ -1645,8 +1645,7 @@ void gfx_widgets_frame(void *data)
       char msg[255];
       char percentage_msg[255];
 
-      menu_texture_item volume_icon = 0;
-
+      uintptr_t volume_icon         = 0;
       unsigned volume_width         = video_info->width / 3;
       unsigned volume_height        = widget_font_size * 4;
       unsigned icon_size            = gfx_widgets_icons_textures[MENU_WIDGETS_ICON_VOLUME_MED] ? volume_height : simple_widget_padding;
@@ -2542,7 +2541,7 @@ static void gfx_widgets_start_achievement_notification(void)
 }
 
 static void gfx_widgets_get_badge_texture(
-      menu_texture_item *tex, const char *badge)
+      uintptr_t *tex, const char *badge)
 {
    char badge_file[16];
    char fullpath[PATH_MAX_LENGTH];

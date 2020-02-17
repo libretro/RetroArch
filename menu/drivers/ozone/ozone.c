@@ -2323,7 +2323,7 @@ static int ozone_list_bind_init(menu_file_list_cbs_t *cbs,
    return -1;
 }
 
-#ifdef HAVE_MENU_WIDGETS
+#ifdef HAVE_GFX_WIDGETS
 static bool ozone_get_load_content_animation_data(void *userdata, menu_texture_item *icon, char **playlist_name)
 {
    ozone_handle_t *ozone = (ozone_handle_t*) userdata;
@@ -2724,7 +2724,7 @@ menu_ctx_driver_t menu_ctx_ozone = {
    NULL,                         /* update_savestate_thumbnail_image */
    NULL,                         /* pointer_down */
    ozone_pointer_up,
-#ifdef HAVE_MENU_WIDGETS
+#ifdef HAVE_GFX_WIDGETS
    ozone_get_load_content_animation_data,
 #else
    NULL,

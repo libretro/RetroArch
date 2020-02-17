@@ -79,9 +79,9 @@
 
 #ifdef HAVE_MENU
 #include "../../menu/menu_driver.h"
-#ifdef HAVE_MENU_WIDGETS
-#include "../gfx_widgets.h"
 #endif
+#ifdef HAVE_GFX_WIDGETS
+#include "../gfx_widgets.h"
 #endif
 
 #ifndef GL_UNSIGNED_INT_8_8_8_8_REV
@@ -3061,7 +3061,7 @@ static bool gl2_frame(void *data, const void *frame,
       gl2_render_overlay(gl, video_info);
 #endif
 
-#ifdef HAVE_MENU_WIDGETS
+#ifdef HAVE_GFX_WIDGETS
    if (video_info->widgets_inited)
       gfx_widgets_frame(video_info);
 #endif
@@ -4525,7 +4525,7 @@ static void gl2_get_poke_interface(void *data,
    *iface = &gl2_poke_interface;
 }
 
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+#ifdef HAVE_GFX_WIDGETS
 static bool gl2_gfx_widgets_enabled(void *data)
 {
    (void)data;
@@ -4567,7 +4567,7 @@ video_driver_t video_gl2 = {
 #endif
    gl2_get_poke_interface,
    gl2_wrap_type_to_enum,
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+#ifdef HAVE_GFX_WIDGETS
    gl2_gfx_widgets_enabled
 #endif
 };

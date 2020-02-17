@@ -23,7 +23,7 @@
 #include "../wifi_driver.h"
 #include "../../retroarch.h"
 #include "../../lakka.h"
-#ifdef HAVE_MENU_WIDGETS
+#ifdef HAVE_GFX_WIDGETS
 #include "../../gfx/gfx_widgets.h"
 #endif
 
@@ -119,7 +119,7 @@ static void connmanctl_tether_toggle(bool switch_on, char* apname, char* passkey
       RARCH_LOG("[CONNMANCTL] Tether toggle: output: \"%s\"\n",
             output);
 
-#ifdef HAVE_MENU_WIDGETS
+#ifdef HAVE_GFX_WIDGETS
       if (!gfx_widgets_ready())
 #endif
          runloop_msg_queue_push(output, 1, 180, true,
@@ -331,7 +331,7 @@ static bool connmanctl_connect_ssid(unsigned i, const char* passphrase)
 
    while (fgets (ln, sizeof(ln), command_file) != NULL)
    {
-#ifdef HAVE_MENU_WIDGETS
+#ifdef HAVE_GFX_WIDGETS
       if (!gfx_widgets_ready())
 #endif
          runloop_msg_queue_push(ln, 1, 180, true,
@@ -636,7 +636,7 @@ static void connmanctl_tether_start_stop(bool start, char* configfile)
                RARCH_LOG("[CONNMANCTL] Tether start stop: output: \"%s\"\n",
                      ln);
 
-#ifdef HAVE_MENU_WIDGETS
+#ifdef HAVE_GFX_WIDGETS
                if (!gfx_widgets_ready())
 #endif
                   runloop_msg_queue_push(ln, 1, 180, true,

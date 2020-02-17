@@ -760,8 +760,8 @@ ifeq ($(HAVE_MENU), 1)
    DEFINES += -DHAVE_MENU
    HAVE_MENU_COMMON = 1
 
-   ifeq ($(HAVE_MENU_WIDGETS), 1)
-      DEFINES += -DHAVE_MENU_WIDGETS
+   ifeq ($(HAVE_GFX_WIDGETS), 1)
+      DEFINES += -DHAVE_GFX_WIDGETS
    endif
 
    ifeq ($(HAVE_RGUI), 1)
@@ -837,11 +837,11 @@ ifeq ($(HAVE_MENU_COMMON), 1)
           menu/cbs/menu_cbs_down.o \
           menu/cbs/menu_cbs_contentlist_switch.o \
           menu/menu_displaylist.o \
-          menu/drivers/menu_generic.o \
+          menu/drivers/menu_generic.o
+endif
 
-   ifeq ($(HAVE_MENU_WIDGETS), 1)
-      OBJ += gfx/gfx_widgets.o
-   endif
+ifeq ($(HAVE_GFX_WIDGETS), 1)
+   OBJ += gfx/gfx_widgets.o
 endif
 
 ifeq ($(HAVE_OVERLAY), 1)

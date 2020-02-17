@@ -1502,7 +1502,7 @@ typedef struct video_driver
    void (*poke_interface)(void *data, const video_poke_interface_t **iface);
    unsigned (*wrap_type_to_enum)(enum gfx_wrap_type type);
 
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+#if defined(HAVE_GFX_WIDGETS)
    /* if set to true, will use menu widgets when applicable
     * if set to false, will use OSD as a fallback */
    bool (*gfx_widgets_enabled)(void *data);

@@ -39,7 +39,7 @@
 #include "../../config.h"
 #endif
 
-#if defined(HAVE_MENU_WIDGETS)
+#ifdef HAVE_GFX_WIDGETS
 #include "../../gfx/gfx_widgets.h"
 #endif
 
@@ -567,7 +567,7 @@ typedef struct
    bool aspect_update_pending;
    rgui_video_settings_t menu_video_settings;
    rgui_video_settings_t content_video_settings;
-#if defined(HAVE_MENU_WIDGETS)
+#ifdef HAVE_GFX_WIDGETS
    bool widgets_supported;
 #endif
    struct scaler_ctx image_scaler;
@@ -4269,11 +4269,11 @@ static void *rgui_init(void **userdata, bool video_is_threaded)
 
    *userdata              = rgui;
 
-#if defined(HAVE_MENU_WIDGETS)
+#ifdef HAVE_GFX_WIDGETS
    /* We have to be somewhat careful here, since some
     * platforms do not like video_driver_texture-related
     * operations (e.g. 3DS). We would hope that these
-    * platforms will always have HAVE_MENU_WIDGETS disabled,
+    * platforms will always have HAVE_GFX_WIDGETS disabled,
     * but for extra safety we will only permit menu widget
     * additions when the current gfx driver reports that it
     * has widget support */
@@ -5159,7 +5159,7 @@ static void rgui_toggle(void *userdata, bool menu_on)
    }
 }
 
-#if defined(HAVE_MENU_WIDGETS)
+#ifdef HAVE_GFX_WIDGETS
 static void rgui_context_reset(void *data, bool is_threaded)
 {
    rgui_t *rgui = (rgui_t*)data;
@@ -5192,7 +5192,7 @@ menu_ctx_driver_t menu_ctx_rgui = {
    rgui_frame,
    rgui_init,
    rgui_free,
-#if defined(HAVE_MENU_WIDGETS)
+#ifdef HAVE_GFX_WIDGETS
    rgui_context_reset,
    rgui_context_destroy,
 #else

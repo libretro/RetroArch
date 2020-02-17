@@ -6587,7 +6587,7 @@ static int xmb_menu_entry_action(
    return generic_menu_entry_action(userdata, entry, i, new_action);
 }
 
-#ifdef HAVE_MENU_WIDGETS
+#ifdef HAVE_GFX_WIDGETS
 static bool xmb_get_load_content_animation_data(void *userdata, menu_texture_item *icon, char **playlist_name)
 {
    xmb_handle_t *xmb = (xmb_handle_t*) userdata;
@@ -6654,7 +6654,7 @@ menu_ctx_driver_t menu_ctx_xmb = {
    xmb_update_savestate_thumbnail_image,
    NULL, /* pointer_down */
    xmb_pointer_up,
-#ifdef HAVE_MENU_WIDGETS
+#ifdef HAVE_GFX_WIDGETS
    xmb_get_load_content_animation_data,
 #else
    NULL,

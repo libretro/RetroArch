@@ -33,9 +33,9 @@
 
 #ifdef HAVE_MENU
 #include "../../menu/menu_driver.h"
-#ifdef HAVE_MENU_WIDGETS
-#include "../gfx_widgets.h"
 #endif
+#ifdef HAVE_GFX_WIDGETS
+#include "../gfx_widgets.h"
 #endif
 
 #include "gfx/common/gx2_common.h"
@@ -1344,11 +1344,9 @@ static bool wiiu_gfx_frame(void *data, const void *frame,
                (const struct font_params*)&video_info->osd_stat_params, NULL);
    }
 
-#ifdef HAVE_MENU
-#ifdef HAVE_MENU_WIDGETS
+#ifdef HAVE_GFX_WIDGETS
    if (video_info->widgets_inited)
       gfx_widgets_frame(video_info);
-#endif
 #endif
 
    if (msg)
@@ -1734,7 +1732,7 @@ static void wiiu_gfx_get_poke_interface(void *data,
    *iface = &wiiu_poke_interface;
 }
 
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+#ifdef HAVE_GFX_WIDGETS
 static bool wiiu_gfx_widgets_enabled(void *data)
 {
    (void)data;
@@ -1767,7 +1765,7 @@ video_driver_t video_wiiu =
 #endif
    wiiu_gfx_get_poke_interface,
    NULL, /* wrap_type_to_enum */
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+#ifdef HAVE_GFX_WIDGETS
    wiiu_gfx_widgets_enabled
 #endif
 };

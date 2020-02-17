@@ -11787,7 +11787,7 @@ static bool setting_append_list(
           * category, but they *do* belong in the ONSCREEN_DISPLAY_SETTINGS
           * group. I don't want to refactor these names, so we'll assume
           * group trumps category, and just place the widget settings here */
-#ifdef HAVE_MENU_WIDGETS
+#ifdef HAVE_GFX_WIDGETS
          CONFIG_BOOL(
                list, list_info,
                &settings->bools.menu_widget_scale_auto,
@@ -12831,7 +12831,7 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_NONE);
 
-#ifdef HAVE_MENU_WIDGETS
+#ifdef HAVE_GFX_WIDGETS
          CONFIG_BOOL(
                list, list_info,
                &settings->bools.menu_enable_widgets,

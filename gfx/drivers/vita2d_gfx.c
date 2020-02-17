@@ -26,9 +26,9 @@
 
 #ifdef HAVE_MENU
 #include "../../menu/menu_driver.h"
-#ifdef HAVE_MENU_WIDGETS
-#include "../gfx_widgets.h"
 #endif
+#ifdef HAVE_GFX_WIDGETS
+#include "../gfx_widgets.h"
 #endif
 
 #include "../font_driver.h"
@@ -264,7 +264,7 @@ static bool vita2d_gfx_frame(void *data, const void *frame,
       vita2d_render_overlay(vita);
 #endif
 
-#ifdef HAVE_MENU_WIDGETS
+#ifdef HAVE_GFX_WIDGETS
    gfx_widgets_frame(video_info);
 #endif
 
@@ -797,7 +797,7 @@ static void vita2d_gfx_get_poke_interface(void *data,
    *iface = &vita_poke_interface;
 }
 
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+#ifdef HAVE_GFX_WIDGETS
 static bool vita2d_gfx_gfx_widgets_enabled(void *data)
 {
    (void)data;
@@ -966,7 +966,7 @@ video_driver_t video_vita2d = {
 #endif
    vita2d_gfx_get_poke_interface,
    NULL,
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+#ifdef HAVE_GFX_WIDGETS
    vita2d_gfx_gfx_widgets_enabled
 #endif
 };

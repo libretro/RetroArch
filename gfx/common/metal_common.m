@@ -31,9 +31,9 @@
 
 #ifdef HAVE_MENU
 #import "../../menu/menu_driver.h"
-#ifdef HAVE_MENU_WIDGETS
-#import "../gfx_widgets.h"
 #endif
+#ifdef HAVE_GFX_WIDGETS
+#import "../gfx_widgets.h"
 #endif
 
 #define STRUCT_ASSIGN(x, y) \
@@ -330,15 +330,13 @@
          }
       }
 
-#ifdef HAVE_MENU
-#ifdef HAVE_MENU_WIDGETS
+#ifdef HAVE_GFX_WIDGETS
       if (video_info->widgets_inited)
       {
          [rce pushDebugGroup:@"menu widgets"];
          gfx_widgets_frame(video_info);
          [rce popDebugGroup];
       }
-#endif
 #endif
 
       if (msg && *msg)

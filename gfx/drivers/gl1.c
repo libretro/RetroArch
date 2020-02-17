@@ -34,9 +34,9 @@
 
 #ifdef HAVE_MENU
 #include "../../menu/menu_driver.h"
-#ifdef HAVE_MENU_WIDGETS
-#include "../gfx_widgets.h"
 #endif
+#ifdef HAVE_GFX_WIDGETS
+#include "../gfx_widgets.h"
 #endif
 
 #include "../font_driver.h"
@@ -870,11 +870,11 @@ static bool gl1_gfx_frame(void *data, const void *frame,
 #endif
       }
    }
+#endif
 
-#ifdef HAVE_MENU_WIDGETS
+#ifdef HAVE_GFX_WIDGETS
    if (video_info->widgets_inited)
       gfx_widgets_frame(video_info);
-#endif
 #endif
 
 #ifdef HAVE_OVERLAY
@@ -1390,7 +1390,7 @@ static void gl1_gfx_get_poke_interface(void *data,
    *iface = &gl1_poke_interface;
 }
 
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+#ifdef HAVE_GFX_WIDGETS
 static bool gl1_gfx_widgets_enabled(void *data)
 {
    (void)data;
@@ -1556,7 +1556,7 @@ video_driver_t video_gl1 = {
 #endif
   gl1_gfx_get_poke_interface,
   gl1_wrap_type_to_enum,
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
+#ifdef HAVE_GFX_WIDGETS
   gl1_gfx_widgets_enabled
 #endif
 };
