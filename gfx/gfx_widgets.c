@@ -2100,9 +2100,9 @@ void gfx_widgets_context_reset(bool is_threaded,
    video_driver_monitor_reset();
 }
 
-void gfx_widgets_context_destroy(void)
+static void gfx_widgets_context_destroy(void)
 {
-   int i;
+   unsigned i;
 
    /* TODO: Dismiss onscreen notifications that have been freed */
 
@@ -2121,7 +2121,7 @@ void gfx_widgets_context_destroy(void)
       gfx_display_font_free(font_bold);
 
    font_regular = NULL;
-   font_bold = NULL;
+   font_bold    = NULL;
 }
 
 #ifdef HAVE_CHEEVOS
@@ -2145,6 +2145,8 @@ void gfx_widgets_free(void)
 {
    size_t i;
    gfx_animation_ctx_tag libretro_tag;
+
+   gfx_widgets_context_destroy();
 
    /* Kill any pending animation */
    gfx_animation_kill_by_tag(&volume_tag);

@@ -78,8 +78,6 @@ void gfx_widgets_context_reset(bool is_threaded,
       unsigned width, unsigned height,
       const char *dir_assets, char *font_path);
 
-void gfx_widgets_context_destroy(void);
-
 void gfx_widgets_push_achievement(const char *title, const char *badge);
 
 /* Warning: not thread safe! */

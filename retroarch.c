@@ -23568,7 +23568,6 @@ static void driver_uninit(int flags)
        * (e.g. Vulkan) will segfault */
       if (gfx_widgets_inited)
       {
-         gfx_widgets_context_destroy();
          gfx_widgets_free();
          gfx_widgets_inited = false;
       }
@@ -23637,7 +23636,6 @@ static void retroarch_deinit_drivers(void)
     * (breaking video_driver_has_widgets) */
    if (gfx_widgets_inited)
    {
-      gfx_widgets_context_destroy();
       gfx_widgets_free();
       gfx_widgets_inited = false;
    }
