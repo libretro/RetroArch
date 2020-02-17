@@ -30,10 +30,6 @@
 #include "gfx_display.h"
 #include "font_driver.h"
 
-#ifdef HAVE_ACCESSIBILITY
-#include "../accessibility.h"
-#endif
-
 #include "../msg_hash.h"
 
 #include "../tasks/task_content.h"
@@ -346,14 +342,11 @@ void gfx_widgets_msg_queue_push(
       char *title,
       enum message_queue_icon icon,
       enum message_queue_category category,
-      unsigned prio, bool flush)
+      unsigned prio, bool flush,
+      bool menu_is_alive)
 {
    menu_widget_msg_t* msg_widget = NULL;
 
-#ifdef HAVE_ACCESSIBILITY
-   if (is_accessibility_enabled())
-      accessibility_speak_priority((char*)msg, 0);
-#endif
    if (fifo_write_avail(msg_queue) > 0)
    {
       /* Get current msg if it exists */
@@ -434,7 +427,7 @@ void gfx_widgets_msg_queue_push(
              * text with expanded width */
             unsigned title_length   = (unsigned)strlen(title);
             char *msg               = strdup(title);
-            unsigned width          = menu_driver_is_alive() 
+            unsigned width          = menu_is_alive 
                ? msg_queue_default_rect_width_menu_alive 
                : msg_queue_default_rect_width;
             unsigned text_width     = font_driver_get_message_width(

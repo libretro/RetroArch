@@ -46,7 +46,8 @@ void gfx_widgets_msg_queue_push(
       char *title,
       enum message_queue_icon icon,
       enum message_queue_category category,
-      unsigned prio, bool flush);
+      unsigned prio, bool flush,
+      bool menu_is_alive);
 
 void gfx_widgets_volume_update_and_show(float new_volume,
       bool mute);

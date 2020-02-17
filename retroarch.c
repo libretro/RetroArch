@@ -25958,7 +25958,11 @@ static void runloop_task_msg_queue_push(
       runloop_msg_queue_lock();
       ui_companion_driver_msg_queue_push(msg,
             prio, task ? duration : duration * 60 / 1000, flush);
-      gfx_widgets_msg_queue_push(task, msg, duration, NULL, (enum message_queue_icon)MESSAGE_QUEUE_CATEGORY_INFO, (enum message_queue_category)MESSAGE_QUEUE_ICON_DEFAULT, prio, flush);
+#ifdef HAVE_ACCESSIBILITY
+   if (is_accessibility_enabled())
+      accessibility_speak_priority((char*)msg, 0);
+#endif
+      gfx_widgets_msg_queue_push(task, msg, duration, NULL, (enum message_queue_icon)MESSAGE_QUEUE_CATEGORY_INFO, (enum message_queue_category)MESSAGE_QUEUE_ICON_DEFAULT, prio, flush, menu_driver_alive);
       runloop_msg_queue_unlock();
    }
    else
@@ -26828,9 +26832,13 @@ void runloop_msg_queue_push(const char *msg,
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
    if (gfx_widgets_inited)
    {
+#ifdef HAVE_ACCESSIBILITY
+      if (is_accessibility_enabled())
+         accessibility_speak_priority((char*)msg, 0);
+#endif
       gfx_widgets_msg_queue_push(NULL, msg,
             roundf((float)duration / 60.0f * 1000.0f),
-            title, icon, category, prio, flush);
+            title, icon, category, prio, flush, menu_driver_alive);
       duration = duration * 60 / 1000;
    }
    else
