@@ -2613,6 +2613,7 @@ gfx_animation_ctx_tag gfx_widgets_generic_tag = (uintptr_t) &gfx_widgets_inited;
 static bool gfx_widgets_paused              = false;
 static bool gfx_widgets_fast_forward        = false;
 static bool gfx_widgets_rewinding           = false;
+#endif
 
 bool gfx_widgets_ready(void)
 {
@@ -2622,7 +2623,6 @@ bool gfx_widgets_ready(void)
    return false;
 #endif
 }
-#endif
 
 #ifdef HAVE_MENU
 /* MENU INPUT GLOBAL VARIABLES */
