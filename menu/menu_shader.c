@@ -39,7 +39,7 @@
 
 static struct video_shader *menu_driver_shader = NULL;
 /* indicative of whether shader was modified from the menus: */
-static bool menu_driver_shader_modified = true;
+static bool menu_driver_shader_modified        = true;
 
 void menu_shader_set_modified(bool modified)
 {
