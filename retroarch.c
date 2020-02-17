@@ -25967,8 +25967,8 @@ static void runloop_task_msg_queue_push(
       ui_companion_driver_msg_queue_push(msg,
             prio, task ? duration : duration * 60 / 1000, flush);
 #ifdef HAVE_ACCESSIBILITY
-   if (is_accessibility_enabled())
-      accessibility_speak_priority((char*)msg, 0);
+      if (is_accessibility_enabled())
+         accessibility_speak_priority((char*)msg, 0);
 #endif
       gfx_widgets_msg_queue_push(task, msg, duration, NULL, (enum message_queue_icon)MESSAGE_QUEUE_CATEGORY_INFO, (enum message_queue_category)MESSAGE_QUEUE_ICON_DEFAULT, prio, flush,
 #ifdef HAVE_MENU
@@ -26846,10 +26846,6 @@ void runloop_msg_queue_push(const char *msg,
 #if defined(HAVE_GFX_WIDGETS)
    if (gfx_widgets_inited)
    {
-#ifdef HAVE_ACCESSIBILITY
-      if (is_accessibility_enabled())
-         accessibility_speak_priority((char*)msg, 0);
-#endif
       gfx_widgets_msg_queue_push(NULL, msg,
             roundf((float)duration / 60.0f * 1000.0f),
             title, icon, category, prio, flush,
@@ -27351,7 +27347,7 @@ static enum runloop_state runloop_check_state(void)
       }
    }
 
-#if defined(HAVE_MENU)
+#if defined(HAVE_MENU) || defined(HAVE_MENU_WIDGETS)
    gfx_animation_update(
          settings->bools.menu_timedate_enable,
          settings->floats.menu_ticker_speed,
@@ -27370,6 +27366,7 @@ static enum runloop_state runloop_check_state(void)
    }
 #endif
 
+#ifdef HAVE_MENU
    if (menu_is_alive)
    {
       enum menu_action action;
@@ -27496,6 +27493,7 @@ static enum runloop_state runloop_check_state(void)
          return RUNLOOP_STATE_POLLED_AND_SLEEP;
    }
    else
+#endif
 #endif
    {
       if (runloop_idle)
