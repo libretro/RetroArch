@@ -5,10 +5,10 @@ ifeq ($(LIBRETRO), 2048)
 	APP_ICON             = pkg/ctr/assets/2048.png
 	APP_BANNER           = pkg/ctr/assets/2048_banner.png
 
-else ifeq ($(LIBRETRO), 4do)
-	APP_TITLE            = 4DO
+else ifeq ($(LIBRETRO), opera)
+	APP_TITLE            = Opera
 	APP_AUTHOR           = various
-	APP_PRODUCT_CODE     = RARCH-4DO
+	APP_PRODUCT_CODE     = RARCH-OPERA
 	APP_UNIQUE_ID        = 0xBAC91
 	APP_ICON             = pkg/ctr/assets/4do.png
 	APP_BANNER           = pkg/ctr/assets/4do_banner.png
