@@ -11027,7 +11027,7 @@ static void clear_controller_port_map(void)
 
 static char *get_temp_directory_alloc(const char *override_dir)
 {
-   const char *src;
+   const char *src        = NULL;
    char *path             = NULL;
 #ifdef _WIN32
 #ifdef LEGACY_WIN32
