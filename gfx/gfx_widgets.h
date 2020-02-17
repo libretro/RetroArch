@@ -94,6 +94,4 @@ void gfx_widgets_frame(void *data);
 
 bool gfx_widgets_set_fps_text(const char *new_fps_text);
 
-enum menu_driver_id_type menu_driver_ident_id(void);
-
 #endif
