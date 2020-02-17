@@ -27347,7 +27347,7 @@ static enum runloop_state runloop_check_state(void)
       }
    }
 
-#if defined(HAVE_MENU) || defined(HAVE_MENU_WIDGETS)
+#if defined(HAVE_MENU) || defined(HAVE_GFX_WIDGETS)
    gfx_animation_update(
          settings->bools.menu_timedate_enable,
          settings->floats.menu_ticker_speed,
