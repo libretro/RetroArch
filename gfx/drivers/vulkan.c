@@ -1975,7 +1975,7 @@ static bool vulkan_frame(void *data, const void *frame,
 
 #ifdef HAVE_MENU_WIDGETS
       if (video_info->widgets_inited)
-         menu_widgets_frame(video_info);
+         gfx_widgets_frame(video_info);
 #endif
 
       /* End the render pass. We're done rendering to backbuffer now. */
@@ -2801,7 +2801,7 @@ static void vulkan_get_overlay_interface(void *data,
 #endif
 
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-static bool vulkan_menu_widgets_enabled(void *data)
+static bool vulkan_gfx_widgets_enabled(void *data)
 {
    (void)data;
    return true;
@@ -2834,6 +2834,6 @@ video_driver_t video_vulkan = {
    vulkan_get_poke_interface,
    NULL,                         /* vulkan_wrap_type_to_enum */
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-   vulkan_menu_widgets_enabled
+   vulkan_gfx_widgets_enabled
 #endif
 };

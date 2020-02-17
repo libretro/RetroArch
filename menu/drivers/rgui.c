@@ -4277,7 +4277,7 @@ static void *rgui_init(void **userdata, bool video_is_threaded)
     * but for extra safety we will only permit menu widget
     * additions when the current gfx driver reports that it
     * has widget support */
-   rgui->widgets_supported = menu_widgets_ready();
+   rgui->widgets_supported = gfx_widgets_ready();
 
    if (rgui->widgets_supported)
    {

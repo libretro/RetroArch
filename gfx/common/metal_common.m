@@ -335,7 +335,7 @@
       if (video_info->widgets_inited)
       {
          [rce pushDebugGroup:@"menu widgets"];
-         menu_widgets_frame(video_info);
+         gfx_widgets_frame(video_info);
          [rce popDebugGroup];
       }
 #endif

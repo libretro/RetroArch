@@ -697,9 +697,9 @@ static void rcheevos_award(rcheevos_cheevo_t* cheevo, int mode)
    /* Show the OSD message. */
    {
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-      bool widgets_ready = menu_widgets_ready();
+      bool widgets_ready = gfx_widgets_ready();
       if (widgets_ready)
-         menu_widgets_push_achievement(cheevo->info->title, cheevo->info->badge);
+         gfx_widgets_push_achievement(cheevo->info->title, cheevo->info->badge);
       else
 #endif
       {

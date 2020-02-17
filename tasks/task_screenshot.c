@@ -209,7 +209,7 @@ static void task_screenshot_callback(retro_task_t *task,
       return;
 
    if (state && !state->silence && state->widgets_ready)
-      menu_widgets_screenshot_taken(state->shotname, state->filename);
+      gfx_widgets_screenshot_taken(state->shotname, state->filename);
 
    free(state);
 }
@@ -255,7 +255,7 @@ static bool screenshot_dump(
    state->frame                  = frame;
    state->userbuf                = userbuf;
 #ifdef HAVE_MENU_WIDGETS
-   state->widgets_ready          = menu_widgets_ready();
+   state->widgets_ready          = gfx_widgets_ready();
 #else
    state->widgets_ready          = false;
 #endif

@@ -412,7 +412,7 @@ static void metal_get_overlay_interface(void *data,
 #endif
 
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-static bool metal_menu_widgets_enabled(void *data)
+static bool metal_gfx_widgets_enabled(void *data)
 {
    (void)data;
    return true;
@@ -444,6 +444,6 @@ video_driver_t video_metal = {
    metal_get_poke_interface,
    NULL, /* metal_wrap_type_to_enum */
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-   metal_menu_widgets_enabled
+   metal_gfx_widgets_enabled
 #endif
 };

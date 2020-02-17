@@ -259,14 +259,14 @@ static bool vita2d_gfx_frame(void *data, const void *frame,
                (const struct font_params*)&video_info->osd_stat_params, NULL);
    }
 
-   #ifdef HAVE_OVERLAY
+#ifdef HAVE_OVERLAY
    if (vita->overlay_enable)
       vita2d_render_overlay(vita);
-   #endif
+#endif
 
-   #ifdef HAVE_MENU_WIDGETS
-      menu_widgets_frame(video_info);
-   #endif
+#ifdef HAVE_MENU_WIDGETS
+   gfx_widgets_frame(video_info);
+#endif
 
    if(!string_is_empty(msg))
       font_driver_render_msg(vita, video_info, msg, NULL, NULL);
@@ -798,7 +798,7 @@ static void vita2d_gfx_get_poke_interface(void *data,
 }
 
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-static bool vita2d_gfx_menu_widgets_enabled(void *data)
+static bool vita2d_gfx_gfx_widgets_enabled(void *data)
 {
    (void)data;
    return true;
@@ -967,6 +967,6 @@ video_driver_t video_vita2d = {
    vita2d_gfx_get_poke_interface,
    NULL,
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-   vita2d_gfx_menu_widgets_enabled
+   vita2d_gfx_gfx_widgets_enabled
 #endif
 };

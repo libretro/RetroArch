@@ -3063,7 +3063,7 @@ static bool gl2_frame(void *data, const void *frame,
 
 #ifdef HAVE_MENU_WIDGETS
    if (video_info->widgets_inited)
-      menu_widgets_frame(video_info);
+      gfx_widgets_frame(video_info);
 #endif
 
    if (!string_is_empty(msg))
@@ -4526,7 +4526,7 @@ static void gl2_get_poke_interface(void *data,
 }
 
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-static bool gl2_menu_widgets_enabled(void *data)
+static bool gl2_gfx_widgets_enabled(void *data)
 {
    (void)data;
    return true;
@@ -4568,6 +4568,6 @@ video_driver_t video_gl2 = {
    gl2_get_poke_interface,
    gl2_wrap_type_to_enum,
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-   gl2_menu_widgets_enabled
+   gl2_gfx_widgets_enabled
 #endif
 };

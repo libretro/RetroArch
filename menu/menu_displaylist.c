@@ -6532,11 +6532,11 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
                            build_list[i].checked = true;
                      break;
                   case MENU_ENUM_LABEL_MENU_WIDGET_SCALE_AUTO:
-                     if (menu_widgets_ready())
+                     if (gfx_widgets_ready())
                         build_list[i].checked = true;
                      break;
                   case MENU_ENUM_LABEL_MENU_WIDGET_SCALE_FACTOR:
-                     if (menu_widgets_ready())
+                     if (gfx_widgets_ready())
                         if (!settings->bools.menu_widget_scale_auto)
                            build_list[i].checked = true;
                      break;

@@ -120,7 +120,7 @@ static void connmanctl_tether_toggle(bool switch_on, char* apname, char* passkey
             output);
 
 #ifdef HAVE_MENU_WIDGETS
-      if (!menu_widgets_ready())
+      if (!gfx_widgets_ready())
 #endif
          runloop_msg_queue_push(output, 1, 180, true,
                NULL, MESSAGE_QUEUE_ICON_DEFAULT,
@@ -332,7 +332,7 @@ static bool connmanctl_connect_ssid(unsigned i, const char* passphrase)
    while (fgets (ln, sizeof(ln), command_file) != NULL)
    {
 #ifdef HAVE_MENU_WIDGETS
-      if (!menu_widgets_ready())
+      if (!gfx_widgets_ready())
 #endif
          runloop_msg_queue_push(ln, 1, 180, true,
                NULL, MESSAGE_QUEUE_ICON_DEFAULT,
@@ -637,7 +637,7 @@ static void connmanctl_tether_start_stop(bool start, char* configfile)
                      ln);
 
 #ifdef HAVE_MENU_WIDGETS
-               if (!menu_widgets_ready())
+               if (!gfx_widgets_ready())
 #endif
                   runloop_msg_queue_push(ln, 1, 180, true,
                         NULL, MESSAGE_QUEUE_ICON_DEFAULT,

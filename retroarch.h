@@ -1505,7 +1505,7 @@ typedef struct video_driver
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
    /* if set to true, will use menu widgets when applicable
     * if set to false, will use OSD as a fallback */
-   bool (*menu_widgets_enabled)(void *data);
+   bool (*gfx_widgets_enabled)(void *data);
 #endif
 } video_driver_t;
 
@@ -1998,7 +1998,7 @@ bool menu_driver_is_alive(void);
 
 void menu_driver_set_binding_state(bool on);
 
-bool menu_widgets_ready(void);
+bool gfx_widgets_ready(void);
 
 unsigned int retroarch_get_rotation(void);
 

@@ -1347,7 +1347,7 @@ static bool wiiu_gfx_frame(void *data, const void *frame,
 #ifdef HAVE_MENU
 #ifdef HAVE_MENU_WIDGETS
    if (video_info->widgets_inited)
-      menu_widgets_frame(video_info);
+      gfx_widgets_frame(video_info);
 #endif
 #endif
 
@@ -1735,7 +1735,7 @@ static void wiiu_gfx_get_poke_interface(void *data,
 }
 
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-static bool wiiu_menu_widgets_enabled(void *data)
+static bool wiiu_gfx_widgets_enabled(void *data)
 {
    (void)data;
    return true;
@@ -1768,6 +1768,6 @@ video_driver_t video_wiiu =
    wiiu_gfx_get_poke_interface,
    NULL, /* wrap_type_to_enum */
 #if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-   wiiu_menu_widgets_enabled
+   wiiu_gfx_widgets_enabled
 #endif
 };

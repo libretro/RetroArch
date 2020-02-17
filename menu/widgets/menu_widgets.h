@@ -13,8 +13,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _MENU_WIDGETS_H
-#define _MENU_WIDGETS_H
+#ifndef _GFX_WIDGETS_H
+#define _GFX_WIDGETS_H
 
 #include <formats/image.h>
 #include <queues/task_queue.h>
@@ -36,11 +36,11 @@
 #define HOURGLASS_DURATION                1000
 #define GENERIC_MESSAGE_DURATION          3000
 
-bool menu_widgets_init(bool video_is_threaded);
+bool gfx_widgets_init(bool video_is_threaded);
 
-void menu_widgets_free(void);
+void gfx_widgets_free(void);
 
-void menu_widgets_msg_queue_push(
+void gfx_widgets_msg_queue_push(
       retro_task_t *task, const char *msg,
       unsigned duration,
       char *title,
@@ -48,51 +48,51 @@ void menu_widgets_msg_queue_push(
       enum message_queue_category category,
       unsigned prio, bool flush);
 
-void menu_widgets_volume_update_and_show(float new_volume,
+void gfx_widgets_volume_update_and_show(float new_volume,
       bool mute);
 
-void menu_widgets_iterate(
+void gfx_widgets_iterate(
       unsigned width, unsigned height,
       const char *dir_assets, char *font_path,
       bool is_threaded);
 
-void menu_widgets_screenshot_taken(const char *shotname, const char *filename);
+void gfx_widgets_screenshot_taken(const char *shotname, const char *filename);
 
 /* AI Service functions */
-int menu_widgets_ai_service_overlay_get_state(void);
-bool menu_widgets_ai_service_overlay_set_state(int state);
+int gfx_widgets_ai_service_overlay_get_state(void);
+bool gfx_widgets_ai_service_overlay_set_state(int state);
 
-bool menu_widgets_ai_service_overlay_load(
+bool gfx_widgets_ai_service_overlay_load(
         char* buffer, unsigned buffer_len,
         enum image_type_enum image_type);
 
-void menu_widgets_ai_service_overlay_unload(void);
+void gfx_widgets_ai_service_overlay_unload(void);
 
-void menu_widgets_start_load_content_animation(
+void gfx_widgets_start_load_content_animation(
       const char *content_name, bool remove_extension);
 
-void menu_widgets_cleanup_load_content_animation(void);
+void gfx_widgets_cleanup_load_content_animation(void);
 
-void menu_widgets_context_reset(bool is_threaded,
+void gfx_widgets_context_reset(bool is_threaded,
       unsigned width, unsigned height,
       const char *dir_assets, char *font_path);
 
-void menu_widgets_context_destroy(void);
+void gfx_widgets_context_destroy(void);
 
-void menu_widgets_push_achievement(const char *title, const char *badge);
-
-/* Warning: not thread safe! */
-void menu_widgets_set_message(char *message);
+void gfx_widgets_push_achievement(const char *title, const char *badge);
 
 /* Warning: not thread safe! */
-void menu_widgets_set_libretro_message(const char *message, unsigned duration);
+void gfx_widgets_set_message(char *message);
+
+/* Warning: not thread safe! */
+void gfx_widgets_set_libretro_message(const char *message, unsigned duration);
 
 /* All the functions below should be called in
  * the video driver - once they are all added, set
  * enable_menu_widgets to true for that driver */
-void menu_widgets_frame(void *data);
+void gfx_widgets_frame(void *data);
 
-bool menu_widgets_set_fps_text(const char *new_fps_text);
+bool gfx_widgets_set_fps_text(const char *new_fps_text);
 
 enum menu_driver_id_type menu_driver_ident_id(void);
 
