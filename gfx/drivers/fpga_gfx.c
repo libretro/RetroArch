@@ -132,6 +132,7 @@ static void *fpga_gfx_init(const video_info_t *video,
    unsigned win_width = 0, win_height   = 0;
    unsigned temp_width = 0, temp_height = 0;
    settings_t *settings                 = config_get_ptr();
+   bool video_font_enable               = settings->bools.video_font_enable;
    fpga_t *fpga                         = (fpga_t*)calloc(1, sizeof(*fpga));
 
    *input                               = NULL;
@@ -209,7 +210,7 @@ static void *fpga_gfx_init(const video_info_t *video,
 
    video_context_driver_input_driver(&inp);
 
-   if (settings->bools.video_font_enable)
+   if (video_font_enable)
       font_driver_init_osd(NULL,
             video,
             false,

@@ -1076,7 +1076,8 @@ static void *d3d11_gfx_init(const video_info_t* video,
 #endif
 
    {
-      int i = 0;
+      int         i = 0;
+      int gpu_index = settings->ints.d3d11_gpu_index;
 
       if (d3d11_gpu_list)
          string_list_free(d3d11_gpu_list);
@@ -1116,18 +1117,18 @@ static void *d3d11_gfx_init(const video_info_t* video,
 
       video_driver_set_gpu_api_devices(GFX_CTX_DIRECT3D11_API, d3d11_gpu_list);
 
-      if (0 <= settings->ints.d3d11_gpu_index && settings->ints.d3d11_gpu_index <= i && settings->ints.d3d11_gpu_index < D3D11_MAX_GPU_COUNT)
+      if (0 <= gpu_index && gpu_index <= i && gpu_index < D3D11_MAX_GPU_COUNT)
       {
-         d3d11_current_adapter = d3d11_adapters[settings->ints.d3d11_gpu_index];
+         d3d11_current_adapter = d3d11_adapters[gpu_index];
          d3d11->adapter = d3d11_current_adapter;
-         RARCH_LOG("[D3D11]: Using GPU index %d.\n", settings->ints.d3d11_gpu_index);
-         video_driver_set_gpu_device_string(d3d11_gpu_list->elems[settings->ints.d3d11_gpu_index].data);
+         RARCH_LOG("[D3D11]: Using GPU index %d.\n", gpu_index);
+         video_driver_set_gpu_device_string(d3d11_gpu_list->elems[gpu_index].data);
       }
       else
       {
-         RARCH_WARN("[D3D11]: Invalid GPU index %d, using first device found.\n", settings->ints.d3d11_gpu_index);
+         RARCH_WARN("[D3D11]: Invalid GPU index %d, using first device found.\n", gpu_index);
          d3d11_current_adapter = d3d11_adapters[0];
-         d3d11->adapter = d3d11_current_adapter;
+         d3d11->adapter        = d3d11_current_adapter;
       }
    }
 
@@ -1664,6 +1665,7 @@ static void d3d11_set_menu_texture_frame(
 {
    d3d11_video_t* d3d11    = (d3d11_video_t*)data;
    settings_t*    settings = config_get_ptr();
+   bool menu_linear_filter = settings->bools.menu_linear_filter;
    DXGI_FORMAT    format   = rgb32 ? DXGI_FORMAT_B8G8R8A8_UNORM :
       (DXGI_FORMAT)DXGI_FORMAT_EX_A4R4G4B4_UNORM;
 
@@ -1680,8 +1682,8 @@ static void d3d11_set_menu_texture_frame(
    d3d11_update_texture(d3d11->context, width, height, 0,
          format, frame, &d3d11->menu.texture);
    d3d11->menu.texture.sampler = d3d11->samplers
-      [settings->bools.menu_linear_filter
-      ? RARCH_FILTER_LINEAR
+      [menu_linear_filter
+         ? RARCH_FILTER_LINEAR
          : RARCH_FILTER_NEAREST][RARCH_WRAP_DEFAULT];
 }
 

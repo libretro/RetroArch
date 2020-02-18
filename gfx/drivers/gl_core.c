@@ -1160,6 +1160,7 @@ static void *gl_core_init(const video_info_t *video,
    gfx_ctx_input_t inp;
    unsigned full_x, full_y;
    settings_t *settings                 = config_get_ptr();
+   bool video_gpu_record                = settings->bools.video_gpu_record;
    int interval                         = 0;
    unsigned win_width                   = 0;
    unsigned win_height                  = 0;
@@ -1329,8 +1330,7 @@ static void *gl_core_init(const video_info_t *video,
             FONT_DRIVER_RENDER_OPENGL_CORE_API);
    }
 
-   gl->pbo_readback_enable = settings->bools.video_gpu_record
-      && recording_is_enabled();
+   gl->pbo_readback_enable = video_gpu_record && recording_is_enabled();
 
    if (gl->pbo_readback_enable && gl_core_init_pbo_readback(gl))
    {
@@ -2118,27 +2118,29 @@ static void gl_core_set_texture_frame(void *data,
       const void *frame, bool rgb32, unsigned width, unsigned height,
       float alpha)
 {
-   GLenum menu_filter;
    settings_t *settings = config_get_ptr();
+   GLenum menu_filter   = settings->bools.menu_linear_filter 
+      ? GL_LINEAR : GL_NEAREST;
    unsigned base_size   = rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
    gl_core_t *gl        = (gl_core_t*)data;
    if (!gl)
       return;
 
    gl_core_context_bind_hw_render(gl, false);
-   menu_filter = settings->bools.menu_linear_filter ? GL_LINEAR : GL_NEAREST;
 
    if (gl->menu_texture)
       glDeleteTextures(1, &gl->menu_texture);
    glGenTextures(1, &gl->menu_texture);
    glBindTexture(GL_TEXTURE_2D, gl->menu_texture);
-   glTexStorage2D(GL_TEXTURE_2D, 1, rgb32 ? GL_RGBA8 : GL_RGBA4, width, height);
+   glTexStorage2D(GL_TEXTURE_2D, 1, rgb32 
+         ? GL_RGBA8 : GL_RGBA4, width, height);
 
    glPixelStorei(GL_UNPACK_ALIGNMENT, base_size);
    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
    glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0,
-                   width, height, GL_RGBA, rgb32 ? GL_UNSIGNED_BYTE : GL_UNSIGNED_SHORT_4_4_4_4, frame);
+                   width, height, GL_RGBA, rgb32 
+                   ? GL_UNSIGNED_BYTE : GL_UNSIGNED_SHORT_4_4_4_4, frame);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, menu_filter);

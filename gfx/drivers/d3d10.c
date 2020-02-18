@@ -1005,7 +1005,8 @@ static void *d3d10_gfx_init(const video_info_t* video,
 #endif
 
    {
-      int i = 0;
+      int         i = 0;
+      int gpu_index = settings->ints.d3d10_gpu_index;
 
       if (d3d10_gpu_list)
          string_list_free(d3d10_gpu_list);
@@ -1045,18 +1046,18 @@ static void *d3d10_gfx_init(const video_info_t* video,
 
       video_driver_set_gpu_api_devices(GFX_CTX_DIRECT3D10_API, d3d10_gpu_list);
 
-      if (0 <= settings->ints.d3d10_gpu_index && settings->ints.d3d10_gpu_index <= i && settings->ints.d3d10_gpu_index < D3D10_MAX_GPU_COUNT)
+      if (0 <= gpu_index && gpu_index <= i && (gpu_index < D3D10_MAX_GPU_COUNT))
       {
-         d3d10_current_adapter = d3d10_adapters[settings->ints.d3d10_gpu_index];
+         d3d10_current_adapter = d3d10_adapters[gpu_index];
          d3d10->adapter = d3d10_current_adapter;
-         RARCH_LOG("[D3D10]: Using GPU index %d.\n", settings->ints.d3d10_gpu_index);
-         video_driver_set_gpu_device_string(d3d10_gpu_list->elems[settings->ints.d3d10_gpu_index].data);
+         RARCH_LOG("[D3D10]: Using GPU index %d.\n", gpu_index);
+         video_driver_set_gpu_device_string(d3d10_gpu_list->elems[gpu_index].data);
       }
       else
       {
-         RARCH_WARN("[D3D10]: Invalid GPU index %d, using first device found.\n", settings->ints.d3d10_gpu_index);
+         RARCH_WARN("[D3D10]: Invalid GPU index %d, using first device found.\n", gpu_index);
          d3d10_current_adapter = d3d10_adapters[0];
-         d3d10->adapter = d3d10_current_adapter;
+         d3d10->adapter        = d3d10_current_adapter;
       }
    }
 

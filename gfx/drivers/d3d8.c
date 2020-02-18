@@ -660,9 +660,10 @@ static void d3d8_make_d3dpp(void *data,
 
    if (info->vsync)
    {
-      settings_t *settings        = config_get_ptr();
+      settings_t *settings         = config_get_ptr();
+      unsigned video_swap_interval = settings->uints.video_swap_interval;
 
-      switch (settings->uints.video_swap_interval)
+      switch (video_swap_interval)
       {
          default:
          case 1:
@@ -787,16 +788,18 @@ static void d3d8_calculate_rect(void *data,
       bool force_full,
       bool allow_rotate)
 {
-   float device_aspect  = (float)*width / *height;
-   d3d8_video_t *d3d     = (d3d8_video_t*)data;
-   settings_t *settings = config_get_ptr();
+   float device_aspect       = (float)*width / *height;
+   d3d8_video_t *d3d         = (d3d8_video_t*)data;
+   settings_t *settings      = config_get_ptr();
+   bool video_scale_integer  = settings->bools.video_scale_integer;
+   unsigned aspect_ratio_idx = settings->uints.video_aspect_ratio_idx;
 
    video_driver_get_size(width, height);
 
    *x                   = 0;
    *y                   = 0;
 
-   if (settings->bools.video_scale_integer && !force_full)
+   if (video_scale_integer && !force_full)
    {
       struct video_viewport vp;
 
@@ -823,7 +826,7 @@ static void d3d8_calculate_rect(void *data,
       float desired_aspect = video_driver_get_aspect_ratio();
 
 #if defined(HAVE_MENU)
-      if (settings->uints.video_aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
+      if (aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
       {
          video_viewport_t *custom = video_viewport_get_custom();
 
@@ -1155,11 +1158,11 @@ static bool d3d8_init_internal(d3d8_video_t *d3d,
    g_win32_resize_width  = info->width;
    g_win32_resize_height = info->height;
 
-   windowed_full   = settings->bools.video_windowed_fullscreen;
+   windowed_full         = settings->bools.video_windowed_fullscreen;
 
-   full_x          = (windowed_full || info->width  == 0) ?
+   full_x                = (windowed_full || info->width  == 0) ?
       (mon_rect.right  - mon_rect.left) : info->width;
-   full_y          = (windowed_full || info->height == 0) ?
+   full_y                = (windowed_full || info->height == 0) ?
       (mon_rect.bottom - mon_rect.top)  : info->height;
 
    RARCH_LOG("[D3D8]: Monitor size: %dx%d.\n",

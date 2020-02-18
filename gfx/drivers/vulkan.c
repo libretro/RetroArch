@@ -1119,7 +1119,8 @@ static void vulkan_init_readback(vk_t *vk)
     */
    settings_t *settings    = config_get_ptr();
    bool recording_enabled  = recording_is_enabled();
-   vk->readback.streamed   = settings->bools.video_gpu_record && recording_enabled;
+   bool video_gpu_record   = settings->bools.video_gpu_record;
+   vk->readback.streamed   = video_gpu_record && recording_enabled;
 
    if (!vk->readback.streamed)
       return;
@@ -1459,22 +1460,24 @@ static void vulkan_set_viewport(void *data, unsigned viewport_width,
       unsigned viewport_height, bool force_full, bool allow_rotate)
 {
    gfx_ctx_aspect_t aspect_data;
-   int x                  = 0;
-   int y                  = 0;
-   float device_aspect    = (float)viewport_width / viewport_height;
-   struct video_ortho ortho = {0, 1, 0, 1, -1, 1};
-   settings_t *settings   = config_get_ptr();
-   vk_t *vk               = (vk_t*)data;
-   unsigned width         = vk->video_width;
-   unsigned height        = vk->video_height;
+   int x                     = 0;
+   int y                     = 0;
+   float device_aspect       = (float)viewport_width / viewport_height;
+   struct video_ortho ortho  = {0, 1, 0, 1, -1, 1};
+   settings_t *settings      = config_get_ptr();
+   bool video_scale_integer  = settings->bools.video_scale_integer;
+   unsigned aspect_ratio_idx = settings->uints.video_aspect_ratio_idx;
+   vk_t *vk                  = (vk_t*)data;
+   unsigned width            = vk->video_width;
+   unsigned height           = vk->video_height;
 
-   aspect_data.aspect     = &device_aspect;
-   aspect_data.width      = viewport_width;
-   aspect_data.height     = viewport_height;
+   aspect_data.aspect        = &device_aspect;
+   aspect_data.width         = viewport_width;
+   aspect_data.height        = viewport_height;
 
    video_context_driver_translate_aspect(&aspect_data);
 
-   if (settings->bools.video_scale_integer && !force_full)
+   if (video_scale_integer && !force_full)
    {
       video_viewport_get_scaled_integer(&vk->vp,
             viewport_width, viewport_height,
@@ -1487,7 +1490,7 @@ static void vulkan_set_viewport(void *data, unsigned viewport_width,
       float desired_aspect = video_driver_get_aspect_ratio();
 
 #if defined(HAVE_MENU)
-      if (settings->uints.video_aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
+      if (aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
       {
          const struct video_viewport *custom = video_viewport_get_custom();
 
@@ -1918,7 +1921,8 @@ static bool vulkan_frame(void *data, const void *frame,
 #if defined(HAVE_MENU)
       if (vk->menu.enable)
       {
-         settings_t *settings = config_get_ptr();
+         settings_t *settings    = config_get_ptr();
+         bool menu_linear_filter = settings->bools.menu_linear_filter;
 
          menu_driver_frame(video_info);
 
@@ -1935,7 +1939,7 @@ static bool vulkan_frame(void *data, const void *frame,
             if (optimal->memory != VK_NULL_HANDLE)
                quad.texture = optimal;
 
-            if (settings->bools.menu_linear_filter)
+            if (menu_linear_filter)
             {
                quad.sampler = optimal->mipmap ?
                   vk->samplers.mipmap_linear : vk->samplers.linear;

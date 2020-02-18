@@ -360,14 +360,16 @@ static void vita2d_set_projection(vita_video_t *vita,
 static void vita2d_gfx_update_viewport(vita_video_t* vita,
       video_frame_info_t *video_info)
 {
-   int x                = 0;
-   int y                = 0;
-   float device_aspect  = ((float)PSP_FB_WIDTH) / PSP_FB_HEIGHT;
-   float width          = PSP_FB_WIDTH;
-   float height         = PSP_FB_HEIGHT;
-   settings_t *settings = config_get_ptr();
+   int x                     = 0;
+   int y                     = 0;
+   float device_aspect       = ((float)PSP_FB_WIDTH) / PSP_FB_HEIGHT;
+   float width               = PSP_FB_WIDTH;
+   float height              = PSP_FB_HEIGHT;
+   settings_t *settings      = config_get_ptr();
+   bool video_scale_integer  = settings->bools.video_scale_integer;
+   unsigned aspect_ratio_idx = settings->uints.video_aspect_ratio_idx;
 
-   if (settings->bools.video_scale_integer)
+   if (video_scale_integer)
    {
       video_viewport_get_scaled_integer(&vita->vp, PSP_FB_WIDTH,
             PSP_FB_HEIGHT, video_driver_get_aspect_ratio(), vita->keep_aspect);
@@ -385,7 +387,7 @@ static void vita2d_gfx_update_viewport(vita_video_t* vita,
          height = PSP_FB_WIDTH;
       }
 #if defined(HAVE_MENU)
-      if (settings->uints.video_aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
+      if (aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
       {
          x      = video_info->custom_vp_x;
          y      = video_info->custom_vp_y;
@@ -435,15 +437,16 @@ static void vita2d_gfx_update_viewport(vita_video_t* vita,
    }
    else
    {
-      vita->vp.x = vita->vp.y = 0;
-      vita->vp.width = width;
+      vita->vp.x      = 0;
+      vita->vp.y      = 0;
+      vita->vp.width  = width;
       vita->vp.height = height;
    }
 
-   vita->vp.width += vita->vp.width&0x1;
-   vita->vp.height += vita->vp.height&0x1;
+   vita->vp.width      += vita->vp.width&0x1;
+   vita->vp.height     += vita->vp.height&0x1;
 
-   vita->should_resize = false;
+   vita->should_resize  = false;
 
 }
 
@@ -451,18 +454,20 @@ static void vita2d_gfx_set_viewport(void *data, unsigned viewport_width,
       unsigned viewport_height, bool force_full, bool allow_rotate)
 {
    gfx_ctx_aspect_t aspect_data;
-   int x                    = 0;
-   int y                    = 0;
-   float device_aspect      = (float)viewport_width / viewport_height;
-   struct video_ortho ortho = {0, 1, 0, 1, -1, 1};
-   settings_t *settings     = config_get_ptr();
-   vita_video_t *vita       = (vita_video_t*)data;
+   int x                     = 0;
+   int y                     = 0;
+   float device_aspect       = (float)viewport_width / viewport_height;
+   struct video_ortho ortho  = {0, 1, 0, 1, -1, 1};
+   settings_t *settings      = config_get_ptr();
+   vita_video_t *vita        = (vita_video_t*)data;
+   bool video_scale_integer  = settings->bools.video_scale_integer;
+   unsigned aspect_ratio_idx = settings->uints.video_aspect_ratio_idx;
 
-   aspect_data.aspect       = &device_aspect;
-   aspect_data.width        = viewport_width;
-   aspect_data.height       = viewport_height;
+   aspect_data.aspect        = &device_aspect;
+   aspect_data.width         = viewport_width;
+   aspect_data.height        = viewport_height;
 
-   if (settings->bools.video_scale_integer && !force_full)
+   if (video_scale_integer && !force_full)
    {
       video_viewport_get_scaled_integer(&vita->vp,
             viewport_width, viewport_height,
@@ -475,7 +480,7 @@ static void vita2d_gfx_set_viewport(void *data, unsigned viewport_width,
       float desired_aspect = video_driver_get_aspect_ratio();
 
 #if defined(HAVE_MENU)
-      if (settings->uints.video_aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
+      if (aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
       {
          const struct video_viewport *custom = video_viewport_get_custom();
 

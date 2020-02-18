@@ -88,26 +88,32 @@ static void sdl_gfx_free(void *data)
    free(vid);
 }
 
-static void sdl_init_font(sdl_video_t *vid, const char *font_path, unsigned font_size)
+static void sdl_init_font(sdl_video_t *vid,
+      bool video_font_enable,
+      const char *path_font,
+      float video_font_size,
+      float msg_color_r,
+      float msg_color_g,
+      float msg_color_b
+      )
 {
    int r, g, b;
-   settings_t *settings = config_get_ptr();
 
-   if (!settings->bools.video_font_enable)
+   if (!video_font_enable)
       return;
 
    if (!font_renderer_create_default(
             &vid->font_driver, &vid->font,
-            *settings->paths.path_font ? settings->paths.path_font : NULL,
-            settings->floats.video_font_size))
+            *path_font ? path_font : NULL,
+            video_font_size))
    {
       RARCH_LOG("[SDL]: Could not initialize fonts.\n");
       return;
    }
 
-   r = settings->floats.video_msg_color_r * 255;
-   g = settings->floats.video_msg_color_g * 255;
-   b = settings->floats.video_msg_color_b * 255;
+   r = msg_color_r * 255;
+   g = msg_color_g * 255;
+   b = msg_color_b * 255;
 
    r = (r < 0) ? 0 : (r > 255 ? 255 : r);
    g = (g < 0) ? 0 : (g > 255 ? 255 : g);
@@ -118,33 +124,39 @@ static void sdl_init_font(sdl_video_t *vid, const char *font_path, unsigned font
    vid->font_b = b;
 }
 
-static void sdl_render_msg(sdl_video_t *vid, SDL_Surface *buffer,
-      const char *msg, unsigned width, unsigned height,
-      const SDL_PixelFormat *fmt)
+static void sdl_render_msg(
+      sdl_video_t *vid,
+      SDL_Surface *buffer,
+      const char *msg,
+      unsigned width,
+      unsigned height,
+      const SDL_PixelFormat *fmt,
+      float msg_pos_x,
+      float msg_pos_y
+      )
 {
    int x, y, msg_base_x, msg_base_y;
    unsigned rshift, gshift, bshift;
    const struct font_atlas *atlas = NULL;
-   settings_t           *settings = config_get_ptr();
 
    if (!vid->font)
       return;
 
-   atlas = vid->font_driver->get_atlas(vid->font);
+   atlas      = vid->font_driver->get_atlas(vid->font);
 
-   msg_base_x = settings->floats.video_msg_pos_x * width;
-   msg_base_y = (1.0f - settings->floats.video_msg_pos_y) * height;
+   msg_base_x = msg_pos_x * width;
+   msg_base_y = (1.0f - msg_pos_y) * height;
 
-   rshift = fmt->Rshift;
-   gshift = fmt->Gshift;
-   bshift = fmt->Bshift;
+   rshift     = fmt->Rshift;
+   gshift     = fmt->Gshift;
+   bshift     = fmt->Bshift;
 
    for (; *msg; msg++)
    {
       int glyph_width, glyph_height;
       int base_x, base_y, max_width, max_height;
-      uint32_t *out      = NULL;
-      const uint8_t *src = NULL;
+      uint32_t             *out      = NULL;
+      const uint8_t             *src = NULL;
       const struct font_glyph *glyph = vid->font_driver->get_glyph(vid->font, (uint8_t)*msg);
       if (!glyph)
          continue;
@@ -152,23 +164,23 @@ static void sdl_render_msg(sdl_video_t *vid, SDL_Surface *buffer,
       glyph_width  = glyph->width;
       glyph_height = glyph->height;
 
-      base_x = msg_base_x + glyph->draw_offset_x;
-      base_y = msg_base_y + glyph->draw_offset_y;
-      src    = atlas->buffer + glyph->atlas_offset_x
+      base_x       = msg_base_x + glyph->draw_offset_x;
+      base_y       = msg_base_y + glyph->draw_offset_y;
+      src          = atlas->buffer + glyph->atlas_offset_x
          + glyph->atlas_offset_y * atlas->width;
 
       if (base_x < 0)
       {
-         src -= base_x;
+         src         -= base_x;
          glyph_width += base_x;
-         base_x = 0;
+         base_x       = 0;
       }
 
       if (base_y < 0)
       {
-         src -= base_y * (int)atlas->width;
+         src          -= base_y * (int)atlas->width;
          glyph_height += base_y;
-         base_y = 0;
+         base_y        = 0;
       }
 
       max_width  = width - base_x;
@@ -182,22 +194,25 @@ static void sdl_render_msg(sdl_video_t *vid, SDL_Surface *buffer,
       if (glyph_height > max_height)
          glyph_height = max_height;
 
-      out = (uint32_t*)buffer->pixels + base_y * (buffer->pitch >> 2) + base_x;
+      out = (uint32_t*)buffer->pixels + base_y 
+         * (buffer->pitch >> 2) + base_x;
 
       for (y = 0; y < glyph_height; y++, src += atlas->width, out += buffer->pitch >> 2)
       {
          for (x = 0; x < glyph_width; x++)
          {
-            unsigned blend = src[x];
+            unsigned blend   = src[x];
             unsigned out_pix = out[x];
-            unsigned r = (out_pix >> rshift) & 0xff;
-            unsigned g = (out_pix >> gshift) & 0xff;
-            unsigned b = (out_pix >> bshift) & 0xff;
+            unsigned       r = (out_pix >> rshift) & 0xff;
+            unsigned       g = (out_pix >> gshift) & 0xff;
+            unsigned       b = (out_pix >> bshift) & 0xff;
 
-            unsigned out_r = (r * (256 - blend) + vid->font_r * blend) >> 8;
-            unsigned out_g = (g * (256 - blend) + vid->font_g * blend) >> 8;
-            unsigned out_b = (b * (256 - blend) + vid->font_b * blend) >> 8;
-            out[x] = (out_r << rshift) | (out_g << gshift) | (out_b << bshift);
+            unsigned   out_r = (r * (256 - blend) + vid->font_r * blend) >> 8;
+            unsigned   out_g = (g * (256 - blend) + vid->font_g * blend) >> 8;
+            unsigned   out_b = (b * (256 - blend) + vid->font_b * blend) >> 8;
+            out[x]           = (out_r << rshift) | 
+                               (out_g << gshift) |
+                               (out_b << bshift);
          }
       }
 
@@ -233,8 +248,10 @@ static void *sdl_gfx_init(const video_info_t *video,
 {
    unsigned full_x, full_y;
    const SDL_VideoInfo *video_info = NULL;
-   sdl_video_t *vid = NULL;
-   settings_t *settings = config_get_ptr();
+   sdl_video_t                *vid = NULL;
+   settings_t            *settings = config_get_ptr();
+   const char *path_font           = settings->paths.path_font;
+   float video_font_size           = settings->floats.video_font_size;
 
 #ifdef HAVE_X11
    XInitThreads();
@@ -295,7 +312,12 @@ static void *sdl_gfx_init(const video_info_t *video,
       }
    }
 
-   sdl_init_font(vid, settings->paths.path_font, settings->floats.video_font_size);
+   sdl_init_font(vid,
+         settings->bools.video_font_enable
+         path_font, video_font_size,
+         settings->floats.video_msg_color_r,
+         settings->floats.video_msg_color_g,
+         settings->floats.video_msg_color_b);
 
    vid->scaler.scaler_type      = video->smooth ? SCALER_TYPE_BILINEAR : SCALER_TYPE_POINT;
    vid->scaler.in_fmt           = video->rgb32 ? SCALER_FMT_ARGB8888 : SCALER_FMT_RGB565;
@@ -373,7 +395,9 @@ static bool sdl_gfx_frame(void *data, const void *frame, unsigned width,
 
    if (msg)
       sdl_render_msg(vid, vid->screen,
-            msg, vid->screen->w, vid->screen->h, vid->screen->format);
+            msg, vid->screen->w, vid->screen->h, vid->screen->format,
+            video_info->font_msg_pos_x,
+            video_info->font_msg_pos_y);
 
    if (SDL_MUSTLOCK(vid->screen))
       SDL_UnlockSurface(vid->screen);

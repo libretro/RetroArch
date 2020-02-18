@@ -1127,14 +1127,15 @@ static void gl1_set_texture_frame(void *data,
       const void *frame, bool rgb32, unsigned width, unsigned height,
       float alpha)
 {
-   settings_t *settings = config_get_ptr();
-   unsigned pitch = width * 2;
-   gl1_t *gl1 = (gl1_t*)data;
+   settings_t *settings    = config_get_ptr();
+   bool menu_linear_filter = settings->bools.menu_linear_filter;
+   unsigned       pitch    = width * 2;
+   gl1_t              *gl1 = (gl1_t*)data;
 
    if (!gl1)
       return;
 
-   gl1->menu_smooth = settings->bools.menu_linear_filter;
+   gl1->menu_smooth        = menu_linear_filter;
 
    gl1_context_bind_hw_render(gl1, false);
 

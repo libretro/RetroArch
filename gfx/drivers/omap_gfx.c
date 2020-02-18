@@ -574,6 +574,7 @@ static int omapfb_init(omapfb_data_t *pdata, unsigned bpp)
    const char *fbname   = omapfb_get_fb_device();
    int             fd   = open(fbname, O_RDWR);
    settings_t *settings = config_get_ptr();
+   bool video_vsync     = settings->bools.video_vsync;
 
    if (fd == -1)
    {
@@ -597,7 +598,7 @@ static int omapfb_init(omapfb_data_t *pdata, unsigned bpp)
    /* always use triple buffering to reduce chance of tearing */
    pdata->bpp           = bpp;
    pdata->num_pages     = 3;
-   pdata->sync          = settings->bools.video_vsync;
+   pdata->sync          = video_vsync;
 
    return 0;
 }
@@ -822,21 +823,27 @@ static void omap_gfx_free(void *data)
 static void omap_init_font(omap_video_t *vid, const char *font_path, unsigned font_size)
 {
    int r, g, b;
-   settings_t *settings = config_get_ptr();
+   settings_t *settings   = config_get_ptr();
+   bool video_font_enable = settings->bools.video_font_enable;
+   const char *path_font  = settings->paths.path_font;
+   float video_font_size  = settings->floats.video_font_size;
+   float msg_color_r      = settings->floats.video_msg_color_r;
+   float msg_color_g      = settings->floats.video_msg_color_g;
+   float msg_color_b      = settings->floats.video_msg_color_b;
 
-   if (!settings->bools.video_font_enable)
+   if (!video_font_enable)
       return;
 
    if (!(font_renderer_create_default(&vid->font_driver, &vid->font,
-               *settings->paths.path_font ? settings->paths.path_font : NULL, settings->video.font_size)))
+               *path_font ? path_font : NULL, video_font_size)))
    {
       RARCH_LOG("[video_omap]: font init failed\n");
       return;
    }
 
-   r = settings->floats.video_msg_color_r * 255;
-   g = settings->floats.video_msg_color_g * 255;
-   b = settings->floats.video_msg_color_b * 255;
+   r = msg_color_r * 255;
+   g = msg_color_g * 255;
+   b = msg_color_b * 255;
 
    r = (r < 0) ? 0 : (r > 255 ? 255 : r);
    g = (g < 0) ? 0 : (g > 255 ? 255 : g);
@@ -851,8 +858,10 @@ static void omap_render_msg(omap_video_t *vid, const char *msg)
 {
    const struct font_atlas *atlas = NULL;
    settings_t *settings = config_get_ptr();
-   int msg_base_x = settings->floats.video_msg_pos_x * vid->width;
-   int msg_base_y = (1.0 - settings->floats.video_msg_pos_y) * vid->height;
+   float msg_pos_x      = settings->floats.video_msg_pos_x;
+   float msg_pos_y      = settings->floats.video_msg_pos_y;
+   int msg_base_x       = msg_pos_x * vid->width;
+   int msg_base_y       = (1.0 - msg_pos_y) * vid->height;
 
    if (!vid->font)
       return;

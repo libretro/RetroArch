@@ -786,6 +786,7 @@ static void gl2_create_fbo_texture(gl_t *gl,
    bool smooth                   = false;
    settings_t *settings          = config_get_ptr();
    bool video_smooth             = settings->bools.video_smooth;
+   bool force_srgb_disable       = settings->bools.video_force_srgb_disable;
    GLuint base_filt              = video_smooth ? GL_LINEAR : GL_NEAREST;
    GLuint base_mip_filt          = video_smooth ?
       GL_LINEAR_MIPMAP_LINEAR : GL_NEAREST_MIPMAP_NEAREST;
@@ -837,7 +838,7 @@ static void gl2_create_fbo_texture(gl_t *gl,
                RARCH_ERR("[GL]: sRGB FBO was requested, but it is not supported. Falling back to UNORM. Result may have banding!\n");
       }
 
-      if (settings->bools.video_force_srgb_disable)
+      if (force_srgb_disable)
          srgb_fbo = false;
 
       if (srgb_fbo && chain->has_srgb_fbo)
@@ -1629,6 +1630,7 @@ static void gl2_renderchain_resolve_extensions(gl_t *gl,
       const video_info_t *video)
 {
    settings_t *settings             = config_get_ptr();
+   bool force_srgb_disable          = settings->bools.video_force_srgb_disable;
 
    if (!chain)
       return;
@@ -1638,7 +1640,7 @@ static void gl2_renderchain_resolve_extensions(gl_t *gl,
    /* GLES3 has unpack_subimage and sRGB in core. */
    chain->has_srgb_fbo_gles3        = gl_check_capability(GL_CAPS_SRGB_FBO_ES3);
 
-   if (!settings->bools.video_force_srgb_disable)
+   if (!force_srgb_disable)
       chain->has_srgb_fbo           = gl_check_capability(GL_CAPS_SRGB_FBO);
 
    /* Use regular textures if we use HW render. */
@@ -2259,16 +2261,15 @@ static void gl2_set_texture_frame(void *data,
       const void *frame, bool rgb32, unsigned width, unsigned height,
       float alpha)
 {
-   enum texture_filter_type menu_filter;
    settings_t *settings            = config_get_ptr();
+   enum texture_filter_type 
+      menu_filter                  = settings->bools.menu_linear_filter ? TEXTURE_FILTER_LINEAR : TEXTURE_FILTER_NEAREST;
    unsigned base_size              = rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
    gl_t *gl                        = (gl_t*)data;
    if (!gl)
       return;
 
    gl2_context_bind_hw_render(gl, false);
-
-   menu_filter = settings->bools.menu_linear_filter ? TEXTURE_FILTER_LINEAR : TEXTURE_FILTER_NEAREST;
 
    if (!gl->menu_texture)
       glGenTextures(1, &gl->menu_texture);
@@ -2308,6 +2309,7 @@ static void gl2_render_osd_background(
    float *dummy            = (float*)calloc(4 * vertices_total, sizeof(float));
    float *verts            = (float*)malloc(2 * vertices_total * sizeof(float));
    settings_t *settings    = config_get_ptr();
+   float video_font_size   = settings->floats.video_font_size;
    int msg_width           =
       font_driver_get_message_width(NULL, msg, (unsigned)strlen(msg), 1.0f);
 
@@ -2315,9 +2317,7 @@ static void gl2_render_osd_background(
    float x                 = video_info->font_msg_pos_x;
    float y                 = video_info->font_msg_pos_y;
    float width             = msg_width / (float)video_info->width;
-   float height            =
-      settings->floats.video_font_size / (float)video_info->height;
-
+   float height            = video_font_size / (float)video_info->height;
    float x2                = 0.005f; /* extend background around text */
    float y2                = 0.005f;
 
@@ -3257,6 +3257,7 @@ static void gl2_set_nonblock_state(
 static bool gl2_resolve_extensions(gl_t *gl, const char *context_ident, const video_info_t *video)
 {
    settings_t *settings          = config_get_ptr();
+   bool video_hard_sync          = settings->bools.video_hard_sync;
 
    /* have_es2_compat - GL_RGB565 internal format support.
     * Even though ES2 support is claimed, the format
@@ -3273,7 +3274,7 @@ static bool gl2_resolve_extensions(gl_t *gl, const char *context_ident, const vi
    gl->support_unpack_row_length = gl_check_capability(GL_CAPS_UNPACK_ROW_LENGTH);
    gl->have_sync                 = gl_check_capability(GL_CAPS_SYNC);
 
-   if (gl->have_sync && settings->bools.video_hard_sync)
+   if (gl->have_sync && video_hard_sync)
       RARCH_LOG("[GL]: Using ARB_sync to reduce latency.\n");
 
    video_driver_unset_rgba();
@@ -4008,12 +4009,13 @@ static void gl2_update_tex_filter_frame(gl_t *gl)
    enum gfx_wrap_type wrap_type;
    bool smooth                       = false;
    settings_t *settings              = config_get_ptr();
+   bool video_smooth                 = settings->bools.video_smooth;
 
    gl2_context_bind_hw_render(gl, false);
 
    if (!gl->shader->filter_type(gl->shader_data,
             1, &smooth))
-      smooth             = settings->bools.video_smooth;
+      smooth             = video_smooth;
 
    mip_level             = 1;
    wrap_type             = gl->shader->wrap_type(gl->shader_data, 1);

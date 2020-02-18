@@ -291,20 +291,23 @@ static void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines,
    int tmpOrigin;
    float refresh_rate;
    bool progressive;
-   unsigned modetype, viHeightMultiplier, viWidth, tvmode,
-            max_width, i;
-   size_t new_fb_pitch    = 0;
-   unsigned new_fb_width  = 0;
-   unsigned new_fb_height = 0;
-   float y_scale          = 0.0f;
-   uint16_t xfbWidth      = 0;
-   uint16_t xfbHeight     = 0;
-   gx_video_t *gx         = (gx_video_t*)data;
-   settings_t *settings   = config_get_ptr();
+   unsigned modetype, tvmode, max_width, i;
+   size_t new_fb_pitch         = 0;
+   unsigned new_fb_width       = 0;
+   unsigned new_fb_height      = 0;
+   float y_scale               = 0.0f;
+   uint16_t xfbWidth           = 0;
+   uint16_t xfbHeight          = 0;
+   gx_video_t *gx              = (gx_video_t*)data;
+   settings_t *settings        = config_get_ptr();
+   unsigned viHeightMultiplier = 1;
+   bool vfilter                = settings->bools.video_vfilter;
+   unsigned viWidth            = settings->uints.video_viwidth;
+   unsigned rgui_aspect_ratio  = settings->uints.menu_rgui_aspect_ratio;
 
    /* stop vsync callback */
    VIDEO_SetPostRetraceCallback(NULL);
-   g_draw_done = false;
+   g_draw_done                 = false;
    /* wait for next even field */
    /* this prevents screen artifacts when switching
     * between interlaced & non-interlaced modes */
@@ -313,8 +316,6 @@ static void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines,
 
    VIDEO_SetBlack(true);
    VIDEO_Flush();
-   viHeightMultiplier = 1;
-   viWidth            = settings->uints.video_viwidth;
 
 #if defined(HW_RVL)
    progressive = CONF_GetProgressiveScan() > 0 && VIDEO_HaveComponentCable();
@@ -401,22 +402,26 @@ static void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines,
    gx_used_system_xOrigin = gx_system_xOrigin;
    if(gx_used_system_xOrigin > 0)
    {
-      while(viWidth + gx_used_system_xOrigin > 720) gx_used_system_xOrigin--;
+      while (viWidth + gx_used_system_xOrigin > 720)
+         gx_used_system_xOrigin--;
    }
    else if(gx_used_system_xOrigin < 0)
    {
-      while(viWidth + gx_used_system_xOrigin > 720) gx_used_system_xOrigin++;
+      while (viWidth + gx_used_system_xOrigin > 720)
+         gx_used_system_xOrigin++;
    }
 
    tmpOrigin = (max_width - gx_mode.viWidth) / 2;
 
    if(gx_system_xOrigin > 0)
    {
-      while(!gx_isValidXOrigin(tmpOrigin)) tmpOrigin--;
+      while (!gx_isValidXOrigin(tmpOrigin))
+         tmpOrigin--;
    }
    else if(gx_system_xOrigin < 0)
    {
-      while(!gx_isValidXOrigin(tmpOrigin)) tmpOrigin++;
+      while (!gx_isValidXOrigin(tmpOrigin))
+         tmpOrigin++;
    }
 
    gx_mode.viXOrigin = gx_xOrigin = tmpOrigin;
@@ -424,20 +429,27 @@ static void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines,
       (max_height - gx_mode.viHeight) / (2 * viHeightMultiplier);
 
    gx_xOriginNeg = 0, gx_xOriginPos = 0;
-   while(gx_isValidXOrigin(gx_mode.viXOrigin+(gx_xOriginNeg-1))) gx_xOriginNeg--;
-   while(gx_isValidXOrigin(gx_mode.viXOrigin+(gx_xOriginPos+1))) gx_xOriginPos++;
-   gx_yOriginNeg = 0, gx_yOriginPos = 0;
-   while(gx_isValidYOrigin(gx_mode.viYOrigin+(gx_yOriginNeg-1))) gx_yOriginNeg--;
-   while(gx_isValidYOrigin(gx_mode.viYOrigin+(gx_yOriginPos+1))) gx_yOriginPos++;
 
-   gx_mode.xfbMode = modetype == VI_INTERLACE ? VI_XFBMODE_DF : VI_XFBMODE_SF;
+   while (gx_isValidXOrigin(gx_mode.viXOrigin+(gx_xOriginNeg-1)))
+      gx_xOriginNeg--;
+   while (gx_isValidXOrigin(gx_mode.viXOrigin+(gx_xOriginPos+1)))
+      gx_xOriginPos++;
+   gx_yOriginNeg = 0, gx_yOriginPos = 0;
+   while (gx_isValidYOrigin(gx_mode.viYOrigin+(gx_yOriginNeg-1)))
+      gx_yOriginNeg--;
+   while (gx_isValidYOrigin(gx_mode.viYOrigin+(gx_yOriginPos+1)))
+      gx_yOriginPos++;
+
+   gx_mode.xfbMode         = (modetype == VI_INTERLACE) 
+      ? VI_XFBMODE_DF 
+      : VI_XFBMODE_SF;
    gx_mode.field_rendering = GX_FALSE;
-   gx_mode.aa = GX_FALSE;
+   gx_mode.aa              = GX_FALSE;
 
    for (i = 0; i < 12; i++)
       gx_mode.sample_pattern[i][0] = gx_mode.sample_pattern[i][1] = 6;
 
-   if (modetype != VI_NON_INTERLACE && settings->bools.video_vfilter)
+   if (modetype != VI_NON_INTERLACE && vfilter)
    {
       gx_mode.vfilter[0] = 8;
       gx_mode.vfilter[1] = 8;
@@ -475,7 +487,7 @@ static void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines,
     *    424 since this is the nearest to the RGUI 'standard'
     *    for 16:9 aspect ratios which is supported by the Wii
     *    - i.e. last two bits of value must be zero, so 426->424) */
-   switch (settings->uints.menu_rgui_aspect_ratio)
+   switch (rgui_aspect_ratio)
    {
       case RGUI_ASPECT_RATIO_16_9:
       case RGUI_ASPECT_RATIO_16_9_CENTRE:
@@ -605,15 +617,14 @@ static void setup_video_mode(gx_video_t *gx)
    gx_set_video_mode(gx, width, height, true);
 }
 
-static void init_texture(void *data, unsigned width, unsigned height)
+static void init_texture(void *data, unsigned width, unsigned height,
+      unsigned g_filter)
 {
    size_t fb_pitch;
    unsigned fb_width, fb_height;
    gx_video_t *gx       = (gx_video_t*)data;
    GXTexObj *fb_ptr   	= (GXTexObj*)&g_tex.obj;
    GXTexObj *menu_ptr 	= (GXTexObj*)&menu_tex.obj;
-   settings_t *settings = config_get_ptr();
-   unsigned g_filter    = settings->bools.video_smooth ? GX_LINEAR : GX_NEAR;
 
    width               &= ~3;
    height              &= ~3;
@@ -632,10 +643,10 @@ static void init_texture(void *data, unsigned width, unsigned height)
    GX_InvalidateTexAll();
 }
 
-static void init_vtx(void *data, const video_info_t *video)
+static void init_vtx(gx_video_t *gx, const video_info_t *video,
+      bool video_smooth)
 {
    Mtx44 m;
-   gx_video_t *gx      = (gx_video_t*)data;
    uint32_t level      = 0;
    _CPU_ISR_Disable(level);
    referenceRetraceCount = retraceCount;
@@ -696,7 +707,8 @@ static void init_vtx(void *data, const video_info_t *video)
    gx->scale = video->input_scale;
    gx->should_resize = true;
 
-   init_texture(data, g_tex.width, g_tex.height);
+   init_texture(data, g_tex.width, g_tex.height,
+         video_smooth ? GX_LINEAR : GX_NEAR);
    GX_Flush();
 }
 
@@ -763,9 +775,10 @@ static void gx_efb_screenshot(void)
 static void *gx_init(const video_info_t *video,
       input_driver_t **input, void **input_data)
 {
-   settings_t *settings = config_get_ptr();
    void *gxinput        = NULL;
+   settings_t *settings = config_get_ptr();
    gx_video_t *gx       = (gx_video_t*)calloc(1, sizeof(gx_video_t));
+   bool video_smooth    = settings->bools.video_smooth;
    if (!gx)
       return NULL;
 
@@ -778,7 +791,7 @@ static void *gx_init(const video_info_t *video,
    g_vsync = video->vsync;
 
    setup_video_mode(gx);
-   init_vtx(gx, video);
+   init_vtx(gx, video, video_smooth);
    build_disp_list();
 
    gx->vp.full_width  = gx_mode.fbWidth;
@@ -920,27 +933,26 @@ static void convert_texture32(const uint32_t *_src, uint32_t *_dst,
    }
 }
 
-static void gx_resize(void *data, settings_t *settings)
+static void gx_resize(gx_video_t *gx,
+      bool video_smooth,
+      unsigned aspect_ratio_idx,
+      unsigned overscan_corr_top,
+      unsigned overscan_corr_bottom)
 {
    int gamma;
    unsigned degrees;
-   unsigned width, height;
    Mtx44 m1, m2;
    float top = 1, bottom = -1, left = -1, right = 1;
    int x = 0, y = 0;
-   gx_video_t                   *gx = (gx_video_t*)data;
    const global_t           *global = global_get_ptr();
-
-   if (!gx || !settings)
-      return;
-
-   width  = gx->vp.full_width;
-   height = gx->vp.full_height;
+   unsigned width                   = gx->vp.full_width;
+   unsigned height                  = gx->vp.full_height;
 
 #ifdef HW_RVL
    VIDEO_SetTrapFilter(global->console.softfilter_enable);
    gamma = global->console.screen.gamma_correction;
-   if(gamma == 0) gamma = 10; //default 1.0 gamma value
+   if(gamma == 0)
+      gamma = 10; /* default 1.0 gamma value */
    VIDEO_SetGamma(gamma);
 #else
 	gamma = global->console.screen.gamma_correction;
@@ -957,7 +969,7 @@ static void gx_resize(void *data, settings_t *settings)
             g_orientation == ORIENTATION_FLIPPED_ROTATED)
          desired_aspect = 1.0 / desired_aspect;
 
-      if (settings->uints.video_aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
+      if (aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
       {
          struct video_viewport *custom_vp = video_viewport_get_custom();
 
@@ -1005,20 +1017,21 @@ static void gx_resize(void *data, settings_t *settings)
    }
 
    /* Overscan correction */
-   if ((settings->uints.video_overscan_correction_top > 0) ||
-       (settings->uints.video_overscan_correction_bottom > 0))
+   if ((overscan_corr_top > 0) ||
+       (overscan_corr_bottom > 0))
    {
       float current_aspect = (float)width / (float)height;
-      int new_height       = height - (settings->uints.video_overscan_correction_top +
-                                       settings->uints.video_overscan_correction_bottom);
+      int new_height       = height - 
+         (overscan_corr_top +
+          overscan_corr_bottom);
       int new_width        = (int)((new_height * current_aspect) + 0.5f);
 
       if ((new_height > 0) && (new_width > 0))
       {
-         x += (int)((float)(width - new_width) * 0.5f);
-         y += (int)settings->uints.video_overscan_correction_top;
-         width = (unsigned)new_width;
-         height = (unsigned)new_height;
+         x      += (int)((float)(width - new_width) * 0.5f);
+         y      += (int)overscan_corr_top;
+         width   = (unsigned)new_width;
+         height  = (unsigned)new_height;
       }
    }
 
@@ -1086,7 +1099,8 @@ static void gx_resize(void *data, settings_t *settings)
    c_guMtxConcat(m1, m2, m1);
    GX_LoadPosMtxImm(m1, GX_PNMTX0);
 
-   init_texture(data, 4, 4);
+   init_texture(data, 4, 4,
+         video_smooth ? GX_LINEAR : GX_NEAR);
    gx_old_width = gx_old_height = 0;
    gx->should_resize = false;
 }
@@ -1538,6 +1552,8 @@ static bool gx_frame(void *data, const void *frame,
    gx_video_t *gx                     = (gx_video_t*)data;
    u8                       clear_efb = GX_FALSE;
    uint32_t level                     = 0;
+   unsigned overscan_corr_top         = settings->uints.video_overscan_correction_top;
+   unsigned overscan_corr_bottom      = settings->uints.video_overscan_correction_bottom;
 
    fps_text_buf[0]                    = '\0';
 
@@ -1547,17 +1563,21 @@ static bool gx_frame(void *data, const void *frame,
    if (!frame)
       width = height = 4; /* draw a black square in the background */
 
-   if ((gx->overscan_correction_top != settings->uints.video_overscan_correction_top) ||
-       (gx->overscan_correction_bottom != settings->uints.video_overscan_correction_bottom))
+   if ((gx->overscan_correction_top    != overscan_corr_top) ||
+       (gx->overscan_correction_bottom != overscan_corr_bottom))
    {
-      gx->overscan_correction_top = settings->uints.video_overscan_correction_top;
-      gx->overscan_correction_bottom = settings->uints.video_overscan_correction_bottom;
-      gx->should_resize = true;
+      gx->overscan_correction_top    = overscan_corr_top;
+      gx->overscan_correction_bottom = overscan_corr_bottom;
+      gx->should_resize              = true;
    }
 
    if(gx->should_resize)
    {
-      gx_resize(gx, settings);
+      gx_resize(gx,
+            settings->bools.video_smooth,
+            settings->uints.video_aspect_ratio_idx,
+            settings->uints.video_overscan_correction_top,
+            settings->uints.video_overscan_correction_bottom);
       clear_efb = GX_TRUE;
    }
 
@@ -1569,7 +1589,8 @@ static bool gx_frame(void *data, const void *frame,
 
    if (width != gx_old_width || height != gx_old_height)
    {
-      init_texture(data, width, height);
+      init_texture(data, width, height,
+            settings->bools.video_smooth ? GX_LINEAR : GX_NEAR);
       gx_old_width = width;
       gx_old_height = height;
    }

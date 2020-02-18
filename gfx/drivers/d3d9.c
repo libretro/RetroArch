@@ -278,15 +278,16 @@ static bool d3d9_init_chain(d3d9_video_t *d3d, const video_info_t *video_info)
       {
          unsigned i;
          settings_t *settings = config_get_ptr();
+         bool video_smooth    = settings->bools.video_smooth;
 
          for (i = 0; i < d3d->shader.luts; i++)
          {
             if (!d3d->renderchain_driver->add_lut(
                      d3d->renderchain_data,
                      d3d->shader.lut[i].id, d3d->shader.lut[i].path,
-                     d3d->shader.lut[i].filter == RARCH_FILTER_UNSPEC ?
-                     settings->bools.video_smooth :
-                     (d3d->shader.lut[i].filter == RARCH_FILTER_LINEAR)))
+                     d3d->shader.lut[i].filter == RARCH_FILTER_UNSPEC 
+                     ? video_smooth 
+                     : (d3d->shader.lut[i].filter == RARCH_FILTER_LINEAR)))
             {
                RARCH_ERR("[D3D9]: Failed to init LUTs.\n");
                return false;
@@ -525,8 +526,9 @@ static void d3d9_overlay_render(d3d9_video_t *d3d,
 
    if (!force_linear)
    {
-      settings_t *settings = config_get_ptr();
-      if (!settings->bools.menu_linear_filter)
+      settings_t *settings    = config_get_ptr();
+      bool menu_linear_filter = settings->bools.menu_linear_filter;
+      if (!menu_linear_filter)
          filter_type       = D3DTEXF_POINT;
    }
 
@@ -664,9 +666,10 @@ void d3d9_make_d3dpp(void *data,
 
    if (info->vsync)
    {
-      settings_t *settings        = config_get_ptr();
+      settings_t *settings         = config_get_ptr();
+      unsigned video_swap_interval = settings->uints.video_swap_interval;
 
-      switch (settings->uints.video_swap_interval)
+      switch (video_swap_interval)
       {
          default:
          case 1:
@@ -769,13 +772,14 @@ static void d3d9_calculate_rect(void *data,
    float device_aspect   = (float)*width / *height;
    d3d9_video_t *d3d     = (d3d9_video_t*)data;
    settings_t *settings  = config_get_ptr();
+   bool scale_integer    = settings->bools.video_scale_integer;
 
    video_driver_get_size(width, height);
 
    *x                   = 0;
    *y                   = 0;
 
-   if (settings->bools.video_scale_integer && !force_full)
+   if (scale_integer && !force_full)
    {
       struct video_viewport vp;
 
