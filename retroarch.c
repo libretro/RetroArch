@@ -4058,10 +4058,10 @@ static bool command_set_shader(const char *arg)
       }
    }
 
-   return retroarch_apply_shader(type, arg, true);
-#else
-   return false;
+   if (retroarch_apply_shader(type, arg, true))
+      return true;
 #endif
+   return false;
 }
 
 #if defined(HAVE_COMMAND)
@@ -4081,10 +4081,12 @@ static bool command_read_ram(const char *arg)
 
    if (sscanf(arg, "%x %u", &addr, &nbytes) != 2)
       return true;
-   alloc_size = 40 + nbytes * 3; /* We allocate more than needed, saving 20 bytes is not really relevant */
-   reply      = (char*) malloc(alloc_size);
-   reply[0]   = '\0';
-   reply_at   = reply + snprintf(reply, alloc_size - 1, SMY_CMD_STR " %x", addr);
+   /* We allocate more than needed, saving 20 bytes is not really relevant */
+   alloc_size              = 40 + nbytes * 3;
+   reply                   = (char*)malloc(alloc_size);
+   reply[0]                = '\0';
+   reply_at                = reply + snprintf(
+         reply, alloc_size - 1, SMY_CMD_STR " %x", addr);
 
    if ((data = rcheevos_patch_address(addr, rcheevos_get_console())))
    {
@@ -4108,7 +4110,8 @@ static bool command_write_ram(const char *arg)
 {
    unsigned nbytes      = 0;
    unsigned int addr    = strtoul(arg, (char**)&arg, 16);
-   uint8_t *data        = (uint8_t *)rcheevos_patch_address(addr, rcheevos_get_console());
+   uint8_t *data        = (uint8_t *)rcheevos_patch_address(
+         addr, rcheevos_get_console());
 
    if (!data)
       return false;
