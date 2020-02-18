@@ -256,7 +256,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_ACCOUNTS_LIST_END,
-    "Ponto Final da Lista de Contas"
+    "Fim da Lista de Contas"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_ACCOUNTS_RETRO_ACHIEVEMENTS,
@@ -336,7 +336,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_AUDIO_MAX_TIMING_SKEW,
-    "Desvio Máximo de Tempo do Áudio"
+    "Variação Máxima da Sincronia de Áudio"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_AUDIO_MUTE,
@@ -344,11 +344,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_RATE,
-    "Taxa da Saída de Áudio (Hz)"
+    "Frequência da Saída de Áudio (Hz)"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_AUDIO_RATE_CONTROL_DELTA,
-    "Controle Dinâmico da Taxa de Áudio"
+    "Controle Dinâmico da Frequência de Áudio"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,
@@ -368,15 +368,15 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_EXCLUSIVE_MODE,
-    "WASAPI Modo Exclusivo"
+    "Modo WASAPI Exclusivo"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_FLOAT_FORMAT,
-    "WASAPI Formato de Ponto Flutuante"
+    "Formato WASAPI de Ponto Flutuante"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_SH_BUFFER_LENGTH,
-    "WASAPI Tamanho do Buffer Compartilhado"
+    "Tamanho do Buffer Compartilhado de WASAPI"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_AUTOSAVE_INTERVAL,
@@ -384,7 +384,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_AUTO_OVERRIDES_ENABLE,
-    "Carrega Automaticamente Arquivos de Redefinição"
+    "Carrega Automaticamente Arquivos de Personalização"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_AUTO_REMAPS_ENABLE,
@@ -918,7 +918,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_AUTO,
-    "Escala Automática nos Widgets do Menu"
+    "Escala Automática nos Widgets Gráficos"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_AUTO,
@@ -926,11 +926,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_FACTOR,
-    "Substituição da Escala do Widget do Menu"
+    "Substituição da Escala dos Widgets Gráficos"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_FACTOR,
-    "Aplica uma substituição manual da escala ao desenhar os widgets do menu. Aplica-se apenas quando 'Escala Automática nos Widgets do Menu' está desativado. Pode ser usado para aumentar ou diminuir o tamanho das notificações, indicadores e controles decorados independentemente do próprio menu."
+    "Aplica uma substituição manual da escala ao desenhar os widgets do menu. Aplica-se apenas quando 'Escala Automática nos Widgets Gráficos' está desativado. Pode ser usado para aumentar ou diminuir o tamanho das notificações, indicadores e controles decorados independentemente do próprio menu."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS,
@@ -5358,11 +5358,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_OVERRIDES_ERROR_SAVING,
-    "Erro em salvar as redefinições."
+    "Erro em salvar as personalizações."
     )
 MSG_HASH(
     MSG_OVERRIDES_SAVED_SUCCESSFULLY,
-    "Redefinições salvas com sucesso."
+    "Personalizações salvas com sucesso."
     )
 MSG_HASH(
     MSG_PAUSED,
@@ -6584,15 +6584,15 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_AUTO_REMAPS_ENABLE,
-    "Habilita por padrão controles personalizados na inicialização."
+    "Carrega os controles personalizados na inicialização."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_AUTO_OVERRIDES_ENABLE,
-    "Habilita por padrão configuração personalizada na inicialização."
+    "Carrega a configuração personalizada na inicialização."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_GAME_SPECIFIC_OPTIONS,
-    "Habilita por padrão opções de núcleo personalizadas na inicialização."
+    "Carrega a configuração de núcleos personalizada por padrão na inicialização."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CORE_ENABLE,
@@ -7451,19 +7451,19 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,
-    "Exibir 'Salvar Redefinição de Núcleo'"
+    "Exibir 'Salvar Personalização de Núcleo'"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,
-    "Exibi ou oculta a opção 'Salvar Redefinição de Núcleo'."
+    "Exibi ou oculta a opção 'Salvar Personalização de Núcleo'."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES,
-    "Exibir 'Salvar Redefinição de Jogo'"
+    "Exibir 'Salvar Personalização de Jogo'"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES,
-    "Exibi ou oculta a opção 'Salvar Redefinição de Jogo'."
+    "Exibi ou oculta a opção 'Salvar Personalização de Jogo'."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_INFORMATION,
@@ -7991,7 +7991,7 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_SCAN_FINISHED,
     "Verificação Terminada.<br><br>\n"
-    "Para que o conteúdo seja verificado corretamente, você deve em ordem:\n"
+    "Para que o conteúdo seja analisado corretamente, você deve em ordem:\n"
     "<ul><li>ter um núcleo compatível já baixado</li>\n"
     "<li>ter os \"Arquivos de Informação de Núcleo\" atualizados via Atualizador On-line</li>\n"
     "<li>ter a \"Base de Dados\" atualizada via Atualizador On-line</li>\n"
@@ -9483,7 +9483,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_WIDGETS_ENABLE,
-    "Widgets do Menu"
+    "Widgets Gráficos"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_SHADERS_ENABLE,
@@ -10377,7 +10377,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_SETTINGS,
-    "Altera as configurações das amostras do áudio."
+    "Altera as configurações das reamostras do áudio."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_MENU_SETTINGS,
