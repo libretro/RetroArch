@@ -12294,7 +12294,8 @@ static bool setting_append_list(
 
          START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
-         if (string_is_not_equal(settings->arrays.menu_driver, "rgui"))
+         if (string_is_not_equal(settings->arrays.menu_driver, "rgui") &&
+             string_is_not_equal(settings->arrays.menu_driver, "ozone"))
          {
             CONFIG_PATH(
                   list, list_info,
@@ -12325,7 +12326,10 @@ static bool setting_append_list(
             (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
             menu_settings_list_current_add_range(list, list_info, 0.0, 1.0, 0.010, true, true);
             SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+         }
 
+         if (string_is_not_equal(settings->arrays.menu_driver, "rgui"))
+         {
             CONFIG_FLOAT(
                   list, list_info,
                   &settings->floats.menu_framebuffer_opacity,

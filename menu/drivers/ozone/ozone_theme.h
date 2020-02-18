@@ -151,8 +151,10 @@ extern unsigned ozone_themes_count;
 extern unsigned last_color_theme;
 extern bool last_use_preferred_system_color_theme;
 extern ozone_theme_t *ozone_default_theme;
+extern float last_framebuffer_opacity;
 
 void ozone_set_color_theme(ozone_handle_t *ozone, unsigned color_theme);
 unsigned ozone_get_system_theme(void);
+void ozone_set_background_running_opacity(ozone_handle_t *ozone, float framebuffer_opacity);
 
 #endif
