@@ -589,9 +589,6 @@ bool gfx_thumbnail_update_path(
    content_dir[0]    = '\0';
    
    /* Sundry error checking */
-   if (!settings)
-      return false;
-   
    if (string_is_empty(dir_thumbnails))
       return false;
    
