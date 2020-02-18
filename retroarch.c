@@ -20590,6 +20590,7 @@ static void video_driver_set_viewport_square_pixel(void)
    struct retro_game_geometry *geom  = &video_driver_av_info.geometry;
    unsigned width                    = geom->base_width;
    unsigned height                   = geom->base_height;
+   unsigned int rotation             = retroarch_get_rotation();
 
    if (width == 0 || height == 0)
       return;
@@ -20603,7 +20604,7 @@ static void video_driver_set_viewport_square_pixel(void)
          highest = i;
    }
 
-   if (retroarch_get_rotation() % 2)
+   if (rotation % 2)
    {
       aspect_x = height / highest;
       aspect_y = width / highest;
@@ -21704,9 +21705,10 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
       unsigned base_width;
       /* Use system reported sizes as these define the
        * geometry for the "normal" case. */
-      unsigned base_height = video_driver_av_info.geometry.base_height;
+      unsigned base_height  = video_driver_av_info.geometry.base_height;
+      unsigned int rotation = retroarch_get_rotation();
       
-      if (retroarch_get_rotation() % 2)
+      if (rotation % 2)
          base_height = video_driver_av_info.geometry.base_width;
 
       if (base_height == 0)
@@ -28668,7 +28670,6 @@ unsigned int retroarch_get_rotation(void)
    return settings->uints.video_rotation + runloop_system.rotation;
 }
 
-
 bool is_input_keyboard_display_on(void)
 {
 #ifdef HAVE_MENU
@@ -28679,14 +28680,14 @@ bool is_input_keyboard_display_on(void)
 }
 
 #ifdef HAVE_ACCESSIBILITY
-
 bool accessibility_speak_priority(const char* speak_text, int priority)
 {
    RARCH_LOG("Spoke: %s\n", speak_text);
 
    if (is_accessibility_enabled())
    {
-      int speed                       = configuration_settings->uints.accessibility_narrator_speech_speed;
+      int speed                       = 
+         configuration_settings->uints.accessibility_narrator_speech_speed;
       frontend_ctx_driver_t *frontend = frontend_get_ptr();
       if (frontend && frontend->accessibility_speak)
          return frontend->accessibility_speak(speed, speak_text,

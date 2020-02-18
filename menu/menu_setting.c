@@ -4286,17 +4286,18 @@ static void setting_get_string_representation_uint_custom_viewport_width(rarch_s
 {
    struct retro_game_geometry  *geom    = NULL;
    struct retro_system_av_info *av_info = NULL;
+   unsigned int rotation                = retroarch_get_rotation();
    if (!setting)
       return;
 
    av_info = video_viewport_get_system_av_info();
    geom    = (struct retro_game_geometry*)&av_info->geometry;
 
-   if (!(retroarch_get_rotation() % 2) && (*setting->value.target.unsigned_integer%geom->base_width == 0))
+   if (!(rotation % 2) && (*setting->value.target.unsigned_integer%geom->base_width == 0))
       snprintf(s, len, "%u (%ux)",
             *setting->value.target.unsigned_integer,
             *setting->value.target.unsigned_integer / geom->base_width);
-   else if ((retroarch_get_rotation() % 2) && (*setting->value.target.unsigned_integer%geom->base_height == 0))
+   else if ((rotation % 2) && (*setting->value.target.unsigned_integer%geom->base_height == 0))
       snprintf(s, len, "%u (%ux)",
             *setting->value.target.unsigned_integer,
             *setting->value.target.unsigned_integer / geom->base_height);
@@ -4310,17 +4311,18 @@ static void setting_get_string_representation_uint_custom_viewport_height(rarch_
 {
    struct retro_game_geometry  *geom    = NULL;
    struct retro_system_av_info *av_info = NULL;
+   unsigned int rotation                = retroarch_get_rotation();
    if (!setting)
       return;
 
    av_info = video_viewport_get_system_av_info();
    geom    = (struct retro_game_geometry*)&av_info->geometry;
 
-   if (!(retroarch_get_rotation() % 2) && (*setting->value.target.unsigned_integer%geom->base_height == 0))
+   if (!(rotation % 2) && (*setting->value.target.unsigned_integer%geom->base_height == 0))
       snprintf(s, len, "%u (%ux)",
             *setting->value.target.unsigned_integer,
             *setting->value.target.unsigned_integer / geom->base_height);
-   else  if ((retroarch_get_rotation() % 2) && (*setting->value.target.unsigned_integer%geom->base_width == 0))
+   else  if ((rotation % 2) && (*setting->value.target.unsigned_integer%geom->base_width == 0))
       snprintf(s, len, "%u (%ux)",
             *setting->value.target.unsigned_integer,
             *setting->value.target.unsigned_integer / geom->base_width);
@@ -4729,7 +4731,8 @@ static int setting_uint_action_left_custom_viewport_width(
       custom->width = 1;
    else if (settings->bools.video_scale_integer)
    {
-      if (retroarch_get_rotation() % 2)
+      unsigned int rotation = retroarch_get_rotation();
+      if (rotation % 2)
       {
          if (custom->width > geom->base_height)
             custom->width -= geom->base_height;
@@ -4768,7 +4771,8 @@ static int setting_uint_action_left_custom_viewport_height(
       custom->height = 1;
    else if (settings->bools.video_scale_integer)
    {
-      if (retroarch_get_rotation() % 2)
+      unsigned int rotation = retroarch_get_rotation();
+      if (rotation % 2)
       {
          if (custom->height > geom->base_width)
             custom->height -= geom->base_width;
@@ -4976,7 +4980,8 @@ static int setting_uint_action_right_custom_viewport_width(
 
    if (settings->bools.video_scale_integer)
    {
-      if (retroarch_get_rotation() % 2)
+      unsigned int rotation = retroarch_get_rotation();
+      if (rotation % 2)
          custom->width += geom->base_height;
       else
          custom->width += geom->base_width;
@@ -5007,7 +5012,8 @@ static int setting_uint_action_right_custom_viewport_height(
 
    if (settings->bools.video_scale_integer)
    {
-      if (retroarch_get_rotation() % 2)
+      unsigned int rotation = retroarch_get_rotation();
+      if (rotation % 2)
          custom->height += geom->base_width;
       else
          custom->height += geom->base_height;
@@ -6002,11 +6008,10 @@ static int setting_action_start_custom_viewport_width(rarch_setting_t *setting)
 
    if (settings->bools.video_scale_integer)
    {
-      if (retroarch_get_rotation() % 2)
-      {
+      unsigned int rotation = retroarch_get_rotation();
+      if (rotation % 2)
          custom->width = ((custom->width + geom->base_height - 1) /
                geom->base_height) * geom->base_height;
-      }
       else
          custom->width = ((custom->width + geom->base_width - 1) /
                geom->base_width) * geom->base_width;
@@ -6036,14 +6041,15 @@ static int setting_action_start_custom_viewport_height(rarch_setting_t *setting)
 
    if (settings->bools.video_scale_integer)
    {
-         if (retroarch_get_rotation() % 2)
-         {
-            custom->height = ((custom->height + geom->base_width - 1) /
+      unsigned int rotation = retroarch_get_rotation();
+      if (rotation % 2)
+      {
+         custom->height = ((custom->height + geom->base_width - 1) /
                geom->base_width) * geom->base_width;
-         }
-         else
-            custom->height = ((custom->height + geom->base_height - 1) /
-                  geom->base_height) * geom->base_height;
+      }
+      else
+         custom->height = ((custom->height + geom->base_height - 1) /
+               geom->base_height) * geom->base_height;
    }
    else
       custom->height = vp.full_height - custom->y;
@@ -6423,9 +6429,12 @@ void general_write_handler(rarch_setting_t *setting)
 
             if (*setting->value.target.boolean)
             {
-               custom->x      = 0;
-               custom->y      = 0;
-               if (retroarch_get_rotation() %2)
+               unsigned int rotation = retroarch_get_rotation();
+
+               custom->x             = 0;
+               custom->y             = 0;
+
+               if (rotation % 2)
                {
                   custom->width  = ((custom->width + geom->base_height - 1) / geom->base_height)  * geom->base_height;
                   custom->height = ((custom->height + geom->base_width - 1) / geom->base_width)   * geom->base_width;
@@ -6566,7 +6575,10 @@ void general_write_handler(rarch_setting_t *setting)
             struct retro_game_geometry     *geom = (struct retro_game_geometry*)
                &av_info->geometry;
 
-            if (system){
+            if (system)
+            {
+               unsigned int rotation = retroarch_get_rotation();
+
                video_driver_set_rotation(
                      (*setting->value.target.unsigned_integer +
                       system->rotation) % 4);
@@ -6577,7 +6589,7 @@ void general_write_handler(rarch_setting_t *setting)
                custom->y      = 0;
                /* Round down when rotation is "horizontal", round up when rotation is "vertical"
                   to avoid expanding viewport each time user rotates */
-               if (retroarch_get_rotation() %2)
+               if (rotation % 2)
                {
                   custom->width  = MAX(1,(custom->width / geom->base_height))  * geom->base_height;
                   custom->height = MAX(1,(custom->height/ geom->base_width ))  * geom->base_width;
