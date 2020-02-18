@@ -334,7 +334,7 @@ static void* ctr_init(const video_info_t* video,
    u8 device_model      = 0xFF;
    void* ctrinput       = NULL;
    settings_t *settings = config_get_ptr();
-   bool 3ds_lcd_bottom  = settings->bools.video_3ds_lcd_bottom;
+   bool lcd_bottom      = settings->bools.video_3ds_lcd_bottom;
    ctr_video_t* ctr     = (ctr_video_t*)linearAlloc(sizeof(ctr_video_t));
 
    if (!ctr)
@@ -498,8 +498,8 @@ static void* ctr_init(const video_info_t* video,
    ctr->menu_texture_enable       = false;
 
    /* Set bottom screen enable state, if required */
-   if (3ds_lcd_bottom != ctr_bottom_screen_enabled)
-      ctr_set_bottom_screen_enable(ctr, 3ds_lcd_bottom);
+   if (lcd_bottom != ctr_bottom_screen_enabled)
+      ctr_set_bottom_screen_enable(ctr, lcd_bottom);
 
    gspSetEventCallback(GSPGPU_EVENT_VBlank0,
          (ThreadFunc)ctr_vsync_hook, ctr, false);
@@ -529,7 +529,7 @@ static bool ctr_frame(void* data, const void* frame,
    static float        fps = 0.0;
    static int total_frames = 0;
    static int       frames = 0;
-   unsigned 3ds_disp_mode  = settings->uints.video_3ds_display_mode;
+   unsigned disp_mode      = settings->uints.video_3ds_display_mode;
 
    if (!width || !height || !settings)
    {
@@ -760,7 +760,7 @@ static bool ctr_frame(void* data, const void* frame,
                   GPU_TEXTURE_WRAP_S(GPU_CLAMP_TO_EDGE) | GPU_TEXTURE_WRAP_T(GPU_CLAMP_TO_EDGE),
                   ctr->rgb32 ? GPU_RGBA8: GPU_RGB565);
 
-   ctr_check_3D_slider(ctr, (ctr_video_mode_enum)3ds_disp_mode);
+   ctr_check_3D_slider(ctr, (ctr_video_mode_enum)disp_mode);
 
    /* ARGB --> RGBA  */
    if (ctr->rgb32)
