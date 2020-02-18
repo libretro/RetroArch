@@ -617,12 +617,11 @@ static void setup_video_mode(gx_video_t *gx)
    gx_set_video_mode(gx, width, height, true);
 }
 
-static void init_texture(void *data, unsigned width, unsigned height,
+static void init_texture(gx_video_t *gx, unsigned width, unsigned height,
       unsigned g_filter)
 {
    size_t fb_pitch;
    unsigned fb_width, fb_height;
-   gx_video_t *gx       = (gx_video_t*)data;
    GXTexObj *fb_ptr   	= (GXTexObj*)&g_tex.obj;
    GXTexObj *menu_ptr 	= (GXTexObj*)&menu_tex.obj;
 
@@ -707,7 +706,7 @@ static void init_vtx(gx_video_t *gx, const video_info_t *video,
    gx->scale = video->input_scale;
    gx->should_resize = true;
 
-   init_texture(data, g_tex.width, g_tex.height,
+   init_texture(gx, g_tex.width, g_tex.height,
          video_smooth ? GX_LINEAR : GX_NEAR);
    GX_Flush();
 }
@@ -1099,7 +1098,7 @@ static void gx_resize(gx_video_t *gx,
    c_guMtxConcat(m1, m2, m1);
    GX_LoadPosMtxImm(m1, GX_PNMTX0);
 
-   init_texture(data, 4, 4,
+   init_texture(gx, 4, 4,
          video_smooth ? GX_LINEAR : GX_NEAR);
    gx_old_width = gx_old_height = 0;
    gx->should_resize = false;
@@ -1589,7 +1588,7 @@ static bool gx_frame(void *data, const void *frame,
 
    if (width != gx_old_width || height != gx_old_height)
    {
-      init_texture(data, width, height,
+      init_texture(gx, width, height,
             settings->bools.video_smooth ? GX_LINEAR : GX_NEAR);
       gx_old_width = width;
       gx_old_height = height;
