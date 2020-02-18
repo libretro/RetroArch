@@ -382,7 +382,8 @@ float gfx_display_get_dpi_scale(unsigned width, unsigned height)
        (menu_scale_factor != last_menu_scale_factor) ||
        (menu_driver_id != last_menu_driver_id))
    {
-      adjusted_scale         = gfx_display_get_adjusted_scale_internal(scale, menu_scale_factor, width);
+      adjusted_scale         = gfx_display_get_adjusted_scale_internal(
+            scale, menu_scale_factor, width);
       last_menu_scale_factor = menu_scale_factor;
       last_menu_driver_id    = menu_driver_id;
    }
@@ -401,16 +402,19 @@ float gfx_display_get_widget_dpi_scale(unsigned width, unsigned height)
    static enum menu_driver_id_type last_menu_driver_id = MENU_DRIVER_ID_UNKNOWN;
    static float adjusted_scale                         = 1.0f;
    settings_t *settings                                = config_get_ptr();
+   bool gfx_widget_scale_auto                          = settings->bools.menu_widget_scale_auto;
+   float _menu_scale_factor                            = settings->floats.menu_scale_factor;
+   float menu_widget_scale_factor                      = settings->floats.menu_widget_scale_factor;
 
-   /* When using RGUI, settings->floats.menu_scale_factor
+   /* When using RGUI, _menu_scale_factor
     * is ignored
     * > If we are not using a widget scale factor override,
     *   just set menu_scale_factor to 1.0 */
    float menu_scale_factor                             = 
-      settings->bools.menu_widget_scale_auto ?
+      gfx_widget_scale_auto ?
       ((menu_driver_id == MENU_DRIVER_ID_RGUI) ?
-       1.0f : settings->floats.menu_scale_factor) :
-      settings->floats.menu_widget_scale_factor;
+       1.0f : _menu_scale_factor) :
+      menu_widget_scale_factor;
 
    /* Scale is based on display metrics - these are a fixed
     * hardware property. To minimise performance overheads
@@ -433,7 +437,8 @@ float gfx_display_get_widget_dpi_scale(unsigned width, unsigned height)
        (menu_scale_factor != last_menu_scale_factor) ||
        (menu_driver_id != last_menu_driver_id))
    {
-      adjusted_scale         = gfx_display_get_adjusted_scale_internal(scale, menu_scale_factor, width);
+      adjusted_scale         = gfx_display_get_adjusted_scale_internal(
+            scale, menu_scale_factor, width);
       last_menu_scale_factor = menu_scale_factor;
       last_menu_driver_id    = menu_driver_id;
    }
@@ -452,71 +457,18 @@ float gfx_display_get_widget_pixel_scale(unsigned width, unsigned height)
    static enum menu_driver_id_type last_menu_driver_id = MENU_DRIVER_ID_UNKNOWN;
    static float adjusted_scale                         = 1.0f;
    settings_t *settings                                = config_get_ptr();
+   float _menu_scale_factor                            = settings->floats.menu_scale_factor;
+   float menu_widget_scale_factor                      = settings->floats.menu_widget_scale_factor;
+   bool gfx_widget_scale_auto                          = settings->bools.menu_widget_scale_auto;
 
-   /* When using RGUI, settings->floats.menu_scale_factor
-    * is ignored
+   /* When using RGUI, _menu_scale_factor is ignored
     * > If we are not using a widget scale factor override,
     *   just set menu_scale_factor to 1.0 */
    float menu_scale_factor                             = 
-      settings->bools.menu_widget_scale_auto ?
+      gfx_widget_scale_auto ?
             ((menu_driver_id == MENU_DRIVER_ID_RGUI) ?
-                  1.0f : settings->floats.menu_scale_factor) :
-                        settings->floats.menu_widget_scale_factor;
-
-   /* We need to perform a square root here, which
-    * can be slow on some platforms (not *slow*, but
-    * it involves enough work that it's worth trying
-    * to optimise). We therefore cache the pixel scale,
-    * and only update on first run or when the video
-    * size changes */
-   if (!scale_cached ||
-       (width  != last_width) ||
-       (height != last_height))
-   {
-      /* Baseline reference is a 1080p display */
-      scale = (float)(
-            sqrt((double)((width * width) + (height * height))) /
-            DIAGONAL_PIXELS_1080P);
-
-      scale_cached  = true;
-      scale_updated = true;
-      last_width    = width;
-      last_height   = height;
-   }
-
-   /* Adjusted scale calculation may also be slow, so
-    * only update if something changes */
-   if (scale_updated ||
-       (menu_scale_factor != last_menu_scale_factor) ||
-       (menu_driver_id != last_menu_driver_id))
-   {
-      adjusted_scale         = gfx_display_get_adjusted_scale_internal(scale, menu_scale_factor, width);
-      last_menu_scale_factor = menu_scale_factor;
-      last_menu_driver_id    = menu_driver_id;
-   }
-
-   return adjusted_scale;
-}
-
-/* Ugh... Since we must now have independent scale
- * factors for menus and widgets, and most of the internal
- * scaling variables are cached/static, a huge amount of
- * code duplication is required for the pixel_scale and
- * dpi_scale functions. A necessary evil, I suppose... */
-
-#if 0
-static float gfx_display_get_pixel_scale(unsigned width, unsigned height)
-{
-   static unsigned last_width                          = 0;
-   static unsigned last_height                         = 0;
-   static float scale                                  = 0.0f;
-   static bool scale_cached                            = false;
-   bool scale_updated                                  = false;
-   static float last_menu_scale_factor                 = 0.0f;
-   static enum menu_driver_id_type last_menu_driver_id = MENU_DRIVER_ID_UNKNOWN;
-   static float adjusted_scale                         = 1.0f;
-   settings_t *settings                                = config_get_ptr();
-   float menu_scale_factor                             = settings->floats.menu_scale_factor;
+                  1.0f : _menu_scale_factor) :
+                        menu_widget_scale_factor;
 
    /* We need to perform a square root here, which
     * can be slow on some platforms (not *slow*, but
@@ -553,8 +505,6 @@ static float gfx_display_get_pixel_scale(unsigned width, unsigned height)
 
    return adjusted_scale;
 }
-#endif
-
 
 /* Check if the current menu driver is compatible
  * with your video driver. */
@@ -661,7 +611,8 @@ void gfx_display_blend_end(video_frame_info_t *video_info)
 }
 
 /* Begin scissoring operation */
-void gfx_display_scissor_begin(video_frame_info_t *video_info, int x, int y, unsigned width, unsigned height)
+void gfx_display_scissor_begin(video_frame_info_t *video_info,
+      int x, int y, unsigned width, unsigned height)
 {
    if (menu_disp && menu_disp->scissor_begin)
    {
@@ -811,7 +762,8 @@ void gfx_display_draw_bg(gfx_display_ctx_draw_t *draw,
       draw->texture     = gfx_display_white_texture;
 
    if (menu_disp && menu_disp->get_default_mvp)
-      draw->matrix_data = (math_matrix_4x4*)menu_disp->get_default_mvp(video_info);
+      draw->matrix_data = (math_matrix_4x4*)menu_disp->get_default_mvp(
+            video_info);
 }
 
 void gfx_display_draw_gradient(gfx_display_ctx_draw_t *draw,
@@ -965,7 +917,8 @@ void gfx_display_draw_texture_slice(
    unsigned i;
    float V_BL[2], V_BR[2], V_TL[2], V_TR[2], T_BL[2], T_BR[2], T_TL[2], T_TR[2];
 
-   /* need space for the coordinates of two triangles in a strip, so 8 vertices */
+   /* need space for the coordinates of two triangles in a strip,
+    * so 8 vertices */
    float *tex_coord  = (float*)malloc(8 * sizeof(float));
    float *vert_coord = (float*)malloc(8 * sizeof(float));
    float *colors     = (float*)malloc(16 * sizeof(float));
@@ -978,8 +931,10 @@ void gfx_display_draw_texture_slice(
    float tex_hoff    = offset / (float)h;
 
    /* the width/height of the middle sections of both the scaled and original image */
-   float vert_scaled_mid_width  = (new_w - (offset * scale_factor * 2)) / (float)width;
-   float vert_scaled_mid_height = (new_h - (offset * scale_factor * 2)) / (float)height;
+   float vert_scaled_mid_width  = (new_w - (offset * scale_factor * 2)) 
+      / (float)width;
+   float vert_scaled_mid_height = (new_h - (offset * scale_factor * 2)) 
+      / (float)height;
    float tex_mid_width          = (w - (offset * 2)) / (float)w;
    float tex_mid_height         = (h - (offset * 2)) / (float)h;
 
