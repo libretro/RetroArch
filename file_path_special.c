@@ -318,9 +318,6 @@ void fill_pathname_application_special(char *s,
             fill_pathname_application_special(s1,
                   PATH_MAX_LENGTH * sizeof(char),
                   APPLICATION_SPECIAL_DIRECTORY_ASSETS_MATERIALUI);
-            fill_pathname_slash(s1,
-                  PATH_MAX_LENGTH * sizeof(char)
-                  );
             strlcpy(s, s1, len);
 
             free(s1);
