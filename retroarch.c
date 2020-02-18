@@ -2338,8 +2338,13 @@ static bool dir_init_shader(const char *path_dir_shader,
    struct string_list *new_list    = dir_list_new_special(path_dir_shader,
          DIR_LIST_SHADERS, NULL, show_hidden_files);
 
-   if (!new_list || new_list->size == 0)
+   if (!new_list)
       return false;
+   if (new_list->size == 0)
+   {
+      string_list_free(new_list);
+      return false;
+   }
 
    dir_list_sort(new_list, false);
 
