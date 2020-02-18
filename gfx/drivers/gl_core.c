@@ -2058,7 +2058,7 @@ static int video_texture_load_wrap_gl_core(void *data)
 #endif
 
 static uintptr_t gl_core_load_texture(void *video_data, void *data,
-                                      bool threaded, enum texture_filter_type filter_type)
+      bool threaded, enum texture_filter_type filter_type)
 {
    uintptr_t id = 0;
 

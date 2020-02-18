@@ -4401,14 +4401,27 @@ static void gl2_get_video_output_next(void *data)
 static void video_texture_load_gl2(
       struct texture_image *ti,
       enum texture_filter_type filter_type,
-      uintptr_t *id)
+      uintptr_t *idptr)
 {
+   GLuint id;
+   unsigned width     = 0;
+   unsigned height    = 0;
+   const void *pixels = NULL;
    /* Generate the OpenGL texture object */
-   glGenTextures(1, (GLuint*)id);
-   gl_load_texture_data((GLuint)*id,
+   glGenTextures(1, &id);
+   *idptr = id;
+
+   if (ti)
+   {
+      width  = ti->width;
+      height = ti->height;
+      pixels = ti->pixels;
+   }
+
+   gl_load_texture_data(id,
          RARCH_WRAP_EDGE, filter_type,
          4 /* TODO/FIXME - dehardcode */,
-         ti->width, ti->height, ti->pixels,
+         width, height, pixels,
          sizeof(uint32_t) /* TODO/FIXME - dehardcode */
          );
 }

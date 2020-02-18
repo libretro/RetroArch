@@ -5601,33 +5601,34 @@ error:
 
 static void xmb_context_reset_background(const char *iconpath)
 {
-   char *path                  = NULL;
    settings_t *settings        = config_get_ptr();
    const char *path_menu_wp    = settings->paths.path_menu_wallpaper;
 
    if (!string_is_empty(path_menu_wp))
-      path = strdup(path_menu_wp);
+   {
+      if (path_is_valid(path_menu_wp))
+         task_push_image_load(path_menu_wp,
+               video_driver_supports_rgba(), 0,
+               menu_display_handle_wallpaper_upload, NULL);
+   }
    else if (!string_is_empty(iconpath))
    {
-      path    = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+      char path[PATH_MAX_LENGTH];
       path[0] = '\0';
 
       fill_pathname_join(path, iconpath, "bg.png",
             PATH_MAX_LENGTH * sizeof(char));
+      if (path_is_valid(path))
+         task_push_image_load(path,
+               video_driver_supports_rgba(), 0,
+               menu_display_handle_wallpaper_upload, NULL);
    }
-
-   if (path_is_valid(path))
-      task_push_image_load(path,
-            video_driver_supports_rgba(), 0,
-            menu_display_handle_wallpaper_upload, NULL);
 
 #ifdef ORBIS
    /* To avoid weird behaviour on orbis with remote host */
    RARCH_LOG("[XMB] after task\n");
    sleep(5);
 #endif
-   if (path)
-      free(path);
 }
 
 static void xmb_context_reset_internal(xmb_handle_t *xmb,
