@@ -1665,10 +1665,11 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
    gfx_animation_ctx_entry_t entry;
    ozone_handle_t* ozone                  = (ozone_handle_t*) data;
    settings_t  *settings                  = config_get_ptr();
-   unsigned color_theme                   = video_info->ozone_color_theme;
+   unsigned color_theme                   = settings->uints.menu_ozone_color_theme;
    gfx_animation_ctx_tag messagebox_tag   = (uintptr_t)ozone->pending_message;
    bool draw_osk                          = menu_input_dialog_get_display_kb();
    static bool draw_osk_old               = false;
+   float *background_color                = NULL;
 
 #if 0
    static bool reset                      = false;
@@ -1708,15 +1709,17 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
    }
 
    /* Change theme on the fly */
-   if (color_theme != last_color_theme || last_use_preferred_system_color_theme != settings->bools.menu_use_preferred_system_color_theme)
+   if ((color_theme != last_color_theme) ||
+       (last_use_preferred_system_color_theme != settings->bools.menu_use_preferred_system_color_theme))
    {
-      if (!settings->bools.menu_use_preferred_system_color_theme)
-         ozone_set_color_theme(ozone, color_theme);
-      else
+      if (settings->bools.menu_use_preferred_system_color_theme)
       {
-         video_info->ozone_color_theme = ozone_get_system_theme();
-         ozone_set_color_theme(ozone, video_info->ozone_color_theme);
+         color_theme = ozone_get_system_theme();
+         settings->uints.menu_ozone_color_theme = color_theme;
       }
+
+      ozone_set_color_theme(ozone, color_theme);
+      ozone_set_background_running_opacity(ozone, video_info->menu_framebuffer_opacity);
 
       last_use_preferred_system_color_theme = settings->bools.menu_use_preferred_system_color_theme;
    }
@@ -1739,10 +1742,21 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
    ozone->raster_blocks.sidebar.carr.coords.vertices = 0;
 
    /* Background */
+   if (video_info->libretro_running &&
+       (video_info->menu_framebuffer_opacity < 1.0f))
+   {
+      if (video_info->menu_framebuffer_opacity != last_framebuffer_opacity)
+         ozone_set_background_running_opacity(ozone, video_info->menu_framebuffer_opacity);
+
+      background_color = ozone->theme->background_libretro_running;
+   }
+   else
+      background_color = ozone->theme->background;
+
    gfx_display_draw_quad(video_info,
       0, 0, video_info->width, video_info->height,
       video_info->width, video_info->height,
-      !video_info->libretro_running ? ozone->theme->background : ozone->theme->background_libretro_running
+      background_color
    );
 
    /* Header, footer */

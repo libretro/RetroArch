@@ -151,7 +151,7 @@ void ozone_draw_sidebar(ozone_handle_t *ozone, video_frame_info_t *video_info)
    /* Background */
    sidebar_height = video_info->height - ozone->dimensions.header_height - ozone->dimensions.sidebar_gradient_height * 2 - ozone->dimensions.footer_height;
 
-   if (!video_info->libretro_running)
+   if (!video_info->libretro_running || (video_info->menu_framebuffer_opacity >= 1.0f))
    {
       gfx_display_draw_quad(video_info, ozone->sidebar_offset, ozone->dimensions.header_height + ozone->dimensions.spacer_1px, (unsigned) ozone->dimensions.sidebar_width, ozone->dimensions.sidebar_gradient_height, video_info->width, video_info->height, ozone->theme->sidebar_top_gradient);
       gfx_display_draw_quad(video_info, ozone->sidebar_offset, ozone->dimensions.header_height + ozone->dimensions.spacer_1px + ozone->dimensions.sidebar_gradient_height, (unsigned) ozone->dimensions.sidebar_width, sidebar_height, video_info->width, video_info->height, ozone->theme->sidebar_background);
