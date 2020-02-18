@@ -11028,7 +11028,15 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                count++;
       }
       else
-         filebrowser_parse(info, type);
+      {
+         settings_t      *settings      = config_get_ptr();
+         filebrowser_parse(info, type,
+               settings->bools.show_hidden_files,
+               settings->bools.multimedia_builtin_mediaplayer_enable,
+               settings->bools.multimedia_builtin_imageviewer_enable,
+               settings->bools.menu_navigation_browser_filter_supported_extensions_enable
+               );
+      }
 
       info->need_refresh = true;
       info->need_push    = true;
