@@ -930,7 +930,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_AUTO,
-    "Auto Scale Menu Widgets"
+    "Auto Scale Graphics Widgets"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_AUTO,
@@ -938,11 +938,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_FACTOR,
-    "Menu Widget Scale Override"
+    "Graphics Widgets Scale Override"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_FACTOR,
-    "Applies a manual scaling factor override when drawing menu widgets. Only applies when 'Auto Scale Menu Widgets' is disabled. Can be used to increase or decrease the size of decorated notifications, indicators and controls independently from the menu itself."
+    "Applies a manual scaling factor override when drawing menu widgets. Only applies when 'Auto Scale Graphics Widgets' is disabled. Can be used to increase or decrease the size of decorated notifications, indicators and controls independently from the menu itself."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS,
@@ -9495,7 +9495,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_WIDGETS_ENABLE,
-    "Menu Widgets"
+    "Graphics Widgets"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_SHADERS_ENABLE,

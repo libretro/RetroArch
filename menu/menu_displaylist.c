@@ -5895,7 +5895,6 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
                {MENU_ENUM_LABEL_MENU_VIEWS_SETTINGS,                                   PARSE_ACTION,      true},
                {MENU_ENUM_LABEL_MENU_SETTINGS,                                         PARSE_ACTION,      true},
                {MENU_ENUM_LABEL_SHOW_ADVANCED_SETTINGS,                                PARSE_ONLY_BOOL,   true},
-               {MENU_ENUM_LABEL_MENU_WIDGETS_ENABLE,                                   PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_MENU_ENABLE_KIOSK_MODE,                                PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_MENU_KIOSK_MODE_PASSWORD,                              PARSE_ONLY_STRING, false},
                {MENU_ENUM_LABEL_NAVIGATION_WRAPAROUND,                                 PARSE_ONLY_BOOL,   true},
@@ -6492,9 +6491,10 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
          {
             settings_t      *settings     = config_get_ptr();
             menu_displaylist_build_info_selective_t build_list[] = {
+               {MENU_ENUM_LABEL_VIDEO_FONT_ENABLE,            PARSE_ONLY_BOOL,   true  },
+               {MENU_ENUM_LABEL_MENU_WIDGETS_ENABLE,          PARSE_ONLY_BOOL,   true  },
                {MENU_ENUM_LABEL_MENU_WIDGET_SCALE_AUTO,       PARSE_ONLY_BOOL,   false },
                {MENU_ENUM_LABEL_MENU_WIDGET_SCALE_FACTOR,     PARSE_ONLY_FLOAT,  false },
-               {MENU_ENUM_LABEL_VIDEO_FONT_ENABLE,            PARSE_ONLY_BOOL,   true },
                {MENU_ENUM_LABEL_FPS_SHOW,                     PARSE_ONLY_BOOL,   false },
                {MENU_ENUM_LABEL_FPS_UPDATE_INTERVAL,          PARSE_ONLY_UINT,   false },
                {MENU_ENUM_LABEL_FRAMECOUNT_SHOW,              PARSE_ONLY_BOOL,   false },
@@ -6532,13 +6532,17 @@ unsigned menu_displaylist_build_list(file_list_t *list, enum menu_displaylist_ct
                            build_list[i].checked = true;
                      break;
                   case MENU_ENUM_LABEL_MENU_WIDGET_SCALE_AUTO:
-                     if (gfx_widgets_ready())
+#ifdef HAVE_GFX_WIDGETS
+                     if (settings->bools.menu_enable_widgets)
                         build_list[i].checked = true;
+#endif
                      break;
                   case MENU_ENUM_LABEL_MENU_WIDGET_SCALE_FACTOR:
-                     if (gfx_widgets_ready())
+#ifdef HAVE_GFX_WIDGETS
+                     if (settings->bools.menu_enable_widgets)
                         if (!settings->bools.menu_widget_scale_auto)
                            build_list[i].checked = true;
+#endif
                      break;
                   default:
                      if (settings->bools.video_font_enable)
