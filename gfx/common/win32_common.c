@@ -1210,16 +1210,18 @@ bool win32_window_create(void *data, unsigned style,
       RECT *mon_rect, unsigned width,
       unsigned height, bool fullscreen)
 {
+   settings_t *settings    = config_get_ptr();
 #if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0500 /* 2K */
    DEV_BROADCAST_DEVICEINTERFACE notification_filter;
+   unsigned window_opacity    = settings->uints.video_window_opacity;
+   bool window_show_decor     = settings->bools.video_window_show_decorations;
 #endif
-   settings_t *settings  = config_get_ptr();
 #ifndef _XBOX
-   unsigned user_width   = width;
-   unsigned user_height  = height;
+   unsigned user_width        = width;
+   unsigned user_height       = height;
+   bool window_save_positions = settings->bools.video_window_save_positions;
 
-   if (settings->bools.video_window_save_positions
-         && !fullscreen)
+   if (window_save_positions && !fullscreen)
    {
       user_width = g_win32_pos_width;
       user_height= g_win32_pos_height;
@@ -1255,17 +1257,17 @@ bool win32_window_create(void *data, unsigned style,
    video_driver_window_set((uintptr_t)main_window.hwnd);
 
 #if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0500 /* 2K */
-   if (!settings->bools.video_window_show_decorations)
+   if (!window_show_decor)
       SetWindowLongPtr(main_window.hwnd, GWL_STYLE, WS_POPUP);
 
    /* Windows 2000 and above use layered windows to enable transparency */
-   if (settings->uints.video_window_opacity < 100)
+   if (window_opacity < 100)
    {
       SetWindowLongPtr(main_window.hwnd,
            GWL_EXSTYLE,
            GetWindowLongPtr(main_window.hwnd, GWL_EXSTYLE) | WS_EX_LAYERED);
       SetLayeredWindowAttributes(main_window.hwnd, 0, (255 *
-               settings->uints.video_window_opacity) / 100, LWA_ALPHA);
+               window_opacity) / 100, LWA_ALPHA);
    }
 #endif
 #endif
@@ -1536,8 +1538,9 @@ void win32_set_window(unsigned *width, unsigned *height,
    {
       settings_t *settings      = config_get_ptr();
       const ui_window_t *window = ui_companion_driver_get_window_ptr();
+      bool ui_menubar_enable    = settings->bools.ui_menubar_enable;
 
-      if (!fullscreen && settings->bools.ui_menubar_enable)
+      if (!fullscreen && ui_menubar_enable)
       {
          RECT rc_temp;
          rc_temp.left   = 0;
