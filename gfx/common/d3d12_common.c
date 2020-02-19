@@ -176,6 +176,7 @@ bool d3d12_init_base(d3d12_video_t* d3d12)
    {
       int i = 0;
       settings_t *settings = config_get_ptr();
+      int gpu_index        = settings->ints.d3d12_gpu_index;
 
       if (d3d12->gpu_list)
          string_list_free(d3d12->gpu_list);
@@ -186,7 +187,7 @@ bool d3d12_init_base(d3d12_video_t* d3d12)
       {
          char str[128];
          union string_list_elem_attr attr = {0};
-         DXGI_ADAPTER_DESC desc = {0};
+         DXGI_ADAPTER_DESC desc           = {0};
 
          str[0] = '\0';
 
@@ -221,16 +222,17 @@ bool d3d12_init_base(d3d12_video_t* d3d12)
 
       video_driver_set_gpu_api_devices(GFX_CTX_DIRECT3D12_API, d3d12->gpu_list);
 
-      if (0 <= settings->ints.d3d12_gpu_index && settings->ints.d3d12_gpu_index <= i && settings->ints.d3d12_gpu_index < D3D12_MAX_GPU_COUNT)
+      if (0 <= gpu_index && gpu_index <= i && gpu_index < D3D12_MAX_GPU_COUNT)
       {
-         d3d12->adapter = d3d12->adapters[settings->ints.d3d12_gpu_index];
+         d3d12->adapter = d3d12->adapters[gpu_index];
          AddRef(d3d12->adapter);
-         RARCH_LOG("[D3D12]: Using GPU index %d.\n", settings->ints.d3d12_gpu_index);
-         video_driver_set_gpu_device_string(d3d12->gpu_list->elems[settings->ints.d3d12_gpu_index].data);
+         RARCH_LOG("[D3D12]: Using GPU index %d.\n", gpu_index);
+         video_driver_set_gpu_device_string(
+               d3d12->gpu_list->elems[gpu_index].data);
       }
       else
       {
-         RARCH_WARN("[D3D12]: Invalid GPU index %d, using first device found.\n", settings->ints.d3d12_gpu_index);
+         RARCH_WARN("[D3D12]: Invalid GPU index %d, using first device found.\n", gpu_index);
          d3d12->adapter = d3d12->adapters[0];
          AddRef(d3d12->adapter);
       }
@@ -245,14 +247,22 @@ bool d3d12_init_base(d3d12_video_t* d3d12)
 bool d3d12_init_queue(d3d12_video_t* d3d12)
 {
    {
-      static const D3D12_COMMAND_QUEUE_DESC desc = { D3D12_COMMAND_LIST_TYPE_DIRECT, 0,
-                                                     D3D12_COMMAND_QUEUE_FLAG_NONE, 0 };
+      static const D3D12_COMMAND_QUEUE_DESC desc = { 
+         D3D12_COMMAND_LIST_TYPE_DIRECT,
+         0,
+         D3D12_COMMAND_QUEUE_FLAG_NONE,
+         0
+      };
       D3D12CreateCommandQueue(
-            d3d12->device, (D3D12_COMMAND_QUEUE_DESC*)&desc, &d3d12->queue.handle);
+            d3d12->device,
+            (D3D12_COMMAND_QUEUE_DESC*)&desc,
+            &d3d12->queue.handle);
    }
 
    D3D12CreateCommandAllocator(
-         d3d12->device, D3D12_COMMAND_LIST_TYPE_DIRECT, &d3d12->queue.allocator);
+         d3d12->device,
+         D3D12_COMMAND_LIST_TYPE_DIRECT,
+         &d3d12->queue.allocator);
 
    D3D12CreateGraphicsCommandList(
          d3d12->device, 0, D3D12_COMMAND_LIST_TYPE_DIRECT, d3d12->queue.allocator,

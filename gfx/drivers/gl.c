@@ -2263,7 +2263,9 @@ static void gl2_set_texture_frame(void *data,
 {
    settings_t *settings            = config_get_ptr();
    enum texture_filter_type 
-      menu_filter                  = settings->bools.menu_linear_filter ? TEXTURE_FILTER_LINEAR : TEXTURE_FILTER_NEAREST;
+      menu_filter                  = settings->bools.menu_linear_filter 
+      ? TEXTURE_FILTER_LINEAR 
+      : TEXTURE_FILTER_NEAREST;
    unsigned base_size              = rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
    gl_t *gl                        = (gl_t*)data;
    if (!gl)
@@ -3410,35 +3412,24 @@ static bool gl2_init_pbo_readback(gl_t *gl)
 
 static const gfx_ctx_driver_t *gl2_get_context(gl_t *gl)
 {
-   enum gfx_ctx_api api;
    const gfx_ctx_driver_t *gfx_ctx      = NULL;
    void                      *ctx_data  = NULL;
-   const char                 *api_name = NULL;
    settings_t                 *settings = config_get_ptr();
    struct retro_hw_render_callback *hwr = video_driver_get_hw_context();
    unsigned major                       = hwr->version_major;
    unsigned minor                       = hwr->version_minor;
-
+   bool video_shared_context            = settings->bools.video_shared_context;
 #ifdef HAVE_OPENGLES
-   api                                  = GFX_CTX_OPENGL_ES_API;
-   api_name                             = "OpenGL ES 2.0";
-
+   enum gfx_ctx_api api                 = GFX_CTX_OPENGL_ES_API;
    if (hwr->context_type == RETRO_HW_CONTEXT_OPENGLES3)
    {
       major                             = 3;
       minor                             = 0;
-      api_name                          = "OpenGL ES 3.0";
    }
-   else if (hwr->context_type == RETRO_HW_CONTEXT_OPENGLES_VERSION)
-      api_name                          = "OpenGL ES 3.1+";
 #else
-   api                                  = GFX_CTX_OPENGL_API;
-   api_name                             = "OpenGL";
+   enum gfx_ctx_api api                 = GFX_CTX_OPENGL_API;
 #endif
-
-   (void)api_name;
-
-   gl_shared_context_use = settings->bools.video_shared_context
+   gl_shared_context_use                = video_shared_context
       && hwr->context_type != RETRO_HW_CONTEXT_NONE;
 
    if (     (libretro_get_shared_context())
@@ -3487,11 +3478,6 @@ static void DEBUG_CALLBACK_TYPE gl2_debug_cb(GLenum source, GLenum type,
 {
    const char      *src = NULL;
    const char *typestr  = NULL;
-   gl_t             *gl = (gl_t*)userParam; /* Useful for debugger. */
-
-   (void)gl;
-   (void)id;
-   (void)length;
 
    switch (source)
    {
@@ -3632,7 +3618,7 @@ static void *gl2_init(const video_info_t *video,
 
    video_context_driver_get_video_size(&mode);
 #if defined(DINGUX)
-   mode.width = 320;
+   mode.width  = 320;
    mode.height = 240;
 #endif
    full_x      = mode.width;
@@ -3780,8 +3766,8 @@ static void *gl2_init(const video_info_t *video,
    video_context_driver_get_video_size(&mode);
 
 #if defined(DINGUX)
-   mode.width = 320;
-   mode.height = 240;
+   mode.width     = 320;
+   mode.height    = 240;
 #endif
    temp_width     = mode.width;
    temp_height    = mode.height;
