@@ -926,7 +926,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_AUTO,
-    "Mise à l'échelle automatique des widgets du menu"
+    "Mise à l'échelle automatique des widgets graphiques"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_AUTO,
@@ -934,11 +934,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_FACTOR,
-    "Remplacement de l'échelle des widgets du menu"
+    "Remplacement de l'échelle des widgets graphiques"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_FACTOR,
-    "Applique une valeur manuelle de remplacement du facteur d'échelle pour l'affichage des widgets du menu. Cette valeur est appliquée uniquement si l'option 'Mise à l'échelle automatique des widgets du menu' est désactivée. Peut être utile pour augmenter ou réduire la taille des notifications améliorées, indicateurs et commandes indépendamment du menu lui-même."
+    "Applique une valeur manuelle de remplacement du facteur d'échelle pour l'affichage des widgets graphiques. Cette valeur est appliquée uniquement si l'option 'Mise à l'échelle automatique des widgets graphiques' est désactivée. Peut être utile pour augmenter ou réduire la taille des notifications améliorées, indicateurs et commandes indépendamment du menu lui-même."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS,
@@ -9419,7 +9419,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_WIDGETS_ENABLE,
-    "Widgets du menu"
+    "Widgets graphiques"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_SHADERS_ENABLE,
