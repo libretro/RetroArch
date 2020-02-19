@@ -329,16 +329,20 @@ static bool netplay_poll(netplay_t *netplay)
    if (netplay->frame_run_time_avg || netplay->stateless_mode)
    {
       /* FIXME: Using fixed 60fps for this calculation */
-      unsigned frames_per_frame    = netplay->frame_run_time_avg ?
+      unsigned frames_per_frame     = netplay->frame_run_time_avg ?
          (16666 / netplay->frame_run_time_avg) :
          0;
-      unsigned frames_ahead        = (netplay->run_frame_count > netplay->unread_frame_count) ?
+      unsigned frames_ahead         = (netplay->run_frame_count > netplay->unread_frame_count) ?
          (netplay->run_frame_count - netplay->unread_frame_count) :
          0;
-      settings_t *settings         = config_get_ptr();
-      int input_latency_frames_min = settings->uints.netplay_input_latency_frames_min -
-            (settings->bools.run_ahead_enabled ? settings->uints.run_ahead_frames : 0);
-      int input_latency_frames_max = input_latency_frames_min + settings->uints.netplay_input_latency_frames_range;
+      settings_t *settings          = config_get_ptr();
+      unsigned netplay_frames_min   = settings->uints.netplay_input_latency_frames_min;
+      unsigned netplay_frames_range = settings->uints.netplay_input_latency_frames_range;
+      bool runahead_enabled         = settings->bools.run_ahead_enabled;
+      unsigned runahead_frames      = settings->uints.run_ahead_frames;
+      int input_latency_frames_min  = netplay_frames_min -
+         (runahead_enabled ? runahead_frames : 0);
+      int input_latency_frames_max  = input_latency_frames_min + netplay_frames_range;
 
       /* Assume we need a couple frames worth of time to actually run the
        * current frame */
@@ -992,12 +996,14 @@ static void netplay_frontend_paused(netplay_t *netplay, bool paused)
  **/
 static bool netplay_pre_frame(netplay_t *netplay)
 {
-   bool sync_stalled     = false;
-   settings_t *settings  = config_get_ptr();
+   bool sync_stalled            = false;
+   settings_t *settings         = config_get_ptr();
+   bool netplay_public_announce = settings->bools.netplay_public_announce;
+   bool netplay_use_mitm_server = settings->bools.netplay_use_mitm_server;
 
    retro_assert(netplay);
 
-   if (settings->bools.netplay_public_announce)
+   if (netplay_public_announce)
    {
       reannounce++;
       if ((netplay->is_server || is_mitm) && (reannounce % 600 == 0))
@@ -1015,7 +1021,7 @@ static bool netplay_pre_frame(netplay_t *netplay)
    if (netplay->quirks & NETPLAY_QUIRK_INITIALIZATION)
       netplay_try_init_serialization(netplay);
 
-   if (netplay->is_server && !settings->bools.netplay_use_mitm_server)
+   if (netplay->is_server && !netplay_use_mitm_server)
    {
       /* Advertise our server */
       netplay_lan_ad_server(netplay);
@@ -1465,7 +1471,8 @@ bool init_netplay(void *direct_host, const char *server, unsigned port)
          settings->bools.netplay_stateless_mode,
          settings->ints.netplay_check_frames,
          &cbs,
-         settings->bools.netplay_nat_traversal && !settings->bools.netplay_use_mitm_server,
+         settings->bools.netplay_nat_traversal 
+         && !settings->bools.netplay_use_mitm_server,
 #ifdef HAVE_DISCORD
          discord_get_own_username() ? discord_get_own_username() :
 #endif

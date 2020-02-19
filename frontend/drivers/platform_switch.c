@@ -75,18 +75,21 @@ void libnx_apply_overclock(void)
 {
    const size_t profiles_count = sizeof(SWITCH_CPU_PROFILES) 
       / sizeof(SWITCH_CPU_PROFILES[1]);
+   settings_t *settings        = config_get_ptr();
+   unsigned libnx_overclock    = settings->uints.libnx_overclock;
 
-   if (config_get_ptr()->uints.libnx_overclock >= 0 && config_get_ptr()->uints.libnx_overclock <= profiles_count)
+   if (libnx_overclock >= 0 && libnx_overclock <= profiles_count)
    {
       if (hosversionBefore(8, 0, 0))
       {
-         pcvSetClockRate(PcvModule_CpuBus, SWITCH_CPU_SPEEDS_VALUES[config_get_ptr()->uints.libnx_overclock]);
+         pcvSetClockRate(PcvModule_CpuBus, SWITCH_CPU_SPEEDS_VALUES[
+               libnx_overclock]);
       }
       else
       {
          ClkrstSession session = {0};
          clkrstOpenSession(&session, PcvModuleId_CpuBus, 3);
-         clkrstSetClockRate(&session, SWITCH_CPU_SPEEDS_VALUES[config_get_ptr()->uints.libnx_overclock]);
+         clkrstSetClockRate(&session, SWITCH_CPU_SPEEDS_VALUES[libnx_overclock]);
          clkrstCloseSession(&session);
       }
    }

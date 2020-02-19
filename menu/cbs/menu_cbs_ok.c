@@ -2700,7 +2700,7 @@ static void menu_input_st_string_cb_enable_settings(void *userdata,
 {
    if (str && *str)
    {
-      const char *label = menu_input_dialog_get_buffer();
+      const char *label    = menu_input_dialog_get_buffer();
       settings_t *settings = config_get_ptr();
 
       if (string_is_equal(label, settings->paths.menu_content_show_settings_password))
@@ -3301,7 +3301,9 @@ static int action_ok_set_switch_cpu_profile(const char *path,
    snprintf(command, sizeof(command), "Current profile set to %s", profile_name);
 #else
    unsigned profile_clock = SWITCH_CPU_SPEEDS_VALUES[entry_idx];
-   config_get_ptr()->uints.libnx_overclock = entry_idx;
+   settings_t *settings   = config_get_ptr();
+
+   settings->uints.libnx_overclock = entry_idx;
 
    if (hosversionBefore(8, 0, 0))
       pcvSetClockRate(PcvModule_CpuBus, (u32)profile_clock);
@@ -4076,7 +4078,7 @@ void cb_generic_download(retro_task_t *task,
    bool extract                          = true;
 #endif
    const char             *dir_path      = NULL;
-   file_transfer_t     *transf      = (file_transfer_t*)user_data;
+   file_transfer_t     *transf           = (file_transfer_t*)user_data;
    settings_t              *settings     = config_get_ptr();
    http_transfer_data_t        *data     = (http_transfer_data_t*)task_data;
 
@@ -4256,7 +4258,7 @@ static int action_ok_download_generic(const char *path,
    char s[PATH_MAX_LENGTH];
    char s2[PATH_MAX_LENGTH];
    char s3[PATH_MAX_LENGTH];
-   file_transfer_t *transf = NULL;
+   file_transfer_t *transf      = NULL;
    settings_t *settings         = config_get_ptr();
    bool suppress_msg            = false;
    retro_task_callback_t cb     = cb_generic_download;

@@ -25,8 +25,9 @@ static const QRegularExpression decimalsRegex("%.(\\d)f");
 
 inline void handleChange(rarch_setting_t *setting)
 {
+   settings_t *settings = config_get_ptr();
 
-   config_get_ptr()->modified = true;
+   settings->modified = true;
 
    if (setting->change_handler)
       setting->change_handler(setting);
