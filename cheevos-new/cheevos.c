@@ -2547,14 +2547,11 @@ found:
    {
       int ret;
       char tok[256];
-      const char *username = coro->settings->arrays.cheevos_username;
-      const char *password = coro->settings->arrays.cheevos_password;
-      const char *token    = coro->settings->arrays.cheevos_token;
 
       if (rcheevos_locals.token[0])
          CORO_RET();
 
-      if (string_is_empty(username))
+      if (string_is_empty(coro->settings->arrays.cheevos_username))
       {
          runloop_msg_queue_push(
                "Missing RetroAchievements account information.",
@@ -2566,12 +2563,14 @@ found:
          CORO_STOP();
       }
 
-      if (string_is_empty(token))
+      if (string_is_empty(coro->settings->arrays.cheevos_token))
          ret = rc_url_login_with_password(coro->url, sizeof(coro->url),
-               username, password);
+               coro->settings->arrays.cheevos_username,
+               coro->settings->arrays.cheevos_password);
       else
          ret = rc_url_login_with_token(coro->url, sizeof(coro->url),
-               username, token);
+               coro->settings->arrays.cheevos_username,
+               coro->settings->arrays.cheevos_token);
 
       if (ret < 0)
       {
