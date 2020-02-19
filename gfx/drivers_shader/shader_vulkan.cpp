@@ -181,25 +181,10 @@ class StaticTexture
       StaticTexture(StaticTexture&&) = delete;
       void operator=(StaticTexture&&) = delete;
 
-      void release_staging_buffer()
-      {
-         buffer.reset();
-      }
-
-      void set_id(string name)
-      {
-         id = move(name);
-      }
-
-      const string &get_id() const
-      {
-         return id;
-      }
-
-      const Texture &get_texture() const
-      {
-         return texture;
-      }
+      void release_staging_buffer() { buffer.reset(); }
+      void set_id(string name) { id = move(name); }
+      const string &get_id() const { return id; }
+      const Texture &get_texture() const { return texture; }
 
    private:
       VkDevice device;
@@ -273,7 +258,7 @@ struct CommonResources
    VkSampler samplers[VULKAN_FILTER_CHAIN_COUNT][VULKAN_FILTER_CHAIN_COUNT][VULKAN_FILTER_CHAIN_ADDRESS_COUNT];
 
    vector<Texture> original_history;
-   vector<Texture> framebuffer_feedback;
+   vector<Texture> fb_feedback;
    vector<Texture> pass_outputs;
    vector<unique_ptr<StaticTexture>> luts;
 
@@ -302,15 +287,8 @@ class Pass
       Pass(Pass&&) = delete;
       void operator=(Pass&&) = delete;
 
-      const Framebuffer &get_framebuffer() const
-      {
-         return *framebuffer;
-      }
-
-      Framebuffer *get_feedback_framebuffer()
-      {
-         return framebuffer_feedback.get();
-      }
+      const Framebuffer &get_framebuffer() const { return *framebuffer; }
+      Framebuffer *get_feedback_framebuffer() { return fb_feedback.get(); }
 
       Size2D set_pass_info(
             const Size2D &max_original,
@@ -333,40 +311,14 @@ class Pass
             const VkViewport &vp,
             const float *mvp);
 
-      void notify_sync_index(unsigned index)
-      {
-         sync_index = index;
-      }
-
-      void set_frame_count(uint64_t count)
-      {
-         frame_count = count;
-      }
-
-      void set_frame_count_period(unsigned period)
-      {
-         frame_count_period = period;
-      }
-
-      void set_frame_direction(int32_t direction)
-      {
-         frame_direction = direction;
-      }
-
-      void set_name(const char *name)
-      {
-         pass_name = name;
-      }
-
-      const string &get_name() const
-      {
-         return pass_name;
-      }
-
-      vulkan_filter_chain_filter get_source_filter() const
-      {
-         return pass_info.source_filter;
-      }
+      void notify_sync_index(unsigned index) { sync_index = index; }
+      void set_frame_count(uint64_t count) { frame_count = count; }
+      void set_frame_count_period(unsigned p) { frame_count_period = p; }
+      void set_frame_direction(int32_t dir) { frame_direction = dir; }
+      void set_name(const char *name) { pass_name = name; }
+      const string &get_name() const { return pass_name; }
+      vulkan_filter_chain_filter get_source_filter() const { 
+         return pass_info.source_filter; }
 
       vulkan_filter_chain_filter get_mip_filter() const
       {
@@ -378,20 +330,9 @@ class Pass
          return pass_info.address;
       }
 
-      void set_common_resources(CommonResources *common)
-      {
-         this->common = common;
-      }
-
-      const slang_reflection &get_reflection() const
-      {
-         return reflection;
-      }
-
-      void set_pass_number(unsigned pass)
-      {
-         pass_number = pass;
-      }
+      void set_common_resources(CommonResources *c) { this->common = c; }
+      const slang_reflection &get_reflection() const { return reflection; }
+      void set_pass_number(unsigned pass) { pass_number = pass; }
 
       void add_parameter(unsigned parameter_index, const std::string &id);
 
@@ -424,14 +365,15 @@ class Pass
       vector<uint32_t> vertex_shader;
       vector<uint32_t> fragment_shader;
       unique_ptr<Framebuffer> framebuffer;
-      unique_ptr<Framebuffer> framebuffer_feedback;
+      unique_ptr<Framebuffer> fb_feedback;
       VkRenderPass swapchain_render_pass;
 
       void clear_vk();
       bool init_pipeline();
       bool init_pipeline_layout();
 
-      void set_semantic_texture(VkDescriptorSet set, slang_texture_semantic semantic,
+      void set_semantic_texture(VkDescriptorSet set,
+            slang_texture_semantic semantic,
             const Texture &texture);
       void set_semantic_texture_array(VkDescriptorSet set,
             slang_texture_semantic semantic, unsigned index,
@@ -663,7 +605,7 @@ void vulkan_filter_chain::update_history_info()
 void vulkan_filter_chain::update_feedback_info()
 {
    unsigned i;
-   if (common.framebuffer_feedback.empty())
+   if (common.fb_feedback.empty())
       return;
 
    for (i = 0; i < passes.size() - 1; i++)
@@ -672,7 +614,7 @@ void vulkan_filter_chain::update_feedback_info()
       if (!fb)
          continue;
 
-      Texture *source         = &common.framebuffer_feedback[i];
+      Texture *source         = &common.fb_feedback[i];
 
       if (!source)
          continue;
@@ -893,7 +835,7 @@ bool vulkan_filter_chain::init_feedback()
    unsigned i;
    bool use_feedbacks = false;
 
-   common.framebuffer_feedback.clear();
+   common.fb_feedback.clear();
 
    /* Final pass cannot have feedback. */
    for (i = 0; i < passes.size() - 1; i++)
@@ -926,7 +868,7 @@ bool vulkan_filter_chain::init_feedback()
       return true;
    }
 
-   common.framebuffer_feedback.resize(passes.size() - 1);
+   common.fb_feedback.resize(passes.size() - 1);
    require_clear = true;
    return true;
 }
@@ -1958,8 +1900,8 @@ void Pass::allocate_buffers()
 
 void Pass::end_frame()
 {
-   if (framebuffer_feedback)
-      swap(framebuffer, framebuffer_feedback);
+   if (fb_feedback)
+      swap(framebuffer, fb_feedback);
 }
 
 bool Pass::init_feedback()
@@ -1967,7 +1909,7 @@ bool Pass::init_feedback()
    if (final_pass)
       return false;
 
-   framebuffer_feedback = unique_ptr<Framebuffer>(
+   fb_feedback = unique_ptr<Framebuffer>(
          new Framebuffer(device, memory_properties,
             current_framebuffer_size,
             pass_info.rt_format, pass_info.max_levels));
@@ -1981,7 +1923,7 @@ bool Pass::build()
    unordered_map<string, slang_semantic_map> semantic_map;
 
    framebuffer.reset();
-   framebuffer_feedback.reset();
+   fb_feedback.reset();
 
    if (!final_pass)
       framebuffer = unique_ptr<Framebuffer>(
@@ -2201,10 +2143,10 @@ void Pass::build_semantics(VkDescriptorSet set, uint8_t *buffer,
             common->pass_outputs[i]);
 
    /* Feedback FBOs. */
-   for (i = 0; i < common->framebuffer_feedback.size(); i++)
+   for (i = 0; i < common->fb_feedback.size(); i++)
       build_semantic_texture_array(set, buffer,
             SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK, i,
-            common->framebuffer_feedback[i]);
+            common->fb_feedback[i]);
 
    /* LUTs. */
    for (i = 0; i < common->luts.size(); i++)
