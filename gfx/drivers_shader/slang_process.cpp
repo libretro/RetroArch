@@ -530,87 +530,93 @@ bool slang_process(
          ps_compiler->set_decoration(
                ps_resources.push_constant_buffers[0].id, spv::DecorationBinding, 1);
 
+      switch (dst_type)
+      {
+         case RARCH_SHADER_HLSL:
+         case RARCH_SHADER_CG:
 #ifdef ENABLE_HLSL
-      if (dst_type == RARCH_SHADER_HLSL || dst_type == RARCH_SHADER_CG)
-      {
-         CompilerHLSL::Options options;
-         CompilerHLSL*         vs = (CompilerHLSL*)vs_compiler;
-         CompilerHLSL*         ps = (CompilerHLSL*)ps_compiler;
-         options.shader_model     = version;
-         vs->set_hlsl_options(options);
-         ps->set_hlsl_options(options);
-         vs_code = vs->compile();
-         ps_code = ps->compile();
-      }
-      else
+            {
+               CompilerHLSL::Options options;
+               CompilerHLSL*         vs = (CompilerHLSL*)vs_compiler;
+               CompilerHLSL*         ps = (CompilerHLSL*)ps_compiler;
+               options.shader_model     = version;
+               vs->set_hlsl_options(options);
+               ps->set_hlsl_options(options);
+               vs_code = vs->compile();
+               ps_code = ps->compile();
+            }
 #endif
-      if (dst_type == RARCH_SHADER_METAL)
-      {
-         CompilerMSL::Options options;
-         CompilerMSL*         vs = (CompilerMSL*)vs_compiler;
-         CompilerMSL*         ps = (CompilerMSL*)ps_compiler;
-         options.msl_version     = version;
-         vs->set_msl_options(options);
-         ps->set_msl_options(options);
-
-         const auto remap_push_constant = [](CompilerMSL *comp,
-                                             const ShaderResources &resources) {
-            for (const Resource& resource : resources.push_constant_buffers)
+            break;
+         case RARCH_SHADER_METAL:
             {
-               // Explicit 1:1 mapping for bindings.
-               MSLResourceBinding binding = {};
-               binding.stage = comp->get_execution_model();
-               binding.desc_set = kPushConstDescSet;
-               binding.binding = kPushConstBinding;
-               // Use earlier decoration override.
-               binding.msl_buffer = comp->get_decoration(resource.id, spv::DecorationBinding);
-               comp->add_msl_resource_binding(binding);
-            }
-         };
+               CompilerMSL::Options options;
+               CompilerMSL*         vs = (CompilerMSL*)vs_compiler;
+               CompilerMSL*         ps = (CompilerMSL*)ps_compiler;
+               options.msl_version     = version;
+               vs->set_msl_options(options);
+               ps->set_msl_options(options);
 
-         const auto remap_generic_resource = [](CompilerMSL *comp,
-                                                const SmallVector<Resource> &resources) {
-            for (const Resource& resource : resources)
+               const auto remap_push_constant = [](CompilerMSL *comp,
+                     const ShaderResources &resources) {
+                  for (const Resource& resource : resources.push_constant_buffers)
+                  {
+                     // Explicit 1:1 mapping for bindings.
+                     MSLResourceBinding binding = {};
+                     binding.stage = comp->get_execution_model();
+                     binding.desc_set = kPushConstDescSet;
+                     binding.binding = kPushConstBinding;
+                     // Use earlier decoration override.
+                     binding.msl_buffer = comp->get_decoration(resource.id, spv::DecorationBinding);
+                     comp->add_msl_resource_binding(binding);
+                  }
+               };
+
+               const auto remap_generic_resource = [](CompilerMSL *comp,
+                     const SmallVector<Resource> &resources) {
+                  for (const Resource& resource : resources)
+                  {
+                     // Explicit 1:1 mapping for bindings.
+                     MSLResourceBinding binding = {};
+                     binding.stage = comp->get_execution_model();
+                     binding.desc_set = comp->get_decoration(resource.id, spv::DecorationDescriptorSet);
+
+                     // Use existing decoration override.
+                     uint32_t msl_binding = comp->get_decoration(resource.id, spv::DecorationBinding);
+                     binding.binding      = msl_binding;
+                     binding.msl_buffer   = msl_binding;
+                     binding.msl_texture  = msl_binding;
+                     binding.msl_sampler  = msl_binding;
+                     comp->add_msl_resource_binding(binding);
+                  }
+               };
+
+               remap_push_constant(vs, vs_resources);
+               remap_push_constant(ps, ps_resources);
+               remap_generic_resource(vs, vs_resources.uniform_buffers);
+               remap_generic_resource(ps, ps_resources.uniform_buffers);
+               remap_generic_resource(vs, vs_resources.sampled_images);
+               remap_generic_resource(ps, ps_resources.sampled_images);
+
+               vs_code = vs->compile();
+               ps_code = ps->compile();
+            }
+            break;
+         case RARCH_SHADER_GLSL:
             {
-               // Explicit 1:1 mapping for bindings.
-               MSLResourceBinding binding = {};
-               binding.stage = comp->get_execution_model();
-               binding.desc_set = comp->get_decoration(resource.id, spv::DecorationDescriptorSet);
+               CompilerGLSL::Options options;
+               CompilerGLSL*         vs = (CompilerGLSL*)vs_compiler;
+               CompilerGLSL*         ps = (CompilerGLSL*)ps_compiler;
+               options.version          = version;
+               ps->set_common_options(options);
+               vs->set_common_options(options);
 
-               // Use existing decoration override.
-               uint32_t msl_binding = comp->get_decoration(resource.id, spv::DecorationBinding);
-               binding.binding      = msl_binding;
-               binding.msl_buffer   = msl_binding;
-               binding.msl_texture  = msl_binding;
-               binding.msl_sampler  = msl_binding;
-               comp->add_msl_resource_binding(binding);
+               vs_code = vs->compile();
+               ps_code = ps->compile();
             }
-         };
-
-         remap_push_constant(vs, vs_resources);
-         remap_push_constant(ps, ps_resources);
-         remap_generic_resource(vs, vs_resources.uniform_buffers);
-         remap_generic_resource(ps, ps_resources.uniform_buffers);
-         remap_generic_resource(vs, vs_resources.sampled_images);
-         remap_generic_resource(ps, ps_resources.sampled_images);
-
-         vs_code = vs->compile();
-         ps_code = ps->compile();
+            break;
+         default:
+            goto error;
       }
-      else if (dst_type == RARCH_SHADER_GLSL)
-      {
-         CompilerGLSL::Options options;
-         CompilerGLSL*         vs = (CompilerGLSL*)vs_compiler;
-         CompilerGLSL*         ps = (CompilerGLSL*)ps_compiler;
-         options.version          = version;
-         ps->set_common_options(options);
-         vs->set_common_options(options);
-
-         vs_code = vs->compile();
-         ps_code = ps->compile();
-      }
-      else
-         goto error;
 
       pass.source.string.vertex   = strdup(vs_code.c_str());
       pass.source.string.fragment = strdup(ps_code.c_str());
