@@ -476,8 +476,10 @@ static void xmb_calculate_visible_range(const xmb_handle_t *xmb,
 
 const char* xmb_theme_ident(void)
 {
-   settings_t *settings = config_get_ptr();
-   switch (settings->uints.menu_xmb_theme)
+   settings_t    *settings = config_get_ptr();
+   unsigned menu_xmb_theme = settings->uints.menu_xmb_theme;
+
+   switch (menu_xmb_theme)
    {
       case XMB_ICON_THEME_FLATUI:
          return "flatui";
@@ -1624,10 +1626,12 @@ static void xmb_list_switch_new(xmb_handle_t *xmb,
       file_list_t *list, int dir, size_t current)
 {
    unsigned i, first, last, height;
-   size_t end           = 0;
-   settings_t *settings = config_get_ptr();
+   size_t end                         = 0;
+   settings_t *settings               = config_get_ptr();
+   bool menu_dynamic_wallpaper_enable = settings->bools.menu_dynamic_wallpaper_enable;
+   const char *dir_dynamic_wallpapers = settings->paths.directory_dynamic_wallpapers;
 
-   if (settings->bools.menu_dynamic_wallpaper_enable)
+   if (menu_dynamic_wallpaper_enable)
    {
       size_t path_size = PATH_MAX_LENGTH * sizeof(char);
       char       *path = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
@@ -1639,7 +1643,7 @@ static void xmb_list_switch_new(xmb_handle_t *xmb,
       {
          fill_pathname_join_noext(
                path,
-               settings->paths.directory_dynamic_wallpapers,
+               dir_dynamic_wallpapers,
                tmp,
                path_size);
          free(tmp);
@@ -1673,7 +1677,8 @@ static void xmb_list_switch_new(xmb_handle_t *xmb,
    last  = (unsigned)(end > 0 ? end - 1 : 0);
 
    video_driver_get_size(NULL, &height);
-   xmb_calculate_visible_range(xmb, height, end, (unsigned)current, &first, &last);
+   xmb_calculate_visible_range(xmb, height,
+         end, (unsigned)current, &first, &last);
 
    for (i = 0; i < end; i++)
    {
@@ -1815,10 +1820,11 @@ static void xmb_list_switch_horizontal_list(xmb_handle_t *xmb)
 static void xmb_list_switch(xmb_handle_t *xmb)
 {
    gfx_animation_ctx_entry_t anim_entry;
-   int dir                    = -1;
-   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
-   size_t selection           = menu_navigation_get_selection();
-   settings_t *settings = config_get_ptr();
+   int dir                        = -1;
+   file_list_t *selection_buf     = menu_entries_get_selection_buf_ptr(0);
+   size_t selection               = menu_navigation_get_selection();
+   settings_t       *settings     = config_get_ptr();
+   bool menu_horizontal_animation = settings->bools.menu_horizontal_animation;
 
    if (xmb->categories_selection_ptr > xmb->categories_selection_ptr_old)
       dir = 1;
@@ -1847,8 +1853,9 @@ static void xmb_list_switch(xmb_handle_t *xmb)
          dir, xmb->selection_ptr_old);
 
    /* Check if we are to have horizontal animations. */
-   if (settings->bools.menu_horizontal_animation)
+   if (menu_horizontal_animation)
       xmb_list_switch_new(xmb, selection_buf, dir, selection);
+
    xmb->categories_active_idx_old = (unsigned)xmb->categories_selection_ptr;
 
    if (gfx_thumbnail_is_enabled(xmb->thumbnail_path_data, GFX_THUMBNAIL_RIGHT) ||
@@ -1924,20 +1931,21 @@ static void xmb_context_destroy_horizontal_list(xmb_handle_t *xmb)
 static void xmb_init_horizontal_list(xmb_handle_t *xmb)
 {
    menu_displaylist_info_t info;
-   settings_t *settings         = config_get_ptr();
+   settings_t *settings             = config_get_ptr();
+   const char *dir_playlist         = settings->paths.directory_playlist;
+   bool menu_content_show_playlists = settings->bools.menu_content_show_playlists;
 
    menu_displaylist_info_init(&info);
 
    info.list                    = xmb->horizontal_list;
-   info.path                    = strdup(
-         settings->paths.directory_playlist);
+   info.path                    = strdup(dir_playlist);
    info.label                   = strdup(
          msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB));
    info.exts                    = strdup("lpl");
    info.type_default            = FILE_TYPE_PLAIN;
    info.enum_idx                = MENU_ENUM_LABEL_PLAYLISTS_TAB;
 
-   if (settings->bools.menu_content_show_playlists && !string_is_empty(info.path))
+   if (menu_content_show_playlists && !string_is_empty(info.path))
    {
       if (menu_displaylist_ctl(DISPLAYLIST_DATABASE_PLAYLISTS_HORIZONTAL, &info))
       {
@@ -2155,6 +2163,9 @@ static void xmb_list_open(xmb_handle_t *xmb)
    gfx_animation_ctx_entry_t entry;
 
    settings_t *settings       = config_get_ptr();
+   unsigned 
+      menu_xmb_animation_opening_main_menu = 
+      settings->uints.menu_xmb_animation_opening_main_menu;
    int                    dir = 0;
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
    size_t selection           = menu_navigation_get_selection();
@@ -2183,7 +2194,7 @@ static void xmb_list_open(xmb_handle_t *xmb)
    entry.tag          = -1;
    entry.cb           = NULL;
 
-   switch (settings->uints.menu_xmb_animation_opening_main_menu)
+   switch (menu_xmb_animation_opening_main_menu)
    {
       case 0:
          entry.easing_enum  = EASING_OUT_QUAD;
@@ -2853,18 +2864,24 @@ static int xmb_draw_item(
    gfx_animation_ctx_ticker_t ticker;
    gfx_animation_ctx_ticker_smooth_t ticker_smooth;
    char tmp[255];
-   unsigned ticker_x_offset          = 0;
-   const char *ticker_str            = NULL;
-   unsigned entry_type               = 0;
-   const float half_size             = xmb->icon_size / 2.0f;
-   uintptr_t texture_switch          = 0;
-   bool do_draw_text                 = false;
-   unsigned ticker_limit             = 35 * scale_mod[0];
-   unsigned line_ticker_width        = 45 * scale_mod[3];
-   xmb_node_t *   node               = (xmb_node_t*)
+   unsigned ticker_x_offset            = 0;
+   const char *ticker_str              = NULL;
+   unsigned entry_type                 = 0;
+   const float half_size               = xmb->icon_size / 2.0f;
+   uintptr_t texture_switch            = 0;
+   bool do_draw_text                   = false;
+   unsigned ticker_limit               = 35 * scale_mod[0];
+   unsigned line_ticker_width          = 45 * scale_mod[3];
+   xmb_node_t *   node                 = (xmb_node_t*)
       file_list_get_userdata_at_offset(list, i);
-   settings_t *settings              = config_get_ptr();
-   bool use_smooth_ticker            = settings->bools.menu_ticker_smooth;
+   settings_t *settings                = config_get_ptr();
+   bool use_smooth_ticker              = settings->bools.menu_ticker_smooth;
+   enum gfx_animation_ticker_type
+      menu_ticker_type                 = settings->uints.menu_ticker_type;
+   unsigned xmb_thumbnail_scale_factor = 
+      settings->uints.menu_xmb_thumbnail_scale_factor;
+   bool menu_xmb_vertical_thumbnails   = settings->bools.menu_xmb_vertical_thumbnails;
+   bool menu_show_sublabels            = settings->bools.menu_show_sublabels;
 
    /* Initial ticker configuration */
    if (use_smooth_ticker)
@@ -2872,7 +2889,7 @@ static int xmb_draw_item(
       ticker_smooth.idx           = gfx_animation_get_ticker_pixel_idx();
       ticker_smooth.font          = xmb->font;
       ticker_smooth.font_scale    = 1.0f;
-      ticker_smooth.type_enum     = (enum gfx_animation_ticker_type)settings->uints.menu_ticker_type;
+      ticker_smooth.type_enum     = menu_ticker_type;
       ticker_smooth.spacer        = NULL;
       ticker_smooth.x_offset      = &ticker_x_offset;
       ticker_smooth.dst_str_width = NULL;
@@ -2880,7 +2897,7 @@ static int xmb_draw_item(
    else
    {
       ticker.idx       = gfx_animation_get_ticker_idx();
-      ticker.type_enum = (enum gfx_animation_ticker_type)settings->uints.menu_ticker_type;
+      ticker.type_enum = menu_ticker_type;
       ticker.spacer    = NULL;
    }
 
@@ -2976,17 +2993,17 @@ static int xmb_draw_item(
             (gfx_thumbnail_is_enabled(xmb->thumbnail_path_data, GFX_THUMBNAIL_LEFT)
              && ((xmb->thumbnails.left.status == GFX_THUMBNAIL_STATUS_AVAILABLE)
                   || (xmb->thumbnails.left.status == GFX_THUMBNAIL_STATUS_PENDING))
-             && settings->bools.menu_xmb_vertical_thumbnails)
+             && menu_xmb_vertical_thumbnails)
          )
       {
          ticker_limit      = 40 * scale_mod[1];
          line_ticker_width = 50 * scale_mod[3];
 
          /* Can increase text length if thumbnail is downscaled */
-         if (settings->uints.menu_xmb_thumbnail_scale_factor < 100)
+         if (xmb_thumbnail_scale_factor < 100)
          {
             float ticker_scale_factor =
-                  1.0f - ((float)settings->uints.menu_xmb_thumbnail_scale_factor / 100.0f);
+                  1.0f - ((float)xmb_thumbnail_scale_factor / 100.0f);
 
             ticker_limit +=
                   (unsigned)(ticker_scale_factor * 15.0f * scale_mod[1]);
@@ -3028,7 +3045,7 @@ static int xmb_draw_item(
 
    label_offset = xmb->margins_label_top;
 
-   if (settings->bools.menu_show_sublabels)
+   if (menu_show_sublabels)
    {
       if (i == current && width > 320 && height > 240
             && !string_is_empty(entry->sublabel))
@@ -3055,7 +3072,7 @@ static int xmb_draw_item(
          if (use_smooth_ticker)
          {
             line_ticker_smooth.fade_enabled         = true;
-            line_ticker_smooth.type_enum            = (enum gfx_animation_ticker_type)settings->uints.menu_ticker_type;
+            line_ticker_smooth.type_enum            = menu_ticker_type;
             line_ticker_smooth.idx                  = gfx_animation_get_ticker_pixel_idx();
 
             line_ticker_smooth.font                 = xmb->font2;
@@ -3088,7 +3105,7 @@ static int xmb_draw_item(
          }
          else
          {
-            line_ticker.type_enum = (enum gfx_animation_ticker_type)settings->uints.menu_ticker_type;
+            line_ticker.type_enum = menu_ticker_type;
             line_ticker.idx       = gfx_animation_get_ticker_idx();
 
             line_ticker.line_len  = (size_t)(line_ticker_width);
@@ -3328,11 +3345,12 @@ static void xmb_render(void *data,
    settings_t   *settings   = config_get_ptr();
    xmb_handle_t *xmb        = (xmb_handle_t*)data;
    unsigned      end        = (unsigned)menu_entries_get_size();
+   float menu_scale_factor  = settings->floats.menu_scale_factor;
 
    if (!xmb)
       return;
 
-   scale_factor = (settings->floats.menu_scale_factor * (float)width) / 1920.0f;
+   scale_factor             = (menu_scale_factor * (float)width) / 1920.0f;
 
    if (scale_factor >= 0.1f && scale_factor != xmb->previous_scale_factor)
       xmb_context_reset_internal(xmb, video_driver_is_threaded(),
@@ -4162,6 +4180,8 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    unsigned xmb_system_tab                 = xmb_get_system_tab(xmb, (unsigned)xmb->categories_selection_ptr);
    bool fade_tab_icons                     = false;
    float fade_tab_icons_x_threshold        = 0.0f;
+   bool menu_core_enable                   = settings->bools.menu_core_enable;
+   float menu_scale_factor                 = settings->floats.menu_scale_factor;
 
    if (!xmb)
       return;
@@ -4188,7 +4208,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
       /* Drop shadow for thumbnails needs to be larger
        * than for text/icons, and also needs to scale
        * with screen dimensions */
-      float shadow_offset = xmb->shadow_offset * 1.5f * (settings->floats.menu_scale_factor * (float)width) / 1920.0f;
+      float shadow_offset = xmb->shadow_offset * 1.5f * (menu_scale_factor * (float)width) / 1920.0f;
       shadow_offset = (shadow_offset > xmb->shadow_offset) ? shadow_offset : xmb->shadow_offset;
 
       thumbnail_shadow.type          = GFX_THUMBNAIL_SHADOW_DROP;
@@ -4246,7 +4266,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          1, 1, TEXT_ALIGN_LEFT,
          width, height, xmb->font);
 
-   if (settings->bools.menu_core_enable)
+   if (menu_core_enable)
    {
       menu_entries_get_core_title(title_msg, sizeof(title_msg));
       xmb_draw_text(video_info, xmb, title_msg, xmb->margins_title_left,
@@ -4749,9 +4769,9 @@ static void xmb_layout_ps3(xmb_handle_t *xmb, int width)
 {
    unsigned new_font_size, new_header_height;
    settings_t *settings          = config_get_ptr();
-
+   float menu_scale_factor       = settings->floats.menu_scale_factor;
    float scale_factor            =
-      (settings->floats.menu_scale_factor * (float)width) / 1920.0f;
+      (menu_scale_factor * (float)width) / 1920.0f;
 
    xmb->above_subitem_offset     =   1.5;
    xmb->above_item_offset        =  -1.0;
@@ -4804,11 +4824,11 @@ static void xmb_layout_psp(xmb_handle_t *xmb, int width)
 {
    unsigned new_font_size, new_header_height;
    settings_t *settings          = config_get_ptr();
+   float menu_scale_factor       = settings->floats.menu_scale_factor;
    float scale_factor            =
-      ((settings->floats.menu_scale_factor * (float)width) / 1920.0f) * 1.5f;
+      ((menu_scale_factor * (float)width) / 1920.0f) * 1.5f;
 #ifdef _3DS
-   scale_factor                  =
-      settings->floats.menu_scale_factor / 4.0f;
+   scale_factor                  = menu_scale_factor / 4.0f;
 #endif
 
    xmb->above_subitem_offset     =  1.5;
@@ -4856,13 +4876,14 @@ static void xmb_layout_psp(xmb_handle_t *xmb, int width)
 static void xmb_layout(xmb_handle_t *xmb)
 {
    unsigned width, height, i, current, end;
-   settings_t *settings       = config_get_ptr();
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
    size_t selection           = menu_navigation_get_selection();
+   settings_t *settings       = config_get_ptr();
+   unsigned menu_xmb_layout   = settings->uints.menu_xmb_layout;
 
    video_driver_get_size(&width, &height);
 
-   switch (settings->uints.menu_xmb_layout)
+   switch (menu_xmb_layout)
    {
       /* Automatic */
       case 0:
@@ -5094,7 +5115,8 @@ static void *xmb_init(void **userdata, bool video_is_threaded)
       xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_NETPLAY;
 #endif
 
-   if (settings->bools.menu_content_show_add && !settings->bools.kiosk_mode_enable)
+   if (      settings->bools.menu_content_show_add 
+         && !settings->bools.kiosk_mode_enable)
       xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_ADD;
 
    menu_driver_ctl(RARCH_MENU_CTL_UNSET_PREVENT_POPULATE, NULL);
@@ -5474,6 +5496,7 @@ static void xmb_context_reset_textures(
 {
    unsigned i;
    settings_t *settings = config_get_ptr();
+
    xmb->assets_missing = false;
 
    gfx_display_allocate_white_texture();
@@ -5849,19 +5872,20 @@ static void xmb_list_deep_copy(const file_list_t *src, file_list_t *dst,
 static void xmb_list_cache(void *data, enum menu_list_type type, unsigned action)
 {
    size_t stack_size, list_size;
-   xmb_handle_t      *xmb     = (xmb_handle_t*)data;
-   file_list_t *menu_stack    = menu_entries_get_menu_stack_ptr(0);
-   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
-   size_t selection           = menu_navigation_get_selection();
-   settings_t *settings       = config_get_ptr();
+   xmb_handle_t      *xmb         = (xmb_handle_t*)data;
+   file_list_t *menu_stack        = menu_entries_get_menu_stack_ptr(0);
+   file_list_t *selection_buf     = menu_entries_get_selection_buf_ptr(0);
+   size_t selection               = menu_navigation_get_selection();
+   settings_t *settings           = config_get_ptr();
+   bool menu_horizontal_animation = settings->bools.menu_horizontal_animation;
 
    if (!xmb)
       return;
 
    /* Check whether to enable the horizontal animation. */
-   if (settings->bools.menu_horizontal_animation)
+   if (menu_horizontal_animation)
    {
-      unsigned first = 0, last = 0;
+      unsigned first  = 0, last = 0;
       unsigned height = 0;
       video_driver_get_size(NULL, &height);
 
@@ -6101,64 +6125,75 @@ static int xmb_list_push(void *data, void *userdata,
       menu_displaylist_info_t *info, unsigned type)
 {
    menu_displaylist_ctx_parse_entry_t entry;
-   int ret                = -1;
-   core_info_list_t *list = NULL;
-   menu_handle_t *menu    = (menu_handle_t*)data;
+   int ret                         = -1;
+   core_info_list_t *list          = NULL;
+   menu_handle_t *menu             = (menu_handle_t*)data;
+   settings_t *settings            = config_get_ptr();
+   bool menu_show_load_core        = settings->bools.menu_show_load_core;
+   bool menu_show_load_content     = settings->bools.menu_show_load_content;
+   bool menu_content_show_pl       = settings->bools.menu_content_show_playlists;
+   bool menu_show_configurations   = settings->bools.menu_show_configurations;
+   bool menu_show_load_disc        = settings->bools.menu_show_load_disc;
+   bool menu_show_dump_disc        = settings->bools.menu_show_dump_disc;
+   bool menu_show_shutdown         = settings->bools.menu_show_shutdown;
+   bool menu_show_reboot           = settings->bools.menu_show_reboot;
+   bool menu_show_quit_retroarch   = settings->bools.menu_show_quit_retroarch;
+   bool menu_show_restart_ra       = settings->bools.menu_show_restart_retroarch;
+   bool menu_show_information      = settings->bools.menu_show_information;
+   bool menu_show_help             = settings->bools.menu_show_help;
+   bool kiosk_mode_enable          = settings->bools.kiosk_mode_enable;
+   bool desktop_menu_enable        = settings->bools.desktop_menu_enable;
+   bool menu_show_online_updater   = settings->bools.menu_show_online_updater;
+   bool menu_content_show_settings = settings->bools.menu_content_show_settings;
+   const char *menu_content_show_settings_password =
+      settings->paths.menu_content_show_settings_password;
+   const char *kiosk_mode_password = settings->paths.kiosk_mode_password;
 
    switch (type)
    {
       case DISPLAYLIST_LOAD_CONTENT_LIST:
-         {
-            settings_t *settings = config_get_ptr();
+         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
 
-            menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+         menu_entries_append_enum(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FAVORITES),
+               msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES),
+               MENU_ENUM_LABEL_FAVORITES,
+               MENU_SETTING_ACTION, 0, 0);
 
+         core_info_get_list(&list);
+         if (core_info_list_num_info_files(list))
             menu_entries_append_enum(info->list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FAVORITES),
-                  msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES),
-                  MENU_ENUM_LABEL_FAVORITES,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST),
+                  msg_hash_to_str(MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST),
+                  MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST,
                   MENU_SETTING_ACTION, 0, 0);
 
-            core_info_get_list(&list);
-            if (core_info_list_num_info_files(list))
-            {
-               menu_entries_append_enum(info->list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST),
-                     msg_hash_to_str(MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST),
-                     MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST,
-                     MENU_SETTING_ACTION, 0, 0);
-            }
+         if (menu_content_show_pl)
+            menu_entries_append_enum(info->list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB),
+                  msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB),
+                  MENU_ENUM_LABEL_PLAYLISTS_TAB,
+                  MENU_SETTING_ACTION, 0, 0);
 
-            if (settings->bools.menu_content_show_playlists)
-               menu_entries_append_enum(info->list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB),
-                     msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB),
-                     MENU_ENUM_LABEL_PLAYLISTS_TAB,
-                     MENU_SETTING_ACTION, 0, 0);
+         if (frontend_driver_parse_drive_list(info->list, true) != 0)
+            menu_entries_append_enum(info->list, "/",
+                  msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+                  MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
+                  MENU_SETTING_ACTION, 0, 0);
 
-            if (frontend_driver_parse_drive_list(info->list, true) != 0)
-               menu_entries_append_enum(info->list, "/",
-                     msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
-                     MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
-                     MENU_SETTING_ACTION, 0, 0);
+         if (!kiosk_mode_enable)
+            menu_entries_append_enum(info->list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS),
+                  msg_hash_to_str(MENU_ENUM_LABEL_MENU_FILE_BROWSER_SETTINGS),
+                  MENU_ENUM_LABEL_MENU_FILE_BROWSER_SETTINGS,
+                  MENU_SETTING_ACTION, 0, 0);
 
-            if (!settings->bools.kiosk_mode_enable)
-            {
-               menu_entries_append_enum(info->list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS),
-                     msg_hash_to_str(MENU_ENUM_LABEL_MENU_FILE_BROWSER_SETTINGS),
-                     MENU_ENUM_LABEL_MENU_FILE_BROWSER_SETTINGS,
-                     MENU_SETTING_ACTION, 0, 0);
-            }
-
-            info->need_push    = true;
-            info->need_refresh = true;
-            ret = 0;
-         }
+         info->need_push    = true;
+         info->need_refresh = true;
+         ret = 0;
          break;
       case DISPLAYLIST_MAIN_MENU:
          {
-            settings_t   *settings      = config_get_ptr();
             rarch_system_info_t *system = runloop_get_system_info();
             menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
 
@@ -6187,7 +6222,7 @@ static int xmb_list_push(void *data, void *userdata,
                if (frontend_driver_has_fork())
 #endif
                {
-                  if (settings->bools.menu_show_load_core)
+                  if (menu_show_load_core)
                   {
                      entry.enum_idx   = MENU_ENUM_LABEL_CORE_LIST;
                      menu_displaylist_setting(&entry);
@@ -6195,7 +6230,7 @@ static int xmb_list_push(void *data, void *userdata,
                }
             }
 
-            if (settings->bools.menu_show_load_content)
+            if (menu_show_load_content)
             {
                entry.enum_idx      = MENU_ENUM_LABEL_LOAD_CONTENT_LIST;
                menu_displaylist_setting(&entry);
@@ -6207,14 +6242,13 @@ static int xmb_list_push(void *data, void *userdata,
                }
             }
 
-
-            if (settings->bools.menu_show_load_disc)
+            if (menu_show_load_disc)
             {
                entry.enum_idx      = MENU_ENUM_LABEL_LOAD_DISC;
                menu_displaylist_setting(&entry);
             }
 
-            if (settings->bools.menu_show_dump_disc)
+            if (menu_show_dump_disc)
             {
                entry.enum_idx      = MENU_ENUM_LABEL_DUMP_DISC;
                menu_displaylist_setting(&entry);
@@ -6223,7 +6257,7 @@ static int xmb_list_push(void *data, void *userdata,
             entry.enum_idx      = MENU_ENUM_LABEL_ADD_CONTENT_LIST;
             menu_displaylist_setting(&entry);
 #ifdef HAVE_QT
-            if (settings->bools.desktop_menu_enable)
+            if (desktop_menu_enable)
             {
                entry.enum_idx      = MENU_ENUM_LABEL_SHOW_WIMP;
                menu_displaylist_setting(&entry);
@@ -6231,26 +6265,27 @@ static int xmb_list_push(void *data, void *userdata,
 #endif
 #if defined(HAVE_NETWORKING)
 #if defined(HAVE_ONLINE_UPDATER)
-            if (settings->bools.menu_show_online_updater && !settings->bools.kiosk_mode_enable)
+            if (menu_show_online_updater && !kiosk_mode_enable)
             {
                entry.enum_idx      = MENU_ENUM_LABEL_ONLINE_UPDATER;
                menu_displaylist_setting(&entry);
             }
 #endif
 #endif
-            if (!settings->bools.menu_content_show_settings && !string_is_empty(settings->paths.menu_content_show_settings_password))
+            if (  !menu_content_show_settings && 
+                  !string_is_empty(menu_content_show_settings_password))
             {
                entry.enum_idx      = MENU_ENUM_LABEL_XMB_MAIN_MENU_ENABLE_SETTINGS;
                menu_displaylist_setting(&entry);
             }
 
-            if (settings->bools.kiosk_mode_enable && !string_is_empty(settings->paths.kiosk_mode_password))
+            if (kiosk_mode_enable && !string_is_empty(kiosk_mode_password))
             {
                entry.enum_idx      = MENU_ENUM_LABEL_MENU_DISABLE_KIOSK_MODE;
                menu_displaylist_setting(&entry);
             }
 
-            if (settings->bools.menu_show_information)
+            if (menu_show_information)
             {
                entry.enum_idx      = MENU_ENUM_LABEL_INFORMATION_LIST;
                menu_displaylist_setting(&entry);
@@ -6269,38 +6304,38 @@ static int xmb_list_push(void *data, void *userdata,
             menu_displaylist_setting(&entry);
 #endif
 
-            if (settings->bools.menu_show_configurations && !settings->bools.kiosk_mode_enable)
+            if (menu_show_configurations && !kiosk_mode_enable)
             {
                entry.enum_idx      = MENU_ENUM_LABEL_CONFIGURATIONS_LIST;
                menu_displaylist_setting(&entry);
             }
 
-            if (settings->bools.menu_show_help)
+            if (menu_show_help)
             {
                entry.enum_idx      = MENU_ENUM_LABEL_HELP_LIST;
                menu_displaylist_setting(&entry);
             }
 
 #if !defined(IOS)
-            if (settings->bools.menu_show_restart_retroarch)
+            if (menu_show_restart_ra)
             {
                entry.enum_idx      = MENU_ENUM_LABEL_RESTART_RETROARCH;
                menu_displaylist_setting(&entry);
             }
 
-            if (settings->bools.menu_show_quit_retroarch)
+            if (menu_show_quit_retroarch)
             {
                entry.enum_idx      = MENU_ENUM_LABEL_QUIT_RETROARCH;
                menu_displaylist_setting(&entry);
             }
 #endif
-            if (settings->bools.menu_show_reboot)
+            if (menu_show_reboot)
             {
                entry.enum_idx      = MENU_ENUM_LABEL_REBOOT;
                menu_displaylist_setting(&entry);
             }
 
-            if (settings->bools.menu_show_shutdown)
+            if (menu_show_shutdown)
             {
                entry.enum_idx      = MENU_ENUM_LABEL_SHUTDOWN;
                menu_displaylist_setting(&entry);
