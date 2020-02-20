@@ -2877,7 +2877,7 @@ static int xmb_draw_item(
    settings_t *settings                = config_get_ptr();
    bool use_smooth_ticker              = settings->bools.menu_ticker_smooth;
    enum gfx_animation_ticker_type
-      menu_ticker_type                 = settings->uints.menu_ticker_type;
+      menu_ticker_type                 = (enum gfx_animation_ticker_type)settings->uints.menu_ticker_type;
    unsigned xmb_thumbnail_scale_factor = 
       settings->uints.menu_xmb_thumbnail_scale_factor;
    bool menu_xmb_vertical_thumbnails   = settings->bools.menu_xmb_vertical_thumbnails;
