@@ -5615,23 +5615,23 @@ static void command_event_deinit_core(bool reinit)
 
 static void command_event_init_cheats(void)
 {
-   settings_t     *settings = configuration_settings;
-   bool        allow_cheats = true;
-
+   settings_t     *settings      = configuration_settings;
+   bool        allow_cheats      = true;
+   bool apply_cheats_after_load  = settings->bools.apply_cheats_after_load;
+   const char *path_cheat_db     = settings->paths.path_cheat_database;
 #ifdef HAVE_NETWORKING
-   allow_cheats &= !netplay_driver_ctl(
+   allow_cheats                 &= !netplay_driver_ctl(
          RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL);
 #endif
-   allow_cheats &= !(bsv_movie_state_handle != NULL);
+   allow_cheats                 &= !(bsv_movie_state_handle != NULL);
 
    if (!allow_cheats)
       return;
 
    cheat_manager_alloc_if_empty();
-   cheat_manager_load_game_specific_cheats(
-         settings->paths.path_cheat_database);
+   cheat_manager_load_game_specific_cheats(path_cheat_db);
 
-   if (settings->bools.apply_cheats_after_load)
+   if (apply_cheats_after_load)
       cheat_manager_apply_cheats();
 }
 
@@ -6983,22 +6983,23 @@ TODO: Add a setting for these tweaks */
          /* Switch to the next available overlay screen. */
 #ifdef HAVE_OVERLAY
          {
-            settings_t *settings = configuration_settings;
-            bool *check_rotation = (bool*)data;
-
+            bool *check_rotation           = (bool*)data;
+            settings_t *settings           = configuration_settings;
+            bool inp_overlay_auto_rotate   = settings->bools.input_overlay_auto_rotate;
+            float input_overlay_opacity    = settings->floats.input_overlay_opacity;
             if (!overlay_ptr)
                return false;
 
             overlay_ptr->index  = overlay_ptr->next_index;
             overlay_ptr->active = &overlay_ptr->overlays[overlay_ptr->index];
 
-            input_overlay_load_active(overlay_ptr, settings->floats.input_overlay_opacity);
+            input_overlay_load_active(overlay_ptr, input_overlay_opacity);
 
             overlay_ptr->blocked    = true;
             overlay_ptr->next_index = (unsigned)((overlay_ptr->index + 1) % overlay_ptr->size);
 
             /* Check orientation, if required */
-            if (settings->bools.input_overlay_auto_rotate)
+            if (inp_overlay_auto_rotate)
                if (check_rotation)
                   if (*check_rotation)
                      input_overlay_auto_rotate(overlay_ptr);
@@ -7083,10 +7084,11 @@ TODO: Add a setting for these tweaks */
          {
             settings_t *settings          = configuration_settings;
             unsigned content_history_size = settings->uints.content_history_size;
+            bool history_list_enable      = settings->bools.history_list_enable;
 
             command_event(CMD_EVENT_HISTORY_DEINIT, NULL);
 
-            if (!settings->bools.history_list_enable)
+            if (!history_list_enable)
                return false;
 
             RARCH_LOG("%s: [%s].\n",
@@ -7179,13 +7181,13 @@ TODO: Add a setting for these tweaks */
       case CMD_EVENT_VIDEO_SET_BLOCKING_STATE:
          {
             settings_t *settings      = configuration_settings;
+            bool adaptive_vsync       = settings->bools.video_adaptive_vsync;
+            unsigned swap_interval    = settings->uints.video_swap_interval;
             if (current_video->set_nonblock_state)
                current_video->set_nonblock_state(video_driver_data, false,
                      video_driver_test_all_flags(
                         GFX_CTX_FLAGS_ADAPTIVE_VSYNC) &&
-                     settings->bools.video_adaptive_vsync,
-                     settings->uints.video_swap_interval
-                     );
+                     adaptive_vsync, swap_interval);
          }
          break;
       case CMD_EVENT_VIDEO_SET_ASPECT_RATIO:
@@ -7253,7 +7255,10 @@ TODO: Add a setting for these tweaks */
             {
                if (str_list->size >= 6)
                {
-                  struct playlist_entry entry = {0};
+                  struct playlist_entry entry       = {0};
+                  bool playlist_use_old_format      = settings->bools.playlist_use_old_format;
+                  bool playlist_sort_alphabetical   = settings->bools.playlist_sort_alphabetical;
+                  bool playlist_fuzzy_archive_match = settings->bools.playlist_fuzzy_archive_match;
 
                   entry.path      = str_list->elems[0].data; /* content_path */
                   entry.label     = str_list->elems[1].data; /* content_label */
@@ -7263,14 +7268,15 @@ TODO: Add a setting for these tweaks */
                   entry.db_name   = str_list->elems[5].data; /* db_name */
 
                   /* Write playlist entry */
-                  if (playlist_push(g_defaults.content_favorites, &entry, settings->bools.playlist_fuzzy_archive_match))
+                  if (playlist_push(g_defaults.content_favorites, &entry,
+                           playlist_fuzzy_archive_match))
                   {
                      /* New addition - need to resort if option is enabled */
-                     if (settings->bools.playlist_sort_alphabetical)
+                     if (playlist_sort_alphabetical)
                         playlist_qsort(g_defaults.content_favorites);
 
                      playlist_write_file(g_defaults.content_favorites,
-                           settings->bools.playlist_use_old_format);
+                           playlist_use_old_format);
                      runloop_msg_queue_push(msg_hash_to_str(MSG_ADDED_TO_FAVORITES), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
                   }
                }
@@ -7414,14 +7420,15 @@ TODO: Add a setting for these tweaks */
          /* init netplay manually */
       case CMD_EVENT_NETPLAY_INIT:
          {
-            char       *hostname = (char *) data;
-            settings_t *settings = configuration_settings;
+            char       *hostname       = (char*)data;
+            settings_t *settings       = configuration_settings;
+            const char *netplay_server = settings->paths.netplay_server;
+            unsigned netplay_port      = settings->uints.netplay_port;
 
             command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
 
             if (!init_netplay(NULL, hostname ? hostname :
-                     settings->paths.netplay_server,
-                     settings->uints.netplay_port))
+                     netplay_server, netplay_port))
             {
                command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
                return false;
@@ -8108,7 +8115,8 @@ void main_exit(void *args)
       strlcpy(settings->arrays.video_driver, cached_video_driver,
             sizeof(settings->arrays.video_driver));
       cached_video_driver[0] = 0;
-      RARCH_LOG("[Video]: Restored video driver to \"%s\".\n", settings->arrays.video_driver);
+      RARCH_LOG("[Video]: Restored video driver to \"%s\".\n",
+            settings->arrays.video_driver);
    }
 
    if (config_save_on_exit)
@@ -11646,16 +11654,18 @@ void ui_companion_driver_init_first(void)
 static void ui_companion_driver_toggle(bool force)
 {
 #ifdef HAVE_QT
-   settings_t *settings = configuration_settings;
+   settings_t *settings     = configuration_settings;
+   bool desktop_menu_enable = settings->bools.desktop_menu_enable;
+   bool ui_companion_toggle = settings->bools.ui_companion_toggle;
 #endif
 
    if (ui_companion && ui_companion->toggle)
       ui_companion->toggle(ui_companion_data, false);
 
 #ifdef HAVE_QT
-   if (settings->bools.desktop_menu_enable)
+   if (desktop_menu_enable)
    {
-      if ((settings->bools.ui_companion_toggle || force) && !qt_is_inited)
+      if ((ui_companion_toggle || force) && !qt_is_inited)
       {
          ui_companion_qt_data = ui_companion_qt.init();
          qt_is_inited         = true;
@@ -13556,23 +13566,27 @@ static void retroarch_overlay_deinit(void)
 static void retroarch_overlay_init(void)
 {
    settings_t *settings      = configuration_settings;
-
+   bool input_overlay_enable = settings->bools.input_overlay_enable;
+   const char *path_overlay  = settings->paths.path_overlay;
+   float overlay_opacity     = settings->floats.input_overlay_opacity;
+   float overlay_scale       = settings->floats.input_overlay_scale;
+   bool overlay_hide_in_menu = settings->bools.input_overlay_hide_in_menu;
 #if defined(GEKKO)
    /* Avoid a crash at startup or even when toggling overlay in rgui */
-   uint64_t memory_free       = frontend_driver_get_free_memory();
+   uint64_t memory_free      = frontend_driver_get_free_memory();
    if (memory_free < (3 * 1024 * 1024))
       return;
 #endif
 
    retroarch_overlay_deinit();
 
-   if (settings->bools.input_overlay_enable)
+   if (input_overlay_enable)
       task_push_overlay_load_default(input_overlay_loaded,
-            settings->paths.path_overlay,
-            settings->bools.input_overlay_hide_in_menu,
-            settings->bools.input_overlay_enable,
-            settings->floats.input_overlay_opacity,
-            settings->floats.input_overlay_scale,
+            path_overlay,
+            overlay_hide_in_menu,
+            input_overlay_enable,
+            overlay_opacity,
+            overlay_scale,
             NULL);
 }
 #endif
@@ -14229,8 +14243,9 @@ static int16_t input_state_device(
       case RETRO_DEVICE_ANALOG:
 
          {
+            bool remap_binds_enable = settings->bools.input_remap_binds_enable;
 #ifdef HAVE_OVERLAY
-            int16_t res_overlay = 0;
+            int16_t res_overlay     = 0;
             if (overlay_ptr && port == 0)
             {
                unsigned                   base = 0;
@@ -14272,15 +14287,15 @@ static int16_t input_state_device(
 #endif
                 )
             {
-               bool bind_valid = libretro_input_binds[port]
+               bool bind_valid         = libretro_input_binds[port]
                   && libretro_input_binds[port][id].valid;
 
                if (bind_valid)
                {
                   /* reset_state - used to reset input state of a button
                    * when the gamepad mapper is in action for that button*/
-                  bool reset_state     = false;
-                  if (settings->bools.input_remap_binds_enable)
+                  bool reset_state        = false;
+                  if (remap_binds_enable)
                   {
                      if (idx < 2 && id < 2)
                      {
@@ -14310,7 +14325,7 @@ static int16_t input_state_device(
                }
             }
 
-            if (settings->bools.input_remap_binds_enable && input_driver_mapper)
+            if (remap_binds_enable && input_driver_mapper)
             {
                if (idx < 2 && id < 2)
                {
@@ -14541,15 +14556,17 @@ static int16_t input_joypad_axis(const input_device_driver_t *drv,
 void menu_input_driver_toggle(bool on)
 {
 #ifdef HAVE_OVERLAY
-   settings_t *settings     = configuration_settings;
+   settings_t *settings         = configuration_settings;
 
    if (on)
    {
+      bool overlay_hide_in_menu = settings->bools.input_overlay_hide_in_menu;
+      bool input_overlay_enable = settings->bools.input_overlay_enable;
       /* If an overlay was displayed before the toggle
        * and overlays are disabled in menu, need to
        * inhibit 'select' input */
-      if (settings->bools.input_overlay_hide_in_menu)
-         if (settings->bools.input_overlay_enable && overlay_ptr && overlay_ptr->alive)
+      if (overlay_hide_in_menu)
+         if (input_overlay_enable && overlay_ptr && overlay_ptr->alive)
             menu_input_set_pointer_inhibit(true);
    }
    else
@@ -14618,11 +14635,14 @@ static void menu_input_get_mouse_hw_state(
     * texture instead (which is only ever set by RGUI) */
    menu_handle_t *menu_data        = menu_driver_get_ptr();
    bool is_rgui                    =
-         (menu_data && menu_data->driver_ctx && menu_data->driver_ctx->set_texture);
+         (menu_data && 
+          menu_data->driver_ctx && 
+          menu_data->driver_ctx->set_texture);
 #ifdef HAVE_OVERLAY
-   bool overlay_enable = settings->bools.input_overlay_enable;
+   bool overlay_enable             = settings->bools.input_overlay_enable;
    /* Menu pointer controls are ignored when overlays are enabled. */
-   bool overlay_active = overlay_enable && overlay_ptr && overlay_ptr->alive;
+   bool overlay_active             = overlay_enable && overlay_ptr 
+      && overlay_ptr->alive;
    if (overlay_active)
       mouse_enabled = false;
 #endif
