@@ -27714,11 +27714,12 @@ static enum runloop_state runloop_check_state(void)
       bool check1                          = true;
       bool check2                          = should_slot_increase && !old_should_slot_increase;
       int addition                         = 1;
+      int state_slot                       = settings->ints.state_slot;
 
       if (!check2)
       {
          check2                            = should_slot_decrease && !old_should_slot_decrease;
-         check1                            = settings->ints.state_slot > 0;
+         check1                            = state_slot > 0;
          addition                          = -1;
       }
 
@@ -27726,7 +27727,7 @@ static enum runloop_state runloop_check_state(void)
        * for this frame. */
       if (check2)
       {
-         int cur_state_slot                = settings->ints.state_slot;
+         int cur_state_slot                = state_slot;
          if (check1)
             configuration_set_int(settings, settings->ints.state_slot,
                   cur_state_slot + addition);
@@ -27761,8 +27762,10 @@ static enum runloop_state runloop_check_state(void)
 
       s[0]           = '\0';
 
-      rewinding      = state_manager_check_rewind(BIT256_GET(current_bits, RARCH_REWIND),
-            settings->uints.rewind_granularity, runloop_paused, s, sizeof(s), &t);
+      rewinding      = state_manager_check_rewind(
+            BIT256_GET(current_bits, RARCH_REWIND),
+            settings->uints.rewind_granularity,
+            runloop_paused, s, sizeof(s), &t);
 
 #if defined(HAVE_GFX_WIDGETS)
       if (gfx_widgets_inited)
@@ -27878,7 +27881,8 @@ static enum runloop_state runloop_check_state(void)
    if (settings->uints.video_shader_delay && !shader_delay_timer.timer_end)
    {
       if (!rarch_timer_is_running(&shader_delay_timer))
-         rarch_timer_begin_us(&shader_delay_timer, settings->uints.video_shader_delay * 1000);
+         rarch_timer_begin_us(&shader_delay_timer,
+               settings->uints.video_shader_delay * 1000);
       else
       {
          rarch_timer_tick(&shader_delay_timer);
