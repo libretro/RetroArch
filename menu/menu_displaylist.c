@@ -1107,6 +1107,8 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
    database_info_list_t *db_info       = NULL;
    settings_t *settings                = config_get_ptr();
    bool show_advanced_settings         = settings->bools.menu_show_advanced_settings;
+   const char *dir_playlist            = settings->paths.directory_playlist;
+   const char *menu_driver             = settings->arrays.menu_driver;
 
    path_playlist[0] = path_base[0] = query[0] = '\0';
 
@@ -1124,8 +1126,7 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
 
    strlcat(path_base, ".lpl", sizeof(path_base));
 
-   fill_pathname_join(path_playlist,
-         settings->paths.directory_playlist, path_base,
+   fill_pathname_join(path_playlist, dir_playlist, path_base,
          sizeof(path_playlist));
 
    playlist = playlist_init(path_playlist, COLLECTION_SIZE);
@@ -1154,8 +1155,8 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
        * RGUI and GLUI, since this functionality is handled elsewhere
        * (and doing it here creates harmful conflicts) */
       if ((i == 0) &&
-          !string_is_equal(settings->arrays.menu_driver, "rgui") &&
-          !string_is_equal(settings->arrays.menu_driver, "glui"))
+          !string_is_equal(menu_driver, "rgui") &&
+          !string_is_equal(menu_driver, "glui"))
       {
          if (!string_is_empty(db_info_entry->name))
             strlcpy(thumbnail_content, db_info_entry->name,
@@ -1233,6 +1234,7 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
                MENU_ENUM_LABEL_RDB_ENTRY_NAME,
                0, 0, 0);
       }
+
       if (db_info_entry->description)
       {
          fill_pathname_join_concat_noext(tmp,
@@ -1245,6 +1247,7 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
                MENU_ENUM_LABEL_RDB_ENTRY_DESCRIPTION,
                0, 0, 0);
       }
+
       if (db_info_entry->genre)
       {
          fill_pathname_join_concat_noext(tmp,
@@ -1257,6 +1260,7 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
                MENU_ENUM_LABEL_RDB_ENTRY_GENRE,
                0, 0, 0);
       }
+
       if (db_info_entry->publisher)
       {
          if (create_string_list_rdb_entry_string(
@@ -1293,6 +1297,7 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
                   db_info_entry->origin, info->path, info->list) == -1)
             goto error;
       }
+
       if (db_info_entry->franchise)
       {
          if (create_string_list_rdb_entry_string(
@@ -1302,6 +1307,7 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
                   db_info_entry->franchise, info->path, info->list) == -1)
             goto error;
       }
+
       if (db_info_entry->max_users)
       {
          if (create_string_list_rdb_entry_int(
@@ -1312,6 +1318,7 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
                   info->path, info->list) == -1)
             goto error;
       }
+
       if (db_info_entry->tgdb_rating)
       {
          if (create_string_list_rdb_entry_int(
@@ -1322,6 +1329,7 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
                   info->path, info->list) == -1)
             goto error;
       }
+
       if (db_info_entry->famitsu_magazine_rating)
       {
          if (create_string_list_rdb_entry_int(
@@ -1332,6 +1340,7 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
                   info->path, info->list) == -1)
             goto error;
       }
+
       if (db_info_entry->edge_magazine_review)
       {
          if (create_string_list_rdb_entry_string(
@@ -1341,6 +1350,7 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
                   db_info_entry->edge_magazine_review, info->path, info->list) == -1)
             goto error;
       }
+
       if (db_info_entry->edge_magazine_rating)
       {
          if (create_string_list_rdb_entry_int(
@@ -1351,6 +1361,7 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
                   info->path, info->list) == -1)
             goto error;
       }
+
       if (db_info_entry->edge_magazine_issue)
       {
          if (create_string_list_rdb_entry_int(
@@ -1361,6 +1372,7 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
                   info->path, info->list) == -1)
             goto error;
       }
+
       if (db_info_entry->releasemonth)
       {
          if (create_string_list_rdb_entry_int(
@@ -1382,6 +1394,7 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
                   info->path, info->list) == -1)
             goto error;
       }
+
       if (db_info_entry->bbfc_rating)
       {
          if (create_string_list_rdb_entry_string(
@@ -1391,6 +1404,7 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
                   db_info_entry->bbfc_rating, info->path, info->list) == -1)
             goto error;
       }
+
       if (db_info_entry->esrb_rating)
       {
          if (create_string_list_rdb_entry_string(
@@ -1400,6 +1414,7 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
                   db_info_entry->esrb_rating, info->path, info->list) == -1)
             goto error;
       }
+
       if (db_info_entry->elspa_rating)
       {
          if (create_string_list_rdb_entry_string(
@@ -1409,6 +1424,7 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
                   db_info_entry->elspa_rating, info->path, info->list) == -1)
             goto error;
       }
+
       if (db_info_entry->pegi_rating)
       {
          if (create_string_list_rdb_entry_string(
@@ -1418,6 +1434,7 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
                   db_info_entry->pegi_rating, info->path, info->list) == -1)
             goto error;
       }
+
       if (db_info_entry->enhancement_hw)
       {
          if (create_string_list_rdb_entry_string(
@@ -1427,6 +1444,7 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
                   db_info_entry->enhancement_hw, info->path, info->list) == -1)
             goto error;
       }
+
       if (db_info_entry->cero_rating)
       {
          if (create_string_list_rdb_entry_string(
@@ -1700,6 +1718,8 @@ static void menu_displaylist_set_new_playlist(
    unsigned playlist_size         = COLLECTION_SIZE;
    const char *playlist_file_name = path_basename(path);
    settings_t *settings           = config_get_ptr();
+   int content_favorites_size     = settings->ints.content_favorites_size;
+   unsigned content_history_size  = settings->uints.content_history_size;
 
    menu->db_playlist_file[0]      = '\0';
 
@@ -1713,10 +1733,10 @@ static void menu_displaylist_set_new_playlist(
           string_is_equal(playlist_file_name, file_path_str(FILE_PATH_CONTENT_MUSIC_HISTORY)) ||
           string_is_equal(playlist_file_name, file_path_str(FILE_PATH_CONTENT_VIDEO_HISTORY)) ||
           string_is_equal(playlist_file_name, file_path_str(FILE_PATH_CONTENT_IMAGE_HISTORY)))
-         playlist_size = settings->uints.content_history_size;
+         playlist_size = content_history_size;
       else if (string_is_equal(playlist_file_name, file_path_str(FILE_PATH_CONTENT_FAVORITES)))
-         if (settings->ints.content_favorites_size >= 0)
-            playlist_size = (unsigned)settings->ints.content_favorites_size;
+         if (content_favorites_size >= 0)
+            playlist_size = (unsigned)content_favorites_size;
    }
 
    if (playlist_init_cached(path, playlist_size))
@@ -1756,15 +1776,13 @@ static int menu_displaylist_parse_horizontal_list(
    {
       char path_playlist[PATH_MAX_LENGTH];
       char lpl_basename[PATH_MAX_LENGTH];
-      settings_t      *settings           = config_get_ptr();
+      settings_t      *settings = config_get_ptr();
+      const char *dir_playlist  = settings->paths.directory_playlist;
 
-      lpl_basename[0]   = '\0';
-      path_playlist[0]  = '\0';
+      lpl_basename[0]           = '\0';
+      path_playlist[0]          = '\0';
 
-      fill_pathname_join(
-            path_playlist,
-            settings->paths.directory_playlist,
-            item->path,
+      fill_pathname_join(path_playlist, dir_playlist, item->path,
             sizeof(path_playlist));
       menu_displaylist_set_new_playlist(menu, path_playlist);
 
@@ -1798,11 +1816,13 @@ static int menu_displaylist_parse_load_content_settings(
    if (!rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
    {
 #ifdef HAVE_LAKKA
-      bool show_advanced_settings    = settings->bools.menu_show_advanced_settings;
+      bool show_advanced_settings         = settings->bools.menu_show_advanced_settings;
 #endif
-      rarch_system_info_t *system    = runloop_get_system_info();
+      bool quickmenu_show_resume_content  = settings->bools.quick_menu_show_resume_content;
+      bool quickmenu_show_restart_content = settings->bools.quick_menu_show_restart_content;
+      rarch_system_info_t *system         = runloop_get_system_info();
 
-      if (settings->bools.quick_menu_show_resume_content)
+      if (quickmenu_show_resume_content)
          if (menu_entries_append_enum(list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RESUME_CONTENT),
                msg_hash_to_str(MENU_ENUM_LABEL_RESUME_CONTENT),
@@ -1810,7 +1830,7 @@ static int menu_displaylist_parse_load_content_settings(
                MENU_SETTING_ACTION_RUN, 0, 0))
             count++;
 
-      if (settings->bools.quick_menu_show_restart_content)
+      if (quickmenu_show_restart_content)
          if (menu_entries_append_enum(list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RESTART_CONTENT),
                msg_hash_to_str(MENU_ENUM_LABEL_RESTART_CONTENT),
@@ -2151,40 +2171,45 @@ static int menu_displaylist_parse_horizontal_content_actions(
       {
          bool remove_entry_enabled = false;
 
-         if (settings->uints.playlist_entry_remove_enable == PLAYLIST_ENTRY_REMOVE_ENABLE_ALL)
-            remove_entry_enabled = true;
-         else if (settings->uints.playlist_entry_remove_enable == PLAYLIST_ENTRY_REMOVE_ENABLE_HIST_FAV)
+         switch (settings->uints.playlist_entry_remove_enable)
          {
-            char system[PATH_MAX_LENGTH];
-            system[0] = '\0';
-
-            menu_driver_get_thumbnail_system(system, sizeof(system));
-
-            if (!string_is_empty(system))
-               remove_entry_enabled = string_is_equal(system, "history") ||
-                                      string_is_equal(system, "favorites") ||
-                                      string_is_equal(system, "images_history") ||
-                                      string_is_equal(system, "music_history") ||
-                                      string_is_equal(system, "video_history");
-
-            /* An annoyance: if the user navigates to the information menu,
-             * then to the database entry, the thumbnail system will be changed.
-             * This breaks the above 'remove_entry_enabled' check for the
-             * history and favorites playlists. We therefore have to check
-             * the playlist file name as well... */
-            if (!remove_entry_enabled && settings->bools.quick_menu_show_information)
-            {
-               const char *playlist_path = playlist_get_conf_path(playlist);
-
-               if (!string_is_empty(playlist_path))
+            case PLAYLIST_ENTRY_REMOVE_ENABLE_ALL:
+               remove_entry_enabled = true;
+               break;
+            case PLAYLIST_ENTRY_REMOVE_ENABLE_HIST_FAV:
                {
-                  const char *playlist_file = path_basename(playlist_path);
+                  char system[PATH_MAX_LENGTH];
+                  system[0] = '\0';
 
-                  if (!string_is_empty(playlist_file))
-                     remove_entry_enabled = string_is_equal(playlist_file, file_path_str(FILE_PATH_CONTENT_HISTORY)) ||
-                                            string_is_equal(playlist_file, file_path_str(FILE_PATH_CONTENT_FAVORITES));
+                  menu_driver_get_thumbnail_system(system, sizeof(system));
+
+                  if (!string_is_empty(system))
+                     remove_entry_enabled = string_is_equal(system, "history") ||
+                        string_is_equal(system, "favorites") ||
+                        string_is_equal(system, "images_history") ||
+                        string_is_equal(system, "music_history") ||
+                        string_is_equal(system, "video_history");
+
+                  /* An annoyance: if the user navigates to the information menu,
+                   * then to the database entry, the thumbnail system will be changed.
+                   * This breaks the above 'remove_entry_enabled' check for the
+                   * history and favorites playlists. We therefore have to check
+                   * the playlist file name as well... */
+                  if (!remove_entry_enabled && settings->bools.quick_menu_show_information)
+                  {
+                     const char *playlist_path = playlist_get_conf_path(playlist);
+
+                     if (!string_is_empty(playlist_path))
+                     {
+                        const char *playlist_file = path_basename(playlist_path);
+
+                        if (!string_is_empty(playlist_file))
+                           remove_entry_enabled = string_is_equal(playlist_file, file_path_str(FILE_PATH_CONTENT_HISTORY)) ||
+                              string_is_equal(playlist_file, file_path_str(FILE_PATH_CONTENT_FAVORITES));
+                     }
+                  }
                }
-            }
+               break;
          }
 
          if (remove_entry_enabled)
@@ -2206,7 +2231,8 @@ static int menu_displaylist_parse_horizontal_content_actions(
                MENU_ENUM_LABEL_ADD_TO_FAVORITES_PLAYLIST, FILE_TYPE_PLAYLIST_ENTRY, 0, 0);
       }
 
-      if (settings->bools.quick_menu_show_set_core_association && !settings->bools.kiosk_mode_enable)
+      if (   settings->bools.quick_menu_show_set_core_association && 
+            !settings->bools.kiosk_mode_enable)
       {
          menu_entries_append_enum(info->list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SET_CORE_ASSOCIATION),
@@ -2214,7 +2240,9 @@ static int menu_displaylist_parse_horizontal_content_actions(
                MENU_ENUM_LABEL_SET_CORE_ASSOCIATION, FILE_TYPE_PLAYLIST_ENTRY, 0, 0);
       }
 
-      if (settings->bools.quick_menu_show_reset_core_association && !settings->bools.kiosk_mode_enable)
+      if (
+             settings->bools.quick_menu_show_reset_core_association && 
+            !settings->bools.kiosk_mode_enable)
       {
          menu_entries_append_enum(info->list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RESET_CORE_ASSOCIATION),
@@ -2232,7 +2260,9 @@ static int menu_displaylist_parse_horizontal_content_actions(
    }
 
 #ifdef HAVE_NETWORKING
-   if (settings->bools.quick_menu_show_download_thumbnails && !settings->bools.kiosk_mode_enable)
+   if (
+          settings->bools.quick_menu_show_download_thumbnails && 
+         !settings->bools.kiosk_mode_enable)
    {
       bool download_enabled = true;
 
@@ -2382,6 +2412,7 @@ static unsigned menu_displaylist_parse_playlists(
    unsigned count               = 0;
    settings_t *settings         = config_get_ptr();
    const char *path             = info->path;
+   bool show_hidden_files       = settings->bools.show_hidden_files;
 
    if (string_is_empty(path))
    {
@@ -2391,7 +2422,8 @@ static unsigned menu_displaylist_parse_playlists(
          count++;
       else
          if (menu_entries_append_enum(info->list, "/", "",
-               MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR, FILE_TYPE_DIRECTORY, 0, 0))
+               MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
+               FILE_TYPE_DIRECTORY, 0, 0))
             count++;
       return count;
    }
@@ -2457,7 +2489,7 @@ static unsigned menu_displaylist_parse_playlists(
    }
 
    str_list = dir_list_new(path, NULL, true,
-         settings->bools.show_hidden_files, true, false);
+         show_hidden_files, true, false);
 
    if (!str_list)
       return count;
@@ -2532,7 +2564,8 @@ static unsigned menu_displaylist_parse_cores(
    unsigned items_found         = 0;
    settings_t *settings         = config_get_ptr();
    const char *path             = info->path;
-   bool ok;
+   bool ok                      = false;
+   bool show_hidden_files       = settings->bools.show_hidden_files;
 
    if (string_is_empty(path))
    {
@@ -2544,8 +2577,8 @@ static unsigned menu_displaylist_parse_cores(
    }
 
    str_list = string_list_new();
-   ok = dir_list_append(str_list, path, info->exts,
-         true, settings->bools.show_hidden_files, false, false);
+   ok       = dir_list_append(str_list, path, info->exts,
+         true, show_hidden_files, false, false);
 
 #if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
    /* UWP: browse the optional packages for additional cores */
@@ -2553,7 +2586,7 @@ static unsigned menu_displaylist_parse_cores(
    uwp_fill_installed_core_packages(core_packages);
    for (i = 0; i < core_packages->size; i++)
       dir_list_append(str_list, core_packages->elems[i].data, info->exts,
-            true, settings->bools.show_hidden_files, true, false);
+            true, show_hidden_files, true, false);
 
    string_list_free(core_packages);
 #else
@@ -2729,9 +2762,9 @@ static unsigned menu_displaylist_parse_cores(
 static unsigned menu_displaylist_parse_playlist_manager_list(
       menu_displaylist_info_t *info)
 {
-   settings_t      *settings    = config_get_ptr();
    unsigned count               = 0;
    struct string_list *str_list = NULL;
+   settings_t      *settings    = config_get_ptr();
 
    if (!settings)
       return count;
@@ -3955,6 +3988,7 @@ static int menu_displaylist_parse_disc_info(file_list_t *info_list,
 static unsigned menu_displaylist_populate_subsystem(
       const struct retro_subsystem_info* subsystem, file_list_t *list)
 {
+   char star_char[16];
    unsigned count       = 0;
    settings_t *settings = config_get_ptr();
    /* Note: Create this string here explicitly (rather than
@@ -3968,15 +4002,15 @@ static unsigned menu_displaylist_populate_subsystem(
     * UCN equivalent: "\u2605" */
    static const char utf8_star_char[] = "\xE2\x98\x85";
 #endif
-   char star_char[16];
-   unsigned i = 0;
-   int n = 0;
+   unsigned   i = 0;
+   int        n = 0;
    bool is_rgui = string_is_equal(settings->arrays.menu_driver, "rgui");
    
    /* Select appropriate 'star' marker for subsystem menu entries
     * (i.e. RGUI does not support unicode, so use a 'standard'
     * character fallback) */
-   snprintf(star_char, sizeof(star_char), "%s", is_rgui ? "*" : utf8_star_char);
+   snprintf(star_char, sizeof(star_char),
+         "%s", is_rgui ? "*" : utf8_star_char);
    
    if (menu_displaylist_has_subsystems())
    {
