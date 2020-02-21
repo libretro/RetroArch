@@ -1597,7 +1597,10 @@ static void path_set_redirect(void)
    const char *old_savestate_dir               = dir_get(RARCH_DIR_SAVESTATE);
    struct retro_system_info *system            = &runloop_system.info;
    settings_t *settings                        = configuration_settings;
-
+   bool sort_savefiles_enable                  = settings->bools.sort_savefiles_enable;
+   bool sort_savestates_enable                 = settings->bools.sort_savestates_enable;
+   bool savefiles_in_content_dir               = settings->bools.savefiles_in_content_dir;
+   bool savestates_in_content_dir              = settings->bools.savestates_in_content_dir;
    new_savefile_dir[0] = new_savestate_dir[0]  = '\0';
 
    /* Initialize current save directories
@@ -1613,7 +1616,7 @@ static void path_set_redirect(void)
 #endif
       {
          /* per-core saves: append the library_name to the save location */
-         if (settings->bools.sort_savefiles_enable
+         if (sort_savefiles_enable
                && !string_is_empty(old_savefile_dir))
          {
             fill_pathname_join(
@@ -1636,7 +1639,7 @@ static void path_set_redirect(void)
          }
 
          /* per-core states: append the library_name to the save location */
-         if (settings->bools.sort_savestates_enable
+         if (sort_savestates_enable
                && !string_is_empty(old_savestate_dir))
          {
             fill_pathname_join(
@@ -1662,7 +1665,7 @@ static void path_set_redirect(void)
    }
 
    /* Set savefile directory if empty to content directory */
-   if (string_is_empty(new_savefile_dir) || settings->bools.savefiles_in_content_dir)
+   if (string_is_empty(new_savefile_dir) || savefiles_in_content_dir)
    {
       strlcpy(new_savefile_dir, path_main_basename,
             path_size);
@@ -1670,7 +1673,7 @@ static void path_set_redirect(void)
    }
 
    /* Set savestate directory if empty based on content directory */
-   if (string_is_empty(new_savestate_dir) || settings->bools.savestates_in_content_dir)
+   if (string_is_empty(new_savestate_dir) || savestates_in_content_dir)
    {
       strlcpy(new_savestate_dir, path_main_basename,
             path_size);
@@ -2603,8 +2606,9 @@ static bool accessibility_enabled               = false;
 
 bool is_accessibility_enabled(void)
 {
-   settings_t *settings              = configuration_settings;
-   if (accessibility_enabled || settings->bools.accessibility_enable)
+   settings_t *settings      = configuration_settings;
+   bool accessibility_enable = settings->bools.accessibility_enable;
+   if (accessibility_enabled || accessibility_enable)
       return true;
    return false;
 }
@@ -5260,19 +5264,21 @@ static bool run_translation_service(void)
    {
       char separator  = '?';
       char new_ai_service_url[PATH_MAX_LENGTH];
+      unsigned ai_service_source_lang = settings->uints.ai_service_source_lang;
+      unsigned ai_service_target_lang = settings->uints.ai_service_target_lang;
+      const char *ai_service_url      = settings->arrays.ai_service_url;
 
-      strlcpy(new_ai_service_url,
-            settings->arrays.ai_service_url, sizeof(new_ai_service_url));
+      strlcpy(new_ai_service_url, ai_service_url, sizeof(new_ai_service_url));
 
       /* if query already exists in url, then use &'s instead */
       if (strrchr(new_ai_service_url, '?'))
           separator = '&';
 
       /* source lang */
-      if (settings->uints.ai_service_source_lang != TRANSLATION_LANG_DONT_CARE)
+      if (ai_service_source_lang != TRANSLATION_LANG_DONT_CARE)
       {
          const char *lang_source = ai_service_get_str(
-               (enum translation_lang)settings->uints.ai_service_source_lang);
+               (enum translation_lang)ai_service_source_lang);
 
          if (!string_is_empty(lang_source))
          {
@@ -5286,10 +5292,10 @@ static bool run_translation_service(void)
       }
 
       /* target lang */
-      if (settings->uints.ai_service_target_lang != TRANSLATION_LANG_DONT_CARE)
+      if (ai_service_target_lang != TRANSLATION_LANG_DONT_CARE)
       {
          const char *lang_target = ai_service_get_str(
-               (enum translation_lang)settings->uints.ai_service_target_lang);
+               (enum translation_lang)ai_service_target_lang);
 
          if (!string_is_empty(lang_target))
          {
@@ -5636,8 +5642,9 @@ static void command_event_load_auto_state(void)
    size_t savestate_name_auto_size = PATH_MAX_LENGTH * sizeof(char);
    settings_t *settings            = configuration_settings;
    global_t   *global              = &g_extern;
+   bool savestate_auto_load        = settings->bools.savestate_auto_load;
 
-   if (!global || !settings->bools.savestate_auto_load)
+   if (!global || !savestate_auto_load)
       return;
 #ifdef HAVE_CHEEVOS
    if (rcheevos_hardcore_active)
@@ -5683,8 +5690,10 @@ static void command_event_set_savestate_auto_index(void)
    unsigned max_idx                  = 0;
    settings_t *settings              = configuration_settings;
    global_t   *global                = &g_extern;
+   bool savestate_auto_index         = settings->bools.savestate_auto_index;
+   bool show_hidden_files            = settings->bools.show_hidden_files;
 
-   if (!global || !settings->bools.savestate_auto_index)
+   if (!global || !savestate_auto_index)
       return;
 
    state_dir                         = (char*)calloc(PATH_MAX_LENGTH, sizeof(*state_dir));
@@ -5699,7 +5708,7 @@ static void command_event_set_savestate_auto_index(void)
          state_size);
 
    dir_list = dir_list_new_special(state_dir, DIR_LIST_PLAIN, NULL,
-         settings->bools.show_hidden_files);
+         show_hidden_files);
 
    free(state_dir);
 
@@ -5785,9 +5794,10 @@ static bool event_init_content(void)
 */
 #ifdef HAVE_CHEEVOS
    {
-      settings_t *settings = configuration_settings;
-      if (  !settings->bools.cheevos_enable ||
-            !settings->bools.cheevos_hardcore_mode_enable)
+      settings_t *settings              = configuration_settings;
+      bool cheevos_enable               = settings->bools.cheevos_enable;
+      bool cheevos_hardcore_mode_enable = settings->bools.cheevos_hardcore_mode_enable;
+      if (!cheevos_enable || !cheevos_hardcore_mode_enable)
          command_event_load_auto_state();
    }
 #else
@@ -5803,14 +5813,16 @@ static bool event_init_content(void)
 
 static void update_runtime_log(bool log_per_core)
 {
-   settings_t *settings = configuration_settings;
+   settings_t *settings        = configuration_settings;
+   const char *dir_runtime_log = settings->paths.directory_runtime_log;
+   const char *dir_playlist    = settings->paths.directory_playlist;
 
    /* Initialise runtime log file */
    runtime_log_t *runtime_log = runtime_log_init(
          runtime_content_path,
          runtime_core_path,
-         settings->paths.directory_runtime_log,
-         settings->paths.directory_playlist,
+         dir_runtime_log,
+         dir_playlist,
          log_per_core);
 
    if (!runtime_log)
@@ -5851,14 +5863,16 @@ static void command_event_runtime_log_deinit(void)
    /* Only write to file if content has run for a non-zero length of time */
    if (libretro_core_runtime_usec > 0)
    {
-      settings_t *settings = configuration_settings;
+      settings_t *settings               = configuration_settings;
+      bool content_runtime_log           = settings->bools.content_runtime_log;
+      bool content_runtime_log_aggregate = settings->bools.content_runtime_log_aggregate;
 
       /* Per core logging */
-      if (settings->bools.content_runtime_log)
+      if (content_runtime_log)
          update_runtime_log(true);
 
       /* Aggregate logging */
-      if (settings->bools.content_runtime_log_aggregate)
+      if (content_runtime_log_aggregate)
          update_runtime_log(false);
    }
 
@@ -5912,6 +5926,13 @@ static void retroarch_set_frame_limit(float fastforward_ratio_orig)
 static bool command_event_init_core(enum rarch_core_type type)
 {
    settings_t *settings            = configuration_settings;
+#ifdef HAVE_CONFIGFILE
+   bool auto_overrides_enable      = settings->bools.auto_overrides_enable;
+   bool auto_remaps_enable         = settings->bools.auto_remaps_enable;
+   const char *dir_input_remapping = settings->paths.directory_input_remapping;
+#endif
+   unsigned poll_type_behavior     = settings->uints.input_poll_type_behavior;
+   float fastforward_ratio         = settings->floats.fastforward_ratio;
 
    if (!init_libretro_symbols(type, &current_core))
       return false;
@@ -5944,7 +5965,7 @@ static bool command_event_init_core(enum rarch_core_type type)
          sizeof(runloop_system.valid_extensions));
 
 #ifdef HAVE_CONFIGFILE
-   if (settings->bools.auto_overrides_enable)
+   if (auto_overrides_enable)
       runloop_overrides_active = config_load_override(&runloop_system);
 #endif
 
@@ -5961,9 +5982,8 @@ static bool command_event_init_core(enum rarch_core_type type)
    current_core.retro_set_environment(rarch_environment_cb);
 
 #ifdef HAVE_CONFIGFILE
-   if (settings->bools.auto_remaps_enable)
-      config_load_remap(settings->paths.directory_input_remapping,
-            &runloop_system);
+   if (auto_remaps_enable)
+      config_load_remap(dir_input_remapping, &runloop_system);
 #endif
 
    /* Per-core saves: reset redirection paths */
@@ -5986,10 +6006,10 @@ static bool command_event_init_core(enum rarch_core_type type)
    /* Verify that initial disk index was set correctly */
    disk_control_verify_initial_index(&runloop_system.disk_control);
 
-   if (!core_load(settings->uints.input_poll_type_behavior))
+   if (!core_load(poll_type_behavior))
       return false;
 
-   retroarch_set_frame_limit(configuration_settings->floats.fastforward_ratio);
+   retroarch_set_frame_limit(fastforward_ratio);
    command_event_runtime_log_init();
    return true;
 }
@@ -6002,8 +6022,9 @@ static bool command_event_save_auto_state(void)
       savestate_name_auto_size = PATH_MAX_LENGTH * sizeof(char);
    settings_t *settings        = configuration_settings;
    global_t   *global          = &g_extern;
+   bool savestate_auto_save    = settings->bools.savestate_auto_save;
 
-   if (!global || !settings || !settings->bools.savestate_auto_save)
+   if (!global || !savestate_auto_save)
       return false;
    if (current_core_type == CORE_TYPE_DUMMY)
       return false;
@@ -6306,8 +6327,10 @@ static bool command_event_main_state(unsigned cmd)
          case CMD_EVENT_SAVE_STATE:
             content_save_state(state_path, true, false);
             {
-               settings_t *settings   = configuration_settings;
-               if (settings->bools.frame_time_counter_reset_after_save_state)
+               settings_t *settings = configuration_settings;
+               bool frame_time_counter_reset_after_save_state = 
+                  settings->bools.frame_time_counter_reset_after_save_state;
+               if (frame_time_counter_reset_after_save_state)
                   video_driver_frame_time_count = 0;
             }
             ret      = true;
@@ -6326,7 +6349,9 @@ static bool command_event_main_state(unsigned cmd)
 #endif
                {
                   settings_t *settings   = configuration_settings;
-                  if (settings->bools.frame_time_counter_reset_after_load_state)
+                  bool frame_time_counter_reset_after_load_state = 
+                     settings->bools.frame_time_counter_reset_after_load_state;
+                  if (frame_time_counter_reset_after_load_state)
                      video_driver_frame_time_count = 0;
                }
             }
@@ -6359,13 +6384,14 @@ static bool command_event_resize_windowed_scale(void)
    unsigned idx           = 0;
    settings_t *settings   = configuration_settings;
    unsigned window_scale  = runloop_pending_windowed_scale;
+   bool video_fullscreen  = settings->bools.video_fullscreen;
 
    if (window_scale == 0)
       return false;
 
    configuration_set_float(settings, settings->floats.video_scale, (float)window_scale);
 
-   if (!settings->bools.video_fullscreen)
+   if (!video_fullscreen)
       command_event(CMD_EVENT_REINIT, NULL);
 
    rarch_ctl(RARCH_CTL_SET_WINDOWED_SCALE, &idx);
@@ -6376,6 +6402,12 @@ static bool command_event_resize_windowed_scale(void)
 static void command_event_reinit(const int flags)
 {
    settings_t *settings      = configuration_settings;
+#ifdef HAVE_MENU
+   bool video_fullscreen     = settings->bools.video_fullscreen;
+   bool adaptive_vsync       = settings->bools.video_adaptive_vsync;
+   unsigned swap_interval    = settings->uints.video_swap_interval;
+#endif
+
    video_driver_reinit(flags);
    /* Poll input to avoid possibly stale data to corrupt things. */
    if (current_input && current_input->poll)
@@ -6384,13 +6416,13 @@ static void command_event_reinit(const int flags)
 
 #ifdef HAVE_MENU
    gfx_display_set_framebuffer_dirty_flag();
-   if (settings->bools.video_fullscreen)
+   if (video_fullscreen)
       video_driver_hide_mouse();
    if (menu_driver_alive && current_video->set_nonblock_state)
       current_video->set_nonblock_state(video_driver_data, false,
                video_driver_test_all_flags(GFX_CTX_FLAGS_ADAPTIVE_VSYNC) &&
-               settings->bools.video_adaptive_vsync,
-               settings->uints.video_swap_interval);
+               adaptive_vsync,
+               swap_interval);
 #endif
 }
 
@@ -6563,7 +6595,9 @@ bool command_event(enum event_command cmd, void *data)
       {
 #ifdef HAVE_TRANSLATE
          settings_t *settings      = configuration_settings;
-         if (settings->bools.ai_service_pause)
+         bool ai_service_pause     = settings->bools.ai_service_pause;
+
+         if (ai_service_pause)
          {
             /* pause on call, unpause on second press. */
             if (!runloop_paused)
@@ -6735,8 +6769,9 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_SAVE_STATE:
          {
             settings_t *settings      = configuration_settings;
+            bool savestate_auto_index = settings->bools.savestate_auto_index;
 
-            if (settings->bools.savestate_auto_index)
+            if (savestate_auto_index)
             {
                int new_state_slot = settings->ints.state_slot + 1;
                configuration_set_int(settings, settings->ints.state_slot, new_state_slot);
@@ -6765,8 +6800,9 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_TAKE_SCREENSHOT:
          {
-            settings_t *settings      = configuration_settings;
-            if (!take_screenshot(settings->paths.directory_screenshot,
+            settings_t *settings       = configuration_settings;
+            const char *dir_screenshot = settings->paths.directory_screenshot;
+            if (!take_screenshot(dir_screenshot,
                      path_get(RARCH_PATH_BASENAME), false,
                      video_driver_cached_frame_has_valid_framebuffer(), false, true))
                return false;
@@ -6800,7 +6836,8 @@ bool command_event(enum event_command cmd, void *data)
                strlcpy(settings->arrays.video_driver, cached_video_driver,
                      sizeof(settings->arrays.video_driver));
                cached_video_driver[0] = 0;
-               RARCH_LOG("[Video]: Restored video driver to \"%s\".\n", settings->arrays.video_driver);
+               RARCH_LOG("[Video]: Restored video driver to \"%s\".\n",
+                     settings->arrays.video_driver);
             }
 
 #ifdef HAVE_CONFIGFILE
@@ -6866,11 +6903,12 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_REWIND_INIT:
          {
             settings_t *settings      = configuration_settings;
+            bool rewind_enable        = settings->bools.rewind_enable;
 #ifdef HAVE_CHEEVOS
             if (rcheevos_hardcore_active)
                return false;
 #endif
-            if (settings->bools.rewind_enable)
+            if (rewind_enable)
             {
 #ifdef HAVE_NETWORKING
                /* Only enable state manager if netplay is not underway
@@ -6886,7 +6924,8 @@ TODO: Add a setting for these tweaks */
       case CMD_EVENT_REWIND_TOGGLE:
          {
             settings_t *settings      = configuration_settings;
-            if (settings->bools.rewind_enable)
+            bool rewind_enable        = settings->bools.rewind_enable;
+            if (rewind_enable)
                command_event(CMD_EVENT_REWIND_INIT, NULL);
             else
                command_event(CMD_EVENT_REWIND_DEINIT, NULL);
@@ -6968,15 +7007,15 @@ TODO: Add a setting for these tweaks */
          break;
       case CMD_EVENT_DSP_FILTER_INIT:
          {
-            settings_t *settings      = configuration_settings;
+            settings_t *settings              = configuration_settings;
+            const char *path_audio_dsp_plugin = settings->paths.path_audio_dsp_plugin;
             audio_driver_dsp_filter_free();
-            if (string_is_empty(settings->paths.path_audio_dsp_plugin))
+            if (string_is_empty(path_audio_dsp_plugin))
                break;
-            if (!audio_driver_dsp_filter_init(
-                     settings->paths.path_audio_dsp_plugin))
+            if (!audio_driver_dsp_filter_init(path_audio_dsp_plugin))
             {
                RARCH_ERR("[DSP]: Failed to initialize DSP filter \"%s\".\n",
-                     settings->paths.path_audio_dsp_plugin);
+                     path_audio_dsp_plugin);
             }
          }
          break;
@@ -6997,18 +7036,20 @@ TODO: Add a setting for these tweaks */
       case CMD_EVENT_HISTORY_DEINIT:
          if (g_defaults.content_history)
          {
-            settings_t *settings = configuration_settings;
+            settings_t *settings         = configuration_settings;
+            bool playlist_use_old_format = settings->bools.playlist_use_old_format;
             playlist_write_file(g_defaults.content_history,
-                  settings->bools.playlist_use_old_format);
+                  playlist_use_old_format);
             playlist_free(g_defaults.content_history);
          }
          g_defaults.content_history = NULL;
 
          if (g_defaults.music_history)
          {
-            settings_t *settings = configuration_settings;
+            settings_t *settings         = configuration_settings;
+            bool playlist_use_old_format = settings->bools.playlist_use_old_format;
             playlist_write_file(g_defaults.music_history,
-                  settings->bools.playlist_use_old_format);
+                  playlist_use_old_format);
             playlist_free(g_defaults.music_history);
          }
          g_defaults.music_history = NULL;
@@ -7016,9 +7057,10 @@ TODO: Add a setting for these tweaks */
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
          if (g_defaults.video_history)
          {
-            settings_t *settings = configuration_settings;
+            settings_t *settings         = configuration_settings;
+            bool playlist_use_old_format = settings->bools.playlist_use_old_format;
             playlist_write_file(g_defaults.video_history,
-                  settings->bools.playlist_use_old_format);
+                  playlist_use_old_format);
             playlist_free(g_defaults.video_history);
          }
          g_defaults.video_history = NULL;
@@ -7028,9 +7070,10 @@ TODO: Add a setting for these tweaks */
 #ifdef HAVE_IMAGEVIEWER
          if (g_defaults.image_history)
          {
-            settings_t *settings = configuration_settings;
+            settings_t *settings         = configuration_settings;
+            bool playlist_use_old_format = settings->bools.playlist_use_old_format;
             playlist_write_file(g_defaults.image_history,
-                  settings->bools.playlist_use_old_format);
+                  playlist_use_old_format);
             playlist_free(g_defaults.image_history);
          }
          g_defaults.image_history = NULL;
@@ -7138,7 +7181,8 @@ TODO: Add a setting for these tweaks */
             settings_t *settings      = configuration_settings;
             if (current_video->set_nonblock_state)
                current_video->set_nonblock_state(video_driver_data, false,
-                     video_driver_test_all_flags(GFX_CTX_FLAGS_ADAPTIVE_VSYNC) &&
+                     video_driver_test_all_flags(
+                        GFX_CTX_FLAGS_ADAPTIVE_VSYNC) &&
                      settings->bools.video_adaptive_vsync,
                      settings->uints.video_swap_interval
                      );
@@ -7240,17 +7284,19 @@ TODO: Add a setting for these tweaks */
             const char *core_name          = "DETECT";
             const char *core_path          = "DETECT";
             size_t *playlist_index         = (size_t*)data;
-            struct playlist_entry entry = {0};
+            struct playlist_entry entry    = {0};
+            bool playlist_use_old_format   = settings->bools.playlist_use_old_format;
 
-            /* the update function reads our entry as const, so these casts are safe */
-            entry.core_path = (char*)core_path;
-            entry.core_name = (char*)core_name;
+            /* the update function reads our entry as const,
+             * so these casts are safe */
+            entry.core_path                = (char*)core_path;
+            entry.core_name                = (char*)core_name;
 
             command_playlist_update_write(
                   NULL,
                   *playlist_index,
                   &entry,
-                  settings->bools.playlist_use_old_format
+                  playlist_use_old_format
                   );
 
             runloop_msg_queue_push(msg_hash_to_str(MSG_RESET_CORE_ASSOCIATION), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
@@ -7340,7 +7386,8 @@ TODO: Add a setting for these tweaks */
          if (menu_driver_alive)
          {
             settings_t *settings      = configuration_settings;
-            if (settings && settings->bools.menu_pause_libretro)
+            bool menu_pause_libretro  = settings->bools.menu_pause_libretro;
+            if (menu_pause_libretro)
                command_event(CMD_EVENT_AUDIO_STOP, NULL);
             else
                command_event(CMD_EVENT_AUDIO_START, NULL);
@@ -7348,7 +7395,8 @@ TODO: Add a setting for these tweaks */
          else
          {
             settings_t *settings      = configuration_settings;
-            if (settings && settings->bools.menu_pause_libretro)
+            bool menu_pause_libretro  = settings->bools.menu_pause_libretro;
+            if (menu_pause_libretro)
                command_event(CMD_EVENT_AUDIO_START, NULL);
          }
 #endif
@@ -7394,6 +7442,7 @@ TODO: Add a setting for these tweaks */
             static struct string_list *hostname = NULL;
             settings_t *settings                = configuration_settings;
             char *buf                           = (char *)data;
+            unsigned netplay_port               = settings->uints.netplay_port;
 
             hostname                            = string_split(buf, "|");
 
@@ -7401,11 +7450,13 @@ TODO: Add a setting for these tweaks */
 
             RARCH_LOG("[Netplay] connecting to %s:%d (direct)\n",
                   hostname->elems[0].data, !string_is_empty(hostname->elems[1].data)
-                  ? atoi(hostname->elems[1].data) : settings->uints.netplay_port);
+                  ? atoi(hostname->elems[1].data) 
+                  : netplay_port);
 
             if (!init_netplay(NULL, hostname->elems[0].data,
                      !string_is_empty(hostname->elems[1].data)
-                     ? atoi(hostname->elems[1].data) : settings->uints.netplay_port))
+                     ? atoi(hostname->elems[1].data) 
+                     : netplay_port))
             {
                command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
                string_list_free(hostname);
@@ -7429,6 +7480,7 @@ TODO: Add a setting for these tweaks */
             /* buf is expected to be address|port */
             settings_t *settings                = configuration_settings;
             char *buf                           = (char *)data;
+            unsigned netplay_port               = settings->uints.netplay_port;
 
             hostname = string_split(buf, "|");
 
@@ -7436,11 +7488,13 @@ TODO: Add a setting for these tweaks */
 
             RARCH_LOG("[Netplay] connecting to %s:%d (deferred)\n",
                   hostname->elems[0].data, !string_is_empty(hostname->elems[1].data)
-                  ? atoi(hostname->elems[1].data) : settings->uints.netplay_port);
+                  ? atoi(hostname->elems[1].data) 
+                  : netplay_port);
 
             if (!init_netplay_deferred(hostname->elems[0].data,
                      !string_is_empty(hostname->elems[1].data)
-                     ? atoi(hostname->elems[1].data) : settings->uints.netplay_port))
+                     ? atoi(hostname->elems[1].data) 
+                     : netplay_port))
             {
                command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
                string_list_free(hostname);
@@ -7493,15 +7547,15 @@ TODO: Add a setting for these tweaks */
 
             {
                settings_t *settings                = configuration_settings;
-               if (settings)
-               {
-                  /* Re-enable rewind if it was enabled
-                   * TODO: Add a setting for these tweaks */
-                  if (settings->bools.rewind_enable)
-                     command_event(CMD_EVENT_REWIND_INIT, NULL);
-                  if (settings->uints.autosave_interval != 0)
-                     command_event(CMD_EVENT_AUTOSAVE_INIT, NULL);
-               }
+               bool rewind_enable                  = settings->bools.rewind_enable;
+               unsigned autosave_interval          = settings->uints.autosave_interval;
+
+               /* Re-enable rewind if it was enabled
+                * TODO: Add a setting for these tweaks */
+               if (rewind_enable)
+                  command_event(CMD_EVENT_REWIND_INIT, NULL);
+               if (autosave_interval != 0)
+                  command_event(CMD_EVENT_AUTOSAVE_INIT, NULL);
             }
 
             break;
@@ -7797,9 +7851,11 @@ TODO: Add a setting for these tweaks */
             return false;
 
          {
-            settings_t         *settings = configuration_settings;
-            discord_userdata_t *userdata = (discord_userdata_t*)data;
-            discord_update(userdata->status, settings->bools.playlist_fuzzy_archive_match);
+            settings_t              *settings = configuration_settings;
+            bool playlist_fuzzy_archive_match = settings->bools.playlist_fuzzy_archive_match;
+            discord_userdata_t *userdata      = (discord_userdata_t*)data;
+
+            discord_update(userdata->status, playlist_fuzzy_archive_match);
          }
 #endif
          break;
@@ -7807,8 +7863,9 @@ TODO: Add a setting for these tweaks */
       case CMD_EVENT_AI_SERVICE_CALL:
       {
 #ifdef HAVE_TRANSLATE
-         settings_t *settings = configuration_settings;
-         if (settings->uints.ai_service_mode == 1 && is_ai_service_speech_running())
+         settings_t *settings     = configuration_settings;
+         unsigned ai_service_mode = settings->uints.ai_service_mode;
+         if (ai_service_mode == 1 && is_ai_service_speech_running())
          {
             ai_service_speech_stop();
 #ifdef HAVE_ACCESSIBILITY
@@ -7817,7 +7874,8 @@ TODO: Add a setting for these tweaks */
 #endif
          }
 #ifdef HAVE_ACCESSIBILITY
-         else if (is_accessibility_enabled() && settings->uints.ai_service_mode == 2 &&
+         else if (is_accessibility_enabled() && 
+                  ai_service_mode == 2 &&
                   is_narrator_running())
             accessibility_speak_priority("stopped.", 10);
 #endif
@@ -7845,7 +7903,8 @@ TODO: Add a setting for these tweaks */
 #endif
 #endif
 
-void retroarch_override_setting_set(enum rarch_override_setting enum_idx, void *data)
+void retroarch_override_setting_set(
+      enum rarch_override_setting enum_idx, void *data)
 {
    switch (enum_idx)
    {
@@ -8041,7 +8100,8 @@ static void global_free(void)
  **/
 void main_exit(void *args)
 {
-   settings_t *settings = configuration_settings;
+   settings_t *settings     = configuration_settings;
+   bool config_save_on_exit = settings->bools.config_save_on_exit;
 
    if (cached_video_driver[0])
    {
@@ -8051,7 +8111,7 @@ void main_exit(void *args)
       RARCH_LOG("[Video]: Restored video driver to \"%s\".\n", settings->arrays.video_driver);
    }
 
-   if (settings->bools.config_save_on_exit)
+   if (config_save_on_exit)
       command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
 
 #ifdef HAVE_MENU
@@ -9196,10 +9256,11 @@ static bool dynamic_request_hw_context(enum retro_hw_context_type type,
 static bool dynamic_verify_hw_context(enum retro_hw_context_type type,
       unsigned minor, unsigned major)
 {
-   settings_t *settings  = configuration_settings;
-   const char *video_ident = settings->arrays.video_driver;
+   settings_t *settings      = configuration_settings;
+   const char *video_ident   = settings->arrays.video_driver;
+   bool driver_switch_enable = settings->bools.driver_switch_enable;
 
-   if (settings->bools.driver_switch_enable)
+   if (driver_switch_enable)
       return true;
 
    switch (type)
@@ -9232,9 +9293,10 @@ static void rarch_log_libretro(enum retro_log_level level,
       const char *fmt, ...)
 {
    va_list vp;
-   settings_t *settings = configuration_settings;
+   settings_t        *settings = configuration_settings;
+   unsigned libretro_log_level = settings->uints.libretro_log_level;
 
-   if ((unsigned)level < settings->uints.libretro_log_level)
+   if ((unsigned)level < libretro_log_level)
       return;
 
    if (!verbosity_is_enabled())
@@ -9331,7 +9393,8 @@ static size_t mmap_highest_bit(size_t n)
 }
 
 
-static bool mmap_preprocess_descriptors(rarch_memory_descriptor_t *first, unsigned count)
+static bool mmap_preprocess_descriptors(
+      rarch_memory_descriptor_t *first, unsigned count)
 {
    size_t                      top_addr = 1;
    rarch_memory_descriptor_t *desc      = NULL;
@@ -9546,9 +9609,11 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
 
       case RETRO_ENVIRONMENT_SET_ROTATION:
       {
-         unsigned rotation = *(const unsigned*)data;
+         unsigned rotation       = *(const unsigned*)data;
+         bool video_allow_rotate = settings->bools.video_allow_rotate;
+
          RARCH_LOG("[Environ]: SET_ROTATION: %u\n", rotation);
-         if (!settings->bools.video_allow_rotate)
+         if (!video_allow_rotate)
             break;
 
          if (system)
@@ -9823,10 +9888,11 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
          unsigned *cb = (unsigned*)data;
          settings_t *settings          = configuration_settings;
          const char *video_driver_name = settings->arrays.video_driver;
+         bool driver_switch_enable     = settings->bools.driver_switch_enable;
 
          RARCH_LOG("[Environ]: GET_PREFERRED_HW_RENDER.\n");
 
-         if (!settings->bools.driver_switch_enable)
+         if (!driver_switch_enable)
              return false;
 
          if (string_is_equal(video_driver_name, "glcore"))
@@ -11552,7 +11618,10 @@ void ui_companion_driver_init_first(void)
    ui_companion               = (ui_companion_driver_t*)ui_companion_drivers[0];
 
 #ifdef HAVE_QT
-   if (settings->bools.desktop_menu_enable && settings->bools.ui_companion_toggle)
+   bool desktop_menu_enable   = settings->bools.desktop_menu_enable;
+   bool ui_companion_toggle   = settings->bools.ui_companion_toggle;
+
+   if (desktop_menu_enable && ui_companion_toggle)
    {
       ui_companion_qt_data = ui_companion_qt.init();
       qt_is_inited = true;
@@ -11561,7 +11630,10 @@ void ui_companion_driver_init_first(void)
 
    if (ui_companion)
    {
-      if (settings->bools.ui_companion_start_on_boot)
+      unsigned ui_companion_start_on_boot = 
+         settings->bools.ui_companion_start_on_boot;
+
+      if (ui_companion_start_on_boot)
       {
          if (ui_companion->init)
             ui_companion_data = ui_companion->init();
@@ -11600,6 +11672,7 @@ void ui_companion_driver_notify_refresh(void)
    const ui_companion_driver_t *ui = ui_companion;
 #ifdef HAVE_QT
    settings_t      *settings       = configuration_settings;
+   bool desktop_menu_enable        = settings->bools.desktop_menu_enable;
 #endif
 
    if (!ui)
@@ -11607,13 +11680,14 @@ void ui_companion_driver_notify_refresh(void)
    if (ui->notify_refresh)
       ui->notify_refresh(ui_companion_data);
 #ifdef HAVE_QT
-   if (settings->bools.desktop_menu_enable)
+   if (desktop_menu_enable)
       if (ui_companion_qt.notify_refresh && qt_is_inited)
          ui_companion_qt.notify_refresh(ui_companion_qt_data);
 #endif
 }
 
-void ui_companion_driver_notify_list_loaded(file_list_t *list, file_list_t *menu_list)
+void ui_companion_driver_notify_list_loaded(
+      file_list_t *list, file_list_t *menu_list)
 {
    const ui_companion_driver_t *ui = ui_companion;
    if (ui && ui->notify_list_loaded)
@@ -11665,8 +11739,9 @@ static void ui_companion_driver_msg_queue_push(
       ui->msg_queue_push(ui_companion_data, msg, priority, duration, flush);
 #ifdef HAVE_QT
    {
-      settings_t *settings            = configuration_settings;
-      if (settings->bools.desktop_menu_enable)
+      settings_t *settings     = configuration_settings;
+      bool desktop_menu_enable = settings->bools.desktop_menu_enable;
+      if (desktop_menu_enable)
          if (ui_companion_qt.msg_queue_push && qt_is_inited)
             ui_companion_qt.msg_queue_push(ui_companion_qt_data, msg, priority, duration, flush);
    }
@@ -11692,9 +11767,10 @@ const char *ui_companion_driver_get_ident(void)
 void ui_companion_driver_log_msg(const char *msg)
 {
 #ifdef HAVE_QT
-   settings_t *settings = configuration_settings;
+   settings_t *settings     = configuration_settings;
+   bool desktop_menu_enable = settings->bools.desktop_menu_enable;
 
-   if (settings->bools.desktop_menu_enable)
+   if (desktop_menu_enable)
       if (ui_companion_qt_data && qt_is_inited)
          ui_companion_qt.log_msg(ui_companion_qt_data, msg);
 #endif
@@ -11959,6 +12035,7 @@ static bool recording_init(void)
    struct retro_system_av_info *av_info = &video_driver_av_info;
    settings_t *settings                 = configuration_settings;
    global_t *global                     = &g_extern;
+   bool video_gpu_record                = settings->bools.video_gpu_record;
 
    if (!recording_enable)
       return false;
@@ -11972,8 +12049,7 @@ static bool recording_init(void)
       return false;
    }
 
-   if (!settings->bools.video_gpu_record
-         && video_driver_is_hw_context())
+   if (!video_gpu_record && video_driver_is_hw_context())
    {
       RARCH_WARN("[recording] %s.\n",
             msg_hash_to_str(MSG_HW_RENDERED_MUST_USE_POSTSHADED_RECORDING));
@@ -14544,8 +14620,9 @@ static void menu_input_get_mouse_hw_state(
    bool is_rgui                    =
          (menu_data && menu_data->driver_ctx && menu_data->driver_ctx->set_texture);
 #ifdef HAVE_OVERLAY
+   bool overlay_enable = settings->bools.input_overlay_enable;
    /* Menu pointer controls are ignored when overlays are enabled. */
-   bool overlay_active = settings->bools.input_overlay_enable && overlay_ptr && overlay_ptr->alive;
+   bool overlay_active = overlay_enable && overlay_ptr && overlay_ptr->alive;
    if (overlay_active)
       mouse_enabled = false;
 #endif
