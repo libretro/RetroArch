@@ -55,15 +55,15 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
        {
           case RARCH_FAST_FORWARD_KEY:
              snprintf(s, len,
-                   "Alternar entre Avanço Rápido e \n"
+                   "Alternar entre Avanço rápido e \n"
                    "velocidade normal."
                    );
              break;
           case RARCH_FAST_FORWARD_HOLD_KEY:
              snprintf(s, len,
-                   "Manter pressionado para Avanço Rápido. \n"
+                   "Manter pressionado para Avanço rápido. \n"
                    " \n"
-                   "Soltar o botão desativa o Avanço Rápido."
+                   "Soltar o botão desativa o Avanço rápido."
                    );
              break;
           case RARCH_SLOWMOTION_KEY:
@@ -72,7 +72,7 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
              break;
           case RARCH_SLOWMOTION_HOLD_KEY:
              snprintf(s, len,
-                   "Manter pressionado para Câmera Lenta.");
+                   "Manter pressionado para Câmera lenta.");
              break;
           case RARCH_PAUSE_TOGGLE:
              snprintf(s, len,
@@ -84,11 +84,11 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
              break;
           case RARCH_SHADER_NEXT:
              snprintf(s, len,
-                   "Aplicar o próximo Shader do diretório.");
+                   "Aplicar o próximo shader do diretório.");
              break;
           case RARCH_SHADER_PREV:
              snprintf(s, len,
-                   "Aplicar o Shader anterior do diretório.");
+                   "Aplicar o shader anterior do diretório.");
              break;
           case RARCH_CHEAT_INDEX_PLUS:
           case RARCH_CHEAT_INDEX_MINUS:
@@ -189,7 +189,7 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
              break;
           case RARCH_LOAD_STATE_KEY:
              snprintf(s, len,
-                   "Carregar Estado de Jogo.");
+                   "Carregar jogo salvo.");
              break;
           case RARCH_FULLSCREEN_TOGGLE_KEY:
              snprintf(s, len,
@@ -210,10 +210,10 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
           case RARCH_STATE_SLOT_PLUS:
           case RARCH_STATE_SLOT_MINUS:
              snprintf(s, len,
-                   "Compartimentos de Estado de Jogo.\n"
+                   "Compartimentos de jogo salvo.\n"
                    " \n"
                    "Com o compartimento é definido em 0, o nome do \n"
-                   "Estado de Jogo é *.state \n"
+                   "jogo salvo é *.state \n"
                    "(ou a definição da linha de comando). \n"
                    " \n"
                    "Quando o compartimento não for 0, o caminho será \n"
@@ -221,7 +221,7 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
              break;
           case RARCH_SAVE_STATE_KEY:
              snprintf(s, len,
-                         "Salvar Estado de Jogo.");
+                         "Salvar jogo.");
              break;
           case RARCH_REWIND:
              snprintf(s, len,
@@ -284,13 +284,13 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
             snprintf(s, len, "Autocarregar opções de núcleo específicas do conteúdo.");
             break;
         case MENU_ENUM_LABEL_AUTO_OVERRIDES_ENABLE:
-            snprintf(s, len, "Autocarregar configurações de redefinição.");
+            snprintf(s, len, "Autocarregar configurações de personalização.");
             break;
         case MENU_ENUM_LABEL_AUTO_REMAPS_ENABLE:
             snprintf(s, len, "Autocarregar arquivos de remapeamento de entrada.");
             break;
         case MENU_ENUM_LABEL_SORT_SAVESTATES_ENABLE:
-            snprintf(s, len, "Ordenar Estados de Jogo em pastas \n"
+            snprintf(s, len, "Ordenar jogos salvos em pastas \n"
                     "com o nome do núcleo Libretro utilizado.");
             break;
         case MENU_ENUM_LABEL_SORT_SAVEFILES_ENABLE:
@@ -309,13 +309,13 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
                     "da memória.");
             break;
         case MENU_ENUM_LABEL_UNDO_LOAD_STATE:
-            snprintf(s, len, "Se um Estado de Jogo foi carregado, o \n"
+            snprintf(s, len, "Se um jogo salvo foi carregado, o \n"
                     "conteúdo irá retornar ao estado anterior \n"
                     "ao carregamento.");
             break;
         case MENU_ENUM_LABEL_UNDO_SAVE_STATE:
-            snprintf(s, len, "Se um Estado de Jogo for sobrescrito, ele irá \n"
-                    "retornar ao Estado de Jogo anterior.");
+            snprintf(s, len, "Se um jogo salvo for sobrescrito, ele irá \n"
+                    "retornar ao jogo salvo anterior.");
             break;
         case MENU_ENUM_LABEL_TAKE_SCREENSHOT:
             snprintf(s, len, "Capturar a tela. \n"
@@ -422,11 +422,11 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
            break;
         case MENU_ENUM_LABEL_FILE_BROWSER_SHADER_PRESET:
             snprintf(s, len,
-                     "Arquivo de predefinição de Shader.");
+                     "Arquivo de predefinição de shader.");
             break;
         case MENU_ENUM_LABEL_FILE_BROWSER_SHADER:
             snprintf(s, len,
-                     "Arquivo de Shader.");
+                     "Arquivo de shader.");
             break;
         case MENU_ENUM_LABEL_FILE_BROWSER_REMAP:
             snprintf(s, len,
@@ -599,10 +599,10 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
             snprintf(s, len,
                      "Automaticamente aumenta o índice de box \n"
                              "a cada salvamento, gerando vários arquivos \n"
-                             "de Estado de Jogo. \n"
+                             "de jogo salvo. \n"
                              "Quando o conteúdo for carregado, o box \n"
-                             "de Estado de Jogo será o do valor existente \n"
-                             "mais alto (último Estado de Jogo).");
+                             "de jogo salvo será o do valor existente \n"
+                             "mais alto (último jogo salvo).");
             break;
         case MENU_ENUM_LABEL_FPS_SHOW:
             snprintf(s, len,
@@ -983,11 +983,11 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
 
         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET:
             snprintf(s, len,
-                     "Carregar Predefinição de Shader. \n"
+                     "Carregar Predefinição de shader. \n"
                              " \n"
-                             "Carregar uma predefinição de Shader \n"
+                             "Carregar uma predefinição de shader \n"
                              "diretamente."
-                             "O menu de Shader é atualizado adequadamente. \n"
+                             "O menu de shader é atualizado adequadamente. \n"
                              " \n"
                              "Se o CGP usa métodos de escala que não sejam \n"
                              "simples, (e.x. escala da origem, mesmo fator de \n"
@@ -1016,18 +1016,18 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
         case MENU_ENUM_LABEL_VIDEO_SHADER_NUM_PASSES:
             snprintf(s, len,
-                     "Estágios de Shader. \n"
+                     "Estágios de shader. \n"
                              " \n"
                              "O RetroArch permite a você misturar e \n"
-                             "combinar vários Shaders com um número \n"
-                             "arbitrário de estágios de Shader, \n"
+                             "combinar vários shaders com um número \n"
+                             "arbitrário de estágios de shader, \n"
                              "com filtros de hardware personalizados \n"
                              "e fatores de escala.\n"
                              " \n"
                              "Esta opção especifica o número de estágios \n"
-                             "de Shader a ser utilizado. Se você definir \n"
+                             "de shader a ser utilizado. Se você definir \n"
                              "isto como 0, e utilizar Aplicar Alterações \n"
-                             "de Shader, você irá utilizar um Shader \n"
+                             "de shader, você irá utilizar um shader \n"
                              "'em branco'."
                              " \n"
                              "A opção Filtro Padrão terá efeito no \n"
@@ -1035,30 +1035,30 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
         case MENU_ENUM_LABEL_VIDEO_SHADER_PARAMETERS:
             snprintf(s, len,
-                     "Parâmetros de Shader. \n"
+                     "Parâmetros de shader. \n"
                              " \n"
-                             "Modifica diretamente o Shader atual. \n"
+                             "Modifica diretamente o shader atual. \n"
                              "Ele não será salvo no arquivo de \n"
                              "predefinição CGP/GLSLP.");
             break;
         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PARAMETERS:
             snprintf(s, len,
-                     "Parâmetros de Predefinição de Shader. \n"
+                     "Parâmetros de Predefinição de shader. \n"
                              " \n"
-                             "Modifica a predefinição de Shader \n"
+                             "Modifica a predefinição de shader \n"
                              "atualmente usada no menu."
             );
             break;
         case MENU_ENUM_LABEL_VIDEO_SHADER_PASS:
             snprintf(s, len,
-                     "Caminho para o Shader. \n"
+                     "Caminho para o shader. \n"
                              " \n"
-                             "Todos os Shaders devem ser do mesmo \n"
+                             "Todos os shaders devem ser do mesmo \n"
                              "tipo (e.x. CG, GLSL ou HLSL). \n"
                              " \n"
-                             "Defina o Diretório de Shaders para estipular \n"
+                             "Defina o Diretório de shaders para estipular \n"
                              "onde o navegador de arquivos começa a busca \n"
-                             "pelos Shaders."
+                             "pelos shaders."
             );
             break;
         case MENU_ENUM_LABEL_CONFIGURATION_SETTINGS:
@@ -1144,31 +1144,31 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
         case MENU_ENUM_LABEL_STATE_SLOT_INCREASE:
         case MENU_ENUM_LABEL_STATE_SLOT_DECREASE:
             snprintf(s, len,
-                     "Boxes de Estado de Jogo.\n"
+                     "Boxes de jogo salvo.\n"
                              " \n"
                              "Com o box definido em 0, o nome do \n"
-                             "Estado de Jogo é *.state \n"
+                             "jogo salvo é *.state \n"
                              "(ou a definição da linha de comando) \n"
                              "Quando o box não for 0, o caminho será \n"
                              "(caminho)(n), onde (n) é o número do box.");
             break;
         case MENU_ENUM_LABEL_SHADER_APPLY_CHANGES:
             snprintf(s, len,
-                     "Aplicar Alterações de Shader. \n"
+                     "Aplicar alterações de shader. \n"
                              " \n"
-                             "Após alterar as configurações de Shader, \n"
+                             "Após alterar as configurações de shader, \n"
                              "utilize essa opção para aplicar as alterações. \n"
                              " \n"
-                             "Alterar as configurações de Shader é uma \n"
+                             "Alterar as configurações de shader é uma \n"
                              "operação relativamente trabalhosa, então \n"
                              "deve ser feita de modo explícito. \n"
                              " \n"
-                             "Ao aplicar os Shaders, as configurações de \n"
-                             "Shader do menu são salvas em um dos arquivos \n"
+                             "Ao aplicar os shaders, as configurações de \n"
+                             "shader do menu são salvas em um dos arquivos \n"
                              "temporários (menu.cgp ou menu.glslp) \n"
                              "e carregadas. \n"
                              "O arquivo permanece salvo no Diretório \n"
-                             "de Shaders após o RetroArch encerrar."
+                             "de shaders após o RetroArch encerrar."
             );
             break;
         case MENU_ENUM_LABEL_SHADER_WATCH_FOR_CHANGES:
@@ -1456,13 +1456,13 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
         case MENU_ENUM_LABEL_SAVESTATE_AUTO_SAVE:
         case MENU_ENUM_LABEL_SAVESTATE_AUTO_LOAD:
             snprintf(s, len,
-                     "Cria automaticamente um Estado de Jogo \n"
+                     "Cria automaticamente um jogo salvo \n"
                              "no final da execução do RetroArch. \n"
                              " \n"
                              "O RetroArch irá carregar automaticamente \n"
-                             "qualquer Estado de Jogo com esse caminho \n"
+                             "qualquer jogo salvo com esse caminho \n"
                              "na inicialização se a função \n"
-                             "'Autocarregar Estado de Jogo' \n"
+                             "'Autocarregar jogo salvo' \n"
                              "estiver habilitada.");
             break;
         case MENU_ENUM_LABEL_VIDEO_THREADED:
@@ -1571,7 +1571,7 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
         case MENU_ENUM_LABEL_BLOCK_SRAM_OVERWRITE:
             snprintf(s, len,
                      "Bloqueia a SRAM de ser sobrescrita \n"
-                             "ao carregar um Estado de Jogo. \n"
+                             "ao carregar um jogo salvo. \n"
                              " \n"
                              "Pode causar problemas no jogo.");
             break;
@@ -1582,7 +1582,7 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
         case MENU_ENUM_LABEL_VIDEO_GPU_SCREENSHOT:
             snprintf(s, len,
-                     "Capturas de tela com Shader \n"
+                     "Capturas de tela com shader \n"
                              "de GPU, se disponível.");
             break;
         case MENU_ENUM_LABEL_SCREENSHOT_DIRECTORY:
@@ -1615,9 +1615,9 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
         case MENU_ENUM_LABEL_SAVESTATE_DIRECTORY:
             snprintf(s, len,
-                     "Diretório de Estados de Jogo. \n"
+                     "Diretório de jogos salvos. \n"
                              " \n"
-                             "Salvar todos os Estados de Jogo \n"
+                             "Salvar todos os jogos salvos \n"
                              "(*.state) neste diretório. \n"
                              " \n"
                              "Será substituído por opções definidas \n"
@@ -1774,7 +1774,7 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
         case MENU_ENUM_LABEL_NETPLAY_STATELESS_MODE:
             snprintf(s, len,
                      "Define se o Jogo em Rede deve executar em um modo \n"
-                             "que não utilize Estados de Jogo. \n"
+                             "que não utilize jogos salvos. \n"
                              " \n"
                              "Se definido como verdadeiro, uma rede muito \n"
                              "rápida é necessária, mas Voltar Atrás não é \n"
@@ -1857,7 +1857,7 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
         case MENU_ENUM_LABEL_VIDEO_SMOOTH:
             snprintf(s, len,
                      "Suaviza a imagem com filtragem bilinear. \n"
-                             "Deve ser desativado se estiver usando Shaders.");
+                             "Deve ser desativado se estiver usando shaders.");
             break;
         case MENU_ENUM_LABEL_TIMEDATE_ENABLE:
             snprintf(s, len,
@@ -2069,11 +2069,11 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
         case MENU_ENUM_LABEL_LOAD_STATE:
             snprintf(s, len,
-                     "Carregar Estado de Jogo.");
+                     "Carregar jogo salvo.");
             break;
         case MENU_ENUM_LABEL_SAVE_STATE:
             snprintf(s, len,
-                     "Salvar Estado de Jogo.");
+                     "Salvar jogo.");
             break;
         case MENU_ENUM_LABEL_NETPLAY_GAME_WATCH:
             snprintf(s, len,
@@ -2089,11 +2089,11 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
         case MENU_ENUM_LABEL_SHADER_PREV:
             snprintf(s, len,
-                     "Aplicar o Shader anterior no diretório.");
+                     "Aplicar o shader anterior no diretório.");
             break;
         case MENU_ENUM_LABEL_SHADER_NEXT:
             snprintf(s, len,
-                     "Aplicar o próximo Shader do diretório.");
+                     "Aplicar o próximo shader do diretório.");
             break;
         case MENU_ENUM_LABEL_RESET:
             snprintf(s, len,
