@@ -113,10 +113,12 @@ void ozone_draw_sidebar(ozone_handle_t *ozone, video_frame_info_t *video_info)
    gfx_animation_ctx_ticker_smooth_t ticker_smooth;
    static const char* const ticker_spacer = OZONE_TICKER_SPACER;
    unsigned ticker_x_offset = 0;
-   settings_t *settings = config_get_ptr();
-   uint32_t text_alpha  = ozone->animations.sidebar_text_alpha * 255.0f;
-   bool use_smooth_ticker = settings->bools.menu_ticker_smooth;
-   float scale_factor = ozone->last_scale_factor;
+   settings_t *settings     = config_get_ptr();
+   uint32_t text_alpha      = ozone->animations.sidebar_text_alpha * 255.0f;
+   bool use_smooth_ticker   = settings->bools.menu_ticker_smooth;
+   float scale_factor       = ozone->last_scale_factor;
+   enum gfx_animation_ticker_type
+      menu_ticker_type      = (enum gfx_animation_ticker_type)settings->uints.menu_ticker_type;
 
    /* Initial ticker configuration */
    if (use_smooth_ticker)
@@ -124,7 +126,7 @@ void ozone_draw_sidebar(ozone_handle_t *ozone, video_frame_info_t *video_info)
       ticker_smooth.idx           = gfx_animation_get_ticker_pixel_idx();
       ticker_smooth.font          = ozone->fonts.sidebar;
       ticker_smooth.font_scale    = 1.0f;
-      ticker_smooth.type_enum     = (enum gfx_animation_ticker_type)settings->uints.menu_ticker_type;
+      ticker_smooth.type_enum     = menu_ticker_type;
       ticker_smooth.spacer        = ticker_spacer;
       ticker_smooth.x_offset      = &ticker_x_offset;
       ticker_smooth.dst_str_width = NULL;
@@ -132,7 +134,7 @@ void ozone_draw_sidebar(ozone_handle_t *ozone, video_frame_info_t *video_info)
    else
    {
       ticker.idx                  = gfx_animation_get_ticker_idx();
-      ticker.type_enum            = (enum gfx_animation_ticker_type)settings->uints.menu_ticker_type;
+      ticker.type_enum            = menu_ticker_type;
       ticker.spacer               = ticker_spacer;
    }
 
@@ -373,6 +375,7 @@ void ozone_sidebar_update_collapse(ozone_handle_t *ozone, bool allow_animation)
    settings_t *settings      = config_get_ptr();
    bool is_playlist          = ozone_is_playlist(ozone, false);
    gfx_animation_ctx_tag tag = (uintptr_t) &ozone->sidebar_collapsed;
+   bool collapse_sidebar     = settings->bools.ozone_collapse_sidebar;
 
    entry.easing_enum    = EASING_OUT_QUAD;
    entry.tag            = tag;
@@ -382,7 +385,7 @@ void ozone_sidebar_update_collapse(ozone_handle_t *ozone, bool allow_animation)
    gfx_animation_kill_by_tag(&tag);
 
    /* Collapse it */
-   if (settings->bools.ozone_collapse_sidebar || (is_playlist && !ozone->cursor_in_sidebar))
+   if (collapse_sidebar || (is_playlist && !ozone->cursor_in_sidebar))
    {
       if (allow_animation)
       {
@@ -408,7 +411,7 @@ void ozone_sidebar_update_collapse(ozone_handle_t *ozone, bool allow_animation)
       }
    }
    /* Show it */
-   else if (ozone->cursor_in_sidebar || (!is_playlist && !settings->bools.ozone_collapse_sidebar))
+   else if (ozone->cursor_in_sidebar || (!is_playlist && !collapse_sidebar))
    {
       if (allow_animation)
       {
@@ -439,20 +442,17 @@ void ozone_sidebar_update_collapse(ozone_handle_t *ozone, bool allow_animation)
    ozone_entries_update_thumbnail_bar(ozone, is_playlist, allow_animation);
 }
 
-static float ozone_sidebar_get_scroll_y(ozone_handle_t *ozone, unsigned video_height)
+static float ozone_sidebar_get_scroll_y(
+      ozone_handle_t *ozone, unsigned video_height)
 {
-   float scroll_y = ozone->animations.scroll_y_sidebar;
-   float selected_position_y;
-   float current_selection_middle_onscreen;
-   float bottom_boundary;
-   float entries_middle;
-   float entries_height;
-
-   selected_position_y               = ozone_get_selected_sidebar_y_position(ozone);
-   current_selection_middle_onscreen = ozone->dimensions.header_height + ozone->dimensions.spacer_1px + ozone->animations.scroll_y_sidebar + selected_position_y + ozone->dimensions.sidebar_entry_height / 2.0f;
-   bottom_boundary                   = (float)video_height - (ozone->dimensions.header_height + ozone->dimensions.spacer_1px) - ozone->dimensions.footer_height;
-   entries_middle                    = (float)video_height / 2.0f;
-   entries_height                    = ozone_get_sidebar_height(ozone);
+   float scroll_y                          = ozone->animations.scroll_y_sidebar;
+   float selected_position_y               = 
+      ozone_get_selected_sidebar_y_position(ozone);
+   float current_selection_middle_onscreen = 
+      ozone->dimensions.header_height + ozone->dimensions.spacer_1px + ozone->animations.scroll_y_sidebar + selected_position_y + ozone->dimensions.sidebar_entry_height / 2.0f;
+   float bottom_boundary                   = (float)video_height - (ozone->dimensions.header_height + ozone->dimensions.spacer_1px) - ozone->dimensions.footer_height;
+   float entries_middle                    = (float)video_height / 2.0f;
+   float entries_height                    = ozone_get_sidebar_height(ozone);
 
    if (current_selection_middle_onscreen != entries_middle)
       scroll_y = ozone->animations.scroll_y_sidebar - (current_selection_middle_onscreen - entries_middle);
@@ -461,7 +461,7 @@ static float ozone_sidebar_get_scroll_y(ozone_handle_t *ozone, unsigned video_he
       scroll_y = bottom_boundary - entries_height - ozone->dimensions.sidebar_padding_vertical;
 
    if (scroll_y > 0.0f)
-      scroll_y = 0.0f;
+      return 0.0f;
 
    return scroll_y;
 }
@@ -470,11 +470,9 @@ void ozone_sidebar_goto(ozone_handle_t *ozone, unsigned new_selection)
 {
    unsigned video_info_height;
    struct gfx_animation_ctx_entry entry;
-   gfx_animation_ctx_tag tag;
+   gfx_animation_ctx_tag tag = (uintptr_t)ozone;
 
    video_driver_get_size(NULL, &video_info_height);
-
-   tag = (uintptr_t)ozone;
 
    if (ozone->categories_selection_ptr != new_selection)
    {
@@ -533,6 +531,7 @@ void ozone_refresh_sidebars(ozone_handle_t *ozone, unsigned video_height)
    gfx_animation_ctx_tag thumbnail_tag  = (uintptr_t)&ozone->show_thumbnail_bar;
    gfx_animation_ctx_tag scroll_tag     = (uintptr_t)ozone;
    bool is_playlist                     = ozone_is_playlist(ozone, false);
+   bool collapse_sidebar                = settings->bools.ozone_collapse_sidebar;
 
    /* Kill any existing animations */
    gfx_animation_kill_by_tag(&collapsed_tag);
@@ -542,13 +541,13 @@ void ozone_refresh_sidebars(ozone_handle_t *ozone, unsigned video_height)
       gfx_animation_kill_by_tag(&scroll_tag);
 
    /* Set sidebar width */
-   if (settings->bools.ozone_collapse_sidebar || (is_playlist && !ozone->cursor_in_sidebar))
+   if (collapse_sidebar || (is_playlist && !ozone->cursor_in_sidebar))
    {
       ozone->animations.sidebar_text_alpha = 0.0f;
       ozone->dimensions.sidebar_width      = ozone->dimensions.sidebar_width_collapsed;
       ozone->sidebar_collapsed             = true;
    }
-   else if (ozone->cursor_in_sidebar || (!is_playlist && !settings->bools.ozone_collapse_sidebar))
+   else if (ozone->cursor_in_sidebar || (!is_playlist && !collapse_sidebar))
    {
       ozone->animations.sidebar_text_alpha = 1.0f;
       ozone->dimensions.sidebar_width      = ozone->dimensions.sidebar_width_normal;
@@ -623,20 +622,20 @@ void ozone_change_tab(ozone_handle_t *ozone,
 void ozone_init_horizontal_list(ozone_handle_t *ozone)
 {
    menu_displaylist_info_t info;
-   settings_t *settings         = config_get_ptr();
-
+   settings_t *settings             = config_get_ptr();
+   const char *dir_playlist         = settings->paths.directory_playlist;
+   bool menu_content_show_playlists = settings->bools.menu_content_show_playlists;
    menu_displaylist_info_init(&info);
 
    info.list                    = ozone->horizontal_list;
-   info.path                    = strdup(
-         settings->paths.directory_playlist);
+   info.path                    = strdup(dir_playlist);
    info.label                   = strdup(
          msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB));
    info.exts                    = strdup("lpl");
    info.type_default            = FILE_TYPE_PLAIN;
    info.enum_idx                = MENU_ENUM_LABEL_PLAYLISTS_TAB;
 
-   if (settings->bools.menu_content_show_playlists && !string_is_empty(info.path))
+   if (menu_content_show_playlists && !string_is_empty(info.path))
    {
       if (menu_displaylist_ctl(DISPLAYLIST_DATABASE_PLAYLISTS_HORIZONTAL, &info))
          menu_displaylist_process(&info);
@@ -674,8 +673,7 @@ void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
    char *chr;
    bool hyphen_found;
    settings_t *settings = config_get_ptr();
-
-   size_t list_size  = ozone_list_get_size(ozone, MENU_LIST_HORIZONTAL);
+   size_t list_size     = ozone_list_get_size(ozone, MENU_LIST_HORIZONTAL);
 
    for (i = 0; i < list_size; i++)
    {
@@ -788,6 +786,9 @@ void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
          chr          = title_noext;
          hyphen_found = false;
 
+         /* TODO/FIXME - why is there a while loop here?
+          * Does 'something' set ozone_truncate_playlist_name
+          * ever to false while this is running? */
          while (settings->bools.ozone_truncate_playlist_name)
          {
             /* Check for "- " */
