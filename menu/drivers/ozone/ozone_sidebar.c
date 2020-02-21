@@ -146,7 +146,7 @@ void ozone_draw_sidebar(ozone_handle_t *ozone, video_frame_info_t *video_info)
    if (ozone->horizontal_list)
       horizontal_list_size = (unsigned)ozone->horizontal_list->size;
 
-   gfx_display_scissor_begin(video_info, 0, ozone->dimensions.header_height, (unsigned) ozone->dimensions.sidebar_width, video_info->height - ozone->dimensions.header_height - ozone->dimensions.footer_height);
+   gfx_display_scissor_begin(video_info, 0, ozone->dimensions.header_height + ozone->dimensions.spacer_1px, (unsigned) ozone->dimensions.sidebar_width, video_info->height - ozone->dimensions.header_height - ozone->dimensions.footer_height - ozone->dimensions.spacer_1px);
 
    /* Background */
    sidebar_height = video_info->height - ozone->dimensions.header_height - ozone->dimensions.sidebar_gradient_height * 2 - ozone->dimensions.footer_height;
@@ -485,6 +485,11 @@ void ozone_sidebar_goto(ozone_handle_t *ozone, unsigned new_selection)
 
       gfx_animation_kill_by_tag(&tag);
    }
+
+   /* ozone->animations.scroll_y_sidebar will be modified
+    * > Set scroll acceleration to zero to minimise
+    *   potential conflicts */
+   menu_input_set_pointer_y_accel(0.0f);
 
    /* Cursor animation */
    ozone->animations.cursor_alpha = 0.0f;
