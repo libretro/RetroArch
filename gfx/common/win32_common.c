@@ -579,10 +579,12 @@ static void win32_save_position(void)
 {
    RECT rect;
    WINDOWPLACEMENT placement;
-   int border_thickness     = GetSystemMetrics(SM_CXSIZEFRAME);
-   int title_bar_height     = GetSystemMetrics(SM_CYCAPTION);
-   int menu_bar_height      = GetSystemMetrics(SM_CYMENU);
-   settings_t *settings     = config_get_ptr();
+   int border_thickness       = GetSystemMetrics(SM_CXSIZEFRAME);
+   int title_bar_height       = GetSystemMetrics(SM_CYCAPTION);
+   int menu_bar_height        = GetSystemMetrics(SM_CYMENU);
+   settings_t *settings       = config_get_ptr();
+   bool window_save_positions = settings->bools.video_window_save_positions;
+   bool video_fullscreen      = settings->bools.video_fullscreen;
 
    memset(&placement, 0, sizeof(placement));
 
@@ -598,9 +600,11 @@ static void win32_save_position(void)
       g_win32_pos_width  = rect.right  - rect.left;
       g_win32_pos_height = rect.bottom - rect.top;
    }
-   if (settings && settings->bools.video_window_save_positions)
+   if (window_save_positions)
    {
-      if (!settings->bools.video_fullscreen && !retroarch_is_forced_fullscreen() && !retroarch_is_switching_display_mode())
+      if (  !video_fullscreen && 
+            !retroarch_is_forced_fullscreen() &&
+            !retroarch_is_switching_display_mode())
       {
          settings->uints.window_position_x      = g_win32_pos_x;
          settings->uints.window_position_y      = g_win32_pos_y;
@@ -1463,13 +1467,16 @@ void win32_set_style(MONITORINFOEX *current_mon, HMONITOR *hm_to_use,
    settings_t *settings          = config_get_ptr();
    if (fullscreen)
    {
+      float video_refresh    = settings->floats.video_refresh_rate;
+      unsigned swap_interval = settings->uints.video_swap_interval;
+      bool bfi               = settings->bools.video_black_frame_insertion;
       /* Windows only reports the refresh rates for modelines as
        * an integer, so video_refresh_rate needs to be rounded. Also, account
        * for black frame insertion using video_refresh_rate set to half
        * of the display refresh rate, as well as higher vsync swap intervals. */
-      float refresh_mod    = settings->bools.video_black_frame_insertion ? 2.0f : 1.0f;
-      unsigned refresh     = roundf(settings->floats.video_refresh_rate
-            * refresh_mod * settings->uints.video_swap_interval);
+      float refresh_mod      = bfi ? 2.0f : 1.0f;
+      unsigned refresh       = roundf(video_refresh * refresh_mod 
+            * swap_interval);
 
       if (windowed_full)
       {

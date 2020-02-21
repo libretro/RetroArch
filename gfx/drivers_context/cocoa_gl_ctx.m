@@ -212,34 +212,35 @@ static float get_from_selector(Class obj_class, id obj_id, SEL selector, CGFloat
 
 void *get_chosen_screen(void)
 {
+   unsigned monitor_index;
    settings_t *settings = config_get_ptr();
-   NSArray *screens = [RAScreen screens];
+   NSArray *screens     = [RAScreen screens];
    if (!screens || !settings)
       return NULL;
 
-   if (settings->uints.video_monitor_index >= screens.count)
+   monitor_index        = settings->uints.video_monitor_index;
+
+   if (monitor_index >= screens.count)
    {
       RARCH_WARN("video_monitor_index is greater than the number of connected monitors; using main screen instead.");
       return (BRIDGE void*)screens;
    }
 
-   return ((BRIDGE void*)[screens objectAtIndex:settings->uints.video_monitor_index]);
+   return ((BRIDGE void*)[screens objectAtIndex:monitor_index]);
 }
 
 float get_backing_scale_factor(void)
 {
    static float
-   backing_scale_def = 0.0f;
+   backing_scale_def    = 0.0f;
    RAScreen *screen     = NULL;
-
-   (void)screen;
 
    if (backing_scale_def != 0.0f)
       return backing_scale_def;
 
-   backing_scale_def = 1.0f;
+   backing_scale_def    = 1.0f;
 #if defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL)
-   screen = (BRIDGE RAScreen*)get_chosen_screen();
+   screen               = (BRIDGE RAScreen*)get_chosen_screen();
 
    if (screen)
    {

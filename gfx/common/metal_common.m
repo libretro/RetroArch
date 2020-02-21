@@ -355,32 +355,42 @@
 - (void)_renderMessage:(const char *)msg
                   info:(video_frame_info_t *)video_info
 {
-   settings_t *settings = config_get_ptr();
-   if (settings && settings->bools.video_msg_bgcolor_enable)
+   settings_t *settings     = config_get_ptr();
+   bool msg_bgcolor_enable  = settings->bools.video_msg_bgcolor_enable;
+
+   if (msg_bgcolor_enable)
    {
-      int msg_width =
+      float r, g, b, a;
+      int msg_width         =
          font_driver_get_message_width(NULL, msg, (unsigned)strlen(msg), 1.0f);
+      float font_size       = settings->floats.video_font_size;
+      unsigned bgcolor_red 
+                            = settings->uints.video_msg_bgcolor_red;
+      unsigned bgcolor_green
+                            = settings->uints.video_msg_bgcolor_green;
+      unsigned bgcolor_blue 
+                            = settings->uints.video_msg_bgcolor_blue;
+      float bgcolor_opacity = settings->floats.video_msg_bgcolor_opacity;
+      float x               = video_info->font_msg_pos_x;
+      float y               = 1.0f - video_info->font_msg_pos_y;
+      float width           = msg_width / (float)_viewport->full_width;
+      float height          = font_size / (float)_viewport->full_height;
 
-      float x = video_info->font_msg_pos_x;
-      float y = 1.0f - video_info->font_msg_pos_y;
-      float width = msg_width / (float)_viewport->full_width;
-      float height =
-         settings->floats.video_font_size / (float)_viewport->full_height;
+      float x2              = 0.005f; /* extend background around text */
+      float y2              = 0.005f;
 
-      y -= height;
+      y                    -= height;
 
-      float x2 = 0.005f; /* extend background around text */
-      float y2 = 0.005f;
+      x                    -= x2;
+      y                    -= y2;
+      width                += x2;
+      height               += y2;
 
-      x -= x2;
-      y -= y2;
-      width += x2;
-      height += y2;
+      r                     = bgcolor_red / 255.0f;
+      g                     = bgcolor_green / 255.0f;
+      b                     = bgcolor_blue / 255.0f;
+      a                     = bgcolor_opacity;
 
-      float r = settings->uints.video_msg_bgcolor_red / 255.0f;
-      float g = settings->uints.video_msg_bgcolor_green / 255.0f;
-      float b = settings->uints.video_msg_bgcolor_blue / 255.0f;
-      float a = settings->floats.video_msg_bgcolor_opacity;
       [_context resetRenderViewport:kFullscreenViewport];
       [_context drawQuadX:x y:y w:width h:height r:r g:g b:b a:a];
    }
@@ -392,10 +402,10 @@
 {
    video_viewport_t vp = *_viewport;
    video_driver_update_viewport(_viewport, NO, _keepAspect);
+
    if (memcmp(&vp, _viewport, sizeof(vp)) != 0)
-   {
       _context.viewport = _viewport;
-   }
+
    [_context begin];
 }
 
@@ -403,7 +413,7 @@
 {
    id<MTLRenderCommandEncoder> rce = _context.rce;
 
-   // draw back buffer
+   /* draw back buffer */
    [rce pushDebugGroup:@"core frame"];
    [_frameView drawWithContext:_context];
 
@@ -1182,11 +1192,11 @@ typedef struct MTLALIGN(16)
    [self _freeVideoShader:_shader];
    _shader = nil;
 
-   config_file_t         *conf = video_shader_read_preset(path.UTF8String);
-   struct video_shader *shader = (struct video_shader *)calloc(1, sizeof(*shader));
-
-   settings_t *settings = config_get_ptr();
-   NSString *shadersPath = [NSString stringWithFormat:@"%s/", settings->paths.directory_video_shader];
+   config_file_t         *conf  = video_shader_read_preset(path.UTF8String);
+   struct video_shader *shader  = (struct video_shader *)calloc(1, sizeof(*shader));
+   settings_t        *settings  = config_get_ptr();
+   const char *dir_video_shader = settings->paths.directory_video_shader;
+   NSString *shadersPath = [NSString stringWithFormat:@"%s/", dir_video_shader];
 
    @try
    {
@@ -1252,15 +1262,16 @@ typedef struct MTLALIGN(16)
          // vertex descriptor
          @try
          {
-            MTLVertexDescriptor *vd = [MTLVertexDescriptor new];
-            vd.attributes[0].offset = offsetof(VertexSlang, position);
-            vd.attributes[0].format = MTLVertexFormatFloat4;
+            NSError *err;
+            MTLVertexDescriptor *vd      = [MTLVertexDescriptor new];
+            vd.attributes[0].offset      = offsetof(VertexSlang, position);
+            vd.attributes[0].format      = MTLVertexFormatFloat4;
             vd.attributes[0].bufferIndex = 4;
-            vd.attributes[1].offset = offsetof(VertexSlang, texCoord);
-            vd.attributes[1].format = MTLVertexFormatFloat2;
+            vd.attributes[1].offset      = offsetof(VertexSlang, texCoord);
+            vd.attributes[1].format      = MTLVertexFormatFloat2;
             vd.attributes[1].bufferIndex = 4;
-            vd.layouts[4].stride = sizeof(VertexSlang);
-            vd.layouts[4].stepFunction = MTLVertexStepFunctionPerVertex;
+            vd.layouts[4].stride         = sizeof(VertexSlang);
+            vd.layouts[4].stepFunction   = MTLVertexStepFunctionPerVertex;
 
             MTLRenderPipelineDescriptor *psd = [MTLRenderPipelineDescriptor new];
 
@@ -1271,18 +1282,17 @@ typedef struct MTLALIGN(16)
 
             ca.pixelFormat = SelectOptimalPixelFormat(glslang_format_to_metal(_engine.pass[i].semantics.format));
 
-            // TODO(sgc): confirm we never need blending for render passes
-            ca.blendingEnabled = NO;
-            ca.sourceAlphaBlendFactor = MTLBlendFactorSourceAlpha;
-            ca.sourceRGBBlendFactor = MTLBlendFactorSourceAlpha;
+            /* TODO(sgc): confirm we never need blending for render passes */
+            ca.blendingEnabled             = NO;
+            ca.sourceAlphaBlendFactor      = MTLBlendFactorSourceAlpha;
+            ca.sourceRGBBlendFactor        = MTLBlendFactorSourceAlpha;
             ca.destinationAlphaBlendFactor = MTLBlendFactorOneMinusSourceAlpha;
-            ca.destinationRGBBlendFactor = MTLBlendFactorOneMinusSourceAlpha;
+            ca.destinationRGBBlendFactor   = MTLBlendFactorOneMinusSourceAlpha;
 
-            psd.sampleCount = 1;
-            psd.vertexDescriptor = vd;
+            psd.sampleCount                = 1;
+            psd.vertexDescriptor           = vd;
 
-            NSError *err;
-            id<MTLLibrary> lib = [_context.device newLibraryWithSource:vs_src options:nil error:&err];
+            id<MTLLibrary>             lib = [_context.device newLibraryWithSource:vs_src options:nil error:&err];
             if (err != nil)
             {
                if (lib == nil)
@@ -1327,9 +1337,7 @@ typedef struct MTLALIGN(16)
             {
                unsigned int size = _engine.pass[i].semantics.cbuffers[j].size;
                if (size == 0)
-               {
                   continue;
-               }
 
                id<MTLBuffer> buf = [_context.device newBufferWithLength:size options:MTLResourceStorageModeManaged];
                STRUCT_ASSIGN(_engine.pass[i].buffers[j], buf);
@@ -1338,11 +1346,11 @@ typedef struct MTLALIGN(16)
          {
             if (save_msl)
             {
+               NSError *err = nil;
                NSString *basePath = [[NSString stringWithUTF8String:shader->pass[i].source.path] stringByDeletingPathExtension];
 
                RARCH_LOG("[Metal]: saving metal shader files to %s\n", basePath.UTF8String);
 
-               NSError *err = nil;
                [vs_src writeToFile:[basePath stringByAppendingPathExtension:@"vs.metal"]
                         atomically:NO
                           encoding:NSStringEncodingConversionAllowLossy
@@ -1375,7 +1383,7 @@ typedef struct MTLALIGN(16)
       for (i = 0; i < shader->luts; i++)
       {
          struct texture_image image = {0};
-         image.supports_rgba = true;
+         image.supports_rgba        = true;
 
          if (!image_texture_load(&image, shader->lut[i].path))
             return NO;

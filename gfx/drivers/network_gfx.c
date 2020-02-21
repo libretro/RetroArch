@@ -67,13 +67,14 @@ static unsigned *network_video_temp_buf  = NULL;
 static void *network_gfx_init(const video_info_t *video,
       input_driver_t **input, void **input_data)
 {
+   int fd;
    gfx_ctx_input_t inp;
    void *ctx_data                       = NULL;
-   settings_t *settings                 = config_get_ptr();
-   network_video_t *network             = (network_video_t*)calloc(1, sizeof(*network));
    const gfx_ctx_driver_t *ctx_driver   = NULL;
    struct addrinfo *addr = NULL, *next_addr = NULL;
-   int fd;
+   settings_t *settings                 = config_get_ptr();
+   network_video_t *network             = (network_video_t*)calloc(1, sizeof(*network));
+   bool video_font_enable               = settings->bools.video_font_enable;
 
    *input                               = NULL;
    *input_data                          = NULL;
@@ -106,7 +107,7 @@ static void *network_gfx_init(const video_info_t *video,
 
    video_context_driver_input_driver(&inp);
 
-   if (settings->bools.video_font_enable)
+   if (font_enable)
       font_driver_init_osd(network,
             video,
             false,

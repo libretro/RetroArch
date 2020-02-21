@@ -252,6 +252,10 @@ static void *sdl_gfx_init(const video_info_t *video,
    settings_t            *settings = config_get_ptr();
    const char *path_font           = settings->paths.path_font;
    float video_font_size           = settings->floats.video_font_size;
+   bool video_font_enable          = settings->bools.video_font_enable;
+   float msg_color_r               = settings->floats.video_msg_color_r;
+   float msg_color_g               = settings->floats.video_msg_color_g;
+   float msg_color_b               = settings->floats.video_msg_color_b;
 
 #ifdef HAVE_X11
    XInitThreads();
@@ -313,11 +317,11 @@ static void *sdl_gfx_init(const video_info_t *video,
    }
 
    sdl_init_font(vid,
-         settings->bools.video_font_enable
+         video_font_enable,
          path_font, video_font_size,
-         settings->floats.video_msg_color_r,
-         settings->floats.video_msg_color_g,
-         settings->floats.video_msg_color_b);
+         msg_color_r,
+         msg_color_g,
+         msg_color_b);
 
    vid->scaler.scaler_type      = video->smooth ? SCALER_TYPE_BILINEAR : SCALER_TYPE_POINT;
    vid->scaler.in_fmt           = video->rgb32 ? SCALER_FMT_ARGB8888 : SCALER_FMT_RGB565;
