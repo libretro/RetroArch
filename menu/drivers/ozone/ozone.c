@@ -1206,10 +1206,19 @@ static void ozone_render(void *data,
       bool last_category_found      = false;
 
       /* Check whether pointer is operating on entries
-       * or sidebar */
+       * or sidebar
+       * > Note: Since touchscreens effectively 'lose their
+       *   place' when a touch is released, we can only perform
+       *   this this check if the pointer is currently
+       *   pressed - i.e. we must preserve the values set the
+       *   last time the screen was touched.
+       *   With mouse input we have a permanent cursor, so this
+       *   is not an issue */
       ozone->last_pointer_in_sidebar = ozone->pointer_in_sidebar;
-      ozone->pointer_in_sidebar      = ozone->pointer.x <
-            ozone->dimensions.sidebar_width + ozone->sidebar_offset;
+      if ((ozone->pointer.type == MENU_POINTER_MOUSE) ||
+           ozone->pointer.pressed)
+         ozone->pointer_in_sidebar   = ozone->pointer.x <
+               ozone->dimensions.sidebar_width + ozone->sidebar_offset;
 
       /* If pointer has switched from entries to sidebar
        * or vice versa, must reset pointer acceleration */
