@@ -6142,7 +6142,9 @@ static int xmb_list_push(void *data, void *userdata,
    bool menu_show_information      = settings->bools.menu_show_information;
    bool menu_show_help             = settings->bools.menu_show_help;
    bool kiosk_mode_enable          = settings->bools.kiosk_mode_enable;
+#ifdef HAVE_QT
    bool desktop_menu_enable        = settings->bools.desktop_menu_enable;
+#endif	
    bool menu_show_online_updater   = settings->bools.menu_show_online_updater;
    bool menu_content_show_settings = settings->bools.menu_content_show_settings;
    const char *menu_content_show_settings_password =

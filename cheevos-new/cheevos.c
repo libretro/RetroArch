@@ -997,7 +997,9 @@ static void rcheevos_test_richpresence(void)
    settings_t             *settings = config_get_ptr();
    const char *cheevos_username     = settings->arrays.cheevos_username;
    bool cheevos_richpresence_enable = settings->bools.cheevos_richpresence_enable;
+#ifdef HAVE_DISCORD
    bool discord_enable              = settings->bools.discord_enable;
+#endif
 
    if (cheevos_richpresence_enable)
    {
