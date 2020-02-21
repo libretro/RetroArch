@@ -5912,7 +5912,7 @@ static int action_ok_push_dropdown_item_manual_content_scan_system_name(const ch
    {
       case MANUAL_CONTENT_SCAN_SYSTEM_NAME_CONTENT_DIR:
       case MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM:
-         system_name_type = idx;
+         system_name_type = (enum manual_content_scan_system_name_type)idx;
          break;
       default:
          break;
