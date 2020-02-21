@@ -20,6 +20,14 @@
 - MENU/WIDGETS: Allow notifications to use full screen width when not displaying menu
 - MENU/WIDGETS: DPI-based scaling
 - MENU/OZONE: Add DPI-based scaling
+- MENU/OZONE: Add rudimentary pointer support
+- MENU/OZONE/POINTER: Pointer can be used to switch between sidebar and entries list
+- MENU/OZONE/POINTER: Pointer can be used to select sidebar and entries list items
+- MENU/OZONE/POINTER: Both sidebar and entries list can be scrolled by dragging
+- MENU/OZONE/POINTER: Clicking/pressing the header or footer produces a 'cancel' action
+- MENU/OZONE/POINTER: Cursor focus follows mouse pointer from sidebar to entries list (and vice versa)
+- MENU/OZONE/POINTER: In entries list, item under cursor is automatically selected (with some fudging to ensure this doesn't break mouse wheel scrolling)
+- MENU/OZONE/POINTER: In sidebar, item under cursor is not automatically selected (this is too jarring)
 - NETPLAY/MENU/BUGFIX: Fix Netplay Stateless Mode doesn't save. Affects other netplay settings which can be overridden by commandline option
 - NETPLAY/ROOMS/BUGFIX: Prevent out-of-bounds array indexing when displaying/selecting netplay rooms in menus
 - VIDEO: Set hardware 'Bilinear filtering' off by default
