@@ -1208,7 +1208,8 @@ void task_push_update_installed_cores(const char *path_dir_libretro)
       goto error;
 
    /* Only one instance of this task may run at a time */
-   find_data.func = task_update_installed_cores_finder;
+   find_data.func     = task_update_installed_cores_finder;
+   find_data.userdata = NULL;
 
    if (task_queue_find(&find_data))
       goto error;

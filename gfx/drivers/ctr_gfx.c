@@ -567,7 +567,7 @@ static bool ctr_frame(void* data, const void* frame,
       ctr->ppf_event_pending = false;
    }
 #ifndef HAVE_THREADS
-   if(task_queue_find(&ctr_tasks_finder_data))
+   if (task_queue_find(&ctr_tasks_finder_data))
    {
 #if 0
       ctr->vsync_event_pending = true;
@@ -576,9 +576,6 @@ static bool ctr_frame(void* data, const void* frame,
       {
          task_queue_check();
          svcSleepThread(0);
-#if 0
-         aptMainLoop();
-#endif
       }
    }
 #endif
