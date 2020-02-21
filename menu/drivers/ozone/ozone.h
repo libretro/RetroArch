@@ -66,6 +66,10 @@ typedef struct ozone_handle ozone_handle_t;
 #define FULLSCREEN_THUMBNAIL_PADDING 48
 
 #define CURSOR_SIZE 64
+/* Cursor becomes active when it moves more
+ * than CURSOR_ACTIVE_DELTA pixels (adjusted
+ * by current scale factor) */
+#define CURSOR_ACTIVE_DELTA 3
 
 #define INTERVAL_OSK_CURSOR            (0.5f * 1000000)
 
@@ -77,6 +81,13 @@ typedef struct ozone_handle ozone_handle_t;
  * UCN equivalent: "\u2003\u2022\u2003" */
 #define OZONE_TICKER_SPACER "\xE2\x80\x83\xE2\x80\xA2\xE2\x80\x83"
 #endif
+
+enum ozone_onscreen_entry_position_type
+{
+   OZONE_ONSCREEN_ENTRY_FIRST = 0,
+   OZONE_ONSCREEN_ENTRY_LAST,
+   OZONE_ONSCREEN_ENTRY_CENTRE
+};
 
 struct ozone_handle
 {
@@ -240,6 +251,16 @@ struct ozone_handle
       int spacer_3px;
       int spacer_5px;
    } dimensions;
+
+   menu_input_pointer_t pointer;
+   int16_t pointer_active_delta;
+   bool pointer_in_sidebar;
+   bool last_pointer_in_sidebar;
+   size_t pointer_categories_selection;
+   size_t first_onscreen_entry;
+   size_t last_onscreen_entry;
+   size_t first_onscreen_category;
+   size_t last_onscreen_category;
 
    bool show_cursor;
    bool cursor_mode;

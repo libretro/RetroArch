@@ -264,6 +264,11 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
    ozone->animations.scroll_y          = 0.0f;
    ozone->animations.scroll_y_sidebar  = 0.0f;
 
+   ozone->first_onscreen_entry    = 0;
+   ozone->last_onscreen_entry     = 0;
+   ozone->first_onscreen_category = 0;
+   ozone->last_onscreen_category  = 0;
+
    /* Assets path */
    fill_pathname_join(
       ozone->assets_path,
@@ -516,6 +521,11 @@ static void ozone_set_layout(ozone_handle_t *ozone, bool is_threaded)
    ozone->dimensions.spacer_2px = ozone->dimensions.spacer_1px * 2;
    ozone->dimensions.spacer_3px = (unsigned)((scale_factor * 3.0f) + 0.5f);
    ozone->dimensions.spacer_5px = (unsigned)((scale_factor * 5.0f) + 0.5f);
+
+   /* Determine movement delta size for activating
+    * pointer input (note: not a dimension as such,
+    * so not included in the 'dimensions' struct) */
+   ozone->pointer_active_delta = CURSOR_ACTIVE_DELTA * scale_factor;
 
    /* Initialise fonts */
 
@@ -1089,13 +1099,17 @@ static void ozone_list_free(file_list_t *list, size_t a, size_t b)
    ozone_list_clear(list);
 }
 
+/* Forward declaration */
+static void ozone_set_thumbnail_content(void *data, const char *s);
+
 static void ozone_render(void *data,
       unsigned width, unsigned height,
       bool is_idle)
 {
    size_t i;
    float scale_factor;
-   unsigned end                     = (unsigned)menu_entries_get_size();
+   unsigned entries_end             = (unsigned)menu_entries_get_size();
+   bool pointer_enabled             = false;
    ozone_handle_t *ozone            = (ozone_handle_t*)data;
    if (!ozone)
       return;
@@ -1126,11 +1140,314 @@ static void ozone_render(void *data,
 
    ozone->selection = menu_navigation_get_selection();
 
-   /* TODO: Handle pointer & mouse */
+   /* Need to update this each frame, otherwise touchscreen
+    * input breaks when changing orientation */
+   gfx_display_set_width(width);
+   gfx_display_set_height(height);
+
+   /* Read pointer state */
+   menu_input_get_pointer_state(&ozone->pointer);
+
+   /* Check whether pointer is enabled */
+   if (ozone->pointer.type != MENU_POINTER_DISABLED)
+   {
+      /* When using a mouse, entry under pointer is
+       * automatically selected
+       * > Must therefore filter out small movements,
+       *   otherwise scrolling with the mouse wheel
+       *   becomes impossible... */
+      if (ozone->pointer.type == MENU_POINTER_MOUSE)
+      {
+         int16_t cursor_x_delta = ozone->pointer.x - ozone->cursor_x_old;
+         int16_t cursor_y_delta = ozone->pointer.y - ozone->cursor_y_old;
+
+         if ((cursor_x_delta > ozone->pointer_active_delta) ||
+             (cursor_x_delta < -ozone->pointer_active_delta) ||
+             (cursor_y_delta > ozone->pointer_active_delta) ||
+             (cursor_y_delta < -ozone->pointer_active_delta))
+            ozone->cursor_mode = true;
+      }
+      /* On touchscreens, just check for any movement */
+      else
+      {
+         if ((ozone->pointer.x != ozone->cursor_x_old) ||
+             (ozone->pointer.y != ozone->cursor_y_old))
+            ozone->cursor_mode = true;
+      }
+   }
+
+   ozone->cursor_x_old = ozone->pointer.x;
+   ozone->cursor_y_old = ozone->pointer.y;
+
+   pointer_enabled = ozone->cursor_mode && !ozone->show_fullscreen_thumbnails;
+
+   /* Process pointer input, if required */
+   if (pointer_enabled)
+   {
+      file_list_t *selection_buf          = menu_entries_get_selection_buf_ptr(0);
+      gfx_animation_ctx_tag animation_tag = (uintptr_t)selection_buf;
+
+      int entry_padding           = (ozone->depth == 1) ?
+            ozone->dimensions.entry_padding_horizontal_half :
+                  ozone->dimensions.entry_padding_horizontal_full;
+      float entry_x               = ozone->dimensions.sidebar_width +
+            ozone->sidebar_offset + entry_padding;
+      float entry_width           = width - ozone->dimensions.sidebar_width -
+            ozone->sidebar_offset - entry_padding * 2 -
+            ozone->animations.thumbnail_bar_position;
+      bool first_entry_found      = false;
+      bool last_entry_found       = false;
+
+      unsigned horizontal_list_size = ozone->horizontal_list ?
+            (unsigned)ozone->horizontal_list->size : 0;
+      float category_height         = ozone->dimensions.sidebar_entry_height +
+            ozone->dimensions.sidebar_entry_padding_vertical;
+      bool first_category_found     = false;
+      bool last_category_found      = false;
+
+      /* Check whether pointer is operating on entries
+       * or sidebar */
+      ozone->last_pointer_in_sidebar = ozone->pointer_in_sidebar;
+      ozone->pointer_in_sidebar      = ozone->pointer.x <
+            ozone->dimensions.sidebar_width + ozone->sidebar_offset;
+
+      /* If pointer has switched from entries to sidebar
+       * or vice versa, must reset pointer acceleration */
+      if (ozone->pointer_in_sidebar != ozone->last_pointer_in_sidebar)
+      {
+         menu_input_set_pointer_y_accel(0.0f);
+         ozone->pointer.y_accel = 0.0f;
+      }
+
+      /* If pointer is a mouse, then automatically follow
+       * mouse focus from entries to sidebar (and vice versa) */
+      if (ozone->pointer.type == MENU_POINTER_MOUSE)
+      {
+         if (ozone->pointer_in_sidebar &&
+             !ozone->last_pointer_in_sidebar &&
+             !ozone->cursor_in_sidebar)
+            ozone_go_to_sidebar(ozone, animation_tag);
+         else if (!ozone->pointer_in_sidebar &&
+                  ozone->last_pointer_in_sidebar &&
+                  ozone->cursor_in_sidebar)
+            ozone_leave_sidebar(ozone, animation_tag);
+      }
+
+      /* Update scrolling - must be done first, otherwise
+       * cannot determine entry/category positions
+       * > Entries */
+      if (!ozone->pointer_in_sidebar)
+      {
+         float entry_bottom_boundary = height - ozone->dimensions.header_height -
+               ozone->dimensions.spacer_1px - ozone->dimensions.footer_height -
+               ozone->dimensions.entry_padding_vertical * 2;
+
+         ozone->animations.scroll_y += ozone->pointer.y_accel;
+
+         if (ozone->animations.scroll_y + ozone->entries_height < entry_bottom_boundary)
+            ozone->animations.scroll_y = entry_bottom_boundary - ozone->entries_height;
+
+         if (ozone->animations.scroll_y > 0.0f)
+            ozone->animations.scroll_y = 0.0f;
+      }
+      /* > Sidebar
+       * Only process sidebar input here if the
+       * cursor is currently *in* the sidebar */
+      else if (ozone->cursor_in_sidebar)
+      {
+         float sidebar_bottom_boundary = height -
+               (ozone->dimensions.header_height + ozone->dimensions.spacer_1px) -
+               ozone->dimensions.footer_height -
+               ozone->dimensions.sidebar_padding_vertical;
+         float sidebar_height          = ozone_get_sidebar_height(ozone);
+
+         ozone->animations.scroll_y_sidebar += ozone->pointer.y_accel;
+
+         if (ozone->animations.scroll_y_sidebar + sidebar_height < sidebar_bottom_boundary)
+            ozone->animations.scroll_y_sidebar = sidebar_bottom_boundary - sidebar_height;
+
+         if (ozone->animations.scroll_y_sidebar > 0.0f)
+            ozone->animations.scroll_y_sidebar = 0.0f;
+      }
+
+      /* Regardless of pointer location, have to process
+       * all entries/categories in order to determine
+       * the indices of the first and last entries/categories
+       * displayed on screen
+       * > Needed so we can determine proper cursor positions
+       *   when mixing pointer + gamepad/keyboard input */
+
+      /* >> Loop over all entries */
+      ozone->first_onscreen_entry = 0;
+      ozone->last_onscreen_entry  = (entries_end > 0) ? entries_end - 1 : 0;
+
+      for (i = 0; i < entries_end; i++)
+      {
+         ozone_node_t *node = (ozone_node_t*)
+               file_list_get_userdata_at_offset(selection_buf, i);
+         float entry_y;
+
+         /* Sanity check */
+         if (!node)
+            break;
+
+         /* Get current entry y position */
+         entry_y = ozone->dimensions.header_height + ozone->dimensions.spacer_1px +
+               ozone->dimensions.entry_padding_vertical + ozone->animations.scroll_y +
+               node->position_y;
+
+         /* Check whether this is the first on screen entry */
+         if (!first_entry_found)
+         {
+            if ((entry_y + node->height) > ozone->dimensions.header_height)
+            {
+               ozone->first_onscreen_entry = i;
+               first_entry_found = true;
+            }
+         }
+         /* Check whether this is the last on screen entry */
+         else if (!last_entry_found)
+         {
+            if (entry_y > (height - ozone->dimensions.footer_height))
+            {
+               /* Current entry is off screen - get index
+                * of previous entry */
+               if (i > 0)
+               {
+                  ozone->last_onscreen_entry = i - 1;
+                  last_entry_found = true;
+               }
+            }
+         }
+
+         /* Track pointer input, if required */
+         if (!ozone->pointer_in_sidebar &&
+             first_entry_found &&
+             !last_entry_found)
+         {
+            /* Check whether pointer is within the bounds
+             * of the current entry */
+            if ((ozone->pointer.x > entry_x) &&
+                (ozone->pointer.x < entry_x + entry_width) &&
+                (ozone->pointer.y > entry_y) &&
+                (ozone->pointer.y < entry_y + node->height))
+            {
+               /* Pointer selection is always updated */
+               menu_input_set_pointer_selection(i);
+
+               /* If pointer is a mouse, then automatically
+                * select entry under cursor */
+               if (ozone->pointer.type == MENU_POINTER_MOUSE)
+               {
+                  /* Note the fudge factor - cannot auto select
+                   * items while drag-scrolling the entry list,
+                   * so have to wait until pointer acceleration
+                   * drops below a 'sensible' level... */
+                  if (!ozone->cursor_in_sidebar &&
+                      (i != ozone->selection) &&
+                      (ozone->pointer.y_accel < ozone->last_scale_factor) &&
+                      (ozone->pointer.y_accel > -ozone->last_scale_factor))
+                  {
+                     menu_navigation_set_selection(i);
+
+                     /* If this is a playlist, must update thumbnails */
+                     if (ozone->is_playlist && (ozone->depth == 1))
+                     {
+                        ozone_set_thumbnail_content(ozone, "");
+                        ozone_update_thumbnail_image(ozone);
+                     }
+                  }
+               }
+
+               /* If pointer is pressed and stationary, and
+                * if pointer has been held for at least
+                * MENU_INPUT_PRESS_TIME_SHORT ms, automatically
+                * select current entry */
+               if (ozone->pointer.pressed &&
+                   !ozone->pointer.dragged &&
+                   (ozone->pointer.press_duration >= MENU_INPUT_PRESS_TIME_SHORT) &&
+                   (i != ozone->selection))
+               {
+                  menu_navigation_set_selection(i);
+
+                  /* If we are currently in the sidebar, leave it */
+                  if (ozone->cursor_in_sidebar)
+                  {
+                     ozone_leave_sidebar(ozone, animation_tag);
+                  }
+                  /* If this is a playlist, must update thumbnails */
+                  else if (ozone->is_playlist && (ozone->depth == 1))
+                  {
+                     ozone_set_thumbnail_content(ozone, "");
+                     ozone_update_thumbnail_image(ozone);
+                  }
+               }
+            }
+         }
+
+         if (last_entry_found)
+            break;
+      }
+
+      /* >> Loop over all categories */
+      ozone->first_onscreen_category = 0;
+      ozone->last_onscreen_category  = ozone->system_tab_end + horizontal_list_size;
+
+      for (i = 0; i < ozone->system_tab_end + horizontal_list_size + 1; i++)
+      {
+         /* Get current category y position */
+         float category_y = ozone->dimensions.header_height + ozone->dimensions.spacer_1px +
+               ozone->dimensions.sidebar_padding_vertical + (category_height * i) +
+               ((i > ozone->system_tab_end) ?
+                     (ozone->dimensions.sidebar_entry_padding_vertical + ozone->dimensions.spacer_1px) : 0) +
+               ozone->animations.scroll_y_sidebar;
+
+         /* Check whether this is the first on screen category */
+         if (!first_category_found)
+         {
+            if ((category_y + category_height) > ozone->dimensions.header_height)
+            {
+               ozone->first_onscreen_category = i;
+               first_category_found = true;
+            }
+         }
+         /* Check whether this is the last on screen category */
+         else if (!last_category_found)
+         {
+            if (category_y > (height - ozone->dimensions.footer_height))
+            {
+               /* Current category is off screen - get index
+                * of previous category */
+               if (i > 0)
+               {
+                  ozone->last_onscreen_category = i - 1;
+                  last_category_found = true;
+               }
+            }
+         }
+
+         /* Track pointer input, if required */
+         if (ozone->pointer_in_sidebar &&
+             ozone->cursor_in_sidebar &&
+             first_category_found &&
+             !last_category_found)
+         {
+            /* If pointer is within the bounds of the
+             * current category, cache category index
+             * (for use in next 'pointer up' event) */
+            if ((ozone->pointer.y > category_y) &&
+                (ozone->pointer.y < category_y + category_height))
+               ozone->pointer_categories_selection = i;
+         }
+
+         if (last_category_found)
+            break;
+      }
+   }
 
    menu_entries_ctl(MENU_ENTRIES_CTL_START_GET, &i);
 
-   if (i >= end)
+   if (i >= entries_end)
    {
       i = 0;
       menu_entries_ctl(MENU_ENTRIES_CTL_SET_START, &i);
@@ -1687,11 +2004,10 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
 
    if (ozone->first_frame)
    {
-      menu_input_pointer_t pointer;
-      menu_input_get_pointer_state(&pointer);
+      menu_input_get_pointer_state(&ozone->pointer);
 
-      ozone->cursor_x_old = pointer.x;
-      ozone->cursor_y_old = pointer.y;
+      ozone->cursor_x_old = ozone->pointer.x;
+      ozone->cursor_y_old = ozone->pointer.y;
       ozone->first_frame  = false;
    }
 
@@ -1874,19 +2190,16 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
    font_driver_flush(video_info->width, video_info->height, ozone->fonts.entries_label, video_info);
 
    /* Cursor */
-   if (ozone->show_cursor)
+   if (ozone->show_cursor && (ozone->pointer.type != MENU_POINTER_DISABLED))
    {
-      menu_input_pointer_t pointer;
-      menu_input_get_pointer_state(&pointer);
-
       gfx_display_set_alpha(ozone_pure_white, 1.0f);
       gfx_display_draw_cursor(
          video_info,
          ozone_pure_white,
          ozone->dimensions.cursor_size,
          ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_POINTER],
-         pointer.x,
-         pointer.y,
+         ozone->pointer.x,
+         ozone->pointer.y,
          video_info->width,
          video_info->height
       );
@@ -1990,6 +2303,9 @@ static void ozone_populate_entries(void *data, const char *path, const char *lab
    }
 
    ozone->need_compute = true;
+
+   ozone->first_onscreen_entry    = 0;
+   ozone->last_onscreen_entry     = 0;
 
    new_depth = (int)ozone_list_get_size(ozone, MENU_LIST_PLAIN);
 
@@ -2396,7 +2712,9 @@ void ozone_show_fullscreen_thumbnails(ozone_handle_t *ozone)
    menu_entry_t selected_entry;
    gfx_animation_ctx_entry_t animation_entry;
    const char *thumbnail_label      = NULL;
+   file_list_t *selection_buf       = menu_entries_get_selection_buf_ptr(0);
    gfx_animation_ctx_tag alpha_tag  = (uintptr_t)&ozone->animations.fullscreen_thumbnail_alpha;
+   gfx_animation_ctx_tag scroll_tag = (uintptr_t)selection_buf;
 
    /* Before showing fullscreen thumbnails, must
     * ensure that any existing fullscreen thumbnail
@@ -2441,6 +2759,13 @@ void ozone_show_fullscreen_thumbnails(ozone_handle_t *ozone)
          return;
    }
 
+   /* Menu list must be stationary while fullscreen
+    * thumbnails are shown
+    * > Kill any existing scroll animations and
+    *   reset scroll acceleration */
+   gfx_animation_kill_by_tag(&scroll_tag);
+   menu_input_set_pointer_y_accel(0.0f);
+
    /* Cache selected entry label
     * (used as title when fullscreen thumbnails
     * are shown) */
@@ -2480,14 +2805,24 @@ void ozone_show_fullscreen_thumbnails(ozone_handle_t *ozone)
    ozone->show_fullscreen_thumbnails     = true;
 }
 
+/* Forward declaration */
+static int ozone_menu_entry_action(
+      void *userdata, menu_entry_t *entry,
+      size_t i, enum menu_action action);
+
 static int ozone_pointer_up(void *userdata,
       unsigned x, unsigned y, unsigned ptr,
       enum menu_input_pointer_gesture gesture,
       menu_file_list_cbs_t *cbs,
       menu_entry_t *entry, unsigned action)
 {
-   ozone_handle_t *ozone = (ozone_handle_t*)userdata;
-   size_t selection      = menu_navigation_get_selection();
+   ozone_handle_t *ozone             = (ozone_handle_t*)userdata;
+   file_list_t *selection_buf        = menu_entries_get_selection_buf_ptr(0);
+   gfx_animation_ctx_tag sidebar_tag = (uintptr_t)selection_buf;
+   size_t selection                  = menu_navigation_get_selection();
+   size_t entries_end                = menu_entries_get_size();
+   unsigned width;
+   unsigned height;
 
    if (!ozone)
       return -1;
@@ -2497,26 +2832,122 @@ static int ozone_pointer_up(void *userdata,
     * be ignored */
    if (ozone->show_fullscreen_thumbnails)
    {
+      /* Must reset scroll acceleration, in case
+       * user performed a swipe (don't want menu
+       * list to 'drift' after hiding fullscreen
+       * thumbnails...) */
+      menu_input_set_pointer_y_accel(0.0f);
+
       ozone_hide_fullscreen_thumbnails(ozone, true);
       return 0;
    }
+
+   video_driver_get_size(&width, &height);
 
    switch (gesture)
    {
       case MENU_INPUT_GESTURE_TAP:
       case MENU_INPUT_GESTURE_SHORT_PRESS:
-         /* Normal pointer input */
-         if (ptr == selection)
-            return menu_entry_action(entry, selection, MENU_ACTION_SELECT);
+         /* Tap/press header or footer: Menu back/cancel */
+         if ((y < ozone->dimensions.header_height) ||
+             (y > height - ozone->dimensions.footer_height))
+            return ozone_menu_entry_action(ozone, entry, selection, MENU_ACTION_CANCEL);
+         /* Tap/press entries: Activate and/or select item */
+         else if ((ptr < entries_end) &&
+                  (x > ozone->dimensions.sidebar_width + ozone->sidebar_offset) &&
+                  (x < width - ozone->animations.thumbnail_bar_position))
+         {
+            if (gesture == MENU_INPUT_GESTURE_TAP)
+            {
+               /* A 'tap' always produces a menu action */
 
-         menu_navigation_set_selection(ptr);
-         menu_driver_navigation_set(false);
+               /* If current 'pointer' item is not active,
+                * activate it immediately */
+               if (ptr != selection)
+                  menu_navigation_set_selection(ptr);
+
+               /* If we are currently in the sidebar, leave it */
+               if (ozone->cursor_in_sidebar)
+                  ozone_leave_sidebar(ozone, sidebar_tag);
+               /* Otherwise perform a MENU_ACTION_SELECT on currently
+                * active item
+                * NOTE: Cannot perform a 'leave sidebar' operation
+                * and a MENU_ACTION_SELECT at the same time... */
+               else
+                  return ozone_menu_entry_action(ozone, entry, (size_t)ptr, MENU_ACTION_SELECT);
+            }
+            else
+            {
+               /* A 'short' press is used only to activate (highlight)
+                * an item - it does not invoke a MENU_ACTION_SELECT
+                * action */
+               menu_input_set_pointer_y_accel(0.0f);
+
+               if (ptr != selection)
+                  menu_navigation_set_selection(ptr);
+
+               /* If we are currently in the sidebar, leave it */
+               if (ozone->cursor_in_sidebar)
+                  ozone_leave_sidebar(ozone, sidebar_tag);
+               /* If this is a playlist and the selection
+                * has changed, must update thumbnails */
+               else if (ozone->is_playlist &&
+                        (ozone->depth == 1) &&
+                        (ptr != selection))
+               {
+                  ozone_set_thumbnail_content(ozone, "");
+                  ozone_update_thumbnail_image(ozone);
+               }
+            }
+         }
+         /* Tap/press sidebar: return to sidebar or select
+          * category */
+         else if (ozone->pointer_in_sidebar)
+         {
+            /* If cursor is not in sidebar, return to sidebar */
+            if (!ozone->cursor_in_sidebar)
+               ozone_go_to_sidebar(ozone, sidebar_tag);
+            /* Otherwise, select current category */
+            else if (ozone->pointer_categories_selection != ozone->categories_selection_ptr)
+            {
+               unsigned horizontal_list_size = (ozone->horizontal_list) ?
+                     (unsigned)ozone->horizontal_list->size : 0;
+
+               /* Ensure that current category is valid */
+               if (ozone->pointer_categories_selection <= ozone->system_tab_end + horizontal_list_size)
+                  ozone_sidebar_goto(ozone, ozone->pointer_categories_selection);
+            }
+         }
          break;
       case MENU_INPUT_GESTURE_LONG_PRESS:
          /* 'Reset to default' action */
-         if ((ptr <= (menu_entries_get_size() - 1)) &&
-             (ptr == selection))
+         if ((y > ozone->dimensions.header_height) &&
+             (y < height - ozone->dimensions.footer_height) &&
+             (ptr < entries_end) &&
+             (ptr == selection) &&
+             (x > ozone->dimensions.sidebar_width + ozone->sidebar_offset) &&
+             (x < width - ozone->animations.thumbnail_bar_position))
             return menu_entry_action(entry, selection, MENU_ACTION_START);
+         break;
+      case MENU_INPUT_GESTURE_SWIPE_LEFT:
+         /* If this is a playlist, descend alphabet
+          * > Note: Can only do this if we are not using
+          *   a mouse, since it conflicts with auto selection
+          *   of entry under cursor */
+         if ((ozone->pointer.type != MENU_POINTER_MOUSE) &&
+             ozone->is_playlist &&
+             (ozone->depth == 1))
+            return ozone_menu_entry_action(ozone, entry, (size_t)ptr, MENU_ACTION_SCROLL_UP);
+         break;
+      case MENU_INPUT_GESTURE_SWIPE_RIGHT:
+         /* If this is a playlist, ascend alphabet
+          * > Note: Can only do this if we are not using
+          *   a mouse, since it conflicts with auto selection
+          *   of entry under cursor */
+         if ((ozone->pointer.type != MENU_POINTER_MOUSE) &&
+             ozone->is_playlist &&
+             (ozone->depth == 1))
+            return ozone_menu_entry_action(ozone, entry, (size_t)ptr, MENU_ACTION_SCROLL_DOWN);
          break;
       default:
          /* Ignore input */
@@ -2524,6 +2955,73 @@ static int ozone_pointer_up(void *userdata,
    }
 
    return 0;
+}
+
+/* Returns true if specified entry is currently
+ * displayed on screen */
+static bool INLINE ozone_entry_onscreen(
+      ozone_handle_t *ozone, size_t idx)
+{
+   return (idx >= ozone->first_onscreen_entry) &&
+         (idx <= ozone->last_onscreen_entry);
+}
+
+/* If currently selected entry is off screen,
+ * moves selection to specified on screen target
+ * > Does nothing if currently selected item is
+ *   already on screen */
+static void ozone_auto_select_onscreen_entry(
+      ozone_handle_t *ozone,
+      enum ozone_onscreen_entry_position_type target_entry)
+{
+   size_t selection = menu_navigation_get_selection();
+
+   /* Check whether selected item is already on screen */
+   if (ozone_entry_onscreen(ozone, selection))
+      return;
+
+   /* Update selection index */
+   switch (target_entry)
+   {
+      case OZONE_ONSCREEN_ENTRY_FIRST:
+         selection = ozone->first_onscreen_entry;
+         break;
+      case OZONE_ONSCREEN_ENTRY_LAST:
+         selection = ozone->last_onscreen_entry;
+         break;
+      case OZONE_ONSCREEN_ENTRY_CENTRE:
+      default:
+         selection = (ozone->first_onscreen_entry >> 1) +
+               (ozone->last_onscreen_entry >> 1);
+         break;
+   }
+
+   /* Apply new selection */
+   menu_navigation_set_selection(selection);
+}
+
+/* Returns true if specified category is currently
+ * displayed on screen */
+static bool INLINE ozone_category_onscreen(
+      ozone_handle_t *ozone, size_t idx)
+{
+   return (idx >= ozone->first_onscreen_category) &&
+         (idx <= ozone->last_onscreen_category);
+}
+
+/* If current category is on screen, returns its
+ * index. If current category is off screen, returns
+ * index of centremost on screen category. */
+static size_t ozone_get_onscreen_category_selection(
+      ozone_handle_t *ozone)
+{
+   /* Check whether selected category is already on screen */
+   if (ozone_category_onscreen(ozone, ozone->categories_selection_ptr))
+      return ozone->categories_selection_ptr;
+
+   /* Return index of centremost category */
+   return (ozone->first_onscreen_category >> 1) +
+         (ozone->last_onscreen_category >> 1);
 }
 
 static enum menu_action ozone_parse_menu_entry_action(
@@ -2579,6 +3077,7 @@ static enum menu_action ozone_parse_menu_entry_action(
    switch (action)
    {
       case MENU_ACTION_START:
+         ozone->cursor_mode = false;
          /* If this is a menu with thumbnails and cursor
           * is not in the sidebar, attempt to show
           * fullscreen thumbnail view */
@@ -2590,32 +3089,58 @@ static enum menu_action ozone_parse_menu_entry_action(
          }
          break;
       case MENU_ACTION_DOWN:
-         ozone->cursor_mode = false;
-         if (!ozone->cursor_in_sidebar)
+         if (ozone->cursor_in_sidebar)
+         {
+            /* If cursor is active, ensure we target
+             * an on screen category */
+            size_t selection = (ozone->cursor_mode) ?
+                  ozone_get_onscreen_category_selection(ozone) : ozone->categories_selection_ptr;
+
+            new_selection = (int)(selection + 1);
+
+            if (new_selection >= (int)(ozone->system_tab_end + horizontal_list_size + 1))
+               new_selection = 0;
+
+            ozone_sidebar_goto(ozone, new_selection);
+
+            new_action = MENU_ACTION_NOOP;
+            ozone->cursor_mode = false;
             break;
+         }
 
-         new_selection = (int)(ozone->categories_selection_ptr + 1);
+         /* If pointer is active and current selection
+          * is off screen, auto select *centre* item */
+         if (ozone->cursor_mode)
+            ozone_auto_select_onscreen_entry(ozone, OZONE_ONSCREEN_ENTRY_CENTRE);
 
-         if (new_selection >= (int)(ozone->system_tab_end + horizontal_list_size + 1))
-            new_selection = 0;
-
-         ozone_sidebar_goto(ozone, new_selection);
-
-         new_action = MENU_ACTION_NOOP;
+         ozone->cursor_mode = false;
          break;
       case MENU_ACTION_UP:
-         ozone->cursor_mode = false;
-         if (!ozone->cursor_in_sidebar)
+         if (ozone->cursor_in_sidebar)
+         {
+            /* If cursor is active, ensure we target
+             * an on screen category */
+            size_t selection = (ozone->cursor_mode) ?
+                  ozone_get_onscreen_category_selection(ozone) : ozone->categories_selection_ptr;
+
+            new_selection = (int)selection - 1;
+
+            if (new_selection < 0)
+               new_selection = horizontal_list_size + ozone->system_tab_end;
+
+            ozone_sidebar_goto(ozone, new_selection);
+
+            new_action = MENU_ACTION_NOOP;
+            ozone->cursor_mode = false;
             break;
+         }
 
-         new_selection = (int)ozone->categories_selection_ptr - 1;
+         /* If pointer is active and current selection
+          * is off screen, auto select *centre* item */
+         if (ozone->cursor_mode)
+            ozone_auto_select_onscreen_entry(ozone, OZONE_ONSCREEN_ENTRY_CENTRE);
 
-         if (new_selection < 0)
-            new_selection = horizontal_list_size + ozone->system_tab_end;
-
-         ozone_sidebar_goto(ozone, new_selection);
-
-         new_action = MENU_ACTION_NOOP;
+         ozone->cursor_mode = false;
          break;
       case MENU_ACTION_LEFT:
          ozone->cursor_mode = false;
@@ -2670,6 +3195,41 @@ static enum menu_action ozone_parse_menu_entry_action(
             ozone_go_to_sidebar(ozone, tag);
             new_action = MENU_ACTION_NOOP;
          }
+         break;
+
+      case MENU_ACTION_SCROLL_UP:
+         /* Descend alphabet (Z towards A) */
+
+         /* Ignore if cursor is in sidebar */
+         if (ozone->cursor_in_sidebar)
+         {
+            new_action = MENU_ACTION_NOOP;
+            break;
+         }
+
+         /* If pointer is active and current selection
+          * is off screen, auto select *last* item */
+         if (ozone->cursor_mode)
+            ozone_auto_select_onscreen_entry(ozone, OZONE_ONSCREEN_ENTRY_LAST);
+
+         ozone->cursor_mode = false;
+         break;
+      case MENU_ACTION_SCROLL_DOWN:
+         /* Ascend alphabet (A towards Z) */
+
+         /* > Ignore if cursor is in sidebar */
+         if (ozone->cursor_in_sidebar)
+         {
+            new_action = MENU_ACTION_NOOP;
+            break;
+         }
+
+         /* If pointer is active and current selection
+          * is off screen, auto select *first* item */
+         if (ozone->cursor_mode)
+            ozone_auto_select_onscreen_entry(ozone, OZONE_ONSCREEN_ENTRY_FIRST);
+
+         ozone->cursor_mode = false;
          break;
       default:
          /* In all other cases, pass through input
