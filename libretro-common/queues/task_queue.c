@@ -26,6 +26,8 @@
 
 #include <queues/task_queue.h>
 
+#include <features/features_cpu.h>
+
 #ifdef HAVE_THREADS
 #include <rthreads/rthreads.h>
 #define SLOCK_LOCK(x) slock_lock(x)
@@ -112,7 +114,24 @@ static void task_queue_put(task_queue_t *queue, retro_task_t *task)
    task->next = NULL;
 
    if (queue->front)
+   {
+      /* Make sure to insert in order - the queue is sorted by 'when' so items that aren't scheduled
+       * to run immediately are at the back of the queue. Items with the same 'when' are inserted after
+       * all the other items with the same 'when'. This primarily affects items with a 'when' of 0.
+       */
+      if (queue->back->when > task->when)
+      {
+         retro_task_t** prev = &queue->front;
+         while (*prev && (*prev)->when <= task->when)
+            prev = &((*prev)->next);
+
+         task->next = *prev;
+         *prev = task;
+         return;
+      }
+
       queue->back->next = task;
+   }
    else
       queue->front = task;
 
@@ -181,9 +200,13 @@ static void retro_task_regular_gather(void)
    for (task = queue; task; task = next)
    {
       next = task->next;
-      task->handler(task);
 
-      task_queue_push_progress(task);
+      if (!task->when || task->when < cpu_features_get_time_usec())
+      {
+         task->handler(task);
+
+         task_queue_push_progress(task);
+      }
 
       if (task->finished)
          task_queue_put(&tasks_finished, task);
@@ -304,9 +327,10 @@ static void task_queue_remove(task_queue_t *queue, retro_task_t *task)
    {
       slock_lock(queue_lock);
       queue->front = task->next;
+      if (queue->back == task) /* if only element, also update back */
+         queue->back = NULL;
       slock_unlock(queue_lock);
       task->next   = NULL;
-
       return;
    }
 
@@ -320,6 +344,15 @@ static void task_queue_remove(task_queue_t *queue, retro_task_t *task)
       {
          t->next    = task->next;
          task->next = NULL;
+
+         /* When removing the tail of the queue, update the tail pointer */
+         if (queue->back == task)
+         {
+            slock_lock(queue_lock);
+            if (queue->back == task)
+               queue->back = t;
+            slock_unlock(queue_lock);
+         }
          break;
       }
 
@@ -451,6 +484,18 @@ static void threaded_worker(void *userdata)
          scond_wait(worker_cond, running_lock);
          slock_unlock(running_lock);
          continue;
+      }
+
+      if (task->when)
+      {
+         retro_time_t now = cpu_features_get_time_usec();
+         retro_time_t delay = task->when - now - 500; /* allow half a millisecond for context switching */
+         if (delay > 0)
+         {
+            scond_wait_timeout(worker_cond, running_lock, delay);
+            slock_unlock(running_lock);
+            continue;
+         }
       }
 
       slock_unlock(running_lock);
