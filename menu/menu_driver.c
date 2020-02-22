@@ -1597,6 +1597,10 @@ static void bundle_decompressed(retro_task_t *task,
 static bool menu_init(menu_handle_t *menu_data)
 {
    settings_t *settings        = config_get_ptr();
+#ifdef HAVE_CONFIGFILE
+   bool menu_show_start_screen = settings->bools.menu_show_start_screen;
+   bool config_save_on_exit    = settings->bools.config_save_on_exit;
+#endif
 
    /* Ensure that menu pointer input is correctly
     * initialised */
@@ -1606,7 +1610,7 @@ static bool menu_init(menu_handle_t *menu_data)
       return false;
 
 #ifdef HAVE_CONFIGFILE
-   if (settings->bools.menu_show_start_screen)
+   if (menu_show_start_screen)
    {
       /* We don't want the welcome dialog screen to show up
        * again after the first startup, so we save to config
@@ -1617,7 +1621,7 @@ static bool menu_init(menu_handle_t *menu_data)
       configuration_set_bool(settings,
             settings->bools.menu_show_start_screen, false);
 #if !(defined(PS2) && defined(DEBUG)) /* TODO: PS2 IMPROVEMENT */
-      if (settings->bools.config_save_on_exit)
+      if (config_save_on_exit)
          command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
 #endif
    }
@@ -1636,10 +1640,16 @@ static bool menu_init(menu_handle_t *menu_data)
    {
       menu_dialog_push_pending(true, MENU_DIALOG_HELP_EXTRACT);
 #ifdef HAVE_COMPRESSION
-      task_push_decompress(settings->arrays.bundle_assets_src,
+      task_push_decompress(
+            settings->arrays.bundle_assets_src,
             settings->arrays.bundle_assets_dst,
-            NULL, settings->arrays.bundle_assets_dst_subdir,
-            NULL, bundle_decompressed, NULL, NULL, false);
+            NULL,
+            settings->arrays.bundle_assets_dst_subdir,
+            NULL,
+            bundle_decompressed,
+            NULL,
+            NULL,
+            false);
 #endif
    }
 
@@ -2087,7 +2097,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          {
             int i;
             driver_ctx_info_t drv;
-            settings_t *settings = config_get_ptr();
+            settings_t *settings    = config_get_ptr();
 
             drv.label = "menu_driver";
             drv.s     = settings->arrays.menu_driver;

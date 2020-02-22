@@ -261,6 +261,7 @@ static void menu_action_setting_disp_set_label_netplay_mitm_server(
       char *s2, size_t len2)
 {
    unsigned j;
+   const char *netplay_mitm_server;
    settings_t *settings = config_get_ptr();
 
    *s = '\0';
@@ -270,12 +271,14 @@ static void menu_action_setting_disp_set_label_netplay_mitm_server(
    if (!settings)
       return;
 
-   if (string_is_empty(settings->arrays.netplay_mitm_server))
+   netplay_mitm_server = settings->arrays.netplay_mitm_server;
+
+   if (string_is_empty(netplay_mitm_server))
       return;
 
    for (j = 0; j < ARRAY_SIZE(netplay_mitm_server_list); j++)
    {
-      if (string_is_equal(settings->arrays.netplay_mitm_server,
+      if (string_is_equal(netplay_mitm_server,
                netplay_mitm_server_list[j].name))
          strlcpy(s, netplay_mitm_server_list[j].description, len);
    }
@@ -291,19 +294,17 @@ static void menu_action_setting_disp_set_label_shader_watch_for_changes(
       const char *path,
       char *s2, size_t len2)
 {
-   settings_t *settings = config_get_ptr();
+   settings_t *settings    = config_get_ptr();
+   bool shader_watch_files = settings ? settings->bools.video_shader_watch_files: false;
 
    *s = '\0';
    *w = 19;
    strlcpy(s2, path, len2);
 
-   if (settings)
-   {
-      if (settings->bools.video_shader_watch_files)
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TRUE), len);
-      else
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FALSE), len);
-   }
+   if (shader_watch_files)
+      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TRUE), len);
+   else
+      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FALSE), len);
 }
 
 static void menu_action_setting_disp_set_label_shader_num_passes(

@@ -1074,11 +1074,13 @@ static int action_bind_sublabel_playlist_entry(
    playlist_get_index(playlist, i, &entry);
 
    /* Only add sublabel if a core is currently assigned */
-   if (string_is_empty(entry->core_name) || string_is_equal(entry->core_name, "DETECT"))
+   if (  string_is_empty(entry->core_name) || 
+         string_is_equal(entry->core_name, "DETECT"))
       return 0;
 
    /* Add core name */
-   strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_CORE), len);
+   strlcpy(s, 
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_CORE), len);
    strlcat(s, " ", len);
    strlcat(s, entry->core_name, len);
 
@@ -1100,33 +1102,39 @@ static int action_bind_sublabel_playlist_entry(
        !string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_HORIZONTAL_MENU)))
       return 0;
 
-   /* Check whether runtime info should be loaded from log file */
-   if (entry->runtime_status == PLAYLIST_RUNTIME_UNKNOWN)
-      runtime_update_playlist(playlist, i);
-
-   /* Check whether runtime info is valid */
-   if (entry->runtime_status == PLAYLIST_RUNTIME_VALID)
+   switch (entry->runtime_status)
    {
-      int n = 0;
-      char tmp[64];
+      case PLAYLIST_RUNTIME_UNKNOWN:
+         /* Check whether runtime info should be loaded from log file */
+         runtime_update_playlist(playlist, i);
+         break;
+      case PLAYLIST_RUNTIME_VALID:
+         /* Check whether runtime info is valid */
+         {
+            int n = 0;
+            char tmp[64];
 
-      tmp[0  ] = '\n';
-      tmp[1  ] = '\0';
+            tmp[0  ] = '\n';
+            tmp[1  ] = '\0';
 
-      n = strlcat(tmp, entry->runtime_str, sizeof(tmp));
+            n        = strlcat(tmp, entry->runtime_str, sizeof(tmp));
 
-      tmp[n  ] = '\n';
-      tmp[n+1] = '\0';
+            tmp[n  ] = '\n';
+            tmp[n+1] = '\0';
 
-      /* Runtime/last played strings are now cached in the
-       * playlist, so we can add both in one go */
-      n = strlcat(tmp, entry->last_played_str, sizeof(tmp));
+            /* Runtime/last played strings are now cached in the
+             * playlist, so we can add both in one go */
+            n = strlcat(tmp, entry->last_played_str, sizeof(tmp));
 
-      if ((n < 0) || (n >= 64))
-         n = 0; /* Silence GCC warnings... */
+            if ((n < 0) || (n >= 64))
+               n = 0; /* Silence GCC warnings... */
 
-      if (!string_is_empty(tmp))
-         strlcat(s, tmp, len);
+            if (!string_is_empty(tmp))
+               strlcat(s, tmp, len);
+         }
+         break;
+      default:
+         break;
    }
 
    return 0;
