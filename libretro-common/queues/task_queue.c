@@ -115,6 +115,10 @@ static void task_queue_put(task_queue_t *queue, retro_task_t *task)
 
    if (queue->front)
    {
+      /* Make sure to insert in order - the queue is sorted by 'when' so items that aren't scheduled
+       * to run immediately are at the back of the queue. Items with the same 'when' are inserted after
+       * all the other items with the same 'when'. This primarily affects items with a 'when' of 0.
+       */
       if (queue->back->when > task->when)
       {
          retro_task_t** prev = &queue->front;
@@ -341,6 +345,7 @@ static void task_queue_remove(task_queue_t *queue, retro_task_t *task)
          t->next    = task->next;
          task->next = NULL;
 
+         /* When removing the tail of the queue, update the tail pointer */
          if (queue->back == task)
          {
             slock_lock(queue_lock);
