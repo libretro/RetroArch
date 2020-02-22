@@ -148,9 +148,7 @@ QWidget *ViewsPage::widget()
             file_list_get_actiondata_at_offset(list, i);
 
          if (cbs->enum_idx == MENU_ENUM_LABEL_MENU_SHOW_SUBLABELS)
-         {
             break;
-         }
 
          status->add(cbs->enum_idx);
       }
