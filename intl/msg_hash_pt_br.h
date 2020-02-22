@@ -3188,7 +3188,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_FEATURES,
-    "Características de CPU"
+    "Características da CPU"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_DPI,
@@ -3508,11 +3508,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_RGUI_SWAP_THUMBNAILS,
-    "Alterna as posições de exibição de 'Miniatura Acima' e 'Miniatura Abaixo'."
+    "Alterna as posições de exibição de 'Miniatura acima' e 'Miniatura abaixo'."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_RGUI_THUMBNAIL_DELAY,
-    "Atraso das Miniaturas (ms)"
+    "Atraso das miniaturas (ms)"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_RGUI_THUMBNAIL_DELAY,
@@ -3940,7 +3940,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_UPDATE_ASSETS,
-    "Atualizar Recursos"
+    "Atualizar recursos"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_UPDATE_AUTOCONFIG_PROFILES,
@@ -4600,7 +4600,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_FRAME_THROTTLE_SETTINGS,
-    "Altera as configurações de Rebobinamento, Avanço Rápido e Câmera Lenta."
+    "Altera as configurações de Rebobinamento, Avanço rápido e Câmera lenta."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SAVING_SETTINGS,
@@ -4826,7 +4826,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_APPLYING_CHEAT,
-    "Aplicando as alterações de Trapaças."
+    "Aplicando as alterações de trapaças."
     )
 MSG_HASH(
     MSG_APPLYING_SHADER,
@@ -5022,7 +5022,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_EXTERNAL_APPLICATION_DIR,
-    "Diretório de Aplicativo Externo"
+    "Diretório de aplicativo externo"
     )
 MSG_HASH(
     MSG_EXTRACTING,
@@ -5086,7 +5086,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_FAILED_TO_LOAD_OVERLAY,
-    "Falha em carregar a Sobreposição."
+    "Falha em carregar a sobreposição."
     )
 MSG_HASH(
     MSG_FAILED_TO_LOAD_STATE,
@@ -5226,7 +5226,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_GRAB_MOUSE_STATE,
-    "Capturar estado do Mouse"
+    "Capturar estado do mouse"
     )
 MSG_HASH(
     MSG_GAME_FOCUS_ON,
@@ -5402,7 +5402,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_REDIRECTING_SAVEFILE_TO,
-    "Redirecionando o Jogo-Salvo em"
+    "Redirecionando o arquivo de jogo salvo em"
     )
 MSG_HASH(
     MSG_REDIRECTING_SAVESTATE_TO,
@@ -5486,7 +5486,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_SAVING_RAM_TYPE,
-    "Salvando Tipo de RAM"
+    "Salvando tipo de RAM"
     )
 MSG_HASH(
     MSG_SAVING_STATE,
@@ -5771,7 +5771,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST,
-    "Lista de Cursores da Base de Dados"
+    "Lista de cursores da base de dados"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_DEVELOPER,
@@ -5867,7 +5867,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_DISABLE_COMPOSITION,
-    "Ativa ou desativa a composição (Somente no Windows)."
+    "Ativa ou desativa a composição (somente no Windows)."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_HISTORY_LIST_ENABLE,
@@ -6400,11 +6400,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_OVERLAY_OPACITY,
-    "Opacidade de todos os elementos de interface da Sobreposição."
+    "Opacidade de todos os elementos de interface da sobreposição."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_OVERLAY_SCALE,
-    "Escala de todos os elementos de interface da Sobreposição."
+    "Escala de todos os elementos de interface da sobreposição."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ENABLE,
@@ -6412,7 +6412,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_OVERLAY_PRESET,
-    "Selecione uma Sobreposição pelo navegador de arquivos."
+    "Selecione uma sobreposição pelo navegador de arquivos."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_NETPLAY_IP_ADDRESS,
@@ -6464,7 +6464,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MOUSE_ENABLE,
-    "Habilita o controle por Mouse dentro do menu."
+    "Habilita o controle por mouse dentro do menu."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_POINTER_ENABLE,
@@ -6688,7 +6688,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CORE_CHEAT_OPTIONS,
-    "Configura os códigos de Trapaça."
+    "Configura os códigos de trapaça."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SHADER_OPTIONS,
@@ -6903,7 +6903,7 @@ MSG_HASH(
 #endif
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CHEAT_DATABASE_PATH,
-    "Os arquivos de Trapaça são mantidos aqui."
+    "Os arquivos de trapaça são mantidos aqui."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_AUDIO_FILTER_DIR,
@@ -8266,7 +8266,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEAT_BROWSE_MEMORY,
-    "Examinar Endereço: %08X"
+    "Examinar endereço: %08X"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEAT_DESC,
@@ -8354,7 +8354,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEAT_COPY_AFTER,
-    "Copiar Esta Trapaça Depois"
+    "Copiar esta trapaça depois"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEAT_COPY_BEFORE,
@@ -9387,7 +9387,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
-    "Formato da 'Última Partida' em sub-etiquetas de listas"
+    "Formato da 'Última partida' em sub-etiquetas de listas"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
@@ -9579,7 +9579,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESTART_CONTENT,
-    "Exibir 'Reiniciar Conteúdo'"
+    "Exibir 'Reiniciar conteúdo'"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESTART_CONTENT,
@@ -10007,7 +10007,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_LOAD_DISC,
-    "Carregar um disco de mídia físico. Você deve primeiro selecionar o núcleo (Carregar Núcleo) que pretende usar com o disco."
+    "Carregar um disco de mídia físico. Você deve primeiro selecionar o núcleo (Carregar núcleo) que pretende usar com o disco."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_DUMP_DISC,
@@ -10023,7 +10023,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_AI_SERVICE_NARRATOR_MODE,
-    "Modo Narrador"
+    "Modo narrador"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE,
