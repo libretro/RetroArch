@@ -30,6 +30,8 @@
 #include <retro_common.h>
 #include <retro_common_api.h>
 
+#include <libretro.h>
+
 RETRO_BEGIN_DECLS
 
 enum task_type
@@ -125,6 +127,9 @@ struct retro_task
 
    /* don't touch this. */
    retro_task_t *next;
+
+   /* when the task should run (0 for as soon as possible) */
+   retro_time_t when;
 };
 
 typedef struct task_finder_data
