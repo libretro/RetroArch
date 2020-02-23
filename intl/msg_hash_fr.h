@@ -926,7 +926,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_AUTO,
-    "Mise à l'échelle automatique des widgets du menu"
+    "Mise à l'échelle automatique des widgets graphiques"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_AUTO,
@@ -934,11 +934,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_FACTOR,
-    "Remplacement de l'échelle des widgets du menu"
+    "Remplacement de l'échelle des widgets graphiques"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_FACTOR,
-    "Applique une valeur manuelle de remplacement du facteur d'échelle pour l'affichage des widgets du menu. Cette valeur est appliquée uniquement si l'option 'Mise à l'échelle automatique des widgets du menu' est désactivée. Peut être utile pour augmenter ou réduire la taille des notifications améliorées, indicateurs et commandes indépendamment du menu lui-même."
+    "Applique une valeur manuelle de remplacement du facteur d'échelle pour l'affichage des widgets graphiques. Cette valeur est appliquée uniquement si l'option 'Mise à l'échelle automatique des widgets graphiques' est désactivée. Peut être utile pour augmenter ou réduire la taille des notifications améliorées, indicateurs et commandes indépendamment du menu lui-même."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS,
@@ -5405,6 +5405,10 @@ MSG_HASH(
     "Redirection du fichier de sauvegarde vers"
     )
 MSG_HASH(
+    MSG_REDIRECTING_SAVESTATE_TO,
+    "Redirection du fichier de sauvegarde instantanée vers"
+    )
+MSG_HASH(
     MSG_REMAP_FILE_SAVED_SUCCESSFULLY,
     "Fichier de remappage enregistré avec succès."
     )
@@ -6032,7 +6036,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_RESTART_RETROARCH,
-    "Restart the program."
+    "Redémarrer le programme."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH,
@@ -6080,7 +6084,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_MOUSE_CURSOR,
-    "Show the mouse cursor when using an onscreen overlay."
+    "Affiche le curseur de la souris lors de l'utilisation d'une surimpression à l'écran."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_PLAYLISTS_TAB,
@@ -6939,7 +6943,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE,
-    "Save the current shader preset."
+    "Enregistrer les réglages de shaders actuels."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_AS,
@@ -6959,7 +6963,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_GLOBAL,
-    "Save the current shader settings as the default global setting."
+    "Enregistrer les réglages de shaders actuels en tant que réglages par défaut globaux."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_SHADER_PARAMETERS,
@@ -7407,11 +7411,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SET_CORE_ASSOCIATION,
-    "Show Set Core Association"
+    "Afficher 'Associer au cœur'"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SET_CORE_ASSOCIATION,
-    "Show/hide the 'Set Core Association' option."
+    "Afficher/masquer l'option 'Associer au cœur'."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESET_CORE_ASSOCIATION,
@@ -9415,7 +9419,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_WIDGETS_ENABLE,
-    "Widgets du menu"
+    "Widgets graphiques"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_SHADERS_ENABLE,
