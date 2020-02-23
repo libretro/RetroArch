@@ -143,13 +143,9 @@ bool disk_control_append_enabled(
 bool disk_control_image_label_enabled(
       disk_control_interface_t *disk_control)
 {
-   if (!disk_control)
+   if (!disk_control || !disk_control->cb.get_image_label)
       return false;
-
-   if (disk_control->cb.get_image_label)
-      return true;
-
-   return false;
+   return true;
 }
 
 /* Returns true if core supports setting
@@ -177,12 +173,8 @@ bool disk_control_initial_image_enabled(
 bool disk_control_get_eject_state(
       disk_control_interface_t *disk_control)
 {
-   if (!disk_control)
+   if (!disk_control || !disk_control->cb.get_eject_state)
       return false;
-
-   if (!disk_control->cb.get_eject_state)
-      return false;
-
    return disk_control->cb.get_eject_state();
 }
 
@@ -191,12 +183,8 @@ bool disk_control_get_eject_state(
 unsigned disk_control_get_num_images(
       disk_control_interface_t *disk_control)
 {
-   if (!disk_control)
+   if (!disk_control || !disk_control->cb.get_num_images)
       return 0;
-
-   if (!disk_control->cb.get_num_images)
-      return 0;
-
    return disk_control->cb.get_num_images();
 }
 
@@ -204,12 +192,8 @@ unsigned disk_control_get_num_images(
 unsigned disk_control_get_image_index(
       disk_control_interface_t *disk_control)
 {
-   if (!disk_control)
+   if (!disk_control || !disk_control->cb.get_image_index)
       return 0;
-
-   if (!disk_control->cb.get_image_index)
-      return 0;
-
    return disk_control->cb.get_image_index();
 }
 
@@ -307,10 +291,7 @@ bool disk_control_set_eject_state(
 
    msg[0] = '\0';
 
-   if (!disk_control)
-      return false;
-
-   if (!disk_control->cb.set_eject_state)
+   if (!disk_control || !disk_control->cb.set_eject_state)
       return false;
 
    /* Set eject state */
