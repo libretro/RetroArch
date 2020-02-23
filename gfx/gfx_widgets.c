@@ -582,7 +582,7 @@ static void gfx_widgets_msg_queue_move(void)
    for (i = (int)(current_msgs->size-1); i >= 0; i--)
    {
       menu_widget_msg_t *msg = (menu_widget_msg_t*)
-         file_list_get_userdata_at_offset(current_msgs, i);
+         current_msgs->list[i].userdata;
 
       if (!msg || msg->dying)
          continue;
@@ -660,7 +660,7 @@ static void gfx_widgets_msg_queue_free(menu_widget_msg_t *msg, bool touch_list)
 static void gfx_widgets_msg_queue_kill_end(void *userdata)
 {
    menu_widget_msg_t *msg = (menu_widget_msg_t*)
-      file_list_get_userdata_at_offset(current_msgs, msg_queue_kill);
+      current_msgs->list[msg_queue_kill].userdata;
 
    if (!msg)
       return;
@@ -671,9 +671,8 @@ static void gfx_widgets_msg_queue_kill_end(void *userdata)
 static void gfx_widgets_msg_queue_kill(unsigned idx)
 {
    gfx_animation_ctx_entry_t entry;
-
    menu_widget_msg_t *msg = (menu_widget_msg_t*)
-      file_list_get_userdata_at_offset(current_msgs, idx);
+      current_msgs->list[idx].userdata;
 
    if (!msg)
       return;
@@ -982,8 +981,8 @@ void gfx_widgets_iterate(
    /* Start expiration timer of dead tasks */
    for (i = 0; i < current_msgs->size ; i++)
    {
-      menu_widget_msg_t *msg  = (menu_widget_msg_t*)
-         file_list_get_userdata_at_offset(current_msgs, i);
+      menu_widget_msg_t *msg = (menu_widget_msg_t*)
+         current_msgs->list[i].userdata;
 
       if (!msg)
          continue;
@@ -1801,8 +1800,7 @@ void gfx_widgets_frame(void *data)
    /* Draw all messages */
    for (i = 0; i < current_msgs->size; i++)
    {
-      menu_widget_msg_t *msg = (menu_widget_msg_t*)
-         file_list_get_userdata_at_offset(current_msgs, i);
+      menu_widget_msg_t *msg = (menu_widget_msg_t*)current_msgs->list[i].userdata;
 
       if (!msg)
          continue;
@@ -2192,7 +2190,7 @@ void gfx_widgets_free(void)
       for (i = 0; i < current_msgs->size; i++)
       {
          menu_widget_msg_t *msg = (menu_widget_msg_t*)
-            file_list_get_userdata_at_offset(current_msgs, i);
+            current_msgs->list[i].userdata;
 
          gfx_widgets_msg_queue_free(msg, false);
       }
