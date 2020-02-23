@@ -1094,7 +1094,7 @@ static bool frontend_unix_powerstate_check_acpi_sysfs(
 #ifdef HAVE_LAKKA_SWITCH
       if (node && strstr(node, "max170xx_battery"))
 #else
-      if (node && strstr(node, "BAT"))
+      if (node && (strstr(node, "BAT") || strstr(node, "battery")))
 #endif
          check_proc_acpi_sysfs_battery(node,
                &have_battery, &charging, seconds, percent);
