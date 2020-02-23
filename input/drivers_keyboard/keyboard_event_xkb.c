@@ -86,19 +86,23 @@ int init_xkb(int fd, size_t size)
       }
       else
       {
-         struct string_list *list   = NULL;
-         struct xkb_rule_names rule = {0};
-         settings_t *settings       = config_get_ptr();
+         struct string_list *list          = NULL;
+         struct xkb_rule_names rule        = {0};
+         settings_t *settings              = config_get_ptr();
+         const char *input_keyboard_layout = settings->arrays.input_keyboard_layout;
 
          rule.rules = "evdev";
 
-         if (*settings->arrays.input_keyboard_layout)
+         if (*input_keyboard_layout)
          {
-            list = string_split(settings->arrays.input_keyboard_layout, ":");
-            if (list && list->size >= 2)
-               rule.variant = list->elems[1].data;
-            if (list && list->size >= 1)
-               rule.layout = list->elems[0].data;
+            list = string_split(input_keyboard_layout, ":");
+            if (list)
+            {
+               if (list->size >= 2)
+                  rule.variant = list->elems[1].data;
+               if (list->size >= 1)
+                  rule.layout = list->elems[0].data;
+            }
          }
 
          xkb_map = xkb_keymap_new_from_names(xkb_ctx,

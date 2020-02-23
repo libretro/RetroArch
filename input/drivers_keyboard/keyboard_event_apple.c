@@ -120,10 +120,10 @@ static icade_map_t icade_maps[MAX_ICADE_PROFILES][MAX_ICADE_KEYS];
 
 static bool handle_icade_event(unsigned *code, bool *keydown)
 {
-   settings_t *settings = config_get_ptr();
    static bool initialized = false;
-   bool ret = false;
-   unsigned kb_type_idx = settings->uints.input_keyboard_gamepad_mapping_type;
+   bool ret                = false;
+   settings_t *settings    = config_get_ptr();
+   unsigned kb_type_idx    = settings->uints.input_keyboard_gamepad_mapping_type;
 
    if (!initialized)
    {
@@ -274,20 +274,21 @@ void apple_input_keyboard_event(bool down,
       unsigned code, uint32_t character, uint32_t mod, unsigned device)
 {
 #if TARGET_OS_IPHONE
-   settings_t *settings = config_get_ptr();
+   settings_t *settings         = config_get_ptr();
+   bool keyboard_gamepad_enable = settings->bools.input_keyboard_gamepad_enable;
+   bool small_keyboard_enable   = settings->bools.input_small_keyboard_enable;
 #endif
-
-   code = HIDKEY(code);
+   code                         = HIDKEY(code);
 
 #if TARGET_OS_IPHONE
-   if (settings->bools.input_keyboard_gamepad_enable)
+   if (keyboard_gamepad_enable)
    {
       if (handle_icade_event(&code, &down))
          character = 0;
       else
          code      = 0;
    }
-   else if (settings->bools.input_small_keyboard_enable)
+   else if (small_keyboard_enable)
    {
       if (handle_small_keyboard(&code, down))
          character = 0;
