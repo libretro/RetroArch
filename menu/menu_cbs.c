@@ -292,13 +292,13 @@ void menu_cbs_init(void *data,
 
    /* It will try to find a corresponding callback function inside
     * menu_cbs_left.c, then map this callback to the entry. */
-   menu_cbs_init_bind_left(cbs, path, label, type, idx, menu_label, label_hash);
+   menu_cbs_init_bind_left(cbs, path, label, type, idx, menu_label);
 
    menu_cbs_init_log(repr_label, "LEFT", cbs->action_left_ident);
 
    /* It will try to find a corresponding callback function inside
     * menu_cbs_right.c, then map this callback to the entry. */
-   menu_cbs_init_bind_right(cbs, path, label, type, idx, menu_label, label_hash);
+   menu_cbs_init_bind_right(cbs, path, label, type, idx, menu_label);
 
    menu_cbs_init_log(repr_label, "RIGHT", cbs->action_right_ident);
 
