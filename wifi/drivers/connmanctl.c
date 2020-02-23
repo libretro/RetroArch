@@ -250,7 +250,7 @@ static bool connmanctl_ssid_is_online(unsigned i)
    return false;
 }
 
-static bool connmanctl_connect_ssid(unsigned i, const char* passphrase)
+static bool connmanctl_connect_ssid(unsigned idx, const char* passphrase)
 {
    unsigned i;
    char ln[512]                        = {0};
@@ -260,7 +260,7 @@ static bool connmanctl_connect_ssid(unsigned i, const char* passphrase)
    char settings_path[PATH_MAX_LENGTH] = {0};
    FILE *command_file                  = NULL;
    FILE *settings_file                 = NULL;
-   const char *line                    = lines->elems[i].data;
+   const char *line                    = lines->elems[idx].data;
    settings_t *settings                = config_get_ptr();
 
    static struct string_list* list     = NULL;
