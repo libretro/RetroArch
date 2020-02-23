@@ -34,6 +34,10 @@
 
 #include "../tasks/task_content.h"
 
+#ifdef HAVE_CHEEVOS
+#include "../cheevos-new/badges.h"
+#endif
+
 /* TODO: Fix context reset freezing everything in place (probably kills animations when it shouldn't anymore) */
 
 static float msg_queue_background[16]  = COLOR_HEX_TO_FLOAT(0x3A3A3A, 1.0f);
@@ -2540,28 +2544,6 @@ static void gfx_widgets_start_achievement_notification(void)
    gfx_animation_push(&entry);
 }
 
-static void gfx_widgets_get_badge_texture(
-      uintptr_t *tex, const char *badge)
-{
-   char badge_file[16];
-   char fullpath[PATH_MAX_LENGTH];
-
-   if (!badge)
-   {
-      *tex = 0;
-      return;
-   }
-
-   strlcpy(badge_file, badge, sizeof(badge_file));
-   strlcat(badge_file, ".png", sizeof(badge_file));
-   fill_pathname_application_special(fullpath,
-         PATH_MAX_LENGTH * sizeof(char),
-         APPLICATION_SPECIAL_DIRECTORY_THUMBNAILS_CHEEVOS_BADGES);
-
-   gfx_display_reset_textures_list(badge_file, fullpath,
-         tex, TEXTURE_FILTER_MIPMAP_LINEAR, NULL, NULL);
-}
-
 void gfx_widgets_push_achievement(const char *title, const char *badge)
 {
    gfx_widgets_achievement_free(NULL);
@@ -2569,7 +2551,7 @@ void gfx_widgets_push_achievement(const char *title, const char *badge)
    /* TODO: Make a queue of notifications to display */
 
    cheevo_title = strdup(title);
-   gfx_widgets_get_badge_texture(&cheevo_badge, badge);
+   cheevo_badge = cheevos_get_badge_texture(badge, 0);
 
    gfx_widgets_start_achievement_notification();
 }

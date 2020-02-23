@@ -412,9 +412,10 @@ uintptr_t ozone_entries_icon_get_texture(ozone_handle_t *ozone,
          (type < MENU_SETTINGS_NETPLAY_ROOMS_START)
       )
    {
-      int new_id = type - MENU_SETTINGS_CHEEVOS_START;
-      if (get_badge_texture(new_id) != 0)
-         return get_badge_texture(new_id);
+      int index = type - MENU_SETTINGS_CHEEVOS_START;
+      uintptr_t badge_texture = cheevos_get_menu_badge_texture(index);
+      if (badge_texture)
+         return badge_texture;
       /* Should be replaced with placeholder badge icon. */
       return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_ACHIEVEMENTS];
    }
