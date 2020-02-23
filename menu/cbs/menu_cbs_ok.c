@@ -7476,7 +7476,10 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
 }
 
 static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
-      uint32_t label_hash, uint32_t menu_label_hash, unsigned type)
+      const char *label,
+      uint32_t label_hash, 
+      const char *menu_label,
+      uint32_t menu_label_hash, unsigned type)
 {
    if (type == MENU_SET_CDROM_LIST)
    {
@@ -7618,7 +7621,7 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             {
                BIND_ACTION_OK(cbs, action_ok_playlist_entry_collection);
             }
-            else if (label_hash == MENU_LABEL_RDB_ENTRY_START_CONTENT)
+            else if (string_is_equal(label, "rdb_entry_start_content"))
             {
                BIND_ACTION_OK(cbs, action_ok_playlist_entry_start_content);
             }
@@ -7650,7 +7653,7 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             BIND_ACTION_OK(cbs, action_ok_push_generic_list);
             break;
          case FILE_TYPE_CHEAT:
-            if (menu_label_hash == MENU_LABEL_CHEAT_FILE_LOAD_APPEND)
+            if (string_is_equal(menu_label, "cheat_file_load_append"))
             {
                BIND_ACTION_OK(cbs, action_ok_cheat_file_load_append);
             }
@@ -7950,7 +7953,9 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
 
 int menu_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx,
-      uint32_t label_hash, uint32_t menu_label_hash)
+      uint32_t label_hash,
+      const char *menu_label,
+      uint32_t menu_label_hash)
 {
    if (!cbs)
       return -1;
@@ -7960,7 +7965,9 @@ int menu_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
    if (menu_cbs_init_bind_ok_compare_label(cbs, label, label_hash) == 0)
       return 0;
 
-   if (menu_cbs_init_bind_ok_compare_type(cbs, label_hash, menu_label_hash, type) == 0)
+   if (menu_cbs_init_bind_ok_compare_type(cbs, label,
+            label_hash, menu_label,
+            menu_label_hash, type) == 0)
       return 0;
 
    return -1;

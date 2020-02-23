@@ -277,7 +277,9 @@ int menu_cbs_init_bind_cancel(menu_file_list_cbs_t *cbs,
 
 int menu_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx,
-      uint32_t label_hash, uint32_t menu_label_hash);
+      uint32_t label_hash,
+      const char *menu_label,
+      uint32_t menu_label_hash);
 
 int menu_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx,

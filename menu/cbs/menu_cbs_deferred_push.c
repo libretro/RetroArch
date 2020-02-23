@@ -1182,24 +1182,28 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
             return -1;
       }
    }
+   else if (string_is_equal(label, "settings"))
+   {
+      BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_settings);
+   }
+   else if (string_is_equal(label, "configurations_list"))
+   {
+      BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_configurations_list);
+   }
+   else if (string_is_equal(label, "deferred_playlist_manager_list"))
+   {
+      BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_playlist_manager_list);
+   }
+   else if (string_is_equal(label, "deferred_playlist_manager_settings"))
+   {
+      BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_playlist_manager_settings);
+   }
    else
    {
       switch (label_hash)
       {
-         case MENU_LABEL_SETTINGS: /* TODO/FIXME */
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_settings);
-            break;
-         case MENU_LABEL_DEFERRED_CONFIGURATIONS_LIST: /* TODO/FIXME */
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_configurations_list);
-            break;
          case MENU_LABEL_DEFERRED_PLAYLIST_SETTINGS_LIST:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_playlist_settings_list);
-            break;
-         case MENU_LABEL_DEFERRED_PLAYLIST_MANAGER_LIST:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_playlist_manager_list);
-            break;
-         case MENU_LABEL_DEFERRED_PLAYLIST_MANAGER_SETTINGS:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_playlist_manager_settings);
             break;
          case MENU_LABEL_DEFERRED_ACCOUNTS_CHEEVOS_LIST:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_accounts_cheevos_list);
