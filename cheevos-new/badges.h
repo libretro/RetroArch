@@ -22,26 +22,13 @@
 
 RETRO_BEGIN_DECLS
 
-#define CHEEVOS_BADGE_LIMIT 256
+#ifdef HAVE_MENU
+void cheevos_reset_menu_badges(void);
+void cheevos_set_menu_badge(int index, const char *badge, bool locked);
+uintptr_t cheevos_get_menu_badge_texture(int index);
+#endif
 
-typedef struct
-{
-  bool badge_locked[CHEEVOS_BADGE_LIMIT];
-  const char * badge_id_list[CHEEVOS_BADGE_LIMIT];
-  uintptr_t menu_texture_list[CHEEVOS_BADGE_LIMIT];
-} badges_ctx_t;
-
-bool badge_exists(const char* filepath);
-
-void set_badge_menu_texture(badges_ctx_t * badges, int i);
-
-void set_badge_info(badges_ctx_t *badge_struct,
-      int id, const char *badge_id, bool active);
-
-uintptr_t get_badge_texture(int id);
-
-extern badges_ctx_t badges_ctx;
-static badges_ctx_t new_badges_ctx;
+uintptr_t cheevos_get_badge_texture(const char* badge, bool locked);
 
 RETRO_END_DECLS
 

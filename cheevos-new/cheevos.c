@@ -1156,7 +1156,7 @@ static void rcheevos_append_menu_achievement(menu_displaylist_info_t* info, size
       cheevo->info->description, enum_idx,
       MENU_SETTINGS_CHEEVOS_START + idx, 0, 0);
 
-   set_badge_info(&badges_ctx, idx, cheevo->info->badge, active);
+   cheevos_set_menu_badge(idx, cheevo->info->badge, active);
 }
 #endif
 
@@ -2487,8 +2487,6 @@ found:
     *************************************************************************/
    CORO_SUB(RCHEEVOS_GET_BADGES)
 
-      badges_ctx = new_badges_ctx;
-
 #if defined(HAVE_GFX_WIDGETS)
       if (false) /* we always want badges if menu widgets are enabled */
 #endif
@@ -2501,6 +2499,10 @@ found:
                !settings->bools.cheevos_badges_enable)
             CORO_RET();
       }
+
+#ifdef HAVE_MENU
+      cheevos_reset_menu_badges();
+#endif
 
       for (coro->i = 0; coro->i < 2; coro->i++)
       {
@@ -2547,7 +2549,7 @@ found:
                      coro->badge_name,
                      sizeof(coro->badge_fullpath));
 
-               if (!badge_exists(coro->badge_fullpath))
+               if (!path_is_valid(coro->badge_fullpath))
                {
 #ifdef CHEEVOS_LOG_BADGES
                   CHEEVOS_LOG(

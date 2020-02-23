@@ -2270,9 +2270,10 @@ static uintptr_t stripes_icon_get_id(stripes_handle_t *stripes,
          (type < MENU_SETTINGS_NETPLAY_ROOMS_START)
       )
    {
-      int new_id = type - MENU_SETTINGS_CHEEVOS_START;
-      if (get_badge_texture(new_id) != 0)
-         return get_badge_texture(new_id);
+      int index = type - MENU_SETTINGS_CHEEVOS_START;
+      uintptr_t badge_texture = cheevos_get_menu_badge_texture(index);
+      if (badge_texture)
+         return badge_texture;
       /* Should be replaced with placeholder badge icon. */
       return stripes->textures.list[STRIPES_TEXTURE_SUBSETTING];
    }
