@@ -28774,6 +28774,7 @@ bool is_input_keyboard_display_on(void)
    return false;
 #endif
 }
+
 #ifdef HAVE_ACCESSIBILITY
 bool accessibility_speak_priority(const char* speak_text, int priority)
 {
