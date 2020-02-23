@@ -43,8 +43,8 @@
  *
  */
 
-#ifndef __RARCH_HASH_H
-#define __RARCH_HASH_H
+#ifndef __LIBRETRO_SDK_HASH_H
+#define __LIBRETRO_SDK_HASH_H
 
 #include <stdint.h>
 #include <stddef.h>

@@ -61,7 +61,6 @@
 #include <retro_inline.h>
 #include <compat/strl.h>
 #include <compat/fopen_utf8.h>
-#include <rhash.h>
 #include <lists/file_list.h>
 #include <file/file_path.h>
 #include <streams/file_stream.h>
@@ -670,7 +669,6 @@ static bool make_proc_acpi_key_val(char **_ptr, char **_key, char **_val)
 }
 
 #define ACPI_VAL_CHARGING_DISCHARGING  0xf268327aU
-#define ACPI_VAL_ONLINE                0x6842bf17U
 
 static void check_proc_acpi_battery(const char * node, bool * have_battery,
       bool * charging, int *seconds, int *percent)
@@ -717,19 +715,8 @@ static void check_proc_acpi_battery(const char * node, bool * have_battery,
       {
          if (string_is_equal(val, "charging"))
             charge = true;
-         else
-         {
-            uint32_t val_hash = djb2_calculate(val);
-
-            switch (val_hash)
-            {
-               case ACPI_VAL_CHARGING_DISCHARGING:
-                  charge = true;
-                  break;
-               default:
-                  break;
-            }
-         }
+         else if (string_is_equal(val, "charging/discharging"))
+            charge = true;
       }
       else if (string_is_equal(key, "remaining capacity"))
       {
@@ -872,10 +859,8 @@ static void check_proc_acpi_ac_adapter(const char * node, bool *have_ac)
    ptr = &buf[0];
    while (make_proc_acpi_key_val(&ptr, &key, &val))
    {
-      uint32_t val_hash = djb2_calculate(val);
-
       if (string_is_equal(key, "state") &&
-            val_hash == ACPI_VAL_ONLINE)
+            string_is_equal(val, "on-line"))
          *have_ac = true;
    }
 
