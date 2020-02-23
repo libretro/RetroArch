@@ -52,7 +52,6 @@
 #include <retro_miscellaneous.h>
 #include <file/file_path.h>
 #include <streams/file_stream.h>
-#include <rhash.h>
 #include <features/features_cpu.h>
 #include <string/stdstring.h>
 
@@ -338,12 +337,16 @@ static void frontend_darwin_get_environment_settings(int *argc, char *argv[],
 {
    CFURLRef bundle_url;
    CFStringRef bundle_path;
+#if TARGET_OS_IPHONE
+   char resolved_home_dir_buf[
+      PATH_MAX_LENGTH]                   = {0};
+   char resolved_bundle_dir_buf[
+      PATH_MAX_LENGTH]                   = {0};
+#endif
    char temp_dir[PATH_MAX_LENGTH]        = {0};
    char bundle_path_buf[PATH_MAX_LENGTH] = {0};
    char home_dir_buf[PATH_MAX_LENGTH]    = {0};
-   CFBundleRef bundle = CFBundleGetMainBundle();
-
-   (void)temp_dir;
+   CFBundleRef bundle                    = CFBundleGetMainBundle();
 
    if (!bundle)
       return;
@@ -351,26 +354,25 @@ static void frontend_darwin_get_environment_settings(int *argc, char *argv[],
    bundle_url  = CFBundleCopyBundleURL(bundle);
    bundle_path = CFURLCopyPath(bundle_url);
 
-   CFStringGetCString(bundle_path, bundle_path_buf, sizeof(bundle_path_buf), kCFStringEncodingUTF8);
-   (void)home_dir_buf;
+   CFStringGetCString(bundle_path,
+         bundle_path_buf, sizeof(bundle_path_buf), kCFStringEncodingUTF8);
 
    CFSearchPathForDirectoriesInDomains(CFDocumentDirectory,
          CFUserDomainMask, 1, home_dir_buf, sizeof(home_dir_buf));
 
 #if TARGET_OS_IPHONE
-   char resolved_home_dir_buf[PATH_MAX_LENGTH] = {0};
-   if (realpath(home_dir_buf, resolved_home_dir_buf)) {
+   if (realpath(home_dir_buf, resolved_home_dir_buf))
+   {
       retro_assert(strlcpy(home_dir_buf,
-            resolved_home_dir_buf,
-            sizeof(home_dir_buf)) < sizeof(home_dir_buf));
+               resolved_home_dir_buf,
+               sizeof(home_dir_buf)) < sizeof(home_dir_buf));
    }
-    char resolved_bundle_dir_buf[PATH_MAX_LENGTH] = {0};
-    if (realpath(bundle_path_buf, resolved_bundle_dir_buf))
-    {
-        retro_assert(strlcpy(bundle_path_buf,
-                             resolved_bundle_dir_buf,
-                             sizeof(bundle_path_buf)) < sizeof(bundle_path_buf));
-    }
+   if (realpath(bundle_path_buf, resolved_bundle_dir_buf))
+   {
+      retro_assert(strlcpy(bundle_path_buf,
+               resolved_bundle_dir_buf,
+               sizeof(bundle_path_buf)) < sizeof(bundle_path_buf));
+   }
 #endif
 
    strlcat(home_dir_buf, "/RetroArch", sizeof(home_dir_buf));
@@ -693,32 +695,20 @@ end:
    return ret;
 }
 
-#define DARWIN_ARCH_X86_64     0x23dea434U
-#define DARWIN_ARCH_X86        0x0b88b8cbU
-#define DARWIN_ARCH_POWER_MAC  0xba3772d8U
-
 static enum frontend_architecture frontend_darwin_get_architecture(void)
 {
    struct utsname buffer;
-   uint32_t buffer_hash;
 
    if (uname(&buffer) != 0)
       return FRONTEND_ARCH_NONE;
 
-   (void)buffer_hash;
-
 #ifdef OSX
-   buffer_hash = djb2_calculate(buffer.machine);
-
-   switch (buffer_hash)
-   {
-      case DARWIN_ARCH_X86_64:
-         return FRONTEND_ARCH_X86_64;
-      case DARWIN_ARCH_X86:
-        return FRONTEND_ARCH_X86;
-      case DARWIN_ARCH_POWER_MAC:
-        return FRONTEND_ARCH_PPC;
-   }
+   if (string_is_equal(buffer.machine, "x86_64"))
+      return FRONTEND_ARCH_X86_64;
+   if (string_is_equal(buffer.machine, "x86"))
+      return FRONTEND_ARCH_X86;
+   if (string_is_equal(buffer.machine, "Power Macintosh"))
+      return FRONTEND_ARCH_PPC;
 
    return FRONTEND_ARCH_NONE;
 #else
@@ -732,29 +722,27 @@ static int frontend_darwin_parse_drive_list(void *data, bool load_content)
    int ret = -1;
 #if TARGET_OS_IPHONE
 #ifdef HAVE_MENU
-   file_list_t *list = (file_list_t*)data;
-   CFURLRef bundle_url;
-   CFStringRef bundle_path;
+   file_list_t *list                     = (file_list_t*)data;
    char bundle_path_buf[PATH_MAX_LENGTH] = {0};
    char home_dir_buf[PATH_MAX_LENGTH]    = {0};
-   CFBundleRef bundle = CFBundleGetMainBundle();
-   enum msg_hash_enums enum_idx = load_content ?
-      MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR :
-      MENU_ENUM_LABEL_FILE_BROWSER_DIRECTORY;
+   CFBundleRef bundle                    = CFBundleGetMainBundle();
+   enum msg_hash_enums enum_idx          = load_content 
+      ? MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR 
+      : MENU_ENUM_LABEL_FILE_BROWSER_DIRECTORY;
+   CFURLRef bundle_url                   = CFBundleCopyBundleURL(bundle);
+   CFStringRef bundle_path               = CFURLCopyPath(bundle_url);
 
-   bundle_url  = CFBundleCopyBundleURL(bundle);
-   bundle_path = CFURLCopyPath(bundle_url);
+   CFStringGetCString(bundle_path, bundle_path_buf,
+         sizeof(bundle_path_buf), kCFStringEncodingUTF8);
 
-   CFStringGetCString(bundle_path, bundle_path_buf, sizeof(bundle_path_buf), kCFStringEncodingUTF8);
-   (void)home_dir_buf;
-
-   CFSearchPathForDirectoriesInDomains(CFDocumentDirectory, CFUserDomainMask, 1, home_dir_buf, sizeof(home_dir_buf));
+   CFSearchPathForDirectoriesInDomains(CFDocumentDirectory,
+         CFUserDomainMask, 1, home_dir_buf, sizeof(home_dir_buf));
 
    menu_entries_append_enum(list,
          home_dir_buf,
-        msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
-        enum_idx,
-        FILE_TYPE_DIRECTORY, 0, 0);
+         msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+         enum_idx,
+         FILE_TYPE_DIRECTORY, 0, 0);
    menu_entries_append_enum(list, "/",
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
          enum_idx,
