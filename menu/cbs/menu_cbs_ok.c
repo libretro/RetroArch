@@ -7712,12 +7712,12 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             break;
          case FILE_TYPE_DIRECTORY:
             if (cbs->enum_idx != MSG_UNKNOWN
-                  || menu_label_hash == MENU_LABEL_DISK_IMAGE_APPEND
-                  || menu_label_hash == MENU_LABEL_SUBSYSTEM_ADD
-                  || menu_label_hash == MENU_LABEL_VIDEO_FONT_PATH
-                  || menu_label_hash == MENU_LABEL_XMB_FONT
-                  || menu_label_hash == MENU_LABEL_AUDIO_DSP_PLUGIN
-                  || menu_label_hash == MENU_LABEL_VIDEO_FILTER)
+                  || string_is_equal(menu_label, "disk_image_append")
+                  || string_is_equal(menu_label, "subsystem_add")
+                  || string_is_equal(menu_label, "video_font_path")
+                  || string_is_equal(menu_label, "xmb_font")
+                  || string_is_equal(menu_label, "audio_dsp_plugin")
+                  || string_is_equal(menu_label, "video_filter"))
                BIND_ACTION_OK(cbs, action_ok_directory_push);
             else
                BIND_ACTION_OK(cbs, action_ok_push_random_dir);
@@ -7731,14 +7731,13 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             }
             else
             {
-               switch (menu_label_hash)
+               if (string_is_equal(menu_label, "favorites"))
                {
-                  case MENU_LABEL_FAVORITES:
-                     BIND_ACTION_OK(cbs, action_ok_compressed_archive_push_detect_core);
-                     break;
-                  default:
-                     BIND_ACTION_OK(cbs, action_ok_compressed_archive_push);
-                     break;
+                  BIND_ACTION_OK(cbs, action_ok_compressed_archive_push_detect_core);
+               }
+               else
+               {
+                  BIND_ACTION_OK(cbs, action_ok_compressed_archive_push);
                }
             }
             break;
