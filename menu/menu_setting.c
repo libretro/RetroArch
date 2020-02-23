@@ -2828,7 +2828,13 @@ static void setting_get_string_representation_cheevos_password(
    if (!string_is_empty(setting->value.target.string))
       strlcpy(s, "********", len);
    else
-      *setting->value.target.string = '\0';
+   {
+      settings_t *settings = config_get_ptr();
+      if (settings->arrays.cheevos_token[0])
+         strlcpy(s, "********", len);
+      else
+         *setting->value.target.string = '\0';
+   }
 }
 #endif
 
@@ -6807,6 +6813,15 @@ void general_write_handler(rarch_setting_t *setting)
                /* No action required */
                break;
          }
+         break;
+      case MENU_ENUM_LABEL_CHEEVOS_USERNAME:
+         /* when changing the username, clear out the password and token */
+         settings->arrays.cheevos_password[0] = '\0';
+         settings->arrays.cheevos_token[0] = '\0';
+         break;
+      case MENU_ENUM_LABEL_CHEEVOS_PASSWORD:
+         /* when changing the password, clear out the token */
+         settings->arrays.cheevos_token[0] = '\0';
          break;
       default:
          break;
