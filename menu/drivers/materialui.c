@@ -1786,91 +1786,95 @@ static void materialui_draw_thumbnail(
    bg_y      = y - (bg_height - (float)mui->thumbnail_height_max) / 2.0f;
 
    /* If thumbnail is missing, draw fallback image... */
-   if (thumbnail->status == GFX_THUMBNAIL_STATUS_MISSING)
+   switch (thumbnail->status)
    {
-      float icon_size;
+      case GFX_THUMBNAIL_STATUS_MISSING:
+         {
+            float icon_size = (float)mui->icon_size;
 
-      /* Adjust icon size based on scale factor */
-      if (scale_factor >= 1.0f)
-         icon_size = (float)mui->icon_size;
-      else
-         icon_size = (float)mui->icon_size * scale_factor;
+            /* Adjust icon size based on scale factor */
+            if (scale_factor < 1.0f)
+               icon_size *= scale_factor;
 
-      /* Background */
-      gfx_display_set_alpha(
-            mui->colors.thumbnail_background,
-            mui->transition_alpha);
+            /* Background */
+            gfx_display_set_alpha(
+                  mui->colors.thumbnail_background,
+                  mui->transition_alpha);
 
-      gfx_display_draw_quad(
-            video_info,
-            bg_x,
-            bg_y,
-            (unsigned)bg_width,
-            (unsigned)bg_height,
-            width,
-            height,
-            mui->colors.thumbnail_background);
+            gfx_display_draw_quad(
+                  video_info,
+                  bg_x,
+                  bg_y,
+                  (unsigned)bg_width,
+                  (unsigned)bg_height,
+                  width,
+                  height,
+                  mui->colors.thumbnail_background);
 
-      /* Icon */
-      materialui_draw_icon(video_info,
-            (unsigned)icon_size,
-            mui->textures.list[MUI_TEXTURE_IMAGE],
-            bg_x + (bg_width - icon_size) / 2.0f,
-            bg_y + (bg_height - icon_size) / 2.0f,
-            width,
-            height,
-            0.0f,
-            1.0f,
-            mui->colors.missing_thumbnail_icon);
-   }
-   /* If thumbnail is available, draw it
-    * > Note that other conditions are ignored - i.e. we
-    *   we draw nothing if thumbnail status is unknown,
-    *   or we are waiting for a thumbnail to load) */
-   else if (thumbnail->status == GFX_THUMBNAIL_STATUS_AVAILABLE)
-   {
-      settings_t *settings = config_get_ptr();
+            /* Icon */
+            materialui_draw_icon(video_info,
+                  (unsigned)icon_size,
+                  mui->textures.list[MUI_TEXTURE_IMAGE],
+                  bg_x + (bg_width - icon_size) / 2.0f,
+                  bg_y + (bg_height - icon_size) / 2.0f,
+                  width,
+                  height,
+                  0.0f,
+                  1.0f,
+                  mui->colors.missing_thumbnail_icon);
+         }
+         break;
+      case GFX_THUMBNAIL_STATUS_AVAILABLE:
+         /* If thumbnail is available, draw it
+          * > Note that other conditions are ignored - i.e. we
+          *   we draw nothing if thumbnail status is unknown,
+          *   or we are waiting for a thumbnail to load) */
+         {
+            settings_t *settings = config_get_ptr();
 
-      if (!settings)
-         return;
+            /* Background */
+            if (settings &&
+                  settings->bools.menu_materialui_thumbnail_background_enable)
+            {
+               /* > If enabled by the user, we draw a background here
+                *   to ensure a uniform visual appearance regardless
+                *   of thumbnail size
+                * NOTE: Have to round up and add 1 to height,
+                * otherwise background and thumbnail have obvious
+                * misalignment (due to various rounding errors...) */
 
-      /* Background */
-      if (settings->bools.menu_materialui_thumbnail_background_enable)
-      {
-         /* > If enabled by the user, we draw a background here
-          *   to ensure a uniform visual appearance regardless
-          *   of thumbnail size
-          * NOTE: Have to round up and add 1 to height,
-          * otherwise background and thumbnail have obvious
-          * misalignment (due to various rounding errors...) */
+               /* > Set background alpha
+                *   - Can't do this in materialui_colors_set_transition_alpha()
+                *     because it's dependent upon thumbnail opacity
+                *   - No need to restore the original alpha value, since it is
+                *     always set 'manually' before use */
+               gfx_display_set_alpha(
+                     mui->colors.thumbnail_background,
+                     mui->transition_alpha * thumbnail->alpha);
 
-         /* > Set background alpha
-          *   - Can't do this in materialui_colors_set_transition_alpha()
-          *     because it's dependent upon thumbnail opacity
-          *   - No need to restore the original alpha value, since it is
-          *     always set 'manually' before use */
-         gfx_display_set_alpha(
-               mui->colors.thumbnail_background,
-               mui->transition_alpha * thumbnail->alpha);
+               /* > Draw background quad */
+               gfx_display_draw_quad(
+                     video_info,
+                     (int)bg_x,
+                     (int)bg_y,
+                     (unsigned)(bg_width + 0.5f),
+                     (unsigned)(bg_height + 1.5f),
+                     width,
+                     height,
+                     mui->colors.thumbnail_background);
+            }
 
-         /* > Draw background quad */
-         gfx_display_draw_quad(
-               video_info,
-               (int)bg_x,
-               (int)bg_y,
-               (unsigned)(bg_width + 0.5f),
-               (unsigned)(bg_height + 1.5f),
-               width,
-               height,
-               mui->colors.thumbnail_background);
-      }
-
-      /* Thumbnail */
-      gfx_thumbnail_draw(
-            video_info, thumbnail,
-            x, y, mui->thumbnail_width_max, mui->thumbnail_height_max,
-            GFX_THUMBNAIL_ALIGN_CENTRE,
-            mui->transition_alpha, scale_factor, NULL);
+            /* Thumbnail */
+            gfx_thumbnail_draw(
+                  video_info, thumbnail,
+                  x, y, mui->thumbnail_width_max, mui->thumbnail_height_max,
+                  GFX_THUMBNAIL_ALIGN_CENTRE,
+                  mui->transition_alpha, scale_factor, NULL);
+         }
+         break;
+      case GFX_THUMBNAIL_STATUS_UNKNOWN:
+      default:
+         break;
    }
 }
 
@@ -2289,8 +2293,15 @@ static void materialui_render(void *data,
    file_list_t *list        = menu_entries_get_selection_buf_ptr(0);
    bool first_entry_found   = false;
    bool last_entry_found    = false;
+   unsigned landscape_layout_optimization
+                            = settings->uints.menu_materialui_landscape_layout_optimization;
+   bool auto_rotate_nav_bar = settings->bools.menu_materialui_auto_rotate_nav_bar;
+   unsigned thumbnail_upscale_threshold = 
+      settings->uints.gfx_thumbnail_upscale_threshold;
+   bool network_on_demand_thumbnails    = 
+      settings->bools.network_on_demand_thumbnails;
 
-   if (!settings || !mui || !list)
+   if (!mui || !list)
       return;
 
    /* Check whether screen dimensions, menu scale
@@ -2301,9 +2312,9 @@ static void materialui_render(void *data,
        (width != mui->last_width) ||
        (height != mui->last_height) ||
        ((enum materialui_landscape_layout_optimization_type)
-            settings->uints.menu_materialui_landscape_layout_optimization !=
+            landscape_layout_optimization !=
                   mui->last_landscape_layout_optimization) ||
-       (settings->bools.menu_materialui_auto_rotate_nav_bar != mui->last_auto_rotate_nav_bar))
+       (auto_rotate_nav_bar != mui->last_auto_rotate_nav_bar))
    {
       mui->dip_base_unit_size                 = scale_factor * MUI_DIP_BASE_UNIT_SIZE;
       mui->last_scale_factor                  = scale_factor;
@@ -2311,8 +2322,8 @@ static void materialui_render(void *data,
       mui->last_height                        = height;
       mui->last_landscape_layout_optimization =
             (enum materialui_landscape_layout_optimization_type)
-                  settings->uints.menu_materialui_landscape_layout_optimization;
-      mui->last_auto_rotate_nav_bar           = settings->bools.menu_materialui_auto_rotate_nav_bar;
+                  landscape_layout_optimization;
+      mui->last_auto_rotate_nav_bar           = auto_rotate_nav_bar;
 
       /* Screen dimensions/layout are going to change
        * > Once this happens, menu will scroll to the
@@ -2509,10 +2520,6 @@ static void materialui_render(void *data,
       {
          bool on_screen                       = 
             first_entry_found && !last_entry_found;
-         unsigned thumbnail_upscale_threshold = 
-            settings->uints.gfx_thumbnail_upscale_threshold;
-         bool network_on_demand_thumbnails    = 
-            settings->bools.network_on_demand_thumbnails;
 
          if (mui->secondary_thumbnail_enabled)
             gfx_thumbnail_process_streams(
@@ -3688,6 +3695,7 @@ static void materialui_render_entry_touch_feedback(
 static void materialui_render_header(
       materialui_handle_t *mui, video_frame_info_t *video_info, unsigned width, unsigned height)
 {
+   char menu_title_buf[255];
    settings_t *settings          = config_get_ptr();
    size_t menu_title_margin      = 0;
    int usable_sys_bar_width      = (int)width - (int)mui->nav_bar_layout_width;
@@ -3702,12 +3710,12 @@ static void materialui_render_header(
    bool use_landscape_layout     = !mui->is_portrait &&
          (mui->last_landscape_layout_optimization != MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION_DISABLED);
    const char *menu_title        = mui->menu_title;
-   char menu_title_buf[255];
+   bool battery_level_enable     = settings->bools.menu_battery_level_enable;
+   bool menu_timedate_enable     = settings->bools.menu_timedate_enable;
+   unsigned menu_timedate_style  = settings->uints.menu_timedate_style;
+   bool menu_core_enable         = settings->bools.menu_core_enable;
 
    menu_title_buf[0]  = '\0';
-
-   if (!settings)
-      return;
 
    /* Draw background quads
     * > Title bar is underneath system bar
@@ -3749,7 +3757,7 @@ static void materialui_render_header(
    /* System bar items */
 
    /* > Draw battery indicator (if required) */
-   if (settings->bools.menu_battery_level_enable)
+   if (battery_level_enable)
    {
       gfx_display_ctx_powerstate_t powerstate;
       char percent_str[MUI_BATTERY_PERCENT_MAX_LENGTH];
@@ -3766,14 +3774,16 @@ static void materialui_render_header(
          /* Need to determine pixel width of percent string
           * > This is somewhat expensive, so utilise a cache
           *   and only update when the string actually changes */
-         if (!string_is_equal(percent_str, mui->sys_bar_cache.battery_percent_str))
+         if (!string_is_equal(percent_str,
+                  mui->sys_bar_cache.battery_percent_str))
          {
             /* Cache new string */
             strlcpy(mui->sys_bar_cache.battery_percent_str, percent_str,
                   MUI_BATTERY_PERCENT_MAX_LENGTH * sizeof(char));
 
             /* Cache width */
-            mui->sys_bar_cache.battery_percent_width = font_driver_get_message_width(
+            mui->sys_bar_cache.battery_percent_width = 
+               font_driver_get_message_width(
                   mui->font_data.hint.font,
                   mui->sys_bar_cache.battery_percent_str,
                   (unsigned)strlen(mui->sys_bar_cache.battery_percent_str),
@@ -3784,7 +3794,8 @@ static void materialui_render_header(
          {
             /* Set critical by default, to ensure texture_battery
              * is always valid */
-            uintptr_t texture_battery = mui->textures.list[MUI_TEXTURE_BATTERY_CRITICAL];
+            uintptr_t texture_battery = 
+               mui->textures.list[MUI_TEXTURE_BATTERY_CRITICAL];
 
             /* Draw battery icon */
             if (powerstate.charging)
@@ -3810,8 +3821,11 @@ static void materialui_render_header(
             materialui_draw_icon(video_info,
                   mui->sys_bar_icon_size,
                   (uintptr_t)texture_battery,
-                  (int)width - ((int)mui->sys_bar_cache.battery_percent_width +
-                        (int)mui->sys_bar_margin + (int)mui->sys_bar_icon_size + (int)mui->nav_bar_layout_width),
+                  (int)width - (
+                     (int)mui->sys_bar_cache.battery_percent_width +
+                     (int)mui->sys_bar_margin                      + 
+                     (int)mui->sys_bar_icon_size                   + 
+                     (int)mui->nav_bar_layout_width),
                   0,
                   width,
                   height,
@@ -3834,7 +3848,7 @@ static void materialui_render_header(
    }
 
    /* > Draw clock (if required) */
-   if (settings->bools.menu_timedate_enable)
+   if (menu_timedate_enable)
    {
       gfx_display_ctx_datetime_t datetime;
       char timedate_str[MUI_TIMEDATE_MAX_LENGTH];
@@ -3843,7 +3857,7 @@ static void materialui_render_header(
 
       datetime.s         = timedate_str;
       datetime.len       = sizeof(timedate_str);
-      datetime.time_mode = settings->uints.menu_timedate_style;
+      datetime.time_mode = menu_timedate_style;
 
       menu_display_timedate(&datetime);
 
@@ -3875,19 +3889,25 @@ static void materialui_render_header(
 
          gfx_display_draw_text(mui->font_data.hint.font,
                mui->sys_bar_cache.timedate_str,
-               (int)width - ((int)sys_bar_clock_width + (int)sys_bar_battery_width + (int)mui->nav_bar_layout_width),
+               (int)width - (
+                    (int)sys_bar_clock_width 
+                  + (int)sys_bar_battery_width 
+                  + (int)mui->nav_bar_layout_width),
                sys_bar_text_y,
-               width, height, mui->colors.sys_bar_text, TEXT_ALIGN_LEFT, 1.0f, false, 0, false);
+               width, height, mui->colors.sys_bar_text,
+               TEXT_ALIGN_LEFT, 1.0f, false, 0, false);
 
          usable_sys_bar_width -= sys_bar_clock_width;
       }
    }
 
    usable_sys_bar_width -= (2 * mui->sys_bar_margin);
-   usable_sys_bar_width = (usable_sys_bar_width > 0) ? usable_sys_bar_width : 0;
+   usable_sys_bar_width  = (usable_sys_bar_width > 0) 
+      ? usable_sys_bar_width 
+      : 0;
 
    /* > Draw core name, if required */
-   if (settings->bools.menu_core_enable)
+   if (menu_core_enable)
    {
       char core_title[255];
       char core_title_buf[255];
@@ -4847,8 +4867,11 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
    unsigned header_height   = gfx_display_get_header_height();
    size_t selection         = menu_navigation_get_selection();
    int list_x_offset;
+   enum gfx_animation_ticker_type
+      menu_ticker_type      = (enum gfx_animation_ticker_type)settings->uints.menu_ticker_type;
+   bool menu_ticker_smooth  = settings->bools.menu_ticker_smooth;
 
-   if (!mui || !settings)
+   if (!mui)
       return;
 
    gfx_display_set_viewport(width, height);
@@ -4865,22 +4888,25 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
    /* Update theme colours, if required */
    if (mui->color_theme != video_info->materialui_color_theme)
    {
-      materialui_prepare_colors(mui, (enum materialui_color_theme)video_info->materialui_color_theme);
-      mui->color_theme = (enum materialui_color_theme)video_info->materialui_color_theme;
+      materialui_prepare_colors(mui,
+            (enum materialui_color_theme)
+            video_info->materialui_color_theme);
+      mui->color_theme = (enum materialui_color_theme)
+         video_info->materialui_color_theme;
    }
 
    /* Update line ticker(s) */
-   mui->use_smooth_ticker = settings->bools.menu_ticker_smooth;
+   mui->use_smooth_ticker          = menu_ticker_smooth;
 
    if (mui->use_smooth_ticker)
    {
       mui->ticker_smooth.idx       = gfx_animation_get_ticker_pixel_idx();
-      mui->ticker_smooth.type_enum = (enum gfx_animation_ticker_type)settings->uints.menu_ticker_type;
+      mui->ticker_smooth.type_enum = menu_ticker_type;
    }
    else
    {
-      mui->ticker.idx       = gfx_animation_get_ticker_idx();
-      mui->ticker.type_enum = (enum gfx_animation_ticker_type)settings->uints.menu_ticker_type;
+      mui->ticker.idx              = gfx_animation_get_ticker_idx();
+      mui->ticker.type_enum        = menu_ticker_type;
    }
 
    /* Handle any transparency adjustments required
@@ -5106,7 +5132,7 @@ static void materialui_set_list_view_type(
  * be applied, and calculates appropriate landscape
  * entry margin size */
 static void materialui_set_landscape_optimisations_enable(
-      materialui_handle_t *mui, settings_t *settings)
+      materialui_handle_t *mui)
 {
    bool optimize_landscape_layout = false;
 
@@ -5413,7 +5439,7 @@ static void materialui_update_list_view(materialui_handle_t *mui)
       return;
 
    materialui_set_list_view_type(mui, settings);
-   materialui_set_landscape_optimisations_enable(mui, settings);
+   materialui_set_landscape_optimisations_enable(mui);
    materialui_set_thumbnail_dimensions(mui);
    materialui_set_secondary_thumbnail_enable(mui, settings);
 
@@ -5650,7 +5676,7 @@ static void *materialui_init(void **userdata, bool video_is_threaded)
    mui->menu_title[0]        = '\0';
 
    /* Set initial theme colours */
-   mui->color_theme = (enum materialui_color_theme)settings->uints.menu_materialui_color_theme;
+   mui->color_theme          = (enum materialui_color_theme)settings->uints.menu_materialui_color_theme;
    materialui_prepare_colors(mui, (enum materialui_color_theme)mui->color_theme);
 
    /* Initial ticker configuration */

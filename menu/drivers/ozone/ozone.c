@@ -243,7 +243,7 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
          setsysGetColorSetId(&theme);
          color_theme = (theme == ColorSetId_Dark) ? 1 : 0;
          ozone_set_color_theme(ozone, color_theme);
-         settings->uints.menu_ozone_color_theme = color_theme;
+         settings->uints.menu_ozone_color_theme                = color_theme;
          settings->bools.menu_preferred_system_color_theme_set = true;
          setsysExit();
       }
@@ -1479,22 +1479,24 @@ static void ozone_draw_header(ozone_handle_t *ozone, video_frame_info_t *video_i
    unsigned logo_icon_size   = 60 * scale_factor;
    unsigned status_icon_size = 92 * scale_factor;
    unsigned seperator_margin = 30 * scale_factor;
+   enum gfx_animation_ticker_type 
+      menu_ticker_type       = (enum gfx_animation_ticker_type)settings->uints.menu_ticker_type;
 
    /* Initial ticker configuration */
    if (use_smooth_ticker)
    {
       ticker_smooth.idx           = gfx_animation_get_ticker_pixel_idx();
       ticker_smooth.font_scale    = 1.0f;
-      ticker_smooth.type_enum     = (enum gfx_animation_ticker_type)settings->uints.menu_ticker_type;
+      ticker_smooth.type_enum     = menu_ticker_type;
       ticker_smooth.spacer        = ticker_spacer;
       ticker_smooth.x_offset      = &ticker_x_offset;
       ticker_smooth.dst_str_width = NULL;
    }
    else
    {
-      ticker.idx       = gfx_animation_get_ticker_idx();
-      ticker.type_enum = (enum gfx_animation_ticker_type)settings->uints.menu_ticker_type;
-      ticker.spacer    = ticker_spacer;
+      ticker.idx                  = gfx_animation_get_ticker_idx();
+      ticker.type_enum            = menu_ticker_type;
+      ticker.spacer               = ticker_spacer;
    }
 
    /* Separator */
@@ -1592,11 +1594,11 @@ static void ozone_draw_header(ozone_handle_t *ozone, video_frame_info_t *video_i
       gfx_display_ctx_datetime_t datetime;
       char timedate[255];
 
-      timedate[0] = '\0';
+      timedate[0]        = '\0';
 
-      datetime.s = timedate;
+      datetime.s         = timedate;
       datetime.time_mode = settings->uints.menu_timedate_style;
-      datetime.len = sizeof(timedate);
+      datetime.len       = sizeof(timedate);
 
       menu_display_timedate(&datetime);
 
@@ -1619,14 +1621,16 @@ static void ozone_draw_header(ozone_handle_t *ozone, video_frame_info_t *video_i
 
 static void ozone_draw_footer(ozone_handle_t *ozone, video_frame_info_t *video_info, settings_t *settings)
 {
-   float scale_factor        = ozone->last_scale_factor;
-   unsigned seperator_margin = 30 * scale_factor;
+   float scale_factor           = ozone->last_scale_factor;
+   unsigned seperator_margin    = 30 * scale_factor;
+   unsigned menu_timedate_style = settings->uints.menu_timedate_style;
+   bool menu_core_enable        = settings->bools.menu_core_enable;
 
    /* Separator */
    gfx_display_draw_quad(video_info, seperator_margin, video_info->height - ozone->dimensions.footer_height, video_info->width - seperator_margin * 2, ozone->dimensions.spacer_1px, video_info->width, video_info->height, ozone->theme->header_footer_separator);
 
    /* Core title or Switch icon */
-   if (settings->bools.menu_core_enable)
+   if (menu_core_enable)
    {
       char core_title[255];
       menu_entries_get_core_title(core_title, sizeof(core_title));
@@ -1700,11 +1704,13 @@ static void ozone_draw_footer(ozone_handle_t *ozone, video_frame_info_t *video_i
 
 void ozone_update_content_metadata(ozone_handle_t *ozone)
 {
-   size_t selection           = menu_navigation_get_selection();
-   playlist_t *playlist       = playlist_get_cached();
-   settings_t *settings       = config_get_ptr();
-   const char *core_name      = NULL;
-
+   const char *core_name        = NULL;
+   size_t selection             = menu_navigation_get_selection();
+   playlist_t *playlist         = playlist_get_cached();
+   settings_t *settings         = config_get_ptr();
+   bool scroll_content_metadata = settings->bools.ozone_scroll_content_metadata;
+   bool content_runtime_log     = settings->bools.content_runtime_log;
+   bool content_runtime_log_aggr= settings->bools.content_runtime_log_aggregate;
    /* Must check whether core corresponds to 'viewer'
     * content even when not using a playlist, otherwise
     * file browser image updates are mishandled */
@@ -1718,7 +1724,6 @@ void ozone_update_content_metadata(ozone_handle_t *ozone)
    if (ozone->is_playlist && playlist)
    {
       const char *core_label       = NULL;
-      bool scroll_content_metadata = settings->bools.ozone_scroll_content_metadata;
 
       /* Fill core name */
       if (!core_name || string_is_equal(core_name, "DETECT"))
@@ -1742,7 +1747,7 @@ void ozone_update_content_metadata(ozone_handle_t *ozone)
          ozone->selection_core_name_lines = 1;
 
       /* Fill play time if applicable */
-      if (settings->bools.content_runtime_log || settings->bools.content_runtime_log_aggregate)
+      if (content_runtime_log || content_runtime_log_aggr)
       {
          const struct playlist_entry *entry = NULL;
 
@@ -1992,6 +1997,7 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
    ozone_handle_t* ozone                  = (ozone_handle_t*) data;
    settings_t  *settings                  = config_get_ptr();
    unsigned color_theme                   = settings->uints.menu_ozone_color_theme;
+   bool use_preferred_system_color_theme  = settings->bools.menu_use_preferred_system_color_theme;
    gfx_animation_ctx_tag messagebox_tag   = (uintptr_t)ozone->pending_message;
    bool draw_osk                          = menu_input_dialog_get_display_kb();
    static bool draw_osk_old               = false;
@@ -2035,18 +2041,18 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
 
    /* Change theme on the fly */
    if ((color_theme != last_color_theme) ||
-       (last_use_preferred_system_color_theme != settings->bools.menu_use_preferred_system_color_theme))
+       (last_use_preferred_system_color_theme != use_preferred_system_color_theme))
    {
-      if (settings->bools.menu_use_preferred_system_color_theme)
+      if (use_preferred_system_color_theme)
       {
-         color_theme = ozone_get_system_theme();
+         color_theme                            = ozone_get_system_theme();
          settings->uints.menu_ozone_color_theme = color_theme;
       }
 
       ozone_set_color_theme(ozone, color_theme);
       ozone_set_background_running_opacity(ozone, video_info->menu_framebuffer_opacity);
 
-      last_use_preferred_system_color_theme = settings->bools.menu_use_preferred_system_color_theme;
+      last_use_preferred_system_color_theme = use_preferred_system_color_theme;
    }
 
    gfx_display_set_viewport(video_info->width, video_info->height);
@@ -2190,9 +2196,7 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
          ozone_draw_osk(ozone, video_info, label, str);
       }
       else
-      {
          ozone_draw_messagebox(ozone, video_info, ozone->pending_message);
-      }
    }
 
    font_driver_flush(video_info->width, video_info->height, ozone->fonts.footer, video_info);
