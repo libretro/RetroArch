@@ -36,13 +36,18 @@
 #ifdef HAVE_MENU
 #include "../menu/menu_driver.h"
 #include "../menu/menu_entries.h"
-#ifdef HAVE_MENU_WIDGETS
-#include "../menu/widgets/menu_widgets.h"
 #endif
+
+#ifdef HAVE_GFX_WIDGETS
+#include "../gfx/gfx_widgets.h"
 #endif
 
 #ifdef HAVE_THREADS
 #include <rthreads/rthreads.h>
+#endif
+
+#ifdef HAVE_DISCORD
+#include "../discord/discord.h"
 #endif
 
 #include "badges.h"
@@ -73,9 +78,6 @@
 /* Define this macro to prevent cheevos from being deactivated. */
 #undef CHEEVOS_DONT_DEACTIVATE
 
-/* Define this macro to log URLs (will log the user token). */
-#undef CHEEVOS_LOG_URLS
-
 /* Define this macro to dump all cheevos' addresses. */
 #undef CHEEVOS_DUMP_ADDRS
 
@@ -90,12 +92,19 @@
  * that name. */
 #undef CHEEVOS_SAVE_JSON
 
+ /* Define this macro to log URLs. */
+#undef CHEEVOS_LOG_URLS
+
 /* Define this macro to have the password and token logged. THIS WILL DISCLOSE
  * THE USER'S PASSWORD, TAKE CARE! */
 #undef CHEEVOS_LOG_PASSWORD
 
 /* Define this macro to log downloaded badge images. */
 #undef CHEEVOS_LOG_BADGES
+
+/* Number of usecs to wait between posting rich presence to the site. */
+/* Keep consistent with SERVER_PING_FREQUENCY from RAIntegration. */
+#define CHEEVOS_PING_FREQUENCY 2 * 60 * 1000000
 
 typedef struct
 {
@@ -116,6 +125,29 @@ typedef struct
 
 typedef struct
 {
+   rc_richpresence_t* richpresence;
+   char evaluation[256];
+   retro_time_t last_update;
+} rcheevos_richpresence_t;
+
+enum rcheevos_async_io_type
+{
+   CHEEVOS_ASYNC_RICHPRESENCE,
+   CHEEVOS_ASYNC_AWARD_ACHIEVEMENT
+};
+
+typedef struct rcheevos_async_io_request
+{
+   int id;
+   int value;
+   int attempt_count;
+   char type;
+   char hardcore;
+   char user_agent[256];
+} rcheevos_async_io_request;
+
+typedef struct
+{
    retro_task_t* task;
 #ifdef HAVE_THREADS
    slock_t* task_lock;
@@ -128,10 +160,12 @@ typedef struct
    rcheevos_cheevo_t* core;
    rcheevos_cheevo_t* unofficial;
    rcheevos_lboard_t* lboards;
+   rcheevos_richpresence_t richpresence;
 
    rcheevos_fixups_t fixups;
 
    char token[32];
+   char hash[33];
 } rcheevos_locals_t;
 
 typedef struct
@@ -163,8 +197,10 @@ static rcheevos_locals_t rcheevos_locals =
    NULL, /* core */
    NULL, /* unofficial */
    NULL, /* lboards */
+   {0},  /* rich presence */
    {0},  /* fixups */
    {0},  /* token */
+   "N/A",/* hash */
 };
 
 bool rcheevos_loaded = false;
@@ -335,6 +371,46 @@ static void rcheevos_log_url(const char* format, const char* url)
 #endif
 }
 
+static retro_time_t rcheevos_async_send_rich_presence(rcheevos_async_io_request* request);
+static void rcheevos_async_award_achievement(rcheevos_async_io_request* request);
+
+static void rcheevos_async_task_handler(retro_task_t* task)
+{
+   rcheevos_async_io_request* request = (rcheevos_async_io_request*)task->user_data;
+
+   switch (request->type)
+   {
+      case CHEEVOS_ASYNC_RICHPRESENCE:
+         if (request->id == (int)rcheevos_locals.patchdata.game_id)
+         {
+            /* update the task to fire again in two minutes */
+            task->when = rcheevos_async_send_rich_presence(request);
+         }
+         else
+         {
+            /* game changed; stop the recurring task - a new one will be scheduled for the next game */
+            task_set_finished(task, 1);
+            free(request);
+         }
+         break;
+
+      case CHEEVOS_ASYNC_AWARD_ACHIEVEMENT:
+         rcheevos_async_award_achievement(request);
+         task_set_finished(task, 1);
+         break;
+   }
+}
+
+static void rcheevos_async_schedule(rcheevos_async_io_request* request, retro_time_t delay)
+{
+   retro_task_t* task = task_init();
+   task->when = cpu_features_get_time_usec() + delay;
+   task->handler = rcheevos_async_task_handler;
+   task->user_data = request;
+   task->progress = -1;
+   task_queue_push(task);
+}
+
 static const char* rcheevos_rc_error(int ret)
 {
    switch (ret)
@@ -371,11 +447,11 @@ static const char* rcheevos_rc_error(int ret)
 static int rcheevos_parse(const char* json)
 {
    char buffer[256];
-   settings_t *settings     = config_get_ptr();
-   int res                  = 0;
-   int i                    = 0;
-   unsigned j               = 0;
-   unsigned count           = 0;
+   settings_t *settings      = config_get_ptr();
+   int res                   = 0;
+   int i                     = 0;
+   unsigned j                = 0;
+   unsigned count            = 0;
    rcheevos_cheevo_t* cheevo = NULL;
    rcheevos_lboard_t* lboard = NULL;
    rcheevos_racheevo_t* rac  = NULL;
@@ -397,18 +473,53 @@ static int rcheevos_parse(const char* json)
       rcheevos_locals.core = NULL;
       rcheevos_locals.unofficial = NULL;
       rcheevos_locals.lboards = NULL;
+      rcheevos_locals.richpresence.richpresence = NULL;
       rcheevos_free_patchdata(&rcheevos_locals.patchdata);
       return 0;
    }
 
+   /* Achievement memory accesses are 0-based, regardless of where the memory is accessed by the
+    * emulated code. As such, address 0 should always be accessible and serves as an indicator that
+    * other addresses will also be accessible. Individual achievements will be "Unsupported" if
+    * they contain addresses that cannot be resolved. This check gives the user immediate feedback
+    * if the core they're trying to use will disable all achievements as "Unsupported".
+    */
    if (!rcheevos_patch_address(0, rcheevos_locals.patchdata.console_id))
    {
-      CHEEVOS_ERR(RCHEEVOS_TAG "No memory exposed by core\n");
+      int delay_judgment = 0;
 
-      if (settings->bools.cheevos_verbose_enable)
-         runloop_msg_queue_push("Cannot activate achievements using this core.", 0, 4 * 60, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
+      rarch_system_info_t* system = runloop_get_system_info();
+      if (system->mmaps.num_descriptors == 0)
+      {
+         /* Special case: the mupen64plus-nx core doesn't initialize the RAM immediately. To avoid a race
+          * condition - if the core says there's SYSTEM_RAM, but the pointer is NULL, proceed. If the memory
+          * isn't exposed when the achievements start processing, they'll be marked "Unsupported" individually.
+          */
+         retro_ctx_memory_info_t meminfo;
+         meminfo.id = RETRO_MEMORY_SYSTEM_RAM;
+         core_get_memory(&meminfo);
 
-      goto error;
+         delay_judgment |= (meminfo.size > 0);
+      }
+      else
+      {
+         /* Special case: the sameboy core exposes the RAM at $8000, but not the ROM at $0000. NES and
+          * Gameboy achievements do attempt to map the entire bus, and it's unlikely that an achievement
+          * will reference the ROM data, so if the RAM is still present, allow the core to load. If any
+          * achievements do reference the ROM data, they'll be marked "Unsupported" individually.
+          */
+         delay_judgment |= (rcheevos_patch_address(0x8000, rcheevos_locals.patchdata.console_id) != NULL);
+      }
+
+      if (!delay_judgment)
+      {
+         CHEEVOS_ERR(RCHEEVOS_TAG "No memory exposed by core\n");
+
+         if (settings->bools.cheevos_verbose_enable)
+            runloop_msg_queue_push("Cannot activate achievements using this core.", 0, 4 * 60, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
+
+         goto error;
+      }
    }
 
    /* Allocate memory. */
@@ -515,6 +626,42 @@ static int rcheevos_parse(const char* json)
       lboard->format = rc_parse_format(lboard->info->format);
    }
 
+   if (rcheevos_locals.patchdata.richpresence_script)
+   {
+      int buffer_size = rc_richpresence_size(rcheevos_locals.patchdata.richpresence_script);
+      if (buffer_size <= 0)
+      {
+         snprintf(buffer, sizeof(buffer), "Error in rich presence: %s", rcheevos_rc_error(buffer_size));
+
+         if (settings->bools.cheevos_verbose_enable)
+            runloop_msg_queue_push(buffer, 0, 4 * 60, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+
+         CHEEVOS_ERR(RCHEEVOS_TAG "%s\n", buffer);
+         rcheevos_locals.richpresence.richpresence = NULL;
+      }
+      else
+      {
+         char *buffer = (char*)malloc(buffer_size);
+         rcheevos_locals.richpresence.richpresence = rc_parse_richpresence(buffer, rcheevos_locals.patchdata.richpresence_script, NULL, 0);
+      }
+
+      rcheevos_locals.richpresence.evaluation[0] = '\0';
+   }
+
+   if (!rcheevos_locals.richpresence.richpresence && rcheevos_locals.patchdata.title)
+   {
+      snprintf(rcheevos_locals.richpresence.evaluation, sizeof(rcheevos_locals.richpresence.evaluation),
+         "Playing %s", rcheevos_locals.patchdata.title);
+   }
+
+   /* schedule the first rich presence call in 30 seconds */
+   {
+      rcheevos_async_io_request* request = (rcheevos_async_io_request*)calloc(1, sizeof(rcheevos_async_io_request));
+      request->id = rcheevos_locals.patchdata.game_id;
+      request->type = CHEEVOS_ASYNC_RICHPRESENCE;
+      rcheevos_async_schedule(request, CHEEVOS_PING_FREQUENCY / 4);
+   }
+
    return 0;
 
 error:
@@ -530,76 +677,49 @@ error:
 Test all the achievements (call once per frame).
 *****************************************************************************/
 
-static void rcheevos_award_task_softcore(retro_task_t *task, void* task_data, void* user_data,
-      const char* error)
+static void rcheevos_award_task_callback(retro_task_t* task, void* task_data, void* user_data, const char* error)
 {
-   settings_t *settings = config_get_ptr();
-   const rcheevos_cheevo_t* cheevo = (const rcheevos_cheevo_t*)user_data;
-   char buffer[256], user_agent[256];
-   int ret;
-   buffer[0] = 0;
+   rcheevos_async_io_request* request = (rcheevos_async_io_request*)user_data;
 
-   if (error == NULL)
+   if (!error)
    {
-      CHEEVOS_LOG(RCHEEVOS_TAG "Awarded achievement %u\n", cheevo->info->id);
-      return;
+      CHEEVOS_LOG(RCHEEVOS_TAG "Awarded achievement %u\n", request->id);
+      free(request);
    }
-
-   if (*error)
-      CHEEVOS_ERR(RCHEEVOS_TAG "Error awarding achievement %u: %s\n", cheevo->info->id, error);
-
-   /* Try again. */
-   ret = rc_url_award_cheevo(buffer, sizeof(buffer), settings->arrays.cheevos_username, rcheevos_locals.token, cheevo->info->id, 0);
-
-   if (ret != 0)
+   else
    {
-      CHEEVOS_ERR(RCHEEVOS_TAG "Buffer to small to create URL");
-      return;
+      /* double the wait between each attempt until we hit a maximum delay of two minutes
+       * 250ms -> 500ms -> 1s -> 2s -> 4s -> 8s -> 16s -> 32s -> 64s -> 120s -> 120s... */
+      retro_time_t retry_delay = (request->attempt_count > 8) ? (120 * 1000 * 1000) : ((250 * 1000) << request->attempt_count);
+
+      request->attempt_count++;
+      rcheevos_async_schedule(request, retry_delay);
+
+      CHEEVOS_ERR(RCHEEVOS_TAG "Error awarding achievement %u: %s\n", request->id, error);
    }
-
-   rcheevos_get_user_agent(user_agent);
-
-   rcheevos_log_url(RCHEEVOS_TAG "rc_url_award_cheevo: %s\n", buffer);
-   task_push_http_transfer_with_user_agent(buffer, true, NULL, user_agent, rcheevos_award_task_softcore, user_data);
 }
 
-static void rcheevos_award_task_hardcore(retro_task_t *task, void* task_data, void* user_data,
-      const char* error)
+static void rcheevos_async_award_achievement(rcheevos_async_io_request* request)
 {
+   char buffer[256];
    settings_t *settings = config_get_ptr();
-   const rcheevos_cheevo_t* cheevo = (const rcheevos_cheevo_t*)user_data;
-   char buffer[256], user_agent[256];
-   int ret;
-   buffer[0] = 0;
-
-   if (error == NULL)
-   {
-      CHEEVOS_LOG(RCHEEVOS_TAG "Awarded achievement %u\n", cheevo->info->id);
-      return;
-   }
-
-   if (*error)
-      CHEEVOS_ERR(RCHEEVOS_TAG "Error awarding achievement %u: %s\n", cheevo->info->id, error);
-
-   /* Try again. */
-   ret = rc_url_award_cheevo(buffer, sizeof(buffer), settings->arrays.cheevos_username, rcheevos_locals.token, cheevo->info->id, 1);
+   int ret = rc_url_award_cheevo(buffer, sizeof(buffer), settings->arrays.cheevos_username, rcheevos_locals.token, request->id, request->hardcore);
 
    if (ret != 0)
    {
-      CHEEVOS_ERR(RCHEEVOS_TAG "Buffer to small to create URL\n");
+      CHEEVOS_ERR(RCHEEVOS_TAG "Buffer too small to create URL\n");
+      free(request);
       return;
    }
 
-   rcheevos_get_user_agent(user_agent);
-
    rcheevos_log_url(RCHEEVOS_TAG "rc_url_award_cheevo: %s\n", buffer);
-   task_push_http_transfer_with_user_agent(buffer, true, NULL, user_agent, rcheevos_award_task_hardcore, user_data);
+   task_push_http_transfer_with_user_agent(buffer, true, NULL, request->user_agent, rcheevos_award_task_callback, request);
 }
 
 static void rcheevos_award(rcheevos_cheevo_t* cheevo, int mode)
 {
-   settings_t *settings = config_get_ptr();
    char buffer[256];
+   settings_t *settings = config_get_ptr();
    buffer[0] = 0;
 
    CHEEVOS_LOG(RCHEEVOS_TAG "awarding cheevo %u: %s (%s)\n",
@@ -613,10 +733,10 @@ static void rcheevos_award(rcheevos_cheevo_t* cheevo, int mode)
 
    /* Show the OSD message. */
    {
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-      bool widgets_ready = menu_widgets_ready();
+#if defined(HAVE_GFX_WIDGETS)
+      bool widgets_ready = gfx_widgets_ready();
       if (widgets_ready)
-         menu_widgets_push_achievement(cheevo->info->title, cheevo->info->badge);
+         gfx_widgets_push_achievement(cheevo->info->title, cheevo->info->badge);
       else
 #endif
       {
@@ -627,10 +747,14 @@ static void rcheevos_award(rcheevos_cheevo_t* cheevo, int mode)
    }
 
    /* Start the award task. */
-   if ((mode & RCHEEVOS_ACTIVE_HARDCORE) != 0)
-      rcheevos_award_task_hardcore(NULL, NULL, cheevo, "");
-   else
-      rcheevos_award_task_softcore(NULL, NULL, cheevo, "");
+   {
+      rcheevos_async_io_request* request = (rcheevos_async_io_request*)calloc(1, sizeof(rcheevos_async_io_request));
+      request->type = CHEEVOS_ASYNC_AWARD_ACHIEVEMENT;
+      request->id = cheevo->info->id;
+      request->hardcore = ((mode & RCHEEVOS_ACTIVE_HARDCORE) != 0) ? 1 : 0;
+      rcheevos_get_user_agent(request->user_agent);
+      rcheevos_async_award_achievement(request);
+   }
 
    /* Take a screenshot of the achievement. */
    if (settings && settings->bools.cheevos_auto_screenshot)
@@ -761,14 +885,15 @@ static void rcheevos_test_cheevo_set(bool official)
 static void rcheevos_lboard_submit_task(retro_task_t *task, void* task_data, void* user_data,
       const char* error)
 {
-   settings_t *settings = config_get_ptr();
-   const rcheevos_lboard_t* lboard = (const rcheevos_lboard_t*)user_data;
+   int ret;
    MD5_CTX ctx;
    uint8_t hash[16];
    char signature[64];
    char buffer[256];
    char user_agent[256];
-   int ret;
+   const rcheevos_lboard_t* lboard = (const rcheevos_lboard_t*)user_data;
+   settings_t            *settings = config_get_ptr();
+   const char *cheevos_username    = settings->arrays.cheevos_username;
 
    if (!error)
    {
@@ -782,15 +907,15 @@ static void rcheevos_lboard_submit_task(retro_task_t *task, void* task_data, voi
 
    /* Evaluate the signature. */
    snprintf(signature, sizeof(signature), "%u%s%u", lboard->info->id,
-      settings->arrays.cheevos_username,
-      lboard->info->id);
+      cheevos_username, lboard->info->id);
 
    MD5_Init(&ctx);
    MD5_Update(&ctx, (void*)signature, strlen(signature));
    MD5_Final(hash, &ctx);
 
    /* Start the request. */
-   ret = rc_url_submit_lboard(buffer, sizeof(buffer), settings->arrays.cheevos_username, rcheevos_locals.token, lboard->info->id, lboard->last_value, hash);
+   ret = rc_url_submit_lboard(buffer, sizeof(buffer), cheevos_username,
+         rcheevos_locals.token, lboard->info->id, lboard->last_value, hash);
 
    if (ret != 0)
    {
@@ -898,13 +1023,67 @@ static void rcheevos_test_leaderboards(void)
    }
 }
 
+const char* rcheevos_get_richpresence(void)
+{
+   if (!rcheevos_locals.richpresence.richpresence)
+      return NULL;
+   else
+      return rcheevos_locals.richpresence.evaluation;
+}
+
+static retro_time_t rcheevos_async_send_rich_presence(rcheevos_async_io_request* request)
+{
+   settings_t *settings             = config_get_ptr();
+   const char *cheevos_username     = settings->arrays.cheevos_username;
+   bool cheevos_richpresence_enable = settings->bools.cheevos_richpresence_enable;
+
+   if (cheevos_richpresence_enable && rcheevos_locals.richpresence.richpresence)
+   {
+      rc_evaluate_richpresence(rcheevos_locals.richpresence.richpresence,
+         rcheevos_locals.richpresence.evaluation,
+         sizeof(rcheevos_locals.richpresence.evaluation), rcheevos_peek, NULL, NULL);
+   }
+
+   {
+      char url[256], post_data[1024];
+
+      snprintf(url, sizeof(url),
+            "http://retroachievements.org/dorequest.php?r=ping&u=%s&t=%s",
+            cheevos_username, rcheevos_locals.token);
+
+      if (rcheevos_locals.richpresence.evaluation[0])
+      {
+         char* tmp = NULL;
+         net_http_urlencode(&tmp, rcheevos_locals.richpresence.evaluation);
+         snprintf(post_data, sizeof(post_data), "g=%u&m=%s", rcheevos_locals.patchdata.game_id, tmp);
+         CHEEVOS_FREE(tmp);
+
+#ifdef HAVE_DISCORD
+         if (settings->bools.discord_enable)
+            discord_update(DISCORD_PRESENCE_RETROACHIEVEMENTS, false);
+#endif
+      }
+      else
+         snprintf(post_data, sizeof(post_data), "g=%u", rcheevos_locals.patchdata.game_id);
+
+      rcheevos_get_user_agent(request->user_agent);
+      task_push_http_post_transfer_with_user_agent(url, post_data, true, "POST", request->user_agent, NULL, NULL);
+   }
+
+   /* Update rich presence every two minutes */
+   if (settings->bools.cheevos_richpresence_enable)
+      return cpu_features_get_time_usec() + CHEEVOS_PING_FREQUENCY;
+
+   /* Send ping every four minutes */
+   return cpu_features_get_time_usec() + CHEEVOS_PING_FREQUENCY * 2;
+}
+
 void rcheevos_reset_game(void)
 {
-   rcheevos_cheevo_t* cheevo;
-   rcheevos_lboard_t* lboard;
    unsigned i;
+   rcheevos_lboard_t* lboard;
+   rcheevos_cheevo_t* cheevo = rcheevos_locals.core;
 
-   cheevo = rcheevos_locals.core;
    for (i = 0; i < rcheevos_locals.patchdata.core_count; i++, cheevo++)
    {
       if (cheevo->trigger)
@@ -913,7 +1092,9 @@ void rcheevos_reset_game(void)
    }
 
    cheevo = rcheevos_locals.unofficial;
-   for (i = 0; i < rcheevos_locals.patchdata.unofficial_count; i++, cheevo++)
+
+   for (i = 0; i < rcheevos_locals.patchdata.unofficial_count;
+         i++, cheevo++)
    {
       if (cheevo->trigger)
          rc_reset_trigger(cheevo->trigger);
@@ -921,7 +1102,8 @@ void rcheevos_reset_game(void)
    }
 
    lboard = rcheevos_locals.lboards;
-   for (i = 0; i < rcheevos_locals.patchdata.lboard_count; i++, lboard++)
+   for (i = 0; i < rcheevos_locals.patchdata.lboard_count;
+         i++, lboard++)
    {
       if (lboard->lboard)
          rc_reset_lboard(lboard->lboard);
@@ -930,11 +1112,15 @@ void rcheevos_reset_game(void)
       {
          lboard->active = 0;
 
-         /* this ensures the leaderboard won't restart until the start trigger is false for at least one frame */
+         /* This ensures the leaderboard won't restart 
+          * until the start trigger is false for at 
+          * least one frame */
          if (lboard->lboard)
             lboard->lboard->submitted = 1;
       }
    }
+
+   rcheevos_locals.richpresence.last_update = cpu_features_get_time_usec();
 }
 
 #ifdef HAVE_MENU
@@ -942,19 +1128,15 @@ static void rcheevos_append_menu_achievement(menu_displaylist_info_t* info, size
 {
    bool active = false;
 
-   if (cheevo->trigger == NULL)
+   if (!cheevo->trigger)
    {
       enum_idx = MENU_ENUM_LABEL_CHEEVOS_UNSUPPORTED_ENTRY;
       active = true; /* not really, but forces the badge to appear disabled */
    }
    else if (!(cheevo->active & RCHEEVOS_ACTIVE_HARDCORE))
-   {
       enum_idx = MENU_ENUM_LABEL_CHEEVOS_UNLOCKED_ENTRY_HARDCORE;
-   }
    else if (!(cheevo->active & RCHEEVOS_ACTIVE_SOFTCORE))
-   {
       enum_idx = MENU_ENUM_LABEL_CHEEVOS_UNLOCKED_ENTRY;
-   }
    else
    {
       /* use enum passed in - either "Locked" for core or "Unofficial" for unofficial */
@@ -972,14 +1154,17 @@ static void rcheevos_append_menu_achievement(menu_displaylist_info_t* info, size
 void rcheevos_populate_menu(void* data)
 {
 #ifdef HAVE_MENU
-   int i                         = 0;
-   int count                     = 0;
-   settings_t* settings          = config_get_ptr();
-   menu_displaylist_info_t* info = (menu_displaylist_info_t*)data;
-   rcheevos_cheevo_t* cheevo      = NULL;
+   int i                             = 0;
+   int count                         = 0;
+   rcheevos_cheevo_t* cheevo         = NULL;
+   menu_displaylist_info_t* info     = (menu_displaylist_info_t*)data;
+   settings_t* settings              = config_get_ptr();
+   bool cheevos_enable               = settings->bools.cheevos_enable;
+   bool cheevos_hardcore_mode_enable = settings->bools.cheevos_hardcore_mode_enable;
+   bool cheevos_test_unofficial      = settings->bools.cheevos_test_unofficial;
 
-   if (   settings->bools.cheevos_enable
-       && settings->bools.cheevos_hardcore_mode_enable
+   if (   cheevos_enable
+       && cheevos_hardcore_mode_enable
        && rcheevos_loaded)
    {
       if (!rcheevos_hardcore_paused)
@@ -1002,7 +1187,7 @@ void rcheevos_populate_menu(void* data)
       rcheevos_append_menu_achievement(info, i++, MENU_ENUM_LABEL_CHEEVOS_LOCKED_ENTRY, cheevo++);
    }
 
-   if (settings->bools.cheevos_test_unofficial)
+   if (cheevos_test_unofficial)
    {
       cheevo = rcheevos_locals.unofficial;
       for (count = rcheevos_locals.patchdata.unofficial_count; count > 0; count--)
@@ -1107,12 +1292,14 @@ bool rcheevos_unload(void)
       CHEEVOS_FREE(rcheevos_locals.core);
       CHEEVOS_FREE(rcheevos_locals.unofficial);
       CHEEVOS_FREE(rcheevos_locals.lboards);
+      CHEEVOS_FREE(rcheevos_locals.richpresence.richpresence);
       rcheevos_free_patchdata(&rcheevos_locals.patchdata);
       rcheevos_fixup_destroy(&rcheevos_locals.fixups);
 
-      rcheevos_locals.core       = NULL;
-      rcheevos_locals.unofficial = NULL;
-      rcheevos_locals.lboards    = NULL;
+      rcheevos_locals.core                      = NULL;
+      rcheevos_locals.unofficial                = NULL;
+      rcheevos_locals.lboards                   = NULL;
+      rcheevos_locals.richpresence.richpresence = NULL;
 
       rcheevos_loaded            = false;
       rcheevos_hardcore_active   = false;
@@ -1125,13 +1312,12 @@ bool rcheevos_unload(void)
 
 bool rcheevos_toggle_hardcore_mode(void)
 {
-   settings_t *settings = config_get_ptr();
-
-   if (!settings)
-      return false;
+   settings_t *settings              = config_get_ptr();
+   bool cheevos_hardcore_mode_enable = settings->bools.cheevos_hardcore_mode_enable;
+   bool rewind_enable                = settings->bools.rewind_enable;
 
    /* reset and deinit rewind to avoid cheat the score */
-   if (   settings->bools.cheevos_hardcore_mode_enable
+   if (cheevos_hardcore_mode_enable
        && !rcheevos_hardcore_paused)
    {
       const char *msg = msg_hash_to_str(
@@ -1144,7 +1330,7 @@ bool rcheevos_toggle_hardcore_mode(void)
        * savestate previusly loaded. */
       command_event(CMD_EVENT_RESET, NULL);
 
-      if (settings->bools.rewind_enable)
+      if (rewind_enable)
          command_event(CMD_EVENT_REWIND_DEINIT, NULL);
 
       CHEEVOS_LOG("%s\n", msg);
@@ -1152,7 +1338,7 @@ bool rcheevos_toggle_hardcore_mode(void)
    }
    else
    {
-      if (settings->bools.rewind_enable)
+      if (rewind_enable)
          command_event(CMD_EVENT_REWIND_INIT, NULL);
    }
 
@@ -1198,23 +1384,28 @@ int rcheevos_get_console(void)
    return rcheevos_locals.patchdata.console_id;
 }
 
+const char* rcheevos_get_hash(void)
+{
+   return rcheevos_locals.hash;
+}
+
 static void rcheevos_unlock_cb(unsigned id, void* userdata)
 {
-   rcheevos_cheevo_t* cheevo = NULL;
    int i = 0;
    unsigned j = 0, count = 0;
+   rcheevos_cheevo_t* cheevo = NULL;
 
    for (i = 0; i < 2; i++)
    {
       if (i == 0)
       {
          cheevo = rcheevos_locals.core;
-         count = rcheevos_locals.patchdata.core_count;
+         count  = rcheevos_locals.patchdata.core_count;
       }
       else
       {
          cheevo = rcheevos_locals.unofficial;
-         count = rcheevos_locals.patchdata.unofficial_count;
+         count  = rcheevos_locals.patchdata.unofficial_count;
       }
 
       for (j = 0; j < count; j++, cheevo++)
@@ -1316,11 +1507,11 @@ enum
 
 static int rcheevos_prepare_hash_psx(rcheevos_coro_t* coro)
 {
+   char buffer[2048];
    char exe_name_buffer[64];
    size_t exe_name_size;
-   char* exe_name = NULL;
+   const char* exe_name = NULL;
    char* scan     = NULL;
-   char buffer[2048];
    int success    = 0;
    size_t to_read = 0;
 
@@ -1368,7 +1559,7 @@ static int rcheevos_prepare_hash_psx(rcheevos_coro_t* coro)
 
       if (exe_name)
       {
-         scan = exe_name;
+         scan = (char*)exe_name;
          while (!isspace(*scan) && *scan != ';')
             ++scan;
          *scan = '\0';
@@ -1440,11 +1631,12 @@ static int rcheevos_prepare_hash_psx(rcheevos_coro_t* coro)
 
 static int rcheevos_prepare_hash_nintendo_ds(rcheevos_coro_t* coro)
 {
-  intfstream_t* stream;
   unsigned char header[512];
-  int success = 0;
+  int success          = 0;
+  intfstream_t *stream = intfstream_open_file(
+        coro->path, RETRO_VFS_FILE_ACCESS_READ,
+        RETRO_VFS_FILE_ACCESS_HINT_NONE);
 
-  stream = intfstream_open_file(coro->path, RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
   if (stream)
   {
      if (intfstream_read(stream, header, sizeof(header)) == 512)
@@ -1516,13 +1708,13 @@ static int rcheevos_prepare_hash_nintendo_ds(rcheevos_coro_t* coro)
 
 static int rcheevos_iterate(rcheevos_coro_t* coro)
 {
+   char buffer[2048];
    const int snes_header_len = 0x200;
    const int lynx_header_len = 0x40;
-   ssize_t num_read = 0;
-   size_t to_read   = 4096;
-   uint8_t* ptr     = NULL;
-   const char* end  = NULL;
-   char buffer[2048];
+   ssize_t num_read          = 0;
+   size_t to_read            = 4096;
+   uint8_t* ptr              = NULL;
+   const char* end           = NULL;
 
    static const uint32_t snes_exts[] =
    {
@@ -1653,16 +1845,16 @@ static int rcheevos_iterate(rcheevos_coro_t* coro)
             while (coro->ext)
             {
                unsigned hash;
-               end = strchr(coro->ext, '|');
+               end          = strchr(coro->ext, '|');
 
                if (end)
                {
-                  hash = rcheevos_djb2(coro->ext, end - coro->ext);
+                  hash      = rcheevos_djb2(coro->ext, end - coro->ext);
                   coro->ext = end + 1;
                }
                else
                {
-                  hash = rcheevos_djb2(coro->ext, strlen(coro->ext));
+                  hash      = rcheevos_djb2(coro->ext, strlen(coro->ext));
                   coro->ext = NULL;
                }
 
@@ -1698,6 +1890,7 @@ static int rcheevos_iterate(rcheevos_coro_t* coro)
       }
 
       CHEEVOS_LOG(RCHEEVOS_TAG "this game doesn't feature achievements\n");
+      strcpy(rcheevos_locals.hash, "N/A");
       rcheevos_hardcore_paused = true;
       CORO_STOP();
 
@@ -2219,11 +2412,13 @@ found:
             CORO_RET();
          }
 
-         CHEEVOS_LOG(RCHEEVOS_TAG "checking %02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x\n",
+         sprintf(rcheevos_locals.hash, "%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x",
             coro->hash[0], coro->hash[1], coro->hash[2], coro->hash[3],
             coro->hash[4], coro->hash[5], coro->hash[6], coro->hash[7],
             coro->hash[8], coro->hash[9], coro->hash[10], coro->hash[11],
             coro->hash[12], coro->hash[13], coro->hash[14], coro->hash[15]);
+
+         CHEEVOS_LOG(RCHEEVOS_TAG "checking %s\n", rcheevos_locals.hash);
          rcheevos_log_url(RCHEEVOS_TAG "rc_url_get_gameid: %s\n", coro->url);
          CORO_GOSUB(RCHEEVOS_HTTP_GET);
 
@@ -2280,7 +2475,7 @@ found:
 
       badges_ctx = new_badges_ctx;
 
-#ifdef HAVE_MENU_WIDGETS
+#if defined(HAVE_GFX_WIDGETS)
       if (false) /* we always want badges if menu widgets are enabled */
 #endif
       {
@@ -2319,6 +2514,10 @@ found:
                if (!path_is_directory(coro->badge_fullpath))
                   path_mkdir(coro->badge_fullpath);
                CORO_YIELD();
+
+               if (!coro->cheevo->info->badge || !coro->cheevo->info->badge[0])
+                  continue;
+
                if (coro->j == 0)
                   snprintf(coro->badge_name,
                         sizeof(coro->badge_name),
@@ -2372,20 +2571,13 @@ found:
     *************************************************************************/
    CORO_SUB(RCHEEVOS_LOGIN)
    {
-      const char* username;
-      const char* password;
-      const char* token;
       int ret;
       char tok[256];
-
-      username = coro->settings->arrays.cheevos_username;
-      password = coro->settings->arrays.cheevos_password;
-      token    = coro->settings->arrays.cheevos_token;
 
       if (rcheevos_locals.token[0])
          CORO_RET();
 
-      if (string_is_empty(username))
+      if (string_is_empty(coro->settings->arrays.cheevos_username))
       {
          runloop_msg_queue_push(
                "Missing RetroAchievements account information.",
@@ -2397,12 +2589,14 @@ found:
          CORO_STOP();
       }
 
-      if (string_is_empty(token))
+      if (string_is_empty(coro->settings->arrays.cheevos_token))
          ret = rc_url_login_with_password(coro->url, sizeof(coro->url),
-               username, password);
+               coro->settings->arrays.cheevos_username,
+               coro->settings->arrays.cheevos_password);
       else
          ret = rc_url_login_with_token(coro->url, sizeof(coro->url),
-               username, token);
+               coro->settings->arrays.cheevos_username,
+               coro->settings->arrays.cheevos_token);
 
       if (ret < 0)
       {
@@ -2573,7 +2767,9 @@ found:
          /* Two calls - one for softcore and one for hardcore */
          for (coro->i = 0; coro->i < 2; coro->i++)
          {
-            ret = rc_url_get_unlock_list(coro->url, sizeof(coro->url), coro->settings->arrays.cheevos_username, rcheevos_locals.token, coro->gameid, coro->i);
+            ret = rc_url_get_unlock_list(coro->url, sizeof(coro->url),
+                  coro->settings->arrays.cheevos_username,
+                  rcheevos_locals.token, coro->gameid, coro->i);
 
             if (ret < 0)
             {
@@ -2662,17 +2858,17 @@ static void rcheevos_task_handler(retro_task_t *task)
 
 bool rcheevos_load(const void *data)
 {
-   retro_task_t *task;
+   char buffer[32];
+   retro_task_t *task                 = NULL;
    const struct retro_game_info *info = NULL;
    rcheevos_coro_t *coro              = NULL;
-   char buffer[32];
 
-   rcheevos_loaded = false;
-   rcheevos_hardcore_paused = false;
+   rcheevos_loaded                    = false;
+   rcheevos_hardcore_paused           = false;
 
    if (!rcheevos_locals.core_supports || !data)
    {
-      rcheevos_hardcore_paused = true;
+      rcheevos_hardcore_paused        = true;
       return false;
    }
 
@@ -2728,9 +2924,9 @@ bool rcheevos_load(const void *data)
             char m3u_contents[1024];
             char disc_path[PATH_MAX_LENGTH];
             char* tmp;
-            int64_t num_read;
+            int64_t num_read = intfstream_read(
+                  m3u_stream, m3u_contents, sizeof(m3u_contents) - 1);
 
-            num_read = intfstream_read(m3u_stream, m3u_contents, sizeof(m3u_contents) - 1);
             intfstream_close(m3u_stream);
             m3u_contents[num_read] = '\0';
 
@@ -2766,10 +2962,8 @@ bool rcheevos_load(const void *data)
    task->title     = NULL;
 
 #ifdef HAVE_THREADS
-   if (rcheevos_locals.task_lock == NULL)
-   {
+   if (!rcheevos_locals.task_lock)
       rcheevos_locals.task_lock = slock_new();
-   }
 #endif
 
    CHEEVOS_LOCK(rcheevos_locals.task_lock);

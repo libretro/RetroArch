@@ -418,6 +418,8 @@ static bool netplay_init_buffers(netplay_t *netplay)
 netplay_t *netplay_new(void *direct_host, const char *server, uint16_t port,
    bool stateless_mode, int check_frames,
    const struct retro_callbacks *cb, bool nat_traversal, const char *nick,
+   const char *netplay_password,
+   const char *netplay_spectate_password,
    uint64_t quirks)
 {
    netplay_t *netplay = (netplay_t*)calloc(1, sizeof(*netplay));
@@ -428,7 +430,7 @@ netplay_t *netplay_new(void *direct_host, const char *server, uint16_t port,
    netplay->tcp_port             = port;
    netplay->cbs                  = *cb;
    netplay->is_server            = (direct_host == NULL && server == NULL);
-   netplay->is_connected         = false;;
+   netplay->is_connected         = false;
    netplay->nat_traversal        = netplay->is_server ? nat_traversal : false;
    netplay->stateless_mode       = stateless_mode;
    netplay->check_frames         = check_frames;
@@ -487,7 +489,9 @@ netplay_t *netplay_new(void *direct_host, const char *server, uint16_t port,
    else
    {
       /* Start our handshake */
-      netplay_handshake_init_send(netplay, &netplay->connections[0]);
+      netplay_handshake_init_send(netplay, &netplay->connections[0],
+            netplay_password,
+            netplay_spectate_password);
 
       netplay->connections[0].mode = NETPLAY_CONNECTION_INIT;
       netplay->self_mode           = NETPLAY_CONNECTION_INIT;

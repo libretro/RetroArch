@@ -374,9 +374,9 @@ static bool frontend_psp_set_fork(enum frontend_fork fork_mode)
 }
 #endif
 
-static void frontend_psp_exitspawn(char *s, size_t len)
+static void frontend_psp_exitspawn(char *s, size_t len, char *args)
 {
-   bool should_load_game = false;
+   bool should_load_content = false;
 #ifndef IS_SALAMANDER
    if (psp_fork_mode == FRONTEND_FORK_NONE)
       return;
@@ -384,14 +384,14 @@ static void frontend_psp_exitspawn(char *s, size_t len)
    switch (psp_fork_mode)
    {
       case FRONTEND_FORK_CORE_WITH_ARGS:
-         should_load_game = true;
+         should_load_content = true;
          break;
       case FRONTEND_FORK_NONE:
       default:
          break;
    }
 #endif
-   frontend_psp_exec(s, should_load_game);
+   frontend_psp_exec(s, should_load_content);
 }
 
 static int frontend_psp_get_rating(void)
@@ -596,9 +596,13 @@ frontend_ctx_driver_t frontend_ctx_psp = {
    NULL,                         /* get_cpu_model_name */
 #ifdef VITA
    frontend_psp_get_user_language,
+   NULL,                         /* is_narrator_running */
+   NULL,                         /* accessibility_speak */
    "vita",
 #else
    NULL,                         /* get_user_language */
+   NULL,                         /* is_narrator_running */
+   NULL,                         /* accessibility_speak */
    "psp",
 #endif
 };

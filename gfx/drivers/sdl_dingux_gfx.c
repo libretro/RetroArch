@@ -222,11 +222,7 @@ static void sdl_dingux_set_texture_frame(void *data, const void *frame, bool rgb
 }
 
 
-static void sdl_dingux_gfx_set_nonblock_state(void *data, bool state)
-{
-   (void)data; /* Can SDL even do this? */
-   (void)state;
-}
+static void sdl_dingux_gfx_set_nonblock_state(void *a, bool b, bool c, unsigned d) { }
 
 static void sdl_dingux_gfx_check_window(sdl_dingux_video_t *vid)
 {

@@ -1,11 +1,37 @@
 # Future
+- ANDROID/CHROMEBOOK/CRASH: Fix Chromebook crashes (on x86 x64) when touching the screen
+- BUGFIX: Prevent double input when using 'return' key (hardware) to close on-screen keyboard
 - BUGFIX: Fix mouse capture hotkey not working
 - CHEEVOS/BUGFIX: Achievement triggers could cause Retroarch to Crash
+- CHEEVOS: Don't block Sameboy core because it only exposes some memory
 - CHEEVOS: Support for extended Sega CD memory
+- CHEEVOS: Show RetroAchievements Hash in content information list
+- CHEEVOS: If the core says it's exposing SYSTEM_RAM, give it the benefit of the doubt
+- CHEEVOS: RetroAchievements rich presence for RA.org website/Discord
+- DISK CONTROL: Add disk labels to 'disk inserted' notifications
 - EMSCRIPTEN: Recreate input event listeners properly
+- FFMPEG CORE: Fix crash on seeking when using HW decoding in some cases
 - LIBRETRO: Add disk control interface API extension
+- LINUX: Avoid possible crash when running retroarch at startup
+- LOCALIZATION: Update French translation
+- LOCALIZATION: Update Korean translation
 - LOCALIZATION: Update Polish translation
+- LOCALIZATION: Update Spanish translation
+- MENU/WIDGETS: Allow notifications to use full screen width when not displaying menu
+- MENU/WIDGETS: DPI-based scaling
+- MENU/OZONE: Add DPI-based scaling
+- MENU/OZONE: Add rudimentary pointer support
+- MENU/OZONE/POINTER: Pointer can be used to switch between sidebar and entries list
+- MENU/OZONE/POINTER: Pointer can be used to select sidebar and entries list items
+- MENU/OZONE/POINTER: Both sidebar and entries list can be scrolled by dragging
+- MENU/OZONE/POINTER: Clicking/pressing the header or footer produces a 'cancel' action
+- MENU/OZONE/POINTER: Cursor focus follows mouse pointer from sidebar to entries list (and vice versa)
+- MENU/OZONE/POINTER: In entries list, item under cursor is automatically selected (with some fudging to ensure this doesn't break mouse wheel scrolling)
+- MENU/OZONE/POINTER: In sidebar, item under cursor is not automatically selected (this is too jarring)
+- NETPLAY/MENU/BUGFIX: Fix Netplay Stateless Mode doesn't save. Affects other netplay settings which can be overridden by commandline option
+- NETPLAY/ROOMS/BUGFIX: Prevent out-of-bounds array indexing when displaying/selecting netplay rooms in menus
 - VIDEO: Set hardware 'Bilinear filtering' off by default
+- WIFI/CONNMANCTL: Display more characters from SSID
 
 # 1.8.4
 - ANDROID/BUGFIX: Prevent crash when Android device is minimized and you go back to the app

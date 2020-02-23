@@ -251,37 +251,6 @@ enum xmb_shader_pipeline
    XMB_SHADER_PIPELINE_LAST
 };
 
-enum menu_display_prim_type
-{
-   MENU_DISPLAY_PRIM_NONE = 0,
-   MENU_DISPLAY_PRIM_TRIANGLESTRIP,
-   MENU_DISPLAY_PRIM_TRIANGLES
-};
-
-enum menu_display_driver_type
-{
-   MENU_VIDEO_DRIVER_GENERIC = 0,
-   MENU_VIDEO_DRIVER_OPENGL,
-   MENU_VIDEO_DRIVER_OPENGL1,
-   MENU_VIDEO_DRIVER_OPENGL_CORE,
-   MENU_VIDEO_DRIVER_VULKAN,
-   MENU_VIDEO_DRIVER_METAL,
-   MENU_VIDEO_DRIVER_DIRECT3D8,
-   MENU_VIDEO_DRIVER_DIRECT3D9,
-   MENU_VIDEO_DRIVER_DIRECT3D10,
-   MENU_VIDEO_DRIVER_DIRECT3D11,
-   MENU_VIDEO_DRIVER_DIRECT3D12,
-   MENU_VIDEO_DRIVER_VITA2D,
-   MENU_VIDEO_DRIVER_CTR,
-   MENU_VIDEO_DRIVER_WIIU,
-   MENU_VIDEO_DRIVER_CACA,
-   MENU_VIDEO_DRIVER_SIXEL,
-   MENU_VIDEO_DRIVER_GDI,
-   MENU_VIDEO_DRIVER_SWITCH,
-   MENU_VIDEO_DRIVER_VGA,
-   MENU_VIDEO_DRIVER_FPGA
-};
-
 enum rgui_thumbnail_scaler
 {
    RGUI_THUMB_SCALE_POINT = 0,
@@ -355,28 +324,6 @@ enum menu_action
    MENU_ACTION_POINTER_PRESSED
 };
 
-enum playlist_sublabel_runtime
-{
-   PLAYLIST_RUNTIME_PER_CORE = 0,
-   PLAYLIST_RUNTIME_AGGREGATE,
-   PLAYLIST_RUNTIME_LAST
-};
-
-enum playlist_sublabel_last_played_style_type
-{
-   PLAYLIST_LAST_PLAYED_STYLE_YMD_HMS = 0,
-   PLAYLIST_LAST_PLAYED_STYLE_YMD_HM,
-   PLAYLIST_LAST_PLAYED_STYLE_MDYYYY,
-   PLAYLIST_LAST_PLAYED_STYLE_DM_HM,
-   PLAYLIST_LAST_PLAYED_STYLE_MD_HM,
-   PLAYLIST_LAST_PLAYED_STYLE_YMD_HMS_AM_PM,
-   PLAYLIST_LAST_PLAYED_STYLE_YMD_HM_AM_PM,
-   PLAYLIST_LAST_PLAYED_STYLE_MDYYYY_AM_PM,
-   PLAYLIST_LAST_PLAYED_STYLE_DM_HM_AM_PM,
-   PLAYLIST_LAST_PLAYED_STYLE_MD_HM_AM_PM,
-   PLAYLIST_LAST_PLAYED_STYLE_LAST
-};
-
 enum playlist_inline_core_display_type
 {
    PLAYLIST_INLINE_CORE_DISPLAY_HIST_FAV = 0,
@@ -392,23 +339,6 @@ enum playlist_entry_remove_enable_type
    PLAYLIST_ENTRY_REMOVE_ENABLE_NONE,
    PLAYLIST_ENTRY_REMOVE_ENABLE_LAST
 };
-
-typedef uintptr_t menu_texture_item;
-
-typedef struct menu_display_ctx_clearcolor
-{
-   float r;
-   float g;
-   float b;
-   float a;
-} menu_display_ctx_clearcolor_t;
-
-typedef struct menu_display_frame_info
-{
-   bool shadows_enable;
-} menu_display_frame_info_t;
-
-typedef struct menu_display_ctx_draw menu_display_ctx_draw_t;
 
 RETRO_END_DECLS
 

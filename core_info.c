@@ -44,7 +44,7 @@ static core_info_list_t *core_info_curr_list        = NULL;
 
 enum compare_op
 {
-   COMPARE_OP_EQUAL,
+   COMPARE_OP_EQUAL = 0,
    COMPARE_OP_NOT_EQUAL,
    COMPARE_OP_LESS,
    COMPARE_OP_LESS_EQUAL,

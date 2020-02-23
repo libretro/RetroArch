@@ -75,18 +75,21 @@ void libnx_apply_overclock(void)
 {
    const size_t profiles_count = sizeof(SWITCH_CPU_PROFILES) 
       / sizeof(SWITCH_CPU_PROFILES[1]);
+   settings_t *settings        = config_get_ptr();
+   unsigned libnx_overclock    = settings->uints.libnx_overclock;
 
-   if (config_get_ptr()->uints.libnx_overclock >= 0 && config_get_ptr()->uints.libnx_overclock <= profiles_count)
+   if (libnx_overclock >= 0 && libnx_overclock <= profiles_count)
    {
       if (hosversionBefore(8, 0, 0))
       {
-         pcvSetClockRate(PcvModule_CpuBus, SWITCH_CPU_SPEEDS_VALUES[config_get_ptr()->uints.libnx_overclock]);
+         pcvSetClockRate(PcvModule_CpuBus, SWITCH_CPU_SPEEDS_VALUES[
+               libnx_overclock]);
       }
       else
       {
          ClkrstSession session = {0};
          clkrstOpenSession(&session, PcvModuleId_CpuBus, 3);
-         clkrstSetClockRate(&session, SWITCH_CPU_SPEEDS_VALUES[config_get_ptr()->uints.libnx_overclock]);
+         clkrstSetClockRate(&session, SWITCH_CPU_SPEEDS_VALUES[libnx_overclock]);
          clkrstCloseSession(&session);
       }
    }
@@ -94,7 +97,6 @@ void libnx_apply_overclock(void)
 
 static void on_applet_hook(AppletHookType hook, void *param)
 {
-   u32 performance_mode;
    AppletFocusState focus_state;
 
    /* Exit request */
@@ -131,9 +133,11 @@ static void on_applet_hook(AppletHookType hook, void *param)
 
          /* Performance mode */
       case AppletHookType_OnPerformanceMode:
-         /* 0 == Handheld, 1 == Docked
-          * Since CPU doesn't change we just re-apply */
-         performance_mode = appletGetPerformanceMode();
+         {
+            /* 0 == Handheld, 1 == Docked
+             * Since CPU doesn't change we just re-apply */
+            u32 performance_mode = appletGetPerformanceMode();
+         }
          libnx_apply_overclock();
          break;
 
@@ -145,7 +149,7 @@ static void on_applet_hook(AppletHookType hook, void *param)
 #endif /* HAVE_LIBNX */
 
 #ifdef IS_SALAMANDER
-static void get_first_valid_core(char *path_return)
+static void get_first_valid_core(char *path_return, size_t len)
 {
    DIR *dir;
    struct dirent *ent;
@@ -162,9 +166,9 @@ static void get_first_valid_core(char *path_return)
             break;
          if (strlen(ent->d_name) > strlen(extension) && !strcmp(ent->d_name + strlen(ent->d_name) - strlen(extension), extension))
          {
-            strcpy(path_return, SD_PREFIX "/retroarch/cores");
-            strcat(path_return, "/");
-            strcat(path_return, ent->d_name);
+            strlcpy(path_return, SD_PREFIX "/retroarch/cores", len);
+            strlcat(path_return, "/", len);
+            strlcat(path_return, ent->d_name, len);
             break;
          }
       }
@@ -318,21 +322,24 @@ static void frontend_switch_deinit(void *data)
 static void frontend_switch_exec(const char *path, bool should_load_game)
 {
    char game_path[PATH_MAX-4];
+#ifndef IS_SALAMANDER
    const char *arg_data[3];
    int args           = 0;
-
-   game_path[0]       = NULL;
    arg_data[0]        = NULL;
 
    arg_data[args]     = elf_path_cst;
    arg_data[args + 1] = NULL;
    args++;
+#endif
+
+   game_path[0]       = NULL;
 
    RARCH_LOG("Attempt to load core: [%s].\n", path);
+
 #ifndef IS_SALAMANDER
    if (should_load_game && !path_is_empty(RARCH_PATH_CONTENT))
    {
-      strcpy(game_path, path_get(RARCH_PATH_CONTENT));
+      strlcpy(game_path, path_get(RARCH_PATH_CONTENT), sizeof(game_path));
       arg_data[args] = game_path;
       arg_data[args + 1] = NULL;
       args++;
@@ -351,7 +358,7 @@ static void frontend_switch_exec(const char *path, bool should_load_game)
          char core_path[PATH_MAX];
 
          /* find first valid core and load it if the target core doesnt exist */
-         get_first_valid_core(&core_path[0]);
+         get_first_valid_core(&core_path[0], PATH_MAX);
 
          if (core_path[0] == '\0')
             svcExitProcess();
@@ -395,9 +402,9 @@ static bool frontend_switch_set_fork(enum frontend_fork fork_mode)
 }
 #endif
 
-static void frontend_switch_exitspawn(char *s, size_t len)
+static void frontend_switch_exitspawn(char *s, size_t len, char *args)
 {
-   bool should_load_game = false;
+   bool should_load_content = false;
 #ifndef IS_SALAMANDER
    if (switch_fork_mode == FRONTEND_FORK_NONE)
       return;
@@ -405,13 +412,13 @@ static void frontend_switch_exitspawn(char *s, size_t len)
    switch (switch_fork_mode)
    {
    case FRONTEND_FORK_CORE_WITH_ARGS:
-      should_load_game = true;
+      should_load_content = true;
       break;
    default:
       break;
    }
 #endif
-   frontend_switch_exec(s, should_load_game);
+   frontend_switch_exec(s, should_load_content);
 }
 
 #if 0
@@ -618,8 +625,6 @@ char *realpath(const char *name, char *resolved)
 
    for (start = end = name; *start; start = end)
    {
-      int n;
-
       /* Skip sequence of multiple path-separators.  */
       while (*start == '/')
          ++start;
@@ -921,5 +926,7 @@ frontend_ctx_driver_t frontend_ctx_switch =
         NULL, /* set_sustained_performance_mode */
         NULL, /* get_cpu_model_name */
         NULL, /* get_user_language */
+        NULL, /* is_narrator_running */
+        NULL, /* accessibility_speak */
         "switch",
 };

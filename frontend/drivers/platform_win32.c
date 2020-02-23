@@ -45,10 +45,10 @@
 #include "../frontend_driver.h"
 #include "../../configuration.h"
 #include "../../defaults.h"
-#include "../../retroarch.h"
 #include "../../verbosity.h"
 #include "../../ui/drivers/ui_win32.h"
 #include "../../paths.h"
+#include "../../msg_hash.h"
 #include "platform_win32.h"
 
 #ifndef SM_SERVERR2
@@ -69,9 +69,10 @@ static char win32_cpu_model_name[64] = {0};
 
 VOID (WINAPI *DragAcceptFiles_func)(HWND, BOOL);
 
-static bool dwm_composition_disabled;
+static bool dwm_composition_disabled = false;
+static bool console_needs_free       = false;
 
-static bool console_needs_free;
+static bool pi_set                   = false;
 
 #if defined(HAVE_LANGEXTRA) && !defined(_XBOX)
 #if (defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0500) || !defined(_MSC_VER)
@@ -195,10 +196,7 @@ static bool gfx_init_dwm(void)
 #endif
 
    if (mmcss)
-   {
-      RARCH_LOG("Setting multimedia scheduling for DWM.\n");
       mmcss(TRUE);
-   }
 
    inited = true;
    return true;
@@ -208,12 +206,13 @@ static void gfx_set_dwm(void)
 {
    HRESULT ret;
    HRESULT (WINAPI *composition_enable)(UINT);
-   settings_t *settings = config_get_ptr();
+   settings_t *settings     = config_get_ptr();
+   bool disable_composition = settings->bools.video_disable_composition;
 
    if (!gfx_init_dwm())
       return;
 
-   if (settings->bools.video_disable_composition == dwm_composition_disabled)
+   if (disable_composition == dwm_composition_disabled)
       return;
 
 #ifdef HAVE_DYNAMIC
@@ -227,10 +226,10 @@ static void gfx_set_dwm(void)
       return;
    }
 
-   ret = composition_enable(!settings->bools.video_disable_composition);
+   ret = composition_enable(!disable_composition);
    if (FAILED(ret))
       RARCH_ERR("Failed to set composition state ...\n");
-   dwm_composition_disabled = settings->bools.video_disable_composition;
+   dwm_composition_disabled = disable_composition;
 }
 
 static void frontend_win32_get_os(char *s, size_t len, int *major, int *minor)
@@ -676,7 +675,7 @@ enum retro_language frontend_win32_get_user_language(void)
 #if defined(_WIN32) && !defined(_XBOX)
 enum frontend_fork win32_fork_mode;
 
-static void frontend_win32_respawn(char *s, size_t len)
+static void frontend_win32_respawn(char *s, size_t len, char *args)
 {
    STARTUPINFO si;
    PROCESS_INFORMATION pi;
@@ -685,22 +684,21 @@ static void frontend_win32_respawn(char *s, size_t len)
    if (win32_fork_mode != FRONTEND_FORK_RESTART)
       return;
 
-   memset(&si, 0, sizeof(si));
-   si.cb = sizeof(si);
-   memset(&pi, 0, sizeof(pi));
-
    fill_pathname_application_path(executable_path,
          sizeof(executable_path));
    path_set(RARCH_PATH_CORE, executable_path);
    RARCH_LOG("Restarting RetroArch with commandline: %s and %s\n",
-      executable_path, get_retroarch_launch_arguments());
+      executable_path, args);
 
-   if(!CreateProcess( executable_path, get_retroarch_launch_arguments(),
+   memset(&si, 0, sizeof(si));
+   si.cb = sizeof(si);
+   memset(&pi, 0, sizeof(pi));
+
+   if(!CreateProcess( executable_path, args,
       NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi))
    {
       RARCH_LOG("Failed to restart RetroArch\n");
    }
-   return;
 }
 
 static bool frontend_win32_set_fork(enum frontend_fork fork_mode)
@@ -719,6 +717,145 @@ static bool frontend_win32_set_fork(enum frontend_fork fork_mode)
          break;
    }
    win32_fork_mode = fork_mode;
+   return true;
+}
+#endif
+
+#if defined(_WIN32) && !defined(_XBOX)
+static const char *accessibility_win_language_code(const char* language)
+{
+   if (string_is_equal(language,"en"))
+      return "Microsoft David Desktop";
+   else if (string_is_equal(language,"it"))
+      return "Microsoft Cosimo Desktop";
+   else if (string_is_equal(language,"sv"))
+      return "Microsoft Bengt Desktop";
+   else if (string_is_equal(language,"fr"))
+      return "Microsoft Paul Desktop";
+   else if (string_is_equal(language,"de"))
+      return "Microsoft Stefan Desktop";
+   else if (string_is_equal(language,"he"))
+      return "Microsoft Hemant Desktop";
+   else if (string_is_equal(language,"id"))
+      return "Microsoft Asaf Desktop";
+   else if (string_is_equal(language,"es"))
+      return "Microsoft Pablo Desktop";
+   else if (string_is_equal(language,"nl"))
+      return "Microsoft Frank Desktop";
+   else if (string_is_equal(language,"ro"))
+      return "Microsoft Andrei Desktop";
+   else if (string_is_equal(language,"pt_pt"))
+      return "Microsoft Helia Desktop";
+   else if (string_is_equal(language,"pt_bt") || string_is_equal(language,"pt"))
+      return "Microsoft Daniel Desktop";
+   else if (string_is_equal(language,"th"))
+      return "Microsoft Pattara Desktop";
+   else if (string_is_equal(language,"ja"))
+      return "Microsoft Ichiro Desktop";
+   else if (string_is_equal(language,"sk"))
+      return "Microsoft Filip Desktop";
+   else if (string_is_equal(language,"hi"))
+      return "Microsoft Hemant Desktop";
+   else if (string_is_equal(language,"ar"))
+      return "Microsoft Naayf Desktop";
+   else if (string_is_equal(language,"hu"))
+      return "Microsoft Szabolcs Desktop";
+   else if (string_is_equal(language,"zh_tw") || string_is_equal(language,"zh"))
+      return "Microsoft Zhiwei Desktop";
+   else if (string_is_equal(language,"el"))
+      return "Microsoft Stefanos Desktop";
+   else if (string_is_equal(language,"ru"))
+      return "Microsoft Pavel Desktop";
+   else if (string_is_equal(language,"nb"))
+      return "Microsoft Jon Desktop";
+   else if (string_is_equal(language,"da"))
+      return "Microsoft Helle Desktop";
+   else if (string_is_equal(language,"fi"))
+      return "Microsoft Heidi Desktop";
+   else if (string_is_equal(language,"zh_hk"))
+      return "Microsoft Danny Desktop";
+   else if (string_is_equal(language,"zh_cn"))
+      return "Microsoft Kangkang Desktop";
+   else if (string_is_equal(language,"tr"))
+      return "Microsoft Tolga Desktop";
+   else if (string_is_equal(language,"ko"))
+      return "Microsoft Heami Desktop";
+   else if (string_is_equal(language,"pl"))
+      return "Microsoft Adam Desktop";
+   else if (string_is_equal(language,"cs")) 
+      return "Microsoft Jakub Desktop";
+   else
+      return "";
+}
+
+static bool terminate_win32_process(PROCESS_INFORMATION pi)
+{
+   TerminateProcess(pi.hProcess,0);
+   CloseHandle(pi.hProcess);
+   CloseHandle(pi.hThread);
+   return true;
+}
+
+static PROCESS_INFORMATION g_pi;
+
+static bool create_win32_process(char* cmd)
+{
+   STARTUPINFO si;
+   memset(&si, 0, sizeof(si));
+   si.cb = sizeof(si);
+   memset(&g_pi, 0, sizeof(g_pi));
+
+   if (!CreateProcess(NULL, cmd, NULL, NULL, FALSE, CREATE_NO_WINDOW,
+                      NULL, NULL, &si, &g_pi))
+      return false;
+   return true;
+}
+
+static bool is_narrator_running_windows(void)
+{
+   DWORD status = 0;
+   if (pi_set == false)
+      return false;
+   if (GetExitCodeProcess(&g_pi, &status) && status == STILL_ACTIVE)
+      return true;
+   return false;
+}
+
+static bool accessibility_speak_windows(int speed,
+      const char* speak_text, int priority)
+{
+   char cmd[1200];
+   const char *voice      = get_user_language_iso639_1(true);
+   const char *language   = accessibility_win_language_code(voice);
+   bool res               = false;
+   const char* speeds[10] = {"-10", "-7.5", "-5", "-2.5", "0", "2", "4", "6", "8", "10"};
+
+   if (speed < 1)
+      speed = 1;
+   else if (speed > 10)
+      speed = 10;
+
+   if (priority < 10)
+   {
+      if (is_narrator_running_windows())
+         return true;
+   }
+
+   if (strlen(language) > 0) 
+      snprintf(cmd, sizeof(cmd),
+               "powershell.exe -NoProfile -WindowStyle Hidden -Command \"Add-Type -AssemblyName System.Speech; $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer; $synth.SelectVoice(\\\"%s\\\"); $synth.Rate = %s; $synth.Speak(\\\"%s\\\");\"", language, speeds[speed-1], (char*) speak_text); 
+   else
+      snprintf(cmd, sizeof(cmd),
+               "powershell.exe -NoProfile -WindowStyle Hidden -Command \"Add-Type -AssemblyName System.Speech; $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer; $synth.Rate = %s; $synth.Speak(\\\"%s\\\");\"", speeds[speed-1], (char*) speak_text); 
+   if (pi_set)
+      terminate_win32_process(g_pi);
+   res = create_win32_process(cmd);
+   if (!res)
+   {
+      pi_set = false;
+      return true;
+   }
+   pi_set = true;
    return true;
 }
 #endif
@@ -760,5 +897,12 @@ frontend_ctx_driver_t frontend_ctx_win32 = {
    NULL,                            /* set_sustained_performance_mode */
    frontend_win32_get_cpu_model_name,
    frontend_win32_get_user_language,
+#if defined(_WIN32) && !defined(_XBOX)
+   is_narrator_running_windows,
+   accessibility_speak_windows,
+#else
+   NULL,                         /* is_narrator_running */
+   NULL,                         /* accessibility_speak */
+#endif
    "win32"
 };

@@ -1,4 +1,4 @@
-/* Copyright  (C) 2010-2018 The RetroArch team
+/* Copyright  (C) 2010-2020 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
  * The following license statement only applies to this file (task_queue.h).
@@ -29,6 +29,8 @@
 
 #include <retro_common.h>
 #include <retro_common_api.h>
+
+#include <libretro.h>
 
 RETRO_BEGIN_DECLS
 
@@ -125,6 +127,9 @@ struct retro_task
 
    /* don't touch this. */
    retro_task_t *next;
+
+   /* when the task should run (0 for as soon as possible) */
+   retro_time_t when;
 };
 
 typedef struct task_finder_data

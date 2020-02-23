@@ -86,6 +86,12 @@ unsigned last_color_theme                   = 0;
 bool last_use_preferred_system_color_theme  = false;
 ozone_theme_t *ozone_default_theme          = &ozone_theme_dark; /* also used as a tag for cursor animation */
 
+/* Enable runtime configuration of framebuffer
+ * opacity */
+float last_framebuffer_opacity               = -1.0f;
+static float background_running_alpha_top    = 1.0f;
+static float background_running_alpha_bottom = 0.75f;
+
 void ozone_set_color_theme(ozone_handle_t *ozone, unsigned color_theme)
 {
    ozone_theme_t *theme = ozone_default_theme;
@@ -135,4 +141,38 @@ unsigned ozone_get_system_theme(void)
    return ret;
 #endif
    return 0;
+}
+
+void ozone_set_background_running_opacity(ozone_handle_t *ozone, float framebuffer_opacity)
+{
+   float *background = NULL;
+
+   if (!ozone || !ozone->theme->background_libretro_running)
+      return;
+
+   background = ozone->theme->background_libretro_running;
+
+   /* When content is running, background is a
+    * gradient that from top to bottom transitions
+    * from maximum to minimum opacity
+    * > RetroArch default 'framebuffer_opacity'
+    *   is 0.900. At this setting:
+    *   - Background top has an alpha of 1.0
+    *   - Background bottom has an alpha of 0.75 */
+   background_running_alpha_top = framebuffer_opacity / 0.9f;
+   background_running_alpha_top = (background_running_alpha_top > 1.0f) ?
+         1.0f : (background_running_alpha_top < 0.0f) ?
+               0.0f : background_running_alpha_top;
+
+   background_running_alpha_bottom = (2.5f * framebuffer_opacity) - 1.5f;
+   background_running_alpha_bottom = (background_running_alpha_bottom > 1.0f) ?
+         1.0f : (background_running_alpha_bottom < 0.0f) ?
+               0.0f : background_running_alpha_bottom;
+
+   background[11] = background_running_alpha_top;
+   background[15] = background_running_alpha_top;
+   background[3]  = background_running_alpha_bottom;
+   background[7]  = background_running_alpha_bottom;
+
+   last_framebuffer_opacity = framebuffer_opacity;
 }

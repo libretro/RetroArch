@@ -153,7 +153,7 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
    /* This will be the case if input driver is reinitialized.
     * No reason to spam autoconfigure messages every time. */
    bool block_osd_spam                =
-#if defined(HAVE_LIBNX) && defined(HAVE_MENU_WIDGETS)
+#if defined(HAVE_LIBNX) && defined(HAVE_GFX_WIDGETS)
       true;
 #else
       input_autoconfigured[params->idx]
@@ -266,7 +266,8 @@ static bool input_autoconfigure_joypad_from_conf_dir(
    fill_pathname_application_special(path, sizeof(path),
          APPLICATION_SPECIAL_DIRECTORY_AUTOCONFIG);
 
-   list = dir_list_new_special(path, DIR_LIST_AUTOCONFIG, "cfg");
+   list = dir_list_new_special(path, DIR_LIST_AUTOCONFIG, "cfg",
+         params->show_hidden_files);
 
    if (!list || !list->size)
    {
@@ -277,7 +278,7 @@ static bool input_autoconfigure_joypad_from_conf_dir(
       }
       if (!string_is_empty(params->autoconfig_directory))
          list = dir_list_new_special(params->autoconfig_directory,
-               DIR_LIST_AUTOCONFIG, "cfg");
+               DIR_LIST_AUTOCONFIG, "cfg", params->show_hidden_files);
    }
 
    if (!list)
@@ -518,6 +519,7 @@ void input_autoconfigure_connect(
    if (!string_is_empty(dir_autoconf))
       state->autoconfig_directory = strdup(dir_autoconf);
 
+   state->show_hidden_files       = settings->bools.show_hidden_files;
    state->idx                     = idx;
    state->vid                     = vid;
    state->pid                     = pid;

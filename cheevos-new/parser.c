@@ -3,6 +3,7 @@
 #include "hash.h"
 #include "util.h"
 
+#include <encodings/utf.h>
 #include <formats/jsonsax.h>
 #include <string/stdstring.h>
 #include <compat/strl.h>
@@ -23,6 +24,7 @@
 #define CHEEVOS_JSON_KEY_TOKEN        0x0e2dbd26U
 #define CHEEVOS_JSON_KEY_FLAGS        0x0d2e96b2U
 #define CHEEVOS_JSON_KEY_LEADERBOARDS 0xf1247d2dU
+#define CHEEVOS_JSON_KEY_RICHPRESENCE 0xf18dd230U
 #define CHEEVOS_JSON_KEY_MEM          0x0b8807e4U
 #define CHEEVOS_JSON_KEY_FORMAT       0xb341208eU
 #define CHEEVOS_JSON_KEY_SUCCESS      0x110461deU
@@ -261,7 +263,10 @@ typedef struct
 {
    int      in_cheevos;
    int      in_lboards;
+   int      is_game_id;
+   int      is_title;
    int      is_console_id;
+   int      is_richpresence;
    unsigned core_count;
    unsigned unofficial_count;
    unsigned lboard_count;
@@ -273,16 +278,77 @@ typedef struct
    rcheevos_rapatchdata_t* patchdata;
 } rcheevos_readud_t;
 
-static const char* rcheevos_dupstr(const rcheevos_field_t* field)
+static char* rcheevos_unescape_string(const char* string, size_t length)
 {
-   char* string = (char*)malloc(field->length + 1);
+   const char* end = string + length;
+   char* buffer = (char*)malloc(length + 1);
+   char* buffer_it = buffer;
 
-   if (!string)
+   if (buffer == NULL)
       return NULL;
 
-   memcpy((void*)string, (void*)field->string, field->length);
-   string[field->length] = 0;
-   return string;
+   while (string < end)
+   {
+      if (*string == '\\')
+      {
+         char escaped_char = string[1];
+         switch (escaped_char)
+         {
+            case 'r': /* Ignore carriage return */
+               string += 2;
+               break;
+
+            case 'n': /* Accept newlines */
+               *buffer_it++ = '\n';
+               string += 2;
+               break;
+
+            case 'u': /* Accept UTF-16 unicode characters */
+            {
+#define MAX_SEQUENCES 16
+               uint16_t  utf16[MAX_SEQUENCES];
+               char      utf8[MAX_SEQUENCES * 4];
+               uint8_t   i, j;
+
+               for (i = 1; i < MAX_SEQUENCES - 1; i++)
+                  if (strncmp((string + 6 * i), "\\u", 2))
+                     break;
+
+               /* Get escaped hex values and add them to the string */
+               for (j = 0; j < i; j++)
+               {
+                  char temp[5];
+
+                  string += 2;
+                  memcpy(temp, string, 4);
+                  temp[4] = '\0';
+                  utf16[j] = string_hex_to_unsigned(temp);
+                  string += 4;
+               }
+               utf16[j] = 0;
+
+               if (utf16_to_char_string(utf16, utf8, sizeof(utf8)))
+               {
+                  memcpy(buffer_it, utf8, strlen(utf8));
+                  buffer_it += strlen(utf8);
+               }
+            }
+            break;
+
+            default:
+               *buffer_it++ = escaped_char;
+               string += 2;
+               break;
+         };
+      }
+      else
+      {
+         *buffer_it++ = *string++;
+      }
+   }
+   *buffer_it = '\0';
+
+   return buffer;
 }
 
 static int rcheevos_new_cheevo(rcheevos_readud_t* ud)
@@ -297,10 +363,10 @@ static int rcheevos_new_cheevo(rcheevos_readud_t* ud)
    else
       return 0;
 
-   cheevo->title       = rcheevos_dupstr(&ud->title);
-   cheevo->description = rcheevos_dupstr(&ud->desc);
-   cheevo->badge       = rcheevos_dupstr(&ud->badge);
-   cheevo->memaddr     = rcheevos_dupstr(&ud->memaddr);
+   cheevo->title       = rcheevos_unescape_string(ud->title.string, ud->title.length);
+   cheevo->description = rcheevos_unescape_string(ud->desc.string, ud->desc.length);
+   cheevo->badge       = rcheevos_unescape_string(ud->badge.string, ud->badge.length);
+   cheevo->memaddr     = rcheevos_unescape_string(ud->memaddr.string, ud->memaddr.length);
    cheevo->points      = (unsigned)strtol(ud->points.string, NULL, 10);
    cheevo->id          = (unsigned)strtol(ud->id.string, NULL, 10);
 
@@ -323,11 +389,11 @@ static int rcheevos_new_lboard(rcheevos_readud_t* ud)
 {
    rcheevos_ralboard_t* lboard = ud->patchdata->lboards + ud->lboard_count++;
 
-   lboard->title              = rcheevos_dupstr(&ud->title);
-   lboard->description        = rcheevos_dupstr(&ud->desc);
-   lboard->format             = rcheevos_dupstr(&ud->format);
-   lboard->mem                = rcheevos_dupstr(&ud->memaddr);
-   lboard->id                 = (unsigned)strtol(ud->id.string, NULL, 10);
+   lboard->title       = rcheevos_unescape_string(ud->title.string, ud->title.length);
+   lboard->description = rcheevos_unescape_string(ud->desc.string, ud->desc.length);
+   lboard->format      = rcheevos_unescape_string(ud->format.string, ud->format.length);
+   lboard->mem         = rcheevos_unescape_string(ud->memaddr.string, ud->memaddr.length);
+   lboard->id          = (unsigned)strtol(ud->id.string, NULL, 10);
 
    if (   !lboard->title
        || !lboard->description
@@ -386,9 +452,14 @@ static int rcheevos_read_key(void* userdata,
       case CHEEVOS_JSON_KEY_CONSOLE_ID:
          ud->is_console_id = 1;
          break;
+      case CHEEVOS_JSON_KEY_RICHPRESENCE:
+         ud->is_richpresence = 1;
+         break;
       case CHEEVOS_JSON_KEY_ID:
          if (common)
             ud->field = &ud->id;
+         else
+            ud->is_game_id = 1;
          break;
       case CHEEVOS_JSON_KEY_MEMADDR:
          if (ud->in_cheevos)
@@ -401,6 +472,8 @@ static int rcheevos_read_key(void* userdata,
       case CHEEVOS_JSON_KEY_TITLE:
          if (common)
             ud->field = &ud->title;
+         else
+            ud->is_title = 1;
          break;
       case CHEEVOS_JSON_KEY_DESCRIPTION:
          if (common)
@@ -451,6 +524,16 @@ static int rcheevos_read_string(void* userdata,
       ud->field->string = string;
       ud->field->length = length;
    }
+   else if (ud->is_title)
+   {
+      ud->patchdata->title = rcheevos_unescape_string(string, length);
+      ud->is_title = 0;
+   }
+   else if (ud->is_richpresence)
+   {
+      ud->patchdata->richpresence_script = rcheevos_unescape_string(string, length);
+      ud->is_richpresence = 0;
+   }
 
    return 0;
 }
@@ -464,6 +547,11 @@ static int rcheevos_read_number(void* userdata,
    {
       ud->field->string = number;
       ud->field->length = length;
+   }
+   else if (ud->is_game_id)
+   {
+      ud->patchdata->game_id = (unsigned)strtol(number, NULL, 10);
+      ud->is_game_id         = 0;
    }
    else if (ud->is_console_id)
    {
@@ -524,10 +612,16 @@ int rcheevos_get_patchdata(const char* json, rcheevos_rapatchdata_t* patchdata)
       return -1;
    }
 
+   patchdata->richpresence_script = NULL;
+   patchdata->title = NULL;
+
    /* Load the achievements. */
    ud.in_cheevos       = 0;
    ud.in_lboards       = 0;
+   ud.is_game_id       = 0;
+   ud.is_title         = 0;
    ud.is_console_id    = 0;
+   ud.is_richpresence  = 0;
    ud.field            = NULL;
    ud.core_count       = 0;
    ud.unofficial_count = 0;
@@ -586,7 +680,10 @@ void rcheevos_free_patchdata(rcheevos_rapatchdata_t* patchdata)
    CHEEVOS_FREE(patchdata->core);
    CHEEVOS_FREE(patchdata->unofficial);
    CHEEVOS_FREE(patchdata->lboards);
+   CHEEVOS_FREE(patchdata->richpresence_script);
+   CHEEVOS_FREE(patchdata->title);
 
+   patchdata->game_id          = 0;
    patchdata->console_id       = 0;
    patchdata->core             = NULL;
    patchdata->unofficial       = NULL;

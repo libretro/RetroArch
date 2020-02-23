@@ -611,6 +611,7 @@ bool slang_reflect(
       semantic.texture                      = true;
    }
 
+#ifdef DEBUG
    RARCH_LOG("[slang]: Reflection\n");
    RARCH_LOG("[slang]:   Textures:\n");
 
@@ -698,6 +699,7 @@ bool slang_reflect(
          RARCH_LOG("[slang]:     #%u (PushOffset: %u)\n", i,
                (unsigned int)param->push_constant_offset);
    }
+#endif
 
    return true;
 }

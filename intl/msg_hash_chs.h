@@ -43,10 +43,6 @@ MSG_HASH(
       "未知的编译器"
       )
 MSG_HASH(
-      MSG_NATIVE,
-      "Native"
-      )
-MSG_HASH(
       MSG_DEVICE_DISCONNECTED_FROM_PORT,
       "设备已从端口上断开"
       )
@@ -75,10 +71,6 @@ MSG_HASH(
       "未提供参数也没有内建菜单，显示帮助..."
       )
 MSG_HASH(
-      MSG_SETTING_DISK_IN_TRAY,
-      "Setting disk in tray"
-      )
-MSG_HASH(
       MSG_WAITING_FOR_CLIENT,
       "等待客户端 ..."
       )
@@ -89,14 +81,6 @@ MSG_HASH(
 MSG_HASH(
       MSG_NETPLAY_YOU_HAVE_JOINED_AS_PLAYER_N,
       "你已作为玩家 %d 加入"
-      )
-MSG_HASH(
-      MSG_NETPLAY_ENDIAN_DEPENDENT,
-      "This core does not support inter-architecture netplay between these systems"
-      )
-MSG_HASH(
-      MSG_NETPLAY_PLATFORM_DEPENDENT,
-      "This core does not support inter-architecture netplay"
       )
 MSG_HASH(
       MSG_NETPLAY_ENTER_PASSWORD,
@@ -137,14 +121,6 @@ MSG_HASH(
 MSG_HASH(
       MSG_NETPLAY_CHANGED_NICK,
       "你的昵称已修改为「%s」"
-      )
-MSG_HASH(
-      MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT,
-      "Give hardware-rendered cores their own private context. Avoids having to assume hardware state changes inbetween frames."
-      )
-MSG_HASH(
-      MENU_ENUM_SUBLABEL_MENU_HORIZONTAL_ANIMATION,
-      "Enable horizontal animation for the menu. This will have a performance hit."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_MENU_SETTINGS,
@@ -3551,10 +3527,6 @@ MSG_HASH(MENU_ENUM_SUBLABEL_MIXER_ACTION_REMOVE,
       "这将停止播放音频流，并将其完全从内存中删除。")
 MSG_HASH(MENU_ENUM_SUBLABEL_MIXER_ACTION_VOLUME,
       "调整音频流的音量。")
-MSG_HASH(MENU_ENUM_SUBLABEL_ADD_TO_MIXER,
-      "Add this audio track to an available audio stream slot. If no slots are currently available, it will be ignored.")
-MSG_HASH(MENU_ENUM_SUBLABEL_ADD_TO_MIXER_AND_PLAY,
-      "Add this audio track to an available audio stream slot and play it. If no slots are currently available, it will be ignored.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY,
       "播放")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY_LOOPED,
@@ -3843,14 +3815,6 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_UDP_STREAM_PORT,
     "直播 UDP 端口"
-    )
-MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_ACCOUNTS_TWITCH,
-    "Twitch"
-    )
-MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_ACCOUNTS_YOUTUBE,
-    "YouTube"
     )
 MSG_HASH(MENU_ENUM_LABEL_VALUE_TWITCH_STREAM_KEY,
       "Twitch 直播密钥")

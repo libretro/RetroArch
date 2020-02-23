@@ -112,13 +112,14 @@ QWidget *ViewsPage::widget()
       unsigned status_begin = 0;
       file_list_t *list     = (file_list_t*)calloc(1, sizeof(*list));
       menu_displaylist_build_list(list, DISPLAYLIST_MENU_VIEWS_SETTINGS_LIST, true);
+      rarch_setting_t *kioskMode = menu_setting_find_enum(MENU_ENUM_LABEL_MENU_ENABLE_KIOSK_MODE);
 
       for (i = 0; i < list->size; i++)
       {
          menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
             file_list_get_actiondata_at_offset(list, i);
 
-         if (cbs->enum_idx == MENU_ENUM_LABEL_CONTENT_SHOW_SETTINGS)
+         if (cbs->enum_idx == (kioskMode ? MENU_ENUM_LABEL_CONTENT_SHOW_SETTINGS : MENU_ENUM_LABEL_CONTENT_SHOW_FAVORITES))
          {
             tabs_begin = i;
             break;
@@ -147,9 +148,7 @@ QWidget *ViewsPage::widget()
             file_list_get_actiondata_at_offset(list, i);
 
          if (cbs->enum_idx == MENU_ENUM_LABEL_MENU_SHOW_SUBLABELS)
-         {
             break;
-         }
 
          status->add(cbs->enum_idx);
       }
@@ -180,10 +179,10 @@ QWidget *ViewsPage::widget()
 
    leftLayout->addRow(mainMenu);
    leftLayout->addRow(settings);
-   leftLayout->addRow(tabs);
    leftLayout->addRow(startScreen);
    leftLayout->add(MENU_ENUM_LABEL_MENU_SHOW_SUBLABELS);
 
+   rightLayout->addWidget(tabs);
    rightLayout->addWidget(quickMenu);
    rightLayout->addWidget(status);
    rightLayout->addStretch();

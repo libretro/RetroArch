@@ -1,4 +1,4 @@
-/* Copyright (C) 2018 The RetroArch team
+/* Copyright (C) 2018-2020 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
  * The following license statement only applies to this libretro SDK code part (nx_gl.h).

@@ -95,4 +95,17 @@ enum slang_constant_buffer
 /* Vulkan minimum limit. */
 #define SLANG_NUM_BINDINGS 16
 
+struct slang_texture_semantic_map
+{
+   enum slang_texture_semantic semantic;
+   unsigned index;
+};
+
+struct slang_semantic_map
+{
+   enum slang_semantic semantic;
+   unsigned index;
+};
+
+
 #endif

@@ -143,16 +143,18 @@ static INLINE void ctr_set_screen_coords(ctr_video_t * ctr)
 
 static void ctr_update_viewport(ctr_video_t* ctr, settings_t *settings, video_frame_info_t *video_info)
 {
-   int x                = 0;
-   int y                = 0;
-   float width          = ctr->vp.full_width;
-   float height         = ctr->vp.full_height;
-   float desired_aspect = video_driver_get_aspect_ratio();
+   int x                     = 0;
+   int y                     = 0;
+   float width               = ctr->vp.full_width;
+   float height              = ctr->vp.full_height;
+   float desired_aspect      = video_driver_get_aspect_ratio();
+   bool video_scale_integer  = settings->bools.video_scale_integer;
+   unsigned aspect_ratio_idx = settings->uints.video_aspect_ratio_idx;
 
    if(ctr->rotation & 0x1)
       desired_aspect = 1.0 / desired_aspect;
 
-   if (settings->bools.video_scale_integer)
+   if (video_scale_integer)
    {
       video_viewport_get_scaled_integer(&ctr->vp, ctr->vp.full_width,
             ctr->vp.full_height, desired_aspect, ctr->keep_aspect);
@@ -160,7 +162,7 @@ static void ctr_update_viewport(ctr_video_t* ctr, settings_t *settings, video_fr
    else if (ctr->keep_aspect)
    {
 #if defined(HAVE_MENU)
-      if (settings->uints.video_aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
+      if (aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
       {
          x      = video_info->custom_vp_x;
          y      = video_info->custom_vp_y;
@@ -332,6 +334,7 @@ static void* ctr_init(const video_info_t* video,
    u8 device_model      = 0xFF;
    void* ctrinput       = NULL;
    settings_t *settings = config_get_ptr();
+   bool lcd_bottom      = settings->bools.video_3ds_lcd_bottom;
    ctr_video_t* ctr     = (ctr_video_t*)linearAlloc(sizeof(ctr_video_t));
 
    if (!ctr)
@@ -345,7 +348,7 @@ static void* ctr_init(const video_info_t* video,
    ctr->vp.height           = CTR_TOP_FRAMEBUFFER_HEIGHT;
    ctr->vp.full_width       = CTR_TOP_FRAMEBUFFER_WIDTH;
    ctr->vp.full_height      = CTR_TOP_FRAMEBUFFER_HEIGHT;
-   video_driver_set_size(&ctr->vp.width, &ctr->vp.height);
+   video_driver_set_size(ctr->vp.width, ctr->vp.height);
 
    ctr->drawbuffers.top.left = vramAlloc(CTR_TOP_FRAMEBUFFER_WIDTH * CTR_TOP_FRAMEBUFFER_HEIGHT * 2 * sizeof(uint32_t));
    ctr->drawbuffers.top.right = (void*)((uint32_t*)ctr->drawbuffers.top.left + CTR_TOP_FRAMEBUFFER_WIDTH * CTR_TOP_FRAMEBUFFER_HEIGHT);
@@ -485,20 +488,21 @@ static void* ctr_init(const video_info_t* video,
    driver_ctl(RARCH_DRIVER_CTL_SET_REFRESH_RATE, &refresh_rate);
    aptHook(&ctr->lcd_aptHook, ctr_lcd_aptHook, ctr);
 
-   font_driver_init_osd(ctr, false,
+   font_driver_init_osd(ctr, video,
+         false,
          video->is_threaded,
          FONT_DRIVER_RENDER_CTR);
 
-   ctr->msg_rendering_enabled = false;
+   ctr->msg_rendering_enabled     = false;
    ctr->menu_texture_frame_enable = false;
-   ctr->menu_texture_enable = false;
+   ctr->menu_texture_enable       = false;
 
    /* Set bottom screen enable state, if required */
-   if (settings->bools.video_3ds_lcd_bottom != ctr_bottom_screen_enabled) {
-      ctr_set_bottom_screen_enable(ctr, settings->bools.video_3ds_lcd_bottom);
-   }
+   if (lcd_bottom != ctr_bottom_screen_enabled)
+      ctr_set_bottom_screen_enable(ctr, lcd_bottom);
 
-   gspSetEventCallback(GSPGPU_EVENT_VBlank0, (ThreadFunc)ctr_vsync_hook, ctr, false);
+   gspSetEventCallback(GSPGPU_EVENT_VBlank0,
+         (ThreadFunc)ctr_vsync_hook, ctr, false);
 
    return ctr;
 }
@@ -512,20 +516,20 @@ static bool ctr_frame(void* data, const void* frame,
       uint64_t frame_count,
       unsigned pitch, const char* msg, video_frame_info_t *video_info)
 {
-   uint32_t diff;
+   extern bool select_pressed;
    static uint64_t currentTick,lastTick;
    touchPosition state_tmp_touch;
    extern GSPGPU_FramebufferInfo topFramebufferInfo;
    extern u8* gfxSharedMemory;
    extern u8 gfxThreadID;
+   uint32_t diff;
    uint32_t state_tmp      = 0;
    settings_t    *settings = config_get_ptr();
    ctr_video_t       *ctr  = (ctr_video_t*)data;
    static float        fps = 0.0;
    static int total_frames = 0;
    static int       frames = 0;
-
-   extern bool select_pressed;
+   unsigned disp_mode      = settings->uints.video_3ds_display_mode;
 
    if (!width || !height || !settings)
    {
@@ -563,7 +567,7 @@ static bool ctr_frame(void* data, const void* frame,
       ctr->ppf_event_pending = false;
    }
 #ifndef HAVE_THREADS
-   if(task_queue_find(&ctr_tasks_finder_data))
+   if (task_queue_find(&ctr_tasks_finder_data))
    {
 #if 0
       ctr->vsync_event_pending = true;
@@ -572,9 +576,6 @@ static bool ctr_frame(void* data, const void* frame,
       {
          task_queue_check();
          svcSleepThread(0);
-#if 0
-         aptMainLoop();
-#endif
       }
    }
 #endif
@@ -756,7 +757,7 @@ static bool ctr_frame(void* data, const void* frame,
                   GPU_TEXTURE_WRAP_S(GPU_CLAMP_TO_EDGE) | GPU_TEXTURE_WRAP_T(GPU_CLAMP_TO_EDGE),
                   ctr->rgb32 ? GPU_RGBA8: GPU_RGB565);
 
-   ctr_check_3D_slider(ctr, (ctr_video_mode_enum)settings->uints.video_3ds_display_mode);
+   ctr_check_3D_slider(ctr, (ctr_video_mode_enum)disp_mode);
 
    /* ARGB --> RGBA  */
    if (ctr->rgb32)
@@ -934,7 +935,8 @@ static bool ctr_frame(void* data, const void* frame,
    return true;
 }
 
-static void ctr_set_nonblock_state(void* data, bool toggle)
+static void ctr_set_nonblock_state(void* data, bool toggle,
+      bool a, unsigned b)
 {
    ctr_video_t* ctr = (ctr_video_t*)data;
 

@@ -67,7 +67,7 @@
 #include "menu_setting.h"
 #include "menu_cbs.h"
 #include "menu_driver.h"
-#include "menu_animation.h"
+#include "../gfx/gfx_animation.h"
 #include "menu_input.h"
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 #include "menu_shader.h"
@@ -277,7 +277,7 @@ struct string_options_entry
    (*a)[b->index - 1].enum_idx = c
 
 #define MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_VALUE_IDX(a, b, c) \
-   (*a)[b->index - 1].enum_value_idx = c 
+   (*a)[b->index - 1].enum_value_idx = c
 
 static void menu_input_st_uint_cb(void *userdata, const char *str)
 {
@@ -631,7 +631,7 @@ int setting_uint_action_left_default(
    overflowed = step > *setting->value.target.unsigned_integer;
 
    if (!overflowed)
-      *setting->value.target.unsigned_integer = 
+      *setting->value.target.unsigned_integer =
          *setting->value.target.unsigned_integer - step;
 
    if (setting->enforce_minrange)
@@ -662,7 +662,7 @@ int setting_uint_action_right_default(
       return -1;
 
    max                       = setting->max;
-   step                      = 
+   step                      =
       recalc_step_based_on_length_of_action(setting);
 
    *setting->value.target.unsigned_integer =
@@ -2552,6 +2552,7 @@ static int setting_action_ok_bind_all(rarch_setting_t *setting, bool wraparound)
    return 0;
 }
 
+#ifdef HAVE_CONFIGFILE
 static int setting_action_ok_bind_all_save_autoconfig(rarch_setting_t *setting,
       bool wraparound)
 {
@@ -2566,7 +2567,8 @@ static int setting_action_ok_bind_all_save_autoconfig(rarch_setting_t *setting,
    index_offset = setting->index_offset;
    name         = input_config_get_device_name(index_offset);
 
-   if(!string_is_empty(name) && config_save_autoconf_profile(name, index_offset))
+   if (!string_is_empty(name) && 
+         config_save_autoconf_profile(name, index_offset))
       runloop_msg_queue_push(
             msg_hash_to_str(MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY), 1, 100, true,
             NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
@@ -2577,6 +2579,7 @@ static int setting_action_ok_bind_all_save_autoconfig(rarch_setting_t *setting,
 
    return 0;
 }
+#endif
 
 static int setting_action_ok_bind_defaults(rarch_setting_t *setting, bool wraparound)
 {
@@ -4182,7 +4185,7 @@ static void setting_get_string_representation_uint_xmb_menu_color_theme(
                msg_hash_to_str(
                   MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_SUNBEAM),
                len);
-         break;         
+         break;
    }
 }
 #endif
@@ -4283,17 +4286,18 @@ static void setting_get_string_representation_uint_custom_viewport_width(rarch_s
 {
    struct retro_game_geometry  *geom    = NULL;
    struct retro_system_av_info *av_info = NULL;
+   unsigned int rotation                = retroarch_get_rotation();
    if (!setting)
       return;
 
    av_info = video_viewport_get_system_av_info();
    geom    = (struct retro_game_geometry*)&av_info->geometry;
 
-   if (!(retroarch_get_rotation() % 2) && (*setting->value.target.unsigned_integer%geom->base_width == 0))
+   if (!(rotation % 2) && (*setting->value.target.unsigned_integer%geom->base_width == 0))
       snprintf(s, len, "%u (%ux)",
             *setting->value.target.unsigned_integer,
             *setting->value.target.unsigned_integer / geom->base_width);
-   else if ((retroarch_get_rotation() % 2) && (*setting->value.target.unsigned_integer%geom->base_height == 0))
+   else if ((rotation % 2) && (*setting->value.target.unsigned_integer%geom->base_height == 0))
       snprintf(s, len, "%u (%ux)",
             *setting->value.target.unsigned_integer,
             *setting->value.target.unsigned_integer / geom->base_height);
@@ -4307,17 +4311,18 @@ static void setting_get_string_representation_uint_custom_viewport_height(rarch_
 {
    struct retro_game_geometry  *geom    = NULL;
    struct retro_system_av_info *av_info = NULL;
+   unsigned int rotation                = retroarch_get_rotation();
    if (!setting)
       return;
 
    av_info = video_viewport_get_system_av_info();
    geom    = (struct retro_game_geometry*)&av_info->geometry;
 
-   if (!(retroarch_get_rotation() % 2) && (*setting->value.target.unsigned_integer%geom->base_height == 0))
+   if (!(rotation % 2) && (*setting->value.target.unsigned_integer%geom->base_height == 0))
       snprintf(s, len, "%u (%ux)",
             *setting->value.target.unsigned_integer,
             *setting->value.target.unsigned_integer / geom->base_height);
-   else  if ((retroarch_get_rotation() % 2) && (*setting->value.target.unsigned_integer%geom->base_width == 0))
+   else  if ((rotation % 2) && (*setting->value.target.unsigned_integer%geom->base_width == 0))
       snprintf(s, len, "%u (%ux)",
             *setting->value.target.unsigned_integer,
             *setting->value.target.unsigned_integer / geom->base_width);
@@ -4355,7 +4360,7 @@ static void setting_get_string_representation_crt_switch_resolution_super(
    else if (*setting->value.target.unsigned_integer == 1)
       strlcpy(s, "DYNAMIC", len);
    else
-      snprintf(s, len, "%d", *setting->value.target.unsigned_integer); 
+      snprintf(s, len, "%d", *setting->value.target.unsigned_integer);
 }
 
 static void setting_get_string_representation_uint_playlist_sublabel_runtime_type(
@@ -4726,7 +4731,8 @@ static int setting_uint_action_left_custom_viewport_width(
       custom->width = 1;
    else if (settings->bools.video_scale_integer)
    {
-      if (retroarch_get_rotation() % 2)
+      unsigned int rotation = retroarch_get_rotation();
+      if (rotation % 2)
       {
          if (custom->width > geom->base_height)
             custom->width -= geom->base_height;
@@ -4765,7 +4771,8 @@ static int setting_uint_action_left_custom_viewport_height(
       custom->height = 1;
    else if (settings->bools.video_scale_integer)
    {
-      if (retroarch_get_rotation() % 2)
+      unsigned int rotation = retroarch_get_rotation();
+      if (rotation % 2)
       {
          if (custom->height > geom->base_width)
             custom->height -= geom->base_width;
@@ -4973,7 +4980,8 @@ static int setting_uint_action_right_custom_viewport_width(
 
    if (settings->bools.video_scale_integer)
    {
-      if (retroarch_get_rotation() % 2)
+      unsigned int rotation = retroarch_get_rotation();
+      if (rotation % 2)
          custom->width += geom->base_height;
       else
          custom->width += geom->base_width;
@@ -5004,7 +5012,8 @@ static int setting_uint_action_right_custom_viewport_height(
 
    if (settings->bools.video_scale_integer)
    {
-      if (retroarch_get_rotation() % 2)
+      unsigned int rotation = retroarch_get_rotation();
+      if (rotation % 2)
          custom->height += geom->base_width;
       else
          custom->height += geom->base_height;
@@ -5885,7 +5894,7 @@ rarch_setting_t *menu_setting_find_enum(enum msg_hash_enums enum_idx)
       return NULL;
    for (; setting_get_type(setting) != ST_NONE; (*list = *list + 1))
    {
-      if (  setting->enum_idx == enum_idx && 
+      if (  setting->enum_idx == enum_idx &&
             setting_get_type(setting) <= ST_GROUP)
       {
          const char *short_description = setting->short_description;
@@ -5999,11 +6008,10 @@ static int setting_action_start_custom_viewport_width(rarch_setting_t *setting)
 
    if (settings->bools.video_scale_integer)
    {
-      if (retroarch_get_rotation() % 2)
-      {
+      unsigned int rotation = retroarch_get_rotation();
+      if (rotation % 2)
          custom->width = ((custom->width + geom->base_height - 1) /
                geom->base_height) * geom->base_height;
-      }
       else
          custom->width = ((custom->width + geom->base_width - 1) /
                geom->base_width) * geom->base_width;
@@ -6033,14 +6041,15 @@ static int setting_action_start_custom_viewport_height(rarch_setting_t *setting)
 
    if (settings->bools.video_scale_integer)
    {
-         if (retroarch_get_rotation() % 2)
-         {
-            custom->height = ((custom->height + geom->base_width - 1) /
+      unsigned int rotation = retroarch_get_rotation();
+      if (rotation % 2)
+      {
+         custom->height = ((custom->height + geom->base_width - 1) /
                geom->base_width) * geom->base_width;
-         }
-         else
-            custom->height = ((custom->height + geom->base_height - 1) /
-                  geom->base_height) * geom->base_height;
+      }
+      else
+         custom->height = ((custom->height + geom->base_height - 1) /
+               geom->base_height) * geom->base_height;
    }
    else
       custom->height = vp.full_height - custom->y;
@@ -6207,7 +6216,7 @@ setting_get_string_representation_st_float_video_refresh_rate_auto(
    {
       snprintf(s, len, "%.3f Hz (%.1f%% dev, %u samples)",
             video_refresh_rate, 100.0 * deviation, sample_points);
-      menu_animation_ctl(MENU_ANIMATION_CTL_SET_ACTIVE, NULL);
+      gfx_animation_ctl(MENU_ANIMATION_CTL_SET_ACTIVE, NULL);
    }
    else
       strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), len);
@@ -6420,9 +6429,12 @@ void general_write_handler(rarch_setting_t *setting)
 
             if (*setting->value.target.boolean)
             {
-               custom->x      = 0;
-               custom->y      = 0;
-               if (retroarch_get_rotation() %2)
+               unsigned int rotation = retroarch_get_rotation();
+
+               custom->x             = 0;
+               custom->y             = 0;
+
+               if (rotation % 2)
                {
                   custom->width  = ((custom->width + geom->base_height - 1) / geom->base_height)  * geom->base_height;
                   custom->height = ((custom->height + geom->base_width - 1) / geom->base_width)   * geom->base_width;
@@ -6514,7 +6526,10 @@ void general_write_handler(rarch_setting_t *setting)
       case MENU_ENUM_LABEL_LOG_VERBOSITY:
          if (!verbosity_is_enabled())
          {
-            rarch_log_file_init();
+            rarch_log_file_init(
+                  settings->bools.log_to_file,
+                  settings->bools.log_to_file_timestamp,
+                  settings->paths.log_dir);
             verbosity_enable();
          }
          else
@@ -6528,7 +6543,10 @@ void general_write_handler(rarch_setting_t *setting)
          if (verbosity_is_enabled())
          {
             if (settings->bools.log_to_file && !is_logging_to_file())
-               rarch_log_file_init();
+               rarch_log_file_init(
+                     settings->bools.log_to_file,
+                     settings->bools.log_to_file_timestamp,
+                     settings->paths.log_dir);
             else if (!settings->bools.log_to_file && is_logging_to_file())
                rarch_log_file_deinit();
          }
@@ -6539,7 +6557,10 @@ void general_write_handler(rarch_setting_t *setting)
          if (verbosity_is_enabled() && is_logging_to_file())
          {
             rarch_log_file_deinit();
-            rarch_log_file_init();
+            rarch_log_file_init(
+                  settings->bools.log_to_file,
+                  settings->bools.log_to_file_timestamp,
+                  settings->paths.log_dir);
          }
          break;
       case MENU_ENUM_LABEL_VIDEO_SMOOTH:
@@ -6554,18 +6575,21 @@ void general_write_handler(rarch_setting_t *setting)
             struct retro_game_geometry     *geom = (struct retro_game_geometry*)
                &av_info->geometry;
 
-            if (system){
+            if (system)
+            {
+               unsigned int rotation = retroarch_get_rotation();
+
                video_driver_set_rotation(
                      (*setting->value.target.unsigned_integer +
                       system->rotation) % 4);
-            
+
                /* Update Custom Aspect Ratio values */
                video_driver_get_viewport_info(&vp);
                custom->x      = 0;
                custom->y      = 0;
                /* Round down when rotation is "horizontal", round up when rotation is "vertical"
                   to avoid expanding viewport each time user rotates */
-               if (retroarch_get_rotation() %2)
+               if (rotation % 2)
                {
                   custom->width  = MAX(1,(custom->width / geom->base_height))  * geom->base_height;
                   custom->height = MAX(1,(custom->height/ geom->base_width ))  * geom->base_width;
@@ -6629,32 +6653,6 @@ void general_write_handler(rarch_setting_t *setting)
             cellSysutilDisableBgmPlayback();
 #endif
          }
-         break;
-      case MENU_ENUM_LABEL_NETPLAY_IP_ADDRESS:
-#ifdef HAVE_NETWORKING
-         {
-            bool val = (!string_is_empty(setting->value.target.string));
-            if (val)
-               retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_NETPLAY_IP_ADDRESS, NULL);
-            else
-               retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_NETPLAY_IP_ADDRESS, NULL);
-         }
-#endif
-         break;
-      case MENU_ENUM_LABEL_NETPLAY_MODE:
-#ifdef HAVE_NETWORKING
-         retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_NETPLAY_MODE, NULL);
-#endif
-         break;
-      case MENU_ENUM_LABEL_NETPLAY_STATELESS_MODE:
-#ifdef HAVE_NETWORKING
-         retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_NETPLAY_STATELESS_MODE, NULL);
-#endif
-         break;
-      case MENU_ENUM_LABEL_NETPLAY_CHECK_FRAMES:
-#ifdef HAVE_NETWORKING
-         retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_NETPLAY_CHECK_FRAMES, NULL);
-#endif
          break;
       case MENU_ENUM_LABEL_AUDIO_ENABLE_MENU:
 #ifdef HAVE_AUDIOMIXER
@@ -6876,7 +6874,7 @@ static void overlay_auto_rotate_toggle_change_handler(rarch_setting_t *setting)
 #ifdef HAVE_VIDEO_LAYOUT
 static void change_handler_video_layout_enable(rarch_setting_t *setting)
 {
-   if(*setting->value.target.boolean)
+   if (*setting->value.target.boolean)
    {
       settings_t *settings = config_get_ptr();
       void *driver = video_driver_get_ptr(false);
@@ -7095,7 +7093,7 @@ static bool setting_append_list_input_player_options(
                "%s %u", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_SPLIT_JOYCON), user + 1);
 
       snprintf(label[user], sizeof(label[user]),
-               "%s", 
+               "%s",
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_INDEX));
       snprintf(label_type[user], sizeof(label_type[user]),
                "%s",
@@ -7107,13 +7105,13 @@ static bool setting_append_list_input_player_options(
                "%s",
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_BIND_ALL));
       snprintf(label_bind_defaults[user], sizeof(label_bind_defaults[user]),
-               "%s", 
+               "%s",
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_BIND_DEFAULT_ALL));
       snprintf(label_bind_all_save_autoconfig[user], sizeof(label_bind_all_save_autoconfig[user]),
-               "%s", 
+               "%s",
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_SAVE_AUTOCONFIG));
       snprintf(label_mouse_index[user], sizeof(label_mouse_index[user]),
-               "%s", 
+               "%s",
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_INDEX));
 
       CONFIG_UINT_ALT(
@@ -7226,6 +7224,7 @@ static bool setting_append_list_input_player_options(
       (*list)[list_info->index - 1].action_ok      = &setting_action_ok_bind_defaults;
       (*list)[list_info->index - 1].action_cancel  = NULL;
 
+#ifdef HAVE_CONFIGFILE
       CONFIG_ACTION_ALT(
             list, list_info,
             key_bind_all_save_autoconfig[user],
@@ -7237,6 +7236,7 @@ static bool setting_append_list_input_player_options(
       (*list)[list_info->index - 1].index_offset   = user;
       (*list)[list_info->index - 1].action_ok      = &setting_action_ok_bind_all_save_autoconfig;
       (*list)[list_info->index - 1].action_cancel  = NULL;
+#endif
 
       CONFIG_UINT_ALT(
             list, list_info,
@@ -7687,6 +7687,15 @@ static bool setting_append_list(
 #endif
 #if !defined(IOS)
          /* Apple rejects iOS apps that let you forcibly quit them. */
+#ifdef HAVE_LAKKA
+         CONFIG_ACTION(
+               list, list_info,
+               MENU_ENUM_LABEL_QUIT_RETROARCH,
+               MENU_ENUM_LABEL_VALUE_RESTART_RETROARCH,
+               &group_info,
+               &subgroup_info,
+               parent_group);
+#else
          CONFIG_ACTION(
                list, list_info,
                MENU_ENUM_LABEL_QUIT_RETROARCH,
@@ -7694,6 +7703,7 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
+#endif
          menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_QUIT);
 #endif
 
@@ -7725,6 +7735,15 @@ static bool setting_append_list(
                &subgroup_info,
                parent_group);
 #endif
+#ifdef HAVE_LAKKA_SWITCH
+         CONFIG_ACTION(
+               list, list_info,
+               MENU_ENUM_LABEL_REBOOT,
+               MENU_ENUM_LABEL_VALUE_REBOOT_RCM,
+               &group_info,
+               &subgroup_info,
+               parent_group);
+#else
          CONFIG_ACTION(
                list, list_info,
                MENU_ENUM_LABEL_REBOOT,
@@ -7732,6 +7751,7 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
+#endif
          menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_REBOOT);
 
          CONFIG_ACTION(
@@ -8699,7 +8719,7 @@ static bool setting_append_list(
                   &settings->bools.content_runtime_log_aggregate,
                   MENU_ENUM_LABEL_CONTENT_RUNTIME_LOG_AGGREGATE,
                   MENU_ENUM_LABEL_VALUE_CONTENT_RUNTIME_LOG_AGGREGATE,
-                  content_runtime_log_aggregate,
+                  DEFAULT_CONTENT_RUNTIME_LOG_AGGREGATE,
                   MENU_ENUM_LABEL_VALUE_OFF,
                   MENU_ENUM_LABEL_VALUE_ON,
                   &group_info,
@@ -8714,7 +8734,7 @@ static bool setting_append_list(
                   &settings->bools.scan_without_core_match,
                   MENU_ENUM_LABEL_SCAN_WITHOUT_CORE_MATCH,
                   MENU_ENUM_LABEL_VALUE_SCAN_WITHOUT_CORE_MATCH,
-                  scan_without_core_match,
+                  DEFAULT_SCAN_WITHOUT_CORE_MATCH,
                   MENU_ENUM_LABEL_VALUE_OFF,
                   MENU_ENUM_LABEL_VALUE_ON,
                   &group_info,
@@ -10155,7 +10175,7 @@ static bool setting_append_list(
             (*list)[list_info->index - 1].action_ok     = setting_bool_action_left_with_refresh;
             (*list)[list_info->index - 1].action_left   = setting_bool_action_left_with_refresh;
             (*list)[list_info->index - 1].action_right  = setting_bool_action_right_with_refresh;
-        
+
             CONFIG_UINT(
                   list, list_info,
                   &settings->uints.video_hard_sync_frames,
@@ -10776,7 +10796,7 @@ static bool setting_append_list(
                   &settings->bools.audio_wasapi_exclusive_mode,
                   MENU_ENUM_LABEL_AUDIO_WASAPI_EXCLUSIVE_MODE,
                   MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_EXCLUSIVE_MODE,
-                  wasapi_exclusive_mode,
+                  DEFAULT_WASAPI_EXCLUSIVE_MODE,
                   MENU_ENUM_LABEL_VALUE_OFF,
                   MENU_ENUM_LABEL_VALUE_ON,
                   &group_info,
@@ -10792,7 +10812,7 @@ static bool setting_append_list(
                   &settings->bools.audio_wasapi_float_format,
                   MENU_ENUM_LABEL_AUDIO_WASAPI_FLOAT_FORMAT,
                   MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_FLOAT_FORMAT,
-                  wasapi_float_format,
+                  DEFAULT_WASAPI_FLOAT_FORMAT,
                   MENU_ENUM_LABEL_VALUE_OFF,
                   MENU_ENUM_LABEL_VALUE_ON,
                   &group_info,
@@ -10808,7 +10828,7 @@ static bool setting_append_list(
                   &settings->ints.audio_wasapi_sh_buffer_length,
                   MENU_ENUM_LABEL_AUDIO_WASAPI_SH_BUFFER_LENGTH,
                   MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_SH_BUFFER_LENGTH,
-                  wasapi_sh_buffer_length,
+                  DEFAULT_WASAPI_SH_BUFFER_LENGTH,
                   &group_info,
                   &subgroup_info,
                   parent_group,
@@ -11166,7 +11186,7 @@ static bool setting_append_list(
                   input_driver_get_float(INPUT_ACTION_AXIS_THRESHOLD),
                   MENU_ENUM_LABEL_INPUT_BUTTON_AXIS_THRESHOLD,
                   MENU_ENUM_LABEL_VALUE_INPUT_BUTTON_AXIS_THRESHOLD,
-                  axis_threshold,
+                  DEFAULT_AXIS_THRESHOLD,
                   "%.3f",
                   &group_info,
                   &subgroup_info,
@@ -11182,7 +11202,7 @@ static bool setting_append_list(
                   &settings->floats.input_analog_deadzone,
                   MENU_ENUM_LABEL_INPUT_ANALOG_DEADZONE,
                   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_DEADZONE,
-                  analog_deadzone,
+                  DEFAULT_ANALOG_DEADZONE,
                   "%.1f",
                   &group_info,
                   &subgroup_info,
@@ -11197,7 +11217,7 @@ static bool setting_append_list(
                   &settings->floats.input_analog_sensitivity,
                   MENU_ENUM_LABEL_INPUT_ANALOG_SENSITIVITY,
                   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_SENSITIVITY,
-                  analog_sensitivity,
+                  DEFAULT_ANALOG_SENSITIVITY,
                   "%.1f",
                   &group_info,
                   &subgroup_info,
@@ -11697,7 +11717,7 @@ static bool setting_append_list(
                &settings->bools.run_ahead_secondary_instance,
                MENU_ENUM_LABEL_RUN_AHEAD_SECONDARY_INSTANCE,
                MENU_ENUM_LABEL_VALUE_RUN_AHEAD_SECONDARY_INSTANCE,
-               false,
+               DEFAULT_RUN_AHEAD_SECONDARY_INSTANCE,
                MENU_ENUM_LABEL_VALUE_OFF,
                MENU_ENUM_LABEL_VALUE_ON,
                &group_info,
@@ -11714,7 +11734,7 @@ static bool setting_append_list(
                &settings->bools.run_ahead_hide_warnings,
                MENU_ENUM_LABEL_RUN_AHEAD_HIDE_WARNINGS,
                MENU_ENUM_LABEL_VALUE_RUN_AHEAD_HIDE_WARNINGS,
-               false,
+               DEFAULT_RUN_AHEAD_HIDE_WARNINGS,
                MENU_ENUM_LABEL_VALUE_OFF,
                MENU_ENUM_LABEL_VALUE_ON,
                &group_info,
@@ -11772,6 +11792,48 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
+
+         /* This is the SETTINGS_LIST_FONT category, but the
+          * parent group is ONSCREEN_DISPLAY_SETTINGS.
+          * Menu widget settings don't belong in the SETTINGS_LIST_FONT
+          * category, but they *do* belong in the ONSCREEN_DISPLAY_SETTINGS
+          * group. I don't want to refactor these names, so we'll assume
+          * group trumps category, and just place the widget settings here */
+#ifdef HAVE_GFX_WIDGETS
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.menu_widget_scale_auto,
+               MENU_ENUM_LABEL_MENU_WIDGET_SCALE_AUTO,
+               MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_AUTO,
+               DEFAULT_MENU_WIDGET_SCALE_AUTO,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE
+               );
+         (*list)[list_info->index - 1].action_ok     = &setting_bool_action_left_with_refresh;
+         (*list)[list_info->index - 1].action_left   = &setting_bool_action_left_with_refresh;
+         (*list)[list_info->index - 1].action_right  = &setting_bool_action_right_with_refresh;
+
+         CONFIG_FLOAT(
+               list, list_info,
+               &settings->floats.menu_widget_scale_factor,
+               MENU_ENUM_LABEL_MENU_WIDGET_SCALE_FACTOR,
+               MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_FACTOR,
+               DEFAULT_MENU_WIDGET_SCALE_FACTOR,
+               "%.2fx",
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+         menu_settings_list_current_add_range(list, list_info, 0.2, 5.0, 0.01, true, true);
+#endif
 
          CONFIG_BOOL(
                list, list_info,
@@ -12232,7 +12294,8 @@ static bool setting_append_list(
 
          START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
-         if (string_is_not_equal(settings->arrays.menu_driver, "rgui"))
+         if (string_is_not_equal(settings->arrays.menu_driver, "rgui") &&
+             string_is_not_equal(settings->arrays.menu_driver, "ozone"))
          {
             CONFIG_PATH(
                   list, list_info,
@@ -12263,7 +12326,10 @@ static bool setting_append_list(
             (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
             menu_settings_list_current_add_range(list, list_info, 0.0, 1.0, 0.010, true, true);
             SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+         }
 
+         if (string_is_not_equal(settings->arrays.menu_driver, "rgui"))
+         {
             CONFIG_FLOAT(
                   list, list_info,
                   &settings->floats.menu_framebuffer_opacity,
@@ -12649,7 +12715,7 @@ static bool setting_append_list(
                   &settings->uints.menu_xmb_animation_horizontal_highlight,
                   MENU_ENUM_LABEL_MENU_XMB_ANIMATION_HORIZONTAL_HIGHLIGHT,
                   MENU_ENUM_LABEL_VALUE_MENU_XMB_ANIMATION_HORIZONTAL_HIGHLIGHT,
-                  menu_ticker_type,
+                  DEFAULT_MENU_TICKER_TYPE,
                   &group_info,
                   &subgroup_info,
                   parent_group,
@@ -12666,7 +12732,7 @@ static bool setting_append_list(
                   &settings->uints.menu_xmb_animation_move_up_down,
                   MENU_ENUM_LABEL_MENU_XMB_ANIMATION_MOVE_UP_DOWN,
                   MENU_ENUM_LABEL_VALUE_MENU_XMB_ANIMATION_MOVE_UP_DOWN,
-                  menu_ticker_type,
+                  DEFAULT_MENU_TICKER_TYPE, /* TODO/FIXME - is this correct? */
                   &group_info,
                   &subgroup_info,
                   parent_group,
@@ -12683,7 +12749,7 @@ static bool setting_append_list(
                   &settings->uints.menu_xmb_animation_opening_main_menu,
                   MENU_ENUM_LABEL_MENU_XMB_ANIMATION_OPENING_MAIN_MENU,
                   MENU_ENUM_LABEL_VALUE_MENU_XMB_ANIMATION_OPENING_MAIN_MENU,
-                  menu_ticker_type,
+                  DEFAULT_MENU_TICKER_TYPE,
                   &group_info,
                   &subgroup_info,
                   parent_group,
@@ -12701,7 +12767,7 @@ static bool setting_append_list(
                &settings->uints.menu_ticker_type,
                MENU_ENUM_LABEL_MENU_TICKER_TYPE,
                MENU_ENUM_LABEL_VALUE_MENU_TICKER_TYPE,
-               menu_ticker_type,
+               DEFAULT_MENU_TICKER_TYPE,
                &group_info,
                &subgroup_info,
                parent_group,
@@ -12781,7 +12847,7 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_NONE);
 
-#ifdef HAVE_MENU_WIDGETS
+#ifdef HAVE_GFX_WIDGETS
          CONFIG_BOOL(
                list, list_info,
                &settings->bools.menu_enable_widgets,
@@ -12805,7 +12871,7 @@ static bool setting_append_list(
                   &settings->bools.kiosk_mode_enable,
                   MENU_ENUM_LABEL_MENU_ENABLE_KIOSK_MODE,
                   MENU_ENUM_LABEL_VALUE_MENU_ENABLE_KIOSK_MODE,
-                  kiosk_mode_enable,
+                  DEFAULT_KIOSK_MODE_ENABLE,
                   MENU_ENUM_LABEL_VALUE_OFF,
                   MENU_ENUM_LABEL_VALUE_ON,
                   &group_info,
@@ -12856,9 +12922,11 @@ static bool setting_append_list(
 
          START_SUB_GROUP(list, list_info, "Display", &group_info, &subgroup_info, parent_group);
 
-         /* Only implemented for GLUI and XMB at present */
+         /* > MaterialUI, XMB and Ozone all support menu scaling */
          if (string_is_equal(settings->arrays.menu_driver, "glui") ||
-             string_is_equal(settings->arrays.menu_driver, "xmb"))
+             string_is_equal(settings->arrays.menu_driver, "xmb") ||
+             string_is_equal(settings->arrays.menu_driver, "ozone"))
+         {
             CONFIG_FLOAT(
                   list, list_info,
                   &settings->floats.menu_scale_factor,
@@ -12873,6 +12941,7 @@ static bool setting_append_list(
                   general_read_handler);
             (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
             menu_settings_list_current_add_range(list, list_info, 0.2, 5.0, 0.01, true, true);
+         }
 
 #ifdef HAVE_XMB
          if (string_is_equal(settings->arrays.menu_driver, "xmb"))
@@ -13234,6 +13303,22 @@ static bool setting_append_list(
                   general_read_handler,
                   SD_FLAG_LAKKA_ADVANCED);
 
+#ifdef HAVE_LAKKA
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.menu_show_quit_retroarch,
+                  MENU_ENUM_LABEL_MENU_SHOW_QUIT_RETROARCH,
+                  MENU_ENUM_LABEL_VALUE_MENU_SHOW_RESTART_RETROARCH,
+                  menu_show_quit_retroarch,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
+#else
             CONFIG_BOOL(
                   list, list_info,
                   &settings->bools.menu_show_quit_retroarch,
@@ -13248,6 +13333,7 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler,
                   SD_FLAG_NONE);
+#endif
 
 #ifdef HAVE_LAKKA
             CONFIG_BOOL(
@@ -13643,7 +13729,7 @@ static bool setting_append_list(
                   general_read_handler);
             (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
             menu_settings_list_current_add_range(list, list_info, 0.0, 1.0, 0.010, true, true);
-            (*list)[list_info->index - 1].ui_type   
+            (*list)[list_info->index - 1].ui_type
                                   = ST_UI_TYPE_FLOAT_SLIDER_AND_SPINBOX;
             */
          }
@@ -13706,7 +13792,7 @@ static bool setting_append_list(
                &settings->bools.menu_show_start_screen,
                MENU_ENUM_LABEL_RGUI_SHOW_START_SCREEN,
                MENU_ENUM_LABEL_VALUE_RGUI_SHOW_START_SCREEN,
-               default_menu_show_start_screen,
+               DEFAULT_MENU_SHOW_START_SCREEN,
                MENU_ENUM_LABEL_VALUE_OFF,
                MENU_ENUM_LABEL_VALUE_ON,
                &group_info,
@@ -13780,10 +13866,10 @@ static bool setting_append_list(
 
             CONFIG_UINT(
                   list, list_info,
-                  &settings->uints.menu_thumbnails,
+                  &settings->uints.gfx_thumbnails,
                   MENU_ENUM_LABEL_THUMBNAILS,
                   thumbnails_label_value,
-                  menu_thumbnails_default,
+                  gfx_thumbnails_default,
                   &group_info,
                   &subgroup_info,
                   parent_group,
@@ -13852,10 +13938,10 @@ static bool setting_append_list(
          {
             CONFIG_UINT(
                   list, list_info,
-                  &settings->uints.menu_thumbnail_upscale_threshold,
+                  &settings->uints.gfx_thumbnail_upscale_threshold,
                   MENU_ENUM_LABEL_MENU_THUMBNAIL_UPSCALE_THRESHOLD,
                   MENU_ENUM_LABEL_VALUE_MENU_THUMBNAIL_UPSCALE_THRESHOLD,
-                  menu_thumbnail_upscale_threshold,
+                  gfx_thumbnail_upscale_threshold,
                   &group_info,
                   &subgroup_info,
                   parent_group,
@@ -14684,7 +14770,7 @@ static bool setting_append_list(
                &settings->bools.quick_menu_show_take_screenshot,
                MENU_ENUM_LABEL_QUICK_MENU_SHOW_TAKE_SCREENSHOT,
                MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_TAKE_SCREENSHOT,
-               quick_menu_show_take_screenshot,
+               DEFAULT_QUICK_MENU_SHOW_TAKE_SCREENSHOT,
                MENU_ENUM_LABEL_VALUE_OFF,
                MENU_ENUM_LABEL_VALUE_ON,
                &group_info,
@@ -14699,7 +14785,7 @@ static bool setting_append_list(
                &settings->bools.quick_menu_show_save_load_state,
                MENU_ENUM_LABEL_QUICK_MENU_SHOW_SAVE_LOAD_STATE,
                MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_LOAD_STATE,
-               quick_menu_show_save_load_state,
+               DEFAULT_QUICK_MENU_SHOW_SAVE_LOAD_STATE,
                MENU_ENUM_LABEL_VALUE_OFF,
                MENU_ENUM_LABEL_VALUE_ON,
                &group_info,
@@ -14714,7 +14800,7 @@ static bool setting_append_list(
                &settings->bools.quick_menu_show_undo_save_load_state,
                MENU_ENUM_LABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
                MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
-               quick_menu_show_undo_save_load_state,
+               DEFAULT_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
                MENU_ENUM_LABEL_VALUE_OFF,
                MENU_ENUM_LABEL_VALUE_ON,
                &group_info,
@@ -15054,7 +15140,7 @@ static bool setting_append_list(
                &settings->bools.desktop_menu_enable,
                MENU_ENUM_LABEL_DESKTOP_MENU_ENABLE,
                MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_ENABLE,
-               desktop_menu_enable,
+               DEFAULT_DESKTOP_MENU_ENABLE,
                MENU_ENUM_LABEL_VALUE_OFF,
                MENU_ENUM_LABEL_VALUE_ON,
                &group_info,
@@ -15287,7 +15373,7 @@ static bool setting_append_list(
                &settings->bools.playlist_fuzzy_archive_match,
                MENU_ENUM_LABEL_PLAYLIST_FUZZY_ARCHIVE_MATCH,
                MENU_ENUM_LABEL_VALUE_PLAYLIST_FUZZY_ARCHIVE_MATCH,
-               playlist_fuzzy_archive_match,
+               DEFAULT_PLAYLIST_FUZZY_ARCHIVE_MATCH,
                MENU_ENUM_LABEL_VALUE_OFF,
                MENU_ENUM_LABEL_VALUE_ON,
                &group_info,
@@ -15381,6 +15467,22 @@ static bool setting_append_list(
                SD_FLAG_NONE
                );
 
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.cheevos_richpresence_enable,
+               MENU_ENUM_LABEL_CHEEVOS_RICHPRESENCE_ENABLE,
+               MENU_ENUM_LABEL_VALUE_CHEEVOS_RICHPRESENCE_ENABLE,
+               true,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE
+               );
+
          if (string_is_equal(settings->arrays.menu_driver, "xmb") || string_is_equal(settings->arrays.menu_driver, "ozone"))
             CONFIG_BOOL(
                   list, list_info,
@@ -15464,7 +15566,7 @@ static bool setting_append_list(
                sizeof(settings->paths.network_buildbot_url),
                MENU_ENUM_LABEL_CORE_UPDATER_BUILDBOT_URL,
                MENU_ENUM_LABEL_VALUE_CORE_UPDATER_BUILDBOT_URL,
-               buildbot_server_url,
+               DEFAULT_BUILDBOT_SERVER_URL,
                &group_info,
                &subgroup_info,
                parent_group,
@@ -15479,7 +15581,7 @@ static bool setting_append_list(
                sizeof(settings->paths.network_buildbot_assets_url),
                MENU_ENUM_LABEL_BUILDBOT_ASSETS_URL,
                MENU_ENUM_LABEL_VALUE_BUILDBOT_ASSETS_URL,
-               buildbot_assets_server_url,
+               DEFAULT_BUILDBOT_ASSETS_SERVER_URL,
                &group_info,
                &subgroup_info,
                parent_group,
@@ -15561,7 +15663,7 @@ static bool setting_append_list(
                   sizeof(settings->arrays.netplay_mitm_server),
                   MENU_ENUM_LABEL_NETPLAY_MITM_SERVER,
                   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER,
-                  netplay_mitm_server,
+                  DEFAULT_NETPLAY_MITM_SERVER,
                   &group_info,
                   &subgroup_info,
                   parent_group,
@@ -16782,7 +16884,7 @@ static bool setting_append_list(
                sizeof(settings->arrays.midi_input),
                MENU_ENUM_LABEL_MIDI_INPUT,
                MENU_ENUM_LABEL_VALUE_MIDI_INPUT,
-               midi_input,
+               DEFAULT_MIDI_INPUT,
                &group_info,
                &subgroup_info,
                parent_group,
@@ -16798,7 +16900,7 @@ static bool setting_append_list(
                sizeof(settings->arrays.midi_output),
                MENU_ENUM_LABEL_MIDI_OUTPUT,
                MENU_ENUM_LABEL_VALUE_MIDI_OUTPUT,
-               midi_output,
+               DEFAULT_MIDI_OUTPUT,
                &group_info,
                &subgroup_info,
                parent_group,

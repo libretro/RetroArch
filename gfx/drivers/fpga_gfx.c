@@ -132,6 +132,7 @@ static void *fpga_gfx_init(const video_info_t *video,
    unsigned win_width = 0, win_height   = 0;
    unsigned temp_width = 0, temp_height = 0;
    settings_t *settings                 = config_get_ptr();
+   bool video_font_enable               = settings->bools.video_font_enable;
    fpga_t *fpga                         = (fpga_t*)calloc(1, sizeof(*fpga));
 
    *input                               = NULL;
@@ -198,7 +199,7 @@ static void *fpga_gfx_init(const video_info_t *video,
    /* Get real known video size, which might have been altered by context. */
 
    if (temp_width != 0 && temp_height != 0)
-      video_driver_set_size(&temp_width, &temp_height);
+      video_driver_set_size(temp_width, temp_height);
 
    video_driver_get_size(&temp_width, &temp_height);
 
@@ -209,8 +210,10 @@ static void *fpga_gfx_init(const video_info_t *video,
 
    video_context_driver_input_driver(&inp);
 
-   if (settings->bools.video_font_enable)
-      font_driver_init_osd(NULL, false,
+   if (video_font_enable)
+      font_driver_init_osd(NULL,
+            video,
+            false,
             video->is_threaded,
             FONT_DRIVER_RENDER_FPGA);
 
@@ -340,11 +343,7 @@ static bool fpga_gfx_frame(void *data, const void *frame,
    return true;
 }
 
-static void fpga_gfx_set_nonblock_state(void *data, bool toggle)
-{
-   (void)data;
-   (void)toggle;
-}
+static void fpga_gfx_set_nonblock_state(void *a, bool b, bool c, unsigned d) { }
 
 static bool fpga_gfx_alive(void *data)
 {
@@ -365,7 +364,7 @@ static bool fpga_gfx_alive(void *data)
    video_context_driver_check_window(&size_data);
 
    if (temp_width != 0 && temp_height != 0)
-      video_driver_set_size(&temp_width, &temp_height);
+      video_driver_set_size(temp_width, temp_height);
 
    return true;
 }

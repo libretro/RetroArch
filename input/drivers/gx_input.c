@@ -109,15 +109,14 @@ static int16_t gx_lightgun_state(gx_input_t *gx, unsigned id, uint16_t joy_idx)
 
 static int16_t gx_mouse_state(gx_input_t *gx, unsigned id, uint16_t joy_idx)
 {
-   int x = 0;
-   int y = 0;
-
-   settings_t *settings = config_get_ptr();
-   int x_scale = settings->uints.input_mouse_scale;
-   int y_scale = settings->uints.input_mouse_scale;
-
-   x = (gx->mouse[joy_idx].x_abs - gx->mouse[joy_idx].x_last) * x_scale;
-   y = (gx->mouse[joy_idx].y_abs - gx->mouse[joy_idx].y_last) * y_scale;
+   settings_t *settings       = config_get_ptr();
+   unsigned input_mouse_scale = settings->uints.input_mouse_scale;
+   int x_scale                = input_mouse_scale;
+   int y_scale                = input_mouse_scale;
+   int x                      = (gx->mouse[joy_idx].x_abs 
+         - gx->mouse[joy_idx].x_last) * x_scale;
+   int y                      = (gx->mouse[joy_idx].y_abs 
+         - gx->mouse[joy_idx].y_last) * y_scale;
 
    switch (id)
    {

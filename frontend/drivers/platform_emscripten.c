@@ -91,7 +91,7 @@ static void emscripten_mainloop(void)
 
 void cmd_savefiles(void)
 {
-   event_save_files();
+   command_event(CMD_EVENT_SAVE_FILES, NULL);
 }
 
 void cmd_save_state(void)
@@ -240,5 +240,7 @@ frontend_ctx_driver_t frontend_ctx_emscripten = {
    NULL,                         /* set_sustained_performance_mode */
    NULL,                         /* get_cpu_model_name */
    NULL,                         /* get_user_language */
+   NULL,                         /* is_narrator_running */
+   NULL,                         /* accessibility_speak */
    "emscripten"
 };

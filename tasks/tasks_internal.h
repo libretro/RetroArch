@@ -32,7 +32,7 @@
 #include "../core_updater_list.h"
 #endif
 
-#if defined(HAVE_NETWORKING) && defined(HAVE_MENU)
+#if defined(HAVE_NETWORKING)
 /* Required for task_push_pl_entry_thumbnail_download() */
 #include "../playlist.h"
 #endif
@@ -56,6 +56,7 @@ struct autoconfig_params
    uint32_t max_users;
    char  *name;
    char  *autoconfig_directory;
+   bool show_hidden_files;
 };
 
 
@@ -75,6 +76,9 @@ void *task_push_http_transfer_with_user_agent(const char *url, bool mute, const 
 void *task_push_http_post_transfer(const char *url, const char *post_data, bool mute, const char *type,
       retro_task_callback_t cb, void *userdata);
 
+void *task_push_http_post_transfer_with_user_agent(const char* url, const char* post_data, bool mute,
+   const char* type, const char* user_agent, retro_task_callback_t cb, void* user_data);
+
 task_retriever_info_t *http_task_get_transfer_list(void);
 
 bool task_push_wifi_scan(retro_task_callback_t cb);
@@ -92,17 +96,21 @@ bool task_push_netplay_nat_traversal(void *nat_traversal_state, uint16_t port);
 void *task_push_get_core_updater_list(
       core_updater_list_t* core_list, bool mute, bool refresh_menu);
 void *task_push_core_updater_download(
-      core_updater_list_t* core_list, const char *filename, bool mute, bool check_crc);
-void task_push_update_installed_cores(void);
+      core_updater_list_t* core_list, const char *filename,
+      bool mute, bool check_crc, const char *path_dir_libretro);
+void task_push_update_installed_cores(const char *path_dir_libretro);
 
-#ifdef HAVE_MENU
-bool task_push_pl_thumbnail_download(const char *system, const char *playlist_path);
 bool task_push_pl_entry_thumbnail_download(
       const char *system,
       playlist_t *playlist,
       unsigned idx,
       bool overwrite,
       bool mute);
+
+#ifdef HAVE_MENU
+bool task_push_pl_thumbnail_download(
+      const char *system, const char *playlist_path,
+      const char *dir_thumbnails);
 #endif
 
 #endif
@@ -166,9 +174,9 @@ bool take_screenshot(
       const char *path, bool silence,
       bool has_valid_framebuffer, bool fullpath, bool use_thread);
 
-bool event_load_save_files(void);
+bool event_load_save_files(bool is_sram_load_disabled);
 
-bool event_save_files(void);
+bool event_save_files(bool sram_used);
 
 void path_init_savefile_rtc(const char *savefile_path);
 

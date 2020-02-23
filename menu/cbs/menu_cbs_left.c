@@ -393,6 +393,7 @@ static int playlist_association_left(unsigned type, const char *label,
    char core_path[PATH_MAX_LENGTH];
    size_t i, next, current          = 0;
    settings_t *settings             = config_get_ptr();
+   bool playlist_use_old_format     = settings->bools.playlist_use_old_format;
    playlist_t *playlist             = playlist_get_cached();
    core_info_list_t *core_info_list = NULL;
    core_info_t *core_info           = NULL;
@@ -451,7 +452,7 @@ static int playlist_association_left(unsigned type, const char *label,
    /* Update playlist */
    playlist_set_default_core_path(playlist, core_info->path);
    playlist_set_default_core_name(playlist, core_info->display_name);
-   playlist_write_file(playlist, settings->bools.playlist_use_old_format);
+   playlist_write_file(playlist, playlist_use_old_format);
 
    return 0;
 }
@@ -461,6 +462,7 @@ static int playlist_label_display_mode_left(unsigned type, const char *label,
 {
    enum playlist_label_display_mode label_display_mode;
    settings_t *settings             = config_get_ptr();
+   bool playlist_use_old_format     = settings->bools.playlist_use_old_format;
    playlist_t *playlist             = playlist_get_cached();
 
    if (!playlist)
@@ -474,7 +476,7 @@ static int playlist_label_display_mode_left(unsigned type, const char *label,
       label_display_mode = LABEL_DISPLAY_MODE_KEEP_REGION_AND_DISC_INDEX;
 
    playlist_set_label_display_mode(playlist, label_display_mode);
-   playlist_write_file(playlist, settings->bools.playlist_use_old_format);
+   playlist_write_file(playlist, playlist_use_old_format);
 
    return 0;
 }
@@ -483,6 +485,7 @@ static void playlist_thumbnail_mode_left(playlist_t *playlist, enum playlist_thu
       bool wraparound)
 {
    settings_t *settings                        = config_get_ptr();
+   bool playlist_use_old_format                = settings->bools.playlist_use_old_format;
    enum playlist_thumbnail_mode thumbnail_mode =
          playlist_get_thumbnail_mode(playlist, thumbnail_id);
 
@@ -492,7 +495,7 @@ static void playlist_thumbnail_mode_left(playlist_t *playlist, enum playlist_thu
       thumbnail_mode = PLAYLIST_THUMBNAIL_MODE_BOXARTS;
 
    playlist_set_thumbnail_mode(playlist, thumbnail_id, thumbnail_mode);
-   playlist_write_file(playlist, settings->bools.playlist_use_old_format);
+   playlist_write_file(playlist, playlist_use_old_format);
 }
 
 static int playlist_right_thumbnail_mode_left(unsigned type, const char *label,
@@ -521,16 +524,19 @@ static int playlist_left_thumbnail_mode_left(unsigned type, const char *label,
    return 0;
 }
 
-static int manual_content_scan_system_name_left(unsigned type, const char *label,
+static int manual_content_scan_system_name_left(
+      unsigned type, const char *label,
       bool wraparound)
 {
+   settings_t *settings              = config_get_ptr();
+   bool show_hidden_files            = settings->bools.show_hidden_files;
 #ifdef HAVE_LIBRETRODB
-   settings_t *settings                                            = config_get_ptr();
+   const char *path_content_database = settings->paths.path_content_database;
    struct string_list *system_name_list                            =
-      manual_content_scan_get_menu_system_name_list(settings->paths.path_content_database);
+      manual_content_scan_get_menu_system_name_list(path_content_database, show_hidden_files);
 #else
    struct string_list *system_name_list                            =
-      manual_content_scan_get_menu_system_name_list(NULL);
+      manual_content_scan_get_menu_system_name_list(NULL, show_hidden_files);
 #endif
    const char *current_system_name                                 = NULL;
    enum manual_content_scan_system_name_type next_system_name_type =
@@ -748,7 +754,7 @@ static int bind_left_generic(unsigned type, const char *label,
 }
 
 static int menu_cbs_init_bind_left_compare_label(menu_file_list_cbs_t *cbs,
-      const char *label, uint32_t label_hash, const char *menu_label)
+      const char *label, const char *menu_label)
 {
 
    if (cbs->setting)
@@ -768,15 +774,12 @@ static int menu_cbs_init_bind_left_compare_label(menu_file_list_cbs_t *cbs,
       unsigned i;
       for (i = 0; i < MAX_USERS; i++)
       {
-         uint32_t label_setting_hash;
          char label_setting[128];
-
          label_setting[0] = '\0';
 
          snprintf(label_setting, sizeof(label_setting), "input_player%d_joypad_index", i + 1);
-         label_setting_hash = msg_hash_calculate(label_setting);
 
-         if (label_hash != label_setting_hash)
+         if (!string_is_equal(label, label_setting))
             continue;
 
          BIND_ACTION_LEFT(cbs, bind_left_generic);
@@ -1024,8 +1027,7 @@ static int menu_cbs_init_bind_left_compare_type(menu_file_list_cbs_t *cbs,
 
 int menu_cbs_init_bind_left(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx,
-      const char *menu_label,
-      uint32_t label_hash)
+      const char *menu_label)
 {
    if (!cbs)
       return -1;
@@ -1052,7 +1054,7 @@ int menu_cbs_init_bind_left(menu_file_list_cbs_t *cbs,
       }
    }
 
-   if (menu_cbs_init_bind_left_compare_label(cbs, label, label_hash, menu_label) == 0)
+   if (menu_cbs_init_bind_left_compare_label(cbs, label, menu_label) == 0)
       return 0;
 
    if (menu_cbs_init_bind_left_compare_type(cbs, type, menu_label) == 0)

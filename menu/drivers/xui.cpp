@@ -34,7 +34,7 @@
 #include "menu_generic.h"
 
 #include "../menu_driver.h"
-#include "../menu_animation.h"
+#include "../../gfx/gfx_animation.h"
 #include "../menu_entries.h"
 #include "../menu_input.h"
 #include "../menu_setting.h"
@@ -219,7 +219,7 @@ HRESULT XuiTextureLoader(IXuiDevice *pDevice, LPCWSTR szFileName,
 
    /* Cast our d3d device into our IDirect3DDevice9* interface */
    d3dDevice = (IDirect3DDevice9*)pDevice->GetD3DDevice();
-   if(!d3dDevice)
+   if (!d3dDevice)
       goto cleanup;
 
    /* Create our texture based on our conditions */
@@ -241,7 +241,7 @@ HRESULT XuiTextureLoader(IXuiDevice *pDevice, LPCWSTR szFileName,
          ppTex
          );
 
-   if(hr != D3DXERR_INVALIDDATA )
+   if (hr != D3DXERR_INVALIDDATA )
    {
       pImageInfo->Depth           = pSrc.Depth;
       pImageInfo->Format          = pSrc.Format;
@@ -413,7 +413,7 @@ static void xui_frame(void *data, video_frame_info_t *video_info)
    if (!d3d)
       return;
 
-   menu_display_set_viewport(video_info->width, video_info->height);
+   gfx_display_set_viewport(video_info->width, video_info->height);
 
    app.RunFrame();
    XuiTimersRun();
@@ -444,7 +444,7 @@ static void xui_frame(void *data, video_frame_info_t *video_info)
 
    XuiRenderEnd( app.GetDC() );
 
-   menu_display_unset_viewport(video_info->width, video_info->height);
+   gfx_display_unset_viewport(video_info->width, video_info->height);
 }
 
 static void blit_line(int x, int y, const char *message, bool green)
@@ -477,7 +477,7 @@ static void xui_set_list_text(int index, const wchar_t* leftText,
    if (XuiHandleIsValid(hControl))
       XuiControlGetVisual(hControl, &hVisual);
 
-   if(!XuiHandleIsValid(hVisual))
+   if (!XuiHandleIsValid(hVisual))
       return;
 
    XuiElementGetChildById(hVisual, L"LeftText", &hTextLeft);
@@ -497,7 +497,7 @@ static void xui_set_list_text(int index, const wchar_t* leftText,
    XuiTextElementSetText(hTextLeft, leftText);
    XuiElementGetChildById(hVisual, L"RightText", &hTextRight);
 
-   if(XuiHandleIsValid(hTextRight))
+   if (XuiHandleIsValid(hTextRight))
    {
       currText = XuiTextElementGetText(hTextRight);
       XuiElementGetBounds(hTextRight, &width, &height);
@@ -529,10 +529,10 @@ static void xui_render(void *data,
    const char *dir             = NULL;
    const char *label           = NULL;
    unsigned menu_type          = 0;
-   bool              msg_force = menu_display_get_msg_force();
+   bool              msg_force = gfx_display_get_msg_force();
    settings_t *settings        = config_get_ptr();
 
-   menu_display_get_fb_size(&fb_width, &fb_height,
+   gfx_display_get_fb_size(&fb_width, &fb_height,
          &fb_pitch);
 
    if (
@@ -541,14 +541,14 @@ static void xui_render(void *data,
       )
       return;
 
-   menu_display_unset_framebuffer_dirty_flag();
-   menu_animation_ctl(MENU_ANIMATION_CTL_CLEAR_ACTIVE, NULL);
+   gfx_display_unset_framebuffer_dirty_flag();
+   gfx_animation_ctl(MENU_ANIMATION_CTL_CLEAR_ACTIVE, NULL);
 
    xui_render_background();
 
    if (XuiHandleIsValid(m_menutitle))
    {
-      menu_animation_ctx_ticker_t ticker;
+      gfx_animation_ctx_ticker_t ticker;
       menu_entries_get_title(title, sizeof(title));
       mbstowcs(strw_buffer, title, sizeof(strw_buffer) / sizeof(wchar_t));
       XuiTextElementSetText(m_menutitle, strw_buffer);
@@ -559,11 +559,11 @@ static void xui_render(void *data,
 
 	  ticker.s        = title;
 	  ticker.len      = RXUI_TERM_WIDTH(fb_width) - 3;
-	  ticker.idx      = menu_animation_get_ticker_idx();
+	  ticker.idx      = gfx_animation_get_ticker_idx();
 	  ticker.str      = title;
 	  ticker.selected = true;
 
-      menu_animation_ticker(&ticker);
+      gfx_animation_ticker(&ticker);
    }
 
    if (XuiHandleIsValid(m_menutitle))

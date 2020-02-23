@@ -23,8 +23,8 @@
 #include "../wifi_driver.h"
 #include "../../retroarch.h"
 #include "../../lakka.h"
-#ifdef HAVE_MENU_WIDGETS
-#include "../../menu/widgets/menu_widgets.h"
+#ifdef HAVE_GFX_WIDGETS
+#include "../../gfx/gfx_widgets.h"
 #endif
 
 static bool connman_cache[256]   = {0};
@@ -86,14 +86,13 @@ static bool connmanctl_tether_status(void)
 
    pclose(command_file);
 
-   if (ln == NULL)
+   if (!ln)
       return false;
-   else if (ln[0] == '0')
+   if (ln[0] == '0')
       return false;
-   else if (ln[0] == '1')
+   if (ln[0] == '1')
       return true;
-   else
-      return false;
+   return false;
 }
 
 static void connmanctl_tether_toggle(bool switch_on, char* apname, char* passkey)
@@ -120,8 +119,8 @@ static void connmanctl_tether_toggle(bool switch_on, char* apname, char* passkey
       RARCH_LOG("[CONNMANCTL] Tether toggle: output: \"%s\"\n",
             output);
 
-#ifdef HAVE_MENU_WIDGETS
-      if (!menu_widgets_ready())
+#ifdef HAVE_GFX_WIDGETS
+      if (!gfx_widgets_ready())
 #endif
          runloop_msg_queue_push(output, 1, 180, true,
                NULL, MESSAGE_QUEUE_ICON_DEFAULT,
@@ -196,7 +195,7 @@ static void connmanctl_get_ssids(struct string_list* ssids)
 
    for (i = 0; i < lines->size; i++)
    {
-      char ssid[20];
+      char ssid[32];
       const char *line = lines->elems[i].data;
 
       strlcpy(ssid, line+4, sizeof(ssid));
@@ -253,6 +252,7 @@ static bool connmanctl_ssid_is_online(unsigned i)
 
 static bool connmanctl_connect_ssid(unsigned i, const char* passphrase)
 {
+   unsigned i;
    char ln[512]                        = {0};
    char name[64]                       = {0};
    char service[128]                   = {0};
@@ -280,7 +280,7 @@ static bool connmanctl_connect_ssid(unsigned i, const char* passphrase)
       return false;
    }
 
-   for (int i = 0; i < list->size-1; i++)
+   for (i = 0; i < list->size-1; i++)
    {
       strlcat(name, list->elems[i].data, sizeof(name));
       strlcat(name, " ", sizeof(name));
@@ -302,7 +302,7 @@ static bool connmanctl_connect_ssid(unsigned i, const char* passphrase)
    fprintf(settings_file, "Name=%s\n", name);
    fprintf(settings_file, "SSID=");
 
-   for (int i=0; i < strlen(name); i++)
+   for (i = 0; i < strlen(name); i++)
       fprintf(settings_file, "%02x", (unsigned int) name[i]);
    fprintf(settings_file, "\n");
 
@@ -331,8 +331,8 @@ static bool connmanctl_connect_ssid(unsigned i, const char* passphrase)
 
    while (fgets (ln, sizeof(ln), command_file) != NULL)
    {
-#ifdef HAVE_MENU_WIDGETS
-      if (!menu_widgets_ready())
+#ifdef HAVE_GFX_WIDGETS
+      if (!gfx_widgets_ready())
 #endif
          runloop_msg_queue_push(ln, 1, 180, true,
                NULL, MESSAGE_QUEUE_ICON_DEFAULT,
@@ -582,7 +582,7 @@ static void connmanctl_tether_start_stop(bool start, char* configfile)
          pclose(command_file);
       }
 
-      if (apname == NULL || passkey == NULL)
+      if (!apname || !passkey)
       {
          RARCH_ERR("[CONNMANCTL] Tether start stop: APNAME or PASSWORD missing\n");
 
@@ -636,8 +636,8 @@ static void connmanctl_tether_start_stop(bool start, char* configfile)
                RARCH_LOG("[CONNMANCTL] Tether start stop: output: \"%s\"\n",
                      ln);
 
-#ifdef HAVE_MENU_WIDGETS
-               if (!menu_widgets_ready())
+#ifdef HAVE_GFX_WIDGETS
+               if (!gfx_widgets_ready())
 #endif
                   runloop_msg_queue_push(ln, 1, 180, true,
                         NULL, MESSAGE_QUEUE_ICON_DEFAULT,

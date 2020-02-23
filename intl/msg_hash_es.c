@@ -907,82 +907,86 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
             );
             break;
         case MENU_ENUM_LABEL_VIDEO_DRIVER:
-            snprintf(s, len,
+            {
+               const char *video_driver = settings->arrays.video_driver;
+
+               snprintf(s, len,
                      "Controlador de vídeo actual.");
 
-            if (string_is_equal(settings->arrays.video_driver, "gl"))
-            {
-                snprintf(s, len,
-                  "Controlador de vídeo OpenGL.\n"
-                  " \n"
-                  "Este controlador permite utilizar núcleos\n"
-                  "OpenGL de libretro, más las implementaciones\n"
-                  "renderizadas por software.\n"
-                  " \n"
-                  "El rendimiento de las implementaciones\n"
-                  "libretro por software y OpenGL dependen\n"
-                  "del controlador OpenGL de la tarjeta gráfica.");
-            }
-            else if (string_is_equal(settings->arrays.video_driver, "sdl2"))
-            {
-                snprintf(s, len,
-                  "Controlador de vídeo SDL 2.\n"
-                  " \n"
-                  "Este es un controlador de vídeo por software.\n"
-                  " \n"
-                  "El rendimiento para las implementaciones\n"
-                  "libretro por software depende de\n"
-                  "la implementación SDL de la plataforma.");
-            }
-            else if (string_is_equal(settings->arrays.video_driver, "sdl1"))
-            {
-                snprintf(s, len,
-                  "Controlador de vídeo SDL 1.2.\n"
-                  " \n"
-                  "Este es un controlador de vídeo por software.\n"
-                  " \n"
-                  "Su rendimiento es considerado inferior.\n"
-                  "Utilízalo únicamente como último recurso.");
-            }
-            else if (string_is_equal(settings->arrays.video_driver, "d3d"))
-            {
-                snprintf(s, len,
-                  "Controlador de vídeo Direct3D.\n"
-                  " \n"
-                  "El rendimiento de los núcleos que rendericen\n"
-                  "por software dependerá del controlador D3D\n"
-                  "de tu tarjeta gráfica.");
-            }
-            else if (string_is_equal(settings->arrays.video_driver, "exynos"))
-            {
-                snprintf(s, len,
-                  "Controlador de vídeo Exynos-G2D.\n"
-                  " \n"
-                  "Este es un controlador de vídeo Exynos\n"
-                  "de bajo nivel. Utiliza el bloque G2D\n"
-                  "del SoC Exynos de Samsung para las operaciones\n"
-                  "de blit.\n"
-                  " \n"
-                  "El rendimiento de los núcleos renderizados\n"
-                  "por software debería ser óptimo.");
-            }
-            else if (string_is_equal(settings->arrays.video_driver, "drm"))
-            {
-                snprintf(s, len,
-                  "Controlador de vídeo de DRM simple.\n"
-                  " \n"
-                  "Este es un controlador de vídeo que usa\n"
-                  "libdrm para escalado por hardware\n"
-                  "mediante las superposiciones de la GPU.\n");
-            }
-            else if (string_is_equal(settings->arrays.video_driver, "sunxi"))
-            {
-                snprintf(s, len,
-                  "Controlador de vídeo Sunxi-G2D.\n"
-                  " \n"
-                  "Este es un controlador de vídeo Sunxi\n"
-                  "de bajo nivel. Utiliza el bloque G2D\n"
-                  "de los SoC Allwinner.");
+               if (string_is_equal(video_driver, "gl"))
+               {
+                  snprintf(s, len,
+                        "Controlador de vídeo OpenGL.\n"
+                        " \n"
+                        "Este controlador permite utilizar núcleos\n"
+                        "OpenGL de libretro, más las implementaciones\n"
+                        "renderizadas por software.\n"
+                        " \n"
+                        "El rendimiento de las implementaciones\n"
+                        "libretro por software y OpenGL dependen\n"
+                        "del controlador OpenGL de la tarjeta gráfica.");
+               }
+               else if (string_is_equal(video_driver, "sdl2"))
+               {
+                  snprintf(s, len,
+                        "Controlador de vídeo SDL 2.\n"
+                        " \n"
+                        "Este es un controlador de vídeo por software.\n"
+                        " \n"
+                        "El rendimiento para las implementaciones\n"
+                        "libretro por software depende de\n"
+                        "la implementación SDL de la plataforma.");
+               }
+               else if (string_is_equal(video_driver, "sdl1"))
+               {
+                  snprintf(s, len,
+                        "Controlador de vídeo SDL 1.2.\n"
+                        " \n"
+                        "Este es un controlador de vídeo por software.\n"
+                        " \n"
+                        "Su rendimiento es considerado inferior.\n"
+                        "Utilízalo únicamente como último recurso.");
+               }
+               else if (string_is_equal(video_driver, "d3d"))
+               {
+                  snprintf(s, len,
+                        "Controlador de vídeo Direct3D.\n"
+                        " \n"
+                        "El rendimiento de los núcleos que rendericen\n"
+                        "por software dependerá del controlador D3D\n"
+                        "de tu tarjeta gráfica.");
+               }
+               else if (string_is_equal(video_driver, "exynos"))
+               {
+                  snprintf(s, len,
+                        "Controlador de vídeo Exynos-G2D.\n"
+                        " \n"
+                        "Este es un controlador de vídeo Exynos\n"
+                        "de bajo nivel. Utiliza el bloque G2D\n"
+                        "del SoC Exynos de Samsung para las operaciones\n"
+                        "de blit.\n"
+                        " \n"
+                        "El rendimiento de los núcleos renderizados\n"
+                        "por software debería ser óptimo.");
+               }
+               else if (string_is_equal(video_driver, "drm"))
+               {
+                  snprintf(s, len,
+                        "Controlador de vídeo de DRM simple.\n"
+                        " \n"
+                        "Este es un controlador de vídeo que usa\n"
+                        "libdrm para escalado por hardware\n"
+                        "mediante las superposiciones de la GPU.\n");
+               }
+               else if (string_is_equal(video_driver, "sunxi"))
+               {
+                  snprintf(s, len,
+                        "Controlador de vídeo Sunxi-G2D.\n"
+                        " \n"
+                        "Este es un controlador de vídeo Sunxi\n"
+                        "de bajo nivel. Utiliza el bloque G2D\n"
+                        "de los SoC Allwinner.");
+               }
             }
             break;
         case MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN:

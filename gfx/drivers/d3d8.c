@@ -660,9 +660,10 @@ static void d3d8_make_d3dpp(void *data,
 
    if (info->vsync)
    {
-      settings_t *settings        = config_get_ptr();
+      settings_t *settings         = config_get_ptr();
+      unsigned video_swap_interval = settings->uints.video_swap_interval;
 
-      switch (settings->uints.video_swap_interval)
+      switch (video_swap_interval)
       {
          default:
          case 1:
@@ -699,7 +700,7 @@ static void d3d8_make_d3dpp(void *data,
       unsigned height             = 0;
 
       d3d8_get_video_size(d3d, &width, &height);
-      video_driver_set_size(&width, &height);
+      video_driver_set_size(width, height);
 #endif
       video_driver_get_size(&d3dpp->BackBufferWidth,
             &d3dpp->BackBufferHeight);
@@ -787,16 +788,18 @@ static void d3d8_calculate_rect(void *data,
       bool force_full,
       bool allow_rotate)
 {
-   float device_aspect  = (float)*width / *height;
-   d3d8_video_t *d3d     = (d3d8_video_t*)data;
-   settings_t *settings = config_get_ptr();
+   float device_aspect       = (float)*width / *height;
+   d3d8_video_t *d3d         = (d3d8_video_t*)data;
+   settings_t *settings      = config_get_ptr();
+   bool video_scale_integer  = settings->bools.video_scale_integer;
+   unsigned aspect_ratio_idx = settings->uints.video_aspect_ratio_idx;
 
    video_driver_get_size(width, height);
 
    *x                   = 0;
    *y                   = 0;
 
-   if (settings->bools.video_scale_integer && !force_full)
+   if (video_scale_integer && !force_full)
    {
       struct video_viewport vp;
 
@@ -823,7 +826,7 @@ static void d3d8_calculate_rect(void *data,
       float desired_aspect = video_driver_get_aspect_ratio();
 
 #if defined(HAVE_MENU)
-      if (settings->uints.video_aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
+      if (aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
       {
          video_viewport_t *custom = video_viewport_get_custom();
 
@@ -948,7 +951,8 @@ static bool d3d8_initialize(d3d8_video_t *d3d, const video_info_t *info)
    d3d8_set_viewport(d3d,
 	   width, height, false, true);
 
-   font_driver_init_osd(d3d, false,
+   font_driver_init_osd(d3d, info,
+         false,
          info->is_threaded,
          FONT_DRIVER_RENDER_D3D8_API);
 
@@ -992,7 +996,9 @@ static bool d3d8_restore(void *data)
    return true;
 }
 
-static void d3d8_set_nonblock_state(void *data, bool state)
+static void d3d8_set_nonblock_state(void *data, bool state,
+      bool adaptive_vsync_enabled,
+      unsigned swap_interval)
 {
    int      interval            = 0;
    d3d8_video_t            *d3d = (d3d8_video_t*)data;
@@ -1026,7 +1032,7 @@ static bool d3d8_set_resize(d3d8_video_t *d3d,
    RARCH_LOG("[D3D8]: Resize %ux%u.\n", new_width, new_height);
    d3d->video_info.width  = new_width;
    d3d->video_info.height = new_height;
-   video_driver_set_size(&new_width, &new_height);
+   video_driver_set_size(new_width, new_height);
 
    return true;
 }
@@ -1060,7 +1066,7 @@ static bool d3d8_alive(void *data)
    ret = !quit;
 
    if (temp_width != 0 && temp_height != 0)
-      video_driver_set_size(&temp_width, &temp_height);
+      video_driver_set_size(temp_width, temp_height);
 
    return ret;
 }
@@ -1152,11 +1158,11 @@ static bool d3d8_init_internal(d3d8_video_t *d3d,
    g_win32_resize_width  = info->width;
    g_win32_resize_height = info->height;
 
-   windowed_full   = settings->bools.video_windowed_fullscreen;
+   windowed_full         = settings->bools.video_windowed_fullscreen;
 
-   full_x          = (windowed_full || info->width  == 0) ?
+   full_x                = (windowed_full || info->width  == 0) ?
       (mon_rect.right  - mon_rect.left) : info->width;
-   full_y          = (windowed_full || info->height == 0) ?
+   full_y                = (windowed_full || info->height == 0) ?
       (mon_rect.bottom - mon_rect.top)  : info->height;
 
    RARCH_LOG("[D3D8]: Monitor size: %dx%d.\n",
@@ -1168,7 +1174,7 @@ static bool d3d8_init_internal(d3d8_video_t *d3d,
    {
       unsigned new_width  = info->fullscreen ? full_x : info->width;
       unsigned new_height = info->fullscreen ? full_y : info->height;
-      video_driver_set_size(&new_width, &new_height);
+      video_driver_set_size(new_width, new_height);
    }
 
 #ifdef HAVE_WINDOW

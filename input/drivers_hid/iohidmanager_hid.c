@@ -597,7 +597,7 @@ static void iohidmanager_hid_device_add_device(
 	for (i=0; i<MAX_USERS; i++)
 	{
 		struct iohidmanager_hid_adapter *a = (struct iohidmanager_hid_adapter*)hid->slots[i].data;
-		if (a == NULL)
+		if (!a)
 			continue;
 		if (a->uniqueId == deviceUniqueId)
 			return;
@@ -1003,12 +1003,12 @@ static int iohidmanager_hid_manager_set_device_matching(
 			||	IOHIDDeviceConformsTo(dev, kHIDPage_GenericDesktop, kHIDUsage_GD_GamePad)
 			)
 		{
-			if ( devList == NULL )
+			if (!devList)
 			{
-				devList          = (hid_list_t *)malloc(sizeof(hid_list_t));
-				devList->device  = dev;
-				devList->lid     = iohidmanager_hid_device_get_location_id(dev);
-				devList->next    = NULL;
+				devList             = (hid_list_t *)malloc(sizeof(hid_list_t));
+				devList->device     = dev;
+				devList->lid        = iohidmanager_hid_device_get_location_id(dev);
+				devList->next       = NULL;
 			}
 			else
 			{

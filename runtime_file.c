@@ -1013,7 +1013,7 @@ void runtime_update_playlist(playlist_t *playlist, size_t idx)
       free(runtime_log);
    }
    
-#ifdef HAVE_MENU
+#if defined(HAVE_MENU) && defined(HAVE_OZONE)
    /* Ozone requires runtime/last played strings to be
     * populated even when no runtime is recorded */
    if (string_is_equal(settings->arrays.menu_driver, "ozone"))

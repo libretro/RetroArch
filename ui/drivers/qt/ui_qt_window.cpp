@@ -359,7 +359,10 @@ MainWindow::MainWindow(QWidget *parent) :
    ,m_itemsCountLabel(new QLabel(this))
 {
    settings_t                   *settings = config_get_ptr();
-   QDir playlistDir(settings->paths.directory_playlist);
+   const char *path_dir_playlist          = settings->paths.directory_playlist;
+   const char *path_dir_assets            = settings->paths.directory_assets;
+   const char *path_dir_menu_content      = settings->paths.directory_menu_content;
+   QDir playlistDir(path_dir_playlist);
    QString                      configDir = QFileInfo(path_get(RARCH_PATH_CONFIG)).dir().absolutePath();
    QToolButton   *searchResetButton       = NULL;
    QHBoxLayout   *zoomLayout              = new QHBoxLayout();
@@ -502,9 +505,9 @@ MainWindow::MainWindow(QWidget *parent) :
 
    m_logWidget->setObjectName("logWidget");
 
-   m_folderIcon = QIcon(QString(settings->paths.directory_assets) + GENERIC_FOLDER_ICON);
-   m_imageFormats = QVector<QByteArray>::fromList(QImageReader::supportedImageFormats());
-   m_defaultStyle = QApplication::style();
+   m_folderIcon     = QIcon(QString(path_dir_assets) + GENERIC_FOLDER_ICON);
+   m_imageFormats   = QVector<QByteArray>::fromList(QImageReader::supportedImageFormats());
+   m_defaultStyle   = QApplication::style();
    m_defaultPalette = QApplication::palette();
 
    /* ViewOptionsDialog needs m_settings set before it's constructed */
@@ -634,7 +637,7 @@ MainWindow::MainWindow(QWidget *parent) :
    connect(m_dirModel, SIGNAL(directoryLoaded(const QString&)), this, SLOT(onFileSystemDirLoaded(const QString&)));
    connect(m_fileModel, SIGNAL(directoryLoaded(const QString&)), this, SLOT(onFileBrowserTableDirLoaded(const QString&)));
 
-   m_dirTree->setCurrentIndex(m_dirModel->index(settings->paths.directory_menu_content));
+   m_dirTree->setCurrentIndex(m_dirModel->index(path_dir_menu_content));
    m_dirTree->scrollTo(m_dirTree->currentIndex(), QAbstractItemView::PositionAtTop);
    m_dirTree->expand(m_dirTree->currentIndex());
 
@@ -1036,14 +1039,17 @@ bool MainWindow::showMessageBox(QString msg, MessageBoxType msgType, Qt::WindowM
 void MainWindow::onFileBrowserTreeContextMenuRequested(const QPoint&)
 {
 #ifdef HAVE_LIBRETRODB
+   QDir dir;
+   QByteArray dirArray;
    QPointer<QAction> action;
    QList<QAction*> actions;
    QScopedPointer<QAction> scanAction;
-   QDir dir;
-   QString currentDirString = QDir::toNativeSeparators(m_dirModel->filePath(m_dirTree->currentIndex()));
-   settings_t *settings = config_get_ptr();
-   QByteArray dirArray;
-   const char *fullpath = NULL;
+   QString currentDirString      = QDir::toNativeSeparators(
+         m_dirModel->filePath(m_dirTree->currentIndex()));
+   settings_t *settings          = config_get_ptr();
+   const char *fullpath          = NULL;
+   const char *path_dir_playlist = settings->paths.directory_playlist;
+   const char *path_content_db   = settings->paths.path_content_database;
 
    if (currentDirString.isEmpty())
       return;
@@ -1067,15 +1073,16 @@ void MainWindow::onFileBrowserTreeContextMenuRequested(const QPoint&)
    fullpath = dirArray.constData();
 
    task_push_dbscan(
-         settings->paths.directory_playlist,
-         settings->paths.path_content_database,
+         path_dir_playlist,
+         path_content_db,
          fullpath, true,
          m_settings->value("show_hidden_files", true).toBool(),
          scan_finished_handler);
 #endif
 }
 
-void MainWindow::showStatusMessage(QString msg, unsigned priority, unsigned duration, bool flush)
+void MainWindow::showStatusMessage(QString msg,
+      unsigned priority, unsigned duration, bool flush)
 {
    emit gotStatusMessage(msg, priority, duration, flush);
 }
@@ -2384,9 +2391,10 @@ void MainWindow::renamePlaylistItem(QListWidgetItem *item, QString newName)
    QFileInfo info;
    QFileInfo playlistInfo;
    QString playlistPath;
-   settings_t *settings = config_get_ptr();
-   bool specialPlaylist = false;
-   QDir playlistDir(settings->paths.directory_playlist);
+   bool specialPlaylist          = false;
+   settings_t *settings          = config_get_ptr();
+   const char *path_dir_playlist = settings->paths.directory_playlist;
+   QDir playlistDir(path_dir_playlist);
 
    if (!item)
       return;
@@ -2405,12 +2413,15 @@ void MainWindow::renamePlaylistItem(QListWidgetItem *item, QString newName)
 
    if (specialPlaylist)
    {
-      /* special playlists shouldn't be editable already, but just in case, set the old name back and early return if they rename it */
+      /* special playlists shouldn't be editable already, 
+       * but just in case, set the old name back and 
+       * early return if they rename it */
       item->setText(oldName);
       return;
    }
 
-   /* block this signal because setData() would trigger an infinite loop here */
+   /* block this signal because setData() would trigger 
+    * an infinite loop here */
    disconnect(m_listWidget, SIGNAL(itemChanged(QListWidgetItem*)), this, SLOT(onCurrentListItemDataChanged(QListWidgetItem*)));
 
    oldPath = item->data(Qt::UserRole).toString();
@@ -2424,10 +2435,8 @@ void MainWindow::renamePlaylistItem(QListWidgetItem *item, QString newName)
 
    /* absolutePath() will always use / even on Windows */
    if (newPath.at(newPath.count() - 1) != '/')
-   {
       /* add trailing slash if the path doesn't have one */
       newPath += '/';
-   }
 
    newPath += newName + "." + extension;
 

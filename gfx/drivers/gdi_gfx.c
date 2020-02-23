@@ -88,6 +88,7 @@ static void *gdi_gfx_init(const video_info_t *video,
    unsigned win_width = 0, win_height   = 0;
    unsigned temp_width = 0, temp_height = 0;
    settings_t *settings                 = config_get_ptr();
+   bool video_font_enable               = settings->bools.video_font_enable;
    gdi_t *gdi                           = (gdi_t*)calloc(1, sizeof(*gdi));
 
    if (!gdi)
@@ -162,7 +163,7 @@ static void *gdi_gfx_init(const video_info_t *video,
    /* Get real known video size, which might have been altered by context. */
 
    if (temp_width != 0 && temp_height != 0)
-      video_driver_set_size(&temp_width, &temp_height);
+      video_driver_set_size(temp_width, temp_height);
 
    video_driver_get_size(&temp_width, &temp_height);
 
@@ -173,8 +174,10 @@ static void *gdi_gfx_init(const video_info_t *video,
 
    video_context_driver_input_driver(&inp);
 
-   if (settings->bools.video_font_enable)
-      font_driver_init_osd(gdi, false,
+   if (video_font_enable)
+      font_driver_init_osd(gdi,
+            video,
+            false,
             video->is_threaded,
             FONT_DRIVER_RENDER_GDI);
 
@@ -368,11 +371,7 @@ static bool gdi_gfx_frame(void *data, const void *frame,
    return true;
 }
 
-static void gdi_gfx_set_nonblock_state(void *data, bool toggle)
-{
-   (void)data;
-   (void)toggle;
-}
+static void gdi_gfx_set_nonblock_state(void *a, bool b, bool c, unsigned d) { }
 
 static bool gdi_gfx_alive(void *data)
 {
@@ -393,7 +392,7 @@ static bool gdi_gfx_alive(void *data)
    ret = !quit;
 
    if (temp_width != 0 && temp_height != 0)
-      video_driver_set_size(&temp_width, &temp_height);
+      video_driver_set_size(temp_width, temp_height);
 
    return ret;
 }

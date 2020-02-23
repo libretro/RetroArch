@@ -337,8 +337,6 @@ static int omapfb_setup_pages(omapfb_data_t *pdata)
 
 static int omapfb_mmap(omapfb_data_t *pdata)
 {
-   retro_assert(pdata->fb_mem == NULL);
-
    pdata->fb_mem = mmap(NULL, pdata->current_state->mi.size, PROT_WRITE,
          MAP_SHARED, pdata->fd, 0);
 
@@ -356,8 +354,6 @@ static int omapfb_mmap(omapfb_data_t *pdata)
 static int omapfb_backup_state(omapfb_data_t *pdata)
 {
    void* mem = NULL;
-
-   retro_assert(pdata->saved_state == NULL);
 
    pdata->saved_state = calloc(1, sizeof(omapfb_state_t));
    if (!pdata->saved_state) return -1;
@@ -383,7 +379,7 @@ static int omapfb_backup_state(omapfb_data_t *pdata)
    pdata->saved_state->mem = malloc(pdata->saved_state->mi.size);
    mem = mmap(NULL, pdata->saved_state->mi.size, PROT_WRITE|PROT_READ,
          MAP_SHARED, pdata->fd, 0);
-   if (pdata->saved_state->mem == NULL || mem == MAP_FAILED)
+   if (!pdata->saved_state->mem || mem == MAP_FAILED)
    {
       RARCH_ERR("[video_omap]: backup layer (mem backup) failed\n");
       munmap(mem, pdata->saved_state->mi.size);
@@ -403,8 +399,6 @@ static int omapfb_alloc_mem(omapfb_data_t *pdata)
    void                              *mem = NULL;
    const struct retro_game_geometry *geom = NULL;
    struct retro_system_av_info *av_info   = NULL;
-
-   retro_assert(pdata->current_state == NULL);
 
    pdata->current_state = (omapfb_state_t*)calloc(1, sizeof(omapfb_state_t));
 
@@ -580,6 +574,7 @@ static int omapfb_init(omapfb_data_t *pdata, unsigned bpp)
    const char *fbname   = omapfb_get_fb_device();
    int             fd   = open(fbname, O_RDWR);
    settings_t *settings = config_get_ptr();
+   bool video_vsync     = settings->bools.video_vsync;
 
    if (fd == -1)
    {
@@ -603,7 +598,7 @@ static int omapfb_init(omapfb_data_t *pdata, unsigned bpp)
    /* always use triple buffering to reduce chance of tearing */
    pdata->bpp           = bpp;
    pdata->num_pages     = 3;
-   pdata->sync          = settings->bools.video_vsync;
+   pdata->sync          = video_vsync;
 
    return 0;
 }
@@ -828,21 +823,27 @@ static void omap_gfx_free(void *data)
 static void omap_init_font(omap_video_t *vid, const char *font_path, unsigned font_size)
 {
    int r, g, b;
-   settings_t *settings = config_get_ptr();
+   settings_t *settings   = config_get_ptr();
+   bool video_font_enable = settings->bools.video_font_enable;
+   const char *path_font  = settings->paths.path_font;
+   float video_font_size  = settings->floats.video_font_size;
+   float msg_color_r      = settings->floats.video_msg_color_r;
+   float msg_color_g      = settings->floats.video_msg_color_g;
+   float msg_color_b      = settings->floats.video_msg_color_b;
 
-   if (!settings->bools.video_font_enable)
+   if (!video_font_enable)
       return;
 
    if (!(font_renderer_create_default(&vid->font_driver, &vid->font,
-               *settings->paths.path_font ? settings->paths.path_font : NULL, settings->video.font_size)))
+               *path_font ? path_font : NULL, video_font_size)))
    {
       RARCH_LOG("[video_omap]: font init failed\n");
       return;
    }
 
-   r = settings->floats.video_msg_color_r * 255;
-   g = settings->floats.video_msg_color_g * 255;
-   b = settings->floats.video_msg_color_b * 255;
+   r = msg_color_r * 255;
+   g = msg_color_g * 255;
+   b = msg_color_b * 255;
 
    r = (r < 0) ? 0 : (r > 255 ? 255 : r);
    g = (g < 0) ? 0 : (g > 255 ? 255 : g);
@@ -857,8 +858,10 @@ static void omap_render_msg(omap_video_t *vid, const char *msg)
 {
    const struct font_atlas *atlas = NULL;
    settings_t *settings = config_get_ptr();
-   int msg_base_x = settings->floats.video_msg_pos_x * vid->width;
-   int msg_base_y = (1.0 - settings->floats.video_msg_pos_y) * vid->height;
+   float msg_pos_x      = settings->floats.video_msg_pos_x;
+   float msg_pos_y      = settings->floats.video_msg_pos_y;
+   int msg_base_x       = msg_pos_x * vid->width;
+   int msg_base_y       = (1.0 - msg_pos_y) * vid->height;
 
    if (!vid->font)
       return;
@@ -1023,14 +1026,15 @@ static bool omap_gfx_frame(void *data, const void *frame, unsigned width,
    return true;
 }
 
-static void omap_gfx_set_nonblock_state(void *data, bool state)
+static void omap_gfx_set_nonblock_state(void *data, bool state, 
+      bool adaptive_vsync_enabled, unsigned swap_interval)
 {
    omap_video_t *vid;
 
    if (!data)
       return;
 
-   vid = data;
+   vid             = data;
    vid->omap->sync = !state;
 }
 

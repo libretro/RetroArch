@@ -105,7 +105,7 @@ int action_switch_thumbnail(const char *path,
    if (!settings)
       return -1;
 
-   if (settings->uints.menu_thumbnails == 0)
+   if (settings->uints.gfx_thumbnails == 0)
    {
       /* RGUI is a special case where thumbnail 'switch' corresponds to
        * toggling thumbnail view on/off.
@@ -113,7 +113,7 @@ int action_switch_thumbnail(const char *path,
        * changing thumbnail view mode.
        * For other menu drivers, we cycle through available thumbnail
        * types. */
-      if(!string_is_equal(settings->arrays.menu_driver, "rgui") &&
+      if (!string_is_equal(settings->arrays.menu_driver, "rgui") &&
          !string_is_equal(settings->arrays.menu_driver, "glui"))
       {
 			settings->uints.menu_left_thumbnails++;
@@ -131,12 +131,12 @@ int action_switch_thumbnail(const char *path,
        * changing thumbnail view mode.
        * For other menu drivers, we cycle through available thumbnail
        * types. */
-      if(!string_is_equal(settings->arrays.menu_driver, "rgui") &&
+      if (!string_is_equal(settings->arrays.menu_driver, "rgui") &&
          !string_is_equal(settings->arrays.menu_driver, "glui"))
       {
-         settings->uints.menu_thumbnails++;
-         if (settings->uints.menu_thumbnails > 3)
-            settings->uints.menu_thumbnails = 1;
+         settings->uints.gfx_thumbnails++;
+         if (settings->uints.gfx_thumbnails > 3)
+            settings->uints.gfx_thumbnails = 1;
       }
       menu_driver_ctl(RARCH_MENU_CTL_UPDATE_THUMBNAIL_PATH, NULL);
       menu_driver_ctl(RARCH_MENU_CTL_UPDATE_THUMBNAIL_IMAGE, NULL);

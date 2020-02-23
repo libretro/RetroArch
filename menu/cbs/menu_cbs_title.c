@@ -89,17 +89,23 @@ static int action_get_title_remap_port(const char *path, const char *label,
 }
 
 static int action_get_title_thumbnails(
-      const char *path, const char *label, unsigned menu_type, char *s, size_t len)
+      const char *path, const char *label, unsigned menu_type,
+      char *s, size_t len)
 {
-   settings_t *settings            = config_get_ptr();
    const char *title               = NULL;
    enum msg_hash_enums label_value = MENU_ENUM_LABEL_VALUE_THUMBNAILS;
-
+#if defined(HAVE_RGUI) || defined(HAVE_MATERIALUI)
+   settings_t *settings            = config_get_ptr();
    /* Get label value */
+#ifdef HAVE_RGUI
    if (string_is_equal(settings->arrays.menu_driver, "rgui"))
       label_value = MENU_ENUM_LABEL_VALUE_THUMBNAILS_RGUI;
-   else if (string_is_equal(settings->arrays.menu_driver, "glui"))
+#endif
+#ifdef HAVE_MATERIALUI
+   if (string_is_equal(settings->arrays.menu_driver, "glui"))
       label_value = MENU_ENUM_LABEL_VALUE_THUMBNAILS_MATERIALUI;
+#endif
+#endif
 
    title = msg_hash_to_str(label_value);
 
@@ -113,19 +119,28 @@ static int action_get_title_thumbnails(
 }
 
 static int action_get_title_left_thumbnails(
-      const char *path, const char *label, unsigned menu_type, char *s, size_t len)
+      const char *path, const char *label, unsigned menu_type,
+      char *s, size_t len)
 {
-   settings_t *settings            = config_get_ptr();
    const char *title               = NULL;
    enum msg_hash_enums label_value = MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS;
-
+#if defined(HAVE_RGUI) || defined(HAVE_OZONE) || defined(HAVE_MATERIALUI)
+   settings_t *settings            = config_get_ptr();
+   const char *menu_driver         = settings->arrays.menu_driver;
    /* Get label value */
-   if (string_is_equal(settings->arrays.menu_driver, "rgui"))
+#ifdef HAVE_RGUI
+   if (string_is_equal(menu_driver, "rgui"))
       label_value = MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_RGUI;
-   else if (string_is_equal(settings->arrays.menu_driver, "ozone"))
+#endif
+#ifdef HAVE_OZONE
+   if (string_is_equal(menu_driver, "ozone"))
       label_value = MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_OZONE;
-   else if (string_is_equal(settings->arrays.menu_driver, "glui"))
+#endif
+#ifdef HAVE_MATERIALUI
+   if (string_is_equal(menu_driver, "glui"))
       label_value = MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_MATERIALUI;
+#endif
+#endif
 
    title = msg_hash_to_str(label_value);
 
@@ -138,7 +153,9 @@ static int action_get_title_left_thumbnails(
    return 0;
 }
 
-static int action_get_title_dropdown_item(const char *path, const char *label, unsigned menu_type, char *s, size_t len)
+static int action_get_title_dropdown_item(
+      const char *path, const char *label, unsigned menu_type,
+      char *s, size_t len)
 {
    /* Sanity check */
    if (string_is_empty(path))
@@ -158,15 +175,16 @@ static int action_get_title_dropdown_item(const char *path, const char *label, u
 
          if (coreopts)
          {
+            unsigned i;
             settings_t *settings            = config_get_ptr();
             unsigned menu_index             = string_to_unsigned(tmp_str_list->elems[(unsigned)tmp_str_list->size - 1].data);
             unsigned visible_index          = 0;
             unsigned option_index           = 0;
             bool option_found               = false;
-            unsigned i;
+            bool game_specific_options      = settings->bools.game_specific_options;
 
             /* Convert menu index to option index */
-            if (settings->bools.game_specific_options)
+            if (game_specific_options)
                menu_index--;
 
             for (i = 0; i < coreopts->size; i++)
@@ -186,7 +204,8 @@ static int action_get_title_dropdown_item(const char *path, const char *label, u
             /* If option was found, title == option description */
             if (option_found)
             {
-               const char *title = core_option_manager_get_desc(coreopts, option_index);
+               const char *title = core_option_manager_get_desc(
+                     coreopts, option_index);
 
                if (s && !string_is_empty(title))
                {
@@ -215,7 +234,8 @@ static int action_get_title_dropdown_item(const char *path, const char *label, u
        *       MENU_ENUM_LABEL_VALUE_##STR
        * to get 'MENU_ENUM_LABEL_VALUE_' from a
        * 'MENU_ENUM_LABEL_', we therefore add 2... */
-      enum msg_hash_enums enum_idx = (enum msg_hash_enums)(string_to_unsigned(path) + 2);
+      enum msg_hash_enums enum_idx = (enum msg_hash_enums)
+         (string_to_unsigned(path) + 2);
 
       /* Check if enum index is valid
        * Note: This is a very crude check, but better than nothing */
@@ -225,19 +245,25 @@ static int action_get_title_dropdown_item(const char *path, const char *label, u
           * MENU_ENUM_LABEL_LEFT_THUMBNAILS require special
           * treatment, since their titles depend upon the
           * current menu driver... */
-         if (enum_idx == MENU_ENUM_LABEL_VALUE_THUMBNAILS)
-            return action_get_title_thumbnails(path, label, menu_type, s, len);
-         else if (enum_idx == MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS)
-            return action_get_title_left_thumbnails(path, label, menu_type, s, len);
-         else
+         switch (enum_idx)
          {
-            const char *title = msg_hash_to_str(enum_idx);
+            case MENU_ENUM_LABEL_VALUE_THUMBNAILS:
+               return action_get_title_thumbnails(
+                     path, label, menu_type, s, len);
+            case MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS:
+               return action_get_title_left_thumbnails(
+                     path, label, menu_type, s, len);
+            default:
+               {
+                  const char *title = msg_hash_to_str(enum_idx);
 
-            if (s && !string_is_empty(title))
-            {
-               sanitize_to_string(s, title, len);
-               return 1;
-            }
+                  if (s && !string_is_empty(title))
+                  {
+                     sanitize_to_string(s, title, len);
+                     return 1;
+                  }
+               }
+               break;
          }
       }
    }
@@ -295,18 +321,6 @@ static int action_get_title_deferred_playlist_list(const char *path, const char 
       strlcpy(s, playlist_file, len);
 
    return 0;
-}
-
-static int action_get_title_dropdown_playlist_right_thumbnail_mode_item(
-      const char *path, const char *label, unsigned menu_type, char *s, size_t len)
-{
-   return action_get_title_thumbnails(path, label, menu_type, s, len);
-}
-
-static int action_get_title_dropdown_playlist_left_thumbnail_mode_item(
-      const char *path, const char *label, unsigned menu_type, char *s, size_t len)
-{
-   return action_get_title_left_thumbnails(path, label, menu_type, s, len);
 }
 
 default_title_macro(action_get_quick_menu_override_options,     MENU_ENUM_LABEL_VALUE_QUICK_MENU_OVERRIDE_OPTIONS)
@@ -1474,8 +1488,8 @@ int menu_cbs_init_bind_title(menu_file_list_cbs_t *cbs,
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_VIDEO_SHADER_NUM_PASSES,                  action_get_title_dropdown_video_shader_num_pass_item   },
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_DEFAULT_CORE,       action_get_title_dropdown_playlist_default_core_item},
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_LABEL_DISPLAY_MODE, action_get_title_dropdown_playlist_label_display_mode_item},
-      {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_RIGHT_THUMBNAIL_MODE, action_get_title_dropdown_playlist_right_thumbnail_mode_item},
-      {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_LEFT_THUMBNAIL_MODE, action_get_title_dropdown_playlist_left_thumbnail_mode_item},
+      {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_RIGHT_THUMBNAIL_MODE, action_get_title_thumbnails},
+      {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_LEFT_THUMBNAIL_MODE, action_get_title_left_thumbnails},
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_MANUAL_CONTENT_SCAN_SYSTEM_NAME, action_get_title_dropdown_manual_content_scan_system_name_item},
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_MANUAL_CONTENT_SCAN_CORE_NAME, action_get_title_dropdown_manual_content_scan_core_name_item},
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_DISK_INDEX, action_get_title_dropdown_disk_index},

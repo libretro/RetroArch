@@ -374,7 +374,7 @@ static int remove_adapter(void *data, struct libusb_device *dev)
    struct libusb_adapter  *adapter = (struct libusb_adapter*)&adapters;
    struct libusb_hid          *hid = (struct libusb_hid*)data;
 
-   while (adapter->next == NULL)
+   while (!adapter->next)
       return -1;
 
    if (adapter->next->device == dev)

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2019 The RetroArch team
+ * Copyright (c) 2010-2020 The RetroArch team
  * Copyright (c) 2017 John Schember <john@nachtimwald.com>
  *
  * ---------------------------------------------------------------------------------------

@@ -19,10 +19,11 @@ static int exec_3dsx_actual(const char* path, const char** args, bool appendPath
 	bool fileExists;
 	bool inited;
 
-	if(path == NULL || path[0] == '\0'){
-		errno = EINVAL;
-		return -1;
-	}
+	if (!path || path[0] == '\0')
+   {
+      errno = EINVAL;
+      return -1;
+   }
 
 	fileExists = stat(path, &sBuff) == 0;
 	if(!fileExists){

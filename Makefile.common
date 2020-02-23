@@ -224,6 +224,10 @@ OBJ += \
        gfx/video_coord_array.o \
        gfx/video_display_server.o \
        gfx/video_crt_switch.o \
+		 gfx/gfx_display.o \
+       gfx/gfx_animation.o \
+		 gfx/gfx_thumbnail_path.o \
+		 gfx/gfx_thumbnail.o \
        configuration.o \
        $(LIBRETRO_COMM_DIR)/dynamic/dylib.o \
        cores/dynamic_dummy.o \
@@ -233,7 +237,6 @@ OBJ += \
        tasks/task_autodetect.o \
        input/input_autodetect_builtin.o \
        input/input_keymaps.o \
-       input/input_remapping.o \
        $(LIBRETRO_COMM_DIR)/queues/fifo_queue.o \
        $(LIBRETRO_COMM_DIR)/compat/compat_fnmatch.o \
        $(LIBRETRO_COMM_DIR)/compat/compat_posix_string.o \
@@ -264,6 +267,11 @@ OBJ += \
        manual_content_scan.o \
        disk_control_interface.o
 
+ifeq ($(HAVE_CONFIGFILE), 1)
+   DEFINES += -DHAVE_CONFIGFILE
+	OBJ += input/input_remapping.o
+endif
+
 ifeq ($(HAVE_BLISSBOX), 1)
    DEFINES += -DHAVE_BLISSBOX
 	OBJ += tasks/task_autodetect_blissbox.o
@@ -278,8 +286,6 @@ endif
 
 ifeq ($(HAVE_RUNAHEAD), 1)
    DEFINES += -DHAVE_RUNAHEAD
-   OBJ += runahead/mem_util.o \
-          runahead/mylist.o
 endif
 
 ifeq ($(HAVE_CC_RESAMPLER), 1)
@@ -754,8 +760,8 @@ ifeq ($(HAVE_MENU), 1)
    DEFINES += -DHAVE_MENU
    HAVE_MENU_COMMON = 1
 
-   ifeq ($(HAVE_MENU_WIDGETS), 1)
-      DEFINES += -DHAVE_MENU_WIDGETS
+   ifeq ($(HAVE_GFX_WIDGETS), 1)
+      DEFINES += -DHAVE_GFX_WIDGETS
    endif
 
    ifeq ($(HAVE_RGUI), 1)
@@ -831,14 +837,11 @@ ifeq ($(HAVE_MENU_COMMON), 1)
           menu/cbs/menu_cbs_down.o \
           menu/cbs/menu_cbs_contentlist_switch.o \
           menu/menu_displaylist.o \
-          menu/menu_animation.o \
-          menu/drivers/menu_generic.o \
-          menu/menu_thumbnail_path.o \
-          menu/menu_thumbnail.o
+          menu/drivers/menu_generic.o
+endif
 
-   ifeq ($(HAVE_MENU_WIDGETS), 1)
-      OBJ += menu/widgets/menu_widgets.o
-   endif
+ifeq ($(HAVE_GFX_WIDGETS), 1)
+   OBJ += gfx/gfx_widgets.o
 endif
 
 ifeq ($(HAVE_OVERLAY), 1)
@@ -900,9 +903,7 @@ ifeq ($(HAVE_VITA2D), 1)
           $(DEPS_DIR)/libvita2d/shader/texture_tint_v_gxp.o \
           $(DEPS_DIR)/libvita2d/shader/texture_tint_f_gxp.o
 
-   ifeq ($(HAVE_MENU_COMMON),1)
-      OBJ += menu/drivers_display/menu_display_vita2d.o
-   endif
+   OBJ += gfx/drivers_display/gfx_display_vita2d.o
 
    OBJ += gfx/drivers/vita2d_gfx.o \
           gfx/drivers_font/vita2d_font.o
@@ -912,7 +913,7 @@ endif
 
 ifeq ($(TARGET), retroarch_3ds)
    OBJ += gfx/drivers/ctr_gfx.o \
-          menu/drivers_display/menu_display_ctr.o \
+          gfx/drivers_display/gfx_display_ctr.o \
           input/drivers/ctr_input.o \
           input/drivers_joypad/ctr_joypad.o
 endif
@@ -933,7 +934,7 @@ endif
 ifeq ($(TARGET), retroarch_wiiu)
    OBJ +=  gfx/drivers/gx2_gfx.o \
 			  gfx/drivers_font/wiiu_font.o \
-			  menu/drivers_display/menu_display_wiiu.o \
+			  gfx/drivers_display/gfx_display_wiiu.o \
 			  input/drivers/wiiu_input.o \
 			  input/drivers_joypad/wiiu_joypad.o \
 			  input/drivers_joypad/wiiu/wpad_driver.o \
@@ -958,7 +959,7 @@ endif
 
 ifeq ($(TARGET), retroarch_switch)
    ifeq ($(HAVE_LIBNX), 1)
-      OBJ += menu/drivers_display/menu_display_switch.o \
+      OBJ += gfx/drivers_display/gfx_display_switch.o \
              gfx/drivers/switch_nx_gfx.o \
              audio/drivers/switch_libnx_audren_audio.o \
              audio/drivers/switch_libnx_audren_thread_audio.o
@@ -1124,10 +1125,6 @@ ifeq ($(HAVE_CACA), 1)
    OBJ += gfx/drivers/caca_gfx.o gfx/drivers_font/caca_font.o
    LIBS += $(CACA_LIBS)
    DEF_FLAGS += $(CACA_CFLAGS)
-
-   ifeq ($(HAVE_MENU_COMMON), 1)
-      OBJ += menu/drivers_display/menu_display_caca.o
-   endif
 endif
 
 ifeq ($(HAVE_SIXEL), 1)
@@ -1137,10 +1134,6 @@ ifeq ($(HAVE_SIXEL), 1)
           gfx/drivers_context/sixel_ctx.o
    LIBS += $(SIXEL_LIBS)
    DEF_FLAGS += $(SIXEL_CFLAGS)
-
-   ifeq ($(HAVE_MENU_COMMON), 1)
-      OBJ += menu/drivers_display/menu_display_sixel.o
-   endif
 endif
 
 ifeq ($(HAVE_NETWORK_VIDEO), 1)
@@ -1172,7 +1165,7 @@ ifeq ($(HAVE_VITAGL), 1)
    OBJ += gfx/drivers/gl1.o \
           gfx/drivers_font/gl1_raster_font.o \
           gfx/drivers_context/vita_ctx.o \
-          menu/drivers_display/menu_display_gl1.o
+          gfx/drivers_display/gfx_display_gl1.o
 endif
 
 ifeq ($(HAVE_GL_CONTEXT), 1)
@@ -1180,7 +1173,8 @@ ifeq ($(HAVE_GL_CONTEXT), 1)
       DEFINES += -DHAVE_OPENGL
       OBJ += gfx/drivers/gl.o \
              $(LIBRETRO_COMM_DIR)/gfx/gl_capabilities.o \
-             gfx/drivers_font/gl_raster_font.o
+             gfx/drivers_font/gl_raster_font.o \
+				 gfx/drivers_display/gfx_display_gl.o
    endif
 
    OBJ += $(LIBRETRO_COMM_DIR)/glsym/rglgen.o
@@ -1188,17 +1182,8 @@ ifeq ($(HAVE_GL_CONTEXT), 1)
    ifeq ($(HAVE_OPENGL1), 1)
       DEFINES += -DHAVE_OPENGL1
       OBJ += gfx/drivers/gl1.o \
-             gfx/drivers_font/gl1_raster_font.o
-   endif
-
-   ifeq ($(HAVE_MENU_COMMON), 1)
-      ifeq ($(HAVE_GL_MODERN), 1)
-         OBJ += menu/drivers_display/menu_display_gl.o
-      endif
-
-      ifeq ($(HAVE_OPENGL1), 1)
-         OBJ += menu/drivers_display/menu_display_gl1.o
-      endif
+             gfx/drivers_font/gl1_raster_font.o \
+				 gfx/drivers_display/gfx_display_gl1.o
    endif
 
    ifeq ($(HAVE_VIDEOCORE), 1)
@@ -1246,11 +1231,8 @@ ifeq ($(HAVE_GL_CONTEXT), 1)
              gfx/common/metal/MenuDisplay.o \
              gfx/common/metal_common.o \
              gfx/drivers/metal.o \
-             gfx/drivers_font/metal_raster_font.o
-
-      ifeq ($(HAVE_MENU_COMMON), 1)
-         OBJ += menu/drivers_display/menu_display_metal.o
-      endif
+             gfx/drivers_font/metal_raster_font.o \
+				 gfx/drivers_display/gfx_display_metal.o
    endif
 
    ifeq ($(HAVE_MPV), 1)
@@ -1346,7 +1328,8 @@ ifeq ($(HAVE_VULKAN), 1)
    OBJ += gfx/drivers/vulkan.o \
           gfx/common/vulkan_common.o \
           $(LIBRETRO_COMM_DIR)/vulkan/vulkan_symbol_wrapper.o \
-          gfx/drivers_font/vulkan_raster_font.o
+          gfx/drivers_font/vulkan_raster_font.o \
+			 gfx/drivers_display/gfx_display_vulkan.o
 
    ifeq ($(HAVE_SLANG), 1)
       OBJ += gfx/drivers_shader/shader_vulkan.o
@@ -1354,9 +1337,6 @@ ifeq ($(HAVE_VULKAN), 1)
 
    ifeq ($(HAVE_VULKAN_DISPLAY), 1)
       OBJ += gfx/drivers_context/khr_display_ctx.o
-   endif
-   ifeq ($(HAVE_MENU_COMMON), 1)
-      OBJ += menu/drivers_display/menu_display_vulkan.o
    endif
    NEED_CXX_LINKER = 1
    DEFINES += -DHAVE_VULKAN
@@ -1366,10 +1346,8 @@ endif
 ifeq ($(HAVE_OPENGL_CORE), 1)
    OBJ += gfx/drivers/gl_core.o \
           gfx/drivers_font/gl_core_raster_font.o \
-			 gfx/drivers_shader/shader_gl_core.o
-   ifeq ($(HAVE_MENU_COMMON), 1)
-      OBJ += menu/drivers_display/menu_display_gl_core.o
-   endif
+			 gfx/drivers_shader/shader_gl_core.o \
+			 gfx/drivers_display/gfx_display_gl_core.o
 
    DEFINES += -DHAVE_OPENGL_CORE
    NEED_CXX_LINKER  = 1
@@ -1436,10 +1414,8 @@ ifeq ($(HAVE_D3D10), 1)
    HAVE_D3D_COMMON = 1
    OBJ += gfx/drivers/d3d10.o \
           gfx/common/d3d10_common.o \
-          gfx/drivers_font/d3d10_font.o
-   ifeq ($(HAVE_MENU_COMMON), 1)
-      OBJ += menu/drivers_display/menu_display_d3d10.o
-   endif
+          gfx/drivers_font/d3d10_font.o \
+			 gfx/drivers_display/gfx_display_d3d10.o
    DEFINES += -DHAVE_D3D10
 endif
 
@@ -1447,10 +1423,8 @@ ifeq ($(HAVE_D3D11), 1)
    HAVE_D3D_COMMON = 1
    OBJ += gfx/drivers/d3d11.o \
           gfx/common/d3d11_common.o \
-          gfx/drivers_font/d3d11_font.o
-   ifeq ($(HAVE_MENU_COMMON), 1)
-      OBJ += menu/drivers_display/menu_display_d3d11.o
-   endif
+          gfx/drivers_font/d3d11_font.o \
+			 gfx/drivers_display/gfx_display_d3d11.o
    DEFINES += -DHAVE_D3D11
 endif
 
@@ -1458,10 +1432,8 @@ ifeq ($(HAVE_D3D12), 1)
    HAVE_D3D_COMMON = 1
    OBJ += gfx/drivers/d3d12.o \
           gfx/common/d3d12_common.o \
-          gfx/drivers_font/d3d12_font.o
-   ifeq ($(HAVE_MENU_COMMON), 1)
-      OBJ += menu/drivers_display/menu_display_d3d12.o
-   endif
+          gfx/drivers_font/d3d12_font.o \
+			 gfx/drivers_display/gfx_display_d3d12.o
    DEFINES += -DHAVE_D3D12
 endif
 
@@ -1499,20 +1471,14 @@ ifeq ($(HAVE_D3D8), 1)
    DEFINES += -DHAVE_D3D8
    OBJ += gfx/drivers/d3d8.o
    OBJ += gfx/common/d3d8_common.o
-
-   ifeq ($(HAVE_MENU_COMMON), 1)
-      OBJ += menu/drivers_display/menu_display_d3d8.o
-   endif
+	OBJ += gfx/drivers_display/gfx_display_d3d8.o
 endif
 
 ifeq ($(HAVE_D3D9), 1)
    DEFINES += -DHAVE_D3D9
    OBJ += gfx/drivers/d3d9.o
    OBJ += gfx/common/d3d9_common.o
-
-   ifeq ($(HAVE_MENU_COMMON), 1)
-      OBJ += menu/drivers_display/menu_display_d3d9.o
-   endif
+	OBJ += gfx/drivers_display/gfx_display_d3d9.o
 endif
 
 ifeq ($(HAVE_D3D_COMMON), 1)
@@ -1548,8 +1514,9 @@ ifeq ($(HAVE_SHADERS_COMMON), 1)
    OBJ += gfx/video_shader_parse.o
 endif
 
-ifeq ($(HAVE_GLSLANG), 1)
-   DEFINES += -DHAVE_GLSLANG
+ifeq ($(HAVE_BUILTINGLSLANG), 1)
+   NEED_CXX_LINKER = 1
+   HAVE_GLSLANG_COMMON = 1
 
    ifneq ($(findstring Win32,$(OS)),)
       GLSLANG_PLATFORM := Windows
@@ -1563,8 +1530,7 @@ ifeq ($(HAVE_GLSLANG), 1)
       -I$(DEPS_DIR)/glslang/glslang \
       -I$(DEPS_DIR)/glslang/glslang/glslang/MachineIndependent \
       -I$(DEPS_DIR)/glslang/glslang/glslang/Public \
-      -I$(DEPS_DIR)/glslang/glslang/SPIRV \
-      -I$(DEPS_DIR)/glslang
+      -I$(DEPS_DIR)/glslang/glslang/SPIRV
 
    GLSLANG_SOURCES := \
       $(wildcard $(DEPS_DIR)/glslang/*.cpp) \
@@ -1579,7 +1545,23 @@ ifeq ($(HAVE_GLSLANG), 1)
       DEFINES += -DENABLE_HLSL
       GLSLANG_SOURCES += $(wildcard $(DEPS_DIR)/glslang/glslang/hlsl/*.cpp)
    endif
+else ifeq ($(HAVE_GLSLANG),1)
+   HAVE_GLSLANG_COMMON = 1
+   GLSLANG_SOURCES := $(DEPS_DIR)/glslang/glslang.cpp
 
+   # The order of these libs are somewhat specific
+   LIBS += $(GLSLANG_LIBS) \
+           $(GLSLANG_OSDEPENDENT_LIBS) \
+           $(GLSLANG_OGLCOMPILER_LIBS) \
+           $(GLSLANG_HLSL_LIBS) \
+           $(GLSLANG_SPIRV_LIBS) \
+           $(GLSLANG_SPIRV_TOOLS_OPT_LIBS) \
+           $(GLSLANG_SPIRV_TOOLS_LIBS)
+endif
+
+ifeq ($(HAVE_GLSLANG_COMMON), 1)
+   DEFINES += -DHAVE_GLSLANG
+   INCLUDE_DIRS += -I$(DEPS_DIR)/glslang
    OBJ += $(GLSLANG_SOURCES:.cpp=.o)
 endif
 
@@ -1788,10 +1770,11 @@ ifeq ($(HAVE_NETWORKING), 1)
           tasks/task_netplay_lan_scan.o \
           tasks/task_netplay_nat_traversal.o \
           tasks/task_wifi.o \
+			 tasks/task_pl_thumbnail_download.o \
           tasks/task_netplay_find_content.o
 
    ifeq ($(HAVE_MENU_COMMON), 1)
-      OBJ += tasks/task_pl_thumbnail_download.o \
+      OBJ +=  \
              tasks/task_core_updater.o \
              menu/menu_networking.o
    endif
@@ -1956,8 +1939,7 @@ endif
 ifneq ($(findstring FPGA,$(OS)),)
    OBJ += gfx/drivers/fpga_gfx.o \
           gfx/drivers_context/fpga_ctx.o \
-          gfx/drivers_font/fpga_font.o \
-          menu/drivers_display/menu_display_fpga.o
+          gfx/drivers_font/fpga_font.o
 endif
 
 ifneq ($(findstring Win32,$(OS)),)
@@ -1969,11 +1951,9 @@ ifneq ($(findstring Win32,$(OS)),)
    ifeq ($(HAVE_GDI), 1)
       OBJ += gfx/drivers/gdi_gfx.o \
 				 gfx/drivers_context/gdi_ctx.o \
-				 gfx/drivers_font/gdi_font.o
+				 gfx/drivers_font/gdi_font.o \
+				 gfx/drivers_display/gfx_display_gdi.o
 		LIBS += -lmsimg32
-   ifeq ($(HAVE_MENU_COMMON), 1)
-      OBJ += menu/drivers_display/menu_display_gdi.o
-   endif
    endif
    LIBS += -lhid -lsetupapi
 endif
@@ -2023,10 +2003,6 @@ ifneq ($(findstring DOS,$(OS)),)
           input/drivers/dos_input.o \
           input/drivers_joypad/dos_joypad.o \
           frontend/drivers/platform_dos.o
-
-   ifeq ($(HAVE_MENU_COMMON), 1)
-      OBJ += menu/drivers_display/menu_display_vga.o
-   endif
 endif
 
 ifeq ($(HAVE_STATIC_VIDEO_FILTERS), 1)

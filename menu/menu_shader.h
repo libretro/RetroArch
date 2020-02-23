@@ -19,7 +19,6 @@
 
 #include <retro_common_api.h>
 
-#include "../retroarch.h"
 #include "../gfx/video_shader_parse.h"
 
 RETRO_BEGIN_DECLS
@@ -70,8 +69,12 @@ bool menu_shader_manager_set_preset(
  * Needs to be consistent with retroarch_load_shader_preset()
  * Auto-shaders will be saved as a reference if possible
  **/
-bool menu_shader_manager_save_auto_preset(const struct video_shader *shader,
-      enum auto_shader_type type, bool apply);
+bool menu_shader_manager_save_auto_preset(
+      const struct video_shader *shader,
+      enum auto_shader_type type,
+      const char *dir_video_shader,
+      const char *dir_menu_config,
+      bool apply);
 
 /**
  * menu_shader_manager_save_preset:
@@ -82,7 +85,10 @@ bool menu_shader_manager_save_auto_preset(const struct video_shader *shader,
  * Save a shader preset to disk.
  **/
 bool menu_shader_manager_save_preset(const struct video_shader *shader,
-      const char *basename, bool apply);
+      const char *basename,
+      const char *dir_video_shader,
+      const char *dir_menu_config,
+      bool apply);
 
 /**
  * menu_shader_manager_get_type:
@@ -100,7 +106,10 @@ enum rarch_shader_type menu_shader_manager_get_type(
  *
  * Apply shader state changes.
  **/
-void menu_shader_manager_apply_changes(struct video_shader *shader);
+void menu_shader_manager_apply_changes(
+      struct video_shader *shader,
+      const char *dir_video_shader,
+      const char *dir_menu_config);
 
 int menu_shader_manager_clear_num_passes(struct video_shader *shader);
 
@@ -122,9 +131,15 @@ void menu_shader_manager_clear_pass_path(struct video_shader *shader,
  *
  * Deletes an auto-shader.
  **/
-bool menu_shader_manager_remove_auto_preset(enum auto_shader_type type);
+bool menu_shader_manager_remove_auto_preset(
+      enum auto_shader_type type,
+      const char *dir_video_shader,
+      const char *dir_menu_config);
 
-bool menu_shader_manager_auto_preset_exists(enum auto_shader_type type);
+bool menu_shader_manager_auto_preset_exists(
+      enum auto_shader_type type,
+      const char *dir_video_shader,
+      const char *dir_menu_config);
 
 void menu_shader_set_modified(bool modified);
 

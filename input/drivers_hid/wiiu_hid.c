@@ -331,7 +331,7 @@ static void log_device(HIDDevice *device)
 static uint8_t try_init_driver(wiiu_adapter_t *adapter)
 {
    adapter->driver_handle = adapter->driver->init(adapter);
-   if (adapter->driver_handle == NULL)
+   if (!adapter->driver_handle)
    {
      RARCH_ERR("[hid]: Failed to initialize driver: %s\n",
         adapter->driver->name);

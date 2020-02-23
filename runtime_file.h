@@ -30,7 +30,6 @@
 #include <boolean.h>
 
 #include "playlist.h"
-#include "menu/menu_defines.h"
 
 RETRO_BEGIN_DECLS
 
@@ -57,6 +56,30 @@ typedef struct
    rtl_last_played_t last_played;
    char path[PATH_MAX_LENGTH];
 } runtime_log_t;
+
+enum playlist_sublabel_last_played_style_type
+{
+   PLAYLIST_LAST_PLAYED_STYLE_YMD_HMS = 0,
+   PLAYLIST_LAST_PLAYED_STYLE_YMD_HM,
+   PLAYLIST_LAST_PLAYED_STYLE_MDYYYY,
+   PLAYLIST_LAST_PLAYED_STYLE_DM_HM,
+   PLAYLIST_LAST_PLAYED_STYLE_MD_HM,
+   PLAYLIST_LAST_PLAYED_STYLE_YMD_HMS_AM_PM,
+   PLAYLIST_LAST_PLAYED_STYLE_YMD_HM_AM_PM,
+   PLAYLIST_LAST_PLAYED_STYLE_MDYYYY_AM_PM,
+   PLAYLIST_LAST_PLAYED_STYLE_DM_HM_AM_PM,
+   PLAYLIST_LAST_PLAYED_STYLE_MD_HM_AM_PM,
+   PLAYLIST_LAST_PLAYED_STYLE_LAST
+};
+
+enum playlist_sublabel_runtime
+{
+   PLAYLIST_RUNTIME_PER_CORE = 0,
+   PLAYLIST_RUNTIME_AGGREGATE,
+   PLAYLIST_RUNTIME_LAST
+};
+
+
 
 /* Initialisation */
 

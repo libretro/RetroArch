@@ -3877,10 +3877,6 @@ MSG_HASH(
     "Ενεργοποιεί την καρτέλα Ρυθμίσεις. Χρειάζεται επανεκκίνηση για να εμφανιστεί η καρτέλα."
     )
 MSG_HASH(
-    MENU_ENUM_SUBLABEL_CONTENT_SHOW_SETTINGS_PASSWORD,
-    "Supplying a password when hiding the settings tab makes it possible to later restore it from the menu, by going to the Main Menu tab, selecting Enable Settings Tab and entering the password."
-    )
-MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,
     "Επίτρεψη μετονομασίας καταχωρήσεων"
     )
@@ -4328,10 +4324,6 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_META_STREAMING_TOGGLE,
     "Απευθείας Μετάδοση"
-    )
-MSG_HASH(
-    MSG_CHEEVOS_HARDCORE_MODE_DISABLED,
-    "A savestate was loaded, Achievements Hardcore Mode disabled for the current session. Restart to enable hardcore mode."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_QUALITY,

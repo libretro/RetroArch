@@ -81,7 +81,7 @@ typedef struct frontend_ctx_driver
    environment_get_t environment_get;
    void (*init)(void *data);
    void (*deinit)(void *data);
-   void (*exitspawn)(char *s, size_t len);
+   void (*exitspawn)(char *s, size_t len, char *args);
 
    process_args_t process_args;
    void (*exec)(const char *, bool);
@@ -110,6 +110,9 @@ typedef struct frontend_ctx_driver
    void (*set_sustained_performance_mode)(bool on);
    const char* (*get_cpu_model_name)(void);
    enum retro_language (*get_user_language)(void);
+   bool (*is_narrator_running)(void);
+   bool (*accessibility_speak)(int speed,
+         const char* speak_text, int priority);
 
    const char *ident;
 
@@ -172,7 +175,7 @@ void frontend_driver_free(void);
 
 enum frontend_architecture frontend_driver_get_cpu_architecture(void);
 
-void frontend_driver_get_cpu_architecture_str(
+const void *frontend_driver_get_cpu_architecture_str(
       char *frontend_architecture, size_t size);
 
 environment_get_t frontend_driver_environment_get_ptr(void);
@@ -185,7 +188,7 @@ void frontend_driver_shutdown(bool a);
 
 void frontend_driver_deinit(void *args);
 
-void frontend_driver_exitspawn(char *s, size_t len);
+void frontend_driver_exitspawn(char *s, size_t len, char *args);
 
 bool frontend_driver_has_fork(void);
 

@@ -166,7 +166,7 @@ static void frontend_gx_get_environment_settings(
 
    /* This situation can happen on some loaders so we really need some
       fake args or else retroarch will just crash on parsing NULL pointers */
-   if(*argc == 0 || argv == NULL)
+   if(*argc == 0 || !argv)
    {
       struct rarch_main_wrap *args = (struct rarch_main_wrap*)params_data;
       if (args)
@@ -366,7 +366,7 @@ static void frontend_gx_exec(const char *path, bool should_load_game)
 #endif
 }
 
-static void frontend_gx_exitspawn(char *s, size_t len)
+static void frontend_gx_exitspawn(char *s, size_t len, char *args)
 {
    bool should_load_game = false;
 #if defined(IS_SALAMANDER)
@@ -567,5 +567,7 @@ frontend_ctx_driver_t frontend_ctx_gx = {
    NULL,                            /* set_sustained_performance_mode */
    NULL,                            /* get_cpu_model_name */
    NULL,                            /* get_user_language */
+   NULL,                         /* is_narrator_running */
+   NULL,                         /* accessibility_speak */
    "gx",
 };

@@ -37,9 +37,9 @@
 
 #ifdef HAVE_MENU
 #import "../../menu/menu_driver.h"
-#ifdef HAVE_MENU_WIDGETS
-#import "../../menu/widgets/menu_widgets.h"
 #endif
+#ifdef HAVE_GFX_WIDGETS
+#import "../gfx_widgets.h"
 #endif
 
 #import "../font_driver.h"
@@ -104,7 +104,8 @@ static bool metal_frame(void *data, const void *frame,
                      info:video_info];
 }
 
-static void metal_set_nonblock_state(void *data, bool non_block)
+static void metal_set_nonblock_state(void *data, bool non_block,
+      bool adaptive_vsync_enabled, unsigned swap_interval)
 {
    MetalDriver *md = (__bridge MetalDriver *)data;
    md.context.displaySyncEnabled = !non_block;
@@ -410,8 +411,8 @@ static void metal_get_overlay_interface(void *data,
 
 #endif
 
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-static bool metal_menu_widgets_enabled(void *data)
+#ifdef HAVE_GFX_WIDGETS
+static bool metal_gfx_widgets_enabled(void *data)
 {
    (void)data;
    return true;
@@ -442,7 +443,7 @@ video_driver_t video_metal = {
 #endif
    metal_get_poke_interface,
    NULL, /* metal_wrap_type_to_enum */
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-   metal_menu_widgets_enabled
+#ifdef HAVE_GFX_WIDGETS
+   metal_gfx_widgets_enabled
 #endif
 };

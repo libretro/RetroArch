@@ -143,13 +143,9 @@ bool disk_control_append_enabled(
 bool disk_control_image_label_enabled(
       disk_control_interface_t *disk_control)
 {
-   if (!disk_control)
+   if (!disk_control || !disk_control->cb.get_image_label)
       return false;
-
-   if (disk_control->cb.get_image_label)
-      return true;
-
-   return false;
+   return true;
 }
 
 /* Returns true if core supports setting
@@ -177,12 +173,8 @@ bool disk_control_initial_image_enabled(
 bool disk_control_get_eject_state(
       disk_control_interface_t *disk_control)
 {
-   if (!disk_control)
+   if (!disk_control || !disk_control->cb.get_eject_state)
       return false;
-
-   if (!disk_control->cb.get_eject_state)
-      return false;
-
    return disk_control->cb.get_eject_state();
 }
 
@@ -191,12 +183,8 @@ bool disk_control_get_eject_state(
 unsigned disk_control_get_num_images(
       disk_control_interface_t *disk_control)
 {
-   if (!disk_control)
+   if (!disk_control || !disk_control->cb.get_num_images)
       return 0;
-
-   if (!disk_control->cb.get_num_images)
-      return 0;
-
    return disk_control->cb.get_num_images();
 }
 
@@ -204,12 +192,8 @@ unsigned disk_control_get_num_images(
 unsigned disk_control_get_image_index(
       disk_control_interface_t *disk_control)
 {
-   if (!disk_control)
+   if (!disk_control || !disk_control->cb.get_image_index)
       return 0;
-
-   if (!disk_control->cb.get_image_index)
-      return 0;
-
    return disk_control->cb.get_image_index();
 }
 
@@ -236,12 +220,66 @@ void disk_control_get_image_label(
 
 error:
    label[0] = '\0';
-   return;
 }
 
 /***********/
 /* Setters */
 /***********/
+
+/* Generates an appropriate log/notification message
+ * for a disk index change event */
+static void disk_control_get_index_set_msg(
+      disk_control_interface_t *disk_control,
+      unsigned num_images, unsigned index, bool success,
+      unsigned *msg_duration, char *msg, size_t len)
+{
+   bool has_label = false;
+   char image_label[PATH_MAX_LENGTH];
+
+   image_label[0] = '\0';
+
+   if (!disk_control || !msg_duration || !msg || len < 1)
+      return;
+
+   /* Attempt to get image label */
+   if (index < num_images)
+   {
+      disk_control_get_image_label(
+            disk_control, index, image_label, sizeof(image_label));
+      has_label = !string_is_empty(image_label);
+   }
+
+   /* Get message duration
+    * > Default is 60
+    * > If a label is shown, then increase duration by 50%
+    * > For errors, duration is always 180 */
+   *msg_duration = success ?
+         (has_label ? 90 : 60) :
+         180;
+
+   /* Check whether image was inserted or removed */
+   if (index < num_images)
+   {
+      if (has_label)
+         snprintf(
+               msg, len, "%s: %u/%u - %s",
+               success ? msg_hash_to_str(MSG_SETTING_DISK_IN_TRAY) :
+                     msg_hash_to_str(MSG_FAILED_TO_SET_DISK),
+               index + 1, num_images, image_label);
+      else
+         snprintf(
+               msg, len, "%s: %u/%u",
+               success ? msg_hash_to_str(MSG_SETTING_DISK_IN_TRAY) :
+                     msg_hash_to_str(MSG_FAILED_TO_SET_DISK),
+               index + 1, num_images);
+   }
+   else
+      strlcpy(
+            msg,
+            success ? msg_hash_to_str(MSG_REMOVED_DISK_FROM_TRAY) :
+                  msg_hash_to_str(MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY),
+            len);
+}
 
 /* Sets the eject state of the virtual disk tray */
 bool disk_control_set_eject_state(
@@ -253,10 +291,7 @@ bool disk_control_set_eject_state(
 
    msg[0] = '\0';
 
-   if (!disk_control)
-      return false;
-
-   if (!disk_control->cb.set_eject_state)
+   if (!disk_control || !disk_control->cb.set_eject_state)
       return false;
 
    /* Set eject state */
@@ -301,9 +336,10 @@ bool disk_control_set_index(
       disk_control_interface_t *disk_control,
       unsigned index, bool verbose)
 {
-   bool error          = false;
-   unsigned num_images = 0;
-   char msg[128];
+   bool error            = false;
+   unsigned num_images   = 0;
+   unsigned msg_duration = 0;
+   char msg[PATH_MAX_LENGTH];
 
    msg[0] = '\0';
 
@@ -319,37 +355,18 @@ bool disk_control_set_index(
    if (!disk_control->cb.get_eject_state())
       return false;
 
+   /* Get current number of disk images */
    num_images = disk_control->cb.get_num_images();
 
-   if (disk_control->cb.set_image_index(index))
-   {
-      if (index < num_images)
-         snprintf(
-               msg, sizeof(msg), "%s: %u/%u",
-               msg_hash_to_str(MSG_SETTING_DISK_IN_TRAY),
-               index + 1, num_images);
-      else
-         strlcpy(
-               msg,
-               msg_hash_to_str(MSG_REMOVED_DISK_FROM_TRAY),
-               sizeof(msg));
-   }
-   else
-   {
-      error = true;
+   /* Perform 'set index' action */
+   error = !disk_control->cb.set_image_index(index);
 
-      if (index < num_images)
-         snprintf(
-               msg, sizeof(msg), "%s %u/%u",
-               msg_hash_to_str(MSG_FAILED_TO_SET_DISK),
-               index + 1, num_images);
-      else
-         strlcpy(
-               msg,
-               msg_hash_to_str(MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY),
-               sizeof(msg));
-   }
+   /* Get log/notification message */
+   disk_control_get_index_set_msg(
+         disk_control, num_images, index, !error,
+         &msg_duration, msg, sizeof(msg));
 
+   /* Output log/notification message */
    if (!string_is_empty(msg))
    {
       if (error)
@@ -360,7 +377,7 @@ bool disk_control_set_index(
       /* Errors should always be displayed */
       if (verbose || error)
          runloop_msg_queue_push(
-               msg, 1, error ? 180 : 60,
+               msg, 1, msg_duration,
                true, NULL,
                MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }
@@ -724,20 +741,20 @@ bool disk_control_verify_initial_index(disk_control_interface_t *disk_control)
     * is available */
    if (disk_control->initial_num_images > 1)
    {
-      char msg[128];
+      unsigned msg_duration = 0;
+      char msg[PATH_MAX_LENGTH];
 
       msg[0] = '\0';
 
-      snprintf(
-            msg, sizeof(msg), "%s: %u/%u",
-            msg_hash_to_str(MSG_SETTING_DISK_IN_TRAY),
-            image_index + 1, disk_control->initial_num_images);
+      disk_control_get_index_set_msg(
+            disk_control, disk_control->initial_num_images, image_index, true,
+            &msg_duration, msg, sizeof(msg));
 
       RARCH_LOG("%s\n", msg);
 
       runloop_msg_queue_push(
             msg,
-            0, 60,
+            0, msg_duration,
             true, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }

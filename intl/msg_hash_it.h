@@ -2392,14 +2392,10 @@ MSG_HASH(MSG_UNDOING_SAVE_STATE,
       "Annullamento del salvataggio")
 MSG_HASH(MSG_UNKNOWN,
       "Sconosciuto")
-MSG_HASH(MSG_UNPAUSED,
-      "Unpaused.")
 MSG_HASH(MSG_UNRECOGNIZED_COMMAND,
       "Comando non riconosciuto")
 MSG_HASH(MSG_USING_CORE_NAME_FOR_NEW_CONFIG,
       "Utilizzo del nome di un core per la nuova configurazione.")
-MSG_HASH(MSG_USING_LIBRETRO_DUMMY_CORE_RECORDING_SKIPPED,
-      "Using libretro dummy core. Skipping recording.")
 MSG_HASH(MSG_VALUE_CONNECT_DEVICE_FROM_A_VALID_PORT,
       "Collegare il dispositivo a una porta valida.")
 MSG_HASH(MSG_VALUE_DISCONNECTING_DEVICE_FROM_PORT,
@@ -3815,32 +3811,8 @@ MSG_HASH(
    "Azerbaijani"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_ALBANIAN,
-   "Albanese"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_AFRIKAANS,
-   "Afrikaans"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_ESTONIAN,
    "Estone"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_FILIPINO,
-   "Filippino"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_FINNISH,
-   "Finnish"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_GALICIAN,
-   "Galician"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_GEORGIAN,
-   "Georgian"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_GUJARATI,
@@ -3863,16 +3835,8 @@ MSG_HASH(
    "Ungherese"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_ICELANDIC,
-   "Icelandic"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_INDONESIAN,
    "Indonesiano"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_IRISH,
-   "Irish"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_KANNADA,
@@ -3949,14 +3913,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_URDU,
    "Urdu"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_WELSH,
-   "Welsh"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_YIDDISH,
-   "Yiddish"
    )
 MSG_HASH(MENU_ENUM_SUBLABEL_LOAD_DISC,
       "Carica un disco fisico multimediale. Dovresti prima selezionare il core (Carica Core) che intendi utilizzare con il disco.")

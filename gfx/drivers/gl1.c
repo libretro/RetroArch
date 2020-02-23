@@ -34,9 +34,9 @@
 
 #ifdef HAVE_MENU
 #include "../../menu/menu_driver.h"
-#ifdef HAVE_MENU_WIDGETS
-#include "../../menu/widgets/menu_widgets.h"
 #endif
+#ifdef HAVE_GFX_WIDGETS
+#include "../gfx_widgets.h"
 #endif
 
 #include "../font_driver.h"
@@ -347,7 +347,7 @@ static void *gl1_gfx_init(const video_info_t *video,
    /* Get real known video size, which might have been altered by context. */
 
    if (temp_width != 0 && temp_height != 0)
-      video_driver_set_size(&temp_width, &temp_height);
+      video_driver_set_size(temp_width, temp_height);
 
    video_driver_get_size(&temp_width, &temp_height);
 
@@ -394,7 +394,9 @@ static void *gl1_gfx_init(const video_info_t *video,
    video_context_driver_input_driver(&inp);
 
    if (settings->bools.video_font_enable)
-      font_driver_init_osd(gl1, false,
+      font_driver_init_osd(gl1,
+            video,
+            false,
             video->is_threaded,
             FONT_DRIVER_RENDER_OPENGL1_API);
 
@@ -868,11 +870,11 @@ static bool gl1_gfx_frame(void *data, const void *frame,
 #endif
       }
    }
-
-#ifdef HAVE_MENU_WIDGETS
-   if (video_info->widgets_inited)
-      menu_widgets_frame(video_info);
 #endif
+
+#ifdef HAVE_GFX_WIDGETS
+   if (video_info->widgets_inited)
+      gfx_widgets_frame(video_info);
 #endif
 
 #ifdef HAVE_OVERLAY
@@ -923,11 +925,12 @@ static bool gl1_gfx_frame(void *data, const void *frame,
    return true;
 }
 
-static void gl1_gfx_set_nonblock_state(void *data, bool state)
+static void gl1_gfx_set_nonblock_state(void *data, bool state,
+      bool adaptive_vsync_enabled,
+      unsigned swap_interval)
 {
    int interval                = 0;
    gl1_t             *gl1      = (gl1_t*)data;
-   settings_t        *settings = config_get_ptr();
 
    if (!gl1)
       return;
@@ -937,12 +940,10 @@ static void gl1_gfx_set_nonblock_state(void *data, bool state)
    gl1_context_bind_hw_render(gl1, false);
 
    if (!state)
-      interval = settings->uints.video_swap_interval;
+      interval = swap_interval;
 
    if (gl1->ctx_driver->swap_interval)
    {
-      bool adaptive_vsync_enabled            = video_driver_test_all_flags(
-            GFX_CTX_FLAGS_ADAPTIVE_VSYNC) && settings->bools.video_adaptive_vsync;
       if (adaptive_vsync_enabled && interval == 1)
          interval = -1;
       gl1->ctx_driver->swap_interval(gl1->ctx_data, interval);
@@ -972,7 +973,7 @@ static bool gl1_gfx_alive(void *data)
    ret = !quit;
 
    if (temp_width != 0 && temp_height != 0)
-      video_driver_set_size(&temp_width, &temp_height);
+      video_driver_set_size(temp_width, temp_height);
 
    return ret;
 }
@@ -1126,14 +1127,15 @@ static void gl1_set_texture_frame(void *data,
       const void *frame, bool rgb32, unsigned width, unsigned height,
       float alpha)
 {
-   settings_t *settings = config_get_ptr();
-   unsigned pitch = width * 2;
-   gl1_t *gl1 = (gl1_t*)data;
+   settings_t *settings    = config_get_ptr();
+   bool menu_linear_filter = settings->bools.menu_linear_filter;
+   unsigned       pitch    = width * 2;
+   gl1_t              *gl1 = (gl1_t*)data;
 
    if (!gl1)
       return;
 
-   gl1->menu_smooth = settings->bools.menu_linear_filter;
+   gl1->menu_smooth        = menu_linear_filter;
 
    gl1_context_bind_hw_render(gl1, false);
 
@@ -1265,14 +1267,28 @@ static void gl1_load_texture_data(
 static void video_texture_load_gl1(
       struct texture_image *ti,
       enum texture_filter_type filter_type,
-      uintptr_t *id)
+      uintptr_t *idptr)
 {
+   GLuint id;
+   unsigned width     = 0;
+   unsigned height    = 0;
+   const void *pixels = NULL;
+
    /* Generate the OpenGL texture object */
-   glGenTextures(1, (GLuint*)id);
-   gl1_load_texture_data((GLuint)*id,
+   glGenTextures(1, &id);
+   *idptr = id;
+
+   if (ti)
+   {
+      width  = ti->width;
+      height = ti->height;
+      pixels = ti->pixels;
+   }
+
+   gl1_load_texture_data(id,
          RARCH_WRAP_EDGE, filter_type,
          4 /* TODO/FIXME - dehardcode */,
-         ti->width, ti->height, ti->pixels,
+         width, height, pixels,
          sizeof(uint32_t) /* TODO/FIXME - dehardcode */
          );
 }
@@ -1389,8 +1405,8 @@ static void gl1_gfx_get_poke_interface(void *data,
    *iface = &gl1_poke_interface;
 }
 
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-static bool gl1_menu_widgets_enabled(void *data)
+#ifdef HAVE_GFX_WIDGETS
+static bool gl1_gfx_widgets_enabled(void *data)
 {
    (void)data;
    return true;
@@ -1555,7 +1571,7 @@ video_driver_t video_gl1 = {
 #endif
   gl1_gfx_get_poke_interface,
   gl1_wrap_type_to_enum,
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-  gl1_menu_widgets_enabled
+#ifdef HAVE_GFX_WIDGETS
+  gl1_gfx_widgets_enabled
 #endif
 };

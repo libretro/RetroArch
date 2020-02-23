@@ -2298,20 +2298,8 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_ROOM_NICKNAME_LAN,
       "Nickname (lan): %s")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_FOUND,
       "Compatible content found")
-MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_CROP_OVERSCAN,
-      "Cuts off a few pixels around the edges of the image customarily left blank by developers which sometimes also contain garbage pixels.")
-MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
-      "Adds a slight blur to the image to take the edge off of the hard pixel edges. This option has very little impact on performance.")
-MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_FILTER,
-      "Apply a CPU-powered video filter. NOTE: Might come at a high performance cost. Some video filters might only work for cores that use 32bit or 16bit color.")
-MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_USERNAME,
-      "Input the username of your Retro Achievements account.")
-MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_PASSWORD,
-      "Input the password of your Retro Achievements account.")
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_NICKNAME,
       "Voer hier je gebruikersnaam in. Dit zal o.a. gebruikt worden voor netplay sessies.")
-MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_POST_FILTER_RECORD,
-      "Capture the image after filters (but not shaders) are applied. Your video will look as fancy as what you see on your screen.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CORE_LIST,
       "Selecteer welke core je wilt gebruiken.")
 MSG_HASH(
@@ -2326,181 +2314,9 @@ MSG_HASH(MENU_ENUM_SUBLABEL_SYSTEM_INFORMATION,
       "Laat apparaat-specifieke informatie zien.")
 MSG_HASH(MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
       "Sluit het programma af.")
-MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH,
-      "Set the custom width size for the display window. Leaving it at 0 will attempt to scale the window as large as possible.")
-MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT,
-      "Set the custom height size for the display window. Leaving it at 0 will attempt to scale the window as large as possible.")
-MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
-      "Set the custom width size for the non-windowed fullscreen mode. Leaving it unset will use the desktop resolution.")
-MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
-      "Set the custom height size for the non-windowed fullscreen mode. Leaving it unset will use the desktop resolution.")
-MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_POS_X,
-      "Specify custom X axis position for onscreen text.")
-MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_POS_Y,
-      "Specify custom Y axis position for onscreen text.")
-MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_FONT_SIZE,
-      "Specify the font size in points.")
-MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_IN_MENU,
-      "Hide the overlay while inside the menu, and show it again when exiting the menu.")
 MSG_HASH(
       MENU_ENUM_SUBLABEL_PLAYLISTS_TAB,
       "Gescande inhoud zal hier getoond worden."
-      )
-MSG_HASH(
-      MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER,
-      "Only scales video in integer steps. The base size depends on system-reported geometry and aspect ratio. If 'Force Aspect' is not set, X/Y will be integer scaled independently."
-      )
-MSG_HASH(
-      MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
-      "Screenshots output of GPU shaded material if available."
-      )
-MSG_HASH(
-      MENU_ENUM_SUBLABEL_VIDEO_ROTATION,
-      "Forces a certain rotation of the screen. The rotation is added to rotations which the core sets."
-      )
-MSG_HASH(
-      MENU_ENUM_SUBLABEL_VIDEO_FORCE_SRGB_DISABLE,
-      "Forcibly disable sRGB FBO support. Some Intel OpenGL drivers on Windows have video problems with sRGB FBO support if this is enabled. Enabling this can work around it."
-      )
-MSG_HASH(
-      MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
-      "Start in fullscreen. Can be changed at runtime."
-      )
-MSG_HASH(
-      MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
-      "If fullscreen, prefer using a windowed fullscreen mode."
-      )
-MSG_HASH(
-      MENU_ENUM_SUBLABEL_VIDEO_GPU_RECORD,
-      "Records output of GPU shaded material if available."
-      )
-MSG_HASH(
-      MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_INDEX,
-      "When making a savestate, save state index is automatically increased before it is saved. When loading content, the index will be set to the highest existing index."
-      )
-MSG_HASH(
-      MENU_ENUM_SUBLABEL_BLOCK_SRAM_OVERWRITE,
-      "Block Save RAM from being overwritten when loading save states. Might potentially lead to buggy games."
-      )
-MSG_HASH(
-      MENU_ENUM_SUBLABEL_FASTFORWARD_RATIO,
-      "The maximum rate at which content will be run when using fast forward (e.g., 5.0x for 60 fps content = 300 fps cap). If set to 0.0x, fastforward ratio is unlimited (no FPS cap)."
-      )
-MSG_HASH(
-      MENU_ENUM_SUBLABEL_SLOWMOTION_RATIO,
-      "When in slow motion, content will slow down by the factor specified/set."
-      )
-MSG_HASH(
-      MENU_ENUM_SUBLABEL_REWIND_ENABLE,
-      "Enable rewinding. This will take a performance hit when playing."
-      )
-MSG_HASH(
-      MENU_ENUM_SUBLABEL_REWIND_GRANULARITY,
-      "When rewinding a defined number of frames, you can rewind several frames at a time, increasing the rewind speed."
-      )
-MSG_HASH(
-      MENU_ENUM_SUBLABEL_LIBRETRO_LOG_LEVEL,
-      "Sets log level for cores. If a log level issued by a core is below this value, it is ignored."
-      )
-MSG_HASH(
-      MENU_ENUM_SUBLABEL_PERFCNT_ENABLE,
-      "Enable performance counters for RetroArch (and cores)."
-      )
-MSG_HASH(
-      MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_SAVE,
-      "Automatically makes a savestate at the end of RetroArch's runtime. RetroArch will automatically load this savestate if 'Auto Load State' is enabled."
-      )
-MSG_HASH(
-      MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_LOAD,
-      "Automatically load the auto save state on startup."
-      )
-MSG_HASH(
-      MENU_ENUM_SUBLABEL_SAVESTATE_THUMBNAIL_ENABLE,
-      "Show thumbnails of save states inside the menu."
-      )
-MSG_HASH(
-      MENU_ENUM_SUBLABEL_AUTOSAVE_INTERVAL,
-      "Autosaves the non-volatile Save RAM at a regular interval. This is disabled by default unless set otherwise. The interval is measured in seconds. A value of 0 disables autosave."
-      )
-MSG_HASH(
-      MENU_ENUM_SUBLABEL_INPUT_REMAP_BINDS_ENABLE,
-      "If enabled, overrides the input binds with the remapped binds set for the current core."
-      )
-MSG_HASH(
-      MENU_ENUM_SUBLABEL_INPUT_AUTODETECT_ENABLE,
-      "Enable input auto-detection. Will attempt to autoconfigure joypads, Plug-and-Play style."
-      )
-MSG_HASH(
-      MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL,
-      "Swap buttons for OK/Cancel. Disabled is the Japanese button orientation, enabled is the western orientation."
-      )
-MSG_HASH(
-      MENU_ENUM_SUBLABEL_PAUSE_LIBRETRO,
-      "If disabled, the content will keep running in the background when RetroArch's menu is toggled."
-      )
-MSG_HASH(
-      MENU_ENUM_SUBLABEL_VIDEO_DRIVER,
-      "Video driver to use."
-      )
-MSG_HASH(
-      MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
-      "Audio driver to use."
-      )
-MSG_HASH(
-      MENU_ENUM_SUBLABEL_INPUT_DRIVER,
-      "Input driver to use. Depending on the video driver, it might force a different input driver."
-      )
-MSG_HASH(
-      MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
-      "Joypad driver to use."
-      )
-MSG_HASH(
-      MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_DRIVER,
-      "Audio resampler driver to use."
-      )
-MSG_HASH(
-      MENU_ENUM_SUBLABEL_CAMERA_DRIVER,
-      "Camera driver to use."
-      )
-MSG_HASH(
-      MENU_ENUM_SUBLABEL_LOCATION_DRIVER,
-      "Location driver to use."
-      )
-MSG_HASH(
-      MENU_ENUM_SUBLABEL_MENU_DRIVER,
-      "Menu driver to use."
-      )
-MSG_HASH(
-      MENU_ENUM_SUBLABEL_RECORD_DRIVER,
-      "Record driver to use."
-      )
-MSG_HASH(
-      MENU_ENUM_SUBLABEL_WIFI_DRIVER,
-      "WiFi driver to use."
-      )
-MSG_HASH(
-      MENU_ENUM_SUBLABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE,
-      "Filter files being shown in filebrowser by supported extensions."
-      )
-MSG_HASH(
-      MENU_ENUM_SUBLABEL_MENU_WALLPAPER,
-      "Select an image to set as menu wallpaper."
-      )
-MSG_HASH(
-      MENU_ENUM_SUBLABEL_DYNAMIC_WALLPAPER,
-      "Dynamically load a new wallpaper depending on context."
-      )
-MSG_HASH(
-      MENU_ENUM_SUBLABEL_AUDIO_DEVICE,
-      "Override the default audio device the audio driver uses. This is driver dependent."
-      )
-MSG_HASH(
-      MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN,
-      "Audio DSP plugin that processes audio before it's sent to the driver."
-      )
-MSG_HASH(
-      MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_RATE,
-      "Audio output sample rate."
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_OVERLAY_OPACITY,
@@ -2523,42 +2339,6 @@ MSG_HASH(
       "Het adres van de host waar we naartoe verbinden."
       )
 MSG_HASH(
-      MENU_ENUM_SUBLABEL_NETPLAY_TCP_UDP_PORT,
-      "The port of the host IP address. Can be either a TCP or UDP port."
-      )
-MSG_HASH(
-      MENU_ENUM_SUBLABEL_NETPLAY_PASSWORD,
-      "The password for connecting to the netplay host. Used only in host mode."
-      )
-MSG_HASH(
-      MENU_ENUM_SUBLABEL_NETPLAY_PUBLIC_ANNOUNCE,
-      "Whether to announce netplay games publicly. If unset, clients must manually connect rather than using the public lobby."
-      )
-MSG_HASH(
-      MENU_ENUM_SUBLABEL_NETPLAY_SPECTATE_PASSWORD,
-      "The password for connecting to the netplay host with only spectator privileges. Used only in host mode."
-      )
-MSG_HASH(
-      MENU_ENUM_SUBLABEL_NETPLAY_START_AS_SPECTATOR,
-      "Whether to start netplay in spectator mode."
-      )
-MSG_HASH(
-      MENU_ENUM_SUBLABEL_NETPLAY_ALLOW_SLAVES,
-      "Whether to allow connections in slave mode. Slave-mode clients require very little processing power on either side, but will suffer significantly from network latency."
-      )
-MSG_HASH(
-      MENU_ENUM_SUBLABEL_NETPLAY_REQUIRE_SLAVES,
-      "Whether to disallow connections not in slave mode. Not recommended except for very fast networks with very weak machines."
-      )
-MSG_HASH(
-      MENU_ENUM_SUBLABEL_NETPLAY_STATELESS_MODE,
-      "Whether to run netplay in a mode not requiring save states. If set to true, a very fast network is required, but no rewinding is performed, so there will be no netplay jitter."
-      )
-MSG_HASH(
-      MENU_ENUM_SUBLABEL_NETPLAY_CHECK_FRAMES,
-      "The frequency in frames with which netplay will verify that the host and client are in sync."
-      )
-MSG_HASH(
       MENU_ENUM_SUBLABEL_TIMEDATE_ENABLE,
       "Huidige tijd/datum weergeven in het menu."
       )
@@ -2572,8 +2352,6 @@ MSG_HASH(
       )
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_USE_MITM_SERVER,
       "Gebruik Relay Server")
-MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY_USE_MITM_SERVER,
-      "Forward netplay connections through a man-in-the-middle server. Useful if the host is behind a firewall or has NAT/UPnP problems.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER,
       "Aan audio mixer toevoegen")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_PLAY,
@@ -2600,34 +2378,18 @@ MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_MIXER_MUTE,
       "Mute/unmute mixer audio.")
 MSG_HASH(MENU_ENUM_LABEL_MENU_SHOW_ONLINE_UPDATER,
       "Online Updater Weergeven")
-MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_ONLINE_UPDATER,
-      "Show/hide the 'Online Updater' option.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_CORE_UPDATER,
       "Show Core Updater")
-MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_CORE_UPDATER,
-      "Show/hide the ability to update cores (and core info files).")
-MSG_HASH(MSG_PREPARING_FOR_CONTENT_SCAN,
-      "Preparing for content scan...")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CORE_DELETE,
       "Verwijder core")
 MSG_HASH(MENU_ENUM_SUBLABEL_CORE_DELETE,
       "Verwijder deze core permanent.")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_RENAME_ENTRY,
-      "Rename the title of the entry.")
-MSG_HASH(MENU_ENUM_LABEL_RENAME_ENTRY,
-      "Rename")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
       "Framebuffer Doorzichtigheid")
-MSG_HASH(MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY,
-      "Modify the opacity of the framebuffer.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES,
       "Favorieten")
-MSG_HASH(MENU_ENUM_SUBLABEL_GOTO_FAVORITES,
-      "Content which you have added to 'Favorites' will appear here.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_GOTO_MUSIC,
       "Muziek")
-MSG_HASH(MENU_ENUM_SUBLABEL_GOTO_MUSIC,
-      "Music which has been previously played will appear here.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_GOTO_IMAGES,
       "Afbeeldingen")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_GOTO_VIDEO,
@@ -2640,8 +2402,6 @@ MSG_HASH(MSG_INPUT_ENABLE_SETTINGS_PASSWORD_OK,
       "Wachtwoord is correct.")
 MSG_HASH(MSG_INPUT_ENABLE_SETTINGS_PASSWORD_NOK,
       "Wachtwoord is incorrect.")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,
-      "Allow to rename entries")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CORE,
       "Toon Core Laden")
 MSG_HASH(MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CORE,
@@ -2690,22 +2450,6 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
       "Toon Save/Load State Ongedaan Maken")
 MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
       "Toon/verberg de opties voor saving/loading een state ongedaan te maken.")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
-      "Show Add to Favorites")
-MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
-      "Show/hide the 'Add to Favorites' option.")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_START_RECORDING,
-      "Show Start Recording")
-MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_START_RECORDING,
-      "Show/hide the 'Start Recording' option.")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_START_STREAMING,
-      "Show Start Streaming")
-MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_START_STREAMING,
-      "Show/hide the 'Start Streaming' option.")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESET_CORE_ASSOCIATION,
-      "Show Reset Core Association")
-MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESET_CORE_ASSOCIATION,
-      "Show/hide the 'Reset Core Association' option.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
       "Toon Opties")
 MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_OPTIONS,
@@ -2736,16 +2480,8 @@ MSG_HASH(MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_INFORMATION,
       "Toon/verberg de 'Informatie' optie.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
       "Kioskmodus Deactiveren")
-MSG_HASH(MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
-      "Disables kiosk mode. A restart is required for the change to take full effect.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_ENABLE_KIOSK_MODE,
       "Kioskmodus Activeren")
-MSG_HASH(MENU_ENUM_SUBLABEL_MENU_ENABLE_KIOSK_MODE,
-      "Protects the setup by hiding all configuration related settings.")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_MENU_KIOSK_MODE_PASSWORD,
-      "Set Password For Disabling Kiosk Mode")
-MSG_HASH(MENU_ENUM_SUBLABEL_MENU_KIOSK_MODE_PASSWORD,
-      "Supplying a password when enabling kiosk mode makes it possible to later disable it from the menu, by going to the Main Menu, selecting Disable Kiosk Mode and entering the password.")
 MSG_HASH(MSG_INPUT_KIOSK_MODE_PASSWORD,
       "Voer Wachtwoord In")
 MSG_HASH(MSG_INPUT_KIOSK_MODE_PASSWORD_OK,
@@ -2840,18 +2576,6 @@ MSG_HASH(
     MENU_ENUM_LABEL_VALUE_UDP_STREAM_PORT,
     "UDP Stream Poort"
     )
-MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_ACCOUNTS_TWITCH,
-    "Twitch"
-    )
-MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_ACCOUNTS_YOUTUBE,
-    "YouTube"
-    )
-MSG_HASH(MENU_ENUM_LABEL_VALUE_TWITCH_STREAM_KEY,
-      "Twitch Stream Key")
-MSG_HASH(MENU_ENUM_LABEL_VALUE_YOUTUBE_STREAM_KEY,
-      "YouTube Stream Key")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_STREAMING_MODE,
       "Streaming Mode")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_STREAMING_TITLE,
@@ -3066,7 +2790,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_ROMANIAN,
-   "Romanian"
+   "Roemeens"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_SERBIAN,

@@ -3,6 +3,8 @@
 #include <stdio.h>
 #include <stdint.h>
 
+#include <compat/strl.h>
+
 #include "scope.h"
 
 union number
@@ -17,8 +19,7 @@ typedef struct generator
    union number value;
    union number increment;
    int          shift;
-}
-generator_t;
+} generator_t;
 
 struct param
 {
@@ -258,9 +259,10 @@ const char *scope_eval(scope_t *scope, const char *src)
             tmp[len] = '\0';
 
             if ((param = param_find(scope, tmp, 0)))
-               strcat(scope->eval, param->value);
+               strlcat(scope->eval, param->value,
+                     sizeof(scope->eval));
             else
-               strcat(scope->eval, tmp);
+               strlcat(scope->eval, tmp, sizeof(scope->eval));
 
             ++next;
          }
@@ -273,7 +275,7 @@ const char *scope_eval(scope_t *scope, const char *src)
       {
          if (in_var)
             --cur;
-         strcat(scope->eval, cur);
+         strlcat(scope->eval, cur, sizeof(scope->eval));
          break;
       }
    }

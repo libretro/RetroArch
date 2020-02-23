@@ -33,9 +33,9 @@
 
 #ifdef HAVE_MENU
 #include "../../menu/menu_driver.h"
-#ifdef HAVE_MENU_WIDGETS
-#include "../../menu/widgets/menu_widgets.h"
 #endif
+#ifdef HAVE_GFX_WIDGETS
+#include "../gfx_widgets.h"
 #endif
 
 #include "gfx/common/gx2_common.h"
@@ -442,13 +442,15 @@ static void *wiiu_gfx_init(const video_info_t *video,
    wiiu->vp.height      = wiiu->render_mode.height;
    wiiu->vp.full_width  = wiiu->render_mode.width;
    wiiu->vp.full_height = wiiu->render_mode.height;
-   video_driver_set_size(&wiiu->vp.width, &wiiu->vp.height);
+   video_driver_set_size(wiiu->vp.width, wiiu->vp.height);
 
    driver_ctl(RARCH_DRIVER_CTL_SET_REFRESH_RATE, &refresh_rate);
 
-   font_driver_init_osd(wiiu, false,
-                        video->is_threaded,
-                        FONT_DRIVER_RENDER_WIIU);
+   font_driver_init_osd(wiiu,
+         video,
+         false,
+         video->is_threaded,
+         FONT_DRIVER_RENDER_WIIU);
 
    {
       enum rarch_shader_type type;
@@ -1342,11 +1344,9 @@ static bool wiiu_gfx_frame(void *data, const void *frame,
                (const struct font_params*)&video_info->osd_stat_params, NULL);
    }
 
-#ifdef HAVE_MENU
-#ifdef HAVE_MENU_WIDGETS
+#ifdef HAVE_GFX_WIDGETS
    if (video_info->widgets_inited)
-      menu_widgets_frame(video_info);
-#endif
+      gfx_widgets_frame(video_info);
 #endif
 
    if (msg)
@@ -1371,7 +1371,8 @@ static bool wiiu_gfx_frame(void *data, const void *frame,
    return true;
 }
 
-static void wiiu_gfx_set_nonblock_state(void *data, bool toggle)
+static void wiiu_gfx_set_nonblock_state(void *data, bool toggle,
+      bool adaptive_vsync_enabled, unsigned swap_interval)
 {
    wiiu_video_t *wiiu = (wiiu_video_t *) data;
 
@@ -1731,8 +1732,8 @@ static void wiiu_gfx_get_poke_interface(void *data,
    *iface = &wiiu_poke_interface;
 }
 
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-static bool wiiu_menu_widgets_enabled(void *data)
+#ifdef HAVE_GFX_WIDGETS
+static bool wiiu_gfx_widgets_enabled(void *data)
 {
    (void)data;
    return true;
@@ -1764,7 +1765,7 @@ video_driver_t video_wiiu =
 #endif
    wiiu_gfx_get_poke_interface,
    NULL, /* wrap_type_to_enum */
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-   wiiu_menu_widgets_enabled
+#ifdef HAVE_GFX_WIDGETS
+   wiiu_gfx_widgets_enabled
 #endif
 };

@@ -88,13 +88,13 @@
    [_context resetScissorRect];
 }
 
-- (MTLPrimitiveType)_toPrimitiveType:(enum menu_display_prim_type)prim
+- (MTLPrimitiveType)_toPrimitiveType:(enum gfx_display_prim_type)prim
 {
    switch (prim)
    {
-      case MENU_DISPLAY_PRIM_TRIANGLESTRIP:
+      case GFX_DISPLAY_PRIM_TRIANGLESTRIP:
          return MTLPrimitiveTypeTriangleStrip;
-      case MENU_DISPLAY_PRIM_TRIANGLES:
+      case GFX_DISPLAY_PRIM_TRIANGLES:
          return MTLPrimitiveTypeTriangle;
       default:
          RARCH_LOG("unexpected primitive type %d\n", prim);
@@ -102,7 +102,7 @@
    }
 }
 
-- (void)drawPipeline:(menu_display_ctx_draw_t *)draw video:(video_frame_info_t *)video
+- (void)drawPipeline:(gfx_display_ctx_draw_t *)draw video:(video_frame_info_t *)video
 {
    static struct video_coords blank_coords;
 
@@ -122,7 +122,7 @@
       case VIDEO_SHADER_MENU:
       case VIDEO_SHADER_MENU_2:
       {
-         video_coord_array_t *ca = menu_display_get_coords_array();
+         video_coord_array_t *ca = gfx_display_get_coords_array();
          draw->coords = (struct video_coords *)&ca->coords;
          break;
       }
@@ -132,9 +132,9 @@
       case VIDEO_SHADER_MENU_5:
       case VIDEO_SHADER_MENU_6:
       {
-         draw->coords = &blank_coords;
+         draw->coords          = &blank_coords;
          blank_coords.vertices = 4;
-         draw->prim_type = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
+         draw->prim_type       = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
          break;
       }
    }
@@ -142,7 +142,7 @@
    _uniforms.time += 0.01;
 }
 
-- (void)draw:(menu_display_ctx_draw_t *)draw video:(video_frame_info_t *)video
+- (void)draw:(gfx_display_ctx_draw_t *)draw video:(video_frame_info_t *)video
 {
    const float *vertex = draw->coords->vertex ?: MenuDisplay.defaultVertices;
    const float *tex_coord = draw->coords->tex_coord ?: MenuDisplay.defaultTexCoords;

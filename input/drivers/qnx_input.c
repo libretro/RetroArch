@@ -623,7 +623,7 @@ static void qnx_handle_navigator_event(
          {
             case NAVIGATOR_WINDOW_THUMBNAIL:
             case NAVIGATOR_WINDOW_INVISIBLE:
-               while(true)
+               for (;;)
                {
                   unsigned event_code;
 
@@ -699,7 +699,7 @@ static void qnx_input_poll(void *data)
    qnx_input_t *qnx = (qnx_input_t*)data;
 
    /* Request and process all available BPS events. */
-   while(true)
+   for (;;)
    {
       bps_event_t *event = NULL;
       int rc = bps_get_event(&event, 0);

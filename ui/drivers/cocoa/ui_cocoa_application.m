@@ -31,7 +31,7 @@ static void* ui_application_cocoa_initialize(void)
 
 static void ui_application_cocoa_process_events(void)
 {
-    while (1)
+    for (;;)
     {
         NSEvent *event = [NSApp nextEventMatchingMask:NSEventMaskAny untilDate:[NSDate distantPast] inMode:NSDefaultRunLoopMode dequeue:YES];
         if (!event)

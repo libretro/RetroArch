@@ -1,3 +1,11 @@
+#if defined(_MSC_VER) && !defined(_XBOX) && (_MSC_VER >= 1500 && _MSC_VER < 1900)
+#if (_MSC_VER >= 1700)
+/* https://support.microsoft.com/en-us/kb/980263 */
+#pragma execution_character_set("utf-8")
+#endif
+#pragma warning(disable:4566)
+#endif
+
 #ifdef HAVE_LAKKA_SWITCH
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SWITCH_GPU_PROFILE,
@@ -541,6 +549,10 @@ MSG_HASH(
     "Leaderboards"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEEVOS_RICHPRESENCE_ENABLE,
+    "Rich Presence"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEEVOS_BADGES_ENABLE,
     "Achievement Badges"
     )
@@ -806,7 +818,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_DISK_TRAY_EJECT,
-    "Opens virtual disk try and removes currently loaded disk. NOTE: If RetroArch is configured to pause while menu is active, some cores may not register changes unless content is resumed for a few seconds after each disk control action."
+    "Opens virtual disk tray and removes currently loaded disk. NOTE: If RetroArch is configured to pause while menu is active, some cores may not register changes unless content is resumed for a few seconds after each disk control action."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
@@ -915,6 +927,22 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_SCALE_FACTOR,
     "Applies a global scaling factor when drawing the menu. Can be used to increase or decrease the size of the user interface."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_AUTO,
+    "Auto Scale Graphics Widgets"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_AUTO,
+    "Automatically resize decorated notifications, indicators and controls based on current menu scale."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_FACTOR,
+    "Graphics Widgets Scale Override"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_FACTOR,
+    "Applies a manual scaling factor override when drawing menu widgets. Only applies when 'Auto Scale Graphics Widgets' is disabled. Can be used to increase or decrease the size of decorated notifications, indicators and controls independently from the menu itself."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS,
@@ -1446,17 +1474,14 @@ MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_META_PAUSE_TOGGLE,
     "Pause toggle"
     )
-#ifdef HAVE_LAKKA
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY,
+    MENU_ENUM_LABEL_VALUE_INPUT_META_RESTART_KEY,
     "Restart RetroArch"
     )
-#else
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY,
     "Quit RetroArch"
     )
-#endif
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_META_RESET,
     "Reset game"
@@ -2547,12 +2572,6 @@ MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MIDI_SETTINGS,
     "MIDI"
     )
-#ifdef HAVE_LAKKA
-MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
-    "Restart RetroArch"
-    )
-#else
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
     "Quit RetroArch"
@@ -2561,7 +2580,6 @@ MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RESTART_RETROARCH,
     "Restart RetroArch"
     )
-#endif
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DETAIL,
     "Database Entry"
@@ -2706,17 +2724,20 @@ MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CONTENT_INFO_LAST_PLAYED,
     "Last Played"
     )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CHEEVOS_HASH,
+   "RetroAchievements Hash"
+   )
 #ifdef HAVE_LAKKA_SWITCH
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_REBOOT,
+    MENU_ENUM_LABEL_VALUE_REBOOT_RCM,
     "Reboot into RCM"
     )
-#else
+#endif
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_REBOOT,
     "Reboot"
     )
-#endif
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RECORDING_CONFIG_DIRECTORY,
     "Recording Config"
@@ -4546,6 +4567,10 @@ MSG_HASH(
     "Has no effect if Hardcore Mode is disabled."
     )
 MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEEVOS_RICHPRESENCE_ENABLE,
+    "Sends detailed play status to the RetroAchievements website."
+    )
+MSG_HASH(
     MENU_ENUM_SUBLABEL_CHEEVOS_BADGES_ENABLE,
     "Display badges in the Achievement List."
     )
@@ -6009,12 +6034,6 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_SYSTEM_INFORMATION,
     "Show information specific to the device."
     )
-#ifdef HAVE_LAKKA
-MSG_HASH(
-    MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
-    "Restart the program."
-    )
-#else
 MSG_HASH(
     MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
     "Quit the program."
@@ -6023,7 +6042,6 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_RESTART_RETROARCH,
     "Restart the program."
     )
-#endif
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH,
     "Set the custom width for the display window."
@@ -7307,16 +7325,6 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_SHOW_HELP,
     "Show/hide the 'Help' option."
     )
-#ifdef HAVE_LAKKA
-MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_MENU_SHOW_QUIT_RETROARCH,
-    "Show Restart RetroArch"
-    )
-MSG_HASH(
-    MENU_ENUM_SUBLABEL_MENU_SHOW_QUIT_RETROARCH,
-    "Show/hide the 'Restart RetroArch' option."
-    )
-#else
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_SHOW_QUIT_RETROARCH,
     "Show Quit RetroArch"
@@ -7333,7 +7341,6 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_SHOW_RESTART_RETROARCH,
     "Show/hide the 'Restart RetroArch' option."
     )
-#endif
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_SHOW_REBOOT,
     "Show Reboot"
@@ -9488,7 +9495,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_WIDGETS_ENABLE,
-    "Menu Widgets"
+    "Graphics Widgets"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_SHADERS_ENABLE,

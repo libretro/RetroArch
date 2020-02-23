@@ -507,7 +507,7 @@ static void dispmanx_set_texture_frame(void *data, const void *frame, bool rgb32
       return;
 
    /* If menu is active in this frame but our menu surface is NULL, we allocate a new one.*/
-   if (_dispvars->menu_surface == NULL)
+   if (!_dispvars->menu_surface)
    {
       _dispvars->menu_width  = width;
       _dispvars->menu_height = height;
@@ -533,27 +533,11 @@ static void dispmanx_set_texture_frame(void *data, const void *frame, bool rgb32
    dispmanx_surface_update_async(frame, _dispvars->menu_surface);
 }
 
-static void dispmanx_gfx_set_nonblock_state(void *data, bool state)
-{
-   struct dispmanx_video *vid = data;
+static void dispmanx_gfx_set_nonblock_state(void *a, bool b,
+      bool c, unsigned d) { }
 
-   (void)data;
-   (void)vid;
-
-   /* TODO */
-}
-
-static bool dispmanx_gfx_alive(void *data)
-{
-   (void)data;
-   return true; /* always alive */
-}
-
-static bool dispmanx_gfx_focus(void *data)
-{
-   (void)data;
-   return true; /* fb device always has focus */
-}
+static bool dispmanx_gfx_alive(void *data) { return true; }
+static bool dispmanx_gfx_focus(void *data) { return true; }
 
 static void dispmanx_gfx_viewport_info(void *data, struct video_viewport *vp)
 {

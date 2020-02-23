@@ -79,9 +79,9 @@
 
 #ifdef HAVE_MENU
 #include "../../menu/menu_driver.h"
-#ifdef HAVE_MENU_WIDGETS
-#include "../../menu/widgets/menu_widgets.h"
 #endif
+#ifdef HAVE_GFX_WIDGETS
+#include "../gfx_widgets.h"
 #endif
 
 #ifndef GL_UNSIGNED_INT_8_8_8_8_REV
@@ -785,8 +785,10 @@ static void gl2_create_fbo_texture(gl_t *gl,
    bool fp_fbo                   = false;
    bool smooth                   = false;
    settings_t *settings          = config_get_ptr();
-   GLuint base_filt              = settings->bools.video_smooth ? GL_LINEAR : GL_NEAREST;
-   GLuint base_mip_filt          = settings->bools.video_smooth ?
+   bool video_smooth             = settings->bools.video_smooth;
+   bool force_srgb_disable       = settings->bools.video_force_srgb_disable;
+   GLuint base_filt              = video_smooth ? GL_LINEAR : GL_NEAREST;
+   GLuint base_mip_filt          = video_smooth ?
       GL_LINEAR_MIPMAP_LINEAR : GL_NEAREST_MIPMAP_NEAREST;
    unsigned mip_level            = i + 2;
    bool mipmapped                = gl->shader->mipmap_input(gl->shader_data, mip_level);
@@ -836,7 +838,7 @@ static void gl2_create_fbo_texture(gl_t *gl,
                RARCH_ERR("[GL]: sRGB FBO was requested, but it is not supported. Falling back to UNORM. Result may have banding!\n");
       }
 
-      if (settings->bools.video_force_srgb_disable)
+      if (force_srgb_disable)
          srgb_fbo = false;
 
       if (srgb_fbo && chain->has_srgb_fbo)
@@ -1628,6 +1630,7 @@ static void gl2_renderchain_resolve_extensions(gl_t *gl,
       const video_info_t *video)
 {
    settings_t *settings             = config_get_ptr();
+   bool force_srgb_disable          = settings->bools.video_force_srgb_disable;
 
    if (!chain)
       return;
@@ -1637,7 +1640,7 @@ static void gl2_renderchain_resolve_extensions(gl_t *gl,
    /* GLES3 has unpack_subimage and sRGB in core. */
    chain->has_srgb_fbo_gles3        = gl_check_capability(GL_CAPS_SRGB_FBO_ES3);
 
-   if (!settings->bools.video_force_srgb_disable)
+   if (!force_srgb_disable)
       chain->has_srgb_fbo           = gl_check_capability(GL_CAPS_SRGB_FBO);
 
    /* Use regular textures if we use HW render. */
@@ -2258,16 +2261,17 @@ static void gl2_set_texture_frame(void *data,
       const void *frame, bool rgb32, unsigned width, unsigned height,
       float alpha)
 {
-   enum texture_filter_type menu_filter;
    settings_t *settings            = config_get_ptr();
+   enum texture_filter_type 
+      menu_filter                  = settings->bools.menu_linear_filter 
+      ? TEXTURE_FILTER_LINEAR 
+      : TEXTURE_FILTER_NEAREST;
    unsigned base_size              = rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
    gl_t *gl                        = (gl_t*)data;
    if (!gl)
       return;
 
    gl2_context_bind_hw_render(gl, false);
-
-   menu_filter = settings->bools.menu_linear_filter ? TEXTURE_FILTER_LINEAR : TEXTURE_FILTER_NEAREST;
 
    if (!gl->menu_texture)
       glGenTextures(1, &gl->menu_texture);
@@ -2307,6 +2311,7 @@ static void gl2_render_osd_background(
    float *dummy            = (float*)calloc(4 * vertices_total, sizeof(float));
    float *verts            = (float*)malloc(2 * vertices_total * sizeof(float));
    settings_t *settings    = config_get_ptr();
+   float video_font_size   = settings->floats.video_font_size;
    int msg_width           =
       font_driver_get_message_width(NULL, msg, (unsigned)strlen(msg), 1.0f);
 
@@ -2314,9 +2319,7 @@ static void gl2_render_osd_background(
    float x                 = video_info->font_msg_pos_x;
    float y                 = video_info->font_msg_pos_y;
    float width             = msg_width / (float)video_info->width;
-   float height            =
-      settings->floats.video_font_size / (float)video_info->height;
-
+   float height            = video_font_size / (float)video_info->height;
    float x2                = 0.005f; /* extend background around text */
    float y2                = 0.005f;
 
@@ -3060,9 +3063,9 @@ static bool gl2_frame(void *data, const void *frame,
       gl2_render_overlay(gl, video_info);
 #endif
 
-#ifdef HAVE_MENU_WIDGETS
+#ifdef HAVE_GFX_WIDGETS
    if (video_info->widgets_inited)
-      menu_widgets_frame(video_info);
+      gfx_widgets_frame(video_info);
 #endif
 
    if (!string_is_empty(msg))
@@ -3226,11 +3229,13 @@ static void gl2_free(void *data)
    gl2_destroy_resources(gl);
 }
 
-static void gl2_set_nonblock_state(void *data, bool state)
+static void gl2_set_nonblock_state(
+      void *data, bool state,
+      bool adaptive_vsync_enabled,
+      unsigned swap_interval)
 {
    int interval                = 0;
    gl_t             *gl        = (gl_t*)data;
-   settings_t        *settings = config_get_ptr();
 
    if (!gl)
       return;
@@ -3240,12 +3245,10 @@ static void gl2_set_nonblock_state(void *data, bool state)
    gl2_context_bind_hw_render(gl, false);
 
    if (!state)
-      interval = settings->uints.video_swap_interval;
+      interval = swap_interval;
 
    if (gl->ctx_driver->swap_interval)
    {
-      bool adaptive_vsync_enabled            = video_driver_test_all_flags(
-            GFX_CTX_FLAGS_ADAPTIVE_VSYNC) && settings->bools.video_adaptive_vsync;
       if (adaptive_vsync_enabled && interval == 1)
          interval = -1;
       gl->ctx_driver->swap_interval(gl->ctx_data, interval);
@@ -3256,6 +3259,7 @@ static void gl2_set_nonblock_state(void *data, bool state)
 static bool gl2_resolve_extensions(gl_t *gl, const char *context_ident, const video_info_t *video)
 {
    settings_t *settings          = config_get_ptr();
+   bool video_hard_sync          = settings->bools.video_hard_sync;
 
    /* have_es2_compat - GL_RGB565 internal format support.
     * Even though ES2 support is claimed, the format
@@ -3272,7 +3276,7 @@ static bool gl2_resolve_extensions(gl_t *gl, const char *context_ident, const vi
    gl->support_unpack_row_length = gl_check_capability(GL_CAPS_UNPACK_ROW_LENGTH);
    gl->have_sync                 = gl_check_capability(GL_CAPS_SYNC);
 
-   if (gl->have_sync && settings->bools.video_hard_sync)
+   if (gl->have_sync && video_hard_sync)
       RARCH_LOG("[GL]: Using ARB_sync to reduce latency.\n");
 
    video_driver_unset_rgba();
@@ -3408,35 +3412,24 @@ static bool gl2_init_pbo_readback(gl_t *gl)
 
 static const gfx_ctx_driver_t *gl2_get_context(gl_t *gl)
 {
-   enum gfx_ctx_api api;
    const gfx_ctx_driver_t *gfx_ctx      = NULL;
    void                      *ctx_data  = NULL;
-   const char                 *api_name = NULL;
    settings_t                 *settings = config_get_ptr();
    struct retro_hw_render_callback *hwr = video_driver_get_hw_context();
    unsigned major                       = hwr->version_major;
    unsigned minor                       = hwr->version_minor;
-
+   bool video_shared_context            = settings->bools.video_shared_context;
 #ifdef HAVE_OPENGLES
-   api                                  = GFX_CTX_OPENGL_ES_API;
-   api_name                             = "OpenGL ES 2.0";
-
+   enum gfx_ctx_api api                 = GFX_CTX_OPENGL_ES_API;
    if (hwr->context_type == RETRO_HW_CONTEXT_OPENGLES3)
    {
       major                             = 3;
       minor                             = 0;
-      api_name                          = "OpenGL ES 3.0";
    }
-   else if (hwr->context_type == RETRO_HW_CONTEXT_OPENGLES_VERSION)
-      api_name                          = "OpenGL ES 3.1+";
 #else
-   api                                  = GFX_CTX_OPENGL_API;
-   api_name                             = "OpenGL";
+   enum gfx_ctx_api api                 = GFX_CTX_OPENGL_API;
 #endif
-
-   (void)api_name;
-
-   gl_shared_context_use = settings->bools.video_shared_context
+   gl_shared_context_use                = video_shared_context
       && hwr->context_type != RETRO_HW_CONTEXT_NONE;
 
    if (     (libretro_get_shared_context())
@@ -3485,11 +3478,6 @@ static void DEBUG_CALLBACK_TYPE gl2_debug_cb(GLenum source, GLenum type,
 {
    const char      *src = NULL;
    const char *typestr  = NULL;
-   gl_t             *gl = (gl_t*)userParam; /* Useful for debugger. */
-
-   (void)gl;
-   (void)id;
-   (void)length;
 
    switch (source)
    {
@@ -3630,7 +3618,7 @@ static void *gl2_init(const video_info_t *video,
 
    video_context_driver_get_video_size(&mode);
 #if defined(DINGUX)
-   mode.width = 320;
+   mode.width  = 320;
    mode.height = 240;
 #endif
    full_x      = mode.width;
@@ -3778,8 +3766,8 @@ static void *gl2_init(const video_info_t *video,
    video_context_driver_get_video_size(&mode);
 
 #if defined(DINGUX)
-   mode.width = 320;
-   mode.height = 240;
+   mode.width     = 320;
+   mode.height    = 240;
 #endif
    temp_width     = mode.width;
    temp_height    = mode.height;
@@ -3789,7 +3777,7 @@ static void *gl2_init(const video_info_t *video,
    /* Get real known video size, which might have been altered by context. */
 
    if (temp_width != 0 && temp_height != 0)
-      video_driver_set_size(&temp_width, &temp_height);
+      video_driver_set_size(temp_width, temp_height);
 
    video_driver_get_size(&temp_width, &temp_height);
    gl->video_width       = temp_width;
@@ -3920,7 +3908,8 @@ static void *gl2_init(const video_info_t *video,
    video_context_driver_input_driver(&inp);
 
    if (video->font_enable)
-      font_driver_init_osd(gl, false,
+      font_driver_init_osd(gl, video,
+            false,
             video->is_threaded,
             FONT_DRIVER_RENDER_OPENGL_API);
 
@@ -3980,7 +3969,7 @@ static bool gl2_alive(void *data)
 
    if (temp_width != 0 && temp_height != 0)
    {
-      video_driver_set_size(&temp_width, &temp_height);
+      video_driver_set_size(temp_width, temp_height);
       gl->video_width  = temp_width;
       gl->video_height = temp_height;
    }
@@ -4006,12 +3995,13 @@ static void gl2_update_tex_filter_frame(gl_t *gl)
    enum gfx_wrap_type wrap_type;
    bool smooth                       = false;
    settings_t *settings              = config_get_ptr();
+   bool video_smooth                 = settings->bools.video_smooth;
 
    gl2_context_bind_hw_render(gl, false);
 
    if (!gl->shader->filter_type(gl->shader_data,
             1, &smooth))
-      smooth             = settings->bools.video_smooth;
+      smooth             = video_smooth;
 
    mip_level             = 1;
    wrap_type             = gl->shader->wrap_type(gl->shader_data, 1);
@@ -4399,14 +4389,27 @@ static void gl2_get_video_output_next(void *data)
 static void video_texture_load_gl2(
       struct texture_image *ti,
       enum texture_filter_type filter_type,
-      uintptr_t *id)
+      uintptr_t *idptr)
 {
+   GLuint id;
+   unsigned width     = 0;
+   unsigned height    = 0;
+   const void *pixels = NULL;
    /* Generate the OpenGL texture object */
-   glGenTextures(1, (GLuint*)id);
-   gl_load_texture_data((GLuint)*id,
+   glGenTextures(1, &id);
+   *idptr = id;
+
+   if (ti)
+   {
+      width  = ti->width;
+      height = ti->height;
+      pixels = ti->pixels;
+   }
+
+   gl_load_texture_data(id,
          RARCH_WRAP_EDGE, filter_type,
          4 /* TODO/FIXME - dehardcode */,
-         ti->width, ti->height, ti->pixels,
+         width, height, pixels,
          sizeof(uint32_t) /* TODO/FIXME - dehardcode */
          );
 }
@@ -4523,8 +4526,8 @@ static void gl2_get_poke_interface(void *data,
    *iface = &gl2_poke_interface;
 }
 
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-static bool gl2_menu_widgets_enabled(void *data)
+#ifdef HAVE_GFX_WIDGETS
+static bool gl2_gfx_widgets_enabled(void *data)
 {
    (void)data;
    return true;
@@ -4565,7 +4568,7 @@ video_driver_t video_gl2 = {
 #endif
    gl2_get_poke_interface,
    gl2_wrap_type_to_enum,
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-   gl2_menu_widgets_enabled
+#ifdef HAVE_GFX_WIDGETS
+   gl2_gfx_widgets_enabled
 #endif
 };

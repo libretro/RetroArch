@@ -1,0 +1,13 @@
+"project_identifier": "retroarch"
+"api_key": "07c53d49b32e30803060b1acec1623ab"
+"preserve_hierarchy": true
+
+"files":
+  [
+    {
+      "source": "/msg_hash_us.json",
+      "translation": "/msg_hash_%locale%.json",
+      "translation_replace": { "_us": "" },
+      "languages_mapping": { "zh-CN": "zhs", "zh-TW": "zht" },
+    },
+  ]

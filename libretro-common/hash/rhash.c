@@ -1,4 +1,4 @@
-/* Copyright  (C) 2010-2018 The RetroArch team
+/* Copyright  (C) 2010-2020 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
  * The following license statement only applies to this file (rhash.c).
@@ -307,7 +307,22 @@ uint32_t crc32_calculate(const uint8_t *data, size_t length)
 /* Define the circular shift macro */
 #define SHA1CircularShift(bits,word) ((((word) << (bits)) & 0xFFFFFFFF) | ((word) >> (32-(bits))))
 
-static void SHA1Reset(SHA1Context *context)
+struct sha1_context
+{
+   unsigned Message_Digest[5]; /* Message Digest (output)          */
+
+   unsigned Length_Low;        /* Message length in bits           */
+   unsigned Length_High;       /* Message length in bits           */
+
+   unsigned char Message_Block[64]; /* 512-bit message blocks      */
+   int Message_Block_Index;    /* Index into message block array   */
+
+   int Computed;               /* Is the digest computed?          */
+   int Corrupted;              /* Is the message digest corruped?  */
+};
+
+
+static void SHA1Reset(struct sha1_context *context)
 {
    if (!context)
       return;
@@ -326,7 +341,7 @@ static void SHA1Reset(SHA1Context *context)
    context->Corrupted  = 0;
 }
 
-static void SHA1ProcessMessageBlock(SHA1Context *context)
+static void SHA1ProcessMessageBlock(struct sha1_context *context)
 {
    const unsigned K[] =            /* Constants defined in SHA-1   */
    {
@@ -418,7 +433,7 @@ static void SHA1ProcessMessageBlock(SHA1Context *context)
    context->Message_Block_Index = 0;
 }
 
-static void SHA1PadMessage(SHA1Context *context)
+static void SHA1PadMessage(struct sha1_context *context)
 {
    if (!context)
       return;
@@ -455,7 +470,7 @@ static void SHA1PadMessage(SHA1Context *context)
    SHA1ProcessMessageBlock(context);
 }
 
-static int SHA1Result(SHA1Context *context)
+static int SHA1Result(struct sha1_context *context)
 {
    if (context->Corrupted)
       return 0;
@@ -469,7 +484,7 @@ static int SHA1Result(SHA1Context *context)
    return 1;
 }
 
-static void SHA1Input(SHA1Context *context,
+static void SHA1Input(struct sha1_context *context,
       const unsigned char *message_array,
       unsigned length)
 {
@@ -508,7 +523,7 @@ static void SHA1Input(SHA1Context *context,
 
 int sha1_calculate(const char *path, char *result)
 {
-   SHA1Context sha;
+   struct sha1_context sha;
    unsigned char buff[4096];
    int rv    = 1;
    RFILE *fd = filestream_open(path,

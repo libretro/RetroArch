@@ -784,7 +784,9 @@ static bool video_thread_frame(void *data, const void *frame_,
    return true;
 }
 
-static void video_thread_set_nonblock_state(void *data, bool state)
+static void video_thread_set_nonblock_state(void *data, bool state,
+      bool adaptive_vsync_enabled,
+      unsigned swap_interval)
 {
    thread_video_t *thr = (thread_video_t*)data;
    if (thr)
@@ -1281,13 +1283,13 @@ static void video_thread_get_poke_interface(
       *iface = NULL;
 }
 
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-static bool video_thread_wrapper_menu_widgets_enabled(void *data)
+#ifdef HAVE_GFX_WIDGETS
+static bool video_thread_wrapper_gfx_widgets_enabled(void *data)
 {
    thread_video_t *thr = (thread_video_t*)data;
 
-   if (thr && thr->driver && thr->driver->menu_widgets_enabled)
-      return thr->driver->menu_widgets_enabled(thr->driver_data);
+   if (thr && thr->driver && thr->driver->gfx_widgets_enabled)
+      return thr->driver->gfx_widgets_enabled(thr->driver_data);
 
    return false;
 }
@@ -1317,8 +1319,8 @@ static const video_driver_t video_thread = {
 #endif
    video_thread_get_poke_interface,
    NULL,
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-   video_thread_wrapper_menu_widgets_enabled
+#ifdef HAVE_GFX_WIDGETS
+   video_thread_wrapper_gfx_widgets_enabled
 #endif
 };
 

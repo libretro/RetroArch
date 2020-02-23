@@ -32,11 +32,11 @@
 #include <lists/string_list.h>
 
 #include "../configuration.h"
-#include "../retroarch.h"
 #include "../verbosity.h"
 #include "../frontend/frontend_driver.h"
 #include "../command.h"
 #include "../file_path_special.h"
+#include "../retroarch.h"
 #include "video_shader_parse.h"
 
 #if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
@@ -583,6 +583,7 @@ bool video_shader_resolve_parameters(config_file_t *conf,
  * See: video_shader_read_preset
  **/
 bool video_shader_write_preset(const char *path,
+      const char *shader_dir,
       const struct video_shader *shader, bool reference)
 {
    /* We need to clean up paths to be able to properly process them
@@ -596,7 +597,7 @@ bool video_shader_write_preset(const char *path,
 
    fill_pathname_join(
       preset_dir,
-      config_get_ptr()->paths.directory_video_shader,
+      shader_dir,
       "presets",
       sizeof(preset_dir));
 
@@ -947,19 +948,16 @@ static void shader_write_fbo(config_file_t *conf,
          fbo->scale_y, fbo->abs_y, i);
 }
 
+#ifdef _WIN32
 static void make_relative_path_portable(char *path)
 {
-#ifdef _WIN32
    /* use '/' instead of '\' for maximum portability */
-   if (!path_is_absolute(path))
-   {
-      char *p;
-      for (p = path; *p; p++)
-         if (*p == '\\')
-            *p = '/';
-   }
-#endif
+   char *p;
+   for (p = path; *p; p++)
+      if (*p == '\\')
+         *p = '/';
 }
+#endif
 
 /**
  * video_shader_write_conf_preset:
@@ -1008,7 +1006,10 @@ void video_shader_write_conf_preset(config_file_t *conf,
       {
          strlcpy(tmp, pass->source.path, tmp_size);
          path_relative_to(tmp_rel, tmp, tmp_base, tmp_size);
-         make_relative_path_portable(tmp_rel);
+#ifdef _WIN32
+         if (!path_is_absolute(tmp_rel))
+            make_relative_path_portable(tmp_rel);
+#endif
 
          config_set_path(conf, key, tmp_rel);
       }
@@ -1096,7 +1097,10 @@ void video_shader_write_conf_preset(config_file_t *conf,
             {
                strlcpy(tmp, shader->lut[i].path, tmp_size);
                path_relative_to(tmp_rel, tmp, tmp_base, tmp_size);
-               make_relative_path_portable(tmp_rel);
+#ifdef _WIN32
+               if (!path_is_absolute(tmp_rel))
+                  make_relative_path_portable(tmp_rel);
+#endif
 
                config_set_path(conf, shader->lut[i].id, tmp_rel);
             }

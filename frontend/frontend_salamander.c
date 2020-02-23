@@ -192,7 +192,7 @@ int main(int argc, char *argv[])
       frontend_ctx->deinit(args);
 
    if (frontend_ctx && frontend_ctx->exitspawn)
-      frontend_ctx->exitspawn(libretro_path, sizeof(libretro_path));
+      frontend_ctx->exitspawn(libretro_path, sizeof(libretro_path), NULL);
 
    return 1;
 }

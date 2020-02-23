@@ -26,6 +26,7 @@
 #include <errno.h>
 
 #include <file/file_path.h>
+#include <queues/task_queue.h>
 #include <string/stdstring.h>
 
 #ifdef _WIN32
@@ -71,8 +72,8 @@
 
 #ifdef HAVE_MENU
 #include "../menu/menu_driver.h"
-#ifdef HAVE_MENU_WIDGETS
-#include "../../menu/widgets/menu_widgets.h"
+#ifdef HAVE_GFX_WIDGETS
+#include "../gfx/gfx_widgets.h"
 #endif
 #endif
 
@@ -1577,8 +1578,8 @@ bool task_push_start_dummy_core(content_ctx_info_t *content_info)
     * load the actual content. Can differ per mode. */
    sys_info->load_no_content = false;
    rarch_ctl(RARCH_CTL_STATE_FREE, NULL);
-   rarch_ctl(RARCH_CTL_DATA_DEINIT, NULL);
-   rarch_ctl(RARCH_CTL_TASK_INIT, NULL);
+   task_queue_deinit();
+   retroarch_init_task_queue();
 
    /* Loads content into currently selected core. */
    if (!content_load(content_info))

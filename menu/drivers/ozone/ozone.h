@@ -24,8 +24,8 @@ typedef struct ozone_handle ozone_handle_t;
 
 #include <retro_miscellaneous.h>
 
-#include "../../menu_thumbnail_path.h"
-#include "../../menu_thumbnail.h"
+#include "../../gfx/gfx_thumbnail_path.h"
+#include "../../gfx/gfx_thumbnail.h"
 #include "../../menu_driver.h"
 
 #include "../../../retroarch.h"
@@ -52,6 +52,8 @@ typedef struct ozone_handle ozone_handle_t;
 #define ENTRY_ICON_SIZE                46
 #define ENTRY_ICON_PADDING             15
 
+/* > 'SIDEBAR_WIDTH' must be kept in sync with
+ *   menu driver metrics */
 #define SIDEBAR_WIDTH               408
 #define SIDEBAR_X_PADDING           40
 #define SIDEBAR_Y_PADDING           20
@@ -59,10 +61,15 @@ typedef struct ozone_handle ozone_handle_t;
 #define SIDEBAR_ENTRY_Y_PADDING     10
 #define SIDEBAR_ENTRY_ICON_SIZE     46
 #define SIDEBAR_ENTRY_ICON_PADDING  15
+#define SIDEBAR_GRADIENT_HEIGHT     28
 
 #define FULLSCREEN_THUMBNAIL_PADDING 48
 
 #define CURSOR_SIZE 64
+/* Cursor becomes active when it moves more
+ * than CURSOR_ACTIVE_DELTA pixels (adjusted
+ * by current scale factor) */
+#define CURSOR_ACTIVE_DELTA 3
 
 #define INTERVAL_OSK_CURSOR            (0.5f * 1000000)
 
@@ -74,6 +81,13 @@ typedef struct ozone_handle ozone_handle_t;
  * UCN equivalent: "\u2003\u2022\u2003" */
 #define OZONE_TICKER_SPACER "\xE2\x80\x83\xE2\x80\xA2\xE2\x80\x83"
 #endif
+
+enum ozone_onscreen_entry_position_type
+{
+   OZONE_ONSCREEN_ENTRY_FIRST = 0,
+   OZONE_ONSCREEN_ENTRY_LAST,
+   OZONE_ONSCREEN_ENTRY_CENTRE
+};
 
 struct ozone_handle
 {
@@ -97,9 +111,9 @@ struct ozone_handle
       video_font_raster_block_t sidebar;
    } raster_blocks;
 
-   menu_texture_item textures[OZONE_THEME_TEXTURE_LAST];
-   menu_texture_item icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_LAST];
-   menu_texture_item tab_textures[OZONE_TAB_TEXTURE_LAST];
+   uintptr_t textures[OZONE_THEME_TEXTURE_LAST];
+   uintptr_t icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_LAST];
+   uintptr_t tab_textures[OZONE_TAB_TEXTURE_LAST];
 
    char title[PATH_MAX_LENGTH];
 
@@ -151,6 +165,14 @@ struct ozone_handle
    unsigned sublabel_font_glyph_width;
    unsigned footer_font_glyph_width;
    unsigned sidebar_font_glyph_width;
+   unsigned time_font_glyph_width;
+
+   unsigned title_font_glyph_height;
+   unsigned entry_font_glyph_height;
+   unsigned sublabel_font_glyph_height;
+   unsigned footer_font_glyph_height;
+   unsigned sidebar_font_glyph_height;
+   unsigned time_font_glyph_height;
 
    ozone_theme_t *theme;
 
@@ -166,6 +188,10 @@ struct ozone_handle
       float cursor_border[16];
       float message_background[16];
    } theme_dynamic;
+
+   unsigned last_width;
+   unsigned last_height;
+   float last_scale_factor;
 
    bool need_compute;
 
@@ -213,12 +239,28 @@ struct ozone_handle
       int sidebar_entry_height;
       int sidebar_entry_icon_size;
       int sidebar_entry_icon_padding;
+      int sidebar_gradient_height;
 
       int cursor_size;
 
       int thumbnail_bar_width;
       int fullscreen_thumbnail_padding;
+
+      int spacer_1px;
+      int spacer_2px;
+      int spacer_3px;
+      int spacer_5px;
    } dimensions;
+
+   menu_input_pointer_t pointer;
+   int16_t pointer_active_delta;
+   bool pointer_in_sidebar;
+   bool last_pointer_in_sidebar;
+   size_t pointer_categories_selection;
+   size_t first_onscreen_entry;
+   size_t last_onscreen_entry;
+   size_t first_onscreen_category;
+   size_t last_onscreen_category;
 
    bool show_cursor;
    bool cursor_mode;
@@ -231,11 +273,11 @@ struct ozone_handle
    /* Thumbnails data */
    bool show_thumbnail_bar;
 
-   menu_thumbnail_path_data_t *thumbnail_path_data;
+   gfx_thumbnail_path_data_t *thumbnail_path_data;
 
    struct {
-      menu_thumbnail_t right;
-      menu_thumbnail_t left;
+      gfx_thumbnail_t right;
+      gfx_thumbnail_t left;
    } thumbnails;
 
    bool fullscreen_thumbnails_available;
@@ -315,6 +357,8 @@ void ozone_compute_entries_position(ozone_handle_t *ozone);
 void ozone_update_scroll(ozone_handle_t *ozone, bool allow_animation, ozone_node_t *node);
 
 void ozone_sidebar_update_collapse(ozone_handle_t *ozone, bool allow_animation);
+
+void ozone_refresh_sidebars(ozone_handle_t *ozone, unsigned video_height);
 
 void ozone_entries_update_thumbnail_bar(ozone_handle_t *ozone, bool is_playlist, bool allow_animation);
 

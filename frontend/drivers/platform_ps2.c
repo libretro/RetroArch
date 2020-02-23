@@ -298,9 +298,9 @@ static bool frontend_ps2_set_fork(enum frontend_fork fork_mode)
 }
 #endif
 
-static void frontend_ps2_exitspawn(char *core_path, size_t core_path_size)
+static void frontend_ps2_exitspawn(char *s, size_t len, char *args)
 {
-   bool should_load_game = false;
+   bool should_load_content = false;
 #ifndef IS_SALAMANDER
    if (ps2_fork_mode == FRONTEND_FORK_NONE)
       return;
@@ -308,14 +308,14 @@ static void frontend_ps2_exitspawn(char *core_path, size_t core_path_size)
    switch (ps2_fork_mode)
    {
       case FRONTEND_FORK_CORE_WITH_ARGS:
-         should_load_game = true;
+         should_load_content = true;
          break;
       case FRONTEND_FORK_NONE:
       default:
          break;
    }
 #endif
-   frontend_ps2_exec(core_path, should_load_game);
+   frontend_ps2_exec(s, should_load_content);
 }
 
 static void frontend_ps2_shutdown(bool unused)
@@ -416,5 +416,7 @@ frontend_ctx_driver_t frontend_ctx_ps2 = {
    NULL,                         /* set_sustained_performance_mode */
    NULL,                         /* get_cpu_model_name */
    NULL,                         /* get_user_language */
+   NULL,                         /* is_narrator_running */
+   NULL,                         /* accessibility_speak */
    "null",
 };

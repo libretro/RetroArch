@@ -185,9 +185,10 @@ static int16_t psp_joypad_axis(unsigned port_num, uint32_t joyaxis)
 static void psp_joypad_poll(void)
 {
    unsigned player;
-   unsigned players_count = DEFAULT_MAX_PADS;
+   unsigned players_count      = DEFAULT_MAX_PADS;
 #if defined(VITA)
-   settings_t *settings = config_get_ptr();
+   settings_t *settings        = config_get_ptr();
+   bool input_backtouch_enable = settings->bools.input_backtouch_enable;
 #endif
 
 #ifdef PSP
@@ -262,21 +263,27 @@ static void psp_joypad_poll(void)
 #endif
 #if defined(VITA)
       if (sceKernelGetModelForCDialog() == SCE_KERNEL_MODEL_VITA
-         && settings->bools.input_backtouch_enable)
+         && input_backtouch_enable)
       {
          unsigned i;
          SceTouchData touch_surface = {0};
-         sceTouchPeek(settings->bools.input_backtouch_toggle
-               ? SCE_TOUCH_PORT_FRONT : SCE_TOUCH_PORT_BACK, &touch_surface, 1);
+         sceTouchPeek(input_backtouch_toggle
+               ? SCE_TOUCH_PORT_FRONT 
+               : SCE_TOUCH_PORT_BACK,
+               &touch_surface, 1);
 
          for (i = 0; i < touch_surface.reportNum; i++)
          {
             int x = LERP(touch_surface.report[i].x, TOUCH_MAX_WIDTH, SCREEN_WIDTH);
             int y = LERP(touch_surface.report[i].y, TOUCH_MAX_HEIGHT, SCREEN_HEIGHT);
-            if (NW_AREA(x, y)) state_tmp.buttons |= PSP_CTRL_L2;
-            if (NE_AREA(x, y)) state_tmp.buttons |= PSP_CTRL_R2;
-            if (SW_AREA(x, y)) state_tmp.buttons |= PSP_CTRL_L3;
-            if (SE_AREA(x, y)) state_tmp.buttons |= PSP_CTRL_R3;
+            if (NW_AREA(x, y))
+               state_tmp.buttons |= PSP_CTRL_L2;
+            if (NE_AREA(x, y))
+               state_tmp.buttons |= PSP_CTRL_R2;
+            if (SW_AREA(x, y))
+               state_tmp.buttons |= PSP_CTRL_L3;
+            if (SE_AREA(x, y))
+               state_tmp.buttons |= PSP_CTRL_R3;
          }
       }
 #endif

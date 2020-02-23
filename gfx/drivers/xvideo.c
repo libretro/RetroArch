@@ -85,7 +85,7 @@ typedef struct xv
          unsigned width, unsigned height, unsigned pitch);
 } xv_t;
 
-static void xv_set_nonblock_state(void *data, bool state)
+static void xv_set_nonblock_state(void *data, bool state, bool c, unsigned d)
 {
    xv_t *xv  = (xv_t*)data;
    Atom atom = XInternAtom(g_x11_dpy, "XV_SYNC_TO_VBLANK", true);
@@ -135,23 +135,28 @@ static void xv_init_yuv_tables(xv_t *xv)
 
 static void xv_init_font(xv_t *xv, const char *font_path, unsigned font_size)
 {
-   settings_t *settings = config_get_ptr();
+   settings_t *settings   = config_get_ptr();
+   bool video_font_enable = settings->bools.video_font_enable;
+   const char *path_font  = settings->paths.path_font;
+   float video_font_size  = settings->floats.video_font_size;
+   float msg_color_r      = settings->floats.video_msg_color_r;
+   float msg_color_g      = settings->floats.video_msg_color_g;
+   float msg_color_b      = settings->floats.video_msg_color_b;
 
-   if (!settings->bools.video_font_enable)
+   if (!video_font_enable)
       return;
 
    if (font_renderer_create_default(
             &xv->font_driver,
-            &xv->font, *settings->paths.path_font
-            ? settings->paths.path_font : NULL,
-            settings->floats.video_font_size))
+            &xv->font, *path_font
+            ? path_font : NULL,
+            video_font_size))
    {
-      int r, g, b;
-      r = settings->floats.video_msg_color_r * 255;
+      int r = msg_color_r * 255;
+      int g = msg_color_g * 255;
+      int b = msg_color_b * 255;
       r = (r < 0 ? 0 : (r > 255 ? 255 : r));
-      g = settings->floats.video_msg_color_g * 255;
       g = (g < 0 ? 0 : (g > 255 ? 255 : g));
-      b = settings->floats.video_msg_color_b * 255;
       b = (b < 0 ? 0 : (b > 255 ? 255 : b));
 
       xv_calculate_yuv(&xv->font_y, &xv->font_u, &xv->font_v,
@@ -370,11 +375,12 @@ static void xv_calc_out_rect(bool keep_aspect,
       unsigned vp_width, unsigned vp_height)
 {
    settings_t *settings = config_get_ptr();
+   bool scale_integer   = settings->bools.video_scale_integer;
 
    vp->full_width       = vp_width;
    vp->full_height      = vp_height;
 
-   if (settings->bools.video_scale_integer)
+   if (scale_integer)
       video_viewport_get_scaled_integer(vp, vp_width, vp_height,
             video_driver_get_aspect_ratio(), keep_aspect);
    else if (!keep_aspect)
@@ -439,7 +445,7 @@ static void *xv_init(const video_info_t *video,
    const struct retro_game_geometry *geom = NULL;
    struct retro_system_av_info *av_info   = NULL;
    settings_t *settings                   = config_get_ptr();
-
+   bool video_disable_composition         = settings->bools.video_disable_composition;
    xv_t                               *xv = (xv_t*)calloc(1, sizeof(*xv));
    if (!xv)
       return NULL;
@@ -448,7 +454,7 @@ static void *xv_init(const video_info_t *video,
 
    g_x11_dpy = XOpenDisplay(NULL);
 
-   if (g_x11_dpy == NULL)
+   if (!g_x11_dpy)
    {
       RARCH_ERR("[XVideo]: Cannot connect to the X server.\n");
       RARCH_ERR("[XVideo]: Check DISPLAY variable and if X is running.\n");
@@ -563,14 +569,17 @@ static void *xv_init(const video_info_t *video,
    XFree(visualinfo);
    XSetWindowBackground(g_x11_dpy, g_x11_win, 0);
 
-   if (video->fullscreen && settings->bools.video_disable_composition)
+   if (video->fullscreen && video_disable_composition)
    {
       uint32_t value = 1;
       Atom cardinal = XInternAtom(g_x11_dpy, "CARDINAL", False);
-      Atom net_wm_bypass_compositor = XInternAtom(g_x11_dpy, "_NET_WM_BYPASS_COMPOSITOR", False);
+      Atom net_wm_bypass_compositor = XInternAtom(g_x11_dpy,
+            "_NET_WM_BYPASS_COMPOSITOR", False);
 
       RARCH_LOG("[XVideo]: Requesting compositor bypass.\n");
-      XChangeProperty(g_x11_dpy, g_x11_win, net_wm_bypass_compositor, cardinal, 32, PropModeReplace, (const unsigned char*)&value, 1);
+      XChangeProperty(g_x11_dpy, g_x11_win,
+            net_wm_bypass_compositor, cardinal, 32,
+            PropModeReplace, (const unsigned char*)&value, 1);
    }
 
    XMapWindow(g_x11_dpy, g_x11_win);
@@ -627,8 +636,6 @@ static void *xv_init(const video_info_t *video,
    x11_install_quit_atom();
 
    frontend_driver_install_signal_handler();
-
-   xv_set_nonblock_state(xv, !video->vsync);
 
    if (input && input_data)
    {
@@ -720,16 +727,18 @@ static void xv_render_msg(xv_t *xv, const char *msg,
    int x, y, msg_base_x, msg_base_y;
    unsigned i, luma_index[2], pitch;
    unsigned chroma_u_index, chroma_v_index;
-   settings_t *settings = config_get_ptr();
    const struct font_atlas *atlas = NULL;
+   settings_t           *settings = config_get_ptr();
+   float video_msg_pos_x          = settings->floats.video_msg_pos_x;
+   float video_msg_pos_y          = settings->floats.video_msg_pos_y;
 
    if (!xv->font)
       return;
 
    atlas          = xv->font_driver->get_atlas(xv->font);
 
-   msg_base_x     = settings->floats.video_msg_pos_x * width;
-   msg_base_y     = height * (1.0f - settings->floats.video_msg_pos_y);
+   msg_base_x     = video_msg_pos_x * width;
+   msg_base_y     = height * (1.0f - video_msg_pos_y);
 
    luma_index[0]  = xv->luma_index[0];
    luma_index[1]  = xv->luma_index[1];
@@ -878,13 +887,7 @@ static bool xv_suppress_screensaver(void *data, bool enable)
    return true;
 }
 
-static bool xv_has_windowed(void *data)
-{
-   (void)data;
-
-   /* TODO - verify. */
-   return true;
-}
+static bool xv_has_windowed(void *data) { return true; }
 
 static void xv_free(void *data)
 {

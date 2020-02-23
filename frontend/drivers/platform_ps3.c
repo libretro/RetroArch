@@ -465,7 +465,7 @@ static void frontend_ps3_exec(const char *path, bool should_load_game)
 #endif
 }
 
-static void frontend_ps3_exitspawn(char *core_path, size_t core_path_size)
+static void frontend_ps3_exitspawn(char *s, size_t len, char *args)
 {
 #ifdef HAVE_RARCH_EXEC
    bool should_load_game = false;
@@ -495,7 +495,7 @@ static void frontend_ps3_exitspawn(char *core_path, size_t core_path_size)
    }
 #endif
 
-   frontend_ps3_exec(core_path, should_load_game);
+   frontend_ps3_exec(s, should_load_game);
 
 #ifdef IS_SALAMANDER
    cellSysmoduleUnloadModule(CELL_SYSMODULE_SYSUTIL_GAME);
@@ -645,5 +645,7 @@ frontend_ctx_driver_t frontend_ctx_ps3 = {
    NULL,                         /* set_sustained_performance_mode */
    NULL,                         /* get_cpu_model_name */
    NULL,                         /* get_user_language */
+   NULL,                         /* is_narrator_running */
+   NULL,                         /* accessibility_speak */
    "ps3",
 };

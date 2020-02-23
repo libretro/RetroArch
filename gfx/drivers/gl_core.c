@@ -46,9 +46,9 @@
 
 #ifdef HAVE_MENU
 #include "../../menu/menu_driver.h"
-#ifdef HAVE_MENU_WIDGETS
-#include "../../menu/widgets/menu_widgets.h"
 #endif
+#ifdef HAVE_GFX_WIDGETS
+#include "../gfx_widgets.h"
 #endif
 
 static const struct video_ortho gl_core_default_ortho = {0, 1, 0, 1, -1, 1};
@@ -1160,6 +1160,7 @@ static void *gl_core_init(const video_info_t *video,
    gfx_ctx_input_t inp;
    unsigned full_x, full_y;
    settings_t *settings                 = config_get_ptr();
+   bool video_gpu_record                = settings->bools.video_gpu_record;
    int interval                         = 0;
    unsigned win_width                   = 0;
    unsigned win_height                  = 0;
@@ -1299,7 +1300,7 @@ static void *gl_core_init(const video_info_t *video,
    /* Get real known video size, which might have been altered by context. */
 
    if (temp_width != 0 && temp_height != 0)
-      video_driver_set_size(&temp_width, &temp_height);
+      video_driver_set_size(temp_width, temp_height);
    video_driver_get_size(&temp_width, &temp_height);
    gl->video_width  = temp_width;
    gl->video_height = temp_height;
@@ -1322,13 +1323,14 @@ static void *gl_core_init(const video_info_t *video,
 
    if (video->font_enable)
    {
-      font_driver_init_osd(gl, false,
-                           video->is_threaded,
-                           FONT_DRIVER_RENDER_OPENGL_CORE_API);
+      font_driver_init_osd(gl,
+            video,
+            false,
+            video->is_threaded,
+            FONT_DRIVER_RENDER_OPENGL_CORE_API);
    }
 
-   gl->pbo_readback_enable = settings->bools.video_gpu_record
-      && recording_is_enabled();
+   gl->pbo_readback_enable = video_gpu_record && recording_is_enabled();
 
    if (gl->pbo_readback_enable && gl_core_init_pbo_readback(gl))
    {
@@ -1565,7 +1567,7 @@ static bool gl_core_alive(void *data)
 
    if (temp_width != 0 && temp_height != 0)
    {
-      video_driver_set_size(&temp_width, &temp_height);
+      video_driver_set_size(temp_width, temp_height);
       gl->video_width  = temp_width;
       gl->video_height = temp_height;
    }
@@ -1573,11 +1575,12 @@ static bool gl_core_alive(void *data)
    return ret;
 }
 
-static void gl_core_set_nonblock_state(void *data, bool state)
+static void gl_core_set_nonblock_state(void *data, bool state,
+      bool adaptive_vsync_enabled,
+      unsigned swap_interval)
 {
    int interval                = 0;
    gl_core_t         *gl       = (gl_core_t*)data;
-   settings_t        *settings = config_get_ptr();
 
    if (!gl)
       return;
@@ -1586,13 +1589,10 @@ static void gl_core_set_nonblock_state(void *data, bool state)
 
    gl_core_context_bind_hw_render(gl, false);
    if (!state)
-      interval = settings->uints.video_swap_interval;
+      interval = swap_interval;
 
    if (gl->ctx_driver->swap_interval)
    {
-      bool adaptive_vsync_enabled            = video_driver_test_all_flags(
-            GFX_CTX_FLAGS_ADAPTIVE_VSYNC) && settings->bools.
-         video_adaptive_vsync;
       if (adaptive_vsync_enabled && interval == 1)
          interval = -1;
       gl->ctx_driver->swap_interval(gl->ctx_data, interval);
@@ -1929,9 +1929,9 @@ static bool gl_core_frame(void *data, const void *frame,
       gl_core_render_overlay(gl, video_info);
 #endif
 
-#ifdef HAVE_MENU_WIDGETS
+#ifdef HAVE_GFX_WIDGETS
    if (video_info->widgets_inited)
-      menu_widgets_frame(video_info);
+      gfx_widgets_frame(video_info);
 #endif
 
    if (!string_is_empty(msg))
@@ -2058,7 +2058,7 @@ static int video_texture_load_wrap_gl_core(void *data)
 #endif
 
 static uintptr_t gl_core_load_texture(void *video_data, void *data,
-                                      bool threaded, enum texture_filter_type filter_type)
+      bool threaded, enum texture_filter_type filter_type)
 {
    uintptr_t id = 0;
 
@@ -2118,27 +2118,29 @@ static void gl_core_set_texture_frame(void *data,
       const void *frame, bool rgb32, unsigned width, unsigned height,
       float alpha)
 {
-   GLenum menu_filter;
    settings_t *settings = config_get_ptr();
+   GLenum menu_filter   = settings->bools.menu_linear_filter 
+      ? GL_LINEAR : GL_NEAREST;
    unsigned base_size   = rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
    gl_core_t *gl        = (gl_core_t*)data;
    if (!gl)
       return;
 
    gl_core_context_bind_hw_render(gl, false);
-   menu_filter = settings->bools.menu_linear_filter ? GL_LINEAR : GL_NEAREST;
 
    if (gl->menu_texture)
       glDeleteTextures(1, &gl->menu_texture);
    glGenTextures(1, &gl->menu_texture);
    glBindTexture(GL_TEXTURE_2D, gl->menu_texture);
-   glTexStorage2D(GL_TEXTURE_2D, 1, rgb32 ? GL_RGBA8 : GL_RGBA4, width, height);
+   glTexStorage2D(GL_TEXTURE_2D, 1, rgb32 
+         ? GL_RGBA8 : GL_RGBA4, width, height);
 
    glPixelStorei(GL_UNPACK_ALIGNMENT, base_size);
    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
    glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0,
-                   width, height, GL_RGBA, rgb32 ? GL_UNSIGNED_BYTE : GL_UNSIGNED_SHORT_4_4_4_4, frame);
+                   width, height, GL_RGBA, rgb32 
+                   ? GL_UNSIGNED_BYTE : GL_UNSIGNED_SHORT_4_4_4_4, frame);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, menu_filter);
@@ -2234,8 +2236,8 @@ static void gl_core_get_poke_interface(void *data,
    *iface = &gl_core_poke_interface;
 }
 
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-static bool gl_core_menu_widgets_enabled(void *data)
+#ifdef HAVE_GFX_WIDGETS
+static bool gl_core_gfx_widgets_enabled(void *data)
 {
    (void)data;
    return true;
@@ -2301,7 +2303,7 @@ video_driver_t video_gl_core = {
 #endif
    gl_core_get_poke_interface,
    gl_core_wrap_type_to_enum,
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-   gl_core_menu_widgets_enabled
+#ifdef HAVE_GFX_WIDGETS
+   gl_core_gfx_widgets_enabled
 #endif
 };

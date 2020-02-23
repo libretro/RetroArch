@@ -120,7 +120,7 @@ static void *switch_init(const video_info_t *video,
    sw->vp.height      = 720;
    sw->vp.full_width  = 1280;
    sw->vp.full_height = 720;
-   video_driver_set_size(&sw->vp.width, &sw->vp.height);
+   video_driver_set_size(sw->vp.width, sw->vp.height);
 
    sw->vsync = video->vsync;
    sw->rgb32 = video->rgb32;
@@ -263,10 +263,10 @@ static bool switch_frame(void *data, const void *frame,
    return true;
 }
 
-static void switch_set_nonblock_state(void *data, bool toggle)
+static void switch_set_nonblock_state(void *data, bool toggle, bool c, unsigned d)
 {
    switch_video_t *sw = data;
-   sw->vsync = !toggle;
+   sw->vsync          = !toggle;
 }
 
 static bool switch_alive(void *data)

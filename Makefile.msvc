@@ -21,7 +21,7 @@ HAVE_D3D12               := 1
 HAVE_CG                  := 1
 HAVE_OPENGL              := 1
 HAVE_OPENGL1             := 1
-HAVE_MENU_WIDGETS			 := 1
+HAVE_GFX_WIDGETS			 := 1
 HAVE_VULKAN              := 1
 HAVE_XAUDIO              := 1
 HAVE_XINPUT              := 1
@@ -31,6 +31,7 @@ HAVE_WINMM               := 1
 
 HAVE_RPNG                := 1
 HAVE_ZLIB                := 1
+HAVE_CONFIGFILE          := 1
 HAVE_MENU                := 1
 HAVE_RGUI                := 1
 HAVE_XMB                 := 1

@@ -246,11 +246,7 @@ static bool xenon360_gfx_frame(void *data, const void *frame, unsigned width, un
    return true;
 }
 
-static void xenon360_gfx_set_nonblock_state(void *data, bool state)
-{
-   (void)data;
-   (void)state;
-}
+static void xenon360_gfx_set_nonblock_state(void *a, bool b, bool c, unsigned d) { }
 
 static bool xenon360_gfx_alive(void *data)
 {

@@ -491,13 +491,14 @@ static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
    BYTE *dest                = NULL;
    settings_t *settings      = config_get_ptr();
    bool float_format         = settings->bools.audio_wasapi_float_format;
+   bool exclusive_mode       = settings->bools.audio_wasapi_exclusive_mode;
    int sh_buffer_length      = settings->ints.audio_wasapi_sh_buffer_length;
    wasapi_t *w               = (wasapi_t*)calloc(1, sizeof(wasapi_t));
 
    if (!w)
       return NULL;
 
-   w->exclusive              = settings->bools.audio_wasapi_exclusive_mode;
+   w->exclusive              = exclusive_mode;
    w->device                 = wasapi_init_device(dev_id);
    if (!w->device && dev_id)
       w->device = wasapi_init_device(NULL);

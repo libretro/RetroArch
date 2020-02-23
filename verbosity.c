@@ -29,6 +29,7 @@
 
 #include <stdio.h>
 #include <stdarg.h>
+#include <time.h>
 
 #ifdef _MSC_VER
 #include <compat/msvc.h>
@@ -43,9 +44,11 @@
 #include <windows.h>
 #endif
 
+#include <file/file_path.h>
 #include <string/stdstring.h>
 #include <streams/file_stream.h>
 #include <compat/fopen_utf8.h>
+#include <retro_miscellaneous.h>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -75,11 +78,14 @@
 
 /* If this is non-NULL. RARCH_LOG and friends
  * will write to this file. */
-static FILE *log_file_fp            = NULL;
-static void* log_file_buf           = NULL;
-static unsigned verbosity_log_level = DEFAULT_FRONTEND_LOG_LEVEL;
-static bool main_verbosity          = false;
-static bool log_file_initialized    = false;
+static FILE *log_file_fp                            = NULL;
+static void* log_file_buf                           = NULL;
+static unsigned verbosity_log_level                 = 
+DEFAULT_FRONTEND_LOG_LEVEL;
+static bool main_verbosity                          = false;
+static bool log_file_initialized                    = false;
+static bool log_file_override_active                = false;
+static char log_file_override_path[PATH_MAX_LENGTH] = {0};
 
 #ifdef HAVE_LIBNX
 static Mutex logging_mtx;
@@ -126,11 +132,6 @@ bool *verbosity_get_ptr(void)
    return &main_verbosity;
 }
 
-void *retro_main_log_file(void)
-{
-   return log_file_fp;
-}
-
 void retro_main_log_file_init(const char *path, bool append)
 {
    if (log_file_initialized)
@@ -141,7 +142,7 @@ void retro_main_log_file_init(const char *path, bool append)
 #endif
 
    log_file_fp          = stderr;
-   if (path == NULL)
+   if (!path)
       return;
 
    log_file_fp          = (FILE*)fopen_utf8(path, append ? "ab" : "wb");
@@ -371,3 +372,139 @@ void RARCH_ERR(const char *fmt, ...)
    va_end(ap);
 }
 #endif
+
+void rarch_log_file_set_override(const char *path)
+{
+   log_file_override_active = true;
+   strlcpy(log_file_override_path, path, sizeof(log_file_override_path));
+}
+
+void rarch_log_file_init(
+      bool log_to_file,
+      bool log_to_file_timestamp,
+      const char *log_dir
+      )
+{
+   char log_directory[PATH_MAX_LENGTH];
+   char log_file_path[PATH_MAX_LENGTH];
+   static bool log_file_created              = false;
+   static char timestamped_log_file_name[64] = {0};
+   bool logging_to_file                      = log_file_initialized;
+
+   log_directory[0]                          = '\0';
+   log_file_path[0]                          = '\0';
+
+   /* If this is the first run, generate a timestamped log
+    * file name (do this even when not outputting timestamped
+    * log files, since user may decide to switch at any moment...) */
+   if (string_is_empty(timestamped_log_file_name))
+   {
+      char format[256];
+      time_t cur_time      = time(NULL);
+      const struct tm *tm_ = localtime(&cur_time);
+
+      format[0] = '\0';
+      strftime(format, sizeof(format), "retroarch__%Y_%m_%d__%H_%M_%S", tm_);
+      fill_pathname_noext(timestamped_log_file_name, format,
+            ".log",
+            sizeof(timestamped_log_file_name));
+   }
+
+   /* If nothing has changed, do nothing */
+   if ((!log_to_file && !logging_to_file) ||
+       (log_to_file && logging_to_file))
+      return;
+
+   /* If we are currently logging to file and wish to stop,
+    * de-initialise existing logger... */
+   if (!log_to_file && logging_to_file)
+   {
+      retro_main_log_file_deinit();
+      /* ...and revert to console */
+      retro_main_log_file_init(NULL, false);
+      return;
+   }
+
+   /* If we reach this point, then we are not currently
+    * logging to file, and wish to do so */
+
+   /* > Check whether we are already logging to console */
+   /* De-initialise existing logger */
+   if (log_file_fp)
+      retro_main_log_file_deinit();
+
+   /* > Get directory/file paths */
+   if (log_file_override_active)
+   {
+      /* Get log directory */
+      const char *last_slash           = 
+         find_last_slash(log_file_override_path);
+
+      if (last_slash)
+      {
+         char tmp_buf[PATH_MAX_LENGTH] = {0};
+         size_t path_length            = last_slash + 1 - log_file_override_path;
+
+         if ((path_length > 1) && (path_length < PATH_MAX_LENGTH))
+            strlcpy(tmp_buf, log_file_override_path, path_length * sizeof(char));
+         strlcpy(log_directory, tmp_buf, sizeof(log_directory));
+      }
+
+      /* Get log file path */
+      strlcpy(log_file_path, log_file_override_path, sizeof(log_file_path));
+   }
+   else if (!string_is_empty(log_dir))
+   {
+      /* Get log directory */
+      strlcpy(log_directory, log_dir, sizeof(log_directory));
+
+      /* Get log file path */
+      fill_pathname_join(log_file_path, log_dir,
+            log_to_file_timestamp
+            ? timestamped_log_file_name
+            : "retroarch.log",
+            sizeof(log_file_path));
+   }
+
+   /* > Attempt to initialise log file */
+   if (!string_is_empty(log_file_path))
+   {
+      /* Create log directory, if required */
+      if (!string_is_empty(log_directory))
+      {
+         if (!path_is_directory(log_directory))
+         {
+            if (!path_mkdir(log_directory))
+            {
+               /* Re-enable console logging and output error message */
+               retro_main_log_file_init(NULL, false);
+               RARCH_ERR("Failed to create system event log directory: %s\n", log_directory);
+               return;
+            }
+         }
+      }
+
+      /* When RetroArch is launched, log file is overwritten.
+       * On subsequent calls within the same session, it is appended to. */
+      retro_main_log_file_init(log_file_path, log_file_created);
+      if (log_file_initialized)
+         log_file_created = true;
+      return;
+   }
+
+   /* If we reach this point, then something went wrong...
+    * Just fall back to console logging */
+   retro_main_log_file_init(NULL, false);
+   RARCH_ERR("Failed to initialise system event file logging...\n");
+}
+
+void rarch_log_file_deinit(void)
+{
+   /* De-initialise existing logger, if currently logging to file */
+   if (log_file_initialized)
+      retro_main_log_file_deinit();
+
+   /* If logging is currently disabled... */
+   if (!log_file_fp) /* ...initialise logging to console */
+      retro_main_log_file_init(NULL, false);
+}

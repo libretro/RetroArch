@@ -47,7 +47,7 @@ void set_badge_menu_texture(badges_ctx_t * badges, int i)
          APPLICATION_SPECIAL_DIRECTORY_THUMBNAILS_CHEEVOS_BADGES);
 
 #ifdef HAVE_MENU
-   menu_display_reset_textures_list(badge_file, fullpath,
+   gfx_display_reset_textures_list(badge_file, fullpath,
          &badges->menu_texture_list[i],TEXTURE_FILTER_MIPMAP_LINEAR, NULL, NULL);
 #endif
 }
@@ -63,11 +63,11 @@ void set_badge_info (badges_ctx_t *badge_struct, int id,
    set_badge_menu_texture(badge_struct, id);
 }
 
-menu_texture_item get_badge_texture(int id)
+uintptr_t get_badge_texture(int id)
 {
    settings_t *settings = config_get_ptr();
    if (!settings || !settings->bools.cheevos_badges_enable)
-      return (menu_texture_item)NULL;
+      return (uintptr_t)NULL;
 
    return badges_ctx.menu_texture_list[id];
 }

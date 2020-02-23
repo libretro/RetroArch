@@ -41,9 +41,9 @@
 #include "../common/d3dcompiler_common.h"
 #ifdef HAVE_MENU
 #include "../../menu/menu_driver.h"
-#ifdef HAVE_MENU_WIDGETS
-#include "../../menu/widgets/menu_widgets.h"
 #endif
+#ifdef HAVE_GFX_WIDGETS
+#include "../gfx_widgets.h"
 #endif
 
 #ifdef __WINRT__
@@ -700,7 +700,7 @@ static void *d3d10_gfx_init(const video_info_t* video,
 
    D3D10SetRenderTargets(d3d10->device, 1, &d3d10->renderTargetView, NULL);
 
-   video_driver_set_size(&d3d10->vp.full_width, &d3d10->vp.full_height);
+   video_driver_set_size(d3d10->vp.full_width, d3d10->vp.full_height);
    d3d10->viewport.Width  = d3d10->vp.full_width;
    d3d10->viewport.Height = d3d10->vp.full_height;
    d3d10->resize_viewport = true;
@@ -966,7 +966,11 @@ static void *d3d10_gfx_init(const video_info_t* video,
 
    D3D10SetState(d3d10->device, d3d10->state);
 
-   font_driver_init_osd(d3d10, false, video->is_threaded, FONT_DRIVER_RENDER_D3D10_API);
+   font_driver_init_osd(d3d10,
+         video,
+         false,
+         video->is_threaded,
+         FONT_DRIVER_RENDER_D3D10_API);
 
    {
       d3d10_fake_context.get_flags = d3d10_get_flags;
@@ -1001,14 +1005,15 @@ static void *d3d10_gfx_init(const video_info_t* video,
 #endif
 
    {
-      int i = 0;
+      int         i = 0;
+      int gpu_index = settings->ints.d3d10_gpu_index;
 
       if (d3d10_gpu_list)
          string_list_free(d3d10_gpu_list);
 
       d3d10_gpu_list = string_list_new();
 
-      while (true)
+      for (;;)
       {
          DXGI_ADAPTER_DESC desc = {0};
          union string_list_elem_attr attr = {0};
@@ -1041,18 +1046,18 @@ static void *d3d10_gfx_init(const video_info_t* video,
 
       video_driver_set_gpu_api_devices(GFX_CTX_DIRECT3D10_API, d3d10_gpu_list);
 
-      if (0 <= settings->ints.d3d10_gpu_index && settings->ints.d3d10_gpu_index <= i && settings->ints.d3d10_gpu_index < D3D10_MAX_GPU_COUNT)
+      if (0 <= gpu_index && gpu_index <= i && (gpu_index < D3D10_MAX_GPU_COUNT))
       {
-         d3d10_current_adapter = d3d10_adapters[settings->ints.d3d10_gpu_index];
+         d3d10_current_adapter = d3d10_adapters[gpu_index];
          d3d10->adapter = d3d10_current_adapter;
-         RARCH_LOG("[D3D10]: Using GPU index %d.\n", settings->ints.d3d10_gpu_index);
-         video_driver_set_gpu_device_string(d3d10_gpu_list->elems[settings->ints.d3d10_gpu_index].data);
+         RARCH_LOG("[D3D10]: Using GPU index %d.\n", gpu_index);
+         video_driver_set_gpu_device_string(d3d10_gpu_list->elems[gpu_index].data);
       }
       else
       {
-         RARCH_WARN("[D3D10]: Invalid GPU index %d, using first device found.\n", settings->ints.d3d10_gpu_index);
+         RARCH_WARN("[D3D10]: Invalid GPU index %d, using first device found.\n", gpu_index);
          d3d10_current_adapter = d3d10_adapters[0];
-         d3d10->adapter = d3d10_current_adapter;
+         d3d10->adapter        = d3d10_current_adapter;
       }
    }
 
@@ -1222,7 +1227,7 @@ static bool d3d10_gfx_frame(
       d3d10->resize_chain    = false;
       d3d10->resize_viewport = true;
 
-      video_driver_set_size(&video_info->width, &video_info->height);
+      video_driver_set_size(video_info->width, video_info->height);
    }
 
    PERF_START();
@@ -1450,7 +1455,7 @@ static bool d3d10_gfx_frame(
    d3d10->sprites.enabled = true;
 
 #ifdef HAVE_MENU
-#ifndef HAVE_MENU_WIDGETS
+#ifndef HAVE_GFX_WIDGETS
    if (d3d10->menu.enabled)
 #endif
    {
@@ -1500,11 +1505,9 @@ static bool d3d10_gfx_frame(
    }
 #endif
 
-#ifdef HAVE_MENU
-#ifdef HAVE_MENU_WIDGETS
+#ifdef HAVE_GFX_WIDGETS
    if (video_info->widgets_inited)
-      menu_widgets_frame(video_info);
-#endif
+      gfx_widgets_frame(video_info);
 #endif
 
    if (msg && *msg)
@@ -1523,7 +1526,9 @@ static bool d3d10_gfx_frame(
    return true;
 }
 
-static void d3d10_gfx_set_nonblock_state(void* data, bool toggle)
+static void d3d10_gfx_set_nonblock_state(void* data, bool toggle,
+      bool adaptive_vsync_enabled,
+      unsigned swap_interval)
 {
    d3d10_video_t* d3d10 = (d3d10_video_t*)data;
 
@@ -1540,8 +1545,10 @@ static bool d3d10_gfx_alive(void* data)
 
    win32_check_window(&quit, &d3d10->resize_chain, &d3d10->vp.full_width, &d3d10->vp.full_height);
 
-   if (d3d10->resize_chain && d3d10->vp.full_width != 0 && d3d10->vp.full_height != 0)
-      video_driver_set_size(&d3d10->vp.full_width, &d3d10->vp.full_height);
+   if (     d3d10->resize_chain 
+         && d3d10->vp.full_width != 0 
+         && d3d10->vp.full_height != 0)
+      video_driver_set_size(d3d10->vp.full_width, d3d10->vp.full_height);
 
    return !quit;
 }
@@ -1762,8 +1769,8 @@ static void d3d10_gfx_get_poke_interface(void* data, const video_poke_interface_
    *iface = &d3d10_poke_interface;
 }
 
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-static bool d3d10_menu_widgets_enabled(void *data)
+#if defined(HAVE_GFX_WIDGETS)
+static bool d3d10_gfx_widgets_enabled(void *data)
 {
    (void)data;
    return true;
@@ -1795,7 +1802,7 @@ video_driver_t video_d3d10 = {
 #endif
    d3d10_gfx_get_poke_interface,
    NULL, /* d3d10_wrap_type_to_enum */
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-   d3d10_menu_widgets_enabled
+#if defined(HAVE_GFX_WIDGETS)
+   d3d10_gfx_widgets_enabled
 #endif
 };

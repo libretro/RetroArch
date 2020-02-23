@@ -168,7 +168,7 @@ static void CALLBACK winmm_midi_input_callback(HMIDIIN dev, UINT msg,
 #endif
       }
    }
-   else if(msg == MIM_LONGDATA)
+   else if (msg == MIM_LONGDATA)
    {
 #ifdef DEBUG
       RARCH_WARN("[MIDI]: SysEx input not implemented, event dropped.\n");

@@ -846,83 +846,86 @@ int menu_hash_get_help_fr_enum(enum msg_hash_enums msg, char *s, size_t len)
             );
             break;
         case MENU_ENUM_LABEL_VIDEO_DRIVER:
-            snprintf(s, len,
+            {
+               const char *video_driver = settings->arrays.video_driver;
+               snprintf(s, len,
                      "Pilote vidéo actuel.");
 
-            if (string_is_equal(settings->arrays.video_driver, "gl"))
-            {
-                snprintf(s, len,
-                         "Pilote vidéo OpenGL. \n"
-                                 " \n"
-                                 "Ce pilote permet d’utiliser les cœurs  \n"
-                                 "libretro GL en plus des implémentations \n"
-                                 "en mode logiciel.\n"
-                                 " \n"
-                                 "Les performances pour les implémentations \n"
-                                 "logicielles et les cœurs libretro GL \n"
-                                 "dépendent du pilote GL sous-jacent de votre \n"
-                                 "carte graphique.");
-            }
-            else if (string_is_equal(settings->arrays.video_driver, "sdl2"))
-            {
-                snprintf(s, len,
-                         "Pilote vidéo SDL 2.\n"
-                                 " \n"
-                                 "Ce pilote vidéo SDL 2 utilise le rendu en mode \n"
-                                 "logiciel.\n"
-                                 " \n"
-                                 "Les performances pour les implémentations \n"
-                                 "de cœurs libretro en mode logiciel dépendent \n"
-                                 "de l’implémentation SDL pour votre plateforme.");
-            }
-            else if (string_is_equal(settings->arrays.video_driver, "sdl1"))
-            {
-                snprintf(s, len,
-                         "Pilote vidéo SDL.\n"
-                                 " \n"
-                                 "Ce pilote vidéo SDL 1.2 utilise le rendu en mode \n"
-                                 "logiciel.\n"
-                                 " \n"
-                                 "Ses performances sont considérées comme sous-optimales. \n"
-                                 "Pensez à ne l'utiliser qu'en dernier recours.");
-            }
-            else if (string_is_equal(settings->arrays.video_driver, "d3d"))
-            {
-                snprintf(s, len,
-                         "Pilote vidéo Direct3D. \n"
-                                 " \n"
-                                 "Les performances des cœurs en mode logiciel \n"
-                                 "dépendent du pilote D3D sous-jacent de votre \n"
-                                 "carte graphique.");
-            }
-            else if (string_is_equal(settings->arrays.video_driver, "exynos"))
-            {
-                snprintf(s, len,
-                         "Pilote vidéo Exynos-G2D. \n"
-                                 " \n"
-                                 "Pilote vidéo Exynos de bas niveau. Utilise \n"
-                                 "le bloc G2D dans le SoC Samsung Exynos \n"
-                                 "pour les opérations blit. \n"
-                                 " \n"
-                                 "Les performances pour les cœurs en mode \n"
-                                 "logiciel devraient être optimales.");
-            }
-            else if (string_is_equal(settings->arrays.video_driver, "drm"))
-            {
-                snprintf(s, len,
-                         "Pilote vidéo DRM simple. \n"
-                                 " \n"
-                                 "Pilote vidéo de bas niveau utilisant libdrm pour \n"
-                                 "la mise à l'échelle matérielle en utilisant des \n"
-                                 "surimpressions accélérées par le processeur graphique.");
-            }
-            else if (string_is_equal(settings->arrays.video_driver, "sunxi"))
-            {
-                snprintf(s, len,
-                         "Pilote vidéo Sunxi-G2D. \n"
-                                 " \n"
-                                 "Pilote vidéo Sunxi de bas niveau. \n"
-                                 "Utilise le bloc G2D dans les SoC Allwinner.");
+               if (string_is_equal(video_driver, "gl"))
+               {
+                  snprintf(s, len,
+                        "Pilote vidéo OpenGL. \n"
+                        " \n"
+                        "Ce pilote permet d’utiliser les cœurs  \n"
+                        "libretro GL en plus des implémentations \n"
+                        "en mode logiciel.\n"
+                        " \n"
+                        "Les performances pour les implémentations \n"
+                        "logicielles et les cœurs libretro GL \n"
+                        "dépendent du pilote GL sous-jacent de votre \n"
+                        "carte graphique.");
+               }
+               else if (string_is_equal(video_driver, "sdl2"))
+               {
+                  snprintf(s, len,
+                        "Pilote vidéo SDL 2.\n"
+                        " \n"
+                        "Ce pilote vidéo SDL 2 utilise le rendu en mode \n"
+                        "logiciel.\n"
+                        " \n"
+                        "Les performances pour les implémentations \n"
+                        "de cœurs libretro en mode logiciel dépendent \n"
+                        "de l’implémentation SDL pour votre plateforme.");
+               }
+               else if (string_is_equal(video_driver, "sdl1"))
+               {
+                  snprintf(s, len,
+                        "Pilote vidéo SDL.\n"
+                        " \n"
+                        "Ce pilote vidéo SDL 1.2 utilise le rendu en mode \n"
+                        "logiciel.\n"
+                        " \n"
+                        "Ses performances sont considérées comme sous-optimales. \n"
+                        "Pensez à ne l'utiliser qu'en dernier recours.");
+               }
+               else if (string_is_equal(video_driver, "d3d"))
+               {
+                  snprintf(s, len,
+                        "Pilote vidéo Direct3D. \n"
+                        " \n"
+                        "Les performances des cœurs en mode logiciel \n"
+                        "dépendent du pilote D3D sous-jacent de votre \n"
+                        "carte graphique.");
+               }
+               else if (string_is_equal(video_driver, "exynos"))
+               {
+                  snprintf(s, len,
+                        "Pilote vidéo Exynos-G2D. \n"
+                        " \n"
+                        "Pilote vidéo Exynos de bas niveau. Utilise \n"
+                        "le bloc G2D dans le SoC Samsung Exynos \n"
+                        "pour les opérations blit. \n"
+                        " \n"
+                        "Les performances pour les cœurs en mode \n"
+                        "logiciel devraient être optimales.");
+               }
+               else if (string_is_equal(video_driver, "drm"))
+               {
+                  snprintf(s, len,
+                        "Pilote vidéo DRM simple. \n"
+                        " \n"
+                        "Pilote vidéo de bas niveau utilisant libdrm pour \n"
+                        "la mise à l'échelle matérielle en utilisant des \n"
+                        "surimpressions accélérées par le processeur graphique.");
+               }
+               else if (string_is_equal(video_driver, "sunxi"))
+               {
+                  snprintf(s, len,
+                        "Pilote vidéo Sunxi-G2D. \n"
+                        " \n"
+                        "Pilote vidéo Sunxi de bas niveau. \n"
+                        "Utilise le bloc G2D dans les SoC Allwinner.");
+               }
             }
             break;
         case MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN:
@@ -1620,6 +1623,20 @@ int menu_hash_get_help_fr_enum(enum msg_hash_enums msg, char *s, size_t len)
                              "Les nombres sont décrits en images."
             );
             break;
+        case MENU_ENUM_LABEL_INPUT_TURBO_MODE:
+            snprintf(s, len,
+                  "Mode turbo.\n"
+                  " \n"
+                  "Sélectionne le comportement général du mode turbo."
+                  );
+            break;
+        case MENU_ENUM_LABEL_INPUT_TURBO_DEFAULT_BUTTON:
+            snprintf(s, len,
+                  "Touche turbo par défaut.\n"
+                  " \n"
+                  "Touche active par défaut pour le mode turbo 'Touche unique'.\n"
+                  );
+            break;
         case MENU_ENUM_LABEL_INPUT_DUTY_CYCLE:
             snprintf(s, len,
                      "Cycle de répétition des touches.\n"
@@ -1960,7 +1977,7 @@ int menu_hash_get_help_fr_enum(enum msg_hash_enums msg, char *s, size_t len)
                              " \n"
                              "Maintenir le turbo tout en appuyant sur une \n"
                              "autre touche permet à la touche d'entrer dans \n"
-                             "un mode turbo où l'état du bouton est modulé \n"
+                             "un mode turbo où son état est modulé \n"
                              "avec un signal périodique. \n"
                              " \n"
                              "La modulation s'arrête lorsque la touche \n"
