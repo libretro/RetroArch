@@ -462,7 +462,16 @@ static int rcheevos_parse(const char* json)
 
    if (res != 0)
    {
-      RARCH_ERR(RCHEEVOS_TAG "Error parsing cheevos");
+      char* ptr = buffer + snprintf(buffer, sizeof(buffer), "Error retrieving achievement data: ");
+
+      /* extract the Error field from the JSON. if not found, remove the colon from the message */
+      if (rcheevos_get_json_error(json, ptr, sizeof(buffer) - (ptr - buffer)) == -1)
+         ptr[-2] = '\0';
+
+      runloop_msg_queue_push(buffer, 0, 5 * 60, false, NULL,
+         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
+
+      RARCH_ERR(RCHEEVOS_TAG "%s", buffer);
       return -1;
    }
 
@@ -1251,6 +1260,7 @@ bool rcheevos_unload(void)
 {
    bool running = false;
    unsigned i = 0, count = 0;
+   settings_t* settings = config_get_ptr();
 
    CHEEVOS_LOCK(rcheevos_locals.task_lock);
    running = rcheevos_locals.task != NULL;
@@ -1306,6 +1316,10 @@ bool rcheevos_unload(void)
       rcheevos_hardcore_paused   = false;
       rcheevos_state_loaded_flag = false;
    }
+
+   /* if the config-level token has been cleared, we need to re-login on loading the next game */
+   if (!settings->arrays.cheevos_token[0])
+      rcheevos_locals.token[0] = '\0';
 
    return true;
 }

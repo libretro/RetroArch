@@ -141,7 +141,7 @@ static int rcheevos_get_value(const char* json, unsigned key_hash,
 }
 
 /*****************************************************************************
-Returns the token of the error message
+Returns the token or the error message
 *****************************************************************************/
 
 int rcheevos_get_token(const char* json, char* token, size_t length)
@@ -154,6 +154,11 @@ int rcheevos_get_token(const char* json, char* token, size_t length)
    return rcheevos_get_value(json, CHEEVOS_JSON_KEY_TOKEN, token, length);
 }
 
+int rcheevos_get_json_error(const char* json, char* token, size_t length)
+{
+   return rcheevos_get_value(json, CHEEVOS_JSON_KEY_ERROR, token, length);
+}
+
 /*****************************************************************************
 Count number of achievements in a JSON file
 *****************************************************************************/
@@ -162,6 +167,7 @@ typedef struct
 {
    int      in_cheevos;
    int      in_lboards;
+   int      has_error;
    uint32_t field_hash;
    unsigned core_count;
    unsigned unofficial_count;
@@ -185,9 +191,11 @@ static int rcheevos_count_key(void* userdata,
    ud->field_hash        = rcheevos_djb2(name, length);
 
    if (ud->field_hash == CHEEVOS_JSON_KEY_ACHIEVEMENTS)
-      ud->in_cheevos     = 1;
+      ud->in_cheevos = 1;
    else if (ud->field_hash == CHEEVOS_JSON_KEY_LEADERBOARDS)
-      ud->in_lboards     = 1;
+      ud->in_lboards = 1;
+   else if (ud->field_hash == CHEEVOS_JSON_KEY_ERROR)
+      ud->has_error  = 1;
 
    return 0;
 }
@@ -214,7 +222,7 @@ static int rcheevos_count_number(void* userdata,
 
 static int rcheevos_count_cheevos(const char* json,
       unsigned* core_count, unsigned* unofficial_count,
-      unsigned* lboard_count)
+      unsigned* lboard_count, int* has_error)
 {
    static const jsonsax_handlers_t handlers =
    {
@@ -236,6 +244,7 @@ static int rcheevos_count_cheevos(const char* json,
    rcheevos_countud_t ud;
    ud.in_cheevos       = 0;
    ud.in_lboards       = 0;
+   ud.has_error        = 0;
    ud.core_count       = 0;
    ud.unofficial_count = 0;
    ud.lboard_count     = 0;
@@ -245,6 +254,7 @@ static int rcheevos_count_cheevos(const char* json,
    *core_count         = ud.core_count;
    *unofficial_count   = ud.unofficial_count;
    *lboard_count       = ud.lboard_count;
+   *has_error          = ud.has_error;
 
    return res;
 }
@@ -582,12 +592,13 @@ int rcheevos_get_patchdata(const char* json, rcheevos_rapatchdata_t* patchdata)
 
    rcheevos_readud_t ud;
    int res;
+   int has_error;
 
    /* Count the number of achievements in the JSON file. */
    res = rcheevos_count_cheevos(json, &patchdata->core_count,
-      &patchdata->unofficial_count, &patchdata->lboard_count);
+      &patchdata->unofficial_count, &patchdata->lboard_count, &has_error);
 
-   if (res != JSONSAX_OK)
+   if (res != JSONSAX_OK || has_error)
       return -1;
 
    /* Allocate the achievements. */
