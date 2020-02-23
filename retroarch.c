@@ -1266,7 +1266,9 @@ static const void *joypad_driver_find_handle(int idx);
 static const void *hid_driver_find_handle(int idx);
 #endif
 #ifdef HAVE_ACCESSIBILITY
+#ifdef HAVE_TRANSLATE
 static bool is_narrator_running(void);
+#endif
 static bool accessibility_startup_message(void);
 #endif
 
@@ -4638,7 +4640,9 @@ static void handle_translation_cb(
          else if (gfx_widgets_paused)
          {
             /* In this case we have to unpause and then repause for a frame */
+#ifdef HAVE_TRANSLATE
             gfx_widgets_ai_service_overlay_set_state(2);/* Unpausing state */
+#endif
             command_event(CMD_EVENT_UNPAUSE, NULL);
          }
       }
@@ -5073,11 +5077,6 @@ static bool run_translation_service(void)
       /* For the case when ai service pause is disabled. */
       gfx_widgets_ai_service_overlay_unload();
       goto finish;
-   }
-#else
-   if (!settings->bools.ai_service_pause)
-   {
-      RARCH_LOG("Pause toggle not supported without menu widgets.\n");
    }
 #endif
 
@@ -6466,7 +6465,7 @@ static void retroarch_pause_checks(void)
 
    }
 
-#if defined(HAVE_GFX_WIDGETS)
+#if defined(HAVE_TRANSLATE) && defined(HAVE_GFX_WIDGETS)
    if (gfx_widgets_ai_service_overlay_get_state() == 1)
       gfx_widgets_ai_service_overlay_unload();
 #endif
@@ -6555,7 +6554,7 @@ bool command_event(enum event_command cmd, void *data)
 #ifdef HAVE_OVERLAY
          retroarch_overlay_deinit();
 #endif
-#if defined(HAVE_GFX_WIDGETS)
+#if defined(HAVE_TRANSLATE) && defined(HAVE_GFX_WIDGETS)
          if (gfx_widgets_ai_service_overlay_get_state() != 0)
          {
             /* Because the overlay is a menu widget, it's going to be written
@@ -27233,7 +27232,7 @@ static enum runloop_state runloop_check_state(void)
    bool display_kb                     = menu_input_dialog_get_display_kb_internal();
 #endif
 
-#if defined(HAVE_GFX_WIDGETS)
+#if defined(HAVE_TRANSLATE) && defined(HAVE_GFX_WIDGETS)
    if (gfx_widgets_ai_service_overlay_get_state() == 3)
    {
       command_event(CMD_EVENT_PAUSE, NULL);
@@ -28793,6 +28792,7 @@ bool accessibility_speak_priority(const char* speak_text, int priority)
       if (frontend && frontend->accessibility_speak)
          return frontend->accessibility_speak(speed, speak_text,
                priority);
+
       RARCH_LOG("Platform not supported for accessibility.\n");
       /* The following method is a fallback for other platforms to use the
          AI Service url to do the TTS.  However, since the playback is done
@@ -28800,16 +28800,17 @@ bool accessibility_speak_priority(const char* speak_text, int priority)
          core is running, this playback method won't work.  When the audio
          mixer can handle playing streams while the core is paused, then
          we can use this. */
-      /*
+#if 0
 #if defined(HAVE_NETWORKING)
-         return accessibility_speak_ai_service(speak_text, voice, priority);
+      return accessibility_speak_ai_service(speak_text, voice, priority);
 #endif
-      */
+#endif
    }
 
    return true;
 }
 
+#ifdef HAVE_TRANSLATE
 static bool is_narrator_running(void)
 {
    if (is_accessibility_enabled())
@@ -28820,6 +28821,7 @@ static bool is_narrator_running(void)
    }
    return true;
 }
+#endif
 
 static bool accessibility_startup_message(void)
 {

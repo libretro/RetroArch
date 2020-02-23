@@ -16,6 +16,10 @@
 #ifndef _GFX_WIDGETS_H
 #define _GFX_WIDGETS_H
 
+#ifdef HAVE_CONFIG_H
+#include "../config.h"
+#endif
+
 #include <formats/image.h>
 #include <queues/task_queue.h>
 #include <queues/message_queue.h>
@@ -60,6 +64,7 @@ void gfx_widgets_iterate(
 void gfx_widgets_screenshot_taken(const char *shotname, const char *filename);
 
 /* AI Service functions */
+#ifdef HAVE_TRANSLATE
 int gfx_widgets_ai_service_overlay_get_state(void);
 bool gfx_widgets_ai_service_overlay_set_state(int state);
 
@@ -68,6 +73,7 @@ bool gfx_widgets_ai_service_overlay_load(
         enum image_type_enum image_type);
 
 void gfx_widgets_ai_service_overlay_unload(void);
+#endif
 
 void gfx_widgets_start_load_content_animation(
       const char *content_name, bool remove_extension);

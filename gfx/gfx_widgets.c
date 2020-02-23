@@ -60,11 +60,11 @@ static float volume_bar_normal[16]        = COLOR_HEX_TO_FLOAT(0x198AC6, 1.0f);
 static float volume_bar_loud[16]          = COLOR_HEX_TO_FLOAT(0xF5DD19, 1.0f);
 static float volume_bar_loudest[16]       = COLOR_HEX_TO_FLOAT(0xC23B22, 1.0f);
 
-static uint64_t gfx_widgets_frame_count  = 0;
+static uint64_t gfx_widgets_frame_count   = 0;
 
 /* Font data */
-static font_data_t *font_regular;
-static font_data_t *font_bold;
+static font_data_t *font_regular          = NULL;
+static font_data_t *font_bold             = NULL;
 
 static video_font_raster_block_t font_raster_regular;
 static video_font_raster_block_t font_raster_bold;
@@ -77,7 +77,7 @@ static float gfx_widgets_pure_white[16] = {
 };
 
 /* FPS */
-static char gfx_widgets_fps_text[255] = {0};
+static char gfx_widgets_fps_text[255]  = {0};
 
 #ifdef HAVE_CHEEVOS
 /* Achievement notification */
@@ -143,20 +143,22 @@ typedef struct menu_widget_msg
    unsigned text_height;
 
    float offset_y;
-
    float alpha;
 
-   bool dying; /* is it currently doing the fade out animation ? */
-
+   /* Is it currently doing the fade out animation ? */
+   bool dying;
+   /* Has the timer expired ? if so, should be set to dying */
+   bool expired;
    unsigned width;
-   bool expired; /* has the timer expired ? if so, should be set to dying */
 
    gfx_timer_t expiration_timer;
    bool expiration_timer_started;
 
    retro_task_t *task_ptr;
-   char *task_title_ptr; /* used to detect title change */
-   uint8_t task_count; /* how many tasks have used this notification? */
+   /* Used to detect title change */
+   char *task_title_ptr;
+   /* How many tasks have used this notification? */
+   uint8_t task_count;
 
    int8_t task_progress;
    bool task_finished;
@@ -164,7 +166,8 @@ typedef struct menu_widget_msg
    bool task_cancelled;
    uint32_t task_ident;
 
-   bool unfolded; /* unfold animation */
+   /* Unfold animation */
+   bool unfolded;
    bool unfolding;
    float unfold;
 
@@ -172,11 +175,12 @@ typedef struct menu_widget_msg
    gfx_timer_t hourglass_timer;
 } menu_widget_msg_t;
 
-static fifo_buffer_t *msg_queue       = NULL;
-static file_list_t *current_msgs      = NULL;
-static unsigned msg_queue_kill        = 0;
+static fifo_buffer_t *msg_queue                  = NULL;
+static file_list_t *current_msgs                 = NULL;
+static unsigned msg_queue_kill                   = 0;
 
-static unsigned msg_queue_tasks_count = 0; /* count of messages bound to a taskin current_msgs */
+/* Count of messages bound to a task in current_msgs */
+static unsigned msg_queue_tasks_count            = 0;
 
 /* TODO: Don't display icons if assets are missing */
 
@@ -185,9 +189,11 @@ static uintptr_t msg_queue_icon_outline          = 0;
 static uintptr_t msg_queue_icon_rect             = 0;
 static bool msg_queue_has_icons                  = false;
 
-extern gfx_animation_ctx_tag gfx_widgets_generic_tag;
+extern gfx_animation_ctx_tag 
+gfx_widgets_generic_tag;
 
-/* there can only be one message animation at a time to avoid confusing users */
+/* There can only be one message animation at a time to 
+ * avoid confusing users */
 static bool widgets_moving                       = false;
 
 /* Icons */
@@ -232,7 +238,8 @@ static const char *gfx_widgets_icons_names[MENU_WIDGETS_ICON_LAST] = {
    "menu_achievements.png"
 };
 
-static uintptr_t gfx_widgets_icons_textures[MENU_WIDGETS_ICON_LAST] = {0};
+static uintptr_t gfx_widgets_icons_textures[
+   MENU_WIDGETS_ICON_LAST]                   = {0};
 
 /* Volume */
 static float volume_db                       = 0.0f;
@@ -246,57 +253,60 @@ static bool volume_mute                      = false;
 
 
 /* Screenshot */
-static float screenshot_alpha                = 0.0f;
-static uintptr_t screenshot_texture          = 0;
-static unsigned screenshot_texture_width     = 0;
-static unsigned screenshot_texture_height    = 0;
-static char screenshot_shotname[256]         = {0};
-static char screenshot_filename[256]         = {0};
-static bool screenshot_loaded                = false;
+static float screenshot_alpha                     = 0.0f;
+static uintptr_t screenshot_texture               = 0;
+static unsigned screenshot_texture_width          = 0;
+static unsigned screenshot_texture_height         = 0;
+static char screenshot_shotname[256]              = {0};
+static char screenshot_filename[256]              = {0};
+static bool screenshot_loaded                     = false;
 
-static float screenshot_scale_factor         = 0.0f;
-static float screenshot_y                    = 0.0f;
-static unsigned screenshot_height            = 0;
-static unsigned screenshot_width             = 0;
-static unsigned screenshot_thumbnail_width   = 0;
-static unsigned screenshot_thumbnail_height  = 0;
+static float screenshot_scale_factor              = 0.0f;
+static float screenshot_y                         = 0.0f;
+static unsigned screenshot_height                 = 0;
+static unsigned screenshot_width                  = 0;
+static unsigned screenshot_thumbnail_width        = 0;
+static unsigned screenshot_thumbnail_height       = 0;
 static gfx_timer_t screenshot_timer;
 
-static unsigned screenshot_shotname_length;
+static unsigned screenshot_shotname_length        = 0;
 
+#ifdef HAVE_TRANSLATE
 /* AI Service Overlay */
 static int ai_service_overlay_state               = 0;
 static unsigned ai_service_overlay_width          = 0;
 static unsigned ai_service_overlay_height         = 0;
 static uintptr_t ai_service_overlay_texture       = 0;
+#endif
 
 /* Generic message */
-#define GENERIC_MESSAGE_SIZE 256
-
 static gfx_timer_t generic_message_timer;
-static float generic_message_alpha                = 0.0f;
-static char generic_message[GENERIC_MESSAGE_SIZE] = {'\0'};
+static float generic_message_alpha        = 0.0f;
+static char generic_message[256]          = {'\0'};
 
 /* Libretro message */
-#define LIBRETRO_MESSAGE_SIZE 512
 
 static gfx_timer_t libretro_message_timer;
-static float libretro_message_alpha                 = 0.0f;
-static unsigned libretro_message_width              = 0;
-static char libretro_message[LIBRETRO_MESSAGE_SIZE] = {'\0'};
+static char libretro_message[512]         = {'\0'};
 
 /* Metrics */
 #define BASE_FONT_SIZE 32.0f
 
+static float libretro_message_alpha       = 0.0f;
+
+static float last_scale_factor            = 0.0f;
+static float msg_queue_text_scale_factor  = 0.0f;
 static float widget_font_size             = 0.0f;
+
 static unsigned simple_widget_padding     = 0;
 static unsigned simple_widget_height      = 0;
 static unsigned glyph_width               = 0;
 
+static unsigned libretro_message_width    = 0;
+
 static unsigned msg_queue_height;
 static unsigned msg_queue_icon_size_x;
 static unsigned msg_queue_icon_size_y;
-static float msg_queue_text_scale_factor;
 static unsigned msg_queue_spacing;
 static unsigned msg_queue_glyph_width;
 static unsigned msg_queue_rect_start_x;
@@ -316,15 +326,14 @@ static unsigned msg_queue_task_hourglass_x;
 /* Used for both generic and libretro messages */
 static unsigned generic_message_height; 
 
-static unsigned divider_width_1px;
+static unsigned divider_width_1px            = 1;
 
-static unsigned last_video_width;
-static unsigned last_video_height;
-static float last_scale_factor;
+static unsigned last_video_width             = 0;
+static unsigned last_video_height            = 0;
 
 static void msg_widget_msg_transition_animation_done(void *userdata)
 {
-   menu_widget_msg_t *msg = (menu_widget_msg_t*) userdata;
+   menu_widget_msg_t *msg = (menu_widget_msg_t*)userdata;
 
    if (msg->msg)
       free(msg->msg);
@@ -352,7 +361,7 @@ void gfx_widgets_msg_queue_push(
       /* Get current msg if it exists */
       if (task && task->frontend_userdata)
       {
-         msg_widget           = (menu_widget_msg_t*) task->frontend_userdata;
+         msg_widget           = (menu_widget_msg_t*)task->frontend_userdata;
          /* msg_widgets can be passed between tasks */
          msg_widget->task_ptr = task;
       }
@@ -493,7 +502,7 @@ void gfx_widgets_msg_queue_push(
                gfx_animation_ctx_entry_t entry;
 
                entry.easing_enum    = EASING_OUT_QUAD;
-               entry.tag            = (uintptr_t) msg_widget;
+               entry.tag            = (uintptr_t)msg_widget;
                entry.duration       = MSG_QUEUE_ANIMATION_DURATION*2;
                entry.target_value   = msg_queue_height/2.0f;
                entry.subject        = &msg_widget->msg_transition_animation;
@@ -522,10 +531,10 @@ void gfx_widgets_msg_queue_push(
 
 static void gfx_widgets_unfold_end(void *userdata)
 {
-   menu_widget_msg_t *unfold = (menu_widget_msg_t*) userdata;
+   menu_widget_msg_t *unfold = (menu_widget_msg_t*)userdata;
 
-   unfold->unfolding = false;
-   widgets_moving    = false;
+   unfold->unfolding         = false;
+   widgets_moving            = false;
 }
 
 static void gfx_widgets_move_end(void *userdata)
@@ -533,13 +542,13 @@ static void gfx_widgets_move_end(void *userdata)
    if (userdata)
    {
       gfx_animation_ctx_entry_t entry;
-      menu_widget_msg_t *unfold = (menu_widget_msg_t*) userdata;
+      menu_widget_msg_t *unfold = (menu_widget_msg_t*)userdata;
 
       entry.cb             = gfx_widgets_unfold_end;
       entry.duration       = MSG_QUEUE_ANIMATION_DURATION;
       entry.easing_enum    = EASING_OUT_QUAD;
       entry.subject        = &unfold->unfold;
-      entry.tag            = (uintptr_t) unfold;
+      entry.tag            = (uintptr_t)unfold;
       entry.target_value   = 1.0f;
       entry.userdata       = unfold;
 
@@ -554,7 +563,7 @@ static void gfx_widgets_move_end(void *userdata)
 
 static void gfx_widgets_msg_queue_expired(void *userdata)
 {
-   menu_widget_msg_t *msg = (menu_widget_msg_t *) userdata;
+   menu_widget_msg_t *msg = (menu_widget_msg_t *)userdata;
 
    if (msg && !msg->expired)
       msg->expired = true;
@@ -591,7 +600,7 @@ static void gfx_widgets_msg_queue_move(void)
          entry.duration       = MSG_QUEUE_ANIMATION_DURATION;
          entry.easing_enum    = EASING_OUT_QUAD;
          entry.subject        = &msg->offset_y;
-         entry.tag            = (uintptr_t) msg;
+         entry.tag            = (uintptr_t)msg;
          entry.target_value   = y;
          entry.userdata       = unfold;
 
@@ -605,7 +614,7 @@ static void gfx_widgets_msg_queue_move(void)
 static void gfx_widgets_msg_queue_free(menu_widget_msg_t *msg, bool touch_list)
 {
    size_t i;
-   gfx_animation_ctx_tag tag = (uintptr_t) msg;
+   gfx_animation_ctx_tag tag = (uintptr_t)msg;
 
    if (msg->task_ptr)
    {
@@ -678,7 +687,7 @@ static void gfx_widgets_msg_queue_kill(unsigned idx)
    entry.cb             = NULL;
    entry.duration       = MSG_QUEUE_ANIMATION_DURATION;
    entry.easing_enum    = EASING_OUT_QUAD;
-   entry.tag            = (uintptr_t) msg;
+   entry.tag            = (uintptr_t)msg;
    entry.userdata       = NULL;
    entry.subject        = &msg->offset_y;
    entry.target_value   = msg->offset_y - msg_queue_height/4;
@@ -744,6 +753,7 @@ static void gfx_widgets_draw_icon(
    gfx_display_draw(&draw, video_info);
 }
 
+#ifdef HAVE_TRANSLATE
 static void gfx_widgets_draw_icon_blend(
       video_frame_info_t *video_info,
       unsigned icon_width,
@@ -791,14 +801,18 @@ static void gfx_widgets_draw_icon_blend(
 
    gfx_display_draw_blend(&draw, video_info);
 }
+#endif
 
-static float gfx_widgets_get_thumbnail_scale_factor(const float dst_width, const float dst_height,
+static float gfx_widgets_get_thumbnail_scale_factor(
+      const float dst_width, const float dst_height,
       const float image_width, const float image_height)
 {
-   float dst_ratio      = dst_width / dst_height;
+   float dst_ratio      = dst_width   / dst_height;
    float image_ratio    = image_width / image_height;
 
-   return (dst_ratio > image_ratio) ? dst_height / image_height : dst_width / image_width;
+   if (dst_ratio > image_ratio)
+      return (dst_height / image_height);
+   return (dst_width / image_width);
 }
 
 static void gfx_widgets_screenshot_dispose(void *userdata)
@@ -843,7 +857,7 @@ static void gfx_widgets_hourglass_tick(void *userdata);
 static void gfx_widgets_hourglass_end(void *userdata)
 {
    gfx_timer_ctx_entry_t timer;
-   menu_widget_msg_t *msg  = (menu_widget_msg_t*) userdata;
+   menu_widget_msg_t *msg  = (menu_widget_msg_t*)userdata;
 
    msg->hourglass_rotation = 0.0f;
 
@@ -857,8 +871,8 @@ static void gfx_widgets_hourglass_end(void *userdata)
 static void gfx_widgets_hourglass_tick(void *userdata)
 {
    gfx_animation_ctx_entry_t entry;
-   menu_widget_msg_t    *msg = (menu_widget_msg_t*) userdata;
-   gfx_animation_ctx_tag tag = (uintptr_t) msg;
+   menu_widget_msg_t    *msg = (menu_widget_msg_t*)userdata;
+   gfx_animation_ctx_tag tag = (uintptr_t)msg;
 
    entry.easing_enum    = EASING_OUT_QUAD;
    entry.tag            = tag;
@@ -888,12 +902,12 @@ void gfx_widgets_iterate(
 
    /* Check whether screen dimensions or menu scale
     * factor have changed */
-   float scale_factor = (gfx_display_get_driver_id() == MENU_DRIVER_ID_XMB) ?
-         gfx_display_get_widget_pixel_scale(width, height) :
-               gfx_display_get_widget_dpi_scale(width, height);
+   float scale_factor = (gfx_display_get_driver_id() == MENU_DRIVER_ID_XMB) 
+      ? gfx_display_get_widget_pixel_scale(width, height) 
+      : gfx_display_get_widget_dpi_scale(width, height);
 
    if ((scale_factor != last_scale_factor) ||
-       (width != last_video_width) ||
+       (width  != last_video_width) ||
        (height != last_video_height))
    {
       last_scale_factor = scale_factor;
@@ -1341,7 +1355,7 @@ static void gfx_widgets_draw_load_content_animation(video_frame_info_t *video_in
 {
 #ifdef HAVE_MENU
    /* TODO: change metrics? */
-   int icon_size        = (int) load_content_animation_icon_size;
+   int icon_size        = (int)load_content_animation_icon_size;
    uint32_t text_alpha  = load_content_animation_fade_alpha * 255.0f;
    uint32_t text_color  = COLOR_TEXT_ALPHA(0xB8B8B800, text_alpha);
    unsigned text_offset = -25 * last_scale_factor * load_content_animation_fade_alpha;
@@ -1409,6 +1423,7 @@ void gfx_widgets_frame(void *data)
    font_raster_regular.carr.coords.vertices = 0;
    font_raster_bold.carr.coords.vertices    = 0;
 
+#ifdef HAVE_TRANSLATE
    /* AI Service overlay */
    if (ai_service_overlay_state > 0)
    {
@@ -1459,7 +1474,7 @@ void gfx_widgets_frame(void *data)
       if (ai_service_overlay_state == 2)
           ai_service_overlay_state = 3;
    }
-
+#endif
 
    /* Libretro message */
    if (libretro_message_alpha > 0.0f)
@@ -1909,9 +1924,9 @@ bool gfx_widgets_init(bool video_is_threaded)
     * > XMB uses pixel based scaling - all other drivers
     *   use DPI based scaling */
    video_driver_get_size(&last_video_width, &last_video_height);
-   last_scale_factor = (gfx_display_get_driver_id() == MENU_DRIVER_ID_XMB) ?
-         gfx_display_get_widget_pixel_scale(last_video_width, last_video_height) :
-               gfx_display_get_widget_dpi_scale(last_video_width, last_video_height);
+   last_scale_factor = (gfx_display_get_driver_id() == MENU_DRIVER_ID_XMB) 
+      ? gfx_display_get_widget_pixel_scale(last_video_width, last_video_height) 
+      : gfx_display_get_widget_dpi_scale(last_video_width, last_video_height);
 
    return true;
 
@@ -2027,7 +2042,9 @@ static void gfx_widgets_layout(
    load_content_animation_icon_size_target  = LOAD_CONTENT_ANIMATION_TARGET_ICON_SIZE * last_scale_factor;
 #endif
 
-   divider_width_1px = (last_scale_factor > 1.0f) ? (unsigned)(last_scale_factor + 0.5f) : 1;
+   divider_width_1px    = 1;
+   if (last_scale_factor > 1.0f)
+      divider_width_1px = (unsigned)(last_scale_factor + 0.5f);
 }
 
 void gfx_widgets_context_reset(bool is_threaded,
@@ -2092,11 +2109,11 @@ void gfx_widgets_context_reset(bool is_threaded,
    /* Update scaling/dimensions */
    last_video_width  = width;
    last_video_height = height;
-   last_scale_factor = (gfx_display_get_driver_id() == MENU_DRIVER_ID_XMB) ?
-         gfx_display_get_widget_pixel_scale(last_video_width, last_video_height) :
-               gfx_display_get_widget_dpi_scale(last_video_width, last_video_height);
-   gfx_widgets_layout(is_threaded, dir_assets, font_path);
+   last_scale_factor = (gfx_display_get_driver_id() == MENU_DRIVER_ID_XMB) 
+      ? gfx_display_get_widget_pixel_scale(last_video_width, last_video_height)
+      : gfx_display_get_widget_dpi_scale(last_video_width, last_video_height);
 
+   gfx_widgets_layout(is_threaded, dir_assets, font_path);
    video_driver_monitor_reset();
 }
 
@@ -2263,6 +2280,7 @@ bool gfx_widgets_set_fps_text(const char *new_fps_text)
    return true;
 }
 
+#ifdef HAVE_TRANSLATE
 int gfx_widgets_ai_service_overlay_get_state(void)
 {
    return ai_service_overlay_state;
@@ -2273,8 +2291,6 @@ bool gfx_widgets_ai_service_overlay_set_state(int state)
    ai_service_overlay_state = state;
    return true;
 }
-
-
 
 bool gfx_widgets_ai_service_overlay_load(
         char* buffer, unsigned buffer_len, enum image_type_enum image_type)
@@ -2302,6 +2318,7 @@ void gfx_widgets_ai_service_overlay_unload(void)
       ai_service_overlay_state   = 0;
    }
 }
+#endif
 
 static void gfx_widgets_screenshot_fadeout(void *userdata)
 {
@@ -2597,7 +2614,7 @@ void gfx_widgets_set_message(char *msg)
    gfx_timer_ctx_entry_t timer;
    gfx_animation_ctx_tag tag = (uintptr_t) &generic_message_timer;
 
-   strlcpy(generic_message, msg, GENERIC_MESSAGE_SIZE);
+   strlcpy(generic_message, msg, sizeof(generic_message));
 
    generic_message_alpha = DEFAULT_BACKDROP;
 
@@ -2634,7 +2651,7 @@ void gfx_widgets_set_libretro_message(const char *msg, unsigned duration)
    gfx_timer_ctx_entry_t timer;
    gfx_animation_ctx_tag tag = (uintptr_t) &libretro_message_timer;
 
-   strlcpy(libretro_message, msg, LIBRETRO_MESSAGE_SIZE);
+   strlcpy(libretro_message, msg, sizeof(libretro_message));
    
    libretro_message_alpha = DEFAULT_BACKDROP;
 
