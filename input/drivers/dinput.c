@@ -268,7 +268,7 @@ static bool dinput_mouse_button_pressed(
 		return false;
 
 	/* the driver only supports one mouse */
-	if ( settings->uints.input_mouse_index[ port ] != 0)
+	if (settings->uints.input_mouse_index[port] != 0)
 		return false;
 
 	switch (key)
@@ -341,7 +341,7 @@ static int16_t dinput_pressed_analog(struct dinput_input *di,
    return pressed_plus + pressed_minus;
 }
 
-static int16_t dinput_lightgun_aiming_state( struct dinput_input *di, unsigned idx, unsigned id)
+static int16_t dinput_lightgun_aiming_state(struct dinput_input *di, unsigned idx, unsigned id)
 {
    const int edge_detect = 32700;
    struct video_viewport vp;
@@ -363,7 +363,7 @@ static int16_t dinput_lightgun_aiming_state( struct dinput_input *di, unsigned i
    vp.full_width = 0;
    vp.full_height = 0;
 
-   while ( check_pos && num < idx)
+   while (check_pos && num < idx)
    {
       num++;
       check_pos = check_pos->next;
@@ -381,7 +381,7 @@ static int16_t dinput_lightgun_aiming_state( struct dinput_input *di, unsigned i
       y = check_pos->pointer_y;
    }
 
-   if ( !( video_driver_translate_coord_viewport_wrap(
+   if (!(video_driver_translate_coord_viewport_wrap(
                &vp, x, y, &res_x, &res_y, &res_screen_x, &res_screen_y)))
       return 0;
 
@@ -402,17 +402,17 @@ static int16_t dinput_lightgun_aiming_state( struct dinput_input *di, unsigned i
    return 0;
 }
 
-static int16_t dinput_mouse_state(struct dinput_input *di, unsigned port, unsigned id)
+static int16_t dinput_mouse_state(struct dinput_input *di,
+      unsigned port, unsigned id)
 {
-   int16_t state = 0;
-
+   int16_t        state = 0;
 	settings_t *settings = config_get_ptr();
 
 	if (port >= MAX_USERS)
 		return false;
 
 	/* the driver only supports one mouse */
-	if (settings->uints.input_mouse_index[ port ] != 0)
+	if (settings->uints.input_mouse_index[port] != 0)
 		return 0;
 
    switch (id)
@@ -456,7 +456,8 @@ static int16_t dinput_mouse_state(struct dinput_input *di, unsigned port, unsign
    return 0;
 }
 
-static int16_t dinput_mouse_state_screen(struct dinput_input *di, unsigned port, unsigned id)
+static int16_t dinput_mouse_state_screen(struct dinput_input *di,
+      unsigned port, unsigned id)
 {
 	settings_t *settings = config_get_ptr();
 
@@ -670,7 +671,7 @@ static int16_t dinput_input_state(void *data,
             case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X:
             case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y:
             case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
-               return dinput_lightgun_aiming_state( di, idx, id);
+               return dinput_lightgun_aiming_state(di, idx, id);
 
                /*buttons*/
             case RETRO_DEVICE_ID_LIGHTGUN_TRIGGER:

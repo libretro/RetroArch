@@ -787,10 +787,12 @@ static INLINE int android_input_poll_event_type_motion(
    }
    else
    {
-      int pointer_max = MIN(AMotionEvent_getPointerCount(event), MAX_TOUCH);
-      settings_t *settings = config_get_ptr();
+      int      pointer_max     = MIN(
+            AMotionEvent_getPointerCount(event), MAX_TOUCH);
+      settings_t *settings     = config_get_ptr();
+      bool vibrate_on_keypress = settings ? settings->bools.vibrate_on_keypress : false;
 
-      if (settings && settings->bools.vibrate_on_keypress && action != AMOTION_EVENT_ACTION_MOVE)
+      if (vibrate_on_keypress && action != AMOTION_EVENT_ACTION_MOVE)
          android_app_write_cmd(g_android, APP_CMD_VIBRATE_KEYPRESS);
 
       if (action == AMOTION_EVENT_ACTION_DOWN && ENABLE_TOUCH_SCREEN_MOUSE)
@@ -1396,10 +1398,10 @@ static bool android_input_key_pressed(android_input_t *android, int key)
  */
 static void android_input_poll(void *data)
 {
-   settings_t *settings = config_get_ptr();
    int ident;
    struct android_app *android_app = (struct android_app*)g_android;
    android_input_t *android        = (android_input_t*)data;
+   settings_t            *settings = config_get_ptr();
 
    while ((ident =
             ALooper_pollAll((input_config_binds[0][RARCH_PAUSE_TOGGLE].valid 
@@ -1742,12 +1744,13 @@ static void android_input_set_rumble_internal(
 static bool android_input_set_rumble(void *data, unsigned port,
       enum retro_rumble_effect effect, uint16_t strength)
 {
-   settings_t *settings = config_get_ptr();
+   settings_t *settings         = config_get_ptr();
+   bool enable_device_vibration = settings->bools.enable_device_vibration;
 
    if (!g_android || !g_android->doVibrate)
       return false;
 
-   if (settings->bools.enable_device_vibration)
+   if (enable_device_vibration)
    {
       static uint16_t last_strength_strong = 0;
       static uint16_t last_strength_weak   = 0;
