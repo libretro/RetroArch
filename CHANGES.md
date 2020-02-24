@@ -22,6 +22,7 @@
 - MENU/WIDGETS: DPI-based scaling
 - MENU/OZONE: Add DPI-based scaling
 - MENU/OZONE: Add rudimentary pointer support
+- MENU/OZONE: Add 'Nord' and 'Gruvbox Dark' themes
 - MENU/OZONE/POINTER: Pointer can be used to switch between sidebar and entries list
 - MENU/OZONE/POINTER: Pointer can be used to select sidebar and entries list items
 - MENU/OZONE/POINTER: Both sidebar and entries list can be scrolled by dragging
