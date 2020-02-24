@@ -1179,7 +1179,12 @@ static void ozone_render(void *data,
    ozone->cursor_x_old = ozone->pointer.x;
    ozone->cursor_y_old = ozone->pointer.y;
 
-   pointer_enabled = ozone->cursor_mode && !ozone->show_fullscreen_thumbnails;
+   /* Pointer is disabled when showing fullscreen
+    * thumbnails, and when the on-screen keyboard
+    * is active */
+   pointer_enabled = ozone->cursor_mode &&
+         !ozone->show_fullscreen_thumbnails &&
+         !menu_input_dialog_get_display_kb();
 
    /* Process pointer input, if required */
    if (pointer_enabled)
