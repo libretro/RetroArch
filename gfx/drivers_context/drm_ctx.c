@@ -42,6 +42,11 @@
 #include "../../frontend/frontend_driver.h"
 #include "../common/drm_common.h"
 
+#ifdef HAVE_ODROIDGO2
+#include <rk_rga/RgaApi.h>
+#include <drm/drm_fourcc.h>
+#endif
+
 #ifdef HAVE_EGL
 #include "../common/egl_common.h"
 #endif

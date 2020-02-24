@@ -170,3 +170,4 @@ HAVE_METAL=no              # Metal support (macOS-only)
 C89_METAL=no
 HAVE_NETWORK_VIDEO=no
 HAVE_STEAM=no              # Enable Steam build
+HAVE_ODROIDGO2=no          # ODROID-GO Advance rotation support (requires librga)

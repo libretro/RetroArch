@@ -2109,4 +2109,9 @@ endif
 ifeq ($(HAVE_SEGAM), 1)
    DEFINES += -DHAVE_SEGAM
 endif
+
+ifeq ($(HAVE_ODROIDGO2), 1)
+  DEFINES += -DHAVE_ODROIDGO2
+  LIBS += -lrk_rga
+endif
 ##################################
