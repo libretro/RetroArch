@@ -1102,39 +1102,33 @@ static int action_bind_sublabel_playlist_entry(
        !string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_HORIZONTAL_MENU)))
       return 0;
 
-   switch (entry->runtime_status)
+   /* Check whether runtime info should be loaded from log file */
+   if (entry->runtime_status == PLAYLIST_RUNTIME_UNKNOWN)
+      runtime_update_playlist(playlist, i);
+
+   /* Check whether runtime info is valid */
+   if (entry->runtime_status == PLAYLIST_RUNTIME_VALID)
    {
-      case PLAYLIST_RUNTIME_UNKNOWN:
-         /* Check whether runtime info should be loaded from log file */
-         runtime_update_playlist(playlist, i);
-         break;
-      case PLAYLIST_RUNTIME_VALID:
-         /* Check whether runtime info is valid */
-         {
-            int n = 0;
-            char tmp[64];
+      int n = 0;
+      char tmp[64];
 
-            tmp[0  ] = '\n';
-            tmp[1  ] = '\0';
+      tmp[0  ] = '\n';
+      tmp[1  ] = '\0';
 
-            n        = strlcat(tmp, entry->runtime_str, sizeof(tmp));
+      n        = strlcat(tmp, entry->runtime_str, sizeof(tmp));
 
-            tmp[n  ] = '\n';
-            tmp[n+1] = '\0';
+      tmp[n  ] = '\n';
+      tmp[n+1] = '\0';
 
-            /* Runtime/last played strings are now cached in the
-             * playlist, so we can add both in one go */
-            n = strlcat(tmp, entry->last_played_str, sizeof(tmp));
+      /* Runtime/last played strings are now cached in the
+       * playlist, so we can add both in one go */
+      n = strlcat(tmp, entry->last_played_str, sizeof(tmp));
 
-            if ((n < 0) || (n >= 64))
-               n = 0; /* Silence GCC warnings... */
+      if ((n < 0) || (n >= 64))
+         n = 0; /* Silence GCC warnings... */
 
-            if (!string_is_empty(tmp))
-               strlcat(s, tmp, len);
-         }
-         break;
-      default:
-         break;
+      if (!string_is_empty(tmp))
+         strlcat(s, tmp, len);
    }
 
    return 0;
