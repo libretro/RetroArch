@@ -9166,6 +9166,14 @@ MSG_HASH(
     "Basic Black"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_NORD,
+    "Nord"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_GRUVBOX_DARK,
+    "Gruvbox Dark"
+    )
+MSG_HASH(
     MENU_ENUM_SUBLABEL_OZONE_MENU_COLOR_THEME,
     "Select a different color theme."
     )
