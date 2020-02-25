@@ -526,7 +526,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD_APPEND,
-    "Carregar arquivo de trapaça (Anexar)"
+    "Carregar arquivo de trapaça (anexar)"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEAT_FILE_SAVE_AS,
@@ -2214,7 +2214,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_NETWORK_ON_DEMAND_THUMBNAILS,
-    "Faça o download automático de imagens em miniatura ausentes ao navegar pelas listas de reprodução. Tem um grande impacto no desempenho."
+    "Faz o download automático de imagens em miniatura ausentes ao navegar pelas listas de reprodução. Tem um grande impacto no desempenho."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NETWORK_HOSTING_SETTINGS,
@@ -2852,11 +2852,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_REWIND_GRANULARITY,
-    "Níveis da rebobinamento"
+    "Níveis do rebobinamento"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_REWIND_BUFFER_SIZE,
-    "Tamanho do buffer da rebobinamento (MB)"
+    "Tamanho do buffer do rebobinamento (MB)"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_REWIND_BUFFER_SIZE_STEP,
@@ -2908,7 +2908,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_DOWNLOAD_PL_ENTRY_THUMBNAILS,
-    "Faça o download de imagens em miniatura da captura de tela, arte da caixa ou tela de título para o conteúdo atual. Atualiza quaisquer miniaturas existentes."
+    "Faz o download de imagens em miniatura da captura de tela, arte da caixa ou tela de título para o conteúdo atual. Atualiza quaisquer miniaturas existentes."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SET_CORE_ASSOCIATION,
@@ -2934,7 +2934,7 @@ MSG_HASH(
 #endif
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SAVEFILE_DIRECTORY,
-    "Arquivos de jogos salvos"
+    "Arquivo de dados da memória do jogo"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX,
@@ -2942,7 +2942,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD,
-    "Carregar Automaticamente jogo salvo"
+    "Carregar automaticamente jogo salvo"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
@@ -2966,7 +2966,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
-    "Salvar personalizações do Diretório de Conteúdo"
+    "Salvar personalizações do diretório de conteúdo"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
@@ -3082,7 +3082,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_ENABLE,
-    "Ordenar arquivos de jogos salvos em pastas"
+    "Ordenar arquivos dados da memória do jogo em pastas"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_ENABLE,
@@ -3094,7 +3094,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SAVEFILES_IN_CONTENT_DIR_ENABLE,
-    "Gravar jogos salvos no diretório de conteúdo"
+    "Gravar arquivos de dados da memória do jogo no diretório de conteúdo"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SYSTEMFILES_IN_CONTENT_DIR_ENABLE,
@@ -3840,11 +3840,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_GRUVBOX_DARK,
-    "Gruvbox escuro"
+    "Gruvbox (escuro)"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_GRUVBOX_LIGHT,
-    "Gruvbox claro"
+    "Gruvbox (claro)"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_HACKING_THE_KERNEL,
@@ -4053,7 +4053,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_3DS_DISPLAY_MODE,
-    "Selecione entre os modos de exibição 3D e 2D. No modo '3D', os pixels são quadrados e um efeito de profundidade é aplicado ao visualizar o Menu Rápido. O modo '2D' oferece o melhor desempenho."
+    "Seleciona entre os modos de exibição 3D e 2D. No modo '3D', os pixels são quadrados e um efeito de profundidade é aplicado ao visualizar o Menu Rápido. O modo '2D' oferece o melhor desempenho."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CTR_VIDEO_MODE_3D,
@@ -4339,7 +4339,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_PATH,
-    "Selecione um esquema de vídeo no navegador de arquivos."
+    "Seleciona um esquema de vídeo no navegador de arquivos."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_SELECTED_VIEW,
@@ -4347,7 +4347,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_SELECTED_VIEW,
-    "Selecione uma visualização dentro do esquema carregado."
+    "Seleciona uma visualização dentro do esquema carregado."
     )
 #endif
 MSG_HASH(
@@ -5402,7 +5402,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_REDIRECTING_SAVEFILE_TO,
-    "Redirecionando o arquivo de jogo salvo em"
+    "Redirecionando arquivo dados da memória do jogo em"
     )
 MSG_HASH(
     MSG_REDIRECTING_SAVESTATE_TO,
@@ -5426,7 +5426,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_RESET,
-    "Reinicializar"
+    "Reiniciando"
     )
 MSG_HASH(
     MSG_RESTARTING_RECORDING_DUE_TO_DRIVER_REINIT,
@@ -5442,7 +5442,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_REVERTING_SAVEFILE_DIRECTORY_TO,
-    "Revertendo diretório de Jogo-Salvo em"
+    "Revertendo diretório de arquivo de dados da memória do jogo em"
     )
 MSG_HASH(
     MSG_REVERTING_SAVESTATE_DIRECTORY_TO,
@@ -5670,7 +5670,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_INPUT_POLL_TYPE_BEHAVIOR,
-    "Influencia como a chamada seletiva de entrada é feita dentro do RetroArch. Definindo com 'Cedo' ou 'Tarde' pode resultar em menos latência, dependendo da sua configuração."
+    "Influencia como a chamada seletiva de entrada é feita dentro do RetroArch. Definindo com 'Mais cedo' ou 'Mais tarde' pode resultar em menos latência, dependendo da sua configuração."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_INPUT_ALL_USERS_CONTROL_MENU,
@@ -5919,7 +5919,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SELECT_FROM_PLAYLIST,
-    "Selecione de uma lista de reprodução"
+    "Selecionar de uma lista de reprodução"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_FILTER,
@@ -6080,7 +6080,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS_PORT,
-    "Selecione a porta para a sobreposição escutar se Exibir Comandos na Sobreposição estiver habilitado."
+    "Seleciona a porta para a sobreposição escutar se Exibir Comandos na Sobreposição estiver habilitado."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_MOUSE_CURSOR,
@@ -6380,7 +6380,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_WALLPAPER,
-    "Selecione uma imagem para definir como plano de fundo do menu."
+    "Seleciona uma imagem para definir como plano de fundo do menu."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_DYNAMIC_WALLPAPER,
@@ -6412,7 +6412,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_OVERLAY_PRESET,
-    "Selecione uma sobreposição pelo navegador de arquivos."
+    "Seleciona uma sobreposição pelo navegador de arquivos."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_NETPLAY_IP_ADDRESS,
@@ -6540,7 +6540,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SORT_SAVEFILES_ENABLE,
-    "Ordena os jogos salvos em pastas com o nome do núcleo utilizado."
+    "Ordena os arquivos de dados da memória do jogo em pastas com o nome do núcleo utilizado."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SORT_SAVESTATES_ENABLE,
@@ -6760,11 +6760,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_XMB_LAYOUT,
-    "Selecione um esquema diferente para a interface XMB."
+    "Seleciona um esquema diferente para a interface XMB."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_XMB_THEME,
-    "Selecione um tema diferente de ícone para o RetroArch."
+    "Seleciona um tema diferente de ícone para o RetroArch."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_XMB_SHADOWS_ENABLE,
@@ -6773,7 +6773,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MATERIALUI_MENU_COLOR_THEME,
-    "Selecione um tema de gradiente de cor de plano de fundo diferente."
+    "Seleciona um tema de gradiente de cor de plano de fundo diferente."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_WALLPAPER_OPACITY,
@@ -6781,15 +6781,15 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_XMB_MENU_COLOR_THEME,
-    "Selecione um tema de gradiente de cor de plano de fundo diferente."
+    "Seleciona um tema de gradiente de cor de plano de fundo diferente."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_XMB_RIBBON_ENABLE,
-    "Selecione um efeito de plano de fundo animado. Pode exigir mais processamento da GPU dependendo do efeito. Se o desempenho for insatisfatório, desligue este efeito ou reverta para um efeito mais simples."
+    "Seleciona um efeito de plano de fundo animado. Pode exigir mais processamento da GPU dependendo do efeito. Se o desempenho for insatisfatório, desligue este efeito ou reverta para um efeito mais simples."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_XMB_FONT,
-    "Selecione uma fonte principal diferente para ser usada pelo menu."
+    "Seleciona uma fonte principal diferente para ser usada pelo menu."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CONTENT_SHOW_FAVORITES,
@@ -6881,7 +6881,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SAVEFILE_DIRECTORY,
-    "Armazena todos os jogos salvos neste diretório. Se não for definido, tentaremos salvar dentro do diretório de trabalho do arquivo."
+    "Armazena todos os arquivos de dados da memória do jogo neste diretório. Se não for definido, tentaremos salvar dentro do diretório de trabalho do arquivo."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SAVESTATE_DIRECTORY,
@@ -6927,7 +6927,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_FONT_PATH,
-    "Selecione uma fonte diferente para as notificações na tela."
+    "Seleciona uma fonte diferente para as notificações na tela."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SHADER_APPLY_CHANGES,
@@ -7671,7 +7671,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_RGUI_ASPECT_RATIO,
-    "Seleciona a proporção do menu. As proporções widescreen aumentam a resolução horizontal da interface do menu. (Pode exigir uma reinicialização se 'Bloquear Proporção da Exibição do Menu' estiver desabilitado)"
+    "Seleciona a proporção do menu. As proporções widescreen aumentam a resolução horizontal da interface do menu. (pode exigir uma reinicialização se a opção 'Bloquear proporção de exibição do menu' estiver desabilitada)"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_RGUI_FULL_WIDTH_LAYOUT,
@@ -7945,7 +7945,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_TITLE_SCREEN,
-    "Tela de Título"
+    "Tela de título"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_ALL_PLAYLISTS,
@@ -8774,7 +8774,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_QUESTION,
-    "Pergunta"
+    "Questão"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_DELETE_FILE,
@@ -9039,7 +9039,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_OUTPUT_DISPLAY_ID,
-    "Selecione a porta de saída conectada ao monitor CRT."
+    "Seleciona a porta de saída conectada ao monitor CRT."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_OUTPUT_DISPLAY_ID,
@@ -9162,8 +9162,16 @@ MSG_HASH(
     "Preto básico"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_NORD,
+    "Nódico"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_GRUVBOX_DARK,
+    "Gruvbox (escuro)"
+    )
+MSG_HASH(
     MENU_ENUM_SUBLABEL_OZONE_MENU_COLOR_THEME,
-    "Selecione um tema de cor diferente"
+    "Seleciona um tema de cor diferente"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_OZONE_COLLAPSE_SIDEBAR,
@@ -9175,7 +9183,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_OZONE_TRUNCATE_PLAYLIST_NAME,
-    "Truncar nomes da Lista de Reprodução"
+    "Truncar nomes da lista de reprodução"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_OZONE_TRUNCATE_PLAYLIST_NAME,
@@ -9391,7 +9399,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
-    "Selecione o formato de data e hora da último partida, mostrando o registro de execução. Nota: As opções AM/PM afetam ligeiramente o desempenho em algumas plataformas."
+    "Seleciona o formato de data e hora da último partida, mostrando o registro de execução. Nota: As opções AM/PM afetam ligeiramente o desempenho em algumas plataformas."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE_YMD_HMS,
@@ -9855,7 +9863,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_DRIVERS,
-    "Exibir 'Drivers'"
+    "Exibir 'Driver'"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SETTINGS_SHOW_DRIVERS,
@@ -9903,7 +9911,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_SAVING,
-    "Exibir 'Salvando'"
+    "Exibir 'Salvamento'"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SETTINGS_SHOW_SAVING,
