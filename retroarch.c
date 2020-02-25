@@ -2660,15 +2660,6 @@ extern u32 __nx_applet_type;
 extern void libnx_apply_overclock(void);
 #endif
 
-#ifdef HAVE_MENU
-#ifdef HAVE_LIBNX
-#define menu_input_dialog_get_display_kb_internal() menu_input_dialog_get_display_kb()
-#else
-#define menu_input_dialog_get_display_kb_internal() menu_input_dialog_keyboard_display
-#endif
-#endif
-
-
 static void menu_input_search_cb(void *userdata, const char *str)
 {
    size_t idx = 0;
@@ -15356,7 +15347,7 @@ static int menu_input_pointer_post_iterate(
    static retro_time_t last_right_action_time      = 0;
    static retro_time_t last_press_direction_time   = 0;
    bool attenuate_y_accel                          = true;
-   bool osk_active                                 = menu_input_dialog_get_display_kb_internal();
+   bool osk_active                                 = menu_input_dialog_get_display_kb();
    bool messagebox_active                          = false;
    int ret                                         = 0;
    menu_input_pointer_hw_state_t *pointer_hw_state = &menu_input_pointer_hw_state;
@@ -27229,7 +27220,7 @@ static enum runloop_state runloop_check_state(void)
    bool menu_driver_binding_state      = menu_driver_is_binding;
    bool menu_is_alive                  = menu_driver_alive;
    unsigned menu_toggle_gamepad_combo  = settings->uints.input_menu_toggle_gamepad_combo;
-   bool display_kb                     = menu_input_dialog_get_display_kb_internal();
+   bool display_kb                     = menu_input_dialog_get_display_kb();
 #endif
 
 #if defined(HAVE_TRANSLATE) && defined(HAVE_GFX_WIDGETS)
