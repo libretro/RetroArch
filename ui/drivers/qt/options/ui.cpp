@@ -45,7 +45,6 @@ QWidget *UserInterfacePage::widget()
    rarch_setting_t           *kioskMode = menu_setting_find_enum(MENU_ENUM_LABEL_MENU_ENABLE_KIOSK_MODE);
 
    menuGroup->add(MENU_ENUM_LABEL_SHOW_ADVANCED_SETTINGS);
-   menuGroup->add(MENU_ENUM_LABEL_MENU_WIDGETS_ENABLE);
 
    /* only on XMB and Ozone*/
    if (kioskMode)
