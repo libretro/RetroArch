@@ -642,8 +642,11 @@ didSelectRowAtIndexPath:(NSIndexPath *)indexPath
    switch (buttonIndex)
    {
       case 0:
-         iter.action = MENU_ACTION_OK;
-         menu_driver_iterate(&iter);
+         {
+            retro_time_t current_time = cpu_features_get_time_usec();
+            iter.action = MENU_ACTION_OK;
+            menu_driver_iterate(&iter, current_time);
+         }
          break;
    }
 }
