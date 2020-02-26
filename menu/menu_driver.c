@@ -28,7 +28,6 @@
 #include <streams/file_stream.h>
 #include <string/stdstring.h>
 #include <encodings/utf.h>
-#include <features/features_cpu.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
