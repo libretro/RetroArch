@@ -1839,10 +1839,11 @@ void menu_display_powerstate(gfx_display_ctx_powerstate_t *powerstate)
 
 
 /* Iterate the menu driver for one frame. */
-bool menu_driver_iterate(menu_ctx_iterate_t *iterate)
+bool menu_driver_iterate(menu_ctx_iterate_t *iterate,
+      retro_time_t current_time)
 {
    /* Get current time */
-   menu_driver_current_time_us = cpu_features_get_time_usec();
+   menu_driver_current_time_us = current_time;
 
    if (menu_driver_pending_quick_menu)
    {

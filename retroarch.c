@@ -27532,7 +27532,7 @@ static enum runloop_state runloop_check_state(retro_time_t current_time)
          }
       }
 
-      if (!menu_driver_iterate(&iter))
+      if (!menu_driver_iterate(&iter, current_time))
          retroarch_menu_running_finished(false);
 
       if (focused || !runloop_idle)

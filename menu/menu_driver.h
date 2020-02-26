@@ -422,7 +422,8 @@ void menu_driver_frame(video_frame_info_t *video_info);
 bool menu_driver_get_load_content_animation_data(
       uintptr_t *icon, char **playlist_name);
 
-bool menu_driver_iterate(menu_ctx_iterate_t *iterate);
+bool menu_driver_iterate(menu_ctx_iterate_t *iterate,
+      retro_time_t current_time);
 
 bool menu_driver_list_clear(file_list_t *list);
 
