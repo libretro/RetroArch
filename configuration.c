@@ -575,9 +575,7 @@ static enum location_driver_enum LOCATION_DEFAULT_DRIVER = LOCATION_NULL;
 #if defined(_3DS) && defined(HAVE_RGUI)
 static enum menu_driver_enum MENU_DEFAULT_DRIVER = MENU_RGUI;
 #else
-#if defined(HAVE_XUI)
-static enum menu_driver_enum MENU_DEFAULT_DRIVER = MENU_XUI;
-#elif defined(HAVE_MATERIALUI) && defined(RARCH_MOBILE)
+#if defined(HAVE_MATERIALUI) && defined(RARCH_MOBILE)
 static enum menu_driver_enum MENU_DEFAULT_DRIVER = MENU_MATERIALUI;
 #elif defined(HAVE_OZONE)
 static enum menu_driver_enum MENU_DEFAULT_DRIVER = MENU_OZONE;
@@ -1090,8 +1088,6 @@ const char *config_get_default_menu(void)
    {
       case MENU_RGUI:
          return "rgui";
-      case MENU_XUI:
-         return "xui";
       case MENU_OZONE:
          return "ozone";
       case MENU_MATERIALUI:
