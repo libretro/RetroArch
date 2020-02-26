@@ -817,7 +817,6 @@ ifeq ($(HAVE_MENU_COMMON), 1)
           menu/widgets/menu_filebrowser.o \
           menu/widgets/menu_dialog.o \
           menu/widgets/menu_input_bind_dialog.o \
-          menu/widgets/menu_osk.o \
           menu/menu_cbs.o \
           menu/cbs/menu_cbs_ok.o \
           menu/cbs/menu_cbs_cancel.o \
@@ -839,6 +838,8 @@ ifeq ($(HAVE_MENU_COMMON), 1)
           menu/menu_displaylist.o \
           menu/drivers/menu_generic.o
 endif
+
+   OBJ += input/input_osk.o
 
 ifeq ($(HAVE_GFX_WIDGETS), 1)
    OBJ += gfx/gfx_widgets.o

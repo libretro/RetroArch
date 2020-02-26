@@ -51,7 +51,7 @@
 #include "../menu_driver.h"
 #include "../../gfx/gfx_animation.h"
 
-#include "../widgets/menu_osk.h"
+#include "../../input/input_osk.h"
 
 #include "../../configuration.h"
 #include "../../gfx/drivers_font_renderer/bitmap.h"
@@ -2953,8 +2953,8 @@ static void rgui_render_osk(
    unsigned osk_width, osk_height;
    unsigned osk_x, osk_y;
    
-   int osk_ptr             = menu_event_get_osk_ptr();
-   char **osk_grid         = menu_event_get_osk_grid();
+   int osk_ptr             = input_event_get_osk_ptr();
+   char **osk_grid         = input_event_get_osk_grid();
    const char *input_str   = menu_input_dialog_get_buffer();
    const char *input_label = menu_input_dialog_get_label_buffer();
    

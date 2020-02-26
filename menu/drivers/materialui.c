@@ -48,7 +48,7 @@
 #include "../../gfx/gfx_thumbnail_path.h"
 #include "../../gfx/gfx_thumbnail.h"
 
-#include "../widgets/menu_osk.h"
+#include "../../input/input_osk.h"
 #include "../widgets/menu_filebrowser.h"
 
 #include "../../core_info.h"
@@ -4997,7 +4997,8 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
             mui->textures.list[MUI_TEXTURE_KEY_HOVER],
             mui->font_data.list.font,
             video_info,
-            menu_event_get_osk_grid(), menu_event_get_osk_ptr(),
+            input_event_get_osk_grid(),
+            input_event_get_osk_ptr(),
             0xFFFFFFFF);
 
       /* Flush message box & osk text

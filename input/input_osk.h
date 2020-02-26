@@ -14,8 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _MENU_WIDGETS_OSK_H
-#define _MENU_WIDGETS_OSK_H
+#ifndef _INPUT_OSK_H
+#define _INPUT_OSK_H
 
 #include <stdint.h>
 #include <stdlib.h>
@@ -47,19 +47,19 @@ enum osk_type
    OSK_TYPE_LAST
 };
 
-enum osk_type menu_event_get_osk_idx(void);
+enum osk_type input_event_get_osk_idx(void);
 
-void menu_event_set_osk_idx(enum osk_type idx);
+void input_event_set_osk_idx(enum osk_type idx);
 
-int menu_event_get_osk_ptr(void);
+int input_event_get_osk_ptr(void);
 
-void menu_event_set_osk_ptr(int a);
+void input_event_set_osk_ptr(int a);
 
-void menu_event_osk_append(int a, bool is_rgui);
+void input_event_osk_append(int a, bool is_rgui);
 
-void menu_event_osk_iterate(void);
+void input_event_osk_iterate(void);
 
-char** menu_event_get_osk_grid(void);
+char **input_event_get_osk_grid(void);
 
 RETRO_END_DECLS
 

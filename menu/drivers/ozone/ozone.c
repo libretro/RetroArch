@@ -44,7 +44,7 @@
 #include "../../playlist.h"
 #include "../../runtime_file.h"
 
-#include "../../widgets/menu_osk.h"
+#include "../../input/input_osk.h"
 #include "../../widgets/menu_filebrowser.h"
 
 #include "../../../configuration.h"

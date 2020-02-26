@@ -49,8 +49,9 @@
 #include "../../core_info.h"
 #include "../../core.h"
 
+#include "../../input/input_osk.h"
+
 #include "../widgets/menu_input_dialog.h"
-#include "../widgets/menu_osk.h"
 #include "../widgets/menu_filebrowser.h"
 
 #include "../../verbosity.h"
@@ -846,8 +847,8 @@ static void stripes_render_messagebox_internal(
    if (menu_input_dialog_get_display_kb())
       stripes_render_keyboard(stripes,
             video_info,
-            menu_event_get_osk_grid(),
-            menu_event_get_osk_ptr());
+            input_event_get_osk_grid(),
+            input_event_get_osk_ptr());
 
 end:
    string_list_free(list);

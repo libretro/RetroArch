@@ -52,7 +52,7 @@
 #include "../../core_info.h"
 #include "../../core.h"
 
-#include "../widgets/menu_osk.h"
+#include "../../input/input_osk.h"
 #include "../widgets/menu_filebrowser.h"
 
 #include "../../verbosity.h"
@@ -884,8 +884,8 @@ static void xmb_render_messagebox_internal(
             xmb->textures.list[XMB_TEXTURE_KEY_HOVER],
             xmb->font,
             video_info,
-            menu_event_get_osk_grid(),
-            menu_event_get_osk_ptr(),
+            input_event_get_osk_grid(),
+            input_event_get_osk_ptr(),
             0xffffffff);
 
 end:

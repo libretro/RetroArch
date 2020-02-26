@@ -30,7 +30,7 @@
 #include "../../menu_input.h"
 #include "../../../gfx/gfx_animation.h"
 
-#include "../../widgets/menu_osk.h"
+#include "../../../input/input_osk.h"
 
 static void ozone_cursor_animation_cb(void *userdata);
 
@@ -336,8 +336,8 @@ void ozone_draw_osk(ozone_handle_t *ozone,
             ozone->theme->textures[OZONE_THEME_TEXTURE_CURSOR_STATIC],
             ozone->fonts.entries_label,
             video_info,
-            menu_event_get_osk_grid(),
-            menu_event_get_osk_ptr(),
+            input_event_get_osk_grid(),
+            input_event_get_osk_ptr(),
             ozone->theme->text_rgba);
 
    string_list_free(list);

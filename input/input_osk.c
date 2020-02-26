@@ -23,14 +23,13 @@
 #include <string/stdstring.h>
 
 #ifdef HAVE_CONFIG_H
-#include "../../config.h"
+#include "../config.h"
 #endif
 
 #include <encodings/utf.h>
 
-#include "menu_osk.h"
-
-#include "../../input/input_driver.h"
+#include "input_osk.h"
+#include "input_driver.h"
 
 static char *osk_grid[45]        = {NULL};
 
@@ -39,7 +38,7 @@ static enum osk_type osk_idx     = OSK_LOWERCASE_LATIN;
 
 #ifdef HAVE_LANGEXTRA
 /* This file has a UTF8 BOM, we assume HAVE_LANGEXTRA is only enabled for compilers that can support this. */
-#include "menu_osk_utf8_pages.h"
+#include "input_osk_utf8_pages.h"
 #else
 /* Otherwise define some ascii-friendly pages. */
 static const char *symbols_page1_grid[] = {
@@ -61,27 +60,27 @@ static const char *lowercase_grid[] = {
                           "z","x","c","v","b","n","m"," ","-",".","Next"};
 #endif
 
-void menu_event_set_osk_idx(enum osk_type idx)
+void input_event_set_osk_idx(enum osk_type idx)
 {
    osk_idx = idx;
 }
 
-enum osk_type menu_event_get_osk_idx(void)
+enum osk_type input_event_get_osk_idx(void)
 {
    return osk_idx;
 }
 
-int menu_event_get_osk_ptr(void)
+int input_event_get_osk_ptr(void)
 {
    return osk_ptr;
 }
 
-void menu_event_set_osk_ptr(int i)
+void input_event_set_osk_ptr(int i)
 {
    osk_ptr = i;
 }
 
-void menu_event_osk_append(int ptr, bool is_rgui)
+void input_event_osk_append(int ptr, bool is_rgui)
 {
 #ifdef HAVE_LANGEXTRA
    if (string_is_equal(osk_grid[ptr],"\xe2\x87\xa6")) /* backspace character */
@@ -114,7 +113,7 @@ void menu_event_osk_append(int ptr, bool is_rgui)
       input_keyboard_line_append(osk_grid[ptr]);
 }
 
-void menu_event_osk_iterate(void)
+void input_event_osk_iterate(void)
 {
    switch (osk_idx)
    {
@@ -145,7 +144,7 @@ void menu_event_osk_iterate(void)
    }
 }
 
-char** menu_event_get_osk_grid(void)
+char **input_event_get_osk_grid(void)
 {
    return osk_grid;
 }

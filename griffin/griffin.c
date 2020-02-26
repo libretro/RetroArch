@@ -1265,6 +1265,8 @@ MENU
 #include "../gfx/gfx_widgets.c"
 #endif
 
+#include "../input/input_osk.c"
+
 #ifdef HAVE_MENU
 #include "../menu/menu_driver.c"
 #include "../menu/menu_setting.c"
@@ -1277,7 +1279,6 @@ MENU
 #include "../menu/widgets/menu_filebrowser.c"
 #include "../menu/widgets/menu_dialog.c"
 #include "../menu/widgets/menu_input_bind_dialog.c"
-#include "../menu/widgets/menu_osk.c"
 #include "../menu/cbs/menu_cbs_ok.c"
 #include "../menu/cbs/menu_cbs_cancel.c"
 #include "../menu/cbs/menu_cbs_select.c"

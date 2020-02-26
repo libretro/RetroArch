@@ -134,12 +134,13 @@
 #include "gfx/gfx_animation.h"
 #include "gfx/gfx_display.h"
 
+#include "input/input_osk.h"
+
 #ifdef HAVE_MENU
 #include "menu/menu_driver.h"
 #include "menu/menu_input.h"
 #include "menu/widgets/menu_dialog.h"
 #include "menu/widgets/menu_input_bind_dialog.h"
-#include "menu/widgets/menu_osk.h"
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 #include "menu/menu_shader.h"
 #endif
@@ -14956,59 +14957,59 @@ static unsigned menu_event(
 
    if (display_kb)
    {
-      menu_event_osk_iterate();
+      input_event_osk_iterate();
 
       if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_DOWN))
       {
-         if (menu_event_get_osk_ptr() < 33)
-            menu_event_set_osk_ptr(menu_event_get_osk_ptr()
+         if (input_event_get_osk_ptr() < 33)
+            input_event_set_osk_ptr(input_event_get_osk_ptr()
                   + OSK_CHARS_PER_LINE);
       }
 
       if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_UP))
       {
-         if (menu_event_get_osk_ptr() >= OSK_CHARS_PER_LINE)
-            menu_event_set_osk_ptr(menu_event_get_osk_ptr()
+         if (input_event_get_osk_ptr() >= OSK_CHARS_PER_LINE)
+            input_event_set_osk_ptr(input_event_get_osk_ptr()
                   - OSK_CHARS_PER_LINE);
       }
 
       if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_RIGHT))
       {
-         if (menu_event_get_osk_ptr() < 43)
-            menu_event_set_osk_ptr(menu_event_get_osk_ptr() + 1);
+         if (input_event_get_osk_ptr() < 43)
+            input_event_set_osk_ptr(input_event_get_osk_ptr() + 1);
       }
 
       if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_LEFT))
       {
-         if (menu_event_get_osk_ptr() >= 1)
-            menu_event_set_osk_ptr(menu_event_get_osk_ptr() - 1);
+         if (input_event_get_osk_ptr() >= 1)
+            input_event_set_osk_ptr(input_event_get_osk_ptr() - 1);
       }
 
       if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_L))
       {
-         enum osk_type osk_type_idx = menu_event_get_osk_idx();
+         enum osk_type osk_type_idx = input_event_get_osk_idx();
          if (osk_type_idx > OSK_TYPE_UNKNOWN + 1)
-            menu_event_set_osk_idx((enum osk_type)(
+            input_event_set_osk_idx((enum osk_type)(
                      osk_type_idx - 1));
          else
-            menu_event_set_osk_idx((enum osk_type)(is_rgui ? OSK_SYMBOLS_PAGE1 : OSK_TYPE_LAST - 1));
+            input_event_set_osk_idx((enum osk_type)(is_rgui ? OSK_SYMBOLS_PAGE1 : OSK_TYPE_LAST - 1));
       }
 
       if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_R))
       {
-         enum osk_type osk_type_idx = menu_event_get_osk_idx();
+         enum osk_type osk_type_idx = input_event_get_osk_idx();
          if (osk_type_idx < (is_rgui ? OSK_SYMBOLS_PAGE1 : OSK_TYPE_LAST - 1))
-            menu_event_set_osk_idx((enum osk_type)(
+            input_event_set_osk_idx((enum osk_type)(
                      osk_type_idx + 1));
          else
-            menu_event_set_osk_idx((enum osk_type)(OSK_TYPE_UNKNOWN + 1));
+            input_event_set_osk_idx((enum osk_type)(OSK_TYPE_UNKNOWN + 1));
       }
 
       if (BIT256_GET_PTR(p_trigger_input, menu_ok_btn))
       {
-         int ptr = menu_event_get_osk_ptr();
+         int ptr = input_event_get_osk_ptr();
          if (ptr >= 0)
-            menu_event_osk_append(ptr, is_rgui);
+            input_event_osk_append(ptr, is_rgui);
       }
 
       if (BIT256_GET_PTR(p_trigger_input, menu_cancel_btn))
@@ -15382,7 +15383,7 @@ static int menu_input_pointer_post_iterate(
 
       menu_driver_ctl(RARCH_MENU_CTL_OSK_PTR_AT_POS, &point);
       if (point.retcode > -1)
-         menu_event_set_osk_ptr(point.retcode);
+         input_event_set_osk_ptr(point.retcode);
    }
 
    /* Select + X/Y position */
@@ -15669,8 +15670,8 @@ static int menu_input_pointer_post_iterate(
                menu_driver_ctl(RARCH_MENU_CTL_OSK_PTR_AT_POS, &point);
                if (point.retcode > -1)
                {
-                  menu_event_set_osk_ptr(point.retcode);
-                  menu_event_osk_append(point.retcode,
+                  input_event_set_osk_ptr(point.retcode);
+                  input_event_osk_append(point.retcode,
                   string_is_equal(
                      configuration_settings->arrays.menu_driver, "rgui"));
                }
