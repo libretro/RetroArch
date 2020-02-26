@@ -293,7 +293,6 @@ enum osk_driver_enum
 enum menu_driver_enum
 {
    MENU_RGUI                = OSK_NULL + 1,
-   MENU_XUI,
    MENU_MATERIALUI,
    MENU_XMB,
    MENU_STRIPES,
