@@ -35,8 +35,6 @@
 #include <formats/image.h>
 #include <math/float_minmax.h>
 
-#include "../menu_generic.h"
-
 #include "../../menu_driver.h"
 #include "../../../gfx/gfx_animation.h"
 #include "../../../gfx/gfx_display.h"
@@ -45,7 +43,6 @@
 #include "../../runtime_file.h"
 
 #include "../../input/input_osk.h"
-#include "../../widgets/menu_filebrowser.h"
 
 #include "../../../configuration.h"
 #include "../../../content.h"
@@ -3274,7 +3271,7 @@ static int ozone_menu_entry_action(
 menu_ctx_driver_t menu_ctx_ozone = {
    NULL,                         /* set_texture */
    ozone_messagebox,
-   generic_menu_iterate,
+   NULL, /* iterate */
    ozone_render,
    ozone_frame,
    ozone_init,

@@ -34,7 +34,6 @@
 #ifdef HAVE_MENU
 #include "../../../menu/menu_entries.h"
 #include "../../../menu/menu_driver.h"
-#include "../../../menu/drivers/menu_generic.h"
 #endif
 
 // Menu Support

@@ -39,8 +39,6 @@
 
 #include "../../frontend/frontend_driver.h"
 
-#include "menu_generic.h"
-
 #include "../menu_driver.h"
 #include "../menu_entries.h"
 #include "../menu_input.h"
@@ -53,7 +51,6 @@
 #include "../../core.h"
 
 #include "../../input/input_osk.h"
-#include "../widgets/menu_filebrowser.h"
 
 #include "../../verbosity.h"
 #include "../../dynamic.h"
@@ -6663,7 +6660,7 @@ static bool xmb_get_load_content_animation_data(void *userdata, uintptr_t *icon,
 menu_ctx_driver_t menu_ctx_xmb = {
    NULL,
    xmb_messagebox,
-   generic_menu_iterate,
+   NULL, /* iterate */
    xmb_render,
    xmb_frame,
    xmb_init,

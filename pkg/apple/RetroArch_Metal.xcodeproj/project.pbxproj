@@ -195,8 +195,6 @@
 		05A8C52F20DB72F000FF7857 /* menu_displaylist.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = menu_displaylist.h; sourceTree = "<group>"; };
 		05A8C53020DB72F000FF7857 /* menu_content.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = menu_content.h; sourceTree = "<group>"; };
 		05A8C53220DB72F000FF7857 /* xmb.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = xmb.c; sourceTree = "<group>"; };
-		05A8C53320DB72F000FF7857 /* menu_generic.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = menu_generic.h; sourceTree = "<group>"; };
-		05A8C53420DB72F000FF7857 /* menu_generic.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = menu_generic.c; sourceTree = "<group>"; };
 		05A8C53B20DB72F000FF7857 /* xui.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = xui.cpp; sourceTree = "<group>"; };
 		05A8C53C20DB72F000FF7857 /* rgui.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = rgui.c; sourceTree = "<group>"; };
 		05A8C53E20DB72F000FF7857 /* null.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = null.c; sourceTree = "<group>"; };
@@ -815,8 +813,6 @@
 			children = (
 				05132C6521A74D5100379846 /* ozone */,
 				05A8C54020DB72F000FF7857 /* materialui.c */,
-				05A8C53420DB72F000FF7857 /* menu_generic.c */,
-				05A8C53320DB72F000FF7857 /* menu_generic.h */,
 				05A8C53E20DB72F000FF7857 /* null.c */,
 				05A8C53C20DB72F000FF7857 /* rgui.c */,
 				05EFAFC22191D64200D27059 /* stripes.c */,

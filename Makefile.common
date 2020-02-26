@@ -835,8 +835,7 @@ ifeq ($(HAVE_MENU_COMMON), 1)
           menu/cbs/menu_cbs_up.o \
           menu/cbs/menu_cbs_down.o \
           menu/cbs/menu_cbs_contentlist_switch.o \
-          menu/menu_displaylist.o \
-          menu/drivers/menu_generic.o
+          menu/menu_displaylist.o
 endif
 
    OBJ += input/input_osk.o

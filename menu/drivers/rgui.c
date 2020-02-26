@@ -46,8 +46,6 @@
 #include "../../playlist.h"
 #include "../../frontend/frontend_driver.h"
 
-#include "menu_generic.h"
-
 #include "../menu_driver.h"
 #include "../../gfx/gfx_animation.h"
 
@@ -5259,7 +5257,7 @@ static void rgui_context_destroy(void *data)
 menu_ctx_driver_t menu_ctx_rgui = {
    rgui_set_texture,
    rgui_set_message,
-   generic_menu_iterate,
+   NULL, /* iterate */
    rgui_render,
    rgui_frame,
    rgui_init,
@@ -5280,7 +5278,7 @@ menu_ctx_driver_t menu_ctx_rgui = {
    rgui_navigation_set_last,
    rgui_navigation_descend_alphabet,
    rgui_navigation_ascend_alphabet,
-   generic_menu_init_list,
+   NULL,
    NULL,
    NULL,
    NULL,

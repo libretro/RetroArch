@@ -31,8 +31,6 @@
 #include <string/stdstring.h>
 #include <queues/message_queue.h>
 
-#include "menu_generic.h"
-
 #include "../menu_driver.h"
 #include "../../gfx/gfx_animation.h"
 #include "../menu_entries.h"
@@ -690,7 +688,7 @@ static int xui_environ(enum menu_environ_cb type, void *data, void *userdata)
 menu_ctx_driver_t menu_ctx_xui = {
    NULL,
    xui_render_messagebox,
-   generic_menu_iterate,
+   NULL, /* iterate */
    xui_render,
    xui_frame,
    xui_init,
@@ -706,7 +704,7 @@ menu_ctx_driver_t menu_ctx_xui = {
    xui_navigation_set_visible,
    xui_navigation_alphabet,
    xui_navigation_alphabet,
-   generic_menu_init_list,
+   NULL, /* init_list */
    xui_list_insert,
    NULL,          /* list_prepend */
    xui_list_free,

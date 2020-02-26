@@ -482,6 +482,16 @@ void menu_driver_destroy(void);
 
 menu_handle_t *menu_driver_get_ptr(void);
 
+enum action_iterate_type
+{
+   ITERATE_TYPE_DEFAULT = 0,
+   ITERATE_TYPE_HELP,
+   ITERATE_TYPE_INFO,
+   ITERATE_TYPE_BIND
+};
+
+int generic_menu_entry_action(void *userdata, menu_entry_t *entry, size_t i, enum menu_action action);
+
 extern menu_ctx_driver_t menu_ctx_ozone;
 extern menu_ctx_driver_t menu_ctx_xui;
 extern menu_ctx_driver_t menu_ctx_rgui;

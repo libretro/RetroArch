@@ -39,8 +39,6 @@
 
 #include "../../frontend/frontend_driver.h"
 
-#include "menu_generic.h"
-
 #include "../menu_driver.h"
 #include "../menu_input.h"
 
@@ -7945,7 +7943,7 @@ static void materialui_refresh_thumbnail_image(void *userdata, unsigned i)
 menu_ctx_driver_t menu_ctx_mui = {
    NULL,
    materialui_get_message,
-   generic_menu_iterate,
+   NULL, /* iterate */
    materialui_render,
    materialui_frame,
    materialui_init,
@@ -7961,7 +7959,7 @@ menu_ctx_driver_t menu_ctx_mui = {
    materialui_navigation_set_last,
    materialui_navigation_alphabet,
    materialui_navigation_alphabet,
-   generic_menu_init_list,
+   NULL,
    materialui_list_insert,
    NULL,
    NULL,

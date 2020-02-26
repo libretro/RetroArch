@@ -39,8 +39,6 @@
 
 #include "../../frontend/frontend_driver.h"
 
-#include "menu_generic.h"
-
 #include "../menu_driver.h"
 #include "../../gfx/gfx_animation.h"
 #include "../menu_entries.h"
@@ -4380,7 +4378,7 @@ static int stripes_pointer_up(void *userdata,
 menu_ctx_driver_t menu_ctx_stripes = {
    NULL,
    stripes_messagebox,
-   generic_menu_iterate,
+   NULL, /* iterate */
    stripes_render,
    stripes_frame,
    stripes_init,
