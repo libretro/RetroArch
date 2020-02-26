@@ -201,6 +201,7 @@ void gfx_timer_start(gfx_timer_t *timer, gfx_timer_ctx_entry_t *timer_entry);
 void gfx_timer_kill(gfx_timer_t *timer);
 
 bool gfx_animation_update(
+      retro_time_t current_time,
       bool timedate_enable,
       float ticker_speed,
       unsigned video_width,

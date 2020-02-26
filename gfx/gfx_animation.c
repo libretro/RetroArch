@@ -1215,6 +1215,7 @@ void gfx_animation_unset_update_time_cb(void)
 }
       
 static void gfx_animation_update_time(
+      retro_time_t current_time,
       bool timedate_enable,
       unsigned video_width, unsigned video_height,
       float _ticker_speed)
@@ -1235,8 +1236,9 @@ static void gfx_animation_update_time(
    unsigned ticker_slow_speed             = 
       (unsigned)(((float)TICKER_SLOW_SPEED / speed_factor) + 0.5);
 
-   /* Note: cur_time & old_time are in us, delta_time is in ms */
-   cur_time   = cpu_features_get_time_usec();
+   /* Note: cur_time & old_time are in us (microseconds),
+    * delta_time is in ms */
+   cur_time   = current_time;
    delta_time = old_time == 0 ? 0.0f : (float)(cur_time - old_time) / 1000.0f;
    old_time   = cur_time;
 
@@ -1307,6 +1309,7 @@ static void gfx_animation_update_time(
 }
 
 bool gfx_animation_update(
+      retro_time_t current_time,
       bool timedate_enable,
       float ticker_speed,
       unsigned video_width,
@@ -1315,6 +1318,7 @@ bool gfx_animation_update(
    unsigned i;
 
    gfx_animation_update_time(
+         current_time,
          timedate_enable,
          video_width, video_height,
          ticker_speed);

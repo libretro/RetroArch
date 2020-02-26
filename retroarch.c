@@ -27205,7 +27205,7 @@ static void update_fastforwarding_state(void)
 #endif
 }
 
-static enum runloop_state runloop_check_state(void)
+static enum runloop_state runloop_check_state(retro_time_t current_time)
 {
    input_bits_t current_bits;
 #ifdef HAVE_MENU
@@ -27364,7 +27364,7 @@ static enum runloop_state runloop_check_state(void)
       if (trig_quit_key && settings->bools.quit_press_twice)
       {
          static retro_time_t quit_key_time   = 0;
-         retro_time_t cur_time = cpu_features_get_time_usec();
+         retro_time_t cur_time = current_time;
          trig_quit_key         = (cur_time - quit_key_time < QUIT_DELAY_USEC);
          quit_key_time         = cur_time;
 
@@ -27450,6 +27450,7 @@ static enum runloop_state runloop_check_state(void)
 
 #if defined(HAVE_MENU) || defined(HAVE_GFX_WIDGETS)
    gfx_animation_update(
+         current_time,
          settings->bools.menu_timedate_enable,
          settings->floats.menu_ticker_speed,
          video_driver_width, video_driver_height);
@@ -27494,7 +27495,7 @@ static enum runloop_state runloop_check_state(void)
       {
          if (action == old_action)
          {
-            retro_time_t press_time           = cpu_features_get_time_usec();
+            retro_time_t press_time           = current_time;
 
             if (action == MENU_ACTION_NOOP)
                global->menu.noop_press_time   = press_time - global->menu.noop_start_time;
@@ -27505,13 +27506,13 @@ static enum runloop_state runloop_check_state(void)
          {
             if (action == MENU_ACTION_NOOP)
             {
-               global->menu.noop_start_time      = cpu_features_get_time_usec();
+               global->menu.noop_start_time      = current_time;
                global->menu.noop_press_time      = 0;
 
                if (global->menu.prev_action == old_action)
                   global->menu.action_start_time = global->menu.prev_start_time;
                else
-                  global->menu.action_start_time = cpu_features_get_time_usec();
+                  global->menu.action_start_time = current_time;
             }
             else
             {
@@ -27519,11 +27520,11 @@ static enum runloop_state runloop_check_state(void)
                      global->menu.noop_press_time < 200000) /* 250ms */
                {
                   global->menu.action_start_time = global->menu.prev_start_time;
-                  global->menu.action_press_time = cpu_features_get_time_usec() - global->menu.action_start_time;
+                  global->menu.action_press_time = current_time - global->menu.action_start_time;
                }
                else
                {
-                  global->menu.prev_start_time   = cpu_features_get_time_usec();
+                  global->menu.prev_start_time   = current_time;
                   global->menu.prev_action       = action;
                   global->menu.action_press_time = 0;
                }
@@ -28012,6 +28013,7 @@ int runloop_iterate(void)
    unsigned video_frame_delay                   = settings->uints.video_frame_delay;
    bool vrr_runloop_enable                      = settings->bools.vrr_runloop_enable;
    unsigned max_users                           = input_driver_max_users;
+   retro_time_t current_time                    = cpu_features_get_time_usec();
 
 #ifdef HAVE_DISCORD
    if (discord_is_inited)
@@ -28023,7 +28025,7 @@ int runloop_iterate(void)
       /* Updates frame timing if frame timing callback is in use by the core.
        * Limits frame time if fast forward ratio throttle is enabled. */
       retro_usec_t runloop_last_frame_time = runloop_frame_time_last;
-      retro_time_t current                 = cpu_features_get_time_usec();
+      retro_time_t current                 = current_time;
       bool is_locked_fps                   = (runloop_paused || input_driver_nonblock_state)
          | !!recording_data;
       retro_time_t delta                   = (!runloop_last_frame_time || is_locked_fps) ?
@@ -28045,7 +28047,7 @@ int runloop_iterate(void)
       runloop_frame_time.callback(delta);
    }
 
-   switch ((enum runloop_state)runloop_check_state())
+   switch ((enum runloop_state)runloop_check_state(current_time))
    {
       case RUNLOOP_STATE_QUIT:
          frame_limit_last_time = 0.0;
