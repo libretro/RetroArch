@@ -1253,6 +1253,8 @@ static struct bsv_state bsv_movie_state;
 
 
 /* Forward declarations */
+static void retroarch_core_options_intl_init(const struct 
+      retro_core_options_intl *core_options_intl);
 static void ui_companion_driver_toggle(bool force);
 
 static const void *location_driver_find_handle(int idx);
@@ -9571,7 +9573,8 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
          RARCH_LOG("[Environ]: RETRO_ENVIRONMENT_SET_CORE_OPTIONS_INTL.\n");
 
          retroarch_deinit_core_options();
-         rarch_ctl(RARCH_CTL_CORE_OPTIONS_INTL_INIT, data);
+         retroarch_core_options_intl_init((const struct 
+                  retro_core_options_intl *)data);
 
          break;
 
@@ -26203,6 +26206,23 @@ void retroarch_init_task_queue(void)
    task_queue_init(threaded_enable, runloop_task_msg_queue_push);
 }
 
+static void retroarch_core_options_intl_init(const struct 
+      retro_core_options_intl *core_options_intl)
+{
+   /* Parse core_options_intl to create option definitions array */
+   struct retro_core_option_definition *option_defs =
+      core_option_manager_get_definitions(core_options_intl);
+
+   if (option_defs)
+   {
+      /* Initialise core options */
+      rarch_init_core_options(option_defs);
+
+      /* Clean up */
+      free(option_defs);
+   }
+}
+
 bool rarch_ctl(enum rarch_ctl_state state, void *data)
 {
    switch(state)
@@ -26438,25 +26458,6 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
                option->index                 =
                   (option->index + 1) % option->vals->size;
                runloop_core_options->updated = true;
-            }
-         }
-         break;
-      case RARCH_CTL_CORE_OPTIONS_INTL_INIT:
-         {
-            const struct retro_core_options_intl *core_options_intl =
-               (const struct retro_core_options_intl*)data;
-
-            /* Parse core_options_intl to create option definitions array */
-            struct retro_core_option_definition *option_defs =
-               core_option_manager_get_definitions(core_options_intl);
-
-            if (option_defs)
-            {
-               /* Initialise core options */
-               rarch_init_core_options(option_defs);
-
-               /* Clean up */
-               free(option_defs);
             }
          }
          break;
