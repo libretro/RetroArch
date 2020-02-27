@@ -723,7 +723,7 @@ uint8_t netplay_settings_share_mode(unsigned share_digital, unsigned share_analo
  *
  * Poll the network if necessary.
  */
-void input_poll_net(void);
+void input_poll_net(netplay_t *netplay);
 
 /***************************************************************
  * NETPLAY-HANDSHAKE.C

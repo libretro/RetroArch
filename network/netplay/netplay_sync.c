@@ -737,7 +737,7 @@ bool netplay_sync_pre_frame(netplay_t *netplay,
 
 process:
    netplay->can_poll = true;
-   input_poll_net();
+   input_poll_net(netplay);
 
    return (netplay->stall != NETPLAY_STALL_NO_CONNECTION);
 }
