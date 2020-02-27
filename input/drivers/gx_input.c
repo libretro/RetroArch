@@ -198,10 +198,10 @@ static int16_t gx_input_state(void *data,
          break;
 #ifdef HW_RVL
       case RETRO_DEVICE_MOUSE:
-         return gx_mouse_state(gx, id, joypad_info.joy_idx);
+         return gx_mouse_state(gx, id, joypad_info->joy_idx);
 
       case RETRO_DEVICE_LIGHTGUN:
-         return gx_lightgun_state(gx, id, joypad_info.joy_idx);
+         return gx_lightgun_state(gx, id, joypad_info->joy_idx);
 #endif
    }
 
