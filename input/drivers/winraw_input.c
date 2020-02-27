@@ -393,7 +393,7 @@ static bool winraw_mouse_button_pressed(
 }
 
 static bool winraw_is_pressed(winraw_input_t *wr,
-      rarch_joypad_info_t joypad_info,
+      rarch_joypad_info_t *joypad_info,
       const struct retro_keybind *binds,
       unsigned port, unsigned id)
 {
@@ -406,15 +406,15 @@ static bool winraw_is_pressed(winraw_input_t *wr,
    {
       /* Auto-binds are per joypad, not per user. */
       const uint64_t joykey  = (binds[id].joykey != NO_BTN)
-         ? binds[id].joykey : joypad_info.auto_binds[id].joykey;
+         ? binds[id].joykey : joypad_info->auto_binds[id].joykey;
       const uint32_t joyaxis = (binds[id].joyaxis != AXIS_NONE)
-         ? binds[id].joyaxis : joypad_info.auto_binds[id].joyaxis;
+         ? binds[id].joyaxis : joypad_info->auto_binds[id].joyaxis;
       if (winraw_mouse_button_pressed(wr, port, bind->mbutton))
          return true;
       if ((uint16_t)joykey != NO_BTN && 
-            wr->joypad->button(joypad_info.joy_idx, (uint16_t)joykey))
+            wr->joypad->button(joypad_info->joy_idx, (uint16_t)joykey))
          return true;
-      if (((float)abs(wr->joypad->axis(joypad_info.joy_idx, joyaxis)) / 0x8000) > joypad_info.axis_threshold)
+      if (((float)abs(wr->joypad->axis(joypad_info->joy_idx, joyaxis)) / 0x8000) > joypad_info->axis_threshold)
          return true;
    }
 
@@ -698,7 +698,7 @@ static void winraw_poll(void *d)
 }
 
 static int16_t winraw_input_state(void *d,
-      rarch_joypad_info_t joypad_info,
+      rarch_joypad_info_t *joypad_info,
       const struct retro_keybind **binds,
       unsigned port, unsigned device, unsigned index, unsigned id)
 {

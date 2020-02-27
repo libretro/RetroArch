@@ -13424,16 +13424,16 @@ static void input_poll_overlay(input_overlay_t *ol, float opacity,
       RARCH_DEVICE_POINTER_SCREEN : RETRO_DEVICE_POINTER;
 
    for (i = 0;
-         input_ptr->input_state(input_data, joypad_info,
+         input_ptr->input_state(input_data, &joypad_info,
             NULL,
             0, device, i, RETRO_DEVICE_ID_POINTER_PRESSED);
          i++)
    {
       input_overlay_state_t polled_data;
-      int16_t x = input_ptr->input_state(input_data, joypad_info,
+      int16_t x = input_ptr->input_state(input_data, &joypad_info,
             NULL,
             0, device, i, RETRO_DEVICE_ID_POINTER_X);
-      int16_t y = input_ptr->input_state(input_data, joypad_info,
+      int16_t y = input_ptr->input_state(input_data, &joypad_info,
             NULL,
             0, device, i, RETRO_DEVICE_ID_POINTER_Y);
 
@@ -13845,7 +13845,7 @@ static void input_driver_poll(void)
          continue;
 
       input_driver_turbo_btns.frame_enable[i] = current_input->input_state(
-            current_input_data, joypad_info[i], libretro_input_binds,
+            current_input_data, &joypad_info[i], libretro_input_binds,
             (unsigned)i, RETRO_DEVICE_JOYPAD, 0, RARCH_TURBO_ENABLE);
    }
 
@@ -13882,7 +13882,8 @@ static void input_driver_poll(void)
                   {
                      int16_t ret = 0;
                      if (current_input && current_input->input_state)
-                        ret = current_input->input_state(current_input_data, joypad_info[i],
+                        ret = current_input->input_state(current_input_data,
+                              &joypad_info[i],
                               libretro_input_binds,
                               (unsigned)i, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_MASK);
 
@@ -13891,7 +13892,7 @@ static void input_driver_poll(void)
                         if (ret & (1 << k))
                         {
                            int16_t      val = input_joypad_analog(
-                                 joypad_driver, joypad_info[i], (unsigned)i,
+                                 joypad_driver, &joypad_info[i], (unsigned)i,
                                  RETRO_DEVICE_INDEX_ANALOG_BUTTON, k, libretro_input_binds[i]);
 
                            BIT256_SET_PTR(p_new_state, k);
@@ -13907,7 +13908,7 @@ static void input_driver_poll(void)
                         {
                            unsigned offset = 0 + (k * 4) + (j * 2);
                            int16_t     val = input_joypad_analog(joypad_driver,
-                                 joypad_info[i], (unsigned)i, k, j, libretro_input_binds[i]);
+                                 &joypad_info[i], (unsigned)i, k, j, libretro_input_binds[i]);
 
                            if (val >= 0)
                               p_new_state->analogs[offset]   = val;
@@ -14395,7 +14396,7 @@ static int16_t input_state(unsigned port, unsigned device,
 
    device &= RETRO_DEVICE_MASK;
    ret     = current_input->input_state(
-         current_input_data, joypad_info,
+         current_input_data, &joypad_info,
          libretro_input_binds, port, device, idx, id);
 
    if (     (input_driver_flushing_input == 0)
@@ -14605,7 +14606,7 @@ int16_t menu_input_read_mouse_hw(enum menu_input_mouse_hw_id id)
          break;
    }
 
-   return current_input->input_state(current_input_data, joypad_info,
+   return current_input->input_state(current_input_data, &joypad_info,
          NULL, 0, device, 0, type);
 }
 
@@ -14789,7 +14790,7 @@ static void menu_input_get_touchscreen_hw_state(
 
    /* X pos */
    pointer_x = current_input->input_state(
-         current_input_data, joypad_info, binds,
+         current_input_data, &joypad_info, binds,
          0, pointer_device, 0, RETRO_DEVICE_ID_POINTER_X);
    hw_state->x = ((pointer_x + 0x7fff) * (int)fb_width) / 0xFFFF;
 
@@ -14813,7 +14814,7 @@ static void menu_input_get_touchscreen_hw_state(
 
    /* Y pos */
    pointer_y = current_input->input_state(
-         current_input_data, joypad_info, binds,
+         current_input_data, &joypad_info, binds,
          0, pointer_device, 0, RETRO_DEVICE_ID_POINTER_Y);
    hw_state->y = ((pointer_y + 0x7fff) * (int)fb_height) / 0xFFFF;
 
@@ -14833,7 +14834,7 @@ static void menu_input_get_touchscreen_hw_state(
    /* Select (touch screen contact)
     * Note that releasing select also counts as activity */
    hw_state->select_pressed = (bool)current_input->input_state(
-         current_input_data, joypad_info, binds,
+         current_input_data, &joypad_info, binds,
          0, pointer_device, 0, RETRO_DEVICE_ID_POINTER_PRESSED);
    if (hw_state->select_pressed || (hw_state->select_pressed != last_select_pressed))
       hw_state->active = true;
@@ -14842,7 +14843,7 @@ static void menu_input_get_touchscreen_hw_state(
    /* Cancel (touch screen 'back' - don't know what is this, but whatever...)
     * Note that releasing cancel also counts as activity */
    hw_state->cancel_pressed = (bool)current_input->input_state(
-         current_input_data, joypad_info, binds,
+         current_input_data, &joypad_info, binds,
          0, pointer_device, 0, RARCH_DEVICE_ID_POINTER_BACK);
    if (hw_state->cancel_pressed || (hw_state->cancel_pressed != last_cancel_pressed))
       hw_state->active = true;
@@ -15965,7 +15966,7 @@ static void input_menu_keys_pressed(input_bits_t *p_new_state,
          const struct retro_keybind *htkey = &input_config_binds[port][RARCH_ENABLE_HOTKEY];
 
          if (htkey->valid
-               && current_input->input_state(current_input_data, joypad_info,
+               && current_input->input_state(current_input_data, &joypad_info,
                   &binds[0], port, RETRO_DEVICE_JOYPAD, 0, RARCH_ENABLE_HOTKEY))
          {
             input_driver_block_libretro_input = true;
@@ -15988,7 +15989,7 @@ static void input_menu_keys_pressed(input_bits_t *p_new_state,
          joypad_info.auto_binds            = input_autoconf_binds[joypad_info.joy_idx];
          joypad_info.axis_threshold        = input_driver_axis_threshold;
          ret[port]                         = current_input->input_state(current_input_data,
-               joypad_info, &binds[0], port, RETRO_DEVICE_JOYPAD, 0,
+               &joypad_info, &binds[0], port, RETRO_DEVICE_JOYPAD, 0,
                RETRO_DEVICE_ID_JOYPAD_MASK);
       }
 
@@ -16030,7 +16031,7 @@ static void input_menu_keys_pressed(input_bits_t *p_new_state,
                joypad_info.auto_binds            = input_autoconf_binds[joypad_info.joy_idx];
                joypad_info.axis_threshold        = input_driver_axis_threshold;
 
-               if (current_input->input_state(current_input_data, joypad_info,
+               if (current_input->input_state(current_input_data, &joypad_info,
                   &binds[0], port, RETRO_DEVICE_JOYPAD, 0, i))
                {
                   bit_pressed = true;
@@ -16096,7 +16097,7 @@ static void input_menu_keys_pressed(input_bits_t *p_new_state,
       for (i = 0; i < ARRAY_SIZE(ids); i++)
       {
          if (current_input->input_state(current_input_data,
-                  joypad_info, binds, 0,
+                  &joypad_info, binds, 0,
                   RETRO_DEVICE_KEYBOARD, 0, ids[i][0]))
             BIT256_SET_PTR(p_new_state, ids[i][1]);
       }
@@ -16136,7 +16137,7 @@ static void input_keys_pressed(input_bits_t *p_new_state)
 
          if (     enable_hotkey && enable_hotkey->valid
                && current_input->input_state(
-                  current_input_data, joypad_info,
+                  current_input_data, &joypad_info,
                   &binds, port,
                   RETRO_DEVICE_JOYPAD, 0, RARCH_ENABLE_HOTKEY))
             input_driver_block_libretro_input = true;
@@ -16156,7 +16157,7 @@ static void input_keys_pressed(input_bits_t *p_new_state)
          if (check_input_driver_block_hotkey(
                   focus_normal, focus_binds_auto))
          {
-            if (current_input->input_state(current_input_data, joypad_info,
+            if (current_input->input_state(current_input_data, &joypad_info,
                      &binds, port,
                      RETRO_DEVICE_JOYPAD, 0, RARCH_GAME_FOCUS_TOGGLE))
                input_driver_block_hotkey = false;
@@ -16167,7 +16168,7 @@ static void input_keys_pressed(input_bits_t *p_new_state)
    /* Check the libretro input first */
    {
       int16_t ret = current_input->input_state(current_input_data,
-            joypad_info, &binds, 0, RETRO_DEVICE_JOYPAD, 0,
+            &joypad_info, &binds, 0, RETRO_DEVICE_JOYPAD, 0,
             RETRO_DEVICE_ID_JOYPAD_MASK);
       for (i = 0; i < RARCH_FIRST_META_KEY; i++)
       {
@@ -16184,7 +16185,7 @@ static void input_keys_pressed(input_bits_t *p_new_state)
    for (i = RARCH_FIRST_META_KEY; i < RARCH_BIND_LIST_END; i++)
    {
       bool bit_pressed = !input_driver_block_hotkey && binds[i].valid
-         && current_input->input_state(current_input_data, joypad_info,
+         && current_input->input_state(current_input_data, &joypad_info,
                &binds, 0, RETRO_DEVICE_JOYPAD, 0, i);
       if (     bit_pressed
             || BIT64_GET(lifecycle_state, i)
@@ -16527,7 +16528,7 @@ bool input_joypad_set_rumble(const input_device_driver_t *drv,
  * Returns: analog value on success, otherwise 0.
  **/
 int16_t input_joypad_analog(const input_device_driver_t *drv,
-      rarch_joypad_info_t joypad_info,
+      rarch_joypad_info_t *joypad_info,
       unsigned port, unsigned idx, unsigned ident,
       const struct retro_keybind *binds)
 {
@@ -16546,7 +16547,7 @@ int16_t input_joypad_analog(const input_device_driver_t *drv,
             return 0;
 
          axis = (bind->joyaxis == AXIS_NONE)
-            ? joypad_info.auto_binds[ident].joyaxis
+            ? joypad_info->auto_binds[ident].joyaxis
             : bind->joyaxis;
 
          /* Analog button. */
@@ -16554,18 +16555,20 @@ int16_t input_joypad_analog(const input_device_driver_t *drv,
          {
             float normal_mag = 0.0f;
             if (configuration_settings->floats.input_analog_deadzone)
-               normal_mag = fabs((1.0f / 0x7fff) * drv->axis(joypad_info.joy_idx, axis));
-            res = abs(input_joypad_axis(drv, joypad_info.joy_idx, axis, normal_mag));
+               normal_mag = fabs((1.0f / 0x7fff) * drv->axis(
+                        joypad_info->joy_idx, axis));
+            res = abs(input_joypad_axis(drv, 
+                     joypad_info->joy_idx, axis, normal_mag));
          }
          /* If the result is zero, it's got a digital button
           * attached to it instead */
          if (res == 0)
          {
             uint16_t key = (bind->joykey == NO_BTN)
-               ? joypad_info.auto_binds[ident].joykey
+               ? joypad_info->auto_binds[ident].joykey
                : bind->joykey;
 
-            if (drv->button(joypad_info.joy_idx, key))
+            if (drv->button(joypad_info->joy_idx, key))
                res = 0x7fff;
          }
       }
@@ -16615,10 +16618,10 @@ int16_t input_joypad_analog(const input_device_driver_t *drv,
       if (drv->axis)
       {
          uint32_t axis_minus      = (bind_minus->joyaxis   == AXIS_NONE)
-            ? joypad_info.auto_binds[ident_minus].joyaxis
+            ? joypad_info->auto_binds[ident_minus].joyaxis
             : bind_minus->joyaxis;
          uint32_t axis_plus       = (bind_plus->joyaxis    == AXIS_NONE)
-            ? joypad_info.auto_binds[ident_plus].joyaxis
+            ? joypad_info->auto_binds[ident_plus].joyaxis
             : bind_plus->joyaxis;
          int16_t pressed_minus    = 0;
          int16_t pressed_plus     = 0;
@@ -16629,32 +16632,32 @@ int16_t input_joypad_analog(const input_device_driver_t *drv,
          if (configuration_settings->floats.input_analog_deadzone)
          {
             uint32_t x_axis_minus    = (bind_x_minus->joyaxis == AXIS_NONE)
-               ? joypad_info.auto_binds[ident_x_minus].joyaxis
+               ? joypad_info->auto_binds[ident_x_minus].joyaxis
                : bind_x_minus->joyaxis;
             uint32_t x_axis_plus     = (bind_x_plus->joyaxis  == AXIS_NONE)
-               ? joypad_info.auto_binds[ident_x_plus].joyaxis
+               ? joypad_info->auto_binds[ident_x_plus].joyaxis
                : bind_x_plus->joyaxis;
             uint32_t y_axis_minus    = (bind_y_minus->joyaxis == AXIS_NONE)
-               ? joypad_info.auto_binds[ident_y_minus].joyaxis
+               ? joypad_info->auto_binds[ident_y_minus].joyaxis
                : bind_y_minus->joyaxis;
             uint32_t y_axis_plus     = (bind_y_plus->joyaxis  == AXIS_NONE)
-               ? joypad_info.auto_binds[ident_y_plus].joyaxis
+               ? joypad_info->auto_binds[ident_y_plus].joyaxis
                : bind_y_plus->joyaxis;
             /* normalized magnitude for radial scaled analog deadzone */
             float x                  = drv->axis(
-                  joypad_info.joy_idx, x_axis_plus)
-               + drv->axis(joypad_info.joy_idx, x_axis_minus);
+                  joypad_info->joy_idx, x_axis_plus)
+               + drv->axis(joypad_info->joy_idx, x_axis_minus);
             float y                  = drv->axis(
-                  joypad_info.joy_idx, y_axis_plus)
-               + drv->axis(joypad_info.joy_idx, y_axis_minus);
+                  joypad_info->joy_idx, y_axis_plus)
+               + drv->axis(joypad_info->joy_idx, y_axis_minus);
             normal_mag = (1.0f / 0x7fff) * sqrt(x * x + y * y);
          }
 
          pressed_minus = abs(
-               input_joypad_axis(drv, joypad_info.joy_idx,
+               input_joypad_axis(drv, joypad_info->joy_idx,
                   axis_minus, normal_mag));
          pressed_plus  = abs(
-               input_joypad_axis(drv, joypad_info.joy_idx,
+               input_joypad_axis(drv, joypad_info->joy_idx,
                   axis_plus, normal_mag));
          res           = pressed_plus - pressed_minus;
       }
@@ -16662,14 +16665,14 @@ int16_t input_joypad_analog(const input_device_driver_t *drv,
       if (res == 0)
       {
          uint16_t key_minus    = (bind_minus->joykey == NO_BTN)
-            ? joypad_info.auto_binds[ident_minus].joykey
+            ? joypad_info->auto_binds[ident_minus].joykey
             : bind_minus->joykey;
          uint16_t key_plus     = (bind_plus->joykey  == NO_BTN)
-            ? joypad_info.auto_binds[ident_plus].joykey
+            ? joypad_info->auto_binds[ident_plus].joykey
             : bind_plus->joykey;
-         int16_t digital_left  = drv->button(joypad_info.joy_idx, key_minus)
+         int16_t digital_left  = drv->button(joypad_info->joy_idx, key_minus)
             ? -0x7fff : 0;
-         int16_t digital_right = drv->button(joypad_info.joy_idx, key_plus)
+         int16_t digital_right = drv->button(joypad_info->joy_idx, key_plus)
             ? 0x7fff  : 0;
 
          return digital_right + digital_left;
@@ -16704,7 +16707,7 @@ bool input_mouse_button_raw(unsigned port, unsigned id)
    joypad_info.auto_binds     = input_autoconf_binds[joypad_info.joy_idx];
 
    if (current_input->input_state(current_input_data,
-         joypad_info, libretro_input_binds, port, RETRO_DEVICE_MOUSE, 0, id))
+         &joypad_info, libretro_input_binds, port, RETRO_DEVICE_MOUSE, 0, id))
       return true;
    return false;
 }

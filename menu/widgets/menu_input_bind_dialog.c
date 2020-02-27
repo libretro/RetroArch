@@ -271,7 +271,7 @@ static void menu_input_key_bind_poll_bind_state(
    joypad_info.axis_threshold = 0.0f;
 
    state->skip = timed_out || input_ptr->input_state(input_data,
-         joypad_info,
+         &joypad_info,
          NULL,
          0, RETRO_DEVICE_KEYBOARD, 0, RETROK_RETURN);
 

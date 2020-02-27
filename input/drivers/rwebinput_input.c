@@ -460,7 +460,8 @@ static int16_t rwebinput_mouse_state(rwebinput_mouse_state_t *mouse,
 }
 
 static bool rwebinput_is_pressed(rwebinput_input_t *rwebinput,
-   rarch_joypad_info_t joypad_info, const struct retro_keybind *binds,
+   rarch_joypad_info_t *joypad_info,
+   const struct retro_keybind *binds,
    unsigned port, unsigned id)
 {
    if (id < RARCH_BIND_LIST_END)
@@ -476,16 +477,16 @@ static bool rwebinput_is_pressed(rwebinput_input_t *rwebinput,
       {
          /* Auto-binds are per joypad, not per user. */
          const uint64_t joykey  = (binds[id].joykey != NO_BTN)
-            ? binds[id].joykey : joypad_info.auto_binds[id].joykey;
+            ? binds[id].joykey : joypad_info->auto_binds[id].joykey;
          const uint32_t joyaxis = (binds[id].joyaxis != AXIS_NONE)
-            ? binds[id].joyaxis : joypad_info.auto_binds[id].joyaxis;
+            ? binds[id].joyaxis : joypad_info->auto_binds[id].joyaxis;
 
          if (port == 0 && !!rwebinput_mouse_state(&rwebinput->mouse,
                   bind->mbutton, false))
             return true;
-         if ((uint16_t)joykey != NO_BTN && rwebinput->joypad->button(joypad_info.joy_idx, (uint16_t)joykey))
+         if ((uint16_t)joykey != NO_BTN && rwebinput->joypad->button(joypad_info->joy_idx, (uint16_t)joykey))
             return true;
-         if (((float)abs(rwebinput->joypad->axis(joypad_info.joy_idx, joyaxis)) / 0x8000) > joypad_info.axis_threshold)
+         if (((float)abs(rwebinput->joypad->axis(joypad_info->joy_idx, joyaxis)) / 0x8000) > joypad_info->axis_threshold)
             return true;
       }
    }
@@ -494,7 +495,7 @@ static bool rwebinput_is_pressed(rwebinput_input_t *rwebinput,
 }
 
 static int16_t rwebinput_analog_pressed(rwebinput_input_t *rwebinput,
-   rarch_joypad_info_t joypad_info, const struct retro_keybind *binds,
+   rarch_joypad_info_t *joypad_info, const struct retro_keybind *binds,
    unsigned idx, unsigned id)
 {
    int16_t pressed_minus = 0, pressed_plus = 0;
@@ -512,7 +513,7 @@ static int16_t rwebinput_analog_pressed(rwebinput_input_t *rwebinput,
 }
 
 static int16_t rwebinput_input_state(void *data,
-      rarch_joypad_info_t joypad_info,
+      rarch_joypad_info_t *joypad_info,
       const struct retro_keybind **binds,
       unsigned port, unsigned device, unsigned idx, unsigned id)
 {
