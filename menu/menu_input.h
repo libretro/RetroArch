@@ -182,11 +182,6 @@ typedef struct menu_input_ctx_hitbox
    int32_t y2;
 } menu_input_ctx_hitbox_t;
 
-/* Must be called inside menu_driver_toggle()
- * Prevents phantom input when using an overlay to
- * toggle menu ON if overlays are disabled in-menu */
-void menu_input_driver_toggle(bool on);
-
 /* Provides access to all pointer device parameters */
 void menu_input_get_pointer_state(menu_input_pointer_t *pointer);
 

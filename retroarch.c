@@ -14547,8 +14547,11 @@ static int16_t input_joypad_axis(const input_device_driver_t *drv,
 
 /* MENU INPUT */
 #ifdef HAVE_MENU
+/* Must be called inside menu_driver_toggle()
+ * Prevents phantom input when using an overlay to
+ * toggle menu ON if overlays are disabled in-menu */
 
-void menu_input_driver_toggle(bool on)
+static void menu_input_driver_toggle(bool on)
 {
 #ifdef HAVE_OVERLAY
    settings_t *settings         = configuration_settings;
