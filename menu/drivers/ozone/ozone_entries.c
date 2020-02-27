@@ -273,10 +273,12 @@ void ozone_compute_entries_position(ozone_handle_t *ozone)
                entry_padding * 2 - ozone->dimensions.entry_icon_padding * 2;
 
             if (ozone->depth == 1)
+            {
                sublabel_max_width -= (unsigned) ozone->dimensions.sidebar_width;
 
-            if (ozone->show_thumbnail_bar)
-               sublabel_max_width -= ozone->dimensions.thumbnail_bar_width;
+               if (ozone->show_thumbnail_bar)
+                  sublabel_max_width -= ozone->dimensions.thumbnail_bar_width;
+            }
 
             word_wrap(wrapped_sublabel_str, sublabel_str, sublabel_max_width / ozone->sublabel_font_glyph_width, false, 0);
 
