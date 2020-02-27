@@ -637,10 +637,3 @@ fi
 
 check_enabled 'ZLIB BUILTINZLIB' RPNG RPNG 'zlib is' false
 check_enabled V4L2 VIDEOPROCESSOR 'video processor' 'Video4linux2 is' true
-
-if [ "$HAVE_ODROIDGO2" != 'no' ]; then
-  check_pkgconf LIBRGA librk_rga
-   if [ "$HAVE_LIBRGA" != 'yes' ]; then
-     die 1 'librga is required for ODROID-GO Advance support'
-   fi
-fi

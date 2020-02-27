@@ -2112,6 +2112,9 @@ endif
 
 ifeq ($(HAVE_ODROIDGO2), 1)
   DEFINES += -DHAVE_ODROIDGO2
-  LIBS += -lrk_rga
+  LIBS += -lrga
+  INCLUDE_DIRS += -I$(DEPS_DIR)/libgo2/include
+  OBJ += $(DEPS_DIR)/libgo2/src/display.o \
+         $(DEPS_DIR)/libgo2/src/queue.o
 endif
 ##################################
