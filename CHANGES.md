@@ -32,6 +32,7 @@
 - MENU/OZONE/POINTER: In entries list, item under cursor is automatically selected (with some fudging to ensure this doesn't break mouse wheel scrolling)
 - MENU/OZONE/POINTER: In sidebar, item under cursor is not automatically selected (this is too jarring)
 - NETPLAY/MENU/BUGFIX: Fix Netplay Stateless Mode doesn't save. Affects other netplay settings which can be overridden by commandline option
+- ODROID GO ADVANCE: Rotation support
 - NETPLAY/ROOMS/BUGFIX: Prevent out-of-bounds array indexing when displaying/selecting netplay rooms in menus
 - VIDEO: Set hardware 'Bilinear filtering' off by default
 - WIFI/CONNMANCTL: Display more characters from SSID
