@@ -57,6 +57,7 @@ typedef struct core_updater_list_handle
    retro_task_t *http_task;
    bool http_task_finished;
    bool http_task_complete;
+   bool http_task_success;
    http_transfer_data_t *http_data;
    enum core_updater_list_status status;
 } core_updater_list_handle_t;
@@ -162,8 +163,9 @@ static void cb_http_task_core_updater_get_list(
    http_transfer_data_t *data              = (http_transfer_data_t*)task_data;
    file_transfer_t *transf                 = (file_transfer_t*)user_data;
    core_updater_list_handle_t *list_handle = NULL;
+   bool success                            = data && string_is_empty(err);
 
-   if (!data || !transf || err)
+   if (!transf)
       goto finish;
 
    list_handle = (core_updater_list_handle_t*)transf->user_data;
@@ -173,8 +175,15 @@ static void cb_http_task_core_updater_get_list(
 
    list_handle->http_data          = data;
    list_handle->http_task_complete = true;
+   list_handle->http_task_success  = success;
 
 finish:
+
+   /* Log any error messages */
+   if (!success)
+      RARCH_ERR("Download of core list '%s' failed: %s\n",
+            (transf ? transf->path: "unknown"),
+            (err ? err : "unknown"));
 
    if (transf)
       free(transf);
@@ -303,15 +312,25 @@ static void task_core_updater_get_list_handler(retro_task_t *task)
          {
             settings_t *settings    = config_get_ptr();
 
-            /* Parse HTTP transfer data */
-            if (list_handle->http_data)
-               core_updater_list_parse_network_data(
-                     list_handle->core_list,
-                     settings->paths.directory_libretro,
-                     settings->paths.path_libretro_info,
-                     settings->paths.network_buildbot_url,
-                     list_handle->http_data->data,
-                     list_handle->http_data->len);
+            /* Check whether HTTP task was successful */
+            if (list_handle->http_task_success)
+            {
+               /* Parse HTTP transfer data */
+               if (list_handle->http_data)
+                  core_updater_list_parse_network_data(
+                        list_handle->core_list,
+                        settings->paths.directory_libretro,
+                        settings->paths.path_libretro_info,
+                        settings->paths.network_buildbot_url,
+                        list_handle->http_data->data,
+                        list_handle->http_data->len);
+            }
+            else
+            {
+               /* Notify user of error via task title */
+               task_free_title(task);
+               task_set_title(task, strdup(msg_hash_to_str(MSG_CORE_LIST_FAILED)));
+            }
 
             /* Enable menu refresh, if required */
 #if defined(RARCH_INTERNAL) && defined(HAVE_MENU)
@@ -372,6 +391,7 @@ void *task_push_get_core_updater_list(
    list_handle->http_task          = NULL;
    list_handle->http_task_finished = false;
    list_handle->http_task_complete = false;
+   list_handle->http_task_success  = false;
    list_handle->http_data          = NULL;
    list_handle->status             = CORE_UPDATER_LIST_BEGIN;
 
@@ -544,10 +564,8 @@ finish:
 
    /* Log any error messages */
    if (!string_is_empty(err))
-   {
       RARCH_ERR("Download of '%s' failed: %s\n",
             (transf ? transf->path: "unknown"), err);
-   }
 
    if (data)
    {
