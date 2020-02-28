@@ -9,6 +9,7 @@
 - CHEEVOS: If the core says it's exposing SYSTEM_RAM, give it the benefit of the doubt
 - CHEEVOS: RetroAchievements rich presence for RA.org website/Discord
 - CHEEVOS: Reset token when username or password changes
+- CORE UPDATER: Prevent hang when fetching core list if HTTP transfer fails
 - DISK CONTROL: Add disk labels to 'disk inserted' notifications
 - EMSCRIPTEN: Recreate input event listeners properly
 - FFMPEG CORE: Fix crash on seeking when using HW decoding in some cases
