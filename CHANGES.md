@@ -1,4 +1,5 @@
 # Future
+- 3DS: Keep the bottom screen hidden on sleep/wakeup. When the 3DS wakes back up after being closed, the bottom screen needs to be reinitialized. Adding the condition here will cause the screen to be turned on or off based on the state of ctr_bottom_screen_enabled, as you'd expect
 - ANDROID/CHROMEBOOK/CRASH: Fix Chromebook crashes (on x86 x64) when touching the screen
 - BUGFIX: Prevent double input when using 'return' key (hardware) to close on-screen keyboard
 - BUGFIX: Fix mouse capture hotkey not working
