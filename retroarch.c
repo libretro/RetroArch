@@ -24503,7 +24503,7 @@ force_input_dirty:
 }
 #endif
 
-static retro_time_t rarch_core_runtime_tick(void)
+static retro_time_t rarch_core_runtime_tick(retro_time_t current_time)
 {
    retro_time_t frame_time              =
       (1.0 / video_driver_av_info.timing.fps) * 1000000;
@@ -24525,7 +24525,7 @@ static retro_time_t rarch_core_runtime_tick(void)
        *    retro_time_t current_usec = cpu_features_get_time_usec();
        *    libretro_core_runtime_last = current_usec;
        * every frame when fast forward is off. */
-      retro_time_t current_usec         = cpu_features_get_time_usec();
+      retro_time_t current_usec         = current_time;
       retro_time_t potential_frame_time = current_usec -
          libretro_core_runtime_last;
       libretro_core_runtime_last        = current_usec;
@@ -27082,7 +27082,7 @@ static bool menu_display_libretro_running(void)
 }
 
 /* Display the libretro core's framebuffer onscreen. */
-static bool menu_display_libretro(void)
+static bool menu_display_libretro(retro_time_t current_time)
 {
    if (video_driver_poke && video_driver_poke->set_texture_enable)
       video_driver_poke->set_texture_enable(video_driver_data,
@@ -27094,7 +27094,7 @@ static bool menu_display_libretro(void)
          input_driver_block_libretro_input = true;
 
       core_run();
-      libretro_core_runtime_usec += rarch_core_runtime_tick();
+      libretro_core_runtime_usec += rarch_core_runtime_tick(current_time);
       input_driver_block_libretro_input = false;
 
       return true;
@@ -27585,7 +27585,7 @@ static enum runloop_state runloop_check_state(retro_time_t current_time)
             }
 
             if (menu_driver_alive && !runloop_idle)
-               menu_display_libretro();
+               menu_display_libretro(current_time);
 
             if (menu_data->driver_ctx->set_texture)
                menu_data->driver_ctx->set_texture();
@@ -28144,7 +28144,7 @@ int runloop_iterate(void)
 
    /* Increment runtime tick counter after each call to
     * core_run() or run_ahead() */
-   libretro_core_runtime_usec += rarch_core_runtime_tick();
+   libretro_core_runtime_usec += rarch_core_runtime_tick(current_time);
 
 #ifdef HAVE_CHEEVOS
    if (  settings->bools.cheevos_enable &&
