@@ -8121,7 +8121,8 @@ void main_exit(void *args)
 #endif
    rarch_ctl(RARCH_CTL_MAIN_DEINIT, NULL);
 
-   rarch_perf_log();
+   if (runloop_perfcnt_enable)
+      rarch_perf_log();
 
 #if defined(HAVE_LOGGER) && !defined(ANDROID)
    logger_shutdown();

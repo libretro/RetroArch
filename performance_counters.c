@@ -108,9 +108,6 @@ static void log_counters(struct retro_perf_counter **counters, unsigned num)
 
 void rarch_perf_log(void)
 {
-   if (!rarch_ctl(RARCH_CTL_IS_PERFCNT_ENABLE, NULL))
-      return;
-
    RARCH_LOG("[PERF]: Performance counters (RetroArch):\n");
    log_counters(perf_counters_rarch, perf_ptr_rarch);
 }
