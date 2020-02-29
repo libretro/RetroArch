@@ -340,7 +340,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_AUDIO_MUTE,
-    "Silenciar áudio"
+    "Desabilitar áudio"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_RATE,
@@ -822,7 +822,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_DISK_TRAY_INSERT,
-    "Insere o disco correspondente ao 'Índice Atual do Disco' e fecha a bandeja do disco virtual. NOTA: Se o RetroArch estiver configurado para pausar enquanto o menu estiver ativo, alguns núcleos poderão não registrar alterações, a menos que o conteúdo seja retomado por alguns segundos após cada ação de controle de disco."
+    "Insere o disco correspondente ao 'Índice atual do disco' e fecha a bandeja do disco virtual. NOTA: Se o RetroArch estiver configurado para pausar enquanto o menu estiver ativo, alguns núcleos poderão não registrar alterações, a menos que o conteúdo seja retomado por alguns segundos após cada ação de controle de disco."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DISK_INDEX,
@@ -830,7 +830,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_DISK_INDEX,
-    "Escolhe o disco atual da lista de imagens disponíveis. O disco será carregado quando 'Inserir Disco' estiver selecionado."
+    "Escolhe o disco atual da lista de imagens disponíveis. O disco será carregado quando 'Inserir disco' estiver selecionado."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
@@ -938,7 +938,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_FACTOR,
-    "Aplica uma substituição manual da escala ao desenhar os widgets do menu. Aplica-se apenas quando 'Escala Automática nos Widgets Gráficos' está desativado. Pode ser usado para aumentar ou diminuir o tamanho das notificações, indicadores e controles decorados independentemente do próprio menu."
+    "Aplica uma substituição manual da escala ao desenhar os widgets do menu. Aplica-se apenas quando 'Escala automática nos widgets gráficos' está desativado. Pode ser usado para aumentar ou diminuir o tamanho das notificações, indicadores e controles decorados independentemente do próprio menu."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS,
@@ -1540,7 +1540,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU,
-    "Ocultar Sobreposição no menu"
+    "Ocultar sobreposição no menu"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS,
@@ -1794,7 +1794,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_LOG_TO_FILE,
-    "Redireciona as mensagens do registro de eventos do sistema para o arquivo. Requer 'Verbosidade do Registro de Eventos' para ser ativado."
+    "Redireciona as mensagens do registro de eventos do sistema para o arquivo. Requer 'Verbosidade do registro de eventos' para ser ativado."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_LOG_TO_FILE_TIMESTAMP,
@@ -1802,7 +1802,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_LOG_TO_FILE_TIMESTAMP,
-    "Redireciona a saída de cada sessão do RetroArch para um novo arquivo com registro de data e hora. Desativar irá sobregravar o registro sempre que o RetroArch for reiniciado."
+    "Redireciona a saída de cada sessão do RetroArch para um novo arquivo com registro de data e hora. Desativar irá sobrescrever o registro sempre que o RetroArch for reiniciado."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MAIN_MENU,
@@ -2430,7 +2430,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_SAVESTATE_RESUME,
-    "Feche automaticamente o menu e continue o conteúdo atual depois de selecionar 'Salvar Jogo' ou 'Carregar Jogo Salvo' no menu rápido. Desativar isso pode melhorar o desempenho ao salvar um jogo em dispositivos muito lentos."
+    "Feche automaticamente o menu e continue o conteúdo atual depois de selecionar 'Salvar jogo' ou 'Carregar jogo salvo' no menu rápido. Desativar isso pode melhorar o desempenho ao salvar um jogo em dispositivos muito lentos."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_INSERT_DISK_RESUME,
@@ -2438,7 +2438,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_INSERT_DISK_RESUME,
-    "Fecha o menu automaticamente e retoma o conteúdo atual depois de selecionar 'Inserir Disco' ou 'Carregar Novo Disco' no menu de Controle de Disco."
+    "Fecha o menu automaticamente e retoma o conteúdo atual depois de selecionar 'Inserir disco' ou 'Carregar novo disco' no menu 'Controle de disco'."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PAUSE_NONACTIVE,
@@ -3500,7 +3500,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_RGUI_INLINE_THUMBNAILS,
-    "Ativa a exibição de miniaturas em escala reduzida durante a visualização das listas de reprodução. Quando desativada, a 'Miniatura Acima' ainda pode ser alternada para tela cheia ao pressionar RetroPad Y."
+    "Ativa a exibição de miniaturas em escala reduzida durante a visualização das listas de reprodução. Quando desativada, a 'Miniatura superior' ainda pode ser alternada para tela cheia ao pressionar RetroPad Y."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_RGUI_SWAP_THUMBNAILS,
@@ -3508,7 +3508,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_RGUI_SWAP_THUMBNAILS,
-    "Alterna as posições de exibição de 'Miniatura acima' e 'Miniatura abaixo'."
+    "Alterna as posições de exibição de 'Miniatura superior' e 'Miniatura inferior'."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_RGUI_THUMBNAIL_DELAY,
@@ -4053,7 +4053,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_3DS_DISPLAY_MODE,
-    "Seleciona entre os modos de exibição 3D e 2D. No modo '3D', os pixels são quadrados e um efeito de profundidade é aplicado ao visualizar o Menu Rápido. O modo '2D' oferece o melhor desempenho."
+    "Seleciona entre os modos de exibição 3D e 2D. No modo '3D', os pixels são quadrados e um efeito de profundidade é aplicado ao visualizar o menu rápido. O modo '2D' oferece o melhor desempenho."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CTR_VIDEO_MODE_3D,
@@ -4290,7 +4290,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_OVERSCAN_CORRECTION_TOP,
-    "Ajuste o corte do overscan da exibição reduzindo o tamanho da imagem pelo número especificado de linhas de varredura (tiradas da parte superior da tela). Nota: pode introduzir artefatos de dimensionamento."
+    "Ajuste o corte do overscan da exibição reduzindo o tamanho da imagem pelo número especificado de linhas de varredura (tiradas da parte superior da tela). NOTA: pode introduzir artefatos de dimensionamento."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_OVERSCAN_CORRECTION_BOTTOM,
@@ -4298,7 +4298,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_OVERSCAN_CORRECTION_BOTTOM,
-    "Ajuste o corte do overscan da exibição reduzindo o tamanho da imagem pelo número especificado de linhas de varredura (tiradas da parte inferior da tela). Nota: pode introduzir artefatos de dimensionamento."
+    "Ajuste o corte do overscan da exibição reduzindo o tamanho da imagem pelo número especificado de linhas de varredura (tiradas da parte inferior da tela). NOTA: pode introduzir artefatos de dimensionamento."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
@@ -4492,11 +4492,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_HISTORY,
-    "Exibir aba de histórico"
+    "Exibir aba 'Histórico'"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_ADD,
-    "Exibir aba de importação de conteúdo"
+    "Exibir aba 'Importar conteúdo'"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_PLAYLISTS,
@@ -4504,27 +4504,27 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_FAVORITES,
-    "Exibir aba de favoritos"
+    "Exibir aba 'Favoritos'"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_IMAGES,
-    "Exibir aba de imagem"
+    "Exibir aba 'Imagem'"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_MUSIC,
-    "Exibir aba de música"
+    "Exibir aba 'Música'"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_SETTINGS,
-    "Exibir aba de configurações"
+    "Exibir aba 'Configurações'"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_VIDEO,
-    "Exibir aba de vídeo"
+    "Exibir aba 'Vídeo'"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_NETPLAY,
-    "Exibir aba de jogo em rede"
+    "Exibir aba 'Jogo em rede'"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_XMB_LAYOUT,
@@ -4766,7 +4766,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES,
-    "Define quantos quadros a CPU pode rodar à frente da GPU quando utilizado o recurso 'Sincronia Rígida de GPU'."
+    "Define quantos quadros a CPU pode rodar à frente da GPU quando utilizado o recurso 'Sincronia rígida de GPU'."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
@@ -4834,11 +4834,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_AUDIO_MUTED,
-    "Sem áudio."
+    "Áudio desabilitado."
     )
 MSG_HASH(
     MSG_AUDIO_UNMUTED,
-    "Áudio normal."
+    "Áudio habilitado."
     )
 MSG_HASH(
     MSG_AUTOCONFIG_FILE_ERROR_SAVING,
@@ -5722,7 +5722,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_INPUT_TURBO_DEFAULT_BUTTON,
-    "O Botão individual para o Modo Turbo."
+    "O botão individual para o modo turbo."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_VSYNC,
@@ -5743,7 +5743,7 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
     "Taxa de atualização vertical da sua tela. Utilizado para calcular uma taxa de saída de áudio adequada.\n"
-    "OBS: Isto será ignorado se a função 'Vídeo Paralelizado' estiver habilitada."
+    "NOTA: Isto será ignorado se a função 'Vídeo paralelizado' estiver habilitada."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_AUDIO_ENABLE,
@@ -5979,12 +5979,12 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
-    "Adiciona um leve embaciado à imagem para suavizar as arestas da borda dos pixels. Esta opção tem pouco impacto no desempenho."
+    "Adiciona um leve embaçado à imagem para suavizar as arestas da borda dos pixels. Esta opção tem pouco impacto no desempenho."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_FILTER,
     "Aplica um filtro de vídeo processado pela CPU.\n"
-    "OBS: Pode vir a um alto custo de desempenho. Alguns filtros de vídeo podem funcionar apenas para núcleos que usam cores de 32 bits ou 16 bits."
+    "NOTA: Pode vir a um alto custo de desempenho. Alguns filtros de vídeo podem funcionar apenas para núcleos que usam cores de 32 bits ou 16 bits."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CHEEVOS_USERNAME,
@@ -6048,7 +6048,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SAVE_POSITION,
-    "Lembre-se do tamanho e posição da janela, permitindo que isso tenha precedência sobre a Escala em Janela."
+    "Lembre-se do tamanho e posição da janela, permitindo que isso tenha precedência sobre a escala em janela."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
@@ -6080,7 +6080,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS_PORT,
-    "Seleciona a porta para a sobreposição escutar se Exibir Comandos na Sobreposição estiver habilitado."
+    "Seleciona a porta para a sobreposição escutar se 'Exibir comandos na sobreposição' estiver habilitado."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_MOUSE_CURSOR,
@@ -6092,7 +6092,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER,
-    "Apenas dimensiona o vídeo em valores inteiros. O tamanho de base depende da geometria relatada pelo sistema e da proporção de tela. Se 'Forçar Proporção' não estiver definido, X / Y serão dimensionados independentemente em valores inteiros."
+    "Apenas dimensiona o vídeo em valores inteiros. O tamanho de base depende da geometria relatada pelo sistema e da proporção de tela. Se 'Forçar proporção' não estiver definido, X / Y serão dimensionados independentemente em valores inteiros."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
@@ -6156,7 +6156,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_RUN_AHEAD_HIDE_WARNINGS,
-    "Oculta a mensagem de advertência que aparece ao usar a 'Execução Antecipada' se o núcleo é compatível com os jogos salvos."
+    "Oculta a mensagem de advertência que aparece ao usar a 'Execução antecipada' se o núcleo é compatível com os jogos salvos."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_REWIND_ENABLE,
@@ -6178,7 +6178,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CHEAT_REPEAT_ADD_TO_ADDRESS,
-    "Após cada 'Número de iterações', o Endereço de Memória será aumentado pelo número de vezes do 'Tamanho da Pesquisa da Memória'."
+    "Após cada 'Número de iterações', o endereço de memória será aumentado pelo número de vezes do 'Tamanho da memória de pesquisa'."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CHEAT_REPEAT_ADD_TO_VALUE,
@@ -6300,7 +6300,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_SAVE,
-    "Cria automaticamente um jogo salvo no final da execução do RetroArch. O RetroArch irá carregar automaticamente este jogo salvo se a função 'Autocarregar jogo salvo' estiver habilitada."
+    "Cria automaticamente um jogo salvo no final da execução do RetroArch. O RetroArch irá carregar automaticamente este jogo salvo se a função 'Carregar automaticamente jogo salvo' estiver habilitada."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_LOAD,
@@ -6632,11 +6632,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_RESUME,
-    "Continua a execução do conteúdo atual e sai do Menu Rápido."
+    "Continua a execução do conteúdo atual e sai do menu rápido."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_RESUME_CONTENT,
-    "Continua a execução do conteúdo atual e sai do Menu Rápido."
+    "Continua a execução do conteúdo atual e sai do menu rápido."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_STATE_SLOT,
@@ -6732,7 +6732,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_THUMBNAILS_DIRECTORY,
-    "Miniaturas auxiliares (arte da embalagem/imagens diversas e etc.) são armazenadas aqui."
+    "Miniaturas auxiliares (arte da caixa/imagens diversas e etc.) são armazenadas aqui."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_RGUI_CONFIG_DIRECTORY,
@@ -7023,11 +7023,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
-    "Deslocamento personalizado no eixo-X da janela de exibição. Será ignorado se a 'Escala com Valores Inteiros' estiver habilitada. Neste caso ela será centralizada automaticamente."
+    "Deslocamento personalizado no eixo-X da janela de exibição. Será ignorado se a 'Escala com valores inteiros' estiver habilitada. Neste caso ela será centralizada automaticamente."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
-    "Deslocamento personalizado no eixo-Y da janela de exibição. Será ignorado se a 'Escala com Valores Inteiros' estiver habilitada. Neste caso ela será centralizada automaticamente."
+    "Deslocamento personalizado no eixo-Y da janela de exibição. Será ignorado se a 'Escala com valores inteiros' estiver habilitada. Neste caso ela será centralizada automaticamente."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NETPLAY_USE_MITM_SERVER,
@@ -7271,7 +7271,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CORE,
-    "Exibi ou oculta a opção 'Carregar Núcleo'."
+    "Exibi ou oculta a opção 'Carregar núcleo'."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT,
@@ -7355,7 +7355,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QUICK_MENU_VIEWS_SETTINGS,
-    "Menu Rápido"
+    "Menu rápido"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_QUICK_MENU_VIEWS_SETTINGS,
@@ -7379,7 +7379,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
-    "Exibir 'Desfazer Salvar/Carregar jogo salvo'"
+    "Exibir 'Desfazer salvamento/carregamento de jogo salvo'"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
@@ -7663,7 +7663,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_RGUI_INTERNAL_UPSCALE_LEVEL,
-    "Redimensiona a interface do menu antes de desenhar na tela. Quando usado com o 'Filtro Linear de Menu' ativado, remove artefatos de escala (pixels ímpares) mantendo uma imagem nítida. Tem um impacto significativo no desempenho que aumenta com o nível de redimensionamento."
+    "Redimensiona a interface do menu antes de desenhar na tela. Quando usado com o 'Filtro linear de menu' ativado, remove artefatos de escala (pixels ímpares) mantendo uma imagem nítida. Tem um impacto significativo no desempenho que aumenta com o nível de redimensionamento."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO,
@@ -8202,7 +8202,7 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_SUBLABEL_DISCORD_ALLOW,
     "Habilitar ou desabilitar o suporte ao Discord.\n"
-    "OBS: Não funcionará com a versão do navegador, apenas o cliente nativo de desktop."
+    "NOTA: Não funcionará com a versão do navegador, apenas o cliente nativo de desktop."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MIDI_INPUT,
@@ -8986,7 +8986,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_PLAYLIST_THUMBNAIL_PROGRESS,
-    "Sucedido: %1 Falhou: %2"
+    "Obtidas: %1 Falhou: %2"
     )
 MSG_HASH(
     MSG_DEVICE_CONFIGURED_IN_PORT,
@@ -9399,7 +9399,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
-    "Seleciona o formato de data e hora da último partida, mostrando o registro de execução. Nota: As opções AM/PM afetam ligeiramente o desempenho em algumas plataformas."
+    "Seleciona o formato de data e hora da último partida, mostrando o registro de execução. NOTA: As opções AM/PM afetam ligeiramente o desempenho em algumas plataformas."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE_YMD_HMS,
@@ -9543,7 +9543,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_DISC_DUMP_FAILED_TO_READ_FROM_DRIVE,
-    "Falha ao ler da unidade. Processo de dumpagem abortada."
+    "Falha ao ler a unidade. Processo de dumpagem abortada."
     )
 MSG_HASH(
     MSG_DISC_DUMP_FAILED_TO_WRITE_TO_DISK,
@@ -9671,7 +9671,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_AI_SERVICE_TARGET_LANG,
-    "O idioma para o qual o serviço será traduzido. Se definido como 'Não Importa', o padrão será inglês."
+    "O idioma para o qual o serviço será traduzido. Se definido como 'Não importa', o padrão será inglês."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_AI_SERVICE_SOURCE_LANG,
@@ -9679,7 +9679,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_AI_SERVICE_SOURCE_LANG,
-    "O idioma do qual o serviço será traduzido. Se definido como 'Não Importa', ele tentará detectar automaticamente o idioma. A configuração para um idioma específico tornará a tradução mais precisa."
+    "O idioma do qual o serviço será traduzido. Se definido como 'Não importa', ele tentará detectar automaticamente o idioma. A configuração para um idioma específico tornará a tradução mais precisa."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_LANG_CZECH,
@@ -10333,7 +10333,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_SCALING_SETTINGS,
-    "Escalado"
+    "Escala"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_SCALING_SETTINGS,
