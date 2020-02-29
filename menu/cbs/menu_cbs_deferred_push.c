@@ -793,6 +793,7 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_MANUAL_CONTENT_SCAN_SYSTEM_NAME, deferred_push_dropdown_box_list_manual_content_scan_system_name},
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_MANUAL_CONTENT_SCAN_CORE_NAME, deferred_push_dropdown_box_list_manual_content_scan_core_name},
       {MENU_ENUM_LABEL_DEFERRED_RECORDING_SETTINGS_LIST, deferred_push_recording_settings_list},
+      {MENU_ENUM_LABEL_COLLECTION, deferred_push_content_collection_list},
    };
 
    for (i = 0; i < ARRAY_SIZE(info_list); i++)
@@ -1352,9 +1353,6 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
             break;
          case MENU_LABEL_CORE_INPUT_REMAPPING_OPTIONS:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_input_remapping_options);
-            break;
-         case MENU_LABEL_PLAYLISTS_TAB:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_content_collection_list);
             break;
          case MENU_LABEL_CONFIGURATIONS:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_configurations);
