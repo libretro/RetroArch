@@ -113,6 +113,7 @@ static void menu_action_setting_disp_set_label_cheat_num_passes(
    snprintf(s, len, "%u", cheat_manager_get_buf_size());
 }
 
+#ifdef HAVE_CHEEVOS
 static void menu_action_setting_disp_set_label_cheevos_entry(
    file_list_t* list,
    unsigned *w, unsigned type, unsigned i,
@@ -126,6 +127,7 @@ static void menu_action_setting_disp_set_label_cheevos_entry(
 
    rcheevos_get_achievement_state(type - MENU_SETTINGS_CHEEVOS_START, s, len);
 }
+#endif
 
 static void menu_action_setting_disp_set_label_remap_file_load(
       file_list_t* list,
@@ -1759,8 +1761,10 @@ int menu_cbs_init_bind_get_string_representation(menu_file_list_cbs_t *cbs,
       switch (cbs->enum_idx)
       {
          case MENU_ENUM_LABEL_CHEEVOS_LOCKED_ENTRY:
+#ifdef HAVE_CHEEVOS
             BIND_ACTION_GET_VALUE(cbs,
                   menu_action_setting_disp_set_label_cheevos_entry);
+#endif
             return 0;
          case MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY:
          case MENU_ENUM_LABEL_SYSTEM_INFORMATION:
