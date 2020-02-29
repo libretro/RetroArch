@@ -794,6 +794,10 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_MANUAL_CONTENT_SCAN_CORE_NAME, deferred_push_dropdown_box_list_manual_content_scan_core_name},
       {MENU_ENUM_LABEL_DEFERRED_RECORDING_SETTINGS_LIST, deferred_push_recording_settings_list},
       {MENU_ENUM_LABEL_COLLECTION, deferred_push_content_collection_list},
+      {MENU_ENUM_LABEL_SETTINGS,   deferred_push_settings},
+      {MENU_ENUM_LABEL_CONFIGURATIONS_LIST, deferred_push_configurations_list},
+      {MENU_ENUM_LABEL_DEFERRED_PLAYLIST_MANAGER_LIST, deferred_push_playlist_manager_list},
+      {MENU_ENUM_LABEL_DEFERRED_PLAYLIST_MANAGER_SETTINGS, deferred_push_playlist_manager_settings},
    };
 
    for (i = 0; i < ARRAY_SIZE(info_list); i++)
@@ -1182,22 +1186,6 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
          default:
             return -1;
       }
-   }
-   else if (string_is_equal(label, "settings"))
-   {
-      BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_settings);
-   }
-   else if (string_is_equal(label, "configurations_list"))
-   {
-      BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_configurations_list);
-   }
-   else if (string_is_equal(label, "deferred_playlist_manager_list"))
-   {
-      BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_playlist_manager_list);
-   }
-   else if (string_is_equal(label, "deferred_playlist_manager_settings"))
-   {
-      BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_playlist_manager_settings);
    }
    else
    {
