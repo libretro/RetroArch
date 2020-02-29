@@ -21168,11 +21168,11 @@ static void video_driver_monitor_adjust_system_rates(void)
 {
    float timing_skew                      = 0.0f;
    settings_t *settings                   = configuration_settings;
-   float video_refresh_rate               = settings->floats.video_refresh_rate;
-   float timing_skew_hz                   = video_refresh_rate;
    const struct retro_system_timing *info = (const struct retro_system_timing*)&video_driver_av_info.timing;
-
-   runloop_force_nonblock                 = false;
+   float video_refresh_rate               = settings->floats.video_refresh_rate;
+   bool vrr_runloop_enable                = settings->bools.vrr_runloop_enable;
+   float audio_max_timing_skew            = settings->floats.audio_max_timing_skew;
+   float timing_skew_hz                   = video_refresh_rate;
 
    if (!info || info->fps <= 0.0)
       return;
@@ -21184,11 +21184,11 @@ static void video_driver_monitor_adjust_system_rates(void)
    timing_skew                             = fabs(
          1.0f - info->fps / timing_skew_hz);
 
-   if (!settings->bools.vrr_runloop_enable)
+   if (!vrr_runloop_enable)
    {
       /* We don't want to adjust pitch too much. If we have extreme cases,
        * just don't readjust at all. */
-      if (timing_skew <= settings->floats.audio_max_timing_skew)
+      if (timing_skew <= audio_max_timing_skew)
          return;
 
       RARCH_LOG("[Video]: Timings deviate too much. Will not adjust."
@@ -23390,6 +23390,9 @@ static bool driver_find_next(const char *label, char *s, size_t len)
 static void driver_adjust_system_rates(void)
 {
    audio_driver_monitor_adjust_system_rates();
+
+   runloop_force_nonblock                 = false;
+
    video_driver_monitor_adjust_system_rates();
 
    if (!video_driver_get_ptr_internal(false))
@@ -23419,8 +23422,12 @@ static void driver_adjust_system_rates(void)
  **/
 void driver_set_nonblock_state(void)
 {
-   settings_t       *settings  = configuration_settings;
    bool                 enable = input_driver_nonblock_state;
+   settings_t       *settings  = configuration_settings;
+   bool audio_sync             = settings->bools.audio_sync;
+   bool video_vsync            = settings->bools.video_vsync;
+   bool adaptive_vsync         = settings->bools.video_adaptive_vsync;
+   unsigned swap_interval      = settings->uints.video_swap_interval;
 
    /* Only apply non-block-state for video if we're using vsync. */
    if (video_driver_active && video_driver_get_ptr_internal(false))
@@ -23428,19 +23435,17 @@ void driver_set_nonblock_state(void)
       if (current_video->set_nonblock_state)
       {
          bool video_nonblock        = enable;
-         if (!settings->bools.video_vsync || runloop_force_nonblock)
+         if (!video_vsync || runloop_force_nonblock)
             video_nonblock = true;
          current_video->set_nonblock_state(video_driver_data, video_nonblock,
                video_driver_test_all_flags(GFX_CTX_FLAGS_ADAPTIVE_VSYNC) &&
-               settings->bools.video_adaptive_vsync,
-               settings->uints.video_swap_interval
-               );
+               adaptive_vsync, swap_interval);
       }
    }
 
    if (audio_driver_active && audio_driver_context_audio_data)
       current_audio->set_nonblock_state(audio_driver_context_audio_data,
-            settings->bools.audio_sync ? enable : true);
+            audio_sync ? enable : true);
    audio_driver_chunk_size = enable
       ? audio_driver_chunk_nonblock_size
       : audio_driver_chunk_block_size;
@@ -24385,8 +24390,10 @@ static void do_runahead(int runahead_count, bool use_secondary)
    {
       if (!runahead_create())
       {
-         settings_t *settings = configuration_settings;
-         if (!settings->bools.run_ahead_hide_warnings)
+         settings_t *settings        = configuration_settings;
+         bool runahead_hide_warnings = settings->bools.run_ahead_hide_warnings;
+
+         if (!runahead_hide_warnings)
             runloop_msg_queue_push(msg_hash_to_str(MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_SAVESTATES), 0, 2 * 60, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          goto force_input_dirty;
       }
@@ -24512,8 +24519,8 @@ static retro_time_t rarch_core_runtime_tick(retro_time_t current_time)
    if (runloop_slowmotion)
    {
       settings_t *settings       = configuration_settings;
-      return (retro_time_t)((double)
-            frame_time * settings->floats.slowmotion_ratio);
+      float slowmotion_ratio     = settings->floats.slowmotion_ratio;
+      return (retro_time_t)((double)frame_time * slowmotion_ratio);
    }
 
    /* Account for fast forward */
@@ -25927,24 +25934,30 @@ static void menu_driver_toggle(bool on)
 void retroarch_menu_running(void)
 {
 #if defined(HAVE_MENU) || defined(HAVE_OVERLAY)
-   settings_t *settings        = configuration_settings;
+   settings_t *settings            = configuration_settings;
 #endif
+#ifdef HAVE_OVERLAY
+   bool input_overlay_hide_in_menu = settings->bools.input_overlay_hide_in_menu;
+#endif
+#ifdef HAVE_AUDIOMIXER
+   bool audio_enable_menu          = settings->bools.audio_enable_menu;
+   bool audio_enable_menu_bgm      = settings->bools.audio_enable_menu_bgm;
+#endif
+
 #ifdef HAVE_MENU
    menu_driver_toggle(true);
 
-   /* Prevent stray input
-    * (for a single frame) */
+   /* Prevent stray input (for a single frame) */
    input_driver_flushing_input = 1;
 
 #ifdef HAVE_AUDIOMIXER
-   if (settings->bools.audio_enable_menu
-         && settings->bools.audio_enable_menu_bgm)
+   if (audio_enable_menu && audio_enable_menu_bgm)
       audio_driver_mixer_play_menu_sound_looped(AUDIO_MIXER_SYSTEM_SLOT_BGM);
 #endif
 #endif
 
 #ifdef HAVE_OVERLAY
-   if (settings->bools.input_overlay_hide_in_menu)
+   if (input_overlay_hide_in_menu)
       command_event(CMD_EVENT_OVERLAY_DEINIT, NULL);
 #endif
 }
@@ -26049,8 +26062,9 @@ static void rarch_init_core_options_path(
       char *path, size_t len,
       char *src_path, size_t src_len)
 {
-   settings_t *settings           = configuration_settings;
    char *game_options_path        = NULL;
+   settings_t *settings           = configuration_settings;
+   bool game_specific_options     = settings->bools.game_specific_options;
 
    /* Ensure that 'input' strings are null terminated */
    if (len > 0)
@@ -26059,7 +26073,7 @@ static void rarch_init_core_options_path(
       src_path[0] = '\0';
 
    /* Check whether game-specific options exist */
-   if (settings->bools.game_specific_options &&
+   if (game_specific_options &&
          rarch_game_specific_options(&game_options_path))
    {
       /* Notify system that we have a valid core options
@@ -26076,8 +26090,9 @@ static void rarch_init_core_options_path(
    {
       char global_options_path[PATH_MAX_LENGTH];
       char per_core_options_path[PATH_MAX_LENGTH];
-      bool per_core_options       = !settings->bools.global_core_options;
-      bool per_core_options_exist = false;
+      bool per_core_options_exist   = false;
+      bool per_core_options         = !settings->bools.global_core_options;
+      const char *path_core_options = settings->paths.path_core_options;
 
       global_options_path[0]   = '\0';
       per_core_options_path[0] = '\0';
@@ -26101,7 +26116,7 @@ static void rarch_init_core_options_path(
        * file does not yet exist, must fetch 'global' options path */
       if (!per_core_options || !per_core_options_exist)
       {
-         const char *options_path = settings ? settings->paths.path_core_options : NULL;
+         const char *options_path = path_core_options;
 
          if (!string_is_empty(options_path))
             strlcpy(global_options_path, options_path, sizeof(global_options_path));
@@ -26581,10 +26596,10 @@ static bool retroarch_load_shader_preset(void)
 
    const char *game_name              = path_basename(rarch_path_basename);
    char *shader_directory             = NULL;
+   bool auto_shaders_enable           = settings->bools.auto_shaders_enable;
 
-   if (!settings->bools.auto_shaders_enable)
+   if (!auto_shaders_enable)
       return false;
-
    if (string_is_empty(video_shader_directory))
       return false;
 
@@ -26648,13 +26663,15 @@ success:
 const char* retroarch_get_shader_preset(void)
 {
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-   settings_t *settings  = configuration_settings;
-   const char *core_name = runloop_system.info.library_name;
+   settings_t *settings        = configuration_settings;
+   const char *core_name       = runloop_system.info.library_name;
+   bool video_shader_enable    = settings->bools.video_shader_enable;
+   unsigned video_shader_delay = settings->uints.video_shader_delay;
 
-   if (!settings->bools.video_shader_enable)
+   if (!video_shader_enable)
       return NULL;
 
-   if (settings->uints.video_shader_delay && !shader_delay_timer.timer_end)
+   if (video_shader_delay && !shader_delay_timer.timer_end)
       return NULL;
 
    /* disallow loading auto-shaders when no core is loaded */
@@ -27073,9 +27090,9 @@ static bool input_driver_toggle_button_combo(
 #if defined(HAVE_MENU)
 static bool menu_display_libretro_running(void)
 {
-   settings_t *settings = configuration_settings;
-   bool check           =
-         !settings->bools.menu_pause_libretro
+   settings_t *settings     = configuration_settings;
+   bool menu_pause_libretro = settings->bools.menu_pause_libretro;
+   bool check               = !menu_pause_libretro
       && rarch_is_inited
       && (current_core_type != CORE_TYPE_DUMMY);
    return check;
@@ -27120,11 +27137,13 @@ static void update_savestate_slot(void)
 {
    char msg[128];
    settings_t *settings = configuration_settings;
+   int state_slot       = settings->ints.state_slot;
+
    msg[0] = '\0';
 
    snprintf(msg, sizeof(msg), "%s: %d",
          msg_hash_to_str(MSG_STATE_SLOT),
-         settings->ints.state_slot);
+         state_slot);
 
    runloop_msg_queue_push(msg, 2, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
@@ -27167,17 +27186,17 @@ static enum runloop_state runloop_check_state(retro_time_t current_time)
 #endif
    static bool old_focus               = true;
    settings_t *settings                = configuration_settings;
-   float fastforward_ratio             = settings->floats.fastforward_ratio;
    bool is_focused                     = false;
    bool is_alive                       = false;
    uint64_t frame_count                = 0;
    bool focused                        = true;
-   bool pause_nonactive                = settings->bools.pause_nonactive;
    bool rarch_is_initialized           = rarch_is_inited;
+   float fastforward_ratio             = settings->floats.fastforward_ratio;
+   bool pause_nonactive                = settings->bools.pause_nonactive;
 #ifdef HAVE_MENU
+   unsigned menu_toggle_gamepad_combo  = settings->uints.input_menu_toggle_gamepad_combo;
    bool menu_driver_binding_state      = menu_driver_is_binding;
    bool menu_is_alive                  = menu_driver_alive;
-   unsigned menu_toggle_gamepad_combo  = settings->uints.input_menu_toggle_gamepad_combo;
    bool display_kb                     = menu_input_dialog_get_display_kb();
 #endif
 
