@@ -159,15 +159,6 @@ void rarch_timer_end(rarch_timer_t *timer)
    timer->timeout_end = 0;
 }
 
-void rarch_timer_begin_new_time(rarch_timer_t *timer, uint64_t sec)
-{
-   if (!timer)
-      return;
-   timer->timeout_us  = sec * 1000000;
-   timer->current     = cpu_features_get_time_usec();
-   timer->timeout_end = timer->current + timer->timeout_us;
-}
-
 void rarch_timer_begin_new_time_us(rarch_timer_t *timer, uint64_t usec)
 {
    if (!timer)
@@ -181,7 +172,7 @@ void rarch_timer_begin(rarch_timer_t *timer, uint64_t sec)
 {
    if (!timer)
       return;
-   rarch_timer_begin_new_time(timer, sec);
+   rarch_timer_begin_new_time_us(timer, sec * 1000000);
    timer->timer_begin = true;
    timer->timer_end   = false;
 }

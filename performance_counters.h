@@ -99,8 +99,6 @@ void rarch_timer_begin(rarch_timer_t *timer, uint64_t sec);
 
 void rarch_timer_begin_us(rarch_timer_t *timer, uint64_t usec);
 
-void rarch_timer_begin_new_time(rarch_timer_t *timer, uint64_t sec);
-
 void rarch_timer_begin_new_time_us(rarch_timer_t *timer, uint64_t usec);
 
 void rarch_timer_end(rarch_timer_t *timer);

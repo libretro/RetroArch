@@ -99,7 +99,8 @@ static bool input_joypad_hat_raw(const input_device_driver_t *drv,
 static bool menu_input_key_bind_custom_bind_keyboard_cb(
       void *data, unsigned code)
 {
-   settings_t     *settings = config_get_ptr();
+   settings_t     *settings    = config_get_ptr();
+   uint64_t timeout_end_us     = settings->uints.input_bind_hold * 1000000;
 
    /* store key in bind */
    menu_input_binds.buffer.key = (enum retro_key)code;
@@ -111,8 +112,10 @@ static bool menu_input_key_bind_custom_bind_keyboard_cb(
    menu_input_binds.begin++;
    menu_input_binds.output++;
    menu_input_binds.buffer=*(menu_input_binds.output);
-   rarch_timer_begin_new_time(&menu_input_binds.timer_hold, settings->uints.input_bind_hold);
-   rarch_timer_begin_new_time(&menu_input_binds.timer_timeout, settings->uints.input_bind_timeout);
+   rarch_timer_begin_new_time_us(
+         &menu_input_binds.timer_hold, timeout_end_us);
+   rarch_timer_begin_new_time_us(
+         &menu_input_binds.timer_timeout, timeout_end_us);
 
    return (menu_input_binds.begin <= menu_input_binds.last);
 }
@@ -291,6 +294,7 @@ bool menu_input_key_bind_set_mode(
    rarch_setting_t  *setting = (rarch_setting_t*)data;
    settings_t *settings      = config_get_ptr();
    menu_handle_t       *menu = menu_driver_get_ptr();
+   uint64_t timeout_end_us   = settings->uints.input_bind_hold * 1000000;
 
    if (!setting || !menu)
       return false;
@@ -305,8 +309,8 @@ bool menu_input_key_bind_set_mode(
    menu_input_key_bind_poll_bind_state(
          &menu_input_binds, menu_bind_port, false);
 
-   rarch_timer_begin_new_time(&menu_input_binds.timer_hold, settings->uints.input_bind_hold);
-   rarch_timer_begin_new_time(&menu_input_binds.timer_timeout, settings->uints.input_bind_timeout);
+   rarch_timer_begin_new_time_us(&menu_input_binds.timer_hold, timeout_end_us);
+   rarch_timer_begin_new_time_us(&menu_input_binds.timer_timeout, timeout_end_us);
 
    keys.userdata = menu;
    keys.cb       = menu_input_key_bind_custom_bind_keyboard_cb;
@@ -571,6 +575,7 @@ bool menu_input_key_bind_iterate(menu_input_ctx_bind_t *bind,
 {
    bool               timed_out = false;
    settings_t *        settings = config_get_ptr();
+   uint64_t timeout_end_us      = settings->uints.input_bind_hold * 1000000;
 
    if (!bind)
       return false;
@@ -596,8 +601,8 @@ bool menu_input_key_bind_iterate(menu_input_ctx_bind_t *bind,
       /*skip to next bind*/
       menu_input_binds.begin++;
       menu_input_binds.output++;
-      rarch_timer_begin_new_time(&menu_input_binds.timer_hold, settings->uints.input_bind_hold);
-      rarch_timer_begin_new_time(&menu_input_binds.timer_timeout, settings->uints.input_bind_timeout);
+      rarch_timer_begin_new_time_us(&menu_input_binds.timer_hold, timeout_end_us);
+      rarch_timer_begin_new_time_us(&menu_input_binds.timer_timeout, timeout_end_us);
       timed_out = true;
    }
 
@@ -632,7 +637,7 @@ bool menu_input_key_bind_iterate(menu_input_ctx_bind_t *bind,
       if (menu_input_key_bind_poll_find_hold(&binds, &binds.buffer))
       {
          /*inhibit timeout*/
-         rarch_timer_begin_new_time( &binds.timer_timeout, settings->uints.input_bind_timeout );
+         rarch_timer_begin_new_time_us( &binds.timer_timeout, timeout_end_us);
 
          /*run hold timer*/
          rarch_timer_tick( &binds.timer_hold, current_time);
@@ -649,7 +654,7 @@ bool menu_input_key_bind_iterate(menu_input_ctx_bind_t *bind,
       else
       {
          /*reset hold countdown*/
-         rarch_timer_begin_new_time( &binds.timer_hold, settings->uints.input_bind_hold );
+         rarch_timer_begin_new_time_us(&binds.timer_hold, timeout_end_us);
       }
 
 #else
@@ -686,8 +691,8 @@ bool menu_input_key_bind_iterate(menu_input_ctx_bind_t *bind,
          /*next bind*/
          binds.output++;
          binds.buffer = *( binds.output );
-         rarch_timer_begin_new_time( &binds.timer_hold, settings->uints.input_bind_hold );
-         rarch_timer_begin_new_time( &binds.timer_timeout, settings->uints.input_bind_timeout );
+         rarch_timer_begin_new_time_us(&binds.timer_hold, timeout_end_us);
+         rarch_timer_begin_new_time_us(&binds.timer_timeout, timeout_end_us);
       }
 
       menu_input_binds = binds;
