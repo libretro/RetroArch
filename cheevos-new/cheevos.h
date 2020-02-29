@@ -45,6 +45,7 @@ bool rcheevos_load(const void *data);
 void rcheevos_reset_game(void);
 
 void rcheevos_populate_menu(void *data);
+void rcheevos_get_achievement_state(unsigned index, char* buffer, size_t buffer_size);
 
 bool rcheevos_get_description(rcheevos_ctx_desc_t *desc);
 
