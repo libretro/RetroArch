@@ -55,15 +55,15 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
        {
           case RARCH_FAST_FORWARD_KEY:
              snprintf(s, len,
-                   "Alternar entre Avanço rápido e \n"
+                   "Alternar entre avanço rápido e \n"
                    "velocidade normal."
                    );
              break;
           case RARCH_FAST_FORWARD_HOLD_KEY:
              snprintf(s, len,
-                   "Manter pressionado para Avanço rápido. \n"
+                   "Manter pressionado para avanço rápido. \n"
                    " \n"
-                   "Soltar o botão desativa o Avanço rápido."
+                   "Soltar o botão desativa o avanço rápido."
                    );
              break;
           case RARCH_SLOWMOTION_KEY:
@@ -72,7 +72,7 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
              break;
           case RARCH_SLOWMOTION_HOLD_KEY:
              snprintf(s, len,
-                   "Manter pressionado para Câmera lenta.");
+                   "Manter pressionado para câmera lenta.");
              break;
           case RARCH_PAUSE_TOGGLE:
              snprintf(s, len,
@@ -106,7 +106,7 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
              break;
           case RARCH_MUTE:
              snprintf(s, len,
-                   "Áudio mudo/não-mudo.");
+                   "Habilitar/desabilitar áudio.");
              break;
           case RARCH_OSK:
              snprintf(s, len,
@@ -151,7 +151,7 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
              break;
           case RARCH_OVERLAY_NEXT:
              snprintf(s, len,
-                   "Mudar para a próxima Sobreposição.");
+                   "Mudar para a próxima sobreposição.");
              break;
           case RARCH_DISK_EJECT_TOGGLE:
              snprintf(s, len,
@@ -172,7 +172,7 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
                    "Alternar captura de Mouse. \n"
                    " \n"
                    "Quando o Mouse é capturado, o RetroArch oculta \n"
-                   "o cursor do Mouse, e mantém o Mouse dentro \n"
+                   "o cursor do mouse, e mantém o mouse dentro \n"
                    "da janela para permitir que a entrada de Mouse \n"
                    "relativa funcione melhor.");
              break;
@@ -202,8 +202,8 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
                    "Encerrá-lo de forma brusca (SIGKILL, etc.) irá \n"
                    "terminar o RetroArch sem salvar RAM, etc."
 #ifdef __unix__
-                   "\nEm Unix-likes, SIGINT/SIGTERM permitem \n"
-                   "uma desinicialização limpa."
+                   "\nEm sistemas do tipo Unix, SIGINT/SIGTERM \n"
+                   "permitem uma desinicialização limpa."
 #endif
                    "");
              break;
@@ -270,7 +270,7 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
                     "Requer a reinicialização para que as \n"
                     "alterações entrem em vigor. \n"
                     " \n"
-                    "OBS: nem todos os idiomas podem estar atualmente \n"
+                    "NOTA: nem todos os idiomas podem estar atualmente \n"
                     "implementados. \n"
                     " \n"
                     "No caso de um idioma não estar implementado, \n"
@@ -321,10 +321,10 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
             snprintf(s, len, "Capturar a tela. \n"
                     " \n"
                     "As imagens capturadas serão armazenadas dentro \n"
-                    "do Diretório de Captura de Telas.");
+                    "do diretório de captura de telas.");
             break;
         case MENU_ENUM_LABEL_ADD_TO_FAVORITES:
-            snprintf(s, len, "Adicionar o item aos seus Favoritos.");
+            snprintf(s, len, "Adicionar o item aos seus favoritos.");
             break;
         case MENU_ENUM_LABEL_RUN:
             snprintf(s, len, "Iniciar o conteúdo.");
@@ -359,27 +359,27 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
         case MENU_ENUM_LABEL_CONTENT_DATABASE_DIRECTORY:
             snprintf(s, len,
-                     "Diretório da Base de Dados de Conteúdo. \n"
+                     "Diretório da base de dados de conteúdo. \n"
                              " \n"
                              "Caminho para o diretório \n"
                              "da base de dados de conteúdo.");
             break;
         case MENU_ENUM_LABEL_THUMBNAILS_DIRECTORY:
             snprintf(s, len,
-                     "Diretório de Miniaturas. \n"
+                     "Diretório de miniaturas. \n"
                              " \n"
                              "Para armazenar arquivos de miniaturas.");
             break;
         case MENU_ENUM_LABEL_LIBRETRO_INFO_PATH:
             snprintf(s, len,
-                     "Diretório de Informações de Núcleos. \n"
+                     "Diretório de informações de núcleos. \n"
                              " \n"
                              "Um diretório por onde procurar \n"
                              "informação sobre os núcleos Libretro.");
             break;
         case MENU_ENUM_LABEL_PLAYLIST_DIRECTORY:
             snprintf(s, len,
-                     "Diretório de Lista de Reprodução. \n"
+                     "Diretório de lista de reprodução. \n"
                              " \n"
                              "Salva todos os arquivos de \n"
                              "lista de reprodução neste diretório.");
@@ -628,11 +628,11 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
         case MENU_ENUM_LABEL_INPUT_OVERLAY_ENABLE:
             snprintf(s, len,
                      "Habilitar ou desabilitar \n"
-                     "a Sobreposição atual.");
+                     "a sobreposição atual.");
             break;
         case MENU_ENUM_LABEL_INPUT_OVERLAY_HIDE_IN_MENU:
             snprintf(s, len,
-                     "Ocultar a exibição de Sobreposição \n"
+                     "Ocultar a exibição de sobreposição \n"
                              "dentro do menu.");
             break;
         case MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS:
@@ -647,7 +647,7 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
         case MENU_ENUM_LABEL_OVERLAY_PRESET:
             snprintf(s, len,
-                     "Caminho para predefinição de Sobreposição.");
+                     "Caminho para predefinição de sobreposição.");
             break;
         case MENU_ENUM_LABEL_OVERLAY_OPACITY:
             snprintf(s, len,
@@ -742,7 +742,7 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
                             " \n";
             snprintf(u, sizeof(u), /* can't inline this due to the printf arguments */
                      "a) Vá para '%s' -> '%s', e habilite \n"
-                             "'Vídeo Paralelizado'. A taxa de atualização \n"
+                             "'Vídeo paralelizado'. A taxa de atualização \n"
                              "não irá importar neste modo, a taxa de \n"
                              "quadros será maior, mas o vídeo será \n"
                              "menos fluído. \n"
@@ -775,7 +775,7 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
                              "em vez de ter que utilizar o \n"
                              "navegador de arquivos todas as vezes.\n"
                              " \n"
-                             "OBS: Conteúdo para alguns núcleos pode ainda \n"
+                             "NOTA: Conteúdo para alguns núcleos pode ainda \n"
                              "não ser reconhecido.",
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST),
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_DIRECTORY),
@@ -1105,7 +1105,7 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
                      "Filtro de hardware para esse estágio. \n"
                              " \n"
                              "Se 'Não importa' estiver definido, \n"
-                             "'Filtro Padrão' será utilizado."
+                             "'Filtro padrão' será utilizado."
             );
             break;
         case MENU_ENUM_LABEL_AUTOSAVE_INTERVAL:
@@ -1380,7 +1380,7 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
                              "O tamanho de base depende da geometria \n"
                              "relatada pelo sistema e da proporção de tela.\n"
                              " \n"
-                             "Se a função 'Forçar Proporção' não estiver \n"
+                             "Se a função 'Forçar proporção' não estiver \n"
                              "definida, X / Y serão dimensionados em \n"
                              "valores inteiros independentemente.");
             break;
@@ -1466,7 +1466,7 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
                              "O RetroArch irá carregar automaticamente \n"
                              "qualquer jogo salvo com esse caminho \n"
                              "na inicialização se a função \n"
-                             "'Autocarregar jogo salvo' \n"
+                             "'Carregar automaticamente jogo salvo' \n"
                              "estiver habilitada.");
             break;
         case MENU_ENUM_LABEL_VIDEO_THREADED:
@@ -2284,7 +2284,7 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
                              "De lá você pode alterar a sobreposição, \n"
                              "mudar o tamanho e opacidade dos botões, etc. \n"
                              " \n"
-                             "OBS: Por padrão, as sobreposições de gamepad \n"
+                             "NOTA: Por padrão, as sobreposições de gamepad \n"
                              "virtual ficam ocultas quando dentro do menu. \n"
                              "Se você quiser alterar este comportamento, \n"
                              "você pode definir '%s' como falso.",
