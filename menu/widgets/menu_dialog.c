@@ -40,7 +40,8 @@ static unsigned              menu_dialog_current_id     = 0;
 static enum menu_dialog_type menu_dialog_current_type   = MENU_DIALOG_NONE;
 static enum msg_hash_enums   menu_dialog_current_msg    = MSG_UNKNOWN;
 
-int menu_dialog_iterate(char *s, size_t len, const char *label)
+int menu_dialog_iterate(char *s, size_t len, const char *label,
+      retro_time_t current_time)
 {
 #ifdef HAVE_CHEEVOS
    rcheevos_ctx_desc_t desc_info;
@@ -56,7 +57,7 @@ int menu_dialog_iterate(char *s, size_t len, const char *label)
             if (!rarch_timer_is_running(&timer))
                rarch_timer_begin(&timer, 3);
 
-            rarch_timer_tick(&timer);
+            rarch_timer_tick(&timer, current_time);
 
             menu_hash_get_help_enum(
                   MENU_ENUM_LABEL_WELCOME_TO_RETROARCH,

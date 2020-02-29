@@ -89,7 +89,7 @@ void rarch_perf_register(struct retro_perf_counter *perf);
  **/
 #define performance_counter_stop_plus(is_perfcnt_enable, perf) performance_counter_stop_internal(is_perfcnt_enable, perf)
 
-void rarch_timer_tick(rarch_timer_t *timer);
+void rarch_timer_tick(rarch_timer_t *timer, retro_time_t current_time);
 
 bool rarch_timer_is_running(rarch_timer_t *timer);
 

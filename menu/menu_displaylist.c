@@ -5331,8 +5331,8 @@ unsigned menu_displaylist_build_list(
          {
             settings_t *settings              = config_get_ptr();
             bool show_hidden_files            = settings->bools.show_hidden_files;
-            const char *path_content_database = settings->paths.path_content_database;
 #ifdef HAVE_LIBRETRODB
+            const char *path_content_database = settings->paths.path_content_database;
             struct string_list *system_name_list = 
                manual_content_scan_get_menu_system_name_list(
                      path_content_database,

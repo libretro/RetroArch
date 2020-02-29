@@ -27,6 +27,7 @@
 #include <lists/string_list.h>
 #include <streams/file_stream.h>
 #include <string/stdstring.h>
+#include <features/features_cpu.h>
 #include <encodings/utf.h>
 
 #ifdef HAVE_CONFIG_H
@@ -116,15 +117,17 @@ static enum action_iterate_type action_iterate_type(const char *label)
 static int generic_menu_iterate(void *data,
       void *userdata, enum menu_action action)
 {
-   static enum action_iterate_type last_iterate_type = ITERATE_TYPE_DEFAULT;
-
+#ifdef HAVE_ACCESSIBILITY
+   static enum action_iterate_type 
+      last_iterate_type           = ITERATE_TYPE_DEFAULT;
+#endif
    enum action_iterate_type iterate_type;
    unsigned file_type             = 0;
    int ret                        = 0;
    const char *label              = NULL;
    menu_handle_t *menu            = (menu_handle_t*)data;
-
-   (void)last_iterate_type;
+   /* TODO/FIXME - menus should take current time from retroarch.c */
+   retro_time_t current_time      = cpu_features_get_time_usec();
 
    if (!menu)
       return 0;
@@ -147,7 +150,8 @@ static int generic_menu_iterate(void *data,
    {
       case ITERATE_TYPE_HELP:
          ret = menu_dialog_iterate(
-               menu->menu_state_msg, sizeof(menu->menu_state_msg), label);
+               menu->menu_state_msg, sizeof(menu->menu_state_msg), label,
+               current_time);
 
 #ifdef HAVE_ACCESSIBILITY
          if (iterate_type != last_iterate_type && is_accessibility_enabled())
@@ -175,7 +179,7 @@ static int generic_menu_iterate(void *data,
             bind.s   = menu->menu_state_msg;
             bind.len = sizeof(menu->menu_state_msg);
 
-            if (menu_input_key_bind_iterate(&bind))
+            if (menu_input_key_bind_iterate(&bind, current_time))
             {
                size_t selection = menu_navigation_get_selection();
                menu_entries_pop_stack(&selection, 0, 0);
@@ -333,9 +337,10 @@ static int generic_menu_iterate(void *data,
 #ifdef HAVE_ACCESSIBILITY
    if ((last_iterate_type == ITERATE_TYPE_HELP || last_iterate_type == ITERATE_TYPE_INFO) && last_iterate_type != iterate_type && is_accessibility_enabled())
       accessibility_speak_priority("Closed dialog.", 10);
-#endif
 
    last_iterate_type = iterate_type;
+#endif
+
    BIT64_SET(menu->state, MENU_STATE_BLIT);
 
    if (BIT64_GET(menu->state, MENU_STATE_POP_STACK))

@@ -3552,6 +3552,7 @@ static const void *hid_data                       = NULL;
 static enum rarch_core_type last_core_type;
 static retro_ctx_load_content_info_t *load_content_info;
 
+#if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
 static char *strcpy_alloc(const char *src)
 {
    char *result = NULL;
@@ -3573,7 +3574,6 @@ static char *strcpy_alloc_force(const char *src)
    return result;
 }
 
-#if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
 /* Forward declarations */
 static bool secondary_core_create(void);
 static int16_t input_state_get_last(unsigned port,
@@ -26949,7 +26949,9 @@ void runloop_get_status(bool *is_paused, bool *is_idle,
 
 #ifdef HAVE_MENU
 static bool input_driver_toggle_button_combo(
-      unsigned mode, input_bits_t* p_input)
+      unsigned mode,
+      retro_time_t current_time,
+      input_bits_t* p_input)
 {
    switch (mode)
    {
@@ -27018,7 +27020,7 @@ static bool input_driver_toggle_button_combo(
          if (!rarch_timer_is_running(&timer))
             rarch_timer_begin(&timer, HOLD_START_DELAY_SEC);
 
-         rarch_timer_tick(&timer);
+         rarch_timer_tick(&timer, current_time);
 
          if (!timer.timer_end && rarch_timer_has_expired(&timer))
          {
@@ -27267,7 +27269,8 @@ static enum runloop_state runloop_check_state(retro_time_t current_time)
    if (
          ((menu_toggle_gamepad_combo != INPUT_TOGGLE_NONE) &&
           input_driver_toggle_button_combo(
-             menu_toggle_gamepad_combo, &last_input)))
+             menu_toggle_gamepad_combo, current_time,
+             &last_input)))
       BIT256_SET(current_bits, RARCH_MENU_TOGGLE);
 #endif
 
@@ -27965,7 +27968,7 @@ static enum runloop_state runloop_check_state(retro_time_t current_time)
        */
       if (need_to_apply)
       {
-         rarch_timer_tick(&timer);
+         rarch_timer_tick(&timer, current_time);
 
          if (!timer.timer_end && rarch_timer_has_expired(&timer))
          {
@@ -27983,7 +27986,7 @@ static enum runloop_state runloop_check_state(retro_time_t current_time)
                settings->uints.video_shader_delay * 1000);
       else
       {
-         rarch_timer_tick(&shader_delay_timer);
+         rarch_timer_tick(&shader_delay_timer, current_time);
 
          if (rarch_timer_has_expired(&shader_delay_timer))
          {

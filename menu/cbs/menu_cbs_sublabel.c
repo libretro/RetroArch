@@ -428,14 +428,22 @@ default_sublabel_macro(action_bind_sublabel_stdin_cmd_enable,              MENU_
 default_sublabel_macro(action_bind_sublabel_mouse_enable,                  MENU_ENUM_SUBLABEL_MOUSE_ENABLE)
 default_sublabel_macro(action_bind_sublabel_pointer_enable,                MENU_ENUM_SUBLABEL_POINTER_ENABLE)
 default_sublabel_macro(action_bind_sublabel_thumbnails,                    MENU_ENUM_SUBLABEL_THUMBNAILS)
-default_sublabel_macro(action_bind_sublabel_thumbnails_rgui,               MENU_ENUM_SUBLABEL_THUMBNAILS_RGUI)
 #ifdef HAVE_MATERIALUI
 default_sublabel_macro(action_bind_sublabel_thumbnails_materialui,         MENU_ENUM_SUBLABEL_THUMBNAILS_MATERIALUI)
 default_sublabel_macro(action_bind_sublabel_left_thumbnails_materialui,    MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_MATERIALUI)
 #endif
 default_sublabel_macro(action_bind_sublabel_left_thumbnails,               MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS)
+#ifdef HAVE_RGUI
 default_sublabel_macro(action_bind_sublabel_left_thumbnails_rgui,          MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_RGUI)
+default_sublabel_macro(action_bind_sublabel_thumbnails_rgui,               MENU_ENUM_SUBLABEL_THUMBNAILS_RGUI)
+#endif
+#ifdef HAVE_OZONE
 default_sublabel_macro(action_bind_sublabel_left_thumbnails_ozone,         MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_OZONE)
+default_sublabel_macro(action_bind_sublabel_ozone_menu_color_theme,                MENU_ENUM_SUBLABEL_OZONE_MENU_COLOR_THEME)
+default_sublabel_macro(action_bind_sublabel_ozone_collapse_sidebar,                MENU_ENUM_SUBLABEL_OZONE_COLLAPSE_SIDEBAR)
+default_sublabel_macro(action_bind_sublabel_ozone_truncate_playlist_name,          MENU_ENUM_SUBLABEL_OZONE_TRUNCATE_PLAYLIST_NAME)
+default_sublabel_macro(action_bind_sublabel_ozone_scroll_content_metadata,         MENU_ENUM_SUBLABEL_OZONE_SCROLL_CONTENT_METADATA)
+#endif
 default_sublabel_macro(action_bind_sublabel_menu_thumbnail_upscale_threshold, MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_UPSCALE_THRESHOLD)
 default_sublabel_macro(action_bind_sublabel_timedate_enable,               MENU_ENUM_SUBLABEL_TIMEDATE_ENABLE)
 default_sublabel_macro(action_bind_sublabel_timedate_style,                MENU_ENUM_SUBLABEL_TIMEDATE_STYLE)
@@ -517,21 +525,22 @@ default_sublabel_macro(action_bind_sublabel_disk_image_append,                  
 default_sublabel_macro(action_bind_sublabel_disk_index,                            MENU_ENUM_SUBLABEL_DISK_INDEX)
 default_sublabel_macro(action_bind_sublabel_disk_options,                          MENU_ENUM_SUBLABEL_DISK_OPTIONS)
 default_sublabel_macro(action_bind_sublabel_menu_throttle_framerate,               MENU_ENUM_SUBLABEL_MENU_ENUM_THROTTLE_FRAMERATE)
+#ifdef HAVE_XMB
 default_sublabel_macro(action_bind_sublabel_xmb_layout,                            MENU_ENUM_SUBLABEL_XMB_LAYOUT)
 default_sublabel_macro(action_bind_sublabel_xmb_icon_theme,                        MENU_ENUM_SUBLABEL_XMB_THEME)
 default_sublabel_macro(action_bind_sublabel_xmb_shadows_enable,                    MENU_ENUM_SUBLABEL_XMB_SHADOWS_ENABLE)
 default_sublabel_macro(action_bind_sublabel_xmb_vertical_thumbnails,               MENU_ENUM_SUBLABEL_XMB_VERTICAL_THUMBNAILS)
 default_sublabel_macro(action_bind_sublabel_menu_xmb_thumbnail_scale_factor,       MENU_ENUM_SUBLABEL_MENU_XMB_THUMBNAIL_SCALE_FACTOR)
+default_sublabel_macro(action_bind_sublabel_menu_xmb_animation_horizontal_higlight,             MENU_ENUM_SUBLABEL_MENU_XMB_ANIMATION_HORIZONTAL_HIGHLIGHT)
+default_sublabel_macro(action_bind_sublabel_menu_xmb_animation_move_up_down,             MENU_ENUM_SUBLABEL_MENU_XMB_ANIMATION_MOVE_UP_DOWN)
+default_sublabel_macro(action_bind_sublabel_menu_xmb_animation_opening_main_menu,             MENU_ENUM_SUBLABEL_MENU_XMB_ANIMATION_OPENING_MAIN_MENU)
+#endif
 default_sublabel_macro(action_bind_sublabel_menu_color_theme,                      MENU_ENUM_SUBLABEL_MATERIALUI_MENU_COLOR_THEME)
 #ifdef HAVE_MATERIALUI
 default_sublabel_macro(action_bind_sublabel_materialui_menu_transition_animation, MENU_ENUM_SUBLABEL_MATERIALUI_MENU_TRANSITION_ANIMATION)
 default_sublabel_macro(action_bind_sublabel_materialui_menu_thumbnail_view_portrait, MENU_ENUM_SUBLABEL_MATERIALUI_MENU_THUMBNAIL_VIEW_PORTRAIT)
 default_sublabel_macro(action_bind_sublabel_materialui_menu_thumbnail_view_landscape, MENU_ENUM_SUBLABEL_MATERIALUI_MENU_THUMBNAIL_VIEW_LANDSCAPE)
 #endif
-default_sublabel_macro(action_bind_sublabel_ozone_menu_color_theme,                MENU_ENUM_SUBLABEL_OZONE_MENU_COLOR_THEME)
-default_sublabel_macro(action_bind_sublabel_ozone_collapse_sidebar,                MENU_ENUM_SUBLABEL_OZONE_COLLAPSE_SIDEBAR)
-default_sublabel_macro(action_bind_sublabel_ozone_truncate_playlist_name,          MENU_ENUM_SUBLABEL_OZONE_TRUNCATE_PLAYLIST_NAME)
-default_sublabel_macro(action_bind_sublabel_ozone_scroll_content_metadata,         MENU_ENUM_SUBLABEL_OZONE_SCROLL_CONTENT_METADATA)
 default_sublabel_macro(action_bind_sublabel_menu_use_preferred_system_color_theme, MENU_ENUM_SUBLABEL_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME)
 default_sublabel_macro(action_bind_sublabel_menu_scale_factor,                     MENU_ENUM_SUBLABEL_MENU_SCALE_FACTOR)
 default_sublabel_macro(action_bind_sublabel_menu_widget_scale_auto,                MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_AUTO)
@@ -539,9 +548,6 @@ default_sublabel_macro(action_bind_sublabel_menu_widget_scale_factor,           
 default_sublabel_macro(action_bind_sublabel_menu_wallpaper_opacity,                MENU_ENUM_SUBLABEL_MENU_WALLPAPER_OPACITY)
 default_sublabel_macro(action_bind_sublabel_menu_framebuffer_opacity,              MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY)
 default_sublabel_macro(action_bind_sublabel_menu_horizontal_animation,             MENU_ENUM_SUBLABEL_MENU_HORIZONTAL_ANIMATION)
-default_sublabel_macro(action_bind_sublabel_menu_xmb_animation_horizontal_higlight,             MENU_ENUM_SUBLABEL_MENU_XMB_ANIMATION_HORIZONTAL_HIGHLIGHT)
-default_sublabel_macro(action_bind_sublabel_menu_xmb_animation_move_up_down,             MENU_ENUM_SUBLABEL_MENU_XMB_ANIMATION_MOVE_UP_DOWN)
-default_sublabel_macro(action_bind_sublabel_menu_xmb_animation_opening_main_menu,             MENU_ENUM_SUBLABEL_MENU_XMB_ANIMATION_OPENING_MAIN_MENU)
 default_sublabel_macro(action_bind_sublabel_menu_ribbon_enable,                    MENU_ENUM_SUBLABEL_XMB_RIBBON_ENABLE)
 default_sublabel_macro(action_bind_sublabel_menu_font,                             MENU_ENUM_SUBLABEL_XMB_FONT)
 default_sublabel_macro(action_bind_sublabel_settings_show_drivers,                 MENU_ENUM_SUBLABEL_SETTINGS_SHOW_DRIVERS)
@@ -1058,8 +1064,12 @@ static int action_bind_sublabel_playlist_entry(
    playlist_t *playlist               = NULL;
    const struct playlist_entry *entry = NULL;
 
-   if (!settings->bools.playlist_show_sublabels || string_is_equal(settings->arrays.menu_driver, "ozone"))
+   if (!settings->bools.playlist_show_sublabels)
       return 0;
+#ifdef HAVE_OZONE
+   if (string_is_equal(settings->arrays.menu_driver, "ozone"))
+      return 0;
+#endif
 
    /* Get current playlist */
    playlist = playlist_get_cached();
@@ -1756,13 +1766,19 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_horizontal_animation);
             break;
          case MENU_ENUM_LABEL_MENU_XMB_ANIMATION_HORIZONTAL_HIGHLIGHT:
+#ifdef HAVE_XMB
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_xmb_animation_horizontal_higlight);
+#endif
             break;
          case MENU_ENUM_LABEL_MENU_XMB_ANIMATION_MOVE_UP_DOWN:
+#ifdef HAVE_XMB
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_xmb_animation_move_up_down);
+#endif
             break;
          case MENU_ENUM_LABEL_MENU_XMB_ANIMATION_OPENING_MAIN_MENU:
+#ifdef HAVE_XMB
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_xmb_animation_opening_main_menu);
+#endif
             break;
          case MENU_ENUM_LABEL_MENU_SCALE_FACTOR:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_scale_factor);
@@ -1780,16 +1796,24 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_use_preferred_system_color_theme);
             break;
          case MENU_ENUM_LABEL_OZONE_MENU_COLOR_THEME:
+#ifdef HAVE_OZONE
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_ozone_menu_color_theme);
+#endif
             break;
          case MENU_ENUM_LABEL_OZONE_COLLAPSE_SIDEBAR:
+#ifdef HAVE_OZONE
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_ozone_collapse_sidebar);
+#endif
             break;
          case MENU_ENUM_LABEL_OZONE_TRUNCATE_PLAYLIST_NAME:
+#ifdef HAVE_OZONE
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_ozone_truncate_playlist_name);
+#endif
             break;
          case MENU_ENUM_LABEL_OZONE_SCROLL_CONTENT_METADATA:
+#ifdef HAVE_OZONE
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_ozone_scroll_content_metadata);
+#endif
             break;
          case MENU_ENUM_LABEL_MATERIALUI_MENU_COLOR_THEME:
          case MENU_ENUM_LABEL_XMB_MENU_COLOR_THEME:
@@ -1811,19 +1835,29 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
 #endif
             break;
          case MENU_ENUM_LABEL_XMB_SHADOWS_ENABLE:
+#ifdef HAVE_XMB
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_xmb_shadows_enable);
+#endif
             break;
          case MENU_ENUM_LABEL_XMB_VERTICAL_THUMBNAILS:
+#ifdef HAVE_XMB
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_xmb_vertical_thumbnails);
+#endif
             break;
          case MENU_ENUM_LABEL_MENU_XMB_THUMBNAIL_SCALE_FACTOR:
+#ifdef HAVE_XMB
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_xmb_thumbnail_scale_factor);
+#endif
             break;
          case MENU_ENUM_LABEL_XMB_LAYOUT:
+#ifdef HAVE_XMB
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_xmb_layout);
+#endif
             break;
          case MENU_ENUM_LABEL_XMB_THEME:
+#ifdef HAVE_XMB
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_xmb_icon_theme);
+#endif
             break;
          case MENU_ENUM_LABEL_MENU_THROTTLE_FRAMERATE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_throttle_framerate);

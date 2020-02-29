@@ -3999,12 +3999,14 @@ static void rgui_update_menu_viewport(rgui_t *rgui)
    size_t fb_pitch;
    struct video_viewport vp;
    unsigned fb_width, fb_height;
+#if !defined(GEKKO)
    bool do_integer_scaling    = false;
    settings_t       *settings = config_get_ptr();
    unsigned aspect_ratio_lock = settings ? settings->uints.menu_rgui_aspect_ratio_lock : 0;
    
    if (!settings)
       return;
+#endif
    
    gfx_display_get_fb_size(&fb_width, &fb_height, &fb_pitch);
    video_driver_get_viewport_info(&vp);
