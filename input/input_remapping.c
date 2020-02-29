@@ -85,18 +85,18 @@ bool input_remapping_load_file(void *data, const char *path)
             fill_pathname_join_delim(key_ident[j], s2,
                   key_strings[j], '_', sizeof(btn_ident[j]));
 
-            if (config_get_int(conf, btn_ident[j], &btn_remap)
-                  && btn_remap != -1)
-               settings->uints.input_remap_ids[i][j] = btn_remap;
-            else if (config_get_int(conf, btn_ident[j], &btn_remap)
-                  && btn_remap == -1)
-               settings->uints.input_remap_ids[i][j] = RARCH_UNMAPPED;
-            /* else do nothing, important */
+            if (config_get_int(conf, btn_ident[j], &btn_remap))
+            {
+               if (btn_remap == -1)
+                  btn_remap                           = RARCH_UNMAPPED;
 
-            if (config_get_int(conf, key_ident[j], &key_remap))
-               settings->uints.input_keymapper_ids[i][j] = key_remap;
-            else
-               settings->uints.input_keymapper_ids[i][j] = RETROK_UNKNOWN;
+               settings->uints.input_remap_ids[i][j]  = btn_remap;
+            }
+
+            if (!config_get_int(conf, key_ident[j], &key_remap))
+               key_remap                              = RETROK_UNKNOWN;
+
+            settings->uints.input_keymapper_ids[i][j] = key_remap;
          }
          else
          {
