@@ -4884,7 +4884,7 @@ static int setting_string_action_left_netplay_mitm_server(
       if (string_is_equal(setting->value.target.string, netplay_mitm_server_list[i].name))
       {
          /* move to the previous one in the list, wrap around if necessary */
-         if (i - 1 >= 0)
+         if (i >= 1)
          {
             found  = true;
             offset = i - 1;
