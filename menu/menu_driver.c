@@ -27,7 +27,6 @@
 #include <lists/string_list.h>
 #include <streams/file_stream.h>
 #include <string/stdstring.h>
-#include <features/features_cpu.h>
 #include <encodings/utf.h>
 
 #ifdef HAVE_CONFIG_H
@@ -115,7 +114,8 @@ static enum action_iterate_type action_iterate_type(const char *label)
  * Returns: 0 on success, -1 if we need to quit out of the loop.
  **/
 static int generic_menu_iterate(void *data,
-      void *userdata, enum menu_action action)
+      void *userdata, enum menu_action action,
+      retro_time_t current_time)
 {
 #ifdef HAVE_ACCESSIBILITY
    static enum action_iterate_type 
@@ -126,8 +126,6 @@ static int generic_menu_iterate(void *data,
    int ret                        = 0;
    const char *label              = NULL;
    menu_handle_t *menu            = (menu_handle_t*)data;
-   /* TODO/FIXME - menus should take current time from retroarch.c */
-   retro_time_t current_time      = cpu_features_get_time_usec();
 
    if (!menu)
       return 0;
@@ -2302,7 +2300,8 @@ bool menu_driver_iterate(menu_ctx_iterate_t *iterate,
    }
    else
       if (generic_menu_iterate(menu_driver_data,
-            menu_userdata, iterate->action) != -1)
+            menu_userdata, iterate->action,
+            current_time) != -1)
          return true;
 
    return false;
