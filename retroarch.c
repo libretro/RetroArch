@@ -21367,8 +21367,10 @@ void video_driver_set_aspect_ratio(void)
 void video_driver_update_viewport(
       struct video_viewport* vp, bool force_full, bool keep_aspect)
 {
-   float            device_aspect = (float)vp->full_width / vp->full_height;
-   settings_t *settings           = configuration_settings;
+   float            device_aspect  = (float)vp->full_width / vp->full_height;
+   settings_t *settings            = configuration_settings;
+   bool video_scale_integer        = settings->bools.video_scale_integer;
+   unsigned video_aspect_ratio_idx = settings->uints.video_aspect_ratio_idx;
 
    if (video_context_data
          && current_video_context.translate_aspect)
@@ -21380,7 +21382,7 @@ void video_driver_update_viewport(
    vp->width  = vp->full_width;
    vp->height = vp->full_height;
 
-   if (settings->bools.video_scale_integer && !force_full)
+   if (video_scale_integer && !force_full)
       video_viewport_get_scaled_integer(
             vp, vp->full_width, vp->full_height, video_driver_aspect_ratio, keep_aspect);
    else if (keep_aspect && !force_full)
@@ -21388,7 +21390,7 @@ void video_driver_update_viewport(
       float desired_aspect = video_driver_aspect_ratio;
 
 #if defined(HAVE_MENU)
-      if (settings->uints.video_aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
+      if (video_aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
       {
          const struct video_viewport* custom = video_viewport_get_custom();
 
@@ -21728,11 +21730,12 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
       unsigned width, unsigned height,
       float aspect_ratio, bool keep_aspect)
 {
-   int padding_x        = 0;
-   int padding_y        = 0;
-   settings_t *settings = configuration_settings;
+   int padding_x                   = 0;
+   int padding_y                   = 0;
+   settings_t *settings            = configuration_settings;
+   unsigned video_aspect_ratio_idx = settings->uints.video_aspect_ratio_idx;
 
-   if (settings->uints.video_aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
+   if (video_aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
    {
       struct video_viewport *custom = video_viewport_get_custom();
 
@@ -22978,7 +22981,8 @@ static bool driver_location_start(void)
    if (location_driver && location_data && location_driver->start)
    {
       settings_t *settings = configuration_settings;
-      if (settings->bools.location_allow)
+      bool location_allow  = settings->bools.location_allow;
+      if (location_allow)
          return location_driver->start(location_data);
 
       runloop_msg_queue_push("Location is explicitly disabled.\n",
@@ -23120,7 +23124,8 @@ static bool driver_camera_start(void)
    if (camera_driver && camera_data && camera_driver->start)
    {
       settings_t *settings = configuration_settings;
-      if (settings->bools.camera_allow)
+      bool camera_allow    = settings->bools.camera_allow;
+      if (camera_allow)
          return camera_driver->start(camera_data);
 
       runloop_msg_queue_push(
@@ -23400,12 +23405,15 @@ static void driver_adjust_system_rates(void)
 
    if (runloop_force_nonblock)
    {
-      settings_t *settings      = configuration_settings;
+      settings_t *settings         = configuration_settings;
+      bool video_adaptive_vsync    = settings->bools.video_adaptive_vsync;
+      unsigned video_swap_interval = settings->uints.video_swap_interval;
+
       if (current_video->set_nonblock_state)
          current_video->set_nonblock_state(video_driver_data, true,
                video_driver_test_all_flags(GFX_CTX_FLAGS_ADAPTIVE_VSYNC) &&
-               settings->bools.video_adaptive_vsync,
-               settings->uints.video_swap_interval
+               video_adaptive_vsync,
+               video_swap_interval
                );
    }
    else
@@ -25844,8 +25852,10 @@ static void menu_driver_toggle(bool on)
    settings_t                 *settings       = configuration_settings;
    bool pause_libretro                        = settings ?
       settings->bools.menu_pause_libretro : false;
-   bool enable_menu_sound                     = settings ?
-      settings->bools.audio_enable_menu : false;
+#ifdef HAVE_AUDIOMIXER
+   bool audio_enable_menu                     = settings->bools.audio_enable_menu;
+   bool audio_enable_menu_bgm                 = settings->bools.audio_enable_menu_bgm;
+#endif
    menu_handle_t *menu_data                   = menu_driver_get_ptr();
 
    if (!menu_data)
@@ -25882,12 +25892,11 @@ static void menu_driver_toggle(bool on)
       /* Stop all rumbling before entering the menu. */
       command_event(CMD_EVENT_RUMBLE_STOP, NULL);
 
-      if (pause_libretro && !enable_menu_sound)
+      if (pause_libretro && !audio_enable_menu)
          command_event(CMD_EVENT_AUDIO_STOP, NULL);
 
 #if 0
-      if (     settings->bools.audio_enable_menu 
-            && settings->bools.audio_enable_menu_bgm)
+     if (audio_enable_menu && audio_enable_menu_bgm)
          audio_driver_mixer_play_menu_sound_looped(AUDIO_MIXER_SYSTEM_SLOT_BGM);
 #endif
 
@@ -25914,13 +25923,11 @@ static void menu_driver_toggle(bool on)
       if (!runloop_shutdown_initiated)
          driver_set_nonblock_state();
 
-      if (pause_libretro && !enable_menu_sound)
+      if (pause_libretro && !audio_enable_menu)
          command_event(CMD_EVENT_AUDIO_START, NULL);
 
 #if 0
-      if (
-            settings->bools.audio_enable_menu && 
-            settings->bools.audio_enable_menu_bgm)
+      if (audio_enable_menu && audio_enable_menu_bgm)
          audio_driver_mixer_stop_stream(AUDIO_MIXER_SYSTEM_SLOT_BGM);
 #endif
 
