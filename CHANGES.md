@@ -22,6 +22,7 @@
 - LOCALIZATION: Update Korean translation
 - LOCALIZATION: Update Polish translation
 - LOCALIZATION: Update Spanish translation
+- LOCALIZATION: Update Portuguese Brazilian translation
 - MENU/WIDGETS: Allow notifications to use full screen width when not displaying menu
 - MENU/WIDGETS: DPI-based scaling
 - MENU/OZONE: Add DPI-based scaling
