@@ -27018,7 +27018,7 @@ static bool input_driver_toggle_button_combo(
 
          /* user started holding down the start button, start the timer */
          if (!rarch_timer_is_running(&timer))
-            rarch_timer_begin(&timer, HOLD_START_DELAY_SEC);
+            rarch_timer_begin_us(&timer, HOLD_START_DELAY_SEC * 1000000);
 
          rarch_timer_tick(&timer, current_time);
 
