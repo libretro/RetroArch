@@ -273,7 +273,7 @@ static void ctr_lcd_aptHook(APT_HookType hook, void* param)
    if ((hook == APTHOOK_ONSUSPEND) && ctr->supports_parallax_disable)
       ctr_set_parallax_layer(*(float*)0x1FF81080 != 0.0);
 
-   if((hook == APTHOOK_ONSUSPEND) || (hook == APTHOOK_ONRESTORE))
+   if((hook == APTHOOK_ONSUSPEND) || (hook == APTHOOK_ONRESTORE) || (hook == APTHOOK_ONWAKEUP))
    {
       Handle lcd_handle;
       u8 not_2DS;
