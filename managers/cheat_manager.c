@@ -1227,7 +1227,8 @@ int cheat_manager_add_matches(const char *path,
 
 void cheat_manager_apply_rumble(struct item_cheat *cheat, unsigned int curr_value)
 {
-   bool rumble = false;
+   bool rumble               = false;
+   retro_time_t current_time = cpu_features_get_time_usec();
 
    switch (cheat->rumble_type)
    {
@@ -1273,8 +1274,8 @@ void cheat_manager_apply_rumble(struct item_cheat *cheat, unsigned int curr_valu
    {
       if (rumble)
       {
-         cheat->rumble_primary_end_time = cpu_features_get_time_usec() + (cheat->rumble_primary_duration * 1000);
-         cheat->rumble_secondary_end_time = cpu_features_get_time_usec() + (cheat->rumble_secondary_duration * 1000);
+         cheat->rumble_primary_end_time   = current_time + (cheat->rumble_primary_duration * 1000);
+         cheat->rumble_secondary_end_time = current_time + (cheat->rumble_secondary_duration * 1000);
          input_driver_set_rumble_state(cheat->rumble_port, RETRO_RUMBLE_STRONG, cheat->rumble_primary_strength);
          input_driver_set_rumble_state(cheat->rumble_port, RETRO_RUMBLE_WEAK, cheat->rumble_secondary_strength);
       }
@@ -1285,18 +1286,20 @@ void cheat_manager_apply_rumble(struct item_cheat *cheat, unsigned int curr_valu
       return;
    }
 
-   if (cheat->rumble_primary_end_time <= cpu_features_get_time_usec())
+   if (cheat->rumble_primary_end_time <= current_time)
    {
       if (cheat->rumble_primary_end_time != 0)
-         input_driver_set_rumble_state(cheat->rumble_port, RETRO_RUMBLE_STRONG, 0);
+         input_driver_set_rumble_state(cheat->rumble_port,
+               RETRO_RUMBLE_STRONG, 0);
       cheat->rumble_primary_end_time = 0;
    }
    else
    {
-      input_driver_set_rumble_state(cheat->rumble_port, RETRO_RUMBLE_STRONG, cheat->rumble_primary_strength);
+      input_driver_set_rumble_state(cheat->rumble_port,
+            RETRO_RUMBLE_STRONG, cheat->rumble_primary_strength);
    }
 
-   if (cheat->rumble_secondary_end_time <= cpu_features_get_time_usec())
+   if (cheat->rumble_secondary_end_time <= current_time)
    {
       if (cheat->rumble_secondary_end_time != 0)
          input_driver_set_rumble_state(cheat->rumble_port, RETRO_RUMBLE_WEAK, 0);

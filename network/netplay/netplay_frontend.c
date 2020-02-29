@@ -286,9 +286,8 @@ static bool netplay_poll(netplay_t *netplay)
 {
    size_t i;
    uint32_t client;
-   bool blocking     = false;
-
-   netplay->can_poll = false;
+   bool blocking             = false;
+   retro_time_t current_time = cpu_features_get_time_usec();
 
    if (!netplay_get_self_input_state(netplay))
       goto catastrophe;
@@ -439,7 +438,7 @@ static bool netplay_poll(netplay_t *netplay)
             <= netplay->self_frame_count)
       {
          netplay->stall      = NETPLAY_STALL_RUNNING_FAST;
-         netplay->stall_time = cpu_features_get_time_usec();
+         netplay->stall_time = current_time;
 
          /* Figure out who to blame */
          if (netplay->is_server)
@@ -469,22 +468,25 @@ static bool netplay_poll(netplay_t *netplay)
            netplay->self_mode == NETPLAY_CONNECTION_SLAVE) &&
           netplay->unread_frame_count <= netplay->self_frame_count)
       {
-         netplay->stall = NETPLAY_STALL_SPECTATOR_WAIT;
-         netplay->stall_time = cpu_features_get_time_usec();
+         netplay->stall      = NETPLAY_STALL_SPECTATOR_WAIT;
+         netplay->stall_time = current_time;
       }
    }
 
    /* If we're stalling, consider disconnection */
    if (netplay->stall && netplay->stall_time)
    {
-      retro_time_t now = cpu_features_get_time_usec();
+      retro_time_t now = current_time;
 
       /* Don't stall out while they're paused */
       if (netplay->remote_paused)
          netplay->stall_time = now;
-      else if (now - netplay->stall_time >=
-               (netplay->is_server ? MAX_SERVER_STALL_TIME_USEC :
-                                          MAX_CLIENT_STALL_TIME_USEC))
+      else if (
+            now - netplay->stall_time >=
+            (netplay->is_server 
+             ? MAX_SERVER_STALL_TIME_USEC 
+             : MAX_CLIENT_STALL_TIME_USEC)
+            )
       {
          /* Stalled out! */
          if (netplay->is_server)
@@ -531,7 +533,10 @@ catastrophe:
 void input_poll_net(netplay_t *netplay)
 {
    if (!netplay_should_skip(netplay) && netplay_can_poll(netplay))
+   {
+      netplay->can_poll         = false;
       netplay_poll(netplay);
+   }
 }
 
 /* Netplay polling callbacks */
