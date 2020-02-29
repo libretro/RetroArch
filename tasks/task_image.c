@@ -144,8 +144,8 @@ static int task_image_iterate_process_transfer(struct nbio_image_handle *image)
 
       if (retval != IMAGE_PROCESS_NEXT)
          break;
-   }
-   while (cpu_features_get_time_usec() - start_time < image->frame_duration);
+   }while(cpu_features_get_time_usec() - start_time 
+         < image->frame_duration);
 
    if (retval == IMAGE_PROCESS_NEXT)
       return 0;
@@ -308,8 +308,8 @@ bool task_image_load_handler(retro_task_t *task)
                      image->status = IMAGE_STATUS_TRANSFER_PARSE;
                      break;
                   }
-               }
-               while (cpu_features_get_time_usec() - start_time < image->frame_duration);
+               }while (cpu_features_get_time_usec() - start_time 
+                     < image->frame_duration);
             }
             break;
          case IMAGE_STATUS_PROCESS_TRANSFER_PARSE:
