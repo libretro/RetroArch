@@ -7477,7 +7477,6 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
 
 static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
       const char *label,
-      uint32_t label_hash, 
       const char *menu_label,
       uint32_t menu_label_hash, unsigned type)
 {
@@ -7617,7 +7616,7 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             BIND_ACTION_OK(cbs, action_ok_push_default);
             break;
          case FILE_TYPE_PLAYLIST_ENTRY:
-            if (label_hash == MENU_LABEL_PLAYLISTS_TAB)
+            if (string_is_equal(label, "collection"))
             {
                BIND_ACTION_OK(cbs, action_ok_playlist_entry_collection);
             }
@@ -7965,7 +7964,7 @@ int menu_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
       return 0;
 
    if (menu_cbs_init_bind_ok_compare_type(cbs, label,
-            label_hash, menu_label,
+            menu_label,
             menu_label_hash, type) == 0)
       return 0;
 
