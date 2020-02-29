@@ -104,7 +104,7 @@ bool input_remapping_load_file(void *data, const char *path)
             k             = j - RARCH_FIRST_CUSTOM_BIND;
 
             fill_pathname_join_delim(stk_ident[k], s3,
-               key_strings[j], '$', sizeof(stk_ident[k]));
+                  key_strings[j], '$', sizeof(stk_ident[k]));
 
             snprintf(stk_ident[k],
                   sizeof(stk_ident[k]),
@@ -112,13 +112,13 @@ bool input_remapping_load_file(void *data, const char *path)
                   s3,
                   key_strings[j]);
 
-            if (config_get_int(conf, stk_ident[k], &stk_remap) 
-                  && stk_remap != -1)
+            if (config_get_int(conf, stk_ident[k], &stk_remap))
+            {
+               if (stk_remap == -1)
+                  stk_remap                          = RARCH_UNMAPPED;
+
                settings->uints.input_remap_ids[i][j] = stk_remap;
-            else if (config_get_int(conf, stk_ident[k], &stk_remap) 
-                  && stk_remap == -1)
-               settings->uints.input_remap_ids[i][j] = RARCH_UNMAPPED;
-            /* else do nothing, important */
+            }
          }
       }
 
