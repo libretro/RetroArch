@@ -931,12 +931,13 @@ static void netplay_frontend_paused(netplay_t *netplay, bool paused)
 
 static bool netplay_pre_frame(netplay_t *netplay)
 {
-   static int reannounce        = 0;
-
-   bool sync_stalled            = false;
-   settings_t *settings         = config_get_ptr();
-   bool netplay_public_announce = settings->bools.netplay_public_announce;
-   bool netplay_use_mitm_server = settings->bools.netplay_use_mitm_server;
+   static int reannounce           = 0;
+   bool sync_stalled               = false;
+   settings_t *settings            = config_get_ptr();
+   bool netplay_public_announce    = settings->bools.netplay_public_announce;
+   bool netplay_use_mitm_server    = settings->bools.netplay_use_mitm_server;
+   const char *netplay_password    = settings->paths.netplay_password;
+   const char *netplay_spectate_pw = settings->paths.netplay_spectate_password;
 
    retro_assert(netplay);
 
@@ -984,8 +985,8 @@ static bool netplay_pre_frame(netplay_t *netplay)
    }
 
    sync_stalled = !netplay_sync_pre_frame(netplay,
-         settings->paths.netplay_password,
-         settings->paths.netplay_spectate_password
+         netplay_password,
+         netplay_spectate_pw
          );
 
    /* If we're disconnected, deinitialize */
@@ -1318,12 +1319,29 @@ void deinit_netplay(void)
  **/
 bool init_netplay(void *direct_host, const char *server, unsigned port)
 {
-   struct retro_callbacks cbs    = {0};
-   settings_t *settings          = config_get_ptr();
-   uint64_t serialization_quirks = 0;
-   uint64_t quirks               = 0;
-   bool _netplay_is_client       = netplay_is_client;
-   bool _netplay_enabled         = netplay_enabled;
+   struct retro_callbacks cbs      = {0};
+   settings_t *settings            = config_get_ptr();
+   uint64_t serialization_quirks   = 0;
+   uint64_t quirks                 = 0;
+   bool _netplay_is_client         = netplay_is_client;
+   bool _netplay_enabled           = netplay_enabled;
+   const char *username            = settings->paths.username;
+   bool netplay_public_announce    = settings->bools.netplay_public_announce;
+   bool netplay_start_as_spectator = settings->bools.netplay_start_as_spectator;
+   bool netplay_stateless_mode     = settings->bools.netplay_stateless_mode;
+   bool netplay_nat_traversal      = settings->bools.netplay_nat_traversal;
+   bool netplay_use_mitm_server    = settings->bools.netplay_use_mitm_server;
+   const char *netplay_password    = settings->paths.netplay_password;
+   const char *netplay_spectate_pw = settings->paths.netplay_spectate_password;
+   int netplay_check_frames        = settings->ints.netplay_check_frames;
+#ifdef HAVE_DISCORD
+   const char *discord_username    = discord_get_own_username();
+   const char *path_username       = discord_username 
+      ? discord_username
+      : username;
+#else
+   const char *path_username       = username;
+#endif
 
    if (!_netplay_enabled)
       return false;
@@ -1352,17 +1370,19 @@ bool init_netplay(void *direct_host, const char *server, unsigned port)
 
    if (_netplay_is_client)
    {
-      RARCH_LOG("[netplay] %s\n", msg_hash_to_str(MSG_CONNECTING_TO_NETPLAY_HOST));
+      RARCH_LOG("[netplay] %s\n",
+            msg_hash_to_str(MSG_CONNECTING_TO_NETPLAY_HOST));
    }
    else
    {
-      RARCH_LOG("[netplay] %s\n", msg_hash_to_str(MSG_WAITING_FOR_CLIENT));
+      RARCH_LOG("[netplay] %s\n",
+            msg_hash_to_str(MSG_WAITING_FOR_CLIENT));
       runloop_msg_queue_push(
          msg_hash_to_str(MSG_WAITING_FOR_CLIENT),
          0, 180, false,
          NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
-      if (settings->bools.netplay_public_announce)
+      if (netplay_public_announce)
          netplay_announce();
    }
 
@@ -1371,23 +1391,22 @@ bool init_netplay(void *direct_host, const char *server, unsigned port)
          _netplay_is_client ? (!netplay_client_deferred ? server
             : server_address_deferred) : NULL,
          _netplay_is_client ? (!netplay_client_deferred ? port
-            : server_port_deferred   ) : (port != 0 ? port : RARCH_DEFAULT_PORT),
-         settings->bools.netplay_stateless_mode,
-         settings->ints.netplay_check_frames,
+            : server_port_deferred   ) 
+         : (port != 0 ? port : RARCH_DEFAULT_PORT),
+         netplay_stateless_mode,
+         netplay_check_frames,
          &cbs,
-         settings->bools.netplay_nat_traversal 
-         && !settings->bools.netplay_use_mitm_server,
-#ifdef HAVE_DISCORD
-         discord_get_own_username() ? discord_get_own_username() :
-#endif
-         settings->paths.username,
-         settings->paths.netplay_password,
-         settings->paths.netplay_spectate_password,
+         netplay_nat_traversal 
+         && !netplay_use_mitm_server,
+         path_username,
+         netplay_password,
+         netplay_spectate_pw,
          quirks);
 
    if (netplay_data)
    {
-      if (netplay_data->is_server && !settings->bools.netplay_start_as_spectator)
+      if (   netplay_data->is_server && 
+            !netplay_start_as_spectator)
          netplay_toggle_play_spectate(netplay_data);
       return true;
    }
@@ -1401,20 +1420,16 @@ bool init_netplay(void *direct_host, const char *server, unsigned port)
    return false;
 }
 
-/**
- * netplay_driver_ctl
- *
- * Frontend access to Netplay functionality
- */
+/* Frontend access to Netplay functionality */
 bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
 {
    /* Used to avoid recursive netplay calls */
-   static bool in_netplay = false;
-   netplay_t *netplay     = netplay_data;
+   static bool in_netplay     = false;
+   netplay_t *netplay         = netplay_data;
 
    if (in_netplay)
       return true;
-   in_netplay             = true;
+   in_netplay                 = true;
 
    if (!netplay)
    {
@@ -1430,7 +1445,7 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
             netplay_is_client = true;
             break;
          case RARCH_NETPLAY_CTL_DISABLE:
-            netplay_enabled = false;
+            netplay_enabled   = false;
 #ifdef HAVE_DISCORD
             if (discord_is_inited)
             {
@@ -1466,13 +1481,13 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
       case RARCH_NETPLAY_CTL_IS_ENABLED:
          break;
       case RARCH_NETPLAY_CTL_IS_REPLAYING:
-         in_netplay = false;
+         in_netplay           = false;
          return netplay->is_replay;
       case RARCH_NETPLAY_CTL_IS_SERVER:
-         in_netplay = false;
+         in_netplay           = false;
          return netplay_enabled && !netplay_is_client;
       case RARCH_NETPLAY_CTL_IS_CONNECTED:
-         in_netplay = false;
+         in_netplay           = false;
          return netplay->is_connected;
       case RARCH_NETPLAY_CTL_POST_FRAME:
          /* We check if we have new input and replay from recorded input.
@@ -1487,7 +1502,7 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
           * Returns true if the frontend is cleared to 
           * render the frame, false if we're stalled or paused
           */
-         in_netplay = false;
+         in_netplay           = false;
          return netplay_pre_frame(netplay);
       case RARCH_NETPLAY_CTL_GAME_WATCH:
          netplay_toggle_play_spectate(netplay);
@@ -1530,10 +1545,10 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
       case RARCH_NETPLAY_CTL_NONE:
       case RARCH_NETPLAY_CTL_DISABLE:
       default:
-         in_netplay = false;
+         in_netplay           = false;
          return false;
    }
 
-   in_netplay = false;
+   in_netplay                 = false;
    return true;
 }
