@@ -1109,11 +1109,6 @@ static bool has_set_libretro                                    = false;
 static bool has_set_libretro_directory                          = false;
 static bool has_set_save_path                                   = false;
 static bool has_set_state_path                                  = false;
-static bool has_set_netplay_mode                                = false;
-static bool has_set_netplay_ip_address                          = false;
-static bool has_set_netplay_ip_port                             = false;
-static bool has_set_netplay_stateless_mode                      = false;
-static bool has_set_netplay_check_frames                        = false;
 static bool has_set_ups_pref                                    = false;
 static bool has_set_bps_pref                                    = false;
 static bool has_set_ips_pref                                    = false;
@@ -3277,6 +3272,16 @@ static bool runahead_available                  = true;
 static bool runahead_secondary_core_available   = true;
 static bool runahead_force_input_dirty          = true;
 static uint64_t runahead_last_frame_count       = 0;
+#endif
+
+#if defined(HAVE_NETWORKING)
+/* NETWORKING GLOBAL VARIABLES */
+
+static bool has_set_netplay_mode                = false;
+static bool has_set_netplay_ip_address          = false;
+static bool has_set_netplay_ip_port             = false;
+static bool has_set_netplay_stateless_mode      = false;
+static bool has_set_netplay_check_frames        = false;
 #endif
 
 /* INPUT REMOTE GLOBAL VARIABLES */
@@ -7933,6 +7938,7 @@ void retroarch_override_setting_set(
       case RARCH_OVERRIDE_SETTING_STATE_PATH:
          has_set_state_path = true;
          break;
+#ifdef HAVE_NETWORKING
       case RARCH_OVERRIDE_SETTING_NETPLAY_MODE:
          has_set_netplay_mode = true;
          break;
@@ -7948,6 +7954,7 @@ void retroarch_override_setting_set(
       case RARCH_OVERRIDE_SETTING_NETPLAY_CHECK_FRAMES:
          has_set_netplay_check_frames = true;
          break;
+#endif
       case RARCH_OVERRIDE_SETTING_UPS_PREF:
          has_set_ups_pref = true;
          break;
@@ -7995,6 +8002,7 @@ void retroarch_override_setting_unset(enum rarch_override_setting enum_idx, void
       case RARCH_OVERRIDE_SETTING_STATE_PATH:
          has_set_state_path = false;
          break;
+#ifdef HAVE_NETWORKING
       case RARCH_OVERRIDE_SETTING_NETPLAY_MODE:
          has_set_netplay_mode = false;
          break;
@@ -8010,6 +8018,7 @@ void retroarch_override_setting_unset(enum rarch_override_setting enum_idx, void
       case RARCH_OVERRIDE_SETTING_NETPLAY_CHECK_FRAMES:
          has_set_netplay_check_frames = false;
          break;
+#endif
       case RARCH_OVERRIDE_SETTING_UPS_PREF:
          has_set_ups_pref = false;
          break;
@@ -26727,6 +26736,7 @@ bool retroarch_override_setting_is_set(enum rarch_override_setting enum_idx, voi
          return has_set_save_path;
       case RARCH_OVERRIDE_SETTING_STATE_PATH:
          return has_set_state_path;
+#ifdef HAVE_NETWORKING
       case RARCH_OVERRIDE_SETTING_NETPLAY_MODE:
          return has_set_netplay_mode;
       case RARCH_OVERRIDE_SETTING_NETPLAY_IP_ADDRESS:
@@ -26737,6 +26747,7 @@ bool retroarch_override_setting_is_set(enum rarch_override_setting enum_idx, voi
          return has_set_netplay_stateless_mode;
       case RARCH_OVERRIDE_SETTING_NETPLAY_CHECK_FRAMES:
          return has_set_netplay_check_frames;
+#endif
       case RARCH_OVERRIDE_SETTING_UPS_PREF:
          return has_set_ups_pref;
       case RARCH_OVERRIDE_SETTING_BPS_PREF:
