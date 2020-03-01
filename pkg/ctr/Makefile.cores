@@ -5,14 +5,6 @@ ifeq ($(LIBRETRO), 2048)
 	APP_ICON             = pkg/ctr/assets/2048.png
 	APP_BANNER           = pkg/ctr/assets/2048_banner.png
 
-else ifeq ($(LIBRETRO), opera)
-	APP_TITLE            = Opera
-	APP_AUTHOR           = various
-	APP_PRODUCT_CODE     = RARCH-OPERA
-	APP_UNIQUE_ID        = 0xBAC91
-	APP_ICON             = pkg/ctr/assets/4do.png
-	APP_BANNER           = pkg/ctr/assets/4do_banner.png
-
 else ifeq ($(LIBRETRO), 81)
 	APP_TITLE            = lr-81
 	APP_AUTHOR           = various
@@ -44,6 +36,13 @@ else ifeq ($(LIBRETRO), dosbox_svn)
 	APP_UNIQUE_ID        = 0xBAC3F
 	APP_ICON             = pkg/ctr/assets/dosbox.png
 	APP_BANNER           = pkg/ctr/assets/dosbox_banner.png
+
+else ifeq ($(LIBRETRO), ecwolf)
+	APP_TITLE            = ECWolf
+	APP_PRODUCT_CODE     = RARCH-ECWOLF
+	APP_UNIQUE_ID        = 0xBAC96
+	APP_ICON             = pkg/ctr/assets/default.png
+	APP_BANNER           = pkg/ctr/assets/libretro_banner.png
 
 else ifeq ($(LIBRETRO), fbalpha2012)
 	APP_TITLE            = Final Burn Alpha 2012
@@ -269,6 +268,14 @@ else ifeq ($(LIBRETRO), o2em)
 	APP_ICON             = pkg/ctr/assets/o2em.png
 	APP_BANNER           = pkg/ctr/assets/o2em_banner.png
 
+else ifeq ($(LIBRETRO), opera)
+	APP_TITLE            = Opera
+	APP_AUTHOR           = various
+	APP_PRODUCT_CODE     = RARCH-OPERA
+	APP_UNIQUE_ID        = 0xBAC91
+	APP_ICON             = pkg/ctr/assets/4do.png
+	APP_BANNER           = pkg/ctr/assets/4do_banner.png
+
 else ifeq ($(LIBRETRO), pcsx_rearmed)
 	APP_TITLE            = PCSX ReARMed
 	APP_AUTHOR           = PCSX Team, notaz, Exophase
@@ -331,6 +338,13 @@ else ifeq ($(LIBRETRO), race)
 	APP_UNIQUE_ID        = 0xBAC95
 	APP_ICON             = pkg/ctr/assets/race.png
 	APP_BANNER           = pkg/ctr/assets/race_banner.png
+
+else ifeq ($(LIBRETRO), smsplus)
+	APP_TITLE            = SMSplus
+	APP_PRODUCT_CODE     = RARCH-SMSPLUS
+	APP_UNIQUE_ID        = 0xBAC97
+	APP_ICON             = pkg/ctr/assets/default.png
+	APP_BANNER           = pkg/ctr/assets/libretro_banner.png
 
 else ifeq ($(LIBRETRO), snes9x2002)
 	APP_TITLE            = Snes9x 2002
@@ -396,4 +410,11 @@ else ifeq ($(LIBRETRO), vecx)
 	APP_UNIQUE_ID        = 0xBAC4C
 	APP_ICON             = pkg/ctr/assets/vecx.png
 	APP_BANNER           = pkg/ctr/assets/vecx_banner.png
+
+else ifeq ($(LIBRETRO), vitaquake2)
+	APP_TITLE            = vitaquake2
+	APP_PRODUCT_CODE     = RARCH-VITAQUAKE2
+	APP_UNIQUE_ID        = 0xBAC98
+	APP_ICON             = pkg/ctr/assets/default.png
+	APP_BANNER           = pkg/ctr/assets/libretro_banner.png
 endif
