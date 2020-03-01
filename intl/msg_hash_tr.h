@@ -7765,19 +7765,19 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_EQ,
-    "Run next cheat if value = memory"
+    "Değer = bellek ise sonraki hile işlemini çalıştır"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_NEQ,
-    "Run next cheat if value != memory"
+    "Değer != bellek ise sonraki hile işlemini çalıştır"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_LT,
-    "Run next cheat if value < memory"
+    "Değer < bellek ise sonraki hile çalıştır"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_GT,
-    "Run next cheat if value > memory"
+    "Değer > bellek ise bir sonraki hile çalıştır"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_RUMBLE_TYPE_DISABLED,
@@ -9550,5 +9550,5 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_START_GONG,
-    "Gong'u başlat"
+    "Gong başlat"
     )
