@@ -467,6 +467,55 @@ float gradient_sunbeam[16] = {
    0.1, 0.0, 0.1, 1.00,
 };
 
+float gradient_lime_green[16] = {
+   209/255.0, 255/255.0,  82/255.0, 1.0,
+   146/255.0, 232/255.0,  66/255.0, 1.0,
+   82/255.0, 101/255.0,  35/255.0, 1.0,
+   63/255.0,  95/255.0,  30/255.0, 1.0,
+};
+
+float gradient_pikachu_yellow[16] = {
+   63/255.0, 63/255.0,  1/255.0, 1.0,
+   174/255.0, 174/255.0,  1/255.0, 1.0,
+   191/255.0, 194/255.0,  1/255.0, 1.0,
+   254/255.0,  221/255.0,  3/255.0, 1.0,
+};
+
+float gradient_gamecube_purple[16] = {
+   40/255.0, 20/255.0,  91/255.0, 1.0,
+   160/255.0, 140/255.0,  211/255.0, 1.0,
+   107/255.0, 92/255.0,  177/255.0, 1.0,
+   84/255.0,  71/255.0,  132/255.0, 1.0,
+};
+
+float gradient_famicom_red[16] = {
+   255/255.0, 191/255.0,  171/255.0, 1.0,
+   119/255.0, 49/255.0,  28/255.0, 1.0,
+   148/255.0, 10/255.0,  36/255.0, 1.0,
+   206/255.0,  126/255.0,  110/255.0, 1.0,
+};
+
+float gradient_flaming_hot[16] = {
+   231/255.0, 53/255.0,  53/255.0, 1.0,
+   242/255.0, 138/255.0,  97/255.0, 1.0,
+   236/255.0, 97/255.0,  76/255.0, 1.0,
+   255/255.0,  125/255.0,  3/255.0, 1.0,
+};
+
+float gradient_ice_cold[16] = {
+   66/255.0, 183/255.0,  229/255.0, 1.0,
+   29/255.0, 164/255.0,  255/255.0, 1.0,
+   176/255.0, 255/255.0,  247/255.0, 1.0,
+   174/255.0,  240/255.0,  255/255.0, 1.0,
+};
+
+float gradient_midgar[16] = {
+   255/255.0, 0/255.0,  0/255.0, 1.0,
+   0/255.0, 0/255.0,  255/255.0, 1.0,
+   0/255.0, 255/255.0,  0/255.0, 1.0,
+   32/255.0,  32/255.0,  32/255.0, 1.0,
+};
+
 static void xmb_calculate_visible_range(const xmb_handle_t *xmb,
       unsigned height, size_t list_size, unsigned current,
       unsigned *first, unsigned *last);
@@ -601,7 +650,21 @@ static float *xmb_gradient_ident(video_frame_info_t *video_info)
       case XMB_THEME_MORNING_BLUE:
          return &gradient_morning_blue[0];
       case XMB_THEME_SUNBEAM:
-         return &gradient_sunbeam[0];         
+         return &gradient_sunbeam[0];
+	  case XMB_THEME_LIME:
+         return &gradient_lime_green[0];
+	  case XMB_THEME_MIDGAR:
+         return &gradient_midgar[0];
+	  case XMB_THEME_PIKACHU_YELLOW:
+         return &gradient_pikachu_yellow[0];    
+	  case XMB_THEME_GAMECUBE_PURPLE:
+         return &gradient_gamecube_purple[0];  
+	  case XMB_THEME_FAMICOM_RED:
+         return &gradient_famicom_red[0];  
+	  case XMB_THEME_FLAMING_HOT:
+         return &gradient_flaming_hot[0];  
+	  case XMB_THEME_ICE_COLD:
+         return &gradient_ice_cold[0];    		 
       case XMB_THEME_LEGACY_RED:
       default:
          break;
