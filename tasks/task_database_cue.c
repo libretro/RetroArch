@@ -136,7 +136,7 @@ static int detect_ps1_game_sub(intfstream_t *fp,
    is_mode1  = 0;
 
    if (intfstream_seek(fp, 0, SEEK_END) == -1)
-      goto error;
+      return 0;
 
    if (!sub_channel_mixed)
    {
@@ -145,7 +145,7 @@ static int detect_ps1_game_sub(intfstream_t *fp,
          unsigned int mode_test = 0;
 
          if (intfstream_seek(fp, 0, SEEK_SET) == -1)
-            goto error;
+            return 0;
 
          intfstream_read(fp, &mode_test, 4);
          if (mode_test != MODETEST_VAL)
@@ -157,21 +157,21 @@ static int detect_ps1_game_sub(intfstream_t *fp,
    frame_size = sub_channel_mixed? 2448: is_mode1? 2048: 2352;
 
    if (intfstream_seek(fp, 156 + skip + 16 * frame_size, SEEK_SET) == -1)
-      goto error;
+      return 0;
 
    intfstream_read(fp, buffer, 6);
 
    cd_sector = buffer[2] | (buffer[3] << 8) | (buffer[4] << 16);
 
    if (intfstream_seek(fp, skip + cd_sector * frame_size, SEEK_SET) == -1)
-      goto error;
+      return 0;
    intfstream_read(fp, buffer, 2048 * 2);
 
    tmp = buffer;
    while (tmp < (buffer + 2048 * 2))
    {
       if (!*tmp)
-         goto error;
+         return 0;
 
       if (!strncasecmp((const char*)(tmp + 33), "SYSTEM.CNF;1", 12))
          break;
@@ -179,12 +179,12 @@ static int detect_ps1_game_sub(intfstream_t *fp,
       tmp += *tmp;
    }
 
-   if(tmp >= (buffer + 2048 * 2))
-      goto error;
+   if (tmp >= (buffer + 2048 * 2))
+      return 0;
 
    cd_sector = tmp[2] | (tmp[3] << 8) | (tmp[4] << 16);
    if (intfstream_seek(fp, skip + cd_sector * frame_size, SEEK_SET) == -1)
-      goto error;
+      return 0;
 
    intfstream_read(fp, buffer, 256);
    buffer[256] = '\0';
@@ -193,13 +193,13 @@ static int detect_ps1_game_sub(intfstream_t *fp,
    while(*tmp && strncasecmp((const char*)tmp, "boot", 4))
       tmp++;
 
-   if(!*tmp)
-      goto error;
+   if (!*tmp)
+      return 0;
 
    boot_file = tmp;
    while(*tmp && *tmp != '\n')
    {
-      if((*tmp == '\\') || (*tmp == ':'))
+      if ((*tmp == '\\') || (*tmp == ':'))
          boot_file = tmp + 1;
 
       tmp++;
@@ -212,22 +212,19 @@ static int detect_ps1_game_sub(intfstream_t *fp,
    *game_id++ = toupper(*tmp++);
    *game_id++ = '-';
 
-   if(!isalnum(*tmp))
+   if (!isalnum(*tmp))
       tmp++;
 
    while(isalnum(*tmp))
    {
       *game_id++ = *tmp++;
-      if(*tmp == '.')
+      if (*tmp == '.')
          tmp++;
    }
 
    *game_id = 0;
 
    return 1;
-
-error:
-   return 0;
 }
 
 int detect_ps1_game(intfstream_t *fd, char *game_id)

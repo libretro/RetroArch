@@ -338,9 +338,7 @@ static bool input_autoconfigure_joypad_from_conf_internal(
         return true;
    }
 
-   if (string_is_empty(params->autoconfig_directory))
-      return true;
-   return false;
+   return string_is_empty(params->autoconfig_directory);
 }
 
 static void input_autoconfigure_params_free(autoconfig_params_t *params)

@@ -1507,7 +1507,7 @@ static bool firmware_update_status(
    if (set_missing_firmware)
       rarch_ctl(RARCH_CTL_SET_MISSING_BIOS, NULL);
 
-   if(
+   if (
          content_ctx->bios_is_missing &&
          content_ctx->check_firmware_before_loading)
    {
