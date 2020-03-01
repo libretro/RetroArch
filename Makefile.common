@@ -1799,7 +1799,6 @@ ifeq ($(HAVE_NETWORKING), 1)
    # Netplay
    DEFINES += -DHAVE_NETWORK_CMD
    OBJ += network/netplay/netplay_delta.o \
-               network/netplay/netplay_frontend.o \
                network/netplay/netplay_handshake.o \
                network/netplay/netplay_init.o \
                network/netplay/netplay_io.o \
