@@ -1151,7 +1151,7 @@ void netplay_load_savestate(netplay_t *netplay,
          if (!core_serialize(&tmp_serial_info))
             return;
          tmp_serial_info.data_const = tmp_serial_info.data;
-         serial_info = &tmp_serial_info;
+         serial_info                = &tmp_serial_info;
       }
       else
       {
