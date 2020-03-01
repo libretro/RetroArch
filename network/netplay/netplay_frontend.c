@@ -75,29 +75,14 @@ static bool netplay_is_alive(netplay_t *netplay)
 }
 
 /**
- * netplay_should_skip:
- * @netplay              : pointer to netplay object
- *
  * If we're fast-forward replaying to resync, check if we
  * should actually show frame.
- *
- * Returns: bool (1) if we should skip this frame, otherwise
- * false (0).
- **/
+ */
 static bool netplay_should_skip(netplay_t *netplay)
 {
    return netplay->is_replay && (netplay->self_mode >= NETPLAY_CONNECTION_CONNECTED);
 }
 
-/**
- * get_self_input_state:
- * @netplay              : pointer to netplay object
- *
- * Grab our own input state and send this frame's input state 
- * (self and remote) over the network
- *
- * Returns: true (1) if successful, otherwise false (0).
- */
 static bool netplay_get_self_input_state(netplay_t *netplay)
 {
    unsigned i;
@@ -269,6 +254,8 @@ static void netplay_poll(netplay_t *netplay)
    bool blocking             = false;
    retro_time_t current_time = cpu_features_get_time_usec();
 
+   /* Grab our own input state and send this frame's input state 
+    * (self and remote) over the network */
    if (!netplay_get_self_input_state(netplay))
       goto catastrophe;
 
@@ -502,11 +489,7 @@ catastrophe:
       netplay_hangup(netplay, &netplay->connections[i]);
 }
 
-/**
- * input_poll_net
- *
- * Poll the network if necessary.
- */
+/* Poll the network if necessary */
 void input_poll_net(netplay_t *netplay)
 {
    if (!netplay_should_skip(netplay) && netplay->can_poll)
@@ -1269,11 +1252,7 @@ uint8_t netplay_settings_share_mode(unsigned share_digital,
    return 0;
 }
 
-/**
- * netplay_toggle_play_spectate
- *
- * Toggle between play mode and spectate mode
- */
+/* Toggle between play mode and spectate mode */
 static void netplay_toggle_play_spectate(netplay_t *netplay)
 {
    switch (netplay->self_mode)
@@ -1485,11 +1464,7 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
       case RARCH_NETPLAY_CTL_ENABLE_CLIENT:
       case RARCH_NETPLAY_CTL_IS_DATA_INITED:
       case RARCH_NETPLAY_CTL_IS_ENABLED:
-         in_netplay = false;
-         return true;
-      case RARCH_NETPLAY_CTL_DISABLE:
-         in_netplay = false;
-         return false;
+         break;
       case RARCH_NETPLAY_CTL_IS_REPLAYING:
          in_netplay = false;
          return netplay->is_replay;
@@ -1506,13 +1481,13 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
          netplay_post_frame(netplay);
          break;
       case RARCH_NETPLAY_CTL_PRE_FRAME:
-         in_netplay = false;
          /*
           * Call netplay_pre_frame before running retro_run().
           *
           * Returns true if the frontend is cleared to 
           * render the frame, false if we're stalled or paused
           */
+         in_netplay = false;
          return netplay_pre_frame(netplay);
       case RARCH_NETPLAY_CTL_GAME_WATCH:
          netplay_toggle_play_spectate(netplay);
@@ -1534,15 +1509,13 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
       case RARCH_NETPLAY_CTL_DISCONNECT:
          if (netplay)
             netplay_disconnect(netplay);
-         in_netplay = false;
-         return true;
+         break;
       case RARCH_NETPLAY_CTL_FINISHED_NAT_TRAVERSAL:
          netplay->nat_traversal_task_oustanding = false;
 #ifndef HAVE_SOCKET_LEGACY
          netplay_announce_nat_traversal(netplay);
 #endif
-         in_netplay = false;
-         return true;
+         break;
       case RARCH_NETPLAY_CTL_DESYNC_PUSH:
          netplay->desync++;
          break;
@@ -1554,8 +1527,9 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
                netplay_load_savestate(netplay, NULL, true);
          }
          break;
-      default:
       case RARCH_NETPLAY_CTL_NONE:
+      case RARCH_NETPLAY_CTL_DISABLE:
+      default:
          in_netplay = false;
          return false;
    }
