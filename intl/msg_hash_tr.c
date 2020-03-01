@@ -2193,9 +2193,9 @@ int menu_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
         case MENU_ENUM_LABEL_MIDI_INPUT:
             snprintf(s, len,
-                     "Giriş cihazını ayarlar (sürücüye özel).\n"
-                     "\"Kapalı\" olarak ayarlandığında, MIDI girişi devre dışı bırakılır.\n"
-                     "Cihaz adı da eklenebilir.");
+                     "Sets the input device (driver specific).\n"
+                     "When set to \"Off\", MIDI input will be disabled.\n"
+                     "Device name can also be typed in.");
             break;
         case MENU_ENUM_LABEL_MIDI_OUTPUT:
             snprintf(s, len,
