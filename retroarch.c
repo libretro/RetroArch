@@ -5349,24 +5349,46 @@ static bool init_netplay(void *direct_host, const char *server, unsigned port)
 /* Frontend access to Netplay functionality */
 bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
 {
+   bool ret                   = true;
    netplay_t *netplay         = netplay_data;
 
    in_netplay                 = true;
 
-   if (!netplay)
+   switch (state)
    {
-      switch (state)
-      {
-         case RARCH_NETPLAY_CTL_ENABLE_SERVER:
+      case RARCH_NETPLAY_CTL_ENABLE_SERVER:
+         if (!netplay)
+         {
             netplay_enabled   = true;
             netplay_is_client = false;
-            in_netplay        = false;
-            return true;
-         case RARCH_NETPLAY_CTL_ENABLE_CLIENT:
+         }
+         break;
+      case RARCH_NETPLAY_CTL_ENABLE_CLIENT:
+         if (!netplay)
+         {
             netplay_enabled   = true;
             netplay_is_client = true;
-            break;
-         case RARCH_NETPLAY_CTL_DISABLE:
+         }
+         break;
+      case RARCH_NETPLAY_CTL_IS_DATA_INITED:
+         if (!netplay)
+            ret               = false;
+         break;
+      case RARCH_NETPLAY_CTL_IS_ENABLED:
+         if (!netplay)
+            ret               = netplay_enabled;
+         break;
+      case RARCH_NETPLAY_CTL_IS_REPLAYING:
+         if (netplay)
+            ret               = netplay->is_replay;
+         else
+            ret               = false;
+         break;
+      case RARCH_NETPLAY_CTL_DISABLE:
+         if (netplay)
+            ret               = false;
+         else
+         {
             netplay_enabled   = false;
 #ifdef HAVE_DISCORD
             if (discord_is_inited)
@@ -5376,88 +5398,78 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
                command_event(CMD_EVENT_DISCORD_UPDATE, &userdata);
             }
 #endif
-            in_netplay        = false;
-            return true;
-         case RARCH_NETPLAY_CTL_IS_ENABLED:
-            in_netplay        = false;
-            return netplay_enabled;
-         case RARCH_NETPLAY_CTL_IS_REPLAYING:
-         case RARCH_NETPLAY_CTL_IS_DATA_INITED:
-         case RARCH_NETPLAY_CTL_IS_CONNECTED:
-            in_netplay        = false;
-            return false;
-         case RARCH_NETPLAY_CTL_IS_SERVER:
-            in_netplay        = false;
-            return netplay_enabled && !netplay_is_client;
-         default:
-            in_netplay        = false;
-            return true;
-      }
-   }
-
-   switch (state)
-   {
-      case RARCH_NETPLAY_CTL_ENABLE_SERVER:
-      case RARCH_NETPLAY_CTL_ENABLE_CLIENT:
-      case RARCH_NETPLAY_CTL_IS_DATA_INITED:
-      case RARCH_NETPLAY_CTL_IS_ENABLED:
+         }
          break;
-      case RARCH_NETPLAY_CTL_IS_REPLAYING:
-         in_netplay           = false;
-         return netplay->is_replay;
-      case RARCH_NETPLAY_CTL_IS_SERVER:
-         in_netplay           = false;
-         return netplay_enabled && !netplay_is_client;
       case RARCH_NETPLAY_CTL_IS_CONNECTED:
-         in_netplay           = false;
-         return netplay->is_connected;
+         if (netplay)
+            ret            = netplay->is_connected;
+         else
+            ret            = false;
+         break;
+      case RARCH_NETPLAY_CTL_IS_SERVER:
+         return netplay_enabled && !netplay_is_client;
       case RARCH_NETPLAY_CTL_POST_FRAME:
-         /* We check if we have new input and replay from recorded input.
-          * Call this after running retro_run().
-          */
-         netplay_post_frame(netplay);
+         if (netplay)
+         {
+            /* We check if we have new input and replay from recorded input.
+             * Call this after running retro_run().
+             */
+            netplay_post_frame(netplay);
+         }
          break;
       case RARCH_NETPLAY_CTL_PRE_FRAME:
-         /*
-          * Call netplay_pre_frame before running retro_run().
-          *
-          * Returns true if the frontend is cleared to 
-          * render the frame, false if we're stalled or paused
-          */
-         in_netplay           = false;
-         return netplay_pre_frame(netplay);
+         if (netplay)
+         {
+            /*
+             * Call netplay_pre_frame before running retro_run().
+             *
+             * Returns true if the frontend is cleared to 
+             * render the frame, false if we're stalled or paused
+             */
+            ret = netplay_pre_frame(netplay);
+         }
+         break;
       case RARCH_NETPLAY_CTL_GAME_WATCH:
-         netplay_toggle_play_spectate(netplay);
+         if (netplay)
+            netplay_toggle_play_spectate(netplay);
          break;
       case RARCH_NETPLAY_CTL_PAUSE:
-         netplay_frontend_paused(netplay, true);
+         if (netplay)
+            netplay_frontend_paused(netplay, true);
          break;
       case RARCH_NETPLAY_CTL_UNPAUSE:
-         netplay_frontend_paused(netplay, false);
+         if (netplay)
+            netplay_frontend_paused(netplay, false);
          break;
       case RARCH_NETPLAY_CTL_LOAD_SAVESTATE:
-         netplay_load_savestate(netplay,
-               (retro_ctx_serialize_info_t*)data, true);
+         if (netplay)
+            netplay_load_savestate(netplay,
+                  (retro_ctx_serialize_info_t*)data, true);
          break;
       case RARCH_NETPLAY_CTL_RESET:
          /* Indicate that the core has been reset to netplay peers */
-         netplay_core_reset(netplay);
+         if (netplay)
+            netplay_core_reset(netplay);
          break;
       case RARCH_NETPLAY_CTL_DISCONNECT:
          if (netplay)
             netplay_disconnect(netplay);
          break;
       case RARCH_NETPLAY_CTL_FINISHED_NAT_TRAVERSAL:
-         netplay->nat_traversal_task_oustanding = false;
+         if (netplay)
+         {
+            netplay->nat_traversal_task_oustanding = false;
 #ifndef HAVE_SOCKET_LEGACY
-         netplay_announce_nat_traversal(netplay);
+            netplay_announce_nat_traversal(netplay);
 #endif
+         }
          break;
       case RARCH_NETPLAY_CTL_DESYNC_PUSH:
-         netplay->desync++;
+         if (netplay)
+            netplay->desync++;
          break;
       case RARCH_NETPLAY_CTL_DESYNC_POP:
-         if (netplay->desync)
+         if (netplay && netplay->desync)
          {
             netplay->desync--;
             if (!netplay->desync)
@@ -5465,14 +5477,17 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
          }
          break;
       case RARCH_NETPLAY_CTL_NONE:
-      case RARCH_NETPLAY_CTL_DISABLE:
+         if (netplay)
+            ret            = false;
+         break;
       default:
-         in_netplay           = false;
-         return false;
+         if (netplay)
+            ret            = false;
+         break;
    }
 
-   in_netplay                 = false;
-   return true;
+   in_netplay              = false;
+   return ret;
 }
 #endif
 
