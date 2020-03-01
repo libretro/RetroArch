@@ -4198,10 +4198,10 @@ static void setting_get_string_representation_uint_xmb_menu_color_theme(
                   MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_LIME),
                len);
          break;
-	  case XMB_THEME_TEST:
+	  case XMB_THEME_MIDGAR:
          strlcpy(s,
                msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_TEST),
+                  MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_MIDGAR),
                len);
          break;
 	  case XMB_THEME_PIKACHU_YELLOW:

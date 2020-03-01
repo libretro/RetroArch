@@ -509,7 +509,7 @@ float gradient_ice_cold[16] = {
    174/255.0,  240/255.0,  255/255.0, 1.0,
 };
 
-float gradient_test[16] = {
+float gradient_midgar[16] = {
    255/255.0, 0/255.0,  0/255.0, 1.0,
    0/255.0, 0/255.0,  255/255.0, 1.0,
    0/255.0, 255/255.0,  0/255.0, 1.0,
@@ -653,8 +653,8 @@ static float *xmb_gradient_ident(video_frame_info_t *video_info)
          return &gradient_sunbeam[0];
 	  case XMB_THEME_LIME:
          return &gradient_lime_green[0];
-	  case XMB_THEME_TEST:
-         return &gradient_test[0];
+	  case XMB_THEME_MIDGAR:
+         return &gradient_midgar[0];
 	  case XMB_THEME_PIKACHU_YELLOW:
          return &gradient_pikachu_yellow[0];    
 	  case XMB_THEME_GAMECUBE_PURPLE:
