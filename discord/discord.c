@@ -82,7 +82,7 @@ static bool connecting = false;
 
 static char cdn_url[] = "https://cdn.discordapp.com/avatars";
 
-DiscordRichPresence discord_presence;
+static DiscordRichPresence discord_presence;
 
 char* discord_get_own_username(void)
 {
@@ -120,9 +120,7 @@ static bool discord_download_avatar(
    static char url[PATH_MAX_LENGTH];
    static char url_encoded[PATH_MAX_LENGTH];
    static char full_path[PATH_MAX_LENGTH];
-
    static char buf[PATH_MAX_LENGTH];
-
    file_transfer_t *transf = NULL;
 
    RARCH_LOG("[discord] user avatar id: %s\n", user_id);
@@ -180,9 +178,8 @@ static void handle_discord_error(int errcode, const char* message)
 static void handle_discord_join_cb(retro_task_t *task,
       void *task_data, void *user_data, const char *err)
 {
-   struct netplay_room *room;
    char join_hostname[PATH_MAX_LENGTH];
-
+   struct netplay_room *room         = NULL;
    http_transfer_data_t *data        = (http_transfer_data_t*)task_data;
 
    if (!data || err)
@@ -196,15 +193,16 @@ static void handle_discord_join_cb(retro_task_t *task,
 
    if (room)
    {
+      bool host_method_is_mitm = room->host_method == NETPLAY_HOST_METHOD_MITM;
+      const char *srv_address  = host_method_is_mitm ? room->mitm_address : room->address;
+      unsigned srv_port        = host_method_is_mitm ? room->mitm_port : room->port;
+
       if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
          deinit_netplay();
       netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_CLIENT, NULL);
 
       snprintf(join_hostname, sizeof(join_hostname), "%s|%d",
-         room->host_method == NETPLAY_HOST_METHOD_MITM 
-         ? room->mitm_address : room->address,
-         room->host_method == NETPLAY_HOST_METHOD_MITM 
-         ? room->mitm_port : room->port);
+            srv_address, srv_port);
 
       RARCH_LOG("[discord] joining lobby at: %s\n", join_hostname);
       task_push_netplay_crc_scan(room->gamecrc,
@@ -253,7 +251,8 @@ static void handle_discord_spectate(const char* secret)
 #ifdef HAVE_MENU
 static void handle_discord_join_response(void *ignore, const char *line)
 {
-   /* To-Do: needs in-game widgets
+#if 0
+   /* TODO/FIXME: needs in-game widgets */
    if (strstr(line, "yes"))
       Discord_Respond(user_id, DISCORD_REPLY_YES);
 
@@ -261,7 +260,7 @@ static void handle_discord_join_response(void *ignore, const char *line)
    menu_input_dialog_end();
    retroarch_menu_running_finished(false);
 #endif
-*/
+#endif
 }
 #endif
 
@@ -402,17 +401,16 @@ void discord_update(enum discord_presence presence, bool fuzzy_archive_match)
          {
             char join_secret[128];
             struct netplay_room *room = netplay_get_host_room();
+            bool host_method_is_mitm  = room->host_method == NETPLAY_HOST_METHOD_MITM;
+            const char *srv_address   = host_method_is_mitm ? room->mitm_address : room->address;
+            unsigned srv_port         = host_method_is_mitm ? room->mitm_port : room->port;
             if (room->id == 0)
                return;
 
             RARCH_LOG("[discord] netplay room details: id=%d"
                   ", nick=%s IP=%s port=%d\n",
                   room->id, room->nickname,
-                  room->host_method == NETPLAY_HOST_METHOD_MITM 
-                  ? room->mitm_address : room->address,
-                  room->host_method == NETPLAY_HOST_METHOD_MITM 
-                  ? room->mitm_port : room->port);
-
+                  srv_address, srv_port);
 
             snprintf(self_party_id,
                   sizeof(self_party_id), "%d", room->id);
