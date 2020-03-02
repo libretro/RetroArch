@@ -28,6 +28,13 @@ static uintptr_t cheevos_badge_menu_texture_list[CHEEVOS_MENU_BADGE_LIMIT] = { 0
 
 void cheevos_reset_menu_badges(void)
 {
+   int index;
+   for (index = 0; index < CHEEVOS_MENU_BADGE_LIMIT; ++index)
+   {
+      if (cheevos_badge_menu_texture_list[index])
+         video_driver_texture_unload(&cheevos_badge_menu_texture_list[index]);
+   }
+
    memset(&cheevos_badge_menu_texture_list, 0, sizeof(cheevos_badge_menu_texture_list));
 }
 
