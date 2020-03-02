@@ -24,7 +24,7 @@
 
 #include "../../retroarch.h"
 #include "../../configuration.h"
-#include "../managers/core_option_manager.h"
+#include "../../managers/core_option_manager.h"
 
 #ifndef BIND_ACTION_GET_TITLE
 #define BIND_ACTION_GET_TITLE(cbs, name) \
