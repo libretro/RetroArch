@@ -256,16 +256,17 @@ static void metal_apply_state_changes(void *data)
 }
 
 static void metal_set_texture_frame(void *data, const void *frame,
-                                    bool rgb32, unsigned width, unsigned height,
-                                    float alpha)
+      bool rgb32, unsigned width, unsigned height,
+      float alpha)
 {
-   MetalDriver *md = (__bridge MetalDriver *)data;
-   settings_t *settings = config_get_ptr();
+   MetalDriver *md         = (__bridge MetalDriver *)data;
+   settings_t *settings    = config_get_ptr();
+   bool menu_linear_filter = settings->bools.menu_linear_filter;
 
    [md.menu updateWidth:width
                  height:height
                  format:rgb32 ? RPixelFormatBGRA8Unorm : RPixelFormatBGRA4Unorm
-                 filter:settings->bools.menu_linear_filter ? RTextureFilterLinear : RTextureFilterNearest];
+                 filter:menu_linear_filter ? RTextureFilterLinear : RTextureFilterNearest];
    [md.menu updateFrame:frame];
    md.menu.alpha = alpha;
 }
@@ -306,7 +307,7 @@ static uint32_t metal_get_flags(void *data)
    BIT32_SET(flags, GFX_CTX_FLAGS_SCREENSHOTS_SUPPORTED);
 
 #if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
-         BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
+   BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
 #endif
 
    return flags;
@@ -329,7 +330,7 @@ static const video_poke_interface_t metal_poke_interface = {
 };
 
 static void metal_get_poke_interface(void *data,
-                                     const video_poke_interface_t **iface)
+      const video_poke_interface_t **iface)
 {
    (void)data;
    *iface = &metal_poke_interface;
@@ -346,7 +347,7 @@ static void metal_overlay_enable(void *data, bool state)
 }
 
 static bool metal_overlay_load(void *data,
-                               const void *images, unsigned num_images)
+      const void *images, unsigned num_images)
 {
    MetalDriver *md = (__bridge MetalDriver *)data;
    if (!md)
@@ -356,7 +357,7 @@ static bool metal_overlay_load(void *data,
 }
 
 static void metal_overlay_tex_geom(void *data, unsigned index,
-                                   float x, float y, float w, float h)
+      float x, float y, float w, float h)
 {
    MetalDriver *md = (__bridge MetalDriver *)data;
    if (!md)
@@ -366,7 +367,7 @@ static void metal_overlay_tex_geom(void *data, unsigned index,
 }
 
 static void metal_overlay_vertex_geom(void *data, unsigned index,
-                                      float x, float y, float w, float h)
+      float x, float y, float w, float h)
 {
    MetalDriver *md = (__bridge MetalDriver *)data;
    if (!md)

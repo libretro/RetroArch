@@ -503,8 +503,10 @@ static void d3d8_overlay_render(d3d8_video_t *d3d,
 
    if (!force_linear)
    {
-      settings_t *settings = config_get_ptr();
-      if (!settings->bools.menu_linear_filter)
+      settings_t *settings    = config_get_ptr();
+      bool menu_linear_filter = settings->bools.menu_linear_filter;
+
+      if (!menu_linear_filter)
          filter_type       = D3DTEXF_POINT;
    }
 

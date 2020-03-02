@@ -774,14 +774,15 @@ static void gx_efb_screenshot(void)
 static void *gx_init(const video_info_t *video,
       input_driver_t **input, void **input_data)
 {
-   void *gxinput        = NULL;
-   settings_t *settings = config_get_ptr();
-   gx_video_t *gx       = (gx_video_t*)calloc(1, sizeof(gx_video_t));
-   bool video_smooth    = settings->bools.video_smooth;
+   void *gxinput                   = NULL;
+   settings_t *settings            = config_get_ptr();
+   gx_video_t *gx                  = (gx_video_t*)calloc(1, sizeof(gx_video_t));
+   bool video_smooth               = settings->bools.video_smooth;
+   const char *input_joypad_driver = settings->arrays.input_joypad_driver;
    if (!gx)
       return NULL;
 
-   gxinput     = input_gx.init(settings->arrays.input_joypad_driver);
+   gxinput     = input_gx.init(input_joypad_driver);
    *input      = gxinput ? &input_gx : NULL;
    *input_data = gxinput;
 
@@ -1553,10 +1554,14 @@ static bool gx_frame(void *data, const void *frame,
    uint32_t level                     = 0;
    unsigned overscan_corr_top         = settings->uints.video_overscan_correction_top;
    unsigned overscan_corr_bottom      = settings->uints.video_overscan_correction_bottom;
+   bool video_smooth                  = settings->bools.video_smooth;
+   unsigned video_aspect_ratio_idx    = settings->uints.video_aspect_ratio_idx;
+   unsigned overscan_corr_top         = settings->uints.video_overscan_correction_top;
+   unsigned overscan_corr_bottom      = settings->uints.video_overscan_correction_bottom;
 
    fps_text_buf[0]                    = '\0';
 
-   if(!gx || (!frame && !gx->menu_texture_enable) || !settings)
+   if(!gx || (!frame && !gx->menu_texture_enable))
       return true;
 
    if (!frame)
@@ -1573,10 +1578,10 @@ static bool gx_frame(void *data, const void *frame,
    if(gx->should_resize)
    {
       gx_resize(gx,
-            settings->bools.video_smooth,
-            settings->uints.video_aspect_ratio_idx,
-            settings->uints.video_overscan_correction_top,
-            settings->uints.video_overscan_correction_bottom);
+            video_smooth,
+            video_aspect_ratio_idx,
+            overscan_corr_top,
+            overscan_corr_bottom);
       clear_efb = GX_TRUE;
    }
 
@@ -1589,7 +1594,7 @@ static bool gx_frame(void *data, const void *frame,
    if (width != gx_old_width || height != gx_old_height)
    {
       init_texture(gx, width, height,
-            settings->bools.video_smooth ? GX_LINEAR : GX_NEAR);
+            video_smooth ? GX_LINEAR : GX_NEAR);
       gx_old_width = width;
       gx_old_height = height;
    }
@@ -1650,11 +1655,12 @@ static bool gx_frame(void *data, const void *frame,
 #endif
 
    _CPU_ISR_Disable(level);
-   if (referenceRetraceCount > retraceCount) {
-      if(g_vsync) {
+   if (referenceRetraceCount > retraceCount)
+   {
+      if(g_vsync)
          VIDEO_WaitVSync();
-      }
    }
+
    referenceRetraceCount = retraceCount;
    _CPU_ISR_Restore(level);
 

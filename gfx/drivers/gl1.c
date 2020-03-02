@@ -242,6 +242,9 @@ static void *gl1_gfx_init(const video_info_t *video,
    unsigned win_width = 0, win_height   = 0;
    unsigned temp_width = 0, temp_height = 0;
    settings_t *settings                 = config_get_ptr();
+   bool video_smooth                    = settings->bools.video_smooth;
+   bool video_font_enable               = settings->bools.video_font_enable;
+   const char *video_context_driver     = settings->arrays.video_context_driver;
    gl1_t *gl1                           = (gl1_t*)calloc(1, sizeof(*gl1));
    const char *vendor                   = NULL;
    const char *renderer                 = NULL;
@@ -268,7 +271,7 @@ static void *gl1_gfx_init(const video_info_t *video,
       gl1_video_pitch = video->width * 2;
 
    ctx_driver = video_context_driver_init_first(gl1,
-         settings->arrays.video_context_driver,
+         video_context_driver,
          GFX_CTX_OPENGL_API, 1, 1, false, &ctx_data);
 
    if (!ctx_driver)
@@ -290,7 +293,8 @@ static void *gl1_gfx_init(const video_info_t *video,
    mode.width  = 0;
    mode.height = 0;
 #ifdef VITA
-   if (!vgl_inited) {
+   if (!vgl_inited)
+   {
       vglInitExtended(0x1400000, full_x, full_y, 0x100000, SCE_GXM_MULTISAMPLE_4X);
       vglUseVram(GL_TRUE);
       vglStartRendering();
@@ -393,14 +397,14 @@ static void *gl1_gfx_init(const video_info_t *video,
 
    video_context_driver_input_driver(&inp);
 
-   if (settings->bools.video_font_enable)
+   if (video_font_enable)
       font_driver_init_osd(gl1,
             video,
             false,
             video->is_threaded,
             FONT_DRIVER_RENDER_OPENGL1_API);
 
-   gl1->smooth        = settings->bools.video_smooth;
+   gl1->smooth        = video_smooth;
    gl1->supports_bgra = string_list_find_elem(gl1->extensions, "GL_EXT_bgra");
 
    glDisable(GL_BLEND);

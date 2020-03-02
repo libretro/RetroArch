@@ -91,14 +91,16 @@ static void wiiu_set_projection(wiiu_video_t *wiiu)
 
 static void wiiu_gfx_update_viewport(wiiu_video_t *wiiu)
 {
-   int x                    = 0;
-   int y                    = 0;
-   unsigned viewport_width  = wiiu->color_buffer.surface.width;
-   unsigned viewport_height = wiiu->color_buffer.surface.height;
-   float device_aspect      = (float)viewport_width / viewport_height;
-   settings_t *settings     = config_get_ptr();
+   int x                           = 0;
+   int y                           = 0;
+   unsigned viewport_width         = wiiu->color_buffer.surface.width;
+   unsigned viewport_height        = wiiu->color_buffer.surface.height;
+   float device_aspect             = (float)viewport_width / viewport_height;
+   settings_t *settings            = config_get_ptr();
+   bool video_scale_integer        = settings->bools.video_scale_integer;
+   unsigned video_aspect_ratio_idx = settings->uints.video_aspect_ratio_idx;
 
-   if (settings->bools.video_scale_integer)
+   if (video_scale_integer)
    {
       video_viewport_get_scaled_integer(&wiiu->vp,
             viewport_width, viewport_height,
@@ -111,8 +113,7 @@ static void wiiu_gfx_update_viewport(wiiu_video_t *wiiu)
       float desired_aspect = video_driver_get_aspect_ratio();
 
 #if defined(HAVE_MENU)
-
-      if (settings->uints.video_aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
+      if (video_aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
       {
          const struct video_viewport *custom = video_viewport_get_custom();
 
@@ -183,12 +184,13 @@ static void *wiiu_gfx_init(const video_info_t *video,
       input_driver_t **input, void **input_data)
 {
    unsigned i;
-   settings_t *settings = config_get_ptr();
-   float refresh_rate = 60.0f / 1.001f;
-   u32 size           = 0;
-   u32 tmp            = 0;
-   void *wiiuinput    = NULL;
-   wiiu_video_t *wiiu = calloc(1, sizeof(*wiiu));
+   float refresh_rate              = 60.0f / 1.001f;
+   u32 size                        = 0;
+   u32 tmp                         = 0;
+   void *wiiuinput                 = NULL;
+   wiiu_video_t *wiiu              = (wiiu_video_t*)calloc(1, sizeof(*wiiu));
+   settings_t *settings            = config_get_ptr();
+   const char *input_joypad_driver = settings->arrays.input_joypad_driver;
 
    if (!wiiu)
       return NULL;
@@ -198,7 +200,7 @@ static void *wiiu_gfx_init(const video_info_t *video,
 
    if (input && input_data)
    {
-      wiiuinput            = input_wiiu.init(settings->arrays.input_joypad_driver);
+      wiiuinput            = input_wiiu.init(input_joypad_driver);
       *input               = wiiuinput ? &input_wiiu : NULL;
       *input_data          = wiiuinput;
    }

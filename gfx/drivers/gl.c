@@ -3591,6 +3591,7 @@ static void *gl2_init(const video_info_t *video,
    unsigned full_x, full_y;
    video_shader_ctx_info_t shader_info;
    settings_t *settings                 = config_get_ptr();
+   bool video_gpu_record                = settings->bools.video_gpu_record;
    int interval                         = 0;
    unsigned mip_level                   = 0;
    unsigned win_width                   = 0;
@@ -3918,7 +3919,7 @@ static void *gl2_init(const video_info_t *video,
     * driver.recording_data, because recording is
     * not initialized yet.
     */
-   gl->pbo_readback_enable = settings->bools.video_gpu_record
+   gl->pbo_readback_enable = video_gpu_record
       && recording_is_enabled();
 
    if (gl->pbo_readback_enable && gl2_init_pbo_readback(gl))
