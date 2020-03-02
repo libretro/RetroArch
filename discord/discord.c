@@ -100,7 +100,6 @@ char* discord_get_own_avatar(void)
 
 bool discord_avatar_is_ready(void)
 {
-   /*To-Do: fix-me, prevent lockups in ozone due to unfinished code*/
    return false;
 }
 

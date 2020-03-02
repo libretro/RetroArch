@@ -152,7 +152,7 @@ int action_right_input_desc_kbd(unsigned type, const char *label,
    return 0;
 }
 
-/* fix-me: incomplete, lacks error checking */
+/* TODO/FIXME: incomplete, lacks error checking */
 int action_right_input_desc(unsigned type, const char *label,
    bool wraparound)
 {
