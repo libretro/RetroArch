@@ -259,6 +259,7 @@ static int action_right_mainmenu(unsigned type, const char *label,
       bool wraparound)
 {
    menu_ctx_list_t list_info;
+   settings_t      *settings = config_get_ptr();
 
    menu_driver_list_get_selection(&list_info);
 
@@ -266,11 +267,14 @@ static int action_right_mainmenu(unsigned type, const char *label,
 
    menu_driver_list_get_size(&list_info);
 
-   if (list_info.size == 1)
+   /* Tab switching functionality does not
+    * apply to RGUI or MaterialUI */
+   if ((list_info.size == 1) &&
+       !string_is_equal(settings->arrays.menu_driver, "rgui") &&
+       !string_is_equal(settings->arrays.menu_driver, "glui"))
    {
       menu_ctx_list_t list_horiz_info;
       menu_ctx_list_t list_tabs_info;
-      settings_t      *settings = config_get_ptr();
 
       list_horiz_info.type      = MENU_LIST_HORIZONTAL;
       list_tabs_info.type       = MENU_LIST_TABS;

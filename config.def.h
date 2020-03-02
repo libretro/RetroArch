@@ -139,6 +139,11 @@
 #define DEFAULT_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION_ALWAYS
 #endif
 
+/* Show/hide navigation bar
+ * > When hidden, MaterialUI menu navigation
+ *   behaves like RGUI */
+#define DEFAULT_MATERIALUI_SHOW_NAV_BAR true
+
 /* Reposition navigation bar to make better use
  * of screen space when using landscape layouts */
 #define DEFAULT_MATERIALUI_AUTO_ROTATE_NAV_BAR true
