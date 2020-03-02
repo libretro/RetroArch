@@ -1,6 +1,18 @@
 #include "rurl.h"
 
+#ifdef RARCH_INTERNAL
+#include <rhash.h> /* libretro-common/include/rhash.h */
+#define md5_state_t MD5_CTX
+#define md5_byte_t unsigned char
+#define md5_init(state) MD5_Init(state)
+#define md5_append(state, buffer, size) MD5_Update(state, buffer, size)
+#define md5_finish(state, hash) MD5_Final(hash, state)
+#else
+#include "..\rhash\md5.h"
+#endif
+
 #include <stdio.h>
+#include <string.h>
 
 static int rc_url_encode(char* encoded, size_t len, const char* str) {
   for (;;) {
@@ -69,9 +81,12 @@ int rc_url_award_cheevo(char* buffer, size_t size, const char* user_name, const 
   return (size_t)written >= size ? -1 : 0;
 }
 
-int rc_url_submit_lboard(char* buffer, size_t size, const char* user_name, const char* login_token, unsigned lboard_id, int value, unsigned char hash[16]) {
+int rc_url_submit_lboard(char* buffer, size_t size, const char* user_name, const char* login_token, unsigned lboard_id, int value, const char* game_hash) {
   char urle_user_name[64];
   char urle_login_token[64];
+  char signature[64];
+  unsigned char hash[16];
+  md5_state_t state;
   int written;
 
   if (rc_url_encode(urle_user_name, sizeof(urle_user_name), user_name) != 0) {
@@ -81,7 +96,13 @@ int rc_url_submit_lboard(char* buffer, size_t size, const char* user_name, const
   if (rc_url_encode(urle_login_token, sizeof(urle_login_token), login_token) != 0) {
     return -1;
   }
-  
+
+  /* Evaluate the signature. */
+  snprintf(signature, sizeof(signature), "%u%s%u", lboard_id, user_name, lboard_id);
+  md5_init(&state);
+  md5_append(&state, (unsigned char*)signature, (int)strlen(signature));
+  md5_finish(&state, hash);
+
   written = snprintf(
     buffer,
     size,
@@ -93,6 +114,10 @@ int rc_url_submit_lboard(char* buffer, size_t size, const char* user_name, const
     hash[ 0], hash[ 1], hash[ 2], hash[ 3], hash[ 4], hash[ 5], hash[ 6], hash[ 7],
     hash[ 8], hash[ 9], hash[10], hash[11],hash[12], hash[13], hash[14], hash[15]
   );
+
+  if (game_hash && strlen(game_hash) == 32 && (size - (size_t)written) >= 35) {
+     written += snprintf(buffer + written, size - (size_t)written, "&m=%s", game_hash);
+  }
 
   return (size_t)written >= size ? -1 : 0;
 }

@@ -133,7 +133,8 @@ typedef struct
 enum rcheevos_async_io_type
 {
    CHEEVOS_ASYNC_RICHPRESENCE,
-   CHEEVOS_ASYNC_AWARD_ACHIEVEMENT
+   CHEEVOS_ASYNC_AWARD_ACHIEVEMENT,
+   CHEEVOS_ASYNC_SUBMIT_LBOARD
 };
 
 typedef struct rcheevos_async_io_request
@@ -143,6 +144,8 @@ typedef struct rcheevos_async_io_request
    int attempt_count;
    char type;
    char hardcore;
+   char* success_message;
+   char* failure_message;
    char user_agent[256];
 } rcheevos_async_io_request;
 
@@ -373,6 +376,7 @@ static void rcheevos_log_url(const char* format, const char* url)
 
 static retro_time_t rcheevos_async_send_rich_presence(rcheevos_async_io_request* request);
 static void rcheevos_async_award_achievement(rcheevos_async_io_request* request);
+static void rcheevos_async_submit_lboard(rcheevos_async_io_request* request);
 
 static void rcheevos_async_task_handler(retro_task_t* task)
 {
@@ -398,6 +402,11 @@ static void rcheevos_async_task_handler(retro_task_t* task)
          rcheevos_async_award_achievement(request);
          task_set_finished(task, 1);
          break;
+
+      case CHEEVOS_ASYNC_SUBMIT_LBOARD:
+         rcheevos_async_submit_lboard(request);
+         task_set_finished(task, 1);
+         break;
    }
 }
 
@@ -409,6 +418,28 @@ static void rcheevos_async_schedule(rcheevos_async_io_request* request, retro_ti
    task->user_data = request;
    task->progress = -1;
    task_queue_push(task);
+}
+
+static void rcheevos_async_task_callback(retro_task_t* task, void* task_data, void* user_data, const char* error)
+{
+   rcheevos_async_io_request* request = (rcheevos_async_io_request*)user_data;
+
+   if (!error)
+   {
+      CHEEVOS_LOG(RCHEEVOS_TAG "%s %u\n", request->success_message, request->id);
+      free(request);
+   }
+   else
+   {
+      /* double the wait between each attempt until we hit a maximum delay of two minutes
+      * 250ms -> 500ms -> 1s -> 2s -> 4s -> 8s -> 16s -> 32s -> 64s -> 120s -> 120s... */
+      retro_time_t retry_delay = (request->attempt_count > 8) ? (120 * 1000 * 1000) : ((250 * 1000) << request->attempt_count);
+
+      request->attempt_count++;
+      rcheevos_async_schedule(request, retry_delay);
+
+      CHEEVOS_ERR(RCHEEVOS_TAG "%s %u: %s\n", request->failure_message, request->id, error);
+   }
 }
 
 static const char* rcheevos_rc_error(int ret)
@@ -686,28 +717,6 @@ error:
 Test all the achievements (call once per frame).
 *****************************************************************************/
 
-static void rcheevos_award_task_callback(retro_task_t* task, void* task_data, void* user_data, const char* error)
-{
-   rcheevos_async_io_request* request = (rcheevos_async_io_request*)user_data;
-
-   if (!error)
-   {
-      CHEEVOS_LOG(RCHEEVOS_TAG "Awarded achievement %u\n", request->id);
-      free(request);
-   }
-   else
-   {
-      /* double the wait between each attempt until we hit a maximum delay of two minutes
-       * 250ms -> 500ms -> 1s -> 2s -> 4s -> 8s -> 16s -> 32s -> 64s -> 120s -> 120s... */
-      retro_time_t retry_delay = (request->attempt_count > 8) ? (120 * 1000 * 1000) : ((250 * 1000) << request->attempt_count);
-
-      request->attempt_count++;
-      rcheevos_async_schedule(request, retry_delay);
-
-      CHEEVOS_ERR(RCHEEVOS_TAG "Error awarding achievement %u: %s\n", request->id, error);
-   }
-}
-
 static void rcheevos_async_award_achievement(rcheevos_async_io_request* request)
 {
    char buffer[256];
@@ -722,7 +731,7 @@ static void rcheevos_async_award_achievement(rcheevos_async_io_request* request)
    }
 
    rcheevos_log_url(RCHEEVOS_TAG "rc_url_award_cheevo: %s\n", buffer);
-   task_push_http_transfer_with_user_agent(buffer, true, NULL, request->user_agent, rcheevos_award_task_callback, request);
+   task_push_http_transfer_with_user_agent(buffer, true, NULL, request->user_agent, rcheevos_async_task_callback, request);
 }
 
 static void rcheevos_award(rcheevos_cheevo_t* cheevo, int mode)
@@ -761,6 +770,8 @@ static void rcheevos_award(rcheevos_cheevo_t* cheevo, int mode)
       request->type = CHEEVOS_ASYNC_AWARD_ACHIEVEMENT;
       request->id = cheevo->info->id;
       request->hardcore = ((mode & RCHEEVOS_ACTIVE_HARDCORE) != 0) ? 1 : 0;
+      request->success_message = "Awarded achievement";
+      request->failure_message = "Error awarding achievement";
       rcheevos_get_user_agent(request->user_agent);
       rcheevos_async_award_achievement(request);
    }
@@ -891,51 +902,22 @@ static void rcheevos_test_cheevo_set(bool official)
    }
 }
 
-static void rcheevos_lboard_submit_task(retro_task_t *task, void* task_data, void* user_data,
-      const char* error)
+static void rcheevos_async_submit_lboard(rcheevos_async_io_request* request)
 {
-   int ret;
-   MD5_CTX ctx;
-   uint8_t hash[16];
-   char signature[64];
    char buffer[256];
-   char user_agent[256];
-   const rcheevos_lboard_t* lboard = (const rcheevos_lboard_t*)user_data;
-   settings_t            *settings = config_get_ptr();
-   const char *cheevos_username    = settings->arrays.cheevos_username;
-
-   if (!error)
-   {
-      CHEEVOS_LOG(RCHEEVOS_TAG "Submitted leaderboard %u\n", lboard->info->id);
-      return;
-   }
-
-   CHEEVOS_ERR(RCHEEVOS_TAG "Error submitting leaderboard %u: %s\n", lboard->info->id, error);
-
-   /* Try again. */
-
-   /* Evaluate the signature. */
-   snprintf(signature, sizeof(signature), "%u%s%u", lboard->info->id,
-      cheevos_username, lboard->info->id);
-
-   MD5_Init(&ctx);
-   MD5_Update(&ctx, (void*)signature, strlen(signature));
-   MD5_Final(hash, &ctx);
-
-   /* Start the request. */
-   ret = rc_url_submit_lboard(buffer, sizeof(buffer), cheevos_username,
-         rcheevos_locals.token, lboard->info->id, lboard->last_value, hash);
+   settings_t *settings = config_get_ptr();
+   int ret = rc_url_submit_lboard(buffer, sizeof(buffer), settings->arrays.cheevos_username,
+      rcheevos_locals.token, request->id, request->value, rcheevos_locals.hash);
 
    if (ret != 0)
    {
-      CHEEVOS_ERR(RCHEEVOS_TAG "Buffer to small to create URL\n");
+      CHEEVOS_ERR(RCHEEVOS_TAG "Buffer too small to create URL\n");
+      free(request);
       return;
    }
 
-   rcheevos_get_user_agent(user_agent);
-
    rcheevos_log_url(RCHEEVOS_TAG "rc_url_submit_lboard: %s\n", buffer);
-   task_push_http_transfer_with_user_agent(buffer, true, NULL, user_agent, rcheevos_lboard_submit_task, user_data);
+   task_push_http_transfer_with_user_agent(buffer, true, NULL, request->user_agent, rcheevos_async_task_callback, request);
 }
 
 static void rcheevos_lboard_submit(rcheevos_lboard_t* lboard)
@@ -962,7 +944,16 @@ static void rcheevos_lboard_submit(rcheevos_lboard_t* lboard)
    runloop_msg_queue_push(buffer, 0, 2 * 60, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
    /* Start the submit task. */
-   rcheevos_lboard_submit_task(NULL, NULL, lboard, "no error, first try");
+   {
+      rcheevos_async_io_request* request = (rcheevos_async_io_request*)calloc(1, sizeof(rcheevos_async_io_request));
+      request->type = CHEEVOS_ASYNC_SUBMIT_LBOARD;
+      request->id = lboard->info->id;
+      request->value = lboard->last_value;
+      request->success_message = "Submitted leaderboard";
+      request->failure_message = "Error submitting leaderboard";
+      rcheevos_get_user_agent(request->user_agent);
+      rcheevos_async_submit_lboard(request);
+   }
 }
 
 static void rcheevos_test_leaderboards(void)
