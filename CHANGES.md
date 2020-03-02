@@ -13,6 +13,7 @@
 - CHEEVOS: Reset token when username or password changes
 - CHEEVOS: Display measured progress on locked achievements
 - CHEEVOS: Queue multiple popups
+- CHEEVOS: Add delay retries to leaderboard submits
 - CORE UPDATER: Prevent hang when fetching core list if HTTP transfer fails
 - DISK CONTROL: Add disk labels to 'disk inserted' notifications
 - EMSCRIPTEN: Recreate input event listeners properly
