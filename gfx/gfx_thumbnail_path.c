@@ -129,12 +129,15 @@ bool gfx_thumbnail_get_sub_directory(
  * Named_Titles, Named_Boxarts) for specified thumbnail
  * identifier (right, left) */
 const char *gfx_thumbnail_get_type(
-      gfx_thumbnail_path_data_t *path_data, enum gfx_thumbnail_id thumbnail_id)
+      gfx_thumbnail_path_data_t *path_data,
+      enum gfx_thumbnail_id thumbnail_id)
 {
-   settings_t *settings = config_get_ptr();
-   unsigned type = 0;
+   unsigned        type          = 0;
+   settings_t *settings          = config_get_ptr();
+   unsigned gfx_thumbnails       = settings->uints.gfx_thumbnails;
+   unsigned menu_left_thumbnails = settings->uints.menu_left_thumbnails;
    
-   if (!path_data || !settings)
+   if (!path_data)
       return msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF);
    
    switch (thumbnail_id)
@@ -143,13 +146,13 @@ const char *gfx_thumbnail_get_type(
          if (path_data->playlist_right_mode != PLAYLIST_THUMBNAIL_MODE_DEFAULT)
             type = (unsigned)path_data->playlist_right_mode - 1;
          else
-            type = settings->uints.gfx_thumbnails;
+            type = gfx_thumbnails;
          break;
       case GFX_THUMBNAIL_LEFT:
          if (path_data->playlist_left_mode != PLAYLIST_THUMBNAIL_MODE_DEFAULT)
             type = (unsigned)path_data->playlist_left_mode - 1;
          else
-            type = settings->uints.menu_left_thumbnails;
+            type = menu_left_thumbnails;
          break;
       default:
          return msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF);
@@ -175,9 +178,11 @@ const char *gfx_thumbnail_get_type(
  * (i.e. if 'type' is not equal to MENU_ENUM_LABEL_VALUE_OFF) */
 bool gfx_thumbnail_is_enabled(gfx_thumbnail_path_data_t *path_data, enum gfx_thumbnail_id thumbnail_id)
 {
-   settings_t *settings = config_get_ptr();
+   settings_t          *settings = config_get_ptr();
+   unsigned gfx_thumbnails       = settings->uints.gfx_thumbnails;
+   unsigned menu_left_thumbnails = settings->uints.menu_left_thumbnails;
    
-   if (!path_data || !settings)
+   if (!path_data)
       return false;
    
    switch (thumbnail_id)
@@ -185,11 +190,11 @@ bool gfx_thumbnail_is_enabled(gfx_thumbnail_path_data_t *path_data, enum gfx_thu
       case GFX_THUMBNAIL_RIGHT:
          if (path_data->playlist_right_mode != PLAYLIST_THUMBNAIL_MODE_DEFAULT)
             return path_data->playlist_right_mode != PLAYLIST_THUMBNAIL_MODE_OFF;
-         return settings->uints.gfx_thumbnails != 0;
+         return gfx_thumbnails != 0;
       case GFX_THUMBNAIL_LEFT:
          if (path_data->playlist_left_mode != PLAYLIST_THUMBNAIL_MODE_DEFAULT)
             return path_data->playlist_left_mode != PLAYLIST_THUMBNAIL_MODE_OFF;
-         return settings->uints.menu_left_thumbnails != 0;
+         return menu_left_thumbnails != 0;
       default:
          break;
    }
@@ -560,7 +565,8 @@ bool gfx_thumbnail_set_content_playlist(
  * - gfx_thumbnail_get_path()
  * Returns true if generated path is valid */
 bool gfx_thumbnail_update_path(
-      gfx_thumbnail_path_data_t *path_data, enum gfx_thumbnail_id thumbnail_id)
+      gfx_thumbnail_path_data_t *path_data,
+      enum gfx_thumbnail_id thumbnail_id)
 {
    char content_dir[PATH_MAX_LENGTH];
    settings_t *settings       = config_get_ptr();
