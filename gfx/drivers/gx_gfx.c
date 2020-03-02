@@ -1556,8 +1556,6 @@ static bool gx_frame(void *data, const void *frame,
    unsigned overscan_corr_bottom      = settings->uints.video_overscan_correction_bottom;
    bool video_smooth                  = settings->bools.video_smooth;
    unsigned video_aspect_ratio_idx    = settings->uints.video_aspect_ratio_idx;
-   unsigned overscan_corr_top         = settings->uints.video_overscan_correction_top;
-   unsigned overscan_corr_bottom      = settings->uints.video_overscan_correction_bottom;
 
    fps_text_buf[0]                    = '\0';
 
