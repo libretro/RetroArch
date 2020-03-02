@@ -3339,8 +3339,8 @@ static int action_ok_set_switch_cpu_profile(const char *path,
    system(command);
    snprintf(command, sizeof(command), "Current profile set to %s", profile_name);
 #else
-   unsigned profile_clock = SWITCH_CPU_SPEEDS_VALUES[entry_idx];
-   settings_t *settings   = config_get_ptr();
+   unsigned profile_clock          = SWITCH_CPU_SPEEDS_VALUES[entry_idx];
+   settings_t *settings            = config_get_ptr();
 
    settings->uints.libnx_overclock = entry_idx;
 
@@ -4153,7 +4153,7 @@ void cb_generic_download(retro_task_t *task,
       case MENU_ENUM_LABEL_CB_CORE_CONTENT_DOWNLOAD:
          dir_path = settings->paths.directory_core_assets;
 #if defined(HAVE_COMPRESSION) && defined(HAVE_ZLIB)
-         extract = settings->bools.network_buildbot_auto_extract_archive;
+         extract  = settings->bools.network_buildbot_auto_extract_archive;
 #endif
          break;
       case MENU_ENUM_LABEL_CB_UPDATE_CORE_INFO_FILES:

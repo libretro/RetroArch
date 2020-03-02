@@ -802,11 +802,13 @@ static void gfx_ctx_wgl_input_driver(void *data,
       const char *joypad_name,
       input_driver_t **input, void **input_data)
 {
-   settings_t *settings = config_get_ptr();
+   settings_t *settings     = config_get_ptr();
 
 #if _WIN32_WINNT >= 0x0501
+   const char *input_driver = settings->arrays.input_driver;
+
    /* winraw only available since XP */
-   if (string_is_equal(settings->arrays.input_driver, "raw"))
+   if (string_is_equal(input_driver, "raw"))
    {
       *input_data = input_winraw.init(joypad_name);
       if (*input_data)

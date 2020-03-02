@@ -1120,11 +1120,12 @@ static void gfx_ctx_x_input_driver(void *data,
       const char *joypad_name,
       input_driver_t **input, void **input_data)
 {
-   void *x_input         = NULL;
+   void *x_input            = NULL;
 #ifdef HAVE_UDEV
-   settings_t *settings = config_get_ptr();
+   settings_t *settings     = config_get_ptr();
+   const char *input_driver = settings->arrays.input_driver;
 
-   if (string_is_equal(settings->arrays.input_driver, "udev"))
+   if (string_is_equal(input_driver, "udev"))
    {
       *input_data = input_udev.init(joypad_name);
       if (*input_data)

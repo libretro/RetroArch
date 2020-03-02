@@ -1532,11 +1532,13 @@ bool task_push_start_dummy_core(content_ctx_info_t *content_info)
    global_t *global                           = global_get_ptr();
    settings_t *settings                       = config_get_ptr();
    rarch_system_info_t *sys_info              = runloop_get_system_info();
+   const char *path_dir_system                = settings->paths.directory_system;
+   bool check_firmware_before_loading         = settings->bools.check_firmware_before_loading;
 
    if (!content_info)
       return false;
 
-   content_ctx.check_firmware_before_loading  = settings->bools.check_firmware_before_loading;
+   content_ctx.check_firmware_before_loading  = check_firmware_before_loading;
    content_ctx.is_ips_pref                    = rarch_ctl(RARCH_CTL_IS_IPS_PREF, NULL);
    content_ctx.is_bps_pref                    = rarch_ctl(RARCH_CTL_IS_BPS_PREF, NULL);
    content_ctx.is_ups_pref                    = rarch_ctl(RARCH_CTL_IS_UPS_PREF, NULL);
@@ -1565,8 +1567,8 @@ bool task_push_start_dummy_core(content_ctx_info_t *content_info)
          content_ctx.name_ups                 = strdup(global->name.ups);
    }
 
-   if (!string_is_empty(settings->paths.directory_system))
-      content_ctx.directory_system            = strdup(settings->paths.directory_system);
+   if (!string_is_empty(path_dir_system))
+      content_ctx.directory_system            = strdup(path_dir_system);
 
    if (!content_info->environ_get)
       content_info->environ_get = menu_content_environment_get;
@@ -1625,6 +1627,7 @@ bool task_push_load_content_from_playlist_from_menu(
    global_t *global                           = global_get_ptr();
    settings_t *settings                       = config_get_ptr();
    rarch_system_info_t *sys_info              = runloop_get_system_info();
+   const char *path_dir_system                = settings->paths.directory_system;
 
    content_ctx.check_firmware_before_loading  = settings->bools.check_firmware_before_loading;
    content_ctx.is_ips_pref                    = rarch_ctl(RARCH_CTL_IS_IPS_PREF, NULL);
@@ -1659,8 +1662,8 @@ bool task_push_load_content_from_playlist_from_menu(
          global->name.label[0] = '\0';
    }
 
-   if (!string_is_empty(settings->paths.directory_system))
-      content_ctx.directory_system            = strdup(settings->paths.directory_system);
+   if (!string_is_empty(path_dir_system))
+      content_ctx.directory_system            = strdup(path_dir_system);
 
    path_set(RARCH_PATH_CORE, core_path);
 
@@ -1723,11 +1726,13 @@ bool task_push_start_current_core(content_ctx_info_t *content_info)
    char *error_string                         = NULL;
    global_t *global                           = global_get_ptr();
    settings_t *settings                       = config_get_ptr();
+   const char *path_dir_system                = settings->paths.directory_system;
+   bool check_firmware_before_loading         = settings->bools.check_firmware_before_loading;
 
    if (!content_info)
       return false;
 
-   content_ctx.check_firmware_before_loading  = settings->bools.check_firmware_before_loading;
+   content_ctx.check_firmware_before_loading  = check_firmware_before_loading;
    content_ctx.is_ips_pref                    = rarch_ctl(RARCH_CTL_IS_IPS_PREF, NULL);
    content_ctx.is_bps_pref                    = rarch_ctl(RARCH_CTL_IS_BPS_PREF, NULL);
    content_ctx.is_ups_pref                    = rarch_ctl(RARCH_CTL_IS_UPS_PREF, NULL);
@@ -1756,8 +1761,8 @@ bool task_push_start_current_core(content_ctx_info_t *content_info)
          content_ctx.name_ups                 = strdup(global->name.ups);
    }
 
-   if (!string_is_empty(settings->paths.directory_system))
-      content_ctx.directory_system            = strdup(settings->paths.directory_system);
+   if (!string_is_empty(path_dir_system))
+      content_ctx.directory_system            = strdup(path_dir_system);
 
    if (!content_info->environ_get)
       content_info->environ_get = menu_content_environment_get;
@@ -1850,8 +1855,10 @@ bool task_push_load_content_with_new_core_from_menu(
    char *error_string                         = NULL;
    global_t *global                           = global_get_ptr();
    settings_t *settings                       = config_get_ptr();
+   bool check_firmware_before_loading         = settings->bools.check_firmware_before_loading;
+   const char *path_dir_system                = settings->paths.directory_system;
 
-   content_ctx.check_firmware_before_loading  = settings->bools.check_firmware_before_loading;
+   content_ctx.check_firmware_before_loading  = check_firmware_before_loading;
    content_ctx.is_ips_pref                    = rarch_ctl(RARCH_CTL_IS_IPS_PREF, NULL);
    content_ctx.is_bps_pref                    = rarch_ctl(RARCH_CTL_IS_BPS_PREF, NULL);
    content_ctx.is_ups_pref                    = rarch_ctl(RARCH_CTL_IS_UPS_PREF, NULL);
@@ -1882,8 +1889,8 @@ bool task_push_load_content_with_new_core_from_menu(
       global->name.label[0]                   = '\0';
    }
 
-   if (!string_is_empty(settings->paths.directory_system))
-      content_ctx.directory_system            = strdup(settings->paths.directory_system);
+   if (!string_is_empty(path_dir_system))
+      content_ctx.directory_system            = strdup(path_dir_system);
 
    path_set(RARCH_PATH_CONTENT, fullpath);
    path_set(RARCH_PATH_CORE, core_path);
@@ -1950,10 +1957,14 @@ static bool task_load_content_callback(content_ctx_info_t *content_info,
    bool ret                                   = false;
    char *error_string                         = NULL;
    global_t *global                           = global_get_ptr();
-   settings_t *settings                       = config_get_ptr();
    rarch_system_info_t *sys_info              = runloop_get_system_info();
+   settings_t *settings                       = config_get_ptr();
+   bool check_firmware_before_loading         = settings->bools.check_firmware_before_loading;
+   bool set_supports_no_game_enable           = settings->bools.set_supports_no_game_enable;
+   const char *path_dir_system                = settings->paths.directory_system;
+   const char *path_dir_cache                 = settings->paths.directory_cache;
 
-   content_ctx.check_firmware_before_loading  = settings->bools.check_firmware_before_loading;
+   content_ctx.check_firmware_before_loading  = check_firmware_before_loading;
    content_ctx.is_ips_pref                    = rarch_ctl(RARCH_CTL_IS_IPS_PREF, NULL);
    content_ctx.is_bps_pref                    = rarch_ctl(RARCH_CTL_IS_BPS_PREF, NULL);
    content_ctx.is_ups_pref                    = rarch_ctl(RARCH_CTL_IS_UPS_PREF, NULL);
@@ -1976,12 +1987,12 @@ static bool task_load_content_callback(content_ctx_info_t *content_info,
    {
       struct retro_system_info *system        = runloop_get_libretro_system_info();
 
-      content_ctx.set_supports_no_game_enable = settings->bools.set_supports_no_game_enable;
+      content_ctx.set_supports_no_game_enable = set_supports_no_game_enable;
 
-      if (!string_is_empty(settings->paths.directory_system))
-         content_ctx.directory_system         = strdup(settings->paths.directory_system);
-      if (!string_is_empty(settings->paths.directory_cache))
-         content_ctx.directory_cache          = strdup(settings->paths.directory_cache);
+      if (!string_is_empty(path_dir_system))
+         content_ctx.directory_system         = strdup(path_dir_system);
+      if (!string_is_empty(path_dir_cache))
+         content_ctx.directory_cache          = strdup(path_dir_cache);
       if (!string_is_empty(system->valid_extensions))
          content_ctx.valid_extensions         = strdup(system->valid_extensions);
 
@@ -2002,8 +2013,8 @@ static bool task_load_content_callback(content_ctx_info_t *content_info,
          content_ctx.name_ups                 = strdup(global->name.ups);
    }
 
-   if (!string_is_empty(settings->paths.directory_system))
-      content_ctx.directory_system            = strdup(settings->paths.directory_system);
+   if (!string_is_empty(path_dir_system))
+      content_ctx.directory_system            = strdup(path_dir_system);
 
    if (!content_info->environ_get)
       content_info->environ_get = menu_content_environment_get;
@@ -2424,12 +2435,16 @@ bool content_init(void)
    char *error_string                         = NULL;
    struct string_list *content                = NULL;
    global_t *global                           = global_get_ptr();
-   settings_t *settings                       = config_get_ptr();
    rarch_system_info_t *sys_info              = runloop_get_system_info();
+   settings_t *settings                       = config_get_ptr();
+   bool check_firmware_before_loading         = settings->bools.check_firmware_before_loading;
+   bool set_supports_no_game_enable           = settings->bools.set_supports_no_game_enable;
+   const char *path_dir_system                = settings->paths.directory_system;
+   const char *path_dir_cache                 = settings->paths.directory_cache;
 
    temporary_content                          = string_list_new();
 
-   content_ctx.check_firmware_before_loading  = settings->bools.check_firmware_before_loading;
+   content_ctx.check_firmware_before_loading  = check_firmware_before_loading;
    content_ctx.patch_is_blocked               = rarch_ctl(RARCH_CTL_IS_PATCH_BLOCKED, NULL);
    content_ctx.is_ips_pref                    = rarch_ctl(RARCH_CTL_IS_IPS_PREF, NULL);
    content_ctx.is_bps_pref                    = rarch_ctl(RARCH_CTL_IS_BPS_PREF, NULL);
@@ -2462,12 +2477,12 @@ bool content_init(void)
    {
       struct retro_system_info *system        = runloop_get_libretro_system_info();
 
-      content_ctx.set_supports_no_game_enable = settings->bools.set_supports_no_game_enable;
+      content_ctx.set_supports_no_game_enable = set_supports_no_game_enable;
 
-      if (!string_is_empty(settings->paths.directory_system))
-         content_ctx.directory_system         = strdup(settings->paths.directory_system);
-      if (!string_is_empty(settings->paths.directory_cache))
-         content_ctx.directory_cache          = strdup(settings->paths.directory_cache);
+      if (!string_is_empty(path_dir_system))
+         content_ctx.directory_system         = strdup(path_dir_system);
+      if (!string_is_empty(path_dir_cache))
+         content_ctx.directory_cache          = strdup(path_dir_cache);
       if (!string_is_empty(system->valid_extensions))
          content_ctx.valid_extensions         = strdup(system->valid_extensions);
 

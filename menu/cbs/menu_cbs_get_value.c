@@ -245,7 +245,7 @@ static void menu_action_setting_disp_set_label_shader_watch_for_changes(
       char *s2, size_t len2)
 {
    settings_t *settings    = config_get_ptr();
-   bool shader_watch_files = settings ? settings->bools.video_shader_watch_files: false;
+   bool shader_watch_files = settings->bools.video_shader_watch_files;
 
    *s = '\0';
    *w = 19;
@@ -307,6 +307,7 @@ static void menu_action_setting_disp_set_label_shader_default_filter(
       char *s2, size_t len2)
 {
    settings_t *settings = config_get_ptr();
+   bool video_smooth    = false;
 
    *s = '\0';
    *w = 19;
@@ -314,7 +315,9 @@ static void menu_action_setting_disp_set_label_shader_default_filter(
    if (!settings)
       return;
 
-   if (settings->bools.video_smooth)
+   video_smooth         = settings->bools.video_smooth;
+
+   if (video_smooth)
       strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LINEAR), len);
    else
       strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NEAREST), len);

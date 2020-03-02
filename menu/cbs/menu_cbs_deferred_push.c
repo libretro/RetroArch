@@ -261,11 +261,16 @@ static int deferred_push_cursor_manager_list_deferred(
    rdb_path[0] = '\0';
 
    {
-      settings_t *settings           = config_get_ptr();
+      settings_t *settings                 = config_get_ptr();
       if (settings)
+      {
+         const char *path_content_database = 
+            settings->paths.path_content_database;
+
          fill_pathname_join(rdb_path,
-               settings->paths.path_content_database,
+               path_content_database,
                rdb, sizeof(rdb_path));
+      }
    }
 
    if (!string_is_empty(info->path_b))
@@ -392,10 +397,14 @@ end:
 static int general_push(menu_displaylist_info_t *info,
       unsigned id, enum menu_displaylist_ctl_state state)
 {
-   char                      *newstring2 = NULL;
-   core_info_list_t           *list      = NULL;
-   settings_t                  *settings = config_get_ptr();
-   menu_handle_t                  *menu  = menu_driver_get_ptr();
+   char                      *newstring2      = NULL;
+   core_info_list_t           *list           = NULL;
+   settings_t                  *settings      = config_get_ptr();
+   menu_handle_t                  *menu       = menu_driver_get_ptr();
+   bool 
+      multimedia_builtin_mediaplayer_enable   = settings->bools.multimedia_builtin_mediaplayer_enable;
+   bool multimedia_builtin_imageviewer_enable = settings->bools.multimedia_builtin_imageviewer_enable;
+   bool filter_by_current_core                = settings->bools.filter_by_current_core;
 
    if (!menu)
       return menu_cbs_exit();
@@ -542,16 +551,18 @@ static int general_push(menu_displaylist_info_t *info,
                }
             }
 
-            if (!settings->bools.filter_by_current_core)
+            if (!filter_by_current_core)
             {
                if (list && !string_is_empty(list->all_ext))
                {
                   unsigned x;
-                  struct string_list *str_list    = string_split(list->all_ext, "|");
+                  struct string_list *str_list = string_split(
+                        list->all_ext, "|");
 
                   for (x = 0; x < str_list->size; x++)
                   {
-                     if (!string_list_find_elem(str_list2, str_list->elems[x].data))
+                     if (!string_list_find_elem(str_list2,
+                              str_list->elems[x].data))
                      {
                         const char *elem = str_list->elems[x].data;
                         string_list_append(str_list2, elem, attr);
@@ -587,14 +598,14 @@ static int general_push(menu_displaylist_info_t *info,
          break;
    }
 
-   if (settings->bools.multimedia_builtin_mediaplayer_enable ||
-         settings->bools.multimedia_builtin_imageviewer_enable)
+   if (multimedia_builtin_mediaplayer_enable ||
+         multimedia_builtin_imageviewer_enable)
    {
       struct retro_system_info sysinfo = {0};
 
       (void)sysinfo;
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
-      if (settings->bools.multimedia_builtin_mediaplayer_enable)
+      if (multimedia_builtin_mediaplayer_enable)
       {
 #if defined(HAVE_FFMPEG)
          libretro_ffmpeg_retro_get_system_info(&sysinfo);
@@ -607,7 +618,7 @@ static int general_push(menu_displaylist_info_t *info,
       }
 #endif
 #ifdef HAVE_IMAGEVIEWER
-      if (settings->bools.multimedia_builtin_imageviewer_enable)
+      if (multimedia_builtin_imageviewer_enable)
       {
          libretro_imageviewer_retro_get_system_info(&sysinfo);
          strlcat(newstring2, "|", PATH_MAX_LENGTH * sizeof(char));

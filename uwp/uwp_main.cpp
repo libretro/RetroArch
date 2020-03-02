@@ -241,11 +241,11 @@ App::App() :
 	m_instance = this;
 }
 
-// The first method called when the IFrameworkView is being created.
+/* The first method called when the IFrameworkView is being created. */
 void App::Initialize(CoreApplicationView^ applicationView)
 {
-	// Register event handlers for app lifecycle. This example includes Activated, so that we
-	// can make the CoreWindow active and start rendering on the window.
+	/* Register event handlers for app lifecycle. This example includes Activated, so that we
+	 * can make the CoreWindow active and start rendering on the window. */
 	applicationView->Activated +=
 		ref new TypedEventHandler<CoreApplicationView^, IActivatedEventArgs^>(this, &App::OnActivated);
 
@@ -256,7 +256,7 @@ void App::Initialize(CoreApplicationView^ applicationView)
 		ref new EventHandler<Platform::Object^>(this, &App::OnResuming);
 }
 
-// Called when the CoreWindow object is created (or re-created).
+/* Called when the CoreWindow object is created (or re-created). */
 void App::SetWindow(CoreWindow^ window)
 {
 	window->SizeChanged +=
@@ -304,7 +304,7 @@ void App::SetWindow(CoreWindow^ window)
 		ref new EventHandler<Windows::UI::Core::BackRequestedEventArgs^>(this, &App::OnBackRequested);
 }
 
-// Initializes scene resources, or loads a previously saved app state.
+/* Initializes scene resources, or loads a previously saved app state. */
 void App::Load(Platform::String^ entryPoint)
 {
 	int ret = rarch_main(NULL, NULL, NULL);
@@ -322,7 +322,7 @@ void App::Load(Platform::String^ entryPoint)
 		ref new TypedEventHandler<PackageCatalog^, PackageInstallingEventArgs^>(this, &App::OnPackageInstalling);
 }
 
-// This method is called after the window becomes active.
+/* This method is called after the window becomes active. */
 void App::Run()
 {
    bool x = false;
@@ -344,8 +344,10 @@ void App::Run()
 
 		if (!x)
 		{
-			/* HACK: I have no idea why is this necessary but it is required to get proper scaling on Xbox *
-			 * Perhaps PreferredLaunchViewSize is broken and we need to wait until the app starts to call TryResizeView */
+			/* HACK: I have no idea why is this necessary but 
+          * it is required to get proper scaling on Xbox *
+			 * Perhaps PreferredLaunchViewSize is broken and 
+          * we need to wait until the app starts to call TryResizeView */
 			m_windowResized = true;
 			x = true;
 		}
@@ -355,53 +357,62 @@ void App::Run()
 	}
 }
 
-// Required for IFrameworkView.
-// Terminate events do not cause Uninitialize to be called. It will be called if your IFrameworkView
-// class is torn down while the app is in the foreground.
+/* Required for IFrameworkView.
+ * Terminate events do not cause Uninitialize to be called. 
+ * It will be called if your IFrameworkView
+ * class is torn down while the app is in the foreground. */
 void App::Uninitialize()
 {
 	main_exit(NULL);
 }
 
-// Application lifecycle event handlers.
+/* Application lifecycle event handlers. */
 
 void App::OnActivated(CoreApplicationView^ applicationView, IActivatedEventArgs^ args)
 {
-	// Run() won't start until the CoreWindow is activated.
+	/* Run() won't start until the CoreWindow is activated. */
 	CoreWindow::GetForCurrentThread()->Activate();
 }
 
 void App::OnSuspending(Platform::Object^ sender, SuspendingEventArgs^ args)
 {
-	// Save app state asynchronously after requesting a deferral. Holding a deferral
-	// indicates that the application is busy performing suspending operations. Be
-	// aware that a deferral may not be held indefinitely. After about five seconds,
-	// the app will be forced to exit.
+	/* Save app state asynchronously after requesting a deferral. Holding a deferral
+	 * indicates that the application is busy performing suspending operations. Be
+	 * aware that a deferral may not be held indefinitely. After about five seconds,
+	 * the app will be forced to exit.
+    */
 	SuspendingDeferral^ deferral = args->SuspendingOperation->GetDeferral();
-	auto app = this;
+	auto                     app = this;
 
 	create_task([app, deferral]()
 	{
-		// TODO: Maybe creating a save state here would be a good idea?
-		settings_t* settings = config_get_ptr();
-		if (settings->bools.config_save_on_exit) {
+		/* TODO: Maybe creating a save state here would be a good idea? */
+		settings_t* settings     = config_get_ptr();
+      bool config_save_on_exit = settings->bools.config_save_on_exit;
+
+		if (config_save_on_exit)
+      {
 			if (!path_is_empty(RARCH_PATH_CONFIG))
 			{
 				const char* config_path = path_get(RARCH_PATH_CONFIG);
-				bool path_exists = !string_is_empty(config_path);
+				bool path_exists        = !string_is_empty(config_path);
 
-				if (path_exists && config_save_file(config_path))
-				{
-					RARCH_LOG("[config] %s \"%s\".\n",
-						msg_hash_to_str(MSG_SAVED_NEW_CONFIG_TO),
-						config_path);
-				}
-				else if (path_exists)
-				{
-					RARCH_ERR("[config] %s \"%s\".\n",
-						msg_hash_to_str(MSG_FAILED_SAVING_CONFIG_TO),
-						config_path);
-				}
+            if (path_exists)
+            {
+               if (config_save_file(config_path))
+               {
+                  RARCH_LOG("[config] %s \"%s\".\n",
+                        msg_hash_to_str(MSG_SAVED_NEW_CONFIG_TO),
+                        config_path);
+               }
+               else
+               {
+                  RARCH_ERR("[config] %s \"%s\".\n",
+                     msg_hash_to_str(MSG_FAILED_SAVING_CONFIG_TO),
+                     config_path);
+               }
+            }
+
 			}
 		}
 
@@ -411,9 +422,10 @@ void App::OnSuspending(Platform::Object^ sender, SuspendingEventArgs^ args)
 
 void App::OnResuming(Platform::Object^ sender, Platform::Object^ args)
 {
-	// Restore any data or state that was unloaded on suspend. By default, data
-	// and state are persisted when resuming from suspend. Note that this event
-	// does not occur if the app was previously terminated.
+	/* Restore any data or state that was unloaded on suspend. By default, data
+	 * and state are persisted when resuming from suspend. Note that this event
+	 * does not occur if the app was previously terminated.
+    */
 }
 
 void App::OnBackRequested(Platform::Object^ sender, Windows::UI::Core::BackRequestedEventArgs^ args)
@@ -422,7 +434,7 @@ void App::OnBackRequested(Platform::Object^ sender, Windows::UI::Core::BackReque
 	args->Handled = true;
 }
 
-// Window event handlers.
+/* Window event handlers. */
 
 void App::OnWindowSizeChanged(CoreWindow^ sender, WindowSizeChangedEventArgs^ args)
 {
@@ -539,7 +551,7 @@ void App::OnWindowClosed(CoreWindow^ sender, CoreWindowEventArgs^ args)
 	m_windowClosed = true;
 }
 
-// DisplayInformation event handlers.
+/* DisplayInformation event handlers. */
 
 void App::OnDpiChanged(DisplayInformation^ sender, Object^ args)
 {
@@ -553,7 +565,7 @@ void App::OnOrientationChanged(DisplayInformation^ sender, Object^ args)
 
 void App::OnDisplayContentsInvalidated(DisplayInformation^ sender, Object^ args)
 {
-	// Probably can be ignored?
+	/* Probably can be ignored? */
 }
 
 void App::OnPackageInstalling(PackageCatalog^ sender, PackageInstallingEventArgs^ args)
@@ -567,7 +579,7 @@ void App::OnPackageInstalling(PackageCatalog^ sender, PackageInstallingEventArgs
 	}
 }
 
-// Implement UWP equivalents of various win32_* functions
+/* Implement UWP equivalents of various win32_* functions */
 extern "C" {
 
 	bool win32_has_focus(void *data)
@@ -687,18 +699,20 @@ extern "C" {
 	}
 
 	bool uwp_keyboard_pressed(unsigned key)
-	{
-		VirtualKey sym = (VirtualKey)rarch_keysym_lut[(enum retro_key)key];
-		if (sym == VirtualKey::None) return false;
-		CoreWindow^ window = CoreWindow::GetForCurrentThread();
-		if (!window)
-		{
-			// At times CoreWindow will return NULL while running Dolphin core
-			// Dolphin core runs on its own CPU thread separate from the UI-thread and so we must do a check for this.
-			return false;
-		}
-		return (window->GetKeyState(sym) & CoreVirtualKeyStates::Down) == CoreVirtualKeyStates::Down;
-	}
+   {
+      VirtualKey sym = (VirtualKey)rarch_keysym_lut[(enum retro_key)key];
+
+      if (sym == VirtualKey::None)
+         return false;
+
+      CoreWindow^ window = CoreWindow::GetForCurrentThread();
+
+      /* At times CoreWindow will return NULL while running Dolphin core
+       * Dolphin core runs on its own CPU thread separate from the UI-thread and so we must do a check for this. */
+      if (!window)
+         return false;
+      return (window->GetKeyState(sym) & CoreVirtualKeyStates::Down) == CoreVirtualKeyStates::Down;
+   }
 
 	int16_t uwp_mouse_state(unsigned port, unsigned id, bool screen)
 	{
@@ -707,9 +721,13 @@ extern "C" {
 		switch (id)
 		{
 		case RETRO_DEVICE_ID_MOUSE_X:
-			return screen ? uwp_current_input.mouse_screen_x : uwp_current_input.mouse_rel_x;
+			return screen 
+            ? uwp_current_input.mouse_screen_x 
+            : uwp_current_input.mouse_rel_x;
 		case RETRO_DEVICE_ID_MOUSE_Y:
-			return screen ? uwp_current_input.mouse_screen_y : uwp_current_input.mouse_rel_y;
+			return screen 
+            ? uwp_current_input.mouse_screen_y 
+            : uwp_current_input.mouse_rel_y;
 		case RETRO_DEVICE_ID_MOUSE_LEFT:
 			return uwp_current_input.mouse_left;
 		case RETRO_DEVICE_ID_MOUSE_RIGHT:
@@ -736,18 +754,22 @@ extern "C" {
 	int16_t uwp_pointer_state(unsigned idx, unsigned id, bool screen)
 	{
 		switch (id)
-		{
-		case RETRO_DEVICE_ID_POINTER_X:
-			return screen ? uwp_current_input.touch[idx].full_x : uwp_current_input.touch[idx].x;
-		case RETRO_DEVICE_ID_POINTER_Y:
-			return screen ? uwp_current_input.touch[idx].full_y : uwp_current_input.touch[idx].y;
-		case RETRO_DEVICE_ID_POINTER_PRESSED:
-			return uwp_current_input.touch[idx].isInContact;
-		case RETRO_DEVICE_ID_POINTER_COUNT:
-			return uwp_current_input.touch_count;
-		default:
-			break;
-		}
+      {
+         case RETRO_DEVICE_ID_POINTER_X:
+            return screen 
+               ? uwp_current_input.touch[idx].full_x 
+               : uwp_current_input.touch[idx].x;
+         case RETRO_DEVICE_ID_POINTER_Y:
+            return screen 
+               ? uwp_current_input.touch[idx].full_y 
+               : uwp_current_input.touch[idx].y;
+         case RETRO_DEVICE_ID_POINTER_PRESSED:
+            return uwp_current_input.touch[idx].isInContact;
+         case RETRO_DEVICE_ID_POINTER_COUNT:
+            return uwp_current_input.touch_count;
+         default:
+            break;
+      }
 
 		return 0;
 	}
@@ -757,7 +779,7 @@ extern "C" {
 		Windows::System::Launcher::LaunchUriAsync(ref new Uri("ms-settings:privacy-broadfilesystemaccess"));
 	}
 
-	enum retro_language uwp_get_language()
+	enum retro_language uwp_get_language(void)
 	{
       string_list* split = NULL;
 		auto lang          = Windows::System::UserProfile::GlobalizationPreferences::Languages->GetAt(0);
@@ -781,7 +803,7 @@ extern "C" {
 		return rarch_get_language_from_iso(lang_iso);
 	}
 
-	const char *uwp_get_cpu_model_name()
+	const char *uwp_get_cpu_model_name(void)
 	{
 		Platform::String^ cpu_id = nullptr;
 		Platform::String^ cpu_name = nullptr;
@@ -817,12 +839,10 @@ extern "C" {
 		}
 		
 		
-		if (cpu_name)
-		{
-			wcstombs(win32_cpu_model_name, cpu_name->Data(), 128);
-			return win32_cpu_model_name;
-		}
-		else
-			return "Unknown";
+		if (!cpu_name)
+         return "Unknown";
+
+      wcstombs(win32_cpu_model_name, cpu_name->Data(), 128);
+      return win32_cpu_model_name;
 	}
 }

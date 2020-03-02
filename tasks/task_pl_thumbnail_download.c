@@ -567,11 +567,14 @@ static void cb_task_pl_entry_thumbnail_refresh_menu(
    playlist_t *current_playlist    = playlist_get_cached();
    menu_handle_t *menu             = menu_driver_get_ptr();
    settings_t *settings            = config_get_ptr();
+   const char *menu_driver         = NULL;
    
    if (!task || !settings)
       return;
-   
-   pl_thumb = (pl_thumb_handle_t*)task->state;
+
+   menu_driver                     = settings->arrays.menu_driver;
+   pl_thumb                        = (pl_thumb_handle_t*)task->state;
+
    if (!pl_thumb || !pl_thumb->thumbnail_path_data)
       return;
    
@@ -592,7 +595,7 @@ static void cb_task_pl_entry_thumbnail_refresh_menu(
       return;
    
 #ifdef HAVE_MATERIALUI
-   if (string_is_equal(settings->arrays.menu_driver, "glui"))
+   if (string_is_equal(menu_driver, "glui"))
    {
       if (!string_is_equal(pl_thumb->playlist_path,
             playlist_get_conf_path(current_playlist)))
@@ -802,13 +805,16 @@ bool task_push_pl_entry_thumbnail_download(
    pl_thumb_handle_t *pl_thumb   = (pl_thumb_handle_t*)calloc(1, sizeof(pl_thumb_handle_t));
    pl_entry_id_t *entry_id       = (pl_entry_id_t*)calloc(1, sizeof(pl_entry_id_t));
    char *playlist_path           = NULL;
+   const char *dir_thumbnails    = NULL;
    
    /* Sanity check */
    if (!settings || !task || !pl_thumb || !playlist || !entry_id)
       goto error;
+
+   dir_thumbnails                = settings->paths.directory_thumbnails;
    
    if (string_is_empty(system) ||
-       string_is_empty(settings->paths.directory_thumbnails) ||
+       string_is_empty(dir_thumbnails) ||
        string_is_empty(playlist_get_conf_path(playlist)))
       goto error;
    
@@ -852,7 +858,7 @@ bool task_push_pl_entry_thumbnail_download(
    /* Configure handle */
    pl_thumb->system              = strdup(system);
    pl_thumb->playlist_path       = playlist_path;
-   pl_thumb->dir_thumbnails      = strdup(settings->paths.directory_thumbnails);
+   pl_thumb->dir_thumbnails      = strdup(dir_thumbnails);
    pl_thumb->playlist            = playlist;
    pl_thumb->thumbnail_path_data = NULL;
    pl_thumb->http_task           = NULL;
