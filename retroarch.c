@@ -27400,7 +27400,9 @@ static void menu_driver_toggle(bool on)
       settings->bools.menu_pause_libretro : false;
 #ifdef HAVE_AUDIOMIXER
    bool audio_enable_menu                     = settings->bools.audio_enable_menu;
+#if 0
    bool audio_enable_menu_bgm                 = settings->bools.audio_enable_menu_bgm;
+#endif
 #endif
    menu_handle_t *menu_data                   = menu_driver_get_ptr();
 
