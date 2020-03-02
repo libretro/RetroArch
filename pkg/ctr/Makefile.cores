@@ -410,11 +410,22 @@ else ifeq ($(LIBRETRO), vecx)
 	APP_UNIQUE_ID        = 0xBAC4C
 	APP_ICON             = pkg/ctr/assets/vecx.png
 	APP_BANNER           = pkg/ctr/assets/vecx_banner.png
-
 else ifeq ($(LIBRETRO), vitaquake2)
 	APP_TITLE            = vitaquake2
 	APP_PRODUCT_CODE     = RARCH-VITAQUAKE2
 	APP_UNIQUE_ID        = 0xBAC98
+	APP_ICON             = pkg/ctr/assets/default.png
+	APP_BANNER           = pkg/ctr/assets/libretro_banner.png
+else ifeq ($(LIBRETRO), xmil)
+	APP_TITLE            = XMillenium Libretro
+	APP_PRODUCT_CODE     = RARCH-XMIL
+	APP_UNIQUE_ID        = 0xBAC99
+	APP_ICON             = pkg/ctr/assets/default.png
+	APP_BANNER           = pkg/ctr/assets/libretro_banner.png
+else ifeq ($(LIBRETRO), ecwolf)
+	APP_TITLE            = ECWolf Libretro
+	APP_PRODUCT_CODE     = RARCH-ECWOLF
+	APP_UNIQUE_ID        = 0xBAC9A
 	APP_ICON             = pkg/ctr/assets/default.png
 	APP_BANNER           = pkg/ctr/assets/libretro_banner.png
 endif
