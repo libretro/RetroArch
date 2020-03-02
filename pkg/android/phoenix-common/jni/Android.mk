@@ -109,6 +109,9 @@ LOCAL_C_INCLUDES := \
 							$(LOCAL_PATH)/$(RARCH_DIR)/deps/7zip
 
 INCLUDE_DIRS     := \
+	-I$(LOCAL_PATH)/$(DEPS_DIR)/dr/ \
+	-I$(LOCAL_PATH)/$(DEPS_DIR)/ibxm/ \
+	-I$(LOCAL_PATH)/$(DEPS_DIR)/miniupnpc/ \
 	-I$(LOCAL_PATH)/$(DEPS_DIR)/stb/ \
 	-I$(LOCAL_PATH)/$(DEPS_DIR)/7zip/ \
 	-I$(LOCAL_PATH)/$(DEPS_DIR)/libFLAC/include

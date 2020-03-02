@@ -184,7 +184,7 @@ else ifeq ($(libogc_platform), 1)
 
    CFLAGS += -DGEKKO -U__INT32_TYPE__ -U __UINT32_TYPE__ -D__INT32_TYPE__=int
 
-	HAVE_AUDIOMIXER			 := 1
+   HAVE_AUDIOMIXER          := 1
    HAVE_RUNAHEAD            := 1
    HAVE_FILTERS_BUILTIN     := 1
    HAVE_THREADS             := 1
@@ -197,11 +197,11 @@ else ifeq ($(libogc_platform), 1)
    HAVE_VIDEO_LAYOUT        := 0
    HAVE_ZLIB                := 1
    HAVE_7ZIP                := 1
-	HAVE_CONFIGFILE          := 1
+   HAVE_CONFIGFILE          := 1
    RARCH_CONSOLE             = 1
 
    ifeq ($(platform), wii)
-		HAVE_AUDIOMIXER			 := 1
+      HAVE_AUDIOMIXER          := 1
       #HAVE_LANGEXTRA          := 1
       HAVE_WIIUSB_HID          := 1
       HAVE_RARCH_EXEC          := 1

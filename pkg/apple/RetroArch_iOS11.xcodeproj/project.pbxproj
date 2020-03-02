@@ -624,6 +624,9 @@
 					"../../libretro-common/include",
 					"../../libretro-common/include/compat/zlib",
 					../../deps/stb,
+					../../deps/miniupnpc,
+					../../deps/ibxm,
+					../../deps/7zip,
 					../../deps/rcheevos/include,
 					../../deps,
 				);
@@ -719,6 +722,9 @@
 					"../../libretro-common/include",
 					"../../libretro-common/include/compat/zlib",
 					../../deps/stb,
+					../../deps/miniupnpc,
+					../../deps/ibxm,
+					../../deps/7zip,
 					../../deps/rcheevos/include,
 					../../deps,
 				);
@@ -845,6 +851,10 @@
 					"../../libretro-common/include",
 					"../../libretro-common/include/compat/zlib",
 					../../deps/stb,
+					../../deps/miniupnpc,
+					../../deps/ibxm,
+					../../deps/dr,
+					../../deps/7zip,
 					../../deps/rcheevos/include,
 					../../deps,
 				);
@@ -968,6 +978,10 @@
 					"../../libretro-common/include",
 					"../../libretro-common/include/compat/zlib",
 					../../deps/stb,
+					../../deps/miniupnpc,
+					../../deps/ibxm,
+					../../deps/dr,
+					../../deps/7zip,
 					../../deps/rcheevos/include,
 					../../deps,
 				);

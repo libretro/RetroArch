@@ -40,23 +40,23 @@
 #define STB_VORBIS_NO_STDIO
 #define STB_VORBIS_NO_CRT
 
-#include <stb/stb_vorbis.h>
+#include "stb_vorbis.h"
 #endif
 
 #ifdef HAVE_DR_FLAC
 #define DR_FLAC_IMPLEMENTATION
-#include <dr/dr_flac.h>
+#include "dr_flac.h"
 #endif
 
 #ifdef HAVE_DR_MP3
 #define DR_MP3_IMPLEMENTATION
 #include <retro_assert.h>
 #define DRMP3_ASSERT(expression) retro_assert(expression)
-#include <dr/dr_mp3.h>
+#include "dr_mp3.h"
 #endif
 
 #ifdef HAVE_IBXM
-#include <ibxm/ibxm.h>
+#include "ibxm.h"
 #endif
 
 #define AUDIO_MIXER_MAX_VOICES      8

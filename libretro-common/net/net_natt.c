@@ -33,9 +33,15 @@
 #include <net/net_natt.h>
 
 #if HAVE_MINIUPNPC
+#if HAVE_BUILTINMINIUPNPC
+#include "miniwget.h"
+#include "miniupnpc.h"
+#include "upnpcommands.h"
+#else
 #include <miniupnpc/miniwget.h>
 #include <miniupnpc/miniupnpc.h>
 #include <miniupnpc/upnpcommands.h>
+#endif
 
 #if MINIUPNPC_API_VERSION < 16
 #undef HAVE_MINIUPNPC

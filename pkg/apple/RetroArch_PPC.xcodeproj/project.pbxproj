@@ -235,6 +235,9 @@
 					"$(SRCROOT)/../../libretro-common/include/compat/zlib",
 					"$(SRCROOT)/../../deps",
 					"$(SRCROOT)/../../deps/stb",
+					"$(SRCROOT)/../../deps/miniupnpc",
+					"$(SRCROOT)/../../deps/ibxm",
+					"$(SRCROOT)/../../deps/7zip",
 					"$(SRCROOT)/../../deps/rcheevos/include",
 					"$(SRCROOT)",
 				);
@@ -252,6 +255,8 @@
 					"$(SRCROOT)/../../libretro-common/include/compat/zlib",
 					"$(SRCROOT)/../../deps",
 					"$(SRCROOT)/../../deps/stb",
+					"$(SRCROOT)/../../deps/ibxm",
+					"$(SRCROOT)/../../deps/7zip",
 					"$(SRCROOT)/../../deps/rcheevos/include",
 					"$(SRCROOT)",
 				);

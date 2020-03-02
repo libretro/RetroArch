@@ -378,6 +378,9 @@
 					"$(SRCROOT)/../../deps/rcheevos/include",
 					"$(SRCROOT)/../../deps/7zip",
 					"$(SRCROOT)/../../deps/stb",
+					"$(SRCROOT)/../../deps/miniupnpc",
+					"$(SRCROOT)/../../deps/ibxm",
+					"$(SRCROOT)/../../deps/dr",
 					"$(SRCROOT)/../../deps",
 				);
 				INFOPLIST_FILE = OSX/Info.plist;
@@ -414,6 +417,9 @@
 					"$(SRCROOT)/../../deps/rcheevos/include",
 					"$(SRCROOT)/../../deps/7zip",
 					"$(SRCROOT)/../../deps/stb",
+					"$(SRCROOT)/../../deps/miniupnpc",
+					"$(SRCROOT)/../../deps/ibxm",
+					"$(SRCROOT)/../../deps/dr",
 					"$(SRCROOT)/../../deps",
 				);
 				INFOPLIST_FILE = OSX/Info.plist;
@@ -452,6 +458,9 @@
 					"$(SRCROOT)/../../deps/rcheevos/include",
 					"$(SRCROOT)/../../deps/7zip",
 					"$(SRCROOT)/../../deps/stb",
+					"$(SRCROOT)/../../deps/miniupnpc",
+					"$(SRCROOT)/../../deps/ibxm",
+					"$(SRCROOT)/../../deps/dr",
 					"$(SRCROOT)/../../deps",
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/OSX/Info.plist";
@@ -484,6 +493,9 @@
 					"$(SRCROOT)/../../deps/rcheevos/include",
 					"$(SRCROOT)/../../deps/7zip",
 					"$(SRCROOT)/../../deps/stb",
+					"$(SRCROOT)/../../deps/miniupnpc",
+					"$(SRCROOT)/../../deps/ibxm",
+					"$(SRCROOT)/../../deps/dr",
 					"$(SRCROOT)/../../deps",
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/OSX/Info.plist";
