@@ -1524,16 +1524,17 @@ ifeq ($(HAVE_BUILTINGLSLANG), 1)
       GLSLANG_PLATFORM := Unix
    endif
 
+   DEFINES += -DHAVE_BUILTINGLSLANG
+
    INCLUDE_DIRS += \
       -I$(DEPS_DIR)/glslang/glslang/glslang/OSDependent/$(GLSLANG_PLATFORM) \
       -I$(DEPS_DIR)/glslang/glslang/OGLCompilersDLL \
-      -I$(DEPS_DIR)/glslang/glslang \
       -I$(DEPS_DIR)/glslang/glslang/glslang/MachineIndependent \
       -I$(DEPS_DIR)/glslang/glslang/glslang/Public \
       -I$(DEPS_DIR)/glslang/glslang/SPIRV
 
    GLSLANG_SOURCES := \
-      $(wildcard $(DEPS_DIR)/glslang/*.cpp) \
+      gfx/drivers_shader/glslang.cpp \
       $(wildcard $(DEPS_DIR)/glslang/glslang/SPIRV/*.cpp) \
       $(wildcard $(DEPS_DIR)/glslang/glslang/glslang/GenericCodeGen/*.cpp) \
       $(wildcard $(DEPS_DIR)/glslang/glslang/OGLCompilersDLL/*.cpp) \
@@ -1547,7 +1548,7 @@ ifeq ($(HAVE_BUILTINGLSLANG), 1)
    endif
 else ifeq ($(HAVE_GLSLANG),1)
    HAVE_GLSLANG_COMMON = 1
-   GLSLANG_SOURCES := $(DEPS_DIR)/glslang/glslang.cpp
+   GLSLANG_SOURCES := gfx/drivers_shader/glslang.cpp
 
    # The order of these libs are somewhat specific
    LIBS += $(GLSLANG_LIBS) \
@@ -1561,7 +1562,6 @@ endif
 
 ifeq ($(HAVE_GLSLANG_COMMON), 1)
    DEFINES += -DHAVE_GLSLANG
-   INCLUDE_DIRS += -I$(DEPS_DIR)/glslang
    OBJ += $(GLSLANG_SOURCES:.cpp=.o)
 endif
 

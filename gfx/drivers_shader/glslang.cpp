@@ -16,8 +16,8 @@
 #include "glslang.hpp"
 
 #ifdef HAVE_BUILTINGLSLANG
-#include "glslang/glslang/Public/ShaderLang.h"
-#include "glslang/SPIRV/GlslangToSpv.h"
+#include "ShaderLang.h"
+#include "GlslangToSpv.h"
 #elif HAVE_GLSLANG
 #include <glslang/Public/ShaderLang.h>
 #include <glslang/SPIRV/GlslangToSpv.h>
