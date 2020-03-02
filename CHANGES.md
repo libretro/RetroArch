@@ -12,6 +12,7 @@
 - CHEEVOS: RetroAchievements rich presence for RA.org website/Discord
 - CHEEVOS: Reset token when username or password changes
 - CHEEVOS: Display measured progress on locked achievements
+- CHEEVOS: Queue multiple popups
 - CORE UPDATER: Prevent hang when fetching core list if HTTP transfer fails
 - DISK CONTROL: Add disk labels to 'disk inserted' notifications
 - EMSCRIPTEN: Recreate input event listeners properly
@@ -25,6 +26,7 @@
 - LOCALIZATION: Update Portuguese Brazilian translation
 - MENU/WIDGETS: Allow notifications to use full screen width when not displaying menu
 - MENU/WIDGETS: DPI-based scaling
+- MENU/MATERIALUI: Add option to remove navigation bar
 - MENU/OZONE: Add DPI-based scaling
 - MENU/OZONE: Add rudimentary pointer support
 - MENU/OZONE: Add 'Nord' and 'Gruvbox Dark' themes
@@ -35,6 +37,7 @@
 - MENU/OZONE/POINTER: Cursor focus follows mouse pointer from sidebar to entries list (and vice versa)
 - MENU/OZONE/POINTER: In entries list, item under cursor is automatically selected (with some fudging to ensure this doesn't break mouse wheel scrolling)
 - MENU/OZONE/POINTER: In sidebar, item under cursor is not automatically selected (this is too jarring)
+- MENU/XMB: New color themes 'Cube Purple', 'Family Red', etc.
 - NETPLAY/MENU/BUGFIX: Fix Netplay Stateless Mode doesn't save. Affects other netplay settings which can be overridden by commandline option
 - ODROID GO ADVANCE: Rotation support
 - NETPLAY/ROOMS/BUGFIX: Prevent out-of-bounds array indexing when displaying/selecting netplay rooms in menus
