@@ -217,6 +217,7 @@ default_sublabel_macro(action_bind_sublabel_input_hotkey_settings,         MENU_
 #ifdef HAVE_MATERIALUI
 default_sublabel_macro(action_bind_sublabel_materialui_icons_enable,       MENU_ENUM_SUBLABEL_MATERIALUI_ICONS_ENABLE)
 default_sublabel_macro(action_bind_sublabel_materialui_landscape_layout_optimization, MENU_ENUM_SUBLABEL_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION)
+default_sublabel_macro(action_bind_sublabel_materialui_show_nav_bar,        MENU_ENUM_SUBLABEL_MATERIALUI_SHOW_NAV_BAR)
 default_sublabel_macro(action_bind_sublabel_materialui_auto_rotate_nav_bar, MENU_ENUM_SUBLABEL_MATERIALUI_AUTO_ROTATE_NAV_BAR)
 default_sublabel_macro(action_bind_sublabel_materialui_dual_thumbnail_list_view_enable, MENU_ENUM_SUBLABEL_MATERIALUI_DUAL_THUMBNAIL_LIST_VIEW_ENABLE)
 default_sublabel_macro(action_bind_sublabel_materialui_thumbnail_background_enable, MENU_ENUM_SUBLABEL_MATERIALUI_THUMBNAIL_BACKGROUND_ENABLE)
@@ -237,6 +238,7 @@ default_sublabel_macro(action_bind_sublabel_video_refresh_rate_auto,       MENU_
 default_sublabel_macro(action_bind_sublabel_video_hard_sync,               MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC)
 default_sublabel_macro(action_bind_sublabel_video_hard_sync_frames,        MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES)
 default_sublabel_macro(action_bind_sublabel_video_threaded,                MENU_ENUM_SUBLABEL_VIDEO_THREADED)
+default_sublabel_macro(action_bind_sublabel_settings,                      MENU_ENUM_SUBLABEL_SETTINGS)
 default_sublabel_macro(action_bind_sublabel_config_save_on_exit,           MENU_ENUM_SUBLABEL_CONFIG_SAVE_ON_EXIT)
 default_sublabel_macro(action_bind_sublabel_configuration_settings_list,   MENU_ENUM_SUBLABEL_CONFIGURATION_SETTINGS)
 default_sublabel_macro(action_bind_sublabel_configurations_list_list,      MENU_ENUM_SUBLABEL_CONFIGURATIONS_LIST)
@@ -1322,6 +1324,11 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION:
 #ifdef HAVE_MATERIALUI
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_materialui_landscape_layout_optimization);
+#endif
+            break;
+         case MENU_ENUM_LABEL_MATERIALUI_SHOW_NAV_BAR:
+#ifdef HAVE_MATERIALUI
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_materialui_show_nav_bar);
 #endif
             break;
          case MENU_ENUM_LABEL_MATERIALUI_AUTO_ROTATE_NAV_BAR:
@@ -2684,6 +2691,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_CHEEVOS_AUTO_SCREENSHOT:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheevos_auto_screenshot);
+            break;
+         case MENU_ENUM_LABEL_SETTINGS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_settings);
             break;
          case MENU_ENUM_LABEL_CONFIG_SAVE_ON_EXIT:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_config_save_on_exit);

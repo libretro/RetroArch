@@ -1126,12 +1126,13 @@ enum materialui_nav_bar_action_tab_type
 };
 
 /* Defines navigation bar draw locations
- * Note: Only bottom and right are supported
- * at present... */
+ * Note: Only bottom, right and 'hidden'
+ * are supported at present... */
 enum materialui_nav_bar_location_type
 {
    MUI_NAV_BAR_LOCATION_BOTTOM = 0,
-   MUI_NAV_BAR_LOCATION_RIGHT
+   MUI_NAV_BAR_LOCATION_RIGHT,
+   MUI_NAV_BAR_LOCATION_HIDDEN
 };
 
 /* This structure holds all runtime parameters
@@ -1251,9 +1252,11 @@ typedef struct materialui_handle
    bool is_portrait;
    bool need_compute;
    bool mouse_show;
+   bool is_playlist_tab;
    bool is_playlist;
    bool is_file_list;
    bool is_dropdown_list;
+   bool last_show_nav_bar;
    bool last_auto_rotate_nav_bar;
    bool menu_stack_flushed;
 
@@ -2293,6 +2296,7 @@ static void materialui_render(void *data,
    bool last_entry_found    = false;
    unsigned landscape_layout_optimization
                             = settings->uints.menu_materialui_landscape_layout_optimization;
+   bool show_nav_bar        = settings->bools.menu_materialui_show_nav_bar;
    bool auto_rotate_nav_bar = settings->bools.menu_materialui_auto_rotate_nav_bar;
    unsigned thumbnail_upscale_threshold = 
       settings->uints.gfx_thumbnail_upscale_threshold;
@@ -2312,6 +2316,7 @@ static void materialui_render(void *data,
        ((enum materialui_landscape_layout_optimization_type)
             landscape_layout_optimization !=
                   mui->last_landscape_layout_optimization) ||
+       (show_nav_bar != mui->last_show_nav_bar) ||
        (auto_rotate_nav_bar != mui->last_auto_rotate_nav_bar))
    {
       mui->dip_base_unit_size                 = scale_factor * MUI_DIP_BASE_UNIT_SIZE;
@@ -2321,6 +2326,7 @@ static void materialui_render(void *data,
       mui->last_landscape_layout_optimization =
             (enum materialui_landscape_layout_optimization_type)
                   landscape_layout_optimization;
+      mui->last_show_nav_bar                  = show_nav_bar;
       mui->last_auto_rotate_nav_bar           = auto_rotate_nav_bar;
 
       /* Screen dimensions/layout are going to change
@@ -4291,12 +4297,22 @@ static void materialui_render_nav_bar(
       materialui_handle_t *mui, video_frame_info_t *video_info,
       unsigned width, unsigned height)
 {
-   if (mui->nav_bar.location == MUI_NAV_BAR_LOCATION_RIGHT)
-      materialui_render_nav_bar_right(
+   switch (mui->nav_bar.location)
+   {
+      case MUI_NAV_BAR_LOCATION_RIGHT:
+         materialui_render_nav_bar_right(
             mui, video_info, width, height);
-   else
-      materialui_render_nav_bar_bottom(
+         break;
+      case MUI_NAV_BAR_LOCATION_HIDDEN:
+         /* Draw nothing */
+         break;
+      /* 'Bottom' is the default case */
+      case MUI_NAV_BAR_LOCATION_BOTTOM:
+      default:
+         materialui_render_nav_bar_bottom(
             mui, video_info, width, height);
+         break;
+   }
 }
 
 /* Convenience function for accessing the thumbnails
@@ -5484,12 +5500,20 @@ static void materialui_layout(materialui_handle_t *mui, bool video_is_threaded)
    /* Get navigation bar layout
     * > Normally drawn at the bottom of the screen,
     *   but in landscape orientations should be placed
-    *   on the right hand side */
+    *   on the right hand side
+    * > When navigation bar is hidden, just set layout
+    *   width and height to zero */
    mui->nav_bar.width                  = mui->dip_base_unit_size / 3;
    mui->nav_bar.divider_width          = mui->entry_divider_width;
    mui->nav_bar.selection_marker_width = mui->nav_bar.width / 16;
 
-   if (!mui->is_portrait && mui->last_auto_rotate_nav_bar)
+   if (!mui->last_show_nav_bar)
+   {
+      mui->nav_bar.location            = MUI_NAV_BAR_LOCATION_HIDDEN;
+      mui->nav_bar_layout_width        = 0;
+      mui->nav_bar_layout_height       = 0;
+   }
+   else if (!mui->is_portrait && mui->last_auto_rotate_nav_bar)
    {
       mui->nav_bar.location            = MUI_NAV_BAR_LOCATION_RIGHT;
       mui->nav_bar_layout_width        = mui->nav_bar.width;
@@ -5663,7 +5687,11 @@ static void *materialui_init(void **userdata, bool video_is_threaded)
    mui->last_scale_factor    = gfx_display_get_dpi_scale(width, height);
    mui->dip_base_unit_size   = mui->last_scale_factor * MUI_DIP_BASE_UNIT_SIZE;
 
+   mui->last_show_nav_bar        = settings->bools.menu_materialui_show_nav_bar;
+   mui->last_auto_rotate_nav_bar = settings->bools.menu_materialui_auto_rotate_nav_bar;
+
    mui->need_compute         = false;
+   mui->is_playlist_tab      = false;
    mui->is_playlist          = false;
    mui->is_file_list         = false;
    mui->is_dropdown_list     = false;
@@ -6086,6 +6114,11 @@ static void materialui_populate_entries(
    /* Set menu title */
    menu_entries_get_title(mui->menu_title, sizeof(mui->menu_title));
 
+   /* Check whether this is the playlists tab
+    * (this requires special handling when
+    * scrolling via an alphabet search) */
+   mui->is_playlist_tab = string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB));
+
    /* Check whether we are currently viewing a playlist,
     * file-browser-type list or dropdown list
     * (each of these is regarded as a 'plain' list,
@@ -6129,7 +6162,12 @@ static void materialui_populate_entries(
    else
       mui->playlist = NULL;
 
-   /* Update navigation bar tabs */
+   /* Update navigation bar tabs
+    * > Note: We do this regardless of whether
+    *   the navigation bar is currently shown.
+    *   Since the visibility may change at any
+    *   point, we must always keep track of the
+    *   current navigation bar status */
    materialui_populate_nav_bar(mui, label, settings);
 
    /* Update list view/thumbnail parameters */
@@ -6166,9 +6204,25 @@ static void materialui_populate_entries(
     * (wrong) first and last entry indices. A
     * simple fix (workaround) for this is to just
     * reset the first and last entry indices to zero
-    * whenever materialui_populate_entries() is called */
-   mui->first_onscreen_entry = 0;
-   mui->last_onscreen_entry  = 0;
+    * whenever materialui_populate_entries() is called
+    * > ADDENDUM: If 'prevent populate' is currently
+    *   set, then we are to assume that this is the
+    *   same menu list as the previous populate_entries()
+    *   invocation. In this very specific case we must
+    *   not reset the first and last entry indices,
+    *   since this may in fact correspond to an option
+    *   value toggle that simultaneously refreshes the
+    *   existing menu list *and* causes a layout change
+    *   (i.e. if we *did* reset the entry indices, the
+    *   selection pointer would incorrectly 'jump' from
+    *   the current selection to the top of the list) */
+   if (menu_driver_ctl(RARCH_MENU_CTL_IS_PREVENT_POPULATE, NULL))
+      menu_driver_ctl(RARCH_MENU_CTL_UNSET_PREVENT_POPULATE, NULL);
+   else
+   {
+      mui->first_onscreen_entry = 0;
+      mui->last_onscreen_entry  = 0;
+   }
 
    /* Note: mui->scroll_y position needs to be set here,
     * but we can't do this until materialui_compute_entries_box()
@@ -6458,9 +6512,10 @@ static enum menu_action materialui_parse_menu_entry_action(
       case MENU_ACTION_LEFT:
       case MENU_ACTION_RIGHT:
          /* Navigate left/right
-          * > If this is a top level menu, left/right is
-          *   used to switch tabs */
-         if (materialui_list_get_size(mui, MENU_LIST_PLAIN) == 1)
+          * > If this is a top level menu *and* the navigation
+          *   bar is shown, left/right is used to switch tabs */
+         if ((mui->nav_bar.location != MUI_NAV_BAR_LOCATION_HIDDEN) &&
+             (materialui_list_get_size(mui, MENU_LIST_PLAIN) == 1))
          {
             materialui_switch_tabs(mui, NULL, action);
             new_action = MENU_ACTION_NOOP;
@@ -6488,15 +6543,33 @@ static enum menu_action materialui_parse_menu_entry_action(
          break;
       case MENU_ACTION_SCROLL_UP:
          /* Descend alphabet (Z towards A)
-          * > If current selection is off screen,
-          *   auto select *last* item */
-         materialui_auto_select_onscreen_entry(mui, MUI_ONSCREEN_ENTRY_LAST);
+          * > If this is the playlists tab, an alphabet
+          *   search is highly ineffective - instead,
+          *   interpret this as a 'left' scroll action */
+         if (mui->is_playlist_tab)
+         {
+            materialui_auto_select_onscreen_entry(mui, MUI_ONSCREEN_ENTRY_CENTRE);
+            new_action = MENU_ACTION_LEFT;
+         }
+         /* > ...otherwise, if current selection is off
+          *   screen, auto select *last* item */
+         else
+            materialui_auto_select_onscreen_entry(mui, MUI_ONSCREEN_ENTRY_LAST);
          break;
       case MENU_ACTION_SCROLL_DOWN:
          /* Ascend alphabet (A towards Z)
-          * > If current selection is off screen,
-          *   auto select *first* item */
-         materialui_auto_select_onscreen_entry(mui, MUI_ONSCREEN_ENTRY_FIRST);
+          * > If this is the playlists tab, an alphabet
+          *   search is highly ineffective - instead,
+          *   interpret this as a 'right' scroll action */
+         if (mui->is_playlist_tab)
+         {
+            materialui_auto_select_onscreen_entry(mui, MUI_ONSCREEN_ENTRY_CENTRE);
+            new_action = MENU_ACTION_RIGHT;
+         }
+         /* > ...otherwise, if current selection is off
+          *   screen, auto select *first* item */
+         else
+            materialui_auto_select_onscreen_entry(mui, MUI_ONSCREEN_ENTRY_FIRST);
          break;
       case MENU_ACTION_SCAN:
          /* 'Scan' command is used to cycle current
@@ -6571,6 +6644,44 @@ static enum menu_action materialui_parse_menu_entry_action(
                new_action = MENU_ACTION_NOOP;
          }
          break;
+      case MENU_ACTION_CANCEL:
+         /* If user hides navigation bar via the settings
+          * tab, pressing cancel (several times) will return
+          * them to the top level settings menu - but since
+          * left/right does not switch tabs when the navigation
+          * bar is hidden, they will get 'stuck' (i.e. cannot
+          * return to the main menu)
+          * > We therefore have to handle this special case
+          *   by switching to the main menu tab whenever the
+          *   user instigates a cancel action from any top
+          *   level menu other than main *if* the navigation
+          *   bar is hidden */
+         if ((mui->nav_bar.location == MUI_NAV_BAR_LOCATION_HIDDEN) &&
+             (materialui_list_get_size(mui, MENU_LIST_PLAIN) == 1))
+         {
+            unsigned main_menu_tab_index                 = 0;
+            materialui_nav_bar_menu_tab_t *main_menu_tab = NULL;
+            unsigned i;
+
+            /* Find index of main menu tab */
+            for (i = 0; i < mui->nav_bar.num_menu_tabs; i++)
+            {
+               if (mui->nav_bar.menu_tabs[i].type == MUI_NAV_BAR_MENU_TAB_MAIN)
+               {
+                  main_menu_tab       = &mui->nav_bar.menu_tabs[i];
+                  main_menu_tab_index = i;
+               }
+            }
+
+            /* If current tab is not main, switch to main */
+            if (main_menu_tab &&
+                (main_menu_tab_index != mui->nav_bar.active_menu_tab_index))
+            {
+               materialui_switch_tabs(mui, main_menu_tab, MENU_ACTION_NOOP);
+               new_action = MENU_ACTION_NOOP;
+            }
+         }
+         break;
       default:
          /* In all other cases, pass through input
           * menu action without intervention */
@@ -6634,11 +6745,13 @@ static int materialui_list_push(void *data, void *userdata,
       menu_displaylist_info_t *info, unsigned type)
 {
    menu_displaylist_ctx_parse_entry_t entry;
-   int ret                = -1;
-   core_info_list_t *list = NULL;
-   menu_handle_t *menu    = (menu_handle_t*)data;
+   int ret                  = -1;
+   core_info_list_t *list   = NULL;
+   menu_handle_t *menu      = (menu_handle_t*)data;
+   materialui_handle_t *mui = (materialui_handle_t*)userdata;
 
-   (void)userdata;
+   if (!menu || !mui)
+      return ret;
 
    switch (type)
    {
@@ -6683,6 +6796,12 @@ static int materialui_list_push(void *data, void *userdata,
          {
             settings_t   *settings      = config_get_ptr();
             rarch_system_info_t *system = runloop_get_system_info();
+
+            /* If navigation bar is hidden, use default
+             * main menu */
+            if (mui->nav_bar.location == MUI_NAV_BAR_LOCATION_HIDDEN)
+               return ret;
+
             menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
 
             entry.data            = menu;
@@ -7033,6 +7152,10 @@ static int materialui_pointer_up_nav_bar(
    unsigned num_tabs = mui->nav_bar.num_menu_tabs + MUI_NAV_BAR_NUM_ACTION_TABS;
    unsigned tab_index;
 
+   /* If navigation bar is hidden, do nothing */
+   if (mui->nav_bar.location == MUI_NAV_BAR_LOCATION_HIDDEN)
+      return 0;
+
    /* Determine tab 'index' - integer corresponding
     * to physical location on screen */
    if (mui->nav_bar.location == MUI_NAV_BAR_LOCATION_RIGHT)
@@ -7273,12 +7396,14 @@ static int materialui_pointer_up(void *userdata,
          break;
       case MENU_INPUT_GESTURE_SWIPE_LEFT:
          {
-            /* If we are at the top level, a swipe should
-             * just switch between the three main menu screens
+            /* If we are at the top level and the navigation bar is
+             * enabled, a swipe should just switch between the three
+             * main menu screens
              * (i.e. we don't care which item is currently selected)
              * Note: For intuitive behaviour, a *left* swipe should
              * trigger a *right* navigation event */
-            if (materialui_list_get_size(mui, MENU_LIST_PLAIN) == 1)
+            if ((mui->nav_bar.location != MUI_NAV_BAR_LOCATION_HIDDEN) &&
+                (materialui_list_get_size(mui, MENU_LIST_PLAIN) == 1))
                return materialui_menu_entry_action(mui, entry, selection, MENU_ACTION_RIGHT);
             /* If we are displaying a playlist/file list/dropdown list,
              * swipes are used for fast navigation */
@@ -7295,12 +7420,14 @@ static int materialui_pointer_up(void *userdata,
          break;
       case MENU_INPUT_GESTURE_SWIPE_RIGHT:
          {
-            /* If we are at the top level, a swipe should
-             * just switch between the three main menu screens
+            /* If we are at the top level and the navigation bar is
+             * enabled, a swipe should just switch between the three
+             * main menu screens
              * (i.e. we don't care which item is currently selected)
-             * Note: For intuitive behaviour, a *right* swipe should
+             * Note: For intuitive behaviour, a *left* swipe should
              * trigger a *left* navigation event */
-            if (materialui_list_get_size(mui, MENU_LIST_PLAIN) == 1)
+            if ((mui->nav_bar.location != MUI_NAV_BAR_LOCATION_HIDDEN) &&
+                (materialui_list_get_size(mui, MENU_LIST_PLAIN) == 1))
                return materialui_menu_entry_action(mui, entry, selection, MENU_ACTION_LEFT);
             /* If we are displaying a playlist/file list/dropdown list,
              * swipes are used for fast navigation */
@@ -7698,7 +7825,8 @@ static void materialui_list_insert(
                   }
             else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SCAN_DIRECTORY)) ||
                      string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SCAN_FILE)) ||
-                     string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_LIST))
+                     string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_LIST)) ||
+                     string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ADD_CONTENT_LIST))
                   )
             {
                node->icon_texture_index = MUI_TEXTURE_ADD;
@@ -7810,7 +7938,8 @@ static void materialui_list_insert(
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_COPY_BEFORE)) ||
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_DELETE)) ||
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PARAMETERS)) ||
-                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_PLAYLIST_MANAGER_LIST))
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_PLAYLIST_MANAGER_LIST)) ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS))
                   )
                   {
                      node->icon_texture_index = MUI_TEXTURE_SETTINGS;
@@ -7828,6 +7957,11 @@ static void materialui_list_insert(
                   )
             {
                node->icon_texture_index = MUI_TEXTURE_FOLDER;
+               node->has_icon           = true;
+            }
+            else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB)))
+            {
+               node->icon_texture_index = MUI_TEXTURE_PLAYLIST;
                node->has_icon           = true;
             }
             else if (strcasestr(label, "_input_binds_list"))

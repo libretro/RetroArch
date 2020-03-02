@@ -3021,6 +3021,10 @@ MSG_HASH(
     "Settings"
     )
 MSG_HASH(
+    MENU_ENUM_SUBLABEL_SETTINGS,
+    "Configure the program."
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SETTINGS_TAB,
     "Settings"
     )
@@ -7228,6 +7232,14 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION_EXCLUDE_THUMBNAIL_VIEWS,
     "Exclude Thumbnail Views"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MATERIALUI_SHOW_NAV_BAR,
+    "Show Navigation Bar"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MATERIALUI_SHOW_NAV_BAR,
+    "Display permanent on-screen menu navigation shortcuts. Enables fast switching between menu categories. Recommended for touchscreen devices."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MATERIALUI_AUTO_ROTATE_NAV_BAR,

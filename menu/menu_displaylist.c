@@ -2434,7 +2434,13 @@ static unsigned menu_displaylist_parse_playlists(
 
    if (!horizontal)
    {
-      if (settings->bools.menu_content_show_add)
+      /* When using MaterialUI with the navigation bar
+       * hidden, these 'add content' entries are accessible
+       * from the main menu 'Scan Content' entry. Placing
+       * them here as well is unnecessary/ugly duplication */
+      if (settings->bools.menu_content_show_add &&
+          !(string_is_equal(settings->arrays.menu_driver, "glui") &&
+            !settings->bools.menu_materialui_show_nav_bar))
       {
 #ifdef HAVE_LIBRETRODB
          if (menu_entries_append_enum(info->list,
@@ -7236,8 +7242,10 @@ unsigned menu_displaylist_build_list(
          break;
       case DISPLAYLIST_MENU_SETTINGS_LIST:
          {
-            settings_t      *settings      = config_get_ptr();
-            bool menu_horizontal_animation = settings->bools.menu_horizontal_animation;
+            settings_t      *settings         = config_get_ptr();
+            bool menu_horizontal_animation    = settings->bools.menu_horizontal_animation;
+            bool menu_materialui_show_nav_bar = settings->bools.menu_materialui_show_nav_bar;
+
             menu_displaylist_build_info_selective_t build_list[] = {
                {MENU_ENUM_LABEL_MENU_SCALE_FACTOR,                            PARSE_ONLY_FLOAT,  true},
                {MENU_ENUM_LABEL_MENU_WALLPAPER,                               PARSE_ONLY_PATH ,  true},
@@ -7276,7 +7284,8 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_OZONE_TRUNCATE_PLAYLIST_NAME,                 PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_MATERIALUI_ICONS_ENABLE,                      PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION,     PARSE_ONLY_UINT,   true},
-               {MENU_ENUM_LABEL_MATERIALUI_AUTO_ROTATE_NAV_BAR,               PARSE_ONLY_BOOL,   true},
+               {MENU_ENUM_LABEL_MATERIALUI_SHOW_NAV_BAR,                      PARSE_ONLY_BOOL,   true},
+               {MENU_ENUM_LABEL_MATERIALUI_AUTO_ROTATE_NAV_BAR,               PARSE_ONLY_BOOL,   false},
                {MENU_ENUM_LABEL_MATERIALUI_MENU_COLOR_THEME,                  PARSE_ONLY_UINT,   true},
                {MENU_ENUM_LABEL_MATERIALUI_MENU_TRANSITION_ANIMATION,         PARSE_ONLY_UINT,   true},
                {MENU_ENUM_LABEL_MATERIALUI_MENU_HEADER_OPACITY,               PARSE_ONLY_FLOAT,  true},
@@ -7308,6 +7317,10 @@ unsigned menu_displaylist_build_list(
                {
                   case MENU_ENUM_LABEL_MENU_XMB_ANIMATION_HORIZONTAL_HIGHLIGHT:
                      if (menu_horizontal_animation)
+                        build_list[i].checked = true;
+                     break;
+                  case MENU_ENUM_LABEL_MATERIALUI_AUTO_ROTATE_NAV_BAR:
+                     if (menu_materialui_show_nav_bar)
                         build_list[i].checked = true;
                      break;
                   default:
@@ -9847,8 +9860,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   count++;
             }
 
-            if (string_is_equal(settings->arrays.menu_driver, "rgui") &&
-                settings->bools.menu_content_show_playlists)
+            if ((string_is_equal(settings->arrays.menu_driver, "rgui") ||
+                 string_is_equal(settings->arrays.menu_driver, "glui")) &&
+                  settings->bools.menu_content_show_playlists)
                if (menu_entries_append_enum(info->list,
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB),
                      msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB),
