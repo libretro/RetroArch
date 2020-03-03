@@ -353,6 +353,9 @@ static unsigned msg_queue_task_hourglass_x;
 /* Used for both generic and libretro messages */
 static unsigned generic_message_height; 
 
+static unsigned volume_widget_width;
+static unsigned volume_widget_height;
+
 static unsigned divider_width_1px            = 1;
 
 static unsigned last_video_width             = 0;
@@ -1694,20 +1697,20 @@ void gfx_widgets_frame(void *data)
       char percentage_msg[255];
 
       uintptr_t volume_icon         = 0;
-      unsigned volume_width         = video_info->width / 3;
-      unsigned volume_height        = widget_font_size * 4;
-      unsigned icon_size            = gfx_widgets_icons_textures[MENU_WIDGETS_ICON_VOLUME_MED] ? volume_height : simple_widget_padding;
+      unsigned icon_size            = gfx_widgets_icons_textures[MENU_WIDGETS_ICON_VOLUME_MED] ? volume_widget_height : simple_widget_padding;
       unsigned text_color           = COLOR_TEXT_ALPHA(0xffffffff, (unsigned)(volume_text_alpha*255.0f));
       unsigned text_color_db        = COLOR_TEXT_ALPHA(TEXT_COLOR_FAINT, (unsigned)(volume_text_alpha*255.0f));
 
       unsigned bar_x                = icon_size;
       unsigned bar_height           = widget_font_size / 2;
-      unsigned bar_width            = volume_width - bar_x - simple_widget_padding;
-      unsigned bar_y                = volume_height / 2 + bar_height/2;
+      unsigned bar_width            = volume_widget_width - bar_x - simple_widget_padding;
+      unsigned bar_y                = volume_widget_height / 2 + bar_height/2;
 
       float *bar_background         = NULL;
       float *bar_foreground         = NULL;
       float bar_percentage          = 0.0f;
+
+      unsigned volume_text_y        = bar_y - (widget_font_size / 3);
 
       if (volume_mute)
          volume_icon = gfx_widgets_icons_textures[MENU_WIDGETS_ICON_VOLUME_MUTE];
@@ -1747,8 +1750,8 @@ void gfx_widgets_frame(void *data)
 
       gfx_display_draw_quad(video_info,
          0, 0,
-         volume_width,
-         volume_height,
+         volume_widget_width,
+         volume_widget_height,
          video_info->width,
          video_info->height,
          gfx_widgets_backdrop_orig
@@ -1777,10 +1780,10 @@ void gfx_widgets_frame(void *data)
             const char *text  = msg_hash_to_str(MSG_AUDIO_MUTED);
             gfx_display_draw_text(font_regular,
                text,
-               volume_width/2, volume_height/2 + widget_font_size / 3,
+               volume_widget_width/2, volume_widget_height/2 + widget_font_size / 3,
                video_info->width, video_info->height,
                text_color, TEXT_ALIGN_CENTER,
-               1, false, 0, false
+               1, false, 0, true
             );
          }
       }
@@ -1813,7 +1816,7 @@ void gfx_widgets_frame(void *data)
 
          gfx_display_draw_text(font_regular,
             msg,
-            volume_width - simple_widget_padding, widget_font_size * 2,
+            volume_widget_width - simple_widget_padding, volume_text_y,
             video_info->width, video_info->height,
             text_color_db,
             TEXT_ALIGN_RIGHT,
@@ -1822,7 +1825,7 @@ void gfx_widgets_frame(void *data)
 
          gfx_display_draw_text(font_regular,
             percentage_msg,
-            icon_size, widget_font_size * 2,
+            icon_size, volume_text_y,
             video_info->width, video_info->height,
             text_color,
             TEXT_ALIGN_LEFT,
@@ -1971,8 +1974,12 @@ static void gfx_widgets_layout(
 {
    int font_height = 0;
 
-   /* Base font size must be determined first */
+   /* Base font size must be determined first
+    * > Note that size must be at least 2,
+    *   otherwise gfx_display_font_file() will
+    *   generate a heap-buffer-overflow */
    widget_font_size = BASE_FONT_SIZE * last_scale_factor;
+   widget_font_size = (widget_font_size > 2.0f) ? widget_font_size : 2.0f;
 
    /* Initialise fonts */
 
@@ -2073,6 +2080,16 @@ static void gfx_widgets_layout(
    load_content_animation_icon_size_initial = LOAD_CONTENT_ANIMATION_INITIAL_ICON_SIZE * last_scale_factor;
    load_content_animation_icon_size_target  = LOAD_CONTENT_ANIMATION_TARGET_ICON_SIZE * last_scale_factor;
 #endif
+
+   volume_widget_height = widget_font_size * 4;
+   volume_widget_width  = volume_widget_height * 4;
+   /* Volume widget cannot exceed screen width
+    * > If it does, scale it down */
+   if (volume_widget_width > last_video_width)
+   {
+      volume_widget_width  = last_video_width;
+      volume_widget_height = volume_widget_width / 4;
+   }
 
    divider_width_1px    = 1;
    if (last_scale_factor > 1.0f)
