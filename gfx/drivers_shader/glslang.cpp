@@ -361,7 +361,7 @@ SlangProcess::SlangProcess()
    }
 }
 
-bool glslang::compile_spirv(const char *src, Stage stage,
+bool glslang::compile_spirv(const string &source, Stage stage,
       std::vector<uint32_t> *spirv)
 {
    string msg;
@@ -395,6 +395,7 @@ bool glslang::compile_spirv(const char *src, Stage stage,
    }
    TShader shader(language);
 
+   const char *src = source.c_str();
    shader.setStrings(&src, 1);
 
    EShMessages messages = static_cast<EShMessages>(EShMsgDefault | EShMsgVulkanRules | EShMsgSpvRules);
