@@ -8,7 +8,7 @@
 #endif
 #endif
 
-#include "../deps/glslang/glslang.cpp"
+#include "../gfx/drivers_shader/glslang.cpp"
 #include "../deps/glslang/glslang/SPIRV/disassemble.cpp"
 #include "../deps/glslang/glslang/SPIRV/doc.cpp"
 #include "../deps/glslang/glslang/SPIRV/GlslangToSpv.cpp"
