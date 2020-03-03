@@ -3017,6 +3017,10 @@ MSG_HASH(
     "Configurações"
     )
 MSG_HASH(
+    MENU_ENUM_SUBLABEL_SETTINGS,
+    "Configura o programa."
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SETTINGS_TAB,
     "Configurações"
     )
@@ -4481,6 +4485,34 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_VOLCANIC_RED,
     "Vermelho vulcânico"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_LIME,
+    "Verde limão"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_PIKACHU_YELLOW,
+    "Amarelo Pikachu"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_GAMECUBE_PURPLE,
+    "Roxo Game Cube"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_FAMICOM_RED,
+    "Vermelho Famicom"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_FLAMING_HOT,
+    "Quente flamejante"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_ICE_COLD,
+    "Gelado"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_MIDGAR,
+    "Midgar"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_XMB_RIBBON_ENABLE,
@@ -7196,6 +7228,14 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION_EXCLUDE_THUMBNAIL_VIEWS,
     "Excluir imagens em miniatura"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MATERIALUI_SHOW_NAV_BAR,
+    "Exibir barra de navegação"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MATERIALUI_SHOW_NAV_BAR,
+    "Exibe atalhos de navegação permanentes no menu na tela. Permite a troca rápida entre as categorias de menu. Recomendado para dispositivos touchscreen."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MATERIALUI_AUTO_ROTATE_NAV_BAR,
