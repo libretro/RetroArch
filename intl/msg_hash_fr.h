@@ -3017,6 +3017,10 @@ MSG_HASH(
     "Réglages"
     )
 MSG_HASH(
+    MENU_ENUM_SUBLABEL_SETTINGS,
+    "Configure l'application."
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SETTINGS_TAB,
     "Réglages"
     )
@@ -7224,6 +7228,14 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION_EXCLUDE_THUMBNAIL_VIEWS,
     "Exclure l'affichage des miniatures"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MATERIALUI_SHOW_NAV_BAR,
+    "Afficher la barre de navigation"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MATERIALUI_SHOW_NAV_BAR,
+    "Affiche des raccourcis de navigation permanents dans le menu à l'écran. Permet de basculer rapidement entre les catégories du menu. Recommandé pour les appareils à écran tactile."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MATERIALUI_AUTO_ROTATE_NAV_BAR,
