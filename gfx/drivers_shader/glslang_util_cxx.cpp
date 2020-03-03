@@ -210,6 +210,7 @@ bool glslang_parse_meta(const struct string_list *lines, glslang_meta *meta)
 bool glslang_compile_shader(const char *shader_path, glslang_output *output)
 {
 #if defined(HAVE_GLSLANG)
+   const char *v_src, *f_src;
    struct string_list *lines = string_list_new();
 
    if (!lines)
@@ -223,14 +224,17 @@ bool glslang_compile_shader(const char *shader_path, glslang_output *output)
    if (!glslang_parse_meta(lines, &output->meta))
       goto error;
 
-   if (    !glslang::compile_spirv(build_stage_source(lines, "vertex"),
+   v_src = build_stage_source(lines, "vertex").c_str();
+   f_src = build_stage_source(lines, "fragment").c_str();
+
+   if (!glslang::compile_spirv(v_src,
             glslang::StageVertex, &output->vertex))
    {
       RARCH_ERR("Failed to compile vertex shader stage.\n");
       goto error;
    }
 
-   if (    !glslang::compile_spirv(build_stage_source(lines, "fragment"),
+   if (!glslang::compile_spirv(f_src,
             glslang::StageFragment, &output->fragment))
    {
       RARCH_ERR("Failed to compile fragment shader stage.\n");

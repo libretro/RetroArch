@@ -17,7 +17,7 @@ namespace glslang
         StageCompute
     };
 
-    bool compile_spirv(const std::string &source, Stage stage, std::vector<uint32_t> *spirv);
+    bool compile_spirv(const char *src, Stage stage, std::vector<uint32_t> *spirv);
 }
 
 #endif

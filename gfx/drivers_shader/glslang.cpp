@@ -13,6 +13,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <string/stdstring.h>
+
 #include "glslang.hpp"
 
 #ifdef HAVE_BUILTINGLSLANG
@@ -43,10 +45,13 @@ struct SlangProcess
       TBuiltInResource Resources;
 };
 
-// We don't use glslang from multiple threads, but to be sure.
-// Initializing TLS and freeing it for glslang works around a really bizarre issue
-// where the TLS key is suddenly corrupted *somehow*.
+/* We don't use glslang from multiple threads, but to be sure.
+ * Initializing TLS and freeing it for glslang works around 
+ * a really bizarre issue where the TLS key is suddenly 
+ * corrupted *somehow*.
+ */
 static std::mutex glslang_global_lock;
+
 struct SlangProcessHolder
 {
    SlangProcessHolder()
@@ -159,229 +164,244 @@ SlangProcess::SlangProcess()
       "generalVariableIndexing 1\n"
       "generalConstantMatrixVectorIndexing 1\n";
 
-   const char *delims = " \t\n\r";
-   const char *token = strtok(DefaultConfig, delims);
+   const char *delims       = " \t\n\r";
+   char *token              = strtok(DefaultConfig, delims);
+
    while (token)
    {
       const char *value_str = strtok(0, delims);
       int             value = (int)strtoul(value_str, nullptr, 0);
 
-      if (strcmp(token, "MaxLights") == 0)
+      if (string_is_equal(token, "MaxLights"))
          Resources.maxLights = value;
-      else if (strcmp(token, "MaxClipPlanes") == 0)
+      else if (string_is_equal(token, "MaxClipPlanes"))
          Resources.maxClipPlanes = value;
-      else if (strcmp(token, "MaxTextureUnits") == 0)
+      else if (string_is_equal(token, "MaxTextureUnits"))
          Resources.maxTextureUnits = value;
-      else if (strcmp(token, "MaxTextureCoords") == 0)
+      else if (string_is_equal(token, "MaxTextureCoords"))
          Resources.maxTextureCoords = value;
-      else if (strcmp(token, "MaxVertexAttribs") == 0)
+      else if (string_is_equal(token, "MaxVertexAttribs"))
          Resources.maxVertexAttribs = value;
-      else if (strcmp(token, "MaxVertexUniformComponents") == 0)
+      else if (string_is_equal(token, "MaxVertexUniformComponents"))
          Resources.maxVertexUniformComponents = value;
-      else if (strcmp(token, "MaxVaryingFloats") == 0)
+      else if (string_is_equal(token, "MaxVaryingFloats"))
          Resources.maxVaryingFloats = value;
-      else if (strcmp(token, "MaxVertexTextureImageUnits") == 0)
+      else if (string_is_equal(token, "MaxVertexTextureImageUnits"))
          Resources.maxVertexTextureImageUnits = value;
-      else if (strcmp(token, "MaxCombinedTextureImageUnits") == 0)
+      else if (string_is_equal(token, "MaxCombinedTextureImageUnits"))
          Resources.maxCombinedTextureImageUnits = value;
-      else if (strcmp(token, "MaxTextureImageUnits") == 0)
+      else if (string_is_equal(token, "MaxTextureImageUnits"))
          Resources.maxTextureImageUnits = value;
-      else if (strcmp(token, "MaxFragmentUniformComponents") == 0)
+      else if (string_is_equal(token, "MaxFragmentUniformComponents"))
          Resources.maxFragmentUniformComponents = value;
-      else if (strcmp(token, "MaxDrawBuffers") == 0)
+      else if (string_is_equal(token, "MaxDrawBuffers"))
          Resources.maxDrawBuffers = value;
-      else if (strcmp(token, "MaxVertexUniformVectors") == 0)
+      else if (string_is_equal(token, "MaxVertexUniformVectors"))
          Resources.maxVertexUniformVectors = value;
-      else if (strcmp(token, "MaxVaryingVectors") == 0)
+      else if (string_is_equal(token, "MaxVaryingVectors"))
          Resources.maxVaryingVectors = value;
-      else if (strcmp(token, "MaxFragmentUniformVectors") == 0)
+      else if (string_is_equal(token, "MaxFragmentUniformVectors"))
          Resources.maxFragmentUniformVectors = value;
-      else if (strcmp(token, "MaxVertexOutputVectors") == 0)
+      else if (string_is_equal(token, "MaxVertexOutputVectors"))
          Resources.maxVertexOutputVectors = value;
-      else if (strcmp(token, "MaxFragmentInputVectors") == 0)
+      else if (string_is_equal(token, "MaxFragmentInputVectors"))
          Resources.maxFragmentInputVectors = value;
-      else if (strcmp(token, "MinProgramTexelOffset") == 0)
+      else if (string_is_equal(token, "MinProgramTexelOffset"))
          Resources.minProgramTexelOffset = value;
-      else if (strcmp(token, "MaxProgramTexelOffset") == 0)
+      else if (string_is_equal(token, "MaxProgramTexelOffset"))
          Resources.maxProgramTexelOffset = value;
-      else if (strcmp(token, "MaxClipDistances") == 0)
+      else if (string_is_equal(token, "MaxClipDistances"))
          Resources.maxClipDistances = value;
-      else if (strcmp(token, "MaxComputeWorkGroupCountX") == 0)
+      else if (string_is_equal(token, "MaxComputeWorkGroupCountX"))
          Resources.maxComputeWorkGroupCountX = value;
-      else if (strcmp(token, "MaxComputeWorkGroupCountY") == 0)
+      else if (string_is_equal(token, "MaxComputeWorkGroupCountY"))
          Resources.maxComputeWorkGroupCountY = value;
-      else if (strcmp(token, "MaxComputeWorkGroupCountZ") == 0)
+      else if (string_is_equal(token, "MaxComputeWorkGroupCountZ"))
          Resources.maxComputeWorkGroupCountZ = value;
-      else if (strcmp(token, "MaxComputeWorkGroupSizeX") == 0)
+      else if (string_is_equal(token, "MaxComputeWorkGroupSizeX"))
          Resources.maxComputeWorkGroupSizeX = value;
-      else if (strcmp(token, "MaxComputeWorkGroupSizeY") == 0)
+      else if (string_is_equal(token, "MaxComputeWorkGroupSizeY"))
          Resources.maxComputeWorkGroupSizeY = value;
-      else if (strcmp(token, "MaxComputeWorkGroupSizeZ") == 0)
+      else if (string_is_equal(token, "MaxComputeWorkGroupSizeZ"))
          Resources.maxComputeWorkGroupSizeZ = value;
-      else if (strcmp(token, "MaxComputeUniformComponents") == 0)
+      else if (string_is_equal(token, "MaxComputeUniformComponents"))
          Resources.maxComputeUniformComponents = value;
-      else if (strcmp(token, "MaxComputeTextureImageUnits") == 0)
+      else if (string_is_equal(token, "MaxComputeTextureImageUnits"))
          Resources.maxComputeTextureImageUnits = value;
-      else if (strcmp(token, "MaxComputeImageUniforms") == 0)
+      else if (string_is_equal(token, "MaxComputeImageUniforms"))
          Resources.maxComputeImageUniforms = value;
-      else if (strcmp(token, "MaxComputeAtomicCounters") == 0)
+      else if (string_is_equal(token, "MaxComputeAtomicCounters"))
          Resources.maxComputeAtomicCounters = value;
-      else if (strcmp(token, "MaxComputeAtomicCounterBuffers") == 0)
+      else if (string_is_equal(token, "MaxComputeAtomicCounterBuffers"))
          Resources.maxComputeAtomicCounterBuffers = value;
-      else if (strcmp(token, "MaxVaryingComponents") == 0)
+      else if (string_is_equal(token, "MaxVaryingComponents"))
          Resources.maxVaryingComponents = value;
-      else if (strcmp(token, "MaxVertexOutputComponents") == 0)
+      else if (string_is_equal(token, "MaxVertexOutputComponents"))
          Resources.maxVertexOutputComponents = value;
-      else if (strcmp(token, "MaxGeometryInputComponents") == 0)
+      else if (string_is_equal(token, "MaxGeometryInputComponents"))
          Resources.maxGeometryInputComponents = value;
-      else if (strcmp(token, "MaxGeometryOutputComponents") == 0)
+      else if (string_is_equal(token, "MaxGeometryOutputComponents"))
          Resources.maxGeometryOutputComponents = value;
-      else if (strcmp(token, "MaxFragmentInputComponents") == 0)
+      else if (string_is_equal(token, "MaxFragmentInputComponents"))
          Resources.maxFragmentInputComponents = value;
-      else if (strcmp(token, "MaxImageUnits") == 0)
+      else if (string_is_equal(token, "MaxImageUnits"))
          Resources.maxImageUnits = value;
-      else if (strcmp(token, "MaxCombinedImageUnitsAndFragmentOutputs") == 0)
+      else if (string_is_equal(token, "MaxCombinedImageUnitsAndFragmentOutputs"))
          Resources.maxCombinedImageUnitsAndFragmentOutputs = value;
-      else if (strcmp(token, "MaxCombinedShaderOutputResources") == 0)
+      else if (string_is_equal(token, "MaxCombinedShaderOutputResources"))
          Resources.maxCombinedShaderOutputResources = value;
-      else if (strcmp(token, "MaxImageSamples") == 0)
+      else if (string_is_equal(token, "MaxImageSamples"))
          Resources.maxImageSamples = value;
-      else if (strcmp(token, "MaxVertexImageUniforms") == 0)
+      else if (string_is_equal(token, "MaxVertexImageUniforms"))
          Resources.maxVertexImageUniforms = value;
-      else if (strcmp(token, "MaxTessControlImageUniforms") == 0)
+      else if (string_is_equal(token, "MaxTessControlImageUniforms"))
          Resources.maxTessControlImageUniforms = value;
-      else if (strcmp(token, "MaxTessEvaluationImageUniforms") == 0)
+      else if (string_is_equal(token, "MaxTessEvaluationImageUniforms"))
          Resources.maxTessEvaluationImageUniforms = value;
-      else if (strcmp(token, "MaxGeometryImageUniforms") == 0)
+      else if (string_is_equal(token, "MaxGeometryImageUniforms"))
          Resources.maxGeometryImageUniforms = value;
-      else if (strcmp(token, "MaxFragmentImageUniforms") == 0)
+      else if (string_is_equal(token, "MaxFragmentImageUniforms"))
          Resources.maxFragmentImageUniforms = value;
-      else if (strcmp(token, "MaxCombinedImageUniforms") == 0)
+      else if (string_is_equal(token, "MaxCombinedImageUniforms"))
          Resources.maxCombinedImageUniforms = value;
-      else if (strcmp(token, "MaxGeometryTextureImageUnits") == 0)
+      else if (string_is_equal(token, "MaxGeometryTextureImageUnits"))
          Resources.maxGeometryTextureImageUnits = value;
-      else if (strcmp(token, "MaxGeometryOutputVertices") == 0)
+      else if (string_is_equal(token, "MaxGeometryOutputVertices"))
          Resources.maxGeometryOutputVertices = value;
-      else if (strcmp(token, "MaxGeometryTotalOutputComponents") == 0)
+      else if (string_is_equal(token, "MaxGeometryTotalOutputComponents"))
          Resources.maxGeometryTotalOutputComponents = value;
-      else if (strcmp(token, "MaxGeometryUniformComponents") == 0)
+      else if (string_is_equal(token, "MaxGeometryUniformComponents"))
          Resources.maxGeometryUniformComponents = value;
-      else if (strcmp(token, "MaxGeometryVaryingComponents") == 0)
+      else if (string_is_equal(token, "MaxGeometryVaryingComponents"))
          Resources.maxGeometryVaryingComponents = value;
-      else if (strcmp(token, "MaxTessControlInputComponents") == 0)
+      else if (string_is_equal(token, "MaxTessControlInputComponents"))
          Resources.maxTessControlInputComponents = value;
-      else if (strcmp(token, "MaxTessControlOutputComponents") == 0)
+      else if (string_is_equal(token, "MaxTessControlOutputComponents"))
          Resources.maxTessControlOutputComponents = value;
-      else if (strcmp(token, "MaxTessControlTextureImageUnits") == 0)
+      else if (string_is_equal(token, "MaxTessControlTextureImageUnits"))
          Resources.maxTessControlTextureImageUnits = value;
-      else if (strcmp(token, "MaxTessControlUniformComponents") == 0)
+      else if (string_is_equal(token, "MaxTessControlUniformComponents"))
          Resources.maxTessControlUniformComponents = value;
-      else if (strcmp(token, "MaxTessControlTotalOutputComponents") == 0)
+      else if (string_is_equal(token, "MaxTessControlTotalOutputComponents"))
          Resources.maxTessControlTotalOutputComponents = value;
-      else if (strcmp(token, "MaxTessEvaluationInputComponents") == 0)
+      else if (string_is_equal(token, "MaxTessEvaluationInputComponents"))
          Resources.maxTessEvaluationInputComponents = value;
-      else if (strcmp(token, "MaxTessEvaluationOutputComponents") == 0)
+      else if (string_is_equal(token, "MaxTessEvaluationOutputComponents"))
          Resources.maxTessEvaluationOutputComponents = value;
-      else if (strcmp(token, "MaxTessEvaluationTextureImageUnits") == 0)
+      else if (string_is_equal(token, "MaxTessEvaluationTextureImageUnits"))
          Resources.maxTessEvaluationTextureImageUnits = value;
-      else if (strcmp(token, "MaxTessEvaluationUniformComponents") == 0)
+      else if (string_is_equal(token, "MaxTessEvaluationUniformComponents"))
          Resources.maxTessEvaluationUniformComponents = value;
-      else if (strcmp(token, "MaxTessPatchComponents") == 0)
+      else if (string_is_equal(token, "MaxTessPatchComponents"))
          Resources.maxTessPatchComponents = value;
-      else if (strcmp(token, "MaxPatchVertices") == 0)
+      else if (string_is_equal(token, "MaxPatchVertices"))
          Resources.maxPatchVertices = value;
-      else if (strcmp(token, "MaxTessGenLevel") == 0)
+      else if (string_is_equal(token, "MaxTessGenLevel"))
          Resources.maxTessGenLevel = value;
-      else if (strcmp(token, "MaxViewports") == 0)
+      else if (string_is_equal(token, "MaxViewports"))
          Resources.maxViewports = value;
-      else if (strcmp(token, "MaxVertexAtomicCounters") == 0)
+      else if (string_is_equal(token, "MaxVertexAtomicCounters"))
          Resources.maxVertexAtomicCounters = value;
-      else if (strcmp(token, "MaxTessControlAtomicCounters") == 0)
+      else if (string_is_equal(token, "MaxTessControlAtomicCounters"))
          Resources.maxTessControlAtomicCounters = value;
-      else if (strcmp(token, "MaxTessEvaluationAtomicCounters") == 0)
+      else if (string_is_equal(token, "MaxTessEvaluationAtomicCounters"))
          Resources.maxTessEvaluationAtomicCounters = value;
-      else if (strcmp(token, "MaxGeometryAtomicCounters") == 0)
+      else if (string_is_equal(token, "MaxGeometryAtomicCounters"))
          Resources.maxGeometryAtomicCounters = value;
-      else if (strcmp(token, "MaxFragmentAtomicCounters") == 0)
+      else if (string_is_equal(token, "MaxFragmentAtomicCounters"))
          Resources.maxFragmentAtomicCounters = value;
-      else if (strcmp(token, "MaxCombinedAtomicCounters") == 0)
+      else if (string_is_equal(token, "MaxCombinedAtomicCounters"))
          Resources.maxCombinedAtomicCounters = value;
-      else if (strcmp(token, "MaxAtomicCounterBindings") == 0)
+      else if (string_is_equal(token, "MaxAtomicCounterBindings"))
          Resources.maxAtomicCounterBindings = value;
-      else if (strcmp(token, "MaxVertexAtomicCounterBuffers") == 0)
+      else if (string_is_equal(token, "MaxVertexAtomicCounterBuffers"))
          Resources.maxVertexAtomicCounterBuffers = value;
-      else if (strcmp(token, "MaxTessControlAtomicCounterBuffers") == 0)
+      else if (string_is_equal(token, "MaxTessControlAtomicCounterBuffers"))
          Resources.maxTessControlAtomicCounterBuffers = value;
-      else if (strcmp(token, "MaxTessEvaluationAtomicCounterBuffers") == 0)
+      else if (string_is_equal(token, "MaxTessEvaluationAtomicCounterBuffers"))
          Resources.maxTessEvaluationAtomicCounterBuffers = value;
-      else if (strcmp(token, "MaxGeometryAtomicCounterBuffers") == 0)
+      else if (string_is_equal(token, "MaxGeometryAtomicCounterBuffers"))
          Resources.maxGeometryAtomicCounterBuffers = value;
-      else if (strcmp(token, "MaxFragmentAtomicCounterBuffers") == 0)
+      else if (string_is_equal(token, "MaxFragmentAtomicCounterBuffers"))
          Resources.maxFragmentAtomicCounterBuffers = value;
-      else if (strcmp(token, "MaxCombinedAtomicCounterBuffers") == 0)
+      else if (string_is_equal(token, "MaxCombinedAtomicCounterBuffers"))
          Resources.maxCombinedAtomicCounterBuffers = value;
-      else if (strcmp(token, "MaxAtomicCounterBufferSize") == 0)
+      else if (string_is_equal(token, "MaxAtomicCounterBufferSize"))
          Resources.maxAtomicCounterBufferSize = value;
-      else if (strcmp(token, "MaxTransformFeedbackBuffers") == 0)
+      else if (string_is_equal(token, "MaxTransformFeedbackBuffers"))
          Resources.maxTransformFeedbackBuffers = value;
-      else if (strcmp(token, "MaxTransformFeedbackInterleavedComponents") == 0)
+      else if (string_is_equal(token, "MaxTransformFeedbackInterleavedComponents"))
          Resources.maxTransformFeedbackInterleavedComponents = value;
-      else if (strcmp(token, "MaxCullDistances") == 0)
+      else if (string_is_equal(token, "MaxCullDistances"))
          Resources.maxCullDistances = value;
-      else if (strcmp(token, "MaxCombinedClipAndCullDistances") == 0)
+      else if (string_is_equal(token, "MaxCombinedClipAndCullDistances"))
          Resources.maxCombinedClipAndCullDistances = value;
-      else if (strcmp(token, "MaxSamples") == 0)
+      else if (string_is_equal(token, "MaxSamples"))
          Resources.maxSamples = value;
-      else if (strcmp(token, "nonInductiveForLoops") == 0)
+      else if (string_is_equal(token, "nonInductiveForLoops"))
          Resources.limits.nonInductiveForLoops = (value != 0);
-      else if (strcmp(token, "whileLoops") == 0)
+      else if (string_is_equal(token, "whileLoops"))
          Resources.limits.whileLoops = (value != 0);
-      else if (strcmp(token, "doWhileLoops") == 0)
+      else if (string_is_equal(token, "doWhileLoops"))
          Resources.limits.doWhileLoops = (value != 0);
-      else if (strcmp(token, "generalUniformIndexing") == 0)
+      else if (string_is_equal(token, "generalUniformIndexing"))
          Resources.limits.generalUniformIndexing = (value != 0);
-      else if (strcmp(token, "generalAttributeMatrixVectorIndexing") == 0)
+      else if (string_is_equal(token, "generalAttributeMatrixVectorIndexing"))
          Resources.limits.generalAttributeMatrixVectorIndexing = (value != 0);
-      else if (strcmp(token, "generalVaryingIndexing") == 0)
+      else if (string_is_equal(token, "generalVaryingIndexing"))
          Resources.limits.generalVaryingIndexing = (value != 0);
-      else if (strcmp(token, "generalSamplerIndexing") == 0)
+      else if (string_is_equal(token, "generalSamplerIndexing"))
          Resources.limits.generalSamplerIndexing = (value != 0);
-      else if (strcmp(token, "generalVariableIndexing") == 0)
+      else if (string_is_equal(token, "generalVariableIndexing"))
          Resources.limits.generalVariableIndexing = (value != 0);
-      else if (strcmp(token, "generalConstantMatrixVectorIndexing") == 0)
+      else if (string_is_equal(token, "generalConstantMatrixVectorIndexing"))
          Resources.limits.generalConstantMatrixVectorIndexing = (value != 0);
 
       token = strtok(0, delims);
    }
 }
 
-bool glslang::compile_spirv(const string &source, Stage stage, std::vector<uint32_t> *spirv)
+bool glslang::compile_spirv(const char *src, Stage stage,
+      std::vector<uint32_t> *spirv)
 {
+   string msg;
    static SlangProcess process;
    SlangProcessHolder process_holder;
-
    TProgram program;
    EShLanguage language;
+
    switch (stage)
    {
-      case StageVertex: language = EShLangVertex; break;
-      case StageTessControl: language = EShLangTessControl; break;
-      case StageTessEvaluation: language = EShLangTessEvaluation; break;
-      case StageGeometry: language = EShLangGeometry; break;
-      case StageFragment: language = EShLangFragment; break;
-      case StageCompute: language = EShLangCompute; break;
-      default: return false;
+      case StageVertex:
+         language = EShLangVertex;
+         break;
+      case StageTessControl:
+         language = EShLangTessControl;
+         break;
+      case StageTessEvaluation:
+         language = EShLangTessEvaluation;
+         break;
+      case StageGeometry:
+         language = EShLangGeometry;
+         break;
+      case StageFragment:
+         language = EShLangFragment;
+         break;
+      case StageCompute:
+         language = EShLangCompute;
+         break;
+      default:
+         return false;
    }
    TShader shader(language);
 
-   const char *src = source.c_str();
    shader.setStrings(&src, 1);
 
    EShMessages messages = static_cast<EShMessages>(EShMsgDefault | EShMsgVulkanRules | EShMsgSpvRules);
 
-   string msg;
    auto forbid_include = glslang::TShader::ForbidIncluder();
-   if (!shader.preprocess(&process.GetResources(), 100, ENoProfile, false, false,
+   if (!shader.preprocess(&process.GetResources(),
+            100, ENoProfile, false, false,
             messages, &msg, forbid_include))
    {
       fprintf(stderr, "%s\n", msg.c_str());
@@ -407,4 +427,3 @@ bool glslang::compile_spirv(const string &source, Stage stage, std::vector<uint3
    GlslangToSpv(*program.getIntermediate(language), *spirv);
    return true;
 }
-
