@@ -5430,7 +5430,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_REDIRECTING_CHEATFILE_TO,
-    "Redirecionando o arquivo de Trapaça em"
+    "Redirecionando o arquivo de trapaça em"
     )
 MSG_HASH(
     MSG_REDIRECTING_SAVEFILE_TO,
