@@ -72,6 +72,7 @@ matrix:
         - xcodebuild -target RetroArch -configuration Release -project pkg/apple/RetroArch.xcodeproj
     - os: osx
       osx_image: xcode11.2
+      env: CSA_LINK='https://repository.certum.pl/cscasha2.cer'
       script:
         - brew update-reset
         - brew install --force-bottle qt5
