@@ -123,12 +123,17 @@ void ozone_free_list_nodes(file_list_t *list, bool actiondata)
 }
 
 static void ozone_menu_animation_update_time(
-      float *dst,
+      float *ticker_pixel_increment,
       unsigned video_width, unsigned video_height)
 {
-   *(dst) *= gfx_display_get_dpi_scale(video_width, video_height) * 0.5f;
+   /* Ozone uses DPI scaling
+    * > Smooth ticker scaling multiplier is
+    *   gfx_display_get_dpi_scale() multiplied by
+    *   a small correction factor to achieve a
+    *   default scroll speed equal to that of the
+    *   non-smooth ticker */
+   *(ticker_pixel_increment) *= gfx_display_get_dpi_scale(video_width, video_height) * 0.5f;
 }
-
 
 static void *ozone_init(void **userdata, bool video_is_threaded)
 {

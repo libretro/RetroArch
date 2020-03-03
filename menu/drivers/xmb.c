@@ -243,6 +243,7 @@ typedef struct xmb_handle
 {
    bool mouse_show;
    bool use_ps3_layout;
+   bool last_use_ps3_layout;
    bool assets_missing;
    bool is_playlist;
    bool is_db_manager_list;
@@ -273,7 +274,7 @@ typedef struct xmb_handle
    float shadow_offset;
    float font_size;
    float font2_size;
-   float previous_scale_factor;
+   float last_scale_factor;
 
    float margins_screen_left;
    float margins_screen_top;
@@ -3141,7 +3142,7 @@ static int xmb_draw_item(
          {
             line_ticker_smooth.fade_enabled         = true;
             line_ticker_smooth.type_enum            = menu_ticker_type;
-            line_ticker_smooth.idx                  = gfx_animation_get_ticker_pixel_idx();
+            line_ticker_smooth.idx                  = gfx_animation_get_ticker_pixel_line_idx();
 
             line_ticker_smooth.font                 = xmb->font2;
             line_ticker_smooth.font_scale           = 1.0f;
@@ -3401,6 +3402,48 @@ static void xmb_draw_items(
    gfx_display_blend_end(video_info);
 }
 
+static INLINE bool xmb_use_ps3_layout(
+      settings_t *settings, unsigned width, unsigned height)
+{
+   unsigned menu_xmb_layout = settings->uints.menu_xmb_layout;
+
+   switch (menu_xmb_layout)
+   {
+      case 1:
+         /* PS3 */
+         return true;
+      case 2:
+         /* PSP */
+         return false;
+      case 0:
+      default:
+         /* Automatic
+          * > Use PSP layout on tiny screens */
+         return (width > 320) && (height > 240);
+   }
+}
+
+static INLINE float xmb_get_scale_factor(
+      settings_t *settings, bool use_ps3_layout, unsigned width)
+{
+   float menu_scale_factor = settings->floats.menu_scale_factor;
+   float scale_factor;
+
+   /* PS3 Layout */
+   if (use_ps3_layout)
+      scale_factor = (menu_scale_factor * (float)width) / 1920.0f;
+   /* PSP Layout */
+   else
+#ifdef _3DS
+      scale_factor = menu_scale_factor / 4.0f;
+#else
+      scale_factor = ((menu_scale_factor * (float)width) / 1920.0f) * 1.5f;
+#endif
+
+   /* Apply safety limit */
+   return (scale_factor >= 0.1f) ? scale_factor : 0.1f;
+}
+
 static void xmb_context_reset_internal(xmb_handle_t *xmb,
       bool is_threaded, bool reinit_textures);
 
@@ -3410,21 +3453,25 @@ static void xmb_render(void *data,
    size_t i;
    float scale_factor;
    menu_input_pointer_t pointer;
-   settings_t   *settings   = config_get_ptr();
    xmb_handle_t *xmb        = (xmb_handle_t*)data;
+   settings_t *settings     = config_get_ptr();
    unsigned      end        = (unsigned)menu_entries_get_size();
-   float menu_scale_factor  = settings->floats.menu_scale_factor;
 
    if (!xmb)
       return;
 
-   scale_factor             = (menu_scale_factor * (float)width) / 1920.0f;
+   xmb->use_ps3_layout = xmb_use_ps3_layout(settings, width, height);
+   scale_factor        = xmb_get_scale_factor(settings, xmb->use_ps3_layout, width);
 
-   if (scale_factor >= 0.1f && scale_factor != xmb->previous_scale_factor)
+   if ((xmb->use_ps3_layout != xmb->last_use_ps3_layout) ||
+       (scale_factor != xmb->last_scale_factor))
+   {
+      xmb->last_use_ps3_layout = xmb->use_ps3_layout;
+      xmb->last_scale_factor   = scale_factor;
+
       xmb_context_reset_internal(xmb, video_driver_is_threaded(),
             false);
-
-   xmb->previous_scale_factor = scale_factor;
+   }
 
    menu_input_get_pointer_state(&pointer);
 
@@ -4279,7 +4326,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
       /* Drop shadow for thumbnails needs to be larger
        * than for text/icons, and also needs to scale
        * with screen dimensions */
-      float shadow_offset = xmb->shadow_offset * 1.5f * (menu_scale_factor * (float)width) / 1920.0f;
+      float shadow_offset = xmb->shadow_offset * 1.5f * xmb->last_scale_factor;
       shadow_offset       = (shadow_offset > xmb->shadow_offset) 
          ? shadow_offset 
          : xmb->shadow_offset;
@@ -4841,10 +4888,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 static void xmb_layout_ps3(xmb_handle_t *xmb, int width)
 {
    unsigned new_font_size, new_header_height;
-   settings_t *settings          = config_get_ptr();
-   float menu_scale_factor       = settings->floats.menu_scale_factor;
-   float scale_factor            =
-      (menu_scale_factor * (float)width) / 1920.0f;
+   float scale_factor            = xmb->last_scale_factor;
 
    xmb->above_subitem_offset     =   1.5;
    xmb->above_item_offset        =  -1.0;
@@ -4896,13 +4940,7 @@ static void xmb_layout_ps3(xmb_handle_t *xmb, int width)
 static void xmb_layout_psp(xmb_handle_t *xmb, int width)
 {
    unsigned new_font_size, new_header_height;
-   settings_t *settings          = config_get_ptr();
-   float menu_scale_factor       = settings->floats.menu_scale_factor;
-   float scale_factor            =
-      ((menu_scale_factor * (float)width) / 1920.0f) * 1.5f;
-#ifdef _3DS
-   scale_factor                  = menu_scale_factor / 4.0f;
-#endif
+   float scale_factor            = xmb->last_scale_factor;
 
    xmb->above_subitem_offset     =  1.5;
    xmb->above_item_offset        = -1.0;
@@ -4951,37 +4989,13 @@ static void xmb_layout(xmb_handle_t *xmb)
    unsigned width, height, i, current, end;
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
    size_t selection           = menu_navigation_get_selection();
-   settings_t *settings       = config_get_ptr();
-   unsigned menu_xmb_layout   = settings->uints.menu_xmb_layout;
 
    video_driver_get_size(&width, &height);
 
-   switch (menu_xmb_layout)
-   {
-      /* Automatic */
-      case 0:
-         {
-            xmb->use_ps3_layout        = false;
-            xmb->use_ps3_layout        = width > 320 && height > 240;
-
-            /* Mimic the layout of the PSP instead of the PS3 on tiny screens */
-            if (xmb->use_ps3_layout)
-               xmb_layout_ps3(xmb, width);
-            else
-               xmb_layout_psp(xmb, width);
-         }
-         break;
-         /* PS3 */
-      case 1:
-         xmb->use_ps3_layout        = true;
-         xmb_layout_ps3(xmb, width);
-         break;
-         /* PSP */
-      case 2:
-         xmb->use_ps3_layout        = false;
-         xmb_layout_psp(xmb, width);
-         break;
-   }
+   if (xmb->use_ps3_layout)
+      xmb_layout_ps3(xmb, width);
+   else
+      xmb_layout_psp(xmb, width);
 
 #ifdef XMB_DEBUG
    RARCH_LOG("[XMB] margin screen left: %.2f\n",  xmb->margins_screen_left);
@@ -5091,6 +5105,24 @@ static void xmb_init_ribbon(xmb_handle_t * xmb)
 
    free(dummy);
    free(ribbon_verts);
+}
+
+static void xmb_menu_animation_update_time(
+      float *ticker_pixel_increment,
+      unsigned video_width, unsigned video_height)
+{
+   menu_handle_t *menu = menu_driver_get_ptr();
+   xmb_handle_t *xmb   = NULL;
+
+   if (!menu)
+      return;
+
+   xmb = (xmb_handle_t*)menu->userdata;
+
+   if (!xmb)
+      return;
+
+   *(ticker_pixel_increment) *= xmb->last_scale_factor;
 }
 
 static void *xmb_init(void **userdata, bool video_is_threaded)
@@ -5224,6 +5256,12 @@ static void *xmb_init(void **userdata, bool video_is_threaded)
    xmb->fullscreen_thumbnail_selection  = 0;
    xmb->fullscreen_thumbnail_label[0]   = '\0';
 
+   xmb->use_ps3_layout      = xmb_use_ps3_layout(settings, width, height);
+   xmb->last_use_ps3_layout = xmb->use_ps3_layout;
+   xmb->last_scale_factor   = xmb_get_scale_factor(settings, xmb->use_ps3_layout, width);
+
+   gfx_animation_set_update_time_cb(xmb_menu_animation_update_time);
+
    return menu;
 
 error:
@@ -5238,6 +5276,7 @@ error:
       file_list_free(xmb->horizontal_list);
    }
    xmb->horizontal_list = NULL;
+   gfx_animation_unset_update_time_cb();
    return NULL;
 }
 
@@ -5275,6 +5314,8 @@ static void xmb_free(void *data)
    }
 
    font_driver_bind_block(NULL, NULL);
+
+   gfx_animation_unset_update_time_cb();
 }
 
 static void xmb_context_bg_destroy(xmb_handle_t *xmb)
