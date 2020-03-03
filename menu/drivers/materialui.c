@@ -5646,10 +5646,16 @@ static void materialui_init_nav_bar(materialui_handle_t *mui)
 }
 
 static void materialui_menu_animation_update_time(
-      float *dst,
+      float *ticker_pixel_increment,
       unsigned video_width, unsigned video_height)
 {
-   *(dst) *= gfx_display_get_dpi_scale(video_width, video_height) * 0.8f;
+   /* MaterialUI uses DPI scaling
+    * > Smooth ticker scaling multiplier is
+    *   gfx_display_get_dpi_scale() multiplied by
+    *   a small correction factor to achieve a
+    *   default scroll speed equal to that of the
+    *   non-smooth ticker */
+   *(ticker_pixel_increment) *= gfx_display_get_dpi_scale(video_width, video_height) * 0.8f;
 }
 
 static void *materialui_init(void **userdata, bool video_is_threaded)

@@ -4296,10 +4296,20 @@ static bool rgui_set_aspect_ratio(rgui_t *rgui, bool delay_update)
 }
 
 static void rgui_menu_animation_update_time(
-      float *dst,
-      unsigned video_width, unsigned height)
+      float *ticker_pixel_increment,
+      unsigned video_width, unsigned video_height)
 {
-   *(dst) *= 0.25f;
+   /* RGUI framebuffer size is independent of
+    * display resolution, so have to use a fixed
+    * multiplier for smooth scrolling ticker text.
+    * We choose a value such that text is scrolled
+    * 1 pixel every 4 frames when ticker speed is 1x,
+    * which matches almost exactly the scroll speed
+    * of non-smooth ticker text (scrolling 1 pixel
+    * every 2 frames is optimal, but may be too fast
+    * for some users - so play it safe. Users can always
+    * set ticker speed to 2x if they prefer) */
+   *(ticker_pixel_increment) *= 0.25f;
 }
 
 static void *rgui_init(void **userdata, bool video_is_threaded)

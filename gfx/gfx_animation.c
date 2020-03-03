@@ -74,15 +74,16 @@ static const float ticker_pixel_period = (1.0f / 60.0f) * 1000.0f;
 
 static const char ticker_spacer_default[] = TICKER_SPACER_DEFAULT;
 
-static gfx_animation_t anim     = {{0}};
-static retro_time_t cur_time     = 0;
-static retro_time_t old_time     = 0;
-static uint64_t ticker_idx       = 0; /* updated every TICKER_SPEED us */
-static uint64_t ticker_slow_idx  = 0; /* updated every TICKER_SLOW_SPEED us */
-static uint64_t ticker_pixel_idx = 0; /* updated every frame */
-static float delta_time          = 0.0f;
-static bool animation_is_active  = false;
-static bool ticker_is_active     = false;
+static gfx_animation_t anim           = {{0}};
+static retro_time_t cur_time          = 0;
+static retro_time_t old_time          = 0;
+static uint64_t ticker_idx            = 0; /* updated every TICKER_SPEED us */
+static uint64_t ticker_slow_idx       = 0; /* updated every TICKER_SLOW_SPEED us */
+static uint64_t ticker_pixel_idx      = 0; /* updated every frame */
+static uint64_t ticker_pixel_line_idx = 0; /* updated every frame */
+static float delta_time               = 0.0f;
+static bool animation_is_active       = false;
+static bool ticker_is_active          = false;
 
 /* Forward declarations */
 static void gfx_animation_update_time_default(
@@ -1197,11 +1198,10 @@ bool gfx_animation_push(gfx_animation_ctx_entry_t *entry)
 }
 
 static void gfx_animation_update_time_default(
-      float *dst,
+      float *ticker_pixel_increment,
       unsigned video_width, unsigned video_height)
 {
-   if (video_width > 0)
-      *(dst) *= ((float)video_width / 1920.0f);
+   /* By default, this should be a NOOP */
 }
 
 void gfx_animation_set_update_time_cb(update_time_cb cb)
@@ -1213,27 +1213,33 @@ void gfx_animation_unset_update_time_cb(void)
 {
    update_time_callback = gfx_animation_update_time_default;
 }
-      
+
 static void gfx_animation_update_time(
       retro_time_t current_time,
       bool timedate_enable,
       unsigned video_width, unsigned video_height,
       float _ticker_speed)
 {
-   static retro_time_t last_clock_update  = 0;
-   static retro_time_t last_ticker_update = 0;
-   static retro_time_t
-      last_ticker_slow_update             = 0;
+   static retro_time_t last_clock_update       = 0;
+   static retro_time_t last_ticker_update      = 0;
+   static retro_time_t last_ticker_slow_update = 0;
 
-   static float ticker_pixel_accumulator  = 0.0f;
-   unsigned ticker_pixel_accumulator_uint = 0;
-   float ticker_pixel_increment           = 0.0f;
+   /* Horizontal smooth ticker parameters */
+   static float ticker_pixel_accumulator       = 0.0f;
+   unsigned ticker_pixel_accumulator_uint      = 0;
+   float ticker_pixel_increment                = 0.0f;
+
+   /* Vertical (line) smooth ticker parameters */
+   static float ticker_pixel_line_accumulator  = 0.0f;
+   unsigned ticker_pixel_line_accumulator_uint = 0;
+   float ticker_pixel_line_increment           = 0.0f;
+
    /* Adjust ticker speed */
-   float speed_factor                     = (_ticker_speed > 0.0001f)
-      ? _ticker_speed : 1.0f;
-   unsigned ticker_speed                  = 
+   float speed_factor                          =
+         (_ticker_speed > 0.0001f) ? _ticker_speed : 1.0f;
+   unsigned ticker_speed                       =
       (unsigned)(((float)TICKER_SPEED / speed_factor) + 0.5);
-   unsigned ticker_slow_speed             = 
+   unsigned ticker_slow_speed                  =
       (unsigned)(((float)TICKER_SLOW_SPEED / speed_factor) + 0.5);
 
    /* Note: cur_time & old_time are in us (microseconds),
@@ -1251,6 +1257,7 @@ static void gfx_animation_update_time(
 
    if (ticker_is_active)
    {
+      /* Update non-smooth ticker indices */
       if (cur_time - last_ticker_update >= ticker_speed)
       {
          ticker_idx++;
@@ -1263,8 +1270,9 @@ static void gfx_animation_update_time(
          last_ticker_slow_update = cur_time;
       }
 
-      /* Pixel ticker updates every frame (regardless of time delta),
-       * so requires special handling */
+      /* Pixel tickers (horizontal + vertical/line) update
+       * every frame (regardless of time delta), so require
+       * special handling */
 
       /* > Get base increment size (+1 every ticker_pixel_period ms) */
       ticker_pixel_increment = delta_time / ticker_pixel_period;
@@ -1272,38 +1280,42 @@ static void gfx_animation_update_time(
       /* > Apply ticker speed adjustment */
       ticker_pixel_increment *= speed_factor;
 
-      /* > Apply display resolution adjustment
-       *   (baseline resolution: 1920x1080)
-       *   Note 1: RGUI framebuffer size is independent of
-       *   display resolution, so have to use a fixed multiplier.
-       *   We choose a value such that text is scrolled
-       *   1 pixel every 4 frames when ticker speed is 1x,
-       *   which matches almost exactly the scroll speed
-       *   of non-smooth ticker text (scrolling 1 pixel
-       *   every 2 frames is optimal, but may be too fast
-       *   for some users - so play it safe. Users can always
-       *   set ticker speed to 2x if they prefer)
-       *   Note 2: GLUI uses the new DPI scaling system,
-       *   so scaling multiplier is gfx_display_get_dpi_scale()
-       *   multiplied by a small correction factor (since the
-       *   default 1.0x speed is just a little faster than the
-       *   non-smooth ticker)
-       *   Note 3: Ozone now also uses the new DPI scaling
-       *   system. We therefore take the same approach as GLUI,
-       *   but with a different correction factor (expected
-       *   scroll speed is somewhat lower for Ozone) */
+      /* At this point we diverge:
+       * > Vertical (line) ticker is based upon text
+       *   characteristics (number of characters per
+       *   line) - it is therefore independent of display
+       *   size/scaling, so speed-adjusted pixel increment
+       *   is used directly */
+      ticker_pixel_line_increment = ticker_pixel_increment;
+
+      /* > Horizontal ticker is based upon physical line
+       *   width - it is therefore very much dependent upon
+       *   display size/scaling. Each menu driver is free
+       *   to handle video scaling as it pleases - a callback
+       *   function set by the menu driver is thus used to
+       *   perform menu-specific scaling adjustments */
       update_time_callback(&ticker_pixel_increment,
             video_width, video_height);
 
-      /* > Update accumulator */
+      /* > Update accumulators */
       ticker_pixel_accumulator += ticker_pixel_increment;
       ticker_pixel_accumulator_uint = (unsigned)ticker_pixel_accumulator;
 
-      /* > Check whether we've accumulated enough for an idx update */
+      ticker_pixel_line_accumulator += ticker_pixel_line_increment;
+      ticker_pixel_line_accumulator_uint = (unsigned)ticker_pixel_line_accumulator;
+
+      /* > Check whether we've accumulated enough
+       *   for an idx update */
       if (ticker_pixel_accumulator_uint > 0)
       {
          ticker_pixel_idx += ticker_pixel_accumulator_uint;
          ticker_pixel_accumulator -= (float)ticker_pixel_accumulator_uint;
+      }
+
+      if (ticker_pixel_accumulator_uint > 0)
+      {
+         ticker_pixel_line_idx += ticker_pixel_line_accumulator_uint;
+         ticker_pixel_line_accumulator -= (float)ticker_pixel_line_accumulator_uint;
       }
    }
 }
@@ -2346,4 +2358,9 @@ uint64_t gfx_animation_get_ticker_slow_idx(void)
 uint64_t gfx_animation_get_ticker_pixel_idx(void)
 {
    return ticker_pixel_idx;
+}
+
+uint64_t gfx_animation_get_ticker_pixel_line_idx(void)
+{
+   return ticker_pixel_line_idx;
 }
