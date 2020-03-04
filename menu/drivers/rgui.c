@@ -494,7 +494,6 @@ static const rgui_theme_t rgui_theme_anti_zenburn = {
    0xE0B090B0  /* particle_color */
 };
 
-#if 0
 static const rgui_theme_t rgui_theme_flux = {
    0xFF6FCB9F, /* hover_color */
    0xFF666547, /* normal_color */
@@ -506,7 +505,6 @@ static const rgui_theme_t rgui_theme_flux = {
    0xE0FFE28A, /* shadow_color */
    0xE0FB2E01  /* particle_color */
 };
-#endif
 
 typedef struct
 {
@@ -2169,6 +2167,8 @@ static const rgui_theme_t *get_theme(rgui_t *rgui)
          return &rgui_theme_zenburn;
       case RGUI_THEME_ANTI_ZENBURN:
          return &rgui_theme_anti_zenburn;
+      case RGUI_THEME_FLUX:
+         return &rgui_theme_flux;
       default:
          break;
    }
