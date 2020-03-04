@@ -405,9 +405,10 @@ float gfx_display_get_widget_dpi_scale(
    settings_t *settings                                = config_get_ptr();
    bool gfx_widget_scale_auto                          = settings->bools.menu_widget_scale_auto;
    float _menu_scale_factor                            = settings->floats.menu_scale_factor;
+   float menu_widget_scale_factor_fullscreen           = settings->floats.menu_widget_scale_factor;
+   float menu_widget_scale_factor_windowed             = settings->floats.menu_widget_scale_factor_windowed;
    float menu_widget_scale_factor                      = fullscreen ?
-         settings->floats.menu_widget_scale_factor :
-               settings->floats.menu_widget_scale_factor_windowed;
+         menu_widget_scale_factor_fullscreen : menu_widget_scale_factor_windowed;
 
    /* When using RGUI, _menu_scale_factor
     * is ignored
@@ -463,9 +464,10 @@ float gfx_display_get_widget_pixel_scale(
    settings_t *settings                                = config_get_ptr();
    bool gfx_widget_scale_auto                          = settings->bools.menu_widget_scale_auto;
    float _menu_scale_factor                            = settings->floats.menu_scale_factor;
+   float menu_widget_scale_factor_fullscreen           = settings->floats.menu_widget_scale_factor;
+   float menu_widget_scale_factor_windowed             = settings->floats.menu_widget_scale_factor_windowed;
    float menu_widget_scale_factor                      = fullscreen ?
-         settings->floats.menu_widget_scale_factor :
-               settings->floats.menu_widget_scale_factor_windowed;
+         menu_widget_scale_factor_fullscreen : menu_widget_scale_factor_windowed;
 
    /* When using RGUI, _menu_scale_factor is ignored
     * > If we are not using a widget scale factor override,

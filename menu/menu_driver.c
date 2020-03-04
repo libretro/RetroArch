@@ -158,16 +158,20 @@ static int generic_menu_iterate(void *data,
 
          BIT64_SET(menu->state, MENU_STATE_RENDER_MESSAGEBOX);
          BIT64_SET(menu->state, MENU_STATE_POST_ITERATE);
-         if (ret == 1 || action == MENU_ACTION_OK)
-         {
-            BIT64_SET(menu->state, MENU_STATE_POP_STACK);
-            menu_dialog_set_active(false);
-         }
 
-         if (action == MENU_ACTION_CANCEL)
          {
-            BIT64_SET(menu->state, MENU_STATE_POP_STACK);
-            menu_dialog_set_active(false);
+            bool pop_stack = false;
+            if (  ret == 1 || 
+                  action == MENU_ACTION_OK ||
+                  action == MENU_ACTION_CANCEL
+               )
+               pop_stack   = true;
+
+            if (pop_stack)
+            {
+               BIT64_SET(menu->state, MENU_STATE_POP_STACK);
+               menu_dialog_set_active(false);
+            }
          }
          break;
       case ITERATE_TYPE_BIND:
