@@ -365,7 +365,6 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
    unsigned count                        = 0;
    const char *tmp_string                = NULL;
    const frontend_ctx_driver_t *frontend = frontend_get_ptr();
-   settings_t *settings                  = config_get_ptr();
    const char *menu_driver               = menu_driver_ident();
 
    tmp[0] = '\0';
@@ -2869,7 +2868,6 @@ static bool menu_displaylist_parse_playlist_manager_settings(
    enum msg_hash_enums left_thumbnail_label_value;
    const char *playlist_file = NULL;
    playlist_t *playlist      = NULL;
-   settings_t *settings      = config_get_ptr();
    const char *menu_driver   = menu_driver_ident();
 
    if (string_is_empty(playlist_path))

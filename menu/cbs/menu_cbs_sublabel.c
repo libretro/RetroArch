@@ -1274,8 +1274,6 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
 
    if (cbs->enum_idx != MSG_UNKNOWN)
    {
-      settings_t *settings; /* config_get_ptr is called only when needed */
-
       switch (cbs->enum_idx)
       {
          case MENU_ENUM_LABEL_FILE_BROWSER_CORE:

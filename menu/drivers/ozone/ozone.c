@@ -1630,7 +1630,6 @@ static void ozone_draw_footer(ozone_handle_t *ozone, video_frame_info_t *video_i
 {
    float scale_factor           = ozone->last_scale_factor;
    unsigned seperator_margin    = 30 * scale_factor;
-   unsigned menu_timedate_style = settings->uints.menu_timedate_style;
    bool menu_core_enable        = settings->bools.menu_core_enable;
 
    /* Separator */

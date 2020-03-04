@@ -4299,7 +4299,6 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    bool fade_tab_icons                     = false;
    float fade_tab_icons_x_threshold        = 0.0f;
    bool menu_core_enable                   = settings->bools.menu_core_enable;
-   float menu_scale_factor                 = settings->floats.menu_scale_factor;
    float thumbnail_scale_factor            = (float)settings->uints.menu_xmb_thumbnail_scale_factor / 100.0f;
 
    if (!xmb)
