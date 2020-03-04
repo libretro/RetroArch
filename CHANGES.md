@@ -28,6 +28,7 @@
 - LOCALIZATION: Update Portuguese Brazilian translation
 - MENU: Automatically select currently checked item when opening drop-down lists
 - MENU: Fix smooth (vertical) line ticker scroll speed
+- MENU/BUGFIX: Fix bug - if you were in XMB and you would set menu driver to RGUI, you could no longer go to the left or right tab
 - MENU/MATERIALUI: Add option to remove navigation bar
 - MENU/OZONE: Add DPI-based scaling
 - MENU/OZONE: Add rudimentary pointer support
