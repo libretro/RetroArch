@@ -2532,18 +2532,18 @@ found:
     *************************************************************************/
    CORO_SUB(RCHEEVOS_GET_BADGES)
 
-#if defined(HAVE_GFX_WIDGETS)
-      if (false) /* we always want badges if menu widgets are enabled */
-#endif
-      {
-         settings_t *settings = config_get_ptr();
-         if (!(
+   /* we always want badges if menu widgets are enabled */
+#if !defined(HAVE_GFX_WIDGETS)
+   {
+      settings_t *settings = config_get_ptr();
+      if (!(
                string_is_equal(settings->arrays.menu_driver, "xmb") ||
                string_is_equal(settings->arrays.menu_driver, "ozone")
-            ) ||
-               !settings->bools.cheevos_badges_enable)
-            CORO_RET();
-      }
+           ) ||
+            !settings->bools.cheevos_badges_enable)
+         CORO_RET();
+   }
+#endif
 
 #ifdef HAVE_MENU
       cheevos_reset_menu_badges();
