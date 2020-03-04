@@ -148,7 +148,7 @@ static int generic_menu_iterate(void *data,
    {
       case ITERATE_TYPE_HELP:
          ret = menu_dialog_iterate(
-               menu->menu_state_msg, sizeof(menu->menu_state_msg), label,
+               menu->menu_state_msg, sizeof(menu->menu_state_msg),
                current_time);
 
 #ifdef HAVE_ACCESSIBILITY
@@ -168,10 +168,7 @@ static int generic_menu_iterate(void *data,
                pop_stack   = true;
 
             if (pop_stack)
-            {
                BIT64_SET(menu->state, MENU_STATE_POP_STACK);
-               menu_dialog_set_active(false);
-            }
          }
          break;
       case ITERATE_TYPE_BIND:
@@ -302,7 +299,6 @@ static int generic_menu_iterate(void *data,
          {
             BIT64_SET(menu->state, MENU_STATE_POP_STACK);
          }
-         menu_dialog_set_active(false);
          break;
       case ITERATE_TYPE_DEFAULT:
          {

@@ -35,12 +35,11 @@
 #include "../../performance_counters.h"
 
 static bool                  menu_dialog_pending_push   = false;
-static bool                  menu_dialog_active         = false;
 static unsigned              menu_dialog_current_id     = 0;
 static enum menu_dialog_type menu_dialog_current_type   = MENU_DIALOG_NONE;
 static enum msg_hash_enums   menu_dialog_current_msg    = MSG_UNKNOWN;
 
-int menu_dialog_iterate(char *s, size_t len, const char *label,
+int menu_dialog_iterate(char *s, size_t len,
       retro_time_t current_time)
 {
 #ifdef HAVE_CHEEVOS
@@ -258,7 +257,6 @@ bool menu_dialog_push_pending(bool push, enum menu_dialog_type type)
 #endif
    menu_dialog_pending_push = push;
    menu_dialog_current_type = type;
-   menu_dialog_active       = true;
 
    return true;
 }
@@ -295,14 +293,4 @@ void menu_dialog_reset(void)
    menu_dialog_current_id   = 0;
    menu_dialog_current_type = MENU_DIALOG_NONE;
    menu_dialog_current_msg  = MSG_UNKNOWN;
-}
-
-void menu_dialog_set_active(bool on)
-{
-   menu_dialog_active = on;
-}
-
-enum menu_dialog_type menu_dialog_get_current_type(void)
-{
-   return menu_dialog_current_type;
 }

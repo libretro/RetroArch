@@ -16861,12 +16861,7 @@ static void menu_input_pointer_close_messagebox(void)
        string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_HELP_AUDIO_VIDEO_TROUBLESHOOTING)) ||
        string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_HELP_SEND_DEBUG_INFO)) ||
        string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEEVOS_DESCRIPTION)))
-   {
-      /* Have to set this to false, apparently...
-       * (c.f. generic_menu_iterate()) */
-      menu_dialog_set_active(false);
       pop_stack = true;
-   }
 
    /* Pop stack, if required */
    if (pop_stack)

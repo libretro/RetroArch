@@ -54,7 +54,7 @@ bool menu_dialog_push_pending(
       bool push, enum menu_dialog_type type);
 
 int menu_dialog_iterate(
-      char *s, size_t len, const char *label,
+      char *s, size_t len,
       retro_time_t current_time);
 
 void menu_dialog_unset_pending_push(void);
@@ -64,10 +64,6 @@ void menu_dialog_push(void);
 void menu_dialog_reset(void);
 
 void menu_dialog_set_current_id(unsigned id);
-
-void menu_dialog_set_active(bool on);
-
-enum menu_dialog_type menu_dialog_get_current_type(void);
 
 RETRO_END_DECLS
 
