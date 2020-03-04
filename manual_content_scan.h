@@ -79,6 +79,7 @@ typedef struct
    char dat_file_path[PATH_MAX_LENGTH];
    bool core_set;
    bool search_archives;
+   bool filter_dat_content;
    bool overwrite_playlist;
 } manual_content_scan_task_config_t;
 
@@ -119,6 +120,10 @@ size_t manual_content_scan_get_dat_file_path_size(void);
 /* Returns a pointer to the internal
  * 'search_archives' bool */
 bool *manual_content_scan_get_search_archives_ptr(void);
+
+/* Returns a pointer to the internal
+ * 'filter_dat_content' bool */
+bool *manual_content_scan_get_filter_dat_content_ptr(void);
 
 /* Returns a pointer to the internal
  * 'overwrite_playlist' bool */
