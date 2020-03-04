@@ -27395,15 +27395,20 @@ static void menu_input_key_event(bool down, unsigned keycode,
  */
 static void menu_driver_toggle(bool on)
 {
+   /* TODO/FIXME - retroarch_main_quit calls menu_driver_toggle -
+    * we might have to redesign this to avoid EXXC_BAD_ACCESS errors
+    * on OSX - for now we work around this by checking if the settings
+    * struct is NULL 
+    */
    retro_keyboard_event_t *key_event          = &runloop_key_event;
    retro_keyboard_event_t *frontend_key_event = &runloop_frontend_key_event;
    settings_t                 *settings       = configuration_settings;
    bool pause_libretro                        = settings ?
       settings->bools.menu_pause_libretro : false;
 #ifdef HAVE_AUDIOMIXER
-   bool audio_enable_menu                     = settings->bools.audio_enable_menu;
+   bool audio_enable_menu                     = settings ? settings->bools.audio_enable_menu : false;
 #if 0
-   bool audio_enable_menu_bgm                 = settings->bools.audio_enable_menu_bgm;
+   bool audio_enable_menu_bgm                 = settings ? settings->bools.audio_enable_menu_bgm : false;
 #endif
 #endif
    menu_handle_t *menu_data                   = menu_driver_get_ptr();
