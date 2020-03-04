@@ -2061,27 +2061,29 @@ static bool menu_init(menu_handle_t *menu_data)
    if (      settings->bools.bundle_assets_extract_enable
          && !string_is_empty(settings->arrays.bundle_assets_src)
          && !string_is_empty(settings->arrays.bundle_assets_dst)
-#ifdef IOS
-         && menu_dialog_is_push_pending()
-#else
+#ifndef IOS
+         /* TODO/FIXME - we should make this more generic so that
+          * this platform-specific ifdef is no longer needed */
          && (settings->uints.bundle_assets_extract_version_current
             != settings->uints.bundle_assets_extract_last_version)
 #endif
       )
    {
-      menu_dialog_push_pending(true, MENU_DIALOG_HELP_EXTRACT);
+      if (menu_dialog_push_pending(true, MENU_DIALOG_HELP_EXTRACT))
+      {
 #ifdef HAVE_COMPRESSION
-      task_push_decompress(
-            settings->arrays.bundle_assets_src,
-            settings->arrays.bundle_assets_dst,
-            NULL,
-            settings->arrays.bundle_assets_dst_subdir,
-            NULL,
-            bundle_decompressed,
-            NULL,
-            NULL,
-            false);
+         task_push_decompress(
+               settings->arrays.bundle_assets_src,
+               settings->arrays.bundle_assets_dst,
+               NULL,
+               settings->arrays.bundle_assets_dst_subdir,
+               NULL,
+               bundle_decompressed,
+               NULL,
+               NULL,
+               false);
 #endif
+      }
    }
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)

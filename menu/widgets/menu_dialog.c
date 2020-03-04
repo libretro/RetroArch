@@ -241,21 +241,26 @@ int menu_dialog_iterate(char *s, size_t len, const char *label,
    return 0;
 }
 
-bool menu_dialog_is_push_pending(void)
-{
-   return menu_dialog_pending_push;
-}
-
 void menu_dialog_unset_pending_push(void)
 {
    menu_dialog_pending_push = false;
 }
 
-void menu_dialog_push_pending(bool push, enum menu_dialog_type type)
+bool menu_dialog_push_pending(bool push, enum menu_dialog_type type)
 {
+#ifdef IOS
+   /* TODO/FIXME - see comment in menu_init -
+    * we should make this more generic so that
+    * this platform-specific ifdef is no longer needed */
+   if (type == MENU_DIALOG_HELP_EXTRACT)
+      if (!menu_dialog_pending_push)
+         return false;
+#endif
    menu_dialog_pending_push = push;
    menu_dialog_current_type = type;
-   menu_dialog_active = true;
+   menu_dialog_active       = true;
+
+   return true;
 }
 
 void menu_dialog_push(void)
@@ -263,7 +268,7 @@ void menu_dialog_push(void)
    menu_displaylist_info_t info;
    const char *label;
 
-   if (!menu_dialog_is_push_pending())
+   if (!menu_dialog_pending_push)
       return;
 
    menu_displaylist_info_init(&info);
