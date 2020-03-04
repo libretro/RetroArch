@@ -3903,6 +3903,10 @@ MSG_HASH(
     "Flux"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_RAINBOW,
+    "Rainbow"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_TRUE,
     "True"
     )

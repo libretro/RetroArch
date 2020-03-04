@@ -494,6 +494,18 @@ static const rgui_theme_t rgui_theme_anti_zenburn = {
    0xE0B090B0  /* particle_color */
 };
 
+static const rgui_theme_t rgui_theme_rainbow = {
+   0xFF336C6C, /* hover_color */
+   0xFF98E8FF, /* normal_color */
+   0xFFFF729D, /* title_color */
+   0xE0A4FFCF, /* bg_dark_color */
+   0xE0C0C0C0, /* bg_light_color */
+   0xE0A0A0A0, /* border_dark_color */
+   0xE0A0A0A0, /* border_light_color */
+   0xE0B0B0B0, /* shadow_color */
+   0xE0B090B0  /* particle_color */
+};
+
 #if 0
 static const rgui_theme_t rgui_theme_flux = {
    0xFF6FCB9F, /* hover_color */
