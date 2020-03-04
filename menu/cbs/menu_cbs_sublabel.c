@@ -1064,14 +1064,19 @@ static int action_bind_sublabel_playlist_entry(
       const char *label, const char *path,
       char *s, size_t len)
 {
-   settings_t *settings               = config_get_ptr();
    playlist_t *playlist               = NULL;
    const struct playlist_entry *entry = NULL;
+   const char *menu_ident             = menu_driver_ident();
+   settings_t *settings               = config_get_ptr();
+   bool playlist_show_sublabels       = settings->bools.playlist_show_sublabels;
+   unsigned playlist_sublabel_runtime_type = settings->uints.playlist_sublabel_runtime_type;
+   bool content_runtime_log           = settings->bools.content_runtime_log;
+   bool content_runtime_log_aggregate = settings->bools.content_runtime_log_aggregate;
 
-   if (!settings->bools.playlist_show_sublabels)
+   if (!playlist_show_sublabels)
       return 0;
 #ifdef HAVE_OZONE
-   if (string_is_equal(settings->arrays.menu_driver, "ozone"))
+   if (string_is_equal(menu_ident, "ozone"))
       return 0;
 #endif
 
@@ -1100,10 +1105,10 @@ static int action_bind_sublabel_playlist_entry(
 
    /* Get runtime info *if* required runtime log is enabled
     * *and* this is a valid playlist type */
-   if (((settings->uints.playlist_sublabel_runtime_type == PLAYLIST_RUNTIME_PER_CORE) &&
-         !settings->bools.content_runtime_log) ||
-       ((settings->uints.playlist_sublabel_runtime_type == PLAYLIST_RUNTIME_AGGREGATE) &&
-         !settings->bools.content_runtime_log_aggregate))
+   if (((playlist_sublabel_runtime_type == PLAYLIST_RUNTIME_PER_CORE) &&
+         !content_runtime_log) ||
+       ((playlist_sublabel_runtime_type == PLAYLIST_RUNTIME_AGGREGATE) &&
+         !content_runtime_log_aggregate))
       return 0;
 
    /* Note: This looks heavy, but each string_is_equal() call will
@@ -2100,50 +2105,54 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_timedate_style);
             break;
          case MENU_ENUM_LABEL_THUMBNAILS:
-            settings = config_get_ptr();
-#ifdef HAVE_RGUI
-            if (string_is_equal(settings->arrays.menu_driver, "rgui"))
             {
-               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_thumbnails_rgui);
-            }
-            else
+               const char *menu_ident             = menu_driver_ident();
+#ifdef HAVE_RGUI
+               if (string_is_equal(menu_ident, "rgui"))
+               {
+                  BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_thumbnails_rgui);
+               }
+               else
 #endif
 #ifdef HAVE_MATERIALUI
-            if (string_is_equal(settings->arrays.menu_driver, "glui"))
-            {
-               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_thumbnails_materialui);
-            }
-            else
+                  if (string_is_equal(menu_ident, "glui"))
+                  {
+                     BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_thumbnails_materialui);
+                  }
+                  else
 #endif
-            {
-               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_thumbnails);
+                  {
+                     BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_thumbnails);
+                  }
             }
             break;
          case MENU_ENUM_LABEL_LEFT_THUMBNAILS:
-            settings = config_get_ptr();
-#ifdef HAVE_RGUI
-            if (string_is_equal(settings->arrays.menu_driver, "rgui"))
             {
-               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_left_thumbnails_rgui);
-            }
-            else
+               const char *menu_ident             = menu_driver_ident();
+#ifdef HAVE_RGUI
+               if (string_is_equal(menu_ident, "rgui"))
+               {
+                  BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_left_thumbnails_rgui);
+               }
+               else
 #endif
 #ifdef HAVE_OZONE
-               if (string_is_equal(settings->arrays.menu_driver, "ozone"))
-            {
-               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_left_thumbnails_ozone);
-            }
-            else
+                  if (string_is_equal(menu_ident, "ozone"))
+                  {
+                     BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_left_thumbnails_ozone);
+                  }
+                  else
 #endif
 #ifdef HAVE_MATERIALUI
-               if (string_is_equal(settings->arrays.menu_driver, "glui"))
-            {
-               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_left_thumbnails_materialui);
-            }
-            else
+                     if (string_is_equal(menu_ident, "glui"))
+                     {
+                        BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_left_thumbnails_materialui);
+                     }
+                     else
 #endif
-            {
-               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_left_thumbnails);
+                     {
+                        BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_left_thumbnails);
+                     }
             }
             break;
          case MENU_ENUM_LABEL_MENU_THUMBNAIL_UPSCALE_THRESHOLD:
@@ -2898,52 +2907,56 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_playlist_manager_clean_playlist);
             break;
          case MENU_ENUM_LABEL_PLAYLIST_MANAGER_RIGHT_THUMBNAIL_MODE:
-            settings = config_get_ptr();
-            /* Uses same sublabels as MENU_ENUM_LABEL_THUMBNAILS */
-#ifdef HAVE_RGUI
-            if (string_is_equal(settings->arrays.menu_driver, "rgui"))
             {
-               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_thumbnails_rgui);
-            }
-            else
+               const char *menu_ident             = menu_driver_ident();
+               /* Uses same sublabels as MENU_ENUM_LABEL_THUMBNAILS */
+#ifdef HAVE_RGUI
+               if (string_is_equal(menu_ident, "rgui"))
+               {
+                  BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_thumbnails_rgui);
+               }
+               else
 #endif
 #ifdef HAVE_MATERIALUI
-               if (string_is_equal(settings->arrays.menu_driver, "glui"))
-            {
-               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_thumbnails_materialui);
-            }
-            else
+                  if (string_is_equal(menu_ident, "glui"))
+                  {
+                     BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_thumbnails_materialui);
+                  }
+                  else
 #endif
-            {
-               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_thumbnails);
+                  {
+                     BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_thumbnails);
+                  }
             }
             break;
          case MENU_ENUM_LABEL_PLAYLIST_MANAGER_LEFT_THUMBNAIL_MODE:
-            settings = config_get_ptr();
-            /* Uses same sublabels as MENU_ENUM_LABEL_LEFT_THUMBNAILS */
-#ifdef HAVE_RGUI
-            if (string_is_equal(settings->arrays.menu_driver, "rgui"))
             {
-               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_left_thumbnails_rgui);
-            }
-            else
+               const char *menu_ident             = menu_driver_ident();
+               /* Uses same sublabels as MENU_ENUM_LABEL_LEFT_THUMBNAILS */
+#ifdef HAVE_RGUI
+               if (string_is_equal(menu_ident, "rgui"))
+               {
+                  BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_left_thumbnails_rgui);
+               }
+               else
 #endif
 #ifdef HAVE_OZONE
-               if (string_is_equal(settings->arrays.menu_driver, "ozone"))
-            {
-               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_left_thumbnails_ozone);
-            }
-            else
+                  if (string_is_equal(menu_ident, "ozone"))
+                  {
+                     BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_left_thumbnails_ozone);
+                  }
+                  else
 #endif
 #ifdef HAVE_MATERIALUI
-               if (string_is_equal(settings->arrays.menu_driver, "glui"))
-            {
-               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_left_thumbnails_materialui);
-            }
-            else
+                     if (string_is_equal(menu_ident, "glui"))
+                     {
+                        BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_left_thumbnails_materialui);
+                     }
+                     else
 #endif
-            {
-               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_left_thumbnails);
+                     {
+                        BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_left_thumbnails);
+                     }
             }
             break;
          case MENU_ENUM_LABEL_DELETE_PLAYLIST:

@@ -100,7 +100,15 @@ int action_scan_directory(const char *path,
 int action_switch_thumbnail(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-   settings_t *settings = config_get_ptr();
+   const char *menu_ident  = menu_driver_ident();
+   settings_t *settings    = config_get_ptr();
+   bool special_case       = false;
+#ifdef HAVE_RGUI
+   special_case            = !string_is_equal(menu_ident, "rgui");
+#endif
+#ifdef HAVE_MATERIALUI
+   special_case            = special_case && !string_is_equal(menu_ident, "glui"); 
+#endif
 
    if (!settings)
       return -1;
@@ -113,8 +121,7 @@ int action_switch_thumbnail(const char *path,
        * changing thumbnail view mode.
        * For other menu drivers, we cycle through available thumbnail
        * types. */
-      if (!string_is_equal(settings->arrays.menu_driver, "rgui") &&
-         !string_is_equal(settings->arrays.menu_driver, "glui"))
+      if (special_case)
       {
 			settings->uints.menu_left_thumbnails++;
 			if (settings->uints.menu_left_thumbnails > 3)
@@ -131,8 +138,7 @@ int action_switch_thumbnail(const char *path,
        * changing thumbnail view mode.
        * For other menu drivers, we cycle through available thumbnail
        * types. */
-      if (!string_is_equal(settings->arrays.menu_driver, "rgui") &&
-         !string_is_equal(settings->arrays.menu_driver, "glui"))
+      if (special_case)
       {
          settings->uints.gfx_thumbnails++;
          if (settings->uints.gfx_thumbnails > 3)

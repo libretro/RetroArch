@@ -366,7 +366,7 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
    const char *tmp_string                = NULL;
    const frontend_ctx_driver_t *frontend = frontend_get_ptr();
    settings_t *settings                  = config_get_ptr();
-   const char *menu_driver               = settings->arrays.menu_driver;
+   const char *menu_driver               = menu_driver_ident();
 
    tmp[0] = '\0';
 
@@ -851,7 +851,7 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
    size_t           list_size        = playlist_size(playlist);
    settings_t       *settings        = config_get_ptr();
    bool show_inline_core_name        = false;
-   const char *menu_driver           = settings->arrays.menu_driver;
+   const char *menu_driver           = menu_driver_ident();
    unsigned pl_show_inline_core_name = settings->uints.playlist_show_inline_core_name;
    bool pl_show_sublabels            = settings->bools.playlist_show_sublabels;
    void (*sanitization)(char*);
@@ -1112,7 +1112,7 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
    settings_t *settings                = config_get_ptr();
    bool show_advanced_settings         = settings->bools.menu_show_advanced_settings;
    const char *dir_playlist            = settings->paths.directory_playlist;
-   const char *menu_driver             = settings->arrays.menu_driver;
+   const char *menu_driver             = menu_driver_ident();
 
    path_playlist[0] = path_base[0] = query[0] = '\0';
 
@@ -2434,12 +2434,14 @@ static unsigned menu_displaylist_parse_playlists(
 
    if (!horizontal)
    {
+      const char *menu_ident = menu_driver_ident();
+
       /* When using MaterialUI with the navigation bar
        * hidden, these 'add content' entries are accessible
        * from the main menu 'Scan Content' entry. Placing
        * them here as well is unnecessary/ugly duplication */
       if (settings->bools.menu_content_show_add &&
-          !(string_is_equal(settings->arrays.menu_driver, "glui") &&
+          !(string_is_equal(menu_ident, "glui") &&
             !settings->bools.menu_materialui_show_nav_bar))
       {
 #ifdef HAVE_LIBRETRODB
@@ -2868,7 +2870,7 @@ static bool menu_displaylist_parse_playlist_manager_settings(
    const char *playlist_file = NULL;
    playlist_t *playlist      = NULL;
    settings_t *settings      = config_get_ptr();
-   const char *menu_driver   = settings->arrays.menu_driver;
+   const char *menu_driver   = menu_driver_ident();
 
    if (string_is_empty(playlist_path))
       return false;
@@ -4006,7 +4008,7 @@ static unsigned menu_displaylist_populate_subsystem(
    char star_char[16];
    unsigned count           = 0;
    settings_t *settings     = config_get_ptr();
-   const char *menu_driver  = settings->arrays.menu_driver;
+   const char *menu_driver  = menu_driver_ident();
    bool menu_show_sublabels = settings->bools.menu_show_sublabels;
    /* Note: Create this string here explicitly (rather than
     * using a #define elsewhere) since we need to be aware of
@@ -7700,7 +7702,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          {
             settings_t        *settings = config_get_ptr();
             unsigned max_users          = *(input_driver_get_uint(INPUT_ACTION_MAX_USERS));
-            const char *menu_driver     = settings->arrays.menu_driver;
+            const char *menu_driver     = menu_driver_ident();
             bool is_rgui                = string_is_equal(menu_driver, "rgui");
             file_list_t *list           = info->list;
             unsigned p                  = atoi(info->path);
@@ -9828,6 +9830,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          {
             settings_t      *settings      = config_get_ptr();
             rarch_system_info_t *sys_info  = runloop_get_system_info();
+            const char *menu_ident         = menu_driver_ident();
 
             if (rarch_ctl(RARCH_CTL_CORE_IS_RUNNING, NULL))
             {
@@ -9898,8 +9901,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   count++;
             }
 
-            if ((string_is_equal(settings->arrays.menu_driver, "rgui") ||
-                 string_is_equal(settings->arrays.menu_driver, "glui")) &&
+            if ((string_is_equal(menu_ident, "rgui") ||
+                 string_is_equal(menu_ident, "glui")) &&
                   settings->bools.menu_content_show_playlists)
                if (menu_entries_append_enum(info->list,
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB),

@@ -1617,7 +1617,7 @@ bool menu_entries_append_enum(file_list_t *list, const char *path,
    size_t idx;
    const char *menu_path           = NULL;
    menu_file_list_cbs_t *cbs       = NULL;
-   settings_t *settings            = config_get_ptr();
+   const char *menu_ident          = menu_driver_ident();
 
    if (!list || !label)
       return false;
@@ -1656,7 +1656,7 @@ bool menu_entries_append_enum(file_list_t *list, const char *path,
        && enum_idx != MENU_ENUM_LABEL_RDB_ENTRY)
       cbs->setting  = menu_setting_find_enum(enum_idx);
 
-   if (!string_is_equal(settings->arrays.menu_driver, "null"))
+   if (!string_is_equal(menu_ident, "null"))
       menu_cbs_init(list, cbs, path, label, type, idx);
 
    return true;

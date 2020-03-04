@@ -94,17 +94,15 @@ static int action_get_title_thumbnails(
 {
    const char *title               = NULL;
    enum msg_hash_enums label_value = MENU_ENUM_LABEL_VALUE_THUMBNAILS;
-#if defined(HAVE_RGUI) || defined(HAVE_MATERIALUI)
-   settings_t *settings            = config_get_ptr();
+   const char *menu_ident          = menu_driver_ident();
    /* Get label value */
 #ifdef HAVE_RGUI
-   if (string_is_equal(settings->arrays.menu_driver, "rgui"))
+   if (string_is_equal(menu_ident, "rgui"))
       label_value = MENU_ENUM_LABEL_VALUE_THUMBNAILS_RGUI;
 #endif
 #ifdef HAVE_MATERIALUI
-   if (string_is_equal(settings->arrays.menu_driver, "glui"))
+   if (string_is_equal(menu_ident, "glui"))
       label_value = MENU_ENUM_LABEL_VALUE_THUMBNAILS_MATERIALUI;
-#endif
 #endif
 
    title = msg_hash_to_str(label_value);
@@ -125,19 +123,18 @@ static int action_get_title_left_thumbnails(
    const char *title               = NULL;
    enum msg_hash_enums label_value = MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS;
 #if defined(HAVE_RGUI) || defined(HAVE_OZONE) || defined(HAVE_MATERIALUI)
-   settings_t *settings            = config_get_ptr();
-   const char *menu_driver         = settings->arrays.menu_driver;
+   const char *menu_ident          = menu_driver_ident();
    /* Get label value */
 #ifdef HAVE_RGUI
-   if (string_is_equal(menu_driver, "rgui"))
+   if (string_is_equal(menu_ident, "rgui"))
       label_value = MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_RGUI;
 #endif
 #ifdef HAVE_OZONE
-   if (string_is_equal(menu_driver, "ozone"))
+   if (string_is_equal(menu_ident, "ozone"))
       label_value = MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_OZONE;
 #endif
 #ifdef HAVE_MATERIALUI
-   if (string_is_equal(menu_driver, "glui"))
+   if (string_is_equal(menu_ident, "glui"))
       label_value = MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_MATERIALUI;
 #endif
 #endif
@@ -176,11 +173,11 @@ static int action_get_title_dropdown_item(
          if (coreopts)
          {
             unsigned i;
-            settings_t *settings            = config_get_ptr();
             unsigned menu_index             = string_to_unsigned(tmp_str_list->elems[(unsigned)tmp_str_list->size - 1].data);
             unsigned visible_index          = 0;
             unsigned option_index           = 0;
             bool option_found               = false;
+            settings_t *settings            = config_get_ptr();
             bool game_specific_options      = settings->bools.game_specific_options;
 
             /* Convert menu index to option index */

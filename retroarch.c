@@ -16170,17 +16170,11 @@ static void menu_input_get_mouse_hw_state(
    static bool last_select_pressed = false;
    static bool last_cancel_pressed = false;
    bool mouse_enabled              = settings->bools.menu_mouse_enable;
-   /* Note: RGUI requires special treatment, but we can't just
-    * check settings->arrays.menu_driver because this may change
-    * while another menu driver is active (and applying RGUI corrections
-    * while another menu driver is active will render the mouse unusable).
-    * We therefore have to check for the existence of a framebuffer
-    * texture instead (which is only ever set by RGUI) */
    menu_handle_t *menu_data        = menu_driver_get_ptr();
-   bool is_rgui                    =
-         (menu_data && 
-          menu_data->driver_ctx && 
-          menu_data->driver_ctx->set_texture);
+   bool menu_has_fb                =
+      (menu_data && 
+       menu_data->driver_ctx && 
+       menu_data->driver_ctx->set_texture);
 #ifdef HAVE_OVERLAY
    bool overlay_enable             = settings->bools.input_overlay_enable;
    /* Menu pointer controls are ignored when overlays are enabled. */
@@ -16221,7 +16215,7 @@ static void menu_input_get_mouse_hw_state(
    last_y = hw_state->y;
 
    /* > X/Y adjustment */
-   if (is_rgui)
+   if (menu_has_fb)
    {
       /* RGUI uses a framebuffer texture + custom viewports,
        * which means we have to convert from screen space to
@@ -16448,14 +16442,13 @@ static unsigned menu_event(
    unsigned ok_current                             = BIT256_GET_PTR(p_input, menu_ok_btn);
    unsigned ok_trigger                             = ok_current & ~ok_old;
 #ifdef HAVE_RGUI
-   /* TODO/FIXME - instead of looking explicitly for the name rgui, instead 
-    * perhaps check if set_texture is set - I assume we want to check if
-    * a menu driver is framebuffer-based instead of specifically looking if 
-    * it's RGUI */
-   bool is_rgui                                    = string_is_equal(
-         settings->arrays.menu_driver, "rgui");
+   menu_handle_t *menu_data                        = menu_driver_get_ptr();
+   bool menu_has_fb                                =
+         (menu_data && 
+          menu_data->driver_ctx && 
+          menu_data->driver_ctx->set_texture);
 #else
-   bool is_rgui                                    = false;
+   bool menu_has_fb                                = false;
 #endif
 
    ok_old                                          = ok_current;
@@ -16547,13 +16540,17 @@ static unsigned menu_event(
             input_event_set_osk_idx((enum osk_type)(
                      osk_type_idx - 1));
          else
-            input_event_set_osk_idx((enum osk_type)(is_rgui ? OSK_SYMBOLS_PAGE1 : OSK_TYPE_LAST - 1));
+            input_event_set_osk_idx((enum osk_type)(menu_has_fb 
+                     ? OSK_SYMBOLS_PAGE1 
+                     : OSK_TYPE_LAST - 1));
       }
 
       if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_R))
       {
          enum osk_type osk_type_idx = input_event_get_osk_idx();
-         if (osk_type_idx < (is_rgui ? OSK_SYMBOLS_PAGE1 : OSK_TYPE_LAST - 1))
+         if (osk_type_idx < (menu_has_fb 
+                  ? OSK_SYMBOLS_PAGE1 
+                  : OSK_TYPE_LAST - 1))
             input_event_set_osk_idx((enum osk_type)(
                      osk_type_idx + 1));
          else
@@ -16564,7 +16561,7 @@ static unsigned menu_event(
       {
          int ptr = input_event_get_osk_ptr();
          if (ptr >= 0)
-            input_event_osk_append(ptr, is_rgui);
+            input_event_osk_append(ptr, menu_has_fb);
       }
 
       if (BIT256_GET_PTR(p_trigger_input, menu_cancel_btn))
@@ -16776,13 +16773,14 @@ static float menu_input_get_dpi(void)
    static unsigned last_video_height = 0;
    static float dpi                  = 0.0f;
    static bool dpi_cached            = false;
+   bool menu_has_fb                  = false;
    menu_handle_t *menu_data          = menu_driver_get_ptr();
-   bool is_rgui;
 
    if (!menu_data)
       return 0.0f;
 
-   is_rgui = menu_data->driver_ctx && menu_data->driver_ctx->set_texture;
+   menu_has_fb                       = menu_data->driver_ctx 
+      && menu_data->driver_ctx->set_texture;
 
    /* Regardless of menu driver, need 'actual' screen DPI
     * Note: DPI is a fixed hardware property. To minimise performance
@@ -16813,7 +16811,7 @@ static float menu_input_get_dpi(void)
     * DPI in a traditional sense is therefore meaningless,
     * so generate a substitute value based upon framebuffer
     * dimensions */
-   if ((dpi > 0.0f) && is_rgui)
+   if ((dpi > 0.0f) && menu_has_fb)
    {
       size_t fb_pitch;
       unsigned fb_width, fb_height;
@@ -17225,10 +17223,15 @@ static int menu_input_pointer_post_iterate(
                menu_driver_ctl(RARCH_MENU_CTL_OSK_PTR_AT_POS, &point);
                if (point.retcode > -1)
                {
+                  menu_handle_t *menu_data      = menu_driver_get_ptr();
+                  bool menu_has_fb              =
+                     (menu_data && 
+                      menu_data->driver_ctx && 
+                      menu_data->driver_ctx->set_texture);
+
                   input_event_set_osk_ptr(point.retcode);
                   input_event_osk_append(point.retcode,
-                  string_is_equal(
-                     configuration_settings->arrays.menu_driver, "rgui"));
+                        menu_has_fb);
                }
             }
          }

@@ -1016,6 +1016,8 @@ void runtime_update_playlist(playlist_t *playlist, size_t idx)
 #if defined(HAVE_MENU) && defined(HAVE_OZONE)
    /* Ozone requires runtime/last played strings to be
     * populated even when no runtime is recorded */
+   /* TODO/FIXME - we shouldn't rely here on the settings
+    * struct - not safe */
    if (string_is_equal(settings->arrays.menu_driver, "ozone"))
    {
       if (update_entry.runtime_status != PLAYLIST_RUNTIME_VALID)

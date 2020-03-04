@@ -566,13 +566,11 @@ static void cb_task_pl_entry_thumbnail_refresh_menu(
    bool do_refresh                 = false;
    playlist_t *current_playlist    = playlist_get_cached();
    menu_handle_t *menu             = menu_driver_get_ptr();
-   settings_t *settings            = config_get_ptr();
-   const char *menu_driver         = NULL;
+   const char *menu_driver         = menu_driver_ident(); 
    
-   if (!task || !settings)
+   if (!task)
       return;
 
-   menu_driver                     = settings->arrays.menu_driver;
    pl_thumb                        = (pl_thumb_handle_t*)task->state;
 
    if (!pl_thumb || !pl_thumb->thumbnail_path_data)

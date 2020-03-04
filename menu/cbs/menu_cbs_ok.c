@@ -381,8 +381,8 @@ int generic_action_ok_displaylist_push(const char *path,
    const char          *info_path          = NULL;
    menu_handle_t *menu                     = menu_driver_get_ptr();
    settings_t            *settings         = config_get_ptr();
+   const char *menu_ident                  = menu_driver_ident();
    file_list_t           *menu_stack       = menu_entries_get_menu_stack_ptr(0);
-   char                  *menu_driver      = settings->arrays.menu_driver;
 #ifdef HAVE_AUDIOMIXER
    bool audio_enable_menu                  = settings->bools.audio_enable_menu;
    bool audio_enable_menu_ok               = settings->bools.audio_enable_menu_ok;
@@ -390,7 +390,7 @@ int generic_action_ok_displaylist_push(const char *path,
    const char *dir_menu_content            = settings->paths.directory_menu_content;
    const char *dir_libretro                = settings->paths.directory_libretro;
 
-   if (!menu || string_is_equal(menu_driver, "null"))
+   if (!menu || string_is_equal(menu_ident, "null"))
    {
       menu_displaylist_info_free(&info);
       return menu_cbs_exit();
