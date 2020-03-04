@@ -30,23 +30,15 @@
 #include "../menu_driver.h"
 
 #include "../../configuration.h"
-
-#include "../../tasks/tasks_internal.h"
 #include "../../performance_counters.h"
 
 static bool                  menu_dialog_pending_push   = false;
 static unsigned              menu_dialog_current_id     = 0;
 static enum menu_dialog_type menu_dialog_current_type   = MENU_DIALOG_NONE;
-static enum msg_hash_enums   menu_dialog_current_msg    = MSG_UNKNOWN;
 
 int menu_dialog_iterate(char *s, size_t len,
       retro_time_t current_time)
 {
-#ifdef HAVE_CHEEVOS
-   rcheevos_ctx_desc_t desc_info;
-#endif
-   bool do_exit              = false;
-
    switch (menu_dialog_current_type)
    {
       case MENU_DIALOG_WELCOME:
@@ -65,7 +57,8 @@ int menu_dialog_iterate(char *s, size_t len,
             if (!timer.timer_end && rarch_timer_has_expired(&timer))
             {
                rarch_timer_end(&timer);
-               do_exit     = true;
+               menu_dialog_current_type = MENU_DIALOG_NONE;
+               return 1;
             }
          }
          break;
@@ -171,10 +164,13 @@ int menu_dialog_iterate(char *s, size_t len,
 
 #ifdef HAVE_CHEEVOS
       case MENU_DIALOG_HELP_CHEEVOS_DESCRIPTION:
-         desc_info.idx = menu_dialog_current_id;
-         desc_info.s   = s;
-         desc_info.len = len;
-         rcheevos_get_description((rcheevos_ctx_desc_t*) &desc_info);
+         {
+            rcheevos_ctx_desc_t desc_info;
+            desc_info.idx = menu_dialog_current_id;
+            desc_info.s   = s;
+            desc_info.len = len;
+            rcheevos_get_description((rcheevos_ctx_desc_t*) &desc_info);
+         }
          break;
 #endif
 
@@ -208,13 +204,15 @@ int menu_dialog_iterate(char *s, size_t len,
       case MENU_DIALOG_HELP_EXTRACT:
          {
             settings_t *settings      = config_get_ptr();
-            menu_hash_get_help_enum(MENU_ENUM_LABEL_VALUE_EXTRACTING_PLEASE_WAIT,
+            menu_hash_get_help_enum(
+                  MENU_ENUM_LABEL_VALUE_EXTRACTING_PLEASE_WAIT,
                   s, len);
 
             if (settings->bools.bundle_finished)
             {
                settings->bools.bundle_finished = false;
-               do_exit                         = true;
+               menu_dialog_current_type = MENU_DIALOG_NONE;
+               return 1;
             }
          }
          break;
@@ -223,18 +221,12 @@ int menu_dialog_iterate(char *s, size_t len,
       case MENU_DIALOG_QUESTION:
       case MENU_DIALOG_WARNING:
       case MENU_DIALOG_ERROR:
-         menu_hash_get_help_enum(menu_dialog_current_msg,
+         menu_hash_get_help_enum(MSG_UNKNOWN,
                s, len);
          break;
       case MENU_DIALOG_NONE:
       default:
          break;
-   }
-
-   if (do_exit)
-   {
-      menu_dialog_current_type = MENU_DIALOG_NONE;
-      return 1;
    }
 
    return 0;
@@ -292,5 +284,4 @@ void menu_dialog_reset(void)
    menu_dialog_pending_push = false;
    menu_dialog_current_id   = 0;
    menu_dialog_current_type = MENU_DIALOG_NONE;
-   menu_dialog_current_msg  = MSG_UNKNOWN;
 }
