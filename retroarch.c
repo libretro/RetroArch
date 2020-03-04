@@ -8439,7 +8439,7 @@ bool command_event(enum event_command cmd, void *data)
             {
 #ifdef HAVE_NETWORKING
                /* Only enable state manager if netplay is not underway
-TODO: Add a setting for these tweaks */
+                  TODO/FIXME: Add a setting for these tweaks */
                if (!netplay_driver_ctl_internal(
                         RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
 #endif
@@ -8464,7 +8464,7 @@ TODO: Add a setting for these tweaks */
          retroarch_autosave_deinit();
 #ifdef HAVE_NETWORKING
          /* Only enable state manager if netplay is not underway
-TODO: Add a setting for these tweaks */
+            TODO/FIXME: Add a setting for these tweaks */
          if (configuration_settings->uints.autosave_interval != 0
                && !netplay_driver_ctl_internal(
                   RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
@@ -8965,7 +8965,7 @@ TODO: Add a setting for these tweaks */
             }
 
             /* Disable rewind & SRAM autosave if it was enabled
-             * TODO: Add a setting for these tweaks */
+             * TODO/FIXME: Add a setting for these tweaks */
             state_manager_event_deinit();
 #ifdef HAVE_THREADS
             autosave_deinit();
@@ -9003,7 +9003,7 @@ TODO: Add a setting for these tweaks */
             string_list_free(hostname);
 
             /* Disable rewind if it was enabled
-TODO: Add a setting for these tweaks */
+               TODO/FIXME: Add a setting for these tweaks */
             state_manager_event_deinit();
 #ifdef HAVE_THREADS
             autosave_deinit();
@@ -9041,7 +9041,7 @@ TODO: Add a setting for these tweaks */
             string_list_free(hostname);
 
             /* Disable rewind if it was enabled
-             * TODO: Add a setting for these tweaks */
+             * TODO/FIXME: Add a setting for these tweaks */
             state_manager_event_deinit();
 #ifdef HAVE_THREADS
             autosave_deinit();
@@ -9091,7 +9091,7 @@ TODO: Add a setting for these tweaks */
                unsigned autosave_interval          = settings->uints.autosave_interval;
 
                /* Re-enable rewind if it was enabled
-                * TODO: Add a setting for these tweaks */
+                * TODO/FIXME: Add a setting for these tweaks */
                if (rewind_enable)
                   command_event(CMD_EVENT_REWIND_INIT, NULL);
                if (autosave_interval != 0)
@@ -20623,7 +20623,6 @@ static void audio_driver_flush(const int16_t *data, size_t samples,
    src_data.data_in                  = audio_driver_input_data;
    src_data.input_frames             = samples >> 1;
 
-   /* TODO/FIXME - not available in fixed integer mode */
    if (audio_driver_dsp)
    {
       struct retro_dsp_data dsp_data;
