@@ -55,6 +55,7 @@ QWidget *NotificationsPage::widget()
    notificationsGroup->add(MENU_ENUM_LABEL_MENU_WIDGETS_ENABLE);
    notificationsGroup->add(MENU_ENUM_LABEL_MENU_WIDGET_SCALE_AUTO);
    notificationsGroup->add(MENU_ENUM_LABEL_MENU_WIDGET_SCALE_FACTOR);
+   notificationsGroup->add(MENU_ENUM_LABEL_MENU_WIDGET_SCALE_FACTOR_WINDOWED);
 
    layout->addWidget(notificationsGroup);
 
