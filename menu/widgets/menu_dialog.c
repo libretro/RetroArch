@@ -292,20 +292,6 @@ void menu_dialog_reset(void)
    menu_dialog_current_msg  = MSG_UNKNOWN;
 }
 
-void menu_dialog_show_message(
-      enum menu_dialog_type type, enum msg_hash_enums msg)
-{
-   menu_dialog_current_msg = msg;
-
-   menu_dialog_push_pending(true, type);
-   menu_dialog_push();
-}
-
-bool menu_dialog_is_active(void)
-{
-   return menu_dialog_active;
-}
-
 void menu_dialog_set_active(bool on)
 {
    menu_dialog_active = on;

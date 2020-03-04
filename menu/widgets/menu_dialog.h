@@ -65,11 +65,6 @@ void menu_dialog_push(void);
 
 void menu_dialog_reset(void);
 
-void menu_dialog_show_message(
-      enum menu_dialog_type type, enum msg_hash_enums msg);
-
-bool menu_dialog_is_active(void);
-
 void menu_dialog_set_current_id(unsigned id);
 
 void menu_dialog_set_active(bool on);
