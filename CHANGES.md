@@ -27,9 +27,6 @@
 - LOCALIZATION: Update Portuguese Brazilian translation
 - MENU: Automatically select currently checked item when opening drop-down lists
 - MENU: Fix smooth (vertical) line ticker scroll speed
-- MENU/WIDGETS: Allow notifications to use full screen width when not displaying menu
-- MENU/WIDGETS: DPI-based scaling
-- MENU/WIDGETS: Fix volume widget scaling
 - MENU/MATERIALUI: Add option to remove navigation bar
 - MENU/OZONE: Add DPI-based scaling
 - MENU/OZONE: Add rudimentary pointer support
@@ -48,6 +45,11 @@
 - NETPLAY/ROOMS/BUGFIX: Prevent out-of-bounds array indexing when displaying/selecting netplay rooms in menus
 - SCANNER: Add 'Arcade DAT Filter' Option
 - VIDEO: Set hardware 'Bilinear filtering' off by default
+- VIDEO/WIDGETS: Widgets are now menu-independent
+- VIDEO/WIDGETS: Allow notifications to use full screen width when not displaying menu
+- VIDEO/WIDGETS: DPI-based scaling
+- VIDEO/WIDGETS: Fix volume widget scaling
+- VIDEO/WIDGETS: Add independent widget scale override settings for fullscreen/windowed modes
 - WIFI/CONNMANCTL: Display more characters from SSID
 
 # 1.8.4
