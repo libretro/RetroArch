@@ -666,7 +666,7 @@ static int rcheevos_parse(const char* json)
       lboard->format = rc_parse_format(lboard->info->format);
    }
 
-   if (rcheevos_locals.patchdata.richpresence_script)
+   if (rcheevos_locals.patchdata.richpresence_script && *rcheevos_locals.patchdata.richpresence_script)
    {
       int buffer_size = rc_richpresence_size(rcheevos_locals.patchdata.richpresence_script);
       if (buffer_size <= 0)
@@ -681,8 +681,8 @@ static int rcheevos_parse(const char* json)
       }
       else
       {
-         char *buffer = (char*)malloc(buffer_size);
-         rcheevos_locals.richpresence.richpresence = rc_parse_richpresence(buffer, rcheevos_locals.patchdata.richpresence_script, NULL, 0);
+         char *rp_buffer = (char*)malloc(buffer_size);
+         rcheevos_locals.richpresence.richpresence = rc_parse_richpresence(rp_buffer, rcheevos_locals.patchdata.richpresence_script, NULL, 0);
       }
 
       rcheevos_locals.richpresence.evaluation[0] = '\0';
