@@ -347,19 +347,18 @@ static bool menu_input_key_bind_poll_find_trigger_pad(
 
       switch ( b )
       {
-
-     case RETRO_DEVICE_ID_MOUSE_LEFT:
-     case RETRO_DEVICE_ID_MOUSE_RIGHT:
-     case RETRO_DEVICE_ID_MOUSE_MIDDLE:
-     case RETRO_DEVICE_ID_MOUSE_BUTTON_4:
-     case RETRO_DEVICE_ID_MOUSE_BUTTON_5:
-     case RETRO_DEVICE_ID_MOUSE_WHEELUP:
-     case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
-     case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:
-     case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN:
-        output->mbutton = b;
-        return true;
-     }
+         case RETRO_DEVICE_ID_MOUSE_LEFT:
+         case RETRO_DEVICE_ID_MOUSE_RIGHT:
+         case RETRO_DEVICE_ID_MOUSE_MIDDLE:
+         case RETRO_DEVICE_ID_MOUSE_BUTTON_4:
+         case RETRO_DEVICE_ID_MOUSE_BUTTON_5:
+         case RETRO_DEVICE_ID_MOUSE_WHEELUP:
+         case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
+         case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:
+         case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN:
+            output->mbutton = b;
+            return true;
+      }
    }
 
    for (b = 0; b < MENU_MAX_BUTTONS; b++)
@@ -447,19 +446,18 @@ static bool menu_input_key_bind_poll_find_hold_pad(
 
       switch ( b )
       {
-
-     case RETRO_DEVICE_ID_MOUSE_LEFT:
-     case RETRO_DEVICE_ID_MOUSE_RIGHT:
-     case RETRO_DEVICE_ID_MOUSE_MIDDLE:
-     case RETRO_DEVICE_ID_MOUSE_BUTTON_4:
-     case RETRO_DEVICE_ID_MOUSE_BUTTON_5:
-     case RETRO_DEVICE_ID_MOUSE_WHEELUP:
-     case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
-     case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:
-     case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN:
-        output->mbutton = b;
-        return true;
-     }
+         case RETRO_DEVICE_ID_MOUSE_LEFT:
+         case RETRO_DEVICE_ID_MOUSE_RIGHT:
+         case RETRO_DEVICE_ID_MOUSE_MIDDLE:
+         case RETRO_DEVICE_ID_MOUSE_BUTTON_4:
+         case RETRO_DEVICE_ID_MOUSE_BUTTON_5:
+         case RETRO_DEVICE_ID_MOUSE_WHEELUP:
+         case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
+         case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:
+         case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN:
+            output->mbutton = b;
+            return true;
+      }
    }
 
    for (b = 0; b < MENU_MAX_BUTTONS; b++)
