@@ -27051,7 +27051,7 @@ bool retroarch_validate_game_options(char *s, size_t len, bool mkdir)
    return true;
 }
 
-bool retroarch_validate_per_core_options(char *s, size_t len, bool mkdir)
+static bool retroarch_validate_per_core_options(char *s, size_t len, bool mkdir)
 {
    char *config_directory                 = NULL;
    size_t str_size                        = PATH_MAX_LENGTH * sizeof(char);
@@ -27656,8 +27656,8 @@ static void rarch_init_core_options_path(
       bool per_core_options         = !settings->bools.global_core_options;
       const char *path_core_options = settings->paths.path_core_options;
 
-      global_options_path[0]   = '\0';
-      per_core_options_path[0] = '\0';
+      global_options_path[0]        = '\0';
+      per_core_options_path[0]      = '\0';
 
       if (per_core_options)
       {
@@ -27678,11 +27678,12 @@ static void rarch_init_core_options_path(
        * file does not yet exist, must fetch 'global' options path */
       if (!per_core_options || !per_core_options_exist)
       {
-         const char *options_path = path_core_options;
+         const char *options_path   = path_core_options;
 
          if (!string_is_empty(options_path))
-            strlcpy(global_options_path, options_path, sizeof(global_options_path));
-         else if (string_is_empty(options_path) && !path_is_empty(RARCH_PATH_CONFIG))
+            strlcpy(global_options_path,
+                  options_path, sizeof(global_options_path));
+         else if (!path_is_empty(RARCH_PATH_CONFIG))
          {
             fill_pathname_resolve_relative(
                   global_options_path, path_get(RARCH_PATH_CONFIG),
