@@ -331,9 +331,11 @@ void gfx_display_set_driver_id(enum menu_driver_id_type type);
 
 float gfx_display_get_dpi_scale(unsigned width, unsigned height);
 
-float gfx_display_get_widget_dpi_scale(unsigned width, unsigned height);
+float gfx_display_get_widget_dpi_scale(
+      unsigned width, unsigned height, bool fullscreen);
 
-float gfx_display_get_widget_pixel_scale(unsigned width, unsigned height);
+float gfx_display_get_widget_pixel_scale(
+      unsigned width, unsigned height, bool fullscreen);
 
 void gfx_display_allocate_white_texture(void);
 

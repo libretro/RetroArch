@@ -11906,6 +11906,21 @@ static bool setting_append_list(
                general_read_handler);
          (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
          menu_settings_list_current_add_range(list, list_info, 0.2, 5.0, 0.01, true, true);
+
+         CONFIG_FLOAT(
+               list, list_info,
+               &settings->floats.menu_widget_scale_factor_windowed,
+               MENU_ENUM_LABEL_MENU_WIDGET_SCALE_FACTOR_WINDOWED,
+               MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_FACTOR_WINDOWED,
+               DEFAULT_MENU_WIDGET_SCALE_FACTOR_WINDOWED,
+               "%.2fx",
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+         menu_settings_list_current_add_range(list, list_info, 0.2, 5.0, 0.01, true, true);
 #endif
 
          CONFIG_BOOL(

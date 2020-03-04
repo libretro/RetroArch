@@ -25100,12 +25100,16 @@ static void drivers_init(int flags)
    if (settings->bools.menu_enable_widgets
       && video_driver_has_widgets())
    {
+      bool video_is_fullscreen = settings->bools.video_fullscreen ||
+            rarch_force_fullscreen;
+
       if (!gfx_widgets_inited)
-         gfx_widgets_inited = gfx_widgets_init(video_is_threaded);
+         gfx_widgets_inited = gfx_widgets_init(
+               video_is_threaded, video_is_fullscreen);
 
       if (gfx_widgets_inited)
          gfx_widgets_context_reset(video_is_threaded,
-               video_driver_width, video_driver_height,
+               video_driver_width, video_driver_height, video_is_fullscreen,
                settings->paths.directory_assets,
                settings->paths.path_font);
       else
@@ -29044,9 +29048,12 @@ static enum runloop_state runloop_check_state(retro_time_t current_time)
 #if defined(HAVE_GFX_WIDGETS)
    if (gfx_widgets_inited)
    {
+      bool video_is_fullscreen = settings->bools.video_fullscreen ||
+            rarch_force_fullscreen;
+
       runloop_msg_queue_lock();
       gfx_widgets_iterate(
-            video_driver_width, video_driver_height,
+            video_driver_width, video_driver_height, video_is_fullscreen,
             settings->paths.directory_assets,
             settings->paths.path_font,
             video_driver_is_threaded_internal());

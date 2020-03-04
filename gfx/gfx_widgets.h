@@ -40,7 +40,7 @@
 #define HOURGLASS_DURATION                1000
 #define GENERIC_MESSAGE_DURATION          3000
 
-bool gfx_widgets_init(bool video_is_threaded);
+bool gfx_widgets_init(bool video_is_threaded, bool fullscreen);
 
 void gfx_widgets_free(void);
 
@@ -57,7 +57,7 @@ void gfx_widgets_volume_update_and_show(float new_volume,
       bool mute);
 
 void gfx_widgets_iterate(
-      unsigned width, unsigned height,
+      unsigned width, unsigned height, bool fullscreen,
       const char *dir_assets, char *font_path,
       bool is_threaded);
 
@@ -81,7 +81,7 @@ void gfx_widgets_start_load_content_animation(
 void gfx_widgets_cleanup_load_content_animation(void);
 
 void gfx_widgets_context_reset(bool is_threaded,
-      unsigned width, unsigned height,
+      unsigned width, unsigned height, bool fullscreen,
       const char *dir_assets, char *font_path);
 
 void gfx_widgets_push_achievement(const char *title, const char *badge);
