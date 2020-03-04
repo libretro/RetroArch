@@ -25,8 +25,11 @@
 - LOCALIZATION: Update Polish translation
 - LOCALIZATION: Update Spanish translation
 - LOCALIZATION: Update Portuguese Brazilian translation
+- MENU: Automatically select currently checked item when opening drop-down lists
+- MENU: Fix smooth (vertical) line ticker scroll speed
 - MENU/WIDGETS: Allow notifications to use full screen width when not displaying menu
 - MENU/WIDGETS: DPI-based scaling
+- MENU/WIDGETS: Fix volume widget scaling
 - MENU/MATERIALUI: Add option to remove navigation bar
 - MENU/OZONE: Add DPI-based scaling
 - MENU/OZONE: Add rudimentary pointer support
@@ -38,10 +41,12 @@
 - MENU/OZONE/POINTER: Cursor focus follows mouse pointer from sidebar to entries list (and vice versa)
 - MENU/OZONE/POINTER: In entries list, item under cursor is automatically selected (with some fudging to ensure this doesn't break mouse wheel scrolling)
 - MENU/OZONE/POINTER: In sidebar, item under cursor is not automatically selected (this is too jarring)
-- MENU/XMB: New color themes 'Cube Purple', 'Family Red', etc.
+- MENU/RGUI: Add 'Flux' theme
+- MENU/XMB: New color themes 'Cube Purple', 'Family Red', etc
 - NETPLAY/MENU/BUGFIX: Fix Netplay Stateless Mode doesn't save. Affects other netplay settings which can be overridden by commandline option
 - ODROID GO ADVANCE: Rotation support
 - NETPLAY/ROOMS/BUGFIX: Prevent out-of-bounds array indexing when displaying/selecting netplay rooms in menus
+- SCANNER: Add 'Arcade DAT Filter' Option
 - VIDEO: Set hardware 'Bilinear filtering' off by default
 - WIFI/CONNMANCTL: Display more characters from SSID
 
