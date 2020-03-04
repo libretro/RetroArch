@@ -3879,7 +3879,10 @@ static unsigned populate_playlist_thumbnail_mode_dropdown_list(
 
          /* Add checkmark if item is currently selected */
          if (current_thumbnail_mode == thumbnail_mode)
+         {
             menu_entries_set_checked(list, i, true);
+            menu_navigation_set_selection(i);
+         }
       }
    }
 
@@ -5210,7 +5213,10 @@ unsigned menu_displaylist_build_list(
                      count++;
 
                   if (video_list[i].current)
+                  {
                      menu_entries_set_checked(list, i, true);
+                     menu_navigation_set_selection(i);
+                  }
                }
 
                free(video_list);
@@ -5245,7 +5251,10 @@ unsigned menu_displaylist_build_list(
 
                if (string_is_empty(current_core_name) ||
                      string_is_equal(current_core_name, "DETECT"))
+               {
                   menu_entries_set_checked(list, 0, true);
+                  menu_navigation_set_selection(0);
+               }
 
                /* Loop through cores */
                for (i = 0; i < core_info_list->count; i++)
@@ -5264,7 +5273,10 @@ unsigned menu_displaylist_build_list(
                         count++;
 
                      if (string_is_equal(current_core_name, core_info->display_name))
+                     {
                         menu_entries_set_checked(list, i + 1, true);
+                        menu_navigation_set_selection(i + 1);
+                     }
                   }
                }
             }
@@ -5321,7 +5333,10 @@ unsigned menu_displaylist_build_list(
                      count++;
 
                   if (current_display_mode == display_mode)
+                  {
                      menu_entries_set_checked(list, i, true);
+                     menu_navigation_set_selection(i);
+                  }
                }
             }
          }
@@ -5375,7 +5390,10 @@ unsigned menu_displaylist_build_list(
 
                   /* Check whether current entry is checked */
                   if (string_is_equal(current_system_name, system_name))
+                  {
                      menu_entries_set_checked(list, i, true);
+                     menu_navigation_set_selection(i);
+                  }
                }
 
                /* Clean up */
@@ -5415,7 +5433,10 @@ unsigned menu_displaylist_build_list(
 
                   /* Check whether current entry is checked */
                   if (string_is_equal(current_core_name, core_name))
+                  {
                      menu_entries_set_checked(list, i, true);
+                     menu_navigation_set_selection(i);
+                  }
                }
 
                /* Clean up */
@@ -5497,7 +5518,10 @@ unsigned menu_displaylist_build_list(
 
                      /* Check whether current disk is selected */
                      if (i == current_image)
+                     {
                         menu_entries_set_checked(list, i, true);
+                        menu_navigation_set_selection(i);
+                     }
                   }
                }
             }
@@ -10441,7 +10465,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         }
 
                         if (checked_found)
+                        {
                            menu_entries_set_checked(info->list, checked, true);
+                           menu_navigation_set_selection(checked);
+                        }
                      }
                   }
                }
@@ -10488,7 +10515,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                               }
 
                               if (checked_found)
+                              {
                                  menu_entries_set_checked(info->list, checked, true);
+                                 menu_navigation_set_selection(checked);
+                              }
                            }
 
                            if (tmp_str_list)
@@ -10565,7 +10595,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                            }
 
                            if (checked_found)
+                           {
                               menu_entries_set_checked(info->list, checked, true);
+                              menu_navigation_set_selection(checked);
+                           }
                         }
                         break;
                      case ST_FLOAT:
@@ -10636,7 +10669,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                            }
 
                            if (checked_found)
+                           {
                               menu_entries_set_checked(info->list, checked, true);
+                              menu_navigation_set_selection(checked);
+                           }
                         }
                         break;
                      case ST_UINT:
@@ -10709,7 +10745,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                            }
 
                            if (checked_found)
+                           {
                               menu_entries_set_checked(info->list, checked, true);
+                              menu_navigation_set_selection(checked);
+                           }
                         }
                         break;
                      default:
@@ -10743,7 +10782,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   count++;
 
                if (i == pass_count)
+               {
                   menu_entries_set_checked(info->list, i, true);
+                  menu_navigation_set_selection(i);
+               }
             }
 
             info->need_refresh       = true;
@@ -10838,7 +10880,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      }
 
                      if (checked_found)
+                     {
                         menu_entries_set_checked(info->list, checked, true);
+                        menu_navigation_set_selection(checked);
+                     }
                   }
                }
             }
@@ -10885,7 +10930,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                            }
 
                            if (checked_found)
+                           {
                               menu_entries_set_checked(info->list, checked, true);
+                              menu_navigation_set_selection(checked);
+                           }
                         }
 
                         if (tmp_str_list)
@@ -10962,7 +11010,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         }
 
                         if (checked_found)
+                        {
                            menu_entries_set_checked(info->list, checked, true);
+                           menu_navigation_set_selection(checked);
+                        }
                      }
                      break;
                   case ST_FLOAT:
@@ -11033,7 +11084,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         }
 
                         if (checked_found)
+                        {
                            menu_entries_set_checked(info->list, checked, true);
+                           menu_navigation_set_selection(checked);
+                        }
                      }
                      break;
                   case ST_UINT:
@@ -11106,7 +11160,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         }
 
                         if (checked_found)
+                        {
                            menu_entries_set_checked(info->list, checked, true);
+                           menu_navigation_set_selection(checked);
+                        }
                      }
                      break;
                   default:
