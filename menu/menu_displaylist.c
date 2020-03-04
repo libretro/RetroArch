@@ -3942,6 +3942,12 @@ static bool menu_displaylist_parse_manual_content_scan_list(
          false) == 0)
       count++;
 
+   /* Arcade DAT filter */
+   if (menu_displaylist_parse_settings_enum(info->list,
+         MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_DAT_FILE_FILTER, PARSE_ONLY_BOOL,
+         false) == 0)
+      count++;
+
    /* Overwrite playlist */
    if (menu_displaylist_parse_settings_enum(info->list,
          MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_OVERWRITE, PARSE_ONLY_BOOL,
