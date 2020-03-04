@@ -229,8 +229,10 @@ static int action_left_mainmenu(unsigned type, const char *label,
       bool wraparound)
 {
    menu_ctx_list_t list_info;
-   unsigned        push_list = 0;
-   settings_t       *settings = config_get_ptr();
+   unsigned        push_list       = 0;
+   settings_t       *settings      = config_get_ptr();
+   bool menu_nav_wraparound_enable = settings->bools.menu_navigation_wraparound_enable;
+   const char *menu_ident          = menu_driver_ident();
 
    menu_driver_list_get_selection(&list_info);
 
@@ -241,11 +243,11 @@ static int action_left_mainmenu(unsigned type, const char *label,
    /* List switching functionality does not
     * apply to RGUI or MaterialUI */
    if ((list_info.size == 1) &&
-       !string_is_equal(settings->arrays.menu_driver, "rgui") &&
-       !string_is_equal(settings->arrays.menu_driver, "glui"))
+       !string_is_equal(menu_ident, "rgui") &&
+       !string_is_equal(menu_ident, "glui"))
    {
       if ((list_info.selection != 0)
-         || settings->bools.menu_navigation_wraparound_enable)
+         || menu_nav_wraparound_enable)
          push_list = 1;
    }
    else
