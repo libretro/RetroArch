@@ -6595,6 +6595,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_MENU_WIDGETS_ENABLE,          PARSE_ONLY_BOOL,   true  },
                {MENU_ENUM_LABEL_MENU_WIDGET_SCALE_AUTO,       PARSE_ONLY_BOOL,   false },
                {MENU_ENUM_LABEL_MENU_WIDGET_SCALE_FACTOR,     PARSE_ONLY_FLOAT,  false },
+               {MENU_ENUM_LABEL_MENU_WIDGET_SCALE_FACTOR_WINDOWED, PARSE_ONLY_FLOAT,  false },
                {MENU_ENUM_LABEL_FPS_SHOW,                     PARSE_ONLY_BOOL,   false },
                {MENU_ENUM_LABEL_FPS_UPDATE_INTERVAL,          PARSE_ONLY_UINT,   false },
                {MENU_ENUM_LABEL_FRAMECOUNT_SHOW,              PARSE_ONLY_BOOL,   false },
@@ -6638,6 +6639,13 @@ unsigned menu_displaylist_build_list(
 #endif
                      break;
                   case MENU_ENUM_LABEL_MENU_WIDGET_SCALE_FACTOR:
+#ifdef HAVE_GFX_WIDGETS
+                     if (menu_enable_widgets)
+                        if (!menu_widget_scale_auto)
+                           build_list[i].checked = true;
+#endif
+                     break;
+                  case MENU_ENUM_LABEL_MENU_WIDGET_SCALE_FACTOR_WINDOWED:
 #ifdef HAVE_GFX_WIDGETS
                      if (menu_enable_widgets)
                         if (!menu_widget_scale_auto)

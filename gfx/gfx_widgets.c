@@ -923,7 +923,7 @@ bool menu_driver_get_load_content_animation_data(
 #endif
 
 void gfx_widgets_iterate(
-      unsigned width, unsigned height,
+      unsigned width, unsigned height, bool fullscreen,
       const char *dir_assets, char *font_path,
       bool is_threaded)
 {
@@ -931,9 +931,9 @@ void gfx_widgets_iterate(
 
    /* Check whether screen dimensions or menu scale
     * factor have changed */
-   float scale_factor = (gfx_display_get_driver_id() == MENU_DRIVER_ID_XMB) 
-      ? gfx_display_get_widget_pixel_scale(width, height) 
-      : gfx_display_get_widget_dpi_scale(width, height);
+   float scale_factor = (gfx_display_get_driver_id() == MENU_DRIVER_ID_XMB) ?
+         gfx_display_get_widget_pixel_scale(width, height, fullscreen) :
+               gfx_display_get_widget_dpi_scale(width, height, fullscreen);
 
    if ((scale_factor != last_scale_factor) ||
        (width  != last_video_width) ||
@@ -1933,7 +1933,7 @@ void gfx_widgets_frame(void *data)
    gfx_display_unset_viewport(video_info->width, video_info->height);
 }
 
-bool gfx_widgets_init(bool video_is_threaded)
+bool gfx_widgets_init(bool video_is_threaded, bool fullscreen)
 {
    if (!gfx_display_init_first_driver(video_is_threaded))
       goto error;
@@ -1959,9 +1959,9 @@ bool gfx_widgets_init(bool video_is_threaded)
     * > XMB uses pixel based scaling - all other drivers
     *   use DPI based scaling */
    video_driver_get_size(&last_video_width, &last_video_height);
-   last_scale_factor = (gfx_display_get_driver_id() == MENU_DRIVER_ID_XMB) 
-      ? gfx_display_get_widget_pixel_scale(last_video_width, last_video_height) 
-      : gfx_display_get_widget_dpi_scale(last_video_width, last_video_height);
+   last_scale_factor = (gfx_display_get_driver_id() == MENU_DRIVER_ID_XMB) ?
+         gfx_display_get_widget_pixel_scale(last_video_width, last_video_height, fullscreen) :
+               gfx_display_get_widget_dpi_scale(last_video_width, last_video_height, fullscreen);
 
    return true;
 
@@ -2097,7 +2097,7 @@ static void gfx_widgets_layout(
 }
 
 void gfx_widgets_context_reset(bool is_threaded,
-      unsigned width, unsigned height,
+      unsigned width, unsigned height, bool fullscreen,
       const char *dir_assets, char *font_path)
 {
    int i;
@@ -2158,9 +2158,9 @@ void gfx_widgets_context_reset(bool is_threaded,
    /* Update scaling/dimensions */
    last_video_width  = width;
    last_video_height = height;
-   last_scale_factor = (gfx_display_get_driver_id() == MENU_DRIVER_ID_XMB) 
-      ? gfx_display_get_widget_pixel_scale(last_video_width, last_video_height)
-      : gfx_display_get_widget_dpi_scale(last_video_width, last_video_height);
+   last_scale_factor = (gfx_display_get_driver_id() == MENU_DRIVER_ID_XMB) ?
+         gfx_display_get_widget_pixel_scale(last_video_width, last_video_height, fullscreen) :
+               gfx_display_get_widget_dpi_scale(last_video_width, last_video_height, fullscreen);
 
    gfx_widgets_layout(is_threaded, dir_assets, font_path);
    video_driver_monitor_reset();

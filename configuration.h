@@ -409,6 +409,7 @@ typedef struct settings
 
       float menu_scale_factor;
       float menu_widget_scale_factor;
+      float menu_widget_scale_factor_windowed;
       float menu_wallpaper_opacity;
       float menu_framebuffer_opacity;
       float menu_footer_opacity;

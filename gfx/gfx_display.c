@@ -391,7 +391,8 @@ float gfx_display_get_dpi_scale(unsigned width, unsigned height)
    return adjusted_scale;
 }
 
-float gfx_display_get_widget_dpi_scale(unsigned width, unsigned height)
+float gfx_display_get_widget_dpi_scale(
+      unsigned width, unsigned height, bool fullscreen)
 {
    static unsigned last_width                          = 0;
    static unsigned last_height                         = 0;
@@ -404,7 +405,9 @@ float gfx_display_get_widget_dpi_scale(unsigned width, unsigned height)
    settings_t *settings                                = config_get_ptr();
    bool gfx_widget_scale_auto                          = settings->bools.menu_widget_scale_auto;
    float _menu_scale_factor                            = settings->floats.menu_scale_factor;
-   float menu_widget_scale_factor                      = settings->floats.menu_widget_scale_factor;
+   float menu_widget_scale_factor                      = fullscreen ?
+         settings->floats.menu_widget_scale_factor :
+               settings->floats.menu_widget_scale_factor_windowed;
 
    /* When using RGUI, _menu_scale_factor
     * is ignored
@@ -446,7 +449,8 @@ float gfx_display_get_widget_dpi_scale(unsigned width, unsigned height)
    return adjusted_scale;
 }
 
-float gfx_display_get_widget_pixel_scale(unsigned width, unsigned height)
+float gfx_display_get_widget_pixel_scale(
+      unsigned width, unsigned height, bool fullscreen)
 {
    static unsigned last_width                          = 0;
    static unsigned last_height                         = 0;
@@ -457,9 +461,11 @@ float gfx_display_get_widget_pixel_scale(unsigned width, unsigned height)
    static enum menu_driver_id_type last_menu_driver_id = MENU_DRIVER_ID_UNKNOWN;
    static float adjusted_scale                         = 1.0f;
    settings_t *settings                                = config_get_ptr();
-   float _menu_scale_factor                            = settings->floats.menu_scale_factor;
-   float menu_widget_scale_factor                      = settings->floats.menu_widget_scale_factor;
    bool gfx_widget_scale_auto                          = settings->bools.menu_widget_scale_auto;
+   float _menu_scale_factor                            = settings->floats.menu_scale_factor;
+   float menu_widget_scale_factor                      = fullscreen ?
+         settings->floats.menu_widget_scale_factor :
+               settings->floats.menu_widget_scale_factor_windowed;
 
    /* When using RGUI, _menu_scale_factor is ignored
     * > If we are not using a widget scale factor override,
