@@ -26,7 +26,6 @@
 #include "../../wiiu/system/memory.h"
 #include "../../wiiu/wiiu_dbg.h"
 
-#include "../../retroarch.h"
 #include "../../verbosity.h"
 
 typedef struct

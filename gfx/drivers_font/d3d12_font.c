@@ -15,7 +15,6 @@
 
 #define CINTERFACE
 
-#include <stdio.h>
 #include <string.h>
 #include <malloc.h>
 #include <math.h>
@@ -24,7 +23,6 @@
 #include "../font_driver.h"
 #include "../common/d3d12_common.h"
 
-#include "../../retroarch.h"
 #include "../../verbosity.h"
 
 typedef struct

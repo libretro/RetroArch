@@ -20,19 +20,20 @@
 #include <encodings/utf.h>
 #include <lists/string_list.h>
 
+#include <windows.h>
+#include <wingdi.h>
+
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
 #endif
 
-#include "../font_driver.h"
-#include "../../configuration.h"
 #include "../../retroarch.h"
-#include "../../verbosity.h"
 #include "../common/gdi_common.h"
 #include "../common/win32_common.h"
 
-#include <windows.h>
-#include <wingdi.h>
+#include "../font_driver.h"
+#include "../../verbosity.h"
+
 
 typedef struct
 {

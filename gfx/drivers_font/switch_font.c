@@ -25,7 +25,6 @@
 
 #include "../font_driver.h"
 
-#include "../../retroarch.h"
 #include "../../verbosity.h"
 
 #include "../common/switch_common.h"

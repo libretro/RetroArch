@@ -24,7 +24,6 @@
 
 #include "../common/gl_core_common.h"
 #include "../font_driver.h"
-#include "../../retroarch.h"
 #include "../../verbosity.h"
 
 /* TODO: Move viewport side effects to the caller: it's a source of bugs. */
