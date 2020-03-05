@@ -3438,7 +3438,7 @@ bool config_load_override(void *data)
     * since it will be overwritten by the override when reloading. */
    path_set(RARCH_PATH_CORE, buf);
    runloop_msg_queue_push(msg_hash_to_str(MSG_CONFIG_OVERRIDE_LOADED),
-         1, 100, true,
+         1, 100, false,
          NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
    /* Reset save paths. */
@@ -3613,7 +3613,7 @@ bool config_load_remap(const char *directory_input_remapping,
 
 success:
    runloop_msg_queue_push(msg_hash_to_str(
-            MSG_GAME_REMAP_FILE_LOADED), 1, 100, true,
+            MSG_GAME_REMAP_FILE_LOADED), 1, 100, false,
          NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    free(content_path);
    free(remap_directory);
