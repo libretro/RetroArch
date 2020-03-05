@@ -1,6 +1,6 @@
 #pragma once
 
-// C stdlib includes
+/* C stdlib includes */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -10,7 +10,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
-// 3DS includes
+/* 3DS includes */
 #include <3ds.h>
 
 #define ENTRY_ARGBUFSIZE   0x400
@@ -73,7 +73,7 @@ typedef struct
 	u32 processAppCodeAddress;
 	u32 processHookTidLow, processHookTidHigh;
 	u32 mediatype;
-	bool capabilities[0x10]; // {socuAccess, csndAccess, qtmAccess, nfcAccess, httpcAccess, reserved...}
+	bool capabilities[0x10]; /* {socuAccess, csndAccess, qtmAccess, nfcAccess, httpcAccess, reserved...} */
 } memmap_header_t;
 
 typedef struct

@@ -15,9 +15,9 @@
 
 void GPU_Init(Handle *gsphandle)
 {
-	gpuCmdBuf=NULL;
-	gpuCmdBufSize=0;
-	gpuCmdBufOffset=0;
+	gpuCmdBuf       = NULL;
+	gpuCmdBufSize   = 0;
+	gpuCmdBufOffset = 0;
 }
 
 void GPU_Reset(u32* gxbuf, u32* gpuBuf, u32 gpuBufSize)
@@ -27,16 +27,18 @@ void GPU_Reset(u32* gxbuf, u32* gpuBuf, u32 gpuBufSize)
 
 void GPU_SetFloatUniform(GPU_SHADER_TYPE type, u32 startreg, u32* data, u32 numreg)
 {
-	if(!data)return;
+   if(!data)
+      return;
 
-	int regOffset=(type==GPU_GEOMETRY_SHADER)?(-0x30):(0x0);
+   int regOffset = (type == GPU_GEOMETRY_SHADER) ? (-0x30) : (0x0);
 
-	GPUCMD_AddWrite(GPUREG_VSH_FLOATUNIFORM_CONFIG+regOffset, 0x80000000|startreg);
-	GPUCMD_AddWrites(GPUREG_VSH_FLOATUNIFORM_DATA+regOffset, data, numreg*4);
+   GPUCMD_AddWrite(GPUREG_VSH_FLOATUNIFORM_CONFIG+regOffset, 0x80000000|startreg);
+   GPUCMD_AddWrites(GPUREG_VSH_FLOATUNIFORM_DATA+regOffset, data, numreg*4);
 }
 
-//takes PAs as arguments
-void GPU_SetViewport(u32* depthBuffer, u32* colorBuffer, u32 x, u32 y, u32 w, u32 h)
+/* takes PAs as arguments */
+void GPU_SetViewport(u32* depthBuffer, u32* colorBuffer,
+      u32 x, u32 y, u32 w, u32 h)
 {
 	u32 param[0x4];
 	float fw=(float)w;
@@ -53,9 +55,9 @@ void GPU_SetViewport(u32* depthBuffer, u32* colorBuffer, u32 x, u32 y, u32 w, u3
 	GPUCMD_AddIncrementalWrites(GPUREG_DEPTHBUFFER_LOC, param, 0x00000003);
 
 	GPUCMD_AddWrite(GPUREG_RENDERBUF_DIM, f116e);
-	GPUCMD_AddWrite(GPUREG_DEPTHBUFFER_FORMAT, 0x00000003); //depth buffer format
-	GPUCMD_AddWrite(GPUREG_COLORBUFFER_FORMAT, 0x00000002); //color buffer format
-	GPUCMD_AddWrite(GPUREG_FRAMEBUFFER_BLOCK32, 0x00000000); //?
+	GPUCMD_AddWrite(GPUREG_DEPTHBUFFER_FORMAT, 0x00000003); /* depth buffer format */
+	GPUCMD_AddWrite(GPUREG_COLORBUFFER_FORMAT, 0x00000002); /* color buffer format */
+	GPUCMD_AddWrite(GPUREG_FRAMEBUFFER_BLOCK32, 0x00000000); /* ? */
 
 	param[0x0]=f32tof24(fw/2);
 	param[0x1]=f32tof31(2.0f / fw) << 1;
@@ -70,7 +72,7 @@ void GPU_SetViewport(u32* depthBuffer, u32* colorBuffer, u32 x, u32 y, u32 w, u3
 	param[0x2]=((h-1)<<16)|((w-1)&0xFFFF);
 	GPUCMD_AddIncrementalWrites(GPUREG_SCISSORTEST_MODE, param, 0x00000003);
 
-	//enable depth buffer
+	/* enable depth buffer */
 	param[0x0]=0x0000000F;
 	param[0x1]=0x0000000F;
 	param[0x2]=0x00000002;
@@ -136,8 +138,8 @@ void GPU_SetBlendingColor(u8 r, u8 g, u8 b, u8 a)
 
 void GPU_SetTextureEnable(GPU_TEXUNIT units)
 {
-	GPUCMD_AddMaskedWrite(GPUREG_SH_OUTATTR_CLOCK, 0x2, units<<8); // enables texcoord outputs
-	GPUCMD_AddWrite(GPUREG_TEXUNIT_CONFIG, 0x00011000|units); // enables texture units
+	GPUCMD_AddMaskedWrite(GPUREG_SH_OUTATTR_CLOCK, 0x2, units<<8); /* enables texcoord outputs */
+	GPUCMD_AddWrite(GPUREG_TEXUNIT_CONFIG, 0x00011000|units); /* enables texture units */
 }
 
 void GPU_SetTexture(GPU_TEXUNIT unit, u32* data, u16 width, u16 height, u32 param, GPU_TEXCOLOR colorType)
@@ -250,24 +252,24 @@ void GPU_SetTexEnv(u8 id, u16 rgbSources, u16 alphaSources, u16 rgbOperands, u16
 	param[0x1]=(alphaOperands<<12)|(rgbOperands);
 	param[0x2]=(alphaCombine<<16)|(rgbCombine);
 	param[0x3]=constantColor;
-	param[0x4]=0x00000000; // ?
+	param[0x4]=0x00000000; /* ? */
 
 	GPUCMD_AddIncrementalWrites(GPUREG_0000|GPU_TEVID[id], param, 0x00000005);
 }
 
 void GPU_DrawArray(GPU_Primitive_t primitive, u32 first, u32 count)
 {
-	//set primitive type
+	/* set primitive type */
 	GPUCMD_AddMaskedWrite(GPUREG_PRIMITIVE_CONFIG, 0x2, primitive);
 	GPUCMD_AddMaskedWrite(GPUREG_RESTART_PRIMITIVE, 0x2, 0x00000001);
-	//index buffer address register should be cleared (except bit 31) before drawing
+	/* index buffer address register should be cleared (except bit 31) before drawing */
 	GPUCMD_AddWrite(GPUREG_INDEXBUFFER_CONFIG, 0x80000000);
-	//pass number of vertices
+	/* pass number of vertices */
 	GPUCMD_AddWrite(GPUREG_NUMVERTICES, count);
-	//set first vertex
+	/* set first vertex */
 	GPUCMD_AddWrite(GPUREG_VERTEX_OFFSET, first);
 
-	//all the following except 0x000F022E might be useless
+	/* all the following except 0x000F022E might be useless */
 	GPUCMD_AddMaskedWrite(GPUREG_GEOSTAGE_CONFIG2, 0x1, 0x00000001);
 	GPUCMD_AddMaskedWrite(GPUREG_START_DRAW_FUNC0, 0x1, 0x00000000);
 	GPUCMD_AddWrite(GPUREG_DRAWARRAYS, 0x00000001);
@@ -278,12 +280,12 @@ void GPU_DrawArray(GPU_Primitive_t primitive, u32 first, u32 count)
 
 void GPU_DrawElements(GPU_Primitive_t primitive, u32* indexArray, u32 n)
 {
-	//set primitive type
+	/* set primitive type */
 	GPUCMD_AddMaskedWrite(GPUREG_PRIMITIVE_CONFIG, 0x2, primitive);
 	GPUCMD_AddMaskedWrite(GPUREG_RESTART_PRIMITIVE, 0x2, 0x00000001);
-	//index buffer (TODO : support multiple types)
+	/* index buffer (TODO : support multiple types) */
 	GPUCMD_AddWrite(GPUREG_INDEXBUFFER_CONFIG, 0x80000000|((u32)indexArray));
-	//pass number of vertices
+	/* pass number of vertices */
 	GPUCMD_AddWrite(GPUREG_NUMVERTICES, n);
 
 	GPUCMD_AddWrite(GPUREG_VERTEX_OFFSET, 0x00000000);
@@ -296,7 +298,7 @@ void GPU_DrawElements(GPU_Primitive_t primitive, u32* indexArray, u32 n)
 	GPUCMD_AddMaskedWrite(GPUREG_START_DRAW_FUNC0, 0x1, 0x00000001);
 	GPUCMD_AddWrite(GPUREG_VTX_FUNC, 0x00000001);
 
-	// CHECKME: does this one also require GPUREG_FRAMEBUFFER_FLUSH at the end?
+	/* CHECKME: does this one also require GPUREG_FRAMEBUFFER_FLUSH at the end? */
 }
 
 void GPU_FinishDrawing()
@@ -315,7 +317,7 @@ void GPU_Finalize(void)
    GPUCMD_Split(NULL, NULL);
 #else
    GPUCMD_AddWrite(GPUREG_FINALIZE, 0x12345678);
-   //not the cleanest way of guaranteeing 0x10-byte size but whatever good enough for now
+   /* not the cleanest way of guaranteeing 0x10-byte size but whatever good enough for now */
    GPUCMD_AddWrite(GPUREG_FINALIZE,0x12345678);
 #endif
 }
