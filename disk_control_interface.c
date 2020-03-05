@@ -284,7 +284,7 @@ static void disk_control_get_index_set_msg(
 /* Sets the eject state of the virtual disk tray */
 bool disk_control_set_eject_state(
       disk_control_interface_t *disk_control,
-      bool eject, bool verbose)
+      bool eject, bool verbosity)
 {
    bool error = false;
    char msg[128];
@@ -320,7 +320,7 @@ bool disk_control_set_eject_state(
          RARCH_LOG("%s\n", msg);
 
       /* Errors should always be displayed */
-      if (verbose || error)
+      if (verbosity || error)
          runloop_msg_queue_push(
                msg, 1, error ? 180 : 60,
                true, NULL,
@@ -334,7 +334,7 @@ bool disk_control_set_eject_state(
  * NOTE: Will fail if disk is not currently ejected */
 bool disk_control_set_index(
       disk_control_interface_t *disk_control,
-      unsigned index, bool verbose)
+      unsigned index, bool verbosity)
 {
    bool error            = false;
    unsigned num_images   = 0;
@@ -375,7 +375,7 @@ bool disk_control_set_index(
          RARCH_LOG("%s\n", msg);
 
       /* Errors should always be displayed */
-      if (verbose || error)
+      if (verbosity || error)
          runloop_msg_queue_push(
                msg, 1, msg_duration,
                true, NULL,
@@ -416,7 +416,7 @@ bool disk_control_set_index(
 /* Increments selected disk index */
 bool disk_control_set_index_next(
       disk_control_interface_t *disk_control,
-      bool verbose)
+      bool verbosity)
 {
    unsigned num_images   = 0;
    unsigned image_index  = 0;
@@ -445,13 +445,13 @@ bool disk_control_set_index_next(
    if (image_index < (num_images - 1))
       image_index++;
 
-   return disk_control_set_index(disk_control, image_index, verbose);
+   return disk_control_set_index(disk_control, image_index, verbosity);
 }
 
 /* Decrements selected disk index */
 bool disk_control_set_index_prev(
       disk_control_interface_t *disk_control,
-      bool verbose)
+      bool verbosity)
 {
    unsigned num_images   = 0;
    unsigned image_index  = 0;
@@ -480,7 +480,7 @@ bool disk_control_set_index_prev(
    if (image_index > 0)
       image_index--;
 
-   return disk_control_set_index(disk_control, image_index, verbose);
+   return disk_control_set_index(disk_control, image_index, verbosity);
 }
 
 /* Appends specified image file to disk image list */
