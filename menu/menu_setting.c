@@ -4249,11 +4249,12 @@ static void setting_get_string_representation_uint_ozone_menu_color_theme(
       rarch_setting_t *setting,
       char *s, size_t len)
 {
-   settings_t      *settings = config_get_ptr();
+   settings_t                       *settings = config_get_ptr();
+   bool menu_preferred_system_color_theme_set = settings->bools.menu_preferred_system_color_theme_set;
    if (!setting)
       return;
 
-   if (settings->bools.menu_preferred_system_color_theme_set)
+   if (menu_preferred_system_color_theme_set)
          strlcpy(s, "System default", len);
 
    switch (*setting->value.target.unsigned_integer)
@@ -4898,9 +4899,10 @@ static int setting_string_action_left_driver(rarch_setting_t *setting,
 
    if (!driver_ctl(RARCH_DRIVER_CTL_FIND_PREV, &drv))
    {
-      settings_t *settings = config_get_ptr();
+      settings_t                   *settings = config_get_ptr();
+      bool menu_navigation_wraparound_enable = settings ? settings->bools.menu_navigation_wraparound_enable: false;
 
-      if (settings && settings->bools.menu_navigation_wraparound_enable)
+      if (menu_navigation_wraparound_enable)
       {
          drv.label = setting->name;
          drv.s     = setting->value.target.string;
@@ -5133,9 +5135,10 @@ static int setting_string_action_right_driver(rarch_setting_t *setting,
 
    if (!driver_ctl(RARCH_DRIVER_CTL_FIND_NEXT, &drv))
    {
-      settings_t *settings = config_get_ptr();
+      settings_t                   *settings = config_get_ptr();
+      bool menu_navigation_wraparound_enable = settings ? settings->bools.menu_navigation_wraparound_enable: false;
 
-      if (settings && settings->bools.menu_navigation_wraparound_enable)
+      if (menu_navigation_wraparound_enable)
       {
          drv.label = setting->name;
          drv.s     = setting->value.target.string;
@@ -6465,7 +6468,7 @@ void general_write_handler(rarch_setting_t *setting)
                menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
                menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
                command_event(CMD_EVENT_SHADERS_APPLY_CHANGES, NULL);
-               settings->bools.video_shader_enable = false;
+               configuration_set_bool(settings, settings->bools.video_shader_enable, false);
             }
          }
 #endif
@@ -6606,12 +6609,17 @@ void general_write_handler(rarch_setting_t *setting)
       case MENU_ENUM_LABEL_LOG_TO_FILE:
          if (verbosity_is_enabled())
          {
-            if (settings->bools.log_to_file && !is_logging_to_file())
+            bool log_to_file           = settings->bools.log_to_file;
+            bool log_to_file_timestamp = settings->bools.log_to_file_timestamp;
+            const char *log_dir        = settings->paths.log_dir;
+            bool logging_to_file       = is_logging_to_file();
+
+            if (log_to_file && !logging_to_file)
                rarch_log_file_init(
-                     settings->bools.log_to_file,
-                     settings->bools.log_to_file_timestamp,
-                     settings->paths.log_dir);
-            else if (!settings->bools.log_to_file && is_logging_to_file())
+                     log_to_file,
+                     log_to_file_timestamp,
+                     log_dir);
+            else if (!log_to_file && logging_to_file)
                rarch_log_file_deinit();
          }
          retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_LOG_TO_FILE, NULL);
@@ -6620,11 +6628,15 @@ void general_write_handler(rarch_setting_t *setting)
       case MENU_ENUM_LABEL_LOG_TO_FILE_TIMESTAMP:
          if (verbosity_is_enabled() && is_logging_to_file())
          {
+            bool log_to_file           = settings->bools.log_to_file;
+            bool log_to_file_timestamp = settings->bools.log_to_file_timestamp;
+            const char *log_dir        = settings->paths.log_dir;
+
             rarch_log_file_deinit();
             rarch_log_file_init(
-                  settings->bools.log_to_file,
-                  settings->bools.log_to_file_timestamp,
-                  settings->paths.log_dir);
+                  log_to_file,
+                  log_to_file_timestamp,
+                  log_dir);
          }
          break;
       case MENU_ENUM_LABEL_VIDEO_SMOOTH:
@@ -6813,12 +6825,13 @@ void general_write_handler(rarch_setting_t *setting)
       case MENU_ENUM_LABEL_CONTENT_FAVORITES_SIZE:
          {
             unsigned new_capacity;
+            int content_favorites_size = settings->ints.content_favorites_size;
 
             /* Get new size */
-            if (settings->ints.content_favorites_size < 0)
+            if (content_favorites_size < 0)
                new_capacity = COLLECTION_SIZE;
             else
-               new_capacity = (unsigned)settings->ints.content_favorites_size;
+               new_capacity = (unsigned)content_favorites_size;
 
             /* Check whether capacity has changed */
             if (new_capacity != playlist_capacity(g_defaults.content_favorites))
@@ -6901,11 +6914,12 @@ static void frontend_log_level_change_handler(rarch_setting_t *setting)
 static void overlay_enable_toggle_change_handler(rarch_setting_t *setting)
 {
    settings_t *settings  = config_get_ptr();
+   bool input_overlay_hide_in_menu = settings ? settings->bools.input_overlay_hide_in_menu : false;
 
    if (!setting)
       return;
 
-   if (settings && settings->bools.input_overlay_hide_in_menu)
+   if (input_overlay_hide_in_menu)
    {
       command_event(CMD_EVENT_OVERLAY_DEINIT, NULL);
       return;
@@ -6950,7 +6964,7 @@ static void change_handler_video_layout_enable(rarch_setting_t *setting)
    if (*setting->value.target.boolean)
    {
       settings_t *settings = config_get_ptr();
-      void *driver = video_driver_get_ptr(false);
+      void         *driver = video_driver_get_ptr(false);
 
       video_layout_init(driver, video_driver_layout_render_interface());
       video_layout_load(settings->paths.path_video_layout);
@@ -6965,7 +6979,8 @@ static void change_handler_video_layout_enable(rarch_setting_t *setting)
 static void change_handler_video_layout_path(rarch_setting_t *setting)
 {
    settings_t *settings = config_get_ptr();
-   settings->uints.video_layout_selected_view = 0;
+   configuration_set_uint(settings, 
+         settings->uints.video_layout_selected_view, 0);
 
    video_layout_load(setting->value.target.string);
 }
@@ -7028,9 +7043,10 @@ static void ssh_enable_toggle_change_handler(void *data)
 {
    bool enable           = false;
    settings_t *settings  = config_get_ptr();
+   bool ssh_enable       = settings ? settings->bools.ssh_enable : false;
 
-   if (settings && settings->bools.ssh_enable)
-      enable = true;
+   if (ssh_enable)
+      enable             = true;
 
    systemd_service_toggle(LAKKA_SSH_PATH, (char*)"sshd.service",
          enable);
@@ -7040,8 +7056,9 @@ static void samba_enable_toggle_change_handler(void *data)
 {
    bool enable           = false;
    settings_t *settings  = config_get_ptr();
+   bool samba_enable     = settings ? settings->bools.samba_enable : false;
 
-   if (settings && settings->bools.samba_enable)
+   if (samba_enable)
       enable = true;
 
    systemd_service_toggle(LAKKA_SAMBA_PATH, (char*)"smbd.service",
