@@ -41,7 +41,6 @@
 
 #include "../menu_driver.h"
 #include "../menu_entries.h"
-#include "../menu_input.h"
 
 #include "../../gfx/gfx_animation.h"
 #include "../../gfx/gfx_thumbnail_path.h"
@@ -53,9 +52,7 @@
 #include "../../input/input_osk.h"
 
 #include "../../verbosity.h"
-#include "../../dynamic.h"
 #include "../../configuration.h"
-#include "../../playlist.h"
 
 #include "../../tasks/tasks_internal.h"
 

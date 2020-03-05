@@ -28,12 +28,13 @@
 #include <compat/strl.h>
 #include <compat/posix_string.h>
 #include <encodings/utf.h>
+#include <file/config_file.h>
 #include <file/file_path.h>
 #include <formats/image.h>
 
 #include <retro_inline.h>
-#include <string/stdstring.h>
-#include <encodings/utf.h>
+#include <gfx/scaler/scaler.h>
+#include <features/features_cpu.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -43,7 +44,6 @@
 #include "../../gfx/gfx_widgets.h"
 #endif
 
-#include "../../playlist.h"
 #include "../../frontend/frontend_driver.h"
 
 #include "../menu_driver.h"
@@ -53,10 +53,6 @@
 
 #include "../../configuration.h"
 #include "../../gfx/drivers_font_renderer/bitmap.h"
-
-#include <file/config_file.h>
-#include <gfx/scaler/scaler.h>
-#include <features/features_cpu.h>
 
 /* Thumbnail additions */
 #include "../../gfx/gfx_thumbnail_path.h"
