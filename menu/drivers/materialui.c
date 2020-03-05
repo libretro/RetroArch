@@ -18,7 +18,6 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <stddef.h>
-#include <stdio.h>
 #include <string.h>
 #include <limits.h>
 
@@ -40,7 +39,6 @@
 #include "../../frontend/frontend_driver.h"
 
 #include "../menu_driver.h"
-#include "../menu_input.h"
 
 #include "../../gfx/gfx_animation.h"
 #include "../../gfx/gfx_thumbnail_path.h"
@@ -50,15 +48,9 @@
 #include "../widgets/menu_filebrowser.h"
 
 #include "../../core_info.h"
-#include "../../core.h"
 #include "../../configuration.h"
 #include "../../verbosity.h"
 #include "../../tasks/tasks_internal.h"
-
-#include "../../paths.h"
-#include "../../file_path_special.h"
-
-#include "../../dynamic.h"
 
 /* Defines the 'device independent pixel' base
  * unit reference size for all UI elements.
@@ -5077,7 +5069,9 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
  * whether current menu is a playlist, and whether
  * user has enabled playlist thumbnails */
 static void materialui_set_list_view_type(
-      materialui_handle_t *mui, settings_t *settings)
+      materialui_handle_t *mui, 
+      unsigned thumbnail_view_portrait,
+      unsigned thumbnail_view_landscape)
 {
    if (!mui->is_playlist)
    {
@@ -5103,7 +5097,7 @@ static void materialui_set_list_view_type(
           * display orientation */
          if (mui->is_portrait)
          {
-            switch (settings->uints.menu_materialui_thumbnail_view_portrait)
+            switch (thumbnail_view_portrait)
             {
                case MATERIALUI_THUMBNAIL_VIEW_PORTRAIT_LIST_SMALL:
                   mui->list_view_type = MUI_LIST_VIEW_PLAYLIST_THUMB_LIST_SMALL;
@@ -5122,7 +5116,7 @@ static void materialui_set_list_view_type(
          }
          else
          {
-            switch (settings->uints.menu_materialui_thumbnail_view_landscape)
+            switch (thumbnail_view_landscape)
             {
                case MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE_LIST_SMALL:
                   mui->list_view_type = MUI_LIST_VIEW_PLAYLIST_THUMB_LIST_SMALL;
@@ -5348,11 +5342,17 @@ static bool materialui_force_enable_secondary_thumbnail(
        *   instead */
       if (settings->uints.gfx_thumbnails ==
             MUI_DEFAULT_SECONDARY_THUMBNAIL_TYPE)
-         settings->uints.menu_left_thumbnails =
-               MUI_DEFAULT_SECONDARY_THUMBNAIL_FALLBACK_TYPE;
+      {
+         configuration_set_uint(settings,
+               settings->uints.menu_left_thumbnails,
+               MUI_DEFAULT_SECONDARY_THUMBNAIL_FALLBACK_TYPE);
+      }
       else
-         settings->uints.menu_left_thumbnails =
-               MUI_DEFAULT_SECONDARY_THUMBNAIL_TYPE;
+      {
+         configuration_set_uint(settings,
+               settings->uints.menu_left_thumbnails,
+               MUI_DEFAULT_SECONDARY_THUMBNAIL_TYPE);
+      }
    }
 
    /* Final check - this will return true unless a
@@ -5376,13 +5376,14 @@ static void materialui_set_secondary_thumbnail_enable(
          {
             int usable_width     = 0;
             int thumbnail_margin = 0;
+            bool menu_materialui_dual_thumbnail_list_view_enable = settings->bools.menu_materialui_dual_thumbnail_list_view_enable;
 
             /* Disable by default */
             mui->secondary_thumbnail_enabled = false;
 
             /* Check whether user has manually disabled
              * secondary thumbnails */
-            if (!settings->bools.menu_materialui_dual_thumbnail_list_view_enable)
+            if (!menu_materialui_dual_thumbnail_list_view_enable)
                return;
 
             /* Attempt to force enable secondary thumbnails if
@@ -5453,7 +5454,9 @@ static void materialui_update_list_view(materialui_handle_t *mui)
    if (!settings)
       return;
 
-   materialui_set_list_view_type(mui, settings);
+   materialui_set_list_view_type(mui, 
+         settings->uints.menu_materialui_thumbnail_view_portrait,
+         settings->uints.menu_materialui_thumbnail_view_landscape);
    materialui_set_landscape_optimisations_enable(mui);
    materialui_set_thumbnail_dimensions(mui);
    materialui_set_secondary_thumbnail_enable(mui, settings);
@@ -5688,10 +5691,11 @@ static void *materialui_init(void **userdata, bool video_is_threaded)
     * UI elements */
    video_driver_get_size(&width, &height);
 
-   mui->last_width           = width;
-   mui->last_height          = height;
-   mui->last_scale_factor    = gfx_display_get_dpi_scale(width, height);
-   mui->dip_base_unit_size   = mui->last_scale_factor * MUI_DIP_BASE_UNIT_SIZE;
+   mui->last_width               = width;
+   mui->last_height              = height;
+   mui->last_scale_factor        = gfx_display_get_dpi_scale(width, height);
+   mui->dip_base_unit_size       = mui->last_scale_factor 
+      * MUI_DIP_BASE_UNIT_SIZE;
 
    mui->last_show_nav_bar        = settings->bools.menu_materialui_show_nav_bar;
    mui->last_auto_rotate_nav_bar = settings->bools.menu_materialui_auto_rotate_nav_bar;
@@ -5933,7 +5937,9 @@ static void materialui_navigation_alphabet(void *data, size_t *unused)
 static void materialui_populate_nav_bar(
       materialui_handle_t *mui, const char *label, settings_t *settings)
 {
-   unsigned menu_tab_index = 0;
+   unsigned menu_tab_index          = 0;
+   bool menu_content_show_playlists = 
+      settings->bools.menu_content_show_playlists;
 
    /* Cache last active menu tab index */
    mui->nav_bar.last_active_menu_tab_index = mui->nav_bar.active_menu_tab_index;
@@ -5963,7 +5969,7 @@ static void materialui_populate_nav_bar(
    menu_tab_index++;
 
    /* > Playlists */
-   if (settings->bools.menu_content_show_playlists)
+   if (menu_content_show_playlists)
    {
       mui->nav_bar.menu_tabs[menu_tab_index].type          =
             MUI_NAV_BAR_MENU_TAB_PLAYLISTS;
@@ -6251,10 +6257,13 @@ static void materialui_context_reset(void *data, bool is_threaded)
    gfx_display_allocate_white_texture();
    materialui_context_reset_textures(mui);
 
-   if (path_is_valid(settings->paths.path_menu_wallpaper))
-      task_push_image_load(settings->paths.path_menu_wallpaper,
-            video_driver_supports_rgba(), 0,
-            menu_display_handle_wallpaper_upload, NULL);
+   {
+      const char *path_menu_wallpaper = settings->paths.path_menu_wallpaper;
+      if (path_is_valid(path_menu_wallpaper))
+         task_push_image_load(path_menu_wallpaper,
+               video_driver_supports_rgba(), 0,
+               menu_display_handle_wallpaper_upload, NULL);
+   }
 
    video_driver_monitor_reset();
 }
@@ -7233,7 +7242,8 @@ static void materialui_switch_list_view(materialui_handle_t *mui)
 
       if (settings->uints.menu_materialui_thumbnail_view_portrait >=
             MATERIALUI_THUMBNAIL_VIEW_PORTRAIT_LAST)
-         settings->uints.menu_materialui_thumbnail_view_portrait = 0;
+         configuration_set_uint(settings,
+               settings->uints.menu_materialui_thumbnail_view_portrait, 0);
    }
    else
    {
@@ -7241,7 +7251,8 @@ static void materialui_switch_list_view(materialui_handle_t *mui)
 
       if (settings->uints.menu_materialui_thumbnail_view_landscape >=
             MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE_LAST)
-         settings->uints.menu_materialui_thumbnail_view_landscape = 0;
+         configuration_set_uint(settings,
+               settings->uints.menu_materialui_thumbnail_view_landscape, 0);
    }
 
    /* Update list view parameters */
