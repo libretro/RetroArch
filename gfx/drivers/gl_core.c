@@ -767,13 +767,11 @@ static void gl_core_set_viewport(gl_core_t *gl,
       bool force_full, bool allow_rotate)
 {
    gfx_ctx_aspect_t aspect_data;
-   unsigned height          = 0;
+   unsigned height          = gl->video_height;
    int x                    = 0;
    int y                    = 0;
    settings_t *settings     = config_get_ptr();
    float device_aspect      = (float)viewport_width / viewport_height;
-
-   video_driver_get_size(NULL, &height);
 
    aspect_data.aspect       = &device_aspect;
    aspect_data.width        = viewport_width;

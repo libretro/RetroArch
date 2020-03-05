@@ -472,12 +472,10 @@ void gl1_gfx_set_viewport(gl1_t *gl1,
 {
    gfx_ctx_aspect_t aspect_data;
    settings_t *settings     = config_get_ptr();
-   unsigned height          = 0;
+   unsigned height          = gl1->video_height;
    int x                    = 0;
    int y                    = 0;
    float device_aspect      = (float)viewport_width / viewport_height;
-
-   video_driver_get_size(NULL, &height);
 
    aspect_data.aspect       = &device_aspect;
    aspect_data.width        = viewport_width;
