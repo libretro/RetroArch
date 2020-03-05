@@ -28882,6 +28882,8 @@ static enum runloop_state runloop_check_state(retro_time_t current_time)
    bool menu_is_alive                  = menu_driver_alive;
    bool display_kb                     = menu_input_dialog_get_display_kb();
 #endif
+   unsigned display_width              = video_driver_width;
+   unsigned display_height             = video_driver_height;
 
 #if defined(HAVE_TRANSLATE) && defined(HAVE_GFX_WIDGETS)
    if (gfx_widgets_ai_service_overlay_get_state() == 3)
@@ -29050,12 +29052,12 @@ static enum runloop_state runloop_check_state(retro_time_t current_time)
        * rotation (if required) */
       if (settings->bools.input_overlay_auto_rotate)
       {
-         if ((video_driver_width  != last_width) ||
-             (video_driver_height != last_height))
+         if ((display_width  != last_width) ||
+             (display_height != last_height))
          {
             input_overlay_auto_rotate(overlay_ptr);
-            last_width  = video_driver_width;
-            last_height = video_driver_height;
+            last_width  = display_width;
+            last_height = display_height;
          }
       }
    }
@@ -29165,7 +29167,8 @@ static enum runloop_state runloop_check_state(retro_time_t current_time)
          current_time,
          settings->bools.menu_timedate_enable,
          settings->floats.menu_ticker_speed,
-         video_driver_width, video_driver_height);
+         display_width,
+         display_height);
 
 #if defined(HAVE_GFX_WIDGETS)
    if (gfx_widgets_inited)
@@ -29175,7 +29178,7 @@ static enum runloop_state runloop_check_state(retro_time_t current_time)
 
       runloop_msg_queue_lock();
       gfx_widgets_iterate(
-            video_driver_width, video_driver_height, video_is_fullscreen,
+            display_width, display_height, video_is_fullscreen,
             settings->paths.directory_assets,
             settings->paths.path_font,
             video_driver_is_threaded_internal());
@@ -29284,8 +29287,8 @@ static enum runloop_state runloop_check_state(retro_time_t current_time)
                if (menu_data->driver_ctx->render)
                   menu_data->driver_ctx->render(
                         menu_data->userdata,
-                        video_driver_width,
-                        video_driver_height,
+                        display_width,
+                        display_height,
                         runloop_idle);
             }
 
