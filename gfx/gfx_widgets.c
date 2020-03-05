@@ -441,7 +441,7 @@ void gfx_widgets_msg_queue_push(
             msg_widget->msg_new              = strdup(title);
             msg_widget->msg_len              = (unsigned)strlen(title);
 
-            msg_widget->task_error           = task->error;
+            msg_widget->task_error           = !string_is_empty(task->error);
             msg_widget->task_cancelled       = task->cancelled;
             msg_widget->task_finished        = task->finished;
             msg_widget->task_progress        = task->progress;
@@ -551,7 +551,7 @@ void gfx_widgets_msg_queue_push(
             msg_widget->width = new_width;
          }
 
-         msg_widget->task_error        = task->error;
+         msg_widget->task_error        = !string_is_empty(task->error);
          msg_widget->task_cancelled    = task->cancelled;
          msg_widget->task_finished     = task->finished;
          msg_widget->task_progress     = task->progress;
