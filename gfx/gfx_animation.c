@@ -26,7 +26,6 @@
 #include <lists/string_list.h>
 
 #define DG_DYNARR_IMPLEMENTATION
-#include <stdio.h>
 #include <retro_assert.h>
 #define DG_DYNARR_ASSERT(cond, msg)  (void)0
 #include <array/dynarray.h>

@@ -15,9 +15,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <stdio.h>
 #include "video_display_server.h"
-#include "../retroarch.h"
 #include "../verbosity.h"
 
 static const video_display_server_t dispserv_null = {
