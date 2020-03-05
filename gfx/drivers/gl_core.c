@@ -762,17 +762,18 @@ static void gl_core_set_projection(gl_core_t *gl,
 }
 
 static void gl_core_set_viewport(gl_core_t *gl,
-      video_frame_info_t *video_info,
       unsigned viewport_width,
       unsigned viewport_height,
       bool force_full, bool allow_rotate)
 {
    gfx_ctx_aspect_t aspect_data;
+   unsigned height          = 0;
    int x                    = 0;
    int y                    = 0;
    settings_t *settings     = config_get_ptr();
    float device_aspect      = (float)viewport_width / viewport_height;
-   unsigned height          = video_info->height;
+
+   video_driver_get_size(NULL, &height);
 
    aspect_data.aspect       = &device_aspect;
    aspect_data.width        = viewport_width;
@@ -1144,12 +1145,8 @@ static void gl_core_set_viewport_wrapper(void *data,
       unsigned viewport_width,
       unsigned viewport_height, bool force_full, bool allow_rotate)
 {
-   video_frame_info_t video_info;
    gl_core_t *gl = (gl_core_t*)data;
-
-   video_driver_build_info(&video_info);
-
-   gl_core_set_viewport(gl, &video_info,
+   gl_core_set_viewport(gl,
          viewport_width, viewport_height, force_full, allow_rotate);
 }
 
@@ -1868,7 +1865,7 @@ static bool gl_core_frame(void *data, const void *frame,
       gl->should_resize = false;
    }
 
-   gl_core_set_viewport(gl, video_info, video_info->width, video_info->height, false, true);
+   gl_core_set_viewport(gl, video_info->width, video_info->height, false, true);
 
    texture.image            = 0;
    texture.width            = streamed->width;

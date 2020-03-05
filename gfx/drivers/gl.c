@@ -384,17 +384,18 @@ static void gl2_set_projection(gl_t *gl,
 }
 
 static void gl2_set_viewport(gl_t *gl,
-      video_frame_info_t *video_info,
       unsigned viewport_width,
       unsigned viewport_height,
       bool force_full, bool allow_rotate)
 {
    gfx_ctx_aspect_t aspect_data;
    settings_t *settings     = config_get_ptr();
+   unsigned height          = 0;
    int x                    = 0;
    int y                    = 0;
    float device_aspect      = (float)viewport_width / viewport_height;
-   unsigned height          = video_info->height;
+
+   video_driver_get_size(NULL, &height);
 
    aspect_data.aspect       = &device_aspect;
    aspect_data.width        = viewport_width;
@@ -545,7 +546,7 @@ static void gl2_renderchain_render(
       glClear(GL_COLOR_BUFFER_BIT);
 
       /* Render to FBO with certain size. */
-      gl2_set_viewport(gl, video_info,
+      gl2_set_viewport(gl,
             rect->img_width, rect->img_height, true, false);
 
       params.data          = gl;
@@ -611,7 +612,7 @@ static void gl2_renderchain_render(
       glGenerateMipmap(GL_TEXTURE_2D);
 
    glClear(GL_COLOR_BUFFER_BIT);
-   gl2_set_viewport(gl, video_info,
+   gl2_set_viewport(gl,
          width, height, false, true);
 
    params.data          = gl;
@@ -1029,7 +1030,7 @@ static void gl2_renderchain_start_render(
    gl2_bind_fb(chain->fbo[0]);
 
    gl2_set_viewport(gl,
-         video_info, gl->fbo_rect[0].img_width,
+         gl->fbo_rect[0].img_width,
          gl->fbo_rect[0].img_height, true, false);
 
    /* Need to preserve the "flipped" state when in FBO
@@ -1909,12 +1910,8 @@ static void gl2_render_overlay(gl_t *gl, video_frame_info_t *video_info)
 static void gl2_set_viewport_wrapper(void *data, unsigned viewport_width,
       unsigned viewport_height, bool force_full, bool allow_rotate)
 {
-   video_frame_info_t video_info;
    gl_t               *gl = (gl_t*)data;
-
-   video_driver_build_info(&video_info);
-
-   gl2_set_viewport(gl, &video_info,
+   gl2_set_viewport(gl,
          viewport_width, viewport_height, force_full, allow_rotate);
 }
 
@@ -2244,17 +2241,13 @@ static void gl2_init_textures(gl_t *gl, const video_info_t *video)
 static INLINE void gl2_set_shader_viewports(gl_t *gl)
 {
    unsigned i;
-   video_frame_info_t video_info;
    unsigned width                = gl->video_width;
    unsigned height               = gl->video_height;
-
-   video_driver_build_info(&video_info);
 
    for (i = 0; i < 2; i++)
    {
       gl->shader->use(gl, gl->shader_data, i, true);
-      gl2_set_viewport(gl, &video_info,
-            width, height, false, true);
+      gl2_set_viewport(gl, width, height, false, true);
    }
 }
 
@@ -2924,7 +2917,7 @@ static bool gl2_frame(void *data, const void *frame,
          gl2_renderchain_start_render(gl, chain, video_info);
       }
       else
-         gl2_set_viewport(gl, video_info, width, height, false, true);
+         gl2_set_viewport(gl, width, height, false, true);
 
 #ifdef HAVE_VIDEO_LAYOUT
       gl->video_layout_resize = true;
@@ -2965,7 +2958,7 @@ static bool gl2_frame(void *data, const void *frame,
       if (!gl->fbo_inited)
       {
          gl2_renderchain_bind_backbuffer();
-         gl2_set_viewport(gl, video_info, width, height, false, true);
+         gl2_set_viewport(gl, width, height, false, true);
       }
 
       gl2_renderchain_restore_default_state(gl);

@@ -466,17 +466,18 @@ static void gl1_set_projection(gl1_t *gl1,
 }
 
 void gl1_gfx_set_viewport(gl1_t *gl1,
-      video_frame_info_t *video_info,
       unsigned viewport_width,
       unsigned viewport_height,
       bool force_full, bool allow_rotate)
 {
    gfx_ctx_aspect_t aspect_data;
    settings_t *settings     = config_get_ptr();
+   unsigned height          = 0;
    int x                    = 0;
    int y                    = 0;
    float device_aspect      = (float)viewport_width / viewport_height;
-   unsigned height          = video_info->height;
+
+   video_driver_get_size(NULL, &height);
 
    aspect_data.aspect       = &device_aspect;
    aspect_data.width        = viewport_width;
@@ -738,7 +739,8 @@ static bool gl1_gfx_frame(void *data, const void *frame,
       video_info->cb_set_resize(video_info->context_data,
             mode.width, mode.height);
 
-      gl1_gfx_set_viewport(gl1, video_info, video_info->width, video_info->height, false, true);
+      gl1_gfx_set_viewport(gl1,
+            video_info->width, video_info->height, false, true);
    }
 
    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -1422,12 +1424,8 @@ static bool gl1_gfx_widgets_enabled(void *data)
 static void gl1_gfx_set_viewport_wrapper(void *data, unsigned viewport_width,
       unsigned viewport_height, bool force_full, bool allow_rotate)
 {
-   video_frame_info_t video_info;
    gl1_t               *gl1 = (gl1_t*)data;
-
-   video_driver_build_info(&video_info);
-
-   gl1_gfx_set_viewport(gl1, &video_info,
+   gl1_gfx_set_viewport(gl1,
          viewport_width, viewport_height, force_full, allow_rotate);
 }
 
