@@ -631,26 +631,23 @@ typedef struct settings
       char input_driver[32];
       char input_joypad_driver[32];
       char midi_driver[32];
+      char midi_input[32];
+      char midi_output[32];
 
       char input_keyboard_layout[64];
 
       char audio_device[255];
       char camera_device[255];
+      char netplay_mitm_server[255];
+
+      char translation_service_url[2048];
 
       char bundle_assets_src[PATH_MAX_LENGTH];
       char bundle_assets_dst[PATH_MAX_LENGTH];
       char bundle_assets_dst_subdir[PATH_MAX_LENGTH];
-
-      char netplay_mitm_server[255];
-
-      char midi_input[32];
-      char midi_output[32];
-
       char youtube_stream_key[PATH_MAX_LENGTH];
       char twitch_stream_key[PATH_MAX_LENGTH];
-
       char discord_app_id[PATH_MAX_LENGTH];
-      char translation_service_url[2048];
       char ai_service_url[PATH_MAX_LENGTH];
    } arrays;
 
@@ -659,12 +656,16 @@ typedef struct settings
       char placeholder;
 
       char username[32];
+
       char netplay_password[128];
       char netplay_spectate_password[128];
+
       char netplay_server[255];
       char network_buildbot_url[255];
       char network_buildbot_assets_url[255];
+
       char browse_url[4096];
+
       char path_stream_url[8192];
 
       char path_menu_xmb_font[PATH_MAX_LENGTH];
