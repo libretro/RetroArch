@@ -956,10 +956,6 @@ static bool d3d9_initialize(d3d9_video_t *d3d, const video_info_t *info)
    d3d9_set_viewport(d3d,
       width, height, false, true);
 
-#ifdef _XBOX
-   strlcpy(settings->paths.path_font, "game:\\media\\Arial_12.xpr",
-         sizeof(settings->paths.path_font));
-#endif
    font_driver_init_osd(d3d, info,
          false,
          info->is_threaded,
