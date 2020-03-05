@@ -28,6 +28,7 @@
 - LOCALIZATION: Update Portuguese Brazilian translation
 - MENU: Automatically select currently checked item when opening drop-down lists
 - MENU: Fix smooth (vertical) line ticker scroll speed
+- MENU: Don't flush on override/remap messages
 - MENU/BUGFIX: Fix bug - if you were in XMB and you would set menu driver to RGUI, you could no longer go to the left or right tab
 - MENU/MATERIALUI: Add option to remove navigation bar
 - MENU/OZONE: Add DPI-based scaling
@@ -52,6 +53,7 @@
 - VIDEO/WIDGETS: DPI-based scaling
 - VIDEO/WIDGETS: Fix volume widget scaling
 - VIDEO/WIDGETS: Add independent widget scale override settings for fullscreen/windowed modes
+- VIDEO/WIDGETS/BUGFIX: Prevent improper display of (old style) OSD text when widgets are enabled
 - WIFI/CONNMANCTL: Display more characters from SSID
 
 # 1.8.4
