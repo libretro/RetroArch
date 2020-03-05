@@ -90,13 +90,15 @@ bool input_remapping_load_file(void *data, const char *path)
                if (btn_remap == -1)
                   btn_remap                           = RARCH_UNMAPPED;
 
-               settings->uints.input_remap_ids[i][j]  = btn_remap;
+               configuration_set_uint(settings,
+                     settings->uints.input_remap_ids[i][j], btn_remap);
             }
 
             if (!config_get_int(conf, key_ident[j], &key_remap))
                key_remap                              = RETROK_UNKNOWN;
 
-            settings->uints.input_keymapper_ids[i][j] = key_remap;
+            configuration_set_uint(settings,
+                  settings->uints.input_keymapper_ids[i][j], key_remap);
          }
          else
          {
@@ -117,7 +119,8 @@ bool input_remapping_load_file(void *data, const char *path)
                if (stk_remap == -1)
                   stk_remap                          = RARCH_UNMAPPED;
 
-               settings->uints.input_remap_ids[i][j] = stk_remap;
+               configuration_set_uint(settings,
+                     settings->uints.input_remap_ids[i][j], stk_remap);
             }
          }
       }
@@ -289,16 +292,21 @@ void input_remapping_set_defaults(bool deinit)
          {
             const struct  retro_keybind *keybind = &input_config_binds[i][j];
             if (keybind)
-               settings->uints.input_remap_ids[i][j]  = keybind->id;
-            settings->uints.input_keymapper_ids[i][j] = RETROK_UNKNOWN;
+               configuration_set_uint(settings,
+                     settings->uints.input_remap_ids[i][j], keybind->id);
+            configuration_set_uint(settings,
+                  settings->uints.input_keymapper_ids[i][j], RETROK_UNKNOWN);
          }
          else
-            settings->uints.input_remap_ids[i][j]     = j;
+            configuration_set_uint(settings,
+                  settings->uints.input_remap_ids[i][j], j);
       }
 
       if (old_analog_dpad_mode[i])
-         settings->uints.input_analog_dpad_mode[i]    = old_analog_dpad_mode[i];
+         configuration_set_uint(settings,
+               settings->uints.input_analog_dpad_mode[i], old_analog_dpad_mode[i]);
       if (old_libretro_device[i])
-         settings->uints.input_libretro_device[i]     = old_libretro_device[i];
+         configuration_set_uint(settings,
+               settings->uints.input_libretro_device[i], old_libretro_device[i]);
    }
 }

@@ -126,9 +126,10 @@ static enum msg_hash_enums new_type     = MSG_UNKNOWN;
 static int menu_displaylist_parse_core_info(file_list_t *list)
 {
    char tmp[PATH_MAX_LENGTH];
-   unsigned i, count         = 0;
-   core_info_t *core_info    = NULL;
-   settings_t *settings      = config_get_ptr();
+   unsigned i, count           = 0;
+   core_info_t *core_info      = NULL;
+   settings_t *settings        = config_get_ptr();
+   bool menu_show_core_updater = settings->bools.menu_show_core_updater;
 
    tmp[0] = '\0';
 
@@ -335,7 +336,7 @@ static int menu_displaylist_parse_core_info(file_list_t *list)
 
 #if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
 #else
-  if (settings->bools.menu_show_core_updater)
+  if (menu_show_core_updater)
   {
      if (menu_entries_append_enum(list,
            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_DELETE),
@@ -10183,11 +10184,14 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 #ifdef HAVE_IMAGEVIEWER
          {
             settings_t *settings      = config_get_ptr();
-            if (settings->bools.history_list_enable)
+            bool history_list_enable  = settings->bools.history_list_enable;
+            const char *path_content_image_history = settings->paths.path_content_image_history;
+
+            if (history_list_enable)
             {
                menu_displaylist_parse_playlist_generic(menu, info,
                      "images_history",
-                     settings->paths.path_content_image_history,
+                     path_content_image_history,
                      false, /* Not a collection */
                      false, /* Do not sort */
                      &ret);
@@ -10407,7 +10411,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                   if (coreopts)
                   {
-                     settings_t *settings            = config_get_ptr();
+                     unsigned i;
                      unsigned size                   = (unsigned)tmp_str_list->size;
                      unsigned menu_index             = atoi(tmp_str_list->elems[size-1].data);
                      unsigned visible_index          = 0;
@@ -10416,14 +10420,15 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      struct core_option *option      = NULL;
                      bool checked_found              = false;
                      unsigned checked                = 0;
-                     unsigned i;
+                     settings_t *settings            = config_get_ptr();
+                     bool game_specific_options      = settings->bools.game_specific_options;
 
                      /* Note: Although we display value labels here,
                       * most logic is performed using values. This seems
                       * more appropriate somehow... */
 
                      /* Convert menu index to option index */
-                     if (settings->bools.game_specific_options)
+                     if (game_specific_options)
                         menu_index--;
 
                      for (i = 0; i < coreopts->size; i++)
@@ -11210,11 +11215,15 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
       {
          settings_t      *settings      = config_get_ptr();
          bool show_hidden_files         = settings->bools.show_hidden_files;
+         bool multimedia_builtin_mediaplayer_enable = settings->bools.multimedia_builtin_mediaplayer_enable;
+         bool multimedia_builtin_imageviewer_enable = settings->bools.multimedia_builtin_imageviewer_enable;
+         bool menu_navigation_browser_filter_supported_extensions_enable = settings->bools.menu_navigation_browser_filter_supported_extensions_enable;
+
          filebrowser_parse(info, type,
                show_hidden_files,
-               settings->bools.multimedia_builtin_mediaplayer_enable,
-               settings->bools.multimedia_builtin_imageviewer_enable,
-               settings->bools.menu_navigation_browser_filter_supported_extensions_enable
+               multimedia_builtin_mediaplayer_enable,
+               multimedia_builtin_imageviewer_enable,
+               menu_navigation_browser_filter_supported_extensions_enable
                );
       }
 
