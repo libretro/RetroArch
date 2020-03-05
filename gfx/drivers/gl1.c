@@ -472,6 +472,7 @@ void gl1_gfx_set_viewport(gl1_t *gl1,
       bool force_full, bool allow_rotate)
 {
    gfx_ctx_aspect_t aspect_data;
+   settings_t *settings     = config_get_ptr();
    int x                    = 0;
    int y                    = 0;
    float device_aspect      = (float)viewport_width / viewport_height;
@@ -483,7 +484,7 @@ void gl1_gfx_set_viewport(gl1_t *gl1,
 
    video_context_driver_translate_aspect(&aspect_data);
 
-   if (video_info->scale_integer && !force_full)
+   if (settings->bools.video_scale_integer && !force_full)
    {
       video_viewport_get_scaled_integer(&gl1->vp,
             viewport_width, viewport_height,
@@ -496,13 +497,14 @@ void gl1_gfx_set_viewport(gl1_t *gl1,
       float desired_aspect = video_driver_get_aspect_ratio();
 
 #if defined(HAVE_MENU)
-      if (video_info->aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
+      if (settings->uints.video_aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
       {
+         const struct video_viewport *custom = video_viewport_get_custom();
          /* GL has bottom-left origin viewport. */
-         x      = video_info->custom_vp_x;
-         y      = height - video_info->custom_vp_y - video_info->custom_vp_height;
-         viewport_width  = video_info->custom_vp_width;
-         viewport_height = video_info->custom_vp_height;
+         x      = custom->x;
+         y      = height - custom->y - custom->height;
+         viewport_width  = custom->width;
+         viewport_height = custom->height;
       }
       else
 #endif

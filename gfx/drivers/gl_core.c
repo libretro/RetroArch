@@ -770,6 +770,7 @@ static void gl_core_set_viewport(gl_core_t *gl,
    gfx_ctx_aspect_t aspect_data;
    int x                    = 0;
    int y                    = 0;
+   settings_t *settings     = config_get_ptr();
    float device_aspect      = (float)viewport_width / viewport_height;
    unsigned height          = video_info->height;
 
@@ -779,7 +780,7 @@ static void gl_core_set_viewport(gl_core_t *gl,
 
    video_context_driver_translate_aspect(&aspect_data);
 
-   if (video_info->scale_integer && !force_full)
+   if (settings->bools.video_scale_integer && !force_full)
    {
       video_viewport_get_scaled_integer(&gl->vp,
             viewport_width, viewport_height,
@@ -792,7 +793,7 @@ static void gl_core_set_viewport(gl_core_t *gl,
       float desired_aspect = video_driver_get_aspect_ratio();
 
 #if defined(HAVE_MENU)
-      if (video_info->aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
+      if (settings->uints.video_aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
       {
          const struct video_viewport *custom = video_viewport_get_custom();
          /* GL has bottom-left origin viewport. */
