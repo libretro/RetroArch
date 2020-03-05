@@ -670,8 +670,7 @@ void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
    unsigned i;
    const char *title;
    char title_noext[255];
-   char *chr;
-   bool hyphen_found;
+   char *console_name   = NULL;
    settings_t *settings = config_get_ptr();
    size_t list_size     = ozone_list_get_size(ozone, MENU_LIST_HORIZONTAL);
 
@@ -780,38 +779,38 @@ void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
 
          fill_pathname_base_noext(title_noext, title, sizeof(title_noext));
 
+         console_name = title_noext;
          /* Format : "Vendor - Console"
             Remove everything before the hyphen
             and the subsequent space */
-         chr          = title_noext;
-         hyphen_found = false;
-
-         /* TODO/FIXME - why is there a while loop here?
-          * Does 'something' set ozone_truncate_playlist_name
-          * ever to false while this is running? */
-         while (settings->bools.ozone_truncate_playlist_name)
+         if (settings->bools.ozone_truncate_playlist_name)
          {
-            /* Check for "- " */
-            if (*chr == '-' && *(chr + 1) == ' ')
+            bool hyphen_found = false;
+
+            while (true)
             {
-               hyphen_found = true;
-               break;
+               /* Check for "- " */
+               if (*console_name == '-' && *(console_name + 1) == ' ')
+               {
+                  hyphen_found = true;
+                  break;
+               }
+               else if (*console_name == '\0')
+                  break;
+
+               console_name++;
             }
-            else if (*chr == '\0')
-               break;
 
-            chr++;
+            if (hyphen_found)
+               console_name += 2;
+            else
+               console_name = title_noext;
          }
-
-         if (hyphen_found)
-            chr += 2;
-         else
-            chr = title_noext;
 
          if (node->console_name)
             free(node->console_name);
 
-         node->console_name = strdup(chr);
+         node->console_name = strdup(console_name);
 
          free(sysname);
          free(texturepath);
