@@ -26,6 +26,18 @@
 #include <string/stdstring.h>
 #include <encodings/utf.h>
 
+char *string_init(const char *src)
+{
+   return src ? strdup(src) : NULL;
+}
+
+void string_set(char **string, const char *src)
+{
+   free(*string);
+   *string = src ? strdup(src) : NULL;
+}
+
+
 char *string_to_upper(char *s)
 {
    char *cs = (char *)s;

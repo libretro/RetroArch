@@ -3,6 +3,7 @@
 #include <string.h>
 
 #include <formats/rxml.h>
+#include <string/stdstring.h>
 
 #include "../../verbosity.h"
 
@@ -67,7 +68,7 @@ static comp_type_t comp_type_from_str(const char *s)
 
    for (i = 2; i < ARRAY_SIZE(comp_type_str); ++i)
    {
-      if (strcmp(s, comp_type_str[i]) == 0)
+      if (string_is_equal(s, comp_type_str[i]))
          return (comp_type_t)(int)i;
    }
 
@@ -136,31 +137,29 @@ static video_layout_orientation_t parse_orientation(scope_t *scope, rxml_node_t 
 
    if ((prop = scope_eval(scope, rxml_node_attrib(node, "rotate"))))
    {
-      if (strcmp(prop, "90") == 0)
+      if (string_is_equal(prop, "90"))
          result = VIDEO_LAYOUT_ROT90;
-
-      else if (strcmp(prop, "180") == 0)
+      else if (string_is_equal(prop, "180"))
          result = VIDEO_LAYOUT_ROT180;
-
-      else if (strcmp(prop, "270") == 0)
+      else if (string_is_equal(prop, "270"))
          result = VIDEO_LAYOUT_ROT270;
    }
 
    if ((prop = scope_eval(scope, rxml_node_attrib(node, "swapxy"))))
    {
-      if (strcmp(prop, "no") != 0)
+      if (!string_is_equal(prop, "no"))
          result ^= VIDEO_LAYOUT_SWAP_XY;
    }
 
    if ((prop = scope_eval(scope, rxml_node_attrib(node, "flipx"))))
    {
-      if (strcmp(prop, "no") != 0)
+      if (!string_is_equal(prop, "no"))
          result ^= VIDEO_LAYOUT_FLIP_X;
    }
 
    if ((prop = scope_eval(scope, rxml_node_attrib(node, "flipy"))))
    {
-      if (strcmp(prop, "no") != 0)
+      if (!string_is_equal(prop, "no"))
          result ^= VIDEO_LAYOUT_FLIP_Y;
    }
 
@@ -234,10 +233,9 @@ static bool load_component(scope_t *scope, component_t *comp, rxml_node_t *node)
 
    for (n = node->children; n; n = n->next)
    {
-      if (strcmp(n->name, "bounds") == 0)
+      if (string_is_equal(n->name, "bounds"))
          comp->bounds = parse_bounds(scope, n);
-
-      else if (strcmp(n->name, "color") == 0)
+      else if (string_is_equal(n->name, "color"))
          comp->color = parse_color(scope, n);
    }
 
@@ -258,10 +256,10 @@ static bool load_component(scope_t *scope, component_t *comp, rxml_node_t *node)
                RARCH_LOG("video_layout: invalid component <%s />, missing 'file' attribute\n", node->name);
                result = false;
             }
-            set_string(&comp->attr.image.file, scope_eval(scope, attr));
+            string_set(&comp->attr.image.file, scope_eval(scope, attr));
 
             if ((attr = rxml_node_attrib(node, "alphafile")))
-               set_string(&comp->attr.image.alpha_file, scope_eval(scope, attr));
+               string_set(&comp->attr.image.alpha_file, scope_eval(scope, attr));
          }
          break;
       case VIDEO_LAYOUT_C_TEXT:
@@ -271,7 +269,7 @@ static bool load_component(scope_t *scope, component_t *comp, rxml_node_t *node)
                RARCH_LOG("video_layout: invalid component <%s />, missing 'string' attribute\n", node->name);
                result = false;
             }
-            set_string(&comp->attr.text.string, scope_eval(scope, attr));
+            string_set(&comp->attr.text.string, scope_eval(scope, attr));
 
             if ((attr = rxml_node_attrib(node, "align")))
                comp->attr.text.align = (video_layout_text_align_t)get_int(scope_eval(scope, attr));
@@ -463,17 +461,16 @@ static bool load_view(scope_t *scope, view_t *view, rxml_node_t *node, bool is_n
       video_layout_bounds_t      n_bounds;
       video_layout_orientation_t n_orient;
 
-      if (strcmp(n->name, "param") == 0)
+      if (string_is_equal(n->name, "param"))
       {
          if (!load_param(scope, n, true))
             result = false;
          continue;
       }
-
-      else if (strcmp(n->name, "bounds") == 0)
+      else if (string_is_equal(n->name, "bounds"))
       {
          view->bounds = parse_bounds(scope, n);
-         has_bounds = true;
+         has_bounds   = true;
          continue;
       }
 
@@ -483,17 +480,15 @@ static bool load_view(scope_t *scope, view_t *view, rxml_node_t *node, bool is_n
 
       for (o = n->children; o; o = o->next)
       {
-         if (strcmp(o->name, "color") == 0)
+         if (string_is_equal(o->name, "color"))
             n_color = parse_color(scope, o);
-
-         else if (strcmp(o->name, "bounds") == 0)
+         else if (string_is_equal(o->name, "bounds"))
             n_bounds = parse_bounds(scope, o);
-
-         else if (strcmp(o->name, "orientation") == 0)
+         else if (string_is_equal(o->name, "orientation"))
             n_orient = parse_orientation(scope, o);
       }
 
-      if (strcmp(n->name, "group") == 0)
+      if (string_is_equal(n->name, "group"))
       {
          const char *ref;
          if ((ref = rxml_node_attrib(n, "ref")))
@@ -516,7 +511,7 @@ static bool load_view(scope_t *scope, view_t *view, rxml_node_t *node, bool is_n
          }
       }
 
-      else if (strcmp(n->name, "repeat") == 0)
+      else if (string_is_equal(n->name, "repeat"))
       {
          const char *count_s;
          int count;
@@ -534,7 +529,7 @@ static bool load_view(scope_t *scope, view_t *view, rxml_node_t *node, bool is_n
 
          for (o = n->children; o; o = o->next)
          {
-            if (strcmp(o->name, "param") == 0)
+            if (string_is_equal(o->name, "param"))
             {
                if (!load_param(scope, o, true))
                   result = false;
@@ -561,13 +556,10 @@ static bool load_view(scope_t *scope, view_t *view, rxml_node_t *node, bool is_n
 
       else /* element */
       {
-         layer_t *layer;
-         element_t *elem;
+         layer_t   *layer = view_emplace_layer(view, n->name);
+         element_t *elem  = layer_add_element(layer);
 
-         layer = view_emplace_layer(view, n->name);
-         elem = layer_add_element(layer);
-
-         if (strcmp(n->name, "screen") == 0)
+         if (string_is_equal(n->name, "screen"))
          {
             if (!load_screen(scope, elem, n))
                result = false;
@@ -649,43 +641,40 @@ static bool load_top_level(scope_t *scope, int *view_count, rxml_node_t *root)
 
    for (node = root->children; node; node = node->next)
    {
-      if (strcmp(node->name, "param") == 0)
+      if (string_is_equal(node->name, "param"))
       {
          if (!load_param(scope, node, false))
             result = false;
       }
-
-      else if (strcmp(node->name, "element") == 0)
+      else if (string_is_equal(node->name, "element"))
       {
          if (!load_element(scope, node))
             result = false;
       }
-
-      else if (strcmp(node->name, "group") == 0)
+      else if (string_is_equal(node->name, "group"))
       {
          if (!load_group(scope, node))
             result = false;
       }
-
-      else if (strcmp(node->name, "view") == 0)
+      else if (string_is_equal(node->name, "view"))
          ++(*view_count);
    }
 
    return result;
 }
 
-static bool load_views(scope_t *scope, view_array_t *view_array, rxml_node_t *root)
+static bool load_views(scope_t *scope, view_array_t *view_array,
+      rxml_node_t *root)
 {
-   rxml_node_t *node;
-   bool result = true;
-   int i = 0;
+   rxml_node_t *node = NULL;
+   bool result       = true;
+   unsigned i        = 0;
 
    for (node = root->children; node; node = node->next)
    {
-      if (strcmp(node->name, "view") == 0)
+      if (string_is_equal(node->name, "view"))
       {
-         view_t *view;
-         view = &view_array->views[i];
+         view_t *view = &view_array->views[i];
 
          scope_push(scope);
 
@@ -705,11 +694,11 @@ static bool load_views(scope_t *scope, view_array_t *view_array, rxml_node_t *ro
    return result;
 }
 
-bool load(view_array_t *view_array, rxml_document_t *doc)
+bool video_layout_load_internal(view_array_t *view_array, rxml_document_t *doc)
 {
-   bool result;
    scope_t scope;
    int view_count;
+   bool result       = true;
    rxml_node_t *root = rxml_root_node(doc);
 
    if (strcmp(root->name, "mamelayout") ||
@@ -718,8 +707,6 @@ bool load(view_array_t *view_array, rxml_document_t *doc)
       RARCH_LOG("video_layout: invalid MAME Layout file\n");
       return false;
    }
-
-   result = false;
 
    scope_init(&scope);
    init_device_params(&scope);

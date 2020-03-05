@@ -1,13 +1,12 @@
 #ifndef VIDEO_LAYOUT_INTERNAL_H
 #define VIDEO_LAYOUT_INTERNAL_H
+
 #include <stddef.h>
 #include <boolean.h>
 #include <retro_miscellaneous.h>
 
 #include "types.h"
 
-char  *init_string (const char *src);
-void   set_string  (char **string, const char *src);
 bool   vec_size    (void **target, size_t elem_size, int count);
 
 bool   is_decimal  (const char *str);
