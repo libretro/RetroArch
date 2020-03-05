@@ -44,6 +44,16 @@ enum message_queue_category
 
 typedef struct msg_queue msg_queue_t;
 
+typedef struct
+{
+   char msg[1024];
+   char title[1024];
+   unsigned duration;
+   unsigned prio;
+   enum message_queue_icon icon;
+   enum message_queue_category category;
+} msg_queue_entry_t;
+
 /**
  * msg_queue_new:
  * @size              : maximum size of message
@@ -81,6 +91,28 @@ void msg_queue_push(msg_queue_t *queue, const char *msg,
  * containing the message.
  **/
 const char *msg_queue_pull(msg_queue_t *queue);
+
+/**
+ * msg_queue_extract:
+ * @queue             : pointer to queue object
+ * @queue_entry       : pointer to external queue entry struct
+ *
+ * Removes highest priority message from queue, copying
+ * contents into queue_entry struct.
+ *
+ * Returns: false if no messages in queue, otherwise true
+ **/
+bool msg_queue_extract(msg_queue_t *queue, msg_queue_entry_t *queue_entry);
+
+/**
+ * msg_queue_size:
+ * @queue             : pointer to queue object
+ *
+ * Fetches number of messages in queue.
+ *
+ * Returns: Number of messages in queue.
+ **/
+size_t msg_queue_size(msg_queue_t *queue);
 
 /**
  * msg_queue_clear:

@@ -1087,6 +1087,7 @@ static retro_keyboard_event_t runloop_key_event                 = NULL;
 static retro_keyboard_event_t runloop_frontend_key_event        = NULL;
 static core_option_manager_t *runloop_core_options              = NULL;
 static msg_queue_t *runloop_msg_queue                           = NULL;
+static size_t runloop_msg_queue_size                            = 0;
 
 static unsigned runloop_pending_windowed_scale                  = 0;
 static unsigned runloop_max_frames                              = 0;
@@ -3741,7 +3742,8 @@ static void retroarch_msg_queue_deinit(void)
    _runloop_msg_queue_lock = NULL;
 #endif
 
-   runloop_msg_queue = NULL;
+   runloop_msg_queue      = NULL;
+   runloop_msg_queue_size = 0;
 }
 
 static void retroarch_msg_queue_init(void)
@@ -23597,14 +23599,57 @@ static void video_driver_frame(const void *data, unsigned width,
 
    video_driver_msg[0] = '\0';
 
-   if (video_info.font_enable)
+   if (runloop_msg_queue_size > 0)
    {
-      const char *msg = NULL;
-      runloop_msg_queue_lock();
-      msg = msg_queue_pull(runloop_msg_queue);
-      if (msg)
-         strlcpy(video_driver_msg, msg, sizeof(video_driver_msg));
-      runloop_msg_queue_unlock();
+      /* If widgets are currently enabled, then
+       * messages were pushed to the queue before
+       * widgets were initialised - in this case, the
+       * first item in the message queue should be
+       * extracted and pushed to the widget message
+       * queue instead */
+#if defined(HAVE_GFX_WIDGETS)
+      if (gfx_widgets_inited)
+      {
+         bool msg_found = false;
+         msg_queue_entry_t msg_entry;
+
+         runloop_msg_queue_lock();
+         msg_found = msg_queue_extract(runloop_msg_queue, &msg_entry);
+         runloop_msg_queue_size = msg_queue_size(runloop_msg_queue);
+         runloop_msg_queue_unlock();
+
+         if (msg_found)
+            gfx_widgets_msg_queue_push(
+                  NULL,
+                  msg_entry.msg,
+                  roundf((float)msg_entry.duration / 60.0f * 1000.0f),
+                  msg_entry.title,
+                  msg_entry.icon,
+                  msg_entry.category,
+                  msg_entry.prio,
+                  false,
+#ifdef HAVE_MENU
+                  menu_driver_alive
+#else
+                  false
+#endif
+            );
+      }
+      /* ...otherwise, just output message via
+       * regular OSD notification text (if enabled) */
+      else if (video_info.font_enable)
+#else
+      if (video_info.font_enable)
+#endif
+      {
+         const char *msg = NULL;
+         runloop_msg_queue_lock();
+         msg = msg_queue_pull(runloop_msg_queue);
+         runloop_msg_queue_size = msg_queue_size(runloop_msg_queue);
+         if (msg)
+            strlcpy(video_driver_msg, msg, sizeof(video_driver_msg));
+         runloop_msg_queue_unlock();
+      }
    }
 
    if (video_info.statistics_show)
@@ -28570,6 +28615,8 @@ void runloop_msg_queue_push(const char *msg,
          msg_queue_push(runloop_msg_queue, msg,
                prio, duration,
                title, icon, category);
+
+      runloop_msg_queue_size = msg_queue_size(runloop_msg_queue);
    }
 
    ui_companion_driver_msg_queue_push(msg,

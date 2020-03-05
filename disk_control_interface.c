@@ -752,10 +752,14 @@ bool disk_control_verify_initial_index(disk_control_interface_t *disk_control)
 
       RARCH_LOG("%s\n", msg);
 
+      /* Note: Do not flush message queue here, since
+       * it is likely other notifications will be
+       * generated before setting the disk index, and
+       * we do not want to 'overwrite' them */
       runloop_msg_queue_push(
             msg,
             0, msg_duration,
-            true, NULL,
+            false, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }
 
