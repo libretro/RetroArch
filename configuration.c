@@ -2047,54 +2047,69 @@ void config_set_defaults(void *data)
    }
 
    if (def_camera)
-      strlcpy(settings->arrays.camera_driver,
-            def_camera, sizeof(settings->arrays.camera_driver));
+      configuration_set_string(settings,
+            settings->arrays.camera_driver,
+            def_camera);
    if (def_wifi)
-      strlcpy(settings->arrays.wifi_driver,
-            def_wifi, sizeof(settings->arrays.wifi_driver));
+      configuration_set_string(settings,
+            settings->arrays.wifi_driver,
+            def_wifi);
    if (def_led)
-      strlcpy(settings->arrays.led_driver,
-            def_led, sizeof(settings->arrays.led_driver));
+      configuration_set_string(settings,
+            settings->arrays.led_driver,
+            def_led);
    if (def_location)
-      strlcpy(settings->arrays.location_driver,
-            def_location, sizeof(settings->arrays.location_driver));
+      configuration_set_string(settings,
+            settings->arrays.location_driver,
+            def_location);
    if (def_video)
-      strlcpy(settings->arrays.video_driver,
-            def_video, sizeof(settings->arrays.video_driver));
+      configuration_set_string(settings,
+            settings->arrays.video_driver,
+            def_video);
    if (def_audio)
-      strlcpy(settings->arrays.audio_driver,
-            def_audio, sizeof(settings->arrays.audio_driver));
+      configuration_set_string(settings,
+            settings->arrays.audio_driver,
+            def_audio);
    if (def_audio_resampler)
-      strlcpy(settings->arrays.audio_resampler,
-            def_audio_resampler, sizeof(settings->arrays.audio_resampler));
+      configuration_set_string(settings,
+            settings->arrays.audio_resampler,
+            def_audio_resampler);
    if (def_input)
-      strlcpy(settings->arrays.input_driver,
-            def_input, sizeof(settings->arrays.input_driver));
+      configuration_set_string(settings,
+            settings->arrays.input_driver,
+            def_input);
    if (def_joypad)
-      strlcpy(settings->arrays.input_joypad_driver,
-            def_joypad, sizeof(settings->arrays.input_joypad_driver));
+      configuration_set_string(settings,
+            settings->arrays.input_joypad_driver,
+            def_joypad);
    if (def_record)
-      strlcpy(settings->arrays.record_driver,
-            def_record, sizeof(settings->arrays.record_driver));
+      configuration_set_string(settings,
+            settings->arrays.record_driver,
+            def_record);
    if (def_midi)
-      strlcpy(settings->arrays.midi_driver,
-            def_midi, sizeof(settings->arrays.midi_driver));
+      configuration_set_string(settings,
+            settings->arrays.midi_driver,
+            def_midi);
    if (def_mitm)
-      strlcpy(settings->arrays.netplay_mitm_server,
-            def_mitm, sizeof(settings->arrays.netplay_mitm_server));
+      configuration_set_string(settings,
+            settings->arrays.netplay_mitm_server,
+            def_mitm);
 #ifdef HAVE_MENU
    if (def_menu)
-      strlcpy(settings->arrays.menu_driver,
-            def_menu,  sizeof(settings->arrays.menu_driver));
+      configuration_set_string(settings,
+            settings->arrays.menu_driver,
+            def_menu);
 #ifdef HAVE_XMB
    *settings->paths.path_menu_xmb_font            = '\0';
 #endif
 
-   strlcpy(settings->arrays.discord_app_id,
-      DEFAULT_DISCORD_APP_ID,  sizeof(settings->arrays.discord_app_id));
+   configuration_set_string(settings,
+         settings->arrays.discord_app_id,
+         DEFAULT_DISCORD_APP_ID);
 
-   strlcpy(settings->arrays.ai_service_url,
-      DEFAULT_AI_SERVICE_URL,  sizeof(settings->arrays.ai_service_url));
+   configuration_set_string(settings,
+         settings->arrays.ai_service_url,
+         DEFAULT_AI_SERVICE_URL);
 
 
 #ifdef HAVE_MATERIALUI
@@ -2121,8 +2136,9 @@ void config_set_defaults(void *data)
       settings->floats.video_refresh_rate      = g_defaults.settings.video_refresh_rate;
 
    if (DEFAULT_AUDIO_DEVICE)
-      strlcpy(settings->arrays.audio_device,
-            DEFAULT_AUDIO_DEVICE, sizeof(settings->arrays.audio_device));
+      configuration_set_string(settings,
+            settings->arrays.audio_device,
+            DEFAULT_AUDIO_DEVICE);
 
    if (!g_defaults.settings.out_latency)
       g_defaults.settings.out_latency          = DEFAULT_OUT_LATENCY;
@@ -2135,16 +2151,20 @@ void config_set_defaults(void *data)
 #endif
 
 #ifdef HAVE_LAKKA
-   settings->bools.ssh_enable                  = filestream_exists(LAKKA_SSH_PATH);
-   settings->bools.samba_enable                = filestream_exists(LAKKA_SAMBA_PATH);
-   settings->bools.bluetooth_enable            = filestream_exists(LAKKA_BLUETOOTH_PATH);
-   settings->bools.localap_enable              = false;
+   configuration_set_bool(settings,
+         settings->bools.ssh_enable, filestream_exists(LAKKA_SSH_PATH));
+   configuration_set_bool(settings,
+         settings->bools.samba_enable, filestream_exists(LAKKA_SAMBA_PATH));
+   configuration_set_bool(settings,
+         settings->bools.bluetooth_enable, filestream_exists(LAKKA_BLUETOOTH_PATH));
+   configuration_set_bool(settings, settings->bools.localap_enable, false);
 #endif
 
 #ifdef HAVE_MENU
    if (first_initialized)
-      settings->bools.menu_show_start_screen          = 
-         DEFAULT_MENU_SHOW_START_SCREEN;
+      configuration_set_bool(settings,
+            settings->bools.menu_show_start_screen,
+            DEFAULT_MENU_SHOW_START_SCREEN);
 #endif
 
 #ifdef HAVE_CHEEVOS
@@ -2170,11 +2190,11 @@ void config_set_defaults(void *data)
       }
    }
 
-   strlcpy(settings->paths.network_buildbot_url, DEFAULT_BUILDBOT_SERVER_URL,
-         sizeof(settings->paths.network_buildbot_url));
-   strlcpy(settings->paths.network_buildbot_assets_url,
-         DEFAULT_BUILDBOT_ASSETS_SERVER_URL,
-         sizeof(settings->paths.network_buildbot_assets_url));
+   configuration_set_string(settings,
+         settings->paths.network_buildbot_url, DEFAULT_BUILDBOT_SERVER_URL);
+   configuration_set_string(settings,
+         settings->paths.network_buildbot_assets_url,
+         DEFAULT_BUILDBOT_ASSETS_SERVER_URL);
 
    *settings->arrays.input_keyboard_layout                = '\0';
 
@@ -2265,68 +2285,68 @@ void config_set_defaults(void *data)
    video_driver_default_settings();
 
    if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_WALLPAPERS]))
-      strlcpy(settings->paths.directory_dynamic_wallpapers,
-            g_defaults.dirs[DEFAULT_DIR_WALLPAPERS],
-            sizeof(settings->paths.directory_dynamic_wallpapers));
+      configuration_set_string(settings,
+            settings->paths.directory_dynamic_wallpapers,
+            g_defaults.dirs[DEFAULT_DIR_WALLPAPERS]);
    if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS]))
-      strlcpy(settings->paths.directory_thumbnails,
-            g_defaults.dirs[DEFAULT_DIR_THUMBNAILS],
-            sizeof(settings->paths.directory_thumbnails));
+      configuration_set_string(settings,
+            settings->paths.directory_thumbnails,
+            g_defaults.dirs[DEFAULT_DIR_THUMBNAILS]);
    if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_REMAP]))
-      strlcpy(settings->paths.directory_input_remapping,
-            g_defaults.dirs[DEFAULT_DIR_REMAP],
-            sizeof(settings->paths.directory_input_remapping));
+      configuration_set_string(settings,
+            settings->paths.directory_input_remapping,
+            g_defaults.dirs[DEFAULT_DIR_REMAP]);
    if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_CACHE]))
-      strlcpy(settings->paths.directory_cache,
-            g_defaults.dirs[DEFAULT_DIR_CACHE],
-            sizeof(settings->paths.directory_cache));
+      configuration_set_string(settings,
+            settings->paths.directory_cache,
+            g_defaults.dirs[DEFAULT_DIR_CACHE]);
    if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_ASSETS]))
-      strlcpy(settings->paths.directory_assets,
-            g_defaults.dirs[DEFAULT_DIR_ASSETS],
-            sizeof(settings->paths.directory_assets));
+      configuration_set_string(settings,
+            settings->paths.directory_assets,
+            g_defaults.dirs[DEFAULT_DIR_ASSETS]);
    if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]))
-      strlcpy(settings->paths.directory_core_assets,
-            g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS],
-            sizeof(settings->paths.directory_core_assets));
+      configuration_set_string(settings,
+            settings->paths.directory_core_assets,
+            g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]);
    if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_PLAYLIST]))
-      strlcpy(settings->paths.directory_playlist,
-            g_defaults.dirs[DEFAULT_DIR_PLAYLIST],
-            sizeof(settings->paths.directory_playlist));
+      configuration_set_string(settings,
+            settings->paths.directory_playlist,
+            g_defaults.dirs[DEFAULT_DIR_PLAYLIST]);
    if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_CORE]))
       fill_pathname_expand_special(settings->paths.directory_libretro,
             g_defaults.dirs[DEFAULT_DIR_CORE],
             sizeof(settings->paths.directory_libretro));
    if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER]))
-      strlcpy(settings->paths.directory_audio_filter,
-            g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER],
-            sizeof(settings->paths.directory_audio_filter));
+      configuration_set_string(settings,
+            settings->paths.directory_audio_filter,
+            g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER]);
    if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER]))
-      strlcpy(settings->paths.directory_video_filter,
-            g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER],
-            sizeof(settings->paths.directory_video_filter));
+      configuration_set_string(settings,
+            settings->paths.directory_video_filter,
+            g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER]);
    if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_SHADER]))
       fill_pathname_expand_special(settings->paths.directory_video_shader,
             g_defaults.dirs[DEFAULT_DIR_SHADER],
             sizeof(settings->paths.directory_video_shader));
 
    if (!string_is_empty(g_defaults.path.buildbot_server_url))
-      strlcpy(settings->paths.network_buildbot_url,
-            g_defaults.path.buildbot_server_url,
-            sizeof(settings->paths.network_buildbot_url));
+      configuration_set_string(settings,
+            settings->paths.network_buildbot_url,
+            g_defaults.path.buildbot_server_url);
    if (!string_is_empty(g_defaults.path.core))
       path_set(RARCH_PATH_CORE, g_defaults.path.core);
    if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_DATABASE]))
-      strlcpy(settings->paths.path_content_database,
-            g_defaults.dirs[DEFAULT_DIR_DATABASE],
-            sizeof(settings->paths.path_content_database));
+      configuration_set_string(settings,
+            settings->paths.path_content_database,
+            g_defaults.dirs[DEFAULT_DIR_DATABASE]);
    if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_CURSOR]))
-      strlcpy(settings->paths.directory_cursor,
-            g_defaults.dirs[DEFAULT_DIR_CURSOR],
-            sizeof(settings->paths.directory_cursor));
+      configuration_set_string(settings,
+            settings->paths.directory_cursor,
+            g_defaults.dirs[DEFAULT_DIR_CURSOR]);
    if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_CHEATS]))
-      strlcpy(settings->paths.path_cheat_database,
-            g_defaults.dirs[DEFAULT_DIR_CHEATS],
-            sizeof(settings->paths.path_cheat_database));
+      configuration_set_string(settings,
+            settings->paths.path_cheat_database,
+            g_defaults.dirs[DEFAULT_DIR_CHEATS]);
    if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]))
       fill_pathname_expand_special(settings->paths.path_libretro_info,
             g_defaults.dirs[DEFAULT_DIR_CORE_INFO],
@@ -2358,9 +2378,9 @@ void config_set_defaults(void *data)
 #ifdef HAVE_MENU
    if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG]))
    {
-      strlcpy(settings->paths.directory_menu_config,
-            g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG],
-            sizeof(settings->paths.directory_menu_config));
+      configuration_set_string(settings,
+            settings->paths.directory_menu_config,
+            g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG]);
 #if TARGET_OS_IPHONE
       {
          char *config_file_path        = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
@@ -2375,14 +2395,14 @@ void config_set_defaults(void *data)
    }
 
    if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_MENU_CONTENT]))
-      strlcpy(settings->paths.directory_menu_content,
-            g_defaults.dirs[DEFAULT_DIR_MENU_CONTENT],
-            sizeof(settings->paths.directory_menu_content));
+      configuration_set_string(settings,
+            settings->paths.directory_menu_content,
+            g_defaults.dirs[DEFAULT_DIR_MENU_CONTENT]);
 #endif
    if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG]))
-      strlcpy(settings->paths.directory_autoconfig,
-            g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG],
-            sizeof(settings->paths.directory_autoconfig));
+      configuration_set_string(settings,
+            settings->paths.directory_autoconfig,
+            g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG]);
 
    if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_SAVESTATE]))
       dir_set(RARCH_DIR_SAVESTATE, g_defaults.dirs[DEFAULT_DIR_SAVESTATE]);
@@ -2391,26 +2411,25 @@ void config_set_defaults(void *data)
       dir_set(RARCH_DIR_SAVEFILE, g_defaults.dirs[DEFAULT_DIR_SRAM]);
 
    if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_SYSTEM]))
-      strlcpy(settings->paths.directory_system,
-            g_defaults.dirs[DEFAULT_DIR_SYSTEM],
-            sizeof(settings->paths.directory_system));
+      configuration_set_string(settings,
+            settings->paths.directory_system,
+            g_defaults.dirs[DEFAULT_DIR_SYSTEM]);
    if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT]))
-      strlcpy(settings->paths.directory_screenshot,
-            g_defaults.dirs[DEFAULT_DIR_SCREENSHOT],
-            sizeof(settings->paths.directory_screenshot));
+      configuration_set_string(settings,
+            settings->paths.directory_screenshot,
+            g_defaults.dirs[DEFAULT_DIR_SCREENSHOT]);
    if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_RESAMPLER]))
-      strlcpy(settings->paths.directory_resampler,
-            g_defaults.dirs[DEFAULT_DIR_RESAMPLER],
-            sizeof(settings->paths.directory_resampler));
+      configuration_set_string(settings,
+            settings->paths.directory_resampler,
+            g_defaults.dirs[DEFAULT_DIR_RESAMPLER]);
    if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_CONTENT_HISTORY]))
-      strlcpy(settings->paths.directory_content_history,
-            g_defaults.dirs[DEFAULT_DIR_CONTENT_HISTORY],
-            sizeof(settings->paths.directory_content_history));
-
+      configuration_set_string(settings,
+            settings->paths.directory_content_history,
+            g_defaults.dirs[DEFAULT_DIR_CONTENT_HISTORY]);
    if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_LOGS]))
-      strlcpy(settings->paths.log_dir,
-            g_defaults.dirs[DEFAULT_DIR_LOGS],
-            sizeof(settings->paths.log_dir));
+      configuration_set_string(settings,
+            settings->paths.log_dir,
+            g_defaults.dirs[DEFAULT_DIR_LOGS]);
 
    if (!string_is_empty(g_defaults.path.config))
    {
@@ -2425,10 +2444,12 @@ void config_set_defaults(void *data)
       free(temp_str);
    }
 
-   strlcpy(settings->arrays.midi_input,
-         DEFAULT_MIDI_INPUT, sizeof(settings->arrays.midi_input));
-   strlcpy(settings->arrays.midi_output,
-         DEFAULT_MIDI_OUTPUT, sizeof(settings->arrays.midi_output));
+   configuration_set_string(settings,
+         settings->arrays.midi_input,
+         DEFAULT_MIDI_INPUT);
+   configuration_set_string(settings,
+         settings->arrays.midi_output,
+         DEFAULT_MIDI_OUTPUT);
 
 #ifdef HAVE_CONFIGFILE
    /* Avoid reloading config on every content load */
@@ -2459,7 +2480,6 @@ void config_load(void *data)
 }
 
 #ifdef HAVE_CONFIGFILE
-
 #if defined(HAVE_MENU) && defined(HAVE_RGUI)
 static bool check_menu_driver_compatibility(settings_t *settings)
 {
@@ -2809,7 +2829,8 @@ static bool config_load_file(global_t *global,
       snprintf(tmp, sizeof(tmp), "network_remote_enable_user_p%u", i + 1);
 
       if (config_get_bool(conf, tmp, &tmp_bool))
-         settings->bools.network_remote_enable_user[i] = tmp_bool;
+         configuration_set_bool(settings,
+               settings->bools.network_remote_enable_user[i], tmp_bool);
    }
 #endif
    if (config_get_bool(conf, "log_verbosity", &tmp_bool))
@@ -2922,7 +2943,8 @@ static bool config_load_file(global_t *global,
    }
 
    if (config_get_path(conf, "libretro_directory", tmp_str, path_size))
-      strlcpy(settings->paths.directory_libretro, tmp_str, sizeof(settings->paths.directory_libretro));
+      configuration_set_string(settings,
+            settings->paths.directory_libretro, tmp_str);
 
 #ifndef HAVE_DYNAMIC
    if (config_get_path(conf, "libretro_path", tmp_str, path_size))
@@ -2937,9 +2959,9 @@ static bool config_load_file(global_t *global,
 
    if (rarch_ctl(RARCH_CTL_HAS_SET_USERNAME, NULL) && override_username)
    {
-      strlcpy(settings->paths.username,
-            override_username,
-            sizeof(settings->paths.username));
+      configuration_set_string(settings,
+            settings->paths.username,
+            override_username);
       free(override_username);
    }
 
@@ -3054,8 +3076,8 @@ static bool config_load_file(global_t *global,
       if (path_is_directory(path_core))
       {
          RARCH_WARN("\"libretro_path\" is a directory, using this for \"libretro_directory\" instead.\n");
-         strlcpy(settings->paths.directory_libretro, path_core,
-               sizeof(settings->paths.directory_libretro));
+         configuration_set_string(settings,
+               settings->paths.directory_libretro, path_core);
          path_clear(RARCH_PATH_CORE);
       }
 #ifdef RARCH_CONSOLE
@@ -3108,9 +3130,11 @@ static bool config_load_file(global_t *global,
    if (string_is_equal(settings->paths.log_dir, "default"))
    {
       if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_LOGS]))
-         strlcpy(settings->paths.log_dir,
-               g_defaults.dirs[DEFAULT_DIR_LOGS],
-               sizeof(settings->paths.log_dir));
+      {
+         configuration_set_string(settings,
+               settings->paths.log_dir,
+               g_defaults.dirs[DEFAULT_DIR_LOGS]);
+      }
       else
          *settings->paths.log_dir = '\0';
    }
@@ -3124,9 +3148,12 @@ static bool config_load_file(global_t *global,
       configuration_set_float(settings, settings->floats.fastforward_ratio, 0.0f);
 
 #ifdef HAVE_LAKKA
-   settings->bools.ssh_enable       = filestream_exists(LAKKA_SSH_PATH);
-   settings->bools.samba_enable     = filestream_exists(LAKKA_SAMBA_PATH);
-   settings->bools.bluetooth_enable = filestream_exists(LAKKA_BLUETOOTH_PATH);
+   configuration_set_bool(settings,
+         settings->bools.ssh_enable, filestream_exists(LAKKA_SSH_PATH));
+   configuration_set_bool(settings,
+         settings->bools.samba_enable, filestream_exists(LAKKA_SAMBA_PATH));
+   configuration_set_bool(settings,
+         settings->bools.bluetooth_enable, filestream_exists(LAKKA_BLUETOOTH_PATH));
 #endif
 
    if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL) &&
@@ -3180,7 +3207,8 @@ static bool config_load_file(global_t *global,
 
 #if defined(HAVE_MENU) && defined(HAVE_RGUI)
    if (!check_menu_driver_compatibility(settings))
-      strlcpy(settings->arrays.menu_driver, "rgui", sizeof(settings->arrays.menu_driver));
+      configuration_set_string(settings,
+            settings->arrays.menu_driver, "rgui");
 #endif
 
 #ifdef HAVE_LIBNX

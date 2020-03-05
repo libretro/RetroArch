@@ -1654,8 +1654,9 @@ static int generic_action_ok(const char *path,
          {
             settings_t            *settings = config_get_ptr();
 
-            strlcpy(settings->paths.path_menu_wallpaper,
-                  action_path, sizeof(settings->paths.path_menu_wallpaper));
+            configuration_set_string(settings,
+                  settings->paths.path_menu_wallpaper,
+                  action_path);
 
             task_push_image_load(action_path,
                   video_driver_supports_rgba(), 0,
@@ -1741,8 +1742,10 @@ static int generic_action_ok(const char *path,
             flush_char       = msg_hash_to_str(flush_id);
 
             if (settings)
-               strlcpy(settings->paths.path_stream_config, action_path,
-                     sizeof(settings->paths.path_stream_config));
+            {
+               configuration_set_string(settings,
+                     settings->paths.path_stream_config, action_path);
+            }
          }
          break;
       case ACTION_OK_LOAD_RECORD_CONFIGFILE:
@@ -1751,8 +1754,10 @@ static int generic_action_ok(const char *path,
             flush_char           = msg_hash_to_str(flush_id);
 
             if (settings)
-               strlcpy(settings->paths.path_record_config, action_path,
-                     sizeof(settings->paths.path_record_config));
+            {
+               configuration_set_string(settings,
+                     settings->paths.path_record_config, action_path);
+            }
          }
          break;
       case ACTION_OK_LOAD_REMAPPING_FILE:
@@ -1786,8 +1791,10 @@ static int generic_action_ok(const char *path,
             flush_char = msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_MENU_SETTINGS_LIST);
 
             if (settings)
-               strlcpy(settings->paths.path_rgui_theme_preset, action_path,
-                     sizeof(settings->paths.path_rgui_theme_preset));
+            {
+               configuration_set_string(settings,
+                     settings->paths.path_rgui_theme_preset, action_path);
+            }
          }
          break;
       case ACTION_OK_APPEND_DISK_IMAGE:

@@ -2428,9 +2428,10 @@ static bool menu_driver_init_internal(bool video_is_threaded)
       return false;
 
    {
+      /* TODO/FIXME - can we get rid of this? Is this needed? */
       settings_t *settings           = config_get_ptr();
-      strlcpy(settings->arrays.menu_driver, menu_driver_ctx->ident,
-            sizeof(settings->arrays.menu_driver));
+      configuration_set_string(settings,
+            settings->arrays.menu_driver, menu_driver_ctx->ident);
    }
 
    if (menu_driver_ctx->lists_init)

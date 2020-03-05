@@ -244,9 +244,9 @@ static int action_start_netplay_mitm_server(
       unsigned type, size_t idx, size_t entry_idx)
 {
    settings_t *settings = config_get_ptr();
-   strlcpy(settings->arrays.netplay_mitm_server,
-         DEFAULT_NETPLAY_MITM_SERVER,
-         sizeof(settings->arrays.netplay_mitm_server));
+   configuration_set_string(settings,
+         settings->arrays.netplay_mitm_server,
+         DEFAULT_NETPLAY_MITM_SERVER);
    return 0;
 }
 

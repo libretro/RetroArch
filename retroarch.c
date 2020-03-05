@@ -8466,17 +8466,23 @@ bool command_event(enum event_command cmd, void *data)
          }
          break;
       case CMD_EVENT_AUTOSAVE_INIT:
-#ifdef HAVE_THREADS
-         retroarch_autosave_deinit();
+         {
 #ifdef HAVE_NETWORKING
-         /* Only enable state manager if netplay is not underway
-            TODO/FIXME: Add a setting for these tweaks */
-         if (configuration_settings->uints.autosave_interval != 0
-               && !netplay_driver_ctl_internal(
-                  RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
+            unsigned autosave_interval = configuration_settings->uints.autosave_interval;
 #endif
-            runloop_autosave = autosave_init();
+
+#ifdef HAVE_THREADS
+            retroarch_autosave_deinit();
+#ifdef HAVE_NETWORKING
+            /* Only enable state manager if netplay is not underway
+               TODO/FIXME: Add a setting for these tweaks */
+            if (      (autosave_interval != 0)
+                  && !netplay_driver_ctl_internal(
+                     RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
 #endif
+               runloop_autosave = autosave_init();
+#endif
+         }
          break;
       case CMD_EVENT_AUDIO_STOP:
          midi_driver_set_all_sounds_off();
@@ -14552,19 +14558,20 @@ static void input_overlay_load_active(input_overlay_t *ol, float opacity)
  * config file. */
 static void input_overlay_auto_rotate(input_overlay_t *ol)
 {
-   settings_t *settings                                = configuration_settings;
    enum overlay_orientation screen_orientation         = OVERLAY_ORIENTATION_NONE;
    enum overlay_orientation active_overlay_orientation = OVERLAY_ORIENTATION_NONE;
+   settings_t *settings                                = configuration_settings;
+   bool input_overlay_enable                           = settings->bools.input_overlay_enable;
    bool next_overlay_found                             = false;
    bool tmp                                            = false;
    unsigned next_overlay_index                         = 0;
    size_t i;
 
    /* Sanity check */
-   if (!ol || !settings)
+   if (!ol)
       return;
 
-   if (!ol->alive || !settings->bools.input_overlay_enable)
+   if (!ol->alive || !input_overlay_enable)
       return;
 
    /* Get current screen orientation */
@@ -14982,14 +14989,14 @@ static void input_poll_overlay(input_overlay_t *ol, float opacity,
    rarch_joypad_info_t joypad_info;
    input_overlay_state_t old_key_state;
    unsigned i, j, device;
-   settings_t *settings            = configuration_settings;
-   uint16_t key_mod                = 0;
-   bool polled                     = false;
-   bool button_pressed             = false;
-   void *input_data                = current_input_data;
-   input_overlay_state_t *ol_state = &ol->overlay_state;
-   input_driver_t *input_ptr       = current_input;
-   bool input_overlay_show_physical_inputs = settings->bools.input_overlay_show_physical_inputs;
+   uint16_t key_mod                                 = 0;
+   bool polled                                      = false;
+   bool button_pressed                              = false;
+   void *input_data                                 = current_input_data;
+   input_overlay_state_t *ol_state                  = &ol->overlay_state;
+   input_driver_t *input_ptr                        = current_input;
+   settings_t *settings                             = configuration_settings;
+   bool input_overlay_show_physical_inputs          = settings->bools.input_overlay_show_physical_inputs;
    unsigned input_overlay_show_physical_inputs_port = settings->uints.input_overlay_show_physical_inputs_port;
 
    if (!ol_state)
