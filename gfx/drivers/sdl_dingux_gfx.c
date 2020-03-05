@@ -272,7 +272,7 @@ static void sdl_dingux_gfx_viewport_info(void *data, struct video_viewport *vp)
    vp->height = vp->full_height = vid->screen->h;
 }
 
-static void sdl_dingux_set_filtering(void *data, unsigned index, bool smooth)
+static void sdl_dingux_set_filtering(void *data, unsigned index, bool smooth, bool ctx_scaling)
 {
     (void)data;
 }

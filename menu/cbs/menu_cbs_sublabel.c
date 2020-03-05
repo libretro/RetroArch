@@ -282,6 +282,7 @@ default_sublabel_macro(action_bind_sublabel_audio_max_timing_skew,         MENU_
 default_sublabel_macro(action_bind_sublabel_pause_nonactive,               MENU_ENUM_SUBLABEL_PAUSE_NONACTIVE)
 default_sublabel_macro(action_bind_sublabel_video_disable_composition,     MENU_ENUM_SUBLABEL_VIDEO_DISABLE_COMPOSITION)
 default_sublabel_macro(action_bind_sublabel_video_smooth,                  MENU_ENUM_SUBLABEL_VIDEO_SMOOTH)
+default_sublabel_macro(action_bind_sublabel_video_ctx_scaling,             MENU_ENUM_SUBLABEL_VIDEO_CTX_SCALING)
 default_sublabel_macro(action_bind_sublabel_history_list_enable,           MENU_ENUM_SUBLABEL_HISTORY_LIST_ENABLE)
 default_sublabel_macro(action_bind_sublabel_content_history_size,          MENU_ENUM_SUBLABEL_CONTENT_HISTORY_SIZE)
 default_sublabel_macro(action_bind_sublabel_content_favorites_size,        MENU_ENUM_SUBLABEL_CONTENT_FAVORITES_SIZE)
@@ -2579,6 +2580,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_VIDEO_SMOOTH:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_smooth);
+            break;
+         case MENU_ENUM_LABEL_VIDEO_CTX_SCALING:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_ctx_scaling);
             break;
          case MENU_ENUM_LABEL_VIDEO_FONT_ENABLE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_onscreen_notifications_enable);

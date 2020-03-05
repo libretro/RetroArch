@@ -1600,7 +1600,7 @@ static void wiiu_gfx_unload_texture(void *data, uintptr_t handle)
    MEM2_free(texture->surface.image);
    free(texture);
 }
-static void wiiu_gfx_set_filtering(void *data, unsigned index, bool smooth)
+static void wiiu_gfx_set_filtering(void *data, unsigned index, bool smooth, bool ctx_scaling)
 {
    wiiu_video_t *wiiu = (wiiu_video_t *) data;
 

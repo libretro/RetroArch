@@ -224,7 +224,7 @@ static void d3d12_get_overlay_interface(void* data, const video_overlay_interfac
 }
 #endif
 
-static void d3d12_set_filtering(void* data, unsigned index, bool smooth)
+static void d3d12_set_filtering(void* data, unsigned index, bool smooth, bool ctx_scaling)
 {
    int            i;
    d3d12_video_t* d3d12 = (d3d12_video_t*)data;
@@ -958,7 +958,7 @@ static void *d3d12_gfx_init(const video_info_t* video,
 #endif
 
    d3d12_init_samplers(d3d12);
-   d3d12_set_filtering(d3d12, 0, video->smooth);
+   d3d12_set_filtering(d3d12, 0, video->smooth, video->ctx_scaling);
 
    d3d12_create_fullscreen_quad_vbo(d3d12->device, &d3d12->frame.vbo_view, &d3d12->frame.vbo);
    d3d12_create_fullscreen_quad_vbo(d3d12->device, &d3d12->menu.vbo_view, &d3d12->menu.vbo);

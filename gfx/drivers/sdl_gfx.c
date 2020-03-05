@@ -459,7 +459,7 @@ static void sdl_gfx_viewport_info(void *data, struct video_viewport *vp)
    vp->height = vp->full_height = vid->screen->h;
 }
 
-static void sdl_set_filtering(void *data, unsigned index, bool smooth)
+static void sdl_set_filtering(void *data, unsigned index, bool smooth, bool ctx_scaling)
 {
    sdl_video_t *vid = (sdl_video_t*)data;
    vid->scaler.scaler_type = smooth ? SCALER_TYPE_BILINEAR : SCALER_TYPE_POINT;
