@@ -53,6 +53,12 @@
    var = newvar; \
 }
 
+#define configuration_set_string(settings, var, newvar) \
+{ \
+   settings->modified = true; \
+   strlcpy(var, newvar, sizeof(var)); \
+}
+
 enum crt_switch_type
 {
    CRT_SWITCH_NONE = 0,

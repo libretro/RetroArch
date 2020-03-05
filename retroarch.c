@@ -3891,13 +3891,15 @@ static bool command_show_osd_msg(const char* arg)
 
 static bool command_get_config_param(const char* arg)
 {
-   char reply[4096]     = {0};
-   const char* value    = "unsupported";
-   settings_t* settings = configuration_settings;
+   char reply[4096]            = {0};
+   const char      *value      = "unsupported";
+   settings_t       *settings  = configuration_settings;
+   bool       video_fullscreen = settings->bools.video_fullscreen;
+   const char *dir_runtime_log = settings->paths.directory_runtime_log;
 
    if (string_is_equal(arg, "video_fullscreen"))
    {
-      if (settings->bools.video_fullscreen)
+      if (video_fullscreen)
          value = "true";
       else
          value = "false";
@@ -3907,7 +3909,7 @@ static bool command_get_config_param(const char* arg)
    else if (string_is_equal(arg, "savestate_directory"))
       value = dir_get(RARCH_DIR_SAVESTATE);
    else if (string_is_equal(arg, "runtime_log_directory"))
-      value = settings->paths.directory_runtime_log;
+      value = dir_runtime_log;
    else if (string_is_equal(arg, "log_dir"))
       value = settings->paths.log_dir;
    else if (string_is_equal(arg, "cache_directory"))
@@ -4763,9 +4765,9 @@ static void netplay_announce(void)
       net_http_urlencode(&username, discord_get_own_username());
    else
 #endif
-   net_http_urlencode(&username, settings->paths.username);
-   net_http_urlencode(&corename, system->library_name);
-   net_http_urlencode(&coreversion, system->library_version);
+   net_http_urlencode(&username,       settings->paths.username);
+   net_http_urlencode(&corename,       system->library_name);
+   net_http_urlencode(&coreversion,    system->library_version);
    net_http_urlencode(&frontend_ident, frontend_architecture);
 
    buf[0] = '\0';
@@ -6578,6 +6580,7 @@ static bool run_translation_service(void)
    struct scaler_ctx *scaler             = (struct scaler_ctx*)
       calloc(1, sizeof(struct scaler_ctx));
    bool error                            = false;
+   bool playlist_fuzzy_archive_match     = settings->bools.playlist_fuzzy_archive_match;
 
    uint8_t *bmp_buffer                   = NULL;
    uint64_t buffer_bytes                 = 0;
@@ -6626,7 +6629,7 @@ static bool run_translation_service(void)
       {
          playlist_get_index_by_path(
             current_playlist, path_get(RARCH_PATH_CONTENT), &entry,
-            settings->bools.playlist_fuzzy_archive_match);
+            playlist_fuzzy_archive_match);
 
          if (entry && !string_is_empty(entry->label))
             label = entry->label;
@@ -6968,9 +6971,7 @@ static void command_event_set_volume(float gain)
 
 #if defined(HAVE_GFX_WIDGETS)
    if (gfx_widgets_inited)
-      gfx_widgets_volume_update_and_show(settings->floats.audio_volume,
-            audio_driver_mute_enable
-            );
+      gfx_widgets_volume_update_and_show(new_volume, audio_driver_mute_enable);
    else
 #endif
       runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
@@ -8297,10 +8298,11 @@ bool command_event(enum event_command cmd, void *data)
          {
             settings_t *settings      = configuration_settings;
             bool savestate_auto_index = settings->bools.savestate_auto_index;
+            int state_slot            = settings->ints.state_slot;
 
             if (savestate_auto_index)
             {
-               int new_state_slot = settings->ints.state_slot + 1;
+               int new_state_slot = state_slot + 1;
                configuration_set_int(settings, settings->ints.state_slot, new_state_slot);
             }
          }
@@ -8310,10 +8312,12 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_SAVE_STATE_DECREMENT:
          {
             settings_t *settings      = configuration_settings;
+            int state_slot            = settings->ints.state_slot;
+
             /* Slot -1 is (auto) slot. */
-            if (settings->ints.state_slot >= 0)
+            if (state_slot >= 0)
             {
-               int new_state_slot = settings->ints.state_slot - 1;
+               int new_state_slot = state_slot - 1;
                configuration_set_int(settings, settings->ints.state_slot, new_state_slot);
             }
          }
@@ -8360,8 +8364,9 @@ bool command_event(enum event_command cmd, void *data)
             if (cached_video_driver[0])
             {
                settings_t *settings = configuration_settings;
-               strlcpy(settings->arrays.video_driver, cached_video_driver,
-                     sizeof(settings->arrays.video_driver));
+               configuration_set_string(settings, 
+               settings->arrays.video_driver, cached_video_driver);
+
                cached_video_driver[0] = 0;
                RARCH_LOG("[Video]: Restored video driver to \"%s\".\n",
                      settings->arrays.video_driver);
@@ -8431,6 +8436,7 @@ bool command_event(enum event_command cmd, void *data)
          {
             settings_t *settings      = configuration_settings;
             bool rewind_enable        = settings->bools.rewind_enable;
+            unsigned rewind_buf_size  = settings->sizes.rewind_buffer_size;
 #ifdef HAVE_CHEEVOS
             if (rcheevos_hardcore_active)
                return false;
@@ -8444,7 +8450,7 @@ bool command_event(enum event_command cmd, void *data)
                         RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
 #endif
                {
-                  state_manager_event_init((unsigned)settings->sizes.rewind_buffer_size);
+                  state_manager_event_init((unsigned)rewind_buf_size);
                }
             }
          }
@@ -8611,9 +8617,13 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_HISTORY_INIT:
          {
-            settings_t *settings          = configuration_settings;
-            unsigned content_history_size = settings->uints.content_history_size;
-            bool history_list_enable      = settings->bools.history_list_enable;
+            settings_t *settings             = configuration_settings;
+            unsigned content_history_size    = settings->uints.content_history_size;
+            bool history_list_enable         = settings->bools.history_list_enable;
+            const char *path_content_history = settings->paths.path_content_history;
+            const char *path_content_music_history = settings->paths.path_content_music_history;
+            const char *path_content_video_history = settings->paths.path_content_video_history;
+            const char *path_content_image_history = settings->paths.path_content_image_history;
 
             command_event(CMD_EVENT_HISTORY_DEINIT, NULL);
 
@@ -8622,33 +8632,33 @@ bool command_event(enum event_command cmd, void *data)
 
             RARCH_LOG("%s: [%s].\n",
                   msg_hash_to_str(MSG_LOADING_HISTORY_FILE),
-                  settings->paths.path_content_history);
+                  path_content_history);
             g_defaults.content_history = playlist_init(
-                  settings->paths.path_content_history,
+                  path_content_history,
                   content_history_size);
 
             RARCH_LOG("%s: [%s].\n",
                   msg_hash_to_str(MSG_LOADING_HISTORY_FILE),
-                  settings->paths.path_content_music_history);
+                  path_content_music_history);
             g_defaults.music_history = playlist_init(
-                  settings->paths.path_content_music_history,
+                  path_content_music_history,
                   content_history_size);
 
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
             RARCH_LOG("%s: [%s].\n",
                   msg_hash_to_str(MSG_LOADING_HISTORY_FILE),
-                  settings->paths.path_content_video_history);
+                  path_content_video_history);
             g_defaults.video_history = playlist_init(
-                  settings->paths.path_content_video_history,
+                  path_content_video_history,
                   content_history_size);
 #endif
 
 #ifdef HAVE_IMAGEVIEWER
             RARCH_LOG("%s: [%s].\n",
                   msg_hash_to_str(MSG_LOADING_HISTORY_FILE),
-                  settings->paths.path_content_image_history);
+                  path_content_image_history);
             g_defaults.image_history = playlist_init(
-                  settings->paths.path_content_image_history,
+                  path_content_image_history,
                   content_history_size);
 #endif
          }
@@ -8660,20 +8670,23 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_CORE_INFO_INIT:
          {
             char ext_name[255];
-            settings_t *settings      = configuration_settings;
+            settings_t *settings           = configuration_settings;
+            const char *dir_libretro       = settings->paths.directory_libretro;
+            const char *path_libretro_info = settings->paths.path_libretro_info;
+            bool show_hidden_files         = settings->bools.show_hidden_files;
 
-            ext_name[0]               = '\0';
+            ext_name[0]                    = '\0';
 
             command_event(CMD_EVENT_CORE_INFO_DEINIT, NULL);
 
             if (!frontend_driver_get_core_extension(ext_name, sizeof(ext_name)))
                return false;
 
-            if (!string_is_empty(settings->paths.directory_libretro))
-               core_info_init_list(settings->paths.path_libretro_info,
-                     settings->paths.directory_libretro,
+            if (!string_is_empty(dir_libretro))
+               core_info_init_list(path_libretro_info,
+                     dir_libretro,
                      ext_name,
-                     settings->bools.show_hidden_files
+                     show_hidden_files
                      );
          }
          break;
@@ -8712,6 +8725,7 @@ bool command_event(enum event_command cmd, void *data)
             settings_t *settings      = configuration_settings;
             bool adaptive_vsync       = settings->bools.video_adaptive_vsync;
             unsigned swap_interval    = settings->uints.video_swap_interval;
+
             if (current_video->set_nonblock_state)
                current_video->set_nonblock_state(video_driver_data, false,
                      video_driver_test_all_flags(
@@ -8725,8 +8739,9 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_OVERLAY_SET_SCALE_FACTOR:
 #ifdef HAVE_OVERLAY
          {
-            settings_t *settings      = configuration_settings;
-            input_overlay_set_scale_factor(overlay_ptr, settings->floats.input_overlay_scale);
+            settings_t *settings        = configuration_settings;
+            float input_overlay_scale   = settings->floats.input_overlay_scale;
+            input_overlay_set_scale_factor(overlay_ptr, input_overlay_scale);
          }
 #endif
          break;
@@ -8735,8 +8750,9 @@ bool command_event(enum event_command cmd, void *data)
           * The alpha factor is applied for all overlays. */
 #ifdef HAVE_OVERLAY
          {
-            settings_t *settings      = configuration_settings;
-            input_overlay_set_alpha_mod(overlay_ptr, settings->floats.input_overlay_opacity);
+            settings_t *settings        = configuration_settings;
+            float input_overlay_opacity = settings->floats.input_overlay_opacity;
+            input_overlay_set_alpha_mod(overlay_ptr, input_overlay_opacity);
          }
 #endif
          break;
@@ -9128,8 +9144,9 @@ bool command_event(enum event_command cmd, void *data)
          {
             bool *userdata            = (bool*)data;
             settings_t *settings      = configuration_settings;
-            bool new_fullscreen_state = !settings->bools.video_fullscreen
-               && !retroarch_is_forced_fullscreen();
+            bool video_fullscreen     = settings->bools.video_fullscreen;
+            bool ra_is_forced_fs      = retroarch_is_forced_fullscreen();
+            bool new_fullscreen_state = !video_fullscreen && !ra_is_forced_fs;
 
             if (!video_driver_has_windowed())
                return false;
@@ -9140,14 +9157,14 @@ bool command_event(enum event_command cmd, void *data)
             configuration_set_bool(settings, settings->bools.video_fullscreen,
                   new_fullscreen_state);
 
-            /* we toggled manually, the cli arg is irrelevant now */
-            if (retroarch_is_forced_fullscreen())
+            /* we toggled manually, the CLI arg is irrelevant now */
+            if (ra_is_forced_fs)
                rarch_force_fullscreen = false;
 
             /* If we go fullscreen we drop all drivers and
              * reinitialize to be safe. */
             command_event(CMD_EVENT_REINIT, NULL);
-            if (settings->bools.video_fullscreen)
+            if (video_fullscreen)
                video_driver_hide_mouse();
             else
                video_driver_show_mouse();
@@ -9370,17 +9387,17 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_DISCORD_INIT:
 #ifdef HAVE_DISCORD
          {
-            settings_t *settings      = configuration_settings;
+            settings_t *settings       = configuration_settings;
+            bool discord_enable        = settings ? settings->bools.discord_enable : false;
+            const char *discord_app_id = settings ? settings->arrays.discord_app_id : NULL;
 
             if (!settings)
                return false;
-            if (!settings->bools.discord_enable)
+            if (!discord_enable)
                return false;
-
             if (discord_is_ready())
                return true;
-
-            discord_init(settings->arrays.discord_app_id,
+            discord_init(discord_app_id,
                   launch_arguments);
          }
 #endif
@@ -9649,8 +9666,9 @@ void main_exit(void *args)
 
    if (cached_video_driver[0])
    {
-      strlcpy(settings->arrays.video_driver, cached_video_driver,
-            sizeof(settings->arrays.video_driver));
+      configuration_set_string(settings, 
+            settings->arrays.video_driver, cached_video_driver);
+
       cached_video_driver[0] = 0;
       RARCH_LOG("[Video]: Restored video driver to \"%s\".\n",
             settings->arrays.video_driver);
@@ -11027,9 +11045,12 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
    switch (cmd)
    {
       case RETRO_ENVIRONMENT_GET_OVERSCAN:
-         *(bool*)data = !settings->bools.video_crop_overscan;
-         RARCH_LOG("[Environ]: GET_OVERSCAN: %u\n",
-               (unsigned)!settings->bools.video_crop_overscan);
+         {
+            bool video_crop_overscan = settings->bools.video_crop_overscan;
+            *(bool*)data = !video_crop_overscan;
+            RARCH_LOG("[Environ]: GET_OVERSCAN: %u\n",
+                  (unsigned)!video_crop_overscan);
+         }
          break;
 
       case RETRO_ENVIRONMENT_GET_CAN_DUPE:
@@ -11195,36 +11216,38 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
          break;
 
       case RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY:
-         if (     string_is_empty(settings->paths.directory_system) 
-               || settings->bools.systemfiles_in_content_dir)
          {
-            const char *fullpath = path_get(RARCH_PATH_CONTENT);
-            if (!string_is_empty(fullpath))
+            const char *dir_system          = settings->paths.directory_system;
+            bool systemfiles_in_content_dir = settings->bools.systemfiles_in_content_dir;
+            if (string_is_empty(dir_system) || systemfiles_in_content_dir)
             {
-               size_t path_size = PATH_MAX_LENGTH * sizeof(char);
-               char *temp_path  = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+               const char *fullpath = path_get(RARCH_PATH_CONTENT);
+               if (!string_is_empty(fullpath))
+               {
+                  size_t path_size = PATH_MAX_LENGTH * sizeof(char);
+                  char *temp_path  = (char*)malloc(PATH_MAX_LENGTH 
+                        * sizeof(char));
+                  temp_path[0]     = '\0';
 
-               temp_path[0]     = '\0';
+                  if (string_is_empty(dir_system))
+                     RARCH_WARN("SYSTEM DIR is empty, assume CONTENT DIR %s\n",
+                           fullpath);
+                  fill_pathname_basedir(temp_path, fullpath, path_size);
+                  dir_set(RARCH_DIR_SYSTEM, temp_path);
+                  free(temp_path);
+               }
 
-               if (string_is_empty(settings->paths.directory_system))
-                  RARCH_WARN("SYSTEM DIR is empty, assume CONTENT DIR %s\n",
-                        fullpath);
-               fill_pathname_basedir(temp_path, fullpath, path_size);
-               dir_set(RARCH_DIR_SYSTEM, temp_path);
-               free(temp_path);
+               *(const char**)data = dir_get_ptr(RARCH_DIR_SYSTEM);
+               RARCH_LOG("[Environ]: SYSTEM_DIRECTORY: \"%s\".\n",
+                     dir_get(RARCH_DIR_SYSTEM));
             }
-
-            *(const char**)data = dir_get_ptr(RARCH_DIR_SYSTEM);
-            RARCH_LOG("[Environ]: SYSTEM_DIRECTORY: \"%s\".\n",
-                  dir_get(RARCH_DIR_SYSTEM));
+            else
+            {
+               *(const char**)data = dir_system;
+               RARCH_LOG("[Environ]: SYSTEM_DIRECTORY: \"%s\".\n",
+                     dir_system);
+            }
          }
-         else
-         {
-            *(const char**)data = settings->paths.directory_system;
-            RARCH_LOG("[Environ]: SYSTEM_DIRECTORY: \"%s\".\n",
-               settings->paths.directory_system);
-         }
-
          break;
 
       case RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY:
@@ -11665,10 +11688,13 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
          if (data)
          {
             settings_t *settings                  = configuration_settings;
-            const bool no_video_reinit =
-                     settings->uints.crt_switch_resolution == 0 && data
-                  && (*info)->geometry.max_width == av_info->geometry.max_width
-                  && (*info)->geometry.max_height == av_info->geometry.max_height;
+            unsigned crt_switch_resolution        = settings->uints.crt_switch_resolution;
+            bool video_fullscreen                 = settings->bools.video_fullscreen;
+            const bool no_video_reinit            = (
+                     crt_switch_resolution == 0 
+                  && data
+                  && ((*info)->geometry.max_width  == av_info->geometry.max_width)
+                  && ((*info)->geometry.max_height == av_info->geometry.max_height));
             /* When not doing video reinit, we also must not do input and menu
              * reinit, otherwise the input driver crashes and the menu gets
              * corrupted. */
@@ -11697,7 +11723,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
 
             /* Hide mouse cursor in fullscreen after
              * a RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO call. */
-            if (settings->bools.video_fullscreen)
+            if (video_fullscreen)
                video_driver_hide_mouse();
 
             return true;
@@ -12087,11 +12113,12 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
       {
          /* Try to use the polled refresh rate first.  */
          float target_refresh_rate = video_driver_get_refresh_rate();
+         float video_refresh_rate  = settings ? settings->floats.video_refresh_rate : 0.0;
 
          /* If the above function failed [possibly because it is not
           * implemented], use the refresh rate set in the config instead. */
-         if (target_refresh_rate == 0.0 && settings)
-            target_refresh_rate = settings->floats.video_refresh_rate;
+         if (target_refresh_rate == 0.0 && video_refresh_rate != 0.0)
+            target_refresh_rate = video_refresh_rate;
 
          *(float *)data = target_refresh_rate;
          break;
@@ -12748,12 +12775,12 @@ static char *copy_core_to_temp_file(void)
    int64_t dll_file_size      = 0;
    const char *core_path      = path_get(RARCH_PATH_CORE);
    const char *core_base_name = path_basename(core_path);
+   const char *dir_libretro   = configuration_settings->paths.directory_libretro;
 
    if (strlen(core_base_name) == 0)
       return NULL;
 
-   temp_directory             = get_temp_directory_alloc(
-         configuration_settings->paths.directory_libretro);
+   temp_directory             = get_temp_directory_alloc(dir_libretro);
    if (!temp_directory)
       return NULL;
 
@@ -13079,7 +13106,8 @@ bool wifi_driver_ctl(enum rarch_wifi_ctl_state state, void *data)
         if (wifi_driver && wifi_data && wifi_driver->start)
         {
            settings_t *settings = configuration_settings;
-           if (settings->bools.wifi_allow)
+           bool wifi_allow      = settings->bools.wifi_allow;
+           if (wifi_allow)
               return wifi_driver->start(wifi_data);
         }
         return false;
@@ -13585,6 +13613,7 @@ static bool recording_init(void)
    settings_t *settings                 = configuration_settings;
    global_t *global                     = &g_extern;
    bool video_gpu_record                = settings->bools.video_gpu_record;
+   bool video_force_aspect              = settings->bools.video_force_aspect;
 
    if (!recording_enable)
       return false;
@@ -13721,7 +13750,7 @@ static bool recording_init(void)
       params.fb_width   = next_pow2(vp.width);
       params.fb_height  = next_pow2(vp.height);
 
-      if (settings->bools.video_force_aspect &&
+      if (video_force_aspect &&
             (video_driver_aspect_ratio > 0.0f))
          params.aspect_ratio  = video_driver_aspect_ratio;
       else
@@ -13746,7 +13775,7 @@ static bool recording_init(void)
          params.out_height = recording_height;
       }
 
-      if (settings->bools.video_force_aspect &&
+      if (video_force_aspect &&
             (video_driver_aspect_ratio > 0.0f))
          params.aspect_ratio = video_driver_aspect_ratio;
       else
@@ -13945,10 +13974,12 @@ static bool bsv_movie_init_record(
    if (state_size)
    {
       retro_ctx_serialize_info_t serial_info;
+      uint8_t *st      = (uint8_t*)malloc(state_size);
 
-      handle->state = (uint8_t*)malloc(state_size);
-      if (!handle->state)
+      if (!st)
          return false;
+
+      handle->state    = st;
 
       serial_info.data = handle->state;
       serial_info.size = state_size;
@@ -14843,6 +14874,8 @@ static void input_overlay_loaded(retro_task_t *task,
    input_overlay_t                    *ol = NULL;
    const video_overlay_interface_t *iface = NULL;
    settings_t *settings                   = configuration_settings;
+   bool input_overlay_show_mouse_cursor   = settings->bools.input_overlay_show_mouse_cursor;
+   bool inp_overlay_auto_rotate           = settings->bools.input_overlay_auto_rotate;
 
    if (err)
       return;
@@ -14889,11 +14922,11 @@ static void input_overlay_loaded(retro_task_t *task,
 
    free(data);
 
-   if (!settings->bools.input_overlay_show_mouse_cursor)
+   if (!input_overlay_show_mouse_cursor)
       video_driver_hide_mouse();
 
    /* Attempt to automatically rotate overlay, if required */
-   if (settings->bools.input_overlay_auto_rotate)
+   if (inp_overlay_auto_rotate)
       input_overlay_auto_rotate(overlay_ptr);
 
    return;
@@ -14956,6 +14989,8 @@ static void input_poll_overlay(input_overlay_t *ol, float opacity,
    void *input_data                = current_input_data;
    input_overlay_state_t *ol_state = &ol->overlay_state;
    input_driver_t *input_ptr       = current_input;
+   bool input_overlay_show_physical_inputs = settings->bools.input_overlay_show_physical_inputs;
+   unsigned input_overlay_show_physical_inputs_port = settings->uints.input_overlay_show_physical_inputs_port;
 
    if (!ol_state)
       return;
@@ -15085,9 +15120,9 @@ static void input_poll_overlay(input_overlay_t *ol, float opacity,
          break;
    }
 
-   if (settings->bools.input_overlay_show_physical_inputs)
+   if (input_overlay_show_physical_inputs)
       button_pressed = input_overlay_add_inputs(ol,
-            settings->uints.input_overlay_show_physical_inputs_port,
+            input_overlay_show_physical_inputs_port,
             analog_dpad_mode);
 
    if (button_pressed || polled)
@@ -15177,7 +15212,7 @@ error:
 static void input_remote_free(input_remote_t *handle, unsigned max_users)
 {
    unsigned user;
-   for(user = 0; user < max_users; user ++)
+   for (user = 0; user < max_users; user ++)
       socket_close(handle->net_fd[user]);
 
    free(handle);
@@ -15193,7 +15228,7 @@ static input_remote_t *input_remote_new(uint16_t port, unsigned max_users)
    if (!handle)
       return NULL;
 
-   for(user = 0; user < max_users; user ++)
+   for (user = 0; user < max_users; user ++)
    {
       handle->net_fd[user] = -1;
       if (settings->bools.network_remote_enable_user[user])
@@ -15371,6 +15406,10 @@ static void input_driver_poll(void)
    size_t i;
    rarch_joypad_info_t joypad_info[MAX_USERS];
    settings_t *settings           = configuration_settings;
+#ifdef HAVE_OVERLAY
+   float input_overlay_opacity    = settings->floats.input_overlay_opacity;
+#endif
+   bool input_remap_binds_enable  = settings->bools.input_remap_binds_enable;
    uint8_t max_users              = (uint8_t)input_driver_max_users;
    input_bits_t current_inputs[MAX_USERS];
 
@@ -15401,7 +15440,7 @@ static void input_driver_poll(void)
    if (overlay_ptr && overlay_ptr->alive)
       input_poll_overlay(
             overlay_ptr,
-            settings->floats.input_overlay_opacity,
+            input_overlay_opacity,
             settings->uints.input_analog_dpad_mode[0],
             input_driver_axis_threshold);
 #endif
@@ -15409,7 +15448,7 @@ static void input_driver_poll(void)
 #ifdef HAVE_MENU
    if (!menu_driver_alive)
 #endif
-   if (settings->bools.input_remap_binds_enable && input_driver_mapper)
+   if (input_remap_binds_enable && input_driver_mapper)
    {
       for (i = 0; i < max_users; i++)
       {
@@ -15510,7 +15549,7 @@ static void input_driver_poll(void)
    {
       unsigned user;
 
-      for(user = 0; user < max_users; user++)
+      for (user = 0; user < max_users; user++)
       {
          if (settings->bools.network_remote_enable_user[user])
          {
@@ -15552,8 +15591,9 @@ static int16_t input_state_device(
       unsigned idx, unsigned id,
       bool button_mask)
 {
-   int16_t res          = 0;
-   settings_t *settings = configuration_settings;
+   int16_t res                   = 0;
+   settings_t *settings          = configuration_settings;
+   bool input_remap_binds_enable = settings->bools.input_remap_binds_enable;
 
 #ifdef HAVE_NETWORKGAMEPAD
    bool remote_input    = false;
@@ -15584,7 +15624,7 @@ static int16_t input_state_device(
             bool bind_valid = libretro_input_binds[port]
                && libretro_input_binds[port][id].valid;
 
-            if (settings->bools.input_remap_binds_enable &&
+            if (input_remap_binds_enable &&
                   id != settings->uints.input_remap_ids[port][id])
                res = 0;
             else if (bind_valid)
@@ -15613,7 +15653,7 @@ static int16_t input_state_device(
             }
          }
 
-         if (settings->bools.input_remap_binds_enable && input_driver_mapper)
+         if (input_remap_binds_enable && input_driver_mapper)
             if (BIT256_GET(input_driver_mapper->buttons[port], id))
                res = 1;
 
@@ -15751,7 +15791,7 @@ static int16_t input_state_device(
          }
 #endif
 
-         if (settings->bools.input_remap_binds_enable && input_driver_mapper)
+         if (input_remap_binds_enable && input_driver_mapper)
             if (id < RETROK_LAST)
                if (MAPPER_GET_KEY(input_driver_mapper, id))
                   res |= 1;
@@ -15781,9 +15821,7 @@ static int16_t input_state_device(
          break;
 
       case RETRO_DEVICE_ANALOG:
-
          {
-            bool remap_binds_enable = settings->bools.input_remap_binds_enable;
 #ifdef HAVE_OVERLAY
             int16_t res_overlay     = 0;
             if (overlay_ptr && port == 0)
@@ -15835,7 +15873,7 @@ static int16_t input_state_device(
                   /* reset_state - used to reset input state of a button
                    * when the gamepad mapper is in action for that button*/
                   bool reset_state        = false;
-                  if (remap_binds_enable)
+                  if (input_remap_binds_enable)
                   {
                      if (idx < 2 && id < 2)
                      {
@@ -15865,7 +15903,7 @@ static int16_t input_state_device(
                }
             }
 
-            if (remap_binds_enable && input_driver_mapper)
+            if (input_remap_binds_enable && input_driver_mapper)
             {
                if (idx < 2 && id < 2)
                {
@@ -16431,6 +16469,8 @@ static unsigned menu_event(
    menu_input_t *menu_input                        = &menu_input_state;
    menu_input_pointer_hw_state_t *pointer_hw_state = &menu_input_pointer_hw_state;
    settings_t *settings                            = configuration_settings;
+   bool menu_mouse_enable                          = settings->bools.menu_mouse_enable;
+   bool menu_pointer_enable                        = settings->bools.menu_pointer_enable;
    bool swap_ok_cancel_btns                        = settings->bools.input_menu_swap_ok_cancel_buttons;
    bool input_swap_override                        = input_autoconfigure_get_swap_override();
    unsigned menu_ok_btn                            =
@@ -16607,7 +16647,7 @@ static unsigned menu_event(
    /* Get pointer (mouse + touchscreen) input */
 
    /* > If pointer input is disabled, do nothing */
-   if (!settings->bools.menu_mouse_enable && !settings->bools.menu_pointer_enable)
+   if (!menu_mouse_enable && !menu_pointer_enable)
       menu_input->pointer.type = MENU_POINTER_DISABLED;
    else
    {
@@ -16615,7 +16655,7 @@ static unsigned menu_event(
       menu_input_pointer_hw_state_t touchscreen_hw_state = {0};
 
       /* Read mouse */
-      if (settings->bools.menu_mouse_enable)
+      if (menu_mouse_enable)
          menu_input_get_mouse_hw_state(&mouse_hw_state);
 
       /* Read touchscreen
@@ -16623,7 +16663,7 @@ static unsigned menu_event(
        * but this is 'cleaner' code... (if performance is a
        * concern - and it isn't - user can just disable touch
        * screen support) */
-      if (settings->bools.menu_pointer_enable)
+      if (menu_pointer_enable)
          menu_input_get_touchscreen_hw_state(&touchscreen_hw_state);
 
       /* Mouse takes precedence */
@@ -17482,9 +17522,9 @@ static void input_menu_keys_pressed(input_bits_t *p_new_state,
 {
    unsigned i, port;
    settings_t     *settings                     = configuration_settings;
+   bool input_all_users_control_menu            = settings->bools.input_all_users_control_menu;
    uint8_t max_users                            = (uint8_t)input_driver_max_users;
-   uint8_t port_max                             =
-      settings->bools.input_all_users_control_menu
+   uint8_t port_max                             = input_all_users_control_menu
       ? max_users : 1;
 
    for (i = 0; i < max_users; i++)
@@ -17772,6 +17812,7 @@ static bool input_driver_init_command(void)
    settings_t *settings          = configuration_settings;
    bool input_stdin_cmd_enable   = settings->bools.stdin_cmd_enable;
    bool input_network_cmd_enable = settings->bools.network_cmd_enable;
+   unsigned network_cmd_port     = settings->uints.network_cmd_port;
    bool grab_stdin               = current_input->grab_stdin && current_input->grab_stdin(current_input_data);
 
    if (!input_stdin_cmd_enable && !input_network_cmd_enable)
@@ -17790,7 +17831,7 @@ static bool input_driver_init_command(void)
                input_driver_command,
                input_stdin_cmd_enable && !grab_stdin,
                input_network_cmd_enable,
-               settings->uints.network_cmd_port))
+               network_cmd_port))
          return true;
 
    RARCH_ERR("Failed to initialize command interface.\n");
@@ -17827,13 +17868,14 @@ static void input_driver_deinit_mapper(void)
 static bool input_driver_init_remote(void)
 {
 #ifdef HAVE_NETWORKGAMEPAD
-   settings_t *settings = configuration_settings;
+   settings_t *settings              = configuration_settings;
+   bool network_remote_enable        = settings->bools.network_remote_enable;
+   unsigned network_remote_base_port = settings->uints.network_remote_base_port;
 
-   if (!settings->bools.network_remote_enable)
+   if (!network_remote_enable)
       return false;
 
-   input_driver_remote = input_remote_new(
-         settings->uints.network_remote_base_port,
+   input_driver_remote = input_remote_new(network_remote_base_port,
          input_driver_max_users);
 
    if (input_driver_remote)
@@ -17846,10 +17888,11 @@ static bool input_driver_init_remote(void)
 
 static bool input_driver_init_mapper(void)
 {
-   input_mapper_t *handle = NULL;
-   settings_t *settings   = configuration_settings;
+   input_mapper_t *handle        = NULL;
+   settings_t *settings          = configuration_settings;
+   bool input_remap_binds_enable = settings->bools.input_remap_binds_enable;
 
-   if (!settings->bools.input_remap_binds_enable)
+   if (!input_remap_binds_enable)
       return false;
 
    handle = (input_mapper_t*)calloc(1, sizeof(*input_driver_mapper));
@@ -18025,6 +18068,7 @@ int16_t input_joypad_analog(const input_device_driver_t *drv,
       const struct retro_keybind *binds)
 {
    int16_t res = 0;
+   float input_analog_deadzone = configuration_settings->floats.input_analog_deadzone;
 
    if (idx == RETRO_DEVICE_INDEX_ANALOG_BUTTON)
    {
@@ -18046,7 +18090,7 @@ int16_t input_joypad_analog(const input_device_driver_t *drv,
          if (drv->axis)
          {
             float normal_mag = 0.0f;
-            if (configuration_settings->floats.input_analog_deadzone)
+            if (input_analog_deadzone)
                normal_mag = fabs((1.0f / 0x7fff) * drv->axis(
                         joypad_info->joy_idx, axis));
             res = abs(input_joypad_axis(drv, 
@@ -18121,7 +18165,7 @@ int16_t input_joypad_analog(const input_device_driver_t *drv,
 
          /* normalized magnitude of stick actuation, needed for scaled
           * radial deadzone */
-         if (configuration_settings->floats.input_analog_deadzone)
+         if (input_analog_deadzone)
          {
             uint32_t x_axis_minus    = (bind_x_minus->joyaxis == AXIS_NONE)
                ? joypad_info->auto_binds[ident_x_minus].joyaxis
@@ -19057,11 +19101,12 @@ static void input_config_get_bind_string_joykey(
 static void input_config_get_bind_string_joyaxis(char *buf, const char *prefix,
       const struct retro_keybind *bind, size_t size)
 {
-   settings_t *settings = configuration_settings;
+   settings_t *settings             = configuration_settings;
+   bool input_descriptor_label_show = settings->bools.input_descriptor_label_show;
 
    if (bind->joyaxis_label &&
          !string_is_empty(bind->joyaxis_label)
-         && settings->bools.input_descriptor_label_show)
+         && input_descriptor_label_show)
       fill_pathname_join_delim_concat(buf, prefix,
             bind->joyaxis_label, ' ', " (axis)", size);
    else
@@ -19299,7 +19344,8 @@ void input_config_set_device(unsigned port, unsigned id)
    settings_t *settings = configuration_settings;
 
    if (settings)
-      settings->uints.input_libretro_device[port] = id;
+      configuration_set_uint(settings,
+      settings->uints.input_libretro_device[port], id);
 }
 
 
@@ -19785,8 +19831,10 @@ static bool midi_driver_init(void)
 
       midi_drv = midi_driver_find_driver(settings->arrays.midi_driver);
       if (strcmp(midi_drv->ident, settings->arrays.midi_driver))
-         strlcpy(settings->arrays.midi_driver, midi_drv->ident,
-               sizeof(settings->arrays.midi_driver));
+      {
+         configuration_set_string(settings,
+               settings->arrays.midi_driver, midi_drv->ident);
+      }
 
       if (!midi_drv->get_avail_inputs(midi_drv_inputs))
          err_str = "list of input devices unavailable";
@@ -19802,8 +19850,8 @@ static bool midi_driver_init(void)
             {
                RARCH_WARN("[MIDI]: Input device \"%s\" unavailable.\n",
                      settings->arrays.midi_input);
-               strlcpy(settings->arrays.midi_input, "Off",
-                     sizeof(settings->arrays.midi_input));
+               configuration_set_string(settings,
+                     settings->arrays.midi_input, "Off");
             }
          }
 
@@ -19815,8 +19863,8 @@ static bool midi_driver_init(void)
             {
                RARCH_WARN("[MIDI]: Output device \"%s\" unavailable.\n",
                      settings->arrays.midi_output);
-               strlcpy(settings->arrays.midi_output, "Off",
-                     sizeof(settings->arrays.midi_output));
+               configuration_set_string(settings,
+                     settings->arrays.midi_output, "Off");
             }
          }
 
@@ -20314,6 +20362,7 @@ static void audio_driver_deinit_resampler(void)
 static bool audio_driver_deinit_internal(void)
 {
    settings_t *settings    = configuration_settings;
+   bool audio_enable       = settings->bools.audio_enable;
 
    if (current_audio && current_audio->free)
    {
@@ -20334,7 +20383,7 @@ static bool audio_driver_deinit_internal(void)
 
    audio_driver_rewind_size  = 0;
 
-   if (!settings->bools.audio_enable)
+   if (!audio_enable)
    {
       audio_driver_active = false;
       return false;
@@ -20418,16 +20467,20 @@ static bool audio_driver_find_driver(void)
 
 static bool audio_driver_init_internal(bool audio_cb_inited)
 {
-   unsigned new_rate     = 0;
-   float   *aud_inp_data = NULL;
-   float  *samples_buf   = NULL;
-   int16_t *rewind_buf   = NULL;
-   size_t max_bufsamples = AUDIO_CHUNK_SIZE_NONBLOCKING * 2;
-   settings_t *settings  = configuration_settings;
+   unsigned new_rate       = 0;
+   float   *aud_inp_data   = NULL;
+   float  *samples_buf     = NULL;
+   int16_t *rewind_buf     = NULL;
+   size_t max_bufsamples   = AUDIO_CHUNK_SIZE_NONBLOCKING * 2;
+   settings_t *settings    = configuration_settings;
+   bool audio_enable       = settings->bools.audio_enable;
+   bool audio_sync         = settings->bools.audio_sync;
+   bool audio_rate_control = settings->bools.audio_rate_control;
+   float slowmotion_ratio  = settings->floats.slowmotion_ratio;
    /* Accomodate rewind since at some point we might have two full buffers. */
-   size_t outsamples_max = AUDIO_CHUNK_SIZE_NONBLOCKING * 2 * AUDIO_MAX_RATIO *
-      settings->floats.slowmotion_ratio;
-   int16_t *conv_buf     = (int16_t*)malloc(outsamples_max
+   size_t outsamples_max   = AUDIO_CHUNK_SIZE_NONBLOCKING * 2 * AUDIO_MAX_RATIO *
+      slowmotion_ratio;
+   int16_t *conv_buf       = (int16_t*)malloc(outsamples_max
          * sizeof(int16_t));
 
    convert_s16_to_float_init_simd();
@@ -20455,7 +20508,7 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
    audio_driver_rewind_buf              = rewind_buf;
    audio_driver_rewind_size             = max_bufsamples;
 
-   if (!settings->bools.audio_enable)
+   if (!audio_enable)
    {
       audio_driver_active = false;
       return false;
@@ -20508,7 +20561,7 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
          && current_audio->use_float(audio_driver_context_audio_data))
       audio_driver_use_float = true;
 
-   if (!settings->bools.audio_sync && audio_driver_active)
+   if (!audio_sync && audio_driver_active)
    {
       if (audio_driver_active && audio_driver_context_audio_data)
          current_audio->set_nonblock_state(audio_driver_context_audio_data, true);
@@ -20563,7 +20616,7 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
    if (
          !audio_cb_inited
          && audio_driver_active
-         && settings->bools.audio_rate_control
+         && audio_rate_control
          )
    {
       /* Audio rate control requires write_avail
@@ -20611,6 +20664,7 @@ static void audio_driver_flush(const int16_t *data, size_t samples,
       bool is_slowmotion)
 {
    struct resampler_data src_data;
+   float slowmotion_ratio            = configuration_settings->floats.slowmotion_ratio;
    float audio_volume_gain           = !audio_driver_mute_enable ?
       audio_driver_volume_gain : 0.0f;
 
@@ -20678,13 +20732,11 @@ static void audio_driver_flush(const int16_t *data, size_t samples,
    src_data.ratio           = audio_source_ratio_current;
 
    if (is_slowmotion)
-      src_data.ratio       *= configuration_settings->floats.slowmotion_ratio;
+      src_data.ratio       *= slowmotion_ratio;
 
    audio_driver_resampler->process(audio_driver_resampler_data, &src_data);
 
 #ifdef HAVE_AUDIOMIXER
-   /* TODO/FIXME - provide an int16_t codepath for audio_mixer_mix too 
-    * so we don't have to skip this here */
    if (audio_mixer_active)
    {
       bool override     = audio_driver_mixer_mute_enable ? true :
@@ -20928,6 +20980,7 @@ static void audio_driver_monitor_adjust_system_rates(void)
 {
    float timing_skew;
    settings_t *settings                   = configuration_settings;
+   bool vrr_runloop_enable                = settings->bools.vrr_runloop_enable;
    const float target_video_sync_rate     =
       settings->floats.video_refresh_rate / settings->uints.video_swap_interval;
    float max_timing_skew                  = settings->floats.audio_max_timing_skew;
@@ -20941,7 +20994,7 @@ static void audio_driver_monitor_adjust_system_rates(void)
    timing_skew             = fabs(1.0f - info->fps / target_video_sync_rate);
    audio_driver_input      = info->sample_rate;
 
-   if (timing_skew <= max_timing_skew && !settings->bools.vrr_runloop_enable)
+   if (timing_skew <= max_timing_skew && !vrr_runloop_enable)
       audio_driver_input *= target_video_sync_rate / info->fps;
 
    RARCH_LOG("[Audio]: Set audio input rate to: %.2f Hz.\n",
@@ -21300,6 +21353,11 @@ static void audio_driver_load_menu_bgm_callback(retro_task_t *task,
 void audio_driver_load_menu_sounds(void)
 {
    settings_t *settings              = configuration_settings;
+   const char *dir_assets            = settings->paths.directory_assets;
+   bool audio_enable_menu_ok         = settings->bools.audio_enable_menu_ok;
+   bool audio_enable_menu_cancel     = settings->bools.audio_enable_menu_cancel;
+   bool audio_enable_menu_notice     = settings->bools.audio_enable_menu_notice;
+   bool audio_enable_menu_bgm        = settings->bools.audio_enable_menu_bgm;
    const char *path_ok               = NULL;
    const char *path_cancel           = NULL;
    const char *path_notice           = NULL;
@@ -21316,7 +21374,7 @@ void audio_driver_load_menu_sounds(void)
 
    fill_pathname_join(
          sounds_fallback_path,
-         settings->paths.directory_assets,
+         dir_assets,
          "sounds",
          PATH_MAX_LENGTH * sizeof(char));
 
@@ -21372,13 +21430,13 @@ void audio_driver_load_menu_sounds(void)
       }
    }
 
-   if (path_ok && settings->bools.audio_enable_menu_ok)
+   if (path_ok && audio_enable_menu_ok)
       task_push_audio_mixer_load(path_ok, NULL, NULL, true, AUDIO_MIXER_SLOT_SELECTION_MANUAL, AUDIO_MIXER_SYSTEM_SLOT_OK);
-   if (path_cancel && settings->bools.audio_enable_menu_cancel)
+   if (path_cancel && audio_enable_menu_cancel)
       task_push_audio_mixer_load(path_cancel, NULL, NULL, true, AUDIO_MIXER_SLOT_SELECTION_MANUAL, AUDIO_MIXER_SYSTEM_SLOT_CANCEL);
-   if (path_notice && settings->bools.audio_enable_menu_notice)
+   if (path_notice && audio_enable_menu_notice)
       task_push_audio_mixer_load(path_notice, NULL, NULL, true, AUDIO_MIXER_SLOT_SELECTION_MANUAL, AUDIO_MIXER_SYSTEM_SLOT_NOTICE);
-   if (path_bgm && settings->bools.audio_enable_menu_bgm)
+   if (path_bgm && audio_enable_menu_bgm)
       task_push_audio_mixer_load(path_bgm, audio_driver_load_menu_bgm_callback, NULL, true, AUDIO_MIXER_SLOT_SELECTION_MANUAL, AUDIO_MIXER_SYSTEM_SLOT_BGM);
 
 end:
@@ -21539,8 +21597,8 @@ bool audio_driver_disable_callback(void)
 static void audio_driver_monitor_set_rate(void)
 {
    settings_t *settings       = configuration_settings;
-   double new_src_ratio       = (double)settings->uints.audio_out_rate /
-      audio_driver_input;
+   unsigned audio_out_rate    = settings->uints.audio_out_rate;
+   double new_src_ratio       = (double)audio_out_rate / audio_driver_input;
 
    audio_source_ratio_original = new_src_ratio;
    audio_source_ratio_current  = new_src_ratio;
@@ -22216,8 +22274,9 @@ static bool video_driver_init_internal(bool *video_is_threaded)
    static uint16_t dummy_pixels[32]       = {0};
    settings_t *settings                   = configuration_settings;
    struct retro_game_geometry *geom       = &video_driver_av_info.geometry;
+   const char *path_softfilter_plugin     = settings->paths.path_softfilter_plugin;
 
-   if (!string_is_empty(settings->paths.path_softfilter_plugin))
+   if (!string_is_empty(path_softfilter_plugin))
       video_driver_init_filter(video_driver_pix_fmt);
 
    max_dim   = MAX(geom->max_width, geom->max_height);
@@ -22787,8 +22846,9 @@ bool video_driver_supports_viewport_read(void)
 
 bool video_driver_prefer_viewport_read(void)
 {
-   settings_t *settings = configuration_settings;
-   return settings->bools.video_gpu_screenshot ||
+   settings_t *settings      = configuration_settings;
+   bool video_gpu_screenshot = settings->bools.video_gpu_screenshot;
+   return video_gpu_screenshot ||
       (video_driver_is_hw_context() && !current_video->read_frame_raw);
 }
 
@@ -23015,8 +23075,9 @@ static bool video_driver_find_driver(void)
             RARCH_LOG("[Video]: \"%s\" saved as cached driver.\n", settings->arrays.video_driver);
             strlcpy(cached_video_driver, settings->arrays.video_driver,
                   sizeof(cached_video_driver));
-            strlcpy(settings->arrays.video_driver, "vulkan",
-                  sizeof(settings->arrays.video_driver));
+            configuration_set_string(settings,
+                  settings->arrays.video_driver,
+                  "vulkan");
          }
          current_video = &video_vulkan;
       }
@@ -23036,13 +23097,13 @@ static bool video_driver_find_driver(void)
                   sizeof(cached_video_driver));
 #if defined(HAVE_OPENGL_CORE)
             RARCH_LOG("[Video]: Forcing \"glcore\" driver.\n");
-            strlcpy(settings->arrays.video_driver, "glcore",
-                  sizeof(settings->arrays.video_driver));
+            configuration_set_string(settings,
+                  settings->arrays.video_driver, "glcore");
             current_video = &video_gl_core;
 #else
             RARCH_LOG("[Video]: Forcing \"gl\" driver.\n");
-            strlcpy(settings->arrays.video_driver, "gl",
-                  sizeof(settings->arrays.video_driver));
+            configuration_set_string(settings,
+                  settings->arrays.video_driver, "gl");
             current_video = &video_gl2;
 #endif
          }
@@ -23975,9 +24036,9 @@ bool video_context_driver_find_prev_driver(void)
 
    if (i > 0)
    {
-      strlcpy(settings->arrays.video_context_driver,
-            gfx_ctx_drivers[i - 1]->ident,
-            sizeof(settings->arrays.video_context_driver));
+      configuration_set_string(settings,
+      settings->arrays.video_context_driver,
+            gfx_ctx_drivers[i - 1]->ident);
       return true;
    }
 
@@ -23998,9 +24059,9 @@ bool video_context_driver_find_next_driver(void)
 
    if (i >= 0 && gfx_ctx_drivers[i + 1])
    {
-      strlcpy(settings->arrays.video_context_driver,
-            gfx_ctx_drivers[i + 1]->ident,
-            sizeof(settings->arrays.video_context_driver));
+      configuration_set_string(settings,
+      settings->arrays.video_context_driver,
+            gfx_ctx_drivers[i + 1]->ident);
       return true;
    }
 
@@ -25009,8 +25070,9 @@ void driver_set_nonblock_state(void)
  **/
 static void drivers_init(int flags)
 {
-   bool video_is_threaded = false;
-   settings_t *settings   = configuration_settings;
+   bool video_is_threaded   = false;
+   settings_t *settings     = configuration_settings;
+   bool menu_enable_widgets = settings->bools.menu_enable_widgets;
 
 #ifdef HAVE_MENU
    /* By default, we want the menu to persist through driver reinits. */
@@ -25094,8 +25156,7 @@ static void drivers_init(int flags)
    core_info_init_current_core();
 
 #if defined(HAVE_GFX_WIDGETS)
-   if (settings->bools.menu_enable_widgets
-      && video_driver_has_widgets())
+   if (menu_enable_widgets && video_driver_has_widgets())
    {
       bool video_is_fullscreen = settings->bools.video_fullscreen ||
             rarch_force_fullscreen;
@@ -26704,8 +26765,9 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
                      settings_t *settings = configuration_settings;
 
                      path_clear(RARCH_PATH_CORE);
-                     strlcpy(settings->paths.directory_libretro, optarg,
-                           sizeof(settings->paths.directory_libretro));
+
+                     configuration_set_string(settings,
+                     settings->paths.directory_libretro, optarg);
 
                      retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO, NULL);
                      retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO_DIRECTORY, NULL);
@@ -26779,8 +26841,9 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
                         RARCH_OVERRIDE_SETTING_NETPLAY_IP_ADDRESS, NULL);
                   if (!in_netplay)
                      netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_CLIENT, NULL);
-                  strlcpy(settings->paths.netplay_server, optarg,
-                        sizeof(settings->paths.netplay_server));
+
+                  configuration_set_string(settings,
+                  settings->paths.netplay_server, optarg);
                }
                break;
 
@@ -26871,8 +26934,8 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
 
                   has_set_username = true;
 
-                  strlcpy(settings->paths.username, optarg,
-                        sizeof(settings->paths.username));
+                  configuration_set_string(settings,
+                  settings->paths.username, optarg);
                }
                break;
 
@@ -29863,8 +29926,9 @@ void retroarch_force_video_driver_fallback(const char *driver)
    settings_t *settings        = configuration_settings;
    ui_msg_window_t *msg_window = NULL;
 
-   strlcpy(settings->arrays.video_driver,
-         driver, sizeof(settings->arrays.video_driver));
+   configuration_set_string(settings,
+         settings->arrays.video_driver,
+         driver);
 
    command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
 
