@@ -670,9 +670,10 @@ void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
    unsigned i;
    const char *title;
    char title_noext[255];
-   char *console_name   = NULL;
-   settings_t *settings = config_get_ptr();
-   size_t list_size     = ozone_list_get_size(ozone, MENU_LIST_HORIZONTAL);
+   char *console_name                = NULL;
+   settings_t *settings              = config_get_ptr();
+   bool ozone_truncate_playlist_name = settings->bools.ozone_truncate_playlist_name;
+   size_t list_size                  = ozone_list_get_size(ozone, MENU_LIST_HORIZONTAL);
 
    for (i = 0; i < list_size; i++)
    {
@@ -780,14 +781,15 @@ void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
          fill_pathname_base_noext(title_noext, title, sizeof(title_noext));
 
          console_name = title_noext;
+
          /* Format : "Vendor - Console"
             Remove everything before the hyphen
             and the subsequent space */
-         if (settings->bools.ozone_truncate_playlist_name)
+         if (ozone_truncate_playlist_name)
          {
             bool hyphen_found = false;
 
-            while (true)
+            for (;;)
             {
                /* Check for "- " */
                if (*console_name == '-' && *(console_name + 1) == ' ')
