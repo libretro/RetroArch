@@ -661,7 +661,7 @@ static void *gfx_ctx_wgl_init(video_frame_info_t *video_info, void *video_driver
    win32_window_reset();
    win32_monitor_init();
 
-   wndclass.lpfnWndProc   = WndProcGL;
+   wndclass.lpfnWndProc   = WndProcWGL;
    if (!win32_window_init(&wndclass, true, NULL))
       goto error;
 
