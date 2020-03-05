@@ -27,7 +27,6 @@
 #include <lists/string_list.h>
 #include <features/features_cpu.h>
 
-#include "../../menu_input.h"
 #include "../../../gfx/gfx_animation.h"
 
 #include "../../../input/input_osk.h"

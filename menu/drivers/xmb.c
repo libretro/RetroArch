@@ -1390,7 +1390,8 @@ static void xmb_selection_pointer_changed(
       }
       else
       {
-         settings_t *settings = config_get_ptr();
+         settings_t                     *settings = config_get_ptr();
+         unsigned menu_xmb_animation_move_up_down = settings->uints.menu_xmb_animation_move_up_down;
 
          /* Move up/down animation */
          gfx_animation_ctx_entry_t anim_entry;
@@ -1400,7 +1401,7 @@ static void xmb_selection_pointer_changed(
          anim_entry.tag          = tag;
          anim_entry.cb           = NULL;
 
-         switch (settings->uints.menu_xmb_animation_move_up_down)
+         switch (menu_xmb_animation_move_up_down)
          {
             case 0:
                anim_entry.duration     = XMB_DELAY;
@@ -4300,6 +4301,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    float fade_tab_icons_x_threshold        = 0.0f;
    bool menu_core_enable                   = settings->bools.menu_core_enable;
    float thumbnail_scale_factor            = (float)settings->uints.menu_xmb_thumbnail_scale_factor / 100.0f;
+   bool menu_xmb_vertical_thumbnails       = settings->bools.menu_xmb_vertical_thumbnails;
 
    if (!xmb)
       return;
@@ -4451,7 +4453,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
       {
          /* Check if user has selected vertically
           * stacked thumbnails */
-         if (settings->bools.menu_xmb_vertical_thumbnails)
+         if (menu_xmb_vertical_thumbnails)
          {
             /* Right + left thumbnails, right side */
             if (show_right_thumbnail && show_left_thumbnail)
@@ -5198,6 +5200,7 @@ static void *xmb_init(void **userdata, bool video_is_threaded)
 
    xmb->system_tab_end                = 0;
    xmb->tabs[xmb->system_tab_end]     = XMB_SYSTEM_TAB_MAIN;
+
    if (settings->bools.menu_content_show_settings && !settings->bools.kiosk_mode_enable)
       xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_SETTINGS;
    if (settings->bools.menu_content_show_favorites)

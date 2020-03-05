@@ -26,9 +26,6 @@ typedef struct ozone_handle ozone_handle_t;
 
 #include "../../gfx/gfx_thumbnail_path.h"
 #include "../../gfx/gfx_thumbnail.h"
-#include "../../menu_driver.h"
-
-#include "../../../retroarch.h"
 
 #define ANIMATION_PUSH_ENTRY_DURATION  166
 #define ANIMATION_CURSOR_DURATION      133

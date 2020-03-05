@@ -35,11 +35,8 @@
 #include <formats/image.h>
 #include <math/float_minmax.h>
 
-#include "../../menu_driver.h"
 #include "../../../gfx/gfx_animation.h"
 #include "../../../gfx/gfx_display.h"
-#include "../../menu_input.h"
-#include "../../playlist.h"
 #include "../../runtime_file.h"
 
 #include "../../input/input_osk.h"
@@ -47,14 +44,11 @@
 #include "../../../configuration.h"
 #include "../../../content.h"
 #include "../../../core_info.h"
-#include "../../../core.h"
 #include "../../../verbosity.h"
-#include "../../../tasks/tasks_internal.h"
-#include "../../../dynamic.h"
 
 ozone_node_t *ozone_alloc_node(void)
 {
-   ozone_node_t *node = (ozone_node_t*)malloc(sizeof(*node));
+   ozone_node_t *node   = (ozone_node_t*)malloc(sizeof(*node));
 
    node->height         = 0;
    node->position_y     = 0;
