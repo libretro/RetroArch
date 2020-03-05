@@ -121,23 +121,23 @@ void disk_control_get_image_label(
 /* Sets the eject state of the virtual disk tray */
 bool disk_control_set_eject_state(
       disk_control_interface_t *disk_control,
-      bool eject, bool verbose);
+      bool eject, bool verbosity);
 
 /* Sets currently selected disk index
  * NOTE: Will fail if disk is not currently ejected */
 bool disk_control_set_index(
       disk_control_interface_t *disk_control,
-      unsigned index, bool verbose);
+      unsigned index, bool verbosity);
 
 /* Increments selected disk index */
 bool disk_control_set_index_next(
       disk_control_interface_t *disk_control,
-      bool verbose);
+      bool verbosity);
 
 /* Decrements selected disk index */
 bool disk_control_set_index_prev(
       disk_control_interface_t *disk_control,
-      bool verbose);
+      bool verbosity);
 
 /* Appends specified image file to disk image list */
 bool disk_control_append_image(
