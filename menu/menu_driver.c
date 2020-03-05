@@ -2004,8 +2004,9 @@ static void bundle_decompressed(retro_task_t *task,
       free(dec);
    }
 
-   settings->uints.bundle_assets_extract_last_version =
-      settings->uints.bundle_assets_extract_version_current;
+   configuration_set_uint(settings,
+         settings->uints.bundle_assets_extract_last_version,
+         settings->uints.bundle_assets_extract_version_current);
 
    configuration_set_bool(settings, settings->bools.bundle_finished, true);
 
