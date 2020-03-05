@@ -34,7 +34,6 @@
 
 #include "../common/gl_core_common.h"
 
-#include "../../retroarch.h"
 #include "../../verbosity.h"
 #include "../../msg_hash.h"
 
