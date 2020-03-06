@@ -712,7 +712,7 @@ static bool gfx_ctx_drm_set_video_mode(void *data,
 #endif
    gfx_ctx_drm_data_t *drm     = (gfx_ctx_drm_data_t*)data;
    settings_t *settings        = config_get_ptr();
-   bool black_frame_insertion  = settings->bools.black_frame_insertion;
+   bool black_frame_insertion  = settings->bools.video_black_frame_insertion;
    float video_refresh_rate    = settings->floats.video_refresh_rate;
 
    if (!drm)
