@@ -1540,7 +1540,6 @@ static void gfx_ctx_wl_set_swap_interval(void *data, int swap_interval)
 }
 
 static bool gfx_ctx_wl_set_video_mode(void *data,
-      video_frame_info_t *video_info,
       unsigned width, unsigned height,
       bool fullscreen)
 {

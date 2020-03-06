@@ -121,12 +121,13 @@ static bool gfx_ctx_khr_display_set_resize(void *data,
 }
 
 static bool gfx_ctx_khr_display_set_video_mode(void *data,
-      video_frame_info_t *video_info,
       unsigned width, unsigned height,
       bool fullscreen)
 {
    struct vulkan_display_surface_info info;
-   khr_display_ctx_data_t *khr = (khr_display_ctx_data_t*)data;
+   khr_display_ctx_data_t *khr    = (khr_display_ctx_data_t*)data;
+   settings_t *settings           = config_get_ptr();
+   unsigned video_monitor_index   = settings->uints.video_monitor_index;
 
    if (!fullscreen)
    {
@@ -136,7 +137,7 @@ static bool gfx_ctx_khr_display_set_video_mode(void *data,
 
    info.width         = width;
    info.height        = height;
-   info.monitor_index = video_info->monitor_index;
+   info.monitor_index = video_monitor_index;
 
    if (!vulkan_surface_create(&khr->vk, VULKAN_WSI_DISPLAY, &info, NULL,
             0, 0, khr->swap_interval))

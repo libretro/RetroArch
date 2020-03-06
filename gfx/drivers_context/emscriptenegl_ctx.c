@@ -245,12 +245,9 @@ error:
 }
 
 static bool gfx_ctx_emscripten_set_video_mode(void *data,
-      video_frame_info_t *video_info,
       unsigned width, unsigned height,
       bool fullscreen)
 {
-   (void)data;
-
    if (g_egl_inited)
       return false;
 

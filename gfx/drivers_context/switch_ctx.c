@@ -148,9 +148,8 @@ static void switch_ctx_check_window(void *data, bool *quit,
 }
 
 static bool switch_ctx_set_video_mode(void *data,
-                                      video_frame_info_t *video_info,
-                                      unsigned width, unsigned height,
-                                      bool fullscreen)
+      unsigned width, unsigned height,
+      bool fullscreen)
 {
     /* Create an EGL rendering context */
     static const EGLint contextAttributeList[] =

@@ -24341,15 +24341,10 @@ bool video_context_driver_get_ident(gfx_ctx_ident_t *ident)
 
 bool video_context_driver_set_video_mode(gfx_ctx_mode_t *mode_info)
 {
-   video_frame_info_t video_info;
-
    if (!current_video_context.set_video_mode)
       return false;
-
-   video_driver_build_info(&video_info);
-
    return current_video_context.set_video_mode(
-         video_context_data, &video_info, mode_info->width,
+         video_context_data, mode_info->width,
          mode_info->height, mode_info->fullscreen);
 }
 

@@ -262,7 +262,6 @@ static EGLint *xegl_fill_attribs(xegl_ctx_data_t *xegl, EGLint *attr)
 static void gfx_ctx_xegl_set_swap_interval(void *data, int swap_interval);
 
 static bool gfx_ctx_xegl_set_video_mode(void *data,
-      video_frame_info_t *video_info,
       unsigned width, unsigned height,
       bool fullscreen)
 {
@@ -279,7 +278,9 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
    char *wm_name                  = NULL;
    xegl_ctx_data_t *xegl          = (xegl_ctx_data_t*)data;
    settings_t *settings           = config_get_ptr();
-   bool video_disable_composition = settings ? settings->bools.video_disable_composition : false;
+   bool video_disable_composition = settings->bools.video_disable_composition;
+   bool windowed_full             = settings->bools.video_windowed_fullscreen;
+   unsigned video_monitor_index   = settings->uints.video_monitor_index;
 
    int (*old_handler)(Display*, XErrorEvent*) = NULL;
 
@@ -306,9 +307,9 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
       ButtonPressMask | ButtonReleaseMask | KeyReleaseMask;
    swa.override_redirect = False;
 
-   if (fullscreen && !video_info->windowed_fullscreen)
+   if (fullscreen && !windowed_fullscreen)
    {
-      if (x11_enter_fullscreen(video_info, g_x11_dpy, width, height))
+      if (x11_enter_fullscreen(g_x11_dpy, width, height))
       {
          xegl->should_reset_mode = true;
          true_full = true;
@@ -332,8 +333,8 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
    if (!x11_has_net_wm_fullscreen(g_x11_dpy) && true_full)
       swa.override_redirect = True;
 
-   if (video_info->monitor_index)
-      g_x11_screen = video_info->monitor_index - 1;
+   if (video_monitor_index)
+      g_x11_screen = video_monitor_index - 1;
 
 #ifdef HAVE_XINERAMA
    if (fullscreen || g_x11_screen != 0)

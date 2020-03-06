@@ -247,7 +247,6 @@ static void osmesa_ctx_swap_interval(void *data, int interval)
 }
 
 static bool osmesa_ctx_set_video_mode(void *data,
-      video_frame_info_t *video_info,
       unsigned width, unsigned height,
       bool fullscreen)
 {

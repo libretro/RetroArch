@@ -223,7 +223,6 @@ static void gfx_ctx_uwp_destroy(void *data)
 }
 
 static bool gfx_ctx_uwp_set_video_mode(void *data,
-      video_frame_info_t *video_info,
       unsigned width, unsigned height,
       bool fullscreen)
 {

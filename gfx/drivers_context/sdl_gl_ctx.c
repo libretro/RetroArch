@@ -172,21 +172,23 @@ static void sdl_ctx_swap_interval(void *data, int interval)
 }
 
 static bool sdl_ctx_set_video_mode(void *data,
-      video_frame_info_t *video_info,
       unsigned width, unsigned height,
       bool fullscreen)
 {
    unsigned fsflag         = 0;
    gfx_ctx_sdl_data_t *sdl = (gfx_ctx_sdl_data_t*)data;
+   settings_t *settings    = config_get_ptr();
+   bool windowed_fullscreen= settings->bools.video_windowed_fullscreen;
+   unsigned video_monitor_index = settings->uints.video_monitor_index;
 
-   sdl->g_new_width  = width;
-   sdl->g_new_height = height;
+   sdl->g_new_width        = width;
+   sdl->g_new_height       = height;
 
 #ifdef HAVE_SDL2
 
    if (fullscreen)
    {
-      if (video_info->windowed_fullscreen)
+      if (windowed_fullscreen)
          fsflag = SDL_WINDOW_FULLSCREEN_DESKTOP;
       else
          fsflag = SDL_WINDOW_FULLSCREEN;
@@ -201,7 +203,7 @@ static bool sdl_ctx_set_video_mode(void *data,
    }
    else
    {
-      unsigned display = video_info->monitor_index;
+      unsigned display = video_monitor_index;
 
       sdl->g_win = SDL_CreateWindow("", SDL_WINDOWPOS_UNDEFINED_DISPLAY(display),
                                SDL_WINDOWPOS_UNDEFINED_DISPLAY(display),

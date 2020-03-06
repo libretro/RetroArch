@@ -689,7 +689,6 @@ static void *cocoagl_gfx_ctx_get_context_data(void *data)
 #endif
 
 static bool cocoagl_gfx_ctx_set_video_mode(void *data,
-      video_frame_info_t *video_info,
       unsigned width, unsigned height, bool fullscreen)
 {
 #if defined(HAVE_COCOA_METAL)

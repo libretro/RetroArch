@@ -697,7 +697,6 @@ error:
 #endif
 
 static bool gfx_ctx_drm_set_video_mode(void *data,
-      video_frame_info_t *video_info,
       unsigned width, unsigned height,
       bool fullscreen)
 {
@@ -707,6 +706,9 @@ static bool gfx_ctx_drm_set_video_mode(void *data,
    struct drm_fb *fb           = NULL;
 #endif
    gfx_ctx_drm_data_t *drm     = (gfx_ctx_drm_data_t*)data;
+   settings_t *settings        = config_get_ptr();
+   bool black_frame_insertion  = settings->bools.black_frame_insertion;
+   float video_refresh_rate    = settings->floats.video_refresh_rate;
 
    if (!drm)
       return false;
@@ -717,7 +719,7 @@ static bool gfx_ctx_drm_set_video_mode(void *data,
    /* If we use black frame insertion,
     * we fake a 60 Hz monitor for 120 Hz one,
     * etc, so try to match that. */
-   refresh_mod = video_info->black_frame_insertion
+   refresh_mod = black_frame_insertion
       ? 0.5f : 1.0f;
 
    /* Find desired video mode, and use that.
@@ -743,7 +745,7 @@ static bool gfx_ctx_drm_set_video_mode(void *data,
             continue;
 
          diff = fabsf(refresh_mod * g_drm_connector->modes[i].vrefresh
-               - video_info->refresh_rate);
+               - video_refresh_rate);
 
          if (!g_drm_mode || diff < minimum_fps_diff)
          {

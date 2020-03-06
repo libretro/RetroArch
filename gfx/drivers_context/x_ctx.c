@@ -609,13 +609,11 @@ error:
 }
 
 static bool gfx_ctx_x_set_video_mode(void *data,
-      video_frame_info_t *video_info,
       unsigned width, unsigned height,
       bool fullscreen)
 {
    XEvent event;
    bool true_full            = false;
-   bool windowed_full        = false;
    int val                   = 0;
    int x_off                 = 0;
    int y_off                 = 0;
@@ -631,14 +629,14 @@ static bool gfx_ctx_x_set_video_mode(void *data,
       * ((unsigned)-1 / 100.0);
    bool disable_composition  = settings->bools.video_disable_composition;
    bool show_decorations     = settings->bools.video_window_show_decorations;
+   bool windowed_full        = settings->bools.video_windowed_fullscreen;
+   unsigned video_monitor_index = settings->uints.video_monitor_index;
 
    frontend_driver_install_signal_handler();
 
    if (!x)
       return false;
 
-   windowed_full = video_info->windowed_fullscreen;
-   true_full = false;
 
    switch (x_api)
    {
@@ -676,7 +674,7 @@ static bool gfx_ctx_x_set_video_mode(void *data,
 
    if (fullscreen && !windowed_full)
    {
-      if (x11_enter_fullscreen(video_info, g_x11_dpy, width, height))
+      if (x11_enter_fullscreen(g_x11_dpy, width, height))
       {
          x->g_should_reset_mode = true;
          true_full = true;
@@ -700,8 +698,8 @@ static bool gfx_ctx_x_set_video_mode(void *data,
    if (!x11_has_net_wm_fullscreen(g_x11_dpy) && true_full)
       swa.override_redirect = True;
 
-   if (video_info->monitor_index)
-      g_x11_screen = video_info->monitor_index - 1;
+   if (video_monitor_index)
+      g_x11_screen = video_monitor_index - 1;
 
 #ifdef HAVE_XINERAMA
    if (fullscreen || g_x11_screen != 0)
