@@ -2319,7 +2319,7 @@ bool gfx_animation_ctl(enum gfx_animation_ctl_state state, void *data)
             da_free(anim.list);
             da_free(anim.pending);
 
-            memset(&anim, 0, sizeof(gfx_animation_t));
+            memset(&anim, 0, sizeof(anim));
          }
          p_anim->cur_time            = 0;
          p_anim->old_time            = 0;
