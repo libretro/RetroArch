@@ -63,7 +63,7 @@ static bool gfx_display_framebuf_dirty          = false;
 
 static enum menu_driver_id_type menu_driver_id  = MENU_DRIVER_ID_UNKNOWN;
 
-static video_coord_array_t disp_ca;
+static video_coord_array_t dispca;
 
 static void *gfx_display_null_get_default_mvp(video_frame_info_t *video_info) { return NULL; }
 static void gfx_display_null_blend_begin(video_frame_info_t *video_info) { }
@@ -600,18 +600,18 @@ static bool gfx_display_check_compatibility(
    return false;
 }
 
+video_coord_array_t *gfx_display_get_coords_array(void)
+{
+   return &dispca;
+}
+
 /* Reset the display's coordinate array vertices.
  * NOTE: Not every display driver uses this. */
 void gfx_display_coords_array_reset(void)
 {
-   disp_ca.coords.vertices = 0;
+   video_coord_array_t *p_dispca = gfx_display_get_coords_array();
+   p_dispca->coords.vertices = 0;
 }
-
-video_coord_array_t *gfx_display_get_coords_array(void)
-{
-   return &disp_ca;
-}
-
 
 /* Begin blending operation */
 void gfx_display_blend_begin(video_frame_info_t *video_info)
@@ -1282,7 +1282,7 @@ void gfx_display_push_quad(
    float vertex[8];
    video_coords_t coords;
    const float *coord_draw_ptr   = NULL;
-   video_coord_array_t       *ca = &disp_ca;
+   video_coord_array_t *p_dispca = gfx_display_get_coords_array();
 
    vertex[0]             = x1 / (float)width;
    vertex[1]             = y1 / (float)height;
@@ -1302,14 +1302,14 @@ void gfx_display_push_quad(
    coords.lut_tex_coord  = coord_draw_ptr;
    coords.vertices       = 3;
 
-   video_coord_array_append(ca, &coords, 3);
+   video_coord_array_append(p_dispca, &coords, 3);
 
    coords.color         += 4;
    coords.vertex        += 2;
    coords.tex_coord     += 2;
    coords.lut_tex_coord += 2;
 
-   video_coord_array_append(ca, &coords, 3);
+   video_coord_array_append(p_dispca, &coords, 3);
 }
 
 void gfx_display_snow(
@@ -1724,7 +1724,7 @@ void gfx_display_allocate_white_texture(void)
 
 void gfx_display_free(void)
 {
-   video_coord_array_free(&disp_ca);
+   video_coord_array_free(&dispca);
    gfx_animation_ctl(MENU_ANIMATION_CTL_DEINIT, NULL);
 
    gfx_display_msg_force       = false;
@@ -1738,8 +1738,11 @@ void gfx_display_free(void)
 
 void gfx_display_init(void)
 {
-   gfx_display_has_windowed = video_driver_has_windowed();
-   disp_ca.allocated    =  0;
+   video_coord_array_t *p_dispca = gfx_display_get_coords_array();
+
+   gfx_display_has_windowed      = video_driver_has_windowed();
+
+   p_dispca->allocated           =  0;
 }
 
 
