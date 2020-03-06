@@ -38,13 +38,6 @@
 /* Menu shader */
 
 static struct video_shader *menu_driver_shader = NULL;
-/* indicative of whether shader was modified from the menus: */
-static bool menu_driver_shader_modified        = true;
-
-void menu_shader_set_modified(bool modified)
-{
-   menu_driver_shader_modified = modified;
-}
 
 static enum rarch_shader_type shader_types[] =
 {
@@ -136,7 +129,7 @@ bool menu_shader_manager_init(void)
       if (video_shader_read_conf_preset(conf, menu_shader))
          video_shader_resolve_parameters(conf, menu_shader);
 
-      menu_driver_shader_modified = false;
+      menu_shader->modified = false;
 
       config_file_free(conf);
    }
@@ -247,7 +240,7 @@ static bool menu_shader_manager_save_preset_internal(
    if (type == RARCH_SHADER_NONE)
       return false;
 
-   if (menu_driver_shader_modified)
+   if (shader->modified)
       save_reference = false;
 
    if (!string_is_empty(basename))
@@ -556,7 +549,7 @@ int menu_shader_manager_clear_num_passes(struct video_shader *shader)
 
    video_shader_resolve_parameters(NULL, shader);
 
-   menu_driver_shader_modified = true;
+   shader->modified = true;
 
    return 0;
 }
@@ -574,7 +567,7 @@ int menu_shader_manager_clear_parameter(struct video_shader *shader,
    param->current = MIN(MAX(param->minimum,
             param->current), param->maximum);
 
-   menu_driver_shader_modified = true;
+   shader->modified = true;
 
    return 0;
 }
@@ -590,7 +583,7 @@ int menu_shader_manager_clear_pass_filter(struct video_shader *shader,
 
    shader_pass->filter = RARCH_FILTER_UNSPEC;
 
-   menu_driver_shader_modified = true;
+   shader->modified = true;
 
    return 0;
 }
@@ -608,7 +601,7 @@ void menu_shader_manager_clear_pass_scale(struct video_shader *shader,
    shader_pass->fbo.scale_y = 0;
    shader_pass->fbo.valid   = false;
 
-   menu_driver_shader_modified = true;
+   shader->modified         = true;
 }
 
 void menu_shader_manager_clear_pass_path(struct video_shader *shader,
@@ -620,7 +613,7 @@ void menu_shader_manager_clear_pass_path(struct video_shader *shader,
    if (shader_pass)
       *shader_pass->source.path = '\0';
 
-   menu_driver_shader_modified = true;
+   shader->modified = true;
 }
 
 /**

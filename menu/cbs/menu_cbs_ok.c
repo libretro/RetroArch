@@ -1731,7 +1731,7 @@ static int generic_action_ok(const char *path,
                      sizeof(shader_pass->source.path));
                video_shader_resolve_parameters(NULL, shader);
 
-               menu_shader_set_modified(true);
+               shader->modified         = true;
             }
          }
 #endif
@@ -5733,7 +5733,7 @@ static int action_ok_push_dropdown_item_video_shader_num_pass(const char *path,
 
    video_shader_resolve_parameters(NULL, shader);
 
-   menu_shader_set_modified(true);
+   shader->modified           = true;
 
    return action_cancel_pop_default(NULL, NULL, 0, 0);
 #else
@@ -5764,7 +5764,7 @@ static int action_ok_push_dropdown_item_video_shader_param_generic(const char *p
    param_prev->current  = val;
    param_menu->current  = param_prev->current;
 
-   menu_shader_set_modified(true);
+   shader->modified     = true;
 
    return action_cancel_pop_default(NULL, NULL, 0, 0);
 #else

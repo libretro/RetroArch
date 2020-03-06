@@ -5527,7 +5527,7 @@ bool retroarch_apply_shader(enum rarch_shader_type type, const char *preset_path
       /* reflect in shader manager */
       if (menu_shader_manager_set_preset(menu_shader_get(), type, preset_path, false))
          if (!string_is_empty(preset_path))
-            menu_shader_set_modified(false);
+            menu_shader_get()->modified = false;
 #endif
 
       if (message)

@@ -141,8 +141,6 @@ bool menu_shader_manager_auto_preset_exists(
       const char *dir_video_shader,
       const char *dir_menu_config);
 
-void menu_shader_set_modified(bool modified);
-
 RETRO_END_DECLS
 
 #endif

@@ -265,7 +265,7 @@ void ShaderParamsDialog::onFilterComboBoxIndexChanged(int)
             if (video_shader)
                video_shader->pass[pass].filter = filter;
 
-            menu_shader_set_modified(true);
+            video_shader->modified = true;
 
             command_event(CMD_EVENT_SHADERS_APPLY_CHANGES, NULL);
          }
@@ -321,7 +321,7 @@ void ShaderParamsDialog::onScaleComboBoxIndexChanged(int)
                video_shader->pass[pass].fbo.valid = scale;
             }
 
-            menu_shader_set_modified(true);
+            video_shader->modified = true;
 
             command_event(CMD_EVENT_SHADERS_APPLY_CHANGES, NULL);
          }
@@ -399,7 +399,7 @@ void ShaderParamsDialog::onShaderPassMoveDownClicked()
       memcpy(&menu_shader->pass[pass + 1], tempPass.pass, sizeof(struct video_shader_pass));
    }
 
-   menu_shader_set_modified(true);
+   menu_shader->modified = true;
 
    reload();
 }
@@ -474,7 +474,7 @@ void ShaderParamsDialog::onShaderPassMoveUpClicked()
       memcpy(&menu_shader->pass[pass], tempPass.pass, sizeof(struct video_shader_pass));
    }
 
-   menu_shader_set_modified(true);
+   menu_shader->modified = true;
 
    reload();
 }
@@ -560,9 +560,9 @@ void ShaderParamsDialog::onShaderResetPass(int pass)
 
          param->current = param->initial;
       }
-   }
 
-   menu_shader_set_modified(true);
+      video_shader->modified = true;
+   }
 
    reload();
 }
@@ -606,9 +606,9 @@ void ShaderParamsDialog::onShaderResetParameter(QString parameter)
 
       if (param)
          param->current = param->initial;
-   }
 
-   menu_shader_set_modified(true);
+      video_shader->modified = true;
+   }
 
    reload();
 }
@@ -665,9 +665,8 @@ void ShaderParamsDialog::onShaderAddPassClicked()
    else
       return;
 
-   menu_shader_set_modified(true);
-
-   shader_pass = &menu_shader->pass[menu_shader->passes - 1];
+   menu_shader->modified = true;
+   shader_pass           = &menu_shader->pass[menu_shader->passes - 1];
 
    if (!shader_pass)
       return;
@@ -841,9 +840,8 @@ void ShaderParamsDialog::onShaderRemoveAllPassesClicked()
    if (!menu_shader)
       return;
 
-   menu_shader->passes = 0;
-
-   menu_shader_set_modified(true);
+   menu_shader->passes   = 0;
+   menu_shader->modified = true;
 
    onShaderApplyClicked();
 }
@@ -890,7 +888,7 @@ void ShaderParamsDialog::onShaderRemovePass(int pass)
 
    menu_shader->passes--;
 
-   menu_shader_set_modified(true);
+   menu_shader->modified = true;
 
    onShaderApplyClicked();
 }
@@ -1427,7 +1425,7 @@ void ShaderParamsDialog::onShaderParamCheckBoxClicked()
             param->current = (checkBox->isChecked() ? param->maximum : param->minimum);
       }
 
-      menu_shader_set_modified(true);
+      video_shader->modified = true;
    }
 }
 
@@ -1492,9 +1490,10 @@ void ShaderParamsDialog::onShaderParamSliderValueChanged(int)
             newValue = round(newValue / param->step) * param->step;
             param->current = newValue;
          }
+
+         video_shader->modified = true;
       }
 
-      menu_shader_set_modified(true);
    }
 
    if (spinBoxVariant.isValid())
@@ -1599,9 +1598,9 @@ void ShaderParamsDialog::onShaderParamSpinBoxValueChanged(int value)
             slider->setValue(newValue);
             slider->blockSignals(false);
          }
-      }
 
-      menu_shader_set_modified(true);
+         video_shader->modified = true;
+      }
    }
 }
 
@@ -1682,8 +1681,8 @@ void ShaderParamsDialog::onShaderParamDoubleSpinBoxValueChanged(double value)
             slider->setValue(newValue);
             slider->blockSignals(false);
          }
-      }
 
-      menu_shader_set_modified(true);
+         video_shader->modified = true;
+      }
    }
 }
