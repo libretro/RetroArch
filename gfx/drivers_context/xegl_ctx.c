@@ -279,7 +279,7 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
    xegl_ctx_data_t *xegl          = (xegl_ctx_data_t*)data;
    settings_t *settings           = config_get_ptr();
    bool video_disable_composition = settings->bools.video_disable_composition;
-   bool windowed_full             = settings->bools.video_windowed_fullscreen;
+   bool windowed_fullscreen       = settings->bools.video_windowed_fullscreen;
    unsigned video_monitor_index   = settings->uints.video_monitor_index;
 
    int (*old_handler)(Display*, XErrorEvent*) = NULL;
