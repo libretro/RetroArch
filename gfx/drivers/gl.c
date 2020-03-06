@@ -485,7 +485,6 @@ static void gl2_set_viewport(gl_t *gl,
 static void gl2_renderchain_render(
       gl_t *gl,
       gl2_renderchain_data_t *chain,
-      video_frame_info_t *video_info,
       uint64_t frame_count,
       const struct video_tex_info *tex_info,
       const struct video_tex_info *feedback_info)
@@ -500,8 +499,8 @@ static void gl2_renderchain_render(
    GLfloat yamt                           = 0.0f;
    unsigned mip_level                     = 0;
    unsigned fbo_tex_info_cnt              = 0;
-   unsigned width                         = video_info->width;
-   unsigned height                        = video_info->height;
+   unsigned width                         = gl->video_width;
+   unsigned height                        = gl->video_height;
 
    /* Render the rest of our passes. */
    gl->coords.tex_coord      = fbo_tex_coords;
@@ -1012,8 +1011,7 @@ static void gl2_renderchain_recompute_pass_sizes(
 
 static void gl2_renderchain_start_render(
       gl_t *gl,
-      gl2_renderchain_data_t *chain,
-      video_frame_info_t *video_info)
+      gl2_renderchain_data_t *chain)
 {
    /* Used when rendering to an FBO.
     * Texture coords have to be aligned
@@ -1866,11 +1864,11 @@ static void gl2_overlay_tex_geom(void *data,
    tex[7]       = y + h;
 }
 
-static void gl2_render_overlay(gl_t *gl, video_frame_info_t *video_info)
+static void gl2_render_overlay(gl_t *gl)
 {
    unsigned i;
-   unsigned width                      = video_info->width;
-   unsigned height                     = video_info->height;
+   unsigned width                      = gl->video_width;
+   unsigned height                     = gl->video_height;
 
    glEnable(GL_BLEND);
 
@@ -2181,7 +2179,7 @@ static void gl2_init_textures_data(gl_t *gl)
    }
 }
 
-static void gl2_init_textures(gl_t *gl, const video_info_t *video)
+static void gl2_init_textures(gl_t *gl)
 {
    unsigned i;
    GLenum internal_fmt = gl->internal_fmt;
@@ -2291,9 +2289,7 @@ static void gl2_set_texture_enable(void *data, bool state, bool full_screen)
    gl->menu_texture_full_screen = full_screen;
 }
 
-static void gl2_render_osd_background(
-      gl_t *gl, video_frame_info_t *video_info,
-      const char *msg)
+static void gl2_render_osd_background(gl_t *gl, const char *msg)
 {
    video_coords_t coords;
    struct uniform_info uniform_param;
@@ -2308,10 +2304,10 @@ static void gl2_render_osd_background(
       font_driver_get_message_width(NULL, msg, (unsigned)strlen(msg), 1.0f);
 
    /* shader driver expects vertex coords as 0..1 */
-   float x                 = video_info->font_msg_pos_x;
-   float y                 = video_info->font_msg_pos_y;
-   float width             = msg_width / (float)video_info->width;
-   float height            = video_font_size / (float)video_info->height;
+   float x                 = settings->floats.video_msg_pos_x;
+   float y                 = settings->floats.video_msg_pos_y;
+   float width             = msg_width / (float)gl->video_width;
+   float height            = video_font_size / (float)gl->video_height;
    float x2                = 0.005f; /* extend background around text */
    float y2                = 0.005f;
 
@@ -2351,8 +2347,8 @@ static void gl2_render_osd_background(
    coords.lut_tex_coord    = dummy;
    coords.vertices         = vertices_total;
 
-   video_driver_set_viewport(video_info->width,
-         video_info->height, true, false);
+   video_driver_set_viewport(gl->video_width,
+         gl->video_height, true, false);
 
    gl->shader->use(gl, gl->shader_data,
          VIDEO_SHADER_STOCK_BLEND, true);
@@ -2398,8 +2394,8 @@ static void gl2_render_osd_background(
    free(dummy);
    free(verts);
 
-   video_driver_set_viewport(video_info->width,
-         video_info->height, false, true);
+   video_driver_set_viewport(gl->video_width,
+         gl->video_height, false, true);
 }
 
 static void gl2_show_mouse(void *data, bool state)
@@ -2421,11 +2417,11 @@ static struct video_shader *gl2_get_current_shader(void *data)
 }
 
 #if defined(HAVE_MENU)
-static INLINE void gl2_draw_texture(gl_t *gl, video_frame_info_t *video_info)
+static INLINE void gl2_draw_texture(gl_t *gl)
 {
    GLfloat color[16];
-   unsigned width         = video_info->width;
-   unsigned height        = video_info->height;
+   unsigned width         = gl->video_width;
+   unsigned height        = gl->video_height;
 
    color[ 0]              = 1.0f;
    color[ 1]              = 1.0f;
@@ -2545,7 +2541,7 @@ static void gl2_video_layout_fbo_free(gl_t *gl)
    }
 }
 
-static void gl2_video_layout_viewport(gl_t *gl, video_frame_info_t *video_info)
+static void gl2_video_layout_viewport(gl_t *gl)
 {
    if (!video_layout_valid())
       return;
@@ -2555,7 +2551,7 @@ static void gl2_video_layout_viewport(gl_t *gl, video_frame_info_t *video_info)
       if (gl->video_layout_fbo)
          gl2_video_layout_fbo_free(gl);
 
-      gl2_video_layout_fbo_init(gl, video_info->width, video_info->height);
+      gl2_video_layout_fbo_init(gl, gl->video_width, gl->video_height);
 
       video_layout_view_change();
 
@@ -2567,8 +2563,8 @@ static void gl2_video_layout_viewport(gl_t *gl, video_frame_info_t *video_info)
       video_layout_bounds_t b;
       b.x = 0.0f;
       b.y = 0.0f;
-      b.w = (float)video_info->width;
-      b.h = (float)video_info->height;
+      b.w = (float)gl->video_width;
+      b.h = (float)gl->video_height;
       video_layout_view_fit_bounds(b);
    }
 
@@ -2578,7 +2574,7 @@ static void gl2_video_layout_viewport(gl_t *gl, video_frame_info_t *video_info)
       bounds = video_layout_screen(0);
 
       glViewport(
-         bounds->x, video_info->height - bounds->y - bounds->h,
+         bounds->x, gl->video_height - bounds->y - bounds->h,
          bounds->w, bounds->h
       );
    }
@@ -2591,7 +2587,7 @@ static void gl2_video_layout_render(gl_t *gl, video_frame_info_t *video_info)
    if (!video_layout_valid())
       return;
 
-   glViewport(0, 0, video_info->width, video_info->height);
+   glViewport(0, 0, gl->video_width, gl->video_height);
    glEnable(GL_BLEND);
 
    for (i = 0; i < video_layout_layer_count(); ++i)
@@ -2671,22 +2667,16 @@ static void gl2_video_layout_layer_begin(const video_layout_render_info_t *info)
 static void gl2_video_layout_image(const video_layout_render_info_t *info, void *image_handle, void *alpha_handle)
 {
    /* TODO alpha_handle */
-
-   gl_t *gl;
-   video_frame_info_t *video_info;
-   video_layout_bounds_t b;
+   int i;
    float coord[8];
    float color[16];
-   int i;
+   gl_t                *gl = (gl_t*)info->video_driver_data;
+   video_layout_bounds_t b = info->bounds;
 
-   gl = (gl_t*)info->video_driver_data;
-   video_info = (video_frame_info_t*)info->video_driver_frame_data;
-
-   b = info->bounds;
-   b.x /= video_info->width;
-   b.y /= video_info->height;
-   b.w /= video_info->width;
-   b.h /= video_info->height;
+   b.x /= gl->video_width;
+   b.y /= gl->video_height;
+   b.w /= gl->video_width;
+   b.h /= gl->video_height;
 
    coord[0] = b.x;
    coord[1] = 1.f - b.y;
@@ -2823,8 +2813,8 @@ static bool gl2_frame(void *data, const void *frame,
    struct video_tex_info feedback_info;
    gl_t                            *gl = (gl_t*)data;
    gl2_renderchain_data_t       *chain = (gl2_renderchain_data_t*)gl->renderchain_data;
-   unsigned width                      = video_info->width;
-   unsigned height                     = video_info->height;
+   unsigned width                      = gl->video_width;
+   unsigned height                     = gl->video_height;
 
    if (!gl)
       return false;
@@ -2851,7 +2841,7 @@ static bool gl2_frame(void *data, const void *frame,
             frame_width, frame_height,
             gl->vp_out_width, gl->vp_out_height);
 
-      gl2_renderchain_start_render(gl, chain, video_info);
+      gl2_renderchain_start_render(gl, chain);
    }
 
    if (gl->should_resize)
@@ -2912,7 +2902,7 @@ static bool gl2_frame(void *data, const void *frame,
 
          /* Go back to what we're supposed to do,
           * render to FBO #0. */
-         gl2_renderchain_start_render(gl, chain, video_info);
+         gl2_renderchain_start_render(gl, chain);
       }
       else
          gl2_set_viewport(gl, width, height, false, true);
@@ -2923,7 +2913,7 @@ static bool gl2_frame(void *data, const void *frame,
    }
 
 #ifdef HAVE_VIDEO_LAYOUT
-   gl2_video_layout_viewport(gl, video_info);
+   gl2_video_layout_viewport(gl);
 #endif
 
    if (frame)
@@ -3020,7 +3010,6 @@ static bool gl2_frame(void *data, const void *frame,
    if (gl->fbo_inited)
       gl2_renderchain_render(gl,
             chain,
-            video_info,
             frame_count, &gl->tex_info, &feedback_info);
 
    /* Set prev textures. */
@@ -3037,7 +3026,7 @@ static bool gl2_frame(void *data, const void *frame,
       menu_driver_frame(video_info);
 
       if (gl->menu_texture)
-         gl2_draw_texture(gl, video_info);
+         gl2_draw_texture(gl);
    }
    else if (video_info->statistics_show)
    {
@@ -3052,7 +3041,7 @@ static bool gl2_frame(void *data, const void *frame,
 
 #ifdef HAVE_OVERLAY
    if (gl->overlay_enable)
-      gl2_render_overlay(gl, video_info);
+      gl2_render_overlay(gl);
 #endif
 
 #ifdef HAVE_GFX_WIDGETS
@@ -3063,7 +3052,7 @@ static bool gl2_frame(void *data, const void *frame,
    if (!string_is_empty(msg))
    {
       if (video_info->msg_bgcolor_enable)
-         gl2_render_osd_background(gl, video_info, msg);
+         gl2_render_osd_background(gl, msg);
       font_driver_render_msg(gl, video_info, msg, NULL, NULL);
    }
 
@@ -3878,7 +3867,7 @@ static void *gl2_init(const video_info_t *video,
    if (!gl->conv_buffer)
       goto error;
 
-   gl2_init_textures(gl, video);
+   gl2_init_textures(gl);
    gl2_init_textures_data(gl);
 
    gl2_renderchain_init(gl,
@@ -4104,10 +4093,10 @@ static bool gl2_set_shader(void *data,
       glBindBuffer(GL_TEXTURE_REFERENCE_BUFFER_SCE, 0);
       glDeleteBuffers(1, &gl->pbo);
 #endif
-      gl->textures = textures;
-      RARCH_LOG("[GL]: Using %u textures.\n", gl->textures);
+      gl->textures  = textures;
       gl->tex_index = 0;
-      gl2_init_textures(gl, &gl->video_info);
+      RARCH_LOG("[GL]: Using %u textures.\n", gl->textures);
+      gl2_init_textures(gl);
       gl2_init_textures_data(gl);
 
       if (gl->hw_render_use)
