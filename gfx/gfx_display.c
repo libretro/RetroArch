@@ -44,6 +44,8 @@ static float osk_dark[16] =  {
    0.00, 0.00, 0.00, 0.85,
 };
 
+/* TODO/FIXME - global that gets referenced outside,
+ * needs to be refactored */
 uintptr_t gfx_display_white_texture;
 
 static bool gfx_display_has_windowed            = false;
