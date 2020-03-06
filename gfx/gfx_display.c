@@ -48,22 +48,33 @@ static float osk_dark[16] =  {
  * needs to be refactored */
 uintptr_t gfx_display_white_texture;
 
-static bool gfx_display_has_windowed            = false;
+struct gfx_display
+{
+   bool has_windowed;
+   bool msg_force;
+   bool framebuf_dirty;
+   
+   /* Width, height and pitch of the display framebuffer */
+   unsigned framebuf_width;
+   unsigned framebuf_height;
+   size_t   framebuf_pitch;
 
-/* Width, height and pitch of the display framebuffer */
-static unsigned gfx_display_framebuf_width      = 0;
-static unsigned gfx_display_framebuf_height     = 0;
-static size_t gfx_display_framebuf_pitch        = 0;
+   /* Height of the display header */
+   unsigned header_height;
 
-/* Height of the display header */
-static unsigned gfx_display_header_height       = 0;
+   enum menu_driver_id_type menu_driver_id;
 
-static bool gfx_display_msg_force               = false;
-static bool gfx_display_framebuf_dirty          = false;
+   video_coord_array_t dispca;
+};
 
-static enum menu_driver_id_type menu_driver_id  = MENU_DRIVER_ID_UNKNOWN;
+typedef struct gfx_display gfx_display_t;
 
-static video_coord_array_t dispca;
+static gfx_display_t dispgfx;
+
+static gfx_display_t *disp_get_ptr(void)
+{
+   return &dispgfx;
+}
 
 static void *gfx_display_null_get_default_mvp(video_frame_info_t *video_info) { return NULL; }
 static void gfx_display_null_blend_begin(video_frame_info_t *video_info) { }
@@ -187,23 +198,26 @@ static INLINE float gfx_display_randf(float min, float max)
 
 void gfx_display_set_driver_id(enum menu_driver_id_type type)
 {
-   menu_driver_id = type;
+   gfx_display_t *p_disp  = disp_get_ptr();
+   p_disp->menu_driver_id = type;
 }
 
 enum menu_driver_id_type gfx_display_get_driver_id(void)
 {
-   return menu_driver_id;
+   gfx_display_t *p_disp  = disp_get_ptr();
+   return p_disp->menu_driver_id;
 }
 
 static float gfx_display_get_adjusted_scale_internal(
       float base_scale, float scale_factor, unsigned width)
 {
+   gfx_display_t *p_disp  = disp_get_ptr();
    /* Apply user-set scaling factor */
-   float adjusted_scale = base_scale * scale_factor;
+   float adjusted_scale   = base_scale * scale_factor;
 
 #ifdef HAVE_OZONE
    /* Ozone has a capped scale factor */
-   if (menu_driver_id == MENU_DRIVER_ID_OZONE)
+   if (p_disp->menu_driver_id == MENU_DRIVER_ID_OZONE)
    {
       float new_width = (float)width * 0.3333333f;
       adjusted_scale  = 
@@ -369,6 +383,7 @@ float gfx_display_get_dpi_scale(unsigned width, unsigned height)
    static float adjusted_scale                         = 1.0f;
    settings_t *settings                                = config_get_ptr();
    float menu_scale_factor                             = settings->floats.menu_scale_factor;
+   gfx_display_t *p_disp                               = disp_get_ptr();
 
    /* Scale is based on display metrics - these are a fixed
     * hardware property. To minimise performance overheads
@@ -389,12 +404,12 @@ float gfx_display_get_dpi_scale(unsigned width, unsigned height)
     * only update if something changes */
    if (scale_updated ||
        (menu_scale_factor != last_menu_scale_factor) ||
-       (menu_driver_id != last_menu_driver_id))
+       (p_disp->menu_driver_id != last_menu_driver_id))
    {
       adjusted_scale         = gfx_display_get_adjusted_scale_internal(
             scale, menu_scale_factor, width);
       last_menu_scale_factor = menu_scale_factor;
-      last_menu_driver_id    = menu_driver_id;
+      last_menu_driver_id    = p_disp->menu_driver_id;
    }
 
    return adjusted_scale;
@@ -418,6 +433,7 @@ float gfx_display_get_widget_dpi_scale(
    float menu_widget_scale_factor_windowed             = settings->floats.menu_widget_scale_factor_windowed;
    float menu_widget_scale_factor                      = fullscreen ?
          menu_widget_scale_factor_fullscreen : menu_widget_scale_factor_windowed;
+   gfx_display_t *p_disp                               = disp_get_ptr();
 
    /* When using RGUI, _menu_scale_factor
     * is ignored
@@ -425,7 +441,7 @@ float gfx_display_get_widget_dpi_scale(
     *   just set menu_scale_factor to 1.0 */
    float menu_scale_factor                             = 
       gfx_widget_scale_auto ?
-      ((menu_driver_id == MENU_DRIVER_ID_RGUI) ?
+      ((p_disp->menu_driver_id == MENU_DRIVER_ID_RGUI) ?
        1.0f : _menu_scale_factor) :
       menu_widget_scale_factor;
 
@@ -448,12 +464,12 @@ float gfx_display_get_widget_dpi_scale(
     * only update if something changes */
    if (scale_updated ||
        (menu_scale_factor != last_menu_scale_factor) ||
-       (menu_driver_id != last_menu_driver_id))
+       (p_disp->menu_driver_id != last_menu_driver_id))
    {
       adjusted_scale         = gfx_display_get_adjusted_scale_internal(
             scale, menu_scale_factor, width);
       last_menu_scale_factor = menu_scale_factor;
-      last_menu_driver_id    = menu_driver_id;
+      last_menu_driver_id    = p_disp->menu_driver_id;
    }
 
    return adjusted_scale;
@@ -477,13 +493,14 @@ float gfx_display_get_widget_pixel_scale(
    float menu_widget_scale_factor_windowed             = settings->floats.menu_widget_scale_factor_windowed;
    float menu_widget_scale_factor                      = fullscreen ?
          menu_widget_scale_factor_fullscreen : menu_widget_scale_factor_windowed;
+   gfx_display_t *p_disp                               = disp_get_ptr();
 
    /* When using RGUI, _menu_scale_factor is ignored
     * > If we are not using a widget scale factor override,
     *   just set menu_scale_factor to 1.0 */
    float menu_scale_factor                             = 
       gfx_widget_scale_auto ?
-            ((menu_driver_id == MENU_DRIVER_ID_RGUI) ?
+            ((p_disp->menu_driver_id == MENU_DRIVER_ID_RGUI) ?
                   1.0f : _menu_scale_factor) :
                         menu_widget_scale_factor;
 
@@ -512,12 +529,12 @@ float gfx_display_get_widget_pixel_scale(
     * only update if something changes */
    if (scale_updated ||
        (menu_scale_factor != last_menu_scale_factor) ||
-       (menu_driver_id != last_menu_driver_id))
+       (p_disp->menu_driver_id != last_menu_driver_id))
    {
       adjusted_scale         = gfx_display_get_adjusted_scale_internal(
             scale, menu_scale_factor, width);
       last_menu_scale_factor = menu_scale_factor;
-      last_menu_driver_id    = menu_driver_id;
+      last_menu_driver_id    = p_disp->menu_driver_id;
    }
 
    return adjusted_scale;
@@ -602,7 +619,8 @@ static bool gfx_display_check_compatibility(
 
 video_coord_array_t *gfx_display_get_coords_array(void)
 {
-   return &dispca;
+   gfx_display_t *p_disp = disp_get_ptr();
+   return &p_disp->dispca;
 }
 
 /* Reset the display's coordinate array vertices.
@@ -1435,51 +1453,60 @@ int gfx_display_osk_ptr_at_pos(void *data, int x, int y,
 void gfx_display_get_fb_size(unsigned *fb_width,
       unsigned *fb_height, size_t *fb_pitch)
 {
-   *fb_width  = gfx_display_framebuf_width;
-   *fb_height = gfx_display_framebuf_height;
-   *fb_pitch  = gfx_display_framebuf_pitch;
+   gfx_display_t *p_disp = disp_get_ptr();
+   *fb_width             = p_disp->framebuf_width;
+   *fb_height            = p_disp->framebuf_height;
+   *fb_pitch             = p_disp->framebuf_pitch;
 }
 
 /* Set the display framebuffer's width. */
 void gfx_display_set_width(unsigned width)
 {
-   gfx_display_framebuf_width = width;
+   gfx_display_t *p_disp  = disp_get_ptr();
+   p_disp->framebuf_width = width;
 }
 
 /* Set the display framebuffer's height. */
 void gfx_display_set_height(unsigned height)
 {
-   gfx_display_framebuf_height = height;
+   gfx_display_t *p_disp   = disp_get_ptr();
+   p_disp->framebuf_height = height;
 }
 
 void gfx_display_set_header_height(unsigned height)
 {
-   gfx_display_header_height = height;
+   gfx_display_t *p_disp   = disp_get_ptr();
+   p_disp->header_height = height;
 }
 
 unsigned gfx_display_get_header_height(void)
 {
-   return gfx_display_header_height;
+   gfx_display_t *p_disp   = disp_get_ptr();
+   return p_disp->header_height;
 }
 
 size_t gfx_display_get_framebuffer_pitch(void)
 {
-   return gfx_display_framebuf_pitch;
+   gfx_display_t *p_disp   = disp_get_ptr();
+   return p_disp->framebuf_pitch;
 }
 
 void gfx_display_set_framebuffer_pitch(size_t pitch)
 {
-   gfx_display_framebuf_pitch = pitch;
+   gfx_display_t *p_disp   = disp_get_ptr();
+   p_disp->framebuf_pitch = pitch;
 }
 
 bool gfx_display_get_msg_force(void)
 {
-   return gfx_display_msg_force;
+   gfx_display_t *p_disp   = disp_get_ptr();
+   return p_disp->msg_force;
 }
 
 void gfx_display_set_msg_force(bool state)
 {
-   gfx_display_msg_force = state;
+   gfx_display_t *p_disp   = disp_get_ptr();
+   p_disp->msg_force       = state;
 }
 
 /* Returns true if an animation is still active or
@@ -1492,7 +1519,8 @@ void gfx_display_set_msg_force(bool state)
  * */
 bool gfx_display_get_update_pending(void)
 {
-   if (gfx_animation_is_active() || gfx_display_framebuf_dirty)
+   gfx_display_t *p_disp   = disp_get_ptr();
+   if (gfx_animation_is_active() || p_disp->framebuf_dirty)
       return true;
    return false;
 }
@@ -1512,19 +1540,22 @@ void gfx_display_unset_viewport(unsigned width, unsigned height)
  * and that it has to be rendered to the screen. */
 bool gfx_display_get_framebuffer_dirty_flag(void)
 {
-   return gfx_display_framebuf_dirty;
+   gfx_display_t *p_disp = disp_get_ptr();
+   return p_disp->framebuf_dirty;
 }
 
 /* Set the display framebuffer's 'dirty flag'. */
 void gfx_display_set_framebuffer_dirty_flag(void)
 {
-   gfx_display_framebuf_dirty = true;
+   gfx_display_t *p_disp = disp_get_ptr();
+   p_disp->framebuf_dirty = true;
 }
 
 /* Unset the display framebufer's 'dirty flag'. */
 void gfx_display_unset_framebuffer_dirty_flag(void)
 {
-   gfx_display_framebuf_dirty = false;
+   gfx_display_t *p_disp = disp_get_ptr();
+   p_disp->framebuf_dirty = false;
 }
 
 void gfx_display_draw_keyboard(
@@ -1724,27 +1755,27 @@ void gfx_display_allocate_white_texture(void)
 
 void gfx_display_free(void)
 {
-   video_coord_array_free(&dispca);
+   gfx_display_t *p_disp   = disp_get_ptr();
+   video_coord_array_free(&p_disp->dispca);
    gfx_animation_ctl(MENU_ANIMATION_CTL_DEINIT, NULL);
 
-   gfx_display_msg_force       = false;
-   gfx_display_header_height   = 0;
-   gfx_display_framebuf_width  = 0;
-   gfx_display_framebuf_height = 0;
-   gfx_display_framebuf_pitch  = 0;
+   p_disp->msg_force           = false;
+   p_disp->header_height       = 0;
+   p_disp->framebuf_width      = 0;
+   p_disp->framebuf_height     = 0;
+   p_disp->framebuf_pitch      = 0;
+   p_disp->has_windowed        = false;
    dispctx                     = NULL;
-   gfx_display_has_windowed    = false;
 }
 
 void gfx_display_init(void)
 {
+   gfx_display_t       *p_disp   = disp_get_ptr();
    video_coord_array_t *p_dispca = gfx_display_get_coords_array();
 
-   gfx_display_has_windowed      = video_driver_has_windowed();
-
+   p_disp->has_windowed          = video_driver_has_windowed();
    p_dispca->allocated           =  0;
 }
-
 
 bool gfx_display_driver_exists(const char *s)
 {
