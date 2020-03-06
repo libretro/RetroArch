@@ -24153,7 +24153,8 @@ static const gfx_ctx_driver_t *video_context_driver_init(
       unsigned minor, bool hw_render_ctx,
       void **ctx_data)
 {
-   video_frame_info_t video_info;
+   settings_t      *settings  = configuration_settings;
+   bool video_shared_context  = settings->bools.video_shared_context;
 
    if (!ctx->bind_api(data, api, major, minor))
    {
@@ -24164,14 +24165,12 @@ static const gfx_ctx_driver_t *video_context_driver_init(
       return NULL;
    }
 
-   video_driver_build_info(&video_info);
-
-   if (!(*ctx_data = ctx->init(&video_info, data)))
+   if (!(*ctx_data = ctx->init(data)))
       return NULL;
 
    if (ctx->bind_hw_render)
       ctx->bind_hw_render(*ctx_data,
-            video_info.shared_context && hw_render_ctx);
+            video_shared_context && hw_render_ctx);
 
    return ctx;
 }

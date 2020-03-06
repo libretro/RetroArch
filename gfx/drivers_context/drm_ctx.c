@@ -389,7 +389,7 @@ static void gfx_ctx_drm_destroy_resources(gfx_ctx_drm_data_t *drm)
 }
 #endif
 
-static void *gfx_ctx_drm_init(video_frame_info_t *video_info, void *video_driver)
+static void *gfx_ctx_drm_init(void *video_driver)
 {
 #ifndef HAVE_ODROIDGO2
    int fd, i;

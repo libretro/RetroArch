@@ -121,7 +121,7 @@ static void vita_bind_hw_render(void *data, bool enable)
    (void)enable;
 }
 
-static void *vita_init(video_frame_info_t *video_info, void *video_driver)
+static void *vita_init(void *video_driver)
 {
    (void)video_driver;
 

@@ -55,7 +55,7 @@ static void orbis_ctx_get_video_size(void *data,
     *height = ATTR_ORBISGL_HEIGHT;
 }
 
-static void *orbis_ctx_init(video_frame_info_t *video_info, void *video_driver)
+static void *orbis_ctx_init(void *video_driver)
 {
 #ifdef HAVE_EGL
     int ret;

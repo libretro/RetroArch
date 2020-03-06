@@ -1209,7 +1209,7 @@ typedef struct gfx_ctx_driver
     * to hold a pointer to it as the context never outlives the video driver.
     *
     * The context driver is responsible for it's own data.*/
-   void* (*init)(video_frame_info_t *video_info, void *video_driver);
+   void* (*init)(void *video_driver);
    void (*destroy)(void *data);
 
    enum gfx_ctx_api (*get_api)(void *data);

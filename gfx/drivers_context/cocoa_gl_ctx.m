@@ -819,7 +819,7 @@ static bool cocoagl_gfx_ctx_set_video_mode(void *data,
    return true;
 }
 
-static void *cocoagl_gfx_ctx_init(video_frame_info_t *video_info, void *video_driver)
+static void *cocoagl_gfx_ctx_init(void *video_driver)
 {
    cocoa_ctx_data_t *cocoa_ctx = (cocoa_ctx_data_t*)
    calloc(1, sizeof(cocoa_ctx_data_t));

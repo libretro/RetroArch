@@ -459,7 +459,7 @@ static bool gfx_ctx_x_set_resize(void *data,
    return true;
 }
 
-static void *gfx_ctx_x_init(video_frame_info_t *video_info, void *data)
+static void *gfx_ctx_x_init(void *data)
 {
    int nelements           = 0;
    int major               = 0;

@@ -186,7 +186,7 @@ static void gfx_ctx_uwp_get_video_size(void *data,
    win32_check_window(&quit, &resize, width, height);
 }
 
-static void *gfx_ctx_uwp_init(video_frame_info_t *video_info, void *video_driver)
+static void *gfx_ctx_uwp_init(void *video_driver)
 {
    gfx_ctx_uwp_data_t *uwp = (gfx_ctx_uwp_data_t*)calloc(1, sizeof(*uwp));
 

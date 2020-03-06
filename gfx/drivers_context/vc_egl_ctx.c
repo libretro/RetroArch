@@ -148,10 +148,12 @@ static void dispmanx_vsync_callback(DISPMANX_UPDATE_HANDLE_T u, void *data)
 
 static void gfx_ctx_vc_destroy(void *data);
 
-static void *gfx_ctx_vc_init(video_frame_info_t *video_info, void *video_driver)
+static void *gfx_ctx_vc_init(void *video_driver)
 {
    VC_DISPMANX_ALPHA_T alpha;
    EGLint n, major, minor;
+   settings_t *settings           = config_get_ptr();
+   unsigned max_swapchain_images  = settings->uints.video_max_swapchain_images;
 
    DISPMANX_ELEMENT_HANDLE_T dispman_element;
    DISPMANX_DISPLAY_HANDLE_T dispman_display;
@@ -311,7 +313,7 @@ static void *gfx_ctx_vc_init(video_frame_info_t *video_info, void *video_driver)
    vc->vsync_condition_mutex = slock_new();
    vc->vsync_callback_set    = false;
 
-   if (video_info->max_swapchain_images <= 2)
+   if (max_swapchain_images <= 2)
    {
       /* Start sending vsync callbacks so we can wait for vsync after eglSwapBuffers */
       vc_dispmanx_vsync_callback(vc->dispman_display,

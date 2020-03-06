@@ -54,8 +54,7 @@ static void gfx_ctx_network_get_video_size(void *data,
    (void)data;
 }
 
-static void *gfx_ctx_network_init(
-      video_frame_info_t *video_info, void *video_driver)
+static void *gfx_ctx_network_init(void *video_driver)
 {
    (void)video_driver;
 
