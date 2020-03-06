@@ -30,11 +30,11 @@
 #define DIAGONAL_PIXELS_1080P 2202.90717008229831581901
 
 /* Standard reference DPI value, used when determining
- * DPI-aware menu scaling factors */
+ * DPI-aware scaling factors */
 #define REFERENCE_DPI 96.0f
 
 /* 'OZONE_SIDEBAR_WIDTH' must be kept in sync
- * with ozone menu driver metrics */
+ * with Ozone driver metrics */
 #define OZONE_SIDEBAR_WIDTH 408
 
 static float osk_dark[16] =  {
@@ -50,12 +50,12 @@ uintptr_t gfx_display_white_texture;
 
 static bool gfx_display_has_windowed            = false;
 
-/* Width, height and pitch of the menu framebuffer */
+/* Width, height and pitch of the display framebuffer */
 static unsigned gfx_display_framebuf_width      = 0;
 static unsigned gfx_display_framebuf_height     = 0;
 static size_t gfx_display_framebuf_pitch        = 0;
 
-/* Height of the menu display header */
+/* Height of the display header */
 static unsigned gfx_display_header_height       = 0;
 
 static bool gfx_display_msg_force               = false;
@@ -172,7 +172,7 @@ static gfx_display_ctx_driver_t *gfx_display_ctx_drivers[] = {
    NULL,
 };
 
-static gfx_display_ctx_driver_t *menu_disp      = NULL;
+static gfx_display_ctx_driver_t *dispctx      = NULL;
 
 static INLINE float gfx_display_scalef(float val,
       float oldmin, float oldmax, float newmin, float newmax)
@@ -600,8 +600,8 @@ static bool gfx_display_check_compatibility(
    return false;
 }
 
-/* Reset the menu's coordinate array vertices.
- * NOTE: Not every menu driver uses this. */
+/* Reset the display's coordinate array vertices.
+ * NOTE: Not every display driver uses this. */
 void gfx_display_coords_array_reset(void)
 {
    disp_ca.coords.vertices = 0;
@@ -616,22 +616,22 @@ video_coord_array_t *gfx_display_get_coords_array(void)
 /* Begin blending operation */
 void gfx_display_blend_begin(video_frame_info_t *video_info)
 {
-   if (menu_disp && menu_disp->blend_begin)
-      menu_disp->blend_begin(video_info);
+   if (dispctx && dispctx->blend_begin)
+      dispctx->blend_begin(video_info);
 }
 
 /* End blending operation */
 void gfx_display_blend_end(video_frame_info_t *video_info)
 {
-   if (menu_disp && menu_disp->blend_end)
-      menu_disp->blend_end(video_info);
+   if (dispctx && dispctx->blend_end)
+      dispctx->blend_end(video_info);
 }
 
 /* Begin scissoring operation */
 void gfx_display_scissor_begin(video_frame_info_t *video_info,
       int x, int y, unsigned width, unsigned height)
 {
-   if (menu_disp && menu_disp->scissor_begin)
+   if (dispctx && dispctx->scissor_begin)
    {
       if (y < 0)
       {
@@ -664,15 +664,15 @@ void gfx_display_scissor_begin(video_frame_info_t *video_info,
       if ((x + width) > video_info->width)
          width = video_info->width - x;
 
-      menu_disp->scissor_begin(video_info, x, y, width, height);
+      dispctx->scissor_begin(video_info, x, y, width, height);
    }
 }
 
 /* End scissoring operation */
 void gfx_display_scissor_end(video_frame_info_t *video_info)
 {
-   if (menu_disp && menu_disp->scissor_end)
-      menu_disp->scissor_end(video_info);
+   if (dispctx && dispctx->scissor_end)
+      dispctx->scissor_end(video_info);
 }
 
 font_data_t *gfx_display_font_file(
@@ -680,10 +680,10 @@ font_data_t *gfx_display_font_file(
 {
    font_data_t *font_data = NULL;
 
-   if (!menu_disp)
+   if (!dispctx)
       return NULL;
 
-   if (!menu_disp->font_init_first((void**)&font_data,
+   if (!dispctx->font_init_first((void**)&font_data,
             video_driver_get_ptr(false),
             fontpath, menu_font_size, is_threaded))
       return NULL;
@@ -693,36 +693,36 @@ font_data_t *gfx_display_font_file(
 
 bool gfx_display_restore_clear_color(void)
 {
-   if (!menu_disp || !menu_disp->restore_clear_color)
+   if (!dispctx || !dispctx->restore_clear_color)
       return false;
-   menu_disp->restore_clear_color();
+   dispctx->restore_clear_color();
    return true;
 }
 
 void gfx_display_clear_color(gfx_display_ctx_clearcolor_t *color,
       video_frame_info_t *video_info)
 {
-   if (menu_disp && menu_disp->clear_color)
-      menu_disp->clear_color(color, video_info);
+   if (dispctx && dispctx->clear_color)
+      dispctx->clear_color(color, video_info);
 }
 
 void gfx_display_draw(gfx_display_ctx_draw_t *draw,
       video_frame_info_t *video_info)
 {
-   if (!menu_disp || !draw || !menu_disp->draw)
+   if (!dispctx || !draw || !dispctx->draw)
       return;
 
    if (draw->height <= 0)
       return;
    if (draw->width <= 0)
       return;
-   menu_disp->draw(draw, video_info);
+   dispctx->draw(draw, video_info);
 }
 
 void gfx_display_draw_blend(gfx_display_ctx_draw_t *draw,
       video_frame_info_t *video_info)
 {
-   if (!menu_disp || !draw || !menu_disp->draw)
+   if (!dispctx || !draw || !dispctx->draw)
       return;
 
    if (draw->height <= 0)
@@ -730,15 +730,15 @@ void gfx_display_draw_blend(gfx_display_ctx_draw_t *draw,
    if (draw->width <= 0)
       return;
    gfx_display_blend_begin(video_info);
-   menu_disp->draw(draw, video_info);
+   dispctx->draw(draw, video_info);
    gfx_display_blend_end(video_info);
 }
 
 void gfx_display_draw_pipeline(gfx_display_ctx_draw_t *draw,
       video_frame_info_t *video_info)
 {
-   if (menu_disp && draw && menu_disp->draw_pipeline)
-      menu_disp->draw_pipeline(draw, video_info);
+   if (dispctx && draw && dispctx->draw_pipeline)
+      dispctx->draw_pipeline(draw, video_info);
 }
 
 void gfx_display_draw_bg(gfx_display_ctx_draw_t *draw,
@@ -748,16 +748,16 @@ void gfx_display_draw_bg(gfx_display_ctx_draw_t *draw,
    static struct video_coords coords;
    const float *new_vertex       = NULL;
    const float *new_tex_coord    = NULL;
-   if (!menu_disp || !draw)
+   if (!dispctx || !draw)
       return;
 
    new_vertex           = draw->vertex;
    new_tex_coord        = draw->tex_coord;
 
    if (!new_vertex)
-      new_vertex        = menu_disp->get_default_vertices();
+      new_vertex        = dispctx->get_default_vertices();
    if (!new_tex_coord)
-      new_tex_coord     = menu_disp->get_default_tex_coords();
+      new_tex_coord     = dispctx->get_default_tex_coords();
 
    coords.vertices      = (unsigned)draw->vertex_count;
    coords.vertex        = new_vertex;
@@ -778,8 +778,8 @@ void gfx_display_draw_bg(gfx_display_ctx_draw_t *draw,
    if (!draw->texture)
       draw->texture     = gfx_display_white_texture;
 
-   if (menu_disp && menu_disp->get_default_mvp)
-      draw->matrix_data = (math_matrix_4x4*)menu_disp->get_default_mvp(
+   if (dispctx && dispctx->get_default_mvp)
+      draw->matrix_data = (math_matrix_4x4*)dispctx->get_default_mvp(
             video_info);
 }
 
@@ -810,8 +810,8 @@ void gfx_display_draw_quad(
    coords.lut_tex_coord = NULL;
    coords.color         = color;
 
-   if (menu_disp && menu_disp->blend_begin)
-      menu_disp->blend_begin(video_info);
+   if (dispctx && dispctx->blend_begin)
+      dispctx->blend_begin(video_info);
 
    draw.x            = x;
    draw.y            = (int)height - y - (int)h;
@@ -827,8 +827,8 @@ void gfx_display_draw_quad(
 
    gfx_display_draw(&draw, video_info);
 
-   if (menu_disp && menu_disp->blend_end)
-      menu_disp->blend_end(video_info);
+   if (dispctx && dispctx->blend_end)
+      dispctx->blend_end(video_info);
 }
 
 void gfx_display_draw_polygon(
@@ -860,8 +860,8 @@ void gfx_display_draw_polygon(
    coords.lut_tex_coord = NULL;
    coords.color         = color;
 
-   if (menu_disp && menu_disp->blend_begin)
-      menu_disp->blend_begin(video_info);
+   if (dispctx && dispctx->blend_begin)
+      dispctx->blend_begin(video_info);
 
    draw.x            = 0;
    draw.y            = 0;
@@ -877,8 +877,8 @@ void gfx_display_draw_polygon(
 
    gfx_display_draw(&draw, video_info);
 
-   if (menu_disp && menu_disp->blend_end)
-      menu_disp->blend_end(video_info);
+   if (dispctx && dispctx->blend_end)
+      dispctx->blend_end(video_info);
 }
 
 void gfx_display_draw_texture(
@@ -1213,13 +1213,13 @@ void gfx_display_rotate_z(gfx_display_ctx_rotate_draw_t *draw,
 
    if (
          !draw                       ||
-         !menu_disp                  ||
-         !menu_disp->get_default_mvp ||
-         menu_disp->handles_transform
+         !dispctx                  ||
+         !dispctx->get_default_mvp ||
+         dispctx->handles_transform
       )
       return;
 
-   b = (math_matrix_4x4*)menu_disp->get_default_mvp(video_info);
+   b = (math_matrix_4x4*)dispctx->get_default_mvp(video_info);
 
    if (!b)
       return;
@@ -1255,8 +1255,8 @@ void gfx_display_draw_cursor(
    coords.lut_tex_coord = NULL;
    coords.color         = (const float*)color;
 
-   if (menu_disp && menu_disp->blend_begin)
-      menu_disp->blend_begin(video_info);
+   if (dispctx && dispctx->blend_begin)
+      dispctx->blend_begin(video_info);
 
    draw.x               = x - (cursor_size / 2);
    draw.y               = (int)height - y - (cursor_size / 2);
@@ -1270,8 +1270,8 @@ void gfx_display_draw_cursor(
 
    gfx_display_draw(&draw, video_info);
 
-   if (menu_disp && menu_disp->blend_end)
-      menu_disp->blend_end(video_info);
+   if (dispctx && dispctx->blend_end)
+      dispctx->blend_end(video_info);
 }
 
 void gfx_display_push_quad(
@@ -1293,8 +1293,8 @@ void gfx_display_push_quad(
    vertex[6]             = x2 / (float)width;
    vertex[7]             = y2 / (float)height;
 
-   if (menu_disp && menu_disp->get_default_tex_coords)
-      coord_draw_ptr     = menu_disp->get_default_tex_coords();
+   if (dispctx && dispctx->get_default_tex_coords)
+      coord_draw_ptr     = dispctx->get_default_tex_coords();
 
    coords.color          = colors;
    coords.vertex         = vertex;
@@ -1334,11 +1334,6 @@ void gfx_display_snow(
 
       if (p->alive)
       {
-#if 0
-         menu_input_pointer_t pointer;
-         menu_input_get_pointer_state(&pointer);
-#endif
-
          p->y            += p->yspeed;
          p->x            += gfx_display_scalef(
                pointer_x, 0, width, -0.3, 0.3);
@@ -1400,7 +1395,7 @@ font_data_t *gfx_display_font(
 {
    char fontpath[PATH_MAX_LENGTH];
 
-   if (!menu_disp)
+   if (!dispctx)
       return NULL;
 
    fontpath[0] = '\0';
@@ -1436,7 +1431,7 @@ int gfx_display_osk_ptr_at_pos(void *data, int x, int y,
    return -1;
 }
 
-/* Get the menu framebuffer's size dimensions. */
+/* Get the display framebuffer's size dimensions. */
 void gfx_display_get_fb_size(unsigned *fb_width,
       unsigned *fb_height, size_t *fb_pitch)
 {
@@ -1445,13 +1440,13 @@ void gfx_display_get_fb_size(unsigned *fb_width,
    *fb_pitch  = gfx_display_framebuf_pitch;
 }
 
-/* Set the menu framebuffer's width. */
+/* Set the display framebuffer's width. */
 void gfx_display_set_width(unsigned width)
 {
    gfx_display_framebuf_width = width;
 }
 
-/* Set the menu framebuffer's height. */
+/* Set the display framebuffer's height. */
 void gfx_display_set_height(unsigned height)
 {
    gfx_display_framebuf_height = height;
@@ -1488,11 +1483,11 @@ void gfx_display_set_msg_force(bool state)
 }
 
 /* Returns true if an animation is still active or
- * when the menu framebuffer still is dirty and
+ * when the display framebuffer still is dirty and
  * therefore it still needs to be rendered onscreen.
  *
  * This function can be used for optimization purposes
- * so that we don't have to render the menu graphics per-frame
+ * so that we don't have to render the display graphics per-frame
  * unless a change has happened.
  * */
 bool gfx_display_get_update_pending(void)
@@ -1512,7 +1507,7 @@ void gfx_display_unset_viewport(unsigned width, unsigned height)
    video_driver_set_viewport(width, height, false, true);
 }
 
-/* Checks if the menu framebuffer has its 'dirty flag' set. This
+/* Checks if the display framebuffer has its 'dirty flag' set. This
  * means that the current contents of the framebuffer has changed
  * and that it has to be rendered to the screen. */
 bool gfx_display_get_framebuffer_dirty_flag(void)
@@ -1520,13 +1515,13 @@ bool gfx_display_get_framebuffer_dirty_flag(void)
    return gfx_display_framebuf_dirty;
 }
 
-/* Set the menu framebuffer's 'dirty flag'. */
+/* Set the display framebuffer's 'dirty flag'. */
 void gfx_display_set_framebuffer_dirty_flag(void)
 {
    gfx_display_framebuf_dirty = true;
 }
 
-/* Unset the menu framebufer's 'dirty flag'. */
+/* Unset the display framebufer's 'dirty flag'. */
 void gfx_display_unset_framebuffer_dirty_flag(void)
 {
    gfx_display_framebuf_dirty = false;
@@ -1703,7 +1698,7 @@ bool gfx_display_reset_textures_list_buffer(
 }
 
 /* Teardown; deinitializes and frees all
- * fonts associated to the menu driver */
+ * fonts associated to the display driver */
 void gfx_display_font_free(font_data_t *font)
 {
    font_driver_free(font);
@@ -1737,7 +1732,7 @@ void gfx_display_free(void)
    gfx_display_framebuf_width  = 0;
    gfx_display_framebuf_height = 0;
    gfx_display_framebuf_pitch  = 0;
-   menu_disp                    = NULL;
+   dispctx                     = NULL;
    gfx_display_has_windowed    = false;
 }
 
@@ -1773,7 +1768,7 @@ bool gfx_display_init_first_driver(bool video_is_threaded)
 
       RARCH_LOG("[Menu]: Found menu display driver: \"%s\".\n",
             gfx_display_ctx_drivers[i]->ident);
-      menu_disp = gfx_display_ctx_drivers[i];
+      dispctx = gfx_display_ctx_drivers[i];
       return true;
    }
    return false;
