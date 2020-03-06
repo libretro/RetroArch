@@ -14,6 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdio.h>
+
 #include <compat/strl.h>
 #include <features/features_cpu.h>
 
@@ -27,9 +29,11 @@
 
 #include "menu_dialog.h"
 
-#include "../menu_driver.h"
+#include "../menu_displaylist.h"
+#include "../menu_entries.h"
 
 #include "../../configuration.h"
+#include "../../input/input_driver.h"
 #include "../../performance_counters.h"
 
 struct menu_dialog
