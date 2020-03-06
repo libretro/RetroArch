@@ -131,14 +131,14 @@ static void ozone_menu_animation_update_time(
 
 static void *ozone_init(void **userdata, bool video_is_threaded)
 {
+   char xmb_path[PATH_MAX_LENGTH];
+   char monochrome_path[PATH_MAX_LENGTH];
    bool fallback_color_theme           = false;
    unsigned width, height, color_theme = 0;
    ozone_handle_t *ozone               = NULL;
    settings_t *settings                = config_get_ptr();
    menu_handle_t *menu                 = (menu_handle_t*)calloc(1, sizeof(*menu));
-
-   char xmb_path[PATH_MAX_LENGTH];
-   char monochrome_path[PATH_MAX_LENGTH];
+   const char *directory_assets        = settings->paths.directory_assets;
 
    if (!menu)
       return NULL;
@@ -239,8 +239,10 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
          setsysGetColorSetId(&theme);
          color_theme = (theme == ColorSetId_Dark) ? 1 : 0;
          ozone_set_color_theme(ozone, color_theme);
-         settings->uints.menu_ozone_color_theme                = color_theme;
-         settings->bools.menu_preferred_system_color_theme_set = true;
+         configuration_set_uint(settings,
+               settings->uints.menu_ozone_color_theme, color_theme);
+         configuration_set_bool(settings,
+               settings->bools.menu_preferred_system_color_theme_set, true);
          setsysExit();
       }
       else
@@ -268,7 +270,7 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
    /* Assets path */
    fill_pathname_join(
       ozone->assets_path,
-      settings->paths.directory_assets,
+      directory_assets,
       "ozone",
       sizeof(ozone->assets_path)
    );
@@ -292,7 +294,7 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
    /* XMB monochrome */
    fill_pathname_join(
       xmb_path,
-      settings->paths.directory_assets,
+      directory_assets,
       "xmb",
       sizeof(xmb_path)
    );
@@ -394,10 +396,12 @@ unsigned ozone_count_lines(const char *str)
 
 static void ozone_update_thumbnail_image(void *data)
 {
-   ozone_handle_t *ozone = (ozone_handle_t*)data;
-   size_t selection      = menu_navigation_get_selection();
-   settings_t *settings  = config_get_ptr();
-   playlist_t *playlist  = playlist_get_cached();
+   ozone_handle_t *ozone             = (ozone_handle_t*)data;
+   size_t selection                  = menu_navigation_get_selection();
+   settings_t *settings              = config_get_ptr();
+   playlist_t *playlist              = playlist_get_cached();
+   unsigned gfx_thumbnail_upscale_threshold = settings->uints.gfx_thumbnail_upscale_threshold;
+   bool network_on_demand_thumbnails = settings->bools.network_on_demand_thumbnails;
 
    if (!ozone)
       return;
@@ -415,8 +419,8 @@ static void ozone_update_thumbnail_image(void *data)
          playlist,
          selection,
          &ozone->thumbnails.right,
-         settings->uints.gfx_thumbnail_upscale_threshold,
-         settings->bools. network_on_demand_thumbnails
+         gfx_thumbnail_upscale_threshold,
+         network_on_demand_thumbnails
          );
 
       /* Left thumbnail is simply reset */
@@ -431,8 +435,8 @@ static void ozone_update_thumbnail_image(void *data)
          playlist,
          selection,
          &ozone->thumbnails.right,
-         settings->uints.gfx_thumbnail_upscale_threshold,
-         settings->bools. network_on_demand_thumbnails);
+         gfx_thumbnail_upscale_threshold,
+         network_on_demand_thumbnails);
 
       /* Left thumbnail */
       gfx_thumbnail_request(
@@ -441,8 +445,8 @@ static void ozone_update_thumbnail_image(void *data)
          playlist,
          selection,
          &ozone->thumbnails.left,
-         settings->uints.gfx_thumbnail_upscale_threshold,
-         settings->bools. network_on_demand_thumbnails);
+         gfx_thumbnail_upscale_threshold,
+         network_on_demand_thumbnails);
    }
 }
 
@@ -867,7 +871,9 @@ static int ozone_list_push(void *data, void *userdata,
    {
       case DISPLAYLIST_LOAD_CONTENT_LIST:
          {
-            settings_t *settings = config_get_ptr();
+            settings_t             *settings = config_get_ptr();
+            bool menu_content_show_playlists = settings->bools.menu_content_show_playlists;
+            bool kiosk_mode_enable           = settings->bools.kiosk_mode_enable;
 
             menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
 
@@ -887,7 +893,7 @@ static int ozone_list_push(void *data, void *userdata,
                      MENU_SETTING_ACTION, 0, 0);
             }
 
-            if (settings->bools.menu_content_show_playlists)
+            if (menu_content_show_playlists)
                menu_entries_append_enum(info->list,
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB),
                      msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB),
@@ -900,7 +906,7 @@ static int ozone_list_push(void *data, void *userdata,
                      MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
                      MENU_SETTING_ACTION, 0, 0);
 
-            if (!settings->bools.kiosk_mode_enable)
+            if (!kiosk_mode_enable)
             {
                menu_entries_append_enum(info->list,
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS),
@@ -2046,7 +2052,8 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
       if (use_preferred_system_color_theme)
       {
          color_theme                            = ozone_get_system_theme();
-         settings->uints.menu_ozone_color_theme = color_theme;
+         configuration_set_uint(settings,
+               settings->uints.menu_ozone_color_theme, color_theme);
       }
 
       ozone_set_color_theme(ozone, color_theme);

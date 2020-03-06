@@ -767,19 +767,21 @@ static void gl_core_set_viewport(gl_core_t *gl,
       bool force_full, bool allow_rotate)
 {
    gfx_ctx_aspect_t aspect_data;
-   unsigned height          = gl->video_height;
-   int x                    = 0;
-   int y                    = 0;
-   settings_t *settings     = config_get_ptr();
-   float device_aspect      = (float)viewport_width / viewport_height;
+   unsigned height                 = gl->video_height;
+   int x                           = 0;
+   int y                           = 0;
+   settings_t *settings            = config_get_ptr();
+   float device_aspect             = (float)viewport_width / viewport_height;
+   bool video_scale_integer        = settings->bools.video_scale_integer;
+   unsigned video_aspect_ratio_idx = settings->uints.video_aspect_ratio_idx;
 
-   aspect_data.aspect       = &device_aspect;
-   aspect_data.width        = viewport_width;
-   aspect_data.height       = viewport_height;
+   aspect_data.aspect              = &device_aspect;
+   aspect_data.width               = viewport_width;
+   aspect_data.height              = viewport_height;
 
    video_context_driver_translate_aspect(&aspect_data);
 
-   if (settings->bools.video_scale_integer && !force_full)
+   if (video_scale_integer && !force_full)
    {
       video_viewport_get_scaled_integer(&gl->vp,
             viewport_width, viewport_height,
@@ -792,7 +794,7 @@ static void gl_core_set_viewport(gl_core_t *gl,
       float desired_aspect = video_driver_get_aspect_ratio();
 
 #if defined(HAVE_MENU)
-      if (settings->uints.video_aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
+      if (video_aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
       {
          const struct video_viewport *custom = video_viewport_get_custom();
          /* GL has bottom-left origin viewport. */

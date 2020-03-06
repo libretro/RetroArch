@@ -269,16 +269,17 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
    XEvent event;
    EGLint egl_attribs[16];
    EGLint vid, num_visuals;
-   EGLint *attr             = NULL;
-   bool true_full           = false;
-   int x_off                = 0;
-   int y_off                = 0;
-   XVisualInfo temp         = {0};
-   XSetWindowAttributes swa = {0};
-   XVisualInfo *vi          = NULL;
-   char *wm_name            = NULL;
-   xegl_ctx_data_t *xegl    = (xegl_ctx_data_t*)data;
-   settings_t *settings     = config_get_ptr();
+   EGLint *attr                   = NULL;
+   bool true_full                 = false;
+   int x_off                      = 0;
+   int y_off                      = 0;
+   XVisualInfo temp               = {0};
+   XSetWindowAttributes swa       = {0};
+   XVisualInfo *vi                = NULL;
+   char *wm_name                  = NULL;
+   xegl_ctx_data_t *xegl          = (xegl_ctx_data_t*)data;
+   settings_t *settings           = config_get_ptr();
+   bool video_disable_composition = settings ? settings->bools.video_disable_composition : false;
 
    int (*old_handler)(Display*, XErrorEvent*) = NULL;
 
@@ -364,7 +365,7 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
          &swa);
    XSetWindowBackground(g_x11_dpy, g_x11_win, 0);
 
-   if (fullscreen && settings && settings->bools.video_disable_composition)
+   if (fullscreen && video_disable_composition)
    {
       uint32_t value                = 1;
       Atom cardinal                 = XInternAtom(g_x11_dpy, "CARDINAL", False);

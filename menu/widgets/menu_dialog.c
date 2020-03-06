@@ -204,13 +204,16 @@ int menu_dialog_iterate(char *s, size_t len,
       case MENU_DIALOG_HELP_EXTRACT:
          {
             settings_t *settings      = config_get_ptr();
+            bool bundle_finished      = settings->bools.bundle_finished;
+
             menu_hash_get_help_enum(
                   MENU_ENUM_LABEL_VALUE_EXTRACTING_PLEASE_WAIT,
                   s, len);
 
-            if (settings->bools.bundle_finished)
+            if (bundle_finished)
             {
-               settings->bools.bundle_finished = false;
+               configuration_set_bool(settings,
+                     settings->bools.bundle_finished, false);
                menu_dialog_current_type = MENU_DIALOG_NONE;
                return 1;
             }
