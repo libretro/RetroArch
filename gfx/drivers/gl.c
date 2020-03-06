@@ -3946,12 +3946,11 @@ static bool gl2_alive(void *data)
    bool quit            = false;
    bool resize          = false;
    gl_t         *gl     = (gl_t*)data;
-   bool is_shutdown     = rarch_ctl(RARCH_CTL_IS_SHUTDOWN, NULL);
    unsigned temp_width  = gl->video_width;
    unsigned temp_height = gl->video_height;
 
    gl->ctx_driver->check_window(gl->ctx_data,
-         &quit, &resize, &temp_width, &temp_height, is_shutdown);
+         &quit, &resize, &temp_width, &temp_height);
 
    if (quit)
       gl->quitting = true;

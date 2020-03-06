@@ -304,8 +304,7 @@ static void sdl_ctx_update_title(void *data, void *data2)
 
 static void sdl_ctx_check_window(void *data, bool *quit,
       bool *resize,unsigned *width,
-      unsigned *height,
-      bool is_shutdown)
+      unsigned *height)
 {
    SDL_Event event;
    gfx_ctx_sdl_data_t *sdl = (gfx_ctx_sdl_data_t*)data;

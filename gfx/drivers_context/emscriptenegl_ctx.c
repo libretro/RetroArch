@@ -91,7 +91,7 @@ static void gfx_ctx_emscripten_get_canvas_size(int *width, int *height)
 }
 
 static void gfx_ctx_emscripten_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height, bool is_shutdown)
+      bool *resize, unsigned *width, unsigned *height)
 {
    EMSCRIPTEN_RESULT r;
    int input_width;

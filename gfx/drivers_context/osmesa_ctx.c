@@ -317,7 +317,7 @@ static void osmesa_ctx_get_video_size(void *data,
 
 static void osmesa_ctx_check_window(void *data, bool *quit,
       bool *resize,unsigned *width,
-      unsigned *height, bool is_shutdown)
+      unsigned *height)
 {
    gfx_ctx_osmesa_data_t *osmesa = (gfx_ctx_osmesa_data_t*)data;
 

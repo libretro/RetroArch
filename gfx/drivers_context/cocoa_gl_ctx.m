@@ -545,7 +545,7 @@ static void cocoagl_gfx_ctx_bind_hw_render(void *data, bool enable)
 }
 
 static void cocoagl_gfx_ctx_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height, bool is_shutdown)
+      bool *resize, unsigned *width, unsigned *height)
 {
    unsigned new_width, new_height;
 #ifdef HAVE_VULKAN

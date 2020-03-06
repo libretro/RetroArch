@@ -399,11 +399,9 @@ static void gfx_ctx_x_swap_buffers(void *data, void *data2)
 }
 
 static void gfx_ctx_x_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height,
-      bool is_shutdown)
+      bool *resize, unsigned *width, unsigned *height)
 {
-   x11_check_window(data, quit, resize, width, height,
-         is_shutdown);
+   x11_check_window(data, quit, resize, width, height);
 
    switch (x_api)
    {
@@ -1019,10 +1017,8 @@ static bool gfx_ctx_x_set_video_mode(void *data,
 #ifdef HAVE_VULKAN
          {
             bool quit, resize;
-            bool shutdown = false;
             unsigned width = 0, height = 0;
-            x11_check_window(x, &quit, &resize, &width, &height,
-                  shutdown);
+            x11_check_window(x, &quit, &resize, &width, &height);
 
             /* FIXME/TODO - threading error here */
 

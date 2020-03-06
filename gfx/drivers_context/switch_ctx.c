@@ -120,7 +120,7 @@ error:
 }
 
 static void switch_ctx_check_window(void *data, bool *quit,
-                                    bool *resize, unsigned *width, unsigned *height, bool is_shutdown)
+      bool *resize, unsigned *width, unsigned *height)
 {
     unsigned new_width, new_height;
 

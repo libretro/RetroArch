@@ -215,8 +215,7 @@ static void android_gfx_ctx_get_video_size(void *data,
 }
 
 static void android_gfx_ctx_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height,
-      bool is_shutdown)
+      bool *resize, unsigned *width, unsigned *height)
 {
 #ifdef HAVE_VULKAN
    struct android_app *android_app = (struct android_app*)g_android;
@@ -265,10 +264,6 @@ static void android_gfx_ctx_check_window(void *data, bool *quit,
       *height = new_height;
       *resize = true;
    }
-
-   /* Check if we are exiting. */
-   if (is_shutdown)
-      *quit = true;
 }
 
 static bool android_gfx_ctx_set_resize(void *data,

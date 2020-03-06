@@ -57,7 +57,7 @@ typedef struct gfx_ctx_gdi_data
 void *dinput_gdi;
 
 static void gfx_ctx_gdi_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height, bool is_shutdown)
+      bool *resize, unsigned *width, unsigned *height)
 {
    win32_check_window(quit, resize, width, height);
 }

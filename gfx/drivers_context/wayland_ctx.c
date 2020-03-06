@@ -1068,8 +1068,7 @@ void flush_wayland_fd(void *data)
 }
 
 static void gfx_ctx_wl_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height,
-      bool is_shutdown)
+      bool *resize, unsigned *width, unsigned *height)
 {
    /* this function works with SCALED sizes, it's used from the renderer */
    unsigned new_width, new_height;

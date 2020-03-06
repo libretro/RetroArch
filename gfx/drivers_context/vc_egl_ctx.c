@@ -91,13 +91,8 @@ static INLINE bool gfx_ctx_vc_egl_query_extension(vc_ctx_data_t *vc, const char 
 }
 
 static void gfx_ctx_vc_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height,
-      bool is_shutdown)
+      bool *resize, unsigned *width, unsigned *height)
 {
-   (void)data;
-   (void)width;
-   (void)height;
-
    *resize = false;
    *quit   = (bool)frontend_driver_get_signal_handler_state();
 }

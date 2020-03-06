@@ -34,7 +34,7 @@
 static enum gfx_ctx_api network_ctx_api = GFX_CTX_NONE;
 
 static void gfx_ctx_network_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height, bool is_shutdown)
+      bool *resize, unsigned *width, unsigned *height)
 {
 }
 

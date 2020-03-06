@@ -467,10 +467,9 @@ static bool vg_alive(void *data)
    unsigned temp_width  = 0;
    unsigned temp_height = 0;
    vg_t            *vg  = (vg_t*)data;
-   bool is_shutdown     = rarch_ctl(RARCH_CTL_IS_SHUTDOWN, NULL);
 
    vg->ctx_driver->check_window(vg->ctx_data,
-            &quit, &resize, &temp_width, &temp_height, is_shutdown);
+            &quit, &resize, &temp_width, &temp_height);
 
    if (temp_width != 0 && temp_height != 0)
       video_driver_set_size(temp_width, temp_height);

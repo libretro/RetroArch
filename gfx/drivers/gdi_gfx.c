@@ -380,14 +380,13 @@ static bool gdi_gfx_alive(void *data)
    bool quit            = false;
    bool resize          = false;
    bool ret             = false;
-   bool is_shutdown     = rarch_ctl(RARCH_CTL_IS_SHUTDOWN, NULL);
    gdi_t *gdi           = (gdi_t*)data;
 
    /* Needed because some context drivers don't track their sizes */
    video_driver_get_size(&temp_width, &temp_height);
 
    gdi->ctx_driver->check_window(gdi->ctx_data,
-            &quit, &resize, &temp_width, &temp_height, is_shutdown);
+            &quit, &resize, &temp_width, &temp_height);
 
    ret = !quit;
 

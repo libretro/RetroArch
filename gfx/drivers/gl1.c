@@ -964,14 +964,13 @@ static bool gl1_gfx_alive(void *data)
    bool quit            = false;
    bool resize          = false;
    bool ret             = false;
-   bool is_shutdown     = rarch_ctl(RARCH_CTL_IS_SHUTDOWN, NULL);
    gl1_t *gl1           = (gl1_t*)data;
 
    /* Needed because some context drivers don't track their sizes */
    video_driver_get_size(&temp_width, &temp_height);
 
    gl1->ctx_driver->check_window(gl1->ctx_data,
-            &quit, &resize, &temp_width, &temp_height, is_shutdown);
+            &quit, &resize, &temp_width, &temp_height);
 
    if (resize)
       gl1->should_resize = true;

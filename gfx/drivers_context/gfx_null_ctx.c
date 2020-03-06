@@ -25,7 +25,7 @@ static void gfx_ctx_null_swap_interval(void *data, int interval)
 }
 
 static void gfx_ctx_null_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height, bool is_shutdown)
+      bool *resize, unsigned *width, unsigned *height)
 {
    (void)data;
    (void)quit;
