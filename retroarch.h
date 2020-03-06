@@ -142,7 +142,6 @@ enum rarch_ctl_state
    RARCH_CTL_SET_PAUSED,
 
    RARCH_CTL_SET_SHUTDOWN,
-   RARCH_CTL_IS_SHUTDOWN,
 
    /* Runloop state */
    RARCH_CTL_STATE_FREE,

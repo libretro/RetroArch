@@ -28069,8 +28069,6 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
       case RARCH_CTL_SET_SHUTDOWN:
          runloop_shutdown_initiated = true;
          break;
-      case RARCH_CTL_IS_SHUTDOWN:
-         return runloop_shutdown_initiated;
       case RARCH_CTL_CORE_OPTION_PREV:
          /*
           * Get previous value for core option specified by @idx.

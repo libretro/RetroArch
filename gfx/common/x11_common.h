@@ -51,7 +51,7 @@ bool x11_get_metrics(void *data,
 float x11_get_refresh_rate(void *data);
 
 void x11_check_window(void *data, bool *quit,
-   bool *resize, unsigned *width, unsigned *height, bool is_shutdown);
+   bool *resize, unsigned *width, unsigned *height);
 
 void x11_get_video_size(void *data, unsigned *width, unsigned *height);
 
