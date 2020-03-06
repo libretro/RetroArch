@@ -77,6 +77,8 @@ bool task_push_load_content_with_new_core_from_companion_ui(
       const char *core_path,
       const char *fullpath,
       const char *label,
+      const char *db_name,
+      const char *crc32,
       content_ctx_info_t *content_info,
       retro_task_callback_t cb,
       void *user_data);

@@ -199,6 +199,9 @@ static char pending_content_rom_crc_path[PATH_MAX_LENGTH]     = {0};
 static char pending_subsystem_ident[255];
 static char *pending_subsystem_roms[RARCH_MAX_SUBSYSTEM_ROMS];
 
+static char companion_ui_db_name[PATH_MAX_LENGTH]             = {0};
+static char companion_ui_crc32[32]                            = {0};
+
 #ifdef HAVE_CDROM
 static void task_cdrom_dump_handler(retro_task_t *task)
 {
@@ -1294,7 +1297,8 @@ static void menu_content_environment_get(int *argc, char *argv[],
  **/
 static void task_push_to_history_list(
       bool launched_from_menu,
-      bool launched_from_cli)
+      bool launched_from_cli,
+      bool launched_from_companion_ui)
 {
    bool contentless = false;
    bool is_inited   = false;
@@ -1374,7 +1378,18 @@ static void task_push_to_history_list(
                if (string_is_empty(core_name))
                   core_name         = info->library_name;
 
+               if (launched_from_companion_ui)
+               {
+                  /* Database name + checksum are supplied
+                   * by the companion UI itself */
+                  if (!string_is_empty(companion_ui_crc32))
+                     crc32 = companion_ui_crc32;
+
+                  if (!string_is_empty(companion_ui_db_name))
+                     db_name = companion_ui_db_name;
+               }
 #ifdef HAVE_MENU
+               else
                {
                   menu_handle_t *menu = menu_driver_get_ptr();
                   /* Set database name + checksum */
@@ -1457,7 +1472,7 @@ static bool command_event_cmd_exec(const char *data,
    /* Loads content into currently selected core. */
    if (!content_load(&content_info))
       return false;
-   task_push_to_history_list(true, launched_from_cli);
+   task_push_to_history_list(true, launched_from_cli, false);
 #else
    frontend_driver_set_fork(FRONTEND_FORK_CORE_WITH_ARGS);
 #endif
@@ -1596,7 +1611,7 @@ bool task_push_start_dummy_core(content_ctx_info_t *content_info)
       ret =  false;
    }
    else
-      task_push_to_history_list(false, false);
+      task_push_to_history_list(false, false, false);
 
    if (content_ctx.name_ips)
       free(content_ctx.name_ips);
@@ -1794,7 +1809,7 @@ bool task_push_start_current_core(content_ctx_info_t *content_info)
       goto end;
    }
    else
-      task_push_to_history_list(true, false);
+      task_push_to_history_list(true, false, false);
 
 #ifdef HAVE_MENU
    /* Push quick menu onto menu stack */
@@ -1922,7 +1937,7 @@ bool task_push_load_content_with_new_core_from_menu(
       goto end;
    }
    else
-      task_push_to_history_list(true, false);
+      task_push_to_history_list(true, false, false);
 #else
    command_event_cmd_exec(path_get(RARCH_PATH_CONTENT), &content_ctx,
          false, &error_string);
@@ -1950,7 +1965,7 @@ end:
 #endif
 
 static bool task_load_content_callback(content_ctx_info_t *content_info,
-      bool loading_from_menu, bool loading_from_cli)
+      bool loading_from_menu, bool loading_from_cli, bool loading_from_companion_ui)
 {
    content_information_ctx_t content_ctx;
 
@@ -2037,7 +2052,8 @@ static bool task_load_content_callback(content_ctx_info_t *content_info,
    ret = content_load(content_info);
 
    if (ret)
-      task_push_to_history_list(true, loading_from_cli);
+      task_push_to_history_list(
+            true, loading_from_cli, loading_from_companion_ui);
 
 end:
    if (content_ctx.name_ips)
@@ -2072,6 +2088,8 @@ bool task_push_load_content_with_new_core_from_companion_ui(
       const char *core_path,
       const char *fullpath,
       const char *label,
+      const char *db_name,
+      const char *crc32,
       content_ctx_info_t *content_info,
       retro_task_callback_t cb,
       void *user_data)
@@ -2080,6 +2098,16 @@ bool task_push_load_content_with_new_core_from_companion_ui(
 
    path_set(RARCH_PATH_CONTENT, fullpath);
    path_set(RARCH_PATH_CORE, core_path);
+
+   companion_ui_db_name[0] = '\0';
+   companion_ui_crc32[0]   = '\0';
+
+   if (!string_is_empty(db_name))
+      strlcpy(companion_ui_db_name, db_name, sizeof(companion_ui_db_name));
+
+   if (!string_is_empty(crc32))
+      strlcpy(companion_ui_crc32, crc32, sizeof(companion_ui_crc32));
+
 #ifdef HAVE_DYNAMIC
    command_event(CMD_EVENT_LOAD_CORE, NULL);
 #endif
@@ -2095,7 +2123,7 @@ bool task_push_load_content_with_new_core_from_companion_ui(
    }
 
    /* Load content */
-   if (!task_load_content_callback(content_info, true, false))
+   if (!task_load_content_callback(content_info, true, false, true))
       return false;
 
 #ifdef HAVE_MENU
@@ -2115,7 +2143,7 @@ bool task_push_load_content_from_cli(
       void *user_data)
 {
    /* Load content */
-   if (!task_load_content_callback(content_info, true, true))
+   if (!task_load_content_callback(content_info, true, true, false))
       return false;
 
    return true;
@@ -2135,7 +2163,7 @@ bool task_push_start_builtin_core(
    retroarch_set_current_core_type(type, true);
 
    /* Load content */
-   if (!task_load_content_callback(content_info, true, false))
+   if (!task_load_content_callback(content_info, true, false, false))
    {
       retroarch_menu_running();
       return false;
@@ -2158,8 +2186,16 @@ bool task_push_load_content_with_current_core_from_companion_ui(
 {
    path_set(RARCH_PATH_CONTENT, fullpath);
 
-   /* Load content */
-   if (!task_load_content_callback(content_info, true, false))
+   /* TODO/FIXME: Enable setting of these values
+    * via function arguments */
+   companion_ui_db_name[0] = '\0';
+   companion_ui_crc32[0]   = '\0';
+
+   /* Load content
+    * > TODO/FIXME: Set loading_from_companion_ui 'false' for
+    *   now, until someone can implement the required higher
+    *   level functionality in 'win32_common.c' and 'ui_cocoa.m' */
+   if (!task_load_content_callback(content_info, true, false, false))
       return false;
 
    /* Push quick menu onto menu stack */
@@ -2181,7 +2217,7 @@ bool task_push_load_content_with_core_from_menu(
    path_set(RARCH_PATH_CONTENT, fullpath);
 
    /* Load content */
-   if (!task_load_content_callback(content_info, true, false))
+   if (!task_load_content_callback(content_info, true, false, false))
    {
       retroarch_menu_running();
       return false;
@@ -2206,7 +2242,7 @@ bool task_push_load_subsystem_with_core_from_menu(
    pending_subsystem_init = true;
 
    /* Load content */
-   if (!task_load_content_callback(content_info, true, false))
+   if (!task_load_content_callback(content_info, true, false, false))
    {
       retroarch_menu_running();
       return false;
