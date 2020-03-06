@@ -398,8 +398,10 @@ static void *gfx_ctx_drm_init(video_frame_info_t *video_info, void *video_driver
    const char *gpu                      = NULL;
    struct string_list *gpu_descriptors  = NULL;
 #endif
+   settings_t *settings                 = config_get_ptr();
    gfx_ctx_drm_data_t *drm              = (gfx_ctx_drm_data_t*)
       calloc(1, sizeof(gfx_ctx_drm_data_t));
+   unsigned video_monitor_index         = settings->uints.video_monitor_index;
 
    if (!drm)
       return NULL;
@@ -431,7 +433,7 @@ nextgpu:
    if (!drm_get_resources(fd))
       goto nextgpu;
 
-   if (!drm_get_connector(fd, video_info))
+   if (!drm_get_connector(fd, video_monitor_index))
       goto nextgpu;
 
    if (!drm_get_encoder(fd))
@@ -442,10 +444,13 @@ nextgpu:
    /* Choose the optimal video mode for get_video_size():
      - the current video mode from the CRTC
      - otherwise pick first connector mode */
-   if (g_orig_crtc->mode_valid) {
+   if (g_orig_crtc->mode_valid)
+   {
       drm->fb_width  = g_orig_crtc->mode.hdisplay;
       drm->fb_height = g_orig_crtc->mode.vdisplay;
-   } else {
+   }
+   else
+   {
       drm->fb_width  = g_drm_connector->modes[0].hdisplay;
       drm->fb_height = g_drm_connector->modes[0].vdisplay;
    }
