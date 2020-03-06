@@ -32,14 +32,28 @@
 #include "../../configuration.h"
 #include "../../performance_counters.h"
 
-static bool                  menu_dialog_pending_push   = false;
-static unsigned              menu_dialog_current_id     = 0;
-static enum menu_dialog_type menu_dialog_current_type   = MENU_DIALOG_NONE;
+struct menu_dialog
+{
+   bool                  pending_push;
+   unsigned              current_id;
+   enum menu_dialog_type current_type;
+};
+
+typedef struct menu_dialog menu_dialog_t;
+
+static menu_dialog_t dialog;
+
+static menu_dialog_t *dialog_get_ptr(void)
+{
+   return &dialog;
+}
 
 int menu_dialog_iterate(char *s, size_t len,
       retro_time_t current_time)
 {
-   switch (menu_dialog_current_type)
+   menu_dialog_t *p_dialog = dialog_get_ptr();
+
+   switch (p_dialog->current_type)
    {
       case MENU_DIALOG_WELCOME:
          {
@@ -57,7 +71,7 @@ int menu_dialog_iterate(char *s, size_t len,
             if (!timer.timer_end && rarch_timer_has_expired(&timer))
             {
                rarch_timer_end(&timer);
-               menu_dialog_current_type = MENU_DIALOG_NONE;
+               p_dialog->current_type = MENU_DIALOG_NONE;
                return 1;
             }
          }
@@ -166,7 +180,7 @@ int menu_dialog_iterate(char *s, size_t len,
       case MENU_DIALOG_HELP_CHEEVOS_DESCRIPTION:
          {
             rcheevos_ctx_desc_t desc_info;
-            desc_info.idx = menu_dialog_current_id;
+            desc_info.idx = p_dialog->current_id;
             desc_info.s   = s;
             desc_info.len = len;
             rcheevos_get_description((rcheevos_ctx_desc_t*) &desc_info);
@@ -214,7 +228,7 @@ int menu_dialog_iterate(char *s, size_t len,
             {
                configuration_set_bool(settings,
                      settings->bools.bundle_finished, false);
-               menu_dialog_current_type = MENU_DIALOG_NONE;
+               p_dialog->current_type = MENU_DIALOG_NONE;
                return 1;
             }
          }
@@ -237,31 +251,35 @@ int menu_dialog_iterate(char *s, size_t len,
 
 void menu_dialog_unset_pending_push(void)
 {
-   menu_dialog_pending_push = false;
+   menu_dialog_t *p_dialog = dialog_get_ptr();
+
+   p_dialog->pending_push  = false;
 }
 
 bool menu_dialog_push_pending(bool push, enum menu_dialog_type type)
 {
+   menu_dialog_t *p_dialog = dialog_get_ptr();
 #ifdef IOS
    /* TODO/FIXME - see comment in menu_init -
     * we should make this more generic so that
     * this platform-specific ifdef is no longer needed */
    if (type == MENU_DIALOG_HELP_EXTRACT)
-      if (!menu_dialog_pending_push)
+      if (!p_dialog->pending_push)
          return false;
 #endif
-   menu_dialog_pending_push = push;
-   menu_dialog_current_type = type;
+   p_dialog->pending_push = push;
+   p_dialog->current_type = type;
 
    return true;
 }
 
 void menu_dialog_push(void)
 {
-   menu_displaylist_info_t info;
    const char *label;
+   menu_displaylist_info_t info;
+   menu_dialog_t *p_dialog = dialog_get_ptr();
 
-   if (!menu_dialog_pending_push)
+   if (!p_dialog->pending_push)
       return;
 
    menu_displaylist_info_init(&info);
@@ -279,12 +297,16 @@ void menu_dialog_push(void)
 
 void menu_dialog_set_current_id(unsigned id)
 {
-   menu_dialog_current_id   = id;
+   menu_dialog_t *p_dialog = dialog_get_ptr();
+
+   p_dialog->current_id    = id;
 }
 
 void menu_dialog_reset(void)
 {
-   menu_dialog_pending_push = false;
-   menu_dialog_current_id   = 0;
-   menu_dialog_current_type = MENU_DIALOG_NONE;
+   menu_dialog_t *p_dialog = dialog_get_ptr();
+
+   p_dialog->pending_push  = false;
+   p_dialog->current_id    = 0;
+   p_dialog->current_type  = MENU_DIALOG_NONE;
 }
