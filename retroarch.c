@@ -9166,6 +9166,8 @@ bool command_event(enum event_command cmd, void *data)
             /* we toggled manually, write the new value to settings */
             configuration_set_bool(settings, settings->bools.video_fullscreen,
                   new_fullscreen_state);
+            /* Need to grab this setting's value again */
+            video_fullscreen = new_fullscreen_state;
 
             /* we toggled manually, the CLI arg is irrelevant now */
             if (ra_is_forced_fs)
