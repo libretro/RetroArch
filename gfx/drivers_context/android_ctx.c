@@ -510,7 +510,7 @@ dpi_fallback:
    return true;
 }
 
-static void android_gfx_ctx_swap_buffers(void *data, void *data2)
+static void android_gfx_ctx_swap_buffers(void *data)
 {
    android_ctx_data_t *and  = (android_ctx_data_t*)data;
 

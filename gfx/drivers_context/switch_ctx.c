@@ -240,9 +240,9 @@ static void switch_ctx_set_swap_interval(void *data,
 #endif
 }
 
-static void switch_ctx_swap_buffers(void *data, void *data2)
+static void switch_ctx_swap_buffers(void *data)
 {
-    switch_ctx_data_t *ctx_nx = (switch_ctx_data_t *)data;
+    switch_ctx_data_t *ctx_nx = (switch_ctx_data_t*)data;
 
 #ifdef HAVE_EGL
     egl_swap_buffers(&ctx_nx->egl);

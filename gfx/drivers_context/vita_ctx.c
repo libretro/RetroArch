@@ -48,7 +48,7 @@ static void vita_check_window(void *data, bool *quit,
    *quit = (bool)false;
 }
 
-static void vita_swap_buffers(void *data, void *data2)
+static void vita_swap_buffers(void *data)
 {
    (void)data;
    vglStopRendering();

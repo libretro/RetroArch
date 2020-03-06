@@ -21772,7 +21772,7 @@ bool video_driver_started_fullscreen(void)
 /* Stub functions */
 
 static void update_window_title_null(void *data) { }
-static void swap_buffers_null(void *data, void *data2) { }
+static void swap_buffers_null(void *data) { }
 static bool get_metrics_null(void *data, enum display_metric_types type,
       float *value) { return false; }
 static bool set_resize_null(void *a, unsigned b, unsigned c) { return false; }

@@ -73,7 +73,7 @@ static void emscripten_mainloop(void)
       if ((emscripten_frame_count & 1) == 0)
       {
          glClear(GL_COLOR_BUFFER_BIT);
-         video_info.cb_swap_buffers(video_info.context_data, &video_info);
+         video_info.cb_swap_buffers(video_info.context_data);
          return;
       }
    }

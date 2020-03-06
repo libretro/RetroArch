@@ -354,7 +354,7 @@ static void gfx_ctx_x_swap_interval(void *data, int interval)
    }
 }
 
-static void gfx_ctx_x_swap_buffers(void *data, void *data2)
+static void gfx_ctx_x_swap_buffers(void *data)
 {
    gfx_ctx_x_data_t *x = (gfx_ctx_x_data_t*)data;
 

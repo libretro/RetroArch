@@ -154,18 +154,16 @@ static gfx_ctx_proc_t gfx_ctx_uwp_get_proc_address(const char* symbol)
 }
 
 
-static void gfx_ctx_uwp_swap_buffers(void *data, void *data2)
+static void gfx_ctx_uwp_swap_buffers(void *data)
 {
-   (void)data;
-
    switch (uwp_api)
    {
-   case GFX_CTX_OPENGL_ES_API:
-      egl_swap_buffers(&uwp_egl);
-      break;
-   case GFX_CTX_NONE:
-   default:
-      break;
+      case GFX_CTX_OPENGL_ES_API:
+         egl_swap_buffers(&uwp_egl);
+         break;
+      case GFX_CTX_NONE:
+      default:
+         break;
    }
 }
 

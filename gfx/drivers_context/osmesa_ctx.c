@@ -340,7 +340,7 @@ static bool osmesa_ctx_suppress_screensaver(void *data, bool enable)
    return false;
 }
 
-static void osmesa_ctx_swap_buffers(void *data, void *data2)
+static void osmesa_ctx_swap_buffers(void *data)
 {
    gfx_ctx_osmesa_data_t *osmesa = (gfx_ctx_osmesa_data_t*)data;
    osmesa_fifo_accept(osmesa);

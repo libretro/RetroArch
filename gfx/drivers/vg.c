@@ -454,8 +454,7 @@ static bool vg_frame(void *data, const void *frame,
 
    video_info->cb_update_window_title(
          video_info->context_data);
-   video_info->cb_swap_buffers(
-         video_info->context_data, video_info);
+   video_info->cb_swap_buffers(video_info->context_data);
 
    return true;
 }

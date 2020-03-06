@@ -135,12 +135,12 @@ static void gfx_ctx_emscripten_check_window(void *data, bool *quit,
    *quit       = false;
 }
 
-static void gfx_ctx_emscripten_swap_buffers(void *data, void *data2)
+static void gfx_ctx_emscripten_swap_buffers(void *data)
 {
    emscripten_ctx_data_t *emscripten = (emscripten_ctx_data_t*)data;
 
-   /* doesn't really do anything in WebGL, but it might if we use WebGL workers
-    * in the future */
+   /* doesn't really do anything in WebGL, but it might 
+    * if we use WebGL workers in the future */
 #ifdef HAVE_EGL
    egl_swap_buffers(&emscripten->egl);
 #endif

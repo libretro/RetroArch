@@ -245,10 +245,9 @@ static void gfx_ctx_drm_check_window(void *data, bool *quit,
 }
 
 #ifdef HAVE_ODROIDGO2
-static void gfx_ctx_drm_swap_buffers(void *data, void *data2)
+static void gfx_ctx_drm_swap_buffers(void *data)
 {
    gfx_ctx_drm_data_t        *drm = (gfx_ctx_drm_data_t*)data;
-   video_frame_info_t *video_info = (video_frame_info_t*)data2;
 
    switch (drm_api)
    {
@@ -273,10 +272,11 @@ static void gfx_ctx_drm_swap_buffers(void *data, void *data2)
    }
 }
 #else
-static void gfx_ctx_drm_swap_buffers(void *data, void *data2)
+static void gfx_ctx_drm_swap_buffers(void *data)
 {
    gfx_ctx_drm_data_t        *drm = (gfx_ctx_drm_data_t*)data;
-   video_frame_info_t *video_info = (video_frame_info_t*)data2;
+   settings_t *settings           = config_get_ptr();
+   unsigned max_swapchain_images  = settings->uints.video_max_swapchain_images;
 
    switch (drm_api)
    {
@@ -302,7 +302,7 @@ static void gfx_ctx_drm_swap_buffers(void *data, void *data2)
    waiting_for_flip = gfx_ctx_drm_queue_flip();
 
    /* Triple-buffered page flips */
-   if (video_info->max_swapchain_images >= 3 &&
+   if (max_swapchain_images >= 3 &&
          gbm_surface_has_free_buffers(g_gbm_surface))
       return;
 

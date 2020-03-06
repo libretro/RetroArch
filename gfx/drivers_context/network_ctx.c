@@ -147,7 +147,7 @@ static uint32_t gfx_ctx_network_get_flags(void *data)
    return flags;
 }
 
-static void gfx_ctx_network_swap_buffers(void *data, void *data2)
+static void gfx_ctx_network_swap_buffers(void *data)
 {
    (void)data;
 }

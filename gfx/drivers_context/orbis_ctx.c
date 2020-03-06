@@ -233,7 +233,7 @@ static void orbis_ctx_set_swap_interval(void *data,
 #endif
 }
 
-static void orbis_ctx_swap_buffers(void *data, void *data2)
+static void orbis_ctx_swap_buffers(void *data)
 {
     orbis_ctx_data_t *ctx_orbis = (orbis_ctx_data_t *)data;
 

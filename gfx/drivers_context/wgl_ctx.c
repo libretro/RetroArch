@@ -536,7 +536,7 @@ static void gfx_ctx_wgl_check_window(void *data, bool *quit,
    }
 }
 
-static void gfx_ctx_wgl_swap_buffers(void *data, void *data2)
+static void gfx_ctx_wgl_swap_buffers(void *data)
 {
    (void)data;
 

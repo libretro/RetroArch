@@ -34,11 +34,6 @@ static void gfx_ctx_null_check_window(void *data, bool *quit,
    (void)resize;
 }
 
-static void gfx_ctx_null_swap_buffers(void *data, void *data2)
-{
-   (void)data;
-}
-
 static void gfx_ctx_null_get_video_size(void *data, unsigned *width, unsigned *height)
 {
    (void)data;
@@ -157,7 +152,7 @@ const gfx_ctx_driver_t gfx_ctx_null = {
    gfx_ctx_null_has_focus,
    gfx_ctx_null_suppress_screensaver,
    false, /* has_windowed */
-   gfx_ctx_null_swap_buffers,
+   NULL, /* swap_buffers */
    gfx_ctx_null_input_driver,
    NULL,
    NULL,

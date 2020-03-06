@@ -1188,7 +1188,7 @@ typedef struct video_frame_info
    } osd_stat_params;
 
    void (*cb_update_window_title)(void*);
-   void (*cb_swap_buffers)(void*, void *);
+   void (*cb_swap_buffers)(void*);
    bool (*cb_get_metrics)(void *data, enum display_metric_types type,
       float *value);
    bool (*cb_set_resize)(void*, unsigned, unsigned);
@@ -1268,7 +1268,7 @@ typedef struct gfx_ctx_driver
 
    /* Swaps buffers. VBlank sync depends on
     * earlier calls to swap_interval. */
-   void (*swap_buffers)(void*, void *);
+   void (*swap_buffers)(void*);
 
    /* Most video backends will want to use a certain input driver.
     * Checks for it here. */

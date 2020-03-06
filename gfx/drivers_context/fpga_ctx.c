@@ -159,11 +159,6 @@ static uint32_t gfx_ctx_fpga_get_flags(void *data)
    return flags;
 }
 
-static void gfx_ctx_fpga_swap_buffers(void *data, void *data2)
-{
-   (void)data;
-}
-
 const gfx_ctx_driver_t gfx_ctx_fpga = {
    gfx_ctx_fpga_init,
    gfx_ctx_fpga_destroy,
@@ -182,7 +177,7 @@ const gfx_ctx_driver_t gfx_ctx_fpga = {
    gfx_ctx_fpga_has_focus,
    gfx_ctx_fpga_suppress_screensaver,
    gfx_ctx_fpga_has_windowed,
-   gfx_ctx_fpga_swap_buffers,
+   NULL, /* swap_buffers */
    gfx_ctx_fpga_input_driver,
    NULL,
    NULL,

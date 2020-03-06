@@ -225,7 +225,7 @@ static void gfx_ctx_vivante_set_swap_interval(void *data, int swap_interval)
 #endif
 }
 
-static void gfx_ctx_vivante_swap_buffers(void *data, void *data2)
+static void gfx_ctx_vivante_swap_buffers(void *data)
 {
    vivante_ctx_data_t *viv = (vivante_ctx_data_t*)data;
 

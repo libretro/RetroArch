@@ -616,7 +616,7 @@ static void cocoagl_gfx_ctx_swap_interval(void *data, int i)
    }
 }
 
-static void cocoagl_gfx_ctx_swap_buffers(void *data, void *data2)
+static void cocoagl_gfx_ctx_swap_buffers(void *data)
 {
 #ifdef HAVE_VULKAN
    cocoa_ctx_data_t *cocoa_ctx = (cocoa_ctx_data_t*)data;

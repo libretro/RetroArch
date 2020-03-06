@@ -147,11 +147,6 @@ static uint32_t gfx_ctx_sixel_get_flags(void *data)
    return flags;
 }
 
-static void gfx_ctx_sixel_swap_buffers(void *data, void *data2)
-{
-   (void)data;
-}
-
 const gfx_ctx_driver_t gfx_ctx_sixel = {
    gfx_ctx_sixel_init,
    gfx_ctx_sixel_destroy,
@@ -172,7 +167,7 @@ const gfx_ctx_driver_t gfx_ctx_sixel = {
    gfx_ctx_sixel_has_focus,
    gfx_ctx_sixel_suppress_screensaver,
    true, /* has_windowed */
-   gfx_ctx_sixel_swap_buffers,
+   NULL, /* swap_buffers */
    gfx_ctx_sixel_input_driver,
    NULL,
    NULL,

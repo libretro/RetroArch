@@ -1816,7 +1816,7 @@ static void *gfx_ctx_wl_get_context_data(void *data)
 }
 #endif
 
-static void gfx_ctx_wl_swap_buffers(void *data, void *data2)
+static void gfx_ctx_wl_swap_buffers(void *data)
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
 

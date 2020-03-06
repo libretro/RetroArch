@@ -375,7 +375,7 @@ static bool sdl_ctx_suppress_screensaver(void *data, bool enable)
    return false;
 }
 
-static void sdl_ctx_swap_buffers(void *data, void *data2)
+static void sdl_ctx_swap_buffers(void *data)
 {
 #ifdef HAVE_SDL2
    gfx_ctx_sdl_data_t *sdl = (gfx_ctx_sdl_data_t*)data;

@@ -246,10 +246,8 @@ static uint32_t gfx_ctx_gdi_get_flags(void *data)
    return flags;
 }
 
-static void gfx_ctx_gdi_swap_buffers(void *data, void *data2)
+static void gfx_ctx_gdi_swap_buffers(void *data)
 {
-   (void)data;
-
    SwapBuffers(win32_gdi_hdc);
 }
 

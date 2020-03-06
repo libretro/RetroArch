@@ -194,18 +194,6 @@ static void *gfx_ctx_vc_init(video_frame_info_t *video_info, void *video_driver)
    if (!vc)
        return NULL;
 
-   /* If we set this env variable, Broadcom's EGL implementation will block
-    * on vsync with a double buffer when we call eglSwapBuffers. Less input lag!
-    * Has to be done before any EGL call.
-    * NOTE this is commented out because it should be the right way to do it, but
-    * currently it doesn't work, so we are using an vsync callback based solution.*/
-#if 0
-   if (video_info->max_swapchain_images <= 2)
-      setenv("V3D_DOUBLE_BUFFER", "1", 1);
-   else
-      setenv("V3D_DOUBLE_BUFFER", "0", 1);
-#endif
-
    bcm_host_init();
 
 #ifdef HAVE_EGL
@@ -648,11 +636,12 @@ error:
    return false;
 }
 
-static void gfx_ctx_vc_swap_buffers(void *data, void *data2)
+static void gfx_ctx_vc_swap_buffers(void *data)
 {
 #ifdef HAVE_EGL
    vc_ctx_data_t              *vc = (vc_ctx_data_t*)data;
-   video_frame_info_t *video_info = (video_frame_info_t*)data2;
+   settings_t *settings           = config_get_ptr();
+   unsigned max_swapchain_images  = settings->uints.video_max_swapchain_images;
 
    if (!vc)
       return;
@@ -661,7 +650,7 @@ static void gfx_ctx_vc_swap_buffers(void *data, void *data2)
 
    /* Wait for vsync immediately if we don't
     * want egl_swap_buffers to triple-buffer */
-   if (video_info->max_swapchain_images <= 2)
+   if (max_swapchain_images <= 2)
    {
       /* We DON'T wait to wait without callback function ready! */
       if (!vc->vsync_callback_set)

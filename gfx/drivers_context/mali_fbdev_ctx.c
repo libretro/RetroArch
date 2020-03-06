@@ -253,7 +253,7 @@ static void gfx_ctx_mali_fbdev_set_swap_interval(void *data,
 #endif
 }
 
-static void gfx_ctx_mali_fbdev_swap_buffers(void *data, void *data2)
+static void gfx_ctx_mali_fbdev_swap_buffers(void *data)
 {
    mali_ctx_data_t *mali = (mali_ctx_data_t*)data;
 
