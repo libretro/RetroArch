@@ -6246,8 +6246,9 @@ static void materialui_populate_entries(
 /* Context reset is called on launch or when a core is launched */
 static void materialui_context_reset(void *data, bool is_threaded)
 {
-   materialui_handle_t *mui = (materialui_handle_t*)data;
-   settings_t *settings     = config_get_ptr();
+   materialui_handle_t        *mui = (materialui_handle_t*)data;
+   settings_t        *settings     = config_get_ptr();
+   const char *path_menu_wallpaper = settings ? settings->paths.path_menu_wallpaper : NULL;
 
    if (!mui || !settings)
       return;
@@ -6257,18 +6258,16 @@ static void materialui_context_reset(void *data, bool is_threaded)
    gfx_display_allocate_white_texture();
    materialui_context_reset_textures(mui);
 
-   {
-      const char *path_menu_wallpaper = settings->paths.path_menu_wallpaper;
-      if (path_is_valid(path_menu_wallpaper))
-         task_push_image_load(path_menu_wallpaper,
-               video_driver_supports_rgba(), 0,
-               menu_display_handle_wallpaper_upload, NULL);
-   }
+   if (path_is_valid(path_menu_wallpaper))
+      task_push_image_load(path_menu_wallpaper,
+            video_driver_supports_rgba(), 0,
+            menu_display_handle_wallpaper_upload, NULL);
 
    video_driver_monitor_reset();
 }
 
-static int materialui_environ(enum menu_environ_cb type, void *data, void *userdata)
+static int materialui_environ(enum menu_environ_cb type,
+      void *data, void *userdata)
 {
    materialui_handle_t *mui              = (materialui_handle_t*)userdata;
 
@@ -7238,7 +7237,10 @@ static void materialui_switch_list_view(materialui_handle_t *mui)
    /* Update setting based upon current display orientation */
    if (mui->is_portrait)
    {
-      settings->uints.menu_materialui_thumbnail_view_portrait++;
+      configuration_set_uint(
+            settings,
+            settings->uints.menu_materialui_thumbnail_view_portrait,
+            settings->uints.menu_materialui_thumbnail_view_portrait + 1);
 
       if (settings->uints.menu_materialui_thumbnail_view_portrait >=
             MATERIALUI_THUMBNAIL_VIEW_PORTRAIT_LAST)
@@ -7247,7 +7249,9 @@ static void materialui_switch_list_view(materialui_handle_t *mui)
    }
    else
    {
-      settings->uints.menu_materialui_thumbnail_view_landscape++;
+      configuration_set_uint(settings,
+            settings->uints.menu_materialui_thumbnail_view_landscape,
+            settings->uints.menu_materialui_thumbnail_view_landscape + 1);
 
       if (settings->uints.menu_materialui_thumbnail_view_landscape >=
             MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE_LAST)
@@ -7486,6 +7490,7 @@ static void materialui_list_insert(
    materialui_node_t *node  = NULL;
    settings_t *settings     = config_get_ptr();
    materialui_handle_t *mui = (materialui_handle_t*)userdata;
+   bool menu_materialui_icons_enable = settings->bools.menu_materialui_icons_enable;
    bool thumbnail_reset     = false;
 
    if (!mui || !list)
@@ -7523,7 +7528,7 @@ static void materialui_list_insert(
       gfx_thumbnail_reset(&node->thumbnails.secondary);
    }
 
-   if (settings->bools.menu_materialui_icons_enable)
+   if (menu_materialui_icons_enable)
    {
       switch (type)
       {

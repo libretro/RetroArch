@@ -4533,8 +4533,9 @@ static void rgui_set_texture(void)
                /* Uh oh... This could mean we don't have enough
                 * memory, so disable upscaling and draw the usual
                 * framebuffer... */
-               settings->uints.menu_rgui_internal_upscale_level = 
-                  RGUI_UPSCALE_NONE;
+               configuration_set_uint(settings,
+                     settings->uints.menu_rgui_internal_upscale_level,
+                     RGUI_UPSCALE_NONE);
                video_driver_set_texture_frame(rgui_frame_buf.data,
                   false, fb_width, fb_height, 1.0f);
                return;
@@ -5090,15 +5091,11 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
    }
 
    if (settings->uints.menu_rgui_color_theme != rgui->color_theme)
-   {
       prepare_rgui_colors(rgui, settings);
-   }
    else if (settings->uints.menu_rgui_color_theme == RGUI_THEME_CUSTOM)
    {
       if (string_is_not_equal_fast(settings->paths.path_rgui_theme_preset, rgui->theme_preset_path, sizeof(rgui->theme_preset_path)))
-      {
          prepare_rgui_colors(rgui, settings);
-      }
    }
 
    /* Note: both rgui_set_aspect_ratio() and rgui_set_video_config()
