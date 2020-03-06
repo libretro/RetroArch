@@ -1941,7 +1941,7 @@ static bool gl_core_frame(void *data, const void *frame,
    }
 
    video_info->cb_update_window_title(
-         video_info->context_data, video_info);
+         video_info->context_data);
 
    if (gl->readback_buffer_screenshot)
    {

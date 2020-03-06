@@ -1146,7 +1146,7 @@ static bool gfx_ctx_wl_set_resize(void *data, unsigned width, unsigned height)
    return true;
 }
 
-static void gfx_ctx_wl_update_title(void *data, void *data2)
+static void gfx_ctx_wl_update_title(void *data)
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
    char title[128];

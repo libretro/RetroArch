@@ -871,7 +871,7 @@ static bool xv_frame(void *data, const void *frame, unsigned width,
          true);
    XSync(g_x11_dpy, False);
 
-   x11_update_title(NULL, video_info);
+   x11_update_title(NULL);
 
    return true;
 }

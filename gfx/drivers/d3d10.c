@@ -1516,7 +1516,7 @@ static bool d3d10_gfx_frame(
       D3D10SetBlendState(d3d10->device, d3d10->blend_enable, NULL, D3D10_DEFAULT_SAMPLE_MASK);
       D3D10SetVertexBuffer(d3d10->device, 0, d3d10->sprites.vbo, sizeof(d3d10_sprite_t), 0);
       font_driver_render_msg(d3d10, video_info, msg, NULL, NULL);
-      dxgi_update_title(video_info);
+      dxgi_update_title();
    }
    d3d10->sprites.enabled = false;
 

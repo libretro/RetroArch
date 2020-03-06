@@ -1511,7 +1511,7 @@ static void d3d9_get_overlay_interface(void *data,
 }
 #endif
 
-static void d3d9_update_title(video_frame_info_t *video_info)
+static void d3d9_update_title(void)
 {
 #ifndef _XBOX
    const ui_window_t *window      = ui_companion_driver_get_window_ptr();
@@ -1651,7 +1651,7 @@ static bool d3d9_frame(void *data, const void *frame,
       d3d9_end_scene(d3d->dev);
    }
 
-   d3d9_update_title(video_info);
+   d3d9_update_title();
    d3d9_swap(d3d, d3d->dev);
 
    return true;

@@ -303,7 +303,7 @@ void dxgi_copy(
 #pragma warning(default : 4293)
 #endif
 
-void dxgi_update_title(video_frame_info_t* video_info)
+void dxgi_update_title(void)
 {
 #ifndef __WINRT__
    const ui_window_t* window = ui_companion_driver_get_window_ptr();

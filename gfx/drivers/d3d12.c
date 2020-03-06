@@ -1574,7 +1574,7 @@ static bool d3d12_gfx_frame(
       D3D12IASetVertexBuffers(d3d12->queue.cmd, 0, 1, &d3d12->sprites.vbo_view);
 
       font_driver_render_msg(d3d12, video_info, msg, NULL, NULL);
-      dxgi_update_title(video_info);
+      dxgi_update_title();
    }
    d3d12->sprites.enabled = false;
 

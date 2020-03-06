@@ -285,7 +285,7 @@ static void sdl_ctx_get_video_size(void *data,
    }
 }
 
-static void sdl_ctx_update_title(void *data, void *data2)
+static void sdl_ctx_update_title(void *data)
 {
    char title[128];
    title[0] = '\0';

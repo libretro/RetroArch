@@ -50,7 +50,7 @@ static bool gfx_ctx_fpga_set_resize(void *data,
    return false;
 }
 
-static void gfx_ctx_fpga_update_title(void *data, void *data2)
+static void gfx_ctx_fpga_update_title(void *data)
 {
    char title[128];
 

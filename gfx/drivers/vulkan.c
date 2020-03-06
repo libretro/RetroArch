@@ -2110,7 +2110,7 @@ static bool vulkan_frame(void *data, const void *frame,
 
    if (!vk->context->swap_interval_emulation_lock)
       video_info->cb_update_window_title(
-            video_info->context_data, video_info);
+            video_info->context_data);
 
    /* Handle spurious swapchain invalidations as soon as we can,
     * i.e. right after swap buffers. */

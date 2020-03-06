@@ -1592,7 +1592,7 @@ static bool d3d11_gfx_frame(
       D3D11SetBlendState(d3d11->context, d3d11->blend_enable, NULL, D3D11_DEFAULT_SAMPLE_MASK);
       D3D11SetVertexBuffer(context, 0, d3d11->sprites.vbo, sizeof(d3d11_sprite_t), 0);
       font_driver_render_msg(d3d11, video_info, msg, NULL, NULL);
-      dxgi_update_title(video_info);
+      dxgi_update_title();
    }
    d3d11->sprites.enabled = false;
 

@@ -48,10 +48,6 @@ static bool gfx_ctx_network_set_resize(void *data,
    return false;
 }
 
-static void gfx_ctx_network_update_window_title(void *data, void *data2)
-{
-}
-
 static void gfx_ctx_network_get_video_size(void *data,
       unsigned *width, unsigned *height)
 {
@@ -170,7 +166,7 @@ const gfx_ctx_driver_t gfx_ctx_network = {
    NULL, /* get_video_output_next */
    gfx_ctx_network_get_metrics,
    NULL,
-   gfx_ctx_network_update_window_title,
+   NULL, /* update_title */
    gfx_ctx_network_check_window,
    gfx_ctx_network_set_resize,
    gfx_ctx_network_has_focus,

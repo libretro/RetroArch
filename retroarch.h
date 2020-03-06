@@ -1187,7 +1187,7 @@ typedef struct video_frame_info
       enum text_alignment text_align;
    } osd_stat_params;
 
-   void (*cb_update_window_title)(void*, void *);
+   void (*cb_update_window_title)(void*);
    void (*cb_swap_buffers)(void*, void *);
    bool (*cb_get_metrics)(void *data, enum display_metric_types type,
       float *value);
@@ -1197,7 +1197,7 @@ typedef struct video_frame_info
    void *userdata;
 } video_frame_info_t;
 
-typedef void (*update_window_title_cb)(void*, void*);
+typedef void (*update_window_title_cb)(void*);
 typedef bool (*get_metrics_cb)(void *data, enum display_metric_types type,
       float *value);
 typedef bool (*set_resize_cb)(void*, unsigned, unsigned);

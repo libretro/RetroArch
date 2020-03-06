@@ -369,7 +369,7 @@ float cocoagl_gfx_ctx_get_native_scale(void)
 }
 
 #if defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL)
-static void cocoagl_gfx_ctx_update_title(void *data, void *data2)
+static void cocoagl_gfx_ctx_update_title(void *data)
 {
    const ui_window_t *window      = ui_companion_driver_get_window_ptr();
 

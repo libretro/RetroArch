@@ -63,7 +63,7 @@ bool x11_alive(void *data);
 
 bool x11_connect(void);
 
-void x11_update_title(void *data, void *data2);
+void x11_update_title(void *data);
 
 bool x11_input_ctx_new(bool true_full);
 

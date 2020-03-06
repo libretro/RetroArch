@@ -779,7 +779,7 @@ static bool gfx_ctx_x_set_video_mode(void *data,
    }
 
    x11_set_window_attr(g_x11_dpy, g_x11_win);
-   x11_update_title(NULL, video_info);
+   x11_update_title(NULL);
 
    if (fullscreen)
       x11_show_mouse(g_x11_dpy, g_x11_win, false);

@@ -794,7 +794,7 @@ static bool drm_gfx_frame(void *data, const void *frame, unsigned width,
 #endif
 
    video_info->cb_update_window_title(
-         video_info->context_data, video_info);
+         video_info->context_data);
 
    /* Update main surface: locate free page, blit and flip. */
    drm_surface_update(_drmvars, frame, _drmvars->main_surface);

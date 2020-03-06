@@ -68,9 +68,8 @@ static bool gfx_ctx_gdi_set_resize(void *data,
    return false;
 }
 
-static void gfx_ctx_gdi_update_title(void *data, void *data2)
+static void gfx_ctx_gdi_update_title(void *data)
 {
-   video_frame_info_t* video_info = (video_frame_info_t*)data2;
    const ui_window_t *window      = ui_companion_driver_get_window_ptr();
    char title[128];
 
