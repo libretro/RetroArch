@@ -95,11 +95,13 @@ typedef struct
 
 /* When streaming thumbnails, sets time in ms that an
  * entry must be on screen before an image load is
- * requested */
+ * requested
+ * > if 'delay' is negative, default value is set */
 void gfx_thumbnail_set_stream_delay(float delay);
 
 /* Sets duration in ms of the thumbnail 'fade in'
- * animation */
+ * animation
+ * > If 'duration' is negative, default value is set */
 void gfx_thumbnail_set_fade_duration(float duration);
 
 /* Getters */

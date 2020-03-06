@@ -5255,6 +5255,9 @@ static void *xmb_init(void **userdata, bool video_is_threaded)
    xmb->fullscreen_thumbnail_selection  = 0;
    xmb->fullscreen_thumbnail_label[0]   = '\0';
 
+   gfx_thumbnail_set_stream_delay(-1.0f);
+   gfx_thumbnail_set_fade_duration(-1.0f);
+
    xmb->use_ps3_layout      = xmb_use_ps3_layout(settings, width, height);
    xmb->last_use_ps3_layout = xmb->use_ps3_layout;
    xmb->last_scale_factor   = xmb_get_scale_factor(settings, xmb->use_ps3_layout, width);
