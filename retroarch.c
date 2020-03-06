@@ -3893,11 +3893,15 @@ static bool command_show_osd_msg(const char* arg)
 
 static bool command_get_config_param(const char* arg)
 {
-   char reply[4096]            = {0};
-   const char      *value      = "unsupported";
-   settings_t       *settings  = configuration_settings;
-   bool       video_fullscreen = settings->bools.video_fullscreen;
-   const char *dir_runtime_log = settings->paths.directory_runtime_log;
+   char reply[4096]             = {0};
+   const char      *value       = "unsupported";
+   settings_t       *settings   = configuration_settings;
+   bool       video_fullscreen  = settings->bools.video_fullscreen;
+   const char *dir_runtime_log  = settings->paths.directory_runtime_log;
+   const char *log_dir          = settings->paths.log_dir;
+   const char *directory_cache  = settings->paths.directory_cache;
+   const char *directory_system = settings->paths.directory_system;
+   const char *path_username    = settings->paths.username;
 
    if (string_is_equal(arg, "video_fullscreen"))
    {
@@ -3913,13 +3917,13 @@ static bool command_get_config_param(const char* arg)
    else if (string_is_equal(arg, "runtime_log_directory"))
       value = dir_runtime_log;
    else if (string_is_equal(arg, "log_dir"))
-      value = settings->paths.log_dir;
+      value = log_dir;
    else if (string_is_equal(arg, "cache_directory"))
-      value = settings->paths.directory_cache;
+      value = directory_cache;
    else if (string_is_equal(arg, "system_directory"))
-      value = settings->paths.directory_system;
+      value = directory_system;
    else if (string_is_equal(arg, "netplay_nickname"))
-      value = settings->paths.username;
+      value = path_username;
    /* TODO: query any string */
 
    snprintf(reply, sizeof(reply), "GET_CONFIG_PARAM %s %s\n", arg, value);
@@ -30073,29 +30077,29 @@ enum retro_language rarch_get_language_from_iso(const char *iso639)
 
 void rarch_favorites_init(void)
 {
-   settings_t *settings      = configuration_settings;
-   unsigned content_favorites_size;
+   settings_t *settings               = configuration_settings;
+   int content_favorites_size         = settings ? settings->ints.content_favorites_size : 0;
+   const char *path_content_favorites = settings ? settings->paths.path_content_favorites : NULL;
+   bool playlist_sort_alphabetical    = settings ? settings->bools.playlist_sort_alphabetical : false;
 
    if (!settings)
       return;
 
-   if (settings->ints.content_favorites_size < 0)
+   if (content_favorites_size < 0)
       content_favorites_size = COLLECTION_SIZE;
-   else
-      content_favorites_size = (unsigned)settings->ints.content_favorites_size;
 
    rarch_favorites_deinit();
 
    RARCH_LOG("%s: [%s].\n",
          msg_hash_to_str(MSG_LOADING_FAVORITES_FILE),
-         settings->paths.path_content_favorites);
+         path_content_favorites);
    g_defaults.content_favorites = playlist_init(
-         settings->paths.path_content_favorites,
-         content_favorites_size);
+         path_content_favorites,
+         (unsigned)content_favorites_size);
 
    /* Ensure that playlist is sorted alphabetically,
     * if required */
-   if (settings->bools.playlist_sort_alphabetical)
+   if (playlist_sort_alphabetical)
       playlist_qsort(g_defaults.content_favorites);
 }
 
@@ -30103,8 +30107,11 @@ void rarch_favorites_deinit(void)
 {
    if (g_defaults.content_favorites)
    {
-      settings_t *settings = configuration_settings;
-      playlist_write_file(g_defaults.content_favorites, settings->bools.playlist_use_old_format);
+      settings_t         *settings = configuration_settings;
+      bool playlist_use_old_format = settings->bools.playlist_use_old_format;
+
+      playlist_write_file(g_defaults.content_favorites,
+            playlist_use_old_format);
       playlist_free(g_defaults.content_favorites);
       g_defaults.content_favorites = NULL;
    }
@@ -30488,8 +30495,9 @@ static void core_free_retro_game_info(struct retro_game_info *dest)
 
 unsigned int retroarch_get_rotation(void)
 {
-   settings_t *settings              = configuration_settings;
-   return settings->uints.video_rotation + runloop_system.rotation;
+   settings_t *settings    = configuration_settings;
+   unsigned video_rotation = settings->uints.video_rotation;
+   return video_rotation + runloop_system.rotation;
 }
 
 bool is_input_keyboard_display_on(void)
