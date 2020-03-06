@@ -511,6 +511,8 @@ static bool video_thread_handle_packet(
       case CMD_POKE_SET_OSD_MSG:
          {
             video_frame_info_t video_info;
+            /* TODO/FIXME - not thread-safe - should get 
+             * rid of this */
             video_driver_build_info(&video_info);
             if (thr->poke && thr->poke->set_osd_msg)
                thr->poke->set_osd_msg(thr->driver_data,
@@ -601,6 +603,8 @@ static void video_thread_loop(void *data)
          if (thr->driver && thr->driver->frame)
          {
             video_frame_info_t video_info;
+            /* TODO/FIXME - not thread-safe - should get 
+             * rid of this */
             video_driver_build_info(&video_info);
 
             ret = thr->driver->frame(thr->driver_data,
