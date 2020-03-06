@@ -7455,7 +7455,6 @@ static bool setting_append_list(
    rarch_setting_group_info_t group_info    = {0};
    rarch_setting_group_info_t subgroup_info = {0};
    settings_t *settings                     = config_get_ptr();
-   const char *menu_ident                   = menu_driver_ident();
    global_t   *global                       = global_get_ptr();
 
    (void)settings;
@@ -7621,7 +7620,7 @@ static bool setting_append_list(
          }
 #endif
 
-         if (string_is_not_equal(menu_ident, "xmb") && string_is_not_equal(menu_ident, "ozone"))
+         if (string_is_not_equal(settings->arrays.menu_driver, "xmb") && string_is_not_equal(settings->arrays.menu_driver, "ozone"))
          {
             CONFIG_ACTION(
                   list, list_info,
@@ -12400,8 +12399,8 @@ static bool setting_append_list(
 
          START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
-         if (string_is_not_equal(menu_ident, "rgui") &&
-             string_is_not_equal(menu_ident, "ozone"))
+         if (string_is_not_equal(settings->arrays.menu_driver, "rgui") &&
+             string_is_not_equal(settings->arrays.menu_driver, "ozone"))
          {
             CONFIG_PATH(
                   list, list_info,
@@ -12434,7 +12433,7 @@ static bool setting_append_list(
             SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
          }
 
-         if (string_is_not_equal(menu_ident, "rgui"))
+         if (string_is_not_equal(settings->arrays.menu_driver, "rgui"))
          {
             CONFIG_FLOAT(
                   list, list_info,
@@ -12453,7 +12452,7 @@ static bool setting_append_list(
             SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
          }
 
-         if (string_is_equal(menu_ident, "xmb"))
+         if (string_is_equal(settings->arrays.menu_driver, "xmb"))
          {
             CONFIG_BOOL(
                   list, list_info,
@@ -12555,7 +12554,7 @@ static bool setting_append_list(
                SD_FLAG_ADVANCED
                );
 
-         if (string_is_equal(menu_ident, "rgui"))
+         if (string_is_equal(settings->arrays.menu_driver, "rgui"))
          {
             CONFIG_BOOL(
                   list, list_info,
@@ -12788,7 +12787,7 @@ static bool setting_append_list(
                   SD_FLAG_NONE);
          }
 
-         if (string_is_equal(menu_ident, "xmb"))
+         if (string_is_equal(settings->arrays.menu_driver, "xmb"))
          {
             CONFIG_BOOL(
                   list, list_info,
@@ -12970,7 +12969,7 @@ static bool setting_append_list(
                SD_FLAG_NONE);
 #endif
 
-         if (string_is_equal(menu_ident, "xmb") || string_is_equal(menu_ident, "ozone"))
+         if (string_is_equal(settings->arrays.menu_driver, "xmb") || string_is_equal(settings->arrays.menu_driver, "ozone"))
          {
             CONFIG_BOOL(
                   list, list_info,
@@ -13029,9 +13028,9 @@ static bool setting_append_list(
          START_SUB_GROUP(list, list_info, "Display", &group_info, &subgroup_info, parent_group);
 
          /* > MaterialUI, XMB and Ozone all support menu scaling */
-         if (string_is_equal(menu_ident, "glui") ||
-             string_is_equal(menu_ident, "xmb") ||
-             string_is_equal(menu_ident, "ozone"))
+         if (string_is_equal(settings->arrays.menu_driver, "glui") ||
+             string_is_equal(settings->arrays.menu_driver, "xmb") ||
+             string_is_equal(settings->arrays.menu_driver, "ozone"))
          {
             CONFIG_FLOAT(
                   list, list_info,
@@ -13050,7 +13049,7 @@ static bool setting_append_list(
          }
 
 #ifdef HAVE_XMB
-         if (string_is_equal(menu_ident, "xmb"))
+         if (string_is_equal(settings->arrays.menu_driver, "xmb"))
          {
             /* only XMB uses these values, don't show
              * them on other drivers. */
@@ -13222,7 +13221,7 @@ static bool setting_append_list(
             (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
        }
 #endif
-         if (string_is_equal(menu_ident, "ozone"))
+         if (string_is_equal(settings->arrays.menu_driver, "ozone"))
          {
             CONFIG_BOOL(
                   list, list_info,
@@ -13492,7 +13491,7 @@ static bool setting_append_list(
 #endif
 
 #if defined(HAVE_XMB) || defined(HAVE_OZONE)
-         if (string_is_equal(menu_ident, "xmb") || string_is_equal(menu_ident, "ozone"))
+         if (string_is_equal(settings->arrays.menu_driver, "xmb") || string_is_equal(settings->arrays.menu_driver, "ozone"))
          {
             CONFIG_BOOL(
                   list, list_info,
@@ -13655,7 +13654,7 @@ static bool setting_append_list(
                   SD_FLAG_NONE);
 
 #ifdef HAVE_MATERIALUI
-         if (string_is_equal(menu_ident, "glui"))
+         if (string_is_equal(settings->arrays.menu_driver, "glui"))
          {
             /* only MaterialUI uses these values, don't show
              * them on other drivers. */
@@ -13860,7 +13859,7 @@ static bool setting_append_list(
 #endif
 
 #ifdef HAVE_OZONE
-         if (string_is_equal(menu_ident, "ozone"))
+         if (string_is_equal(settings->arrays.menu_driver, "ozone"))
          {
             CONFIG_UINT(
                   list, list_info,
@@ -13926,7 +13925,7 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_ADVANCED);
 
-         if (string_is_equal(menu_ident, "rgui"))
+         if (string_is_equal(settings->arrays.menu_driver, "rgui"))
          {
             CONFIG_BOOL(
                   list, list_info,
@@ -13959,25 +13958,25 @@ static bool setting_append_list(
                   SD_FLAG_NONE);
          }
 
-         if (string_is_equal(menu_ident, "xmb") ||
-             string_is_equal(menu_ident, "ozone") ||
-             string_is_equal(menu_ident, "rgui") ||
-             string_is_equal(menu_ident, "glui"))
+         if (string_is_equal(settings->arrays.menu_driver, "xmb") ||
+             string_is_equal(settings->arrays.menu_driver, "ozone") ||
+             string_is_equal(settings->arrays.menu_driver, "rgui") ||
+             string_is_equal(settings->arrays.menu_driver, "glui"))
          {
             enum msg_hash_enums thumbnails_label_value;
             enum msg_hash_enums left_thumbnails_label_value;
 
-            if (string_is_equal(menu_ident, "rgui"))
+            if (string_is_equal(settings->arrays.menu_driver, "rgui"))
             {
                thumbnails_label_value      = MENU_ENUM_LABEL_VALUE_THUMBNAILS_RGUI;
                left_thumbnails_label_value = MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_RGUI;
             }
-            else if (string_is_equal(menu_ident, "ozone"))
+            else if (string_is_equal(settings->arrays.menu_driver, "ozone"))
             {
                thumbnails_label_value      = MENU_ENUM_LABEL_VALUE_THUMBNAILS;
                left_thumbnails_label_value = MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_OZONE;
             }
-            else if (string_is_equal(menu_ident, "glui"))
+            else if (string_is_equal(settings->arrays.menu_driver, "glui"))
             {
                thumbnails_label_value      = MENU_ENUM_LABEL_VALUE_THUMBNAILS_MATERIALUI;
                left_thumbnails_label_value = MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_MATERIALUI;
@@ -14023,7 +14022,7 @@ static bool setting_append_list(
             (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_RADIO_BUTTONS;
          }
 
-         if (string_is_equal(menu_ident, "xmb"))
+         if (string_is_equal(settings->arrays.menu_driver, "xmb"))
          {
             CONFIG_BOOL(
                   list, list_info,
@@ -14056,9 +14055,9 @@ static bool setting_append_list(
             menu_settings_list_current_add_range(list, list_info, (*list)[list_info->index - 1].offset_by, 100, 1, true, true);
          }
 
-         if (string_is_equal(menu_ident, "xmb") ||
-             string_is_equal(menu_ident, "ozone") ||
-             string_is_equal(menu_ident, "glui"))
+         if (string_is_equal(settings->arrays.menu_driver, "xmb") ||
+             string_is_equal(settings->arrays.menu_driver, "ozone") ||
+             string_is_equal(settings->arrays.menu_driver, "glui"))
          {
             CONFIG_UINT(
                   list, list_info,
@@ -14075,7 +14074,7 @@ static bool setting_append_list(
             menu_settings_list_current_add_range(list, list_info, 0, 1024, 256, true, true);
          }
 
-         if (string_is_equal(menu_ident, "rgui"))
+         if (string_is_equal(settings->arrays.menu_driver, "rgui"))
          {
             CONFIG_UINT(
                   list, list_info,
@@ -15509,7 +15508,7 @@ static bool setting_append_list(
                );
 
 #ifdef HAVE_OZONE
-         if (string_is_equal(menu_ident, "ozone"))
+         if (string_is_equal(settings->arrays.menu_driver, "ozone"))
          {
             CONFIG_BOOL(
                   list, list_info,
@@ -15607,7 +15606,7 @@ static bool setting_append_list(
                SD_FLAG_NONE
                );
 
-         if (string_is_equal(menu_ident, "xmb") || string_is_equal(menu_ident, "ozone"))
+         if (string_is_equal(settings->arrays.menu_driver, "xmb") || string_is_equal(settings->arrays.menu_driver, "ozone"))
             CONFIG_BOOL(
                   list, list_info,
                   &settings->bools.cheevos_badges_enable,
