@@ -277,7 +277,7 @@ static bool get_video_mode(
    float minimum_fps_diff      = 0.0f;
    XF86VidModeModeInfo **modes = NULL;
    settings_t *settings        = config_get_ptr();
-   bool black_frame_insertion  = settings->bools.black_frame_insertion;
+   bool black_frame_insertion  = settings->bools.video_black_frame_insertion;
    float video_refresh_rate    = settings->floats.video_refresh_rate;
 
    XF86VidModeGetAllModeLines(dpy, DefaultScreen(dpy), &num_modes, &modes);
