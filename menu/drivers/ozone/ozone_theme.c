@@ -152,14 +152,19 @@ ozone_theme_t *ozone_themes[] = {
    &ozone_theme_gruvbox_dark
 };
 
+/* TODO/FIXME - all of the public global variables below are
+ * referenced outside */
+
 unsigned ozone_themes_count                 = sizeof(ozone_themes) / sizeof(ozone_themes[0]);
 unsigned last_color_theme                   = 0;
+
 bool last_use_preferred_system_color_theme  = false;
 ozone_theme_t *ozone_default_theme          = &ozone_theme_dark; /* also used as a tag for cursor animation */
 
 /* Enable runtime configuration of framebuffer
  * opacity */
 float last_framebuffer_opacity               = -1.0f;
+
 static float background_running_alpha_top    = 1.0f;
 static float background_running_alpha_bottom = 0.75f;
 
@@ -216,8 +221,9 @@ unsigned ozone_get_system_theme(void)
    }
 
    return ret;
-#endif
+#else
    return 0;
+#endif
 }
 
 void ozone_set_background_running_opacity(ozone_handle_t *ozone, float framebuffer_opacity)
