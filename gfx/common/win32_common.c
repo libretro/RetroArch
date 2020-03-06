@@ -514,7 +514,7 @@ bool win32_load_content_from_gui(const char *szFilename)
       if (info)
       {
          task_push_load_content_with_new_core_from_companion_ui(
-            info->path, NULL, NULL, &content_info, NULL, NULL);
+            info->path, NULL, NULL, NULL, NULL, &content_info, NULL, NULL);
          return true;
       }
    }

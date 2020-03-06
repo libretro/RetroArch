@@ -1857,11 +1857,18 @@ void MainWindow::loadContent(const QHash<QString, QString> &contentHash)
    QByteArray corePathArray;
    QByteArray contentPathArray;
    QByteArray contentLabelArray;
-   const char *corePath     = NULL;
-   const char *contentPath  = NULL;
-   const char *contentLabel = NULL;
-   QVariantMap coreMap      = m_launchWithComboBox->currentData(Qt::UserRole).value<QVariantMap>();
+   QByteArray contentDbNameArray;
+   QByteArray contentCrc32Array;
+   char contentDbNameFull[PATH_MAX_LENGTH];
+   const char *corePath        = NULL;
+   const char *contentPath     = NULL;
+   const char *contentLabel    = NULL;
+   const char *contentDbName   = NULL;
+   const char *contentCrc32    = NULL;
+   QVariantMap coreMap         = m_launchWithComboBox->currentData(Qt::UserRole).value<QVariantMap>();
    CoreSelection coreSelection = static_cast<CoreSelection>(coreMap.value("core_selection").toInt());
+
+   contentDbNameFull[0] = '\0';
 
    if (m_pendingRun)
       coreSelection = CORE_SELECTION_CURRENT;
@@ -1944,9 +1951,29 @@ void MainWindow::loadContent(const QHash<QString, QString> &contentHash)
          return;
    }
 
+   contentDbNameArray = contentHash["db_name"].toUtf8();
+   contentCrc32Array  = contentHash["crc32"].toUtf8();
+
    corePath                            = corePathArray.constData();
    contentPath                         = contentPathArray.constData();
    contentLabel                        = contentLabelArray.constData();
+   contentDbName                       = contentDbNameArray.constData();
+   contentCrc32                        = contentCrc32Array.constData();
+
+   /* Add lpl extension to db_name, if required */
+   if (!string_is_empty(contentDbName))
+   {
+      const char *extension = NULL;
+
+      strlcpy(contentDbNameFull, contentDbName, sizeof(contentDbNameFull));
+      extension = path_get_extension(contentDbNameFull);
+
+      if (string_is_empty(extension) || !string_is_equal_noncase(
+            extension, file_path_str(FILE_PATH_LPL_EXTENSION_NO_DOT)))
+         strlcat(
+               contentDbNameFull, file_path_str(FILE_PATH_LPL_EXTENSION),
+                     sizeof(contentDbNameFull));
+   }
 
    content_info.argc                   = 0;
    content_info.argv                   = NULL;
@@ -1960,8 +1987,8 @@ void MainWindow::loadContent(const QHash<QString, QString> &contentHash)
    command_event(CMD_EVENT_UNLOAD_CORE, NULL);
 
    if (!task_push_load_content_with_new_core_from_companion_ui(
-         corePath, contentPath, contentLabel, &content_info,
-         NULL, NULL))
+         corePath, contentPath, contentLabel, contentDbNameFull, contentCrc32,
+         &content_info, NULL, NULL))
    {
       QMessageBox::critical(this, msg_hash_to_str(MSG_ERROR),
             msg_hash_to_str(MSG_FAILED_TO_LOAD_CONTENT));
