@@ -5742,6 +5742,9 @@ static void *materialui_init(void **userdata, bool video_is_threaded)
    /* Set initial thumbnail stream delay */
    gfx_thumbnail_set_stream_delay(MUI_THUMBNAIL_STREAM_DELAY_DEFAULT);
 
+   /* Set thumbnail fade duration to default */
+   gfx_thumbnail_set_fade_duration(-1.0f);
+
    /* Ensure that fullscreen thumbnails are inactive */
    mui->show_fullscreen_thumbnails     = false;
    mui->fullscreen_thumbnail_selection = 0;

@@ -35,28 +35,36 @@
 
 #include "../tasks/tasks_internal.h"
 
-/* When streaming thumbnails, to minimise the processing
- * of unnecessary images (i.e. when scrolling rapidly through
- * playlists), we delay loading until an entry has been on screen
- * for at least gfx_thumbnail_delay ms */
-#define DEFAULT_GFX_THUMBNAIL_STREAM_DELAY 83.333333f
-static float gfx_thumbnail_stream_delay = DEFAULT_GFX_THUMBNAIL_STREAM_DELAY;
-
-/* Duration in ms of the thumbnail 'fade in' animation */
+#define DEFAULT_GFX_THUMBNAIL_STREAM_DELAY  83.333333f
 #define DEFAULT_GFX_THUMBNAIL_FADE_DURATION 166.66667f
-static float gfx_thumbnail_fade_duration = DEFAULT_GFX_THUMBNAIL_FADE_DURATION;
 
-/* Due to the asynchronous nature of thumbnail
- * loading, it is quite possible to trigger a load
- * then navigate to a different menu list before
- * the load is complete/handled. As an additional
- * safety check, we therefore tag the current menu
- * list with counter value that is incremented whenever
- * a list is cleared/set. This is sent as userdata when
- * requesting a thumbnail, and the upload is only
- * handled if the tag matches the most recent value
- * at the time when the load completes */
-static uint64_t gfx_thumbnail_list_id = 0;
+/* Structure containing all gfx_thumbnail
+ * global variables */
+struct gfx_thumbnail_state
+{
+   /* When streaming thumbnails, to minimise the processing
+    * of unnecessary images (i.e. when scrolling rapidly through
+    * playlists), we delay loading until an entry has been on screen
+    * for at least gfx_thumbnail_delay ms */
+   float stream_delay;
+
+   /* Duration in ms of the thumbnail 'fade in' animation */
+   float fade_duration;
+
+   /* Due to the asynchronous nature of thumbnail
+    * loading, it is quite possible to trigger a load
+    * then navigate to a different menu list before
+    * the load is complete/handled. As an additional
+    * safety check, we therefore tag the current menu
+    * list with counter value that is incremented whenever
+    * a list is cleared/set. This is sent as userdata when
+    * requesting a thumbnail, and the upload is only
+    * handled if the tag matches the most recent value
+    * at the time when the load completes */
+   uint64_t list_id;
+};
+
+typedef struct gfx_thumbnail_state gfx_thumbnail_state_t;
 
 /* Utility structure, sent as userdata when pushing
  * an image load */
@@ -66,22 +74,40 @@ typedef struct
    retro_time_t list_id;
 } gfx_thumbnail_tag_t;
 
+/* Global gfx_thumbnail_state structure */
+static gfx_thumbnail_state_t gfx_thumb_state;
+
+/* Global variable access */
+
+/* Returns pointer to global gfx_thumbnail_state
+ * structure */
+static gfx_thumbnail_state_t *gfx_thumb_get_ptr(void)
+{
+   return &gfx_thumb_state;
+}
+
 /* Setters */
 
 /* When streaming thumbnails, sets time in ms that an
  * entry must be on screen before an image load is
- * requested */
+ * requested
+ * > if 'delay' is negative, default value is set */
 void gfx_thumbnail_set_stream_delay(float delay)
 {
-   gfx_thumbnail_stream_delay = (delay >= 0.0f) ?
+   gfx_thumbnail_state_t *p_gfx_thumb = gfx_thumb_get_ptr();
+
+   p_gfx_thumb->stream_delay = (delay >= 0.0f) ?
          delay : DEFAULT_GFX_THUMBNAIL_STREAM_DELAY;
 }
 
 /* Sets duration in ms of the thumbnail 'fade in'
- * animation */
+ * animation
+ * > If 'duration' is negative, default value is set */
 void gfx_thumbnail_set_fade_duration(float duration)
 {
-   gfx_thumbnail_fade_duration = (duration >= 0.0f) ?
+   gfx_thumbnail_state_t *p_gfx_thumb = gfx_thumb_get_ptr();
+
+   p_gfx_thumb->fade_duration = (duration >= 0.0f) ?
          duration : DEFAULT_GFX_THUMBNAIL_FADE_DURATION;
 }
 
@@ -90,13 +116,17 @@ void gfx_thumbnail_set_fade_duration(float duration)
 /* Fetches current streaming thumbnails request delay */
 float gfx_thumbnail_get_stream_delay(void)
 {
-   return gfx_thumbnail_stream_delay;
+   gfx_thumbnail_state_t *p_gfx_thumb = gfx_thumb_get_ptr();
+
+   return p_gfx_thumb->stream_delay;
 }
 
 /* Fetches current 'fade in' animation duration */
 float gfx_thumbnail_get_fade_duration(void)
 {
-   return gfx_thumbnail_fade_duration;
+   gfx_thumbnail_state_t *p_gfx_thumb = gfx_thumb_get_ptr();
+
+   return p_gfx_thumb->fade_duration;
 }
 
 /* Callbacks */
@@ -107,7 +137,8 @@ static void gfx_thumbnail_handle_upload(
       retro_task_t *task, void *task_data, void *user_data, const char *err)
 {
    gfx_animation_ctx_entry_t animation_entry;
-   struct texture_image *img           = (struct texture_image*)task_data;
+   gfx_thumbnail_state_t *p_gfx_thumb = gfx_thumb_get_ptr();
+   struct texture_image *img          = (struct texture_image*)task_data;
    gfx_thumbnail_tag_t *thumbnail_tag = (gfx_thumbnail_tag_t*)user_data;
 
    /* Sanity check */
@@ -116,7 +147,7 @@ static void gfx_thumbnail_handle_upload(
 
    /* Ensure that we are operating on the correct
     * thumbnail... */
-   if (thumbnail_tag->list_id != gfx_thumbnail_list_id)
+   if (thumbnail_tag->list_id != p_gfx_thumb->list_id)
       goto end;
 
    /* Only process image if we are waiting for it */
@@ -154,13 +185,13 @@ static void gfx_thumbnail_handle_upload(
    thumbnail_tag->thumbnail->status = GFX_THUMBNAIL_STATUS_AVAILABLE;
 
    /* Trigger 'fade in' animation, if required */
-   if (gfx_thumbnail_fade_duration > 0.0f)
+   if (p_gfx_thumb->fade_duration > 0.0f)
    {
       thumbnail_tag->thumbnail->alpha  = 0.0f;
 
       animation_entry.easing_enum      = EASING_OUT_QUAD;
       animation_entry.tag              = (uintptr_t)&thumbnail_tag->thumbnail->alpha;
-      animation_entry.duration         = gfx_thumbnail_fade_duration;
+      animation_entry.duration         = p_gfx_thumb->fade_duration;
       animation_entry.target_value     = 1.0f;
       animation_entry.subject          = &thumbnail_tag->thumbnail->alpha;
       animation_entry.cb               = NULL;
@@ -193,7 +224,9 @@ end:
  *    heap-use-after-free errors *will* occur */
 void gfx_thumbnail_cancel_pending_requests(void)
 {
-   gfx_thumbnail_list_id++;
+   gfx_thumbnail_state_t *p_gfx_thumb = gfx_thumb_get_ptr();
+
+   p_gfx_thumb->list_id++;
 }
 
 /* Requests loading of the specified thumbnail
@@ -236,6 +269,7 @@ void gfx_thumbnail_request(
    {
       if (path_is_valid(thumbnail_path))
       {
+         gfx_thumbnail_state_t *p_gfx_thumb = gfx_thumb_get_ptr();
          gfx_thumbnail_tag_t *thumbnail_tag =
                (gfx_thumbnail_tag_t*)calloc(1, sizeof(gfx_thumbnail_tag_t));
 
@@ -244,7 +278,7 @@ void gfx_thumbnail_request(
 
          /* Configure user data */
          thumbnail_tag->thumbnail = thumbnail;
-         thumbnail_tag->list_id   = gfx_thumbnail_list_id;
+         thumbnail_tag->list_id   = p_gfx_thumb->list_id;
 
          /* Would like to cancel any existing image load tasks
           * here, but can't see how to do it... */
@@ -312,6 +346,7 @@ void gfx_thumbnail_request_file(
       unsigned gfx_thumbnail_upscale_threshold
       )
 {
+   gfx_thumbnail_state_t *p_gfx_thumb = gfx_thumb_get_ptr();
    gfx_thumbnail_tag_t *thumbnail_tag = NULL;
 
    if (!thumbnail)
@@ -337,7 +372,7 @@ void gfx_thumbnail_request_file(
 
    /* Configure user data */
    thumbnail_tag->thumbnail = thumbnail;
-   thumbnail_tag->list_id   = gfx_thumbnail_list_id;
+   thumbnail_tag->list_id   = p_gfx_thumb->list_id;
 
    /* Would like to cancel any existing image load tasks
     * here, but can't see how to do it... */
@@ -406,10 +441,12 @@ void gfx_thumbnail_process_stream(
        *   GFX_THUMBNAIL_STATUS_UNKNOWN */
       if (thumbnail->status == GFX_THUMBNAIL_STATUS_UNKNOWN)
       {
+         gfx_thumbnail_state_t *p_gfx_thumb = gfx_thumb_get_ptr();
+
          /* Check if stream delay timer has elapsed */
          thumbnail->delay_timer += gfx_animation_get_delta_time();
 
-         if (thumbnail->delay_timer > gfx_thumbnail_stream_delay)
+         if (thumbnail->delay_timer > p_gfx_thumb->stream_delay)
          {
             /* Sanity check */
             if (!path_data || !playlist)
@@ -483,22 +520,23 @@ void gfx_thumbnail_process_streams(
       if (process_right || process_left)
       {
          /* Check if stream delay timer has elapsed */
-         float delta_time   = gfx_animation_get_delta_time();
-         bool request_right = false;
-         bool request_left  = false;
+         gfx_thumbnail_state_t *p_gfx_thumb = gfx_thumb_get_ptr();
+         float delta_time                   = gfx_animation_get_delta_time();
+         bool request_right                 = false;
+         bool request_left                  = false;
 
          if (process_right)
          {
             right_thumbnail->delay_timer += delta_time;
             request_right                 =
-                  (right_thumbnail->delay_timer > gfx_thumbnail_stream_delay);
+                  (right_thumbnail->delay_timer > p_gfx_thumb->stream_delay);
          }
 
          if (process_left)
          {
             left_thumbnail->delay_timer  += delta_time;
             request_left                  =
-                  (left_thumbnail->delay_timer > gfx_thumbnail_stream_delay);
+                  (left_thumbnail->delay_timer > p_gfx_thumb->stream_delay);
          }
 
          /* Check if one or more thumbnails should be requested */

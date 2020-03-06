@@ -189,6 +189,9 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
    ozone->fullscreen_thumbnail_selection        = 0;
    ozone->fullscreen_thumbnail_label[0]         = '\0';
 
+   gfx_thumbnail_set_stream_delay(-1.0f);
+   gfx_thumbnail_set_fade_duration(-1.0f);
+
    ozone_sidebar_update_collapse(ozone, false);
 
    ozone->system_tab_end                = 0;
