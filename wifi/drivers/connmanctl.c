@@ -134,12 +134,14 @@ static void connmanctl_tether_toggle(bool switch_on, char* apname, char* passkey
    if (switch_on)
    {
       if (!connmanctl_tether_status())
-          settings->bools.localap_enable = false;
+         configuration_set_bool(settings,
+               settings->bools.localap_enable, false);
    }
    else
    {
       if (connmanctl_tether_status())
-         settings->bools.localap_enable = true;
+         configuration_set_bool(settings,
+               settings->bools.localap_enable, true);
    }
 }
 
@@ -160,7 +162,8 @@ static void connmanctl_scan(void)
       runloop_msg_queue_push(msg_hash_to_str(MSG_LOCALAP_SWITCHING_OFF),
             1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT,
             MESSAGE_QUEUE_CATEGORY_INFO);
-      settings->bools.localap_enable = false;
+      configuration_set_bool(settings,
+            settings->bools.localap_enable, false);
       connmanctl_tether_toggle(false, "", "");
    }
 
@@ -317,7 +320,8 @@ static bool connmanctl_connect_ssid(unsigned idx, const char* passphrase)
       runloop_msg_queue_push(msg_hash_to_str(MSG_LOCALAP_SWITCHING_OFF),
             1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT,
             MESSAGE_QUEUE_CATEGORY_INFO);
-      settings->bools.localap_enable = false;
+      configuration_set_bool(settings,
+            settings->bools.localap_enable, false);
       connmanctl_tether_toggle(false, "", "");
    }
 
