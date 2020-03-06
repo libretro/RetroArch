@@ -104,9 +104,11 @@ int shader_action_preset_parameter_right(unsigned type, const char *label, bool 
 int generic_action_cheat_toggle(size_t idx, unsigned type, const char *label,
       bool wraparound)
 {
-   settings_t *settings = config_get_ptr();
+   settings_t           *settings = config_get_ptr();
+   bool apply_cheats_after_toggle = settings->bools.apply_cheats_after_toggle;
+
    cheat_manager_toggle_index(
-         settings->bools.apply_cheats_after_toggle,
+         apply_cheats_after_toggle,
          (unsigned)idx);
 
    return 0;
@@ -478,13 +480,13 @@ static int action_right_video_resolution(unsigned type, const char *label,
 
 static int playlist_association_right(unsigned type, const char *label,
       bool wraparound)
-{
-   char core_path[PATH_MAX_LENGTH];
+{ char core_path[PATH_MAX_LENGTH];
    size_t i, next, current          = 0;
    core_info_list_t *core_info_list = NULL;
    core_info_t *core_info           = NULL;
    settings_t *settings             = config_get_ptr();
    playlist_t *playlist             = playlist_get_cached();
+   bool playlist_use_old_format     = settings->bools.playlist_use_old_format;
 
    core_path[0]     = '\0';
 
@@ -547,7 +549,7 @@ static int playlist_association_right(unsigned type, const char *label,
    /* Update playlist */
    playlist_set_default_core_path(playlist, core_info->path);
    playlist_set_default_core_name(playlist, core_info->display_name);
-   playlist_write_file(playlist, settings->bools.playlist_use_old_format);
+   playlist_write_file(playlist, playlist_use_old_format);
 
    return 0;
 }
@@ -558,6 +560,7 @@ static int playlist_label_display_mode_right(unsigned type, const char *label,
    enum playlist_label_display_mode label_display_mode;
    settings_t *settings             = config_get_ptr();
    playlist_t *playlist             = playlist_get_cached();
+   bool playlist_use_old_format     = settings->bools.playlist_use_old_format;
 
    if (!playlist)
       return -1;
@@ -570,7 +573,7 @@ static int playlist_label_display_mode_right(unsigned type, const char *label,
       label_display_mode = LABEL_DISPLAY_MODE_DEFAULT;
 
    playlist_set_label_display_mode(playlist, label_display_mode);
-   playlist_write_file(playlist, settings->bools.playlist_use_old_format);
+   playlist_write_file(playlist, playlist_use_old_format);
 
    return 0;
 }
@@ -579,6 +582,7 @@ static void playlist_thumbnail_mode_right(playlist_t *playlist, enum playlist_th
       bool wraparound)
 {
    settings_t *settings                        = config_get_ptr();
+   bool playlist_use_old_format                = settings->bools.playlist_use_old_format;
    enum playlist_thumbnail_mode thumbnail_mode =
          playlist_get_thumbnail_mode(playlist, thumbnail_id);
 
@@ -588,7 +592,7 @@ static void playlist_thumbnail_mode_right(playlist_t *playlist, enum playlist_th
       thumbnail_mode = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
 
    playlist_set_thumbnail_mode(playlist, thumbnail_id, thumbnail_mode);
-   playlist_write_file(playlist, settings->bools.playlist_use_old_format);
+   playlist_write_file(playlist, playlist_use_old_format);
 }
 
 static int playlist_right_thumbnail_mode_right(unsigned type, const char *label,
@@ -620,16 +624,18 @@ static int playlist_left_thumbnail_mode_right(unsigned type, const char *label,
 static int manual_content_scan_system_name_right(unsigned type, const char *label,
       bool wraparound)
 {
-   settings_t *settings                                            = config_get_ptr();
+   settings_t            *settings   = config_get_ptr();
+   bool            show_hidden_files = settings->bools.show_hidden_files;
 #ifdef HAVE_LIBRETRODB
+   const char *path_content_database = settings->paths.path_content_database;
    struct string_list *system_name_list                            =
       manual_content_scan_get_menu_system_name_list(
-            settings->paths.path_content_database,
-            settings->bools.show_hidden_files);
+            path_content_database,
+            show_hidden_files);
 #else
    struct string_list *system_name_list                            =
       manual_content_scan_get_menu_system_name_list(NULL,
-            settings->bools.show_hidden_files);
+            show_hidden_files);
 #endif
    const char *current_system_name                                 = NULL;
    enum manual_content_scan_system_name_type next_system_name_type =

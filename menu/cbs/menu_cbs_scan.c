@@ -53,6 +53,9 @@ int action_scan_file(const char *path,
    char fullpath[PATH_MAX_LENGTH];
    const char *menu_path          = NULL;
    settings_t *settings           = config_get_ptr();
+   bool show_hidden_files         = settings->bools.show_hidden_files;
+   const char *directory_playlist = settings->paths.directory_playlist;
+   const char *path_content_db    = settings->paths.path_content_database;
 
    fullpath[0]                    = '\0';
 
@@ -61,10 +64,10 @@ int action_scan_file(const char *path,
    fill_pathname_join(fullpath, menu_path, path, sizeof(fullpath));
 
    task_push_dbscan(
-         settings->paths.directory_playlist,
-         settings->paths.path_content_database,
+         directory_playlist,
+         path_content_db,
          fullpath, false,
-         settings->bools.show_hidden_files,
+         show_hidden_files,
          handle_dbscan_finished);
 
    return 0;
@@ -76,6 +79,9 @@ int action_scan_directory(const char *path,
    char fullpath[PATH_MAX_LENGTH];
    const char *menu_path          = NULL;
    settings_t *settings           = config_get_ptr();
+   bool show_hidden_files         = settings->bools.show_hidden_files;
+   const char *directory_playlist = settings->paths.directory_playlist;
+   const char *path_content_db    = settings->paths.path_content_database;
 
    fullpath[0]                    = '\0';
 
@@ -87,10 +93,10 @@ int action_scan_directory(const char *path,
       strlcpy(fullpath, menu_path, sizeof(fullpath));
 
    task_push_dbscan(
-         settings->paths.directory_playlist,
-         settings->paths.path_content_database,
+         directory_playlist,
+         path_content_db,
          fullpath, true,
-         settings->bools.show_hidden_files,
+         show_hidden_files,
          handle_dbscan_finished);
 
    return 0;
@@ -123,9 +129,15 @@ int action_switch_thumbnail(const char *path,
        * types. */
       if (special_case)
       {
-			settings->uints.menu_left_thumbnails++;
+         configuration_set_uint(settings,
+               settings->uints.menu_left_thumbnails,
+               settings->uints.menu_left_thumbnails + 1);
+
 			if (settings->uints.menu_left_thumbnails > 3)
-				settings->uints.menu_left_thumbnails = 1;
+         {
+            configuration_set_uint(settings,
+                  settings->uints.menu_left_thumbnails, 1);
+         }
 			menu_driver_ctl(RARCH_MENU_CTL_UPDATE_THUMBNAIL_PATH, NULL);
 			menu_driver_ctl(RARCH_MENU_CTL_UPDATE_THUMBNAIL_IMAGE, NULL);
 		}
@@ -140,9 +152,15 @@ int action_switch_thumbnail(const char *path,
        * types. */
       if (special_case)
       {
-         settings->uints.gfx_thumbnails++;
+         configuration_set_uint(settings,
+               settings->uints.menu_left_thumbnails,
+               settings->uints.menu_left_thumbnails + 1);
+
          if (settings->uints.gfx_thumbnails > 3)
-            settings->uints.gfx_thumbnails = 1;
+         {
+            configuration_set_uint(settings,
+                  settings->uints.gfx_thumbnails, 1);
+         }
       }
       menu_driver_ctl(RARCH_MENU_CTL_UPDATE_THUMBNAIL_PATH, NULL);
       menu_driver_ctl(RARCH_MENU_CTL_UPDATE_THUMBNAIL_IMAGE, NULL);

@@ -681,10 +681,20 @@ static int action_left_video_gpu_index(unsigned type, const char *label,
          if (list)
          {
             settings_t *settings = config_get_ptr();
-            if (settings->ints.vulkan_gpu_index > 0)
-               settings->ints.vulkan_gpu_index--;
+            int vulkan_gpu_index = settings->ints.vulkan_gpu_index;
+
+            if (vulkan_gpu_index > 0)
+            {
+               configuration_set_int(settings,
+                     settings->ints.vulkan_gpu_index,
+                     vulkan_gpu_index - 1);
+            }
             else
-               settings->ints.vulkan_gpu_index = list->size - 1;
+            {
+               configuration_set_int(settings,
+                     settings->ints.vulkan_gpu_index,
+                     list->size - 1);
+            }
          }
 
          break;
@@ -698,10 +708,19 @@ static int action_left_video_gpu_index(unsigned type, const char *label,
          if (list)
          {
             settings_t *settings = config_get_ptr();
-            if (settings->ints.d3d10_gpu_index > 0)
-               settings->ints.d3d10_gpu_index--;
+            int d3d10_gpu_index  = settings->ints.d3d10_gpu_index;
+            if (d3d10_gpu_index > 0)
+            {
+               configuration_set_int(settings,
+                     settings->ints.d3d10_gpu_index,
+                     settings->ints.d3d10_gpu_index - 1);
+            }
             else
-               settings->ints.d3d10_gpu_index = list->size - 1;
+            {
+               configuration_set_int(settings,
+                     settings->ints.d3d10_gpu_index,
+                     list->size - 1);
+            }
          }
 
          break;
@@ -715,10 +734,19 @@ static int action_left_video_gpu_index(unsigned type, const char *label,
          if (list)
          {
             settings_t *settings = config_get_ptr();
-            if (settings->ints.d3d11_gpu_index > 0)
-               settings->ints.d3d11_gpu_index--;
+            int d3d11_gpu_index  = settings->ints.d3d11_gpu_index;
+            if (d3d11_gpu_index > 0)
+            {
+               configuration_set_int(settings,
+                     settings->ints.d3d11_gpu_index,
+                     settings->ints.d3d11_gpu_index - 1);
+            }
             else
-               settings->ints.d3d11_gpu_index = list->size - 1;
+            {
+               configuration_set_int(settings,
+                     settings->ints.d3d11_gpu_index,
+                     list->size - 1);
+            }
          }
 
          break;
@@ -732,10 +760,19 @@ static int action_left_video_gpu_index(unsigned type, const char *label,
          if (list)
          {
             settings_t *settings = config_get_ptr();
-            if (settings->ints.d3d12_gpu_index > 0)
-               settings->ints.d3d12_gpu_index--;
+            int d3d12_gpu_index  = settings->ints.d3d12_gpu_index;
+            if (d3d12_gpu_index > 0)
+            {
+               configuration_set_int(settings,
+                     settings->ints.d3d12_gpu_index,
+                     settings->ints.d3d12_gpu_index - 1);
+            }
             else
-               settings->ints.d3d12_gpu_index = list->size - 1;
+            {
+               configuration_set_int(settings,
+                     settings->ints.d3d12_gpu_index,
+                     list->size - 1);
+            }
          }
 
          break;
