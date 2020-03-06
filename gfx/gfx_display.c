@@ -63,7 +63,7 @@ static bool gfx_display_framebuf_dirty          = false;
 
 static enum menu_driver_id_type menu_driver_id  = MENU_DRIVER_ID_UNKNOWN;
 
-static video_coord_array_t menu_disp_ca;
+static video_coord_array_t disp_ca;
 
 static void *gfx_display_null_get_default_mvp(video_frame_info_t *video_info) { return NULL; }
 static void gfx_display_null_blend_begin(video_frame_info_t *video_info) { }
@@ -201,11 +201,18 @@ static float gfx_display_get_adjusted_scale_internal(
    /* Apply user-set scaling factor */
    float adjusted_scale = base_scale * scale_factor;
 
+#ifdef HAVE_OZONE
    /* Ozone has a capped scale factor */
-   adjusted_scale = (menu_driver_id == MENU_DRIVER_ID_OZONE) ?
-         (((float)OZONE_SIDEBAR_WIDTH * adjusted_scale) > ((float)width * 0.3333333f) ?
-                  ((float)width * 0.3333333f / (float)OZONE_SIDEBAR_WIDTH) : adjusted_scale) :
-                        adjusted_scale;
+   if (menu_driver_id == MENU_DRIVER_ID_OZONE)
+   {
+      float new_width = (float)width * 0.3333333f;
+      adjusted_scale  = 
+         (((float)OZONE_SIDEBAR_WIDTH * adjusted_scale) 
+          > new_width
+          ? (new_width / (float)OZONE_SIDEBAR_WIDTH) 
+          : adjusted_scale);
+   }
+#endif
 
    /* Ensure final scale is 'sane' */
    return (adjusted_scale > 0.0001f) ? adjusted_scale : 1.0f;
@@ -213,13 +220,13 @@ static float gfx_display_get_adjusted_scale_internal(
 
 float gfx_display_get_dpi_scale_internal(unsigned width, unsigned height)
 {
+   float dpi;
+   float diagonal_pixels;
+   float pixel_scale;
    static unsigned last_width  = 0;
    static unsigned last_height = 0;
    static float scale          = 0.0f;
    static bool scale_cached    = false;
-   float diagonal_pixels;
-   float pixel_scale;
-   float dpi;
    gfx_ctx_metrics_t metrics;
 
    if (scale_cached &&
@@ -597,12 +604,12 @@ static bool gfx_display_check_compatibility(
  * NOTE: Not every menu driver uses this. */
 void gfx_display_coords_array_reset(void)
 {
-   menu_disp_ca.coords.vertices = 0;
+   disp_ca.coords.vertices = 0;
 }
 
 video_coord_array_t *gfx_display_get_coords_array(void)
 {
-   return &menu_disp_ca;
+   return &disp_ca;
 }
 
 
@@ -1275,7 +1282,7 @@ void gfx_display_push_quad(
    float vertex[8];
    video_coords_t coords;
    const float *coord_draw_ptr   = NULL;
-   video_coord_array_t       *ca = &menu_disp_ca;
+   video_coord_array_t       *ca = &disp_ca;
 
    vertex[0]             = x1 / (float)width;
    vertex[1]             = y1 / (float)height;
@@ -1722,7 +1729,7 @@ void gfx_display_allocate_white_texture(void)
 
 void gfx_display_free(void)
 {
-   video_coord_array_free(&menu_disp_ca);
+   video_coord_array_free(&disp_ca);
    gfx_animation_ctl(MENU_ANIMATION_CTL_DEINIT, NULL);
 
    gfx_display_msg_force       = false;
@@ -1737,7 +1744,7 @@ void gfx_display_free(void)
 void gfx_display_init(void)
 {
    gfx_display_has_windowed = video_driver_has_windowed();
-   menu_disp_ca.allocated    =  0;
+   disp_ca.allocated    =  0;
 }
 
 
