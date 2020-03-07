@@ -99,8 +99,6 @@ static void gfx_ctx_fpga_input_driver(void *data,
       const char *joypad_name,
       const input_driver_t **input, void **input_data)
 {
-   (void)data;
-   settings_t *settings = config_get_ptr();
 }
 
 static bool gfx_ctx_fpga_has_focus(void *data)

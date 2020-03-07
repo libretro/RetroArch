@@ -46,8 +46,11 @@ typedef struct
    unsigned fb_height;
 } emscripten_ctx_data_t;
 
+/* TODO/FIXME - would like to move these to emscripten_ctx_data_t - 
+ * see the TODO/FIXME note down below */
 static int emscripten_initial_width;
 static int emscripten_initial_height;
+
 static enum gfx_ctx_api emscripten_api = GFX_CTX_NONE;
 
 static void gfx_ctx_emscripten_swap_interval(void *data, int interval)
@@ -102,8 +105,8 @@ static void gfx_ctx_emscripten_check_window(void *data, bool *quit,
 
    if (input_width == 0 || input_height == 0)
    {
-      input_width = emscripten_initial_width;
-      input_height = emscripten_initial_height;
+      input_width          = emscripten_initial_width;
+      input_height         = emscripten_initial_height;
       emscripten->fb_width = emscripten->fb_height = 0;
    }
 
@@ -202,6 +205,8 @@ static void *gfx_ctx_emscripten_init(void *video_driver)
 
    (void)video_driver;
 
+   /* TODO/FIXME - why is this conditional here - shouldn't these always
+    * be grabbed? */
    if (emscripten_initial_width == 0 || emscripten_initial_height == 0)
       emscripten_get_canvas_element_size("#canvas",
          &emscripten_initial_width, &emscripten_initial_height);

@@ -278,7 +278,6 @@ static void frontend_switch_get_environment_settings(
          sizeof(g_defaults.path.config));
 }
 
-extern switch_ctx_data_t *nx_ctx_ptr;
 static void frontend_switch_deinit(void *data)
 {
    (void)data;

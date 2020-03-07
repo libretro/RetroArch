@@ -28,8 +28,6 @@
 
 static enum gfx_ctx_api ctx_orbis_api = GFX_CTX_OPENGL_API;
 
-orbis_ctx_data_t *nx_ctx_ptr = NULL;
-
 extern bool platform_orbis_has_focus;
 
 void orbis_ctx_destroy(void *data)
@@ -79,8 +77,6 @@ static void *orbis_ctx_init(void *video_driver)
 
     if (!ctx_orbis)
         return NULL;
-
-    nx_ctx_ptr = ctx_orbis;
 
 #ifdef HAVE_EGL
 

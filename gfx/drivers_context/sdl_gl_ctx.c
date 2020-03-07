@@ -33,8 +33,6 @@
 #endif
 
 static enum gfx_ctx_api sdl_api = GFX_CTX_OPENGL_API;
-static unsigned       g_major   = 2;
-static unsigned       g_minor = 1;
 
 typedef struct gfx_ctx_sdl_data
 {
@@ -151,8 +149,6 @@ static bool sdl_ctx_bind_api(void *data,
 #endif
 
    sdl_api = api;
-   g_major = major;
-   g_minor = minor;
 
 #ifndef HAVE_SDL2
    if (api != GFX_CTX_OPENGL_API)

@@ -28,7 +28,6 @@
 #include "../../frontend/frontend_driver.h"
 
 static enum gfx_ctx_api ctx_nx_api = GFX_CTX_OPENGL_API;
-switch_ctx_data_t *nx_ctx_ptr = NULL;
 
 extern bool platform_switch_has_focus;
 
@@ -80,8 +79,6 @@ static void *switch_ctx_init(void *video_driver)
 
     if (!ctx_nx)
         return NULL;
-
-    nx_ctx_ptr = ctx_nx;
 
     /* Comment below to enable error checking */
     setenv("MESA_NO_ERROR", "1", 1);

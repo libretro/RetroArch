@@ -44,8 +44,8 @@
 static bool           g_osmesa_profile = OSMESA_COMPAT_PROFILE;
 static int            g_osmesa_major   = 2;
 static int            g_osmesa_minor   = 1;
-static int            g_osmesa_format  = OSMESA_RGBA;
-static int            g_osmesa_bpp     = 4;
+static const int      g_osmesa_format  = OSMESA_RGBA;
+static const int      g_osmesa_bpp     = 4;
 static const char    *g_osmesa_fifo    = "/tmp/osmesa-retroarch.sock";
 
 static enum gfx_ctx_api osmesa_api     = GFX_CTX_NONE;
