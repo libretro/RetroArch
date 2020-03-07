@@ -526,48 +526,51 @@ typedef struct
    bool bg_modified;
    bool force_redraw;
    bool mouse_show;
-   unsigned last_width;
-   unsigned last_height;
-   unsigned window_width;
-   unsigned window_height;
    bool ignore_resize_events;
    bool bg_thickness;
    bool border_thickness;
    bool border_enable;
    bool shadow_enable;
-   unsigned particle_effect;
    bool extended_ascii_enable;
-   int16_t scroll_y;
-   char msgbox[1024];
-   unsigned color_theme;
-   rgui_colors_t colors;
    bool is_playlist;
    bool entry_has_thumbnail;
    bool entry_has_left_thumbnail;
    bool show_fs_thumbnail;
-   gfx_thumbnail_path_data_t *thumbnail_path_data;
-   uint32_t thumbnail_queue_size;
-   uint32_t left_thumbnail_queue_size;
    bool thumbnail_load_pending;
-   retro_time_t thumbnail_load_trigger_time;
    bool show_wallpaper;
-   char theme_preset_path[PATH_MAX_LENGTH]; /* Must be a fixed length array... */
-   char menu_title[255]; /* Must be a fixed length array... */
-   char menu_sublabel[MENU_SUBLABEL_MAX_LENGTH]; /* Must be a fixed length array... */
-   unsigned menu_aspect_ratio;
-   unsigned menu_aspect_ratio_lock;
    bool aspect_update_pending;
-   rgui_video_settings_t menu_video_settings;
-   rgui_video_settings_t content_video_settings;
 #ifdef HAVE_GFX_WIDGETS
    bool widgets_supported;
 #endif
+
+   int16_t scroll_y;
+
+   unsigned mini_thumbnail_max_width;
+   unsigned mini_thumbnail_max_height;
+   unsigned last_width;
+   unsigned last_height;
+   unsigned window_width;
+   unsigned window_height;
+   unsigned particle_effect;
+   unsigned color_theme;
+   unsigned menu_aspect_ratio;
+   unsigned menu_aspect_ratio_lock;
+
+   uint32_t thumbnail_queue_size;
+   uint32_t left_thumbnail_queue_size;
+
+   rgui_colors_t colors;
+   retro_time_t thumbnail_load_trigger_time;
+   rgui_video_settings_t menu_video_settings;
+   rgui_video_settings_t content_video_settings;
    struct scaler_ctx image_scaler;
    menu_input_pointer_t pointer;
+   char msgbox[1024];
+   char theme_preset_path[PATH_MAX_LENGTH]; /* Must be a fixed length array... */
+   char menu_title[255]; /* Must be a fixed length array... */
+   char menu_sublabel[MENU_SUBLABEL_MAX_LENGTH]; /* Must be a fixed length array... */
+   gfx_thumbnail_path_data_t *thumbnail_path_data;
 } rgui_t;
-
-static unsigned mini_thumbnail_max_width = 0;
-static unsigned mini_thumbnail_max_height = 0;
 
 static bool font_lut[NUM_FONT_GLYPHS_EXTENDED][FONT_WIDTH * FONT_HEIGHT];
 
@@ -3492,7 +3495,7 @@ static void rgui_render(void *data,
 
          if ((rgui->entry_has_thumbnail && rgui->thumbnail_queue_size > 0) ||
              (rgui->entry_has_left_thumbnail && rgui->left_thumbnail_queue_size > 0))
-            thumbnail_panel_width = mini_thumbnail_max_width;
+            thumbnail_panel_width = rgui->mini_thumbnail_max_width;
 
          /* Index (relative to first displayed menu entry) of
           * the vertical centre of RGUI's 'terminal'
@@ -4256,20 +4259,20 @@ static bool rgui_set_aspect_ratio(rgui_t *rgui, bool delay_update)
       return false;
    
    /* Allocate mini thumbnail buffers */
-   mini_thumbnail_max_width  = ((rgui_term_layout.width - 4) > 19 ? 19 : (rgui_term_layout.width - 4)) * FONT_WIDTH_STRIDE;
-   mini_thumbnail_max_height = (unsigned)((rgui_term_layout.height * FONT_HEIGHT_STRIDE) * 0.5f) - 2;
+   rgui->mini_thumbnail_max_width  = ((rgui_term_layout.width - 4) > 19 ? 19 : (rgui_term_layout.width - 4)) * FONT_WIDTH_STRIDE;
+   rgui->mini_thumbnail_max_height = (unsigned)((rgui_term_layout.height * FONT_HEIGHT_STRIDE) * 0.5f) - 2;
    
-   mini_thumbnail.max_width  = mini_thumbnail_max_width;
-   mini_thumbnail.max_height = mini_thumbnail_max_height;
-   mini_thumbnail.data       = (uint16_t*)calloc(
+   mini_thumbnail.max_width        = rgui->mini_thumbnail_max_width;
+   mini_thumbnail.max_height       = rgui->mini_thumbnail_max_height;
+   mini_thumbnail.data             = (uint16_t*)calloc(
          mini_thumbnail.max_width * mini_thumbnail.max_height,
          sizeof(uint16_t));
    if (!mini_thumbnail.data)
       return false;
    
-   mini_left_thumbnail.max_width  = mini_thumbnail_max_width;
-   mini_left_thumbnail.max_height = mini_thumbnail_max_height;
-   mini_left_thumbnail.data       = (uint16_t*)calloc(
+   mini_left_thumbnail.max_width   = rgui->mini_thumbnail_max_width;
+   mini_left_thumbnail.max_height  = rgui->mini_thumbnail_max_height;
+   mini_left_thumbnail.data        = (uint16_t*)calloc(
          mini_left_thumbnail.max_width * mini_left_thumbnail.max_height,
          sizeof(uint16_t));
    if (!mini_left_thumbnail.data)
