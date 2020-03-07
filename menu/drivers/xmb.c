@@ -874,8 +874,8 @@ static void xmb_render_messagebox_internal(
    unsigned i, y_position;
    int x, y, longest = 0, longest_width = 0;
    float line_height        = 0;
-   unsigned width           = video_info->width;
-   unsigned height          = video_info->height;
+   unsigned video_width     = video_info->width;
+   unsigned video_height    = video_info->height;
    struct string_list *list = !string_is_empty(message)
       ? string_split(message, "\n") : NULL;
 
@@ -891,11 +891,11 @@ static void xmb_render_messagebox_internal(
 
    line_height      = xmb->font->size * 1.2;
 
-   y_position       = height / 2;
+   y_position       = video_height / 2;
    if (menu_input_dialog_get_display_kb())
-      y_position    = height / 4;
+      y_position    = video_height / 4;
 
-   x                = width  / 2;
+   x                = video_width  / 2;
    y                = y_position - (list->size-1) * line_height / 2;
 
    /* find the longest line width */
@@ -921,7 +921,7 @@ static void xmb_render_messagebox_internal(
          256, 256,
          longest_width + xmb->margins_dialog * 2,
          line_height * list->size + xmb->margins_dialog * 2,
-         width, height,
+         video_width, video_height,
          NULL,
          xmb->margins_slice, 1.0,
          xmb->textures.list[XMB_TEXTURE_DIALOG_SLICE]);
@@ -934,7 +934,8 @@ static void xmb_render_messagebox_internal(
          gfx_display_draw_text(xmb->font, msg,
                x - longest_width/2.0,
                y + (i+0.75) * line_height,
-               width, height, 0x444444ff, TEXT_ALIGN_LEFT, 1.0f, false, 0, false);
+               video_width, video_height, 0x444444ff,
+               TEXT_ALIGN_LEFT, 1.0f, false, 0, false);
    }
 
    if (menu_input_dialog_get_display_kb())
@@ -3612,7 +3613,9 @@ static void xmb_draw_bg(
 {
    gfx_display_ctx_draw_t draw;
 
-   bool running              = video_info->libretro_running;
+   bool libretro_running     = video_info->libretro_running;
+   unsigned video_width      = video_info->width;
+   unsigned video_height     = video_info->height;
 
    draw.x                    = 0;
    draw.y                    = 0;
@@ -3628,7 +3631,7 @@ static void xmb_draw_bg(
    draw.pipeline.active      = xmb_shader_pipeline_active(video_info);
 
    gfx_display_blend_begin(video_info);
-   gfx_display_set_viewport(video_info->width, video_info->height);
+   gfx_display_set_viewport(video_width, video_height);
 
 #ifdef HAVE_SHADERPIPELINE
    if (video_info->menu_shader_pipeline > XMB_SHADER_PIPELINE_WALLPAPER
@@ -3637,7 +3640,7 @@ static void xmb_draw_bg(
    {
       draw.color = xmb_gradient_ident(video_info);
 
-      if (running)
+      if (libretro_running)
          gfx_display_set_alpha(draw.color, coord_black[3]);
       else
          gfx_display_set_alpha(draw.color, coord_white[3]);
@@ -3677,7 +3680,7 @@ static void xmb_draw_bg(
       if (video_info->xmb_color_theme != XMB_THEME_WALLPAPER)
          draw.color = xmb_gradient_ident(video_info);
 
-      if (running)
+      if (libretro_running)
          gfx_display_set_alpha(draw.color, coord_black[3]);
       else
          gfx_display_set_alpha(draw.color, coord_white[3]);
@@ -3695,7 +3698,7 @@ static void xmb_draw_bg(
          if (draw.texture)
             draw.color = &coord_white[0];
 
-         if (running || video_info->xmb_color_theme == XMB_THEME_WALLPAPER)
+         if (libretro_running || video_info->xmb_color_theme == XMB_THEME_WALLPAPER)
             add_opacity = true;
 
          gfx_display_draw_bg(&draw, video_info, add_opacity, override_opacity);
@@ -3883,13 +3886,16 @@ static void xmb_draw_fullscreen_thumbnails(
       xmb_handle_t *xmb, video_frame_info_t *video_info,
       settings_t *settings, size_t selection)
 {
+   unsigned video_width           = video_info->width;
+   unsigned video_height          = video_info->height;
+
    /* Check whether fullscreen thumbnails are visible */
    if (xmb->fullscreen_thumbnail_alpha > 0.0f)
    {
       gfx_thumbnail_t *right_thumbnail = NULL;
       gfx_thumbnail_t *left_thumbnail  = NULL;
-      int view_width                    = (int)video_info->width;
-      int view_height                   = (int)video_info->height;
+      int view_width                    = (int)video_width;
+      int view_height                   = (int)video_height;
       int thumbnail_margin              = (int)(xmb->icon_size / 2.0f);
       bool show_right_thumbnail         = false;
       bool show_left_thumbnail          = false;
@@ -4299,6 +4305,8 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    bool menu_core_enable                   = settings->bools.menu_core_enable;
    float thumbnail_scale_factor            = (float)settings->uints.menu_xmb_thumbnail_scale_factor / 100.0f;
    bool menu_xmb_vertical_thumbnails       = settings->bools.menu_xmb_vertical_thumbnails;
+   unsigned video_width                    = video_info->width;
+   unsigned video_height                   = video_info->height;
 
    if (!xmb)
       return;
@@ -4825,10 +4833,10 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          width,
          height);
 
-   font_driver_flush(video_info->width, video_info->height, xmb->font);
+   font_driver_flush(video_width, video_height, xmb->font);
    font_driver_bind_block(xmb->font, NULL);
 
-   font_driver_flush(video_info->width, video_info->height, xmb->font2);
+   font_driver_flush(video_width, video_height, xmb->font2);
    font_driver_bind_block(xmb->font2, NULL);
 
    /* Draw fullscreen thumbnails, if required */
@@ -4878,7 +4886,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             height);
    }
 
-   gfx_display_unset_viewport(video_info->width, video_info->height);
+   gfx_display_unset_viewport(video_width, video_height);
 }
 
 static void xmb_layout_ps3(xmb_handle_t *xmb, int width)

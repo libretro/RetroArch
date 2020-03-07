@@ -117,11 +117,13 @@ static void ozone_draw_cursor_slice(ozone_handle_t *ozone,
       unsigned width, unsigned height,
       size_t y, float alpha)
 {
-   float scale_factor   = ozone->last_scale_factor;
-   int slice_x          = x_offset - 14 * scale_factor;
-   int slice_y          = (int)y + 8 * scale_factor;
-   unsigned slice_new_w = width + (3 + 28 - 4) * scale_factor;
-   unsigned slice_new_h = height + 20 * scale_factor;
+   float scale_factor    = ozone->last_scale_factor;
+   int slice_x           = x_offset - 14 * scale_factor;
+   int slice_y           = (int)y + 8 * scale_factor;
+   unsigned slice_new_w  = width + (3 + 28 - 4) * scale_factor;
+   unsigned slice_new_h  = height + 20 * scale_factor;
+   unsigned video_width  = video_info->width;
+   unsigned video_height = video_info->height;
 
    gfx_display_set_alpha(ozone->theme_dynamic.cursor_alpha, alpha);
    gfx_display_set_alpha(ozone->theme_dynamic.cursor_border, alpha);
@@ -136,7 +138,7 @@ static void ozone_draw_cursor_slice(ozone_handle_t *ozone,
       80, 80,
       slice_new_w,
       slice_new_h,
-      video_info->width, video_info->height,
+      video_width, video_height,
       ozone->theme_dynamic.cursor_alpha,
       20, scale_factor,
       ozone->theme->textures[OZONE_THEME_TEXTURE_CURSOR_NO_BORDER]
@@ -150,7 +152,7 @@ static void ozone_draw_cursor_slice(ozone_handle_t *ozone,
       80, 80,
       slice_new_w,
       slice_new_h,
-      video_info->width, video_info->height,
+      video_width, video_height,
       ozone->theme_dynamic.cursor_border,
       20, scale_factor,
       ozone->textures[OZONE_TEXTURE_CURSOR_BORDER]
@@ -165,25 +167,28 @@ static void ozone_draw_cursor_fallback(ozone_handle_t *ozone,
       unsigned width, unsigned height,
       size_t y, float alpha)
 {
+   unsigned video_width  = video_info->width;
+   unsigned video_height = video_info->height;
+
    gfx_display_set_alpha(ozone->theme_dynamic.selection_border, alpha);
    gfx_display_set_alpha(ozone->theme_dynamic.selection, alpha);
 
    /* Fill */
-   gfx_display_draw_quad(video_info, x_offset, (int)y, width, height - ozone->dimensions.spacer_5px, video_info->width, video_info->height, ozone->theme_dynamic.selection);
+   gfx_display_draw_quad(video_info, x_offset, (int)y, width, height - ozone->dimensions.spacer_5px, video_width, video_height, ozone->theme_dynamic.selection);
 
    /* Borders (can't do one single quad because of alpha) */
 
    /* Top */
-   gfx_display_draw_quad(video_info, x_offset - ozone->dimensions.spacer_3px, (int)(y - ozone->dimensions.spacer_3px), width + ozone->dimensions.spacer_3px * 2, ozone->dimensions.spacer_3px, video_info->width, video_info->height, ozone->theme_dynamic.selection_border);
+   gfx_display_draw_quad(video_info, x_offset - ozone->dimensions.spacer_3px, (int)(y - ozone->dimensions.spacer_3px), width + ozone->dimensions.spacer_3px * 2, ozone->dimensions.spacer_3px, video_width, video_height, ozone->theme_dynamic.selection_border);
 
    /* Bottom */
-   gfx_display_draw_quad(video_info, x_offset - ozone->dimensions.spacer_3px, (int)(y + height - ozone->dimensions.spacer_5px), width + ozone->dimensions.spacer_3px * 2, ozone->dimensions.spacer_3px, video_info->width, video_info->height, ozone->theme_dynamic.selection_border);
+   gfx_display_draw_quad(video_info, x_offset - ozone->dimensions.spacer_3px, (int)(y + height - ozone->dimensions.spacer_5px), width + ozone->dimensions.spacer_3px * 2, ozone->dimensions.spacer_3px, video_width, video_height, ozone->theme_dynamic.selection_border);
 
    /* Left */
-   gfx_display_draw_quad(video_info, (int)(x_offset - ozone->dimensions.spacer_3px), (int)y, ozone->dimensions.spacer_3px, height - ozone->dimensions.spacer_5px, video_info->width, video_info->height, ozone->theme_dynamic.selection_border);
+   gfx_display_draw_quad(video_info, (int)(x_offset - ozone->dimensions.spacer_3px), (int)y, ozone->dimensions.spacer_3px, height - ozone->dimensions.spacer_5px, video_width, video_height, ozone->theme_dynamic.selection_border);
 
    /* Right */
-   gfx_display_draw_quad(video_info, x_offset + width, (int)y, ozone->dimensions.spacer_3px, height - ozone->dimensions.spacer_5px, video_info->width, video_info->height, ozone->theme_dynamic.selection_border);
+   gfx_display_draw_quad(video_info, x_offset + width, (int)y, ozone->dimensions.spacer_3px, height - ozone->dimensions.spacer_5px, video_width, video_height, ozone->theme_dynamic.selection_border);
 }
 
 void ozone_draw_cursor(ozone_handle_t *ozone,
@@ -246,8 +251,11 @@ void ozone_draw_icon(
 void ozone_draw_backdrop(video_frame_info_t *video_info, float alpha)
 {
    /* TODO: Replace this backdrop by a blur shader on the whole screen if available */
+   unsigned video_width  = video_info->width;
+   unsigned video_height = video_info->height;
+
    gfx_display_set_alpha(ozone_backdrop, alpha);
-   gfx_display_draw_quad(video_info, 0, 0, video_info->width, video_info->height, video_info->width, video_info->height, ozone_backdrop);
+   gfx_display_draw_quad(video_info, 0, 0, video_width, video_height, video_width, video_height, ozone_backdrop);
 }
 
 void ozone_draw_osk(ozone_handle_t *ozone,
@@ -259,11 +267,13 @@ void ozone_draw_osk(ozone_handle_t *ozone,
    char message[2048];
    unsigned text_color;
    struct string_list *list;
+   unsigned video_width    = video_info->width;
+   unsigned video_height   = video_info->height;
 
    float scale_factor      = ozone->last_scale_factor;
    unsigned margin         = 75 * scale_factor;
    unsigned padding        = 10 * scale_factor;
-   unsigned bottom_end     = video_info->height/2;
+   unsigned bottom_end     = video_height / 2;
    unsigned y_offset       = 0;
    bool draw_placeholder   = string_is_empty(str);
 
@@ -278,20 +288,20 @@ void ozone_draw_osk(ozone_handle_t *ozone,
 
    /* Border */
    /* Top */
-   gfx_display_draw_quad(video_info, margin, margin, video_info->width - margin*2, ozone->dimensions.spacer_1px, video_info->width, video_info->height, ozone->theme->entries_border);
+   gfx_display_draw_quad(video_info, margin, margin, video_width - margin*2, ozone->dimensions.spacer_1px, video_width, video_height, ozone->theme->entries_border);
 
    /* Bottom */
-   gfx_display_draw_quad(video_info, margin, bottom_end - margin, video_info->width - margin*2, ozone->dimensions.spacer_1px, video_info->width, video_info->height, ozone->theme->entries_border);
+   gfx_display_draw_quad(video_info, margin, bottom_end - margin, video_width - margin*2, ozone->dimensions.spacer_1px, video_width, video_height, ozone->theme->entries_border);
 
    /* Left */
-   gfx_display_draw_quad(video_info, margin, margin, ozone->dimensions.spacer_1px, bottom_end - margin*2, video_info->width, video_info->height, ozone->theme->entries_border);
+   gfx_display_draw_quad(video_info, margin, margin, ozone->dimensions.spacer_1px, bottom_end - margin*2, video_width, video_height, ozone->theme->entries_border);
 
    /* Right */
-   gfx_display_draw_quad(video_info, video_info->width - margin, margin, ozone->dimensions.spacer_1px, bottom_end - margin*2, video_info->width, video_info->height, ozone->theme->entries_border);
+   gfx_display_draw_quad(video_info, video_width - margin, margin, ozone->dimensions.spacer_1px, bottom_end - margin*2, video_width, video_height, ozone->theme->entries_border);
 
    /* Backdrop */
    /* TODO: Remove the backdrop if blur shader is available */
-   gfx_display_draw_quad(video_info, margin + ozone->dimensions.spacer_1px, margin + ozone->dimensions.spacer_1px, video_info->width - margin*2 - ozone->dimensions.spacer_2px, bottom_end - margin*2 - ozone->dimensions.spacer_2px, video_info->width, video_info->height, ozone_osk_backdrop);
+   gfx_display_draw_quad(video_info, margin + ozone->dimensions.spacer_1px, margin + ozone->dimensions.spacer_1px, video_width - margin*2 - ozone->dimensions.spacer_2px, bottom_end - margin*2 - ozone->dimensions.spacer_2px, video_width, video_height, ozone_osk_backdrop);
 
    /* Placeholder & text*/
    if (!draw_placeholder)
@@ -305,7 +315,7 @@ void ozone_draw_osk(ozone_handle_t *ozone,
       text_color  = ozone_theme_light.text_sublabel_rgba;
    }
 
-   word_wrap(message, text, (video_info->width - margin*2 - padding*2) / ozone->entry_font_glyph_width, true, 0);
+   word_wrap(message, text, (video_width - margin*2 - padding*2) / ozone->entry_font_glyph_width, true, 0);
 
    list = string_split(message, "\n");
 
@@ -313,7 +323,7 @@ void ozone_draw_osk(ozone_handle_t *ozone,
    {
       const char *msg = list->elems[i].data;
 
-      ozone_draw_text(video_info, ozone, msg, margin + padding * 2, margin + padding + ozone->sublabel_font_glyph_height + y_offset, TEXT_ALIGN_LEFT, video_info->width, video_info->height, ozone->fonts.entries_label, text_color, false);
+      ozone_draw_text(video_info, ozone, msg, margin + padding * 2, margin + padding + ozone->sublabel_font_glyph_height + y_offset, TEXT_ALIGN_LEFT, video_width, video_height, ozone->fonts.entries_label, text_color, false);
 
       /* Cursor */
       if (i == list->size - 1)
@@ -321,7 +331,7 @@ void ozone_draw_osk(ozone_handle_t *ozone,
          if (ozone->osk_cursor)
          {
             unsigned cursor_x = draw_placeholder ? 0 : font_driver_get_message_width(ozone->fonts.entries_label, msg, (unsigned)strlen(msg), 1);
-            gfx_display_draw_quad(video_info, margin + padding*2 + cursor_x, margin + padding + y_offset + ozone->dimensions.spacer_3px, ozone->dimensions.spacer_1px, 25 * scale_factor, video_info->width, video_info->height, ozone_pure_white);
+            gfx_display_draw_quad(video_info, margin + padding*2 + cursor_x, margin + padding + y_offset + ozone->dimensions.spacer_3px, ozone->dimensions.spacer_1px, 25 * scale_factor, video_width, video_height, ozone_pure_white);
          }
       }
       else
