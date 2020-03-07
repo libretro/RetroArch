@@ -11568,9 +11568,10 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
             return false;
          if (cb)
             audio_callback = *cb;
+	 return true;
       }
 #endif
-      break;
+      return false;
 
       case RETRO_ENVIRONMENT_SET_FRAME_TIME_CALLBACK:
       {
