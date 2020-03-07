@@ -44,28 +44,16 @@ typedef struct RegOp
    int only_munmap;
 } RegOp;
 
-static unsigned char *fpga_menu_frame = NULL;
-static unsigned fpga_menu_width       = 0;
-static unsigned fpga_menu_height      = 0;
-static unsigned fpga_menu_pitch       = 0;
-static unsigned fpga_video_width      = 0;
-static unsigned fpga_video_height     = 0;
-static unsigned fpga_video_pitch      = 0;
-static unsigned fpga_video_bits       = 0;
-static unsigned fpga_menu_bits        = 0;
-static bool fpga_rgb32                = false;
-static bool fpga_menu_rgb32           = false;
 static RegOp regOp;
 
 static unsigned int get_memory_size(void)
 {
-   FILE *size_fp;
    unsigned int size;
 
    /* this file holds the memory range needed to map the framebuffer into
     * kernel address space, it is specified in the device tree
     */
-   size_fp = fopen("/sys/class/uio/uio0/maps/map0/size", "r");
+   FILE *size_fp = fopen("/sys/class/uio/uio0/maps/map0/size", "r");
 
    if (!size_fp)
    {
@@ -138,16 +126,16 @@ static void *fpga_gfx_init(const video_info_t *video,
    *input                               = NULL;
    *input_data                          = NULL;
 
-   fpga_video_width                      = video->width;
-   fpga_video_height                     = video->height;
-   fpga_rgb32                            = video->rgb32;
+   fpga->video_width                    = video->width;
+   fpga->video_height                   = video->height;
+   fpga->rgb32                          = video->rgb32;
 
-   fpga_video_bits                       = video->rgb32 ? 32 : 16;
+   fpga->video_bits                     = video->rgb32 ? 32 : 16;
 
    if (video->rgb32)
-      fpga_video_pitch = video->width * 4;
+      fpga->video_pitch = video->width * 4;
    else
-      fpga_video_pitch = video->width * 2;
+      fpga->video_pitch = video->width * 2;
 
    fpga_gfx_create(fpga);
 
@@ -236,9 +224,9 @@ static bool fpga_gfx_frame(void *data, const void *frame,
    const void *frame_to_copy = frame;
    unsigned width            = 0;
    unsigned height           = 0;
-   unsigned bits             = fpga_video_bits;
    bool draw                 = true;
-   fpga_t *fpga                = (fpga_t*)data;
+   fpga_t *fpga              = (fpga_t*)data;
+   unsigned bits             = fpga->video_bits;
 
    if (!frame || !frame_width || !frame_height)
       return true;
@@ -247,29 +235,31 @@ static bool fpga_gfx_frame(void *data, const void *frame,
    menu_driver_frame(video_info);
 #endif
 
-   if (fpga_video_width != frame_width || fpga_video_height != frame_height || fpga_video_pitch != pitch)
+   if (  fpga->video_width  != frame_width  || 
+         fpga->video_height != frame_height || 
+         fpga->video_pitch  != pitch)
    {
       if (frame_width > 4 && frame_height > 4)
       {
-         fpga_video_width = frame_width;
-         fpga_video_height = frame_height;
-         fpga_video_pitch = pitch;
+         fpga->video_width = frame_width;
+         fpga->video_height = frame_height;
+         fpga->video_pitch = pitch;
       }
    }
 
-   if (fpga_menu_frame && video_info->menu_is_alive)
+   if (fpga->menu_frame && video_info->menu_is_alive)
    {
-      frame_to_copy = fpga_menu_frame;
-      width         = fpga_menu_width;
-      height        = fpga_menu_height;
-      pitch         = fpga_menu_pitch;
-      bits          = fpga_menu_bits;
+      frame_to_copy = fpga->menu_frame;
+      width         = fpga->menu_width;
+      height        = fpga->menu_height;
+      pitch         = fpga->menu_pitch;
+      bits          = fpga->menu_bits;
    }
    else
    {
-      width         = fpga_video_width;
-      height        = fpga_video_height;
-      pitch         = fpga_video_pitch;
+      width         = fpga->video_width;
+      height        = fpga->video_height;
+      pitch         = fpga->video_pitch;
 
       if (frame_width == 4 && frame_height == 4 && (frame_width < width && frame_height < height))
          draw = false;
@@ -284,7 +274,7 @@ static bool fpga_gfx_frame(void *data, const void *frame,
    {
       if (bits == 16)
       {
-         if (frame_to_copy == fpga_menu_frame)
+         if (frame_to_copy == fpga->menu_frame)
          {
             /* RGBX4444 color bits for RGUI */
             unsigned x, y;
@@ -392,14 +382,12 @@ static void fpga_gfx_free(void *data)
 {
    fpga_t *fpga = (fpga_t*)data;
 
-   if (fpga_menu_frame)
-   {
-      free(fpga_menu_frame);
-      fpga_menu_frame = NULL;
-   }
-
    if (!fpga)
       return;
+
+   if (fpga->menu_frame)
+      free(fpga->menu_frame);
+   fpga->menu_frame = NULL;
 
    font_driver_free_osd();
    video_context_driver_free();
@@ -448,28 +436,30 @@ static void fpga_set_texture_frame(void *data,
       const void *frame, bool rgb32, unsigned width, unsigned height,
       float alpha)
 {
+   fpga_t *fpga   = (fpga_t*)data;
    unsigned pitch = width * 2;
 
-   if (rgb32)
+   if (fpga->rgb32)
       pitch = width * 4;
 
-   if (fpga_menu_frame)
-   {
-      free(fpga_menu_frame);
-      fpga_menu_frame = NULL;
-   }
+   if (fpga->menu_frame)
+      free(fpga->menu_frame);
+   fpga->menu_frame = NULL;
 
-   if (!fpga_menu_frame || fpga_menu_width != width || fpga_menu_height != height || fpga_menu_pitch != pitch)
+   if (  !fpga->menu_frame           || 
+         fpga->menu_width  != width  || 
+         fpga->menu_height != height || 
+         fpga->menu_pitch != pitch)
       if (pitch && height)
-         fpga_menu_frame = (unsigned char*)malloc(pitch * height);
+         fpga->menu_frame = (unsigned char*)malloc(pitch * height);
 
-   if (fpga_menu_frame && frame && pitch && height)
+   if (fpga->menu_frame && frame && pitch && height)
    {
-      memcpy(fpga_menu_frame, frame, pitch * height);
-      fpga_menu_width  = width;
-      fpga_menu_height = height;
-      fpga_menu_pitch  = pitch;
-      fpga_menu_bits   = rgb32 ? 32 : 16;
+      memcpy(fpga->menu_frame, frame, pitch * height);
+      fpga->menu_width  = width;
+      fpga->menu_height = height;
+      fpga->menu_pitch  = pitch;
+      fpga->menu_bits   = fpga->rgb32 ? 32 : 16;
    }
 }
 
@@ -552,11 +542,6 @@ static void fpga_gfx_get_poke_interface(void *data,
 static void fpga_gfx_set_viewport(void *data, unsigned viewport_width,
       unsigned viewport_height, bool force_full, bool allow_rotate)
 {
-}
-
-bool fpga_has_menu_frame(void)
-{
-   return (fpga_menu_frame != NULL);
 }
 
 video_driver_t video_fpga = {
