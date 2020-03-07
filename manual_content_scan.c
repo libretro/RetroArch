@@ -67,6 +67,11 @@ typedef struct
  *   are not thread safe, but we only access them when pushing a
  *   task, not in the task thread itself, so all is well) */
 static scan_settings_t scan_settings = {
+   false,                                       /* search_archives */
+   false,                                       /* filter_dat_content */
+   false,                                       /* overwrite_playlist */
+   MANUAL_CONTENT_SCAN_SYSTEM_NAME_CONTENT_DIR, /* system_name_type */
+   MANUAL_CONTENT_SCAN_CORE_DETECT,             /* core_type */
    "",                                          /* content_dir */
    "",                                          /* system_name_content_dir */
    "",                                          /* system_name_database */
@@ -76,11 +81,6 @@ static scan_settings_t scan_settings = {
    "",                                          /* file_exts_core */
    "",                                          /* file_exts_custom */
    "",                                          /* dat_file_path */
-   MANUAL_CONTENT_SCAN_SYSTEM_NAME_CONTENT_DIR, /* system_name_type */
-   MANUAL_CONTENT_SCAN_CORE_DETECT,             /* core_type */
-   false,                                       /* search_archives */
-   false,                                       /* filter_dat_content */
-   false                                        /* overwrite_playlist */
 };
 
 /*****************/
