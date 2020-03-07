@@ -68,6 +68,9 @@ typedef struct d3d9_video
    /* TODO - refactor this away properly. */
    bool resolution_hd_enable;
 
+   /* Only used for Xbox */
+   bool widescreen_mode;
+
    unsigned cur_mon_id;
    unsigned dev_rotation;
 

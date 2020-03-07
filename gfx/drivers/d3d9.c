@@ -76,16 +76,13 @@
 /* Temporary workaround for d3d9 not being able to poll flags during init */
 static gfx_ctx_driver_t d3d9_fake_context;
 static uint32_t d3d9_get_flags(void *data);
-static bool d3d9_set_shader(void *data, enum rarch_shader_type type, const char *path);
+static bool d3d9_set_shader(void *data,
+      enum rarch_shader_type type, const char *path);
 
 static LPDIRECT3D9 g_pD3D9;
 static enum rarch_shader_type supported_shader_type = RARCH_SHADER_NONE;
 
 void *dinput;
-
-#ifdef _XBOX
-static bool d3d9_widescreen_mode = false;
-#endif
 
 static bool d3d9_set_resize(d3d9_video_t *d3d,
       unsigned new_width, unsigned new_height)
@@ -642,7 +639,7 @@ static void d3d9_get_video_size(d3d9_video_t *d3d,
       *height = 480;
    }
 
-   d3d9_widescreen_mode = video_mode.fIsWideScreen;
+   d3d->widescreen_mode = video_mode.fIsWideScreen;
 }
 #endif
 
@@ -721,7 +718,7 @@ void d3d9_make_d3dpp(void *data,
 #ifdef _XBOX
    d3dpp->MultiSampleType         = D3DMULTISAMPLE_NONE;
    d3dpp->EnableAutoDepthStencil  = FALSE;
-   if (!d3d9_widescreen_mode)
+   if (!d3d->widescreen_mode)
       d3dpp->Flags |= D3DPRESENTFLAG_NO_LETTERBOX;
    d3dpp->MultiSampleQuality      = 0;
 #endif
@@ -1218,22 +1215,19 @@ static bool d3d9_init_internal(d3d9_video_t *d3d,
    if (!d3d9_initialize(d3d, &d3d->video_info))
       return false;
 
-   {
-
-      d3d9_fake_context.get_flags = d3d9_get_flags;
+   d3d9_fake_context.get_flags   = d3d9_get_flags;
 #ifndef _XBOX_
-      d3d9_fake_context.get_metrics = win32_get_metrics;
+   d3d9_fake_context.get_metrics = win32_get_metrics;
 #endif
-      video_context_driver_set(&d3d9_fake_context); 
+   video_context_driver_set(&d3d9_fake_context); 
 #if defined(HAVE_CG) || defined(HAVE_HLSL)
-      {
-         const char *shader_preset   = retroarch_get_shader_preset();
-         enum rarch_shader_type type = video_shader_parse_type(shader_preset);
+   {
+      const char *shader_preset   = retroarch_get_shader_preset();
+      enum rarch_shader_type type = video_shader_parse_type(shader_preset);
 
-         d3d9_set_shader(d3d, type, shader_preset);
-      }
-#endif
+      d3d9_set_shader(d3d, type, shader_preset);
    }
+#endif
 
    d3d_input_driver(settings->arrays.input_joypad_driver,
       settings->arrays.input_joypad_driver, input, input_data);
