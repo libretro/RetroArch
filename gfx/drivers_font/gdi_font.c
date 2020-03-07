@@ -32,6 +32,7 @@
 #include "../common/win32_common.h"
 
 #include "../font_driver.h"
+#include "../../configuration.h"
 #include "../../verbosity.h"
 
 
@@ -97,8 +98,14 @@ static void gdi_render_msg(
    gdi_raster_t *font               = (gdi_raster_t*)data;
    unsigned width                   = video_info->width;
    unsigned height                  = video_info->height;
-   SIZE textSize = {0};
-   struct string_list *msg_list = NULL;
+   SIZE textSize                    = {0};
+   struct string_list *msg_list     = NULL;
+   settings_t *settings             = config_get_ptr();
+   float video_msg_pos_x            = settings->floats.video_msg_pos_x;
+   float video_msg_pos_y            = settings->floats.video_msg_pos_y;
+   float video_msg_color_r          = settings->floats.video_msg_color_r;
+   float video_msg_color_g          = settings->floats.video_msg_color_g;
+   float video_msg_color_b          = settings->floats.video_msg_color_b;
 
    if (!font || string_is_empty(msg) || !font->gdi)
       return;
@@ -120,17 +127,17 @@ static void gdi_render_msg(
    }
    else
    {
-      x          = video_info->font_msg_pos_x;
-      y          = video_info->font_msg_pos_y;
+      x          = video_msg_pos_x;
+      y          = video_msg_pos_y;
       drop_x     = -2;
       drop_y     = -2;
       drop_mod   = 0.3f;
       drop_alpha = 1.0f;
       scale      = 1.0f;
       align      = TEXT_ALIGN_LEFT;
-      red        = video_info->font_msg_color_r * 255.0f;
-      green      = video_info->font_msg_color_g * 255.0f;
-      blue       = video_info->font_msg_color_b * 255.0f;
+      red        = video_msg_color_r * 255.0f;
+      green      = video_msg_color_g * 255.0f;
+      blue       = video_msg_color_b * 255.0f;
    }
 
    msg_strlen = strlen(msg);
@@ -140,19 +147,19 @@ static void gdi_render_msg(
    switch (align)
    {
       case TEXT_ALIGN_LEFT:
-         newX = x * width * scale;
+         newX     = x * width * scale;
          newDropX = drop_x * width * scale;
          break;
       case TEXT_ALIGN_RIGHT:
-         newX = (x * width * scale) - textSize.cx;
+         newX     = (x * width * scale) - textSize.cx;
          newDropX = (drop_x * width * scale) - textSize.cx;
          break;
       case TEXT_ALIGN_CENTER:
-         newX = (x * width * scale) - (textSize.cx / 2);
+         newX     = (x * width * scale) - (textSize.cx / 2);
          newDropX = (drop_x * width * scale) - (textSize.cx / 2);
          break;
       default:
-         newX = 0;
+         newX     = 0;
          newDropX = 0;
          break;
    }
