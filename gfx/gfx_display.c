@@ -649,6 +649,9 @@ void gfx_display_blend_end(video_frame_info_t *video_info)
 void gfx_display_scissor_begin(video_frame_info_t *video_info,
       int x, int y, unsigned width, unsigned height)
 {
+   unsigned video_width  = video_info->width;
+   unsigned video_height = video_info->height;
+
    if (dispctx && dispctx->scissor_begin)
    {
       if (y < 0)
@@ -667,20 +670,20 @@ void gfx_display_scissor_begin(video_frame_info_t *video_info,
             width += x;
          x = 0;
       }
-      if (y >= (int)video_info->height)
+      if (y >= (int)video_height)
       {
          height = 0;
          y = 0;
       }
-      if (x >= (int)video_info->width)
+      if (x >= (int)video_width)
       {
          width = 0;
          x = 0;
       }
-      if ((y + height) > video_info->height)
-         height = video_info->height - y;
-      if ((x + width) > video_info->width)
-         width = video_info->width - x;
+      if ((y + height) > video_height)
+         height = video_height - y;
+      if ((x + width) > video_width)
+         width = video_width - x;
 
       dispctx->scissor_begin(video_info, x, y, width, height);
    }
