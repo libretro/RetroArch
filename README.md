@@ -265,7 +265,7 @@ MAME ROMs that run in a vertical aspect like DoDonPachi need to be rotated withi
 The links below belong to our official channels. Links other than this may have been created by fans, independent members or followers. We seriously recommend using our original resources.
 
 - [Website](https://www.retroarch.com/)
-- [Blog](http://libretro.com/)
+- [Blog](https://libretro.com/)
 - [Facebook](https://www.facebook.com/libretro)
 - [Twitter](https://twitter.com/libretro)
 - [Reddit](https://www.reddit.com/r/RetroArch/)
