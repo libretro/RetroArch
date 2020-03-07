@@ -24,6 +24,19 @@
 typedef struct vga
 {
    bool color;
+   bool vga_rgb32;
+
+   unsigned vga_menu_width;
+   unsigned vga_menu_height;
+   unsigned vga_menu_pitch;
+   unsigned vga_menu_bits;
+   unsigned vga_video_width;
+   unsigned vga_video_height;
+   unsigned vga_video_pitch;
+   unsigned vga_video_bits;
+
+   unsigned char *vga_menu_frame;
+   unsigned char *vga_frame;
 } vga_t;
 
 #endif
