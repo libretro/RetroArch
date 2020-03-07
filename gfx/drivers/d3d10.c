@@ -1230,8 +1230,6 @@ static bool d3d10_gfx_frame(
       video_driver_set_size(video_info->width, video_info->height);
    }
 
-   PERF_START();
-
 #if 0 /* custom viewport doesn't call apply_state_changes, so we can't rely on this for now */
    if (d3d10->resize_viewport)
 #endif
@@ -1520,7 +1518,6 @@ static bool d3d10_gfx_frame(
    }
    d3d10->sprites.enabled = false;
 
-   PERF_STOP();
    DXGIPresent(d3d10->swapChain, !!d3d10->vsync, 0);
 
    return true;

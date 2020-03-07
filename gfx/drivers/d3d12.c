@@ -1170,7 +1170,6 @@ static bool d3d12_gfx_frame(
    d3d12_video_t*   d3d12   = (d3d12_video_t*)data;
 
    d3d12_gfx_sync(d3d12);
-   PERF_START();
 
    if (d3d12->resize_chain)
    {
@@ -1586,7 +1585,6 @@ static bool d3d12_gfx_frame(
    D3D12ExecuteGraphicsCommandLists(d3d12->queue.handle, 1, &d3d12->queue.cmd);
    D3D12SignalCommandQueue(d3d12->queue.handle, d3d12->queue.fence, ++d3d12->queue.fenceValue);
 
-   PERF_STOP();
 #if 1
    DXGIPresent(d3d12->chain.handle, !!d3d12->chain.vsync, 0);
 #else
