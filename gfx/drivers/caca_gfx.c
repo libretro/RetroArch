@@ -207,25 +207,17 @@ static bool caca_gfx_has_windowed(void *data)
 
 static void caca_gfx_free(void *data)
 {
-   caca_t *caca        = (caca_t*)data;
-
    if (caca_display)
-   {
       caca_free_display(caca_display);
-      caca_display = NULL;
-   }
+   caca_display = NULL;
 
    if (caca_dither)
-   {
       caca_free_dither(caca_dither);
-      caca_dither = NULL;
-   }
+   caca_dither = NULL;
 
    if (caca_menu_frame)
-   {
       free(caca_menu_frame);
-      caca_menu_frame = NULL;
-   }
+   caca_menu_frame = NULL;
 }
 
 static bool caca_gfx_set_shader(void *data,
