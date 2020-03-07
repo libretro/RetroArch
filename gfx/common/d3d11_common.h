@@ -2484,9 +2484,6 @@ typedef struct ALIGN(16)
    float time;
 } d3d11_uniform_t;
 
-static_assert(
-      (!(sizeof(d3d11_uniform_t) & 0xF)), "sizeof(d3d11_uniform_t) must be a multiple of 16");
-
 typedef struct d3d11_shader_t
 {
    D3D11VertexShader   vs;
