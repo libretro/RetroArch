@@ -23,6 +23,7 @@
 
 #include "../common/gl_common.h"
 #include "../font_driver.h"
+#include "../../configuration.h"
 #include "../../verbosity.h"
 
 /* TODO: Move viewport side effects to the caller: it's a source of bugs. */
@@ -422,8 +423,14 @@ static void gl_raster_font_render_msg(
    enum text_alignment text_align   = TEXT_ALIGN_LEFT;
    bool full_screen                 = false ;
    gl_raster_t                *font = (gl_raster_t*)data;
-   unsigned width                   = video_info->width;
-   unsigned height                  = video_info->height;
+   unsigned width                   = font->gl->video_width;
+   unsigned height                  = font->gl->video_height;
+   settings_t *settings             = config_get_ptr();
+   float video_msg_pos_x            = settings->floats.video_msg_pos_x;
+   float video_msg_pos_y            = settings->floats.video_msg_pos_y;
+   float video_msg_color_r          = settings->floats.video_msg_color_r;
+   float video_msg_color_g          = settings->floats.video_msg_color_g;
+   float video_msg_color_b          = settings->floats.video_msg_color_b;
 
    if (!font || string_is_empty(msg))
       return;
@@ -451,15 +458,15 @@ static void gl_raster_font_render_msg(
    }
    else
    {
-      x                    = video_info->font_msg_pos_x;
-      y                    = video_info->font_msg_pos_y;
+      x                    = video_msg_pos_x;
+      y                    = video_msg_pos_y;
       scale                = 1.0f;
       full_screen          = true;
       text_align           = TEXT_ALIGN_LEFT;
 
-      color[0]             = video_info->font_msg_color_r;
-      color[1]             = video_info->font_msg_color_g;
-      color[2]             = video_info->font_msg_color_b;
+      color[0]             = video_msg_color_r;
+      color[1]             = video_msg_color_g;
+      color[2]             = video_msg_color_b;
       color[3]             = 1.0f;
 
       drop_x               = -2;

@@ -80,7 +80,10 @@ static void xfonts_render_msg(
 {
    float x, y;
    wchar_t str[PATH_MAX_LENGTH];
-   xfonts_t *xfonts = (xfonts_t*)data;
+   xfonts_t     *xfonts  = (xfonts_t*)data;
+   settings_t *settings  = config_get_ptr();
+   float video_msg_pos_x = settings->floats.video_msg_pos_x;
+   float video_msg_pos_y = settings->floats.video_msg_pos_y;
 
    if (params)
    {
@@ -89,8 +92,8 @@ static void xfonts_render_msg(
    }
    else
    {
-      x = video_info->font_msg_pos_x;
-      y = video_info->font_msg_pos_y;
+      x = video_msg_pos_x;
+      y = video_msg_pos_y;
    }
 
    d3d8_device_get_backbuffer(xfonts->d3d->dev,
