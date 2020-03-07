@@ -94,6 +94,8 @@ typedef struct gfx_ctx_x_data
    bool g_should_reset_mode;
    bool g_is_double;
    bool core_hw_context_enable;
+   bool adaptive_vsync;
+   bool msaa_enable;
 
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)
    GLXWindow g_glx_win;
@@ -109,8 +111,6 @@ typedef struct gfx_ctx_x_data
 #endif
 } gfx_ctx_x_data_t;
 
-static bool x_adaptive_vsync                  = false;
-static bool x_enable_msaa                     = false;
 static unsigned g_major                       = 0;
 static unsigned g_minor                       = 0;
 static enum gfx_ctx_api x_api                 = GFX_CTX_NONE;
@@ -567,7 +567,7 @@ static void *gfx_ctx_x_init(void *data)
 	 if (GLXExtensionSupported(g_x11_dpy, "GLX_EXT_swap_control_tear"))
 	 {
             RARCH_LOG("[GLX]: GLX_EXT_swap_control_tear supported.\n");
-	    x_adaptive_vsync = true;
+            x->adaptive_vsync = true;
 	 }
          if (GLXExtensionSupported(g_x11_dpy, "GLX_OML_sync_control") &&
              GLXExtensionSupported(g_x11_dpy, "GLX_MESA_swap_control")
@@ -1268,13 +1268,13 @@ static uint32_t gfx_ctx_x_get_flags(void *data)
    {
       case GFX_CTX_OPENGL_API:
       case GFX_CTX_OPENGL_ES_API:
-         if (x_adaptive_vsync)
+         if (x->adaptive_vsync)
             BIT32_SET(flags, GFX_CTX_FLAGS_ADAPTIVE_VSYNC);
 
          if (x->core_hw_context_enable || x->g_core_es)
             BIT32_SET(flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT);
 
-         if (x_enable_msaa)
+         if (x->msaa_enable)
             BIT32_SET(flags, GFX_CTX_FLAGS_MULTISAMPLING);
 
          if (string_is_equal(video_driver_get_ident(), "gl1")) { }
@@ -1317,11 +1317,11 @@ static void gfx_ctx_x_set_flags(void *data, uint32_t flags)
       case GFX_CTX_OPENGL_API:
       case GFX_CTX_OPENGL_ES_API:
          if (BIT32_GET(flags, GFX_CTX_FLAGS_ADAPTIVE_VSYNC))
-               x_adaptive_vsync = true;
+               x->adaptive_vsync = true;
          if (BIT32_GET(flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT))
             x->core_hw_context_enable = true;
          if (BIT32_GET(flags, GFX_CTX_FLAGS_MULTISAMPLING))
-            x_enable_msaa = true;
+            x->msaa_enable = true;
          break;
       case GFX_CTX_NONE:
       default:
