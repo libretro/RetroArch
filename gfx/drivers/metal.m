@@ -56,10 +56,11 @@
 
 /* Temporary workaround for metal not being able to poll flags during init */
 static gfx_ctx_driver_t metal_fake_context;
+
 static uint32_t metal_get_flags(void *data);
 
 static bool metal_set_shader(void *data,
-                             enum rarch_shader_type type, const char *path);
+      enum rarch_shader_type type, const char *path);
 
 static void *metal_init(
       const video_info_t *video,
@@ -70,9 +71,7 @@ static void *metal_init(
 
    MetalDriver *md = [[MetalDriver alloc] initWithVideo:video input:input inputData:input_data];
    if (md == nil)
-   {
       return NULL;
-   }
 
    {
       const char *shader_path;

@@ -47,26 +47,30 @@
 typedef struct
 {
    bool should_resize;
-   float mScreenAspect;
    bool keep_aspect;
    bool mEglImageBuf;
+   bool mFontsOn;
+
+   float mScreenAspect;
+
    unsigned mTextureWidth;
    unsigned mTextureHeight;
    unsigned mRenderWidth;
    unsigned mRenderHeight;
    unsigned x1, y1, x2, y2;
+   uint32_t mFontHeight;
+
+   char *mLastMsg;
+
+   VGint scissor[4];
    VGImageFormat mTexType;
    VGImage mImage;
    math_matrix_3x3 mTransformMatrix;
-   VGint scissor[4];
    EGLImageKHR last_egl_image;
 
-   char *mLastMsg;
-   uint32_t mFontHeight;
    VGFont mFont;
    void *mFontRenderer;
    const font_renderer_driver_t *font_driver;
-   bool mFontsOn;
    VGuint mMsgLength;
    VGuint mGlyphIndices[1024];
    VGPaint mPaintFg;

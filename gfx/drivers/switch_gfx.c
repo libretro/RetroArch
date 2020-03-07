@@ -54,30 +54,30 @@ typedef struct
    bool rgb32;
    unsigned width, height;
    unsigned rotation;
+	uint32_t last_width;
+	uint32_t last_height;
+
    struct video_viewport vp;
 
-	struct {
-		bool enable;
-		bool fullscreen;
+	struct
+   {
+      bool enable;
+      bool fullscreen;
 
-		uint32_t *pixels;
+      uint32_t *pixels;
 
-		unsigned width;
-		unsigned height;
+      unsigned width;
+      unsigned height;
 
-		unsigned tgtw;
-		unsigned tgth;
+      unsigned tgtw;
+      unsigned tgth;
 
-		struct scaler_ctx scaler;
-	} menu_texture;
-
+      struct scaler_ctx scaler;
+   } menu_texture;
 	surface_t surface;
 	revent_h vsync_h;
 	uint32_t image[1280*720];
-
 	struct scaler_ctx scaler;
-	uint32_t last_width;
-	uint32_t last_height;
 } switch_video_t;
 
 static void *switch_init(const video_info_t *video,
@@ -92,17 +92,13 @@ static void *switch_init(const video_info_t *video,
 
    result_t r = display_init();
    if (r != RESULT_OK)
-   {
-      free(sw);
-      return NULL;
-   }
+      goto error;
    r = display_open_layer(&sw->surface);
 
    if (r != RESULT_OK)
    {
       display_finalize();
-      free(sw);
-      return NULL;
+      goto error;
    }
    r = display_get_vsync_event(&sw->vsync_h);
 
@@ -110,8 +106,7 @@ static void *switch_init(const video_info_t *video,
    {
 	   display_close_layer(&sw->surface);
       display_finalize();
-      free(sw);
-      return NULL;
+      goto error;
    }
 
    sw->vp.x           = 0;
@@ -122,13 +117,17 @@ static void *switch_init(const video_info_t *video,
    sw->vp.full_height = 720;
    video_driver_set_size(sw->vp.width, sw->vp.height);
 
-   sw->vsync = video->vsync;
-   sw->rgb32 = video->rgb32;
+   sw->vsync   = video->vsync;
+   sw->rgb32   = video->rgb32;
 
-   *input = NULL;
+   *input      = NULL;
    *input_data = NULL;
 
    return sw;
+
+error:
+   free(sw);
+   return NULL;
 }
 
 static void switch_wait_vsync(switch_video_t *sw)

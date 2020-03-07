@@ -44,13 +44,12 @@
 
 typedef struct sdl_dingux_video
 {
-   SDL_Surface *screen;
    bool rgb;
    bool menu_active;
    bool was_in_menu;
    bool quitting;
    char menu_frame[320*240*32];
-
+   SDL_Surface *screen;
 } sdl_dingux_video_t;
 
 static void sdl_dingux_gfx_free(void *data)

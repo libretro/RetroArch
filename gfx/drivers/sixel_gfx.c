@@ -79,24 +79,24 @@ static int sixel_write(char *data, int size, void *priv)
 static SIXELSTATUS output_sixel(unsigned char *pixbuf, int width, int height,
       int ncolors, int pixelformat)
 {
-   sixel_output_t *context;
-   sixel_dither_t *dither;
-   SIXELSTATUS status;
-
-   context = sixel_output_create(sixel_write, stdout);
-   dither = sixel_dither_create(ncolors);
-   status = sixel_dither_initialize(dither, pixbuf,
+   sixel_output_t *context = sixel_output_create(sixel_write, stdout);
+   sixel_dither_t *dither  = sixel_dither_create(ncolors);
+   SIXELSTATUS      status = sixel_dither_initialize(dither, pixbuf,
          width, height,
          pixelformat,
          SIXEL_LARGE_AUTO,
          SIXEL_REP_AUTO,
          SIXEL_QUALITY_AUTO);
+
    if (SIXEL_FAILED(status))
       return status;
+
    status = sixel_encode(pixbuf, width, height,
          pixelformat, dither, context);
+
    if (SIXEL_FAILED(status))
       return status;
+
    sixel_output_unref(context);
    sixel_dither_unref(dither);
 
@@ -104,7 +104,7 @@ static SIXELSTATUS output_sixel(unsigned char *pixbuf, int width, int height,
 }
 
 #ifdef HAVE_SYS_IOCTL_H
-# ifdef HAVE_TERMIOS_H
+#ifdef HAVE_TERMIOS_H
 static int wait_stdin(int usec)
 {
 #ifdef HAVE_SYS_SELECT_H
@@ -114,7 +114,7 @@ static int wait_stdin(int usec)
    int ret = 0;
 
 #ifdef HAVE_SYS_SELECT_H
-   tv.tv_sec = usec / 1000000;
+   tv.tv_sec  = usec / 1000000;
    tv.tv_usec = usec % 1000000;
    FD_ZERO(&rfds);
    FD_SET(STDIN_FILENO, &rfds);

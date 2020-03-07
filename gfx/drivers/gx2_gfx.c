@@ -63,11 +63,12 @@ static const wiiu_render_mode_t wiiu_render_mode_map[] =
 };
 
 static bool wiiu_gfx_set_shader(void *data,
-                                enum rarch_shader_type type, const char *path);
+      enum rarch_shader_type type, const char *path);
 
-static void wiiu_set_tex_coords(frame_vertex_t *v, GX2Texture *texture, float u0, float v0,
-                                float u1, float v1,
-                                unsigned rotation)
+static void wiiu_set_tex_coords(frame_vertex_t *v,
+      GX2Texture *texture, float u0, float v0,
+      float u1, float v1,
+      unsigned rotation)
 {
    v[0].coord.u = u0 / texture->surface.width;
    v[0].coord.v = v0 / texture->surface.height;

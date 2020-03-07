@@ -54,18 +54,17 @@ typedef struct sdl_menu_frame
 
 typedef struct sdl_video
 {
-   SDL_Surface *screen;
    bool quitting;
-
-   void *font;
-   const font_renderer_driver_t *font_driver;
    uint8_t font_r;
    uint8_t font_g;
    uint8_t font_b;
 
    struct scaler_ctx scaler;
-
    sdl_menu_frame_t menu;
+   SDL_Surface *screen;
+
+   void *font;
+   const font_renderer_driver_t *font_driver;
 } sdl_video_t;
 
 static void sdl_gfx_free(void *data)
