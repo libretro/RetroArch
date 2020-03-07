@@ -277,5 +277,5 @@ The links below belong to our official channels. Links other than this may have 
 - [BOUNTYSOURCE](https://www.bountysource.com/teams/libretro/issues)
 - [Discord](https://discord.gg/27Xxm2h)
 - [Teespring](https://teespring.com/stores/retroarch)
-- [Documentation](http://docs.libretro.com/)
+- [Documentation](https://docs.libretro.com/)
 - [Forum](https://forums.libretro.com/)
