@@ -140,6 +140,12 @@ static void d3dfonts_w32_render_msg(video_frame_info_t *video_info,
    float drop_alpha                 = 1.0f;
    int drop_x                       = -2;
    int drop_y                       = -2;
+   settings_t *settings             = config_get_ptr();
+   float video_msg_pos_x            = settings->floats.video_msg_pos_x;
+   float video_msg_pos_y            = settings->floats.video_msg_pos_y;
+   float video_msg_color_r          = settings->floats.video_msg_color_r;
+   float video_msg_color_g          = settings->floats.video_msg_color_g;
+   float video_msg_color_b          = settings->floats.video_msg_color_b;
 
    if (!d3dfonts || !d3dfonts->d3d || !msg)
       return;
@@ -197,9 +203,9 @@ static void d3dfonts_w32_render_msg(video_frame_info_t *video_info,
    else
    {
       a = 255;
-      r = video_info->font_msg_color_r * 255;
-      g = video_info->font_msg_color_g * 255;
-      b = video_info->font_msg_color_b * 255;
+      r = video_msg_color_r * 255;
+      g = video_msg_color_g * 255;
+      b = video_msg_color_b * 255;
    }
 
    if(drop_x || drop_y)

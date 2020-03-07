@@ -28,6 +28,7 @@
 #include "../drivers/ctr_gu.h"
 #include "../../ctr/gpu_old.h"
 
+#include "../../configuration.h"
 #include "../../verbosity.h"
 
 /* FIXME: this is just a workaround to avoid
@@ -368,6 +369,12 @@ static void ctr_font_render_msg(
    ctr_font_t                * font = (ctr_font_t*)data;
    unsigned width                   = video_info->width;
    unsigned height                  = video_info->height;
+   settings_t *settings             = config_get_ptr();
+   float video_msg_pos_x            = settings->floats.video_msg_pos_x;
+   float video_msg_pos_y            = settings->floats.video_msg_pos_y;
+   float video_msg_color_r          = settings->floats.video_msg_color_r;
+   float video_msg_color_g          = settings->floats.video_msg_color_g;
+   float video_msg_color_b          = settings->floats.video_msg_color_b;
 
    if (!font || !msg || !*msg)
       return;
@@ -392,14 +399,14 @@ static void ctr_font_render_msg(
    }
    else
    {
-      x              = video_info->font_msg_pos_x;
-      y              = video_info->font_msg_pos_y;
+      x              = video_msg_pos_x;
+      y              = video_msg_pos_y;
       scale          = 1.0f;
       text_align     = TEXT_ALIGN_LEFT;
 
-      r              = (video_info->font_msg_color_r * 255);
-      g              = (video_info->font_msg_color_g * 255);
-      b              = (video_info->font_msg_color_b * 255);
+      r              = (video_msg_color_r * 255);
+      g              = (video_msg_color_g * 255);
+      b              = (video_msg_color_b * 255);
       alpha          = 255;
       color          = COLOR_ABGR(r, g, b, alpha);
 
