@@ -23,6 +23,7 @@
 
 typedef struct
 {
+   HANDLE hnd;
    uint8_t keys[256];
 } winraw_keyboard_t;
 
@@ -37,18 +38,19 @@ typedef struct
 typedef struct
 {
    bool mouse_grab;
-   winraw_keyboard_t keyboard;
+   winraw_keyboard_t *keyboards;
    HWND window;
    winraw_mouse_t *mice;
    const input_device_driver_t *joypad;
 } winraw_input_t;
 
-static winraw_keyboard_t *g_keyboard = NULL;
-static winraw_mouse_t *g_mice        = NULL;
-static unsigned g_mouse_cnt          = 0;
-static bool g_mouse_xy_mapping_ready = false;
-static double g_view_abs_ratio_x     = 0.0;
-static double g_view_abs_ratio_y     = 0.0;
+static winraw_keyboard_t *g_keyboards = NULL;
+static unsigned g_keyboard_cnt        = 0;
+static winraw_mouse_t *g_mice         = NULL;
+static unsigned g_mouse_cnt           = 0;
+static bool g_mouse_xy_mapping_ready  = false;
+static double g_view_abs_ratio_x      = 0.0;
+static double g_view_abs_ratio_y      = 0.0;
 
 static HWND winraw_create_window(WNDPROC wnd_proc)
 {
@@ -147,15 +149,36 @@ static void winraw_log_mice_info(winraw_mouse_t *mice, unsigned mouse_cnt)
    }
 }
 
-static bool winraw_init_devices(winraw_mouse_t **mice, unsigned *mouse_cnt)
+static void winraw_log_keyboards_info(winraw_keyboard_t *keyboards, unsigned keyboard_cnt)
+{
+   unsigned i;
+   char name[256];
+   UINT name_size = sizeof(name);
+
+   name[0] = '\0';
+
+   for (i = 0; i < keyboard_cnt; ++i)
+   {
+      UINT r = GetRawInputDeviceInfoA(keyboards[i].hnd, RIDI_DEVICENAME,
+            name, &name_size);
+      if (r == (UINT)-1 || r == 0)
+         name[0] = '\0';
+      RARCH_LOG("[WINRAW]: Keyboard #%u %s.\n", i, name);
+   }
+}
+
+static bool winraw_init_devices(winraw_mouse_t **mice, unsigned *mouse_cnt,
+                                winraw_keyboard_t **keyboards, unsigned *keyboard_cnt)
 {
    UINT i;
    POINT crs_pos;
-   winraw_mouse_t *mice_r   = NULL;
-   unsigned mouse_cnt_r     = 0;
-   RAWINPUTDEVICELIST *devs = NULL;
-   UINT dev_cnt             = 0;
-   UINT r                   = GetRawInputDeviceList(
+   winraw_mouse_t *mice_r         = NULL;
+   unsigned mouse_cnt_r           = 0;
+   winraw_keyboard_t *keyboards_r = NULL;
+   unsigned keyboard_cnt_r        = 0;
+   RAWINPUTDEVICELIST *devs       = NULL;
+   UINT dev_cnt                   = 0;
+   UINT r                         = GetRawInputDeviceList(
          NULL, &dev_cnt, sizeof(RAWINPUTDEVICELIST));
 
    if (r == (UINT)-1)
@@ -176,7 +199,10 @@ static bool winraw_init_devices(winraw_mouse_t **mice, unsigned *mouse_cnt)
    }
 
    for (i = 0; i < dev_cnt; ++i)
+   {
       mouse_cnt_r += devs[i].dwType == RIM_TYPEMOUSE ? 1 : 0;
+      keyboard_cnt_r += devs[i].dwType == RIM_TYPEKEYBOARD ? 1 : 0;
+   }
 
    if (mouse_cnt_r)
    {
@@ -193,19 +219,31 @@ static bool winraw_init_devices(winraw_mouse_t **mice, unsigned *mouse_cnt)
          mice_r[i].y = crs_pos.y;
       }
    }
+   
+   if (keyboard_cnt_r)
+   {
+      keyboards_r = (winraw_keyboard_t*)calloc(1, keyboard_cnt_r * sizeof(winraw_keyboard_t));
+      if (!keyboards_r)
+         goto error;
+   }
 
    /* count is already checked, so this is safe */
-   for (i = mouse_cnt_r = 0; i < dev_cnt; ++i)
+   for (i = mouse_cnt_r = keyboard_cnt_r = 0; i < dev_cnt; ++i)
    {
       if (devs[i].dwType == RIM_TYPEMOUSE)
          mice_r[mouse_cnt_r++].hnd = devs[i].hDevice;
+      if (devs[i].dwType == RIM_TYPEKEYBOARD)
+         keyboards_r[keyboard_cnt_r++].hnd = devs[i].hDevice;
    }
 
    winraw_log_mice_info(mice_r, mouse_cnt_r);
+   winraw_log_keyboards_info(keyboards_r, keyboard_cnt_r);
    free(devs);
 
-   *mice      = mice_r;
-   *mouse_cnt = mouse_cnt_r;
+   *mice         = mice_r;
+   *mouse_cnt    = mouse_cnt_r;
+   *keyboards    = keyboards_r;
+   *keyboard_cnt = keyboard_cnt_r;
 
    return true;
 
@@ -214,6 +252,8 @@ error:
    free(mice_r);
    *mice = NULL;
    *mouse_cnt = 0;
+   *keyboards = NULL;
+   *keyboard_cnt = 0;
    return false;
 }
 
@@ -346,8 +386,6 @@ static int16_t winraw_mouse_state(winraw_input_t *wr,
    return 0;
 }
 
-#define winraw_keyboard_pressed(wr, key) (wr->keyboard.keys[rarch_keysym_lut[(enum retro_key)(key)]])
-
 static bool winraw_mouse_button_pressed(
       winraw_input_t *wr, unsigned port, unsigned key)
 {
@@ -392,6 +430,63 @@ static bool winraw_mouse_button_pressed(
 	return false;
 }
 
+#define winraw_keyboard_pressed(keyboard, key) (keyboard->keys[rarch_keysym_lut[(enum retro_key)(key)]])
+
+static int16_t winraw_keyboard_state(winraw_input_t *wr,
+      unsigned port, unsigned id)
+{
+   settings_t *settings        = config_get_ptr();
+   winraw_keyboard_t *keyboard = NULL;
+   unsigned i;
+   
+   if (port >= MAX_USERS)
+      return 0;
+
+   for (i = 0; i < g_keyboard_cnt; ++i)
+   {
+      if (i == settings->uints.input_mouse_index[port])
+      {
+         keyboard = &wr->keyboards[i];
+         break;
+      }
+   }
+
+   if (!keyboard)
+      return 0;
+
+   return (id < RETROK_LAST) && winraw_keyboard_pressed(keyboard, id);
+}
+
+static bool keyboard_key_is_pressed(winraw_input_t *wr,
+      const struct retro_keybind *bind,
+      unsigned port, unsigned id)
+{
+   settings_t *settings        = config_get_ptr();
+   winraw_keyboard_t *keyboard = NULL;
+   unsigned i;
+   
+   if (bind->key >= RETROK_LAST || port >= MAX_USERS)
+      return false;
+
+   for (i = 0; i < g_keyboard_cnt; ++i)
+   {
+      if (i == settings->uints.input_mouse_index[port])
+      {
+         keyboard = &wr->keyboards[i];
+         break;
+      }
+   }
+
+   if (!keyboard)
+      return false;
+
+   if (winraw_keyboard_pressed(keyboard, bind->key))
+      if ((id == RARCH_GAME_FOCUS_TOGGLE) || !input_winraw.keyboard_mapping_blocked)
+         return true;
+   
+   return false;
+}
+
 static bool winraw_is_pressed(winraw_input_t *wr,
       rarch_joypad_info_t *joypad_info,
       const struct retro_keybind *binds,
@@ -399,9 +494,9 @@ static bool winraw_is_pressed(winraw_input_t *wr,
 {
    const struct retro_keybind *bind = &binds[id];
 
-   if ((bind->key < RETROK_LAST) && winraw_keyboard_pressed(wr, bind->key))
-      if ((id == RARCH_GAME_FOCUS_TOGGLE) || !input_winraw.keyboard_mapping_blocked)
-         return true;
+   if (keyboard_key_is_pressed(wr, bind, port, id))
+      return true;
+
    if (binds && binds[id].valid)
    {
       /* Auto-binds are per joypad, not per user. */
@@ -577,10 +672,16 @@ static LRESULT CALLBACK winraw_callback(HWND wnd, UINT msg, WPARAM wpar, LPARAM 
 
    if (ri->header.dwType == RIM_TYPEKEYBOARD)
    {
-      if (ri->data.keyboard.Message == WM_KEYDOWN)
-         g_keyboard->keys[ri->data.keyboard.VKey] = 1;
-      else if (ri->data.keyboard.Message == WM_KEYUP)
-         g_keyboard->keys[ri->data.keyboard.VKey] = 0;
+      for (i = 0; i < g_keyboard_cnt; ++i)
+      {
+         if (g_keyboards[i].hnd == ri->header.hDevice)
+         {
+            if (ri->data.keyboard.Message == WM_KEYDOWN)
+               g_keyboards[i].keys[ri->data.keyboard.VKey] = 1;
+            else if (ri->data.keyboard.Message == WM_KEYUP)
+               g_keyboards[i].keys[ri->data.keyboard.VKey] = 0;
+         }
+      }
    }
    else if (ri->header.dwType == RIM_TYPEMOUSE)
    {
@@ -604,10 +705,8 @@ static void *winraw_init(const char *joypad_driver)
    bool r;
    winraw_input_t *wr = (winraw_input_t *)
       calloc(1, sizeof(winraw_input_t));
-   g_keyboard         = (winraw_keyboard_t*)
-      calloc(1, sizeof(winraw_keyboard_t));
 
-   if (!wr || !g_keyboard)
+   if (!wr)
       goto error;
 
    RARCH_LOG("[WINRAW]: Initializing input driver... \n");
@@ -618,7 +717,7 @@ static void *winraw_init(const char *joypad_driver)
    if (!wr->window)
       goto error;
 
-   r = winraw_init_devices(&g_mice, &g_mouse_cnt);
+   r = winraw_init_devices(&g_mice, &g_mouse_cnt, &g_keyboards, &g_keyboard_cnt);
    if (!r)
       goto error;
 
@@ -634,6 +733,20 @@ static void *winraw_init(const char *joypad_driver)
          goto error;
 
       memcpy(wr->mice, g_mice, g_mouse_cnt * sizeof(winraw_mouse_t));
+   }
+
+   if (!g_keyboard_cnt)
+   {
+      RARCH_LOG("[WINRAW]: Keyboard unavailable.\n");
+   }
+   else
+   {
+      wr->keyboards = (winraw_keyboard_t*)
+         malloc(g_keyboard_cnt * sizeof(winraw_keyboard_t));
+      if (!wr->keyboards)
+         goto error;
+
+      memcpy(wr->keyboards, g_keyboards, g_keyboard_cnt * sizeof(winraw_keyboard_t));
    }
 
    r = winraw_set_keyboard_input(wr->window);
@@ -655,10 +768,13 @@ error:
       winraw_set_keyboard_input(NULL);
       winraw_destroy_window(wr->window);
    }
-   free(g_keyboard);
+   free(g_keyboards);
    free(g_mice);
    if (wr)
+   {
       free(wr->mice);
+      free(wr->keyboards);
+   }
    free(wr);
    return NULL;
 }
@@ -668,15 +784,18 @@ static void winraw_poll(void *d)
    unsigned i;
    winraw_input_t *wr = (winraw_input_t*)d;
 
-   memcpy(&wr->keyboard, g_keyboard, sizeof(winraw_keyboard_t));
+   for (i = 0; i < g_keyboard_cnt; ++i)
+   {
+      memcpy(&wr->keyboards[i], &g_keyboards[i], sizeof(winraw_keyboard_t));
 
-   /* following keys are not handled by windows raw input api */
-   wr->keyboard.keys[VK_LCONTROL] = GetAsyncKeyState(VK_LCONTROL) >> 1 ? 1 : 0;
-   wr->keyboard.keys[VK_RCONTROL] = GetAsyncKeyState(VK_RCONTROL) >> 1 ? 1 : 0;
-   wr->keyboard.keys[VK_LMENU]    = GetAsyncKeyState(VK_LMENU)    >> 1 ? 1 : 0;
-   wr->keyboard.keys[VK_RMENU]    = GetAsyncKeyState(VK_RMENU)    >> 1 ? 1 : 0;
-   wr->keyboard.keys[VK_LSHIFT]   = GetAsyncKeyState(VK_LSHIFT)   >> 1 ? 1 : 0;
-   wr->keyboard.keys[VK_RSHIFT]   = GetAsyncKeyState(VK_RSHIFT)   >> 1 ? 1 : 0;
+      /* following keys are not handled by windows raw input api */
+      wr->keyboards[i].keys[VK_LCONTROL] = GetAsyncKeyState(VK_LCONTROL) >> 1 ? 1 : 0;
+      wr->keyboards[i].keys[VK_RCONTROL] = GetAsyncKeyState(VK_RCONTROL) >> 1 ? 1 : 0;
+      wr->keyboards[i].keys[VK_LMENU]    = GetAsyncKeyState(VK_LMENU)    >> 1 ? 1 : 0;
+      wr->keyboards[i].keys[VK_RMENU]    = GetAsyncKeyState(VK_RMENU)    >> 1 ? 1 : 0;
+      wr->keyboards[i].keys[VK_LSHIFT]   = GetAsyncKeyState(VK_LSHIFT)   >> 1 ? 1 : 0;
+      wr->keyboards[i].keys[VK_RSHIFT]   = GetAsyncKeyState(VK_RSHIFT)   >> 1 ? 1 : 0;
+   }
 
    for (i = 0; i < g_mouse_cnt; ++i)
    {
@@ -735,7 +854,7 @@ static int16_t winraw_input_state(void *d,
                   port, index, id, binds[port]);
          break;
       case RETRO_DEVICE_KEYBOARD:
-         return (id < RETROK_LAST) && winraw_keyboard_pressed(wr, id);
+         return winraw_keyboard_state(wr, port, id);
       case RETRO_DEVICE_MOUSE:
          return winraw_mouse_state(wr, port, false, id);
       case RARCH_DEVICE_MOUSE_SCREEN:
@@ -796,7 +915,7 @@ static void winraw_free(void *d)
    winraw_set_keyboard_input(NULL);
    winraw_destroy_window(wr->window);
    free(g_mice);
-   free(g_keyboard);
+   free(g_keyboards);
    free(wr->mice);
    free(wr);
 
