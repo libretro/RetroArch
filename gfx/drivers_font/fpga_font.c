@@ -23,11 +23,12 @@
 #include "../../config.h"
 #endif
 
+#include "../common/fpga_common.h"
+
 #include "../font_driver.h"
 #include "../video_driver.h"
 #include "../../configuration.h"
 #include "../../verbosity.h"
-#include "../common/fpga_common.h"
 
 typedef struct
 {
@@ -83,27 +84,30 @@ static void fpga_render_msg(
       const void *userdata)
 {
    float x, y, scale;
-   fpga_raster_t *font = (fpga_raster_t*)data;
    unsigned newX, newY, len;
    unsigned align;
+   fpga_raster_t              *font = (fpga_raster_t*)data;
    const struct font_params *params = (const struct font_params*)userdata;
    unsigned width                   = video_info->width;
    unsigned height                  = video_info->height;
+   settings_t *settings             = config_get_ptr();
+   float video_msg_pos_x            = settings->floats.video_msg_pos_x;
+   float video_msg_pos_y            = settings->floats.video_msg_pos_y;
 
    if (!font || string_is_empty(msg))
       return;
 
    if (params)
    {
-      x = params->x;
-      y = params->y;
+      x     = params->x;
+      y     = params->y;
       scale = params->scale;
       align = params->text_align;
    }
    else
    {
-      x = video_info->font_msg_pos_x;
-      y = video_info->font_msg_pos_y;
+      x     = video_msg_pos_x;
+      y     = video_msg_pos_y;
       scale = 1.0f;
       align = TEXT_ALIGN_LEFT;
    }
@@ -131,23 +135,13 @@ static void fpga_render_msg(
    /* TODO: draw osd msg */
 }
 
-static void fpga_font_flush_block(unsigned width, unsigned height, void* data)
-{
-   (void)data;
-}
-
-static void fpga_font_bind_block(void* data, void* userdata)
-{
-   (void)data;
-}
-
 font_renderer_t fpga_font = {
    fpga_init_font,
    fpga_render_free_font,
    fpga_render_msg,
    "fpga font",
    fpga_font_get_glyph,       /* get_glyph */
-   fpga_font_bind_block,      /* bind_block */
-   fpga_font_flush_block,     /* flush */
+   NULL,      /* bind_block */
+   NULL,     /* flush */
    fpga_get_message_width     /* get_message_width */
 };
