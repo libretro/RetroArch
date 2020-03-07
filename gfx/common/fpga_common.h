@@ -25,10 +25,18 @@
 #define FB_WIDTH 1920
 #define FB_HEIGHT 1080
 
+typedef struct RegOp
+{
+   int fd;
+   void *ptr;
+   int only_mmap;
+   int only_munmap;
+} RegOp;
+
 typedef struct fpga
 {
-   volatile unsigned *framebuffer;
-   unsigned char *menu_frame;
+   bool rgb32;
+   bool menu_rgb32;
    unsigned menu_width;
    unsigned menu_height;
    unsigned menu_pitch;
@@ -37,8 +45,10 @@ typedef struct fpga
    unsigned video_pitch;
    unsigned video_bits;
    unsigned menu_bits;
-   bool rgb32;
-   bool menu_rgb32;
+
+   RegOp regOp;
+   volatile unsigned *framebuffer;
+   unsigned char *menu_frame;
 } fpga_t;
 
 #endif

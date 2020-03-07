@@ -36,15 +36,6 @@
 #include "../../verbosity.h"
 #include "../common/fpga_common.h"
 
-typedef struct RegOp
-{
-   int fd;
-   void *ptr;
-   int only_mmap;
-   int only_munmap;
-} RegOp;
-
-static RegOp regOp;
 
 static unsigned int get_memory_size(void)
 {
@@ -76,7 +67,8 @@ static void do_mmap_op(RegOp *regOp)
       if (regOp->fd < 1)
          return;
 
-      regOp->ptr = mmap(NULL, get_memory_size(), PROT_READ|PROT_WRITE, MAP_SHARED, regOp->fd, 0);
+      regOp->ptr = mmap(NULL, get_memory_size(),
+            PROT_READ|PROT_WRITE, MAP_SHARED, regOp->fd, 0);
 
       if (regOp->ptr == MAP_FAILED)
       {
@@ -101,13 +93,13 @@ static void do_mmap_op(RegOp *regOp)
 
 static void fpga_gfx_create(fpga_t *fpga)
 {
-   memset(&regOp, 0, sizeof(regOp));
+   memset(&fpga->regOp, 0, sizeof(fpga->regOp));
 
-   regOp.only_mmap = 1;
+   fpga->regOp.only_mmap = 1;
 
-   do_mmap_op(&regOp);
+   do_mmap_op(&fpga->regOp);
 
-   fpga->framebuffer = ((volatile unsigned*)regOp.ptr);
+   fpga->framebuffer = ((volatile unsigned*)fpga->regOp.ptr);
 }
 
 static void *fpga_gfx_init(const video_info_t *video,
@@ -394,10 +386,10 @@ static void fpga_gfx_free(void *data)
 
    free(fpga);
 
-   regOp.only_mmap = 0;
-   regOp.only_munmap = 1;
+   fpga->regOp.only_mmap = 0;
+   fpga->regOp.only_munmap = 1;
 
-   do_mmap_op(&regOp);
+   do_mmap_op(&fpga->regOp);
 }
 
 static bool fpga_gfx_set_shader(void *data,
