@@ -102,12 +102,12 @@ static void caca_render_msg(video_frame_info_t *video_info,
       align = TEXT_ALIGN_LEFT;
    }
 
-   if (!font->caca || !font->caca->caca_cv || !font->caca->caca_display ||
-       !*font->caca->caca_cv || !*font->caca->caca_display)
+   if (!font->caca || !font->caca->cv || !font->caca->display ||
+       !font->caca->cv || !font->caca->display)
       return;
 
-   width    = caca_get_canvas_width(*font->caca->caca_cv);
-   height   = caca_get_canvas_height(*font->caca->caca_cv);
+   width    = caca_get_canvas_width(font->caca->cv);
+   height   = caca_get_canvas_height(font->caca->cv);
    newY     = height - (y * height * scale);
 
    switch (align)
@@ -124,9 +124,9 @@ static void caca_render_msg(video_frame_info_t *video_info,
          break;
    }
 
-   caca_put_str(*font->caca->caca_cv, newX, newY, msg);
+   caca_put_str(font->caca->cv, newX, newY, msg);
 
-   caca_refresh_display(*font->caca->caca_display);
+   caca_refresh_display(font->caca->display);
 }
 
 font_renderer_t caca_font = {
