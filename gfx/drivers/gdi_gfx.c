@@ -39,8 +39,6 @@
 #include "../common/win32_common.h"
 #endif
 
-static unsigned char *gdi_menu_frame = NULL;
-
 static void gdi_gfx_create(gdi_t *gdi)
 {
    char os[64] = {0};
@@ -215,9 +213,9 @@ static bool gdi_gfx_frame(void *data, const void *frame,
       }
    }
 
-   if (gdi_menu_frame && video_info->menu_is_alive)
+   if (gdi->menu_frame && video_info->menu_is_alive)
    {
-      frame_to_copy = gdi_menu_frame;
+      frame_to_copy = gdi->menu_frame;
       width         = gdi->menu_width;
       height        = gdi->menu_height;
       pitch         = gdi->menu_pitch;
@@ -319,7 +317,7 @@ static bool gdi_gfx_frame(void *data, const void *frame,
          info->bmiHeader.biCompression = BI_BITFIELDS;
 
          /* default 16-bit format on Windows is XRGB1555 */
-         if (frame_to_copy == gdi_menu_frame)
+         if (frame_to_copy == gdi->menu_frame)
          {
             /* map RGB444 color bits for RGUI */
             masks[0] = 0xF000;
@@ -411,9 +409,9 @@ static void gdi_gfx_free(void *data)
    if (!gdi)
       return;
 
-   if (gdi_menu_frame)
-      free(gdi_menu_frame);
-   gdi_menu_frame = NULL;
+   if (gdi->menu_frame)
+      free(gdi->menu_frame);
+   gdi->menu_frame = NULL;
 
    if (gdi->temp_buf)
       free(gdi->temp_buf);
@@ -464,11 +462,11 @@ static void gdi_set_texture_frame(void *data,
    if (rgb32)
       pitch = width * 4;
 
-   if (gdi_menu_frame)
-      free(gdi_menu_frame);
-   gdi_menu_frame = NULL;
+   if (gdi->menu_frame)
+      free(gdi->menu_frame);
+   gdi->menu_frame = NULL;
 
-   if ( !gdi_menu_frame            ||
+   if ( !gdi->menu_frame            ||
          gdi->menu_width != width   ||
          gdi->menu_height != height ||
          gdi->menu_pitch != pitch)
@@ -478,13 +476,13 @@ static void gdi_set_texture_frame(void *data,
          unsigned char *tmp = (unsigned char*)malloc(pitch * height);
 
          if (tmp)
-            gdi_menu_frame = tmp;
+            gdi->menu_frame = tmp;
       }
    }
 
-   if (gdi_menu_frame && frame && pitch && height)
+   if (gdi->menu_frame && frame && pitch && height)
    {
-      memcpy(gdi_menu_frame, frame, pitch * height);
+      memcpy(gdi->menu_frame, frame, pitch * height);
       gdi->menu_width  = width;
       gdi->menu_height = height;
       gdi->menu_pitch  = pitch;
@@ -620,9 +618,10 @@ static void gdi_gfx_set_viewport(void *data, unsigned viewport_width,
 {
 }
 
-bool gdi_has_menu_frame(void)
+bool gdi_has_menu_frame(void *data)
 {
-   return (gdi_menu_frame != NULL);
+   gdi_t *gdi = (gdi_t*)data;
+   return (gdi->menu_frame != NULL);
 }
 
 video_driver_t video_gdi = {

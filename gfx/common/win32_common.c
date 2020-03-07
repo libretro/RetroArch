@@ -1149,7 +1149,7 @@ LRESULT CALLBACK WndProcGDI(HWND hwnd, UINT message,
             gdi->bmp_old = (HBITMAP)SelectObject(gdi->memDC, gdi->bmp);
 
 #ifdef HAVE_MENU
-            if (menu_driver_is_alive() && !gdi_has_menu_frame())
+            if (menu_driver_is_alive() && !gdi_has_menu_frame(gdi))
             {
                /* draw menu contents behind a gradient background */
                if (gdi && gdi->memDC)

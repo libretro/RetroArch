@@ -49,6 +49,7 @@ typedef struct gdi
    int win_minor;
    bool lte_win98;
    unsigned short *temp_buf;
+   unsigned char *menu_frame;
 } gdi_t;
 
 typedef struct gdi_texture
