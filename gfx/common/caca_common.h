@@ -31,6 +31,13 @@ typedef struct caca
    caca_canvas_t **caca_cv;
    caca_dither_t **caca_dither;
    caca_display_t **caca_display;
+   unsigned menu_width;
+   unsigned menu_height;
+   unsigned menu_pitch;
+   unsigned video_width;
+   unsigned video_height;
+   unsigned video_pitch;
+   bool rgb32;
 } caca_t;
 
 #endif
