@@ -67,7 +67,7 @@ bool drm_get_resources(int fd)
 bool drm_get_connector(int fd, unsigned monitor_index)
 {
    unsigned i;
-   unsigned monitor_index = 0;
+   unsigned monitor_index_count = 0;
    unsigned monitor       = MAX(monitor_index, 1);
 
    /* Enumerate all connectors. */
@@ -86,14 +86,14 @@ bool drm_get_connector(int fd, unsigned monitor_index)
          RARCH_LOG("[DRM]: Connector %d has %d modes.\n", i, conn->count_modes);
          if (connected && conn->count_modes > 0)
          {
-            monitor_index++;
-            RARCH_LOG("[DRM]: Connector %d assigned to monitor index: #%u.\n", i, monitor_index);
+            monitor_index_count++;
+            RARCH_LOG("[DRM]: Connector %d assigned to monitor index: #%u.\n", i, monitor_index_count);
          }
          drmModeFreeConnector(conn);
       }
    }
 
-   monitor_index = 0;
+   monitor_index_count = 0;
 
    for (i = 0; (int)i < g_drm_resources->count_connectors; i++)
    {
@@ -105,8 +105,8 @@ bool drm_get_connector(int fd, unsigned monitor_index)
       if (g_drm_connector->connection == DRM_MODE_CONNECTED
             && g_drm_connector->count_modes > 0)
       {
-         monitor_index++;
-         if (monitor_index == monitor)
+         monitor_index_count++;
+         if (monitor_index_count == monitor)
             break;
       }
 
