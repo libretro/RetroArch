@@ -172,6 +172,7 @@ struct gl
    bool has_fbo;
    bool hw_render_use;
    bool core_context_in_use;
+   bool shared_context_use;
 
    bool should_resize;
    bool quitting;

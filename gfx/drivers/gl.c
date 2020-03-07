@@ -137,10 +137,8 @@ static const GLfloat white_color[] = {
    1, 1, 1, 1,
 };
 
-static bool gl_shared_context_use = false;
-
 #define gl2_context_bind_hw_render(gl, enable) \
-   if (gl_shared_context_use) \
+   if (gl->shared_context_use) \
       gl->ctx_driver->bind_hw_render(gl->ctx_data, enable)
 
 #define MAX_FENCES 4
@@ -3130,8 +3128,6 @@ static void gl2_destroy_resources(gl_t *gl)
       free(gl);
    }
 
-   gl_shared_context_use   = false;
-
    gl_query_core_context_unset();
 }
 
@@ -3410,16 +3406,16 @@ static const gfx_ctx_driver_t *gl2_get_context(gl_t *gl)
 #else
    enum gfx_ctx_api api                 = GFX_CTX_OPENGL_API;
 #endif
-   gl_shared_context_use                = video_shared_context
+   gl->shared_context_use                = video_shared_context
       && hwr->context_type != RETRO_HW_CONTEXT_NONE;
 
    if (     (libretro_get_shared_context())
          && (hwr->context_type != RETRO_HW_CONTEXT_NONE))
-      gl_shared_context_use = true;
+      gl->shared_context_use = true;
 
    gfx_ctx = video_context_driver_init_first(gl,
          settings->arrays.video_context_driver,
-         api, major, minor, gl_shared_context_use, &ctx_data);
+         api, major, minor, gl->shared_context_use, &ctx_data);
 
    if (ctx_data)
       gl->ctx_data = ctx_data;
