@@ -574,6 +574,7 @@ static void stripes_draw_icon(
 {
    gfx_display_ctx_draw_t draw;
    struct video_coords coords;
+   bool xmb_shadows_enable = video_info->xmb_shadows_enable;
 
    if (
          (x < (-icon_size / 2.0f)) ||
@@ -602,7 +603,7 @@ static void stripes_draw_icon(
    draw.prim_type       = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
    draw.pipeline.id     = 0;
 
-   if (video_info->xmb_shadows_enable)
+   if (xmb_shadows_enable)
    {
       gfx_display_set_alpha(stripes_coord_shadow, color[3] * 0.35f);
 
@@ -645,6 +646,7 @@ static void stripes_draw_text(
    uint32_t color;
    uint8_t a8;
    settings_t *settings;
+   bool xmb_shadows_enable = video_info->xmb_shadows_enable;
 
    if (alpha > stripes->alpha)
       alpha = stripes->alpha;
@@ -663,7 +665,7 @@ static void stripes_draw_text(
 
    gfx_display_draw_text(font, str, x, y,
          width, height, color, text_align, scale_factor,
-         video_info->xmb_shadows_enable,
+         xmb_shadows_enable,
          stripes->shadow_offset, false);
 }
 
@@ -2799,19 +2801,20 @@ static void stripes_frame(void *data, video_frame_info_t *video_info)
    const int min_thumb_size                = 50;
    bool render_background                  = false;
    file_list_t *selection_buf              = NULL;
-   unsigned width                          = video_info->width;
-   unsigned height                         = video_info->height;
+   unsigned video_width                    = video_info->width;
+   unsigned video_height                   = video_info->height;
+   float xmb_alpha_factor                  = video_info->xmb_alpha_factor;
    const float under_thumb_margin          = 0.96;
    float scale_factor                      = 0.0f;
    float pseudo_font_length                = 0.0f;
    float stack_width                       = 285;
-   stripes_handle_t *stripes                       = (stripes_handle_t*)data;
+   stripes_handle_t *stripes               = (stripes_handle_t*)data;
    settings_t *settings                    = config_get_ptr();
 
    if (!stripes)
       return;
 
-   scale_factor                            = (settings->floats.menu_scale_factor * (float)width) / 1920.0f;
+   scale_factor                            = (settings->floats.menu_scale_factor * (float)video_width) / 1920.0f;
    pseudo_font_length                      = stripes->icon_spacing_horizontal * 4 - stripes->icon_size / 4;
 
    msg[0]             = '\0';
@@ -2825,14 +2828,14 @@ static void stripes_frame(void *data, video_frame_info_t *video_info)
    stripes->raster_block2.carr.coords.vertices = 0;
 
    gfx_display_set_alpha(stripes_coord_black, MIN(
-         (float)video_info->xmb_alpha_factor/100, stripes->alpha));
+         (float)xmb_alpha_factor / 100, stripes->alpha));
    gfx_display_set_alpha(stripes_coord_white, stripes->alpha);
 
    stripes_draw_bg(
          stripes,
          video_info,
-         width,
-         height);
+         video_width,
+         video_height);
 
    selection = menu_navigation_get_selection();
 
@@ -2871,10 +2874,10 @@ static void stripes_frame(void *data, video_frame_info_t *video_info)
             stripes->categories_x_pos + stack_width + node->width,
             0,
             stripes->categories_x_pos + stack_width + stripes->categories_angle,
-            video_info->height,
+            video_height,
             stripes->categories_x_pos + stack_width + stripes->categories_angle + node->width,
-            video_info->height,
-            video_info->width, video_info->height,
+            video_height,
+            video_width, video_height,
             &color[0]);
 
       gfx_display_blend_begin(video_info);
@@ -2921,8 +2924,8 @@ static void stripes_frame(void *data, video_frame_info_t *video_info)
                texture,
                x,
                y,
-               width,
-               height,
+               video_width,
+               video_height,
                1.0,
                rotation,
                scale_factor,
@@ -2936,36 +2939,38 @@ static void stripes_frame(void *data, video_frame_info_t *video_info)
    gfx_display_blend_end(video_info);
 
    /* Vertical icons */
-//    if (stripes)
-//       stripes_draw_items(
-//             video_info,
-//             stripes,
-//             stripes->selection_buf_old,
-//             stripes->selection_ptr_old,
-//             (stripes_list_get_size(stripes, MENU_LIST_PLAIN) > 1)
-//             ? stripes->categories_selection_ptr :
-//             stripes->categories_selection_ptr_old,
-//             &stripes_item_color[0],
-//             width,
-//             height);
+#if 0
+   if (stripes)
+      stripes_draw_items(
+            video_info,
+            stripes,
+            stripes->selection_buf_old,
+            stripes->selection_ptr_old,
+            (stripes_list_get_size(stripes, MENU_LIST_PLAIN) > 1)
+            ? stripes->categories_selection_ptr :
+            stripes->categories_selection_ptr_old,
+            &stripes_item_color[0],
+            video_width,
+            video_height);
 
-//    selection_buf = menu_entries_get_selection_buf_ptr(0);
+   selection_buf = menu_entries_get_selection_buf_ptr(0);
 
-//    if (stripes)
-//       stripes_draw_items(
-//             video_info,
-//             stripes,
-//             selection_buf,
-//             selection,
-//             stripes->categories_selection_ptr,
-//             &stripes_item_color[0],
-//             width,
-//             height);
+   if (stripes)
+      stripes_draw_items(
+            video_info,
+            stripes,
+            selection_buf,
+            selection,
+            stripes->categories_selection_ptr,
+            &stripes_item_color[0],
+            video_width,
+            video_height);
+#endif
 
-   font_driver_flush(video_info->width, video_info->height, stripes->font);
+   font_driver_flush(video_width, video_height, stripes->font);
    font_driver_bind_block(stripes->font, NULL);
 
-   font_driver_flush(video_info->width, video_info->height, stripes->font2);
+   font_driver_flush(video_width, video_height, stripes->font2);
    font_driver_bind_block(stripes->font2, NULL);
 
    if (menu_input_dialog_get_display_kb())
@@ -2988,7 +2993,7 @@ static void stripes_frame(void *data, video_frame_info_t *video_info)
 
    if (render_background)
    {
-      stripes_draw_dark_layer(stripes, video_info, width, height);
+      stripes_draw_dark_layer(stripes, video_info, video_width, video_height);
       stripes_render_messagebox_internal(
             video_info, stripes, msg);
    }
@@ -3007,11 +3012,11 @@ static void stripes_frame(void *data, video_frame_info_t *video_info)
             stripes->textures.list[STRIPES_TEXTURE_POINTER],
             pointer.x,
             pointer.y,
-            width,
-            height);
+            video_width,
+            video_height);
    }
 
-   gfx_display_unset_viewport(video_info->width, video_info->height);
+   gfx_display_unset_viewport(video_width, video_height);
 }
 
 static void stripes_layout_ps3(stripes_handle_t *stripes, int width, int height)

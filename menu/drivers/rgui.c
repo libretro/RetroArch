@@ -5037,6 +5037,8 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
    bool border_filler_thickness_enable = settings->bools.menu_rgui_border_filler_thickness_enable;
    unsigned aspect_ratio_lock          = settings->uints.menu_rgui_aspect_ratio_lock;
    bool border_filler_enable           = settings->bools.menu_rgui_border_filler_enable;
+   unsigned video_width                = video_info->width;
+   unsigned video_height               = video_info->height;
 
    if (bg_filler_thickness_enable != rgui->bg_thickness)
    {
@@ -5143,8 +5145,8 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
 
    /* > If aspect ratio is locked, have to rescale if window
     *   dimensions change */
-   if ((rgui->window_width  != video_info->width) ||
-       (rgui->window_height != video_info->height))
+   if ((rgui->window_width  != video_width) ||
+       (rgui->window_height != video_height))
    {
       if ((aspect_ratio_lock != RGUI_ASPECT_RATIO_LOCK_NONE) &&
           !rgui->ignore_resize_events)
@@ -5153,8 +5155,8 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
          rgui_set_video_config(rgui, &rgui->menu_video_settings, true);
       }
 
-      rgui->window_width  = video_info->width;
-      rgui->window_height = video_info->height;
+      rgui->window_width  = video_width;
+      rgui->window_height = video_height;
    }
 
    /* Handle pending thumbnail load operations */

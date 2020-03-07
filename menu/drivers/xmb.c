@@ -625,7 +625,9 @@ static xmb_node_t *xmb_copy_node(const xmb_node_t *old_node)
 
 static float *xmb_gradient_ident(video_frame_info_t *video_info)
 {
-   switch (video_info->xmb_color_theme)
+   unsigned xmb_color_theme = video_info->xmb_color_theme;
+
+   switch (xmb_color_theme)
    {
       case XMB_THEME_DARK_PURPLE:
          return &gradient_dark_purple[0];
@@ -764,6 +766,7 @@ static void xmb_draw_icon(
 {
    gfx_display_ctx_draw_t draw;
    struct video_coords coords;
+   bool xmb_shadows_enable = video_info->xmb_shadows_enable;
 
    if (
          (x < (-icon_size / 2.0f)) ||
@@ -792,7 +795,7 @@ static void xmb_draw_icon(
    draw.prim_type       = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
    draw.pipeline.id     = 0;
 
-   if (video_info->xmb_shadows_enable)
+   if (xmb_shadows_enable)
    {
       gfx_display_set_alpha(coord_shadow, color[3] * 0.35f);
 
@@ -834,6 +837,7 @@ static void xmb_draw_text(
 {
    uint32_t color;
    uint8_t a8;
+   bool xmb_shadows_enable;
    settings_t *settings;
 
    if (alpha > xmb->alpha)
@@ -845,15 +849,16 @@ static void xmb_draw_text(
    if (a8 == 0)
       return;
 
-   settings = config_get_ptr();
-   color = FONT_COLOR_RGBA(
+   settings           = config_get_ptr();
+   color              = FONT_COLOR_RGBA(
          settings->uints.menu_font_color_red,
          settings->uints.menu_font_color_green,
          settings->uints.menu_font_color_blue, a8);
+   xmb_shadows_enable = video_info->xmb_shadows_enable;
 
    gfx_display_draw_text(font, str, x, y,
          width, height, color, text_align, scale_factor,
-         video_info->xmb_shadows_enable,
+         xmb_shadows_enable,
          xmb->shadow_offset, false);
 }
 
@@ -3594,9 +3599,10 @@ static void xmb_render(void *data,
 
 static bool xmb_shader_pipeline_active(video_frame_info_t *video_info)
 {
+   unsigned menu_shader_pipeline = video_info->menu_shader_pipeline;
    if (string_is_not_equal(menu_driver_ident(), "xmb"))
       return false;
-   if (video_info->menu_shader_pipeline == XMB_SHADER_PIPELINE_WALLPAPER)
+   if (menu_shader_pipeline == XMB_SHADER_PIPELINE_WALLPAPER)
       return false;
    return true;
 }
@@ -3613,9 +3619,12 @@ static void xmb_draw_bg(
 {
    gfx_display_ctx_draw_t draw;
 
-   bool libretro_running     = video_info->libretro_running;
-   unsigned video_width      = video_info->width;
-   unsigned video_height     = video_info->height;
+   bool libretro_running         = video_info->libretro_running;
+   unsigned video_width          = video_info->width;
+   unsigned video_height         = video_info->height;
+   unsigned menu_shader_pipeline = video_info->menu_shader_pipeline;
+   unsigned xmb_color_theme      = video_info->xmb_color_theme;
+   float menu_wallpaper_opacity  = video_info->menu_wallpaper_opacity;
 
    draw.x                    = 0;
    draw.y                    = 0;
@@ -3634,9 +3643,9 @@ static void xmb_draw_bg(
    gfx_display_set_viewport(video_width, video_height);
 
 #ifdef HAVE_SHADERPIPELINE
-   if (video_info->menu_shader_pipeline > XMB_SHADER_PIPELINE_WALLPAPER
+   if (menu_shader_pipeline > XMB_SHADER_PIPELINE_WALLPAPER
          &&
-         (video_info->xmb_color_theme != XMB_THEME_WALLPAPER))
+         (xmb_color_theme != XMB_THEME_WALLPAPER))
    {
       draw.color = xmb_gradient_ident(video_info);
 
@@ -3649,7 +3658,7 @@ static void xmb_draw_bg(
 
       draw.pipeline.id = VIDEO_SHADER_MENU_2;
 
-      switch (video_info->menu_shader_pipeline)
+      switch (menu_shader_pipeline)
       {
          case XMB_SHADER_PIPELINE_RIBBON:
             draw.pipeline.id  = VIDEO_SHADER_MENU;
@@ -3677,7 +3686,7 @@ static void xmb_draw_bg(
    {
       uintptr_t texture           = draw.texture;
 
-      if (video_info->xmb_color_theme != XMB_THEME_WALLPAPER)
+      if (xmb_color_theme != XMB_THEME_WALLPAPER)
          draw.color = xmb_gradient_ident(video_info);
 
       if (libretro_running)
@@ -3685,11 +3694,10 @@ static void xmb_draw_bg(
       else
          gfx_display_set_alpha(draw.color, coord_white[3]);
 
-      if (video_info->xmb_color_theme != XMB_THEME_WALLPAPER)
+      if (xmb_color_theme != XMB_THEME_WALLPAPER)
          gfx_display_draw_gradient(&draw, video_info);
 
       {
-         float override_opacity = video_info->menu_wallpaper_opacity;
          bool add_opacity       = false;
 
          draw.texture           = texture;
@@ -3698,10 +3706,10 @@ static void xmb_draw_bg(
          if (draw.texture)
             draw.color = &coord_white[0];
 
-         if (libretro_running || video_info->xmb_color_theme == XMB_THEME_WALLPAPER)
+         if (libretro_running || xmb_color_theme == XMB_THEME_WALLPAPER)
             add_opacity = true;
 
-         gfx_display_draw_bg(&draw, video_info, add_opacity, override_opacity);
+         gfx_display_draw_bg(&draw, video_info, add_opacity, menu_wallpaper_opacity);
       }
    }
 
@@ -3888,6 +3896,7 @@ static void xmb_draw_fullscreen_thumbnails(
 {
    unsigned video_width           = video_info->width;
    unsigned video_height          = video_info->height;
+   bool xmb_shadows_enable        = video_info->xmb_shadows_enable;
 
    /* Check whether fullscreen thumbnails are visible */
    if (xmb->fullscreen_thumbnail_alpha > 0.0f)
@@ -4192,7 +4201,7 @@ static void xmb_draw_fullscreen_thumbnails(
       /* Draw thumbnails */
 
       /* > Configure shadow effect */
-      if (video_info->xmb_shadows_enable)
+      if (xmb_shadows_enable)
       {
          float shadow_offset            = xmb->icon_size / 24.0f;
 
@@ -4287,8 +4296,6 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    size_t percent_width                    = 0;
    bool render_background                  = false;
    file_list_t *selection_buf              = NULL;
-   unsigned width                          = video_info->width;
-   unsigned height                         = video_info->height;
    const float under_thumb_margin          = 0.96f;
    float left_thumbnail_margin_width       = 0.0f;
    float right_thumbnail_margin_width      = 0.0f;
@@ -4307,6 +4314,10 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    bool menu_xmb_vertical_thumbnails       = settings->bools.menu_xmb_vertical_thumbnails;
    unsigned video_width                    = video_info->width;
    unsigned video_height                   = video_info->height;
+   bool xmb_shadows_enable                 = video_info->xmb_shadows_enable;
+   float xmb_alpha_factor                  = video_info->xmb_alpha_factor;
+   bool timedate_enable                    = video_info->timedate_enable;
+   bool battery_level_enable               = video_info->battery_level_enable;
 
    if (!xmb)
       return;
@@ -4318,16 +4329,16 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    pseudo_font_length                      = xmb->icon_spacing_horizontal * 4 - xmb->icon_size / 4.0f;
    left_thumbnail_margin_width             = xmb->icon_size * 3.4f;
    right_thumbnail_margin_width            =
-         (float)width - (xmb->icon_size / 6) -
+         (float)video_width - (xmb->icon_size / 6) -
          (xmb->margins_screen_left * scale_mod[5]) -
          xmb->icon_spacing_horizontal - pseudo_font_length;
-   thumbnail_margin_height_under           = ((float)height * under_thumb_margin) - xmb->margins_screen_top - xmb->icon_size;
-   thumbnail_margin_height_full            = (float)height - xmb->margins_title_top - ((xmb->icon_size / 4.0f) * 2.0f);
+   thumbnail_margin_height_under           = ((float)video_height * under_thumb_margin) - xmb->margins_screen_top - xmb->icon_size;
+   thumbnail_margin_height_full            = (float)video_height - xmb->margins_title_top - ((xmb->icon_size / 4.0f) * 2.0f);
    left_thumbnail_margin_x                 = xmb->icon_size / 6.0f;
-   right_thumbnail_margin_x                = (float)width - (xmb->icon_size / 6.0f) - right_thumbnail_margin_width;
+   right_thumbnail_margin_x                = (float)video_width - (xmb->icon_size / 6.0f) - right_thumbnail_margin_width;
 
    /* Configure shadow effect */
-   if (video_info->xmb_shadows_enable)
+   if (xmb_shadows_enable)
    {
       /* Drop shadow for thumbnails needs to be larger
        * than for text/icons, and also needs to scale
@@ -4352,14 +4363,15 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    xmb->raster_block2.carr.coords.vertices = 0;
 
    gfx_display_set_alpha(coord_black, MIN(
-            (float)video_info->xmb_alpha_factor/100, xmb->alpha));
+            (float)xmb_alpha_factor / 100,
+            xmb->alpha));
    gfx_display_set_alpha(coord_white, xmb->alpha);
 
    xmb_draw_bg(
          xmb,
          video_info,
-         width,
-         height,
+         video_width,
+         video_height,
          xmb->alpha,
          xmb->textures.bg,
          coord_black,
@@ -4390,14 +4402,14 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          title_truncated, xmb->margins_title_left,
          xmb->margins_title_top,
          1, 1, TEXT_ALIGN_LEFT,
-         width, height, xmb->font);
+         video_width, video_height, xmb->font);
 
    if (menu_core_enable)
    {
       menu_entries_get_core_title(title_msg, sizeof(title_msg));
       xmb_draw_text(video_info, xmb, title_msg, xmb->margins_title_left,
-            height - xmb->margins_title_bottom, 1, 1, TEXT_ALIGN_LEFT,
-            width, height, xmb->font);
+            video_height - xmb->margins_title_bottom, 1, 1, TEXT_ALIGN_LEFT,
+            video_width, video_height, xmb->font);
    }
 
    rotate_draw.matrix       = &mymat;
@@ -4602,7 +4614,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    /* Clock image */
    gfx_display_set_alpha(item_color, MIN(xmb->alpha, 1.00f));
 
-   if (video_info->battery_level_enable)
+   if (battery_level_enable)
    {
       gfx_display_ctx_powerstate_t powerstate;
       char msg[12];
@@ -4633,10 +4645,10 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                      (powerstate.percent > 20)? XMB_TEXTURE_BATTERY_40   :
                      XMB_TEXTURE_BATTERY_20
                   ],
-                  width - (xmb->icon_size / 2) - x_pos_icon,
+                  video_width - (xmb->icon_size / 2) - x_pos_icon,
                   xmb->icon_size,
-                  width,
-                  height,
+                  video_width,
+                  video_height,
                   1,
                   0,
                   1,
@@ -4650,13 +4662,13 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                   xmb->font, msg, (unsigned)strlen(msg), 1);
 
          xmb_draw_text(video_info, xmb, msg,
-               width - xmb->margins_title_left - x_pos,
+               video_width - xmb->margins_title_left - x_pos,
                xmb->margins_title_top, 1, 1, TEXT_ALIGN_RIGHT,
-               width, height, xmb->font);
+               video_width, video_height, xmb->font);
       }
    }
 
-   if (video_info->timedate_enable)
+   if (timedate_enable)
    {
       gfx_display_ctx_datetime_t datetime;
       char timedate[255];
@@ -4674,10 +4686,10 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                xmb->icon_size,
                &mymat,
                xmb->textures.list[XMB_TEXTURE_CLOCK],
-               width - xmb->icon_size - x_pos,
+               video_width - xmb->icon_size - x_pos,
                xmb->icon_size,
-               width,
-               height,
+               video_width,
+               video_height,
                1,
                0,
                1,
@@ -4698,9 +4710,9 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          x_pos = percent_width + (xmb->icon_size / 2.5);
 
       xmb_draw_text(video_info, xmb, timedate,
-            width - xmb->margins_title_left - xmb->icon_size / 4 - x_pos,
+            video_width - xmb->margins_title_left - xmb->icon_size / 4 - x_pos,
             xmb->margins_title_top, 1, 1, TEXT_ALIGN_RIGHT,
-            width, height, xmb->font);
+            video_width, video_height, xmb->font);
    }
 
    /* Arrow image */
@@ -4720,8 +4732,8 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             xmb->margins_screen_top +
             xmb->icon_size / 2.0 + xmb->icon_spacing_vertical
             * xmb->active_item_factor,
-            width,
-            height,
+            video_width,
+            video_height,
             xmb->textures_arrow_alpha,
             0,
             1,
@@ -4795,8 +4807,8 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                   texture,
                   x,
                   y,
-                  width,
-                  height,
+                  video_width,
+                  video_height,
                   1.0,
                   rotation,
                   scale_factor,
@@ -4818,8 +4830,8 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          ? xmb->categories_selection_ptr :
          xmb->categories_selection_ptr_old,
          &item_color[0],
-         width,
-         height);
+         video_width,
+         video_height);
 
    selection_buf = menu_entries_get_selection_buf_ptr(0);
 
@@ -4830,8 +4842,8 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          selection,
          xmb->categories_selection_ptr,
          &item_color[0],
-         width,
-         height);
+         video_width,
+         video_height);
 
    font_driver_flush(video_width, video_height, xmb->font);
    font_driver_bind_block(xmb->font, NULL);
@@ -4863,7 +4875,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
    if (render_background)
    {
-      xmb_draw_dark_layer(xmb, video_info, width, height);
+      xmb_draw_dark_layer(xmb, video_info, video_width, video_height);
       xmb_render_messagebox_internal(
             video_info, xmb, msg);
    }
@@ -4882,8 +4894,8 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             xmb->textures.list[XMB_TEXTURE_POINTER],
             pointer.x,
             pointer.y,
-            width,
-            height);
+            video_width,
+            video_height);
    }
 
    gfx_display_unset_viewport(video_width, video_height);

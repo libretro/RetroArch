@@ -1892,8 +1892,8 @@ static void materialui_render_messagebox(materialui_handle_t *mui,
    int y                    = 0;
    int longest_width        = 0;
    size_t longest_len       = 0;
-   unsigned width           = video_info->width;
-   unsigned height          = video_info->height;
+   unsigned video_width     = video_info->width;
+   unsigned video_height    = video_info->height;
    struct string_list *list = NULL;
 
    /* Sanity check */
@@ -1907,7 +1907,7 @@ static void materialui_render_messagebox(materialui_handle_t *mui,
       goto end;
 
    /* Get coordinates of message box centre */
-   x = width / 2;
+   x = video_width / 2;
    y = (int)(y_centre - (list->size - 1) * (mui->font_data.list.font_height / 2));
 
    /* TODO/FIXME: Reduce text scale if width or height
@@ -1941,8 +1941,8 @@ static void materialui_render_messagebox(materialui_handle_t *mui,
          y -  mui->font_data.list.font_height / 2.0 -  mui->margin * 2.0,
          longest_width + mui->margin * 4.0,
          mui->font_data.list.font_height * list->size + mui->margin * 4.0,
-         width,
-         height,
+         video_width,
+         video_height,
          mui->colors.surface_background);
 
    /* Print each line of the message */
@@ -1954,8 +1954,9 @@ static void materialui_render_messagebox(materialui_handle_t *mui,
          gfx_display_draw_text(
                mui->font_data.list.font, line,
                x - longest_width/2.0,
-               y + i *  mui->font_data.list.font_height + mui->font_data.list.font_height / 3,
-               width, height, mui->colors.list_text,
+               y + i *  mui->font_data.list.font_height 
+               + mui->font_data.list.font_height / 3,
+               video_width, video_height, mui->colors.list_text,
                TEXT_ALIGN_LEFT, 1.0f, false, 0, true);
    }
 
@@ -3478,12 +3479,17 @@ static void materialui_render_background(materialui_handle_t *mui, video_frame_i
       1.0f, 1.0f, 1.0f, 1.0f,
       1.0f, 1.0f, 1.0f, 1.0f
    };
+   unsigned video_width           = video_info->width;
+   unsigned video_height          = video_info->height;
+   bool libretro_running          = video_info->libretro_running;
+   float menu_wallpaper_opacity   = video_info->menu_wallpaper_opacity;
+   float menu_framebuffer_opacity = video_info->menu_framebuffer_opacity;
 
    /* Configure draw object */
    draw.x                     = 0;
    draw.y                     = 0;
-   draw.width                 = video_info->width;
-   draw.height                = video_info->height;
+   draw.width                 = video_width;
+   draw.height                = video_height;
    draw.coords                = NULL;
    draw.matrix_data           = NULL;
    draw.prim_type             = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
@@ -3495,14 +3501,14 @@ static void materialui_render_background(materialui_handle_t *mui, video_frame_i
    draw.pipeline.backend_data = NULL;
    draw.color                 = draw_color;
 
-   if (mui->textures.bg && !video_info->libretro_running)
+   if (mui->textures.bg && !libretro_running)
    {
       draw.texture = mui->textures.bg;
 
       /* We are showing a wallpaper - set opacity
        * override to menu_wallpaper_opacity */
       add_opacity      = true;
-      opacity_override = video_info->menu_wallpaper_opacity;
+      opacity_override = menu_wallpaper_opacity;
    }
    else
    {
@@ -3514,10 +3520,10 @@ static void materialui_render_background(materialui_handle_t *mui, video_frame_i
       /* We are not showing a wallpaper - if content
        * is running, set opacity override to
        * menu_framebuffer_opacity */
-      if (video_info->libretro_running)
+      if (libretro_running)
       {
          add_opacity      = true;
-         opacity_override = video_info->menu_framebuffer_opacity;
+         opacity_override = menu_framebuffer_opacity;
       }
    }
 
@@ -4870,6 +4876,8 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
    settings_t *settings     = config_get_ptr();
    unsigned width           = video_info->width;
    unsigned height          = video_info->height;
+   unsigned 
+      materialui_color_theme = video_info->materialui_color_theme;
    unsigned header_height   = gfx_display_get_header_height();
    size_t selection         = menu_navigation_get_selection();
    int list_x_offset;
@@ -4892,13 +4900,13 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
    mui->font_data.hint.raster_block.carr.coords.vertices  = 0;
 
    /* Update theme colours, if required */
-   if (mui->color_theme != video_info->materialui_color_theme)
+   if (mui->color_theme != materialui_color_theme)
    {
       materialui_prepare_colors(mui,
             (enum materialui_color_theme)
-            video_info->materialui_color_theme);
+            materialui_color_theme);
       mui->color_theme = (enum materialui_color_theme)
-         video_info->materialui_color_theme;
+         materialui_color_theme;
    }
 
    /* Update line ticker(s) */

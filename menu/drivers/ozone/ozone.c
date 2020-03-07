@@ -1493,6 +1493,8 @@ static void ozone_draw_header(ozone_handle_t *ozone, video_frame_info_t *video_i
       menu_ticker_type       = (enum gfx_animation_ticker_type)settings->uints.menu_ticker_type;
    unsigned video_width      = video_info->width;
    unsigned video_height     = video_info->height;
+   bool battery_level_enable = video_info->battery_level_enable;
+   bool timedate_enable      = video_info->timedate_enable;
 
    /* Initial ticker configuration */
    if (use_smooth_ticker)
@@ -1567,7 +1569,7 @@ static void ozone_draw_header(ozone_handle_t *ozone, video_frame_info_t *video_i
    gfx_display_blend_end(video_info);
 
    /* Battery */
-   if (video_info->battery_level_enable)
+   if (battery_level_enable)
    {
       gfx_display_ctx_powerstate_t powerstate;
       char msg[12];
@@ -1601,7 +1603,7 @@ static void ozone_draw_header(ozone_handle_t *ozone, video_frame_info_t *video_i
    }
 
    /* Timedate */
-   if (video_info->timedate_enable)
+   if (timedate_enable)
    {
       gfx_display_ctx_datetime_t datetime;
       char timedate[255];
@@ -2017,6 +2019,8 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
    float *background_color                = NULL;
    unsigned video_width                   = video_info->width;
    unsigned video_height                  = video_info->height;
+   float menu_framebuffer_opacity         = video_info->menu_framebuffer_opacity;
+   bool libretro_running                  = video_info->libretro_running;
 
 #if 0
    static bool reset                      = false;
@@ -2066,7 +2070,7 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
       }
 
       ozone_set_color_theme(ozone, color_theme);
-      ozone_set_background_running_opacity(ozone, video_info->menu_framebuffer_opacity);
+      ozone_set_background_running_opacity(ozone, menu_framebuffer_opacity);
 
       last_use_preferred_system_color_theme = use_preferred_system_color_theme;
    }
@@ -2089,11 +2093,11 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
    ozone->raster_blocks.sidebar.carr.coords.vertices = 0;
 
    /* Background */
-   if (video_info->libretro_running &&
-       (video_info->menu_framebuffer_opacity < 1.0f))
+   if (libretro_running &&
+       (menu_framebuffer_opacity < 1.0f))
    {
-      if (video_info->menu_framebuffer_opacity != last_framebuffer_opacity)
-         ozone_set_background_running_opacity(ozone, video_info->menu_framebuffer_opacity);
+      if (menu_framebuffer_opacity != last_framebuffer_opacity)
+         ozone_set_background_running_opacity(ozone, menu_framebuffer_opacity);
 
       background_color = ozone->theme->background_libretro_running;
    }
