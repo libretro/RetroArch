@@ -43,12 +43,13 @@
 struct content_playlist
 {
    bool modified;
-   size_t size;
-   size_t cap;
 
    enum playlist_label_display_mode label_display_mode;
    enum playlist_thumbnail_mode right_thumbnail_mode;
    enum playlist_thumbnail_mode left_thumbnail_mode;
+
+   size_t size;
+   size_t cap;
 
    char *conf_path;
    char *default_core_path;
@@ -58,25 +59,27 @@ struct content_playlist
 
 typedef struct
 {
+   bool in_items;
+   bool in_subsystem_roms;
+   bool capacity_exceeded;
+
+   unsigned array_depth;
+   unsigned object_depth;
+
    JSON_Parser parser;
    JSON_Writer writer;
    RFILE *file;
    playlist_t *playlist;
    struct playlist_entry *current_entry;
-   unsigned array_depth;
-   unsigned object_depth;
+   char *current_meta_string;
+   char *current_items_string;
    char **current_entry_val;
+   char **current_meta_val;
    int *current_entry_int_val;
    unsigned *current_entry_uint_val;
    struct string_list **current_entry_string_list_val;
-   char *current_meta_string;
-   char **current_meta_val;
    enum playlist_label_display_mode *current_meta_label_display_mode_val;
    enum playlist_thumbnail_mode *current_meta_thumbnail_mode_val;
-   char *current_items_string;
-   bool in_items;
-   bool in_subsystem_roms;
-   bool capacity_exceeded;
 } JSONContext;
 
 static playlist_t *playlist_cached = NULL;
