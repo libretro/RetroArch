@@ -292,10 +292,16 @@
 {
    @autoreleasepool
    {
+      bool statistics_show = video_info->statistics_show;
+#ifdef HAVE_GFX_WIDGETS
+      bool widgets_inited  = video_info->widgets_inited;
+#endif
+
       [self _beginFrame];
 
       _frameView.frameCount = frameCount;
-      if (data && width && height) {
+      if (data && width && height)
+      {
          _frameView.size = CGSizeMake(width, height);
          [_frameView updateFrame:data pitch:pitch];
       }
@@ -318,7 +324,7 @@
       }
 #endif
 
-      if (video_info->statistics_show)
+      if (statistics_show)
       {
          struct font_params *osd_params = (struct font_params *)&video_info->osd_stat_params;
 
@@ -331,7 +337,7 @@
       }
 
 #ifdef HAVE_GFX_WIDGETS
-      if (video_info->widgets_inited)
+      if (widgets_inited)
       {
          [rce pushDebugGroup:@"menu widgets"];
          gfx_widgets_frame(video_info);

@@ -2103,7 +2103,8 @@ const char *menu_driver_ident(void)
 
 void menu_driver_frame(video_frame_info_t *video_info)
 {
-   if (video_info->menu_is_alive && menu_driver_ctx->frame)
+   bool menu_is_alive = video_info->menu_is_alive;
+   if (menu_is_alive && menu_driver_ctx->frame)
       menu_driver_ctx->frame(menu_userdata, video_info);
 }
 

@@ -1453,8 +1453,15 @@ void gfx_widgets_frame(void *data)
 {
    size_t i;
    video_frame_info_t *video_info = (video_frame_info_t*)data;
+   bool framecount_show           = video_info->framecount_show;
+   bool memory_show               = video_info->memory_show;
    unsigned video_width           = video_info->width;
    unsigned video_height          = video_info->height;
+   bool widgets_is_paused         = video_info->widgets_is_paused;
+   bool fps_show                  = video_info->fps_show;
+   bool widgets_is_fastforwarding = video_info->widgets_is_fast_forwarding;
+   bool widgets_is_rewinding      = video_info->widgets_is_rewinding;
+   bool runloop_is_slowmotion     = video_info->runloop_is_slowmotion;
    int top_right_x_advance        = video_width;
    int scissor_me_timbers         = 0;
 
@@ -1866,9 +1873,9 @@ void gfx_widgets_frame(void *data)
    }
 
    /* FPS Counter */
-   if (     video_info->fps_show 
-         || video_info->framecount_show
-         || video_info->memory_show
+   if (     fps_show 
+         || framecount_show
+         || memory_show
          )
    {
       const char *text      = *gfx_widgets_fps_text == '\0' ? "N/A" : gfx_widgets_fps_text;
@@ -1901,24 +1908,24 @@ void gfx_widgets_frame(void *data)
    }
 
    /* Indicators */
-   if (video_info->widgets_is_paused)
+   if (widgets_is_paused)
       top_right_x_advance -= gfx_widgets_draw_indicator(video_info,
-         gfx_widgets_icons_textures[MENU_WIDGETS_ICON_PAUSED], (video_info->fps_show ? simple_widget_height : 0), top_right_x_advance,
+         gfx_widgets_icons_textures[MENU_WIDGETS_ICON_PAUSED], (fps_show ? simple_widget_height : 0), top_right_x_advance,
          MSG_PAUSED);
 
-   if (video_info->widgets_is_fast_forwarding)
+   if (widgets_is_fastforwarding)
       top_right_x_advance -= gfx_widgets_draw_indicator(video_info,
-         gfx_widgets_icons_textures[MENU_WIDGETS_ICON_FAST_FORWARD], (video_info->fps_show ? simple_widget_height : 0), top_right_x_advance,
+         gfx_widgets_icons_textures[MENU_WIDGETS_ICON_FAST_FORWARD], (fps_show ? simple_widget_height : 0), top_right_x_advance,
          MSG_PAUSED);
 
-   if (video_info->widgets_is_rewinding)
+   if (widgets_is_rewinding)
       top_right_x_advance -= gfx_widgets_draw_indicator(video_info,
-         gfx_widgets_icons_textures[MENU_WIDGETS_ICON_REWIND], (video_info->fps_show ? simple_widget_height : 0), top_right_x_advance,
+         gfx_widgets_icons_textures[MENU_WIDGETS_ICON_REWIND], (fps_show ? simple_widget_height : 0), top_right_x_advance,
          MSG_REWINDING);
 
-   if (video_info->runloop_is_slowmotion)
+   if (runloop_is_slowmotion)
       top_right_x_advance -= gfx_widgets_draw_indicator(video_info,
-         gfx_widgets_icons_textures[MENU_WIDGETS_ICON_SLOW_MOTION], (video_info->fps_show ? simple_widget_height : 0), top_right_x_advance,
+         gfx_widgets_icons_textures[MENU_WIDGETS_ICON_SLOW_MOTION], (fps_show ? simple_widget_height : 0), top_right_x_advance,
          MSG_SLOW_MOTION);
 
    /* Screenshot */
