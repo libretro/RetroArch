@@ -68,17 +68,21 @@ struct screenshot_task_state
    bool history_list_enable;
    bool pl_fuzzy_archive_match;
    bool pl_use_old_format;
+   bool widgets_ready;
+
    int pitch;
    unsigned width;
    unsigned height;
    unsigned pixel_format_type;
-   uint8_t *out_buffer;
-   const void *frame;
+
    char filename[PATH_MAX_LENGTH];
    char shotname[256];
-   void *userbuf;
-   bool widgets_ready;
+
    struct scaler_ctx scaler;
+
+   uint8_t *out_buffer;
+   const void *frame;
+   void *userbuf;
 };
 
 static bool screenshot_dump_direct(screenshot_task_state_t *state)

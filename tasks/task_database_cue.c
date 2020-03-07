@@ -129,11 +129,11 @@ static int detect_ps1_game_sub(intfstream_t *fp,
 {
    uint8_t* tmp;
    uint8_t* boot_file;
-   int skip, frame_size, is_mode1, cd_sector;
+   int skip, frame_size, cd_sector;
    uint8_t buffer[2048 * 2];
+   int is_mode1 = 0;
 
-   buffer[0] = '\0';
-   is_mode1  = 0;
+   buffer[0]    = '\0';
 
    if (intfstream_seek(fp, 0, SEEK_END) == -1)
       return 0;
