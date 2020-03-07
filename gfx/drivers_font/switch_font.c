@@ -25,6 +25,7 @@
 
 #include "../font_driver.h"
 
+#include "../../configuration.h"
 #include "../../verbosity.h"
 
 #include "../common/switch_common.h"
