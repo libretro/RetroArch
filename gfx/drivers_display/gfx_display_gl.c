@@ -144,8 +144,7 @@ static void gfx_display_gl_viewport(gfx_display_ctx_draw_t *draw,
 #ifdef MALI_BUG
 static bool 
 gfx_display_gl_discard_draw_rectangle(gfx_display_ctx_draw_t *draw,
-      video_frame_info_t *video_info
-      )
+      unsigned width, unsigned height)
 {
    static bool mali_4xx_detected     = false;
    static bool scissor_inited        = false;
@@ -159,9 +158,9 @@ gfx_display_gl_discard_draw_rectangle(gfx_display_ctx_draw_t *draw,
       scissor_inited                = true;
 
       scissor_set_rectangle(0,
-            video_info->width - 1,
+            width - 1,
             0,
-            video_info->height - 1,
+            height - 1,
             0);
 
       /* TODO/FIXME - This might be thread unsafe in the long run -
@@ -183,8 +182,8 @@ gfx_display_gl_discard_draw_rectangle(gfx_display_ctx_draw_t *draw,
          }
       }
 
-      last_video_width  = video_info->width;
-      last_video_height = video_info->height;
+      last_video_width  = width;
+      last_video_height = height;
    }
 
    /* Early out, to minimise performance impact on
@@ -194,17 +193,17 @@ gfx_display_gl_discard_draw_rectangle(gfx_display_ctx_draw_t *draw,
 
    /* Have to update scissor_set_rectangle() if the
     * video dimensions change */
-   if ((video_info->width  != last_video_width) ||
-       (video_info->height != last_video_height))
+   if ((width  != last_video_width) ||
+       (height != last_video_height))
    {
       scissor_set_rectangle(0,
-            video_info->width - 1,
+            width - 1,
             0,
-            video_info->height - 1,
+            height - 1,
             0);
 
-      last_video_width  = video_info->width;
-      last_video_height = video_info->height;
+      last_video_width  = width;
+      last_video_height = height;
    }
 
    /* Discards not only out-of-bounds scissoring,
@@ -227,7 +226,8 @@ static void gfx_display_gl_draw(gfx_display_ctx_draw_t *draw,
       return;
 
 #ifdef MALI_BUG
-   if (gfx_display_gl_discard_draw_rectangle(draw, video_info))
+   if (gfx_display_gl_discard_draw_rectangle(draw, video_info->width,
+            video_info->height))
    {
       /*RARCH_WARN("[Menu]: discarded draw rect: %.4i %.4i %.4i %.4i\n",
         (int)draw->x, (int)draw->y, (int)draw->width, (int)draw->height);*/
