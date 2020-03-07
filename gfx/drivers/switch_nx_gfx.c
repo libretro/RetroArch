@@ -52,12 +52,6 @@
 #include "../../tasks/tasks_internal.h"
 #endif
 
-#ifdef HAVE_NXRGUI
-extern uint32_t *nx_backgroundImage;
-/* Temp Overlay - kill it with fire */
-extern uint32_t *tmp_overlay;
-#endif
-
 /* (C) libtransistor */
 static int pdep(uint32_t mask, uint32_t value)
 {
@@ -439,11 +433,7 @@ static bool switch_frame(void *data, const void *frame,
 
         if (sw->menu_texture.pixels)
         {
-#ifdef HAVE_NXRGUI
-            gfx_cpy_dsp_buf(out_buffer, nx_backgroundImage, sw->vp.full_width, sw->vp.full_height, stride, false);
-#else
             memset(out_buffer, 0, stride * sw->vp.full_height);
-#endif
             scaler_ctx_scale(&sw->menu_texture.scaler, sw->tmp_image + ((sw->vp.full_height - sw->menu_texture.tgth) / 2) * sw->vp.full_width + ((sw->vp.full_width - sw->menu_texture.tgtw) / 2), sw->menu_texture.pixels);
             gfx_cpy_dsp_buf(out_buffer, sw->tmp_image, sw->vp.full_width, sw->vp.full_height, stride, true);
         }
@@ -466,10 +456,6 @@ static bool switch_frame(void *data, const void *frame,
         struct scaler_ctx *ctx = &sw->scaler;
         scaler_ctx_scale(ctx, sw->image + (sw->vp.y * sw->vp.full_width) + sw->vp.x, frame);
         gfx_cpy_dsp_buf(out_buffer, sw->image, sw->vp.full_width, sw->vp.full_height, stride, false);
-#ifdef HAVE_NXRGUI
-        if (tmp_overlay)
-            gfx_cpy_dsp_buf(out_buffer, tmp_overlay, sw->vp.full_width, sw->vp.full_height, stride, true);
-#endif
     }
 
     if (video_info->statistics_show && !sw->smooth)
