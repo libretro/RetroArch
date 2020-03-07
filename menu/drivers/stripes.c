@@ -2962,12 +2962,10 @@ static void stripes_frame(void *data, video_frame_info_t *video_info)
 //             width,
 //             height);
 
-   font_driver_flush(video_info->width, video_info->height, stripes->font,
-         video_info);
+   font_driver_flush(video_info->width, video_info->height, stripes->font);
    font_driver_bind_block(stripes->font, NULL);
 
-   font_driver_flush(video_info->width, video_info->height, stripes->font2,
-         video_info);
+   font_driver_flush(video_info->width, video_info->height, stripes->font2);
    font_driver_bind_block(stripes->font2, NULL);
 
    if (menu_input_dialog_get_display_kb())

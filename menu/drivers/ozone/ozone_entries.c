@@ -674,12 +674,10 @@ icons_iterate:
    }
 
    /* Text layer */
-   font_driver_flush(video_info->width, video_info->height, ozone->fonts.entries_label, video_info);
+   font_driver_flush(video_info->width, video_info->height, ozone->fonts.entries_label);
 
    if (menu_show_sublabels)
-   {
-      font_driver_flush(video_info->width, video_info->height, ozone->fonts.entries_sublabel, video_info);
-   }
+      font_driver_flush(video_info->width, video_info->height, ozone->fonts.entries_sublabel);
 }
 
 static void ozone_draw_no_thumbnail_available(ozone_handle_t *ozone,

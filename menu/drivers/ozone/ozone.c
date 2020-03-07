@@ -2140,9 +2140,9 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
    gfx_display_scissor_end(video_info);
 
    /* Flush first layer of text */
-   font_driver_flush(video_info->width, video_info->height, ozone->fonts.footer, video_info);
-   font_driver_flush(video_info->width, video_info->height, ozone->fonts.title, video_info);
-   font_driver_flush(video_info->width, video_info->height, ozone->fonts.time, video_info);
+   font_driver_flush(video_info->width, video_info->height, ozone->fonts.footer);
+   font_driver_flush(video_info->width, video_info->height, ozone->fonts.title);
+   font_driver_flush(video_info->width, video_info->height, ozone->fonts.time);
 
    font_driver_bind_block(ozone->fonts.footer, NULL);
    font_driver_bind_block(ozone->fonts.title, NULL);
@@ -2209,8 +2209,8 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
          ozone_draw_messagebox(ozone, video_info, ozone->pending_message);
    }
 
-   font_driver_flush(video_info->width, video_info->height, ozone->fonts.footer, video_info);
-   font_driver_flush(video_info->width, video_info->height, ozone->fonts.entries_label, video_info);
+   font_driver_flush(video_info->width, video_info->height, ozone->fonts.footer);
+   font_driver_flush(video_info->width, video_info->height, ozone->fonts.entries_label);
 
    /* Cursor */
    if (ozone->show_cursor && (ozone->pointer.type != MENU_POINTER_DISABLED))

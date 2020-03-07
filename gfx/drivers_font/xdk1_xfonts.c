@@ -42,9 +42,6 @@ static void *xfonts_init_font(void *video_data,
    if (!xfont)
       return NULL;
 
-   (void)font_path;
-   (void)font_size;
-
    xfont->d3d = (d3d8_video_t*)video_data;
 
    XFONT_OpenDefaultFont(&xfont->debug_font);
@@ -81,9 +78,9 @@ static void xfonts_render_msg(
       void *data, const char *msg,
       const struct font_params *params)
 {
-   wchar_t str[PATH_MAX_LENGTH];
    float x, y;
-   xfonts_t *xfonts                 = (xfonts_t*)data;
+   wchar_t str[PATH_MAX_LENGTH];
+   xfonts_t *xfonts = (xfonts_t*)data;
 
    if (params)
    {

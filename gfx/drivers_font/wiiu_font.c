@@ -150,10 +150,10 @@ static void wiiu_font_render_line(
 {
    unsigned i;
    wiiu_video_t* wiiu = (wiiu_video_t*)video_info->userdata;
-   unsigned width   = video_info->width;
-   unsigned height  = video_info->height;
-   int x            = roundf(pos_x * width);
-   int y            = roundf((1.0 - pos_y) * height);
+   unsigned width     = video_info->width;
+   unsigned height    = video_info->height;
+   int x              = roundf(pos_x * width);
+   int y              = roundf((1.0 - pos_y) * height);
 
    if(  !wiiu ||
          wiiu->vertex_cache.current + (msg_len * 4) > wiiu->vertex_cache.size)
@@ -267,8 +267,8 @@ static void wiiu_font_render_message(
       {
          unsigned msg_len = delim - msg;
          wiiu_font_render_line(video_info, font, msg, msg_len,
-                              scale, color, pos_x, pos_y - (float)lines * line_height,
-                              text_align);
+               scale, color, pos_x, pos_y - (float)lines * line_height,
+               text_align);
          msg += msg_len + 1;
          lines++;
       }
@@ -276,8 +276,8 @@ static void wiiu_font_render_message(
       {
          unsigned msg_len = strlen(msg);
          wiiu_font_render_line(video_info, font, msg, msg_len,
-                              scale, color, pos_x, pos_y - (float)lines * line_height,
-                              text_align);
+               scale, color, pos_x, pos_y - (float)lines * line_height,
+               text_align);
          break;
       }
    }
@@ -351,12 +351,12 @@ static void wiiu_font_render_msg(
       color_dark     = COLOR_RGBA(r_dark, g_dark, b_dark, alpha_dark);
 
       wiiu_font_render_message(video_info, font, msg, scale, color_dark,
-                              x + scale * drop_x / width, y +
-                              scale * drop_y / height, text_align);
+            x + scale * drop_x / width, y +
+            scale * drop_y / height, text_align);
    }
 
    wiiu_font_render_message(video_info, font, msg, scale,
-                           color, x, y, text_align);
+         color, x, y, text_align);
 }
 
 static const struct font_glyph* wiiu_font_get_glyph(

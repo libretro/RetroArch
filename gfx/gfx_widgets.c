@@ -1219,7 +1219,7 @@ static void gfx_widgets_draw_task_msg(menu_widget_msg_t *msg, video_frame_info_t
    /* Text */
    if (draw_msg_new)
    {
-      font_driver_flush(video_info->width, video_info->height, font_regular, video_info);
+      font_driver_flush(video_info->width, video_info->height, font_regular);
       font_raster_regular.carr.coords.vertices  = 0;
 
       gfx_display_scissor_begin(video_info, rect_x, rect_y, rect_width, rect_height);
@@ -1252,7 +1252,7 @@ static void gfx_widgets_draw_task_msg(menu_widget_msg_t *msg, video_frame_info_t
 
    if (draw_msg_new)
    {
-      font_driver_flush(video_info->width, video_info->height, font_regular, video_info);
+      font_driver_flush(video_info->width, video_info->height, font_regular);
       font_raster_regular.carr.coords.vertices  = 0;
 
       gfx_display_scissor_end(video_info);
@@ -1290,8 +1290,8 @@ static void gfx_widgets_draw_regular_msg(menu_widget_msg_t *msg, video_frame_inf
 
    if (!msg->unfolded || msg->unfolding)
    {
-      font_driver_flush(video_info->width, video_info->height, font_regular, video_info);
-      font_driver_flush(video_info->width, video_info->height, font_bold, video_info);
+      font_driver_flush(video_info->width, video_info->height, font_regular);
+      font_driver_flush(video_info->width, video_info->height, font_bold);
 
       font_raster_regular.carr.coords.vertices  = 0;
       font_raster_bold.carr.coords.vertices     = 0;
@@ -1339,8 +1339,8 @@ static void gfx_widgets_draw_regular_msg(menu_widget_msg_t *msg, video_frame_inf
 
    if (!msg->unfolded || msg->unfolding)
    {
-      font_driver_flush(video_info->width, video_info->height, font_regular, video_info);
-      font_driver_flush(video_info->width, video_info->height, font_bold, video_info);
+      font_driver_flush(video_info->width, video_info->height, font_regular);
+      font_driver_flush(video_info->width, video_info->height, font_bold);
 
       font_raster_regular.carr.coords.vertices  = 0;
       font_raster_bold.carr.coords.vertices     = 0;
@@ -1422,8 +1422,8 @@ static void gfx_widgets_draw_load_content_animation(video_frame_info_t *video_in
    );
 
    /* Flush text layer */
-   font_driver_flush(video_info->width, video_info->height, font_regular, video_info);
-   font_driver_flush(video_info->width, video_info->height, font_bold, video_info);
+   font_driver_flush(video_info->width, video_info->height, font_regular);
+   font_driver_flush(video_info->width, video_info->height, font_bold);
 
    font_raster_regular.carr.coords.vertices = 0;
    font_raster_bold.carr.coords.vertices = 0;
@@ -1680,7 +1680,7 @@ void gfx_widgets_frame(void *data)
 
          if (scissor_me_timbers)
          {
-            font_driver_flush(video_info->width, video_info->height, font_regular, video_info);
+            font_driver_flush(video_info->width, video_info->height, font_regular);
             font_raster_regular.carr.coords.vertices = 0;
             gfx_display_scissor_end(video_info);
          }
@@ -1923,8 +1923,8 @@ void gfx_widgets_frame(void *data)
    else
 #endif
    {
-      font_driver_flush(video_info->width, video_info->height, font_regular, video_info);
-      font_driver_flush(video_info->width, video_info->height, font_bold, video_info);
+      font_driver_flush(video_info->width, video_info->height, font_regular);
+      font_driver_flush(video_info->width, video_info->height, font_bold);
 
       font_raster_regular.carr.coords.vertices = 0;
       font_raster_bold.carr.coords.vertices = 0;

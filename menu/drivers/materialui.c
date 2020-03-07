@@ -4953,8 +4953,8 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
 
    /* Flush first layer of text
     * > Menu list only uses list and hint fonts */
-   font_driver_flush(width, height, mui->font_data.list.font, video_info);
-   font_driver_flush(width, height, mui->font_data.hint.font, video_info);
+   font_driver_flush(width, height, mui->font_data.list.font);
+   font_driver_flush(width, height, mui->font_data.hint.font);
 
    mui->font_data.list.raster_block.carr.coords.vertices = 0;
    mui->font_data.hint.raster_block.carr.coords.vertices = 0;
@@ -4973,8 +4973,8 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
 
    /* Flush second layer of text
     * > Title + system bar only use title and hint fonts */
-   font_driver_flush(width, height, mui->font_data.title.font, video_info);
-   font_driver_flush(width, height, mui->font_data.hint.font,  video_info);
+   font_driver_flush(width, height, mui->font_data.title.font);
+   font_driver_flush(width, height, mui->font_data.hint.font);
 
    mui->font_data.title.raster_block.carr.coords.vertices = 0;
    mui->font_data.hint.raster_block.carr.coords.vertices  = 0;
@@ -5009,7 +5009,7 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
 
       /* Flush message box & osk text
        * > Message box & osk only use list font */
-      font_driver_flush(width, height, mui->font_data.list.font, video_info);
+      font_driver_flush(width, height, mui->font_data.list.font);
       mui->font_data.list.raster_block.carr.coords.vertices = 0;
    }
 
@@ -5028,7 +5028,7 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
 
       /* Flush message box text
        * > Message box only uses list font */
-      font_driver_flush(width, height, mui->font_data.list.font, video_info);
+      font_driver_flush(width, height, mui->font_data.list.font);
       mui->font_data.list.raster_block.carr.coords.vertices = 0;
    }
 

@@ -19,15 +19,15 @@
 
 #include "../font_driver.h"
 
-#define FONTM_VRAM_SIZE 4096
-#define FONTM_TEXTURE_COLOR GS_SETREG_RGBAQ(0x80,0x80,0x80,0x80,0x00)
-#define FONTM_TEXTURE_WIDTH 52
-#define FONTM_TEXTURE_HEIGHT 832
-#define FONTM_TEXTURE_SPACING 1.0f
-#define FONTM_TEXTURE_SCALED 0.5f
-#define FONTM_TEXTURE_LEFT_MARGIN 0
+#define FONTM_VRAM_SIZE             4096
+#define FONTM_TEXTURE_COLOR         GS_SETREG_RGBAQ(0x80,0x80,0x80,0x80,0x00)
+#define FONTM_TEXTURE_WIDTH         52
+#define FONTM_TEXTURE_HEIGHT        832
+#define FONTM_TEXTURE_SPACING       1.0f
+#define FONTM_TEXTURE_SCALED        0.5f
+#define FONTM_TEXTURE_LEFT_MARGIN   0
 #define FONTM_TEXTURE_BOTTOM_MARGIN 15
-#define FONTM_TEXTURE_ZPOSITION 3
+#define FONTM_TEXTURE_ZPOSITION     3
 
 typedef struct ps2_font_info
 {
@@ -45,12 +45,14 @@ static u32 gsKit_fontm_clut[16] = {	0x00000000, 0x11111111, 0x22222222, 0x333333
 
 static void deinit_texture(GSTEXTURE *texture)
 {
-   if (texture->Mem!= NULL) {
+   if (texture->Mem)
+   {
       free(texture->Mem);
       texture->Mem = NULL;
    }
 
-   if (texture->Mem!= NULL) {
+   if (texture->Mem)
+   {
       free(texture->Clut);
       texture->Clut = NULL;
    }
@@ -65,13 +67,14 @@ static void deinit_gsfont(GSFONTM *gsFontM)
 }
 
 static void ps2_prepare_font(GSGLOBAL *gsGlobal, GSFONTM *gsFontM)
-{  
-   if(gsKit_fontm_unpack(gsFontM) == 0) {
-      gsFontM->Texture->Width = FONTM_TEXTURE_WIDTH;
-      gsFontM->Texture->Height = FONTM_TEXTURE_HEIGHT;
-      gsFontM->Texture->PSM = GS_PSM_T4;
+{
+   if(gsKit_fontm_unpack(gsFontM) == 0)
+   {
+      gsFontM->Texture->Width   = FONTM_TEXTURE_WIDTH;
+      gsFontM->Texture->Height  = FONTM_TEXTURE_HEIGHT;
+      gsFontM->Texture->PSM     = GS_PSM_T4;
       gsFontM->Texture->ClutPSM = GS_PSM_CT32;
-      gsFontM->Texture->Filter = GS_FILTER_LINEAR;
+      gsFontM->Texture->Filter  = GS_FILTER_LINEAR;
       gsKit_setup_tbw(gsFontM->Texture);
    }
 }
@@ -83,8 +86,10 @@ static void ps2_upload_font(GSGLOBAL *gsGlobal, GSFONTM *gsFontM)
 
    gsFontM->Texture->VramClut = gsKit_vram_alloc(gsGlobal, FONTM_VRAM_SIZE, GSKIT_ALLOC_USERBUFFER);
 
-   for (pgindx = 0; pgindx < GS_FONTM_PAGE_COUNT; ++pgindx) {
-      gsFontM->Vram[pgindx] = gsKit_vram_alloc(gsGlobal, TexSize, GSKIT_ALLOC_USERBUFFER);
+   for (pgindx = 0; pgindx < GS_FONTM_PAGE_COUNT; ++pgindx)
+   {
+      gsFontM->Vram[pgindx]     = gsKit_vram_alloc(
+            gsGlobal, TexSize, GSKIT_ALLOC_USERBUFFER);
       gsFontM->LastPage[pgindx] = (u32) -1;
    }
 
@@ -127,15 +132,21 @@ static void ps2_font_render_msg(
 {
    ps2_font_info_t *ps2 = (ps2_font_info_t *)data;
 
-   if (ps2) {
+   if (ps2)
+   {
       int x = FONTM_TEXTURE_LEFT_MARGIN;
       int y = ps2->ps2_video->gsGlobal->Height - FONTM_TEXTURE_BOTTOM_MARGIN;
-      if (ps2->ps2_video->clearVRAM_font) {
+
+      if (ps2->ps2_video->clearVRAM_font)
+      {
          ps2_upload_font(ps2->ps2_video->gsGlobal, ps2->gsFontM);
          ps2->ps2_video->clearVRAM_font = false;
       }
-      gsKit_fontm_print_scaled(ps2->ps2_video->gsGlobal, ps2->gsFontM, x, y, FONTM_TEXTURE_ZPOSITION,
-                                 FONTM_TEXTURE_SCALED , FONTM_TEXTURE_COLOR, msg);
+
+      gsKit_fontm_print_scaled(
+            ps2->ps2_video->gsGlobal,
+            ps2->gsFontM, x, y, FONTM_TEXTURE_ZPOSITION,
+            FONTM_TEXTURE_SCALED , FONTM_TEXTURE_COLOR, msg);
    }
 }
 

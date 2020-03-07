@@ -288,7 +288,7 @@ console_iterate:
       gfx_display_blend_end(video_info);
    }
 
-   font_driver_flush(video_info->width, video_info->height, ozone->fonts.sidebar, video_info);
+   font_driver_flush(video_info->width, video_info->height, ozone->fonts.sidebar);
    ozone->raster_blocks.sidebar.carr.coords.vertices = 0;
 
    gfx_display_scissor_end(video_info);

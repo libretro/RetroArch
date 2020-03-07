@@ -195,24 +195,13 @@ static void gdi_render_msg(
    SelectObject(font->gdi->memDC, font->gdi->bmp_old);
 }
 
-static void gdi_font_flush_block(unsigned width, unsigned height, void* data,
-      video_frame_info_t *video_info)
-{
-   (void)data;
-}
-
-static void gdi_font_bind_block(void* data, void* userdata)
-{
-   (void)data;
-}
-
 font_renderer_t gdi_font = {
    gdi_init_font,
    gdi_render_free_font,
    gdi_render_msg,
    "gdi font",
    gdi_font_get_glyph,       /* get_glyph */
-   gdi_font_bind_block,      /* bind_block */
-   gdi_font_flush_block,     /* flush */
+   NULL,      /* bind_block */
+   NULL,     /* flush */
    gdi_get_message_width     /* get_message_width */
 };

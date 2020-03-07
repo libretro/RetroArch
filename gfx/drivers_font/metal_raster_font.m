@@ -533,24 +533,13 @@ static const struct font_glyph *metal_raster_font_get_glyph(
    return [r getGlyph:code];
 }
 
-static void metal_raster_font_flush_block(unsigned width, unsigned height,
-      void *data, video_frame_info_t *video_info)
-{
-   (void)data;
-}
-
-static void metal_raster_font_bind_block(void *data, void *userdata)
-{
-   (void)data;
-}
-
 font_renderer_t metal_raster_font = {
    .init              = metal_raster_font_init_font,
    .free              = metal_raster_font_free_font,
    .render_msg        = metal_raster_font_render_msg,
    .ident             = "Metal raster",
    .get_glyph         = metal_raster_font_get_glyph,
-   .bind_block        = metal_raster_font_bind_block,
-   .flush             = metal_raster_font_flush_block,
+   NULL, /* bind_block  */
+   NULL, /* flush_block */
    .get_message_width = metal_get_message_width
 };

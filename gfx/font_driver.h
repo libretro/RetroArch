@@ -92,8 +92,7 @@ typedef struct font_renderer
 
    const struct font_glyph *(*get_glyph)(void *data, uint32_t code);
    void (*bind_block)(void *data, void *block);
-   void (*flush)(unsigned width, unsigned height, void *data,
-         video_frame_info_t *video_info);
+   void (*flush)(unsigned width, unsigned height, void *data);
 
    int (*get_message_width)(void *data, const char *msg, unsigned msg_len_full, float scale);
    int (*get_line_height)(void* data);
@@ -138,8 +137,7 @@ void font_driver_bind_block(void *font_data, void *block);
 
 int font_driver_get_message_width(void *font_data, const char *msg, unsigned len, float scale);
 
-void font_driver_flush(unsigned width, unsigned height, void *font_data,
-      video_frame_info_t *video_info);
+void font_driver_flush(unsigned width, unsigned height, void *font_data);
 
 void font_driver_free(void *font_data);
 

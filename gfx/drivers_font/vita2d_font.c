@@ -367,7 +367,7 @@ font_renderer_t vita2d_vita_font = {
    vita2d_font_free_font,
    vita2d_font_render_msg,
    "vita2dfont",
-	 vita2d_font_get_glyph,
+   vita2d_font_get_glyph,
    NULL,                      /* bind_block */
    NULL,                      /* flush */
    vita2d_font_get_message_width,
