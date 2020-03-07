@@ -669,10 +669,13 @@ void gfx_thumbnail_draw(
       float alpha, float scale_factor,
       gfx_thumbnail_shadow_t *shadow)
 {
+   unsigned video_height;
    /* Sanity check */
    if (!video_info || !thumbnail ||
        (width < 1) || (height < 1) || (alpha <= 0.0f) || (scale_factor <= 0.0f))
       return;
+
+   video_height = video_info->height;
 
    /* Only draw thumbnail if it is available... */
    if (thumbnail->status == GFX_THUMBNAIL_STATUS_AVAILABLE)
@@ -749,31 +752,31 @@ void gfx_thumbnail_draw(
             /* Centred horizontally */
             draw_x = x + ((float)width - draw_width) / 2.0f;
             /* Drawn at top of bounding box */
-            draw_y = (float)video_info->height - y - draw_height;
+            draw_y = (float)video_height - y - draw_height;
             break;
          case GFX_THUMBNAIL_ALIGN_BOTTOM:
             /* Centred horizontally */
             draw_x = x + ((float)width - draw_width) / 2.0f;
             /* Drawn at bottom of bounding box */
-            draw_y = (float)video_info->height - y - (float)height;
+            draw_y = (float)video_height - y - (float)height;
             break;
          case GFX_THUMBNAIL_ALIGN_LEFT:
             /* Drawn at left side of bounding box */
             draw_x = x;
             /* Centred vertically */
-            draw_y = (float)video_info->height - y - draw_height - ((float)height - draw_height) / 2.0f;
+            draw_y = (float)video_height - y - draw_height - ((float)height - draw_height) / 2.0f;
             break;
          case GFX_THUMBNAIL_ALIGN_RIGHT:
             /* Drawn at right side of bounding box */
             draw_x = x + (float)width - draw_width;
             /* Centred vertically */
-            draw_y = (float)video_info->height - y - draw_height - ((float)height - draw_height) / 2.0f;
+            draw_y = (float)video_height - y - draw_height - ((float)height - draw_height) / 2.0f;
             break;
          case GFX_THUMBNAIL_ALIGN_CENTRE:
          default:
             /* Centred both horizontally and vertically */
             draw_x = x + ((float)width - draw_width) / 2.0f;
-            draw_y = (float)video_info->height - y - draw_height - ((float)height - draw_height) / 2.0f;
+            draw_y = (float)video_height - y - draw_height - ((float)height - draw_height) / 2.0f;
             break;
       }
 

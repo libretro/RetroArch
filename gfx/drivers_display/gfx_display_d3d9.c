@@ -127,6 +127,8 @@ static void gfx_display_d3d9_draw(gfx_display_ctx_draw_t *draw,
    const float *vertex           = NULL;
    const float *tex_coord        = NULL;
    const float *color            = NULL;
+   unsigned video_width          = video_info->width;
+   unsigned video_height         = video_info->height;
 
    if (!d3d || !draw || draw->pipeline.id)
       return;
@@ -190,12 +192,12 @@ static void gfx_display_d3d9_draw(gfx_display_ctx_draw_t *draw,
    matrix_4x4_multiply(m1,
          *((math_matrix_4x4*)draw->matrix_data), m2);
    matrix_4x4_scale(mop,
-         (draw->width  / 2.0) / video_info->width,
-         (draw->height / 2.0) / video_info->height, 0);
+         (draw->width  / 2.0) / video_width,
+         (draw->height / 2.0) / video_height, 0);
    matrix_4x4_multiply(m2, mop, m1);
    matrix_4x4_translate(mop,
-         (draw->x + (draw->width  / 2.0)) / video_info->width,
-         (draw->y + (draw->height / 2.0)) / video_info->height,
+         (draw->x + (draw->width  / 2.0)) / video_width,
+         (draw->y + (draw->height / 2.0)) / video_height,
          0);
    matrix_4x4_multiply(m1, mop, m2);
    matrix_4x4_multiply(m2, d3d->mvp_transposed, m1);
@@ -324,15 +326,17 @@ void gfx_display_d3d9_scissor_begin(
 void gfx_display_d3d9_scissor_end(video_frame_info_t *video_info)
 {
    RECT rect;
-   d3d9_video_t *d3d9 = (d3d9_video_t*)video_info->userdata;
+   d3d9_video_t            *d3d9 = (d3d9_video_t*)video_info->userdata;
+   unsigned video_width          = video_info->width;
+   unsigned video_height         = video_info->height;
 
    if (!d3d9)
       return;
 
    rect.left            = 0;
    rect.top             = 0;
-   rect.right           = video_info->width;
-   rect.bottom          = video_info->height;
+   rect.right           = video_width;
+   rect.bottom          = video_height;
 
    d3d9_set_scissor_rect(d3d9->dev, &rect);
 }

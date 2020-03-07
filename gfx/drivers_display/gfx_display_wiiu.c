@@ -317,15 +317,22 @@ static bool gfx_display_wiiu_font_init_first(
    return *handle;
 }
 
-static void gfx_display_wiiu_scissor_begin(video_frame_info_t *video_info, int x, int y,
+static void gfx_display_wiiu_scissor_begin(
+      video_frame_info_t *video_info, int x, int y,
       unsigned width, unsigned height)
 {
-   GX2SetScissor(MAX(x, 0), MAX(video_info->height - y - height, 0), MIN(width, video_info->width), MIN(height, video_info->height));
+   unsigned video_width  = video_info->width;
+   unsigned video_height = video_info->height;
+
+   GX2SetScissor(MAX(x, 0), MAX(video_height - y - height, 0), MIN(width, video_width), MIN(height, video_height));
 }
 
 static void gfx_display_wiiu_scissor_end(video_frame_info_t *video_info)
 {
-   GX2SetScissor(0, 0, video_info->width, video_info->height);
+   unsigned video_width  = video_info->width;
+   unsigned video_height = video_info->height;
+
+   GX2SetScissor(0, 0, video_width, video_height);
 }
 
 gfx_display_ctx_driver_t gfx_display_ctx_wiiu = {

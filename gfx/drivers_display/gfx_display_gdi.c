@@ -50,6 +50,7 @@ static void gfx_display_gdi_draw(gfx_display_ctx_draw_t *draw,
 {
    struct gdi_texture *texture = NULL;
    gdi_t *gdi                  = (gdi_t*)video_info->userdata;
+   unsigned video_height       = video_info->height;
    BITMAPINFO info             = {{0}};
 
    if (!gdi || !draw || draw->x < 0 || draw->y < 0 || draw->width <= 1 || draw->height <= 1)
@@ -100,13 +101,13 @@ static void gfx_display_gdi_draw(gfx_display_ctx_draw_t *draw,
       blend.AlphaFormat = AC_SRC_ALPHA;
 
       /* AlphaBlend() is only available since Win98 */
-      AlphaBlend(gdi->memDC, draw->x, video_info->height - draw->height - draw->y, draw->width, draw->height, gdi->texDC, 0, 0, draw->width, draw->height, blend);
+      AlphaBlend(gdi->memDC, draw->x, video_height - draw->height - draw->y, draw->width, draw->height, gdi->texDC, 0, 0, draw->width, draw->height, blend);
 #if 0
-      TransparentBlt(gdi->memDC, draw->x, video_info->height - draw->height - draw->y, draw->width, draw->height, gdi->texDC, 0, 0, draw->width, draw->height, 0);
+      TransparentBlt(gdi->memDC, draw->x, video_height - draw->height - draw->y, draw->width, draw->height, gdi->texDC, 0, 0, draw->width, draw->height, 0);
 #endif
 #else
       /* Just draw without the blending */
-      StretchBlt(gdi->memDC, draw->x, video_info->height - draw->height - draw->y, draw->width, draw->height, gdi->texDC, 0, 0, draw->width, draw->height, SRCCOPY);
+      StretchBlt(gdi->memDC, draw->x, video_height - draw->height - draw->y, draw->width, draw->height, gdi->texDC, 0, 0, draw->width, draw->height, SRCCOPY);
 
 #endif
 

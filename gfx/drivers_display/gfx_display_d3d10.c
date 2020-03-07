@@ -291,15 +291,17 @@ void gfx_display_d3d10_scissor_begin(video_frame_info_t *video_info, int x, int 
 void gfx_display_d3d10_scissor_end(video_frame_info_t *video_info)
 {
    D3D10_RECT rect;
-   d3d10_video_t *d3d10 = (d3d10_video_t*)video_info->userdata;
+   d3d10_video_t *d3d10  = (d3d10_video_t*)video_info->userdata;
+   unsigned video_width  = video_info->width;
+   unsigned video_height = video_info->height;
 
    if (!d3d10)
       return;
 
    rect.left            = 0;
    rect.top             = 0;
-   rect.right           = video_info->width;
-   rect.bottom          = video_info->height;
+   rect.right           = video_width;
+   rect.bottom          = video_height;
 
    D3D10SetScissorRects(d3d10->device, 1, &rect);
 }

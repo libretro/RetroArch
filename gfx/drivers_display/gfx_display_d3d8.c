@@ -121,6 +121,8 @@ static void gfx_display_d3d8_draw(gfx_display_ctx_draw_t *draw,
    unsigned i;
    math_matrix_4x4 mop, m1, m2;
    d3d8_video_t *d3d             = (d3d8_video_t*)video_info->userdata;
+   unsigned video_width          = video_info->width;
+   unsigned video_height         = video_info->height;
    Vertex * pv                   = NULL;
    const float *vertex           = NULL;
    const float *tex_coord        = NULL;
@@ -195,12 +197,12 @@ static void gfx_display_d3d8_draw(gfx_display_ctx_draw_t *draw,
    matrix_4x4_multiply(m1,
          *((math_matrix_4x4*)draw->matrix_data), m2);
    matrix_4x4_scale(mop,
-         (draw->width  / 2.0) / video_info->width,
-         (draw->height / 2.0) / video_info->height, 0);
+         (draw->width  / 2.0) / video_width,
+         (draw->height / 2.0) / video_height, 0);
    matrix_4x4_multiply(m2, mop, m1);
    matrix_4x4_translate(mop,
-         (draw->x + (draw->width  / 2.0)) / video_info->width,
-         (draw->y + (draw->height / 2.0)) / video_info->height,
+         (draw->x + (draw->width  / 2.0)) / video_width,
+         (draw->y + (draw->height / 2.0)) / video_height,
          0);
    matrix_4x4_multiply(m1, mop, m2);
    matrix_4x4_multiply(m2, d3d->mvp_transposed, m1);
