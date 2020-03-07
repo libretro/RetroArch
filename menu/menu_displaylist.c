@@ -102,6 +102,8 @@
 #include "../runtime_file.h"
 #include "../manual_content_scan.h"
 
+/* TODO/FIXME - globals - need to find a way to 
+ * get rid of these */
 static char new_path_entry[4096]        = {0};
 static char new_lbl_entry[4096]         = {0};
 static char new_entry[4096]             = {0};
