@@ -125,7 +125,7 @@ static int wait_stdin(int usec)
 
    return ret;
 }
-# endif
+#endif
 #endif
 
 static void scroll_on_demand(int pixelheight)
@@ -149,7 +149,7 @@ static void scroll_on_demand(int pixelheight)
       printf("\033[H\0337");
       return;
    }
-# ifdef HAVE_TERMIOS_H
+#ifdef HAVE_TERMIOS_H
    /* set the terminal to cbreak mode */
    tcgetattr(STDIN_FILENO, &old_termios);
    memcpy(&new_termios, &old_termios, sizeof(old_termios));
@@ -178,9 +178,9 @@ static void scroll_on_demand(int pixelheight)
    }
 
    tcsetattr(STDIN_FILENO, TCSAFLUSH, &old_termios);
-# else
+#else
    printf("\033[H\0337");
-# endif  /* HAVE_TERMIOS_H */
+#endif  /* HAVE_TERMIOS_H */
 #else
    printf("\033[H\0337");
 #endif  /* HAVE_SYS_IOCTL_H */

@@ -47,9 +47,8 @@
 typedef struct sdl_menu_frame
 {
    bool active;
-   SDL_Surface *frame;
    struct scaler_ctx scaler;
-
+   SDL_Surface *frame;
 } sdl_menu_frame_t;
 
 typedef struct sdl_video

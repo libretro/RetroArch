@@ -94,29 +94,28 @@ typedef struct psp1_menu_frame
 
 typedef struct psp1_video
 {
-   void* main_dList;
-   void* frame_dList;
-   void* draw_buffer;
-   void* texture;
-   psp1_sprite_t* frame_coords;
-   int tex_filter;
-
    bool vsync;
    bool rgb32;
-   int bpp_log2;
-
-   psp1_menu_frame_t menu;
-
-   video_viewport_t vp;
-
-   unsigned rotation;
    bool vblank_not_reached;
    bool keep_aspect;
    bool should_resize;
    bool hw_render;
+
+   int tex_filter;
+   int bpp_log2;
+
+   unsigned rotation;
+
+   psp1_menu_frame_t menu;
+   video_viewport_t vp;
+   void* main_dList;
+   void* frame_dList;
+   void* draw_buffer;
+   void* texture;
+   psp1_sprite_t *frame_coords;
 } psp1_video_t;
 
-// both row and column count need to be a power of 2
+/* both row and column count need to be a power of 2 */
 #define PSP_FRAME_ROWS_COUNT     4
 #define PSP_FRAME_COLUMNS_COUNT  16
 #define PSP_FRAME_SLICE_COUNT    (PSP_FRAME_ROWS_COUNT * PSP_FRAME_COLUMNS_COUNT)

@@ -59,29 +59,27 @@ typedef struct sdl2_tex
 
 typedef struct _sdl2_video
 {
-   SDL_Window *window;
-   SDL_Renderer *renderer;
-
-   sdl2_tex_t frame;
-   sdl2_tex_t menu;
-   sdl2_tex_t font;
-
    bool gl;
    bool quitting;
+   bool should_resize;
 
-   void *font_data;
-   const font_renderer_driver_t *font_driver;
    uint8_t font_r;
    uint8_t font_g;
    uint8_t font_b;
 
-   struct video_viewport vp;
-
-   video_info_t video;
-
-   bool should_resize;
    double rotation;
 
+   struct video_viewport vp;
+   video_info_t video;
+   sdl2_tex_t frame;
+   sdl2_tex_t menu;
+   sdl2_tex_t font;
+
+   SDL_Window *window;
+   SDL_Renderer *renderer;
+
+   void *font_data;
+   const font_renderer_driver_t *font_driver;
 } sdl2_video_t;
 
 static void sdl2_gfx_free(void *data);

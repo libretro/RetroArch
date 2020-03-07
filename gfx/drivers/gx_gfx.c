@@ -93,6 +93,20 @@ typedef struct gx_video
    bool rgb32;
    bool menu_texture_enable;
    bool vsync;
+#ifdef HAVE_OVERLAY
+   bool overlay_enable;
+   bool overlay_full_screen;
+#endif
+
+   int8_t system_xOrigin;
+   int8_t used_system_xOrigin;
+   int8_t xOriginNeg;
+   int8_t xOriginPos;
+   int8_t yOriginNeg;
+   int8_t yOriginPos;
+
+   uint16_t xOrigin;
+   uint16_t yOrigin;
 
    unsigned scale;
    unsigned overscan_correction_top;
@@ -100,26 +114,26 @@ typedef struct gx_video
    unsigned old_width;
    unsigned old_height;
    unsigned current_framebuf;
-   uint32_t orientation;
-
 #ifdef HAVE_OVERLAY
-   struct gx_overlay_data *overlay;
    unsigned overlays;
-   bool overlay_enable;
-   bool overlay_full_screen;
 #endif
+
+   uint32_t orientation;
 
    video_viewport_t vp;
    void *framebuf[2];
    uint32_t *menu_data; /* FIXME: Should be const uint16_t*. */
+#ifdef HAVE_OVERLAY
+   struct gx_overlay_data *overlay;
+#endif
 } gx_video_t;
 
 static struct
 {
-   uint32_t *data; /* needs to be resizable. */
    unsigned width;
    unsigned height;
    GXTexObj obj;
+   uint32_t *data; /* needs to be resizable. */
 } g_tex;
 
 static struct
@@ -132,20 +146,15 @@ static OSCond g_video_cond;
 
 static volatile bool g_draw_done       = false;
 
-int8_t gx_system_xOrigin, gx_used_system_xOrigin;
-int8_t gx_xOriginNeg, gx_xOriginPos;
-int8_t gx_yOriginNeg, gx_yOriginPos;
-
 static uint8_t gx_fifo[256 * 1024] ATTRIBUTE_ALIGN(32);
 static uint8_t display_list[1024]  ATTRIBUTE_ALIGN(32);
-
-static uint16_t gx_xOrigin             = 0;
-static uint16_t gx_yOrigin             = 0;
 
 static uint32_t retraceCount           = 0;
 static uint32_t referenceRetraceCount  = 0;
 
-static size_t display_list_size;
+static unsigned max_height             = 0;
+
+static size_t display_list_size        = 0;
 
 GXRModeObj gx_mode;
 
@@ -271,19 +280,17 @@ static void retrace_callback(u32 retrace_count)
    _CPU_ISR_Restore(level);
 }
 
-static bool gx_isValidXOrigin(int origin)
+static bool gx_is_valid_xorigin(gx_video_t *gx, int origin)
 {
-   if(origin < 0 || origin + gx_used_system_xOrigin < 0 ||
-         gx_mode.viWidth + origin + gx_used_system_xOrigin > 720)
+   if (origin < 0 || origin + gx->used_system_xOrigin < 0 ||
+         gx_mode.viWidth + origin + gx->used_system_xOrigin > 720)
       return false;
    return true;
 }
 
-static unsigned max_height;
-
-static bool gx_isValidYOrigin(int origin)
+static bool gx_is_valid_yorigin(int origin)
 {
-	if(origin < 0 || gx_mode.viHeight + origin > max_height)
+	if (origin < 0 || gx_mode.viHeight + origin > max_height)
 	   return false;
 	return true;
 }
@@ -340,7 +347,7 @@ static void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines,
    }
 #else
    progressive = VIDEO_HaveComponentCable();
-   tvmode = VIDEO_GetCurrentTvMode();
+   tvmode      = VIDEO_GetCurrentTvMode();
 #endif
 
    switch (tvmode)
@@ -391,55 +398,58 @@ static void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines,
    gx_mode.efbHeight    = MIN(lines, 480);
 
    if (modetype == VI_NON_INTERLACE && lines > max_height / 2)
-      gx_mode.xfbHeight = max_height / 2;
+      gx_mode.xfbHeight    = max_height / 2;
    else if (modetype != VI_NON_INTERLACE && lines > max_height)
-      gx_mode.xfbHeight = max_height;
+      gx_mode.xfbHeight    = max_height;
    else
-      gx_mode.xfbHeight = lines;
+      gx_mode.xfbHeight    = lines;
 
-   gx_mode.viWidth      = viWidth;
-   gx_mode.viHeight     = gx_mode.xfbHeight * viHeightMultiplier;
+   gx_mode.viWidth         = viWidth;
+   gx_mode.viHeight        = gx_mode.xfbHeight * viHeightMultiplier;
 
-   gx_used_system_xOrigin = gx_system_xOrigin;
-   if(gx_used_system_xOrigin > 0)
+   gx->used_system_xOrigin = gx->system_xOrigin;
+
+   if (gx->used_system_xOrigin > 0)
    {
-      while (viWidth + gx_used_system_xOrigin > 720)
-         gx_used_system_xOrigin--;
+      while (viWidth + gx->used_system_xOrigin > 720)
+         gx->used_system_xOrigin--;
    }
-   else if(gx_used_system_xOrigin < 0)
+   else if (gx->used_system_xOrigin < 0)
    {
-      while (viWidth + gx_used_system_xOrigin > 720)
-         gx_used_system_xOrigin++;
+      while (viWidth + gx->used_system_xOrigin > 720)
+         gx->used_system_xOrigin++;
    }
 
    tmpOrigin = (max_width - gx_mode.viWidth) / 2;
 
-   if(gx_system_xOrigin > 0)
+   if (gx->system_xOrigin > 0)
    {
-      while (!gx_isValidXOrigin(tmpOrigin))
+      while (!gx_is_valid_xorigin(gx, tmpOrigin))
          tmpOrigin--;
    }
-   else if(gx_system_xOrigin < 0)
+   else if (gx->system_xOrigin < 0)
    {
-      while (!gx_isValidXOrigin(tmpOrigin))
+      while (!gx_is_valid_xorigin(gx, tmpOrigin))
          tmpOrigin++;
    }
 
-   gx_mode.viXOrigin = gx_xOrigin = tmpOrigin;
-   gx_mode.viYOrigin = gx_yOrigin =
+   gx_mode.viXOrigin = gx->xOrigin = tmpOrigin;
+   gx_mode.viYOrigin = gx->yOrigin =
       (max_height - gx_mode.viHeight) / (2 * viHeightMultiplier);
 
-   gx_xOriginNeg = 0, gx_xOriginPos = 0;
+   gx->xOriginNeg = 0;
+   gx->xOriginPos = 0;
 
-   while (gx_isValidXOrigin(gx_mode.viXOrigin+(gx_xOriginNeg-1)))
-      gx_xOriginNeg--;
-   while (gx_isValidXOrigin(gx_mode.viXOrigin+(gx_xOriginPos+1)))
-      gx_xOriginPos++;
-   gx_yOriginNeg = 0, gx_yOriginPos = 0;
-   while (gx_isValidYOrigin(gx_mode.viYOrigin+(gx_yOriginNeg-1)))
-      gx_yOriginNeg--;
-   while (gx_isValidYOrigin(gx_mode.viYOrigin+(gx_yOriginPos+1)))
-      gx_yOriginPos++;
+   while (gx_is_valid_xorigin(gx, gx_mode.viXOrigin+(gx->xOriginNeg-1)))
+      gx->xOriginNeg--;
+   while (gx_is_valid_xorigin(gx, gx_mode.viXOrigin+(gx->xOriginPos+1)))
+      gx->xOriginPos++;
+   gx->yOriginNeg = 0;
+   gx->yOriginPos = 0;
+   while (gx_is_valid_yorigin(gx_mode.viYOrigin+(gx->yOriginNeg-1)))
+      gx->yOriginNeg--;
+   while (gx_is_valid_yorigin(gx_mode.viYOrigin+(gx->yOriginPos+1)))
+      gx->yOriginPos++;
 
    gx_mode.xfbMode         = (modetype == VI_INTERLACE) 
       ? VI_XFBMODE_DF 
@@ -801,15 +811,15 @@ static void *gx_init(const video_info_t *video,
    gx->old_width      = 0;
    gx->old_height     = 0;
 
-   gx_system_xOrigin  = 0;
+   gx->system_xOrigin = 0;
 
 #ifdef HW_RVL
    int8_t offset;
-   if(CONF_GetDisplayOffsetH(&offset) == 0)
-      gx_system_xOrigin = offset;
+   if (CONF_GetDisplayOffsetH(&offset) == 0)
+      gx->system_xOrigin = offset;
 #else
-   syssram *sram = __SYS_LockSram();
-   gx_system_xOrigin = sram->display_offsetH;
+   syssram      *sram = __SYS_LockSram();
+   gx->system_xOrigin = sram->display_offsetH;
    __SYS_UnlockSram(0);
 #endif
    return gx;
@@ -954,7 +964,7 @@ static void gx_resize(gx_video_t *gx,
 #ifdef HW_RVL
    VIDEO_SetTrapFilter(global->console.softfilter_enable);
    gamma = global->console.screen.gamma_correction;
-   if(gamma == 0)
+   if (gamma == 0)
       gamma = 10; /* default 1.0 gamma value */
    VIDEO_SetGamma(gamma);
 #else
@@ -1038,36 +1048,36 @@ static void gx_resize(gx_video_t *gx,
       }
    }
 
-   if(gx_isValidXOrigin(gx_xOrigin + x))
+   if (gx_is_valid_xorigin(gx, gx->xOrigin + x))
    {
-      gx_mode.viXOrigin = gx_xOrigin + x;
+      gx_mode.viXOrigin = gx->xOrigin + x;
       x = 0;
    }
-   else if(x < 0)
+   else if (x < 0)
    {
-      gx_mode.viXOrigin = gx_xOrigin+gx_xOriginNeg;
-      x -= gx_xOriginNeg;
+      gx_mode.viXOrigin = gx->xOrigin + gx->xOriginNeg;
+      x -= gx->xOriginNeg;
    }
-   else if(x > 0)
+   else if (x > 0)
    {
-      gx_mode.viXOrigin = gx_xOrigin+gx_xOriginPos;
-      x -= gx_xOriginPos;
+      gx_mode.viXOrigin = gx->xOrigin + gx->xOriginPos;
+      x -= gx->xOriginPos;
    }
 
-   if(gx_isValidYOrigin(gx_yOrigin + y))
+   if (gx_is_valid_yorigin(gx->yOrigin + y))
    {
-      gx_mode.viYOrigin = gx_yOrigin + y;
+      gx_mode.viYOrigin = gx->yOrigin + y;
       y = 0;
    }
-   else if(y < 0)
+   else if (y < 0)
    {
-      gx_mode.viYOrigin = gx_yOrigin+gx_yOriginNeg;
-      y -= gx_yOriginNeg;
+      gx_mode.viYOrigin = gx->yOrigin + gx->yOriginNeg;
+      y -= gx->yOriginNeg;
    }
-   else if(y > 0)
+   else if (y > 0)
    {
-      gx_mode.viYOrigin = gx_yOrigin+gx_yOriginPos;
-      y -= gx_yOriginPos;
+      gx_mode.viYOrigin = gx->yOrigin + gx->yOriginPos;
+      y -= gx->yOriginPos;
    }
 
    VIDEO_Configure(&gx_mode);
@@ -1567,7 +1577,7 @@ static bool gx_frame(void *data, const void *frame,
 
    fps_text_buf[0]                    = '\0';
 
-   if(!gx || (!frame && !gx->menu_texture_enable))
+   if (!gx || (!frame && !gx->menu_texture_enable))
       return true;
 
    if (!frame)
@@ -1581,7 +1591,7 @@ static bool gx_frame(void *data, const void *frame,
       gx->should_resize              = true;
    }
 
-   if(gx->should_resize)
+   if (gx->should_resize)
    {
       gx_resize(gx,
             video_smooth,
@@ -1663,7 +1673,7 @@ static bool gx_frame(void *data, const void *frame,
    _CPU_ISR_Disable(level);
    if (referenceRetraceCount > retraceCount)
    {
-      if(gx->vsync)
+      if (gx->vsync)
          VIDEO_WaitVSync();
    }
 

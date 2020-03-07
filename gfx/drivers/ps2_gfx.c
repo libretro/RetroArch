@@ -33,25 +33,25 @@
 
 typedef struct ps2_video
 {
-   GSGLOBAL *gsGlobal;
-   GSTEXTURE *menuTexture;
-   GSTEXTURE *coreTexture;
    bool clearVRAM;
    /* I need to create this additional field 
     * to be used in the font driver*/
    bool clearVRAM_font;
+   bool menuVisible;
+   bool fullscreen;
+   bool vsync;
+   bool force_aspect;
+
+   int PSM;
+   int menu_filter;
+   int core_filter;
+
    /* Palette in the cores */
    struct retro_hw_render_interface_gskit_ps2 iface;
 
-   bool menuVisible;
-   bool fullscreen;
-
-   bool vsync;
-
-   int PSM;
-   bool force_aspect;
-   int menu_filter;
-   int core_filter;
+   GSGLOBAL *gsGlobal;
+   GSTEXTURE *menuTexture;
+   GSTEXTURE *coreTexture;
 } ps2_video_t;
 
 /* PRIVATE METHODS */
@@ -84,9 +84,9 @@ static GSGLOBAL *init_GSGlobal(void)
    return gsGlobal;
 }
 
-static GSTEXTURE * prepare_new_texture(void)
+static GSTEXTURE *prepare_new_texture(void)
 {
-   GSTEXTURE *texture = calloc(1, sizeof(*texture));
+   GSTEXTURE *texture = (GSTEXTURE*)calloc(1, sizeof(*texture));
    return texture;
 }
 
@@ -102,7 +102,7 @@ static void init_ps2_video(ps2_video_t *ps2)
    ps2->iface.coreTexture       = ps2->coreTexture;
 }
 
-static void deinitTexture(GSTEXTURE *texture)
+static void deinit_texture(GSTEXTURE *texture)
 {
    texture->Mem  = NULL;
    texture->Clut = NULL;
@@ -210,9 +210,7 @@ static void clearVRAMIfNeeded(ps2_video_t *ps2,
 static void refreshScreen(ps2_video_t *ps2)
 {
    if (ps2->vsync)
-   {
       gsKit_sync_flip(ps2->gsGlobal);
-   }
    gsKit_queue_exec(ps2->gsGlobal);
 
    /* Here we are just puting in false the ps2->clearVRAM field
@@ -388,8 +386,8 @@ static void ps2_gfx_free(void *data)
 
    font_driver_free_osd();
 
-   deinitTexture(ps2->menuTexture);
-   deinitTexture(ps2->coreTexture);
+   deinit_texture(ps2->menuTexture);
+   deinit_texture(ps2->coreTexture);
 
    free(ps2->menuTexture);
    free(ps2->coreTexture);
