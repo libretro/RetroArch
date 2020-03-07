@@ -89,9 +89,13 @@ static char log_file_override_path[PATH_MAX_LENGTH] = {0};
 
 #ifdef HAVE_LIBNX
 static Mutex logging_mtx;
+
 #ifdef NXLINK
+/* TODO/FIXME - global referenced in platform_switch.c - not
+ * thread-safe */
 bool nxlink_connected = false;
 #endif /* NXLINK */
+
 #endif /* HAVE_LIBNX */
 
 void verbosity_set_log_level(unsigned level)

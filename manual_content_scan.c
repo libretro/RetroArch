@@ -39,6 +39,13 @@
  * with a manual content scan */
 typedef struct
 {
+   bool search_archives;
+   bool filter_dat_content;
+   bool overwrite_playlist;
+
+   enum manual_content_scan_system_name_type system_name_type;
+   enum manual_content_scan_core_type core_type;
+
    char content_dir[PATH_MAX_LENGTH];
    char system_name_content_dir[PATH_MAX_LENGTH];
    char system_name_database[PATH_MAX_LENGTH];
@@ -48,11 +55,6 @@ typedef struct
    char file_exts_core[PATH_MAX_LENGTH];
    char file_exts_custom[PATH_MAX_LENGTH];
    char dat_file_path[PATH_MAX_LENGTH];
-   enum manual_content_scan_system_name_type system_name_type;
-   enum manual_content_scan_core_type core_type;
-   bool search_archives;
-   bool filter_dat_content;
-   bool overwrite_playlist;
 } scan_settings_t;
 
 /* Static settings object
