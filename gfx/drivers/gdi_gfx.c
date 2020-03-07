@@ -43,8 +43,6 @@ static unsigned char *gdi_menu_frame = NULL;
 static unsigned gdi_menu_width       = 0;
 static unsigned gdi_menu_height      = 0;
 static unsigned gdi_menu_pitch       = 0;
-static unsigned gdi_video_width      = 0;
-static unsigned gdi_video_height     = 0;
 static unsigned gdi_video_pitch      = 0;
 static unsigned gdi_video_bits       = 0;
 static unsigned gdi_menu_bits        = 0;
@@ -97,8 +95,8 @@ static void *gdi_gfx_init(const video_info_t *video,
    *input                               = NULL;
    *input_data                          = NULL;
 
-   gdi_video_width                      = video->width;
-   gdi_video_height                     = video->height;
+   gdi->video_width                     = video->width;
+   gdi->video_height                    = video->height;
    gdi_rgb32                            = video->rgb32;
 
    gdi_video_bits                       = video->rgb32 ? 32 : 16;
@@ -217,14 +215,14 @@ static bool gdi_gfx_frame(void *data, const void *frame,
    menu_driver_frame(video_info);
 #endif
 
-   if (  gdi_video_width  != frame_width  ||
-         gdi_video_height != frame_height ||
+   if (  gdi->video_width  != frame_width  ||
+         gdi->video_height != frame_height ||
          gdi_video_pitch  != pitch)
    {
       if (frame_width > 4 && frame_height > 4)
       {
-         gdi_video_width  = frame_width;
-         gdi_video_height = frame_height;
+         gdi->video_width  = frame_width;
+         gdi->video_height = frame_height;
          gdi_video_pitch  = pitch;
       }
    }
@@ -239,8 +237,8 @@ static bool gdi_gfx_frame(void *data, const void *frame,
    }
    else
    {
-      width         = gdi_video_width;
-      height        = gdi_video_height;
+      width         = gdi->video_width;
+      height        = gdi->video_height;
       pitch         = gdi_video_pitch;
 
       if (  frame_width  == 4 &&
