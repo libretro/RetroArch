@@ -56,27 +56,6 @@
 #include "../video_thread_wrapper.h"
 #endif
 
-#ifdef VITA
-static bool vgl_inited = false;
-#endif
-
-static unsigned char *gl1_menu_frame = NULL;
-static unsigned gl1_menu_width       = 0;
-static unsigned gl1_menu_height      = 0;
-static unsigned gl1_menu_pitch       = 0;
-static unsigned gl1_video_width      = 0;
-static unsigned gl1_video_height     = 0;
-static unsigned gl1_video_pitch      = 0;
-static unsigned gl1_video_bits       = 0;
-static unsigned gl1_menu_bits        = 0;
-static bool gl1_rgb32                = false;
-static bool gl1_menu_rgb32           = false;
-static bool gl1_menu_size_changed    = false;
-static unsigned char *gl1_video_buf  = NULL;
-static unsigned char *gl1_menu_video_buf = NULL;
-
-static bool gl1_shared_context_use = false;
-
 static struct video_ortho gl1_default_ortho = {0, 1, 0, 1, -1, 1};
 
 /* Used for the last pass when rendering to the back buffer. */
@@ -109,7 +88,7 @@ static const GLfloat gl1_white_color[] = {
 };
 
 #define gl1_context_bind_hw_render(gl1, enable) \
-   if (gl1_shared_context_use) \
+   if (gl1->shared_context_use) \
       gl1->ctx_driver->bind_hw_render(gl1->ctx_data, enable)
 
 #ifdef HAVE_OVERLAY
@@ -259,16 +238,16 @@ static void *gl1_gfx_init(const video_info_t *video,
    *input                               = NULL;
    *input_data                          = NULL;
 
-   gl1_video_width                      = video->width;
-   gl1_video_height                     = video->height;
-   gl1_rgb32                            = video->rgb32;
+   gl1->video_width                     = video->width;
+   gl1->video_height                    = video->height;
+   gl1->rgb32                           = video->rgb32;
 
-   gl1_video_bits                       = video->rgb32 ? 32 : 16;
+   gl1->video_bits                      = video->rgb32 ? 32 : 16;
 
    if (video->rgb32)
-      gl1_video_pitch = video->width * 4;
+      gl1->video_pitch                  = video->width * 4;
    else
-      gl1_video_pitch = video->width * 2;
+      gl1->video_pitch                  = video->width * 2;
 
    ctx_driver = video_context_driver_init_first(gl1,
          video_context_driver,
@@ -293,12 +272,12 @@ static void *gl1_gfx_init(const video_info_t *video,
    mode.width  = 0;
    mode.height = 0;
 #ifdef VITA
-   if (!vgl_inited)
+   if (!gl1->vgl_inited)
    {
       vglInitExtended(0x1400000, full_x, full_y, 0x100000, SCE_GXM_MULTISAMPLE_4X);
       vglUseVram(GL_TRUE);
       vglStartRendering();
-      vgl_inited = true;
+      gl1->vgl_inited = true;
    }
 #endif
    /* Clear out potential error flags in case we use cached context. */
@@ -710,9 +689,9 @@ static bool gl1_gfx_frame(void *data, const void *frame,
    const void *frame_to_copy = NULL;
    unsigned width            = 0;
    unsigned height           = 0;
-   unsigned bits             = gl1_video_bits;
    bool draw                 = true;
    gl1_t *gl1                = (gl1_t*)data;
+   unsigned bits             = gl1->video_bits;
    unsigned pot_width        = 0;
    unsigned pot_height       = 0;
 
@@ -747,29 +726,29 @@ static bool gl1_gfx_frame(void *data, const void *frame,
    glEnable(GL_BLEND);
    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-   if (  gl1_video_width  != frame_width  ||
-         gl1_video_height != frame_height ||
-         gl1_video_pitch  != pitch)
+   if (  gl1->video_width  != frame_width  ||
+         gl1->video_height != frame_height ||
+         gl1->video_pitch  != pitch)
    {
       if (frame_width > 4 && frame_height > 4)
       {
-         gl1_video_width  = frame_width;
-         gl1_video_height = frame_height;
-         gl1_video_pitch  = pitch;
+         gl1->video_width  = frame_width;
+         gl1->video_height = frame_height;
+         gl1->video_pitch  = pitch;
 
          pot_width = get_pot(frame_width);
          pot_height = get_pot(frame_height);
 
-         if (gl1_video_buf)
-            free(gl1_video_buf);
+         if (gl1->video_buf)
+            free(gl1->video_buf);
 
-         gl1_video_buf = (unsigned char*)malloc(pot_width * pot_height * 4);
+         gl1->video_buf = (unsigned char*)malloc(pot_width * pot_height * 4);
       }
    }
 
-   width         = gl1_video_width;
-   height        = gl1_video_height;
-   pitch         = gl1_video_pitch;
+   width         = gl1->video_width;
+   height        = gl1->video_height;
+   pitch         = gl1->video_pitch;
 
    pot_width = get_pot(width);
    pot_height = get_pot(height);
@@ -780,19 +759,19 @@ static bool gl1_gfx_frame(void *data, const void *frame,
       )
       draw = false;
 
-   if (draw && gl1_video_buf)
+   if (draw && gl1->video_buf)
    {
       if (bits == 32)
       {
          unsigned y;
          /* copy lines into top-left portion of larger (power-of-two) buffer */
          for (y = 0; y < height; y++)
-            memcpy(gl1_video_buf + ((pot_width * (bits / 8)) * y), (const unsigned char*)frame + (pitch * y), width * (bits / 8));
+            memcpy(gl1->video_buf + ((pot_width * (bits / 8)) * y), (const unsigned char*)frame + (pitch * y), width * (bits / 8));
       }
       else if (bits == 16)
-         conv_rgb565_argb8888(gl1_video_buf, frame, width, height, pot_width * sizeof(unsigned), pitch);
+         conv_rgb565_argb8888(gl1->video_buf, frame, width, height, pot_width * sizeof(unsigned), pitch);
 
-      frame_to_copy = gl1_video_buf;
+      frame_to_copy = gl1->video_buf;
    }
 
    if (gl1->video_width != width || gl1->video_height != height)
@@ -814,36 +793,34 @@ static bool gl1_gfx_frame(void *data, const void *frame,
       }
    }
 
-   if (gl1_menu_frame && video_info->menu_is_alive)
+   if (gl1->menu_frame && video_info->menu_is_alive)
    {
       frame_to_copy = NULL;
-      width         = gl1_menu_width;
-      height        = gl1_menu_height;
-      pitch         = gl1_menu_pitch;
-      bits          = gl1_menu_bits;
+      width         = gl1->menu_width;
+      height        = gl1->menu_height;
+      pitch         = gl1->menu_pitch;
+      bits          = gl1->menu_bits;
 
       pot_width = get_pot(width);
       pot_height = get_pot(height);
 
-      if (gl1_menu_size_changed)
+      if (gl1->menu_size_changed)
       {
-         gl1_menu_size_changed = false;
+         gl1->menu_size_changed = false;
 
-         if (gl1_menu_video_buf)
-         {
-            free(gl1_menu_video_buf);
-            gl1_menu_video_buf = NULL;
-         }
+         if (gl1->menu_video_buf)
+            free(gl1->menu_video_buf);
+         gl1->menu_video_buf = NULL;
       }
 
-      if (!gl1_menu_video_buf)
-         gl1_menu_video_buf = (unsigned char*)malloc(pot_width * pot_height * 4);
+      if (!gl1->menu_video_buf)
+         gl1->menu_video_buf = (unsigned char*)malloc(pot_width * pot_height * 4);
 
-      if (bits == 16 && gl1_menu_video_buf)
+      if (bits == 16 && gl1->menu_video_buf)
       {
-         conv_rgba4444_argb8888(gl1_menu_video_buf, gl1_menu_frame, width, height, pot_width * sizeof(unsigned), pitch);
+         conv_rgba4444_argb8888(gl1->menu_video_buf, gl1->menu_frame, width, height, pot_width * sizeof(unsigned), pitch);
 
-         frame_to_copy = gl1_menu_video_buf;
+         frame_to_copy = gl1->menu_video_buf;
 
          if (gl1->menu_texture_full_screen)
          {
@@ -1000,28 +977,22 @@ static void gl1_gfx_free(void *data)
 {
    gl1_t *gl1 = (gl1_t*)data;
 
-   gl1_context_bind_hw_render(gl1, false);
-
-   if (gl1_menu_frame)
-   {
-      free(gl1_menu_frame);
-      gl1_menu_frame = NULL;
-   }
-
-   if (gl1_video_buf)
-   {
-      free(gl1_video_buf);
-      gl1_video_buf = NULL;
-   }
-
-   if (gl1_menu_video_buf)
-   {
-      free(gl1_menu_video_buf);
-      gl1_menu_video_buf = NULL;
-   }
-
    if (!gl1)
       return;
+
+   gl1_context_bind_hw_render(gl1, false);
+
+   if (gl1->menu_frame)
+      free(gl1->menu_frame);
+   gl1->menu_frame = NULL;
+
+   if (gl1->video_buf)
+      free(gl1->video_buf);
+   gl1->video_buf = NULL;
+
+   if (gl1->menu_video_buf)
+      free(gl1->menu_video_buf);
+   gl1->menu_video_buf = NULL;
 
    if (gl1->tex)
    {
@@ -1040,10 +1011,8 @@ static void gl1_gfx_free(void *data)
 #endif
 
    if (gl1->extensions)
-   {
       string_list_free(gl1->extensions);
-      gl1->extensions = NULL;
-   }
+   gl1->extensions = NULL;
 
    font_driver_free_osd();
    video_context_driver_free();
@@ -1147,35 +1116,36 @@ static void gl1_set_texture_frame(void *data,
    if (rgb32)
       pitch = width * 4;
 
-   if (gl1_menu_frame)
-   {
-      free(gl1_menu_frame);
-      gl1_menu_frame = NULL;
-   }
+   if (gl1->menu_frame)
+      free(gl1->menu_frame);
+   gl1->menu_frame = NULL;
 
-   if ( !gl1_menu_frame            ||
-         gl1_menu_width != width   ||
-         gl1_menu_height != height ||
-         gl1_menu_pitch != pitch)
+   if ( !gl1->menu_frame            ||
+         gl1->menu_width != width   ||
+         gl1->menu_height != height ||
+         gl1->menu_pitch != pitch)
    {
       if (pitch && height)
       {
-         if (gl1_menu_frame)
-            free(gl1_menu_frame);
+         if (gl1->menu_frame)
+            free(gl1->menu_frame);
 
-         /* FIXME? We have to assume the pitch has no extra padding in it because that will mess up the POT calculation when we don't know how many bpp there are. */
-         gl1_menu_frame = (unsigned char*)malloc(pitch * height);
+         /* FIXME? We have to assume the pitch has no 
+          * extra padding in it because that will 
+          * mess up the POT calculation when we don't 
+          * know how many bpp there are. */
+         gl1->menu_frame = (unsigned char*)malloc(pitch * height);
       }
    }
 
-   if (gl1_menu_frame && frame && pitch && height)
+   if (gl1->menu_frame && frame && pitch && height)
    {
-      memcpy(gl1_menu_frame, frame, pitch * height);
-      gl1_menu_width  = width;
-      gl1_menu_height = height;
-      gl1_menu_pitch  = pitch;
-      gl1_menu_bits   = rgb32 ? 32 : 16;
-      gl1_menu_size_changed = true;
+      memcpy(gl1->menu_frame, frame, pitch * height);
+      gl1->menu_width        = width;
+      gl1->menu_height       = height;
+      gl1->menu_pitch        = pitch;
+      gl1->menu_bits         = rgb32 ? 32 : 16;
+      gl1->menu_size_changed = true;
    }
 
    gl1_context_bind_hw_render(gl1, true);
@@ -1424,11 +1394,6 @@ static void gl1_gfx_set_viewport_wrapper(void *data, unsigned viewport_width,
    gl1_t               *gl1 = (gl1_t*)data;
    gl1_gfx_set_viewport(gl1,
          viewport_width, viewport_height, force_full, allow_rotate);
-}
-
-bool gl1_has_menu_frame(void)
-{
-   return (gl1_menu_frame != NULL);
 }
 
 #ifdef HAVE_OVERLAY
