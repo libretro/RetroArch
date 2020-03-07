@@ -57,7 +57,8 @@ static void *switch_font_init_font(void *data, const char *font_path,
 
    font->atlas = font->font_driver->get_atlas(font->font_data);
 
-   RARCH_LOG("Switch font driver initialized with backend %s\n", font->font_driver->ident);
+   RARCH_LOG("Switch font driver initialized with backend %s\n",
+         font->font_driver->ident);
 
    return font;
 }
@@ -78,10 +79,9 @@ static void switch_font_free_font(void *data, bool is_threaded)
 static int switch_font_get_message_width(void *data, const char *msg,
       unsigned msg_len, float scale)
 {
-   switch_font_t *font = (switch_font_t *)data;
-
    unsigned i;
-   int delta_x = 0;
+   int         delta_x = 0;
+   switch_font_t *font = (switch_font_t *)data;
 
    if (!font)
       return 0;
@@ -89,8 +89,8 @@ static int switch_font_get_message_width(void *data, const char *msg,
    for (i = 0; i < msg_len; i++)
    {
       const char *msg_tmp = &msg[i];
-      unsigned code = utf8_walk(&msg_tmp);
-      unsigned skip = msg_tmp - &msg[i];
+      unsigned       code = utf8_walk(&msg_tmp);
+      unsigned       skip = msg_tmp - &msg[i];
 
       if (skip > 1)
          i += skip - 1;
@@ -111,24 +111,19 @@ static int switch_font_get_message_width(void *data, const char *msg,
 }
 
 static void switch_font_render_line(
-    video_frame_info_t *video_info,
-    switch_font_t *font, const char *msg, unsigned msg_len,
-    float scale, const unsigned int color, float pos_x,
-    float pos_y, unsigned text_align)
+      switch_video_t *sw,
+      switch_font_t *font, const char *msg, unsigned msg_len,
+      float scale, const unsigned int color, float pos_x,
+      float pos_y, unsigned text_align)
 {
-   unsigned fb_width, fb_height;
    int delta_x        = 0;
    int delta_y        = 0;
-   switch_video_t* sw = (switch_video_t*)video_info->userdata;
-
-   if (!sw)
-      return;
-
-   fb_width           = sw->vp.full_width;
-   fb_height          = sw->vp.full_height;
+   unsigned fb_width  = sw->vp.full_width;
+   unsigned fb_height = sw->vp.full_height;
 
    if (sw->out_buffer)
    {
+      unsigned i;
       int x = roundf(pos_x * fb_width);
       int y = roundf((1.0f - pos_y) * fb_height);
 
@@ -142,7 +137,7 @@ static void switch_font_render_line(
             break;
       }
 
-      for (int i = 0; i < msg_len; i++)
+      for (i = 0; i < msg_len; i++)
       {
          int off_x, off_y, tex_x, tex_y, width, height, y;
          const char *msg_tmp = &msg[i];
@@ -192,13 +187,13 @@ static void switch_font_render_line(
 }
 
 static void switch_font_render_message(
-    video_frame_info_t *video_info,
-    switch_font_t *font, const char *msg, float scale,
-    const unsigned int color, float pos_x, float pos_y,
-    unsigned text_align)
+      switch_video_t *sw,
+      switch_font_t *font, const char *msg, float scale,
+      const unsigned int color, float pos_x, float pos_y,
+      unsigned text_align)
 {
-   int lines = 0;
    float line_height;
+   int lines          = 0;
 
    if (!msg || !*msg)
       return;
@@ -209,8 +204,9 @@ static void switch_font_render_message(
       int msgLen = strlen(msg);
       if (msgLen <= AVG_GLPYH_LIMIT)
       {
-         switch_font_render_line(video_info, font, msg, strlen(msg),
-               scale, color, pos_x, pos_y, text_align);
+         if (sw)
+            switch_font_render_line(sw, font, msg, strlen(msg),
+                  scale, color, pos_x, pos_y, text_align);
       }
       return;
    }
@@ -226,9 +222,10 @@ static void switch_font_render_message(
          unsigned msg_len = delim - msg;
          if (msg_len <= AVG_GLPYH_LIMIT)
          {
-            switch_font_render_line(video_info, font, msg, msg_len,
-                  scale, color, pos_x, pos_y - (float)lines * line_height,
-                  text_align);
+            if (sw)
+               switch_font_render_line(sw, font, msg, msg_len,
+                     scale, color, pos_x, pos_y - (float)lines * line_height,
+                     text_align);
          }
          msg += msg_len + 1;
          lines++;
@@ -238,9 +235,10 @@ static void switch_font_render_message(
          unsigned msg_len = strlen(msg);
          if (msg_len <= AVG_GLPYH_LIMIT)
          {
-            switch_font_render_line(video_info, font, msg, msg_len,
-                  scale, color, pos_x, pos_y - (float)lines * line_height,
-                  text_align);
+            if (sw)
+               switch_font_render_line(sw, font, msg, msg_len,
+                     scale, color, pos_x, pos_y - (float)lines * line_height,
+                     text_align);
          }
          break;
       }
@@ -255,7 +253,12 @@ static void switch_font_render_msg(
    float x, y, scale;
    enum text_alignment text_align;
    unsigned color, r, g, b, alpha;
-   switch_font_t *font = (switch_font_t *)data;
+   switch_font_t *font              = (switch_font_t *)data;
+   switch_video_t *sw               = (switch_video_t*)video_info->userdata;
+   settings_t *settings             = config_get_ptr();
+   float video_msg_color_r          = settings->floats.video_msg_color_r;
+   float video_msg_color_g          = settings->floats.video_msg_color_g;
+   float video_msg_color_b          = settings->floats.video_msg_color_b;
 
    if (!font || !msg || (msg && !*msg))
       return;
@@ -281,15 +284,15 @@ static void switch_font_render_msg(
       scale      = 1.0f;
       text_align = TEXT_ALIGN_LEFT;
 
-      r          = (video_info->font_msg_color_r * 255);
-      g          = (video_info->font_msg_color_g * 255);
-      b          = (video_info->font_msg_color_b * 255);
+      r          = (video_msg_color_r * 255);
+      g          = (video_msg_color_g * 255);
+      b          = (video_msg_color_b * 255);
       alpha      = 255;
       color      = COLOR_ABGR(r, g, b, alpha);
 
    }
 
-   switch_font_render_message(video_info, font, msg, scale,
+   switch_font_render_message(sw, font, msg, scale,
          color, x, y, text_align);
 }
 
@@ -317,14 +320,14 @@ static int switch_font_get_line_height(void *data)
 }
 
 font_renderer_t switch_font =
-    {
-        switch_font_init_font,
-        switch_font_free_font,
-        switch_font_render_msg,
-        "switchfont",
-        switch_font_get_glyph,
-        NULL, /* bind_block  */
-        NULL, /* flush_block */
-        switch_font_get_message_width,
-        switch_font_get_line_height
+{
+   switch_font_init_font,
+   switch_font_free_font,
+   switch_font_render_msg,
+   "switchfont",
+   switch_font_get_glyph,
+   NULL, /* bind_block  */
+   NULL, /* flush_block */
+   switch_font_get_message_width,
+   switch_font_get_line_height
 };
