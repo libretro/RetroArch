@@ -240,7 +240,7 @@ VIDEO CONTEXT
 
 #endif
 
-#if defined(__CELLOS_LV2__)
+#if defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
 #include "../gfx/drivers_context/ps3_ctx.c"
 #elif defined(ANDROID)
 #include "../gfx/drivers_context/android_ctx.c"
@@ -488,7 +488,9 @@ VIDEO DRIVER
 #include "../gfx/drivers/xvideo.c"
 #endif
 
-#if defined(GEKKO)
+#if defined(__PSL1GHT__)
+#include "../gfx/drivers/gcm_gfx.c"
+#elif defined(GEKKO)
 #include "../gfx/drivers/gx_gfx.c"
 #elif defined(PSP)
 #include "../gfx/drivers/psp1_gfx.c"
@@ -648,8 +650,12 @@ INPUT
 #include "../input/input_autodetect_builtin.c"
 
 #if defined(__CELLOS_LV2__)
+#ifdef __PSL1GHT__
+#include "../input/drivers/psl1ght_input.c"
+#else
 #include "../input/drivers/ps3_input.c"
 #include "../input/drivers_joypad/ps3_joypad.c"
+#endif
 #elif defined(SN_TARGET_PSP2) || defined(PSP) || defined(VITA)
 #include "../input/drivers/psp_input.c"
 #include "../input/drivers_joypad/psp_joypad.c"

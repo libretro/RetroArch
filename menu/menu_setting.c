@@ -43,7 +43,7 @@
 #include "../config.def.h"
 #include "../config.def.keybinds.h"
 
-#if defined(__CELLOS_LV2__)
+#if defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
 #include <sdk_version.h>
 
 #if (CELL_SDK_VERSION > 0x340000)
