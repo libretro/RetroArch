@@ -922,7 +922,9 @@ static void xmb_render_messagebox_internal(
    gfx_display_blend_begin(video_info->userdata);
 
    gfx_display_draw_texture_slice(
-         video_info,
+         video_info->userdata,
+         video_info->width,
+         video_info->height,
          x - longest_width/2 - xmb->margins_dialog,
          y + xmb->margins_slice - xmb->margins_dialog,
          256, 256,
@@ -3656,7 +3658,12 @@ static void xmb_draw_bg(
       else
          gfx_display_set_alpha(draw.color, coord_white[3]);
 
-      gfx_display_draw_gradient(&draw, video_info);
+      gfx_display_draw_gradient(&draw,
+            video_info->userdata,
+            video_info->width,
+            video_info->height,
+            video_info->menu_wallpaper_opacity
+            );
 
       draw.pipeline.id = VIDEO_SHADER_MENU_2;
 
@@ -3681,7 +3688,10 @@ static void xmb_draw_bg(
             break;
       }
 
-      gfx_display_draw_pipeline(&draw, video_info);
+      gfx_display_draw_pipeline(&draw,
+            video_info->userdata,
+            video_info->width,
+            video_info->height);
    }
    else
 #endif
@@ -3697,7 +3707,11 @@ static void xmb_draw_bg(
          gfx_display_set_alpha(draw.color, coord_white[3]);
 
       if (xmb_color_theme != XMB_THEME_WALLPAPER)
-         gfx_display_draw_gradient(&draw, video_info);
+         gfx_display_draw_gradient(&draw,
+            video_info->userdata,
+            video_info->width,
+            video_info->height,
+            video_info->menu_wallpaper_opacity);
 
       {
          bool add_opacity       = false;
@@ -3711,7 +3725,8 @@ static void xmb_draw_bg(
          if (libretro_running || xmb_color_theme == XMB_THEME_WALLPAPER)
             add_opacity = true;
 
-         gfx_display_draw_bg(&draw, video_info, add_opacity, menu_wallpaper_opacity);
+         gfx_display_draw_bg(&draw, video_info->userdata,
+               add_opacity, menu_wallpaper_opacity);
       }
    }
 

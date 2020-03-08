@@ -765,26 +765,24 @@ void gfx_display_draw_blend(
    gfx_display_blend_end(data);
 }
 
-void gfx_display_draw_pipeline(gfx_display_ctx_draw_t *draw,
-      video_frame_info_t *video_info)
+void gfx_display_draw_pipeline(
+      gfx_display_ctx_draw_t *draw,
+      void *userdata,
+      unsigned video_width,
+      unsigned video_height)
 {
-   void       *userdata    = video_info->userdata;
-   unsigned video_width    = video_info->width;
-   unsigned video_height   = video_info->height;
-
    if (dispctx && draw && dispctx->draw_pipeline)
       dispctx->draw_pipeline(draw, userdata,
             video_width, video_height);
 }
 
 void gfx_display_draw_bg(gfx_display_ctx_draw_t *draw,
-      video_frame_info_t *video_info, bool add_opacity_to_wallpaper,
+      void *userdata, bool add_opacity_to_wallpaper,
       float override_opacity)
 {
    static struct video_coords coords;
    const float *new_vertex       = NULL;
    const float *new_tex_coord    = NULL;
-   void *userdata                = video_info->userdata;
    if (!dispctx || !draw)
       return;
 
@@ -820,19 +818,19 @@ void gfx_display_draw_bg(gfx_display_ctx_draw_t *draw,
             userdata);
 }
 
-void gfx_display_draw_gradient(gfx_display_ctx_draw_t *draw,
-      video_frame_info_t *video_info)
+void gfx_display_draw_gradient(
+      gfx_display_ctx_draw_t *draw,
+      void *userdata,
+      unsigned video_width,
+      unsigned video_height,
+      float menu_wallpaper_opacity
+      )
 {
-   void *userdata               = video_info->userdata;
-   unsigned video_width         = video_info->width;
-   unsigned video_height        = video_info->height;
-   float menu_wallpaper_opacity = video_info->menu_wallpaper_opacity;
-
    draw->texture       = 0;
    draw->x             = 0;
    draw->y             = 0;
 
-   gfx_display_draw_bg(draw, video_info, false,
+   gfx_display_draw_bg(draw, userdata, false,
          menu_wallpaper_opacity);
    gfx_display_draw(draw, userdata,
          video_width, video_height);
@@ -975,7 +973,9 @@ void gfx_display_draw_texture(
  * The middle sections will only scale in the X axis, and the side
  * sections will only scale in the Y axis. */
 void gfx_display_draw_texture_slice(
-      video_frame_info_t *video_info,
+      void *userdata,
+      unsigned video_width,
+      unsigned video_height,
       int x, int y, unsigned w, unsigned h,
       unsigned new_w, unsigned new_h,
       unsigned width, unsigned height,
@@ -987,9 +987,6 @@ void gfx_display_draw_texture_slice(
    math_matrix_4x4 mymat;
    unsigned i;
    float V_BL[2], V_BR[2], V_TL[2], V_TR[2], T_BL[2], T_BR[2], T_TL[2], T_TR[2];
-   void *userdata           = video_info->userdata;
-   unsigned video_width     = video_info->width;
-   unsigned video_height    = video_info->height;
 
    /* need space for the coordinates of two triangles in a strip,
     * so 8 vertices */

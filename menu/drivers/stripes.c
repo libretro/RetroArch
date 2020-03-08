@@ -827,7 +827,9 @@ static void stripes_render_messagebox_internal(
    gfx_display_blend_begin(video_info->userdata);
 
    gfx_display_draw_texture_slice(
-         video_info,
+         video_info->userdata,
+         video_info->width,
+         video_info->height,
          x - longest_width/2 - stripes->margins_dialog,
          y + stripes->margins_slice - stripes->margins_dialog,
          256, 256,

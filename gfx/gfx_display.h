@@ -284,15 +284,24 @@ void gfx_display_draw_keyboard(
       char *grid[], unsigned id,
       unsigned text_color);
 
-void gfx_display_draw_pipeline(gfx_display_ctx_draw_t *draw,
-      video_frame_info_t *video_info);
+void gfx_display_draw_pipeline(
+      gfx_display_ctx_draw_t *draw,
+      void *userdata,
+      unsigned video_width,
+      unsigned video_height);
+
 void gfx_display_draw_bg(
       gfx_display_ctx_draw_t *draw,
-      video_frame_info_t *video_info,
+      void *userdata,
       bool add_opacity, float opacity_override);
+
 void gfx_display_draw_gradient(
       gfx_display_ctx_draw_t *draw,
-      video_frame_info_t *video_info);
+      void *userdata,
+      unsigned video_width,
+      unsigned video_height,
+      float menu_wallpaper_opacity
+      );
 
 void gfx_display_draw_quad(
       void *data,
@@ -318,10 +327,14 @@ void gfx_display_draw_texture(
       int x, int y, unsigned w, unsigned h,
       unsigned width, unsigned height,
       float *color, uintptr_t texture);
+
 void gfx_display_draw_texture_slice(
-      video_frame_info_t *video_info,
+      void *userdata,
+      unsigned video_width,
+      unsigned video_height,
       int x, int y, unsigned w, unsigned h,
-      unsigned new_w, unsigned new_h, unsigned width, unsigned height,
+      unsigned new_w, unsigned new_h,
+      unsigned width, unsigned height,
       float *color, unsigned offset, float scale_factor, uintptr_t texture);
 
 void gfx_display_rotate_z(gfx_display_ctx_rotate_draw_t *draw, void *data);

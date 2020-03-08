@@ -132,7 +132,9 @@ static void ozone_draw_cursor_slice(ozone_handle_t *ozone,
 
    /* Cursor without border */
    gfx_display_draw_texture_slice(
-      video_info,
+      video_info->userdata,
+      video_info->width,
+      video_info->height,
       slice_x,
       slice_y,
       80, 80,
@@ -146,7 +148,9 @@ static void ozone_draw_cursor_slice(ozone_handle_t *ozone,
 
    /* Tainted border */
    gfx_display_draw_texture_slice(
-      video_info,
+      video_info->userdata,
+      video_info->width,
+      video_info->height,
       slice_x,
       slice_y,
       80, 80,
@@ -530,17 +534,19 @@ void ozone_draw_messagebox(ozone_handle_t *ozone,
       unsigned slice_new_h = ozone->footer_font_glyph_height * (list->size + 2);
 
       gfx_display_draw_texture_slice(
-         video_info,
-         slice_x,
-         y,
-         256, 256,
-         slice_new_w,
-         slice_new_h,
-         width, height,
-         ozone->theme_dynamic.message_background,
-         16, scale_factor,
-         ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_DIALOG_SLICE]
-      );
+            video_info->userdata,
+            video_info->width,
+            video_info->height,
+            slice_x,
+            y,
+            256, 256,
+            slice_new_w,
+            slice_new_h,
+            width, height,
+            ozone->theme_dynamic.message_background,
+            16, scale_factor,
+            ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_DIALOG_SLICE]
+            );
    }
 
    for (i = 0; i < list->size; i++)
