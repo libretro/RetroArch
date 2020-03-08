@@ -85,11 +85,10 @@ static void gfx_display_vita2d_blend_end(video_frame_info_t *video_info)
 }
 
 static void gfx_display_vita2d_viewport(gfx_display_ctx_draw_t *draw,
-      video_frame_info_t *video_info)
+      void *data)
 {
-   if (draw){
+   if (draw)
       vita2d_set_viewport(draw->x, draw->y, draw->width, draw->height);
-   }
 }
 
 static void gfx_display_vita2d_draw(gfx_display_ctx_draw_t *draw,
@@ -121,7 +120,7 @@ static void gfx_display_vita2d_draw(gfx_display_ctx_draw_t *draw,
     if (!color)
        color           = gfx_display_vita2d_get_default_color();
 
-    gfx_display_vita2d_viewport(draw, video_info);
+    gfx_display_vita2d_viewport(draw, vita2d);
    
     vita2d_texture_tint_vertex *vertices = (vita2d_texture_tint_vertex *)vita2d_pool_memalign(
 	   draw->coords->vertices * sizeof(vita2d_texture_tint_vertex),
@@ -140,13 +139,13 @@ static void gfx_display_vita2d_draw(gfx_display_ctx_draw_t *draw,
     }
 
     const math_matrix_4x4 *mat = draw->matrix_data
-                     ? (const math_matrix_4x4*)draw->matrix_data : (const math_matrix_4x4*)gfx_display_vita2d_get_default_mvp(video_info->userdata);
+                     ? (const math_matrix_4x4*)draw->matrix_data : (const math_matrix_4x4*)gfx_display_vita2d_get_default_mvp(vita2d);
 
    switch (draw->pipeline.id)
    {
      default:
      {
-        vita2d_draw_array_textured_mat(texture, vertices, draw->coords->vertices, gfx_display_vita2d_get_default_mvp(video_info->userdata));
+        vita2d_draw_array_textured_mat(texture, vertices, draw->coords->vertices, gfx_display_vita2d_get_default_mvp(vita2d));
         break;
      }
   }

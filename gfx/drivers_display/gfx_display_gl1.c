@@ -93,7 +93,7 @@ static void gfx_display_gl1_blend_end(video_frame_info_t *video_info)
 }
 
 static void gfx_display_gl1_viewport(gfx_display_ctx_draw_t *draw,
-      video_frame_info_t *video_info)
+      void *data)
 {
    if (draw)
       glViewport(draw->x, draw->y, draw->width, draw->height);
@@ -115,7 +115,7 @@ static void gfx_display_gl1_draw(gfx_display_ctx_draw_t *draw,
    if (!draw->coords->lut_tex_coord)
       draw->coords->lut_tex_coord = gfx_display_gl1_get_default_tex_coords();
 
-   gfx_display_gl1_viewport(draw, video_info);
+   gfx_display_gl1_viewport(draw, gl1);
 
    glEnable(GL_TEXTURE_2D);
 
@@ -123,7 +123,7 @@ static void gfx_display_gl1_draw(gfx_display_ctx_draw_t *draw,
 
    mvp.data   = gl1;
    mvp.matrix = draw->matrix_data ? (math_matrix_4x4*)draw->matrix_data
-      : (math_matrix_4x4*)gfx_display_gl1_get_default_mvp(video_info->userdata);
+      : (math_matrix_4x4*)gfx_display_gl1_get_default_mvp(gl1);
 
    glMatrixMode(GL_PROJECTION);
    glPushMatrix();

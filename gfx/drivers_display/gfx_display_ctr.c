@@ -34,7 +34,7 @@ static void *gfx_display_ctr_get_default_mvp(void *data) { return NULL; }
 static void gfx_display_ctr_blend_begin(video_frame_info_t *video_info) { }
 static void gfx_display_ctr_blend_end(video_frame_info_t *video_info) { }
 static void gfx_display_ctr_viewport(gfx_display_ctx_draw_t *draw,
-      video_frame_info_t *video_info) { }
+      void *data) { }
 
 static void gfx_display_ctr_draw(gfx_display_ctx_draw_t *draw,
       video_frame_info_t *video_info)

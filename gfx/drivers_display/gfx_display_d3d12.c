@@ -58,10 +58,7 @@ static void gfx_display_d3d12_blend_end(video_frame_info_t *video_info)
    D3D12SetPipelineState(d3d12->queue.cmd, d3d12->sprites.pipe);
 }
 
-static void gfx_display_d3d12_viewport(gfx_display_ctx_draw_t *draw,
-      video_frame_info_t *video_info)
-{
-}
+static void gfx_display_d3d12_viewport(gfx_display_ctx_draw_t *draw, void *data) { }
 
 static void gfx_display_d3d12_draw(gfx_display_ctx_draw_t *draw,
       video_frame_info_t *video_info)
@@ -176,7 +173,7 @@ static void gfx_display_d3d12_draw(gfx_display_ctx_draw_t *draw,
       if (texture->dirty)
       {
          d3d12_upload_texture(d3d12->queue.cmd,
-               texture, video_info->userdata);
+               texture, d3d12);
 
          if (vertex_count > 1)
             D3D12SetPipelineState(d3d12->queue.cmd,

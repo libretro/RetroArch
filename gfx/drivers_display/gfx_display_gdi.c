@@ -112,10 +112,7 @@ static void gfx_display_gdi_draw_pipeline(gfx_display_ctx_draw_t *draw,
 {
 }
 
-static void gfx_display_gdi_viewport(gfx_display_ctx_draw_t *draw,
-      video_frame_info_t *video_info)
-{
-}
+static void gfx_display_gdi_viewport(gfx_display_ctx_draw_t *draw, void *data) { }
 
 static void gfx_display_gdi_restore_clear_color(void)
 {

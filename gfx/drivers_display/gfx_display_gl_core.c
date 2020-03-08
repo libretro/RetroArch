@@ -71,8 +71,7 @@ static const float *gfx_display_gl_core_get_default_tex_coords(void)
    return &gl_core_tex_coords[0];
 }
 
-static void gfx_display_gl_core_viewport(gfx_display_ctx_draw_t *draw,
-      video_frame_info_t *video_info)
+static void gfx_display_gl_core_viewport(gfx_display_ctx_draw_t *draw, void *data) 
 {
    if (draw)
       glViewport(draw->x, draw->y, draw->width, draw->height);
@@ -88,11 +87,11 @@ static void gfx_display_gl_core_draw_pipeline(gfx_display_ctx_draw_t *draw,
    static float t                = 0.0f;
    float yflip                   = 0.0f;
    video_coord_array_t *ca       = NULL;
-   gl_core_t *gl_core            = (gl_core_t*)video_info->userdata;
+   gl_core_t *gl                 = (gl_core_t*)video_info->userdata;
    unsigned video_width          = video_info->width;
    unsigned video_height         = video_info->height;
 
-   if (!gl_core || !draw)
+   if (!gl || !draw)
       return;
 
    draw->x                       = 0;
@@ -129,7 +128,7 @@ static void gfx_display_gl_core_draw_pipeline(gfx_display_ctx_draw_t *draw,
 
          /* Match UBO layout in shader. */
          memcpy(ubo_scratch_data,
-               gfx_display_gl_core_get_default_mvp(video_info->userdata),
+               gfx_display_gl_core_get_default_mvp(gl),
                sizeof(math_matrix_4x4));
          memcpy(ubo_scratch_data + sizeof(math_matrix_4x4),
                output_size,
@@ -178,7 +177,7 @@ static void gfx_display_gl_core_draw(gfx_display_ctx_draw_t *draw,
    if (!color)
       color           = gfx_display_gl_core_get_default_color();
 
-   gfx_display_gl_core_viewport(draw, video_info);
+   gfx_display_gl_core_viewport(draw, gl);
 
    glActiveTexture(GL_TEXTURE1);
    glBindTexture(GL_TEXTURE_2D, texture);
@@ -242,7 +241,7 @@ static void gfx_display_gl_core_draw(gfx_display_ctx_draw_t *draw,
    if (!loc)
    {
       const math_matrix_4x4 *mat = draw->matrix_data
-                     ? (const math_matrix_4x4*)draw->matrix_data : (const math_matrix_4x4*)gfx_display_gl_core_get_default_mvp(video_info->userdata);
+                     ? (const math_matrix_4x4*)draw->matrix_data : (const math_matrix_4x4*)gfx_display_gl_core_get_default_mvp(gl);
       if (gl->pipelines.alpha_blend_loc.flat_ubo_vertex >= 0)
          glUniform4fv(gl->pipelines.alpha_blend_loc.flat_ubo_vertex,
                       4, mat->data);

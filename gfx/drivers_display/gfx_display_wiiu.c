@@ -53,11 +53,7 @@ static void gfx_display_wiiu_blend_end(video_frame_info_t *video_info)
 
 }
 
-static void gfx_display_wiiu_viewport(gfx_display_ctx_draw_t *draw,
-      video_frame_info_t *video_info)
-{
-
-}
+static void gfx_display_wiiu_viewport(gfx_display_ctx_draw_t *draw, void *data) { }
 
 static void gfx_display_wiiu_draw(gfx_display_ctx_draw_t *draw,
       video_frame_info_t *video_info)

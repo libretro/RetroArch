@@ -56,10 +56,7 @@ static void gfx_display_d3d11_blend_end(video_frame_info_t *video_info)
          d3d11->blend_disable, NULL, D3D11_DEFAULT_SAMPLE_MASK);
 }
 
-static void gfx_display_d3d11_viewport(gfx_display_ctx_draw_t *draw,
-      video_frame_info_t *video_info)
-{
-}
+static void gfx_display_d3d11_viewport(gfx_display_ctx_draw_t *draw, void *data) { }
 
 static void gfx_display_d3d11_draw(gfx_display_ctx_draw_t *draw,
       video_frame_info_t *video_info)

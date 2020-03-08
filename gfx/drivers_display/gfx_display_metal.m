@@ -82,9 +82,7 @@ static void gfx_display_metal_draw_pipeline(gfx_display_ctx_draw_t *draw, video_
 }
 
 static void gfx_display_metal_viewport(gfx_display_ctx_draw_t *draw,
-                                        video_frame_info_t *video_info)
-{
-}
+      void *data) } { }
 
 static void gfx_display_metal_scissor_begin(video_frame_info_t *video_info, int x, int y, unsigned width, unsigned height)
 {

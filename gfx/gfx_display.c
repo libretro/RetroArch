@@ -83,8 +83,7 @@ static void gfx_display_null_draw(gfx_display_ctx_draw_t *draw,
       video_frame_info_t *video_info) { }
 static void gfx_display_null_draw_pipeline(gfx_display_ctx_draw_t *draw,
       video_frame_info_t *video_info) { }
-static void gfx_display_null_viewport(gfx_display_ctx_draw_t *draw,
-      video_frame_info_t *video_info) { }
+static void gfx_display_null_viewport(gfx_display_ctx_draw_t *draw, void *data) { }
 static void gfx_display_null_restore_clear_color(void) { }
 static void gfx_display_null_clear_color(gfx_display_ctx_clearcolor_t *clearcolor, video_frame_info_t *video_info) { }
 

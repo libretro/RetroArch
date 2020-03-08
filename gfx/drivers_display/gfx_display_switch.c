@@ -46,9 +46,7 @@ static void gfx_display_switch_draw_pipeline(
 }
 
 static void gfx_display_switch_viewport(gfx_display_ctx_draw_t *draw,
-      video_frame_info_t *video_info)
-{
-}
+      void *data) { }
 
 static void gfx_display_switch_restore_clear_color(void)
 {

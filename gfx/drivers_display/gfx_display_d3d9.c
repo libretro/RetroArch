@@ -98,10 +98,7 @@ static void gfx_display_d3d9_blend_end(video_frame_info_t *video_info)
    d3d9_disable_blend_func(d3d->dev);
 }
 
-static void gfx_display_d3d9_viewport(gfx_display_ctx_draw_t *draw,
-      video_frame_info_t *video_info)
-{
-}
+static void gfx_display_d3d9_viewport(gfx_display_ctx_draw_t *draw, void *data) { }
 
 static void gfx_display_d3d9_bind_texture(gfx_display_ctx_draw_t *draw,
       d3d9_video_t *d3d)
@@ -183,7 +180,7 @@ static void gfx_display_d3d9_draw(gfx_display_ctx_draw_t *draw,
          d3d->menu_display.buffer);
 
    if (!draw->matrix_data)
-      draw->matrix_data = gfx_display_d3d9_get_default_mvp(video_info->userdata);
+      draw->matrix_data = gfx_display_d3d9_get_default_mvp(d3d);
 
    /* ugh */
    matrix_4x4_scale(m1,       2.0,  2.0, 0);

@@ -100,9 +100,9 @@ static unsigned to_menu_pipeline(
 #endif
 
 static void gfx_display_vk_viewport(gfx_display_ctx_draw_t *draw,
-      video_frame_info_t *video_info)
+      void *data)
 {
-   vk_t *vk                      = (vk_t*)video_info->userdata;
+   vk_t *vk                      = (vk_t*)data;
 
    if (!vk || !draw)
       return;
@@ -164,7 +164,7 @@ static void gfx_display_vk_draw_pipeline(gfx_display_ctx_draw_t *draw,
 
          /* Match UBO layout in shader. */
          memcpy(ubo_scratch_data,
-               gfx_display_vk_get_default_mvp(video_info->userdata),
+               gfx_display_vk_get_default_mvp(vk),
                sizeof(math_matrix_4x4));
          memcpy(ubo_scratch_data + sizeof(math_matrix_4x4),
                output_size,
@@ -221,7 +221,7 @@ static void gfx_display_vk_draw(gfx_display_ctx_draw_t *draw,
    if (!color)
       color           = gfx_display_vk_get_default_color();
 
-   gfx_display_vk_viewport(draw, video_info);
+   gfx_display_vk_viewport(draw, vk);
 
    vk->tracker.dirty |= VULKAN_DIRTY_DYNAMIC_BIT;
 
@@ -284,7 +284,7 @@ static void gfx_display_vk_draw(gfx_display_ctx_draw_t *draw,
             (texture->default_smooth ? vk->samplers.linear
              : vk->samplers.nearest);
          call.uniform      = draw->matrix_data
-            ? draw->matrix_data : gfx_display_vk_get_default_mvp(video_info->userdata);
+            ? draw->matrix_data : gfx_display_vk_get_default_mvp(vk);
          call.uniform_size = sizeof(math_matrix_4x4);
          call.vbo          = &range;
          call.vertices     = draw->coords->vertices;
