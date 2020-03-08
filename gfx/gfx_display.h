@@ -121,7 +121,7 @@ typedef struct gfx_display_ctx_driver
    void (*clear_color)(gfx_display_ctx_clearcolor_t *clearcolor,
          video_frame_info_t *video_info);
    /* Get the default Model-View-Projection matrix */
-   void *(*get_default_mvp)(video_frame_info_t *video_info);
+   void *(*get_default_mvp)(void *data);
    /* Get the default vertices matrix */
    const float *(*get_default_vertices)(void);
    /* Get the default texture coordinates matrix */

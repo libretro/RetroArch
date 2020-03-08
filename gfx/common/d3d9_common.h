@@ -40,7 +40,6 @@ typedef struct d3d9_renderchain_driver
    void (*chain_free)(void *data);
    void *(*chain_new)(void);
    bool (*init)(d3d9_video_t *d3d,
-         const video_info_t *video_info,
          LPDIRECT3DDEVICE9 dev,
          const D3DVIEWPORT9 *final_viewport,
          const struct LinkInfo *info,

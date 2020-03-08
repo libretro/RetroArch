@@ -64,10 +64,9 @@ static const float *gfx_display_vita2d_get_default_tex_coords(void)
    return &vita2d_tex_coords[0];
 }
 
-static void *gfx_display_vita2d_get_default_mvp(
-      video_frame_info_t *video_info)
+static void *gfx_display_vita2d_get_default_mvp(void *data)
 {
-   vita_video_t *vita2d = (vita_video_t*)video_info->userdata;
+   vita_video_t *vita2d = (vita_video_t*)data;
 
    if (!vita2d)
       return NULL;
@@ -141,13 +140,13 @@ static void gfx_display_vita2d_draw(gfx_display_ctx_draw_t *draw,
     }
 
     const math_matrix_4x4 *mat = draw->matrix_data
-                     ? (const math_matrix_4x4*)draw->matrix_data : (const math_matrix_4x4*)gfx_display_vita2d_get_default_mvp(video_info);
+                     ? (const math_matrix_4x4*)draw->matrix_data : (const math_matrix_4x4*)gfx_display_vita2d_get_default_mvp(video_info->userdata);
 
    switch (draw->pipeline.id)
    {
      default:
      {
-        vita2d_draw_array_textured_mat(texture, vertices, draw->coords->vertices, gfx_display_vita2d_get_default_mvp(video_info));
+        vita2d_draw_array_textured_mat(texture, vertices, draw->coords->vertices, gfx_display_vita2d_get_default_mvp(video_info->userdata));
         break;
      }
   }

@@ -227,7 +227,6 @@ static bool d3d9_init_chain(d3d9_video_t *d3d, const video_info_t *video_info)
    if (
          !d3d->renderchain_driver->init(
             d3d,
-            &d3d->video_info,
             d3d->dev, &d3d->final_viewport, &link_info,
             d3d->video_info.rgb32)
       )

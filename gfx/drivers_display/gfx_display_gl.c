@@ -91,9 +91,9 @@ static const float *gfx_display_gl_get_default_tex_coords(void)
    return &gl_tex_coords[0];
 }
 
-static void *gfx_display_gl_get_default_mvp(video_frame_info_t *video_info)
+static void *gfx_display_gl_get_default_mvp(void *data)
 {
-   gl_t *gl = (gl_t*)video_info->userdata;
+   gl_t *gl = (gl_t*)data;
 
    if (!gl)
       return NULL;
@@ -250,7 +250,7 @@ static void gfx_display_gl_draw(gfx_display_ctx_draw_t *draw,
    gl->shader->set_coords(gl->shader_data, draw->coords);
    gl->shader->set_mvp(gl->shader_data,
          draw->matrix_data ? (math_matrix_4x4*)draw->matrix_data
-      : (math_matrix_4x4*)gfx_display_gl_get_default_mvp(video_info));
+      : (math_matrix_4x4*)gfx_display_gl_get_default_mvp(video_info->userdata));
 
 
    glDrawArrays(gfx_display_prim_to_gl_enum(

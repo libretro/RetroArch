@@ -48,9 +48,9 @@ static const float gl_core_colors[] = {
    1.0f, 1.0f, 1.0f, 1.0f,
 };
 
-static void *gfx_display_gl_core_get_default_mvp(video_frame_info_t *video_info)
+static void *gfx_display_gl_core_get_default_mvp(void *data)
 {
-   gl_core_t *gl_core = (gl_core_t*)video_info->userdata;
+   gl_core_t *gl_core = (gl_core_t*)data;
    if (!gl_core)
       return NULL;
    return &gl_core->mvp_no_rot;
@@ -129,7 +129,7 @@ static void gfx_display_gl_core_draw_pipeline(gfx_display_ctx_draw_t *draw,
 
          /* Match UBO layout in shader. */
          memcpy(ubo_scratch_data,
-               gfx_display_gl_core_get_default_mvp(video_info),
+               gfx_display_gl_core_get_default_mvp(video_info->userdata),
                sizeof(math_matrix_4x4));
          memcpy(ubo_scratch_data + sizeof(math_matrix_4x4),
                output_size,
@@ -242,7 +242,7 @@ static void gfx_display_gl_core_draw(gfx_display_ctx_draw_t *draw,
    if (!loc)
    {
       const math_matrix_4x4 *mat = draw->matrix_data
-                     ? (const math_matrix_4x4*)draw->matrix_data : (const math_matrix_4x4*)gfx_display_gl_core_get_default_mvp(video_info);
+                     ? (const math_matrix_4x4*)draw->matrix_data : (const math_matrix_4x4*)gfx_display_gl_core_get_default_mvp(video_info->userdata);
       if (gl->pipelines.alpha_blend_loc.flat_ubo_vertex >= 0)
          glUniform4fv(gl->pipelines.alpha_blend_loc.flat_ubo_vertex,
                       4, mat->data);

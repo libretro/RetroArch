@@ -76,7 +76,7 @@ static gfx_display_t *disp_get_ptr(void)
    return &dispgfx;
 }
 
-static void *gfx_display_null_get_default_mvp(video_frame_info_t *video_info) { return NULL; }
+static void *gfx_display_null_get_default_mvp(void *data) { return NULL; }
 static void gfx_display_null_blend_begin(video_frame_info_t *video_info) { }
 static void gfx_display_null_blend_end(video_frame_info_t *video_info) { }
 static void gfx_display_null_draw(gfx_display_ctx_draw_t *draw,
@@ -801,7 +801,7 @@ void gfx_display_draw_bg(gfx_display_ctx_draw_t *draw,
 
    if (dispctx && dispctx->get_default_mvp)
       draw->matrix_data = (math_matrix_4x4*)dispctx->get_default_mvp(
-            video_info);
+            video_info->userdata);
 }
 
 void gfx_display_draw_gradient(gfx_display_ctx_draw_t *draw,
@@ -1240,7 +1240,7 @@ void gfx_display_rotate_z(gfx_display_ctx_rotate_draw_t *draw,
       )
       return;
 
-   b = (math_matrix_4x4*)dispctx->get_default_mvp(video_info);
+   b = (math_matrix_4x4*)dispctx->get_default_mvp(video_info->userdata);
 
    if (!b)
       return;

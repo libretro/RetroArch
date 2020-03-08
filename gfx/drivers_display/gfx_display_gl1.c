@@ -54,9 +54,9 @@ static const float *gfx_display_gl1_get_default_tex_coords(void)
    return &gl1_menu_tex_coords[0];
 }
 
-static void *gfx_display_gl1_get_default_mvp(video_frame_info_t *video_info)
+static void *gfx_display_gl1_get_default_mvp(void *data)
 {
-   gl1_t *gl1 = (gl1_t*)video_info->userdata;
+   gl1_t *gl1 = (gl1_t*)data;
 
    if (!gl1)
       return NULL;
@@ -123,7 +123,7 @@ static void gfx_display_gl1_draw(gfx_display_ctx_draw_t *draw,
 
    mvp.data   = gl1;
    mvp.matrix = draw->matrix_data ? (math_matrix_4x4*)draw->matrix_data
-      : (math_matrix_4x4*)gfx_display_gl1_get_default_mvp(video_info);
+      : (math_matrix_4x4*)gfx_display_gl1_get_default_mvp(video_info->userdata);
 
    glMatrixMode(GL_PROJECTION);
    glPushMatrix();

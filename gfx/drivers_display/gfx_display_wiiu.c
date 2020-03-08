@@ -38,7 +38,7 @@ static const float *gfx_display_wiiu_get_default_tex_coords(void)
    return NULL;
 }
 
-static void *gfx_display_wiiu_get_default_mvp(video_frame_info_t *video_info)
+static void *gfx_display_wiiu_get_default_mvp(void *data)
 {
    return NULL;
 }

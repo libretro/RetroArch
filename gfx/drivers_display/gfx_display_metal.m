@@ -35,9 +35,9 @@ static const float *gfx_display_metal_get_default_tex_coords(void)
    return [MenuDisplay defaultTexCoords];
 }
 
-static void *gfx_display_metal_get_default_mvp(video_frame_info_t *video_info)
+static void *gfx_display_metal_get_default_mvp(void *data)
 {
-   MetalDriver *md = (__bridge MetalDriver *)video_info->userdata;
+   MetalDriver *md = (__bridge MetalDriver *)data;
    if (!md)
       return NULL;
 

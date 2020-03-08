@@ -22,7 +22,7 @@
 
 #include "../gfx_display.h"
 
-static void *gfx_display_switch_get_default_mvp(video_frame_info_t *video_info)
+static void *gfx_display_switch_get_default_mvp(void *data)
 {
    return NULL;
 }

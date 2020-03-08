@@ -28,13 +28,8 @@
 #include "../../ctr/gpu_old.h"
 
 static const float *gfx_display_ctr_get_default_vertices(void) { return NULL; }
-
 static const float *gfx_display_ctr_get_default_tex_coords(void) { return NULL; }
-
-static void *gfx_display_ctr_get_default_mvp(video_frame_info_t *video_info)
-{
-   return NULL;
-}
+static void *gfx_display_ctr_get_default_mvp(void *data) { return NULL; }
 
 static void gfx_display_ctr_blend_begin(video_frame_info_t *video_info) { }
 static void gfx_display_ctr_blend_end(video_frame_info_t *video_info) { }

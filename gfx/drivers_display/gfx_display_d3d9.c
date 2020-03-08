@@ -53,7 +53,7 @@ static const float *gfx_display_d3d9_get_default_tex_coords(void)
    return &d3d9_tex_coords[0];
 }
 
-static void *gfx_display_d3d9_get_default_mvp(video_frame_info_t *video_info)
+static void *gfx_display_d3d9_get_default_mvp(void *data)
 {
    static math_matrix_4x4 id;
    matrix_4x4_identity(id);
@@ -183,7 +183,7 @@ static void gfx_display_d3d9_draw(gfx_display_ctx_draw_t *draw,
          d3d->menu_display.buffer);
 
    if (!draw->matrix_data)
-      draw->matrix_data = gfx_display_d3d9_get_default_mvp(video_info);
+      draw->matrix_data = gfx_display_d3d9_get_default_mvp(video_info->userdata);
 
    /* ugh */
    matrix_4x4_scale(m1,       2.0,  2.0, 0);
