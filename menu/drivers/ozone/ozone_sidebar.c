@@ -153,7 +153,9 @@ void ozone_draw_sidebar(ozone_handle_t *ozone, video_frame_info_t *video_info)
    if (ozone->horizontal_list)
       horizontal_list_size = (unsigned)ozone->horizontal_list->size;
 
-   gfx_display_scissor_begin(video_info, 0, ozone->dimensions.header_height + ozone->dimensions.spacer_1px, (unsigned) ozone->dimensions.sidebar_width, video_height - ozone->dimensions.header_height - ozone->dimensions.footer_height - ozone->dimensions.spacer_1px);
+   gfx_display_scissor_begin(video_info->userdata,
+         video_info->width, video_info->height,
+         0, ozone->dimensions.header_height + ozone->dimensions.spacer_1px, (unsigned) ozone->dimensions.sidebar_width, video_height - ozone->dimensions.header_height - ozone->dimensions.footer_height - ozone->dimensions.spacer_1px);
 
    /* Background */
    sidebar_height = video_height - ozone->dimensions.header_height - ozone->dimensions.sidebar_gradient_height * 2 - ozone->dimensions.footer_height;
@@ -296,7 +298,8 @@ console_iterate:
    font_driver_flush(video_width, video_height, ozone->fonts.sidebar);
    ozone->raster_blocks.sidebar.carr.coords.vertices = 0;
 
-   gfx_display_scissor_end(video_info);
+   gfx_display_scissor_end(video_info->userdata, video_info->width,
+         video_info->height);
 }
 
 void ozone_go_to_sidebar(ozone_handle_t *ozone, uintptr_t tag)

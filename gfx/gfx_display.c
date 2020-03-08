@@ -645,13 +645,11 @@ void gfx_display_blend_end(void *data)
 }
 
 /* Begin scissoring operation */
-void gfx_display_scissor_begin(video_frame_info_t *video_info,
+void gfx_display_scissor_begin(void *userdata,
+      unsigned video_width,
+      unsigned video_height,
       int x, int y, unsigned width, unsigned height)
 {
-   unsigned video_width  = video_info->width;
-   unsigned video_height = video_info->height;
-   void *userdata        = video_info->userdata;
-
    if (dispctx && dispctx->scissor_begin)
    {
       if (y < 0)
@@ -692,12 +690,15 @@ void gfx_display_scissor_begin(video_frame_info_t *video_info,
 }
 
 /* End scissoring operation */
-void gfx_display_scissor_end(video_frame_info_t *video_info)
+void gfx_display_scissor_end(
+      void *userdata,
+      unsigned video_width,
+      unsigned video_height
+      )
 {
    if (dispctx && dispctx->scissor_end)
-      dispctx->scissor_end(video_info->userdata,
-            video_info->width,
-            video_info->height);
+      dispctx->scissor_end(userdata,
+            video_width, video_height);
 }
 
 font_data_t *gfx_display_font_file(

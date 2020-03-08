@@ -1229,7 +1229,9 @@ static void gfx_widgets_draw_task_msg(menu_widget_msg_t *msg,
       font_driver_flush(video_width, video_height, font_regular);
       font_raster_regular.carr.coords.vertices  = 0;
 
-      gfx_display_scissor_begin(video_info, rect_x, rect_y, rect_width, rect_height);
+      gfx_display_scissor_begin(video_info->userdata,
+            video_info->width, video_info->height,
+            rect_x, rect_y, rect_width, rect_height);
       gfx_display_draw_text(font_regular,
          msg->msg_new,
          msg_queue_task_text_start_x,
@@ -1262,7 +1264,8 @@ static void gfx_widgets_draw_task_msg(menu_widget_msg_t *msg,
       font_driver_flush(video_width, video_height, font_regular);
       font_raster_regular.carr.coords.vertices  = 0;
 
-      gfx_display_scissor_end(video_info);
+      gfx_display_scissor_end(video_info->userdata,
+            video_width, video_height);
    }
 
    /* Progress text */
@@ -1305,8 +1308,10 @@ static void gfx_widgets_draw_regular_msg(menu_widget_msg_t *msg, video_frame_inf
       font_raster_regular.carr.coords.vertices  = 0;
       font_raster_bold.carr.coords.vertices     = 0;
 
-      gfx_display_scissor_begin(video_info, msg_queue_scissor_start_x, 0,
-         (msg_queue_scissor_start_x + msg->width - simple_widget_padding*2) * msg->unfold, video_height);
+      gfx_display_scissor_begin(video_info->userdata,
+            video_info->width, video_info->height,
+            msg_queue_scissor_start_x, 0,
+            (msg_queue_scissor_start_x + msg->width - simple_widget_padding*2) * msg->unfold, video_height);
    }
 
    if (msg_queue_has_icons)
@@ -1354,7 +1359,8 @@ static void gfx_widgets_draw_regular_msg(menu_widget_msg_t *msg, video_frame_inf
       font_raster_regular.carr.coords.vertices  = 0;
       font_raster_bold.carr.coords.vertices     = 0;
 
-      gfx_display_scissor_end(video_info);
+      gfx_display_scissor_end(video_info->userdata,
+            video_width, video_height);
    }
 
    if (msg_queue_has_icons)
@@ -1668,10 +1674,11 @@ void gfx_widgets_frame(void *data)
          /* I _think_ cheevo_unfold changes in another thread */
          scissor_me_timbers = (fabs(cheevo_unfold - 1.0f) > 0.01);
          if (scissor_me_timbers)
-            gfx_display_scissor_begin(video_info,
-               cheevo_height, 0,
-               (unsigned)((float)(cheevo_width)*cheevo_unfold),
-               cheevo_height);
+            gfx_display_scissor_begin(video_info->userdata,
+                  video_info->width, video_info->height,
+                  cheevo_height, 0,
+                  (unsigned)((float)(cheevo_width)*cheevo_unfold),
+                  cheevo_height);
 
          /* Backdrop */
          gfx_display_draw_quad(video_info,
@@ -1708,7 +1715,8 @@ void gfx_widgets_frame(void *data)
          {
             font_driver_flush(video_width, video_height, font_regular);
             font_raster_regular.carr.coords.vertices = 0;
-            gfx_display_scissor_end(video_info);
+            gfx_display_scissor_end(video_info->userdata,
+                  video_width, video_height);
          }
       }
 

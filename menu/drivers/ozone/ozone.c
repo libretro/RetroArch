@@ -2118,7 +2118,12 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
    ozone_draw_sidebar(ozone, video_info);
 
    /* Menu entries */
-   gfx_display_scissor_begin(video_info, ozone->sidebar_offset + (unsigned) ozone->dimensions.sidebar_width, ozone->dimensions.header_height + ozone->dimensions.spacer_1px, video_width - (unsigned) ozone->dimensions.sidebar_width + (-ozone->sidebar_offset), video_height - ozone->dimensions.header_height - ozone->dimensions.footer_height - ozone->dimensions.spacer_1px);
+   gfx_display_scissor_begin(video_info->userdata,
+         video_info->width, video_info->height,
+         ozone->sidebar_offset + (unsigned) ozone->dimensions.sidebar_width,
+         ozone->dimensions.header_height + ozone->dimensions.spacer_1px,
+         video_width - (unsigned) ozone->dimensions.sidebar_width + (-ozone->sidebar_offset),
+         video_height - ozone->dimensions.header_height - ozone->dimensions.footer_height - ozone->dimensions.spacer_1px);
 
    /* Current list */
    ozone_draw_entries(ozone,
@@ -2147,7 +2152,8 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
    if (ozone->show_thumbnail_bar)
       ozone_draw_thumbnail_bar(ozone, video_info);
 
-   gfx_display_scissor_end(video_info);
+   gfx_display_scissor_end(video_info->userdata, video_info->width,
+         video_info->height);
 
    /* Flush first layer of text */
    font_driver_flush(video_width, video_height, ozone->fonts.footer);

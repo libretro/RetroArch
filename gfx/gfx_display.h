@@ -235,8 +235,8 @@ font_data_t *gfx_display_font(
       float font_size,
       bool video_is_threaded);
 
-void gfx_display_scissor_begin(video_frame_info_t *video_info, int x, int y, unsigned width, unsigned height);
-void gfx_display_scissor_end(video_frame_info_t *video_info);
+void gfx_display_scissor_begin(void *data, unsigned video_width, unsigned video_height, int x, int y, unsigned width, unsigned height);
+void gfx_display_scissor_end(void *data, unsigned width, unsigned height);
 
 void gfx_display_font_free(font_data_t *font);
 
