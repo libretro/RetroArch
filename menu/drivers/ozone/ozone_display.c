@@ -225,7 +225,7 @@ void ozone_draw_icon(
    rotate_draw.scale_z      = 1;
    rotate_draw.scale_enable = true;
 
-   gfx_display_rotate_z(&rotate_draw, video_info);
+   gfx_display_rotate_z(&rotate_draw, video_info->userdata);
 
    coords.vertices      = 4;
    coords.vertex        = NULL;

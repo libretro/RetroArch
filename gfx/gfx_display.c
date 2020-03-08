@@ -937,7 +937,7 @@ void gfx_display_draw_texture(
    draw.pipeline.id         = 0;
    coords.color             = (const float*)color;
 
-   gfx_display_rotate_z(&rotate_draw, video_info);
+   gfx_display_rotate_z(&rotate_draw, video_info->userdata);
 
    draw.texture             = texture;
    draw.x                   = x;
@@ -1027,7 +1027,7 @@ void gfx_display_draw_texture_slice(
    draw.pipeline.id         = 0;
    coords.color             = (const float*)(color == NULL ? colors : color);
 
-   gfx_display_rotate_z(&rotate_draw, video_info);
+   gfx_display_rotate_z(&rotate_draw, video_info->userdata);
 
    draw.texture             = texture;
    draw.x                   = 0;
@@ -1233,8 +1233,7 @@ void gfx_display_draw_texture_slice(
    free(tex_coord);
 }
 
-void gfx_display_rotate_z(gfx_display_ctx_rotate_draw_t *draw,
-      video_frame_info_t *video_info)
+void gfx_display_rotate_z(gfx_display_ctx_rotate_draw_t *draw, void *data)
 {
    math_matrix_4x4 matrix_rotated, matrix_scaled;
    math_matrix_4x4 *b = NULL;
@@ -1247,7 +1246,7 @@ void gfx_display_rotate_z(gfx_display_ctx_rotate_draw_t *draw,
       )
       return;
 
-   b = (math_matrix_4x4*)dispctx->get_default_mvp(video_info->userdata);
+   b = (math_matrix_4x4*)dispctx->get_default_mvp(data);
 
    if (!b)
       return;

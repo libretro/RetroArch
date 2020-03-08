@@ -308,8 +308,7 @@ void gfx_display_draw_texture_slice(
       unsigned new_w, unsigned new_h, unsigned width, unsigned height,
       float *color, unsigned offset, float scale_factor, uintptr_t texture);
 
-void gfx_display_rotate_z(gfx_display_ctx_rotate_draw_t *draw,
-      video_frame_info_t *video_info);
+void gfx_display_rotate_z(gfx_display_ctx_rotate_draw_t *draw, void *data);
 
 font_data_t *gfx_display_font_file(char* fontpath, float font_size, bool is_threaded);
 

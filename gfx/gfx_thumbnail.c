@@ -727,7 +727,7 @@ void gfx_thumbnail_draw(
       rotate_draw.scale_z      = 1.0f;
       rotate_draw.scale_enable = false;
 
-      gfx_display_rotate_z(&rotate_draw, video_info);
+      gfx_display_rotate_z(&rotate_draw, video_info->userdata);
 
       /* Configure draw object
        * > Note: Colour, width/height and position must
