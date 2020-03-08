@@ -222,7 +222,6 @@ OBJ += \
        input/input_mapper.o \
        led/led_driver.o \
        gfx/video_coord_array.o \
-       gfx/video_display_server.o \
        gfx/video_crt_switch.o \
 		 gfx/gfx_display.o \
        gfx/gfx_animation.o \

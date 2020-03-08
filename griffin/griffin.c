@@ -920,7 +920,6 @@ DRIVERS
 #include "../gfx/gfx_display.c"
 #include "../gfx/gfx_thumbnail_path.c"
 #include "../gfx/gfx_thumbnail.c"
-#include "../gfx/video_display_server.c"
 #include "../gfx/video_coord_array.c"
 #ifdef HAVE_AUDIOMIXER
 #include "../libretro-common/audio/audio_mixer.c"
