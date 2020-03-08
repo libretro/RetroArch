@@ -245,7 +245,8 @@ void ozone_draw_icon(
    draw.prim_type       = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
    draw.pipeline.id     = 0;
 
-   gfx_display_draw(&draw, video_info);
+   gfx_display_draw(&draw, video_info->userdata,
+         video_info->width, video_info->height);
 }
 
 void ozone_draw_backdrop(video_frame_info_t *video_info, float alpha)

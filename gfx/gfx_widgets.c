@@ -779,7 +779,8 @@ static void gfx_widgets_draw_icon(
    draw.prim_type       = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
    draw.pipeline.id     = 0;
 
-   gfx_display_draw(&draw, video_info);
+   gfx_display_draw(&draw, video_info->userdata,
+         video_info->width, video_info->height);
 }
 
 #ifdef HAVE_TRANSLATE
@@ -828,7 +829,8 @@ static void gfx_widgets_draw_icon_blend(
    draw.prim_type       = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
    draw.pipeline.id     = 0;
 
-   gfx_display_draw_blend(&draw, video_info);
+   gfx_display_draw_blend(&draw, video_info->userdata,
+         video_info->width, video_info->height);
 }
 #endif
 

@@ -832,7 +832,8 @@ void gfx_thumbnail_draw(
             draw.y       = shadow_y;
 
             /* Draw shadow */
-            gfx_display_draw(&draw, video_info);
+            gfx_display_draw(&draw, video_info->userdata,
+                  video_info->width, video_info->height);
          }
       }
 
@@ -844,7 +845,8 @@ void gfx_thumbnail_draw(
       draw.y       = draw_y;
 
       /* Draw thumbnail */
-      gfx_display_draw(&draw, video_info);
+      gfx_display_draw(&draw, video_info->userdata,
+            video_info->width, video_info->height);
       gfx_display_blend_end(video_info->userdata);
    }
 }

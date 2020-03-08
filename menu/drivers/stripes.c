@@ -618,7 +618,8 @@ static void stripes_draw_icon(
          draw.y         = draw.y + (icon_size-draw.width)/2;
       }
 #endif
-      gfx_display_draw(&draw, video_info);
+      gfx_display_draw(&draw, video_info->userdata,
+            video_info->width, video_info->height);
    }
 
    coords.color         = (const float*)color;
@@ -632,7 +633,8 @@ static void stripes_draw_icon(
       draw.y            = draw.y + (icon_size-draw.width)/2;
    }
 #endif
-   gfx_display_draw(&draw, video_info);
+   gfx_display_draw(&draw, video_info->userdata,
+         video_info->width, video_info->height);
 }
 
 static void stripes_draw_text(
@@ -2746,7 +2748,8 @@ static void stripes_draw_bg(
    draw.pipeline.id = 0;
 
    gfx_display_blend_begin(video_info->userdata);
-   gfx_display_draw(&draw, video_info);
+   gfx_display_draw(&draw, video_info->userdata,
+         video_info->width, video_info->height);
    gfx_display_blend_end(video_info->userdata);
 }
 
@@ -2784,7 +2787,8 @@ static void stripes_draw_dark_layer(
    draw.pipeline.id = 0;
 
    gfx_display_blend_begin(video_info->userdata);
-   gfx_display_draw(&draw, video_info);
+   gfx_display_draw(&draw, video_info->userdata,
+         video_info->width, video_info->height);
    gfx_display_blend_end(video_info->userdata);
 }
 

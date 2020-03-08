@@ -262,12 +262,21 @@ void gfx_display_set_framebuffer_dirty_flag(void);
 void gfx_display_unset_framebuffer_dirty_flag(void);
 bool gfx_display_init_first_driver(bool video_is_threaded);
 bool gfx_display_restore_clear_color(void);
-void gfx_display_clear_color(gfx_display_ctx_clearcolor_t *color,
-      video_frame_info_t *video_info);
+
+/* TODO/FIXME - this is no longer used - consider getting rid of it */
+void gfx_display_clear_color(gfx_display_ctx_clearcolor_t *color, void *data);
+
 void gfx_display_draw(gfx_display_ctx_draw_t *draw,
-      video_frame_info_t *video_info);
-void gfx_display_draw_blend(gfx_display_ctx_draw_t *draw,
-      video_frame_info_t *video_info);
+      void *data,
+      unsigned video_width, 
+      unsigned video_height);
+
+void gfx_display_draw_blend(
+      gfx_display_ctx_draw_t *draw,
+      void *data,
+      unsigned video_width,
+      unsigned video_height);
+
 void gfx_display_draw_keyboard(
       uintptr_t hover_texture,
       const font_data_t *font,

@@ -724,15 +724,17 @@ bool gfx_display_restore_clear_color(void)
    return true;
 }
 
-void gfx_display_clear_color(gfx_display_ctx_clearcolor_t *color,
-      video_frame_info_t *video_info)
+/* TODO/FIXME - this is no longer used - consider getting rid of it */
+void gfx_display_clear_color(gfx_display_ctx_clearcolor_t *color, void *data)
 {
    if (dispctx && dispctx->clear_color)
-      dispctx->clear_color(color, video_info->userdata);
+      dispctx->clear_color(color, data);
 }
 
 void gfx_display_draw(gfx_display_ctx_draw_t *draw,
-      video_frame_info_t *video_info)
+      void *data,
+      unsigned video_width, 
+      unsigned video_height)
 {
    if (!dispctx || !draw || !dispctx->draw)
       return;
@@ -741,12 +743,14 @@ void gfx_display_draw(gfx_display_ctx_draw_t *draw,
       return;
    if (draw->width <= 0)
       return;
-   dispctx->draw(draw, video_info->userdata,
-         video_info->width, video_info->height);
+   dispctx->draw(draw, data, video_width, video_height);
 }
 
-void gfx_display_draw_blend(gfx_display_ctx_draw_t *draw,
-      video_frame_info_t *video_info)
+void gfx_display_draw_blend(
+      gfx_display_ctx_draw_t *draw,
+      void *data,
+      unsigned video_width,
+      unsigned video_height)
 {
    if (!dispctx || !draw || !dispctx->draw)
       return;
@@ -755,10 +759,9 @@ void gfx_display_draw_blend(gfx_display_ctx_draw_t *draw,
       return;
    if (draw->width <= 0)
       return;
-   gfx_display_blend_begin(video_info->userdata);
-   dispctx->draw(draw, video_info->userdata,
-         video_info->width, video_info->height);
-   gfx_display_blend_end(video_info->userdata);
+   gfx_display_blend_begin(data);
+   dispctx->draw(draw, data, video_width, video_height);
+   gfx_display_blend_end(data);
 }
 
 void gfx_display_draw_pipeline(gfx_display_ctx_draw_t *draw,
@@ -820,7 +823,8 @@ void gfx_display_draw_gradient(gfx_display_ctx_draw_t *draw,
 
    gfx_display_draw_bg(draw, video_info, false,
          video_info->menu_wallpaper_opacity);
-   gfx_display_draw(draw, video_info);
+   gfx_display_draw(draw, video_info->userdata,
+         video_info->width, video_info->height);
 }
 
 void gfx_display_draw_quad(
@@ -853,7 +857,8 @@ void gfx_display_draw_quad(
    draw.scale_factor = 1.0f;
    draw.rotation     = 0.0f;
 
-   gfx_display_draw(&draw, video_info);
+   gfx_display_draw(&draw, video_info->userdata,
+         video_info->width, video_info->height);
 
    if (dispctx && dispctx->blend_end)
       dispctx->blend_end(video_info->userdata);
@@ -903,7 +908,8 @@ void gfx_display_draw_polygon(
    draw.scale_factor = 1.0f;
    draw.rotation     = 0.0f;
 
-   gfx_display_draw(&draw, video_info);
+   gfx_display_draw(&draw, video_info->userdata,
+         video_info->width, video_info->height);
 
    if (dispctx && dispctx->blend_end)
       dispctx->blend_end(video_info->userdata);
@@ -942,7 +948,8 @@ void gfx_display_draw_texture(
    draw.texture             = texture;
    draw.x                   = x;
    draw.y                   = height - y;
-   gfx_display_draw(&draw, video_info);
+   gfx_display_draw(&draw, video_info->userdata,
+         video_info->width, video_info->height);
 }
 
 /* Draw the texture split into 9 sections, without scaling the corners.
@@ -1058,7 +1065,8 @@ void gfx_display_draw_texture_slice(
    tex_coord[6] = T_TR[0];
    tex_coord[7] = T_TR[1];
 
-   gfx_display_draw(&draw, video_info);
+   gfx_display_draw(&draw, video_info->userdata,
+         video_info->width, video_info->height);
 
    /* top-middle section */
    vert_coord[0] = V_BL[0] + vert_woff;
@@ -1079,7 +1087,8 @@ void gfx_display_draw_texture_slice(
    tex_coord[6] = T_TR[0] + tex_mid_width;
    tex_coord[7] = T_TR[1];
 
-   gfx_display_draw(&draw, video_info);
+   gfx_display_draw(&draw, video_info->userdata,
+         video_info->width, video_info->height);
 
    /* top-right corner */
    vert_coord[0] = V_BL[0] + vert_woff + vert_scaled_mid_width;
@@ -1100,7 +1109,8 @@ void gfx_display_draw_texture_slice(
    tex_coord[6] = T_TR[0] + tex_mid_width + tex_woff;
    tex_coord[7] = T_TR[1];
 
-   gfx_display_draw(&draw, video_info);
+   gfx_display_draw(&draw, video_info->userdata,
+         video_info->width, video_info->height);
 
    /* middle-left section */
    vert_coord[0] = V_BL[0];
@@ -1121,7 +1131,8 @@ void gfx_display_draw_texture_slice(
    tex_coord[6] = T_TR[0];
    tex_coord[7] = T_TR[1] + tex_hoff;
 
-   gfx_display_draw(&draw, video_info);
+   gfx_display_draw(&draw, video_info->userdata,
+         video_info->width, video_info->height);
 
    /* center section */
    vert_coord[0] = V_BL[0] + vert_woff;
@@ -1142,7 +1153,8 @@ void gfx_display_draw_texture_slice(
    tex_coord[6] = T_TR[0] + tex_mid_width;
    tex_coord[7] = T_TR[1] + tex_hoff;
 
-   gfx_display_draw(&draw, video_info);
+   gfx_display_draw(&draw, video_info->userdata,
+         video_info->width, video_info->height);
 
    /* middle-right section */
    vert_coord[0] = V_BL[0] + vert_woff + vert_scaled_mid_width;
@@ -1163,7 +1175,8 @@ void gfx_display_draw_texture_slice(
    tex_coord[6] = T_TR[0] + tex_woff + tex_mid_width;
    tex_coord[7] = T_TR[1] + tex_hoff;
 
-   gfx_display_draw(&draw, video_info);
+   gfx_display_draw(&draw, video_info->userdata,
+         video_info->width, video_info->height);
 
    /* bottom-left corner */
    vert_coord[0] = V_BL[0];
@@ -1184,7 +1197,8 @@ void gfx_display_draw_texture_slice(
    tex_coord[6] = T_TR[0];
    tex_coord[7] = T_TR[1] + tex_hoff + tex_mid_height;
 
-   gfx_display_draw(&draw, video_info);
+   gfx_display_draw(&draw, video_info->userdata,
+         video_info->width, video_info->height);
 
    /* bottom-middle section */
    vert_coord[0] = V_BL[0] + vert_woff;
@@ -1205,7 +1219,8 @@ void gfx_display_draw_texture_slice(
    tex_coord[6] = T_TR[0] + tex_mid_width;
    tex_coord[7] = T_TR[1] + tex_hoff + tex_mid_height;
 
-   gfx_display_draw(&draw, video_info);
+   gfx_display_draw(&draw, video_info->userdata,
+         video_info->width, video_info->height);
 
    /* bottom-right corner */
    vert_coord[0] = V_BL[0] + vert_woff + vert_scaled_mid_width;
@@ -1226,7 +1241,8 @@ void gfx_display_draw_texture_slice(
    tex_coord[6] = T_TR[0] + tex_woff + tex_mid_width;
    tex_coord[7] = T_TR[1] + tex_hoff + tex_mid_height;
 
-   gfx_display_draw(&draw, video_info);
+   gfx_display_draw(&draw, video_info->userdata,
+         video_info->width, video_info->height);
 
    free(colors);
    free(vert_coord);
@@ -1296,7 +1312,8 @@ void gfx_display_draw_cursor(
    draw.prim_type       = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
    draw.pipeline.id     = 0;
 
-   gfx_display_draw(&draw, video_info);
+   gfx_display_draw(&draw, video_info->userdata,
+         video_info->width, video_info->height);
 
    if (dispctx && dispctx->blend_end)
       dispctx->blend_end(video_info->userdata);

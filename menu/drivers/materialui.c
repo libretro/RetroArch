@@ -1750,7 +1750,8 @@ static void materialui_draw_icon(
    draw.prim_type       = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
    draw.pipeline.id     = 0;
 
-   gfx_display_draw(&draw, video_info);
+   gfx_display_draw(&draw, video_info->userdata,
+         video_info->width, video_info->height);
    gfx_display_blend_end(video_info->userdata);
 }
 
@@ -3530,7 +3531,8 @@ static void materialui_render_background(materialui_handle_t *mui, video_frame_i
    /* Draw background */
    gfx_display_blend_begin(video_info->userdata);
    gfx_display_draw_bg(&draw, video_info, add_opacity, opacity_override);
-   gfx_display_draw(&draw, video_info);
+   gfx_display_draw(&draw, video_info->userdata,
+         video_info->width, video_info->height);
    gfx_display_blend_end(video_info->userdata);
 }
 
