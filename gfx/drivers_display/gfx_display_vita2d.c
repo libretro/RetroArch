@@ -191,7 +191,9 @@ static bool gfx_display_vita2d_font_init_first(
 
 static void gfx_display_vita2d_scissor_end(video_frame_info_t *video_info)
 {
-   vita2d_set_region_clip(SCE_GXM_REGION_CLIP_NONE, 0, 0, video_info->width, video_info->height);
+   unsigned video_width          = video_info->width;
+   unsigned video_height         = video_info->height;
+   vita2d_set_region_clip(SCE_GXM_REGION_CLIP_NONE, 0, 0, video_width, video_height);
    vita2d_disable_clipping();
 }
 

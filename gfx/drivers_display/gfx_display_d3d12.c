@@ -311,15 +311,17 @@ void gfx_display_d3d12_scissor_begin(video_frame_info_t *video_info, int x, int 
 void gfx_display_d3d12_scissor_end(video_frame_info_t *video_info)
 {
    D3D12_RECT rect;
-   d3d12_video_t *d3d12 = (d3d12_video_t*)video_info->userdata;
+   d3d12_video_t *d3d12  = (d3d12_video_t*)video_info->userdata;
+   unsigned video_width  = video_info->width;
+   unsigned video_height = video_info->height;
 
    if (!d3d12)
       return;
 
    rect.left            = 0;
    rect.top             = 0;
-   rect.right           = video_info->width;
-   rect.bottom          = video_info->height;
+   rect.right           = video_width;
+   rect.bottom          = video_height;
 
    D3D12RSSetScissorRects(d3d12->queue.cmd, 1, &rect);
 }

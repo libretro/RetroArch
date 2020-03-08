@@ -89,6 +89,8 @@ static void gfx_display_gl_core_draw_pipeline(gfx_display_ctx_draw_t *draw,
    float yflip                   = 0.0f;
    video_coord_array_t *ca       = NULL;
    gl_core_t *gl_core            = (gl_core_t*)video_info->userdata;
+   unsigned video_width          = video_info->width;
+   unsigned video_height         = video_info->height;
 
    if (!gl_core || !draw)
       return;
@@ -97,8 +99,8 @@ static void gfx_display_gl_core_draw_pipeline(gfx_display_ctx_draw_t *draw,
    draw->y                       = 0;
    draw->matrix_data             = NULL;
 
-   output_size[0]                = (float)video_info->width;
-   output_size[1]                = (float)video_info->height;
+   output_size[0]                = (float)video_width;
+   output_size[1]                = (float)video_height;
 
    switch (draw->pipeline.id)
    {
@@ -158,7 +160,8 @@ static void gfx_display_gl_core_draw(gfx_display_ctx_draw_t *draw,
    const float *color        = NULL;
    GLuint            texture = 0;
    gl_core_t *gl             = (gl_core_t*)video_info->userdata;
-   const struct gl_core_buffer_locations *loc = NULL;
+   const struct 
+      gl_core_buffer_locations *loc = NULL;
 
    if (!gl || !draw)
       return;
@@ -332,7 +335,8 @@ static bool gfx_display_gl_core_font_init_first(
 static void gfx_display_gl_core_scissor_begin(video_frame_info_t *video_info,
       int x, int y, unsigned width, unsigned height)
 {
-   glScissor(x, video_info->height - y - height, width, height);
+   unsigned video_height         = video_info->height;
+   glScissor(x, video_height - y - height, width, height);
    glEnable(GL_SCISSOR_TEST);
 }
 

@@ -220,14 +220,16 @@ gfx_display_gl_discard_draw_rectangle(gfx_display_ctx_draw_t *draw,
 static void gfx_display_gl_draw(gfx_display_ctx_draw_t *draw,
       video_frame_info_t *video_info)
 {
-   gl_t             *gl          = (gl_t*)video_info->userdata;
+   gl_t             *gl  = (gl_t*)video_info->userdata;
+   unsigned video_width  = video_info->width;
+   unsigned video_height = video_info->height;
 
    if (!gl || !draw)
       return;
 
 #ifdef MALI_BUG
-   if (gfx_display_gl_discard_draw_rectangle(draw, video_info->width,
-            video_info->height))
+   if (gfx_display_gl_discard_draw_rectangle(draw, video_width,
+            video_height))
    {
       /*RARCH_WARN("[Menu]: discarded draw rect: %.4i %.4i %.4i %.4i\n",
         (int)draw->x, (int)draw->y, (int)draw->width, (int)draw->height);*/
@@ -368,7 +370,8 @@ static void gfx_display_gl_scissor_begin(
       video_frame_info_t *video_info, int x, int y,
       unsigned width, unsigned height)
 {
-   glScissor(x, video_info->height - y - height, width, height);
+   unsigned video_height = video_info->height;
+   glScissor(x, video_height - y - height, width, height);
    glEnable(GL_SCISSOR_TEST);
 #ifdef MALI_BUG
    /* TODO/FIXME: If video width/height changes between
@@ -385,10 +388,12 @@ static void gfx_display_gl_scissor_begin(
 
 static void gfx_display_gl_scissor_end(video_frame_info_t *video_info)
 {
-   glScissor(0, 0, video_info->width, video_info->height);
+   unsigned video_width  = video_info->width;
+   unsigned video_height = video_info->height;
+   glScissor(0, 0, video_width, video_height);
    glDisable(GL_SCISSOR_TEST);
 #ifdef MALI_BUG
-   scissor_set_rectangle(0, video_info->width - 1, 0, video_info->height - 1, 0);
+   scissor_set_rectangle(0, video_width - 1, 0, video_height - 1, 0);
 #endif
 }
 

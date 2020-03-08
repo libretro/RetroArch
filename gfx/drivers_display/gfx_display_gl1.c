@@ -204,13 +204,17 @@ static bool gfx_display_gl1_font_init_first(
 static void gfx_display_gl1_scissor_begin(video_frame_info_t *video_info, int x, int y,
       unsigned width, unsigned height)
 {
-   glScissor(x, video_info->height - y - height, width, height);
+   unsigned video_width          = video_info->width;
+   unsigned video_height         = video_info->height;
+   glScissor(x, video_height - y - height, width, height);
    glEnable(GL_SCISSOR_TEST);
 }
 
 static void gfx_display_gl1_scissor_end(video_frame_info_t *video_info)
 {
-   glScissor(0, 0, video_info->width, video_info->height);
+   unsigned video_width          = video_info->width;
+   unsigned video_height         = video_info->height;
+   glScissor(0, 0, video_width, video_height);
    glDisable(GL_SCISSOR_TEST);
 }
 
