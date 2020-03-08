@@ -52,7 +52,6 @@ typedef struct d3d9_renderchain_driver
          const char *id, const char *path,
          bool smooth);
    bool (*render)(d3d9_video_t *d3d,
-         const video_frame_info_t *video_info,
          const void *frame,
          unsigned width, unsigned height, unsigned pitch, unsigned rotation);
    const char *ident;

@@ -772,7 +772,6 @@ static bool d3d9_cg_renderchain_create_first_pass(
 
 static bool d3d9_cg_renderchain_init(
       d3d9_video_t *d3d,
-      const video_info_t *video_info,
       LPDIRECT3DDEVICE9 dev,
       const D3DVIEWPORT9 *final_viewport,
       const struct LinkInfo *info,
@@ -960,7 +959,6 @@ static void d3d9_cg_renderchain_render_pass(
 
 static bool d3d9_cg_renderchain_render(
       d3d9_video_t *d3d,
-      const video_frame_info_t *video_info,
       const void *frame_data,
       unsigned width, unsigned height,
       unsigned pitch, unsigned rotation)

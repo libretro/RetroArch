@@ -1586,8 +1586,7 @@ static bool d3d9_frame(void *data, const void *frame,
    }
 
    if (!d3d->renderchain_driver->render(
-            d3d, video_info,
-            frame, frame_width, frame_height,
+            d3d, frame, frame_width, frame_height,
             pitch, d3d->dev_rotation))
    {
       RARCH_ERR("[D3D9]: Failed to render scene.\n");
