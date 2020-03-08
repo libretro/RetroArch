@@ -549,6 +549,10 @@ MSG_HASH(
     "Tabelas de classificação"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEEVOS_RICHPRESENCE_ENABLE,
+    "Rich Presence"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEEVOS_BADGES_ENABLE,
     "Insígnias de conquistas"
     )
@@ -939,6 +943,14 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_FACTOR,
     "Aplica uma substituição manual da escala ao desenhar os widgets do menu no modo de tela cheia. Aplica-se apenas quando 'Escala automática nos widgets gráficos' está desativado. Pode ser usado para aumentar ou diminuir o tamanho das notificações, indicadores e controles decorados independentemente do próprio menu."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_FACTOR_WINDOWED,
+    "Substituição da escala dos widgets gráficos (modo janela)"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_FACTOR_WINDOWED,
+    "Aplica uma substituição manual da escala ao desenhar os widgets do menu no modo janela. Aplica-se apenas quando 'Escala automática nos widgets gráficos' está desativado. Pode ser usado para aumentar ou diminuir o tamanho das notificações, indicadores e controles decorados independentemente do próprio menu."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS,
@@ -4186,7 +4198,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_SCALE,
-    "Escala em janela"
+    "Escala no modo janela"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_THREADS,
@@ -6080,7 +6092,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SAVE_POSITION,
-    "Lembre-se do tamanho e posição da janela, permitindo que isso tenha precedência sobre a escala em janela."
+    "Lembre-se do tamanho e posição da janela, permitindo que isso tenha precedência sobre a escala no modo janela."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
@@ -6148,7 +6160,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
-    "Se estiver em tela cheia, prefira utilizar uma janela de tela cheia."
+    "Se estiver em tela cheia, prefira utilizar o 'Modo janela em tela cheia'."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_GPU_RECORD,
@@ -10294,6 +10306,14 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_DAT_FILE,
     "Seleciona um arquivo DAT XML de Logiqx ou MAME para nomear automaticamente os conteúdos do arcade analisados (para MAME, FinalBurn Neo, etc.)."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_DAT_FILE_FILTER,
+    "Filtro DAT de arcade"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_DAT_FILE_FILTER,
+    "Ao usar um arquivo DAT de arcade, adicione conteúdo à lista de reprodução apenas se uma entrada correspondente do arquivo DAT for encontrada."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_OVERWRITE,
