@@ -787,7 +787,9 @@ static void gfx_widgets_draw_icon(
 
 #ifdef HAVE_TRANSLATE
 static void gfx_widgets_draw_icon_blend(
-      video_frame_info_t *video_info,
+      void *userdata,
+      unsigned video_width,
+      unsigned video_height,
       unsigned icon_width,
       unsigned icon_height,
       uintptr_t texture,
@@ -800,9 +802,6 @@ static void gfx_widgets_draw_icon_blend(
    gfx_display_ctx_draw_t draw;
    struct video_coords coords;
    math_matrix_4x4 mymat;
-   void *userdata           = video_info->userdata;
-   unsigned video_width     = video_info->width;
-   unsigned video_height    = video_info->height;
 
    if (!texture)
       return;
@@ -1073,14 +1072,14 @@ void gfx_widgets_iterate(
    }
 }
 
-static int gfx_widgets_draw_indicator(video_frame_info_t *video_info, 
+static int gfx_widgets_draw_indicator(
+      void *userdata, 
+      unsigned video_width,
+      unsigned video_height,
       uintptr_t icon, int y, int top_right_x_advance, 
       enum msg_hash_enums msg)
 {
    unsigned width;
-   void *userdata        = video_info->userdata;
-   unsigned video_width  = video_info->width;
-   unsigned video_height = video_info->height;
 
    gfx_display_set_alpha(gfx_widgets_backdrop_orig, DEFAULT_BACKDROP);
 
@@ -1139,8 +1138,11 @@ static int gfx_widgets_draw_indicator(video_frame_info_t *video_info,
    return width;
 }
 
-static void gfx_widgets_draw_task_msg(menu_widget_msg_t *msg,
-      video_frame_info_t *video_info)
+static void gfx_widgets_draw_task_msg(
+      menu_widget_msg_t *msg,
+      void *userdata,
+      unsigned video_width,
+      unsigned video_height)
 {
    unsigned text_color;
    unsigned bar_width;
@@ -1156,9 +1158,6 @@ static void gfx_widgets_draw_task_msg(menu_widget_msg_t *msg,
    bool draw_msg_new               = false;
    unsigned task_percentage_offset = 0;
    char task_percentage[256]       = {0};
-   void *userdata                  = video_info->userdata;
-   unsigned video_width            = video_info->width;
-   unsigned video_height           = video_info->height;
 
    if (msg->msg_new)
       draw_msg_new = !string_is_equal(msg->msg_new, msg->msg);
@@ -1302,14 +1301,15 @@ static void gfx_widgets_draw_task_msg(menu_widget_msg_t *msg,
    );
 }
 
-static void gfx_widgets_draw_regular_msg(menu_widget_msg_t *msg, video_frame_info_t *video_info)
+static void gfx_widgets_draw_regular_msg(
+      menu_widget_msg_t *msg,
+      void *userdata,
+      unsigned video_width,
+      unsigned video_height)
 {
    unsigned bar_width;
    unsigned text_color;
    uintptr_t icon        = 0;
-   void *userdata        = video_info->userdata;
-   unsigned video_width  = video_info->width;
-   unsigned video_height = video_info->height;
 
    if (!icon)
       icon = gfx_widgets_icons_textures[MENU_WIDGETS_ICON_INFO]; /* TODO: Real icon logic here */
@@ -1423,12 +1423,12 @@ static void gfx_widgets_draw_regular_msg(menu_widget_msg_t *msg, video_frame_inf
    }
 }
 
-static void gfx_widgets_draw_backdrop(video_frame_info_t *video_info, float alpha)
+static void gfx_widgets_draw_backdrop(
+      void *userdata,
+      unsigned video_width,
+      unsigned video_height,
+      float alpha)
 {
-   void *userdata        = video_info->userdata;
-   unsigned video_width  = video_info->width;
-   unsigned video_height = video_info->height;
-
    gfx_display_set_alpha(gfx_widgets_backdrop, alpha);
    gfx_display_draw_quad(userdata,
          video_width, video_height, 0, 0,
@@ -1436,13 +1436,13 @@ static void gfx_widgets_draw_backdrop(video_frame_info_t *video_info, float alph
          gfx_widgets_backdrop);
 }
 
-static void gfx_widgets_draw_load_content_animation(video_frame_info_t *video_info)
+static void gfx_widgets_draw_load_content_animation(
+      void *userdata,
+      unsigned video_width,
+      unsigned video_height)
 {
 #ifdef HAVE_MENU
    /* TODO: change metrics? */
-   void *userdata        = video_info->userdata;
-   unsigned video_width  = video_info->width;
-   unsigned video_height = video_info->height;
    int icon_size         = (int)load_content_animation_icon_size;
    uint32_t text_alpha   = load_content_animation_fade_alpha * 255.0f;
    uint32_t text_color   = COLOR_TEXT_ALPHA(0xB8B8B800, text_alpha);
@@ -1450,7 +1450,8 @@ static void gfx_widgets_draw_load_content_animation(video_frame_info_t *video_in
    float *icon_color     = load_content_animation_icon_color;
 
    /* Fade out */
-   gfx_widgets_draw_backdrop(video_info, load_content_animation_fade_alpha);
+   gfx_widgets_draw_backdrop(userdata,
+         video_width, video_height, load_content_animation_fade_alpha);
 
    /* Icon */
    gfx_display_set_alpha(icon_color, load_content_animation_icon_alpha);
@@ -1492,7 +1493,8 @@ static void gfx_widgets_draw_load_content_animation(video_frame_info_t *video_in
    font_raster_bold.carr.coords.vertices = 0;
 
    /* Everything disappears */
-   gfx_widgets_draw_backdrop(video_info,
+   gfx_widgets_draw_backdrop(userdata,
+         video_width, video_height,
          load_content_animation_final_fade_alpha);
 #endif
 }
@@ -1537,13 +1539,16 @@ void gfx_widgets_frame(void *data)
       };
       gfx_display_set_alpha(gfx_widgets_pure_white, 1.0f);
 
-      gfx_widgets_draw_icon_blend(video_info,
-         video_width, video_height,
-         ai_service_overlay_texture,
-         0, 0,
-         video_width, video_height,
-         0, 1, gfx_widgets_pure_white
-      );
+      gfx_widgets_draw_icon_blend(
+            userdata,
+            video_width,
+            video_height,
+            video_width, video_height,
+            ai_service_overlay_texture,
+            0, 0,
+            video_width, video_height,
+            0, 1, gfx_widgets_pure_white
+            );
       /* top line */
       gfx_display_draw_quad(userdata,
             video_width, video_height,
@@ -1950,9 +1955,11 @@ void gfx_widgets_frame(void *data)
          continue;
 
       if (msg->task_ptr)
-         gfx_widgets_draw_task_msg(msg, video_info);
+         gfx_widgets_draw_task_msg(msg, userdata,
+               video_width, video_height);
       else
-         gfx_widgets_draw_regular_msg(msg, video_info);
+         gfx_widgets_draw_regular_msg(msg, userdata,
+               video_width, video_height);
    }
 
    /* FPS Counter */
@@ -1994,24 +2001,36 @@ void gfx_widgets_frame(void *data)
 
    /* Indicators */
    if (widgets_is_paused)
-      top_right_x_advance -= gfx_widgets_draw_indicator(video_info,
-         gfx_widgets_icons_textures[MENU_WIDGETS_ICON_PAUSED], (fps_show ? simple_widget_height : 0), top_right_x_advance,
-         MSG_PAUSED);
+      top_right_x_advance -= gfx_widgets_draw_indicator(
+            userdata,
+            video_width,
+            video_height,
+            gfx_widgets_icons_textures[MENU_WIDGETS_ICON_PAUSED], (fps_show ? simple_widget_height : 0), top_right_x_advance,
+            MSG_PAUSED);
 
    if (widgets_is_fastforwarding)
-      top_right_x_advance -= gfx_widgets_draw_indicator(video_info,
-         gfx_widgets_icons_textures[MENU_WIDGETS_ICON_FAST_FORWARD], (fps_show ? simple_widget_height : 0), top_right_x_advance,
-         MSG_PAUSED);
+      top_right_x_advance -= gfx_widgets_draw_indicator(
+            userdata,
+            video_width,
+            video_height,
+            gfx_widgets_icons_textures[MENU_WIDGETS_ICON_FAST_FORWARD], (fps_show ? simple_widget_height : 0), top_right_x_advance,
+            MSG_PAUSED);
 
    if (widgets_is_rewinding)
-      top_right_x_advance -= gfx_widgets_draw_indicator(video_info,
-         gfx_widgets_icons_textures[MENU_WIDGETS_ICON_REWIND], (fps_show ? simple_widget_height : 0), top_right_x_advance,
-         MSG_REWINDING);
+      top_right_x_advance -= gfx_widgets_draw_indicator(
+            userdata,
+            video_width,
+            video_height,
+            gfx_widgets_icons_textures[MENU_WIDGETS_ICON_REWIND], (fps_show ? simple_widget_height : 0), top_right_x_advance,
+            MSG_REWINDING);
 
    if (runloop_is_slowmotion)
-      top_right_x_advance -= gfx_widgets_draw_indicator(video_info,
-         gfx_widgets_icons_textures[MENU_WIDGETS_ICON_SLOW_MOTION], (fps_show ? simple_widget_height : 0), top_right_x_advance,
-         MSG_SLOW_MOTION);
+      top_right_x_advance -= gfx_widgets_draw_indicator(
+            userdata,
+            video_width,
+            video_height,
+            gfx_widgets_icons_textures[MENU_WIDGETS_ICON_SLOW_MOTION], (fps_show ? simple_widget_height : 0), top_right_x_advance,
+            MSG_SLOW_MOTION);
 
    /* Screenshot */
    if (screenshot_alpha > 0.0f)
@@ -2030,7 +2049,8 @@ void gfx_widgets_frame(void *data)
 #ifdef HAVE_MENU
    /* Load content animation */
    if (load_content_animation_running)
-      gfx_widgets_draw_load_content_animation(video_info);
+      gfx_widgets_draw_load_content_animation(userdata,
+            video_width, video_height);
    else
 #endif
    {
