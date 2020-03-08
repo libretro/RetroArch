@@ -432,7 +432,7 @@ else ifeq ($(LIBRETRO), vitaquake2)
 	APP_ICON             = pkg/ctr/assets/default.png
 	APP_BANNER           = pkg/ctr/assets/libretro_banner.png
 
-else ifeq ($(LIBRETRO), xmil)
+else ifeq ($(LIBRETRO), x1)
 	APP_TITLE            = XMillenium Libretro
 	APP_PRODUCT_CODE     = RARCH-XMIL
 	APP_UNIQUE_ID        = 0xBAC99
