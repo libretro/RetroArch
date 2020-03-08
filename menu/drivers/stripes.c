@@ -688,6 +688,7 @@ static void stripes_render_keyboard(
 {
    unsigned i;
    int ptr_width, ptr_height;
+   void *userdata    = video_info->userdata;
    unsigned width    = video_info->width;
    unsigned height   = video_info->height;
    float dark[16]    =  {
@@ -705,7 +706,9 @@ static void stripes_render_keyboard(
    };
 
    gfx_display_draw_quad(
-         video_info,
+         userdata,
+         video_width,
+         video_height,
          0, height/2.0, width, height/2.0,
          width, height,
          &dark[0]);

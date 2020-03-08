@@ -360,16 +360,18 @@ void ozone_entries_update_thumbnail_bar(ozone_handle_t *ozone, bool is_playlist,
    }
 }
 
-void ozone_draw_entries(ozone_handle_t *ozone, video_frame_info_t *video_info,
-   unsigned selection, unsigned selection_old,
-   file_list_t *selection_buf, float alpha, float scroll_y,
-   bool is_playlist)
+void ozone_draw_entries(ozone_handle_t *ozone,
+      video_frame_info_t *video_info,
+      unsigned selection, unsigned selection_old,
+      file_list_t *selection_buf, float alpha, float scroll_y,
+      bool is_playlist)
 {
    uint32_t alpha_uint32;
    size_t i, y, entries_end;
    float sidebar_offset, bottom_boundary, invert, alpha_anim;
    unsigned video_info_height, video_info_width, entry_width, button_height;
    settings_t    *settings = config_get_ptr();
+   void *userdata          = video_info->userdata;
    unsigned video_width    = video_info->width;
    unsigned video_height   = video_info->height;
    bool menu_show_sublabels= settings->bools.menu_show_sublabels;
@@ -446,10 +448,28 @@ void ozone_draw_entries(ozone_handle_t *ozone, video_frame_info_t *video_info,
       gfx_display_set_alpha(ozone->theme_dynamic.entries_checkmark, alpha);
 
       /* Borders */
-      gfx_display_draw_quad(video_info, border_start_x,
-         border_start_y, entry_width, ozone->dimensions.spacer_1px, video_width, video_height, ozone->theme_dynamic.entries_border);
-      gfx_display_draw_quad(video_info, border_start_x,
-         border_start_y + button_height, entry_width, ozone->dimensions.spacer_1px, video_width, video_height, ozone->theme_dynamic.entries_border);
+      gfx_display_draw_quad(
+            userdata,
+            video_width,
+            video_height,
+            border_start_x,
+            border_start_y,
+            entry_width,
+            ozone->dimensions.spacer_1px,
+            video_width,
+            video_height,
+            ozone->theme_dynamic.entries_border);
+      gfx_display_draw_quad(
+            userdata,
+            video_width,
+            video_height,
+            border_start_x,
+            border_start_y + button_height,
+            entry_width,
+            ozone->dimensions.spacer_1px,
+            video_width,
+            video_height,
+            ozone->theme_dynamic.entries_border);
 
 border_iterate:
       if (node)
@@ -749,6 +769,7 @@ void ozone_draw_thumbnail_bar(ozone_handle_t *ozone, video_frame_info_t *video_i
    int left_thumbnail_y_position     = 0;
    bool show_right_thumbnail         = false;
    bool show_left_thumbnail          = false;
+   void *userdata                    = video_info->userdata;
    unsigned video_width              = video_info->width;
    unsigned video_height             = video_info->height;
    bool libretro_running             = video_info->libretro_running;
@@ -761,9 +782,39 @@ void ozone_draw_thumbnail_bar(ozone_handle_t *ozone, video_frame_info_t *video_i
    /* Background */
    if (!libretro_running || (menu_framebuffer_opacity >= 1.0f))
    {
-      gfx_display_draw_quad(video_info, x_position, ozone->dimensions.header_height + ozone->dimensions.spacer_1px, (unsigned) ozone->animations.thumbnail_bar_position, ozone->dimensions.sidebar_gradient_height, video_width, video_height, ozone->theme->sidebar_top_gradient);
-      gfx_display_draw_quad(video_info, x_position, ozone->dimensions.header_height + ozone->dimensions.spacer_1px + ozone->dimensions.sidebar_gradient_height, (unsigned) ozone->animations.thumbnail_bar_position, sidebar_height, video_width, video_height, ozone->theme->sidebar_background);
-      gfx_display_draw_quad(video_info, x_position, video_height - ozone->dimensions.footer_height - ozone->dimensions.sidebar_gradient_height - ozone->dimensions.spacer_1px, (unsigned) ozone->animations.thumbnail_bar_position, ozone->dimensions.sidebar_gradient_height + ozone->dimensions.spacer_1px, video_width, video_height, ozone->theme->sidebar_bottom_gradient);
+      gfx_display_draw_quad(
+            userdata,
+            video_width,
+            video_height,
+            x_position,
+            ozone->dimensions.header_height + ozone->dimensions.spacer_1px,
+            (unsigned)ozone->animations.thumbnail_bar_position,
+            ozone->dimensions.sidebar_gradient_height,
+            video_width,
+            video_height,
+            ozone->theme->sidebar_top_gradient);
+      gfx_display_draw_quad(
+            userdata,
+            video_width,
+            video_height,
+            x_position,
+            ozone->dimensions.header_height + ozone->dimensions.spacer_1px + ozone->dimensions.sidebar_gradient_height,
+            (unsigned)ozone->animations.thumbnail_bar_position,
+            sidebar_height,
+            video_width,
+            video_height,
+            ozone->theme->sidebar_background);
+      gfx_display_draw_quad(
+            userdata,
+            video_width,
+            video_height,
+            x_position,
+            video_height - ozone->dimensions.footer_height - ozone->dimensions.sidebar_gradient_height - ozone->dimensions.spacer_1px,
+            (unsigned) ozone->animations.thumbnail_bar_position,
+            ozone->dimensions.sidebar_gradient_height + ozone->dimensions.spacer_1px,
+            video_width,
+            video_height,
+            ozone->theme->sidebar_bottom_gradient);
    }
 
    /* Thumbnails */
@@ -895,11 +946,17 @@ void ozone_draw_thumbnail_bar(ozone_handle_t *ozone, video_frame_info_t *video_i
       /* Content metadata */
 
       /* Separator */
-      gfx_display_draw_quad(video_info,
-         x_position + separator_padding, y,
-         sidebar_width - separator_padding*2, ozone->dimensions.spacer_1px,
-         video_width, video_height,
-         ozone->theme_dynamic.entries_border);
+      gfx_display_draw_quad(
+            userdata,
+            video_width,
+            video_height,
+            x_position + separator_padding,
+            y,
+            sidebar_width - separator_padding*2,
+            ozone->dimensions.spacer_1px,
+            video_width,
+            video_height,
+            ozone->theme_dynamic.entries_border);
 
       y += 18;
 

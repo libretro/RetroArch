@@ -829,7 +829,9 @@ void gfx_display_draw_gradient(gfx_display_ctx_draw_t *draw,
 }
 
 void gfx_display_draw_quad(
-      video_frame_info_t *video_info,
+      void *data,
+      unsigned video_width,
+      unsigned video_height,
       int x, int y, unsigned w, unsigned h,
       unsigned width, unsigned height,
       float *color)
@@ -844,7 +846,7 @@ void gfx_display_draw_quad(
    coords.color         = color;
 
    if (dispctx && dispctx->blend_begin)
-      dispctx->blend_begin(video_info->userdata);
+      dispctx->blend_begin(data);
 
    draw.x            = x;
    draw.y            = (int)height - y - (int)h;
@@ -858,11 +860,11 @@ void gfx_display_draw_quad(
    draw.scale_factor = 1.0f;
    draw.rotation     = 0.0f;
 
-   gfx_display_draw(&draw, video_info->userdata,
-         video_info->width, video_info->height);
+   gfx_display_draw(&draw, data,
+         video_width, video_height);
 
    if (dispctx && dispctx->blend_end)
-      dispctx->blend_end(video_info->userdata);
+      dispctx->blend_end(data);
 }
 
 void gfx_display_draw_polygon(
@@ -1595,6 +1597,7 @@ void gfx_display_draw_keyboard(
 {
    unsigned i;
    int ptr_width, ptr_height;
+   void *userdata    = video_info->userdata;
    unsigned width    = video_info->width;
    unsigned height   = video_info->height;
 
@@ -1606,7 +1609,8 @@ void gfx_display_draw_keyboard(
    };
 
    gfx_display_draw_quad(
-         video_info,
+         userdata,
+         width, height,
          0, height/2.0, width, height/2.0,
          width, height,
          &osk_dark[0]);

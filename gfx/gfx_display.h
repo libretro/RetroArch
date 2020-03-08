@@ -293,11 +293,15 @@ void gfx_display_draw_bg(
 void gfx_display_draw_gradient(
       gfx_display_ctx_draw_t *draw,
       video_frame_info_t *video_info);
+
 void gfx_display_draw_quad(
-      video_frame_info_t *video_info,
+      void *data,
+      unsigned video_width,
+      unsigned video_height,
       int x, int y, unsigned w, unsigned h,
       unsigned width, unsigned height,
       float *color);
+
 void gfx_display_draw_polygon(
       video_frame_info_t *video_info,
       int x1, int y1,

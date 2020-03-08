@@ -1491,6 +1491,7 @@ static void ozone_draw_header(ozone_handle_t *ozone, video_frame_info_t *video_i
    unsigned seperator_margin = 30 * scale_factor;
    enum gfx_animation_ticker_type 
       menu_ticker_type       = (enum gfx_animation_ticker_type)settings->uints.menu_ticker_type;
+   void *userdata            = video_info->userdata;
    unsigned video_width      = video_info->width;
    unsigned video_height     = video_info->height;
    bool battery_level_enable = video_info->battery_level_enable;
@@ -1514,7 +1515,17 @@ static void ozone_draw_header(ozone_handle_t *ozone, video_frame_info_t *video_i
    }
 
    /* Separator */
-   gfx_display_draw_quad(video_info, seperator_margin, ozone->dimensions.header_height, video_width - seperator_margin * 2, ozone->dimensions.spacer_1px, video_width, video_height, ozone->theme->header_footer_separator);
+   gfx_display_draw_quad(
+         userdata,
+         video_width,
+         video_height,
+         seperator_margin,
+         ozone->dimensions.header_height,
+         video_width - seperator_margin * 2,
+         ozone->dimensions.spacer_1px,
+         video_width,
+         video_height,
+         ozone->theme->header_footer_separator);
 
    /* Title */
    if (use_smooth_ticker)
@@ -1638,11 +1649,22 @@ static void ozone_draw_footer(ozone_handle_t *ozone, video_frame_info_t *video_i
    float scale_factor           = ozone->last_scale_factor;
    unsigned seperator_margin    = 30 * scale_factor;
    bool menu_core_enable        = settings->bools.menu_core_enable;
+   void *userdata               = video_info->userdata;
    unsigned video_width         = video_info->width;
    unsigned video_height        = video_info->height;
 
    /* Separator */
-   gfx_display_draw_quad(video_info, seperator_margin, video_height - ozone->dimensions.footer_height, video_width - seperator_margin * 2, ozone->dimensions.spacer_1px, video_width, video_height, ozone->theme->header_footer_separator);
+   gfx_display_draw_quad(
+         userdata,
+         video_width,
+         video_height,
+         seperator_margin,
+         video_height - ozone->dimensions.footer_height,
+         video_width - seperator_margin * 2,
+         ozone->dimensions.spacer_1px,
+         video_width,
+         video_height,
+         ozone->theme->header_footer_separator);
 
    /* Core title or Switch icon */
    if (menu_core_enable)
@@ -2017,6 +2039,7 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
    bool draw_osk                          = menu_input_dialog_get_display_kb();
    static bool draw_osk_old               = false;
    float *background_color                = NULL;
+   void *userdata                         = video_info->userdata;
    unsigned video_width                   = video_info->width;
    unsigned video_height                  = video_info->height;
    float menu_framebuffer_opacity         = video_info->menu_framebuffer_opacity;
@@ -2104,11 +2127,14 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
    else
       background_color = ozone->theme->background;
 
-   gfx_display_draw_quad(video_info,
-      0, 0, video_width, video_height,
-      video_width, video_height,
-      background_color
-   );
+   gfx_display_draw_quad(
+         userdata,
+         video_width,
+         video_height,
+         0, 0, video_width, video_height,
+         video_width, video_height,
+         background_color
+         );
 
    /* Header, footer */
    ozone_draw_header(ozone, video_info);

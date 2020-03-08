@@ -3898,6 +3898,7 @@ static void xmb_draw_fullscreen_thumbnails(
       xmb_handle_t *xmb, video_frame_info_t *video_info,
       settings_t *settings, size_t selection)
 {
+   void *userdata                 = video_info->userdata;
    unsigned video_width           = video_info->width;
    unsigned video_height          = video_info->height;
    bool xmb_shadows_enable        = video_info->xmb_shadows_enable;
@@ -4118,7 +4119,9 @@ static void xmb_draw_fullscreen_thumbnails(
 
       /* Darken background */
       gfx_display_draw_quad(
-            video_info,
+            userdata,
+            video_width,
+            video_height,
             0,
             0,
             (unsigned)view_width,
@@ -4132,7 +4135,9 @@ static void xmb_draw_fullscreen_thumbnails(
       {
          /* Background */
          gfx_display_draw_quad(
-               video_info,
+               userdata,
+               video_width,
+               video_height,
                0,
                0,
                (unsigned)view_width,
@@ -4222,7 +4227,9 @@ static void xmb_draw_fullscreen_thumbnails(
       {
          /* Background */
          gfx_display_draw_quad(
-               video_info,
+               userdata,
+               video_width,
+               video_height,
                right_thumbnail_x - frame_width +
                      ((thumbnail_box_width - (int)right_thumbnail_draw_width) >> 1),
                thumbnail_y - frame_width +
@@ -4252,7 +4259,9 @@ static void xmb_draw_fullscreen_thumbnails(
       {
          /* Background */
          gfx_display_draw_quad(
-               video_info,
+               userdata,
+               video_width,
+               video_height,
                left_thumbnail_x - frame_width +
                      ((thumbnail_box_width - (int)left_thumbnail_draw_width) >> 1),
                thumbnail_y - frame_width +
