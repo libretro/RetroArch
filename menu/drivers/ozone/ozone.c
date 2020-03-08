@@ -1549,7 +1549,7 @@ static void ozone_draw_header(ozone_handle_t *ozone, video_frame_info_t *video_i
       gfx_animation_ticker(&ticker);
    }
 
-   ozone_draw_text(video_info, ozone, title, ticker_x_offset + 128 * scale_factor, ozone->dimensions.header_height / 2 + ozone->title_font_glyph_height * 3.0f/10.0f, TEXT_ALIGN_LEFT, video_width, video_height, ozone->fonts.title, ozone->theme->text_rgba, false);
+   ozone_draw_text(ozone, title, ticker_x_offset + 128 * scale_factor, ozone->dimensions.header_height / 2 + ozone->title_font_glyph_height * 3.0f/10.0f, TEXT_ALIGN_LEFT, video_width, video_height, ozone->fonts.title, ozone->theme->text_rgba, false);
 
    /* Icon */
    gfx_display_blend_begin(video_info->userdata);
@@ -1596,7 +1596,7 @@ static void ozone_draw_header(ozone_handle_t *ozone, video_frame_info_t *video_i
       {
          timedate_offset = 95 * scale_factor;
 
-         ozone_draw_text(video_info, ozone, msg, video_width - 85 * scale_factor, ozone->dimensions.header_height / 2 + ozone->time_font_glyph_height * 3.0f/10.0f, TEXT_ALIGN_RIGHT, video_width, video_height, ozone->fonts.time, ozone->theme->text_rgba, false);
+         ozone_draw_text(ozone, msg, video_width - 85 * scale_factor, ozone->dimensions.header_height / 2 + ozone->time_font_glyph_height * 3.0f/10.0f, TEXT_ALIGN_RIGHT, video_width, video_height, ozone->fonts.time, ozone->theme->text_rgba, false);
 
          gfx_display_blend_begin(video_info->userdata);
          ozone_draw_icon(
@@ -1627,7 +1627,7 @@ static void ozone_draw_header(ozone_handle_t *ozone, video_frame_info_t *video_i
 
       menu_display_timedate(&datetime);
 
-      ozone_draw_text(video_info, ozone, timedate, video_width - (85 * scale_factor) - timedate_offset, ozone->dimensions.header_height / 2 + ozone->time_font_glyph_height * 3.0f/10.0f, TEXT_ALIGN_RIGHT, video_width, video_height, ozone->fonts.time, ozone->theme->text_rgba, false);
+      ozone_draw_text(ozone, timedate, video_width - (85 * scale_factor) - timedate_offset, ozone->dimensions.header_height / 2 + ozone->time_font_glyph_height * 3.0f/10.0f, TEXT_ALIGN_RIGHT, video_width, video_height, ozone->fonts.time, ozone->theme->text_rgba, false);
 
       gfx_display_blend_begin(video_info->userdata);
       ozone_draw_icon(
@@ -1671,7 +1671,7 @@ static void ozone_draw_footer(ozone_handle_t *ozone, video_frame_info_t *video_i
    {
       char core_title[255];
       menu_entries_get_core_title(core_title, sizeof(core_title));
-      ozone_draw_text(video_info, ozone, core_title, 59 * scale_factor, video_height - ozone->dimensions.footer_height / 2 + ozone->footer_font_glyph_height * 3.0f/10.0f, TEXT_ALIGN_LEFT, video_width, video_height, ozone->fonts.footer, ozone->theme->text_rgba, false);
+      ozone_draw_text(ozone, core_title, 59 * scale_factor, video_height - ozone->dimensions.footer_height / 2 + ozone->footer_font_glyph_height * 3.0f/10.0f, TEXT_ALIGN_LEFT, video_width, video_height, ozone->fonts.footer, ozone->theme->text_rgba, false);
    }
    else
       ozone_draw_icon(video_info, 69 * scale_factor, 30 * scale_factor, ozone->theme->textures[OZONE_THEME_TEXTURE_SWITCH], 59 * scale_factor, video_height - ozone->dimensions.footer_height / 2 - 15 * scale_factor, video_width, video_height, 0, 1, NULL);
@@ -1714,23 +1714,23 @@ static void ozone_draw_footer(ozone_handle_t *ozone, video_frame_info_t *video_i
 
       gfx_display_blend_end(video_info->userdata);
 
-      ozone_draw_text(video_info, ozone,
+      ozone_draw_text(ozone,
             do_swap ?
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_OK) :
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_BACK),
             video_width - back_width, video_height - ozone->dimensions.footer_height / 2 + ozone->footer_font_glyph_height * 3.0f/10.0f, TEXT_ALIGN_LEFT, video_width, video_height, ozone->fonts.footer, ozone->theme->text_rgba, false);
-      ozone_draw_text(video_info, ozone,
+      ozone_draw_text(ozone,
             do_swap ?
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_BACK) :
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_OK),
             video_width - ok_width, video_height - ozone->dimensions.footer_height / 2 + ozone->footer_font_glyph_height * 3.0f/10.0f, TEXT_ALIGN_LEFT, video_width, video_height, ozone->fonts.footer, ozone->theme->text_rgba, false);
 
-      ozone_draw_text(video_info, ozone,
+      ozone_draw_text(ozone,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SEARCH),
             video_width - search_width, video_height - ozone->dimensions.footer_height / 2 + ozone->footer_font_glyph_height * 3.0f/10.0f, TEXT_ALIGN_LEFT, video_width, video_height, ozone->fonts.footer, ozone->theme->text_rgba, false);
 
       if (ozone->is_playlist && !ozone->cursor_in_sidebar)
-         ozone_draw_text(video_info, ozone,
+         ozone_draw_text(ozone,
                msg_hash_to_str(MSG_CHANGE_THUMBNAIL_TYPE),
                video_width - thumb_width, video_height - ozone->dimensions.footer_height / 2 + ozone->footer_font_glyph_height * 3.0f/10.0f, TEXT_ALIGN_LEFT, video_width, video_height, ozone->fonts.footer, ozone->theme->text_rgba, false);
 

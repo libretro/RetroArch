@@ -254,7 +254,7 @@ void ozone_draw_sidebar(ozone_handle_t *ozone, video_frame_info_t *video_info)
 
       /* Text */
       if (!ozone->sidebar_collapsed)
-         ozone_draw_text(video_info, ozone, title, ozone->sidebar_offset + ozone->dimensions.sidebar_padding_horizontal + ozone->dimensions.sidebar_entry_icon_padding * 2 + ozone->dimensions.sidebar_entry_icon_size,
+         ozone_draw_text(ozone, title, ozone->sidebar_offset + ozone->dimensions.sidebar_padding_horizontal + ozone->dimensions.sidebar_entry_icon_padding * 2 + ozone->dimensions.sidebar_entry_icon_size,
             y + ozone->dimensions.sidebar_entry_height / 2 + ozone->sidebar_font_glyph_height * 3.0f/10.0f + ozone->animations.scroll_y_sidebar, TEXT_ALIGN_LEFT, video_width, video_height, ozone->fonts.sidebar, text_color, true);
 
       y += ozone->dimensions.sidebar_entry_height + ozone->dimensions.sidebar_entry_padding_vertical;
@@ -325,9 +325,9 @@ void ozone_draw_sidebar(ozone_handle_t *ozone, video_frame_info_t *video_info)
             gfx_animation_ticker(&ticker);
          }
 
-         ozone_draw_text(video_info, ozone, console_title, ticker_x_offset + ozone->sidebar_offset + ozone->dimensions.sidebar_padding_horizontal + ozone->dimensions.sidebar_entry_icon_padding * 2 + ozone->dimensions.sidebar_entry_icon_size,
-            y + ozone->dimensions.sidebar_entry_height / 2 + ozone->sidebar_font_glyph_height * 3.0f/10.0f + ozone->animations.scroll_y_sidebar, TEXT_ALIGN_LEFT,
-            video_width, video_height, ozone->fonts.sidebar, text_color, true);
+         ozone_draw_text(ozone, console_title, ticker_x_offset + ozone->sidebar_offset + ozone->dimensions.sidebar_padding_horizontal + ozone->dimensions.sidebar_entry_icon_padding * 2 + ozone->dimensions.sidebar_entry_icon_size,
+               y + ozone->dimensions.sidebar_entry_height / 2 + ozone->sidebar_font_glyph_height * 3.0f/10.0f + ozone->animations.scroll_y_sidebar, TEXT_ALIGN_LEFT,
+               video_width, video_height, ozone->fonts.sidebar, text_color, true);
 
 console_iterate:
          y += ozone->dimensions.sidebar_entry_height + ozone->dimensions.sidebar_entry_padding_vertical;

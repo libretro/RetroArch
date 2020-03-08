@@ -96,7 +96,6 @@ void ozone_restart_cursor_animation(ozone_handle_t *ozone)
 }
 
 void ozone_draw_text(
-      video_frame_info_t *video_info,
       ozone_handle_t *ozone,
       const char *str, float x,
       float y,
@@ -441,7 +440,7 @@ void ozone_draw_osk(ozone_handle_t *ozone,
    {
       const char *msg = list->elems[i].data;
 
-      ozone_draw_text(video_info, ozone, msg, margin + padding * 2, margin + padding + ozone->sublabel_font_glyph_height + y_offset, TEXT_ALIGN_LEFT, video_width, video_height, ozone->fonts.entries_label, text_color, false);
+      ozone_draw_text(ozone, msg, margin + padding * 2, margin + padding + ozone->sublabel_font_glyph_height + y_offset, TEXT_ALIGN_LEFT, video_width, video_height, ozone->fonts.entries_label, text_color, false);
 
       /* Cursor */
       if (i == list->size - 1)
@@ -554,7 +553,7 @@ void ozone_draw_messagebox(ozone_handle_t *ozone,
       const char *msg = list->elems[i].data;
 
       if (msg)
-         ozone_draw_text(video_info, ozone,
+         ozone_draw_text(ozone,
             msg,
             x - longest_width/2.0,
             y + (i + 1) * ozone->footer_font_glyph_height,
