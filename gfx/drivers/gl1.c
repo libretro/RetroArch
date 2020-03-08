@@ -694,6 +694,8 @@ static bool gl1_gfx_frame(void *data, const void *frame,
    unsigned bits             = gl1->video_bits;
    unsigned pot_width        = 0;
    unsigned pot_height       = 0;
+   unsigned video_width      = video_info->width;
+   unsigned video_height     = video_info->height;
 
    gl1_context_bind_hw_render(gl1, false);
    
@@ -717,7 +719,7 @@ static bool gl1_gfx_frame(void *data, const void *frame,
             mode.width, mode.height);
 
       gl1_gfx_set_viewport(gl1,
-            video_info->width, video_info->height, false, true);
+            video_width, video_height, false, true);
    }
 
    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -824,7 +826,7 @@ static bool gl1_gfx_frame(void *data, const void *frame,
 
          if (gl1->menu_texture_full_screen)
          {
-            glViewport(0, 0, video_info->width, video_info->height);
+            glViewport(0, 0, video_width, video_height);
             draw_tex(gl1, pot_width, pot_height, width, height, gl1->menu_tex, frame_to_copy);
             glViewport(gl1->vp.x, gl1->vp.y, gl1->vp.width, gl1->vp.height);
          }

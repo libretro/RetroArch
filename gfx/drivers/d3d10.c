@@ -60,14 +60,14 @@ static struct string_list *d3d10_gpu_list = NULL;
 static IDXGIAdapter1 *d3d10_adapters[D3D10_MAX_GPU_COUNT] = {NULL};
 static IDXGIAdapter1 *d3d10_current_adapter = NULL;
 
-static void d3d10_clear_scissor(d3d10_video_t *d3d10, video_frame_info_t *video_info)
+static void d3d10_clear_scissor(d3d10_video_t *d3d10, unsigned width, unsigned height)
 {
    D3D10_RECT scissor_rect;
 
    scissor_rect.left   = 0;
    scissor_rect.top    = 0;
-   scissor_rect.right  = video_info->width;
-   scissor_rect.bottom = video_info->height;
+   scissor_rect.right  = width;
+   scissor_rect.bottom = height;
 
    D3D10SetScissorRects(d3d10->device, 1, &scissor_rect);
 }
@@ -1204,6 +1204,8 @@ static bool d3d10_gfx_frame(
    d3d10_texture_t*   texture = NULL;
    d3d10_video_t      * d3d10 = (d3d10_video_t*)data;
    D3D10Device       context  = d3d10->device;
+   unsigned video_width       = video_info->width;
+   unsigned video_height      = video_info->height;
 
    if (d3d10->resize_chain)
    {
@@ -1218,8 +1220,8 @@ static bool d3d10_gfx_frame(
       Release(backBuffer);
 
       D3D10SetRenderTargets(d3d10->device, 1, &d3d10->renderTargetView, NULL);
-      d3d10->viewport.Width  = video_info->width;
-      d3d10->viewport.Height = video_info->height;
+      d3d10->viewport.Width               = video_width;
+      d3d10->viewport.Height              = video_height;
 
       d3d10->ubo_values.OutputSize.width  = d3d10->viewport.Width;
       d3d10->ubo_values.OutputSize.height = d3d10->viewport.Height;
@@ -1227,7 +1229,7 @@ static bool d3d10_gfx_frame(
       d3d10->resize_chain    = false;
       d3d10->resize_viewport = true;
 
-      video_driver_set_size(video_info->width, video_info->height);
+      video_driver_set_size(video_width, video_height);
    }
 
 #if 0 /* custom viewport doesn't call apply_state_changes, so we can't rely on this for now */
@@ -1427,7 +1429,7 @@ static bool d3d10_gfx_frame(
    D3D10ClearRenderTargetView(context, d3d10->renderTargetView, d3d10->clearcolor);
    D3D10SetViewports(context, 1, &d3d10->frame.viewport);
 
-   d3d10_clear_scissor(d3d10, video_info);
+   d3d10_clear_scissor(d3d10, video_width, video_height);
 
    D3D10Draw(context, 4, 0);
 

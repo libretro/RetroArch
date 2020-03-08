@@ -1705,10 +1705,10 @@ static void d3d8_video_texture_load_d3d(
       uintptr_t *id)
 {
    D3DLOCKED_RECT d3dlr;
-   unsigned usage           = 0;
+   unsigned usage            = 0;
    d3d8_video_t *d3d         = (d3d8_video_t*)info->userdata;
-   struct texture_image *ti = (struct texture_image*)info->data;
-   LPDIRECT3DTEXTURE8 tex   = (LPDIRECT3DTEXTURE8)d3d8_texture_new(d3d->dev, NULL,
+   struct texture_image *ti  = (struct texture_image*)info->data;
+   LPDIRECT3DTEXTURE8 tex    = (LPDIRECT3DTEXTURE8)d3d8_texture_new(d3d->dev, NULL,
                ti->width, ti->height, 0,
                usage, d3d8_get_argb8888_format(),
                D3DPOOL_MANAGED, 0, 0, 0,

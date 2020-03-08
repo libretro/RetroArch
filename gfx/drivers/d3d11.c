@@ -73,14 +73,14 @@ static struct string_list *d3d11_gpu_list = NULL;
 static IDXGIAdapter1 *d3d11_adapters[D3D11_MAX_GPU_COUNT] = {NULL};
 static IDXGIAdapter1 *d3d11_current_adapter = NULL;
 
-static void d3d11_clear_scissor(d3d11_video_t *d3d11, video_frame_info_t *video_info)
+static void d3d11_clear_scissor(d3d11_video_t *d3d11, unsigned video_width, unsigned video_height)
 {
    D3D11_RECT scissor_rect;
 
    scissor_rect.left   = 0;
    scissor_rect.top    = 0;
-   scissor_rect.right  = video_info->width;
-   scissor_rect.bottom = video_info->height;
+   scissor_rect.right  = video_width;
+   scissor_rect.bottom = video_height;
 
    D3D11SetScissorRects(d3d11->context, 1, &scissor_rect);
 }
@@ -1285,6 +1285,8 @@ static bool d3d11_gfx_frame(
    d3d11_texture_t*   texture = NULL;
    d3d11_video_t*     d3d11   = (d3d11_video_t*)data;
    D3D11DeviceContext context = d3d11->context;
+   unsigned video_width       = video_info->width;
+   unsigned video_height      = video_info->height;
 
    if (d3d11->resize_chain)
    {
@@ -1300,15 +1302,15 @@ static bool d3d11_gfx_frame(
 
       D3D11SetRenderTargets(context, 1, &d3d11->renderTargetView, NULL);
 
-      d3d11->viewport.Width  = video_info->width;
-      d3d11->viewport.Height = video_info->height;
+      d3d11->viewport.Width  = video_width;
+      d3d11->viewport.Height = video_height;
 
       d3d11->ubo_values.OutputSize.width  = d3d11->viewport.Width;
       d3d11->ubo_values.OutputSize.height = d3d11->viewport.Height;
 
       d3d11->resize_chain    = false;
       d3d11->resize_viewport = true;
-      video_driver_set_size(video_info->width, video_info->height);
+      video_driver_set_size(video_width, video_height);
    }
 
 #ifdef __WINRT__
@@ -1316,7 +1318,8 @@ static bool d3d11_gfx_frame(
    D3D11SetRenderTargets(context, 1, &d3d11->renderTargetView, NULL);
 #endif
 
-#if 0 /* custom viewport doesn't call apply_state_changes, so we can't rely on this for now */
+   /* custom viewport doesn't call apply_state_changes, so we can't rely on this for now */
+#if 0 
    if (d3d11->resize_viewport)
 #endif
       d3d11_update_viewport(d3d11, false);
@@ -1500,7 +1503,7 @@ static bool d3d11_gfx_frame(
    D3D11ClearRenderTargetView(context, d3d11->renderTargetView, d3d11->clearcolor);
    D3D11SetViewports(context, 1, &d3d11->frame.viewport);
 
-   d3d11_clear_scissor(d3d11, video_info);
+   d3d11_clear_scissor(d3d11, video_width, video_height);
 
    D3D11Draw(context, 4, 0);
 
