@@ -180,20 +180,26 @@ static bool gfx_display_vita2d_font_init_first(
    return *handle;
 }
 
-static void gfx_display_vita2d_scissor_end(video_frame_info_t *video_info)
-{
-   unsigned video_width          = video_info->width;
-   unsigned video_height         = video_info->height;
-   vita2d_set_region_clip(SCE_GXM_REGION_CLIP_NONE, 0, 0, video_width, video_height);
-   vita2d_disable_clipping();
-}
-
-static void gfx_display_vita2d_scissor_begin(video_frame_info_t *video_info, int x, int y,
+static void gfx_display_vita2d_scissor_begin(void *data,
+      unsigned video_width,
+      unsigned video_height,
+      int x, int y,
       unsigned width, unsigned height)
 {
    vita2d_set_clip_rectangle(x, y, x + width, y + height);  
    vita2d_set_region_clip(SCE_GXM_REGION_CLIP_OUTSIDE, x, y, x + width, y + height);
 }
+
+static void gfx_display_vita2d_scissor_end(
+      void *data,
+      unsigned video_width,
+      unsigned video_height)
+{
+   vita2d_set_region_clip(SCE_GXM_REGION_CLIP_NONE, 0, 0,
+         video_width, video_height);
+   vita2d_disable_clipping();
+}
+
 
 gfx_display_ctx_driver_t gfx_display_ctx_vita2d = {
    gfx_display_vita2d_draw,

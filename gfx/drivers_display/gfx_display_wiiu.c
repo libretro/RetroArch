@@ -28,24 +28,11 @@
 #include "../../wiiu/system/memory.h"
 #include "../../wiiu/wiiu_dbg.h"
 
-static const float *gfx_display_wiiu_get_default_vertices(void)
-{
-   return NULL;
-}
-
-static const float *gfx_display_wiiu_get_default_tex_coords(void)
-{
-   return NULL;
-}
-
-static void *gfx_display_wiiu_get_default_mvp(void *data)
-{
-   return NULL;
-}
-
+static const float *gfx_display_wiiu_get_default_vertices(void) { return NULL; }
+static const float *gfx_display_wiiu_get_default_tex_coords(void) { return NULL; }
+static void *gfx_display_wiiu_get_default_mvp(void *data) { return NULL; }
 static void gfx_display_wiiu_blend_begin(void *data) { }
 static void gfx_display_wiiu_blend_end(void *data) { }
-
 static void gfx_display_wiiu_viewport(gfx_display_ctx_draw_t *draw, void *data) { }
 
 static void gfx_display_wiiu_draw(gfx_display_ctx_draw_t *draw,
@@ -307,20 +294,21 @@ static bool gfx_display_wiiu_font_init_first(
 }
 
 static void gfx_display_wiiu_scissor_begin(
-      video_frame_info_t *video_info, int x, int y,
+      void *data,
+      unsigned video_width,
+      unsigned video_height,
+      int x, int y,
       unsigned width, unsigned height)
 {
-   unsigned video_width  = video_info->width;
-   unsigned video_height = video_info->height;
-
    GX2SetScissor(MAX(x, 0), MAX(video_height - y - height, 0), MIN(width, video_width), MIN(height, video_height));
 }
 
-static void gfx_display_wiiu_scissor_end(video_frame_info_t *video_info)
+static void gfx_display_wiiu_scissor_end(
+      void *data,
+      unsigned video_width,
+      unsigned video_height
+      )
 {
-   unsigned video_width  = video_info->width;
-   unsigned video_height = video_info->height;
-
    GX2SetScissor(0, 0, video_width, video_height);
 }
 

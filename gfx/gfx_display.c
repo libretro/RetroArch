@@ -650,6 +650,7 @@ void gfx_display_scissor_begin(video_frame_info_t *video_info,
 {
    unsigned video_width  = video_info->width;
    unsigned video_height = video_info->height;
+   void *userdata        = video_info->userdata;
 
    if (dispctx && dispctx->scissor_begin)
    {
@@ -684,7 +685,9 @@ void gfx_display_scissor_begin(video_frame_info_t *video_info,
       if ((x + width) > video_width)
          width = video_width - x;
 
-      dispctx->scissor_begin(video_info, x, y, width, height);
+      dispctx->scissor_begin(userdata,
+            video_width, video_height,
+            x, y, width, height);
    }
 }
 
@@ -692,7 +695,9 @@ void gfx_display_scissor_begin(video_frame_info_t *video_info,
 void gfx_display_scissor_end(video_frame_info_t *video_info)
 {
    if (dispctx && dispctx->scissor_end)
-      dispctx->scissor_end(video_info);
+      dispctx->scissor_end(video_info->userdata,
+            video_info->width,
+            video_info->height);
 }
 
 font_data_t *gfx_display_font_file(

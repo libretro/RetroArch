@@ -108,15 +108,11 @@ static void gfx_display_gdi_draw(gfx_display_ctx_draw_t *draw,
 }
 
 static void gfx_display_gdi_draw_pipeline(gfx_display_ctx_draw_t *draw,
-      video_frame_info_t *video_info)
-{
-}
+      video_frame_info_t *video_info) { }
 
 static void gfx_display_gdi_viewport(gfx_display_ctx_draw_t *draw, void *data) { }
 
-static void gfx_display_gdi_restore_clear_color(void)
-{
-}
+static void gfx_display_gdi_restore_clear_color(void) { }
 
 static void gfx_display_gdi_clear_color(
       gfx_display_ctx_clearcolor_t *clearcolor,
@@ -168,6 +164,6 @@ gfx_display_ctx_driver_t gfx_display_ctx_gdi = {
    GFX_VIDEO_DRIVER_GDI,
    "gdi",
    false,
-   NULL,
-   NULL
+   NULL, /* scissor_begin */
+   NULL  /* scissor_end   */
 };

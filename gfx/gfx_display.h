@@ -134,8 +134,11 @@ typedef struct gfx_display_ctx_driver
    const char *ident;
    bool handles_transform;
    /* Enables and disables scissoring */
-   void (*scissor_begin)(video_frame_info_t *video_info, int x, int y, unsigned width, unsigned height);
-   void (*scissor_end)(video_frame_info_t *video_info);
+   void (*scissor_begin)(void *data, unsigned video_width,
+         unsigned video_height,
+         int x, int y, unsigned width, unsigned height);
+   void (*scissor_end)(void *data, unsigned video_width,
+         unsigned video_height);
 } gfx_display_ctx_driver_t;
 
 struct gfx_display_ctx_draw

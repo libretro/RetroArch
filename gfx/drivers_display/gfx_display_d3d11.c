@@ -268,10 +268,13 @@ static bool gfx_display_d3d11_font_init_first(
    return true;
 }
 
-void gfx_display_d3d11_scissor_begin(video_frame_info_t *video_info, int x, int y, unsigned width, unsigned height)
+void gfx_display_d3d11_scissor_begin(void *data,
+      unsigned video_width,
+      unsigned video_height,
+      int x, int y, unsigned width, unsigned height)
 {
    D3D11_RECT rect;
-   d3d11_video_t *d3d11 = (d3d11_video_t*)video_info->userdata;
+   d3d11_video_t *d3d11 = (d3d11_video_t*)data;
 
    if (!d3d11 || !width || !height)
       return;
@@ -284,12 +287,12 @@ void gfx_display_d3d11_scissor_begin(video_frame_info_t *video_info, int x, int 
    D3D11SetScissorRects(d3d11->context, 1, &rect);
 }
 
-void gfx_display_d3d11_scissor_end(video_frame_info_t *video_info)
+void gfx_display_d3d11_scissor_end(void *data,
+      unsigned video_width,
+      unsigned video_height)
 {
    D3D11_RECT rect;
-   d3d11_video_t *d3d11  = (d3d11_video_t*)video_info->userdata;
-   unsigned video_width  = video_info->width;
-   unsigned video_height = video_info->height;
+   d3d11_video_t *d3d11  = (d3d11_video_t*)data;
 
    if (!d3d11)
       return;

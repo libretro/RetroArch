@@ -367,10 +367,12 @@ static bool gfx_display_gl_font_init_first(
 }
 
 static void gfx_display_gl_scissor_begin(
-      video_frame_info_t *video_info, int x, int y,
+      void *data,
+      unsigned video_width,
+      unsigned video_height,
+      int x, int y,
       unsigned width, unsigned height)
 {
-   unsigned video_height = video_info->height;
    glScissor(x, video_height - y - height, width, height);
    glEnable(GL_SCISSOR_TEST);
 #ifdef MALI_BUG
@@ -386,10 +388,11 @@ static void gfx_display_gl_scissor_begin(
 #endif
 }
 
-static void gfx_display_gl_scissor_end(video_frame_info_t *video_info)
+static void gfx_display_gl_scissor_end(
+      void *data,
+      unsigned video_width,
+      unsigned video_height)
 {
-   unsigned video_width  = video_info->width;
-   unsigned video_height = video_info->height;
    glScissor(0, 0, video_width, video_height);
    glDisable(GL_SCISSOR_TEST);
 #ifdef MALI_BUG

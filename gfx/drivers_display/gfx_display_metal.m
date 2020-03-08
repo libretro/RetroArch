@@ -84,9 +84,13 @@ static void gfx_display_metal_draw_pipeline(gfx_display_ctx_draw_t *draw, video_
 static void gfx_display_metal_viewport(gfx_display_ctx_draw_t *draw,
       void *data) } { }
 
-static void gfx_display_metal_scissor_begin(video_frame_info_t *video_info, int x, int y, unsigned width, unsigned height)
+static void gfx_display_metal_scissor_begin(
+      void *data,
+      unsigned video_width,
+      unsigned video_height,
+      int x, int y, unsigned width, unsigned height)
 {
-   MetalDriver *md = (__bridge MetalDriver *)video_info->userdata;
+   MetalDriver *md = (__bridge MetalDriver *)data;
    if (!md)
       return;
 
@@ -94,22 +98,23 @@ static void gfx_display_metal_scissor_begin(video_frame_info_t *video_info, int 
    [md.display setScissorRect:r];
 }
 
-static void gfx_display_metal_scissor_end(video_frame_info_t *video_info)
+static void gfx_display_metal_scissor_end(void *data,
+      unsigned video_width,
+      unsigned video_height)
 {
-   MetalDriver *md = (__bridge MetalDriver *)video_info->userdata;
+   MetalDriver *md = (__bridge MetalDriver *)data;
    if (!md)
       return;
 
    [md.display clearScissorRect];
 }
 
-static void gfx_display_metal_restore_clear_color(void)
-{
-   /* nothing to do */
-}
+/* Nothing to do */
+static void gfx_display_metal_restore_clear_color(void) { }
 
-static void gfx_display_metal_clear_color(gfx_display_ctx_clearcolor_t *clearcolor,
-                                           video_frame_info_t *video_info)
+static void gfx_display_metal_clear_color(
+      gfx_display_ctx_clearcolor_t *clearcolor,
+      video_frame_info_t *video_info)
 {
    MetalDriver *md = (__bridge MetalDriver *)video_info->userdata;
    if (!md)
@@ -125,9 +130,9 @@ static bool gfx_display_metal_font_init_first(
 {
    font_data_t **handle = (font_data_t **)font_handle;
    *handle = font_driver_init_first(video_data,
-                                    font_path, font_size, true,
-                                    is_threaded,
-                                    FONT_DRIVER_RENDER_METAL_API);
+         font_path, font_size, true,
+         is_threaded,
+         FONT_DRIVER_RENDER_METAL_API);
 
    if (*handle)
       return true;

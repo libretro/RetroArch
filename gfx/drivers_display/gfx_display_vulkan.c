@@ -357,10 +357,13 @@ static bool gfx_display_vk_font_init_first(
    return false;
 }
 
-static void gfx_display_vk_scissor_begin(video_frame_info_t *video_info,
+static void gfx_display_vk_scissor_begin(
+      void *data,
+      unsigned video_width,
+      unsigned video_height,
       int x, int y, unsigned width, unsigned height)
 {
-   vk_t *vk                          = (vk_t*)video_info->userdata;
+   vk_t *vk                          = (vk_t*)data;
 
    vk->tracker.use_scissor           = true;
    vk->tracker.scissor.offset.x      = x;
@@ -370,9 +373,11 @@ static void gfx_display_vk_scissor_begin(video_frame_info_t *video_info,
    vk->tracker.dirty                |= VULKAN_DIRTY_DYNAMIC_BIT;
 }
 
-static void gfx_display_vk_scissor_end(video_frame_info_t *video_info)
+static void gfx_display_vk_scissor_end(void *data,
+      unsigned video_width,
+      unsigned video_height)
 {
-   vk_t *vk                 = (vk_t*)video_info->userdata;
+   vk_t *vk                 = (vk_t*)data;
 
    vk->tracker.use_scissor  = false;
    vk->tracker.dirty       |= VULKAN_DIRTY_DYNAMIC_BIT;

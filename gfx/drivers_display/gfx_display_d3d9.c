@@ -303,11 +303,12 @@ static bool gfx_display_d3d9_font_init_first(
 }
 
 void gfx_display_d3d9_scissor_begin(
-      video_frame_info_t *video_info,
+      void *data,
+      unsigned video_width, unsigned video_height,
       int x, int y, unsigned width, unsigned height)
 {
    RECT rect;
-   d3d9_video_t *d3d9 = (d3d9_video_t*)video_info->userdata;
+   d3d9_video_t *d3d9 = (d3d9_video_t*)data;
 
    if (!d3d9 || !width || !height)
       return;
@@ -320,12 +321,11 @@ void gfx_display_d3d9_scissor_begin(
    d3d9_set_scissor_rect(d3d9->dev, &rect);
 }
 
-void gfx_display_d3d9_scissor_end(video_frame_info_t *video_info)
+void gfx_display_d3d9_scissor_end(void *data,
+      unsigned video_width, unsigned video_height)
 {
    RECT rect;
-   d3d9_video_t            *d3d9 = (d3d9_video_t*)video_info->userdata;
-   unsigned video_width          = video_info->width;
-   unsigned video_height         = video_info->height;
+   d3d9_video_t            *d3d9 = (d3d9_video_t*)data;
 
    if (!d3d9)
       return;
