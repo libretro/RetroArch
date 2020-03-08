@@ -728,7 +728,7 @@ void gfx_display_clear_color(gfx_display_ctx_clearcolor_t *color,
       video_frame_info_t *video_info)
 {
    if (dispctx && dispctx->clear_color)
-      dispctx->clear_color(color, video_info);
+      dispctx->clear_color(color, video_info->userdata);
 }
 
 void gfx_display_draw(gfx_display_ctx_draw_t *draw,
@@ -1272,8 +1272,9 @@ void gfx_display_draw_cursor(
 {
    gfx_display_ctx_draw_t draw;
    struct video_coords coords;
-   bool cursor_visible  = video_info->fullscreen;
-   if (!video_info->menu_mouse_enable || !cursor_visible)
+   bool cursor_visible  = video_info->fullscreen 
+      || video_info->menu_mouse_enable;
+   if (!cursor_visible)
       return;
 
    coords.vertices      = 4;
