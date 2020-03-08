@@ -121,19 +121,20 @@ static void ozone_draw_cursor_slice(ozone_handle_t *ozone,
    int slice_y           = (int)y + 8 * scale_factor;
    unsigned slice_new_w  = width + (3 + 28 - 4) * scale_factor;
    unsigned slice_new_h  = height + 20 * scale_factor;
+   void *userdata        = video_info->userdata;
    unsigned video_width  = video_info->width;
    unsigned video_height = video_info->height;
 
    gfx_display_set_alpha(ozone->theme_dynamic.cursor_alpha, alpha);
    gfx_display_set_alpha(ozone->theme_dynamic.cursor_border, alpha);
 
-   gfx_display_blend_begin(video_info->userdata);
+   gfx_display_blend_begin(userdata);
 
    /* Cursor without border */
    gfx_display_draw_texture_slice(
-      video_info->userdata,
-      video_info->width,
-      video_info->height,
+      userdata,
+      video_width,
+      video_height,
       slice_x,
       slice_y,
       80, 80,
@@ -147,9 +148,9 @@ static void ozone_draw_cursor_slice(ozone_handle_t *ozone,
 
    /* Tainted border */
    gfx_display_draw_texture_slice(
-      video_info->userdata,
-      video_info->width,
-      video_info->height,
+      userdata,
+      video_width,
+      video_height,
       slice_x,
       slice_y,
       80, 80,
@@ -161,7 +162,7 @@ static void ozone_draw_cursor_slice(ozone_handle_t *ozone,
       ozone->textures[OZONE_TEXTURE_CURSOR_BORDER]
    );
 
-   gfx_display_blend_end(video_info->userdata);
+   gfx_display_blend_end(userdata);
 }
 
 static void ozone_draw_cursor_fallback(ozone_handle_t *ozone,
@@ -271,6 +272,9 @@ void ozone_draw_icon(
    gfx_display_ctx_draw_t draw;
    struct video_coords coords;
    math_matrix_4x4 mymat;
+   void *userdata           = video_info->userdata;
+   unsigned video_width     = video_info->width;
+   unsigned video_height    = video_info->height;
 
    rotate_draw.matrix       = &mymat;
    rotate_draw.rotation     = rotation;
@@ -279,7 +283,7 @@ void ozone_draw_icon(
    rotate_draw.scale_z      = 1;
    rotate_draw.scale_enable = true;
 
-   gfx_display_rotate_z(&rotate_draw, video_info->userdata);
+   gfx_display_rotate_z(&rotate_draw, userdata);
 
    coords.vertices      = 4;
    coords.vertex        = NULL;
@@ -299,8 +303,8 @@ void ozone_draw_icon(
    draw.prim_type       = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
    draw.pipeline.id     = 0;
 
-   gfx_display_draw(&draw, video_info->userdata,
-         video_info->width, video_info->height);
+   gfx_display_draw(&draw, userdata,
+         video_width, video_height);
 }
 
 void ozone_draw_backdrop(video_frame_info_t *video_info, float alpha)
@@ -490,6 +494,9 @@ void ozone_draw_messagebox(ozone_handle_t *ozone,
    struct string_list *list = !string_is_empty(message)
       ? string_split(message, "\n") : NULL;
    float scale_factor       = ozone->last_scale_factor;
+   void *userdata           = video_info->userdata;
+   unsigned video_width     = video_info->width;
+   unsigned video_height    = video_info->height;
 
    if (!list || !ozone || !ozone->fonts.footer)
    {
@@ -524,7 +531,7 @@ void ozone_draw_messagebox(ozone_handle_t *ozone,
 
    gfx_display_set_alpha(ozone->theme_dynamic.message_background, ozone->animations.messagebox_alpha);
 
-   gfx_display_blend_begin(video_info->userdata);
+   gfx_display_blend_begin(userdata);
 
    if (ozone->has_all_assets) /* avoid drawing a black box if there's no assets */
    {
@@ -533,9 +540,9 @@ void ozone_draw_messagebox(ozone_handle_t *ozone,
       unsigned slice_new_h = ozone->footer_font_glyph_height * (list->size + 2);
 
       gfx_display_draw_texture_slice(
-            video_info->userdata,
-            video_info->width,
-            video_info->height,
+            userdata,
+            video_width,
+            video_height,
             slice_x,
             y,
             256, 256,

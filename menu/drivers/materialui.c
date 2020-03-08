@@ -1720,8 +1720,11 @@ static void materialui_draw_icon(
    gfx_display_ctx_draw_t draw;
    struct video_coords coords;
    math_matrix_4x4 mymat;
+   void *userdata           = video_info->userdata;
+   unsigned video_width     = video_info->width;
+   unsigned video_height    = video_info->height;
 
-   gfx_display_blend_begin(video_info->userdata);
+   gfx_display_blend_begin(userdata);
 
    rotate_draw.matrix       = &mymat;
    rotate_draw.rotation     = rotation;
@@ -1730,7 +1733,7 @@ static void materialui_draw_icon(
    rotate_draw.scale_z      = 1;
    rotate_draw.scale_enable = true;
 
-   gfx_display_rotate_z(&rotate_draw, video_info->userdata);
+   gfx_display_rotate_z(&rotate_draw, userdata);
 
    coords.vertices      = 4;
    coords.vertex        = NULL;
@@ -1750,9 +1753,9 @@ static void materialui_draw_icon(
    draw.prim_type       = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
    draw.pipeline.id     = 0;
 
-   gfx_display_draw(&draw, video_info->userdata,
-         video_info->width, video_info->height);
-   gfx_display_blend_end(video_info->userdata);
+   gfx_display_draw(&draw, userdata,
+         video_width, video_height);
+   gfx_display_blend_end(userdata);
 }
 
 static void materialui_draw_thumbnail(
@@ -3505,6 +3508,7 @@ static void materialui_render_background(materialui_handle_t *mui, video_frame_i
       1.0f, 1.0f, 1.0f, 1.0f,
       1.0f, 1.0f, 1.0f, 1.0f
    };
+   void *userdata                 = video_info->userdata;
    unsigned video_width           = video_info->width;
    unsigned video_height          = video_info->height;
    bool libretro_running          = video_info->libretro_running;
@@ -3554,12 +3558,12 @@ static void materialui_render_background(materialui_handle_t *mui, video_frame_i
    }
 
    /* Draw background */
-   gfx_display_blend_begin(video_info->userdata);
-   gfx_display_draw_bg(&draw, video_info->userdata,
+   gfx_display_blend_begin(userdata);
+   gfx_display_draw_bg(&draw, userdata,
          add_opacity, opacity_override);
-   gfx_display_draw(&draw, video_info->userdata,
-         video_info->width, video_info->height);
-   gfx_display_blend_end(video_info->userdata);
+   gfx_display_draw(&draw, userdata,
+         video_width, video_height);
+   gfx_display_blend_end(userdata);
 }
 
 static void materialui_render_landscape_border(
