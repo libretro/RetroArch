@@ -80,12 +80,12 @@ static void *gfx_display_null_get_default_mvp(void *data) { return NULL; }
 static void gfx_display_null_blend_begin(void *data) { }
 static void gfx_display_null_blend_end(void *data) { }
 static void gfx_display_null_draw(gfx_display_ctx_draw_t *draw,
-      video_frame_info_t *video_info) { }
+      void *data, unsigned width, unsigned height) { }
 static void gfx_display_null_draw_pipeline(gfx_display_ctx_draw_t *draw,
-      video_frame_info_t *video_info) { }
+      void *data, unsigned width, unsigned height) { }
 static void gfx_display_null_viewport(gfx_display_ctx_draw_t *draw, void *data) { }
 static void gfx_display_null_restore_clear_color(void) { }
-static void gfx_display_null_clear_color(gfx_display_ctx_clearcolor_t *clearcolor, video_frame_info_t *video_info) { }
+static void gfx_display_null_clear_color(gfx_display_ctx_clearcolor_t *clearcolor, void *data) { }
 
 static bool gfx_display_null_font_init_first(
       void **font_handle, void *video_data,
@@ -741,7 +741,8 @@ void gfx_display_draw(gfx_display_ctx_draw_t *draw,
       return;
    if (draw->width <= 0)
       return;
-   dispctx->draw(draw, video_info);
+   dispctx->draw(draw, video_info->userdata,
+         video_info->width, video_info->height);
 }
 
 void gfx_display_draw_blend(gfx_display_ctx_draw_t *draw,
@@ -755,7 +756,8 @@ void gfx_display_draw_blend(gfx_display_ctx_draw_t *draw,
    if (draw->width <= 0)
       return;
    gfx_display_blend_begin(video_info->userdata);
-   dispctx->draw(draw, video_info);
+   dispctx->draw(draw, video_info->userdata,
+         video_info->width, video_info->height);
    gfx_display_blend_end(video_info->userdata);
 }
 
@@ -763,7 +765,8 @@ void gfx_display_draw_pipeline(gfx_display_ctx_draw_t *draw,
       video_frame_info_t *video_info)
 {
    if (dispctx && draw && dispctx->draw_pipeline)
-      dispctx->draw_pipeline(draw, video_info);
+      dispctx->draw_pipeline(draw, video_info->userdata,
+            video_info->width, video_info->height);
 }
 
 void gfx_display_draw_bg(gfx_display_ctx_draw_t *draw,

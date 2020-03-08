@@ -63,22 +63,28 @@ static void gfx_display_metal_blend_end(void *data)
 }
 
 static void gfx_display_metal_draw(gfx_display_ctx_draw_t *draw,
-                                    video_frame_info_t *video_info)
+      void *data,
+      unsigned video_width,
+      unsigned video_height)
 {
-   MetalDriver *md = (__bridge MetalDriver *)video_info->userdata;
+   MetalDriver *md = (__bridge MetalDriver *)data;
    if (!md || !draw)
       return;
 
-   [md.display draw:draw video:video_info];
+   [md.display draw:draw];
 }
 
-static void gfx_display_metal_draw_pipeline(gfx_display_ctx_draw_t *draw, video_frame_info_t *video_info)
+static void gfx_display_metal_draw_pipeline(
+      gfx_display_ctx_draw_t *draw,
+      void *data,
+      unsigned video_width,
+      unsigned video_height)
 {
-   MetalDriver *md = (__bridge MetalDriver *)video_info->userdata;
+   MetalDriver *md = (__bridge MetalDriver *)data;
    if (!md || !draw)
       return;
 
-   [md.display drawPipeline:draw video:video_info];
+   [md.display drawPipeline:draw];
 }
 
 static void gfx_display_metal_viewport(gfx_display_ctx_draw_t *draw,
@@ -114,9 +120,9 @@ static void gfx_display_metal_restore_clear_color(void) { }
 
 static void gfx_display_metal_clear_color(
       gfx_display_ctx_clearcolor_t *clearcolor,
-      video_frame_info_t *video_info)
+      void *data)
 {
-   MetalDriver *md = (__bridge MetalDriver *)video_info->userdata;
+   MetalDriver *md = (__bridge MetalDriver *)data;
    if (!md)
       return;
 

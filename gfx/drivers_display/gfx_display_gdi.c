@@ -37,11 +37,10 @@ static void gfx_display_gdi_blend_begin(void *data) { }
 static void gfx_display_gdi_blend_end(void *data) { }
 
 static void gfx_display_gdi_draw(gfx_display_ctx_draw_t *draw,
-      video_frame_info_t *video_info)
+      void *data, unsigned video_width, unsigned video_height)
 {
    struct gdi_texture *texture = NULL;
-   gdi_t *gdi                  = (gdi_t*)video_info->userdata;
-   unsigned video_height       = video_info->height;
+   gdi_t *gdi                  = (gdi_t*)data;
    BITMAPINFO info             = {{0}};
 
    if (!gdi || !draw || draw->x < 0 || draw->y < 0 || draw->width <= 1 || draw->height <= 1)
@@ -108,15 +107,13 @@ static void gfx_display_gdi_draw(gfx_display_ctx_draw_t *draw,
 }
 
 static void gfx_display_gdi_draw_pipeline(gfx_display_ctx_draw_t *draw,
-      video_frame_info_t *video_info) { }
-
+      void *data, unsigned video_width, unsigned video_height) { }
 static void gfx_display_gdi_viewport(gfx_display_ctx_draw_t *draw, void *data) { }
-
 static void gfx_display_gdi_restore_clear_color(void) { }
 
 static void gfx_display_gdi_clear_color(
       gfx_display_ctx_clearcolor_t *clearcolor,
-      video_frame_info_t *video_info)
+      void *data)
 {
    (void)clearcolor;
 

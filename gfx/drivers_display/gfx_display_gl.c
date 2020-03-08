@@ -218,11 +218,9 @@ gfx_display_gl_discard_draw_rectangle(gfx_display_ctx_draw_t *draw,
 #endif
 
 static void gfx_display_gl_draw(gfx_display_ctx_draw_t *draw,
-      video_frame_info_t *video_info)
+      void *data, unsigned video_width, unsigned video_height)
 {
-   gl_t             *gl  = (gl_t*)video_info->userdata;
-   unsigned video_width  = video_info->width;
-   unsigned video_height = video_info->height;
+   gl_t             *gl  = (gl_t*)data;
 
    if (!gl || !draw)
       return;
@@ -259,12 +257,15 @@ static void gfx_display_gl_draw(gfx_display_ctx_draw_t *draw,
    gl->coords.color     = gl->white_color_ptr;
 }
 
-static void gfx_display_gl_draw_pipeline(gfx_display_ctx_draw_t *draw,
-      video_frame_info_t *video_info)
+static void gfx_display_gl_draw_pipeline(
+      gfx_display_ctx_draw_t *draw,
+      void *data,
+      unsigned video_width,
+      unsigned video_height)
 {
 #ifdef HAVE_SHADERPIPELINE
    struct uniform_info uniform_param;
-   gl_t             *gl             = (gl_t*)video_info->userdata;
+   gl_t             *gl             = (gl_t*)data;
    static float t                   = 0;
    video_coord_array_t *ca          = gfx_display_get_coords_array();
 
@@ -342,7 +343,7 @@ static void gfx_display_gl_restore_clear_color(void)
 
 static void gfx_display_gl_clear_color(
       gfx_display_ctx_clearcolor_t *clearcolor,
-      video_frame_info_t *video_info)
+      void *data)
 {
    if (!clearcolor)
       return;

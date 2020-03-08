@@ -60,10 +60,10 @@ static void gfx_display_d3d10_blend_end(void *data)
 static void gfx_display_d3d10_viewport(gfx_display_ctx_draw_t *draw, void *data) { }
 
 static void gfx_display_d3d10_draw(gfx_display_ctx_draw_t *draw,
-      video_frame_info_t *video_info)
+      void *data, unsigned video_width, unsigned video_height)
 {
    int vertex_count;
-   d3d10_video_t* d3d10 = (d3d10_video_t*)video_info->userdata;
+   d3d10_video_t* d3d10 = (d3d10_video_t*)data;
 
    if (!d3d10 || !draw || !draw->texture)
       return;
@@ -182,9 +182,9 @@ static void gfx_display_d3d10_draw(gfx_display_ctx_draw_t *draw,
 }
 
 static void gfx_display_d3d10_draw_pipeline(gfx_display_ctx_draw_t* draw,
-      video_frame_info_t *video_info)
+      void *data, unsigned video_width, unsigned video_height)
 {
-   d3d10_video_t* d3d10 = (d3d10_video_t*)video_info->userdata;
+   d3d10_video_t* d3d10 = (d3d10_video_t*)data;
 
    if (!d3d10 || !draw)
       return;
@@ -240,10 +240,9 @@ static void gfx_display_d3d10_draw_pipeline(gfx_display_ctx_draw_t* draw,
 static void gfx_display_d3d10_restore_clear_color(void) {}
 
 static void gfx_display_d3d10_clear_color(
-      gfx_display_ctx_clearcolor_t* clearcolor,
-      video_frame_info_t *video_info)
+      gfx_display_ctx_clearcolor_t* clearcolor, void *data)
 {
-   d3d10_video_t* d3d10 = (d3d10_video_t*)video_info->userdata;
+   d3d10_video_t* d3d10 = (d3d10_video_t*)data;
 
    if (!d3d10 || !clearcolor)
       return;

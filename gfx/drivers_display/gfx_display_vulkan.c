@@ -116,7 +116,7 @@ static void gfx_display_vk_viewport(gfx_display_ctx_draw_t *draw,
 }
 
 static void gfx_display_vk_draw_pipeline(gfx_display_ctx_draw_t *draw,
-      video_frame_info_t *video_info)
+      void *data, unsigned video_width, unsigned video_height)
 {
 #ifdef HAVE_SHADERPIPELINE
    static uint8_t ubo_scratch_data[768];
@@ -125,7 +125,7 @@ static void gfx_display_vk_draw_pipeline(gfx_display_ctx_draw_t *draw,
    static struct video_coords blank_coords;
    float output_size[2];
    video_coord_array_t *ca          = NULL;
-   vk_t *vk                         = (vk_t*)video_info->userdata;
+   vk_t *vk                         = (vk_t*)data;
 
    if (!vk || !draw)
       return;
@@ -191,7 +191,7 @@ static void gfx_display_vk_draw_pipeline(gfx_display_ctx_draw_t *draw,
 }
 
 static void gfx_display_vk_draw(gfx_display_ctx_draw_t *draw,
-      video_frame_info_t *video_info)
+      void *data, unsigned video_width, unsigned video_height)
 {
    unsigned i;
    struct vk_buffer_range range;
@@ -200,7 +200,7 @@ static void gfx_display_vk_draw(gfx_display_ctx_draw_t *draw,
    const float *tex_coord        = NULL;
    const float *color            = NULL;
    struct vk_vertex *pv          = NULL;
-   vk_t *vk                      = (vk_t*)video_info->userdata;
+   vk_t *vk                      = (vk_t*)data;
 
    if (!vk || !draw)
       return;
@@ -301,11 +301,11 @@ static void gfx_display_vk_restore_clear_color(void)
 
 static void gfx_display_vk_clear_color(
       gfx_display_ctx_clearcolor_t *clearcolor,
-      video_frame_info_t *video_info)
+      void *data)
 {
    VkClearRect rect;
    VkClearAttachment attachment;
-   vk_t *vk = (vk_t*)video_info->userdata;
+   vk_t *vk = (vk_t*)data;
    if (!vk || !clearcolor)
       return;
 

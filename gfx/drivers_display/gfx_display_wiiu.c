@@ -36,9 +36,9 @@ static void gfx_display_wiiu_blend_end(void *data) { }
 static void gfx_display_wiiu_viewport(gfx_display_ctx_draw_t *draw, void *data) { }
 
 static void gfx_display_wiiu_draw(gfx_display_ctx_draw_t *draw,
-      video_frame_info_t *video_info)
+      void *data, unsigned video_width, unsigned video_height)
 {
-   wiiu_video_t             *wiiu  = (wiiu_video_t*)video_info->userdata;
+   wiiu_video_t             *wiiu  = (wiiu_video_t*)data;
 
    if (!wiiu || !draw)
       return;
@@ -205,10 +205,10 @@ static void gfx_display_wiiu_draw(gfx_display_ctx_draw_t *draw,
 }
 
 static void gfx_display_wiiu_draw_pipeline(gfx_display_ctx_draw_t *draw,
-      video_frame_info_t *video_info)
+      void *data, unsigned video_width, unsigned video_height)
 {
    video_coord_array_t *ca        = NULL;
-   wiiu_video_t             *wiiu = (wiiu_video_t*)video_info->userdata;
+   wiiu_video_t             *wiiu = (wiiu_video_t*)data;
 
    if (!wiiu || !draw)
       return;
@@ -267,7 +267,7 @@ static void gfx_display_wiiu_restore_clear_color(void)
 
 static void gfx_display_wiiu_clear_color(
       gfx_display_ctx_clearcolor_t *clearcolor,
-      video_frame_info_t *video_info)
+      void *data)
 {
    if (!clearcolor)
       return;

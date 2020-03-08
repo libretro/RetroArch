@@ -78,7 +78,9 @@ static void gfx_display_gl_core_viewport(gfx_display_ctx_draw_t *draw, void *dat
 }
 
 static void gfx_display_gl_core_draw_pipeline(gfx_display_ctx_draw_t *draw,
-      video_frame_info_t *video_info)
+      void *data,
+      unsigned video_width,
+      unsigned video_height)
 {
 #ifdef HAVE_SHADERPIPELINE
    float output_size[2];
@@ -87,9 +89,7 @@ static void gfx_display_gl_core_draw_pipeline(gfx_display_ctx_draw_t *draw,
    static float t                = 0.0f;
    float yflip                   = 0.0f;
    video_coord_array_t *ca       = NULL;
-   gl_core_t *gl                 = (gl_core_t*)video_info->userdata;
-   unsigned video_width          = video_info->width;
-   unsigned video_height         = video_info->height;
+   gl_core_t *gl                 = (gl_core_t*)data;
 
    if (!gl || !draw)
       return;
@@ -152,13 +152,13 @@ static void gfx_display_gl_core_draw_pipeline(gfx_display_ctx_draw_t *draw,
 }
 
 static void gfx_display_gl_core_draw(gfx_display_ctx_draw_t *draw,
-      video_frame_info_t *video_info)
+      void *data, unsigned video_width, unsigned video_height)
 {
    const float *vertex       = NULL;
    const float *tex_coord    = NULL;
    const float *color        = NULL;
    GLuint            texture = 0;
-   gl_core_t *gl             = (gl_core_t*)video_info->userdata;
+   gl_core_t *gl             = (gl_core_t*)data;
    const struct 
       gl_core_buffer_locations *loc = NULL;
 
@@ -292,7 +292,7 @@ static void gfx_display_gl_core_restore_clear_color(void)
 
 static void gfx_display_gl_core_clear_color(
       gfx_display_ctx_clearcolor_t *clearcolor,
-      video_frame_info_t *video_info)
+      void *data)
 {
    if (!clearcolor)
       return;

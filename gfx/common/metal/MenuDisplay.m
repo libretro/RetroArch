@@ -1,13 +1,13 @@
-//
-// Created by Stuart Carnie on 6/24/18.
-//
+/*
+ * Created by Stuart Carnie on 6/24/18.
+ */
 
 #import "Context.h"
 #import "MenuDisplay.h"
 #import "ShaderTypes.h"
 #import "menu_driver.h"
 #import <Metal/Metal.h>
-// TODO(sgc): this dependency is incorrect
+/* TODO(sgc): this dependency is incorrect */
 #import "../metal_common.h"
 
 @implementation MenuDisplay
@@ -102,7 +102,7 @@
    }
 }
 
-- (void)drawPipeline:(gfx_display_ctx_draw_t *)draw video:(video_frame_info_t *)video
+- (void)drawPipeline:(gfx_display_ctx_draw_t *)draw
 {
    static struct video_coords blank_coords;
 
@@ -117,7 +117,7 @@
 
    switch (draw->pipeline.id)
    {
-      // ribbon
+      /* ribbon */
       default:
       case VIDEO_SHADER_MENU:
       case VIDEO_SHADER_MENU_2:
@@ -142,7 +142,7 @@
    _uniforms.time += 0.01;
 }
 
-- (void)draw:(gfx_display_ctx_draw_t *)draw video:(video_frame_info_t *)video
+- (void)draw:(gfx_display_ctx_draw_t *)draw
 {
    const float *vertex = draw->coords->vertex ?: MenuDisplay.defaultVertices;
    const float *tex_coord = draw->coords->tex_coord ?: MenuDisplay.defaultTexCoords;

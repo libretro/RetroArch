@@ -113,13 +113,13 @@ static void gfx_display_d3d8_bind_texture(gfx_display_ctx_draw_t *draw,
 }
 
 static void gfx_display_d3d8_draw(gfx_display_ctx_draw_t *draw,
-      video_frame_info_t *video_info)
+      void *data,
+      unsigned video_width, 
+      unsigned video_height)
 {
    unsigned i;
    math_matrix_4x4 mop, m1, m2;
-   d3d8_video_t *d3d             = (d3d8_video_t*)video_info->userdata;
-   unsigned video_width          = video_info->width;
-   unsigned video_height         = video_info->height;
+   d3d8_video_t *d3d             = (d3d8_video_t*)data;
    Vertex * pv                   = NULL;
    const float *vertex           = NULL;
    const float *tex_coord        = NULL;
@@ -221,20 +221,14 @@ static void gfx_display_d3d8_draw(gfx_display_ctx_draw_t *draw,
 }
 
 static void gfx_display_d3d8_draw_pipeline(gfx_display_ctx_draw_t *draw,
-      video_frame_info_t *video_info)
-{
-}
-
-static void gfx_display_d3d8_restore_clear_color(void)
-{
-   /* not needed */
-}
+      void *data, unsigned video_width, unsigned video_height) { }
+static void gfx_display_d3d8_restore_clear_color(void) { }
 
 static void gfx_display_d3d8_clear_color(
-      gfx_display_ctx_clearcolor_t *clearcolor, video_frame_info_t *video_info)
+      gfx_display_ctx_clearcolor_t *clearcolor, void *data)
 {
    DWORD    clear_color  = 0;
-   d3d8_video_t     *d3d = (d3d8_video_t*)video_info->userdata;
+   d3d8_video_t     *d3d = (d3d8_video_t*)data;
 
    if (!d3d || !clearcolor)
       return;

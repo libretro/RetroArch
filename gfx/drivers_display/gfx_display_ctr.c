@@ -37,12 +37,12 @@ static void gfx_display_ctr_viewport(gfx_display_ctx_draw_t *draw,
       void *data) { }
 
 static void gfx_display_ctr_draw(gfx_display_ctx_draw_t *draw,
-      video_frame_info_t *video_info)
+      void *data, unsigned video_width, unsigned video_height)
 {
    int colorR, colorG, colorB, colorA;
    struct ctr_texture *texture      = NULL;
    const float *color               = NULL;
-   ctr_video_t             *ctr     = (ctr_video_t*)video_info->userdata;
+   ctr_video_t             *ctr     = (ctr_video_t*)data;
 
    if (!ctr || !draw)
       return;
@@ -135,9 +135,7 @@ static void gfx_display_ctr_draw(gfx_display_ctx_draw_t *draw,
 }
 
 static void gfx_display_ctr_draw_pipeline(gfx_display_ctx_draw_t *draw,
-      video_frame_info_t *video_info)
-{
-}
+      void *data, unsigned video_width, unsigned video_height) { }
 
 static void gfx_display_ctr_restore_clear_color(void)
 {
@@ -146,7 +144,7 @@ static void gfx_display_ctr_restore_clear_color(void)
 #endif
 }
 
-static void gfx_display_ctr_clear_color(gfx_display_ctx_clearcolor_t *clearcolor, video_frame_info_t *video_info)
+static void gfx_display_ctr_clear_color(gfx_display_ctx_clearcolor_t *clearcolor, void *data)
 {
    if (!clearcolor)
       return;

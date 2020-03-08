@@ -105,10 +105,11 @@ typedef struct gfx_display_ctx_draw gfx_display_ctx_draw_t;
 typedef struct gfx_display_ctx_driver
 {
    /* Draw graphics to the screen. */
-   void (*draw)(gfx_display_ctx_draw_t *draw, video_frame_info_t *video_info);
+   void (*draw)(gfx_display_ctx_draw_t *draw,
+         void *data, unsigned video_width, unsigned video_height);
    /* Draw one of the menu pipeline shaders. */
    void (*draw_pipeline)(gfx_display_ctx_draw_t *draw,
-         video_frame_info_t *video_info);
+         void *data, unsigned video_width, unsigned video_height);
    void (*viewport)(gfx_display_ctx_draw_t *draw, void *data);
    /* Start blending operation. */
    void (*blend_begin)(void *data);
@@ -118,7 +119,7 @@ typedef struct gfx_display_ctx_driver
    void (*restore_clear_color)(void);
    /* Set the color to be used when clearing the screen */
    void (*clear_color)(gfx_display_ctx_clearcolor_t *clearcolor,
-         video_frame_info_t *video_info);
+         void *data);
    /* Get the default Model-View-Projection matrix */
    void *(*get_default_mvp)(void *data);
    /* Get the default vertices matrix */

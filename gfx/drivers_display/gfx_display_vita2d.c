@@ -85,14 +85,14 @@ static void gfx_display_vita2d_viewport(gfx_display_ctx_draw_t *draw,
 }
 
 static void gfx_display_vita2d_draw(gfx_display_ctx_draw_t *draw,
-      video_frame_info_t *video_info)
+      void *data, unsigned video_width, unsigned video_height)
 {
     unsigned i;
     struct vita2d_texture *texture   = NULL;
     const float *vertex              = NULL;
     const float *tex_coord           = NULL;
     const float *color               = NULL;
-    vita_video_t             *vita2d = (vita_video_t*)video_info->userdata;
+    vita_video_t             *vita2d = (vita_video_t*)data;
 
     if (!vita2d || !draw)
       return;
@@ -145,9 +145,7 @@ static void gfx_display_vita2d_draw(gfx_display_ctx_draw_t *draw,
 }
 
 static void gfx_display_vita2d_draw_pipeline(gfx_display_ctx_draw_t *draw,
-      video_frame_info_t *video_info)
-{
-}
+      void *data, unsigned video_width, unsigned video_height) { }
 
 static void gfx_display_vita2d_restore_clear_color(void)
 {
@@ -155,8 +153,7 @@ static void gfx_display_vita2d_restore_clear_color(void)
 }
 
 static void gfx_display_vita2d_clear_color(
-      gfx_display_ctx_clearcolor_t *clearcolor,
-      video_frame_info_t *video_info)
+      gfx_display_ctx_clearcolor_t *clearcolor, void *data)
 {
    if (!clearcolor)
       return;

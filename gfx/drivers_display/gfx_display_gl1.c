@@ -100,10 +100,12 @@ static void gfx_display_gl1_viewport(gfx_display_ctx_draw_t *draw,
 }
 
 static void gfx_display_gl1_draw(gfx_display_ctx_draw_t *draw,
-      video_frame_info_t *video_info)
+      void *data,
+      unsigned video_width,
+      unsigned video_height)
 {
    video_shader_ctx_mvp_t mvp;
-   gl1_t             *gl1          = (gl1_t*)video_info->userdata;
+   gl1_t             *gl1          = (gl1_t*)data;
 
    if (!gl1 || !draw)
       return;
@@ -177,7 +179,7 @@ static void gfx_display_gl1_restore_clear_color(void)
 
 static void gfx_display_gl1_clear_color(
       gfx_display_ctx_clearcolor_t *clearcolor,
-      video_frame_info_t *video_info)
+      void *data)
 {
    if (!clearcolor)
       return;

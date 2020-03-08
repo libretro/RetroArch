@@ -114,18 +114,16 @@ static void gfx_display_d3d9_bind_texture(gfx_display_ctx_draw_t *draw,
 }
 
 static void gfx_display_d3d9_draw(gfx_display_ctx_draw_t *draw,
-      video_frame_info_t *video_info)
+      void *data, unsigned video_width, unsigned video_height)
 {
    unsigned i;
    math_matrix_4x4 mop, m1, m2;
    LPDIRECT3DDEVICE9 dev;
-   d3d9_video_t *d3d             = (d3d9_video_t*)video_info->userdata;
+   d3d9_video_t *d3d             = (d3d9_video_t*)data;
    Vertex * pv                   = NULL;
    const float *vertex           = NULL;
    const float *tex_coord        = NULL;
    const float *color            = NULL;
-   unsigned video_width          = video_info->width;
-   unsigned video_height         = video_info->height;
 
    if (!d3d || !draw || draw->pipeline.id)
       return;
@@ -216,7 +214,7 @@ static void gfx_display_d3d9_draw(gfx_display_ctx_draw_t *draw,
 }
 
 static void gfx_display_d3d9_draw_pipeline(gfx_display_ctx_draw_t *draw,
-      video_frame_info_t *video_info)
+      void *data, unsigned video_width, unsigned video_height)
 {
 #if defined(HAVE_HLSL) || defined(HAVE_CG)
    static float t                    = 0;
@@ -267,11 +265,11 @@ static void gfx_display_d3d9_restore_clear_color(void)
 
 static void gfx_display_d3d9_clear_color(
       gfx_display_ctx_clearcolor_t *clearcolor,
-      video_frame_info_t *video_info)
+      void *data)
 {
    LPDIRECT3DDEVICE9 dev;
    DWORD    clear_color  = 0;
-   d3d9_video_t     *d3d = (d3d9_video_t*)video_info->userdata;
+   d3d9_video_t     *d3d = (d3d9_video_t*)data;
 
    if (!d3d || !clearcolor)
       return;

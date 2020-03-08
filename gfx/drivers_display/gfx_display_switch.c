@@ -26,14 +26,15 @@ static void *gfx_display_switch_get_default_mvp(void *data) { return NULL; }
 static void gfx_display_switch_blend_begin(void *data) { }
 static void gfx_display_switch_blend_end(void *data) { }
 static void gfx_display_switch_draw(gfx_display_ctx_draw_t *draw,
-      video_frame_info_t *video_info) { }
+      void *data, unsigned video_width, unsigned video_height) { }
 static void gfx_display_switch_draw_pipeline(
-      gfx_display_ctx_draw_t *draw, video_frame_info_t *video_info) { }
+      gfx_display_ctx_draw_t *draw,
+      void *data, unsigned video_width, unsigned video_height) { }
 static void gfx_display_switch_viewport(gfx_display_ctx_draw_t *draw,
       void *data) { }
 static void gfx_display_switch_restore_clear_color(void) { }
 
-static void gfx_display_switch_clear_color(gfx_display_ctx_clearcolor_t *clearcolor, video_frame_info_t *video_info) { }
+static void gfx_display_switch_clear_color(gfx_display_ctx_clearcolor_t *clearcolor, void *data) { }
 
 static bool gfx_display_switch_font_init_first(
       void **font_handle, void *video_data,
