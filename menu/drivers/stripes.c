@@ -2808,6 +2808,7 @@ static void stripes_frame(void *data, video_frame_info_t *video_info)
    const int min_thumb_size                = 50;
    bool render_background                  = false;
    file_list_t *selection_buf              = NULL;
+   void *userdata                          = video_info->userdata;
    unsigned video_width                    = video_info->width;
    unsigned video_height                   = video_info->height;
    float xmb_alpha_factor                  = video_info->xmb_alpha_factor;
@@ -2875,7 +2876,9 @@ static void stripes_frame(void *data, video_frame_info_t *video_info)
       };
 
       gfx_display_draw_polygon(
-            video_info,
+            userdata,
+            video_width,
+            video_height,
             stripes->categories_x_pos + stack_width,
             0,
             stripes->categories_x_pos + stack_width + node->width,

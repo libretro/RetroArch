@@ -303,13 +303,16 @@ void gfx_display_draw_quad(
       float *color);
 
 void gfx_display_draw_polygon(
-      video_frame_info_t *video_info,
+      void *userdata,
+      unsigned video_width,
+      unsigned video_height,
       int x1, int y1,
       int x2, int y2,
       int x3, int y3,
       int x4, int y4,
       unsigned width, unsigned height,
       float *color);
+
 void gfx_display_draw_texture(
       video_frame_info_t *video_info,
       int x, int y, unsigned w, unsigned h,

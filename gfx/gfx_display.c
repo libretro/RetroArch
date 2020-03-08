@@ -768,9 +768,13 @@ void gfx_display_draw_blend(
 void gfx_display_draw_pipeline(gfx_display_ctx_draw_t *draw,
       video_frame_info_t *video_info)
 {
+   void       *userdata    = video_info->userdata;
+   unsigned video_width    = video_info->width;
+   unsigned video_height   = video_info->height;
+
    if (dispctx && draw && dispctx->draw_pipeline)
-      dispctx->draw_pipeline(draw, video_info->userdata,
-            video_info->width, video_info->height);
+      dispctx->draw_pipeline(draw, userdata,
+            video_width, video_height);
 }
 
 void gfx_display_draw_bg(gfx_display_ctx_draw_t *draw,
@@ -780,6 +784,7 @@ void gfx_display_draw_bg(gfx_display_ctx_draw_t *draw,
    static struct video_coords coords;
    const float *new_vertex       = NULL;
    const float *new_tex_coord    = NULL;
+   void *userdata                = video_info->userdata;
    if (!dispctx || !draw)
       return;
 
@@ -812,20 +817,25 @@ void gfx_display_draw_bg(gfx_display_ctx_draw_t *draw,
 
    if (dispctx && dispctx->get_default_mvp)
       draw->matrix_data = (math_matrix_4x4*)dispctx->get_default_mvp(
-            video_info->userdata);
+            userdata);
 }
 
 void gfx_display_draw_gradient(gfx_display_ctx_draw_t *draw,
       video_frame_info_t *video_info)
 {
+   void *userdata               = video_info->userdata;
+   unsigned video_width         = video_info->width;
+   unsigned video_height        = video_info->height;
+   float menu_wallpaper_opacity = video_info->menu_wallpaper_opacity;
+
    draw->texture       = 0;
    draw->x             = 0;
    draw->y             = 0;
 
    gfx_display_draw_bg(draw, video_info, false,
-         video_info->menu_wallpaper_opacity);
-   gfx_display_draw(draw, video_info->userdata,
-         video_info->width, video_info->height);
+         menu_wallpaper_opacity);
+   gfx_display_draw(draw, userdata,
+         video_width, video_height);
 }
 
 void gfx_display_draw_quad(
@@ -868,7 +878,9 @@ void gfx_display_draw_quad(
 }
 
 void gfx_display_draw_polygon(
-      video_frame_info_t *video_info,
+      void *userdata,
+      unsigned video_width,
+      unsigned video_height,
       int x1, int y1,
       int x2, int y2,
       int x3, int y3,
@@ -897,7 +909,7 @@ void gfx_display_draw_polygon(
    coords.color         = color;
 
    if (dispctx && dispctx->blend_begin)
-      dispctx->blend_begin(video_info->userdata);
+      dispctx->blend_begin(userdata);
 
    draw.x            = 0;
    draw.y            = 0;
@@ -911,11 +923,11 @@ void gfx_display_draw_polygon(
    draw.scale_factor = 1.0f;
    draw.rotation     = 0.0f;
 
-   gfx_display_draw(&draw, video_info->userdata,
-         video_info->width, video_info->height);
+   gfx_display_draw(&draw, userdata,
+         video_width, video_height);
 
    if (dispctx && dispctx->blend_end)
-      dispctx->blend_end(video_info->userdata);
+      dispctx->blend_end(userdata);
 }
 
 void gfx_display_draw_texture(
@@ -928,6 +940,10 @@ void gfx_display_draw_texture(
    gfx_display_ctx_rotate_draw_t rotate_draw;
    struct video_coords coords;
    math_matrix_4x4 mymat;
+   void *userdata           = video_info->userdata;
+   unsigned video_width     = video_info->width;
+   unsigned video_height    = video_info->height;
+
    rotate_draw.matrix       = &mymat;
    rotate_draw.rotation     = 0.0;
    rotate_draw.scale_x      = 1.0;
@@ -946,13 +962,13 @@ void gfx_display_draw_texture(
    draw.pipeline.id         = 0;
    coords.color             = (const float*)color;
 
-   gfx_display_rotate_z(&rotate_draw, video_info->userdata);
+   gfx_display_rotate_z(&rotate_draw, userdata);
 
    draw.texture             = texture;
    draw.x                   = x;
    draw.y                   = height - y;
-   gfx_display_draw(&draw, video_info->userdata,
-         video_info->width, video_info->height);
+   gfx_display_draw(&draw, userdata,
+         video_width, video_height);
 }
 
 /* Draw the texture split into 9 sections, without scaling the corners.
@@ -971,6 +987,9 @@ void gfx_display_draw_texture_slice(
    math_matrix_4x4 mymat;
    unsigned i;
    float V_BL[2], V_BR[2], V_TL[2], V_TR[2], T_BL[2], T_BR[2], T_TL[2], T_TR[2];
+   void *userdata           = video_info->userdata;
+   unsigned video_width     = video_info->width;
+   unsigned video_height    = video_info->height;
 
    /* need space for the coordinates of two triangles in a strip,
     * so 8 vertices */
@@ -1037,7 +1056,7 @@ void gfx_display_draw_texture_slice(
    draw.pipeline.id         = 0;
    coords.color             = (const float*)(color == NULL ? colors : color);
 
-   gfx_display_rotate_z(&rotate_draw, video_info->userdata);
+   gfx_display_rotate_z(&rotate_draw, userdata);
 
    draw.texture             = texture;
    draw.x                   = 0;
@@ -1068,8 +1087,8 @@ void gfx_display_draw_texture_slice(
    tex_coord[6] = T_TR[0];
    tex_coord[7] = T_TR[1];
 
-   gfx_display_draw(&draw, video_info->userdata,
-         video_info->width, video_info->height);
+   gfx_display_draw(&draw, userdata,
+         video_width, video_height);
 
    /* top-middle section */
    vert_coord[0] = V_BL[0] + vert_woff;
@@ -1090,8 +1109,8 @@ void gfx_display_draw_texture_slice(
    tex_coord[6] = T_TR[0] + tex_mid_width;
    tex_coord[7] = T_TR[1];
 
-   gfx_display_draw(&draw, video_info->userdata,
-         video_info->width, video_info->height);
+   gfx_display_draw(&draw, userdata,
+         video_width, video_height);
 
    /* top-right corner */
    vert_coord[0] = V_BL[0] + vert_woff + vert_scaled_mid_width;
@@ -1112,8 +1131,8 @@ void gfx_display_draw_texture_slice(
    tex_coord[6] = T_TR[0] + tex_mid_width + tex_woff;
    tex_coord[7] = T_TR[1];
 
-   gfx_display_draw(&draw, video_info->userdata,
-         video_info->width, video_info->height);
+   gfx_display_draw(&draw, userdata,
+         video_width, video_height);
 
    /* middle-left section */
    vert_coord[0] = V_BL[0];
@@ -1134,8 +1153,8 @@ void gfx_display_draw_texture_slice(
    tex_coord[6] = T_TR[0];
    tex_coord[7] = T_TR[1] + tex_hoff;
 
-   gfx_display_draw(&draw, video_info->userdata,
-         video_info->width, video_info->height);
+   gfx_display_draw(&draw, userdata,
+         video_width, video_height);
 
    /* center section */
    vert_coord[0] = V_BL[0] + vert_woff;
@@ -1156,8 +1175,8 @@ void gfx_display_draw_texture_slice(
    tex_coord[6] = T_TR[0] + tex_mid_width;
    tex_coord[7] = T_TR[1] + tex_hoff;
 
-   gfx_display_draw(&draw, video_info->userdata,
-         video_info->width, video_info->height);
+   gfx_display_draw(&draw, userdata,
+         video_width, video_height);
 
    /* middle-right section */
    vert_coord[0] = V_BL[0] + vert_woff + vert_scaled_mid_width;
@@ -1178,8 +1197,8 @@ void gfx_display_draw_texture_slice(
    tex_coord[6] = T_TR[0] + tex_woff + tex_mid_width;
    tex_coord[7] = T_TR[1] + tex_hoff;
 
-   gfx_display_draw(&draw, video_info->userdata,
-         video_info->width, video_info->height);
+   gfx_display_draw(&draw, userdata,
+         video_width, video_height);
 
    /* bottom-left corner */
    vert_coord[0] = V_BL[0];
@@ -1200,8 +1219,8 @@ void gfx_display_draw_texture_slice(
    tex_coord[6] = T_TR[0];
    tex_coord[7] = T_TR[1] + tex_hoff + tex_mid_height;
 
-   gfx_display_draw(&draw, video_info->userdata,
-         video_info->width, video_info->height);
+   gfx_display_draw(&draw, userdata,
+         video_width, video_height);
 
    /* bottom-middle section */
    vert_coord[0] = V_BL[0] + vert_woff;
@@ -1222,8 +1241,8 @@ void gfx_display_draw_texture_slice(
    tex_coord[6] = T_TR[0] + tex_mid_width;
    tex_coord[7] = T_TR[1] + tex_hoff + tex_mid_height;
 
-   gfx_display_draw(&draw, video_info->userdata,
-         video_info->width, video_info->height);
+   gfx_display_draw(&draw, userdata,
+         video_width, video_height);
 
    /* bottom-right corner */
    vert_coord[0] = V_BL[0] + vert_woff + vert_scaled_mid_width;
@@ -1244,8 +1263,8 @@ void gfx_display_draw_texture_slice(
    tex_coord[6] = T_TR[0] + tex_woff + tex_mid_width;
    tex_coord[7] = T_TR[1] + tex_hoff + tex_mid_height;
 
-   gfx_display_draw(&draw, video_info->userdata,
-         video_info->width, video_info->height);
+   gfx_display_draw(&draw, userdata,
+         video_width, video_height);
 
    free(colors);
    free(vert_coord);
@@ -1291,8 +1310,12 @@ void gfx_display_draw_cursor(
 {
    gfx_display_ctx_draw_t draw;
    struct video_coords coords;
-   bool cursor_visible  = video_info->fullscreen 
+   bool cursor_visible   = video_info->fullscreen 
       || video_info->menu_mouse_enable;
+
+   void *userdata        = video_info->userdata;
+   unsigned video_width  = video_info->width;
+   unsigned video_height = video_info->height;
    if (!cursor_visible)
       return;
 
@@ -1303,7 +1326,7 @@ void gfx_display_draw_cursor(
    coords.color         = (const float*)color;
 
    if (dispctx && dispctx->blend_begin)
-      dispctx->blend_begin(video_info->userdata);
+      dispctx->blend_begin(userdata);
 
    draw.x               = x - (cursor_size / 2);
    draw.y               = (int)height - y - (cursor_size / 2);
@@ -1315,11 +1338,10 @@ void gfx_display_draw_cursor(
    draw.prim_type       = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
    draw.pipeline.id     = 0;
 
-   gfx_display_draw(&draw, video_info->userdata,
-         video_info->width, video_info->height);
+   gfx_display_draw(&draw, userdata, video_width, video_height);
 
    if (dispctx && dispctx->blend_end)
-      dispctx->blend_end(video_info->userdata);
+      dispctx->blend_end(userdata);
 }
 
 void gfx_display_push_quad(
@@ -1628,7 +1650,7 @@ void gfx_display_draw_keyboard(
 
       if (i == id)
       {
-         gfx_display_blend_begin(video_info->userdata);
+         gfx_display_blend_begin(userdata);
 
          gfx_display_draw_texture(
                video_info,
@@ -1639,7 +1661,7 @@ void gfx_display_draw_keyboard(
                &white[0],
                hover_texture);
 
-         gfx_display_blend_end(video_info->userdata);
+         gfx_display_blend_end(userdata);
 
          color = text_color;
       }
