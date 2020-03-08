@@ -917,7 +917,7 @@ static void xmb_render_messagebox_internal(
       }
    }
 
-   gfx_display_blend_begin(video_info);
+   gfx_display_blend_begin(video_info->userdata);
 
    gfx_display_draw_texture_slice(
          video_info,
@@ -3382,7 +3382,7 @@ static void xmb_draw_items(
 
    xmb_calculate_visible_range(xmb, height, end, (unsigned)current, &first, &last);
 
-   gfx_display_blend_begin(video_info);
+   gfx_display_blend_begin(video_info->userdata);
 
    for (i = first; i <= last; i++)
    {
@@ -3403,7 +3403,7 @@ static void xmb_draw_items(
          break;
    }
 
-   gfx_display_blend_end(video_info);
+   gfx_display_blend_end(video_info->userdata);
 }
 
 static INLINE bool xmb_use_ps3_layout(
@@ -3639,7 +3639,7 @@ static void xmb_draw_bg(
    draw.pipeline.id          = 0;
    draw.pipeline.active      = xmb_shader_pipeline_active(video_info);
 
-   gfx_display_blend_begin(video_info);
+   gfx_display_blend_begin(video_info->userdata);
    gfx_display_set_viewport(video_width, video_height);
 
 #ifdef HAVE_SHADERPIPELINE
@@ -3714,7 +3714,7 @@ static void xmb_draw_bg(
    }
 
    gfx_display_draw(&draw, video_info);
-   gfx_display_blend_end(video_info);
+   gfx_display_blend_end(video_info->userdata);
 }
 
 static void xmb_draw_dark_layer(
@@ -3750,9 +3750,9 @@ static void xmb_draw_dark_layer(
    draw.prim_type   = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
    draw.pipeline.id = 0;
 
-   gfx_display_blend_begin(video_info);
+   gfx_display_blend_begin(video_info->userdata);
    gfx_display_draw(&draw, video_info);
-   gfx_display_blend_end(video_info);
+   gfx_display_blend_end(video_info->userdata);
 }
 
 /* Disables the fullscreen thumbnail view, with
@@ -4633,7 +4633,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
          if (coord_white[3] != 0 &&  !xmb->assets_missing)
          {
-            gfx_display_blend_begin(video_info);
+            gfx_display_blend_begin(video_info->userdata);
             xmb_draw_icon(video_info,
                   xmb->icon_size,
                   &mymat,
@@ -4654,7 +4654,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                   1,
                   &item_color[0],
                   xmb->shadow_offset);
-            gfx_display_blend_end(video_info);
+            gfx_display_blend_end(video_info->userdata);
          }
 
          percent_width = (unsigned)
@@ -4681,7 +4681,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          if (percent_width)
             x_pos = percent_width + (xmb->icon_size / 2.5);
 
-         gfx_display_blend_begin(video_info);
+         gfx_display_blend_begin(video_info->userdata);
          xmb_draw_icon(video_info,
                xmb->icon_size,
                &mymat,
@@ -4695,7 +4695,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                1,
                &item_color[0],
                xmb->shadow_offset);
-         gfx_display_blend_end(video_info);
+         gfx_display_blend_end(video_info->userdata);
       }
 
       timedate[0]        = '\0';
@@ -4721,7 +4721,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
    if (coord_white[3] != 0 && !xmb->assets_missing)
    {
-      gfx_display_blend_begin(video_info);
+      gfx_display_blend_begin(video_info->userdata);
       xmb_draw_icon(video_info,
             xmb->icon_size,
             &mymat,
@@ -4739,13 +4739,13 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             1,
             &item_color[0],
             xmb->shadow_offset);
-      gfx_display_blend_end(video_info);
+      gfx_display_blend_end(video_info->userdata);
    }
 
    /* Horizontal tab icons */
    if (!xmb->assets_missing)
    {
-      gfx_display_blend_begin(video_info);
+      gfx_display_blend_begin(video_info->userdata);
 
       for (i = 0; i <= xmb_list_get_size(xmb, MENU_LIST_HORIZONTAL)
             + xmb->system_tab_end; i++)
@@ -4817,7 +4817,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          }
       }
 
-      gfx_display_blend_end(video_info);
+      gfx_display_blend_end(video_info->userdata);
    }
 
    /* Vertical icons */

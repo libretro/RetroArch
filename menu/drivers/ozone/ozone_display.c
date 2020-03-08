@@ -128,7 +128,7 @@ static void ozone_draw_cursor_slice(ozone_handle_t *ozone,
    gfx_display_set_alpha(ozone->theme_dynamic.cursor_alpha, alpha);
    gfx_display_set_alpha(ozone->theme_dynamic.cursor_border, alpha);
 
-   gfx_display_blend_begin(video_info);
+   gfx_display_blend_begin(video_info->userdata);
 
    /* Cursor without border */
    gfx_display_draw_texture_slice(
@@ -158,7 +158,7 @@ static void ozone_draw_cursor_slice(ozone_handle_t *ozone,
       ozone->textures[OZONE_TEXTURE_CURSOR_BORDER]
    );
 
-   gfx_display_blend_end(video_info);
+   gfx_display_blend_end(video_info->userdata);
 }
 
 static void ozone_draw_cursor_fallback(ozone_handle_t *ozone,
@@ -397,7 +397,7 @@ void ozone_draw_messagebox(ozone_handle_t *ozone,
 
    gfx_display_set_alpha(ozone->theme_dynamic.message_background, ozone->animations.messagebox_alpha);
 
-   gfx_display_blend_begin(video_info);
+   gfx_display_blend_begin(video_info->userdata);
 
    if (ozone->has_all_assets) /* avoid drawing a black box if there's no assets */
    {

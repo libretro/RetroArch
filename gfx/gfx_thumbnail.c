@@ -707,7 +707,7 @@ void gfx_thumbnail_draw(
             thumbnail, width, height, scale_factor,
             &draw_width, &draw_height);
 
-      gfx_display_blend_begin(video_info);
+      gfx_display_blend_begin(video_info->userdata);
 
       /* Perform 'rotation' step
        * > Note that rotation does not actually work...
@@ -845,6 +845,6 @@ void gfx_thumbnail_draw(
 
       /* Draw thumbnail */
       gfx_display_draw(&draw, video_info);
-      gfx_display_blend_end(video_info);
+      gfx_display_blend_end(video_info->userdata);
    }
 }

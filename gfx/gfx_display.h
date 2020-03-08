@@ -204,9 +204,9 @@ void gfx_display_free(void);
 
 void gfx_display_init(void);
 
-void gfx_display_blend_begin(video_frame_info_t *video_info);
+void gfx_display_blend_begin(void *data);
 
-void gfx_display_blend_end(video_frame_info_t *video_info);
+void gfx_display_blend_end(void *data);
 
 void gfx_display_push_quad(
       unsigned width, unsigned height,
@@ -234,7 +234,6 @@ font_data_t *gfx_display_font(
       enum application_special_type type,
       float font_size,
       bool video_is_threaded);
-
 
 void gfx_display_scissor_begin(video_frame_info_t *video_info, int x, int y, unsigned width, unsigned height);
 void gfx_display_scissor_end(video_frame_info_t *video_info);

@@ -200,7 +200,7 @@ void ozone_draw_sidebar(ozone_handle_t *ozone, video_frame_info_t *video_info)
 
    /* Menu tabs */
    y = ozone->dimensions.header_height + ozone->dimensions.spacer_1px + ozone->dimensions.sidebar_padding_vertical;
-   gfx_display_blend_begin(video_info);
+   gfx_display_blend_begin(video_info->userdata);
 
    for (i = 0; i < (unsigned)(ozone->system_tab_end+1); i++)
    {
@@ -227,7 +227,7 @@ void ozone_draw_sidebar(ozone_handle_t *ozone, video_frame_info_t *video_info)
       y += ozone->dimensions.sidebar_entry_height + ozone->dimensions.sidebar_entry_padding_vertical;
    }
 
-   gfx_display_blend_end(video_info);
+   gfx_display_blend_end(video_info->userdata);
 
    /* Console tabs */
    if (horizontal_list_size > 0)
@@ -236,7 +236,7 @@ void ozone_draw_sidebar(ozone_handle_t *ozone, video_frame_info_t *video_info)
 
       y += ozone->dimensions.sidebar_entry_padding_vertical + ozone->dimensions.spacer_1px;
 
-      gfx_display_blend_begin(video_info);
+      gfx_display_blend_begin(video_info->userdata);
 
       for (i = 0; i < horizontal_list_size; i++)
       {
@@ -290,7 +290,7 @@ console_iterate:
          y += ozone->dimensions.sidebar_entry_height + ozone->dimensions.sidebar_entry_padding_vertical;
       }
 
-      gfx_display_blend_end(video_info);
+      gfx_display_blend_end(video_info->userdata);
    }
 
    font_driver_flush(video_width, video_height, ozone->fonts.sidebar);

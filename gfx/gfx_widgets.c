@@ -1090,13 +1090,13 @@ static int gfx_widgets_draw_indicator(video_frame_info_t *video_info,
 
       gfx_display_set_alpha(gfx_widgets_pure_white, 1.0f);
 
-      gfx_display_blend_begin(video_info);
+      gfx_display_blend_begin(video_info->userdata);
       gfx_widgets_draw_icon(video_info, width, height,
          icon, top_right_x_advance - width, y,
          video_width, video_height,
          0, 1, gfx_widgets_pure_white
       );
-      gfx_display_blend_end(video_info);
+      gfx_display_blend_end(video_info->userdata);
    }
    else
    {
@@ -1208,7 +1208,7 @@ static void gfx_widgets_draw_task_msg(menu_widget_msg_t *msg,
 
    /* Icon */
    gfx_display_set_alpha(gfx_widgets_pure_white, msg->alpha);
-   gfx_display_blend_begin(video_info);
+   gfx_display_blend_begin(video_info->userdata);
    gfx_widgets_draw_icon(video_info,
       msg_queue_height/2,
       msg_queue_height/2,
@@ -1219,7 +1219,7 @@ static void gfx_widgets_draw_task_msg(menu_widget_msg_t *msg,
       video_height,
       msg->task_finished ? 0 : msg->hourglass_rotation,
       1, gfx_widgets_pure_white);
-   gfx_display_blend_end(video_info);
+   gfx_display_blend_end(video_info->userdata);
 
    /* Text */
    if (draw_msg_new)
@@ -1309,7 +1309,7 @@ static void gfx_widgets_draw_regular_msg(menu_widget_msg_t *msg, video_frame_inf
 
    if (msg_queue_has_icons)
    {
-      gfx_display_blend_begin(video_info);
+      gfx_display_blend_begin(video_info->userdata);
       /* (int) cast is to be consistent with the rect drawing and prevent alignment
       * issues, don't remove it */
       gfx_widgets_draw_icon(video_info,
@@ -1318,7 +1318,7 @@ static void gfx_widgets_draw_regular_msg(menu_widget_msg_t *msg, video_frame_inf
          video_width, video_height, 
          0, 1, msg_queue_background);
 
-      gfx_display_blend_end(video_info);
+      gfx_display_blend_end(video_info->userdata);
    }
 
    /* Background */
@@ -1357,7 +1357,7 @@ static void gfx_widgets_draw_regular_msg(menu_widget_msg_t *msg, video_frame_inf
 
    if (msg_queue_has_icons)
    {
-      gfx_display_blend_begin(video_info);
+      gfx_display_blend_begin(video_info->userdata);
 
       gfx_widgets_draw_icon(video_info,
          msg_queue_icon_size_x, msg_queue_icon_size_y,
@@ -1379,7 +1379,7 @@ static void gfx_widgets_draw_regular_msg(menu_widget_msg_t *msg, video_frame_inf
          video_width, video_height,
          0, 1, gfx_widgets_pure_white);
 
-      gfx_display_blend_end(video_info);
+      gfx_display_blend_end(video_info->userdata);
    }
 }
 
@@ -1410,7 +1410,7 @@ static void gfx_widgets_draw_load_content_animation(video_frame_info_t *video_in
 
    /* Icon */
    gfx_display_set_alpha(icon_color, load_content_animation_icon_alpha);
-   gfx_display_blend_begin(video_info);
+   gfx_display_blend_begin(video_info->userdata);
    gfx_widgets_draw_icon(video_info, icon_size,
       icon_size, load_content_animation_icon,
       video_width  / 2 - icon_size/2,
@@ -1419,7 +1419,7 @@ static void gfx_widgets_draw_load_content_animation(video_frame_info_t *video_in
       video_height,
       0, 1, icon_color
    );
-   gfx_display_blend_end(video_info);
+   gfx_display_blend_end(video_info->userdata);
 
    /* Text */
    gfx_display_draw_text(font_bold,
@@ -1646,12 +1646,12 @@ void gfx_widgets_frame(void *data)
             /* Icon */
             if (gfx_widgets_icons_textures[MENU_WIDGETS_ICON_ACHIEVEMENT])
             {
-               gfx_display_blend_begin(video_info);
+               gfx_display_blend_begin(video_info->userdata);
                gfx_widgets_draw_icon(video_info,
                   cheevo_height, cheevo_height,
                   gfx_widgets_icons_textures[MENU_WIDGETS_ICON_ACHIEVEMENT], 0, cheevo_y,
                   video_width, video_height, 0, 1, gfx_widgets_pure_white);
-               gfx_display_blend_end(video_info);
+               gfx_display_blend_end(video_info->userdata);
             }
          }
          /* Badge */
@@ -1786,7 +1786,7 @@ void gfx_widgets_frame(void *data)
       {
          gfx_display_set_alpha(gfx_widgets_pure_white, volume_text_alpha);
 
-         gfx_display_blend_begin(video_info);
+         gfx_display_blend_begin(video_info->userdata);
          gfx_widgets_draw_icon(video_info,
             icon_size, icon_size,
             volume_icon,
@@ -1794,7 +1794,7 @@ void gfx_widgets_frame(void *data)
             video_width, video_height,
             0, 1, gfx_widgets_pure_white
          );
-         gfx_display_blend_end(video_info);
+         gfx_display_blend_end(video_info->userdata);
       }
 
       if (volume_mute)

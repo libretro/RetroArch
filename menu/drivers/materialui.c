@@ -1721,7 +1721,7 @@ static void materialui_draw_icon(
    struct video_coords coords;
    math_matrix_4x4 mymat;
 
-   gfx_display_blend_begin(video_info);
+   gfx_display_blend_begin(video_info->userdata);
 
    rotate_draw.matrix       = &mymat;
    rotate_draw.rotation     = rotation;
@@ -1751,7 +1751,7 @@ static void materialui_draw_icon(
    draw.pipeline.id     = 0;
 
    gfx_display_draw(&draw, video_info);
-   gfx_display_blend_end(video_info);
+   gfx_display_blend_end(video_info->userdata);
 }
 
 static void materialui_draw_thumbnail(
@@ -3528,10 +3528,10 @@ static void materialui_render_background(materialui_handle_t *mui, video_frame_i
    }
 
    /* Draw background */
-   gfx_display_blend_begin(video_info);
+   gfx_display_blend_begin(video_info->userdata);
    gfx_display_draw_bg(&draw, video_info, add_opacity, opacity_override);
    gfx_display_draw(&draw, video_info);
-   gfx_display_blend_end(video_info);
+   gfx_display_blend_end(video_info->userdata);
 }
 
 static void materialui_render_landscape_border(

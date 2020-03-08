@@ -722,7 +722,7 @@ static void stripes_render_keyboard(
       {
          uintptr_t texture = stripes->textures.list[STRIPES_TEXTURE_KEY_HOVER];
 
-         gfx_display_blend_begin(video_info);
+         gfx_display_blend_begin(video_info->userdata);
 
          gfx_display_draw_texture(
                video_info,
@@ -733,7 +733,7 @@ static void stripes_render_keyboard(
                &white[0],
                texture);
 
-         gfx_display_blend_end(video_info);
+         gfx_display_blend_end(video_info->userdata);
       }
 
       gfx_display_draw_text(stripes->font, grid[i],
@@ -819,7 +819,7 @@ static void stripes_render_messagebox_internal(
       }
    }
 
-   gfx_display_blend_begin(video_info);
+   gfx_display_blend_begin(video_info->userdata);
 
    gfx_display_draw_texture_slice(
          video_info,
@@ -2630,7 +2630,7 @@ static void stripes_draw_items(
 
    stripes_calculate_visible_range(stripes, height, end, current, &first, &last);
 
-   gfx_display_blend_begin(video_info);
+   gfx_display_blend_begin(video_info->userdata);
 
    for (i = first; i <= last; i++)
    {
@@ -2649,7 +2649,7 @@ static void stripes_draw_items(
          break;
    }
 
-   gfx_display_blend_end(video_info);
+   gfx_display_blend_end(video_info->userdata);
 }
 
 static void stripes_render(void *data,
@@ -2745,9 +2745,9 @@ static void stripes_draw_bg(
    draw.prim_type   = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
    draw.pipeline.id = 0;
 
-   gfx_display_blend_begin(video_info);
+   gfx_display_blend_begin(video_info->userdata);
    gfx_display_draw(&draw, video_info);
-   gfx_display_blend_end(video_info);
+   gfx_display_blend_end(video_info->userdata);
 }
 
 static void stripes_draw_dark_layer(
@@ -2783,9 +2783,9 @@ static void stripes_draw_dark_layer(
    draw.prim_type   = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
    draw.pipeline.id = 0;
 
-   gfx_display_blend_begin(video_info);
+   gfx_display_blend_begin(video_info->userdata);
    gfx_display_draw(&draw, video_info);
-   gfx_display_blend_end(video_info);
+   gfx_display_blend_end(video_info->userdata);
 }
 
 static void stripes_frame(void *data, video_frame_info_t *video_info)
@@ -2847,7 +2847,7 @@ static void stripes_frame(void *data, video_frame_info_t *video_info)
    rotate_draw.scale_enable = true;
 
    gfx_display_rotate_z(&rotate_draw, video_info);
-   gfx_display_blend_begin(video_info);
+   gfx_display_blend_begin(video_info->userdata);
 
    /* Horizontal stripes */
    for (i = 0; i <= stripes_list_get_size(stripes, MENU_LIST_HORIZONTAL)
@@ -2880,7 +2880,7 @@ static void stripes_frame(void *data, video_frame_info_t *video_info)
             video_width, video_height,
             &color[0]);
 
-      gfx_display_blend_begin(video_info);
+      gfx_display_blend_begin(video_info->userdata);
 
       stack_width += node->width;
    }
@@ -2936,7 +2936,7 @@ static void stripes_frame(void *data, video_frame_info_t *video_info)
       stack_width += node->width;
    }
 
-   gfx_display_blend_end(video_info);
+   gfx_display_blend_end(video_info->userdata);
 
    /* Vertical icons */
 #if 0

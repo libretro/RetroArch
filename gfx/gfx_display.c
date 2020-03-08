@@ -631,17 +631,17 @@ void gfx_display_coords_array_reset(void)
 }
 
 /* Begin blending operation */
-void gfx_display_blend_begin(video_frame_info_t *video_info)
+void gfx_display_blend_begin(void *data)
 {
    if (dispctx && dispctx->blend_begin)
-      dispctx->blend_begin(video_info->userdata);
+      dispctx->blend_begin(data);
 }
 
 /* End blending operation */
-void gfx_display_blend_end(video_frame_info_t *video_info)
+void gfx_display_blend_end(void *data)
 {
    if (dispctx && dispctx->blend_end)
-      dispctx->blend_end(video_info->userdata);
+      dispctx->blend_end(data);
 }
 
 /* Begin scissoring operation */
