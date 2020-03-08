@@ -42,16 +42,16 @@ static void* gfx_display_d3d11_get_default_mvp(void *data)
    return NULL;
 }
 
-static void gfx_display_d3d11_blend_begin(video_frame_info_t *video_info)
+static void gfx_display_d3d11_blend_begin(void *data)
 {
-   d3d11_video_t* d3d11 = (d3d11_video_t*)video_info->userdata;
+   d3d11_video_t* d3d11 = (d3d11_video_t*)data;
    D3D11SetBlendState(d3d11->context,
          d3d11->blend_enable, NULL, D3D11_DEFAULT_SAMPLE_MASK);
 }
 
-static void gfx_display_d3d11_blend_end(video_frame_info_t *video_info)
+static void gfx_display_d3d11_blend_end(void *data)
 {
-   d3d11_video_t* d3d11 = (d3d11_video_t*)video_info->userdata;
+   d3d11_video_t* d3d11 = (d3d11_video_t*)data;
    D3D11SetBlendState(d3d11->context,
          d3d11->blend_disable, NULL, D3D11_DEFAULT_SAMPLE_MASK);
 }

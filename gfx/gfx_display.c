@@ -77,8 +77,8 @@ static gfx_display_t *disp_get_ptr(void)
 }
 
 static void *gfx_display_null_get_default_mvp(void *data) { return NULL; }
-static void gfx_display_null_blend_begin(video_frame_info_t *video_info) { }
-static void gfx_display_null_blend_end(video_frame_info_t *video_info) { }
+static void gfx_display_null_blend_begin(void *data) { }
+static void gfx_display_null_blend_end(void *data) { }
 static void gfx_display_null_draw(gfx_display_ctx_draw_t *draw,
       video_frame_info_t *video_info) { }
 static void gfx_display_null_draw_pipeline(gfx_display_ctx_draw_t *draw,
@@ -634,14 +634,14 @@ void gfx_display_coords_array_reset(void)
 void gfx_display_blend_begin(video_frame_info_t *video_info)
 {
    if (dispctx && dispctx->blend_begin)
-      dispctx->blend_begin(video_info);
+      dispctx->blend_begin(video_info->userdata);
 }
 
 /* End blending operation */
 void gfx_display_blend_end(video_frame_info_t *video_info)
 {
    if (dispctx && dispctx->blend_end)
-      dispctx->blend_end(video_info);
+      dispctx->blend_end(video_info->userdata);
 }
 
 /* Begin scissoring operation */
@@ -749,9 +749,9 @@ void gfx_display_draw_blend(gfx_display_ctx_draw_t *draw,
       return;
    if (draw->width <= 0)
       return;
-   gfx_display_blend_begin(video_info);
+   gfx_display_blend_begin(video_info->userdata);
    dispctx->draw(draw, video_info);
-   gfx_display_blend_end(video_info);
+   gfx_display_blend_end(video_info->userdata);
 }
 
 void gfx_display_draw_pipeline(gfx_display_ctx_draw_t *draw,
@@ -831,7 +831,7 @@ void gfx_display_draw_quad(
    coords.color         = color;
 
    if (dispctx && dispctx->blend_begin)
-      dispctx->blend_begin(video_info);
+      dispctx->blend_begin(video_info->userdata);
 
    draw.x            = x;
    draw.y            = (int)height - y - (int)h;
@@ -848,7 +848,7 @@ void gfx_display_draw_quad(
    gfx_display_draw(&draw, video_info);
 
    if (dispctx && dispctx->blend_end)
-      dispctx->blend_end(video_info);
+      dispctx->blend_end(video_info->userdata);
 }
 
 void gfx_display_draw_polygon(
@@ -881,7 +881,7 @@ void gfx_display_draw_polygon(
    coords.color         = color;
 
    if (dispctx && dispctx->blend_begin)
-      dispctx->blend_begin(video_info);
+      dispctx->blend_begin(video_info->userdata);
 
    draw.x            = 0;
    draw.y            = 0;
@@ -898,7 +898,7 @@ void gfx_display_draw_polygon(
    gfx_display_draw(&draw, video_info);
 
    if (dispctx && dispctx->blend_end)
-      dispctx->blend_end(video_info);
+      dispctx->blend_end(video_info->userdata);
 }
 
 void gfx_display_draw_texture(
@@ -1276,7 +1276,7 @@ void gfx_display_draw_cursor(
    coords.color         = (const float*)color;
 
    if (dispctx && dispctx->blend_begin)
-      dispctx->blend_begin(video_info);
+      dispctx->blend_begin(video_info->userdata);
 
    draw.x               = x - (cursor_size / 2);
    draw.y               = (int)height - y - (cursor_size / 2);
@@ -1291,7 +1291,7 @@ void gfx_display_draw_cursor(
    gfx_display_draw(&draw, video_info);
 
    if (dispctx && dispctx->blend_end)
-      dispctx->blend_end(video_info);
+      dispctx->blend_end(video_info->userdata);
 }
 
 void gfx_display_push_quad(
@@ -1598,7 +1598,7 @@ void gfx_display_draw_keyboard(
 
       if (i == id)
       {
-         gfx_display_blend_begin(video_info);
+         gfx_display_blend_begin(video_info->userdata);
 
          gfx_display_draw_texture(
                video_info,
@@ -1609,7 +1609,7 @@ void gfx_display_draw_keyboard(
                &white[0],
                hover_texture);
 
-         gfx_display_blend_end(video_info);
+         gfx_display_blend_end(video_info->userdata);
 
          color = text_color;
       }

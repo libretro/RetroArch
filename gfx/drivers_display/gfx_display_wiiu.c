@@ -43,15 +43,8 @@ static void *gfx_display_wiiu_get_default_mvp(void *data)
    return NULL;
 }
 
-static void gfx_display_wiiu_blend_begin(video_frame_info_t *video_info)
-{
-
-}
-
-static void gfx_display_wiiu_blend_end(video_frame_info_t *video_info)
-{
-
-}
+static void gfx_display_wiiu_blend_begin(void *data) { }
+static void gfx_display_wiiu_blend_end(void *data) { }
 
 static void gfx_display_wiiu_viewport(gfx_display_ctx_draw_t *draw, void *data) { }
 

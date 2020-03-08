@@ -74,15 +74,8 @@ static void *gfx_display_vita2d_get_default_mvp(void *data)
    return &vita2d->mvp_no_rot;
 }
 
-static void gfx_display_vita2d_blend_begin(video_frame_info_t *video_info)
-{
-
-}
-
-static void gfx_display_vita2d_blend_end(video_frame_info_t *video_info)
-{
-
-}
+static void gfx_display_vita2d_blend_begin(void *data) { }
+static void gfx_display_vita2d_blend_end(void *data) { }
 
 static void gfx_display_vita2d_viewport(gfx_display_ctx_draw_t *draw,
       void *data)

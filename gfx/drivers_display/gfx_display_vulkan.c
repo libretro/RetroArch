@@ -325,17 +325,17 @@ static void gfx_display_vk_clear_color(
    vkCmdClearAttachments(vk->cmd, 1, &attachment, 1, &rect);
 }
 
-static void gfx_display_vk_blend_begin(video_frame_info_t *video_info)
+static void gfx_display_vk_blend_begin(void *data)
 {
-   vk_t *vk = (vk_t*)video_info->userdata;
+   vk_t *vk = (vk_t*)data;
 
    if (vk)
       vk->display.blend = true;
 }
 
-static void gfx_display_vk_blend_end(video_frame_info_t *video_info)
+static void gfx_display_vk_blend_end(void *data)
 {
-   vk_t *vk = (vk_t*)video_info->userdata;
+   vk_t *vk = (vk_t*)data;
 
    if (vk)
       vk->display.blend = false;

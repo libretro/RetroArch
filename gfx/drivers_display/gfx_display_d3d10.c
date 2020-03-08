@@ -43,16 +43,16 @@ static void* gfx_display_d3d10_get_default_mvp(void *data)
    return NULL;
 }
 
-static void gfx_display_d3d10_blend_begin(video_frame_info_t *video_info)
+static void gfx_display_d3d10_blend_begin(void *data)
 {
-   d3d10_video_t* d3d10 = (d3d10_video_t*)video_info->userdata;
+   d3d10_video_t* d3d10 = (d3d10_video_t*)data;
    D3D10SetBlendState(d3d10->device,
          d3d10->blend_enable, NULL, D3D10_DEFAULT_SAMPLE_MASK);
 }
 
-static void gfx_display_d3d10_blend_end(video_frame_info_t *video_info)
+static void gfx_display_d3d10_blend_end(void *data)
 {
-   d3d10_video_t* d3d10 = (d3d10_video_t*)video_info->userdata;
+   d3d10_video_t* d3d10 = (d3d10_video_t*)data;
    D3D10SetBlendState(d3d10->device,
          d3d10->blend_disable, NULL, D3D10_DEFAULT_SAMPLE_MASK);
 }

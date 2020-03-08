@@ -111,9 +111,9 @@ typedef struct gfx_display_ctx_driver
          video_frame_info_t *video_info);
    void (*viewport)(gfx_display_ctx_draw_t *draw, void *data);
    /* Start blending operation. */
-   void (*blend_begin)(video_frame_info_t *video_info);
+   void (*blend_begin)(void *data);
    /* Finish blending operation. */
-   void (*blend_end)(video_frame_info_t *video_info);
+   void (*blend_end)(void *data);
    /* Set the clear color back to its default values. */
    void (*restore_clear_color)(void);
    /* Set the color to be used when clearing the screen */

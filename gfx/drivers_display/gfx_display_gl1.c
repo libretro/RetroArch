@@ -81,13 +81,13 @@ static GLenum gfx_display_prim_to_gl1_enum(
    return 0;
 }
 
-static void gfx_display_gl1_blend_begin(video_frame_info_t *video_info)
+static void gfx_display_gl1_blend_begin(void *data)
 {
    glEnable(GL_BLEND);
    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
 
-static void gfx_display_gl1_blend_end(video_frame_info_t *video_info)
+static void gfx_display_gl1_blend_end(void *data)
 {
    glDisable(GL_BLEND);
 }

@@ -33,8 +33,8 @@
 #endif
 
 static void *gfx_display_gdi_get_default_mvp(void *data) { return NULL; }
-static void gfx_display_gdi_blend_begin(video_frame_info_t *video_info) { }
-static void gfx_display_gdi_blend_end(video_frame_info_t *video_info) { }
+static void gfx_display_gdi_blend_begin(void *data) { }
+static void gfx_display_gdi_blend_end(void *data) { }
 
 static void gfx_display_gdi_draw(gfx_display_ctx_draw_t *draw,
       video_frame_info_t *video_info)

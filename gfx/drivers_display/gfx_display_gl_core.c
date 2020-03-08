@@ -301,16 +301,16 @@ static void gfx_display_gl_core_clear_color(
    glClear(GL_COLOR_BUFFER_BIT);
 }
 
-static void gfx_display_gl_core_blend_begin(video_frame_info_t *video_info)
+static void gfx_display_gl_core_blend_begin(void *data)
 {
-   gl_core_t *gl = (gl_core_t*)video_info->userdata;
+   gl_core_t *gl = (gl_core_t*)data;
 
    glEnable(GL_BLEND);
    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
    glUseProgram(gl->pipelines.alpha_blend);
 }
 
-static void gfx_display_gl_core_blend_end(video_frame_info_t *video_info)
+static void gfx_display_gl_core_blend_end(void *data)
 {
    glDisable(GL_BLEND);
 }

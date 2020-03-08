@@ -78,9 +78,9 @@ static INT32 gfx_display_prim_to_d3d9_enum(
    return 0;
 }
 
-static void gfx_display_d3d9_blend_begin(video_frame_info_t *video_info)
+static void gfx_display_d3d9_blend_begin(void *data)
 {
-   d3d9_video_t *d3d = (d3d9_video_t*)video_info->userdata;
+   d3d9_video_t *d3d = (d3d9_video_t*)data;
 
    if (!d3d)
       return;
@@ -88,9 +88,9 @@ static void gfx_display_d3d9_blend_begin(video_frame_info_t *video_info)
    d3d9_enable_blend_func(d3d->dev);
 }
 
-static void gfx_display_d3d9_blend_end(video_frame_info_t *video_info)
+static void gfx_display_d3d9_blend_end(void *data)
 {
-   d3d9_video_t *d3d = (d3d9_video_t*)video_info->userdata;
+   d3d9_video_t *d3d = (d3d9_video_t*)data;
 
    if (!d3d)
       return;

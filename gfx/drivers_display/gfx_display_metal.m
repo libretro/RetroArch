@@ -44,18 +44,18 @@ static void *gfx_display_metal_get_default_mvp(void *data)
    return (void *)&md.viewportMVP->projectionMatrix;
 }
 
-static void gfx_display_metal_blend_begin(video_frame_info_t *video_info)
+static void gfx_display_metal_blend_begin(void *data)
 {
-   MetalDriver *md = (__bridge MetalDriver *)video_info->userdata;
+   MetalDriver *md = (__bridge MetalDriver *)data;
    if (!md)
       return;
 
    md.display.blend = YES;
 }
 
-static void gfx_display_metal_blend_end(video_frame_info_t *video_info)
+static void gfx_display_metal_blend_end(void *data)
 {
-   MetalDriver *md = (__bridge MetalDriver *)video_info->userdata;
+   MetalDriver *md = (__bridge MetalDriver *)data;
    if (!md)
       return;
 
