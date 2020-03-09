@@ -40,6 +40,49 @@
 #define HOURGLASS_DURATION                1000
 #define GENERIC_MESSAGE_DURATION          3000
 
+/* A widget */
+struct gfx_widget
+{
+   /* the name of the widget */
+   char* name;
+
+   /* called when the widgets system is initialized
+    * -> initialize the widget here */
+   bool (*init)(bool video_is_threaded, bool fullscreen);
+
+   /* called when the widgets system is freed
+    * -> free the widget here */
+   void (*free)(void);
+
+   /* called when the graphics context is reset
+    * -> (re)load the textures here */
+   void (*context_reset)(bool is_threaded,
+      unsigned width, unsigned height, bool fullscreen,
+      const char *dir_assets, char *font_path);
+
+   /* called when the graphics context is destroyed
+    * -> release the textures here */
+   void (*context_destroy)(void);
+
+   /* called when the window resolution changes
+    * -> (re)layout the widget here */
+   void (*layout)(bool is_threaded, const char *dir_assets, char *font_path);
+
+   /* called every frame on the main thread
+    * -> update the widget logic here */
+   void (*iterate)(
+      unsigned width, unsigned height, bool fullscreen,
+      const char *dir_assets, char *font_path,
+      bool is_threaded);
+
+   /* called every frame
+    * (on the video thread if threaded video is on)
+    * -> draw the widget here */
+   void (*frame)(void* data);
+};
+
+typedef struct gfx_widget gfx_widget_;
+
 bool gfx_widgets_init(bool video_is_threaded, bool fullscreen);
 
 void gfx_widgets_free(void);
