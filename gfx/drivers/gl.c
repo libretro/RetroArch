@@ -1389,7 +1389,7 @@ error:
 static void gl2_renderchain_copy_frame(
       gl_t *gl,
       gl2_renderchain_data_t *chain,
-      video_frame_info_t *video_info,
+      bool use_rgba,
       const void *frame,
       unsigned width, unsigned height, unsigned pitch)
 {
@@ -1443,7 +1443,7 @@ static void gl2_renderchain_copy_frame(
             video_pixel_get_alignment(width * gl->base_size));
 
       /* Fallback for GLES devices without GL_BGRA_EXT. */
-      if (gl->base_size == 4 && video_info->use_rgba)
+      if (gl->base_size == 4 && use_rgba)
       {
          video_frame_convert_argb8888_to_abgr8888(
                &gl->scaler,
@@ -2813,6 +2813,20 @@ static bool gl2_frame(void *data, const void *frame,
    gl2_renderchain_data_t       *chain = (gl2_renderchain_data_t*)gl->renderchain_data;
    unsigned width                      = gl->video_width;
    unsigned height                     = gl->video_height;
+   bool use_rgba                       = video_info->use_rgba;
+   bool statistics_show                = video_info->statistics_show;
+   bool widgets_inited                 = video_info->widgets_inited;
+   bool msg_bgcolor_enable             = video_info->msg_bgcolor_enable;
+   bool black_frame_insertion          = video_info->black_frame_insertion;
+   bool input_driver_nonblock_state    = video_info->input_driver_nonblock_state; 
+   bool runloop_is_slowmotion          = video_info->runloop_is_slowmotion;
+   bool runloop_is_paused              = video_info->runloop_is_paused;
+   bool hard_sync                      = video_info->hard_sync;
+   unsigned hard_sync_frames           = video_info->hard_sync_frames;
+   void *context_data                  = video_info->context_data;
+   struct font_params *osd_params      = (struct font_params*)
+      &video_info->osd_stat_params;
+   const char *stat_text               = video_info->stat_text;
 
    if (!gl)
       return false;
@@ -2844,7 +2858,7 @@ static bool gl2_frame(void *data, const void *frame,
 
    if (gl->should_resize)
    {
-      video_info->cb_set_resize(video_info->context_data,
+      video_info->cb_set_resize(context_data,
             width, height);
       gl->should_resize = false;
 
@@ -2926,8 +2940,8 @@ static bool gl2_frame(void *data, const void *frame,
       {
          gl2_update_input_size(gl, frame_width, frame_height, pitch, true);
 
-         gl2_renderchain_copy_frame(gl, chain,
-               video_info, frame, frame_width, frame_height, pitch);
+         gl2_renderchain_copy_frame(gl, chain, use_rgba,
+               frame, frame_width, frame_height, pitch);
       }
 
       /* No point regenerating mipmaps
@@ -3017,7 +3031,6 @@ static bool gl2_frame(void *data, const void *frame,
 #ifdef HAVE_VIDEO_LAYOUT
    gl2_video_layout_render(gl, video_info);
 #endif
-
 #if defined(HAVE_MENU)
    if (gl->menu_texture_enable)
    {
@@ -3026,14 +3039,11 @@ static bool gl2_frame(void *data, const void *frame,
       if (gl->menu_texture)
          gl2_draw_texture(gl);
    }
-   else if (video_info->statistics_show)
+   else if (statistics_show)
    {
-      struct font_params *osd_params = (struct font_params*)
-         &video_info->osd_stat_params;
-
       if (osd_params)
-         font_driver_render_msg(gl, video_info, video_info->stat_text,
-               (const struct font_params*)&video_info->osd_stat_params, NULL);
+         font_driver_render_msg(gl, video_info, stat_text,
+               (const struct font_params*)osd_params, NULL);
    }
 #endif
 
@@ -3043,20 +3053,19 @@ static bool gl2_frame(void *data, const void *frame,
 #endif
 
 #ifdef HAVE_GFX_WIDGETS
-   if (video_info->widgets_inited)
+   if (widgets_inited)
       gfx_widgets_frame(video_info);
 #endif
 
    if (!string_is_empty(msg))
    {
-      if (video_info->msg_bgcolor_enable)
+      if (msg_bgcolor_enable)
          gl2_render_osd_background(gl, msg);
       font_driver_render_msg(gl, video_info, msg, NULL, NULL);
    }
 
    if (video_info->cb_update_window_title)
-      video_info->cb_update_window_title(
-            video_info->context_data);
+      video_info->cb_update_window_title(context_data);
 
    /* Reset state which could easily mess up libretro core. */
    if (gl->hw_render_fbo_init)
@@ -3085,28 +3094,28 @@ static bool gl2_frame(void *data, const void *frame,
    /* Disable BFI during fast forward, slow-motion,
     * and pause to prevent flicker. */
    if (
-         video_info->black_frame_insertion
-         && !video_info->input_driver_nonblock_state
-         && !video_info->runloop_is_slowmotion
-         && !video_info->runloop_is_paused)
+         black_frame_insertion
+         && !input_driver_nonblock_state
+         && !runloop_is_slowmotion
+         && !runloop_is_paused)
    {
-      video_info->cb_swap_buffers(video_info->context_data);
+      video_info->cb_swap_buffers(context_data);
       glClear(GL_COLOR_BUFFER_BIT);
    }
 #endif
 
-   video_info->cb_swap_buffers(video_info->context_data);
+   video_info->cb_swap_buffers(context_data);
 
    /* check if we are fast forwarding or in menu, if we are ignore hard sync */
    if (  gl->have_sync
-         && video_info->hard_sync
-         && !video_info->input_driver_nonblock_state
+         && hard_sync
+         && !input_driver_nonblock_state
          && !gl->menu_texture_enable)
    {
       glClear(GL_COLOR_BUFFER_BIT);
 
       gl2_renderchain_fence_iterate(gl, chain,
-            video_info->hard_sync_frames);
+            hard_sync_frames);
    }
 
 #ifndef HAVE_OPENGLES
