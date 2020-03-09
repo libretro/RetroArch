@@ -46,8 +46,11 @@ static int ozone_get_entries_padding(ozone_handle_t* ozone, bool old_list)
       return ozone->dimensions.entry_padding_horizontal_full;
 }
 
-static void ozone_draw_entry_value(ozone_handle_t *ozone,
-      video_frame_info_t *video_info,
+static void ozone_draw_entry_value(
+      ozone_handle_t *ozone,
+      void *userdata,
+      unsigned video_width,
+      unsigned video_height,
       char *value,
       unsigned x, unsigned y,
       uint32_t alpha_uint32,
@@ -56,9 +59,6 @@ static void ozone_draw_entry_value(ozone_handle_t *ozone,
    bool switch_is_on     = true;
    bool do_draw_text     = false;
    float scale_factor    = ozone->last_scale_factor;
-   void *userdata        = video_info->userdata;
-   unsigned video_width  = video_info->width;
-   unsigned video_height = video_info->height;
 
    if (!entry->checked && string_is_empty(value))
       return;
@@ -374,10 +374,16 @@ void ozone_entries_update_thumbnail_bar(ozone_handle_t *ozone, bool is_playlist,
    }
 }
 
-void ozone_draw_entries(ozone_handle_t *ozone,
-      video_frame_info_t *video_info,
-      unsigned selection, unsigned selection_old,
-      file_list_t *selection_buf, float alpha, float scroll_y,
+void ozone_draw_entries(
+      ozone_handle_t *ozone,
+      void *userdata,
+      unsigned video_width,
+      unsigned video_height,
+      unsigned selection,
+      unsigned selection_old,
+      file_list_t *selection_buf,
+      float alpha,
+      float scroll_y,
       bool is_playlist)
 {
    uint32_t alpha_uint32;
@@ -385,9 +391,6 @@ void ozone_draw_entries(ozone_handle_t *ozone,
    float sidebar_offset, bottom_boundary, invert, alpha_anim;
    unsigned video_info_height, video_info_width, entry_width, button_height;
    settings_t    *settings = config_get_ptr();
-   void *userdata          = video_info->userdata;
-   unsigned video_width    = video_info->width;
-   unsigned video_height   = video_info->height;
    bool menu_show_sublabels= settings->bools.menu_show_sublabels;
    bool use_smooth_ticker  = settings->bools.menu_ticker_smooth;
    bool old_list           = selection_buf == ozone->selection_buf_old;
@@ -492,18 +495,33 @@ border_iterate:
 
    /* Cursor(s) layer - current */
    if (!ozone->cursor_in_sidebar)
-      ozone_draw_cursor(ozone, video_info, (unsigned) ozone->dimensions.sidebar_width + x_offset + entry_padding + ozone->dimensions.spacer_3px,
-         entry_width - ozone->dimensions.spacer_5px, button_height + ozone->dimensions.spacer_2px, selection_y + scroll_y + ozone->dimensions.spacer_1px, ozone->animations.cursor_alpha * alpha);
+      ozone_draw_cursor(
+            ozone,
+            userdata,
+            video_width,
+            video_height,
+            (unsigned) ozone->dimensions.sidebar_width + x_offset + entry_padding + ozone->dimensions.spacer_3px,
+            entry_width - ozone->dimensions.spacer_5px,
+            button_height + ozone->dimensions.spacer_2px,
+            selection_y + scroll_y + ozone->dimensions.spacer_1px,
+            ozone->animations.cursor_alpha * alpha);
 
    /* Old*/
    if (!ozone->cursor_in_sidebar_old)
-      ozone_draw_cursor(ozone, video_info, (unsigned) ozone->dimensions.sidebar_width + x_offset + entry_padding + ozone->dimensions.spacer_3px,
+      ozone_draw_cursor(
+            ozone,
+            userdata,
+            video_width,
+            video_height,
+            (unsigned)ozone->dimensions.sidebar_width + x_offset + entry_padding + ozone->dimensions.spacer_3px,
             /* TODO/FIXME - undefined behavior reported by ASAN -
              *-35.2358 is outside the range of representable values
              of type 'unsigned int'
              * */
-         entry_width - ozone->dimensions.spacer_5px,
-         button_height + ozone->dimensions.spacer_2px, old_selection_y + scroll_y + ozone->dimensions.spacer_1px, (1-ozone->animations.cursor_alpha) * alpha);
+            entry_width - ozone->dimensions.spacer_5px,
+            button_height + ozone->dimensions.spacer_2px,
+            old_selection_y + scroll_y + ozone->dimensions.spacer_1px,
+            (1-ozone->animations.cursor_alpha) * alpha);
 
    /* Icons + text */
    y = ozone->dimensions.header_height + ozone->dimensions.spacer_1px + ozone->dimensions.entry_padding_vertical;
@@ -714,9 +732,15 @@ border_iterate:
          gfx_animation_ticker(&ticker);
       }
 
-      ozone_draw_entry_value(ozone, video_info, entry_value_ticker,
+      ozone_draw_entry_value(ozone,
+            userdata,
+            video_width,
+            video_height,
+            entry_value_ticker,
             value_x_offset + (unsigned) ozone->dimensions.sidebar_width + entry_padding + x_offset + entry_width - ozone->dimensions.entry_icon_padding,
-            y + ozone->dimensions.entry_height / 2 + ozone->entry_font_glyph_height * 3.0f/10.0f + scroll_y, alpha_uint32, &entry);
+            y + ozone->dimensions.entry_height / 2 + ozone->entry_font_glyph_height * 3.0f/10.0f + scroll_y,
+            alpha_uint32,
+            &entry);
 
 icons_iterate:
       y += node->height;

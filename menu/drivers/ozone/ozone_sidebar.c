@@ -227,12 +227,26 @@ void ozone_draw_sidebar(ozone_handle_t *ozone, video_frame_info_t *video_info)
 
    /* Cursor */
    if (ozone->cursor_in_sidebar)
-      ozone_draw_cursor(ozone, video_info, ozone->sidebar_offset + ozone->dimensions.sidebar_padding_horizontal + ozone->dimensions.spacer_3px,
-         entry_width - ozone->dimensions.spacer_5px, ozone->dimensions.sidebar_entry_height + ozone->dimensions.spacer_2px, selection_y + ozone->dimensions.spacer_2px + ozone->animations.scroll_y_sidebar, ozone->animations.cursor_alpha);
+      ozone_draw_cursor(ozone,
+            userdata,
+            video_width,
+            video_height,
+            ozone->sidebar_offset + ozone->dimensions.sidebar_padding_horizontal + ozone->dimensions.spacer_3px,
+            entry_width - ozone->dimensions.spacer_5px,
+            ozone->dimensions.sidebar_entry_height + ozone->dimensions.spacer_2px,
+            selection_y + ozone->dimensions.spacer_2px + ozone->animations.scroll_y_sidebar,
+            ozone->animations.cursor_alpha);
 
    if (ozone->cursor_in_sidebar_old)
-      ozone_draw_cursor(ozone, video_info, ozone->sidebar_offset + ozone->dimensions.sidebar_padding_horizontal + ozone->dimensions.spacer_3px,
-         entry_width - ozone->dimensions.spacer_5px, ozone->dimensions.sidebar_entry_height + ozone->dimensions.spacer_2px, selection_old_y + ozone->dimensions.spacer_2px + ozone->animations.scroll_y_sidebar, 1-ozone->animations.cursor_alpha);
+      ozone_draw_cursor(
+            ozone,
+            userdata,
+            video_width,
+            video_height,
+            ozone->sidebar_offset + ozone->dimensions.sidebar_padding_horizontal + ozone->dimensions.spacer_3px,
+         entry_width - ozone->dimensions.spacer_5px,
+         ozone->dimensions.sidebar_entry_height + ozone->dimensions.spacer_2px, selection_old_y + ozone->dimensions.spacer_2px + ozone->animations.scroll_y_sidebar,
+         1-ozone->animations.cursor_alpha);
 
    /* Menu tabs */
    y = ozone->dimensions.header_height + ozone->dimensions.spacer_1px + ozone->dimensions.sidebar_padding_vertical;

@@ -165,16 +165,15 @@ static void ozone_draw_cursor_slice(
    gfx_display_blend_end(userdata);
 }
 
-static void ozone_draw_cursor_fallback(ozone_handle_t *ozone,
-      video_frame_info_t *video_info,
+static void ozone_draw_cursor_fallback(
+      ozone_handle_t *ozone,
+      void *userdata,
+      unsigned video_width,
+      unsigned video_height,
       int x_offset,
       unsigned width, unsigned height,
       size_t y, float alpha)
 {
-   void *userdata        = video_info->userdata;
-   unsigned video_width  = video_info->width;
-   unsigned video_height = video_info->height;
-
    gfx_display_set_alpha(ozone->theme_dynamic.selection_border, alpha);
    gfx_display_set_alpha(ozone->theme_dynamic.selection, alpha);
 
@@ -246,21 +245,25 @@ static void ozone_draw_cursor_fallback(ozone_handle_t *ozone,
          ozone->theme_dynamic.selection_border);
 }
 
-void ozone_draw_cursor(ozone_handle_t *ozone,
-      video_frame_info_t *video_info,
+void ozone_draw_cursor(
+      ozone_handle_t *ozone,
+      void *userdata,
+      unsigned video_width,
+      unsigned video_height,
       int x_offset,
       unsigned width, unsigned height,
       size_t y, float alpha)
 {
-   void *userdata        = video_info->userdata;
-   unsigned video_width  = video_info->width;
-   unsigned video_height = video_info->height;
    if (ozone->has_all_assets)
       ozone_draw_cursor_slice(ozone, userdata,
             video_width, video_height,
             x_offset, width, height, y, alpha);
    else
-      ozone_draw_cursor_fallback(ozone, video_info, x_offset, width, height, y, alpha);
+      ozone_draw_cursor_fallback(ozone,
+            userdata,
+            video_width,
+            video_height,
+            x_offset, width, height, y, alpha);
 }
 
 void ozone_draw_icon(

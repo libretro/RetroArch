@@ -30,8 +30,11 @@ void ozone_draw_text(
       uint32_t color,
       bool draw_outside);
 
-void ozone_draw_cursor(ozone_handle_t *ozone,
-      video_frame_info_t *video_info,
+void ozone_draw_cursor(
+      ozone_handle_t *ozone,
+      void *userdata,
+      unsigned video_width,
+      unsigned video_height,
       int x_offset,
       unsigned width, unsigned height,
       size_t y, float alpha);

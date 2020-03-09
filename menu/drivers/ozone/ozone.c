@@ -2207,26 +2207,32 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
          video_height - ozone->dimensions.header_height - ozone->dimensions.footer_height - ozone->dimensions.spacer_1px);
 
    /* Current list */
-   ozone_draw_entries(ozone,
-      video_info,
-      (unsigned)ozone->selection,
-      (unsigned)ozone->selection_old,
-      menu_entries_get_selection_buf_ptr(0),
-      ozone->animations.list_alpha,
-      ozone->animations.scroll_y,
-      ozone->is_playlist
-   );
+   ozone_draw_entries(
+         ozone,
+         userdata,
+         video_width,
+         video_height,
+         (unsigned)ozone->selection,
+         (unsigned)ozone->selection_old,
+         menu_entries_get_selection_buf_ptr(0),
+         ozone->animations.list_alpha,
+         ozone->animations.scroll_y,
+         ozone->is_playlist
+         );
 
    /* Old list */
    if (ozone->draw_old_list)
-      ozone_draw_entries(ozone,
-         video_info,
-         (unsigned)ozone->selection_old_list,
-         (unsigned)ozone->selection_old_list,
-         ozone->selection_buf_old,
-         ozone->animations.list_alpha,
-         ozone->scroll_old,
-         ozone->is_playlist_old
+      ozone_draw_entries(
+            ozone,
+            userdata,
+            video_width,
+            video_height,
+            (unsigned)ozone->selection_old_list,
+            (unsigned)ozone->selection_old_list,
+            ozone->selection_buf_old,
+            ozone->animations.list_alpha,
+            ozone->scroll_old,
+            ozone->is_playlist_old
       );
 
    /* Thumbnail bar */

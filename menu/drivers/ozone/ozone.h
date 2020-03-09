@@ -312,10 +312,17 @@ typedef struct ozone_node
    uintptr_t content_icon;
 } ozone_node_t;
 
-void ozone_draw_entries(ozone_handle_t *ozone, video_frame_info_t *video_info,
-   unsigned selection, unsigned selection_old,
-   file_list_t *selection_buf, float alpha, float scroll_y,
-   bool is_playlist);
+void ozone_draw_entries(
+      ozone_handle_t *ozone,
+      void *userdata,
+      unsigned video_width,
+      unsigned video_height,
+      unsigned selection,
+      unsigned selection_old,
+      file_list_t *selection_buf,
+      float alpha,
+      float scroll_y,
+      bool is_playlist);
 
 void ozone_draw_sidebar(ozone_handle_t *ozone, video_frame_info_t *video_info);
 
