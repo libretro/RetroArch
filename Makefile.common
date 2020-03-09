@@ -1937,8 +1937,7 @@ endif
 
 ifneq ($(findstring FPGA,$(OS)),)
    OBJ += gfx/drivers/fpga_gfx.o \
-          gfx/drivers_context/fpga_ctx.o \
-          gfx/drivers_font/fpga_font.o
+          gfx/drivers_context/fpga_ctx.o
 endif
 
 ifneq ($(findstring Win32,$(OS)),)
