@@ -247,7 +247,6 @@ static INLINE void write_quad6(SpriteVertex *pv,
 }
 
 - (void)_renderLine:(const char *)msg
-              video:(video_frame_info_t *)video
              length:(NSUInteger)length
               scale:(float)scale
               color:(vector_float4)color
@@ -344,7 +343,7 @@ static INLINE void write_quad6(SpriteVertex *pv,
 }
 
 - (void)renderMessage:(const char *)msg
-                video:(video_frame_info_t *)video
+                height:(unsigned)height
                 scale:(float)scale
                 color:(vector_float4)color
                  posX:(float)posX
@@ -354,7 +353,7 @@ static INLINE void write_quad6(SpriteVertex *pv,
    /* If the font height is not supported just draw as usual */
    if (!_font_driver->get_line_height)
    {
-      [self _renderLine:msg video:video length:strlen(msg) scale:scale color:color posX:posX posY:posY aligned:aligned];
+      [self _renderLine:msg length:strlen(msg) scale:scale color:color posX:posX posY:posY aligned:aligned];
       return;
    }
 
@@ -370,7 +369,6 @@ static INLINE void write_quad6(SpriteVertex *pv,
       {
          NSUInteger msg_len = delim - msg;
          [self _renderLine:msg
-                     video:video
                     length:msg_len
                      scale:scale
                      color:color
@@ -384,7 +382,6 @@ static INLINE void write_quad6(SpriteVertex *pv,
       {
          NSUInteger msg_len = strlen(msg);
          [self _renderLine:msg
-                     video:video
                     length:msg_len
                      scale:scale
                      color:color
@@ -408,21 +405,27 @@ static INLINE void write_quad6(SpriteVertex *pv,
    int drop_x, drop_y;
    enum text_alignment text_align;
    vector_float4 color, color_dark;
-   unsigned width = video->width;
-   unsigned height = video->height;
+   unsigned width                   = video->width;
+   unsigned height                  = video->height;
+   settings_t *settings             = config_get_ptr();
+   float video_msg_pos_x            = settings->floats.video_msg_pos_x;
+   float video_msg_pos_y            = settings->floats.video_msg_pos_y;
+   float video_msg_color_r          = settings->floats.video_msg_color_r;
+   float video_msg_color_g          = settings->floats.video_msg_color_g;
+   float video_msg_color_b          = settings->floats.video_msg_color_b;
 
    if (params)
    {
-      x = params->x;
-      y = params->y;
-      scale = params->scale;
+      x          = params->x;
+      y          = params->y;
+      scale      = params->scale;
       text_align = params->text_align;
-      drop_x = params->drop_x;
-      drop_y = params->drop_y;
-      drop_mod = params->drop_mod;
+      drop_x     = params->drop_x;
+      drop_y     = params->drop_y;
+      drop_mod   = params->drop_mod;
       drop_alpha = params->drop_alpha;
 
-      color = simd_make_float4(
+      color      = simd_make_float4(
          FONT_COLOR_GET_RED(params->color) / 255.0f,
          FONT_COLOR_GET_GREEN(params->color) / 255.0f,
          FONT_COLOR_GET_BLUE(params->color) / 255.0f,
@@ -431,20 +434,20 @@ static INLINE void write_quad6(SpriteVertex *pv,
    }
    else
    {
-      x = video->font_msg_pos_x;
-      y = video->font_msg_pos_y;
-      scale = 1.0f;
+      x          = video_msg_pos_x;
+      y          = video_msg_pos_y;
+      scale      = 1.0f;
       text_align = TEXT_ALIGN_LEFT;
 
-      color = simd_make_float4(
-         video->font_msg_color_r,
-         video->font_msg_color_g,
-         video->font_msg_color_b,
+      color      = simd_make_float4(
+         video_msg_color_r,
+         video_msg_color_g,
+         video_msg_color_b,
          1.0f);
 
-      drop_x = -2;
-      drop_y = -2;
-      drop_mod = 0.3f;
+      drop_x     = -2;
+      drop_y     = -2;
+      drop_mod   = 0.3f;
       drop_alpha = 1.0f;
    }
 
@@ -456,9 +459,7 @@ static INLINE void write_quad6(SpriteVertex *pv,
          max_glyphs *= 2;
 
       if (max_glyphs * 6 + _offset > _capacity)
-      {
          _offset = 0;
-      }
 
       if (drop_x || drop_y)
       {
@@ -468,7 +469,7 @@ static INLINE void write_quad6(SpriteVertex *pv,
          color_dark.w = color.w * drop_alpha;
 
          [self renderMessage:msg
-                       video:video
+                       height:height
                        scale:scale
                        color:color_dark
                         posX:x + scale * drop_x / width
@@ -477,7 +478,7 @@ static INLINE void write_quad6(SpriteVertex *pv,
       }
 
       [self renderMessage:msg
-                    video:video
+                    height:height
                     scale:scale
                     color:color
                      posX:x
