@@ -71,12 +71,12 @@ static uint64_t gfx_widgets_frame_count   = 0;
 static font_data_t *font_regular          = NULL;
 static font_data_t *font_bold             = NULL;
 
-font_data_t* gfx_widgets_get_font_regular()
+font_data_t* gfx_widgets_get_font_regular(void)
 {
    return font_regular;
 }
 
-font_data_t* gfx_widgets_get_font_bold()
+font_data_t* gfx_widgets_get_font_bold(void)
 {
    return font_bold;
 }
