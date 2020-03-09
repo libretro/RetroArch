@@ -1900,16 +1900,16 @@ static void materialui_get_message(void *data, const char *message)
 }
 
 static void materialui_render_messagebox(materialui_handle_t *mui,
-      video_frame_info_t *video_info, int y_centre, const char *message)
+      void *userdata,
+      unsigned video_width,
+      unsigned video_height,
+      int y_centre, const char *message)
 {
    unsigned i;
    int x                    = 0;
    int y                    = 0;
    int longest_width        = 0;
    size_t longest_len       = 0;
-   void *userdata           = video_info->userdata;
-   unsigned video_width     = video_info->width;
-   unsigned video_height    = video_info->height;
    struct string_list *list = NULL;
 
    /* Sanity check */
@@ -3228,7 +3228,9 @@ static void materialui_render_menu_entry_playlist_list(
  * >> MUI_LIST_VIEW_PLAYLIST_THUMB_DUAL_ICON */
 static void materialui_render_menu_entry_playlist_dual_icon(
       materialui_handle_t *mui,
-      video_frame_info_t *video_info,
+      void *userdata,
+      unsigned video_width,
+      unsigned video_height,
       materialui_node_t *node,
       menu_entry_t *entry,
       bool entry_selected,
@@ -3237,9 +3239,6 @@ static void materialui_render_menu_entry_playlist_dual_icon(
       unsigned width, unsigned height,
       int x_offset)
 {
-   void *userdata          = video_info->userdata;
-   unsigned video_width    = video_info->width;
-   unsigned video_height   = video_info->height;
    const char *entry_label = NULL;
    int usable_width        =
          (int)width - (int)(mui->margin * 2) -
@@ -3374,12 +3373,11 @@ static void materialui_render_menu_entry_playlist_dual_icon(
 
 static void materialui_render_scrollbar(
       materialui_handle_t *mui,
-      video_frame_info_t *video_info,
+      void *userdata,
+      unsigned video_width,
+      unsigned video_height,
       unsigned width, unsigned height)
 {
-   void *userdata          = video_info->userdata;
-   unsigned video_width    = video_info->width;
-   unsigned video_height   = video_info->height;
    /* Do nothing if scrollbar is disabled */
    if (!mui->scrollbar.active)
       return;
@@ -3400,7 +3398,8 @@ static void materialui_render_scrollbar(
 /* Draws current menu list */
 static void materialui_render_menu_list(
       materialui_handle_t *mui,
-      video_frame_info_t *video_info,
+      void *userdata,
+      unsigned video_width, unsigned video_height,
       unsigned width, unsigned height,
       int x_offset)
 {
@@ -3408,9 +3407,6 @@ static void materialui_render_menu_list(
    size_t first_entry;
    size_t last_entry;
    file_list_t *list           = NULL;
-   void *userdata              = video_info->userdata;
-   unsigned video_width        = video_info->width;
-   unsigned video_height       = video_info->height;
    size_t entries_end          = menu_entries_get_size();
    unsigned header_height      = gfx_display_get_header_height();
    size_t selection            = menu_navigation_get_selection();
@@ -3480,7 +3476,9 @@ static void materialui_render_menu_list(
          case MUI_LIST_VIEW_PLAYLIST_THUMB_DUAL_ICON:
             materialui_render_menu_entry_playlist_dual_icon(
                   mui,
-                  video_info,
+                  userdata,
+                  video_width,
+                  video_height,
                   node,
                   &entry,
                   entry_selected,
@@ -3511,7 +3509,11 @@ static void materialui_render_menu_list(
 
    /* Draw scrollbar */
    materialui_render_scrollbar(
-         mui, video_info, width, height);
+         mui,
+         userdata,
+         video_width,
+         video_height,
+         width, height);
 }
 
 static size_t materialui_list_get_size(void *data, enum menu_list_type type)
@@ -3777,7 +3779,10 @@ static void materialui_render_entry_touch_feedback(
 }
 
 static void materialui_render_header(
-      materialui_handle_t *mui, video_frame_info_t *video_info, unsigned width, unsigned height)
+      materialui_handle_t *mui,
+      void *userdata,
+      unsigned video_width, unsigned video_height,
+      unsigned width, unsigned height)
 {
    char menu_title_buf[255];
    settings_t *settings          = config_get_ptr();
@@ -3798,9 +3803,6 @@ static void materialui_render_header(
    bool menu_timedate_enable     = settings->bools.menu_timedate_enable;
    unsigned menu_timedate_style  = settings->uints.menu_timedate_style;
    bool menu_core_enable         = settings->bools.menu_core_enable;
-   void *userdata                = video_info->userdata;
-   unsigned video_width          = video_info->width;
-   unsigned video_height         = video_info->height;
 
    menu_title_buf[0]  = '\0';
 
@@ -4195,7 +4197,9 @@ static void materialui_render_header(
  * we try to handle this with a single function then
  * things get incredibly messy and inefficient... */
 static void materialui_render_nav_bar_bottom(
-      materialui_handle_t *mui, video_frame_info_t *video_info,
+      materialui_handle_t *mui,
+      void *userdata,
+      unsigned video_width, unsigned video_height,
       unsigned width, unsigned height)
 {
    unsigned i;
@@ -4209,9 +4213,6 @@ static void materialui_render_nav_bar_bottom(
    unsigned selection_marker_width  = tab_width_int;
    unsigned selection_marker_height = mui->nav_bar.selection_marker_width;
    int selection_marker_y           = (int)height - (int)mui->nav_bar.selection_marker_width;
-   void *userdata                   = video_info->userdata;
-   unsigned video_width             = video_info->width;
-   unsigned video_height            = video_info->height;
 
    /* Draw navigation bar background */
 
@@ -4313,7 +4314,10 @@ static void materialui_render_nav_bar_bottom(
 }
 
 static void materialui_render_nav_bar_right(
-      materialui_handle_t *mui, video_frame_info_t *video_info,
+      materialui_handle_t *mui,
+      void *userdata,
+      unsigned video_width,
+      unsigned video_height,
       unsigned width, unsigned height)
 {
    unsigned i;
@@ -4327,9 +4331,6 @@ static void materialui_render_nav_bar_right(
    unsigned selection_marker_width  = mui->nav_bar.selection_marker_width;
    unsigned selection_marker_height = tab_height_int;
    int selection_marker_x           = (int)width - (int)mui->nav_bar.selection_marker_width;
-   void *userdata                   = video_info->userdata;
-   unsigned video_width             = video_info->width;
-   unsigned video_height            = video_info->height;
 
    /* Draw navigation bar background */
 
@@ -4434,11 +4435,16 @@ static void materialui_render_nav_bar(
       materialui_handle_t *mui, video_frame_info_t *video_info,
       unsigned width, unsigned height)
 {
+   void *userdata                   = video_info->userdata;
+   unsigned video_width             = video_info->width;
+   unsigned video_height            = video_info->height;
+
    switch (mui->nav_bar.location)
    {
       case MUI_NAV_BAR_LOCATION_RIGHT:
          materialui_render_nav_bar_right(
-            mui, video_info, width, height);
+            mui, userdata, video_width, video_height,
+            width, height);
          break;
       case MUI_NAV_BAR_LOCATION_HIDDEN:
          /* Draw nothing */
@@ -4447,7 +4453,8 @@ static void materialui_render_nav_bar(
       case MUI_NAV_BAR_LOCATION_BOTTOM:
       default:
          materialui_render_nav_bar_bottom(
-            mui, video_info, width, height);
+            mui, userdata, video_width, video_height,
+            width, height);
          break;
    }
 }
@@ -5113,7 +5120,10 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
     *   position in order to enable fast navigation
     *   via scrollbar 'dragging' */
    materialui_update_scrollbar(mui, width, height, header_height, list_x_offset);
-   materialui_render_menu_list(mui, video_info, width, height, list_x_offset);
+   materialui_render_menu_list(mui,
+         userdata,
+         video_width, video_height,
+         width, height, list_x_offset);
 
    /* Flush first layer of text
     * > Menu list only uses list and hint fonts */
@@ -5130,7 +5140,8 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
          mui, video_info, width, height, header_height, selection);
 
    /* Draw title + system bar */
-   materialui_render_header(mui, video_info, width, height);
+   materialui_render_header(mui, userdata, video_width,
+         video_height, width, height);
 
    /* Draw navigation bar */
    materialui_render_nav_bar(mui, video_info, width, height);
@@ -5163,7 +5174,9 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
 
       /* Draw message box */
       snprintf(msg, sizeof(msg), "%s\n%s", label, str);
-      materialui_render_messagebox(mui, video_info, height / 4, msg);
+      materialui_render_messagebox(mui,
+            userdata, video_width, video_height,
+            height / 4, msg);
 
       /* Draw onscreen keyboard */
       gfx_display_draw_keyboard(
@@ -5195,7 +5208,9 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
             0, 0, width, height, width, height, mui->colors.screen_fade);
 
       /* Draw message box */
-      materialui_render_messagebox(mui, video_info, height / 2, mui->msgbox);
+      materialui_render_messagebox(mui, 
+            userdata, video_width, video_height,
+            height / 2, mui->msgbox);
       mui->msgbox[0] = '\0';
 
       /* Flush message box text
