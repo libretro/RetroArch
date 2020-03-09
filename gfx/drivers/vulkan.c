@@ -58,7 +58,7 @@ static void vulkan_set_viewport(void *data, unsigned viewport_width,
 
 #ifdef HAVE_OVERLAY
 static void vulkan_overlay_free(vk_t *vk);
-static void vulkan_render_overlay(vk_t *vk, video_frame_info_t *video_info);
+static void vulkan_render_overlay(vk_t *vk, unsigned width, unsigned height);
 #endif
 static void vulkan_viewport_info(void *data, struct video_viewport *vp);
 
@@ -1606,7 +1606,8 @@ static void vulkan_readback(vk_t *vk)
          1, &barrier, 0, NULL, 0, NULL);
 }
 
-static void vulkan_inject_black_frame(vk_t *vk, video_frame_info_t *video_info)
+static void vulkan_inject_black_frame(vk_t *vk, video_frame_info_t *video_info,
+      void *context_data)
 {
    VkCommandBufferBeginInfo begin_info           = {
       VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
@@ -1658,7 +1659,7 @@ static void vulkan_inject_black_frame(vk_t *vk, video_frame_info_t *video_info)
    slock_unlock(vk->context->queue_lock);
 #endif
 
-   video_info->cb_swap_buffers(video_info->context_data);
+   video_info->cb_swap_buffers(context_data);
 }
 
 static bool vulkan_frame(void *data, const void *frame,
@@ -1666,13 +1667,26 @@ static bool vulkan_frame(void *data, const void *frame,
       uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
+   VkClearValue clear_color;
    VkSemaphore signal_semaphores[2];
    vk_t *vk                                      = (vk_t*)data;
    struct vk_per_frame *chain                    = NULL;
    bool waits_for_semaphores                     = false;
    unsigned width                                = video_info->width;
    unsigned height                               = video_info->height;
-   VkClearValue clear_color;
+   void *context_data                            = video_info->context_data;
+   bool statistics_show                          = video_info->statistics_show;
+   const char *stat_text                         = video_info->stat_text;
+   bool widgets_inited                           = video_info->widgets_inited;
+   bool black_frame_insertion                    = video_info->black_frame_insertion;
+   bool input_driver_nonblock_state              = video_info->input_driver_nonblock_state;
+   bool runloop_is_slowmotion                    = video_info->runloop_is_slowmotion;
+   bool runloop_is_paused                        = video_info->runloop_is_paused;
+   unsigned video_width                          = video_info->width;
+   unsigned video_height                         = video_info->height;
+   struct font_params *osd_params                = (struct font_params*)
+      &video_info->osd_stat_params;
+
 
    VkCommandBufferBeginInfo begin_info           = {
       VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
@@ -1956,27 +1970,25 @@ static bool vulkan_frame(void *data, const void *frame,
             vulkan_draw_quad(vk, &quad);
          }
       }
-      else if (video_info->statistics_show)
+      else if (statistics_show)
       {
-         struct font_params *osd_params = (struct font_params*)
-            &video_info->osd_stat_params;
-
          if (osd_params)
-            font_driver_render_msg(vk, video_info, video_info->stat_text,
-                  &video_info->osd_stat_params, NULL);
+            font_driver_render_msg(vk, video_info,
+                  stat_text,
+                  &osd_params, NULL);
       }
 #endif
 
 #ifdef HAVE_OVERLAY
       if (vk->overlay.enable)
-         vulkan_render_overlay(vk, video_info);
+         vulkan_render_overlay(vk, video_width, video_height);
 #endif
 
       if (!string_is_empty(msg))
          font_driver_render_msg(vk, video_info, msg, NULL, NULL);
 
 #ifdef HAVE_GFX_WIDGETS
-      if (video_info->widgets_inited)
+      if (widgets_inited)
          gfx_widgets_frame(video_info);
 #endif
 
@@ -2106,11 +2118,10 @@ static bool vulkan_frame(void *data, const void *frame,
    slock_unlock(vk->context->queue_lock);
 #endif
 
-   video_info->cb_swap_buffers(video_info->context_data);
+   video_info->cb_swap_buffers(context_data);
 
    if (!vk->context->swap_interval_emulation_lock)
-      video_info->cb_update_window_title(
-            video_info->context_data);
+      video_info->cb_update_window_title(context_data);
 
    /* Handle spurious swapchain invalidations as soon as we can,
     * i.e. right after swap buffers. */
@@ -2120,7 +2131,7 @@ static bool vulkan_frame(void *data, const void *frame,
       mode.width  = width;
       mode.height = height;
 
-      video_info->cb_set_resize(video_info->context_data, mode.width, mode.height);
+      video_info->cb_set_resize(context_data, mode.width, mode.height);
 
       vk->should_resize = false;
    }
@@ -2131,13 +2142,11 @@ static bool vulkan_frame(void *data, const void *frame,
    if (
          chain->backbuffer.image != VK_NULL_HANDLE
          && vk->context->has_acquired_swapchain
-         && video_info->black_frame_insertion
-         && !video_info->input_driver_nonblock_state
-         && !video_info->runloop_is_slowmotion
-         && !video_info->runloop_is_paused)
-   {
-      vulkan_inject_black_frame(vk, video_info);
-   }
+         && black_frame_insertion
+         && !input_driver_nonblock_state
+         && !runloop_is_slowmotion
+         && !runloop_is_paused)
+      vulkan_inject_black_frame(vk, video_info, context_data);
 
    /* Vulkan doesn't directly support swap_interval > 1, so we fake it by duping out more frames. */
    if (      vk->context->swap_interval > 1
@@ -2645,12 +2654,11 @@ static void vulkan_overlay_set_alpha(void *data,
    }
 }
 
-static void vulkan_render_overlay(vk_t *vk, video_frame_info_t *video_info)
+static void vulkan_render_overlay(vk_t *vk, unsigned width,
+      unsigned height)
 {
    unsigned i;
    struct video_viewport vp;
-   unsigned width           = video_info->width;
-   unsigned height          = video_info->height;
 
    if (!vk)
       return;
