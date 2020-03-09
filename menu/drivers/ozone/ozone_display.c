@@ -264,7 +264,9 @@ void ozone_draw_cursor(ozone_handle_t *ozone,
 }
 
 void ozone_draw_icon(
-      video_frame_info_t *video_info,
+      void *userdata,
+      unsigned video_width,
+      unsigned video_height,
       unsigned icon_width,
       unsigned icon_height,
       uintptr_t texture,
@@ -277,9 +279,6 @@ void ozone_draw_icon(
    gfx_display_ctx_draw_t draw;
    struct video_coords coords;
    math_matrix_4x4 mymat;
-   void *userdata           = video_info->userdata;
-   unsigned video_width     = video_info->width;
-   unsigned video_height    = video_info->height;
 
    rotate_draw.matrix       = &mymat;
    rotate_draw.rotation     = rotation;

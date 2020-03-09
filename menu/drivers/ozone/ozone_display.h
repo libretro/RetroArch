@@ -37,7 +37,9 @@ void ozone_draw_cursor(ozone_handle_t *ozone,
       size_t y, float alpha);
 
 void ozone_draw_icon(
-      video_frame_info_t *video_info,
+      void *userdata,
+      unsigned video_width,
+      unsigned video_height,
       unsigned icon_width,
       unsigned icon_height,
       uintptr_t texture,

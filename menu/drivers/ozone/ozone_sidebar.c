@@ -248,9 +248,20 @@ void ozone_draw_sidebar(ozone_handle_t *ozone, video_frame_info_t *video_info)
       uint32_t text_color  = COLOR_TEXT_ALPHA((selected ? ozone->theme->text_selected_rgba : ozone->theme->text_rgba), text_alpha);
 
       /* Icon */
-      ozone_draw_icon(video_info, ozone->dimensions.sidebar_entry_icon_size, ozone->dimensions.sidebar_entry_icon_size,
-         ozone->tab_textures[icon], ozone->sidebar_offset + ozone->dimensions.sidebar_padding_horizontal + ozone->dimensions.sidebar_entry_icon_padding,
-         y + ozone->dimensions.sidebar_entry_height / 2 - ozone->dimensions.sidebar_entry_icon_size / 2 + ozone->animations.scroll_y_sidebar, video_width, video_height, 0, 1, (selected ? ozone->theme->text_selected : ozone->theme->entries_icon));
+      ozone_draw_icon(
+            userdata,
+            video_width,
+            video_height,
+            ozone->dimensions.sidebar_entry_icon_size,
+            ozone->dimensions.sidebar_entry_icon_size,
+            ozone->tab_textures[icon],
+            ozone->sidebar_offset + ozone->dimensions.sidebar_padding_horizontal + ozone->dimensions.sidebar_entry_icon_padding,
+            y + ozone->dimensions.sidebar_entry_height / 2 - ozone->dimensions.sidebar_entry_icon_size / 2 + ozone->animations.scroll_y_sidebar,
+            video_width,
+            video_height,
+            0,
+            1,
+            (selected ? ozone->theme->text_selected : ozone->theme->entries_icon));
 
       value_idx = ozone_system_tabs_value[ozone->tabs[i]];
       title     = msg_hash_to_str(value_idx);
@@ -296,9 +307,20 @@ void ozone_draw_sidebar(ozone_handle_t *ozone, video_frame_info_t *video_info)
             goto console_iterate;
 
          /* Icon */
-         ozone_draw_icon(video_info, ozone->dimensions.sidebar_entry_icon_size, ozone->dimensions.sidebar_entry_icon_size,
-            node->icon, ozone->sidebar_offset + ozone->dimensions.sidebar_padding_horizontal + ozone->dimensions.sidebar_entry_icon_padding,
-            y + ozone->dimensions.sidebar_entry_height / 2 - ozone->dimensions.sidebar_entry_icon_size / 2 + ozone->animations.scroll_y_sidebar, video_width, video_height, 0, 1, (selected ? ozone->theme->text_selected : ozone->theme->entries_icon));
+         ozone_draw_icon(
+               userdata,
+               video_width,
+               video_height,
+               ozone->dimensions.sidebar_entry_icon_size,
+               ozone->dimensions.sidebar_entry_icon_size,
+               node->icon,
+               ozone->sidebar_offset + ozone->dimensions.sidebar_padding_horizontal + ozone->dimensions.sidebar_entry_icon_padding,
+               y + ozone->dimensions.sidebar_entry_height / 2 - ozone->dimensions.sidebar_entry_icon_size / 2 + ozone->animations.scroll_y_sidebar,
+               video_width,
+               video_height,
+               0,
+               1,
+               (selected ? ozone->theme->text_selected : ozone->theme->entries_icon));
 
          /* Text */
          if (ozone->sidebar_collapsed)

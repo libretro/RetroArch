@@ -67,7 +67,20 @@ static void ozone_draw_entry_value(ozone_handle_t *ozone,
    if (entry->checked)
    {
       gfx_display_blend_begin(userdata);
-      ozone_draw_icon(video_info, 30 * scale_factor, 30 * scale_factor, ozone->theme->textures[OZONE_THEME_TEXTURE_CHECK], x - 20 * scale_factor, y - 22 * scale_factor, video_width, video_height, 0, 1, ozone->theme_dynamic.entries_checkmark);
+      ozone_draw_icon(
+            userdata,
+            video_width,
+            video_height,
+            30 * scale_factor,
+            30 * scale_factor,
+            ozone->theme->textures[OZONE_THEME_TEXTURE_CHECK],
+            x - 20 * scale_factor,
+            y - 22 * scale_factor,
+            video_width,
+            video_height,
+            0,
+            1,
+            ozone->theme_dynamic.entries_checkmark);
       gfx_display_blend_end(userdata);
       return;
    }
@@ -642,9 +655,20 @@ border_iterate:
          gfx_display_set_alpha(icon_color, alpha);
 
          gfx_display_blend_begin(userdata);
-         ozone_draw_icon(video_info, ozone->dimensions.entry_icon_size, ozone->dimensions.entry_icon_size, texture,
-            (unsigned) ozone->dimensions.sidebar_width + x_offset + entry_padding + ozone->dimensions.entry_icon_padding,
-            y + scroll_y + ozone->dimensions.entry_height / 2 - ozone->dimensions.entry_icon_size / 2, video_width, video_height, 0, 1, icon_color);
+         ozone_draw_icon(
+               userdata,
+               video_width,
+               video_height,
+               ozone->dimensions.entry_icon_size,
+               ozone->dimensions.entry_icon_size,
+               texture,
+               (unsigned)ozone->dimensions.sidebar_width + x_offset + entry_padding + ozone->dimensions.entry_icon_padding,
+               y + scroll_y + ozone->dimensions.entry_height / 2 - ozone->dimensions.entry_icon_size / 2,
+               video_width,
+               video_height,
+               0,
+               1,
+               icon_color);
          gfx_display_blend_end(userdata);
 
          if (icon_color == ozone_pure_white)
@@ -718,15 +742,18 @@ static void ozone_draw_no_thumbnail_available(ozone_handle_t *ozone,
    unsigned video_height   = video_info->height;
 
    gfx_display_blend_begin(userdata);
-   ozone_draw_icon(video_info,
-      icon_size,
-      icon_size,
-      ozone->icons_textures[icon],
-      x_position + sidebar_width/2 - icon_size/2,
-      video_height / 2 - icon_size/2 - y_offset,
-      video_width,
-      video_height,
-      0, 1, ozone->theme->entries_icon);
+   ozone_draw_icon(
+         userdata,
+         video_width,
+         video_height,
+         icon_size,
+         icon_size,
+         ozone->icons_textures[icon],
+         x_position + sidebar_width/2 - icon_size/2,
+         video_height / 2 - icon_size/2 - y_offset,
+         video_width,
+         video_height,
+         0, 1, ozone->theme->entries_icon);
    gfx_display_blend_end(userdata);
 
    ozone_draw_text(
