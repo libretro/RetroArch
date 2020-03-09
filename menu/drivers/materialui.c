@@ -3535,7 +3535,12 @@ static size_t materialui_list_get_size(void *data, enum menu_list_type type)
    return 0;
 }
 
-static void materialui_render_background(materialui_handle_t *mui, video_frame_info_t *video_info)
+static void materialui_render_background(materialui_handle_t *mui,
+      void *userdata,
+      unsigned video_width, unsigned video_height,
+      bool libretro_running,
+      float menu_wallpaper_opacity,
+      float menu_framebuffer_opacity)
 {
    gfx_display_ctx_draw_t draw;
    bool add_opacity       = false;
@@ -3546,12 +3551,6 @@ static void materialui_render_background(materialui_handle_t *mui, video_frame_i
       1.0f, 1.0f, 1.0f, 1.0f,
       1.0f, 1.0f, 1.0f, 1.0f
    };
-   void *userdata                 = video_info->userdata;
-   unsigned video_width           = video_info->width;
-   unsigned video_height          = video_info->height;
-   bool libretro_running          = video_info->libretro_running;
-   float menu_wallpaper_opacity   = video_info->menu_wallpaper_opacity;
-   float menu_framebuffer_opacity = video_info->menu_framebuffer_opacity;
 
    /* Configure draw object */
    draw.x                     = 0;
@@ -3650,14 +3649,13 @@ static void materialui_render_landscape_border(
 }
 
 static void materialui_render_selection_highlight(
-      materialui_handle_t *mui, video_frame_info_t *video_info,
+      materialui_handle_t *mui,
+      void *userdata,
+      unsigned video_width,
+      unsigned video_height,
       unsigned width, unsigned height, unsigned header_height, int x_offset,
       size_t selection, float *color)
 {
-   void *userdata          = video_info->userdata;
-   unsigned video_width    = video_info->width;
-   unsigned video_height   = video_info->height;
-
    /* Only draw highlight if selection is onscreen */
    if (materialui_entry_onscreen(mui, selection))
    {
@@ -3710,7 +3708,9 @@ static void materialui_render_selection_highlight(
 }
 
 static void materialui_render_entry_touch_feedback(
-      materialui_handle_t *mui, video_frame_info_t *video_info,
+      materialui_handle_t *mui,
+      void *userdata,
+      unsigned video_width, unsigned video_height,
       unsigned width, unsigned height, unsigned header_height, int x_offset,
       size_t current_selection)
 {
@@ -3771,7 +3771,8 @@ static void materialui_render_entry_touch_feedback(
 
       /* Draw highlight */
       materialui_render_selection_highlight(
-            mui, video_info, width, height, header_height, x_offset,
+            mui, userdata, video_width, video_height,
+            width, height, header_height, x_offset,
             mui->touch_feedback_selection,
             higlight_color);
    }
@@ -4616,14 +4617,12 @@ static void materialui_show_fullscreen_thumbnails(
 }
 
 static void materialui_render_fullscreen_thumbnails(
-      materialui_handle_t *mui, video_frame_info_t *video_info,
+      materialui_handle_t *mui,
+      void *userdata,
+      unsigned video_width, unsigned video_height,
       unsigned width, unsigned height, unsigned header_height,
       size_t selection)
 {
-   void *userdata                   = video_info->userdata;
-   unsigned video_width             = video_info->width;
-   unsigned video_height            = video_info->height;
-
    /* Check whether fullscreen thumbnails are visible */
    if (mui->fullscreen_thumbnail_alpha > 0.0f)
    {
@@ -5045,6 +5044,9 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
    enum gfx_animation_ticker_type
       menu_ticker_type       = (enum gfx_animation_ticker_type)settings->uints.menu_ticker_type;
    bool menu_ticker_smooth   = settings->bools.menu_ticker_smooth;
+   bool libretro_running          = video_info->libretro_running;
+   float menu_wallpaper_opacity   = video_info->menu_wallpaper_opacity;
+   float menu_framebuffer_opacity = video_info->menu_framebuffer_opacity;
 
    if (!mui)
       return;
@@ -5093,7 +5095,11 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
    list_x_offset = (int)(mui->transition_x_offset * (float)((int)width - (int)mui->nav_bar_layout_width));
 
    /* Draw background */
-   materialui_render_background(mui, video_info);
+   materialui_render_background(mui, userdata,
+         video_width, video_height, libretro_running,
+         menu_wallpaper_opacity,
+         menu_framebuffer_opacity
+         );
 
    /* Draw landscape border
     * (does nothing in portrait mode, or if landscape
@@ -5106,12 +5112,12 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
 
    /* Draw 'highlighted entry' selection box */
    materialui_render_selection_highlight(
-         mui, video_info, width, height, header_height, list_x_offset, selection,
+         mui, userdata, video_width, video_height, width, height, header_height, list_x_offset, selection,
          mui->colors.list_highlighted_background);
 
    /* Draw 'short press' touch feedback highlight */
    materialui_render_entry_touch_feedback(
-         mui, video_info, width, height, header_height, list_x_offset, selection);
+         mui, userdata, video_width, video_height, width, height, header_height, list_x_offset, selection);
 
    /* Draw menu list
     * > Must update scrollbar draw position before
@@ -5138,7 +5144,8 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
     * > Must be done *after* we flush the first layer
     *   of text */
    materialui_render_fullscreen_thumbnails(
-         mui, video_info, width, height, header_height, selection);
+         mui, userdata, video_width,
+         video_height, width, height, header_height, selection);
 
    /* Draw title + system bar */
    materialui_render_header(mui, userdata, video_width,
