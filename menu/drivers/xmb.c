@@ -4262,9 +4262,9 @@ static void xmb_draw_fullscreen_thumbnails(
 
          /* Thumbnail */
          gfx_thumbnail_draw(
-               video_info->userdata,
-               video_info->width,
-               video_info->height,
+               userdata,
+               video_width,
+               video_height,
                right_thumbnail,
                right_thumbnail_x,
                thumbnail_y,
@@ -4296,9 +4296,9 @@ static void xmb_draw_fullscreen_thumbnails(
 
          /* Thumbnail */
          gfx_thumbnail_draw(
-               video_info->userdata,
-               video_info->width,
-               video_info->height,
+               userdata,
+               video_width,
+               video_height,
                left_thumbnail,
                left_thumbnail_x,
                thumbnail_y,
@@ -4480,9 +4480,9 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
       float thumb_y             = xmb->margins_title_top + (xmb->icon_size / 4.0f) + ((thumb_height - scaled_thumb_height) / 2.0f);
 
       gfx_thumbnail_draw(
-            video_info->userdata,
-            video_info->width,
-            video_info->height,
+            userdata,
+            video_width,
+            video_height,
             &xmb->thumbnails.savestate,
             thumb_x,
             thumb_y,
@@ -4526,9 +4526,9 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                float left_thumb_y        = thumb_y_base + thumb_height + (xmb->icon_size / 4) + thumb_y_offset;
 
                gfx_thumbnail_draw(
-                     video_info->userdata,
-                     video_info->width,
-                     video_info->height,
+                     userdata,
+                     video_width,
+                     video_height,
                      &xmb->thumbnails.right,
                      thumb_x,
                      right_thumb_y,
@@ -4538,9 +4538,9 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                      1.0f, 1.0f, &thumbnail_shadow);
 
                gfx_thumbnail_draw(
-                     video_info->userdata,
-                     video_info->width,
-                     video_info->height,
+                     userdata,
+                     video_width,
+                     video_height,
                      &xmb->thumbnails.left,
                      thumb_x,
                      left_thumb_y,
@@ -4565,9 +4565,9 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                float thumb_y             = xmb->margins_screen_top + xmb->icon_size;
 
                gfx_thumbnail_draw(
-                     video_info->userdata,
-                     video_info->width,
-                     video_info->height,
+                     userdata,
+                     video_width,
+                     video_height,
                      show_right_thumbnail ? &xmb->thumbnails.right : &xmb->thumbnails.left,
                      thumb_x,
                      thumb_y,
@@ -4590,9 +4590,9 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                float thumb_y             = xmb->margins_screen_top + xmb->icon_size;
 
                gfx_thumbnail_draw(
-                     video_info->userdata,
-                     video_info->width,
-                     video_info->height,
+                     userdata,
+                     video_width,
+                     video_height,
                      &xmb->thumbnails.right,
                      thumb_x,
                      thumb_y,
@@ -4614,9 +4614,9 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                float thumb_y             = xmb->margins_screen_top + xmb->icon_size + y_offset;
 
                gfx_thumbnail_draw(
-                     video_info->userdata,
-                     video_info->width,
-                     video_info->height,
+                     userdata,
+                     video_width,
+                     video_height,
                      &xmb->thumbnails.left,
                      thumb_x,
                      thumb_y,
@@ -4646,9 +4646,9 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
           * > Impose a minimum size limit */
          if (thumb_height > xmb->icon_size)
             gfx_thumbnail_draw(
-                  video_info->userdata,
-                  video_info->width,
-                  video_info->height,
+                  userdata,
+                  video_width,
+                  video_height,
                   show_left_thumbnail ? &xmb->thumbnails.left : &xmb->thumbnails.right,
                   thumb_x,
                   thumb_y,

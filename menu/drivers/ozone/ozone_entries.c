@@ -56,6 +56,7 @@ static void ozone_draw_entry_value(ozone_handle_t *ozone,
    bool switch_is_on     = true;
    bool do_draw_text     = false;
    float scale_factor    = ozone->last_scale_factor;
+   void *userdata        = video_info->userdata;
    unsigned video_width  = video_info->width;
    unsigned video_height = video_info->height;
 
@@ -65,9 +66,9 @@ static void ozone_draw_entry_value(ozone_handle_t *ozone,
    /* check icon */
    if (entry->checked)
    {
-      gfx_display_blend_begin(video_info->userdata);
+      gfx_display_blend_begin(userdata);
       ozone_draw_icon(video_info, 30 * scale_factor, 30 * scale_factor, ozone->theme->textures[OZONE_THEME_TEXTURE_CHECK], x - 20 * scale_factor, y - 22 * scale_factor, video_width, video_height, 0, 1, ozone->theme_dynamic.entries_checkmark);
-      gfx_display_blend_end(video_info->userdata);
+      gfx_display_blend_end(userdata);
       return;
    }
 
@@ -640,11 +641,11 @@ border_iterate:
 
          gfx_display_set_alpha(icon_color, alpha);
 
-         gfx_display_blend_begin(video_info->userdata);
+         gfx_display_blend_begin(userdata);
          ozone_draw_icon(video_info, ozone->dimensions.entry_icon_size, ozone->dimensions.entry_icon_size, texture,
             (unsigned) ozone->dimensions.sidebar_width + x_offset + entry_padding + ozone->dimensions.entry_icon_padding,
             y + scroll_y + ozone->dimensions.entry_height / 2 - ozone->dimensions.entry_icon_size / 2, video_width, video_height, 0, 1, icon_color);
-         gfx_display_blend_end(video_info->userdata);
+         gfx_display_blend_end(userdata);
 
          if (icon_color == ozone_pure_white)
             gfx_display_set_alpha(icon_color, 1.0f);
@@ -712,10 +713,11 @@ static void ozone_draw_no_thumbnail_available(ozone_handle_t *ozone,
 {
    unsigned icon           = OZONE_ENTRIES_ICONS_TEXTURE_CORE_INFO;
    unsigned icon_size      = (unsigned)((float)ozone->dimensions.sidebar_entry_icon_size * 1.5f);
+   void *userdata          = video_info->userdata;
    unsigned video_width    = video_info->width;
    unsigned video_height   = video_info->height;
 
-   gfx_display_blend_begin(video_info->userdata);
+   gfx_display_blend_begin(userdata);
    ozone_draw_icon(video_info,
       icon_size,
       icon_size,
@@ -725,7 +727,7 @@ static void ozone_draw_no_thumbnail_available(ozone_handle_t *ozone,
       video_width,
       video_height,
       0, 1, ozone->theme->entries_icon);
-   gfx_display_blend_end(video_info->userdata);
+   gfx_display_blend_end(userdata);
 
    ozone_draw_text(
       ozone,

@@ -4850,9 +4850,9 @@ static void materialui_render_fullscreen_thumbnails(
 
          /* Thumbnail */
          gfx_thumbnail_draw(
-               video_info->userdata,
-               video_info->width,
-               video_info->height,
+               userdata,
+               video_width,
+               video_height,
                primary_thumbnail,
                primary_thumbnail_x,
                primary_thumbnail_y,
@@ -4884,9 +4884,9 @@ static void materialui_render_fullscreen_thumbnails(
 
          /* Thumbnail */
          gfx_thumbnail_draw(
-               video_info->userdata,
-               video_info->width,
-               video_info->height,
+               userdata,
+               video_width,
+               video_height,
                secondary_thumbnail,
                secondary_thumbnail_x,
                secondary_thumbnail_y,
@@ -5025,21 +5025,21 @@ static void materialui_update_scrollbar(
  * Draws all menu elements */
 static void materialui_frame(void *data, video_frame_info_t *video_info)
 {
-   materialui_handle_t *mui = (materialui_handle_t*)data;
-   settings_t *settings     = config_get_ptr();
-   void *userdata           = video_info->userdata;
-   unsigned width           = video_info->width;
-   unsigned height          = video_info->height;
-   unsigned video_width     = video_info->width;
-   unsigned video_height    = video_info->height;
+   materialui_handle_t *mui  = (materialui_handle_t*)data;
+   settings_t *settings      = config_get_ptr();
+   void *userdata            = video_info->userdata;
+   unsigned width            = video_info->width;
+   unsigned height           = video_info->height;
+   unsigned video_width      = video_info->width;
+   unsigned video_height     = video_info->height;
    unsigned 
       materialui_color_theme = video_info->materialui_color_theme;
-   unsigned header_height   = gfx_display_get_header_height();
-   size_t selection         = menu_navigation_get_selection();
+   unsigned header_height    = gfx_display_get_header_height();
+   size_t selection          = menu_navigation_get_selection();
    int list_x_offset;
    enum gfx_animation_ticker_type
-      menu_ticker_type      = (enum gfx_animation_ticker_type)settings->uints.menu_ticker_type;
-   bool menu_ticker_smooth  = settings->bools.menu_ticker_smooth;
+      menu_ticker_type       = (enum gfx_animation_ticker_type)settings->uints.menu_ticker_type;
+   bool menu_ticker_smooth   = settings->bools.menu_ticker_smooth;
 
    if (!mui)
       return;
