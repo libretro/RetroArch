@@ -88,7 +88,7 @@ static void gfx_display_metal_draw_pipeline(
 }
 
 static void gfx_display_metal_viewport(gfx_display_ctx_draw_t *draw,
-      void *data) } { }
+      void *data) { }
 
 static void gfx_display_metal_scissor_begin(
       void *data,
