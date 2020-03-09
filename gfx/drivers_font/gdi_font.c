@@ -96,9 +96,10 @@ static void gdi_render_msg(
    unsigned align;
    unsigned red, green, blue;
    unsigned drop_red, drop_green, drop_blue;
+   gdi_t *gdi                       = (gdi_t*)userdata;
    gdi_raster_t *font               = (gdi_raster_t*)data;
-   unsigned width                   = video_info->width;
-   unsigned height                  = video_info->height;
+   unsigned width                   = gdi->video_width;
+   unsigned height                  = gdi->video_height;
    SIZE textSize                    = {0};
    struct string_list *msg_list     = NULL;
    settings_t *settings             = config_get_ptr();
