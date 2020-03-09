@@ -2259,9 +2259,15 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
    /* Cursor */
    if (ozone->show_cursor && (ozone->pointer.type != MENU_POINTER_DISABLED))
    {
+      bool cursor_visible   = video_info->fullscreen 
+         || video_info->menu_mouse_enable;
+
       gfx_display_set_alpha(ozone_pure_white, 1.0f);
       gfx_display_draw_cursor(
-         video_info,
+         userdata,
+         video_width,
+         video_height,
+         cursor_visible,
          ozone_pure_white,
          ozone->dimensions.cursor_size,
          ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_POINTER],

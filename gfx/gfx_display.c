@@ -1300,18 +1300,16 @@ void gfx_display_rotate_z(gfx_display_ctx_rotate_draw_t *draw, void *data)
  * Draw a hardware cursor on top of the screen for the mouse.
  */
 void gfx_display_draw_cursor(
-      video_frame_info_t *video_info,
+      void *userdata,
+      unsigned video_width,
+      unsigned video_height,
+      bool cursor_visible,
       float *color, float cursor_size, uintptr_t texture,
       float x, float y, unsigned width, unsigned height)
 {
    gfx_display_ctx_draw_t draw;
    struct video_coords coords;
-   bool cursor_visible   = video_info->fullscreen 
-      || video_info->menu_mouse_enable;
 
-   void *userdata        = video_info->userdata;
-   unsigned video_width  = video_info->width;
-   unsigned video_height = video_info->height;
    if (!cursor_visible)
       return;
 

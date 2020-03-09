@@ -219,7 +219,10 @@ void gfx_display_snow(
       int width, int height);
 
 void gfx_display_draw_cursor(
-      video_frame_info_t *video_info,
+      void *userdata,
+      unsigned video_width,
+      unsigned video_height,
+      bool cursor_visible,
       float *color, float cursor_size, uintptr_t texture,
       float x, float y, unsigned width, unsigned height);
 

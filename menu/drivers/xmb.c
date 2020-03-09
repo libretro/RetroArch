@@ -4922,11 +4922,17 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    if (xmb->mouse_show)
    {
       menu_input_pointer_t pointer;
+      bool cursor_visible   = video_info->fullscreen 
+         || video_info->menu_mouse_enable;
+
       menu_input_get_pointer_state(&pointer);
 
       gfx_display_set_alpha(coord_white, MIN(xmb->alpha, 1.00f));
       gfx_display_draw_cursor(
-            video_info,
+            userdata,
+            video_width,
+            video_height,
+            cursor_visible,
             &coord_white[0],
             xmb->cursor_size,
             xmb->textures.list[XMB_TEXTURE_POINTER],

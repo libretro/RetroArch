@@ -5143,9 +5143,14 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
          1.0f, 1.0f, 1.0f, 1.0f,
          1.0f, 1.0f, 1.0f, 1.0f
       };
+      bool cursor_visible   = video_info->fullscreen 
+         || video_info->menu_mouse_enable;
 
       gfx_display_draw_cursor(
-            video_info,
+            userdata,
+            video_width,
+            video_height,
+            cursor_visible,
             color_white,
             mui->cursor_size,
             mui->textures.list[MUI_TEXTURE_POINTER],
