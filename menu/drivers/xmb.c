@@ -949,9 +949,11 @@ static void xmb_render_messagebox_internal(
 
    if (menu_input_dialog_get_display_kb())
       gfx_display_draw_keyboard(
+            userdata,
+            video_width,
+            video_height,
             xmb->textures.list[XMB_TEXTURE_KEY_HOVER],
             xmb->font,
-            video_info,
             input_event_get_osk_grid(),
             input_event_get_osk_ptr(),
             0xffffffff);

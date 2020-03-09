@@ -929,7 +929,9 @@ void gfx_display_draw_polygon(
 }
 
 void gfx_display_draw_texture(
-      video_frame_info_t *video_info,
+      void *userdata,
+      unsigned video_width,
+      unsigned video_height,
       int x, int y, unsigned w, unsigned h,
       unsigned width, unsigned height,
       float *color, uintptr_t texture)
@@ -938,9 +940,6 @@ void gfx_display_draw_texture(
    gfx_display_ctx_rotate_draw_t rotate_draw;
    struct video_coords coords;
    math_matrix_4x4 mymat;
-   void *userdata           = video_info->userdata;
-   unsigned video_width     = video_info->width;
-   unsigned video_height    = video_info->height;
 
    rotate_draw.matrix       = &mymat;
    rotate_draw.rotation     = 0.0;
@@ -1608,17 +1607,16 @@ void gfx_display_unset_framebuffer_dirty_flag(void)
 }
 
 void gfx_display_draw_keyboard(
+      void *userdata,
+      unsigned video_width,
+      unsigned video_height,
       uintptr_t hover_texture,
       const font_data_t *font,
-      video_frame_info_t *video_info,
       char *grid[], unsigned id,
       unsigned text_color)
 {
    unsigned i;
    int ptr_width, ptr_height;
-   void *userdata    = video_info->userdata;
-   unsigned width    = video_info->width;
-   unsigned height   = video_info->height;
 
    float white[16]=  {
       1.00, 1.00, 1.00, 1.00,
@@ -1629,20 +1627,25 @@ void gfx_display_draw_keyboard(
 
    gfx_display_draw_quad(
          userdata,
-         width, height,
-         0, height/2.0, width, height/2.0,
-         width, height,
+         video_width,
+         video_height,
+         0,
+         video_height / 2.0,
+         video_width,
+         video_height / 2.0,
+         video_width,
+         video_height,
          &osk_dark[0]);
 
-   ptr_width  = width  / 11;
-   ptr_height = height / 10;
+   ptr_width  = video_width  / 11;
+   ptr_height = video_height / 10;
 
    if (ptr_width >= ptr_height)
       ptr_width = ptr_height;
 
    for (i = 0; i < 44; i++)
    {
-      int line_y     = (i / 11) * height / 10.0;
+      int line_y     = (i / 11) * video_height / 10.0;
       unsigned color = 0xffffffff;
 
       if (i == id)
@@ -1650,11 +1653,15 @@ void gfx_display_draw_keyboard(
          gfx_display_blend_begin(userdata);
 
          gfx_display_draw_texture(
-               video_info,
-               width/2.0 - (11*ptr_width)/2.0 + (i % 11) * ptr_width,
-               height/2.0 + ptr_height*1.5 + line_y,
+               userdata,
+               video_width,
+               video_height,
+               video_width / 2.0 - (11 * ptr_width) / 2.0 + (i % 11) 
+               * ptr_width,
+               video_height / 2.0 + ptr_height * 1.5 + line_y,
                ptr_width, ptr_height,
-               width, height,
+               video_width,
+               video_height,
                &white[0],
                hover_texture);
 
@@ -1664,10 +1671,14 @@ void gfx_display_draw_keyboard(
       }
 
       gfx_display_draw_text(font, grid[i],
-            width/2.0 - (11*ptr_width)/2.0 + (i % 11)
+            video_width/2.0 - (11*ptr_width)/2.0 + (i % 11)
             * ptr_width + ptr_width/2.0,
-            height/2.0 + ptr_height + line_y + font->size / 3,
-            width, height, color, TEXT_ALIGN_CENTER, 1.0f,
+            video_height / 2.0 + ptr_height + line_y + font->size / 3,
+            video_width,
+            video_height,
+            color,
+            TEXT_ALIGN_CENTER,
+            1.0f,
             false, 0, false);
    }
 }

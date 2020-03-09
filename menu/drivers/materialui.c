@@ -5097,9 +5097,11 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
 
       /* Draw onscreen keyboard */
       gfx_display_draw_keyboard(
+            userdata,
+            video_width,
+            video_height,
             mui->textures.list[MUI_TEXTURE_KEY_HOVER],
             mui->font_data.list.font,
-            video_info,
             input_event_get_osk_grid(),
             input_event_get_osk_ptr(),
             0xFFFFFFFF);

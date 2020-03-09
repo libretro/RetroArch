@@ -278,9 +278,11 @@ void gfx_display_draw_blend(
       unsigned video_height);
 
 void gfx_display_draw_keyboard(
+      void *userdata,
+      unsigned video_width,
+      unsigned video_height,
       uintptr_t hover_texture,
       const font_data_t *font,
-      video_frame_info_t *video_info,
       char *grid[], unsigned id,
       unsigned text_color);
 
@@ -323,7 +325,9 @@ void gfx_display_draw_polygon(
       float *color);
 
 void gfx_display_draw_texture(
-      video_frame_info_t *video_info,
+      void *userdata,
+      unsigned video_width,
+      unsigned video_height,
       int x, int y, unsigned w, unsigned h,
       unsigned width, unsigned height,
       float *color, uintptr_t texture);

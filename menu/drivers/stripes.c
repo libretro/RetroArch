@@ -733,7 +733,9 @@ static void stripes_render_keyboard(
          gfx_display_blend_begin(userdata);
 
          gfx_display_draw_texture(
-               video_info,
+               userdata,
+               video_width,
+               video_height,
                width/2.0 - (11*ptr_width)/2.0 + (i % 11) * ptr_width,
                height/2.0 + ptr_height*1.5 + line_y,
                ptr_width, ptr_height,

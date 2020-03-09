@@ -473,12 +473,14 @@ void ozone_draw_osk(ozone_handle_t *ozone,
 
    /* Keyboard */
    gfx_display_draw_keyboard(
-            ozone->theme->textures[OZONE_THEME_TEXTURE_CURSOR_STATIC],
-            ozone->fonts.entries_label,
-            video_info,
-            input_event_get_osk_grid(),
-            input_event_get_osk_ptr(),
-            ozone->theme->text_rgba);
+         userdata,
+         video_width,
+         video_height,
+         ozone->theme->textures[OZONE_THEME_TEXTURE_CURSOR_STATIC],
+         ozone->fonts.entries_label,
+         input_event_get_osk_grid(),
+         input_event_get_osk_ptr(),
+         ozone->theme->text_rgba);
 
    string_list_free(list);
 }
