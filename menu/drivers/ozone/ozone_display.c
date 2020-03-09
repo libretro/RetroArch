@@ -814,7 +814,9 @@ void ozone_draw_fullscreen_thumbnails(
 
          /* Thumbnail */
          gfx_thumbnail_draw(
-               video_info,
+               userdata,
+               video_width,
+               video_height,
                right_thumbnail,
                right_thumbnail_x,
                thumbnail_y,
@@ -846,7 +848,9 @@ void ozone_draw_fullscreen_thumbnails(
 
          /* Thumbnail */
          gfx_thumbnail_draw(
-               video_info,
+               userdata,
+               video_width,
+               video_height,
                left_thumbnail,
                left_thumbnail_x,
                thumbnail_y,

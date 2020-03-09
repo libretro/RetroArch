@@ -219,7 +219,10 @@ void gfx_thumbnail_get_draw_dimensions(
  *       (width x height) rectangle (alignment + aspect
  *       correct scaling is preserved). Use with caution */
 void gfx_thumbnail_draw(
-      video_frame_info_t *video_info, gfx_thumbnail_t *thumbnail,
+      void *userdata,
+      unsigned video_width,
+      unsigned video_height,
+      gfx_thumbnail_t *thumbnail,
       float x, float y, unsigned width, unsigned height,
       enum gfx_thumbnail_alignment alignment,
       float alpha, float scale_factor,

@@ -859,7 +859,9 @@ void ozone_draw_thumbnail_bar(ozone_handle_t *ozone, video_frame_info_t *video_i
                ozone->dimensions.sidebar_entry_icon_padding;
 
       gfx_thumbnail_draw(
-            video_info,
+            userdata,
+            video_width,
+            video_height,
             &ozone->thumbnails.right,
             (float)thumbnail_x_position,
             (float)right_thumbnail_y_position,
@@ -887,7 +889,9 @@ void ozone_draw_thumbnail_bar(ozone_handle_t *ozone, video_frame_info_t *video_i
    if (show_right_thumbnail && show_left_thumbnail)
    {
       gfx_thumbnail_draw(
-            video_info,
+            userdata,
+            video_width,
+            video_height,
             &ozone->thumbnails.left,
             (float)thumbnail_x_position,
             (float)left_thumbnail_y_position,

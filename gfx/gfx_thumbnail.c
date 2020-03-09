@@ -662,20 +662,21 @@ error:
  *       size of the thumbnail beyond the limits of the
  *       (width x height) rectangle (alignment + aspect
  *       correct scaling is preserved). Use with caution */
+
 void gfx_thumbnail_draw(
-      video_frame_info_t *video_info, gfx_thumbnail_t *thumbnail,
+      void *userdata,
+      unsigned video_width,
+      unsigned video_height,
+      gfx_thumbnail_t *thumbnail,
       float x, float y, unsigned width, unsigned height,
       enum gfx_thumbnail_alignment alignment,
       float alpha, float scale_factor,
       gfx_thumbnail_shadow_t *shadow)
 {
-   unsigned video_height;
    /* Sanity check */
-   if (!video_info || !thumbnail ||
+   if (!thumbnail ||
        (width < 1) || (height < 1) || (alpha <= 0.0f) || (scale_factor <= 0.0f))
       return;
-
-   video_height = video_info->height;
 
    /* Only draw thumbnail if it is available... */
    if (thumbnail->status == GFX_THUMBNAIL_STATUS_AVAILABLE)
@@ -707,7 +708,7 @@ void gfx_thumbnail_draw(
             thumbnail, width, height, scale_factor,
             &draw_width, &draw_height);
 
-      gfx_display_blend_begin(video_info->userdata);
+      gfx_display_blend_begin(userdata);
 
       /* Perform 'rotation' step
        * > Note that rotation does not actually work...
@@ -727,7 +728,7 @@ void gfx_thumbnail_draw(
       rotate_draw.scale_z      = 1.0f;
       rotate_draw.scale_enable = false;
 
-      gfx_display_rotate_z(&rotate_draw, video_info->userdata);
+      gfx_display_rotate_z(&rotate_draw, userdata);
 
       /* Configure draw object
        * > Note: Colour, width/height and position must
@@ -832,8 +833,8 @@ void gfx_thumbnail_draw(
             draw.y       = shadow_y;
 
             /* Draw shadow */
-            gfx_display_draw(&draw, video_info->userdata,
-                  video_info->width, video_info->height);
+            gfx_display_draw(&draw, userdata,
+                  video_width, video_height);
          }
       }
 
@@ -845,8 +846,8 @@ void gfx_thumbnail_draw(
       draw.y       = draw_y;
 
       /* Draw thumbnail */
-      gfx_display_draw(&draw, video_info->userdata,
-            video_info->width, video_info->height);
-      gfx_display_blend_end(video_info->userdata);
+      gfx_display_draw(&draw, userdata,
+            video_width, video_height);
+      gfx_display_blend_end(userdata);
    }
 }

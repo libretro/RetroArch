@@ -1708,7 +1708,9 @@ static void materialui_context_reset_textures(materialui_handle_t *mui)
 }
 
 static void materialui_draw_icon(
-      video_frame_info_t *video_info,
+      void *userdata,
+      unsigned video_width,
+      unsigned video_height,
       unsigned icon_size,
       uintptr_t texture,
       float x, float y,
@@ -1720,9 +1722,6 @@ static void materialui_draw_icon(
    gfx_display_ctx_draw_t draw;
    struct video_coords coords;
    math_matrix_4x4 mymat;
-   void *userdata           = video_info->userdata;
-   unsigned video_width     = video_info->width;
-   unsigned video_height    = video_info->height;
 
    gfx_display_blend_begin(userdata);
 
@@ -1760,8 +1759,10 @@ static void materialui_draw_icon(
 
 static void materialui_draw_thumbnail(
       materialui_handle_t *mui,
-      video_frame_info_t *video_info,
       gfx_thumbnail_t *thumbnail,
+      void *userdata,
+      unsigned video_width,
+      unsigned video_height,
       float x, float y,
       unsigned width, unsigned height,
       float scale_factor)
@@ -1770,9 +1771,6 @@ static void materialui_draw_thumbnail(
    float bg_y;
    float bg_width;
    float bg_height;
-   void *userdata        = video_info->userdata;
-   unsigned video_width  = video_info->width;
-   unsigned video_height = video_info->height;
 
    /* Sanity check */
    if (scale_factor <= 0)
@@ -1814,7 +1812,10 @@ static void materialui_draw_thumbnail(
                   mui->colors.thumbnail_background);
 
             /* Icon */
-            materialui_draw_icon(video_info,
+            materialui_draw_icon(
+                  userdata,
+                  video_width,
+                  video_height,
                   (unsigned)icon_size,
                   mui->textures.list[MUI_TEXTURE_IMAGE],
                   bg_x + (bg_width - icon_size) / 2.0f,
@@ -1870,7 +1871,10 @@ static void materialui_draw_thumbnail(
 
             /* Thumbnail */
             gfx_thumbnail_draw(
-                  video_info, thumbnail,
+                  userdata,
+                  video_width,
+                  video_height,
+                  thumbnail,
                   x, y, mui->thumbnail_width_max, mui->thumbnail_height_max,
                   GFX_THUMBNAIL_ALIGN_CENTRE,
                   mui->transition_alpha, scale_factor, NULL);
@@ -2626,7 +2630,9 @@ enum materialui_entry_value_type materialui_get_entry_value_type(
 
 static void materialui_render_switch_icon(
       materialui_handle_t *mui,
-      video_frame_info_t *video_info,
+      void *userdata,
+      unsigned video_width,
+      unsigned video_height,
       float y,
       unsigned width, unsigned height, int x_offset,
       bool on)
@@ -2643,7 +2649,10 @@ static void materialui_render_switch_icon(
 
    /* Draw background */
    if (mui->textures.list[MUI_TEXTURE_SWITCH_BG])
-      materialui_draw_icon(video_info,
+      materialui_draw_icon(
+            userdata,
+            video_width,
+            video_height,
             mui->icon_size,
             mui->textures.list[MUI_TEXTURE_SWITCH_BG],
             x,
@@ -2656,7 +2665,10 @@ static void materialui_render_switch_icon(
 
    /* Draw switch */
    if (mui->textures.list[switch_texture_index])
-      materialui_draw_icon(video_info,
+      materialui_draw_icon(
+            userdata,
+            video_width,
+            video_height,
             mui->icon_size,
             mui->textures.list[switch_texture_index],
             x,
@@ -2673,7 +2685,9 @@ static void materialui_render_switch_icon(
  * >> MUI_LIST_VIEW_DEFAULT */
 static void materialui_render_menu_entry_default(
       materialui_handle_t *mui,
-      video_frame_info_t *video_info,
+      void *userdata,
+      unsigned video_width,
+      unsigned video_height,
       materialui_node_t *node,
       menu_entry_t *entry,
       bool entry_selected,
@@ -2754,7 +2768,10 @@ static void materialui_render_menu_entry_default(
 
    if (icon_texture)
    {
-      materialui_draw_icon(video_info,
+      materialui_draw_icon(
+            userdata,
+            video_width,
+            video_height,
             mui->icon_size,
             (uintptr_t)icon_texture,
             x_offset + (int)mui->landscape_entry_margin,
@@ -2894,14 +2911,16 @@ static void materialui_render_menu_entry_default(
       case MUI_ENTRY_VALUE_SWITCH_ON:
          {
             materialui_render_switch_icon(
-                  mui, video_info, value_icon_y, width, height, x_offset, true);
+                  mui, userdata, video_width,
+                  video_height, value_icon_y, width, height, x_offset, true);
             entry_value_width = mui->icon_size;
          }
          break;
       case MUI_ENTRY_VALUE_SWITCH_OFF:
          {
             materialui_render_switch_icon(
-                  mui, video_info, value_icon_y, width, height, x_offset, false);
+                  mui, userdata, video_width,
+                  video_height, value_icon_y, width, height, x_offset, false);
             entry_value_width = mui->icon_size;
          }
          break;
@@ -2909,7 +2928,10 @@ static void materialui_render_menu_entry_default(
          {
             /* Draw checkmark */
             if (mui->textures.list[MUI_TEXTURE_CHECKMARK])
-               materialui_draw_icon(video_info,
+               materialui_draw_icon(
+                     userdata,
+                     video_width,
+                     video_height,
                      mui->icon_size,
                      mui->textures.list[MUI_TEXTURE_CHECKMARK],
                      x_offset + (int)width - (int)mui->margin - (int)mui->landscape_entry_margin - (int)mui->nav_bar_layout_width - (int)mui->icon_size,
@@ -2986,7 +3008,9 @@ static void materialui_render_menu_entry_default(
  * >> MUI_LIST_VIEW_PLAYLIST_THUMB_LIST_LARGE */
 static void materialui_render_menu_entry_playlist_list(
       materialui_handle_t *mui,
-      video_frame_info_t *video_info,
+      void *userdata,
+      unsigned video_width,
+      unsigned video_height,
       materialui_node_t *node,
       menu_entry_t *entry,
       bool entry_selected,
@@ -2995,9 +3019,6 @@ static void materialui_render_menu_entry_playlist_list(
       unsigned width, unsigned height,
       int x_offset)
 {
-   void *userdata             = video_info->userdata;
-   unsigned video_width       = video_info->width;
-   unsigned video_height      = video_info->height;
    const char *entry_label    = NULL;
    const char *entry_sublabel = NULL;
    int entry_y                = header_height - mui->scroll_y + node->y;
@@ -3064,8 +3085,10 @@ static void materialui_render_menu_entry_playlist_list(
       /* Draw primary thumbnail */
       materialui_draw_thumbnail(
             mui,
-            video_info,
             &node->thumbnails.primary,
+            userdata,
+            video_width,
+            video_height,
             (float)(x_offset + thumbnail_margin + (int)mui->landscape_entry_margin),
             thumbnail_y,
             width,
@@ -3080,8 +3103,10 @@ static void materialui_render_menu_entry_playlist_list(
       {
          materialui_draw_thumbnail(
                mui,
-               video_info,
                &node->thumbnails.secondary,
+               userdata,
+               video_width,
+               video_height,
                (float)(x_offset + (int)width - thumbnail_margin - (int)mui->landscape_entry_margin -
                      (int)mui->nav_bar_layout_width - (int)mui->thumbnail_width_max),
                thumbnail_y,
@@ -3244,8 +3269,10 @@ static void materialui_render_menu_entry_playlist_dual_icon(
    /* > Primary thumbnail */
    materialui_draw_thumbnail(
          mui,
-         video_info,
          &node->thumbnails.primary,
+         userdata,
+         video_width,
+         video_height,
          (float)(x_offset + (int)mui->margin + (int)mui->landscape_entry_margin),
          thumbnail_y,
          width,
@@ -3255,8 +3282,10 @@ static void materialui_render_menu_entry_playlist_dual_icon(
    /* > Secondary thumbnail */
    materialui_draw_thumbnail(
          mui,
-         video_info,
          &node->thumbnails.secondary,
+         userdata,
+         video_width,
+         video_height,
          (float)(x_offset + (int)width - (int)mui->margin - (int)mui->landscape_entry_margin -
                (int)mui->nav_bar_layout_width - (int)mui->thumbnail_width_max),
          thumbnail_y,
@@ -3379,6 +3408,9 @@ static void materialui_render_menu_list(
    size_t first_entry;
    size_t last_entry;
    file_list_t *list           = NULL;
+   void *userdata              = video_info->userdata;
+   unsigned video_width        = video_info->width;
+   unsigned video_height       = video_info->height;
    size_t entries_end          = menu_entries_get_size();
    unsigned header_height      = gfx_display_get_header_height();
    size_t selection            = menu_navigation_get_selection();
@@ -3433,7 +3465,9 @@ static void materialui_render_menu_list(
          case MUI_LIST_VIEW_PLAYLIST_THUMB_LIST_LARGE:
             materialui_render_menu_entry_playlist_list(
                   mui,
-                  video_info,
+                  userdata,
+                  video_width,
+                  video_height,
                   node,
                   &entry,
                   entry_selected,
@@ -3460,7 +3494,9 @@ static void materialui_render_menu_list(
          default:
             materialui_render_menu_entry_default(
                   mui,
-                  video_info,
+                  userdata,
+                  video_width,
+                  video_height,
                   node,
                   &entry,
                   entry_selected,
@@ -3875,7 +3911,10 @@ static void materialui_render_header(
                   texture_battery = mui->textures.list[MUI_TEXTURE_BATTERY_20];
             }
 
-            materialui_draw_icon(video_info,
+            materialui_draw_icon(
+                  userdata,
+                  video_width,
+                  video_height,
                   mui->sys_bar_icon_size,
                   (uintptr_t)texture_battery,
                   (int)width - (
@@ -4010,7 +4049,10 @@ static void materialui_render_header(
    {
       menu_title_margin = mui->icon_size;
 
-      materialui_draw_icon(video_info,
+      materialui_draw_icon(
+            userdata,
+            video_width,
+            video_height,
             mui->icon_size,
             mui->textures.list[MUI_TEXTURE_BACK],
             0,
@@ -4027,7 +4069,10 @@ static void materialui_render_header(
    /* > Draw 'search' icon, if required */
    if (show_search_icon)
    {
-      materialui_draw_icon(video_info,
+      materialui_draw_icon(
+            userdata,
+            video_width,
+            video_height,
             mui->icon_size,
             mui->textures.list[MUI_TEXTURE_SEARCH],
             (int)width - (int)mui->icon_size - (int)mui->nav_bar_layout_width,
@@ -4046,7 +4091,10 @@ static void materialui_render_header(
        *   'search' is also shown... */
       if (show_switch_view_icon)
       {
-         materialui_draw_icon(video_info,
+         materialui_draw_icon(
+               userdata,
+               video_width,
+               video_height,
                mui->icon_size,
                mui->textures.list[MUI_TEXTURE_SWITCH_VIEW],
                (int)width - (2 * (int)mui->icon_size) - (int)mui->nav_bar_layout_width,
@@ -4196,7 +4244,10 @@ static void materialui_render_nav_bar_bottom(
    /* Draw tabs */
 
    /* > Back - left hand side */
-   materialui_draw_icon(video_info,
+   materialui_draw_icon(
+         userdata,
+         video_width,
+         video_height,
          mui->icon_size,
          mui->textures.list[mui->nav_bar.back_tab.texture_index],
          (int)((0.5f * tab_width) - ((float)mui->icon_size / 2.0f)),
@@ -4209,7 +4260,10 @@ static void materialui_render_nav_bar_bottom(
                mui->colors.nav_bar_icon_passive : mui->colors.nav_bar_icon_disabled);
 
    /* > Resume - right hand side */
-   materialui_draw_icon(video_info,
+   materialui_draw_icon(
+         userdata,
+         video_width,
+         video_height,
          mui->icon_size,
          mui->textures.list[mui->nav_bar.resume_tab.texture_index],
          (int)((((float)num_tabs - 0.5f) * tab_width) - ((float)mui->icon_size / 2.0f)),
@@ -4229,7 +4283,10 @@ static void materialui_render_nav_bar_bottom(
             mui->colors.nav_bar_icon_active : mui->colors.nav_bar_icon_passive;
 
       /* Draw icon */
-      materialui_draw_icon(video_info,
+      materialui_draw_icon(
+            userdata,
+            video_width,
+            video_height,
             mui->icon_size,
             mui->textures.list[tab->texture_index],
             (((float)i + 1.5f) * tab_width) - ((float)mui->icon_size / 2.0f),
@@ -4305,7 +4362,10 @@ static void materialui_render_nav_bar_right(
    /* Draw tabs */
 
    /* > Back - bottom */
-   materialui_draw_icon(video_info,
+   materialui_draw_icon(
+         userdata,
+         video_width,
+         video_height,
          mui->icon_size,
          mui->textures.list[mui->nav_bar.back_tab.texture_index],
          nav_bar_x,
@@ -4318,7 +4378,10 @@ static void materialui_render_nav_bar_right(
                mui->colors.nav_bar_icon_passive : mui->colors.nav_bar_icon_disabled);
 
    /* > Resume - top */
-   materialui_draw_icon(video_info,
+   materialui_draw_icon(
+         userdata,
+         video_width,
+         video_height,
          mui->icon_size,
          mui->textures.list[mui->nav_bar.resume_tab.texture_index],
          nav_bar_x,
@@ -4338,7 +4401,10 @@ static void materialui_render_nav_bar_right(
             mui->colors.nav_bar_icon_active : mui->colors.nav_bar_icon_passive;
 
       /* Draw icon */
-      materialui_draw_icon(video_info,
+      materialui_draw_icon(
+            userdata,
+            video_width,
+            video_height,
             mui->icon_size,
             mui->textures.list[tab->texture_index],
             nav_bar_x,
@@ -4784,7 +4850,9 @@ static void materialui_render_fullscreen_thumbnails(
 
          /* Thumbnail */
          gfx_thumbnail_draw(
-               video_info,
+               video_info->userdata,
+               video_info->width,
+               video_info->height,
                primary_thumbnail,
                primary_thumbnail_x,
                primary_thumbnail_y,
@@ -4816,7 +4884,9 @@ static void materialui_render_fullscreen_thumbnails(
 
          /* Thumbnail */
          gfx_thumbnail_draw(
-               video_info,
+               video_info->userdata,
+               video_info->width,
+               video_info->height,
                secondary_thumbnail,
                secondary_thumbnail_x,
                secondary_thumbnail_y,
