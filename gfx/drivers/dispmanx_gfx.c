@@ -437,7 +437,8 @@ static bool dispmanx_gfx_frame(void *data, const void *frame, unsigned width,
       video_frame_info_t *video_info)
 {
    struct dispmanx_video *_dispvars = data;
-   float aspect = video_driver_get_aspect_ratio();
+   float                     aspect = video_driver_get_aspect_ratio();
+   unsigned    max_swapchain_images = video_info->max_swapchain_images;
 
    if (!frame)
       return true;
@@ -468,7 +469,7 @@ static bool dispmanx_gfx_frame(void *data, const void *frame, unsigned width,
             _dispvars->rgb32 ? VC_IMAGE_XRGB8888 : VC_IMAGE_RGB565,
             255,
             _dispvars->aspect_ratio,
-            video_info->max_swapchain_images,
+            max_swapchain_images,
             0,
             &_dispvars->main_surface);
 

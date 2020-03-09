@@ -1166,10 +1166,16 @@ static bool d3d12_gfx_frame(
       video_frame_info_t* video_info)
 {
    unsigned         i;
-   d3d12_texture_t* texture = NULL;
-   d3d12_video_t*   d3d12   = (d3d12_video_t*)data;
-   unsigned video_width     = video_info->width;
-   unsigned video_height    = video_info->height;
+   d3d12_texture_t* texture       = NULL;
+   d3d12_video_t*   d3d12         = (d3d12_video_t*)data;
+   const char *stat_text          = video_info->stat_text;
+   bool statistics_show           = video_info->statistics_show;
+   bool widgets_inited            = video_info->widgets_inited;
+   unsigned video_width           = video_info->width;
+   unsigned video_height          = video_info->height;
+   struct font_params *osd_params = (struct font_params*)
+      &video_info->osd_stat_params;
+
 
    d3d12_gfx_sync(d3d12);
 
@@ -1511,19 +1517,16 @@ static bool d3d12_gfx_frame(
       menu_driver_frame(video_info);
    else
 #endif
-      if (video_info->statistics_show)
+      if (statistics_show)
       {
-         struct font_params *osd_params = (struct font_params*)
-            &video_info->osd_stat_params;
-
          if (osd_params)
          {
             D3D12SetPipelineState(d3d12->queue.cmd, d3d12->sprites.pipe_blend);
             D3D12RSSetViewports(d3d12->queue.cmd, 1, &d3d12->chain.viewport);
             D3D12RSSetScissorRects(d3d12->queue.cmd, 1, &d3d12->chain.scissorRect);
             D3D12IASetVertexBuffers(d3d12->queue.cmd, 0, 1, &d3d12->sprites.vbo_view);
-            font_driver_render_msg(d3d12, video_info, video_info->stat_text,
-                  (const struct font_params*)&video_info->osd_stat_params, NULL);
+            font_driver_render_msg(d3d12, video_info, stat_text,
+                  (const struct font_params*)osd_params, NULL);
          }
       }
 #ifdef HAVE_OVERLAY
@@ -1563,7 +1566,7 @@ static bool d3d12_gfx_frame(
 #endif
 
 #ifdef HAVE_GFX_WIDGETS
-   if (video_info->widgets_inited)
+   if (widgets_inited)
       gfx_widgets_frame(video_info);
 #endif
 

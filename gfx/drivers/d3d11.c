@@ -1282,11 +1282,15 @@ static bool d3d11_gfx_frame(
       video_frame_info_t* video_info)
 {
    unsigned           i;
-   d3d11_texture_t*   texture = NULL;
-   d3d11_video_t*     d3d11   = (d3d11_video_t*)data;
-   D3D11DeviceContext context = d3d11->context;
-   unsigned video_width       = video_info->width;
-   unsigned video_height      = video_info->height;
+   d3d11_texture_t*   texture     = NULL;
+   d3d11_video_t*     d3d11       = (d3d11_video_t*)data;
+   D3D11DeviceContext context     = d3d11->context;
+   bool widgets_inited            = video_info->widgets_inited;
+   const char *stat_text          = video_info->stat_text;
+   unsigned video_width           = video_info->width;
+   unsigned video_height          = video_info->height;
+   bool statistics_show           = video_info->statistics_show;
+   struct font_params* osd_params = (struct font_params*)&video_info->osd_stat_params;
 
    if (d3d11->resize_chain)
    {
@@ -1544,18 +1548,16 @@ static bool d3d11_gfx_frame(
       menu_driver_frame(video_info);
    else
 #endif
-      if (video_info->statistics_show)
+      if (statistics_show)
    {
-      struct font_params* osd_params = (struct font_params*)&video_info->osd_stat_params;
-
       if (osd_params)
       {
          D3D11SetViewports(context, 1, &d3d11->viewport);
          D3D11SetBlendState(d3d11->context, d3d11->blend_enable, NULL, D3D11_DEFAULT_SAMPLE_MASK);
          D3D11SetVertexBuffer(context, 0, d3d11->sprites.vbo, sizeof(d3d11_sprite_t), 0);
          font_driver_render_msg(d3d11,
-               video_info, video_info->stat_text,
-               (const struct font_params*)&video_info->osd_stat_params, NULL);
+               video_info, stat_text,
+               (const struct font_params*)osd_params, NULL);
       }
    }
 
@@ -1581,7 +1583,7 @@ static bool d3d11_gfx_frame(
 #endif
 
 #ifdef HAVE_GFX_WIDGETS
-   if (video_info->widgets_inited)
+   if (widgets_inited)
       gfx_widgets_frame(video_info);
 #endif
 
