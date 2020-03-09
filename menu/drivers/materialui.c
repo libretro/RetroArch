@@ -3605,13 +3605,12 @@ static void materialui_render_background(materialui_handle_t *mui, video_frame_i
 }
 
 static void materialui_render_landscape_border(
-      materialui_handle_t *mui, video_frame_info_t *video_info,
+      materialui_handle_t *mui,
+      void *userdata,
+      unsigned video_width,
+      unsigned video_height,
       unsigned width, unsigned height, unsigned header_height, int x_offset)
 {
-   void *userdata          = video_info->userdata;
-   unsigned video_width    = video_info->width;
-   unsigned video_height   = video_info->height;
-
    if (mui->landscape_entry_margin > mui->margin)
    {
       unsigned border_width  = mui->landscape_entry_margin - mui->margin;
@@ -5100,7 +5099,10 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
     * (does nothing in portrait mode, or if landscape
     * optimisations are disabled) */
    materialui_render_landscape_border(
-         mui, video_info, width, height, header_height, list_x_offset);
+         mui, userdata, 
+         video_width,
+         video_height,
+         width, height, header_height, list_x_offset);
 
    /* Draw 'highlighted entry' selection box */
    materialui_render_selection_highlight(

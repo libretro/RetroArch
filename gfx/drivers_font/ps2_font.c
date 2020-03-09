@@ -38,24 +38,22 @@ typedef struct ps2_font_info
 /* Copied from GSKIT FONTM CLUT
    FONTM Textures are GS_PSM_T4, and need a 16x16 CLUT
    This is a greyscale ramp CLUT, with linear alpha. */
-static u32 gsKit_fontm_clut[16] = {	0x00000000, 0x11111111, 0x22222222, 0x33333333, \
-					0x44444444, 0x55555555, 0x66666666, 0x77777777, \
-					0x80888888, 0x80999999, 0x80AAAAAA, 0x80BBBBBB, \
-					0x80CCCCCC, 0x80DDDDDD, 0x80EEEEEE, 0x80FFFFFF };
+static u32 gsKit_fontm_clut[16] = {	
+   0x00000000, 0x11111111, 0x22222222, 0x33333333, \
+   0x44444444, 0x55555555, 0x66666666, 0x77777777, \
+   0x80888888, 0x80999999, 0x80AAAAAA, 0x80BBBBBB, \
+   0x80CCCCCC, 0x80DDDDDD, 0x80EEEEEE, 0x80FFFFFF
+};
 
 static void deinit_texture(GSTEXTURE *texture)
 {
    if (texture->Mem)
-   {
       free(texture->Mem);
-      texture->Mem = NULL;
-   }
+   texture->Mem = NULL;
 
    if (texture->Mem)
-   {
       free(texture->Clut);
-      texture->Clut = NULL;
-   }
+   texture->Clut = NULL;
 }
 
 static void deinit_gsfont(GSFONTM *gsFontM)
@@ -68,7 +66,7 @@ static void deinit_gsfont(GSFONTM *gsFontM)
 
 static void ps2_prepare_font(GSGLOBAL *gsGlobal, GSFONTM *gsFontM)
 {
-   if(gsKit_fontm_unpack(gsFontM) == 0)
+   if (gsKit_fontm_unpack(gsFontM) == 0)
    {
       gsFontM->Texture->Width   = FONTM_TEXTURE_WIDTH;
       gsFontM->Texture->Height  = FONTM_TEXTURE_HEIGHT;
@@ -81,22 +79,26 @@ static void ps2_prepare_font(GSGLOBAL *gsGlobal, GSFONTM *gsFontM)
 
 static void ps2_upload_font(GSGLOBAL *gsGlobal, GSFONTM *gsFontM)
 {
-	int pgindx;
-   int TexSize = gsKit_texture_size(gsFontM->Texture->Width, gsFontM->Texture->Height, gsFontM->Texture->PSM);
+	unsigned i;
+   int TexSize                = gsKit_texture_size(
+         gsFontM->Texture->Width,
+         gsFontM->Texture->Height,
+         gsFontM->Texture->PSM);
 
-   gsFontM->Texture->VramClut = gsKit_vram_alloc(gsGlobal, FONTM_VRAM_SIZE, GSKIT_ALLOC_USERBUFFER);
+   gsFontM->Texture->VramClut = gsKit_vram_alloc(
+         gsGlobal, FONTM_VRAM_SIZE, GSKIT_ALLOC_USERBUFFER);
 
-   for (pgindx = 0; pgindx < GS_FONTM_PAGE_COUNT; ++pgindx)
+   for (i = 0; i < GS_FONTM_PAGE_COUNT; ++i)
    {
-      gsFontM->Vram[pgindx]     = gsKit_vram_alloc(
+      gsFontM->Vram[i]     = gsKit_vram_alloc(
             gsGlobal, TexSize, GSKIT_ALLOC_USERBUFFER);
-      gsFontM->LastPage[pgindx] = (u32) -1;
+      gsFontM->LastPage[i] = (u32) -1;
    }
 
    gsFontM->Texture->Vram = gsFontM->Vram[0];
-   gsFontM->VramIdx = 0;
-   gsFontM->Spacing = FONTM_TEXTURE_SPACING;
-   gsFontM->Align = GSKIT_FALIGN_LEFT;
+   gsFontM->VramIdx       = 0;
+   gsFontM->Spacing       = FONTM_TEXTURE_SPACING;
+   gsFontM->Align         = GSKIT_FALIGN_LEFT;
 
 	gsFontM->Texture->Clut = memalign(GS_VRAM_TBWALIGN_CLUT, GS_VRAM_TBWALIGN);
 	memcpy(gsFontM->Texture->Clut, gsKit_fontm_clut, GS_VRAM_TBWALIGN);
@@ -108,8 +110,9 @@ static void *ps2_font_init_font(void *gl_data, const char *font_path,
       float font_size, bool is_threaded)
 {
    ps2_font_info_t *ps2 = (ps2_font_info_t*)calloc(1, sizeof(ps2_font_info_t));
-   ps2->ps2_video = (ps2_video_t *)gl_data;
-   ps2->gsFontM = gsKit_init_fontm();
+
+   ps2->ps2_video       = (ps2_video_t *)gl_data;
+   ps2->gsFontM         = gsKit_init_fontm();
 
    ps2_prepare_font(ps2->ps2_video->gsGlobal, ps2->gsFontM);
    ps2_upload_font(ps2->ps2_video->gsGlobal, ps2->gsFontM);
@@ -120,9 +123,11 @@ static void *ps2_font_init_font(void *gl_data, const char *font_path,
 static void ps2_font_free_font(void *data, bool is_threaded)
 {
    ps2_font_info_t *ps2 = (ps2_font_info_t *)data;
+
    deinit_gsfont(ps2->gsFontM);
+
    ps2->ps2_video = NULL;
-   ps2 = NULL;
+   ps2            = NULL;
 }
 
 static void ps2_font_render_msg(
