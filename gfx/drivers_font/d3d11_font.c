@@ -290,8 +290,8 @@ static void d3d11_font_render_msg(
                              alpha, r_dark, g_dark, b_dark, alpha_dark;
    d3d11_font_t*             font   = (d3d11_font_t*)data;
    d3d11_video_t           * d3d11  = (d3d11_video_t*)userdata;
-   unsigned                  width  = video_info->width;
-   unsigned                  height = video_info->height;
+   unsigned                  width  = d3d11->vp.full_width;
+   unsigned                  height = d3d11->vp.full_height;
    settings_t *settings             = config_get_ptr();
    float video_msg_pos_x            = settings->floats.video_msg_pos_x;
    float video_msg_pos_y            = settings->floats.video_msg_pos_y;

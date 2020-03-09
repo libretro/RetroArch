@@ -82,13 +82,13 @@ static void fpga_render_msg(
       void *userdata,
       video_frame_info_t *video_info,
       void *data, const char *msg,
-      const void *userdata)
+      const void *_params)
 {
    float x, y, scale;
    unsigned newX, newY, len;
    unsigned align;
    fpga_raster_t              *font = (fpga_raster_t*)data;
-   const struct font_params *params = (const struct font_params*)userdata;
+   const struct font_params *params = (const struct font_params*)_params;
    unsigned width                   = video_info->width;
    unsigned height                  = video_info->height;
    settings_t *settings             = config_get_ptr();

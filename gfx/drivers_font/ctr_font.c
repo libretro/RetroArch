@@ -368,8 +368,8 @@ static void ctr_font_render_msg(
             alpha, r_dark, g_dark, b_dark, alpha_dark;
    ctr_font_t                * font = (ctr_font_t*)data;
    ctr_video_t                *ctr  = (ctr_video_t*)userdata;
-   unsigned width                   = video_info->width;
-   unsigned height                  = video_info->height;
+   unsigned width                   = ctr->vp.width;
+   unsigned height                  = ctr->vp.height;
    settings_t *settings             = config_get_ptr();
    float video_msg_pos_x            = settings->floats.video_msg_pos_x;
    float video_msg_pos_y            = settings->floats.video_msg_pos_y;

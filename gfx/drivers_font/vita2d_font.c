@@ -273,9 +273,10 @@ static void vita2d_font_render_msg(
    bool full_screen                 = false ;
    unsigned color, color_dark, r, g, b,
             alpha, r_dark, g_dark, b_dark, alpha_dark;
+   vita_video_t             *vita   = (vita_video_t *)userdata;
    vita_font_t                *font = (vita_font_t *)data;
-   unsigned width                   = video_info->width;
-   unsigned height                  = video_info->height;
+   unsigned width                   = vita->width;
+   unsigned height                  = vita->height;
    settings_t *settings             = config_get_ptr();
    float video_msg_pos_x            = settings->floats.video_msg_pos_x;
    float video_msg_pos_y            = settings->floats.video_msg_pos_y;

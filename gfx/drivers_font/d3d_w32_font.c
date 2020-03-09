@@ -133,12 +133,11 @@ static void d3dfonts_w32_render_msg(
 {
    unsigned format;
    unsigned a, r, g, b;
+   unsigned width, height;
    RECT rect, rect_shifted;
    RECT *p_rect_shifted             = NULL;
    RECT *p_rect                     = NULL;
    d3dfonts_t *d3dfonts             = (d3dfonts_t*)data;
-   unsigned width                   = video_info->width;
-   unsigned height                  = video_info->height;
    float drop_mod                   = 0.3f;
    float drop_alpha                 = 1.0f;
    int drop_x                       = -2;
@@ -150,12 +149,15 @@ static void d3dfonts_w32_render_msg(
    float video_msg_color_g          = settings->floats.video_msg_color_g;
    float video_msg_color_b          = settings->floats.video_msg_color_b;
 
-   if (!d3dfonts || !d3dfonts->d3d || !msg)
+   if (!d3dfonts || !msg)
       return;
 
-   format         = DT_LEFT;
-   p_rect         = &d3dfonts->d3d->font_rect;
-   p_rect_shifted = &d3dfonts->d3d->font_rect_shifted;
+   width                            = d3dfonts->d3d->video_info.width;
+   height                           = d3dfonts->d3d->video_info.height;
+
+   p_rect                           = &d3dfonts->d3d->font_rect;
+   p_rect_shifted                   = &d3dfonts->d3d->font_rect_shifted;
+   format                           = DT_LEFT;
 
    if(params)
    {

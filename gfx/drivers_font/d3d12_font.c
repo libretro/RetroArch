@@ -303,8 +303,8 @@ static void d3d12_font_render_msg(
                              alpha, r_dark, g_dark, b_dark, alpha_dark;
    d3d12_video_t           *d3d12   = (d3d12_video_t*)userdata;
    d3d12_font_t*             font   = (d3d12_font_t*)data;
-   unsigned                  width  = video_info->width;
-   unsigned                  height = video_info->height;
+   unsigned                  width  = d3d12->vp.full_width;
+   unsigned                  height = d3d12->vp.full_height;
    settings_t *settings             = config_get_ptr();
    float video_msg_pos_x            = settings->floats.video_msg_pos_x;
    float video_msg_pos_y            = settings->floats.video_msg_pos_y;
