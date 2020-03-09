@@ -76,6 +76,7 @@ typedef struct gfx_ctx_x_data
    GLXWindow g_glx_win;
    GLXContext g_ctx, g_hw_ctx;
    GLXFBConfig g_fbc;
+   unsigned swap_mode;
 #endif
 
    int g_interval;
@@ -287,22 +288,45 @@ static void gfx_ctx_x_swap_interval(void *data, int interval)
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)
          x->g_interval = interval;
 
-         if (g_pglSwapInterval)
+         if (x->swap_mode)
          {
-            RARCH_LOG("[GLX]: glXSwapInterval(%i)\n", x->g_interval);
-            if (g_pglSwapInterval(x->g_interval) != 0)
-               RARCH_WARN("[GLX]: glXSwapInterval() failed.\n");
+             if (g_pglSwapInterval)
+             {
+                RARCH_LOG("[GLX]: glXSwapInterval(%i)\n", x->g_interval);
+                if (g_pglSwapInterval(x->g_interval) != 0)
+                   RARCH_WARN("[GLX]: glXSwapInterval() failed.\n");
+             }
+             else if (g_pglSwapIntervalEXT)
+             {
+                RARCH_LOG("[GLX]: glXSwapIntervalEXT(%i)\n", x->g_interval);
+                g_pglSwapIntervalEXT(g_x11_dpy, x->g_glx_win, x->g_interval);
+             }
+             else if (g_pglSwapIntervalSGI)
+             {
+                RARCH_LOG("[GLX]: glXSwapIntervalSGI(%i)\n", x->g_interval);
+                if (g_pglSwapIntervalSGI(x->g_interval) != 0)
+                   RARCH_WARN("[GLX]: glXSwapIntervalSGI() failed.\n");
+             }
          }
-	 else if (g_pglSwapIntervalEXT)
+         else
          {
-            RARCH_LOG("[GLX]: glXSwapIntervalEXT(%i)\n", x->g_interval);
-            g_pglSwapIntervalEXT(g_x11_dpy, x->g_glx_win, x->g_interval);
-         }
-         else if (g_pglSwapIntervalSGI)
-         {
-            RARCH_LOG("[GLX]: glXSwapIntervalSGI(%i)\n", x->g_interval);
-            if (g_pglSwapIntervalSGI(x->g_interval) != 0)
-               RARCH_WARN("[GLX]: glXSwapIntervalSGI() failed.\n");
+             if (g_pglSwapIntervalEXT)
+             {
+                RARCH_LOG("[GLX]: glXSwapIntervalEXT(%i)\n", x->g_interval);
+                g_pglSwapIntervalEXT(g_x11_dpy, x->g_glx_win, x->g_interval);
+             }
+             else if (g_pglSwapInterval)
+             {
+                RARCH_LOG("[GLX]: glXSwapInterval(%i)\n", x->g_interval);
+                if (g_pglSwapInterval(x->g_interval) != 0)
+                   RARCH_WARN("[GLX]: glXSwapInterval() failed.\n");
+             }
+             else if (g_pglSwapIntervalSGI)
+             {
+                RARCH_LOG("[GLX]: glXSwapIntervalSGI(%i)\n", x->g_interval);
+                if (g_pglSwapIntervalSGI(x->g_interval) != 0)
+                   RARCH_WARN("[GLX]: glXSwapIntervalSGI() failed.\n");
+             }
          }
 #endif
          break;
@@ -522,6 +546,11 @@ static void *gfx_ctx_x_init(void *data)
             RARCH_LOG("[GLX]: GLX_EXT_swap_control_tear supported.\n");
             x->adaptive_vsync = true;
 	 }
+
+     if (GLXExtensionSupported(g_x11_dpy, "GLX_OML_sync_control") &&
+         GLXExtensionSupported(g_x11_dpy, "GLX_MESA_swap_control")
+        )
+        x->swap_mode         = 1;
 #endif
          break;
       default:
