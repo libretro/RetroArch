@@ -1261,6 +1261,7 @@ MENU
 
 #ifdef HAVE_GFX_WIDGETS
 #include "../gfx/gfx_widgets.c"
+#include "../gfx/widgets/gfx_widget_screenshot.c"
 #endif
 
 #include "../input/input_osk.c"
