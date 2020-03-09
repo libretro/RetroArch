@@ -394,7 +394,8 @@ static INLINE void write_quad6(SpriteVertex *pv,
 }
 
 - (void)renderMessage:(const char *)msg
-                video:(video_frame_info_t *)video
+                width:(unsigned)width
+                height:(unsigned)height
                params:(const struct font_params *)params
 {
 
@@ -405,8 +406,6 @@ static INLINE void write_quad6(SpriteVertex *pv,
    int drop_x, drop_y;
    enum text_alignment text_align;
    vector_float4 color, color_dark;
-   unsigned width                   = video->width;
-   unsigned height                  = video->height;
    settings_t *settings             = config_get_ptr();
    float video_msg_pos_x            = settings->floats.video_msg_pos_x;
    float video_msg_pos_y            = settings->floats.video_msg_pos_y;
@@ -524,8 +523,10 @@ static void metal_raster_font_render_msg(
       void *data, const char *msg,
       const struct font_params *params)
 {
-   MetalRaster *r = (__bridge MetalRaster *)data;
-   [r renderMessage:msg video:video_info params:params];
+   MetalRaster *r  = (__bridge MetalRaster *)data;
+   unsigned width  = video_info->width;
+   unsigned height = video_info->height;
+   [r renderMessage:msg width:width height:height params:params];
 }
 
 static const struct font_glyph *metal_raster_font_get_glyph(
