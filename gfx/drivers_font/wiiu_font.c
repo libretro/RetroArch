@@ -284,6 +284,7 @@ static void wiiu_font_render_message(
 }
 
 static void wiiu_font_render_msg(
+      void *userdata,
       video_frame_info_t *video_info,
       void* data, const char* msg,
       const struct font_params *params)
@@ -294,7 +295,7 @@ static void wiiu_font_render_msg(
    enum text_alignment text_align;
    unsigned color, color_dark, r, g, b,
             alpha, r_dark, g_dark, b_dark, alpha_dark;
-   wiiu_video_t              *wiiu  = (wiiu_video_t*)video_info->userdata;
+   wiiu_video_t              *wiiu  = (wiiu_video_t*)userdata;
    wiiu_font_t                *font = (wiiu_font_t*)data;
    unsigned width                   = video_info->width;
    unsigned height                  = video_info->height;

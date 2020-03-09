@@ -355,6 +355,7 @@ static void ctr_font_render_message(
 }
 
 static void ctr_font_render_msg(
+      void *userdata,
       video_frame_info_t *video_info,
       void* data, const char* msg,
       const struct font_params *params)
@@ -366,7 +367,7 @@ static void ctr_font_render_msg(
    unsigned color, color_dark, r, g, b,
             alpha, r_dark, g_dark, b_dark, alpha_dark;
    ctr_font_t                * font = (ctr_font_t*)data;
-   ctr_video_t                *ctr  = (ctr_video_t*)video_info->userdata;
+   ctr_video_t                *ctr  = (ctr_video_t*)userdata;
    unsigned width                   = video_info->width;
    unsigned height                  = video_info->height;
    settings_t *settings             = config_get_ptr();

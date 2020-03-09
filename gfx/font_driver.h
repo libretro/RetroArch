@@ -86,7 +86,7 @@ typedef struct font_renderer
    void *(*init)(void *data, const char *font_path,
          float font_size, bool is_threaded);
    void (*free)(void *data, bool is_threaded);
-   void (*render_msg)(
+   void (*render_msg)(void *userdata,
          video_frame_info_t *video_info,
          void *data, const char *msg,
          const struct font_params *params);

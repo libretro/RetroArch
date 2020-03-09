@@ -247,15 +247,16 @@ static void switch_font_render_message(
 }
 
 static void switch_font_render_msg(
-    video_frame_info_t *video_info,
-    void *data, const char *msg,
-    const struct font_params *params)
+      void *userdata,
+      video_frame_info_t *video_info,
+      void *data, const char *msg,
+      const struct font_params *params)
 {
    float x, y, scale;
    enum text_alignment text_align;
    unsigned color, r, g, b, alpha;
    switch_font_t *font              = (switch_font_t *)data;
-   switch_video_t *sw               = (switch_video_t*)video_info->userdata;
+   switch_video_t *sw               = (switch_video_t*)userdata;
    settings_t *settings             = config_get_ptr();
    float video_msg_color_r          = settings->floats.video_msg_color_r;
    float video_msg_color_g          = settings->floats.video_msg_color_g;

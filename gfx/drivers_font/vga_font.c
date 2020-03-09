@@ -76,7 +76,9 @@ static const struct font_glyph *vga_font_get_glyph(
    return NULL;
 }
 
-static void vga_render_msg(video_frame_info_t *video_info,
+static void vga_render_msg(
+      void *userdata,
+      video_frame_info_t *video_info,
       void *data, const char *msg,
       const struct font_params *params)
 {

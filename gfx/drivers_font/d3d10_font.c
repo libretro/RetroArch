@@ -283,6 +283,7 @@ static void d3d10_font_render_message(
 }
 
 static void d3d10_font_render_msg(
+      void *userdata,
       video_frame_info_t* video_info, void* data,
       const char* msg, const struct font_params *params)
 {
@@ -292,7 +293,7 @@ static void d3d10_font_render_msg(
    unsigned                  color, color_dark, r, g, b,
                              alpha, r_dark, g_dark, b_dark, alpha_dark;
    d3d10_font_t*             font   = (d3d10_font_t*)data;
-   d3d10_video_t*           d3d10   = (d3d10_video_t*)video_info->userdata;
+   d3d10_video_t*           d3d10   = (d3d10_video_t*)userdata;
    unsigned                  width  = video_info->width;
    unsigned                  height = video_info->height;
    settings_t *settings             = config_get_ptr();

@@ -1048,7 +1048,8 @@ void font_driver_render_msg(
       char *new_msg = (char*)msg;
 #endif
 
-      font->renderer->render_msg(video_info,
+      font->renderer->render_msg(data,
+            video_info,
             font->renderer_data, new_msg, params);
 #ifdef HAVE_LANGEXTRA
       free(new_msg);
