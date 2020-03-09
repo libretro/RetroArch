@@ -4937,7 +4937,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    {
       menu_input_pointer_t pointer;
       bool cursor_visible   = video_info->fullscreen 
-         || video_info->menu_mouse_enable;
+         && video_info->menu_mouse_enable;
 
       menu_input_get_pointer_state(&pointer);
 

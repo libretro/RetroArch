@@ -2260,7 +2260,7 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
    if (ozone->show_cursor && (ozone->pointer.type != MENU_POINTER_DISABLED))
    {
       bool cursor_visible   = video_info->fullscreen 
-         || video_info->menu_mouse_enable;
+         && video_info->menu_mouse_enable;
 
       gfx_display_set_alpha(ozone_pure_white, 1.0f);
       gfx_display_draw_cursor(

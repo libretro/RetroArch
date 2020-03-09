@@ -3891,9 +3891,10 @@ static void rgui_render(void *data,
 
    if (rgui->mouse_show)
    {
-      bool cursor_visible  = video_fullscreen || !video_driver_has_windowed();
+      bool cursor_visible   = video_fullscreen 
+         && menu_mouse_enable;
 
-      if (menu_mouse_enable && cursor_visible)
+      if (cursor_visible)
          rgui_blit_cursor(rgui);
    }
 }
