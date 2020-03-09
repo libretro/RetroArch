@@ -49,7 +49,6 @@
 
 #include "../../input/input_osk.h"
 
-#include "../widgets/menu_input_dialog.h"
 #include "../widgets/menu_filebrowser.h"
 
 #include "../../verbosity.h"
@@ -59,7 +58,10 @@
 
 #include "../../tasks/tasks_internal.h"
 
-#include "../../cheevos/badges.h"
+#ifdef HAVE_CHEEVOS
+#include "../../cheevos-new/badges.h"
+#endif
+
 #include "../../content.h"
 
 #define STRIPES_RIBBON_ROWS 64
@@ -603,7 +605,7 @@ static void stripes_draw_icon(
    draw.coords          = &coords;
    draw.matrix_data     = mymat;
    draw.texture         = texture;
-   draw.prim_type       = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
+   draw.prim_type       = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
    draw.pipeline.id     = 0;
 
    if (xmb_shadows_enable)
@@ -692,8 +694,8 @@ static void stripes_render_keyboard(
    unsigned i;
    int ptr_width, ptr_height;
    void *userdata    = video_info->userdata;
-   unsigned width    = video_info->width;
-   unsigned height   = video_info->height;
+   unsigned video_width    = video_info->width;
+   unsigned video_height   = video_info->height;
    float dark[16]    =  {
       0.00, 0.00, 0.00, 0.85,
       0.00, 0.00, 0.00, 0.85,
@@ -712,19 +714,23 @@ static void stripes_render_keyboard(
          userdata,
          video_width,
          video_height,
-         0, height/2.0, width, height/2.0,
-         width, height,
+         0,
+         video_height / 2.0,
+         video_width,
+         video_height/2.0,
+         video_width,
+         video_height,
          &dark[0]);
 
-   ptr_width  = width / 11;
-   ptr_height = height / 10;
+   ptr_width  = video_width / 11;
+   ptr_height = video_height / 10;
 
    if (ptr_width >= ptr_height)
       ptr_width = ptr_height;
 
    for (i = 0; i < 44; i++)
    {
-      int line_y = (i / 11) * height / 10.0;
+      int line_y = (i / 11) * video_height / 10.0;
 
       if (i == id)
       {
@@ -736,10 +742,11 @@ static void stripes_render_keyboard(
                userdata,
                video_width,
                video_height,
-               width/2.0 - (11*ptr_width)/2.0 + (i % 11) * ptr_width,
-               height/2.0 + ptr_height*1.5 + line_y,
+               video_width  / 2.0 - (11*ptr_width)/2.0 + (i % 11) * ptr_width,
+               video_height / 2.0 + ptr_height*1.5 + line_y,
                ptr_width, ptr_height,
-               width, height,
+               video_width,
+               video_height,
                &white[0],
                texture);
 
@@ -747,15 +754,24 @@ static void stripes_render_keyboard(
       }
 
       gfx_display_draw_text(stripes->font, grid[i],
-            width/2.0 - (11*ptr_width)/2.0 + (i % 11) * ptr_width + ptr_width/2.0,
-            height/2.0 + ptr_height + line_y + stripes->font->size / 3,
-            width, height, 0xffffffff, TEXT_ALIGN_CENTER, 1.0f,
+            video_width / 2.0 - (11*ptr_width)/2.0 + (i % 11) * ptr_width + ptr_width/2.0,
+            video_height / 2.0 + ptr_height + line_y + stripes->font->size / 3,
+            video_width,
+            video_height,
+            0xffffffff,
+            TEXT_ALIGN_CENTER,
+            1.0f,
             false, 0, false);
    }
 }
 
 /* Returns the OSK key at a given position */
-static int stripes_osk_ptr_at_pos(void *data, int x, int y, unsigned width, unsigned height)
+static int stripes_osk_ptr_at_pos(
+      void *data,
+      int x,
+      int y,
+      unsigned width,
+      unsigned height)
 {
    unsigned i;
    int ptr_width, ptr_height;
@@ -792,8 +808,8 @@ static void stripes_render_messagebox_internal(
    int x, y, longest = 0, longest_width = 0;
    float line_height        = 0;
    void *userdata           = video_info->userdata;
-   unsigned width           = video_info->width;
-   unsigned height          = video_info->height;
+   unsigned video_width     = video_info->width;
+   unsigned video_height    = video_info->height;
    struct string_list *list = !string_is_empty(message)
       ? string_split(message, "\n") : NULL;
 
@@ -809,11 +825,11 @@ static void stripes_render_messagebox_internal(
 
    line_height      = stripes->font->size * 1.2;
 
-   y_position       = height / 2;
+   y_position       = video_height / 2;
    if (menu_input_dialog_get_display_kb())
-      y_position    = height / 4;
+      y_position    = video_height / 4;
 
-   x                = width  / 2;
+   x                = video_width  / 2;
    y                = y_position - (list->size-1) * line_height / 2;
 
    /* find the longest line width */
@@ -841,7 +857,8 @@ static void stripes_render_messagebox_internal(
          256, 256,
          longest_width + stripes->margins_dialog * 2,
          line_height * list->size + stripes->margins_dialog * 2,
-         width, height,
+         video_width,
+         video_height,
          NULL,
          stripes->margins_slice, 1.0,
          stripes->textures.list[STRIPES_TEXTURE_DIALOG_SLICE]);
@@ -854,7 +871,11 @@ static void stripes_render_messagebox_internal(
          gfx_display_draw_text(stripes->font, msg,
                x - longest_width/2.0,
                y + (i+0.75) * line_height,
-               width, height, 0x444444ff, TEXT_ALIGN_LEFT, 1.0f, false, 0, false);
+               video_width,
+               video_height,
+               0x444444ff,
+               TEXT_ALIGN_LEFT,
+               1.0f, false, 0, false);
    }
 
    if (menu_input_dialog_get_display_kb())
@@ -873,7 +894,7 @@ static void stripes_update_thumbnail_path(void *data, unsigned i, char pos)
    unsigned entry_type            = 0;
    char new_path[PATH_MAX_LENGTH] = {0};
    settings_t     *settings       = config_get_ptr();
-   stripes_handle_t     *stripes          = (stripes_handle_t*)data;
+   stripes_handle_t     *stripes  = (stripes_handle_t*)data;
    playlist_t     *playlist       = NULL;
    const char    *dir_thumbnails  = settings->paths.directory_thumbnails;
 
@@ -2761,7 +2782,7 @@ static void stripes_draw_bg(
    draw.coords      = &coords;
    draw.matrix_data = NULL;
    draw.texture     = gfx_display_white_texture;
-   draw.prim_type   = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
+   draw.prim_type   = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
    draw.pipeline.id = 0;
 
    gfx_display_blend_begin(userdata);
@@ -2803,7 +2824,7 @@ static void stripes_draw_dark_layer(
    draw.coords      = &coords;
    draw.matrix_data = NULL;
    draw.texture     = gfx_display_white_texture;
-   draw.prim_type   = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
+   draw.prim_type   = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
    draw.pipeline.id = 0;
 
    gfx_display_blend_begin(userdata);
