@@ -530,6 +530,7 @@ static bool ctr_frame(void* data, const void* frame,
    static int total_frames = 0;
    static int       frames = 0;
    unsigned disp_mode      = settings->uints.video_3ds_display_mode;
+   float video_refresh_rate = video_info->refresh_rate;
 
    if (!width || !height || !settings)
    {
@@ -620,7 +621,7 @@ static bool ctr_frame(void* data, const void* frame,
       bool next_event = false;
       struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
       if (av_info)
-         next_event = av_info->timing.fps < video_info->refresh_rate * 0.9f;
+         next_event = av_info->timing.fps < video_refresh_rate * 0.9f;
       gspWaitForEvent(GSPGPU_EVENT_VBlank0, next_event);
    }
 

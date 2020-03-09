@@ -101,6 +101,7 @@ static bool caca_gfx_frame(void *data, const void *frame,
    unsigned height           = 0;
    bool draw                 = true;
    caca_t *caca              = (caca_t*)data;
+   bool menu_is_alive        = video_info->menu_is_alive;
 
    if (!frame || !frame_width || !frame_height)
       return true;
@@ -122,7 +123,7 @@ static bool caca_gfx_frame(void *data, const void *frame,
    if (!caca->cv)
       return true;
 
-   if (caca->menu_frame && video_info->menu_is_alive)
+   if (caca->menu_frame && menu_is_alive)
       frame_to_copy = caca->menu_frame;
 
    width  = caca_get_canvas_width(caca->cv);
@@ -134,7 +135,7 @@ static bool caca_gfx_frame(void *data, const void *frame,
          (frame_width < width && frame_height < height))
       draw = false;
 
-   if (video_info->menu_is_alive)
+   if (menu_is_alive)
       draw = false;
 
    caca_clear_canvas(caca->cv);
