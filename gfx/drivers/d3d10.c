@@ -1206,6 +1206,12 @@ static bool d3d10_gfx_frame(
    D3D10Device       context  = d3d10->device;
    unsigned video_width       = video_info->width;
    unsigned video_height      = video_info->height;
+   bool widgets_inited        = video_info->widgets_inited;
+   bool statistics_show       = video_info->statistics_show;
+   struct font_params 
+      *osd_params             = (struct font_params*)
+      &video_info->osd_stat_params;
+   const char *stat_text      = video_info->stat_text;
 
    if (d3d10->resize_chain)
    {
@@ -1469,18 +1475,16 @@ static bool d3d10_gfx_frame(
       menu_driver_frame(video_info);
    else
 #endif
-      if (video_info->statistics_show)
+      if (statistics_show)
       {
-         struct font_params* osd_params = (struct font_params*)&video_info->osd_stat_params;
-
          if (osd_params)
          {
             D3D10SetViewports(context, 1, &d3d10->viewport);
             D3D10SetBlendState(d3d10->device, d3d10->blend_enable, NULL, D3D10_DEFAULT_SAMPLE_MASK);
             D3D10SetVertexBuffer(context, 0, d3d10->sprites.vbo, sizeof(d3d10_sprite_t), 0);
             font_driver_render_msg(d3d10,
-                  video_info, video_info->stat_text,
-                  (const struct font_params*)&video_info->osd_stat_params, NULL);
+                  video_info, stat_text,
+                  (const struct font_params*)osd_params, NULL);
          }
       }
 
@@ -1506,7 +1510,7 @@ static bool d3d10_gfx_frame(
 #endif
 
 #ifdef HAVE_GFX_WIDGETS
-   if (video_info->widgets_inited)
+   if (widgets_inited)
       gfx_widgets_frame(video_info);
 #endif
 
