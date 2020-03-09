@@ -54,7 +54,6 @@ enum thread_cmd
    CMD_POKE_GET_FBO_STATE,
 
    CMD_POKE_SET_ASPECT_RATIO,
-   CMD_POKE_SET_OSD_MSG,
    CMD_FONT_INIT,
    CMD_CUSTOM_COMMAND,
 
@@ -505,21 +504,6 @@ static bool video_thread_handle_packet(
          if (thr->poke && thr->poke->set_aspect_ratio)
             thr->poke->set_aspect_ratio(thr->driver_data,
                   pkt.data.i);
-         video_thread_reply(thr, &pkt);
-         break;
-
-      case CMD_POKE_SET_OSD_MSG:
-         {
-            video_frame_info_t video_info;
-            /* TODO/FIXME - not thread-safe - should get 
-             * rid of this */
-            video_driver_build_info(&video_info);
-            if (thr->poke && thr->poke->set_osd_msg)
-               thr->poke->set_osd_msg(thr->driver_data,
-                     &video_info,
-                     pkt.data.osd_message.msg,
-                     &pkt.data.osd_message.params, NULL);
-         }
          video_thread_reply(thr, &pkt);
          break;
 
