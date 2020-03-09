@@ -305,27 +305,27 @@ static bool d3d8_renderchain_render(
 }
 
 static bool d3d8_renderchain_init(void *data,
-      const void *_video_info,
+      const video_info_t *video_info,
       void *dev_data,
-      const void *info_data,
+      const struct LinkInfo *link_info,
       bool rgb32
       )
 {
    unsigned width, height;
    d3d8_video_t *d3d                       = (d3d8_video_t*)data;
    LPDIRECT3DDEVICE8 d3dr                  = (LPDIRECT3DDEVICE8)d3d->dev;
-   const video_info_t *video_info         = (const video_info_t*)_video_info;
-   const struct LinkInfo *link_info       = (const struct LinkInfo*)info_data;
    d3d8_renderchain_t *chain              = (d3d8_renderchain_t*)d3d->renderchain_data;
    unsigned fmt                           = (rgb32) ? RETRO_PIXEL_FORMAT_XRGB8888 : RETRO_PIXEL_FORMAT_RGB565;
    struct video_viewport *custom_vp       = video_viewport_get_custom();
 
    video_driver_get_size(&width, &height);
 
-   chain->dev                   = dev_data;
-   chain->pixel_size            = (fmt == RETRO_PIXEL_FORMAT_RGB565) ? 2 : 4;
-   chain->tex_w                 = link_info->tex_w;
-   chain->tex_h                 = link_info->tex_h;
+   chain->dev                             = dev_data;
+   chain->pixel_size                      = (fmt == RETRO_PIXEL_FORMAT_RGB565) 
+      ? 2 
+      : 4;
+   chain->tex_w                           = link_info->tex_w;
+   chain->tex_h                           = link_info->tex_h;
 
    if (!d3d8_renderchain_create_first_pass(d3d, chain, video_info))
       return false;
@@ -421,7 +421,7 @@ static void d3d8_viewport_info(void *data, struct video_viewport *vp)
 }
 
 static void d3d8_overlay_render(d3d8_video_t *d3d,
-      video_frame_info_t *video_info,
+      unsigned width, unsigned height,
       overlay_t *overlay, bool force_linear)
 {
    D3DVIEWPORT8 vp_full;
@@ -430,8 +430,6 @@ static void d3d8_overlay_render(d3d8_video_t *d3d,
    unsigned i;
    Vertex vert[4];
    enum D3DTEXTUREFILTERTYPE filter_type = D3DTEXF_LINEAR;
-   unsigned width                        = video_info->width;
-   unsigned height                       = video_info->height;
 
    if (!d3d || !overlay || !overlay->tex)
       return;
@@ -1487,6 +1485,12 @@ static bool d3d8_frame(void *data, const void *frame,
    d3d8_video_t *d3d                    = (d3d8_video_t*)data;
    unsigned width                      = video_info->width;
    unsigned height                     = video_info->height;
+   struct font_params *osd_params      = (struct font_params*)
+      &video_info->osd_stat_params;
+   const char *stat_text               = video_info->stat_text;
+   bool statistics_show                = video_info->statistics_show;
+   bool black_frame_insertion          = video_info->black_frame_insertion;
+
    (void)i;
 
    if (!frame)
@@ -1527,7 +1531,7 @@ static bool d3d8_frame(void *data, const void *frame,
 
    /* Insert black frame first, so we
     * can screenshot, etc. */
-   if (video_info->black_frame_insertion)
+   if (black_frame_insertion)
    {
       if (!d3d8_swap(d3d, d3d->dev) || d3d->needs_restore)
          return true;
@@ -1547,7 +1551,7 @@ static bool d3d8_frame(void *data, const void *frame,
    if (d3d->menu && d3d->menu->enabled)
    {
       d3d8_set_mvp(d3d->dev, &d3d->mvp);
-      d3d8_overlay_render(d3d, video_info, d3d->menu, false);
+      d3d8_overlay_render(d3d, width, height, d3d->menu, false);
 
       d3d->menu_display.offset = 0;
       d3d8_set_stream_source(d3d->dev, 0, d3d->menu_display.buffer, 0, sizeof(Vertex));
@@ -1555,14 +1559,11 @@ static bool d3d8_frame(void *data, const void *frame,
       d3d8_set_viewports(d3d->dev, &screen_vp);
       menu_driver_frame(video_info);
    }
-   else if (video_info->statistics_show)
+   else if (statistics_show)
    {
-      struct font_params *osd_params = (struct font_params*)
-         &video_info->osd_stat_params;
-
       if (osd_params)
-         font_driver_render_msg(d3d, video_info, video_info->stat_text,
-               (const struct font_params*)&video_info->osd_stat_params, NULL);
+         font_driver_render_msg(d3d, video_info, stat_text,
+               (const struct font_params*)osd_params, NULL);
    }
 #endif
 
@@ -1571,7 +1572,7 @@ static bool d3d8_frame(void *data, const void *frame,
    {
       d3d8_set_mvp(d3d->dev, &d3d->mvp);
       for (i = 0; i < d3d->overlays_size; i++)
-         d3d8_overlay_render(d3d, video_info, &d3d->overlays[i], true);
+         d3d8_overlay_render(d3d, width, height, &d3d->overlays[i], true);
    }
 #endif
 

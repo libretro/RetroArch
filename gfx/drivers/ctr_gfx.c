@@ -141,7 +141,10 @@ static INLINE void ctr_set_screen_coords(ctr_video_t * ctr)
    }
 }
 
-static void ctr_update_viewport(ctr_video_t* ctr, settings_t *settings, video_frame_info_t *video_info)
+static void ctr_update_viewport(
+      ctr_video_t* ctr,
+      settings_t *settings,
+      video_frame_info_t *video_info)
 {
    int x                     = 0;
    int y                     = 0;
@@ -523,14 +526,19 @@ static bool ctr_frame(void* data, const void* frame,
    extern u8* gfxSharedMemory;
    extern u8 gfxThreadID;
    uint32_t diff;
-   uint32_t state_tmp      = 0;
-   settings_t    *settings = config_get_ptr();
-   ctr_video_t       *ctr  = (ctr_video_t*)data;
-   static float        fps = 0.0;
-   static int total_frames = 0;
-   static int       frames = 0;
-   unsigned disp_mode      = settings->uints.video_3ds_display_mode;
-   float video_refresh_rate = video_info->refresh_rate;
+   uint32_t state_tmp             = 0;
+   ctr_video_t       *ctr         = (ctr_video_t*)data;
+   static float        fps        = 0.0;
+   static int total_frames        = 0;
+   static int       frames        = 0;
+   settings_t    *settings        = config_get_ptr();
+   unsigned disp_mode             = settings->uints.video_3ds_display_mode;
+   bool statistics_show           = video_info->statistics_show;
+   const char *stat_text          = video_info->stat_text;
+   float video_refresh_rate       = video_info->refresh_rate;
+   struct font_params *osd_params = (struct font_params*)
+      &video_info->osd_stat_params;
+
 
    if (!width || !height || !settings)
    {
@@ -856,15 +864,12 @@ static bool ctr_frame(void* data, const void* frame,
       ctr->msg_rendering_enabled = false;
 
    }
-   else if (video_info->statistics_show)
+   else if (statistics_show)
    {
-      struct font_params *osd_params = (struct font_params*)
-         &video_info->osd_stat_params;
-
       if (osd_params)
       {
-         font_driver_render_msg(ctr, video_info, video_info->stat_text,
-               (const struct font_params*)&video_info->osd_stat_params, NULL);
+         font_driver_render_msg(ctr, video_info, stat_text,
+               (const struct font_params*)osd_params, NULL);
       }
    }
 #endif
