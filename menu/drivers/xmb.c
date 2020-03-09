@@ -877,7 +877,6 @@ static void xmb_render_messagebox_internal(
       void *userdata,
       unsigned video_width,
       unsigned video_height,
-      video_frame_info_t *video_info,
       xmb_handle_t *xmb, const char *message)
 {
    unsigned i, y_position;
@@ -3742,7 +3741,7 @@ static void xmb_draw_bg(
 
 static void xmb_draw_dark_layer(
       xmb_handle_t *xmb,
-      video_frame_info_t *video_info,
+      void *userdata,
       unsigned width,
       unsigned height)
 {
@@ -3754,9 +3753,6 @@ static void xmb_draw_dark_layer(
       0, 0, 0, 1,
       0, 0, 0, 1,
    };
-   void *userdata                = video_info->userdata;
-   unsigned video_width          = video_info->width;
-   unsigned video_height         = video_info->height;
 
    gfx_display_set_alpha(black, MIN(xmb->alpha, 0.75));
 
@@ -3778,7 +3774,7 @@ static void xmb_draw_dark_layer(
 
    gfx_display_blend_begin(userdata);
    gfx_display_draw(&draw, userdata,
-         video_width, video_height);
+         width, height);
    gfx_display_blend_end(userdata);
 }
 
@@ -4913,9 +4909,9 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
    if (render_background)
    {
-      xmb_draw_dark_layer(xmb, video_info, video_width, video_height);
+      xmb_draw_dark_layer(xmb, userdata, video_width, video_height);
       xmb_render_messagebox_internal(userdata, video_width, video_height,
-            video_info, xmb, msg);
+            xmb, msg);
    }
 
    /* Cursor image */
