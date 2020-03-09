@@ -24,6 +24,8 @@
 #include <queues/task_queue.h>
 #include <queues/message_queue.h>
 
+#include "gfx_animation.h"
+
 #define DEFAULT_BACKDROP               0.75f
 
 #define MSG_QUEUE_PENDING_MAX          32
@@ -31,14 +33,18 @@
 
 #define MSG_QUEUE_ANIMATION_DURATION      330
 #define VOLUME_DURATION                   3000
-#define SCREENSHOT_DURATION_IN            66
-#define SCREENSHOT_DURATION_OUT           SCREENSHOT_DURATION_IN*10
-#define SCREENSHOT_NOTIFICATION_DURATION  6000
 #define CHEEVO_NOTIFICATION_DURATION      4000
 #define TASK_FINISHED_DURATION            3000
 #define HOURGLASS_INTERVAL                5000
 #define HOURGLASS_DURATION                1000
 #define GENERIC_MESSAGE_DURATION          3000
+
+#define TEXT_COLOR_INFO 0xD8EEFFFF
+#if 0
+#define TEXT_COLOR_SUCCESS 0x22B14CFF
+#define TEXT_COLOR_ERROR 0xC23B22FF
+#endif
+#define TEXT_COLOR_FAINT 0x878787FF
 
 /* A widget */
 /* TODO: cleanup all unused parameters */
@@ -79,9 +85,35 @@ struct gfx_widget
    void (*frame)(void* data);
 };
 
+gfx_animation_ctx_tag gfx_widgets_get_generic_tag(void);
+float* gfx_widgets_get_pure_white(void);
+unsigned gfx_widgets_get_padding(void);
+unsigned gfx_widgets_get_height(void);
+unsigned gfx_widgets_get_glyph_width(void);
+float gfx_widgets_get_font_size(void);
+font_data_t* gfx_widgets_get_font_regular(void);
+font_data_t* gfx_widgets_get_font_bold(void);
+float* gfx_widgets_get_backdrop_orig(void);
+
+float gfx_widgets_get_thumbnail_scale_factor(
+      const float dst_width, const float dst_height,
+      const float image_width, const float image_height);
+
+void gfx_widgets_draw_icon(
+      void *userdata,
+      unsigned video_width,
+      unsigned video_height,
+      unsigned icon_width,
+      unsigned icon_height,
+      uintptr_t texture,
+      float x, float y,
+      unsigned width, unsigned height,
+      float rotation, float scale_factor,
+      float *color);
+
 typedef struct gfx_widget gfx_widget_t;
 
-extern gfx_widget_t gfx_widget_screenshot;
+extern const gfx_widget_t gfx_widget_screenshot;
 
 bool gfx_widgets_init(bool video_is_threaded, bool fullscreen);
 

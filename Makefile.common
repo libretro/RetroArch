@@ -840,7 +840,8 @@ endif
    OBJ += input/input_osk.o
 
 ifeq ($(HAVE_GFX_WIDGETS), 1)
-   OBJ += gfx/gfx_widgets.o
+   OBJ += gfx/gfx_widgets.o \
+          gfx/widgets/gfx_widget_screenshot.o
 endif
 
 ifeq ($(HAVE_OVERLAY), 1)

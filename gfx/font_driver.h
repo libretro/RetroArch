@@ -24,6 +24,8 @@
 
 #include "../retroarch.h"
 
+#include "video_defines.h"
+
 RETRO_BEGIN_DECLS
 
 /* All coordinates and offsets are top-left oriented.
