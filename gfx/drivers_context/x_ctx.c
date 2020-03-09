@@ -58,35 +58,10 @@
 static int      (*g_pglSwapInterval)(int);
 static int      (*g_pglSwapIntervalSGI)(int);
 static void     (*g_pglSwapIntervalEXT)(Display*, GLXDrawable, int);
-typedef Bool    (*GLXGETSYNCVALUESOMLPROC)(Display *dpy, GLXDrawable drawable,
-      int64_t *ust, int64_t *msc, int64_t *sbc);
-typedef Bool    (*GLXGETMSCRATEOMLPROC)(Display *dpy, GLXDrawable drawable, int32_t *numerator,
-      int32_t *denominator);
-typedef int64_t (*GLXSWAPBUFFERSMSCOMLPROC)(Display *dpy, GLXDrawable drawable,
-      int64_t target_msc, int64_t divisor,
-      int64_t remainder);
-typedef Bool    (*GLXWAITFORMSCOMLPROC)(Display *dpy, GLXDrawable drawable, int64_t target_msc,
-      int64_t divisor, int64_t remainder, int64_t *ust,
-      int64_t *msc, int64_t *sbc);
-typedef Bool    (*GLXWAITFORSBCOMLPROC)(Display *dpy, GLXDrawable drawable, int64_t target_sbc,
-      int64_t *ust, int64_t *msc, int64_t *sbc);
-
-static GLXGETSYNCVALUESOMLPROC  glXGetSyncValuesOML;
-static GLXGETMSCRATEOMLPROC     glXGetMscRateOML;
-static GLXSWAPBUFFERSMSCOMLPROC glXSwapBuffersMscOML;
-static GLXWAITFORMSCOMLPROC     glXWaitForMscOML;
-static GLXWAITFORSBCOMLPROC     glXWaitForSbcOML;
-
 #endif
 
 typedef struct gfx_ctx_x_data
 {
-   int64_t ust;
-   int64_t msc;
-   int64_t sbc;
-
-   int divisor;
-   int remainder;
    bool g_use_hw_ctx;
    bool g_core_es;
    bool g_core_es_core;
@@ -101,7 +76,6 @@ typedef struct gfx_ctx_x_data
    GLXWindow g_glx_win;
    GLXContext g_ctx, g_hw_ctx;
    GLXFBConfig g_fbc;
-   unsigned swap_mode;
 #endif
 
    int g_interval;
@@ -205,11 +179,7 @@ static void gfx_ctx_x_destroy_resources(gfx_ctx_x_data_t *x)
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)
             if (x->g_ctx)
             {
-               if (x->swap_mode)
-                  glXSwapBuffersMscOML(g_x11_dpy, x->g_glx_win, 0, x->divisor, x->remainder);
-               else
-                  glXSwapBuffers(g_x11_dpy, x->g_glx_win);
-
+               glXSwapBuffers(g_x11_dpy, x->g_glx_win);
                glFinish();
                glXMakeContextCurrent(g_x11_dpy, None, None, NULL);
 
@@ -317,16 +287,16 @@ static void gfx_ctx_x_swap_interval(void *data, int interval)
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)
          x->g_interval = interval;
 
-         if (g_pglSwapIntervalEXT)
-         {
-            RARCH_LOG("[GLX]: glXSwapIntervalEXT(%i)\n", x->g_interval);
-            g_pglSwapIntervalEXT(g_x11_dpy, x->g_glx_win, x->g_interval);
-         }
-         else if (g_pglSwapInterval)
+         if (g_pglSwapInterval)
          {
             RARCH_LOG("[GLX]: glXSwapInterval(%i)\n", x->g_interval);
             if (g_pglSwapInterval(x->g_interval) != 0)
                RARCH_WARN("[GLX]: glXSwapInterval() failed.\n");
+         }
+	 else if (g_pglSwapIntervalEXT)
+         {
+            RARCH_LOG("[GLX]: glXSwapIntervalEXT(%i)\n", x->g_interval);
+            g_pglSwapIntervalEXT(g_x11_dpy, x->g_glx_win, x->g_interval);
          }
          else if (g_pglSwapIntervalSGI)
          {
@@ -363,25 +333,8 @@ static void gfx_ctx_x_swap_buffers(void *data)
       case GFX_CTX_OPENGL_API:
       case GFX_CTX_OPENGL_ES_API:
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)
-         if (x->swap_mode)
-         {
-            if (x->g_interval)
-            {
-               glXWaitForMscOML(g_x11_dpy, x->g_glx_win, x->msc + x->g_interval,
-                     0, 0, &x->ust, &x->msc, &x->sbc);
-               glXSwapBuffersMscOML(g_x11_dpy, x->g_glx_win, 0, 0, 0);
-            }
-            else
-               glXSwapBuffersMscOML(g_x11_dpy, x->g_glx_win, 0, x->divisor, x->remainder);
-#if 0
-            RARCH_LOG("UST: %d, MSC: %d, SBC: %d\n", x->ust, x->msc, x->sbc);
-#endif
-         }
-         else
-         {
-            if (x->g_is_double)
-               glXSwapBuffers(g_x11_dpy, x->g_glx_win);
-         }
+         if (x->g_is_double)
+            glXSwapBuffers(g_x11_dpy, x->g_glx_win);
 #endif
          break;
 
@@ -569,26 +522,6 @@ static void *gfx_ctx_x_init(void *data)
             RARCH_LOG("[GLX]: GLX_EXT_swap_control_tear supported.\n");
             x->adaptive_vsync = true;
 	 }
-         if (GLXExtensionSupported(g_x11_dpy, "GLX_OML_sync_control") &&
-             GLXExtensionSupported(g_x11_dpy, "GLX_MESA_swap_control")
-            )
-         {
-            RARCH_LOG("[GLX]: GLX_OML_sync_control and GLX_MESA_swap_control supported, using better swap control method...\n");
-
-            x->swap_mode         = 1;
-
-            glXGetSyncValuesOML  = (GLXGETSYNCVALUESOMLPROC)glXGetProcAddress((unsigned char *)"glXGetSyncValuesOML");
-            glXGetMscRateOML     = (GLXGETMSCRATEOMLPROC)glXGetProcAddress((unsigned char *)"glXGetMscRateOML");
-            glXSwapBuffersMscOML = (GLXSWAPBUFFERSMSCOMLPROC)glXGetProcAddress((unsigned char *)"glXSwapBuffersMscOML");
-            glXWaitForMscOML     = (GLXWAITFORMSCOMLPROC)glXGetProcAddress((unsigned char *)"glXWaitForMscOML");
-            glXWaitForSbcOML     = (GLXWAITFORSBCOMLPROC)glXGetProcAddress((unsigned char *)"glXWaitForSbcOML");
-
-            glXGetSyncValuesOML(g_x11_dpy, g_x11_win, &x->ust, &x->msc, &x->sbc);
-
-#if 0
-            RARCH_LOG("[GLX]: UST: %d, MSC: %d, SBC: %d\n", x->ust, x->msc, x->sbc);
-#endif
-         }
 #endif
          break;
       default:
