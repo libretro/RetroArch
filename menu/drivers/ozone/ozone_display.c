@@ -110,8 +110,11 @@ void ozone_draw_text(
          1.0, draw_outside);
 }
 
-static void ozone_draw_cursor_slice(ozone_handle_t *ozone,
-      video_frame_info_t *video_info,
+static void ozone_draw_cursor_slice(
+      ozone_handle_t *ozone,
+      void *userdata,
+      unsigned video_width,
+      unsigned video_height,
       int x_offset,
       unsigned width, unsigned height,
       size_t y, float alpha)
@@ -121,9 +124,6 @@ static void ozone_draw_cursor_slice(ozone_handle_t *ozone,
    int slice_y           = (int)y + 8 * scale_factor;
    unsigned slice_new_w  = width + (3 + 28 - 4) * scale_factor;
    unsigned slice_new_h  = height + 20 * scale_factor;
-   void *userdata        = video_info->userdata;
-   unsigned video_width  = video_info->width;
-   unsigned video_height = video_info->height;
 
    gfx_display_set_alpha(ozone->theme_dynamic.cursor_alpha, alpha);
    gfx_display_set_alpha(ozone->theme_dynamic.cursor_border, alpha);
@@ -252,8 +252,13 @@ void ozone_draw_cursor(ozone_handle_t *ozone,
       unsigned width, unsigned height,
       size_t y, float alpha)
 {
+   void *userdata        = video_info->userdata;
+   unsigned video_width  = video_info->width;
+   unsigned video_height = video_info->height;
    if (ozone->has_all_assets)
-      ozone_draw_cursor_slice(ozone, video_info, x_offset, width, height, y, alpha);
+      ozone_draw_cursor_slice(ozone, userdata,
+            video_width, video_height,
+            x_offset, width, height, y, alpha);
    else
       ozone_draw_cursor_fallback(ozone, video_info, x_offset, width, height, y, alpha);
 }
@@ -309,7 +314,8 @@ void ozone_draw_icon(
 
 void ozone_draw_backdrop(video_frame_info_t *video_info, float alpha)
 {
-   /* TODO: Replace this backdrop by a blur shader on the whole screen if available */
+   /* TODO: Replace this backdrop by a blur shader 
+    * on the whole screen if available */
    void *userdata        = video_info->userdata;
    unsigned video_width  = video_info->width;
    unsigned video_height = video_info->height;
@@ -491,14 +497,14 @@ void ozone_draw_messagebox(ozone_handle_t *ozone,
 {
    unsigned i, y_position;
    int x, y, longest = 0, longest_width = 0;
-   unsigned width           = video_info->width;
-   unsigned height          = video_info->height;
    struct string_list *list = !string_is_empty(message)
       ? string_split(message, "\n") : NULL;
    float scale_factor       = ozone->last_scale_factor;
    void *userdata           = video_info->userdata;
    unsigned video_width     = video_info->width;
    unsigned video_height    = video_info->height;
+   unsigned width           = video_width;
+   unsigned height          = video_height;
 
    if (!list || !ozone || !ozone->fonts.footer)
    {
@@ -590,10 +596,10 @@ void ozone_draw_fullscreen_thumbnails(
       gfx_thumbnail_t *right_thumbnail = &ozone->thumbnails.left;
       gfx_thumbnail_t *left_thumbnail  = &ozone->thumbnails.right;
       void *userdata                    = video_info->userdata;
-      unsigned width                    = video_info->width;
-      unsigned height                   = video_info->height;
       unsigned video_width              = video_info->width;
       unsigned video_height             = video_info->height;
+      unsigned width                    = video_width;
+      unsigned height                   = video_height;
       int view_width                    = (int)width;
       int view_height                   = (int)height - ozone->dimensions.header_height - ozone->dimensions.footer_height - ozone->dimensions.spacer_1px;
       int thumbnail_margin              = ozone->dimensions.fullscreen_thumbnail_padding;
