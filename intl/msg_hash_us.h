@@ -7146,6 +7146,14 @@ MSG_HASH(
     "Show/hide the ability to download legacy thumbnail packages."
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_SCROLL_PSP_STYLE,
+    "PSP-style fast scroll"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_SCROLL_PSP_STYLE,
+    "When holding a direction to scroll, cursor has a slower maximum speed."
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_VIEWS_SETTINGS,
     "Views"
     )
