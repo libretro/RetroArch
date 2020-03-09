@@ -2249,7 +2249,12 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
 
    /* Thumbnail bar */
    if (ozone->show_thumbnail_bar)
-      ozone_draw_thumbnail_bar(ozone, video_info);
+      ozone_draw_thumbnail_bar(ozone,
+            userdata,
+            video_width,
+            video_height,
+            libretro_running,
+            menu_framebuffer_opacity);
 
    gfx_display_scissor_end(userdata,
          video_width,
@@ -2266,7 +2271,10 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
    font_driver_bind_block(ozone->fonts.entries_label, NULL);
 
    /* Draw fullscreen thumbnails, if required */
-   ozone_draw_fullscreen_thumbnails(ozone, video_info);
+   ozone_draw_fullscreen_thumbnails(ozone,
+         userdata,
+         video_width,
+         video_height);
 
    /* Message box & OSK - second layer of text */
    ozone->raster_blocks.footer.carr.coords.vertices = 0;
@@ -2312,17 +2320,29 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
          gfx_animation_push(&entry);
       }
 
-      ozone_draw_backdrop(video_info, float_min(ozone->animations.messagebox_alpha, 0.75f));
+      ozone_draw_backdrop(
+            userdata,
+            video_width,
+            video_height,
+            float_min(ozone->animations.messagebox_alpha, 0.75f));
 
       if (draw_osk)
       {
          const char *label = menu_input_dialog_get_label_buffer();
          const char *str   = menu_input_dialog_get_buffer();
 
-         ozone_draw_osk(ozone, video_info, label, str);
+         ozone_draw_osk(ozone,
+               userdata,
+               video_width,
+               video_height,
+               label, str);
       }
       else
-         ozone_draw_messagebox(ozone, video_info, ozone->pending_message);
+         ozone_draw_messagebox(ozone,
+               userdata,
+               video_width,
+               video_height,
+               ozone->pending_message);
    }
 
    font_driver_flush(video_width, video_height, ozone->fonts.footer);

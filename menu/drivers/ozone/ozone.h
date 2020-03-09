@@ -373,7 +373,13 @@ void ozone_refresh_sidebars(ozone_handle_t *ozone, unsigned video_height);
 
 void ozone_entries_update_thumbnail_bar(ozone_handle_t *ozone, bool is_playlist, bool allow_animation);
 
-void ozone_draw_thumbnail_bar(ozone_handle_t *ozone, video_frame_info_t *video_info);
+void ozone_draw_thumbnail_bar(
+      ozone_handle_t *ozone,
+      void *userdata,
+      unsigned video_width,
+      unsigned video_height,
+      bool libretro_running,
+      float menu_framebuffer_opacity);
 
 void ozone_hide_fullscreen_thumbnails(ozone_handle_t *ozone, bool animate);
 void ozone_show_fullscreen_thumbnails(ozone_handle_t *ozone);

@@ -817,7 +817,11 @@ static void ozone_content_metadata_line(
 }
 
 void ozone_draw_thumbnail_bar(ozone_handle_t *ozone,
-      video_frame_info_t *video_info)
+      void *userdata,
+      unsigned video_width,
+      unsigned video_height,
+      bool libretro_running,
+      float menu_framebuffer_opacity)
 {
    unsigned sidebar_width            = ozone->dimensions.thumbnail_bar_width;
    unsigned thumbnail_width          = sidebar_width - (ozone->dimensions.sidebar_entry_icon_padding * 2);
@@ -825,11 +829,6 @@ void ozone_draw_thumbnail_bar(ozone_handle_t *ozone,
    int left_thumbnail_y_position     = 0;
    bool show_right_thumbnail         = false;
    bool show_left_thumbnail          = false;
-   void *userdata                    = video_info->userdata;
-   unsigned video_width              = video_info->width;
-   unsigned video_height             = video_info->height;
-   bool libretro_running             = video_info->libretro_running;
-   float menu_framebuffer_opacity    = video_info->menu_framebuffer_opacity;
    unsigned sidebar_height           = video_height - ozone->dimensions.header_height - ozone->dimensions.sidebar_gradient_height * 2 - ozone->dimensions.footer_height;
    unsigned x_position               = video_width - (unsigned) ozone->animations.thumbnail_bar_position;
    int thumbnail_x_position          = x_position + ozone->dimensions.sidebar_entry_icon_padding;

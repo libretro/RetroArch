@@ -314,14 +314,14 @@ void ozone_draw_icon(
          video_width, video_height);
 }
 
-void ozone_draw_backdrop(video_frame_info_t *video_info, float alpha)
+void ozone_draw_backdrop(
+      void *userdata,
+      unsigned video_width,
+      unsigned video_height,
+      float alpha)
 {
    /* TODO: Replace this backdrop by a blur shader 
     * on the whole screen if available */
-   void *userdata        = video_info->userdata;
-   unsigned video_width  = video_info->width;
-   unsigned video_height = video_info->height;
-
    gfx_display_set_alpha(ozone_backdrop, alpha);
    gfx_display_draw_quad(
          userdata,
@@ -337,7 +337,9 @@ void ozone_draw_backdrop(video_frame_info_t *video_info, float alpha)
 }
 
 void ozone_draw_osk(ozone_handle_t *ozone,
-      video_frame_info_t *video_info,
+      void *userdata,
+      unsigned video_width,
+      unsigned video_height,
       const char *label, const char *str)
 {
    unsigned i;
@@ -345,9 +347,6 @@ void ozone_draw_osk(ozone_handle_t *ozone,
    char message[2048];
    unsigned text_color;
    struct string_list *list= NULL;
-   void *userdata          = video_info->userdata;
-   unsigned video_width    = video_info->width;
-   unsigned video_height   = video_info->height;
 
    float scale_factor      = ozone->last_scale_factor;
    unsigned margin         = 75 * scale_factor;
@@ -493,8 +492,11 @@ void ozone_draw_osk(ozone_handle_t *ozone,
    string_list_free(list);
 }
 
-void ozone_draw_messagebox(ozone_handle_t *ozone,
-      video_frame_info_t *video_info,
+void ozone_draw_messagebox(
+      ozone_handle_t *ozone,
+      void *userdata,
+      unsigned video_width,
+      unsigned video_height,
       const char *message)
 {
    unsigned i, y_position;
@@ -502,9 +504,6 @@ void ozone_draw_messagebox(ozone_handle_t *ozone,
    struct string_list *list = !string_is_empty(message)
       ? string_split(message, "\n") : NULL;
    float scale_factor       = ozone->last_scale_factor;
-   void *userdata           = video_info->userdata;
-   unsigned video_width     = video_info->width;
-   unsigned video_height    = video_info->height;
    unsigned width           = video_width;
    unsigned height          = video_height;
 
@@ -587,7 +586,10 @@ end:
 }
 
 void ozone_draw_fullscreen_thumbnails(
-      ozone_handle_t *ozone, video_frame_info_t *video_info)
+      ozone_handle_t *ozone,
+      void *userdata,
+      unsigned video_width,
+      unsigned video_height)
 {
    /* Check whether fullscreen thumbnails are visible */
    if (ozone->animations.fullscreen_thumbnail_alpha > 0.0f)
@@ -597,9 +599,6 @@ void ozone_draw_fullscreen_thumbnails(
        * thumbnail when viewed fullscreen */
       gfx_thumbnail_t *right_thumbnail = &ozone->thumbnails.left;
       gfx_thumbnail_t *left_thumbnail  = &ozone->thumbnails.right;
-      void *userdata                    = video_info->userdata;
-      unsigned video_width              = video_info->width;
-      unsigned video_height             = video_info->height;
       unsigned width                    = video_width;
       unsigned height                   = video_height;
       int view_width                    = (int)width;
