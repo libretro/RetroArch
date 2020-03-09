@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2014-2017 - Jean-André Santoni
  *  Copyright (C) 2015-2018 - Andre Leiradella
- *  Copyright (C) 2018-2019 - natinusala
+ *  Copyright (C) 2018-2020 - natinusala
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -35,7 +35,6 @@
 
 #include "gfx_widgets.h"
 
-#include "gfx_animation.h"
 #include "gfx_display.h"
 #include "font_driver.h"
 
@@ -61,13 +60,6 @@ static float msg_queue_task_progress_2[16] = COLOR_HEX_TO_FLOAT(0x317198, 1.0f);
 static float color_task_progress_bar[16] = COLOR_HEX_TO_FLOAT(0x22B14C, 1.0f);
 #endif
 
-#define TEXT_COLOR_INFO 0xD8EEFFFF
-#if 0
-#define TEXT_COLOR_SUCCESS 0x22B14CFF
-#define TEXT_COLOR_ERROR 0xC23B22FF
-#endif
-#define TEXT_COLOR_FAINT 0x878787FF
-
 static float volume_bar_background[16]    = COLOR_HEX_TO_FLOAT(0x1A1A1A, 1.0f);
 static float volume_bar_normal[16]        = COLOR_HEX_TO_FLOAT(0x198AC6, 1.0f);
 static float volume_bar_loud[16]          = COLOR_HEX_TO_FLOAT(0xF5DD19, 1.0f);
@@ -79,6 +71,16 @@ static uint64_t gfx_widgets_frame_count   = 0;
 static font_data_t *font_regular          = NULL;
 static font_data_t *font_bold             = NULL;
 
+font_data_t* gfx_widgets_get_font_regular()
+{
+   return font_regular;
+}
+
+font_data_t* gfx_widgets_get_font_bold()
+{
+   return font_bold;
+}
+
 static video_font_raster_block_t font_raster_regular;
 static video_font_raster_block_t font_raster_bold;
 
@@ -88,6 +90,11 @@ static float gfx_widgets_pure_white[16] = {
       1.00, 1.00, 1.00, 1.00,
       1.00, 1.00, 1.00, 1.00,
 };
+
+float* gfx_widgets_get_pure_white(void)
+{
+   return gfx_widgets_pure_white;
+}
 
 /* FPS */
 static char gfx_widgets_fps_text[255]  = {0};
@@ -149,6 +156,11 @@ static float gfx_widgets_backdrop_orig[16] = {
    0.00, 0.00, 0.00, 0.75,
    0.00, 0.00, 0.00, 0.75,
 };
+
+float* gfx_widgets_get_backdrop_orig(void)
+{
+   return gfx_widgets_backdrop_orig;
+}
 
 static float gfx_widgets_backdrop[16] = {
       0.00, 0.00, 0.00, 0.75,
@@ -216,8 +228,12 @@ static uintptr_t msg_queue_icon_outline          = 0;
 static uintptr_t msg_queue_icon_rect             = 0;
 static bool msg_queue_has_icons                  = false;
 
-extern gfx_animation_ctx_tag 
-gfx_widgets_generic_tag;
+extern gfx_animation_ctx_tag gfx_widgets_generic_tag;
+
+gfx_animation_ctx_tag gfx_widgets_get_generic_tag(void)
+{
+   return gfx_widgets_generic_tag;
+}
 
 /* There can only be one message animation at a time to 
  * avoid confusing users */
@@ -279,25 +295,6 @@ static gfx_animation_ctx_tag volume_tag      = (uintptr_t) &volume_alpha;
 static bool volume_mute                      = false;
 
 
-/* Screenshot */
-static float screenshot_alpha                     = 0.0f;
-static uintptr_t screenshot_texture               = 0;
-static unsigned screenshot_texture_width          = 0;
-static unsigned screenshot_texture_height         = 0;
-static char screenshot_shotname[256]              = {0};
-static char screenshot_filename[256]              = {0};
-static bool screenshot_loaded                     = false;
-
-static float screenshot_scale_factor              = 0.0f;
-static float screenshot_y                         = 0.0f;
-static unsigned screenshot_height                 = 0;
-static unsigned screenshot_width                  = 0;
-static unsigned screenshot_thumbnail_width        = 0;
-static unsigned screenshot_thumbnail_height       = 0;
-static gfx_timer_t screenshot_timer;
-
-static unsigned screenshot_shotname_length        = 0;
-
 #ifdef HAVE_TRANSLATE
 /* AI Service Overlay */
 static int ai_service_overlay_state               = 0;
@@ -325,9 +322,29 @@ static float last_scale_factor            = 0.0f;
 static float msg_queue_text_scale_factor  = 0.0f;
 static float widget_font_size             = 0.0f;
 
+float gfx_widgets_get_font_size(void)
+{
+   return widget_font_size;
+}
+
 static unsigned simple_widget_padding     = 0;
 static unsigned simple_widget_height      = 0;
 static unsigned glyph_width               = 0;
+
+unsigned gfx_widgets_get_padding(void)
+{
+   return simple_widget_padding;
+}
+
+unsigned gfx_widgets_get_height(void)
+{
+   return simple_widget_height;
+}
+
+unsigned gfx_widgets_get_glyph_width(void)
+{
+   return glyph_width;
+}
 
 static unsigned libretro_message_width    = 0;
 
@@ -360,6 +377,13 @@ static unsigned divider_width_1px            = 1;
 
 static unsigned last_video_width             = 0;
 static unsigned last_video_height            = 0;
+
+/* Widgets list */
+const static gfx_widget_t* const widgets[] = {
+   &gfx_widget_screenshot
+};
+
+static const size_t widgets_len = sizeof(widgets) / sizeof(widgets[0]);
 
 static void msg_widget_msg_transition_animation_done(void *userdata)
 {
@@ -734,7 +758,7 @@ static void gfx_widgets_msg_queue_kill(unsigned idx)
    gfx_widgets_msg_queue_move();
 }
 
-static void gfx_widgets_draw_icon(
+void gfx_widgets_draw_icon(
       void *userdata,
       unsigned video_width,
       unsigned video_height,
@@ -838,7 +862,7 @@ static void gfx_widgets_draw_icon_blend(
 }
 #endif
 
-static float gfx_widgets_get_thumbnail_scale_factor(
+float gfx_widgets_get_thumbnail_scale_factor(
       const float dst_width, const float dst_height,
       const float image_width, const float image_height)
 {
@@ -848,28 +872,6 @@ static float gfx_widgets_get_thumbnail_scale_factor(
    if (dst_ratio > image_ratio)
       return (dst_height / image_height);
    return (dst_width / image_width);
-}
-
-static void gfx_widgets_screenshot_dispose(void *userdata)
-{
-   screenshot_loaded  = false;
-   video_driver_texture_unload(&screenshot_texture);
-   screenshot_texture = 0;
-}
-
-static void gfx_widgets_screenshot_end(void *userdata)
-{
-   gfx_animation_ctx_entry_t entry;
-
-   entry.cb             = gfx_widgets_screenshot_dispose;
-   entry.duration       = MSG_QUEUE_ANIMATION_DURATION;
-   entry.easing_enum    = EASING_OUT_QUAD;
-   entry.subject        = &screenshot_y;
-   entry.tag            = gfx_widgets_generic_tag;
-   entry.target_value   = -((float)screenshot_height);
-   entry.userdata       = NULL;
-
-   gfx_animation_push(&entry);
 }
 
 static void gfx_widgets_start_msg_expiration_timer(menu_widget_msg_t *msg_widget, unsigned duration)
@@ -955,10 +957,18 @@ void gfx_widgets_iterate(
       video_driver_monitor_reset();
    }
 
+   for (i = 0; i < widgets_len; i++)
+   {
+      const gfx_widget_t* widget = widgets[i];
+
+      if (widget->iterate)
+         widget->iterate(width, height, fullscreen, dir_assets, font_path, is_threaded);
+   }
+
    /* Messages queue */
 
    /* Consume one message if available */
-   if ((fifo_read_avail(msg_queue) > 0) 
+   if ((fifo_read_avail(msg_queue) > 0)
          && !widgets_moving 
          && (current_msgs->size < MSG_QUEUE_ONSCREEN_MAX))
    {
@@ -1031,44 +1041,6 @@ void gfx_widgets_iterate(
          gfx_widgets_msg_queue_kill((unsigned)i);
          break;
       }
-   }
-
-   /* Load screenshot and start its animation */
-   if (screenshot_filename[0] != '\0')
-   {
-      gfx_timer_ctx_entry_t timer;
-
-      video_driver_texture_unload(&screenshot_texture);
-
-      screenshot_texture = 0;
-
-      gfx_display_reset_textures_list(screenshot_filename,
-            "", &screenshot_texture, TEXTURE_FILTER_MIPMAP_LINEAR,
-            &screenshot_texture_width, &screenshot_texture_height);
-
-      screenshot_height = widget_font_size * 4;
-      screenshot_width  = width;
-
-      screenshot_scale_factor = gfx_widgets_get_thumbnail_scale_factor(
-         width, screenshot_height,
-         screenshot_texture_width, screenshot_texture_height
-      );
-
-      screenshot_thumbnail_width  = screenshot_texture_width * screenshot_scale_factor;
-      screenshot_thumbnail_height = screenshot_texture_height * screenshot_scale_factor;
-
-      screenshot_shotname_length  = (width - screenshot_thumbnail_width - simple_widget_padding*2) / glyph_width;
-
-      screenshot_y = 0.0f;
-
-      timer.cb       = gfx_widgets_screenshot_end;
-      timer.duration = SCREENSHOT_NOTIFICATION_DURATION;
-      timer.userdata = NULL;
-
-      gfx_timer_start(&screenshot_timer, &timer);
-
-      screenshot_loaded       = true;
-      screenshot_filename[0]  = '\0';
    }
 }
 
@@ -1630,62 +1602,6 @@ void gfx_widgets_frame(void *data)
          1, false, 0, false);
    }
 
-   /* Screenshot */
-   if (screenshot_loaded)
-   {
-      char shotname[256];
-      gfx_animation_ctx_ticker_t ticker;
-
-      gfx_display_set_alpha(gfx_widgets_backdrop_orig, DEFAULT_BACKDROP);
-
-      gfx_display_draw_quad(userdata,
-            video_width, video_height,
-            0, screenshot_y,
-            screenshot_width, screenshot_height,
-            video_width, video_height,
-            gfx_widgets_backdrop_orig
-            );
-
-      gfx_display_set_alpha(gfx_widgets_pure_white, 1.0f);
-      gfx_widgets_draw_icon(
-         userdata,
-         video_width,
-         video_height,
-         screenshot_thumbnail_width,
-         screenshot_thumbnail_height,
-         screenshot_texture,
-         0, screenshot_y,
-         video_width, video_height,
-         0, 1, gfx_widgets_pure_white
-      );
-
-      gfx_display_draw_text(font_regular,
-         msg_hash_to_str(MSG_SCREENSHOT_SAVED),
-         screenshot_thumbnail_width + simple_widget_padding, widget_font_size * 1.9f + screenshot_y,
-         video_width, video_height,
-         TEXT_COLOR_FAINT,
-         TEXT_ALIGN_LEFT,
-         1, false, 0, true
-      );
-
-      ticker.idx        = gfx_animation_get_ticker_idx();
-      ticker.len        = screenshot_shotname_length;
-      ticker.s          = shotname;
-      ticker.selected   = true;
-      ticker.str        = screenshot_shotname;
-
-      gfx_animation_ticker(&ticker);
-
-      gfx_display_draw_text(font_regular,
-         shotname,
-         screenshot_thumbnail_width + simple_widget_padding, widget_font_size * 2.9f + screenshot_y,
-         video_width, video_height,
-         TEXT_COLOR_INFO,
-         TEXT_ALIGN_LEFT,
-         1, false, 0, true
-      );
-   }
-
 #ifdef HAVE_CHEEVOS
    /* Achievement notification */
    if (cheevo_popup_queue_read_index >= 0 && cheevo_popup_queue[cheevo_popup_queue_read_index].title)
@@ -2032,18 +1948,12 @@ void gfx_widgets_frame(void *data)
             gfx_widgets_icons_textures[MENU_WIDGETS_ICON_SLOW_MOTION], (fps_show ? simple_widget_height : 0), top_right_x_advance,
             MSG_SLOW_MOTION);
 
-   /* Screenshot */
-   if (screenshot_alpha > 0.0f)
+   for (i = 0; i < widgets_len; i++)
    {
-      gfx_display_set_alpha(gfx_widgets_pure_white, screenshot_alpha);
-      gfx_display_draw_quad(userdata,
-            video_width,
-            video_height,
-            0, 0,
-            video_width, video_height,
-            video_width, video_height,
-            gfx_widgets_pure_white
-            );
+      const gfx_widget_t* widget = widgets[i];
+
+      if (widget->frame)
+         widget->frame(data);
    }
 
 #ifdef HAVE_MENU
@@ -2066,10 +1976,20 @@ void gfx_widgets_frame(void *data)
 
 bool gfx_widgets_init(bool video_is_threaded, bool fullscreen)
 {
+   size_t i;
+
    if (!gfx_display_init_first_driver(video_is_threaded))
       goto error;
 
    gfx_widgets_frame_count = 0;
+
+   for (i = 0; i < widgets_len; i++)
+   {
+      const gfx_widget_t* widget = widgets[i];
+
+      if (widget->init)
+         widget->init(video_is_threaded, fullscreen);
+   }
 
    msg_queue = fifo_new(MSG_QUEUE_PENDING_MAX * sizeof(menu_widget_msg_t*));
 
@@ -2103,6 +2023,7 @@ error:
 static void gfx_widgets_layout(
       bool is_threaded, const char *dir_assets, char *font_path)
 {
+   size_t i;
    int font_height = 0;
 
    /* Base font size must be determined first
@@ -2225,13 +2146,21 @@ static void gfx_widgets_layout(
    divider_width_1px    = 1;
    if (last_scale_factor > 1.0f)
       divider_width_1px = (unsigned)(last_scale_factor + 0.5f);
+
+   for (i = 0; i < widgets_len; i++)
+   {
+      const gfx_widget_t* widget = widgets[i];
+
+      if (widget->layout)
+         widget->layout(is_threaded, dir_assets, font_path);
+   }
 }
 
 void gfx_widgets_context_reset(bool is_threaded,
       unsigned width, unsigned height, bool fullscreen,
       const char *dir_assets, char *font_path)
 {
-   int i;
+   size_t i;
    char xmb_path[PATH_MAX_LENGTH];
    char monochrome_png_path[PATH_MAX_LENGTH];
    char gfx_widgets_path[PATH_MAX_LENGTH];
@@ -2286,6 +2215,14 @@ void gfx_widgets_context_reset(bool is_threaded,
 
    msg_queue_has_icons = msg_queue_icon && msg_queue_icon_outline && msg_queue_icon_rect;
 
+   for (i = 0; i < widgets_len; i++)
+   {
+      const gfx_widget_t* widget = widgets[i];
+
+      if (widget->context_reset)
+         widget->context_reset(is_threaded, width, height, fullscreen, dir_assets, font_path);
+   }
+
    /* Update scaling/dimensions */
    last_video_width  = width;
    last_video_height = height;
@@ -2299,7 +2236,15 @@ void gfx_widgets_context_reset(bool is_threaded,
 
 static void gfx_widgets_context_destroy(void)
 {
-   unsigned i;
+   size_t i;
+
+   for (i = 0; i < widgets_len; i++)
+   {
+      const gfx_widget_t* widget = widgets[i];
+
+      if (widget->context_destroy)
+         widget->context_destroy();
+   }
 
    /* TODO: Dismiss onscreen notifications that have been freed */
 
@@ -2363,6 +2308,14 @@ void gfx_widgets_free(void)
    gfx_animation_ctx_tag libretro_tag;
 
    gfx_widgets_context_destroy();
+
+   for (i = 0; i < widgets_len; i++)
+   {
+      const gfx_widget_t* widget = widgets[i];
+
+      if (widget->free)
+         widget->free();
+   }
 
    /* Kill any pending animation */
    gfx_animation_kill_by_tag(&volume_tag);
@@ -2435,10 +2388,6 @@ void gfx_widgets_free(void)
 
    /* Volume */
    volume_alpha           = 0.0f;
-
-   /* Screenshot */
-   screenshot_alpha       = 0.0f;
-   gfx_widgets_screenshot_dispose(NULL);
 }
 
 static void gfx_widgets_volume_timer_end(void *userdata)
@@ -2526,43 +2475,6 @@ void gfx_widgets_ai_service_overlay_unload(void)
    }
 }
 #endif
-
-static void gfx_widgets_screenshot_fadeout(void *userdata)
-{
-   gfx_animation_ctx_entry_t entry;
-
-   entry.cb             = NULL;
-   entry.duration       = SCREENSHOT_DURATION_OUT;
-   entry.easing_enum    = EASING_OUT_QUAD;
-   entry.subject        = &screenshot_alpha;
-   entry.tag            = gfx_widgets_generic_tag;
-   entry.target_value   = 0.0f;
-   entry.userdata       = NULL;
-
-   gfx_animation_push(&entry);
-}
-
-static void gfx_widgets_play_screenshot_flash(void)
-{
-   gfx_animation_ctx_entry_t entry;
-
-   entry.cb             = gfx_widgets_screenshot_fadeout;
-   entry.duration       = SCREENSHOT_DURATION_IN;
-   entry.easing_enum    = EASING_IN_QUAD;
-   entry.subject        = &screenshot_alpha;
-   entry.tag            = gfx_widgets_generic_tag;
-   entry.target_value   = 1.0f;
-   entry.userdata       = NULL;
-
-   gfx_animation_push(&entry);
-}
-
-void gfx_widgets_screenshot_taken(const char *shotname, const char *filename)
-{
-   gfx_widgets_play_screenshot_flash();
-   strlcpy(screenshot_filename, filename, sizeof(screenshot_filename));
-   strlcpy(screenshot_shotname, shotname, sizeof(screenshot_shotname));
-}
 
 static void gfx_widgets_end_load_content_animation(void *userdata)
 {
@@ -2870,7 +2782,7 @@ void gfx_widgets_set_libretro_message(const char *msg, unsigned duration)
    gfx_animation_ctx_tag tag = (uintptr_t) &libretro_message_timer;
 
    strlcpy(libretro_message, msg, sizeof(libretro_message));
-   
+
    libretro_message_alpha = DEFAULT_BACKDROP;
 
    /* Kill and restart the timer / animation */
