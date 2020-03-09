@@ -4432,13 +4432,12 @@ static void materialui_render_nav_bar_right(
 }
 
 static void materialui_render_nav_bar(
-      materialui_handle_t *mui, video_frame_info_t *video_info,
+      materialui_handle_t *mui,
+      void *userdata,
+      unsigned video_width,
+      unsigned video_height,
       unsigned width, unsigned height)
 {
-   void *userdata                   = video_info->userdata;
-   unsigned video_width             = video_info->width;
-   unsigned video_height            = video_info->height;
-
    switch (mui->nav_bar.location)
    {
       case MUI_NAV_BAR_LOCATION_RIGHT:
@@ -5144,7 +5143,8 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
          video_height, width, height);
 
    /* Draw navigation bar */
-   materialui_render_nav_bar(mui, video_info, width, height);
+   materialui_render_nav_bar(mui, userdata, 
+         video_width, video_height, width, height);
 
    /* Flush second layer of text
     * > Title + system bar only use title and hint fonts */
