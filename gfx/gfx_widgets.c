@@ -361,6 +361,13 @@ static unsigned divider_width_1px            = 1;
 static unsigned last_video_width             = 0;
 static unsigned last_video_height            = 0;
 
+/* Widgets list */
+const static gfx_widget_t* const widgets[] = {
+   &gfx_widget_screenshot
+};
+
+static const size_t widgets_len = sizeof(widgets) / sizeof(widgets[0]);
+
 static void msg_widget_msg_transition_animation_done(void *userdata)
 {
    menu_widget_msg_t *msg = (menu_widget_msg_t*)userdata;
@@ -955,10 +962,18 @@ void gfx_widgets_iterate(
       video_driver_monitor_reset();
    }
 
+   for (i = 0; i < widgets_len; i++)
+   {
+      const gfx_widget_t* widget = widgets[i];
+
+      if (widget->init)
+         widget->iterate(width, height, fullscreen, dir_assets, font_path, is_threaded);
+   }
+
    /* Messages queue */
 
    /* Consume one message if available */
-   if ((fifo_read_avail(msg_queue) > 0) 
+   if ((fifo_read_avail(msg_queue) > 0)
          && !widgets_moving 
          && (current_msgs->size < MSG_QUEUE_ONSCREEN_MAX))
    {
@@ -2046,6 +2061,14 @@ void gfx_widgets_frame(void *data)
             );
    }
 
+   for (i = 0; i < widgets_len; i++)
+   {
+      const gfx_widget_t* widget = widgets[i];
+
+      if (widget->init)
+         widget->frame(data);
+   }
+
 #ifdef HAVE_MENU
    /* Load content animation */
    if (load_content_animation_running)
@@ -2066,10 +2089,20 @@ void gfx_widgets_frame(void *data)
 
 bool gfx_widgets_init(bool video_is_threaded, bool fullscreen)
 {
+   size_t i;
+
    if (!gfx_display_init_first_driver(video_is_threaded))
       goto error;
 
    gfx_widgets_frame_count = 0;
+
+   for (i = 0; i < widgets_len; i++)
+   {
+      const gfx_widget_t* widget = widgets[i];
+
+      if (widget->init)
+         widget->init(video_is_threaded, fullscreen);
+   }
 
    msg_queue = fifo_new(MSG_QUEUE_PENDING_MAX * sizeof(menu_widget_msg_t*));
 
@@ -2103,6 +2136,7 @@ error:
 static void gfx_widgets_layout(
       bool is_threaded, const char *dir_assets, char *font_path)
 {
+   size_t i;
    int font_height = 0;
 
    /* Base font size must be determined first
@@ -2225,13 +2259,21 @@ static void gfx_widgets_layout(
    divider_width_1px    = 1;
    if (last_scale_factor > 1.0f)
       divider_width_1px = (unsigned)(last_scale_factor + 0.5f);
+
+   for (i = 0; i < widgets_len; i++)
+   {
+      const gfx_widget_t* widget = widgets[i];
+
+      if (widget->init)
+         widget->layout(is_threaded, dir_assets, font_path);
+   }
 }
 
 void gfx_widgets_context_reset(bool is_threaded,
       unsigned width, unsigned height, bool fullscreen,
       const char *dir_assets, char *font_path)
 {
-   int i;
+   size_t i;
    char xmb_path[PATH_MAX_LENGTH];
    char monochrome_png_path[PATH_MAX_LENGTH];
    char gfx_widgets_path[PATH_MAX_LENGTH];
@@ -2286,6 +2328,14 @@ void gfx_widgets_context_reset(bool is_threaded,
 
    msg_queue_has_icons = msg_queue_icon && msg_queue_icon_outline && msg_queue_icon_rect;
 
+   for (i = 0; i < widgets_len; i++)
+   {
+      const gfx_widget_t* widget = widgets[i];
+
+      if (widget->init)
+         widget->context_reset(is_threaded, width, height, fullscreen, dir_assets, font_path);
+   }
+
    /* Update scaling/dimensions */
    last_video_width  = width;
    last_video_height = height;
@@ -2299,7 +2349,15 @@ void gfx_widgets_context_reset(bool is_threaded,
 
 static void gfx_widgets_context_destroy(void)
 {
-   unsigned i;
+   size_t i;
+
+   for (i = 0; i < widgets_len; i++)
+   {
+      const gfx_widget_t* widget = widgets[i];
+
+      if (widget->init)
+         widget->context_destroy();
+   }
 
    /* TODO: Dismiss onscreen notifications that have been freed */
 
@@ -2363,6 +2421,14 @@ void gfx_widgets_free(void)
    gfx_animation_ctx_tag libretro_tag;
 
    gfx_widgets_context_destroy();
+
+   for (i = 0; i < widgets_len; i++)
+   {
+      const gfx_widget_t* widget = widgets[i];
+
+      if (widget->init)
+         widget->free();
+   }
 
    /* Kill any pending animation */
    gfx_animation_kill_by_tag(&volume_tag);

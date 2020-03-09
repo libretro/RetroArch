@@ -41,11 +41,9 @@
 #define GENERIC_MESSAGE_DURATION          3000
 
 /* A widget */
+/* TODO: cleanup all unused parameters */
 struct gfx_widget
 {
-   /* the name of the widget */
-   char* name;
-
    /* called when the widgets system is initialized
     * -> initialize the widget here */
    bool (*init)(bool video_is_threaded, bool fullscreen);
@@ -81,7 +79,9 @@ struct gfx_widget
    void (*frame)(void* data);
 };
 
-typedef struct gfx_widget gfx_widget_;
+typedef struct gfx_widget gfx_widget_t;
+
+extern gfx_widget_t gfx_widget_screenshot;
 
 bool gfx_widgets_init(bool video_is_threaded, bool fullscreen);
 
