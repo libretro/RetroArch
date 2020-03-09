@@ -324,7 +324,14 @@ void ozone_draw_entries(
       float scroll_y,
       bool is_playlist);
 
-void ozone_draw_sidebar(ozone_handle_t *ozone, video_frame_info_t *video_info);
+void ozone_draw_sidebar(
+      ozone_handle_t *ozone,
+      void *userdata,
+      unsigned video_width,
+      unsigned video_height,
+      bool libretro_running,
+      float menu_framebuffer_opacity
+      );
 
 void ozone_change_tab(ozone_handle_t *ozone,
       enum msg_hash_enums tab,

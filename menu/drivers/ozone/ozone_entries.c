@@ -754,16 +754,15 @@ icons_iterate:
 }
 
 static void ozone_draw_no_thumbnail_available(ozone_handle_t *ozone,
-      video_frame_info_t *video_info,
+      void *userdata,
+      unsigned video_width,
+      unsigned video_height,
       unsigned x_position,
       unsigned sidebar_width,
       unsigned y_offset)
 {
    unsigned icon           = OZONE_ENTRIES_ICONS_TEXTURE_CORE_INFO;
    unsigned icon_size      = (unsigned)((float)ozone->dimensions.sidebar_entry_icon_size * 1.5f);
-   void *userdata          = video_info->userdata;
-   unsigned video_width    = video_info->width;
-   unsigned video_height   = video_info->height;
 
    gfx_display_blend_begin(userdata);
    ozone_draw_icon(
@@ -793,12 +792,15 @@ static void ozone_draw_no_thumbnail_available(ozone_handle_t *ozone,
    );
 }
 
-static void ozone_content_metadata_line(video_frame_info_t *video_info, ozone_handle_t *ozone,
-   unsigned *y, unsigned column_x, const char *text, unsigned lines_count)
+static void ozone_content_metadata_line(
+      unsigned video_width,
+      unsigned video_height,
+      ozone_handle_t *ozone,
+      unsigned *y,
+      unsigned column_x,
+      const char *text,
+      unsigned lines_count)
 {
-   unsigned video_width    = video_info->width;
-   unsigned video_height   = video_info->height;
-
    ozone_draw_text(ozone,
       text,
       column_x,
@@ -814,7 +816,8 @@ static void ozone_content_metadata_line(video_frame_info_t *video_info, ozone_ha
       *y += (unsigned)(ozone->footer_font_glyph_height * (lines_count - 1)) + (unsigned)((float)ozone->footer_font_glyph_height * 1.5f);
 }
 
-void ozone_draw_thumbnail_bar(ozone_handle_t *ozone, video_frame_info_t *video_info)
+void ozone_draw_thumbnail_bar(ozone_handle_t *ozone,
+      video_frame_info_t *video_info)
 {
    unsigned sidebar_width            = ozone->dimensions.thumbnail_bar_width;
    unsigned thumbnail_width          = sidebar_width - (ozone->dimensions.sidebar_entry_icon_padding * 2);
@@ -884,7 +887,12 @@ void ozone_draw_thumbnail_bar(ozone_handle_t *ozone, video_frame_info_t *video_i
     * return immediately */
    if (!show_right_thumbnail && !show_left_thumbnail && gfx_thumbnail_is_enabled(ozone->thumbnail_path_data, GFX_THUMBNAIL_LEFT))
    {
-      ozone_draw_no_thumbnail_available(ozone, video_info, x_position, sidebar_width, 0);
+      ozone_draw_no_thumbnail_available(
+            ozone,
+            userdata,
+            video_width,
+            video_height,
+            x_position, sidebar_width, 0);
       return;
    }
 
@@ -930,7 +938,13 @@ void ozone_draw_thumbnail_bar(ozone_handle_t *ozone, video_frame_info_t *video_i
        * content metadata panel */
       unsigned y_offset = thumbnail_height / 2;
 
-      ozone_draw_no_thumbnail_available(ozone, video_info, x_position, sidebar_width, y_offset);
+      ozone_draw_no_thumbnail_available(ozone,
+            userdata,
+            video_width,
+            video_height,
+            x_position,
+            sidebar_width,
+            y_offset);
    }
 
    /* Bottom row : "left" thumbnail or content metadata */
@@ -1033,9 +1047,14 @@ void ozone_draw_thumbnail_bar(ozone_handle_t *ozone, video_frame_info_t *video_i
             gfx_animation_ticker(&ticker);
          }
 
-         ozone_content_metadata_line(video_info, ozone,
-            &y, ticker_x_offset + column_x,
-            ticker_buf, 1);
+         ozone_content_metadata_line(
+               video_width, 
+               video_height,
+               ozone,
+               &y,
+               ticker_x_offset + column_x,
+               ticker_buf,
+               1);
 
          /* Playtime
           * Note: It is essentially impossible for this string
@@ -1055,9 +1074,14 @@ void ozone_draw_thumbnail_bar(ozone_handle_t *ozone, video_frame_info_t *video_i
             gfx_animation_ticker(&ticker);
          }
 
-         ozone_content_metadata_line(video_info, ozone,
-            &y, ticker_x_offset + column_x,
-            ticker_buf, 1);
+         ozone_content_metadata_line(
+               video_width,
+               video_height,
+               ozone,
+               &y,
+               ticker_x_offset + column_x,
+               ticker_buf,
+               1);
 
          /* Last played */
          ticker_buf[0] = '\0';
@@ -1073,26 +1097,46 @@ void ozone_draw_thumbnail_bar(ozone_handle_t *ozone, video_frame_info_t *video_i
             gfx_animation_ticker(&ticker);
          }
 
-         ozone_content_metadata_line(video_info, ozone,
-            &y, ticker_x_offset + column_x,
-            ticker_buf, 1);
+         ozone_content_metadata_line(
+               video_width,
+               video_height,
+               ozone,
+               &y,
+               ticker_x_offset + column_x,
+               ticker_buf,
+               1);
       }
       else
       {
          /* Core association */
-         ozone_content_metadata_line(video_info, ozone,
-            &y, column_x,
-            ozone->selection_core_name, ozone->selection_core_name_lines);
+         ozone_content_metadata_line(
+               video_width,
+               video_height,
+               ozone,
+               &y,
+               column_x,
+               ozone->selection_core_name,
+               ozone->selection_core_name_lines);
 
          /* Playtime */
-         ozone_content_metadata_line(video_info, ozone,
-            &y, column_x,
-            ozone->selection_playtime, 1);
+         ozone_content_metadata_line(
+               video_width,
+               video_height,
+               ozone,
+               &y,
+               column_x,
+               ozone->selection_playtime,
+               1);
 
          /* Last played */
-         ozone_content_metadata_line(video_info, ozone,
-            &y, column_x,
-            ozone->selection_lastplayed, ozone->selection_lastplayed_lines);
+         ozone_content_metadata_line(
+               video_width,
+               video_height,
+               ozone,
+               &y,
+               column_x,
+               ozone->selection_lastplayed,
+               ozone->selection_lastplayed_lines);
       }
    }
 }

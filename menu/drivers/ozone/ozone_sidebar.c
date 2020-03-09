@@ -103,7 +103,14 @@ unsigned ozone_system_tabs_icons[OZONE_SYSTEM_TAB_LAST] = {
    OZONE_TAB_TEXTURE_SCAN_CONTENT
 };
 
-void ozone_draw_sidebar(ozone_handle_t *ozone, video_frame_info_t *video_info)
+void ozone_draw_sidebar(
+      ozone_handle_t *ozone,
+      void *userdata,
+      unsigned video_width,
+      unsigned video_height,
+      bool libretro_running,
+      float menu_framebuffer_opacity
+      )
 {
    size_t y;
    int entry_width;
@@ -120,11 +127,6 @@ void ozone_draw_sidebar(ozone_handle_t *ozone, video_frame_info_t *video_info)
    float scale_factor       = ozone->last_scale_factor;
    enum gfx_animation_ticker_type
       menu_ticker_type      = (enum gfx_animation_ticker_type)settings->uints.menu_ticker_type;
-   void *userdata           = video_info->userdata;
-   unsigned video_width     = video_info->width;
-   unsigned video_height    = video_info->height;
-   bool libretro_running    = video_info->libretro_running;
-   float menu_framebuffer_opacity = video_info->menu_framebuffer_opacity;
 
    /* Initial ticker configuration */
    if (use_smooth_ticker)

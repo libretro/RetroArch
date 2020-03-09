@@ -1475,7 +1475,12 @@ static void ozone_render(void *data,
    gfx_animation_ctl(MENU_ANIMATION_CTL_CLEAR_ACTIVE, NULL);
 }
 
-static void ozone_draw_header(ozone_handle_t *ozone, video_frame_info_t *video_info)
+static void ozone_draw_header(ozone_handle_t *ozone,
+      void *userdata,
+      unsigned video_width,
+      unsigned video_height,
+      bool battery_level_enable,
+      bool timedate_enable)
 {
    char title[255];
    gfx_animation_ctx_ticker_t ticker;
@@ -1491,11 +1496,6 @@ static void ozone_draw_header(ozone_handle_t *ozone, video_frame_info_t *video_i
    unsigned seperator_margin = 30 * scale_factor;
    enum gfx_animation_ticker_type 
       menu_ticker_type       = (enum gfx_animation_ticker_type)settings->uints.menu_ticker_type;
-   void *userdata            = video_info->userdata;
-   unsigned video_width      = video_info->width;
-   unsigned video_height     = video_info->height;
-   bool battery_level_enable = video_info->battery_level_enable;
-   bool timedate_enable      = video_info->timedate_enable;
 
    /* Initial ticker configuration */
    if (use_smooth_ticker)
@@ -2093,6 +2093,8 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
    bool video_fullscreen                  = video_info->fullscreen;
    bool menu_mouse_enable                 = video_info->menu_mouse_enable;
    bool input_menu_swap_ok_cancel_buttons = video_info->input_menu_swap_ok_cancel_buttons;
+   bool battery_level_enable              = video_info->battery_level_enable;
+   bool timedate_enable                   = video_info->timedate_enable;
 
 #if 0
    static bool reset                      = false;
@@ -2186,7 +2188,12 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
          );
 
    /* Header, footer */
-   ozone_draw_header(ozone, video_info);
+   ozone_draw_header(ozone,
+         userdata,
+         video_width,
+         video_height,
+         battery_level_enable,
+         timedate_enable);
    ozone_draw_footer(ozone,
          userdata,
          video_width,
@@ -2195,7 +2202,12 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
          settings);
 
    /* Sidebar */
-   ozone_draw_sidebar(ozone, video_info);
+   ozone_draw_sidebar(ozone,
+         userdata,
+         video_width,
+         video_height,
+         libretro_running,
+         menu_framebuffer_opacity);
 
    /* Menu entries */
    gfx_display_scissor_begin(userdata,
