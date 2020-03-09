@@ -1646,12 +1646,13 @@ static void ozone_draw_header(ozone_handle_t *ozone, video_frame_info_t *video_i
 
 static void ozone_draw_footer(ozone_handle_t *ozone, video_frame_info_t *video_info, settings_t *settings)
 {
-   float scale_factor           = ozone->last_scale_factor;
-   unsigned seperator_margin    = 30 * scale_factor;
-   bool menu_core_enable        = settings->bools.menu_core_enable;
-   void *userdata               = video_info->userdata;
-   unsigned video_width         = video_info->width;
-   unsigned video_height        = video_info->height;
+   float scale_factor                     = ozone->last_scale_factor;
+   unsigned seperator_margin              = 30 * scale_factor;
+   bool menu_core_enable                  = settings->bools.menu_core_enable;
+   void *userdata                         = video_info->userdata;
+   unsigned video_width                   = video_info->width;
+   unsigned video_height                  = video_info->height;
+   bool input_menu_swap_ok_cancel_buttons = video_info->input_menu_swap_ok_cancel_buttons;
 
    /* Separator */
    gfx_display_draw_quad(
@@ -1684,9 +1685,8 @@ static void ozone_draw_footer(ozone_handle_t *ozone, video_frame_info_t *video_i
       unsigned thumb_width    = (343 + 188 + 80) * scale_factor;
       unsigned icon_size      = 35 * scale_factor;
       unsigned icon_offset    = icon_size / 2;
-      bool do_swap            = video_info->input_menu_swap_ok_cancel_buttons;
 
-      if (do_swap)
+      if (input_menu_swap_ok_cancel_buttons)
       {
          back_width  = 96 * scale_factor;
          ok_width    = 215 * scale_factor;
@@ -1696,7 +1696,7 @@ static void ozone_draw_footer(ozone_handle_t *ozone, video_frame_info_t *video_i
 
       gfx_display_set_alpha(ozone->theme_dynamic.entries_icon, 1.0f);
 
-      if (do_swap)
+      if (input_menu_swap_ok_cancel_buttons)
       {
          ozone_draw_icon(video_info, icon_size, icon_size, ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_BTN_D], video_width - 138 * scale_factor, video_height - ozone->dimensions.footer_height / 2 - icon_offset, video_width,video_height, 0, 1, ozone->theme_dynamic.entries_icon);
          ozone_draw_icon(video_info, icon_size, icon_size, ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_BTN_R], video_width - 256 * scale_factor, video_height - ozone->dimensions.footer_height / 2 - icon_offset, video_width,video_height, 0, 1, ozone->theme_dynamic.entries_icon);
@@ -1715,12 +1715,12 @@ static void ozone_draw_footer(ozone_handle_t *ozone, video_frame_info_t *video_i
       gfx_display_blend_end(userdata);
 
       ozone_draw_text(ozone,
-            do_swap ?
+            (input_menu_swap_ok_cancel_buttons) ?
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_OK) :
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_BACK),
             video_width - back_width, video_height - ozone->dimensions.footer_height / 2 + ozone->footer_font_glyph_height * 3.0f/10.0f, TEXT_ALIGN_LEFT, video_width, video_height, ozone->fonts.footer, ozone->theme->text_rgba, false);
       ozone_draw_text(ozone,
-            do_swap ?
+            (input_menu_swap_ok_cancel_buttons) ?
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_BACK) :
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_OK),
             video_width - ok_width, video_height - ozone->dimensions.footer_height / 2 + ozone->footer_font_glyph_height * 3.0f/10.0f, TEXT_ALIGN_LEFT, video_width, video_height, ozone->fonts.footer, ozone->theme->text_rgba, false);
@@ -2044,6 +2044,8 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
    unsigned video_height                  = video_info->height;
    float menu_framebuffer_opacity         = video_info->menu_framebuffer_opacity;
    bool libretro_running                  = video_info->libretro_running;
+   bool video_fullscreen                  = video_info->fullscreen;
+   bool menu_mouse_enable                 = video_info->menu_mouse_enable;
 
 #if 0
    static bool reset                      = false;
@@ -2259,8 +2261,7 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
    /* Cursor */
    if (ozone->show_cursor && (ozone->pointer.type != MENU_POINTER_DISABLED))
    {
-      bool cursor_visible   = video_info->fullscreen 
-         && video_info->menu_mouse_enable;
+      bool cursor_visible   = video_fullscreen && menu_mouse_enable;
 
       gfx_display_set_alpha(ozone_pure_white, 1.0f);
       gfx_display_draw_cursor(

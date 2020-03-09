@@ -2719,11 +2719,11 @@ static void stripes_render(void *data,
    gfx_animation_ctl(MENU_ANIMATION_CTL_CLEAR_ACTIVE, NULL);
 }
 
-static bool stripes_shader_pipeline_active(video_frame_info_t *video_info)
+static bool stripes_shader_pipeline_active(unsigned menu_shader_pipeline)
 {
    if (string_is_not_equal(menu_driver_ident(), "stripes"))
       return false;
-   if (video_info->menu_shader_pipeline == XMB_SHADER_PIPELINE_WALLPAPER)
+   if (menu_shader_pipeline == XMB_SHADER_PIPELINE_WALLPAPER)
       return false;
    return true;
 }
@@ -2829,6 +2829,8 @@ static void stripes_frame(void *data, video_frame_info_t *video_info)
    unsigned video_width                    = video_info->width;
    unsigned video_height                   = video_info->height;
    float xmb_alpha_factor                  = video_info->xmb_alpha_factor;
+   bool video_fullscreen                   = video_info->fullscreen;
+   bool menu_mouse_enable                  = video_info->menu_mouse_enable;
    const float under_thumb_margin          = 0.96;
    float scale_factor                      = 0.0f;
    float pseudo_font_length                = 0.0f;
@@ -3029,8 +3031,8 @@ static void stripes_frame(void *data, video_frame_info_t *video_info)
    if (stripes->mouse_show)
    {
       menu_input_pointer_t pointer;
-      bool cursor_visible   = video_info->fullscreen 
-         && video_info->menu_mouse_enable;
+      bool cursor_visible   = video_fullscreen 
+         && menu_mouse_enable;
 
       menu_input_get_pointer_state(&pointer);
 

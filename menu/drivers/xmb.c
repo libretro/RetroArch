@@ -4356,6 +4356,8 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    float xmb_alpha_factor                  = video_info->xmb_alpha_factor;
    bool timedate_enable                    = video_info->timedate_enable;
    bool battery_level_enable               = video_info->battery_level_enable;
+   bool video_fullscreen                   = video_info->fullscreen;
+   bool menu_mouse_enable                  = video_info->menu_mouse_enable;
 
    if (!xmb)
       return;
@@ -4936,8 +4938,8 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    if (xmb->mouse_show)
    {
       menu_input_pointer_t pointer;
-      bool cursor_visible   = video_info->fullscreen 
-         && video_info->menu_mouse_enable;
+      bool cursor_visible   = video_fullscreen 
+         && menu_mouse_enable;
 
       menu_input_get_pointer_state(&pointer);
 
