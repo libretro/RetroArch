@@ -2495,7 +2495,6 @@ static void gl2_pbo_async_readback(gl_t *gl)
 }
 
 #ifdef HAVE_VIDEO_LAYOUT
-
 static float video_layout_layer_tex_coord[] = {
    0.0f, 1.0f,
    1.0f, 1.0f,
@@ -2578,7 +2577,7 @@ static void gl2_video_layout_viewport(gl_t *gl)
    }
 }
 
-static void gl2_video_layout_render(gl_t *gl, video_frame_info_t *video_info)
+static void gl2_video_layout_render(gl_t *gl)
 {
    int i;
 
@@ -2798,7 +2797,6 @@ static const video_layout_render_interface_t *gl2_get_video_layout_render_interf
 {
    return &gl2_video_layout_render_interface;
 }
-
 #endif /* HAVE_VIDEO_LAYOUT */
 
 static bool gl2_frame(void *data, const void *frame,
@@ -3029,7 +3027,7 @@ static bool gl2_frame(void *data, const void *frame,
          chain, &gl->tex_info);
 
 #ifdef HAVE_VIDEO_LAYOUT
-   gl2_video_layout_render(gl, video_info);
+   gl2_video_layout_render(gl);
 #endif
 #if defined(HAVE_MENU)
    if (gl->menu_texture_enable)

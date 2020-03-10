@@ -474,11 +474,10 @@ static void gl_core_overlay_tex_geom(void *data,
    tex[7]       = y + h;
 }
 
-static void gl_core_render_overlay(gl_core_t *gl, video_frame_info_t *video_info)
+static void gl_core_render_overlay(gl_core_t *gl,
+      unsigned width, unsigned height)
 {
    unsigned i;
-   unsigned width                      = video_info->width;
-   unsigned height                     = video_info->height;
 
    glEnable(GL_BLEND);
    glDisable(GL_CULL_FACE);
@@ -1784,7 +1783,8 @@ static void gl_core_update_cpu_texture(gl_core_t *gl,
 }
 
 #if defined(HAVE_MENU)
-static void gl_core_draw_menu_texture(gl_core_t *gl, video_frame_info_t *video_info)
+static void gl_core_draw_menu_texture(gl_core_t *gl,
+      unsigned width, unsigned height)
 {
    const float vbo_data[] = {
       0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, gl->menu_texture_alpha,
@@ -1800,7 +1800,7 @@ static void gl_core_draw_menu_texture(gl_core_t *gl, video_frame_info_t *video_i
    glBlendEquation(GL_FUNC_ADD);
 
    if (gl->menu_texture_full_screen)
-      glViewport(0, 0, video_info->width, video_info->height);
+      glViewport(0, 0, width, height);
    else
       glViewport(gl->vp.x, gl->vp.y, gl->vp.width, gl->vp.height);
 
@@ -1835,8 +1835,22 @@ static bool gl_core_frame(void *data, const void *frame,
       video_frame_info_t *video_info)
 {
    struct gl_core_filter_chain_texture texture;
-   struct gl_core_streamed_texture *streamed;
-   gl_core_t *gl = (gl_core_t*)data;
+   struct gl_core_streamed_texture *streamed   = NULL;
+   gl_core_t *gl                               = (gl_core_t*)data;
+   unsigned width                              = video_info->width;
+   unsigned height                             = video_info->height;
+   struct font_params *osd_params              = (struct font_params*)
+      &video_info->osd_stat_params;
+   const char *stat_text                       = video_info->stat_text;
+   bool statistics_show                        = video_info->statistics_show;
+   bool widgets_inited                         = video_info->widgets_inited;
+   bool msg_bgcolor_enable                     = video_info->msg_bgcolor_enable;
+   bool black_frame_insertion                  = video_info->black_frame_insertion;
+   void *context_data                          = video_info->context_data;
+   unsigned hard_sync_frames                   = video_info->hard_sync_frames;
+   bool runloop_is_paused                      = video_info->runloop_is_paused;
+   bool runloop_is_slowmotion                  = video_info->runloop_is_slowmotion;
+   bool input_driver_nonblock_state            = video_info->input_driver_nonblock_state;
    if (!gl)
       return false;
 
@@ -1860,11 +1874,11 @@ static bool gl_core_frame(void *data, const void *frame,
 
    if (gl->should_resize)
    {
-      video_info->cb_set_resize(video_info->context_data, video_info->width, video_info->height);
+      video_info->cb_set_resize(context_data, width, height);
       gl->should_resize = false;
    }
 
-   gl_core_set_viewport(gl, video_info->width, video_info->height, false, true);
+   gl_core_set_viewport(gl, width, height, false, true);
 
    texture.image            = 0;
    texture.width            = streamed->width;
@@ -1908,40 +1922,36 @@ static bool gl_core_frame(void *data, const void *frame,
    {
       menu_driver_frame(video_info);
       if (gl->menu_texture_enable && gl->menu_texture)
-         gl_core_draw_menu_texture(gl, video_info);
+         gl_core_draw_menu_texture(gl, width, height);
    }
-   else if (video_info->statistics_show)
+   else if (statistics_show)
    {
-      struct font_params *osd_params = (struct font_params*)
-         &video_info->osd_stat_params;
-
       if (osd_params)
-         font_driver_render_msg(gl, video_info->stat_text,
-               (const struct font_params*)&video_info->osd_stat_params, NULL);
+         font_driver_render_msg(gl, stat_text,
+               (const struct font_params*)osd_params, NULL);
    }
 #endif
 
 #ifdef HAVE_OVERLAY
    if (gl->overlay_enable)
-      gl_core_render_overlay(gl, video_info);
+      gl_core_render_overlay(gl, width, height);
 #endif
 
 #ifdef HAVE_GFX_WIDGETS
-   if (video_info->widgets_inited)
+   if (widgets_inited)
       gfx_widgets_frame(video_info);
 #endif
 
    if (!string_is_empty(msg))
    {
 #if 0
-      if (video_info->msg_bgcolor_enable)
+      if (msg_bgcolor_enable)
          gl_core_render_osd_background(gl, video_info, msg);
 #endif
       font_driver_render_msg(gl, msg, NULL, NULL);
    }
 
-   video_info->cb_update_window_title(
-         video_info->context_data);
+   video_info->cb_update_window_title(context_data);
 
    if (gl->readback_buffer_screenshot)
    {
@@ -1960,22 +1970,22 @@ static bool gl_core_frame(void *data, const void *frame,
    /* Disable BFI during fast forward, slow-motion,
     * and pause to prevent flicker. */
    if (
-         video_info->black_frame_insertion
-         && !video_info->input_driver_nonblock_state
-         && !video_info->runloop_is_slowmotion
-         && !video_info->runloop_is_paused)
+         black_frame_insertion
+         && !input_driver_nonblock_state
+         && !runloop_is_slowmotion
+         && !runloop_is_paused)
    {
-      video_info->cb_swap_buffers(video_info->context_data);
+      video_info->cb_swap_buffers(context_data);
       glClear(GL_COLOR_BUFFER_BIT);
    }
 
-   video_info->cb_swap_buffers(video_info->context_data);
+   video_info->cb_swap_buffers(context_data);
 
    if (video_info->hard_sync &&
-       !video_info->input_driver_nonblock_state &&
+       !input_driver_nonblock_state &&
        !gl->menu_texture_enable)
    {
-      gl_core_fence_iterate(gl, video_info->hard_sync_frames);
+      gl_core_fence_iterate(gl, hard_sync_frames);
    }
 
    glBindVertexArray(0);

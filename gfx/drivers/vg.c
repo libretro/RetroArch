@@ -318,11 +318,9 @@ static void vg_free(void *data)
    free(vg);
 }
 
-static void vg_calculate_quad(vg_t *vg, video_frame_info_t *video_info)
+static void vg_calculate_quad(vg_t *vg,
+      unsigned width, unsigned height)
 {
-   unsigned width  = video_info->width;
-   unsigned height = video_info->height;
-
    /* set viewport for aspect ratio, taken from the OpenGL driver. */
    if (vg->keep_aspect)
    {
@@ -427,7 +425,7 @@ static bool vg_frame(void *data, const void *frame,
    {
       vg->mRenderWidth  = frame_width;
       vg->mRenderHeight = frame_height;
-      vg_calculate_quad(vg, video_info);
+      vg_calculate_quad(vg, width, height);
       matrix_3x3_quad_to_quad(
          vg->x1, vg->y1, vg->x2, vg->y1, vg->x2, vg->y2, vg->x1, vg->y2,
          /* needs to be flipped, Khronos loves their bottom-left origin */
