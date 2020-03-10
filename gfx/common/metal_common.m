@@ -378,8 +378,8 @@
       unsigned bgcolor_blue 
                             = settings->uints.video_msg_bgcolor_blue;
       float bgcolor_opacity = settings->floats.video_msg_bgcolor_opacity;
-      float x               = video_info->font_msg_pos_x;
-      float y               = 1.0f - video_info->font_msg_pos_y;
+      float x               = settings->floats.video_msg_pos_x;
+      float y               = 1.0f - settings->floats.video_msg_pos_y;
       float width           = msg_width / (float)_viewport->full_width;
       float height          = font_size / (float)_viewport->full_height;
 
