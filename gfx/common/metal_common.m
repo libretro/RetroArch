@@ -282,7 +282,8 @@
 
 }
 
-- (bool)renderFrame:(const void *)data
+- (bool)renderFrame:(const void *)frame
+               data:(void*)data
               width:(unsigned)width
              height:(unsigned)height
          frameCount:(uint64_t)frameCount
@@ -300,10 +301,10 @@
       [self _beginFrame];
 
       _frameView.frameCount = frameCount;
-      if (data && width && height)
+      if (frame && width && height)
       {
          _frameView.size = CGSizeMake(width, height);
-         [_frameView updateFrame:data pitch:pitch];
+         [_frameView updateFrame:frame pitch:pitch];
       }
 
       [self _drawCore:video_info];

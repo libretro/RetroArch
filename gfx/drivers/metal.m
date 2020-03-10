@@ -95,6 +95,7 @@ static bool metal_frame(void *data, const void *frame,
 {
    MetalDriver *md = (__bridge MetalDriver *)data;
    return [md renderFrame:frame
+                     data:data
                     width:frame_width
                    height:frame_height
                frameCount:frame_count
