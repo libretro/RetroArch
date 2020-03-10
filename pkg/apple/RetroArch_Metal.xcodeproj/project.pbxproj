@@ -479,7 +479,6 @@
 		05C5D56C20E3DD0900654EE4 /* input_overlay.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = input_overlay.h; sourceTree = "<group>"; };
 		05C5D56D20E3DD0900654EE4 /* input_defines.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = input_defines.h; sourceTree = "<group>"; };
 		05C5D56F20E3DD0900654EE4 /* btstack_hid.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = btstack_hid.c; sourceTree = "<group>"; };
-		05C5D57020E3DD0900654EE4 /* null_hid.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = null_hid.c; sourceTree = "<group>"; };
 		05C5D57320E3DD0900654EE4 /* iohidmanager_hid.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = iohidmanager_hid.c; sourceTree = "<group>"; };
 		05C5D57620E3DD0900654EE4 /* input_hid_common.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = input_hid_common.c; sourceTree = "<group>"; };
 		05C5D57720E3DD0900654EE4 /* input_x11_common.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = input_x11_common.c; sourceTree = "<group>"; };
@@ -939,7 +938,6 @@
 				A9020EE4BE2C6A15024A32E0 /* ui_cocoa_metal.m */,
 				A9020BD6594399DDAB0E2563 /* ui_cocoatouch_metal.m */,
 				05A8C5CF20DB72F000FF7857 /* ui_cocoatouch.m */,
-				05A8C5B920DB72F000FF7857 /* ui_null.c */,
 				05A8C5D020DB72F000FF7857 /* ui_qt.cpp */,
 				05A8C5C820DB72F000FF7857 /* ui_qt.h */,
 				05A8C5B820DB72F000FF7857 /* ui_win32_resource.h */,
