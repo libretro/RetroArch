@@ -358,7 +358,7 @@ static INLINE void write_quad6(SpriteVertex *pv,
    }
 
    int lines = 0;
-   float line_height = _font_driver->get_line_height(_font_data) * scale / video->height;
+   float line_height = _font_driver->get_line_height(_font_data) * scale / height;
 
    for (;;)
    {
