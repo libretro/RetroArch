@@ -25281,7 +25281,7 @@ void driver_set_nonblock_state(void)
  **/
 static void drivers_init(int flags)
 {
-   bool video_is_threaded   = false;
+   bool video_is_threaded   = video_driver_is_threaded_internal();
    settings_t *settings     = configuration_settings;
    bool menu_enable_widgets = settings->bools.menu_enable_widgets;
 
