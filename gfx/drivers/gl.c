@@ -2589,7 +2589,7 @@ static void gl2_video_layout_render(gl_t *gl, video_frame_info_t *video_info)
    glEnable(GL_BLEND);
 
    for (i = 0; i < video_layout_layer_count(); ++i)
-      video_layout_layer_render(video_info, i);
+      video_layout_layer_render(i);
 
    glDisable(GL_BLEND);
 }
