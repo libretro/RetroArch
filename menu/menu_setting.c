@@ -15214,6 +15214,21 @@ static bool setting_append_list(
 
          CONFIG_BOOL(
                list, list_info,
+               &settings->bools.menu_scroll_fast,
+               MENU_ENUM_LABEL_MENU_SCROLL_FAST,
+               MENU_ENUM_LABEL_VALUE_MENU_SCROLL_FAST,
+               menu_scroll_fast,
+               MENU_ENUM_LABEL_VALUE_SCROLL_NORMAL,
+               MENU_ENUM_LABEL_VALUE_SCROLL_FAST,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+
+         CONFIG_BOOL(
+               list, list_info,
                &settings->bools.ui_companion_enable,
                MENU_ENUM_LABEL_UI_COMPANION_ENABLE,
                MENU_ENUM_LABEL_VALUE_UI_COMPANION_ENABLE,
