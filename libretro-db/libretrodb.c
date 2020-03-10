@@ -173,8 +173,7 @@ int libretrodb_create(RFILE *fd, libretrodb_value_provider value_provider,
    if ((rv = rmsgpack_dom_write(fd, &sentinal)) < 0)
       goto clean;
 
-   header.metadata_offset = swap_if_little64(filestream_seek(
-            fd, 0, RETRO_VFS_SEEK_POSITION_CURRENT));
+   header.metadata_offset = swap_if_little64(filestream_tell(fd));
    md.count = item_count;
    libretrodb_write_metadata(fd, &md);
    filestream_seek(fd, root, RETRO_VFS_SEEK_POSITION_START);

@@ -23,7 +23,7 @@ extern void* __service_ptr;
 typedef u32(*backdoor_fn)(u32 arg0, u32 arg1);
 
 __attribute((naked))
-static u32 svc_7b(backdoor_fn entry_fn, ...) // can pass up to two arguments to entry_fn(...)
+static u32 svc_7b(backdoor_fn entry_fn, ...) /* can pass up to two arguments to entry_fn(...) */
 {
    __asm__ volatile(
       "push {r0, r1, r2} \n\t"
@@ -161,19 +161,17 @@ static void target_thread_entry(mch2_thread_args_t* args)
 static u32 get_first_free_basemem_page(bool isNew3DS)
 {
    s64 v1;
-   int memused_base;
-   int memused_base_linear;  // guessed
-
-   memused_base = osGetMemRegionUsed(MEMREGION_BASE);
+   int memused_base_linear;  /* guessed */
+   int memused_base = osGetMemRegionUsed(MEMREGION_BASE);
 
    svcGetSystemInfo(&v1, 2, 0);
    memused_base_linear = 0x6C000 + v1 +
                          (osGetKernelVersion() > SYSTEM_VERSION(2, 49, 0) ? (isNew3DS ? 0x2000 : 0x1000) : 0x0);
 
-   return (osGetKernelVersion() > SYSTEM_VERSION(2, 40, 0) ? 0xE0000000 : 0xF0000000) // kernel FCRAM mapping
-          + (isNew3DS ? 0x10000000 : 0x08000000)  // FCRAM size
-          - (memused_base - memused_base_linear)  // memory usage for pages allocated without the MEMOP_LINEAR flag
-          - 0x1000;  // skip to the start addr of the next free page
+   return (osGetKernelVersion() > SYSTEM_VERSION(2, 40, 0) ? 0xE0000000 : 0xF0000000) /* kernel FCRAM mapping */
+          + (isNew3DS ? 0x10000000 : 0x08000000)  /* FCRAM size */
+          - (memused_base - memused_base_linear)  /* memory usage for pages allocated without the MEMOP_LINEAR flag */
+          - 0x1000;  /* skip to the start addr of the next free page */
 
 }
 
@@ -280,7 +278,7 @@ static void do_memchunkhax2(void)
 
    u32 alloc_address_kaddr = osConvertVirtToPhys((void*)linear_address) + mch2.kernel_fcram_mapping_offset;
 
-   mch2.thread_page_kva = get_first_free_basemem_page(mch2.isNew3DS) - 0x10000; // skip down 16 pages
+   mch2.thread_page_kva = get_first_free_basemem_page(mch2.isNew3DS) - 0x10000; /* skip down 16 pages */
    ((u32*)linear_buffer)[0] = 1;
    ((u32*)linear_buffer)[1] = mch2.thread_page_kva;
    ((u32*)linear_buffer)[2] = alloc_address_kaddr + (((mch2.alloc_size >> 12) - 3) << 13) + (skip_pages << 12);
@@ -404,8 +402,9 @@ static void gspwn(u32 dst, u32 src, u32 size, u8* flush_buffer)
  *    *(u32*)val1 = 0x0;
  */
 
-// X-X--X-X
-// X-XXXX-X
+/* X-X--X-X
+ * X-XXXX-X
+ */
 
 static void memchunkhax1_write_pair(u32 val1, u32 val2)
 {
@@ -458,23 +457,24 @@ static void do_memchunkhax1(void)
 {
    u32 saved_vram_value = *(u32*)0x1F000008;
 
-   // 0x1F000000 contains the enable bit for svc 0x7B
+   /* 0x1F000000 contains the enable bit for svc 0x7B */
    memchunkhax1_write_pair(get_thread_page() + THREAD_PAGE_ACL_OFFSET + SVC_ACL_OFFSET(0x7B), 0x1F000000);
 
    write_kaddr(0x1F000008, saved_vram_value);
 }
 
-Result get_luma_version(u32 *major, u32 *minor) {
-  s64 out;
-  u32 version;
+Result get_luma_version(u32 *major, u32 *minor)
+{
+   s64 out;
+   u32 version;
 
-  if (R_FAILED(svcGetSystemInfo(&out, 0x10000, 0)))
-    return -1;
+   if (R_FAILED(svcGetSystemInfo(&out, 0x10000, 0)))
+      return -1;
 
-  version = (u32)out;
-  *major = GET_VERSION_MAJOR(version);
-  *minor = GET_VERSION_MINOR(version);
-  return 0;
+   version = (u32)out;
+   *major = GET_VERSION_MAJOR(version);
+   *minor = GET_VERSION_MINOR(version);
+   return 0;
 }
 
 Result svchax_init(bool patch_srv)

@@ -35,22 +35,34 @@
 #include "uwp/uwp_func.h"
 #endif
 
-#ifdef HAVE_COMPRESSION
-static const struct string_list *core_info_tmp_list = NULL;
-#endif
-static const char *core_info_tmp_path               = NULL;
-static core_info_t *core_info_current               = NULL;
-static core_info_list_t *core_info_curr_list        = NULL;
-
 enum compare_op
 {
-   COMPARE_OP_EQUAL,
+   COMPARE_OP_EQUAL = 0,
    COMPARE_OP_NOT_EQUAL,
    COMPARE_OP_LESS,
    COMPARE_OP_LESS_EQUAL,
    COMPARE_OP_GREATER,
    COMPARE_OP_GREATER_EQUAL
 };
+
+struct core_info_state
+{
+#ifdef HAVE_COMPRESSION
+   const struct string_list *tmp_list;
+#endif
+   const char *tmp_path;
+   core_info_t *current;
+   core_info_list_t *curr_list;
+};
+
+typedef struct core_info_state core_info_state_t;
+
+static core_info_state_t core_info_st;
+
+static core_info_state_t *coreinfo_get_ptr(void)
+{
+   return &core_info_st;
+}
 
 static void core_info_list_resolve_all_extensions(
       core_info_list_t *core_info_list)
@@ -537,15 +549,18 @@ static bool core_info_does_support_file(
 
 static int core_info_qsort_cmp(const void *a_, const void *b_)
 {
-   const core_info_t *a = (const core_info_t*)a_;
-   const core_info_t *b = (const core_info_t*)b_;
-   int support_a        = core_info_does_support_file(a, core_info_tmp_path);
-   int support_b        = core_info_does_support_file(b, core_info_tmp_path);
+   core_info_state_t *p_coreinfo = coreinfo_get_ptr();
+   const core_info_t          *a = (const core_info_t*)a_;
+   const core_info_t          *b = (const core_info_t*)b_;
+   int support_a                 = core_info_does_support_file(a,
+         p_coreinfo->tmp_path);
+   int support_b                 = core_info_does_support_file(b,
+         p_coreinfo->tmp_path);
 #ifdef HAVE_COMPRESSION
    support_a            = support_a ||
-      core_info_does_support_any_file(a, core_info_tmp_list);
+      core_info_does_support_any_file(a, p_coreinfo->tmp_list);
    support_b            = support_b ||
-      core_info_does_support_any_file(b, core_info_tmp_list);
+      core_info_does_support_any_file(b, p_coreinfo->tmp_list);
 #endif
 
    if (support_a != support_b)
@@ -617,38 +632,44 @@ static bool core_info_list_update_missing_firmware_internal(
 
 void core_info_free_current_core(void)
 {
-   if (core_info_current)
-      free(core_info_current);
-   core_info_current = NULL;
+   core_info_state_t *p_coreinfo = coreinfo_get_ptr();
+   if (p_coreinfo->current)
+      free(p_coreinfo->current);
+   p_coreinfo->current = NULL;
 }
 
 bool core_info_init_current_core(void)
 {
-   core_info_current = (core_info_t*)calloc(1, sizeof(core_info_t));
-   if (!core_info_current)
+   core_info_state_t *p_coreinfo = coreinfo_get_ptr();
+   core_info_t *current          = (core_info_t*)calloc(1, sizeof(*current));
+   if (!current)
       return false;
+   p_coreinfo->current = current;
    return true;
 }
 
 bool core_info_get_current_core(core_info_t **core)
 {
+   core_info_state_t *p_coreinfo = coreinfo_get_ptr();
    if (!core)
       return false;
-   *core = core_info_current;
+   *core = p_coreinfo->current;
    return true;
 }
 
 void core_info_deinit_list(void)
 {
-   if (core_info_curr_list)
-      core_info_list_free(core_info_curr_list);
-   core_info_curr_list = NULL;
+   core_info_state_t *p_coreinfo = coreinfo_get_ptr();
+   if (p_coreinfo->curr_list)
+      core_info_list_free(p_coreinfo->curr_list);
+   p_coreinfo->curr_list = NULL;
 }
 
 bool core_info_init_list(const char *path_info, const char *dir_cores,
       const char *exts, bool dir_show_hidden_files)
 {
-   if (!(core_info_curr_list = core_info_list_new(dir_cores,
+   core_info_state_t *p_coreinfo = coreinfo_get_ptr();
+   if (!(p_coreinfo->curr_list = core_info_list_new(dir_cores,
                !string_is_empty(path_info) ? path_info : dir_cores,
                exts,
                dir_show_hidden_files)))
@@ -658,39 +679,42 @@ bool core_info_init_list(const char *path_info, const char *dir_cores,
 
 bool core_info_get_list(core_info_list_t **core)
 {
+   core_info_state_t *p_coreinfo = coreinfo_get_ptr();
    if (!core)
       return false;
-   *core = core_info_curr_list;
+   *core = p_coreinfo->curr_list;
    return true;
 }
 
 bool core_info_list_update_missing_firmware(core_info_ctx_firmware_t *info,
       bool *set_missing_bios)
 {
+   core_info_state_t *p_coreinfo = coreinfo_get_ptr();
    if (!info)
       return false;
    return core_info_list_update_missing_firmware_internal(
-         core_info_curr_list,
+         p_coreinfo->curr_list,
          info->path, info->directory.system,
          set_missing_bios);
 }
 
 bool core_info_load(core_info_ctx_find_t *info)
 {
-   core_info_t *core_info     = NULL;
+   core_info_t    *core_info     = NULL;
+   core_info_state_t *p_coreinfo = coreinfo_get_ptr();
 
    if (!info)
       return false;
 
-   if (!core_info_current)
+   if (!p_coreinfo->current)
       core_info_init_current_core();
 
    core_info_get_current_core(&core_info);
 
-   if (!core_info_curr_list)
+   if (!p_coreinfo->curr_list)
       return false;
 
-   if (!core_info_list_get_info(core_info_curr_list,
+   if (!core_info_list_get_info(p_coreinfo->curr_list,
             core_info, info->path))
       return false;
 
@@ -699,9 +723,10 @@ bool core_info_load(core_info_ctx_find_t *info)
 
 bool core_info_find(core_info_ctx_find_t *info, const char *core_path)
 {
-   if (!info || !core_info_curr_list)
+   core_info_state_t *p_coreinfo = coreinfo_get_ptr();
+   if (!info || !p_coreinfo->curr_list)
       return false;
-   info->inf = core_info_find_internal(core_info_curr_list, core_path);
+   info->inf = core_info_find_internal(p_coreinfo->curr_list, core_path);
    if (!info->inf)
       return false;
    return true;
@@ -724,20 +749,21 @@ void core_info_list_get_supported_cores(core_info_list_t *core_info_list,
       const char *path, const core_info_t **infos, size_t *num_infos)
 {
    size_t i;
-   size_t supported         = 0;
+   size_t supported              = 0;
 #ifdef HAVE_COMPRESSION
-   struct string_list *list = NULL;
+   struct string_list *list      = NULL;
 #endif
+   core_info_state_t *p_coreinfo = coreinfo_get_ptr();
 
    if (!core_info_list)
       return;
 
-   core_info_tmp_path = path;
+   p_coreinfo->tmp_path          = path;
 
 #ifdef HAVE_COMPRESSION
    if (path_is_compressed_file(path))
       list = file_archive_get_file_list(path, NULL);
-   core_info_tmp_list = list;
+   p_coreinfo->tmp_list = list;
 #endif
 
    /* Let supported core come first in list so we can return
@@ -834,8 +860,9 @@ size_t core_info_list_num_info_files(core_info_list_t *core_info_list)
 
 bool core_info_database_match_archive_member(const char *database_path)
 {
-   char *database           = NULL;
-   const char *new_path     = path_basename(database_path);
+   char      *database           = NULL;
+   const char      *new_path     = path_basename(database_path);
+   core_info_state_t *p_coreinfo = coreinfo_get_ptr();
 
    if (string_is_empty(new_path))
       return false;
@@ -847,13 +874,13 @@ bool core_info_database_match_archive_member(const char *database_path)
 
    path_remove_extension(database);
 
-   if (core_info_curr_list)
+   if (p_coreinfo->curr_list)
    {
       size_t i;
 
-      for (i = 0; i < core_info_curr_list->count; i++)
+      for (i = 0; i < p_coreinfo->curr_list->count; i++)
       {
-         const core_info_t *info = &core_info_curr_list->list[i];
+         const core_info_t *info = &p_coreinfo->curr_list->list[i];
 
          if (!info->database_match_archive_member)
              continue;
@@ -875,8 +902,9 @@ error:
 bool core_info_database_supports_content_path(
       const char *database_path, const char *path)
 {
-   char *database           = NULL;
-   const char *new_path     = path_basename(database_path);
+   char      *database           = NULL;
+   const char      *new_path     = path_basename(database_path);
+   core_info_state_t *p_coreinfo = coreinfo_get_ptr();
 
    if (string_is_empty(new_path))
       return false;
@@ -888,13 +916,13 @@ bool core_info_database_supports_content_path(
 
    path_remove_extension(database);
 
-   if (core_info_curr_list)
+   if (p_coreinfo->curr_list)
    {
       size_t i;
 
-      for (i = 0; i < core_info_curr_list->count; i++)
+      for (i = 0; i < p_coreinfo->curr_list->count; i++)
       {
-         const core_info_t *info = &core_info_curr_list->list[i];
+         const core_info_t *info = &p_coreinfo->curr_list->list[i];
 
          if (!string_list_find_elem(info->supported_extensions_list,
                   path_get_extension(path)))

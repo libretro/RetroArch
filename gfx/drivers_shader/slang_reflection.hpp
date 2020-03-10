@@ -23,64 +23,53 @@
 
 struct slang_semantic_location
 {
-   int ubo_vertex = -1;
-   int push_vertex = -1;
-   int ubo_fragment = -1;
+   int ubo_vertex    = -1;
+   int push_vertex   = -1;
+   int ubo_fragment  = -1;
    int push_fragment = -1;
 };
 
 struct slang_texture_semantic_meta
 {
-   size_t ubo_offset = 0;
+   size_t ubo_offset           = 0;
    size_t push_constant_offset = 0;
-   unsigned binding = 0;
-   uint32_t stage_mask = 0;
+   unsigned binding            = 0;
+   uint32_t stage_mask         = 0;
 
-   bool texture = false;
-   bool uniform = false;
-   bool push_constant = false;
+   bool texture                = false;
+   bool uniform                = false;
+   bool push_constant          = false;
 
-   // For APIs which need location information ala legacy GL.
-   // API user fills this struct in.
+   /* For APIs which need location information ala legacy GL.
+    * API user fills this struct in. */
    slang_semantic_location location;
 };
 
 struct slang_semantic_meta
 {
-   size_t ubo_offset = 0;
+   size_t ubo_offset           = 0;
    size_t push_constant_offset = 0;
-   unsigned num_components = 0;
-   bool uniform = false;
-   bool push_constant = false;
+   unsigned num_components     = 0;
+   bool uniform                = false;
+   bool push_constant          = false;
 
-   // For APIs which need location information ala legacy GL.
+   /* For APIs which need location information ala legacy GL. */
    slang_semantic_location location;
-};
-
-struct slang_texture_semantic_map
-{
-   slang_texture_semantic semantic;
-   unsigned index;
-};
-
-struct slang_semantic_map
-{
-   slang_semantic semantic;
-   unsigned index;
 };
 
 struct slang_reflection
 {
    slang_reflection();
 
-   size_t ubo_size = 0;
-   size_t push_constant_size = 0;
+   size_t ubo_size                   = 0;
+   size_t push_constant_size         = 0;
 
-   unsigned ubo_binding = 0;
-   uint32_t ubo_stage_mask = 0;
+   unsigned ubo_binding              = 0;
+   uint32_t ubo_stage_mask           = 0;
    uint32_t push_constant_stage_mask = 0;
 
-   std::vector<slang_texture_semantic_meta> semantic_textures[SLANG_NUM_TEXTURE_SEMANTICS];
+   std::vector<slang_texture_semantic_meta>
+      semantic_textures[SLANG_NUM_TEXTURE_SEMANTICS];
    slang_semantic_meta semantics[SLANG_NUM_SEMANTICS];
    std::vector<slang_semantic_meta> semantic_float_parameters;
 
@@ -90,12 +79,16 @@ struct slang_reflection
    unsigned pass_number = 0;
 };
 
-bool slang_reflect_spirv(const std::vector<uint32_t> &vertex,
+bool slang_reflect_spirv(
+      const std::vector<uint32_t> &vertex,
       const std::vector<uint32_t> &fragment,
       slang_reflection *reflection);
 
-bool slang_reflect(const spirv_cross::Compiler &vertex_compiler, const spirv_cross::Compiler &fragment_compiler,
-      const spirv_cross::ShaderResources &vertex, const spirv_cross::ShaderResources &fragment,
+bool slang_reflect(
+      const spirv_cross::Compiler &vertex_compiler,
+      const spirv_cross::Compiler &fragment_compiler,
+      const spirv_cross::ShaderResources &vertex,
+      const spirv_cross::ShaderResources &fragment,
       slang_reflection *reflection);
 
 #endif

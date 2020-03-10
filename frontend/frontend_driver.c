@@ -70,6 +70,8 @@ static frontend_ctx_driver_t frontend_ctx_null = {
    NULL,                         /* set_sustained_performance_mode */
    NULL,                         /* get_cpu_model_name */
    NULL,                         /* get_user_language */
+   NULL,                         /* is_narrator_running */
+   NULL,                         /* accessibility_speak */
    "null",
    NULL,                         /* get_video_driver */
 };
@@ -552,5 +554,13 @@ enum retro_language frontend_driver_get_user_language(void)
    if (!frontend || !frontend->get_user_language)
       return RETRO_LANGUAGE_ENGLISH;
    return frontend->get_user_language();
+}
+
+bool frontend_driver_is_narrator_running(void)
+{
+   frontend_ctx_driver_t *frontend = frontend_get_ptr();
+   if (!frontend || !frontend->is_narrator_running)
+      return false;
+   return frontend->is_narrator_running();
 }
 #endif

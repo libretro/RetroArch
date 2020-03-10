@@ -830,30 +830,8 @@ void dxgi_copy(
       int         dst_pitch,
       void*       dst_data);
 
-void dxgi_update_title(video_frame_info_t* video_info);
+void dxgi_update_title(void);
 
 DXGI_FORMAT glslang_format_to_dxgi(glslang_format fmt);
 
 RETRO_END_DECLS
-
-#if 1
-#include "../../performance_counters.h"
-
-#ifndef PERF_START
-#define PERF_START() \
-   { \
-   static struct retro_perf_counter perfcounter = { __FUNCTION__ }; \
-   LARGE_INTEGER                    start, stop; \
-   rarch_perf_register(&perfcounter); \
-   perfcounter.call_cnt++; \
-   QueryPerformanceCounter(&start)
-
-#define PERF_STOP() \
-   QueryPerformanceCounter(&stop); \
-   perfcounter.total += stop.QuadPart - start.QuadPart; \
-   }
-#endif
-#else
-#define PERF_START()
-#define PERF_STOP()
-#endif

@@ -787,10 +787,12 @@ static INLINE int android_input_poll_event_type_motion(
    }
    else
    {
-      int pointer_max = MIN(AMotionEvent_getPointerCount(event), MAX_TOUCH);
-      settings_t *settings = config_get_ptr();
+      int      pointer_max     = MIN(
+            AMotionEvent_getPointerCount(event), MAX_TOUCH);
+      settings_t *settings     = config_get_ptr();
+      bool vibrate_on_keypress = settings ? settings->bools.vibrate_on_keypress : false;
 
-      if (settings && settings->bools.vibrate_on_keypress && action != AMOTION_EVENT_ACTION_MOVE)
+      if (vibrate_on_keypress && action != AMOTION_EVENT_ACTION_MOVE)
          android_app_write_cmd(g_android, APP_CMD_VIBRATE_KEYPRESS);
 
       if (action == AMOTION_EVENT_ACTION_DOWN && ENABLE_TOUCH_SCREEN_MOUSE)
@@ -1396,10 +1398,10 @@ static bool android_input_key_pressed(android_input_t *android, int key)
  */
 static void android_input_poll(void *data)
 {
-   settings_t *settings = config_get_ptr();
    int ident;
    struct android_app *android_app = (struct android_app*)g_android;
    android_input_t *android        = (android_input_t*)data;
+   settings_t            *settings = config_get_ptr();
 
    while ((ident =
             ALooper_pollAll((input_config_binds[0][RARCH_PAUSE_TOGGLE].valid 
@@ -1464,7 +1466,7 @@ bool android_run_events(void *data)
 }
 
 static int16_t android_input_state(void *data,
-      rarch_joypad_info_t joypad_info,
+      rarch_joypad_info_t *joypad_info,
       const struct retro_keybind **binds, unsigned port, unsigned device,
       unsigned idx, unsigned id)
 {
@@ -1481,17 +1483,17 @@ static int16_t android_input_state(void *data,
             {
                /* Auto-binds are per joypad, not per user. */
                const uint64_t joykey  = (binds[port][i].joykey != NO_BTN)
-                  ? binds[port][i].joykey : joypad_info.auto_binds[i].joykey;
+                  ? binds[port][i].joykey : joypad_info->auto_binds[i].joykey;
                const uint32_t joyaxis = (binds[port][i].joyaxis != AXIS_NONE)
-                  ? binds[port][i].joyaxis : joypad_info.auto_binds[i].joyaxis;
+                  ? binds[port][i].joyaxis : joypad_info->auto_binds[i].joyaxis;
                if ((uint16_t)joykey != NO_BTN && android->joypad->button(
-                        joypad_info.joy_idx, (uint16_t)joykey))
+                        joypad_info->joy_idx, (uint16_t)joykey))
                {
                   ret |= (1 << i);
                   continue;
                }
                if (((float)abs(android->joypad->axis(
-                              joypad_info.joy_idx, joyaxis)) / 0x8000) > joypad_info.axis_threshold)
+                              joypad_info->joy_idx, joyaxis)) / 0x8000) > joypad_info->axis_threshold)
                {
                   ret |= (1 << i);
                   continue;
@@ -1505,14 +1507,14 @@ static int16_t android_input_state(void *data,
          {
             /* Auto-binds are per joypad, not per user. */
             const uint64_t joykey  = (binds[port][id].joykey != NO_BTN)
-               ? binds[port][id].joykey : joypad_info.auto_binds[id].joykey;
+               ? binds[port][id].joykey : joypad_info->auto_binds[id].joykey;
             const uint32_t joyaxis = (binds[port][id].joyaxis != AXIS_NONE)
-               ? binds[port][id].joyaxis : joypad_info.auto_binds[id].joyaxis;
+               ? binds[port][id].joyaxis : joypad_info->auto_binds[id].joyaxis;
             if ((uint16_t)joykey != NO_BTN && android->joypad->button(
-                     joypad_info.joy_idx, (uint16_t)joykey))
+                     joypad_info->joy_idx, (uint16_t)joykey))
                return true;
             if (((float)abs(android->joypad->axis(
-                           joypad_info.joy_idx, joyaxis)) / 0x8000) > joypad_info.axis_threshold)
+                           joypad_info->joy_idx, joyaxis)) / 0x8000) > joypad_info->axis_threshold)
                return true;
             if (android_keyboard_port_input_pressed(binds[port], id))
                return true;
@@ -1742,12 +1744,13 @@ static void android_input_set_rumble_internal(
 static bool android_input_set_rumble(void *data, unsigned port,
       enum retro_rumble_effect effect, uint16_t strength)
 {
-   settings_t *settings = config_get_ptr();
+   settings_t *settings         = config_get_ptr();
+   bool enable_device_vibration = settings->bools.enable_device_vibration;
 
    if (!g_android || !g_android->doVibrate)
       return false;
 
-   if (settings->bools.enable_device_vibration)
+   if (enable_device_vibration)
    {
       static uint16_t last_strength_strong = 0;
       static uint16_t last_strength_weak   = 0;

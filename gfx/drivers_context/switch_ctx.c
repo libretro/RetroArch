@@ -28,7 +28,6 @@
 #include "../../frontend/frontend_driver.h"
 
 static enum gfx_ctx_api ctx_nx_api = GFX_CTX_OPENGL_API;
-switch_ctx_data_t *nx_ctx_ptr = NULL;
 
 extern bool platform_switch_has_focus;
 
@@ -47,10 +46,8 @@ void switch_ctx_destroy(void *data)
 }
 
 static void switch_ctx_get_video_size(void *data,
-                                      unsigned *width, unsigned *height)
+      unsigned *width, unsigned *height)
 {
-   switch_ctx_data_t *ctx_nx = (switch_ctx_data_t *)data;
-
    switch (appletGetOperationMode())
       {
          default:
@@ -65,7 +62,7 @@ static void switch_ctx_get_video_size(void *data,
       }
 }
 
-static void *switch_ctx_init(video_frame_info_t *video_info, void *video_driver)
+static void *switch_ctx_init(void *video_driver)
 {
 #ifdef HAVE_EGL
     EGLint n;
@@ -82,8 +79,6 @@ static void *switch_ctx_init(video_frame_info_t *video_info, void *video_driver)
 
     if (!ctx_nx)
         return NULL;
-
-    nx_ctx_ptr = ctx_nx;
 
     /* Comment below to enable error checking */
     setenv("MESA_NO_ERROR", "1", 1);
@@ -122,7 +117,7 @@ error:
 }
 
 static void switch_ctx_check_window(void *data, bool *quit,
-                                    bool *resize, unsigned *width, unsigned *height, bool is_shutdown)
+      bool *resize, unsigned *width, unsigned *height)
 {
     unsigned new_width, new_height;
 
@@ -150,9 +145,8 @@ static void switch_ctx_check_window(void *data, bool *quit,
 }
 
 static bool switch_ctx_set_video_mode(void *data,
-                                      video_frame_info_t *video_info,
-                                      unsigned width, unsigned height,
-                                      bool fullscreen)
+      unsigned width, unsigned height,
+      bool fullscreen)
 {
     /* Create an EGL rendering context */
     static const EGLint contextAttributeList[] =
@@ -242,9 +236,9 @@ static void switch_ctx_set_swap_interval(void *data,
 #endif
 }
 
-static void switch_ctx_swap_buffers(void *data, void *data2)
+static void switch_ctx_swap_buffers(void *data)
 {
-    switch_ctx_data_t *ctx_nx = (switch_ctx_data_t *)data;
+    switch_ctx_data_t *ctx_nx = (switch_ctx_data_t*)data;
 
 #ifdef HAVE_EGL
     egl_swap_buffers(&ctx_nx->egl);
@@ -305,7 +299,42 @@ bool switch_ctx_get_metrics(void *data,
    switch (type)
    {
       case DISPLAY_METRIC_DPI:
-         *value = 236.87; /* FIXME: Don't hardcode this value */
+         /* FIXME: DPI values should be obtained by querying
+          * the hardware - these hard-coded values are a kludge */
+         switch (appletGetOperationMode())
+         {
+            case AppletOperationMode_Docked:
+               /* Docked mode
+                * > Resolution:  1920x1080
+                * > Screen Size: 39 inch
+                *   - Have to make an assumption here. We select
+                *     a 'default' screen size of 39 inches which
+                *     corresponds to the optimal diagonal screen
+                *     size for HD television as reported in:
+                *       "HDTV displays: subjective effects of scanning
+                *       standards and domestic picture sizes,"
+                *       N. E. Tanton and M. A. Stone,
+                *       BBC Research Department Report 1989/09,
+                *       January 1989
+                *     This agrees with the median recorded TV
+                *     size in:
+                *       "A Survey of UK Television Viewing Conditions,"
+                *       Katy C. Noland and Louise H. Truong,
+                *       BBC R&D White Paper WHP 287 January 2015
+                * > DPI:         sqrt((1920 * 1920) + (1080 * 1080)) / 39
+                */
+               *value = 56.48480f;
+               break;
+            case AppletOperationMode_Handheld:
+            default:
+               /* Handheld mode
+                * > Resolution:  1280x720
+                * > Screen size: 6.2 inch
+                * > DPI:         sqrt((1280 * 1280) + (720 * 720)) / 6.2
+                */
+               *value = 236.8717f;
+               break;
+         }
          return true;
       default:
          break;

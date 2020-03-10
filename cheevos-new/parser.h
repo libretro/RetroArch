@@ -42,11 +42,14 @@ typedef struct {
 } rcheevos_ralboard_t;
 
 typedef struct {
+   unsigned game_id;
    unsigned console_id;
+   char* title;
 
    rcheevos_racheevo_t* core;
    rcheevos_racheevo_t* unofficial;
    rcheevos_ralboard_t* lboards;
+   char* richpresence_script;
 
    unsigned core_count;
    unsigned unofficial_count;
@@ -55,6 +58,7 @@ typedef struct {
 
 typedef void (*rcheevos_unlock_cb_t)(unsigned id, void* userdata);
 
+int rcheevos_get_json_error(const char* json, char* token, size_t length);
 int rcheevos_get_token(const char* json, char* token, size_t length);
 
 int  rcheevos_get_patchdata(const char* json, rcheevos_rapatchdata_t* patchdata);

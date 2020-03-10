@@ -22,6 +22,8 @@
 
 #include "../font_driver.h"
 
+#include "../../configuration.h"
+
 typedef struct
 {
    vk_t *vk;
@@ -333,25 +335,34 @@ static void vulkan_raster_font_flush(vulkan_raster_t *font)
 }
 
 static void vulkan_raster_font_render_msg(
-      video_frame_info_t *video_info,
-      void *data, const char *msg,
+      void *userdata,
+      void *data,
+      const char *msg,
       const struct font_params *params)
 {
    float color[4], color_dark[4];
    int drop_x, drop_y;
    bool full_screen;
    unsigned max_glyphs;
+   unsigned width, height;
    enum text_alignment text_align;
    float x, y, scale, drop_mod, drop_alpha;
    vk_t *vk                         = NULL;
    vulkan_raster_t *font            = (vulkan_raster_t*)data;
-   unsigned width                   = video_info->width;
-   unsigned height                  = video_info->height;
+   settings_t *settings             = config_get_ptr();
+   float video_msg_pos_x            = settings->floats.video_msg_pos_x;
+   float video_msg_pos_y            = settings->floats.video_msg_pos_y;
+   float video_msg_color_r          = settings->floats.video_msg_color_r;
+   float video_msg_color_g          = settings->floats.video_msg_color_g;
+   float video_msg_color_b          = settings->floats.video_msg_color_b;
 
    if (!font || !msg || !*msg)
       return;
 
    vk             = font->vk;
+
+   width          = vk->video_width;
+   height         = vk->video_height;
 
    if (params)
    {
@@ -376,8 +387,8 @@ static void vulkan_raster_font_render_msg(
    }
    else
    {
-      x           = video_info->font_msg_pos_x;
-      y           = video_info->font_msg_pos_y;
+      x           = video_msg_pos_x;
+      y           = video_msg_pos_y;
       scale       = 1.0f;
       full_screen = true;
       text_align  = TEXT_ALIGN_LEFT;
@@ -386,9 +397,9 @@ static void vulkan_raster_font_render_msg(
       drop_mod    = 0.3f;
       drop_alpha  = 1.0f;
 
-      color[0]    = video_info->font_msg_color_r;
-      color[1]    = video_info->font_msg_color_g;
-      color[2]    = video_info->font_msg_color_b;
+      color[0]    = video_msg_color_r;
+      color[1]    = video_msg_color_g;
+      color[2]    = video_msg_color_b;
       color[3]    = 1.0f;
    }
 

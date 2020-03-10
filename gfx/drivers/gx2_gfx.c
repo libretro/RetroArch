@@ -33,9 +33,9 @@
 
 #ifdef HAVE_MENU
 #include "../../menu/menu_driver.h"
-#ifdef HAVE_MENU_WIDGETS
-#include "../../menu/widgets/menu_widgets.h"
 #endif
+#ifdef HAVE_GFX_WIDGETS
+#include "../gfx_widgets.h"
 #endif
 
 #include "gfx/common/gx2_common.h"
@@ -63,11 +63,12 @@ static const wiiu_render_mode_t wiiu_render_mode_map[] =
 };
 
 static bool wiiu_gfx_set_shader(void *data,
-                                enum rarch_shader_type type, const char *path);
+      enum rarch_shader_type type, const char *path);
 
-static void wiiu_set_tex_coords(frame_vertex_t *v, GX2Texture *texture, float u0, float v0,
-                                float u1, float v1,
-                                unsigned rotation)
+static void wiiu_set_tex_coords(frame_vertex_t *v,
+      GX2Texture *texture, float u0, float v0,
+      float u1, float v1,
+      unsigned rotation)
 {
    v[0].coord.u = u0 / texture->surface.width;
    v[0].coord.v = v0 / texture->surface.height;
@@ -91,14 +92,16 @@ static void wiiu_set_projection(wiiu_video_t *wiiu)
 
 static void wiiu_gfx_update_viewport(wiiu_video_t *wiiu)
 {
-   int x                    = 0;
-   int y                    = 0;
-   unsigned viewport_width  = wiiu->color_buffer.surface.width;
-   unsigned viewport_height = wiiu->color_buffer.surface.height;
-   float device_aspect      = (float)viewport_width / viewport_height;
-   settings_t *settings     = config_get_ptr();
+   int x                           = 0;
+   int y                           = 0;
+   unsigned viewport_width         = wiiu->color_buffer.surface.width;
+   unsigned viewport_height        = wiiu->color_buffer.surface.height;
+   float device_aspect             = (float)viewport_width / viewport_height;
+   settings_t *settings            = config_get_ptr();
+   bool video_scale_integer        = settings->bools.video_scale_integer;
+   unsigned video_aspect_ratio_idx = settings->uints.video_aspect_ratio_idx;
 
-   if (settings->bools.video_scale_integer)
+   if (video_scale_integer)
    {
       video_viewport_get_scaled_integer(&wiiu->vp,
             viewport_width, viewport_height,
@@ -111,8 +114,7 @@ static void wiiu_gfx_update_viewport(wiiu_video_t *wiiu)
       float desired_aspect = video_driver_get_aspect_ratio();
 
 #if defined(HAVE_MENU)
-
-      if (settings->uints.video_aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
+      if (video_aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
       {
          const struct video_viewport *custom = video_viewport_get_custom();
 
@@ -183,12 +185,13 @@ static void *wiiu_gfx_init(const video_info_t *video,
       input_driver_t **input, void **input_data)
 {
    unsigned i;
-   settings_t *settings = config_get_ptr();
-   float refresh_rate = 60.0f / 1.001f;
-   u32 size           = 0;
-   u32 tmp            = 0;
-   void *wiiuinput    = NULL;
-   wiiu_video_t *wiiu = calloc(1, sizeof(*wiiu));
+   float refresh_rate              = 60.0f / 1.001f;
+   u32 size                        = 0;
+   u32 tmp                         = 0;
+   void *wiiuinput                 = NULL;
+   wiiu_video_t *wiiu              = (wiiu_video_t*)calloc(1, sizeof(*wiiu));
+   settings_t *settings            = config_get_ptr();
+   const char *input_joypad_driver = settings->arrays.input_joypad_driver;
 
    if (!wiiu)
       return NULL;
@@ -198,7 +201,7 @@ static void *wiiu_gfx_init(const video_info_t *video,
 
    if (input && input_data)
    {
-      wiiuinput            = input_wiiu.init(settings->arrays.input_joypad_driver);
+      wiiuinput            = input_wiiu.init(input_joypad_driver);
       *input               = wiiuinput ? &input_wiiu : NULL;
       *input_data          = wiiuinput;
    }
@@ -446,9 +449,11 @@ static void *wiiu_gfx_init(const video_info_t *video,
 
    driver_ctl(RARCH_DRIVER_CTL_SET_REFRESH_RATE, &refresh_rate);
 
-   font_driver_init_osd(wiiu, false,
-                        video->is_threaded,
-                        FONT_DRIVER_RENDER_WIIU);
+   font_driver_init_osd(wiiu,
+         video,
+         false,
+         video->is_threaded,
+         FONT_DRIVER_RENDER_WIIU);
 
    {
       enum rarch_shader_type type;
@@ -1338,19 +1343,17 @@ static bool wiiu_gfx_frame(void *data, const void *frame,
          &video_info->osd_stat_params;
 
       if (osd_params)
-         font_driver_render_msg(wiiu, video_info, video_info->stat_text,
+         font_driver_render_msg(wiiu, video_info->stat_text,
                (const struct font_params*)&video_info->osd_stat_params, NULL);
    }
 
-#ifdef HAVE_MENU
-#ifdef HAVE_MENU_WIDGETS
+#ifdef HAVE_GFX_WIDGETS
    if (video_info->widgets_inited)
-      menu_widgets_frame(video_info);
-#endif
+      gfx_widgets_frame(video_info);
 #endif
 
    if (msg)
-      font_driver_render_msg(wiiu, video_info, msg, NULL, NULL);
+      font_driver_render_msg(wiiu, msg, NULL, NULL);
 
    wiiu->render_msg_enabled = false;
 
@@ -1371,7 +1374,8 @@ static bool wiiu_gfx_frame(void *data, const void *frame,
    return true;
 }
 
-static void wiiu_gfx_set_nonblock_state(void *data, bool toggle)
+static void wiiu_gfx_set_nonblock_state(void *data, bool toggle,
+      bool adaptive_vsync_enabled, unsigned swap_interval)
 {
    wiiu_video_t *wiiu = (wiiu_video_t *) data;
 
@@ -1672,20 +1676,16 @@ static void wiiu_gfx_set_texture_enable(void *data, bool state, bool full_screen
 }
 
 static void wiiu_gfx_set_osd_msg(void *data,
-                                 video_frame_info_t *video_info,
-                                 const char *msg,
-                                 const void *params, void *font)
+      const char *msg,
+      const void *params, void *font)
 {
    wiiu_video_t *wiiu = (wiiu_video_t *)data;
 
    if (wiiu)
    {
       if (wiiu->render_msg_enabled)
-         font_driver_render_msg(wiiu, video_info, msg, params, font);
-      else
-         printf("OSD msg: %s\n", msg);
+         font_driver_render_msg(wiiu, msg, params, font);
    }
-
 }
 
 static uint32_t wiiu_gfx_get_flags(void *data)
@@ -1731,8 +1731,8 @@ static void wiiu_gfx_get_poke_interface(void *data,
    *iface = &wiiu_poke_interface;
 }
 
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-static bool wiiu_menu_widgets_enabled(void *data)
+#ifdef HAVE_GFX_WIDGETS
+static bool wiiu_gfx_widgets_enabled(void *data)
 {
    (void)data;
    return true;
@@ -1764,7 +1764,7 @@ video_driver_t video_wiiu =
 #endif
    wiiu_gfx_get_poke_interface,
    NULL, /* wrap_type_to_enum */
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-   wiiu_menu_widgets_enabled
+#ifdef HAVE_GFX_WIDGETS
+   wiiu_gfx_widgets_enabled
 #endif
 };

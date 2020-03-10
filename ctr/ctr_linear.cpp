@@ -88,7 +88,9 @@ struct MemPool
 		last = nullptr;
 	}
 
-	//void Dump(const char* title);
+#if 0
+	void Dump(const char* title);
+#endif
 	u32 GetFreeSpace();
 };
 
@@ -159,25 +161,25 @@ static bool linearInit(void)
 
 void* linearMemAlign(size_t size, size_t alignment)
 {
-	// Enforce minimum alignment
+	int shift;
+	/* Enforce minimum alignment */
 	if (alignment < 16)
 		alignment = 16;
 
-	// Convert alignment to shift amount
-	int shift;
+	/* Convert alignment to shift amount */
 	for (shift = 4; shift < 32; shift ++)
 	{
 		if ((1U<<shift) == alignment)
 			break;
 	}
-	if (shift == 32) // Invalid alignment
+	if (shift == 32) /* Invalid alignment */
 		return nullptr;
 
-	// Initialize the pool if it is not ready
+	/* Initialize the pool if it is not ready */
 	if (!sLinearPool.Ready() && !linearInit())
 		return nullptr;
 
-	// Allocate the chunk
+	/* Allocate the chunk */
 	MemChunk chunk;
 	if (!sLinearPool.Allocate(chunk, size, shift))
 		return nullptr;
@@ -211,23 +213,24 @@ void* linearAlloc(size_t size)
 
 void* linearRealloc(void* mem, size_t size)
 {
-	// TODO
+	/* TODO */
 	return NULL;
 }
 
 void linearFree(void* mem)
 {
 	auto node = getNode(mem);
-	if (!node) return;
+	if (!node)
+      return;
 
-	// Free the chunk
+	/* Free the chunk */
 	sLinearPool.Deallocate(node->chunk);
 
-	// Free the node
+	/* Free the node */
 	delNode(node);
 }
 
-u32 linearSpaceFree()
+u32 linearSpaceFree(void)
 {
 	return sLinearPool.GetFreeSpace();
 }

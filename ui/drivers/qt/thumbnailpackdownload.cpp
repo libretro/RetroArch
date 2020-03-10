@@ -225,16 +225,19 @@ void MainWindow::onThumbnailPackDownloadReadyRead()
 void MainWindow::downloadAllThumbnails(QString system, QUrl url)
 {
    QString urlString;
-   QNetworkReply *reply = NULL;
    QNetworkRequest request;
    QByteArray urlArray;
+   QNetworkReply *reply = NULL;
    settings_t *settings = config_get_ptr();
-   const char *urlData = NULL;
+   const char *urlData  = NULL;
 
    if (!settings)
       return;
 
-   urlString = QString(THUMBNAILPACK_URL_HEADER) + system + THUMBNAILPACK_EXTENSION;
+   urlString = 
+      QString(THUMBNAILPACK_URL_HEADER) 
+      + system 
+      + THUMBNAILPACK_EXTENSION;
 
    if (url.isEmpty())
       url = urlString;
@@ -242,7 +245,7 @@ void MainWindow::downloadAllThumbnails(QString system, QUrl url)
    request.setUrl(url);
 
    urlArray = url.toString().toUtf8();
-   urlData = urlArray.constData();
+   urlData  = urlArray.constData();
 
    if (m_thumbnailPackDownloadFile.isOpen())
    {
@@ -251,11 +254,17 @@ void MainWindow::downloadAllThumbnails(QString system, QUrl url)
    }
    else
    {
-      QString dirString = QString(settings->paths.directory_thumbnails);
-      QString fileName = dirString + "/" + system + THUMBNAILPACK_EXTENSION + PARTIAL_EXTENSION;
       QDir dir;
-      QByteArray fileNameArray = fileName.toUtf8();
-      const char *fileNameData = fileNameArray.constData();
+      const char *path_dir_thumbnails = settings->paths.directory_thumbnails;
+      QString dirString               = QString(path_dir_thumbnails);
+      QString fileName                = 
+         dirString 
+         + "/" 
+         + system 
+         + THUMBNAILPACK_EXTENSION 
+         + PARTIAL_EXTENSION;
+      QByteArray fileNameArray        = fileName.toUtf8();
+      const char *fileNameData        = fileNameArray.constData();
 
       dir.mkpath(dirString);
 
@@ -321,6 +330,7 @@ void MainWindow::onThumbnailPackExtractFinished(bool success)
    m_playlistModel->reloadSystemThumbnails(reply->property("system").toString());
    reply->deleteLater();
    updateVisibleItems();
-   /* reload thumbnail image */
+
+   /* Reload thumbnail image */
    emit itemChanged();
 }

@@ -47,26 +47,30 @@
 typedef struct
 {
    bool should_resize;
-   float mScreenAspect;
    bool keep_aspect;
    bool mEglImageBuf;
+   bool mFontsOn;
+
+   float mScreenAspect;
+
    unsigned mTextureWidth;
    unsigned mTextureHeight;
    unsigned mRenderWidth;
    unsigned mRenderHeight;
    unsigned x1, y1, x2, y2;
+   uint32_t mFontHeight;
+
+   char *mLastMsg;
+
+   VGint scissor[4];
    VGImageFormat mTexType;
    VGImage mImage;
    math_matrix_3x3 mTransformMatrix;
-   VGint scissor[4];
    EGLImageKHR last_egl_image;
 
-   char *mLastMsg;
-   uint32_t mFontHeight;
    VGFont mFont;
    void *mFontRenderer;
    const font_renderer_driver_t *font_driver;
-   bool mFontsOn;
    VGuint mMsgLength;
    VGuint mGlyphIndices[1024];
    VGPaint mPaintFg;
@@ -77,16 +81,14 @@ typedef struct
 
 static PFNVGCREATEEGLIMAGETARGETKHRPROC pvgCreateEGLImageTargetKHR;
 
-static void vg_set_nonblock_state(void *data, bool state)
+static void vg_set_nonblock_state(void *data, bool state,
+      bool adaptive_vsync_enabled, unsigned swap_interval)
 {
    vg_t *vg     = (vg_t*)data;
    int interval = state ? 0 : 1;
 
    if (vg->ctx_driver && vg->ctx_driver->swap_interval)
    {
-      settings_t *settings                   = config_get_ptr();
-      bool adaptive_vsync_enabled            = video_driver_test_all_flags(
-            GFX_CTX_FLAGS_ADAPTIVE_VSYNC) && settings->bools.video_adaptive_vsync;
       if (adaptive_vsync_enabled && interval == 1)
          interval = -1;
       vg->ctx_driver->swap_interval(vg->ctx_data, interval);
@@ -116,6 +118,11 @@ static void *vg_init(const video_info_t *video,
    unsigned temp_height            = 0;
    void *ctx_data                  = NULL;
    settings_t        *settings     = config_get_ptr();
+   const char *path_font           = settings->paths.path_font;
+   float video_font_size           = settings->floats.video_font_size;
+   float video_msg_color_r         = settings->floats.video_msg_color_r;
+   float video_msg_color_g         = settings->floats.video_msg_color_g;
+   float video_msg_color_b         = settings->floats.video_msg_color_b;
    vg_t                    *vg     = (vg_t*)calloc(1, sizeof(vg_t));
    const gfx_ctx_driver_t *ctx     = video_context_driver_init_first(
          vg, settings->arrays.video_context_driver,
@@ -176,23 +183,24 @@ static void *vg_init(const video_info_t *video,
 
    video_driver_get_size(&temp_width, &temp_height);
 
-   temp_width  = 0;
-   temp_height = 0;
-   mode.width  = 0;
-   mode.height = 0;
+   temp_width        = 0;
+   temp_height       = 0;
+   mode.width        = 0;
+   mode.height       = 0;
 
    video_context_driver_get_video_size(&mode);
 
-   temp_width  = mode.width;
-   temp_height = mode.height;
-   mode.width  = 0;
-   mode.height = 0;
+   temp_width        = mode.width;
+   temp_height       = mode.height;
+   mode.width        = 0;
+   mode.height       = 0;
 
    vg->should_resize = true;
 
    if (temp_width != 0 && temp_height != 0)
    {
-      RARCH_LOG("[VG]: Verified window resolution %ux%u.\n", temp_width, temp_height);
+      RARCH_LOG("[VG]: Verified window resolution %ux%u.\n",
+            temp_width, temp_height);
       video_driver_set_size(temp_width, temp_height);
    }
 
@@ -209,8 +217,13 @@ static void *vg_init(const video_info_t *video,
    vgSetfv(VG_CLEAR_COLOR, 4, clearColor);
 
    vg->mTextureWidth = vg->mTextureHeight = video->input_scale * RARCH_SCALE_BASE;
-   vg->mImage = vgCreateImage(vg->mTexType, vg->mTextureWidth, vg->mTextureHeight,
-         video->smooth ? VG_IMAGE_QUALITY_BETTER : VG_IMAGE_QUALITY_NONANTIALIASED);
+   vg->mImage        = vgCreateImage(
+         vg->mTexType,
+         vg->mTextureWidth,
+         vg->mTextureHeight,
+         video->smooth 
+         ? VG_IMAGE_QUALITY_BETTER 
+         : VG_IMAGE_QUALITY_NONANTIALIASED);
    vg_set_nonblock_state(vg, !video->vsync);
 
    inp.input      = input;
@@ -221,7 +234,8 @@ static void *vg_init(const video_info_t *video,
    if (     video->font_enable
          && font_renderer_create_default(
             &vg->font_driver, &vg->mFontRenderer,
-            *settings->paths.path_font ? settings->paths.path_font : NULL, settings->floats.video_font_size))
+            *path_font ? path_font : NULL,
+            video_font_size))
    {
       vg->mFont            = vgCreateFont(0);
 
@@ -231,19 +245,19 @@ static void *vg_init(const video_info_t *video,
          VGfloat paintBg[4];
 
          vg->mFontsOn      = true;
-         vg->mFontHeight   = settings->floats.video_font_size;
+         vg->mFontHeight   = video_font_size;
          vg->mPaintFg      = vgCreatePaint();
          vg->mPaintBg      = vgCreatePaint();
 
-         paintFg[0] = settings->floats.video_msg_color_r;
-         paintFg[1] = settings->floats.video_msg_color_g;
-         paintFg[2] = settings->floats.video_msg_color_b;
-         paintFg[3] = 1.0f;
+         paintFg[0]        = video_msg_color_r;
+         paintFg[1]        = video_msg_color_g;
+         paintFg[2]        = video_msg_color_b;
+         paintFg[3]        = 1.0f;
 
-         paintBg[0] = settings->floats.video_msg_color_r / 2.0f;
-         paintBg[1] = settings->floats.video_msg_color_g / 2.0f;
-         paintBg[2] = settings->floats.video_msg_color_b / 2.0f;
-         paintBg[3] = 0.5f;
+         paintBg[0]        = video_msg_color_r / 2.0f;
+         paintBg[1]        = video_msg_color_g / 2.0f;
+         paintBg[2]        = video_msg_color_b / 2.0f;
+         paintBg[3]        = 0.5f;
 
          vgSetParameteri(vg->mPaintFg, VG_PAINT_TYPE, VG_PAINT_TYPE_COLOR);
          vgSetParameterfv(vg->mPaintFg, VG_PAINT_COLOR, 4, paintFg);
@@ -443,9 +457,8 @@ static bool vg_frame(void *data, const void *frame,
 #endif
 
    video_info->cb_update_window_title(
-         video_info->context_data, video_info);
-   video_info->cb_swap_buffers(
-         video_info->context_data, video_info);
+         video_info->context_data);
+   video_info->cb_swap_buffers(video_info->context_data);
 
    return true;
 }
@@ -457,10 +470,9 @@ static bool vg_alive(void *data)
    unsigned temp_width  = 0;
    unsigned temp_height = 0;
    vg_t            *vg  = (vg_t*)data;
-   bool is_shutdown     = rarch_ctl(RARCH_CTL_IS_SHUTDOWN, NULL);
 
    vg->ctx_driver->check_window(vg->ctx_data,
-            &quit, &resize, &temp_width, &temp_height, is_shutdown);
+            &quit, &resize, &temp_width, &temp_height);
 
    if (temp_width != 0 && temp_height != 0)
       video_driver_set_size(temp_width, temp_height);

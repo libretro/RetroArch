@@ -153,10 +153,8 @@ void d3d10_update_texture(
          &mapped_texture);
 
 #if 0
-   PERF_START();
    conv_rgb565_argb8888(mapped_texture.pData, data, width, height,
          mapped_texture.RowPitch, pitch);
-   PERF_STOP();
 #else
    dxgi_copy(
          width, height, format, pitch, data, texture->desc.Format,

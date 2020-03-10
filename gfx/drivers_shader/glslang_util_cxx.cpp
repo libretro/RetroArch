@@ -32,7 +32,7 @@
 #include "glslang_util.h"
 #include "glslang_util_cxx.h"
 #if defined(HAVE_GLSLANG)
-#include <glslang.hpp>
+#include "glslang.hpp"
 #endif
 #include "../../verbosity.h"
 
@@ -73,11 +73,12 @@ static std::string build_stage_source(
             strlcpy(expected, "#pragma stage ", sizeof(expected));
             strlcat(expected, stage,            sizeof(expected));
 
-            active = strcmp(expected, line) == 0;
+            active = string_is_equal(expected, line);
          }
       }
-      else if (!strncmp("#pragma name ", line, STRLEN_CONST("#pragma name ")) ||
-               !strncmp("#pragma format ", line, STRLEN_CONST("#pragma format ")))
+      else if (
+            !strncmp("#pragma name ", line, STRLEN_CONST("#pragma name ")) ||
+            !strncmp("#pragma format ", line, STRLEN_CONST("#pragma format ")))
       {
          /* Ignore */
       }
@@ -104,7 +105,8 @@ bool glslang_parse_meta(const struct string_list *lines, glslang_meta *meta)
       const char *line = lines->elems[i].data;
 
       /* Check for shader identifier */
-      if (!strncmp("#pragma name ", line, STRLEN_CONST("#pragma name ")))
+      if (!strncmp("#pragma name ", line,
+               STRLEN_CONST("#pragma name ")))
       {
          const char *str = NULL;
 
@@ -121,7 +123,8 @@ bool glslang_parse_meta(const struct string_list *lines, glslang_meta *meta)
          meta->name = str;
       }
       /* Check for shader parameters */
-      else if (!strncmp("#pragma parameter ", line, STRLEN_CONST("#pragma parameter ")))
+      else if (!strncmp("#pragma parameter ", line,
+               STRLEN_CONST("#pragma parameter ")))
       {
          float initial, minimum, maximum, step;
          int ret = sscanf(
@@ -175,12 +178,14 @@ bool glslang_parse_meta(const struct string_list *lines, glslang_meta *meta)
          }
          else
          {
-            RARCH_ERR("[slang]: Invalid #pragma parameter line: \"%s\".\n", line);
+            RARCH_ERR("[slang]: Invalid #pragma parameter line: \"%s\".\n",
+                  line);
             return false;
          }
       }
       /* Check for framebuffer format */
-      else if (!strncmp("#pragma format ", line, STRLEN_CONST("#pragma format ")))
+      else if (!strncmp("#pragma format ", line,
+               STRLEN_CONST("#pragma format ")))
       {
          const char *str = NULL;
 
@@ -223,14 +228,14 @@ bool glslang_compile_shader(const char *shader_path, glslang_output *output)
    if (!glslang_parse_meta(lines, &output->meta))
       goto error;
 
-   if (    !glslang::compile_spirv(build_stage_source(lines, "vertex"),
+   if (!glslang::compile_spirv(build_stage_source(lines, "vertex"),
             glslang::StageVertex, &output->vertex))
    {
       RARCH_ERR("Failed to compile vertex shader stage.\n");
       goto error;
    }
 
-   if (    !glslang::compile_spirv(build_stage_source(lines, "fragment"),
+   if (!glslang::compile_spirv(build_stage_source(lines, "fragment"),
             glslang::StageFragment, &output->fragment))
    {
       RARCH_ERR("Failed to compile fragment shader stage.\n");
@@ -242,9 +247,7 @@ bool glslang_compile_shader(const char *shader_path, glslang_output *output)
    return true;
 
 error:
-
-   if (lines)
-      string_list_free(lines);
+   string_list_free(lines);
 #endif
 
    return false;

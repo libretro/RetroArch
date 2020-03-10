@@ -79,24 +79,24 @@ static int sixel_write(char *data, int size, void *priv)
 static SIXELSTATUS output_sixel(unsigned char *pixbuf, int width, int height,
       int ncolors, int pixelformat)
 {
-   sixel_output_t *context;
-   sixel_dither_t *dither;
-   SIXELSTATUS status;
-
-   context = sixel_output_create(sixel_write, stdout);
-   dither = sixel_dither_create(ncolors);
-   status = sixel_dither_initialize(dither, pixbuf,
+   sixel_output_t *context = sixel_output_create(sixel_write, stdout);
+   sixel_dither_t *dither  = sixel_dither_create(ncolors);
+   SIXELSTATUS      status = sixel_dither_initialize(dither, pixbuf,
          width, height,
          pixelformat,
          SIXEL_LARGE_AUTO,
          SIXEL_REP_AUTO,
          SIXEL_QUALITY_AUTO);
+
    if (SIXEL_FAILED(status))
       return status;
+
    status = sixel_encode(pixbuf, width, height,
          pixelformat, dither, context);
+
    if (SIXEL_FAILED(status))
       return status;
+
    sixel_output_unref(context);
    sixel_dither_unref(dither);
 
@@ -104,7 +104,7 @@ static SIXELSTATUS output_sixel(unsigned char *pixbuf, int width, int height,
 }
 
 #ifdef HAVE_SYS_IOCTL_H
-# ifdef HAVE_TERMIOS_H
+#ifdef HAVE_TERMIOS_H
 static int wait_stdin(int usec)
 {
 #ifdef HAVE_SYS_SELECT_H
@@ -114,7 +114,7 @@ static int wait_stdin(int usec)
    int ret = 0;
 
 #ifdef HAVE_SYS_SELECT_H
-   tv.tv_sec = usec / 1000000;
+   tv.tv_sec  = usec / 1000000;
    tv.tv_usec = usec % 1000000;
    FD_ZERO(&rfds);
    FD_SET(STDIN_FILENO, &rfds);
@@ -125,7 +125,7 @@ static int wait_stdin(int usec)
 
    return ret;
 }
-# endif
+#endif
 #endif
 
 static void scroll_on_demand(int pixelheight)
@@ -149,7 +149,7 @@ static void scroll_on_demand(int pixelheight)
       printf("\033[H\0337");
       return;
    }
-# ifdef HAVE_TERMIOS_H
+#ifdef HAVE_TERMIOS_H
    /* set the terminal to cbreak mode */
    tcgetattr(STDIN_FILENO, &old_termios);
    memcpy(&new_termios, &old_termios, sizeof(old_termios));
@@ -178,9 +178,9 @@ static void scroll_on_demand(int pixelheight)
    }
 
    tcsetattr(STDIN_FILENO, TCSAFLUSH, &old_termios);
-# else
+#else
    printf("\033[H\0337");
-# endif  /* HAVE_TERMIOS_H */
+#endif  /* HAVE_TERMIOS_H */
 #else
    printf("\033[H\0337");
 #endif  /* HAVE_SYS_IOCTL_H */
@@ -192,6 +192,7 @@ static void *sixel_gfx_init(const video_info_t *video,
    gfx_ctx_input_t inp;
    void *ctx_data                       = NULL;
    settings_t *settings                 = config_get_ptr();
+   bool video_font_enable               = settings->bools.video_font_enable;
    sixel_t *sixel                       = (sixel_t*)calloc(1, sizeof(*sixel));
    const gfx_ctx_driver_t *ctx_driver   = NULL;
    const char *scale_str                = NULL;
@@ -238,8 +239,10 @@ static void *sixel_gfx_init(const video_info_t *video,
 
    video_context_driver_input_driver(&inp);
 
-   if (settings->bools.video_font_enable)
-      font_driver_init_osd(sixel, false,
+   if (video_font_enable)
+      font_driver_init_osd(sixel,
+            video,
+            false,
             video->is_threaded,
             FONT_DRIVER_RENDER_SIXEL);
 
@@ -422,16 +425,12 @@ static bool sixel_gfx_frame(void *data, const void *frame,
    }
 
    if (msg)
-      font_driver_render_msg(sixel, video_info, msg, NULL, NULL);
+      font_driver_render_msg(sixel, msg, NULL, NULL);
 
    return true;
 }
 
-static void sixel_gfx_set_nonblock_state(void *data, bool toggle)
-{
-   (void)data;
-   (void)toggle;
-}
+static void sixel_gfx_set_nonblock_state(void *a, bool b, bool c, unsigned d) { }
 
 static bool sixel_gfx_alive(void *data)
 {
@@ -440,14 +439,13 @@ static bool sixel_gfx_alive(void *data)
    unsigned temp_height = 0;
    bool quit            = false;
    bool resize          = false;
-   bool is_shutdown     = rarch_ctl(RARCH_CTL_IS_SHUTDOWN, NULL);
    sixel_t *sixel       = (sixel_t*)data;
 
    /* Needed because some context drivers don't track their sizes */
    video_driver_get_size(&temp_width, &temp_height);
 
    sixel->ctx_driver->check_window(sixel->ctx_data,
-            &quit, &resize, &temp_width, &temp_height, is_shutdown);
+            &quit, &resize, &temp_width, &temp_height);
 
    if (temp_width != 0 && temp_height != 0)
       video_driver_set_size(temp_width, temp_height);

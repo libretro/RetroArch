@@ -86,8 +86,6 @@ typedef struct output_info
    struct wl_list link; /* wl->all_outputs */
 } output_info_t;
 
-static int num_active_touches;
-static touch_pos_t active_touch_positions[MAX_TOUCHES];
 
 typedef struct gfx_ctx_wayland_data
 {
@@ -144,6 +142,8 @@ typedef struct gfx_ctx_wayland_data
 #ifdef HAVE_VULKAN
    gfx_ctx_vulkan_data_t vk;
 #endif
+   int num_active_touches;
+   touch_pos_t active_touch_positions[MAX_TOUCHES];
 } gfx_ctx_wayland_data_t;
 
 static enum gfx_ctx_api wl_api   = GFX_CTX_NONE;
@@ -406,49 +406,49 @@ static void touch_handle_down(void *data,
    int i;
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
 
-   if (num_active_touches < MAX_TOUCHES)
+   if (wl->num_active_touches < MAX_TOUCHES)
    {
       for (i = 0; i < MAX_TOUCHES; i++)
       {
          /* Use next empty slot */
-         if (!active_touch_positions[i].active)
+         if (!wl->active_touch_positions[i].active)
          {
-            active_touch_positions[num_active_touches].active = true;
-            active_touch_positions[num_active_touches].id     = id;
-            active_touch_positions[num_active_touches].x      = (unsigned)
+            wl->active_touch_positions[wl->num_active_touches].active = true;
+            wl->active_touch_positions[wl->num_active_touches].id     = id;
+            wl->active_touch_positions[wl->num_active_touches].x      = (unsigned)
                wl_fixed_to_int(x);
-            active_touch_positions[num_active_touches].y      = (unsigned)
+            wl->active_touch_positions[wl->num_active_touches].y      = (unsigned)
                wl_fixed_to_int(y);
-            num_active_touches++;
+            wl->num_active_touches++;
             break;
          }
       }
    }
 }
-static void reorder_touches(void)
+static void reorder_touches(gfx_ctx_wayland_data_t *wl)
 {
    int i, j;
-   if (num_active_touches == 0)
+   if (wl->num_active_touches == 0)
       return;
 
    for (i = 0; i < MAX_TOUCHES; i++)
    {
-      if (!active_touch_positions[i].active)
+      if (!wl->active_touch_positions[i].active)
       {
          for (j=i+1; j<MAX_TOUCHES; j++)
          {
-            if (active_touch_positions[j].active)
+            if (wl->active_touch_positions[j].active)
             {
-               active_touch_positions[i].active =
-                  active_touch_positions[j].active;
-               active_touch_positions[i].id     =
-                  active_touch_positions[j].id;
-               active_touch_positions[i].x      = active_touch_positions[j].x;
-               active_touch_positions[i].y      = active_touch_positions[j].y;
-               active_touch_positions[j].active = false;
-               active_touch_positions[j].id     = -1;
-               active_touch_positions[j].x      = (unsigned) 0;
-               active_touch_positions[j].y      = (unsigned) 0;
+               wl->active_touch_positions[i].active =
+                  wl->active_touch_positions[j].active;
+               wl->active_touch_positions[i].id     =
+                  wl->active_touch_positions[j].id;
+               wl->active_touch_positions[i].x      = wl->active_touch_positions[j].x;
+               wl->active_touch_positions[i].y      = wl->active_touch_positions[j].y;
+               wl->active_touch_positions[j].active = false;
+               wl->active_touch_positions[j].id     = -1;
+               wl->active_touch_positions[j].x      = (unsigned) 0;
+               wl->active_touch_positions[j].y      = (unsigned) 0;
                break;
             }
 
@@ -470,18 +470,19 @@ static void touch_handle_up(void *data,
 
    for (i = 0; i < MAX_TOUCHES; i++)
    {
-      if (  active_touch_positions[i].active &&
-            active_touch_positions[i].id == id)
+      if (  wl->active_touch_positions[i].active &&
+            wl->active_touch_positions[i].id == id)
       {
-         active_touch_positions[i].active = false;
-         active_touch_positions[i].id     = -1;
-         active_touch_positions[i].x      = (unsigned)0;
-         active_touch_positions[i].y      = (unsigned)0;
-         num_active_touches--;
+         wl->active_touch_positions[i].active = false;
+         wl->active_touch_positions[i].id     = -1;
+         wl->active_touch_positions[i].x      = (unsigned)0;
+         wl->active_touch_positions[i].y      = (unsigned)0;
+         wl->num_active_touches--;
       }
    }
-   reorder_touches();
+   reorder_touches(wl);
 }
+
 static void touch_handle_motion(void *data,
       struct wl_touch *wl_touch,
       uint32_t time,
@@ -494,11 +495,11 @@ static void touch_handle_motion(void *data,
 
    for (i = 0; i < MAX_TOUCHES; i++)
    {
-      if (  active_touch_positions[i].active &&
-            active_touch_positions[i].id == id)
+      if (  wl->active_touch_positions[i].active &&
+            wl->active_touch_positions[i].id == id)
       {
-         active_touch_positions[i].x = (unsigned) wl_fixed_to_int(x);
-         active_touch_positions[i].y = (unsigned) wl_fixed_to_int(y);
+         wl->active_touch_positions[i].x = (unsigned) wl_fixed_to_int(x);
+         wl->active_touch_positions[i].y = (unsigned) wl_fixed_to_int(y);
       }
    }
 }
@@ -517,12 +518,13 @@ static void touch_handle_cancel(void *data,
 
    for (i = 0; i < MAX_TOUCHES; i++)
    {
-      active_touch_positions[i].active = false;
-      active_touch_positions[i].id     = -1;
-      active_touch_positions[i].x      = (unsigned) 0;
-      active_touch_positions[i].y      = (unsigned) 0;
+      wl->active_touch_positions[i].active = false;
+      wl->active_touch_positions[i].id     = -1;
+      wl->active_touch_positions[i].x      = (unsigned) 0;
+      wl->active_touch_positions[i].y      = (unsigned) 0;
    }
-   num_active_touches = 0;
+
+   wl->num_active_touches = 0;
 }
 static const struct wl_touch_listener touch_listener = {
    touch_handle_down,
@@ -592,9 +594,9 @@ bool wayland_context_gettouchpos(void *data, unsigned id,
 
    if (id >= MAX_TOUCHES)
        return false;
-   *touch_x = active_touch_positions[id].x;
-   *touch_y = active_touch_positions[id].y;
-   return active_touch_positions[id].active;
+   *touch_x = wl->active_touch_positions[id].x;
+   *touch_y = wl->active_touch_positions[id].y;
+   return wl->active_touch_positions[id].active;
 }
 
 /* Surface callbacks. */
@@ -1068,8 +1070,7 @@ void flush_wayland_fd(void *data)
 }
 
 static void gfx_ctx_wl_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height,
-      bool is_shutdown)
+      bool *resize, unsigned *width, unsigned *height)
 {
    /* this function works with SCALED sizes, it's used from the renderer */
    unsigned new_width, new_height;
@@ -1147,7 +1148,7 @@ static bool gfx_ctx_wl_set_resize(void *data, unsigned width, unsigned height)
    return true;
 }
 
-static void gfx_ctx_wl_update_title(void *data, void *data2)
+static void gfx_ctx_wl_update_title(void *data)
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
    char title[128];
@@ -1216,7 +1217,7 @@ static bool gfx_ctx_wl_get_metrics(void *data,
    EGL_DEPTH_SIZE,      0
 #endif
 
-static void *gfx_ctx_wl_init(video_frame_info_t *video_info, void *video_driver)
+static void *gfx_ctx_wl_init(void *video_driver)
 {
    int i;
 #ifdef HAVE_EGL
@@ -1391,13 +1392,14 @@ static void *gfx_ctx_wl_init(video_frame_info_t *video_info, void *video_driver)
    wl->cursor.theme = wl_cursor_theme_load(NULL, 16, wl->shm);
    wl->cursor.default_cursor = wl_cursor_theme_get_cursor(wl->cursor.theme, "left_ptr");
 
-   num_active_touches = 0;
+   wl->num_active_touches = 0;
+
    for (i = 0;i < MAX_TOUCHES;i++)
    {
-       active_touch_positions[i].active = false;
-       active_touch_positions[i].id = -1;
-       active_touch_positions[i].x = (unsigned) 0;
-       active_touch_positions[i].y = (unsigned) 0;
+       wl->active_touch_positions[i].active = false;
+       wl->active_touch_positions[i].id     = -1;
+       wl->active_touch_positions[i].x      = (unsigned) 0;
+       wl->active_touch_positions[i].y      = (unsigned) 0;
    }
 
    flush_wayland_fd(&wl->input);
@@ -1541,7 +1543,6 @@ static void gfx_ctx_wl_set_swap_interval(void *data, int swap_interval)
 }
 
 static bool gfx_ctx_wl_set_video_mode(void *data,
-      video_frame_info_t *video_info,
       unsigned width, unsigned height,
       bool fullscreen)
 {
@@ -1817,7 +1818,7 @@ static void *gfx_ctx_wl_get_context_data(void *data)
 }
 #endif
 
-static void gfx_ctx_wl_swap_buffers(void *data, void *data2)
+static void gfx_ctx_wl_swap_buffers(void *data)
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
 

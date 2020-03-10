@@ -81,7 +81,7 @@ static void gfx_ctx_cgl_get_video_size(void *data, unsigned *width, unsigned *he
 }
 
 static void gfx_ctx_cgl_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height, bool is_shutdown)
+      bool *resize, unsigned *width, unsigned *height)
 {
    unsigned new_width  = 0;
    unsigned new_height = 0;
@@ -97,7 +97,7 @@ static void gfx_ctx_cgl_check_window(void *data, bool *quit,
    }
 }
 
-static void gfx_ctx_cgl_swap_buffers(void *data, void *data2)
+static void gfx_ctx_cgl_swap_buffers(void *data)
 {
    gfx_ctx_cgl_data_t *cgl = (gfx_ctx_cgl_data_t*)data;
 
@@ -105,7 +105,6 @@ static void gfx_ctx_cgl_swap_buffers(void *data, void *data2)
 }
 
 static bool gfx_ctx_cgl_set_video_mode(void *data,
-      video_frame_info_t *video_info,
       unsigned width, unsigned height,
       bool fullscreen)
 {
@@ -290,7 +289,7 @@ static CGSSurfaceID attach_gl_context_to_window(CGLContextObj glCtx,
     return sid;
 }
 
-static void *gfx_ctx_cgl_init(video_frame_info_t *video_info, void *video_driver)
+static void *gfx_ctx_cgl_init(void *video_driver)
 {
    CGError err;
    gfx_ctx_cgl_data_t *cgl = (gfx_ctx_cgl_data_t*)calloc(1, sizeof(gfx_ctx_cgl_data_t));

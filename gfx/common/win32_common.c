@@ -514,7 +514,7 @@ bool win32_load_content_from_gui(const char *szFilename)
       if (info)
       {
          task_push_load_content_with_new_core_from_companion_ui(
-            info->path, NULL, NULL, &content_info, NULL, NULL);
+            info->path, NULL, NULL, NULL, NULL, &content_info, NULL, NULL);
          return true;
       }
    }
@@ -575,31 +575,17 @@ static bool win32_drag_query_file(HWND hwnd, WPARAM wparam)
    return false;
 }
 
-static void win32_set_position_from_config(void)
-{
-   settings_t *settings  = config_get_ptr();
-   int border_thickness  = GetSystemMetrics(SM_CXSIZEFRAME);
-   int title_bar_height  = GetSystemMetrics(SM_CYCAPTION);
-
-   if (!settings->bools.video_window_save_positions)
-      return;
-
-   g_win32_pos_x         = settings->uints.window_position_x;
-   g_win32_pos_y         = settings->uints.window_position_y;
-   g_win32_pos_width     = settings->uints.window_position_width
-      + border_thickness * 2;
-   g_win32_pos_height    = settings->uints.window_position_height
-      + border_thickness * 2 + title_bar_height;
-}
-
 static void win32_save_position(void)
 {
    RECT rect;
    WINDOWPLACEMENT placement;
-   int border_thickness     = GetSystemMetrics(SM_CXSIZEFRAME);
-   int title_bar_height     = GetSystemMetrics(SM_CYCAPTION);
-   int menu_bar_height      = GetSystemMetrics(SM_CYMENU);
-   settings_t *settings     = config_get_ptr();
+   int border_thickness       = GetSystemMetrics(SM_CXSIZEFRAME);
+   int title_bar_height       = GetSystemMetrics(SM_CYCAPTION);
+   int menu_bar_height        = GetSystemMetrics(SM_CYMENU);
+   settings_t *settings       = config_get_ptr();
+   bool window_save_positions = settings->bools.video_window_save_positions;
+   bool video_fullscreen      = settings->bools.video_fullscreen;
+   bool ui_menubar_enable     = settings->bools.ui_menubar_enable;
 
    memset(&placement, 0, sizeof(placement));
 
@@ -615,14 +601,16 @@ static void win32_save_position(void)
       g_win32_pos_width  = rect.right  - rect.left;
       g_win32_pos_height = rect.bottom - rect.top;
    }
-   if (settings && settings->bools.video_window_save_positions)
+   if (window_save_positions)
    {
-      if (!settings->bools.video_fullscreen && !retroarch_is_forced_fullscreen() && !retroarch_is_switching_display_mode())
+      if (  !video_fullscreen && 
+            !retroarch_is_forced_fullscreen() &&
+            !retroarch_is_switching_display_mode())
       {
          settings->uints.window_position_x      = g_win32_pos_x;
          settings->uints.window_position_y      = g_win32_pos_y;
          settings->uints.window_position_width  = g_win32_pos_width - border_thickness * 2;
-         settings->uints.window_position_height = g_win32_pos_height - border_thickness * 2 - title_bar_height - (settings->bools.ui_menubar_enable ? menu_bar_height : 0);
+         settings->uints.window_position_height = g_win32_pos_height - border_thickness * 2 - title_bar_height - (ui_menubar_enable ? menu_bar_height : 0);
       }
    }
 }
@@ -677,7 +665,6 @@ static bool win32_browser(
 
    return result;
 }
-
 
 static LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
 {
@@ -943,16 +930,15 @@ static LRESULT CALLBACK WndProcCommon(bool *quit, HWND hwnd, UINT message,
                return 0;
          }
          return DefWindowProc(hwnd, message, wparam, lparam);
-      case WM_MOVE:
-         win32_save_position();
-         break;
+
       case WM_CLOSE:
       case WM_DESTROY:
       case WM_QUIT:
-         win32_save_position();
-
          g_win32_quit  = true;
          *quit         = true;
+         /* fall-through */
+      case WM_MOVE:
+         win32_save_position();
          break;
       case WM_SIZE:
          /* Do not send resize message if we minimize. */
@@ -972,7 +958,8 @@ static LRESULT CALLBACK WndProcCommon(bool *quit, HWND hwnd, UINT message,
       case WM_COMMAND:
          {
             settings_t *settings     = config_get_ptr();
-            if (settings && settings->bools.ui_menubar_enable)
+            bool ui_menubar_enable   = settings ? settings->bools.ui_menubar_enable : false;
+            if (ui_menubar_enable)
                win32_menu_loop(main_window.hwnd, wparam);
          }
          break;
@@ -1055,7 +1042,7 @@ LRESULT CALLBACK WndProcD3D(HWND hwnd, UINT message,
 #endif
 
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE) || defined(HAVE_VULKAN)
-LRESULT CALLBACK WndProcGL(HWND hwnd, UINT message,
+LRESULT CALLBACK WndProcWGL(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
 {
    LRESULT ret;
@@ -1162,7 +1149,7 @@ LRESULT CALLBACK WndProcGDI(HWND hwnd, UINT message,
             gdi->bmp_old = (HBITMAP)SelectObject(gdi->memDC, gdi->bmp);
 
 #ifdef HAVE_MENU
-            if (menu_driver_is_alive() && !gdi_has_menu_frame())
+            if (menu_driver_is_alive() && !gdi_has_menu_frame(gdi))
             {
                /* draw menu contents behind a gradient background */
                if (gdi && gdi->memDC)
@@ -1228,16 +1215,18 @@ bool win32_window_create(void *data, unsigned style,
       RECT *mon_rect, unsigned width,
       unsigned height, bool fullscreen)
 {
+   settings_t *settings    = config_get_ptr();
 #if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0500 /* 2K */
    DEV_BROADCAST_DEVICEINTERFACE notification_filter;
+   unsigned window_opacity    = settings->uints.video_window_opacity;
+   bool window_show_decor     = settings->bools.video_window_show_decorations;
 #endif
-   settings_t *settings  = config_get_ptr();
 #ifndef _XBOX
-   unsigned user_width   = width;
-   unsigned user_height  = height;
+   bool window_save_positions = settings->bools.video_window_save_positions;
+   unsigned user_width        = width;
+   unsigned user_height       = height;
 
-   if (settings->bools.video_window_save_positions
-         && !fullscreen)
+   if (window_save_positions && !fullscreen)
    {
       user_width = g_win32_pos_width;
       user_height= g_win32_pos_height;
@@ -1273,17 +1262,17 @@ bool win32_window_create(void *data, unsigned style,
    video_driver_window_set((uintptr_t)main_window.hwnd);
 
 #if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0500 /* 2K */
-   if (!settings->bools.video_window_show_decorations)
+   if (!window_show_decor)
       SetWindowLongPtr(main_window.hwnd, GWL_STYLE, WS_POPUP);
 
    /* Windows 2000 and above use layered windows to enable transparency */
-   if (settings->uints.video_window_opacity < 100)
+   if (window_opacity < 100)
    {
       SetWindowLongPtr(main_window.hwnd,
            GWL_EXSTYLE,
            GetWindowLongPtr(main_window.hwnd, GWL_EXSTYLE) | WS_EX_LAYERED);
       SetLayeredWindowAttributes(main_window.hwnd, 0, (255 *
-               settings->uints.video_window_opacity) / 100, LWA_ALPHA);
+               window_opacity) / 100, LWA_ALPHA);
    }
 #endif
 #endif
@@ -1475,17 +1464,26 @@ void win32_set_style(MONITORINFOEX *current_mon, HMONITOR *hm_to_use,
    RECT *rect, RECT *mon_rect, DWORD *style)
 {
 #if !defined(_XBOX)
-   bool position_set_from_config = false;
-   settings_t *settings          = config_get_ptr();
+   bool position_set_from_config    = false;
+   settings_t *settings             = config_get_ptr();
+   bool video_window_save_positions = settings->bools.video_window_save_positions;
+   float video_refresh              = settings->floats.video_refresh_rate;
+   unsigned swap_interval           = settings->uints.video_swap_interval;
+   bool bfi                         = settings->bools.video_black_frame_insertion;
+   unsigned window_position_x       = settings->uints.window_position_x;
+   unsigned window_position_y       = settings->uints.window_position_y;
+   unsigned window_position_width   = settings->uints.window_position_width;
+   unsigned window_position_height  = settings->uints.window_position_height;
+
    if (fullscreen)
    {
       /* Windows only reports the refresh rates for modelines as
        * an integer, so video_refresh_rate needs to be rounded. Also, account
        * for black frame insertion using video_refresh_rate set to half
        * of the display refresh rate, as well as higher vsync swap intervals. */
-      float refresh_mod    = settings->bools.video_black_frame_insertion ? 2.0f : 1.0f;
-      unsigned refresh     = roundf(settings->floats.video_refresh_rate
-            * refresh_mod * settings->uints.video_swap_interval);
+      float refresh_mod      = bfi ? 2.0f : 1.0f;
+      unsigned refresh       = roundf(video_refresh * refresh_mod 
+            * swap_interval);
 
       if (windowed_full)
       {
@@ -1513,9 +1511,19 @@ void win32_set_style(MONITORINFOEX *current_mon, HMONITOR *hm_to_use,
 
       AdjustWindowRect(rect, *style, FALSE);
 
-      if (settings->bools.video_window_save_positions)
+      if (video_window_save_positions)
       {
-         win32_set_position_from_config();
+         /* Set position from config */
+         int border_thickness  = GetSystemMetrics(SM_CXSIZEFRAME);
+         int title_bar_height  = GetSystemMetrics(SM_CYCAPTION);
+
+         g_win32_pos_x         = window_position_x;
+         g_win32_pos_y         = window_position_y;
+         g_win32_pos_width     = window_position_width
+            + border_thickness * 2;
+         g_win32_pos_height    = window_position_height
+            + border_thickness * 2 + title_bar_height;
+
          if (g_win32_pos_width != 0 && g_win32_pos_height != 0)
             position_set_from_config = true;
       }
@@ -1544,8 +1552,9 @@ void win32_set_window(unsigned *width, unsigned *height,
    {
       settings_t *settings      = config_get_ptr();
       const ui_window_t *window = ui_companion_driver_get_window_ptr();
+      bool ui_menubar_enable    = settings->bools.ui_menubar_enable;
 
-      if (!fullscreen && settings->bools.ui_menubar_enable)
+      if (!fullscreen && ui_menubar_enable)
       {
          RECT rc_temp;
          rc_temp.left   = 0;
@@ -1582,11 +1591,11 @@ bool win32_set_video_mode(void *data,
    RECT mon_rect;
    RECT rect;
    MONITORINFOEX current_mon;
+   int res               = 0;
    unsigned mon_id       = 0;
-   bool windowed_full    = false;
    HMONITOR hm_to_use    = NULL;
    settings_t *settings  = config_get_ptr();
-   int res               = 0;
+   bool windowed_full    = settings->bools.video_windowed_fullscreen;
 
    rect.left             = 0;
    rect.top              = 0;
@@ -1598,8 +1607,6 @@ bool win32_set_video_mode(void *data,
    mon_rect                    = current_mon.rcMonitor;
    g_win32_resize_width        = width;
    g_win32_resize_height       = height;
-
-   windowed_full               = settings->bools.video_windowed_fullscreen;
 
    win32_set_style(&current_mon, &hm_to_use, &width, &height,
          fullscreen, windowed_full, &rect, &mon_rect, &style);

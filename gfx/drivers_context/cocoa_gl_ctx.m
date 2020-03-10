@@ -212,34 +212,35 @@ static float get_from_selector(Class obj_class, id obj_id, SEL selector, CGFloat
 
 void *get_chosen_screen(void)
 {
+   unsigned monitor_index;
    settings_t *settings = config_get_ptr();
-   NSArray *screens = [RAScreen screens];
+   NSArray *screens     = [RAScreen screens];
    if (!screens || !settings)
       return NULL;
 
-   if (settings->uints.video_monitor_index >= screens.count)
+   monitor_index        = settings->uints.video_monitor_index;
+
+   if (monitor_index >= screens.count)
    {
       RARCH_WARN("video_monitor_index is greater than the number of connected monitors; using main screen instead.");
       return (BRIDGE void*)screens;
    }
 
-   return ((BRIDGE void*)[screens objectAtIndex:settings->uints.video_monitor_index]);
+   return ((BRIDGE void*)[screens objectAtIndex:monitor_index]);
 }
 
 float get_backing_scale_factor(void)
 {
    static float
-   backing_scale_def = 0.0f;
+   backing_scale_def    = 0.0f;
    RAScreen *screen     = NULL;
-
-   (void)screen;
 
    if (backing_scale_def != 0.0f)
       return backing_scale_def;
 
-   backing_scale_def = 1.0f;
+   backing_scale_def    = 1.0f;
 #if defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL)
-   screen = (BRIDGE RAScreen*)get_chosen_screen();
+   screen               = (BRIDGE RAScreen*)get_chosen_screen();
 
    if (screen)
    {
@@ -368,7 +369,7 @@ float cocoagl_gfx_ctx_get_native_scale(void)
 }
 
 #if defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL)
-static void cocoagl_gfx_ctx_update_title(void *data, void *data2)
+static void cocoagl_gfx_ctx_update_title(void *data)
 {
    const ui_window_t *window      = ui_companion_driver_get_window_ptr();
 
@@ -544,7 +545,7 @@ static void cocoagl_gfx_ctx_bind_hw_render(void *data, bool enable)
 }
 
 static void cocoagl_gfx_ctx_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height, bool is_shutdown)
+      bool *resize, unsigned *width, unsigned *height)
 {
    unsigned new_width, new_height;
 #ifdef HAVE_VULKAN
@@ -615,7 +616,7 @@ static void cocoagl_gfx_ctx_swap_interval(void *data, int i)
    }
 }
 
-static void cocoagl_gfx_ctx_swap_buffers(void *data, void *data2)
+static void cocoagl_gfx_ctx_swap_buffers(void *data)
 {
 #ifdef HAVE_VULKAN
    cocoa_ctx_data_t *cocoa_ctx = (cocoa_ctx_data_t*)data;
@@ -688,7 +689,6 @@ static void *cocoagl_gfx_ctx_get_context_data(void *data)
 #endif
 
 static bool cocoagl_gfx_ctx_set_video_mode(void *data,
-      video_frame_info_t *video_info,
       unsigned width, unsigned height, bool fullscreen)
 {
 #if defined(HAVE_COCOA_METAL)
@@ -819,7 +819,7 @@ static bool cocoagl_gfx_ctx_set_video_mode(void *data,
    return true;
 }
 
-static void *cocoagl_gfx_ctx_init(video_frame_info_t *video_info, void *video_driver)
+static void *cocoagl_gfx_ctx_init(void *video_driver)
 {
    cocoa_ctx_data_t *cocoa_ctx = (cocoa_ctx_data_t*)
    calloc(1, sizeof(cocoa_ctx_data_t));

@@ -34,7 +34,7 @@
 static enum gfx_ctx_api network_ctx_api = GFX_CTX_NONE;
 
 static void gfx_ctx_network_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height, bool is_shutdown)
+      bool *resize, unsigned *width, unsigned *height)
 {
 }
 
@@ -48,18 +48,13 @@ static bool gfx_ctx_network_set_resize(void *data,
    return false;
 }
 
-static void gfx_ctx_network_update_window_title(void *data, void *data2)
-{
-}
-
 static void gfx_ctx_network_get_video_size(void *data,
       unsigned *width, unsigned *height)
 {
    (void)data;
 }
 
-static void *gfx_ctx_network_init(
-      video_frame_info_t *video_info, void *video_driver)
+static void *gfx_ctx_network_init(void *video_driver)
 {
    (void)video_driver;
 
@@ -72,7 +67,6 @@ static void gfx_ctx_network_destroy(void *data)
 }
 
 static bool gfx_ctx_network_set_video_mode(void *data,
-      video_frame_info_t *video_info,
       unsigned width, unsigned height,
       bool fullscreen)
 {
@@ -151,7 +145,7 @@ static uint32_t gfx_ctx_network_get_flags(void *data)
    return flags;
 }
 
-static void gfx_ctx_network_swap_buffers(void *data, void *data2)
+static void gfx_ctx_network_swap_buffers(void *data)
 {
    (void)data;
 }
@@ -170,7 +164,7 @@ const gfx_ctx_driver_t gfx_ctx_network = {
    NULL, /* get_video_output_next */
    gfx_ctx_network_get_metrics,
    NULL,
-   gfx_ctx_network_update_window_title,
+   NULL, /* update_title */
    gfx_ctx_network_check_window,
    gfx_ctx_network_set_resize,
    gfx_ctx_network_has_focus,

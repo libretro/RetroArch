@@ -517,8 +517,7 @@ static void gfx_ctx_wgl_swap_interval(void *data, int interval)
 }
 
 static void gfx_ctx_wgl_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height,
-      bool is_shutdown)
+      bool *resize, unsigned *width, unsigned *height)
 {
    win32_check_window(quit, resize, width, height);
 
@@ -537,7 +536,7 @@ static void gfx_ctx_wgl_check_window(void *data, bool *quit,
    }
 }
 
-static void gfx_ctx_wgl_swap_buffers(void *data, void *data2)
+static void gfx_ctx_wgl_swap_buffers(void *data)
 {
    (void)data;
 
@@ -595,9 +594,8 @@ static bool gfx_ctx_wgl_set_resize(void *data,
    return false;
 }
 
-static void gfx_ctx_wgl_update_title(void *data, void *data2)
+static void gfx_ctx_wgl_update_title(void *data)
 {
-   video_frame_info_t* video_info = (video_frame_info_t*)data2;
    char title[128];
 
    title[0] = '\0';
@@ -639,7 +637,7 @@ static void gfx_ctx_wgl_get_video_size(void *data,
    }
 }
 
-static void *gfx_ctx_wgl_init(video_frame_info_t *video_info, void *video_driver)
+static void *gfx_ctx_wgl_init(void *video_driver)
 {
    WNDCLASSEX wndclass     = {0};
    gfx_ctx_wgl_data_t *wgl = (gfx_ctx_wgl_data_t*)calloc(1, sizeof(*wgl));
@@ -661,7 +659,7 @@ static void *gfx_ctx_wgl_init(video_frame_info_t *video_info, void *video_driver
    win32_window_reset();
    win32_monitor_init();
 
-   wndclass.lpfnWndProc   = WndProcGL;
+   wndclass.lpfnWndProc   = WndProcWGL;
    if (!win32_window_init(&wndclass, true, NULL))
       goto error;
 
@@ -766,7 +764,6 @@ static void gfx_ctx_wgl_destroy(void *data)
 }
 
 static bool gfx_ctx_wgl_set_video_mode(void *data,
-      video_frame_info_t *video_info,
       unsigned width, unsigned height,
       bool fullscreen)
 {
@@ -802,11 +799,13 @@ static void gfx_ctx_wgl_input_driver(void *data,
       const char *joypad_name,
       input_driver_t **input, void **input_data)
 {
-   settings_t *settings = config_get_ptr();
+   settings_t *settings     = config_get_ptr();
 
 #if _WIN32_WINNT >= 0x0501
+   const char *input_driver = settings->arrays.input_driver;
+
    /* winraw only available since XP */
-   if (string_is_equal(settings->arrays.input_driver, "raw"))
+   if (string_is_equal(input_driver, "raw"))
    {
       *input_data = input_winraw.init(joypad_name);
       if (*input_data)

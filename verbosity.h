@@ -17,6 +17,7 @@
 #define __RARCH_VERBOSITY_H
 
 #include <stdarg.h>
+#include <stdlib.h>
 
 #include <boolean.h>
 #include <retro_common_api.h>

@@ -34,7 +34,6 @@
 #ifdef HAVE_MENU
 #include "../../../menu/menu_entries.h"
 #include "../../../menu/menu_driver.h"
-#include "../../../menu/drivers/menu_generic.h"
 #endif
 
 // Menu Support
@@ -643,8 +642,11 @@ didSelectRowAtIndexPath:(NSIndexPath *)indexPath
    switch (buttonIndex)
    {
       case 0:
-         iter.action = MENU_ACTION_OK;
-         menu_driver_iterate(&iter);
+         {
+            retro_time_t current_time = cpu_features_get_time_usec();
+            iter.action = MENU_ACTION_OK;
+            menu_driver_iterate(&iter, current_time);
+         }
          break;
    }
 }
@@ -667,6 +669,7 @@ didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
    UIBarButtonItem *item = NULL;
    settings_t *settings  = config_get_ptr();
+   bool menu_core_enable = settings->bools.menu_core_enable;
 
    [self reloadData];
 
@@ -676,7 +679,7 @@ didSelectRowAtIndexPath:(NSIndexPath *)indexPath
    item = [[UIBarButtonItem alloc] initWithCustomView:self.osdmessage];
    [self setToolbarItems: [NSArray arrayWithObject:item]];
 
-   if (settings->bools.menu_core_enable)
+   if (menu_core_enable)
    {
       char title_msg[256];
       menu_entries_get_core_title(title_msg, sizeof(title_msg));
@@ -691,8 +694,9 @@ didSelectRowAtIndexPath:(NSIndexPath *)indexPath
    RAMainMenu* __weak weakSelf = NULL;
    NSMutableArray *everything  = [NSMutableArray array];
    settings_t *settings        = config_get_ptr();
+   bool menu_core_enable       = settings->bools.menu_core_enable;
 
-   if (settings->bools.menu_core_enable)
+   if (menu_core_enable)
    {
       char title_msg[256];
       menu_entries_get_core_title(title_msg, sizeof(title_msg));

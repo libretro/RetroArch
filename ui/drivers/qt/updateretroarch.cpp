@@ -235,7 +235,7 @@ void MainWindow::onUpdateDownloadReadyRead()
 
 void MainWindow::updateRetroArchNightly()
 {
-   QUrl url(QUrl(buildbot_server_url).resolved(QUrl(RETROARCH_NIGHTLY_UPDATE_PATH)));
+   QUrl url(QUrl(DEFAULT_BUILDBOT_SERVER_URL).resolved(QUrl(RETROARCH_NIGHTLY_UPDATE_PATH)));
    QNetworkRequest request(url);
    QNetworkReply *reply = NULL;
    QByteArray urlArray = url.toString().toUtf8();

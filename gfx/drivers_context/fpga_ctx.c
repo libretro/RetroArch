@@ -36,7 +36,7 @@ static unsigned g_resize_width  = FB_WIDTH;
 static unsigned g_resize_height = FB_HEIGHT;
 
 static void gfx_ctx_fpga_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height, bool is_shutdown)
+      bool *resize, unsigned *width, unsigned *height)
 {
 }
 
@@ -50,7 +50,7 @@ static bool gfx_ctx_fpga_set_resize(void *data,
    return false;
 }
 
-static void gfx_ctx_fpga_update_title(void *data, void *data2)
+static void gfx_ctx_fpga_update_title(void *data)
 {
    char title[128];
 
@@ -68,7 +68,7 @@ static void gfx_ctx_fpga_get_video_size(void *data,
     *height = g_resize_height;
 }
 
-static void *gfx_ctx_fpga_init(video_frame_info_t *video_info, void *video_driver)
+static void *gfx_ctx_fpga_init(void *video_driver)
 {
    (void)video_driver;
 
@@ -81,7 +81,6 @@ static void gfx_ctx_fpga_destroy(void *data)
 }
 
 static bool gfx_ctx_fpga_set_video_mode(void *data,
-      video_frame_info_t *video_info,
       unsigned width, unsigned height,
       bool fullscreen)
 {
@@ -100,8 +99,6 @@ static void gfx_ctx_fpga_input_driver(void *data,
       const char *joypad_name,
       const input_driver_t **input, void **input_data)
 {
-   (void)data;
-   settings_t *settings = config_get_ptr();
 }
 
 static bool gfx_ctx_fpga_has_focus(void *data)
@@ -159,11 +156,6 @@ static uint32_t gfx_ctx_fpga_get_flags(void *data)
    return flags;
 }
 
-static void gfx_ctx_fpga_swap_buffers(void *data, void *data2)
-{
-   (void)data;
-}
-
 const gfx_ctx_driver_t gfx_ctx_fpga = {
    gfx_ctx_fpga_init,
    gfx_ctx_fpga_destroy,
@@ -182,7 +174,7 @@ const gfx_ctx_driver_t gfx_ctx_fpga = {
    gfx_ctx_fpga_has_focus,
    gfx_ctx_fpga_suppress_screensaver,
    gfx_ctx_fpga_has_windowed,
-   gfx_ctx_fpga_swap_buffers,
+   NULL, /* swap_buffers */
    gfx_ctx_fpga_input_driver,
    NULL,
    NULL,

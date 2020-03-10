@@ -40,7 +40,6 @@ typedef struct d3d9_renderchain_driver
    void (*chain_free)(void *data);
    void *(*chain_new)(void);
    bool (*init)(d3d9_video_t *d3d,
-         const video_info_t *video_info,
          LPDIRECT3DDEVICE9 dev,
          const D3DVIEWPORT9 *final_viewport,
          const struct LinkInfo *info,
@@ -52,7 +51,6 @@ typedef struct d3d9_renderchain_driver
          const char *id, const char *path,
          bool smooth);
    bool (*render)(d3d9_video_t *d3d,
-         const video_frame_info_t *video_info,
          const void *frame,
          unsigned width, unsigned height, unsigned pitch, unsigned rotation);
    const char *ident;
@@ -67,6 +65,9 @@ typedef struct d3d9_video
    bool overlays_enabled;
    /* TODO - refactor this away properly. */
    bool resolution_hd_enable;
+
+   /* Only used for Xbox */
+   bool widescreen_mode;
 
    unsigned cur_mon_id;
    unsigned dev_rotation;

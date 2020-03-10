@@ -14,6 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdio.h>
+
 #include <compat/strl.h>
 #include <features/features_cpu.h>
 
@@ -27,37 +29,44 @@
 
 #include "menu_dialog.h"
 
-#include "../menu_driver.h"
+#include "../menu_displaylist.h"
+#include "../menu_entries.h"
 
-#include "../../retroarch.h"
 #include "../../configuration.h"
-
-#include "../../tasks/tasks_internal.h"
+#include "../../input/input_driver.h"
 #include "../../performance_counters.h"
 
-static bool                  menu_dialog_pending_push   = false;
-static bool                  menu_dialog_active         = false;
-static unsigned              menu_dialog_current_id     = 0;
-static enum menu_dialog_type menu_dialog_current_type   = MENU_DIALOG_NONE;
-static enum msg_hash_enums   menu_dialog_current_msg    = MSG_UNKNOWN;
-
-int menu_dialog_iterate(char *s, size_t len, const char *label)
+struct menu_dialog
 {
-#ifdef HAVE_CHEEVOS
-   rcheevos_ctx_desc_t desc_info;
-#endif
-   bool do_exit              = false;
+   bool                  pending_push;
+   unsigned              current_id;
+   enum menu_dialog_type current_type;
+};
 
-   switch (menu_dialog_current_type)
+typedef struct menu_dialog menu_dialog_t;
+
+static menu_dialog_t dialog;
+
+static menu_dialog_t *dialog_get_ptr(void)
+{
+   return &dialog;
+}
+
+int menu_dialog_iterate(char *s, size_t len,
+      retro_time_t current_time)
+{
+   menu_dialog_t *p_dialog = dialog_get_ptr();
+
+   switch (p_dialog->current_type)
    {
       case MENU_DIALOG_WELCOME:
          {
             static rarch_timer_t timer;
 
             if (!rarch_timer_is_running(&timer))
-               rarch_timer_begin(&timer, 3);
+               rarch_timer_begin_us(&timer, 3 * 1000000);
 
-            rarch_timer_tick(&timer);
+            rarch_timer_tick(&timer, current_time);
 
             menu_hash_get_help_enum(
                   MENU_ENUM_LABEL_WELCOME_TO_RETROARCH,
@@ -66,7 +75,8 @@ int menu_dialog_iterate(char *s, size_t len, const char *label)
             if (!timer.timer_end && rarch_timer_has_expired(&timer))
             {
                rarch_timer_end(&timer);
-               do_exit     = true;
+               p_dialog->current_type = MENU_DIALOG_NONE;
+               return 1;
             }
          }
          break;
@@ -172,10 +182,13 @@ int menu_dialog_iterate(char *s, size_t len, const char *label)
 
 #ifdef HAVE_CHEEVOS
       case MENU_DIALOG_HELP_CHEEVOS_DESCRIPTION:
-         desc_info.idx = menu_dialog_current_id;
-         desc_info.s   = s;
-         desc_info.len = len;
-         rcheevos_get_description((rcheevos_ctx_desc_t*) &desc_info);
+         {
+            rcheevos_ctx_desc_t desc_info;
+            desc_info.idx = p_dialog->current_id;
+            desc_info.s   = s;
+            desc_info.len = len;
+            rcheevos_get_description((rcheevos_ctx_desc_t*) &desc_info);
+         }
          break;
 #endif
 
@@ -209,13 +222,18 @@ int menu_dialog_iterate(char *s, size_t len, const char *label)
       case MENU_DIALOG_HELP_EXTRACT:
          {
             settings_t *settings      = config_get_ptr();
-            menu_hash_get_help_enum(MENU_ENUM_LABEL_VALUE_EXTRACTING_PLEASE_WAIT,
+            bool bundle_finished      = settings->bools.bundle_finished;
+
+            menu_hash_get_help_enum(
+                  MENU_ENUM_LABEL_VALUE_EXTRACTING_PLEASE_WAIT,
                   s, len);
 
-            if (settings->bools.bundle_finished)
+            if (bundle_finished)
             {
-               settings->bools.bundle_finished = false;
-               do_exit                         = true;
+               configuration_set_bool(settings,
+                     settings->bools.bundle_finished, false);
+               p_dialog->current_type = MENU_DIALOG_NONE;
+               return 1;
             }
          }
          break;
@@ -224,7 +242,7 @@ int menu_dialog_iterate(char *s, size_t len, const char *label)
       case MENU_DIALOG_QUESTION:
       case MENU_DIALOG_WARNING:
       case MENU_DIALOG_ERROR:
-         menu_hash_get_help_enum(menu_dialog_current_msg,
+         menu_hash_get_help_enum(MSG_UNKNOWN,
                s, len);
          break;
       case MENU_DIALOG_NONE:
@@ -232,38 +250,40 @@ int menu_dialog_iterate(char *s, size_t len, const char *label)
          break;
    }
 
-   if (do_exit)
-   {
-      menu_dialog_current_type = MENU_DIALOG_NONE;
-      return 1;
-   }
-
    return 0;
-}
-
-bool menu_dialog_is_push_pending(void)
-{
-   return menu_dialog_pending_push;
 }
 
 void menu_dialog_unset_pending_push(void)
 {
-   menu_dialog_pending_push = false;
+   menu_dialog_t *p_dialog = dialog_get_ptr();
+
+   p_dialog->pending_push  = false;
 }
 
-void menu_dialog_push_pending(bool push, enum menu_dialog_type type)
+bool menu_dialog_push_pending(bool push, enum menu_dialog_type type)
 {
-   menu_dialog_pending_push = push;
-   menu_dialog_current_type = type;
-   menu_dialog_active = true;
+   menu_dialog_t *p_dialog = dialog_get_ptr();
+#ifdef IOS
+   /* TODO/FIXME - see comment in menu_init -
+    * we should make this more generic so that
+    * this platform-specific ifdef is no longer needed */
+   if (type == MENU_DIALOG_HELP_EXTRACT)
+      if (!p_dialog->pending_push)
+         return false;
+#endif
+   p_dialog->pending_push = push;
+   p_dialog->current_type = type;
+
+   return true;
 }
 
 void menu_dialog_push(void)
 {
-   menu_displaylist_info_t info;
    const char *label;
+   menu_displaylist_info_t info;
+   menu_dialog_t *p_dialog = dialog_get_ptr();
 
-   if (!menu_dialog_is_push_pending())
+   if (!p_dialog->pending_push)
       return;
 
    menu_displaylist_info_init(&info);
@@ -281,37 +301,16 @@ void menu_dialog_push(void)
 
 void menu_dialog_set_current_id(unsigned id)
 {
-   menu_dialog_current_id   = id;
+   menu_dialog_t *p_dialog = dialog_get_ptr();
+
+   p_dialog->current_id    = id;
 }
 
 void menu_dialog_reset(void)
 {
-   menu_dialog_pending_push = false;
-   menu_dialog_current_id   = 0;
-   menu_dialog_current_type = MENU_DIALOG_NONE;
-   menu_dialog_current_msg  = MSG_UNKNOWN;
-}
+   menu_dialog_t *p_dialog = dialog_get_ptr();
 
-void menu_dialog_show_message(
-      enum menu_dialog_type type, enum msg_hash_enums msg)
-{
-   menu_dialog_current_msg = msg;
-
-   menu_dialog_push_pending(true, type);
-   menu_dialog_push();
-}
-
-bool menu_dialog_is_active(void)
-{
-   return menu_dialog_active;
-}
-
-void menu_dialog_set_active(bool on)
-{
-   menu_dialog_active = on;
-}
-
-enum menu_dialog_type menu_dialog_get_current_type(void)
-{
-   return menu_dialog_current_type;
+   p_dialog->pending_push  = false;
+   p_dialog->current_id    = 0;
+   p_dialog->current_type  = MENU_DIALOG_NONE;
 }

@@ -20,19 +20,21 @@
 #include <encodings/utf.h>
 #include <lists/string_list.h>
 
+#include <windows.h>
+#include <wingdi.h>
+
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
 #endif
 
-#include "../font_driver.h"
-#include "../../configuration.h"
 #include "../../retroarch.h"
-#include "../../verbosity.h"
 #include "../common/gdi_common.h"
 #include "../common/win32_common.h"
 
-#include <windows.h>
-#include <wingdi.h>
+#include "../font_driver.h"
+#include "../../configuration.h"
+#include "../../verbosity.h"
+
 
 typedef struct
 {
@@ -82,8 +84,9 @@ static const struct font_glyph *gdi_font_get_glyph(
 }
 
 static void gdi_render_msg(
-      video_frame_info_t *video_info,
-      void *data, const char *msg,
+      void *userdata,
+      void *data,
+      const char *msg,
       const struct font_params *params)
 {
    float x, y, scale, drop_mod, drop_alpha;
@@ -93,11 +96,18 @@ static void gdi_render_msg(
    unsigned align;
    unsigned red, green, blue;
    unsigned drop_red, drop_green, drop_blue;
+   gdi_t *gdi                       = (gdi_t*)userdata;
    gdi_raster_t *font               = (gdi_raster_t*)data;
-   unsigned width                   = video_info->width;
-   unsigned height                  = video_info->height;
-   SIZE textSize = {0};
-   struct string_list *msg_list = NULL;
+   unsigned width                   = gdi->video_width;
+   unsigned height                  = gdi->video_height;
+   SIZE textSize                    = {0};
+   struct string_list *msg_list     = NULL;
+   settings_t *settings             = config_get_ptr();
+   float video_msg_pos_x            = settings->floats.video_msg_pos_x;
+   float video_msg_pos_y            = settings->floats.video_msg_pos_y;
+   float video_msg_color_r          = settings->floats.video_msg_color_r;
+   float video_msg_color_g          = settings->floats.video_msg_color_g;
+   float video_msg_color_b          = settings->floats.video_msg_color_b;
 
    if (!font || string_is_empty(msg) || !font->gdi)
       return;
@@ -119,17 +129,17 @@ static void gdi_render_msg(
    }
    else
    {
-      x          = video_info->font_msg_pos_x;
-      y          = video_info->font_msg_pos_y;
+      x          = video_msg_pos_x;
+      y          = video_msg_pos_y;
       drop_x     = -2;
       drop_y     = -2;
       drop_mod   = 0.3f;
       drop_alpha = 1.0f;
       scale      = 1.0f;
       align      = TEXT_ALIGN_LEFT;
-      red        = video_info->font_msg_color_r * 255.0f;
-      green      = video_info->font_msg_color_g * 255.0f;
-      blue       = video_info->font_msg_color_b * 255.0f;
+      red        = video_msg_color_r * 255.0f;
+      green      = video_msg_color_g * 255.0f;
+      blue       = video_msg_color_b * 255.0f;
    }
 
    msg_strlen = strlen(msg);
@@ -139,19 +149,19 @@ static void gdi_render_msg(
    switch (align)
    {
       case TEXT_ALIGN_LEFT:
-         newX = x * width * scale;
+         newX     = x * width * scale;
          newDropX = drop_x * width * scale;
          break;
       case TEXT_ALIGN_RIGHT:
-         newX = (x * width * scale) - textSize.cx;
+         newX     = (x * width * scale) - textSize.cx;
          newDropX = (drop_x * width * scale) - textSize.cx;
          break;
       case TEXT_ALIGN_CENTER:
-         newX = (x * width * scale) - (textSize.cx / 2);
+         newX     = (x * width * scale) - (textSize.cx / 2);
          newDropX = (drop_x * width * scale) - (textSize.cx / 2);
          break;
       default:
-         newX = 0;
+         newX     = 0;
          newDropX = 0;
          break;
    }
@@ -194,24 +204,13 @@ static void gdi_render_msg(
    SelectObject(font->gdi->memDC, font->gdi->bmp_old);
 }
 
-static void gdi_font_flush_block(unsigned width, unsigned height, void* data,
-      video_frame_info_t *video_info)
-{
-   (void)data;
-}
-
-static void gdi_font_bind_block(void* data, void* userdata)
-{
-   (void)data;
-}
-
 font_renderer_t gdi_font = {
    gdi_init_font,
    gdi_render_free_font,
    gdi_render_msg,
    "gdi font",
    gdi_font_get_glyph,       /* get_glyph */
-   gdi_font_bind_block,      /* bind_block */
-   gdi_font_flush_block,     /* flush */
+   NULL,      /* bind_block */
+   NULL,     /* flush */
    gdi_get_message_width     /* get_message_width */
 };

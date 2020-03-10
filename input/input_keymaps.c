@@ -14,7 +14,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
@@ -46,7 +45,7 @@
 #include "SDL.h"
 #endif
 
-#if defined(__linux__) || defined(HAVE_WAYLAND)
+#if defined(__linux__) || defined(__linux__) && defined(HAVE_WAYLAND)
 #include <linux/input.h>
 #include <linux/kd.h>
 #endif

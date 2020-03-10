@@ -160,8 +160,9 @@ enum BootDeviceIDs getBootDeviceID(char *path)
 
 bool waitUntilDeviceIsReady(enum BootDeviceIDs device_id)
 {
-   int openFile = - 1;
-   int retries = 3; /* just in case we tried a unit that is not working/connected */
+   int openFile     = - 1;
+   /* just in case we tried a unit that is not working/connected */
+   int retries      = 3; 
    char *rootDevice = rootDevicePath(device_id);
 
    while(openFile < 0 && retries > 0)
@@ -178,10 +179,10 @@ bool waitUntilDeviceIsReady(enum BootDeviceIDs device_id)
       nopdelay();
 
       retries--;
-   };
-   if (openFile > 0) {
-      fileXioDclose(openFile);
    }
+
+   if (openFile > 0)
+      fileXioDclose(openFile);
    
    return openFile >= 0;
 }

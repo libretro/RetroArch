@@ -58,9 +58,9 @@
 
 #ifdef HAVE_MENU
 #include "../../menu/menu_driver.h"
-#ifdef HAVE_MENU_WIDGETS
-#include "../../menu/widgets/menu_widgets.h"
 #endif
+#ifdef HAVE_GFX_WIDGETS
+#include "../gfx_widgets.h"
 #endif
 
 #include "../font_driver.h"
@@ -76,16 +76,13 @@
 /* Temporary workaround for d3d9 not being able to poll flags during init */
 static gfx_ctx_driver_t d3d9_fake_context;
 static uint32_t d3d9_get_flags(void *data);
-static bool d3d9_set_shader(void *data, enum rarch_shader_type type, const char *path);
+static bool d3d9_set_shader(void *data,
+      enum rarch_shader_type type, const char *path);
 
 static LPDIRECT3D9 g_pD3D9;
 static enum rarch_shader_type supported_shader_type = RARCH_SHADER_NONE;
 
 void *dinput;
-
-#ifdef _XBOX
-static bool d3d9_widescreen_mode = false;
-#endif
 
 static bool d3d9_set_resize(d3d9_video_t *d3d,
       unsigned new_width, unsigned new_height)
@@ -198,22 +195,18 @@ static void d3d9_log_info(const struct LinkInfo *info)
          info->pass->filter == RARCH_FILTER_LINEAR ? "true" : "false");
 }
 
-static bool d3d9_init_chain(d3d9_video_t *d3d, const video_info_t *video_info)
+static bool d3d9_init_chain(d3d9_video_t *d3d,
+      unsigned input_scale,
+      bool rgb32)
 {
+   unsigned i = 0;
    struct LinkInfo link_info;
    unsigned current_width, current_height, out_width, out_height;
-   unsigned i                   = 0;
-
-   (void)i;
-   (void)current_width;
-   (void)current_height;
-   (void)out_width;
-   (void)out_height;
 
    /* Setup information for first pass. */
    link_info.pass  = NULL;
-   link_info.tex_w = video_info->input_scale * RARCH_SCALE_BASE;
-   link_info.tex_h = video_info->input_scale * RARCH_SCALE_BASE;
+   link_info.tex_w = input_scale * RARCH_SCALE_BASE;
+   link_info.tex_h = input_scale * RARCH_SCALE_BASE;
    link_info.pass  = &d3d->shader.pass[0];
 
    if (!renderchain_d3d_init_first(GFX_CTX_DIRECT3D9_API,
@@ -230,9 +223,8 @@ static bool d3d9_init_chain(d3d9_video_t *d3d, const video_info_t *video_info)
    if (
          !d3d->renderchain_driver->init(
             d3d,
-            &d3d->video_info,
             d3d->dev, &d3d->final_viewport, &link_info,
-            d3d->video_info.rgb32)
+            rgb32)
       )
    {
       RARCH_ERR("[D3D9]: Failed to init render chain.\n");
@@ -259,8 +251,8 @@ static bool d3d9_init_chain(d3d9_video_t *d3d, const video_info_t *video_info)
       link_info.tex_w = next_pow2(out_width);
       link_info.tex_h = next_pow2(out_height);
 
-      current_width = out_width;
-      current_height = out_height;
+      current_width   = out_width;
+      current_height  = out_height;
 
       if (!d3d->renderchain_driver->add_pass(
                d3d->renderchain_data, &link_info))
@@ -278,15 +270,16 @@ static bool d3d9_init_chain(d3d9_video_t *d3d, const video_info_t *video_info)
       {
          unsigned i;
          settings_t *settings = config_get_ptr();
+         bool video_smooth    = settings->bools.video_smooth;
 
          for (i = 0; i < d3d->shader.luts; i++)
          {
             if (!d3d->renderchain_driver->add_lut(
                      d3d->renderchain_data,
                      d3d->shader.lut[i].id, d3d->shader.lut[i].path,
-                     d3d->shader.lut[i].filter == RARCH_FILTER_UNSPEC ?
-                     settings->bools.video_smooth :
-                     (d3d->shader.lut[i].filter == RARCH_FILTER_LINEAR)))
+                     d3d->shader.lut[i].filter == RARCH_FILTER_UNSPEC 
+                     ? video_smooth 
+                     : (d3d->shader.lut[i].filter == RARCH_FILTER_LINEAR)))
             {
                RARCH_ERR("[D3D9]: Failed to init LUTs.\n");
                return false;
@@ -426,7 +419,8 @@ void d3d9_set_mvp(void *data, const void *mat_data)
 
 #if defined(HAVE_MENU) || defined(HAVE_OVERLAY)
 static void d3d9_overlay_render(d3d9_video_t *d3d,
-      video_frame_info_t *video_info,
+      unsigned width,
+      unsigned height,
       overlay_t *overlay, bool force_linear)
 {
    D3DTEXTUREFILTERTYPE filter_type;
@@ -445,8 +439,6 @@ static void d3d9_overlay_render(d3d9_video_t *d3d,
          D3DDECLUSAGE_COLOR, 0},
       D3DDECL_END()
    };
-   unsigned width      = video_info->width;
-   unsigned height     = video_info->height;
 
    if (!d3d || !overlay || !overlay->tex)
       return;
@@ -525,8 +517,9 @@ static void d3d9_overlay_render(d3d9_video_t *d3d,
 
    if (!force_linear)
    {
-      settings_t *settings = config_get_ptr();
-      if (!settings->bools.menu_linear_filter)
+      settings_t *settings    = config_get_ptr();
+      bool menu_linear_filter = settings->bools.menu_linear_filter;
+      if (!menu_linear_filter)
          filter_type       = D3DTEXF_POINT;
    }
 
@@ -640,7 +633,7 @@ static void d3d9_get_video_size(d3d9_video_t *d3d,
       *height = 480;
    }
 
-   d3d9_widescreen_mode = video_mode.fIsWideScreen;
+   d3d->widescreen_mode = video_mode.fIsWideScreen;
 }
 #endif
 
@@ -664,9 +657,10 @@ void d3d9_make_d3dpp(void *data,
 
    if (info->vsync)
    {
-      settings_t *settings        = config_get_ptr();
+      settings_t *settings         = config_get_ptr();
+      unsigned video_swap_interval = settings->uints.video_swap_interval;
 
-      switch (settings->uints.video_swap_interval)
+      switch (video_swap_interval)
       {
          default:
          case 1:
@@ -718,7 +712,7 @@ void d3d9_make_d3dpp(void *data,
 #ifdef _XBOX
    d3dpp->MultiSampleType         = D3DMULTISAMPLE_NONE;
    d3dpp->EnableAutoDepthStencil  = FALSE;
-   if (!d3d9_widescreen_mode)
+   if (!d3d->widescreen_mode)
       d3dpp->Flags |= D3DPRESENTFLAG_NO_LETTERBOX;
    d3dpp->MultiSampleQuality      = 0;
 #endif
@@ -769,13 +763,14 @@ static void d3d9_calculate_rect(void *data,
    float device_aspect   = (float)*width / *height;
    d3d9_video_t *d3d     = (d3d9_video_t*)data;
    settings_t *settings  = config_get_ptr();
+   bool scale_integer    = settings->bools.video_scale_integer;
 
    video_driver_get_size(width, height);
 
    *x                   = 0;
    *y                   = 0;
 
-   if (settings->bools.video_scale_integer && !force_full)
+   if (scale_integer && !force_full)
    {
       struct video_viewport vp;
 
@@ -942,7 +937,7 @@ static bool d3d9_initialize(d3d9_video_t *d3d, const video_info_t *info)
    if (!ret)
       return ret;
 
-   if (!d3d9_init_chain(d3d, info))
+   if (!d3d9_init_chain(d3d, info->input_scale, info->rgb32))
    {
       RARCH_ERR("[D3D9]: Failed to initialize render chain.\n");
       return false;
@@ -952,11 +947,8 @@ static bool d3d9_initialize(d3d9_video_t *d3d, const video_info_t *info)
    d3d9_set_viewport(d3d,
       width, height, false, true);
 
-#ifdef _XBOX
-   strlcpy(settings->paths.path_font, "game:\\media\\Arial_12.xpr",
-         sizeof(settings->paths.path_font));
-#endif
-   font_driver_init_osd(d3d, false,
+   font_driver_init_osd(d3d, info,
+         false,
          info->is_threaded,
          FONT_DRIVER_RENDER_D3D9_API);
 
@@ -1020,20 +1012,24 @@ static bool d3d9_restore(void *data)
    return true;
 }
 
-static void d3d9_set_nonblock_state(void *data, bool state)
+static void d3d9_set_nonblock_state(void *data, bool state,
+      bool adaptive_vsync_enabled,
+      unsigned swap_interval)
 {
+#ifdef _XBOX
    int interval                 = 0;
+#endif
    d3d9_video_t            *d3d = (d3d9_video_t*)data;
 
    if (!d3d)
       return;
 
+#ifdef _XBOX
    if (!state)
       interval           = 1;
+#endif
 
    d3d->video_info.vsync = !state;
-
-   (void)interval;
 
 #ifdef _XBOX
    d3d9_set_render_state(d3d->dev,
@@ -1110,7 +1106,6 @@ static void d3d9_apply_state_changes(void *data)
 }
 
 static void d3d9_set_osd_msg(void *data,
-      video_frame_info_t *video_info,
       const char *msg,
       const void *params, void *font)
 {
@@ -1121,7 +1116,7 @@ static void d3d9_set_osd_msg(void *data,
 
    d3d9_set_font_rect(d3d, d3d_font_params);
    d3d9_begin_scene(dev);
-   font_driver_render_msg(d3d, video_info,
+   font_driver_render_msg(d3d,
          msg, d3d_font_params, font);
    d3d9_end_scene(dev);
 }
@@ -1213,22 +1208,19 @@ static bool d3d9_init_internal(d3d9_video_t *d3d,
    if (!d3d9_initialize(d3d, &d3d->video_info))
       return false;
 
-   {
-
-      d3d9_fake_context.get_flags = d3d9_get_flags;
+   d3d9_fake_context.get_flags   = d3d9_get_flags;
 #ifndef _XBOX_
-      d3d9_fake_context.get_metrics = win32_get_metrics;
+   d3d9_fake_context.get_metrics = win32_get_metrics;
 #endif
-      video_context_driver_set(&d3d9_fake_context); 
+   video_context_driver_set(&d3d9_fake_context); 
 #if defined(HAVE_CG) || defined(HAVE_HLSL)
-      {
-         const char *shader_preset   = retroarch_get_shader_preset();
-         enum rarch_shader_type type = video_shader_parse_type(shader_preset);
+   {
+      const char *shader_preset   = retroarch_get_shader_preset();
+      enum rarch_shader_type type = video_shader_parse_type(shader_preset);
 
-         d3d9_set_shader(d3d, type, shader_preset);
-      }
-#endif
+      d3d9_set_shader(d3d, type, shader_preset);
    }
+#endif
 
    d3d_input_driver(settings->arrays.input_joypad_driver,
       settings->arrays.input_joypad_driver, input, input_data);
@@ -1506,7 +1498,7 @@ static void d3d9_get_overlay_interface(void *data,
 }
 #endif
 
-static void d3d9_update_title(video_frame_info_t *video_info)
+static void d3d9_update_title(void)
 {
 #ifndef _XBOX
    const ui_window_t *window      = ui_companion_driver_get_window_ptr();
@@ -1535,7 +1527,13 @@ static bool d3d9_frame(void *data, const void *frame,
    d3d9_video_t *d3d                   = (d3d9_video_t*)data;
    unsigned width                      = video_info->width;
    unsigned height                     = video_info->height;
-   (void)i;
+   bool statistics_show                = video_info->statistics_show;
+   bool widgets_inited                 = video_info->widgets_inited;
+   bool black_frame_insertion          = video_info->black_frame_insertion;
+   struct font_params *osd_params      = (struct font_params*)
+      &video_info->osd_stat_params;
+   const char *stat_text               = video_info->stat_text;
+
 
    if (!frame)
       return true;
@@ -1579,7 +1577,7 @@ static bool d3d9_frame(void *data, const void *frame,
 
    /* Insert black frame first, so we
     * can screenshot, etc. */
-   if (video_info->black_frame_insertion)
+   if (black_frame_insertion)
    {
       if (!d3d9_swap(d3d, d3d->dev) || d3d->needs_restore)
          return true;
@@ -1587,8 +1585,7 @@ static bool d3d9_frame(void *data, const void *frame,
    }
 
    if (!d3d->renderchain_driver->render(
-            d3d, video_info,
-            frame, frame_width, frame_height,
+            d3d, frame, frame_width, frame_height,
             pitch, d3d->dev_rotation))
    {
       RARCH_ERR("[D3D9]: Failed to render scene.\n");
@@ -1599,7 +1596,7 @@ static bool d3d9_frame(void *data, const void *frame,
    if (d3d->menu && d3d->menu->enabled)
    {
       d3d9_set_mvp(d3d->dev, &d3d->mvp);
-      d3d9_overlay_render(d3d, video_info, d3d->menu, false);
+      d3d9_overlay_render(d3d, width, height, d3d->menu, false);
 
       d3d->menu_display.offset = 0;
       d3d9_set_vertex_declaration(d3d->dev, (LPDIRECT3DVERTEXDECLARATION9)d3d->menu_display.decl);
@@ -1608,17 +1605,14 @@ static bool d3d9_frame(void *data, const void *frame,
       d3d9_set_viewports(d3d->dev, &screen_vp);
       menu_driver_frame(video_info);
    }
-   else if (video_info->statistics_show)
+   else if (statistics_show)
    {
-      struct font_params *osd_params = (struct font_params*)
-         &video_info->osd_stat_params;
-
       if (osd_params)
       {
          d3d9_set_viewports(d3d->dev, &screen_vp);
          d3d9_begin_scene(d3d->dev);
-         font_driver_render_msg(d3d, video_info, video_info->stat_text,
-               (const struct font_params*)&video_info->osd_stat_params, NULL);
+         font_driver_render_msg(d3d, stat_text,
+               (const struct font_params*)osd_params, NULL);
          d3d9_end_scene(d3d->dev);
       }
    }
@@ -1629,26 +1623,24 @@ static bool d3d9_frame(void *data, const void *frame,
    {
       d3d9_set_mvp(d3d->dev, &d3d->mvp);
       for (i = 0; i < d3d->overlays_size; i++)
-         d3d9_overlay_render(d3d, video_info, &d3d->overlays[i], true);
+         d3d9_overlay_render(d3d, width, height, &d3d->overlays[i], true);
    }
 #endif
 
-#ifdef HAVE_MENU
-#ifdef HAVE_MENU_WIDGETS
-   if (video_info->widgets_inited)
-      menu_widgets_frame(video_info);
-#endif
+#ifdef HAVE_GFX_WIDGETS
+   if (widgets_inited)
+      gfx_widgets_frame(video_info);
 #endif
 
    if (msg && *msg)
    {
       d3d9_set_viewports(d3d->dev, &screen_vp);
       d3d9_begin_scene(d3d->dev);
-      font_driver_render_msg(d3d, video_info, msg, NULL, NULL);
+      font_driver_render_msg(d3d, msg, NULL, NULL);
       d3d9_end_scene(d3d->dev);
    }
 
-   d3d9_update_title(video_info);
+   d3d9_update_title();
    d3d9_swap(d3d, d3d->dev);
 
    return true;
@@ -2019,8 +2011,8 @@ static bool d3d9_has_windowed(void *data)
 #endif
 }
 
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-static bool d3d9_menu_widgets_enabled(void *data)
+#ifdef HAVE_GFX_WIDGETS
+static bool d3d9_gfx_widgets_enabled(void *data)
 {
    (void)data;
    return false; /* currently disabled due to memory issues */
@@ -2051,7 +2043,7 @@ video_driver_t video_d3d9 = {
 #endif
    d3d9_get_poke_interface,
    NULL, /* wrap_type_to_enum */
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-   d3d9_menu_widgets_enabled
+#ifdef HAVE_GFX_WIDGETS
+   d3d9_gfx_widgets_enabled
 #endif
 };

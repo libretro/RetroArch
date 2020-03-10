@@ -35,7 +35,7 @@ typedef struct led_driver
    const char *ident;
 } led_driver_t;
 
-bool led_driver_init(void);
+void led_driver_init(const char *led_driver);
 
 void led_driver_free(void);
 

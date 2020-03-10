@@ -1,14 +1,17 @@
 #include <stdlib.h>
 #include <string.h>
+
+#include <string/stdstring.h>
+
 #include "component.h"
 
 void component_init(component_t *comp, comp_type_t type)
 {
-   comp->type = type;
-   comp->bounds = make_bounds();
+   comp->type          = type;
+   comp->bounds        = make_bounds();
    comp->render_bounds = make_bounds_unit();
-   comp->orientation = VIDEO_LAYOUT_ROT0;
-   comp->color = make_color_white();
+   comp->orientation   = VIDEO_LAYOUT_ROT0;
+   comp->color         = make_color_white();
    comp->enabled_state = -1;
 
    switch (comp->type)
@@ -23,20 +26,20 @@ void component_init(component_t *comp, comp_type_t type)
       case VIDEO_LAYOUT_C_DISK:
          break;
       case VIDEO_LAYOUT_C_IMAGE:
-         comp->attr.image.file = NULL;
-         comp->attr.image.alpha_file = NULL;
-         comp->attr.image.image_idx = 0;
-         comp->attr.image.alpha_idx = 0;
-         comp->attr.image.loaded = false;
+         comp->attr.image.file        = NULL;
+         comp->attr.image.alpha_file  = NULL;
+         comp->attr.image.image_idx   = 0;
+         comp->attr.image.alpha_idx   = 0;
+         comp->attr.image.loaded      = false;
          break;
       case VIDEO_LAYOUT_C_TEXT:
-         comp->attr.text.string = NULL;
-         comp->attr.text.align = VIDEO_LAYOUT_TEXT_ALIGN_CENTER;
+         comp->attr.text.string       = NULL;
+         comp->attr.text.align        = VIDEO_LAYOUT_TEXT_ALIGN_CENTER;
          break;
       case VIDEO_LAYOUT_C_COUNTER:
-         comp->attr.counter.digits = 2;
+         comp->attr.counter.digits    = 2;
          comp->attr.counter.max_state = 999;
-         comp->attr.counter.align = VIDEO_LAYOUT_TEXT_ALIGN_CENTER;
+         comp->attr.counter.align     = VIDEO_LAYOUT_TEXT_ALIGN_CENTER;
          break;
       case VIDEO_LAYOUT_C_DOTMATRIX_X1:
          break;
@@ -63,11 +66,11 @@ void component_init(component_t *comp, comp_type_t type)
 
 void component_copy(component_t *comp, const component_t *src)
 {
-   comp->type = src->type;
-   comp->bounds = src->bounds;
+   comp->type          = src->type;
+   comp->bounds        = src->bounds;
    comp->render_bounds = src->render_bounds;
-   comp->orientation = src->orientation;
-   comp->color = src->color;
+   comp->orientation   = src->orientation;
+   comp->color         = src->color;
    comp->enabled_state = src->enabled_state;
 
    switch (comp->type)
@@ -75,25 +78,25 @@ void component_copy(component_t *comp, const component_t *src)
       case VIDEO_LAYOUT_C_UNKNOWN:
          break;
       case VIDEO_LAYOUT_C_SCREEN:
-         comp->attr.screen.index = src->attr.screen.index;
+         comp->attr.screen.index      = src->attr.screen.index;
          break;
       case VIDEO_LAYOUT_C_RECT:
          break;
       case VIDEO_LAYOUT_C_DISK:
          break;
       case VIDEO_LAYOUT_C_IMAGE:
-         comp->attr.image.file = init_string(src->attr.image.file);
-         comp->attr.image.alpha_file = init_string(src->attr.image.alpha_file);
-         comp->attr.image.image_idx = src->attr.image.image_idx;
-         comp->attr.image.alpha_idx = src->attr.image.alpha_idx;
-         comp->attr.image.loaded = src->attr.image.loaded;
+         comp->attr.image.file        = string_init(src->attr.image.file);
+         comp->attr.image.alpha_file  = string_init(src->attr.image.alpha_file);
+         comp->attr.image.image_idx   = src->attr.image.image_idx;
+         comp->attr.image.alpha_idx   = src->attr.image.alpha_idx;
+         comp->attr.image.loaded      = src->attr.image.loaded;
          break;
       case VIDEO_LAYOUT_C_TEXT:
-         comp->attr.text.string = init_string(src->attr.text.string);
-         comp->attr.text.align = src->attr.text.align;
+         comp->attr.text.string       = string_init(src->attr.text.string);
+         comp->attr.text.align        = src->attr.text.align;
          break;
       case VIDEO_LAYOUT_C_COUNTER:
-         comp->attr.counter.digits = src->attr.counter.digits;
+         comp->attr.counter.digits    = src->attr.counter.digits;
          comp->attr.counter.max_state = src->attr.counter.max_state;
          comp->attr.counter.align = src->attr.counter.align;
          break;

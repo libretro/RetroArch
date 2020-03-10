@@ -804,13 +804,7 @@ static bool sunxi_gfx_frame(void *data, const void *frame, unsigned width,
    return true;
 }
 
-static void sunxi_gfx_set_nonblock_state(void *data, bool state)
-{
-   struct sunxi_video *vid = data;
-
-   (void)vid;
-   (void)state;
-}
+static void sunxi_gfx_set_nonblock_state(void *a, bool b, bool c, unsigned d) { }
 
 static bool sunxi_gfx_alive(void *data)
 {

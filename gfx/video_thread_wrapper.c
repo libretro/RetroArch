@@ -54,7 +54,6 @@ enum thread_cmd
    CMD_POKE_GET_FBO_STATE,
 
    CMD_POKE_SET_ASPECT_RATIO,
-   CMD_POKE_SET_OSD_MSG,
    CMD_FONT_INIT,
    CMD_CUSTOM_COMMAND,
 
@@ -508,19 +507,6 @@ static bool video_thread_handle_packet(
          video_thread_reply(thr, &pkt);
          break;
 
-      case CMD_POKE_SET_OSD_MSG:
-         {
-            video_frame_info_t video_info;
-            video_driver_build_info(&video_info);
-            if (thr->poke && thr->poke->set_osd_msg)
-               thr->poke->set_osd_msg(thr->driver_data,
-                     &video_info,
-                     pkt.data.osd_message.msg,
-                     &pkt.data.osd_message.params, NULL);
-         }
-         video_thread_reply(thr, &pkt);
-         break;
-
       case CMD_FONT_INIT:
          if (pkt.data.font_init.method)
             pkt.data.font_init.return_value =
@@ -601,6 +587,8 @@ static void video_thread_loop(void *data)
          if (thr->driver && thr->driver->frame)
          {
             video_frame_info_t video_info;
+            /* TODO/FIXME - not thread-safe - should get 
+             * rid of this */
             video_driver_build_info(&video_info);
 
             ret = thr->driver->frame(thr->driver_data,
@@ -784,7 +772,9 @@ static bool video_thread_frame(void *data, const void *frame_,
    return true;
 }
 
-static void video_thread_set_nonblock_state(void *data, bool state)
+static void video_thread_set_nonblock_state(void *data, bool state,
+      bool adaptive_vsync_enabled,
+      unsigned swap_interval)
 {
    thread_video_t *thr = (thread_video_t*)data;
    if (thr)
@@ -1173,7 +1163,6 @@ static void thread_set_texture_enable(void *data, bool state, bool full_screen)
 }
 
 static void thread_set_osd_msg(void *data,
-      video_frame_info_t *video_info,
       const char *msg,
       const void *params, void *font)
 {
@@ -1185,7 +1174,7 @@ static void thread_set_osd_msg(void *data,
    /* TODO : find a way to determine if the calling
     * thread is the driver thread or not. */
    if (thr->poke && thr->poke->set_osd_msg)
-      thr->poke->set_osd_msg(thr->driver_data, video_info, msg, params, font);
+      thr->poke->set_osd_msg(thr->driver_data, msg, params, font);
 }
 
 static uintptr_t thread_load_texture(void *video_data, void *data,
@@ -1281,13 +1270,13 @@ static void video_thread_get_poke_interface(
       *iface = NULL;
 }
 
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-static bool video_thread_wrapper_menu_widgets_enabled(void *data)
+#ifdef HAVE_GFX_WIDGETS
+static bool video_thread_wrapper_gfx_widgets_enabled(void *data)
 {
    thread_video_t *thr = (thread_video_t*)data;
 
-   if (thr && thr->driver && thr->driver->menu_widgets_enabled)
-      return thr->driver->menu_widgets_enabled(thr->driver_data);
+   if (thr && thr->driver && thr->driver->gfx_widgets_enabled)
+      return thr->driver->gfx_widgets_enabled(thr->driver_data);
 
    return false;
 }
@@ -1317,8 +1306,8 @@ static const video_driver_t video_thread = {
 #endif
    video_thread_get_poke_interface,
    NULL,
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-   video_thread_wrapper_menu_widgets_enabled
+#ifdef HAVE_GFX_WIDGETS
+   video_thread_wrapper_gfx_widgets_enabled
 #endif
 };
 

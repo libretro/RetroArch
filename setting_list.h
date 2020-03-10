@@ -136,6 +136,12 @@ struct rarch_setting
    uint64_t             free_flags;
 
    double               min;
+   /* TODO/FIXME - nasty hack needed for 'suspected' MSVC 2010 x64 Release -
+    * split min/max to work around MSVC 2010 x64 bug that 
+    * causes crashes due to stack misalignment in or near 
+    * setting_string_setting'
+    */
+   char placeholder;
    double               max;
 
    const char           *rounding_fraction;

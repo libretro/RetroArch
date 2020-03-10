@@ -48,7 +48,6 @@
 #include "../dynamic.h"
 #include "../core.h"
 #include "../verbosity.h"
-#include "../configuration.h"
 
 cheat_manager_t cheat_manager_state;
 
@@ -579,19 +578,16 @@ void cheat_manager_update(cheat_manager_t *handle, unsigned handle_idx)
    RARCH_LOG("%s\n", msg);
 }
 
-void cheat_manager_toggle_index(unsigned i)
+void cheat_manager_toggle_index(bool apply_cheats_after_toggle,
+      unsigned i)
 {
-   settings_t *settings = config_get_ptr();
    if (!cheat_manager_state.cheats || cheat_manager_state.size == 0)
       return;
 
    cheat_manager_state.cheats[i].state = !cheat_manager_state.cheats[i].state;
    cheat_manager_update(&cheat_manager_state, i);
 
-   if (!settings)
-      return;
-
-   if (settings->bools.apply_cheats_after_toggle)
+   if (apply_cheats_after_toggle)
       cheat_manager_apply_cheats();
 }
 
@@ -650,27 +646,24 @@ bool cheat_manager_get_code_state(unsigned i)
 
 static bool cheat_manager_get_game_specific_filename(
       char *s, size_t len,
+      const char *path_cheat_database,
       bool saving)
 {
    char s1[PATH_MAX_LENGTH];
    struct retro_system_info system_info;
-   settings_t *settings    = config_get_ptr();
    global_t *global        = global_get_ptr();
    const char *core_name   = NULL;
    const char *game_name   = NULL;
 
    s1[0]                   = '\0';
 
-   if (!settings || !global)
-      return false;
-
-   if (!core_get_system_info(&system_info))
+   if (!global || !core_get_system_info(&system_info))
       return false;
 
    core_name = system_info.library_name;
    game_name = path_basename(global->name.cheatfile);
 
-   if (string_is_empty(settings->paths.path_cheat_database) ||
+   if (string_is_empty(path_cheat_database) ||
          string_is_empty(core_name) ||
          string_is_empty(game_name))
       return false;
@@ -678,7 +671,7 @@ static bool cheat_manager_get_game_specific_filename(
    s[0] = '\0';
 
    fill_pathname_join(s1,
-         settings->paths.path_cheat_database, core_name,
+         path_cheat_database, core_name,
          sizeof(s1));
 
    if (saving)
@@ -693,24 +686,28 @@ static bool cheat_manager_get_game_specific_filename(
    return true;
 }
 
-void cheat_manager_load_game_specific_cheats(void)
+void cheat_manager_load_game_specific_cheats(const char *path_cheat_database)
 {
    char cheat_file[PATH_MAX_LENGTH];
 
    if (cheat_manager_get_game_specific_filename(
-            cheat_file, sizeof(cheat_file), false))
+            cheat_file, sizeof(cheat_file),
+            path_cheat_database,
+            false))
    {
       RARCH_LOG("[Cheats]: Load game-specific cheatfile: %s\n", cheat_file);
       cheat_manager_load(cheat_file, true);
    }
 }
 
-void cheat_manager_save_game_specific_cheats(void)
+void cheat_manager_save_game_specific_cheats(const char *path_cheat_database)
 {
    char cheat_file[PATH_MAX_LENGTH];
 
    if (cheat_manager_get_game_specific_filename(
-            cheat_file, sizeof(cheat_file), true))
+            cheat_file, sizeof(cheat_file),
+            path_cheat_database,
+            true))
    {
       RARCH_LOG("[Cheats]: Save game-specific cheatfile: %s\n", cheat_file);
       cheat_manager_save(cheat_file, NULL, true);
@@ -1230,7 +1227,8 @@ int cheat_manager_add_matches(const char *path,
 
 void cheat_manager_apply_rumble(struct item_cheat *cheat, unsigned int curr_value)
 {
-   bool rumble = false;
+   bool rumble               = false;
+   retro_time_t current_time = cpu_features_get_time_usec();
 
    switch (cheat->rumble_type)
    {
@@ -1276,8 +1274,8 @@ void cheat_manager_apply_rumble(struct item_cheat *cheat, unsigned int curr_valu
    {
       if (rumble)
       {
-         cheat->rumble_primary_end_time = cpu_features_get_time_usec() + (cheat->rumble_primary_duration * 1000);
-         cheat->rumble_secondary_end_time = cpu_features_get_time_usec() + (cheat->rumble_secondary_duration * 1000);
+         cheat->rumble_primary_end_time   = current_time + (cheat->rumble_primary_duration * 1000);
+         cheat->rumble_secondary_end_time = current_time + (cheat->rumble_secondary_duration * 1000);
          input_driver_set_rumble_state(cheat->rumble_port, RETRO_RUMBLE_STRONG, cheat->rumble_primary_strength);
          input_driver_set_rumble_state(cheat->rumble_port, RETRO_RUMBLE_WEAK, cheat->rumble_secondary_strength);
       }
@@ -1288,18 +1286,20 @@ void cheat_manager_apply_rumble(struct item_cheat *cheat, unsigned int curr_valu
       return;
    }
 
-   if (cheat->rumble_primary_end_time <= cpu_features_get_time_usec())
+   if (cheat->rumble_primary_end_time <= current_time)
    {
       if (cheat->rumble_primary_end_time != 0)
-         input_driver_set_rumble_state(cheat->rumble_port, RETRO_RUMBLE_STRONG, 0);
+         input_driver_set_rumble_state(cheat->rumble_port,
+               RETRO_RUMBLE_STRONG, 0);
       cheat->rumble_primary_end_time = 0;
    }
    else
    {
-      input_driver_set_rumble_state(cheat->rumble_port, RETRO_RUMBLE_STRONG, cheat->rumble_primary_strength);
+      input_driver_set_rumble_state(cheat->rumble_port,
+            RETRO_RUMBLE_STRONG, cheat->rumble_primary_strength);
    }
 
-   if (cheat->rumble_secondary_end_time <= cpu_features_get_time_usec())
+   if (cheat->rumble_secondary_end_time <= current_time)
    {
       if (cheat->rumble_secondary_end_time != 0)
          input_driver_set_rumble_state(cheat->rumble_port, RETRO_RUMBLE_WEAK, 0);

@@ -32,7 +32,7 @@ static void vita_get_video_size(void *data, unsigned *width, unsigned *height)
 }
 
 static void vita_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height, bool is_shutdown)
+      bool *resize, unsigned *width, unsigned *height)
 {
    unsigned new_width, new_height;
 
@@ -48,7 +48,7 @@ static void vita_check_window(void *data, bool *quit,
    *quit = (bool)false;
 }
 
-static void vita_swap_buffers(void *data, void *data2)
+static void vita_swap_buffers(void *data)
 {
    (void)data;
    vglStopRendering();
@@ -56,7 +56,6 @@ static void vita_swap_buffers(void *data, void *data2)
 }
 
 static bool vita_set_video_mode(void *data,
-      video_frame_info_t *video_info,
       unsigned width, unsigned height,
       bool fullscreen)
 {
@@ -122,7 +121,7 @@ static void vita_bind_hw_render(void *data, bool enable)
    (void)enable;
 }
 
-static void *vita_init(video_frame_info_t *video_info, void *video_driver)
+static void *vita_init(void *video_driver)
 {
    (void)video_driver;
 

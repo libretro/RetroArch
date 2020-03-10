@@ -218,32 +218,35 @@ void MainWindow::onThumbnailDownloadReadyRead()
 
 void MainWindow::downloadThumbnail(QString system, QString title, QUrl url)
 {
-   QString systemUnderscore = system;
    QString urlString;
-   QNetworkReply *reply = NULL;
    QNetworkRequest request;
    QByteArray urlArray;
    QString downloadType;
-   settings_t *settings = config_get_ptr();
-   const char *urlData = NULL;
+   QString systemUnderscore = system;
+   QNetworkReply *reply     = NULL;
+   settings_t *settings     = config_get_ptr();
+   const char *urlData      = NULL;
 
    if (!settings || m_pendingThumbnailDownloadTypes.isEmpty())
       return;
 
-   title = getScrubbedString(title);
-   downloadType = m_pendingThumbnailDownloadTypes.takeFirst();
-
-   systemUnderscore = systemUnderscore.replace(" ", "_");
-
-   urlString = QString(THUMBNAIL_URL_HEADER) + systemUnderscore + THUMBNAIL_URL_BRANCH + downloadType + "/" + title + THUMBNAIL_URL_FOOTER;
+   title                    = getScrubbedString(title);
+   downloadType             = m_pendingThumbnailDownloadTypes.takeFirst();
+   systemUnderscore         = systemUnderscore.replace(" ", "_");
+   urlString                = QString(THUMBNAIL_URL_HEADER) 
+      + systemUnderscore 
+      + THUMBNAIL_URL_BRANCH 
+      + downloadType + "/" 
+      + title 
+      + THUMBNAIL_URL_FOOTER;
 
    if (url.isEmpty())
       url = urlString;
 
    request.setUrl(url);
 
-   urlArray = url.toString().toUtf8();
-   urlData = urlArray.constData();
+   urlArray                 = url.toString().toUtf8();
+   urlData                  = urlArray.constData();
 
    if (m_thumbnailDownloadFile.isOpen())
    {
@@ -252,11 +255,16 @@ void MainWindow::downloadThumbnail(QString system, QString title, QUrl url)
    }
    else
    {
-      QString dirString = QString(settings->paths.directory_thumbnails) + "/" + system + "/" + downloadType;
-      QString fileName = dirString + "/" + title + THUMBNAIL_IMAGE_EXTENSION + PARTIAL_EXTENSION;
       QDir dir;
-      QByteArray fileNameArray = fileName.toUtf8();
-      const char *fileNameData = fileNameArray.constData();
+      const char *path_dir_thumbnails = settings->paths.directory_thumbnails;
+      QString               dirString = QString(path_dir_thumbnails) + "/" + system + "/" + downloadType;
+      QString fileName                = dirString 
+         + "/" 
+         + title 
+         + THUMBNAIL_IMAGE_EXTENSION 
+         + PARTIAL_EXTENSION;
+      QByteArray fileNameArray        = fileName.toUtf8();
+      const char *fileNameData        = fileNameArray.constData();
 
       dir.mkpath(dirString);
 

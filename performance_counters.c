@@ -108,9 +108,6 @@ static void log_counters(struct retro_perf_counter **counters, unsigned num)
 
 void rarch_perf_log(void)
 {
-   if (!rarch_ctl(RARCH_CTL_IS_PERFCNT_ENABLE, NULL))
-      return;
-
    RARCH_LOG("[PERF]: Performance counters (RetroArch):\n");
    log_counters(perf_counters_rarch, perf_ptr_rarch);
 }
@@ -121,11 +118,11 @@ void retro_perf_log(void)
    log_counters(perf_counters_libretro, perf_ptr_libretro);
 }
 
-void rarch_timer_tick(rarch_timer_t *timer)
+void rarch_timer_tick(rarch_timer_t *timer, retro_time_t current_time)
 {
    if (!timer)
       return;
-   timer->current = cpu_features_get_time_usec();
+   timer->current    = current_time;
    timer->timeout_us = (timer->timeout_end - timer->current);
 }
 
@@ -159,31 +156,13 @@ void rarch_timer_end(rarch_timer_t *timer)
    timer->timeout_end = 0;
 }
 
-void rarch_timer_begin_new_time(rarch_timer_t *timer, uint64_t sec)
-{
-   if (!timer)
-      return;
-   timer->timeout_us = sec * 1000000;
-   timer->current = cpu_features_get_time_usec();
-   timer->timeout_end = timer->current + timer->timeout_us;
-}
-
 void rarch_timer_begin_new_time_us(rarch_timer_t *timer, uint64_t usec)
 {
    if (!timer)
       return;
-   timer->timeout_us = usec;
-   timer->current = cpu_features_get_time_usec();
+   timer->timeout_us  = usec;
+   timer->current     = cpu_features_get_time_usec();
    timer->timeout_end = timer->current + timer->timeout_us;
-}
-
-void rarch_timer_begin(rarch_timer_t *timer, uint64_t sec)
-{
-   if (!timer)
-      return;
-   rarch_timer_begin_new_time(timer, sec);
-   timer->timer_begin = true;
-   timer->timer_end   = false;
 }
 
 void rarch_timer_begin_us(rarch_timer_t *timer, uint64_t usec)

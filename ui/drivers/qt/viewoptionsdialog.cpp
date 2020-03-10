@@ -189,8 +189,14 @@ ViewOptionsDialog::ViewOptionsDialog(MainWindow *mainwindow, QWidget *parent) :
    connect(this, SIGNAL(rejected()), this, SLOT(onRejected()));
 }
 
-QIcon getIcon(OptionsCategory *category) {
-   QPixmap pixmap = QPixmap(QString(config_get_ptr()->paths.directory_assets) + "/xmb/monochrome/png/" + category->categoryIconName() + ".png");
+QIcon getIcon(OptionsCategory *category)
+{
+   settings_t *settings        = config_get_ptr();
+   const char *path_dir_assets = settings->paths.directory_assets;
+   QPixmap pixmap              = QPixmap(QString(path_dir_assets) 
+         + "/xmb/monochrome/png/" 
+         + category->categoryIconName() 
+         + ".png");
    return QIcon(getColorizedPixmap(pixmap, getLabelColor("iconColor")));
 }
 
@@ -203,7 +209,8 @@ void ViewOptionsDialog::addCategory(OptionsCategory *category)
    for (OptionsPage* page : category->pages())
    {
       SmartScrollArea *scrollArea = new SmartScrollArea(this);
-      QWidget *widget = page->widget();
+      QWidget             *widget = page->widget();
+
       scrollArea->setWidget(widget);
       widget->setAutoFillBackground(false);
       tabWidget->addTab(scrollArea, page->displayName());
@@ -216,7 +223,9 @@ void ViewOptionsDialog::addCategory(OptionsCategory *category)
    if (tabWidget->count() < 2)
       tabWidget->tabBar()->hide();
 #endif
-   m_optionsList->addItem(new QListWidgetItem(getIcon(category), category->displayName()));
+   m_optionsList->addItem(
+         new QListWidgetItem(getIcon(category),
+            category->displayName()));
    m_optionsStack->addWidget(tabWidget);
 }
 

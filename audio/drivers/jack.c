@@ -26,7 +26,6 @@
 #include <rthreads/rthreads.h>
 
 #include "../../retroarch.h"
-#include "../../configuration.h"
 #include "../../verbosity.h"
 
 #define FRAMES(x) (x / (sizeof(float) * 2))
@@ -97,13 +96,13 @@ static void shutdown_cb(void *data)
 #endif
 }
 
-static int parse_ports(char **dest_ports, const char **jports)
+static int parse_ports(const char *audio_device,
+      char **dest_ports, const char **jports)
 {
    int i;
    char           *save   = NULL;
    int           parsed   = 0;
-   settings_t *settings   = config_get_ptr();
-   char *audio_device_cpy = strdup(settings->arrays.audio_device);
+   char *audio_device_cpy = strdup(audio_device);
    const char      *con   = strtok_r(audio_device_cpy, ",", &save);
 
    if (con)
@@ -146,7 +145,8 @@ static size_t find_buffersize(jack_t *jd, int latency, unsigned out_rate)
    return buffer_frames * sizeof(jack_default_audio_sample_t);
 }
 
-static void *ja_init(const char *device, unsigned rate, unsigned latency,
+static void *ja_init(const char *device,
+      unsigned rate, unsigned latency,
       unsigned block_frames,
       unsigned *new_rate)
 {
@@ -203,7 +203,7 @@ static void *ja_init(const char *device, unsigned rate, unsigned latency,
       }
    }
 
-   parsed = parse_ports(dest_ports, jports);
+   parsed = parse_ports(device, dest_ports, jports);
 
    if (jack_activate(jd->client) < 0)
    {

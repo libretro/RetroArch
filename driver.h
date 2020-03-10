@@ -57,7 +57,6 @@ enum
 enum driver_ctl_state
 {
    RARCH_DRIVER_CTL_NONE = 0,
-   RARCH_DRIVER_CTL_DEINIT,
 
    /* Sets monitor refresh rate to new value by calling
     * video_monitor_set_refresh_rate(). Subsequently

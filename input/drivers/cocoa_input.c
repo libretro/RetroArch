@@ -289,7 +289,7 @@ static int16_t cocoa_pointer_state(cocoa_input_data_t *apple,
 }
 
 static int16_t cocoa_input_state(void *data,
-      rarch_joypad_info_t joypad_info,
+      rarch_joypad_info_t *joypad_info,
       const struct retro_keybind **binds, unsigned port,
       unsigned device, unsigned idx, unsigned id)
 {
@@ -306,9 +306,9 @@ static int16_t cocoa_input_state(void *data,
             {
                /* Auto-binds are per joypad, not per user. */
                const uint64_t joykey  = (binds[port][i].joykey != NO_BTN)
-                  ? binds[port][i].joykey : joypad_info.auto_binds[i].joykey;
+                  ? binds[port][i].joykey : joypad_info->auto_binds[i].joykey;
                const uint32_t joyaxis = (binds[port][i].joyaxis != AXIS_NONE)
-                  ? binds[port][i].joyaxis : joypad_info.auto_binds[i].joyaxis;
+                  ? binds[port][i].joyaxis : joypad_info->auto_binds[i].joyaxis;
 
                if (apple_key_state[rarch_keysym_lut[binds[port][i].key]])
                {
@@ -316,23 +316,23 @@ static int16_t cocoa_input_state(void *data,
                   continue;
                }
 
-               if ((uint16_t)joykey != NO_BTN && apple->joypad->button(joypad_info.joy_idx, (uint16_t)joykey))
+               if ((uint16_t)joykey != NO_BTN && apple->joypad->button(joypad_info->joy_idx, (uint16_t)joykey))
                {
                   ret |= (1 << i);
                   continue;
                }
-               if (((float)abs(apple->joypad->axis(joypad_info.joy_idx, joyaxis)) / 0x8000) > joypad_info.axis_threshold)
+               if (((float)abs(apple->joypad->axis(joypad_info->joy_idx, joyaxis)) / 0x8000) > joypad_info->axis_threshold)
                {
                   ret |= (1 << i);
                   continue;
                }
 #ifdef HAVE_MFI
-               if ((uint16_t)joykey != NO_BTN && apple->sec_joypad->button(joypad_info.joy_idx, (uint16_t)joykey))
+               if ((uint16_t)joykey != NO_BTN && apple->sec_joypad->button(joypad_info->joy_idx, (uint16_t)joykey))
                {
                   ret |= (1 << i);
                   continue;
                }
-               if (((float)abs(apple->sec_joypad->axis(joypad_info.joy_idx, joyaxis)) / 0x8000) > joypad_info.axis_threshold)
+               if (((float)abs(apple->sec_joypad->axis(joypad_info->joy_idx, joyaxis)) / 0x8000) > joypad_info->axis_threshold)
                {
                   ret |= (1 << i);
                   continue;
@@ -345,21 +345,21 @@ static int16_t cocoa_input_state(void *data,
          {
             /* Auto-binds are per joypad, not per user. */
             const uint64_t joykey  = (binds[port][id].joykey != NO_BTN)
-               ? binds[port][id].joykey : joypad_info.auto_binds[id].joykey;
+               ? binds[port][id].joykey : joypad_info->auto_binds[id].joykey;
             const uint32_t joyaxis = (binds[port][id].joyaxis != AXIS_NONE)
-               ? binds[port][id].joyaxis : joypad_info.auto_binds[id].joyaxis;
+               ? binds[port][id].joyaxis : joypad_info->auto_binds[id].joyaxis;
             if (id < RARCH_BIND_LIST_END)
                if (apple_key_state[rarch_keysym_lut[binds[port][id].key]])
                   return true;
             if ((uint16_t)joykey != NO_BTN && apple->joypad->button(
-                     joypad_info.joy_idx, (uint16_t)joykey))
+                     joypad_info->joy_idx, (uint16_t)joykey))
                return true;
-            if (((float)abs(apple->joypad->axis(joypad_info.joy_idx, joyaxis)) / 0x8000) > joypad_info.axis_threshold)
+            if (((float)abs(apple->joypad->axis(joypad_info->joy_idx, joyaxis)) / 0x8000) > joypad_info->axis_threshold)
                return true;
 #ifdef HAVE_MFI
-            if ((uint16_t)joykey != NO_BTN && apple->sec_joypad->button(joypad_info.joy_idx, (uint16_t)joykey))
+            if ((uint16_t)joykey != NO_BTN && apple->sec_joypad->button(joypad_info->joy_idx, (uint16_t)joykey))
                return true;
-            if (((float)abs(apple->sec_joypad->axis(joypad_info.joy_idx, joyaxis)) / 0x8000) > joypad_info.axis_threshold)
+            if (((float)abs(apple->sec_joypad->axis(joypad_info->joy_idx, joyaxis)) / 0x8000) > joypad_info->axis_threshold)
                return true;
 #endif
          }

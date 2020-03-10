@@ -165,7 +165,7 @@ struct input_driver
     * Analog values have same range as a signed 16-bit integer.
     */
    int16_t (*input_state)(void *data,
-         rarch_joypad_info_t joypad_info,
+         rarch_joypad_info_t *joypad_info,
          const struct retro_keybind **retro_keybinds,
          unsigned port, unsigned device, unsigned index, unsigned id);
 
@@ -344,7 +344,7 @@ const input_device_driver_t *input_joypad_init_driver(
  * Returns: analog value on success, otherwise 0.
  **/
 int16_t input_joypad_analog(const input_device_driver_t *driver,
-      rarch_joypad_info_t joypad_info,
+      rarch_joypad_info_t *joypad_info,
       unsigned port, unsigned idx, unsigned ident,
       const struct retro_keybind *binds);
 

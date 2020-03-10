@@ -28,7 +28,7 @@
 #include "../drivers/ctr_gu.h"
 #include "../../ctr/gpu_old.h"
 
-#include "../../retroarch.h"
+#include "../../configuration.h"
 #include "../../verbosity.h"
 
 /* FIXME: this is just a workaround to avoid
@@ -154,17 +154,15 @@ static int ctr_font_get_message_width(void* data, const char* msg,
 }
 
 static void ctr_font_render_line(
-      video_frame_info_t *video_info,
+      ctr_video_t *ctr,
       ctr_font_t* font, const char* msg, unsigned msg_len,
       float scale, const unsigned int color, float pos_x,
-      float pos_y, unsigned text_align)
+      float pos_y,
+      unsigned width, unsigned height, unsigned text_align)
 {
    unsigned i;
 
    ctr_vertex_t* v  = NULL;
-   ctr_video_t* ctr = (ctr_video_t*)video_info->userdata;
-   unsigned width   = video_info->width;
-   unsigned height  = video_info->height;
    int x            = roundf(pos_x * width);
    int y            = roundf((1.0f - pos_y) * height);
    int delta_x      = 0;
@@ -309,10 +307,10 @@ static void ctr_font_render_line(
 }
 
 static void ctr_font_render_message(
-      video_frame_info_t *video_info,
+      ctr_video_t *ctr,
       ctr_font_t* font, const char* msg, float scale,
       const unsigned int color, float pos_x, float pos_y,
-      unsigned text_align)
+      unsigned width, unsigned height, unsigned text_align)
 {
    int lines = 0;
    float line_height;
@@ -323,8 +321,9 @@ static void ctr_font_render_message(
    /* If the font height is not supported just draw as usual */
    if (!font->font_driver->get_line_height)
    {
-      ctr_font_render_line(video_info, font, msg, strlen(msg),
-                           scale, color, pos_x, pos_y, text_align);
+      ctr_font_render_line(ctr, font, msg, strlen(msg),
+                           scale, color, pos_x, pos_y,
+                           width, height, text_align);
       return;
    }
 
@@ -338,25 +337,25 @@ static void ctr_font_render_message(
       if (delim)
       {
          unsigned msg_len = delim - msg;
-         ctr_font_render_line(video_info, font, msg, msg_len,
-                              scale, color, pos_x, pos_y - (float)lines * line_height,
-                              text_align);
+         ctr_font_render_line(ctr, font, msg, msg_len,
+               scale, color, pos_x, pos_y - (float)lines * line_height,
+               width, height, text_align);
          msg += msg_len + 1;
          lines++;
       }
       else
       {
          unsigned msg_len = strlen(msg);
-         ctr_font_render_line(video_info, font, msg, msg_len,
-                              scale, color, pos_x, pos_y - (float)lines * line_height,
-                              text_align);
+         ctr_font_render_line(ctr, font, msg, msg_len,
+               scale, color, pos_x, pos_y - (float)lines * line_height,
+               width, height, text_align);
          break;
       }
    }
 }
 
 static void ctr_font_render_msg(
-      video_frame_info_t *video_info,
+      void *userdata,
       void* data, const char* msg,
       const struct font_params *params)
 {
@@ -367,8 +366,15 @@ static void ctr_font_render_msg(
    unsigned color, color_dark, r, g, b,
             alpha, r_dark, g_dark, b_dark, alpha_dark;
    ctr_font_t                * font = (ctr_font_t*)data;
-   unsigned width                   = video_info->width;
-   unsigned height                  = video_info->height;
+   ctr_video_t                *ctr  = (ctr_video_t*)userdata;
+   unsigned width                   = ctr->vp.width;
+   unsigned height                  = ctr->vp.height;
+   settings_t *settings             = config_get_ptr();
+   float video_msg_pos_x            = settings->floats.video_msg_pos_x;
+   float video_msg_pos_y            = settings->floats.video_msg_pos_y;
+   float video_msg_color_r          = settings->floats.video_msg_color_r;
+   float video_msg_color_g          = settings->floats.video_msg_color_g;
+   float video_msg_color_b          = settings->floats.video_msg_color_b;
 
    if (!font || !msg || !*msg)
       return;
@@ -393,14 +399,14 @@ static void ctr_font_render_msg(
    }
    else
    {
-      x              = video_info->font_msg_pos_x;
-      y              = video_info->font_msg_pos_y;
+      x              = video_msg_pos_x;
+      y              = video_msg_pos_y;
       scale          = 1.0f;
       text_align     = TEXT_ALIGN_LEFT;
 
-      r              = (video_info->font_msg_color_r * 255);
-      g              = (video_info->font_msg_color_g * 255);
-      b              = (video_info->font_msg_color_b * 255);
+      r              = (video_msg_color_r * 255);
+      g              = (video_msg_color_g * 255);
+      b              = (video_msg_color_b * 255);
       alpha          = 255;
       color          = COLOR_ABGR(r, g, b, alpha);
 
@@ -423,13 +429,15 @@ static void ctr_font_render_msg(
       alpha_dark     = alpha * drop_alpha;
       color_dark     = COLOR_ABGR(r_dark, g_dark, b_dark, alpha_dark);
 
-      ctr_font_render_message(video_info, font, msg, scale, color_dark,
+      ctr_font_render_message(ctr, font, msg, scale, color_dark,
                               x + scale * drop_x / width, y +
-                              scale * drop_y / height, text_align);
+                              scale * drop_y / height,
+                              width, height, text_align);
    }
 
-   ctr_font_render_message(video_info, font, msg, scale,
-                           color, x, y, text_align);
+   ctr_font_render_message(ctr, font, msg, scale,
+                           color, x, y,
+                           width, height, text_align);
 }
 
 static const struct font_glyph* ctr_font_get_glyph(

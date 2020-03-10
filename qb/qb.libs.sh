@@ -264,25 +264,27 @@ check_pkgconf()
 }
 
 # check_header:
-# $1 = HAVE_$1
+# $1 = language
+# $2 = HAVE_$2
 # $@ = header files
 check_header()
-{	add_opt "$1"
-	tmpval="$(eval "printf %s \"\$HAVE_$1\"")"
+{	add_opt "$2"
+	check_compiler "$1" ''
+	tmpval="$(eval "printf %s \"\$HAVE_$2\"")"
 	[ "$tmpval" = 'no' ] && return 0
 	rm -f -- "$TEMP_C"
-	val="$1"
-	header="$2"
-	shift
+	val="$2"
+	header="$3"
+	shift 2
 	for head do
 		CHECKHEADER="$head"
-		printf %s\\n "#include <$head>" >> "$TEMP_C"
+		printf %s\\n "#include <$head>" >> "$TEMP_CODE"
 	done
-	printf %s\\n "int main(void) { return 0; }" >> "$TEMP_C"
+	printf %s\\n "int main(void) { return 0; }" >> "$TEMP_CODE"
 	answer='no'
 	printf %s "Checking presence of header file $CHECKHEADER ... "
-	$(printf %s "$CC") -o "$TEMP_EXE" "$TEMP_C" \
-		$(printf %s "$BUILD_DIRS $CFLAGS $LDFLAGS") >>config.log 2>&1 &&
+	$(printf %s "$COMPILER") -o "$TEMP_EXE" "$TEMP_CODE" \
+		$(printf %s "$BUILD_DIRS $FLAGS $LDFLAGS") >>config.log 2>&1 &&
 		answer='yes'
 	eval "HAVE_$val=\"$answer\""
 	printf %s\\n "$answer"

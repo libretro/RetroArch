@@ -31,9 +31,9 @@
 
 #ifdef HAVE_MENU
 #include "../../menu/menu_driver.h"
-#ifdef HAVE_MENU_WIDGETS
-#include "../../menu/widgets/menu_widgets.h"
 #endif
+#ifdef HAVE_GFX_WIDGETS
+#include "../gfx_widgets.h"
 #endif
 
 #include "../../driver.h"
@@ -73,14 +73,14 @@ static struct string_list *d3d11_gpu_list = NULL;
 static IDXGIAdapter1 *d3d11_adapters[D3D11_MAX_GPU_COUNT] = {NULL};
 static IDXGIAdapter1 *d3d11_current_adapter = NULL;
 
-static void d3d11_clear_scissor(d3d11_video_t *d3d11, video_frame_info_t *video_info)
+static void d3d11_clear_scissor(d3d11_video_t *d3d11, unsigned video_width, unsigned video_height)
 {
    D3D11_RECT scissor_rect;
 
    scissor_rect.left   = 0;
    scissor_rect.top    = 0;
-   scissor_rect.right  = video_info->width;
-   scissor_rect.bottom = video_info->height;
+   scissor_rect.right  = video_width;
+   scissor_rect.bottom = video_height;
 
    D3D11SetScissorRects(d3d11->context, 1, &scissor_rect);
 }
@@ -1041,7 +1041,11 @@ static void *d3d11_gfx_init(const video_info_t* video,
    }
    D3D11SetState(d3d11->context, d3d11->state);
 
-   font_driver_init_osd(d3d11, false, video->is_threaded, FONT_DRIVER_RENDER_D3D11_API);
+   font_driver_init_osd(d3d11,
+         video,
+         false,
+         video->is_threaded,
+         FONT_DRIVER_RENDER_D3D11_API);
 
    {
       d3d11_fake_context.get_flags = d3d11_get_flags;
@@ -1072,7 +1076,8 @@ static void *d3d11_gfx_init(const video_info_t* video,
 #endif
 
    {
-      int i = 0;
+      int         i = 0;
+      int gpu_index = settings->ints.d3d11_gpu_index;
 
       if (d3d11_gpu_list)
          string_list_free(d3d11_gpu_list);
@@ -1112,18 +1117,18 @@ static void *d3d11_gfx_init(const video_info_t* video,
 
       video_driver_set_gpu_api_devices(GFX_CTX_DIRECT3D11_API, d3d11_gpu_list);
 
-      if (0 <= settings->ints.d3d11_gpu_index && settings->ints.d3d11_gpu_index <= i && settings->ints.d3d11_gpu_index < D3D11_MAX_GPU_COUNT)
+      if (0 <= gpu_index && gpu_index <= i && gpu_index < D3D11_MAX_GPU_COUNT)
       {
-         d3d11_current_adapter = d3d11_adapters[settings->ints.d3d11_gpu_index];
+         d3d11_current_adapter = d3d11_adapters[gpu_index];
          d3d11->adapter = d3d11_current_adapter;
-         RARCH_LOG("[D3D11]: Using GPU index %d.\n", settings->ints.d3d11_gpu_index);
-         video_driver_set_gpu_device_string(d3d11_gpu_list->elems[settings->ints.d3d11_gpu_index].data);
+         RARCH_LOG("[D3D11]: Using GPU index %d.\n", gpu_index);
+         video_driver_set_gpu_device_string(d3d11_gpu_list->elems[gpu_index].data);
       }
       else
       {
-         RARCH_WARN("[D3D11]: Invalid GPU index %d, using first device found.\n", settings->ints.d3d11_gpu_index);
+         RARCH_WARN("[D3D11]: Invalid GPU index %d, using first device found.\n", gpu_index);
          d3d11_current_adapter = d3d11_adapters[0];
-         d3d11->adapter = d3d11_current_adapter;
+         d3d11->adapter        = d3d11_current_adapter;
       }
    }
 
@@ -1277,9 +1282,15 @@ static bool d3d11_gfx_frame(
       video_frame_info_t* video_info)
 {
    unsigned           i;
-   d3d11_texture_t*   texture = NULL;
-   d3d11_video_t*     d3d11   = (d3d11_video_t*)data;
-   D3D11DeviceContext context = d3d11->context;
+   d3d11_texture_t*   texture     = NULL;
+   d3d11_video_t*     d3d11       = (d3d11_video_t*)data;
+   D3D11DeviceContext context     = d3d11->context;
+   bool widgets_inited            = video_info->widgets_inited;
+   const char *stat_text          = video_info->stat_text;
+   unsigned video_width           = video_info->width;
+   unsigned video_height          = video_info->height;
+   bool statistics_show           = video_info->statistics_show;
+   struct font_params* osd_params = (struct font_params*)&video_info->osd_stat_params;
 
    if (d3d11->resize_chain)
    {
@@ -1295,15 +1306,15 @@ static bool d3d11_gfx_frame(
 
       D3D11SetRenderTargets(context, 1, &d3d11->renderTargetView, NULL);
 
-      d3d11->viewport.Width  = video_info->width;
-      d3d11->viewport.Height = video_info->height;
+      d3d11->viewport.Width  = video_width;
+      d3d11->viewport.Height = video_height;
 
       d3d11->ubo_values.OutputSize.width  = d3d11->viewport.Width;
       d3d11->ubo_values.OutputSize.height = d3d11->viewport.Height;
 
       d3d11->resize_chain    = false;
       d3d11->resize_viewport = true;
-      video_driver_set_size(video_info->width, video_info->height);
+      video_driver_set_size(video_width, video_height);
    }
 
 #ifdef __WINRT__
@@ -1311,11 +1322,8 @@ static bool d3d11_gfx_frame(
    D3D11SetRenderTargets(context, 1, &d3d11->renderTargetView, NULL);
 #endif
 
-#if 0
-   PERF_START();
-#endif
-
-#if 0 /* custom viewport doesn't call apply_state_changes, so we can't rely on this for now */
+   /* custom viewport doesn't call apply_state_changes, so we can't rely on this for now */
+#if 0 
    if (d3d11->resize_viewport)
 #endif
       d3d11_update_viewport(d3d11, false);
@@ -1499,7 +1507,7 @@ static bool d3d11_gfx_frame(
    D3D11ClearRenderTargetView(context, d3d11->renderTargetView, d3d11->clearcolor);
    D3D11SetViewports(context, 1, &d3d11->frame.viewport);
 
-   d3d11_clear_scissor(d3d11, video_info);
+   d3d11_clear_scissor(d3d11, video_width, video_height);
 
    D3D11Draw(context, 4, 0);
 
@@ -1525,7 +1533,7 @@ static bool d3d11_gfx_frame(
    d3d11->sprites.enabled = true;
 
 #ifdef HAVE_MENU
-#ifndef HAVE_MENU_WIDGETS
+#ifndef HAVE_GFX_WIDGETS
    if (d3d11->menu.enabled)
 #endif
    {
@@ -1540,18 +1548,16 @@ static bool d3d11_gfx_frame(
       menu_driver_frame(video_info);
    else
 #endif
-      if (video_info->statistics_show)
+      if (statistics_show)
    {
-      struct font_params* osd_params = (struct font_params*)&video_info->osd_stat_params;
-
       if (osd_params)
       {
          D3D11SetViewports(context, 1, &d3d11->viewport);
          D3D11SetBlendState(d3d11->context, d3d11->blend_enable, NULL, D3D11_DEFAULT_SAMPLE_MASK);
          D3D11SetVertexBuffer(context, 0, d3d11->sprites.vbo, sizeof(d3d11_sprite_t), 0);
          font_driver_render_msg(d3d11,
-               video_info, video_info->stat_text,
-               (const struct font_params*)&video_info->osd_stat_params, NULL);
+               stat_text,
+               (const struct font_params*)osd_params, NULL);
       }
    }
 
@@ -1576,11 +1582,9 @@ static bool d3d11_gfx_frame(
    }
 #endif
 
-#ifdef HAVE_MENU
-#ifdef HAVE_MENU_WIDGETS
-   if (video_info->widgets_inited)
-      menu_widgets_frame(video_info);
-#endif
+#ifdef HAVE_GFX_WIDGETS
+   if (widgets_inited)
+      gfx_widgets_frame(video_info);
 #endif
 
    if (msg && *msg)
@@ -1588,20 +1592,20 @@ static bool d3d11_gfx_frame(
       D3D11SetViewports(context, 1, &d3d11->viewport);
       D3D11SetBlendState(d3d11->context, d3d11->blend_enable, NULL, D3D11_DEFAULT_SAMPLE_MASK);
       D3D11SetVertexBuffer(context, 0, d3d11->sprites.vbo, sizeof(d3d11_sprite_t), 0);
-      font_driver_render_msg(d3d11, video_info, msg, NULL, NULL);
-      dxgi_update_title(video_info);
+      font_driver_render_msg(d3d11, msg, NULL, NULL);
+      dxgi_update_title();
    }
    d3d11->sprites.enabled = false;
 
-#if 0
-   PERF_STOP();
-#endif
    DXGIPresent(d3d11->swapChain, !!d3d11->vsync, 0);
 
    return true;
 }
 
-static void d3d11_gfx_set_nonblock_state(void* data, bool toggle)
+static void d3d11_gfx_set_nonblock_state(void* data,
+      bool toggle,
+      bool adaptive_vsync_enabled,
+      unsigned swap_interval)
 {
    d3d11_video_t* d3d11 = (d3d11_video_t*)data;
 
@@ -1659,6 +1663,7 @@ static void d3d11_set_menu_texture_frame(
 {
    d3d11_video_t* d3d11    = (d3d11_video_t*)data;
    settings_t*    settings = config_get_ptr();
+   bool menu_linear_filter = settings->bools.menu_linear_filter;
    DXGI_FORMAT    format   = rgb32 ? DXGI_FORMAT_B8G8R8A8_UNORM :
       (DXGI_FORMAT)DXGI_FORMAT_EX_A4R4G4B4_UNORM;
 
@@ -1675,8 +1680,8 @@ static void d3d11_set_menu_texture_frame(
    d3d11_update_texture(d3d11->context, width, height, 0,
          format, frame, &d3d11->menu.texture);
    d3d11->menu.texture.sampler = d3d11->samplers
-      [settings->bools.menu_linear_filter
-      ? RARCH_FILTER_LINEAR
+      [menu_linear_filter
+         ? RARCH_FILTER_LINEAR
          : RARCH_FILTER_NEAREST][RARCH_WRAP_DEFAULT];
 }
 
@@ -1711,14 +1716,19 @@ static void d3d11_gfx_apply_state_changes(void* data)
 }
 
 static void d3d11_gfx_set_osd_msg(
-      void* data, video_frame_info_t* video_info, const char* msg, const void* params, void* font)
+      void* data,
+      const char* msg,
+      const void* params,
+      void* font)
 {
    d3d11_video_t* d3d11 = (d3d11_video_t*)data;
 
    if (d3d11)
    {
       if (d3d11->sprites.enabled)
-         font_driver_render_msg(d3d11, video_info, msg, (const struct font_params*)params, font);
+         font_driver_render_msg(d3d11,
+               msg,
+               (const struct font_params*)params, font);
       else
          printf("OSD msg: %s\n", msg);
    }
@@ -1834,8 +1844,8 @@ static void d3d11_gfx_get_poke_interface(void* data, const video_poke_interface_
    *iface = &d3d11_poke_interface;
 }
 
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-static bool d3d11_menu_widgets_enabled(void *data)
+#if defined(HAVE_GFX_WIDGETS)
+static bool d3d11_gfx_widgets_enabled(void *data)
 {
    (void)data;
    return true;
@@ -1867,7 +1877,7 @@ video_driver_t video_d3d11 = {
 #endif
    d3d11_gfx_get_poke_interface,
    NULL, /* d3d11_wrap_type_to_enum */
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-   d3d11_menu_widgets_enabled
+#if defined(HAVE_GFX_WIDGETS)
+   d3d11_gfx_widgets_enabled
 #endif
 };

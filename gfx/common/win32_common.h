@@ -62,7 +62,7 @@ void create_graphics_context(HWND hwnd, bool *quit);
 
 void create_gdi_context(HWND hwnd, bool *quit);
 
-bool gdi_has_menu_frame(void);
+bool gdi_has_menu_frame(void *data);
 
 bool win32_get_video_output(DEVMODE *dm, int mode, size_t len);
 
@@ -127,7 +127,7 @@ LRESULT CALLBACK WndProcD3D(HWND hwnd, UINT message,
 #endif
 
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE) || defined(HAVE_VULKAN)
-LRESULT CALLBACK WndProcGL(HWND hwnd, UINT message,
+LRESULT CALLBACK WndProcWGL(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam);
 #endif
 

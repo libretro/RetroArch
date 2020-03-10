@@ -49,8 +49,8 @@
 #include "../../input/input_driver.h"
 #include "../../input/input_keymaps.h"
 #include "../../input/common/input_x11_common.h"
-#include "../../verbosity.h"
 #include "../../configuration.h"
+#include "../../verbosity.h"
 
 #define _NET_WM_STATE_ADD                    1
 #define MOVERESIZE_GRAVITY_CENTER            5
@@ -267,7 +267,7 @@ float x11_get_refresh_rate(void *data)
    return refresh;
 }
 
-static bool get_video_mode(video_frame_info_t *video_info,
+static bool get_video_mode(
       Display *dpy, unsigned width, unsigned height,
       XF86VidModeModeInfo *mode, XF86VidModeModeInfo *desktop_mode)
 {
@@ -276,6 +276,9 @@ static bool get_video_mode(video_frame_info_t *video_info,
    float refresh_mod           = 0.0f;
    float minimum_fps_diff      = 0.0f;
    XF86VidModeModeInfo **modes = NULL;
+   settings_t *settings        = config_get_ptr();
+   bool black_frame_insertion  = settings->bools.video_black_frame_insertion;
+   float video_refresh_rate    = settings->floats.video_refresh_rate;
 
    XF86VidModeGetAllModeLines(dpy, DefaultScreen(dpy), &num_modes, &modes);
 
@@ -289,7 +292,7 @@ static bool get_video_mode(video_frame_info_t *video_info,
 
    /* If we use black frame insertion, we fake a 60 Hz monitor
     * for 120 Hz one, etc, so try to match that. */
-   refresh_mod = video_info->black_frame_insertion ? 0.5f : 1.0f;
+   refresh_mod = black_frame_insertion ? 0.5f : 1.0f;
 
    for (i = 0; i < num_modes; i++)
    {
@@ -305,7 +308,7 @@ static bool get_video_mode(video_frame_info_t *video_info,
          continue;
 
       refresh = refresh_mod * m->dotclock * 1000.0f / (m->htotal * m->vtotal);
-      diff    = fabsf(refresh - video_info->refresh_rate);
+      diff    = fabsf(refresh - video_refresh_rate);
 
       if (!ret || diff < minimum_fps_diff)
       {
@@ -319,13 +322,13 @@ static bool get_video_mode(video_frame_info_t *video_info,
    return ret;
 }
 
-bool x11_enter_fullscreen(video_frame_info_t *video_info,
+bool x11_enter_fullscreen(
       Display *dpy, unsigned width,
       unsigned height)
 {
    XF86VidModeModeInfo mode;
 
-   if (!get_video_mode(video_info, dpy, width, height, &mode, &desktop_mode))
+   if (!get_video_mode(dpy, width, height, &mode, &desktop_mode))
       return false;
 
    if (!XF86VidModeSwitchToMode(dpy, DefaultScreen(dpy), &mode))
@@ -598,8 +601,7 @@ bool x11_alive(void *data)
 }
 
 void x11_check_window(void *data, bool *quit,
-   bool *resize, unsigned *width, unsigned *height,
-   bool is_shutdown)
+   bool *resize, unsigned *width, unsigned *height)
 {
    unsigned new_width  = *width;
    unsigned new_height = *height;
@@ -679,9 +681,8 @@ bool x11_connect(void)
    return true;
 }
 
-void x11_update_title(void *data, void *data2)
+void x11_update_title(void *data)
 {
-   video_frame_info_t *video_info = (video_frame_info_t*)data2;
    char title[128];
 
    title[0] = '\0';

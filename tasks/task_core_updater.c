@@ -57,6 +57,7 @@ typedef struct core_updater_list_handle
    retro_task_t *http_task;
    bool http_task_finished;
    bool http_task_complete;
+   bool http_task_success;
    http_transfer_data_t *http_data;
    enum core_updater_list_status status;
 } core_updater_list_handle_t;
@@ -72,6 +73,7 @@ enum core_updater_download_status
 
 typedef struct core_updater_download_handle
 {
+   char *path_dir_libretro;
    char *remote_filename;
    char *remote_core_path;
    char *local_download_path;
@@ -102,6 +104,7 @@ enum update_installed_cores_status
 
 typedef struct update_installed_cores_handle
 {
+   char *path_dir_libretro;
    core_updater_list_t* core_list;
    retro_task_t *list_task;
    retro_task_t *download_task;
@@ -160,8 +163,9 @@ static void cb_http_task_core_updater_get_list(
    http_transfer_data_t *data              = (http_transfer_data_t*)task_data;
    file_transfer_t *transf                 = (file_transfer_t*)user_data;
    core_updater_list_handle_t *list_handle = NULL;
+   bool success                            = data && string_is_empty(err);
 
-   if (!data || !transf || err)
+   if (!transf)
       goto finish;
 
    list_handle = (core_updater_list_handle_t*)transf->user_data;
@@ -171,14 +175,22 @@ static void cb_http_task_core_updater_get_list(
 
    list_handle->http_data          = data;
    list_handle->http_task_complete = true;
+   list_handle->http_task_success  = success;
 
 finish:
+
+   /* Log any error messages */
+   if (!success)
+      RARCH_ERR("Download of core list '%s' failed: %s\n",
+            (transf ? transf->path: "unknown"),
+            (err ? err : "unknown"));
 
    if (transf)
       free(transf);
 }
 
-static void free_core_updater_list_handle(core_updater_list_handle_t *list_handle)
+static void free_core_updater_list_handle(
+      core_updater_list_handle_t *list_handle)
 {
    if (!list_handle)
       return;
@@ -218,6 +230,8 @@ static void task_core_updater_get_list_handler(retro_task_t *task)
             file_transfer_t *transf = NULL;
             char *tmp_url           = NULL;
             char buildbot_url[PATH_MAX_LENGTH];
+            const char *net_buildbot_url = 
+               settings->paths.network_buildbot_url;
 
             buildbot_url[0] = '\0';
 
@@ -228,12 +242,12 @@ static void task_core_updater_get_list_handler(retro_task_t *task)
             if (!settings)
                goto task_finished;
 
-            if (string_is_empty(settings->paths.network_buildbot_url))
+            if (string_is_empty(net_buildbot_url))
                goto task_finished;
 
             fill_pathname_join(
                   buildbot_url,
-                  settings->paths.network_buildbot_url,
+                  net_buildbot_url,
                   ".index-extended",
                   sizeof(buildbot_url));
 
@@ -298,15 +312,25 @@ static void task_core_updater_get_list_handler(retro_task_t *task)
          {
             settings_t *settings    = config_get_ptr();
 
-            /* Parse HTTP transfer data */
-            if (list_handle->http_data)
-               core_updater_list_parse_network_data(
-                     list_handle->core_list,
-                     settings->paths.directory_libretro,
-                     settings->paths.path_libretro_info,
-                     settings->paths.network_buildbot_url,
-                     list_handle->http_data->data,
-                     list_handle->http_data->len);
+            /* Check whether HTTP task was successful */
+            if (list_handle->http_task_success)
+            {
+               /* Parse HTTP transfer data */
+               if (list_handle->http_data)
+                  core_updater_list_parse_network_data(
+                        list_handle->core_list,
+                        settings->paths.directory_libretro,
+                        settings->paths.path_libretro_info,
+                        settings->paths.network_buildbot_url,
+                        list_handle->http_data->data,
+                        list_handle->http_data->len);
+            }
+            else
+            {
+               /* Notify user of error via task title */
+               task_free_title(task);
+               task_set_title(task, strdup(msg_hash_to_str(MSG_CORE_LIST_FAILED)));
+            }
 
             /* Enable menu refresh, if required */
 #if defined(RARCH_INTERNAL) && defined(HAVE_MENU)
@@ -367,6 +391,7 @@ void *task_push_get_core_updater_list(
    list_handle->http_task          = NULL;
    list_handle->http_task_finished = false;
    list_handle->http_task_complete = false;
+   list_handle->http_task_success  = false;
    list_handle->http_data          = NULL;
    list_handle->status             = CORE_UPDATER_LIST_BEGIN;
 
@@ -539,10 +564,8 @@ finish:
 
    /* Log any error messages */
    if (!string_is_empty(err))
-   {
       RARCH_ERR("Download of '%s' failed: %s\n",
             (transf ? transf->path: "unknown"), err);
-   }
 
    if (data)
    {
@@ -559,6 +582,9 @@ static void free_core_updater_download_handle(core_updater_download_handle_t *do
 {
    if (!download_handle)
       return;
+
+   if (download_handle->path_dir_libretro)
+      free(download_handle->path_dir_libretro);
 
    if (download_handle->remote_filename)
       free(download_handle->remote_filename);
@@ -780,12 +806,13 @@ static bool task_core_updater_download_finder(retro_task_t *task, void *user_dat
 }
 
 void *task_push_core_updater_download(
-      core_updater_list_t* core_list, const char *filename, bool mute, bool check_crc)
+      core_updater_list_t* core_list,
+      const char *filename, bool mute, bool check_crc,
+      const char *path_dir_libretro)
 {
    task_finder_data_t find_data;
    char task_title[PATH_MAX_LENGTH];
    char local_download_path[PATH_MAX_LENGTH];
-   settings_t *settings                            = config_get_ptr();
    const core_updater_list_entry_t *list_entry     = NULL;
    retro_task_t *task                              = NULL;
    core_updater_download_handle_t *download_handle = (core_updater_download_handle_t*)
@@ -797,7 +824,6 @@ void *task_push_core_updater_download(
    /* Sanity check */
    if (!core_list ||
        string_is_empty(filename) ||
-       !settings ||
        !download_handle)
       goto error;
 
@@ -816,16 +842,17 @@ void *task_push_core_updater_download(
       goto error;
 
    /* Get local file download path */
-   if (string_is_empty(settings->paths.directory_libretro))
+   if (string_is_empty(path_dir_libretro))
       goto error;
 
    fill_pathname_join(
          local_download_path,
-         settings->paths.directory_libretro,
+         path_dir_libretro,
          list_entry->remote_filename,
          sizeof(local_download_path));
 
    /* Configure handle */
+   download_handle->path_dir_libretro        = strdup(path_dir_libretro);
    download_handle->remote_filename          = strdup(list_entry->remote_filename);
    download_handle->remote_core_path         = strdup(list_entry->remote_core_path);
    download_handle->local_download_path      = strdup(local_download_path);
@@ -892,10 +919,14 @@ error:
 /* Update installed cores */
 /**************************/
 
-static void free_update_installed_cores_handle(update_installed_cores_handle_t *update_installed_handle)
+static void free_update_installed_cores_handle(
+      update_installed_cores_handle_t *update_installed_handle)
 {
    if (!update_installed_handle)
       return;
+
+   if (update_installed_handle->path_dir_libretro)
+      free(update_installed_handle->path_dir_libretro);
 
    core_updater_list_free(update_installed_handle->core_list);
 
@@ -921,21 +952,19 @@ static void task_update_installed_cores_handler(retro_task_t *task)
    switch (update_installed_handle->status)
    {
       case UPDATE_INSTALLED_CORES_BEGIN:
-         {
-            /* Request buildbot core list */
-            update_installed_handle->list_task = (retro_task_t*)
-                  task_push_get_core_updater_list(
-                        update_installed_handle->core_list,
-                        true, false);
+         /* Request buildbot core list */
+         update_installed_handle->list_task = (retro_task_t*)
+            task_push_get_core_updater_list(
+                  update_installed_handle->core_list,
+                  true, false);
 
-            /* If push failed, go to end
-             * (error will message will be displayed when
-             * final task title is set) */
-            if (!update_installed_handle->list_task)
-               update_installed_handle->status = UPDATE_INSTALLED_CORES_END;
-            else
-               update_installed_handle->status = UPDATE_INSTALLED_CORES_WAIT_LIST;
-         }
+         /* If push failed, go to end
+          * (error will message will be displayed when
+          * final task title is set) */
+         if (!update_installed_handle->list_task)
+            update_installed_handle->status = UPDATE_INSTALLED_CORES_END;
+         else
+            update_installed_handle->status = UPDATE_INSTALLED_CORES_WAIT_LIST;
          break;
       case UPDATE_INSTALLED_CORES_WAIT_LIST:
          {
@@ -1058,7 +1087,8 @@ static void task_update_installed_cores_handler(retro_task_t *task)
                   task_push_core_updater_download(
                         update_installed_handle->core_list,
                         list_entry->remote_filename,
-                        true, false);
+                        true, false,
+                        update_installed_handle->path_dir_libretro);
 
             /* Again, if an error occurred, just return to
              * UPDATE_INSTALLED_CORES_ITERATE state */
@@ -1168,7 +1198,7 @@ static bool task_update_installed_cores_finder(retro_task_t *task, void *user_da
    return false;
 }
 
-void task_push_update_installed_cores(void)
+void task_push_update_installed_cores(const char *path_dir_libretro)
 {
    task_finder_data_t find_data;
    retro_task_t *task                                       = NULL;
@@ -1181,20 +1211,23 @@ void task_push_update_installed_cores(void)
       goto error;
 
    /* Configure handle */
-   update_installed_handle->core_list       = core_updater_list_init(CORE_UPDATER_LIST_SIZE);
-   update_installed_handle->list_task       = NULL;
-   update_installed_handle->download_task   = NULL;
-   update_installed_handle->list_size       = 0;
-   update_installed_handle->list_index      = 0;
-   update_installed_handle->installed_index = 0;
-   update_installed_handle->num_updated     = 0;
-   update_installed_handle->status          = UPDATE_INSTALLED_CORES_BEGIN;
+   update_installed_handle->core_list         = core_updater_list_init(
+         CORE_UPDATER_LIST_SIZE);
+   update_installed_handle->list_task         = NULL;
+   update_installed_handle->download_task     = NULL;
+   update_installed_handle->list_size         = 0;
+   update_installed_handle->list_index        = 0;
+   update_installed_handle->installed_index   = 0;
+   update_installed_handle->num_updated       = 0;
+   update_installed_handle->path_dir_libretro = strdup(path_dir_libretro);
+   update_installed_handle->status            = UPDATE_INSTALLED_CORES_BEGIN;
 
    if (!update_installed_handle->core_list)
       goto error;
 
    /* Only one instance of this task may run at a time */
-   find_data.func = task_update_installed_cores_finder;
+   find_data.func     = task_update_installed_cores_finder;
+   find_data.userdata = NULL;
 
    if (task_queue_find(&find_data))
       goto error;

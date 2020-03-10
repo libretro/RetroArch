@@ -229,7 +229,8 @@ AspectRatioGroup::AspectRatioGroup(const QString &title, QWidget *parent) :
 
 void AspectRatioGroup::paintEvent(QPaintEvent *event)
 {
-   unsigned value = config_get_ptr()->uints.video_aspect_ratio_idx;
+   settings_t *settings = config_get_ptr();
+   unsigned       value = settings->uints.video_aspect_ratio_idx;
 
    if (ASPECT_RATIO_4_3 >= value || value <= ASPECT_RATIO_32_9)
    {
@@ -295,8 +296,11 @@ void VideoPage::onResolutionComboIndexChanged(const QString &text)
 
 void CrtSwitchresPage::onCrtSuperResolutionComboIndexChanged(int index)
 {
+   settings_t *settings = config_get_ptr();
    Q_UNUSED(index)
-   config_get_ptr()->uints.crt_switch_resolution_super = m_crtSuperResolutionCombo->currentData().value<unsigned>();
+
+   settings->uints.crt_switch_resolution_super = 
+   m_crtSuperResolutionCombo->currentData().value<unsigned>();
 }
 
 AspectRatioRadioButton::AspectRatioRadioButton(unsigned min, unsigned max, QWidget *parent) :

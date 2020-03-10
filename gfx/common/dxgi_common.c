@@ -282,28 +282,22 @@ void dxgi_copy(
       void*       dst_data)
 {
    int i, j;
-#if defined(PERF_START) && defined(PERF_STOP)
-   PERF_START();
-#endif
 
    switch ((unsigned)src_format)
    {
       FORMAT_SRC_LIST();
 
       default:
-         assert(0);
-         break;
+      assert(0);
+      break;
    }
-
-#if defined(PERF_START) && defined(PERF_STOP)
-   PERF_STOP();
-#endif
 }
+
 #ifdef _MSC_VER
 #pragma warning(default : 4293)
 #endif
 
-void dxgi_update_title(video_frame_info_t* video_info)
+void dxgi_update_title(void)
 {
 #ifndef __WINRT__
    const ui_window_t* window = ui_companion_driver_get_window_ptr();

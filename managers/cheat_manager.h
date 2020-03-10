@@ -217,7 +217,8 @@ void cheat_manager_apply_cheats(void);
 
 void cheat_manager_update(cheat_manager_t *handle, unsigned handle_idx);
 
-void cheat_manager_toggle_index(unsigned i);
+void cheat_manager_toggle_index(bool apply_cheats_after_toggle,
+      unsigned i);
 
 unsigned cheat_manager_get_buf_size(void);
 
@@ -235,9 +236,9 @@ bool cheat_manager_copy_idx_to_working(unsigned idx);
 
 bool cheat_manager_copy_working_to_idx(unsigned idx);
 
-void cheat_manager_load_game_specific_cheats(void);
+void cheat_manager_load_game_specific_cheats(const char *path_cheat_database);
 
-void cheat_manager_save_game_specific_cheats(void);
+void cheat_manager_save_game_specific_cheats(const char *path_cheat_database);
 
 int cheat_manager_initialize_memory(rarch_setting_t *setting, bool wraparound);
 

@@ -292,7 +292,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NETPLAY_TAB,
-    "Salas de juego en red"
+    "Juego en red"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_ASK_ARCHIVE,
@@ -809,12 +809,44 @@ MSG_HASH(
     "Carpeta"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
+    "Expulsar disco"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_DISK_TRAY_EJECT,
+    "Abre la bandeja de disco virtual y retira el disco que esté cargado. NOTA: Si RetroArch está configurado para pausarse al acceder al menú, algunos núcleos pueden no registrar los cambios hasta que se haya reanudado el contenido y hayan pasado unos segundos entre cada acción de control de disco."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
+    "Introducir disco"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_DISK_TRAY_INSERT,
+    "Introduce el disco correspondiente al índice de disco actual y cierra la bandeja de disco virtual. NOTA: Si RetroArch está configurado para pausarse al acceder al menú, algunos núcleos pueden no registrar los cambios hasta que se haya reanudado el contenido y hayan pasado unos segundos entre cada acción de control de disco."
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DISK_INDEX,
-    "Índice de disco"
+    "Índice de disco actual"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_DISK_INDEX,
+    "Selecciona el disco actual en la lista de imágenes disponibles. El disco se cargará una vez se haya seleccionado «Introducir disco»."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
+    "Cargar disco nuevo"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
+    "Expulsa el disco actual, selecciona uno nuevo en el sistema de archivos, lo introduce y cierra la bandeja de disco virtual. NOTA: Esta es una característica antigua. Se recomienda cargar títulos multidisco utilizando listas de reproducción en formato M3U, las cuales permiten cambiar de disco mediante las opciones «Expulsar/Introducir disco» e «Índice de disco actual»."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DISK_OPTIONS,
     "Control de disco"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NO_DISK,
+    "No se ha seleccionado un disco"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DONT_CARE,
@@ -879,6 +911,10 @@ MSG_HASH(
 MSG_HASH(
     MSG_ALL_CORES_UPDATED,
     "Todos los núcleos instalados están al día"
+    )
+MSG_HASH(
+    MSG_NUM_CORES_UPDATED,
+    "núcleos actualizados: "
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_SCALE_FACTOR,
@@ -2168,6 +2204,14 @@ MSG_HASH(
     "Descarga automáticamente las miniaturas mientras se navega por las listas de reproducción. Provoca una bajada importante en el rendimiento."
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_NETWORK_HOSTING_SETTINGS,
+    "Anfitrión"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SUBSYSTEM_SETTINGS,
+    "Subsistemas"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_NETWORK_SETTINGS,
     "Red"
     )
@@ -2376,6 +2420,14 @@ MSG_HASH(
     "Cierra el menú y reanuda el contenido actual de forma automática tras seleccionar «Guardado rápido» o  «Cargar guardado rápido» en el menú rápido. Si se desactiva esta opción, puede mejorar el rendimiento de los guardados rápidos en dispositivos lentos."
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_INSERT_DISK_RESUME,
+    "Reanudar contenido tras cambiar de disco"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_INSERT_DISK_RESUME,
+    "Cierra el menú de forma automática y reanuda el contenido actual tras seleccionar las opciones «Introducir disco» o «Cargar disco nuevo» en el menú de Control de disco."
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PAUSE_NONACTIVE,
     "Pausar al pasar a segundo plano"
     )
@@ -2466,6 +2518,22 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_THUMBNAIL_MODE_DEFAULT,
     "Valores predeterminados del sistema"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_CLEAN_PLAYLIST,
+    "Limpiar lista de reproducción"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_CLEAN_PLAYLIST,
+    "Elimina las entradas duplicadas o no válidas y confirma las asociaciones de núcleos."
+    )
+MSG_HASH(
+    MSG_PLAYLIST_MANAGER_CLEANING_PLAYLIST,
+    "Limpiando lista de reproducción: "
+    )
+MSG_HASH(
+    MSG_PLAYLIST_MANAGER_PLAYLIST_CLEANED,
+    "Lista de reproducción limpiada: "
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_POINTER_ENABLE,
@@ -2646,6 +2714,10 @@ MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CONTENT_INFO_LAST_PLAYED,
     "Última partida"
     )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CHEEVOS_HASH,
+   "Hash de RetroAchievements"
+   )
 #ifdef HAVE_LAKKA_SWITCH
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_REBOOT,
@@ -4735,6 +4807,10 @@ MSG_HASH(
     "Disco en cola"
     )
 MSG_HASH(
+    MSG_FAILED_TO_APPEND_DISK,
+    "Error al poner disco en cola"
+    )
+MSG_HASH(
     MSG_APPLICATION_DIR,
     "Carpeta de la aplicación"
     )
@@ -5549,6 +5625,14 @@ MSG_HASH(
 MSG_HASH(
     MSG_VIRTUAL_DISK_TRAY,
     "bandeja de discos virtual."
+    )
+MSG_HASH(
+    MSG_VIRTUAL_DISK_TRAY_EJECT,
+    "expulsar"
+    )
+MSG_HASH(
+    MSG_VIRTUAL_DISK_TRAY_CLOSE,
+    "cerrar"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
@@ -8921,6 +9005,10 @@ MSG_HASH(
     "Error al asignar disco"
     )
 MSG_HASH(
+    MSG_FAILED_TO_SET_INITIAL_DISK,
+    "Error al asignar el último disco utilizado..."
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_CORE_OPTIONS,
     "Opciones del núcleo"
     )
@@ -10044,6 +10132,10 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DELETE_PLAYLIST,
     "Borrar lista de reproducción"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_DELETE_PLAYLIST,
+    "Elimina la lista de reproducción del sistema de archivos."
     )
 #ifdef HAVE_LAKKA
 MSG_HASH(

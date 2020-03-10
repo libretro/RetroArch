@@ -92,8 +92,7 @@ static void gfx_ctx_mali_fbdev_get_video_size(void *data,
    *height = mali->height;
 }
 
-static void *gfx_ctx_mali_fbdev_init(video_frame_info_t *video_info,
-      void *video_driver)
+static void *gfx_ctx_mali_fbdev_init(void *video_driver)
 {
 #ifdef HAVE_EGL
    EGLint n;
@@ -134,7 +133,7 @@ error:
 }
 
 static void gfx_ctx_mali_fbdev_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height, bool is_shutdown)
+      bool *resize, unsigned *width, unsigned *height)
 {
    unsigned new_width, new_height;
 
@@ -151,7 +150,6 @@ static void gfx_ctx_mali_fbdev_check_window(void *data, bool *quit,
 }
 
 static bool gfx_ctx_mali_fbdev_set_video_mode(void *data,
-      video_frame_info_t *video_info,
       unsigned width, unsigned height,
       bool fullscreen)
 {
@@ -253,7 +251,7 @@ static void gfx_ctx_mali_fbdev_set_swap_interval(void *data,
 #endif
 }
 
-static void gfx_ctx_mali_fbdev_swap_buffers(void *data, void *data2)
+static void gfx_ctx_mali_fbdev_swap_buffers(void *data)
 {
    mali_ctx_data_t *mali = (mali_ctx_data_t*)data;
 

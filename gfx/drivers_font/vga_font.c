@@ -23,6 +23,7 @@
 #endif
 
 #include "../font_driver.h"
+#include "../../configuration.h"
 #include "../../verbosity.h"
 #include "../common/vga_common.h"
 
@@ -75,15 +76,19 @@ static const struct font_glyph *vga_font_get_glyph(
    return NULL;
 }
 
-static void vga_render_msg(video_frame_info_t *video_info,
+static void vga_render_msg(
+      void *userdata,
       void *data, const char *msg,
       const struct font_params *params)
 {
    float x, y, scale;
    unsigned width, height;
-   unsigned newX, newY;
+   unsigned new_x, new_y;
    unsigned align;
    vga_raster_t              *font = (vga_raster_t*)data;
+   settings_t *settings            = config_get_ptr();
+   float video_msg_pos_x           = settings->floats.video_msg_pos_x;
+   float video_msg_pos_y           = settings->floats.video_msg_pos_y;
 
    if (!font || string_is_empty(msg))
       return;
@@ -97,8 +102,8 @@ static void vga_render_msg(video_frame_info_t *video_info,
    }
    else
    {
-      x     = video_info->font_msg_pos_x;
-      y     = video_info->font_msg_pos_y;
+      x     = video_msg_pos_x;
+      y     = video_msg_pos_y;
       scale = 1.0f;
       align = TEXT_ALIGN_LEFT;
    }
@@ -108,22 +113,24 @@ static void vga_render_msg(video_frame_info_t *video_info,
 
    width    = VGA_WIDTH;
    height   = VGA_HEIGHT;
-   newY     = height - (y * height * scale);
+   new_y    = height - (y * height * scale);
 
    switch (align)
    {
       case TEXT_ALIGN_LEFT:
-         newX = x * width * scale;
+         new_x = x * width * scale;
          break;
       case TEXT_ALIGN_RIGHT:
-         newX = (x * width * scale) - strlen(msg);
+         new_x = (x * width * scale) - strlen(msg);
          break;
       case TEXT_ALIGN_CENTER:
-         newX = (x * width * scale) - (strlen(msg) / 2);
+         new_x = (x * width * scale) - (strlen(msg) / 2);
          break;
       default:
          break;
    }
+
+   /* TODO/FIXME - implement */
 }
 
 font_renderer_t vga_font = {

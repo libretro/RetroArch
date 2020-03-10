@@ -437,7 +437,8 @@ static bool dispmanx_gfx_frame(void *data, const void *frame, unsigned width,
       video_frame_info_t *video_info)
 {
    struct dispmanx_video *_dispvars = data;
-   float aspect = video_driver_get_aspect_ratio();
+   float                     aspect = video_driver_get_aspect_ratio();
+   unsigned    max_swapchain_images = video_info->max_swapchain_images;
 
    if (!frame)
       return true;
@@ -468,7 +469,7 @@ static bool dispmanx_gfx_frame(void *data, const void *frame, unsigned width,
             _dispvars->rgb32 ? VC_IMAGE_XRGB8888 : VC_IMAGE_RGB565,
             255,
             _dispvars->aspect_ratio,
-            video_info->max_swapchain_images,
+            max_swapchain_images,
             0,
             &_dispvars->main_surface);
 
@@ -533,27 +534,11 @@ static void dispmanx_set_texture_frame(void *data, const void *frame, bool rgb32
    dispmanx_surface_update_async(frame, _dispvars->menu_surface);
 }
 
-static void dispmanx_gfx_set_nonblock_state(void *data, bool state)
-{
-   struct dispmanx_video *vid = data;
+static void dispmanx_gfx_set_nonblock_state(void *a, bool b,
+      bool c, unsigned d) { }
 
-   (void)data;
-   (void)vid;
-
-   /* TODO */
-}
-
-static bool dispmanx_gfx_alive(void *data)
-{
-   (void)data;
-   return true; /* always alive */
-}
-
-static bool dispmanx_gfx_focus(void *data)
-{
-   (void)data;
-   return true; /* fb device always has focus */
-}
+static bool dispmanx_gfx_alive(void *data) { return true; }
+static bool dispmanx_gfx_focus(void *data) { return true; }
 
 static void dispmanx_gfx_viewport_info(void *data, struct video_viewport *vp)
 {

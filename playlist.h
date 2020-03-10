@@ -64,8 +64,12 @@ enum playlist_thumbnail_mode
    PLAYLIST_THUMBNAIL_MODE_BOXARTS
 };
 
+/* TODO/FIXME - since gfx_thumbnail_path.h has now
+ * been divorced from the menu code, perhaps jdgleaver
+ * can refactor this? */
+
 /* Note: We already have a left/right enum defined
- * in menu_thumbnail_path.h - but we can't include
+ * in gfx_thumbnail_path.h - but we can't include
  * menu code here, so have to make a 'duplicate'... */
 enum playlist_thumbnail_id
 {

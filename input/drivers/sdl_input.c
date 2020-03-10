@@ -91,15 +91,15 @@ static int16_t sdl_analog_pressed(sdl_input_t *sdl, const struct retro_keybind *
 }
 
 static int16_t sdl_joypad_device_state(sdl_input_t *sdl,
-      rarch_joypad_info_t joypad_info,
+      rarch_joypad_info_t *joypad_info,
       const struct retro_keybind *binds,
       unsigned port, unsigned id, enum input_device_type *device)
 {
    /* Auto-binds are per joypad, not per user. */
    const uint64_t joykey  = (binds[id].joykey != NO_BTN)
-      ? binds[id].joykey : joypad_info.auto_binds[id].joykey;
+      ? binds[id].joykey : joypad_info->auto_binds[id].joykey;
    const uint32_t joyaxis = (binds[id].joyaxis != AXIS_NONE)
-      ? binds[id].joyaxis : joypad_info.auto_binds[id].joyaxis;
+      ? binds[id].joyaxis : joypad_info->auto_binds[id].joyaxis;
 
    if ((binds[id].key < RETROK_LAST) && sdl_key_pressed(binds[id].key))
    {
@@ -107,13 +107,14 @@ static int16_t sdl_joypad_device_state(sdl_input_t *sdl,
       return 1;
    }
 
-   if ((uint16_t)joykey != NO_BTN && sdl->joypad->button(joypad_info.joy_idx, (uint16_t)joykey))
+   if ((uint16_t)joykey != NO_BTN && sdl->joypad->button(
+            joypad_info->joy_idx, (uint16_t)joykey))
    {
       *device = INPUT_DEVICE_TYPE_JOYPAD;
       return 1;
    }
 
-   if (((float)abs(sdl->joypad->axis(joypad_info.joy_idx, joyaxis)) / 0x8000) > joypad_info.axis_threshold)
+   if (((float)abs(sdl->joypad->axis(joypad_info->joy_idx, joyaxis)) / 0x8000) > joypad_info->axis_threshold)
    {
       *device = INPUT_DEVICE_TYPE_JOYPAD;
       return 1;
@@ -218,7 +219,7 @@ static int16_t sdl_lightgun_device_state(sdl_input_t *sdl, unsigned id)
 }
 
 static int16_t sdl_input_state(void *data,
-      rarch_joypad_info_t joypad_info,
+      rarch_joypad_info_t *joypad_info,
       const struct retro_keybind **binds,
       unsigned port, unsigned device, unsigned idx, unsigned id)
 {

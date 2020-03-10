@@ -46,8 +46,11 @@ typedef struct
    unsigned fb_height;
 } emscripten_ctx_data_t;
 
+/* TODO/FIXME - would like to move these to emscripten_ctx_data_t - 
+ * see the TODO/FIXME note down below */
 static int emscripten_initial_width;
 static int emscripten_initial_height;
+
 static enum gfx_ctx_api emscripten_api = GFX_CTX_NONE;
 
 static void gfx_ctx_emscripten_swap_interval(void *data, int interval)
@@ -91,7 +94,7 @@ static void gfx_ctx_emscripten_get_canvas_size(int *width, int *height)
 }
 
 static void gfx_ctx_emscripten_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height, bool is_shutdown)
+      bool *resize, unsigned *width, unsigned *height)
 {
    EMSCRIPTEN_RESULT r;
    int input_width;
@@ -102,8 +105,8 @@ static void gfx_ctx_emscripten_check_window(void *data, bool *quit,
 
    if (input_width == 0 || input_height == 0)
    {
-      input_width = emscripten_initial_width;
-      input_height = emscripten_initial_height;
+      input_width          = emscripten_initial_width;
+      input_height         = emscripten_initial_height;
       emscripten->fb_width = emscripten->fb_height = 0;
    }
 
@@ -135,12 +138,12 @@ static void gfx_ctx_emscripten_check_window(void *data, bool *quit,
    *quit       = false;
 }
 
-static void gfx_ctx_emscripten_swap_buffers(void *data, void *data2)
+static void gfx_ctx_emscripten_swap_buffers(void *data)
 {
    emscripten_ctx_data_t *emscripten = (emscripten_ctx_data_t*)data;
 
-   /* doesn't really do anything in WebGL, but it might if we use WebGL workers
-    * in the future */
+   /* doesn't really do anything in WebGL, but it might 
+    * if we use WebGL workers in the future */
 #ifdef HAVE_EGL
    egl_swap_buffers(&emscripten->egl);
 #endif
@@ -172,8 +175,7 @@ static void gfx_ctx_emscripten_destroy(void *data)
    free(data);
 }
 
-static void *gfx_ctx_emscripten_init(video_frame_info_t *video_info,
-   void *video_driver)
+static void *gfx_ctx_emscripten_init(void *video_driver)
 {
 #ifdef HAVE_EGL
    unsigned width, height;
@@ -203,6 +205,8 @@ static void *gfx_ctx_emscripten_init(video_frame_info_t *video_info,
 
    (void)video_driver;
 
+   /* TODO/FIXME - why is this conditional here - shouldn't these always
+    * be grabbed? */
    if (emscripten_initial_width == 0 || emscripten_initial_height == 0)
       emscripten_get_canvas_element_size("#canvas",
          &emscripten_initial_width, &emscripten_initial_height);
@@ -245,12 +249,9 @@ error:
 }
 
 static bool gfx_ctx_emscripten_set_video_mode(void *data,
-      video_frame_info_t *video_info,
       unsigned width, unsigned height,
       bool fullscreen)
 {
-   (void)data;
-
    if (g_egl_inited)
       return false;
 

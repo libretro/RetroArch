@@ -33,7 +33,6 @@
 #include "../../configuration.h"
 #include "../../core.h"
 #include "../../core_info.h"
-#include "../../retroarch.h"
 #include "../../verbosity.h"
 
 #ifndef BIND_ACTION_DEFERRED_PUSH
@@ -262,11 +261,16 @@ static int deferred_push_cursor_manager_list_deferred(
    rdb_path[0] = '\0';
 
    {
-      settings_t *settings           = config_get_ptr();
+      settings_t *settings                 = config_get_ptr();
       if (settings)
+      {
+         const char *path_content_database = 
+            settings->paths.path_content_database;
+
          fill_pathname_join(rdb_path,
-               settings->paths.path_content_database,
+               path_content_database,
                rdb, sizeof(rdb_path));
+      }
    }
 
    if (!string_is_empty(info->path_b))
@@ -393,10 +397,14 @@ end:
 static int general_push(menu_displaylist_info_t *info,
       unsigned id, enum menu_displaylist_ctl_state state)
 {
-   char                      *newstring2 = NULL;
-   core_info_list_t           *list      = NULL;
-   settings_t                  *settings = config_get_ptr();
-   menu_handle_t                  *menu  = menu_driver_get_ptr();
+   char                      *newstring2      = NULL;
+   core_info_list_t           *list           = NULL;
+   settings_t                  *settings      = config_get_ptr();
+   menu_handle_t                  *menu       = menu_driver_get_ptr();
+   bool 
+      multimedia_builtin_mediaplayer_enable   = settings->bools.multimedia_builtin_mediaplayer_enable;
+   bool multimedia_builtin_imageviewer_enable = settings->bools.multimedia_builtin_imageviewer_enable;
+   bool filter_by_current_core                = settings->bools.filter_by_current_core;
 
    if (!menu)
       return menu_cbs_exit();
@@ -543,16 +551,18 @@ static int general_push(menu_displaylist_info_t *info,
                }
             }
 
-            if (!settings->bools.filter_by_current_core)
+            if (!filter_by_current_core)
             {
                if (list && !string_is_empty(list->all_ext))
                {
                   unsigned x;
-                  struct string_list *str_list    = string_split(list->all_ext, "|");
+                  struct string_list *str_list = string_split(
+                        list->all_ext, "|");
 
                   for (x = 0; x < str_list->size; x++)
                   {
-                     if (!string_list_find_elem(str_list2, str_list->elems[x].data))
+                     if (!string_list_find_elem(str_list2,
+                              str_list->elems[x].data))
                      {
                         const char *elem = str_list->elems[x].data;
                         string_list_append(str_list2, elem, attr);
@@ -588,14 +598,14 @@ static int general_push(menu_displaylist_info_t *info,
          break;
    }
 
-   if (settings->bools.multimedia_builtin_mediaplayer_enable ||
-         settings->bools.multimedia_builtin_imageviewer_enable)
+   if (multimedia_builtin_mediaplayer_enable ||
+         multimedia_builtin_imageviewer_enable)
    {
       struct retro_system_info sysinfo = {0};
 
       (void)sysinfo;
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
-      if (settings->bools.multimedia_builtin_mediaplayer_enable)
+      if (multimedia_builtin_mediaplayer_enable)
       {
 #if defined(HAVE_FFMPEG)
          libretro_ffmpeg_retro_get_system_info(&sysinfo);
@@ -608,7 +618,7 @@ static int general_push(menu_displaylist_info_t *info,
       }
 #endif
 #ifdef HAVE_IMAGEVIEWER
-      if (settings->bools.multimedia_builtin_imageviewer_enable)
+      if (multimedia_builtin_imageviewer_enable)
       {
          libretro_imageviewer_retro_get_system_info(&sysinfo);
          strlcat(newstring2, "|", PATH_MAX_LENGTH * sizeof(char));
@@ -794,6 +804,11 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_MANUAL_CONTENT_SCAN_SYSTEM_NAME, deferred_push_dropdown_box_list_manual_content_scan_system_name},
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_MANUAL_CONTENT_SCAN_CORE_NAME, deferred_push_dropdown_box_list_manual_content_scan_core_name},
       {MENU_ENUM_LABEL_DEFERRED_RECORDING_SETTINGS_LIST, deferred_push_recording_settings_list},
+      {MENU_ENUM_LABEL_COLLECTION, deferred_push_content_collection_list},
+      {MENU_ENUM_LABEL_SETTINGS,   deferred_push_settings},
+      {MENU_ENUM_LABEL_CONFIGURATIONS_LIST, deferred_push_configurations_list},
+      {MENU_ENUM_LABEL_DEFERRED_PLAYLIST_MANAGER_LIST, deferred_push_playlist_manager_list},
+      {MENU_ENUM_LABEL_DEFERRED_PLAYLIST_MANAGER_SETTINGS, deferred_push_playlist_manager_settings},
    };
 
    for (i = 0; i < ARRAY_SIZE(info_list); i++)
@@ -1187,20 +1202,8 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
    {
       switch (label_hash)
       {
-         case MENU_LABEL_SETTINGS: /* TODO/FIXME */
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_settings);
-            break;
-         case MENU_LABEL_DEFERRED_CONFIGURATIONS_LIST: /* TODO/FIXME */
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_configurations_list);
-            break;
          case MENU_LABEL_DEFERRED_PLAYLIST_SETTINGS_LIST:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_playlist_settings_list);
-            break;
-         case MENU_LABEL_DEFERRED_PLAYLIST_MANAGER_LIST:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_playlist_manager_list);
-            break;
-         case MENU_LABEL_DEFERRED_PLAYLIST_MANAGER_SETTINGS:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_playlist_manager_settings);
             break;
          case MENU_LABEL_DEFERRED_ACCOUNTS_CHEEVOS_LIST:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_accounts_cheevos_list);
@@ -1349,9 +1352,6 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
             break;
          case MENU_LABEL_CORE_INPUT_REMAPPING_OPTIONS:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_input_remapping_options);
-            break;
-         case MENU_LABEL_PLAYLISTS_TAB:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_content_collection_list);
             break;
          case MENU_LABEL_CONFIGURATIONS:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_configurations);

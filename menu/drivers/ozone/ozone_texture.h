@@ -212,7 +212,7 @@ enum
 
 const char *ozone_entries_icon_texture_path(unsigned id);
 
-menu_texture_item ozone_entries_icon_get_texture(ozone_handle_t *ozone,
+uintptr_t ozone_entries_icon_get_texture(ozone_handle_t *ozone,
       enum msg_hash_enums enum_idx, unsigned type, bool active);
 
 bool ozone_reset_theme_textures(ozone_handle_t *ozone);

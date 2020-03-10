@@ -40,6 +40,10 @@
 #include "verbosity.h"
 #include "msg_hash.h"
 
+#if defined(HAVE_MENU)
+#include "menu/menu_driver.h"
+#endif
+
 #include "runtime_file.h"
 
 #define LOG_FILE_RUNTIME_FORMAT_STR "%u:%02u:%02u"
@@ -946,11 +950,15 @@ void runtime_update_playlist(playlist_t *playlist, size_t idx)
    char runtime_str[64];
    char last_played_str[64];
    enum playlist_sublabel_last_played_style_type 
-      timedate_style                  = PLAYLIST_LAST_PLAYED_STYLE_YMD_HMS;
-   settings_t *settings               = config_get_ptr();
-   runtime_log_t *runtime_log         = NULL;
-   const struct playlist_entry *entry = NULL;
-   struct playlist_entry update_entry = {0};
+      timedate_style                      = PLAYLIST_LAST_PLAYED_STYLE_YMD_HMS;
+   runtime_log_t *runtime_log             = NULL;
+   const struct playlist_entry *entry     = NULL;
+   struct playlist_entry update_entry     = {0};
+   settings_t *settings                   = config_get_ptr();
+   unsigned pl_sublabel_last_played_style = settings ? settings->uints.playlist_sublabel_last_played_style : 0;
+#ifdef HAVE_MENU
+   const char *menu_ident                 = menu_driver_ident();
+#endif
    
    /* Sanity check */
    if (!playlist || !settings)
@@ -963,11 +971,10 @@ void runtime_update_playlist(playlist_t *playlist, size_t idx)
     * (saves 'if' checks later...) */
    update_entry.runtime_status = PLAYLIST_RUNTIME_MISSING;
    
+#ifdef HAVE_MENU
    /* Get current last played formatting type
     * > Have to include a 'HAVE_MENU' check here... */
-#ifdef HAVE_MENU
-   timedate_style               = (enum playlist_sublabel_last_played_style_type)
-      settings->uints.playlist_sublabel_last_played_style;
+   timedate_style               = (enum playlist_sublabel_last_played_style_type)pl_sublabel_last_played_style;
 #endif
 
    /* 'Attach' runtime/last played strings */
@@ -1013,10 +1020,10 @@ void runtime_update_playlist(playlist_t *playlist, size_t idx)
       free(runtime_log);
    }
    
-#ifdef HAVE_MENU
+#if defined(HAVE_MENU) && defined(HAVE_OZONE)
    /* Ozone requires runtime/last played strings to be
     * populated even when no runtime is recorded */
-   if (string_is_equal(settings->arrays.menu_driver, "ozone"))
+   if (string_is_equal(menu_ident, "ozone"))
    {
       if (update_entry.runtime_status != PLAYLIST_RUNTIME_VALID)
       {

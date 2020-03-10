@@ -26,10 +26,11 @@
 #include "../config.h"
 #endif
 
-#include "menu_driver.h"
+#include "menu_entries.h"
 #include "menu_shader.h"
+
+#include "../command.h"
 #include "../file_path_special.h"
-#include "../configuration.h"
 #include "../paths.h"
 #include "../retroarch.h"
 #include "../verbosity.h"
@@ -37,13 +38,6 @@
 /* Menu shader */
 
 static struct video_shader *menu_driver_shader = NULL;
-/* indicative of whether shader was modified from the menus: */
-static bool menu_driver_shader_modified = true;
-
-void menu_shader_set_modified(bool modified)
-{
-   menu_driver_shader_modified = modified;
-}
 
 static enum rarch_shader_type shader_types[] =
 {
@@ -135,7 +129,7 @@ bool menu_shader_manager_init(void)
       if (video_shader_read_conf_preset(conf, menu_shader))
          video_shader_resolve_parameters(conf, menu_shader);
 
-      menu_driver_shader_modified = false;
+      menu_shader->modified = false;
 
       config_file_free(conf);
    }
@@ -169,24 +163,12 @@ bool menu_shader_manager_set_preset(struct video_shader *shader,
    bool ret                      = false;
 
    if (apply && !retroarch_apply_shader(type, preset_path, true))
-   {
-      /* We don't want to disable shaders entirely here,
-       * just reset number of passes
-       * > Note: Disabling shaders at this point would in
-       *   fact be dangerous, since it changes the number of
-       *   entries in the shader options menu which can in
-       *   turn lead to the menu selection pointer going out
-       *   of bounds. This causes undefined behaviour/segfaults */
-      menu_shader_manager_clear_num_passes(shader);
-      command_event(CMD_EVENT_SHADER_PRESET_LOADED, NULL);
-      return false;
-   }
+      goto clear;
 
    if (string_is_empty(preset_path))
    {
-      menu_shader_manager_clear_num_passes(shader);
-      command_event(CMD_EVENT_SHADER_PRESET_LOADED, NULL);
-      return true;
+      ret = true;
+      goto clear;
    }
 
    if (!shader)
@@ -216,15 +198,29 @@ bool menu_shader_manager_set_preset(struct video_shader *shader,
    ret = true;
 
 end:
-   command_event(CMD_EVENT_SHADER_PRESET_LOADED, NULL);
 #ifdef HAVE_MENU
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
 #endif
+   command_event(CMD_EVENT_SHADER_PRESET_LOADED, NULL);
+   return ret;
+
+clear:
+   /* We don't want to disable shaders entirely here,
+    * just reset number of passes
+    * > Note: Disabling shaders at this point would in
+    *   fact be dangerous, since it changes the number of
+    *   entries in the shader options menu which can in
+    *   turn lead to the menu selection pointer going out
+    *   of bounds. This causes undefined behaviour/segfaults */
+   menu_shader_manager_clear_num_passes(shader);
+   command_event(CMD_EVENT_SHADER_PRESET_LOADED, NULL);
    return ret;
 }
 
 static bool menu_shader_manager_save_preset_internal(
       const struct video_shader *shader, const char *basename,
+      const char *dir_video_shader,
+      const char *dir_menu_config,
       bool apply, bool save_reference)
 {
    bool ret                       = false;
@@ -244,7 +240,7 @@ static bool menu_shader_manager_save_preset_internal(
    if (type == RARCH_SHADER_NONE)
       return false;
 
-   if (menu_driver_shader_modified)
+   if (shader->modified)
       save_reference = false;
 
    if (!string_is_empty(basename))
@@ -271,7 +267,9 @@ static bool menu_shader_manager_save_preset_internal(
    {
       preset_path = fullname;
 
-      ret = video_shader_write_preset(preset_path, shader, save_reference);
+      ret = video_shader_write_preset(preset_path,
+            dir_video_shader,
+            shader, save_reference);
 
       if (ret)
          RARCH_LOG("Saved shader preset to %s.\n", preset_path);
@@ -281,7 +279,6 @@ static bool menu_shader_manager_save_preset_internal(
    else
    {
       const char *dirs[3]  = {0};
-      settings_t *settings = config_get_ptr();
       char config_directory[PATH_MAX_LENGTH];
 
       config_directory[0] = '\0';
@@ -292,8 +289,8 @@ static bool menu_shader_manager_save_preset_internal(
                path_get(RARCH_PATH_CONFIG),
                sizeof(config_directory));
 
-      dirs[0] = settings->paths.directory_video_shader;
-      dirs[1] = settings->paths.directory_menu_config;
+      dirs[0] = dir_video_shader;
+      dirs[1] = dir_menu_config;
       dirs[2] = config_directory;
 
       for (i = 0; i < ARRAY_SIZE(dirs); i++)
@@ -306,7 +303,9 @@ static bool menu_shader_manager_save_preset_internal(
 
          preset_path = buffer;
 
-         ret = video_shader_write_preset(preset_path, shader, save_reference);
+         ret = video_shader_write_preset(preset_path,
+               dir_video_shader,
+               shader, save_reference);
 
          if (ret)
          {
@@ -328,24 +327,26 @@ static bool menu_shader_manager_save_preset_internal(
    return ret;
 }
 
-static bool menu_shader_manager_operate_auto_preset(enum auto_shader_operation op,
-      const struct video_shader *shader, enum auto_shader_type type, bool apply)
+static bool menu_shader_manager_operate_auto_preset(
+      enum auto_shader_operation op,
+      const struct video_shader *shader,
+      const char *dir_video_shader,
+      const char *dir_menu_config,
+      enum auto_shader_type type, bool apply)
 {
    char tmp[PATH_MAX_LENGTH];
    char directory[PATH_MAX_LENGTH];
    char file[PATH_MAX_LENGTH];
    bool success                      = false;
-   settings_t *settings              = config_get_ptr();
    struct retro_system_info *system  = runloop_get_libretro_system_info();
    const char *core_name             = system ? system->library_name : NULL;
-   const char *path_dir_video_shader = settings->paths.directory_video_shader;
 
    tmp[0] = directory[0] = file[0] = '\0';
 
    if (type == SHADER_PRESET_GLOBAL)
       fill_pathname_join(
             directory,
-            path_dir_video_shader,
+            dir_video_shader,
             "presets",
             sizeof(directory));
    else if (string_is_empty(core_name))
@@ -354,7 +355,7 @@ static bool menu_shader_manager_operate_auto_preset(enum auto_shader_operation o
    {
       fill_pathname_join(
             tmp,
-            path_dir_video_shader,
+            dir_video_shader,
             "presets",
             sizeof(tmp));
       fill_pathname_join(
@@ -397,7 +398,10 @@ static bool menu_shader_manager_operate_auto_preset(enum auto_shader_operation o
             path_mkdir(directory);
 
          return menu_shader_manager_save_preset_internal(
-               shader, file, apply, true);
+               shader, file,
+               dir_video_shader,
+               dir_menu_config,
+               apply, true);
       case AUTO_SHADER_OP_REMOVE:
          {
             /* remove all supported auto-shaders of given type */
@@ -458,11 +462,18 @@ static bool menu_shader_manager_operate_auto_preset(enum auto_shader_operation o
  * Needs to be consistent with retroarch_load_shader_preset()
  * Auto-shaders will be saved as a reference if possible
  **/
-bool menu_shader_manager_save_auto_preset(const struct video_shader *shader,
-      enum auto_shader_type type, bool apply)
+bool menu_shader_manager_save_auto_preset(
+      const struct video_shader *shader,
+      enum auto_shader_type type,
+      const char *dir_video_shader,
+      const char *dir_menu_config,
+      bool apply)
 {
    return menu_shader_manager_operate_auto_preset(
-         AUTO_SHADER_OP_SAVE, shader, type, apply);
+         AUTO_SHADER_OP_SAVE, shader, 
+         dir_video_shader,
+         dir_menu_config,
+         type, apply);
 }
 
 /**
@@ -475,10 +486,16 @@ bool menu_shader_manager_save_auto_preset(const struct video_shader *shader,
  * Save a shader preset to disk.
  **/
 bool menu_shader_manager_save_preset(const struct video_shader *shader,
-      const char *basename, bool apply)
+      const char *basename,
+      const char *dir_video_shader,
+      const char *dir_menu_config,
+      bool apply)
 {
    return menu_shader_manager_save_preset_internal(
-         shader, basename, apply, false);
+         shader, basename,
+         dir_video_shader,
+         dir_menu_config,
+         apply, false);
 }
 
 /**
@@ -487,10 +504,16 @@ bool menu_shader_manager_save_preset(const struct video_shader *shader,
  *
  * Deletes an auto-shader.
  **/
-bool menu_shader_manager_remove_auto_preset(enum auto_shader_type type)
+bool menu_shader_manager_remove_auto_preset(
+      enum auto_shader_type type,
+      const char *dir_video_shader,
+      const char *dir_menu_config)
 {
    return menu_shader_manager_operate_auto_preset(
-         AUTO_SHADER_OP_REMOVE, NULL, type, false);
+         AUTO_SHADER_OP_REMOVE, NULL,
+         dir_video_shader,
+         dir_menu_config,
+         type, false);
 }
 
 /**
@@ -499,10 +522,16 @@ bool menu_shader_manager_remove_auto_preset(enum auto_shader_type type)
  *
  * Tests if an auto-shader of the given type exists.
  **/
-bool menu_shader_manager_auto_preset_exists(enum auto_shader_type type)
+bool menu_shader_manager_auto_preset_exists(
+      enum auto_shader_type type,
+      const char *dir_video_shader,
+      const char *dir_menu_config)
 {
    return menu_shader_manager_operate_auto_preset(
-         AUTO_SHADER_OP_EXISTS, NULL, type, false);
+         AUTO_SHADER_OP_EXISTS, NULL,
+         dir_video_shader,
+         dir_menu_config,
+         type, false);
 }
 
 int menu_shader_manager_clear_num_passes(struct video_shader *shader)
@@ -520,7 +549,7 @@ int menu_shader_manager_clear_num_passes(struct video_shader *shader)
 
    video_shader_resolve_parameters(NULL, shader);
 
-   menu_driver_shader_modified = true;
+   shader->modified = true;
 
    return 0;
 }
@@ -538,7 +567,7 @@ int menu_shader_manager_clear_parameter(struct video_shader *shader,
    param->current = MIN(MAX(param->minimum,
             param->current), param->maximum);
 
-   menu_driver_shader_modified = true;
+   shader->modified = true;
 
    return 0;
 }
@@ -554,7 +583,7 @@ int menu_shader_manager_clear_pass_filter(struct video_shader *shader,
 
    shader_pass->filter = RARCH_FILTER_UNSPEC;
 
-   menu_driver_shader_modified = true;
+   shader->modified = true;
 
    return 0;
 }
@@ -572,7 +601,7 @@ void menu_shader_manager_clear_pass_scale(struct video_shader *shader,
    shader_pass->fbo.scale_y = 0;
    shader_pass->fbo.valid   = false;
 
-   menu_driver_shader_modified = true;
+   shader->modified         = true;
 }
 
 void menu_shader_manager_clear_pass_path(struct video_shader *shader,
@@ -584,7 +613,7 @@ void menu_shader_manager_clear_pass_path(struct video_shader *shader,
    if (shader_pass)
       *shader_pass->source.path = '\0';
 
-   menu_driver_shader_modified = true;
+   shader->modified = true;
 }
 
 /**
@@ -613,7 +642,7 @@ enum rarch_shader_type menu_shader_manager_get_type(
    if (type == RARCH_SHADER_NONE)
    {
       type = video_shader_parse_type(shader->pass[0].source.path);
-      i = 1;
+      i    = 1;
    }
 
    for (; i < shader->passes; i++)
@@ -642,7 +671,10 @@ enum rarch_shader_type menu_shader_manager_get_type(
  *
  * Apply shader state changes.
  **/
-void menu_shader_manager_apply_changes(struct video_shader *shader)
+void menu_shader_manager_apply_changes(
+      struct video_shader *shader,
+      const char *dir_video_shader,
+      const char *dir_menu_config)
 {
    enum rarch_shader_type type = RARCH_SHADER_NONE;
 
@@ -653,7 +685,8 @@ void menu_shader_manager_apply_changes(struct video_shader *shader)
 
    if (shader->passes && type != RARCH_SHADER_NONE)
    {
-      menu_shader_manager_save_preset(shader, NULL, true);
+      menu_shader_manager_save_preset(shader, NULL,
+            dir_video_shader, dir_menu_config, true);
       return;
    }
 

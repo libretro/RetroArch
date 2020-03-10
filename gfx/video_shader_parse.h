@@ -142,7 +142,11 @@ struct video_shader
 {
    char prefix[64];
    char path[PATH_MAX_LENGTH];
+
    bool modern; /* Only used for XML shaders. */
+   /* indicative of whether shader was modified - 
+    * for instance from the menus */
+   bool modified;
 
    unsigned passes;
    unsigned luts;
@@ -154,9 +158,7 @@ struct video_shader
    int history_size;
 
    struct video_shader_pass pass[GFX_MAX_SHADERS];
-
    struct video_shader_lut lut[GFX_MAX_TEXTURES];
-
    struct video_shader_parameter parameters[GFX_MAX_PARAMETERS];
 };
 
@@ -170,6 +172,7 @@ struct video_shader
  * See: video_shader_read_preset
  **/
 bool video_shader_write_preset(const char *path,
+      const char *shader_dir,
       const struct video_shader *shader, bool reference);
 
 /**

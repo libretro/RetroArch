@@ -109,15 +109,14 @@ static int16_t gx_lightgun_state(gx_input_t *gx, unsigned id, uint16_t joy_idx)
 
 static int16_t gx_mouse_state(gx_input_t *gx, unsigned id, uint16_t joy_idx)
 {
-   int x = 0;
-   int y = 0;
-
-   settings_t *settings = config_get_ptr();
-   int x_scale = settings->uints.input_mouse_scale;
-   int y_scale = settings->uints.input_mouse_scale;
-
-   x = (gx->mouse[joy_idx].x_abs - gx->mouse[joy_idx].x_last) * x_scale;
-   y = (gx->mouse[joy_idx].y_abs - gx->mouse[joy_idx].y_last) * y_scale;
+   settings_t *settings       = config_get_ptr();
+   unsigned input_mouse_scale = settings->uints.input_mouse_scale;
+   int x_scale                = input_mouse_scale;
+   int y_scale                = input_mouse_scale;
+   int x                      = (gx->mouse[joy_idx].x_abs 
+         - gx->mouse[joy_idx].x_last) * x_scale;
+   int y                      = (gx->mouse[joy_idx].y_abs 
+         - gx->mouse[joy_idx].y_last) * y_scale;
 
    switch (id)
    {
@@ -136,7 +135,7 @@ static int16_t gx_mouse_state(gx_input_t *gx, unsigned id, uint16_t joy_idx)
 #endif
 
 static int16_t gx_input_state(void *data,
-      rarch_joypad_info_t joypad_info,
+      rarch_joypad_info_t *joypad_info,
       const struct retro_keybind **binds,
       unsigned port, unsigned device,
       unsigned idx, unsigned id)
@@ -157,16 +156,18 @@ static int16_t gx_input_state(void *data,
             {
                /* Auto-binds are per joypad, not per user. */
                const uint64_t joykey  = (binds[port][i].joykey != NO_BTN)
-                  ? binds[port][i].joykey : joypad_info.auto_binds[i].joykey;
+                  ? binds[port][i].joykey : joypad_info->auto_binds[i].joykey;
                const uint32_t joyaxis = (binds[port][i].joyaxis != AXIS_NONE)
-                  ? binds[port][i].joyaxis : joypad_info.auto_binds[i].joyaxis;
+                  ? binds[port][i].joyaxis : joypad_info->auto_binds[i].joyaxis;
 
-               if ((uint16_t)joykey != NO_BTN && gx->joypad->button(joypad_info.joy_idx, (uint16_t)joykey))
+               if ((uint16_t)joykey != NO_BTN && gx->joypad->button(
+                        joypad_info->joy_idx, (uint16_t)joykey))
                {
                   ret |= (1 << i);
                   continue;
                }
-               if (((float)abs(gx->joypad->axis(joypad_info.joy_idx, joyaxis)) / 0x8000) > joypad_info.axis_threshold)
+               if (((float)abs(gx->joypad->axis(
+                              joypad_info->joy_idx, joyaxis)) / 0x8000) > joypad_info->axis_threshold)
                {
                   ret |= (1 << i);
                   continue;
@@ -179,13 +180,14 @@ static int16_t gx_input_state(void *data,
          {
             /* Auto-binds are per joypad, not per user. */
             const uint64_t joykey  = (binds[port][id].joykey != NO_BTN)
-               ? binds[port][id].joykey : joypad_info.auto_binds[id].joykey;
+               ? binds[port][id].joykey : joypad_info->auto_binds[id].joykey;
             const uint32_t joyaxis = (binds[port][id].joyaxis != AXIS_NONE)
-               ? binds[port][id].joyaxis : joypad_info.auto_binds[id].joyaxis;
+               ? binds[port][id].joyaxis : joypad_info->auto_binds[id].joyaxis;
 
-            if ((uint16_t)joykey != NO_BTN && gx->joypad->button(joypad_info.joy_idx, (uint16_t)joykey))
+            if ((uint16_t)joykey != NO_BTN && gx->joypad->button(
+                     joypad_info->joy_idx, (uint16_t)joykey))
                return true;
-            if (((float)abs(gx->joypad->axis(joypad_info.joy_idx, joyaxis)) / 0x8000) > joypad_info.axis_threshold)
+            if (((float)abs(gx->joypad->axis(joypad_info->joy_idx, joyaxis)) / 0x8000) > joypad_info->axis_threshold)
                return true;
          }
          break;
@@ -196,10 +198,10 @@ static int16_t gx_input_state(void *data,
          break;
 #ifdef HW_RVL
       case RETRO_DEVICE_MOUSE:
-         return gx_mouse_state(gx, id, joypad_info.joy_idx);
+         return gx_mouse_state(gx, id, joypad_info->joy_idx);
 
       case RETRO_DEVICE_LIGHTGUN:
-         return gx_lightgun_state(gx, id, joypad_info.joy_idx);
+         return gx_lightgun_state(gx, id, joypad_info->joy_idx);
 #endif
    }
 

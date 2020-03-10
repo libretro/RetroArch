@@ -19,7 +19,7 @@
 
 #include <boolean.h>
 
-#include "../../retroarch.h"
+#include "../video_defines.h"
 
 void gl_glsl_set_get_proc_address(gfx_ctx_proc_t (*proc)(const char*));
 

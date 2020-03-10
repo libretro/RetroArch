@@ -141,18 +141,23 @@ static INLINE void ctr_set_screen_coords(ctr_video_t * ctr)
    }
 }
 
-static void ctr_update_viewport(ctr_video_t* ctr, settings_t *settings, video_frame_info_t *video_info)
+static void ctr_update_viewport(
+      ctr_video_t* ctr,
+      settings_t *settings,
+      video_frame_info_t *video_info)
 {
-   int x                = 0;
-   int y                = 0;
-   float width          = ctr->vp.full_width;
-   float height         = ctr->vp.full_height;
-   float desired_aspect = video_driver_get_aspect_ratio();
+   int x                     = 0;
+   int y                     = 0;
+   float width               = ctr->vp.full_width;
+   float height              = ctr->vp.full_height;
+   float desired_aspect      = video_driver_get_aspect_ratio();
+   bool video_scale_integer  = settings->bools.video_scale_integer;
+   unsigned aspect_ratio_idx = settings->uints.video_aspect_ratio_idx;
 
    if(ctr->rotation & 0x1)
       desired_aspect = 1.0 / desired_aspect;
 
-   if (settings->bools.video_scale_integer)
+   if (video_scale_integer)
    {
       video_viewport_get_scaled_integer(&ctr->vp, ctr->vp.full_width,
             ctr->vp.full_height, desired_aspect, ctr->keep_aspect);
@@ -160,7 +165,7 @@ static void ctr_update_viewport(ctr_video_t* ctr, settings_t *settings, video_fr
    else if (ctr->keep_aspect)
    {
 #if defined(HAVE_MENU)
-      if (settings->uints.video_aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
+      if (aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
       {
          x      = video_info->custom_vp_x;
          y      = video_info->custom_vp_y;
@@ -271,7 +276,7 @@ static void ctr_lcd_aptHook(APT_HookType hook, void* param)
    if ((hook == APTHOOK_ONSUSPEND) && ctr->supports_parallax_disable)
       ctr_set_parallax_layer(*(float*)0x1FF81080 != 0.0);
 
-   if((hook == APTHOOK_ONSUSPEND) || (hook == APTHOOK_ONRESTORE))
+   if((hook == APTHOOK_ONSUSPEND) || (hook == APTHOOK_ONRESTORE) || (hook == APTHOOK_ONWAKEUP))
    {
       Handle lcd_handle;
       u8 not_2DS;
@@ -332,6 +337,7 @@ static void* ctr_init(const video_info_t* video,
    u8 device_model      = 0xFF;
    void* ctrinput       = NULL;
    settings_t *settings = config_get_ptr();
+   bool lcd_bottom      = settings->bools.video_3ds_lcd_bottom;
    ctr_video_t* ctr     = (ctr_video_t*)linearAlloc(sizeof(ctr_video_t));
 
    if (!ctr)
@@ -485,20 +491,21 @@ static void* ctr_init(const video_info_t* video,
    driver_ctl(RARCH_DRIVER_CTL_SET_REFRESH_RATE, &refresh_rate);
    aptHook(&ctr->lcd_aptHook, ctr_lcd_aptHook, ctr);
 
-   font_driver_init_osd(ctr, false,
+   font_driver_init_osd(ctr, video,
+         false,
          video->is_threaded,
          FONT_DRIVER_RENDER_CTR);
 
-   ctr->msg_rendering_enabled = false;
+   ctr->msg_rendering_enabled     = false;
    ctr->menu_texture_frame_enable = false;
-   ctr->menu_texture_enable = false;
+   ctr->menu_texture_enable       = false;
 
    /* Set bottom screen enable state, if required */
-   if (settings->bools.video_3ds_lcd_bottom != ctr_bottom_screen_enabled) {
-      ctr_set_bottom_screen_enable(ctr, settings->bools.video_3ds_lcd_bottom);
-   }
+   if (lcd_bottom != ctr_bottom_screen_enabled)
+      ctr_set_bottom_screen_enable(ctr, lcd_bottom);
 
-   gspSetEventCallback(GSPGPU_EVENT_VBlank0, (ThreadFunc)ctr_vsync_hook, ctr, false);
+   gspSetEventCallback(GSPGPU_EVENT_VBlank0,
+         (ThreadFunc)ctr_vsync_hook, ctr, false);
 
    return ctr;
 }
@@ -512,20 +519,26 @@ static bool ctr_frame(void* data, const void* frame,
       uint64_t frame_count,
       unsigned pitch, const char* msg, video_frame_info_t *video_info)
 {
-   uint32_t diff;
+   extern bool select_pressed;
    static uint64_t currentTick,lastTick;
    touchPosition state_tmp_touch;
    extern GSPGPU_FramebufferInfo topFramebufferInfo;
    extern u8* gfxSharedMemory;
    extern u8 gfxThreadID;
-   uint32_t state_tmp      = 0;
-   settings_t    *settings = config_get_ptr();
-   ctr_video_t       *ctr  = (ctr_video_t*)data;
-   static float        fps = 0.0;
-   static int total_frames = 0;
-   static int       frames = 0;
+   uint32_t diff;
+   uint32_t state_tmp             = 0;
+   ctr_video_t       *ctr         = (ctr_video_t*)data;
+   static float        fps        = 0.0;
+   static int total_frames        = 0;
+   static int       frames        = 0;
+   settings_t    *settings        = config_get_ptr();
+   unsigned disp_mode             = settings->uints.video_3ds_display_mode;
+   bool statistics_show           = video_info->statistics_show;
+   const char *stat_text          = video_info->stat_text;
+   float video_refresh_rate       = video_info->refresh_rate;
+   struct font_params *osd_params = (struct font_params*)
+      &video_info->osd_stat_params;
 
-   extern bool select_pressed;
 
    if (!width || !height || !settings)
    {
@@ -563,7 +576,7 @@ static bool ctr_frame(void* data, const void* frame,
       ctr->ppf_event_pending = false;
    }
 #ifndef HAVE_THREADS
-   if(task_queue_find(&ctr_tasks_finder_data))
+   if (task_queue_find(&ctr_tasks_finder_data))
    {
 #if 0
       ctr->vsync_event_pending = true;
@@ -572,9 +585,6 @@ static bool ctr_frame(void* data, const void* frame,
       {
          task_queue_check();
          svcSleepThread(0);
-#if 0
-         aptMainLoop();
-#endif
       }
    }
 #endif
@@ -619,7 +629,7 @@ static bool ctr_frame(void* data, const void* frame,
       bool next_event = false;
       struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
       if (av_info)
-         next_event = av_info->timing.fps < video_info->refresh_rate * 0.9f;
+         next_event = av_info->timing.fps < video_refresh_rate * 0.9f;
       gspWaitForEvent(GSPGPU_EVENT_VBlank0, next_event);
    }
 
@@ -756,7 +766,7 @@ static bool ctr_frame(void* data, const void* frame,
                   GPU_TEXTURE_WRAP_S(GPU_CLAMP_TO_EDGE) | GPU_TEXTURE_WRAP_T(GPU_CLAMP_TO_EDGE),
                   ctr->rgb32 ? GPU_RGBA8: GPU_RGB565);
 
-   ctr_check_3D_slider(ctr, (ctr_video_mode_enum)settings->uints.video_3ds_display_mode);
+   ctr_check_3D_slider(ctr, (ctr_video_mode_enum)disp_mode);
 
    /* ARGB --> RGBA  */
    if (ctr->rgb32)
@@ -854,21 +864,18 @@ static bool ctr_frame(void* data, const void* frame,
       ctr->msg_rendering_enabled = false;
 
    }
-   else if (video_info->statistics_show)
+   else if (statistics_show)
    {
-      struct font_params *osd_params = (struct font_params*)
-         &video_info->osd_stat_params;
-
       if (osd_params)
       {
-         font_driver_render_msg(ctr, video_info, video_info->stat_text,
-               (const struct font_params*)&video_info->osd_stat_params, NULL);
+         font_driver_render_msg(ctr, stat_text,
+               (const struct font_params*)osd_params, NULL);
       }
    }
 #endif
 
    if (msg)
-      font_driver_render_msg(ctr, video_info, msg, NULL, NULL);
+      font_driver_render_msg(ctr, msg, NULL, NULL);
 
    GPU_FinishDrawing();
    GPU_Finalize();
@@ -934,7 +941,8 @@ static bool ctr_frame(void* data, const void* frame,
    return true;
 }
 
-static void ctr_set_nonblock_state(void* data, bool toggle)
+static void ctr_set_nonblock_state(void* data, bool toggle,
+      bool a, unsigned b)
 {
    ctr_video_t* ctr = (ctr_video_t*)data;
 
@@ -1181,14 +1189,13 @@ static void ctr_unload_texture(void *data, uintptr_t handle)
 }
 
 static void ctr_set_osd_msg(void *data,
-      video_frame_info_t *video_info,
       const char *msg,
       const void *params, void *font)
 {
    ctr_video_t* ctr = (ctr_video_t*)data;
 
    if (ctr && ctr->msg_rendering_enabled)
-      font_driver_render_msg(data, video_info, msg, params, font);
+      font_driver_render_msg(data, msg, params, font);
 }
 
 static uint32_t ctr_get_flags(void *data)

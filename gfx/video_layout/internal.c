@@ -4,17 +4,6 @@
 #include <compat/posix_string.h>
 #include "internal.h"
 
-char *init_string(const char *src)
-{
-   return src ? strdup(src) : NULL;
-}
-
-void set_string(char **string, const char *src)
-{
-   free(*string);
-   *string = src ? strdup(src) : NULL;
-}
-
 bool vec_size(void **target, size_t elem_size, int count)
 {
    const int seg = 4;
@@ -57,9 +46,7 @@ int get_int(const char *str)
       res = (int)hex;
    }
    else
-   {
       sscanf(str, "%i", &res);
-   }
 
    return res;
 }

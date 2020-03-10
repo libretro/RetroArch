@@ -138,8 +138,7 @@ static void gfx_ctx_uwp_swap_interval(void *data, int interval)
 }
 
 static void gfx_ctx_uwp_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height,
-      bool is_shutdown)
+      bool *resize, unsigned *width, unsigned *height)
 {
    win32_check_window(quit, resize, width, height);
 }
@@ -155,18 +154,16 @@ static gfx_ctx_proc_t gfx_ctx_uwp_get_proc_address(const char* symbol)
 }
 
 
-static void gfx_ctx_uwp_swap_buffers(void *data, void *data2)
+static void gfx_ctx_uwp_swap_buffers(void *data)
 {
-   (void)data;
-
    switch (uwp_api)
    {
-   case GFX_CTX_OPENGL_ES_API:
-      egl_swap_buffers(&uwp_egl);
-      break;
-   case GFX_CTX_NONE:
-   default:
-      break;
+      case GFX_CTX_OPENGL_ES_API:
+         egl_swap_buffers(&uwp_egl);
+         break;
+      case GFX_CTX_NONE:
+      default:
+         break;
    }
 }
 
@@ -189,7 +186,7 @@ static void gfx_ctx_uwp_get_video_size(void *data,
    win32_check_window(&quit, &resize, width, height);
 }
 
-static void *gfx_ctx_uwp_init(video_frame_info_t *video_info, void *video_driver)
+static void *gfx_ctx_uwp_init(void *video_driver)
 {
    gfx_ctx_uwp_data_t *uwp = (gfx_ctx_uwp_data_t*)calloc(1, sizeof(*uwp));
 
@@ -226,7 +223,6 @@ static void gfx_ctx_uwp_destroy(void *data)
 }
 
 static bool gfx_ctx_uwp_set_video_mode(void *data,
-      video_frame_info_t *video_info,
       unsigned width, unsigned height,
       bool fullscreen)
 {

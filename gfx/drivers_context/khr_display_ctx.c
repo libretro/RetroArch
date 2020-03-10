@@ -58,8 +58,7 @@ static void gfx_ctx_khr_display_get_video_size(void *data,
    *height = khr->height;
 }
 
-static void *gfx_ctx_khr_display_init(video_frame_info_t *video_info,
-      void *video_driver)
+static void *gfx_ctx_khr_display_init(void *video_driver)
 {
    khr_display_ctx_data_t *khr = (khr_display_ctx_data_t*)calloc(1, sizeof(*khr));
    if (!khr)
@@ -81,7 +80,7 @@ error:
 }
 
 static void gfx_ctx_khr_display_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height, bool is_shutdown)
+      bool *resize, unsigned *width, unsigned *height)
 {
    khr_display_ctx_data_t *khr = (khr_display_ctx_data_t*)data;
 
@@ -94,7 +93,7 @@ static void gfx_ctx_khr_display_check_window(void *data, bool *quit,
       *resize = true;
    }
 
-   if (is_shutdown || (bool)frontend_driver_get_signal_handler_state())
+   if ((bool)frontend_driver_get_signal_handler_state())
       *quit = true;
 }
 
@@ -121,12 +120,13 @@ static bool gfx_ctx_khr_display_set_resize(void *data,
 }
 
 static bool gfx_ctx_khr_display_set_video_mode(void *data,
-      video_frame_info_t *video_info,
       unsigned width, unsigned height,
       bool fullscreen)
 {
    struct vulkan_display_surface_info info;
-   khr_display_ctx_data_t *khr = (khr_display_ctx_data_t*)data;
+   khr_display_ctx_data_t *khr    = (khr_display_ctx_data_t*)data;
+   settings_t *settings           = config_get_ptr();
+   unsigned video_monitor_index   = settings->uints.video_monitor_index;
 
    if (!fullscreen)
    {
@@ -136,7 +136,7 @@ static bool gfx_ctx_khr_display_set_video_mode(void *data,
 
    info.width         = width;
    info.height        = height;
-   info.monitor_index = video_info->monitor_index;
+   info.monitor_index = video_monitor_index;
 
    if (!vulkan_surface_create(&khr->vk, VULKAN_WSI_DISPLAY, &info, NULL,
             0, 0, khr->swap_interval))
@@ -242,7 +242,7 @@ static void gfx_ctx_khr_display_set_swap_interval(void *data,
    }
 }
 
-static void gfx_ctx_khr_display_swap_buffers(void *data, void *data2)
+static void gfx_ctx_khr_display_swap_buffers(void *data)
 {
    khr_display_ctx_data_t *khr = (khr_display_ctx_data_t*)data;
    vulkan_present(&khr->vk, khr->vk.context.current_swapchain_index);

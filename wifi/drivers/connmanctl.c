@@ -23,8 +23,8 @@
 #include "../wifi_driver.h"
 #include "../../retroarch.h"
 #include "../../lakka.h"
-#ifdef HAVE_MENU_WIDGETS
-#include "../../menu/widgets/menu_widgets.h"
+#ifdef HAVE_GFX_WIDGETS
+#include "../../gfx/gfx_widgets.h"
 #endif
 
 static bool connman_cache[256]   = {0};
@@ -119,8 +119,8 @@ static void connmanctl_tether_toggle(bool switch_on, char* apname, char* passkey
       RARCH_LOG("[CONNMANCTL] Tether toggle: output: \"%s\"\n",
             output);
 
-#ifdef HAVE_MENU_WIDGETS
-      if (!menu_widgets_ready())
+#ifdef HAVE_GFX_WIDGETS
+      if (!gfx_widgets_ready())
 #endif
          runloop_msg_queue_push(output, 1, 180, true,
                NULL, MESSAGE_QUEUE_ICON_DEFAULT,
@@ -134,12 +134,14 @@ static void connmanctl_tether_toggle(bool switch_on, char* apname, char* passkey
    if (switch_on)
    {
       if (!connmanctl_tether_status())
-          settings->bools.localap_enable = false;
+         configuration_set_bool(settings,
+               settings->bools.localap_enable, false);
    }
    else
    {
       if (connmanctl_tether_status())
-         settings->bools.localap_enable = true;
+         configuration_set_bool(settings,
+               settings->bools.localap_enable, true);
    }
 }
 
@@ -160,7 +162,8 @@ static void connmanctl_scan(void)
       runloop_msg_queue_push(msg_hash_to_str(MSG_LOCALAP_SWITCHING_OFF),
             1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT,
             MESSAGE_QUEUE_CATEGORY_INFO);
-      settings->bools.localap_enable = false;
+      configuration_set_bool(settings,
+            settings->bools.localap_enable, false);
       connmanctl_tether_toggle(false, "", "");
    }
 
@@ -195,7 +198,7 @@ static void connmanctl_get_ssids(struct string_list* ssids)
 
    for (i = 0; i < lines->size; i++)
    {
-      char ssid[20];
+      char ssid[32];
       const char *line = lines->elems[i].data;
 
       strlcpy(ssid, line+4, sizeof(ssid));
@@ -250,8 +253,9 @@ static bool connmanctl_ssid_is_online(unsigned i)
    return false;
 }
 
-static bool connmanctl_connect_ssid(unsigned i, const char* passphrase)
+static bool connmanctl_connect_ssid(unsigned idx, const char* passphrase)
 {
+   unsigned i;
    char ln[512]                        = {0};
    char name[64]                       = {0};
    char service[128]                   = {0};
@@ -259,7 +263,7 @@ static bool connmanctl_connect_ssid(unsigned i, const char* passphrase)
    char settings_path[PATH_MAX_LENGTH] = {0};
    FILE *command_file                  = NULL;
    FILE *settings_file                 = NULL;
-   const char *line                    = lines->elems[i].data;
+   const char *line                    = lines->elems[idx].data;
    settings_t *settings                = config_get_ptr();
 
    static struct string_list* list     = NULL;
@@ -279,7 +283,7 @@ static bool connmanctl_connect_ssid(unsigned i, const char* passphrase)
       return false;
    }
 
-   for (int i = 0; i < list->size-1; i++)
+   for (i = 0; i < list->size-1; i++)
    {
       strlcat(name, list->elems[i].data, sizeof(name));
       strlcat(name, " ", sizeof(name));
@@ -301,7 +305,7 @@ static bool connmanctl_connect_ssid(unsigned i, const char* passphrase)
    fprintf(settings_file, "Name=%s\n", name);
    fprintf(settings_file, "SSID=");
 
-   for (int i=0; i < strlen(name); i++)
+   for (i = 0; i < strlen(name); i++)
       fprintf(settings_file, "%02x", (unsigned int) name[i]);
    fprintf(settings_file, "\n");
 
@@ -316,7 +320,8 @@ static bool connmanctl_connect_ssid(unsigned i, const char* passphrase)
       runloop_msg_queue_push(msg_hash_to_str(MSG_LOCALAP_SWITCHING_OFF),
             1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT,
             MESSAGE_QUEUE_CATEGORY_INFO);
-      settings->bools.localap_enable = false;
+      configuration_set_bool(settings,
+            settings->bools.localap_enable, false);
       connmanctl_tether_toggle(false, "", "");
    }
 
@@ -330,8 +335,8 @@ static bool connmanctl_connect_ssid(unsigned i, const char* passphrase)
 
    while (fgets (ln, sizeof(ln), command_file) != NULL)
    {
-#ifdef HAVE_MENU_WIDGETS
-      if (!menu_widgets_ready())
+#ifdef HAVE_GFX_WIDGETS
+      if (!gfx_widgets_ready())
 #endif
          runloop_msg_queue_push(ln, 1, 180, true,
                NULL, MESSAGE_QUEUE_ICON_DEFAULT,
@@ -635,8 +640,8 @@ static void connmanctl_tether_start_stop(bool start, char* configfile)
                RARCH_LOG("[CONNMANCTL] Tether start stop: output: \"%s\"\n",
                      ln);
 
-#ifdef HAVE_MENU_WIDGETS
-               if (!menu_widgets_ready())
+#ifdef HAVE_GFX_WIDGETS
+               if (!gfx_widgets_ready())
 #endif
                   runloop_msg_queue_push(ln, 1, 180, true,
                         NULL, MESSAGE_QUEUE_ICON_DEFAULT,

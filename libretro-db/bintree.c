@@ -61,7 +61,7 @@ static struct bintree_node *bintree_new_nil_node(struct bintree_node *parent)
 
 static INLINE int bintree_is_nil(const struct bintree_node *node)
 {
-   return (node == NULL) || (node->value == NIL_NODE);
+   return !node || (node->value == NIL_NODE);
 }
 
 static int bintree_insert_internal(bintree_t *t, struct bintree_node *root, void *value)

@@ -384,6 +384,7 @@ bool content_undo_load_state(void)
    void* temp_data           = NULL;
    struct sram_block *blocks = NULL;
    settings_t *settings      = config_get_ptr();
+   bool block_sram_overwrite = settings->bools.block_sram_overwrite;
 
    RARCH_LOG("%s: \"%s\".\n",
          msg_hash_to_str(MSG_LOADING_STATE),
@@ -398,7 +399,7 @@ bool content_undo_load_state(void)
     * the backing up of it and
     * its flushing could all be in their
     * own functions... */
-   if (settings->bools.block_sram_overwrite && task_save_files
+   if (block_sram_overwrite && task_save_files
          && task_save_files->size)
    {
       RARCH_LOG("%s.\n",
@@ -904,6 +905,7 @@ static void content_load_state_cb(retro_task_t *task,
    void *buf                   = load_data->data;
    struct sram_block *blocks   = NULL;
    settings_t *settings        = config_get_ptr();
+   bool block_sram_overwrite   = settings->bools.block_sram_overwrite;
 
    RARCH_LOG("%s: \"%s\".\n",
          msg_hash_to_str(MSG_LOADING_STATE),
@@ -917,8 +919,9 @@ static void content_load_state_cb(retro_task_t *task,
          (unsigned)size,
          msg_hash_to_str(MSG_BYTES));
 
-   /* This means we're backing up the file in memory, so content_undo_save_state()
-   can restore it */
+   /* This means we're backing up the file in memory, 
+    * so content_undo_save_state()
+    * can restore it */
    if (load_data->load_to_backup_buffer)
    {
       /* If we were previously backing up a file, let go of it first */
@@ -941,7 +944,7 @@ static void content_load_state_cb(retro_task_t *task,
       return;
    }
 
-   if (settings->bools.block_sram_overwrite && task_save_files
+   if (block_sram_overwrite && task_save_files
          && task_save_files->size)
    {
       RARCH_LOG("%s.\n",
@@ -1045,12 +1048,13 @@ static void save_state_cb(retro_task_t *task,
       void *task_data,
       void *user_data, const char *error)
 {
-   settings_t     *settings = config_get_ptr();
-   save_task_state_t *state = (save_task_state_t*)task_data;
-   char               *path = strdup(state->path);
+   save_task_state_t *state   = (save_task_state_t*)task_data;
+   char               *path   = strdup(state->path);
+   settings_t     *settings   = config_get_ptr();
+   const char *dir_screenshot = settings->paths.directory_screenshot; 
 
    if (state->thumbnail_enable)
-      take_screenshot(settings->paths.directory_screenshot,
+      take_screenshot(dir_screenshot,
             path, true, state->has_valid_framebuffer, false, true);
 
    free(path);
@@ -1067,20 +1071,22 @@ static void save_state_cb(retro_task_t *task,
  **/
 static void task_push_save_state(const char *path, void *data, size_t size, bool autosave)
 {
-   retro_task_t       *task = task_init();
-   save_task_state_t *state = (save_task_state_t*)calloc(1, sizeof(*state));
-   settings_t     *settings = config_get_ptr();
+   retro_task_t       *task        = task_init();
+   save_task_state_t *state        = (save_task_state_t*)calloc(1, sizeof(*state));
+   settings_t     *settings        = config_get_ptr();
+   bool savestate_thumbnail_enable = settings->bools.savestate_thumbnail_enable;
+   int state_slot                  = settings->ints.state_slot;
 
    if (!task || !state)
       goto error;
 
    strlcpy(state->path, path, sizeof(state->path));
-   state->data             = data;
-   state->size             = size;
-   state->autosave         = autosave;
-   state->mute             = autosave; /* don't show OSD messages if we are auto-saving */
-   state->thumbnail_enable = settings->bools.savestate_thumbnail_enable;
-   state->state_slot       = settings->ints.state_slot;
+   state->data                   = data;
+   state->size                   = size;
+   state->autosave               = autosave;
+   state->mute                   = autosave; /* don't show OSD messages if we are auto-saving */
+   state->thumbnail_enable       = savestate_thumbnail_enable;
+   state->state_slot             = state_slot;
    state->has_valid_framebuffer  = video_driver_cached_frame_has_valid_framebuffer();
 
    task->type              = TASK_TYPE_BLOCKING;
@@ -1153,7 +1159,8 @@ static void task_push_load_and_save_state(const char *path, void *data,
       size_t size, bool load_to_backup_buffer, bool autosave)
 {
    retro_task_t      *task     = NULL;
-   settings_t        *settings = NULL;
+   settings_t        *settings = config_get_ptr();
+   int state_slot              = settings->ints.state_slot;
    save_task_state_t *state    = (save_task_state_t*)
       calloc(1, sizeof(*state));
 
@@ -1168,7 +1175,6 @@ static void task_push_load_and_save_state(const char *path, void *data,
       return;
    }
 
-   settings                    = config_get_ptr();
 
    strlcpy(state->path, path, sizeof(state->path));
    state->load_to_backup_buffer = load_to_backup_buffer;
@@ -1179,7 +1185,7 @@ static void task_push_load_and_save_state(const char *path, void *data,
                                     are auto-saving */
    if (load_to_backup_buffer)
       state->mute                = true;
-   state->state_slot             = settings->ints.state_slot;
+   state->state_slot             = state_slot;
    state->has_valid_framebuffer  = 
       video_driver_cached_frame_has_valid_framebuffer();
 
@@ -1311,6 +1317,7 @@ bool content_load_state(const char *path,
    retro_task_t       *task     = task_init();
    save_task_state_t *state     = (save_task_state_t*)calloc(1, sizeof(*state));
    settings_t *settings         = config_get_ptr();
+   int state_slot               = settings->ints.state_slot;
 
    if (!task || !state)
       goto error;
@@ -1318,7 +1325,7 @@ bool content_load_state(const char *path,
    strlcpy(state->path, path, sizeof(state->path));
    state->load_to_backup_buffer = load_to_backup_buffer;
    state->autoload              = autoload;
-   state->state_slot            = settings->ints.state_slot;
+   state->state_slot            = state_slot;
    state->has_valid_framebuffer = 
       video_driver_cached_frame_has_valid_framebuffer();
 
@@ -1556,8 +1563,11 @@ bool content_save_ram_file(unsigned slot)
 bool event_save_files(bool is_sram_used)
 {
    unsigned i;
+   settings_t *settings            = config_get_ptr();
+   const char *path_cheat_database = settings->paths.path_cheat_database;
 
-   cheat_manager_save_game_specific_cheats();
+   cheat_manager_save_game_specific_cheats(
+         path_cheat_database);
    if (!task_save_files || !is_sram_used)
       return false;
 

@@ -34,7 +34,7 @@
 static enum gfx_ctx_api sixel_ctx_api = GFX_CTX_NONE;
 
 static void gfx_ctx_sixel_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height, bool is_shutdown)
+      bool *resize, unsigned *width, unsigned *height)
 {
 }
 
@@ -54,8 +54,7 @@ static void gfx_ctx_sixel_get_video_size(void *data,
    (void)data;
 }
 
-static void *gfx_ctx_sixel_init(
-      video_frame_info_t *video_info, void *video_driver)
+static void *gfx_ctx_sixel_init(void *video_driver)
 {
    (void)video_driver;
 
@@ -68,7 +67,6 @@ static void gfx_ctx_sixel_destroy(void *data)
 }
 
 static bool gfx_ctx_sixel_set_video_mode(void *data,
-      video_frame_info_t *video_info,
       unsigned width, unsigned height,
       bool fullscreen)
 {
@@ -147,11 +145,6 @@ static uint32_t gfx_ctx_sixel_get_flags(void *data)
    return flags;
 }
 
-static void gfx_ctx_sixel_swap_buffers(void *data, void *data2)
-{
-   (void)data;
-}
-
 const gfx_ctx_driver_t gfx_ctx_sixel = {
    gfx_ctx_sixel_init,
    gfx_ctx_sixel_destroy,
@@ -172,7 +165,7 @@ const gfx_ctx_driver_t gfx_ctx_sixel = {
    gfx_ctx_sixel_has_focus,
    gfx_ctx_sixel_suppress_screensaver,
    true, /* has_windowed */
-   gfx_ctx_sixel_swap_buffers,
+   NULL, /* swap_buffers */
    gfx_ctx_sixel_input_driver,
    NULL,
    NULL,

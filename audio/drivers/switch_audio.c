@@ -32,7 +32,9 @@
 static const int sample_rate           = 48000;
 static const int max_num_samples       = sample_rate;
 static const int num_channels          = 2;
+#ifndef HAVE_LIBNX
 static const size_t sample_buffer_size = ((max_num_samples * num_channels * sizeof(uint16_t)) + 0xfff) & ~0xfff;
+#endif
 
 typedef struct
 {
@@ -98,7 +100,9 @@ static ssize_t switch_audio_write(void *data, const void *buf, size_t size)
 
          while (!swa->current_buffer)
          {
+#ifndef HAVE_LIBNX
             uint32_t handle_idx = 0;
+#endif
             num                 = 0;
 
 #ifdef HAVE_LIBNX
@@ -236,7 +240,9 @@ static void *switch_audio_init(const char *device,
 {
    unsigned i;
    char names[8][0x20];
+#ifndef HAVE_LIBNX
    uint32_t num_names  = 0;
+#endif
    switch_audio_t *swa = (switch_audio_t*) calloc(1, sizeof(*swa));
 
    if (!swa)
@@ -333,8 +339,9 @@ fail_audio_output:
 /* TODO/FIXME - fix libnx codepath */
 #ifndef HAVE_LIBNX
    audio_ipc_output_close(&swa->output);
-#endif
 fail_audio_ipc:
+#endif
+
 /* TODO/FIXME - fix libnx codepath */
 #ifndef HAVE_LIBNX
    audio_ipc_finalize();

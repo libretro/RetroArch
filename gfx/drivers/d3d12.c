@@ -37,9 +37,9 @@
 
 #ifdef HAVE_MENU
 #include "../../menu/menu_driver.h"
-#ifdef HAVE_MENU_WIDGETS
-#include "../../menu/widgets/menu_widgets.h"
 #endif
+#ifdef HAVE_GFX_WIDGETS
+#include "../gfx_widgets.h"
 #endif
 
 #include "wiiu/wiiu_dbg.h"
@@ -1005,7 +1005,11 @@ static void *d3d12_gfx_init(const video_info_t* video,
    d3d12->frame.texture[0].srv_heap    = &d3d12->desc.srv_heap;
    d3d12_init_texture(d3d12->device, &d3d12->frame.texture[0]);
 
-   font_driver_init_osd(d3d12, false, video->is_threaded, FONT_DRIVER_RENDER_D3D12_API);
+   font_driver_init_osd(d3d12,
+         video,
+         false,
+         video->is_threaded,
+         FONT_DRIVER_RENDER_D3D12_API);
 
    {
       d3d12_fake_context.get_flags = d3d12_get_flags;
@@ -1162,11 +1166,18 @@ static bool d3d12_gfx_frame(
       video_frame_info_t* video_info)
 {
    unsigned         i;
-   d3d12_texture_t* texture = NULL;
-   d3d12_video_t*   d3d12   = (d3d12_video_t*)data;
+   d3d12_texture_t* texture       = NULL;
+   d3d12_video_t*   d3d12         = (d3d12_video_t*)data;
+   const char *stat_text          = video_info->stat_text;
+   bool statistics_show           = video_info->statistics_show;
+   bool widgets_inited            = video_info->widgets_inited;
+   unsigned video_width           = video_info->width;
+   unsigned video_height          = video_info->height;
+   struct font_params *osd_params = (struct font_params*)
+      &video_info->osd_stat_params;
+
 
    d3d12_gfx_sync(d3d12);
-   PERF_START();
 
    if (d3d12->resize_chain)
    {
@@ -1184,17 +1195,17 @@ static bool d3d12_gfx_frame(
                d3d12->device, d3d12->chain.renderTargets[i], NULL, d3d12->chain.desc_handles[i]);
       }
 
-      d3d12->chain.viewport.Width     = video_info->width;
-      d3d12->chain.viewport.Height    = video_info->height;
-      d3d12->chain.scissorRect.right  = video_info->width;
-      d3d12->chain.scissorRect.bottom = video_info->height;
+      d3d12->chain.viewport.Width     = video_width;
+      d3d12->chain.viewport.Height    = video_height;
+      d3d12->chain.scissorRect.right  = video_width;
+      d3d12->chain.scissorRect.bottom = video_height;
       d3d12->resize_chain             = false;
       d3d12->resize_viewport          = true;
 
       d3d12->ubo_values.OutputSize.width  = d3d12->chain.viewport.Width;
       d3d12->ubo_values.OutputSize.height = d3d12->chain.viewport.Height;
 
-      video_driver_set_size(video_info->width, video_info->height);
+      video_driver_set_size(video_width, video_height);
    }
 
    D3D12ResetCommandAllocator(d3d12->queue.allocator);
@@ -1222,7 +1233,7 @@ static bool d3d12_gfx_frame(
          if (d3d12->shader_preset->luts && d3d12->luts[0].dirty)
             for (i = 0; i < d3d12->shader_preset->luts; i++)
                d3d12_upload_texture(d3d12->queue.cmd, &d3d12->luts[i],
-                     video_info->userdata);
+                    d3d12);
 
          if (d3d12->frame.texture[0].desc.Width != width ||
              d3d12->frame.texture[0].desc.Height != height)
@@ -1273,7 +1284,7 @@ static bool d3d12_gfx_frame(
       d3d12_update_texture(width, height, pitch, d3d12->format, frame, &d3d12->frame.texture[0]);
 
       d3d12_upload_texture(d3d12->queue.cmd, &d3d12->frame.texture[0],
-            video_info->userdata);
+            d3d12);
    }
    D3D12IASetVertexBuffers(d3d12->queue.cmd, 0, 1, &d3d12->frame.vbo_view);
 
@@ -1468,7 +1479,7 @@ static bool d3d12_gfx_frame(
    {
       if (d3d12->menu.texture.dirty)
          d3d12_upload_texture(d3d12->queue.cmd, &d3d12->menu.texture,
-               video_info->userdata);
+               d3d12);
 
       D3D12SetGraphicsRootConstantBufferView(
             d3d12->queue.cmd, ROOT_ID_UBO, d3d12->ubo_view.BufferLocation);
@@ -1491,7 +1502,7 @@ static bool d3d12_gfx_frame(
    d3d12->sprites.enabled = true;
 
 #ifdef HAVE_MENU
-#ifndef HAVE_MENU_WIDGETS
+#ifndef HAVE_GFX_WIDGETS
    if (d3d12->menu.enabled)
 #endif
    {
@@ -1506,21 +1517,18 @@ static bool d3d12_gfx_frame(
       menu_driver_frame(video_info);
    else
 #endif
-      if (video_info->statistics_show)
-   {
-      struct font_params *osd_params = (struct font_params*)
-         &video_info->osd_stat_params;
-
-      if (osd_params)
+      if (statistics_show)
       {
-         D3D12SetPipelineState(d3d12->queue.cmd, d3d12->sprites.pipe_blend);
-         D3D12RSSetViewports(d3d12->queue.cmd, 1, &d3d12->chain.viewport);
-         D3D12RSSetScissorRects(d3d12->queue.cmd, 1, &d3d12->chain.scissorRect);
-         D3D12IASetVertexBuffers(d3d12->queue.cmd, 0, 1, &d3d12->sprites.vbo_view);
-         font_driver_render_msg(d3d12, video_info, video_info->stat_text,
-               (const struct font_params*)&video_info->osd_stat_params, NULL);
+         if (osd_params)
+         {
+            D3D12SetPipelineState(d3d12->queue.cmd, d3d12->sprites.pipe_blend);
+            D3D12RSSetViewports(d3d12->queue.cmd, 1, &d3d12->chain.viewport);
+            D3D12RSSetScissorRects(d3d12->queue.cmd, 1, &d3d12->chain.scissorRect);
+            D3D12IASetVertexBuffers(d3d12->queue.cmd, 0, 1, &d3d12->sprites.vbo_view);
+            font_driver_render_msg(d3d12, stat_text,
+                  (const struct font_params*)osd_params, NULL);
+         }
       }
-   }
 #ifdef HAVE_OVERLAY
    if (d3d12->overlays.enabled)
    {
@@ -1548,7 +1556,7 @@ static bool d3d12_gfx_frame(
          if (d3d12->overlays.textures[i].dirty)
             d3d12_upload_texture(d3d12->queue.cmd,
                   &d3d12->overlays.textures[i],
-                  video_info->userdata);
+                  d3d12);
 
          D3D12SetGraphicsRootDescriptorTable(
                d3d12->queue.cmd, ROOT_ID_TEXTURE_T, d3d12->overlays.textures[i].gpu_descriptor[0]);
@@ -1557,11 +1565,9 @@ static bool d3d12_gfx_frame(
    }
 #endif
 
-#ifdef HAVE_MENU
-#ifdef HAVE_MENU_WIDGETS
-   if (video_info->widgets_inited)
-      menu_widgets_frame(video_info);
-#endif
+#ifdef HAVE_GFX_WIDGETS
+   if (widgets_inited)
+      gfx_widgets_frame(video_info);
 #endif
 
    if (msg && *msg)
@@ -1571,8 +1577,8 @@ static bool d3d12_gfx_frame(
       D3D12RSSetScissorRects(d3d12->queue.cmd, 1, &d3d12->chain.scissorRect);
       D3D12IASetVertexBuffers(d3d12->queue.cmd, 0, 1, &d3d12->sprites.vbo_view);
 
-      font_driver_render_msg(d3d12, video_info, msg, NULL, NULL);
-      dxgi_update_title(video_info);
+      font_driver_render_msg(d3d12, msg, NULL, NULL);
+      dxgi_update_title();
    }
    d3d12->sprites.enabled = false;
 
@@ -1584,7 +1590,6 @@ static bool d3d12_gfx_frame(
    D3D12ExecuteGraphicsCommandLists(d3d12->queue.handle, 1, &d3d12->queue.cmd);
    D3D12SignalCommandQueue(d3d12->queue.handle, d3d12->queue.fence, ++d3d12->queue.fenceValue);
 
-   PERF_STOP();
 #if 1
    DXGIPresent(d3d12->chain.handle, !!d3d12->chain.vsync, 0);
 #else
@@ -1595,7 +1600,9 @@ static bool d3d12_gfx_frame(
    return true;
 }
 
-static void d3d12_gfx_set_nonblock_state(void* data, bool toggle)
+static void d3d12_gfx_set_nonblock_state(void* data, bool toggle,
+      bool adaptive_vsync_enabled,
+      unsigned swap_interval)
 {
    d3d12_video_t* d3d12 = (d3d12_video_t*)data;
    d3d12->chain.vsync   = !toggle;
@@ -1722,15 +1729,17 @@ static void d3d12_gfx_apply_state_changes(void* data)
 }
 
 static void d3d12_gfx_set_osd_msg(
-      void* data, video_frame_info_t* video_info,
-      const char* msg, const void* params, void* font)
+      void* data,
+      const char* msg,
+      const void* params,
+      void* font)
 {
    d3d12_video_t* d3d12 = (d3d12_video_t*)data;
 
    if (!d3d12 || !d3d12->sprites.enabled)
       return;
 
-   font_driver_render_msg(d3d12, video_info, msg,
+   font_driver_render_msg(d3d12, msg,
          (const struct font_params*)params, font);
 }
 
@@ -1837,8 +1846,8 @@ static void d3d12_gfx_get_poke_interface(void* data, const video_poke_interface_
    *iface = &d3d12_poke_interface;
 }
 
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-static bool d3d12_menu_widgets_enabled(void *data)
+#ifdef HAVE_GFX_WIDGETS
+static bool d3d12_gfx_widgets_enabled(void *data)
 {
    (void)data;
    return true;
@@ -1870,7 +1879,7 @@ video_driver_t video_d3d12 = {
 #endif
    d3d12_gfx_get_poke_interface,
    NULL, /* d3d12_wrap_type_to_enum */
-#if defined(HAVE_MENU) && defined(HAVE_MENU_WIDGETS)
-   d3d12_menu_widgets_enabled
+#ifdef HAVE_GFX_WIDGETS
+   d3d12_gfx_widgets_enabled
 #endif
 };

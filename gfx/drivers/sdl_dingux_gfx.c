@@ -44,13 +44,12 @@
 
 typedef struct sdl_dingux_video
 {
-   SDL_Surface *screen;
    bool rgb;
    bool menu_active;
    bool was_in_menu;
    bool quitting;
    char menu_frame[320*240*32];
-
+   SDL_Surface *screen;
 } sdl_dingux_video_t;
 
 static void sdl_dingux_gfx_free(void *data)
@@ -167,7 +166,6 @@ static bool sdl_dingux_gfx_frame(void *data, const void *frame, unsigned width,
         unsigned height, uint64_t frame_count,
         unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
-//    printf("sdl_gfx_frame width %d height %d pitch %d frame_count %lu\n", width, height, pitch, frame_count); 
     sdl_dingux_video_t* vid = (sdl_dingux_video_t*)data;
 
     if (unlikely(!frame))
@@ -222,11 +220,7 @@ static void sdl_dingux_set_texture_frame(void *data, const void *frame, bool rgb
 }
 
 
-static void sdl_dingux_gfx_set_nonblock_state(void *data, bool state)
-{
-   (void)data; /* Can SDL even do this? */
-   (void)state;
-}
+static void sdl_dingux_gfx_set_nonblock_state(void *a, bool b, bool c, unsigned d) { }
 
 static void sdl_dingux_gfx_check_window(sdl_dingux_video_t *vid)
 {

@@ -23,37 +23,33 @@ void die(char *s)
 
 int main(void)
 {
-    struct sockaddr_in si_other;
-    int s, i, slen=sizeof(si_other);
+   struct sockaddr_in si_other;
+   int s, i, slen=sizeof(si_other);
 
-    if ( (s=socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1)
-    {
-        die("socket");
-    }
+   if ( (s=socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1)
+      die("socket");
 
-    memset((char *) &si_other, 0, sizeof(si_other));
-    si_other.sin_family = AF_INET;
-    si_other.sin_port = htons(PORT);
+   memset((char *) &si_other, 0, sizeof(si_other));
+   si_other.sin_family = AF_INET;
+   si_other.sin_port = htons(PORT);
 
-    if (inet_aton(SERVER , &si_other.sin_addr) == 0)
-    {
-        fprintf(stderr, "inet_aton() failed\n");
-        exit(1);
-    }
-    while(1)
-    {
+   if (inet_aton(SERVER , &si_other.sin_addr) == 0)
+   {
+      fprintf(stderr, "inet_aton() failed\n");
+      exit(1);
+   }
 
-        char message[10]="128";
-        //send the message
-        if (sendto(s, message, strlen(message) , 0 , (struct sockaddr *) &si_other, slen)==-1)
-        {
-            die("sendto()");
-        }
-        /* sleep for 1 frame (60hz) */
-        usleep(16*1000);
+   for (;;)
+   {
+      char message[10]="128";
+      /* send the message */
+      if (sendto(s, message, strlen(message) , 0 , (struct sockaddr *) &si_other, slen)==-1)
+         die("sendto()");
 
-    }
+      /* sleep for 1 frame (60hz) */
+      usleep(16*1000);
+   }
 
-    close(s);
-    return 0;
+   close(s);
+   return 0;
 }

@@ -73,7 +73,7 @@ static void emscripten_mainloop(void)
       if ((emscripten_frame_count & 1) == 0)
       {
          glClear(GL_COLOR_BUFFER_BIT);
-         video_info.cb_swap_buffers(video_info.context_data, &video_info);
+         video_info.cb_swap_buffers(video_info.context_data);
          return;
       }
    }
@@ -240,5 +240,7 @@ frontend_ctx_driver_t frontend_ctx_emscripten = {
    NULL,                         /* set_sustained_performance_mode */
    NULL,                         /* get_cpu_model_name */
    NULL,                         /* get_user_language */
+   NULL,                         /* is_narrator_running */
+   NULL,                         /* accessibility_speak */
    "emscripten"
 };

@@ -8,7 +8,8 @@
 /* special formats only used by rc_richpresence_display_part_t.display_type. must not overlap other RC_FORMAT values */
 enum {
   RC_FORMAT_STRING = 101,
-  RC_FORMAT_LOOKUP = 102
+  RC_FORMAT_LOOKUP = 102,
+  RC_FORMAT_UNKNOWN_MACRO = 103
 };
 
 static const char* rc_parse_line(const char* line, const char** end) {
@@ -161,10 +162,15 @@ static rc_richpresence_display_t* rc_parse_richpresence_display_internal(const c
             *next = part;
             next = &part->next;
 
-            ptr = line;
+            /* find the closing parenthesis */
+            while (ptr < endline && *ptr != ')')
+              ++ptr;
+            if (*ptr == ')')
+              ++ptr;
 
-            part->display_type = RC_FORMAT_STRING;
-            part->text = rc_alloc_str(parse, "[Unknown macro]", 15);
+            /* assert: the allocated string is going to be smaller than the memory used for the parameter of the macro */
+            part->display_type = RC_FORMAT_UNKNOWN_MACRO;
+            part->text = rc_alloc_str(parse, line, ptr - line);
           }
         }
       }
@@ -420,6 +426,10 @@ int rc_evaluate_richpresence(rc_richpresence_t* richpresence, char* buffer, unsi
 
               chars = snprintf(ptr, buffersize, "%s", item->label);
             }
+            break;
+
+          case RC_FORMAT_UNKNOWN_MACRO:
+            chars = snprintf(ptr, buffersize, "[Unknown macro]%s", part->text);
             break;
 
           default:

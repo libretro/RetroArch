@@ -23,9 +23,11 @@
 #include "../../config.h"
 #endif
 
-#include "../font_driver.h"
-#include "../../verbosity.h"
 #include "../common/caca_common.h"
+
+#include "../font_driver.h"
+#include "../../configuration.h"
+#include "../../verbosity.h"
 
 typedef struct
 {
@@ -74,7 +76,8 @@ static const struct font_glyph *caca_font_get_glyph(
    return NULL;
 }
 
-static void caca_render_msg(video_frame_info_t *video_info,
+static void caca_render_msg(
+      void *userdata,
       void *data, const char *msg,
       const struct font_params *params)
 {
@@ -83,6 +86,9 @@ static void caca_render_msg(video_frame_info_t *video_info,
    unsigned newX, newY;
    unsigned align;
    caca_raster_t              *font = (caca_raster_t*)data;
+   settings_t *settings             = config_get_ptr();
+   float video_msg_pos_x            = settings->floats.video_msg_pos_x;
+   float video_msg_pos_y            = settings->floats.video_msg_pos_y;
 
    if (!font || string_is_empty(msg))
       return;
@@ -96,18 +102,18 @@ static void caca_render_msg(video_frame_info_t *video_info,
    }
    else
    {
-      x     = video_info->font_msg_pos_x;
-      y     = video_info->font_msg_pos_y;
+      x     = video_msg_pos_x;
+      y     = video_msg_pos_y;
       scale = 1.0f;
       align = TEXT_ALIGN_LEFT;
    }
 
-   if (!font->caca || !font->caca->caca_cv || !font->caca->caca_display ||
-       !*font->caca->caca_cv || !*font->caca->caca_display)
+   if (!font->caca || !font->caca->cv || !font->caca->display ||
+       !font->caca->cv || !font->caca->display)
       return;
 
-   width    = caca_get_canvas_width(*font->caca->caca_cv);
-   height   = caca_get_canvas_height(*font->caca->caca_cv);
+   width    = caca_get_canvas_width(font->caca->cv);
+   height   = caca_get_canvas_height(font->caca->cv);
    newY     = height - (y * height * scale);
 
    switch (align)
@@ -124,9 +130,9 @@ static void caca_render_msg(video_frame_info_t *video_info,
          break;
    }
 
-   caca_put_str(*font->caca->caca_cv, newX, newY, msg);
+   caca_put_str(font->caca->cv, newX, newY, msg);
 
-   caca_refresh_display(*font->caca->caca_display);
+   caca_refresh_display(font->caca->display);
 }
 
 font_renderer_t caca_font = {

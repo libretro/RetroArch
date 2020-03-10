@@ -25,18 +25,13 @@ static void gfx_ctx_null_swap_interval(void *data, int interval)
 }
 
 static void gfx_ctx_null_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height, bool is_shutdown)
+      bool *resize, unsigned *width, unsigned *height)
 {
    (void)data;
    (void)quit;
    (void)width;
    (void)height;
    (void)resize;
-}
-
-static void gfx_ctx_null_swap_buffers(void *data, void *data2)
-{
-   (void)data;
 }
 
 static void gfx_ctx_null_get_video_size(void *data, unsigned *width, unsigned *height)
@@ -52,7 +47,6 @@ static void gfx_ctx_null_get_video_size(void *data, unsigned *width, unsigned *h
 }
 
 static bool gfx_ctx_null_set_video_mode(void *data,
-      video_frame_info_t *video_info,
       unsigned width, unsigned height,
       bool fullscreen)
 {
@@ -118,7 +112,7 @@ static void gfx_ctx_null_bind_hw_render(void *data, bool enable)
    (void)enable;
 }
 
-static void *gfx_ctx_null_init(video_frame_info_t *video_info, void *video_driver)
+static void *gfx_ctx_null_init(void *video_driver)
 {
    (void)video_driver;
 
@@ -157,7 +151,7 @@ const gfx_ctx_driver_t gfx_ctx_null = {
    gfx_ctx_null_has_focus,
    gfx_ctx_null_suppress_screensaver,
    false, /* has_windowed */
-   gfx_ctx_null_swap_buffers,
+   NULL, /* swap_buffers */
    gfx_ctx_null_input_driver,
    NULL,
    NULL,

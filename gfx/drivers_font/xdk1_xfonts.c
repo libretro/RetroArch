@@ -42,9 +42,6 @@ static void *xfonts_init_font(void *video_data,
    if (!xfont)
       return NULL;
 
-   (void)font_path;
-   (void)font_size;
-
    xfont->d3d = (d3d8_video_t*)video_data;
 
    XFONT_OpenDefaultFont(&xfont->debug_font);
@@ -77,13 +74,17 @@ static void xfonts_free_font(void *data, bool is_threaded)
 }
 
 static void xfonts_render_msg(
-      video_frame_info_t *video_info,
-      void *data, const char *msg,
+      void *userdata,
+      void *data,
+      const char *msg,
       const struct font_params *params)
 {
-   wchar_t str[PATH_MAX_LENGTH];
    float x, y;
-   xfonts_t *xfonts                 = (xfonts_t*)data;
+   wchar_t str[PATH_MAX_LENGTH];
+   xfonts_t     *xfonts  = (xfonts_t*)data;
+   settings_t *settings  = config_get_ptr();
+   float video_msg_pos_x = settings->floats.video_msg_pos_x;
+   float video_msg_pos_y = settings->floats.video_msg_pos_y;
 
    if (params)
    {
@@ -92,8 +93,8 @@ static void xfonts_render_msg(
    }
    else
    {
-      x = video_info->font_msg_pos_x;
-      y = video_info->font_msg_pos_y;
+      x = video_msg_pos_x;
+      y = video_msg_pos_y;
    }
 
    d3d8_device_get_backbuffer(xfonts->d3d->dev,

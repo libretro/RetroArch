@@ -12,7 +12,7 @@ static Result HBLDR_SetTarget(const char* path)
 	u32 pathLen = strlen(path) + 1;
 	u32* cmdbuf = getThreadCommandBuffer();
 
-	cmdbuf[0] = IPC_MakeHeader(2, 0, 2); //0x20002
+	cmdbuf[0] = IPC_MakeHeader(2, 0, 2); /* 0x20002 */
 	cmdbuf[1] = IPC_Desc_StaticBuffer(pathLen, 0);
 	cmdbuf[2] = (u32)path;
 
@@ -25,7 +25,7 @@ static Result HBLDR_SetArgv(const void* buffer, u32 size)
 {
 	u32* cmdbuf = getThreadCommandBuffer();
 
-	cmdbuf[0] = IPC_MakeHeader(3, 0, 2); //0x30002
+	cmdbuf[0] = IPC_MakeHeader(3, 0, 2); /* 0x30002 */
 	cmdbuf[1] = IPC_Desc_StaticBuffer(size, 1);
 	cmdbuf[2] = (u32)buffer;
 

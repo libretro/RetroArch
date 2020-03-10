@@ -815,80 +815,84 @@ int menu_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
             );
             break;
         case MENU_ENUM_LABEL_VIDEO_DRIVER:
-            snprintf(s, len,
+            {
+               const char *video_driver = settings->arrays.video_driver;
+
+               snprintf(s, len,
                      "Geçerli Video sürücüsü.");
 
-            if (string_is_equal(settings->arrays.video_driver, "gl"))
-            {
-                snprintf(s, len,
-                         "OpenGL Video sürücüsü. \n"
-                                 " \n"
-                                 "Bu sürücü, yazılım tarafından oluşturulan \n"
-                                 "Çekirdek uygulamalarına ek olarak libretro GL \n"
-                                 "çekirdeklerinin kullanılmasına izin verir.\n"
-                                 " \n"
-                                 "Yazılım tarafından oluşturulan ve libretro GL \n"
-                                 "Çekirdek uygulamaları için performans, \n"
-                                 "grafik kartınızın temelindeki GL sürücüsüne bağlıdır.");
-            }
-            else if (string_is_equal(settings->arrays.video_driver, "sdl2"))
-            {
-                snprintf(s, len,
-                         "SDL 2 Video sürücüsü.\n"
-                                 " \n"
-                                 "Bu bir SDL 2 yazılımı tarafından oluşturulan \n"
-                                 "video sürücüsüdür.\n"
-                                 " \n"
-                                 "Yazılım tarafından oluşturulan libretro Çekirdek uygulamaları \n"
-                                 "için performans, SDL uygulamanıza bağlıdır.");
-            }
-            else if (string_is_equal(settings->arrays.video_driver, "sdl1"))
-            {
-                snprintf(s, len,
-                         "SDL Video sürücüsü.\n"
-                                 " \n"
-                                 "Bu bir SDL 1.2 yazılımı tarafından üretilmiş \n"
-                                 "video sürücüsüdür.\n"
-                                 " \n"
-                                 "Performansın yetersiz olduğu kabul edilir. \n"
-                                 "Sadece son çare olarak kullanmayı düşünün.");
-            }
-            else if (string_is_equal(settings->arrays.video_driver, "d3d"))
-            {
-                snprintf(s, len,
-                         "Direct3D Video sürücüsü. \n"
-                                 " \n"
-                                 "Yazılım tarafından oluşturulan Çekirdek performansı,\n"
-                                 "grafik kartınızın temelindeki D3D \n"
-                                 "sürücüsüne bağlıdır.");
-            }
-            else if (string_is_equal(settings->arrays.video_driver, "exynos"))
-            {
-                snprintf(s, len,
-                         "Exynos-G2D Video sürücüsü. \n"
-                                 " \n"
-                                 "Bu, düşük seviye bir Exynos video sürücüsüdür. \n"
-                                 "Karışım işlemleri için Samsung Exynos SoC'daki \n"
-                                 " G2D bloğunu kullanır. \n"
-                                 " \n"
-                                 "Yazılım tarafından oluşturulan Çekirdek performansı \n"
-                                 "optimum olmalıdır.");
-            }
-            else if (string_is_equal(settings->arrays.video_driver, "drm"))
-            {
-                snprintf(s, len,
-                         "Plain DRM Video sürücüsü. \n"
-                                 " \n"
-                                 "Bu düşük bir seviye video sürücüsüdür. \n"
-                                 "GPU kaplamalarını için libdrm donanım ölçeklendirmesi kullanır.");
-            }
-            else if (string_is_equal(settings->arrays.video_driver, "sunxi"))
-            {
-                snprintf(s, len,
-                         "Sunxi-G2D Video sürücüsü. \n"
-                                 " \n"
-                                 "Bu düşük seviye bir Sunxi video sürücüsü. \n"
-                                 "Allwinner SoC'lerde G2D bloğunu kullanır.");
+               if (string_is_equal(video_driver, "gl"))
+               {
+                  snprintf(s, len,
+                        "OpenGL Video sürücüsü. \n"
+                        " \n"
+                        "Bu sürücü, yazılım tarafından oluşturulan \n"
+                        "Çekirdek uygulamalarına ek olarak libretro GL \n"
+                        "çekirdeklerinin kullanılmasına izin verir.\n"
+                        " \n"
+                        "Yazılım tarafından oluşturulan ve libretro GL \n"
+                        "Çekirdek uygulamaları için performans, \n"
+                        "grafik kartınızın temelindeki GL sürücüsüne bağlıdır.");
+               }
+               else if (string_is_equal(video_driver, "sdl2"))
+               {
+                  snprintf(s, len,
+                        "SDL 2 Video sürücüsü.\n"
+                        " \n"
+                        "Bu bir SDL 2 yazılımı tarafından oluşturulan \n"
+                        "video sürücüsüdür.\n"
+                        " \n"
+                        "Yazılım tarafından oluşturulan libretro Çekirdek uygulamaları \n"
+                        "için performans, SDL uygulamanıza bağlıdır.");
+               }
+               else if (string_is_equal(video_driver, "sdl1"))
+               {
+                  snprintf(s, len,
+                        "SDL Video sürücüsü.\n"
+                        " \n"
+                        "Bu bir SDL 1.2 yazılımı tarafından üretilmiş \n"
+                        "video sürücüsüdür.\n"
+                        " \n"
+                        "Performansın yetersiz olduğu kabul edilir. \n"
+                        "Sadece son çare olarak kullanmayı düşünün.");
+               }
+               else if (string_is_equal(video_driver, "d3d"))
+               {
+                  snprintf(s, len,
+                        "Direct3D Video sürücüsü. \n"
+                        " \n"
+                        "Yazılım tarafından oluşturulan Çekirdek performansı,\n"
+                        "grafik kartınızın temelindeki D3D \n"
+                        "sürücüsüne bağlıdır.");
+               }
+               else if (string_is_equal(video_driver, "exynos"))
+               {
+                  snprintf(s, len,
+                        "Exynos-G2D Video sürücüsü. \n"
+                        " \n"
+                        "Bu, düşük seviye bir Exynos video sürücüsüdür. \n"
+                        "Karışım işlemleri için Samsung Exynos SoC'daki \n"
+                        " G2D bloğunu kullanır. \n"
+                        " \n"
+                        "Yazılım tarafından oluşturulan Çekirdek performansı \n"
+                        "optimum olmalıdır.");
+               }
+               else if (string_is_equal(video_driver, "drm"))
+               {
+                  snprintf(s, len,
+                        "Plain DRM Video sürücüsü. \n"
+                        " \n"
+                        "Bu düşük bir seviye video sürücüsüdür. \n"
+                        "GPU kaplamalarını için libdrm donanım ölçeklendirmesi kullanır.");
+               }
+               else if (string_is_equal(video_driver, "sunxi"))
+               {
+                  snprintf(s, len,
+                        "Sunxi-G2D Video sürücüsü. \n"
+                        " \n"
+                        "Bu düşük seviye bir Sunxi video sürücüsü. \n"
+                        "Allwinner SoC'lerde G2D bloğunu kullanır.");
+               }
             }
             break;
         case MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN:

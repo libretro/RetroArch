@@ -1340,9 +1340,6 @@ typedef struct ALIGN(16)
    float time;
 } d3d12_uniform_t;
 
-static_assert(
-      (!(sizeof(d3d12_uniform_t) & 0xF)), "sizeof(d3d12_uniform_t) must be a multiple of 16");
-
 typedef struct
 {
    unsigned    cur_mon_id;

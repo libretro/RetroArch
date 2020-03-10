@@ -32,11 +32,11 @@
 #include <lists/string_list.h>
 
 #include "../configuration.h"
-#include "../retroarch.h"
 #include "../verbosity.h"
 #include "../frontend/frontend_driver.h"
 #include "../command.h"
 #include "../file_path_special.h"
+#include "../retroarch.h"
 #include "video_shader_parse.h"
 
 #if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
@@ -583,6 +583,7 @@ bool video_shader_resolve_parameters(config_file_t *conf,
  * See: video_shader_read_preset
  **/
 bool video_shader_write_preset(const char *path,
+      const char *shader_dir,
       const struct video_shader *shader, bool reference)
 {
    /* We need to clean up paths to be able to properly process them
@@ -596,7 +597,7 @@ bool video_shader_write_preset(const char *path,
 
    fill_pathname_join(
       preset_dir,
-      config_get_ptr()->paths.directory_video_shader,
+      shader_dir,
       "presets",
       sizeof(preset_dir));
 

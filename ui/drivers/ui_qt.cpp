@@ -26,9 +26,7 @@ extern "C" {
 #endif
 
 #include "../ui_companion_driver.h"
-#include "../../core.h"
 #include "../../configuration.h"
-#include "../../retroarch.h"
 #include "../../verbosity.h"
 #include "../../msg_hash.h"
 #include "../../tasks/tasks_internal.h"
@@ -614,8 +612,8 @@ static void* ui_companion_qt_init(void)
    /* the initial playlist that is selected is based on the user's setting (initialPlaylist) */
    for (i = 0; listWidget->count() && i < listWidget->count(); i++)
    {
-      QListWidgetItem *item = listWidget->item(i);
       QString path;
+      QListWidgetItem *item = listWidget->item(i);
 
       if (!item)
          continue;
@@ -650,20 +648,19 @@ static void* ui_companion_qt_init(void)
    return handle;
 }
 
-static void ui_companion_qt_notify_content_loaded(void *data)
-{
-   (void)data;
-}
+static void ui_companion_qt_notify_content_loaded(void *data) { }
 
 static void ui_companion_qt_toggle(void *data, bool force)
 {
    ui_companion_qt_t *handle  = (ui_companion_qt_t*)data;
    ui_window_qt_t *win_handle = (ui_window_qt_t*)handle->window;
    settings_t *settings       = config_get_ptr();
+   bool ui_companion_toggle   = settings->bools.ui_companion_toggle;
+   bool video_fullscreen      = settings->bools.video_fullscreen;
 
-   if (settings->bools.ui_companion_toggle || force)
+   if (ui_companion_toggle || force)
    {
-      if (settings->bools.video_fullscreen)
+      if (video_fullscreen)
          command_event(CMD_EVENT_FULLSCREEN_TOGGLE, NULL);
 
       win_handle->qtWindow->activateWindow();
@@ -678,7 +675,8 @@ static void ui_companion_qt_toggle(void *data, bool force)
       {
          already_started = true;
 
-         if (win_handle->qtWindow->settings()->value("show_welcome_screen", true).toBool())
+         if (win_handle->qtWindow->settings()->value(
+                  "show_welcome_screen", true).toBool())
             win_handle->qtWindow->showWelcomeScreen();
       }
    }
@@ -707,12 +705,7 @@ static void ui_companion_qt_event_command(void *data, enum event_command cmd)
 }
 
 static void ui_companion_qt_notify_list_pushed(void *data, file_list_t *list,
-   file_list_t *menu_list)
-{
-   (void)data;
-   (void)list;
-   (void)menu_list;
-}
+   file_list_t *menu_list) { }
 
 static void ui_companion_qt_notify_refresh(void *data)
 {
@@ -730,7 +723,8 @@ static void ui_companion_qt_log_msg(void *data, const char *msg)
    win_handle->qtWindow->appendLogMessage(msg);
 }
 
-void ui_companion_qt_msg_queue_push(void *data, const char *msg, unsigned priority, unsigned duration, bool flush)
+void ui_companion_qt_msg_queue_push(void *data,
+      const char *msg, unsigned priority, unsigned duration, bool flush)
 {
    ui_companion_qt_t *handle  = (ui_companion_qt_t*)data;
    ui_window_qt_t *win_handle = NULL;
@@ -738,7 +732,7 @@ void ui_companion_qt_msg_queue_push(void *data, const char *msg, unsigned priori
    if (!handle)
       return;
 
-   win_handle = (ui_window_qt_t*)handle->window;
+   win_handle                 = (ui_window_qt_t*)handle->window;
 
    if (win_handle)
       win_handle->qtWindow->showStatusMessage(msg, priority, duration, flush);

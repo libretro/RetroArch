@@ -23,15 +23,9 @@ static DescriptorTranslation *__ps2_fdmap[MAX_OPEN_FILES];
 static DescriptorTranslation __ps2_fdmap_pool[MAX_OPEN_FILES];
 static int _lock_sema_id = -1;
 
-static inline int _lock(void)
-{
-   return(WaitSema(_lock_sema_id));
-}
+static inline int _lock(void) { return(WaitSema(_lock_sema_id)); }
 
-static inline int _unlock(void)
-{
-   return(SignalSema(_lock_sema_id));
-}
+static inline int _unlock(void) { return(SignalSema(_lock_sema_id)); }
 
 static int __ps2_fd_drop(DescriptorTranslation *map)
 {
@@ -45,9 +39,7 @@ static int __ps2_fd_drop(DescriptorTranslation *map)
       memset(map, 0, sizeof(DescriptorTranslation));
    }
    else
-   {
       map->ref_count--;
-   }
 
    _unlock();
    return 0;
@@ -61,19 +53,21 @@ int is_fd_valid(int fd)
    return (fd >= 0) && (fd < MAX_OPEN_FILES) && (__ps2_fdmap[fd] != NULL);
 }
 
-void _init_ps2_io(void) {
+void _init_ps2_io(void)
+{
    ee_sema_t sp;
 
    memset(__ps2_fdmap, 0, sizeof(__ps2_fdmap));
    memset(__ps2_fdmap_pool, 0, sizeof(__ps2_fdmap_pool));
 
    sp.init_count = 1;
-   sp.max_count = 1;
-   sp.option = 0;
+   sp.max_count  = 1;
+   sp.option     = 0;
    _lock_sema_id = CreateSema(&sp);
 }
 
-void _free_ps2_io(void) {
+void _free_ps2_io(void)
+{
    _lock();
    _unlock();
    if(_lock_sema_id >= 0) DeleteSema(_lock_sema_id);
@@ -88,17 +82,18 @@ int __ps2_acquire_descriptor(void)
    /* get free descriptor */
    for (fd = 0; fd < MAX_OPEN_FILES; ++fd)
    {
-      if (__ps2_fdmap[fd] == NULL)
+      if (!__ps2_fdmap[fd])
       {
          /* get free pool */
          for (i = 0; i < MAX_OPEN_FILES; ++i)
          {
             if (__ps2_fdmap_pool[i].ref_count == 0)
             {
-               __ps2_fdmap[fd] = &__ps2_fdmap_pool[i];
-               __ps2_fdmap[fd]->ref_count = 1;
+               __ps2_fdmap[fd]                          = &__ps2_fdmap_pool[i];
+               __ps2_fdmap[fd]->ref_count               = 1;
                __ps2_fdmap[fd]->current_folder_position = -1;
-               __ps2_fdmap[fd]->FileEntry = calloc(sizeof(entries), FILEENTRY_SIZE);
+               __ps2_fdmap[fd]->FileEntry               = 
+                  calloc(sizeof(entries), FILEENTRY_SIZE);
                _unlock();
                return MAX_OPEN_FILES - fd;
             }
@@ -115,7 +110,8 @@ int __ps2_release_descriptor(int fd)
 {
    int res = -1;
 
-   if (is_fd_valid(fd) && __ps2_fd_drop(__ps2_fdmap[MAX_OPEN_FILES - fd]) >= 0)
+   if (is_fd_valid(fd) && 
+         __ps2_fd_drop(__ps2_fdmap[MAX_OPEN_FILES - fd]) >= 0)
    {
       _lock();
       /* Correct fd value */

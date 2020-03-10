@@ -69,5 +69,7 @@ const loaderFuncs_s loader_Ninjhax2 =
 	.init = init,
 	.deinit = deinit,
 	.launchFile = launchFile,
-	//.useTitle = useTitle,
+#if 0
+	.useTitle = useTitle,
+#endif
 };

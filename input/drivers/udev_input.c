@@ -930,7 +930,7 @@ static bool udev_mouse_button_pressed(
 }
 
 static bool udev_is_pressed(udev_input_t *udev,
-      rarch_joypad_info_t joypad_info,
+      rarch_joypad_info_t *joypad_info,
       const struct retro_keybind *binds,
       unsigned port, unsigned id)
 {
@@ -944,15 +944,16 @@ static bool udev_is_pressed(udev_input_t *udev,
    {
       /* Auto-binds are per joypad, not per user. */
       const uint64_t joykey  = (binds[id].joykey != NO_BTN)
-         ? binds[id].joykey : joypad_info.auto_binds[id].joykey;
+         ? binds[id].joykey : joypad_info->auto_binds[id].joykey;
       const uint32_t joyaxis = (binds[id].joyaxis != AXIS_NONE)
-         ? binds[id].joyaxis : joypad_info.auto_binds[id].joyaxis;
+         ? binds[id].joyaxis : joypad_info->auto_binds[id].joyaxis;
 
       if (udev_mouse_button_pressed(udev, port, bind->mbutton))
          return true;
-      if ((uint16_t)joykey != NO_BTN && udev->joypad->button(joypad_info.joy_idx, (uint16_t)joykey))
+      if ((uint16_t)joykey != NO_BTN && udev->joypad->button(
+               joypad_info->joy_idx, (uint16_t)joykey))
          return true;
-      if (((float)abs(udev->joypad->axis(joypad_info.joy_idx, joyaxis)) / 0x8000) > joypad_info.axis_threshold)
+      if (((float)abs(udev->joypad->axis(joypad_info->joy_idx, joyaxis)) / 0x8000) > joypad_info->axis_threshold)
          return true;
    }
 
@@ -1003,7 +1004,7 @@ static int16_t udev_pointer_state(udev_input_t *udev,
 }
 
 static int16_t udev_input_state(void *data,
-      rarch_joypad_info_t joypad_info,
+      rarch_joypad_info_t *joypad_info,
       const struct retro_keybind **binds,
       unsigned port, unsigned device, unsigned idx, unsigned id)
 {

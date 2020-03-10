@@ -67,7 +67,7 @@
 
     <exec command="scripts/retroarch-phoenix.sh"/>
   
-    <author name="Themaister" website="http://themaister.net/retroarch.html"/>
+    <author name="Libretro" website="https://www.retroarch.com"/>
 
     <version major="0" minor="9" release="7" build="1"/>
     <osversion major="1" minor="0" release="0" build="0"/>

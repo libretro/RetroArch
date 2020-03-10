@@ -17,8 +17,8 @@ u32 ctr_get_linear_unused(void);
 u32 ctr_get_stack_free(void)
 {
    extern u32 __stack_bottom;
-
    uint32_t* stack_bottom_current = (u32*)__stack_bottom;
+
    while(*stack_bottom_current++ == 0xFCFCFCFC);
    stack_bottom_current--;
 
@@ -110,11 +110,10 @@ void ctr_request_free_pages(u32 pages)
 void* _sbrk_r(struct _reent *ptr, ptrdiff_t incr)
 {
    static u32 sbrk_top = 0;
+   u32 tmp;
 
    if (!sbrk_top)
       sbrk_top = __heapBase;
-
-   u32 tmp;
 
    int diff = ((sbrk_top + incr + 0xFFF) & ~0xFFF)
       - (__heapBase + __heap_size);

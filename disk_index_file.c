@@ -160,10 +160,9 @@ static bool disk_index_file_read(disk_index_file_t *disk_index_file)
    if (!disk_index_file)
       return false;
 
-   if (string_is_empty(disk_index_file->file_path))
-      return false;
-
-   if (!path_is_valid(disk_index_file->file_path))
+   if (   string_is_empty(disk_index_file->file_path) ||
+         !path_is_valid(disk_index_file->file_path)
+      )
       return false;
 
    /* Attempt to open disk index file */

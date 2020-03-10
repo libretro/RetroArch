@@ -175,16 +175,16 @@ int CreateSubfolder(const char * fullpath)
       return 1;
 
    {
+      char *ptr;
       char parentpath[strlen(dirnoslash)+2];
-      size_t copied = strcpy(parentpath, dirnoslash);
-      char * ptr    = strrchr(parentpath, '/');
+      strcpy(parentpath, dirnoslash);
+      ptr    = strrchr(parentpath, '/');
 
       if (!ptr)
       {
-         struct stat filestat;
          /* Device root directory (must be with '/') */
-         parentpath[copied]   = '/';
-         parentpath[copied+1] = '\0';
+         struct stat filestat;
+         strcat(parentpath, "/");
 
          if (stat(parentpath, &filestat) == 0)
             return 1;

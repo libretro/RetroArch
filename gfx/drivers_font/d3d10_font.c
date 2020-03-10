@@ -16,7 +16,6 @@
 
 #define CINTERFACE
 
-#include <stdio.h>
 #include <string.h>
 #include <malloc.h>
 #include <math.h>
@@ -25,7 +24,7 @@
 #include "../font_driver.h"
 #include "../common/d3d10_common.h"
 
-#include "../../retroarch.h"
+#include "../../configuration.h"
 #include "../../verbosity.h"
 
 typedef struct
@@ -119,7 +118,7 @@ static int d3d10_font_get_message_width(void* data, const char* msg, unsigned ms
 }
 
 static void d3d10_font_render_line(
-      video_frame_info_t* video_info,
+      d3d10_video_t *d3d10,
       d3d10_font_t*       font,
       const char*         msg,
       unsigned            msg_len,
@@ -127,14 +126,13 @@ static void d3d10_font_render_line(
       const unsigned int  color,
       float               pos_x,
       float               pos_y,
+      unsigned            width,
+      unsigned            height,
       unsigned            text_align)
 {
    unsigned                 i, count;
    void*                    mapped_vbo;
    d3d10_sprite_t*          v;
-   d3d10_video_t*           d3d10  = (d3d10_video_t*)video_info->userdata;
-   unsigned                 width  = video_info->width;
-   unsigned                 height = video_info->height;
    int                      x      = roundf(pos_x * width);
    int                      y      = roundf((1.0 - pos_y) * height);
 
@@ -228,13 +226,15 @@ static void d3d10_font_render_line(
 }
 
 static void d3d10_font_render_message(
-      video_frame_info_t* video_info,
+      d3d10_video_t *d3d10,
       d3d10_font_t*       font,
       const char*         msg,
       float               scale,
       const unsigned int  color,
       float               pos_x,
       float               pos_y,
+      unsigned            width,
+      unsigned            height,
       unsigned            text_align)
 {
    int   lines = 0;
@@ -246,12 +246,14 @@ static void d3d10_font_render_message(
    /* If the font height is not supported just draw as usual */
    if (!font->font_driver->get_line_height)
    {
-      d3d10_font_render_line(
-            video_info, font, msg, strlen(msg), scale, color, pos_x, pos_y, text_align);
+      d3d10_font_render_line(d3d10,
+            font, msg, strlen(msg), scale, color, pos_x, pos_y,
+            width, height, text_align);
       return;
    }
 
-   line_height = font->font_driver->get_line_height(font->font_data) * scale / video_info->height;
+   line_height = font->font_driver->get_line_height(font->font_data) 
+      * scale / height;
 
    for (;;)
    {
@@ -261,26 +263,30 @@ static void d3d10_font_render_message(
       if (delim)
       {
          unsigned msg_len = delim - msg;
-         d3d10_font_render_line(
-               video_info, font, msg, msg_len, scale, color, pos_x,
-               pos_y - (float)lines * line_height, text_align);
+         d3d10_font_render_line(d3d10,
+               font, msg, msg_len, scale, color, pos_x,
+               pos_y - (float)lines * line_height,
+               width, height, text_align);
          msg += msg_len + 1;
          lines++;
       }
       else
       {
          unsigned msg_len = strlen(msg);
-         d3d10_font_render_line(
-               video_info, font, msg, msg_len, scale, color, pos_x,
-               pos_y - (float)lines * line_height, text_align);
+         d3d10_font_render_line(d3d10,
+               font, msg, msg_len, scale, color, pos_x,
+               pos_y - (float)lines * line_height,
+               width, height, text_align);
          break;
       }
    }
 }
 
 static void d3d10_font_render_msg(
-      video_frame_info_t* video_info, void* data,
-      const char* msg, const struct font_params *params)
+      void *userdata,
+      void* data,
+      const char* msg,
+      const struct font_params *params)
 {
    float                     x, y, scale, drop_mod, drop_alpha;
    int                       drop_x, drop_y;
@@ -288,8 +294,15 @@ static void d3d10_font_render_msg(
    unsigned                  color, color_dark, r, g, b,
                              alpha, r_dark, g_dark, b_dark, alpha_dark;
    d3d10_font_t*             font   = (d3d10_font_t*)data;
-   unsigned                  width  = video_info->width;
-   unsigned                  height = video_info->height;
+   d3d10_video_t*           d3d10   = (d3d10_video_t*)userdata;
+   unsigned                  width  = d3d10->vp.full_width;
+   unsigned                  height = d3d10->vp.full_height;
+   settings_t *settings             = config_get_ptr();
+   float video_msg_pos_x            = settings->floats.video_msg_pos_x;
+   float video_msg_pos_y            = settings->floats.video_msg_pos_y;
+   float video_msg_color_r          = settings->floats.video_msg_color_r;
+   float video_msg_color_g          = settings->floats.video_msg_color_g;
+   float video_msg_color_b          = settings->floats.video_msg_color_b;
 
    if (!font || !msg || !*msg)
       return;
@@ -314,14 +327,14 @@ static void d3d10_font_render_msg(
    }
    else
    {
-      x          = video_info->font_msg_pos_x;
-      y          = video_info->font_msg_pos_y;
+      x          = video_msg_pos_x;
+      y          = video_msg_pos_y;
       scale      = 1.0f;
       text_align = TEXT_ALIGN_LEFT;
 
-      r          = (video_info->font_msg_color_r * 255);
-      g          = (video_info->font_msg_color_g * 255);
-      b          = (video_info->font_msg_color_b * 255);
+      r          = (video_msg_color_r * 255);
+      g          = (video_msg_color_g * 255);
+      b          = (video_msg_color_b * 255);
       alpha      = 255;
       color      = DXGI_COLOR_RGBA(r, g, b, alpha);
 
@@ -339,14 +352,16 @@ static void d3d10_font_render_msg(
       alpha_dark = alpha * drop_alpha;
       color_dark = DXGI_COLOR_RGBA(r_dark, g_dark, b_dark, alpha_dark);
 
-      d3d10_font_render_message(
-            video_info, font, msg, scale, color_dark,
+      d3d10_font_render_message(d3d10,
+            font, msg, scale, color_dark,
             x + scale * drop_x / width,
-            y + scale * drop_y / height, text_align);
+            y + scale * drop_y / height,
+            width, height, text_align);
    }
 
-   d3d10_font_render_message(video_info, font, msg, scale,
-         color, x, y, text_align);
+   d3d10_font_render_message(d3d10, font, msg, scale,
+         color, x, y,
+         width, height, text_align);
 }
 
 static const struct font_glyph* d3d10_font_get_glyph(void *data, uint32_t code)

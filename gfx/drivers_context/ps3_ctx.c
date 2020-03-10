@@ -149,8 +149,7 @@ static void gfx_ctx_ps3_set_swap_interval(void *data, int interval)
 }
 
 static void gfx_ctx_ps3_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height,
-      bool is_shutdown)
+      bool *resize, unsigned *width, unsigned *height)
 {
    gl_t *gl = data;
 
@@ -174,7 +173,7 @@ static bool gfx_ctx_ps3_suppress_screensaver(void *data, bool enable)
    return false;
 }
 
-static void gfx_ctx_ps3_swap_buffers(void *data, void *data2)
+static void gfx_ctx_ps3_swap_buffers(void *data)
 {
    (void)data;
 #ifdef HAVE_PSGL
@@ -196,7 +195,7 @@ static void gfx_ctx_ps3_get_video_size(void *data,
 #endif
 }
 
-static void *gfx_ctx_ps3_init(video_frame_info_t *video_info, void *video_driver)
+static void *gfx_ctx_ps3_init(void *video_driver)
 {
 #ifdef HAVE_PSGL
    PSGLdeviceParameters params;
@@ -273,7 +272,6 @@ static void *gfx_ctx_ps3_init(video_frame_info_t *video_info, void *video_driver
 }
 
 static bool gfx_ctx_ps3_set_video_mode(void *data,
-      video_frame_info_t *video_info,
       unsigned width, unsigned height,
       bool fullscreen)
 {

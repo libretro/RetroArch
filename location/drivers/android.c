@@ -45,7 +45,7 @@ static void *android_location_init(void)
       goto dealloc;
 
    GET_OBJECT_CLASS(env, class, android_app->activity->clazz);
-   if (class == NULL)
+   if (!class)
       goto dealloc;
 
    GET_METHOD_ID(env, androidlocation->onLocationInit, class,

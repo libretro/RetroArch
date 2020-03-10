@@ -43,12 +43,13 @@
 struct content_playlist
 {
    bool modified;
-   size_t size;
-   size_t cap;
 
    enum playlist_label_display_mode label_display_mode;
    enum playlist_thumbnail_mode right_thumbnail_mode;
    enum playlist_thumbnail_mode left_thumbnail_mode;
+
+   size_t size;
+   size_t cap;
 
    char *conf_path;
    char *default_core_path;
@@ -58,25 +59,27 @@ struct content_playlist
 
 typedef struct
 {
+   bool in_items;
+   bool in_subsystem_roms;
+   bool capacity_exceeded;
+
+   unsigned array_depth;
+   unsigned object_depth;
+
    JSON_Parser parser;
    JSON_Writer writer;
    RFILE *file;
    playlist_t *playlist;
    struct playlist_entry *current_entry;
-   unsigned array_depth;
-   unsigned object_depth;
+   char *current_meta_string;
+   char *current_items_string;
    char **current_entry_val;
+   char **current_meta_val;
    int *current_entry_int_val;
    unsigned *current_entry_uint_val;
    struct string_list **current_entry_string_list_val;
-   char *current_meta_string;
-   char **current_meta_val;
    enum playlist_label_display_mode *current_meta_label_display_mode_val;
    enum playlist_thumbnail_mode *current_meta_thumbnail_mode_val;
-   char *current_items_string;
-   bool in_items;
-   bool in_subsystem_roms;
-   bool capacity_exceeded;
 } JSONContext;
 
 static playlist_t *playlist_cached = NULL;
@@ -2148,7 +2151,7 @@ json_cleanup:
       /* > Exclude trailing newline */
       metadata_char = filestream_getc(file);
 
-      while((metadata_char == '\n') ||
+      while ((metadata_char == '\n') ||
             (metadata_char == '\r'))
       {
          filestream_seek(file, -2, SEEK_CUR);
@@ -2626,7 +2629,8 @@ void playlist_set_default_core_path(playlist_t *playlist, const char *core_path)
    /* Get 'real' core path */
    strlcpy(real_core_path, core_path, sizeof(real_core_path));
    if (!string_is_equal(real_core_path, "DETECT"))
-       playlist_resolve_path(PLAYLIST_SAVE, real_core_path, sizeof(real_core_path));
+       playlist_resolve_path(PLAYLIST_SAVE,
+             real_core_path, sizeof(real_core_path));
 
    if (string_is_empty(real_core_path))
       return;
@@ -2654,31 +2658,35 @@ void playlist_set_default_core_name(playlist_t *playlist, const char *core_name)
    }
 }
 
-void playlist_set_label_display_mode(playlist_t *playlist, enum playlist_label_display_mode label_display_mode)
+void playlist_set_label_display_mode(playlist_t *playlist,
+      enum playlist_label_display_mode label_display_mode)
 {
    if (!playlist)
       return;
 
-   if (playlist->label_display_mode != label_display_mode) {
+   if (playlist->label_display_mode != label_display_mode)
+   {
       playlist->label_display_mode = label_display_mode;
       playlist->modified = true;
    }
 }
 
 void playlist_set_thumbnail_mode(
-      playlist_t *playlist, enum playlist_thumbnail_id thumbnail_id, enum playlist_thumbnail_mode thumbnail_mode)
+      playlist_t *playlist, enum playlist_thumbnail_id thumbnail_id,
+      enum playlist_thumbnail_mode thumbnail_mode)
 {
    if (!playlist)
       return;
 
-   if (thumbnail_id == PLAYLIST_THUMBNAIL_RIGHT)
+   switch (thumbnail_id)
    {
-      playlist->right_thumbnail_mode = thumbnail_mode;
-      playlist->modified = true;
-   }
-   else if (thumbnail_id == PLAYLIST_THUMBNAIL_LEFT)
-   {
-      playlist->left_thumbnail_mode = thumbnail_mode;
-      playlist->modified = true;
+      case PLAYLIST_THUMBNAIL_RIGHT:
+         playlist->right_thumbnail_mode = thumbnail_mode;
+         playlist->modified             = true;
+         break;
+      case PLAYLIST_THUMBNAIL_LEFT:
+         playlist->left_thumbnail_mode = thumbnail_mode;
+         playlist->modified            = true;
+         break;
    }
 }

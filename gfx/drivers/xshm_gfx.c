@@ -118,10 +118,7 @@ static bool xshm_gfx_frame(void *data, const void *frame, unsigned width,
    return true;
 }
 
-static void xshm_gfx_set_nonblock_state(void *data, bool toggle)
-{
-
-}
+static void xshm_gfx_set_nonblock_state(void *a, bool b, bool c, unsigned d) { }
 
 static bool xshm_gfx_alive(void *data)
 {

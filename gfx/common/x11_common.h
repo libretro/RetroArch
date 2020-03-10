@@ -31,9 +31,7 @@ extern unsigned g_x11_screen;
 void x11_show_mouse(Display *dpy, Window win, bool state);
 void x11_set_net_wm_fullscreen(Display *dpy, Window win);
 void x11_suspend_screensaver(Window win, bool enable);
-bool x11_enter_fullscreen(video_frame_info_t *video_info,
-      Display *dpy, unsigned width,
-      unsigned height);
+bool x11_enter_fullscreen(Display *dpy, unsigned width, unsigned height);
 
 void x11_exit_fullscreen(Display *dpy);
 void x11_move_window(Display *dpy, Window win,
@@ -51,7 +49,7 @@ bool x11_get_metrics(void *data,
 float x11_get_refresh_rate(void *data);
 
 void x11_check_window(void *data, bool *quit,
-   bool *resize, unsigned *width, unsigned *height, bool is_shutdown);
+   bool *resize, unsigned *width, unsigned *height);
 
 void x11_get_video_size(void *data, unsigned *width, unsigned *height);
 
@@ -63,7 +61,7 @@ bool x11_alive(void *data);
 
 bool x11_connect(void);
 
-void x11_update_title(void *data, void *data2);
+void x11_update_title(void *data);
 
 bool x11_input_ctx_new(bool true_full);
 

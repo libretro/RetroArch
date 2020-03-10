@@ -33,8 +33,6 @@
 #endif
 
 static enum gfx_ctx_api sdl_api = GFX_CTX_OPENGL_API;
-static unsigned       g_major   = 2;
-static unsigned       g_minor = 1;
 
 typedef struct gfx_ctx_sdl_data
 {
@@ -76,7 +74,7 @@ static void sdl_ctx_destroy_resources(gfx_ctx_sdl_data_t *sdl)
    SDL_QuitSubSystem(SDL_INIT_VIDEO);
 }
 
-static void *sdl_ctx_init(video_frame_info_t *video_info, void *video_driver)
+static void *sdl_ctx_init(void *video_driver)
 {
    gfx_ctx_sdl_data_t *sdl = (gfx_ctx_sdl_data_t*)
       calloc(1, sizeof(gfx_ctx_sdl_data_t));
@@ -151,8 +149,6 @@ static bool sdl_ctx_bind_api(void *data,
 #endif
 
    sdl_api = api;
-   g_major = major;
-   g_minor = minor;
 
 #ifndef HAVE_SDL2
    if (api != GFX_CTX_OPENGL_API)
@@ -172,21 +168,23 @@ static void sdl_ctx_swap_interval(void *data, int interval)
 }
 
 static bool sdl_ctx_set_video_mode(void *data,
-      video_frame_info_t *video_info,
       unsigned width, unsigned height,
       bool fullscreen)
 {
    unsigned fsflag         = 0;
    gfx_ctx_sdl_data_t *sdl = (gfx_ctx_sdl_data_t*)data;
+   settings_t *settings    = config_get_ptr();
+   bool windowed_fullscreen= settings->bools.video_windowed_fullscreen;
+   unsigned video_monitor_index = settings->uints.video_monitor_index;
 
-   sdl->g_new_width  = width;
-   sdl->g_new_height = height;
+   sdl->g_new_width        = width;
+   sdl->g_new_height       = height;
 
 #ifdef HAVE_SDL2
 
    if (fullscreen)
    {
-      if (video_info->windowed_fullscreen)
+      if (windowed_fullscreen)
          fsflag = SDL_WINDOW_FULLSCREEN_DESKTOP;
       else
          fsflag = SDL_WINDOW_FULLSCREEN;
@@ -201,7 +199,7 @@ static bool sdl_ctx_set_video_mode(void *data,
    }
    else
    {
-      unsigned display = video_info->monitor_index;
+      unsigned display = video_monitor_index;
 
       sdl->g_win = SDL_CreateWindow("", SDL_WINDOWPOS_UNDEFINED_DISPLAY(display),
                                SDL_WINDOWPOS_UNDEFINED_DISPLAY(display),
@@ -285,7 +283,7 @@ static void sdl_ctx_get_video_size(void *data,
    }
 }
 
-static void sdl_ctx_update_title(void *data, void *data2)
+static void sdl_ctx_update_title(void *data)
 {
    char title[128];
    title[0] = '\0';
@@ -304,8 +302,7 @@ static void sdl_ctx_update_title(void *data, void *data2)
 
 static void sdl_ctx_check_window(void *data, bool *quit,
       bool *resize,unsigned *width,
-      unsigned *height,
-      bool is_shutdown)
+      unsigned *height)
 {
    SDL_Event event;
    gfx_ctx_sdl_data_t *sdl = (gfx_ctx_sdl_data_t*)data;
@@ -376,7 +373,7 @@ static bool sdl_ctx_suppress_screensaver(void *data, bool enable)
    return false;
 }
 
-static void sdl_ctx_swap_buffers(void *data, void *data2)
+static void sdl_ctx_swap_buffers(void *data)
 {
 #ifdef HAVE_SDL2
    gfx_ctx_sdl_data_t *sdl = (gfx_ctx_sdl_data_t*)data;

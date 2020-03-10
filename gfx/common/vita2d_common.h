@@ -84,6 +84,9 @@ typedef struct vita_video
    bool overlay_full_screen;
 #endif
 
+   unsigned width;
+   unsigned height;
+
 } vita_video_t;
 
 #endif

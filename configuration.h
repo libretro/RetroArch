@@ -53,6 +53,12 @@
    var = newvar; \
 }
 
+#define configuration_set_string(settings, var, newvar) \
+{ \
+   settings->modified = true; \
+   strlcpy(var, newvar, sizeof(var)); \
+}
+
 enum crt_switch_type
 {
    CRT_SWITCH_NONE = 0,
@@ -151,6 +157,7 @@ typedef struct settings
       /* Menu */
       bool filter_by_current_core;
       bool menu_enable_widgets;
+      bool menu_widget_scale_auto;
       bool menu_show_start_screen;
       bool menu_pause_libretro;
       bool menu_savestate_resume;
@@ -190,6 +197,7 @@ typedef struct settings
       bool menu_show_video_layout;
 #endif
       bool menu_materialui_icons_enable;
+      bool menu_materialui_show_nav_bar;
       bool menu_materialui_auto_rotate_nav_bar;
       bool menu_materialui_dual_thumbnail_list_view_enable;
       bool menu_materialui_thumbnail_background_enable;
@@ -289,6 +297,7 @@ typedef struct settings
       bool cheevos_test_unofficial;
       bool cheevos_hardcore_mode_enable;
       bool cheevos_leaderboards_enable;
+      bool cheevos_richpresence_enable;
       bool cheevos_badges_enable;
       bool cheevos_verbose_enable;
       bool cheevos_auto_screenshot;
@@ -405,6 +414,8 @@ typedef struct settings
       float video_msg_bgcolor_opacity;
 
       float menu_scale_factor;
+      float menu_widget_scale_factor;
+      float menu_widget_scale_factor_windowed;
       float menu_wallpaper_opacity;
       float menu_framebuffer_opacity;
       float menu_footer_opacity;
@@ -527,9 +538,9 @@ typedef struct settings
       unsigned accessibility_narrator_speech_speed;
 
       unsigned menu_timedate_style;
-      unsigned menu_thumbnails;
+      unsigned gfx_thumbnails;
       unsigned menu_left_thumbnails;
-      unsigned menu_thumbnail_upscale_threshold;
+      unsigned gfx_thumbnail_upscale_threshold;
       unsigned menu_rgui_thumbnail_downscaler;
       unsigned menu_rgui_thumbnail_delay;
       unsigned menu_rgui_color_theme;
@@ -626,26 +637,23 @@ typedef struct settings
       char input_driver[32];
       char input_joypad_driver[32];
       char midi_driver[32];
+      char midi_input[32];
+      char midi_output[32];
 
       char input_keyboard_layout[64];
 
       char audio_device[255];
       char camera_device[255];
+      char netplay_mitm_server[255];
+
+      char translation_service_url[2048];
 
       char bundle_assets_src[PATH_MAX_LENGTH];
       char bundle_assets_dst[PATH_MAX_LENGTH];
       char bundle_assets_dst_subdir[PATH_MAX_LENGTH];
-
-      char netplay_mitm_server[255];
-
-      char midi_input[32];
-      char midi_output[32];
-
       char youtube_stream_key[PATH_MAX_LENGTH];
       char twitch_stream_key[PATH_MAX_LENGTH];
-
       char discord_app_id[PATH_MAX_LENGTH];
-      char translation_service_url[2048];
       char ai_service_url[PATH_MAX_LENGTH];
    } arrays;
 
@@ -654,12 +662,16 @@ typedef struct settings
       char placeholder;
 
       char username[32];
+
       char netplay_password[128];
       char netplay_spectate_password[128];
+
       char netplay_server[255];
       char network_buildbot_url[255];
       char network_buildbot_assets_url[255];
+
       char browse_url[4096];
+
       char path_stream_url[8192];
 
       char path_menu_xmb_font[PATH_MAX_LENGTH];
@@ -809,14 +821,7 @@ const char *config_get_midi_driver_options(void);
 
 const char *config_get_default_record(void);
 
-/**
- * config_parse_file:
- *
- * Loads a config file and reads all the values into memory.
- *
- */
-void config_parse_file(void *data);
-
+#ifdef HAVE_CONFIGFILE
 /**
  * config_load_override:
  *
@@ -827,7 +832,7 @@ void config_parse_file(void *data);
  * Returns: false if there was an error or no action was performed.
  *
  */
-bool config_load_override(void);
+bool config_load_override(void *data);
 
 /**
  * config_unload_override:
@@ -847,7 +852,8 @@ bool config_unload_override(void);
  * Returns: false if there was an error or no action was performed.
  *
  */
-bool config_load_remap(const char *directory_input_remapping);
+bool config_load_remap(const char *directory_input_remapping,
+      void *data);
 
 /**
  * config_save_autoconf_profile:
@@ -875,16 +881,19 @@ bool config_save_file(const char *path);
  *
  * Returns: true (1) on success, otherwise returns false (0).
  **/
-bool config_save_overrides(int override_type);
+bool config_save_overrides(enum override_type type, void *data);
 
 /* Replaces currently loaded configuration file with
  * another one. Will load a dummy core to flush state
  * properly. */
 bool config_replace(bool config_save_on_exit, char *path);
+#endif
 
 bool config_overlay_enable_default(void);
 
 void config_set_defaults(void *data);
+
+void config_load(void *data);
 
 settings_t *config_get_ptr(void);
 

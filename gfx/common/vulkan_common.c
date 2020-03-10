@@ -1584,6 +1584,7 @@ static bool vulkan_context_init_gpu(gfx_ctx_vulkan_data_t *vk)
    VkPhysicalDevice *gpus           = NULL;
    union string_list_elem_attr attr = {0};
    settings_t *settings             = config_get_ptr();
+   int gpu_index                    = settings->ints.vulkan_gpu_index;
 
    if (vkEnumeratePhysicalDevices(vk->context.instance,
             &gpu_count, NULL) != VK_SUCCESS)
@@ -1633,14 +1634,14 @@ static bool vulkan_context_init_gpu(gfx_ctx_vulkan_data_t *vk)
 
    video_driver_set_gpu_api_devices(GFX_CTX_VULKAN_API, vulkan_gpu_list);
 
-   if (0 <= settings->ints.vulkan_gpu_index && settings->ints.vulkan_gpu_index < (int)gpu_count)
+   if (0 <= gpu_index && gpu_index < (int)gpu_count)
    {
-      RARCH_LOG("[Vulkan]: Using GPU index %d.\n", settings->ints.vulkan_gpu_index);
-      vk->context.gpu = gpus[settings->ints.vulkan_gpu_index];
+      RARCH_LOG("[Vulkan]: Using GPU index %d.\n", gpu_index);
+      vk->context.gpu = gpus[gpu_index];
    }
    else
    {
-      RARCH_WARN("[Vulkan]: Invalid GPU index %d, using first device found.\n", settings->ints.vulkan_gpu_index);
+      RARCH_WARN("[Vulkan]: Invalid GPU index %d, using first device found.\n", gpu_index);
       vk->context.gpu = gpus[0];
    }
 

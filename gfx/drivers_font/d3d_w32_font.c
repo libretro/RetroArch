@@ -125,28 +125,38 @@ static int d3dfonts_w32_get_message_width(void* data, const char* msg,
    return box.right - box.left;
 }
 
-static void d3dfonts_w32_render_msg(video_frame_info_t *video_info,
-      void *data, const char *msg, const struct font_params *params)
+static void d3dfonts_w32_render_msg(
+      void *userdata,
+      void *data, const char *msg,
+      const struct font_params *params)
 {
    unsigned format;
    unsigned a, r, g, b;
+   unsigned width, height;
    RECT rect, rect_shifted;
    RECT *p_rect_shifted             = NULL;
    RECT *p_rect                     = NULL;
    d3dfonts_t *d3dfonts             = (d3dfonts_t*)data;
-   unsigned width                   = video_info->width;
-   unsigned height                  = video_info->height;
    float drop_mod                   = 0.3f;
    float drop_alpha                 = 1.0f;
    int drop_x                       = -2;
    int drop_y                       = -2;
+   settings_t *settings             = config_get_ptr();
+   float video_msg_pos_x            = settings->floats.video_msg_pos_x;
+   float video_msg_pos_y            = settings->floats.video_msg_pos_y;
+   float video_msg_color_r          = settings->floats.video_msg_color_r;
+   float video_msg_color_g          = settings->floats.video_msg_color_g;
+   float video_msg_color_b          = settings->floats.video_msg_color_b;
 
-   if (!d3dfonts || !d3dfonts->d3d || !msg)
+   if (!d3dfonts || !msg)
       return;
 
-   format         = DT_LEFT;
-   p_rect         = &d3dfonts->d3d->font_rect;
-   p_rect_shifted = &d3dfonts->d3d->font_rect_shifted;
+   width                            = d3dfonts->d3d->video_info.width;
+   height                           = d3dfonts->d3d->video_info.height;
+
+   p_rect                           = &d3dfonts->d3d->font_rect;
+   p_rect_shifted                   = &d3dfonts->d3d->font_rect_shifted;
+   format                           = DT_LEFT;
 
    if(params)
    {
@@ -197,9 +207,9 @@ static void d3dfonts_w32_render_msg(video_frame_info_t *video_info,
    else
    {
       a = 255;
-      r = video_info->font_msg_color_r * 255;
-      g = video_info->font_msg_color_g * 255;
-      b = video_info->font_msg_color_b * 255;
+      r = video_msg_color_r * 255;
+      g = video_msg_color_g * 255;
+      b = video_msg_color_b * 255;
    }
 
    if(drop_x || drop_y)

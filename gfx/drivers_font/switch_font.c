@@ -25,340 +25,311 @@
 
 #include "../font_driver.h"
 
-#include "../../retroarch.h"
+#include "../../configuration.h"
 #include "../../verbosity.h"
 
 #include "../common/switch_common.h"
 
+#define AVG_GLPYH_LIMIT 140
+
 typedef struct
 {
-      struct font_atlas *atlas;
+   struct font_atlas *atlas;
 
-      const font_renderer_driver_t *font_driver;
-      void *font_data;
+   const font_renderer_driver_t *font_driver;
+   void *font_data;
 } switch_font_t;
 
 static void *switch_font_init_font(void *data, const char *font_path,
-                                   float font_size, bool is_threaded)
+      float font_size, bool is_threaded)
 {
-      switch_font_t *font = (switch_font_t *)calloc(1, sizeof(switch_font_t));
+   switch_font_t *font = (switch_font_t *)calloc(1, sizeof(switch_font_t));
 
-      if (!font)
-            return NULL;
+   if (!font)
+      return NULL;
 
-      if (!font_renderer_create_default((const void **)&font->font_driver,
-                                        &font->font_data, font_path, font_size))
-      {
-            RARCH_WARN("Couldn't initialize font renderer.\n");
-            free(font);
-            return NULL;
-      }
+   if (!font_renderer_create_default(&font->font_driver,
+            &font->font_data, font_path, font_size))
+   {
+      RARCH_WARN("Couldn't initialize font renderer.\n");
+      free(font);
+      return NULL;
+   }
 
-      font->atlas = font->font_driver->get_atlas(font->font_data);
+   font->atlas = font->font_driver->get_atlas(font->font_data);
 
-      RARCH_LOG("Switch font driver initialized with backend %s\n", font->font_driver->ident);
+   RARCH_LOG("Switch font driver initialized with backend %s\n",
+         font->font_driver->ident);
 
-      return font;
+   return font;
 }
 
 static void switch_font_free_font(void *data, bool is_threaded)
 {
-      switch_font_t *font = (switch_font_t *)data;
+   switch_font_t *font = (switch_font_t *)data;
 
-      if (!font)
-            return;
+   if (!font)
+      return;
 
-      if (font->font_driver && font->font_data)
-            font->font_driver->free(font->font_data);
+   if (font->font_driver && font->font_data)
+      font->font_driver->free(font->font_data);
 
-      free(font);
+   free(font);
 }
 
 static int switch_font_get_message_width(void *data, const char *msg,
-                                         unsigned msg_len, float scale)
+      unsigned msg_len, float scale)
 {
-      switch_font_t *font = (switch_font_t *)data;
+   unsigned i;
+   int         delta_x = 0;
+   switch_font_t *font = (switch_font_t *)data;
 
-      unsigned i;
-      int delta_x = 0;
+   if (!font)
+      return 0;
 
-      if (!font)
-            return 0;
+   for (i = 0; i < msg_len; i++)
+   {
+      const char *msg_tmp = &msg[i];
+      unsigned       code = utf8_walk(&msg_tmp);
+      unsigned       skip = msg_tmp - &msg[i];
 
-      for (i = 0; i < msg_len; i++)
-      {
-            const char *msg_tmp = &msg[i];
-            unsigned code = utf8_walk(&msg_tmp);
-            unsigned skip = msg_tmp - &msg[i];
+      if (skip > 1)
+         i += skip - 1;
 
-            if (skip > 1)
-                  i += skip - 1;
+      const struct font_glyph *glyph =
+         font->font_driver->get_glyph(font->font_data, code);
 
-            const struct font_glyph *glyph =
-                font->font_driver->get_glyph(font->font_data, code);
+      if (!glyph) /* Do something smarter here ... */
+         glyph = font->font_driver->get_glyph(font->font_data, '?');
 
-            if (!glyph) /* Do something smarter here ... */
-                  glyph = font->font_driver->get_glyph(font->font_data, '?');
+      if (!glyph)
+         continue;
 
-            if (!glyph)
-                  continue;
+      delta_x += glyph->advance_x;
+   }
 
-            delta_x += glyph->advance_x;
-      }
-
-      return delta_x * scale;
+   return delta_x * scale;
 }
 
 static void switch_font_render_line(
-    video_frame_info_t *video_info,
-    switch_font_t *font, const char *msg, unsigned msg_len,
-    float scale, const unsigned int color, float pos_x,
-    float pos_y, unsigned text_align)
+      switch_video_t *sw,
+      switch_font_t *font, const char *msg, unsigned msg_len,
+      float scale, const unsigned int color, float pos_x,
+      float pos_y, unsigned text_align)
 {
-      switch_video_t* sw = (switch_video_t*)video_info->userdata;
+   int delta_x        = 0;
+   int delta_y        = 0;
+   unsigned fb_width  = sw->vp.full_width;
+   unsigned fb_height = sw->vp.full_height;
 
-      if(!sw)
-         return;
+   if (sw->out_buffer)
+   {
+      unsigned i;
+      int x = roundf(pos_x * fb_width);
+      int y = roundf((1.0f - pos_y) * fb_height);
 
-      int delta_x = 0;
-      int delta_y = 0;
-
-      unsigned fbWidth = sw->vp.full_width;
-      unsigned fbHeight = sw->vp.full_height;
-
-      if (sw->out_buffer) {
-
-            int x = roundf(pos_x * fbWidth);
-            int y = roundf((1.0f - pos_y) * fbHeight);
-
-            switch (text_align)
-            {
-            case TEXT_ALIGN_RIGHT:
-                  x -= switch_font_get_message_width(font, msg, msg_len, scale);
-                  break;
-            case TEXT_ALIGN_CENTER:
-                  x -= switch_font_get_message_width(font, msg, msg_len, scale) / 2;
-                  break;
-            }
-
-            for (int i = 0; i < msg_len; i++)
-            {
-                  int off_x, off_y, tex_x, tex_y, width, height;
-                  const char *msg_tmp = &msg[i];
-                  unsigned code = utf8_walk(&msg_tmp);
-                  unsigned skip = msg_tmp - &msg[i];
-
-                  if (skip > 1)
-                        i += skip - 1;
-
-                  const struct font_glyph *glyph =
-                        font->font_driver->get_glyph(font->font_data, code);
-
-                  if (!glyph) /* Do something smarter here ... */
-                        glyph = font->font_driver->get_glyph(font->font_data, '?');
-
-                  if (!glyph)
-                        continue;
-
-                  off_x = x + glyph->draw_offset_x + delta_x;
-                  off_y = y + glyph->draw_offset_y + delta_y;
-                  width = glyph->width;
-                  height = glyph->height;
-
-                  tex_x = glyph->atlas_offset_x;
-                  tex_y = glyph->atlas_offset_y;
-
-                  for (int y = tex_y; y < tex_y + height; y++)
-                  {
-                        uint8_t *row = &font->atlas->buffer[y * font->atlas->width];
-                        for (int x = tex_x; x < tex_x + width; x++)
-                        {
-                              if (!row[x])
-                                 continue;
-                              int x1 = off_x + (x - tex_x);
-                              int y1 = off_y + (y - tex_y);
-                              if (x1 < fbWidth && y1 < fbHeight)
-                                    sw->out_buffer[y1 * sw->stride / sizeof(uint32_t) + x1] = color;
-                        }
-                  }
-
-                  delta_x += glyph->advance_x;
-                  delta_y += glyph->advance_y;
-            }
+      switch (text_align)
+      {
+         case TEXT_ALIGN_RIGHT:
+            x -= switch_font_get_message_width(font, msg, msg_len, scale);
+            break;
+         case TEXT_ALIGN_CENTER:
+            x -= switch_font_get_message_width(font, msg, msg_len, scale) / 2;
+            break;
       }
+
+      for (i = 0; i < msg_len; i++)
+      {
+         int off_x, off_y, tex_x, tex_y, width, height, y;
+         const char *msg_tmp = &msg[i];
+         unsigned code       = utf8_walk(&msg_tmp);
+         unsigned skip       = msg_tmp - &msg[i];
+
+         if (skip > 1)
+            i += skip - 1;
+
+         const struct font_glyph *glyph =
+            font->font_driver->get_glyph(font->font_data, code);
+
+         if (!glyph) /* Do something smarter here ... */
+            glyph = font->font_driver->get_glyph(font->font_data, '?');
+
+         if (!glyph)
+            continue;
+
+         off_x = x + glyph->draw_offset_x + delta_x;
+         off_y = y + glyph->draw_offset_y + delta_y;
+         width = glyph->width;
+         height = glyph->height;
+
+         tex_x = glyph->atlas_offset_x;
+         tex_y = glyph->atlas_offset_y;
+
+         for (y = tex_y; y < tex_y + height; y++)
+         {
+            int x;
+            uint8_t *row = &font->atlas->buffer[y * font->atlas->width];
+            for (x = tex_x; x < tex_x + width; x++)
+            {
+               int x1, y1;
+               if (!row[x])
+                  continue;
+               x1 = off_x + (x - tex_x);
+               y1 = off_y + (y - tex_y);
+               if (x1 < fb_width && y1 < fb_height)
+                  sw->out_buffer[y1 * sw->stride / sizeof(uint32_t) + x1] = color;
+            }
+         }
+
+         delta_x += glyph->advance_x;
+         delta_y += glyph->advance_y;
+      }
+   }
 }
 
-#define AVG_GLPYH_LIMIT 140
 static void switch_font_render_message(
-    video_frame_info_t *video_info,
-    switch_font_t *font, const char *msg, float scale,
-    const unsigned int color, float pos_x, float pos_y,
-    unsigned text_align)
+      switch_video_t *sw,
+      switch_font_t *font, const char *msg, float scale,
+      const unsigned int color, float pos_x, float pos_y,
+      unsigned text_align)
 {
-      int lines = 0;
-      float line_height;
+   float line_height;
+   int lines          = 0;
 
-      if (!msg || !*msg)
-            return;
+   if (!msg || !*msg)
+      return;
 
-      /* If the font height is not supported just draw as usual */
-      if (!font->font_driver->get_line_height)
+   /* If the font height is not supported just draw as usual */
+   if (!font->font_driver->get_line_height)
+   {
+      int msgLen = strlen(msg);
+      if (msgLen <= AVG_GLPYH_LIMIT)
       {
-            int msgLen = strlen(msg);
-            if (msgLen <= AVG_GLPYH_LIMIT)
-            {
-                  switch_font_render_line(video_info, font, msg, strlen(msg),
-                                          scale, color, pos_x, pos_y, text_align);
-            }
-            return;
+         if (sw)
+            switch_font_render_line(sw, font, msg, strlen(msg),
+                  scale, color, pos_x, pos_y, text_align);
       }
-      line_height = scale / font->font_driver->get_line_height(font->font_data);
+      return;
+   }
+   line_height = scale / font->font_driver->get_line_height(font->font_data);
 
-      for (;;)
+   for (;;)
+   {
+      const char *delim = strchr(msg, '\n');
+
+      /* Draw the line */
+      if (delim)
       {
-            const char *delim = strchr(msg, '\n');
-
-            /* Draw the line */
-            if (delim)
-            {
-                  unsigned msg_len = delim - msg;
-                  if (msg_len <= AVG_GLPYH_LIMIT)
-                  {
-                        switch_font_render_line(video_info, font, msg, msg_len,
-                                                scale, color, pos_x, pos_y - (float)lines * line_height,
-                                                text_align);
-                  }
-                  msg += msg_len + 1;
-                  lines++;
-            }
-            else
-            {
-                  unsigned msg_len = strlen(msg);
-                  if (msg_len <= AVG_GLPYH_LIMIT)
-                  {
-                        switch_font_render_line(video_info, font, msg, msg_len,
-                                                scale, color, pos_x, pos_y - (float)lines * line_height,
-                                                text_align);
-                  }
-                  break;
-            }
-      }
-}
-
-static void switch_font_render_msg(
-    video_frame_info_t *video_info,
-    void *data, const char *msg,
-    const struct font_params *params)
-{
-      float x, y, scale, drop_mod, drop_alpha;
-      int drop_x, drop_y;
-      unsigned max_glyphs;
-      enum text_alignment text_align;
-      unsigned color, color_dark, r, g, b,
-          alpha, r_dark, g_dark, b_dark, alpha_dark;
-      switch_font_t *font = (switch_font_t *)data;
-      unsigned width = video_info->width;
-      unsigned height = video_info->height;
-
-      if (!font || !msg || msg && !*msg)
-            return;
-
-      if (params)
-      {
-            x = params->x;
-            y = params->y;
-            scale = params->scale;
-            text_align = params->text_align;
-            drop_x = params->drop_x;
-            drop_y = params->drop_y;
-            drop_mod = params->drop_mod;
-            drop_alpha = params->drop_alpha;
-
-            r = FONT_COLOR_GET_RED(params->color);
-            g = FONT_COLOR_GET_GREEN(params->color);
-            b = FONT_COLOR_GET_BLUE(params->color);
-            alpha = FONT_COLOR_GET_ALPHA(params->color);
-
-            color = params->color;
+         unsigned msg_len = delim - msg;
+         if (msg_len <= AVG_GLPYH_LIMIT)
+         {
+            if (sw)
+               switch_font_render_line(sw, font, msg, msg_len,
+                     scale, color, pos_x, pos_y - (float)lines * line_height,
+                     text_align);
+         }
+         msg += msg_len + 1;
+         lines++;
       }
       else
       {
-            x = 0.0f;
-            y = 0.0f;
-            scale = 1.0f;
-            text_align = TEXT_ALIGN_LEFT;
-
-            r = (video_info->font_msg_color_r * 255);
-            g = (video_info->font_msg_color_g * 255);
-            b = (video_info->font_msg_color_b * 255);
-            alpha = 255;
-            color = COLOR_ABGR(r, g, b, alpha);
-
-            drop_x = -2;
-            drop_y = -2;
-            drop_mod = 0.3f;
-            drop_alpha = 1.0f;
+         unsigned msg_len = strlen(msg);
+         if (msg_len <= AVG_GLPYH_LIMIT)
+         {
+            if (sw)
+               switch_font_render_line(sw, font, msg, msg_len,
+                     scale, color, pos_x, pos_y - (float)lines * line_height,
+                     text_align);
+         }
+         break;
       }
+   }
+}
 
-      max_glyphs = strlen(msg);
+static void switch_font_render_msg(
+      void *userdata,
+      void *data,
+      const char *msg,
+      const struct font_params *params)
+{
+   float x, y, scale;
+   enum text_alignment text_align;
+   unsigned color, r, g, b, alpha;
+   switch_font_t *font              = (switch_font_t *)data;
+   switch_video_t *sw               = (switch_video_t*)userdata;
+   settings_t *settings             = config_get_ptr();
+   float video_msg_color_r          = settings->floats.video_msg_color_r;
+   float video_msg_color_g          = settings->floats.video_msg_color_g;
+   float video_msg_color_b          = settings->floats.video_msg_color_b;
 
-      /*if (drop_x || drop_y)
-      max_glyphs    *= 2;
+   if (!font || !msg || (msg && !*msg))
+      return;
 
-   if (drop_x || drop_y)
+   if (params)
    {
-      r_dark         = r * drop_mod;
-      g_dark         = g * drop_mod;
-      b_dark         = b * drop_mod;
-      alpha_dark     = alpha * drop_alpha;
-      color_dark     = COLOR_ABGR(r_dark, g_dark, b_dark, alpha_dark);
+      x          = params->x;
+      y          = params->y;
+      scale      = params->scale;
+      text_align = params->text_align;
 
-      switch_font_render_message(video_info, font, msg, scale, color_dark,
-                              x + scale * drop_x / width, y +
-                              scale * drop_y / height, text_align);
-   }*/
+      r          = FONT_COLOR_GET_RED(params->color);
+      g          = FONT_COLOR_GET_GREEN(params->color);
+      b          = FONT_COLOR_GET_BLUE(params->color);
+      alpha      = FONT_COLOR_GET_ALPHA(params->color);
 
-      switch_font_render_message(video_info, font, msg, scale,
-                                 color, x, y, text_align);
+      color      = params->color;
+   }
+   else
+   {
+      x          = 0.0f;
+      y          = 0.0f;
+      scale      = 1.0f;
+      text_align = TEXT_ALIGN_LEFT;
+
+      r          = (video_msg_color_r * 255);
+      g          = (video_msg_color_g * 255);
+      b          = (video_msg_color_b * 255);
+      alpha      = 255;
+      color      = COLOR_ABGR(r, g, b, alpha);
+
+   }
+
+   switch_font_render_message(sw, font, msg, scale,
+         color, x, y, text_align);
 }
 
 static const struct font_glyph *switch_font_get_glyph(
     void *data, uint32_t code)
 {
-      switch_font_t *font = (switch_font_t *)data;
+   switch_font_t *font = (switch_font_t *)data;
 
-      if (!font || !font->font_driver)
-            return NULL;
+   if (!font || !font->font_driver)
+      return NULL;
 
-      if (!font->font_driver->ident)
-            return NULL;
+   if (!font->font_driver->ident)
+      return NULL;
 
-      return font->font_driver->get_glyph((void *)font->font_driver, code);
-}
-
-static void switch_font_bind_block(void *data, void *userdata)
-{
-      (void)data;
+   return font->font_driver->get_glyph((void *)font->font_driver, code);
 }
 
 static int switch_font_get_line_height(void *data)
 {
-      switch_font_t *font = (switch_font_t *)data;
-      if (!font || !font->font_driver || !font->font_data)
+   switch_font_t *font = (switch_font_t *)data;
+   if (!font || !font->font_driver || !font->font_data)
       return -1;
 
-      return font->font_driver->get_line_height(font->font_data);
+   return font->font_driver->get_line_height(font->font_data);
 }
 
 font_renderer_t switch_font =
-    {
-        switch_font_init_font,
-        switch_font_free_font,
-        switch_font_render_msg,
-        "switchfont",
-        switch_font_get_glyph,
-        switch_font_bind_block,
-        NULL, /* flush_block */
-        switch_font_get_message_width,
-        switch_font_get_line_height
+{
+   switch_font_init_font,
+   switch_font_free_font,
+   switch_font_render_msg,
+   "switchfont",
+   switch_font_get_glyph,
+   NULL, /* bind_block  */
+   NULL, /* flush_block */
+   switch_font_get_message_width,
+   switch_font_get_line_height
 };

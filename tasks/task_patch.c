@@ -60,28 +60,25 @@ enum patch_error
 
 struct bps_data
 {
-   const uint8_t *modify_data;
-   const uint8_t *source_data;
-   uint8_t *target_data;
    size_t modify_length;
    size_t source_length;
    size_t target_length;
    size_t modify_offset;
    size_t source_offset;
    size_t target_offset;
-   uint32_t modify_checksum;
-   uint32_t source_checksum;
-   uint32_t target_checksum;
    size_t source_relative_offset;
    size_t target_relative_offset;
    size_t output_offset;
+   uint32_t modify_checksum;
+   uint32_t source_checksum;
+   uint32_t target_checksum;
+   const uint8_t *modify_data;
+   const uint8_t *source_data;
+   uint8_t *target_data;
 };
 
 struct ups_data
 {
-   const uint8_t *patch_data;
-   const uint8_t *source_data;
-   uint8_t *target_data;
    unsigned patch_length;
    unsigned source_length;
    unsigned target_length;
@@ -91,6 +88,9 @@ struct ups_data
    unsigned patch_checksum;
    unsigned source_checksum;
    unsigned target_checksum;
+   const uint8_t *patch_data;
+   const uint8_t *source_data;
+   uint8_t *target_data;
 };
 
 typedef enum patch_error (*patch_func_t)(const uint8_t*, uint64_t,
@@ -329,10 +329,10 @@ static enum patch_error ups_apply_patch(
    struct ups_data data;
    unsigned source_read_length;
    unsigned target_read_length;
-   uint32_t patch_result_checksum;
-   uint32_t patch_read_checksum  = 0;
-   uint32_t source_read_checksum = 0;
-   uint32_t target_read_checksum = 0;
+   uint32_t patch_result_checksum = 0;
+   uint32_t patch_read_checksum   = 0;
+   uint32_t source_read_checksum  = 0;
+   uint32_t target_read_checksum  = 0;
 
    data.patch_data      = patchdata;
    data.source_data     = sourcedata;

@@ -59,7 +59,7 @@ static void xenon360_input_poll(void *data)
 }
 
 static int16_t xenon360_input_state(void *data,
-      rarch_joypad_info_t joypad_info,
+      rarch_joypad_info_t *joypad_info,
       const struct retro_keybind **binds,
       bool port, unsigned device,
       unsigned idx, unsigned id)

@@ -393,6 +393,27 @@ void* task_push_http_post_transfer(const char *url,
          url, mute, type, cb, user_data);
 }
 
+void* task_push_http_post_transfer_with_user_agent(const char *url,
+   const char *post_data, bool mute,
+   const char *type, const char* user_agent,
+   retro_task_callback_t cb, void *user_data)
+{
+   struct http_connection_t* conn;
+
+   if (string_is_empty(url))
+      return NULL;
+
+   conn = net_http_connection_new(url, "POST", post_data);
+   if (!conn)
+      return NULL;
+
+   if (user_agent != NULL)
+      net_http_connection_set_user_agent(conn, user_agent);
+
+   /* assert: task_push_http_transfer_generic will free conn on failure */
+   return task_push_http_transfer_generic(conn, url, mute, type, cb, user_data);
+}
+
 task_retriever_info_t *http_task_get_transfer_list(void)
 {
    task_retriever_data_t retrieve_data;

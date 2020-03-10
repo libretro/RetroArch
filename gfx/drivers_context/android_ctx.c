@@ -102,7 +102,7 @@ static void android_gfx_ctx_destroy(void *data)
    free(data);
 }
 
-static void *android_gfx_ctx_init(video_frame_info_t *video_info, void *video_driver)
+static void *android_gfx_ctx_init(void *video_driver)
 {
 #ifdef HAVE_OPENGLES
    EGLint n, major, minor;
@@ -215,8 +215,7 @@ static void android_gfx_ctx_get_video_size(void *data,
 }
 
 static void android_gfx_ctx_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height,
-      bool is_shutdown)
+      bool *resize, unsigned *width, unsigned *height)
 {
 #ifdef HAVE_VULKAN
    struct android_app *android_app = (struct android_app*)g_android;
@@ -265,10 +264,6 @@ static void android_gfx_ctx_check_window(void *data, bool *quit,
       *height = new_height;
       *resize = true;
    }
-
-   /* Check if we are exiting. */
-   if (is_shutdown)
-      *quit = true;
 }
 
 static bool android_gfx_ctx_set_resize(void *data,
@@ -311,7 +306,6 @@ static bool android_gfx_ctx_set_resize(void *data,
 }
 
 static bool android_gfx_ctx_set_video_mode(void *data,
-      video_frame_info_t *video_info,
       unsigned width, unsigned height,
       bool fullscreen)
 {
@@ -515,7 +509,7 @@ dpi_fallback:
    return true;
 }
 
-static void android_gfx_ctx_swap_buffers(void *data, void *data2)
+static void android_gfx_ctx_swap_buffers(void *data)
 {
    android_ctx_data_t *and  = (android_ctx_data_t*)data;
 

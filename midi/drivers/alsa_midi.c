@@ -405,7 +405,8 @@ static bool alsa_midi_write(void *p, const midi_event_t *event)
    ev.time.time.tv_sec  = d->out_ev_time.tv_sec + event->delta_time / 1000000;
    ev.time.time.tv_nsec = d->out_ev_time.tv_nsec +
          (event->delta_time % 1000000) * 1000;
-   if(ev.time.time.tv_nsec >= 1000000000)
+
+   if (ev.time.time.tv_nsec >= 1000000000)
    {
        ev.time.time.tv_sec  += 1;
        ev.time.time.tv_nsec -= 1000000000;

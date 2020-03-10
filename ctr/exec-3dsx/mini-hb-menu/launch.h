@@ -12,14 +12,14 @@ enum
 
 typedef struct
 {
-	// Mandatory fields
+	/* Mandatory fields */
 	const char* name;
 	u32 flags;
 	bool (* init)(void);
 	void (* deinit)(void);
 	void (* launchFile)(const char* path, argData_s* args, executableMetadata_s* em);
 
-	// Optional fields
+	/* Optional fields */
 	void (* useTitle)(u64 tid, u8 mediatype);
 } loaderFuncs_s;
 

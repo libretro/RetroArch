@@ -44,8 +44,8 @@
 static bool           g_osmesa_profile = OSMESA_COMPAT_PROFILE;
 static int            g_osmesa_major   = 2;
 static int            g_osmesa_minor   = 1;
-static int            g_osmesa_format  = OSMESA_RGBA;
-static int            g_osmesa_bpp     = 4;
+static const int      g_osmesa_format  = OSMESA_RGBA;
+static const int      g_osmesa_bpp     = 4;
 static const char    *g_osmesa_fifo    = "/tmp/osmesa-retroarch.sock";
 
 static enum gfx_ctx_api osmesa_api     = GFX_CTX_NONE;
@@ -142,7 +142,7 @@ static void osmesa_fifo_write(gfx_ctx_osmesa_data_t *osmesa)
    }
 }
 
-static void *osmesa_ctx_init(video_frame_info_t *video_info, void *video_driver)
+static void *osmesa_ctx_init(void *video_driver)
 {
 #ifdef HAVE_OSMESA_CREATE_CONTEXT_ATTRIBS
    const int attribs[] = {
@@ -247,7 +247,6 @@ static void osmesa_ctx_swap_interval(void *data, int interval)
 }
 
 static bool osmesa_ctx_set_video_mode(void *data,
-      video_frame_info_t *video_info,
       unsigned width, unsigned height,
       bool fullscreen)
 {
@@ -317,7 +316,7 @@ static void osmesa_ctx_get_video_size(void *data,
 
 static void osmesa_ctx_check_window(void *data, bool *quit,
       bool *resize,unsigned *width,
-      unsigned *height, bool is_shutdown)
+      unsigned *height)
 {
    gfx_ctx_osmesa_data_t *osmesa = (gfx_ctx_osmesa_data_t*)data;
 
@@ -340,7 +339,7 @@ static bool osmesa_ctx_suppress_screensaver(void *data, bool enable)
    return false;
 }
 
-static void osmesa_ctx_swap_buffers(void *data, void *data2)
+static void osmesa_ctx_swap_buffers(void *data)
 {
    gfx_ctx_osmesa_data_t *osmesa = (gfx_ctx_osmesa_data_t*)data;
    osmesa_fifo_accept(osmesa);

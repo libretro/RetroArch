@@ -79,6 +79,7 @@ typedef struct
    char dat_file_path[PATH_MAX_LENGTH];
    bool core_set;
    bool search_archives;
+   bool filter_dat_content;
    bool overwrite_playlist;
 } manual_content_scan_task_config_t;
 
@@ -119,6 +120,10 @@ size_t manual_content_scan_get_dat_file_path_size(void);
 /* Returns a pointer to the internal
  * 'search_archives' bool */
 bool *manual_content_scan_get_search_archives_ptr(void);
+
+/* Returns a pointer to the internal
+ * 'filter_dat_content' bool */
+bool *manual_content_scan_get_filter_dat_content_ptr(void);
 
 /* Returns a pointer to the internal
  * 'overwrite_playlist' bool */
@@ -195,7 +200,7 @@ bool manual_content_scan_get_menu_core_name(const char **core_name);
  * > Returns NULL in the event of failure
  * > Returned string list must be free()'d */
 struct string_list *manual_content_scan_get_menu_system_name_list(
-      const char *path_content_database);
+      const char *path_content_database, bool show_hidden_files);
 
 /* Creates a list of all possible 'core name' menu
  * strings, for use in 'menu_displaylist' drop-down

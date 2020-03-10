@@ -118,7 +118,8 @@ int32_t d3d_translate_filter(unsigned type)
       case RARCH_FILTER_UNSPEC:
          {
             settings_t *settings = config_get_ptr();
-            if (!settings->bools.video_smooth)
+            bool video_smooth    = settings->bools.video_smooth;
+            if (!video_smooth)
                break;
          }
          /* fall-through */
@@ -140,19 +141,19 @@ void d3d_input_driver(const char* input_name, const char* joypad_name,
    if (string_is_equal(input_name, "xinput"))
    {
       void *xinput = input_xinput.init(joypad_name);
-      *input = xinput ? (input_driver_t*)&input_xinput : NULL;
-      *input_data = xinput;
+      *input       = xinput ? (input_driver_t*)&input_xinput : NULL;
+      *input_data  = xinput;
    }
    else
    {
-      void *uwp = input_uwp.init(joypad_name);
-      *input = uwp ? (input_driver_t*)&input_uwp : NULL;
-      *input_data = uwp;
+      void *uwp    = input_uwp.init(joypad_name);
+      *input       = uwp ? (input_driver_t*)&input_uwp : NULL;
+      *input_data  = uwp;
    }
 #elif defined(_XBOX)
-   void *xinput = input_xinput.init(joypad_name);
-   *input = xinput ? (input_driver_t*)&input_xinput : NULL;
-   *input_data = xinput;
+   void *xinput    = input_xinput.init(joypad_name);
+   *input          = xinput ? (input_driver_t*)&input_xinput : NULL;
+   *input_data     = xinput;
 #else
 #if _WIN32_WINNT >= 0x0501
    /* winraw only available since XP */
@@ -169,7 +170,7 @@ void d3d_input_driver(const char* input_name, const char* joypad_name,
 
 #ifdef HAVE_DINPUT
    *input_data = input_dinput.init(joypad_name);
-   *input = *input_data ? &input_dinput : NULL;
+   *input      = *input_data ? &input_dinput : NULL;
 #endif
 #endif
 }

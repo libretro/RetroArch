@@ -58,35 +58,10 @@
 static int      (*g_pglSwapInterval)(int);
 static int      (*g_pglSwapIntervalSGI)(int);
 static void     (*g_pglSwapIntervalEXT)(Display*, GLXDrawable, int);
-typedef Bool    (*GLXGETSYNCVALUESOMLPROC)(Display *dpy, GLXDrawable drawable,
-      int64_t *ust, int64_t *msc, int64_t *sbc);
-typedef Bool    (*GLXGETMSCRATEOMLPROC)(Display *dpy, GLXDrawable drawable, int32_t *numerator,
-      int32_t *denominator);
-typedef int64_t (*GLXSWAPBUFFERSMSCOMLPROC)(Display *dpy, GLXDrawable drawable,
-      int64_t target_msc, int64_t divisor,
-      int64_t remainder);
-typedef Bool    (*GLXWAITFORMSCOMLPROC)(Display *dpy, GLXDrawable drawable, int64_t target_msc,
-      int64_t divisor, int64_t remainder, int64_t *ust,
-      int64_t *msc, int64_t *sbc);
-typedef Bool    (*GLXWAITFORSBCOMLPROC)(Display *dpy, GLXDrawable drawable, int64_t target_sbc,
-      int64_t *ust, int64_t *msc, int64_t *sbc);
-
-static GLXGETSYNCVALUESOMLPROC  glXGetSyncValuesOML;
-static GLXGETMSCRATEOMLPROC     glXGetMscRateOML;
-static GLXSWAPBUFFERSMSCOMLPROC glXSwapBuffersMscOML;
-static GLXWAITFORMSCOMLPROC     glXWaitForMscOML;
-static GLXWAITFORSBCOMLPROC     glXWaitForSbcOML;
-
 #endif
 
 typedef struct gfx_ctx_x_data
 {
-   int64_t ust;
-   int64_t msc;
-   int64_t sbc;
-
-   int divisor;
-   int remainder;
    bool g_use_hw_ctx;
    bool g_core_es;
    bool g_core_es_core;
@@ -94,6 +69,8 @@ typedef struct gfx_ctx_x_data
    bool g_should_reset_mode;
    bool g_is_double;
    bool core_hw_context_enable;
+   bool adaptive_vsync;
+   bool msaa_enable;
 
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)
    GLXWindow g_glx_win;
@@ -109,8 +86,6 @@ typedef struct gfx_ctx_x_data
 #endif
 } gfx_ctx_x_data_t;
 
-static bool x_adaptive_vsync                  = false;
-static bool x_enable_msaa                     = false;
 static unsigned g_major                       = 0;
 static unsigned g_minor                       = 0;
 static enum gfx_ctx_api x_api                 = GFX_CTX_NONE;
@@ -205,11 +180,7 @@ static void gfx_ctx_x_destroy_resources(gfx_ctx_x_data_t *x)
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)
             if (x->g_ctx)
             {
-               if (x->swap_mode)
-                  glXSwapBuffersMscOML(g_x11_dpy, x->g_glx_win, 0, x->divisor, x->remainder);
-               else
-                  glXSwapBuffers(g_x11_dpy, x->g_glx_win);
-
+               glXSwapBuffers(g_x11_dpy, x->g_glx_win);
                glFinish();
                glXMakeContextCurrent(g_x11_dpy, None, None, NULL);
 
@@ -317,22 +288,45 @@ static void gfx_ctx_x_swap_interval(void *data, int interval)
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)
          x->g_interval = interval;
 
-         if (g_pglSwapIntervalEXT)
+         if (x->swap_mode)
          {
-            RARCH_LOG("[GLX]: glXSwapIntervalEXT(%i)\n", x->g_interval);
-            g_pglSwapIntervalEXT(g_x11_dpy, x->g_glx_win, x->g_interval);
+             if (g_pglSwapInterval)
+             {
+                RARCH_LOG("[GLX]: glXSwapInterval(%i)\n", x->g_interval);
+                if (g_pglSwapInterval(x->g_interval) != 0)
+                   RARCH_WARN("[GLX]: glXSwapInterval() failed.\n");
+             }
+             else if (g_pglSwapIntervalEXT)
+             {
+                RARCH_LOG("[GLX]: glXSwapIntervalEXT(%i)\n", x->g_interval);
+                g_pglSwapIntervalEXT(g_x11_dpy, x->g_glx_win, x->g_interval);
+             }
+             else if (g_pglSwapIntervalSGI)
+             {
+                RARCH_LOG("[GLX]: glXSwapIntervalSGI(%i)\n", x->g_interval);
+                if (g_pglSwapIntervalSGI(x->g_interval) != 0)
+                   RARCH_WARN("[GLX]: glXSwapIntervalSGI() failed.\n");
+             }
          }
-         else if (g_pglSwapInterval)
+         else
          {
-            RARCH_LOG("[GLX]: glXSwapInterval(%i)\n", x->g_interval);
-            if (g_pglSwapInterval(x->g_interval) != 0)
-               RARCH_WARN("[GLX]: glXSwapInterval() failed.\n");
-         }
-         else if (g_pglSwapIntervalSGI)
-         {
-            RARCH_LOG("[GLX]: glXSwapIntervalSGI(%i)\n", x->g_interval);
-            if (g_pglSwapIntervalSGI(x->g_interval) != 0)
-               RARCH_WARN("[GLX]: glXSwapIntervalSGI() failed.\n");
+             if (g_pglSwapIntervalEXT)
+             {
+                RARCH_LOG("[GLX]: glXSwapIntervalEXT(%i)\n", x->g_interval);
+                g_pglSwapIntervalEXT(g_x11_dpy, x->g_glx_win, x->g_interval);
+             }
+             else if (g_pglSwapInterval)
+             {
+                RARCH_LOG("[GLX]: glXSwapInterval(%i)\n", x->g_interval);
+                if (g_pglSwapInterval(x->g_interval) != 0)
+                   RARCH_WARN("[GLX]: glXSwapInterval() failed.\n");
+             }
+             else if (g_pglSwapIntervalSGI)
+             {
+                RARCH_LOG("[GLX]: glXSwapIntervalSGI(%i)\n", x->g_interval);
+                if (g_pglSwapIntervalSGI(x->g_interval) != 0)
+                   RARCH_WARN("[GLX]: glXSwapIntervalSGI() failed.\n");
+             }
          }
 #endif
          break;
@@ -354,7 +348,7 @@ static void gfx_ctx_x_swap_interval(void *data, int interval)
    }
 }
 
-static void gfx_ctx_x_swap_buffers(void *data, void *data2)
+static void gfx_ctx_x_swap_buffers(void *data)
 {
    gfx_ctx_x_data_t *x = (gfx_ctx_x_data_t*)data;
 
@@ -363,25 +357,8 @@ static void gfx_ctx_x_swap_buffers(void *data, void *data2)
       case GFX_CTX_OPENGL_API:
       case GFX_CTX_OPENGL_ES_API:
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)
-         if (x->swap_mode)
-         {
-            if (x->g_interval)
-            {
-               glXWaitForMscOML(g_x11_dpy, x->g_glx_win, x->msc + x->g_interval,
-                     0, 0, &x->ust, &x->msc, &x->sbc);
-               glXSwapBuffersMscOML(g_x11_dpy, x->g_glx_win, 0, 0, 0);
-            }
-            else
-               glXSwapBuffersMscOML(g_x11_dpy, x->g_glx_win, 0, x->divisor, x->remainder);
-#if 0
-            RARCH_LOG("UST: %d, MSC: %d, SBC: %d\n", x->ust, x->msc, x->sbc);
-#endif
-         }
-         else
-         {
-            if (x->g_is_double)
-               glXSwapBuffers(g_x11_dpy, x->g_glx_win);
-         }
+         if (x->g_is_double)
+            glXSwapBuffers(g_x11_dpy, x->g_glx_win);
 #endif
          break;
 
@@ -399,11 +376,9 @@ static void gfx_ctx_x_swap_buffers(void *data, void *data2)
 }
 
 static void gfx_ctx_x_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height,
-      bool is_shutdown)
+      bool *resize, unsigned *width, unsigned *height)
 {
-   x11_check_window(data, quit, resize, width, height,
-         is_shutdown);
+   x11_check_window(data, quit, resize, width, height);
 
    switch (x_api)
    {
@@ -461,7 +436,7 @@ static bool gfx_ctx_x_set_resize(void *data,
    return true;
 }
 
-static void *gfx_ctx_x_init(video_frame_info_t *video_info, void *data)
+static void *gfx_ctx_x_init(void *data)
 {
    int nelements           = 0;
    int major               = 0;
@@ -569,28 +544,13 @@ static void *gfx_ctx_x_init(video_frame_info_t *video_info, void *data)
 	 if (GLXExtensionSupported(g_x11_dpy, "GLX_EXT_swap_control_tear"))
 	 {
             RARCH_LOG("[GLX]: GLX_EXT_swap_control_tear supported.\n");
-	    x_adaptive_vsync = true;
+            x->adaptive_vsync = true;
 	 }
-         if (GLXExtensionSupported(g_x11_dpy, "GLX_OML_sync_control") &&
-             GLXExtensionSupported(g_x11_dpy, "GLX_MESA_swap_control")
-            )
-         {
-            RARCH_LOG("[GLX]: GLX_OML_sync_control and GLX_MESA_swap_control supported, using better swap control method...\n");
 
-            x->swap_mode         = 1;
-
-            glXGetSyncValuesOML  = (GLXGETSYNCVALUESOMLPROC)glXGetProcAddress((unsigned char *)"glXGetSyncValuesOML");
-            glXGetMscRateOML     = (GLXGETMSCRATEOMLPROC)glXGetProcAddress((unsigned char *)"glXGetMscRateOML");
-            glXSwapBuffersMscOML = (GLXSWAPBUFFERSMSCOMLPROC)glXGetProcAddress((unsigned char *)"glXSwapBuffersMscOML");
-            glXWaitForMscOML     = (GLXWAITFORMSCOMLPROC)glXGetProcAddress((unsigned char *)"glXWaitForMscOML");
-            glXWaitForSbcOML     = (GLXWAITFORSBCOMLPROC)glXGetProcAddress((unsigned char *)"glXWaitForSbcOML");
-
-            glXGetSyncValuesOML(g_x11_dpy, g_x11_win, &x->ust, &x->msc, &x->sbc);
-
-#if 0
-            RARCH_LOG("[GLX]: UST: %d, MSC: %d, SBC: %d\n", x->ust, x->msc, x->sbc);
-#endif
-         }
+     if (GLXExtensionSupported(g_x11_dpy, "GLX_OML_sync_control") &&
+         GLXExtensionSupported(g_x11_dpy, "GLX_MESA_swap_control")
+        )
+        x->swap_mode         = 1;
 #endif
          break;
       default:
@@ -611,13 +571,11 @@ error:
 }
 
 static bool gfx_ctx_x_set_video_mode(void *data,
-      video_frame_info_t *video_info,
       unsigned width, unsigned height,
       bool fullscreen)
 {
    XEvent event;
    bool true_full            = false;
-   bool windowed_full        = false;
    int val                   = 0;
    int x_off                 = 0;
    int y_off                 = 0;
@@ -626,18 +584,21 @@ static bool gfx_ctx_x_set_video_mode(void *data,
    char *wm_name             = NULL;
    int (*old_handler)(Display*, XErrorEvent*) = NULL;
    gfx_ctx_x_data_t *x       = (gfx_ctx_x_data_t*)data;
-   Atom net_wm_icon = XInternAtom(g_x11_dpy, "_NET_WM_ICON", False);
-   Atom cardinal = XInternAtom(g_x11_dpy, "CARDINAL", False);
-   settings_t *settings = config_get_ptr();
-   unsigned opacity = settings->uints.video_window_opacity * ((unsigned)-1 / 100.0);
+   Atom net_wm_icon          = XInternAtom(g_x11_dpy, "_NET_WM_ICON", False);
+   Atom cardinal             = XInternAtom(g_x11_dpy, "CARDINAL", False);
+   settings_t *settings      = config_get_ptr();
+   unsigned opacity          = settings->uints.video_window_opacity 
+      * ((unsigned)-1 / 100.0);
+   bool disable_composition  = settings->bools.video_disable_composition;
+   bool show_decorations     = settings->bools.video_window_show_decorations;
+   bool windowed_full        = settings->bools.video_windowed_fullscreen;
+   unsigned video_monitor_index = settings->uints.video_monitor_index;
 
    frontend_driver_install_signal_handler();
 
    if (!x)
       return false;
 
-   windowed_full = video_info->windowed_fullscreen;
-   true_full = false;
 
    switch (x_api)
    {
@@ -675,7 +636,7 @@ static bool gfx_ctx_x_set_video_mode(void *data,
 
    if (fullscreen && !windowed_full)
    {
-      if (x11_enter_fullscreen(video_info, g_x11_dpy, width, height))
+      if (x11_enter_fullscreen(g_x11_dpy, width, height))
       {
          x->g_should_reset_mode = true;
          true_full = true;
@@ -699,8 +660,8 @@ static bool gfx_ctx_x_set_video_mode(void *data,
    if (!x11_has_net_wm_fullscreen(g_x11_dpy) && true_full)
       swa.override_redirect = True;
 
-   if (video_info->monitor_index)
-      g_x11_screen = video_info->monitor_index - 1;
+   if (video_monitor_index)
+      g_x11_screen = video_monitor_index - 1;
 
 #ifdef HAVE_XINERAMA
    if (fullscreen || g_x11_screen != 0)
@@ -734,9 +695,9 @@ static bool gfx_ctx_x_set_video_mode(void *data,
 
    XChangeProperty(g_x11_dpy, g_x11_win, net_wm_icon, cardinal, 32, PropModeReplace, (const unsigned char*)retroarch_icon_data, sizeof(retroarch_icon_data) / sizeof(*retroarch_icon_data));
 
-   if (fullscreen && settings->bools.video_disable_composition)
+   if (fullscreen && disable_composition)
    {
-      uint32_t value = 1;
+      uint32_t                value = 1;
       Atom net_wm_bypass_compositor = XInternAtom(g_x11_dpy, "_NET_WM_BYPASS_COMPOSITOR", False);
 
       RARCH_LOG("[GLX]: Requesting compositor bypass.\n");
@@ -749,14 +710,15 @@ static bool gfx_ctx_x_set_video_mode(void *data,
       XChangeProperty(g_x11_dpy, g_x11_win, net_wm_opacity, cardinal, 32, PropModeReplace, (const unsigned char*)&opacity, 1);
    }
 
-   if (!settings->bools.video_window_show_decorations)
+   if (!show_decorations)
    {
-      /* We could have just set _NET_WM_WINDOW_TYPE_DOCK instead, but that removes the window from any taskbar/panel,
+      /* We could have just set _NET_WM_WINDOW_TYPE_DOCK instead, 
+       * but that removes the window from any taskbar/panel,
        * so we are forced to use the old motif hints method. */
       Hints hints;
-      Atom property = XInternAtom(g_x11_dpy, "_MOTIF_WM_HINTS", False);
+      Atom property     = XInternAtom(g_x11_dpy, "_MOTIF_WM_HINTS", False);
 
-      hints.flags = 2;
+      hints.flags       = 2;
       hints.decorations = 0;
 
       XChangeProperty(g_x11_dpy, g_x11_win, property, property, 32, PropModeReplace, (const unsigned char*)&hints, 5);
@@ -777,7 +739,7 @@ static bool gfx_ctx_x_set_video_mode(void *data,
    }
 
    x11_set_window_attr(g_x11_dpy, g_x11_win);
-   x11_update_title(NULL, video_info);
+   x11_update_title(NULL);
 
    if (fullscreen)
       x11_show_mouse(g_x11_dpy, g_x11_win, false);
@@ -1015,10 +977,8 @@ static bool gfx_ctx_x_set_video_mode(void *data,
 #ifdef HAVE_VULKAN
          {
             bool quit, resize;
-            bool shutdown = false;
             unsigned width = 0, height = 0;
-            x11_check_window(x, &quit, &resize, &width, &height,
-                  shutdown);
+            x11_check_window(x, &quit, &resize, &width, &height);
 
             /* FIXME/TODO - threading error here */
 
@@ -1116,11 +1076,12 @@ static void gfx_ctx_x_input_driver(void *data,
       const char *joypad_name,
       input_driver_t **input, void **input_data)
 {
-   void *x_input         = NULL;
+   void *x_input            = NULL;
 #ifdef HAVE_UDEV
-   settings_t *settings = config_get_ptr();
+   settings_t *settings     = config_get_ptr();
+   const char *input_driver = settings->arrays.input_driver;
 
-   if (string_is_equal(settings->arrays.input_driver, "udev"))
+   if (string_is_equal(input_driver, "udev"))
    {
       *input_data = input_udev.init(joypad_name);
       if (*input_data)
@@ -1269,13 +1230,13 @@ static uint32_t gfx_ctx_x_get_flags(void *data)
    {
       case GFX_CTX_OPENGL_API:
       case GFX_CTX_OPENGL_ES_API:
-         if (x_adaptive_vsync)
+         if (x->adaptive_vsync)
             BIT32_SET(flags, GFX_CTX_FLAGS_ADAPTIVE_VSYNC);
 
          if (x->core_hw_context_enable || x->g_core_es)
             BIT32_SET(flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT);
 
-         if (x_enable_msaa)
+         if (x->msaa_enable)
             BIT32_SET(flags, GFX_CTX_FLAGS_MULTISAMPLING);
 
          if (string_is_equal(video_driver_get_ident(), "gl1")) { }
@@ -1318,11 +1279,11 @@ static void gfx_ctx_x_set_flags(void *data, uint32_t flags)
       case GFX_CTX_OPENGL_API:
       case GFX_CTX_OPENGL_ES_API:
          if (BIT32_GET(flags, GFX_CTX_FLAGS_ADAPTIVE_VSYNC))
-               x_adaptive_vsync = true;
+               x->adaptive_vsync = true;
          if (BIT32_GET(flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT))
             x->core_hw_context_enable = true;
          if (BIT32_GET(flags, GFX_CTX_FLAGS_MULTISAMPLING))
-            x_enable_msaa = true;
+            x->msaa_enable = true;
          break;
       case GFX_CTX_NONE:
       default:

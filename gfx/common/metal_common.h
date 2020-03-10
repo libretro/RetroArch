@@ -98,7 +98,8 @@ extern MTLPixelFormat SelectOptimalPixelFormat(MTLPixelFormat fmt);
 										inputData:(void **)inputData;
 
 - (void)setVideo:(const video_info_t *)video;
-- (bool)renderFrame:(const void *)data
+- (bool)renderFrame:(const void *)frame
+                     data:(void*)data
 							width:(unsigned)width
 						 height:(unsigned)height
 				 frameCount:(uint64_t)frameCount

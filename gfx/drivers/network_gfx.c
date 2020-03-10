@@ -67,13 +67,14 @@ static unsigned *network_video_temp_buf  = NULL;
 static void *network_gfx_init(const video_info_t *video,
       input_driver_t **input, void **input_data)
 {
+   int fd;
    gfx_ctx_input_t inp;
    void *ctx_data                       = NULL;
-   settings_t *settings                 = config_get_ptr();
-   network_video_t *network             = (network_video_t*)calloc(1, sizeof(*network));
    const gfx_ctx_driver_t *ctx_driver   = NULL;
    struct addrinfo *addr = NULL, *next_addr = NULL;
-   int fd;
+   settings_t *settings                 = config_get_ptr();
+   network_video_t *network             = (network_video_t*)calloc(1, sizeof(*network));
+   bool video_font_enable               = settings->bools.video_font_enable;
 
    *input                               = NULL;
    *input_data                          = NULL;
@@ -106,8 +107,10 @@ static void *network_gfx_init(const video_info_t *video,
 
    video_context_driver_input_driver(&inp);
 
-   if (settings->bools.video_font_enable)
-      font_driver_init_osd(network, false,
+   if (font_enable)
+      font_driver_init_osd(network,
+            video,
+            false,
             video->is_threaded,
             FONT_DRIVER_RENDER_NETWORK_VIDEO);
 
@@ -320,16 +323,12 @@ static bool network_gfx_frame(void *data, const void *frame,
    }
 
    if (msg)
-      font_driver_render_msg(network, video_info, msg, NULL, NULL);
+      font_driver_render_msg(network, msg, NULL, NULL);
 
    return true;
 }
 
-static void network_gfx_set_nonblock_state(void *data, bool toggle)
-{
-   (void)data;
-   (void)toggle;
-}
+static void network_gfx_set_nonblock_state(void *a, bool b, bool c, unsigned d) { }
 
 static bool network_gfx_alive(void *data)
 {
@@ -338,14 +337,13 @@ static bool network_gfx_alive(void *data)
    unsigned temp_height = 0;
    bool quit            = false;
    bool resize          = false;
-   bool is_shutdown     = rarch_ctl(RARCH_CTL_IS_SHUTDOWN, NULL);
    network_video_t *network       = (network_video_t*)data;
 
    /* Needed because some context drivers don't track their sizes */
    video_driver_get_size(&temp_width, &temp_height);
 
    network->ctx_driver->check_window(network->ctx_data,
-            &quit, &resize, &temp_width, &temp_height, is_shutdown);
+            &quit, &resize, &temp_width, &temp_height);
 
    if (temp_width != 0 && temp_height != 0)
       video_driver_set_size(temp_width, temp_height);

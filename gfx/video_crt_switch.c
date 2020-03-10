@@ -33,21 +33,27 @@
 static void crt_rpi_switch(int width, int height, float hz, int xoffset);
 #endif
 
-static unsigned ra_core_width     = 0;
-static unsigned ra_core_height    = 0;
-static unsigned ra_tmp_width      = 0;
-static unsigned ra_tmp_height     = 0;
-static unsigned ra_set_core_hz    = 0;
-static int crt_center_adjust      = 0;
-static int crt_tmp_center_adjust  = 0;
-static double p_clock             = 0;
+typedef struct videocrt_switch
+{
+   int center_adjust;
+   int tmp_center_adjust;
+   unsigned ra_core_width;
+   unsigned ra_core_height;
+   unsigned ra_tmp_width;
+   unsigned ra_tmp_height;
+   unsigned ra_set_core_hz;
+   unsigned index;
+
+   float ra_core_hz;
+   float ra_tmp_core_hz;
+   float fly_aspect;
+
+   double p_clock;
+} videocrt_switch_t;
+
+static videocrt_switch_t crt_switch_st;
 
 static bool first_run             = true;
-
-static float ra_tmp_core_hz       = 0.0f;
-static float fly_aspect           = 0.0f;
-static float ra_core_hz           = 0.0f;
-static unsigned crt_index         = 0;
 
 static void crt_check_first_run(void)
 {
@@ -59,48 +65,63 @@ static void crt_check_first_run(void)
 
 static void switch_crt_hz(void)
 {
-   if (ra_core_hz == ra_tmp_core_hz)
+   videocrt_switch_t *p_switch = &crt_switch_st;
+
+   float ra_core_hz = p_switch->ra_core_hz;
+
+   if (ra_core_hz == p_switch->ra_tmp_core_hz)
       return;
+
    /* set hz float to an int for windows switching */
    if (ra_core_hz < 100)
    {
       if (ra_core_hz < 53)
-         ra_set_core_hz = 50;
+         p_switch->ra_set_core_hz = 50;
       if (ra_core_hz >= 53  &&  ra_core_hz < 57)
-         ra_set_core_hz = 55;
+         p_switch->ra_set_core_hz = 55;
       if (ra_core_hz >= 57)
-         ra_set_core_hz = 60;
+         p_switch->ra_set_core_hz = 60;
    }
 
    if (ra_core_hz > 100)
    {
       if (ra_core_hz < 106)
-         ra_set_core_hz = 120;
+         p_switch->ra_set_core_hz = 120;
       if (ra_core_hz >= 106  &&  ra_core_hz < 114)
-         ra_set_core_hz = 110;
+         p_switch->ra_set_core_hz = 110;
       if (ra_core_hz >= 114)
-         ra_set_core_hz = 120;
+         p_switch->ra_set_core_hz = 120;
    }
 
-   video_monitor_set_refresh_rate(ra_set_core_hz);
+   video_monitor_set_refresh_rate(p_switch->ra_set_core_hz);
 
-   ra_tmp_core_hz = ra_core_hz;
+   p_switch->ra_tmp_core_hz = ra_core_hz;
 }
 
 void crt_aspect_ratio_switch(unsigned width, unsigned height)
 {
-   /* send aspect float to videeo_driver */
-   fly_aspect = (float)width / height;
-   video_driver_set_aspect_ratio_value((float)fly_aspect);
+   videocrt_switch_t *p_switch = &crt_switch_st;
+   /* send aspect float to video_driver */
+   p_switch->fly_aspect = (float)width / height;
+   video_driver_set_aspect_ratio_value((float)p_switch->fly_aspect);
 }
 
 static void switch_res_crt(unsigned width, unsigned height)
 {
+   videocrt_switch_t *p_switch = &crt_switch_st;
+
    video_display_server_set_resolution(width, height,
-         ra_set_core_hz, ra_core_hz, crt_center_adjust, crt_index, crt_center_adjust);
+         p_switch->ra_set_core_hz,
+         p_switch->ra_core_hz,
+         p_switch->center_adjust,
+         p_switch->index,
+         p_switch->center_adjust);
+
 #if defined(HAVE_VIDEOCORE)
-   crt_rpi_switch(width, height, ra_core_hz, crt_center_adjust);
-   video_monitor_set_refresh_rate(ra_core_hz);
+   crt_rpi_switch(width, height,
+         p_switch->ra_core_hz,
+         p_switch->center_adjust);
+   video_monitor_set_refresh_rate(p_switch->ra_core_hz);
    crt_switch_driver_reinit();
 #endif
    video_driver_apply_state_changes();
@@ -109,6 +130,7 @@ static void switch_res_crt(unsigned width, unsigned height)
 /* Create correct aspect to fit video if resolution does not exist */
 static void crt_screen_setup_aspect(unsigned width, unsigned height)
 {
+   videocrt_switch_t *p_switch = &crt_switch_st;
 #if defined(HAVE_VIDEOCORE)
    if (height > 300)
       height = height/2;
@@ -136,7 +158,7 @@ static void crt_screen_setup_aspect(unsigned width, unsigned height)
    if (height > 200)
       crt_aspect_ratio_switch(width, height);
 
-   if (height == 144 && ra_set_core_hz == 50)
+   if (height == 144 && p_switch->ra_set_core_hz == 50)
    {
       height = 288;
       crt_aspect_ratio_switch(width, height);
@@ -160,13 +182,13 @@ static void crt_screen_setup_aspect(unsigned width, unsigned height)
       height = 254;
    }
 
-   if (height == 528 && ra_set_core_hz == 60)
+   if (height == 528 && p_switch->ra_set_core_hz == 60)
    {
       crt_aspect_ratio_switch(width, height);
       height = 480;
    }
 
-   if (height >= 240 && height < 255 && ra_set_core_hz == 55)
+   if (height >= 240 && height < 255 && p_switch->ra_set_core_hz == 55)
    {
       crt_aspect_ratio_switch(width, height);
       height = 254;
@@ -179,51 +201,55 @@ void crt_switch_res_core(unsigned width, unsigned height,
       float hz, unsigned crt_mode,
       int crt_switch_center_adjust, int monitor_index, bool dynamic)
 {
+   videocrt_switch_t *p_switch = &crt_switch_st;
+
    /* ra_core_hz float passed from within
     * video_driver_monitor_adjust_system_rates() */
    if (width == 4)
    {
-      width = 320;
+      width  = 320;
       height = 240;
    }
 
-   ra_core_height = height;
-   ra_core_hz     = hz;
+   p_switch->ra_core_height        = height;
+   p_switch->ra_core_hz            = hz;
 
    if (dynamic)
-      ra_core_width = crt_compute_dynamic_width(width);
+      p_switch->ra_core_width      = crt_compute_dynamic_width(width);
    else 
-      ra_core_width  = width;
+      p_switch->ra_core_width      = width;
 
-   crt_center_adjust = crt_switch_center_adjust;
-   crt_index  = monitor_index;
+   p_switch->center_adjust         = crt_switch_center_adjust;
+   p_switch->index                 = monitor_index;
 
    if (crt_mode == 2)
    {
       if (hz > 53)
-         ra_core_hz = hz * 2;
-
+         p_switch->ra_core_hz = hz * 2;
       if (hz <= 53)
-         ra_core_hz = 120.0f;
+         p_switch->ra_core_hz = 120.0f;
    }
 
    crt_check_first_run();
 
    /* Detect resolution change and switch */
    if (
-      (ra_tmp_height != ra_core_height) ||
-      (ra_core_width != ra_tmp_width) || (crt_center_adjust != crt_tmp_center_adjust)
+         (p_switch->ra_tmp_height != p_switch->ra_core_height) ||
+         (p_switch->ra_core_width != p_switch->ra_tmp_width) || 
+         (p_switch->center_adjust != p_switch->tmp_center_adjust)
       )
-      crt_screen_setup_aspect(ra_core_width, ra_core_height);
+      crt_screen_setup_aspect(
+            p_switch->ra_core_width,
+            p_switch->ra_core_height);
 
-   ra_tmp_height  = ra_core_height;
-   ra_tmp_width   = ra_core_width;
-    crt_tmp_center_adjust = crt_center_adjust;
+   p_switch->ra_tmp_height     = p_switch->ra_core_height;
+   p_switch->ra_tmp_width      = p_switch->ra_core_width;
+   p_switch->tmp_center_adjust = p_switch->center_adjust;
 
    /* Check if aspect is correct, if not change */
-   if (video_driver_get_aspect_ratio() != fly_aspect)
+   if (video_driver_get_aspect_ratio() != p_switch->fly_aspect)
    {
-      video_driver_set_aspect_ratio_value((float)fly_aspect);
+      video_driver_set_aspect_ratio_value((float)p_switch->fly_aspect);
       video_driver_apply_state_changes();
    }
 }
@@ -239,21 +265,22 @@ void crt_video_restore(void)
 int crt_compute_dynamic_width(int width)
 {
    unsigned i;
-   int dynamic_width   = 0;
-   unsigned min_height = 261;
+   int       dynamic_width     = 0;
+   unsigned       min_height   = 261;
+   videocrt_switch_t *p_switch = &crt_switch_st;
 
 #if defined(HAVE_VIDEOCORE)
-   p_clock             = 32000000;
+   p_switch->p_clock           = 32000000;
 #else
-   p_clock             = 21000000;
+   p_switch->p_clock           = 21000000;
 #endif
 
    for (i = 0; i < 10; i++)
    {
-      dynamic_width = width*i;
-      if ((dynamic_width * min_height * ra_core_hz) > p_clock)
+      dynamic_width = width * i;
+      if ((dynamic_width * min_height * p_switch->ra_core_hz) 
+            > p_switch->p_clock)
          break;
-
    }
    return dynamic_width;
 }
@@ -336,10 +363,8 @@ static void crt_rpi_switch(int width, int height, float hz, int xoffset)
    if (height > 300)
       vsp = vfp + 6; /* needs to be 6 for interlaced */
 
-   vsp = 3;
-
-   vbp = (vmax-height)-vsp-vfp;
-
+   vsp  = 3;
+   vbp  = (vmax-height)-vsp-vfp;
    hmax = width+hfp+hsp+hbp;
 
    if (height < 300)
