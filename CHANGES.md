@@ -21,6 +21,7 @@
 - FFMPEG CORE: Fix crash on seeking when using HW decoding in some cases
 - LIBRETRO: Add disk control interface API extension
 - LINUX: Avoid possible crash when running retroarch at startup
+- LINUX/GLX: Fix threaded video crashes/instability because of GLX OML sync callbacks
 - LOCALIZATION: Update French translation
 - LOCALIZATION: Update Korean translation
 - LOCALIZATION: Update Polish translation
@@ -47,6 +48,7 @@
 - ODROID GO ADVANCE: Rotation support
 - NETPLAY/ROOMS/BUGFIX: Prevent out-of-bounds array indexing when displaying/selecting netplay rooms in menus
 - SCANNER: Add 'Arcade DAT Filter' Option
+- SCANNER: Add scanning Korea and Asia PS1 discs
 - VIDEO: Set hardware 'Bilinear filtering' off by default
 - VIDEO/WIDGETS: Widgets are now menu-independent
 - VIDEO/WIDGETS: Allow notifications to use full screen width when not displaying menu
