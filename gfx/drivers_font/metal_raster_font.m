@@ -524,8 +524,9 @@ static void metal_raster_font_render_msg(
       const struct font_params *params)
 {
    MetalRaster *r  = (__bridge MetalRaster *)data;
-   unsigned width  = video_info->width;
-   unsigned height = video_info->height;
+   MetalDriver *md = (__bridge MetalDriver *)r->_driver;
+   unsigned width  = md->_viewport->full_width;
+   unsigned height = md->_viewport->full_height;
    [r renderMessage:msg width:width height:height params:params];
 }
 
