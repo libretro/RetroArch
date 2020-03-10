@@ -307,7 +307,7 @@
          [_frameView updateFrame:frame pitch:pitch];
       }
 
-      [self _drawCore:video_info];
+      [self _drawCore];
       [self _drawMenu:video_info];
 
       id<MTLRenderCommandEncoder> rce = _context.rce;
@@ -416,7 +416,7 @@
    [_context begin];
 }
 
-- (void)_drawCore:(video_frame_info_t *)video_info
+- (void)_drawCore
 {
    id<MTLRenderCommandEncoder> rce = _context.rce;
 
