@@ -845,12 +845,12 @@ static bool gl1_gfx_frame(void *data, const void *frame,
 
       if (osd_params)
       {
-         font_driver_render_msg(gl1, video_info, video_info->stat_text,
+         font_driver_render_msg(gl1, video_info->stat_text,
                (const struct font_params*)&video_info->osd_stat_params, NULL);
 #if 0
          osd_params->y               = 0.350f;
          osd_params->scale           = 0.75f;
-         font_driver_render_msg(gl1, video_info, video_info->chat_text,
+         font_driver_render_msg(gl1, video_info->chat_text,
                (const struct font_params*)&video_info->osd_stat_params, NULL);
 #endif
       }
@@ -868,7 +868,7 @@ static bool gl1_gfx_frame(void *data, const void *frame,
 #endif
 
    if (msg)
-      font_driver_render_msg(gl1, video_info, msg, NULL, NULL);
+      font_driver_render_msg(gl1, msg, NULL, NULL);
 
    video_info->cb_update_window_title(
          video_info->context_data);

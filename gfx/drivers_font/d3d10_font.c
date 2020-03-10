@@ -284,8 +284,9 @@ static void d3d10_font_render_message(
 
 static void d3d10_font_render_msg(
       void *userdata,
-      video_frame_info_t* video_info, void* data,
-      const char* msg, const struct font_params *params)
+      void* data,
+      const char* msg,
+      const struct font_params *params)
 {
    float                     x, y, scale, drop_mod, drop_alpha;
    int                       drop_x, drop_y;

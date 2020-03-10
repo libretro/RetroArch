@@ -1973,7 +1973,7 @@ static bool vulkan_frame(void *data, const void *frame,
       else if (statistics_show)
       {
          if (osd_params)
-            font_driver_render_msg(vk, video_info,
+            font_driver_render_msg(vk,
                   stat_text,
                   &osd_params, NULL);
       }
@@ -1985,7 +1985,7 @@ static bool vulkan_frame(void *data, const void *frame,
 #endif
 
       if (!string_is_empty(msg))
-         font_driver_render_msg(vk, video_info, msg, NULL, NULL);
+         font_driver_render_msg(vk, msg, NULL, NULL);
 
 #ifdef HAVE_GFX_WIDGETS
       if (widgets_inited)

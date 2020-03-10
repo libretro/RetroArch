@@ -1163,7 +1163,6 @@ static void thread_set_texture_enable(void *data, bool state, bool full_screen)
 }
 
 static void thread_set_osd_msg(void *data,
-      video_frame_info_t *video_info,
       const char *msg,
       const void *params, void *font)
 {
@@ -1175,7 +1174,7 @@ static void thread_set_osd_msg(void *data,
    /* TODO : find a way to determine if the calling
     * thread is the driver thread or not. */
    if (thr->poke && thr->poke->set_osd_msg)
-      thr->poke->set_osd_msg(thr->driver_data, video_info, msg, params, font);
+      thr->poke->set_osd_msg(thr->driver_data, msg, params, font);
 }
 
 static uintptr_t thread_load_texture(void *video_data, void *data,

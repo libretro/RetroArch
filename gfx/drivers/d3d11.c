@@ -1556,7 +1556,7 @@ static bool d3d11_gfx_frame(
          D3D11SetBlendState(d3d11->context, d3d11->blend_enable, NULL, D3D11_DEFAULT_SAMPLE_MASK);
          D3D11SetVertexBuffer(context, 0, d3d11->sprites.vbo, sizeof(d3d11_sprite_t), 0);
          font_driver_render_msg(d3d11,
-               video_info, stat_text,
+               stat_text,
                (const struct font_params*)osd_params, NULL);
       }
    }
@@ -1592,7 +1592,7 @@ static bool d3d11_gfx_frame(
       D3D11SetViewports(context, 1, &d3d11->viewport);
       D3D11SetBlendState(d3d11->context, d3d11->blend_enable, NULL, D3D11_DEFAULT_SAMPLE_MASK);
       D3D11SetVertexBuffer(context, 0, d3d11->sprites.vbo, sizeof(d3d11_sprite_t), 0);
-      font_driver_render_msg(d3d11, video_info, msg, NULL, NULL);
+      font_driver_render_msg(d3d11, msg, NULL, NULL);
       dxgi_update_title();
    }
    d3d11->sprites.enabled = false;
@@ -1716,14 +1716,19 @@ static void d3d11_gfx_apply_state_changes(void* data)
 }
 
 static void d3d11_gfx_set_osd_msg(
-      void* data, video_frame_info_t* video_info, const char* msg, const void* params, void* font)
+      void* data,
+      const char* msg,
+      const void* params,
+      void* font)
 {
    d3d11_video_t* d3d11 = (d3d11_video_t*)data;
 
    if (d3d11)
    {
       if (d3d11->sprites.enabled)
-         font_driver_render_msg(d3d11, video_info, msg, (const struct font_params*)params, font);
+         font_driver_render_msg(d3d11,
+               msg,
+               (const struct font_params*)params, font);
       else
          printf("OSD msg: %s\n", msg);
    }

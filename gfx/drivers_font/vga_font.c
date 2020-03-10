@@ -78,7 +78,6 @@ static const struct font_glyph *vga_font_get_glyph(
 
 static void vga_render_msg(
       void *userdata,
-      video_frame_info_t *video_info,
       void *data, const char *msg,
       const struct font_params *params)
 {
@@ -130,6 +129,8 @@ static void vga_render_msg(
       default:
          break;
    }
+
+   /* TODO/FIXME - implement */
 }
 
 font_renderer_t vga_font = {

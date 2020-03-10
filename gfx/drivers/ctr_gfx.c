@@ -868,14 +868,14 @@ static bool ctr_frame(void* data, const void* frame,
    {
       if (osd_params)
       {
-         font_driver_render_msg(ctr, video_info, stat_text,
+         font_driver_render_msg(ctr, stat_text,
                (const struct font_params*)osd_params, NULL);
       }
    }
 #endif
 
    if (msg)
-      font_driver_render_msg(ctr, video_info, msg, NULL, NULL);
+      font_driver_render_msg(ctr, msg, NULL, NULL);
 
    GPU_FinishDrawing();
    GPU_Finalize();
@@ -1189,14 +1189,13 @@ static void ctr_unload_texture(void *data, uintptr_t handle)
 }
 
 static void ctr_set_osd_msg(void *data,
-      video_frame_info_t *video_info,
       const char *msg,
       const void *params, void *font)
 {
    ctr_video_t* ctr = (ctr_video_t*)data;
 
    if (ctr && ctr->msg_rendering_enabled)
-      font_driver_render_msg(data, video_info, msg, params, font);
+      font_driver_render_msg(data, msg, params, font);
 }
 
 static uint32_t ctr_get_flags(void *data)

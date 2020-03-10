@@ -336,8 +336,8 @@ static void vulkan_raster_font_flush(vulkan_raster_t *font)
 
 static void vulkan_raster_font_render_msg(
       void *userdata,
-      video_frame_info_t *video_info,
-      void *data, const char *msg,
+      void *data,
+      const char *msg,
       const struct font_params *params)
 {
    float color[4], color_dark[4];

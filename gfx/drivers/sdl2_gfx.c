@@ -681,13 +681,11 @@ static void sdl2_poke_texture_enable(void *data,
 }
 
 static void sdl2_poke_set_osd_msg(void *data,
-      video_frame_info_t *video_info,
       const char *msg,
       const void *params, void *font)
 {
    sdl2_video_t *vid = (sdl2_video_t*)data;
    sdl2_render_msg(vid, msg);
-   RARCH_LOG("[SDL2]: OSD MSG: %s\n", msg);
 }
 
 static void sdl2_show_mouse(void *data, bool state)

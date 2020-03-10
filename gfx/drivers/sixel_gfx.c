@@ -425,7 +425,7 @@ static bool sixel_gfx_frame(void *data, const void *frame,
    }
 
    if (msg)
-      font_driver_render_msg(sixel, video_info, msg, NULL, NULL);
+      font_driver_render_msg(sixel, msg, NULL, NULL);
 
    return true;
 }

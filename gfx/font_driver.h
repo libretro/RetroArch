@@ -87,7 +87,6 @@ typedef struct font_renderer
          float font_size, bool is_threaded);
    void (*free)(void *data, bool is_threaded);
    void (*render_msg)(void *userdata,
-         video_frame_info_t *video_info,
          void *data, const char *msg,
          const struct font_params *params);
    const char *ident;
@@ -132,7 +131,6 @@ int font_renderer_create_default(
       const char *font_path, unsigned font_size);
 
 void font_driver_render_msg(void *data,
-      video_frame_info_t *video_info,
       const char *msg, const void *params, void *font_data);
 
 void font_driver_bind_block(void *font_data, void *block);

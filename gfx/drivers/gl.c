@@ -3042,7 +3042,7 @@ static bool gl2_frame(void *data, const void *frame,
    else if (statistics_show)
    {
       if (osd_params)
-         font_driver_render_msg(gl, video_info, stat_text,
+         font_driver_render_msg(gl, stat_text,
                (const struct font_params*)osd_params, NULL);
    }
 #endif
@@ -3061,7 +3061,7 @@ static bool gl2_frame(void *data, const void *frame,
    {
       if (msg_bgcolor_enable)
          gl2_render_osd_background(gl, msg);
-      font_driver_render_msg(gl, video_info, msg, NULL, NULL);
+      font_driver_render_msg(gl, msg, NULL, NULL);
    }
 
    if (video_info->cb_update_window_title)

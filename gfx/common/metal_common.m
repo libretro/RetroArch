@@ -332,7 +332,7 @@
          if (osd_params)
          {
             [rce pushDebugGroup:@"video stats"];
-            font_driver_render_msg(data, video_info, video_info->stat_text, osd_params, NULL);
+            font_driver_render_msg(data, video_info->stat_text, osd_params, NULL);
             [rce popDebugGroup];
          }
       }
@@ -349,7 +349,7 @@
       if (msg && *msg)
       {
          [rce pushDebugGroup:@"message"];
-         [self _renderMessage:msg info:video_info];
+         [self _renderMessage:msg data:data];
          [rce popDebugGroup];
       }
 
@@ -360,7 +360,7 @@
 }
 
 - (void)_renderMessage:(const char *)msg
-                  info:(video_frame_info_t *)video_info
+                  data:(void*)data
 {
    settings_t *settings     = config_get_ptr();
    bool msg_bgcolor_enable  = settings->bools.video_msg_bgcolor_enable;
@@ -402,7 +402,7 @@
       [_context drawQuadX:x y:y w:width h:height r:r g:g b:b a:a];
    }
 
-   font_driver_render_msg(NULL, video_info, msg, NULL, NULL);
+   font_driver_render_msg(data, msg, NULL, NULL);
 }
 
 - (void)_beginFrame

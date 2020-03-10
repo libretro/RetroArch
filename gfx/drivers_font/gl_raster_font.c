@@ -414,8 +414,8 @@ static void gl_raster_font_setup_viewport(unsigned width, unsigned height,
 
 static void gl_raster_font_render_msg(
       void *userdata,
-      video_frame_info_t *video_info,
-      void *data, const char *msg,
+      void *data,
+      const char *msg,
       const struct font_params *params)
 {
    GLfloat color[4];

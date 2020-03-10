@@ -78,7 +78,6 @@ static const struct font_glyph *caca_font_get_glyph(
 
 static void caca_render_msg(
       void *userdata,
-      video_frame_info_t *video_info,
       void *data, const char *msg,
       const struct font_params *params)
 {

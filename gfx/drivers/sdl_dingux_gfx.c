@@ -166,7 +166,6 @@ static bool sdl_dingux_gfx_frame(void *data, const void *frame, unsigned width,
         unsigned height, uint64_t frame_count,
         unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
-//    printf("sdl_gfx_frame width %d height %d pitch %d frame_count %lu\n", width, height, pitch, frame_count); 
     sdl_dingux_video_t* vid = (sdl_dingux_video_t*)data;
 
     if (unlikely(!frame))

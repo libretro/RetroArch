@@ -1031,7 +1031,6 @@ end:
 
 void font_driver_render_msg(
       void *data,
-      video_frame_info_t *video_info,
       const char *msg,
       const void *_params,
       void *font_data)
@@ -1049,7 +1048,6 @@ void font_driver_render_msg(
 #endif
 
       font->renderer->render_msg(data,
-            video_info,
             font->renderer_data, new_msg, params);
 #ifdef HAVE_LANGEXTRA
       free(new_msg);

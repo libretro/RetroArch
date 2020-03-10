@@ -351,12 +351,12 @@ static bool ps2_gfx_frame(void *data, const void *frame,
          &video_info->osd_stat_params;
 
       if (osd_params)
-         font_driver_render_msg(ps2, video_info, video_info->stat_text,
+         font_driver_render_msg(ps2, video_info->stat_text,
                (const struct font_params*)&video_info->osd_stat_params, NULL);
    }
 
    if(!string_is_empty(msg))
-      font_driver_render_msg(ps2, video_info, msg, NULL, NULL);
+      font_driver_render_msg(ps2, msg, NULL, NULL);
 
    refreshScreen(ps2);
 

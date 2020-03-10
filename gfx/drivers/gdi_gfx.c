@@ -345,7 +345,7 @@ static bool gdi_gfx_frame(void *data, const void *frame,
    free(info);
 
    if (msg)
-      font_driver_render_msg(gdi, video_info, msg, NULL, NULL);
+      font_driver_render_msg(gdi, msg, NULL, NULL);
 
    InvalidateRect(hwnd, NULL, false);
 

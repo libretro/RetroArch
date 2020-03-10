@@ -1525,7 +1525,7 @@ static bool d3d12_gfx_frame(
             D3D12RSSetViewports(d3d12->queue.cmd, 1, &d3d12->chain.viewport);
             D3D12RSSetScissorRects(d3d12->queue.cmd, 1, &d3d12->chain.scissorRect);
             D3D12IASetVertexBuffers(d3d12->queue.cmd, 0, 1, &d3d12->sprites.vbo_view);
-            font_driver_render_msg(d3d12, video_info, stat_text,
+            font_driver_render_msg(d3d12, stat_text,
                   (const struct font_params*)osd_params, NULL);
          }
       }
@@ -1577,7 +1577,7 @@ static bool d3d12_gfx_frame(
       D3D12RSSetScissorRects(d3d12->queue.cmd, 1, &d3d12->chain.scissorRect);
       D3D12IASetVertexBuffers(d3d12->queue.cmd, 0, 1, &d3d12->sprites.vbo_view);
 
-      font_driver_render_msg(d3d12, video_info, msg, NULL, NULL);
+      font_driver_render_msg(d3d12, msg, NULL, NULL);
       dxgi_update_title();
    }
    d3d12->sprites.enabled = false;
@@ -1729,15 +1729,17 @@ static void d3d12_gfx_apply_state_changes(void* data)
 }
 
 static void d3d12_gfx_set_osd_msg(
-      void* data, video_frame_info_t* video_info,
-      const char* msg, const void* params, void* font)
+      void* data,
+      const char* msg,
+      const void* params,
+      void* font)
 {
    d3d12_video_t* d3d12 = (d3d12_video_t*)data;
 
    if (!d3d12 || !d3d12->sprites.enabled)
       return;
 
-   font_driver_render_msg(d3d12, video_info, msg,
+   font_driver_render_msg(d3d12, msg,
          (const struct font_params*)params, font);
 }
 

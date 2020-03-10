@@ -258,7 +258,7 @@ static bool vita2d_gfx_frame(void *data, const void *frame,
          &video_info->osd_stat_params;
 
       if (osd_params)
-         font_driver_render_msg(vita, video_info, video_info->stat_text,
+         font_driver_render_msg(vita, video_info->stat_text,
                (const struct font_params*)&video_info->osd_stat_params, NULL);
    }
 
@@ -272,7 +272,7 @@ static bool vita2d_gfx_frame(void *data, const void *frame,
 #endif
 
    if(!string_is_empty(msg))
-      font_driver_render_msg(vita, video_info, msg, NULL, NULL);
+      font_driver_render_msg(vita, msg, NULL, NULL);
 
    vita2d_end_drawing();
    vita2d_swap_buffers();

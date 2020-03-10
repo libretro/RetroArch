@@ -145,7 +145,7 @@ static bool caca_gfx_frame(void *data, const void *frame,
 #endif
 
    if (msg)
-      font_driver_render_msg(data, video_info, msg, NULL, NULL);
+      font_driver_render_msg(data, msg, NULL, NULL);
 
    if (draw)
    {

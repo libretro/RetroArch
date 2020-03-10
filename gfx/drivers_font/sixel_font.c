@@ -77,8 +77,8 @@ static const struct font_glyph *sixel_font_get_glyph(
 
 static void sixel_render_msg(
       void *userdata,
-      video_frame_info_t *video_info,
-      void *data, const char *msg,
+      void *data,
+      const char *msg,
       const struct font_params *_params)
 {
    float x, y, scale;

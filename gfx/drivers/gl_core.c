@@ -1916,7 +1916,7 @@ static bool gl_core_frame(void *data, const void *frame,
          &video_info->osd_stat_params;
 
       if (osd_params)
-         font_driver_render_msg(gl, video_info, video_info->stat_text,
+         font_driver_render_msg(gl, video_info->stat_text,
                (const struct font_params*)&video_info->osd_stat_params, NULL);
    }
 #endif
@@ -1937,7 +1937,7 @@ static bool gl_core_frame(void *data, const void *frame,
       if (video_info->msg_bgcolor_enable)
          gl_core_render_osd_background(gl, video_info, msg);
 #endif
-      font_driver_render_msg(gl, video_info, msg, NULL, NULL);
+      font_driver_render_msg(gl, msg, NULL, NULL);
    }
 
    video_info->cb_update_window_title(

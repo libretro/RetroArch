@@ -132,8 +132,8 @@ static void ps2_font_free_font(void *data, bool is_threaded)
 
 static void ps2_font_render_msg(
       void *userdata,
-      video_frame_info_t *video_info,
-      void *data, const char *msg,
+      void *data,
+      const char *msg,
       const struct font_params *params)
 {
    ps2_font_info_t *ps2 = (ps2_font_info_t *)data;
