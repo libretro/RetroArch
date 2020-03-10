@@ -5994,7 +5994,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_THREADED_DATA_RUNLOOP_ENABLE,                          PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_PAUSE_NONACTIVE,                                       PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_VIDEO_DISABLE_COMPOSITION,                             PARSE_ONLY_BOOL,   true},
-               {MENU_ENUM_LABEL_MENU_SCROLL_PSP_STYLE,                                 PARSE_ONLY_BOOL,   true},
+               {MENU_ENUM_LABEL_MENU_SCROLL_FAST,                                      PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_UI_COMPANION_ENABLE,                                   PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_UI_COMPANION_START_ON_BOOT,                            PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_UI_MENUBAR_ENABLE,                                     PARSE_ONLY_BOOL,   true},

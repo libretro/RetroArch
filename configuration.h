@@ -176,7 +176,7 @@ typedef struct settings
       bool menu_throttle_framerate;
       bool menu_linear_filter;
       bool menu_horizontal_animation;
-      bool menu_scroll_psp_style;
+      bool menu_scroll_fast;
       bool menu_show_online_updater;
       bool menu_show_core_updater;
       bool menu_show_load_core;

@@ -15214,12 +15214,12 @@ static bool setting_append_list(
 
          CONFIG_BOOL(
                list, list_info,
-               &settings->bools.menu_scroll_psp_style,
-               MENU_ENUM_LABEL_MENU_SCROLL_PSP_STYLE,
-               MENU_ENUM_LABEL_VALUE_MENU_SCROLL_PSP_STYLE,
-               menu_scroll_psp_style,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
+               &settings->bools.menu_scroll_fast,
+               MENU_ENUM_LABEL_MENU_SCROLL_FAST,
+               MENU_ENUM_LABEL_VALUE_MENU_SCROLL_FAST,
+               menu_scroll_fast,
+               MENU_ENUM_LABEL_VALUE_SCROLL_NORMAL,
+               MENU_ENUM_LABEL_VALUE_SCROLL_FAST,
                &group_info,
                &subgroup_info,
                parent_group,

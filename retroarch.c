@@ -16510,7 +16510,7 @@ static unsigned menu_event(
    bool menu_mouse_enable                          = settings->bools.menu_mouse_enable;
    bool menu_pointer_enable                        = settings->bools.menu_pointer_enable;
    bool swap_ok_cancel_btns                        = settings->bools.input_menu_swap_ok_cancel_buttons;
-   bool scroll_psp_style                           = settings->bools.menu_scroll_psp_style;
+   bool menu_scroll_fast                           = settings->bools.menu_scroll_fast;
    bool input_swap_override                        = input_autoconfigure_get_swap_override();
    unsigned menu_ok_btn                            =
          (!input_swap_override && swap_ok_cancel_btns) ?
@@ -16540,10 +16540,10 @@ static unsigned menu_event(
           * for old_input_state. */
 
          first_held  = true;
-         if (scroll_psp_style)
-            delay_timer = initial_held ? 400 : 20;
-         else
+         if (menu_scroll_fast)
             delay_timer = initial_held ? 200 : 100;
+         else
+            delay_timer = initial_held ? 400 : 20;
          delay_count = 0;
       }
 
@@ -16564,10 +16564,10 @@ static unsigned menu_event(
          menu_driver_ctl(MENU_NAVIGATION_CTL_GET_SCROLL_ACCEL,
                &new_scroll_accel);
 
-         if (scroll_psp_style)
-            new_scroll_accel = MIN(new_scroll_accel + 1, 5);
-         else
+         if (menu_scroll_fast)
             new_scroll_accel = MIN(new_scroll_accel + 1, 64);
+         else
+            new_scroll_accel = MIN(new_scroll_accel + 1, 5);
       }
 
       initial_held  = false;
