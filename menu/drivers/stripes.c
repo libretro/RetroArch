@@ -560,7 +560,10 @@ static INLINE float stripes_item_y(const stripes_handle_t *stripes, int i, size_
 }
 
 static void stripes_draw_icon(
-      video_frame_info_t *video_info,
+      void *userdata,
+      unsigned video_width,
+      unsigned video_height,
+      bool xmb_shadows_enable,
       int icon_size,
       math_matrix_4x4 *mymat,
       uintptr_t texture,
@@ -576,10 +579,6 @@ static void stripes_draw_icon(
 {
    gfx_display_ctx_draw_t draw;
    struct video_coords coords;
-   bool xmb_shadows_enable = video_info->xmb_shadows_enable;
-   void *userdata          = video_info->userdata;
-   unsigned video_width    = video_info->width;
-   unsigned video_height   = video_info->height;
 
    if (
          (x < (-icon_size / 2.0f)) ||
@@ -643,7 +642,7 @@ static void stripes_draw_icon(
 }
 
 static void stripes_draw_text(
-      video_frame_info_t *video_info,
+      bool xmb_shadows_enable,
       stripes_handle_t *stripes,
       const char *str, float x,
       float y, float scale_factor, float alpha,
@@ -653,7 +652,6 @@ static void stripes_draw_text(
    uint32_t color;
    uint8_t a8;
    settings_t *settings;
-   bool xmb_shadows_enable = video_info->xmb_shadows_enable;
 
    if (alpha > stripes->alpha)
       alpha = stripes->alpha;
@@ -688,14 +686,13 @@ static void stripes_messagebox(void *data, const char *message)
 
 static void stripes_render_keyboard(
       stripes_handle_t *stripes,
-      video_frame_info_t *video_info,
+      void *userdata,
+      unsigned video_width,
+      unsigned video_height,
       char **grid, unsigned id)
 {
    unsigned i;
    int ptr_width, ptr_height;
-   void *userdata    = video_info->userdata;
-   unsigned video_width    = video_info->width;
-   unsigned video_height   = video_info->height;
    float dark[16]    =  {
       0.00, 0.00, 0.00, 0.85,
       0.00, 0.00, 0.00, 0.85,
@@ -801,15 +798,15 @@ static int stripes_osk_ptr_at_pos(
 }
 
 static void stripes_render_messagebox_internal(
-      video_frame_info_t *video_info,
-      stripes_handle_t *stripes, const char *message)
+      stripes_handle_t *stripes,
+      void *userdata,
+      unsigned video_width,
+      unsigned video_height,
+      const char *message)
 {
    unsigned i, y_position;
    int x, y, longest = 0, longest_width = 0;
    float line_height        = 0;
-   void *userdata           = video_info->userdata;
-   unsigned video_width     = video_info->width;
-   unsigned video_height    = video_info->height;
    struct string_list *list = !string_is_empty(message)
       ? string_split(message, "\n") : NULL;
 
@@ -880,7 +877,9 @@ static void stripes_render_messagebox_internal(
 
    if (menu_input_dialog_get_display_kb())
       stripes_render_keyboard(stripes,
-            video_info,
+            userdata,
+            video_width,
+            video_height,
             input_event_get_osk_grid(),
             input_event_get_osk_ptr());
 
@@ -2353,7 +2352,10 @@ static void stripes_calculate_visible_range(const stripes_handle_t *stripes,
 }
 
 static int stripes_draw_item(
-      video_frame_info_t *video_info,
+      void *userdata,
+      unsigned video_width,
+      unsigned video_height,
+      bool xmb_shadows_enable,
       menu_entry_t *entry,
       math_matrix_4x4 *mymat,
       stripes_handle_t *stripes,
@@ -2380,9 +2382,6 @@ static int stripes_draw_item(
    stripes_node_t *   node               = (stripes_node_t*)
       file_list_get_userdata_at_offset(list, i);
    settings_t *settings              = config_get_ptr();
-   void *userdata                    = video_info->userdata;
-   unsigned video_width              = video_info->width;
-   unsigned video_height             = video_info->height;
 
    /* Initial ticker configuration */
    ticker.type_enum = settings->uints.menu_ticker_type;
@@ -2512,7 +2511,7 @@ static int stripes_draw_item(
 
       word_wrap(entry_sublabel, entry->sublabel, 50 * stripes_scale_mod[3], true, 0);
 
-      stripes_draw_text(video_info, stripes, entry_sublabel,
+      stripes_draw_text(xmb_shadows_enable, stripes, entry_sublabel,
             node->x + stripes->margins_screen_left +
             stripes->icon_spacing_horizontal + stripes->margins_label_left,
             stripes->margins_screen_top + node->y + stripes->margins_label_top*3.5,
@@ -2520,7 +2519,7 @@ static int stripes_draw_item(
             width, height, stripes->font2);
    }
 
-   stripes_draw_text(video_info, stripes, tmp,
+   stripes_draw_text(xmb_shadows_enable, stripes, tmp,
          node->x + stripes->margins_screen_left +
          stripes->icon_spacing_horizontal + stripes->margins_label_left,
          stripes->margins_screen_top + node->y + label_offset,
@@ -2541,7 +2540,7 @@ static int stripes_draw_item(
    }
 
    if (do_draw_text)
-      stripes_draw_text(video_info, stripes, tmp,
+      stripes_draw_text(xmb_shadows_enable, stripes, tmp,
             node->x +
             + stripes->margins_screen_left
             + stripes->icon_spacing_horizontal
@@ -2575,7 +2574,11 @@ static int stripes_draw_item(
 
       gfx_display_rotate_z(&rotate_draw, userdata);
 
-      stripes_draw_icon(video_info,
+      stripes_draw_icon(
+            userdata,
+            video_width,
+            video_height,
+            xmb_shadows_enable,
             stripes->icon_size,
             &mymat_tmp,
             texture,
@@ -2593,7 +2596,11 @@ static int stripes_draw_item(
    gfx_display_set_alpha(color, MIN(node->alpha, stripes->alpha));
 
    if (texture_switch != 0 && color[3] != 0)
-      stripes_draw_icon(video_info,
+      stripes_draw_icon(
+            userdata,
+            video_width,
+            video_height,
+            xmb_shadows_enable,
             stripes->icon_size,
             mymat,
             texture_switch,
@@ -2616,7 +2623,10 @@ end:
 }
 
 static void stripes_draw_items(
-      video_frame_info_t *video_info,
+      void *userdata,
+      unsigned video_width,
+      unsigned video_height,
+      bool xmb_shadows_enable,
       stripes_handle_t *stripes,
       file_list_t *list,
       size_t current, size_t cat_selection_ptr, float *color,
@@ -2626,11 +2636,10 @@ static void stripes_draw_items(
    unsigned first, last;
    math_matrix_4x4 mymat;
    gfx_display_ctx_rotate_draw_t rotate_draw;
-   stripes_node_t *core_node       = NULL;
-   size_t end                  = 0;
-   const char *thumb_ident     = stripes_thumbnails_ident('R');
-   const char *left_thumb_ident= stripes_thumbnails_ident('L');
-   void *userdata              = video_info->userdata;
+   stripes_node_t *core_node    = NULL;
+   size_t end                   = 0;
+   const char *thumb_ident      = stripes_thumbnails_ident('R');
+   const char *left_thumb_ident = stripes_thumbnails_ident('L');
 
    if (!list || !list->size || !stripes)
       return;
@@ -2676,7 +2685,11 @@ static void stripes_draw_items(
       menu_entry_t entry;
       menu_entry_init(&entry);
       menu_entry_get(&entry, 0, i, list, true);
-      ret = stripes_draw_item(video_info,
+      ret = stripes_draw_item(
+            userdata,
+            video_width,
+            video_height,
+            xmb_shadows_enable,
             &entry,
             &mymat,
             stripes, core_node,
@@ -2751,16 +2764,15 @@ static bool stripes_shader_pipeline_active(unsigned menu_shader_pipeline)
 
 static void stripes_draw_bg(
       stripes_handle_t *stripes,
-      video_frame_info_t *video_info,
+      void *userdata,
+      unsigned video_width,
+      unsigned video_height,
       unsigned width,
       unsigned height)
 {
    gfx_display_ctx_draw_t draw;
    struct video_coords coords;
    float rgb[3];
-   void *userdata        = video_info->userdata; 
-   unsigned video_width  = video_info->width;
-   unsigned video_height = video_info->height;
    HSLToRGB(0.0,0.5,0.5, &rgb[0]);
    float color[16] = {
       rgb[0], rgb[1], rgb[2], 1,
@@ -2793,7 +2805,9 @@ static void stripes_draw_bg(
 
 static void stripes_draw_dark_layer(
       stripes_handle_t *stripes,
-      video_frame_info_t *video_info,
+      void *userdata,
+      unsigned video_width,
+      unsigned video_height,
       unsigned width,
       unsigned height)
 {
@@ -2805,9 +2819,6 @@ static void stripes_draw_dark_layer(
       0, 0, 0, 1,
       0, 0, 0, 1,
    };
-   void *userdata        = video_info->userdata; 
-   unsigned video_width  = video_info->width;
-   unsigned video_height = video_info->height;
 
    gfx_display_set_alpha(black, MIN(stripes->alpha, 0.75));
 
@@ -2850,6 +2861,7 @@ static void stripes_frame(void *data, video_frame_info_t *video_info)
    unsigned video_width                    = video_info->width;
    unsigned video_height                   = video_info->height;
    float xmb_alpha_factor                  = video_info->xmb_alpha_factor;
+   bool xmb_shadows_enable                 = video_info->xmb_shadows_enable;
    bool video_fullscreen                   = video_info->fullscreen;
    bool menu_mouse_enable                  = video_info->menu_mouse_enable;
    const float under_thumb_margin          = 0.96;
@@ -2881,7 +2893,9 @@ static void stripes_frame(void *data, video_frame_info_t *video_info)
 
    stripes_draw_bg(
          stripes,
-         video_info,
+         userdata,
+         video_width,
+         video_height,
          video_width,
          video_height);
 
@@ -2968,7 +2982,11 @@ static void stripes_frame(void *data, video_frame_info_t *video_info)
 
          gfx_display_rotate_z(&rotate_draw, userdata);
 
-         stripes_draw_icon(video_info,
+         stripes_draw_icon(
+               userdata,
+               video_width,
+               video_height,
+               xmb_shadows_enable,
                stripes->icon_size,
                &mymat,
                texture,
@@ -2992,7 +3010,10 @@ static void stripes_frame(void *data, video_frame_info_t *video_info)
 #if 0
    if (stripes)
       stripes_draw_items(
-            video_info,
+            userdata,
+            video_width,
+            video_height,
+            xmb_shadows_enable,
             stripes,
             stripes->selection_buf_old,
             stripes->selection_ptr_old,
@@ -3007,7 +3028,10 @@ static void stripes_frame(void *data, video_frame_info_t *video_info)
 
    if (stripes)
       stripes_draw_items(
-            video_info,
+            userdata,
+            video_width,
+            video_height,
+            xmb_shadows_enable,
             stripes,
             selection_buf,
             selection,
@@ -3043,9 +3067,18 @@ static void stripes_frame(void *data, video_frame_info_t *video_info)
 
    if (render_background)
    {
-      stripes_draw_dark_layer(stripes, video_info, video_width, video_height);
+      stripes_draw_dark_layer(stripes,
+            userdata,
+            video_width,
+            video_height,
+            video_width,
+            video_height);
       stripes_render_messagebox_internal(
-            video_info, stripes, msg);
+            stripes,
+            userdata,
+            video_width,
+            video_height,
+            msg);
    }
 
    /* Cursor image */
