@@ -56,6 +56,7 @@
 - VIDEO/WIDGETS: Fix volume widget scaling
 - VIDEO/WIDGETS: Add independent widget scale override settings for fullscreen/windowed modes
 - VIDEO/WIDGETS/BUGFIX: Prevent improper display of (old style) OSD text when widgets are enabled
+- VIDEO/WIDGETS/THREADED/BUGFIX: Fix issue - corruption of menu widgets when running some cores (e.g. VICE) with threaded video enabled
 - WIFI/CONNMANCTL: Display more characters from SSID
 
 # 1.8.4
