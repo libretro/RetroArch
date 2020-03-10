@@ -102,7 +102,7 @@ static void init_ps2_video(ps2_video_t *ps2)
    ps2->iface.coreTexture       = ps2->coreTexture;
 }
 
-static void deinit_texture(GSTEXTURE *texture)
+static void ps2_gfx_deinit_texture(GSTEXTURE *texture)
 {
    texture->Mem  = NULL;
    texture->Clut = NULL;
@@ -386,8 +386,8 @@ static void ps2_gfx_free(void *data)
 
    font_driver_free_osd();
 
-   deinit_texture(ps2->menuTexture);
-   deinit_texture(ps2->coreTexture);
+   ps2_gfx_deinit_texture(ps2->menuTexture);
+   ps2_gfx_deinit_texture(ps2->coreTexture);
 
    free(ps2->menuTexture);
    free(ps2->coreTexture);
