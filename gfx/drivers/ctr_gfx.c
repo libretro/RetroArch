@@ -144,7 +144,11 @@ static INLINE void ctr_set_screen_coords(ctr_video_t * ctr)
 static void ctr_update_viewport(
       ctr_video_t* ctr,
       settings_t *settings,
-      video_frame_info_t *video_info)
+      int custom_vp_x,
+      int custom_vp_y,
+      unsigned custom_vp_width,
+      unsigned custom_vp_height
+      )
 {
    int x                     = 0;
    int y                     = 0;
@@ -167,10 +171,10 @@ static void ctr_update_viewport(
 #if defined(HAVE_MENU)
       if (aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
       {
-         x      = video_info->custom_vp_x;
-         y      = video_info->custom_vp_y;
-         width  = video_info->custom_vp_width;
-         height = video_info->custom_vp_height;
+         x      = custom_vp_x;
+         y      = custom_vp_y;
+         width  = custom_vp_width;
+         height = custom_vp_height;
       }
       else
 #endif
@@ -538,6 +542,10 @@ static bool ctr_frame(void* data, const void* frame,
    float video_refresh_rate       = video_info->refresh_rate;
    struct font_params *osd_params = (struct font_params*)
       &video_info->osd_stat_params;
+   int custom_vp_x                = video_info->custom_vp_x;
+   int custom_vp_y                = video_info->custom_vp_y;
+   unsigned custom_vp_width       = video_info->custom_vp_width;
+   unsigned custom_vp_height      = video_info->custom_vp_height;
 
 
    if (!width || !height || !settings)
@@ -702,7 +710,12 @@ static bool ctr_frame(void* data, const void* frame,
    }
 
    if (ctr->should_resize)
-      ctr_update_viewport(ctr, settings, video_info);
+      ctr_update_viewport(ctr, settings,
+            custom_vp_x,
+            custom_vp_y,
+            custom_vp_width,
+            custom_vp_height
+            );
 
    ctrGuSetMemoryFill(true, (u32*)ctr->drawbuffers.top.left, 0x00000000,
                     (u32*)ctr->drawbuffers.top.left + 2 * CTR_TOP_FRAMEBUFFER_WIDTH * CTR_TOP_FRAMEBUFFER_HEIGHT,

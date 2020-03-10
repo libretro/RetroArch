@@ -92,11 +92,11 @@ static const GLfloat gl1_white_color[] = {
       gl1->ctx_driver->bind_hw_render(gl1->ctx_data, enable)
 
 #ifdef HAVE_OVERLAY
-static void gl1_render_overlay(gl1_t *gl, video_frame_info_t *video_info)
+static void gl1_render_overlay(gl1_t *gl,
+      unsigned width,
+      unsigned height)
 {
    unsigned i;
-   unsigned width                      = video_info->width;
-   unsigned height                     = video_info->height;
 
    glEnable(GL_BLEND);
 
@@ -864,7 +864,7 @@ static bool gl1_gfx_frame(void *data, const void *frame,
 
 #ifdef HAVE_OVERLAY
    if (gl1->overlay_enable)
-      gl1_render_overlay(gl1, video_info);
+      gl1_render_overlay(gl1, video_width, video_height);
 #endif
 
    if (msg)

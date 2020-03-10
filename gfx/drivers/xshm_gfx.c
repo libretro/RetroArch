@@ -169,7 +169,6 @@ static void xshm_poke_texture_enable(void *data,
 }
 
 static void xshm_poke_set_osd_msg(void *data,
-      video_frame_info_t *video_info,
       const char *msg,
       const void *params, void *font)
 {
