@@ -7142,6 +7142,22 @@ MSG_HASH(
     "Afficher/masquer l'ancienne méthode procédant par téléchargement de packs de miniatures par systèmes entiers."
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_SCROLL_FAST,
+    "Accélération au défilement du menu"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_SCROLL_FAST,
+    "Vitesse maximale de déplacement du curseur lors d'un défilement prolongé."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SCROLL_NORMAL,
+    "Normale"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SCROLL_FAST,
+    "Rapide"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_VIEWS_SETTINGS,
     "Vues"
     )
