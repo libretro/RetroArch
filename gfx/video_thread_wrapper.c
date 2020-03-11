@@ -1216,7 +1216,7 @@ static void thread_apply_state_changes(void *data)
 static struct video_shader *thread_get_current_shader(void *data)
 {
    thread_video_t *thr = (thread_video_t*)data;
-   if (!thr || !thr->poke)
+   if (!thr || !thr->poke || !thr->poke->get_current_shader)
       return NULL;
    return thr->poke->get_current_shader(thr->driver_data);
 }

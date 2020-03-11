@@ -115,9 +115,14 @@ typedef struct gfx_widget gfx_widget_t;
 
 extern const gfx_widget_t gfx_widget_screenshot;
 
-bool gfx_widgets_init(bool video_is_threaded, bool fullscreen);
+bool gfx_widgets_active(void);
+void gfx_widgets_set_persistence(bool persist);
 
-void gfx_widgets_free(void);
+bool gfx_widgets_init(
+      bool video_is_threaded,
+      unsigned width, unsigned height, bool fullscreen,
+      const char *dir_assets, char *font_path);
+void gfx_widgets_deinit(void);
 
 void gfx_widgets_msg_queue_push(
       retro_task_t *task, const char *msg,
@@ -154,10 +159,6 @@ void gfx_widgets_start_load_content_animation(
       const char *content_name, bool remove_extension);
 
 void gfx_widgets_cleanup_load_content_animation(void);
-
-void gfx_widgets_context_reset(bool is_threaded,
-      unsigned width, unsigned height, bool fullscreen,
-      const char *dir_assets, char *font_path);
 
 void gfx_widgets_push_achievement(const char *title, const char *badge);
 

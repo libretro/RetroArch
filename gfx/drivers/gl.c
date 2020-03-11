@@ -2813,7 +2813,6 @@ static bool gl2_frame(void *data, const void *frame,
    unsigned height                     = gl->video_height;
    bool use_rgba                       = video_info->use_rgba;
    bool statistics_show                = video_info->statistics_show;
-   bool widgets_inited                 = video_info->widgets_inited;
    bool msg_bgcolor_enable             = video_info->msg_bgcolor_enable;
    bool black_frame_insertion          = video_info->black_frame_insertion;
    bool input_driver_nonblock_state    = video_info->input_driver_nonblock_state; 
@@ -3051,8 +3050,7 @@ static bool gl2_frame(void *data, const void *frame,
 #endif
 
 #ifdef HAVE_GFX_WIDGETS
-   if (widgets_inited)
-      gfx_widgets_frame(video_info);
+   gfx_widgets_frame(video_info);
 #endif
 
    if (!string_is_empty(msg))

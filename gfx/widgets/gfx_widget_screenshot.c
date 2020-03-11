@@ -106,7 +106,12 @@ static void gfx_widgets_play_screenshot_flash(void)
 
 void gfx_widgets_screenshot_taken(const char *shotname, const char *filename)
 {
-   gfx_widget_screenshot_state_t* state = gfx_widget_screenshot_get_ptr();
+   gfx_widget_screenshot_state_t* state = NULL;
+
+   if (!gfx_widgets_active())
+      return;
+
+   state = gfx_widget_screenshot_get_ptr();
    gfx_widgets_play_screenshot_flash();
    strlcpy(state->filename, filename, sizeof(state->filename));
    strlcpy(state->shotname, shotname, sizeof(state->shotname));

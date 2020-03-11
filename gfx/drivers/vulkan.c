@@ -1677,7 +1677,6 @@ static bool vulkan_frame(void *data, const void *frame,
    void *context_data                            = video_info->context_data;
    bool statistics_show                          = video_info->statistics_show;
    const char *stat_text                         = video_info->stat_text;
-   bool widgets_inited                           = video_info->widgets_inited;
    bool black_frame_insertion                    = video_info->black_frame_insertion;
    bool input_driver_nonblock_state              = video_info->input_driver_nonblock_state;
    bool runloop_is_slowmotion                    = video_info->runloop_is_slowmotion;
@@ -1988,8 +1987,7 @@ static bool vulkan_frame(void *data, const void *frame,
          font_driver_render_msg(vk, msg, NULL, NULL);
 
 #ifdef HAVE_GFX_WIDGETS
-      if (widgets_inited)
-         gfx_widgets_frame(video_info);
+      gfx_widgets_frame(video_info);
 #endif
 
       /* End the render pass. We're done rendering to backbuffer now. */

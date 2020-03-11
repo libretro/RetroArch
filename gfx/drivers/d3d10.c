@@ -1206,7 +1206,6 @@ static bool d3d10_gfx_frame(
    D3D10Device       context  = d3d10->device;
    unsigned video_width       = video_info->width;
    unsigned video_height      = video_info->height;
-   bool widgets_inited        = video_info->widgets_inited;
    bool statistics_show       = video_info->statistics_show;
    struct font_params 
       *osd_params             = (struct font_params*)
@@ -1510,8 +1509,7 @@ static bool d3d10_gfx_frame(
 #endif
 
 #ifdef HAVE_GFX_WIDGETS
-   if (widgets_inited)
-      gfx_widgets_frame(video_info);
+   gfx_widgets_frame(video_info);
 #endif
 
    if (msg && *msg)

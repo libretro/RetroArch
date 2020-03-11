@@ -295,7 +295,7 @@
    {
       bool statistics_show = video_info->statistics_show;
 #ifdef HAVE_GFX_WIDGETS
-      bool widgets_inited  = video_info->widgets_inited;
+      bool widgets_active  = gfx_widgets_active();
 #endif
 
       [self _beginFrame];
@@ -338,7 +338,7 @@
       }
 
 #ifdef HAVE_GFX_WIDGETS
-      if (widgets_inited)
+      if (widgets_active)
       {
          [rce pushDebugGroup:@"menu widgets"];
          gfx_widgets_frame(video_info);

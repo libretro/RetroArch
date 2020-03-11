@@ -1348,8 +1348,7 @@ static bool wiiu_gfx_frame(void *data, const void *frame,
    }
 
 #ifdef HAVE_GFX_WIDGETS
-   if (video_info->widgets_inited)
-      gfx_widgets_frame(video_info);
+   gfx_widgets_frame(video_info);
 #endif
 
    if (msg)

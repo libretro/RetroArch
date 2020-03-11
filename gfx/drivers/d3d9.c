@@ -1528,7 +1528,6 @@ static bool d3d9_frame(void *data, const void *frame,
    unsigned width                      = video_info->width;
    unsigned height                     = video_info->height;
    bool statistics_show                = video_info->statistics_show;
-   bool widgets_inited                 = video_info->widgets_inited;
    bool black_frame_insertion          = video_info->black_frame_insertion;
    struct font_params *osd_params      = (struct font_params*)
       &video_info->osd_stat_params;
@@ -1628,8 +1627,7 @@ static bool d3d9_frame(void *data, const void *frame,
 #endif
 
 #ifdef HAVE_GFX_WIDGETS
-   if (widgets_inited)
-      gfx_widgets_frame(video_info);
+   gfx_widgets_frame(video_info);
 #endif
 
    if (msg && *msg)

@@ -2636,9 +2636,6 @@ bool is_accessibility_enabled(void)
 #endif
 
 #ifdef HAVE_GFX_WIDGETS
-static bool gfx_widgets_inited                 = false;
-gfx_animation_ctx_tag gfx_widgets_generic_tag = (uintptr_t) &gfx_widgets_inited;
-
 /* Status icons */
 static bool gfx_widgets_paused              = false;
 static bool gfx_widgets_fast_forward        = false;
@@ -2648,7 +2645,7 @@ static bool gfx_widgets_rewinding           = false;
 bool gfx_widgets_ready(void)
 {
 #ifdef HAVE_GFX_WIDGETS
-   return gfx_widgets_inited;
+   return gfx_widgets_active();
 #else
    return false;
 #endif
@@ -5557,7 +5554,7 @@ bool retroarch_apply_shader(enum rarch_shader_type type, const char *preset_path
                preset_file ? "Shader: \"%s\"" : "Shader: %s",
                preset_file ? preset_file : "None");
 #ifdef HAVE_GFX_WIDGETS
-         if (gfx_widgets_inited)
+         if (gfx_widgets_active())
             gfx_widgets_set_message(msg);
          else
 #endif
@@ -6996,7 +6993,7 @@ static void command_event_set_volume(float gain)
          new_volume);
 
 #if defined(HAVE_GFX_WIDGETS)
-   if (gfx_widgets_inited)
+   if (gfx_widgets_active())
       gfx_widgets_volume_update_and_show(new_volume, audio_driver_mute_enable);
    else
 #endif
@@ -7992,7 +7989,7 @@ static void retroarch_pause_checks(void)
       RARCH_LOG("%s\n", msg_hash_to_str(MSG_PAUSED));
 
 #if defined(HAVE_GFX_WIDGETS)
-      if (gfx_widgets_inited)
+      if (gfx_widgets_active())
          gfx_widgets_paused = is_paused;
       else
 #endif
@@ -8012,7 +8009,7 @@ static void retroarch_pause_checks(void)
    else
    {
 #if defined(HAVE_GFX_WIDGETS)
-      if (gfx_widgets_inited)
+      if (gfx_widgets_active())
          gfx_widgets_paused = is_paused;
 #endif
       RARCH_LOG("%s\n", msg_hash_to_str(MSG_UNPAUSED));
@@ -8529,7 +8526,7 @@ bool command_event(enum event_command cmd, void *data)
             audio_driver_mute_enable  = !audio_driver_mute_enable;
 
 #if defined(HAVE_GFX_WIDGETS)
-            if (gfx_widgets_inited)
+            if (gfx_widgets_active())
                gfx_widgets_volume_update_and_show(
                      configuration_settings->floats.audio_volume,
                      audio_driver_mute_enable);
@@ -9713,6 +9710,10 @@ void main_exit(void *args)
    if (config_save_on_exit)
       command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
 
+#if defined(HAVE_GFX_WIDGETS)
+   /* Do not want menu widgets to live any more. */
+   gfx_widgets_set_persistence(false);
+#endif
 #ifdef HAVE_MENU
    /* Do not want menu context to live any more. */
    menu_driver_ctl(RARCH_MENU_CTL_UNSET_OWN_DRIVER, NULL);
@@ -11200,7 +11201,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
          const struct retro_message *msg = (const struct retro_message*)data;
          RARCH_LOG("[Environ]: SET_MESSAGE: %s\n", msg->msg);
 #if defined(HAVE_GFX_WIDGETS)
-         if (gfx_widgets_inited)
+         if (gfx_widgets_active())
             gfx_widgets_set_libretro_message(msg->msg,
                   roundf((float)msg->frames / 60.0f * 1000.0f));
          else
@@ -23615,8 +23616,10 @@ static void video_driver_frame(const void *data, unsigned width,
    static retro_time_t curr_time;
    static retro_time_t fps_time;
    static float last_fps, frame_time;
-   retro_time_t        new_time                      =
-      cpu_features_get_time_usec();
+   retro_time_t new_time = cpu_features_get_time_usec();
+#if defined(HAVE_GFX_WIDGETS)
+   bool widgets_active   = gfx_widgets_active();
+#endif
 
    if (!video_driver_active)
       return;
@@ -23780,7 +23783,7 @@ static void video_driver_frame(const void *data, unsigned width,
        * extracted and pushed to the widget message
        * queue instead */
 #if defined(HAVE_GFX_WIDGETS)
-      if (gfx_widgets_inited)
+      if (widgets_active)
       {
          bool msg_found = false;
          msg_queue_entry_t msg_entry;
@@ -23897,7 +23900,7 @@ static void video_driver_frame(const void *data, unsigned width,
          )
    {
 #if defined(HAVE_GFX_WIDGETS)
-      if (gfx_widgets_inited)
+      if (widgets_active)
          gfx_widgets_set_fps_text(video_info.fps_text);
       else
 #endif
@@ -24073,12 +24076,10 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->fps_text[0]           = '\0';
 
 #if defined(HAVE_GFX_WIDGETS)
-   video_info->widgets_inited             = gfx_widgets_inited;
    video_info->widgets_is_paused          = gfx_widgets_paused;
    video_info->widgets_is_fast_forwarding = gfx_widgets_fast_forward;
    video_info->widgets_is_rewinding       = gfx_widgets_rewinding;
 #else
-   video_info->widgets_inited             = false;
    video_info->widgets_is_paused          = false;
    video_info->widgets_is_fast_forwarding = false;
    video_info->widgets_is_rewinding       = false;
@@ -24175,7 +24176,10 @@ bool video_driver_translate_coord_viewport(
    int norm_full_vp_width    = (int)vp->full_width;
    int norm_full_vp_height   = (int)vp->full_height;
 
-   if (norm_full_vp_width <= 0 || norm_full_vp_height <= 0)
+   if (norm_vp_width <= 0 ||
+       norm_vp_height <= 0 ||
+       norm_full_vp_width <= 0 ||
+       norm_full_vp_height <= 0)
       return false;
 
    if (mouse_x >= 0 && mouse_x <= norm_full_vp_width)
@@ -25292,6 +25296,11 @@ static void drivers_init(int flags)
    settings_t *settings     = configuration_settings;
    bool menu_enable_widgets = settings->bools.menu_enable_widgets;
 
+#if defined(HAVE_GFX_WIDGETS)
+   /* By default, we want menu widgets to persist through driver reinits. */
+   gfx_widgets_set_persistence(true);
+#endif
+
 #ifdef HAVE_MENU
    /* By default, we want the menu to persist through driver reinits. */
    menu_driver_ctl(RARCH_MENU_CTL_SET_OWN_DRIVER, NULL);
@@ -25379,17 +25388,10 @@ static void drivers_init(int flags)
       bool video_is_fullscreen = settings->bools.video_fullscreen ||
             rarch_force_fullscreen;
 
-      if (!gfx_widgets_inited)
-         gfx_widgets_inited = gfx_widgets_init(
-               video_is_threaded, video_is_fullscreen);
-
-      if (gfx_widgets_inited)
-         gfx_widgets_context_reset(video_is_threaded,
-               video_driver_width, video_driver_height, video_is_fullscreen,
-               settings->paths.directory_assets,
-               settings->paths.path_font);
-      else
-         gfx_widgets_free();
+      gfx_widgets_init(video_is_threaded,
+            video_driver_width, video_driver_height, video_is_fullscreen,
+            settings->paths.directory_assets,
+            settings->paths.path_font);
    }
    else
 #endif
@@ -25461,11 +25463,7 @@ static void driver_uninit(int flags)
    /* This absolutely has to be done before video_driver_free_internal()
     * is called/completes, otherwise certain menu drivers
     * (e.g. Vulkan) will segfault */
-   {
-      if (gfx_widgets_inited)
-         gfx_widgets_free();
-      gfx_widgets_inited = false;
-   }
+   gfx_widgets_deinit();
 #endif
 
 #ifdef HAVE_MENU
@@ -25533,11 +25531,7 @@ static void retroarch_deinit_drivers(void)
     * in case the handle is lost in the threaded
     * video driver in the meantime
     * (breaking video_driver_has_widgets) */
-   if (gfx_widgets_inited)
-   {
-      gfx_widgets_free();
-      gfx_widgets_inited = false;
-   }
+   gfx_widgets_deinit();
 #endif
 
    /* Video */
@@ -27870,7 +27864,7 @@ static void runloop_task_msg_queue_push(
       bool flush)
 {
 #if defined(HAVE_GFX_WIDGETS)
-   if (gfx_widgets_inited && task->title && !task->mute)
+   if (gfx_widgets_active() && task->title && !task->mute)
    {
       runloop_msg_queue_lock();
       ui_companion_driver_msg_queue_push(msg,
@@ -28756,7 +28750,7 @@ void runloop_msg_queue_push(const char *msg,
       accessibility_speak_priority((char*) msg, 0);
 #endif
 #if defined(HAVE_GFX_WIDGETS)
-   if (gfx_widgets_inited)
+   if (gfx_widgets_active())
    {
       gfx_widgets_msg_queue_push(NULL, msg,
             roundf((float)duration / 60.0f * 1000.0f),
@@ -29002,14 +28996,14 @@ static void update_fastforwarding_state(void)
    if (runloop_fastmotion)
    {
 #if defined(HAVE_GFX_WIDGETS)
-      if (gfx_widgets_inited)
+      if (gfx_widgets_active())
          gfx_widgets_fast_forward = true;
 #endif
    }
 #if defined(HAVE_GFX_WIDGETS)
    else
    {
-      if (gfx_widgets_inited)
+      if (gfx_widgets_active())
       {
          gfx_widgets_fast_forward = false;
          {
@@ -29043,6 +29037,9 @@ static enum runloop_state runloop_check_state(retro_time_t current_time)
    bool menu_driver_binding_state      = menu_driver_is_binding;
    bool menu_is_alive                  = menu_driver_alive;
    bool display_kb                     = menu_input_dialog_get_display_kb();
+#endif
+#if defined(HAVE_GFX_WIDGETS)
+   bool widgets_active                 = gfx_widgets_active();
 #endif
 
 #if defined(HAVE_TRANSLATE) && defined(HAVE_GFX_WIDGETS)
@@ -29330,7 +29327,7 @@ static enum runloop_state runloop_check_state(retro_time_t current_time)
          video_driver_width, video_driver_height);
 
 #if defined(HAVE_GFX_WIDGETS)
-   if (gfx_widgets_inited)
+   if (widgets_active)
    {
       bool video_is_fullscreen = settings->bools.video_fullscreen ||
             rarch_force_fullscreen;
@@ -29662,7 +29659,7 @@ static enum runloop_state runloop_check_state(retro_time_t current_time)
 
       /* Show the fast-forward OSD for 1 frame every frame if menu widgets are disabled */
 #if defined(HAVE_GFX_WIDGETS)
-      if (!gfx_widgets_inited && runloop_fastmotion)
+      if (!widgets_active && runloop_fastmotion)
 #else
       if (runloop_fastmotion)
 #endif
@@ -29737,7 +29734,7 @@ static enum runloop_state runloop_check_state(retro_time_t current_time)
             runloop_paused, s, sizeof(s), &t);
 
 #if defined(HAVE_GFX_WIDGETS)
-      if (gfx_widgets_inited)
+      if (widgets_active)
          gfx_widgets_rewinding = rewinding;
       else
 #endif
@@ -29772,7 +29769,7 @@ static enum runloop_state runloop_check_state(retro_time_t current_time)
                video_driver_cached_frame();
 
 #if defined(HAVE_GFX_WIDGETS)
-         if (!gfx_widgets_inited)
+         if (!widgets_active)
 #endif
          {
             if (state_manager_frame_is_reversed())
