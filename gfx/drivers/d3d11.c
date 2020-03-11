@@ -1285,7 +1285,6 @@ static bool d3d11_gfx_frame(
    d3d11_texture_t*   texture     = NULL;
    d3d11_video_t*     d3d11       = (d3d11_video_t*)data;
    D3D11DeviceContext context     = d3d11->context;
-   bool widgets_inited            = video_info->widgets_inited;
    const char *stat_text          = video_info->stat_text;
    unsigned video_width           = video_info->width;
    unsigned video_height          = video_info->height;
@@ -1583,8 +1582,7 @@ static bool d3d11_gfx_frame(
 #endif
 
 #ifdef HAVE_GFX_WIDGETS
-   if (widgets_inited)
-      gfx_widgets_frame(video_info);
+   gfx_widgets_frame(video_info);
 #endif
 
    if (msg && *msg)

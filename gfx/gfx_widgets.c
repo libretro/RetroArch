@@ -46,7 +46,20 @@
 #include "../cheevos-new/badges.h"
 #endif
 
-/* TODO: Fix context reset freezing everything in place (probably kills animations when it shouldn't anymore) */
+static bool widgets_inited = false;
+static bool widgets_active = false;
+
+bool gfx_widgets_active(void)
+{
+   return widgets_active;
+}
+
+static bool widgets_persisting = false;
+
+void gfx_widgets_set_persistence(bool persist)
+{
+   widgets_persisting = persist;
+}
 
 static float msg_queue_background[16]  = COLOR_HEX_TO_FLOAT(0x3A3A3A, 1.0f);
 static float msg_queue_info[16]        = COLOR_HEX_TO_FLOAT(0x12ACF8, 1.0f);
@@ -228,7 +241,7 @@ static uintptr_t msg_queue_icon_outline          = 0;
 static uintptr_t msg_queue_icon_rect             = 0;
 static bool msg_queue_has_icons                  = false;
 
-extern gfx_animation_ctx_tag gfx_widgets_generic_tag;
+static gfx_animation_ctx_tag gfx_widgets_generic_tag = (uintptr_t)&widgets_active;
 
 gfx_animation_ctx_tag gfx_widgets_get_generic_tag(void)
 {
@@ -409,6 +422,9 @@ void gfx_widgets_msg_queue_push(
       bool menu_is_alive)
 {
    menu_widget_msg_t* msg_widget = NULL;
+
+   if (!widgets_active)
+      return;
 
    if (fifo_write_avail(msg_queue) > 0)
    {
@@ -922,7 +938,12 @@ static void gfx_widgets_hourglass_tick(void *userdata)
    gfx_animation_push(&entry);
 }
 
-/* Forward declaration */
+/* Forward declarations */
+static void gfx_widgets_context_reset(bool is_threaded,
+      unsigned width, unsigned height, bool fullscreen,
+      const char *dir_assets, char *font_path);
+static void gfx_widgets_context_destroy(void);
+static void gfx_widgets_free(void);
 static void gfx_widgets_layout(
       bool is_threaded, const char *dir_assets, char *font_path);
 #ifdef HAVE_MENU
@@ -936,10 +957,14 @@ void gfx_widgets_iterate(
       bool is_threaded)
 {
    size_t i;
+   float scale_factor;
+
+   if (!widgets_active)
+      return;
 
    /* Check whether screen dimensions or menu scale
     * factor have changed */
-   float scale_factor = (gfx_display_get_driver_id() == MENU_DRIVER_ID_XMB) ?
+   scale_factor = (gfx_display_get_driver_id() == MENU_DRIVER_ID_XMB) ?
          gfx_display_get_widget_pixel_scale(width, height, fullscreen) :
                gfx_display_get_widget_dpi_scale(width, height, fullscreen);
 
@@ -1473,20 +1498,42 @@ static void gfx_widgets_draw_load_content_animation(
 
 void gfx_widgets_frame(void *data)
 {
+   /* (Pointless) optimisation: allocating these
+    * costs nothing, so do it *before* the
+    * 'widgets_active' check... */
    size_t i;
-   video_frame_info_t *video_info = (video_frame_info_t*)data;
-   bool framecount_show           = video_info->framecount_show;
-   bool memory_show               = video_info->memory_show;
-   void *userdata                 = video_info->userdata;
-   unsigned video_width           = video_info->width;
-   unsigned video_height          = video_info->height;
-   bool widgets_is_paused         = video_info->widgets_is_paused;
-   bool fps_show                  = video_info->fps_show;
-   bool widgets_is_fastforwarding = video_info->widgets_is_fast_forwarding;
-   bool widgets_is_rewinding      = video_info->widgets_is_rewinding;
-   bool runloop_is_slowmotion     = video_info->runloop_is_slowmotion;
-   int top_right_x_advance        = video_width;
-   int scissor_me_timbers         = 0;
+   video_frame_info_t *video_info;
+   bool framecount_show;
+   bool memory_show;
+   void *userdata;
+   unsigned video_width;
+   unsigned video_height;
+   bool widgets_is_paused;
+   bool fps_show;
+   bool widgets_is_fastforwarding;
+   bool widgets_is_rewinding;
+   bool runloop_is_slowmotion;
+   int top_right_x_advance;
+   int scissor_me_timbers;
+
+   if (!widgets_active)
+      return;
+
+   /* ...but assigning them costs a tiny amount,
+    * so do it *after* the 'widgets_active' check */
+   video_info                = (video_frame_info_t*)data;
+   framecount_show           = video_info->framecount_show;
+   memory_show               = video_info->memory_show;
+   userdata                  = video_info->userdata;
+   video_width               = video_info->width;
+   video_height              = video_info->height;
+   widgets_is_paused         = video_info->widgets_is_paused;
+   fps_show                  = video_info->fps_show;
+   widgets_is_fastforwarding = video_info->widgets_is_fast_forwarding;
+   widgets_is_rewinding      = video_info->widgets_is_rewinding;
+   runloop_is_slowmotion     = video_info->runloop_is_slowmotion;
+   top_right_x_advance       = video_width;
+   scissor_me_timbers        = 0;
 
    gfx_widgets_frame_count++;
 
@@ -1974,50 +2021,67 @@ void gfx_widgets_frame(void *data)
    gfx_display_unset_viewport(video_width, video_height);
 }
 
-bool gfx_widgets_init(bool video_is_threaded, bool fullscreen)
+bool gfx_widgets_init(
+      bool video_is_threaded,
+      unsigned width, unsigned height, bool fullscreen,
+      const char *dir_assets, char *font_path)
 {
-   size_t i;
-
    if (!gfx_display_init_first_driver(video_is_threaded))
       goto error;
 
-   gfx_widgets_frame_count = 0;
-
-   for (i = 0; i < widgets_len; i++)
+   if (!widgets_inited)
    {
-      const gfx_widget_t* widget = widgets[i];
+      size_t i;
 
-      if (widget->init)
-         widget->init(video_is_threaded, fullscreen);
+      gfx_widgets_frame_count = 0;
+
+      for (i = 0; i < widgets_len; i++)
+      {
+         const gfx_widget_t* widget = widgets[i];
+
+         if (widget->init)
+            widget->init(video_is_threaded, fullscreen);
+      }
+
+      msg_queue = fifo_new(MSG_QUEUE_PENDING_MAX * sizeof(menu_widget_msg_t*));
+
+      if (!msg_queue)
+         goto error;
+
+      current_msgs = (file_list_t*)calloc(1, sizeof(file_list_t));
+
+      if (!current_msgs)
+         goto error;
+
+      if (!file_list_reserve(current_msgs, MSG_QUEUE_ONSCREEN_MAX))
+         goto error;
+
+      widgets_inited = true;
    }
 
-   msg_queue = fifo_new(MSG_QUEUE_PENDING_MAX * sizeof(menu_widget_msg_t*));
+   gfx_widgets_context_reset(video_is_threaded,
+         width, height, fullscreen,
+         dir_assets, font_path);
 
-   if (!msg_queue)
-      goto error;
-
-   current_msgs = (file_list_t*)calloc(1, sizeof(file_list_t));
-
-   if (!current_msgs)
-      goto error;
-
-   if (!file_list_reserve(current_msgs, MSG_QUEUE_ONSCREEN_MAX))
-      goto error;
-
-   /* Initialise scaling parameters
-    * NOTE - special cases:
-    * > Ozone has a capped scale factor
-    * > XMB uses pixel based scaling - all other drivers
-    *   use DPI based scaling */
-   video_driver_get_size(&last_video_width, &last_video_height);
-   last_scale_factor = (gfx_display_get_driver_id() == MENU_DRIVER_ID_XMB) ?
-         gfx_display_get_widget_pixel_scale(last_video_width, last_video_height, fullscreen) :
-               gfx_display_get_widget_dpi_scale(last_video_width, last_video_height, fullscreen);
+   widgets_active = true;
 
    return true;
 
 error:
+   gfx_widgets_free();
    return false;
+}
+
+void gfx_widgets_deinit(void)
+{
+   if (!widgets_inited)
+      return;
+
+   widgets_active = false;
+   gfx_widgets_context_destroy();
+
+   if (!widgets_persisting)
+      gfx_widgets_free();
 }
 
 static void gfx_widgets_layout(
@@ -2156,7 +2220,7 @@ static void gfx_widgets_layout(
    }
 }
 
-void gfx_widgets_context_reset(bool is_threaded,
+static void gfx_widgets_context_reset(bool is_threaded,
       unsigned width, unsigned height, bool fullscreen,
       const char *dir_assets, char *font_path)
 {
@@ -2168,7 +2232,7 @@ void gfx_widgets_context_reset(bool is_threaded,
 
    xmb_path[0]            = '\0';
    monochrome_png_path[0] = '\0';
-   gfx_widgets_path[0]   = '\0';
+   gfx_widgets_path[0]    = '\0';
    theme_path[0]          = '\0';
 
    /* Textures paths */
@@ -2302,12 +2366,13 @@ static void gfx_widgets_achievement_next(void* userdata)
 }
 #endif
 
-void gfx_widgets_free(void)
+static void gfx_widgets_free(void)
 {
    size_t i;
    gfx_animation_ctx_tag libretro_tag;
 
-   gfx_widgets_context_destroy();
+   widgets_inited = false;
+   widgets_active = false;
 
    for (i = 0; i < widgets_len; i++)
    {
@@ -2413,6 +2478,9 @@ void gfx_widgets_volume_update_and_show(float new_volume, bool mute)
 {
    gfx_timer_ctx_entry_t entry;
 
+   if (!widgets_active)
+      return;
+
    gfx_animation_kill_by_tag(&volume_tag);
 
    volume_db         = new_volume;
@@ -2430,6 +2498,9 @@ void gfx_widgets_volume_update_and_show(float new_volume, bool mute)
 
 bool gfx_widgets_set_fps_text(const char *new_fps_text)
 {
+   if (!widgets_active)
+      return false;
+
    strlcpy(gfx_widgets_fps_text,
          new_fps_text, sizeof(gfx_widgets_fps_text));
 
@@ -2501,6 +2572,9 @@ void gfx_widgets_start_load_content_animation(const char *content_name, bool rem
 
    float icon_color[16] = COLOR_HEX_TO_FLOAT(0x0473C9, 1.0f); /* TODO: random color */
    unsigned timing      = 0;
+
+   if (!widgets_active)
+      return;
 
    /* Prepare data */
    load_content_animation_icon         = 0;
@@ -2680,6 +2754,9 @@ void gfx_widgets_push_achievement(const char *title, const char *badge)
 {
    int start_notification = 1;
 
+   if (!widgets_active)
+      return;
+
    if (cheevo_popup_queue_read_index < 0)
    {
       /* queue uninitialized */
@@ -2744,6 +2821,9 @@ void gfx_widgets_set_message(char *msg)
    gfx_timer_ctx_entry_t timer;
    gfx_animation_ctx_tag tag = (uintptr_t) &generic_message_timer;
 
+   if (!widgets_active)
+      return;
+
    strlcpy(generic_message, msg, sizeof(generic_message));
 
    generic_message_alpha = DEFAULT_BACKDROP;
@@ -2780,6 +2860,9 @@ void gfx_widgets_set_libretro_message(const char *msg, unsigned duration)
 {
    gfx_timer_ctx_entry_t timer;
    gfx_animation_ctx_tag tag = (uintptr_t) &libretro_message_timer;
+
+   if (!widgets_active)
+      return;
 
    strlcpy(libretro_message, msg, sizeof(libretro_message));
 

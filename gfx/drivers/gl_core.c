@@ -1843,7 +1843,6 @@ static bool gl_core_frame(void *data, const void *frame,
       &video_info->osd_stat_params;
    const char *stat_text                       = video_info->stat_text;
    bool statistics_show                        = video_info->statistics_show;
-   bool widgets_inited                         = video_info->widgets_inited;
    bool msg_bgcolor_enable                     = video_info->msg_bgcolor_enable;
    bool black_frame_insertion                  = video_info->black_frame_insertion;
    void *context_data                          = video_info->context_data;
@@ -1938,8 +1937,7 @@ static bool gl_core_frame(void *data, const void *frame,
 #endif
 
 #ifdef HAVE_GFX_WIDGETS
-   if (widgets_inited)
-      gfx_widgets_frame(video_info);
+   gfx_widgets_frame(video_info);
 #endif
 
    if (!string_is_empty(msg))

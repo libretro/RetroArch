@@ -1170,7 +1170,6 @@ static bool d3d12_gfx_frame(
    d3d12_video_t*   d3d12         = (d3d12_video_t*)data;
    const char *stat_text          = video_info->stat_text;
    bool statistics_show           = video_info->statistics_show;
-   bool widgets_inited            = video_info->widgets_inited;
    unsigned video_width           = video_info->width;
    unsigned video_height          = video_info->height;
    struct font_params *osd_params = (struct font_params*)
@@ -1566,8 +1565,7 @@ static bool d3d12_gfx_frame(
 #endif
 
 #ifdef HAVE_GFX_WIDGETS
-   if (widgets_inited)
-      gfx_widgets_frame(video_info);
+   gfx_widgets_frame(video_info);
 #endif
 
    if (msg && *msg)
