@@ -2077,8 +2077,8 @@ void gfx_widgets_deinit(void)
    if (!widgets_inited)
       return;
 
-   gfx_widgets_context_destroy();
    widgets_active = false;
+   gfx_widgets_context_destroy();
 
    if (!widgets_persisting)
       gfx_widgets_free();
@@ -2232,7 +2232,7 @@ static void gfx_widgets_context_reset(bool is_threaded,
 
    xmb_path[0]            = '\0';
    monochrome_png_path[0] = '\0';
-   gfx_widgets_path[0]   = '\0';
+   gfx_widgets_path[0]    = '\0';
    theme_path[0]          = '\0';
 
    /* Textures paths */
@@ -2371,6 +2371,9 @@ static void gfx_widgets_free(void)
    size_t i;
    gfx_animation_ctx_tag libretro_tag;
 
+   widgets_inited = false;
+   widgets_active = false;
+
    for (i = 0; i < widgets_len; i++)
    {
       const gfx_widget_t* widget = widgets[i];
@@ -2450,9 +2453,6 @@ static void gfx_widgets_free(void)
 
    /* Volume */
    volume_alpha           = 0.0f;
-
-   widgets_inited         = false;
-   widgets_active         = false;
 }
 
 static void gfx_widgets_volume_timer_end(void *userdata)
