@@ -213,7 +213,7 @@ static void task_screenshot_callback(retro_task_t *task,
       return;
 
    if (state && !state->silence && state->widgets_ready)
-      gfx_widgets_screenshot_taken(state->shotname, state->filename);
+      gfx_widget_screenshot_taken(state->shotname, state->filename);
 
    free(state);
 }

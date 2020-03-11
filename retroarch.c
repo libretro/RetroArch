@@ -6994,7 +6994,7 @@ static void command_event_set_volume(float gain)
 
 #if defined(HAVE_GFX_WIDGETS)
    if (gfx_widgets_active())
-      gfx_widgets_volume_update_and_show(new_volume, audio_driver_mute_enable);
+      gfx_widget_volume_update_and_show(new_volume, audio_driver_mute_enable);
    else
 #endif
       runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
@@ -8527,7 +8527,7 @@ bool command_event(enum event_command cmd, void *data)
 
 #if defined(HAVE_GFX_WIDGETS)
             if (gfx_widgets_active())
-               gfx_widgets_volume_update_and_show(
+               gfx_widget_volume_update_and_show(
                      configuration_settings->floats.audio_volume,
                      audio_driver_mute_enable);
             else

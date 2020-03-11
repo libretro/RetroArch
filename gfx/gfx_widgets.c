@@ -71,11 +71,6 @@ static float msg_queue_task_progress_2[16] = COLOR_HEX_TO_FLOAT(0x317198, 1.0f);
 static float color_task_progress_bar[16] = COLOR_HEX_TO_FLOAT(0x22B14C, 1.0f);
 #endif
 
-static float volume_bar_background[16]    = COLOR_HEX_TO_FLOAT(0x1A1A1A, 1.0f);
-static float volume_bar_normal[16]        = COLOR_HEX_TO_FLOAT(0x198AC6, 1.0f);
-static float volume_bar_loud[16]          = COLOR_HEX_TO_FLOAT(0xF5DD19, 1.0f);
-static float volume_bar_loudest[16]       = COLOR_HEX_TO_FLOAT(0xC23B22, 1.0f);
-
 static uint64_t gfx_widgets_frame_count   = 0;
 
 /* Font data */
@@ -251,12 +246,7 @@ static bool widgets_moving                       = false;
 /* Icons */
 enum gfx_widgets_icon
 {
-   MENU_WIDGETS_ICON_VOLUME_MED = 0,
-   MENU_WIDGETS_ICON_VOLUME_MAX,
-   MENU_WIDGETS_ICON_VOLUME_MIN,
-   MENU_WIDGETS_ICON_VOLUME_MUTE,
-
-   MENU_WIDGETS_ICON_PAUSED,
+   MENU_WIDGETS_ICON_PAUSED = 0,
    MENU_WIDGETS_ICON_FAST_FORWARD,
    MENU_WIDGETS_ICON_REWIND,
    MENU_WIDGETS_ICON_SLOW_MOTION,
@@ -272,11 +262,6 @@ enum gfx_widgets_icon
 };
 
 static const char *gfx_widgets_icons_names[MENU_WIDGETS_ICON_LAST] = {
-   "menu_volume_med.png",
-   "menu_volume_max.png",
-   "menu_volume_min.png",
-   "menu_volume_mute.png",
-
    "menu_pause.png",
    "menu_frameskip.png",
    "menu_rewind.png",
@@ -292,17 +277,6 @@ static const char *gfx_widgets_icons_names[MENU_WIDGETS_ICON_LAST] = {
 
 static uintptr_t gfx_widgets_icons_textures[
    MENU_WIDGETS_ICON_LAST]                   = {0};
-
-/* Volume */
-static float volume_db                       = 0.0f;
-static float volume_percent                  = 1.0f;
-static gfx_timer_t volume_timer              = 0.0f;
-
-static float volume_alpha                    = 0.0f;
-static float volume_text_alpha               = 0.0f;
-static gfx_animation_ctx_tag volume_tag      = (uintptr_t) &volume_alpha;
-static bool volume_mute                      = false;
-
 
 #ifdef HAVE_TRANSLATE
 /* AI Service Overlay */
@@ -379,17 +353,25 @@ static unsigned msg_queue_task_hourglass_x;
 /* Used for both generic and libretro messages */
 static unsigned generic_message_height; 
 
-static unsigned volume_widget_width;
-static unsigned volume_widget_height;
-
 static unsigned divider_width_1px            = 1;
 
 static unsigned last_video_width             = 0;
 static unsigned last_video_height            = 0;
 
+unsigned gfx_widgets_get_last_video_width(void)
+{
+   return last_video_width;
+}
+
+unsigned gfx_widgets_get_last_video_height(void)
+{
+   return last_video_height;
+}
+
 /* Widgets list */
 const static gfx_widget_t* const widgets[] = {
-   &gfx_widget_screenshot
+   &gfx_widget_screenshot,
+   &gfx_widget_volume
 };
 
 static const size_t widgets_len = sizeof(widgets) / sizeof(widgets[0]);
@@ -1752,159 +1734,6 @@ void gfx_widgets_frame(void *data)
    }
 #endif
 
-   /* Volume */
-   if (volume_alpha > 0.0f)
-   {
-      char msg[255];
-      char percentage_msg[255];
-
-      uintptr_t volume_icon         = 0;
-      unsigned icon_size            = gfx_widgets_icons_textures[MENU_WIDGETS_ICON_VOLUME_MED] ? volume_widget_height : simple_widget_padding;
-      unsigned text_color           = COLOR_TEXT_ALPHA(0xffffffff, (unsigned)(volume_text_alpha*255.0f));
-      unsigned text_color_db        = COLOR_TEXT_ALPHA(TEXT_COLOR_FAINT, (unsigned)(volume_text_alpha*255.0f));
-
-      unsigned bar_x                = icon_size;
-      unsigned bar_height           = widget_font_size / 2;
-      unsigned bar_width            = volume_widget_width - bar_x - simple_widget_padding;
-      unsigned bar_y                = volume_widget_height / 2 + bar_height/2;
-
-      float *bar_background         = NULL;
-      float *bar_foreground         = NULL;
-      float bar_percentage          = 0.0f;
-
-      unsigned volume_text_y        = bar_y - (widget_font_size / 3);
-
-      if (volume_mute)
-         volume_icon = gfx_widgets_icons_textures[MENU_WIDGETS_ICON_VOLUME_MUTE];
-      else if (volume_percent <= 1.0f)
-      {
-         if (volume_percent <= 0.5f)
-            volume_icon = gfx_widgets_icons_textures[MENU_WIDGETS_ICON_VOLUME_MIN];
-         else
-            volume_icon = gfx_widgets_icons_textures[MENU_WIDGETS_ICON_VOLUME_MED];
-
-         bar_background = volume_bar_background;
-         bar_foreground = volume_bar_normal;
-         bar_percentage = volume_percent;
-      }
-      else if (volume_percent > 1.0f && volume_percent <= 2.0f)
-      {
-         volume_icon = gfx_widgets_icons_textures[MENU_WIDGETS_ICON_VOLUME_MAX];
-
-         bar_background = volume_bar_normal;
-         bar_foreground = volume_bar_loud;
-         bar_percentage = volume_percent - 1.0f;
-      }
-      else
-      {
-         volume_icon = gfx_widgets_icons_textures[MENU_WIDGETS_ICON_VOLUME_MAX];
-
-         bar_background = volume_bar_loud;
-         bar_foreground = volume_bar_loudest;
-         bar_percentage = volume_percent - 2.0f;
-      }
-
-      if (bar_percentage > 1.0f)
-         bar_percentage = 1.0f;
-
-      /* Backdrop */
-      gfx_display_set_alpha(gfx_widgets_backdrop_orig, volume_alpha);
-
-      gfx_display_draw_quad(userdata,
-            video_width,
-            video_height,
-            0, 0,
-            volume_widget_width,
-            volume_widget_height,
-            video_width,
-            video_height,
-            gfx_widgets_backdrop_orig
-            );
-
-      /* Icon */
-      if (volume_icon)
-      {
-         gfx_display_set_alpha(gfx_widgets_pure_white, volume_text_alpha);
-
-         gfx_display_blend_begin(userdata);
-         gfx_widgets_draw_icon(
-               userdata,
-               video_width,
-               video_height,
-               icon_size, icon_size,
-               volume_icon,
-               0, 0,
-               video_width, video_height,
-               0, 1, gfx_widgets_pure_white
-               );
-         gfx_display_blend_end(userdata);
-      }
-
-      if (volume_mute)
-      {
-         if (!gfx_widgets_icons_textures[MENU_WIDGETS_ICON_VOLUME_MUTE])
-         {
-            const char *text  = msg_hash_to_str(MSG_AUDIO_MUTED);
-            gfx_display_draw_text(font_regular,
-               text,
-               volume_widget_width/2, volume_widget_height/2 + widget_font_size / 3,
-               video_width, video_height,
-               text_color, TEXT_ALIGN_CENTER,
-               1, false, 0, true
-            );
-         }
-      }
-      else
-      {
-         /* Bar */
-         gfx_display_set_alpha(bar_background, volume_text_alpha);
-         gfx_display_set_alpha(bar_foreground, volume_text_alpha);
-
-         gfx_display_draw_quad(userdata,
-               video_width,
-               video_height,
-               bar_x + bar_percentage * bar_width, bar_y,
-               bar_width - bar_percentage * bar_width, bar_height,
-               video_width, video_height,
-               bar_background
-               );
-
-         gfx_display_draw_quad(userdata,
-               video_width,
-               video_height,
-               bar_x, bar_y,
-               bar_percentage * bar_width, bar_height,
-               video_width, video_height,
-               bar_foreground
-               );
-
-         /* Text */
-         snprintf(msg, sizeof(msg), (volume_db >= 0 ? "+%.1f dB" : "%.1f dB"),
-            volume_db);
-
-         snprintf(percentage_msg, sizeof(percentage_msg), "%d%%",
-            (int)(volume_percent * 100.0f));
-
-         gfx_display_draw_text(font_regular,
-            msg,
-            volume_widget_width - simple_widget_padding, volume_text_y,
-            video_width, video_height,
-            text_color_db,
-            TEXT_ALIGN_RIGHT,
-            1, false, 0, false
-         );
-
-         gfx_display_draw_text(font_regular,
-            percentage_msg,
-            icon_size, volume_text_y,
-            video_width, video_height,
-            text_color,
-            TEXT_ALIGN_LEFT,
-            1, false, 0, false
-         );
-      }
-   }
-
    /* Draw all messages */
    for (i = 0; i < current_msgs->size; i++)
    {
@@ -2193,16 +2022,6 @@ static void gfx_widgets_layout(
    load_content_animation_icon_size_target  = LOAD_CONTENT_ANIMATION_TARGET_ICON_SIZE * last_scale_factor;
 #endif
 
-   volume_widget_height = widget_font_size * 4;
-   volume_widget_width  = volume_widget_height * 4;
-   /* Volume widget cannot exceed screen width
-    * > If it does, scale it down */
-   if (volume_widget_width > last_video_width)
-   {
-      volume_widget_width  = last_video_width;
-      volume_widget_height = volume_widget_width / 4;
-   }
-
    divider_width_1px    = 1;
    if (last_scale_factor > 1.0f)
       divider_width_1px = (unsigned)(last_scale_factor + 0.5f);
@@ -2280,7 +2099,7 @@ static void gfx_widgets_context_reset(bool is_threaded,
       const gfx_widget_t* widget = widgets[i];
 
       if (widget->context_reset)
-         widget->context_reset(is_threaded, width, height, fullscreen, dir_assets, font_path);
+         widget->context_reset(is_threaded, width, height, fullscreen, dir_assets, font_path, monochrome_png_path, gfx_widgets_path);
    }
 
    /* Update scaling/dimensions */
@@ -2378,8 +2197,7 @@ static void gfx_widgets_free(void)
          widget->free();
    }
 
-   /* Kill any pending animation */
-   gfx_animation_kill_by_tag(&volume_tag);
+   /* Kill all running animations */
    gfx_animation_kill_by_tag(&gfx_widgets_generic_tag);
 
    /* Purge everything from the fifo */
@@ -2446,50 +2264,6 @@ static void gfx_widgets_free(void)
 
    /* AI Service overlay */
    /* ... */
-
-   /* Volume */
-   volume_alpha           = 0.0f;
-}
-
-static void gfx_widgets_volume_timer_end(void *userdata)
-{
-   gfx_animation_ctx_entry_t entry;
-
-   entry.cb             = NULL;
-   entry.duration       = MSG_QUEUE_ANIMATION_DURATION;
-   entry.easing_enum    = EASING_OUT_QUAD;
-   entry.subject        = &volume_alpha;
-   entry.tag            = volume_tag;
-   entry.target_value   = 0.0f;
-   entry.userdata       = NULL;
-
-   gfx_animation_push(&entry);
-
-   entry.subject        = &volume_text_alpha;
-
-   gfx_animation_push(&entry);
-}
-
-void gfx_widgets_volume_update_and_show(float new_volume, bool mute)
-{
-   gfx_timer_ctx_entry_t entry;
-
-   if (!widgets_active)
-      return;
-
-   gfx_animation_kill_by_tag(&volume_tag);
-
-   volume_db         = new_volume;
-   volume_percent    = pow(10, new_volume/20);
-   volume_alpha      = DEFAULT_BACKDROP;
-   volume_text_alpha = 1.0f;
-   volume_mute       = mute;
-
-   entry.cb          = gfx_widgets_volume_timer_end;
-   entry.duration    = VOLUME_DURATION;
-   entry.userdata    = NULL;
-
-   gfx_timer_start(&volume_timer, &entry);
 }
 
 bool gfx_widgets_set_fps_text(const char *new_fps_text)

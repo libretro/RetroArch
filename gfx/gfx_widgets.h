@@ -32,7 +32,6 @@
 #define MSG_QUEUE_ONSCREEN_MAX         4
 
 #define MSG_QUEUE_ANIMATION_DURATION      330
-#define VOLUME_DURATION                   3000
 #define CHEEVO_NOTIFICATION_DURATION      4000
 #define TASK_FINISHED_DURATION            3000
 #define HOURGLASS_INTERVAL                5000
@@ -64,7 +63,9 @@ struct gfx_widget
     * -> (re)load the textures here */
    void (*context_reset)(bool is_threaded,
       unsigned width, unsigned height, bool fullscreen,
-      const char *dir_assets, char *font_path);
+      const char *dir_assets, char *font_path,
+      char* menu_png_path,
+      char* widgets_png_path);
 
    /* called when the graphics context is destroyed
     * -> release the textures here */
@@ -96,6 +97,8 @@ float gfx_widgets_get_font_size(void);
 font_data_t* gfx_widgets_get_font_regular(void);
 font_data_t* gfx_widgets_get_font_bold(void);
 float* gfx_widgets_get_backdrop_orig(void);
+unsigned gfx_widgets_get_last_video_width(void);
+unsigned gfx_widgets_get_last_video_height(void);
 
 float gfx_widgets_get_thumbnail_scale_factor(
       const float dst_width, const float dst_height,
@@ -116,6 +119,7 @@ void gfx_widgets_draw_icon(
 typedef struct gfx_widget gfx_widget_t;
 
 extern const gfx_widget_t gfx_widget_screenshot;
+extern const gfx_widget_t gfx_widget_volume;
 
 bool gfx_widgets_active(void);
 void gfx_widgets_set_persistence(bool persist);
@@ -135,7 +139,7 @@ void gfx_widgets_msg_queue_push(
       unsigned prio, bool flush,
       bool menu_is_alive);
 
-void gfx_widgets_volume_update_and_show(float new_volume,
+void gfx_widget_volume_update_and_show(float new_volume,
       bool mute);
 
 void gfx_widgets_iterate(
@@ -143,7 +147,7 @@ void gfx_widgets_iterate(
       const char *dir_assets, char *font_path,
       bool is_threaded);
 
-void gfx_widgets_screenshot_taken(const char *shotname, const char *filename);
+void gfx_widget_screenshot_taken(const char *shotname, const char *filename);
 
 /* AI Service functions */
 #ifdef HAVE_TRANSLATE
