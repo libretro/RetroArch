@@ -39,6 +39,8 @@
 #define HOURGLASS_DURATION                1000
 #define GENERIC_MESSAGE_DURATION          3000
 
+/* TODO: Colors for warning, error and success */
+
 #define TEXT_COLOR_INFO 0xD8EEFFFF
 #if 0
 #define TEXT_COLOR_SUCCESS 0x22B14CFF

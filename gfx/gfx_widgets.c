@@ -64,8 +64,6 @@ void gfx_widgets_set_persistence(bool persist)
 static float msg_queue_background[16]  = COLOR_HEX_TO_FLOAT(0x3A3A3A, 1.0f);
 static float msg_queue_info[16]        = COLOR_HEX_TO_FLOAT(0x12ACF8, 1.0f);
 
-/* TODO: Colors for warning, error and success */
-
 static float msg_queue_task_progress_1[16] = COLOR_HEX_TO_FLOAT(0x397869, 1.0f); /* Color of first progress bar in a task message */
 static float msg_queue_task_progress_2[16] = COLOR_HEX_TO_FLOAT(0x317198, 1.0f); /* Color of second progress bar in a task message (for multiple tasks with same message) */
 
@@ -233,8 +231,6 @@ static unsigned msg_queue_kill                   = 0;
 
 /* Count of messages bound to a task in current_msgs */
 static unsigned msg_queue_tasks_count            = 0;
-
-/* TODO: Don't display icons if assets are missing */
 
 static uintptr_t msg_queue_icon                  = 0;
 static uintptr_t msg_queue_icon_outline          = 0;
