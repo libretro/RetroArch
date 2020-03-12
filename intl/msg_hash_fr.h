@@ -7642,6 +7642,10 @@ MSG_HASH(
     "Fichier de remappage pour le jeu chargé."
     )
 MSG_HASH(
+    MSG_DIRECTORY_REMAP_FILE_LOADED,
+    "Fichier de remappage pour le dossier de contenu chargé."
+    )
+MSG_HASH(
     MSG_CORE_REMAP_FILE_LOADED,
     "Fichier de remappage pour le cœur chargé."
     )
