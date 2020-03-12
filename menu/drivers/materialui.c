@@ -1294,6 +1294,10 @@ typedef struct materialui_handle
    float scroll_y;
    float content_height;
 
+   /* Used to track scroll animations */
+   bool scroll_animation_active;
+   size_t scroll_animation_selection;
+
    char msgbox[1024];
 
    char menu_title[255];
@@ -2250,6 +2254,8 @@ static bool INLINE materialui_entry_onscreen(
  * moves selection to specified on screen target
  * > Does nothing if currently selected item is
  *   already on screen
+ * > Does nothing if we are already scrolling
+ *   towards currently selected item
  * > Returns index of selected item */
 static size_t materialui_auto_select_onscreen_entry(
       materialui_handle_t *mui,
@@ -2259,6 +2265,13 @@ static size_t materialui_auto_select_onscreen_entry(
 
    /* Check whether selected item is already on screen */
    if (materialui_entry_onscreen(mui, selection))
+      return selection;
+
+   /* If selected item is off screen but we are
+    * currently scrolling towards it (via an animation),
+    * no action is required */
+   if (mui->scroll_animation_active &&
+       (mui->scroll_animation_selection == selection))
       return selection;
 
    /* Update selection index */
@@ -2281,6 +2294,20 @@ static size_t materialui_auto_select_onscreen_entry(
    menu_navigation_set_selection(selection);
 
    return selection;
+}
+
+/* Kills any existing scroll animation and
+ * resets scroll acceleration */
+static INLINE void materialui_kill_scroll_animation(
+      materialui_handle_t *mui)
+{
+   gfx_animation_ctx_tag scroll_tag = (uintptr_t)&mui->scroll_y;
+
+   gfx_animation_kill_by_tag(&scroll_tag);
+   menu_input_set_pointer_y_accel(0.0f);
+
+   mui->scroll_animation_active    = false;
+   mui->scroll_animation_selection = 0;
 }
 
 static void materialui_layout(
@@ -2357,8 +2384,6 @@ static void materialui_render(void *data,
 
    if (mui->need_compute)
    {
-      gfx_animation_ctx_tag tag = (uintptr_t)&mui->scroll_y;
-
       if (mui->font_data.list.font && mui->font_data.hint.font)
          materialui_compute_entries_box(mui, width, height, header_height);
 
@@ -2369,11 +2394,9 @@ static void materialui_render(void *data,
        * has been called, so we delay it until here, when
        * mui->need_compute is acted upon. */
 
-      /* Kill any existing scroll animation */
-      gfx_animation_kill_by_tag(&tag);
-
-      /* Reset scroll acceleration */
-      menu_input_set_pointer_y_accel(0.0f);
+      /* Kill any existing scroll animation
+       * and reset scroll acceleration */
+      materialui_kill_scroll_animation(mui);
 
       /* Get new scroll position */
       mui->scroll_y     = materialui_get_scroll(mui);
@@ -4535,7 +4558,6 @@ static void materialui_show_fullscreen_thumbnails(
    gfx_animation_ctx_entry_t animation_entry;
    gfx_thumbnail_t *primary_thumbnail   = NULL;
    gfx_thumbnail_t *secondary_thumbnail = NULL;
-   gfx_animation_ctx_tag scroll_tag      = (uintptr_t)&mui->scroll_y;
    gfx_animation_ctx_tag alpha_tag       = (uintptr_t)&mui->fullscreen_thumbnail_alpha;
    const char *thumbnail_label           = NULL;
 
@@ -4572,10 +4594,9 @@ static void materialui_show_fullscreen_thumbnails(
 
    /* Menu list must be stationary while fullscreen
     * thumbnails are shown
-    * > Kill any existing scroll animations and
-    *   reset scroll acceleration */
-   gfx_animation_kill_by_tag(&scroll_tag);
-   menu_input_set_pointer_y_accel(0.0f);
+    * > Kill any existing scroll animation
+    *   and reset scroll acceleration */
+   materialui_kill_scroll_animation(mui);
 
    /* Cache selected entry label
     * (used as menu title when fullscreen thumbnails
@@ -5936,6 +5957,9 @@ static void *materialui_init(void **userdata, bool video_is_threaded)
    mui->transition_x_offset             = 0.0f;
    mui->last_stack_size                 = 1;
 
+   mui->scroll_animation_active         = false;
+   mui->scroll_animation_selection      = 0;
+
    /* Ensure message box string is empty */
    mui->msgbox[0] = '\0';
 
@@ -6063,6 +6087,13 @@ static bool materialui_load_image(void *userdata, void *data, enum menu_image_ty
    return true;
 }
 
+static void materialui_scroll_animation_end(void *userdata)
+{
+   materialui_handle_t *mui        = (materialui_handle_t*)userdata;
+   mui->scroll_animation_active    = false;
+   mui->scroll_animation_selection = 0;
+}
+
 static void materialui_animate_scroll(
       materialui_handle_t *mui, float scroll_pos, float duration)
 {
@@ -6077,14 +6108,18 @@ static void materialui_animate_scroll(
     *   potential conflicts */
    menu_input_set_pointer_y_accel(0.0f);
 
+   /* Set 'animation active' flag */
+   mui->scroll_animation_active    = true;
+   mui->scroll_animation_selection = menu_navigation_get_selection();
+
    /* Configure animation */
    animation_entry.easing_enum  = EASING_IN_OUT_QUAD;
    animation_entry.tag          = animation_tag;
    animation_entry.duration     = duration;
    animation_entry.target_value = scroll_pos;
    animation_entry.subject      = &mui->scroll_y;
-   animation_entry.cb           = NULL;
-   animation_entry.userdata     = NULL;
+   animation_entry.cb           = materialui_scroll_animation_end;
+   animation_entry.userdata     = mui;
 
    /* Push animation */
    gfx_animation_push(&animation_entry);
@@ -7203,8 +7238,7 @@ static int materialui_pointer_down(void *userdata,
     *   fullscreen thumbnails) */
    if (mui->scrollbar.active && !mui->show_fullscreen_thumbnails)
    {
-      unsigned header_height     = gfx_display_get_header_height();
-      gfx_animation_ctx_tag tag  = (uintptr_t)&mui->scroll_y;
+      unsigned header_height = gfx_display_get_header_height();
       unsigned width;
       unsigned height;
       int drag_margin_horz;
@@ -7257,10 +7291,9 @@ static int materialui_pointer_down(void *userdata,
 
       /* User has 'selected' scrollbar */
 
-      /* > Kill any existing scroll animations
+      /* > Kill any existing scroll animation
        *   and reset scroll acceleration */
-      gfx_animation_kill_by_tag(&tag);
-      menu_input_set_pointer_y_accel(0.0f);
+      materialui_kill_scroll_animation(mui);
 
       /* > Enable dragging */
       mui->scrollbar.dragged = true;
