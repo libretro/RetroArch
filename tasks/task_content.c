@@ -701,9 +701,9 @@ static bool load_content_into_memory(
          }
          else
          {
-            p_content->pending_rom_crc      = true;
             strlcpy(p_content->pending_rom_crc_path,
                   path, sizeof(p_content->pending_rom_crc_path));
+            p_content->pending_rom_crc      = true;
          }
       }
       else
@@ -862,8 +862,9 @@ static bool content_file_init_extract(
          free(temp_content);
 
          {
-            bool append_success = string_list_append(content_ctx->temporary_content,
-                     new_path, *attr);
+            bool append_success = string_list_append(
+                  content_ctx->temporary_content,
+                  new_path, *attr);
 
             free(new_path);
 
@@ -1046,10 +1047,9 @@ static bool content_file_load(
 
          RARCH_LOG("%s\n", msg_hash_to_str(
                   MSG_CONTENT_LOADING_SKIPPED_IMPLEMENTATION_WILL_DO_IT));
-         p_content->pending_rom_crc      = true;
          strlcpy(p_content->pending_rom_crc_path,
                path, sizeof(p_content->pending_rom_crc_path));
-
+         p_content->pending_rom_crc      = true;
       }
    }
 
