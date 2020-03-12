@@ -28,6 +28,7 @@
 - LOCALIZATION: Update Polish translation
 - LOCALIZATION: Update Spanish translation
 - LOCALIZATION: Update Portuguese Brazilian translation
+- MENU: Add Menu Scroll Acceleration option
 - MENU: Automatically select currently checked item when opening drop-down lists
 - MENU: Fix smooth (vertical) line ticker scroll speed
 - MENU: Don't flush on override/remap messages
