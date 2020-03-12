@@ -30,7 +30,7 @@ enum gfx_widget_volume_icon
    ICON_MIN,
    ICON_MUTE,
 
-   ICON_LAST,
+   ICON_LAST
 };
 
 static const char* const ICONS_NAMES[ICON_LAST] = {
