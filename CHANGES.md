@@ -4,6 +4,7 @@
 - BUGFIX: Prevent double input when using 'return' key (hardware) to close on-screen keyboard
 - BUGFIX: Fix mouse capture hotkey not working
 - BUGFIX: Avoid overflow when calculating multiplying performance counter
+- BUGFIX: Retroarch overlay displaying "Game remap file loaded." on the overlay instead of "Core remap file loaded." when only a core remap file is present
 - CHEEVOS/BUGFIX: Achievement triggers could cause Retroarch to Crash
 - CHEEVOS: Don't block Sameboy core because it only exposes some memory
 - CHEEVOS: Support for extended Sega CD memory
