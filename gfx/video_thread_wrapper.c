@@ -57,6 +57,9 @@ enum thread_cmd
    CMD_FONT_INIT,
    CMD_CUSTOM_COMMAND,
 
+   CMD_POKE_SHOW_MOUSE,
+   CMD_POKE_GRAB_MOUSE_TOGGLE,
+
    CMD_DUMMY = INT_MAX
 };
 
@@ -526,6 +529,19 @@ static bool video_thread_handle_packet(
             pkt.data.custom_command.return_value =
                   pkt.data.custom_command.method
                   (pkt.data.custom_command.data);
+         video_thread_reply(thr, &pkt);
+         break;
+
+      case CMD_POKE_SHOW_MOUSE:
+         if (thr->poke && thr->poke->show_mouse)
+            thr->poke->show_mouse(thr->driver_data,
+                  pkt.data.b);
+         video_thread_reply(thr, &pkt);
+         break;
+
+      case CMD_POKE_GRAB_MOUSE_TOGGLE:
+         if (thr->poke && thr->poke->grab_mouse_toggle)
+            thr->poke->grab_mouse_toggle(thr->driver_data);
          video_thread_reply(thr, &pkt);
          break;
 
@@ -1177,6 +1193,29 @@ static void thread_set_osd_msg(void *data,
       thr->poke->set_osd_msg(thr->driver_data, msg, params, font);
 }
 
+static void thread_show_mouse(void *data, bool state)
+{
+   thread_video_t *thr = (thread_video_t*)data;
+   thread_packet_t pkt = { CMD_POKE_SHOW_MOUSE };
+
+   if (!thr)
+      return;
+   pkt.data.b = state;
+
+   video_thread_send_and_wait_user_to_thread(thr, &pkt);
+}
+
+static void thread_grab_mouse_toggle(void *data)
+{
+   thread_video_t *thr = (thread_video_t*)data;
+   thread_packet_t pkt = { CMD_POKE_GRAB_MOUSE_TOGGLE };
+
+   if (!thr)
+      return;
+
+   video_thread_send_and_wait_user_to_thread(thr, &pkt);
+}
+
 static uintptr_t thread_load_texture(void *video_data, void *data,
       bool threaded, enum texture_filter_type filter_type)
 {
@@ -1247,8 +1286,8 @@ static const video_poke_interface_t thread_poke = {
    thread_set_texture_enable,
    thread_set_osd_msg,
 
-   NULL,
-   NULL,
+   thread_show_mouse,
+   thread_grab_mouse_toggle,
 
    thread_get_current_shader,
    NULL,                      /* get_current_software_framebuffer */
