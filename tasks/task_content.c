@@ -205,7 +205,7 @@ typedef struct content_state
    struct string_list *temporary_content;
 } content_state_t;
 
-static content_state_t content_st = {};
+static content_state_t content_st;
 
 #ifdef HAVE_CDROM
 static void task_cdrom_dump_handler(retro_task_t *task)
