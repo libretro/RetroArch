@@ -546,7 +546,11 @@ static const unsigned xmb_alpha_factor      = 75;
 static const unsigned menu_font_color_red   = 255;
 static const unsigned menu_font_color_green = 255;
 static const unsigned menu_font_color_blue  = 255;
+#ifdef HAVE_ODROIDGO2
+static const unsigned xmb_menu_layout       = 2;
+#else
 static const unsigned xmb_menu_layout       = 0;
+#endif
 static const unsigned xmb_icon_theme        = XMB_ICON_THEME_MONOCHROME;
 static const unsigned xmb_theme             = XMB_THEME_ELECTRIC_BLUE;
 

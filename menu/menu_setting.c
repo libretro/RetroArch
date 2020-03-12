@@ -13440,7 +13440,7 @@ static bool setting_append_list(
                   SD_FLAG_NONE);
 #endif
 
-#ifdef HAVE_LAKKA
+#if defined(HAVE_LAKKA) || defined(HAVE_ODROIDGO2)
             CONFIG_BOOL(
                   list, list_info,
                   &settings->bools.menu_show_reboot,
