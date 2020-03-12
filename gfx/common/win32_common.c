@@ -218,7 +218,6 @@ typedef struct DISPLAYCONFIG_PATH_INFO_CUSTOM {
 typedef LONG (WINAPI *QUERYDISPLAYCONFIG)(UINT32, UINT32*, DISPLAYCONFIG_PATH_INFO_CUSTOM*, UINT32*, DISPLAYCONFIG_MODE_INFO_CUSTOM*, UINT32*);
 typedef LONG (WINAPI *GETDISPLAYCONFIGBUFFERSIZES)(UINT32, UINT32*, UINT32*);
 
-static bool g_win32_resized         = false;
 bool g_win32_restore_desktop        = false;
 static bool doubleclick_on_titlebar = false;
 static bool taskbar_is_created      = false;
@@ -233,6 +232,7 @@ typedef struct win32_common_state
    unsigned taskbar_message;
    bool quit;
    unsigned monitor_count;
+   bool resized;
 } win32_common_state_t;
 
 static win32_common_state_t win32_st =
@@ -244,6 +244,7 @@ static win32_common_state_t win32_st =
    0,                   /* taskbar_message */
    false,               /* quit */
    0,                   /* monitor_count */
+   false                /* resized */
 };
 
 unsigned g_win32_resize_width       = 0;
@@ -969,7 +970,7 @@ static LRESULT CALLBACK WndProcCommon(bool *quit, HWND hwnd, UINT message,
             {
                g_win32_resize_width  = LOWORD(lparam);
                g_win32_resize_height = HIWORD(lparam);
-               g_win32_resized       = true;
+               g_win32->resized      = true;
             }
          }
          *quit = true;
@@ -1397,12 +1398,12 @@ void win32_check_window(bool *quit, bool *resize,
       ui_companion_win32.application->process_events();
    *quit                  = g_win32->quit;
 
-   if (g_win32_resized)
+   if (g_win32->resized)
    {
       *resize             = true;
       *width              = g_win32_resize_width;
       *height             = g_win32_resize_height;
-      g_win32_resized     = false;
+      g_win32->resized    = false;
    }
 #endif
 }
