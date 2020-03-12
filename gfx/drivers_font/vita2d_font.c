@@ -275,8 +275,8 @@ static void vita2d_font_render_msg(
             alpha, r_dark, g_dark, b_dark, alpha_dark;
    vita_video_t             *vita   = (vita_video_t *)userdata;
    vita_font_t                *font = (vita_font_t *)data;
-   unsigned width                   = vita->width;
-   unsigned height                  = vita->height;
+   unsigned width                   = vita->video_width;
+   unsigned height                  = vita->video_height;
    settings_t *settings             = config_get_ptr();
    float video_msg_pos_x            = settings->floats.video_msg_pos_x;
    float video_msg_pos_y            = settings->floats.video_msg_pos_y;
