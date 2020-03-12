@@ -938,10 +938,18 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_FACTOR,
-    "Substituição da escala dos widgets gráficos (tela cheia)"
+    "Substituição da escala dos widgets gráficos"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_FACTOR,
+    "Aplica uma substituição manual da escala ao desenhar os widgets do menu. Aplica-se apenas quando 'Escala automática nos widgets gráficos' está desativado. Pode ser usado para aumentar ou diminuir o tamanho das notificações, indicadores e controles decorados independentemente do próprio menu."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_FACTOR_FULLSCREEN,
+    "Substituição da escala dos widgets gráficos (tela cheia)"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_FACTOR_FULLSCREEN,
     "Aplica uma substituição manual da escala ao desenhar os widgets do menu no modo de tela cheia. Aplica-se apenas quando 'Escala automática nos widgets gráficos' está desativado. Pode ser usado para aumentar ou diminuir o tamanho das notificações, indicadores e controles decorados independentemente do próprio menu."
     )
 MSG_HASH(

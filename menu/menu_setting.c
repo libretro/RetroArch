@@ -11913,7 +11913,11 @@ static bool setting_append_list(
                list, list_info,
                &settings->floats.menu_widget_scale_factor,
                MENU_ENUM_LABEL_MENU_WIDGET_SCALE_FACTOR,
+#if (defined(RARCH_CONSOLE) || defined(RARCH_MOBILE))
                MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_FACTOR,
+#else
+               MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_FACTOR_FULLSCREEN,
+#endif
                DEFAULT_MENU_WIDGET_SCALE_FACTOR,
                "%.2fx",
                &group_info,
@@ -11924,6 +11928,7 @@ static bool setting_append_list(
          (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
          menu_settings_list_current_add_range(list, list_info, 0.2, 5.0, 0.01, true, true);
 
+#if !(defined(RARCH_CONSOLE) || defined(RARCH_MOBILE))
          CONFIG_FLOAT(
                list, list_info,
                &settings->floats.menu_widget_scale_factor_windowed,
@@ -11938,6 +11943,8 @@ static bool setting_append_list(
                general_read_handler);
          (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
          menu_settings_list_current_add_range(list, list_info, 0.2, 5.0, 0.01, true, true);
+#endif
+
 #endif
 
          CONFIG_BOOL(

@@ -6599,7 +6599,9 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_MENU_WIDGETS_ENABLE,          PARSE_ONLY_BOOL,   true  },
                {MENU_ENUM_LABEL_MENU_WIDGET_SCALE_AUTO,       PARSE_ONLY_BOOL,   false },
                {MENU_ENUM_LABEL_MENU_WIDGET_SCALE_FACTOR,     PARSE_ONLY_FLOAT,  false },
+#if !(defined(RARCH_CONSOLE) || defined(RARCH_MOBILE))
                {MENU_ENUM_LABEL_MENU_WIDGET_SCALE_FACTOR_WINDOWED, PARSE_ONLY_FLOAT,  false },
+#endif
                {MENU_ENUM_LABEL_FPS_SHOW,                     PARSE_ONLY_BOOL,   false },
                {MENU_ENUM_LABEL_FPS_UPDATE_INTERVAL,          PARSE_ONLY_UINT,   false },
                {MENU_ENUM_LABEL_FRAMECOUNT_SHOW,              PARSE_ONLY_BOOL,   false },
@@ -6649,6 +6651,7 @@ unsigned menu_displaylist_build_list(
                            build_list[i].checked = true;
 #endif
                      break;
+#if !(defined(RARCH_CONSOLE) || defined(RARCH_MOBILE))
                   case MENU_ENUM_LABEL_MENU_WIDGET_SCALE_FACTOR_WINDOWED:
 #ifdef HAVE_GFX_WIDGETS
                      if (menu_enable_widgets)
@@ -6656,6 +6659,7 @@ unsigned menu_displaylist_build_list(
                            build_list[i].checked = true;
 #endif
                      break;
+#endif
                   default:
                      if (video_font_enable)
                         build_list[i].checked = true;
