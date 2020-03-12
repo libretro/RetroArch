@@ -573,7 +573,8 @@ static void content_load_init_wrap(
  * Returns: false (0) if retroarch_main_init failed,
  * otherwise true (1).
  **/
-static bool content_load(content_ctx_info_t *info)
+static bool content_load(content_ctx_info_t *info, 
+      content_state_t *p_content)
 {
    unsigned i                        = 0;
    int rarch_argc                    = 0;
@@ -582,7 +583,6 @@ static bool content_load(content_ctx_info_t *info)
    char **rarch_argv_ptr             = (char**)info->argv;
    int *rarch_argc_ptr               = (int*)&info->argc;
    struct rarch_main_wrap *wrap_args = NULL;
-   content_state_t *p_content        = (content_state_t*)&content_st;
 
    if (!(wrap_args = (struct rarch_main_wrap*)
       calloc(1, sizeof(*wrap_args))))
@@ -655,11 +655,11 @@ static bool content_load(content_ctx_info_t *info)
  **/
 static bool load_content_into_memory(
       content_information_ctx_t *content_ctx,
+      content_state_t *p_content,
       unsigned i, const char *path, void **buf,
       int64_t *length)
 {
    uint8_t *ret_buf           = NULL;
-   content_state_t *p_content = (content_state_t*)&content_st;
 
    RARCH_LOG("%s: %s.\n",
          msg_hash_to_str(MSG_LOADING_CONTENT_FILE), path);
@@ -888,6 +888,7 @@ static bool content_file_init_extract(
  **/
 static bool content_file_load(
       struct retro_game_info *info,
+      content_state_t *p_content,
       const struct string_list *content,
       content_information_ctx_t *content_ctx,
       char **error_string,
@@ -901,7 +902,6 @@ static bool content_file_load(
 #ifdef __WINRT__
    rarch_system_info_t *system = runloop_get_system_info();
 #endif
-   content_state_t *p_content  = (content_state_t*)&content_st;
 
    for (i = 0; i < content->size; i++)
    {
@@ -929,7 +929,7 @@ static bool content_file_load(
          int64_t len = 0;
 
          if (!load_content_into_memory(
-                  content_ctx,
+                  content_ctx, p_content,
                   i, path, (void**)&info[i].data, &len))
          {
             size_t msg_size = 1024 * sizeof(char);
@@ -1213,6 +1213,7 @@ static void content_file_init_set_attribs(
  **/
 static bool content_file_init(
       content_information_ctx_t *content_ctx,
+      content_state_t *p_content,
       struct string_list *content,
       char **error_string)
 {
@@ -1242,7 +1243,8 @@ static bool content_file_init(
       unsigned i;
       struct string_list *additional_path_allocs = string_list_new();
 
-      ret = content_file_load(info, content, content_ctx, error_string,
+      ret = content_file_load(info, p_content,
+            content, content_ctx, error_string,
             special, additional_path_allocs);
       string_list_free(additional_path_allocs);
 
@@ -1300,13 +1302,13 @@ static void menu_content_environment_get(int *argc, char *argv[],
  * Will push the content entry to the history playlist.
  **/
 static void task_push_to_history_list(
+      content_state_t *p_content,
       bool launched_from_menu,
       bool launched_from_cli,
       bool launched_from_companion_ui)
 {
    bool            contentless = false;
    bool            is_inited   = false;
-   content_state_t *p_content  = (content_state_t*)&content_st;
 
    content_get_status(&contentless, &is_inited);
 
@@ -1451,7 +1453,9 @@ static void task_push_to_history_list(
 }
 
 #ifdef HAVE_MENU
-static bool command_event_cmd_exec(const char *data,
+static bool command_event_cmd_exec(
+      content_state_t *p_content,
+      const char *data,
       content_information_ctx_t *content_ctx,
       bool launched_from_cli,
       char **error_string)
@@ -1475,9 +1479,9 @@ static bool command_event_cmd_exec(const char *data,
 
 #if defined(HAVE_DYNAMIC)
    /* Loads content into currently selected core. */
-   if (!content_load(&content_info))
+   if (!content_load(&content_info, p_content))
       return false;
-   task_push_to_history_list(true, launched_from_cli, false);
+   task_push_to_history_list(p_content, true, launched_from_cli, false);
 #else
    frontend_driver_set_fork(FRONTEND_FORK_CORE_WITH_ARGS);
 #endif
@@ -1547,6 +1551,7 @@ static bool firmware_update_status(
 bool task_push_start_dummy_core(content_ctx_info_t *content_info)
 {
    content_information_ctx_t content_ctx;
+   content_state_t                 *p_content = (content_state_t*)&content_st;
    bool ret                                   = true;
    char *error_string                         = NULL;
    global_t *global                           = global_get_ptr();
@@ -1604,7 +1609,7 @@ bool task_push_start_dummy_core(content_ctx_info_t *content_info)
    retroarch_init_task_queue();
 
    /* Loads content into currently selected core. */
-   if (!content_load(content_info))
+   if (!content_load(content_info, p_content))
    {
       if (error_string)
       {
@@ -1616,7 +1621,7 @@ bool task_push_start_dummy_core(content_ctx_info_t *content_info)
       ret =  false;
    }
    else
-      task_push_to_history_list(false, false, false);
+      task_push_to_history_list(p_content, false, false, false);
 
    if (content_ctx.name_ips)
       free(content_ctx.name_ips);
@@ -1642,6 +1647,7 @@ bool task_push_load_content_from_playlist_from_menu(
 {
    content_information_ctx_t content_ctx;
 
+   content_state_t                 *p_content = (content_state_t*)&content_st;
    bool ret                                   = true;
    char *error_string                         = NULL;
    global_t *global                           = global_get_ptr();
@@ -1696,7 +1702,8 @@ bool task_push_load_content_from_playlist_from_menu(
    /* On targets that have no dynamic core loading support, we'd
     * execute the new core from this point. If this returns false,
     * we assume we can dynamically load the core. */
-   if (!command_event_cmd_exec(fullpath, &content_ctx, CONTENT_MODE_LOAD_NONE, &error_string))
+   if (!command_event_cmd_exec(p_content,
+            fullpath, &content_ctx, CONTENT_MODE_LOAD_NONE, &error_string))
    {
       if (error_string)
       {
@@ -1741,6 +1748,8 @@ end:
 bool task_push_start_current_core(content_ctx_info_t *content_info)
 {
    content_information_ctx_t content_ctx;
+
+   content_state_t                 *p_content = (content_state_t*)&content_st;
 
    bool ret                                   = true;
    char *error_string                         = NULL;
@@ -1799,7 +1808,7 @@ bool task_push_start_current_core(content_ctx_info_t *content_info)
       goto end;
 
    /* Loads content into currently selected core. */
-   if (!content_load(content_info))
+   if (!content_load(content_info, p_content))
    {
       if (error_string)
       {
@@ -1814,7 +1823,7 @@ bool task_push_start_current_core(content_ctx_info_t *content_info)
       goto end;
    }
    else
-      task_push_to_history_list(true, false, false);
+      task_push_to_history_list(p_content, true, false, false);
 
 #ifdef HAVE_MENU
    /* Push quick menu onto menu stack */
@@ -1870,6 +1879,8 @@ bool task_push_load_content_with_new_core_from_menu(
       void *user_data)
 {
    content_information_ctx_t content_ctx;
+
+   content_state_t                 *p_content = (content_state_t*)&content_st;
 
    bool ret                                   = true;
    char *error_string                         = NULL;
@@ -1927,7 +1938,7 @@ bool task_push_load_content_with_new_core_from_menu(
       goto end;
 
    /* Loads content into currently selected core. */
-   if (!content_load(content_info))
+   if (!content_load(content_info, p_content))
    {
       if (error_string)
       {
@@ -1942,9 +1953,10 @@ bool task_push_load_content_with_new_core_from_menu(
       goto end;
    }
    else
-      task_push_to_history_list(true, false, false);
+      task_push_to_history_list(p_content, true, false, false);
 #else
-   command_event_cmd_exec(path_get(RARCH_PATH_CONTENT), &content_ctx,
+   command_event_cmd_exec(p_content,
+         path_get(RARCH_PATH_CONTENT), &content_ctx,
          false, &error_string);
    command_event(CMD_EVENT_QUIT, NULL);
 #endif
@@ -1973,6 +1985,8 @@ static bool task_load_content_callback(content_ctx_info_t *content_info,
       bool loading_from_menu, bool loading_from_cli, bool loading_from_companion_ui)
 {
    content_information_ctx_t content_ctx;
+
+   content_state_t                 *p_content = (content_state_t*)&content_st;
 
    bool ret                                   = false;
    char *error_string                         = NULL;
@@ -2054,10 +2068,10 @@ static bool task_load_content_callback(content_ctx_info_t *content_info,
 #endif
 
    /* Loads content into currently selected core. */
-   ret = content_load(content_info);
+   ret = content_load(content_info, p_content);
 
    if (ret)
-      task_push_to_history_list(
+      task_push_to_history_list(p_content,
             true, loading_from_cli, loading_from_companion_ui);
 
 end:
@@ -2569,7 +2583,8 @@ bool content_init(void)
    content              = string_list_new();
 
    if (     !p_content->temporary_content
-         || !content_file_init(&content_ctx, content, &error_string))
+         || !content_file_init(&content_ctx, p_content,
+            content, &error_string))
    {
       content_deinit();
 
