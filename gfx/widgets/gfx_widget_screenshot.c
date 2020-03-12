@@ -72,7 +72,7 @@ static gfx_widget_screenshot_state_t* gfx_widget_screenshot_get_ptr(void)
    return &p_state;
 }
 
-static void gfx_widgets_screenshot_fadeout(void *userdata)
+static void gfx_widget_screenshot_fadeout(void *userdata)
 {
    gfx_widget_screenshot_state_t* state = gfx_widget_screenshot_get_ptr();
    gfx_animation_ctx_entry_t entry;
@@ -93,7 +93,7 @@ static void gfx_widgets_play_screenshot_flash(void)
    gfx_widget_screenshot_state_t* state = gfx_widget_screenshot_get_ptr();
    gfx_animation_ctx_entry_t entry;
 
-   entry.cb             = gfx_widgets_screenshot_fadeout;
+   entry.cb             = gfx_widget_screenshot_fadeout;
    entry.duration       = SCREENSHOT_DURATION_IN;
    entry.easing_enum    = EASING_IN_QUAD;
    entry.subject        = &state->alpha;
@@ -104,7 +104,7 @@ static void gfx_widgets_play_screenshot_flash(void)
    gfx_animation_push(&entry);
 }
 
-void gfx_widgets_screenshot_taken(const char *shotname, const char *filename)
+void gfx_widget_screenshot_taken(const char *shotname, const char *filename)
 {
    gfx_widget_screenshot_state_t* state = NULL;
 
@@ -117,7 +117,7 @@ void gfx_widgets_screenshot_taken(const char *shotname, const char *filename)
    strlcpy(state->shotname, shotname, sizeof(state->shotname));
 }
 
-static void gfx_widgets_screenshot_dispose(void *userdata)
+static void gfx_widget_screenshot_dispose(void *userdata)
 {
    gfx_widget_screenshot_state_t* state = gfx_widget_screenshot_get_ptr();
    state->loaded  = false;
@@ -125,12 +125,12 @@ static void gfx_widgets_screenshot_dispose(void *userdata)
    state->texture = 0;
 }
 
-static void gfx_widgets_screenshot_end(void *userdata)
+static void gfx_widget_screenshot_end(void *userdata)
 {
    gfx_widget_screenshot_state_t* state = gfx_widget_screenshot_get_ptr();
    gfx_animation_ctx_entry_t entry;
 
-   entry.cb             = gfx_widgets_screenshot_dispose;
+   entry.cb             = gfx_widget_screenshot_dispose;
    entry.duration       = MSG_QUEUE_ANIMATION_DURATION;
    entry.easing_enum    = EASING_OUT_QUAD;
    entry.subject        = &state->y;
@@ -145,7 +145,7 @@ static void gfx_widget_screenshot_free(void)
 {
    gfx_widget_screenshot_state_t* state = gfx_widget_screenshot_get_ptr();
    state->alpha       = 0.0f;
-   gfx_widgets_screenshot_dispose(NULL);
+   gfx_widget_screenshot_dispose(NULL);
 }
 
 static void gfx_widget_screenshot_frame(void* data)
@@ -273,7 +273,7 @@ static void gfx_widget_screenshot_iterate(unsigned width, unsigned height, bool 
 
       state->y = 0.0f;
 
-      timer.cb       = gfx_widgets_screenshot_end;
+      timer.cb       = gfx_widget_screenshot_end;
       timer.duration = SCREENSHOT_NOTIFICATION_DURATION;
       timer.userdata = NULL;
 
