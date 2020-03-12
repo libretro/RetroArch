@@ -65,14 +65,14 @@ struct gfx_widget_volume_state
 
 typedef struct gfx_widget_volume_state gfx_widget_volume_state_t;
 
-static gfx_widget_volume_state_t p_state = {
+static gfx_widget_volume_state_t p_w_volume_st = {
    0.0f,
    1.0f,
    0.0f,
 
    0.0f,
    0.0f,
-   (uintptr_t) &p_state,
+   (uintptr_t) &p_w_volume_st,
    false,
 
    0,
@@ -88,7 +88,7 @@ static gfx_widget_volume_state_t p_state = {
 
 gfx_widget_volume_state_t* gfx_widget_volume_get_ptr(void)
 {
-   return &p_state;
+   return &p_w_volume_st;
 }
 
 static void gfx_widget_volume_frame(void* data)

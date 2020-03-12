@@ -47,7 +47,7 @@ struct gfx_widget_screenshot_state
 
 typedef struct gfx_widget_screenshot_state gfx_widget_screenshot_state_t;
 
-static gfx_widget_screenshot_state_t p_state = {
+static gfx_widget_screenshot_state_t p_w_screenshot_st = {
    0.0f,
    0,
    0,
@@ -69,7 +69,7 @@ static gfx_widget_screenshot_state_t p_state = {
 
 static gfx_widget_screenshot_state_t* gfx_widget_screenshot_get_ptr(void)
 {
-   return &p_state;
+   return &p_w_screenshot_st;
 }
 
 static void gfx_widget_screenshot_fadeout(void *userdata)
