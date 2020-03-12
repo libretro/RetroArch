@@ -3517,6 +3517,7 @@ bool config_load_remap(const char *directory_input_remapping,
    const char *core_name                  = system ? system->info.library_name : NULL;
    const char *rarch_path_basename        = path_get(RARCH_PATH_BASENAME);
    const char *game_name                  = path_basename(rarch_path_basename);
+   enum msg_hash_enums msg_remap_loaded   = MSG_GAME_REMAP_FILE_LOADED;
    char content_dir_name[PATH_MAX_LENGTH];
 
    if (string_is_empty(core_name) || string_is_empty(game_name))
@@ -3578,6 +3579,8 @@ bool config_load_remap(const char *directory_input_remapping,
       if (input_remapping_load_file(new_conf, game_path))
       {
          rarch_ctl(RARCH_CTL_SET_REMAPS_GAME_ACTIVE, NULL);
+         /* msg_remap_loaded is set to MSG_GAME_REMAP_FILE_LOADED
+          * by default - no need to change it here */
          goto success;
       }
    }
@@ -3589,6 +3592,7 @@ bool config_load_remap(const char *directory_input_remapping,
       if (input_remapping_load_file(new_conf, content_path))
       {
          rarch_ctl(RARCH_CTL_SET_REMAPS_CONTENT_DIR_ACTIVE, NULL);
+         msg_remap_loaded = MSG_DIRECTORY_REMAP_FILE_LOADED;
          goto success;
       }
    }
@@ -3600,6 +3604,7 @@ bool config_load_remap(const char *directory_input_remapping,
       if (input_remapping_load_file(new_conf, core_path))
       {
          rarch_ctl(RARCH_CTL_SET_REMAPS_CORE_ACTIVE, NULL);
+         msg_remap_loaded = MSG_CORE_REMAP_FILE_LOADED;
          goto success;
       }
    }
@@ -3613,8 +3618,8 @@ bool config_load_remap(const char *directory_input_remapping,
    return false;
 
 success:
-   runloop_msg_queue_push(msg_hash_to_str(
-            MSG_GAME_REMAP_FILE_LOADED), 1, 100, false,
+   runloop_msg_queue_push(
+         msg_hash_to_str(msg_remap_loaded), 1, 100, false,
          NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    free(content_path);
    free(remap_directory);

@@ -7638,6 +7638,10 @@ MSG_HASH(
     "Game remap file loaded."
     )
 MSG_HASH(
+    MSG_DIRECTORY_REMAP_FILE_LOADED,
+    "Content directory remap file loaded."
+    )
+MSG_HASH(
     MSG_CORE_REMAP_FILE_LOADED,
     "Core remap file loaded."
     )
