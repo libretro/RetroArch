@@ -790,7 +790,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DIRECTORY_CONTENT,
-    "<Dossier de contenu>"
+    "<Dossier du contenu>"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DIRECTORY_DEFAULT,
@@ -4986,7 +4986,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_CRC32_CHECKSUM_MISMATCH,
-    "Incohérence de la somme de contrôle CRC32 entre le fichier de contenu et sa somme de contrôle enregistrée dans l'en-tête du fichier de relecture. Replay très susceptible de se désynchroniser lors de la lecture."
+    "Incohérence de la somme de contrôle CRC32 entre le fichier du contenu et sa somme de contrôle enregistrée dans l'en-tête du fichier de relecture. Replay très susceptible de se désynchroniser lors de la lecture."
     )
 MSG_HASH(
     MSG_CUSTOM_TIMING_GIVEN,
@@ -5006,7 +5006,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_DID_NOT_FIND_A_VALID_CONTENT_PATCH,
-    "Impossible de trouver un patch de contenu valide."
+    "Impossible de trouver un patch valide pour ce contenu."
     )
 MSG_HASH(
     MSG_DISCONNECT_DEVICE_FROM_A_VALID_PORT,
@@ -5106,7 +5106,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_FAILED_TO_BIND_SOCKET,
-    "Échec de l'attribution du socket."
+    "Échec à l'attribution du socket."
     )
 MSG_HASH(
     MSG_FAILED_TO_CREATE_THE_DIRECTORY,
@@ -5114,7 +5114,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE,
-    "Échec de l'extraction du contenu depuis le fichier compressé."
+    "Échec à l'extraction de contenu depuis le fichier compressé."
     )
 MSG_HASH(
     MSG_FAILED_TO_GET_NICKNAME_FROM_CLIENT,
@@ -5786,7 +5786,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CHECK_FOR_MISSING_FIRMWARE,
-    "Vérifie que tous les firmwares requis sont présents avant de tenter le chargement du contenu."
+    "Vérifie que tous les firmwares requis sont présents avant de tenter le chargement du contenu sélectionné."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
@@ -5839,7 +5839,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CONTENT_HISTORY_PATH,
-    "Emplacement de l'historique du contenu"
+    "Emplacement de l'historique de contenu"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_ORIGIN,
@@ -6180,7 +6180,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_FASTFORWARD_RATIO,
-    "Vitesse d'exécution de contenu maximale lors de l'avance rapide (par exemple, 5,0x pour un contenu à 60 images/s = une limitation à 300 images/s) Si définie à 0,0x, la vitesse en avance rapide est illimitée (pas de limite d'images/s)."
+    "Vitesse d'exécution du contenu maximale lors de l'avance rapide (par exemple, 5,0x pour un contenu à 60 images/s = une limitation à 300 images/s) Si définie à 0,0x, la vitesse en avance rapide est illimitée (pas de limite d'images/s)."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SLOWMOTION_RATIO,
@@ -7183,7 +7183,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_PREPARING_FOR_CONTENT_SCAN,
-    "Préparation à l'analyse du contenu..."
+    "Préparation à l'analyse de contenu..."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CORE_DELETE,
@@ -7291,7 +7291,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MATERIALUI_THUMBNAIL_BACKGROUND_ENABLE,
-    "Active le remplissage de l'espace inutilisé autour des miniatures avec une couleur de fond. Cela assure une taille d'affichage uniforme pour toutes les images, améliorant l'apparence du menu lors de l'affichage de miniatures de contenu mixte avec différentes dimensions de base."
+    "Active le remplissage de l'espace inutilisé autour des miniatures avec une couleur de fond. Cela assure une taille d'affichage uniforme pour toutes les images, améliorant l'apparence du menu lors de l'affichage des miniatures de contenu mixte avec différentes dimensions de base."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_XMB_MAIN_MENU_ENABLE_SETTINGS,
@@ -7643,7 +7643,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_DIRECTORY_REMAP_FILE_LOADED,
-    "Fichier de remappage pour le dossier de contenu chargé."
+    "Fichier de remappage pour le dossier du contenu chargé."
     )
 MSG_HASH(
     MSG_CORE_REMAP_FILE_LOADED,
@@ -10205,7 +10205,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_DIR,
-    "Dossier de contenu"
+    "Dossier du contenu"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_DIR,
@@ -10233,7 +10233,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_CORE_NAME,
-    "Sélectionne le cœur par défaut à utiliser au lancement du contenu analysé."
+    "Sélectionne le cœur à utiliser par défaut au lancement du contenu analysé."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_FILE_EXTS,
