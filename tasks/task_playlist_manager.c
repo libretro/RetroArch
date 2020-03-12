@@ -44,14 +44,14 @@ enum pl_manager_status
 
 typedef struct pl_manager_handle
 {
+   bool use_old_format;
+   bool fuzzy_archive_match;
+   enum pl_manager_status status;
+   size_t list_size;
+   size_t list_index;
    char *playlist_path;
    char *playlist_name;
    playlist_t *playlist;
-   size_t list_size;
-   size_t list_index;
-   enum pl_manager_status status;
-   bool use_old_format;
-   bool fuzzy_archive_match;
 } pl_manager_handle_t;
 
 /*********************/

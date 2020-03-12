@@ -35,21 +35,24 @@ typedef struct overlay_loader overlay_loader_t;
 
 struct overlay_loader
 {
-   enum overlay_status state;
-   enum overlay_image_transfer_status loading_status;
-   config_file_t *conf;
-   char *overlay_path;
-   struct overlay *overlays;
-   struct overlay *active;
+   bool driver_rgba_support;
    bool overlay_enable;
    bool overlay_hide_in_menu;
+
+   enum overlay_status state;
+   enum overlay_image_transfer_status loading_status;
+
    size_t resolve_pos;
    unsigned size;
    unsigned pos;
    unsigned pos_increment;
    float overlay_opacity;
    float overlay_scale;
-   bool driver_rgba_support;
+
+   config_file_t *conf;
+   char *overlay_path;
+   struct overlay *overlays;
+   struct overlay *active;
 };
 
 static void task_overlay_image_done(struct overlay *overlay)

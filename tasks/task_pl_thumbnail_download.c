@@ -51,26 +51,28 @@ enum pl_thumb_status
 
 typedef struct pl_thumb_handle
 {
+   bool overwrite;
+   bool right_thumbnail_exists;
+   bool left_thumbnail_exists;
+   bool http_task_complete;
+   enum pl_thumb_status status;
+
+   size_t list_size;
+   size_t list_index;
+   unsigned type_idx;
+
    char *system;
    char *playlist_path;
    char *dir_thumbnails;
    playlist_t *playlist;
    gfx_thumbnail_path_data_t *thumbnail_path_data;
    retro_task_t *http_task;
-   bool http_task_complete;
-   size_t list_size;
-   size_t list_index;
-   unsigned type_idx;
-   bool overwrite;
-   bool right_thumbnail_exists;
-   bool left_thumbnail_exists;
-   enum pl_thumb_status status;
 } pl_thumb_handle_t;
 
 typedef struct pl_entry_id
 {
-   char *playlist_path;
    size_t idx;
+   char *playlist_path;
 } pl_entry_id_t;
 
 /*********************/
@@ -84,14 +86,14 @@ static bool get_thumbnail_paths(
    char *path, size_t path_size,
    char *url, size_t url_size)
 {
+   char raw_url[2048];
+   char content_dir[PATH_MAX_LENGTH];
+   char tmp_buf[PATH_MAX_LENGTH];
    const char *system      = NULL;
    const char *db_name     = NULL;
    const char *img_name    = NULL;
    const char *sub_dir     = NULL;
    const char *system_name = NULL;
-   char content_dir[PATH_MAX_LENGTH];
-   char raw_url[2048];
-   char tmp_buf[PATH_MAX_LENGTH];
    
    content_dir[0] = '\0';
    raw_url[0]     = '\0';

@@ -29,8 +29,8 @@ typedef struct powerstate powerstate_t;
 
 struct powerstate
 {
-   int percent;
    enum frontend_powerstate state;
+   int percent;
 };
 
 enum frontend_powerstate get_last_powerstate(int *percent)
