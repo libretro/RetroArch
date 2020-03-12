@@ -6180,7 +6180,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_FASTFORWARD_RATIO,
-    "Vitesse d'exécution du contenu maximale lors de l'avance rapide (par exemple, 5,0x pour un contenu à 60 images/s = une limitation à 300 images/s) Si définie à 0,0x, la vitesse en avance rapide est illimitée (pas de limite d'images/s)."
+    "Vitesse d'exécution maximale du contenu lors de l'avance rapide (par exemple, 5,0x pour un contenu à 60 images/s = une limitation à 300 images/s) Si définie à 0,0x, la vitesse en avance rapide est illimitée (pas de limite d'images/s)."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SLOWMOTION_RATIO,
@@ -7155,7 +7155,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_SCROLL_FAST,
-    "Vitesse maximale de déplacement du curseur lors d'un défilement prolongé."
+    "Vitesse de déplacement maximale du curseur lors d'un défilement prolongé."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SCROLL_NORMAL,
