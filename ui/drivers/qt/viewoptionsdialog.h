@@ -43,6 +43,7 @@ private:
    QCheckBox *m_showHiddenFilesCheckBox;
    QComboBox *m_themeComboBox;
    QSpinBox *m_thumbnailCacheSpinBox;
+   QSpinBox *m_thumbnailDropSizeSpinBox;
    QComboBox *m_startupPlaylistComboBox;
    QPushButton *m_highlightColorPushButton;
    QColor m_highlightColor;

@@ -9049,6 +9049,10 @@ MSG_HASH(
     "Thumbnail cache limit:"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THUMBNAIL_DROP_SIZE_LIMIT,
+    "Drag-n-drop Thumbnail size limit:"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS,
     "Download All Thumbnails"
     )
