@@ -261,6 +261,7 @@ int detect_psp_game(intfstream_t *fd, char *game_id)
                || (string_is_equal(game_id, "UCUS-"))
                || (string_is_equal(game_id, "UCJS-"))
                || (string_is_equal(game_id, "UCAS-"))
+               || (string_is_equal(game_id, "UCKS-"))
 
                || (string_is_equal(game_id, "ULKS-"))
                || (string_is_equal(game_id, "ULAS-"))
