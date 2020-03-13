@@ -117,6 +117,13 @@ else ifeq ($(LIBRETRO), fceumm)
 	APP_ICON             = pkg/ctr/assets/fceumm.png
 	APP_BANNER           = pkg/ctr/assets/fceumm_banner.png
 
+else ifeq ($(LIBRETRO), ffmpeg)
+	APP_TITLE            = FFMPEG
+	APP_PRODUCT_CODE     = RARCH-FFMPEG
+	APP_UNIQUE_ID        = 0xBAC9D
+	APP_ICON             = pkg/ctr/assets/default.png
+	APP_BANNER           = pkg/ctr/assets/libretro_banner.png
+
 else ifeq ($(LIBRETRO), fmsx)
 	APP_TITLE            = fMSX
 	APP_AUTHOR           = Marat Fayzullin
@@ -124,6 +131,13 @@ else ifeq ($(LIBRETRO), fmsx)
 	APP_UNIQUE_ID        = 0xBAC16
 	APP_ICON             = pkg/ctr/assets/fmsx.png
 	APP_BANNER           = pkg/ctr/assets/fmsx_banner.png
+
+else ifeq ($(LIBRETRO), freechaf)
+	APP_TITLE            = FreeChaf
+	APP_PRODUCT_CODE     = RARCH-FREECHAF
+	APP_UNIQUE_ID        = 0xBAC9C
+	APP_ICON             = pkg/ctr/assets/default.png
+	APP_BANNER           = pkg/ctr/assets/libretro_banner.png
 
 else ifeq ($(LIBRETRO), freeintv)
 	APP_TITLE            = FreeIntv
