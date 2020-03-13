@@ -842,7 +842,8 @@ endif
 ifeq ($(HAVE_GFX_WIDGETS), 1)
    OBJ += gfx/gfx_widgets.o \
           gfx/widgets/gfx_widget_screenshot.o \
-          gfx/widgets/gfx_widget_volume.o
+          gfx/widgets/gfx_widget_volume.o \
+          gfx/widgets/gfx_widget_generic_message.o
 endif
 
 ifeq ($(HAVE_OVERLAY), 1)

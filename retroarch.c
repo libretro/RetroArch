@@ -5555,7 +5555,7 @@ bool retroarch_apply_shader(enum rarch_shader_type type, const char *preset_path
                preset_file ? preset_file : "None");
 #ifdef HAVE_GFX_WIDGETS
          if (gfx_widgets_active())
-            gfx_widgets_set_message(msg);
+            gfx_widget_set_message(msg);
          else
 #endif
             runloop_msg_queue_push(msg, 1, 120, true, NULL,

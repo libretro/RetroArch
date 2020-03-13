@@ -99,6 +99,7 @@ font_data_t* gfx_widgets_get_font_bold(void);
 float* gfx_widgets_get_backdrop_orig(void);
 unsigned gfx_widgets_get_last_video_width(void);
 unsigned gfx_widgets_get_last_video_height(void);
+unsigned gfx_widgets_get_generic_message_height(void);
 
 float gfx_widgets_get_thumbnail_scale_factor(
       const float dst_width, const float dst_height,
@@ -120,6 +121,7 @@ typedef struct gfx_widget gfx_widget_t;
 
 extern const gfx_widget_t gfx_widget_screenshot;
 extern const gfx_widget_t gfx_widget_volume;
+extern const gfx_widget_t gfx_widget_generic_message;
 
 bool gfx_widgets_active(void);
 void gfx_widgets_set_persistence(bool persist);
@@ -169,7 +171,7 @@ void gfx_widgets_cleanup_load_content_animation(void);
 void gfx_widgets_push_achievement(const char *title, const char *badge);
 
 /* Warning: not thread safe! */
-void gfx_widgets_set_message(char *message);
+void gfx_widget_set_message(char *message);
 
 /* Warning: not thread safe! */
 void gfx_widgets_set_libretro_message(const char *message, unsigned duration);
