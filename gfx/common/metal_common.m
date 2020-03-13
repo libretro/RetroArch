@@ -156,7 +156,7 @@
       *input = NULL;
       *inputData = NULL;
 
-      // menu display
+      // graphics display driver
       _display = [[MenuDisplay alloc] initWithContext:_context];
 
       // menu view
@@ -340,7 +340,7 @@
 #ifdef HAVE_GFX_WIDGETS
       if (widgets_active)
       {
-         [rce pushDebugGroup:@"menu widgets"];
+         [rce pushDebugGroup:@"display widgets"];
          gfx_widgets_frame(video_info);
          [rce popDebugGroup];
       }

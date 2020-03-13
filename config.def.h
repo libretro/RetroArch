@@ -978,16 +978,16 @@ static const unsigned playlist_entry_remove_enable = PLAYLIST_ENTRY_REMOVE_ENABL
 /* Show Menu start-up screen on boot. */
 #define DEFAULT_MENU_SHOW_START_SCREEN true
 
-/* Default scale factor for non-frambuffer-based menu
- * drivers and menu widgets */
+/* Default scale factor for non-frambuffer-based display
+ * drivers and display widgets */
 #define DEFAULT_MENU_SCALE_FACTOR 1.0f
-/* Specifies whether menu widgets should be scaled
+/* Specifies whether display widgets should be scaled
  * automatically using the default menu scale factor */
 #define DEFAULT_MENU_WIDGET_SCALE_AUTO true
-/* Default scale factor for menu widgets when widget
+/* Default scale factor for display widgets when widget
  * auto scaling is disabled (fullscreen mode) */
 #define DEFAULT_MENU_WIDGET_SCALE_FACTOR 1.0f
-/* Default scale factor for menu widgets when widget
+/* Default scale factor for display widgets when widget
  * auto scaling is disabled (windowed mode) */
 #define DEFAULT_MENU_WIDGET_SCALE_FACTOR_WINDOWED 1.0f
 

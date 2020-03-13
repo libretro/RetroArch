@@ -6148,7 +6148,7 @@ static void handle_translation_cb(
       video_driver_cached_frame_get(&dummy_data, &width, &height, &pitch);
 
       /* try two different modes for text display *
-       * In the first mode, we use menu widget overlays, but they require
+       * In the first mode, we use display widget overlays, but they require
        * the video poke interface to be able to load image buffers.
        *
        * The other method is to draw to the video buffer directly, which needs
@@ -6198,7 +6198,7 @@ static void handle_translation_cb(
       }
       else
 #endif
-      /* Can't use menu widget overlays, so try writing to video buffer */
+      /* Can't use display widget overlays, so try writing to video buffer */
       {
          /* Write to video buffer directly (software cores only) */
          if (raw_image_file_data[0] == 'B' && raw_image_file_data[1] == 'M')
@@ -8108,7 +8108,8 @@ bool command_event(enum event_command cmd, void *data)
 #if defined(HAVE_TRANSLATE) && defined(HAVE_GFX_WIDGETS)
          if (gfx_widgets_ai_service_overlay_get_state() != 0)
          {
-            /* Because the overlay is a menu widget, it's going to be written
+            /* Because the overlay is a display widget, 
+             * it's going to be written
              * over the menu, so we unset it here. */
             gfx_widgets_ai_service_overlay_unload();
          }
@@ -9711,7 +9712,7 @@ void main_exit(void *args)
       command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
 
 #if defined(HAVE_GFX_WIDGETS)
-   /* Do not want menu widgets to live any more. */
+   /* Do not want display widgets to live any more. */
    gfx_widgets_set_persistence(false);
 #endif
 #ifdef HAVE_MENU
@@ -25297,7 +25298,7 @@ static void drivers_init(int flags)
    bool menu_enable_widgets = settings->bools.menu_enable_widgets;
 
 #if defined(HAVE_GFX_WIDGETS)
-   /* By default, we want menu widgets to persist through driver reinits. */
+   /* By default, we want display widgets to persist through driver reinits. */
    gfx_widgets_set_persistence(true);
 #endif
 
@@ -25527,7 +25528,7 @@ static void driver_uninit(int flags)
 static void retroarch_deinit_drivers(void)
 {
 #if defined(HAVE_GFX_WIDGETS)
-   /* Tear down menu widgets no matter what
+   /* Tear down display widgets no matter what
     * in case the handle is lost in the threaded
     * video driver in the meantime
     * (breaking video_driver_has_widgets) */
@@ -29657,7 +29658,8 @@ static enum runloop_state runloop_check_state(retro_time_t current_time)
       old_button_state                  = new_button_state;
       old_hold_button_state             = new_hold_button_state;
 
-      /* Show the fast-forward OSD for 1 frame every frame if menu widgets are disabled */
+      /* Show the fast-forward OSD for 1 frame every frame if 
+       * display widgets are disabled */
 #if defined(HAVE_GFX_WIDGETS)
       if (!widgets_active && runloop_fastmotion)
 #else

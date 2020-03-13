@@ -4337,7 +4337,7 @@ static void *rgui_init(void **userdata, bool video_is_threaded)
     * platforms do not like video_driver_texture-related
     * operations (e.g. 3DS). We would hope that these
     * platforms will always have HAVE_GFX_WIDGETS disabled,
-    * but for extra safety we will only permit menu widget
+    * but for extra safety we will only permit display widget
     * additions when the current gfx driver reports that it
     * has widget support */
    rgui->widgets_supported = gfx_widgets_ready();

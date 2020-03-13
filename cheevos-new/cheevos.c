@@ -2532,7 +2532,7 @@ found:
     *************************************************************************/
    CORO_SUB(RCHEEVOS_GET_BADGES)
 
-   /* we always want badges if menu widgets are enabled */
+   /* we always want badges if display widgets are enabled */
 #if !defined(HAVE_GFX_WIDGETS)
    {
       settings_t *settings = config_get_ptr();

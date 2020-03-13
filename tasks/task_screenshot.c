@@ -159,7 +159,7 @@ static void task_screenshot_handler(retro_task_t *task)
          free(state->userbuf);
 
 #if defined(HAVE_GFX_WIDGETS)
-      /* If menu widgets are enabled, state is freed
+      /* If display widgets are enabled, state is freed
          in the callback after the notification
          is displayed */
       if (!state->widgets_ready)
