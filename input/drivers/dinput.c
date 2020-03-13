@@ -84,6 +84,7 @@ struct dinput_input
    int mouse_rel_y;
    int mouse_x;
    int mouse_y;
+   bool doubleclick_on_titlebar;
    bool mouse_l, mouse_r, mouse_m, mouse_b4, mouse_b5, mouse_wu, mouse_wd, mouse_hwu, mouse_hwd;
    struct pointer_status pointer_head;  /* dummy head for easier iteration */
 };
@@ -190,9 +191,6 @@ static void *dinput_init(const char *joypad_driver)
    return di;
 }
 
-bool doubleclick_on_titlebar_pressed(void);
-void unset_doubleclick_on_titlebar(void);
-
 static void dinput_poll(void *data)
 {
    struct dinput_input *di = (struct dinput_input*)data;
@@ -236,8 +234,8 @@ static void dinput_poll(void *data)
       di->mouse_rel_y = mouse_state.lY;
 
       if (!mouse_state.rgbButtons[0])
-         unset_doubleclick_on_titlebar();
-      if (doubleclick_on_titlebar_pressed())
+         di->doubleclick_on_titlebar = false;
+      if (di->doubleclick_on_titlebar)
          di->mouse_l  = 0;
       else
          di->mouse_l  = mouse_state.rgbButtons[0];
@@ -852,7 +850,8 @@ static void dinput_clear_pointers(struct dinput_input *di)
    }
 }
 
-bool dinput_handle_message(void *data, UINT message, WPARAM wParam, LPARAM lParam)
+bool dinput_handle_message(void *data,
+      UINT message, WPARAM wParam, LPARAM lParam)
 {
    struct dinput_input *di = (struct dinput_input *)data;
    /* WM_POINTERDOWN   : Arrives for each new touch event
@@ -865,6 +864,9 @@ bool dinput_handle_message(void *data, UINT message, WPARAM wParam, LPARAM lPara
 
    switch (message)
    {
+      case WM_NCLBUTTONDBLCLK:
+         di->doubleclick_on_titlebar = true;
+         break;
       case WM_MOUSEMOVE:
          di->window_pos_x = GET_X_LPARAM(lParam);
          di->window_pos_y = GET_Y_LPARAM(lParam);

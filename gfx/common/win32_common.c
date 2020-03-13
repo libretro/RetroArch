@@ -115,11 +115,6 @@ static HDEVNOTIFY notification_handler;
 #ifdef HAVE_DINPUT
 extern bool dinput_handle_message(void *dinput, UINT message,
       WPARAM wParam, LPARAM lParam);
-#ifdef HAVE_GDI
-extern void *dinput_gdi;
-#endif
-extern void *dinput_wgl;
-extern void *dinput;
 #endif
 
 typedef struct DISPLAYCONFIG_RATIONAL_CUSTOM {
@@ -219,7 +214,6 @@ typedef LONG (WINAPI *QUERYDISPLAYCONFIG)(UINT32, UINT32*, DISPLAYCONFIG_PATH_IN
 typedef LONG (WINAPI *GETDISPLAYCONFIGBUFFERSIZES)(UINT32, UINT32*, UINT32*);
 
 bool g_win32_restore_desktop        = false;
-static bool doubleclick_on_titlebar = false;
 static bool taskbar_is_created      = false;
 bool g_win32_inited                 = false;
 
@@ -305,16 +299,6 @@ static HMONITOR win32_monitor_all[MAX_MONITORS];
 bool win32_taskbar_is_created(void)
 {
    return taskbar_is_created;
-}
-
-bool doubleclick_on_titlebar_pressed(void)
-{
-   return doubleclick_on_titlebar;
-}
-
-void unset_doubleclick_on_titlebar(void)
-{
-   doubleclick_on_titlebar = false;
 }
 
 static INT_PTR_COMPAT CALLBACK PickCoreProc(
@@ -848,7 +832,19 @@ static LRESULT CALLBACK WndProcCommon(bool *quit, HWND hwnd, UINT message,
    switch (message)
    {
       case WM_NCLBUTTONDBLCLK:
-         doubleclick_on_titlebar = true;
+#if _WIN32_WINNT >= 0x0500 /* 2K */
+         if (g_win32->taskbar_message && message == g_win32->taskbar_message)
+            taskbar_is_created = true;
+#endif
+#ifdef HAVE_DINPUT
+         if (input_get_ptr() == &input_dinput)
+         {
+            void* input_data = input_get_data();
+            if (input_data && dinput_handle_message(input_data,
+                     message, wparam, lparam))
+               return 0;
+         }
+#endif
          break;
       case WM_SYSCOMMAND:
          /* Prevent screensavers, etc, while running. */
@@ -1004,6 +1000,7 @@ LRESULT CALLBACK WndProcD3D(HWND hwnd, UINT message,
       case WM_DEVICECHANGE:
       case WM_MOUSEWHEEL:
       case WM_MOUSEHWHEEL:
+      case WM_NCLBUTTONDBLCLK:
 #if _WIN32_WINNT >= 0x0500 /* 2K */
          if (g_win32->taskbar_message && message == g_win32->taskbar_message)
             taskbar_is_created = true;
@@ -1016,13 +1013,6 @@ LRESULT CALLBACK WndProcD3D(HWND hwnd, UINT message,
                      message, wparam, lparam))
                return 0;
          }
-#endif
-         break;
-      case WM_NCLBUTTONDBLCLK:
-         doubleclick_on_titlebar = true;
-#if _WIN32_WINNT >= 0x0500 /* 2K */
-         if (g_win32->taskbar_message && message == g_win32->taskbar_message)
-            taskbar_is_created = true;
 #endif
          break;
       case WM_DROPFILES:
@@ -1075,21 +1065,18 @@ LRESULT CALLBACK WndProcWGL(HWND hwnd, UINT message,
       case WM_DEVICECHANGE:
       case WM_MOUSEWHEEL:
       case WM_MOUSEHWHEEL:
+      case WM_NCLBUTTONDBLCLK:
 #if _WIN32_WINNT >= 0x0500 /* 2K */
          if (g_win32->taskbar_message && message == g_win32->taskbar_message)
             taskbar_is_created = true;
 #endif
 #ifdef HAVE_DINPUT
-         if (dinput_wgl && dinput_handle_message(dinput_wgl,
-                  message, wparam, lparam))
-            return 0;
-#endif
-         break;
-      case WM_NCLBUTTONDBLCLK:
-         doubleclick_on_titlebar = true;
-#if _WIN32_WINNT >= 0x0500 /* 2K */
-         if (g_win32->taskbar_message && message == g_win32->taskbar_message)
-            taskbar_is_created = true;
+         {
+            void* input_data = input_get_data();
+            if (input_data && dinput_handle_message(input_data,
+                     message, wparam, lparam))
+               return 0;
+         }
 #endif
          break;
       case WM_DROPFILES:
@@ -1142,21 +1129,18 @@ LRESULT CALLBACK WndProcGDI(HWND hwnd, UINT message,
       case WM_DEVICECHANGE:
       case WM_MOUSEWHEEL:
       case WM_MOUSEHWHEEL:
+      case WM_NCLBUTTONDBLCLK:
 #if _WIN32_WINNT >= 0x0500 /* 2K */
          if (g_win32->taskbar_message && message == g_win32->taskbar_message)
             taskbar_is_created = true;
 #endif
 #ifdef HAVE_DINPUT
-         if (dinput_gdi && dinput_handle_message(dinput_gdi,
-                  message, wparam, lparam))
-            return 0;
-#endif
-         break;
-      case WM_NCLBUTTONDBLCLK:
-         doubleclick_on_titlebar = true;
-#if _WIN32_WINNT >= 0x0500 /* 2K */
-         if (g_win32->taskbar_message && message == g_win32->taskbar_message)
-            taskbar_is_created = true;
+         {
+            void* input_data = input_get_data();
+            if (input_data && dinput_handle_message(input_data,
+                     message, wparam, lparam))
+               return 0;
+         }
 #endif
          break;
       case WM_PAINT:
