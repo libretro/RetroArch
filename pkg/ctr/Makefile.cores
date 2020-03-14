@@ -13,6 +13,13 @@ else ifeq ($(LIBRETRO), 81)
 	APP_ICON             = pkg/ctr/assets/81.png
 	APP_BANNER           = pkg/ctr/assets/81_banner.png
 
+else ifeq ($(LIBRETRO), atari800)
+	APP_TITLE            = Atari800
+	APP_PRODUCT_CODE     = RARCH-ATARI800
+	APP_UNIQUE_ID        = 0xBAC9E
+	APP_ICON             = pkg/ctr/assets/default.png
+	APP_BANNER           = pkg/ctr/assets/libretro_banner.png
+
 else ifeq ($(LIBRETRO), bk)
 	APP_TITLE            = BK 0010/0011
 	APP_PRODUCT_CODE     = RARCH-BK
@@ -438,6 +445,55 @@ else ifeq ($(LIBRETRO), vecx)
 	APP_UNIQUE_ID        = 0xBAC4C
 	APP_ICON             = pkg/ctr/assets/vecx.png
 	APP_BANNER           = pkg/ctr/assets/vecx_banner.png
+
+else ifeq ($(LIBRETRO), vice_x64)
+	APP_TITLE            = VICE x64
+	APP_PRODUCT_CODE     = RARCH-VICE-X64
+	APP_UNIQUE_ID        = 0xBAC9F
+	APP_ICON             = pkg/ctr/assets/default.png
+	APP_BANNER           = pkg/ctr/assets/libretro_banner.png
+
+else ifeq ($(LIBRETRO), vice_x64sc)
+	APP_TITLE            = VICE x64sc
+	APP_PRODUCT_CODE     = RARCH-VICE-X64SC
+	APP_UNIQUE_ID        = 0xBACA0
+	APP_ICON             = pkg/ctr/assets/default.png
+	APP_BANNER           = pkg/ctr/assets/libretro_banner.png
+
+else ifeq ($(LIBRETRO), vice_x128)
+	APP_TITLE            = VICE x128
+	APP_PRODUCT_CODE     = RARCH-VICE-X128
+	APP_UNIQUE_ID        = 0xBACA1
+	APP_ICON             = pkg/ctr/assets/default.png
+	APP_BANNER           = pkg/ctr/assets/libretro_banner.png
+
+else ifeq ($(LIBRETRO), vice_xcbm2)
+	APP_TITLE            = VICE xcbm2
+	APP_PRODUCT_CODE     = RARCH-VICE-XCBM2
+	APP_UNIQUE_ID        = 0xBACA2
+	APP_ICON             = pkg/ctr/assets/default.png
+	APP_BANNER           = pkg/ctr/assets/libretro_banner.png
+
+else ifeq ($(LIBRETRO), vice_xpet)
+	APP_TITLE            = VICE xpet
+	APP_PRODUCT_CODE     = RARCH-VICE-XPET
+	APP_UNIQUE_ID        = 0xBACA3
+	APP_ICON             = pkg/ctr/assets/default.png
+	APP_BANNER           = pkg/ctr/assets/libretro_banner.png
+
+else ifeq ($(LIBRETRO), vice_xplus4)
+	APP_TITLE            = VICE xplus4
+	APP_PRODUCT_CODE     = RARCH-VICE-XPLUS4
+	APP_UNIQUE_ID        = 0xBACA4
+	APP_ICON             = pkg/ctr/assets/default.png
+	APP_BANNER           = pkg/ctr/assets/libretro_banner.png
+
+else ifeq ($(LIBRETRO), vice_xvic)
+	APP_TITLE            = VICE xvic
+	APP_PRODUCT_CODE     = RARCH-VICE-XVIC
+	APP_UNIQUE_ID        = 0xBACA5
+	APP_ICON             = pkg/ctr/assets/default.png
+	APP_BANNER           = pkg/ctr/assets/libretro_banner.png
 
 else ifeq ($(LIBRETRO), vitaquake2)
 	APP_TITLE            = vitaquake2
