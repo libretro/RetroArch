@@ -286,11 +286,6 @@ static unsigned ai_service_overlay_height         = 0;
 static uintptr_t ai_service_overlay_texture       = 0;
 #endif
 
-/* Generic message */
-static gfx_timer_t generic_message_timer;
-static float generic_message_alpha        = 0.0f;
-static char generic_message[256]          = {'\0'};
-
 /* Libretro message */
 
 static gfx_timer_t libretro_message_timer;
@@ -351,7 +346,12 @@ static unsigned msg_queue_task_rect_start_x;
 static unsigned msg_queue_task_hourglass_x;
 
 /* Used for both generic and libretro messages */
-static unsigned generic_message_height; 
+static unsigned generic_message_height;
+
+unsigned gfx_widgets_get_generic_message_height(void)
+{
+   return generic_message_height;
+}
 
 static unsigned divider_width_1px            = 1;
 
@@ -371,7 +371,8 @@ unsigned gfx_widgets_get_last_video_height(void)
 /* Widgets list */
 const static gfx_widget_t* const widgets[] = {
    &gfx_widget_screenshot,
-   &gfx_widget_volume
+   &gfx_widget_volume,
+   &gfx_widget_generic_message
 };
 
 static const size_t widgets_len = sizeof(widgets) / sizeof(widgets[0]);
@@ -1606,27 +1607,6 @@ void gfx_widgets_frame(void *data)
          1, false, 0, false);
    }
 
-   /* Generic message */
-   if (generic_message_alpha > 0.0f)
-   {
-      unsigned text_color = COLOR_TEXT_ALPHA(0xffffffff, (unsigned)(generic_message_alpha*255.0f));
-      gfx_display_set_alpha(gfx_widgets_backdrop_orig, generic_message_alpha);
-
-      gfx_display_draw_quad(userdata,
-            video_width, video_height,
-            0, video_height - generic_message_height,
-            video_width, generic_message_height,
-            video_width, video_height,
-            gfx_widgets_backdrop_orig);
-
-      gfx_display_draw_text(font_regular, generic_message,
-         video_width/2,
-         video_height - generic_message_height/2 + widget_font_size/4,
-         video_width, video_height,
-         text_color, TEXT_ALIGN_CENTER,
-         1, false, 0, false);
-   }
-
 #ifdef HAVE_CHEEVOS
    /* Achievement notification */
    if (cheevo_popup_queue_read_index >= 0 && cheevo_popup_queue[cheevo_popup_queue_read_index].title)
@@ -2253,9 +2233,6 @@ static void gfx_widgets_free(void)
    font_driver_bind_block(NULL, NULL);
 
    /* Reset state of all other widgets */
-   /* Generic message*/
-   generic_message_alpha  = 0.0f;
-
    /* Libretro message */
    libretro_tag           = (uintptr_t) &libretro_message_timer;
    libretro_message_alpha = 0.0f;
@@ -2568,46 +2545,6 @@ void gfx_widgets_push_achievement(const char *title, const char *badge)
    SLOCK_UNLOCK(cheevo_popup_queue_lock);
 }
 #endif
-
-static void gfx_widgets_generic_message_fadeout(void *userdata)
-{
-   gfx_animation_ctx_entry_t entry;
-   gfx_animation_ctx_tag tag = (uintptr_t) &generic_message_timer;
-
-   /* Start fade out animation */
-   entry.cb             = NULL;
-   entry.duration       = MSG_QUEUE_ANIMATION_DURATION;
-   entry.easing_enum    = EASING_OUT_QUAD;
-   entry.subject        = &generic_message_alpha;
-   entry.tag            = tag;
-   entry.target_value   = 0.0f;
-   entry.userdata       = NULL;
-
-   gfx_animation_push(&entry);
-}
-
-void gfx_widgets_set_message(char *msg)
-{
-   gfx_timer_ctx_entry_t timer;
-   gfx_animation_ctx_tag tag = (uintptr_t) &generic_message_timer;
-
-   if (!widgets_active)
-      return;
-
-   strlcpy(generic_message, msg, sizeof(generic_message));
-
-   generic_message_alpha = DEFAULT_BACKDROP;
-
-   /* Kill and restart the timer / animation */
-   gfx_timer_kill(&generic_message_timer);
-   gfx_animation_kill_by_tag(&tag);
-
-   timer.cb       = gfx_widgets_generic_message_fadeout;
-   timer.duration = GENERIC_MESSAGE_DURATION;
-   timer.userdata = NULL;
-
-   gfx_timer_start(&generic_message_timer, &timer);
-}
 
 static void gfx_widgets_libretro_message_fadeout(void *userdata)
 {

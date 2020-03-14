@@ -1263,6 +1263,7 @@ MENU
 #include "../gfx/gfx_widgets.c"
 #include "../gfx/widgets/gfx_widget_screenshot.c"
 #include "../gfx/widgets/gfx_widget_volume.c"
+#include "../gfx/widgets/gfx_widget_generic_message.c"
 #endif
 
 #include "../input/input_osk.c"
