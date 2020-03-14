@@ -267,6 +267,13 @@ else ifeq ($(LIBRETRO), nekop2)
 	APP_ICON             = pkg/ctr/assets/nekop2.png
 	APP_BANNER           = pkg/ctr/assets/nekop2_banner.png
 
+else ifeq ($(LIBRETRO), mrboom)
+	APP_TITLE            = MrBoom
+	APP_PRODUCT_CODE     = RARCH-MRBOOM
+	APP_UNIQUE_ID        = 0xBACA6
+	APP_ICON             = pkg/ctr/assets/default.png
+	APP_BANNER           = pkg/ctr/assets/libretro_banner.png
+
 else ifeq ($(LIBRETRO), mu)
 	APP_TITLE            = Mu Palm Emulator
 	APP_PRODUCT_CODE     = RARCH-MU
