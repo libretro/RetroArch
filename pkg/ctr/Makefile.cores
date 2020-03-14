@@ -176,6 +176,13 @@ else ifeq ($(LIBRETRO), genesis_plus_gx)
 	APP_ICON             = pkg/ctr/assets/genesis_plus_gx.png
 	APP_BANNER           = pkg/ctr/assets/genesis_plus_gx_banner.png
 
+else ifeq ($(LIBRETRO), gme)
+	APP_TITLE            = GME
+	APP_PRODUCT_CODE     = RARCH-GME
+	APP_UNIQUE_ID        = 0xBACA8
+	APP_ICON             = pkg/ctr/assets/default.png
+	APP_BANNER           = pkg/ctr/assets/libretro_banner.png
+
 else ifeq ($(LIBRETRO), gpsp)
 	APP_TITLE            = gpSP Libretro
 	APP_PRODUCT_CODE     = RARCH-GPSP
