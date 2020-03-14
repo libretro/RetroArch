@@ -302,6 +302,7 @@ ViewOptionsWidget::ViewOptionsWidget(MainWindow *mainwindow, QWidget *parent) :
    ,m_showHiddenFilesCheckBox(new QCheckBox(this))
    ,m_themeComboBox(new QComboBox(this))
    ,m_thumbnailCacheSpinBox(new QSpinBox(this))
+   ,m_thumbnailDropSizeSpinBox(new QSpinBox(this))
    ,m_startupPlaylistComboBox(new QComboBox(this))
    ,m_highlightColorPushButton(new QPushButton(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CHOOSE), this))
    ,m_highlightColor()
@@ -320,6 +321,9 @@ ViewOptionsWidget::ViewOptionsWidget(MainWindow *mainwindow, QWidget *parent) :
 
    m_thumbnailCacheSpinBox->setSuffix(" MB");
    m_thumbnailCacheSpinBox->setRange(0, 99999);
+   
+   m_thumbnailDropSizeSpinBox->setSuffix(" px");
+   m_thumbnailDropSizeSpinBox->setRange(0, 99999);
 
    /* m_allPlaylistsListMaxCountSpinBox->setRange(0, 99999); */
    /* m_allPlaylistsGridMaxCountSpinBox->setRange(0, 99999); */
@@ -336,6 +340,7 @@ ViewOptionsWidget::ViewOptionsWidget(MainWindow *mainwindow, QWidget *parent) :
    /* form->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_ALL_PLAYLISTS_GRID_MAX_COUNT), m_allPlaylistsGridMaxCountSpinBox); */
    form->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_STARTUP_PLAYLIST), m_startupPlaylistComboBox);
    form->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THUMBNAIL_CACHE_LIMIT), m_thumbnailCacheSpinBox);
+   form->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THUMBNAIL_DROP_SIZE_LIMIT), m_thumbnailDropSizeSpinBox);
    form->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME), m_themeComboBox);
    form->addRow(m_highlightColorLabel, m_highlightColorPushButton);
 
@@ -420,6 +425,7 @@ void ViewOptionsWidget::loadViewOptions()
    /* m_allPlaylistsListMaxCountSpinBox->setValue(m_settings->value("all_playlists_list_max_count", 0).toInt()); */
    /* m_allPlaylistsGridMaxCountSpinBox->setValue(m_settings->value("all_playlists_grid_max_count", 5000).toInt()); */
    m_thumbnailCacheSpinBox->setValue(m_settings->value("thumbnail_cache_limit", 512).toInt());
+   m_thumbnailDropSizeSpinBox->setValue(m_settings->value("thumbnail_max_size", 0).toInt());
 
    themeIndex = m_themeComboBox->findData(m_mainwindow->getThemeFromString(m_settings->value("theme", "default").toString()));
 
@@ -477,6 +483,7 @@ void ViewOptionsWidget::saveViewOptions()
    /* m_settings->setValue("all_playlists_grid_max_count", m_allPlaylistsGridMaxCountSpinBox->value()); */
    m_settings->setValue("initial_playlist", m_startupPlaylistComboBox->currentData(Qt::UserRole).toString());
    m_settings->setValue("thumbnail_cache_limit", m_thumbnailCacheSpinBox->value());
+   m_settings->setValue("thumbnail_max_size", m_thumbnailDropSizeSpinBox->value());
 
    if (!m_mainwindow->customThemeString().isEmpty())
       m_settings->setValue("custom_theme", m_customThemePath);

@@ -1316,9 +1316,9 @@ QString MainWindow::changeThumbnail(const QImage &image, QString type)
 
    if (m_settings->contains("thumbnail_max_size"))
    {
-      int size = m_settings->value("thumbnail_max_size", 512).toInt();
+      int size = m_settings->value("thumbnail_max_size", 0).toInt();
 
-      if (size != 0)
+      if (size != 0 && (image.height() > size ||  image.width() > size))
          scaledImage = image.scaled(size, size, Qt::KeepAspectRatio, Qt::SmoothTransformation);
    }
 
