@@ -42,6 +42,7 @@
 #include "../gfx/video_display_server.h"
 #endif
 #include "../verbosity.h"
+#include <retroarch.h>
 
 typedef struct database_state_handle
 {
@@ -85,13 +86,21 @@ int gdi_find_track(const char *gdi_path, bool first,
 bool gdi_next_file(intfstream_t *fd, const char *gdi_path,
       char *path, uint64_t max_len);
 
-int detect_system(intfstream_t *fd, const char** system_name);
+int detect_system(intfstream_t *fd, const char** system_name, const char *filename);
 
-int detect_ps1_game(intfstream_t *fd, char *game_id);
+int detect_ps1_game(intfstream_t *fd, char *game_id, const char *filename);
 
-int detect_psp_game(intfstream_t *fd, char *game_id);
+int detect_psp_game(intfstream_t *fd, char *game_id, const char *filename);
 
-int detect_gc_game(intfstream_t *fd, char *game_id);
+int detect_gc_game(intfstream_t *fd, char *game_id, const char *filename);
+
+int detect_scd_game(intfstream_t *fd, char *game_id, const char *filename);
+
+int detect_sat_game(intfstream_t *fd, char *game_id, const char *filename);
+
+int detect_dc_game(intfstream_t *fd, char *game_id, const char *filename);
+
+int detect_wii_game(intfstream_t *fd, char *game_id, const char *filename);
 
 int detect_serial_ascii_game(intfstream_t *fd, char *game_id);
 
@@ -168,52 +177,73 @@ static int task_database_iterate_start(retro_task_t *task,
    return 0;
 }
 
-static int intfstream_get_serial(intfstream_t *fd, char *serial)
+static int intfstream_get_serial(intfstream_t *fd, char *game_id, const char *filename)
 {
-  const char *system_name = NULL;
-
-  /* Check if the system was not auto-detected. */
-  if (detect_system(fd, &system_name) < 0)
-  {
-    /* Attempt to read an ASCII serial, like Wii. */
-    if (detect_serial_ascii_game(fd, serial))
-    {
-      /* ASCII serial (Wii) was detected. */
-      RARCH_LOG("%s '%s'\n", msg_hash_to_str(MSG_FOUND_DISK_LABEL), serial);
+   const char *system_name = NULL;
+   if (detect_system(fd, &system_name, filename) >= 1)
+   {
+      /** Debug: runloop_msg_queue_push(system_name, 0, 180, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO); **/
+   }
+   else
+   {
       return 0;
-    }
+   }
 
-    /* Any other non-system specific detection methods? */
-    return 0;
-  }
+   if (string_is_equal(system_name, "Sony - PlayStation Portable"))
+   {
+      if (detect_psp_game(fd, game_id, filename) == 0)
+         return 0;
+      RARCH_LOG("Serial: %s\n", game_id);
+      return 1;
+   }
+   else if (string_is_equal(system_name, "Sony - PlayStation"))
+   {
+      if (detect_ps1_game(fd, game_id, filename) == 0)
+         return 0;
+      RARCH_LOG("Serial: %s\n", game_id);
+      return 1;
+   }
+   else if (string_is_equal(system_name, "Nintendo - GameCube"))
+   {
+      if (detect_gc_game(fd, game_id, filename) == 0)
+         return 0;
+      RARCH_LOG("Serial: %s\n", game_id);
+      return 1;
+   }
+   else if (string_is_equal(system_name, "Sega - Mega-CD - Sega CD"))
+   {
+      if (detect_scd_game(fd, game_id, filename) == 0)
+         return 0;
+      RARCH_LOG("Serial: %s\n", game_id);
+      return 1;
+   }
+   else if (string_is_equal(system_name, "Sega - Saturn"))
+   {
+      if (detect_sat_game(fd, game_id, filename) == 0)
+         return 0;
+      RARCH_LOG("Serial: %s\n", game_id);
+      return 1;
+   }
+   else if (string_is_equal(system_name, "Sega - Dreamcast"))
+   {
+      if (detect_dc_game(fd, game_id, filename) == 0)
+         return 0;
+      RARCH_LOG("Serial: %s\n", game_id);
+      return 1;
+   }
+   else if (string_is_equal(system_name, "Nintendo - Wii"))
+   {
+      if (detect_wii_game(fd, game_id, filename) == 0)
+         return 0;
+      RARCH_LOG("Serial: %s\n", game_id);
+      return 1;
+   }
 
-  if (string_is_equal(system_name, "psp"))
-  {
-    if (detect_psp_game(fd, serial) == 0)
-      return 0;
-    RARCH_LOG("%s '%s'\n", msg_hash_to_str(MSG_FOUND_DISK_LABEL), serial);
-  }
-  else if (string_is_equal(system_name, "ps1"))
-  {
-    if (detect_ps1_game(fd, serial) == 0)
-      return 0;
-    RARCH_LOG("%s '%s'\n", msg_hash_to_str(MSG_FOUND_DISK_LABEL), serial);
-  }
-  else if (string_is_equal(system_name, "gc"))
-  {
-    if (detect_gc_game(fd, serial) == 0)
-      return 0;
-    RARCH_LOG("%s '%s'\n", msg_hash_to_str(MSG_FOUND_DISK_LABEL), serial);
-  }
-  else {
-    return 0;
-  }
-
-  return 1;
+   return 0;
 }
 
 static bool intfstream_file_get_serial(const char *name,
-      uint64_t offset, uint64_t size, char *serial)
+      uint64_t offset, uint64_t size, char *game_id)
 {
    int rv;
    uint8_t *data     = NULL;
@@ -260,7 +290,7 @@ static bool intfstream_file_get_serial(const char *name,
       }
    }
 
-   rv = intfstream_get_serial(fd, serial);
+   rv = intfstream_get_serial(fd, game_id, name);
    intfstream_close(fd);
    free(fd);
    free(data);
@@ -272,7 +302,7 @@ error:
    return 0;
 }
 
-static int task_database_cue_get_serial(const char *name, char* serial)
+static int task_database_cue_get_serial(const char *name, char* game_id)
 {
    char *track_path                 = (char*)malloc(PATH_MAX_LENGTH
          * sizeof(char));
@@ -296,13 +326,13 @@ static int task_database_cue_get_serial(const char *name, char* serial)
 
    RARCH_LOG("%s\n", msg_hash_to_str(MSG_READING_FIRST_DATA_TRACK));
 
-   ret = intfstream_file_get_serial(track_path, offset, size, serial);
+   ret = intfstream_file_get_serial(track_path, offset, size, game_id);
    free(track_path);
 
    return ret;
 }
 
-static int task_database_gdi_get_serial(const char *name, char* serial)
+static int task_database_gdi_get_serial(const char *name, char* game_id)
 {
    char *track_path                 = (char*)malloc(PATH_MAX_LENGTH
          * sizeof(char));
@@ -324,13 +354,13 @@ static int task_database_gdi_get_serial(const char *name, char* serial)
 
    RARCH_LOG("%s\n", msg_hash_to_str(MSG_READING_FIRST_DATA_TRACK));
 
-   ret = intfstream_file_get_serial(track_path, 0, SIZE_MAX, serial);
+   ret = intfstream_file_get_serial(track_path, 0, SIZE_MAX, game_id);
    free(track_path);
 
    return ret;
 }
 
-static int task_database_chd_get_serial(const char *name, char* serial)
+static int task_database_chd_get_serial(const char *name, char* game_id)
 {
    int result;
    intfstream_t *fd = intfstream_open_chd_track(
@@ -341,7 +371,7 @@ static int task_database_chd_get_serial(const char *name, char* serial)
    if (!fd)
       return 0;
 
-   result = intfstream_get_serial(fd, serial);
+   result = intfstream_get_serial(fd, game_id, name);
    intfstream_close(fd);
    free(fd);
    return result;
@@ -813,7 +843,7 @@ static int database_info_list_iterate_found_match(
    playlist = playlist_init(db_playlist_path, COLLECTION_SIZE);
 
    snprintf(db_crc, PATH_MAX_LENGTH * sizeof(char),
-         "%08X|crc", db_info_entry->crc32);
+         "%s|serial", db_state->serial);
 
    if (entry_path)
       strlcpy(entry_path_str, entry_path, PATH_MAX_LENGTH * sizeof(char));
