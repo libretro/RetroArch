@@ -2998,7 +2998,7 @@ void MainWindow::showAbout()
    QDialogButtonBox *buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok);
    QString text = QString("RetroArch ") + PACKAGE_VERSION +
          "<br><br>" + "<a href=\"https://www.libretro.com/\">www.libretro.com</a>"
-         "<br><br>" + "<a href=\"http://www.retroarch.com/\">www.retroarch.com</a>"
+         "<br><br>" + "<a href=\"https://www.retroarch.com/\">www.retroarch.com</a>"
 #ifdef HAVE_GIT_VERSION
          "<br><br>" + msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION) + ": " + retroarch_git_version +
 #endif
