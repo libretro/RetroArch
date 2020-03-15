@@ -444,7 +444,7 @@ static int16_t winraw_keyboard_state(winraw_input_t *wr,
 
    for (i = 0; i < g_keyboard_cnt; ++i)
    {
-      if (i == settings->uints.input_mouse_index[port])
+      if (i == settings->uints.input_keyboard_index[port])
       {
          keyboard = &wr->keyboards[i];
          break;
@@ -470,7 +470,7 @@ static bool keyboard_key_is_pressed(winraw_input_t *wr,
 
    for (i = 0; i < g_keyboard_cnt; ++i)
    {
-      if (i == settings->uints.input_mouse_index[port])
+      if (i == settings->uints.input_keyboard_index[port])
       {
          keyboard = &wr->keyboards[i];
          break;

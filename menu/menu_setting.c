@@ -4777,6 +4777,22 @@ static int setting_action_left_mouse_index(rarch_setting_t *setting, bool wrapar
    return 0;
 }
 
+static int setting_action_left_keyboard_index(rarch_setting_t *setting, bool wraparound)
+{
+   settings_t *settings     = config_get_ptr();
+
+   if (!setting)
+      return -1;
+
+   if (settings->uints.input_keyboard_index[setting->index_offset])
+   {
+      --settings->uints.input_keyboard_index[setting->index_offset];
+      settings->modified = true;
+   }
+
+   return 0;
+}
+
 static int setting_uint_action_left_custom_viewport_width(
       rarch_setting_t *setting, bool wraparound)
 {
@@ -6257,6 +6273,19 @@ static int setting_action_right_mouse_index(rarch_setting_t *setting, bool wrapa
    return 0;
 }
 
+static int setting_action_right_keyboard_index(rarch_setting_t *setting, bool wraparound)
+{
+   settings_t *settings     = config_get_ptr();
+
+   if (!setting)
+      return -1;
+
+   ++settings->uints.input_keyboard_index[setting->index_offset];
+   settings->modified = true;
+
+   return 0;
+}
+
 /**
  ******* ACTION OK CALLBACK FUNCTIONS *******
 **/
@@ -7143,6 +7172,7 @@ static bool setting_append_list_input_player_options(
       static char split_joycon_lbl[MAX_USERS][64];
       static char key_bind_defaults[MAX_USERS][64];
       static char mouse_index[MAX_USERS][64];
+      static char keyboard_index[MAX_USERS][64];
 
       static char label[MAX_USERS][64];
       static char label_type[MAX_USERS][64];
@@ -7151,6 +7181,7 @@ static bool setting_append_list_input_player_options(
       static char label_bind_all_save_autoconfig[MAX_USERS][64];
       static char label_bind_defaults[MAX_USERS][64];
       static char label_mouse_index[MAX_USERS][64];
+      static char label_keyboard_index[MAX_USERS][64];
 
       tmp_string[0] = '\0';
 
@@ -7178,6 +7209,8 @@ static bool setting_append_list_input_player_options(
             sizeof(key_bind_defaults[user]));
       fill_pathname_join_delim(mouse_index[user], tmp_string, "mouse_index", '_',
             sizeof(mouse_index[user]));
+      fill_pathname_join_delim(keyboard_index[user], tmp_string, "keyboard_index", '_',
+            sizeof(keyboard_index[user]));
 
       snprintf(split_joycon_lbl[user], sizeof(label[user]),
                "%s %u", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_SPLIT_JOYCON), user + 1);
@@ -7203,6 +7236,9 @@ static bool setting_append_list_input_player_options(
       snprintf(label_mouse_index[user], sizeof(label_mouse_index[user]),
                "%s",
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_INDEX));
+      snprintf(label_keyboard_index[user], sizeof(label_keyboard_index[user]),
+               "%s",
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_INDEX));
 
       CONFIG_UINT_ALT(
             list, list_info,
@@ -7343,6 +7379,22 @@ static bool setting_append_list_input_player_options(
       (*list)[list_info->index - 1].index_offset = user;
       (*list)[list_info->index - 1].action_left  = &setting_action_left_mouse_index;
       (*list)[list_info->index - 1].action_right = &setting_action_right_mouse_index;
+
+      CONFIG_UINT_ALT(
+            list, list_info,
+            &settings->uints.input_keyboard_index[user],
+            keyboard_index[user],
+            label_keyboard_index[user],
+            0,
+            &group_info,
+            &subgroup_info,
+            parent_group,
+            general_write_handler,
+            general_read_handler);
+      (*list)[list_info->index - 1].index        = user + 1;
+      (*list)[list_info->index - 1].index_offset = user;
+      (*list)[list_info->index - 1].action_left  = &setting_action_left_keyboard_index;
+      (*list)[list_info->index - 1].action_right = &setting_action_right_keyboard_index;
    }
 
    for (i = 0; i < RARCH_BIND_LIST_END; i ++)

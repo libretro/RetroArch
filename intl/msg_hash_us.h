@@ -1250,6 +1250,11 @@ MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_INDEX,
     "Mouse Index"
     )
+/* TODO/FIXME: need to add translated version of keyboard index for other languages */
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_INDEX,
+    "Keyboard Index"
+    )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_DRIVER,
     "Input"
