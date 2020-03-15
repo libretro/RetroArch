@@ -328,6 +328,14 @@ else ifeq ($(LIBRETRO), picodrive)
 	APP_BANNER           = pkg/ctr/assets/picodrive_banner.png
 	APP_USE_SVCHAX       = 1
 
+else ifeq ($(LIBRETRO), pocketcdg)
+	APP_TITLE            = PocketCDG
+	APP_PRODUCT_CODE     = RARCH-POCKETCDG
+	APP_UNIQUE_ID        = 0xBACAC
+	APP_ICON             = pkg/ctr/assets/default.png
+	APP_BANNER           = pkg/ctr/assets/libretro_banner.png
+
+
 else ifeq ($(LIBRETRO), pokemini)
 	APP_TITLE            = PokeMini
 	APP_AUTHOR           = justburn
