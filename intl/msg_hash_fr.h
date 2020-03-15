@@ -8973,6 +8973,10 @@ MSG_HASH(
     "Limite du cache des miniatures :"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THUMBNAIL_DROP_SIZE_LIMIT,
+    "Limite de taille des miniatures glissées-déposées :"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS,
     "Télécharger toutes les miniatures"
     )
