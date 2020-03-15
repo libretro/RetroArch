@@ -205,6 +205,13 @@ else ifeq ($(LIBRETRO), handy)
 	APP_ICON             = pkg/ctr/assets/handy.png
 	APP_BANNER           = pkg/ctr/assets/handy_banner.png
 
+else ifeq ($(LIBRETRO), hatari)
+	APP_TITLE            = Hatari
+	APP_PRODUCT_CODE     = RARCH-HATARI
+	APP_UNIQUE_ID        = 0xBACAD
+	APP_ICON             = pkg/ctr/assets/default.png
+	APP_BANNER           = pkg/ctr/assets/libretro_banner.png
+
 else ifeq ($(LIBRETRO), mame2000)
 	APP_TITLE            = MAME-2000
 	APP_PRODUCT_CODE     = RARCH-MAME2000
