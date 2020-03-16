@@ -205,6 +205,20 @@ else ifeq ($(LIBRETRO), handy)
 	APP_ICON             = pkg/ctr/assets/handy.png
 	APP_BANNER           = pkg/ctr/assets/handy_banner.png
 
+else ifeq ($(LIBRETRO), hatari)
+	APP_TITLE            = Hatari
+	APP_PRODUCT_CODE     = RARCH-HATARI
+	APP_UNIQUE_ID        = 0xBACAD
+	APP_ICON             = pkg/ctr/assets/default.png
+	APP_BANNER           = pkg/ctr/assets/libretro_banner.png
+
+else ifeq ($(LIBRETRO), lutro)
+	APP_TITLE            = Lutro
+	APP_PRODUCT_CODE     = RARCH-LUTRO
+	APP_UNIQUE_ID        = 0xBACAF
+	APP_ICON             = pkg/ctr/assets/default.png
+	APP_BANNER           = pkg/ctr/assets/libretro_banner.png
+
 else ifeq ($(LIBRETRO), mame2000)
 	APP_TITLE            = MAME-2000
 	APP_PRODUCT_CODE     = RARCH-MAME2000
@@ -460,6 +474,13 @@ else ifeq ($(LIBRETRO), theodore)
 	APP_UNIQUE_ID        = 0xBAC2E
 	APP_ICON             = pkg/ctr/assets/ThomsonMOTO.png
 	APP_BANNER           = pkg/ctr/assets/ThomsonMOTO_banner.png
+
+else ifeq ($(LIBRETRO), tyrquake)
+	APP_TITLE            = Tyrquake
+	APP_PRODUCT_CODE     = RARCH-TYRQUAKE
+	APP_UNIQUE_ID        = 0xBACAA
+	APP_ICON             = pkg/ctr/assets/default.png
+	APP_BANNER           = pkg/ctr/assets/libretro_banner.png
 
 else ifeq ($(LIBRETRO), vecx)
 	APP_TITLE            = VecX Libretro
