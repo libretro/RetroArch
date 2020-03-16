@@ -2029,7 +2029,7 @@ bool MainWindow::isContentLessCore()
 
 bool MainWindow::isCoreLoaded()
 {
-   if (  m_currentCore.isEmpty() || 
+   if (  m_currentCore.isEmpty() ||
          m_currentCore == msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE))
       return false;
 
@@ -2430,7 +2430,7 @@ void MainWindow::renamePlaylistItem(QListWidgetItem *item, QString newName)
    playlistInfo = playlistPath;
    oldName      = playlistInfo.completeBaseName();
 
-   /* Don't just compare strings in case there are 
+   /* Don't just compare strings in case there are
     * case differences on Windows that should be ignored. */
    if (QDir(playlistInfo.absoluteDir()) != QDir(playlistDir))
    {
@@ -2440,14 +2440,14 @@ void MainWindow::renamePlaylistItem(QListWidgetItem *item, QString newName)
 
    if (specialPlaylist)
    {
-      /* special playlists shouldn't be editable already, 
-       * but just in case, set the old name back and 
+      /* special playlists shouldn't be editable already,
+       * but just in case, set the old name back and
        * early return if they rename it */
       item->setText(oldName);
       return;
    }
 
-   /* block this signal because setData() would trigger 
+   /* block this signal because setData() would trigger
     * an infinite loop here */
    disconnect(m_listWidget, SIGNAL(itemChanged(QListWidgetItem*)), this, SLOT(onCurrentListItemDataChanged(QListWidgetItem*)));
 
@@ -2997,8 +2997,8 @@ void MainWindow::showAbout()
    QScopedPointer<QDialog> dialog(new QDialog());
    QDialogButtonBox *buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok);
    QString text = QString("RetroArch ") + PACKAGE_VERSION +
-         "<br><br>" + "<a href=\"http://www.libretro.com/\">www.libretro.com</a>"
-         "<br><br>" + "<a href=\"http://www.retroarch.com/\">www.retroarch.com</a>"
+         "<br><br>" + "<a href=\"https://www.libretro.com/\">www.libretro.com</a>"
+         "<br><br>" + "<a href=\"https://www.retroarch.com/\">www.retroarch.com</a>"
 #ifdef HAVE_GIT_VERSION
          "<br><br>" + msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION) + ": " + retroarch_git_version +
 #endif

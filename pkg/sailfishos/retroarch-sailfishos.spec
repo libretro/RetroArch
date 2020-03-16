@@ -5,7 +5,7 @@ Summary:        Official reference frontend for libretro
 
 Group:          Applications/Emulators
 License:        GPLv3+
-URL:            http://www.libretro.com/
+URL:            https://www.libretro.com/
 
 BuildRequires:  mesa-llvmpipe-libwayland-egl-devel
 BuildRequires:  pulseaudio-devel
