@@ -32,6 +32,9 @@
 - MENU: Automatically select currently checked item when opening drop-down lists
 - MENU: Fix smooth (vertical) line ticker scroll speed
 - MENU: Don't flush on override/remap messages
+- MENU/DATETIME: Adds some new timedate styles that follow the DD/MM/YYYY format, found in several European countries
+- MENU/DATETIME: Modifies the existing translation files in order to accommodate the new options that are now available
+- MENU/DATETIME: Reorders the timedate view options based on a decreasing order of the quantity of information displayed, so that they are more convenient to switch around and easily categorized
 - MENU/BUGFIX: Fix bug - if you were in XMB and you would set menu driver to RGUI, you could no longer go to the left or right tab
 - MENU/MATERIALUI: Add option to remove navigation bar
 - MENU/OZONE: Add DPI-based scaling
