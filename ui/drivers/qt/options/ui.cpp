@@ -71,6 +71,7 @@ QWidget *UserInterfacePage::widget()
    menuGroup->add(MENU_ENUM_LABEL_UI_COMPANION_ENABLE);
    menuGroup->add(MENU_ENUM_LABEL_UI_COMPANION_START_ON_BOOT);
    menuGroup->add(MENU_ENUM_LABEL_UI_MENUBAR_ENABLE);
+   menuGroup->add(MENU_ENUM_LABEL_MENU_SCROLL_FAST);
 
    /* layout->add(MENU_ENUM_LABEL_DESKTOP_MENU_ENABLE); */
    desktopGroup->add(MENU_ENUM_LABEL_UI_COMPANION_TOGGLE);
