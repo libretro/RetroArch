@@ -105,10 +105,6 @@ matrix:
         - cd pkg/android/phoenix
         - ./gradlew assembleNormalRelease
 
-jobs:
-  allow_failure:
-    - os: osx
-
 before_install:
   - |
      if [[ "$CC" =~ ^gcc-8.* ]]; then
