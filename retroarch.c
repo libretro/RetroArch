@@ -11203,7 +11203,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
          RARCH_LOG("[Environ]: SET_MESSAGE: %s\n", msg->msg);
 #if defined(HAVE_GFX_WIDGETS)
          if (gfx_widgets_active())
-            gfx_widgets_set_libretro_message(msg->msg,
+            gfx_widget_set_libretro_message(msg->msg,
                   roundf((float)msg->frames / 60.0f * 1000.0f));
          else
 #endif

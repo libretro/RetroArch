@@ -286,15 +286,8 @@ static unsigned ai_service_overlay_height         = 0;
 static uintptr_t ai_service_overlay_texture       = 0;
 #endif
 
-/* Libretro message */
-
-static gfx_timer_t libretro_message_timer;
-static char libretro_message[512]         = {'\0'};
-
 /* Metrics */
 #define BASE_FONT_SIZE 32.0f
-
-static float libretro_message_alpha       = 0.0f;
 
 static float last_scale_factor            = 0.0f;
 static float msg_queue_text_scale_factor  = 0.0f;
@@ -323,8 +316,6 @@ unsigned gfx_widgets_get_glyph_width(void)
 {
    return glyph_width;
 }
-
-static unsigned libretro_message_width    = 0;
 
 static unsigned msg_queue_height;
 static unsigned msg_queue_icon_size_x;
@@ -372,7 +363,8 @@ unsigned gfx_widgets_get_last_video_height(void)
 const static gfx_widget_t* const widgets[] = {
    &gfx_widget_screenshot,
    &gfx_widget_volume,
-   &gfx_widget_generic_message
+   &gfx_widget_generic_message,
+   &gfx_widget_libretro_message
 };
 
 static const size_t widgets_len = sizeof(widgets) / sizeof(widgets[0]);
@@ -1586,27 +1578,6 @@ void gfx_widgets_frame(void *data)
    }
 #endif
 
-   /* Libretro message */
-   if (libretro_message_alpha > 0.0f)
-   {
-      unsigned text_color = COLOR_TEXT_ALPHA(0xffffffff, (unsigned)(libretro_message_alpha*255.0f));
-      gfx_display_set_alpha(gfx_widgets_backdrop_orig, libretro_message_alpha);
-
-      gfx_display_draw_quad(userdata,
-            video_width, video_height,
-            0, video_height - generic_message_height,
-            libretro_message_width, generic_message_height,
-            video_width, video_height,
-            gfx_widgets_backdrop_orig);
-
-      gfx_display_draw_text(font_regular, libretro_message,
-         simple_widget_padding,
-         video_height - generic_message_height/2 + widget_font_size/4,
-         video_width, video_height,
-         text_color, TEXT_ALIGN_LEFT,
-         1, false, 0, false);
-   }
-
 #ifdef HAVE_CHEEVOS
    /* Achievement notification */
    if (cheevo_popup_queue_read_index >= 0 && cheevo_popup_queue[cheevo_popup_queue_read_index].title)
@@ -2164,7 +2135,6 @@ static void gfx_widgets_achievement_next(void* userdata)
 static void gfx_widgets_free(void)
 {
    size_t i;
-   gfx_animation_ctx_tag libretro_tag;
 
    widgets_inited = false;
    widgets_active = false;
@@ -2231,16 +2201,6 @@ static void gfx_widgets_free(void)
    video_coord_array_free(&font_raster_bold.carr);
 
    font_driver_bind_block(NULL, NULL);
-
-   /* Reset state of all other widgets */
-   /* Libretro message */
-   libretro_tag           = (uintptr_t) &libretro_message_timer;
-   libretro_message_alpha = 0.0f;
-   gfx_timer_kill(&libretro_message_timer);
-   gfx_animation_kill_by_tag(&libretro_tag);
-
-   /* AI Service overlay */
-   /* ... */
 }
 
 bool gfx_widgets_set_fps_text(const char *new_fps_text)
@@ -2545,46 +2505,3 @@ void gfx_widgets_push_achievement(const char *title, const char *badge)
    SLOCK_UNLOCK(cheevo_popup_queue_lock);
 }
 #endif
-
-static void gfx_widgets_libretro_message_fadeout(void *userdata)
-{
-   gfx_animation_ctx_entry_t entry;
-   gfx_animation_ctx_tag tag = (uintptr_t) &libretro_message_timer;
-
-   /* Start fade out animation */
-   entry.cb             = NULL;
-   entry.duration       = MSG_QUEUE_ANIMATION_DURATION;
-   entry.easing_enum    = EASING_OUT_QUAD;
-   entry.subject        = &libretro_message_alpha;
-   entry.tag            = tag;
-   entry.target_value   = 0.0f;
-   entry.userdata       = NULL;
-
-   gfx_animation_push(&entry);
-}
-
-void gfx_widgets_set_libretro_message(const char *msg, unsigned duration)
-{
-   gfx_timer_ctx_entry_t timer;
-   gfx_animation_ctx_tag tag = (uintptr_t) &libretro_message_timer;
-
-   if (!widgets_active)
-      return;
-
-   strlcpy(libretro_message, msg, sizeof(libretro_message));
-
-   libretro_message_alpha = DEFAULT_BACKDROP;
-
-   /* Kill and restart the timer / animation */
-   gfx_timer_kill(&libretro_message_timer);
-   gfx_animation_kill_by_tag(&tag);
-
-   timer.cb       = gfx_widgets_libretro_message_fadeout;
-   timer.duration = duration;
-   timer.userdata = NULL;
-
-   gfx_timer_start(&libretro_message_timer, &timer);
-
-   /* Compute text width */
-   libretro_message_width = font_driver_get_message_width(font_regular, msg, (unsigned)strlen(msg), 1) + simple_widget_padding * 2;
-}

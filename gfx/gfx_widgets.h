@@ -122,6 +122,7 @@ typedef struct gfx_widget gfx_widget_t;
 extern const gfx_widget_t gfx_widget_screenshot;
 extern const gfx_widget_t gfx_widget_volume;
 extern const gfx_widget_t gfx_widget_generic_message;
+extern const gfx_widget_t gfx_widget_libretro_message;
 
 bool gfx_widgets_active(void);
 void gfx_widgets_set_persistence(bool persist);
@@ -174,7 +175,7 @@ void gfx_widgets_push_achievement(const char *title, const char *badge);
 void gfx_widget_set_message(char *message);
 
 /* Warning: not thread safe! */
-void gfx_widgets_set_libretro_message(const char *message, unsigned duration);
+void gfx_widget_set_libretro_message(const char *message, unsigned duration);
 
 /* All the functions below should be called in
  * the video driver - once they are all added, set
