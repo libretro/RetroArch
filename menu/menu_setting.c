@@ -3185,10 +3185,63 @@ static void setting_get_string_representation_uint_menu_timedate_style(
          strlcpy(s, msg_hash_to_str(
             MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_YMD_HM), len);
          break;
+      case MENU_TIMEDATE_STYLE_YMD:
+         strlcpy(s, msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_YMD), len);
+         break;
+      case MENU_TIMEDATE_STYLE_YM:
+         strlcpy(s, msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_YM), len);
+         break;
+      case MENU_TIMEDATE_STYLE_MDYYYY_HMS:
+         strlcpy(s,
+            msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_MDYYYY_HMS), len);
+         break;
+      case MENU_TIMEDATE_STYLE_MDYYYY_HM:
+         strlcpy(s,
+            msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_MDYYYY_HM), len);
+         break;
+      case MENU_TIMEDATE_STYLE_MD_HM:
+         strlcpy(s,
+            msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_MD_HM), len);
+         break;
       case MENU_TIMEDATE_STYLE_MDYYYY:
          strlcpy(s,
             msg_hash_to_str(
                MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_MDYYYY), len);
+         break;
+      case MENU_TIMEDATE_STYLE_MD:
+         strlcpy(s,
+            msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_MD), len);
+         break;
+      case MENU_TIMEDATE_STYLE_DDMMYYYY_HMS:
+         strlcpy(s,
+            msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_DDMMYYYY_HMS), len);
+         break;
+      case MENU_TIMEDATE_STYLE_DDMMYYYY_HM:
+         strlcpy(s,
+            msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_DDMMYYYY_HM), len);
+         break;
+      case MENU_TIMEDATE_STYLE_DDMM_HM:
+         strlcpy(s,
+            msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_DDMM_HM), len);
+         break;
+      case MENU_TIMEDATE_STYLE_DDMMYYYY:
+         strlcpy(s,
+            msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_DDMMYYYY), len);
+         break;
+      case MENU_TIMEDATE_STYLE_DDMM:
+         strlcpy(s,
+            msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_DDMM), len);
          break;
       case MENU_TIMEDATE_STYLE_HMS:
          strlcpy(s,
@@ -3200,16 +3253,6 @@ static void setting_get_string_representation_uint_menu_timedate_style(
             msg_hash_to_str(
                MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_HM), len);
          break;
-      case MENU_TIMEDATE_STYLE_DM_HM:
-         strlcpy(s,
-            msg_hash_to_str(
-               MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_DM_HM), len);
-         break;
-      case MENU_TIMEDATE_STYLE_MD_HM:
-         strlcpy(s,
-            msg_hash_to_str(
-               MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_MD_HM), len);
-         break;
       case MENU_TIMEDATE_STYLE_YMD_HMS_AM_PM:
          strlcpy(s,
             msg_hash_to_str(
@@ -3220,10 +3263,35 @@ static void setting_get_string_representation_uint_menu_timedate_style(
             msg_hash_to_str(
                MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_YMD_HM_AM_PM), len);
          break;
-      case MENU_TIMEDATE_STYLE_MDYYYY_AM_PM:
+      case MENU_TIMEDATE_STYLE_MDYYYY_HMS_AM_PM:
          strlcpy(s,
             msg_hash_to_str(
-               MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_MDYYYY_AM_PM), len);
+               MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_MDYYYY_HMS_AM_PM), len);
+         break;
+      case MENU_TIMEDATE_STYLE_MDYYYY_HM_AM_PM:
+         strlcpy(s,
+            msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_MDYYYY_HM_AM_PM), len);
+         break;
+      case MENU_TIMEDATE_STYLE_MD_HM_AM_PM:
+         strlcpy(s,
+            msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_MD_HM_AM_PM), len);
+         break;
+      case MENU_TIMEDATE_STYLE_DDMMYYYY_HMS_AM_PM:
+         strlcpy(s,
+            msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_DDMMYYYY_HMS_AM_PM), len);
+         break;
+      case MENU_TIMEDATE_STYLE_DDMMYYYY_HM_AM_PM:
+         strlcpy(s,
+            msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_DDMMYYYY_HM_AM_PM), len);
+         break;
+      case MENU_TIMEDATE_STYLE_DDMM_HM_AM_PM:
+         strlcpy(s,
+            msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_DDMM_HM_AM_PM), len);
          break;
       case MENU_TIMEDATE_STYLE_HMS_AM_PM:
          strlcpy(s,
@@ -3234,16 +3302,6 @@ static void setting_get_string_representation_uint_menu_timedate_style(
          strlcpy(s,
             msg_hash_to_str(
                MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_HM_AM_PM), len);
-         break;
-      case MENU_TIMEDATE_STYLE_DM_HM_AM_PM:
-         strlcpy(s,
-            msg_hash_to_str(
-               MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_DM_HM_AM_PM), len);
-         break;
-      case MENU_TIMEDATE_STYLE_MD_HM_AM_PM:
-         strlcpy(s,
-            msg_hash_to_str(
-               MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_MD_HM_AM_PM), len);
          break;
    }
 }

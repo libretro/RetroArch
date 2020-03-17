@@ -2174,9 +2174,53 @@ void menu_display_timedate(gfx_display_ctx_datetime_t *datetime)
             strftime(menu_datetime_cache, sizeof(menu_datetime_cache),
                   "%Y-%m-%d %H:%M", tm_);
             break;
-         case MENU_TIMEDATE_STYLE_MDYYYY: /* MM-DD-YYYY HH:MM */
+         case MENU_TIMEDATE_STYLE_YMD: /* YYYY-MM-DD */
+            strftime(menu_datetime_cache, sizeof(menu_datetime_cache),
+                  "%Y-%m-%d", tm_);
+            break;
+         case MENU_TIMEDATE_STYLE_YM: /* YYYY-MM */
+            strftime(menu_datetime_cache, sizeof(menu_datetime_cache),
+                  "%Y-%m", tm_);
+            break;
+         case MENU_TIMEDATE_STYLE_MDYYYY_HMS: /* MM-DD-YYYY HH:MM:SS */
+            strftime(menu_datetime_cache, sizeof(menu_datetime_cache),
+                  "%m-%d-%Y %H:%M:%S", tm_);
+            break;
+         case MENU_TIMEDATE_STYLE_MDYYYY_HM: /* MM-DD-YYYY HH:MM */
             strftime(menu_datetime_cache, sizeof(menu_datetime_cache),
                   "%m-%d-%Y %H:%M", tm_);
+            break;
+         case MENU_TIMEDATE_STYLE_MD_HM: /* MM/DD HH:MM */
+            strftime(menu_datetime_cache, sizeof(menu_datetime_cache),
+                  "%m/%d %H:%M", tm_);
+            break;
+         case MENU_TIMEDATE_STYLE_MDYYYY: /* MM-DD-YYYY */
+            strftime(menu_datetime_cache, sizeof(menu_datetime_cache),
+                  "%m-%d-%Y", tm_);
+            break;
+         case MENU_TIMEDATE_STYLE_MD: /* MM-DD */
+            strftime(menu_datetime_cache, sizeof(menu_datetime_cache),
+                  "%m-%d", tm_);
+            break;
+         case MENU_TIMEDATE_STYLE_DDMMYYYY_HMS: /* DD/MM/YYYY HH:MM:SS */
+            strftime(menu_datetime_cache, sizeof(menu_datetime_cache),
+                  "%d/%m/%Y %H:%M:%S", tm_);
+            break;
+         case MENU_TIMEDATE_STYLE_DDMMYYYY_HM: /* DD/MM/YYYY HH:MM */
+            strftime(menu_datetime_cache, sizeof(menu_datetime_cache),
+                  "%d/%m/%Y %H:%M", tm_);
+            break;
+         case MENU_TIMEDATE_STYLE_DDMM_HM: /* DD/MM HH:MM */
+            strftime(menu_datetime_cache, sizeof(menu_datetime_cache),
+                  "%d/%m %H:%M", tm_);
+            break;
+         case MENU_TIMEDATE_STYLE_DDMMYYYY: /* DD/MM/YYYY */
+            strftime(menu_datetime_cache, sizeof(menu_datetime_cache),
+                  "%d/%m/%Y", tm_);
+            break;
+         case MENU_TIMEDATE_STYLE_DDMM: /* DD/MM */
+            strftime(menu_datetime_cache, sizeof(menu_datetime_cache),
+                  "%d/%m", tm_);
             break;
          case MENU_TIMEDATE_STYLE_HMS: /* HH:MM:SS */
             strftime(menu_datetime_cache, sizeof(menu_datetime_cache),
@@ -2186,14 +2230,6 @@ void menu_display_timedate(gfx_display_ctx_datetime_t *datetime)
             strftime(menu_datetime_cache, sizeof(menu_datetime_cache),
                   "%H:%M", tm_);
             break;
-         case MENU_TIMEDATE_STYLE_DM_HM: /* DD/MM HH:MM */
-            strftime(menu_datetime_cache, sizeof(menu_datetime_cache),
-                  "%d/%m %H:%M", tm_);
-            break;
-         case MENU_TIMEDATE_STYLE_MD_HM: /* MM/DD HH:MM */
-            strftime(menu_datetime_cache, sizeof(menu_datetime_cache),
-                  "%m/%d %H:%M", tm_);
-            break;
          case MENU_TIMEDATE_STYLE_YMD_HMS_AM_PM: /* YYYY-MM-DD HH:MM:SS (am/pm) */
             strftime_am_pm(menu_datetime_cache, sizeof(menu_datetime_cache),
                   "%Y-%m-%d %I:%M:%S %p", tm_);
@@ -2202,9 +2238,29 @@ void menu_display_timedate(gfx_display_ctx_datetime_t *datetime)
             strftime_am_pm(menu_datetime_cache, sizeof(menu_datetime_cache),
                   "%Y-%m-%d %I:%M %p", tm_);
             break;
-         case MENU_TIMEDATE_STYLE_MDYYYY_AM_PM: /* MM-DD-YYYY HH:MM (am/pm) */
+         case MENU_TIMEDATE_STYLE_MDYYYY_HMS_AM_PM: /* MM-DD-YYYY HH:MM:SS (am/pm) */
+            strftime_am_pm(menu_datetime_cache, sizeof(menu_datetime_cache),
+                  "%m-%d-%Y %I:%M:%S %p", tm_);
+            break;
+         case MENU_TIMEDATE_STYLE_MDYYYY_HM_AM_PM: /* MM-DD-YYYY HH:MM (am/pm) */
             strftime_am_pm(menu_datetime_cache, sizeof(menu_datetime_cache),
                   "%m-%d-%Y %I:%M %p", tm_);
+            break;
+         case MENU_TIMEDATE_STYLE_MD_HM_AM_PM: /* MM/DD HH:MM (am/pm) */
+            strftime_am_pm(menu_datetime_cache, sizeof(menu_datetime_cache),
+                  "%m/%d %I:%M %p", tm_);
+            break;
+         case MENU_TIMEDATE_STYLE_DDMMYYYY_HMS_AM_PM: /* DD/MM/YYYY HH:MM:SS (am/pm) */
+            strftime_am_pm(menu_datetime_cache, sizeof(menu_datetime_cache),
+                  "%d/%m/%Y %I:%M:%S %p", tm_);
+            break;
+         case MENU_TIMEDATE_STYLE_DDMMYYYY_HM_AM_PM: /* DD/MM/YYYY HH:MM (am/pm) */
+            strftime_am_pm(menu_datetime_cache, sizeof(menu_datetime_cache),
+                  "%d/%m/%Y %I:%M %p", tm_);
+            break;
+         case MENU_TIMEDATE_STYLE_DDMM_HM_AM_PM: /* DD/MM HH:MM (am/pm) */
+            strftime_am_pm(menu_datetime_cache, sizeof(menu_datetime_cache),
+                  "%d/%m %I:%M %p", tm_);
             break;
          case MENU_TIMEDATE_STYLE_HMS_AM_PM: /* HH:MM:SS (am/pm) */
             strftime_am_pm(menu_datetime_cache, sizeof(menu_datetime_cache),
@@ -2213,14 +2269,6 @@ void menu_display_timedate(gfx_display_ctx_datetime_t *datetime)
          case MENU_TIMEDATE_STYLE_HM_AM_PM: /* HH:MM (am/pm) */
             strftime_am_pm(menu_datetime_cache, sizeof(menu_datetime_cache),
                   "%I:%M %p", tm_);
-            break;
-         case MENU_TIMEDATE_STYLE_DM_HM_AM_PM: /* DD/MM HH:MM (am/pm) */
-            strftime_am_pm(menu_datetime_cache, sizeof(menu_datetime_cache),
-                  "%d/%m %I:%M %p", tm_);
-            break;
-         case MENU_TIMEDATE_STYLE_MD_HM_AM_PM: /* MM/DD HH:MM (am/pm) */
-            strftime_am_pm(menu_datetime_cache, sizeof(menu_datetime_cache),
-                  "%m/%d %I:%M %p", tm_);
             break;
       }
    }
