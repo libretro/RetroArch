@@ -34,6 +34,13 @@ else ifeq ($(LIBRETRO), bluemsx)
 	APP_ICON             = pkg/ctr/assets/default.png
 	APP_BANNER           = pkg/ctr/assets/libretro_banner.png
 
+else ifeq ($(LIBRETRO), chailove)
+	APP_TITLE            = ChaiLove
+	APP_PRODUCT_CODE     = RARCH-CHAILOVE
+	APP_UNIQUE_ID        = 0xBACB2
+	APP_ICON             = pkg/ctr/assets/default.png
+	APP_BANNER           = pkg/ctr/assets/libretro_banner.png
+
 else ifeq ($(LIBRETRO), cap32)
 	APP_TITLE            = Caprice32
 	APP_AUTHOR           = various
