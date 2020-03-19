@@ -105,9 +105,6 @@ typedef struct gfx_ctx_wayland_data
    struct wl_registry *registry;
    struct wl_compositor *compositor;
    struct wl_surface *surface;
-   struct zxdg_surface_v6 *zxdg_surface;
-   struct zxdg_shell_v6 *zxdg_shell;
-   struct zxdg_toplevel_v6 *zxdg_toplevel;
    struct xdg_surface *xdg_surface;
    struct xdg_wm_base *xdg_shell;
    struct xdg_toplevel *xdg_toplevel;
@@ -349,10 +346,7 @@ static void pointer_handle_button(void *data,
 
          if (BIT_GET(wl->input.key_state, KEY_LEFTALT))
          {
-			 if (wl->xdg_toplevel)
-			   xdg_toplevel_move(wl->xdg_toplevel, wl->seat, serial);
-			 else if (wl->zxdg_toplevel)
-			   zxdg_toplevel_v6_move(wl->zxdg_toplevel, wl->seat, serial);
+            xdg_toplevel_move(wl->xdg_toplevel, wl->seat, serial);
          }
       }
       else if (button == BTN_RIGHT)
@@ -716,88 +710,6 @@ static const struct xdg_toplevel_listener xdg_toplevel_listener = {
     handle_toplevel_close,
 };
 
-static void zxdg_shell_ping(void *data,
-      struct zxdg_shell_v6 *shell, uint32_t serial)
-{
-    zxdg_shell_v6_pong(shell, serial);
-}
-
-static const struct zxdg_shell_v6_listener zxdg_shell_v6_listener = {
-    zxdg_shell_ping,
-};
-
-static void handle_zxdg_surface_config(void *data,
-      struct zxdg_surface_v6 *surface,
-      uint32_t serial)
-{
-    zxdg_surface_v6_ack_configure(surface, serial);
-}
-
-static const struct zxdg_surface_v6_listener zxdg_surface_v6_listener = {
-    handle_zxdg_surface_config,
-};
-
-static void handle_zxdg_toplevel_config(
-      void *data, struct zxdg_toplevel_v6 *toplevel,
-      int32_t width, int32_t height, struct wl_array *states)
-{
-   const uint32_t *state;
-   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
-
-   wl->fullscreen             = false;
-   wl->maximized              = false;
-
-   WL_ARRAY_FOR_EACH(state, states, const uint32_t*)
-   {
-      switch (*state)
-      {
-         case XDG_TOPLEVEL_STATE_FULLSCREEN:
-            wl->fullscreen = true;
-            break;
-         case XDG_TOPLEVEL_STATE_MAXIMIZED:
-            wl->maximized = true;
-            break;
-         case XDG_TOPLEVEL_STATE_RESIZING:
-            wl->resize = true;
-            break;
-         case XDG_TOPLEVEL_STATE_ACTIVATED:
-            wl->activated = true;
-            break;
-      }
-   }
-
-   if (width > 0 && height > 0)
-   {
-      wl->prev_width = width;
-      wl->prev_height = height;
-      wl->width = width;
-      wl->height = height;
-   }
-
-#ifdef HAVE_EGL
-   if (wl->win)
-      wl_egl_window_resize(wl->win, width, height, 0, 0);
-   else
-      wl->win = wl_egl_window_create(wl->surface,
-            wl->width * wl->buffer_scale,
-            wl->height * wl->buffer_scale);
-#endif
-
-   wl->configured = false;
-}
-
-static void handle_zxdg_toplevel_close(void *data,
-      struct zxdg_toplevel_v6 *zxdg_toplevel)
-{
-	gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
-	BIT_SET(wl->input.key_state, KEY_ESC);
-}
-
-static const struct zxdg_toplevel_v6_listener zxdg_toplevel_v6_listener = {
-    handle_zxdg_toplevel_config,
-    handle_zxdg_toplevel_close,
-};
-
 static void display_handle_geometry(void *data,
       struct wl_output *output,
       int x, int y,
@@ -895,9 +807,6 @@ static void registry_handle_global(void *data, struct wl_registry *reg,
    else if (string_is_equal(interface, "xdg_wm_base"))
       wl->xdg_shell = (struct xdg_wm_base*)
          wl_registry_bind(reg, id, &xdg_wm_base_interface, 1);
-   else if (string_is_equal(interface, "zxdg_shell_v6"))
-      wl->zxdg_shell = (struct zxdg_shell_v6*)
-         wl_registry_bind(reg, id, &zxdg_shell_v6_interface, 1);
    else if (string_is_equal(interface, "wl_shm"))
       wl->shm = (struct wl_shm*)wl_registry_bind(reg, id, &wl_shm_interface, 1);
    else if (string_is_equal(interface, "wl_seat"))
@@ -994,22 +903,16 @@ static void gfx_ctx_wl_destroy_resources(gfx_ctx_wayland_data_t *wl)
       wl_seat_destroy(wl->seat);
    if (wl->xdg_shell)
       xdg_wm_base_destroy(wl->xdg_shell);
-   if (wl->zxdg_shell)
-      zxdg_shell_v6_destroy(wl->zxdg_shell);
    if (wl->compositor)
       wl_compositor_destroy(wl->compositor);
    if (wl->registry)
       wl_registry_destroy(wl->registry);
    if (wl->xdg_surface)
       xdg_surface_destroy(wl->xdg_surface);
-   if (wl->zxdg_surface)
-      zxdg_surface_v6_destroy(wl->zxdg_surface);
    if (wl->surface)
       wl_surface_destroy(wl->surface);
    if (wl->xdg_toplevel)
       xdg_toplevel_destroy(wl->xdg_toplevel);
-   if (wl->zxdg_toplevel)
-      zxdg_toplevel_v6_destroy(wl->zxdg_toplevel);
    if (wl->idle_inhibit_manager)
       zwp_idle_inhibit_manager_v1_destroy(wl->idle_inhibit_manager);
    if (wl->deco)
@@ -1029,14 +932,12 @@ static void gfx_ctx_wl_destroy_resources(gfx_ctx_wayland_data_t *wl)
    wl->win              = NULL;
 #endif
    wl->xdg_shell        = NULL;
-   wl->zxdg_shell       = NULL;
    wl->compositor       = NULL;
    wl->registry         = NULL;
    wl->input.dpy        = NULL;
    wl->xdg_surface      = NULL;
    wl->surface          = NULL;
    wl->xdg_toplevel     = NULL;
-   wl->zxdg_toplevel    = NULL;
 
    wl->width            = 0;
    wl->height           = 0;
@@ -1159,18 +1060,13 @@ static void gfx_ctx_wl_update_title(void *data)
 
    if (wl && title[0])
    {
-      if (wl->xdg_toplevel || wl->zxdg_toplevel)
+      if (wl->deco)
       {
-         if (wl->deco)
-         {
             zxdg_toplevel_decoration_v1_set_mode(wl->deco,
                   ZXDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE);
-         }
       }
-      if (wl->xdg_toplevel)
-         xdg_toplevel_set_title(wl->xdg_toplevel, title);
-      else if (wl->zxdg_toplevel)
-         zxdg_toplevel_v6_set_title(wl->zxdg_toplevel, title);
+
+       xdg_toplevel_set_title(wl->xdg_toplevel, title);
    }
 }
 
@@ -1331,12 +1227,7 @@ static void *gfx_ctx_wl_init(void *video_driver)
       goto error;
    }
 
-   if (!wl->xdg_shell && !!wl->zxdg_shell)
-   {
-      RARCH_LOG("[Wayland]: Using zxdg_shell_v6 interface.\n");
-   }
-
-   if (!wl->xdg_shell && !wl->zxdg_shell)
+   if (!wl->xdg_shell)
    {
 	   RARCH_ERR("[Wayland]: Failed to create shell.\n");
 	   goto error;
@@ -1575,7 +1466,6 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
          break;
    }
 
-   if (wl->xdg_shell)
    {
       wl->xdg_surface = xdg_wm_base_get_xdg_surface(wl->xdg_shell, wl->surface);
       xdg_surface_add_listener(wl->xdg_surface, &xdg_surface_listener, wl);
@@ -1601,31 +1491,6 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
 
       wl_display_roundtrip(wl->input.dpy);
       xdg_wm_base_add_listener(wl->xdg_shell, &xdg_shell_listener, NULL);
-   }
-   else if (wl->zxdg_shell)
-   {
-      wl->zxdg_surface = zxdg_shell_v6_get_xdg_surface(wl->zxdg_shell, wl->surface);
-      zxdg_surface_v6_add_listener(wl->zxdg_surface, &zxdg_surface_v6_listener, wl);
-
-      wl->zxdg_toplevel = zxdg_surface_v6_get_toplevel(wl->zxdg_surface);
-      zxdg_toplevel_v6_add_listener(wl->zxdg_toplevel, &zxdg_toplevel_v6_listener, wl);
-
-      zxdg_toplevel_v6_set_app_id(wl->zxdg_toplevel, "retroarch");
-      zxdg_toplevel_v6_set_title(wl->zxdg_toplevel, "RetroArch");
-
-      if (wl->deco_manager)
-         wl->deco = zxdg_decoration_manager_v1_get_toplevel_decoration(
-               wl->deco_manager, wl->xdg_toplevel);
-
-      /* Waiting for xdg_toplevel to be configured before starting to draw */
-      wl_surface_commit(wl->surface);
-      wl->configured = true;
-
-      while (wl->configured)
-         wl_display_dispatch(wl->input.dpy);
-
-      wl_display_roundtrip(wl->input.dpy);
-      zxdg_shell_v6_add_listener(wl->zxdg_shell, &zxdg_shell_v6_listener, NULL);
    }
 
    switch (wl_api)
@@ -1653,10 +1518,7 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
 
    if (fullscreen)
    {
-	   if (wl->xdg_toplevel)
-		   xdg_toplevel_set_fullscreen(wl->xdg_toplevel, NULL);
-	   else if (wl->zxdg_toplevel)
-		   zxdg_toplevel_v6_set_fullscreen(wl->zxdg_toplevel, NULL);
+      xdg_toplevel_set_fullscreen(wl->xdg_toplevel, NULL);
 	}
 
    flush_wayland_fd(&wl->input);
