@@ -4531,22 +4531,76 @@ static void setting_get_string_representation_uint_playlist_sublabel_last_played
                   MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE_YMD_HM),
                len);
          break;
-      case PLAYLIST_LAST_PLAYED_STYLE_MDYYYY:
+      case PLAYLIST_LAST_PLAYED_STYLE_YMD:
          strlcpy(s,
                msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE_MDYYYY),
+                  MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE_YMD),
                len);
          break;
-      case PLAYLIST_LAST_PLAYED_STYLE_DM_HM:
+      case PLAYLIST_LAST_PLAYED_STYLE_YM:
          strlcpy(s,
                msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE_DM_HM),
+                  MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE_YM),
+               len);
+         break;
+      case PLAYLIST_LAST_PLAYED_STYLE_MDYYYY_HMS:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE_MDYYYY_HMS),
+               len);
+         break;
+      case PLAYLIST_LAST_PLAYED_STYLE_MDYYYY_HM:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE_MDYYYY_HM),
                len);
          break;
       case PLAYLIST_LAST_PLAYED_STYLE_MD_HM:
          strlcpy(s,
                msg_hash_to_str(
                   MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE_MD_HM),
+               len);
+         break;
+      case PLAYLIST_LAST_PLAYED_STYLE_MDYYYY:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE_MDYYYY),
+               len);
+         break;
+      case PLAYLIST_LAST_PLAYED_STYLE_MD:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE_MD),
+               len);
+         break;
+      case PLAYLIST_LAST_PLAYED_STYLE_DDMMYYYY_HMS:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE_DDMMYYYY_HMS),
+               len);
+         break;
+      case PLAYLIST_LAST_PLAYED_STYLE_DDMMYYYY_HM:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE_DDMMYYYY_HM),
+               len);
+         break;
+      case PLAYLIST_LAST_PLAYED_STYLE_DDMM_HM:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE_DDMM_HM),
+               len);
+         break;
+      case PLAYLIST_LAST_PLAYED_STYLE_DDMMYYYY:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE_DDMMYYYY),
+               len);
+         break;
+      case PLAYLIST_LAST_PLAYED_STYLE_DDMM:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE_DDMM),
                len);
          break;
       case PLAYLIST_LAST_PLAYED_STYLE_YMD_HMS_AM_PM:
@@ -4561,22 +4615,40 @@ static void setting_get_string_representation_uint_playlist_sublabel_last_played
                   MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE_YMD_HM_AM_PM),
                len);
          break;
-      case PLAYLIST_LAST_PLAYED_STYLE_MDYYYY_AM_PM:
+      case PLAYLIST_LAST_PLAYED_STYLE_MDYYYY_HMS_AM_PM:
          strlcpy(s,
                msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE_MDYYYY_AM_PM),
+                  MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE_MDYYYY_HMS_AM_PM),
                len);
          break;
-      case PLAYLIST_LAST_PLAYED_STYLE_DM_HM_AM_PM:
+      case PLAYLIST_LAST_PLAYED_STYLE_MDYYYY_HM_AM_PM:
          strlcpy(s,
                msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE_DM_HM_AM_PM),
+                  MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE_MDYYYY_HM_AM_PM),
                len);
          break;
       case PLAYLIST_LAST_PLAYED_STYLE_MD_HM_AM_PM:
          strlcpy(s,
                msg_hash_to_str(
                   MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE_MD_HM_AM_PM),
+               len);
+         break;
+      case PLAYLIST_LAST_PLAYED_STYLE_DDMMYYYY_HMS_AM_PM:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE_DDMMYYYY_HMS_AM_PM),
+               len);
+         break;
+      case PLAYLIST_LAST_PLAYED_STYLE_DDMMYYYY_HM_AM_PM:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE_DDMMYYYY_HM_AM_PM),
+               len);
+         break;
+      case PLAYLIST_LAST_PLAYED_STYLE_DDMM_HM_AM_PM:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE_DDMM_HM_AM_PM),
                len);
          break;
    }
