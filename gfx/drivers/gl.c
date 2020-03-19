@@ -3671,12 +3671,19 @@ static void *gl2_init(const video_info_t *video,
 
       device_str[0] = '\0';
 
-      strlcpy(device_str, vendor, sizeof(device_str));
-      strlcat(device_str, " ", sizeof(device_str));
-      strlcat(device_str, renderer, sizeof(device_str));
+      if (!string_is_empty(vendor))
+      {
+        strlcpy(device_str, vendor, sizeof(device_str));
+        strlcat(device_str, " ", sizeof(device_str));
+      }
+
+      if (!string_is_empty(renderer))
+        strlcat(device_str, renderer, sizeof(device_str));
 
       video_driver_set_gpu_device_string(device_str);
-      video_driver_set_gpu_api_version_string(version);
+
+      if (!string_is_empty(version))
+        video_driver_set_gpu_api_version_string(version);
    }
 
 #ifdef _WIN32
