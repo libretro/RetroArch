@@ -7199,7 +7199,23 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_SHOW_LEGACY_THUMBNAIL_UPDATER,
-    "Exibi ou oculta a capacidade de baixar pacotes de miniaturas herdadas."
+    "Mostrar ou ocultar a capacidade de baixar o antigo pacote de miniaturas."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_SCROLL_FAST,
+    "Aceleração de rolagem de menus"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_SCROLL_FAST,
+    "Velocidade máxima do cursor ao manter uma direção para rolar."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SCROLL_NORMAL,
+    "Normal"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SCROLL_FAST,
+    "Rápida"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_VIEWS_SETTINGS,
@@ -7676,6 +7692,10 @@ MSG_HASH(
 MSG_HASH(
     MSG_GAME_REMAP_FILE_LOADED,
     "Arquivo de remapeamento do jogo carregado."
+    )
+MSG_HASH(
+    MSG_DIRECTORY_REMAP_FILE_LOADED,
+    "Remapeamento de controle para o diretório de conteúdo carregado."
     )
 MSG_HASH(
     MSG_CORE_REMAP_FILE_LOADED,
@@ -9075,6 +9095,10 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THUMBNAIL_CACHE_LIMIT,
    "Limite de cache de miniaturas:"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THUMBNAIL_DROP_SIZE_LIMIT,
+    "Limite de tamanho para miniaturas de arrastar e soltar:"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS,
