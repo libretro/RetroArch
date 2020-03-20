@@ -182,21 +182,21 @@ static bool m3u_file_load(m3u_file_t *m3u_file)
             size_t len = (size_t)(1 + token_ptr - line);
 
             /* Get entry_path segment */
-				if (len > 0)
+            if (len > 0)
             {
                memset(entry_path, 0, sizeof(entry_path));
-					strlcpy(
-							entry_path, line,
-							((len < PATH_MAX_LENGTH ?
+               strlcpy(
+                     entry_path, line,
+                     ((len < PATH_MAX_LENGTH ?
                            len : PATH_MAX_LENGTH) * sizeof(char)));
                string_trim_whitespace(entry_path);
             }
 
             /* Get entry_label segment */
-				token_ptr++;
-				if (*token_ptr != '\0')
+            token_ptr++;
+            if (*token_ptr != '\0')
             {
-					strlcpy(entry_label, token_ptr, sizeof(entry_label));
+               strlcpy(entry_label, token_ptr, sizeof(entry_label));
                string_trim_whitespace(entry_label);
             }
          }
