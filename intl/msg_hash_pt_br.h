@@ -942,7 +942,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_FACTOR,
-    "Aplica uma substituição manual da escala ao desenhar os widgets do menu. Aplica-se apenas quando 'Escala automática nos widgets gráficos' está desativado. Pode ser usado para aumentar ou diminuir o tamanho das notificações, indicadores e controles decorados independentemente do próprio menu."
+    "Aplica uma substituição manual da escala ao desenhar os widgets na tela. Aplica-se apenas quando 'Escala automática nos widgets gráficos' está desativado. Pode ser usado para aumentar ou diminuir o tamanho das notificações, indicadores e controles decorados independentemente do próprio menu."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_FACTOR_FULLSCREEN,
@@ -950,7 +950,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_FACTOR_FULLSCREEN,
-    "Aplica uma substituição manual da escala ao desenhar os widgets do menu no modo de tela cheia. Aplica-se apenas quando 'Escala automática nos widgets gráficos' está desativado. Pode ser usado para aumentar ou diminuir o tamanho das notificações, indicadores e controles decorados independentemente do próprio menu."
+    "Aplica uma substituição manual da escala ao desenhar os widgets na tela no modo de tela cheia. Aplica-se apenas quando 'Escala automática nos widgets gráficos' está desativado. Pode ser usado para aumentar ou diminuir o tamanho das notificações, indicadores e controles decorados independentemente do próprio menu."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_FACTOR_WINDOWED,
@@ -958,7 +958,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_FACTOR_WINDOWED,
-    "Aplica uma substituição manual da escala ao desenhar os widgets do menu no modo janela. Aplica-se apenas quando 'Escala automática nos widgets gráficos' está desativado. Pode ser usado para aumentar ou diminuir o tamanho das notificações, indicadores e controles decorados independentemente do próprio menu."
+    "Aplica uma substituição manual da escala ao desenhar os widgets na tela no modo janela. Aplica-se apenas quando 'Escala automática nos widgets gráficos' está desativado. Pode ser usado para aumentar ou diminuir o tamanho das notificações, indicadores e controles decorados independentemente do próprio menu."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS,
@@ -7199,7 +7199,23 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_SHOW_LEGACY_THUMBNAIL_UPDATER,
-    "Exibi ou oculta a capacidade de baixar pacotes de miniaturas herdadas."
+    "Mostrar ou ocultar a capacidade de baixar o antigo pacote de miniaturas."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_SCROLL_FAST,
+    "Aceleração de rolagem de menus"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_SCROLL_FAST,
+    "Velocidade máxima do cursor ao manter uma direção para rolar."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SCROLL_NORMAL,
+    "Normal"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SCROLL_FAST,
+    "Rápida"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_VIEWS_SETTINGS,
@@ -7676,6 +7692,10 @@ MSG_HASH(
 MSG_HASH(
     MSG_GAME_REMAP_FILE_LOADED,
     "Arquivo de remapeamento do jogo carregado."
+    )
+MSG_HASH(
+    MSG_DIRECTORY_REMAP_FILE_LOADED,
+    "Remapeamento de controle para o diretório de conteúdo carregado."
     )
 MSG_HASH(
     MSG_CORE_REMAP_FILE_LOADED,
@@ -9075,6 +9095,10 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THUMBNAIL_CACHE_LIMIT,
    "Limite de cache de miniaturas:"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THUMBNAIL_DROP_SIZE_LIMIT,
+    "Limite de tamanho para miniaturas de arrastar e soltar:"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS,
