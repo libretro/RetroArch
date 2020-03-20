@@ -172,6 +172,18 @@ void playlist_delete_index(playlist_t *playlist,
       size_t idx);
 
 /**
+ * playlist_delete_by_path:
+ * @playlist            : Playlist handle.
+ * @search_path         : Content path.
+ *
+ * Deletes all entries with content path
+ * matching 'search_path'
+ **/
+void playlist_delete_by_path(playlist_t *playlist,
+      const char *search_path,
+      bool fuzzy_archive_match);
+
+/**
  * playlist_resolve_path:
  * @mode      : PLAYLIST_LOAD or PLAYLIST_SAVE
  * @path        : The path to be modified
