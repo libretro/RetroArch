@@ -180,7 +180,6 @@ static void *gfx_ctx_vc_init(void *video_driver)
       EGL_NONE
    };
 #endif
-   settings_t *settings  = config_get_ptr();
    vc_ctx_data_t *vc     = NULL;
    unsigned fullscreen_x = settings->uints.video_fullscreen_x;
    unsigned fullscreen_y = settings->uints.video_fullscreen_y;
