@@ -483,6 +483,9 @@ static const video_driver_t *video_drivers[] = {
 #ifdef SWITCH
    &video_switch,
 #endif
+#ifdef HAVE_ODROIDGO2
+   &video_oga,
+#endif
 #if defined(HAVE_SDL) && !defined(HAVE_SDL_DINGUX)
    &video_sdl,
 #endif

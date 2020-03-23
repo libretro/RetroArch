@@ -262,7 +262,7 @@ static void gfx_ctx_drm_swap_buffers(void *data)
                      surface,
                      0, 0, 480, 320,
                      0, 0, 320, 480,
-                     GO2_ROTATION_DEGREES_270);
+                     GO2_ROTATION_DEGREES_270, 2);
          go2_context_surface_unlock(drm->context, surface);
 #endif
          break;
@@ -488,7 +488,7 @@ error:
    return NULL;
 #else
    drm->display   = go2_display_create();
-   drm->presenter = go2_presenter_create(drm->display, DRM_FORMAT_RGB565, 0xff080808);
+   drm->presenter = go2_presenter_create(drm->display, DRM_FORMAT_RGB565, 0xff000000, true);
    return drm;
 #endif
 }
