@@ -26,6 +26,7 @@
 #include <lists/string_list.h>
 #include <file/file_path.h>
 #include <formats/logiqx_dat.h>
+#include <formats/m3u_file.h>
 
 #include "tasks_internal.h"
 
@@ -45,6 +46,7 @@ enum manual_scan_status
 {
    MANUAL_SCAN_BEGIN = 0,
    MANUAL_SCAN_ITERATE_CONTENT,
+   MANUAL_SCAN_ITERATE_M3U,
    MANUAL_SCAN_END
 };
 
@@ -56,6 +58,8 @@ typedef struct manual_scan_handle
    logiqx_dat_t *dat_file;
    size_t list_size;
    size_t list_index;
+   struct string_list *m3u_list;
+   size_t m3u_index;
    enum manual_scan_status status;
    bool fuzzy_archive_match;
    bool use_old_format;
@@ -83,6 +87,12 @@ static void free_manual_content_scan_handle(manual_scan_handle_t *manual_scan)
    {
       string_list_free(manual_scan->content_list);
       manual_scan->content_list = NULL;
+   }
+
+   if (manual_scan->m3u_list)
+   {
+      string_list_free(manual_scan->m3u_list);
+      manual_scan->m3u_list = NULL;
    }
 
    if (manual_scan->dat_file)
@@ -201,11 +211,88 @@ static void task_manual_content_scan_handler(retro_task_t *task)
                      manual_scan->task_config, manual_scan->playlist,
                      content_path, content_type, manual_scan->dat_file,
                      manual_scan->fuzzy_archive_match);
+
+               /* If this is an M3U file, add it to the
+                * M3U list for later processing */
+               if (m3u_file_is_m3u(content_path))
+               {
+                  union string_list_elem_attr attr;
+                  attr.i = 0;
+                  /* Note: If string_list_append() fails, there is
+                   * really nothing we can do. The M3U file will
+                   * just be ignored... */
+                  string_list_append(
+                        manual_scan->m3u_list, content_path, attr);
+               }
             }
 
             /* Increment content index */
             manual_scan->list_index++;
             if (manual_scan->list_index >= manual_scan->list_size)
+            {
+               /* Check whether we have any M3U files
+                * to process */
+               if (manual_scan->m3u_list->size > 0)
+                  manual_scan->status = MANUAL_SCAN_ITERATE_M3U;
+               else
+                  manual_scan->status = MANUAL_SCAN_END;
+            }
+         }
+         break;
+      case MANUAL_SCAN_ITERATE_M3U:
+         {
+            const char *m3u_path =
+                  manual_scan->m3u_list->elems[manual_scan->m3u_index].data;
+
+            if (!string_is_empty(m3u_path))
+            {
+               const char *m3u_name = path_basename(m3u_path);
+               m3u_file_t *m3u_file = NULL;
+               char task_title[PATH_MAX_LENGTH];
+
+               task_title[0] = '\0';
+
+               /* Update progress display */
+               task_free_title(task);
+
+               strlcpy(
+                     task_title, msg_hash_to_str(MSG_MANUAL_CONTENT_SCAN_M3U_CLEANUP),
+                     sizeof(task_title));
+
+               if (!string_is_empty(m3u_name))
+                  strlcat(task_title, m3u_name, sizeof(task_title));
+
+               task_set_title(task, strdup(task_title));
+               task_set_progress(task, (manual_scan->m3u_index * 100) / manual_scan->m3u_list->size);
+
+               /* Load M3U file */
+               m3u_file = m3u_file_init(m3u_path, M3U_FILE_SIZE);
+
+               if (m3u_file)
+               {
+                  size_t i;
+
+                  /* Loop over M3U entries */
+                  for (i = 0; i < m3u_file_get_size(m3u_file); i++)
+                  {
+                     m3u_file_entry_t *m3u_entry = NULL;
+
+                     /* Delete any playlist items matching the
+                      * content path of the M3U entry */
+                     if (m3u_file_get_entry(m3u_file, i, &m3u_entry))
+                        playlist_delete_by_path(
+                              manual_scan->playlist,
+                              m3u_entry->full_path,
+                              manual_scan->fuzzy_archive_match);
+                  }
+
+                  m3u_file_free(m3u_file);
+               }
+            }
+
+            /* Increment M3U file index */
+            manual_scan->m3u_index++;
+            if (manual_scan->m3u_index >= manual_scan->m3u_list->size)
                manual_scan->status = MANUAL_SCAN_END;
          }
          break;
@@ -318,9 +405,14 @@ bool task_push_manual_content_scan(void)
    manual_scan->dat_file            = NULL;
    manual_scan->list_size           = 0;
    manual_scan->list_index          = 0;
+   manual_scan->m3u_list            = string_list_new();
+   manual_scan->m3u_index           = 0;
    manual_scan->status              = MANUAL_SCAN_BEGIN;
    manual_scan->fuzzy_archive_match = settings->bools.playlist_fuzzy_archive_match;
    manual_scan->use_old_format      = settings->bools.playlist_use_old_format;
+
+   if (!manual_scan->m3u_list)
+      goto error;
 
    /* > Get current manual content scan configuration */
    manual_scan->task_config = (manual_content_scan_task_config_t*)

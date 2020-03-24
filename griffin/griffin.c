@@ -1599,3 +1599,8 @@ MANUAL CONTENT SCAN
 DISK CONTROL INTERFACE
 ============================================================ */
 #include "../disk_control_interface.c"
+
+/*============================================================
+MISC FILE FORMATS
+============================================================ */
+#include "../libretro-common/formats/m3u/m3u_file.c"

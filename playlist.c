@@ -341,6 +341,47 @@ void playlist_delete_index(playlist_t *playlist,
    playlist->modified = true;
 }
 
+/**
+ * playlist_delete_by_path:
+ * @playlist            : Playlist handle.
+ * @search_path         : Content path.
+ *
+ * Deletes all entries with content path
+ * matching 'search_path'
+ **/
+void playlist_delete_by_path(playlist_t *playlist,
+      const char *search_path,
+      bool fuzzy_archive_match)
+{
+   size_t i = 0;
+   char real_search_path[PATH_MAX_LENGTH];
+
+   real_search_path[0] = '\0';
+
+   if (!playlist || string_is_empty(search_path))
+      return;
+
+   /* Get 'real' search path */
+   strlcpy(real_search_path, search_path, sizeof(real_search_path));
+   path_resolve_realpath(real_search_path, sizeof(real_search_path), true);
+
+   while (i < playlist->size)
+   {
+      if (!playlist_path_equal(real_search_path, playlist->entries[i].path,
+            fuzzy_archive_match))
+      {
+         i++;
+         continue;
+      }
+
+      /* Paths are equal - delete entry */
+      playlist_delete_index(playlist, i);
+
+      /* Entries are shifted up by the delete
+       * operation - *do not* increment i */
+   }
+}
+
 void playlist_get_index_by_path(playlist_t *playlist,
       const char *search_path,
       const struct playlist_entry **entry,
