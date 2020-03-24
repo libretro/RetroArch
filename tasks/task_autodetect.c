@@ -199,7 +199,7 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
       snprintf(msg, sizeof(msg), "%s %s #%u.",
             autoconfig_str,
             msg_hash_to_str(MSG_DEVICE_CONFIGURED_IN_PORT),
-            params->idx);
+            params->idx + 1);
 
       /* allow overriding the swap menu controls for player 1*/
       if (params->idx == 0)
@@ -425,7 +425,7 @@ bool input_autoconfigure_disconnect(unsigned i, const char *ident)
 
    snprintf(msg, sizeof(msg), "%s #%u (%s).",
          msg_hash_to_str(MSG_DEVICE_DISCONNECTED_FROM_PORT),
-         i, ident);
+         i + 1, ident);
 
    state->msg    = strdup(msg);
 
