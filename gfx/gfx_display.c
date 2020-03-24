@@ -713,13 +713,19 @@ font_data_t *gfx_display_font_file(
       char* fontpath, float menu_font_size, bool is_threaded)
 {
    font_data_t *font_data = NULL;
+   float font_size        = menu_font_size;
 
    if (!dispctx)
       return NULL;
 
+   /* Font size must be at least 2, or font_init_first()
+    * will generate a heap-buffer-overflow when using
+    * many font drivers */
+   font_size = (font_size > 2.0f) ? font_size : 2.0f;
+
    if (!dispctx->font_init_first((void**)&font_data,
             video_driver_get_ptr(false),
-            fontpath, menu_font_size, is_threaded))
+            fontpath, font_size, is_threaded))
       return NULL;
 
    return font_data;
