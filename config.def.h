@@ -406,6 +406,8 @@
 #endif
 
 #ifdef HAVE_OZONE
+/* Ozone colour theme: 1 == Basic Black */
+#define DEFAULT_OZONE_COLOR_THEME 1
 #define DEFAULT_OZONE_COLLAPSE_SIDEBAR false
 #define DEFAULT_OZONE_TRUNCATE_PLAYLIST_NAME true
 #define DEFAULT_OZONE_SCROLL_CONTENT_METADATA false

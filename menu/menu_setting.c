@@ -13314,6 +13314,9 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler,
                   SD_FLAG_NONE);
+            (*list)[list_info->index - 1].action_ok     = &setting_bool_action_left_with_refresh;
+            (*list)[list_info->index - 1].action_left   = &setting_bool_action_left_with_refresh;
+            (*list)[list_info->index - 1].action_right  = &setting_bool_action_right_with_refresh;
          }
 
             CONFIG_BOOL(
@@ -13943,7 +13946,7 @@ static bool setting_append_list(
                   &settings->uints.menu_ozone_color_theme,
                   MENU_ENUM_LABEL_OZONE_MENU_COLOR_THEME,
                   MENU_ENUM_LABEL_VALUE_OZONE_MENU_COLOR_THEME,
-                  0,
+                  DEFAULT_OZONE_COLOR_THEME,
                   &group_info,
                   &subgroup_info,
                   parent_group,
