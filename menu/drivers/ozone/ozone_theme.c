@@ -14,6 +14,9 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/* Required for default theme setting */
+#include "../../../config.def.h"
+
 #include "ozone.h"
 #include "ozone_theme.h"
 #include "ozone_display.h"
@@ -222,7 +225,7 @@ unsigned ozone_get_system_theme(void)
 
    return ret;
 #else
-   return 0;
+   return DEFAULT_OZONE_COLOR_THEME;
 #endif
 }
 
