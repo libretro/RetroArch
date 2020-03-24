@@ -56,14 +56,9 @@ else
    CODEGEN=private-code
 fi
 
-XDG_SHELL_UNSTABLE='unstable/xdg-shell/xdg-shell-unstable-v6.xml'
 XDG_SHELL='stable/xdg-shell/xdg-shell.xml'
 XDG_DECORATION_UNSTABLE='unstable/xdg-decoration/xdg-decoration-unstable-v1.xml'
 IDLE_INHIBIT_UNSTABLE='unstable/idle-inhibit/idle-inhibit-unstable-v1.xml'
-
-#Generate xdg-shell_v6 header and .c files
-"$WAYSCAN" client-header "$WAYLAND_PROTOS/$XDG_SHELL_UNSTABLE" ./xdg-shell-unstable-v6.h
-"$WAYSCAN" $CODEGEN "$WAYLAND_PROTOS/$XDG_SHELL_UNSTABLE" ./xdg-shell-unstable-v6.c
 
 #Generate xdg-shell header and .c files
 "$WAYSCAN" client-header "$WAYLAND_PROTOS/$XDG_SHELL" ./xdg-shell.h
