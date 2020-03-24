@@ -4698,7 +4698,7 @@ static void rgui_scan_selected_entry_thumbnail(rgui_t *rgui, bool force_load)
    }
 }
 
-static void rgui_update_thumbnail_image(void *userdata)
+static void rgui_toggle_fs_thumbnail(void *userdata)
 {
    rgui_t *rgui                = (rgui_t*)userdata;
    settings_t *settings        = config_get_ptr();
@@ -4961,6 +4961,11 @@ static int rgui_environ(enum menu_environ_cb type,
    return -1;
 }
 
+/* Forward declaration */
+static int rgui_menu_entry_action(
+      void *userdata, menu_entry_t *entry,
+      size_t i, enum menu_action action);
+
 static int rgui_pointer_up(void *data,
       unsigned x, unsigned y, unsigned ptr,
       enum menu_input_pointer_gesture gesture,
@@ -4993,20 +4998,20 @@ static int rgui_pointer_up(void *data,
                 * - A normal mouse press should just select the current
                 *   entry (for which the thumbnail is being shown) */
                if (y < header_height)
-                  rgui_update_thumbnail_image(rgui);
+                  rgui_toggle_fs_thumbnail(rgui);
                else
-                  return menu_entry_action(entry, selection, MENU_ACTION_SELECT);
+                  return rgui_menu_entry_action(rgui, entry, selection, MENU_ACTION_SELECT);
             }
             else
             {
                if (y < header_height)
-                  return menu_entry_action(entry, selection, MENU_ACTION_CANCEL);
+                  return rgui_menu_entry_action(rgui, entry, selection, MENU_ACTION_CANCEL);
                else if (ptr <= (menu_entries_get_size() - 1))
                {
                   /* If currently selected item matches 'pointer' value,
                    * perform a MENU_ACTION_SELECT on it */
                   if (ptr == selection)
-                     return menu_entry_action(entry, selection, MENU_ACTION_SELECT);
+                     return rgui_menu_entry_action(rgui, entry, selection, MENU_ACTION_SELECT);
 
                   /* Otherwise, just move the current selection to the
                    * 'pointer' value */
@@ -5020,7 +5025,7 @@ static int rgui_pointer_up(void *data,
          /* 'Reset to default' action */
          if ((ptr <= (menu_entries_get_size() - 1)) &&
              (ptr == selection))
-            return menu_entry_action(entry, selection, MENU_ACTION_START);
+            return rgui_menu_entry_action(rgui, entry, selection, MENU_ACTION_START);
          break;
       default:
          /* Ignore input */
@@ -5265,6 +5270,43 @@ static void rgui_context_destroy(void *data)
 }
 #endif
 
+static enum menu_action rgui_parse_menu_entry_action(
+      rgui_t *rgui, enum menu_action action)
+{
+   enum menu_action new_action = action;
+
+   /* Scan user inputs */
+   switch (action)
+   {
+      case MENU_ACTION_SCAN:
+         /* 'Scan' command is used to toggle
+          * fullscreen thumbnail view */
+         rgui_toggle_fs_thumbnail(rgui);
+         new_action = MENU_ACTION_NOOP;
+         break;
+      default:
+         /* In all other cases, pass through input
+          * menu action without intervention */
+         break;
+   }
+
+   return new_action;
+}
+
+/* Menu entry action callback */
+static int rgui_menu_entry_action(
+      void *userdata, menu_entry_t *entry,
+      size_t i, enum menu_action action)
+{
+   rgui_t *rgui = (rgui_t*)userdata;
+
+   /* Process input action */
+   enum menu_action new_action = rgui_parse_menu_entry_action(rgui, action);
+
+   /* Call standard generic_menu_entry_action() function */
+   return generic_menu_entry_action(userdata, entry, i, new_action);
+}
+
 menu_ctx_driver_t menu_ctx_rgui = {
    rgui_set_texture,
    rgui_set_message,
@@ -5305,7 +5347,7 @@ menu_ctx_driver_t menu_ctx_rgui = {
    "rgui",
    rgui_environ,
    NULL,                               /* update_thumbnail_path */
-   rgui_update_thumbnail_image,
+   NULL,                               /* update_thumbnail_image */
    rgui_refresh_thumbnail_image,
    rgui_set_thumbnail_system,
    rgui_get_thumbnail_system,
@@ -5316,5 +5358,5 @@ menu_ctx_driver_t menu_ctx_rgui = {
    NULL,                               /* pointer_down */
    rgui_pointer_up,
    NULL,                               /* get_load_content_animation_data */
-   generic_menu_entry_action
+   rgui_menu_entry_action
 };

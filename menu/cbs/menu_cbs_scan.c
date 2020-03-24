@@ -108,63 +108,53 @@ int action_switch_thumbnail(const char *path,
 {
    const char *menu_ident  = menu_driver_ident();
    settings_t *settings    = config_get_ptr();
-   bool special_case       = false;
+   bool switch_enabled     = true;
 #ifdef HAVE_RGUI
-   special_case            = !string_is_equal(menu_ident, "rgui");
+   switch_enabled          = !string_is_equal(menu_ident, "rgui");
 #endif
 #ifdef HAVE_MATERIALUI
-   special_case            = special_case && !string_is_equal(menu_ident, "glui"); 
+   switch_enabled          = switch_enabled && !string_is_equal(menu_ident, "glui");
 #endif
 
    if (!settings)
       return -1;
 
+   /* RGUI is a special case where thumbnail 'switch' corresponds to
+    * toggling thumbnail view on/off.
+    * GLUI is a special case where thumbnail 'switch' corresponds to
+    * changing thumbnail view mode.
+    * For other menu drivers, we cycle through available thumbnail
+    * types. */
+   if (!switch_enabled)
+      return 0;
+
    if (settings->uints.gfx_thumbnails == 0)
    {
-      /* RGUI is a special case where thumbnail 'switch' corresponds to
-       * toggling thumbnail view on/off.
-       * GLUI is a special case where thumbnail 'switch' corresponds to
-       * changing thumbnail view mode.
-       * For other menu drivers, we cycle through available thumbnail
-       * types. */
-      if (special_case)
-      {
-         configuration_set_uint(settings,
-               settings->uints.menu_left_thumbnails,
-               settings->uints.menu_left_thumbnails + 1);
+      configuration_set_uint(settings,
+            settings->uints.menu_left_thumbnails,
+            settings->uints.menu_left_thumbnails + 1);
 
-			if (settings->uints.menu_left_thumbnails > 3)
-         {
-            configuration_set_uint(settings,
-                  settings->uints.menu_left_thumbnails, 1);
-         }
-			menu_driver_ctl(RARCH_MENU_CTL_UPDATE_THUMBNAIL_PATH, NULL);
-			menu_driver_ctl(RARCH_MENU_CTL_UPDATE_THUMBNAIL_IMAGE, NULL);
-		}
-   }
-   else
-   {
-      /* RGUI is a special case where thumbnail 'switch' corresponds to
-       * toggling thumbnail view on/off.
-       * GLUI is a special case where thumbnail 'switch' corresponds to
-       * changing thumbnail view mode.
-       * For other menu drivers, we cycle through available thumbnail
-       * types. */
-      if (special_case)
-      {
+      if (settings->uints.menu_left_thumbnails > 3)
          configuration_set_uint(settings,
-               settings->uints.menu_left_thumbnails,
-               settings->uints.menu_left_thumbnails + 1);
+               settings->uints.menu_left_thumbnails, 1);
 
-         if (settings->uints.gfx_thumbnails > 3)
-         {
-            configuration_set_uint(settings,
-                  settings->uints.gfx_thumbnails, 1);
-         }
-      }
       menu_driver_ctl(RARCH_MENU_CTL_UPDATE_THUMBNAIL_PATH, NULL);
       menu_driver_ctl(RARCH_MENU_CTL_UPDATE_THUMBNAIL_IMAGE, NULL);
    }
+   else
+   {
+      configuration_set_uint(settings,
+            settings->uints.gfx_thumbnails,
+            settings->uints.gfx_thumbnails + 1);
+
+      if (settings->uints.gfx_thumbnails > 3)
+         configuration_set_uint(settings,
+               settings->uints.gfx_thumbnails, 1);
+
+      menu_driver_ctl(RARCH_MENU_CTL_UPDATE_THUMBNAIL_PATH, NULL);
+      menu_driver_ctl(RARCH_MENU_CTL_UPDATE_THUMBNAIL_IMAGE, NULL);
+   }
+
    return 0;
 }
 
