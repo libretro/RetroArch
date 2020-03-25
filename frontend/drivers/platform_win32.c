@@ -806,13 +806,38 @@ static bool create_win32_process(char* cmd)
    return true;
 }
 
+#define COBJMACROS
+#include <sapi.h>
+#include <ole2.h>
+
+ISpVoice* pVoice = NULL;
+bool USE_POWERSHELL = false;
+
 static bool is_narrator_running_windows(void)
 {
    DWORD status = 0;
-   if (pi_set == false)
+   bool res;
+
+   if (USE_POWERSHELL)
+   {
+      if (pi_set == false)
+         return false;
+      if (GetExitCodeProcess(&g_pi, &status) && status == STILL_ACTIVE)
+         return true;
       return false;
-   if (GetExitCodeProcess(&g_pi, &status) && status == STILL_ACTIVE)
-      return true;
+   }
+   else
+   {
+      SPVOICESTATUS pStatus;
+      if (pVoice != NULL)
+      {
+         ISpVoice_GetStatus(pVoice, &pStatus, NULL);
+         if (pStatus.dwRunningState == SPRS_IS_SPEAKING)
+            return true;
+         else
+            return false;
+      }
+   }
    return false;
 }
 
@@ -825,6 +850,8 @@ static bool accessibility_speak_windows(int speed,
    bool res               = false;
    const char* speeds[10] = {"-10", "-7.5", "-5", "-2.5", "0", "2", "4", "6", "8", "10"};
 
+   HRESULT hr;
+
    if (speed < 1)
       speed = 1;
    else if (speed > 10)
@@ -836,22 +863,49 @@ static bool accessibility_speak_windows(int speed,
          return true;
    }
 
-   if (strlen(language) > 0) 
-      snprintf(cmd, sizeof(cmd),
-               "powershell.exe -NoProfile -WindowStyle Hidden -Command \"Add-Type -AssemblyName System.Speech; $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer; $synth.SelectVoice(\\\"%s\\\"); $synth.Rate = %s; $synth.Speak(\\\"%s\\\");\"", language, speeds[speed-1], (char*) speak_text); 
-   else
-      snprintf(cmd, sizeof(cmd),
-               "powershell.exe -NoProfile -WindowStyle Hidden -Command \"Add-Type -AssemblyName System.Speech; $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer; $synth.Rate = %s; $synth.Speak(\\\"%s\\\");\"", speeds[speed-1], (char*) speak_text); 
-   if (pi_set)
-      terminate_win32_process(g_pi);
-   res = create_win32_process(cmd);
-   if (!res)
+   if (USE_POWERSHELL)
    {
-      pi_set = false;
+      if (strlen(language) > 0) 
+         snprintf(cmd, sizeof(cmd),
+                  "powershell.exe -NoProfile -WindowStyle Hidden -Command \"Add-Type -AssemblyName System.Speech; $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer; $synth.SelectVoice(\\\"%s\\\"); $synth.Rate = %s; $synth.Speak(\\\"%s\\\");\"", language, speeds[speed-1], (char*) speak_text); 
+      else
+         snprintf(cmd, sizeof(cmd),
+               "powershell.exe -NoProfile -WindowStyle Hidden -Command \"Add-Type -AssemblyName System.Speech; $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer; $synth.Rate = %s; $synth.Speak(\\\"%s\\\");\"", speeds[speed-1], (char*) speak_text); 
+      if (pi_set)
+         terminate_win32_process(g_pi);
+      res = create_win32_process(cmd);
+      if (!res)
+      {
+         pi_set = false;
+         return true;
+      }
+      pi_set = true;
       return true;
    }
-   pi_set = true;
-   return true;
+   else
+   {
+      /* stop the old voice if running */
+      CoUninitialize();
+      if (pVoice != NULL)
+         ISpVoice_Release(pVoice);
+      pVoice = NULL;
+
+      /* Play the new voice */
+      if (FAILED(CoInitialize(NULL)))
+         return NULL;
+
+      hr = CoCreateInstance(&CLSID_SpVoice, NULL, CLSCTX_ALL, &IID_ISpVoice, (void **)&pVoice);
+      if (SUCCEEDED(hr))
+      {
+         wchar_t wtext[1200];
+         snprintf(cmd, sizeof(cmd),
+                  "<rate speed=\"%s\"/><volume level=\"80\"/><lang langid=\"%s\"/>%s", speeds[speed], langid, speak_text);
+         mbstowcs(wtext, cmd, strlen(cmd)+1);
+
+         hr = ISpVoice_Speak(pVoice, (LPWSTR) wtext, SPF_ASYNC /*SVSFlagsAsync*/, NULL);
+      }
+      return true;
+   }
 }
 #endif
 
