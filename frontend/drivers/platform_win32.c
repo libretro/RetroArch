@@ -51,6 +51,10 @@
 #include "../../msg_hash.h"
 #include "platform_win32.h"
 
+#ifdef HAVE_NVDA
+#include "../../nvdaController.h"
+#endif
+
 #ifndef SM_SERVERR2
 #define SM_SERVERR2 89
 #endif
@@ -717,6 +721,74 @@ static bool frontend_win32_set_fork(enum frontend_fork fork_mode)
 #endif
 
 #if defined(_WIN32) && !defined(_XBOX)
+static const char *accessibility_win_language_id(const char* language)
+{
+   if (string_is_equal(language,"en"))
+      return "409";
+   else if (string_is_equal(language,"it"))
+      return "410";
+   else if (string_is_equal(language,"sv"))
+      return "041d";
+   else if (string_is_equal(language,"fr"))
+      return "040c";
+   else if (string_is_equal(language,"de"))
+      return "407";
+   else if (string_is_equal(language,"he"))
+      return "040d";
+   else if (string_is_equal(language,"id"))
+      return "421";
+   else if (string_is_equal(language,"es"))
+      return "040a";
+   else if (string_is_equal(language,"nl"))
+      return "413";
+   else if (string_is_equal(language,"ro"))
+      return "418";
+   else if (string_is_equal(language,"pt_pt"))
+      return "816";
+   else if (string_is_equal(language,"pt_bt") || string_is_equal(language,"pt"))
+      return "416";
+   else if (string_is_equal(language,"th"))
+      return "041e";
+   else if (string_is_equal(language,"ja"))
+      return "411";
+   else if (string_is_equal(language,"sk"))
+      return "041b";
+   else if (string_is_equal(language,"hi"))
+      return "439";
+   else if (string_is_equal(language,"ar"))
+      return "401";
+   else if (string_is_equal(language,"hu"))
+      return "040e";
+   else if (string_is_equal(language,"zh_tw") || string_is_equal(language,"zh"))
+      return "804";
+   else if (string_is_equal(language,"el"))
+      return "408";
+   else if (string_is_equal(language,"ru"))
+      return "419";
+   else if (string_is_equal(language,"nb"))
+      return "414";
+   else if (string_is_equal(language,"da"))
+      return "406";
+   else if (string_is_equal(language,"fi"))
+      return "040b";
+   else if (string_is_equal(language,"zh_hk"))
+      return "0c04";
+   else if (string_is_equal(language,"zh_cn"))
+      return "804";
+   else if (string_is_equal(language,"tr"))
+      return "041f";
+   else if (string_is_equal(language,"ko"))
+      return "412";
+   else if (string_is_equal(language,"pl"))
+      return "415";
+   else if (string_is_equal(language,"cs")) 
+      return "405";
+   else
+      return "";
+
+
+}
+
 static const char *accessibility_win_language_code(const char* language)
 {
    if (string_is_equal(language,"en"))
@@ -730,9 +802,9 @@ static const char *accessibility_win_language_code(const char* language)
    else if (string_is_equal(language,"de"))
       return "Microsoft Stefan Desktop";
    else if (string_is_equal(language,"he"))
-      return "Microsoft Hemant Desktop";
-   else if (string_is_equal(language,"id"))
       return "Microsoft Asaf Desktop";
+   else if (string_is_equal(language,"id"))
+      return "Microsoft Andika Desktop";
    else if (string_is_equal(language,"es"))
       return "Microsoft Pablo Desktop";
    else if (string_is_equal(language,"nl"))
@@ -812,6 +884,8 @@ static bool create_win32_process(char* cmd)
 
 ISpVoice* pVoice = NULL;
 bool USE_POWERSHELL = false;
+bool USE_NVDA = true;
+bool USE_NVDA_BRAILLE = false;
 
 static bool is_narrator_running_windows(void)
 {
@@ -826,6 +900,22 @@ static bool is_narrator_running_windows(void)
          return true;
       return false;
    }
+#ifdef HAVE_NVDA
+   else if (USE_NVDA)
+   {
+      long res=nvdaController_testIfRunning();
+      if(res!=0) 
+      {
+         RARCH_LOG("Error communicating with NVDA\n");
+	 return false;
+      }
+      return true;
+      /*
+      nvdaController_speakText(L"This is a test speech message");
+      nvdaController_brailleMessage(L"This is a test braille message");
+      */
+   }
+#endif
    else
    {
       SPVOICESTATUS pStatus;
@@ -847,6 +937,7 @@ static bool accessibility_speak_windows(int speed,
    char cmd[1200];
    const char *voice      = get_user_language_iso639_1(true);
    const char *language   = accessibility_win_language_code(voice);
+   const char *langid     = accessibility_win_language_id(voice);
    bool res               = false;
    const char* speeds[10] = {"-10", "-7.5", "-5", "-2.5", "0", "2", "4", "6", "8", "10"};
 
@@ -882,6 +973,27 @@ static bool accessibility_speak_windows(int speed,
       pi_set = true;
       return true;
    }
+#ifdef HAVE_NVDA
+   else if (USE_NVDA)
+   {
+      long res=nvdaController_testIfRunning();
+      if(res!=0) 
+      {
+         RARCH_LOG("Error communicating with NVDA\n");
+         return false;
+      }
+      else
+      {
+         nvdaController_cancelSpeech();
+      }
+
+      if (USE_NVDA_BRAILLE)
+         nvdaController_brailleMessage((wchar_t*) speak_text);
+      else
+         nvdaController_speakText((wchar_t *) speak_text);
+      return true;
+   }
+#endif
    else
    {
       /* stop the old voice if running */
