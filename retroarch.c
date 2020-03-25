@@ -6013,6 +6013,122 @@ error:
 
 /* TRANSLATION */
 #ifdef HAVE_TRANSLATE
+int g_ai_service_auto = 0;
+
+int get_ai_service_auto(void)
+{
+   return g_ai_service_auto;
+}
+
+bool set_ai_service_auto(int num)
+{
+   g_ai_service_auto = num;
+   return true;
+}
+
+bool task_auto_translate_callback()
+{
+   bool was_paused                   = runloop_paused;
+   command_event(CMD_EVENT_AI_SERVICE_CALL, &was_paused);
+   return true;
+}
+
+
+/* Doesn't currently work.  Fix this. */
+bool is_ai_service_speech_running(void)
+{
+#ifdef HAVE_AUDIOMIXER
+   enum audio_mixer_state res = audio_driver_mixer_get_stream_state(10);
+   if (res == AUDIO_STREAM_STATE_NONE || res == AUDIO_STREAM_STATE_STOPPED)
+      return false;
+   return true;
+#else
+   return false;
+#endif
+}
+
+bool ai_service_speech_stop(void)
+{
+#ifdef HAVE_AUDIOMIXER
+   audio_driver_mixer_stop_stream(10);
+   audio_driver_mixer_remove_stream(10);
+#endif
+   return false;
+}
+
+
+static void task_auto_translate_handler(retro_task_t *task)
+{
+   http_transfer_data_t *data = NULL;
+   int* mode_ptr = task->user_data;
+
+   if (task_get_cancelled(task))
+      goto task_finished;
+   /* Narrator Mode */
+   if (*mode_ptr == 2)
+   {
+#ifdef HAVE_ACCESSIBILITY
+      if (is_narrator_running() == false)
+      {
+         goto task_finished;
+      }
+#endif
+   }
+   /* Speech Mode */
+   else if (*mode_ptr == 1)
+   {
+#ifdef HAVE_AUDIOMIXER
+      if (is_ai_service_speech_running() == false)
+      {
+         goto task_finished;
+      }
+#endif
+   }
+   return;
+task_finished:
+   if (get_ai_service_auto() == 1)
+      set_ai_service_auto(2);
+
+   task_set_finished(task, true);
+   if (*mode_ptr == 1 || *mode_ptr == 2)
+       task_auto_translate_callback();
+   if (task->user_data)
+       free(task->user_data);
+}
+
+bool call_auto_translate_task(bool* was_paused)
+{
+   settings_t *settings                  = configuration_settings;
+   int ai_service_mode                   = settings->uints.ai_service_mode;
+
+   /*Image Mode*/
+   if (ai_service_mode == 0)
+   {
+      if (get_ai_service_auto() == 1)
+         set_ai_service_auto(2);
+
+      command_event(CMD_EVENT_AI_SERVICE_CALL, was_paused);
+      return true;
+   }
+   else /* Speech or Narrator Mode */
+   {
+      retro_task_t  *t                   = NULL;
+      int* mode                          = (int*) malloc(sizeof(int));
+      *mode = ai_service_mode;
+      t = task_init();
+      if (!t)
+         return false;
+
+      t->handler = task_auto_translate_handler;
+      t->user_data = mode;
+      t->mute = true;
+      task_queue_push(t);
+   }
+   return true;
+}
+
+
+
 static void handle_translation_cb(
       retro_task_t *task, void *task_data, void *user_data, const char *error)
 {
@@ -6039,13 +6155,32 @@ static void handle_translation_cb(
    char* found_string                = NULL;
    char* error_string                = NULL;
    char* text_string                 = NULL;
+   char* auto_string                 = NULL;
    int curr_state                    = 0;
+   settings_t* settings              = configuration_settings;
+   bool was_paused                   = runloop_paused;
+
+
+#ifdef HAVE_MENU_WIDGETS
+   if (menu_widgets_ai_service_overlay_get_state() != 0 
+       && get_ai_service_auto() == 2)
+   {
+      /* When auto mode is on, we turn off the overlay
+       * once we have the result for the next call.*/
+      gfx_widgets_ai_service_overlay_unload();
+   }
+#endif
 
 #ifdef DEBUG
-   RARCH_LOG("RESULT FROM AI SERVICE...\n");
+   if (get_ai_service_auto() != 2)
+      RARCH_LOG("RESULT FROM AI SERVICE...\n");
 #endif
+
    if (!data || error)
       goto finish;
+
+  if (get_ai_service_auto() == 0)
+    goto finish;
 
    data->data = (char*)realloc(data->data, data->len + 1);
    if (!data->data)
@@ -6096,6 +6231,12 @@ static void handle_translation_cb(
                strlcpy(error_string, body_copy+start+1, i-start);
                curr_state = 0;
             }
+            else if (curr_state == 5)
+            {
+               auto_string = (char*)malloc(i-start+1);
+               strlcpy(auto_string, body_copy+start+1, i-start);
+               curr_state = 0;
+            }
             else if (string_is_equal(found_string, "image"))
             {
                curr_state = 1;
@@ -6116,6 +6257,11 @@ static void handle_translation_cb(
                curr_state = 4;
                free(found_string);
             }
+            else if (string_is_equal(found_string, "auto"))
+            {
+               curr_state = 5;
+               free(found_string);
+            }
             else
             {
               curr_state = 0;
@@ -6126,6 +6272,9 @@ static void handle_translation_cb(
       }
       i++;
    }
+
+   if (auto_string != NULL)
+      RARCH_LOG("auto_string %s\n", auto_string);
 
    if (string_is_equal(error_string, "No text found."))
    {
@@ -6146,7 +6295,7 @@ static void handle_translation_cb(
 #endif
    }
 
-   if (!raw_image_file_data && !raw_sound_data && !text_string)
+   if (!raw_image_file_data && !raw_sound_data && !text_string && get_ai_service_auto() != 2)
    {
       error = "Invalid JSON body.";
       goto finish;
@@ -6413,25 +6562,14 @@ finish:
       free(text_string);
    if (raw_output_data)
       free(raw_output_data);
-}
 
-static bool is_ai_service_speech_running(void)
-{
-#ifdef HAVE_AUDIOMIXER
-   enum audio_mixer_state res = audio_driver_mixer_get_stream_state(10);
-   if (res != AUDIO_STREAM_STATE_NONE && res != AUDIO_STREAM_STATE_STOPPED)
-      return true;
-#endif
-   return false;
-}
-
-static bool ai_service_speech_stop(void)
-{
-#ifdef HAVE_AUDIOMIXER
-   audio_driver_mixer_stop_stream(10);
-   audio_driver_mixer_remove_stream(10);
-#endif
-   return false;
+   if (string_is_equal(auto_string, "auto"))
+   {
+      if (get_ai_service_auto() != 0 && settings->bools.ai_service_pause == false)
+      { 
+         call_auto_translate_task(&was_paused);
+      }
+   }
 }
 
 static const char *ai_service_get_str(enum translation_lang id)
@@ -6598,8 +6736,16 @@ static const char *ai_service_get_str(enum translation_lang id)
    The server must output the translated image in the form of a
    JSON body, with the "image" field also as a base64 encoded
    24bit-BMP, or as an alpha channel png.
+
+  "paused" boolean is passed in to indicate if the current call
+   was made during a paused frame.  Due to how the menu widgets work,
+   if the ai service is called in "auto" mode, then this call will
+   be made while the menu widgets unpause the core for a frame to update
+   the on-screen widgets.  To tell the ai service what the pause
+   mode is honestly, we store the runloop_paused variable from before
+   the handle_translation_cb wipes the widgets, and pass that in here.
    */
-static bool run_translation_service(void)
+static bool run_translation_service(bool paused)
 {
    struct video_viewport vp;
    uint8_t header[54];
@@ -6625,6 +6771,9 @@ static bool run_translation_service(void)
    const char *rf1                       = "{\"image\": \"";
    const char *rf2                       = "\"}\0";
    char *rf3                             = NULL;
+   char *state_son                       = NULL;
+   int state_son_length                  = 0;
+   int curr_length                       = 0;
    bool TRANSLATE_USE_BMP                = false;
    bool use_overlay                      = false;
 
@@ -6633,7 +6782,7 @@ static bool run_translation_service(void)
    core_info_t *core_info                = NULL;
 
 #ifdef HAVE_GFX_WIDGETS
-   if (gfx_widgets_ai_service_overlay_get_state() != 0)
+   if (gfx_widgets_ai_service_overlay_get_state() != 0 && get_ai_service_auto() == 0)
    {
       /* For the case when ai service pause is disabled. */
       gfx_widgets_ai_service_overlay_unload();
@@ -6794,32 +6943,59 @@ static bool run_translation_service(void)
    {
       unsigned i;
       /* include game label if provided */
-      rf3 = (char *)malloc(16+strlen(system_label));
-      memcpy(rf3, "\", \"label\": \"", 13*sizeof(uint8_t));
-      memcpy(rf3+13, system_label, strlen(system_label));
-      memcpy(rf3+13+strlen(system_label), "\"}\0", 3*sizeof(uint8_t));
-      for (i=13;i<strlen(system_label)+13;i++)
+      rf3 = (char *)malloc(15+strlen(system_label));
+      memcpy(rf3, ", \"label\": \"", 12*sizeof(uint8_t));
+      memcpy(rf3+12, system_label, strlen(system_label));
+      memcpy(rf3+12+strlen(system_label), "\"}\0", 3*sizeof(uint8_t));
+      for (i=12;i<strlen(system_label)+12;i++)
       {
          if (rf3[i] == '\"')
             rf3[i] = ' ';
       }
-      json_length = 11+out_length+16+strlen(system_label);
+      json_length = 11+out_length+15+strlen(system_label);
    }
    else
-      json_length = 11+out_length+3;
+      json_length = 11+out_length+1;
+
+   {
+      state_son_length = 24;
+      state_son = (char *) malloc(state_son_length);
+
+      memcpy(state_son, ", \"state\": {\"paused\": 0}", state_son_length*sizeof(uint8_t));
+
+      if (paused)
+         state_son[22] = '1';
+      json_length+=state_son_length;
+   }
 
    json_buffer = (char*)malloc(json_length);
    if (!json_buffer)
       goto finish;
-
+   /* Image data */
    memcpy(json_buffer, (const void*)rf1, 11*sizeof(uint8_t));
    memcpy(json_buffer+11, bmp64_buffer, (out_length)*sizeof(uint8_t));
+   memcpy(json_buffer+11+out_length, "\"", 1*sizeof(uint8_t));
+   curr_length = 11+out_length+1;
+
+   /* State data */
+   memcpy(json_buffer+curr_length, state_son, state_son_length*sizeof(uint8_t));
+   curr_length+= state_son_length;
+
+   /* System Label */
    if (rf3)
-      memcpy(json_buffer+11+out_length, (const void*)rf3, (16+strlen(system_label))*sizeof(uint8_t));
+   {
+      memcpy(json_buffer+curr_length, (const void*)rf3, (15+strlen(system_label))*sizeof(uint8_t));   
+      curr_length+=15+strlen(system_label);
+   }
    else
-      memcpy(json_buffer+11+out_length, (const void*)rf2, 3*sizeof(uint8_t));
+   {
+      memcpy(json_buffer+curr_length, (const void*)rf2, 3*sizeof(uint8_t));
+      curr_length+=3;
+   }
+
 #ifdef DEBUG
-   RARCH_LOG("Request size: %d\n", out_length);
+   if (get_ai_service_auto()!=2)
+      RARCH_LOG("Request size: %d\n", out_length);
 #endif
    {
       char separator  = '?';
@@ -6913,7 +7089,8 @@ static bool run_translation_service(void)
                  sizeof(new_ai_service_url));
       }
 #ifdef DEBUG
-      RARCH_LOG("SENDING... %s\n", new_ai_service_url);
+      if (get_ai_service_auto() != 2)
+         RARCH_LOG("SENDING... %s\n", new_ai_service_url);
 #endif
       task_push_http_post_transfer(new_ai_service_url,
             json_buffer, true, NULL, handle_translation_cb, NULL);
@@ -8180,8 +8357,22 @@ bool command_event(enum event_command cmd, void *data)
            /* Don't pause - useful for Text-To-Speech since
             * the audio can't currently play while paused.
             * Also useful for cases when users don't want the
-            * core's sound to stop while translating. */
-            command_event(CMD_EVENT_AI_SERVICE_CALL, NULL);
+            * core's sound to stop while translating. 
+            *
+            * Also, this mode is required for "auto" translation
+            * packages, since you don't want to pause for that.   
+            */ 
+            if (get_ai_service_auto() == 2)
+            {
+               /* Auto mode was turned on, but we pressed the
+                * toggle button, so turn it off now. */
+               set_ai_service_auto(0);
+#ifdef HAVE_MENU_WIDGETS
+               gfx_widgets_ai_service_overlay_unload();
+#endif
+            }
+            else
+               command_event(CMD_EVENT_AI_SERVICE_CALL, NULL);
          }
 #endif
          break;
@@ -9482,8 +9673,15 @@ bool command_event(enum event_command cmd, void *data)
 #endif
          else
          {
-            RARCH_LOG("AI Service Called...\n");
-            run_translation_service();
+            bool paused = runloop_paused;
+            if (data!=NULL)
+               paused = *((bool*)data);
+
+            if (get_ai_service_auto() == 0 && settings->bools.ai_service_pause == false)
+               set_ai_service_auto(1);
+            if (get_ai_service_auto() != 2)
+               RARCH_LOG("AI Service Called...\n");
+            run_translation_service(paused);
          }
 #endif
          break;
