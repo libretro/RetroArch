@@ -4956,3 +4956,27 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_INPUT_MENU_SETTINGS,
     "Zmień ustawienia sterowania menu."
     )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_SCROLL_FAST,
+    "Przyspieszenie przewijania menu"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_SCROLL_FAST,
+    "Maksymalna prędkość kursora przy przytrzymywaniu kierunku przewijania."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_ONSCREEN_VIDEO_LAYOUT_SETTINGS,
+    "Układ wideo"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_ONSCREEN_VIDEO_LAYOUT_SETTINGS,
+    "Dostosuj układ wideo"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_DAT_FILE_FILTER,
+    "Filtr Arcade DAT"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_DAT_FILE_FILTER,
+    "Korzystając z arkadowego pliku DAT, dodawaj zawartość do listy odtwarzania tylko wtedy, gdy znaleziono pasujący wpis pliku DAT."
+    )
