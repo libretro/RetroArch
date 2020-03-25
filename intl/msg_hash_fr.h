@@ -10424,6 +10424,10 @@ MSG_HASH(
     "Analyse : "
     )
 MSG_HASH(
+    MSG_MANUAL_CONTENT_SCAN_M3U_CLEANUP,
+    "Nettoyage des entrées M3U : "
+    )
+MSG_HASH(
     MSG_MANUAL_CONTENT_SCAN_END,
     "Analyse terminée : "
     )
