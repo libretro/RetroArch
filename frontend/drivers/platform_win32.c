@@ -51,6 +51,10 @@
 #include "../../msg_hash.h"
 #include "platform_win32.h"
 
+#ifdef HAVE_NVDA
+#include "../../nvdaController.h"
+#endif
+
 #ifndef SM_SERVERR2
 #define SM_SERVERR2 89
 #endif
@@ -717,6 +721,74 @@ static bool frontend_win32_set_fork(enum frontend_fork fork_mode)
 #endif
 
 #if defined(_WIN32) && !defined(_XBOX)
+static const char *accessibility_win_language_id(const char* language)
+{
+   if (string_is_equal(language,"en"))
+      return "409";
+   else if (string_is_equal(language,"it"))
+      return "410";
+   else if (string_is_equal(language,"sv"))
+      return "041d";
+   else if (string_is_equal(language,"fr"))
+      return "040c";
+   else if (string_is_equal(language,"de"))
+      return "407";
+   else if (string_is_equal(language,"he"))
+      return "040d";
+   else if (string_is_equal(language,"id"))
+      return "421";
+   else if (string_is_equal(language,"es"))
+      return "040a";
+   else if (string_is_equal(language,"nl"))
+      return "413";
+   else if (string_is_equal(language,"ro"))
+      return "418";
+   else if (string_is_equal(language,"pt_pt"))
+      return "816";
+   else if (string_is_equal(language,"pt_bt") || string_is_equal(language,"pt"))
+      return "416";
+   else if (string_is_equal(language,"th"))
+      return "041e";
+   else if (string_is_equal(language,"ja"))
+      return "411";
+   else if (string_is_equal(language,"sk"))
+      return "041b";
+   else if (string_is_equal(language,"hi"))
+      return "439";
+   else if (string_is_equal(language,"ar"))
+      return "401";
+   else if (string_is_equal(language,"hu"))
+      return "040e";
+   else if (string_is_equal(language,"zh_tw") || string_is_equal(language,"zh"))
+      return "804";
+   else if (string_is_equal(language,"el"))
+      return "408";
+   else if (string_is_equal(language,"ru"))
+      return "419";
+   else if (string_is_equal(language,"nb"))
+      return "414";
+   else if (string_is_equal(language,"da"))
+      return "406";
+   else if (string_is_equal(language,"fi"))
+      return "040b";
+   else if (string_is_equal(language,"zh_hk"))
+      return "0c04";
+   else if (string_is_equal(language,"zh_cn"))
+      return "804";
+   else if (string_is_equal(language,"tr"))
+      return "041f";
+   else if (string_is_equal(language,"ko"))
+      return "412";
+   else if (string_is_equal(language,"pl"))
+      return "415";
+   else if (string_is_equal(language,"cs")) 
+      return "405";
+   else
+      return "";
+
+
+}
+
 static const char *accessibility_win_language_code(const char* language)
 {
    if (string_is_equal(language,"en"))
@@ -730,9 +802,9 @@ static const char *accessibility_win_language_code(const char* language)
    else if (string_is_equal(language,"de"))
       return "Microsoft Stefan Desktop";
    else if (string_is_equal(language,"he"))
-      return "Microsoft Hemant Desktop";
-   else if (string_is_equal(language,"id"))
       return "Microsoft Asaf Desktop";
+   else if (string_is_equal(language,"id"))
+      return "Microsoft Andika Desktop";
    else if (string_is_equal(language,"es"))
       return "Microsoft Pablo Desktop";
    else if (string_is_equal(language,"nl"))
@@ -806,13 +878,68 @@ static bool create_win32_process(char* cmd)
    return true;
 }
 
+#define COBJMACROS
+#include <sapi.h>
+#include <ole2.h>
+
+static ISpVoice* pVoice = NULL;
+#ifdef HAVE_NVDA
+bool USE_POWERSHELL = false;
+bool USE_NVDA = true;
+#else
+bool USE_POWERSHELL = true;
+bool USE_NVDA = false;
+#endif
+bool USE_NVDA_BRAILLE = false;
+
 static bool is_narrator_running_windows(void)
 {
    DWORD status = 0;
-   if (pi_set == false)
+   bool res;
+   if (USE_POWERSHELL)
+   {
+      if (pi_set == false)
+         return false;
+      if (GetExitCodeProcess(g_pi.hProcess, &status))
+      {
+         if (status == STILL_ACTIVE)
+            return true;
+      }
       return false;
-   if (GetExitCodeProcess(&g_pi, &status) && status == STILL_ACTIVE)
-      return true;
+   }
+#ifdef HAVE_NVDA
+   else if (USE_NVDA)
+   {
+      long res=nvdaController_testIfRunning();
+      if(res!=0) 
+      {
+         /* The running nvda service wasn't found, so revert
+            back to the powershell method
+         */
+         RARCH_LOG("Error communicating with NVDA\n");
+         USE_POWERSHELL = true;
+         USE_NVDA = false;
+	 return false;
+      }
+      return false;
+      /*
+      nvdaController_speakText(L"This is a test speech message");
+      nvdaController_brailleMessage(L"This is a test braille message");
+      */
+   }
+#endif
+   else
+   {
+      SPVOICESTATUS pStatus;
+      if (pVoice != NULL)
+      {
+         ISpVoice_GetStatus(pVoice, &pStatus, NULL);
+         if (pStatus.dwRunningState == SPRS_IS_SPEAKING)
+            return true;
+         else
+            return false;
+      }
+   }
    return false;
 }
 
@@ -822,8 +949,11 @@ static bool accessibility_speak_windows(int speed,
    char cmd[1200];
    const char *voice      = get_user_language_iso639_1(true);
    const char *language   = accessibility_win_language_code(voice);
+   const char *langid     = accessibility_win_language_id(voice);
    bool res               = false;
    const char* speeds[10] = {"-10", "-7.5", "-5", "-2.5", "0", "2", "4", "6", "8", "10"};
+
+   HRESULT hr;
 
    if (speed < 1)
       speed = 1;
@@ -836,22 +966,78 @@ static bool accessibility_speak_windows(int speed,
          return true;
    }
 
-   if (strlen(language) > 0) 
-      snprintf(cmd, sizeof(cmd),
-               "powershell.exe -NoProfile -WindowStyle Hidden -Command \"Add-Type -AssemblyName System.Speech; $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer; $synth.SelectVoice(\\\"%s\\\"); $synth.Rate = %s; $synth.Speak(\\\"%s\\\");\"", language, speeds[speed-1], (char*) speak_text); 
-   else
-      snprintf(cmd, sizeof(cmd),
-               "powershell.exe -NoProfile -WindowStyle Hidden -Command \"Add-Type -AssemblyName System.Speech; $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer; $synth.Rate = %s; $synth.Speak(\\\"%s\\\");\"", speeds[speed-1], (char*) speak_text); 
-   if (pi_set)
-      terminate_win32_process(g_pi);
-   res = create_win32_process(cmd);
-   if (!res)
+   if (USE_POWERSHELL)
    {
-      pi_set = false;
+      if (strlen(language) > 0) 
+         snprintf(cmd, sizeof(cmd),
+                  "powershell.exe -NoProfile -WindowStyle Hidden -Command \"Add-Type -AssemblyName System.Speech; $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer; $synth.SelectVoice(\\\"%s\\\"); $synth.Rate = %s; $synth.Speak(\\\"%s\\\");\"", language, speeds[speed-1], (char*) speak_text); 
+      else
+         snprintf(cmd, sizeof(cmd),
+               "powershell.exe -NoProfile -WindowStyle Hidden -Command \"Add-Type -AssemblyName System.Speech; $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer; $synth.Rate = %s; $synth.Speak(\\\"%s\\\");\"", speeds[speed-1], (char*) speak_text); 
+      if (pi_set)
+         terminate_win32_process(g_pi);
+      res = create_win32_process(cmd);
+      if (!res)
+      {
+         pi_set = false;
+         return true;
+      }
+      pi_set = true;
       return true;
    }
-   pi_set = true;
-   return true;
+#ifdef HAVE_NVDA
+   else if (USE_NVDA)
+   {
+      long res=nvdaController_testIfRunning();
+      const size_t cSize = strlen(speak_text)+1;
+      wchar_t* wc = malloc(sizeof(wchar_t)*cSize);
+      mbstowcs(wc, speak_text, cSize);
+
+      if(res!=0) 
+      {
+         RARCH_LOG("Error communicating with NVDA\n");
+         return false;
+      }
+      else
+      {
+         nvdaController_cancelSpeech();
+      }
+
+      if (USE_NVDA_BRAILLE)
+         nvdaController_brailleMessage(wc);
+      else
+      {
+         nvdaController_speakText(wc);
+      }
+      return true;
+   }
+#endif
+   else
+   {
+      /* stop the old voice if running */
+      if (pVoice != NULL)
+      {
+         CoUninitialize();
+         ISpVoice_Release(pVoice);
+      }
+      pVoice = NULL;
+
+      /* Play the new voice */
+      if (FAILED(CoInitialize(NULL)))
+         return NULL;
+
+      hr = CoCreateInstance(&CLSID_SpVoice, NULL, CLSCTX_ALL, &IID_ISpVoice, (void **)&pVoice);
+      if (SUCCEEDED(hr))
+      {
+         wchar_t wtext[1200];
+         snprintf(cmd, sizeof(cmd),
+                  "<rate speed=\"%s\"/><volume level=\"80\"/><lang langid=\"%s\"/>%s", speeds[speed], langid, speak_text);
+         mbstowcs(wtext, speak_text, sizeof(wtext));
+ 
+         hr = ISpVoice_Speak(pVoice, wtext, SPF_ASYNC /*SVSFlagsAsync*/, NULL);
+      }
+      return true;
+   }
 }
 #endif
 

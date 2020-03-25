@@ -1297,6 +1297,7 @@ static const void *hid_driver_find_handle(int idx);
 #ifdef HAVE_ACCESSIBILITY
 #ifdef HAVE_TRANSLATE
 static bool is_narrator_running(void);
+int ai_gamepad_state[16];
 #endif
 static bool accessibility_startup_message(void);
 #endif
@@ -3895,7 +3896,7 @@ static bool command_get_status(const char* arg)
 
        core_info_get_current_core(&core_info);
 
-	   if (runloop_paused)
+       if (runloop_paused)
           status                = "PAUSED";
        if (core_info)
           system_id             = core_info->system_id;
@@ -6013,6 +6014,122 @@ error:
 
 /* TRANSLATION */
 #ifdef HAVE_TRANSLATE
+static int g_ai_service_auto = 0;
+
+int get_ai_service_auto(void)
+{
+   return g_ai_service_auto;
+}
+
+bool set_ai_service_auto(int num)
+{
+   g_ai_service_auto = num;
+   return true;
+}
+
+bool task_auto_translate_callback()
+{
+   bool was_paused                   = runloop_paused;
+   command_event(CMD_EVENT_AI_SERVICE_CALL, &was_paused);
+   return true;
+}
+
+
+/* Doesn't currently work.  Fix this. */
+bool is_ai_service_speech_running(void)
+{
+#ifdef HAVE_AUDIOMIXER
+   enum audio_mixer_state res = audio_driver_mixer_get_stream_state(10);
+   if (res == AUDIO_STREAM_STATE_NONE || res == AUDIO_STREAM_STATE_STOPPED)
+      return false;
+   return true;
+#else
+   return false;
+#endif
+}
+
+bool ai_service_speech_stop(void)
+{
+#ifdef HAVE_AUDIOMIXER
+   audio_driver_mixer_stop_stream(10);
+   audio_driver_mixer_remove_stream(10);
+#endif
+   return false;
+}
+
+
+static void task_auto_translate_handler(retro_task_t *task)
+{
+   http_transfer_data_t *data = NULL;
+   int* mode_ptr = task->user_data;
+
+   if (task_get_cancelled(task))
+      goto task_finished;
+   /* Narrator Mode */
+   if (*mode_ptr == 2)
+   {
+#ifdef HAVE_ACCESSIBILITY
+      if (is_narrator_running() == false)
+      {
+         goto task_finished;
+      }
+#endif
+   }
+   /* Speech Mode */
+   else if (*mode_ptr == 1)
+   {
+#ifdef HAVE_AUDIOMIXER
+      if (is_ai_service_speech_running() == false)
+      {
+         goto task_finished;
+      }
+#endif
+   }
+   return;
+task_finished:
+   if (get_ai_service_auto() == 1)
+      set_ai_service_auto(2);
+
+   task_set_finished(task, true);
+   if (*mode_ptr == 1 || *mode_ptr == 2)
+       task_auto_translate_callback();
+   if (task->user_data)
+       free(task->user_data);
+}
+
+bool call_auto_translate_task(bool* was_paused)
+{
+   settings_t *settings                  = configuration_settings;
+   int ai_service_mode                   = settings->uints.ai_service_mode;
+
+   /*Image Mode*/
+   if (ai_service_mode == 0)
+   {
+      if (get_ai_service_auto() == 1)
+         set_ai_service_auto(2);
+
+      command_event(CMD_EVENT_AI_SERVICE_CALL, was_paused);
+      return true;
+   }
+   else /* Speech or Narrator Mode */
+   {
+      retro_task_t  *t                   = NULL;
+      int* mode                          = (int*) malloc(sizeof(int));
+      *mode = ai_service_mode;
+      t = task_init();
+      if (!t)
+         return false;
+
+      t->handler = task_auto_translate_handler;
+      t->user_data = mode;
+      t->mute = true;
+      task_queue_push(t);
+   }
+   return true;
+}
+
+
+
 static void handle_translation_cb(
       retro_task_t *task, void *task_data, void *user_data, const char *error)
 {
@@ -6039,14 +6156,31 @@ static void handle_translation_cb(
    char* found_string                = NULL;
    char* error_string                = NULL;
    char* text_string                 = NULL;
+   char* auto_string                 = NULL;
+   char* key_string                  = NULL;
    int curr_state                    = 0;
+   settings_t* settings              = configuration_settings;
+   bool was_paused                   = runloop_paused;
+
+
+#ifdef GFX_MENU_WIDGETS
+   if (gfx_widgets_ai_service_overlay_get_state() != 0 
+       && get_ai_service_auto() == 2)
+   {
+      /* When auto mode is on, we turn off the overlay
+       * once we have the result for the next call.*/
+      gfx_widgets_ai_service_overlay_unload();
+   }
+#endif
 
 #ifdef DEBUG
-   RARCH_LOG("RESULT FROM AI SERVICE...\n");
+   if (get_ai_service_auto() != 2)
+      RARCH_LOG("RESULT FROM AI SERVICE...\n");
 #endif
+
    if (!data || error)
       goto finish;
-
+   
    data->data = (char*)realloc(data->data, data->len + 1);
    if (!data->data)
       goto finish;
@@ -6096,6 +6230,18 @@ static void handle_translation_cb(
                strlcpy(error_string, body_copy+start+1, i-start);
                curr_state = 0;
             }
+            else if (curr_state == 5)
+            {
+               auto_string = (char*)malloc(i-start+1);
+               strlcpy(auto_string, body_copy+start+1, i-start);
+               curr_state = 0;
+            }
+            else if (curr_state == 6)
+            {
+               key_string = (char*)malloc(i-start+1);
+               strlcpy(key_string, body_copy+start+1, i-start);
+               curr_state = 0;
+            }
             else if (string_is_equal(found_string, "image"))
             {
                curr_state = 1;
@@ -6114,6 +6260,16 @@ static void handle_translation_cb(
             else if (string_is_equal(found_string, "error"))
             {
                curr_state = 4;
+               free(found_string);
+            }
+            else if (string_is_equal(found_string, "auto"))
+            {
+               curr_state = 5;
+               free(found_string);
+            }
+            else if (string_is_equal(found_string, "press"))
+            {
+               curr_state = 6;
                free(found_string);
             }
             else
@@ -6146,7 +6302,7 @@ static void handle_translation_cb(
 #endif
    }
 
-   if (!raw_image_file_data && !raw_sound_data && !text_string)
+   if (!raw_image_file_data && !raw_sound_data && !text_string && get_ai_service_auto() != 2 && !key_string)
    {
       error = "Invalid JSON body.";
       goto finish;
@@ -6379,6 +6535,76 @@ static void handle_translation_cb(
    }
 #endif
 
+   if (key_string)
+   {
+      int length = strlen(key_string);
+      int i = 0;
+      int start = 0;
+      char t = ' ';
+      char key[8];
+
+      for (i=1;i<length;i++)
+      {
+         t = key_string[i];
+         if (i == length-1 || t == ' ' || t == ',')
+         {
+            if (i == length-1 && t != ' ' && t!= ',')
+               i++;
+
+            if (i-start > 7)
+            {
+               start = i;
+               continue;
+            }
+            
+            strncpy(key, key_string+start, i-start);
+            key[i-start] = '\0';
+            if (string_is_equal(key, "b"))
+               ai_gamepad_state[0] = 2;
+            if (string_is_equal(key, "y"))
+               ai_gamepad_state[1] = 2;
+            if (string_is_equal(key, "select"))
+               ai_gamepad_state[2] = 2;
+            if (string_is_equal(key, "start"))
+               ai_gamepad_state[3] = 2;
+
+            if (string_is_equal(key, "up"))
+               ai_gamepad_state[4] = 2;
+            if (string_is_equal(key, "down"))
+               ai_gamepad_state[5] = 2;
+            if (string_is_equal(key, "left"))
+               ai_gamepad_state[6] = 2;
+            if (string_is_equal(key, "right"))
+               ai_gamepad_state[7] = 2;
+
+            if (string_is_equal(key, "a"))
+               ai_gamepad_state[8] = 2;
+            if (string_is_equal(key, "x"))
+               ai_gamepad_state[9] = 2;
+            if (string_is_equal(key, "l"))
+               ai_gamepad_state[10] = 2;
+            if (string_is_equal(key, "r"))
+               ai_gamepad_state[11] = 2;
+
+            if (string_is_equal(key, "l2"))
+               ai_gamepad_state[12] = 2;
+            if (string_is_equal(key, "r2"))
+               ai_gamepad_state[13] = 2;
+            if (string_is_equal(key, "l3"))
+               ai_gamepad_state[14] = 2;
+            if (string_is_equal(key, "r3"))
+               ai_gamepad_state[15] = 2;
+
+            if (string_is_equal(key, "pause"))
+               command_event(CMD_EVENT_PAUSE, NULL);
+            if (string_is_equal(key, "unpause"))
+               command_event(CMD_EVENT_UNPAUSE, NULL);
+
+            start = i+1;
+         }
+      }
+   }
+
 #ifdef HAVE_ACCESSIBILITY
    if (text_string && is_accessibility_enabled())
       accessibility_speak_priority(text_string, 10);
@@ -6413,25 +6639,18 @@ finish:
       free(text_string);
    if (raw_output_data)
       free(raw_output_data);
-}
 
-static bool is_ai_service_speech_running(void)
-{
-#ifdef HAVE_AUDIOMIXER
-   enum audio_mixer_state res = audio_driver_mixer_get_stream_state(10);
-   if (res != AUDIO_STREAM_STATE_NONE && res != AUDIO_STREAM_STATE_STOPPED)
-      return true;
-#endif
-   return false;
-}
-
-static bool ai_service_speech_stop(void)
-{
-#ifdef HAVE_AUDIOMIXER
-   audio_driver_mixer_stop_stream(10);
-   audio_driver_mixer_remove_stream(10);
-#endif
-   return false;
+   if (string_is_equal(auto_string, "auto"))
+   {
+      if (get_ai_service_auto() != 0 && settings->bools.ai_service_pause == false)
+      { 
+         call_auto_translate_task(&was_paused);
+      }
+   }
+   if (auto_string)
+      free(auto_string);
+   if (key_string)
+      free(key_string);
 }
 
 static const char *ai_service_get_str(enum translation_lang id)
@@ -6572,6 +6791,7 @@ static const char *ai_service_get_str(enum translation_lang id)
    return "";
 }
 
+
 /*
    This function does all the stuff needed to translate the game screen,
    using the URL given in the settings.  Once the image from the frame
@@ -6598,8 +6818,17 @@ static const char *ai_service_get_str(enum translation_lang id)
    The server must output the translated image in the form of a
    JSON body, with the "image" field also as a base64 encoded
    24bit-BMP, or as an alpha channel png.
-   */
-static bool run_translation_service(void)
+
+  "paused" boolean is passed in to indicate if the current call
+   was made during a paused frame.  Due to how the menu widgets work,
+   if the ai service is called in "auto" mode, then this call will
+   be made while the menu widgets unpause the core for a frame to update
+   the on-screen widgets.  To tell the ai service what the pause
+   mode is honestly, we store the runloop_paused variable from before
+   the handle_translation_cb wipes the widgets, and pass that in here.
+*/
+
+static bool run_translation_service(bool paused)
 {
    struct video_viewport vp;
    uint8_t header[54];
@@ -6625,6 +6854,9 @@ static bool run_translation_service(void)
    const char *rf1                       = "{\"image\": \"";
    const char *rf2                       = "\"}\0";
    char *rf3                             = NULL;
+   char *state_son                       = NULL;
+   int state_son_length                  = 0;
+   int curr_length                       = 0;
    bool TRANSLATE_USE_BMP                = false;
    bool use_overlay                      = false;
 
@@ -6633,7 +6865,7 @@ static bool run_translation_service(void)
    core_info_t *core_info                = NULL;
 
 #ifdef HAVE_GFX_WIDGETS
-   if (gfx_widgets_ai_service_overlay_get_state() != 0)
+   if (gfx_widgets_ai_service_overlay_get_state() != 0 && get_ai_service_auto() == 1)
    {
       /* For the case when ai service pause is disabled. */
       gfx_widgets_ai_service_overlay_unload();
@@ -6794,32 +7026,96 @@ static bool run_translation_service(void)
    {
       unsigned i;
       /* include game label if provided */
-      rf3 = (char *)malloc(16+strlen(system_label));
-      memcpy(rf3, "\", \"label\": \"", 13*sizeof(uint8_t));
-      memcpy(rf3+13, system_label, strlen(system_label));
-      memcpy(rf3+13+strlen(system_label), "\"}\0", 3*sizeof(uint8_t));
-      for (i=13;i<strlen(system_label)+13;i++)
+      rf3 = (char *)malloc(15+strlen(system_label));
+      memcpy(rf3, ", \"label\": \"", 12*sizeof(uint8_t));
+      memcpy(rf3+12, system_label, strlen(system_label));
+      memcpy(rf3+12+strlen(system_label), "\"}\0", 3*sizeof(uint8_t));
+      for (i=12;i<strlen(system_label)+12;i++)
       {
          if (rf3[i] == '\"')
             rf3[i] = ' ';
       }
-      json_length = 11+out_length+16+strlen(system_label);
+      json_length = 11+out_length+15+strlen(system_label);
    }
    else
-      json_length = 11+out_length+3;
+      json_length = 11+out_length+1;
+
+   {
+      state_son_length = 177;
+      state_son = (char *) malloc(state_son_length);
+
+      memcpy(state_son, ", \"state\": {\"paused\": 0, \"a\": 0, \"b\": 0, \"select\": 0, \"start\": 0, \"up\": 0, \"down\": 0, \"left\": 0, \"right\": 0, \"x\": 0, \"y\": 0, \"l\": 0, \"r\":0, \"l2\": 0, \"r2\": 0, \"l3\":0, \"r3\": 0}}\0", state_son_length*sizeof(uint8_t));
+
+      if (paused)
+         state_son[22] = '1';
+
+      if (ai_gamepad_state[8])//a
+         state_son[30] = '1';
+      if (ai_gamepad_state[0])//b
+         state_son[38] = '1';
+      if (ai_gamepad_state[2])//select
+         state_son[51] = '1';
+      if (ai_gamepad_state[3])//start
+         state_son[63] = '1';
+
+      if (ai_gamepad_state[4])//up
+         state_son[72] = '1';
+      if (ai_gamepad_state[5])//down
+         state_son[83] = '1';
+      if (ai_gamepad_state[6])//left
+         state_son[94] = '1';
+      if (ai_gamepad_state[7])//right
+         state_son[106] = '1';
+
+      if (ai_gamepad_state[9])//x
+         state_son[114] = '1';
+      if (ai_gamepad_state[1])//y
+         state_son[122] = '1';
+      if (ai_gamepad_state[10])//l
+         state_son[130] = '1';
+      if (ai_gamepad_state[11])//r
+         state_son[138] = '1';
+
+      if (ai_gamepad_state[12])//l2
+         state_son[147] = '1';
+      if (ai_gamepad_state[13])//r2
+         state_son[156] = '1';
+      if (ai_gamepad_state[14])//l3
+         state_son[165] = '1';
+      if (ai_gamepad_state[15])//r3
+         state_son[174] = '1';
+
+      json_length+=state_son_length;
+   }
 
    json_buffer = (char*)malloc(json_length);
    if (!json_buffer)
       goto finish;
-
+   /* Image data */
    memcpy(json_buffer, (const void*)rf1, 11*sizeof(uint8_t));
    memcpy(json_buffer+11, bmp64_buffer, (out_length)*sizeof(uint8_t));
+   memcpy(json_buffer+11+out_length, "\"", 1*sizeof(uint8_t));
+   curr_length = 11+out_length+1;
+
+   /* State data */
+   memcpy(json_buffer+curr_length, state_son, state_son_length*sizeof(uint8_t));
+   curr_length+= state_son_length;
+
+   /* System Label */
    if (rf3)
-      memcpy(json_buffer+11+out_length, (const void*)rf3, (16+strlen(system_label))*sizeof(uint8_t));
+   {
+      memcpy(json_buffer+curr_length, (const void*)rf3, (15+strlen(system_label))*sizeof(uint8_t));   
+      curr_length+=15+strlen(system_label);
+   }
    else
-      memcpy(json_buffer+11+out_length, (const void*)rf2, 3*sizeof(uint8_t));
+   {
+      memcpy(json_buffer+curr_length, (const void*)rf2, 3*sizeof(uint8_t));
+      curr_length+=3;
+   }
+
 #ifdef DEBUG
-   RARCH_LOG("Request size: %d\n", out_length);
+   if (get_ai_service_auto()!=2)
+      RARCH_LOG("Request size: %d\n", out_length);
 #endif
    {
       char separator  = '?';
@@ -6913,7 +7209,8 @@ static bool run_translation_service(void)
                  sizeof(new_ai_service_url));
       }
 #ifdef DEBUG
-      RARCH_LOG("SENDING... %s\n", new_ai_service_url);
+      if (get_ai_service_auto() != 2)
+         RARCH_LOG("SENDING... %s\n", new_ai_service_url);
 #endif
       task_push_http_post_transfer(new_ai_service_url,
             json_buffer, true, NULL, handle_translation_cb, NULL);
@@ -8158,7 +8455,11 @@ bool command_event(enum event_command cmd, void *data)
          settings_t *settings      = configuration_settings;
          bool ai_service_pause     = settings->bools.ai_service_pause;
 
-         if (ai_service_pause)
+         if (!settings->bools.ai_service_enable)
+         {
+            break;
+         }
+         else if (ai_service_pause)
          {
             /* pause on call, unpause on second press. */
             if (!runloop_paused)
@@ -8180,8 +8481,22 @@ bool command_event(enum event_command cmd, void *data)
            /* Don't pause - useful for Text-To-Speech since
             * the audio can't currently play while paused.
             * Also useful for cases when users don't want the
-            * core's sound to stop while translating. */
-            command_event(CMD_EVENT_AI_SERVICE_CALL, NULL);
+            * core's sound to stop while translating. 
+            *
+            * Also, this mode is required for "auto" translation
+            * packages, since you don't want to pause for that.   
+            */ 
+            if (get_ai_service_auto() == 2)
+            {
+               /* Auto mode was turned on, but we pressed the
+                * toggle button, so turn it off now. */
+               set_ai_service_auto(0);
+#ifdef HAVE_MENU_WIDGETS
+               gfx_widgets_ai_service_overlay_unload();
+#endif
+            }
+            else
+               command_event(CMD_EVENT_AI_SERVICE_CALL, NULL);
          }
 #endif
          break;
@@ -9482,8 +9797,15 @@ bool command_event(enum event_command cmd, void *data)
 #endif
          else
          {
-            RARCH_LOG("AI Service Called...\n");
-            run_translation_service();
+            bool paused = runloop_paused;
+            if (data!=NULL)
+               paused = *((bool*)data);
+
+            if (get_ai_service_auto() == 0 && settings->bools.ai_service_pause == false)
+               set_ai_service_auto(1);
+            if (get_ai_service_auto() != 2)
+               RARCH_LOG("AI Service Called...\n");
+            run_translation_service(paused);
          }
 #endif
          break;
@@ -25896,7 +26218,6 @@ static int16_t input_state_with_logging(unsigned port,
       int16_t last_input = input_state_get_last(port, device, index, id);
       if (result != last_input)
          input_is_dirty  = true;
-
       /*arbitrary limit of up to 65536 elements in state array*/
       if (id < 65536)
          input_state_set_last(port, device, index, id, result);
@@ -25922,7 +26243,7 @@ static bool unserialize_hook(const void *buf, size_t size)
 }
 
 static void add_input_state_hook(void)
-{
+{  
    if (!input_state_callback_original)
    {
       input_state_callback_original = retro_ctx.state_cb;
@@ -29138,7 +29459,22 @@ static enum runloop_state runloop_check_state(retro_time_t current_time)
    }
    else
 #endif
+   {
       input_keys_pressed(&current_bits, &joypad_info);
+#ifdef HAVE_TRANSLATE
+      if (settings->bools.ai_service_enable)
+      {
+         reset_gamepad_input_override();
+      
+         for (int i=0;i<16;i++)
+         {
+            if (ai_gamepad_state[i] == 2)
+               set_gamepad_input_override(i, true);
+            ai_gamepad_state[i] = 0;
+         }
+      }      
+#endif
+   }
 
 #ifdef HAVE_MENU
    last_input                       = current_bits;
@@ -29625,7 +29961,31 @@ static enum runloop_state runloop_check_state(retro_time_t current_time)
       }
    }
 
-   if (!focused)
+#ifdef HAVE_TRANSLATE
+   /* Copy over the retropad state to a buffer for the translate service
+      to send off if it's run. */
+   ai_gamepad_state[0] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_B);
+   ai_gamepad_state[1] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_Y);
+   ai_gamepad_state[2] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_SELECT);
+   ai_gamepad_state[3] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_START);
+
+   ai_gamepad_state[4] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_UP);
+   ai_gamepad_state[5] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_DOWN);
+   ai_gamepad_state[6] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_LEFT);
+   ai_gamepad_state[7] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_RIGHT);
+
+   ai_gamepad_state[8] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_A);
+   ai_gamepad_state[9] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_X);
+   ai_gamepad_state[10] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_L);
+   ai_gamepad_state[11] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_R);
+
+   ai_gamepad_state[12] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_L2);
+   ai_gamepad_state[13] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_R2);
+   ai_gamepad_state[14] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_L3);
+   ai_gamepad_state[15] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_R3);
+#endif
+
+  if (!focused)
    {
       retro_ctx.poll_cb();
       return RUNLOOP_STATE_POLLED_AND_SLEEP;
@@ -29823,6 +30183,7 @@ static enum runloop_state runloop_check_state(retro_time_t current_time)
          RARCH_CHEAT_INDEX_PLUS,  CMD_EVENT_CHEAT_INDEX_PLUS,
          RARCH_CHEAT_INDEX_MINUS, CMD_EVENT_CHEAT_INDEX_MINUS,
          RARCH_CHEAT_TOGGLE,      CMD_EVENT_CHEAT_TOGGLE);
+
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    if (settings->bools.video_shader_watch_files)
@@ -30297,8 +30658,8 @@ static int16_t core_input_state_poll_late(unsigned port,
 {
    if (!current_core.input_polled)
       input_driver_poll();
-
    current_core.input_polled = true;
+   
    return input_state(port, device, idx, id);
 }
 
@@ -30730,4 +31091,27 @@ static bool accessibility_startup_message(void)
          10);
    return true;
 }
+
+
+static unsigned gamepad_input_override = 0;
+
+unsigned get_gamepad_input_override(void)
+{
+   return gamepad_input_override;
+}
+
+void set_gamepad_input_override(unsigned i, bool val)
+{
+   if (val)
+      gamepad_input_override = gamepad_input_override | (1<<i);
+   else
+      gamepad_input_override = gamepad_input_override & ((1<<i) ^ 0);
+}
+
+void reset_gamepad_input_override(void)
+{
+    gamepad_input_override = 0;
+}
+
+
 #endif

@@ -1,5 +1,6 @@
 HAVE_LIBRETRO=             # Libretro library used
 HAVE_ASSETS_DIR=           # Assets install directory
+HAVE_NVDA=no               # NVDA support
 HAVE_BLISSBOX=auto         # Blissbox support
 HAVE_ANGLE=no              # ANGLE support (OpenGL wrapper)
 HAVE_CONFIGFILE=yes        # Config file support

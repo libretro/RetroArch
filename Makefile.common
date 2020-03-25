@@ -19,6 +19,10 @@ ifeq ($(HAVE_CXX11), 1)
    CXXFLAGS += $(CXX11_CFLAGS)
 endif
 
+ifeq ($(HAVE_NVDA), 1)
+   LIBS += nvdaControllerClient64.dll
+endif
+
 ifeq ($(HAVE_GL_CONTEXT),)
    HAVE_GL_CONTEXT = 0
    HAVE_GL_MODERN  = 0
@@ -1764,7 +1768,13 @@ endif
 # Accessibility
 ifeq ($(HAVE_ACCESSIBILITY), 1)
    DEFINES += -DHAVE_ACCESSIBILITY
+
+ifneq ($(findstring Win32,$(OS)),)
+   LIBS += -lsapi
 endif
+endif
+
+
 
 # Things that depend on network availability
 

@@ -6806,7 +6806,7 @@ static enum menu_action materialui_parse_menu_entry_action(
              (materialui_list_get_size(mui, MENU_LIST_PLAIN) == 1))
          {
             materialui_switch_tabs(mui, NULL, action);
-            new_action = MENU_ACTION_NOOP;
+            new_action = MENU_ACTION_ACCESSIBILITY_SPEAK_TITLE_LABEL;
          }
          else
          {
