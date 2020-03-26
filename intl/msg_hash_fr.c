@@ -640,7 +640,6 @@ int menu_hash_get_help_fr_enum(enum msg_hash_enums msg, char *s, size_t len)
         case MENU_ENUM_LABEL_OVERLAY_OPACITY:
             snprintf(s, len,
                      "Opacité de la surimpression.");
-#ifdef HAVE_VIDEO_LAYOUT
         case MENU_ENUM_LABEL_VIDEO_LAYOUT_ENABLE:
             snprintf(s, len,
                       "Active ou désactive la disposition d'affichage actuelle.");
@@ -653,8 +652,6 @@ int menu_hash_get_help_fr_enum(enum msg_hash_enums msg, char *s, size_t len)
             snprintf(s, len,
                       "Les dispositions d'affichage peuvent contenir plusieurs vues. \n"
                       "Sélectionne une vue.");
-            break;
-#endif
             break;
         case MENU_ENUM_LABEL_INPUT_BIND_TIMEOUT:
             snprintf(s, len,
@@ -1872,15 +1869,13 @@ int menu_hash_get_help_fr_enum(enum msg_hash_enums msg, char *s, size_t len)
                              "Définit un dossier dans lequel les surimpressions \n"
                              "seront conservées pour un accès facile.");
             break;
-#ifdef HAVE_VIDEO_LAYOUT
         case MENU_ENUM_LABEL_VIDEO_LAYOUT_DIRECTORY:
             snprintf(s, len,
                      "Dossier des Dispositions d'affichage. \n"
                              " \n"
                              "Définit un dossier dans lequel les dispositions d'affichage \n"
                              "seront conservées pour un accès facile.");
-        break;
-#endif
+            break;
         case MENU_ENUM_LABEL_INPUT_MAX_USERS:
             snprintf(s, len,
                      "Nombre maximum d'utilisateurs pris en charge par \n"

@@ -2051,7 +2051,6 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_ONSCREEN_OVERLAY_SETTINGS,
     "Çerçeveleri ve Ekran denetimlerini ayarlama"
     )
-#ifdef HAVE_VIDEO_LAYOUT
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_ONSCREEN_VIDEO_LAYOUT_SETTINGS,
     "Video Düzeni"
@@ -2060,7 +2059,6 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_ONSCREEN_VIDEO_LAYOUT_SETTINGS,
     "Video Düzenini Ayarla"
     )
-#endif
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_SETTINGS,
     "Ekrandaki Bildirimler"
@@ -3939,7 +3937,6 @@ MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
     "Tam ekran yüksekliği"
     )
-#ifdef HAVE_VIDEO_LAYOUT
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_ENABLE,
     "Video Düzenini Etkinleştir"
@@ -3964,7 +3961,6 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_SELECTED_VIEW,
     "Yüklenen düzende bir görünüm seçin."
     )
-#endif
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_WIFI_DRIVER,
     "Wi-Fi"
@@ -7224,7 +7220,6 @@ MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_OVERLAYS,
     "Kaplama ayarlarını göster"
     )
-#ifdef HAVE_VIDEO_LAYOUT
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_VIDEO_LAYOUT,
     "Video Düzeni Ayarlarını Göster"
@@ -7233,7 +7228,6 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_CONTENT_SHOW_VIDEO_LAYOUT,
     "Video Düzeni seçeneklerini göster/gizle."
     )
-#endif
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE_MENU,
     "Mikser"

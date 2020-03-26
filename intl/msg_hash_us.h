@@ -2356,7 +2356,6 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_ONSCREEN_OVERLAY_SETTINGS,
     "Adjust Bezels and Onscreen controls"
     )
-#ifdef HAVE_VIDEO_LAYOUT
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_ONSCREEN_VIDEO_LAYOUT_SETTINGS,
     "Video Layout"
@@ -2365,7 +2364,6 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_ONSCREEN_VIDEO_LAYOUT_SETTINGS,
     "Adjust Video Layout"
     )
-#endif
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_SETTINGS,
     "Onscreen Notifications"
@@ -2394,12 +2392,10 @@ MSG_HASH(
     MENU_ENUM_LABEL_VALUE_OVERLAY_DIRECTORY,
     "Overlay"
     )
-#ifdef HAVE_VIDEO_LAYOUT
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_DIRECTORY,
     "Video Layout"
     )
-#endif
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_OVERLAY_OPACITY,
     "Overlay Opacity"
@@ -4396,7 +4392,6 @@ MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
     "Fullscreen Height"
     )
-#ifdef HAVE_VIDEO_LAYOUT
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_ENABLE,
     "Enable Video Layout"
@@ -4421,7 +4416,6 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_SELECTED_VIEW,
     "Select a view within the loaded layout."
     )
-#endif
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_WIFI_DRIVER,
     "Wi-Fi"
@@ -6995,12 +6989,10 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_OVERLAY_DIRECTORY,
     "Defines a directory where overlays are kept for easy access."
     )
-#ifdef HAVE_VIDEO_LAYOUT
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_DIRECTORY,
     "Defines a directory where video layouts are kept for easy access."
     )
-#endif
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CHEAT_DATABASE_PATH,
     "Cheat files are kept here."
@@ -7905,7 +7897,6 @@ MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_OVERLAYS,
     "Show Overlay Settings"
     )
-#ifdef HAVE_VIDEO_LAYOUT
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_VIDEO_LAYOUT,
     "Show Video Layout Settings"
@@ -7914,7 +7905,6 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_CONTENT_SHOW_VIDEO_LAYOUT,
     "Show/hide Video Layout options."
     )
-#endif
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE_MENU,
     "Mixer"

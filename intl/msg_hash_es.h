@@ -2323,7 +2323,6 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_ONSCREEN_OVERLAY_SETTINGS,
     "Ajusta los controles en pantalla y los marcos."
     )
-#ifdef HAVE_VIDEO_LAYOUT
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_ONSCREEN_VIDEO_LAYOUT_SETTINGS,
     "Diseño de vídeo"
@@ -2332,7 +2331,6 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_ONSCREEN_VIDEO_LAYOUT_SETTINGS,
     "Ajusta el diseño de vídeo."
     )
-#endif
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_SETTINGS,
     "Notificaciones"
@@ -2361,12 +2359,10 @@ MSG_HASH(
     MENU_ENUM_LABEL_VALUE_OVERLAY_DIRECTORY,
     "Superposiciones"
     )
-#ifdef HAVE_VIDEO_LAYOUT
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_DIRECTORY,
     "Diseño de vídeo"
     )
-#endif
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_OVERLAY_OPACITY,
     "Opacidad"
@@ -4367,7 +4363,6 @@ MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
     "Alto en pantalla completa"
     )
-#ifdef HAVE_VIDEO_LAYOUT
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_ENABLE,
     "Activar diseño de vídeo"
@@ -4392,7 +4387,6 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_SELECTED_VIEW,
     "Selecciona una vista del diseño cargado."
     )
-#endif
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_WIFI_DRIVER,
     "Controlador wifi"
@@ -6940,12 +6934,10 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_OVERLAY_DIRECTORY,
     "En esta carpeta se guardan las superposiciones."
     )
-#ifdef HAVE_VIDEO_LAYOUT
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_DIRECTORY,
     "En esta carpeta se guardan los diseños de vídeo."
     )
-#endif
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CHEAT_DATABASE_PATH,
     "En esta carpeta se guardan los archivos de trucos."
@@ -7833,7 +7825,6 @@ MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_OVERLAYS,
     "Mostrar opciones de superposición"
     )
-#ifdef HAVE_VIDEO_LAYOUT
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_VIDEO_LAYOUT,
     "Mostrar opciones de diseño de vídeo"
@@ -7842,7 +7833,6 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_CONTENT_SHOW_VIDEO_LAYOUT,
     "Muestra las opciones de diseño de vídeo."
     )
-#endif
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE_MENU,
     "Mezclador de audio"

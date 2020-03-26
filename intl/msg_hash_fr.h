@@ -2352,7 +2352,6 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_ONSCREEN_OVERLAY_SETTINGS,
     "Ajuste les cadres d'images et les touches à l'écran"
     )
-#ifdef HAVE_VIDEO_LAYOUT
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_ONSCREEN_VIDEO_LAYOUT_SETTINGS,
     "Dispositions d'affichage"
@@ -2361,7 +2360,6 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_ONSCREEN_VIDEO_LAYOUT_SETTINGS,
     "Ajuste la disposition de l'affichage"
     )
-#endif
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_SETTINGS,
     "Notifications à l'écran"
@@ -2390,12 +2388,10 @@ MSG_HASH(
     MENU_ENUM_LABEL_VALUE_OVERLAY_DIRECTORY,
     "Surimpressions à l'écran "
     )
-#ifdef HAVE_VIDEO_LAYOUT
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_DIRECTORY,
     "Dispositions d'affichage "
     )
-#endif
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_OVERLAY_OPACITY,
     "Opacité de la surimpression "
@@ -4392,7 +4388,6 @@ MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
     "Hauteur en plein écran"
     )
-#ifdef HAVE_VIDEO_LAYOUT
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_ENABLE,
     "Active la disposition d'affichage"
@@ -4417,7 +4412,6 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_SELECTED_VIEW,
     "Sélectionne une vue pour la disposition d'affichage."
     )
-#endif
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_WIFI_DRIVER,
     "Wi-Fi "
@@ -6991,12 +6985,10 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_OVERLAY_DIRECTORY,
     "Les surimpressions seront conservées dans ce dossier pour un accès facile."
     )
-#ifdef HAVE_VIDEO_LAYOUT
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_DIRECTORY,
     "Les dispositions d'affichage seront conservées dans ce dossier pour un accès facile."
     )
-#endif
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CHEAT_DATABASE_PATH,
     "Les fichiers de cheats seront conservés dans ce dossier."
@@ -7901,7 +7893,6 @@ MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_OVERLAYS,
     "Afficher les réglages de surimpression"
     )
-#ifdef HAVE_VIDEO_LAYOUT
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_VIDEO_LAYOUT,
     "Afficher les réglages de disposition d'affichage"
@@ -7910,7 +7901,6 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_CONTENT_SHOW_VIDEO_LAYOUT,
     "Afficher/masquer les options de disposition d'affichage."
     )
-#endif
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE_MENU,
     "Mixeur"

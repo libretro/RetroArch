@@ -638,7 +638,6 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
          snprintf(s, len,
                "Overlay opacity.");
          break;
-#ifdef HAVE_VIDEO_LAYOUT
       case MENU_ENUM_LABEL_VIDEO_LAYOUT_ENABLE:
          snprintf(s, len,
                   "Enable or disable the current video layout.");
@@ -652,7 +651,6 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
                   "Layouts can contain multiple views. \n"
                   "Select a view.");
          break;
-#endif
       case MENU_ENUM_LABEL_INPUT_BIND_TIMEOUT:
          snprintf(s, len,
                "Input bind timer timeout (in seconds). \n"
@@ -1841,7 +1839,6 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
                "Defines a directory where overlays are \n"
                "kept for easy access.");
          break;
-#ifdef HAVE_VIDEO_LAYOUT
       case MENU_ENUM_LABEL_VIDEO_LAYOUT_DIRECTORY:
          snprintf(s, len,
                   "Video Layout Directory. \n"
@@ -1849,7 +1846,6 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
                   "Defines a directory where video layouts are \n"
                   "kept for easy access.");
          break;
-#endif
       case MENU_ENUM_LABEL_INPUT_MAX_USERS:
          snprintf(s, len,
                "Maximum amount of users supported by \n"

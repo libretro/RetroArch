@@ -2356,7 +2356,6 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_ONSCREEN_OVERLAY_SETTINGS,
     "Opções de controles de notificações na tela ou molduras"
     )
-#ifdef HAVE_VIDEO_LAYOUT
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_ONSCREEN_VIDEO_LAYOUT_SETTINGS,
     "Esquema de vídeo"
@@ -2365,7 +2364,6 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_ONSCREEN_VIDEO_LAYOUT_SETTINGS,
     "Ajustar o esquema de vídeo"
     )
-#endif
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_SETTINGS,
     "Notificações na tela"
@@ -2394,12 +2392,10 @@ MSG_HASH(
     MENU_ENUM_LABEL_VALUE_OVERLAY_DIRECTORY,
     "Sobreposição"
     )
-#ifdef HAVE_VIDEO_LAYOUT
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_DIRECTORY,
     "Esquema de vídeo"
     )
-#endif
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_OVERLAY_OPACITY,
     "Opacidade da sobreposição"
@@ -4396,7 +4392,6 @@ MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
     "Altura em tela cheia"
     )
-#ifdef HAVE_VIDEO_LAYOUT
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_ENABLE,
     "Ativar o esquema de vídeo"
@@ -4421,7 +4416,6 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_SELECTED_VIEW,
     "Seleciona uma visualização dentro do esquema carregado."
     )
-#endif
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_WIFI_DRIVER,
     "Wi-Fi"
@@ -6995,12 +6989,10 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_OVERLAY_DIRECTORY,
     "Define um diretório onde as sobreposições são mantidas para facilitar o acesso."
     )
-#ifdef HAVE_VIDEO_LAYOUT
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_DIRECTORY,
     "Define um diretório onde os esquemas de vídeo são mantidos para facilitar o acesso."
     )
-#endif
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CHEAT_DATABASE_PATH,
     "Os arquivos de trapaça são mantidos aqui."
@@ -7905,7 +7897,6 @@ MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_OVERLAYS,
     "Exibir configurações de sobreposição"
     )
-#ifdef HAVE_VIDEO_LAYOUT
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_VIDEO_LAYOUT,
     "Mostrar configurações de esquema de vídeo"
@@ -7914,7 +7905,6 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_CONTENT_SHOW_VIDEO_LAYOUT,
     "Mostrar ou ocultar opções de esquema de vídeo."
     )
-#endif
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE_MENU,
     "Mixer de áudio"

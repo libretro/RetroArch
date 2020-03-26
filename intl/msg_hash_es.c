@@ -690,7 +690,6 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
             snprintf(s, len,
                      "Opacidad de la superposición.");
             break;
-#ifdef HAVE_VIDEO_LAYOUT
         case MENU_ENUM_LABEL_VIDEO_LAYOUT_ENABLE:
             snprintf(s, len,
                      "Activa o desactiva el diseño de vídeo actual.");
@@ -704,7 +703,6 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
                      "Los diseños pueden contener múltiples vistas.\n"
                      "Selecciona una.");
             break;
-#endif
         case MENU_ENUM_LABEL_INPUT_BIND_TIMEOUT:
             snprintf(s, len,
                      "Tiempo de espera para asignar una función\n"
@@ -2008,7 +2006,6 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
                      "Define la carpeta que contiene\n"
                      "las superposiciones.");
             break;
-#ifdef HAVE_VIDEO_LAYOUT
         case MENU_ENUM_LABEL_VIDEO_LAYOUT_DIRECTORY:
             snprintf(s, len,
                      "Carpeta de diseños de vídeo.\n"
@@ -2016,7 +2013,6 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
                      "Define la carpeta que contiene\n"
                      "los diseños de vídeo.");
             break;
-#endif
         case MENU_ENUM_LABEL_INPUT_MAX_USERS:
             snprintf(s, len,
                      "Indica el número máximo de usuarios\n"
