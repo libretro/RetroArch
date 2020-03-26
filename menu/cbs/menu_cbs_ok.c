@@ -3808,23 +3808,23 @@ static int action_ok_cheat_delete(const char *path,
    if (new_size >0)
    {
       unsigned i;
+
       if (cheat_manager_state.cheats[cheat_manager_state.working_cheat.idx].code)
-      {
          free(cheat_manager_state.cheats[cheat_manager_state.working_cheat.idx].code);
-         cheat_manager_state.cheats[cheat_manager_state.working_cheat.idx].code = NULL;
-      }
       if (cheat_manager_state.cheats[cheat_manager_state.working_cheat.idx].desc)
-      {
          free(cheat_manager_state.cheats[cheat_manager_state.working_cheat.idx].desc);
-         cheat_manager_state.cheats[cheat_manager_state.working_cheat.idx].desc = NULL;
-      }
+
       for (i = cheat_manager_state.working_cheat.idx; i <cheat_manager_state.size-1; i++)
       {
          memcpy(&cheat_manager_state.cheats[i], &cheat_manager_state.cheats[i+1], sizeof(struct item_cheat ));
          cheat_manager_state.cheats[i].idx--;
       }
-      cheat_manager_state.cheats[cheat_manager_state.size-1].code = NULL;
-      cheat_manager_state.cheats[cheat_manager_state.size-1].desc = NULL;
+
+      cheat_manager_state.cheats[cheat_manager_state.size-1].code            = NULL;
+      cheat_manager_state.cheats[cheat_manager_state.size-1].desc            = NULL;
+      cheat_manager_state.cheats[cheat_manager_state.working_cheat.idx].desc = NULL;
+      cheat_manager_state.cheats[cheat_manager_state.working_cheat.idx].code = NULL;
+
    }
 
    cheat_manager_realloc(new_size, CHEAT_HANDLER_TYPE_RETRO);
@@ -5355,8 +5355,9 @@ static void netplay_refresh_rooms_cb(retro_task_t *task,
                      host->nick,
                      sizeof(netplay_room_list[i].nickname));
 
-               strlcpy(netplay_room_list[i].address, host->address, INET6_ADDRSTRLEN);
-
+               strlcpy(netplay_room_list[i].address,
+                     host->address,
+                     INET6_ADDRSTRLEN);
                strlcpy(netplay_room_list[i].corename,
                      host->core,
                      sizeof(netplay_room_list[i].corename));
@@ -5379,7 +5380,7 @@ static void netplay_refresh_rooms_cb(retro_task_t *task,
                netplay_room_list[i].port      = host->port;
                netplay_room_list[i].gamecrc   = host->content_crc;
                netplay_room_list[i].timestamp = 0;
-               netplay_room_list[i].lan = true;
+               netplay_room_list[i].lan       = true;
 
                snprintf(s, sizeof(s),
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_ROOM_NICKNAME),
