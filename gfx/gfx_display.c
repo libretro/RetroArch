@@ -1000,6 +1000,45 @@ void gfx_display_draw_texture_slice(
    math_matrix_4x4 mymat;
    unsigned i;
    float V_BL[2], V_BR[2], V_TL[2], V_TR[2], T_BL[2], T_BR[2], T_TL[2], T_TR[2];
+   /* To prevent visible seams between the corners and
+    * middle segments of the sliced texture, the texture
+    * must be scaled such that its effective size (before
+    * expansion of the middle segments) is no greater than
+    * the requested display size.
+    * > This is consequence of the way textures are rendered
+    *   in hardware...
+    * > Whenever an image is scaled, the colours at the
+    *   transparent edges get interpolated, which means
+    *   the colours of the transparent pixels themselves bleed
+    *   into the visible area.
+    * > This effectively 'blurs' anything that gets scaled
+    *   [SIDE NOTE: this causes additional issues if the transparent
+    *    pixels have the wrong colour - i.e. if they are black,
+    *    every edge gets a nasty dark border...]
+    * > This burring is a problem because (by design) the corners
+    *   of the sliced texture are drawn at native resolution,
+    *   whereas the middle segments are stretched to fit the
+    *   requested dimensions. Consequently, the corners are sharp
+    *   while the middle segments are blurred.
+    * > When *upscaling* the middle segments (i.e. display size
+    *   greater than texture size), the visible effects of this
+    *   are mostly imperceptible.
+    * > When *downscaling* them, however, the interpolation effects
+    *   completely dominate the output image - creating an ugly
+    *   transition between the corners and middle parts.
+    * > Since this is a property of hardware rendering, it is not
+    *   practical to fix this 'properly'...
+    * > However: An effective workaround is to force downscaling of
+    *   the entire texture (including corners) whenever the
+    *   requested display size is less than the texture dimensions.
+    * > This blurs the corners enough that the corner/middle
+    *   transitions are essentially invisible. */
+   float max_scale_w = (float)new_w / (float)w;
+   float max_scale_h = (float)new_h / (float)h;
+   /* Find the minimum of scale_factor, max_scale_w, max_scale_h */
+   float slice_scale = (scale_factor < max_scale_w) ?
+         (scale_factor < max_scale_h) ? scale_factor : max_scale_h :
+         (max_scale_w  < max_scale_h) ? max_scale_w  : max_scale_h;
 
    /* need space for the coordinates of two triangles in a strip,
     * so 8 vertices */
@@ -1009,15 +1048,15 @@ void gfx_display_draw_texture_slice(
 
    /* normalized width/height of the amount to offset from the corners,
     * for both the vertex and texture coordinates */
-   float vert_woff   = (offset * scale_factor) / (float)width;
-   float vert_hoff   = (offset * scale_factor) / (float)height;
+   float vert_woff   = (offset * slice_scale) / (float)width;
+   float vert_hoff   = (offset * slice_scale) / (float)height;
    float tex_woff    = offset / (float)w;
    float tex_hoff    = offset / (float)h;
 
    /* the width/height of the middle sections of both the scaled and original image */
-   float vert_scaled_mid_width  = (new_w - (offset * scale_factor * 2)) 
+   float vert_scaled_mid_width  = (new_w - (offset * slice_scale * 2))
       / (float)width;
-   float vert_scaled_mid_height = (new_h - (offset * scale_factor * 2)) 
+   float vert_scaled_mid_height = (new_h - (offset * slice_scale * 2))
       / (float)height;
    float tex_mid_width          = (w - (offset * 2)) / (float)w;
    float tex_mid_height         = (h - (offset * 2)) / (float)h;

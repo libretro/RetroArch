@@ -502,8 +502,8 @@ border_iterate:
             video_height,
             (unsigned) ozone->dimensions.sidebar_width + x_offset + entry_padding + ozone->dimensions.spacer_3px,
             entry_width - ozone->dimensions.spacer_5px,
-            button_height + ozone->dimensions.spacer_2px,
-            selection_y + scroll_y + ozone->dimensions.spacer_1px,
+            button_height + ozone->dimensions.spacer_1px,
+            selection_y + scroll_y,
             ozone->animations.cursor_alpha * alpha);
 
    /* Old*/
@@ -519,8 +519,8 @@ border_iterate:
              of type 'unsigned int'
              * */
             entry_width - ozone->dimensions.spacer_5px,
-            button_height + ozone->dimensions.spacer_2px,
-            old_selection_y + scroll_y + ozone->dimensions.spacer_1px,
+            button_height + ozone->dimensions.spacer_1px,
+            old_selection_y + scroll_y,
             (1-ozone->animations.cursor_alpha) * alpha);
 
    /* Icons + text */
