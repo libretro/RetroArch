@@ -6598,746 +6598,290 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
 
    if (cbs->enum_idx != MSG_UNKNOWN)
    {
-      switch (cbs->enum_idx)
+      unsigned i;
+      typedef struct temp_ok_list
       {
-         case MENU_ENUM_LABEL_QUICK_MENU_START_RECORDING:
-            BIND_ACTION_OK(cbs, action_ok_start_recording);
-            break;
-         case MENU_ENUM_LABEL_QUICK_MENU_START_STREAMING:
-            BIND_ACTION_OK(cbs, action_ok_start_streaming);
-            break;
-         case MENU_ENUM_LABEL_QUICK_MENU_STOP_RECORDING:
-            BIND_ACTION_OK(cbs, action_ok_stop_recording);
-            break;
-         case MENU_ENUM_LABEL_QUICK_MENU_STOP_STREAMING:
-            BIND_ACTION_OK(cbs, action_ok_stop_streaming);
-            break;
-         case MENU_ENUM_LABEL_CHEAT_START_OR_CONT:
-            BIND_ACTION_OK(cbs, action_ok_cheat_start_or_cont);
-            break;
-         case MENU_ENUM_LABEL_CHEAT_ADD_NEW_TOP:
-            BIND_ACTION_OK(cbs, action_ok_cheat_add_top);
-            break;
-         case MENU_ENUM_LABEL_CHEAT_RELOAD_CHEATS:
-            BIND_ACTION_OK(cbs, action_ok_cheat_reload_cheats);
-            break;
-         case MENU_ENUM_LABEL_CHEAT_ADD_NEW_BOTTOM:
-            BIND_ACTION_OK(cbs, action_ok_cheat_add_bottom);
-            break;
-         case MENU_ENUM_LABEL_CHEAT_DELETE_ALL:
-            BIND_ACTION_OK(cbs, action_ok_cheat_delete_all);
-            break;
-         case MENU_ENUM_LABEL_CHEAT_ADD_NEW_AFTER:
-            BIND_ACTION_OK(cbs, action_ok_cheat_add_new_after);
-            break;
-         case MENU_ENUM_LABEL_CHEAT_ADD_NEW_BEFORE:
-            BIND_ACTION_OK(cbs, action_ok_cheat_add_new_before);
-            break;
-         case MENU_ENUM_LABEL_CHEAT_COPY_AFTER:
-            BIND_ACTION_OK(cbs, action_ok_cheat_copy_after);
-            break;
-         case MENU_ENUM_LABEL_CHEAT_COPY_BEFORE:
-            BIND_ACTION_OK(cbs, action_ok_cheat_copy_before);
-            break;
-         case MENU_ENUM_LABEL_CHEAT_DELETE:
-            BIND_ACTION_OK(cbs, action_ok_cheat_delete);
-            break;
-         case MENU_ENUM_LABEL_RUN_MUSIC:
-            BIND_ACTION_OK(cbs, action_ok_audio_run);
-            break;
-         case MENU_ENUM_LABEL_ADD_TO_MIXER_AND_COLLECTION:
+         enum msg_hash_enums type;
+         int (*cb)(const char *path, const char *label, unsigned type,
+               size_t idx, size_t entry_idx);
+      } temp_ok_list_t;
+
+      temp_ok_list_t ok_list[] = {
+         {MENU_ENUM_LABEL_QUICK_MENU_START_RECORDING,          action_ok_start_recording},
+         {MENU_ENUM_LABEL_QUICK_MENU_START_STREAMING,          action_ok_start_streaming},
+         {MENU_ENUM_LABEL_QUICK_MENU_STOP_RECORDING,           action_ok_stop_recording},
+         {MENU_ENUM_LABEL_QUICK_MENU_STOP_STREAMING,           action_ok_stop_streaming},
+         {MENU_ENUM_LABEL_CHEAT_START_OR_CONT,                 action_ok_cheat_start_or_cont},
+         {MENU_ENUM_LABEL_CHEAT_ADD_NEW_TOP,                   action_ok_cheat_add_top},
+         {MENU_ENUM_LABEL_CHEAT_RELOAD_CHEATS,                 action_ok_cheat_reload_cheats},
+         {MENU_ENUM_LABEL_CHEAT_ADD_NEW_BOTTOM,                action_ok_cheat_add_bottom},
+         {MENU_ENUM_LABEL_CHEAT_DELETE_ALL,                    action_ok_cheat_delete_all},
+         {MENU_ENUM_LABEL_CHEAT_ADD_NEW_AFTER,                 action_ok_cheat_add_new_after},
+         {MENU_ENUM_LABEL_CHEAT_ADD_NEW_BEFORE,                action_ok_cheat_add_new_before},
+         {MENU_ENUM_LABEL_CHEAT_COPY_AFTER,                    action_ok_cheat_copy_after},
+         {MENU_ENUM_LABEL_CHEAT_COPY_BEFORE,                   action_ok_cheat_copy_before},
+         {MENU_ENUM_LABEL_CHEAT_DELETE,                        action_ok_cheat_delete},
+         {MENU_ENUM_LABEL_RUN_MUSIC,                           action_ok_audio_run},
 #ifdef HAVE_AUDIOMIXER
-            BIND_ACTION_OK(cbs, action_ok_audio_add_to_mixer_and_collection);
+         {MENU_ENUM_LABEL_ADD_TO_MIXER_AND_COLLECTION,         action_ok_audio_add_to_mixer_and_collection},
+         {MENU_ENUM_LABEL_ADD_TO_MIXER_AND_COLLECTION_AND_PLAY,action_ok_audio_add_to_mixer_and_collection_and_play},
+         {MENU_ENUM_LABEL_ADD_TO_MIXER,                        action_ok_audio_add_to_mixer},
+         {MENU_ENUM_LABEL_ADD_TO_MIXER_AND_PLAY,               action_ok_audio_add_to_mixer_and_play},
 #endif
-            break;
-         case MENU_ENUM_LABEL_ADD_TO_MIXER_AND_COLLECTION_AND_PLAY:
-#ifdef HAVE_AUDIOMIXER
-            BIND_ACTION_OK(cbs, action_ok_audio_add_to_mixer_and_collection_and_play);
-#endif
-            break;
-         case MENU_ENUM_LABEL_ADD_TO_MIXER:
-#ifdef HAVE_AUDIOMIXER
-            BIND_ACTION_OK(cbs, action_ok_audio_add_to_mixer);
-#endif
-            break;
-         case MENU_ENUM_LABEL_ADD_TO_MIXER_AND_PLAY:
-#ifdef HAVE_AUDIOMIXER
-            BIND_ACTION_OK(cbs, action_ok_audio_add_to_mixer_and_play);
-#endif
-            break;
-         case MENU_ENUM_LABEL_MENU_WALLPAPER:
-            BIND_ACTION_OK(cbs, action_ok_menu_wallpaper);
-            break;
-         case MENU_ENUM_LABEL_VIDEO_FONT_PATH:
-            BIND_ACTION_OK(cbs, action_ok_menu_font);
-            break;
-         case MENU_ENUM_LABEL_GOTO_FAVORITES:
-            BIND_ACTION_OK(cbs, action_ok_goto_favorites);
-            break;
-         case MENU_ENUM_LABEL_GOTO_MUSIC:
-            BIND_ACTION_OK(cbs, action_ok_goto_music);
-            break;
-         case MENU_ENUM_LABEL_GOTO_IMAGES:
-            BIND_ACTION_OK(cbs, action_ok_goto_images);
-            break;
-         case MENU_ENUM_LABEL_GOTO_VIDEO:
-            BIND_ACTION_OK(cbs, action_ok_goto_video);
-            break;
-         case MENU_ENUM_LABEL_BROWSE_START:
-            BIND_ACTION_OK(cbs, action_ok_browse_url_start);
-            break;
-         case MENU_ENUM_LABEL_FILE_BROWSER_CORE:
-            BIND_ACTION_OK(cbs, action_ok_load_core);
-            break;
-         case MENU_ENUM_LABEL_FILE_BROWSER_CORE_SELECT_FROM_COLLECTION:
-         case MENU_ENUM_LABEL_FILE_BROWSER_CORE_SELECT_FROM_COLLECTION_CURRENT_CORE:
-            BIND_ACTION_OK(cbs, action_ok_core_deferred_set);
-            break;
-         case MENU_ENUM_LABEL_START_CORE:
-            BIND_ACTION_OK(cbs, action_ok_start_core);
-            break;
-         case MENU_ENUM_LABEL_START_NET_RETROPAD:
-            BIND_ACTION_OK(cbs, action_ok_start_net_retropad_core);
-            break;
-         case MENU_ENUM_LABEL_START_GONG:
-            BIND_ACTION_OK(cbs, action_ok_start_gong_core);
-            break;
-         case MENU_ENUM_LABEL_START_VIDEO_PROCESSOR:
-            BIND_ACTION_OK(cbs, action_ok_start_video_processor_core);
-            break;
-         case MENU_ENUM_LABEL_OPEN_ARCHIVE_DETECT_CORE:
-            BIND_ACTION_OK(cbs, action_ok_open_archive_detect_core);
-            break;
-         case MENU_ENUM_LABEL_OPEN_ARCHIVE:
-            BIND_ACTION_OK(cbs, action_ok_open_archive);
-            break;
-         case MENU_ENUM_LABEL_LOAD_ARCHIVE_DETECT_CORE:
-            BIND_ACTION_OK(cbs, action_ok_load_archive_detect_core);
-            break;
-         case MENU_ENUM_LABEL_LOAD_ARCHIVE:
-            BIND_ACTION_OK(cbs, action_ok_load_archive);
-            break;
-         case MENU_ENUM_LABEL_CUSTOM_BIND_ALL:
-            BIND_ACTION_OK(cbs, action_ok_lookup_setting);
-            break;
-         case MENU_ENUM_LABEL_SAVE_STATE:
-            BIND_ACTION_OK(cbs, action_ok_save_state);
-            break;
-         case MENU_ENUM_LABEL_LOAD_STATE:
-            BIND_ACTION_OK(cbs, action_ok_load_state);
-            break;
-         case MENU_ENUM_LABEL_UNDO_LOAD_STATE:
-            BIND_ACTION_OK(cbs, action_ok_undo_load_state);
-            break;
-         case MENU_ENUM_LABEL_UNDO_SAVE_STATE:
-            BIND_ACTION_OK(cbs, action_ok_undo_save_state);
-            break;
-         case MENU_ENUM_LABEL_RESUME_CONTENT:
-            BIND_ACTION_OK(cbs, action_ok_resume_content);
-            break;
-         case MENU_ENUM_LABEL_ADD_TO_FAVORITES_PLAYLIST:
-            BIND_ACTION_OK(cbs, action_ok_add_to_favorites_playlist);
-            break;
-         case MENU_ENUM_LABEL_SET_CORE_ASSOCIATION:
-            BIND_ACTION_OK(cbs, action_ok_set_core_association);
-            break;
-         case MENU_ENUM_LABEL_RESET_CORE_ASSOCIATION:
-            BIND_ACTION_OK(cbs, action_ok_reset_core_association);
-            break;
-         case MENU_ENUM_LABEL_ADD_TO_FAVORITES:
-            BIND_ACTION_OK(cbs, action_ok_add_to_favorites);
-            break;
-         case MENU_ENUM_LABEL_RESTART_CONTENT:
-            BIND_ACTION_OK(cbs, action_ok_restart_content);
-            break;
-         case MENU_ENUM_LABEL_TAKE_SCREENSHOT:
-            BIND_ACTION_OK(cbs, action_ok_screenshot);
-            break;
-         case MENU_ENUM_LABEL_RENAME_ENTRY:
-            BIND_ACTION_OK(cbs, action_ok_rename_entry);
-            break;
-         case MENU_ENUM_LABEL_DELETE_ENTRY:
-            BIND_ACTION_OK(cbs, action_ok_delete_entry);
-            break;
-         case MENU_ENUM_LABEL_MENU_DISABLE_KIOSK_MODE:
-            BIND_ACTION_OK(cbs, action_ok_disable_kiosk_mode);
-            break;
-         case MENU_ENUM_LABEL_XMB_MAIN_MENU_ENABLE_SETTINGS:
-            BIND_ACTION_OK(cbs, action_ok_enable_settings);
-            break;
-         case MENU_ENUM_LABEL_SHOW_WIMP:
-            BIND_ACTION_OK(cbs, action_ok_show_wimp);
-            break;
-         case MENU_ENUM_LABEL_QUIT_RETROARCH:
-            BIND_ACTION_OK(cbs, action_ok_quit);
-            break;
-         case MENU_ENUM_LABEL_CLOSE_CONTENT:
-            BIND_ACTION_OK(cbs, action_ok_close_content);
-            break;
-         case MENU_ENUM_LABEL_SAVE_NEW_CONFIG:
-            BIND_ACTION_OK(cbs, action_ok_save_new_config);
-            break;
-         case MENU_ENUM_LABEL_HELP:
-            BIND_ACTION_OK(cbs, action_ok_help);
-            break;
-         case MENU_ENUM_LABEL_HELP_CONTROLS:
-            BIND_ACTION_OK(cbs, action_ok_help_controls);
-            break;
-         case MENU_ENUM_LABEL_HELP_WHAT_IS_A_CORE:
-            BIND_ACTION_OK(cbs, action_ok_help_what_is_a_core);
-            break;
-         case MENU_ENUM_LABEL_HELP_CHANGE_VIRTUAL_GAMEPAD:
-            BIND_ACTION_OK(cbs, action_ok_help_change_virtual_gamepad);
-            break;
-         case MENU_ENUM_LABEL_HELP_AUDIO_VIDEO_TROUBLESHOOTING:
-            BIND_ACTION_OK(cbs, action_ok_help_audio_video_troubleshooting);
-            break;
-         case MENU_ENUM_LABEL_HELP_SEND_DEBUG_INFO:
-            BIND_ACTION_OK(cbs, action_ok_help_send_debug_info);
-            break;
-         case MENU_ENUM_LABEL_HELP_SCANNING_CONTENT:
-            BIND_ACTION_OK(cbs, action_ok_help_scanning_content);
-            break;
-         case MENU_ENUM_LABEL_HELP_LOADING_CONTENT:
-            BIND_ACTION_OK(cbs, action_ok_help_load_content);
-            break;
-         case MENU_ENUM_LABEL_VIDEO_SHADER_PASS:
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-            BIND_ACTION_OK(cbs, action_ok_shader_pass);
+         {MENU_ENUM_LABEL_VIDEO_SHADER_PASS,                   action_ok_shader_pass},
+         {MENU_ENUM_LABEL_VIDEO_SHADER_PRESET,                 action_ok_shader_preset},
+         {MENU_ENUM_LABEL_VIDEO_SHADER_PARAMETERS,             action_ok_shader_parameters},
+         {MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PARAMETERS,      action_ok_shader_parameters},
+         {MENU_ENUM_LABEL_SHADER_APPLY_CHANGES,                action_ok_shader_apply_changes},
+         {MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE,          action_ok_shader_preset_remove},
+         {MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE,            action_ok_shader_preset_save},
+         {MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_AS,         action_ok_shader_preset_save_as},
+         {MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_GLOBAL,     action_ok_shader_preset_save_global},
+         {MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_CORE,       action_ok_shader_preset_save_core},
+         {MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_PARENT,     action_ok_shader_preset_save_parent},
+         {MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_GAME,       action_ok_shader_preset_save_game},
+         {MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE_GLOBAL,   action_ok_shader_preset_remove_global},
+         {MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE_CORE,     action_ok_shader_preset_remove_core},
+         {MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE_PARENT,   action_ok_shader_preset_remove_parent},
+         {MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE_GAME,     action_ok_shader_preset_remove_game},
+         {MENU_ENUM_LABEL_UPDATE_GLSL_SHADERS,                 action_ok_update_shaders_glsl},
+         {MENU_ENUM_LABEL_UPDATE_CG_SHADERS,                   action_ok_update_shaders_cg},
+         {MENU_ENUM_LABEL_UPDATE_SLANG_SHADERS,                action_ok_update_shaders_slang},
 #endif
-            break;
-         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET:
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-            BIND_ACTION_OK(cbs, action_ok_shader_preset);
+#ifdef HAVE_AUDIOMIXER
+         {MENU_ENUM_LABEL_AUDIO_MIXER_SETTINGS,                action_ok_push_audio_mixer_settings_list},
 #endif
-            break;
-         case MENU_ENUM_LABEL_CHEAT_FILE_LOAD:
-            BIND_ACTION_OK(cbs, action_ok_cheat_file);
-            break;
-         case MENU_ENUM_LABEL_CHEAT_FILE_LOAD_APPEND:
-            BIND_ACTION_OK(cbs, action_ok_cheat_file_append);
-            break;
-         case MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN:
-            BIND_ACTION_OK(cbs, action_ok_audio_dsp_plugin);
-            break;
-         case MENU_ENUM_LABEL_REMAP_FILE_LOAD:
-            BIND_ACTION_OK(cbs, action_ok_remap_file);
-            break;
-         case MENU_ENUM_LABEL_RECORD_CONFIG:
-            BIND_ACTION_OK(cbs, action_ok_record_configfile);
-            break;
-         case MENU_ENUM_LABEL_STREAM_CONFIG:
-            BIND_ACTION_OK(cbs, action_ok_stream_configfile);
-            break;
-         case MENU_ENUM_LABEL_RGUI_MENU_THEME_PRESET:
-            BIND_ACTION_OK(cbs, action_ok_rgui_menu_theme_preset);
-            break;
 #ifdef HAVE_NETWORKING
-         case MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT:
-            BIND_ACTION_OK(cbs, action_ok_core_content_list);
-            break;
-         case MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT_DIRS:
-            BIND_ACTION_OK(cbs, action_ok_core_content_dirs_list);
-            break;
-         case MENU_ENUM_LABEL_CORE_UPDATER_LIST:
-            BIND_ACTION_OK(cbs, action_ok_core_updater_list);
-            break;
-         case MENU_ENUM_LABEL_UPDATE_INSTALLED_CORES:
-            BIND_ACTION_OK(cbs, action_ok_update_installed_cores);
-            break;
-         case MENU_ENUM_LABEL_THUMBNAILS_UPDATER_LIST:
-            BIND_ACTION_OK(cbs, action_ok_thumbnails_updater_list);
-            break;
-         case MENU_ENUM_LABEL_PL_THUMBNAILS_UPDATER_LIST:
-            BIND_ACTION_OK(cbs, action_ok_pl_thumbnails_updater_list);
-            break;
-         case MENU_ENUM_LABEL_DOWNLOAD_PL_ENTRY_THUMBNAILS:
-            BIND_ACTION_OK(cbs, action_ok_pl_entry_content_thumbnails);
-            break;
-         case MENU_ENUM_LABEL_UPDATE_LAKKA:
-            BIND_ACTION_OK(cbs, action_ok_lakka_list);
-            break;
+         {MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT,               action_ok_core_content_list},
+         {MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT_DIRS,          action_ok_core_content_dirs_list},
+         {MENU_ENUM_LABEL_CORE_UPDATER_LIST,                   action_ok_core_updater_list},
+         {MENU_ENUM_LABEL_UPDATE_INSTALLED_CORES,              action_ok_update_installed_cores},
+         {MENU_ENUM_LABEL_THUMBNAILS_UPDATER_LIST,             action_ok_thumbnails_updater_list},
+         {MENU_ENUM_LABEL_PL_THUMBNAILS_UPDATER_LIST,          action_ok_pl_thumbnails_updater_list},
+         {MENU_ENUM_LABEL_DOWNLOAD_PL_ENTRY_THUMBNAILS,        action_ok_pl_entry_content_thumbnails},
+         {MENU_ENUM_LABEL_UPDATE_LAKKA,                        action_ok_lakka_list},
+         {MENU_ENUM_LABEL_NETPLAY_REFRESH_ROOMS,               action_ok_push_netplay_refresh_rooms},
 #endif
-         case MENU_ENUM_LABEL_VIDEO_SHADER_PARAMETERS:
-         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PARAMETERS:
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-            BIND_ACTION_OK(cbs, action_ok_shader_parameters);
+#ifdef HAVE_VIDEO_LAYOUT
+         {MENU_ENUM_LABEL_ONSCREEN_VIDEO_LAYOUT_SETTINGS,      action_ok_onscreen_video_layout_list},
 #endif
-            break;
-         case MENU_ENUM_LABEL_ACCOUNTS_LIST:
-            BIND_ACTION_OK(cbs, action_ok_push_accounts_list);
-            break;
-         case MENU_ENUM_LABEL_ACCESSIBILITY_SETTINGS:
-            BIND_ACTION_OK(cbs, action_ok_push_accessibility_settings_list);
-            break;
-         case MENU_ENUM_LABEL_AI_SERVICE_SETTINGS:
-            BIND_ACTION_OK(cbs, action_ok_push_ai_service_settings_list);
-            break;
-         case MENU_ENUM_LABEL_INPUT_SETTINGS:
-            BIND_ACTION_OK(cbs, action_ok_push_input_settings_list);
-            break;
-         case MENU_ENUM_LABEL_INPUT_MENU_SETTINGS:
-            BIND_ACTION_OK(cbs, action_ok_push_input_menu_settings_list);
-            break;
-         case MENU_ENUM_LABEL_INPUT_HAPTIC_FEEDBACK_SETTINGS:
-            BIND_ACTION_OK(cbs, action_ok_push_input_haptic_feedback_settings_list);
-            break;
-         case MENU_ENUM_LABEL_DRIVER_SETTINGS:
-            BIND_ACTION_OK(cbs, action_ok_push_driver_settings_list);
-            break;
-         case MENU_ENUM_LABEL_VIDEO_SETTINGS:
-            BIND_ACTION_OK(cbs, action_ok_push_video_settings_list);
-            break;
-         case MENU_ENUM_LABEL_VIDEO_SYNCHRONIZATION_SETTINGS:
-            BIND_ACTION_OK(cbs, action_ok_push_video_synchronization_settings_list);
-            break;
-         case MENU_ENUM_LABEL_VIDEO_FULLSCREEN_MODE_SETTINGS:
-            BIND_ACTION_OK(cbs, action_ok_push_video_fullscreen_mode_settings_list);
-            break;
-         case MENU_ENUM_LABEL_VIDEO_WINDOWED_MODE_SETTINGS:
-            BIND_ACTION_OK(cbs, action_ok_push_video_windowed_mode_settings_list);
-            break;
-         case MENU_ENUM_LABEL_VIDEO_SCALING_SETTINGS:
-            BIND_ACTION_OK(cbs, action_ok_push_video_scaling_settings_list);
-            break;
-         case MENU_ENUM_LABEL_VIDEO_OUTPUT_SETTINGS:
-            BIND_ACTION_OK(cbs, action_ok_push_video_output_settings_list);
-            break;
-         case MENU_ENUM_LABEL_CRT_SWITCHRES_SETTINGS:
-            BIND_ACTION_OK(cbs, action_ok_push_crt_switchres_settings_list);
-            break;
-         case MENU_ENUM_LABEL_AUDIO_SETTINGS:
-            BIND_ACTION_OK(cbs, action_ok_push_audio_settings_list);
-            break;
-         case MENU_ENUM_LABEL_AUDIO_SYNCHRONIZATION_SETTINGS:
-            BIND_ACTION_OK(cbs, action_ok_push_audio_synchronization_settings_list);
-            break;
-         case MENU_ENUM_LABEL_AUDIO_OUTPUT_SETTINGS:
-            BIND_ACTION_OK(cbs, action_ok_push_audio_output_settings_list);
-            break;
-         case MENU_ENUM_LABEL_AUDIO_RESAMPLER_SETTINGS:
-            BIND_ACTION_OK(cbs, action_ok_push_audio_resampler_settings_list);
-            break;
-         case MENU_ENUM_LABEL_AUDIO_MIXER_SETTINGS:
-#ifdef HAVE_AUDIOMIXER
-            BIND_ACTION_OK(cbs, action_ok_push_audio_mixer_settings_list);
-#endif
-            break;
-         case MENU_ENUM_LABEL_LATENCY_SETTINGS:
-            BIND_ACTION_OK(cbs, action_ok_push_latency_settings_list);
-            break;
-         case MENU_ENUM_LABEL_CORE_SETTINGS:
-            BIND_ACTION_OK(cbs, action_ok_push_core_settings_list);
-            break;
-         case MENU_ENUM_LABEL_CONFIGURATION_SETTINGS:
-            BIND_ACTION_OK(cbs, action_ok_push_configuration_settings_list);
-            break;
-         case MENU_ENUM_LABEL_PLAYLIST_SETTINGS:
-            BIND_ACTION_OK(cbs, action_ok_push_playlist_settings_list);
-            break;
-         case MENU_ENUM_LABEL_PLAYLIST_MANAGER_LIST:
-            BIND_ACTION_OK(cbs, action_ok_push_playlist_manager_list);
-            break;
-         case MENU_ENUM_LABEL_PLAYLIST_MANAGER_SETTINGS:
-            BIND_ACTION_OK(cbs, action_ok_push_playlist_manager_settings);
-            break;
-         case MENU_ENUM_LABEL_PLAYLIST_MANAGER_RESET_CORES:
-            BIND_ACTION_OK(cbs, action_ok_playlist_reset_cores);
-            break;
-         case MENU_ENUM_LABEL_PLAYLIST_MANAGER_CLEAN_PLAYLIST:
-            BIND_ACTION_OK(cbs, action_ok_playlist_clean);
-            break;
-         case MENU_ENUM_LABEL_RECORDING_SETTINGS:
-            BIND_ACTION_OK(cbs, action_ok_push_recording_settings_list);
-            break;
-         case MENU_ENUM_LABEL_INPUT_HOTKEY_BINDS:
-            BIND_ACTION_OK(cbs, action_ok_push_input_hotkey_binds_list);
-            break;
-         case MENU_ENUM_LABEL_ACCOUNTS_RETRO_ACHIEVEMENTS:
-            BIND_ACTION_OK(cbs, action_ok_push_accounts_cheevos_list);
-            break;
-         case MENU_ENUM_LABEL_ACCOUNTS_YOUTUBE:
-            BIND_ACTION_OK(cbs, action_ok_push_accounts_youtube_list);
-            break;
-         case MENU_ENUM_LABEL_ACCOUNTS_TWITCH:
-            BIND_ACTION_OK(cbs, action_ok_push_accounts_twitch_list);
-            break;
-         case MENU_ENUM_LABEL_DUMP_DISC:
-            BIND_ACTION_OK(cbs, action_ok_push_dump_disc_list);
-            break;
-         case MENU_ENUM_LABEL_LOAD_DISC:
-            BIND_ACTION_OK(cbs, action_ok_push_load_disc_list);
-            break;
-         case MENU_ENUM_LABEL_SHADER_OPTIONS:
-         case MENU_ENUM_LABEL_CORE_OPTIONS:
-         case MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS:
-         case MENU_ENUM_LABEL_CORE_INPUT_REMAPPING_OPTIONS:
-         case MENU_ENUM_LABEL_CORE_INFORMATION:
-         case MENU_ENUM_LABEL_DISC_INFORMATION:
-         case MENU_ENUM_LABEL_SYSTEM_INFORMATION:
-         case MENU_ENUM_LABEL_NETWORK_INFORMATION:
-         case MENU_ENUM_LABEL_ACHIEVEMENT_LIST:
-         case MENU_ENUM_LABEL_ACHIEVEMENT_LIST_HARDCORE:
-         case MENU_ENUM_LABEL_DISK_OPTIONS:
-         case MENU_ENUM_LABEL_SETTINGS:
-         case MENU_ENUM_LABEL_FRONTEND_COUNTERS:
-         case MENU_ENUM_LABEL_CORE_COUNTERS:
-         case MENU_ENUM_LABEL_MANAGEMENT:
-         case MENU_ENUM_LABEL_ONLINE_UPDATER:
-         case MENU_ENUM_LABEL_NETPLAY:
-         case MENU_ENUM_LABEL_LOAD_CONTENT_LIST:
-         case MENU_ENUM_LABEL_ADD_CONTENT_LIST:
-         case MENU_ENUM_LABEL_CONFIGURATIONS_LIST:
-         case MENU_ENUM_LABEL_HELP_LIST:
-         case MENU_ENUM_LABEL_INFORMATION_LIST:
-         case MENU_ENUM_LABEL_INFORMATION:
-         case MENU_ENUM_LABEL_CONTENT_SETTINGS:
 #ifdef HAVE_LAKKA_SWITCH
-         case MENU_ENUM_LABEL_SWITCH_GPU_PROFILE:
-         case MENU_ENUM_LABEL_SWITCH_BACKLIGHT_CONTROL:
+         {MENU_ENUM_LABEL_SWITCH_GPU_PROFILE,                  action_ok_push_default},
+         {MENU_ENUM_LABEL_SWITCH_BACKLIGHT_CONTROL,            action_ok_push_default},
 #endif
 #if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
-         case MENU_ENUM_LABEL_SWITCH_CPU_PROFILE:
+         {MENU_ENUM_LABEL_SWITCH_CPU_PROFILE,                  action_ok_push_default},
 #endif
-            BIND_ACTION_OK(cbs, action_ok_push_default);
-            break;
-         case MENU_ENUM_LABEL_LOAD_CONTENT_SPECIAL:
-            BIND_ACTION_OK(cbs, action_ok_push_filebrowser_list_file_select);
-            break;
-         case MENU_ENUM_LABEL_SCAN_DIRECTORY:
-            BIND_ACTION_OK(cbs, action_ok_scan_directory_list);
-            break;
-         case MENU_ENUM_LABEL_SCAN_FILE:
-            BIND_ACTION_OK(cbs, action_ok_push_scan_file);
-            break;
-#ifdef HAVE_NETWORKING
-         case MENU_ENUM_LABEL_NETPLAY_REFRESH_ROOMS:
-            BIND_ACTION_OK(cbs, action_ok_push_netplay_refresh_rooms);
-            break;
+         {MENU_ENUM_LABEL_MENU_WALLPAPER,                      action_ok_menu_wallpaper},
+         {MENU_ENUM_LABEL_VIDEO_FONT_PATH,                     action_ok_menu_font},
+         {MENU_ENUM_LABEL_GOTO_FAVORITES,                      action_ok_goto_favorites},
+         {MENU_ENUM_LABEL_GOTO_MUSIC,                          action_ok_goto_music},
+         {MENU_ENUM_LABEL_GOTO_IMAGES,                         action_ok_goto_images},
+         {MENU_ENUM_LABEL_GOTO_VIDEO,                          action_ok_goto_video},
+         {MENU_ENUM_LABEL_BROWSE_START,                        action_ok_browse_url_start},
+         {MENU_ENUM_LABEL_FILE_BROWSER_CORE,                   action_ok_load_core},
+         {MENU_ENUM_LABEL_FILE_BROWSER_CORE_SELECT_FROM_COLLECTION, action_ok_core_deferred_set},
+         {MENU_ENUM_LABEL_FILE_BROWSER_CORE_SELECT_FROM_COLLECTION_CURRENT_CORE,action_ok_core_deferred_set}, 
+         {MENU_ENUM_LABEL_START_CORE,                          action_ok_start_core},
+         {MENU_ENUM_LABEL_START_NET_RETROPAD,                  action_ok_start_net_retropad_core},
+         {MENU_ENUM_LABEL_START_GONG,                          action_ok_start_gong_core},
+         {MENU_ENUM_LABEL_START_VIDEO_PROCESSOR,               action_ok_start_video_processor_core},
+         {MENU_ENUM_LABEL_OPEN_ARCHIVE_DETECT_CORE,            action_ok_open_archive_detect_core},
+         {MENU_ENUM_LABEL_OPEN_ARCHIVE,                        action_ok_open_archive},
+         {MENU_ENUM_LABEL_LOAD_ARCHIVE_DETECT_CORE,            action_ok_load_archive_detect_core},
+         {MENU_ENUM_LABEL_LOAD_ARCHIVE,                        action_ok_load_archive},
+         {MENU_ENUM_LABEL_CUSTOM_BIND_ALL,                     action_ok_lookup_setting}, 
+         {MENU_ENUM_LABEL_SAVE_STATE,                          action_ok_save_state},
+         {MENU_ENUM_LABEL_LOAD_STATE,                          action_ok_load_state},
+         {MENU_ENUM_LABEL_UNDO_LOAD_STATE,                     action_ok_undo_load_state},
+         {MENU_ENUM_LABEL_UNDO_SAVE_STATE,                     action_ok_undo_save_state},
+         {MENU_ENUM_LABEL_RESUME_CONTENT,                      action_ok_resume_content},
+         {MENU_ENUM_LABEL_ADD_TO_FAVORITES_PLAYLIST,           action_ok_add_to_favorites_playlist},
+         {MENU_ENUM_LABEL_SET_CORE_ASSOCIATION,                action_ok_set_core_association},
+         {MENU_ENUM_LABEL_RESET_CORE_ASSOCIATION,              action_ok_reset_core_association},
+         {MENU_ENUM_LABEL_ADD_TO_FAVORITES,                    action_ok_add_to_favorites},
+         {MENU_ENUM_LABEL_RESTART_CONTENT,                     action_ok_restart_content},
+         {MENU_ENUM_LABEL_TAKE_SCREENSHOT,                     action_ok_screenshot},
+         {MENU_ENUM_LABEL_RENAME_ENTRY,                        action_ok_rename_entry},
+         {MENU_ENUM_LABEL_DELETE_ENTRY,                        action_ok_delete_entry},
+         {MENU_ENUM_LABEL_MENU_DISABLE_KIOSK_MODE,             action_ok_disable_kiosk_mode},
+         {MENU_ENUM_LABEL_XMB_MAIN_MENU_ENABLE_SETTINGS,       action_ok_enable_settings},
+         {MENU_ENUM_LABEL_SHOW_WIMP,                           action_ok_show_wimp},
+         {MENU_ENUM_LABEL_QUIT_RETROARCH,                      action_ok_quit},
+         {MENU_ENUM_LABEL_CLOSE_CONTENT,                       action_ok_close_content},
+         {MENU_ENUM_LABEL_SAVE_NEW_CONFIG,                     action_ok_save_new_config},
+         {MENU_ENUM_LABEL_HELP,                                action_ok_help},
+         {MENU_ENUM_LABEL_HELP_CONTROLS,                       action_ok_help_controls},
+         {MENU_ENUM_LABEL_HELP_WHAT_IS_A_CORE,                 action_ok_help_what_is_a_core},
+         {MENU_ENUM_LABEL_HELP_CHANGE_VIRTUAL_GAMEPAD,         action_ok_help_change_virtual_gamepad},
+         {MENU_ENUM_LABEL_HELP_AUDIO_VIDEO_TROUBLESHOOTING,    action_ok_help_audio_video_troubleshooting},
+         {MENU_ENUM_LABEL_HELP_SEND_DEBUG_INFO,                action_ok_help_send_debug_info},
+         {MENU_ENUM_LABEL_HELP_SCANNING_CONTENT,               action_ok_help_scanning_content},
+         {MENU_ENUM_LABEL_HELP_LOADING_CONTENT,                action_ok_help_load_content},
+         {MENU_ENUM_LABEL_CHEAT_FILE_LOAD,                     action_ok_cheat_file},
+         {MENU_ENUM_LABEL_CHEAT_FILE_LOAD_APPEND,              action_ok_cheat_file_append},
+         {MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN,                    action_ok_audio_dsp_plugin},
+         {MENU_ENUM_LABEL_REMAP_FILE_LOAD,                     action_ok_remap_file},
+         {MENU_ENUM_LABEL_RECORD_CONFIG,                       action_ok_record_configfile},
+         {MENU_ENUM_LABEL_STREAM_CONFIG,                       action_ok_stream_configfile},
+#ifdef HAVE_RGUI
+         {MENU_ENUM_LABEL_RGUI_MENU_THEME_PRESET,              action_ok_rgui_menu_theme_preset},
 #endif
-         case MENU_ENUM_LABEL_FAVORITES:
-            BIND_ACTION_OK(cbs, action_ok_push_content_list);
-            break;
-         case MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR:
-            BIND_ACTION_OK(cbs, action_ok_push_random_dir);
-            break;
-         case MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST:
-            BIND_ACTION_OK(cbs, action_ok_push_downloads_dir);
-            break;
-         case MENU_ENUM_LABEL_DETECT_CORE_LIST_OK:
-            BIND_ACTION_OK(cbs, action_ok_file_load_detect_core);
-            break;
-         case MENU_ENUM_LABEL_DETECT_CORE_LIST_OK_CURRENT_CORE:
-            BIND_ACTION_OK(cbs, action_ok_file_load_current_core);
-            break;
-         case MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY:
-         case MENU_ENUM_LABEL_CURSOR_MANAGER_LIST:
-         case MENU_ENUM_LABEL_DATABASE_MANAGER_LIST:
-            BIND_ACTION_OK(cbs, action_ok_push_generic_list);
-            break;
-         case MENU_ENUM_LABEL_SHADER_APPLY_CHANGES:
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-            BIND_ACTION_OK(cbs, action_ok_shader_apply_changes);
-#endif
-            break;
-         case MENU_ENUM_LABEL_CHEAT_APPLY_CHANGES:
-            BIND_ACTION_OK(cbs, action_ok_cheat_apply_changes);
-            break;
-         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE:
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-            BIND_ACTION_OK(cbs, action_ok_shader_preset_remove);
-#endif
-            break;
-         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE:
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-            BIND_ACTION_OK(cbs, action_ok_shader_preset_save);
-#endif
-            break;
-         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_AS:
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-            BIND_ACTION_OK(cbs, action_ok_shader_preset_save_as);
-#endif
-            break;
-         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_GLOBAL:
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-            BIND_ACTION_OK(cbs, action_ok_shader_preset_save_global);
-#endif
-            break;
-         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_CORE:
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-            BIND_ACTION_OK(cbs, action_ok_shader_preset_save_core);
-#endif
-            break;
-         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_PARENT:
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-            BIND_ACTION_OK(cbs, action_ok_shader_preset_save_parent);
-#endif
-            break;
-         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_GAME:
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-            BIND_ACTION_OK(cbs, action_ok_shader_preset_save_game);
-#endif
-            break;
-         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE_GLOBAL:
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-            BIND_ACTION_OK(cbs, action_ok_shader_preset_remove_global);
-#endif
-            break;
-         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE_CORE:
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-            BIND_ACTION_OK(cbs, action_ok_shader_preset_remove_core);
-#endif
-            break;
-         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE_PARENT:
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-            BIND_ACTION_OK(cbs, action_ok_shader_preset_remove_parent);
-#endif
-            break;
-         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE_GAME:
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-            BIND_ACTION_OK(cbs, action_ok_shader_preset_remove_game);
-#endif
-            break;
-         case MENU_ENUM_LABEL_CHEAT_FILE_SAVE_AS:
-            BIND_ACTION_OK(cbs, action_ok_cheat_file_save_as);
-            break;
-         case MENU_ENUM_LABEL_REMAP_FILE_SAVE_CORE:
-            BIND_ACTION_OK(cbs, action_ok_remap_file_save_core);
-            break;
-         case MENU_ENUM_LABEL_REMAP_FILE_SAVE_CONTENT_DIR:
-            BIND_ACTION_OK(cbs, action_ok_remap_file_save_content_dir);
-            break;
-         case MENU_ENUM_LABEL_REMAP_FILE_SAVE_GAME:
-            BIND_ACTION_OK(cbs, action_ok_remap_file_save_game);
-            break;
-         case MENU_ENUM_LABEL_REMAP_FILE_REMOVE_CORE:
-            BIND_ACTION_OK(cbs, action_ok_remap_file_remove_core);
-            break;
-         case MENU_ENUM_LABEL_REMAP_FILE_REMOVE_CONTENT_DIR:
-            BIND_ACTION_OK(cbs, action_ok_remap_file_remove_content_dir);
-            break;
-         case MENU_ENUM_LABEL_REMAP_FILE_REMOVE_GAME:
-            BIND_ACTION_OK(cbs, action_ok_remap_file_remove_game);
-            break;
-         case MENU_ENUM_LABEL_PLAYLISTS_TAB:
-            BIND_ACTION_OK(cbs, action_ok_content_collection_list);
-            break;
-         case MENU_ENUM_LABEL_BROWSE_URL_LIST:
-            BIND_ACTION_OK(cbs, action_ok_browse_url_list);
-            break;
-         case MENU_ENUM_LABEL_CORE_LIST:
-            BIND_ACTION_OK(cbs, action_ok_core_list);
-            break;
-         case MENU_ENUM_LABEL_SIDELOAD_CORE_LIST:
-            BIND_ACTION_OK(cbs, action_ok_sideload_core_list);
-            break;
-         case MENU_ENUM_LABEL_DISK_IMAGE_APPEND:
-            BIND_ACTION_OK(cbs, action_ok_disk_image_append_list);
-            break;
-         case MENU_ENUM_LABEL_SUBSYSTEM_ADD:
-            BIND_ACTION_OK(cbs, action_ok_subsystem_add_list);
-            break;
-         case MENU_ENUM_LABEL_SUBSYSTEM_LOAD:
-            BIND_ACTION_OK(cbs, action_ok_subsystem_add_load);
-            break;
-         case MENU_ENUM_LABEL_CONFIGURATIONS:
-            BIND_ACTION_OK(cbs, action_ok_configurations_list);
-            break;
-         case MENU_ENUM_LABEL_SAVING_SETTINGS:
-            BIND_ACTION_OK(cbs, action_ok_saving_list);
-            break;
-         case MENU_ENUM_LABEL_LOGGING_SETTINGS:
-            BIND_ACTION_OK(cbs, action_ok_logging_list);
-            break;
-         case MENU_ENUM_LABEL_FRAME_THROTTLE_SETTINGS:
-            BIND_ACTION_OK(cbs, action_ok_frame_throttle_list);
-            break;
-         case MENU_ENUM_LABEL_FRAME_TIME_COUNTER_SETTINGS:
-            BIND_ACTION_OK(cbs, action_ok_frame_time_counter_list);
-            break;
-         case MENU_ENUM_LABEL_REWIND_SETTINGS:
-            BIND_ACTION_OK(cbs, action_ok_rewind_list);
-            break;
-         case MENU_ENUM_LABEL_ONSCREEN_DISPLAY_SETTINGS:
-            BIND_ACTION_OK(cbs, action_ok_onscreen_display_list);
-            break;
-         case MENU_ENUM_LABEL_ONSCREEN_NOTIFICATIONS_SETTINGS:
-            BIND_ACTION_OK(cbs, action_ok_onscreen_notifications_list);
-            break;
-         case MENU_ENUM_LABEL_ONSCREEN_OVERLAY_SETTINGS:
-            BIND_ACTION_OK(cbs, action_ok_onscreen_overlay_list);
-            break;
-#ifdef HAVE_VIDEO_LAYOUT
-         case MENU_ENUM_LABEL_ONSCREEN_VIDEO_LAYOUT_SETTINGS:
-            BIND_ACTION_OK(cbs, action_ok_onscreen_video_layout_list);
-            break;
-#endif
-         case MENU_ENUM_LABEL_MENU_SETTINGS:
-            BIND_ACTION_OK(cbs, action_ok_menu_list);
-            break;
-         case MENU_ENUM_LABEL_MENU_VIEWS_SETTINGS:
-            BIND_ACTION_OK(cbs, action_ok_menu_views_list);
-            break;
-         case MENU_ENUM_LABEL_QUICK_MENU_OVERRIDE_OPTIONS:
-            BIND_ACTION_OK(cbs, action_ok_quick_menu_override_options);
-            break;
-         case MENU_ENUM_LABEL_SETTINGS_VIEWS_SETTINGS:
-            BIND_ACTION_OK(cbs, action_ok_settings_views_list);
-            break;
-         case MENU_ENUM_LABEL_QUICK_MENU_VIEWS_SETTINGS:
-            BIND_ACTION_OK(cbs, action_ok_quick_menu_views_list);
-            break;
-         case MENU_ENUM_LABEL_USER_INTERFACE_SETTINGS:
-            BIND_ACTION_OK(cbs, action_ok_user_interface_list);
-            break;
-         case MENU_ENUM_LABEL_POWER_MANAGEMENT_SETTINGS:
-            BIND_ACTION_OK(cbs, action_ok_power_management_list);
-            break;
-         case MENU_ENUM_LABEL_MENU_SOUNDS:
-            BIND_ACTION_OK(cbs, action_ok_menu_sounds_list);
-            break;
-         case MENU_ENUM_LABEL_MENU_FILE_BROWSER_SETTINGS:
-            BIND_ACTION_OK(cbs, action_ok_menu_file_browser_list);
-            break;
-         case MENU_ENUM_LABEL_FILE_BROWSER_OPEN_UWP_PERMISSIONS:
-            BIND_ACTION_OK(cbs, action_ok_open_uwp_permission_settings);
-            break;
-         case MENU_ENUM_LABEL_FILE_BROWSER_OPEN_PICKER:
-            BIND_ACTION_OK(cbs, action_ok_open_picker);
-            break;
-         case MENU_ENUM_LABEL_RETRO_ACHIEVEMENTS_SETTINGS:
-            BIND_ACTION_OK(cbs, action_ok_retro_achievements_list);
-            break;
-         case MENU_ENUM_LABEL_UPDATER_SETTINGS:
-            BIND_ACTION_OK(cbs, action_ok_updater_list);
-            break;
-         case MENU_ENUM_LABEL_WIFI_SETTINGS:
-            BIND_ACTION_OK(cbs, action_ok_wifi_list);
-            break;
-         case MENU_ENUM_LABEL_NETWORK_HOSTING_SETTINGS:
-            BIND_ACTION_OK(cbs, action_ok_network_hosting_list);
-            break;
-         case MENU_ENUM_LABEL_SUBSYSTEM_SETTINGS:
-            BIND_ACTION_OK(cbs, action_ok_subsystem_list);
-            break;
-         case MENU_ENUM_LABEL_NETWORK_SETTINGS:
-            BIND_ACTION_OK(cbs, action_ok_network_list);
-            break;
-         case MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM:
-            BIND_ACTION_OK(cbs, action_ok_netplay_connect_room);
-            break;
-         case MENU_ENUM_LABEL_LAKKA_SERVICES:
-            BIND_ACTION_OK(cbs, action_ok_lakka_services);
-            break;
-         case MENU_ENUM_LABEL_NETPLAY_SETTINGS:
-            BIND_ACTION_OK(cbs, action_ok_netplay_sublist);
-            break;
-         case MENU_ENUM_LABEL_USER_SETTINGS:
-            BIND_ACTION_OK(cbs, action_ok_user_list);
-            break;
-         case MENU_ENUM_LABEL_DIRECTORY_SETTINGS:
-            BIND_ACTION_OK(cbs, action_ok_directory_list);
-            break;
-         case MENU_ENUM_LABEL_PRIVACY_SETTINGS:
-            BIND_ACTION_OK(cbs, action_ok_privacy_list);
-            break;
-         case MENU_ENUM_LABEL_MIDI_SETTINGS:
-            BIND_ACTION_OK(cbs, action_ok_midi_list);
-            break;
-         case MENU_ENUM_LABEL_SCREEN_RESOLUTION:
-            BIND_ACTION_OK(cbs, action_ok_video_resolution);
-            break;
-         case MENU_ENUM_LABEL_PLAYLIST_MANAGER_DEFAULT_CORE:
-            BIND_ACTION_OK(cbs, action_ok_playlist_default_core);
-            break;
-         case MENU_ENUM_LABEL_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE:
-            BIND_ACTION_OK(cbs, action_ok_playlist_label_display_mode);
-            break;
-         case MENU_ENUM_LABEL_PLAYLIST_MANAGER_RIGHT_THUMBNAIL_MODE:
-            BIND_ACTION_OK(cbs, action_ok_playlist_right_thumbnail_mode);
-            break;
-         case MENU_ENUM_LABEL_PLAYLIST_MANAGER_LEFT_THUMBNAIL_MODE:
-            BIND_ACTION_OK(cbs, action_ok_playlist_left_thumbnail_mode);
-            break;
-         case MENU_ENUM_LABEL_UPDATE_ASSETS:
-            BIND_ACTION_OK(cbs, action_ok_update_assets);
-            break;
-         case MENU_ENUM_LABEL_UPDATE_CORE_INFO_FILES:
-            BIND_ACTION_OK(cbs, action_ok_update_core_info_files);
-            break;
-         case MENU_ENUM_LABEL_UPDATE_OVERLAYS:
-            BIND_ACTION_OK(cbs, action_ok_update_overlays);
-            break;
-         case MENU_ENUM_LABEL_UPDATE_DATABASES:
-            BIND_ACTION_OK(cbs, action_ok_update_databases);
-            break;
-         case MENU_ENUM_LABEL_UPDATE_GLSL_SHADERS:
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-            BIND_ACTION_OK(cbs, action_ok_update_shaders_glsl);
-#endif
-            break;
-         case MENU_ENUM_LABEL_UPDATE_CG_SHADERS:
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-            BIND_ACTION_OK(cbs, action_ok_update_shaders_cg);
-#endif
-            break;
-         case MENU_ENUM_LABEL_UPDATE_SLANG_SHADERS:
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-            BIND_ACTION_OK(cbs, action_ok_update_shaders_slang);
-#endif
-            break;
-         case MENU_ENUM_LABEL_UPDATE_CHEATS:
-            BIND_ACTION_OK(cbs, action_ok_update_cheats);
-            break;
-         case MENU_ENUM_LABEL_CHEAT_ADD_MATCHES:
-            BIND_ACTION_OK(cbs, cheat_manager_add_matches);
-            break;
-         case MENU_ENUM_LABEL_UPDATE_AUTOCONFIG_PROFILES:
-            BIND_ACTION_OK(cbs, action_ok_update_autoconfig_profiles);
-            break;
-         case MENU_ENUM_LABEL_NETPLAY_ENABLE_HOST:
-            BIND_ACTION_OK(cbs, action_ok_netplay_enable_host);
-            break;
-         case MENU_ENUM_LABEL_NETPLAY_ENABLE_CLIENT:
-            BIND_ACTION_OK(cbs, action_ok_netplay_enable_client);
-            break;
-         case MENU_ENUM_LABEL_NETPLAY_DISCONNECT:
-            BIND_ACTION_OK(cbs, action_ok_netplay_disconnect);
-            break;
-         case MENU_ENUM_LABEL_CORE_DELETE:
-            BIND_ACTION_OK(cbs, action_ok_core_delete);
-            break;
-         case MENU_ENUM_LABEL_DELETE_PLAYLIST:
-            BIND_ACTION_OK(cbs, action_ok_delete_playlist);
-            break;
-         case MENU_ENUM_LABEL_ACHIEVEMENT_PAUSE:
-         case MENU_ENUM_LABEL_ACHIEVEMENT_RESUME:
-            BIND_ACTION_OK(cbs, action_ok_cheevos_toggle_hardcore_mode);
-            break;
-         case MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_LIST:
-            BIND_ACTION_OK(cbs, action_ok_push_manual_content_scan_list);
-            break;
-         case MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_DIR:
-            BIND_ACTION_OK(cbs, action_ok_push_manual_content_scan_dir_select);
-            break;
-         case MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME:
-            BIND_ACTION_OK(cbs, action_ok_manual_content_scan_system_name);
-            break;
-         case MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_CORE_NAME:
-            BIND_ACTION_OK(cbs, action_ok_manual_content_scan_core_name);
-            break;
-         case MENU_ENUM_LABEL_VIDEO_SHADER_NUM_PASSES:
-            BIND_ACTION_OK(cbs, action_ok_video_shader_num_passes_dropdown_box_list);
-            break;
-         case MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_DAT_FILE:
-            BIND_ACTION_OK(cbs, action_ok_manual_content_scan_dat_file);
-            break;
-         case MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_START:
-            BIND_ACTION_OK(cbs, action_ok_manual_content_scan_start);
-            break;
-         default:
-            return -1;
+         {MENU_ENUM_LABEL_ACCOUNTS_LIST,                       action_ok_push_accounts_list},
+         {MENU_ENUM_LABEL_ACCESSIBILITY_SETTINGS,              action_ok_push_accessibility_settings_list},
+         {MENU_ENUM_LABEL_AI_SERVICE_SETTINGS,                 action_ok_push_ai_service_settings_list},
+         {MENU_ENUM_LABEL_INPUT_SETTINGS,                      action_ok_push_input_settings_list},
+         {MENU_ENUM_LABEL_INPUT_MENU_SETTINGS,                 action_ok_push_input_menu_settings_list},
+         {MENU_ENUM_LABEL_INPUT_HAPTIC_FEEDBACK_SETTINGS,      action_ok_push_input_haptic_feedback_settings_list},
+         {MENU_ENUM_LABEL_DRIVER_SETTINGS,                     action_ok_push_driver_settings_list},
+         {MENU_ENUM_LABEL_VIDEO_SETTINGS,                      action_ok_push_video_settings_list},
+         {MENU_ENUM_LABEL_VIDEO_SYNCHRONIZATION_SETTINGS,      action_ok_push_video_synchronization_settings_list},
+         {MENU_ENUM_LABEL_VIDEO_FULLSCREEN_MODE_SETTINGS,      action_ok_push_video_fullscreen_mode_settings_list},
+         {MENU_ENUM_LABEL_VIDEO_WINDOWED_MODE_SETTINGS,        action_ok_push_video_windowed_mode_settings_list},
+         {MENU_ENUM_LABEL_VIDEO_SCALING_SETTINGS,              action_ok_push_video_scaling_settings_list},
+         {MENU_ENUM_LABEL_VIDEO_OUTPUT_SETTINGS,               action_ok_push_video_output_settings_list},
+         {MENU_ENUM_LABEL_CRT_SWITCHRES_SETTINGS,              action_ok_push_crt_switchres_settings_list},
+         {MENU_ENUM_LABEL_AUDIO_SETTINGS,                      action_ok_push_audio_settings_list},
+         {MENU_ENUM_LABEL_AUDIO_SYNCHRONIZATION_SETTINGS,      action_ok_push_audio_synchronization_settings_list},
+         {MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_DIR,             action_ok_push_manual_content_scan_dir_select},
+         {MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME,     action_ok_manual_content_scan_system_name},
+         {MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_CORE_NAME,       action_ok_manual_content_scan_core_name},
+         {MENU_ENUM_LABEL_VIDEO_SHADER_NUM_PASSES,             action_ok_video_shader_num_passes_dropdown_box_list},
+         {MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_DAT_FILE,        action_ok_manual_content_scan_dat_file},
+         {MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_START,           action_ok_manual_content_scan_start},
+         {MENU_ENUM_LABEL_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE, action_ok_playlist_label_display_mode},
+         {MENU_ENUM_LABEL_PLAYLIST_MANAGER_RIGHT_THUMBNAIL_MODE,action_ok_playlist_right_thumbnail_mode},
+         {MENU_ENUM_LABEL_PLAYLIST_MANAGER_LEFT_THUMBNAIL_MODE,action_ok_playlist_left_thumbnail_mode},
+         {MENU_ENUM_LABEL_UPDATE_ASSETS,                       action_ok_update_assets},
+         {MENU_ENUM_LABEL_UPDATE_CORE_INFO_FILES,              action_ok_update_core_info_files},
+         {MENU_ENUM_LABEL_UPDATE_OVERLAYS,                     action_ok_update_overlays},
+         {MENU_ENUM_LABEL_UPDATE_DATABASES,                    action_ok_update_databases},
+         {MENU_ENUM_LABEL_UPDATE_CHEATS,                       action_ok_update_cheats},
+         {MENU_ENUM_LABEL_CHEAT_ADD_MATCHES,                   cheat_manager_add_matches},
+         {MENU_ENUM_LABEL_UPDATE_AUTOCONFIG_PROFILES,          action_ok_update_autoconfig_profiles},
+         {MENU_ENUM_LABEL_NETPLAY_ENABLE_HOST,                 action_ok_netplay_enable_host},
+         {MENU_ENUM_LABEL_NETPLAY_ENABLE_CLIENT,               action_ok_netplay_enable_client},
+         {MENU_ENUM_LABEL_NETPLAY_DISCONNECT,                  action_ok_netplay_disconnect},
+         {MENU_ENUM_LABEL_CORE_DELETE,                         action_ok_core_delete},
+         {MENU_ENUM_LABEL_DELETE_PLAYLIST,                     action_ok_delete_playlist},
+         {MENU_ENUM_LABEL_ACHIEVEMENT_PAUSE,                   action_ok_cheevos_toggle_hardcore_mode}, 
+         {MENU_ENUM_LABEL_ACHIEVEMENT_RESUME,                  action_ok_cheevos_toggle_hardcore_mode},
+         {MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_LIST,            action_ok_push_manual_content_scan_list},
+         {MENU_ENUM_LABEL_AUDIO_OUTPUT_SETTINGS,               action_ok_push_audio_output_settings_list},
+         {MENU_ENUM_LABEL_AUDIO_RESAMPLER_SETTINGS,            action_ok_push_audio_resampler_settings_list},
+         {MENU_ENUM_LABEL_LATENCY_SETTINGS,                    action_ok_push_latency_settings_list},
+         {MENU_ENUM_LABEL_CORE_SETTINGS,                       action_ok_push_core_settings_list},
+         {MENU_ENUM_LABEL_CONFIGURATION_SETTINGS,              action_ok_push_configuration_settings_list},
+         {MENU_ENUM_LABEL_PLAYLIST_SETTINGS,                   action_ok_push_playlist_settings_list},
+         {MENU_ENUM_LABEL_PLAYLIST_MANAGER_LIST,               action_ok_push_playlist_manager_list},
+         {MENU_ENUM_LABEL_PLAYLIST_MANAGER_SETTINGS,           action_ok_push_playlist_manager_settings},
+         {MENU_ENUM_LABEL_PLAYLIST_MANAGER_RESET_CORES,        action_ok_playlist_reset_cores},
+         {MENU_ENUM_LABEL_PLAYLIST_MANAGER_CLEAN_PLAYLIST,     action_ok_playlist_clean},
+         {MENU_ENUM_LABEL_RECORDING_SETTINGS,                  action_ok_push_recording_settings_list},
+         {MENU_ENUM_LABEL_INPUT_HOTKEY_BINDS,                  action_ok_push_input_hotkey_binds_list},
+         {MENU_ENUM_LABEL_ACCOUNTS_RETRO_ACHIEVEMENTS,         action_ok_push_accounts_cheevos_list},
+         {MENU_ENUM_LABEL_ACCOUNTS_YOUTUBE,                    action_ok_push_accounts_youtube_list},
+         {MENU_ENUM_LABEL_ACCOUNTS_TWITCH,                     action_ok_push_accounts_twitch_list},
+         {MENU_ENUM_LABEL_DUMP_DISC,                           action_ok_push_dump_disc_list},
+         {MENU_ENUM_LABEL_LOAD_DISC,                           action_ok_push_load_disc_list},
+         {MENU_ENUM_LABEL_SHADER_OPTIONS,                      action_ok_push_default},
+         {MENU_ENUM_LABEL_CORE_OPTIONS,                        action_ok_push_default},
+         {MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS,                  action_ok_push_default},
+         {MENU_ENUM_LABEL_CORE_INPUT_REMAPPING_OPTIONS,        action_ok_push_default},
+         {MENU_ENUM_LABEL_CORE_INFORMATION,                    action_ok_push_default},
+         {MENU_ENUM_LABEL_DISC_INFORMATION,                    action_ok_push_default},
+         {MENU_ENUM_LABEL_SYSTEM_INFORMATION,                  action_ok_push_default},
+         {MENU_ENUM_LABEL_NETWORK_INFORMATION,                 action_ok_push_default},
+         {MENU_ENUM_LABEL_ACHIEVEMENT_LIST,                    action_ok_push_default},
+         {MENU_ENUM_LABEL_ACHIEVEMENT_LIST_HARDCORE,           action_ok_push_default},
+         {MENU_ENUM_LABEL_DISK_OPTIONS,                        action_ok_push_default},
+         {MENU_ENUM_LABEL_SETTINGS,                            action_ok_push_default},
+         {MENU_ENUM_LABEL_FRONTEND_COUNTERS,                   action_ok_push_default},
+         {MENU_ENUM_LABEL_CORE_COUNTERS,                       action_ok_push_default},
+         {MENU_ENUM_LABEL_MANAGEMENT,                          action_ok_push_default},
+         {MENU_ENUM_LABEL_ONLINE_UPDATER,                      action_ok_push_default},
+         {MENU_ENUM_LABEL_NETPLAY,                             action_ok_push_default},
+         {MENU_ENUM_LABEL_LOAD_CONTENT_LIST,                   action_ok_push_default},
+         {MENU_ENUM_LABEL_ADD_CONTENT_LIST,                    action_ok_push_default},
+         {MENU_ENUM_LABEL_CONFIGURATIONS_LIST,                 action_ok_push_default},
+         {MENU_ENUM_LABEL_HELP_LIST,                           action_ok_push_default},
+         {MENU_ENUM_LABEL_INFORMATION_LIST,                    action_ok_push_default},
+         {MENU_ENUM_LABEL_INFORMATION,                         action_ok_push_default},
+         {MENU_ENUM_LABEL_CONTENT_SETTINGS,                    action_ok_push_default},
+         {MENU_ENUM_LABEL_LOAD_CONTENT_SPECIAL,                action_ok_push_filebrowser_list_file_select},
+         {MENU_ENUM_LABEL_SCAN_DIRECTORY,                      action_ok_scan_directory_list},
+         {MENU_ENUM_LABEL_SCAN_FILE,                           action_ok_push_scan_file},
+         {MENU_ENUM_LABEL_FAVORITES,                           action_ok_push_content_list},
+         {MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,      action_ok_push_random_dir},
+         {MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST,    action_ok_push_downloads_dir},
+         {MENU_ENUM_LABEL_DETECT_CORE_LIST_OK,                 action_ok_file_load_detect_core},
+         {MENU_ENUM_LABEL_DETECT_CORE_LIST_OK_CURRENT_CORE,    action_ok_file_load_current_core},
+         {MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY,                action_ok_push_generic_list},
+         {MENU_ENUM_LABEL_CURSOR_MANAGER_LIST,                 action_ok_push_generic_list},
+         {MENU_ENUM_LABEL_DATABASE_MANAGER_LIST,               action_ok_push_generic_list},
+         {MENU_ENUM_LABEL_CHEAT_APPLY_CHANGES,                 action_ok_cheat_apply_changes},
+         {MENU_ENUM_LABEL_CHEAT_FILE_SAVE_AS,                  action_ok_cheat_file_save_as},
+         {MENU_ENUM_LABEL_REMAP_FILE_SAVE_CORE,                action_ok_remap_file_save_core},
+         {MENU_ENUM_LABEL_REMAP_FILE_SAVE_CONTENT_DIR,         action_ok_remap_file_save_content_dir},
+         {MENU_ENUM_LABEL_REMAP_FILE_SAVE_GAME,                action_ok_remap_file_save_game},
+         {MENU_ENUM_LABEL_REMAP_FILE_REMOVE_CORE,              action_ok_remap_file_remove_core},
+         {MENU_ENUM_LABEL_REMAP_FILE_REMOVE_CONTENT_DIR,       action_ok_remap_file_remove_content_dir},
+         {MENU_ENUM_LABEL_REMAP_FILE_REMOVE_GAME,              action_ok_remap_file_remove_game},
+         {MENU_ENUM_LABEL_PLAYLISTS_TAB,                       action_ok_content_collection_list},
+         {MENU_ENUM_LABEL_BROWSE_URL_LIST,                     action_ok_browse_url_list},
+         {MENU_ENUM_LABEL_CORE_LIST,                           action_ok_core_list},
+         {MENU_ENUM_LABEL_SIDELOAD_CORE_LIST,                  action_ok_sideload_core_list},
+         {MENU_ENUM_LABEL_DISK_IMAGE_APPEND,                   action_ok_disk_image_append_list},
+         {MENU_ENUM_LABEL_SUBSYSTEM_ADD,                       action_ok_subsystem_add_list},
+         {MENU_ENUM_LABEL_SUBSYSTEM_LOAD,                      action_ok_subsystem_add_load},
+         {MENU_ENUM_LABEL_CONFIGURATIONS,                      action_ok_configurations_list},
+         {MENU_ENUM_LABEL_SAVING_SETTINGS,                     action_ok_saving_list},
+         {MENU_ENUM_LABEL_LOGGING_SETTINGS,                    action_ok_logging_list},
+         {MENU_ENUM_LABEL_FRAME_THROTTLE_SETTINGS,             action_ok_frame_throttle_list},
+         {MENU_ENUM_LABEL_FRAME_TIME_COUNTER_SETTINGS,         action_ok_frame_time_counter_list},
+         {MENU_ENUM_LABEL_REWIND_SETTINGS,                     action_ok_rewind_list},
+         {MENU_ENUM_LABEL_ONSCREEN_DISPLAY_SETTINGS,           action_ok_onscreen_display_list},
+         {MENU_ENUM_LABEL_ONSCREEN_NOTIFICATIONS_SETTINGS,     action_ok_onscreen_notifications_list},
+         {MENU_ENUM_LABEL_ONSCREEN_OVERLAY_SETTINGS,           action_ok_onscreen_overlay_list},
+         {MENU_ENUM_LABEL_MENU_SETTINGS,                       action_ok_menu_list},
+         {MENU_ENUM_LABEL_MENU_VIEWS_SETTINGS,                 action_ok_menu_views_list},
+         {MENU_ENUM_LABEL_QUICK_MENU_OVERRIDE_OPTIONS,         action_ok_quick_menu_override_options},
+         {MENU_ENUM_LABEL_SETTINGS_VIEWS_SETTINGS,             action_ok_settings_views_list},
+         {MENU_ENUM_LABEL_QUICK_MENU_VIEWS_SETTINGS,           action_ok_quick_menu_views_list},
+         {MENU_ENUM_LABEL_USER_INTERFACE_SETTINGS,             action_ok_user_interface_list},
+         {MENU_ENUM_LABEL_POWER_MANAGEMENT_SETTINGS,           action_ok_power_management_list},
+         {MENU_ENUM_LABEL_MENU_SOUNDS,                         action_ok_menu_sounds_list},
+         {MENU_ENUM_LABEL_MENU_FILE_BROWSER_SETTINGS,          action_ok_menu_file_browser_list},
+         {MENU_ENUM_LABEL_FILE_BROWSER_OPEN_UWP_PERMISSIONS,   action_ok_open_uwp_permission_settings},
+         {MENU_ENUM_LABEL_FILE_BROWSER_OPEN_PICKER,            action_ok_open_picker},
+         {MENU_ENUM_LABEL_RETRO_ACHIEVEMENTS_SETTINGS,         action_ok_retro_achievements_list},
+         {MENU_ENUM_LABEL_UPDATER_SETTINGS,                    action_ok_updater_list},
+         {MENU_ENUM_LABEL_WIFI_SETTINGS,                       action_ok_wifi_list},
+         {MENU_ENUM_LABEL_NETWORK_HOSTING_SETTINGS,            action_ok_network_hosting_list},
+         {MENU_ENUM_LABEL_SUBSYSTEM_SETTINGS,                  action_ok_subsystem_list},
+         {MENU_ENUM_LABEL_NETWORK_SETTINGS,                    action_ok_network_list},
+         {MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM,                action_ok_netplay_connect_room},
+         {MENU_ENUM_LABEL_LAKKA_SERVICES,                      action_ok_lakka_services},
+         {MENU_ENUM_LABEL_NETPLAY_SETTINGS,                    action_ok_netplay_sublist},
+         {MENU_ENUM_LABEL_USER_SETTINGS,                       action_ok_user_list},
+         {MENU_ENUM_LABEL_DIRECTORY_SETTINGS,                  action_ok_directory_list},
+         {MENU_ENUM_LABEL_PRIVACY_SETTINGS,                    action_ok_privacy_list},
+         {MENU_ENUM_LABEL_MIDI_SETTINGS,                       action_ok_midi_list},
+         {MENU_ENUM_LABEL_SCREEN_RESOLUTION,                   action_ok_video_resolution},
+         {MENU_ENUM_LABEL_PLAYLIST_MANAGER_DEFAULT_CORE,       action_ok_playlist_default_core},
+      };
+
+      for (i = 0; i < ARRAY_SIZE(ok_list); i++)
+      {
+         if (cbs->enum_idx == ok_list[i].type)
+         {
+            BIND_ACTION_OK(cbs, ok_list[i].cb);
+            return 0;
+         }
       }
+
+      return -1;
    }
    else
    {
