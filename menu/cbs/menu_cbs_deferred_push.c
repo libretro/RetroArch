@@ -809,6 +809,11 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       {MENU_ENUM_LABEL_CONFIGURATIONS_LIST, deferred_push_configurations_list},
       {MENU_ENUM_LABEL_DEFERRED_PLAYLIST_MANAGER_LIST, deferred_push_playlist_manager_list},
       {MENU_ENUM_LABEL_DEFERRED_PLAYLIST_MANAGER_SETTINGS, deferred_push_playlist_manager_settings},
+      {MENU_ENUM_LABEL_LOAD_CONTENT_LIST, deferred_push_load_content_list},
+      {MENU_ENUM_LABEL_DEFERRED_PLAYLIST_SETTINGS_LIST, deferred_push_playlist_settings_list},
+      {MENU_ENUM_LABEL_MANAGEMENT, deferred_push_management_options},
+      {MENU_ENUM_LABEL_DEFERRED_DATABASE_MANAGER_LIST, deferred_push_database_manager_list_deferred},
+      {MENU_ENUM_LABEL_CONFIGURATIONS, deferred_push_configurations},
    };
 
    for (i = 0; i < ARRAY_SIZE(info_list); i++)
@@ -1202,9 +1207,6 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
    {
       switch (label_hash)
       {
-         case MENU_LABEL_DEFERRED_PLAYLIST_SETTINGS_LIST:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_playlist_settings_list);
-            break;
          case MENU_LABEL_DEFERRED_ACCOUNTS_CHEEVOS_LIST:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_accounts_cheevos_list);
             break;
@@ -1258,12 +1260,6 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
          case MENU_LABEL_ADD_CONTENT_LIST:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_add_content_list);
             break;
-         case MENU_LABEL_LOAD_CONTENT_LIST:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_load_content_list);
-            break;
-         case MENU_LABEL_MANAGEMENT:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_management_options);
-            break;
          case MENU_LABEL_DEFERRED_CORE_LIST:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_list_deferred);
             break;
@@ -1272,9 +1268,6 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
             break;
          case MENU_LABEL_DEFERRED_VIDEO_FILTER:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_video_filter);
-            break;
-         case MENU_LABEL_DEFERRED_DATABASE_MANAGER_LIST:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_database_manager_list_deferred);
             break;
 #ifdef HAVE_LIBRETRODB
          case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST:
@@ -1352,9 +1345,6 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
             break;
          case MENU_LABEL_CORE_INPUT_REMAPPING_OPTIONS:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_input_remapping_options);
-            break;
-         case MENU_LABEL_CONFIGURATIONS:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_configurations);
             break;
          case MENU_LABEL_VIDEO_SHADER_PRESET:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_video_shader_preset);
