@@ -645,7 +645,7 @@ static int action_get_title_input_binds_list(const char *path, const char *label
 }
 
 static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
-      const char *label, uint32_t label_hash)
+      const char *label)
 {
    unsigned i;
    typedef struct title_info_list 
@@ -902,6 +902,40 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
          action_get_download_core_content_list},
       {MENU_ENUM_LABEL_DEFERRED_ACCOUNTS_LIST,
          action_get_user_accounts_list},
+      {MENU_ENUM_LABEL_VIDEO_FONT_PATH,
+         action_get_title_font_path},
+      {MENU_ENUM_LABEL_XMB_FONT,
+         action_get_title_font_path},
+      {MENU_ENUM_LABEL_VIDEO_FILTER,
+         action_get_title_video_filter},
+      {MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN,
+         action_get_title_audio_filter},
+      {MENU_ENUM_LABEL_CHEAT_DATABASE_PATH,
+         action_get_title_cheat_directory},
+      {MENU_ENUM_LABEL_LIBRETRO_DIR_PATH,
+         action_get_title_core_directory},
+      {MENU_ENUM_LABEL_LIBRETRO_INFO_PATH,
+         action_get_title_core_info_directory},
+#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
+      {MENU_ENUM_LABEL_SWITCH_CPU_PROFILE,
+         action_get_title_switch_cpu_profile},
+#endif
+#ifdef HAVE_LAKKA_SWITCH
+      {MENU_ENUM_LABEL_SWITCH_GPU_PROFILE,
+         action_get_title_switch_gpu_profile},
+      {MENU_ENUM_LABEL_SWITCH_BACKLIGHT_CONTROL,
+         action_get_title_switch_backlight_control},
+#endif
+      {MENU_ENUM_LABEL_DEFERRED_MANUAL_CONTENT_SCAN_LIST,
+         action_get_title_manual_content_scan_list},
+      {MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_DIR,
+         action_get_title_manual_content_scan_dir},
+      {MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ELSPA_RATING,
+         action_get_title_list_rdb_entry_elspa_rating},
+      {MENU_ENUM_LABEL_DEFERRED_CORE_LIST,
+         action_get_title_deferred_core_list},
+      {MENU_ENUM_LABEL_DEFERRED_CORE_LIST_SET,
+         action_get_title_deferred_core_list},
    };
 
    if (cbs->setting)
@@ -962,7 +996,7 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ESRB_RATING:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_list_rdb_entry_esrb_rating);
             break;
-         case MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ELSPA_RATING:
+         case MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ELSPA_RATING: /* TODO/FIXME - doesn't work  */
             BIND_ACTION_GET_TITLE(cbs, action_get_title_list_rdb_entry_elspa_rating);
             break;
          case MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_PEGI_RATING:
@@ -1282,59 +1316,6 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
             return -1;
       }
    }
-   else
-   {
-      switch (label_hash)
-      {
-         case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ELSPA_RATING:
-            BIND_ACTION_GET_TITLE(cbs, action_get_title_list_rdb_entry_elspa_rating);
-            break;
-         case MENU_LABEL_DEFERRED_CORE_LIST:
-         case MENU_LABEL_DEFERRED_CORE_LIST_SET:
-            BIND_ACTION_GET_TITLE(cbs, action_get_title_deferred_core_list);
-            break;
-         case MENU_LABEL_VIDEO_FONT_PATH:
-         case MENU_LABEL_XMB_FONT:
-            BIND_ACTION_GET_TITLE(cbs, action_get_title_font_path);
-            break;
-         case MENU_LABEL_VIDEO_FILTER:
-            BIND_ACTION_GET_TITLE(cbs, action_get_title_video_filter);
-            break;
-         case MENU_LABEL_AUDIO_DSP_PLUGIN:
-            BIND_ACTION_GET_TITLE(cbs, action_get_title_audio_filter);
-            break;
-         case MENU_LABEL_CHEAT_DATABASE_PATH:
-            BIND_ACTION_GET_TITLE(cbs, action_get_title_cheat_directory);
-            break;
-         case MENU_LABEL_LIBRETRO_DIR_PATH:
-            BIND_ACTION_GET_TITLE(cbs, action_get_title_core_directory);
-            break;
-         case MENU_LABEL_LIBRETRO_INFO_PATH:
-            BIND_ACTION_GET_TITLE(cbs, action_get_title_core_info_directory);
-            break;
-#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
-         case MENU_ENUM_LABEL_SWITCH_CPU_PROFILE:
-            BIND_ACTION_GET_TITLE(cbs, action_get_title_switch_cpu_profile);
-            break;
-#endif
-#ifdef HAVE_LAKKA_SWITCH
-         case MENU_ENUM_LABEL_SWITCH_GPU_PROFILE:
-            BIND_ACTION_GET_TITLE(cbs, action_get_title_switch_gpu_profile);
-            break;
-         case MENU_ENUM_LABEL_SWITCH_BACKLIGHT_CONTROL:
-            BIND_ACTION_GET_TITLE(cbs, action_get_title_switch_backlight_control);
-            break;
-#endif
-         case MENU_LABEL_DEFERRED_MANUAL_CONTENT_SCAN_LIST:
-            BIND_ACTION_GET_TITLE(cbs, action_get_title_manual_content_scan_list);
-            break;
-         case MENU_LABEL_MANUAL_CONTENT_SCAN_DIR:
-            BIND_ACTION_GET_TITLE(cbs, action_get_title_manual_content_scan_dir);
-            break;
-         default:
-            return -1;
-      }
-   }
 
    return 0;
 }
@@ -1362,8 +1343,7 @@ static int menu_cbs_init_bind_title_compare_type(menu_file_list_cbs_t *cbs,
 }
 
 int menu_cbs_init_bind_title(menu_file_list_cbs_t *cbs,
-      const char *path, const char *label, unsigned type, size_t idx,
-      uint32_t label_hash)
+      const char *path, const char *label, unsigned type, size_t idx)
 {
    unsigned i;
    typedef struct title_info_list 
@@ -1375,28 +1355,28 @@ int menu_cbs_init_bind_title(menu_file_list_cbs_t *cbs,
 
    title_info_list_t info_list[] = {
 #ifdef HAVE_AUDIOMIXER
-      {MENU_ENUM_LABEL_DEFERRED_MIXER_STREAM_SETTINGS_LIST,                    action_get_title_mixer_stream_actions},
+      {MENU_ENUM_LABEL_DEFERRED_MIXER_STREAM_SETTINGS_LIST,                                 action_get_title_mixer_stream_actions},
 #endif
-      {MENU_ENUM_LABEL_DEFERRED_VIDEO_SHADER_PRESET_SAVE_LIST,                 action_get_title_video_shader_preset_save_list},
-      {MENU_ENUM_LABEL_DEFERRED_VIDEO_SHADER_PRESET_REMOVE_LIST,               action_get_title_video_shader_preset_remove},
-      {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST,                             action_get_title_dropdown_item},
-      {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_SPECIAL,                     action_get_title_dropdown_item},
-      {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_RESOLUTION,                  action_get_title_dropdown_resolution_item   },
-      {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_VIDEO_SHADER_PARAMETER,                  action_get_title_dropdown_video_shader_parameter_item   },
-      {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_VIDEO_SHADER_PRESET_PARAMETER,                  action_get_title_dropdown_video_shader_preset_parameter_item   },
-      {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_VIDEO_SHADER_NUM_PASSES,                  action_get_title_dropdown_video_shader_num_pass_item   },
-      {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_DEFAULT_CORE,       action_get_title_dropdown_playlist_default_core_item},
-      {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_LABEL_DISPLAY_MODE, action_get_title_dropdown_playlist_label_display_mode_item},
-      {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_RIGHT_THUMBNAIL_MODE, action_get_title_thumbnails},
-      {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_LEFT_THUMBNAIL_MODE, action_get_title_left_thumbnails},
-      {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_MANUAL_CONTENT_SCAN_SYSTEM_NAME, action_get_title_dropdown_manual_content_scan_system_name_item},
-      {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_MANUAL_CONTENT_SCAN_CORE_NAME, action_get_title_dropdown_manual_content_scan_core_name_item},
-      {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_DISK_INDEX, action_get_title_dropdown_disk_index},
-      {MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS, action_get_quick_menu_views_settings_list},
-      {MENU_ENUM_LABEL_DEFERRED_PLAYLIST_LIST, action_get_title_deferred_playlist_list},
-      {MENU_ENUM_LABEL_DEFERRED_PLAYLIST_MANAGER_SETTINGS, action_get_title_deferred_playlist_list},
-      {MENU_ENUM_LABEL_PLAYLISTS_TAB, action_get_title_collection},
-      {MENU_ENUM_LABEL_DEFERRED_MANUAL_CONTENT_SCAN_LIST, action_get_title_manual_content_scan_list},
+      {MENU_ENUM_LABEL_DEFERRED_VIDEO_SHADER_PRESET_SAVE_LIST,                              action_get_title_video_shader_preset_save_list},
+      {MENU_ENUM_LABEL_DEFERRED_VIDEO_SHADER_PRESET_REMOVE_LIST,                            action_get_title_video_shader_preset_remove},
+      {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST,                                          action_get_title_dropdown_item},
+      {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_SPECIAL,                                  action_get_title_dropdown_item},
+      {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_RESOLUTION,                               action_get_title_dropdown_resolution_item},
+      {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_VIDEO_SHADER_PARAMETER,                   action_get_title_dropdown_video_shader_parameter_item},
+      {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_VIDEO_SHADER_PRESET_PARAMETER,            action_get_title_dropdown_video_shader_preset_parameter_item},
+      {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_VIDEO_SHADER_NUM_PASSES,                  action_get_title_dropdown_video_shader_num_pass_item},
+      {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_DEFAULT_CORE,                    action_get_title_dropdown_playlist_default_core_item},
+      {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_LABEL_DISPLAY_MODE,              action_get_title_dropdown_playlist_label_display_mode_item},
+      {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_RIGHT_THUMBNAIL_MODE,            action_get_title_thumbnails},
+      {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_LEFT_THUMBNAIL_MODE,             action_get_title_left_thumbnails},
+      {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_MANUAL_CONTENT_SCAN_SYSTEM_NAME,          action_get_title_dropdown_manual_content_scan_system_name_item},
+      {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_MANUAL_CONTENT_SCAN_CORE_NAME,            action_get_title_dropdown_manual_content_scan_core_name_item},
+      {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_DISK_INDEX,                               action_get_title_dropdown_disk_index},
+      {MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS,                                          action_get_quick_menu_views_settings_list},
+      {MENU_ENUM_LABEL_DEFERRED_PLAYLIST_LIST,                                              action_get_title_deferred_playlist_list},
+      {MENU_ENUM_LABEL_DEFERRED_PLAYLIST_MANAGER_SETTINGS,                                  action_get_title_deferred_playlist_list},
+      {MENU_ENUM_LABEL_PLAYLISTS_TAB,                                                       action_get_title_collection},
+      {MENU_ENUM_LABEL_DEFERRED_MANUAL_CONTENT_SCAN_LIST,                                   action_get_title_manual_content_scan_list},
    };
 
    if (!cbs)
@@ -1405,7 +1385,7 @@ int menu_cbs_init_bind_title(menu_file_list_cbs_t *cbs,
    BIND_ACTION_GET_TITLE(cbs, action_get_title_default);
 
    if (cbs->enum_idx != MENU_ENUM_LABEL_PLAYLIST_ENTRY &&
-       menu_cbs_init_bind_title_compare_label(cbs, label, label_hash) == 0)
+       menu_cbs_init_bind_title_compare_label(cbs, label) == 0)
       return 0;
 
    if (menu_cbs_init_bind_title_compare_type(cbs, type) == 0)
