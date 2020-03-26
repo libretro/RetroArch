@@ -120,9 +120,9 @@ static void ozone_draw_cursor_slice(
       size_t y, float alpha)
 {
    float scale_factor    = ozone->last_scale_factor;
-   int slice_x           = x_offset - 14 * scale_factor;
+   int slice_x           = x_offset - 12 * scale_factor;
    int slice_y           = (int)y + 8 * scale_factor;
-   unsigned slice_new_w  = width + (3 + 28 - 4) * scale_factor;
+   unsigned slice_new_w  = width + (24 + 1) * scale_factor;
    unsigned slice_new_h  = height + 20 * scale_factor;
 
    gfx_display_set_alpha(ozone->theme_dynamic.cursor_alpha, alpha);
@@ -185,7 +185,7 @@ static void ozone_draw_cursor_fallback(
          x_offset,
          (int)y,
          width,
-         height - ozone->dimensions.spacer_5px,
+         height - ozone->dimensions.spacer_3px,
          video_width,
          video_height,
          ozone->theme_dynamic.selection);
@@ -211,7 +211,7 @@ static void ozone_draw_cursor_fallback(
          video_width,
          video_height,
          x_offset - ozone->dimensions.spacer_3px,
-         (int)(y + height - ozone->dimensions.spacer_5px),
+         (int)(y + height - ozone->dimensions.spacer_3px),
          width + ozone->dimensions.spacer_3px * 2,
          ozone->dimensions.spacer_3px,
          video_width,
@@ -226,7 +226,7 @@ static void ozone_draw_cursor_fallback(
          (int)(x_offset - ozone->dimensions.spacer_3px),
          (int)y,
          ozone->dimensions.spacer_3px,
-         height - ozone->dimensions.spacer_5px,
+         height - ozone->dimensions.spacer_3px,
          video_width,
          video_height,
          ozone->theme_dynamic.selection_border);
@@ -239,7 +239,7 @@ static void ozone_draw_cursor_fallback(
          x_offset + width,
          (int)y,
          ozone->dimensions.spacer_3px,
-         height - ozone->dimensions.spacer_5px,
+         height - ozone->dimensions.spacer_3px,
          video_width,
          video_height,
          ozone->theme_dynamic.selection_border);
@@ -545,6 +545,7 @@ void ozone_draw_messagebox(
    if (ozone->has_all_assets) /* avoid drawing a black box if there's no assets */
    {
       int slice_x          = x - longest_width/2 - 48 * scale_factor;
+      int slice_y          = (list->size > 1) ? y : y - (ozone->footer_font_glyph_height / 2);
       unsigned slice_new_w = longest_width + 48 * 2 * scale_factor;
       unsigned slice_new_h = ozone->footer_font_glyph_height * (list->size + 2);
 
@@ -553,7 +554,7 @@ void ozone_draw_messagebox(
             video_width,
             video_height,
             slice_x,
-            y,
+            slice_y,
             256, 256,
             slice_new_w,
             slice_new_h,

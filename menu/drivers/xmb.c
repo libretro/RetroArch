@@ -930,7 +930,7 @@ static void xmb_render_messagebox_internal(
          line_height * list->size + xmb->margins_dialog * 2,
          video_width, video_height,
          NULL,
-         xmb->margins_slice, 1.0,
+         xmb->margins_slice, xmb->last_scale_factor,
          xmb->textures.list[XMB_TEXTURE_DIALOG_SLICE]);
 
    for (i = 0; i < list->size; i++)
@@ -5050,7 +5050,7 @@ static void xmb_layout_ps3(xmb_handle_t *xmb, int width)
    xmb->margins_setting_left     = 600.0 * scale_factor * scale_mod[6];
    xmb->margins_dialog           = 48 * scale_factor;
 
-   xmb->margins_slice            = 16;
+   xmb->margins_slice            = 16 * scale_factor;
 
    xmb->icon_size                = 128.0 * scale_factor;
    xmb->font_size                = new_font_size;
@@ -5098,7 +5098,7 @@ static void xmb_layout_psp(xmb_handle_t *xmb, int width)
    xmb->margins_label_top        = new_font_size / 3.0;
    xmb->margins_setting_left     = 600.0 * scale_factor;
    xmb->margins_dialog           = 48 * scale_factor;
-   xmb->margins_slice            = 16;
+   xmb->margins_slice            = 16 * scale_factor;
    xmb->icon_size                = 128.0 * scale_factor;
    xmb->font_size                = new_font_size;
 
