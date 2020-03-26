@@ -7354,19 +7354,6 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_LABEL_LOAD_ARCHIVE:
             BIND_ACTION_OK(cbs, action_ok_load_archive);
             break;
-         case MENU_LABEL_SIDELOAD_CORE_LIST:
-            BIND_ACTION_OK(cbs, action_ok_sideload_core_list);
-            break;
-         case MENU_LABEL_VIDEO_SHADER_PASS:
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-            BIND_ACTION_OK(cbs, action_ok_shader_pass);
-#endif
-            break;
-         case MENU_LABEL_VIDEO_SHADER_PRESET:
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-            BIND_ACTION_OK(cbs, action_ok_shader_preset);
-#endif
-            break;
          case MENU_LABEL_CHEAT_FILE_LOAD:
             BIND_ACTION_OK(cbs, action_ok_cheat_file);
             break;
@@ -7393,17 +7380,6 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             BIND_ACTION_OK(cbs, action_ok_lakka_list);
             break;
 #endif
-         case MENU_LABEL_VIDEO_SHADER_PRESET_SAVE:
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-            BIND_ACTION_OK(cbs, action_ok_shader_preset_save);
-            break;
-#endif
-         case MENU_LABEL_VIDEO_SHADER_PARAMETERS:
-         case MENU_LABEL_VIDEO_SHADER_PRESET_PARAMETERS:
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-            BIND_ACTION_OK(cbs, action_ok_shader_parameters);
-#endif
-            break;
          case MENU_LABEL_ACCOUNTS_LIST:
             BIND_ACTION_OK(cbs, action_ok_push_accounts_list);
             break;
@@ -7419,18 +7395,8 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_LABEL_DETECT_CORE_LIST_OK:
             BIND_ACTION_OK(cbs, action_ok_file_load_detect_core);
             break;
-         case MENU_LABEL_SHADER_APPLY_CHANGES:
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-            BIND_ACTION_OK(cbs, action_ok_shader_apply_changes);
-#endif
-            break;
          case MENU_LABEL_CHEAT_APPLY_CHANGES:
             BIND_ACTION_OK(cbs, action_ok_cheat_apply_changes);
-            break;
-         case MENU_LABEL_VIDEO_SHADER_PRESET_SAVE_AS:
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-            BIND_ACTION_OK(cbs, action_ok_shader_preset_save_as);
-#endif
             break;
          case MENU_LABEL_CHEAT_FILE_SAVE_AS:
             BIND_ACTION_OK(cbs, action_ok_cheat_file_save_as);
