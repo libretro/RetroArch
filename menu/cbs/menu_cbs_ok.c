@@ -6558,7 +6558,7 @@ static int is_rdb_entry(enum msg_hash_enums enum_idx)
 }
 
 static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
-      const char *label, uint32_t hash)
+      const char *label, uint32_t label_hash)
 {
    if (cbs->enum_idx != MSG_UNKNOWN)
    {
@@ -6885,7 +6885,7 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
    }
    else
    {
-      switch (hash)
+      switch (label_hash)
       {
          case MENU_LABEL_OPEN_ARCHIVE_DETECT_CORE:
             BIND_ACTION_OK(cbs, action_ok_open_archive_detect_core);
@@ -6919,14 +6919,6 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_LABEL_RGUI_MENU_THEME_PRESET:
             BIND_ACTION_OK(cbs, action_ok_rgui_menu_theme_preset);
-            break;
-#ifdef HAVE_NETWORKING
-         case MENU_LABEL_UPDATE_LAKKA:
-            BIND_ACTION_OK(cbs, action_ok_lakka_list);
-            break;
-#endif
-         case MENU_LABEL_ACCOUNTS_LIST:
-            BIND_ACTION_OK(cbs, action_ok_push_accounts_list);
             break;
          case MENU_LABEL_ACCOUNTS_RETRO_ACHIEVEMENTS:
             BIND_ACTION_OK(cbs, action_ok_push_accounts_cheevos_list);
