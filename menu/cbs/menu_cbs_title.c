@@ -1316,6 +1316,8 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
             return -1;
       }
    }
+   else
+      return -1;
 
    return 0;
 }
