@@ -1069,14 +1069,20 @@ static int action_bind_sublabel_playlist_entry(
       const char *label, const char *path,
       char *s, size_t len)
 {
-   playlist_t *playlist               = NULL;
-   const struct playlist_entry *entry = NULL;
-   const char *menu_ident             = menu_driver_ident();
-   settings_t *settings               = config_get_ptr();
-   bool playlist_show_sublabels       = settings->bools.playlist_show_sublabels;
-   unsigned playlist_sublabel_runtime_type = settings->uints.playlist_sublabel_runtime_type;
-   bool content_runtime_log           = settings->bools.content_runtime_log;
-   bool content_runtime_log_aggregate = settings->bools.content_runtime_log_aggregate;
+   playlist_t *playlist                      = NULL;
+   const struct playlist_entry *entry        = NULL;
+   const char *menu_ident                    = menu_driver_ident();
+   settings_t *settings                      = config_get_ptr();
+   bool playlist_show_sublabels              = settings->bools.playlist_show_sublabels;
+   unsigned playlist_sublabel_runtime_type   = settings->uints.playlist_sublabel_runtime_type;
+   bool content_runtime_log                  = settings->bools.content_runtime_log;
+   bool content_runtime_log_aggregate        = settings->bools.content_runtime_log_aggregate;
+   const char *directory_runtime_log         = settings->paths.directory_runtime_log;
+   const char *directory_playlist            = settings->paths.directory_playlist;
+   enum playlist_sublabel_last_played_style_type
+         playlist_sublabel_last_played_style =
+               (enum playlist_sublabel_last_played_style_type)
+                     settings->uints.playlist_sublabel_last_played_style;
 
    if (!playlist_show_sublabels)
       return 0;
@@ -1128,7 +1134,12 @@ static int action_bind_sublabel_playlist_entry(
 
    /* Check whether runtime info should be loaded from log file */
    if (entry->runtime_status == PLAYLIST_RUNTIME_UNKNOWN)
-      runtime_update_playlist(playlist, i);
+      runtime_update_playlist(
+            playlist, i,
+            directory_runtime_log,
+            directory_playlist,
+            (playlist_sublabel_runtime_type == PLAYLIST_RUNTIME_PER_CORE),
+            playlist_sublabel_last_played_style);
 
    /* Check whether runtime info is valid */
    if (entry->runtime_status == PLAYLIST_RUNTIME_VALID)

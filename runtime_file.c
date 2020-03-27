@@ -36,7 +36,6 @@
 #include "file_path_special.h"
 #include "paths.h"
 #include "core_info.h"
-#include "configuration.h"
 #include "verbosity.h"
 #include "msg_hash.h"
 
@@ -1008,23 +1007,24 @@ void runtime_log_convert_usec2hms(retro_time_t usec,
 
 /* Updates specified playlist entry runtime values with
  * contents of associated log file */
-void runtime_update_playlist(playlist_t *playlist, size_t idx)
+void runtime_update_playlist(
+      playlist_t *playlist, size_t idx,
+      const char *dir_runtime_log,
+      const char *dir_playlist,
+      bool log_per_core,
+      enum playlist_sublabel_last_played_style_type timedate_style)
 {
    char runtime_str[64];
    char last_played_str[64];
-   enum playlist_sublabel_last_played_style_type 
-      timedate_style                      = PLAYLIST_LAST_PLAYED_STYLE_YMD_HMS;
    runtime_log_t *runtime_log             = NULL;
    const struct playlist_entry *entry     = NULL;
    struct playlist_entry update_entry     = {0};
-   settings_t *settings                   = config_get_ptr();
-   unsigned pl_sublabel_last_played_style = settings ? settings->uints.playlist_sublabel_last_played_style : 0;
-#ifdef HAVE_MENU
+#if defined(HAVE_MENU) && defined(HAVE_OZONE)
    const char *menu_ident                 = menu_driver_ident();
 #endif
    
    /* Sanity check */
-   if (!playlist || !settings)
+   if (!playlist)
       return;
    
    if (idx >= playlist_get_size(playlist))
@@ -1034,12 +1034,6 @@ void runtime_update_playlist(playlist_t *playlist, size_t idx)
     * (saves 'if' checks later...) */
    update_entry.runtime_status = PLAYLIST_RUNTIME_MISSING;
    
-#ifdef HAVE_MENU
-   /* Get current last played formatting type
-    * > Have to include a 'HAVE_MENU' check here... */
-   timedate_style               = (enum playlist_sublabel_last_played_style_type)pl_sublabel_last_played_style;
-#endif
-
    /* 'Attach' runtime/last played strings */
    runtime_str[0]               = '\0';
    last_played_str[0]           = '\0';
@@ -1053,9 +1047,9 @@ void runtime_update_playlist(playlist_t *playlist, size_t idx)
    runtime_log = runtime_log_init(
          entry->path,
          entry->core_path,
-         settings->paths.directory_runtime_log,
-         settings->paths.directory_playlist,
-         (settings->uints.playlist_sublabel_runtime_type == PLAYLIST_RUNTIME_PER_CORE));
+         dir_runtime_log,
+         dir_playlist,
+         log_per_core);
    
    if (runtime_log)
    {
