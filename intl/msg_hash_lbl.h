@@ -1030,6 +1030,8 @@ MSG_HASH(MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_RELEASEYEAR,
       "deferred_cursor_manager_list_rdb_entry_releaseyear")
 MSG_HASH(MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ESRB_RATING,
       "deferred_cursor_manager_list_rdb_entry_esrb_rating")
+MSG_HASH(MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ELSPA_RATING,
+      "deferred_cursor_manager_list_rdb_entry_elspa_rating")
 MSG_HASH(MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_PEGI_RATING,
       "deferred_cursor_manager_list_rdb_entry_pegi_rating")
 MSG_HASH(MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_CERO_RATING,
