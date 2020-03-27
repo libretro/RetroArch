@@ -521,6 +521,10 @@ MSG_HASH(
     "Cheat File"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEAT_FILE_APPEND,
+    "Cheat File (Append)"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD,
     "Load Cheat File (Replace)"
     )
