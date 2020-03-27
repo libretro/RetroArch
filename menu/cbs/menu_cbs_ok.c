@@ -6938,9 +6938,7 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
 }
 
 static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
-      const char *label,
-      const char *menu_label,
-      uint32_t menu_label_hash, unsigned type)
+      const char *label, const char *menu_label, unsigned type)
 {
    if (type == MENU_SET_CDROM_LIST)
    {
@@ -7217,17 +7215,17 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             }
             else
             {
-               switch (menu_label_hash)
+               if (string_is_equal(menu_label, "deferred_core_list"))
                {
-                  case MENU_LABEL_DEFERRED_CORE_LIST:
-                     BIND_ACTION_OK(cbs, action_ok_load_core_deferred);
-                     break;
-                  case MENU_LABEL_DEFERRED_CORE_LIST_SET:
-                     BIND_ACTION_OK(cbs, action_ok_core_deferred_set);
-                     break;
-                  case MENU_LABEL_CORE_LIST:
-                     BIND_ACTION_OK(cbs, action_ok_load_core);
-                     break;
+                  BIND_ACTION_OK(cbs, action_ok_load_core_deferred);
+               }
+               else if (string_is_equal(menu_label, "deferred_core_list_set"))
+               {
+                  BIND_ACTION_OK(cbs, action_ok_core_deferred_set);
+               }
+               else if (string_is_equal(menu_label, "load_core"))
+               {
+                  BIND_ACTION_OK(cbs, action_ok_load_core);
                }
             }
             break;
@@ -7258,15 +7256,18 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
          case FILE_TYPE_DOWNLOAD_CORE_INFO:
             break;
          case FILE_TYPE_RDB:
-            switch (menu_label_hash)
+            if (string_is_equal(menu_label, "deferred_database_manager_list"))
             {
-               case MENU_LABEL_DEFERRED_DATABASE_MANAGER_LIST:
-                  BIND_ACTION_OK(cbs, action_ok_deferred_list_stub);
-                  break;
-               case MENU_LABEL_DATABASE_MANAGER_LIST:
-               case MENU_VALUE_HORIZONTAL_MENU:
-                  BIND_ACTION_OK(cbs, action_ok_database_manager_list);
-                  break;
+               BIND_ACTION_OK(cbs, action_ok_deferred_list_stub);
+            }
+            else if (string_is_equal(menu_label, "database_manager_list"))
+            {
+               BIND_ACTION_OK(cbs, action_ok_database_manager_list);
+            }
+            /* TODO/FIXME - refactor this */
+            else if (string_is_equal(menu_label, "Horizontal Menu"))
+            {
+               BIND_ACTION_OK(cbs, action_ok_database_manager_list);
             }
             break;
          case FILE_TYPE_RDB_ENTRY:
@@ -7279,14 +7280,13 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             BIND_ACTION_OK(cbs, action_ok_netplay_lan_scan);
             break;
          case FILE_TYPE_CURSOR:
-            switch (menu_label_hash)
+            if (string_is_equal(menu_label, "deferred_database_manager_list"))
             {
-               case MENU_LABEL_DEFERRED_DATABASE_MANAGER_LIST:
-                  BIND_ACTION_OK(cbs, action_ok_deferred_list_stub);
-                  break;
-               case MENU_LABEL_CURSOR_MANAGER_LIST:
-                  BIND_ACTION_OK(cbs, action_ok_cursor_manager_list);
-                  break;
+               BIND_ACTION_OK(cbs, action_ok_deferred_list_stub);
+            }
+            else if (string_is_equal(menu_label, "cursor_manager_list"))
+            {
+               BIND_ACTION_OK(cbs, action_ok_cursor_manager_list);
             }
             break;
          case FILE_TYPE_VIDEOFILTER:
@@ -7345,31 +7345,34 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             }
             else
             {
-               switch (menu_label_hash)
+               if (
+                     string_is_equal(menu_label, "deferred_archive_open_detect_core") ||
+                     string_is_equal(menu_label, "downloaded_file_detect_core_list") ||
+                     string_is_equal(menu_label, "favorites")
+                  )
                {
-                  case MENU_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST:
-                  case MENU_LABEL_FAVORITES:
-                  case MENU_LABEL_DEFERRED_ARCHIVE_OPEN_DETECT_CORE:
 #ifdef HAVE_COMPRESSION
-                     if (type == FILE_TYPE_IN_CARCHIVE)
-                     {
-                        BIND_ACTION_OK(cbs, action_ok_file_load_with_detect_core_carchive);
-                     }
-                     else
+                  if (type == FILE_TYPE_IN_CARCHIVE)
+                  {
+                     BIND_ACTION_OK(cbs, action_ok_file_load_with_detect_core_carchive);
+                  }
+                  else
 #endif
-                     {
-                        BIND_ACTION_OK(cbs, action_ok_file_load_with_detect_core);
-                     }
-                     break;
-                  case MENU_LABEL_DISK_IMAGE_APPEND:
-                     BIND_ACTION_OK(cbs, action_ok_disk_image_append);
-                     break;
-                  case MENU_LABEL_SUBSYSTEM_ADD:
-                     BIND_ACTION_OK(cbs, action_ok_subsystem_add);
-                     break;
-                  default:
-                     BIND_ACTION_OK(cbs, action_ok_file_load);
-                     break;
+                  {
+                     BIND_ACTION_OK(cbs, action_ok_file_load_with_detect_core);
+                  }
+               }
+               else if (string_is_equal(menu_label, "disk_image_append"))
+               {
+                  BIND_ACTION_OK(cbs, action_ok_disk_image_append);
+               }
+               else if (string_is_equal(menu_label, "subsystem_add"))
+               {
+                  BIND_ACTION_OK(cbs, action_ok_subsystem_add);
+               }
+               else
+               {
+                  BIND_ACTION_OK(cbs, action_ok_file_load);
                }
             }
             break;
@@ -7413,8 +7416,7 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
 
 int menu_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx,
-      const char *menu_label,
-      uint32_t menu_label_hash)
+      const char *menu_label)
 {
    if (!cbs)
       return -1;
@@ -7425,8 +7427,7 @@ int menu_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
       return 0;
 
    if (menu_cbs_init_bind_ok_compare_type(cbs, label,
-            menu_label,
-            menu_label_hash, type) == 0)
+            menu_label, type) == 0)
       return 0;
 
    return -1;
