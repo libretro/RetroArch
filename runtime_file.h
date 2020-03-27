@@ -182,7 +182,12 @@ void runtime_log_convert_usec2hms(retro_time_t usec, unsigned *hours, unsigned *
 
 /* Updates specified playlist entry runtime values with
  * contents of associated log file */
-void runtime_update_playlist(playlist_t *playlist, size_t idx);
+void runtime_update_playlist(
+      playlist_t *playlist, size_t idx,
+      const char *dir_runtime_log,
+      const char *dir_playlist,
+      bool log_per_core,
+      enum playlist_sublabel_last_played_style_type timedate_style);
 
 RETRO_END_DECLS
 

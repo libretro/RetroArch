@@ -1787,13 +1787,21 @@ static void ozone_draw_footer(ozone_handle_t *ozone,
 
 void ozone_update_content_metadata(ozone_handle_t *ozone)
 {
-   const char *core_name        = NULL;
-   size_t selection             = menu_navigation_get_selection();
-   playlist_t *playlist         = playlist_get_cached();
-   settings_t *settings         = config_get_ptr();
-   bool scroll_content_metadata = settings->bools.ozone_scroll_content_metadata;
-   bool content_runtime_log     = settings->bools.content_runtime_log;
-   bool content_runtime_log_aggr= settings->bools.content_runtime_log_aggregate;
+   const char *core_name             = NULL;
+   size_t selection                  = menu_navigation_get_selection();
+   playlist_t *playlist              = playlist_get_cached();
+   settings_t *settings              = config_get_ptr();
+   bool scroll_content_metadata      = settings->bools.ozone_scroll_content_metadata;
+   bool content_runtime_log          = settings->bools.content_runtime_log;
+   bool content_runtime_log_aggr     = settings->bools.content_runtime_log_aggregate;
+   const char *directory_runtime_log = settings->paths.directory_runtime_log;
+   const char *directory_playlist    = settings->paths.directory_playlist;
+   unsigned runtime_type             = settings->uints.playlist_sublabel_runtime_type;
+   enum playlist_sublabel_last_played_style_type
+         runtime_last_played_style   =
+               (enum playlist_sublabel_last_played_style_type)
+                     settings->uints.playlist_sublabel_last_played_style;
+
    /* Must check whether core corresponds to 'viewer'
     * content even when not using a playlist, otherwise
     * file browser image updates are mishandled */
@@ -1837,7 +1845,12 @@ void ozone_update_content_metadata(ozone_handle_t *ozone)
          playlist_get_index(playlist, selection, &entry);
 
          if (entry->runtime_status == PLAYLIST_RUNTIME_UNKNOWN)
-            runtime_update_playlist(playlist, selection);
+            runtime_update_playlist(
+                  playlist, selection,
+                  directory_runtime_log,
+                  directory_playlist,
+                  (runtime_type == PLAYLIST_RUNTIME_PER_CORE),
+                  runtime_last_played_style);
 
          if (!string_is_empty(entry->runtime_str))
             strlcpy(ozone->selection_playtime, entry->runtime_str, sizeof(ozone->selection_playtime));
