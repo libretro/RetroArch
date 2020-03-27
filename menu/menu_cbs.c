@@ -210,8 +210,6 @@ void menu_cbs_init(void *data,
    menu_ctx_bind_t bind_info;
    const char *repr_label        = NULL;
    const char *menu_label        = NULL;
-   uint32_t label_hash           = 0;
-   uint32_t menu_label_hash      = 0;
    enum msg_hash_enums enum_idx  = MSG_UNKNOWN;
    file_list_t *list             = (file_list_t*)data;
    if (!list)
@@ -221,9 +219,6 @@ void menu_cbs_init(void *data,
 
    if (!label || !menu_label)
       return;
-
-   label_hash      = msg_hash_calculate(label);
-   menu_label_hash = msg_hash_calculate(menu_label);
 
 #ifdef DEBUG_LOG
    RARCH_LOG("\n");
@@ -343,7 +338,6 @@ void menu_cbs_init(void *data,
    bind_info.label           = label;
    bind_info.type            = type;
    bind_info.idx             = idx;
-   bind_info.label_hash      = label_hash;
 
    menu_driver_ctl(RARCH_MENU_CTL_BIND_INIT, &bind_info);
 }
