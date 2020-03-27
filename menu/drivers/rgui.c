@@ -5245,7 +5245,6 @@ static void rgui_toggle(void *userdata, bool menu_on)
    }
 }
 
-#ifdef HAVE_GFX_WIDGETS
 static void rgui_context_reset(void *data, bool is_threaded)
 {
    rgui_t *rgui = (rgui_t*)data;
@@ -5253,8 +5252,10 @@ static void rgui_context_reset(void *data, bool is_threaded)
    if (!rgui)
       return;
 
+#ifdef HAVE_GFX_WIDGETS
    if (rgui->widgets_supported)
       gfx_display_allocate_white_texture();
+#endif
    video_driver_monitor_reset();
 }
 
@@ -5265,10 +5266,11 @@ static void rgui_context_destroy(void *data)
    if (!rgui)
       return;
 
+#ifdef HAVE_GFX_WIDGETS
    if (rgui->widgets_supported)
       video_driver_texture_unload(&gfx_display_white_texture);
-}
 #endif
+}
 
 static enum menu_action rgui_parse_menu_entry_action(
       rgui_t *rgui, enum menu_action action)
@@ -5315,13 +5317,8 @@ menu_ctx_driver_t menu_ctx_rgui = {
    rgui_frame,
    rgui_init,
    rgui_free,
-#ifdef HAVE_GFX_WIDGETS
    rgui_context_reset,
    rgui_context_destroy,
-#else
-   NULL,
-   NULL,
-#endif
    rgui_populate_entries,
    rgui_toggle,
    rgui_navigation_clear,
