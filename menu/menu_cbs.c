@@ -238,7 +238,7 @@ void menu_cbs_init(void *data,
 
    /* It will try to find a corresponding callback function inside
     * menu_cbs_ok.c, then map this callback to the entry. */
-   menu_cbs_init_bind_ok(cbs, path, label, type, idx, label_hash, menu_label,
+   menu_cbs_init_bind_ok(cbs, path, label, type, idx, menu_label,
          menu_label_hash);
 
    menu_cbs_init_log(repr_label, "OK", cbs->action_ok_ident);

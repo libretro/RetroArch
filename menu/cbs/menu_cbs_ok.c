@@ -6558,7 +6558,7 @@ static int is_rdb_entry(enum msg_hash_enums enum_idx)
 }
 
 static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
-      const char *label, uint32_t label_hash)
+      const char *label)
 {
    if (cbs->enum_idx != MSG_UNKNOWN)
    {
@@ -6880,109 +6880,61 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             return 0;
          }
       }
-
-      return -1;
    }
    else
    {
-      switch (label_hash)
+      unsigned i;
+      typedef struct temp_ok_list
       {
-         case MENU_LABEL_OPEN_ARCHIVE_DETECT_CORE:
-            BIND_ACTION_OK(cbs, action_ok_open_archive_detect_core);
-            break;
-         case MENU_LABEL_OPEN_ARCHIVE:
-            BIND_ACTION_OK(cbs, action_ok_open_archive);
-            break;
-         case MENU_LABEL_LOAD_ARCHIVE_DETECT_CORE:
-            BIND_ACTION_OK(cbs, action_ok_load_archive_detect_core);
-            break;
-         case MENU_LABEL_LOAD_ARCHIVE:
-            BIND_ACTION_OK(cbs, action_ok_load_archive);
-            break;
-         case MENU_LABEL_CHEAT_FILE_LOAD:
-            BIND_ACTION_OK(cbs, action_ok_cheat_file);
-            break;
-         case MENU_LABEL_CHEAT_FILE_LOAD_APPEND:
-            BIND_ACTION_OK(cbs, action_ok_cheat_file_append);
-            break;
-         case MENU_LABEL_AUDIO_DSP_PLUGIN:
-            BIND_ACTION_OK(cbs, action_ok_audio_dsp_plugin);
-            break;
-         case MENU_LABEL_REMAP_FILE_LOAD:
-            BIND_ACTION_OK(cbs, action_ok_remap_file);
-            break;
-         case MENU_LABEL_RECORD_CONFIG:
-            BIND_ACTION_OK(cbs, action_ok_record_configfile);
-            break;
-         case MENU_LABEL_STREAM_CONFIG:
-            BIND_ACTION_OK(cbs, action_ok_stream_configfile);
-            break;
-         case MENU_LABEL_RGUI_MENU_THEME_PRESET:
-            BIND_ACTION_OK(cbs, action_ok_rgui_menu_theme_preset);
-            break;
-         case MENU_LABEL_ACCOUNTS_RETRO_ACHIEVEMENTS:
-            BIND_ACTION_OK(cbs, action_ok_push_accounts_cheevos_list);
-            break;
-         case MENU_LABEL_FAVORITES:
-            BIND_ACTION_OK(cbs, action_ok_push_content_list);
-            break;
-         case MENU_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST:
-            BIND_ACTION_OK(cbs, action_ok_push_downloads_dir);
-            break;
-         case MENU_LABEL_DETECT_CORE_LIST_OK:
-            BIND_ACTION_OK(cbs, action_ok_file_load_detect_core);
-            break;
-         case MENU_LABEL_CHEAT_APPLY_CHANGES:
-            BIND_ACTION_OK(cbs, action_ok_cheat_apply_changes);
-            break;
-         case MENU_LABEL_CHEAT_FILE_SAVE_AS:
-            BIND_ACTION_OK(cbs, action_ok_cheat_file_save_as);
-            break;
-         case MENU_LABEL_REMAP_FILE_SAVE_CORE:
-            BIND_ACTION_OK(cbs, action_ok_remap_file_save_core);
-            break;
-         case MENU_LABEL_REMAP_FILE_SAVE_CONTENT_DIR:
-            BIND_ACTION_OK(cbs, action_ok_remap_file_save_content_dir);
-            break;
-         case MENU_LABEL_REMAP_FILE_SAVE_GAME:
-            BIND_ACTION_OK(cbs, action_ok_remap_file_save_game);
-            break;
-         case MENU_LABEL_DISK_IMAGE_APPEND:
-            BIND_ACTION_OK(cbs, action_ok_disk_image_append_list);
-            break;
-         case MENU_LABEL_SUBSYSTEM_ADD:
-            BIND_ACTION_OK(cbs, action_ok_subsystem_add_list);
-            break;
-         case MENU_LABEL_SCREEN_RESOLUTION:
-            BIND_ACTION_OK(cbs, action_ok_video_resolution);
-            break;
-         case MENU_LABEL_PLAYLIST_MANAGER_DEFAULT_CORE:
-            BIND_ACTION_OK(cbs, action_ok_playlist_default_core);
-            break;
-         case MENU_LABEL_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE:
-            BIND_ACTION_OK(cbs, action_ok_playlist_label_display_mode);
-            break;
-         case MENU_LABEL_PLAYLIST_MANAGER_RIGHT_THUMBNAIL_MODE:
-            BIND_ACTION_OK(cbs, action_ok_playlist_right_thumbnail_mode);
-            break;
-         case MENU_LABEL_PLAYLIST_MANAGER_LEFT_THUMBNAIL_MODE:
-            BIND_ACTION_OK(cbs, action_ok_playlist_left_thumbnail_mode);
-            break;
-         case MENU_LABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME:
-            BIND_ACTION_OK(cbs, action_ok_manual_content_scan_system_name);
-            break;
-         case MENU_LABEL_MANUAL_CONTENT_SCAN_CORE_NAME:
-            BIND_ACTION_OK(cbs, action_ok_manual_content_scan_core_name);
-            break;
-         case MENU_LABEL_MANUAL_CONTENT_SCAN_DAT_FILE:
-            BIND_ACTION_OK(cbs, action_ok_manual_content_scan_dat_file);
-            break;
-         default:
-            return -1;
+         enum msg_hash_enums type;
+         int (*cb)(const char *path, const char *label, unsigned type,
+               size_t idx, size_t entry_idx);
+      } temp_ok_list_t;
+
+      temp_ok_list_t ok_list[] = {
+         {MENU_ENUM_LABEL_OPEN_ARCHIVE_DETECT_CORE,            action_ok_open_archive_detect_core},
+         {MENU_ENUM_LABEL_OPEN_ARCHIVE,                        action_ok_open_archive},
+         {MENU_ENUM_LABEL_LOAD_ARCHIVE_DETECT_CORE,            action_ok_load_archive_detect_core},
+         {MENU_ENUM_LABEL_LOAD_ARCHIVE,                        action_ok_load_archive},
+         {MENU_ENUM_LABEL_CHEAT_FILE_LOAD,                     action_ok_cheat_file},
+         {MENU_ENUM_LABEL_CHEAT_FILE_LOAD_APPEND,              action_ok_cheat_file_append},
+         {MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN,                    action_ok_audio_dsp_plugin},
+         {MENU_ENUM_LABEL_REMAP_FILE_LOAD,                     action_ok_remap_file},
+         {MENU_ENUM_LABEL_RECORD_CONFIG,                       action_ok_record_configfile},
+         {MENU_ENUM_LABEL_STREAM_CONFIG,                       action_ok_stream_configfile},
+         {MENU_ENUM_LABEL_RGUI_MENU_THEME_PRESET,              action_ok_rgui_menu_theme_preset},
+         {MENU_ENUM_LABEL_ACCOUNTS_RETRO_ACHIEVEMENTS,         action_ok_push_accounts_cheevos_list},
+         {MENU_ENUM_LABEL_FAVORITES,                           action_ok_push_content_list},
+         {MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST,    action_ok_push_downloads_dir},
+         {MENU_ENUM_LABEL_DETECT_CORE_LIST_OK,                 action_ok_file_load_detect_core},
+         {MENU_ENUM_LABEL_CHEAT_APPLY_CHANGES,                 action_ok_cheat_apply_changes},
+         {MENU_ENUM_LABEL_CHEAT_FILE_SAVE_AS,                  action_ok_cheat_file_save_as},
+         {MENU_ENUM_LABEL_REMAP_FILE_SAVE_CORE,                action_ok_remap_file_save_core},
+         {MENU_ENUM_LABEL_REMAP_FILE_SAVE_CONTENT_DIR,         action_ok_remap_file_save_content_dir},
+         {MENU_ENUM_LABEL_REMAP_FILE_SAVE_GAME,                action_ok_remap_file_save_game},
+         {MENU_ENUM_LABEL_DISK_IMAGE_APPEND,                   action_ok_disk_image_append_list},
+         {MENU_ENUM_LABEL_SUBSYSTEM_ADD,                       action_ok_subsystem_add_list},
+         {MENU_ENUM_LABEL_SCREEN_RESOLUTION,                   action_ok_video_resolution},
+         {MENU_ENUM_LABEL_PLAYLIST_MANAGER_DEFAULT_CORE,       action_ok_playlist_default_core},
+         {MENU_ENUM_LABEL_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE, action_ok_playlist_label_display_mode},
+         {MENU_ENUM_LABEL_PLAYLIST_MANAGER_RIGHT_THUMBNAIL_MODE, action_ok_playlist_right_thumbnail_mode},
+         {MENU_ENUM_LABEL_PLAYLIST_MANAGER_LEFT_THUMBNAIL_MODE, action_ok_playlist_left_thumbnail_mode},
+         {MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME, action_ok_manual_content_scan_system_name},
+         {MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_CORE_NAME, action_ok_manual_content_scan_core_name},
+         {MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_DAT_FILE, action_ok_manual_content_scan_dat_file},
+      };
+
+      for (i = 0; i < ARRAY_SIZE(ok_list); i++)
+      {
+         if (string_is_equal(label, msg_hash_to_str(ok_list[i].type)))
+         {
+            BIND_ACTION_OK(cbs, ok_list[i].cb);
+            return 0;
+         }
       }
    }
 
-   return 0;
+   return -1;
 }
 
 static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
@@ -7461,7 +7413,6 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
 
 int menu_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx,
-      uint32_t label_hash,
       const char *menu_label,
       uint32_t menu_label_hash)
 {
@@ -7470,7 +7421,7 @@ int menu_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
 
    BIND_ACTION_OK(cbs, action_ok_lookup_setting);
 
-   if (menu_cbs_init_bind_ok_compare_label(cbs, label, label_hash) == 0)
+   if (menu_cbs_init_bind_ok_compare_label(cbs, label) == 0)
       return 0;
 
    if (menu_cbs_init_bind_ok_compare_type(cbs, label,
