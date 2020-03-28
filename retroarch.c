@@ -24419,15 +24419,12 @@ bool video_context_driver_get_video_output_next(void)
    return true;
 }
 
-bool video_context_driver_translate_aspect(gfx_ctx_aspect_t *aspect)
+void video_context_driver_translate_aspect(gfx_ctx_aspect_t *aspect)
 {
-   if (!video_context_data || !aspect)
-      return false;
-   if (!current_video_context.translate_aspect)
-      return false;
+   if (!video_context_data || !aspect || !current_video_context.translate_aspect)
+      return;
    *aspect->aspect = current_video_context.translate_aspect(
          video_context_data, aspect->width, aspect->height);
-   return true;
 }
 
 void video_context_driver_free(void)
