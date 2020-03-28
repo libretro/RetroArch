@@ -31,12 +31,6 @@
 #include "../../core_info.h"
 #include "../../verbosity.h"
 
-#ifndef BIND_ACTION_SUBLABEL
-#define BIND_ACTION_SUBLABEL(cbs, name) \
-   cbs->action_sublabel = name; \
-   cbs->action_sublabel_ident = #name;
-#endif
-
 #ifdef HAVE_NETWORKING
 #include "../../network/netplay/netplay.h"
 #include "../../network/netplay/netplay_discovery.h"
@@ -51,6 +45,11 @@
 
 #include "../../playlist.h"
 #include "../../runtime_file.h"
+
+#ifndef BIND_ACTION_SUBLABEL
+#define BIND_ACTION_SUBLABEL(cbs, name) (cbs)->action_sublabel = (name)
+#endif
+
 
 #define default_sublabel_macro(func_name, lbl) \
   static int (func_name)(file_list_t *list, unsigned type, unsigned i, const char *label, const char *path, char *s, size_t len) \
@@ -1592,7 +1591,7 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_settings_show_saving);
             break;
          case MENU_ENUM_LABEL_SETTINGS_SHOW_LOGGING:
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_settings_show_logging)
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_settings_show_logging);
             break;
          case MENU_ENUM_LABEL_SETTINGS_SHOW_FRAME_THROTTLE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_settings_show_frame_throttle);

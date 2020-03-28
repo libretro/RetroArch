@@ -17,9 +17,7 @@
 #include "../menu_cbs.h"
 
 #ifndef BIND_ACTION_CONTENT_LIST_SWITCH
-#define BIND_ACTION_CONTENT_LIST_SWITCH(cbs, name) \
-   cbs->action_content_list_switch = name; \
-   cbs->action_content_list_switch_ident = #name;
+#define BIND_ACTION_CONTENT_LIST_SWITCH(cbs, name) (cbs)->action_content_list_switch = (name)
 #endif
 
 static int deferred_push_content_list(void *data, void *userdata,

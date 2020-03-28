@@ -27,9 +27,7 @@
 #include "../../managers/core_option_manager.h"
 
 #ifndef BIND_ACTION_GET_TITLE
-#define BIND_ACTION_GET_TITLE(cbs, name) \
-   cbs->action_get_title = name; \
-   cbs->action_get_title_ident = #name;
+#define BIND_ACTION_GET_TITLE(cbs, name) (cbs)->action_get_title = (name)
 #endif
 
 #define sanitize_to_string(s, label, len) \

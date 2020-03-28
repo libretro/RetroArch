@@ -53,9 +53,7 @@
 #endif
 
 #ifndef BIND_ACTION_GET_VALUE
-#define BIND_ACTION_GET_VALUE(cbs, name) \
-   cbs->action_get_value = name; \
-   cbs->action_get_value_ident = #name;
+#define BIND_ACTION_GET_VALUE(cbs, name) (cbs)->action_get_value = (name)
 #endif
 
 extern struct key_desc key_descriptors[RARCH_MAX_KEYS];

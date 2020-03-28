@@ -23,9 +23,7 @@
 #include "../../managers/cheat_manager.h"
 
 #ifndef BIND_ACTION_LABEL
-#define BIND_ACTION_LABEL(cbs, name) \
-   cbs->action_label = name; \
-   cbs->action_label_ident = #name;
+#define BIND_ACTION_LABEL(cbs, name) (cbs)->action_label = (name)
 #endif
 
 static int action_bind_label_generic(

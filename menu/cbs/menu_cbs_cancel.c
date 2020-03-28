@@ -25,9 +25,7 @@
 #include "../widgets/menu_filebrowser.h"
 
 #ifndef BIND_ACTION_CANCEL
-#define BIND_ACTION_CANCEL(cbs, name) \
-   cbs->action_cancel = name; \
-   cbs->action_cancel_ident = #name;
+#define BIND_ACTION_CANCEL(cbs, name) (cbs)->action_cancel = (name)
 #endif
 
 /* Clicks the back button */

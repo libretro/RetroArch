@@ -45,9 +45,7 @@
 #include "../../config.def.h"
 
 #ifndef BIND_ACTION_START
-#define BIND_ACTION_START(cbs, name) \
-   cbs->action_start = name; \
-   cbs->action_start_ident = #name;
+#define BIND_ACTION_START(cbs, name) (cbs)->action_start = (name)
 #endif
 
 /* Forward declarations */

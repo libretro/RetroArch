@@ -31,9 +31,7 @@
 #include "../../tasks/tasks_internal.h"
 
 #ifndef BIND_ACTION_SCAN
-#define BIND_ACTION_SCAN(cbs, name) \
-   cbs->action_scan = name; \
-   cbs->action_scan_ident = #name;
+#define BIND_ACTION_SCAN(cbs, name) (cbs)->action_scan = (name)
 #endif
 
 #ifdef HAVE_LIBRETRODB

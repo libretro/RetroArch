@@ -130,11 +130,7 @@ enum
 };
 
 #ifndef BIND_ACTION_OK
-#define BIND_ACTION_OK(cbs, name) \
-   do { \
-      cbs->action_ok = name; \
-      cbs->action_ok_ident = #name; \
-   } while(0)
+#define BIND_ACTION_OK(cbs, name) (cbs)->action_ok = (name)
 #endif
 
 #ifdef HAVE_NETWORKING

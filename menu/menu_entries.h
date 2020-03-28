@@ -81,24 +81,6 @@ typedef struct menu_file_list_cbs
    char action_title_cache   [512];
 
    enum msg_hash_enums enum_idx;
-   const char *action_iterate_ident;
-   const char *action_deferred_push_ident;
-   const char *action_select_ident;
-   const char *action_get_title_ident;
-   const char *action_ok_ident;
-   const char *action_cancel_ident;
-   const char *action_scan_ident;
-   const char *action_right_ident;
-   const char *action_start_ident;
-   const char *action_info_ident;
-   const char *action_content_list_switch_ident;
-   const char *action_left_ident;
-   const char *action_refresh_ident;
-   const char *action_up_ident;
-   const char *action_label_ident;
-   const char *action_sublabel_ident;
-   const char *action_down_ident;
-   const char *action_get_value_ident;
 
    bool checked;
 

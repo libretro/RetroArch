@@ -44,11 +44,7 @@
 #include "../../manual_content_scan.h"
 
 #ifndef BIND_ACTION_LEFT
-#define BIND_ACTION_LEFT(cbs, name) \
-   do { \
-      cbs->action_left = name; \
-      cbs->action_left_ident = #name; \
-   } while(0)
+#define BIND_ACTION_LEFT(cbs, name) (cbs)->action_left = (name)
 #endif
 
 extern struct key_desc key_descriptors[RARCH_MAX_KEYS];

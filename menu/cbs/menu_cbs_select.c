@@ -31,9 +31,7 @@
 #endif
 
 #ifndef BIND_ACTION_SELECT
-#define BIND_ACTION_SELECT(cbs, name) \
-   cbs->action_select = name; \
-   cbs->action_select_ident = #name;
+#define BIND_ACTION_SELECT(cbs, name) (cbs)->action_select = (name)
 #endif
 
 static int action_select_default(const char *path, const char *label, unsigned type,

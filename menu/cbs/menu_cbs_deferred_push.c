@@ -36,9 +36,7 @@
 #include "../../verbosity.h"
 
 #ifndef BIND_ACTION_DEFERRED_PUSH
-#define BIND_ACTION_DEFERRED_PUSH(cbs, name) \
-   cbs->action_deferred_push = name; \
-   cbs->action_deferred_push_ident = #name;
+#define BIND_ACTION_DEFERRED_PUSH(cbs, name) (cbs)->action_deferred_push = (name)
 #endif
 
 enum
