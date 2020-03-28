@@ -280,12 +280,12 @@ typedef struct global
 #ifdef HAVE_MENU
    struct
    {
-      retro_time_t prev_start_time ;
-      retro_time_t noop_press_time ;
-      retro_time_t noop_start_time  ;
-      retro_time_t action_start_time  ;
-      retro_time_t action_press_time ;
-      enum menu_action prev_action ;
+      retro_time_t prev_start_time;
+      retro_time_t noop_press_time;
+      retro_time_t noop_start_time;
+      retro_time_t action_start_time;
+      retro_time_t action_press_time;
+      enum menu_action prev_action;
    } menu;
 #endif
 } global_t;
