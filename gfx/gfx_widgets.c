@@ -530,7 +530,7 @@ void gfx_widgets_msg_queue_push(
             if (msg_widget->msg_new)
             {
                free(msg_widget->msg_new);
-               msg_widget->msg_new = NULL;
+               msg_widget->msg_new                 = NULL;
             }
 
             msg_widget->msg_new                    = strdup(task->title);
@@ -652,7 +652,8 @@ static void gfx_widgets_msg_queue_move(void)
    }
 }
 
-static void gfx_widgets_msg_queue_free(menu_widget_msg_t *msg, bool touch_list)
+static void gfx_widgets_msg_queue_free(
+      menu_widget_msg_t *msg, bool touch_list)
 {
    size_t i;
    gfx_animation_ctx_tag tag = (uintptr_t)msg;
@@ -2265,7 +2266,9 @@ void gfx_widgets_cleanup_load_content_animation(void)
 {
 #ifdef HAVE_MENU
    load_content_animation_running = false;
-   free(load_content_animation_content_name);
+   if (load_content_animation_content_name)
+      free(load_content_animation_content_name);
+   load_content_animation_content_name = NULL;
 #endif
 }
 
