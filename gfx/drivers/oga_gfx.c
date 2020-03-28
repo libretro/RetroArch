@@ -25,6 +25,8 @@
 #include <xf86drmMode.h>
 #include <drm/drm_fourcc.h>
 
+#include "frontend/frontend_driver.h"
+
 #include "../font_driver.h"
 
 #ifdef HAVE_CONFIG_H
@@ -107,6 +109,8 @@ static void *oga_gfx_init(const video_info_t *video,
     oga_video_t *vid = NULL;
     settings_t *settings = config_get_ptr();
     struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
+
+   frontend_driver_install_signal_handler();
 
     if (input && input_data) {
         void* udev = input_udev.init(settings->arrays.input_joypad_driver);
@@ -290,7 +294,7 @@ static void oga_gfx_set_nonblock_state(void *a, bool b, bool c, unsigned d)
 
 static bool oga_gfx_alive(void *data)
 {
-    return true;
+    return !frontend_driver_get_signal_handler_state();
 }
 
 static bool oga_gfx_focus(void *data)
