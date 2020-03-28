@@ -26,10 +26,6 @@
 
 #include "../gfx_display.h"
 
-#ifdef VITA
-static float *vertices3 = NULL;
-#endif
-
 static const GLfloat gl1_menu_vertexes[] = {
    0, 0,
    1, 0,
@@ -140,16 +136,21 @@ static void gfx_display_gl1_draw(gfx_display_ctx_draw_t *draw,
    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 
 #ifdef VITA
-   if (vertices3)
-      free(vertices3);
-   vertices3 = (float*)malloc(sizeof(float) * 3 * draw->coords->vertices);
-   int i;
-   for (i = 0; i < draw->coords->vertices; i++) {
-      memcpy(&vertices3[i*3], &draw->coords->vertex[i*2], sizeof(float) * 2);
-      vertices3[i*3] -= 0.5f;
-      vertices3[i*3+2] = 0.0f;
+   {
+      unsigned i;
+      static float *vertices3 = NULL;
+
+      if (vertices3)
+         free(vertices3);
+      vertices3 = (float*)malloc(sizeof(float) * 3 * draw->coords->vertices);
+      for (i = 0; i < draw->coords->vertices; i++)
+      {
+         memcpy(&vertices3[i*3], &draw->coords->vertex[i*2], sizeof(float) * 2);
+         vertices3[i*3]   -= 0.5f;
+         vertices3[i*3+2]  = 0.0f;
+      }
+      glVertexPointer(3, GL_FLOAT, 0, vertices3);   
    }
-   glVertexPointer(3, GL_FLOAT, 0, vertices3);   
 #else
    glVertexPointer(2, GL_FLOAT, 0, draw->coords->vertex);
 #endif
