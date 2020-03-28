@@ -517,6 +517,10 @@ MSG_HASH(
     "Fichier de cheats"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_CHEAT_FILE_APPEND,
+    "Fichier de cheats (Ajouter)"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD,
     "Charger des cheats (Remplacer)"
     )
