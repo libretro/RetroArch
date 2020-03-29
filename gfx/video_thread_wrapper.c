@@ -117,6 +117,7 @@ struct thread_packet
       {
          unsigned index;
          bool smooth;
+         bool ctx_scaling;
       } filtering;
 
       struct
@@ -499,7 +500,8 @@ static bool video_thread_handle_packet(
          if (thr->poke && thr->poke->set_filtering)
             thr->poke->set_filtering(thr->driver_data,
                   pkt.data.filtering.index,
-                  pkt.data.filtering.smooth);
+                  pkt.data.filtering.smooth,
+                  pkt.data.filtering.ctx_scaling);
          video_thread_reply(thr, &pkt);
          break;
 
@@ -1078,7 +1080,7 @@ static void thread_set_video_mode(void *data, unsigned width, unsigned height,
    video_thread_send_and_wait_user_to_thread(thr, &pkt);
 }
 
-static void thread_set_filtering(void *data, unsigned idx, bool smooth)
+static void thread_set_filtering(void *data, unsigned idx, bool smooth, bool ctx_scaling)
 {
    thread_video_t *thr = (thread_video_t*)data;
    thread_packet_t pkt = { CMD_POKE_SET_FILTERING };

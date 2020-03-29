@@ -7,6 +7,7 @@
 - MENU/OZONE: Fix thumbnail switching via 'scan' button functionality
 - MENU/OZONE: Prevent glitches when rendering Ozone's selection cursor
 - MENU/XMB: Fix thumbnail switching via 'scan' button functionality
+- ODROID GO ADVANCE: Add DRM HW context driver
 - SCANNER: Prevent redundant playlist entries when handling M3U content
 - SCANNER/ANDROID: Fix content scanner being unable to identify certain games from CHD images (raw data sector/subcode)
 

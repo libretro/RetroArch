@@ -140,7 +140,7 @@ static void xshm_gfx_free(void *data)
 
 }
 
-static void xshm_poke_set_filtering(void *data, unsigned index, bool smooth)
+static void xshm_poke_set_filtering(void *data, unsigned index, bool smooth, bool ctx_scaling)
 {
 
 }

@@ -783,6 +783,11 @@ static void gl2_create_fbo_texture(gl_t *gl,
    bool smooth                   = false;
    settings_t *settings          = config_get_ptr();
    bool video_smooth             = settings->bools.video_smooth;
+   bool video_ctx_scaling         = settings->bools.video_ctx_scaling;
+#if HAVE_ODROIDGO2
+   if (video_ctx_scaling)
+       video_smooth = false;
+#endif
    bool force_srgb_disable       = settings->bools.video_force_srgb_disable;
    GLuint base_filt              = video_smooth ? GL_LINEAR : GL_NEAREST;
    GLuint base_mip_filt          = video_smooth ?
@@ -3834,6 +3839,12 @@ static void *gl2_init(const video_info_t *video,
    gl->tex_w = gl->tex_h = (RARCH_SCALE_BASE * video->input_scale);
    gl->keep_aspect     = video->force_aspect;
 
+#if defined(HAVE_ODROIDGO2)
+   if (settings->bools.video_ctx_scaling)
+       gl->keep_aspect = false;
+   else
+#endif
+
    /* Apparently need to set viewport for passes
     * when we aren't using FBOs. */
    gl2_set_shader_viewports(gl);
@@ -3986,6 +3997,12 @@ static void gl2_update_tex_filter_frame(gl_t *gl)
    bool smooth                       = false;
    settings_t *settings              = config_get_ptr();
    bool video_smooth                 = settings->bools.video_smooth;
+   bool video_ctx_scaling             = settings->bools.video_ctx_scaling;
+
+#ifdef HAVE_ODROIDGO2
+   if (video_ctx_scaling)
+       video_smooth = false;
+#endif
 
    gl2_context_bind_hw_render(gl, false);
 
@@ -4346,6 +4363,10 @@ static void gl2_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
       return;
 
    gl->keep_aspect   = true;
+#if defined(HAVE_ODROIDGO2)
+   if (config_get_ptr()->bools.video_ctx_scaling)
+       gl->keep_aspect = false;
+#endif
    gl->should_resize = true;
 }
 

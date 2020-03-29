@@ -340,6 +340,9 @@
 #define DEFAULT_VIDEO_SMOOTH false
 #endif
 
+/* Graphics context specific scaling */
+#define DEFAULT_VIDEO_CTX_SCALING false
+
 /* On resize and fullscreen, rendering area will stay 4:3 */
 #define DEFAULT_FORCE_ASPECT true
 

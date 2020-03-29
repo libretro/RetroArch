@@ -628,7 +628,7 @@ static bool sdl2_gfx_read_viewport(void *data, uint8_t *buffer, bool is_idle)
    return true;
 }
 
-static void sdl2_poke_set_filtering(void *data, unsigned index, bool smooth)
+static void sdl2_poke_set_filtering(void *data, unsigned index, bool smooth, bool ctx_scaling)
 {
    sdl2_video_t *vid = (sdl2_video_t*)data;
    vid->video.smooth = smooth;

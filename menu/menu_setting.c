@@ -6770,7 +6770,8 @@ void general_write_handler(rarch_setting_t *setting)
          }
          break;
       case MENU_ENUM_LABEL_VIDEO_SMOOTH:
-         video_driver_set_filtering(1, settings->bools.video_smooth);
+      case MENU_ENUM_LABEL_VIDEO_CTX_SCALING:
+         video_driver_set_filtering(1, settings->bools.video_ctx_scaling, settings->bools.video_ctx_scaling);
          break;
       case MENU_ENUM_LABEL_VIDEO_ROTATION:
          {
@@ -10261,6 +10262,25 @@ static bool setting_append_list(
                   SD_FLAG_NONE
                   );
             menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_REINIT);
+
+#ifdef HAVE_ODROIDGO2
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.video_ctx_scaling,
+                  MENU_ENUM_LABEL_VIDEO_CTX_SCALING,
+                  MENU_ENUM_LABEL_VALUE_VIDEO_CTX_SCALING,
+                  DEFAULT_VIDEO_CTX_SCALING,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE
+                  );
+            menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_REINIT);
+#endif
 
             CONFIG_UINT(
                   list, list_info,

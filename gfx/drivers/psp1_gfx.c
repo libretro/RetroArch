@@ -737,7 +737,7 @@ static void psp_set_rotation(void *data, unsigned rotation)
    psp->rotation      = rotation;
    psp->should_resize = true;
 }
-static void psp_set_filtering(void *data, unsigned index, bool smooth)
+static void psp_set_filtering(void *data, unsigned index, bool smooth, bool ctx_scaling)
 {
    psp1_video_t *psp = (psp1_video_t*)data;
 

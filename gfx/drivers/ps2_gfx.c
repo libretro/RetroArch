@@ -400,7 +400,7 @@ static void ps2_gfx_free(void *data)
 static bool ps2_gfx_set_shader(void *data,
       enum rarch_shader_type type, const char *path) { return false; }
 
-static void ps2_set_filtering(void *data, unsigned index, bool smooth)
+static void ps2_set_filtering(void *data, unsigned index, bool smooth, bool ctx_scaling)
 {
    ps2_video_t *ps2 = (ps2_video_t*)data;
 

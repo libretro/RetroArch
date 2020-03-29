@@ -1072,7 +1072,7 @@ static void ctr_set_rotation(void* data, unsigned rotation)
    ctr->rotation = rotation;
    ctr->should_resize = true;
 }
-static void ctr_set_filtering(void* data, unsigned index, bool smooth)
+static void ctr_set_filtering(void* data, unsigned index, bool smooth, bool ctx_scaling)
 {
    ctr_video_t* ctr = (ctr_video_t*)data;
 

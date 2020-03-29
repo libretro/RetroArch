@@ -4680,6 +4680,10 @@ unsigned menu_displaylist_build_list(
                      PARSE_ONLY_BOOL, false) == 0)
                count++;
             if (menu_displaylist_parse_settings_enum(list,
+                     MENU_ENUM_LABEL_VIDEO_CTX_SCALING,
+                     PARSE_ONLY_BOOL, false) == 0)
+               count++;
+            if (menu_displaylist_parse_settings_enum(list,
                      MENU_ENUM_LABEL_VIDEO_SHADER_DELAY,
                      PARSE_ONLY_UINT, false) == 0)
                count++;

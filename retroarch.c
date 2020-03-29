@@ -592,7 +592,11 @@ static const gfx_ctx_driver_t *gfx_ctx_drivers[] = {
    &gfx_ctx_x_egl,
 #endif
 #if defined(HAVE_KMS)
+#if defined(HAVE_ODROIDGO2)
+   &gfx_ctx_go2_drm,
+#else
    &gfx_ctx_drm,
+#endif
 #endif
 #if defined(ANDROID)
    &gfx_ctx_android,
@@ -22560,6 +22564,9 @@ static bool video_driver_init_internal(bool *video_is_threaded)
    video.vfilter       = settings->bools.video_vfilter;
 #endif
    video.smooth        = settings->bools.video_smooth;
+#ifdef HAVE_ODROIDGO2
+   video.ctx_scaling    = settings->bools.video_ctx_scaling;
+#endif
    video.input_scale   = scale;
    video.font_size     = settings->floats.video_font_size;
    video.path_font     = settings->paths.path_font;
@@ -22769,10 +22776,10 @@ void *video_driver_read_frame_raw(unsigned *width,
          height, pitch);
 }
 
-void video_driver_set_filtering(unsigned index, bool smooth)
+void video_driver_set_filtering(unsigned index, bool smooth, bool ctx_scaling)
 {
    if (video_driver_poke && video_driver_poke->set_filtering)
-      video_driver_poke->set_filtering(video_driver_data, index, smooth);
+      video_driver_poke->set_filtering(video_driver_data, index, smooth, ctx_scaling);
 }
 
 void video_driver_cached_frame_set(const void *data, unsigned width,

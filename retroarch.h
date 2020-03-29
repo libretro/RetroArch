@@ -1052,6 +1052,8 @@ typedef struct video_info
     * otherwise nearest filtering. */
    bool smooth;
 
+   bool ctx_scaling;
+
    bool is_threaded;
 
    /* Use 32bit RGBA rather than native RGB565/XBGR1555.
@@ -1378,7 +1380,7 @@ typedef struct video_poke_interface
    void (*set_video_mode)(void *data, unsigned width,
          unsigned height, bool fullscreen);
    float (*get_refresh_rate)(void *data);
-   void (*set_filtering)(void *data, unsigned index, bool smooth);
+   void (*set_filtering)(void *data, unsigned index, bool smooth, bool ctx_scaling);
    void (*get_video_output_size)(void *data,
          unsigned *width, unsigned *height);
 
@@ -1616,7 +1618,7 @@ const video_layout_render_interface_t *video_driver_layout_render_interface(void
 void * video_driver_read_frame_raw(unsigned *width,
    unsigned *height, size_t *pitch);
 
-void video_driver_set_filtering(unsigned index, bool smooth);
+void video_driver_set_filtering(unsigned index, bool smooth, bool ctx_scaling);
 
 const char *video_driver_get_ident(void);
 
@@ -1892,6 +1894,7 @@ extern const gfx_ctx_driver_t gfx_ctx_uwp;
 extern const gfx_ctx_driver_t gfx_ctx_wayland;
 extern const gfx_ctx_driver_t gfx_ctx_x;
 extern const gfx_ctx_driver_t gfx_ctx_drm;
+extern const gfx_ctx_driver_t gfx_ctx_go2_drm;
 extern const gfx_ctx_driver_t gfx_ctx_mali_fbdev;
 extern const gfx_ctx_driver_t gfx_ctx_vivante_fbdev;
 extern const gfx_ctx_driver_t gfx_ctx_android;
