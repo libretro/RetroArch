@@ -254,7 +254,7 @@ static void d3d11_get_overlay_interface(void* data, const video_overlay_interfac
 }
 #endif
 
-static void d3d11_set_filtering(void* data, unsigned index, bool smooth)
+static void d3d11_set_filtering(void* data, unsigned index, bool smooth, bool ctx_scaling)
 {
    unsigned       i;
    d3d11_video_t* d3d11 = (d3d11_video_t*)data;
@@ -859,7 +859,7 @@ static void *d3d11_gfx_init(const video_info_t* video,
       }
    }
 
-   d3d11_set_filtering(d3d11, 0, video->smooth);
+   d3d11_set_filtering(d3d11, 0, video->smooth, video->ctx_scaling);
 
    {
       D3D11_BUFFER_DESC desc;

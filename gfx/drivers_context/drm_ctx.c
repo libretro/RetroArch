@@ -42,11 +42,6 @@
 #include "../../frontend/frontend_driver.h"
 #include "../common/drm_common.h"
 
-#ifdef HAVE_ODROIDGO2
-#include <go2/display.h>
-#include <drm/drm_fourcc.h>
-#endif
-
 #ifdef HAVE_EGL
 #include "../common/egl_common.h"
 #endif
@@ -73,27 +68,19 @@
 
 static enum gfx_ctx_api drm_api           = GFX_CTX_NONE;
 
-#ifndef HAVE_ODROIDGO2
 static struct gbm_bo *g_bo                = NULL;
 static struct gbm_bo *g_next_bo           = NULL;
 static struct gbm_surface *g_gbm_surface  = NULL;
 static struct gbm_device *g_gbm_dev       = NULL;
 
 static bool waiting_for_flip              = false;
-#endif
 
 typedef struct gfx_ctx_drm_data
 {
 #ifdef HAVE_EGL
    egl_ctx_data_t egl;
 #endif
-#ifndef HAVE_ODROIDGO2
    int fd;
-#else
-   go2_display_t* display;
-   go2_presenter_t* presenter;
-   go2_context_t* context;
-#endif
    int interval;
    unsigned fb_width;
    unsigned fb_height;
@@ -101,7 +88,6 @@ typedef struct gfx_ctx_drm_data
    bool core_hw_context_enable;
 } gfx_ctx_drm_data_t;
 
-#ifndef HAVE_ODROIDGO2
 struct drm_fb
 {
    struct gbm_bo *bo;
@@ -146,6 +132,26 @@ error:
    RARCH_ERR("[KMS]: Failed to create FB: %s\n", strerror(errno));
    free(fb);
    return NULL;
+}
+
+static void gfx_ctx_drm_swap_interval(void *data, int interval)
+{
+   gfx_ctx_drm_data_t *drm = (gfx_ctx_drm_data_t*)data;
+   drm->interval           = interval;
+
+   if (interval > 1)
+      RARCH_WARN("[KMS]: Swap intervals > 1 currently not supported. Will use swap interval of 1.\n");
+}
+
+static void gfx_ctx_drm_check_window(void *data, bool *quit,
+      bool *resize, unsigned *width, unsigned *height)
+{
+   (void)data;
+   (void)width;
+   (void)height;
+
+   *resize = false;
+   *quit   = (bool)frontend_driver_get_signal_handler_state();
 }
 
 static void drm_flip_handler(int fd, unsigned frame,
@@ -222,56 +228,7 @@ static bool gfx_ctx_drm_queue_flip(void)
    /* Failed to queue page flip. */
    return false;
 }
-#endif
 
-static void gfx_ctx_drm_swap_interval(void *data, int interval)
-{
-   gfx_ctx_drm_data_t *drm = (gfx_ctx_drm_data_t*)data;
-   drm->interval           = interval;
-
-   if (interval > 1)
-      RARCH_WARN("[KMS]: Swap intervals > 1 currently not supported. Will use swap interval of 1.\n");
-}
-
-static void gfx_ctx_drm_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height)
-{
-   (void)data;
-   (void)width;
-   (void)height;
-
-   *resize = false;
-   *quit   = (bool)frontend_driver_get_signal_handler_state();
-}
-
-#ifdef HAVE_ODROIDGO2
-static void gfx_ctx_drm_swap_buffers(void *data)
-{
-   gfx_ctx_drm_data_t        *drm = (gfx_ctx_drm_data_t*)data;
-
-   switch (drm_api)
-   {
-      case GFX_CTX_OPENGL_API:
-      case GFX_CTX_OPENGL_ES_API:
-      case GFX_CTX_OPENVG_API:
-#ifdef HAVE_EGL
-         go2_context_swap_buffers(drm->context);
-
-         go2_surface_t* surface = go2_context_surface_lock(drm->context);
-         go2_presenter_post(drm->presenter,
-                     surface,
-                     0, 0, 480, 320,
-                     0, 0, 320, 480,
-                     GO2_ROTATION_DEGREES_270, 2);
-         go2_context_surface_unlock(drm->context, surface);
-#endif
-         break;
-      default:
-         printf("unhandled gfx_ctx_drm_swap_buffers\n");
-         break;
-   }
-}
-#else
 static void gfx_ctx_drm_swap_buffers(void *data)
 {
    gfx_ctx_drm_data_t        *drm = (gfx_ctx_drm_data_t*)data;
@@ -309,6 +266,18 @@ static void gfx_ctx_drm_swap_buffers(void *data)
    gfx_ctx_drm_wait_flip(true);
 }
 
+static void gfx_ctx_drm_get_video_size(void *data,
+      unsigned *width, unsigned *height)
+{
+   gfx_ctx_drm_data_t *drm = (gfx_ctx_drm_data_t*)data;
+
+   if (!drm)
+      return;
+
+   *width  = drm->fb_width;
+   *height = drm->fb_height;
+}
+
 static void free_drm_resources(gfx_ctx_drm_data_t *drm)
 {
    if (!drm)
@@ -338,21 +307,7 @@ static void free_drm_resources(gfx_ctx_drm_data_t *drm)
    g_gbm_dev          = NULL;
    g_drm_fd           = -1;
 }
-#endif
 
-static void gfx_ctx_drm_get_video_size(void *data,
-      unsigned *width, unsigned *height)
-{
-   gfx_ctx_drm_data_t *drm = (gfx_ctx_drm_data_t*)data;
-
-   if (!drm)
-      return;
-
-   *width  = drm->fb_width;
-   *height = drm->fb_height;
-}
-
-#ifndef HAVE_ODROIDGO2
 static void gfx_ctx_drm_destroy_resources(gfx_ctx_drm_data_t *drm)
 {
    if (!drm)
@@ -387,17 +342,14 @@ static void gfx_ctx_drm_destroy_resources(gfx_ctx_drm_data_t *drm)
    g_bo                = NULL;
    g_next_bo           = NULL;
 }
-#endif
 
 static void *gfx_ctx_drm_init(void *video_driver)
 {
-#ifndef HAVE_ODROIDGO2
    int fd, i;
    unsigned monitor_index;
    unsigned gpu_index                   = 0;
    const char *gpu                      = NULL;
    struct string_list *gpu_descriptors  = NULL;
-#endif
    settings_t *settings                 = config_get_ptr();
    gfx_ctx_drm_data_t *drm              = (gfx_ctx_drm_data_t*)
       calloc(1, sizeof(gfx_ctx_drm_data_t));
@@ -405,8 +357,6 @@ static void *gfx_ctx_drm_init(void *video_driver)
 
    if (!drm)
       return NULL;
-
-#ifndef HAVE_ODROIDGO2
    drm->fd = -1;
 
    gpu_descriptors = dir_list_new("/dev/dri", NULL, false, true, false, false);
@@ -486,14 +436,8 @@ error:
       free(drm);
 
    return NULL;
-#else
-   drm->display   = go2_display_create();
-   drm->presenter = go2_presenter_create(drm->display, DRM_FORMAT_RGB565, 0xff000000, true);
-   return drm;
-#endif
 }
 
-#ifndef HAVE_ODROIDGO2
 static EGLint *gfx_ctx_drm_egl_fill_attribs(
       gfx_ctx_drm_data_t *drm, EGLint *attr)
 {
@@ -562,9 +506,7 @@ static EGLint *gfx_ctx_drm_egl_fill_attribs(
    *attr = EGL_NONE;
    return attr;
 }
-#endif
 
-#ifndef HAVE_ODROIDGO2
 #ifdef HAVE_EGL
 static bool gbm_choose_xrgb8888_cb(void *display_data, EGLDisplay dpy, EGLConfig config)
 {
@@ -587,8 +529,6 @@ static bool gbm_choose_xrgb8888_cb(void *display_data, EGLDisplay dpy, EGLConfig
 
    return id == GBM_FORMAT_XRGB8888;
 }
-#endif
-#endif
 
 #define DRM_EGL_ATTRIBS_BASE \
    EGL_SURFACE_TYPE,    EGL_WINDOW_BIT, \
@@ -598,7 +538,6 @@ static bool gbm_choose_xrgb8888_cb(void *display_data, EGLDisplay dpy, EGLConfig
    EGL_ALPHA_SIZE,      0, \
    EGL_DEPTH_SIZE,      0
 
-#ifndef HAVE_ODROIDGO2
 static bool gfx_ctx_drm_egl_set_video_mode(gfx_ctx_drm_data_t *drm)
 {
    const EGLint *attrib_ptr    = NULL;
@@ -705,11 +644,9 @@ static bool gfx_ctx_drm_set_video_mode(void *data,
       unsigned width, unsigned height,
       bool fullscreen)
 {
-#ifndef HAVE_ODROIDGO2
    float refresh_mod;
    int i, ret                  = 0;
    struct drm_fb *fb           = NULL;
-#endif
    gfx_ctx_drm_data_t *drm     = (gfx_ctx_drm_data_t*)data;
    settings_t *settings        = config_get_ptr();
    bool black_frame_insertion  = settings->bools.video_black_frame_insertion;
@@ -720,7 +657,6 @@ static bool gfx_ctx_drm_set_video_mode(void *data,
 
    frontend_driver_install_signal_handler();
 
-#ifndef HAVE_ODROIDGO2
    /* If we use black frame insertion,
     * we fake a 60 Hz monitor for 120 Hz one,
     * etc, so try to match that. */
@@ -777,13 +713,7 @@ static bool gfx_ctx_drm_set_video_mode(void *data,
          drm->fb_height,
          GBM_FORMAT_XRGB8888,
          GBM_BO_USE_SCANOUT | GBM_BO_USE_RENDERING);
-#else
-   /* Hardcoded odroidgo2 display resolution */
-   drm->fb_width    = 480;
-   drm->fb_height   = 320;
-#endif
 
-#ifndef HAVE_ODROIDGO2
    if (!g_gbm_surface)
    {
       RARCH_ERR("[KMS/EGL]: Couldn't create GBM surface.\n");
@@ -826,25 +756,6 @@ error:
       free(drm);
 
    return false;
-#else
-   go2_context_attributes_t attr;
-   attr.major = 3;
-   attr.minor = 2;
-   attr.red_bits = 8;
-   attr.green_bits = 8;
-   attr.blue_bits = 8;
-   attr.alpha_bits = 8;
-   attr.depth_bits = 0;
-   attr.stencil_bits = 0;
-
-   /* Hardcoded odroidgo2 display resolution */
-   drm->context = go2_context_create(drm->display, 480, 320, &attr);
-   go2_context_make_current(drm->context);
-
-   glClear(GL_COLOR_BUFFER_BIT);
-
-   return true;
-#endif
 }
 
 static void gfx_ctx_drm_destroy(void *data)
@@ -854,22 +765,8 @@ static void gfx_ctx_drm_destroy(void *data)
    if (!drm)
       return;
 
-#ifndef HAVE_ODROIDGO2
    gfx_ctx_drm_destroy_resources(drm);
    free(drm);
-#else
-   if (drm->context)
-   {
-      go2_context_destroy(drm->context);
-      drm->context = NULL;
-   }
-
-   go2_presenter_destroy(drm->presenter);
-   drm->presenter = NULL;
-
-   go2_display_destroy(drm->display);
-   drm->display = NULL;
-#endif
 }
 
 static void gfx_ctx_drm_input_driver(void *data,

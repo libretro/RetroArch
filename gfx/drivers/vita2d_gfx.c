@@ -579,7 +579,7 @@ static void vita2d_gfx_viewport_info(void *data,
        *vp = vita->vp;
 }
 
-static void vita_set_filtering(void *data, unsigned index, bool smooth)
+static void vita_set_filtering(void *data, unsigned index, bool smooth, bool ctx_scaling)
 {
    vita_video_t *vita = (vita_video_t *)data;
 
