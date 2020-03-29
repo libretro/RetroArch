@@ -6014,7 +6014,7 @@ error:
 
 /* TRANSLATION */
 #ifdef HAVE_TRANSLATE
-int g_ai_service_auto = 0;
+static int g_ai_service_auto = 0;
 
 int get_ai_service_auto(void)
 {
@@ -6286,9 +6286,10 @@ static void handle_translation_cb(
       i++;
    }
 
+   /*
    if (auto_string != NULL)
       RARCH_LOG("auto_string %s\n", auto_string);
-
+   */
    if (string_is_equal(error_string, "No text found."))
    {
 #ifdef DEBUG
@@ -7047,10 +7048,10 @@ static bool run_translation_service(bool paused)
       json_length = 11+out_length+1;
 
    {
-      state_son_length = 176;
+      state_son_length = 177;
       state_son = (char *) malloc(state_son_length);
 
-      memcpy(state_son, ", \"state\": {\"paused\": 0, \"a\": 0, \"b\": 0, \"select\": 0, \"start\": 0, \"up\": 0, \"down\": 0, \"left\": 0, \"right\": 0, \"x\": 0, \"y\": 0, \"l\": 0, \"r\":0, \"l2\": 0, \"r2\": 0, \"l3\":0, \"r3\": 0}", state_son_length*sizeof(uint8_t));
+      memcpy(state_son, ", \"state\": {\"paused\": 0, \"a\": 0, \"b\": 0, \"select\": 0, \"start\": 0, \"up\": 0, \"down\": 0, \"left\": 0, \"right\": 0, \"x\": 0, \"y\": 0, \"l\": 0, \"r\":0, \"l2\": 0, \"r2\": 0, \"l3\":0, \"r3\": 0}}", state_son_length*sizeof(uint8_t));
 
       if (paused)
          state_son[22] = '1';
