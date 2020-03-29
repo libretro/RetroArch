@@ -32,6 +32,7 @@
 
 #include "../input_driver.h"
 #include "../input_keymaps.h"
+#include "../../retroarch.h"
 
 #include "wiiu_dbg.h"
 
@@ -161,7 +162,7 @@ static int16_t wiiu_input_state(void *data,
                }
             }
 
-            return ret;
+            return ret|get_gamepad_input_override();
          }
          else
          {

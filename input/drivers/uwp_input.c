@@ -26,6 +26,7 @@
 #include <uwp/uwp_func.h>
 
 #include "../input_driver.h"
+#include "../../retroarch.h"
 
 // TODO: Add support for multiple mice and multiple touch
 
@@ -195,7 +196,7 @@ static int16_t uwp_input_state(void *data,
                }
             }
 
-            return ret;
+            return ret|get_gamepad_input_override();
          }
          else
          {

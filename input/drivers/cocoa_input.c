@@ -339,7 +339,7 @@ static int16_t cocoa_input_state(void *data,
                }
 #endif
             }
-            return ret;
+            return ret|get_gamepad_input_override();
          }
          else
          {

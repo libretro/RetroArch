@@ -1297,6 +1297,7 @@ static const void *hid_driver_find_handle(int idx);
 #ifdef HAVE_ACCESSIBILITY
 #ifdef HAVE_TRANSLATE
 static bool is_narrator_running(void);
+int ai_gamepad_state[16];
 #endif
 static bool accessibility_startup_message(void);
 #endif
@@ -3895,7 +3896,7 @@ static bool command_get_status(const char* arg)
 
        core_info_get_current_core(&core_info);
 
-	   if (runloop_paused)
+       if (runloop_paused)
           status                = "PAUSED";
        if (core_info)
           system_id             = core_info->system_id;
@@ -6156,6 +6157,7 @@ static void handle_translation_cb(
    char* error_string                = NULL;
    char* text_string                 = NULL;
    char* auto_string                 = NULL;
+   char* key_string                  = NULL;
    int curr_state                    = 0;
    settings_t* settings              = configuration_settings;
    bool was_paused                   = runloop_paused;
@@ -6237,6 +6239,12 @@ static void handle_translation_cb(
                strlcpy(auto_string, body_copy+start+1, i-start);
                curr_state = 0;
             }
+            else if (curr_state == 6)
+            {
+               key_string = (char*)malloc(i-start+1);
+               strlcpy(key_string, body_copy+start+1, i-start);
+               curr_state = 0;
+            }
             else if (string_is_equal(found_string, "image"))
             {
                curr_state = 1;
@@ -6260,6 +6268,11 @@ static void handle_translation_cb(
             else if (string_is_equal(found_string, "auto"))
             {
                curr_state = 5;
+               free(found_string);
+            }
+            else if (string_is_equal(found_string, "press"))
+            {
+               curr_state = 6;
                free(found_string);
             }
             else
@@ -6295,7 +6308,7 @@ static void handle_translation_cb(
 #endif
    }
 
-   if (!raw_image_file_data && !raw_sound_data && !text_string && get_ai_service_auto() != 2)
+   if (!raw_image_file_data && !raw_sound_data && !text_string && get_ai_service_auto() != 2 && !key_string)
    {
       error = "Invalid JSON body.";
       goto finish;
@@ -6528,6 +6541,76 @@ static void handle_translation_cb(
    }
 #endif
 
+   if (key_string)
+   {
+      int length = strlen(key_string);
+      int i = 0;
+      int start = 0;
+      char t = ' ';
+      char key[8];
+
+      for (i=1;i<length;i++)
+      {
+         t = key_string[i];
+         if (i == length-1 || t == ' ' || t == ',')
+         {
+            if (i == length-1 && t != ' ' && t!= ',')
+               i++;
+
+            if (i-start > 7)
+            {
+               start = i;
+               continue;
+            }
+            
+            strncpy(key, key_string+start, i-start);
+            key[i-start] = '\0';
+            if (string_is_equal(key, "b"))
+               ai_gamepad_state[0] = 2;
+            if (string_is_equal(key, "y"))
+               ai_gamepad_state[1] = 2;
+            if (string_is_equal(key, "select"))
+               ai_gamepad_state[2] = 2;
+            if (string_is_equal(key, "start"))
+               ai_gamepad_state[3] = 2;
+
+            if (string_is_equal(key, "up"))
+               ai_gamepad_state[4] = 2;
+            if (string_is_equal(key, "down"))
+               ai_gamepad_state[5] = 2;
+            if (string_is_equal(key, "left"))
+               ai_gamepad_state[6] = 2;
+            if (string_is_equal(key, "right"))
+               ai_gamepad_state[7] = 2;
+
+            if (string_is_equal(key, "a"))
+               ai_gamepad_state[8] = 2;
+            if (string_is_equal(key, "x"))
+               ai_gamepad_state[9] = 2;
+            if (string_is_equal(key, "l"))
+               ai_gamepad_state[10] = 2;
+            if (string_is_equal(key, "r"))
+               ai_gamepad_state[11] = 2;
+
+            if (string_is_equal(key, "l2"))
+               ai_gamepad_state[12] = 2;
+            if (string_is_equal(key, "r2"))
+               ai_gamepad_state[13] = 2;
+            if (string_is_equal(key, "l3"))
+               ai_gamepad_state[14] = 2;
+            if (string_is_equal(key, "r3"))
+               ai_gamepad_state[15] = 2;
+
+            if (string_is_equal(key, "pause"))
+               command_event(CMD_EVENT_PAUSE, NULL);
+            if (string_is_equal(key, "unpause"))
+               command_event(CMD_EVENT_UNPAUSE, NULL);
+
+            start = i+1;
+         }
+      }
+   }
+
 #ifdef HAVE_ACCESSIBILITY
    if (text_string && is_accessibility_enabled())
       accessibility_speak_priority(text_string, 10);
@@ -6570,6 +6653,10 @@ finish:
          call_auto_translate_task(&was_paused);
       }
    }
+   if (auto_string)
+      free(auto_string);
+   if (key_string)
+      free(key_string);
 }
 
 static const char *ai_service_get_str(enum translation_lang id)
@@ -6710,6 +6797,7 @@ static const char *ai_service_get_str(enum translation_lang id)
    return "";
 }
 
+
 /*
    This function does all the stuff needed to translate the game screen,
    using the URL given in the settings.  Once the image from the frame
@@ -6744,7 +6832,8 @@ static const char *ai_service_get_str(enum translation_lang id)
    the on-screen widgets.  To tell the ai service what the pause
    mode is honestly, we store the runloop_paused variable from before
    the handle_translation_cb wipes the widgets, and pass that in here.
-   */
+*/
+
 static bool run_translation_service(bool paused)
 {
    struct video_viewport vp;
@@ -6958,13 +7047,50 @@ static bool run_translation_service(bool paused)
       json_length = 11+out_length+1;
 
    {
-      state_son_length = 24;
+      state_son_length = 176;
       state_son = (char *) malloc(state_son_length);
 
-      memcpy(state_son, ", \"state\": {\"paused\": 0}", state_son_length*sizeof(uint8_t));
+      memcpy(state_son, ", \"state\": {\"paused\": 0, \"a\": 0, \"b\": 0, \"select\": 0, \"start\": 0, \"up\": 0, \"down\": 0, \"left\": 0, \"right\": 0, \"x\": 0, \"y\": 0, \"l\": 0, \"r\":0, \"l2\": 0, \"r2\": 0, \"l3\":0, \"r3\": 0}", state_son_length*sizeof(uint8_t));
 
       if (paused)
          state_son[22] = '1';
+
+      if (ai_gamepad_state[8])//a
+         state_son[30] = '1';
+      if (ai_gamepad_state[0])//b
+         state_son[38] = '1';
+      if (ai_gamepad_state[2])//select
+         state_son[51] = '1';
+      if (ai_gamepad_state[3])//start
+         state_son[63] = '1';
+
+      if (ai_gamepad_state[4])//up
+         state_son[72] = '1';
+      if (ai_gamepad_state[5])//down
+         state_son[83] = '1';
+      if (ai_gamepad_state[6])//left
+         state_son[94] = '1';
+      if (ai_gamepad_state[7])//right
+         state_son[106] = '1';
+
+      if (ai_gamepad_state[9])//x
+         state_son[114] = '1';
+      if (ai_gamepad_state[1])//y
+         state_son[122] = '1';
+      if (ai_gamepad_state[10])//l
+         state_son[130] = '1';
+      if (ai_gamepad_state[11])//r
+         state_son[138] = '1';
+
+      if (ai_gamepad_state[12])//l2
+         state_son[147] = '1';
+      if (ai_gamepad_state[13])//r2
+         state_son[156] = '1';
+      if (ai_gamepad_state[14])//l3
+         state_son[165] = '1';
+      if (ai_gamepad_state[15])//r3
+         state_son[174] = '1';
+
       json_length+=state_son_length;
    }
 
@@ -26094,7 +26220,6 @@ static int16_t input_state_with_logging(unsigned port,
       int16_t last_input = input_state_get_last(port, device, index, id);
       if (result != last_input)
          input_is_dirty  = true;
-
       /*arbitrary limit of up to 65536 elements in state array*/
       if (id < 65536)
          input_state_set_last(port, device, index, id, result);
@@ -26120,7 +26245,7 @@ static bool unserialize_hook(const void *buf, size_t size)
 }
 
 static void add_input_state_hook(void)
-{
+{  
    if (!input_state_callback_original)
    {
       input_state_callback_original = retro_ctx.state_cb;
@@ -29336,7 +29461,35 @@ static enum runloop_state runloop_check_state(retro_time_t current_time)
    }
    else
 #endif
+   {
       input_keys_pressed(&current_bits, &joypad_info);
+
+#ifdef HAVE_TRANSLATE
+      reset_gamepad_input_override();
+
+/* aaaa */
+      if (ai_gamepad_state[0] == 2)/* UP */
+         set_gamepad_input_override(0, true);
+      if (ai_gamepad_state[1] == 2)/* DOWN */
+         set_gamepad_input_override(1, true);      
+      if (ai_gamepad_state[2] == 2)/* LEFT */
+         set_gamepad_input_override(2, true);      
+      if (ai_gamepad_state[3] == 2)/* RIGHT */
+         set_gamepad_input_override(3, true);
+        
+      if (ai_gamepad_state[4] == 2)/* A */
+         set_gamepad_input_override(4, true);
+      if (ai_gamepad_state[5] == 2)/* B */
+         set_gamepad_input_override(5, true);
+      if (ai_gamepad_state[6] == 2)/* SELECT */
+         set_gamepad_input_override(6, true);
+      if (ai_gamepad_state[7] == 2)/* START */
+         set_gamepad_input_override(7, true);
+
+      for (int i=0;i<16;i++)
+         ai_gamepad_state[i] = 0;      
+#endif
+   }
 
 #ifdef HAVE_MENU
    last_input                       = current_bits;
@@ -30022,6 +30175,35 @@ static enum runloop_state runloop_check_state(retro_time_t current_time)
          RARCH_CHEAT_INDEX_MINUS, CMD_EVENT_CHEAT_INDEX_MINUS,
          RARCH_CHEAT_TOGGLE,      CMD_EVENT_CHEAT_TOGGLE);
 
+#ifdef HAVE_TRANSLATE
+   /* Copy over the retropad state to a buffer for the translate service
+      to send off if it's run. */
+   
+   ai_gamepad_state[0] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_B);
+   ai_gamepad_state[1] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_Y);
+   ai_gamepad_state[2] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_SELECT);
+   ai_gamepad_state[3] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_START);
+
+   ai_gamepad_state[4] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_UP);
+   ai_gamepad_state[5] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_DOWN);
+   ai_gamepad_state[6] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_LEFT);
+   ai_gamepad_state[7] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_RIGHT);
+
+   ai_gamepad_state[8] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_A);
+   ai_gamepad_state[9] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_X);
+   ai_gamepad_state[10] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_L);
+   ai_gamepad_state[11] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_R);
+
+   ai_gamepad_state[12] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_L2);
+   ai_gamepad_state[13] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_R2);
+   ai_gamepad_state[14] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_L3);
+   ai_gamepad_state[15] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_R3);
+
+
+
+
+#endif
+
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    if (settings->bools.video_shader_watch_files)
    {
@@ -30495,8 +30677,8 @@ static int16_t core_input_state_poll_late(unsigned port,
 {
    if (!current_core.input_polled)
       input_driver_poll();
-
    current_core.input_polled = true;
+   
    return input_state(port, device, idx, id);
 }
 
@@ -30928,4 +31110,27 @@ static bool accessibility_startup_message(void)
          10);
    return true;
 }
+
+
+static uint16_t gamepad_input_override = 0;
+
+uint16_t get_gamepad_input_override(void)
+{
+   return gamepad_input_override;
+}
+
+void set_gamepad_input_override(unsigned i, bool val)
+{
+   if (val)
+      gamepad_input_override = gamepad_input_override | (1<<i);
+   else
+      gamepad_input_override = gamepad_input_override & (65535 <<i);
+}
+
+void reset_gamepad_input_override(void)
+{
+    gamepad_input_override = 0;
+}
+
+
 #endif

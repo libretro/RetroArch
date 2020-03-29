@@ -27,6 +27,7 @@
 #include <retro_miscellaneous.h>
 
 #include "../input_driver.h"
+#include "../../retroarch.h"
 
 typedef struct ps2_input
 {
@@ -78,7 +79,7 @@ static int16_t ps2_input_state(void *data,
                }
             }
 
-            return ret;
+            return ret|get_gamepad_input_override();
          }
          else
          {

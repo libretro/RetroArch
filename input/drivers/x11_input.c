@@ -321,8 +321,8 @@ static int16_t x_input_state(void *data,
                   continue;
                }
             }
-
-            return ret;
+            
+            return ret|get_gamepad_input_override();
          }
          else
          {

@@ -721,7 +721,7 @@ static int16_t winraw_input_state(void *d,
                }
             }
 
-            return ret;
+            return ret|get_gamepad_input_override();
          }
          else
          {

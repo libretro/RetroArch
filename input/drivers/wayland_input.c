@@ -322,7 +322,7 @@ static int16_t input_wl_state(void *data,
                }
             }
 
-            return ret;
+            return ret|get_gamepad_input_override();
          }
          else
          {

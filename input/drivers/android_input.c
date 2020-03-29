@@ -1501,7 +1501,7 @@ static int16_t android_input_state(void *data,
                if (android_keyboard_port_input_pressed(binds[port], i))
                   ret |= (1 << i);
             }
-            return ret;
+            return ret|get_gamepad_input_override();
          }
          else
          {

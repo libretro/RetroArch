@@ -244,7 +244,7 @@ static int16_t sdl_input_state(void *data,
                }
             }
 
-            return ret;
+            return ret|get_gamepad_input_override();
          }
          else
          {

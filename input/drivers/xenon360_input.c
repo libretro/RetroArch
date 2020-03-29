@@ -26,6 +26,7 @@
 #include "../../config.def.h"
 
 #include "../input_driver.h"
+#include "../../retorarch.h"
 
 /* TODO/FIXME -
  * fix game focus toggle */
@@ -83,7 +84,7 @@ static int16_t xenon360_input_state(void *data,
                   ret |= (1 << i);
             }
 
-            return ret;
+            return ret|get_gamepad_input_override();
          }
          else
             if (state[port] & binds[port][id].joykey)

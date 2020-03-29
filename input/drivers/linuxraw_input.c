@@ -31,6 +31,7 @@
 
 #include "../input_keymaps.h"
 #include "../input_driver.h"
+#include "../../retroarch.h"
 
 /* TODO/FIXME -
  * fix game focus toggle */
@@ -151,7 +152,7 @@ static int16_t linuxraw_input_state(void *data,
                }
             }
 
-            return ret;
+            return ret|get_gamepad_input_override();
          }
          else
          {
