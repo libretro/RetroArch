@@ -4316,14 +4316,17 @@ MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
     "Bilinear Filtering"
     )
+#ifdef HAVE_ODROIDGO2
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_CTX_SCALING,
-#ifdef HAVE_ODROIDGO2
     "RGA Scaling"
-#else
-    "Context Specific Scaling"
-#endif
     )
+#else
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_CTX_SCALING,
+    "Context Specific Scaling"
+    )
+#endif
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_SOFT_FILTER,
     "Soft Filter"
@@ -6087,14 +6090,17 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
     "Adds a slight blur to the image to take the edge off of the hard pixel edges. This option has very little impact on performance."
     )
+#ifdef HAVE_ODROIDGO2
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_CTX_SCALING,
-#ifdef HAVE_ODROIDGO2
     "RGA scaling and bicubic filtering. May break widgets."
-#else
-    "Hardware context scaling (if available)."
-#endif
     )
+#else
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_CTX_SCALING,
+    "Hardware context scaling (if available)."
+    )
+#endif
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_FILTER,
     "Apply a CPU-powered video filter.\n"
