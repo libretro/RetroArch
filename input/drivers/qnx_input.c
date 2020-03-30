@@ -135,7 +135,6 @@ static void qnx_process_gamepad_event(
    int i;
    screen_device_t device;
    qnx_input_device_t* controller = NULL;
-   uint64_t *state_cur            = NULL;
 
    (void)type;
 
@@ -596,7 +595,6 @@ static void qnx_handle_screen_event(qnx_input_t *qnx, bps_event_t *event)
 static void qnx_handle_navigator_event(
       qnx_input_t *qnx, bps_event_t *event)
 {
-   navigator_window_state_t state;
    bps_event_t *event_pause = NULL;
 
    switch (bps_event_get_code(event))
@@ -652,9 +650,6 @@ static void qnx_handle_navigator_event(
 
    return;
 
-   togglemenu:
-       command_event(CMD_EVENT_MENU_TOGGLE, NULL);
-       return;
    shutdown:
        rarch_ctl(RARCH_CTL_SET_SHUTDOWN, NULL);
        return;
@@ -808,7 +803,7 @@ static int16_t qnx_input_state(void *data,
             for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
             {
                if (qnx_is_pressed(
-                        qnx, joypad_info, port, binds[port], i))
+                        qnx, joypad_info, binds[port], port, i))
                {
                   ret |= (1 << i);
                   continue;
@@ -818,7 +813,7 @@ static int16_t qnx_input_state(void *data,
             return ret;
          }
          else
-            if (qnx_is_pressed(qnx, joypad_info, port, binds[port], id))
+            if (qnx_is_pressed(qnx, joypad_info, binds[port], port, id))
                return true;
          break;
       case RETRO_DEVICE_KEYBOARD:
