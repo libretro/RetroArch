@@ -17,8 +17,6 @@
 #ifndef _PS3_DEFINES_H
 #define _PS3_DEFINES_H
 
-#include <sdk_version.h>
-
 /*============================================================
 	AUDIO PROTOTYPES
 ============================================================ */
@@ -71,6 +69,7 @@ extern int audioAddData(uint32_t portNum, float *data, uint32_t frames, float vo
 #define sys_semaphore_t sys_sem_t
 
 #else
+#include <sdk_version.h>
 #include <cell/audio.h>
 #include <sys/event.h>
 #include <sys/synchronization.h>
@@ -330,6 +329,11 @@ extern int audioAddData(uint32_t portNum, float *data, uint32_t frames, float vo
 #define sys_ppu_thread_join sysThreadJoin
 #define sys_ppu_thread_exit sysThreadExit
 
+#define sys_process_exit sysProcessExit
+#define sys_game_process_exitspawn sysProcessExitSpawn2
+
+#define SYS_PROCESS_PRIMARY_STACK_SIZE_1M SYS_PROCESS_SPAWN_STACK_SIZE_1M
+
 #define SYS_PPU_THREAD_CREATE_JOINABLE 0 /* FIXME - not sure if this is correct */
 #elif defined(__CELLOS_LV2__)
 #include <sys/ppu_thread.h>
@@ -572,6 +576,7 @@ extern int audioAddData(uint32_t portNum, float *data, uint32_t frames, float vo
 #define socketclose close
 
 #define sys_net_initialize_network netInitialize
+#define sys_net_finalize_network netFinalizeNetwork
 #else
 #include <netex/net.h>
 #include <np.h>

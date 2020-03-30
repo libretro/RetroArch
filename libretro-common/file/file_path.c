@@ -85,7 +85,7 @@
 #include <fileXio.h>
 #endif
 
-#if defined(__CELLOS_LV2__)
+#if defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
 #include <cell/cell_fs.h>
 #endif
 
