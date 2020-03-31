@@ -29464,31 +29464,15 @@ static enum runloop_state runloop_check_state(retro_time_t current_time)
 #endif
    {
       input_keys_pressed(&current_bits, &joypad_info);
-
 #ifdef HAVE_TRANSLATE
       reset_gamepad_input_override();
 
-/* aaaa */
-      if (ai_gamepad_state[0] == 2)/* UP */
-         set_gamepad_input_override(0, true);
-      if (ai_gamepad_state[1] == 2)/* DOWN */
-         set_gamepad_input_override(1, true);      
-      if (ai_gamepad_state[2] == 2)/* LEFT */
-         set_gamepad_input_override(2, true);      
-      if (ai_gamepad_state[3] == 2)/* RIGHT */
-         set_gamepad_input_override(3, true);
-        
-      if (ai_gamepad_state[4] == 2)/* A */
-         set_gamepad_input_override(4, true);
-      if (ai_gamepad_state[5] == 2)/* B */
-         set_gamepad_input_override(5, true);
-      if (ai_gamepad_state[6] == 2)/* SELECT */
-         set_gamepad_input_override(6, true);
-      if (ai_gamepad_state[7] == 2)/* START */
-         set_gamepad_input_override(7, true);
-
       for (int i=0;i<16;i++)
-         ai_gamepad_state[i] = 0;      
+      {
+         if (ai_gamepad_state[i] == 2)
+            set_gamepad_input_override(i, true);
+         ai_gamepad_state[i] = 0;
+      }      
 #endif
    }
 
@@ -29977,7 +29961,31 @@ static enum runloop_state runloop_check_state(retro_time_t current_time)
       }
    }
 
-   if (!focused)
+#ifdef HAVE_TRANSLATE
+   /* Copy over the retropad state to a buffer for the translate service
+      to send off if it's run. */
+   ai_gamepad_state[0] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_B);
+   ai_gamepad_state[1] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_Y);
+   ai_gamepad_state[2] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_SELECT);
+   ai_gamepad_state[3] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_START);
+
+   ai_gamepad_state[4] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_UP);
+   ai_gamepad_state[5] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_DOWN);
+   ai_gamepad_state[6] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_LEFT);
+   ai_gamepad_state[7] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_RIGHT);
+
+   ai_gamepad_state[8] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_A);
+   ai_gamepad_state[9] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_X);
+   ai_gamepad_state[10] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_L);
+   ai_gamepad_state[11] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_R);
+
+   ai_gamepad_state[12] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_L2);
+   ai_gamepad_state[13] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_R2);
+   ai_gamepad_state[14] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_L3);
+   ai_gamepad_state[15] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_R3);
+#endif
+
+  if (!focused)
    {
       retro_ctx.poll_cb();
       return RUNLOOP_STATE_POLLED_AND_SLEEP;
@@ -30176,34 +30184,6 @@ static enum runloop_state runloop_check_state(retro_time_t current_time)
          RARCH_CHEAT_INDEX_MINUS, CMD_EVENT_CHEAT_INDEX_MINUS,
          RARCH_CHEAT_TOGGLE,      CMD_EVENT_CHEAT_TOGGLE);
 
-#ifdef HAVE_TRANSLATE
-   /* Copy over the retropad state to a buffer for the translate service
-      to send off if it's run. */
-   
-   ai_gamepad_state[0] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_B);
-   ai_gamepad_state[1] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_Y);
-   ai_gamepad_state[2] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_SELECT);
-   ai_gamepad_state[3] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_START);
-
-   ai_gamepad_state[4] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_UP);
-   ai_gamepad_state[5] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_DOWN);
-   ai_gamepad_state[6] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_LEFT);
-   ai_gamepad_state[7] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_RIGHT);
-
-   ai_gamepad_state[8] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_A);
-   ai_gamepad_state[9] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_X);
-   ai_gamepad_state[10] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_L);
-   ai_gamepad_state[11] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_R);
-
-   ai_gamepad_state[12] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_L2);
-   ai_gamepad_state[13] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_R2);
-   ai_gamepad_state[14] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_L3);
-   ai_gamepad_state[15] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_R3);
-
-
-
-
-#endif
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    if (settings->bools.video_shader_watch_files)
