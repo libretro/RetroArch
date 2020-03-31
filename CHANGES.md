@@ -1,5 +1,6 @@
 # Future
 - AUTOCONFIG: Use correct port index in input device configured/disconnected notifications
+- CHD: Fixes a crash caused by ignoring the return value from one of the CHD library functions.
 - MENU: Prevent font-related segfaults when using extremely small scales/window sizes
 - MENU: Fix 'gfx_display_draw_texture_slice()'
 - MENU/OZONE: Update timedate style options for Last Played sublabel metadata
