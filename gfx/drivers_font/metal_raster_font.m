@@ -350,15 +350,18 @@ static INLINE void write_quad6(SpriteVertex *pv,
                  posY:(float)posY
               aligned:(unsigned)aligned
 {
-   /* If the font height is not supported just draw as usual */
-   if (!_font_driver->get_line_height)
+   struct font_line_metrics *line_metrics = NULL;
+
+   /* If font line metrics are not supported just draw as usual */
+   if (!_font_driver->get_line_metrics ||
+       !_font_driver->get_line_metrics(_font_data, &line_metrics))
    {
       [self _renderLine:msg length:strlen(msg) scale:scale color:color posX:posX posY:posY aligned:aligned];
       return;
    }
 
    int lines = 0;
-   float line_height = _font_driver->get_line_height(_font_data) * scale / height;
+   float line_height = line_metrics->height * scale / height;
 
    for (;;)
    {
@@ -545,5 +548,6 @@ font_renderer_t metal_raster_font = {
    .get_glyph         = metal_raster_font_get_glyph,
    NULL, /* bind_block  */
    NULL, /* flush_block */
-   .get_message_width = metal_get_message_width
+   .get_message_width = metal_get_message_width,
+   NULL  /* get_line_metrics */
 };

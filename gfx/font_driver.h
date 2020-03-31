@@ -81,6 +81,13 @@ struct font_params
    enum text_alignment text_align;
 };
 
+struct font_line_metrics
+{
+   float height;
+   float ascender;
+   float descender;
+};
+
 typedef struct font_renderer
 {
    void *(*init)(void *data, const char *font_path,
@@ -96,7 +103,7 @@ typedef struct font_renderer
    void (*flush)(unsigned width, unsigned height, void *data);
 
    int (*get_message_width)(void *data, const char *msg, unsigned msg_len_full, float scale);
-   int (*get_line_height)(void* data);
+   bool (*get_line_metrics)(void* data, struct font_line_metrics **metrics);
 } font_renderer_t;
 
 typedef struct font_renderer_driver
@@ -114,7 +121,7 @@ typedef struct font_renderer_driver
 
    const char *ident;
 
-   int (*get_line_height)(void* data);
+   bool (*get_line_metrics)(void* data, struct font_line_metrics **metrics);
 } font_renderer_driver_t;
 
 typedef struct
@@ -159,6 +166,9 @@ void font_driver_init_osd(
 void font_driver_free_osd(void);
 
 int font_driver_get_line_height(void *font_data, float scale);
+int font_driver_get_line_ascender(void *font_data, float scale);
+int font_driver_get_line_descender(void *font_data, float scale);
+int font_driver_get_line_centre_offset(void *font_data, float scale);
 
 extern font_renderer_t gl_raster_font;
 extern font_renderer_t gl_core_raster_font;
