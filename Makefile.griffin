@@ -75,14 +75,21 @@ ifeq ($(WHOLE_ARCHIVE_LINK), 1)
    WHOLE_END       := -Wl,--no-whole-archive
 endif
 
+STATIC_BUILD = 1
 ifneq (,$(findstring msvc,$(platform)))
-   LIBS               := $(WHOLE_START) $(WHOLE_END)
-else
+   STATIC_BUILD = 0
+endif
 ifneq (,$(findstring unix,$(platform)))
+   STATIC_BUILD = 0
+endif
+ifeq (qnx, $(platform))
+   STATIC_BUILD = 0
+endif
+
+ifeq ($(STATIC_BUILD), 0)
    LIBS               := $(WHOLE_START) $(WHOLE_END)
 else
    LIBS               := $(WHOLE_START) -lretro_$(platform) $(WHOLE_END)
-endif
 endif
 
 libogc_platform    :=
@@ -791,6 +798,44 @@ else ifneq (,$(findstring windows_msvc2015,$(platform)))
       export INCLUDE := $(INCLUDE);libretro-common\include;libretro-common\include\compat\msvc;gfx\include;deps;deps\stb
       export LIB := $(LIB)
    endif
+else ifeq (qnx,$(platform))
+   HAVE_AUDIOMIXER          := 1
+   HAVE_RPNG                := 1
+   HAVE_RJPEG               := 1
+   HAVE_RBMP                := 1
+   HAVE_RTGA                := 1
+   HAVE_ZLIB                := 1
+   HAVE_7ZIP                := 1
+   HAVE_NETWORKING          := 1
+   HAVE_NETWORK_CMD         := 1
+   HAVE_NETPLAYDISCOVERY    := 1
+   HAVE_OVERLAY             := 1
+   HAVE_VIDEO_LAYOUT        := 0
+   HAVE_MATERIALUI          := 1
+   HAVE_XMB                 := 1
+   HAVE_STB_FONT            := 1
+   HAVE_THREADS             := 1
+   HAVE_LIBRETRODB          := 1
+   HAVE_COMMAND             := 1
+   HAVE_STDIN_CMD           := 1
+   HAVE_CMD                 := 1
+   HAVE_DYLIB               := 1
+   HAVE_DYNAMIC             := 1
+   HAVE_GRIFFIN_CPP         := 0
+   WANT_GLSLANG             := 0
+	HAVE_CONFIGFILE          := 1
+   CC=qcc -Vgcc_ntoarmv7le
+   CXX=QCC -Vgcc_ntoarmv7le
+
+   ifeq ($(DEBUG), 1)
+      LDFLAGS += -g
+   endif
+
+   PLATCFLAGS += -DHAVE_SHADERPIPELINE -DHAVE_OPENGL -DHAVE_OPENGLES -DHAVE_OPENGLES2 -DHAVE_OZONE -DHAVE_CC_RESAMPLER -DHAVE_CHEEVOS -DRC_DISABLE_LUA -DHAVE_FBO -DHAVE_GL_SYNC -DHAVE_GLSLANG -DHAVE_BUILTINGLSLANG -DHAVE_IMAGEVIEWER -DHAVE_LANGEXTRA -DHAVE_RUNAHEAD -DHAVE_GFX_WIDGETS -DHAVE_CONFIGFILE -DHAVE_SPIRV_CROSS -DHAVE_STB_FONT -DHAVE_ONLINE_UPDATER -DHAVE_UPDATE_ASSETS -DHAVE_UPDATE_CORES -DHAVE_XMB -DRARCH_INTERNAL -DWANT_GLSLANG -DHAVE_XCB -DHAVE_EGL -DHAVE_BB10 -DHAVE_GLSL -DHAVE_AL -DRARCH_MOBILE
+   EXT_TARGET := $(TARGET_NAME)
+   EXT_INTER_TARGET := $(TARGET_NAME)
+   INCLUDE += -Ilibretro-common/include -Igfx/include -Ideps -Ideps/stb -Ideps/rcheevos/include -Ideps/SPIRV-Cross -Ideps/glslang -I.
+   LIBS += -lEGL -lbps -lscreen -lsocket -lm -lGLESv2 -lOpenAL
 else ifneq (,$(findstring unix,$(platform)))
    HAVE_AUDIOMIXER          := 1
    HAVE_RPNG                := 1
