@@ -306,18 +306,35 @@ static void qnx_handle_device(qnx_input_t *qnx,
 }
 
 /* Find currently connected gamepads. */
-static void qnx_discover_controllers(qnx_input_t *qnx)
+static int qnx_discover_controllers(qnx_input_t *qnx)
 {
    /* Get an array of all available devices. */
-   int deviceCount;
+   int deviceCount = 0;
+   int ret;
    unsigned i;
 
-   screen_get_context_property_iv(screen_ctx,
+   ret = screen_get_context_property_iv(screen_ctx,
          SCREEN_PROPERTY_DEVICE_COUNT, &deviceCount);
+   if (ret < 0) {
+     RARCH_ERR("Error querying SCREEN_PROPERTY_DEVICE_COUNT: [%d] %s\n",
+	       errno, strerror(errno));
+     return false;
+   }
    screen_device_t* devices_found = (screen_device_t*)
       calloc(deviceCount, sizeof(screen_device_t));
-   screen_get_context_property_pv(screen_ctx,
+   if (!devices_found) {
+     RARCH_ERR("Error allocating devices_found, deviceCount=%d\n",
+	       deviceCount);
+     return false;
+   }
+
+   ret = screen_get_context_property_pv(screen_ctx,
          SCREEN_PROPERTY_DEVICES, (void**)devices_found);
+   if (ret < 0) {
+     RARCH_ERR("Error querying SCREEN_PROPERTY_DEVICES: [%d] %s\n",
+	       errno, strerror(errno));
+     return false;
+   }
 
    /* Scan the list for gamepad and joystick devices. */
    for(i = 0; i < qnx->pads_connected; ++i)
@@ -347,6 +364,8 @@ static void qnx_discover_controllers(qnx_input_t *qnx)
    }
 
    free(devices_found);
+
+   return true;
 }
 #endif
 
