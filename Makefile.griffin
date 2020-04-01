@@ -1141,12 +1141,29 @@ $(APP_BOOTER_DIR)/app_booter.bin:
 	$(MAKE) -C $(APP_BOOTER_DIR)
 
 pkg: all
-ifeq ($(platform), wii)
+ifeq ($(platform), qnx)
+	mkdir -p pkg/qnx/pkg
+	cp -r $(EXT_TARGET) pkg/qnx/pkg/RetroArch
+	cp -r media/canvas.png pkg/qnx/pkg/canvas.png
+	cp -r media/retroarch-96x96.png pkg/qnx/pkg/retroarch-96x96.png
+else ifeq ($(platform), wii)
 	cp -r $(EXT_TARGET) pkg/wii/CORE.dol
 else ifeq ($(platform), ngc)
 	cp -r $(EXT_TARGET) pkg/ngc/CORE.dol
 else ifeq ($(platform), psp1)
 	psp-fixup-imports$(EXT) $(EXT_TARGET)
+endif
+
+ifeq ($(platform), qnx)
+retroarch-dev.bar: pkg
+ifeq ($(QNX_DEBUGTOKEN),)
+	blackberry-nativepackager -package $@ -devMode pkg/qnx/bar-descriptor.xml -C  pkg/qnx/pkg pkg/qnx/pkg/*
+else
+	blackberry-nativepackager -package $@ -devMode -debugToken $(QNX_DEBUGTOKEN) pkg/qnx/bar-descriptor.xml -C  pkg/qnx/pkg pkg/qnx/pkg/*
+endif
+
+retroarch-release.bar: pkg
+	blackberry-nativepackager -package $@ pkg/qnx/bar-descriptor.xml -C  pkg/qnx/pkg pkg/qnx/pkg/*
 endif
 
 shaders-checkout:
