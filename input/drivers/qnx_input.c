@@ -135,7 +135,6 @@ static void qnx_process_gamepad_event(
    int i;
    screen_device_t device;
    qnx_input_device_t* controller = NULL;
-   uint64_t *state_cur            = NULL;
 
    (void)type;
 
@@ -307,18 +306,35 @@ static void qnx_handle_device(qnx_input_t *qnx,
 }
 
 /* Find currently connected gamepads. */
-static void qnx_discover_controllers(qnx_input_t *qnx)
+static int qnx_discover_controllers(qnx_input_t *qnx)
 {
    /* Get an array of all available devices. */
-   int deviceCount;
+   int deviceCount = 0;
+   int ret;
    unsigned i;
 
-   screen_get_context_property_iv(screen_ctx,
+   ret = screen_get_context_property_iv(screen_ctx,
          SCREEN_PROPERTY_DEVICE_COUNT, &deviceCount);
+   if (ret < 0) {
+     RARCH_ERR("Error querying SCREEN_PROPERTY_DEVICE_COUNT: [%d] %s\n",
+	       errno, strerror(errno));
+     return false;
+   }
    screen_device_t* devices_found = (screen_device_t*)
       calloc(deviceCount, sizeof(screen_device_t));
-   screen_get_context_property_pv(screen_ctx,
+   if (!devices_found) {
+     RARCH_ERR("Error allocating devices_found, deviceCount=%d\n",
+	       deviceCount);
+     return false;
+   }
+
+   ret = screen_get_context_property_pv(screen_ctx,
          SCREEN_PROPERTY_DEVICES, (void**)devices_found);
+   if (ret < 0) {
+     RARCH_ERR("Error querying SCREEN_PROPERTY_DEVICES: [%d] %s\n",
+	       errno, strerror(errno));
+     return false;
+   }
 
    /* Scan the list for gamepad and joystick devices. */
    for(i = 0; i < qnx->pads_connected; ++i)
@@ -348,6 +364,8 @@ static void qnx_discover_controllers(qnx_input_t *qnx)
    }
 
    free(devices_found);
+
+   return true;
 }
 #endif
 
@@ -596,7 +614,6 @@ static void qnx_handle_screen_event(qnx_input_t *qnx, bps_event_t *event)
 static void qnx_handle_navigator_event(
       qnx_input_t *qnx, bps_event_t *event)
 {
-   navigator_window_state_t state;
    bps_event_t *event_pause = NULL;
 
    switch (bps_event_get_code(event))
@@ -652,9 +669,6 @@ static void qnx_handle_navigator_event(
 
    return;
 
-   togglemenu:
-       command_event(CMD_EVENT_MENU_TOGGLE, NULL);
-       return;
    shutdown:
        rarch_ctl(RARCH_CTL_SET_SHUTDOWN, NULL);
        return;
@@ -808,7 +822,7 @@ static int16_t qnx_input_state(void *data,
             for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
             {
                if (qnx_is_pressed(
-                        qnx, joypad_info, port, binds[port], i))
+                        qnx, joypad_info, binds[port], port, i))
                {
                   ret |= (1 << i);
                   continue;
@@ -818,9 +832,14 @@ static int16_t qnx_input_state(void *data,
             return ret;
          }
          else
-            if (qnx_is_pressed(qnx, joypad_info, port, binds[port], id))
+            if (qnx_is_pressed(qnx, joypad_info, binds[port], port, id))
                return true;
          break;
+      case RETRO_DEVICE_ANALOG:
+	if (binds[port])
+            return input_joypad_analog(qnx->joypad, joypad_info,
+                  port, idx, id, binds[port]);
+	 return 0;
       case RETRO_DEVICE_KEYBOARD:
          return qnx_keyboard_pressed(qnx, id);
       case RETRO_DEVICE_POINTER:
