@@ -3,6 +3,7 @@
 - CHD: Fixes a crash caused by ignoring the return value from one of the CHD library functions.
 - MENU: Prevent font-related segfaults when using extremely small scales/window sizes
 - MENU: Fix 'gfx_display_draw_texture_slice()'
+- MENU/FONT: Enable correct vertical alignment of text (+ font rendering fixes)
 - MENU/OZONE: Update timedate style options for Last Played sublabel metadata
 - MENU/OZONE: Hide 'Menu Color Theme' setting when 'Use preferred system color theme' is enabled
 - MENU/OZONE: Fix thumbnail switching via 'scan' button functionality
