@@ -165,4 +165,5 @@ font_renderer_t ps2_font = {
    NULL,                      /* bind_block */
    NULL,                      /* flush */
    NULL,                      /* get_message_width */
+   NULL                       /* get_line_metrics */
 };

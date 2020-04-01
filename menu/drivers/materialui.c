@@ -1194,8 +1194,10 @@ typedef struct
 {
    font_data_t *font;
    video_font_raster_block_t raster_block;
-   int font_height;
    unsigned glyph_width;
+   int line_height;
+   int line_ascender;
+   int line_centre_offset;
 } materialui_font_data_t;
 
 #define MUI_BATTERY_PERCENT_MAX_LENGTH 12
@@ -1273,6 +1275,8 @@ typedef struct materialui_handle
    unsigned sys_bar_margin;
    unsigned landscape_entry_margin;
    unsigned entry_divider_width;
+   unsigned sublabel_gap;
+   unsigned sublabel_padding;
 
    /* Navigation bar parameters
     * Note: layout width and height are convenience
@@ -1928,7 +1932,7 @@ static void materialui_render_messagebox(materialui_handle_t *mui,
 
    /* Get coordinates of message box centre */
    x = video_width / 2;
-   y = (int)(y_centre - (list->size - 1) * (mui->font_data.list.font_height / 2));
+   y = (int)(y_centre - (list->size * mui->font_data.list.line_height) / 2);
 
    /* TODO/FIXME: Reduce text scale if width or height
     * are too large to fit on screen */
@@ -1960,9 +1964,9 @@ static void materialui_render_messagebox(materialui_handle_t *mui,
          video_width,
          video_height,
          x - longest_width / 2.0 - mui->margin * 2.0,
-         y -  mui->font_data.list.font_height / 2.0 -  mui->margin * 2.0,
+         y - mui->margin * 2.0,
          longest_width + mui->margin * 4.0,
-         mui->font_data.list.font_height * list->size + mui->margin * 4.0,
+         mui->font_data.list.line_height * list->size + mui->margin * 4.0,
          video_width,
          video_height,
          mui->colors.surface_background);
@@ -1976,8 +1980,7 @@ static void materialui_render_messagebox(materialui_handle_t *mui,
          gfx_display_draw_text(
                mui->font_data.list.font, line,
                x - longest_width/2.0,
-               y + i *  mui->font_data.list.font_height 
-               + mui->font_data.list.font_height / 3,
+               y + (i * mui->font_data.list.line_height) + mui->font_data.list.line_ascender,
                video_width, video_height, mui->colors.list_text,
                TEXT_ALIGN_LEFT, 1.0f, false, 0, true);
    }
@@ -2061,7 +2064,7 @@ static void materialui_compute_entries_box(
    if (mui->list_view_type == MUI_LIST_VIEW_PLAYLIST_THUMB_DUAL_ICON)
    {
       /* One line of list text */
-      float node_text_height  = (float)mui->font_data.list.font_height;
+      float node_text_height  = (float)mui->font_data.list.line_height;
       /* List text + thumbnail height + padding */
       float node_entry_height =
             node_text_height + (float)mui->thumbnail_height_max +
@@ -2140,7 +2143,7 @@ static void materialui_compute_entries_box(
 
       if (!string_is_empty(sublabel_str))
       {
-         int sublabel_width_max = usable_width;
+         int sublabel_width_max = usable_width - (int)mui->sublabel_padding;
 
          /* If this is a default menu list with an icon,
           * must subtract icon size from sublabel width */
@@ -2157,8 +2160,8 @@ static void materialui_compute_entries_box(
          num_sublabel_lines = materialui_count_lines(wrapped_sublabel_str);
       }
 
-      node->text_height  = mui->font_data.list.font_height +
-            (num_sublabel_lines * mui->font_data.hint.font_height);
+      node->text_height  = mui->font_data.list.line_height +
+            (num_sublabel_lines * mui->font_data.hint.line_height);
 
       node->entry_height = node->text_height +
             mui->dip_base_unit_size / 10;
@@ -2814,16 +2817,33 @@ static void materialui_render_menu_entry_default(
     *   affects y offset positions */
    if (!string_is_empty(entry_sublabel))
    {
-      int sublabel_y =
-            entry_y + (int)(mui->dip_base_unit_size / 5.0f) +
-                  (int)mui->font_data.list.font_height;
+      /* Note: Due to the way the selection highlight
+       * marker is drawn (height is effectively 1px larger
+       * than the entry height, to avoid visible seams),
+       * drawing the label+sublabel text at the exact centre
+       * of the entry gives the illusion of misalignment
+       * > Have to offset the label downwards by half a pixel
+       *   (rounded up) */
+      int vertical_margin = ((node->entry_height - node->text_height) / 2.0f) - (float)mui->sublabel_gap + 1.0f;
+      int sublabel_y;
       char wrapped_sublabel[MENU_SUBLABEL_MAX_LENGTH];
 
       wrapped_sublabel[0] = '\0';
 
+      /* Label + sublabel 'block' is drawn at the
+       * vertical centre of the current node.
+       * > Value icon is drawn in line with the centre
+       *   of the part of the label above the baseline
+       *   (needs a little extra padding at the top, since
+       *   the line ascender is usually somewhat taller
+       *   than the visible text) */
+      label_y      = entry_y + vertical_margin + mui->font_data.list.line_ascender;
+      value_icon_y = label_y + (mui->dip_base_unit_size / 60.0f) - (mui->font_data.list.line_ascender / 2.0f) - (mui->icon_size / 2.0f);
+      sublabel_y   = entry_y + vertical_margin + mui->font_data.list.line_height + (int)mui->sublabel_gap + mui->font_data.hint.line_ascender;
+
       /* Wrap sublabel string */
       word_wrap(wrapped_sublabel, entry_sublabel,
-            (int)(usable_width / mui->font_data.hint.glyph_width),
+            (int)((usable_width - (int)mui->sublabel_padding) / mui->font_data.hint.glyph_width),
             true, 0);
 
       /* Draw sublabel string
@@ -2839,22 +2859,13 @@ static void materialui_render_menu_entry_default(
             (entry_selected || touch_feedback_active) ?
                   mui->colors.list_hint_text_highlighted : mui->colors.list_hint_text,
             TEXT_ALIGN_LEFT, 1.0f, false, 0, draw_text_outside || (sublabel_y < 0));
-
-      /* If we have a sublabel, entry label y position has a
-       * fixed vertical offset */
-      label_y      = entry_y + (int)(mui->dip_base_unit_size / 5.0f);
-      value_icon_y = entry_y + (int)((mui->dip_base_unit_size / 6.0f) - (mui->icon_size / 2.0f));
    }
    else
    {
       /* If we don't have a sublabel, entry label is drawn
-       * at the vertical centre of the current node
-       * Note: Text is drawn relative to the baseline,
-       * so we can't do this accurately - but as a general
-       * rule of thumb, the descender of a font is at least
-       * 20% of it's height - so we just add (font_height / 5) */
-      label_y      = entry_y + (int)((node->entry_height / 2.0f) + (mui->font_data.list.font_height / 5.0f));
-      value_icon_y = entry_y + (int)((node->entry_height / 2.0f) - (mui->icon_size / 2.0f));
+       * at the vertical centre of the current node */
+      label_y      = entry_y + (node->entry_height / 2.0f) + mui->font_data.list.line_centre_offset;
+      value_icon_y = entry_y + (node->entry_height / 2.0f) - (mui->icon_size / 2.0f);
    }
 
    /* Draw entry value */
@@ -3048,16 +3059,7 @@ static void materialui_render_menu_entry_playlist_list(
    int entry_margin           = (int)mui->margin + (int)mui->landscape_entry_margin;
    int usable_width           =
          (int)width - (int)(mui->margin * 2) - (int)(mui->landscape_entry_margin * 2) - (int)mui->nav_bar_layout_width;
-   /* The label + sublabel text block is always drawn at
-    * the vertical centre of the current node
-    * Note: Text is drawn relative to the baseline,
-    * so we can't do this accurately - but tests
-    * indicate that the ascender of Material UI's
-    * font accounts for 7/20 of its height, so we
-    * just add (13/20) * font_height */
-   int label_y                =
-         entry_y + ((float)(node->entry_height - node->text_height) / 2.0f) +
-         (13.0f * (float)mui->font_data.list.font_height / 20.0f);
+   int label_y                = 0;
    bool draw_text_outside     = (x_offset != 0);
 
    /* Initial ticker configuration
@@ -3149,6 +3151,53 @@ static void materialui_render_menu_entry_playlist_list(
                (int)mui->landscape_entry_margin : (int)mui->margin;
    }
 
+   /* Draw entry sublabel
+    * > Must be done before label, since it
+    *   affects y offset positions */
+   if (!string_is_empty(entry_sublabel))
+   {
+      /* Note: Due to the way the selection highlight
+       * marker is drawn (height is effectively 1px larger
+       * than the entry height, to avoid visible seams),
+       * drawing the label+sublabel text at the exact centre
+       * of the entry gives the illusion of misalignment
+       * > Have to offset the label downwards by half a pixel
+       *   (rounded up) */
+      int vertical_margin = ((node->entry_height - node->text_height) / 2.0f) - (float)mui->sublabel_gap + 1.0f;
+      int sublabel_y;
+      char wrapped_sublabel[MENU_SUBLABEL_MAX_LENGTH];
+
+      wrapped_sublabel[0] = '\0';
+
+      /* Label + sublabel 'block' is drawn at the
+       * vertical centre of the current node */
+      label_y      = entry_y + vertical_margin + mui->font_data.list.line_ascender;
+      sublabel_y   = entry_y + vertical_margin + mui->font_data.list.line_height + (int)mui->sublabel_gap + mui->font_data.hint.line_ascender;
+
+      /* Wrap sublabel string */
+      word_wrap(wrapped_sublabel, entry_sublabel,
+            (int)((usable_width - (int)mui->sublabel_padding) / mui->font_data.hint.glyph_width),
+            true, 0);
+
+      /* Draw sublabel string
+       * > Note: We must allow text to be drawn off-screen
+       *   if the current y position is negative, otherwise topmost
+       *   entries with very long sublabels may get 'clipped' too
+       *   early as they are scrolled upwards beyond the top edge
+       *   of the screen */
+      gfx_display_draw_text(mui->font_data.hint.font, wrapped_sublabel,
+            x_offset + entry_margin,
+            sublabel_y,
+            width, height,
+            (entry_selected || touch_feedback_active) ?
+                  mui->colors.list_hint_text_highlighted : mui->colors.list_hint_text,
+            TEXT_ALIGN_LEFT, 1.0f, false, 0, draw_text_outside || (sublabel_y < 0));
+   }
+   /* If we don't have a sublabel, entry label is drawn
+    * at the vertical centre of the current node */
+   else
+      label_y = entry_y + (node->entry_height / 2.0f) + mui->font_data.list.line_centre_offset;
+
    /* Draw entry label */
    if (!string_is_empty(entry_label))
    {
@@ -3190,45 +3239,15 @@ static void materialui_render_menu_entry_playlist_list(
       }
    }
 
-   /* Draw entry sublabel */
-   if (!string_is_empty(entry_sublabel))
-   {
-      int sublabel_y = label_y + (int)mui->font_data.list.font_height;
-      char wrapped_sublabel[MENU_SUBLABEL_MAX_LENGTH];
-
-      wrapped_sublabel[0] = '\0';
-
-      /* Wrap sublabel string */
-      word_wrap(wrapped_sublabel, entry_sublabel,
-            (int)(usable_width / mui->font_data.hint.glyph_width),
-            true, 0);
-
-      /* Draw sublabel string
-       * > Note: We must allow text to be drawn off-screen
-       *   if the current y position is negative, otherwise topmost
-       *   entries with very long sublabels may get 'clipped' too
-       *   early as they are scrolled upwards beyond the top edge
-       *   of the screen */
-      gfx_display_draw_text(mui->font_data.hint.font, wrapped_sublabel,
-            x_offset + entry_margin,
-            sublabel_y,
-            width, height,
-            (entry_selected || touch_feedback_active) ?
-                  mui->colors.list_hint_text_highlighted : mui->colors.list_hint_text,
-            TEXT_ALIGN_LEFT, 1.0f, false, 0, draw_text_outside || (sublabel_y < 0));
-   }
-
-   /* When using the larger thumbnail views, the horizontal
+   /* When using thumbnail views, the horizontal
     * text area is unpleasantly vacuous, such that the
     * label + sublabel strings float in a sea of nothingness.
     * We can partially mitigate the visual 'emptiness' of this
     * by drawing a divider between entries. This is particularly
     * beneficial when dual thumbnails are enabled, since it
-    * 'ties' the left/right thumbnails together
-    * NOTE: This does not work at all for the smallest thumbnail
-    * list view, or when thumbnails are disabled - the result is
-    * just too 'busy'/visually cluttered */
-   if ((mui->list_view_type == MUI_LIST_VIEW_PLAYLIST_THUMB_LIST_MEDIUM) ||
+    * 'ties' the left/right thumbnails together */
+   if ((mui->list_view_type == MUI_LIST_VIEW_PLAYLIST_THUMB_LIST_SMALL) ||
+       (mui->list_view_type == MUI_LIST_VIEW_PLAYLIST_THUMB_LIST_MEDIUM) ||
        (mui->list_view_type == MUI_LIST_VIEW_PLAYLIST_THUMB_LIST_LARGE))
    {
       if (usable_width > 0)
@@ -3323,8 +3342,9 @@ static void materialui_render_menu_entry_playlist_dual_icon(
        * with a small vertical margin */
       float label_y          =
             thumbnail_y + (float)mui->thumbnail_height_max +
-            ((float)mui->dip_base_unit_size / 10.0f) +
-            (9.0f * (float)mui->font_data.list.font_height / 20.0f);
+            ((float)mui->dip_base_unit_size / 20.0f) +
+            ((float)mui->font_data.list.line_height / 2.0f) +
+            (float)mui->font_data.list.line_centre_offset;
 
       bool draw_text_outside = (x_offset != 0);
       char label_buf[255];
@@ -3386,7 +3406,7 @@ static void materialui_render_menu_entry_playlist_dual_icon(
             (float)(x_offset + (int)mui->margin + (int)mui->landscape_entry_margin),
             thumbnail_y + (float)mui->thumbnail_height_max +
                   ((float)mui->dip_base_unit_size / 10.0f) +
-                  (float)mui->font_data.list.font_height,
+                  (float)mui->font_data.list.line_height,
             (unsigned)usable_width,
             mui->entry_divider_width,
             width,
@@ -3814,7 +3834,7 @@ static void materialui_render_header(
    int usable_title_bar_width    = usable_sys_bar_width;
    size_t sys_bar_battery_width  = 0;
    size_t sys_bar_clock_width    = 0;
-   int sys_bar_text_y            = (int)(((float)mui->sys_bar_height / 2.0f) + ((float)mui->font_data.hint.font_height / 4.0f));
+   int sys_bar_text_y            = (int)(((float)mui->sys_bar_height / 2.0f) + (float)mui->font_data.hint.line_centre_offset);
    int title_x                   = 0;
    bool show_back_icon           = menu_entries_ctl(MENU_ENTRIES_CTL_SHOW_BACK, NULL);
    bool show_search_icon         = mui->is_playlist || mui->is_file_list;
@@ -4211,7 +4231,7 @@ static void materialui_render_header(
 
    gfx_display_draw_text(mui->font_data.title.font, menu_title_buf,
          title_x,
-         (int)(mui->sys_bar_height + (mui->title_bar_height / 2.0f) + (mui->font_data.title.font_height / 4.0f)),
+         (int)(mui->sys_bar_height + (mui->title_bar_height / 2.0f) + mui->font_data.title.line_centre_offset),
          width, height, mui->colors.header_text, TEXT_ALIGN_LEFT, 1.0f, false, 0, false);
 }
 
@@ -5458,8 +5478,8 @@ static void materialui_set_thumbnail_dimensions(materialui_handle_t *mui)
           * > One line of list text + three lines of
           *   hint text + padding */
          mui->thumbnail_height_max =
-               mui->font_data.list.font_height +
-               (3 * mui->font_data.hint.font_height) +
+               mui->font_data.list.line_height +
+               (3 * mui->font_data.hint.line_height) +
                (mui->dip_base_unit_size / 10);
 
          /* Set thumbnail width based on max height
@@ -5481,8 +5501,8 @@ static void materialui_set_thumbnail_dimensions(materialui_handle_t *mui)
           * > Two lines of list text + three lines of
           *   hint text (no padding) */
          mui->thumbnail_height_max =
-               (mui->font_data.list.font_height +
-                (3 * mui->font_data.hint.font_height)) * 2;
+               (mui->font_data.list.line_height +
+                (3 * mui->font_data.hint.line_height)) * 2;
 
          /* Set thumbnail width based on max height */
          mui->thumbnail_width_max =
@@ -5719,6 +5739,13 @@ static void materialui_layout(materialui_handle_t *mui, bool video_is_threaded)
    mui->entry_divider_width  = (mui->last_scale_factor > 1.0f) ?
          (unsigned)(mui->last_scale_factor + 0.5f) : 1;
 
+   /* Additional vertical spacing between label and
+    * sublabel text */
+   mui->sublabel_gap         = mui->dip_base_unit_size / 42;
+   /* Additional horizontal padding inserted at the
+    * end of sublabel text to prevent line overflow */
+   mui->sublabel_padding     = mui->dip_base_unit_size / 20;
+
    /* Note: We used to set scrollbar width here, but
     * since we now have several scrollbar parameters
     * that cannot be determined until materialui_compute_entries_box()
@@ -5791,40 +5818,46 @@ static void materialui_layout(materialui_handle_t *mui, bool video_is_threaded)
    if (mui->font_data.title.font)
    {
       /* Calculate a more realistic ticker_limit */
-      unsigned title_char_width =
+      int title_char_width =
          font_driver_get_message_width(mui->font_data.title.font, "a", 1, 1);
 
-      if (title_char_width)
-         mui->font_data.title.glyph_width = title_char_width;
+      if (title_char_width > 0)
+         mui->font_data.title.glyph_width = (unsigned)title_char_width;
 
-      /* Get font height */
-      mui->font_data.title.font_height = font_driver_get_line_height(mui->font_data.title.font, 1.0f);
+      /* Get line metrics */
+      mui->font_data.title.line_height        = font_driver_get_line_height(mui->font_data.title.font, 1.0f);
+      mui->font_data.title.line_ascender      = font_driver_get_line_ascender(mui->font_data.title.font, 1.0f);
+      mui->font_data.title.line_centre_offset = font_driver_get_line_centre_offset(mui->font_data.title.font, 1.0f);
    }
 
    if (mui->font_data.list.font)
    {
       /* Calculate a more realistic ticker_limit */
-      unsigned list_char_width =
+      int list_char_width =
          font_driver_get_message_width(mui->font_data.list.font, "a", 1, 1);
 
-      if (list_char_width)
-         mui->font_data.list.glyph_width = list_char_width;
+      if (list_char_width > 0)
+         mui->font_data.list.glyph_width = (unsigned)list_char_width;
 
-      /* Get font height */
-      mui->font_data.list.font_height = font_driver_get_line_height(mui->font_data.list.font, 1.0f);
+      /* Get line metrics */
+      mui->font_data.list.line_height        = font_driver_get_line_height(mui->font_data.list.font, 1.0f);
+      mui->font_data.list.line_ascender      = font_driver_get_line_ascender(mui->font_data.list.font, 1.0f);
+      mui->font_data.list.line_centre_offset = font_driver_get_line_centre_offset(mui->font_data.list.font, 1.0f);
    }
 
    if (mui->font_data.hint.font)
    {
       /* Calculate a more realistic ticker_limit */
-      unsigned hint_char_width =
+      int hint_char_width =
          font_driver_get_message_width(mui->font_data.hint.font, "t", 1, 1);
 
-      if (hint_char_width)
-         mui->font_data.hint.glyph_width = hint_char_width;
+      if (hint_char_width > 0)
+         mui->font_data.hint.glyph_width = (unsigned)hint_char_width;
 
-      /* Get font height */
-      mui->font_data.hint.font_height = font_driver_get_line_height(mui->font_data.hint.font, 1.0f);
+      /* Get line metrics */
+      mui->font_data.hint.line_height        = font_driver_get_line_height(mui->font_data.hint.font, 1.0f);
+      mui->font_data.hint.line_ascender      = font_driver_get_line_ascender(mui->font_data.hint.font, 1.0f);
+      mui->font_data.hint.line_centre_offset = font_driver_get_line_centre_offset(mui->font_data.hint.font, 1.0f);
    }
 
    /* When updating the layout, the system bar

@@ -141,5 +141,6 @@ font_renderer_t vga_font = {
    vga_font_get_glyph,       /* get_glyph */
    NULL,                     /* bind_block */
    NULL,                     /* flush */
-   vga_get_message_width     /* get_message_width */
+   vga_get_message_width,    /* get_message_width */
+   NULL                      /* get_line_metrics */
 };

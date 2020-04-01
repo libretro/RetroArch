@@ -33,6 +33,7 @@ typedef struct bm_renderer
    unsigned scale_factor;
    struct font_glyph glyphs[BMP_ATLAS_SIZE];
    struct font_atlas atlas;
+   struct font_line_metrics line_metrics;
 } bm_renderer_t;
 
 static struct font_atlas *font_renderer_bmp_get_atlas(void *data)
@@ -113,10 +114,14 @@ static void *font_renderer_bmp_init(const char *font_path, float font_size)
       handle->glyphs[i].atlas_offset_x = x;
       handle->glyphs[i].atlas_offset_y = y;
       handle->glyphs[i].draw_offset_x  = 0;
-      handle->glyphs[i].draw_offset_y  = -FONT_HEIGHT_BASELINE * (int)handle->scale_factor;
-      handle->glyphs[i].advance_x      = (FONT_WIDTH + 1) * handle->scale_factor;
+      handle->glyphs[i].draw_offset_y  = -FONT_HEIGHT_BASELINE_OFFSET * handle->scale_factor;
+      handle->glyphs[i].advance_x      = FONT_WIDTH_STRIDE * handle->scale_factor;
       handle->glyphs[i].advance_y      = 0;
    }
+
+   handle->line_metrics.ascender       = (float)FONT_HEIGHT_BASELINE_OFFSET * handle->scale_factor;
+   handle->line_metrics.descender      = (float)(FONT_HEIGHT - FONT_HEIGHT_BASELINE_OFFSET) * handle->scale_factor;
+   handle->line_metrics.height         = (float)FONT_HEIGHT_STRIDE * handle->scale_factor;
 
    return handle;
 }
@@ -135,14 +140,16 @@ static const char *font_renderer_bmp_get_default_font(void)
    return "";
 }
 
-static int font_renderer_bmp_get_line_height(void* data)
+static bool font_renderer_bmp_get_line_metrics(
+      void* data, struct font_line_metrics **metrics)
 {
-    bm_renderer_t *handle = (bm_renderer_t*)data;
+   bm_renderer_t *handle = (bm_renderer_t*)data;
 
-    if (!handle)
-      return FONT_HEIGHT;
+   if (!handle)
+      return false;
 
-    return FONT_HEIGHT * handle->scale_factor;
+   *metrics = &handle->line_metrics;
+   return true;
 }
 
 font_renderer_driver_t bitmap_font_renderer = {
@@ -152,5 +159,5 @@ font_renderer_driver_t bitmap_font_renderer = {
    font_renderer_bmp_free,
    font_renderer_bmp_get_default_font,
    "bitmap",
-   font_renderer_bmp_get_line_height,
+   font_renderer_bmp_get_line_metrics
 };

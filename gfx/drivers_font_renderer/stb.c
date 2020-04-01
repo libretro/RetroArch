@@ -36,7 +36,7 @@
 
 typedef struct
 {
-   int     line_height;
+   struct font_line_metrics line_metrics;
    struct font_atlas atlas;
    struct font_glyph glyphs[256];
 } stb_font_renderer_t;
@@ -141,6 +141,7 @@ error:
 static void *font_renderer_stb_init(const char *font_path, float font_size)
 {
    int ascent, descent, line_gap;
+   float scale_factor;
    stbtt_fontinfo info;
    uint8_t *font_data = NULL;
    stb_font_renderer_t *self = (stb_font_renderer_t*) calloc(1, sizeof(*self));
@@ -161,12 +162,17 @@ static void *font_renderer_stb_init(const char *font_path, float font_size)
       goto error;
 
    stbtt_GetFontVMetrics(&info, &ascent, &descent, &line_gap);
-   self->line_height  = ascent - descent;
 
-   if (font_size < 0)
-      self->line_height *= stbtt_ScaleForMappingEmToPixels(&info, -font_size);
-   else
-      self->line_height *= stbtt_ScaleForPixelHeight(&info, font_size);
+   scale_factor = (font_size < 0) ?
+         stbtt_ScaleForMappingEmToPixels(&info, -font_size) :
+         stbtt_ScaleForPixelHeight(&info, font_size);
+
+   /* Ascender, descender and line_gap values always
+    * end up ~0.5 pixels too small when scaled...
+    * > Add a manual correction factor */
+   self->line_metrics.ascender  = 0.5f + (float)ascent * scale_factor;
+   self->line_metrics.descender = 0.5f + (float)(-descent) * scale_factor;
+   self->line_metrics.height    = 0.5f + (float)(ascent - descent + line_gap) * scale_factor;
 
    free(font_data);
 
@@ -226,10 +232,14 @@ static const char *font_renderer_stb_get_default_font(void)
    return NULL;
 }
 
-static int font_renderer_stb_get_line_height(void* data)
+static bool font_renderer_stb_get_line_metrics(
+      void* data, struct font_line_metrics **metrics)
 {
    stb_font_renderer_t *handle = (stb_font_renderer_t*)data;
-   return handle->line_height;
+   if (!handle)
+      return false;
+   *metrics = &handle->line_metrics;
+   return true;
 }
 
 font_renderer_driver_t stb_font_renderer = {
@@ -239,5 +249,5 @@ font_renderer_driver_t stb_font_renderer = {
    font_renderer_stb_free,
    font_renderer_stb_get_default_font,
    "stb",
-   font_renderer_stb_get_line_height,
+   font_renderer_stb_get_line_metrics
 };

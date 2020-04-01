@@ -241,14 +241,16 @@ static void wiiu_font_render_message(
       const unsigned int color, float pos_x, float pos_y,
       unsigned width, unsigned height, unsigned text_align)
 {
-   int lines = 0;
+   struct font_line_metrics *line_metrics = NULL;
+   int lines                              = 0;
    float line_height;
 
    if (!msg || !*msg)
       return;
 
-   /* If the font height is not supported just draw as usual */
-   if (!font->font_driver->get_line_height)
+   /* If font line metrics are not supported just draw as usual */
+   if (!font->font_driver->get_line_metrics ||
+       !font->font_driver->get_line_metrics(font->font_data, &line_metrics))
    {
       wiiu_font_render_line(wiiu, font, msg, strlen(msg),
             scale, color, pos_x, pos_y,
@@ -256,7 +258,7 @@ static void wiiu_font_render_message(
       return;
    }
 
-   line_height = scale / font->font_driver->get_line_height(font->font_data);
+   line_height = scale / line_metrics->height;
 
    for (;;)
    {
@@ -381,14 +383,14 @@ static const struct font_glyph* wiiu_font_get_glyph(
    return font->font_driver->get_glyph((void*)font->font_driver, code);
 }
 
-static int wiiu_font_get_line_height(void *data)
+static bool wiiu_font_get_line_metrics(void* data, struct font_line_metrics **metrics)
 {
    wiiu_font_t* font = (wiiu_font_t*)data;
 
    if (!font || !font->font_driver || !font->font_data)
       return -1;
 
-   return font->font_driver->get_line_height(font->font_data);
+   return font->font_driver->get_line_metrics(font->font_data, metrics);
 }
 
 font_renderer_t wiiu_font =
@@ -401,5 +403,5 @@ font_renderer_t wiiu_font =
    NULL,                   /* bind_block */
    NULL,                   /* flush */
    wiiu_font_get_message_width,
-   wiiu_font_get_line_height
+   wiiu_font_get_line_metrics
 };

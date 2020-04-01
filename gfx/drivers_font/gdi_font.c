@@ -209,8 +209,9 @@ font_renderer_t gdi_font = {
    gdi_render_free_font,
    gdi_render_msg,
    "gdi font",
-   gdi_font_get_glyph,       /* get_glyph */
-   NULL,      /* bind_block */
-   NULL,     /* flush */
-   gdi_get_message_width     /* get_message_width */
+   gdi_font_get_glyph,        /* get_glyph */
+   NULL,                      /* bind_block */
+   NULL,                      /* flush */
+   gdi_get_message_width,     /* get_message_width */
+   NULL                       /* get_line_metrics */
 };
