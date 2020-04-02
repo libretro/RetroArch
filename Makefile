@@ -118,7 +118,8 @@ ifneq ($(CXX_BUILD), 1)
    CFLAGS += -D_GNU_SOURCE
 endif
 
-DEF_FLAGS += $(INCLUDE_DIRS) -I. -Ideps -Ideps/stb
+# local includes must go first
+DEF_FLAGS := $(INCLUDE_DIRS) -I. -Ideps -Ideps/stb $(DEF_FLAGS)
 
 CFLAGS += $(DEF_FLAGS)
 CXXFLAGS += $(DEF_FLAGS) -D__STDC_CONSTANT_MACROS
