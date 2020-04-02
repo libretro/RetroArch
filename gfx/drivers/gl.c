@@ -783,8 +783,8 @@ static void gl2_create_fbo_texture(gl_t *gl,
    bool smooth                   = false;
    settings_t *settings          = config_get_ptr();
    bool video_smooth             = settings->bools.video_smooth;
-   bool video_ctx_scaling         = settings->bools.video_ctx_scaling;
 #if HAVE_ODROIDGO2
+   bool video_ctx_scaling         = settings->bools.video_ctx_scaling;
    if (video_ctx_scaling)
        video_smooth = false;
 #endif
@@ -3997,9 +3997,8 @@ static void gl2_update_tex_filter_frame(gl_t *gl)
    bool smooth                       = false;
    settings_t *settings              = config_get_ptr();
    bool video_smooth                 = settings->bools.video_smooth;
-   bool video_ctx_scaling             = settings->bools.video_ctx_scaling;
-
 #ifdef HAVE_ODROIDGO2
+   bool video_ctx_scaling            = settings->bools.video_ctx_scaling;
    if (video_ctx_scaling)
        video_smooth = false;
 #endif

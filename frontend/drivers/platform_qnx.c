@@ -102,8 +102,6 @@ static void frontend_qnx_get_environment_settings(int *argc, char *argv[],
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_VIDEO_LAYOUT], data_path,
          "layouts", sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_LAYOUT]));
 #endif
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SHADERS], data_path,
-         "shaders", sizeof(g_defaults.dirs[DEFAULT_DIR_SHADERS]));
 
    /* user data */
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CHEATS], user_path,
@@ -116,8 +114,6 @@ static void frontend_qnx_get_environment_settings(int *argc, char *argv[],
          "downloads", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER], user_path,
          "filters/audio", sizeof(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER]));
-   fill_pathname_join(g_defaults.dirs[DEFAULT_VIDEO_FILTER], user_path,
-         "filters/video", sizeof(g_defaults.dirs[DEFAULT_VIDEO_FILTER]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_PLAYLIST], user_path,
          "playlists", sizeof(g_defaults.dirs[DEFAULT_DIR_PLAYLIST]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_REMAP], user_path,
@@ -130,8 +126,6 @@ static void frontend_qnx_get_environment_settings(int *argc, char *argv[],
          "states", sizeof(g_defaults.dirs[DEFAULT_DIR_SAVESTATE]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SYSTEM], user_path,
          "system", sizeof(g_defaults.dirs[DEFAULT_DIR_SYSTEM]));
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_THUMBNAIL], user_path,
-         "thumbnails", sizeof(g_defaults.dirs[DEFAULT_DIR_THUMBNAIL]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_WALLPAPERS], user_path,
          "wallpapers", sizeof(g_defaults.dirs[DEFAULT_DIR_WALLPAPERS]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_LOGS], user_path,

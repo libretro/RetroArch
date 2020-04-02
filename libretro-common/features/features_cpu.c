@@ -39,6 +39,10 @@
 #include <windows.h>
 #endif
 
+#ifdef __PSL1GHT__
+#include <lv2/systime.h>
+#endif
+
 #if defined(__CELLOS_LV2__) || ( defined(__OpenBSD__) && defined(__powerpc__) )
 #ifndef _PPU_INTRINSICS_H
 #include <ppu_intrinsics.h>
@@ -226,6 +230,8 @@ retro_time_t cpu_features_get_time_usec(void)
    if (!QueryPerformanceCounter(&count))
       return 0;
    return (count.QuadPart / freq.QuadPart * 1000000) + (count.QuadPart % freq.QuadPart * 1000000 / freq.QuadPart);
+#elif defined(__PSL1GHT__)
+   return sysGetSystemTime();
 #elif defined(__CELLOS_LV2__)
    return sys_time_get_system_time();
 #elif defined(GEKKO)
@@ -234,7 +240,7 @@ retro_time_t cpu_features_get_time_usec(void)
    return ticks_to_us(OSGetSystemTime());
 #elif defined(SWITCH) || defined(HAVE_LIBNX)
    return (svcGetSystemTick() * 10) / 192;
-#elif defined(_POSIX_MONOTONIC_CLOCK) || defined(__QNX__) || defined(ANDROID) || defined(__MACH__)
+#elif defined(_POSIX_MONOTONIC_CLOCK) || defined(__QNX__) || defined(ANDROID) || defined(__MACH__) || defined(__PSL1GHT__)
    struct timespec tv = {0};
    if (ra_clock_gettime(CLOCK_MONOTONIC, &tv) < 0)
       return 0;
@@ -492,7 +498,7 @@ unsigned cpu_features_get_core_amount(void)
    return sysinfo.dwNumberOfProcessors;
 #elif defined(GEKKO)
    return 1;
-#elif defined(PSP) || defined(PS2)
+#elif defined(PSP) || defined(PS2) || defined(__CELLOS_LV2__)
    return 1;
 #elif defined(VITA)
    return 4;

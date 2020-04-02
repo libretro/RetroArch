@@ -435,6 +435,9 @@ static video_driver_t video_null = {
 };
 
 static const video_driver_t *video_drivers[] = {
+#ifdef __PSL1GHT__
+   &video_gcm,
+#endif
 #ifdef HAVE_VITA2D
    &video_vita2d,
 #endif
@@ -559,7 +562,7 @@ static const gfx_ctx_driver_t *gfx_ctx_drivers[] = {
 #if defined(HAVE_LIBNX) && defined(HAVE_OPENGL)
    &switch_ctx,
 #endif
-#if defined(__CELLOS_LV2__)
+#if defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
    &gfx_ctx_ps3,
 #endif
 #if defined(HAVE_VIDEOCORE)

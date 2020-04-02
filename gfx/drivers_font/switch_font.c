@@ -193,14 +193,16 @@ static void switch_font_render_message(
       const unsigned int color, float pos_x, float pos_y,
       unsigned text_align)
 {
+   struct font_line_metrics *line_metrics = NULL;
+   int lines                              = 0;
    float line_height;
-   int lines          = 0;
 
    if (!msg || !*msg)
       return;
 
-   /* If the font height is not supported just draw as usual */
-   if (!font->font_driver->get_line_height)
+   /* If font line metrics are not supported just draw as usual */
+   if (!font->font_driver->get_line_metrics ||
+       !font->font_driver->get_line_metrics(font->font_data, &line_metrics))
    {
       int msgLen = strlen(msg);
       if (msgLen <= AVG_GLPYH_LIMIT)
@@ -211,7 +213,7 @@ static void switch_font_render_message(
       }
       return;
    }
-   line_height = scale / font->font_driver->get_line_height(font->font_data);
+   line_height = scale / line_metrics->height;
 
    for (;;)
    {
@@ -312,13 +314,13 @@ static const struct font_glyph *switch_font_get_glyph(
    return font->font_driver->get_glyph((void *)font->font_driver, code);
 }
 
-static int switch_font_get_line_height(void *data)
+static bool switch_font_get_line_metrics(void* data, struct font_line_metrics **metrics)
 {
    switch_font_t *font = (switch_font_t *)data;
    if (!font || !font->font_driver || !font->font_data)
       return -1;
 
-   return font->font_driver->get_line_height(font->font_data);
+   return font->font_driver->get_line_metrics(font->font_data, metrics);
 }
 
 font_renderer_t switch_font =
@@ -331,5 +333,5 @@ font_renderer_t switch_font =
    NULL, /* bind_block  */
    NULL, /* flush_block */
    switch_font_get_message_width,
-   switch_font_get_line_height
+   switch_font_get_line_metrics
 };

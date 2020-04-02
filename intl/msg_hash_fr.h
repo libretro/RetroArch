@@ -4312,6 +4312,17 @@ MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
     "Filtre bilinéaire"
     )
+#ifdef HAVE_ODROIDGO2
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_CTX_SCALING,
+    "Mise à l'échelle RGA"
+    )
+#else
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_VIDEO_CTX_SCALING,
+    "Mise à l'échelle spécifique au contexte"
+    )
+#endif
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_VIDEO_SOFT_FILTER,
     "Filtre logiciel"
@@ -6075,6 +6086,17 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
     "Ajoute un léger flou à l'image pour atténuer le contour des pixels bruts. Cette option a très peu d'impact sur les performances."
     )
+#ifdef HAVE_ODROIDGO2
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_CTX_SCALING,
+    "Mise à l'échelle RGA et filtrage bicubique. Peut affecter les widgets."
+    )
+#else
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_VIDEO_CTX_SCALING,
+    "Mise à l'échelle selon le contexte matériel (si disponible)."
+    )
+#endif
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_FILTER,
     "Applique un filtre vidéo produit par le processeur.\n"

@@ -383,11 +383,13 @@ static void gl1_raster_font_render_message(
       const GLfloat color[4], GLfloat pos_x, GLfloat pos_y,
       unsigned text_align)
 {
+   struct font_line_metrics *line_metrics = NULL;
+   int lines                              = 0;
    float line_height;
-   int lines = 0;
 
-   /* If the font height is not supported just draw as usual */
-   if (!font->font_driver->get_line_height)
+   /* If font line metrics are not supported just draw as usual */
+   if (!font->font_driver->get_line_metrics ||
+       !font->font_driver->get_line_metrics(font->font_data, &line_metrics))
    {
       gl1_raster_font_render_line(font,
             msg, (unsigned)strlen(msg), scale, color, pos_x,
@@ -395,8 +397,7 @@ static void gl1_raster_font_render_message(
       return;
    }
 
-   line_height = (float) font->font_driver->get_line_height(font->font_data) *
-                     scale / font->gl->vp.height;
+   line_height = line_metrics->height * scale / font->gl->vp.height;
 
    for (;;)
    {
@@ -576,14 +577,14 @@ static void gl1_raster_font_bind_block(void *data, void *userdata)
       font->block = block;
 }
 
-static int gl1_get_line_height(void *data)
+static bool gl1_get_line_metrics(void* data, struct font_line_metrics **metrics)
 {
    gl1_raster_t *font = (gl1_raster_t*)data;
 
    if (!font || !font->font_driver || !font->font_data)
       return -1;
 
-   return font->font_driver->get_line_height(font->font_data);
+   return font->font_driver->get_line_metrics(font->font_data, metrics);
 }
 
 font_renderer_t gl1_raster_font = {
@@ -595,5 +596,5 @@ font_renderer_t gl1_raster_font = {
    gl1_raster_font_bind_block,
    gl1_raster_font_flush_block,
    gl1_get_message_width,
-   gl1_get_line_height
+   gl1_get_line_metrics
 };

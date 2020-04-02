@@ -80,6 +80,13 @@ platform=ngc
 MAKEFILE_GRIFFIN=yes
 EXT=a
 
+# PSL1GHT
+elif [ $PLATFORM = "psl1ght" ] ; then
+platform=psl1ght
+SALAMANDER=yes
+EXT=a
+ps3appid=SSNE10001
+
 # DEX PS3
 elif [ $PLATFORM = "dex-ps3" ] ; then
 platform=ps3
@@ -250,7 +257,13 @@ for f in `ls -v *_${platform}.${EXT}`; do
    fi
 
    # Move executable files
-   if [ $platform = "ps3" ] ; then
+   if [ $platform = "psl1ght" ] ; then
+       mv -fv ../retroarch_psl1ght.self ../pkg/psl1ght/pkg/USRDIR/cores/"${name}_libretro_${platform}.SELF"
+       if [ -d ../../dist/info ]; then
+           mkdir -p ../pkg/psl1ght/USRDIR/cores/info
+           cp -fv ../../dist/info/"${name}_libretro.info" ../pkg/psl1ght/USRDIR/pkg/cores/info/"${name}_libretro.info"
+       fi
+   elif [ $platform = "ps3" ] ; then
       if [ $PLATFORM = "ode-ps3" ] ; then
          mv -fv ../CORE.SELF ../pkg/${platform}_iso/PS3_GAME/USRDIR/cores/"${name}_libretro_${platform}.SELF"
          if [ -d ../../dist/info ]; then
@@ -299,7 +312,9 @@ for f in `ls -v *_${platform}.${EXT}`; do
    fi
 
    # Remove executable files
-   if [ $platform = "ps3" ] ; then
+   if [ $platform = "psl1ght" ] ; then
+       rm -f ../retroarch_${platform}.elf ../retroarch_${platform}.self ../CORE.SELF
+   elif [ $platform = "ps3" ] ; then
       rm -f ../retroarch_${platform}.elf ../retroarch_${platform}.self ../CORE.SELF
    elif [ $PLATFORM = "ps2" ] ; then
       rm -f ../retroarchps2.elf
@@ -340,7 +355,7 @@ for f in `ls -v *_${platform}.${EXT}`; do
 done
 
 # Additional build step
-if [ $platform = "ps3" ] ; then
+if [ $platform = "ps3" ] || [ $platform = "psl1ght" ] ; then
    if [ $PLATFORM = "ode-ps3" ] ; then
       echo Deploy : Assets...
       if [ -d ../media/assets ]; then
@@ -367,29 +382,33 @@ if [ $platform = "ps3" ] ; then
          cp -r ../media/shaders_cg/* ../pkg/${platform}_iso/PS3_GAME/USRDIR/cores/shaders_cg
       fi
    else
+      ps3pkgdir=pkg/ps3/SSNE10000
+      if [ $platform = psl1ght ]; then
+	 ps3pkgdir=pkg/psl1ght/pkg
+      fi
       echo Deploy : Assets...
       if [ -d ../media/assets ]; then
-         mkdir -p ../pkg/${platform}/SSNE10000/USRDIR/cores/assets
-         cp -r ../media/assets/* ../pkg/${platform}/SSNE10000/USRDIR/cores/assets
+         mkdir -p ../${ps3pkgdir}/USRDIR/cores/assets
+         cp -r ../media/assets/* ../${ps3pkgdir}/USRDIR/cores/assets
       fi
       echo Deploy : Databases...
       if [ -d ../media/libretrodb/rdb ]; then
-         mkdir -p ../pkg/${platform}/SSNE10000/USRDIR/cores/database/rdb
-         cp -r ../media/libretrodb/rdb/* ../pkg/${platform}/SSNE10000/USRDIR/cores/database/rdb
+         mkdir -p ../${ps3pkgdir}/USRDIR/cores/database/rdb
+         cp -r ../media/libretrodb/rdb/* ../${ps3pkgdir}/USRDIR/cores/database/rdb
 	  fi
 	  if [ -d ../media/libretrodb/cursors ]; then
-         mkdir -p ../pkg/${platform}/SSNE10000/USRDIR/cores/database/cursors
-         cp -r ../media/libretrodb/cursors/* ../pkg/${platform}/SSNE10000/USRDIR/cores/database/cursors
+         mkdir -p ../${ps3pkgdir}/USRDIR/cores/database/cursors
+         cp -r ../media/libretrodb/cursors/* ../${ps3pkgdir}/USRDIR/cores/database/cursors
       fi
       echo Deploy : Overlays...
       if [ -d ../media/overlays ]; then
-         mkdir -p ../pkg/${platform}/SSNE10000/USRDIR/cores/overlays
-         cp -r ../media/overlays/* ../pkg/${platform}/SSNE10000/USRDIR/cores/overlays
+         mkdir -p ../${ps3pkgdir}/USRDIR/cores/overlays
+         cp -r ../media/overlays/* ../${ps3pkgdir}/USRDIR/cores/overlays
       fi
       echo Deploy : Shaders...
       if [ -d ../media/shaders_cg ]; then
-         mkdir -p ../pkg/${platform}/SSNE10000/USRDIR/cores/shaders_cg
-         cp -r ../media/shaders_cg/* ../pkg/${platform}/SSNE10000/USRDIR/cores/shaders_cg
+         mkdir -p ../${ps3pkgdir}/USRDIR/cores/shaders_cg
+         cp -r ../media/shaders_cg/* ../${ps3pkgdir}/USRDIR/cores/shaders_cg
       fi
    fi
 fi
@@ -408,6 +427,8 @@ elif [ $PLATFORM = "cex-ps3" ] ; then
    (cd ../tools/ps3/ps3py && python2 setup.py build)
    find ../tools/ps3/ps3py/build -name '*.dll' -exec cp {} ../tools/ps3/ps3py \;
    ../tools/ps3/ps3py/pkg.py --contentid UP0001-SSNE10000_00-0000000000000001 ../pkg/${platform}/SSNE10000/ ../pkg/${platform}/RetroArch.PS3.CEX.PS3.pkg
+elif [ $PLATFORM = "psl1ght" ] ; then
+   pkg.py --contentid UP0001-SSNE10001_00-0000000000000001 ../pkg/psl1ght/pkg/ ../pkg/psl1ght/RetroArch.PSL1GHT.pkg
 elif [ $PLATFORM = "ode-ps3" ] ; then
    rsync -av ../pkg/${platform}_iso/PS3_GAME/USRDIR/cores/*.SELF ../pkg/${platform}/${PLATFORM}/
    $SCETOOL_PATH $SCETOOL_FLAGS_ODE ../retroarch-salamander_${platform}.elf ../pkg/${platform}_iso/PS3_GAME/USRDIR/EBOOT.BIN

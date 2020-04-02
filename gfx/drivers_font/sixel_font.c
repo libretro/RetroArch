@@ -141,5 +141,6 @@ font_renderer_t sixel_font = {
    sixel_font_get_glyph,       /* get_glyph */
    NULL,                       /* bind_block */
    NULL,                       /* flush */
-   sixel_get_message_width     /* get_message_width */
+   sixel_get_message_width,    /* get_message_width */
+   NULL                        /* get_line_metrics */
 };

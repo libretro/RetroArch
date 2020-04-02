@@ -20,9 +20,7 @@
 #include "config.h"
 #endif
 
-#ifndef __PSL1GHT__
 #include <sys/spu_initialize.h>
-#endif
 
 #include <compat/strl.h>
 
