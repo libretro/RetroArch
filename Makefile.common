@@ -426,6 +426,8 @@ ifeq ($(HAVE_QT), 1)
 
    ifneq ($(findstring Linux,$(OS)),)
       DEF_FLAGS += -fPIC
+   else ifneq ($(findstring BSD,$(OS)),)
+      DEF_FLAGS += -fPIC
    endif
 endif
 
