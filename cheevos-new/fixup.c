@@ -248,6 +248,14 @@ const uint8_t* rcheevos_patch_address(unsigned address, int console)
          }
       }
    }
+   else if (console == RC_CONSOLE_GAMEBOY_ADVANCE)
+   {
+      /* The RetroAchievements implementation of memory access for GBA puts the save RAM first,
+       * so the default looping behavior below is backwards. If the core doesn't expose a
+       * memory map, say it isn't supported.
+       */
+       pointer = NULL;
+   }
    else
    {
       unsigned i;
