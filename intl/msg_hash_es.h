@@ -922,7 +922,39 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_SCALE_FACTOR,
-    "Aplica un valor global a la escala del menú. Sirve para aumentar o reducir el tamaño de la interfaz de usuario."
+    "Aplica un valor global a la escala del menú. Se puede usar para aumentar o disminuir el tamaño de la interfaz de usuario."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_AUTO,
+    "Escala automática de los gráficos de Widgets"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_AUTO,
+    "Cambiar automáticamente el tamaño de las notificaciones, indicadores y controles basados en la escala del menú actual."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_FACTOR,
+    "Escala de los gráficos de Widgets"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_FACTOR,
+    "Aplica un valor a la escala de los gráficos de widgets. Solo aplica cuando 'Escala automática de los gráficos de Widgets' esta deactivado. Se puede utilizar para aumentar o disminuir el tamaño de las notificaciones, indicadores y controles independientemente del propio menú."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_FACTOR_FULLSCREEN,
+    "Escala de los gráficos de Widgets (Pantalla completa)"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_FACTOR_FULLSCREEN,
+    "Aplica un valor a la escala de los gráficos de widgets en modo de pantalla completa. Solo aplica cuando 'Escala automática de los gráficos de Widgets' esta deactivado. Se puede utilizar para aumentar o disminuir el tamaño de las notificaciones, indicadores y controles independientemente del propio menú."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_FACTOR_WINDOWED,
+    "Escala de los gráficos de Widgets (Ventana)"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_FACTOR_WINDOWED,
+    "Aplica un valor a la escala de los gráficos de widgets en modo ventana. Solo aplica cuando 'Escala automática de los gráficos de Widgets' esta deactivado. Se puede utilizar para aumentar o disminuir el tamaño de las notificaciones, indicadores y controles independientemente del propio menú."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS,
@@ -1909,7 +1941,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIM_NONE,
-    "Desactivar"
+    "Desactivado"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_THUMBNAIL_VIEW_PORTRAIT,
@@ -1929,7 +1961,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_PORTRAIT_DISABLED,
-    "Desactivar"
+    "Desactivado"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_PORTRAIT_LIST_SMALL,
@@ -1945,7 +1977,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE_DISABLED,
-    "Desactivar"
+    "Desactivado"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE_LIST_SMALL,
@@ -2297,11 +2329,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_OFF,
-    "OFF"
+    "Desactivado"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_ON,
-    "ON"
+    "Activado"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_ONLINE,
@@ -3591,7 +3623,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_NONE,
-    "Desactivar"
+    "Desactivado"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_FIT_SCREEN,
@@ -4597,6 +4629,10 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_CHEEVOS_LEADERBOARDS_ENABLE,
     "Utiliza tablas de clasificación específicas para cada juego.\n"
     "Esta opción no surtirá efecto si se ha desactivado el modo Hardcore."
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_CHEEVOS_RICHPRESENCE_ENABLE,
+    "Envía el estado detallado del juego al sitio web RetroAchievements."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CHEEVOS_BADGES_ENABLE,
@@ -5815,11 +5851,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DISABLED,
-    "Desactivar"
+    "Desactivado"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_ENABLED,
-    "Activar"
+    "Activado"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CONTENT_HISTORY_PATH,
@@ -7139,6 +7175,22 @@ MSG_HASH(
     "Permite descargar los paquetes de miniaturas con el sistema antiguo."
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MENU_SCROLL_FAST,
+    "Aceleración de desplazamiento del menú"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MENU_SCROLL_FAST,
+    "Velocidad máxima del cursor al mantener presionada una dirección para desplazarse."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SCROLL_NORMAL,
+    "Normal"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SCROLL_FAST,
+    "Rápido"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_VIEWS_SETTINGS,
     "Vistas"
     )
@@ -7747,7 +7799,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_NONE,
-    "Desactivar"
+    "Desactivado"
 )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_SNOW,
@@ -9325,7 +9377,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_NONE,
-    "Desactivar"
+    "Desactivado"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLIST_SORT_ALPHABETICAL,
@@ -10340,6 +10392,14 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_DAT_FILE,
     "Selecciona un archivo DAT XML de Logiqx o MAME para nombrar automáticamente los contenidos de arcade escaneados (para MAME, FinalBurn Neo, etc.)."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_DAT_FILE_FILTER,
+    "Filtro DAT de arcade"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_DAT_FILE_FILTER,
+    "Cuando utilice un archivo DAT arcade, solo agregue contenido a la lista de reproducción si se encuentra una entrada de archivo DAT coincidente."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_OVERWRITE,
