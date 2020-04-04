@@ -75,6 +75,7 @@
       _device = d;
       _layer = layer;
 #if TARGET_OS_OSX
+      _layer.framebufferOnly = NO;
       _layer.displaySyncEnabled = YES;
 #endif
       _library = l;
@@ -544,13 +545,13 @@
    NSUInteger dstStride = _viewport.width * 3;
    uint8_t *dst = buffer + (_viewport.height - 1) * dstStride;
 
-   for (int y = _viewport.y; y < _viewport.height; y++, src += srcStride, dst -= dstStride)
+   for (int y = 0; y < _viewport.height; y++, src += srcStride, dst -= dstStride)
    {
-      for (int x = _viewport.x; x < _viewport.width; x++)
+      for (int x = 0; x < _viewport.width; x++)
       {
-         dst[3 * x + 0] = src[4 * x + 0];
-         dst[3 * x + 1] = src[4 * x + 1];
-         dst[3 * x + 2] = src[4 * x + 2];
+         dst[3 * x + 0] = src[4 * (_viewport.x + x) + 0];
+         dst[3 * x + 1] = src[4 * (_viewport.x + x) + 1];
+         dst[3 * x + 2] = src[4 * (_viewport.x + x) + 2];
       }
    }
 
@@ -642,6 +643,14 @@
 
    if (_blitCommandBuffer)
    {
+#if TARGET_OS_OSX
+      if (_captureEnabled)
+      {
+         id<MTLBlitCommandEncoder> bce = [_blitCommandBuffer blitCommandEncoder];
+         [bce synchronizeResource:_backBuffer];
+         [bce endEncoding];
+      }
+#endif
       // pending blits for mipmaps or render passes for slang shaders
       [_blitCommandBuffer commit];
       [_blitCommandBuffer waitUntilCompleted];

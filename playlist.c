@@ -1114,8 +1114,14 @@ void playlist_write_runtime_file(playlist_t *playlist)
             STRLEN_CONST("core_path"), JSON_UTF8);
       JSON_Writer_WriteColon(context.writer);
       JSON_Writer_WriteSpace(context.writer, 1);
-      JSON_Writer_WriteString(context.writer, playlist->entries[i].core_path,
-            strlen(playlist->entries[i].core_path), JSON_UTF8);
+      JSON_Writer_WriteString(context.writer,
+            playlist->entries[i].core_path
+            ? playlist->entries[i].core_path
+            : "",
+            playlist->entries[i].core_path
+            ? strlen(playlist->entries[i].core_path)
+            : 0,
+            JSON_UTF8);
       JSON_Writer_WriteComma(context.writer);
       JSON_Writer_WriteNewLine(context.writer);
 
@@ -1461,8 +1467,13 @@ void playlist_write_file(playlist_t *playlist, bool use_old_format)
          JSON_Writer_WriteColon(context.writer);
          JSON_Writer_WriteSpace(context.writer, 1);
          JSON_Writer_WriteString(context.writer,
-               playlist->entries[i].core_path,
-               strlen(playlist->entries[i].core_path), JSON_UTF8);
+               playlist->entries[i].core_path
+               ? playlist->entries[i].core_path
+               : "",
+               playlist->entries[i].core_path
+               ? strlen(playlist->entries[i].core_path)
+               : 0,
+               JSON_UTF8);
          JSON_Writer_WriteComma(context.writer);
 
          JSON_Writer_WriteNewLine(context.writer);
@@ -1472,8 +1483,13 @@ void playlist_write_file(playlist_t *playlist, bool use_old_format)
          JSON_Writer_WriteColon(context.writer);
          JSON_Writer_WriteSpace(context.writer, 1);
          JSON_Writer_WriteString(context.writer,
-               playlist->entries[i].core_name,
-               strlen(playlist->entries[i].core_name), JSON_UTF8);
+               playlist->entries[i].core_name
+               ? playlist->entries[i].core_name
+               : "",
+               playlist->entries[i].core_name
+               ? strlen(playlist->entries[i].core_name)
+               : 0,
+               JSON_UTF8);
          JSON_Writer_WriteComma(context.writer);
 
          JSON_Writer_WriteNewLine(context.writer);
