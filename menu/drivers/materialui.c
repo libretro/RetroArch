@@ -6881,8 +6881,6 @@ static enum menu_action materialui_parse_menu_entry_action(
             }
             else if (!materialui_entry_onscreen(mui, selection))
                new_action = MENU_ACTION_NOOP;
-            else
-               new_action = MENU_ACTION_ACCESSIBILITY_SPEAK_TITLE_LABEL;
          }
          break;
       case MENU_ACTION_INFO:

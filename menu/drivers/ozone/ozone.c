@@ -3266,8 +3266,6 @@ static enum menu_action ozone_parse_menu_entry_action(
          }
          if (ozone->cursor_in_sidebar)
             new_action = MENU_ACTION_ACCESSIBILITY_SPEAK_TITLE;
-         else
-            new_action = MENU_ACTION_ACCESSIBILITY_SPEAK_TITLE_LABEL;
          break;
       case MENU_ACTION_DOWN:
          if (ozone->cursor_in_sidebar)

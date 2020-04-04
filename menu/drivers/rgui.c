@@ -5286,9 +5286,6 @@ static enum menu_action rgui_parse_menu_entry_action(
          rgui_toggle_fs_thumbnail(rgui);
          new_action = MENU_ACTION_NOOP;
          break;
-      case MENU_ACTION_START:
-         new_action = MENU_ACTION_ACCESSIBILITY_SPEAK_TITLE_LABEL;
-         break;
       default:
          /* In all other cases, pass through input
           * menu action without intervention */

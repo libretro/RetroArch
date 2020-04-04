@@ -6842,7 +6842,6 @@ static enum menu_action xmb_parse_menu_entry_action(
             new_action = MENU_ACTION_NOOP;
             break;
          }
-         new_action = MENU_ACTION_ACCESSIBILITY_SPEAK_TITLE_LABEL;
          break;
       default:
          /* In all other cases, pass through input
