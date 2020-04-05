@@ -1133,12 +1133,12 @@ void rcheevos_get_achievement_state(unsigned index, char *buffer, size_t buffer_
    if (index < rcheevos_locals.patchdata.core_count)
    {
       enum_idx = MENU_ENUM_LABEL_VALUE_CHEEVOS_LOCKED_ENTRY;
-      cheevo = &rcheevos_locals.core[index];
+      cheevo = rcheevos_locals.core ? &rcheevos_locals.core[index] : NULL;
    }
    else
    {
       enum_idx = MENU_ENUM_LABEL_VALUE_CHEEVOS_UNOFFICIAL_ENTRY;
-      cheevo = &rcheevos_locals.unofficial[index - rcheevos_locals.patchdata.core_count];
+      cheevo = rcheevos_locals.unofficial ? &rcheevos_locals.unofficial[index - rcheevos_locals.patchdata.core_count] : NULL;
    }
 
    if (!cheevo || !cheevo->trigger)
