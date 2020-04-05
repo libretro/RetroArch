@@ -65,22 +65,35 @@
 #include "../../wii/libogc/include/ogc/conf.h"
 #endif
 
-#define MAX_FB_WIDTH 426
+#if defined(GEKKO)
+/* When running on the Wii, need to round down the
+ * frame buffer width value such that the last two
+ * bits are zero */
+#define RGUI_ROUND_FB_WIDTH(width) ((unsigned)(width) & ~3)
+#else
+/* On all other platforms, just want to round width
+ * down to the nearest multiple of 2 */
+#define RGUI_ROUND_FB_WIDTH(width) ((unsigned)(width) & ~1)
+#endif
+
+#define RGUI_MIN_FB_HEIGHT 192
+#define RGUI_MIN_FB_WIDTH 256
+#define RGUI_MAX_FB_WIDTH 426
 
 #define RGUI_ENTRY_VALUE_MAXLEN 19
 
 #define RGUI_TICKER_SPACER " | "
 
-#define NUM_FONT_GLYPHS_REGULAR 128
-#define NUM_FONT_GLYPHS_EXTENDED 256
+#define RGUI_NUM_FONT_GLYPHS_REGULAR 128
+#define RGUI_NUM_FONT_GLYPHS_EXTENDED 256
 
-#define NUM_PARTICLES 256
+#define RGUI_NUM_PARTICLES 256
 
 #ifndef PI
 #define PI 3.14159265359f
 #endif
 
-#define BATTERY_WARN_THRESHOLD 20
+#define RGUI_BATTERY_WARN_THRESHOLD 20
 
 typedef struct
 {
@@ -572,7 +585,7 @@ typedef struct
    gfx_thumbnail_path_data_t *thumbnail_path_data;
 } rgui_t;
 
-static bool font_lut[NUM_FONT_GLYPHS_EXTENDED][FONT_WIDTH * FONT_HEIGHT];
+static bool font_lut[RGUI_NUM_FONT_GLYPHS_EXTENDED][FONT_WIDTH * FONT_HEIGHT];
 
 /* A 'particle' is just 4 float variables that can
  * be used for any purpose - e.g.:
@@ -591,7 +604,7 @@ typedef struct
    float d;
 } rgui_particle_t;
 
-static rgui_particle_t particles[NUM_PARTICLES] = {{ 0.0f }};
+static rgui_particle_t particles[RGUI_NUM_PARTICLES] = {{ 0.0f }};
 
 /* Particle effect animations update at a base rate
  * of 60Hz (-> 16.666 ms update period) */
@@ -1005,8 +1018,8 @@ static void rgui_fill_rect(
    unsigned x_end   = x + width;
    unsigned y_end   = y + height;
    size_t x_size;
-   uint16_t scanline_even[MAX_FB_WIDTH]; /* Initial values don't matter here */
-   uint16_t scanline_odd[MAX_FB_WIDTH];
+   uint16_t scanline_even[RGUI_MAX_FB_WIDTH]; /* Initial values don't matter here */
+   uint16_t scanline_odd[RGUI_MAX_FB_WIDTH];
 
    /* Note: unlike rgui_color_rect() and rgui_draw_particle(),
     * this function is frequently used to fill large areas.
@@ -1255,7 +1268,7 @@ static void rgui_init_particle_effect(rgui_t *rgui)
       case RGUI_PARTICLE_EFFECT_SNOW:
       case RGUI_PARTICLE_EFFECT_SNOW_ALT:
          {
-            for (i = 0; i < NUM_PARTICLES; i++)
+            for (i = 0; i < RGUI_NUM_PARTICLES; i++)
             {
                rgui_particle_t *particle = &particles[i];
                
@@ -1278,9 +1291,9 @@ static void rgui_init_particle_effect(rgui_t *rgui)
                8, 8, 8,
                9, 9,
                10};
-            unsigned num_drops = (unsigned)(0.85f * ((float)fb_width / (float)MAX_FB_WIDTH) * (float)NUM_PARTICLES);
+            unsigned num_drops = (unsigned)(0.85f * ((float)fb_width / (float)RGUI_MAX_FB_WIDTH) * (float)RGUI_NUM_PARTICLES);
             
-            num_drops = num_drops < NUM_PARTICLES ? num_drops : NUM_PARTICLES;
+            num_drops = num_drops < RGUI_NUM_PARTICLES ? num_drops : RGUI_NUM_PARTICLES;
             
             for (i = 0; i < num_drops; i++)
             {
@@ -1302,7 +1315,7 @@ static void rgui_init_particle_effect(rgui_t *rgui)
             float max_radius         = (float)sqrt((double)((fb_width * fb_width) + (fb_height * fb_height))) / 2.0f;
             float one_degree_radians = PI / 360.0f;
             
-            for (i = 0; i < NUM_PARTICLES; i++)
+            for (i = 0; i < RGUI_NUM_PARTICLES; i++)
             {
                rgui_particle_t *particle = &particles[i];
                
@@ -1319,7 +1332,7 @@ static void rgui_init_particle_effect(rgui_t *rgui)
          break;
       case RGUI_PARTICLE_EFFECT_STARFIELD:
          {
-            for (i = 0; i < NUM_PARTICLES; i++)
+            for (i = 0; i < RGUI_NUM_PARTICLES; i++)
             {
                rgui_particle_t *particle = &particles[i];
                
@@ -1394,7 +1407,7 @@ static void rgui_render_particle_effect(rgui_t *rgui)
             unsigned particle_size;
             bool on_screen;
             
-            for (i = 0; i < NUM_PARTICLES; i++)
+            for (i = 0; i < RGUI_NUM_PARTICLES; i++)
             {
                rgui_particle_t *particle = &particles[i];
                
@@ -1452,10 +1465,10 @@ static void rgui_render_particle_effect(rgui_t *rgui)
                8, 8, 8,
                9, 9,
                10};
-            unsigned num_drops = (unsigned)(0.85f * ((float)fb_width / (float)MAX_FB_WIDTH) * (float)NUM_PARTICLES);
+            unsigned num_drops = (unsigned)(0.85f * ((float)fb_width / (float)RGUI_MAX_FB_WIDTH) * (float)RGUI_NUM_PARTICLES);
             bool on_screen;
             
-            num_drops = num_drops < NUM_PARTICLES ? num_drops : NUM_PARTICLES;
+            num_drops = num_drops < RGUI_NUM_PARTICLES ? num_drops : RGUI_NUM_PARTICLES;
             
             for (i = 0; i < num_drops; i++)
             {
@@ -1494,7 +1507,7 @@ static void rgui_render_particle_effect(rgui_t *rgui)
             float r_speed, theta_speed;
             int x, y;
             
-            for (i = 0; i < NUM_PARTICLES; i++)
+            for (i = 0; i < RGUI_NUM_PARTICLES; i++)
             {
                rgui_particle_t *particle = &particles[i];
                
@@ -1551,7 +1564,7 @@ static void rgui_render_particle_effect(rgui_t *rgui)
             
             /* Based on an example found here:
              * https://codepen.io/nodws/pen/pejBNb */
-            for (i = 0; i < NUM_PARTICLES; i++)
+            for (i = 0; i < RGUI_NUM_PARTICLES; i++)
             {
                rgui_particle_t *particle = &particles[i];
                
@@ -2406,7 +2419,7 @@ static void blit_line_regular(unsigned fb_width, int x, int y,
       unsigned i, j;
       uint8_t symbol = (uint8_t)*message++;
 
-      if (symbol >= NUM_FONT_GLYPHS_REGULAR)
+      if (symbol >= RGUI_NUM_FONT_GLYPHS_REGULAR)
          continue;
 
       if (symbol != ' ')
@@ -2445,7 +2458,7 @@ static void blit_line_regular_shadow(unsigned fb_width, int x, int y,
       unsigned i, j;
       uint8_t symbol = (uint8_t)*message++;
 
-      if (symbol >= NUM_FONT_GLYPHS_REGULAR)
+      if (symbol >= RGUI_NUM_FONT_GLYPHS_REGULAR)
          continue;
 
       if (symbol != ' ')
@@ -2500,7 +2513,7 @@ static void blit_line_extended(unsigned fb_width, int x, int y,
          if (symbol == 338) /* Latin capital ligature oe */
             symbol = 140;
 
-         if (symbol >= NUM_FONT_GLYPHS_EXTENDED)
+         if (symbol >= RGUI_NUM_FONT_GLYPHS_EXTENDED)
             continue;
 
          for (j = 0; j < FONT_HEIGHT; j++)
@@ -2552,7 +2565,7 @@ static void blit_line_extended_shadow(unsigned fb_width, int x, int y,
          if (symbol == 338) /* Latin capital ligature oe */
             symbol = 140;
 
-         if (symbol >= NUM_FONT_GLYPHS_EXTENDED)
+         if (symbol >= RGUI_NUM_FONT_GLYPHS_EXTENDED)
             continue;
 
          for (j = 0; j < FONT_HEIGHT; j++)
@@ -2717,7 +2730,7 @@ static void rgui_init_font_lut(void)
    unsigned symbol_index, i, j;
    
    /* Loop over all possible characters */
-   for (symbol_index = 0; symbol_index < NUM_FONT_GLYPHS_EXTENDED; symbol_index++)
+   for (symbol_index = 0; symbol_index < RGUI_NUM_FONT_GLYPHS_EXTENDED; symbol_index++)
    {
       for (j = 0; j < FONT_HEIGHT; j++)
       {
@@ -3525,7 +3538,7 @@ static void rgui_render(void *data,
             {
                unsigned powerstate_x;
                enum rgui_symbol_type powerstate_symbol;
-               uint16_t powerstate_color = (powerstate.percent > BATTERY_WARN_THRESHOLD || powerstate.charging) 
+               uint16_t powerstate_color = (powerstate.percent > RGUI_BATTERY_WARN_THRESHOLD || powerstate.charging) 
                   ? rgui->colors.title_color 
                   : rgui->colors.hover_color;
 
@@ -4108,9 +4121,21 @@ static void rgui_update_menu_viewport(rgui_t *rgui)
 static bool rgui_set_aspect_ratio(rgui_t *rgui, bool delay_update)
 {
    unsigned base_term_width;
-   settings_t       *settings = config_get_ptr();
-   unsigned rgui_aspect_ratio = settings->uints.menu_rgui_aspect_ratio;
-   unsigned aspect_ratio_lock = settings->uints.menu_rgui_aspect_ratio_lock;
+   unsigned mini_thumbnail_term_width;
+#if defined(GEKKO)
+   size_t fb_pitch;
+   unsigned fb_width, fb_height;
+   /* Note: Maximum Wii frame buffer width is 424, not
+    * the usual 426, since the last two bits of the
+    * width value must be zero... */
+   unsigned max_frame_buf_width = 424;
+#else
+   struct video_viewport vp;
+   unsigned max_frame_buf_width = RGUI_MAX_FB_WIDTH;
+#endif
+   settings_t       *settings   = config_get_ptr();
+   unsigned rgui_aspect_ratio   = settings->uints.menu_rgui_aspect_ratio;
+   unsigned aspect_ratio_lock   = settings->uints.menu_rgui_aspect_ratio_lock;
    
    rgui_framebuffer_free();
    rgui_background_free();
@@ -4121,101 +4146,139 @@ static bool rgui_set_aspect_ratio(rgui_t *rgui, bool delay_update)
    /* Cache new aspect ratio */
    rgui->menu_aspect_ratio = rgui_aspect_ratio;
    
+   /* Set frame buffer dimensions: */
+   
+   /* Frame buffer height */
 #if defined(GEKKO)
-   {
-      size_t fb_pitch;
-      unsigned fb_width, fb_height;
-      
-      gfx_display_get_fb_size(&fb_width, &fb_height, &fb_pitch);
-      
-      /* Set frame buffer dimensions */
-      rgui_frame_buf.height = fb_height;
-      switch (rgui->menu_aspect_ratio)
-      {
-         /* Note: Maximum Wii framebuffer width is 424, not
-          * the usual 426, since the last two bits of the
-          * width value must be zero... */
-         case RGUI_ASPECT_RATIO_16_9:
-            if (rgui_frame_buf.height == 240)
-               rgui_frame_buf.width = 424;
-            else
-               rgui_frame_buf.width = (unsigned)
-                  ((16.0f / 9.0f) * (float)rgui_frame_buf.height) & ~3;
-            base_term_width = rgui_frame_buf.width;
-            break;
-         case RGUI_ASPECT_RATIO_16_9_CENTRE:
-            if (rgui_frame_buf.height == 240)
-            {
-               rgui_frame_buf.width = 424;
-               base_term_width      = 320;
-            }
-            else
-            {
-               rgui_frame_buf.width = (unsigned)
-                  ((16.0f / 9.0f) * (float)rgui_frame_buf.height) & ~3;
-               base_term_width      = (unsigned)
-                  (( 4.0f / 3.0f) * (float)rgui_frame_buf.height) & ~3;
-            }
-            break;
-         case RGUI_ASPECT_RATIO_16_10:
-            if (rgui_frame_buf.height == 240)
-               rgui_frame_buf.width = 384;
-            else
-               rgui_frame_buf.width = (unsigned)
-                  ((16.0f / 10.0f) * (float)rgui_frame_buf.height) & ~3;
-            base_term_width = rgui_frame_buf.width;
-            break;
-         case RGUI_ASPECT_RATIO_16_10_CENTRE:
-            if (rgui_frame_buf.height == 240)
-            {
-               rgui_frame_buf.width = 384;
-               base_term_width      = 320;
-            }
-            else
-            {
-               rgui_frame_buf.width = (unsigned)
-                  ((16.0f / 10.0f) * (float)rgui_frame_buf.height) & ~3;
-               base_term_width      = (unsigned)
-                  (( 4.0f / 3.0f)  * (float)rgui_frame_buf.height) & ~3;
-            }
-            break;
-         default:
-            /* 4:3 */
-            if (rgui_frame_buf.height == 240)
-               rgui_frame_buf.width = 320;
-            else
-               rgui_frame_buf.width = (unsigned)
-                  (( 4.0f / 3.0f)  * (float)rgui_frame_buf.height) & ~3;
-            base_term_width = rgui_frame_buf.width;
-            break;
-      }
-   }
+   /* Since Wii graphics driver can change frame buffer
+    * dimensions at will, have to read currently set
+    * values */
+   gfx_display_get_fb_size(&fb_width, &fb_height, &fb_pitch);
+   rgui_frame_buf.height = fb_height;
 #else
-   /* Set frame buffer dimensions */
+   /* If window height is less than RGUI default
+    * height of 240, allow the frame buffer to
+    * 'shrink' to a minimum height of 192 */
    rgui_frame_buf.height = 240;
+   video_driver_get_viewport_info(&vp);
+   if (vp.full_height < rgui_frame_buf.height)
+      rgui_frame_buf.height = (vp.full_height > RGUI_MIN_FB_HEIGHT) ?
+            vp.full_height : RGUI_MIN_FB_HEIGHT;
+#endif
+   
+   /* Frame buffer width */
    switch (rgui->menu_aspect_ratio)
    {
       case RGUI_ASPECT_RATIO_16_9:
-         rgui_frame_buf.width = 426;
+         if (rgui_frame_buf.height == 240)
+            rgui_frame_buf.width = max_frame_buf_width;
+         else
+            rgui_frame_buf.width = RGUI_ROUND_FB_WIDTH(
+                  (16.0f / 9.0f) * (float)rgui_frame_buf.height);
          base_term_width = rgui_frame_buf.width;
          break;
       case RGUI_ASPECT_RATIO_16_9_CENTRE:
-         rgui_frame_buf.width = 426;
-         base_term_width = 320;
+         if (rgui_frame_buf.height == 240)
+         {
+            rgui_frame_buf.width = max_frame_buf_width;
+            base_term_width      = 320;
+         }
+         else
+         {
+            rgui_frame_buf.width = RGUI_ROUND_FB_WIDTH(
+                  (16.0f / 9.0f) * (float)rgui_frame_buf.height);
+            base_term_width      = RGUI_ROUND_FB_WIDTH(
+                  ( 4.0f / 3.0f) * (float)rgui_frame_buf.height);
+         }
          break;
       case RGUI_ASPECT_RATIO_16_10:
-         rgui_frame_buf.width = 384;
+         if (rgui_frame_buf.height == 240)
+            rgui_frame_buf.width = 384;
+         else
+            rgui_frame_buf.width = RGUI_ROUND_FB_WIDTH(
+                  (16.0f / 10.0f) * (float)rgui_frame_buf.height);
          base_term_width = rgui_frame_buf.width;
          break;
       case RGUI_ASPECT_RATIO_16_10_CENTRE:
-         rgui_frame_buf.width = 384;
-         base_term_width = 320;
+         if (rgui_frame_buf.height == 240)
+         {
+            rgui_frame_buf.width = 384;
+            base_term_width      = 320;
+         }
+         else
+         {
+            rgui_frame_buf.width = RGUI_ROUND_FB_WIDTH(
+                  (16.0f / 10.0f) * (float)rgui_frame_buf.height);
+            base_term_width      = RGUI_ROUND_FB_WIDTH(
+                  ( 4.0f / 3.0f)  * (float)rgui_frame_buf.height);
+         }
          break;
       default:
          /* 4:3 */
-         rgui_frame_buf.width = 320;
+         if (rgui_frame_buf.height == 240)
+            rgui_frame_buf.width = 320;
+         else
+            rgui_frame_buf.width = RGUI_ROUND_FB_WIDTH(
+                  ( 4.0f / 3.0f)  * (float)rgui_frame_buf.height);
          base_term_width = rgui_frame_buf.width;
          break;
+   }
+   
+   /* Ensure frame buffer/terminal width is sane
+    * - Must be less than max_frame_buf_width
+    *   (note that this is a redundant safety
+    *   check - it can never actually happen...)
+    * - On platforms other than the Wii, must
+    *   be less than window width but greater than
+    *   defined minimum width */
+   rgui_frame_buf.width = (rgui_frame_buf.width > max_frame_buf_width) ?
+         max_frame_buf_width : rgui_frame_buf.width;
+   base_term_width = (base_term_width > rgui_frame_buf.width) ?
+         rgui_frame_buf.width : base_term_width;
+#if !defined(GEKKO)
+   if (vp.full_width < rgui_frame_buf.width)
+   {
+      rgui_frame_buf.width = (vp.full_width > RGUI_MIN_FB_WIDTH) ?
+            RGUI_ROUND_FB_WIDTH(vp.full_width) : RGUI_MIN_FB_WIDTH;
+      
+      /* An annoyance: have to rescale the frame buffer
+       * height and terminal width to maintain the correct
+       * aspect ratio... */
+      switch (rgui->menu_aspect_ratio)
+      {
+         case RGUI_ASPECT_RATIO_16_9:
+            rgui_frame_buf.height = (unsigned)(
+                  ( 9.0f / 16.0f) * (float)rgui_frame_buf.width);
+            base_term_width = rgui_frame_buf.width;
+            break;
+         case RGUI_ASPECT_RATIO_16_9_CENTRE:
+            rgui_frame_buf.height = (unsigned)(
+                  ( 9.0f / 16.0f) * (float)rgui_frame_buf.width);
+            base_term_width       = RGUI_ROUND_FB_WIDTH(
+                  ( 4.0f / 3.0f)  * (float)rgui_frame_buf.height);
+            base_term_width = (base_term_width < RGUI_MIN_FB_WIDTH) ?
+                  RGUI_MIN_FB_WIDTH : base_term_width;
+            break;
+         case RGUI_ASPECT_RATIO_16_10:
+            rgui_frame_buf.height = (unsigned)(
+                  (10.0f / 16.0f) * (float)rgui_frame_buf.width);
+            base_term_width = rgui_frame_buf.width;
+            break;
+         case RGUI_ASPECT_RATIO_16_10_CENTRE:
+            rgui_frame_buf.height = (unsigned)(
+                  (10.0f / 16.0f) * (float)rgui_frame_buf.width);
+            base_term_width       = RGUI_ROUND_FB_WIDTH(
+                  ( 4.0f / 3.0f)  * (float)rgui_frame_buf.height);
+            base_term_width = (base_term_width < RGUI_MIN_FB_WIDTH) ?
+                  RGUI_MIN_FB_WIDTH : base_term_width;
+            break;
+         default:
+            /* 4:3 */
+            rgui_frame_buf.height = (unsigned)(
+                  ( 3.0f /  4.0f) * (float)rgui_frame_buf.width);
+            base_term_width = rgui_frame_buf.width;
+            break;
+      }
    }
 #endif
    
@@ -4260,7 +4323,9 @@ static bool rgui_set_aspect_ratio(rgui_t *rgui, bool delay_update)
       return false;
    
    /* Allocate mini thumbnail buffers */
-   rgui->mini_thumbnail_max_width  = ((rgui_term_layout.width - 4) > 19 ? 19 : (rgui_term_layout.width - 4)) * FONT_WIDTH_STRIDE;
+   mini_thumbnail_term_width       = (unsigned)((float)rgui_term_layout.width * (2.0f / 5.0f));
+   mini_thumbnail_term_width       = mini_thumbnail_term_width > 19 ? 19 : mini_thumbnail_term_width;
+   rgui->mini_thumbnail_max_width  = mini_thumbnail_term_width * FONT_WIDTH_STRIDE;
    rgui->mini_thumbnail_max_height = (unsigned)((rgui_term_layout.height * FONT_HEIGHT_STRIDE) * 0.5f) - 2;
    
    mini_thumbnail.max_width        = rgui->mini_thumbnail_max_width;
@@ -4286,7 +4351,8 @@ static bool rgui_set_aspect_ratio(rgui_t *rgui, bool delay_update)
    
    /* If aspect ratio lock is enabled, notify
     * video driver of change */
-   if (aspect_ratio_lock != RGUI_ASPECT_RATIO_LOCK_NONE)
+   if ((aspect_ratio_lock != RGUI_ASPECT_RATIO_LOCK_NONE) &&
+       !rgui->ignore_resize_events)
    {
       rgui_update_menu_viewport(rgui);
       rgui_set_video_config(rgui, &rgui->menu_video_settings, delay_update);
@@ -4360,6 +4426,12 @@ static void *rgui_init(void **userdata, bool video_is_threaded)
    /* Cache initial video settings */
    rgui_get_video_config(&rgui->content_video_settings);
 
+   /* Get initial 'window' dimensions */
+   video_driver_get_viewport_info(&vp);
+   rgui->window_width          = vp.full_width;
+   rgui->window_height         = vp.full_height;
+   rgui->ignore_resize_events  = false;
+
    /* Set aspect ratio
     * - Allocates frame buffer
     * - Configures variable 'menu display' settings */
@@ -4390,12 +4462,6 @@ static void *rgui_init(void **userdata, bool video_is_threaded)
 
    rgui->last_width            = rgui_frame_buf.width;
    rgui->last_height           = rgui_frame_buf.height;
-
-   /* Get initial 'window' dimensions */
-   video_driver_get_viewport_info(&vp);
-   rgui->window_width          = vp.full_width;
-   rgui->window_height         = vp.full_height;
-   rgui->ignore_resize_events  = false;
 
    /* Initialise particle effect, if required */
    if (rgui->particle_effect != RGUI_PARTICLE_EFFECT_NONE)
@@ -4913,10 +4979,19 @@ static void rgui_populate_entries(void *data,
    
    /* If aspect ratio lock is enabled, must restore
     * content video settings when accessing the video
-    * settings menu... */
+    * scaling settings menu... */
    if (aspect_ratio_lock != RGUI_ASPECT_RATIO_LOCK_NONE)
    {
+#if defined(GEKKO)
+      /* On the Wii, have to restore content video settings
+       * at the top level video menu, otherwise changing
+       * resolutions is cumbersome (if menu aspect ratio
+       * is locked while this occurs, menu dimensions
+       * go out of sync...) */
       if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_VIDEO_SETTINGS_LIST)))
+#else
+      if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_VIDEO_SCALING_SETTINGS_LIST)))
+#endif
       {
          /* Make sure that any changes made while accessing
           * the video settings menu are preserved */
@@ -5120,14 +5195,14 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
    /* > Check for changes in aspect ratio */
    if (settings->uints.menu_rgui_aspect_ratio != rgui->menu_aspect_ratio)
    {
-      rgui_set_aspect_ratio(rgui, true);
-
       /* If user changes aspect ratio directly after opening
-       * the video settings menu, then all bets are off - we
-       * can no longer guarantee that changes to aspect ratio
+       * the video scaling settings menu, then all bets are off
+       * - we can no longer guarantee that changes to aspect ratio
        * and custom viewport settings will be preserved. So it
        * no longer makes sense to ignore resize events */
       rgui->ignore_resize_events = false;
+
+      rgui_set_aspect_ratio(rgui, true);
    }
 
    /* > Check for changes in aspect ratio lock setting */
@@ -5139,21 +5214,56 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
          rgui_set_video_config(rgui, &rgui->content_video_settings, true);
       else
       {
+         /* As with changes in aspect ratio, if we reach this point
+          * after visiting the video scaling settings menu, resize
+          * events should be monitored again */
+         rgui->ignore_resize_events = false;
+
          rgui_update_menu_viewport(rgui);
          rgui_set_video_config(rgui, &rgui->menu_video_settings, true);
-
-         /* As with changes in aspect ratio, if we reach this point
-          * after visiting the video settings menu, resize events
-          * should be monitored again */
-         rgui->ignore_resize_events = false;
       }
    }
 
-   /* > If aspect ratio is locked, have to rescale if window
-    *   dimensions change */
+   /* > Check for changes in window (display) dimensions */
    if ((rgui->window_width  != video_width) ||
        (rgui->window_height != video_height))
    {
+#if !defined(GEKKO)
+      /* If window width or height are less than the
+       * RGUI default size of (320-426)x240, must enable
+       * dynamic menu 'downscaling'.
+       * All texture buffers must be regenerated in this
+       * case - easiest way is to just call
+       * rgui_set_aspect_ratio()
+       * > rgui_set_aspect_ratio() must also be called
+       *   when transitioning from a 'downscaled' size
+       *   back the default */
+      unsigned default_fb_width;
+
+      switch (rgui->menu_aspect_ratio)
+      {
+         case RGUI_ASPECT_RATIO_16_9:
+         case RGUI_ASPECT_RATIO_16_9_CENTRE:
+            default_fb_width = RGUI_MAX_FB_WIDTH;
+            break;
+         case RGUI_ASPECT_RATIO_16_10:
+         case RGUI_ASPECT_RATIO_16_10_CENTRE:
+            default_fb_width = 384;
+            break;
+         default:
+            /* 4:3 */
+            default_fb_width = 320;
+            break;
+      }
+
+      if ((video_width < default_fb_width) ||
+          (rgui->window_width < default_fb_width) ||
+          (video_height < 240) ||
+          (rgui->window_height < 240))
+         rgui_set_aspect_ratio(rgui, true);
+#endif
+
+      /* If aspect ratio is locked, have to update viewport */
       if ((aspect_ratio_lock != RGUI_ASPECT_RATIO_LOCK_NONE) &&
           !rgui->ignore_resize_events)
       {
@@ -5229,8 +5339,9 @@ static void rgui_toggle(void *userdata, bool menu_on)
          if (rgui_is_video_config_equal(&current_video_settings, &rgui->menu_video_settings))
             rgui_set_video_config(rgui, &rgui->content_video_settings, false);
          
-         /* Any modified video settings have now been registered,
-          * so it is again 'safe' to respond to window resize events */
+         /* Any modified video scaling settings have now been
+          * registered, so it is again 'safe' to respond to window
+          * resize events */
          rgui->ignore_resize_events = false;
       }
    }
