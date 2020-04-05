@@ -29199,12 +29199,23 @@ static enum runloop_state runloop_check_state(retro_time_t current_time)
    HOTKEY_CHECK(RARCH_GRAB_MOUSE_TOGGLE, CMD_EVENT_GRAB_MOUSE_TOGGLE, true, NULL);
 
 #ifdef HAVE_OVERLAY
-   if (settings->bools.input_overlay_enable)
+   static bool was_input_device_connected = false;
+   bool is_input_device_connected = input_config_get_device_count() > 0;
+   if (is_input_device_connected)
+   {
+      retroarch_overlay_deinit();
+   }
+   else if (settings->bools.input_overlay_enable)
    {
       static char prev_overlay_restore = false;
       bool check_next_rotation         = true;
       static unsigned last_width       = 0;
       static unsigned last_height      = 0;
+
+      if (was_input_device_connected && !is_input_device_connected)
+      {
+         retroarch_overlay_init();
+      }
 
       /* Check next overlay */
       HOTKEY_CHECK(RARCH_OVERLAY_NEXT, CMD_EVENT_OVERLAY_NEXT, true, &check_next_rotation);
@@ -29232,6 +29243,7 @@ static enum runloop_state runloop_check_state(retro_time_t current_time)
          }
       }
    }
+    was_input_device_connected = is_input_device_connected;
 #endif
 
    /* Check quit key */
