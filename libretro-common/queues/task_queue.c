@@ -506,18 +506,28 @@ static void threaded_worker(void *userdata)
       finished = task->finished;
       slock_unlock(property_lock);
 
-      slock_lock(running_lock);
-      task_queue_remove(&tasks_running, task);
-      slock_unlock(running_lock);
-
       /* Update queue */
       if (!finished)
       {
-         /* Re-add task to running queue */
-         retro_task_threaded_push_running(task);
+         /* Move the task to the back of the queue */
+         /* mimics retro_task_threaded_push_running, but also includes a task_queue_remove */
+         slock_lock(running_lock);
+         slock_lock(queue_lock);
+         if (task->next != NULL) /* do nothing if only item in queue */
+         {
+            task_queue_remove(&tasks_running, task);
+            task_queue_put(&tasks_running, task);
+         }
+         slock_unlock(queue_lock);
+         slock_unlock(running_lock);
       }
       else
       {
+         /* Remove task from running queue */
+         slock_lock(running_lock);
+         task_queue_remove(&tasks_running, task);
+         slock_unlock(running_lock);
+
          /* Add task to finished queue */
          slock_lock(finished_lock);
          task_queue_put(&tasks_finished, task);
