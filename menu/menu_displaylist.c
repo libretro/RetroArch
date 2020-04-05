@@ -6443,6 +6443,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS_PORT,PARSE_ONLY_BOOL,  false  },
                {MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_MOUSE_CURSOR,        PARSE_ONLY_BOOL,  false  },
                {MENU_ENUM_LABEL_INPUT_OVERLAY_AUTO_ROTATE,              PARSE_ONLY_BOOL,  false  },
+               {MENU_ENUM_LABEL_INPUT_OVERLAY_AUTO_HIDE,                PARSE_ONLY_BOOL,  false  },
                {MENU_ENUM_LABEL_OVERLAY_PRESET,                         PARSE_ONLY_PATH,  false  },
                {MENU_ENUM_LABEL_OVERLAY_OPACITY,                        PARSE_ONLY_FLOAT, false },
                {MENU_ENUM_LABEL_OVERLAY_SCALE,                          PARSE_ONLY_FLOAT, false },
@@ -6457,6 +6458,7 @@ unsigned menu_displaylist_build_list(
                   case MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS_PORT:
                   case MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_MOUSE_CURSOR:
                   case MENU_ENUM_LABEL_INPUT_OVERLAY_AUTO_ROTATE:
+                  case MENU_ENUM_LABEL_INPUT_OVERLAY_AUTO_HIDE:
                   case MENU_ENUM_LABEL_OVERLAY_PRESET:
                   case MENU_ENUM_LABEL_OVERLAY_OPACITY:
                   case MENU_ENUM_LABEL_OVERLAY_SCALE:

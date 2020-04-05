@@ -141,6 +141,7 @@ typedef struct settings
       bool input_overlay_show_physical_inputs;
       bool input_overlay_show_mouse_cursor;
       bool input_overlay_auto_rotate;
+      bool input_overlay_auto_hide;
       bool input_descriptor_label_show;
       bool input_descriptor_hide_unbound;
       bool input_all_users_control_menu;

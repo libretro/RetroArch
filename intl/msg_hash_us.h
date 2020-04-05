@@ -1583,6 +1583,14 @@ MSG_HASH(
     "If supported by current overlay, automatically rotate layout to match screen orientation/aspect ratio."
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_AUTO_HIDE,
+    "Hide Overlay When Gamepad(s) Connected"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_AUTO_HIDE,
+    "Automatically hide the overlay when an input device such as a controller is connected."
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS_PORT,
     "Show Inputs Listen Port"
     )

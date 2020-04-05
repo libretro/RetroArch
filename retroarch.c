@@ -29201,7 +29201,8 @@ static enum runloop_state runloop_check_state(retro_time_t current_time)
 #ifdef HAVE_OVERLAY
    static bool was_input_device_connected = false;
    bool is_input_device_connected = input_config_get_device_count() > 0;
-   if (is_input_device_connected)
+   bool is_auto_hide_enabled = settings->bools.input_overlay_auto_hide;
+   if (is_auto_hide_enabled && is_input_device_connected)
    {
       retroarch_overlay_deinit();
    }
@@ -29212,7 +29213,7 @@ static enum runloop_state runloop_check_state(retro_time_t current_time)
       static unsigned last_width       = 0;
       static unsigned last_height      = 0;
 
-      if (was_input_device_connected && !is_input_device_connected)
+      if (is_auto_hide_enabled && was_input_device_connected && !is_input_device_connected)
       {
          retroarch_overlay_init();
       }

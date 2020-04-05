@@ -12443,6 +12443,23 @@ static bool setting_append_list(
                );
          (*list)[list_info->index - 1].change_handler = overlay_auto_rotate_toggle_change_handler;
 
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.input_overlay_auto_hide,
+               MENU_ENUM_LABEL_INPUT_OVERLAY_AUTO_HIDE,
+               MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_AUTO_HIDE,
+               DEFAULT_OVERLAY_AUTO_HIDE,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE
+               );
+         (*list)[list_info->index - 1].change_handler = overlay_enable_toggle_change_handler;
+
          CONFIG_PATH(
                list, list_info,
                settings->paths.path_overlay,

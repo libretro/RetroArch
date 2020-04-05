@@ -394,8 +394,10 @@
 
 #if defined(RARCH_MOBILE)
 #define DEFAULT_OVERLAY_AUTO_ROTATE true
+#define DEFAULT_OVERLAY_AUTO_HIDE true
 #else
 #define DEFAULT_OVERLAY_AUTO_ROTATE false
+#define DEFAULT_OVERLAY_AUTO_HIDE false
 #endif
 
 #include "runtime_file.h"
