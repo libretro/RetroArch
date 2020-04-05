@@ -1,9 +1,17 @@
 # Future
 - AUTOCONFIG: Use correct port index in input device configured/disconnected notifications
-- CHD: Fixes a crash caused by ignoring the return value from one of the CHD library functions.
+- BUGFIX: Fix race condition where task could momentarily not be in the queue when reordering
+- CHEEVOS/BUGFIX: Prevent null reference rendering achievement list while closing application
+- CHEEVOS/BUGFIX: Report non-memorymap GBA cores as unsupported
+- CHD: Fixes a crash caused by ignoring the return value from one of the CHD library functions
+- LOCALIZATION: Update Spanish translation
+- METAL/BUGFIX: GPU capture on Metal/OSX/NVidia could crash
+- METAL/BUGFIX: Taking screenshots could capture black frames. Resulting PNG screenshots were black.
+- METAL/BUGFIX: Corrupted image due to incorrect viewport copy when taking screenshot
 - MENU: Prevent font-related segfaults when using extremely small scales/window sizes
 - MENU: Fix 'gfx_display_draw_texture_slice()'
 - MENU/FONT: Enable correct vertical alignment of text (+ font rendering fixes)
+- MENU/RGUI: Enable automatic menu size reduction when running at low resolutions (down to 256x192)
 - MENU/OZONE: Update timedate style options for Last Played sublabel metadata
 - MENU/OZONE: Hide 'Menu Color Theme' setting when 'Use preferred system color theme' is enabled
 - MENU/OZONE: Fix thumbnail switching via 'scan' button functionality
@@ -11,8 +19,10 @@
 - MENU/XMB: Fix thumbnail switching via 'scan' button functionality
 - ODROID GO ADVANCE: Add DRM HW context driver
 - PSL1GHT: Initial port
+- QNX: Support analog sticks
 - SCANNER: Prevent redundant playlist entries when handling M3U content
 - SCANNER/ANDROID: Fix content scanner being unable to identify certain games from CHD images (raw data sector/subcode)
+- TVOS: Disable overlays for tvOS, fix app icon
 
 # 1.8.5
 - 3DS: Keep the bottom screen hidden on sleep/wakeup. When the 3DS wakes back up after being closed, the bottom screen needs to be reinitialized. Adding the condition here will cause the screen to be turned on or off based on the state of ctr_bottom_screen_enabled, as you'd expect
