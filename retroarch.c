@@ -59,6 +59,9 @@
 #include <setjmp.h>
 #include <math.h>
 #include <locale.h>
+#include <time.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 #include <boolean.h>
 #include <clamping.h>
@@ -28994,9 +28997,40 @@ static void update_savestate_slot(void)
 
    msg[0] = '\0';
 
-   snprintf(msg, sizeof(msg), "%s: %d",
-         msg_hash_to_str(MSG_STATE_SLOT),
-         state_slot);
+   char *state_path           = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+   size_t state_path_size     = PATH_MAX_LENGTH * sizeof(char);
+   global_t *global           = global_get_ptr();
+
+   char *file_time            = (char*)malloc(26 * sizeof(char));
+   file_time[0]               = '\0';
+
+   if (global)
+   {
+      settings_t *settings    = config_get_ptr();
+      int state_slot          = settings->ints.state_slot;
+      struct stat fileinfos;
+
+      if (state_slot > 0)
+      snprintf(state_path, state_path_size, "%s%d",
+            global->name.savestate, state_slot);
+      else if (state_slot < 0)
+      fill_pathname_join_delim(state_path,
+            global->name.savestate, "auto", '.', state_path_size);
+      else
+      strlcpy(state_path, global->name.savestate, state_path_size);
+
+      if (stat(state_path, &fileinfos) == 0) {
+         strftime (file_time, 100, " (%Y-%m-%d %H:%M:%S)", localtime (&fileinfos.st_mtim.tv_sec));
+      }
+   }
+
+   snprintf(msg, sizeof(msg), "%s: %d (%s)",
+            msg_hash_to_str(MSG_STATE_SLOT),
+            settings->ints.state_slot,
+            file_time);
+
+   free(state_path);
+   free(file_time);
 
    runloop_msg_queue_push(msg, 2, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
