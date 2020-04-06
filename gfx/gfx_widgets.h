@@ -88,14 +88,27 @@ struct gfx_widget
    void (*frame)(void* data);
 };
 
+/* This structure holds all objects + metadata
+ * corresponding to a particular font */
+typedef struct
+{
+   font_data_t *font;
+   video_font_raster_block_t raster_block;
+   unsigned glyph_width;
+   float line_height;
+   float line_ascender;
+   float line_descender;
+   float line_centre_offset;
+   size_t usage_count;
+} gfx_widget_font_data_t;
+
 gfx_animation_ctx_tag gfx_widgets_get_generic_tag(void);
 float* gfx_widgets_get_pure_white(void);
 unsigned gfx_widgets_get_padding(void);
 unsigned gfx_widgets_get_height(void);
-unsigned gfx_widgets_get_glyph_width(void);
-float gfx_widgets_get_font_size(void);
-font_data_t* gfx_widgets_get_font_regular(void);
-font_data_t* gfx_widgets_get_font_bold(void);
+gfx_widget_font_data_t* gfx_widgets_get_font_regular(void);
+gfx_widget_font_data_t* gfx_widgets_get_font_bold(void);
+gfx_widget_font_data_t* gfx_widgets_get_font_msg_queue(void);
 float* gfx_widgets_get_backdrop_orig(void);
 unsigned gfx_widgets_get_last_video_width(void);
 unsigned gfx_widgets_get_last_video_height(void);
@@ -116,6 +129,19 @@ void gfx_widgets_draw_icon(
       unsigned width, unsigned height,
       float rotation, float scale_factor,
       float *color);
+
+void gfx_widgets_draw_text(
+      gfx_widget_font_data_t* font_data,
+      const char *text,
+      float x, float y,
+      int width, int height,
+      uint32_t color,
+      enum text_alignment text_align,
+      bool draw_outside);
+
+void gfx_widgets_flush_text(
+      unsigned video_width, unsigned video_height,
+      gfx_widget_font_data_t* font_data);
 
 typedef struct gfx_widget gfx_widget_t;
 
