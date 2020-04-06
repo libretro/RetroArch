@@ -88,14 +88,14 @@ static void gfx_widget_generic_message_frame(void* data)
 
    if (state->alpha > 0.0f)
    {
-      video_frame_info_t* video_info      = (video_frame_info_t*)data;
-      void* userdata                      = video_info->userdata;
-      unsigned video_width                = video_info->width;
-      unsigned video_height               = video_info->height;
+      video_frame_info_t* video_info       = (video_frame_info_t*)data;
+      void* userdata                       = video_info->userdata;
+      unsigned video_width                 = video_info->width;
+      unsigned video_height                = video_info->height;
+      unsigned height                      = gfx_widgets_get_generic_message_height();
+      unsigned text_color                  = COLOR_TEXT_ALPHA(0xffffffff, (unsigned)(state->alpha*255.0f));
+      gfx_widget_font_data_t* font_regular = gfx_widgets_get_font_regular();
 
-      unsigned height = gfx_widgets_get_generic_message_height();
-
-      unsigned text_color = COLOR_TEXT_ALPHA(0xffffffff, (unsigned)(state->alpha*255.0f));
       gfx_display_set_alpha(gfx_widgets_get_backdrop_orig(), state->alpha);
 
       gfx_display_draw_quad(userdata,
@@ -105,12 +105,12 @@ static void gfx_widget_generic_message_frame(void* data)
             video_width, video_height,
             gfx_widgets_get_backdrop_orig());
 
-      gfx_display_draw_text(gfx_widgets_get_font_regular(), state->message,
-         video_width/2,
-         video_height - height/2 + gfx_widgets_get_font_size()/4,
-         video_width, video_height,
-         text_color, TEXT_ALIGN_CENTER,
-         1, false, 0, false);
+      gfx_widgets_draw_text(font_regular, state->message,
+            video_width/2,
+            video_height - height/2.0f + font_regular->line_centre_offset,
+            video_width, video_height,
+            text_color, TEXT_ALIGN_CENTER,
+            false);
    }
 }
 
