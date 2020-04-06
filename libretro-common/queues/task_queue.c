@@ -313,6 +313,7 @@ static scond_t *worker_cond     = NULL;
 static sthread_t *worker_thread = NULL;
 static bool worker_continue     = true; /* use running_lock when touching it */
 
+/* 'queue_lock' must be held for the duration of this function */
 static void task_queue_remove(task_queue_t *queue, retro_task_t *task)
 {
    retro_task_t     *t = NULL;
