@@ -1432,6 +1432,22 @@ MSG_HASH(
    "オーバーレイにマウスカーソルを表示"
 )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_AUTO_ROTATE,
+    "オーバーレイを自動回転"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_AUTO_ROTATE,
+    "端末回転時にオーバーレイを自動回転"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_AUTO_HIDE,
+    "オーバーレイを自動非表示"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_AUTO_HIDE,
+    "ゲームコントローラー接続時にオーバーレイを非表示"
+    )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS_PORT,
    "入力表示のポート番号"
 )
