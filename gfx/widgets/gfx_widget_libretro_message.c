@@ -64,8 +64,9 @@ static void gfx_widget_libretro_message_fadeout(void *userdata)
 void gfx_widget_set_libretro_message(const char *msg, unsigned duration)
 {
    gfx_widget_libretro_message_state_t* state = gfx_widget_libretro_message_get_state();
+   gfx_animation_ctx_tag tag                  = (uintptr_t) &state->timer;
+   gfx_widget_font_data_t* font_regular       = gfx_widgets_get_font_regular();
    gfx_timer_ctx_entry_t timer;
-   gfx_animation_ctx_tag tag = (uintptr_t) &state->timer;
 
    if (!gfx_widgets_active())
       return;
@@ -85,7 +86,7 @@ void gfx_widget_set_libretro_message(const char *msg, unsigned duration)
    gfx_timer_start(&state->timer, &timer);
 
    /* Compute text width */
-   state->width = font_driver_get_message_width(gfx_widgets_get_font_regular(), msg, (unsigned)strlen(msg), 1) + gfx_widgets_get_padding() * 2;
+   state->width = font_driver_get_message_width(font_regular->font, msg, (unsigned)strlen(msg), 1) + gfx_widgets_get_padding() * 2;
 }
 
 static void gfx_widget_libretro_message_frame(void *data)
@@ -94,15 +95,14 @@ static void gfx_widget_libretro_message_frame(void *data)
 
    if (state->alpha > 0.0f)
    {
-      video_frame_info_t* video_info  = (video_frame_info_t*)data;
-      void* userdata                  = video_info->userdata;
-      unsigned video_width            = video_info->width;
-      unsigned video_height           = video_info->height;
-
-      unsigned height = gfx_widgets_get_generic_message_height();
-
-      float* backdrop_orign   = gfx_widgets_get_backdrop_orig();
-      unsigned text_color     = COLOR_TEXT_ALPHA(0xffffffff, (unsigned)(state->alpha*255.0f));
+      video_frame_info_t* video_info       = (video_frame_info_t*)data;
+      void* userdata                       = video_info->userdata;
+      unsigned video_width                 = video_info->width;
+      unsigned video_height                = video_info->height;
+      unsigned height                      = gfx_widgets_get_generic_message_height();
+      float* backdrop_orign                = gfx_widgets_get_backdrop_orig();
+      unsigned text_color                  = COLOR_TEXT_ALPHA(0xffffffff, (unsigned)(state->alpha*255.0f));
+      gfx_widget_font_data_t* font_regular = gfx_widgets_get_font_regular();
 
       gfx_display_set_alpha(backdrop_orign, state->alpha);
 
@@ -113,12 +113,12 @@ static void gfx_widget_libretro_message_frame(void *data)
             video_width, video_height,
             backdrop_orign);
 
-      gfx_display_draw_text(gfx_widgets_get_font_regular(), state->message,
-         gfx_widgets_get_padding(),
-         video_height - height/2 + gfx_widgets_get_font_size()/4,
-         video_width, video_height,
-         text_color, TEXT_ALIGN_LEFT,
-         1, false, 0, false);
+      gfx_widgets_draw_text(font_regular, state->message,
+            gfx_widgets_get_padding(),
+            video_height - height/2 + font_regular->line_centre_offset,
+            video_width, video_height,
+            text_color, TEXT_ALIGN_LEFT,
+            false);
    }
 }
 
