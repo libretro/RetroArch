@@ -318,18 +318,14 @@ static void task_queue_remove(task_queue_t *queue, retro_task_t *task)
    retro_task_t     *t = NULL;
    retro_task_t *front = NULL;
 
-   slock_lock(queue_lock);
    front = queue->front;
-   slock_unlock(queue_lock);
 
    /* Remove first element if needed */
    if (task == front)
    {
-      slock_lock(queue_lock);
       queue->front = task->next;
       if (queue->back == task) /* if only element, also update back */
          queue->back = NULL;
-      slock_unlock(queue_lock);
       task->next   = NULL;
       return;
    }
@@ -348,10 +344,8 @@ static void task_queue_remove(task_queue_t *queue, retro_task_t *task)
          /* When removing the tail of the queue, update the tail pointer */
          if (queue->back == task)
          {
-            slock_lock(queue_lock);
             if (queue->back == task)
                queue->back = t;
-            slock_unlock(queue_lock);
          }
          break;
       }
@@ -517,6 +511,7 @@ static void threaded_worker(void *userdata)
          {
             task_queue_remove(&tasks_running, task);
             task_queue_put(&tasks_running, task);
+            scond_signal(worker_cond);
          }
          slock_unlock(queue_lock);
          slock_unlock(running_lock);
@@ -525,7 +520,9 @@ static void threaded_worker(void *userdata)
       {
          /* Remove task from running queue */
          slock_lock(running_lock);
+         slock_lock(queue_lock);
          task_queue_remove(&tasks_running, task);
+         slock_unlock(queue_lock);
          slock_unlock(running_lock);
 
          /* Add task to finished queue */
