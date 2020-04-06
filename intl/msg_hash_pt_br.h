@@ -6202,7 +6202,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_FORCE_SRGB_DISABLE,
-    "Desabilita de forma forçada o suporte sRGB FBO. Alguns drivers Intel OpenGL no Windows possuem problemas de vídeo com o suporte sRGB FBO se estiver habilitado. Habilitando isto pode contornar o problema."
+    "Desabilita de forma forçada o suporte sRGB FBO. Pode contornar problemas com certos drivers Intel OpenGL no Windows."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
@@ -9761,7 +9761,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESTART_CONTENT,
-    "Exibi ou oculta a opção 'Reiniciar conteúdo'."
+    "Exibe ou oculta a opção 'Reiniciar conteúdo'."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CLOSE_CONTENT,
@@ -9769,7 +9769,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CLOSE_CONTENT,
-    "Exibi ou oculta a opção 'Fechar conteúdo'."
+    "Exibe ou oculta a opção 'Fechar conteúdo'."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESUME_CONTENT,
@@ -9777,7 +9777,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESUME_CONTENT,
-    "Exibi ou oculta a opção 'Continuar conteúdo'."
+    "Exibe ou oculta a opção 'Continuar conteúdo'."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SETTINGS_VIEWS_SETTINGS,
@@ -9785,7 +9785,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SETTINGS_VIEWS_SETTINGS,
-    "Exibi ou oculta elementos na tela de Configurações."
+    "Exibe ou oculta elementos na tela de Configurações."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_INPUT,
@@ -9793,7 +9793,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SETTINGS_SHOW_INPUT,
-    "Exibi ou oculta a opção 'Entrada' na tela de Configurações."
+    "Exibe ou oculta a opção 'Entrada' na tela de Configurações."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_SETTINGS,
@@ -10189,7 +10189,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_DUMP_DISC,
-    "Dumpa o disco de mídia física no armazenamento interno. Será salvo como um arquivo de imagem."
+    "Cria uma cópia da mídia física em um arquvo de imagem no armazenamento interno."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_AI_SERVICE_IMAGE_MODE,
