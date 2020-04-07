@@ -630,7 +630,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CONTENT_FAVORITES_SIZE,
-    "Limita o número de entradas na lista de reprodução de favoritos. Uma vez atingido o limite, novas adições serão evitadas até que as entradas antigas sejam removidas. Definir um valor -1 permite entradas 'ilimitadas' (99999). AVISO: A redução do valor excluirá as entradas existentes!"
+    "Limita o número de entradas na lista de reprodução de favoritos. Ao atingir o limite, novas adições serão evitadas até que as entradas antigas sejam removidas. Definir um valor -1 permite entradas 'ilimitadas' (99999). AVISO: A redução do valor excluirá as entradas existentes!"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE,
@@ -1950,7 +1950,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MATERIALUI_MENU_THUMBNAIL_VIEW_PORTRAIT,
-    "Especifica como exibir miniaturas das listas da reprodução na orientação de retrato."
+    "Especifica como exibir miniaturas das listas de reprodução na orientação de retrato."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_THUMBNAIL_VIEW_LANDSCAPE,
@@ -1958,7 +1958,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MATERIALUI_MENU_THUMBNAIL_VIEW_LANDSCAPE,
-    "Especifica como exibir miniaturas das das listas da reprodução na orientação da paisagem."
+    "Especifica como exibir miniaturas das listas de reprodução na orientação de paisagem."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_PORTRAIT_DISABLED,
@@ -2018,7 +2018,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_LINEAR_FILTER,
-    "Adiciona um leve desfoque no menu para remover as arestas de pixel rígido."
+    "Adiciona um leve desfoque para suavizar arestas dos pixels no menu."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_HORIZONTAL_ANIMATION,
@@ -2446,7 +2446,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_SAVESTATE_RESUME,
-    "Feche automaticamente o menu e continue o conteúdo atual depois de selecionar 'Salvar jogo' ou 'Carregar jogo salvo' no menu rápido. Desativar isso pode melhorar o desempenho ao salvar um jogo em dispositivos muito lentos."
+    "Fecha automaticamente o menu e continue o conteúdo atual depois de selecionar 'Salvar jogo' ou 'Carregar jogo salvo' no menu rápido. Desativar isso pode melhorar o desempenho ao salvar um jogo em dispositivos muito lentos."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_INSERT_DISK_RESUME,
@@ -6226,7 +6226,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_FASTFORWARD_RATIO,
-    "Taxa máxima em que o conteúdo será executado quando utilizado o Avanço Rápido (ex: 5.0x para conteúdos em 60fps = 300 fps máx). Se for definido como 0.0x, a taxa de Avanço Rápido é ilimitada (sem FPS máx)."
+    "Taxa máxima em que o conteúdo será executado quando utilizado o Avanço Rápido (ex: 5.0x para conteúdos em 60fps = 300 fps máx). Se definido como 0.0x, a taxa de Avanço Rápido é ilimitada (sem FPS máx)."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SLOWMOTION_RATIO,
@@ -6284,7 +6284,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_REWIND_BUFFER_SIZE,
-    "A quantidade de memória (em MB) para reservar ao buffer de rebobinamento .  Aumentar esse valor aumentará a quantidade de histórico do rebobinamento."
+    "A quantidade de memória (em MB) para reservar ao buffer de rebobinamento.  Aumentar esse valor aumentará a quantidade de histórico do rebobinamento."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_REWIND_BUFFER_SIZE_STEP,
@@ -6390,11 +6390,11 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_SUBLABEL_PERFCNT_ENABLE,
     "Contadores de desempenho para o RetroArch (e núcleos).\n"
-    "O contador de dados pode ajudar a determinar os gargalos do sistema e ajustar o desempenho do sistema e do aplicativo"
+    "Ele pode ajudar a determinar os gargalos do sistema e ajustar o desempenho do sistema e do aplicativo"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_SAVE,
-    "Cria automaticamente um jogo salvo no final da execução do RetroArch. O RetroArch irá carregar automaticamente este jogo salvo se a função 'Carregar automaticamente jogo salvo' estiver habilitada."
+    "Cria automaticamente um jogo salvo ao encerrar o RetroArch. O RetroArch irá carregar automaticamente este jogo salvo se a função 'Carregar automaticamente jogo salvo' estiver habilitada."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_LOAD,
@@ -6522,7 +6522,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_NETPLAY_PUBLIC_ANNOUNCE,
-    "Anuncia os jogos em rede publicamente. Se não for definido, os clientes deverão conectar manualmente em vez de usar o lobby público."
+    "Anuncia os jogos em rede publicamente. Se não definido, os clientes deverão conectar manualmente em vez de usar o lobby público."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_NETPLAY_SPECTATE_PASSWORD,
@@ -6770,15 +6770,15 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
-    "Salva um arquivo de personalização de configuração que será aplicado a todo o conteúdo carregado por este núcleo. Terá prioridade sobre a configuração principal."
+    "Salva um arquivo de configuração que será aplicado a todo o conteúdo carregado por este núcleo. Terá prioridade sobre a configuração principal."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
-    "Salva um arquivo de personalização de configuração que será aplicado a todo o conteúdo carregado no mesmo diretório que o arquivo atual. Terá prioridade sobre a configuração principal."
+    "Salva um arquivo de configuração que será aplicado a todo o conteúdo carregado no mesmo diretório que o arquivo atual. Terá prioridade sobre a configuração principal."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
-    "Salva um arquivo de personalização de configuração que será aplicado apenas ao conteúdo atual. Terá prioridade sobre a configuração principal."
+    "Salva um arquivo de configuração que será aplicado apenas ao conteúdo atual. Terá prioridade sobre a configuração principal."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_CORE_CHEAT_OPTIONS,
@@ -6879,7 +6879,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_XMB_RIBBON_ENABLE,
-    "Seleciona um efeito de plano de fundo animado. Pode exigir mais processamento da GPU dependendo do efeito. Se o desempenho for insatisfatório, desligue este efeito ou reverta para um mais simples."
+    "Seleciona um efeito de plano de fundo animado. Pode exigir mais processamento gráfico. Se o desempenho for insatisfatório, desligue este efeito ou reverta para um mais simples."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_XMB_FONT,
@@ -7311,7 +7311,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MATERIALUI_SHOW_NAV_BAR,
-    "Exibe atalhos de navegação permanentes no menu na tela. Permite a troca rápida entre as categorias de menu. Recomendado para dispositivos touchscreen."
+    "Exibe atalhos de navegação permanentes no menu na tela. Permite a troca rápida entre as categorias de menu. Recomendado para telas de toque."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MATERIALUI_AUTO_ROTATE_NAV_BAR,
@@ -7335,7 +7335,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MATERIALUI_THUMBNAIL_BACKGROUND_ENABLE,
-    "Permite o preenchimento de espaço não utilizado nas imagens em miniatura com um fundo sólido. Isso garante um tamanho de exibição uniforme para todas as imagens, melhorando a aparência do menu ao exibir miniaturas de conteúdo misto com diferentes dimensões básicas."
+    "Preenche o espaço não utilizado nas imagens em miniatura com um fundo sólido. Isso garante um tamanho de exibição uniforme para todas as imagens, melhorando a aparência do menu ao exibir miniaturas de conteúdo misto com diferentes dimensões básicas."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_XMB_MAIN_MENU_ENABLE_SETTINGS,
