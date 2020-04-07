@@ -1103,9 +1103,12 @@ static int action_bind_sublabel_playlist_entry(
    /* Read playlist entry */
    playlist_get_index(playlist, i, &entry);
 
-   /* Only add sublabel if a core is currently assigned */
+   /* Only add sublabel if a core is currently assigned
+    * > Both core name and core path must be valid */
    if (  string_is_empty(entry->core_name) || 
-         string_is_equal(entry->core_name, "DETECT"))
+         string_is_equal(entry->core_name, "DETECT") ||
+         string_is_empty(entry->core_path) ||
+         string_is_equal(entry->core_path, "DETECT"))
       return 0;
 
    /* Add core name */

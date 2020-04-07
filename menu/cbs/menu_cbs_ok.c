@@ -1211,9 +1211,13 @@ static bool menu_content_playlist_load(playlist_t *playlist, size_t idx)
    char path[PATH_MAX_LENGTH];
    const struct playlist_entry *entry = NULL;
 
+   path[0] = '\0';
+
    playlist_get_index(playlist, idx, &entry);
 
-   path[0] = '\0';
+   if (!entry || string_is_empty(entry->path))
+      return false;
+
    strlcpy(path, entry->path, sizeof(path));
    playlist_resolve_path(PLAYLIST_LOAD, path, sizeof(path));
 
@@ -2074,9 +2078,13 @@ static int action_ok_playlist_entry_collection(const char *path,
       return 1;
    }
 
-   /* Is the core path / name of the playlist entry not yet filled in? */
-   if (     string_is_equal(entry->core_path, "DETECT")
-         && string_is_equal(entry->core_name, "DETECT"))
+   /* Check whether playlist already has core path/name
+    * assignments
+    * > Both core name and core path must be valid */
+   if (     string_is_empty(entry->core_path)
+         || string_is_empty(entry->core_name)
+         || string_is_equal(entry->core_path, "DETECT")
+         || string_is_equal(entry->core_name, "DETECT"))
    {
       core_info_ctx_find_t core_info;
       const char *entry_path                 = NULL;
@@ -2127,7 +2135,7 @@ static int action_ok_playlist_entry_collection(const char *path,
    else
    {
       strlcpy(new_core_path, entry->core_path, sizeof(new_core_path));
-       playlist_resolve_path(PLAYLIST_LOAD, new_core_path, sizeof(new_core_path));
+      playlist_resolve_path(PLAYLIST_LOAD, new_core_path, sizeof(new_core_path));
    }
 
    if (!playlist || !menu_content_playlist_load(playlist, selection_ptr))
@@ -2172,8 +2180,13 @@ static int action_ok_playlist_entry(const char *path,
 
    entry_label = entry->label;
 
-   if (     string_is_equal(entry->core_path, "DETECT")
-         && string_is_equal(entry->core_name, "DETECT"))
+   /* Check whether playlist already has core path/name
+    * assignments
+    * > Both core name and core path must be valid */
+   if (     string_is_empty(entry->core_path)
+         || string_is_empty(entry->core_name)
+         || string_is_equal(entry->core_path, "DETECT")
+         || string_is_equal(entry->core_name, "DETECT"))
    {
       core_info_ctx_find_t core_info;
       const char *default_core_path          =
@@ -2212,7 +2225,7 @@ static int action_ok_playlist_entry(const char *path,
       }
 
    }
-   else if (!string_is_empty(entry->core_path))
+   else
    {
       strlcpy(new_core_path, entry->core_path, sizeof(new_core_path));
       playlist_resolve_path(PLAYLIST_LOAD, new_core_path, sizeof(new_core_path));
@@ -2251,8 +2264,13 @@ static int action_ok_playlist_entry_start_content(const char *path,
 
    playlist_get_index(playlist, selection_ptr, &entry);
 
-   if (     string_is_equal(entry->core_path, "DETECT")
-         && string_is_equal(entry->core_name, "DETECT"))
+   /* Check whether playlist already has core path/name
+    * assignments
+    * > Both core name and core path must be valid */
+   if (     string_is_empty(entry->core_path)
+         || string_is_empty(entry->core_name)
+         || string_is_equal(entry->core_path, "DETECT")
+         || string_is_equal(entry->core_name, "DETECT"))
    {
       core_info_ctx_find_t core_info;
       char new_core_path[PATH_MAX_LENGTH];

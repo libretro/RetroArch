@@ -2450,36 +2450,38 @@ static int playlist_qsort_func(const struct playlist_entry *a,
     * have no other option...) */
    if (string_is_empty(a_str))
    {
-      if (string_is_empty(a->path))
-         goto end;
-
       a_fallback_label = (char*)calloc(PATH_MAX_LENGTH, sizeof(char));
 
       if (!a_fallback_label)
          goto end;
 
-      fill_short_pathname_representation(a_fallback_label, a->path, PATH_MAX_LENGTH * sizeof(char));
+      if (!string_is_empty(a->path))
+         fill_short_pathname_representation(a_fallback_label, a->path, PATH_MAX_LENGTH * sizeof(char));
+      /* If filename is also empty, use core name
+       * instead -> this matches the behaviour of
+       * menu_displaylist_parse_playlist() */
+      else if (!string_is_empty(a->core_name))
+         strlcpy(a_fallback_label, a->core_name, PATH_MAX_LENGTH * sizeof(char));
 
-      if (string_is_empty(a_fallback_label))
-         goto end;
+      /* If both filename and core name are empty,
+       * then have to compare an empty string
+       * -> again, this is to match the behaviour of
+       * menu_displaylist_parse_playlist() */
 
       a_str = a_fallback_label;
    }
 
    if (string_is_empty(b_str))
    {
-      if (string_is_empty(b->path))
-         goto end;
-
       b_fallback_label = (char*)calloc(PATH_MAX_LENGTH, sizeof(char));
 
       if (!b_fallback_label)
          goto end;
 
-      fill_short_pathname_representation(b_fallback_label, b->path, PATH_MAX_LENGTH * sizeof(char));
-
-      if (string_is_empty(b_fallback_label))
-         goto end;
+      if (!string_is_empty(b->path))
+         fill_short_pathname_representation(b_fallback_label, b->path, PATH_MAX_LENGTH * sizeof(char));
+      else if (!string_is_empty(b->core_name))
+         strlcpy(b_fallback_label, b->core_name, PATH_MAX_LENGTH * sizeof(char));
 
       b_str = b_fallback_label;
    }
