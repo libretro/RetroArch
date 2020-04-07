@@ -7311,7 +7311,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MATERIALUI_SHOW_NAV_BAR,
-    "Exibe atalhos de navegação permanentes no menu na tela. Permite a troca rápida entre as categorias de menu. Recomendado para telas de toque."
+    "Exibe atalhos fixos de navegação do menu na tela. Permite a troca rápida entre as categorias de menu. Recomendado para telas de toque."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MATERIALUI_AUTO_ROTATE_NAV_BAR,
