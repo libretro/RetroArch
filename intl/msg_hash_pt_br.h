@@ -10189,7 +10189,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_DUMP_DISC,
-    "Cria uma cópia da mídia física em um arquvo de imagem no armazenamento interno."
+    "Cria uma cópia da mídia física em um arquivo de imagem no armazenamento interno."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_AI_SERVICE_IMAGE_MODE,
