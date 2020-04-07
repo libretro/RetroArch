@@ -6390,7 +6390,7 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_SUBLABEL_PERFCNT_ENABLE,
     "Contadores de desempenho para o RetroArch (e núcleos).\n"
-    "Ele pode ajudar a determinar os gargalos do sistema e ajustar o desempenho do sistema e do aplicativo"
+    "Ele pode ajudar a determinar gargalos e ajustar o desempenho do sistema e do aplicativo"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_SAVE,
