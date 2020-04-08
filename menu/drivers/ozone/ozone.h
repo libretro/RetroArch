@@ -86,27 +86,29 @@ enum ozone_onscreen_entry_position_type
    OZONE_ONSCREEN_ENTRY_CENTRE
 };
 
+/* This structure holds all objects + metadata
+ * corresponding to a particular font */
+typedef struct
+{
+   font_data_t *font;
+   video_font_raster_block_t raster_block;
+   int glyph_width;
+   int line_height;
+   int line_ascender;
+   int line_centre_offset;
+} ozone_font_data_t;
+
 struct ozone_handle
 {
    struct
    {
-      font_data_t *footer;
-      font_data_t *title;
-      font_data_t *time;
-      font_data_t *entries_label;
-      font_data_t *entries_sublabel;
-      font_data_t *sidebar;
+      ozone_font_data_t footer;
+      ozone_font_data_t title;
+      ozone_font_data_t time;
+      ozone_font_data_t entries_label;
+      ozone_font_data_t entries_sublabel;
+      ozone_font_data_t sidebar;
    } fonts;
-
-   struct
-   {
-      video_font_raster_block_t footer;
-      video_font_raster_block_t title;
-      video_font_raster_block_t time;
-      video_font_raster_block_t entries_label;
-      video_font_raster_block_t entries_sublabel;
-      video_font_raster_block_t sidebar;
-   } raster_blocks;
 
    uintptr_t textures[OZONE_THEME_TEXTURE_LAST];
    uintptr_t icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_LAST];
@@ -156,20 +158,6 @@ struct ozone_handle
 
    bool draw_sidebar;
    float sidebar_offset;
-
-   unsigned title_font_glyph_width;
-   unsigned entry_font_glyph_width;
-   unsigned sublabel_font_glyph_width;
-   unsigned footer_font_glyph_width;
-   unsigned sidebar_font_glyph_width;
-   unsigned time_font_glyph_width;
-
-   unsigned title_font_glyph_height;
-   unsigned entry_font_glyph_height;
-   unsigned sublabel_font_glyph_height;
-   unsigned footer_font_glyph_height;
-   unsigned sidebar_font_glyph_height;
-   unsigned time_font_glyph_height;
 
    ozone_theme_t *theme;
 
@@ -304,6 +292,7 @@ typedef struct ozone_node
    unsigned height;
    unsigned position_y;
    bool wrap;
+   unsigned sublabel_lines;
    char *fullpath;
 
    /* Console tabs */
@@ -387,5 +376,9 @@ void ozone_show_fullscreen_thumbnails(ozone_handle_t *ozone);
 unsigned ozone_count_lines(const char *str);
 
 void ozone_update_content_metadata(ozone_handle_t *ozone);
+
+void ozone_font_flush(
+      unsigned video_width, unsigned video_height,
+      ozone_font_data_t *font_data);
 
 #endif
