@@ -6394,11 +6394,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_SAVE,
-    "Cria automaticamente um jogo salvo ao encerrar o RetroArch. O RetroArch irá carregar automaticamente este jogo salvo se a função 'Carregar automaticamente jogo salvo' estiver habilitada."
+    "Cria automaticamente um jogo salvo ao encerrar o RetroArch. Ele carregará automaticamente se a função 'Carregar automaticamente jogo salvo' estiver habilitada."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_LOAD,
-    "Carrega automaticamente o último jogo salvo auto salvo na inicialização do RetroArch."
+    "Carrega automaticamente o último jogo salvo na inicialização do RetroArch."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SAVESTATE_THUMBNAIL_ENABLE,
