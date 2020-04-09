@@ -1184,12 +1184,14 @@ static void ozone_render(void *data,
    ozone->cursor_x_old = ozone->pointer.x;
    ozone->cursor_y_old = ozone->pointer.y;
 
-   /* Pointer is disabled when showing fullscreen
-    * thumbnails, and when the on-screen keyboard
-    * is active */
+   /* Pointer is disabled when:
+    * - Showing fullscreen thumbnails
+    * - On-screen keyboard is active
+    * - A message box is being displayed */
    pointer_enabled = ozone->cursor_mode &&
          !ozone->show_fullscreen_thumbnails &&
-         !menu_input_dialog_get_display_kb();
+         !menu_input_dialog_get_display_kb() &&
+         !ozone->should_draw_messagebox;
 
    /* Process pointer input, if required */
    if (pointer_enabled)
@@ -1217,18 +1219,25 @@ static void ozone_render(void *data,
 
       /* Check whether pointer is operating on entries
        * or sidebar
-       * > Note: Since touchscreens effectively 'lose their
+       * > Note 1: Since touchscreens effectively 'lose their
        *   place' when a touch is released, we can only perform
        *   this this check if the pointer is currently
        *   pressed - i.e. we must preserve the values set the
        *   last time the screen was touched.
        *   With mouse input we have a permanent cursor, so this
-       *   is not an issue */
+       *   is not an issue
+       * > Note 2: Windows seems to report negative pointer
+       *   coordinates when the cursor goes off the left hand
+       *   side of the screen/window, so checking whether
+       *   pointer.x is less than the effective sidebar width
+       *   generates a false positive when ozone->depth > 1.
+       *   We therefore must also check whether the sidebar
+       *   is currently being drawn */
       ozone->last_pointer_in_sidebar = ozone->pointer_in_sidebar;
       if ((ozone->pointer.type == MENU_POINTER_MOUSE) ||
            ozone->pointer.pressed)
-         ozone->pointer_in_sidebar   = ozone->pointer.x <
-               ozone->dimensions.sidebar_width + ozone->sidebar_offset;
+         ozone->pointer_in_sidebar   = ozone->draw_sidebar &&
+               (ozone->pointer.x < ozone->dimensions.sidebar_width + ozone->sidebar_offset);
 
       /* If pointer has switched from entries to sidebar
        * or vice versa, must reset pointer acceleration */
