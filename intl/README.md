@@ -3,7 +3,7 @@
 ## Steps
 
 - Developers update strings in `msg_hash_us.h`.
-- Developers (can set a cron job) run `./h2json.py msg_hash_us.h` to generate `msg_hash_us.json`. It is just a convenient format that is supported by Weblate/Crowdin/Transifex and doesn't need to be inversion control.
+- Developers (can set a cron job) run `./h2json.py msg_hash_us.h` to generate `msg_hash_us.json`. It is just a convenient format that is supported by Weblate/Crowdin/Transifex and doesn't need to be in version control.
 - Developers (can set a cron job) upload `msg_hash_us.json` to Weblate/Crowdin/Transifex.
 - Translators translate strings on Weblate/Crowdin/Transifex.
 - Developers (can set a cron job) download `msg_hash_xx.json` files.
