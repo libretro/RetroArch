@@ -298,14 +298,15 @@ runtime_log_t *runtime_log_init(
       return NULL;
    }
 
+   if (  string_is_empty(core_path) ||
+         string_is_equal(core_path, "builtin") ||
+         string_is_equal(core_path, "DETECT"))
+      return NULL;
+
    core_path_basename = path_basename(core_path);
    
    if (  string_is_empty(content_path) || 
          string_is_empty(core_path_basename))
-      return NULL;
-   
-   if (  string_is_equal(core_path, "builtin") || 
-         string_is_equal(core_path, "DETECT"))
       return NULL;
    
    /* Get core name

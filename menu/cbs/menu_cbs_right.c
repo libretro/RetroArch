@@ -475,7 +475,8 @@ static int action_right_video_resolution(unsigned type, const char *label,
 
 static int playlist_association_right(unsigned type, const char *label,
       bool wraparound)
-{ char core_path[PATH_MAX_LENGTH];
+{
+   char core_path[PATH_MAX_LENGTH];
    size_t i, next, current          = 0;
    core_info_list_t *core_info_list = NULL;
    core_info_t *core_info           = NULL;

@@ -965,7 +965,9 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
 
          if (show_inline_core_name)
          {
-            if (!string_is_empty(entry->core_name) && !string_is_equal(entry->core_name, "DETECT"))
+            /* Both core name and core path must be valid */
+            if (!string_is_empty(entry->core_name) && !string_is_equal(entry->core_name, "DETECT") &&
+                !string_is_empty(entry->core_path) && !string_is_equal(entry->core_path, "DETECT"))
             {
                strlcat(menu_entry_label, label_spacer, sizeof(menu_entry_label));
                strlcat(menu_entry_label, entry->core_name, sizeof(menu_entry_label));
@@ -977,11 +979,19 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
       }
       else
       {
-         if (entry->core_name)
+         /* Playlist entry without content...
+          * This is useless/broken, but have to include
+          * it otherwise synchronisation between the menu
+          * and the underlying playlist will be lost...
+          * > Use label if available, otherwise core name
+          * > If both are missing, add an empty menu entry */
+         if (!string_is_empty(entry->label))
+            strlcpy(menu_entry_label, entry->label, sizeof(menu_entry_label));
+         else if (!string_is_empty(entry->core_name))
             strlcpy(menu_entry_label, entry->core_name, sizeof(menu_entry_label));
 
          menu_entries_append_enum(info->list, menu_entry_label, path_playlist,
-               MENU_ENUM_LABEL_PLAYLIST_ENTRY, FILE_TYPE_PLAYLIST_ENTRY, 0, i);
+               MENU_ENUM_LABEL_PLAYLIST_ENTRY, FILE_TYPE_RPL_ENTRY, 0, i);
       }
 
       info->count++;
@@ -3086,7 +3096,12 @@ static unsigned menu_displaylist_parse_content_information(
          core_path     = entry->core_path;
          db_name       = entry->db_name;
 
-         strlcpy(core_name, entry->core_name, sizeof(core_name));
+         /* Only display core name if both core name and
+          * core path are valid */
+         if (!string_is_empty(entry->core_name) &&
+             !string_is_empty(core_path) &&
+             !string_is_equal(core_path, "DETECT"))
+            strlcpy(core_name, entry->core_name, sizeof(core_name));
       }
    }
    else
