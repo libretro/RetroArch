@@ -55,14 +55,85 @@ typedef struct ps3_input
    unsigned mice_connected;
 #endif
    const input_device_driver_t *joypad;
+   KbInfo kbinfo;
+   KbData kbdata[MAX_KB_PORT_NUM];
+   int connected[MAX_KB_PORT_NUM];
 } ps3_input_t;
+
+static void connect_keyboard(ps3_input_t *ps3, int port)
+{
+    ioKbSetCodeType(port, KB_CODETYPE_RAW);
+    ioKbSetReadMode(port, KB_RMODE_INPUTCHAR);
+    ps3->connected[port] = 1;
+}
+
+static void disconnect_keyboard(ps3_input_t *ps3, int port)
+{
+    ps3->connected[port] = 0;
+}
 
 static void ps3_input_poll(void *data)
 {
    ps3_input_t *ps3 = (ps3_input_t*)data;
+   KbData last_kbdata[MAX_KB_PORT_NUM];
 
    if (ps3 && ps3->joypad)
       ps3->joypad->poll();
+
+   ioKbGetInfo(&ps3->kbinfo);
+   for (int i = 0; i < MAX_KB_PORT_NUM; i++) {
+     if(ps3->kbinfo.status[i] && !ps3->connected[i])
+	 connect_keyboard(ps3, i);
+//     if(!ps3->kbinfo.status[i] && ps3->connected[i])
+//	 disconnect_keyboard(ps3, i);
+   }
+
+   memcpy(last_kbdata, ps3->kbdata, sizeof(last_kbdata));
+   for (int i = 0; i < MAX_KB_PORT_NUM; i++) {
+     if(ps3->kbinfo.status[i])
+       ioKbRead(i, &ps3->kbdata[i]);
+   }
+
+   for (int i = 0; i < MAX_KB_PORT_NUM; i++) {
+     /* Set keyboard modifier based on shift,ctrl and alt state */
+     uint16_t mod          = 0;
+
+     if (ps3->kbdata[i].mkey._KbMkeyU._KbMkeyS.l_alt || ps3->kbdata[i].mkey._KbMkeyU._KbMkeyS.r_alt)
+       mod |= RETROKMOD_ALT;
+     if (ps3->kbdata[i].mkey._KbMkeyU._KbMkeyS.l_ctrl || ps3->kbdata[i].mkey._KbMkeyU._KbMkeyS.r_ctrl)
+       mod |= RETROKMOD_CTRL;
+     if (ps3->kbdata[i].mkey._KbMkeyU._KbMkeyS.l_shift || ps3->kbdata[i].mkey._KbMkeyU._KbMkeyS.r_shift)
+       mod |= RETROKMOD_SHIFT;
+     /* TODO: windows keys.  */
+
+     for (int j = 0; j < last_kbdata[i].nb_keycode; j++) {
+       int code = last_kbdata[i].keycode[j];
+       int newly_depressed = 1;
+       for (int k = 0; k < MAX_KB_PORT_NUM; i++)
+	 if (ps3->kbdata[i].keycode[k] == code) {
+	   newly_depressed = 0;
+	   break;
+	 }
+       if (newly_depressed) {
+	 unsigned keyboardcode = input_keymaps_translate_keysym_to_rk(code);
+	 input_keyboard_event(false, keyboardcode, keyboardcode, mod, RETRO_DEVICE_KEYBOARD);
+       }
+     }
+
+     for (int j = 0; j < ps3->kbdata[i].nb_keycode; j++) {
+       int code = ps3->kbdata[i].keycode[j];
+       int newly_pressed = 1;
+       for (int k = 0; k < MAX_KB_PORT_NUM; i++)
+	 if (last_kbdata[i].keycode[k] == code) {
+	   newly_pressed = 0;
+	   break;
+	 }
+       if (newly_pressed) {
+	 unsigned keyboardcode = input_keymaps_translate_keysym_to_rk(code);
+	 input_keyboard_event(true, keyboardcode, keyboardcode, mod, RETRO_DEVICE_KEYBOARD);
+       }
+     }
+   }
 }
 
 #ifdef HAVE_MOUSE
@@ -73,6 +144,46 @@ static int16_t ps3_mouse_device_state(ps3_input_t *ps3,
 }
 
 #endif
+
+static int mod_table[] = {
+    RETROK_RSUPER,
+    RETROK_RALT,
+    RETROK_RSHIFT,
+    RETROK_RCTRL,
+    RETROK_LSUPER,
+    RETROK_LALT,
+    RETROK_LSHIFT,
+    RETROK_LCTRL
+};
+
+static bool
+psl1ght_keyboard_port_input_pressed(ps3_input_t *ps3, unsigned id)
+{
+  if (id >= RETROK_LAST || id == 0)
+    return false;
+  for (int i = 0; i < 8; i++) {
+      if (id == mod_table[i]) {
+	  for (int j = 0; j < MAX_KB_PORT_NUM; j++) {
+	      if(ps3->kbinfo.status[j] && (ps3->kbdata[j].mkey._KbMkeyU.mkeys &
+					   (1 << i)))
+		  return true;
+	  }
+	  return false;
+      }
+  }
+
+  int code = rarch_keysym_lut[id];
+  if (code == 0)
+    return false;
+  for (int i = 0; i < MAX_KB_PORT_NUM; i++) {
+    if(ps3->kbinfo.status[i])
+      for (int j = 0; j < ps3->kbdata[i].nb_keycode; j++) {
+	if (ps3->kbdata[i].keycode[j] == code)
+	  return true;
+      }
+  }
+  return false;
+}
 
 static int16_t ps3_input_state(void *data,
       rarch_joypad_info_t *joypad_info,
@@ -112,6 +223,9 @@ static int16_t ps3_input_state(void *data,
                   ret |= (1 << i);
                   continue;
                }
+	       else if (psl1ght_keyboard_port_input_pressed(ps3, binds[port][i].key))
+                  ret |= (1 << i);
+
             }
 
             return ret;
@@ -129,12 +243,16 @@ static int16_t ps3_input_state(void *data,
                return true;
             if (((float)abs(ps3->joypad->axis(joypad_info->joy_idx, joyaxis)) / 0x8000) > joypad_info->axis_threshold)
                return true;
+	    if (psl1ght_keyboard_port_input_pressed(ps3, binds[port][id].key))
+               return true;
          }
          break;
       case RETRO_DEVICE_ANALOG:
 	if (binds[port])
 	    return input_joypad_analog(ps3->joypad, joypad_info, port, idx, id, binds[port]);
          break;
+      case RETRO_DEVICE_KEYBOARD:
+	return (psl1ght_keyboard_port_input_pressed(ps3, id));
    }
 
    return 0;
@@ -142,7 +260,8 @@ static int16_t ps3_input_state(void *data,
 
 static void ps3_input_free_input(void *data)
 {
-    RARCH_LOG("alive " __FILE__ ":%d\n", __LINE__);
+    ioPadEnd();
+    ioKbEnd();
 }
 
 static void* ps3_input_init(const char *joypad_driver)
@@ -156,6 +275,26 @@ static void* ps3_input_init(const char *joypad_driver)
    if (ps3->joypad)
       ps3->joypad->init(ps3);
 
+   /* Keyboard  */
+
+   input_keymaps_init_keyboard_lut(rarch_key_map_psl1ght);
+
+   int status;
+   
+   status = ioKbInit(MAX_KB_PORT_NUM);
+   RARCH_LOG("Calling ioKbInit(%d) returned %d\r\n", MAX_KB_PORT_NUM, status);
+
+   status = ioKbGetInfo(&ps3->kbinfo);
+   RARCH_LOG("Calling ioKbGetInfo() returned %d\r\n", status);
+	
+   RARCH_LOG("KbInfo:\r\nMax Kbs: %u\r\nConnected Kbs: %u\r\nInfo Field: %08x\r\n", ps3->kbinfo.max, ps3->kbinfo.connected, ps3->kbinfo.info);
+
+   for (int i = 0; i < MAX_KB_PORT_NUM; i++) {
+       if(ps3->kbinfo.status[i]) {
+	   connect_keyboard(ps3, i);
+       }
+   }
+
    return ps3;
 }
 
@@ -166,6 +305,7 @@ static uint64_t ps3_input_get_capabilities(void *data)
 #ifdef HAVE_MOUSE
       (1 << RETRO_DEVICE_MOUSE)  |
 #endif
+      (1 << RETRO_DEVICE_KEYBOARD)  |
       (1 << RETRO_DEVICE_JOYPAD) |
       (1 << RETRO_DEVICE_ANALOG);
 }
