@@ -8672,12 +8672,17 @@ bool command_event(enum event_command cmd, void *data)
             if (!history_list_enable)
                return false;
 
+            /* Note: Sorting is disabled by default for
+             * all content history playlists */
+
             RARCH_LOG("%s: [%s].\n",
                   msg_hash_to_str(MSG_LOADING_HISTORY_FILE),
                   path_content_history);
             g_defaults.content_history = playlist_init(
                   path_content_history,
                   content_history_size);
+            playlist_set_sort_mode(
+                  g_defaults.content_history, PLAYLIST_SORT_MODE_OFF);
 
             RARCH_LOG("%s: [%s].\n",
                   msg_hash_to_str(MSG_LOADING_HISTORY_FILE),
@@ -8685,6 +8690,8 @@ bool command_event(enum event_command cmd, void *data)
             g_defaults.music_history = playlist_init(
                   path_content_music_history,
                   content_history_size);
+            playlist_set_sort_mode(
+                  g_defaults.music_history, PLAYLIST_SORT_MODE_OFF);
 
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
             RARCH_LOG("%s: [%s].\n",
@@ -8693,6 +8700,8 @@ bool command_event(enum event_command cmd, void *data)
             g_defaults.video_history = playlist_init(
                   path_content_video_history,
                   content_history_size);
+            playlist_set_sort_mode(
+                  g_defaults.video_history, PLAYLIST_SORT_MODE_OFF);
 #endif
 
 #ifdef HAVE_IMAGEVIEWER
@@ -8702,6 +8711,8 @@ bool command_event(enum event_command cmd, void *data)
             g_defaults.image_history = playlist_init(
                   path_content_image_history,
                   content_history_size);
+            playlist_set_sort_mode(
+                  g_defaults.image_history, PLAYLIST_SORT_MODE_OFF);
 #endif
          }
          break;
@@ -8858,8 +8869,12 @@ bool command_event(enum event_command cmd, void *data)
                   if (playlist_push(g_defaults.content_favorites, &entry,
                            playlist_fuzzy_archive_match))
                   {
+                     enum playlist_sort_mode current_sort_mode =
+                           playlist_get_sort_mode(g_defaults.content_favorites);
+
                      /* New addition - need to resort if option is enabled */
-                     if (playlist_sort_alphabetical)
+                     if ((playlist_sort_alphabetical && (current_sort_mode == PLAYLIST_SORT_MODE_DEFAULT)) ||
+                         (current_sort_mode == PLAYLIST_SORT_MODE_ALPHABETICAL))
                         playlist_qsort(g_defaults.content_favorites);
 
                      playlist_write_file(g_defaults.content_favorites,
@@ -30249,6 +30264,7 @@ void rarch_favorites_init(void)
    int content_favorites_size         = settings ? settings->ints.content_favorites_size : 0;
    const char *path_content_favorites = settings ? settings->paths.path_content_favorites : NULL;
    bool playlist_sort_alphabetical    = settings ? settings->bools.playlist_sort_alphabetical : false;
+   enum playlist_sort_mode current_sort_mode;
 
    if (!settings)
       return;
@@ -30265,9 +30281,13 @@ void rarch_favorites_init(void)
          path_content_favorites,
          (unsigned)content_favorites_size);
 
+   /* Get current per-playlist sort mode */
+   current_sort_mode = playlist_get_sort_mode(g_defaults.content_favorites);
+
    /* Ensure that playlist is sorted alphabetically,
     * if required */
-   if (playlist_sort_alphabetical)
+   if ((playlist_sort_alphabetical && (current_sort_mode == PLAYLIST_SORT_MODE_DEFAULT)) ||
+       (current_sort_mode == PLAYLIST_SORT_MODE_ALPHABETICAL))
       playlist_qsort(g_defaults.content_favorites);
 }
 

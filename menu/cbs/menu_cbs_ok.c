@@ -187,6 +187,8 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
          return MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_RIGHT_THUMBNAIL_MODE;
       case ACTION_OK_DL_DROPDOWN_BOX_LIST_PLAYLIST_LEFT_THUMBNAIL_MODE:
          return MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_LEFT_THUMBNAIL_MODE;
+      case ACTION_OK_DL_DROPDOWN_BOX_LIST_PLAYLIST_SORT_MODE:
+         return MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_SORT_MODE;
       case ACTION_OK_DL_DROPDOWN_BOX_LIST_MANUAL_CONTENT_SCAN_SYSTEM_NAME:
          return MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_MANUAL_CONTENT_SCAN_SYSTEM_NAME;
       case ACTION_OK_DL_DROPDOWN_BOX_LIST_MANUAL_CONTENT_SCAN_CORE_NAME:
@@ -522,6 +524,15 @@ int generic_action_ok_displaylist_push(const char *path,
          info_label         = msg_hash_to_str(
                MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_LEFT_THUMBNAIL_MODE);
          info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_LEFT_THUMBNAIL_MODE;
+         dl_type            = DISPLAYLIST_GENERIC;
+         break;
+      case ACTION_OK_DL_DROPDOWN_BOX_LIST_PLAYLIST_SORT_MODE:
+         info.type          = type;
+         info.directory_ptr = idx;
+         info_path          = path;
+         info_label         = msg_hash_to_str(
+               MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_SORT_MODE);
+         info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_SORT_MODE;
          dl_type            = DISPLAYLIST_GENERIC;
          break;
       case ACTION_OK_DL_DROPDOWN_BOX_LIST_MANUAL_CONTENT_SCAN_SYSTEM_NAME:
@@ -2018,15 +2029,20 @@ static int action_ok_playlist_entry_collection(const char *path,
 {
    char new_path[PATH_MAX_LENGTH];
    char new_core_path[PATH_MAX_LENGTH];
-   size_t selection_ptr                = 0;
-   bool playlist_initialized           = false;
-   playlist_t *playlist                = NULL;
-   playlist_t *tmp_playlist            = NULL;
-   const struct playlist_entry *entry  = NULL;
-   unsigned i                          = 0;
-   menu_handle_t *menu                 = menu_driver_get_ptr();
-   settings_t *settings                = config_get_ptr();
-   bool playlist_use_old_format        = settings->bools.playlist_use_old_format;
+   size_t selection_ptr                   = 0;
+   bool playlist_initialized              = false;
+   playlist_t *playlist                   = NULL;
+   playlist_t *tmp_playlist               = NULL;
+   const struct playlist_entry *entry     = NULL;
+   unsigned i                             = 0;
+   menu_handle_t *menu                    = menu_driver_get_ptr();
+   settings_t *settings                   = config_get_ptr();
+   bool playlist_use_old_format           = settings->bools.playlist_use_old_format;
+   bool playlist_sort_alphabetical        = settings->bools.playlist_sort_alphabetical;
+   const char *path_content_history       = settings->paths.path_content_history;
+   const char *path_content_music_history = settings->paths.path_content_music_history;
+   const char *path_content_video_history = settings->paths.path_content_video_history;
+   const char *path_content_image_history = settings->paths.path_content_image_history;
 
    if (!menu)
       return menu_cbs_exit();
@@ -2037,11 +2053,30 @@ static int action_ok_playlist_entry_collection(const char *path,
 
    if (!tmp_playlist)
    {
+      /* If playlist is not cached, have to load
+       * it here
+       * > Since the menu will always sort playlists
+       *   based on current user config, have to do
+       *   the same here - otherwise entry_idx may
+       *   go out of sync... */
+      bool is_content_history = string_is_equal(menu->db_playlist_file, path_content_history) ||
+                                string_is_equal(menu->db_playlist_file, path_content_music_history) ||
+                                string_is_equal(menu->db_playlist_file, path_content_video_history) ||
+                                string_is_equal(menu->db_playlist_file, path_content_image_history);
+      enum playlist_sort_mode current_sort_mode;
+
       tmp_playlist = playlist_init(
             menu->db_playlist_file, COLLECTION_SIZE);
 
       if (!tmp_playlist)
          return menu_cbs_exit();
+
+      current_sort_mode = playlist_get_sort_mode(tmp_playlist);
+
+      if (!is_content_history &&
+          ((playlist_sort_alphabetical && (current_sort_mode == PLAYLIST_SORT_MODE_DEFAULT)) ||
+           (current_sort_mode == PLAYLIST_SORT_MODE_ALPHABETICAL)))
+         playlist_qsort(tmp_playlist);
 
       playlist_initialized = true;
    }
@@ -2065,6 +2100,8 @@ static int action_ok_playlist_entry_collection(const char *path,
       {
          RARCH_LOG("[playlist] subsystem not found in implementation\n");
          /* TODO: Add OSD message telling users that content can't be loaded */
+         if (playlist_initialized)
+            playlist_free(tmp_playlist);
          return 0;
       }
 
@@ -2075,6 +2112,8 @@ static int action_ok_playlist_entry_collection(const char *path,
          NULL, &content_info,
          CORE_TYPE_PLAIN, NULL, NULL);
       /* TODO: update playlist entry? move to first position I guess? */
+      if (playlist_initialized)
+         playlist_free(tmp_playlist);
       return 1;
    }
 
@@ -2091,6 +2130,7 @@ static int action_ok_playlist_entry_collection(const char *path,
       const char *default_core_path          =
             playlist_get_default_core_path(playlist);
       bool found_associated_core             = false;
+      struct playlist_entry update_entry     = {0};
 
       if (!string_is_empty(default_core_path))
       {
@@ -2116,21 +2156,14 @@ static int action_ok_playlist_entry_collection(const char *path,
          return ret;
       }
 
-      tmp_playlist = playlist_get_cached();
+      update_entry.core_path = (char*)default_core_path;
+      update_entry.core_name = core_info.inf->display_name;
 
-      if (tmp_playlist)
-      {
-         struct playlist_entry entry  = {0};
-
-         entry.core_path = (char*)default_core_path;
-         entry.core_name = core_info.inf->display_name;
-
-         command_playlist_update_write(
-               tmp_playlist,
-               selection_ptr,
-               &entry,
-               playlist_use_old_format);
-      }
+      command_playlist_update_write(
+            playlist,
+            selection_ptr,
+            &update_entry,
+            playlist_use_old_format);
    }
    else
    {
@@ -2153,6 +2186,10 @@ static int action_ok_playlist_entry_collection(const char *path,
 
    strlcpy(new_path, entry->path, sizeof(new_path));
    playlist_resolve_path(PLAYLIST_LOAD, new_path, sizeof(new_path));
+
+   if (playlist_initialized)
+      playlist_free(tmp_playlist);
+
    return default_action_ok_load_content_from_playlist_from_menu(
             new_core_path, new_path, entry->label);
 }
@@ -2223,7 +2260,6 @@ static int action_ok_playlist_entry(const char *path,
                &entry,
                playlist_use_old_format);
       }
-
    }
    else
    {
@@ -5921,6 +5957,20 @@ static int action_ok_push_dropdown_item_playlist_left_thumbnail_mode(const char 
    return generic_set_thumbnail_mode(PLAYLIST_THUMBNAIL_LEFT, idx);
 }
 
+static int action_ok_push_dropdown_item_playlist_sort_mode(
+      const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   settings_t *settings         = config_get_ptr();
+   playlist_t *playlist         = playlist_get_cached();
+   bool playlist_use_old_format = settings->bools.playlist_use_old_format;
+
+   playlist_set_sort_mode(playlist, (enum playlist_sort_mode)idx);
+   playlist_write_file(playlist, playlist_use_old_format);
+
+   return action_cancel_pop_default(NULL, NULL, 0, 0);
+}
+
 static int action_ok_push_dropdown_item_manual_content_scan_system_name(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -6189,6 +6239,20 @@ static int action_ok_playlist_right_thumbnail_mode(const char *path,
          ACTION_OK_DL_DROPDOWN_BOX_LIST_PLAYLIST_RIGHT_THUMBNAIL_MODE);
 }
 
+static int action_ok_playlist_left_thumbnail_mode(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return generic_dropdown_box_list(idx,
+         ACTION_OK_DL_DROPDOWN_BOX_LIST_PLAYLIST_LEFT_THUMBNAIL_MODE);
+}
+
+static int action_ok_playlist_sort_mode(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return generic_dropdown_box_list(idx,
+         ACTION_OK_DL_DROPDOWN_BOX_LIST_PLAYLIST_SORT_MODE);
+}
+
 static int action_ok_remappings_port_list(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -6211,13 +6275,6 @@ static int action_ok_shader_preset_parameter_dropdown_box_list(const char *path,
 {
    return generic_dropdown_box_list(idx, 
          ACTION_OK_DL_DROPDOWN_BOX_LIST_SHADER_PRESET_PARAMETER);
-}
-
-static int action_ok_playlist_left_thumbnail_mode(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   return generic_dropdown_box_list(idx, 
-         ACTION_OK_DL_DROPDOWN_BOX_LIST_PLAYLIST_LEFT_THUMBNAIL_MODE);
 }
 
 static int action_ok_manual_content_scan_system_name(const char *path,
@@ -6767,6 +6824,7 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE, action_ok_playlist_label_display_mode},
          {MENU_ENUM_LABEL_PLAYLIST_MANAGER_RIGHT_THUMBNAIL_MODE,action_ok_playlist_right_thumbnail_mode},
          {MENU_ENUM_LABEL_PLAYLIST_MANAGER_LEFT_THUMBNAIL_MODE,action_ok_playlist_left_thumbnail_mode},
+         {MENU_ENUM_LABEL_PLAYLIST_MANAGER_SORT_MODE,          action_ok_playlist_sort_mode},
          {MENU_ENUM_LABEL_UPDATE_ASSETS,                       action_ok_update_assets},
          {MENU_ENUM_LABEL_UPDATE_CORE_INFO_FILES,              action_ok_update_core_info_files},
          {MENU_ENUM_LABEL_UPDATE_OVERLAYS,                     action_ok_update_overlays},
@@ -6933,6 +6991,7 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE, action_ok_playlist_label_display_mode},
          {MENU_ENUM_LABEL_PLAYLIST_MANAGER_RIGHT_THUMBNAIL_MODE, action_ok_playlist_right_thumbnail_mode},
          {MENU_ENUM_LABEL_PLAYLIST_MANAGER_LEFT_THUMBNAIL_MODE, action_ok_playlist_left_thumbnail_mode},
+         {MENU_ENUM_LABEL_PLAYLIST_MANAGER_SORT_MODE,          action_ok_playlist_sort_mode},
          {MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME, action_ok_manual_content_scan_system_name},
          {MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_CORE_NAME, action_ok_manual_content_scan_core_name},
          {MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_DAT_FILE, action_ok_manual_content_scan_dat_file},
@@ -7076,6 +7135,9 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             break;
          case MENU_SETTING_DROPDOWN_ITEM_PLAYLIST_LEFT_THUMBNAIL_MODE:
             BIND_ACTION_OK(cbs, action_ok_push_dropdown_item_playlist_left_thumbnail_mode);
+            break;
+         case MENU_SETTING_DROPDOWN_ITEM_PLAYLIST_SORT_MODE:
+            BIND_ACTION_OK(cbs, action_ok_push_dropdown_item_playlist_sort_mode);
             break;
          case MENU_SETTING_DROPDOWN_ITEM_MANUAL_CONTENT_SCAN_SYSTEM_NAME:
             BIND_ACTION_OK(cbs, action_ok_push_dropdown_item_manual_content_scan_system_name);

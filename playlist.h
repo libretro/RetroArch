@@ -64,6 +64,13 @@ enum playlist_thumbnail_mode
    PLAYLIST_THUMBNAIL_MODE_BOXARTS
 };
 
+enum playlist_sort_mode
+{
+   PLAYLIST_SORT_MODE_DEFAULT = 0,
+   PLAYLIST_SORT_MODE_ALPHABETICAL,
+   PLAYLIST_SORT_MODE_OFF
+};
+
 /* TODO/FIXME - since gfx_thumbnail_path.h has now
  * been divorced from the menu code, perhaps jdgleaver
  * can refactor this? */
@@ -287,12 +294,14 @@ char *playlist_get_default_core_name(playlist_t *playlist);
 enum playlist_label_display_mode playlist_get_label_display_mode(playlist_t *playlist);
 enum playlist_thumbnail_mode playlist_get_thumbnail_mode(
       playlist_t *playlist, enum playlist_thumbnail_id thumbnail_id);
+enum playlist_sort_mode playlist_get_sort_mode(playlist_t *playlist);
 
 void playlist_set_default_core_path(playlist_t *playlist, const char *core_path);
 void playlist_set_default_core_name(playlist_t *playlist, const char *core_name);
 void playlist_set_label_display_mode(playlist_t *playlist, enum playlist_label_display_mode label_display_mode);
 void playlist_set_thumbnail_mode(
       playlist_t *playlist, enum playlist_thumbnail_id thumbnail_id, enum playlist_thumbnail_mode thumbnail_mode);
+void playlist_set_sort_mode(playlist_t *playlist, enum playlist_sort_mode sort_mode);
 
 RETRO_END_DECLS
 

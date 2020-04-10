@@ -300,6 +300,8 @@ MSG_HASH(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_RIGHT_THUMBNAIL_MOD
       "deferred_dropdown_box_list_playlist_right_thumbnail_mode")
 MSG_HASH(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_LEFT_THUMBNAIL_MODE,
       "deferred_dropdown_box_list_playlist_left_thumbnail_mode")
+MSG_HASH(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_SORT_MODE,
+      "deferred_dropdown_box_list_playlist_sort_mode")
 MSG_HASH(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_DISK_INDEX,
       "deferred_dropdown_box_list_disk_index")
 MSG_HASH(MENU_ENUM_LABEL_DEFERRED_CONFIGURATIONS_LIST,
@@ -978,6 +980,8 @@ MSG_HASH(MENU_ENUM_LABEL_PLAYLIST_MANAGER_RIGHT_THUMBNAIL_MODE,
       "playlist_manager_right_thumbnail_mode")
 MSG_HASH(MENU_ENUM_LABEL_PLAYLIST_MANAGER_LEFT_THUMBNAIL_MODE,
       "playlist_manager_left_thumbnail_mode")
+MSG_HASH(MENU_ENUM_LABEL_PLAYLIST_MANAGER_SORT_MODE,
+      "playlist_manager_sort_mode")
 MSG_HASH(MENU_ENUM_LABEL_PLAYLIST_MANAGER_CLEAN_PLAYLIST,
       "playlist_manager_clean_playlist")
 MSG_HASH(MENU_ENUM_LABEL_PLAYLIST_SETTINGS_BEGIN,
