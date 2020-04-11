@@ -1758,10 +1758,8 @@ static void menu_displaylist_set_new_playlist(
 
    if (playlist_init_cached(path, playlist_size))
    {
-      playlist_t *playlist                      =
-            playlist_get_cached();
-      enum playlist_sort_mode current_sort_mode =
-            playlist_get_sort_mode(playlist);
+      playlist_t *playlist                      = playlist_get_cached();
+      enum playlist_sort_mode current_sort_mode = playlist_get_sort_mode(playlist);
 
       /* Sort playlist, if required */
       if (sort_enabled &&
