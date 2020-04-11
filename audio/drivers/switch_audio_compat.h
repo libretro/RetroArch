@@ -46,6 +46,10 @@ typedef AudioOutBuffer compat_audio_out_buffer;
 #define switch_audio_ipc_output_stop(a) audoutStopAudioOut()
 #define switch_audio_ipc_output_start(a) audoutStartAudioOut()
 
+#ifndef UINT64_MAX
+#define UINT64_MAX U64_MAX
+#endif
+
 #else
 
 /* libtransistor definitions */
