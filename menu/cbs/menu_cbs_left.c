@@ -520,6 +520,30 @@ static int playlist_left_thumbnail_mode_left(unsigned type, const char *label,
    return 0;
 }
 
+static int playlist_sort_mode_left(unsigned type, const char *label,
+      bool wraparound)
+{
+   enum playlist_sort_mode sort_mode;
+   settings_t *settings             = config_get_ptr();
+   bool playlist_use_old_format     = settings->bools.playlist_use_old_format;
+   playlist_t *playlist             = playlist_get_cached();
+
+   if (!playlist)
+      return -1;
+
+   sort_mode = playlist_get_sort_mode(playlist);
+
+   if (sort_mode > PLAYLIST_SORT_MODE_DEFAULT)
+      sort_mode = (enum playlist_sort_mode)((int)sort_mode - 1);
+   else if (wraparound)
+      sort_mode = PLAYLIST_SORT_MODE_OFF;
+
+   playlist_set_sort_mode(playlist, sort_mode);
+   playlist_write_file(playlist, playlist_use_old_format);
+
+   return 0;
+}
+
 static int manual_content_scan_system_name_left(
       unsigned type, const char *label,
       bool wraparound)
@@ -923,6 +947,9 @@ static int menu_cbs_init_bind_left_compare_label(menu_file_list_cbs_t *cbs,
                break;
             case MENU_ENUM_LABEL_PLAYLIST_MANAGER_LEFT_THUMBNAIL_MODE:
                BIND_ACTION_LEFT(cbs, playlist_left_thumbnail_mode_left);
+               break;
+            case MENU_ENUM_LABEL_PLAYLIST_MANAGER_SORT_MODE:
+               BIND_ACTION_LEFT(cbs, playlist_sort_mode_left);
                break;
             case MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME:
                BIND_ACTION_LEFT(cbs, manual_content_scan_system_name_left);

@@ -950,22 +950,22 @@ static const unsigned default_content_history_size = 200;
 static const int default_content_favorites_size = 200;
 
 /* Sort all playlists (apart from histories) alphabetically */
-static const bool playlist_sort_alphabetical = true;
+#define DEFAULT_PLAYLIST_SORT_ALPHABETICAL true
 
 /* File format to use when writing playlists to disk */
-static const bool playlist_use_old_format = false;
+#define DEFAULT_PLAYLIST_USE_OLD_FORMAT false
 
 #ifdef HAVE_MENU
 /* Specify when to display 'core name' inline on playlist entries */
-static const unsigned playlist_show_inline_core_name = PLAYLIST_INLINE_CORE_DISPLAY_HIST_FAV;
+#define DEFAULT_PLAYLIST_SHOW_INLINE_CORE_NAME PLAYLIST_INLINE_CORE_DISPLAY_HIST_FAV
 
 /* Specifies which runtime record to use on playlist sublabels */
-static const unsigned playlist_sublabel_runtime_type = PLAYLIST_RUNTIME_PER_CORE;
+#define DEFAULT_PLAYLIST_SUBLABEL_RUNTIME_TYPE PLAYLIST_RUNTIME_PER_CORE
 
 /* Specifies time/date display format for runtime 'last played' data */
 #define DEFAULT_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE PLAYLIST_LAST_PLAYED_STYLE_YMD_HMS
 
-static const unsigned playlist_entry_remove_enable = PLAYLIST_ENTRY_REMOVE_ENABLE_ALL;
+#define DEFAULT_PLAYLIST_ENTRY_REMOVE_ENABLE PLAYLIST_ENTRY_REMOVE_ENABLE_ALL
 #endif
 
 #define DEFAULT_SCAN_WITHOUT_CORE_MATCH false

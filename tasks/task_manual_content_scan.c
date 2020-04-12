@@ -303,7 +303,9 @@ static void task_manual_content_scan_handler(retro_task_t *task)
 
             task_title[0] = '\0';
 
-            /* Ensure playlist is alphabetically sorted */
+            /* Ensure playlist is alphabetically sorted
+             * > Override user settings here */
+            playlist_set_sort_mode(manual_scan->playlist, PLAYLIST_SORT_MODE_DEFAULT);
             playlist_qsort(manual_scan->playlist);
 
             /* Save playlist changes to disk */

@@ -146,6 +146,7 @@ default_sublabel_macro(action_bind_sublabel_playlist_manager_list,         MENU_
 default_sublabel_macro(action_bind_sublabel_playlist_manager_default_core, MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_DEFAULT_CORE)
 default_sublabel_macro(action_bind_sublabel_playlist_manager_reset_cores,  MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_RESET_CORES)
 default_sublabel_macro(action_bind_sublabel_playlist_manager_label_display_mode, MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE)
+default_sublabel_macro(action_bind_sublabel_playlist_manager_sort_mode, MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_SORT_MODE)
 default_sublabel_macro(action_bind_sublabel_playlist_manager_clean_playlist, MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_CLEAN_PLAYLIST)
 default_sublabel_macro(action_bind_sublabel_delete_playlist,               MENU_ENUM_SUBLABEL_DELETE_PLAYLIST)
 default_sublabel_macro(action_bind_sublabel_network_settings_list,         MENU_ENUM_SUBLABEL_NETWORK_SETTINGS)
@@ -2927,6 +2928,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_playlist_manager_label_display_mode);
+            break;
+         case MENU_ENUM_LABEL_PLAYLIST_MANAGER_SORT_MODE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_playlist_manager_sort_mode);
             break;
          case MENU_ENUM_LABEL_PLAYLIST_MANAGER_CLEAN_PLAYLIST:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_playlist_manager_clean_playlist);
