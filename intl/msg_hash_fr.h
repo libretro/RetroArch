@@ -2549,6 +2549,26 @@ MSG_HASH(
     "Par défaut du système"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_SORT_MODE,
+    "Trier par"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_SORT_MODE,
+    "Changer l'ordre de tri dans cette liste de lecture."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_SORT_MODE_DEFAULT,
+    "Par défaut du système"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_SORT_MODE_ALPHABETICAL,
+    "Alphabétique"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_SORT_MODE_OFF,
+    "Aucun"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_CLEAN_PLAYLIST,
     "Nettoyer la liste de lecture"
     )
@@ -6656,11 +6676,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SORT_SAVEFILES_ENABLE,
-    "Trier les fichiers de sauvegarde dans des dossiers nommés d'après le cœur utilisé."
+    "Classer les fichiers de sauvegarde dans des dossiers nommés d'après le cœur utilisé."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SORT_SAVESTATES_ENABLE,
-    "Trier les sauvegardes instantanées dans des dossiers nommés d'après le cœur utilisé."
+    "Classer les sauvegardes instantanées dans des dossiers nommés d'après le cœur utilisé."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_NETPLAY_REQUEST_DEVICE_I,
@@ -9363,11 +9383,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLIST_SORT_ALPHABETICAL,
-    "Organiser les listes de lecture par ordre alphabétique"
+    "Trier les listes de lecture par ordre alphabétique"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_PLAYLIST_SORT_ALPHABETICAL,
-    "Organiser les listes de lecture de contenu par ordre alphabétique. Notez que les listes de lecture 'Historique' des jeux, images, musiques et vidéos récemment utilisés sont exclues."
+    "Trier les listes de lecture de contenu par ordre alphabétique. Notez que les listes de lecture 'Historique' des jeux, images, musiques et vidéos récemment utilisés sont exclues."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_SOUNDS,
