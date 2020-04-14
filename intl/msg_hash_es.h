@@ -2548,6 +2548,26 @@ MSG_HASH(
     "Valores predeterminados del sistema"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_SORT_MODE,
+    "Modo de ordenación"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_SORT_MODE,
+    "Cambia cómo se ordenan las entradas en esta lista de reproducción."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_SORT_MODE_DEFAULT,
+    "Por defecto"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_SORT_MODE_ALPHABETICAL,
+    "Alfabético"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_SORT_MODE_OFF,
+    "Ninguno"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_CLEAN_PLAYLIST,
     "Limpiar lista de reproducción"
     )
