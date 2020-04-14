@@ -10312,7 +10312,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_LOCALAP_ERROR_CONFIG_PARSE,
-     "Mauvais fichier de configuration - impossible de trouver l'APNAME ou le PASSWORD dans %s"
+    "Mauvais fichier de configuration - impossible de trouver l'APNAME ou le PASSWORD dans %s"
     )
 #endif
 MSG_HASH(
