@@ -8950,6 +8950,24 @@ static bool setting_append_list(
                   general_read_handler,
                   SD_FLAG_NONE);
 
+#if defined(HAVE_ZLIB)
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.savestate_file_compression,
+                  MENU_ENUM_LABEL_SAVESTATE_FILE_COMPRESSION,
+                  MENU_ENUM_LABEL_VALUE_SAVESTATE_FILE_COMPRESSION,
+                  DEFAULT_SAVESTATE_FILE_COMPRESSION,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
+#endif
+
+            /* TODO/FIXME: This is in the wrong group... */
             CONFIG_BOOL(
                   list, list_info,
                   &settings->bools.scan_without_core_match,

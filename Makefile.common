@@ -1681,7 +1681,8 @@ endif
 
 ifeq ($(HAVE_ZLIB_COMMON), 1)
    OBJ += $(LIBRETRO_COMM_DIR)/file/archive_file_zlib.o \
-          $(LIBRETRO_COMM_DIR)/streams/trans_stream_zlib.o
+          $(LIBRETRO_COMM_DIR)/streams/trans_stream_zlib.o \
+          $(LIBRETRO_COMM_DIR)/streams/rzip_stream.o
    DEFINES += -DHAVE_ZLIB
    HAVE_COMPRESSION = 1
 

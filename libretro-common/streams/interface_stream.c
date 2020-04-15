@@ -28,6 +28,9 @@
 #ifdef HAVE_CHD
 #include <streams/chd_stream.h>
 #endif
+#if defined(HAVE_ZLIB)
+#include <streams/rzip_stream.h>
+#endif
 
 struct intfstream_internal
 {
@@ -55,6 +58,12 @@ struct intfstream_internal
       chdstream_t *fp;
    } chd;
 #endif
+#if defined(HAVE_ZLIB)
+   struct
+   {
+      rzipstream_t *fp;
+   } rzip;
+#endif
 };
 
 int64_t intfstream_get_size(intfstream_internal_t *intf)
@@ -73,6 +82,12 @@ int64_t intfstream_get_size(intfstream_internal_t *intf)
         return chdstream_get_size(intf->chd.fp);
 #else
         break;
+#endif
+      case INTFSTREAM_RZIP:
+#if defined(HAVE_ZLIB)
+         return rzipstream_get_size(intf->rzip.fp);
+#else
+         break;
 #endif
    }
 
@@ -99,6 +114,9 @@ bool intfstream_resize(intfstream_internal_t *intf, intfstream_info_t *info)
 #ifdef HAVE_CHD
 #endif
          break;
+      case INTFSTREAM_RZIP:
+         /* Unsupported */
+         return false;
    }
 
    return true;
@@ -131,6 +149,15 @@ bool intfstream_open(intfstream_internal_t *intf, const char *path,
 #else
          return false;
 #endif
+      case INTFSTREAM_RZIP:
+#if defined(HAVE_ZLIB)
+         intf->rzip.fp = rzipstream_open(path, mode);
+         if (!intf->rzip.fp)
+            return false;
+         break;
+#else
+         return false;
+#endif
    }
 
    return true;
@@ -147,6 +174,7 @@ int intfstream_flush(intfstream_internal_t *intf)
          return filestream_flush(intf->file.fp);
       case INTFSTREAM_MEMORY:
       case INTFSTREAM_CHD:
+      case INTFSTREAM_RZIP:
          /* Should we stub this for these interfaces? */
          break;
    }
@@ -173,6 +201,12 @@ int intfstream_close(intfstream_internal_t *intf)
 #ifdef HAVE_CHD
          if (intf->chd.fp)
             chdstream_close(intf->chd.fp);
+#endif
+         return 0;
+      case INTFSTREAM_RZIP:
+#if defined(HAVE_ZLIB)
+         if (intf->rzip.fp)
+            return rzipstream_close(intf->rzip.fp);
 #endif
          return 0;
    }
@@ -209,6 +243,8 @@ void *intfstream_init(intfstream_info_t *info)
 #else
          goto error;
 #endif
+      case INTFSTREAM_RZIP:
+         break;
    }
 
    return intf;
@@ -252,6 +288,9 @@ int64_t intfstream_seek(intfstream_internal_t *intf, int64_t offset, int whence)
 #else
          break;
 #endif
+      case INTFSTREAM_RZIP:
+         /* Unsupported */
+         break;
    }
 
    return -1;
@@ -274,6 +313,12 @@ int64_t intfstream_read(intfstream_internal_t *intf, void *s, uint64_t len)
 #else
          break;
 #endif
+      case INTFSTREAM_RZIP:
+#if defined(HAVE_ZLIB)
+         return rzipstream_read(intf->rzip.fp, s, len);
+#else
+         break;
+#endif
    }
 
    return -1;
@@ -293,6 +338,12 @@ int64_t intfstream_write(intfstream_internal_t *intf,
          return memstream_write(intf->memory.fp, s, len);
       case INTFSTREAM_CHD:
          return -1;
+      case INTFSTREAM_RZIP:
+#if defined(HAVE_ZLIB)
+         return rzipstream_write(intf->rzip.fp, s, len);
+#else
+         return -1;
+#endif
    }
 
    return 0;
@@ -310,6 +361,8 @@ int64_t intfstream_get_ptr(intfstream_internal_t* intf)
       case INTFSTREAM_MEMORY:
          return memstream_get_ptr(intf->memory.fp);
       case INTFSTREAM_CHD:
+         return -1;
+      case INTFSTREAM_RZIP:
          return -1;
    }
 
@@ -336,6 +389,9 @@ char *intfstream_gets(intfstream_internal_t *intf,
 #else
          break;
 #endif
+      case INTFSTREAM_RZIP:
+         /* Unsupported */
+         break;
    }
 
    return NULL;
@@ -358,6 +414,9 @@ int intfstream_getc(intfstream_internal_t *intf)
 #else
          break;
 #endif
+      case INTFSTREAM_RZIP:
+         /* Unsupported */
+         break;
    }
 
    return -1;
@@ -380,6 +439,9 @@ int64_t intfstream_tell(intfstream_internal_t *intf)
 #else
          break;
 #endif
+      case INTFSTREAM_RZIP:
+         /* Unsupported */
+         break;
    }
 
    return -1;
@@ -400,6 +462,9 @@ void intfstream_rewind(intfstream_internal_t *intf)
          chdstream_rewind(intf->chd.fp);
 #endif
          break;
+      case INTFSTREAM_RZIP:
+         /* Unsupported */
+         break;
    }
 }
 
@@ -417,6 +482,9 @@ void intfstream_putc(intfstream_internal_t *intf, int c)
          memstream_putc(intf->memory.fp, c);
          break;
       case INTFSTREAM_CHD:
+         break;
+      case INTFSTREAM_RZIP:
+         /* Unsupported */
          break;
    }
 }
@@ -531,8 +599,6 @@ error:
    return NULL;
 }
 
-
-
 intfstream_t *intfstream_open_chd_track(const char *path,
       unsigned mode, unsigned hints, int32_t track)
 {
@@ -548,6 +614,32 @@ intfstream_t *intfstream_open_chd_track(const char *path,
       return NULL;
 
    if (!intfstream_open(fd, path, mode, hints))
+      goto error;
+
+   return fd;
+
+error:
+   if (fd)
+   {
+      intfstream_close(fd);
+      free(fd);
+   }
+   return NULL;
+}
+
+intfstream_t* intfstream_open_rzip_file(const char *path,
+      unsigned mode)
+{
+   intfstream_info_t info;
+   intfstream_t *fd = NULL;
+
+   info.type        = INTFSTREAM_RZIP;
+   fd               = (intfstream_t*)intfstream_init(&info);
+
+   if (!fd)
+      return NULL;
+
+   if (!intfstream_open(fd, path, mode, RETRO_VFS_FILE_ACCESS_HINT_NONE))
       goto error;
 
    return fd;

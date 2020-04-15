@@ -128,6 +128,7 @@ COMPRESSION
 
 #ifdef HAVE_ZLIB
 #include "../libretro-common/streams/trans_stream_zlib.c"
+#include "../libretro-common/streams/rzip_stream.c"
 #endif
 
 /*============================================================

@@ -911,6 +911,10 @@ static const bool savestate_auto_load = false;
 
 static const bool savestate_thumbnail_enable = false;
 
+/* When creating save state files, compress
+ * written data */
+#define DEFAULT_SAVESTATE_FILE_COMPRESSION false
+
 /* Slowmotion ratio. */
 #define DEFAULT_SLOWMOTION_RATIO 3.0
 

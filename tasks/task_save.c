@@ -101,6 +101,7 @@ typedef struct
    int state_slot;
    bool thumbnail_enable;
    bool has_valid_framebuffer;
+   bool compress_files;
 } save_task_state_t;
 
 typedef save_task_state_t load_task_data_t;
@@ -560,7 +561,12 @@ static void *get_serialized_data(const char *path, size_t serial_size)
    if (!serial_size)
       return NULL;
 
-   data = malloc(serial_size);
+   /* Ensure buffer is initialised to zero
+    * > Prevents inconsistent compressed state file
+    *   sizes when core requests a larger buffer
+    *   than it needs (and leaves the excess
+    *   as uninitialised garbage) */
+   data = calloc(serial_size, 1);
 
    if (!data)
       return NULL;
@@ -597,9 +603,13 @@ static void task_save_handler(retro_task_t *task)
 
    if (!state->file)
    {
-      state->file   = intfstream_open_file(
-            state->path, RETRO_VFS_FILE_ACCESS_WRITE,
-            RETRO_VFS_FILE_ACCESS_HINT_NONE);
+      if (state->compress_files)
+         state->file   = intfstream_open_rzip_file(
+               state->path, RETRO_VFS_FILE_ACCESS_WRITE);
+      else
+         state->file   = intfstream_open_file(
+               state->path, RETRO_VFS_FILE_ACCESS_WRITE,
+               RETRO_VFS_FILE_ACCESS_HINT_NONE);
 
       if (!state->file)
          return;
@@ -694,6 +704,11 @@ static bool task_push_undo_save_state(const char *path, void *data, size_t size)
    retro_task_t       *task = task_init();
    save_task_state_t *state = (save_task_state_t*)calloc(1, sizeof(*state));
    settings_t     *settings = config_get_ptr();
+#if defined(HAVE_ZLIB)
+   bool compress_files      = settings->bools.savestate_file_compression;
+#else
+   bool compress_files      = false;
+#endif
 
    if (!task || !state)
       goto error;
@@ -704,6 +719,7 @@ static bool task_push_undo_save_state(const char *path, void *data, size_t size)
    state->undo_save              = true;
    state->state_slot             = settings->ints.state_slot;
    state->has_valid_framebuffer  = video_driver_cached_frame_has_valid_framebuffer();
+   state->compress_files         = compress_files;
 
    task->type                    = TASK_TYPE_BLOCKING;
    task->state                   = state;
@@ -787,22 +803,25 @@ static void task_load_handler(retro_task_t *task)
 
    if (!state->file)
    {
+#if defined(HAVE_ZLIB)
+      /* Always use RZIP interface when reading state
+       * files - this will automatically handle uncompressed
+       * data */
+      state->file = intfstream_open_rzip_file(state->path,
+            RETRO_VFS_FILE_ACCESS_READ);
+#else
       state->file = intfstream_open_file(state->path,
             RETRO_VFS_FILE_ACCESS_READ,
             RETRO_VFS_FILE_ACCESS_HINT_NONE);
+#endif
 
       if (!state->file)
          goto error;
 
-      if (intfstream_seek(state->file, 0, SEEK_END) != 0)
-         goto error;
-
-      state->size = intfstream_tell(state->file);
+      state->size = intfstream_get_size(state->file);
 
       if (state->size < 0)
          goto error;
-
-      intfstream_rewind(state->file);
 
       state->data = malloc(state->size + 1);
 
@@ -1076,6 +1095,11 @@ static void task_push_save_state(const char *path, void *data, size_t size, bool
    settings_t     *settings        = config_get_ptr();
    bool savestate_thumbnail_enable = settings->bools.savestate_thumbnail_enable;
    int state_slot                  = settings->ints.state_slot;
+#if defined(HAVE_ZLIB)
+   bool compress_files             = settings->bools.savestate_file_compression;
+#else
+   bool compress_files             = false;
+#endif
 
    if (!task || !state)
       goto error;
@@ -1088,6 +1112,7 @@ static void task_push_save_state(const char *path, void *data, size_t size, bool
    state->thumbnail_enable       = savestate_thumbnail_enable;
    state->state_slot             = state_slot;
    state->has_valid_framebuffer  = video_driver_cached_frame_has_valid_framebuffer();
+   state->compress_files         = compress_files;
 
    task->type              = TASK_TYPE_BLOCKING;
    task->state             = state;
@@ -1161,6 +1186,11 @@ static void task_push_load_and_save_state(const char *path, void *data,
    retro_task_t      *task     = NULL;
    settings_t        *settings = config_get_ptr();
    int state_slot              = settings->ints.state_slot;
+#if defined(HAVE_ZLIB)
+   bool compress_files         = settings->bools.savestate_file_compression;
+#else
+   bool compress_files         = false;
+#endif
    save_task_state_t *state    = (save_task_state_t*)
       calloc(1, sizeof(*state));
 
@@ -1188,6 +1218,7 @@ static void task_push_load_and_save_state(const char *path, void *data,
    state->state_slot             = state_slot;
    state->has_valid_framebuffer  = 
       video_driver_cached_frame_has_valid_framebuffer();
+   state->compress_files         = compress_files;
 
    task->state       = state;
    task->type        = TASK_TYPE_BLOCKING;
@@ -1318,6 +1349,11 @@ bool content_load_state(const char *path,
    save_task_state_t *state     = (save_task_state_t*)calloc(1, sizeof(*state));
    settings_t *settings         = config_get_ptr();
    int state_slot               = settings->ints.state_slot;
+#if defined(HAVE_ZLIB)
+   bool compress_files          = settings->bools.savestate_file_compression;
+#else
+   bool compress_files          = false;
+#endif
 
    if (!task || !state)
       goto error;
@@ -1328,6 +1364,7 @@ bool content_load_state(const char *path,
    state->state_slot            = state_slot;
    state->has_valid_framebuffer = 
       video_driver_cached_frame_has_valid_framebuffer();
+   state->compress_files        = compress_files;
 
    task->type                   = TASK_TYPE_BLOCKING;
    task->state                  = state;
