@@ -2993,6 +2993,14 @@ MSG_HASH(
     "Miniatures pour les sauvegardes instantanées"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SAVESTATE_FILE_COMPRESSION,
+    "Compression des sauvegardes instantanées"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SAVESTATE_FILE_COMPRESSION,
+    "Enregistre les fichiers de sauvegarde instantanée sous un format archivé. Réduit considérablement la taille du fichier au détriment de l'augmentation des temps de sauvegarde/chargement."
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG,
     "Sauvegarder la configuration actuelle"
     )
