@@ -2997,6 +2997,14 @@ MSG_HASH(
     "Savestate Thumbnails"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SAVESTATE_FILE_COMPRESSION,
+    "Savestate Compression"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SAVESTATE_FILE_COMPRESSION,
+    "Write save state files in an archived format. Dramatically reduces file size at the expense of increased saving/loading times."
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG,
     "Save Current Configuration"
     )
