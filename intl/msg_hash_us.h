@@ -2435,11 +2435,11 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_FILE_BROWSER_OPEN_PICKER,
     "Open..."
-)
+    )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_FILE_BROWSER_OPEN_PICKER,
     "Open another directory using the system file picker"
-)
+    )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PAUSE_LIBRETRO,
     "Pause when menu activated"
@@ -5128,7 +5128,7 @@ MSG_HASH(
 MSG_HASH(
     MSG_ERROR_LIBRETRO_CORE_REQUIRES_VFS,
     "Core does not support VFS, and loading from a local copy failed"
-)
+    )
 MSG_HASH(
     MSG_ERROR_PARSING_ARGUMENTS,
     "Error parsing arguments."
@@ -7866,27 +7866,27 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_NONE,
     "OFF"
-)
+    )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_SNOW,
     "Snow (Light)"
-)
+    )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_SNOW_ALT,
     "Snow (Heavy)"
-)
+    )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_RAIN,
     "Rain"
-)
+    )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_VORTEX,
     "Vortex"
-)
+    )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_STARFIELD,
     "Star Field"
-)
+    )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_RGUI_PARTICLE_EFFECT_SPEED,
     "Background Animation Speed"
