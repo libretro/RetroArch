@@ -1888,15 +1888,15 @@ MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_SOLARIZED_DARK,
     "Solarisé sombre"
     )
- MSG_HASH(
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_CUTIE_BLUE,
     "Cutie bleu"
     )
- MSG_HASH(
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_CUTIE_CYAN,
     "Cutie cyan"
     )
- MSG_HASH(
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_CUTIE_GREEN,
     "Cutie vert"
     )
@@ -2757,9 +2757,9 @@ MSG_HASH(
     "Dernière partie"
     )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CHEEVOS_HASH,
-   "Empreinte RetroSuccès"
-   )
+    MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CHEEVOS_HASH,
+    "Empreinte RetroSuccès"
+    )
 #ifdef HAVE_LAKKA_SWITCH
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_REBOOT_RCM,
@@ -10320,7 +10320,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_LOCALAP_ERROR_CONFIG_PARSE,
-     "Mauvais fichier de configuration - impossible de trouver l'APNAME ou le PASSWORD dans %s"
+    "Mauvais fichier de configuration - impossible de trouver l'APNAME ou le PASSWORD dans %s"
     )
 #endif
 MSG_HASH(
