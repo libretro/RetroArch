@@ -23,6 +23,12 @@ ifeq ($(HAVE_NVDA), 1)
    LIBS += nvdaControllerClient64.dll
 endif
 
+ifeq ($(HAVE_SAPI), 1)
+   LIBS += sapi.dll
+endif
+
+
+
 ifeq ($(HAVE_GL_CONTEXT),)
    HAVE_GL_CONTEXT = 0
    HAVE_GL_MODERN  = 0

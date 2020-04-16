@@ -878,9 +878,11 @@ static bool create_win32_process(char* cmd)
    return true;
 }
 
+#ifdef HAVE_SAPI
 #define COBJMACROS
 #include <sapi.h>
 #include <ole2.h>
+#endif
 
 static ISpVoice* pVoice = NULL;
 #ifdef HAVE_NVDA
@@ -928,6 +930,7 @@ static bool is_narrator_running_windows(void)
       */
    }
 #endif
+#ifdef HAVE_SAPI
    else
    {
       SPVOICESTATUS pStatus;
@@ -940,6 +943,7 @@ static bool is_narrator_running_windows(void)
             return false;
       }
    }
+#endif
    return false;
 }
 
@@ -1012,6 +1016,7 @@ static bool accessibility_speak_windows(int speed,
       return true;
    }
 #endif
+#ifdef HAVE_SAPI
    else
    {
       /* stop the old voice if running */
@@ -1038,6 +1043,7 @@ static bool accessibility_speak_windows(int speed,
       }
       return true;
    }
+#endif
 }
 #endif
 
