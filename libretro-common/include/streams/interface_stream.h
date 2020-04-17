@@ -75,6 +75,9 @@ int64_t intfstream_read(intfstream_internal_t *intf,
 int64_t intfstream_write(intfstream_internal_t *intf,
       const void *s, uint64_t len);
 
+int intfstream_printf(intfstream_internal_t *intf,
+      const char* format, ...);
+
 int64_t intfstream_get_ptr(intfstream_internal_t *intf);
 
 char *intfstream_gets(intfstream_internal_t *intf,
@@ -100,6 +103,8 @@ int intfstream_flush(intfstream_internal_t *intf);
 uint32_t intfstream_get_offset_to_start(intfstream_internal_t *intf);
 
 uint32_t intfstream_get_frame_size(intfstream_internal_t *intf);
+
+bool intfstream_is_compressed(intfstream_internal_t *intf);
 
 intfstream_t* intfstream_open_file(const char *path,
       unsigned mode, unsigned hints);

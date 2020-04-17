@@ -349,6 +349,40 @@ int64_t intfstream_write(intfstream_internal_t *intf,
    return 0;
 }
 
+int intfstream_printf(intfstream_internal_t *intf,
+      const char* format, ...)
+{
+   va_list vl;
+   int result;
+
+   if (!intf)
+      return 0;
+
+   switch (intf->type)
+   {
+      case INTFSTREAM_FILE:
+         va_start(vl, format);
+         result = filestream_vprintf(intf->file.fp, format, vl);
+         va_end(vl);
+         return result;
+      case INTFSTREAM_MEMORY:
+         return -1;
+      case INTFSTREAM_CHD:
+         return -1;
+      case INTFSTREAM_RZIP:
+#if defined(HAVE_ZLIB)
+         va_start(vl, format);
+         result = rzipstream_vprintf(intf->rzip.fp, format, vl);
+         va_end(vl);
+         return result;
+#else
+         return -1;
+#endif
+   }
+
+   return 0;
+}
+
 int64_t intfstream_get_ptr(intfstream_internal_t* intf)
 {
    if (!intf)
@@ -390,8 +424,11 @@ char *intfstream_gets(intfstream_internal_t *intf,
          break;
 #endif
       case INTFSTREAM_RZIP:
-         /* Unsupported */
+#if defined(HAVE_ZLIB)
+         return rzipstream_gets(intf->rzip.fp, buffer, len);
+#else
          break;
+#endif
    }
 
    return NULL;
@@ -415,8 +452,11 @@ int intfstream_getc(intfstream_internal_t *intf)
          break;
 #endif
       case INTFSTREAM_RZIP:
-         /* Unsupported */
+#if defined(HAVE_ZLIB)
+         return rzipstream_getc(intf->rzip.fp);
+#else
          break;
+#endif
    }
 
    return -1;
@@ -440,8 +480,11 @@ int64_t intfstream_tell(intfstream_internal_t *intf)
          break;
 #endif
       case INTFSTREAM_RZIP:
-         /* Unsupported */
+#if defined(HAVE_ZLIB)
+         return (int64_t)rzipstream_tell(intf->rzip.fp);
+#else
          break;
+#endif
    }
 
    return -1;
@@ -463,7 +506,9 @@ void intfstream_rewind(intfstream_internal_t *intf)
 #endif
          break;
       case INTFSTREAM_RZIP:
-         /* Unsupported */
+#if defined(HAVE_ZLIB)
+         rzipstream_rewind(intf->rzip.fp);
+#endif
          break;
    }
 }
@@ -484,8 +529,11 @@ void intfstream_putc(intfstream_internal_t *intf, int c)
       case INTFSTREAM_CHD:
          break;
       case INTFSTREAM_RZIP:
-         /* Unsupported */
+#if defined(HAVE_ZLIB)
+         rzipstream_putc(intf->rzip.fp, c);
+#else
          break;
+#endif
    }
 }
 
@@ -513,6 +561,30 @@ uint32_t intfstream_get_frame_size(intfstream_internal_t *intf)
    }
 
    return 0;
+}
+
+bool intfstream_is_compressed(intfstream_internal_t *intf)
+{
+   if (!intf)
+      return false;
+
+   switch (intf->type)
+   {
+      case INTFSTREAM_FILE:
+         return false;
+      case INTFSTREAM_MEMORY:
+         return false;
+      case INTFSTREAM_CHD:
+         return true;
+      case INTFSTREAM_RZIP:
+#if defined(HAVE_ZLIB)
+         return rzipstream_is_compressed(intf->rzip.fp);
+#else
+         break;
+#endif
+   }
+
+   return false;
 }
 
 intfstream_t* intfstream_open_file(const char *path,
