@@ -518,7 +518,7 @@ int64_t rzipstream_read(rzipstream_t *stream, void *data, int64_t len)
    uint8_t *data_ptr = (uint8_t *)data;
    int64_t data_read = 0;
 
-   if (!stream || stream->is_writing)
+   if (!stream || stream->is_writing || !data)
       return -1;
 
    /* If we are reading uncompressed data, simply
@@ -564,6 +564,151 @@ int64_t rzipstream_read(rzipstream_t *stream, void *data, int64_t len)
    }
 
    return data_read;
+}
+
+/* Reads next character from an RZIP file.
+ * Returns character value, or EOF if no data
+ * remains.
+ * Note: Always returns EOF if file is open
+ * for writing. */
+int rzipstream_getc(rzipstream_t *stream)
+{
+   char c = 0;
+
+   if (!stream || stream->is_writing)
+      return EOF;
+
+   /* Attempt to read a single character */
+   if (rzipstream_read(stream, &c, 1) == 1)
+      return (int)(unsigned char)c;
+
+   return EOF;
+}
+
+/* Reads one line from an RZIP file and stores it
+ * in the character array pointed to by 's'.
+ * It stops reading when either (len-1) characters
+ * are read, the newline character is read, or the
+ * end-of-file is reached, whichever comes first.
+ * On success, returns 's'. In the event of an error,
+ * or if end-of-file is reached and no characters
+ * have been read, returns NULL. */
+char* rzipstream_gets(rzipstream_t *stream, char *s, size_t len)
+{
+   int c         = 0;
+   char *str_ptr = s;
+   size_t str_len;
+
+   if (!stream || stream->is_writing || (len == 0))
+      return NULL;
+
+   /* Read bytes until newline or EOF is reached,
+    * or string buffer is full */
+   for (str_len = (len - 1); str_len > 0; str_len--)
+   {
+      /* Get next character */
+      c = rzipstream_getc(stream);
+
+      /* Check for newline and EOF */
+      if ((c == '\n') || (c == EOF))
+         break;
+
+      /* Copy character to string buffer */
+      *str_ptr++ = c;
+   }
+
+   /* Add NUL termination */
+   *str_ptr = '\0';
+
+   /* Check whether EOF has been reached without
+    * reading any characters */
+   if ((str_ptr == s) && (c == EOF))
+      return NULL;
+
+   return (s);
+}
+
+/* Reads all data from file specified by 'path' and
+ * copies it to 'buf'.
+ * - 'buf' will be allocated and must be free()'d manually.
+ * - Allocated 'buf' size is equal to 'len'.
+ * Returns false in the event of an error */
+bool rzipstream_read_file(const char *path, void **buf, int64_t *len)
+{
+   int64_t bytes_read       = 0;
+   void *content_buf        = NULL;
+   int64_t content_buf_size = 0;
+   rzipstream_t *stream     = NULL;
+
+   if (!buf)
+      return false;
+
+   /* Attempt to open file */
+   stream = rzipstream_open(path, RETRO_VFS_FILE_ACCESS_READ);
+
+   if (!stream)
+   {
+      fprintf(stderr, "[rzipstream] Failed to open file: %s\n", path ? path : "");
+      goto error;
+   }
+
+   /* Get file size */
+   content_buf_size = rzipstream_get_size(stream);
+
+   if (content_buf_size < 0)
+      goto error;
+
+   if ((int64_t)(uint64_t)(content_buf_size + 1) != (content_buf_size + 1))
+      goto error;
+
+   /* Allocate buffer */
+   content_buf = malloc((size_t)(content_buf_size + 1));
+
+   if (!content_buf)
+      goto error;
+
+   /* Read file contents */
+   bytes_read = rzipstream_read(stream, content_buf, content_buf_size);
+
+   if (bytes_read < 0)
+   {
+      fprintf(stderr, "[rzipstream] Failed to read file: %s\n", path);
+      goto error;
+   }
+
+   /* Close file */
+   rzipstream_close(stream);
+   stream = NULL;
+
+   /* Add NUL termination for easy/safe handling of strings.
+    * Will only work with sane character formatting (Unix). */
+   ((char*)content_buf)[bytes_read] = '\0';
+
+   /* Assign buffer */
+   *buf = content_buf;
+
+   /* Assign length value, if required */
+   if (len)
+      *len = bytes_read;
+
+   return true;
+
+error:
+
+   if (stream)
+      rzipstream_close(stream);
+   stream = NULL;
+
+   if (content_buf)
+      free(content_buf);
+   content_buf = NULL;
+
+   if (len)
+      *len = -1;
+
+   *buf = NULL;
+
+   return false;
 }
 
 /* File Write */
@@ -638,7 +783,7 @@ int64_t rzipstream_write(rzipstream_t *stream, const void *data, int64_t len)
    int64_t data_len        = len;
    const uint8_t *data_ptr = (const uint8_t *)data;
 
-   if (!stream || !stream->is_writing)
+   if (!stream || !stream->is_writing || !data)
       return -1;
 
    /* Process input data */
@@ -676,6 +821,194 @@ int64_t rzipstream_write(rzipstream_t *stream, const void *data, int64_t len)
    return len;
 }
 
+/* Writes a single character to an RZIP file.
+ * Returns character written, or EOF in the event
+ * of an error */
+int rzipstream_putc(rzipstream_t *stream, int c)
+{
+   char c_char = (char)c;
+
+   if (!stream || !stream->is_writing)
+      return EOF;
+
+   return (rzipstream_write(stream, &c_char, 1) == 1) ?
+         (int)(unsigned char)c : EOF;
+}
+
+/* Writes a variable argument list to an RZIP file.
+ * Ugly 'internal' function, required to enable
+ * 'printf' support in the higher level 'interface_stream'.
+ * Returns actual number of bytes written, or -1
+ * in the event of an error */
+int rzipstream_vprintf(rzipstream_t *stream, const char* format, va_list args)
+{
+   static char buffer[8 * 1024] = {0};
+   int64_t num_chars            = vsprintf(buffer, format, args);
+
+   if (num_chars < 0)
+      return -1;
+   else if (num_chars == 0)
+      return 0;
+
+   return (int)rzipstream_write(stream, buffer, num_chars);
+}
+
+/* Writes formatted output to an RZIP file.
+ * Returns actual number of bytes written, or -1
+ * in the event of an error */
+int rzipstream_printf(rzipstream_t *stream, const char* format, ...)
+{
+   va_list vl;
+   int result = 0;
+
+   /* Initialise variable argument list */
+   va_start(vl, format);
+
+   /* Write variable argument list to file */
+   result = rzipstream_vprintf(stream, format, vl);
+
+   /* End using variable argument list */
+   va_end(vl);
+
+   return result;
+}
+
+/* Writes contents of 'data' buffer to file
+ * specified by 'path'.
+ * Returns false in the event of an error */
+bool rzipstream_write_file(const char *path, const void *data, int64_t len)
+{
+   int64_t bytes_written = 0;
+   rzipstream_t *stream  = NULL;
+
+   if (!data)
+      return false;
+
+   /* Attempt to open file */
+   stream = rzipstream_open(path, RETRO_VFS_FILE_ACCESS_WRITE);
+
+   if (!stream)
+   {
+      fprintf(stderr, "[rzipstream] Failed to open file: %s\n", path ? path : "");
+      return false;
+   }
+
+   /* Write contents of data buffer to file */
+   bytes_written = rzipstream_write(stream, data, len);
+
+   /* Close file */
+   if (rzipstream_close(stream) == -1)
+   {
+      fprintf(stderr, "[rzipstream] Failed to close file: %s\nData will be lost...\n", path);
+      return false;
+   }
+
+   /* Check that the correct number of bytes
+    * were written */
+   if (bytes_written != len)
+   {
+      fprintf(stderr, "[rzipstream] Wrote incorrect number of bytes to file: %s\n", path);
+      return false;
+   }
+
+   return true;
+}
+
+/* File Control */
+
+/* Sets file position to the beginning of the
+ * specified RZIP file.
+ * Note: It is not recommended to rewind a file
+ * that is open for writing, since the caller
+ * may end up with a file containing junk data
+ * at the end (harmless, but a waste of space). */
+void rzipstream_rewind(rzipstream_t *stream)
+{
+   if (!stream)
+      return;
+
+   /* Note: rzipstream_rewind() has no way of
+    * reporting errors (higher level interface
+    * requires a void return type) - so if anything
+    * goes wrong, all we can do is print to stderr
+    * and bail out... */
+
+   /* If we are handling uncompressed data, simply
+    * 'pass on' the direct file access request */
+   if (!stream->is_compressed)
+   {
+      filestream_rewind(stream->file);
+      return;
+   }
+
+   /* If no file access has yet occurred, file is
+    * already at the beginning -> do nothing */
+   if (stream->virtual_ptr == 0)
+      return;
+
+   /* Check whether we are reading or writing */
+   if (stream->is_writing)
+   {
+      /* Reset file position to first chunk location */
+      filestream_seek(stream->file, RZIP_HEADER_SIZE, SEEK_SET);
+      if (filestream_error(stream->file))
+      {
+         fprintf(
+               stderr,
+               "rzipstream_rewind(): Failed to reset file position...\n");
+         return;
+      }
+
+      /* Reset pointers */
+      stream->virtual_ptr = 0;
+      stream->in_buf_ptr  = 0;
+
+      /* Reset file size */
+      stream->size        = 0;
+   }
+   else
+   {
+      /* Check whether first file chunk is currently
+       * buffered in memory */
+      if ((stream->virtual_ptr < stream->chunk_size) &&
+          (stream->out_buf_ptr < stream->out_buf_occupancy))
+      {
+         /* It is: No file access is therefore required
+          * > Just reset pointers */
+         stream->virtual_ptr = 0;
+         stream->out_buf_ptr = 0;
+      }
+      else
+      {
+         /* It isn't: Have to re-read the first chunk
+          * from disk... */
+
+         /* Reset file position to first chunk location */
+         filestream_seek(stream->file, RZIP_HEADER_SIZE, SEEK_SET);
+         if (filestream_error(stream->file))
+         {
+            fprintf(
+                  stderr,
+                  "rzipstream_rewind(): Failed to reset file position...\n");
+            return;
+         }
+
+         /* Read chunk */
+         if (!rzipstream_read_chunk(stream))
+         {
+            fprintf(
+                  stderr,
+                  "rzipstream_rewind(): Failed to read first chunk of file...\n");
+            return;
+         }
+
+         /* Reset pointers */
+         stream->virtual_ptr = 0;
+         stream->out_buf_ptr = 0;
+      }
+   }
+}
+
 /* File Status */
 
 /* Returns total size (in bytes) of the *uncompressed*
@@ -706,6 +1039,27 @@ int rzipstream_eof(rzipstream_t *stream)
             EOF : 0;
    else
       return filestream_eof(stream->file);
+}
+
+/* Returns the offset of the current byte of *uncompressed*
+ * data relative to the beginning of an RZIP file.
+ * Returns -1 in the event of a error. */
+int64_t rzipstream_tell(rzipstream_t *stream)
+{
+   if (!stream)
+      return -1;
+
+   return (int64_t)stream->virtual_ptr;
+}
+
+/* Returns true if specified RZIP file contains
+ * compressed content */
+bool rzipstream_is_compressed(rzipstream_t *stream)
+{
+   if (!stream)
+      return false;
+
+   return stream->is_compressed;
 }
 
 /* File Close */
