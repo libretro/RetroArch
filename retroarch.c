@@ -6061,7 +6061,7 @@ bool ai_service_speech_stop(void)
 static void task_auto_translate_handler(retro_task_t *task)
 {
    http_transfer_data_t *data = NULL;
-   int* mode_ptr = task->user_data;
+   int* mode_ptr = (int*)task->user_data;
 
    if (task_get_cancelled(task))
       goto task_finished;
@@ -7049,40 +7049,40 @@ static bool run_translation_service(bool paused)
       if (paused)
          state_son[22] = '1';
 
-      if (ai_gamepad_state[8])//a
+      if (ai_gamepad_state[8]) /* a */
          state_son[30] = '1';
-      if (ai_gamepad_state[0])//b
+      if (ai_gamepad_state[0]) /* b */
          state_son[38] = '1';
-      if (ai_gamepad_state[2])//select
+      if (ai_gamepad_state[2]) /* select */
          state_son[51] = '1';
-      if (ai_gamepad_state[3])//start
+      if (ai_gamepad_state[3]) /* start */
          state_son[63] = '1';
 
-      if (ai_gamepad_state[4])//up
+      if (ai_gamepad_state[4]) /* up */
          state_son[72] = '1';
-      if (ai_gamepad_state[5])//down
+      if (ai_gamepad_state[5]) /* down */
          state_son[83] = '1';
-      if (ai_gamepad_state[6])//left
+      if (ai_gamepad_state[6]) /* left */
          state_son[94] = '1';
-      if (ai_gamepad_state[7])//right
+      if (ai_gamepad_state[7]) /* right */
          state_son[106] = '1';
 
-      if (ai_gamepad_state[9])//x
+      if (ai_gamepad_state[9]) /* x */
          state_son[114] = '1';
-      if (ai_gamepad_state[1])//y
+      if (ai_gamepad_state[1]) /* y */
          state_son[122] = '1';
-      if (ai_gamepad_state[10])//l
+      if (ai_gamepad_state[10]) /* l */
          state_son[130] = '1';
-      if (ai_gamepad_state[11])//r
+      if (ai_gamepad_state[11]) /* r */
          state_son[138] = '1';
 
-      if (ai_gamepad_state[12])//l2
+      if (ai_gamepad_state[12]) /* l2 */
          state_son[147] = '1';
-      if (ai_gamepad_state[13])//r2
+      if (ai_gamepad_state[13]) /* r2 */
          state_son[156] = '1';
-      if (ai_gamepad_state[14])//l3
+      if (ai_gamepad_state[14]) /* l3 */
          state_son[165] = '1';
-      if (ai_gamepad_state[15])//r3
+      if (ai_gamepad_state[15]) /* r3 */
          state_son[174] = '1';
 
       json_length+=state_son_length;
@@ -29981,28 +29981,33 @@ static enum runloop_state runloop_check_state(retro_time_t current_time)
       }
    }
 
+#ifdef HAVE_ACCESSIBILITY
 #ifdef HAVE_TRANSLATE
    /* Copy over the retropad state to a buffer for the translate service
       to send off if it's run. */
-   ai_gamepad_state[0] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_B);
-   ai_gamepad_state[1] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_Y);
-   ai_gamepad_state[2] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_SELECT);
-   ai_gamepad_state[3] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_START);
+   if (settings->bools.ai_service_enable)
+   {
+      ai_gamepad_state[0] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_B);
+      ai_gamepad_state[1] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_Y);
+      ai_gamepad_state[2] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_SELECT);
+      ai_gamepad_state[3] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_START);
 
-   ai_gamepad_state[4] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_UP);
-   ai_gamepad_state[5] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_DOWN);
-   ai_gamepad_state[6] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_LEFT);
-   ai_gamepad_state[7] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_RIGHT);
+      ai_gamepad_state[4] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_UP);
+      ai_gamepad_state[5] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_DOWN);
+      ai_gamepad_state[6] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_LEFT);
+      ai_gamepad_state[7] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_RIGHT);
 
-   ai_gamepad_state[8] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_A);
-   ai_gamepad_state[9] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_X);
-   ai_gamepad_state[10] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_L);
-   ai_gamepad_state[11] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_R);
+      ai_gamepad_state[8] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_A);
+      ai_gamepad_state[9] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_X);
+      ai_gamepad_state[10] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_L);
+      ai_gamepad_state[11] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_R);
 
-   ai_gamepad_state[12] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_L2);
-   ai_gamepad_state[13] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_R2);
-   ai_gamepad_state[14] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_L3);
-   ai_gamepad_state[15] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_R3);
+      ai_gamepad_state[12] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_L2);
+      ai_gamepad_state[13] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_R2);
+      ai_gamepad_state[14] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_L3);
+      ai_gamepad_state[15] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_R3);
+   }
+#endif
 #endif
 
   if (!focused)
