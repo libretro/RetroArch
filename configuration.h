@@ -585,6 +585,7 @@ typedef struct settings
       unsigned input_joypad_map[MAX_USERS];
       unsigned input_device[MAX_USERS];
       unsigned input_mouse_index[MAX_USERS];
+      unsigned input_keyboard_index[MAX_USERS];
       /* Set by autoconfiguration in joypad_autoconfig_dir.
        * Does not override main binds. */
       unsigned input_libretro_device[MAX_USERS];

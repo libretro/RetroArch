@@ -2213,6 +2213,7 @@ void config_set_defaults(void *data)
 #endif
       input_config_set_device(i, RETRO_DEVICE_JOYPAD);
       settings->uints.input_mouse_index[i] = 0;
+      settings->uints.input_keyboard_index[i] = 0;
    }
 
    video_driver_reset_custom_viewport();
@@ -2895,6 +2896,9 @@ static bool config_load_file(global_t *global,
 
       snprintf(buf, sizeof(buf), "input_player%u_mouse_index", i + 1);
       CONFIG_GET_INT_BASE(conf, settings, uints.input_mouse_index[i], buf);
+
+      snprintf(buf, sizeof(buf), "input_player%u_keyboard_index", i + 1);
+      CONFIG_GET_INT_BASE(conf, settings, uints.input_keyboard_index[i], buf);
 
       snprintf(buf, sizeof(buf), "input_libretro_device_p%u", i + 1);
       CONFIG_GET_INT_BASE(conf, settings, uints.input_libretro_device[i], buf);
@@ -3921,6 +3925,8 @@ bool config_save_file(const char *path)
       config_set_int(conf, cfg, settings->uints.input_analog_dpad_mode[i]);
       snprintf(cfg, sizeof(cfg), "input_player%u_mouse_index", i + 1);
       config_set_int(conf, cfg, settings->uints.input_mouse_index[i]);
+      snprintf(cfg, sizeof(cfg), "input_player%u_keyboard_index", i + 1);
+      config_set_int(conf, cfg, settings->uints.input_keyboard_index[i]);
    }
 
    /* Boolean settings */

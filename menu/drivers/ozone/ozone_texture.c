@@ -444,12 +444,15 @@ uintptr_t ozone_entries_icon_get_texture(ozone_handle_t *ozone,
                return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_SAVING];
             if (type == input_id + 6)
                return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_MOUSE];
-            if ((type > (input_id + 30)) && (type < (input_id + 42)))
+            if (type == input_id + 7)
+               /* TODO/FIXME: add keyboard input icon */
+               return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_SUBSETTING];
+            if ((type > (input_id + 31)) && (type < (input_id + 43)))
                return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_LGUN];
-            if (type == input_id + 42)
+            if (type == input_id + 43)
                return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_TURBO];
             /* align to use the same code of Quickmenu controls*/
-            input_id = input_id + 7;
+            input_id = input_id + 8;
          }
          else
          {
