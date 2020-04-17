@@ -884,20 +884,22 @@ static bool create_win32_process(char* cmd)
 #include <ole2.h>
 #endif
 
+#ifdef HAVE_SAPI
 static ISpVoice* pVoice = NULL;
-#ifdef HAVE_NVDA
-bool USE_POWERSHELL = false;
-bool USE_NVDA = true;
-#else
-bool USE_POWERSHELL = true;
-bool USE_NVDA = false;
 #endif
-bool USE_NVDA_BRAILLE = false;
+#ifdef HAVE_NVDA
+bool USE_POWERSHELL     = false;
+bool USE_NVDA           = true;
+#else
+bool USE_POWERSHELL     = true;
+bool USE_NVDA           = false;
+#endif
+bool USE_NVDA_BRAILLE   = false;
 
 static bool is_narrator_running_windows(void)
 {
    DWORD status = 0;
-   bool res;
+
    if (USE_POWERSHELL)
    {
       if (pi_set == false)
@@ -912,35 +914,30 @@ static bool is_narrator_running_windows(void)
 #ifdef HAVE_NVDA
    else if (USE_NVDA)
    {
-      long res=nvdaController_testIfRunning();
-      if(res!=0) 
+      long res = nvdaController_testIfRunning();
+
+      if (res != 0) 
       {
          /* The running nvda service wasn't found, so revert
             back to the powershell method
          */
          RARCH_LOG("Error communicating with NVDA\n");
          USE_POWERSHELL = true;
-         USE_NVDA = false;
-	 return false;
+         USE_NVDA       = false;
+	     return false;
       }
       return false;
-      /*
-      nvdaController_speakText(L"This is a test speech message");
-      nvdaController_brailleMessage(L"This is a test braille message");
-      */
    }
 #endif
 #ifdef HAVE_SAPI
    else
    {
       SPVOICESTATUS pStatus;
-      if (pVoice != NULL)
+      if (pVoice)
       {
          ISpVoice_GetStatus(pVoice, &pStatus, NULL);
          if (pStatus.dwRunningState == SPRS_IS_SPEAKING)
             return true;
-         else
-            return false;
       }
    }
 #endif
@@ -992,12 +989,13 @@ static bool accessibility_speak_windows(int speed,
 #ifdef HAVE_NVDA
    else if (USE_NVDA)
    {
-      long res=nvdaController_testIfRunning();
-      const size_t cSize = strlen(speak_text)+1;
-      wchar_t* wc = malloc(sizeof(wchar_t)*cSize);
+      long           res = nvdaController_testIfRunning();
+      const size_t cSize = strlen(speak_text) + 1;
+      wchar_t        *wc = malloc(sizeof(wchar_t) * cSize);
+
       mbstowcs(wc, speak_text, cSize);
 
-      if(res!=0) 
+      if (res != 0) 
       {
          RARCH_LOG("Error communicating with NVDA\n");
          return false;
@@ -1020,7 +1018,7 @@ static bool accessibility_speak_windows(int speed,
    else
    {
       /* stop the old voice if running */
-      if (pVoice != NULL)
+      if (pVoice)
       {
          CoUninitialize();
          ISpVoice_Release(pVoice);
@@ -1031,7 +1029,9 @@ static bool accessibility_speak_windows(int speed,
       if (FAILED(CoInitialize(NULL)))
          return NULL;
 
-      hr = CoCreateInstance(&CLSID_SpVoice, NULL, CLSCTX_ALL, &IID_ISpVoice, (void **)&pVoice);
+      hr = CoCreateInstance(&CLSID_SpVoice, NULL,
+            CLSCTX_ALL, &IID_ISpVoice, (void **)&pVoice);
+
       if (SUCCEEDED(hr))
       {
          wchar_t wtext[1200];
