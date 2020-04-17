@@ -1659,7 +1659,7 @@ static void vulkan_inject_black_frame(vk_t *vk, video_frame_info_t *video_info,
    slock_unlock(vk->context->queue_lock);
 #endif
 
-   video_info->cb_swap_buffers(context_data);
+   vk->ctx_driver->swap_buffers(context_data);
 }
 
 static bool vulkan_frame(void *data, const void *frame,
@@ -2116,10 +2116,10 @@ static bool vulkan_frame(void *data, const void *frame,
    slock_unlock(vk->context->queue_lock);
 #endif
 
-   video_info->cb_swap_buffers(context_data);
+   vk->ctx_driver->swap_buffers(context_data);
 
    if (!vk->context->swap_interval_emulation_lock)
-      video_info->cb_update_window_title(context_data);
+      vk->ctx_driver->update_window_title(context_data);
 
    /* Handle spurious swapchain invalidations as soon as we can,
     * i.e. right after swap buffers. */

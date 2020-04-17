@@ -26,6 +26,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stddef.h>
+#include <stdarg.h>
 
 #include <retro_common_api.h>
 
@@ -90,12 +91,68 @@ rzipstream_t* rzipstream_open(const char *path, unsigned mode);
  * the event of an error */
 int64_t rzipstream_read(rzipstream_t *stream, void *data, int64_t len);
 
+/* Reads next character from an RZIP file.
+ * Returns character value, or EOF if no data
+ * remains.
+ * Note: Always returns EOF if file is open
+ * for writing. */
+int rzipstream_getc(rzipstream_t *stream);
+
+/* Reads one line from an RZIP file and stores it
+ * in the character array pointed to by 's'.
+ * It stops reading when either (len-1) characters
+ * are read, the newline character is read, or the
+ * end-of-file is reached, whichever comes first.
+ * On success, returns 's'. In the event of an error,
+ * or if end-of-file is reached and no characters
+ * have been read, returns NULL. */
+char* rzipstream_gets(rzipstream_t *stream, char *s, size_t len);
+
+/* Reads all data from file specified by 'path' and
+ * copies it to 'buf'.
+ * - 'buf' will be allocated and must be free()'d manually.
+ * - Allocated 'buf' size is equal to 'len'.
+ * Returns false in the event of an error */
+bool rzipstream_read_file(const char *path, void **buf, int64_t *len);
+
 /* File Write */
 
 /* Writes 'len' bytes to an RZIP file.
  * Returns actual number of bytes written, or -1
  * in the event of an error */
 int64_t rzipstream_write(rzipstream_t *stream, const void *data, int64_t len);
+
+/* Writes a single character to an RZIP file.
+ * Returns character written, or EOF in the event
+ * of an error */
+int rzipstream_putc(rzipstream_t *stream, int c);
+
+/* Writes a variable argument list to an RZIP file.
+ * Ugly 'internal' function, required to enable
+ * 'printf' support in the higher level 'interface_stream'.
+ * Returns actual number of bytes written, or -1
+ * in the event of an error */
+int rzipstream_vprintf(rzipstream_t *stream, const char* format, va_list args);
+
+/* Writes formatted output to an RZIP file.
+ * Returns actual number of bytes written, or -1
+ * in the event of an error */
+int rzipstream_printf(rzipstream_t *stream, const char* format, ...);
+
+/* Writes contents of 'data' buffer to file
+ * specified by 'path'.
+ * Returns false in the event of an error */
+bool rzipstream_write_file(const char *path, const void *data, int64_t len);
+
+/* File Control */
+
+/* Sets file position to the beginning of the
+ * specified RZIP file.
+ * Note: It is not recommended to rewind a file
+ * that is open for writing, since the caller
+ * may end up with a file containing junk data
+ * at the end (harmless, but a waste of space). */
+void rzipstream_rewind(rzipstream_t *stream);
 
 /* File Status */
 
@@ -109,6 +166,15 @@ int64_t rzipstream_get_size(rzipstream_t *stream);
 /* Returns EOF when no further *uncompressed* data
  * can be read from an RZIP file. */
 int rzipstream_eof(rzipstream_t *stream);
+
+/* Returns the offset of the current byte of *uncompressed*
+ * data relative to the beginning of an RZIP file.
+ * Returns -1 in the event of a error. */
+int64_t rzipstream_tell(rzipstream_t *stream);
+
+/* Returns true if specified RZIP file contains
+ * compressed content */
+bool rzipstream_is_compressed(rzipstream_t *stream);
 
 /* File Close */
 

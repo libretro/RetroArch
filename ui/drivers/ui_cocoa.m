@@ -139,6 +139,7 @@ static void app_terminate(void)
 #if defined(HAVE_COCOA_METAL)
             pos = [apple_platform.renderView convertPoint:[event locationInWindow] fromView:nil];
 #elif defined(HAVE_COCOA)
+            pos = [[CocoaView get] convertPoint:[event locationInWindow] fromView:nil];
 #endif
             apple->touches[0].screen_x = (int16_t)pos.x;
             apple->touches[0].screen_y = (int16_t)pos.y;
@@ -172,6 +173,7 @@ static void app_terminate(void)
            if (!apple || pos.y < 0)
                return;
            apple->mouse_buttons |= (1 << event.buttonNumber);
+           apple->touch_count = 1;
        }
            break;
       case NSEventTypeLeftMouseUp:
@@ -431,10 +433,10 @@ static char** waiting_argv;
 
 - (void)application:(NSApplication *)sender openFiles:(NSArray *)filenames
 {
-	if ((filenames.count == 1) && [filenames objectAtIndex:0])
+  if ((filenames.count == 1) && [filenames objectAtIndex:0])
    {
       struct retro_system_info *system = runloop_get_libretro_system_info();
-	  NSString *__core                 = [filenames objectAtIndex:0];
+    NSString *__core                 = [filenames objectAtIndex:0];
       const char *core_name            = system->library_name;
 
       if (core_name)
@@ -483,7 +485,7 @@ static void open_core_handler(ui_browser_window_state_t *state, bool result)
    path_set(RARCH_PATH_CORE, state->result);
    ui_companion_event_command(CMD_EVENT_LOAD_CORE);
 
-   if (info 
+   if (info
          && info->load_no_content
          && set_supports_no_game_enable)
    {
@@ -554,7 +556,7 @@ static void open_document_handler(
 
     if (browser)
     {
-       ui_browser_window_state_t 
+       ui_browser_window_state_t
           browser_state                  = {{0}};
        bool result                       = false;
        settings_t *settings              = config_get_ptr();

@@ -1888,15 +1888,15 @@ MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_SOLARIZED_DARK,
     "Solarisé sombre"
     )
- MSG_HASH(
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_CUTIE_BLUE,
     "Cutie bleu"
     )
- MSG_HASH(
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_CUTIE_CYAN,
     "Cutie cyan"
     )
- MSG_HASH(
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_CUTIE_GREEN,
     "Cutie vert"
     )
@@ -2558,15 +2558,15 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_SORT_MODE_DEFAULT,
-    "Par défaut du système"
+    "Ordre par défaut du système"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_SORT_MODE_ALPHABETICAL,
-    "Alphabétique"
+    "Ordre alphabétique"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_SORT_MODE_OFF,
-    "Aucun"
+    "Aucun tri"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_CLEAN_PLAYLIST,
@@ -2757,9 +2757,9 @@ MSG_HASH(
     "Dernière partie"
     )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CHEEVOS_HASH,
-   "Empreinte RetroSuccès"
-   )
+    MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CHEEVOS_HASH,
+    "Empreinte RetroSuccès"
+    )
 #ifdef HAVE_LAKKA_SWITCH
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_REBOOT_RCM,
@@ -2991,6 +2991,14 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SAVESTATE_THUMBNAIL_ENABLE,
     "Miniatures pour les sauvegardes instantanées"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SAVESTATE_FILE_COMPRESSION,
+    "Compression des sauvegardes instantanées"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SAVESTATE_FILE_COMPRESSION,
+    "Enregistrer les fichiers de sauvegarde instantanée sous un format archivé. Réduit considérablement la taille du fichier au détriment de l'augmentation des temps de sauvegarde/chargement."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG,
@@ -10312,7 +10320,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_LOCALAP_ERROR_CONFIG_PARSE,
-     "Mauvais fichier de configuration - impossible de trouver l'APNAME ou le PASSWORD dans %s"
+    "Mauvais fichier de configuration - impossible de trouver l'APNAME ou le PASSWORD dans %s"
     )
 #endif
 MSG_HASH(
