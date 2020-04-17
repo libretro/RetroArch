@@ -2010,7 +2010,6 @@ bool is_input_keyboard_display_on(void);
 
 /* Input overrides  */
 
-static unsigned gamepad_input_override;
 extern unsigned get_gamepad_input_override(void);
 extern void set_gamepad_input_override(unsigned i, bool val);
 extern void reset_gamepad_input_override(void);
