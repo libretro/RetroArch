@@ -6559,6 +6559,9 @@ static void handle_translation_cb(
             
             strncpy(key, key_string+start, i-start);
             key[i-start] = '\0';
+
+#ifdef HAVE_ACCESSIBILITY
+#ifdef HAVE_TRANSLATE
             if (string_is_equal(key, "b"))
                ai_gamepad_state[0] = 2;
             if (string_is_equal(key, "y"))
@@ -6594,6 +6597,8 @@ static void handle_translation_cb(
                ai_gamepad_state[14] = 2;
             if (string_is_equal(key, "r3"))
                ai_gamepad_state[15] = 2;
+#endif
+#endif
 
             if (string_is_equal(key, "pause"))
                command_event(CMD_EVENT_PAUSE, NULL);
@@ -7049,6 +7054,8 @@ static bool run_translation_service(bool paused)
       if (paused)
          state_son[22] = '1';
 
+#ifdef HAVE_ACCESSIBILITY
+#ifdef HAVE_TRANSLATE
       if (ai_gamepad_state[8]) /* a */
          state_son[30] = '1';
       if (ai_gamepad_state[0]) /* b */
@@ -7084,6 +7091,8 @@ static bool run_translation_service(bool paused)
          state_son[165] = '1';
       if (ai_gamepad_state[15]) /* r3 */
          state_son[174] = '1';
+#endif
+#endif
 
       json_length+=state_son_length;
    }
