@@ -29478,18 +29478,21 @@ static enum runloop_state runloop_check_state(retro_time_t current_time)
 #endif
    {
       input_keys_pressed(&current_bits, &joypad_info);
+#ifdef HAVE_ACCESSIBILITY
 #ifdef HAVE_TRANSLATE
       if (settings->bools.ai_service_enable)
       {
+         unsigned i;
          reset_gamepad_input_override();
       
-         for (int i=0;i<16;i++)
+         for (i = 0; i < 16; i++)
          {
             if (ai_gamepad_state[i] == 2)
                set_gamepad_input_override(i, true);
             ai_gamepad_state[i] = 0;
          }
       }      
+#endif
 #endif
    }
 
