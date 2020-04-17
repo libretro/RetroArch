@@ -31134,6 +31134,4 @@ void reset_gamepad_input_override(void)
 {
     gamepad_input_override = 0;
 }
-
-
 #endif
