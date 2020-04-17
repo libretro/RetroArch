@@ -3287,7 +3287,7 @@ static enum menu_action ozone_parse_menu_entry_action(
 
             ozone_sidebar_goto(ozone, new_selection);
 
-            new_action = MENU_ACTION_NOOP;
+            new_action = MENU_ACTION_ACCESSIBILITY_SPEAK_TITLE;
             ozone->cursor_mode = false;
             break;
          }
@@ -3314,7 +3314,7 @@ static enum menu_action ozone_parse_menu_entry_action(
 
             ozone_sidebar_goto(ozone, new_selection);
 
-            new_action = MENU_ACTION_NOOP;
+            new_action = MENU_ACTION_ACCESSIBILITY_SPEAK_TITLE;
             ozone->cursor_mode = false;
             break;
          }
@@ -3330,7 +3330,7 @@ static enum menu_action ozone_parse_menu_entry_action(
          ozone->cursor_mode = false;
          if (ozone->cursor_in_sidebar)
          {
-            new_action = MENU_ACTION_NOOP;
+            new_action = MENU_ACTION_ACCESSIBILITY_SPEAK_TITLE;
             break;
          }
          else if (ozone->depth > 1)
@@ -3338,7 +3338,7 @@ static enum menu_action ozone_parse_menu_entry_action(
 
          ozone_go_to_sidebar(ozone, tag);
 
-         new_action = MENU_ACTION_NOOP;
+         new_action = MENU_ACTION_ACCESSIBILITY_SPEAK_TITLE;
          break;
       case MENU_ACTION_RIGHT:
          ozone->cursor_mode = false;
@@ -3351,14 +3351,14 @@ static enum menu_action ozone_parse_menu_entry_action(
 
          ozone_leave_sidebar(ozone, tag);
 
-         new_action = MENU_ACTION_NOOP;
+         new_action = MENU_ACTION_ACCESSIBILITY_SPEAK_LABEL;
          break;
       case MENU_ACTION_OK:
          ozone->cursor_mode = false;
          if (ozone->cursor_in_sidebar)
          {
             ozone_leave_sidebar(ozone, tag);
-            new_action = MENU_ACTION_NOOP;
+            new_action = MENU_ACTION_ACCESSIBILITY_SPEAK_LABEL;
             break;
          }
          break;
@@ -3370,14 +3370,14 @@ static enum menu_action ozone_parse_menu_entry_action(
             if (ozone->categories_selection_ptr != 0)
                ozone_sidebar_goto(ozone, 0);
 
-            new_action = MENU_ACTION_NOOP;
+            new_action = MENU_ACTION_ACCESSIBILITY_SPEAK_TITLE;
             break;
          }
 
          if (menu_entries_get_stack_size(0) == 1)
          {
             ozone_go_to_sidebar(ozone, tag);
-            new_action = MENU_ACTION_NOOP;
+            new_action = MENU_ACTION_ACCESSIBILITY_SPEAK_TITLE;
          }
          break;
 
@@ -3387,7 +3387,7 @@ static enum menu_action ozone_parse_menu_entry_action(
          /* Ignore if cursor is in sidebar */
          if (ozone->cursor_in_sidebar)
          {
-            new_action = MENU_ACTION_NOOP;
+            new_action = MENU_ACTION_ACCESSIBILITY_SPEAK_TITLE;
             break;
          }
 
@@ -3404,7 +3404,7 @@ static enum menu_action ozone_parse_menu_entry_action(
          /* > Ignore if cursor is in sidebar */
          if (ozone->cursor_in_sidebar)
          {
-            new_action = MENU_ACTION_NOOP;
+            new_action = MENU_ACTION_ACCESSIBILITY_SPEAK_TITLE;
             break;
          }
 

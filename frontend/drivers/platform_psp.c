@@ -557,6 +557,22 @@ static uint64_t frontend_psp_get_mem_used(void)
 }
 #endif
 
+// stdlibc++ references usleep but it's not available.
+// This is a workaround
+#ifdef VITA
+int usleep(uint64_t usec)
+{
+   sceKernelDelayThread(usec);
+   return 0;
+}
+
+unsigned int sleep(unsigned int seconds)
+{
+   sceKernelDelayThread(seconds * 1000000LL);
+   return 0;
+}
+#endif
+
 frontend_ctx_driver_t frontend_ctx_psp = {
    frontend_psp_get_environment_settings,
    frontend_psp_init,

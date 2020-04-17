@@ -3065,8 +3065,8 @@ static bool gl2_frame(void *data, const void *frame,
       font_driver_render_msg(gl, msg, NULL, NULL);
    }
 
-   if (video_info->cb_update_window_title)
-      video_info->cb_update_window_title(context_data);
+   if (gl->ctx_driver->update_window_title)
+      gl->ctx_driver->update_window_title(context_data);
 
    /* Reset state which could easily mess up libretro core. */
    if (gl->hw_render_fbo_init)
@@ -3100,12 +3100,13 @@ static bool gl2_frame(void *data, const void *frame,
          && !runloop_is_slowmotion
          && !runloop_is_paused)
    {
-      video_info->cb_swap_buffers(context_data);
+      if (gl->ctx_driver->swap_buffers)
+         gl->ctx_driver->swap_buffers(context_data);
       glClear(GL_COLOR_BUFFER_BIT);
    }
 #endif
 
-   video_info->cb_swap_buffers(context_data);
+   gl->ctx_driver->swap_buffers(context_data);
 
    /* check if we are fast forwarding or in menu, if we are ignore hard sync */
    if (  gl->have_sync

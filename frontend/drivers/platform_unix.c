@@ -2091,8 +2091,8 @@ static void frontend_unix_exitspawn(char *s, size_t len, char *args)
 
 static uint64_t frontend_unix_get_mem_total(void)
 {
-   long pages            = sysconf(_SC_PHYS_PAGES);
-   long page_size        = sysconf(_SC_PAGE_SIZE);
+   uint64_t pages            = sysconf(_SC_PHYS_PAGES);
+   uint64_t page_size        = sysconf(_SC_PAGE_SIZE);
    return pages * page_size;
 }
 
