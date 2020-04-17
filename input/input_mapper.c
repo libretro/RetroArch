@@ -40,6 +40,7 @@
 #endif
 
 #include "../configuration.h"
+#include "../retroarch.h"
 
 void input_mapper_poll(input_mapper_t *handle,
       void *ol_pointer,
@@ -123,6 +124,12 @@ void input_mapper_poll(input_mapper_t *handle,
 #endif
                remap_valid                   = (current_button_value == 1) &&
                   (j != remap_button) && (remap_button != RARCH_UNMAPPED);
+
+               /* gamepad override */
+               if (i==0 && get_gamepad_input_override() & (1<<j))
+               {
+                  BIT256_SET(handle->buttons[i], j);
+               }
 
                if (remap_valid)
                {

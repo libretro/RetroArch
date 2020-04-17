@@ -36,7 +36,8 @@ enum intfstream_type
 {
    INTFSTREAM_FILE = 0,
    INTFSTREAM_MEMORY,
-   INTFSTREAM_CHD
+   INTFSTREAM_CHD,
+   INTFSTREAM_RZIP
 };
 
 typedef struct intfstream_internal intfstream_internal_t, intfstream_t;
@@ -111,6 +112,9 @@ intfstream_t *intfstream_open_writable_memory(void *data,
 
 intfstream_t *intfstream_open_chd_track(const char *path,
       unsigned mode, unsigned hints, int32_t track);
+
+intfstream_t* intfstream_open_rzip_file(const char *path,
+      unsigned mode);
 
 RETRO_END_DECLS
 

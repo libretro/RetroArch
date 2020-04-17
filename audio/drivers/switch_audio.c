@@ -106,7 +106,7 @@ static ssize_t switch_audio_write(void *data, const void *buf, size_t size)
             num                 = 0;
 
 #ifdef HAVE_LIBNX
-            if (audoutWaitPlayFinish(&swa->current_buffer, &num, U64_MAX) != 0) { }
+            if (audoutWaitPlayFinish(&swa->current_buffer, &num, UINT64_MAX) != 0) { }
 #else
             svcWaitSynchronization(&handle_idx, &swa->event, 1, 33333333);
             svcResetSignal(swa->event);

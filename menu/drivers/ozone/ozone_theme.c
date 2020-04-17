@@ -100,9 +100,9 @@ ozone_theme_t ozone_theme_nord = {
    0x8FBCBBFF,                             /* text_sublabel_rgba */
 
    /* Sidebar color */
-   ozone_sidebar_background_nord,          /* <TODO> sidebar_background */
-   ozone_sidebar_gradient_top_nord,        /* <TODO> sidebar_top_gradient */
-   ozone_sidebar_gradient_bottom_nord,     /* <TODO> sidebar_bottom_gradient */
+   ozone_sidebar_background_nord,          /* sidebar_background */
+   ozone_sidebar_gradient_top_nord,        /* sidebar_top_gradient */
+   ozone_sidebar_gradient_bottom_nord,     /* sidebar_bottom_gradient */
 
    /* Fancy cursor colors */
    ozone_border_0_nord,                    /* cursor_border_0 */

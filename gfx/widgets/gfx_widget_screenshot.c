@@ -150,19 +150,14 @@ static void gfx_widget_screenshot_free(void)
 
 static void gfx_widget_screenshot_frame(void* data)
 {
-   video_frame_info_t *video_info = (video_frame_info_t*)data;
-   void *userdata                 = video_info->userdata;
-   unsigned video_width           = video_info->width;
-   unsigned video_height          = video_info->height;
-
-   unsigned padding  = gfx_widgets_get_padding();
-   float font_size   = gfx_widgets_get_font_size();
-
-   font_data_t* font_regular = gfx_widgets_get_font_regular();
-
-   float* pure_white = gfx_widgets_get_pure_white();
-
+   video_frame_info_t *video_info       = (video_frame_info_t*)data;
+   void *userdata                       = video_info->userdata;
+   unsigned video_width                 = video_info->width;
+   unsigned video_height                = video_info->height;
+   gfx_widget_font_data_t* font_regular = gfx_widgets_get_font_regular();
+   float* pure_white                    = gfx_widgets_get_pure_white();
    gfx_widget_screenshot_state_t* state = gfx_widget_screenshot_get_ptr();
+   int padding                          = (state->height - (font_regular->line_height * 2.0f)) / 2.0f;
 
    /* Screenshot */
    if (state->loaded)
@@ -193,14 +188,14 @@ static void gfx_widget_screenshot_frame(void* data)
          0, 1, pure_white
       );
 
-      gfx_display_draw_text(font_regular,
-         msg_hash_to_str(MSG_SCREENSHOT_SAVED),
-         state->thumbnail_width + padding, font_size * 1.9f + state->y,
-         video_width, video_height,
-         TEXT_COLOR_FAINT,
-         TEXT_ALIGN_LEFT,
-         1, false, 0, true
-      );
+      gfx_widgets_draw_text(font_regular,
+            msg_hash_to_str(MSG_SCREENSHOT_SAVED),
+            state->thumbnail_width + padding,
+            padding + font_regular->line_ascender + state->y,
+            video_width, video_height,
+            TEXT_COLOR_FAINT,
+            TEXT_ALIGN_LEFT,
+            true);
 
       ticker.idx        = gfx_animation_get_ticker_idx();
       ticker.len        = state->shotname_length;
@@ -210,14 +205,14 @@ static void gfx_widget_screenshot_frame(void* data)
 
       gfx_animation_ticker(&ticker);
 
-      gfx_display_draw_text(font_regular,
-         shotname,
-         state->thumbnail_width + padding, font_size * 2.9f + state->y,
-         video_width, video_height,
-         TEXT_COLOR_INFO,
-         TEXT_ALIGN_LEFT,
-         1, false, 0, true
-      );
+      gfx_widgets_draw_text(font_regular,
+            shotname,
+            state->thumbnail_width + padding,
+            state->height - padding - font_regular->line_descender + state->y,
+            video_width, video_height,
+            TEXT_COLOR_INFO,
+            TEXT_ALIGN_LEFT,
+            true);
    }
 
    /* Flash effect */
@@ -240,10 +235,8 @@ static void gfx_widget_screenshot_iterate(unsigned width, unsigned height, bool 
       bool is_threaded)
 {
    gfx_widget_screenshot_state_t* state = gfx_widget_screenshot_get_ptr();
-
-   float font_size      = gfx_widgets_get_font_size();
-   unsigned padding     = gfx_widgets_get_padding();
-   unsigned glyph_width = gfx_widgets_get_glyph_width();
+   unsigned padding                     = gfx_widgets_get_padding();
+   gfx_widget_font_data_t* font_regular = gfx_widgets_get_font_regular();
 
    /* Load screenshot and start its animation */
    if (state->filename[0] != '\0')
@@ -258,7 +251,7 @@ static void gfx_widget_screenshot_iterate(unsigned width, unsigned height, bool 
             "", &state->texture, TEXTURE_FILTER_MIPMAP_LINEAR,
             &state->texture_width, &state->texture_height);
 
-      state->height = font_size * 4;
+      state->height = font_regular->line_height * 4;
       state->width  = width;
 
       state->scale_factor = gfx_widgets_get_thumbnail_scale_factor(
@@ -269,7 +262,7 @@ static void gfx_widget_screenshot_iterate(unsigned width, unsigned height, bool 
       state->thumbnail_width  = state->texture_width * state->scale_factor;
       state->thumbnail_height = state->texture_height * state->scale_factor;
 
-      state->shotname_length  = (width - state->thumbnail_width - padding*2) / glyph_width;
+      state->shotname_length  = (width - state->thumbnail_width - padding*2) / font_regular->glyph_width;
 
       state->y = 0.0f;
 

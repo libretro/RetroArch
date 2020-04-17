@@ -132,7 +132,7 @@ void ozone_draw_sidebar(
    if (use_smooth_ticker)
    {
       ticker_smooth.idx           = gfx_animation_get_ticker_pixel_idx();
-      ticker_smooth.font          = ozone->fonts.sidebar;
+      ticker_smooth.font          = ozone->fonts.sidebar.font;
       ticker_smooth.font_scale    = 1.0f;
       ticker_smooth.type_enum     = menu_ticker_type;
       ticker_smooth.spacer        = ticker_spacer;
@@ -285,8 +285,10 @@ void ozone_draw_sidebar(
 
       /* Text */
       if (!ozone->sidebar_collapsed)
-         ozone_draw_text(ozone, title, ozone->sidebar_offset + ozone->dimensions.sidebar_padding_horizontal + ozone->dimensions.sidebar_entry_icon_padding * 2 + ozone->dimensions.sidebar_entry_icon_size,
-            y + ozone->dimensions.sidebar_entry_height / 2 + ozone->sidebar_font_glyph_height * 3.0f/10.0f + ozone->animations.scroll_y_sidebar, TEXT_ALIGN_LEFT, video_width, video_height, ozone->fonts.sidebar, text_color, true);
+         ozone_draw_text(ozone, title,
+               ozone->sidebar_offset + ozone->dimensions.sidebar_padding_horizontal + ozone->dimensions.sidebar_entry_icon_padding * 2 + ozone->dimensions.sidebar_entry_icon_size,
+               y + ozone->dimensions.sidebar_entry_height / 2.0f + ozone->fonts.sidebar.line_centre_offset + ozone->animations.scroll_y_sidebar,
+               TEXT_ALIGN_LEFT, video_width, video_height, &ozone->fonts.sidebar, text_color, true);
 
       y += ozone->dimensions.sidebar_entry_height + ozone->dimensions.sidebar_entry_padding_vertical;
    }
@@ -359,7 +361,7 @@ void ozone_draw_sidebar(
          }
          else
          {
-            ticker.len      = (entry_width - ozone->dimensions.sidebar_entry_icon_size - 40 * scale_factor) / ozone->sidebar_font_glyph_width;
+            ticker.len      = (entry_width - ozone->dimensions.sidebar_entry_icon_size - 40 * scale_factor) / ozone->fonts.sidebar.glyph_width;
             ticker.s        = console_title;
             ticker.selected = selected;
             ticker.str      = node->console_name;
@@ -367,9 +369,11 @@ void ozone_draw_sidebar(
             gfx_animation_ticker(&ticker);
          }
 
-         ozone_draw_text(ozone, console_title, ticker_x_offset + ozone->sidebar_offset + ozone->dimensions.sidebar_padding_horizontal + ozone->dimensions.sidebar_entry_icon_padding * 2 + ozone->dimensions.sidebar_entry_icon_size,
-               y + ozone->dimensions.sidebar_entry_height / 2 + ozone->sidebar_font_glyph_height * 3.0f/10.0f + ozone->animations.scroll_y_sidebar, TEXT_ALIGN_LEFT,
-               video_width, video_height, ozone->fonts.sidebar, text_color, true);
+         ozone_draw_text(ozone, console_title,
+               ticker_x_offset + ozone->sidebar_offset + ozone->dimensions.sidebar_padding_horizontal + ozone->dimensions.sidebar_entry_icon_padding * 2 + ozone->dimensions.sidebar_entry_icon_size,
+               y + ozone->dimensions.sidebar_entry_height / 2 + ozone->fonts.sidebar.line_centre_offset + ozone->animations.scroll_y_sidebar,
+               TEXT_ALIGN_LEFT,
+               video_width, video_height, &ozone->fonts.sidebar, text_color, true);
 
 console_iterate:
          y += ozone->dimensions.sidebar_entry_height + ozone->dimensions.sidebar_entry_padding_vertical;
@@ -378,8 +382,7 @@ console_iterate:
       gfx_display_blend_end(userdata);
    }
 
-   font_driver_flush(video_width, video_height, ozone->fonts.sidebar);
-   ozone->raster_blocks.sidebar.carr.coords.vertices = 0;
+   ozone_font_flush(video_width, video_height, &ozone->fonts.sidebar);
 
    gfx_display_scissor_end(userdata, video_width,
          video_height);

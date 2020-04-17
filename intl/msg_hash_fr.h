@@ -1888,15 +1888,15 @@ MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_SOLARIZED_DARK,
     "Solarisé sombre"
     )
- MSG_HASH(
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_CUTIE_BLUE,
     "Cutie bleu"
     )
- MSG_HASH(
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_CUTIE_CYAN,
     "Cutie cyan"
     )
- MSG_HASH(
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_CUTIE_GREEN,
     "Cutie vert"
     )
@@ -2549,6 +2549,26 @@ MSG_HASH(
     "Par défaut du système"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_SORT_MODE,
+    "Trier par"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_SORT_MODE,
+    "Changer l'ordre de tri dans cette liste de lecture."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_SORT_MODE_DEFAULT,
+    "Ordre par défaut du système"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_SORT_MODE_ALPHABETICAL,
+    "Ordre alphabétique"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_SORT_MODE_OFF,
+    "Aucun tri"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_CLEAN_PLAYLIST,
     "Nettoyer la liste de lecture"
     )
@@ -2737,9 +2757,9 @@ MSG_HASH(
     "Dernière partie"
     )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CHEEVOS_HASH,
-   "Empreinte RetroSuccès"
-   )
+    MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CHEEVOS_HASH,
+    "Empreinte RetroSuccès"
+    )
 #ifdef HAVE_LAKKA_SWITCH
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_REBOOT_RCM,
@@ -2971,6 +2991,14 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SAVESTATE_THUMBNAIL_ENABLE,
     "Miniatures pour les sauvegardes instantanées"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_SAVESTATE_FILE_COMPRESSION,
+    "Compression des sauvegardes instantanées"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_SAVESTATE_FILE_COMPRESSION,
+    "Enregistrer les fichiers de sauvegarde instantanée sous un format archivé. Réduit considérablement la taille du fichier au détriment de l'augmentation des temps de sauvegarde/chargement."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG,
@@ -6656,11 +6684,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SORT_SAVEFILES_ENABLE,
-    "Trier les fichiers de sauvegarde dans des dossiers nommés d'après le cœur utilisé."
+    "Classer les fichiers de sauvegarde dans des dossiers nommés d'après le cœur utilisé."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_SORT_SAVESTATES_ENABLE,
-    "Trier les sauvegardes instantanées dans des dossiers nommés d'après le cœur utilisé."
+    "Classer les sauvegardes instantanées dans des dossiers nommés d'après le cœur utilisé."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_NETPLAY_REQUEST_DEVICE_I,
@@ -9363,11 +9391,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLIST_SORT_ALPHABETICAL,
-    "Organiser les listes de lecture par ordre alphabétique"
+    "Trier les listes de lecture par ordre alphabétique"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_PLAYLIST_SORT_ALPHABETICAL,
-    "Organiser les listes de lecture de contenu par ordre alphabétique. Notez que les listes de lecture 'Historique' des jeux, images, musiques et vidéos récemment utilisés sont exclues."
+    "Trier les listes de lecture de contenu par ordre alphabétique. Notez que les listes de lecture 'Historique' des jeux, images, musiques et vidéos récemment utilisés sont exclues."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_SOUNDS,
@@ -10292,7 +10320,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_LOCALAP_ERROR_CONFIG_PARSE,
-     "Mauvais fichier de configuration - impossible de trouver l'APNAME ou le PASSWORD dans %s"
+    "Mauvais fichier de configuration - impossible de trouver l'APNAME ou le PASSWORD dans %s"
     )
 #endif
 MSG_HASH(

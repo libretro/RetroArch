@@ -344,6 +344,7 @@ typedef struct settings
       bool savestate_auto_save;
       bool savestate_auto_load;
       bool savestate_thumbnail_enable;
+      bool savestate_file_compression;
       bool network_cmd_enable;
       bool stdin_cmd_enable;
       bool keymapper_enable;

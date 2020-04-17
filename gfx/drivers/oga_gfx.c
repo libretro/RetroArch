@@ -176,6 +176,7 @@ static void render_msg(oga_video_t* vid, go2_surface_t* surface, const char* msg
     const struct font_atlas* atlas = vid->font_driver->get_atlas(vid->font);
     int msg_width = get_message_width(vid, msg);
     int dest_x = MAX(0, width - get_message_width(vid, msg));
+    int dest_stride = go2_surface_stride_get(surface);
 
     const char* c = msg;
     while (*c) {
@@ -202,7 +203,7 @@ static void render_msg(oga_video_t* vid, go2_surface_t* surface, const char* msg
                     *(dest++) = px;
                 }
             }
-            dest += go2_surface_stride_get(surface) - g->advance_x * bpp;
+            dest += dest_stride - g->advance_x * bpp;
             source += atlas->width - g->width;
         }
 
@@ -239,10 +240,11 @@ static bool oga_gfx_frame(void *data, const void *frame, unsigned width,
     uint8_t* dst = (uint8_t*)go2_surface_map(dst_surface);
     int yy = height;
     int stride = width * bpp;
+    int dst_stride = go2_surface_stride_get(dst_surface);
     while (yy > 0) {
         memcpy(dst, src, stride);
         src += pitch;
-        dst += go2_surface_stride_get(dst_surface);
+        dst += dst_stride;
         --yy;
     }
 

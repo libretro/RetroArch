@@ -47,6 +47,7 @@ struct content_playlist
    enum playlist_label_display_mode label_display_mode;
    enum playlist_thumbnail_mode right_thumbnail_mode;
    enum playlist_thumbnail_mode left_thumbnail_mode;
+   enum playlist_sort_mode sort_mode;
 
    size_t size;
    size_t cap;
@@ -80,6 +81,7 @@ typedef struct
    struct string_list **current_entry_string_list_val;
    enum playlist_label_display_mode *current_meta_label_display_mode_val;
    enum playlist_thumbnail_mode *current_meta_thumbnail_mode_val;
+   enum playlist_sort_mode *current_meta_sort_mode_val;
 } JSONContext;
 
 static playlist_t *playlist_cached = NULL;
@@ -1299,9 +1301,12 @@ void playlist_write_file(playlist_t *playlist, bool use_old_format)
                );
 
       /* Add metadata lines
-       * (we add these at the end of the file to prevent
-       * breakage if the playlist is loaded with an older
-       * version of RetroArch */
+       * > We add these at the end of the file to prevent
+       *   breakage if the playlist is loaded with an older
+       *   version of RetroArch
+       * > There is only room for four entries. At present
+       *   the following metadata is excluded:
+       *   - sort_mode */
       filestream_printf(
             file,
             "default_core_path = \"%s\"\n"
@@ -1339,8 +1344,8 @@ void playlist_write_file(playlist_t *playlist, bool use_old_format)
             STRLEN_CONST("version"), JSON_UTF8);
       JSON_Writer_WriteColon(context.writer);
       JSON_Writer_WriteSpace(context.writer, 1);
-      JSON_Writer_WriteString(context.writer, "1.2",
-            STRLEN_CONST("1.3"), JSON_UTF8);
+      JSON_Writer_WriteString(context.writer, "1.4",
+            STRLEN_CONST("1.4"), JSON_UTF8);
       JSON_Writer_WriteComma(context.writer);
       JSON_Writer_WriteNewLine(context.writer);
 
@@ -1408,6 +1413,19 @@ void playlist_write_file(playlist_t *playlist, bool use_old_format)
       JSON_Writer_WriteSpace(context.writer, 2);
       JSON_Writer_WriteString(context.writer, "left_thumbnail_mode",
             STRLEN_CONST("left_thumbnail_mode"), JSON_UTF8);
+      JSON_Writer_WriteColon(context.writer);
+      JSON_Writer_WriteSpace(context.writer, 1);
+      JSON_Writer_WriteNumber(context.writer, uint_str,
+            strlen(uint_str), JSON_UTF8);
+      JSON_Writer_WriteComma(context.writer);
+      JSON_Writer_WriteNewLine(context.writer);
+
+      uint_str[0] = '\0';
+      snprintf(uint_str, sizeof(uint_str), "%u", playlist->sort_mode);
+
+      JSON_Writer_WriteSpace(context.writer, 2);
+      JSON_Writer_WriteString(context.writer, "sort_mode",
+            STRLEN_CONST("sort_mode"), JSON_UTF8);
       JSON_Writer_WriteColon(context.writer);
       JSON_Writer_WriteSpace(context.writer, 1);
       JSON_Writer_WriteNumber(context.writer, uint_str,
@@ -1904,6 +1922,8 @@ static JSON_Parser_HandlerResult JSONNumberHandler(JSON_Parser parser, char *pVa
                *pCtx->current_meta_label_display_mode_val = (enum playlist_label_display_mode)strtoul(pValue, NULL, 10);
             else if (pCtx->current_meta_thumbnail_mode_val)
                *pCtx->current_meta_thumbnail_mode_val = (enum playlist_thumbnail_mode)strtoul(pValue, NULL, 10);
+            else if (pCtx->current_meta_sort_mode_val)
+               *pCtx->current_meta_sort_mode_val = (enum playlist_sort_mode)strtoul(pValue, NULL, 10);
             else
             {
                /* must be a value for an unknown member we aren't tracking, skip it */
@@ -1916,6 +1936,7 @@ static JSON_Parser_HandlerResult JSONNumberHandler(JSON_Parser parser, char *pVa
    pCtx->current_entry_uint_val              = NULL;
    pCtx->current_meta_label_display_mode_val = NULL;
    pCtx->current_meta_thumbnail_mode_val     = NULL;
+   pCtx->current_meta_sort_mode_val          = NULL;
 
    return JSON_Parser_Continue;
 }
@@ -2024,6 +2045,8 @@ static JSON_Parser_HandlerResult JSONObjectMemberHandler(JSON_Parser parser, cha
                pCtx->current_meta_thumbnail_mode_val = &pCtx->playlist->right_thumbnail_mode;
             else if (string_is_equal(pValue, "left_thumbnail_mode"))
                pCtx->current_meta_thumbnail_mode_val = &pCtx->playlist->left_thumbnail_mode;
+            else if (string_is_equal(pValue, "sort_mode"))
+               pCtx->current_meta_sort_mode_val = &pCtx->playlist->sort_mode;
             else
             {
                /* ignore unknown members */
@@ -2316,6 +2339,10 @@ json_cleanup:
          playlist->default_core_name = strdup(default_core_name);
       }
 
+      /* > Sort mode is excluded from old format
+       *   playlists - just set to default */
+      playlist->sort_mode = PLAYLIST_SORT_MODE_DEFAULT;
+
       /* Read playlist entries */
       filestream_seek(file, 0, SEEK_SET);
       if (filestream_error(file))
@@ -2423,6 +2450,7 @@ playlist_t *playlist_init(const char *path, size_t size)
    playlist->label_display_mode   = LABEL_DISPLAY_MODE_DEFAULT;
    playlist->right_thumbnail_mode = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
    playlist->left_thumbnail_mode  = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
+   playlist->sort_mode            = PLAYLIST_SORT_MODE_DEFAULT;
 
    playlist_read_file(playlist, path);
 
@@ -2450,36 +2478,38 @@ static int playlist_qsort_func(const struct playlist_entry *a,
     * have no other option...) */
    if (string_is_empty(a_str))
    {
-      if (string_is_empty(a->path))
-         goto end;
-
       a_fallback_label = (char*)calloc(PATH_MAX_LENGTH, sizeof(char));
 
       if (!a_fallback_label)
          goto end;
 
-      fill_short_pathname_representation(a_fallback_label, a->path, PATH_MAX_LENGTH * sizeof(char));
+      if (!string_is_empty(a->path))
+         fill_short_pathname_representation(a_fallback_label, a->path, PATH_MAX_LENGTH * sizeof(char));
+      /* If filename is also empty, use core name
+       * instead -> this matches the behaviour of
+       * menu_displaylist_parse_playlist() */
+      else if (!string_is_empty(a->core_name))
+         strlcpy(a_fallback_label, a->core_name, PATH_MAX_LENGTH * sizeof(char));
 
-      if (string_is_empty(a_fallback_label))
-         goto end;
+      /* If both filename and core name are empty,
+       * then have to compare an empty string
+       * -> again, this is to match the behaviour of
+       * menu_displaylist_parse_playlist() */
 
       a_str = a_fallback_label;
    }
 
    if (string_is_empty(b_str))
    {
-      if (string_is_empty(b->path))
-         goto end;
-
       b_fallback_label = (char*)calloc(PATH_MAX_LENGTH, sizeof(char));
 
       if (!b_fallback_label)
          goto end;
 
-      fill_short_pathname_representation(b_fallback_label, b->path, PATH_MAX_LENGTH * sizeof(char));
-
-      if (string_is_empty(b_fallback_label))
-         goto end;
+      if (!string_is_empty(b->path))
+         fill_short_pathname_representation(b_fallback_label, b->path, PATH_MAX_LENGTH * sizeof(char));
+      else if (!string_is_empty(b->core_name))
+         strlcpy(b_fallback_label, b->core_name, PATH_MAX_LENGTH * sizeof(char));
 
       b_str = b_fallback_label;
    }
@@ -2508,6 +2538,12 @@ end:
 
 void playlist_qsort(playlist_t *playlist)
 {
+   /* Avoid inadvertent sorting if 'sort mode'
+    * has been set explicitly to PLAYLIST_SORT_MODE_OFF */
+   if (!playlist ||
+       (playlist->sort_mode == PLAYLIST_SORT_MODE_OFF))
+      return;
+
    qsort(playlist->entries, playlist->size,
          sizeof(struct playlist_entry),
          (int (*)(const void *, const void *))playlist_qsort_func);
@@ -2674,6 +2710,13 @@ enum playlist_thumbnail_mode playlist_get_thumbnail_mode(
    return PLAYLIST_THUMBNAIL_MODE_DEFAULT;
 }
 
+enum playlist_sort_mode playlist_get_sort_mode(playlist_t *playlist)
+{
+   if (!playlist)
+      return PLAYLIST_SORT_MODE_DEFAULT;
+   return playlist->sort_mode;
+}
+
 void playlist_set_default_core_path(playlist_t *playlist, const char *core_path)
 {
    char real_core_path[PATH_MAX_LENGTH];
@@ -2745,5 +2788,17 @@ void playlist_set_thumbnail_mode(
          playlist->left_thumbnail_mode = thumbnail_mode;
          playlist->modified            = true;
          break;
+   }
+}
+
+void playlist_set_sort_mode(playlist_t *playlist, enum playlist_sort_mode sort_mode)
+{
+   if (!playlist)
+      return;
+
+   if (playlist->sort_mode != sort_mode)
+   {
+      playlist->sort_mode = sort_mode;
+      playlist->modified  = true;
    }
 }

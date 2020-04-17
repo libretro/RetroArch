@@ -362,6 +362,23 @@ static int action_start_playlist_left_thumbnail_mode(
    return 0;
 }
 
+static int action_start_playlist_sort_mode(
+      const char *path, const char *label,
+      unsigned type, size_t idx, size_t entry_idx)
+{
+   settings_t *settings  = config_get_ptr();
+   playlist_t *playlist  = playlist_get_cached();
+
+   if (!playlist)
+      return -1;
+
+   /* Set sort mode to the default */
+   playlist_set_sort_mode(playlist, PLAYLIST_SORT_MODE_DEFAULT);
+   playlist_write_file(playlist, settings->bools.playlist_use_old_format);
+
+   return 0;
+}
+
 static int action_start_manual_content_scan_dir(
       const char *path, const char *label,
       unsigned type, size_t idx, size_t entry_idx)
@@ -499,6 +516,9 @@ static int menu_cbs_init_bind_start_compare_label(menu_file_list_cbs_t *cbs)
             break;
          case MENU_ENUM_LABEL_PLAYLIST_MANAGER_LEFT_THUMBNAIL_MODE:
             BIND_ACTION_START(cbs, action_start_playlist_left_thumbnail_mode);
+            break;
+         case MENU_ENUM_LABEL_PLAYLIST_MANAGER_SORT_MODE:
+            BIND_ACTION_START(cbs, action_start_playlist_sort_mode);
             break;
          case MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_DIR:
             BIND_ACTION_START(cbs, action_start_manual_content_scan_dir);

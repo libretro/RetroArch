@@ -26,7 +26,7 @@ void ozone_draw_text(
       const char *str, float x,
       float y,
       enum text_alignment text_align,
-      unsigned width, unsigned height, font_data_t* font,
+      unsigned width, unsigned height, ozone_font_data_t *font_data,
       uint32_t color,
       bool draw_outside);
 
