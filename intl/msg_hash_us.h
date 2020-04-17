@@ -9346,6 +9346,10 @@ MSG_HASH(
     "Gruvbox Dark"
     )
 MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_FLUX,
+    "Flux"
+    )
+MSG_HASH(
     MENU_ENUM_SUBLABEL_OZONE_MENU_COLOR_THEME,
     "Select a different color theme."
     )

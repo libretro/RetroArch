@@ -147,12 +147,42 @@ ozone_theme_t ozone_theme_gruvbox_dark = {
    "gruvbox_dark"                                  /* name */
 };
 
+ozone_theme_t ozone_theme_flux = {
+   COLOR_HEX_TO_FLOAT(0xF3C414, 1.00),
+   ozone_background_libretro_running_flux,
+
+   COLOR_HEX_TO_FLOAT(0x14584D, 1.00),
+   COLOR_HEX_TO_FLOAT(0x242124, 1.00),
+   COLOR_HEX_TO_FLOAT(0xDC5623, 1.00),
+   COLOR_HEX_TO_FLOAT(0x14584D, 1.00),
+   COLOR_HEX_TO_FLOAT(0xCDCDCD, 1.00),
+   COLOR_HEX_TO_FLOAT(0x14584D, 1.00),
+   COLOR_HEX_TO_FLOAT(0x14584D, 1.00),
+   COLOR_HEX_TO_FLOAT(0xDC5623, 1.00),
+
+   0x14584DFF,
+   0x14584DFF,
+   0xDC5623FF,
+
+   ozone_sidebar_background_flux,
+   ozone_sidebar_gradient_top_flux,
+   ozone_sidebar_gradient_bottom_flux,
+
+   ozone_border_0_flux,
+   ozone_border_1_flux,
+
+   {0},
+
+   "flux"
+};
+
 
 ozone_theme_t *ozone_themes[] = {
    &ozone_theme_light,
    &ozone_theme_dark,
    &ozone_theme_nord,
-   &ozone_theme_gruvbox_dark
+   &ozone_theme_gruvbox_dark,
+   &ozone_theme_flux
 };
 
 /* TODO/FIXME - all of the public global variables below are
@@ -192,6 +222,9 @@ void ozone_set_color_theme(ozone_handle_t *ozone, unsigned color_theme)
       case 3:
          theme = &ozone_theme_gruvbox_dark;
          break;
+      case 4:
+         theme = &ozone_theme_flux;
+         break;         
       default:
          break;
    }
