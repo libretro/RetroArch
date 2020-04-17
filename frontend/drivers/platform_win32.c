@@ -1044,6 +1044,7 @@ static bool accessibility_speak_windows(int speed,
       return true;
    }
 #endif
+   return true;
 }
 #endif
 
