@@ -1,9 +1,9 @@
 #if defined(_MSC_VER) && !defined(_XBOX) && (_MSC_VER >= 1500 && _MSC_VER < 1900)
-	#if (_MSC_VER >= 1700)
-		/* https://support.microsoft.com/en-us/kb/980263 */
-		#pragma execution_character_set("utf-8")
-	#endif
-	#pragma warning(disable:4566)
+#if (_MSC_VER >= 1700)
+/* https://support.microsoft.com/en-us/kb/980263 */
+#pragma execution_character_set("utf-8")
+#endif
+#pragma warning(disable:4566)
 #endif
 
 /* Top-level Menu */
@@ -1742,7 +1742,7 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
    "Desired audio latency in milliseconds. Might not be honored if the audio driver can't provide given latency."
    )
-   
+
 /* Settings > Audio > Resampler */
 
 MSG_HASH(
@@ -1761,7 +1761,7 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_RATE,
    "Audio output sample rate."
    )
-   
+
 /* Settings > Audio > Synchronization */
 
 MSG_HASH(
