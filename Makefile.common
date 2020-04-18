@@ -1776,9 +1776,12 @@ endif
 ifeq ($(HAVE_ACCESSIBILITY), 1)
    DEFINES += -DHAVE_ACCESSIBILITY
 
+ifeq ($(HAVE_SAPI), 1)
 ifneq ($(findstring Win32,$(OS)),)
    LIBS += -lsapi
 endif
+endif
+
 endif
 
 
