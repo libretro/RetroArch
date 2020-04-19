@@ -892,6 +892,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP_CONTROLS,
    "Contrôles de base du menu"
    )
+
 /* Main Menu > Help > Basic Menu Controls */
 
 MSG_HASH(
@@ -7838,6 +7839,7 @@ MSG_HASH(
    )
 
 /* MaterialUI: Settings > User Interface > Appearance */
+
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_ICONS_ENABLE,
    "Icônes du menu"
