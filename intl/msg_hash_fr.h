@@ -10637,7 +10637,7 @@ MSG_HASH(
    "Redémarrer"
    )
 
-/* Environment Specific Settings*/
+/* Environment Specific Settings */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SPLIT_JOYCON,
