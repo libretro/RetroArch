@@ -470,11 +470,11 @@ MSG_HASH(
    )
 MSG_HASH( /* FIXME Should be MENU_LABEL_VALUE */
    MSG_COMPILER,
-   "Compiler"
+   "Compilateur "
    )
 MSG_HASH( /* FIXME Should be MENU_LABEL_VALUE */
    MSG_UNKNOWN_COMPILER,
-   "Unknown compiler"
+   "Compilateur inconnu"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_MODEL,
@@ -3031,7 +3031,7 @@ MSG_HASH(
    )
 MSG_HASH( /* FIXME Unused */
    MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_SELECTED_VIEW,
-   "Select a view within the loaded layout."
+   "Sélectionne une vue pour la disposition d'affichage."
    )
 
 /* Settings > Onscreen Display > Onscreen Notifications */
@@ -3560,11 +3560,11 @@ MSG_HASH(
    )
 MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_LABEL_VALUE_RGUI_SHOW_START_SCREEN,
-   "Display Start Screen"
+   "Afficher l'écran de configuration initiale"
    )
 MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_SUBLABEL_RGUI_SHOW_START_SCREEN,
-   "Show startup screen in menu. This is automatically set to false after the program starts for the first time."
+   "Affiche à nouveau l'écran de configuration initiale dans le menu au prochain lancement. Cette option est automatiquement désactivée après le premier démarrage du programme."
    )
 
 /* Settings > User Interface > Views > Quick Menu */
@@ -4678,19 +4678,19 @@ MSG_HASH(
    )
 MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
-   "File Browser"
+   "Navigateur de fichiers "
    )
 MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_SUBLABEL_RGUI_BROWSER_DIRECTORY,
-   "Sets start directory for the filebrowser."
+   "Définit le dossier de départ du navigateur de fichiers."
    )
 MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY,
-   "Config"
+   "Fichiers de configuration "
    )
 MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_SUBLABEL_RGUI_CONFIG_DIRECTORY,
-   "Sets start directory for menu configuration browser."
+   "Définit le dossier de départ du navigateur de configurations du menu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LIBRETRO_DIR_PATH,
@@ -6482,7 +6482,7 @@ MSG_HASH(
    )
 MSG_HASH( /* FIXME Unused? */
    MENU_ENUM_LABEL_VALUE_RETROKEYBOARD,
-   "RetroKeyboard"
+   "RetroClavier"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RETROPAD,
@@ -7616,11 +7616,11 @@ MSG_HASH(
    )
 MSG_HASH( /* FIXME Unused? */
    MENU_ENUM_LABEL_VALUE_XMB_MAIN_MENU_ENABLE_SETTINGS,
-   "Settings Tab"
+   "Onglet Réglages"
    )
 MSG_HASH( /* FIXME Unused? */
    MENU_ENUM_SUBLABEL_XMB_MAIN_MENU_ENABLE_SETTINGS,
-   "Enables the Settings tab. A restart is required for the tab to appear."
+   "Active l'onglet Réglages. Un redémarrage est requis pour que l'onglet apparaisse."
    )
 
 /* XMB: Settings Options */
@@ -8884,19 +8884,19 @@ MSG_HASH(
    )
 MSG_HASH( /* FIXME Still exists in a comment about being removed */
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_FOOTER_OPACITY,
-   "Footer Opacity"
+   "Opacité du pied de page"
    )
 MSG_HASH( /* FIXME Still exists in a comment about being removed */
    MENU_ENUM_SUBLABEL_MATERIALUI_MENU_FOOTER_OPACITY,
-   "Modify the opacity of the footer graphic."
+   "Modifier l'opacité du graphique de pied de page."
    )
 MSG_HASH( /* FIXME Still exists in a comment about being removed */
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_HEADER_OPACITY,
-   "Header Opacity"
+   "Opacité de l'en-tête"
    )
 MSG_HASH( /* FIXME Still exists in a comment about being removed */
    MENU_ENUM_SUBLABEL_MATERIALUI_MENU_HEADER_OPACITY,
-   "Modify the opacity of the header graphic."
+   "Modifier l'opacité du graphique d'en-tête."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE,
@@ -9119,7 +9119,7 @@ MSG_HASH(
    )
 MSG_HASH( /* FIXME Seems related to MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY, possible duplicate */
    MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIR,
-   "Downloads"
+   "Téléchargements"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SETTINGS,
@@ -9205,23 +9205,23 @@ MSG_HASH(
 
 MSG_HASH( /* FIXME Should be MSG_ */
    MENU_ENUM_LABEL_VALUE_NETPLAY_START_WHEN_LOADED,
-   "Netplay will start when content is loaded."
+   "Le jeu en réseau débutera quand un contenu sera chargé."
    )
 MSG_HASH( /* FIXME Should be MSG_ */
    MENU_ENUM_LABEL_VALUE_NETPLAY_LOAD_CONTENT_MANUALLY,
-   "Couldn't find a suitable core or content file, load manually."
+   "Impossible de trouver un cœur ou un jeu adapté, veuillez charger le contenu manuellement."
    )
 MSG_HASH( /* FIXME Should be MSG_ */
    MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER_FALLBACK,
-   "Your graphics driver is not compatible with the current video driver in RetroArch, falling back to the %s driver. Please restart RetroArch for the changes to take effect."
+   "Votre pilote graphique n'est pas compatible avec le pilote vidéo actuel de RetroArch, retour au pilote %s. Veuillez redémarrer RetroArch pour que les modifications prennent effet."
    )
 MSG_HASH( /* FIXME Should be MSG_ */
    MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_SUCCESS,
-   "Core installation succesful"
+   "Installation du cœur réussie"
    )
 MSG_HASH( /* FIXME Should be MSG_ */
    MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_ERROR,
-   "Core installation failed"
+   "Installation du cœur échouée"
    )
 MSG_HASH(
    MSG_CHEAT_DELETE_ALL_INSTRUCTIONS,
