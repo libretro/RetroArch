@@ -76,26 +76,23 @@
 #include <winsock2.h>
 #endif
 
-#if defined (BYTE_ORDER) && defined (BIG_ENDIAN) && defined (LITTLE_ENDIAN)
-#  if BYTE_ORDER == BIG_ENDIAN
-#    define MSB_FIRST 1
-#  elif BYTE_ORDER == LITTLE_ENDIAN
-#    define LSB_FIRST 1
-#  else
-#    error "Invalid endianness macros"
-#  endif
-#elif defined (__BYTE_ORDER__) && defined (__ORDER_BIG_ENDIAN__) && defined (__ORDER_LITTLE_ENDIAN__)
-#  if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
-#    define MSB_FIRST 1
-#  elif __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
-#    define LSB_FIRST 1
-#  else
-#    error "Invalid endianness macros"
-#  endif
-#elif defined (__i386__) || defined(__x86_64__)
+#ifdef _MSC_VER
+# if _M_IX86 || _M_AMD64 || _M_ARM || _M_ARM64
+#  define MSB_FIRST 1
+# elif _M_PPC
 #  define LSB_FIRST 1
+# else
+/* MSVC can run on _M_ALPHA and _M_IA64 too, but they're both bi-endian; need to find what mode MSVC runs them at */
+#  error "unknown platform, can't determine endianness"
+# endif
 #else
-#  error "Unknown platform"
+# if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+#  define MSB_FIRST 1
+# elif __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+#  define LSB_FIRST 1
+# else
+#  error "Invalid endianness macros"
+# endif
 #endif
 
 #if defined(MSB_FIRST) && defined(LSB_FIRST)
