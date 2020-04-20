@@ -299,8 +299,8 @@ static void wiiu_font_render_msg(
             alpha, r_dark, g_dark, b_dark, alpha_dark;
    wiiu_video_t              *wiiu  = (wiiu_video_t*)userdata;
    wiiu_font_t                *font = (wiiu_font_t*)data;
-   unsigned width                   = wiiu->vp.width;
-   unsigned height                  = wiiu->vp.height;
+   unsigned width                   = wiiu->vp.full_width;
+   unsigned height                  = wiiu->vp.full_height;
    settings_t *settings             = config_get_ptr();
    float video_msg_pos_x            = settings->floats.video_msg_pos_x;
    float video_msg_pos_y            = settings->floats.video_msg_pos_y;
