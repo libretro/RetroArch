@@ -381,6 +381,7 @@ default_sublabel_macro(action_bind_sublabel_perfcnt_enable,                MENU_
 default_sublabel_macro(action_bind_sublabel_savestate_auto_save,           MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_SAVE)
 default_sublabel_macro(action_bind_sublabel_savestate_auto_load,           MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_LOAD)
 default_sublabel_macro(action_bind_sublabel_savestate_thumbnail_enable,    MENU_ENUM_SUBLABEL_SAVESTATE_THUMBNAIL_ENABLE)
+default_sublabel_macro(action_bind_sublabel_save_file_compression,         MENU_ENUM_SUBLABEL_SAVE_FILE_COMPRESSION)
 default_sublabel_macro(action_bind_sublabel_savestate_file_compression,    MENU_ENUM_SUBLABEL_SAVESTATE_FILE_COMPRESSION)
 default_sublabel_macro(action_bind_sublabel_autosave_interval,             MENU_ENUM_SUBLABEL_AUTOSAVE_INTERVAL)
 default_sublabel_macro(action_bind_sublabel_input_remap_binds_enable,      MENU_ENUM_SUBLABEL_INPUT_REMAP_BINDS_ENABLE)
@@ -2327,6 +2328,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_SAVESTATE_THUMBNAIL_ENABLE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_savestate_thumbnail_enable);
+            break;
+         case MENU_ENUM_LABEL_SAVE_FILE_COMPRESSION:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_save_file_compression);
             break;
          case MENU_ENUM_LABEL_SAVESTATE_FILE_COMPRESSION:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_savestate_file_compression);

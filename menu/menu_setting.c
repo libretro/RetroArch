@@ -8953,6 +8953,21 @@ static bool setting_append_list(
 #if defined(HAVE_ZLIB)
             CONFIG_BOOL(
                   list, list_info,
+                  &settings->bools.save_file_compression,
+                  MENU_ENUM_LABEL_SAVE_FILE_COMPRESSION,
+                  MENU_ENUM_LABEL_VALUE_SAVE_FILE_COMPRESSION,
+                  DEFAULT_SAVE_FILE_COMPRESSION,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
+
+            CONFIG_BOOL(
+                  list, list_info,
                   &settings->bools.savestate_file_compression,
                   MENU_ENUM_LABEL_SAVESTATE_FILE_COMPRESSION,
                   MENU_ENUM_LABEL_VALUE_SAVESTATE_FILE_COMPRESSION,
