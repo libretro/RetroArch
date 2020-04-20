@@ -73,8 +73,7 @@
 #endif
 
 #ifdef _MSC_VER
-#  include <winsock2.h>
-#  include <sys/param.h>
+#include <winsock2.h>
 #endif
 
 #if defined (BYTE_ORDER) && defined (BIG_ENDIAN) && defined (LITTLE_ENDIAN)
