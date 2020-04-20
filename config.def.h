@@ -911,6 +911,10 @@ static const bool savestate_auto_load = false;
 
 static const bool savestate_thumbnail_enable = false;
 
+/* When creating save (srm) files, compress
+ * written data */
+#define DEFAULT_SAVE_FILE_COMPRESSION false
+
 /* When creating save state files, compress
  * written data */
 #define DEFAULT_SAVESTATE_FILE_COMPRESSION false

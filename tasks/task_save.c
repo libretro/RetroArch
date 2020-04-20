@@ -31,6 +31,7 @@
 #include <lists/string_list.h>
 #include <streams/interface_stream.h>
 #include <streams/file_stream.h>
+#include <streams/rzip_stream.h>
 #include <rthreads/rthreads.h>
 #include <file/file_path.h>
 #include <retro_miscellaneous.h>
@@ -129,6 +130,7 @@ struct autosave
    volatile bool quit;
    size_t bufsize;
    unsigned interval;
+   bool compress_files;
    void *buffer;
    const void *retro_buffer;
    const char *path;
@@ -163,15 +165,22 @@ static void autosave_thread(void *data)
 
       if (differ)
       {
+         intfstream_t *file = NULL;
+
          /* Should probably deal with this more elegantly. */
-         RFILE *file = filestream_open(save->path,
-               RETRO_VFS_FILE_ACCESS_WRITE, RETRO_VFS_FILE_ACCESS_HINT_NONE);
+         if (save->compress_files)
+            file = intfstream_open_rzip_file(save->path,
+                  RETRO_VFS_FILE_ACCESS_WRITE);
+         else
+            file = intfstream_open_file(save->path,
+                  RETRO_VFS_FILE_ACCESS_WRITE, RETRO_VFS_FILE_ACCESS_HINT_NONE);
 
          if (file)
          {
-            filestream_write(file, save->buffer, save->bufsize);
-            filestream_flush(file);
-            filestream_close(file);
+            intfstream_write(file, save->buffer, save->bufsize);
+            intfstream_flush(file);
+            intfstream_close(file);
+            free(file);
          }
       }
 
@@ -206,7 +215,7 @@ static void autosave_thread(void *data)
  **/
 static autosave_t *autosave_new(const char *path,
       const void *data, size_t size,
-      unsigned interval)
+      unsigned interval, bool compress)
 {
    void       *buf               = NULL;
    autosave_t *handle            = (autosave_t*)malloc(sizeof(*handle));
@@ -216,6 +225,7 @@ static autosave_t *autosave_new(const char *path,
    handle->quit                  = false;
    handle->bufsize               = size;
    handle->interval              = interval;
+   handle->compress_files        = compress;
    handle->retro_buffer          = data;
    handle->path                  = path;
 
@@ -268,6 +278,11 @@ bool autosave_init(void)
    autosave_t **list          = NULL;
    settings_t *settings       = config_get_ptr();
    unsigned autosave_interval = settings->uints.autosave_interval;
+#if defined(HAVE_ZLIB)
+   bool compress_files        = settings->bools.save_file_compression;
+#else
+   bool compress_files        = false;
+#endif
 
    if (autosave_interval < 1 || !task_save_files)
       return false;
@@ -299,7 +314,8 @@ bool autosave_init(void)
       auto_st             = autosave_new(path,
             mem_info.data,
             mem_info.size,
-            autosave_interval);
+            autosave_interval,
+            compress_files);
 
       if (!auto_st)
       {
@@ -1471,7 +1487,22 @@ bool content_load_ram_file(unsigned slot)
    if (!content_get_memory(&mem_info, &ram, slot))
       return false;
 
+   /* On first run of content, SRAM file will
+    * not exist. This is a common enough occurrence
+    * that we should check before attempting to
+    * invoke the relevant read_file() function */
+   if (string_is_empty(ram.path) ||
+       !path_is_valid(ram.path))
+      return false;
+
+#if defined(HAVE_ZLIB)
+   /* Always use RZIP interface when reading SRAM
+    * files - this will automatically handle uncompressed
+    * data */
+   if (!rzipstream_read_file(ram.path, &buf, &rc))
+#else
    if (!filestream_read_file(ram.path, &buf, &rc))
+#endif
       return false;
 
    if (rc > 0)
@@ -1539,6 +1570,15 @@ static bool dump_to_file_desperate(const void *data,
    free(application_data);
    free(timebuf);
 
+   /* Fallback (emergency) saves are always
+    * uncompressed
+    * > If a regular save fails, then the host
+    *   system is experiencing serious technical
+    *   difficulties (most likely some kind of
+    *   hardware failure)
+    * > In this case, we don't want to further
+    *   complicate matters by introducing zlib
+    *   compression overheads */
    if (!filestream_write_file(path, data, size))
    {
       free(path);
@@ -1558,10 +1598,11 @@ static bool dump_to_file_desperate(const void *data,
  * Save a RAM state from memory to disk.
  *
  */
-bool content_save_ram_file(unsigned slot)
+bool content_save_ram_file(unsigned slot, bool compress)
 {
    struct ram_type ram;
    retro_ctx_memory_info_t mem_info;
+   bool write_success;
 
    if (!content_get_memory(&mem_info, &ram, slot))
       return false;
@@ -1572,8 +1613,16 @@ bool content_save_ram_file(unsigned slot)
          msg_hash_to_str(MSG_TO),
          ram.path);
 
-   if (!filestream_write_file(
-            ram.path, mem_info.data, mem_info.size))
+#if defined(HAVE_ZLIB)
+   if (compress)
+      write_success = rzipstream_write_file(
+            ram.path, mem_info.data, mem_info.size);
+   else
+#endif
+      write_success = filestream_write_file(
+            ram.path, mem_info.data, mem_info.size);
+
+   if (!write_success)
    {
       RARCH_ERR("%s.\n",
             msg_hash_to_str(MSG_FAILED_TO_SAVE_SRAM));
@@ -1602,6 +1651,11 @@ bool event_save_files(bool is_sram_used)
    unsigned i;
    settings_t *settings            = config_get_ptr();
    const char *path_cheat_database = settings->paths.path_cheat_database;
+#if defined(HAVE_ZLIB)
+   bool compress_files             = settings->bools.save_file_compression;
+#else
+   bool compress_files             = false;
+#endif
 
    cheat_manager_save_game_specific_cheats(
          path_cheat_database);
@@ -1609,7 +1663,7 @@ bool event_save_files(bool is_sram_used)
       return false;
 
    for (i = 0; i < task_save_files->size; i++)
-      content_save_ram_file(i);
+      content_save_ram_file(i, compress_files);
 
    return true;
 }
