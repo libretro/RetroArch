@@ -48,6 +48,7 @@ QWidget *SavingPage::widget()
 
    saveRamGroup->add(MENU_ENUM_LABEL_BLOCK_SRAM_OVERWRITE);
    saveRamGroup->add(MENU_ENUM_LABEL_AUTOSAVE_INTERVAL);
+   saveRamGroup->add(MENU_ENUM_LABEL_SAVE_FILE_COMPRESSION);
 
    systemFilesDirGroup->add(MENU_ENUM_LABEL_SYSTEMFILES_IN_CONTENT_DIR_ENABLE);
 
