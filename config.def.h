@@ -963,6 +963,9 @@ static const int default_content_favorites_size = 200;
 /* File format to use when writing playlists to disk */
 #define DEFAULT_PLAYLIST_USE_OLD_FORMAT false
 
+/* When creating/updating playlists, compress written data */
+#define DEFAULT_PLAYLIST_COMPRESSION false
+
 #ifdef HAVE_MENU
 /* Specify when to display 'core name' inline on playlist entries */
 #define DEFAULT_PLAYLIST_SHOW_INLINE_CORE_NAME PLAYLIST_INLINE_CORE_DISPLAY_HIST_FAV

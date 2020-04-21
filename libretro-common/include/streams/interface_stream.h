@@ -92,6 +92,8 @@ void intfstream_rewind(intfstream_internal_t *intf);
 
 int64_t intfstream_tell(intfstream_internal_t *intf);
 
+int intfstream_eof(intfstream_internal_t *intf);
+
 void intfstream_putc(intfstream_internal_t *intf, int c);
 
 int intfstream_close(intfstream_internal_t *intf);
@@ -106,7 +108,7 @@ uint32_t intfstream_get_frame_size(intfstream_internal_t *intf);
 
 bool intfstream_is_compressed(intfstream_internal_t *intf);
 
-intfstream_t* intfstream_open_file(const char *path,
+intfstream_t *intfstream_open_file(const char *path,
       unsigned mode, unsigned hints);
 
 intfstream_t *intfstream_open_memory(void *data,
@@ -118,7 +120,7 @@ intfstream_t *intfstream_open_writable_memory(void *data,
 intfstream_t *intfstream_open_chd_track(const char *path,
       unsigned mode, unsigned hints, int32_t track);
 
-intfstream_t* intfstream_open_rzip_file(const char *path,
+intfstream_t *intfstream_open_rzip_file(const char *path,
       unsigned mode);
 
 RETRO_END_DECLS

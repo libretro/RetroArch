@@ -490,6 +490,34 @@ int64_t intfstream_tell(intfstream_internal_t *intf)
    return -1;
 }
 
+int intfstream_eof(intfstream_internal_t *intf)
+{
+   if (!intf)
+      return -1;
+
+   switch (intf->type)
+   {
+      case INTFSTREAM_FILE:
+         return filestream_eof(intf->file.fp);
+      case INTFSTREAM_MEMORY:
+         /* TODO: Add this functionality to
+          * memory_stream interface */
+         break;
+      case INTFSTREAM_CHD:
+         /* TODO: Add this functionality to
+          * chd_stream interface */
+         break;
+      case INTFSTREAM_RZIP:
+#if defined(HAVE_ZLIB)
+         return rzipstream_eof(intf->rzip.fp);
+#else
+         break;
+#endif
+   }
+
+   return -1;
+}
+
 void intfstream_rewind(intfstream_internal_t *intf)
 {
    switch (intf->type)

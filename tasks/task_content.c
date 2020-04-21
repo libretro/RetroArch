@@ -1444,7 +1444,8 @@ static void task_push_to_history_list(
             command_playlist_push_write(
                   playlist_hist, &entry,
                   settings->bools.playlist_fuzzy_archive_match,
-                  settings->bools.playlist_use_old_format);
+                  settings->bools.playlist_use_old_format,
+                  settings->bools.playlist_compression);
          }
       }
 

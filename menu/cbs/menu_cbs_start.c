@@ -297,8 +297,10 @@ static int action_start_playlist_association(
       const char *path, const char *label,
       unsigned type, size_t idx, size_t entry_idx)
 {
-   settings_t *settings  = config_get_ptr();
-   playlist_t *playlist  = playlist_get_cached();
+   settings_t *settings         = config_get_ptr();
+   bool playlist_use_old_format = settings->bools.playlist_use_old_format;
+   bool playlist_compression    = settings->bools.playlist_compression;
+   playlist_t *playlist         = playlist_get_cached();
 
    if (!playlist)
       return -1;
@@ -306,7 +308,8 @@ static int action_start_playlist_association(
    /* Set default core path + name to DETECT */
    playlist_set_default_core_path(playlist, file_path_str(FILE_PATH_DETECT));
    playlist_set_default_core_name(playlist, file_path_str(FILE_PATH_DETECT));
-   playlist_write_file(playlist, settings->bools.playlist_use_old_format);
+   playlist_write_file(
+         playlist, playlist_use_old_format, playlist_compression);
 
    return 0;
 }
@@ -315,15 +318,18 @@ static int action_start_playlist_label_display_mode(
       const char *path, const char *label,
       unsigned type, size_t idx, size_t entry_idx)
 {
-   settings_t *settings  = config_get_ptr();
-   playlist_t *playlist  = playlist_get_cached();
+   settings_t *settings         = config_get_ptr();
+   bool playlist_use_old_format = settings->bools.playlist_use_old_format;
+   bool playlist_compression    = settings->bools.playlist_compression;
+   playlist_t *playlist         = playlist_get_cached();
 
    if (!playlist)
       return -1;
 
    /* Set label display mode to the default */
    playlist_set_label_display_mode(playlist, LABEL_DISPLAY_MODE_DEFAULT);
-   playlist_write_file(playlist, settings->bools.playlist_use_old_format);
+   playlist_write_file(
+         playlist, playlist_use_old_format, playlist_compression);
 
    return 0;
 }
@@ -332,15 +338,18 @@ static int action_start_playlist_right_thumbnail_mode(
       const char *path, const char *label,
       unsigned type, size_t idx, size_t entry_idx)
 {
-   settings_t *settings  = config_get_ptr();
-   playlist_t *playlist  = playlist_get_cached();
+   settings_t *settings         = config_get_ptr();
+   bool playlist_use_old_format = settings->bools.playlist_use_old_format;
+   bool playlist_compression    = settings->bools.playlist_compression;
+   playlist_t *playlist         = playlist_get_cached();
 
    if (!playlist)
       return -1;
 
    /* Set thumbnail_mode to default value */
    playlist_set_thumbnail_mode(playlist, PLAYLIST_THUMBNAIL_RIGHT, PLAYLIST_THUMBNAIL_MODE_DEFAULT);
-   playlist_write_file(playlist, settings->bools.playlist_use_old_format);
+   playlist_write_file(
+         playlist, playlist_use_old_format, playlist_compression);
 
    return 0;
 }
@@ -349,15 +358,18 @@ static int action_start_playlist_left_thumbnail_mode(
       const char *path, const char *label,
       unsigned type, size_t idx, size_t entry_idx)
 {
-   settings_t *settings = config_get_ptr();
-   playlist_t *playlist = playlist_get_cached();
+   settings_t *settings         = config_get_ptr();
+   bool playlist_use_old_format = settings->bools.playlist_use_old_format;
+   bool playlist_compression    = settings->bools.playlist_compression;
+   playlist_t *playlist         = playlist_get_cached();
 
    if (!playlist)
       return -1;
 
    /* Set thumbnail_mode to default value */
    playlist_set_thumbnail_mode(playlist, PLAYLIST_THUMBNAIL_LEFT, PLAYLIST_THUMBNAIL_MODE_DEFAULT);
-   playlist_write_file(playlist, settings->bools.playlist_use_old_format);
+   playlist_write_file(
+         playlist, playlist_use_old_format, playlist_compression);
 
    return 0;
 }
@@ -366,15 +378,18 @@ static int action_start_playlist_sort_mode(
       const char *path, const char *label,
       unsigned type, size_t idx, size_t entry_idx)
 {
-   settings_t *settings  = config_get_ptr();
-   playlist_t *playlist  = playlist_get_cached();
+   settings_t *settings         = config_get_ptr();
+   bool playlist_use_old_format = settings->bools.playlist_use_old_format;
+   bool playlist_compression    = settings->bools.playlist_compression;
+   playlist_t *playlist         = playlist_get_cached();
 
    if (!playlist)
       return -1;
 
    /* Set sort mode to the default */
    playlist_set_sort_mode(playlist, PLAYLIST_SORT_MODE_DEFAULT);
-   playlist_write_file(playlist, settings->bools.playlist_use_old_format);
+   playlist_write_file(
+         playlist, playlist_use_old_format, playlist_compression);
 
    return 0;
 }

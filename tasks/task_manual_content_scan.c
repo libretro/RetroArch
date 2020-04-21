@@ -63,6 +63,7 @@ typedef struct manual_scan_handle
    enum manual_scan_status status;
    bool fuzzy_archive_match;
    bool use_old_format;
+   bool compress;
 } manual_scan_handle_t;
 
 /* Frees task handle + all constituent objects */
@@ -309,7 +310,10 @@ static void task_manual_content_scan_handler(retro_task_t *task)
             playlist_qsort(manual_scan->playlist);
 
             /* Save playlist changes to disk */
-            playlist_write_file(manual_scan->playlist, manual_scan->use_old_format);
+            playlist_write_file(
+                  manual_scan->playlist,
+                  manual_scan->use_old_format,
+                  manual_scan->compress);
 
             /* If this is the currently cached playlist, then
              * it must be re-cached (otherwise changes will be
@@ -323,7 +327,8 @@ static void task_manual_content_scan_handler(retro_task_t *task)
                {
                   playlist_free_cached();
                   playlist_init_cached(
-                        manual_scan->task_config->playlist_file, COLLECTION_SIZE);
+                        manual_scan->task_config->playlist_file, COLLECTION_SIZE,
+                        manual_scan->use_old_format, manual_scan->compress);
                }
             }
 
@@ -412,6 +417,7 @@ bool task_push_manual_content_scan(void)
    manual_scan->status              = MANUAL_SCAN_BEGIN;
    manual_scan->fuzzy_archive_match = settings->bools.playlist_fuzzy_archive_match;
    manual_scan->use_old_format      = settings->bools.playlist_use_old_format;
+   manual_scan->compress            = settings->bools.playlist_compression;
 
    if (!manual_scan->m3u_list)
       goto error;

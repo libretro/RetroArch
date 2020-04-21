@@ -2038,6 +2038,7 @@ static int action_ok_playlist_entry_collection(const char *path,
    menu_handle_t *menu                    = menu_driver_get_ptr();
    settings_t *settings                   = config_get_ptr();
    bool playlist_use_old_format           = settings->bools.playlist_use_old_format;
+   bool playlist_compression              = settings->bools.playlist_compression;
    bool playlist_sort_alphabetical        = settings->bools.playlist_sort_alphabetical;
    const char *path_content_history       = settings->paths.path_content_history;
    const char *path_content_music_history = settings->paths.path_content_music_history;
@@ -2163,7 +2164,8 @@ static int action_ok_playlist_entry_collection(const char *path,
             playlist,
             selection_ptr,
             &update_entry,
-            playlist_use_old_format);
+            playlist_use_old_format,
+            playlist_compression);
    }
    else
    {
@@ -2205,6 +2207,7 @@ static int action_ok_playlist_entry(const char *path,
    playlist_t *playlist                = playlist_get_cached();
    menu_handle_t *menu                 = menu_driver_get_ptr();
    bool playlist_use_old_format        = settings->bools.playlist_use_old_format;
+   bool playlist_compression           = settings->bools.playlist_compression;
 
    new_core_path[0] = '\0';
 
@@ -2258,7 +2261,8 @@ static int action_ok_playlist_entry(const char *path,
          command_playlist_update_write(NULL,
                selection_ptr,
                &entry,
-               playlist_use_old_format);
+               playlist_use_old_format,
+               playlist_compression);
       }
    }
    else
@@ -2292,6 +2296,7 @@ static int action_ok_playlist_entry_start_content(const char *path,
    playlist_t *playlist                = playlist_get_cached();
    menu_handle_t *menu                 = menu_driver_get_ptr();
    bool playlist_use_old_format        = settings->bools.playlist_use_old_format;
+   bool playlist_compression           = settings->bools.playlist_compression;
 
    if (!playlist || !menu)
       return menu_cbs_exit();
@@ -2347,7 +2352,8 @@ static int action_ok_playlist_entry_start_content(const char *path,
                playlist,
                selection_ptr,
                &entry,
-               playlist_use_old_format);
+               playlist_use_old_format,
+               playlist_compression);
       }
    }
 
@@ -2611,6 +2617,7 @@ static int action_ok_audio_add_to_mixer_and_collection(const char *path,
    menu_handle_t *menu                 = menu_driver_get_ptr();
    bool playlist_fuzzy_archive_match   = settings->bools.playlist_fuzzy_archive_match;
    bool playlist_use_old_format        = settings->bools.playlist_use_old_format;
+   bool playlist_compression           = settings->bools.playlist_compression;
 
    combined_path[0] = '\0';
 
@@ -2627,7 +2634,8 @@ static int action_ok_audio_add_to_mixer_and_collection(const char *path,
 
    command_playlist_push_write(g_defaults.music_history, &entry,
          playlist_fuzzy_archive_match,
-         playlist_use_old_format);
+         playlist_use_old_format,
+         playlist_compression);
 
    if (filestream_exists(combined_path))
       task_push_audio_mixer_load(combined_path,
@@ -2647,6 +2655,7 @@ static int action_ok_audio_add_to_mixer_and_collection_and_play(const char *path
    settings_t *settings                = config_get_ptr();
    bool playlist_fuzzy_archive_match   = settings->bools.playlist_fuzzy_archive_match;
    bool playlist_use_old_format        = settings->bools.playlist_use_old_format;
+   bool playlist_compression           = settings->bools.playlist_compression;
 
    combined_path[0] = '\0';
 
@@ -2663,8 +2672,8 @@ static int action_ok_audio_add_to_mixer_and_collection_and_play(const char *path
 
    command_playlist_push_write(g_defaults.music_history, &entry,
          playlist_fuzzy_archive_match,
-         playlist_use_old_format
-         );
+         playlist_use_old_format,
+         playlist_compression);
 
    if (filestream_exists(combined_path))
       task_push_audio_mixer_load_and_play(combined_path,
@@ -2726,6 +2735,7 @@ static void menu_input_st_string_cb_rename_entry(void *userdata,
 {
    settings_t *settings           = config_get_ptr();
    bool playlist_use_old_format   = settings->bools.playlist_use_old_format;
+   bool playlist_compression      = settings->bools.playlist_compression;
    if (str && *str)
    {
       const char        *label    = menu_input_dialog_get_buffer();
@@ -2741,7 +2751,8 @@ static void menu_input_st_string_cb_rename_entry(void *userdata,
          command_playlist_update_write(NULL,
                menu_input_dialog_get_kb_idx(),
                &entry,
-               playlist_use_old_format);
+               playlist_use_old_format,
+               playlist_compression);
       }
    }
 
@@ -3332,6 +3343,7 @@ static int action_ok_core_deferred_set(const char *new_core_path,
    const char *path_dir_libretro           = settings->paths.directory_libretro;
    bool show_hidden_files                  = settings->bools.show_hidden_files;
    bool playlist_use_old_format            = settings->bools.playlist_use_old_format;
+   bool playlist_compression               = settings->bools.playlist_compression;
 
    ext_name[0]                             = '\0';
    core_display_name[0]                    = '\0';
@@ -3364,7 +3376,8 @@ static int action_ok_core_deferred_set(const char *new_core_path,
          NULL,
          menu->scratchpad.unsigned_var,
          &entry,
-         playlist_use_old_format);
+         playlist_use_old_format,
+         playlist_compression);
 
    /* Provide visual feedback */
    strlcpy(msg, msg_hash_to_str(MSG_SET_CORE_ASSOCIATION), sizeof(msg));
@@ -4952,6 +4965,7 @@ static int action_ok_delete_entry(const char *path,
    char *def_conf_fav_path      = NULL;
    settings_t *settings         = config_get_ptr();
    bool playlist_use_old_format = settings->bools.playlist_use_old_format;
+   bool playlist_compression    = settings->bools.playlist_compression;
    playlist_t *playlist         = playlist_get_cached();
    menu_handle_t *menu          = menu_driver_get_ptr();
 
@@ -4987,7 +5001,8 @@ static int action_ok_delete_entry(const char *path,
    if (playlist)
    {
       playlist_delete_index(playlist, menu->rpl_entry_selection_ptr);
-      playlist_write_file(playlist, playlist_use_old_format);
+      playlist_write_file(
+            playlist, playlist_use_old_format, playlist_compression);
    }
 
    new_selection_ptr = menu_navigation_get_selection();
@@ -5858,6 +5873,7 @@ static int action_ok_push_dropdown_item_playlist_default_core(const char *path,
    const char* core_name            = path;
    settings_t *settings             = config_get_ptr();
    bool playlist_use_old_format     = settings->bools.playlist_use_old_format;
+   bool playlist_compression        = settings->bools.playlist_compression;
 
    /* Get core list */
    core_info_get_list(&core_info_list);
@@ -5907,7 +5923,8 @@ static int action_ok_push_dropdown_item_playlist_default_core(const char *path,
    }
 
    /* In all cases, update file on disk */
-   playlist_write_file(playlist, playlist_use_old_format);
+   playlist_write_file(
+         playlist, playlist_use_old_format, playlist_compression);
 
    return action_cancel_pop_default(NULL, NULL, 0, 0);
 }
@@ -5920,11 +5937,13 @@ static int action_ok_push_dropdown_item_playlist_label_display_mode(
    settings_t *settings         = config_get_ptr();
    playlist_t *playlist         = playlist_get_cached();
    bool playlist_use_old_format = settings->bools.playlist_use_old_format;
+   bool playlist_compression    = settings->bools.playlist_compression;
 
    playlist_set_label_display_mode(playlist, (enum playlist_label_display_mode)idx);
 
    /* In all cases, update file on disk */
-   playlist_write_file(playlist, playlist_use_old_format);
+   playlist_write_file(
+         playlist, playlist_use_old_format, playlist_compression);
 
    return action_cancel_pop_default(NULL, NULL, 0, 0);
 }
@@ -5934,13 +5953,15 @@ static int generic_set_thumbnail_mode(enum playlist_thumbnail_id thumbnail_id, s
    settings_t         *settings = config_get_ptr();
    playlist_t         *playlist = playlist_get_cached();
    bool playlist_use_old_format = settings->bools.playlist_use_old_format;
+   bool playlist_compression    = settings->bools.playlist_compression;
 
    if (!playlist)
       return -1;
 
    playlist_set_thumbnail_mode(playlist, thumbnail_id,
          (enum playlist_thumbnail_mode)idx);
-   playlist_write_file(playlist, playlist_use_old_format);
+   playlist_write_file(
+         playlist, playlist_use_old_format, playlist_compression);
 
    return action_cancel_pop_default(NULL, NULL, 0, 0);
 }
@@ -5964,9 +5985,11 @@ static int action_ok_push_dropdown_item_playlist_sort_mode(
    settings_t *settings         = config_get_ptr();
    playlist_t *playlist         = playlist_get_cached();
    bool playlist_use_old_format = settings->bools.playlist_use_old_format;
+   bool playlist_compression    = settings->bools.playlist_compression;
 
    playlist_set_sort_mode(playlist, (enum playlist_sort_mode)idx);
-   playlist_write_file(playlist, playlist_use_old_format);
+   playlist_write_file(
+         playlist, playlist_use_old_format, playlist_compression);
 
    return action_cancel_pop_default(NULL, NULL, 0, 0);
 }
