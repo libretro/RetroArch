@@ -812,6 +812,7 @@ enum
 #endif /* __STB_INCLUDE_STB_TRUETYPE_H__ */
 
 #include <retro_assert.h>
+#include <retro_endianness.h>
 
 /* IMPLEMENTATION */
 

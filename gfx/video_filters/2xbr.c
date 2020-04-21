@@ -37,6 +37,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <retro_endianness.h>
 
 #ifdef RARCH_INTERNAL
 #define softfilter_get_implementation twoxbr_get_implementation

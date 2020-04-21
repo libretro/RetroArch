@@ -16,6 +16,8 @@
 #ifndef GX2_SHADER_INL_H
 #define GX2_SHADER_INL_H
 
+#include <retro_endianness.h>
+
 #ifdef MSB_FIRST
 #define to_QWORD(w0, w1) (((u64)(w0) << 32ull) | (w1))
 #define to_LE(x) (__builtin_bswap32(x))
