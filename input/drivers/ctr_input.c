@@ -51,7 +51,7 @@ static int16_t ctr_input_state(void *data,
 {
    ctr_input_t *ctr                   = (ctr_input_t*)data;
 
-   if (port > 0)
+   if (port >= MENU_ENUM_LABEL_VALUE_INPUT_MAX_USERS)
       return 0;
 
    switch (device)
