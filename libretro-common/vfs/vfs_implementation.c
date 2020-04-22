@@ -1535,8 +1535,7 @@ int retro_vfs_get_timestamp_impl(const char *path,
    path_wide = utf8_to_utf16_string_alloc(path);
    file_info = GetFileAttributesW(path_wide);
 
-   if (!string_is_empty(path_wide))
-      stat_ret = _wstat(path_wide, &stats);
+   stat_ret = _wstat(path_wide, &stats);
 
    if (path_wide)
       free(path_wide);
