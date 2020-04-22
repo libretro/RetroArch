@@ -4,6 +4,7 @@
 #ifndef __CPU_ARCH_H
 #define __CPU_ARCH_H
 
+#include <retro_endianness.h>
 #include "7zTypes.h"
 
 #ifdef __cplusplus

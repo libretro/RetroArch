@@ -163,7 +163,7 @@ OBJ := $(addprefix $(BUILD_DIR)/,$(OBJ))
 #-----------------------------
 # Compile flags
 
-DEFINES += -DWIIU -DMSB_FIRST -D__WUT__ -DHW_WUP -D__wiiu__
+DEFINES += -DWIIU -D__WUT__ -DHW_WUP -D__wiiu__
 DEFINES += -DHAVE_MAIN
 DEFINES += -DRARCH_CONSOLE
 
