@@ -2618,6 +2618,14 @@ MSG_HASH(
    "Affiche des miniatures pour les sauvegardes instantanées dans le menu."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVE_FILE_COMPRESSION,
+   "Compression de la SaveRAM (SRAM)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVE_FILE_COMPRESSION,
+   "Enregistrer la mémoire SRAM non volatile sous un format archivé. Réduit considérablement la taille du fichier au détriment de l'augmentation (négligeable) des temps de sauvegarde/chargement. REMARQUE : S'applique uniquement aux cœurs qui peuvent sauvegarder via l'interface Save RAM standard de libretro."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_FILE_COMPRESSION,
    "Compression des sauvegardes instantanées"
    )
