@@ -35,7 +35,7 @@
 
 RETRO_BEGIN_DECLS
 
-#define PATH_REQUIRED_VFS_VERSION 3
+#define PATH_REQUIRED_VFS_VERSION 4
 
 void path_vfs_init(const struct retro_vfs_interface_info* vfs_info);
 
@@ -525,6 +525,39 @@ bool path_is_valid(const char *path);
 int32_t path_get_size(const char *path);
 
 bool is_path_accessible_using_standard_io(const char *path);
+
+/**
+ * path_get_atime:
+ * @path               : path
+ * @time               : file access time
+ *
+ * Fetches last access time of file
+ *
+ * Returns: true on success, otherwise false.
+ */
+bool path_get_atime(const char *path, struct retro_vfs_time *time);
+
+/**
+ * path_get_ctime:
+ * @path               : path
+ * @time               : file creation time
+ *
+ * Fetches creation time of file
+ *
+ * Returns: true on success, otherwise false.
+ */
+bool path_get_ctime(const char *path, struct retro_vfs_time *time);
+
+/**
+ * path_get_mtime:
+ * @path               : path
+ * @time               : file modification time
+ *
+ * Fetches last modification time of file
+ *
+ * Returns: true on success, otherwise false.
+ */
+bool path_get_mtime(const char *path, struct retro_vfs_time *time);
 
 RETRO_END_DECLS
 

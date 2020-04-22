@@ -38,13 +38,11 @@
 #include <stdarg.h>
 #include <vfs/vfs_implementation.h>
 
-#define FILESTREAM_REQUIRED_VFS_VERSION 2
-
 RETRO_BEGIN_DECLS
 
-typedef struct RFILE RFILE;
-
 #define FILESTREAM_REQUIRED_VFS_VERSION 2
+
+typedef struct RFILE RFILE;
 
 void filestream_vfs_init(const struct retro_vfs_interface_info* vfs_info);
 

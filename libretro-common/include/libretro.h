@@ -1337,6 +1337,19 @@ struct retro_vfs_dir_handle;
 #define RETRO_VFS_STAT_IS_DIRECTORY           (1 << 1)
 #define RETRO_VFS_STAT_IS_CHARACTER_SPECIAL   (1 << 2)
 
+/* Contains all elements of a file
+ * access/creation/modification timestamp
+ * Introduced in VFS API v4 */
+struct retro_vfs_time
+{
+   uint16_t year;
+   uint8_t month;
+   uint8_t day;
+   uint8_t hour;
+   uint8_t minute;
+   uint8_t second;
+};
+
 /* Get path from opaque handle. Returns the exact same path passed to file_open when getting the handle
  * Introduced in VFS API v1 */
 typedef const char *(RETRO_CALLCONV *retro_vfs_get_path_t)(struct retro_vfs_file_handle *stream);
@@ -1420,6 +1433,13 @@ typedef bool (RETRO_CALLCONV *retro_vfs_dirent_is_dir_t)(struct retro_vfs_dir_ha
  * Introduced in VFS API v3 */
 typedef int (RETRO_CALLCONV *retro_vfs_closedir_t)(struct retro_vfs_dir_handle *dirstream);
 
+/* Fetches access(atime)/creation(ctime)/modification(mtime) times for the specified file.
+ * Individual retro_vfs_time arguments may be set to NULL if specific value is not required.
+ * Returns 0 on success, -1 on failure.
+ * Introduced in VFS API v4 */
+typedef int (RETRO_CALLCONV *retro_vfs_get_timestamp_t)(const char *path,
+      struct retro_vfs_time *atime, struct retro_vfs_time *ctime, struct retro_vfs_time *mtime);
+
 struct retro_vfs_interface
 {
    /* VFS API v1 */
@@ -1444,6 +1464,8 @@ struct retro_vfs_interface
    retro_vfs_dirent_get_name_t dirent_get_name;
    retro_vfs_dirent_is_dir_t dirent_is_dir;
    retro_vfs_closedir_t closedir;
+   /* VFS API v4 */
+   retro_vfs_get_timestamp_t get_timestamp;
 };
 
 struct retro_vfs_interface_info

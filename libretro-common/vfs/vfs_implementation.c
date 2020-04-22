@@ -25,6 +25,7 @@
 #include <string.h>
 #include <errno.h>
 #include <sys/types.h>
+#include <time.h>
 
 #include <string/stdstring.h>
 
@@ -1336,5 +1337,316 @@ int retro_vfs_closedir_impl(libretro_vfs_implementation_dir *rdir)
    if (rdir->orig_path)
       free(rdir->orig_path);
    free(rdir);
+   return 0;
+}
+
+int retro_vfs_get_timestamp_impl(const char *path,
+		struct retro_vfs_time *atime, struct retro_vfs_time *ctime, struct retro_vfs_time *mtime)
+{
+#if defined(VITA) || defined(PSP)
+
+   /* Vita / PSP */
+   SceIoStat stats;
+   int stat_ret;
+   char *tmp  = NULL;
+   size_t len = 0;
+
+   if (!path || !*path)
+      return -1;
+
+   tmp = strdup(path);
+   len = strlen(tmp);
+   if (tmp[len-1] == '/')
+      tmp[len-1] = '\0';
+
+   stat_ret = sceIoGetstat(tmp, &stats);
+   free(tmp);
+   if (stat_ret < 0)
+      return -1;
+
+   if (atime)
+   {
+      atime->year   = (uint16_t)stats.st_atime.year;
+      atime->month  = (uint8_t)stats.st_atime.month;
+      atime->day    = (uint8_t)stats.st_atime.day;
+      atime->hour   = (uint8_t)stats.st_atime.hour;
+      atime->minute = (uint8_t)stats.st_atime.minute;
+      atime->second = (uint8_t)stats.st_atime.second;
+   }
+
+   if (ctime)
+   {
+      ctime->year   = (uint16_t)stats.st_ctime.year;
+      ctime->month  = (uint8_t)stats.st_ctime.month;
+      ctime->day    = (uint8_t)stats.st_ctime.day;
+      ctime->hour   = (uint8_t)stats.st_ctime.hour;
+      ctime->minute = (uint8_t)stats.st_ctime.minute;
+      ctime->second = (uint8_t)stats.st_ctime.second;
+   }
+
+   if (mtime)
+   {
+      mtime->year   = (uint16_t)stats.st_mtime.year;
+      mtime->month  = (uint8_t)stats.st_mtime.month;
+      mtime->day    = (uint8_t)stats.st_mtime.day;
+      mtime->hour   = (uint8_t)stats.st_mtime.hour;
+      mtime->minute = (uint8_t)stats.st_mtime.minute;
+      mtime->second = (uint8_t)stats.st_mtime.second;
+   }
+
+#elif defined(ORBIS)
+
+   /* Orbis */
+
+   /* TODO/FIXME: Implement this */
+   return -1;
+
+#elif defined(PS2)
+
+   /* PS2 */
+   iox_stat_t stats;
+   int stat_ret;
+   char *tmp  = NULL;
+   size_t len = 0;
+
+   if (!path || !*path)
+      return -1;
+
+   tmp = strdup(path);
+   len = strlen(tmp);
+   if (tmp[len-1] == '/')
+      tmp[len-1] = '\0';
+
+   stat_ret = fileXioGetStat(tmp, &stats);
+   free(tmp);
+   if (stat_ret < 0)
+      return -1;
+
+   if (atime)
+   {
+      atime->year   = (uint16_t)(stats.atime[6] | ((unsigned short int)stats.atime[7] << 8));
+      atime->month  = (uint8_t)stats.atime[5];
+      atime->day    = (uint8_t)stats.atime[4];
+      atime->hour   = (uint8_t)stats.atime[3];
+      atime->minute = (uint8_t)stats.atime[2];
+      atime->second = (uint8_t)stats.atime[1];
+   }
+
+   if (ctime)
+   {
+      ctime->year   = (uint16_t)(stats.ctime[6] | ((unsigned short int)stats.ctime[7] << 8));
+      ctime->month  = (uint8_t)stats.ctime[5];
+      ctime->day    = (uint8_t)stats.ctime[4];
+      ctime->hour   = (uint8_t)stats.ctime[3];
+      ctime->minute = (uint8_t)stats.ctime[2];
+      ctime->second = (uint8_t)stats.ctime[1];
+   }
+
+   if (mtime)
+   {
+      mtime->year   = (uint16_t)(stats.mtime[6] | ((unsigned short int)stats.mtime[7] << 8));
+      mtime->month  = (uint8_t)stats.mtime[5];
+      mtime->day    = (uint8_t)stats.mtime[4];
+      mtime->hour   = (uint8_t)stats.mtime[3];
+      mtime->minute = (uint8_t)stats.mtime[2];
+      mtime->second = (uint8_t)stats.mtime[1];
+   }
+
+#elif defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
+
+   /* CellOS Lv2 */
+   CellFsStat stats;
+
+   if (!path || !*path)
+      return -1;
+   if (cellFsStat(path, &stats) < 0)
+      return -1;
+
+   if (atime)
+   {
+      struct tm *time_info = localtime(&stats.st_atime);
+
+      if(!time_info)
+         return -1;
+
+      atime->year   = (uint16_t)time_info->tm_year + 1900;
+      atime->month  = (uint8_t)time_info->tm_mon + 1;
+      atime->day    = (uint8_t)time_info->tm_mday;
+      atime->hour   = (uint8_t)time_info->tm_hour;
+      atime->minute = (uint8_t)time_info->tm_min;
+      atime->second = (uint8_t)time_info->tm_sec;
+   }
+
+   if (ctime)
+   {
+      struct tm *time_info = localtime(&stats.st_ctime);
+
+      if(!time_info)
+         return -1;
+
+      ctime->year   = (uint16_t)time_info->tm_year + 1900;
+      ctime->month  = (uint8_t)time_info->tm_mon + 1;
+      ctime->day    = (uint8_t)time_info->tm_mday;
+      ctime->hour   = (uint8_t)time_info->tm_hour;
+      ctime->minute = (uint8_t)time_info->tm_min;
+      ctime->second = (uint8_t)time_info->tm_sec;
+   }
+
+   if (mtime)
+   {
+      struct tm *time_info = localtime(&stats.st_mtime);
+
+      if(!time_info)
+         return -1;
+
+      mtime->year   = (uint16_t)time_info->tm_year + 1900;
+      mtime->month  = (uint8_t)time_info->tm_mon + 1;
+      mtime->day    = (uint8_t)time_info->tm_mday;
+      mtime->hour   = (uint8_t)time_info->tm_hour;
+      mtime->minute = (uint8_t)time_info->tm_min;
+      mtime->second = (uint8_t)time_info->tm_sec;
+   }
+
+#elif defined(_WIN32)
+
+   /* Windows */
+   DWORD file_info;
+   struct _stat stats;
+   int stat_ret       = -1;
+#if defined(LEGACY_WIN32)
+   char *path_local   = NULL;
+#else
+   wchar_t *path_wide = NULL;
+#endif
+
+   if (!path || !*path)
+      return -1;
+
+#if defined(LEGACY_WIN32)
+   path_local = utf8_to_local_string_alloc(path);
+   file_info  = GetFileAttributes(path_local);
+
+   if (!string_is_empty(path_local))
+      stat_ret = _stat(path_local, &stats);
+
+   if (path_local)
+      free(path_local);
+#else
+   path_wide = utf8_to_utf16_string_alloc(path);
+   file_info = GetFileAttributesW(path_wide);
+
+   if (!string_is_empty(path_wide))
+      stat_ret = _wstat(path_wide, &stats);
+
+   if (path_wide)
+      free(path_wide);
+#endif
+
+   if ((stat_ret < 0) ||
+       (file_info == INVALID_FILE_ATTRIBUTES))
+      return -1;
+
+   if (atime)
+   {
+      struct tm *time_info = localtime(&stats.st_atime);
+
+      if(!time_info)
+         return -1;
+
+      atime->year   = (uint16_t)time_info->tm_year + 1900;
+      atime->month  = (uint8_t)time_info->tm_mon + 1;
+      atime->day    = (uint8_t)time_info->tm_mday;
+      atime->hour   = (uint8_t)time_info->tm_hour;
+      atime->minute = (uint8_t)time_info->tm_min;
+      atime->second = (uint8_t)time_info->tm_sec;
+   }
+
+   if (ctime)
+   {
+      struct tm *time_info = localtime(&stats.st_ctime);
+
+      if(!time_info)
+         return -1;
+
+      ctime->year   = (uint16_t)time_info->tm_year + 1900;
+      ctime->month  = (uint8_t)time_info->tm_mon + 1;
+      ctime->day    = (uint8_t)time_info->tm_mday;
+      ctime->hour   = (uint8_t)time_info->tm_hour;
+      ctime->minute = (uint8_t)time_info->tm_min;
+      ctime->second = (uint8_t)time_info->tm_sec;
+   }
+
+   if (mtime)
+   {
+      struct tm *time_info = localtime(&stats.st_mtime);
+
+      if(!time_info)
+         return -1;
+
+      mtime->year   = (uint16_t)time_info->tm_year + 1900;
+      mtime->month  = (uint8_t)time_info->tm_mon + 1;
+      mtime->day    = (uint8_t)time_info->tm_mday;
+      mtime->hour   = (uint8_t)time_info->tm_hour;
+      mtime->minute = (uint8_t)time_info->tm_min;
+      mtime->second = (uint8_t)time_info->tm_sec;
+   }
+
+#else
+
+   /* Every other platform */
+   struct stat stats;
+
+   if (!path || !*path)
+      return -1;
+   if (stat(path, &stats) < 0)
+      return -1;
+
+   if (atime)
+   {
+      struct tm *time_info = localtime(&stats.st_atime);
+
+      if(!time_info)
+         return -1;
+
+      atime->year   = (uint16_t)time_info->tm_year + 1900;
+      atime->month  = (uint8_t)time_info->tm_mon + 1;
+      atime->day    = (uint8_t)time_info->tm_mday;
+      atime->hour   = (uint8_t)time_info->tm_hour;
+      atime->minute = (uint8_t)time_info->tm_min;
+      atime->second = (uint8_t)time_info->tm_sec;
+   }
+
+   if (ctime)
+   {
+      struct tm *time_info = localtime(&stats.st_ctime);
+
+      if(!time_info)
+         return -1;
+
+      ctime->year   = (uint16_t)time_info->tm_year + 1900;
+      ctime->month  = (uint8_t)time_info->tm_mon + 1;
+      ctime->day    = (uint8_t)time_info->tm_mday;
+      ctime->hour   = (uint8_t)time_info->tm_hour;
+      ctime->minute = (uint8_t)time_info->tm_min;
+      ctime->second = (uint8_t)time_info->tm_sec;
+   }
+
+   if (mtime)
+   {
+      struct tm *time_info = localtime(&stats.st_mtime);
+
+      if(!time_info)
+         return -1;
+
+      mtime->year   = (uint16_t)time_info->tm_year + 1900;
+      mtime->month  = (uint8_t)time_info->tm_mon + 1;
+      mtime->day    = (uint8_t)time_info->tm_mday;
+      mtime->hour   = (uint8_t)time_info->tm_hour;
+      mtime->minute = (uint8_t)time_info->tm_min;
+      mtime->second = (uint8_t)time_info->tm_sec;
+   }
+
+#endif
+
    return 0;
 }

@@ -12402,7 +12402,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
 
       case RETRO_ENVIRONMENT_GET_VFS_INTERFACE:
       {
-         const uint32_t supported_vfs_version = 3;
+         const uint32_t supported_vfs_version = 4;
          static struct retro_vfs_interface vfs_iface =
          {
             /* VFS API v1 */
@@ -12426,7 +12426,9 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
             retro_vfs_readdir_impl,
             retro_vfs_dirent_get_name_impl,
             retro_vfs_dirent_is_dir_impl,
-            retro_vfs_closedir_impl
+            retro_vfs_closedir_impl,
+            /* VFS API v4 */
+            retro_vfs_get_timestamp_impl
          };
 
          struct retro_vfs_interface_info *vfs_iface_info = (struct retro_vfs_interface_info *) data;

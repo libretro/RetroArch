@@ -71,6 +71,9 @@ bool retro_vfs_dirent_is_dir_impl(libretro_vfs_implementation_dir *dirstream);
 
 int retro_vfs_closedir_impl(libretro_vfs_implementation_dir *dirstream);
 
+int retro_vfs_get_timestamp_impl(const char *path,
+		struct retro_vfs_time *atime, struct retro_vfs_time *ctime, struct retro_vfs_time *mtime);
+
 RETRO_END_DECLS
 
 #endif

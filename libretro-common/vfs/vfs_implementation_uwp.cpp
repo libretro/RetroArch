@@ -745,6 +745,52 @@ int retro_vfs_closedir_impl(libretro_vfs_implementation_dir *rdir)
 	return 0;
 }
 
+int retro_vfs_get_timestamp_impl(const char *path,
+		struct retro_vfs_time *atime, struct retro_vfs_time *ctime, struct retro_vfs_time *mtime)
+{
+	if (!path || !*path)
+		return -1;
+
+	wchar_t *path_wide = utf8_to_utf16_string_alloc(path);
+	windowsize_path(path_wide);
+	Platform::String^ path_str = ref new Platform::String(path_wide);
+	free(path_wide);
+
+	IStorageItem^ item = LocateStorageFileOrFolder(path_str);
+	if (!item)
+		return -1;
+
+	return RunAsyncAndCatchErrors<int>([&]() {
+		return concurrency::create_task(item->GetBasicPropertiesAsync()).then([&](BasicProperties^ properties) {
+			/* TODO/FIXME: Implement this...
+			 * I have no idea how UWP works, nor do I have any
+			 * way to test this code...
+			 * > properties->DateModified contains a modification
+			 *   timestamp, which seems to be a DateTime struct
+			 *   (https://docs.microsoft.com/en-us/uwp/api/windows.foundation.datetime?view=winrt-18362),
+			 *   but this is not clear, nor it it clear how to convert
+			 *   this into anything useful (the examples just show
+			 *   string formatting)
+			 * > Access and creation times require the retrieval of
+			 *   'extended properties'
+			 *   (https://docs.microsoft.com/en-us/windows/uwp/files/quickstart-getting-file-properties#getting-a-files-extended-properties)
+			 *   Not sure how to fit this in, and again, resultant
+			 *   timestamp format is unclear... */
+			/*if (atime)
+			{
+			}
+			if (ctime)
+			{
+			}
+			if (mtime)
+			{
+			}
+			return 0;*/
+			return -1;
+		});
+	}, -1);
+}
+
 bool uwp_drive_exists(const char *path)
 {
 	if (!path || !*path)

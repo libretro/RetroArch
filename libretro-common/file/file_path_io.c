@@ -114,8 +114,9 @@
 
 #endif
 
-static retro_vfs_stat_t path_stat_cb   = retro_vfs_stat_impl;
-static retro_vfs_mkdir_t path_mkdir_cb = retro_vfs_mkdir_impl;
+static retro_vfs_stat_t path_stat_cb                   = retro_vfs_stat_impl;
+static retro_vfs_mkdir_t path_mkdir_cb                 = retro_vfs_mkdir_impl;
+static retro_vfs_get_timestamp_t path_get_timestamp_cb = retro_vfs_get_timestamp_impl;
 
 void path_vfs_init(const struct retro_vfs_interface_info* vfs_info)
 {
@@ -124,12 +125,14 @@ void path_vfs_init(const struct retro_vfs_interface_info* vfs_info)
 
    path_stat_cb           = retro_vfs_stat_impl;
    path_mkdir_cb          = retro_vfs_mkdir_impl;
+   path_get_timestamp_cb  = retro_vfs_get_timestamp_impl;
 
    if (vfs_info->required_interface_version < PATH_REQUIRED_VFS_VERSION || !vfs_iface)
       return;
 
    path_stat_cb           = vfs_iface->stat;
    path_mkdir_cb          = vfs_iface->mkdir;
+   path_get_timestamp_cb  = vfs_iface->get_timestamp;
 }
 
 int path_stat(const char *path)
@@ -239,4 +242,64 @@ bool path_mkdir(const char *dir)
    }
 
    return sret;
+}
+
+/**
+ * path_get_atime:
+ * @path               : path
+ * @time               : file access time
+ *
+ * Fetches last access time of file
+ *
+ * Returns: true on success, otherwise false.
+ */
+bool path_get_atime(const char *path, struct retro_vfs_time *time)
+{
+   if (!time)
+      return false;
+
+   if (path_get_timestamp_cb(path, time, NULL, NULL) == 0)
+      return true;
+
+   return false;
+}
+
+/**
+ * path_get_ctime:
+ * @path               : path
+ * @time               : file creation time
+ *
+ * Fetches creation time of file
+ *
+ * Returns: true on success, otherwise false.
+ */
+bool path_get_ctime(const char *path, struct retro_vfs_time *time)
+{
+   if (!time)
+      return false;
+
+   if (path_get_timestamp_cb(path, NULL, time, NULL) == 0)
+      return true;
+
+   return false;
+}
+
+/**
+ * path_get_mtime:
+ * @path               : path
+ * @time               : file modification time
+ *
+ * Fetches last modification time of file
+ *
+ * Returns: true on success, otherwise false.
+ */
+bool path_get_mtime(const char *path, struct retro_vfs_time *time)
+{
+   if (!time)
+      return false;
+
+   if (path_get_timestamp_cb(path, NULL, NULL, time) == 0)
+      return true;
+
+   return false;
 }
