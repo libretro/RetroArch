@@ -68,6 +68,7 @@ struct screenshot_task_state
    bool history_list_enable;
    bool pl_fuzzy_archive_match;
    bool pl_use_old_format;
+   bool pl_compression;
    bool widgets_ready;
 
    int pitch;
@@ -185,7 +186,8 @@ static void task_screenshot_handler(retro_task_t *task)
 
       command_playlist_push_write(g_defaults.image_history, &entry,
             state->pl_fuzzy_archive_match,
-            state->pl_use_old_format);
+            state->pl_use_old_format,
+            state->pl_compression);
    }
 #endif
 
@@ -250,6 +252,7 @@ static bool screenshot_dump(
 
    state->pl_fuzzy_archive_match = settings->bools.playlist_fuzzy_archive_match;
    state->pl_use_old_format      = settings->bools.playlist_use_old_format;
+   state->pl_compression         = settings->bools.playlist_compression;
    state->is_idle                = is_idle;
    state->is_paused              = is_paused;
    state->bgr24                  = bgr24;

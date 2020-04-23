@@ -60,6 +60,7 @@ typedef struct db_handle
 {
    bool pl_fuzzy_archive_match;
    bool pl_use_old_format;
+   bool pl_compression;
    bool is_directory;
    bool scan_started;
    bool scan_without_core_match;
@@ -880,7 +881,8 @@ static int database_info_list_iterate_found_match(
       playlist_push(playlist, &entry, _db->pl_fuzzy_archive_match);
    }
 
-   playlist_write_file(playlist, _db->pl_use_old_format);
+   playlist_write_file(
+         playlist, _db->pl_use_old_format, _db->pl_compression);
    playlist_free(playlist);
 
    database_info_list_free(db_state->info);
@@ -1091,7 +1093,8 @@ static int task_database_iterate_playlist_lutro(
       free(game_title);
    }
 
-   playlist_write_file(playlist, _db->pl_use_old_format);
+   playlist_write_file(
+         playlist, _db->pl_use_old_format, _db->pl_compression);
    playlist_free(playlist);
 
    return 0;
@@ -1407,9 +1410,11 @@ bool task_push_dbscan(
    db->scan_without_core_match = settings->bools.scan_without_core_match;
    db->pl_fuzzy_archive_match  = settings->bools.playlist_fuzzy_archive_match;
    db->pl_use_old_format       = settings->bools.playlist_use_old_format;
+   db->pl_compression          = settings->bools.playlist_compression;
 #else
    db->pl_fuzzy_archive_match  = false;
    db->pl_use_old_format       = false;
+   db->pl_compression          = false;
 #endif
    db->show_hidden_files       = db_dir_show_hidden_files;
    db->is_directory            = directory;

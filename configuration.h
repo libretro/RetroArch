@@ -379,6 +379,7 @@ typedef struct settings
 
       bool sustained_performance_mode;
       bool playlist_use_old_format;
+      bool playlist_compression;
       bool content_runtime_log;
       bool content_runtime_log_aggregate;
 

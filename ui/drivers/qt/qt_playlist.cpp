@@ -386,6 +386,7 @@ void MainWindow::addFilesToPlaylist(QStringList files)
    playlist_t *playlist                = NULL;
    settings_t *settings                = config_get_ptr();
    bool playlist_use_old_format        = settings->bools.playlist_use_old_format;
+   bool playlist_compression           = settings->bools.playlist_compression;
 
    /* Assume a blank list means we will manually enter in all fields. */
    if (files.isEmpty())
@@ -652,7 +653,8 @@ void MainWindow::addFilesToPlaylist(QStringList files)
       }
    }
 
-   playlist_write_file(playlist, playlist_use_old_format);
+   playlist_write_file(
+         playlist, playlist_use_old_format, playlist_compression);
    playlist_free(playlist);
 
    reloadPlaylists();
@@ -687,6 +689,7 @@ bool MainWindow::updateCurrentPlaylistEntry(
    bool ok                      = false;
    settings_t *settings         = config_get_ptr();
    bool playlist_use_old_format = settings->bools.playlist_use_old_format;
+   bool playlist_compression    = settings->bools.playlist_compression;
 
    if (  playlistPath.isEmpty() || 
          contentHash.isEmpty()  || 
@@ -769,7 +772,8 @@ bool MainWindow::updateCurrentPlaylistEntry(
       playlist_update(playlist, index, &entry);
    }
 
-   playlist_write_file(playlist, playlist_use_old_format);
+   playlist_write_file(
+         playlist, playlist_use_old_format, playlist_compression);
    playlist_free(playlist);
 
    reloadPlaylists();
@@ -800,6 +804,7 @@ void MainWindow::onPlaylistWidgetContextMenuRequested(const QPoint&)
    settings_t *settings             = config_get_ptr();
    const char *path_dir_playlist    = settings->paths.directory_playlist;
    bool playlist_use_old_format     = settings->bools.playlist_use_old_format;
+   bool playlist_compression        = settings->bools.playlist_compression;
    QDir playlistDir(path_dir_playlist);
    QListWidgetItem *selectedItem    = m_listWidget->itemAt(
          m_listWidget->viewport()->mapFromGlobal(cursorPos));
@@ -996,7 +1001,8 @@ void MainWindow::onPlaylistWidgetContextMenuRequested(const QPoint&)
          }
 
          /* Write changes to disk */
-         playlist_write_file(playlist, playlist_use_old_format);
+         playlist_write_file(
+               playlist, playlist_use_old_format, playlist_compression);
 
          /* Free playlist, if required */
          if (loadPlaylist)
@@ -1342,6 +1348,8 @@ void MainWindow::deleteCurrentPlaylistItem()
    bool ok                             = false;
    bool isAllPlaylist                  = currentPlaylistIsAll();
    settings_t *settings                = config_get_ptr();
+   bool playlist_use_old_format        = settings->bools.playlist_use_old_format;
+   bool playlist_compression           = settings->bools.playlist_compression;
 
    if (isAllPlaylist)
       return;
@@ -1366,7 +1374,8 @@ void MainWindow::deleteCurrentPlaylistItem()
    playlist = playlist_init(playlistData, COLLECTION_SIZE);
 
    playlist_delete_index(playlist, index);
-   playlist_write_file(playlist, settings->bools.playlist_use_old_format);
+   playlist_write_file(
+         playlist, playlist_use_old_format, playlist_compression);
    playlist_free(playlist);
 
    reloadPlaylists();

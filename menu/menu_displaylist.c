@@ -1737,6 +1737,8 @@ static void menu_displaylist_set_new_playlist(
    int content_favorites_size      = settings->ints.content_favorites_size;
    unsigned content_history_size   = settings->uints.content_history_size;
    bool playlist_sort_alphabetical = settings->bools.playlist_sort_alphabetical;
+   bool playlist_use_old_format    = settings->bools.playlist_use_old_format;
+   bool playlist_compression       = settings->bools.playlist_compression;
 
    menu->db_playlist_file[0]       = '\0';
 
@@ -1756,7 +1758,9 @@ static void menu_displaylist_set_new_playlist(
             playlist_size = (unsigned)content_favorites_size;
    }
 
-   if (playlist_init_cached(path, playlist_size))
+   if (playlist_init_cached(
+         path, playlist_size,
+         playlist_use_old_format, playlist_compression))
    {
       playlist_t *playlist                      = playlist_get_cached();
       enum playlist_sort_mode current_sort_mode = playlist_get_sort_mode(playlist);
@@ -2989,9 +2993,8 @@ static bool menu_displaylist_parse_playlist_manager_settings(
          MENU_SETTING_PLAYLIST_MANAGER_LEFT_THUMBNAIL_MODE, 0, 0);
 
    /* Sorting mode
-    * > Only enabled when using the new playlist format
     * > Not relevant for history playlists  */
-   if (!playlist_use_old_format && !is_content_history)
+   if (!is_content_history)
       menu_entries_append_enum(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_SORT_MODE),
             msg_hash_to_str(MENU_ENUM_LABEL_PLAYLIST_MANAGER_SORT_MODE),
@@ -4263,6 +4266,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_PLAYLIST_ENTRY_REMOVE,               PARSE_ONLY_UINT, true},
                {MENU_ENUM_LABEL_PLAYLIST_SORT_ALPHABETICAL,          PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_PLAYLIST_USE_OLD_FORMAT,             PARSE_ONLY_BOOL, true},
+               {MENU_ENUM_LABEL_PLAYLIST_COMPRESSION,                PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_PLAYLIST_SHOW_INLINE_CORE_NAME,      PARSE_ONLY_UINT, true},
                {MENU_ENUM_LABEL_PLAYLIST_SHOW_SUBLABELS,             PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_PLAYLIST_SUBLABEL_RUNTIME_TYPE,      PARSE_ONLY_UINT, false},

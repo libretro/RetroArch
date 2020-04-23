@@ -8945,8 +8945,9 @@ bool command_event(enum event_command cmd, void *data)
          {
             settings_t *settings         = configuration_settings;
             bool playlist_use_old_format = settings->bools.playlist_use_old_format;
+            bool playlist_compression    = settings->bools.playlist_compression;
             playlist_write_file(g_defaults.content_history,
-                  playlist_use_old_format);
+                  playlist_use_old_format, playlist_compression);
             playlist_free(g_defaults.content_history);
          }
          g_defaults.content_history = NULL;
@@ -8955,8 +8956,9 @@ bool command_event(enum event_command cmd, void *data)
          {
             settings_t *settings         = configuration_settings;
             bool playlist_use_old_format = settings->bools.playlist_use_old_format;
+            bool playlist_compression    = settings->bools.playlist_compression;
             playlist_write_file(g_defaults.music_history,
-                  playlist_use_old_format);
+                  playlist_use_old_format, playlist_compression);
             playlist_free(g_defaults.music_history);
          }
          g_defaults.music_history = NULL;
@@ -8966,12 +8968,12 @@ bool command_event(enum event_command cmd, void *data)
          {
             settings_t *settings         = configuration_settings;
             bool playlist_use_old_format = settings->bools.playlist_use_old_format;
+            bool playlist_compression    = settings->bools.playlist_compression;
             playlist_write_file(g_defaults.video_history,
-                  playlist_use_old_format);
+                  playlist_use_old_format, playlist_compression);
             playlist_free(g_defaults.video_history);
          }
          g_defaults.video_history = NULL;
-
 #endif
 
 #ifdef HAVE_IMAGEVIEWER
@@ -8979,8 +8981,9 @@ bool command_event(enum event_command cmd, void *data)
          {
             settings_t *settings         = configuration_settings;
             bool playlist_use_old_format = settings->bools.playlist_use_old_format;
+            bool playlist_compression    = settings->bools.playlist_compression;
             playlist_write_file(g_defaults.image_history,
-                  playlist_use_old_format);
+                  playlist_use_old_format, playlist_compression);
             playlist_free(g_defaults.image_history);
          }
          g_defaults.image_history = NULL;
@@ -9186,6 +9189,7 @@ bool command_event(enum event_command cmd, void *data)
                {
                   struct playlist_entry entry       = {0};
                   bool playlist_use_old_format      = settings->bools.playlist_use_old_format;
+                  bool playlist_compression         = settings->bools.playlist_compression;
                   bool playlist_sort_alphabetical   = settings->bools.playlist_sort_alphabetical;
                   bool playlist_fuzzy_archive_match = settings->bools.playlist_fuzzy_archive_match;
 
@@ -9209,7 +9213,7 @@ bool command_event(enum event_command cmd, void *data)
                         playlist_qsort(g_defaults.content_favorites);
 
                      playlist_write_file(g_defaults.content_favorites,
-                           playlist_use_old_format);
+                           playlist_use_old_format, playlist_compression);
                      runloop_msg_queue_push(msg_hash_to_str(MSG_ADDED_TO_FAVORITES), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
                   }
                }
@@ -9225,6 +9229,7 @@ bool command_event(enum event_command cmd, void *data)
             size_t *playlist_index         = (size_t*)data;
             struct playlist_entry entry    = {0};
             bool playlist_use_old_format   = settings->bools.playlist_use_old_format;
+            bool playlist_compression      = settings->bools.playlist_compression;
 
             /* the update function reads our entry as const,
              * so these casts are safe */
@@ -9235,8 +9240,8 @@ bool command_event(enum event_command cmd, void *data)
                   NULL,
                   *playlist_index,
                   &entry,
-                  playlist_use_old_format
-                  );
+                  playlist_use_old_format,
+                  playlist_compression);
 
             runloop_msg_queue_push(msg_hash_to_str(MSG_RESET_CORE_ASSOCIATION), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
             break;
@@ -30677,9 +30682,10 @@ void rarch_favorites_deinit(void)
    {
       settings_t         *settings = configuration_settings;
       bool playlist_use_old_format = settings->bools.playlist_use_old_format;
+      bool playlist_compression    = settings->bools.playlist_compression;
 
       playlist_write_file(g_defaults.content_favorites,
-            playlist_use_old_format);
+            playlist_use_old_format, playlist_compression);
       playlist_free(g_defaults.content_favorites);
       g_defaults.content_favorites = NULL;
    }
