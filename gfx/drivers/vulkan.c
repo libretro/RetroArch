@@ -1686,7 +1686,6 @@ static bool vulkan_frame(void *data, const void *frame,
    struct font_params *osd_params                = (struct font_params*)
       &video_info->osd_stat_params;
 
-
    VkCommandBufferBeginInfo begin_info           = {
       VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
    VkRenderPassBeginInfo rp_info                 = {
@@ -1974,7 +1973,7 @@ static bool vulkan_frame(void *data, const void *frame,
          if (osd_params)
             font_driver_render_msg(vk,
                   stat_text,
-                  &osd_params, NULL);
+                  osd_params, NULL);
       }
 #endif
 
