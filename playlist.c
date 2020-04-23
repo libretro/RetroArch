@@ -2277,7 +2277,7 @@ json_cleanup:
    }
    else
    {
-      char line_buf[PLAYLIST_ENTRIES][1024] = {{0}};
+      char line_buf[PLAYLIST_ENTRIES][PATH_MAX_LENGTH] = {{0}};
 
       /* Unnecessary, but harmless */
       for (i = 0; i < PLAYLIST_ENTRIES; i++)
@@ -2302,10 +2302,8 @@ json_cleanup:
 
                /* Ensure line is NUL terminated, regardless of
                 * Windows or Unix line endings */
-               if ((last_char = strrchr(line_buf[i], '\r')))
-                  *last_char = '\0';
-               else if ((last_char = strrchr(line_buf[i], '\n')))
-                  *last_char = '\0';
+               string_replace_all_chars(line_buf[i], '\r', '\0');
+               string_replace_all_chars(line_buf[i], '\n', '\0');
 
                lines_read++;
             }
@@ -2353,8 +2351,8 @@ json_cleanup:
           * read, then this is metadata */
          else
          {
-            char default_core_path[1024];
-            char default_core_name[1024];
+            char default_core_path[PATH_MAX_LENGTH];
+            char default_core_name[PATH_MAX_LENGTH];
 
             default_core_path[0] = '\0';
             default_core_name[0] = '\0';
