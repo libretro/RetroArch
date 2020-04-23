@@ -2298,8 +2298,6 @@ json_cleanup:
 
             if (intfstream_gets(file, line_buf[i], sizeof(line_buf[i])))
             {
-               char *last_char = NULL;
-
                /* Ensure line is NUL terminated, regardless of
                 * Windows or Unix line endings */
                string_replace_all_chars(line_buf[i], '\r', '\0');
