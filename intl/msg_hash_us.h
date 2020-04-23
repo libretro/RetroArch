@@ -892,6 +892,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP_CONTROLS,
    "Basic Menu Controls"
    )
+
 /* Main Menu > Help > Basic Menu Controls */
 
 MSG_HASH(
@@ -1496,7 +1497,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
    "Aspect Ratio"
    )
- MSG_HASH(
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO,
    "Config Aspect Ratio"
    )
@@ -7469,27 +7470,27 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_NONE,
    "OFF"
-)
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_SNOW,
    "Snow (Light)"
-)
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_SNOW_ALT,
    "Snow (Heavy)"
-)
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_RAIN,
    "Rain"
-)
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_VORTEX,
    "Vortex"
-)
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_STARFIELD,
    "Star Field"
-)
+   )
 
 /* XMB: Settings > User Interface > Appearance */
 
@@ -7846,6 +7847,7 @@ MSG_HASH(
    )
 
 /* MaterialUI: Settings > User Interface > Appearance */
+
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_ICONS_ENABLE,
    "Menu Icons"
@@ -8005,27 +8007,27 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_CUTIE_CYAN,
    "Cutie Cyan"
    )
- MSG_HASH(
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_CUTIE_GREEN,
    "Cutie Green"
    )
- MSG_HASH(
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_CUTIE_ORANGE,
    "Cutie Orange"
    )
- MSG_HASH(
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_CUTIE_PINK,
    "Cutie Pink"
    )
- MSG_HASH(
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_CUTIE_PURPLE,
    "Cutie Purple"
    )
- MSG_HASH(
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_CUTIE_RED,
    "Cutie Red"
    )
-  MSG_HASH(
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_VIRTUAL_BOY,
    "Virtual Boy"
    )
@@ -9706,7 +9708,7 @@ MSG_HASH(
 MSG_HASH(
    MSG_ERROR_LIBRETRO_CORE_REQUIRES_VFS,
    "Core does not support VFS, and loading from a local copy failed"
-)
+   )
 MSG_HASH(
    MSG_ERROR_PARSING_ARGUMENTS,
    "Error parsing arguments."
@@ -10643,7 +10645,7 @@ MSG_HASH(
    "Reboot"
    )
 
-/* Environment Specific Settings*/
+/* Environment Specific Settings */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SPLIT_JOYCON,
@@ -10680,11 +10682,11 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FILE_BROWSER_OPEN_PICKER,
    "Open..."
-)
+   )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FILE_BROWSER_OPEN_PICKER,
    "Open another directory using the system file picker"
-)
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_FLICKER,
    "Flicker filter"
