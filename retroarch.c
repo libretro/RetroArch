@@ -26821,6 +26821,8 @@ static void retroarch_print_version(void)
          PACKAGE_VERSION);
 #ifdef HAVE_GIT_VERSION
    printf(" -- %s --\n", retroarch_git_version);
+#else
+   printf("\n");
 #endif
    retroarch_get_capabilities(RARCH_CAPABILITIES_COMPILER, str, sizeof(str));
    strlcat(str, " Built: " __DATE__, sizeof(str));
