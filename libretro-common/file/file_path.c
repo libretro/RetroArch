@@ -611,7 +611,7 @@ bool path_is_absolute(const char *path)
          || strstr(path, ":\\")
          || strstr(path, ":\\\\"))
       return true;
-#elif defined(__wiiu__)
+#elif defined(__wiiu__) || defined(VITA)
    if (strstr(path, ":/"))
       return true;
 #endif
