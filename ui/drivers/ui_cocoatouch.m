@@ -37,6 +37,8 @@
 #include "../../menu/menu_setting.h"
 #endif
 
+#import <AVFoundation/AVFoundation.h>
+
 static char msg_old[PATH_MAX_LENGTH];
 #ifdef HAVE_COCOA_METAL
 id<ApplePlatform> apple_platform;
@@ -355,6 +357,12 @@ enum
    [self pushViewController:self.mainmenu animated:NO];
 #endif
 
+   NSError *error;
+   [[AVAudioSession sharedInstance] setCategory:AVAudioSessionCategoryAmbient error:&error];
+   if (error) {
+       NSLog(@"Could not set audio session category: %@",error.localizedDescription);
+   }
+
    [self refreshSystemConfig];
    [self showGameView];
 
@@ -394,14 +402,6 @@ enum
   [self showGameView];
 }
 
-- (void)applicationWillResignActive:(UIApplication *)application
-{
-   dispatch_async(dispatch_get_main_queue(),
-                  ^{
-                  ui_companion_cocoatouch_event_command(NULL, CMD_EVENT_MENU_SAVE_CURRENT_CONFIG);
-                  });
-}
-
 -(BOOL)application:(UIApplication *)application openURL:(NSURL *)url sourceApplication:(NSString *)sourceApplication annotation:(id)annotation
 {
    NSString *filename = (NSString*)url.path.lastPathComponent;
@@ -435,7 +435,9 @@ enum
     [[UIApplication sharedApplication] setIdleTimerDisabled:true];
    [self.window setRootViewController:[CocoaView get]];
 
-   ui_companion_cocoatouch_event_command(NULL, CMD_EVENT_AUDIO_START);
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 1.0 * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
+        command_event(CMD_EVENT_AUDIO_START, NULL);
+    });
    rarch_disable_ui();
 }
 
