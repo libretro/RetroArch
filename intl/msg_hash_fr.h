@@ -4409,6 +4409,18 @@ MSG_HASH(
    "Sauvegarder les listes de lecture dans l'ancien format"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_USE_OLD_FORMAT,
+   "Sauvegarder les listes de lecture au format texte brut déprécié. Si désactivé, les listes de lecture seront au format JSON."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_COMPRESSION,
+   "Compression des listes de lecture"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_COMPRESSION,
+   "Enregistrer les données des listes de lecture sous un format archivé. Réduit la taille du fichier et les temps de sauvegarde/chargement au détriment de l'augmentation (négligeable) de l'utilisation du processeur. Peut être utilisé avec l'ancien et le nouveau format des listes de lecture."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_INLINE_CORE_NAME,
    "Afficher les cœurs associés dans les listes de lecture"
    )
