@@ -1864,9 +1864,9 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
       case MENU_ENUM_LABEL_VIDEO_CTX_SCALING:
          snprintf(s, len,
 #ifdef HAVE_ODROIDGO2
-               "RGA scaling and bicubic filtering. May break widgets."
+               "Escala RGA e filtragem bicúbica. Pode quebrar os widgets."
 #else
-               "Hardware context scaling (if available)."
+               "Escala de contexto de hardware (se disponível)."
 #endif
          );
          break;

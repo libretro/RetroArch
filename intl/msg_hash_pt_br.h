@@ -521,6 +521,10 @@ MSG_HASH(
     "Arquivo de trapaça"
     )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_FILE_APPEND,
+   "Arquivo de trapaça (anexar)"
+    )
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD,
     "Carregar arquivo de trapaça"
     )
@@ -1213,6 +1217,26 @@ MSG_HASH(
     MENU_ENUM_SUBLABEL_INPUT_MOUSE_SCALE,
     "Ajusta a escala X/Y para a velocidade das lightguns usando o Wiimote."
     )
+   )
+#endif
+#ifdef HAVE_ODROIDGO2
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_CTX_SCALING,
+   "Escala RGA"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_CTX_SCALING,
+   "Escala RGA e filtragem bicúbica. Pode quebrar os widgets."
+   )
+#else
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_CTX_SCALING,
+   "Escala específica de contexto"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_CTX_SCALING,
+   "Escala de contexto de hardware (se disponível)."
+   )
 #endif
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
@@ -2547,6 +2571,26 @@ MSG_HASH(
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_THUMBNAIL_MODE_DEFAULT,
     "Padrão do sistema"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_SORT_MODE,
+    "Modo de classificação"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_SORT_MODE,
+    "Altera o modo como as entradas nesta lista de reprodução são ordenadas."
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_SORT_MODE_DEFAULT,
+    "Padrão"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_SORT_MODE_ALPHABETICAL,
+    "Alfabético"
+    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_SORT_MODE_OFF,
+    "Nenhum"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_CLEAN_PLAYLIST,
@@ -6405,8 +6449,16 @@ MSG_HASH(
     "Mostrar miniaturas de estados salvos dentro do menu."
     )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVE_FILE_COMPRESSION,
+   "Compactar SaveRAM"
+    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVE_FILE_COMPRESSION,
+   "Escreve arquivos SaveRAM não voláteis em um formato arquivado. Reduz drasticamente o tamanho do arquivo às custas do (insignificante) aumento de tempo de salvamento/carregamento. Nota: Aplica-se apenas a núcleos que permitem salvar através da interface padrão libretro de SaveRAM."
+    )
+MSG_HASH(
     MENU_ENUM_SUBLABEL_AUTOSAVE_INTERVAL,
-    "Salva automaticamente o Save RAM não-volátil em um intervalo regular. Isso está desabilitado por padrão, a menos que seja definido de outra forma. O intervalo é medido em segundos. Um valor de 0 desativa o salvamento automático."
+    "Salva automaticamente o SaveRAM não-volátil em um intervalo regular. Isso está desabilitado por padrão, a menos que seja definido de outra forma. O intervalo é medido em segundos. Um valor de 0 desativa o salvamento automático."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_INPUT_REMAP_BINDS_ENABLE,
