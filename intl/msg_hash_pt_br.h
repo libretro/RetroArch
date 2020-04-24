@@ -9443,7 +9443,7 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_COMPRESSION,
    "Salva dados da lista de reprodução em um formato arquivado. Reduz o tamanho do arquivo e o tempo de carregamento, às custas do (insignificante) aumento do uso da CPU. Pode ser usado com listas de reprodução de formato antigo ou novo."
    )
-MSG_HASH(	MSG_HASH(
+MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_INLINE_CORE_NAME,
     "Mostrar núcleos associados nas listas de reprodução"
     )
