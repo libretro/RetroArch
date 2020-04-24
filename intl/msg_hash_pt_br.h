@@ -1810,7 +1810,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_DUMP_DISC,
-    "Dumpar disco"
+    "Criar cópia do disco"
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_LOAD_STATE,
@@ -6454,7 +6454,7 @@ MSG_HASH(
     )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVE_FILE_COMPRESSION,
-   "Escreve arquivos SaveRAM não voláteis em um formato arquivado. Reduz drasticamente o tamanho do arquivo às custas do (insignificante) aumento de tempo de salvamento/carregamento. Nota: Aplica-se apenas a núcleos que permitem salvar através da interface padrão libretro de SaveRAM."
+   "Salva arquivos SaveRAM não voláteis em um formato arquivado. Reduz drasticamente o tamanho do arquivo às custas do (insignificante) aumento de tempo de salvamento/carregamento. Nota: Aplica-se apenas a núcleos que permitem salvar através da interface padrão libretro de SaveRAM."
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_AUTOSAVE_INTERVAL,
@@ -7459,11 +7459,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_SHOW_DUMP_DISC,
-    "Exibir 'Dumpar disco'"
+    "Exibir 'Criar cópia do disco'"
     )
 MSG_HASH(
     MENU_ENUM_SUBLABEL_MENU_SHOW_DUMP_DISC,
-    "Exibe ou oculta a opção 'Dumpar disco'."
+    "Exibe ou oculta a opção 'Criar cópia do disco'."
     )
 MSG_HASH(
     MENU_ENUM_LABEL_VALUE_MENU_SHOW_INFORMATION,
@@ -9432,6 +9432,18 @@ MSG_HASH(
     "Salvar listas de reprodução usando o formato antigo"
     )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_USE_OLD_FORMAT,
+   "Salva as listas de reprodução usando o obsoleto formato de texto sem formatação. Quando desativada, as listas de reprodução são formatadas usando JSON."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_COMPRESSION,
+   "Compactar listas de reprodução"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_COMPRESSION,
+   "Salva dados da lista de reprodução em um formato arquivado. Reduz o tamanho do arquivo e o tempo de carregamento, às custas do (insignificante) aumento do uso da CPU. Pode ser usado com listas de reprodução de formato antigo ou novo."
+   )
+MSG_HASH(	MSG_HASH(
     MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_INLINE_CORE_NAME,
     "Mostrar núcleos associados nas listas de reprodução"
     )
@@ -9753,7 +9765,7 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_DUMPING_DISC,
-    "Dumpando disco..."
+    "Criando cópia do disco..."
     )
 MSG_HASH(
     MSG_DRIVE_NUMBER,
@@ -9765,11 +9777,11 @@ MSG_HASH(
     )
 MSG_HASH(
     MSG_DISC_DUMP_FAILED_TO_READ_FROM_DRIVE,
-    "Falha ao ler a unidade. Processo de dumpagem abortada."
+    "Falha ao ler a unidade. Processo de criação de cópia do disco abortada."
     )
 MSG_HASH(
     MSG_DISC_DUMP_FAILED_TO_WRITE_TO_DISK,
-    "Falha ao escrever para o disco. Processo de dumpagem abortada."
+    "Falha ao escrever para o disco. Processo de criação de cópia do disco abortada."
     )
 MSG_HASH(
     MSG_NO_DISC_INSERTED,
