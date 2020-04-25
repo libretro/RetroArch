@@ -1926,7 +1926,6 @@ MSG_HASH(
    "OSD Berichten Y-as positie"
    )
 MSG_HASH(
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_POST_FILTER_RECORD,
    "Post Filter Opname Activeren"
    )
