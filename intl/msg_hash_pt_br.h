@@ -1217,7 +1217,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_MOUSE_SCALE,
    "Ajusta a escala X/Y para a velocidade das lightguns usando o Wiimote."
    )
-   )
 #endif
 #ifdef HAVE_ODROIDGO2
 MSG_HASH(
@@ -7155,7 +7154,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO,
-   "Valor em ponto flutuante da proporção de tela (largura / altura), utilizado se a proporção de tela estiver definido como 'Configuração'."
+   "Valor em ponto flutuante da proporção de tela (largura/altura), utilizado se a proporção de tela estiver definido como 'Configuração'."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
