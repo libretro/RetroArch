@@ -2118,7 +2118,10 @@ static bool vulkan_frame(void *data, const void *frame,
    vk->ctx_driver->swap_buffers(context_data);
 
    if (!vk->context->swap_interval_emulation_lock)
-      vk->ctx_driver->update_window_title(context_data);
+   {
+      if (vk->ctx_driver->update_window_title)
+         vk->ctx_driver->update_window_title(context_data);
+   }
 
    /* Handle spurious swapchain invalidations as soon as we can,
     * i.e. right after swap buffers. */
