@@ -75,10 +75,6 @@ MSG_HASH(
    "ポートマッピングに失敗しました"
    )
 MSG_HASH(
-   MSG_NO_ARGUMENTS_SUPPLIED_AND_NO_MENU_BUILTIN,
-   "No arguments supplied and no menu builtin, displaying help..."
-   )
-MSG_HASH(
    MSG_SETTING_DISK_IN_TRAY,
    "ディスクがトレイに入りました"
    )
@@ -242,16 +238,8 @@ MSG_HASH(
    "接続スロット"
    )
 MSG_HASH(
-   MSG_SORRY_UNIMPLEMENTED_CORES_DONT_DEMAND_CONTENT_NETPLAY,
-   "Sorry, unimplemented: cores that don't demand content cannot participate in netplay."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_PASSWORD,
    "パスワード"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_SETTINGS,
-   "Accounts Cheevos"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_USERNAME,
@@ -260,14 +248,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACCOUNTS_LIST,
    "アカウント"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ACCOUNTS_LIST_END,
-   "Accounts List Endpoint"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ACCOUNTS_RETRO_ACHIEVEMENTS,
-   "RetroAchievements"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST,
@@ -302,16 +282,8 @@ MSG_HASH(
    "ネットプレイ"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ASK_ARCHIVE,
-   "Ask"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ASSETS_DIRECTORY,
    "アセット"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_BLOCK_FRAMES,
-   "Block Frames"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE,
@@ -332,10 +304,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_FILTER_DIR,
    "オーディオフィルタ"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_TURBO_DEADZONE_LIST,
-   "Turbo/Deadzone"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
@@ -565,10 +533,6 @@ MSG_HASH(
    "未解除"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_SETTINGS,
-   "RetroAchievements"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_TEST_UNOFFICIAL,
    "非公式実績をテスト"
    )
@@ -645,10 +609,6 @@ MSG_HASH(
    "チート"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_COUNTERS,
-   "Core Counters"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_ENABLE,
    "コアの名前を表示"
    )
@@ -695,10 +655,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_NAME,
    "システム名"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_REQUIRED_HW_API,
-   "Required graphics API"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS,
@@ -885,20 +841,8 @@ MSG_HASH(
    "フレーム制御"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRONTEND_COUNTERS,
-   "Frontend Counters"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS,
    "コンテンツごとのコア設定を自動的にロード"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_CREATE,
-   "Create game-options file"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_IN_USE,
-   "Game-options file"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP,
@@ -1091,10 +1035,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BIND_HOLD,
    "バインド設定時のホールド期間"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_BLOCK_TIMEOUT,
-   "Input Block Timeout"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DESCRIPTOR_HIDE_UNBOUND,
@@ -1452,10 +1392,6 @@ MSG_HASH(
    "普通"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_PREFER_FRONT_TOUCH,
-   "Prefer Front Touch"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_REMAPPING_DIRECTORY,
    "入力リマップ"
    )
@@ -1722,10 +1658,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE,
    "メニューのフレームレートを制限"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
-   "File Browser"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_LINEAR_FILTER,
@@ -2013,10 +1945,6 @@ MSG_HASH(
    "該当するネットワークが見つかりませんでした。"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NO_PERFORMANCE_COUNTERS,
-   "No performance counters."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_PLAYLISTS,
    "プレイリストが見つかりません。"
    )
@@ -2061,14 +1989,6 @@ MSG_HASH(
    "OSDコントロールとベゼルを調整します。"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ONSCREEN_VIDEO_LAYOUT_SETTINGS,
-   "Video Layout"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ONSCREEN_VIDEO_LAYOUT_SETTINGS,
-   "Adjust Video Layout"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_SETTINGS,
    "OSD通知"
    )
@@ -2097,10 +2017,6 @@ MSG_HASH(
    "オーバーレイ"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_DIRECTORY,
-   "Video Layout"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_OPACITY,
    "オーバーレイの不透明度"
    )
@@ -2123,22 +2039,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PARENT_DIRECTORY,
    "親ディレクトリ"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FILE_BROWSER_OPEN_UWP_PERMISSIONS,
-   "Enable external file access"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FILE_BROWSER_OPEN_UWP_PERMISSIONS,
-   "Open Windows file access permissions settings"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FILE_BROWSER_OPEN_PICKER,
-   "Open..."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FILE_BROWSER_OPEN_PICKER,
-   "Open another directory using the system file picker"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PAUSE_LIBRETRO,
@@ -4594,10 +4494,6 @@ MSG_HASH(
    "履歴ファイルをロード中"
    )
 MSG_HASH(
-   MSG_LOADING_FAVORITES_FILE,
-   "Loading favorites file"
-   )
-MSG_HASH(
    MSG_LOADING_STATE,
    "ステートロード中"
    )
@@ -5321,10 +5217,6 @@ MSG_HASH(
    "ゲーム内部のラグフレームの数を超えると, ジッターなどのゲームプレイの問題が発生します。"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_BLOCK_TIMEOUT,
-   "The number of milliseconds to wait to get a complete input sample, use it if you have issues with simultaneous button presses (Android only)."
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_RUN_AHEAD_SECONDARY_INSTANCE,
    "RetroArchコアの2番目のインスタンスを使用して先読みします。\n"
    "ステートのロードによるオーディオの問題を防ぎます。"
@@ -5978,10 +5870,6 @@ MSG_HASH(
    "オーバーレイが存在するフォルダを指定します。"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_DIRECTORY,
-   "Defines a directory where video layouts are kept for easy access."
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_DATABASE_PATH,
    "チートファイルが存在するフォルダを指定します。"
    )
@@ -6616,10 +6504,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHADER_WATCH_FOR_CHANGES,
    "シェーダファイルの変更を監視"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SHADER_WATCH_FOR_CHANGES,
-   "Auto-apply changes made to shader files on disk."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SHOW_DECORATIONS,
@@ -7545,20 +7429,12 @@ MSG_HASH(
    "配信タイトル"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_SPLIT_JOYCON,
-   "Split Joy-Con"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
    "デフォルトに戻す"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RESET_TO_DEFAULT_CONFIG,
    "現在の設定をデフォルトの値に戻します。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_OK,
-   "OK"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_MENU_COLOR_THEME,
@@ -7652,10 +7528,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_ALL,
    "すべてのプレイリストで許可"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_NONE,
-   "OFF"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SORT_ALPHABETICAL,

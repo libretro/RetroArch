@@ -593,10 +593,6 @@ MSG_HASH(
    "Όνομα πυρήνα"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE,
-   "Firmware(s)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES,
    "Άδεια(ες)"
    )
@@ -1475,14 +1471,6 @@ MSG_HASH(
    "Κίτρινο"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_FOOTER_OPACITY,
-   "Footer Opacity"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_HEADER_OPACITY,
-   "Header Opacity"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
    "Οδηγός Μενού"
    )
@@ -1513,10 +1501,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE,
    "Φιλτράρισμα άγνωστων επεκτάσεων"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NAVIGATION_WRAPAROUND,
-   "Navigation Wrap-Around"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NEAREST,
@@ -3429,10 +3413,6 @@ MSG_HASH(
    "Εισάγεται το όνομα χρήστη σας εδώ. Αυτό θα χρησιμοποιηθεί για συνεδρίες netplay ανάμεσα σε άλλα πράγματα."
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_POST_FILTER_RECORD,
-   "Capture the image after filters (but not shaders) are applied. Your video will look as fancy as what you see on your screen."
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_LIST,
    "Επιλέξτε ποιον πυρήνα θα χρησιμοποιήστε."
    )
@@ -3789,16 +3769,8 @@ MSG_HASH(
    "Χρήση Εξυπηρετητή Αναμετάδοσης"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_USE_MITM_SERVER,
-   "Forward netplay connections through a man-in-the-middle server. Useful if the host is behind a firewall or has NAT/UPnP problems."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER,
    "Τοποθεσία Εξυπηρετητή Αναμετάδοσης"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_MITM_SERVER,
-   "Choose a specific relay server to use. Geographically closer locations tend to have lower latency."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER,

@@ -1357,14 +1357,6 @@ MSG_HASH(
    "载入游戏内容"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LOAD_DISC,
-   "Load Disc"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DUMP_DISC,
-   "Dump Disc"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_STATE,
    "即时读档"
    )
@@ -1439,10 +1431,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE,
    "限制菜单帧率"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS, /* TODO/FIXME - update */
-   "File Browser"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_LINEAR_FILTER,
@@ -1655,10 +1643,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NONE,
    "无"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE,
-   "N/A"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_ACHIEVEMENTS_TO_DISPLAY,
@@ -3529,10 +3513,6 @@ MSG_HASH(
    "阻止覆盖游戏存档"
    )
 MSG_HASH(
-   MSG_BRINGING_UP_COMMAND_INTERFACE_ON_PORT,
-   "Bringing up command interface on port"
-   )
-MSG_HASH(
    MSG_BYTES,
    "字节"
    )
@@ -3607,10 +3587,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_CRC32_CHECKSUM_MISMATCH,
    "游戏的 CRC32 校验码与录像不一致。录像极有可能在重放时出错。"
-   )
-MSG_HASH(
-   MSG_CUSTOM_TIMING_GIVEN,
-   "Custom timing given"
    )
 MSG_HASH(
    MSG_DECOMPRESSION_ALREADY_IN_PROGRESS,
@@ -3733,14 +3709,6 @@ MSG_HASH(
    "载入视频文件失败"
    )
 MSG_HASH(
-   MSG_FAILED_TO_LOAD_OVERLAY,
-   "Failed to load overlay."
-   )
-MSG_HASH(
-   MSG_FAILED_TO_LOAD_STATE,
-   "Failed to load state from"
-   )
-MSG_HASH(
    MSG_FAILED_TO_OPEN_LIBRETRO_CORE,
    "打开libretro核心失败"
    )
@@ -3851,10 +3819,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_INPUT_CHEAT,
    "输入金手指"
-   )
-MSG_HASH(
-   MSG_INPUT_CHEAT_FILENAME,
-   "Input Cheat Filename"
    )
 MSG_HASH(
    MSG_INPUT_PRESET_FILENAME,
@@ -4009,10 +3973,6 @@ MSG_HASH(
    "自定义键位文件已保存。"
    )
 MSG_HASH(
-   MSG_REMOVED_DISK_FROM_TRAY,
-   "Removed disk from tray."
-   )
-MSG_HASH(
    MSG_REMOVING_TEMPORARY_CONTENT_FILE,
    "移除临时内容文件"
    )
@@ -4053,10 +4013,6 @@ MSG_HASH(
    "初始化回放缓存失败。 回放功能关闭。"
    )
 MSG_HASH(
-   MSG_REWIND_INIT_FAILED_THREADED_AUDIO,
-   "Implementation uses threaded audio. Cannot use rewind."
-   )
-MSG_HASH(
    MSG_REWIND_REACHED_END,
    "到达回溯缓存末端。"
    )
@@ -4095,10 +4051,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_SENDING_COMMAND,
    "发送指令"
-   )
-MSG_HASH(
-   MSG_SEVERAL_PATCHES_ARE_EXPLICITLY_DEFINED,
-   "Several patches are explicitly defined, ignoring all..."
    )
 MSG_HASH(
    MSG_SHADER,
@@ -4171,10 +4123,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_UNRECOGNIZED_COMMAND,
    "无法识别的指令"
-   )
-MSG_HASH(
-   MSG_USING_CORE_NAME_FOR_NEW_CONFIG,
-   "Using core name for new config."
    )
 MSG_HASH(
    MSG_USING_LIBRETRO_DUMMY_CORE_RECORDING_SKIPPED,
@@ -4487,10 +4435,6 @@ MSG_HASH(
    "昵称（局域网）：%s"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_FOUND,
-   "Compatible content found"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_CROP_OVERSCAN,
    "不显示图像周围可能存在的黑边。"
    )
@@ -4775,10 +4719,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DYNAMIC_WALLPAPER,
    "根据核心或游戏的不同，使用不同的壁纸。"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_DEVICE,
-   "Override the default audio device the audio driver uses. This is driver dependent."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN,
@@ -5291,14 +5231,6 @@ MSG_HASH(
    "设置视频渲染器文件的文件夹。"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_RECORDING_OUTPUT_DIRECTORY,
-   "Recordings will be dumped to this directory."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RECORDING_CONFIG_DIRECTORY,
-   "Recording configurations will be kept here."
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FONT_PATH,
    "为屏显消息设置不同的字体。"
    )
@@ -5418,22 +5350,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_MITM_SERVER,
    "选择一个代理服务器。服务器位置较近的\n"
    "一般网络延迟更低。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER,
-   "Add to mixer"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_PLAY,
-   "Add to mixer and play"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_COLLECTION,
-   "Add to mixer"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_COLLECTION_AND_PLAY,
-   "Add to mixer and play"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FILTER_BY_CURRENT_CORE,
@@ -5694,30 +5610,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
    "显示或隐藏「添加到收藏夹」选项。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_START_RECORDING,
-   "Show Start Recording"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_START_RECORDING,
-   "Show/hide the 'Start Recording' option."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_START_STREAMING,
-   "Show Start Streaming"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_START_STREAMING,
-   "Show/hide the 'Start Streaming' option."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESET_CORE_ASSOCIATION,
-   "Show Reset Core Association"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESET_CORE_ASSOCIATION,
-   "Show/hide the 'Reset Core Association' option."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,

@@ -1213,8 +1213,8 @@ MSG_HASH(
    "Период турборежима"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS, /* TODO/FIXME - Change user to port */
-   "Привязки ввода пользователя %u"
+   MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
+   "Привязки ввода порт %u"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INTERNAL_STORAGE_STATUS,
@@ -3142,8 +3142,8 @@ MSG_HASH(
    "Настройки управления для джойстика, клавиатуры и мыши."
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_USER_BINDS, /* TODO/FIXME - change user to port */
-   "Настройки элементов управления для этого пользователя."
+   MENU_ENUM_SUBLABEL_INPUT_USER_BINDS,
+   "Настройки элементов управления для этого порт."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOG_VERBOSITY,
@@ -5632,10 +5632,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS,
    "Показывать клавиатуру/контроллер на оверлее."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS_PORT,
-   "Select the port for the overlay to listen to if Show Inputs On Overlay is enabled."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS,

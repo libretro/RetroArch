@@ -220,7 +220,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST_HARDCORE,
-   "Lista Achievement(Hardcore)"
+   "Lista Achievement (Hardcore)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST,
@@ -457,10 +457,6 @@ MSG_HASH(
    "Salva il file cheat come"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_NUM_PASSES,
-   "Cheat Passes"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_DESCRIPTION,
    "Descrizione"
    )
@@ -667,10 +663,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DIRECTORY_CONTENT,
    "<Contenuto della cartella>"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DIRECTORY_DEFAULT,
-   "<Default>"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DIRECTORY_NONE,
@@ -937,22 +929,6 @@ MSG_HASH(
    "Scambia i pulsanti OK & Annulla "
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_BIND_ALL,
-   "Bind All"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_BIND_DEFAULT_ALL,
-   "Bind Default All"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_BIND_TIMEOUT,
-   "Bind Timeout"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_BIND_HOLD,
-   "Bind Hold"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DESCRIPTOR_HIDE_UNBOUND,
    "Nascondi i descrittori di input di core non legati"
    )
@@ -979,10 +955,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DUTY_CYCLE,
    "Ciclo di lavoro"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BINDS,
-   "Input Hotkey Binds"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ICADE_ENABLE,
@@ -1055,42 +1027,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_KEY,
    "(Tasto: %s)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_LEFT,
-   "Mouse 1"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_RIGHT,
-   "Mouse 2"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_MIDDLE,
-   "Mouse 3"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_BUTTON4,
-   "Mouse 4"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_BUTTON5,
-   "Mouse 5"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_WHEEL_UP,
-   "Wheel Up"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_WHEEL_DOWN,
-   "Wheel Down"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_HORIZ_WHEEL_UP,
-   "Wheel Left"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_HORIZ_WHEEL_DOWN,
-   "Wheel Right"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE,
@@ -1419,10 +1355,6 @@ MSG_HASH(
    "Informazione sul Core"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LIBRETRO_LOG_LEVEL,
-   "Core Logging Level"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LINEAR,
    "Lineare"
    )
@@ -1523,10 +1455,6 @@ MSG_HASH(
    "Frequenza dei fotogrammi nel menu"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
-   "File Browser"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_LINEAR_FILTER,
    "Filtro lineare del Menu"
    )
@@ -1569,14 +1497,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE,
    "Filtra estensioni sconosciute"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NAVIGATION_WRAPAROUND,
-   "Navigazione Wrap-Around"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NEAREST,
-   "Nearest"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY,
@@ -1863,18 +1783,6 @@ MSG_HASH(
    "Contatori di prestazioni"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB,
-   "Playlists"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PLAYLIST_DIRECTORY,
-   "Playlists"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PLAYLIST_SETTINGS,
-   "Playlists"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE,
    "Modalità di visualizzazione etichetta"
    )
@@ -1921,10 +1829,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PRESENT,
    "Presente"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PRIVACY_SETTINGS,
-   "Privacy"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
@@ -2662,10 +2566,6 @@ MSG_HASH(
    "Supporto Video4Linux2 "
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_VIDEO_CONTEXT_DRIVER,
-   "Video context driver"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_VULKAN_SUPPORT,
    "Supporto Vulkan "
    )
@@ -2694,10 +2594,6 @@ MSG_HASH(
    "Effettua Screenshot"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_THREADED_DATA_RUNLOOP_ENABLE,
-   "Threaded tasks"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS,
    "Miniature"
    )
@@ -2716,10 +2612,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_SCREENSHOTS,
    "Screenshots"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_TITLE_SCREENS,
-   "Title Screens"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIMEDATE_ENABLE,
@@ -3064,10 +2956,6 @@ MSG_HASH(
    "Framerate dello schermo stimato"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_POLLED,
-   "Set Display-Reported Refresh Rate"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION,
    "Rotazione"
    )
@@ -3078,18 +2966,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER,
    "Scala Intera"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS,
-   "Video"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DIR,
-   "Video Shader"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_NUM_PASSES,
-   "Shader Passes"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PARAMETERS,
@@ -3122,22 +2998,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SOFT_FILTER,
    "Abilita il filtro morbido "
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
-   "Vertical Sync (Vsync) Swap Interval"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_TAB,
-   "Video"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_THREADED,
-   "Threaded Video"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_VFILTER,
-   "Deflicker"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
@@ -3300,14 +3160,6 @@ MSG_HASH(
    "Sunbeam"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_RIBBON_ENABLE,
-   "Menu Shader Pipeline"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SCALE_FACTOR,
-   "Menu Scale Factor"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_SHADOWS_ENABLE,
    "Abilita Ombre delle Icone"
    )
@@ -3344,20 +3196,12 @@ MSG_HASH(
    "Visualizza colonna Lobby Netplay"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_LAYOUT,
-   "Menu Layout"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_THEME,
    "Icone del Menu"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_YES,
    "Si"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_TWO,
-   "Shader Preset"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_ENABLE,
@@ -3562,10 +3406,6 @@ MSG_HASH(
    "La stima precisa di aggiornamento dello schermo in Hz."
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_POLLED,
-   "The refresh rate as reported by the display driver."
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SETTINGS,
    "Cambia le impostazioni per l'uscita video."
    )
@@ -3626,10 +3466,6 @@ MSG_HASH(
    "Bloccare la sovrascrittura della SRAM"
    )
 MSG_HASH(
-   MSG_BRINGING_UP_COMMAND_INTERFACE_ON_PORT,
-   "Bringing up command interface on port"
-   )
-MSG_HASH(
    MSG_BYTES,
    "bytes"
    )
@@ -3663,7 +3499,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CONTENT_LOADING_SKIPPED_IMPLEMENTATION_WILL_DO_IT,
-   "Il caricamento del contenuto è stato saltato.Le Implemenzioni verranno caricati in proprio."
+   "Il caricamento del contenuto è stato saltato. Le Implemenzioni verranno caricati in proprio."
    )
 MSG_HASH(
    MSG_CORE_DOES_NOT_SUPPORT_SAVESTATES,
@@ -3704,10 +3540,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_CRC32_CHECKSUM_MISMATCH,
    "La mancata corrispondenza del checksum CRC32 tra il file di contenuto e il checksum del contenuto salvato nell'intestazione del file di replay, riproduce molto probabilmente il desync sulla riproduzione."
-   )
-MSG_HASH(
-   MSG_CUSTOM_TIMING_GIVEN,
-   "Custom timing given"
    )
 MSG_HASH(
    MSG_DECOMPRESSION_ALREADY_IN_PROGRESS,
@@ -3966,10 +3798,6 @@ MSG_HASH(
    "Trovato shader"
    )
 MSG_HASH(
-   MSG_FRAMES,
-   "Frames"
-   )
-MSG_HASH(
    MSG_GAME_SPECIFIC_CORE_OPTIONS_FOUND_AT,
    "Opzioni di gioco: opzioni di base specifiche per il gioco trovate in"
    )
@@ -3978,28 +3806,8 @@ MSG_HASH(
    "Indice del disco non valida."
    )
 MSG_HASH(
-   MSG_GRAB_MOUSE_STATE,
-   "Grab mouse state"
-   )
-MSG_HASH(
-   MSG_GAME_FOCUS_ON,
-   "Game focus on"
-   )
-MSG_HASH(
-   MSG_GAME_FOCUS_OFF,
-   "Game focus off"
-   )
-MSG_HASH(
-   MSG_HW_RENDERED_MUST_USE_POSTSHADED_RECORDING,
-   "Libretro core is hardware rendered. Must use post-shaded recording as well."
-   )
-MSG_HASH(
    MSG_INFLATED_CHECKSUM_DID_NOT_MATCH_CRC32,
    "Il checksum inserito non corrisponde a CRC32."
-   )
-MSG_HASH(
-   MSG_INPUT_CHEAT,
-   "Input Cheat"
    )
 MSG_HASH(
    MSG_INPUT_CHEAT_FILENAME,
@@ -4178,10 +3986,6 @@ MSG_HASH(
    "Resetta"
    )
 MSG_HASH(
-   MSG_RESTARTING_RECORDING_DUE_TO_DRIVER_REINIT,
-   "Restarting recording due to driver reinit."
-   )
-MSG_HASH(
    MSG_RESTORED_OLD_SAVE_STATE,
    "Ripristinato un vecchio salva stato."
    )
@@ -4264,14 +4068,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_SHADER_PRESET_SAVED_SUCCESSFULLY,
    "Shader predefinito salvato con successo."
-   )
-MSG_HASH(
-   MSG_SKIPPING_SRAM_LOAD,
-   "Skipping SRAM load."
-   )
-MSG_HASH(
-   MSG_SLOW_MOTION,
-   "Slow motion."
    )
 MSG_HASH(
    MSG_FAST_FORWARD,
@@ -5431,7 +5227,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_FILE_LOAD,
-   "Carica un file cheat ."
+   "Carica un file cheat."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_FILE_SAVE_AS,
@@ -5484,10 +5280,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_COLLECTION,
    "Aggiungi al mixer"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_COLLECTION_AND_PLAY,
-   "Add to mixer and play"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FILTER_BY_CURRENT_CORE,
@@ -6601,10 +6393,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE_GAME,
    "Rimuove il Game Preset, utilizzato solo per il gioco specifico in questione."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_SETTINGS,
-   "Frame Time Counter"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_SETTINGS,
