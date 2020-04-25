@@ -1,4 +1,4 @@
-﻿/*  RetroArch - A frontend for libretro.
+/*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2011-2017 - Daniel De Matteis
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
@@ -42,6 +42,12 @@ int menu_hash_get_help_nl_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       default:
          strlcpy(s, "Geen informatie beschikbaar.", len);
+         ret = -1;
+         break;
+   }
+   {
+      case MSG_UNKNOWN:
+      default:
          ret = -1;
          break;
    }
