@@ -116,7 +116,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
-   "Âm thanh Latency (Ms)"
+   "Âm thanh Latency (ms)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_MAX_TIMING_SKEW,
@@ -905,7 +905,7 @@ MSG_HASH(
 #endif
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SUSPEND_SCREENSAVER_ENABLE,
-   "Chặn tính năng screensaver (Màn hình chờ)."
+   "Chặn tính năng screensaver (màn hình chờ)."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_USER_LANGUAGE,

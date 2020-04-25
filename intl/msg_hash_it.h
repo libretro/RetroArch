@@ -276,7 +276,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
-   "Latenza audio (Ms)"
+   "Latenza audio (ms)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_MAX_TIMING_SKEW,
@@ -2355,11 +2355,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_HEIGHT,
-   "Visualizza l'altezza metrica (Mm)"
+   "Visualizza l'altezza metrica (mm)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_WIDTH,
-   "Visualizza la larghezza metrica (Mm)"
+   "Visualizza la larghezza metrica (mm)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DSOUND_SUPPORT,
@@ -4471,7 +4471,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_POST_FILTER_RECORD,
-   "Cattura l'immagine dopo che vengono applicati i filtri (Ma non shader). Il tuo video sarà simile a quello che vedi sul tuo schermo."
+   "Cattura l'immagine dopo che vengono applicati i filtri (ma non shader). Il tuo video sarà simile a quello che vedi sul tuo schermo."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_LIST,
@@ -6172,7 +6172,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AI_SERVICE_MODE,
-   "Mostra la traduzione come overlay di testo (Modalità Immagine) o la riproduce come sintesi vocale (Modalità vocale)"
+   "Mostra la traduzione come overlay di testo (modalità immagine) o la riproduce come sintesi vocale (modalità vocale)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AI_SERVICE_URL,
