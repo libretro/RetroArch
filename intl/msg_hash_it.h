@@ -2355,13 +2355,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_HEIGHT,
-   "Visualizza l'altezza metrica (
-   Mm)"
+   "Visualizza l'altezza metrica (Mm)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_WIDTH,
-   "Visualizza la larghezza metrica (
-   Mm)"
+   "Visualizza la larghezza metrica (Mm)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DSOUND_SUPPORT,
