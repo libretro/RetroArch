@@ -33,6 +33,7 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SETTINGS,
    "القائمة السريعة"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_LIST,
    "تحميل الكور"
