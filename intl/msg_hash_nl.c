@@ -44,8 +44,6 @@ int menu_hash_get_help_nl_enum(enum msg_hash_enums msg, char *s, size_t len)
          strlcpy(s, "Geen informatie beschikbaar.", len);
          ret = -1;
          break;
-   }
-   {
       case MSG_UNKNOWN:
       default:
          ret = -1;
