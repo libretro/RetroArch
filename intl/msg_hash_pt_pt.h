@@ -5398,6 +5398,10 @@ MSG_HASH(
    "Baixe este valor para favorecer o desempenho ou baixar a latência sobre a qualidade do som, ou aumente caso pretenda melhor qualidade de som a troco de desempenho/baixa latência."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_MENU_COLOR_THEME,
+   "Tema da cor do menu"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DELETE_PLAYLIST,
    "Apagar a lista de reprodução"
    )
