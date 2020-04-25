@@ -288,8 +288,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
-   "Opóźnienie dźwięku (
-   Ms)"
+   "Opóźnienie dźwięku (Ms)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_MAX_TIMING_SKEW,
@@ -2536,13 +2535,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_HEIGHT,
-   "Wyświetl wysokość metryczną (
-   Mm)"
+   "Wyświetl wysokość metryczną (Mm)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_WIDTH,
-   "Wyświetl szerokość metryczną (
-   Mm)"
+   "Wyświetl szerokość metryczną (Mm)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DSOUND_SUPPORT,
@@ -6005,17 +6002,20 @@ MSG_HASH(
    "Włącz grubość wypełniacza tła"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION, "Tylko dla wyświetlaczy CRT. Próby użycia dokładnej rozdzielczości rdzenia/gry i częstotliwości odświeżania."
+   MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION,
+   "Tylko dla wyświetlaczy CRT. Próby użycia dokładnej rozdzielczości rdzenia/gry i częstotliwości odświeżania."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION, "CRT Przełącz rozdzielczość"
+   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION,
+   "CRT Przełącz rozdzielczość"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_SUPER,
    "Przełącz między natywnymi i superszybkimi superrozdzielczościami."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_SUPER, "CRT Super rozdzielczość"
+   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_SUPER,
+   "CRT Super rozdzielczość"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_REWIND,
@@ -6039,7 +6039,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_OVERLAYS,
-	  "Pokaż ustawienia nakładek"
+   "Pokaż ustawienia nakładek"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE_MENU,
@@ -6127,7 +6127,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_SEARCH_CLEAR,
-	   "Oczyść"
+   "Oczyść"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISCORD_IN_MENU,
@@ -6603,13 +6603,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REWIND_BUFFER_SIZE,
-   "Rozmiar bufora przewijania (
-   MB)"
+   "Rozmiar bufora przewijania (MB)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REWIND_BUFFER_SIZE_STEP,
-   "Krok zmiany rozmiaru bufora (
-   MB)"
+   "Krok zmiany rozmiaru bufora (MB)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP_SEND_DEBUG_INFO,
@@ -7608,16 +7606,8 @@ MSG_HASH(
    "Zmień ustawienia wyjścia audio."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_SYNCHRONIZATION_SETTINGS,
-   "Synchronization"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_SYNCHRONIZATION_SETTINGS,
    "Zmień ustawienia synchronizacji dźwięku."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_SETTINGS,
-   "Resampler"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_SETTINGS,

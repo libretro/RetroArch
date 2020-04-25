@@ -332,8 +332,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
-   "Ses Geçikmesi (
-   Ms)"
+   "Ses Geçikmesi (Ms)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_MAX_TIMING_SKEW,
@@ -934,10 +933,6 @@ MSG_HASH(
    "Geçmiş"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_HORIZONTAL_MENU,
-   "Horizontal Menu"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_IMAGES_TAB,
    "Görüntü"
    )
@@ -1006,50 +1001,6 @@ MSG_HASH(
    "Sağ analog Y+ (aşağı)"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_TRIGGER,
-   "Gun Trigger"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_RELOAD,
-   "Gun Reload"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_A,
-   "Gun Aux A"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_B,
-   "Gun Aux B"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_C,
-   "Gun Aux C"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_START,
-   "Gun Start"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_SELECT,
-   "Gun Select"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_UP,
-   "Gun D-pad Up"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_DOWN,
-   "Gun D-pad Down"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_LEFT,
-   "Gun D-pad Left"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_RIGHT,
-   "Gun D-pad Right"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
    "Otomatik Konfigürasyon"
    )
@@ -1082,10 +1033,6 @@ MSG_HASH(
    "Basılı Tutmanın Zaman Aşımını"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_BIND_HOLD,
-   "Bind Hold"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BLOCK_TIMEOUT,
    "Giriş Bloğu Zaman Aşımı"
    )
@@ -1112,10 +1059,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DRIVER,
    "Girdi"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_DUTY_CYCLE,
-   "Duty Cycle"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BINDS,
@@ -1423,7 +1366,8 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_MOUSE_CURSOR,
    "Yerleşimli Fare İmlecini Göster"
-   )MSG_HASH(
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_AUTO_ROTATE,
    "Kaplamayı Otomatik Döndür"
    )
@@ -1734,10 +1678,6 @@ MSG_HASH(
    "Sert piksel kenarlarından kenarı çıkarmak için menüye hafif bir bulanıklık ekler."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_HORIZONTAL_ANIMATION,
-   "Horizontal Animation"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SETTINGS,
    "Görünüş"
    )
@@ -1786,10 +1726,6 @@ MSG_HASH(
    "Netplay"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_SLAVES,
-   "Allow Slave-Mode Clients"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_CHECK_FRAMES,
    "Netplay Kareleri Kontrol eder"
    )
@@ -1834,10 +1770,6 @@ MSG_HASH(
    "Yerel ağı tara"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_MODE,
-   "Netplay Client"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_NICKNAME,
    "Kullanıcı Adı"
    )
@@ -1852,10 +1784,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_REQUEST_DEVICE_I,
    "%u Aygıt Talebi"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_REQUIRE_SLAVES,
-   "Disallow Non-Slave-Mode Clients"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SETTINGS,
@@ -1880,14 +1808,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_DIGITAL_OR,
    "Paylaş"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_DIGITAL_XOR,
-   "Grapple"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_DIGITAL_VOTE,
-   "Vote"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_NONE,
@@ -2537,13 +2457,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REWIND_BUFFER_SIZE,
-   "Geri Sarma Arabelleği (
-   MB)"
+   "Geri Sarma Arabelleği (MB)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REWIND_BUFFER_SIZE_STEP,
-   "Geri Sarma Arabelleği Basamakları (
-   MB)"
+   "Geri Sarma Arabelleği Basamakları (MB)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REWIND_SETTINGS,
@@ -2871,13 +2789,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_HEIGHT,
-   "Display metric height (
-   Mm)"
+   "Display metric height (Mm)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_WIDTH,
-   "Display metric width (
-   Mm)"
+   "Display metric width (Mm)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DSOUND_SUPPORT,
@@ -2901,8 +2817,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FBO_SUPPORT,
-   "OpenGL/Direct3D render-to-texture (
-   Multi-pass shaders) support"
+   "OpenGL/Direct3D render-to-texture (Multi-pass shaders) support"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FFMPEG_SUPPORT,
@@ -2915,18 +2830,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_STB_TRUETYPE_SUPPORT,
    "STB TrueType Desteği"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER,
-   "Frontend identifier"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_NAME,
-   "Frontend name"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_OS,
-   "Frontend OS"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION,
@@ -2998,7 +2901,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OVERLAY_SUPPORT,
-   "Overlay support"
+   "Overlay Desteği"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE,
@@ -3133,10 +3036,6 @@ MSG_HASH(
    "Top Küçük Resim"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS,
-   "Left Thumbnails"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_RGUI,
    "Bottom Küçük Resim"
    )
@@ -3145,44 +3044,8 @@ MSG_HASH(
    "İkinci Küçük Resim"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_VERTICAL_THUMBNAILS,
-   "Thumbnails Vertical Disposition"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_INLINE_THUMBNAILS,
    "Oynatma Listesini Küçük Resimlerini Göster"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_RGUI_INLINE_THUMBNAILS,
-   "Enable display of inline downscaled thumbnails while viewing playlists. When disabled, 'Top Thumbnail' may still be toggled fullscreen by pressing RetroPad Y."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_RGUI_SWAP_THUMBNAILS,
-   "Swap Thumbnails"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_RGUI_SWAP_THUMBNAILS,
-   "Swaps the display positions of 'Top Thumbnail' and 'Bottom Thumbnail'."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_RGUI_THUMBNAIL_DOWNSCALER,
-   "Thumbnail Downscaling Method"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_RGUI_THUMBNAIL_DOWNSCALER,
-   "Resampling method used when shrinking large thumbnails to fit the display."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_THUMB_SCALE_POINT,
-   "Nearest Neighbour (Fast)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_THUMB_SCALE_BILINEAR,
-   "Bilinear"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_THUMB_SCALE_SINC,
-   "Sinc/Lanczos3 (Slow)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_NONE,
@@ -3251,10 +3114,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_FIT_SCREEN,
    "Ekrana Sığdır"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_INTEGER,
-   "Integer Scale"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS_DIRECTORY,
@@ -4384,8 +4243,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY,
-   "Daha fazla video takılma riski pahasına gecikmeyi azaltır. V-Sync'ten sonra gecikme ekler (
-   Ms cinsinden)."
+   "Daha fazla video takılma riski pahasına gecikmeyi azaltır. V-Sync'ten sonra gecikme ekler (Ms cinsinden)."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES,
@@ -5108,10 +4966,6 @@ MSG_HASH(
    "Komutlar gönderiliyor"
    )
 MSG_HASH(
-   MSG_SEVERAL_PATCHES_ARE_EXPLICITLY_DEFINED,
-   "Several patches are explicitly defined, ignoring all..."
-   )
-MSG_HASH(
    MSG_SHADER,
    "Gölgelendirici"
    )
@@ -5776,8 +5630,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REWIND_BUFFER_SIZE,
-   "Geri alma arabelleği için ayrılacak bellek miktarı (
-   MB cinsinden). Bunun arttırılması, geri sarma geçmişinin miktarını artıracaktır."
+   "Geri alma arabelleği için ayrılacak bellek miktarı (MB cinsinden). Bunun arttırılması, geri sarma geçmişinin miktarını artıracaktır."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REWIND_BUFFER_SIZE_STEP,
@@ -6326,10 +6179,6 @@ MSG_HASH(
    "Ağ gecikmesini gizlemek için kullanılabilecek giriş gecikmesi çerçevelerinin aralığı. Jitteri azaltır ve tahmin edilemeyen girdi gecikmesi pahasına netçeyi daha az CPU yoğun yapar."
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_OPTIONS,
-   "Disk image management."
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_ENUM_THROTTLE_FRAMERATE,
    "Menünün içindeyken kare hızının kapatıldığından emin olun."
    )
@@ -6639,10 +6488,6 @@ MSG_HASH(
    "Global ses karıştırıcı sesi (dB cinsinden). 0 dB normal hacimdir ve arttırma uygulanmaz."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_VOLUME,
-   "Mixer Volume Gain (dB)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_MUTE,
    "Mixer'i Sustur"
    )
@@ -6898,10 +6743,6 @@ MSG_HASH(
    "Kaydet/Yükle Konumunu Geri Almayı Göster"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
-   "Show/hide the options for undoing save/load state."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
    "Favorilere Ekle'yi Göster"
    )
@@ -7094,10 +6935,6 @@ MSG_HASH(
    "Konum yüklenemedi. RunAhead devre dışı bırakıldı."
    )
 MSG_HASH(
-   MSG_RUNAHEAD_FAILED_TO_CREATE_SECONDARY_INSTANCE,
-   "Failed to create second instance. RunAhead will now use only one instance."
-   )
-MSG_HASH(
    MSG_SCANNING_OF_FILE_FINISHED,
    "Dosyanın taranması tamamlandı"
    )
@@ -7134,30 +6971,6 @@ MSG_HASH(
    "Ekrandaki teknik istatistikleri göster."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_RGUI_BORDER_FILLER_ENABLE,
-   "Border filler"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_RGUI_BORDER_FILLER_ENABLE,
-   "Display menu border."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_RGUI_BORDER_FILLER_THICKNESS_ENABLE,
-   "Border filler thickness"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_RGUI_BORDER_FILLER_THICKNESS_ENABLE,
-   "Increase coarseness of menu border chequerboard pattern."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_RGUI_BACKGROUND_FILLER_THICKNESS_ENABLE,
-   "Background filler thickness"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_RGUI_BACKGROUND_FILLER_THICKNESS_ENABLE,
-   "Increase coarseness of menu background chequerboard pattern."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO_LOCK,
    "Menü En Boy Oranını Kilitle"
    )
@@ -7166,24 +6979,12 @@ MSG_HASH(
    "Menünün her zaman doğru en boy oranıyla görüntülenmesini sağlar. Devre dışı bırakılırsa, hızlı menü geçerli yüklü içerikle eşleşecek şekilde genişletilir."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_RGUI_INTERNAL_UPSCALE_LEVEL,
-   "Internal Upscaling"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_RGUI_INTERNAL_UPSCALE_LEVEL,
-   "Upscale menu interface before drawing to screen. When used with 'Menu Linear Filter' enabled, removes scaling artefacts (uneven pixels) while maintaining a sharp image. Has a significant performance impact that increases with upscaling level."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO,
    "Menü En Boy Oranı"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_ASPECT_RATIO,
    "Menü en boy oranını seçin. Geniş ekran oranları, menü arayüzünün yatay çözünürlüğünü arttırır. ('Menü En Boy Oranını Kilitle' devre dışı bırakılmışsa yeniden başlatmayı gerektirebilir)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_RGUI_FULL_WIDTH_LAYOUT,
-   "Use Full-Width Layout"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_FULL_WIDTH_LAYOUT,
@@ -7259,8 +7060,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_MIXER_SETTINGS,
-   "Ses karıştırıcı(
-   Mikser) ayarlarını görüntüleyin ve/veya değiştirin."
+   "Ses karıştırıcı(Mikser) ayarlarını görüntüleyin ve/veya değiştirin."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_INFO,
@@ -7712,10 +7512,6 @@ MSG_HASH(
    "Eşleşmeyi Göster #"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_MATCH,
-   "Match Address: %08X Mask: %02X"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_COPY_MATCH,
    "Kod Eşleşmesi Yaratın #"
    )
@@ -7740,58 +7536,12 @@ MSG_HASH(
    "Kod"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_HANDLER,
-   "Handler"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_MEMORY_SEARCH_SIZE,
-   "Memory Search Size"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_TYPE,
    "Tip"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_VALUE,
    "Değer"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_ADDRESS,
-   "Memory Address"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_ADDRESS_BIT_POSITION,
-   "Memory Address Mask"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_TYPE,
-   "Rumble When Memory"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_VALUE,
-   "Rumble Value"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_PORT,
-   "Rumble Port"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_PRIMARY_STRENGTH,
-   "Rumble Primary Strength"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_PRIMARY_DURATION,
-   "Rumble Primary Duration (
-   Ms)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_SECONDARY_STRENGTH,
-   "Rumble Secondary Strength"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_SECONDARY_DURATION,
-   "Rumble Secondary Duration (
-   Ms)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_REPEAT_COUNT,
@@ -7850,22 +7600,6 @@ MSG_HASH(
    "Değere Göre Düşür"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_EQ,
-   "Run next cheat if value = memory"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_NEQ,
-   "Run next cheat if value != memory"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_LT,
-   "Run next cheat if value < memory"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_GT,
-   "Run next cheat if value > memory"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_RUMBLE_TYPE_DISABLED,
    "<Devre dışı bırakıldı>"
    )
@@ -7884,30 +7618,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_RUMBLE_TYPE_DECREASE,
    "Azalttırır"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_RUMBLE_TYPE_EQ_VALUE,
-   "= Rumble Value"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_RUMBLE_TYPE_NEQ_VALUE,
-   "!= Rumble Value"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_RUMBLE_TYPE_LT_VALUE,
-   "< Rumble Value"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_RUMBLE_TYPE_GT_VALUE,
-   "> Rumble Value"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_RUMBLE_TYPE_INCREASE_BY_VALUE,
-   "Increases by Rumble Value"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_RUMBLE_TYPE_DECREASE_BY_VALUE,
-   "Decreases by Rumble Value"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_1,
@@ -9554,8 +9264,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_DAT_FILE,
-   "Taranan arcade içeriğinin (
-   MAME, FinalBurn Neo, vb.) Otomatik olarak adlandırılmasını etkinleştirmek için bir Logiqx veya MAME List XML DAT dosyası seçin."
+   "Taranan arcade içeriğinin (MAME, FinalBurn Neo, vb.) Otomatik olarak adlandırılmasını etkinleştirmek için bir Logiqx veya MAME List XML DAT dosyası seçin."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_OVERWRITE,
@@ -9688,10 +9397,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_SYNCHRONIZATION_SETTINGS,
    "Ses senkronizasyonu ayarlarını değiştirin."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_SETTINGS,
-   "Resampler"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_SETTINGS,
