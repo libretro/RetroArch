@@ -2073,13 +2073,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REWIND_BUFFER_SIZE,
-   "回溯缓冲区大小 (
-   MB)"
+   "回溯缓冲区大小 (MB)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REWIND_BUFFER_SIZE_STEP,
-   "回溯缓冲区大小步长 (
-   MB)"
+   "回溯缓冲区大小步长 (MB)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REWIND_SETTINGS,
