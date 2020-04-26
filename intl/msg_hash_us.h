@@ -2450,7 +2450,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RUN_AHEAD_HIDE_WARNINGS,
-   "Hides the warning message that appears when using Run-Ahead and the core does not support savestates."
+   "Hides the warning message that appears when using Run-Ahead and the core does not support save states."
    )
 
 /* Settings > Core */
@@ -2587,7 +2587,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_INDEX,
-   "When making a savestate, save state index is automatically increased before it is saved. When loading content, the index will be set to the highest existing index."
+   "When making a save state, save state index is automatically increased before it is saved. When loading content, the index will be set to the highest existing index."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
@@ -2595,7 +2595,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_SAVE,
-   "Automatically makes a savestate at the end of RetroArch's runtime. RetroArch will automatically load this savestate if 'Auto Load State' is enabled."
+   "Automatically makes a save state at the end of RetroArch's runtime. RetroArch will automatically load this save state if 'Auto Load State' is enabled."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD,
@@ -4095,7 +4095,7 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_HARDCORE_MODE_ENABLE,
    "Double the amount of points earned.\n"
-   "Disables savestates, cheats, rewind, pause, and slow-motion for all games.\n"
+   "Disables save states, cheats, rewind, pause, and slow-motion for all games.\n"
    "Toggling this setting at runtime will restart your game."
    )
 MSG_HASH(
@@ -4855,7 +4855,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_DIRECTORY,
-   "Savestate"
+   "Save State"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_DIRECTORY,
@@ -6006,7 +6006,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ACHIEVEMENT_PAUSE,
-   "Pause achievements for current session (This action will enable savestates, cheats, rewind, pause, and slow-motion)."
+   "Pause achievements for current session (This action will enable save states, cheats, rewind, pause, and slow-motion)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME,
@@ -6014,7 +6014,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME,
-   "Resume achievements for current session (This action will disable savestates, cheats, rewind, pause, and slow-motion and reset the current game)."
+   "Resume achievements for current session (This action will disable save states, cheats, rewind, pause, and slow-motion and reset the current game)."
    )
 
 /* Quick Menu > Information */
@@ -9439,7 +9439,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_AUTOLOADING_SAVESTATE_FROM,
-   "Auto-loading savestate from"
+   "Auto-loading save state from"
    )
 MSG_HASH(
    MSG_CAPABILITIES,
@@ -9595,7 +9595,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_MODE_ENABLE,
-   "Achievements Hardcore Mode Enabled, savestate & rewind were disabled."
+   "Achievements Hardcore Mode Enabled, save state & rewind were disabled."
    )
 MSG_HASH(
    MSG_COMPARING_WITH_KNOWN_MAGIC_NUMBERS,
@@ -9915,7 +9915,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FOUND_AUTO_SAVESTATE_IN,
-   "Found auto savestate in"
+   "Found auto save state in"
    )
 MSG_HASH(
    MSG_FOUND_DISK_LABEL,
@@ -10127,7 +10127,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_REDIRECTING_SAVESTATE_TO,
-   "Redirecting savestate to"
+   "Redirecting save state to"
    )
 MSG_HASH(
    MSG_REMAP_FILE_SAVED_SUCCESSFULLY,
@@ -10167,7 +10167,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_REVERTING_SAVESTATE_DIRECTORY_TO,
-   "Reverting savestate directory to"
+   "Reverting save state directory to"
    )
 MSG_HASH(
    MSG_REWINDING,
@@ -10543,7 +10543,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_MODE_DISABLED,
-   "A savestate was loaded, Achievements Hardcore Mode disabled for the current session. Restart to enable hardcore mode."
+   "A save state was loaded, Achievements Hardcore Mode disabled for the current session. Restart to enable hardcore mode."
    )
 MSG_HASH(
    MSG_RESAMPLER_QUALITY_LOWEST,
