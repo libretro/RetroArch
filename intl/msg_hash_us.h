@@ -7,7 +7,7 @@
 #endif
 
 /* Top-level Menu */
-   
+
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MAIN_MENU,
    "Main Menu"
@@ -5784,7 +5784,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_TRAY_INSERT,
-   "Inserts disc corresponding to 'Current Disc Index' and closes virtual disc tray. NOTE: If RetroArch is configured to pause while menu is active, some cores may not register changes unless content is resumed for a few seconds after each disk control action."
+   "Inserts disc corresponding to 'Current Disc Index' and closes virtual disc tray. NOTE: If RetroArch is configured to pause while menu is active, some cores may not register changes unless content is resumed for a few seconds after each disc control action."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
