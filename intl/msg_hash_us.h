@@ -1499,11 +1499,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO,
-   "Config Aspect Ratio"
+   "Custom Aspect Ratio"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO,
-   "Floating point value for video aspect ratio (width / height), used if the Aspect Ratio is set to 'Config Aspect Ratio'."
+   "Floating point value for video aspect ratio (width / height), used if the Aspect Ratio is set to 'Custom Aspect Ratio'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_X,
