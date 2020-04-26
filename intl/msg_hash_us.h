@@ -1527,7 +1527,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH,
-   "Custom viewport width that is used if the Aspect Ratio is set to 'Custom'."
+   "Custom viewport width that is used if the Aspect Ratio is set to 'Custom Aspect Ratio'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
@@ -1535,7 +1535,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
-   "Custom viewport height that is used if the Aspect Ratio is set to 'Custom'."
+   "Custom viewport height that is used if the Aspect Ratio is set to 'Custom Aspect Ratio'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_CROP_OVERSCAN,
