@@ -1431,8 +1431,8 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD,
    "Turbo Aralığı"
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS, /* TODO/FIXME - Change user to port */
+MSG_HASH( /* FIXME Change user to port */
+   MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
    "Kullanıcı %u Atamaları"
    )
 MSG_HASH(
@@ -4177,8 +4177,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_SETTINGS,
    "Joypad, klavye ve fare ayarlarını değiştirin."
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_USER_BINDS, /* TODO/FIXME - change user to port */
+MSG_HASH( /* FIXME Change user to port */
+   MENU_ENUM_SUBLABEL_INPUT_USER_BINDS,
    "Bu kullanıcı için kontrolleri yapılandırın."
    )
 MSG_HASH(
@@ -8716,8 +8716,8 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_ENABLE,
    "AI Servisi Etkinleştirildi"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AI_SERVICE_MODE, /* TODO/FIXME - update this - see US original */
+MSG_HASH( /* FIXME Update this - see US original */
+   MENU_ENUM_SUBLABEL_AI_SERVICE_MODE,
    "Çeviri sırasında oyunu duraklatır (Görüntü modu) veya çalışmaya devam eder (Konuşma modu)"
    )
 MSG_HASH(

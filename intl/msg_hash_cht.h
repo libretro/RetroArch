@@ -90,9 +90,9 @@ MSG_HASH(
    MSG_NETPLAY_CANNOT_PLAY_UNPRIVILEGED,
    "你沒有遊戲權限"
    )
-MSG_HASH(
+MSG_HASH( /* FIXME There are no free player slots */
    MSG_NETPLAY_CANNOT_PLAY_NO_SLOTS,
-   "連線遊戲人數已滿" /*FIXME:"There are no free player slots"*/
+   "連線遊戲人數已滿"
    )
 MSG_HASH(
    MSG_NETPLAY_CANNOT_PLAY,
@@ -169,7 +169,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_SETTINGS,
-   "Cheevos帳戶" /*FIXME:"Accounts Cheevos"*/
+   "Cheevos帳戶"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_USERNAME,
@@ -194,7 +194,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST_HARDCORE,
-   "成就列表（專家模式）" /*FIXME:"Achievement List (Hardcore)"*/
+   "成就列表（專家模式）"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST,
@@ -220,9 +220,9 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ASSETS_DIRECTORY,
    "資源目錄"
    )
-MSG_HASH(
+MSG_HASH( /* FIXME Block Frames */
    MENU_ENUM_LABEL_VALUE_AUDIO_BLOCK_FRAMES,
-   "塊幀" /*FIXME:"Block Frames"*/
+   "塊幀"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE,
@@ -418,17 +418,16 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_FILE_SAVE_AS,
    "另存金手指文件"
    )
-MSG_HASH(
+MSG_HASH( /* FIXME Cheat Passes */
    MENU_ENUM_LABEL_VALUE_CHEAT_NUM_PASSES,
-   "金手指通過" /*FIXME: "Cheat Passes"*/
+   "金手指通過"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_DESCRIPTION,
    "描述"
    )
-MSG_HASH(
+MSG_HASH( /* FIXME? Translate 'Hardcore Mode' */
    MENU_ENUM_LABEL_VALUE_CHEEVOS_HARDCORE_MODE_ENABLE,
-/* FIXME? Translate 'Hardcore Mode' */
    "成就-專家模式"
    )
 MSG_HASH(
@@ -439,9 +438,8 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_SETTINGS,
    "Retro 成就"
    )
-MSG_HASH(
+MSG_HASH( /* FIXME? Translate 'Test Unofficial Achievements' */
    MENU_ENUM_LABEL_VALUE_CHEEVOS_TEST_UNOFFICIAL,
-/* FIXME? Translate 'Test Unofficial Achievements' */
    "非官方測試成就"
    )
 MSG_HASH(
@@ -624,10 +622,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DELETE_ENTRY,
    "移除"
    )
-MSG_HASH(
+MSG_HASH( /* FIXME Update */
    MENU_ENUM_LABEL_VALUE_FAVORITES,
    "選擇文件並探測核心"
-   ) /* TODO/FIXME - update */
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DIRECTORY_CONTENT,
    "<遊戲內容目錄>"
@@ -676,15 +674,14 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS,
    "驅動"
    )
-MSG_HASH(
+MSG_HASH( /* FIXME? Translate 'Load Dummy on Core Shutdown' */
    MENU_ENUM_LABEL_VALUE_DUMMY_ON_CORE_SHUTDOWN,
-/* FIXME? Translate 'Load Dummy on Core Shutdown' */
    "核心關閉時戴入虛擬程序"
    )
-MSG_HASH(
+MSG_HASH( /*FIXME Check for Missing Firmware Before Loading */
    MENU_ENUM_LABEL_VALUE_CHECK_FOR_MISSING_FIRMWARE,
    "載入前檢查韌體/BIOS是否存在"
-   ) /*FIXME: "Check for Missing Firmware Before Loading"*/
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPER,
    "動態壁紙"
@@ -693,9 +690,8 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPERS_DIRECTORY,
    "動態壁紙目錄"
    )
-MSG_HASH(
+MSG_HASH( /* FIXME? Translate 'Enable Achievements' */
    MENU_ENUM_LABEL_VALUE_CHEEVOS_ENABLE,
-/* FIXME? Translate 'Enable Achievements' */
    "啟用成就系統"
    )
 MSG_HASH(
@@ -850,10 +846,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
    "啟用自動設定"
    )
-MSG_HASH(
+MSG_HASH( /* FIXME Menu Swap OK & Cancel Buttons */
    MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
    "選單切換 確定/取消 按鈕"
-   ) /*FIXME:"Menu Swap OK & Cancel Buttons"*/
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BIND_ALL,
    "綁定全部"
@@ -962,10 +958,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_Y,
    "Y鍵(左側)"
    )
-MSG_HASH(
+MSG_HASH( /*FIXME (Key: %s) */
    MENU_ENUM_LABEL_VALUE_INPUT_KEY,
    "(鍵: %s)"
-   ) /*FIXME:"(Key: %s)"*/
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE,
    "鍵盤控制器映射類型"
@@ -1174,8 +1170,8 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD,
    "Turbo區間"
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS, /* TODO/FIXME - change User to Port */
+MSG_HASH( /* FIXME Change User to Port */
+   MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
    "輸入用戶 %u 的綁定"
    )
 MSG_HASH(
@@ -2403,8 +2399,8 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT,
    "截取營幕"
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_THREADED_DATA_RUNLOOP_ENABLE, /* TODO/FIXME - update */
+MSG_HASH( /* FIXME Update */
+   MENU_ENUM_LABEL_VALUE_THREADED_DATA_RUNLOOP_ENABLE,
    "啟用多線程數據執行循環"
    )
 MSG_HASH(
@@ -2979,8 +2975,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_SETTINGS,
    "調整遊戲控制器、鍵盤和鼠標的設定。"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_USER_BINDS, /* TODO/FIXME - change user to port */
+MSG_HASH( /* FIXME Change user to port */
+   MENU_ENUM_SUBLABEL_INPUT_USER_BINDS,
    "設定該用戶的控制選項。"
    )
 MSG_HASH(

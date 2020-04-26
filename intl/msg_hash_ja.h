@@ -1423,8 +1423,8 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD,
    "ターボの期間"
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS, /* TODO/FIXME - Change user to port */
+MSG_HASH( /* FIXME Change user to port */
+   MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
    "入力ユーザ%uのバインド"
    )
 MSG_HASH(
@@ -7827,8 +7827,8 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_ENABLE,
    "AIサービス有効"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AI_SERVICE_MODE, /* TODO/FIXME - update this - see US original */
+MSG_HASH( /* FIXME Update this - see US original */
+   MENU_ENUM_SUBLABEL_AI_SERVICE_MODE,
    "'Image mode'は翻訳中にゲームを一時停止, 'Speech mode'は実行継続します。"
    )
 MSG_HASH(

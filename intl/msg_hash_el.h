@@ -1288,8 +1288,8 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ENABLE,
    "Ενεργοποίηση Turbo"
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS, /* TODO/FIXME - Change User to Port */
+MSG_HASH( /* FIXME Change User to Port */
+   MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
    "Σύνδεση Πλήκτρων Εισόδου Χρήστη %u"
    )
 MSG_HASH(
@@ -3030,8 +3030,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_SETTINGS,
    "Αλλαγή ρυθμίσεων χειριστηρίου, πληκτρολογίου και ποντικιού."
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_USER_BINDS, /* TODO/FIXME - change user to port */
+MSG_HASH( /* FIXME Change user to port */
+   MENU_ENUM_SUBLABEL_INPUT_USER_BINDS,
    "Διαμόρφωση χειρισμών για αυτόν τον χρήστη."
    )
 MSG_HASH(
@@ -3796,9 +3796,9 @@ MSG_HASH(
    MSG_AUDIO_MIXER_VOLUME,
    "Γενική ένταση μίκτη ήχου"
    )
-MSG_HASH(
+MSG_HASH( /* FIXME Need a good translation for gain if there's any */
    MENU_ENUM_SUBLABEL_AUDIO_MIXER_VOLUME,
-   "Γενική ένταση μίκτη ήχου (σε dB). Το 0 είναι η φυσιολογική ένταση και δεν εφαρμόζεται gain." /*Need a good translation for gain if there's any*/
+   "Γενική ένταση μίκτη ήχου (σε dB). Το 0 είναι η φυσιολογική ένταση και δεν εφαρμόζεται gain."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_VOLUME,

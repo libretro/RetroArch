@@ -177,7 +177,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_SETTINGS,
-   "Cheevos 账户设置" /*FIXME:"Accounts Cheevos"*/    /*Should be fixed now, not sure though*/
+   "Cheevos 账户设置"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_USERNAME,
@@ -228,9 +228,9 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ASSETS_DIRECTORY,
    "资源文件夹"
    )
-MSG_HASH(
+MSG_HASH( /* FIXME Block Frames */
    MENU_ENUM_LABEL_VALUE_AUDIO_BLOCK_FRAMES,
-   "块帧" /*FIXME:"Block Frames"*/
+   "块帧"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE,
@@ -654,10 +654,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DELETE_ENTRY,
    "移除"
    )
-MSG_HASH(
+MSG_HASH( /* FIXME Update */
    MENU_ENUM_LABEL_VALUE_FAVORITES,
    "选择文件并选择核心"
-   ) /* TODO/FIXME - update */
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DIRECTORY_CONTENT,
    "<游戏内容文件夹>"
@@ -1222,8 +1222,8 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD,
    "连发按键频率"
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS, /* TODO/FIXME - change User to Port */
+MSG_HASH( /* FIXME Change User to Port */
+   MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
    "输入用户 %u 的绑定"
    )
 MSG_HASH(
@@ -2599,8 +2599,8 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT,
    "截图"
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_THREADED_DATA_RUNLOOP_ENABLE, /* TODO/FIXME - update */
+MSG_HASH( /* FIXME Update */
+   MENU_ENUM_LABEL_VALUE_THREADED_DATA_RUNLOOP_ENABLE,
    "启用多线程数据执行循环"
    )
 MSG_HASH(
@@ -3371,8 +3371,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_SETTINGS,
    "调整游戏控制器、键盘和鼠标的设置。"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_USER_BINDS, /* TODO/FIXME - change user to port */
+MSG_HASH( /* FIXME Change user to port */
+   MENU_ENUM_SUBLABEL_INPUT_USER_BINDS,
    "配置该用户的控制选项。"
    )
 MSG_HASH(

@@ -3145,8 +3145,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_SETTINGS,
    "Einstellungen für Joypads, Tastaturen und Mäuse."
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_USER_BINDS, /* TODO/FIXME - change user to port */
+MSG_HASH( /* FIXME Change user to port */
+   MENU_ENUM_SUBLABEL_INPUT_USER_BINDS,
    "Steuerung für diesen Benutzer konfigurieren."
    )
 MSG_HASH(
@@ -3297,10 +3297,10 @@ MSG_HASH(
    MSG_BYTES,
    "Bytes"
    )
-MSG_HASH(
+MSG_HASH( /* FIXME Huh? */
    MSG_CANNOT_INFER_NEW_CONFIG_PATH,
    "Kann neuen Konfigurationspfad nicht ableiten. Verwende aktuelle Zeit."
-   ) /* huh?*/
+   )
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_MODE_ENABLE,
    "Hardcore-Modus aktiviert. Spielstände & die Rückspul-Funktion wurden ausgeschaltet."
@@ -3997,10 +3997,10 @@ MSG_HASH(
    MSG_USING_LIBRETRO_DUMMY_CORE_RECORDING_SKIPPED,
    "Verwende libretro-Dumy-Core. Überspringe Aufzeichnung."
    )
-MSG_HASH(
+MSG_HASH( /* FIXME Sounds odd, maybe improper translation */
    MSG_VALUE_CONNECT_DEVICE_FROM_A_VALID_PORT,
    "Verbinde Gerät mit einem gültigen Anschluss."
-   ) /* sounds odd, maybe improper translation*/
+   )
 MSG_HASH(
    MSG_VALUE_DISCONNECTING_DEVICE_FROM_PORT,
    "Trenne Gerät von Anschluss"
@@ -4133,9 +4133,9 @@ MSG_HASH(
    MSG_DEVICE_NOT_CONFIGURED_FALLBACK,
    "nicht konfiguriert, verwende Rückfalloption"
    )
-MSG_HASH(
+MSG_HASH( /* FIXME Might be inaccurate */
    MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST,
-   "Datenbank-Suchanfragen" /* might be inaccurate */
+   "Datenbank-Suchanfragen"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_DEVELOPER,
@@ -4733,10 +4733,10 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_DATABASE_MANAGER,
    "Betrachte Datenbanken."
    )
-MSG_HASH(
+MSG_HASH( /* FIXME Maybe sloppy */
    MENU_ENUM_SUBLABEL_CURSOR_MANAGER,
    "Betrachte vorherige Suchanfragen."
-   ) /* Maybe sloppy */
+   )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_TAKE_SCREENSHOT,
    "Fertigt ein Foto des Bildschirms an."
@@ -5065,9 +5065,9 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_FILE_LOAD,
    "Lade eine Cheat-Datei."
    )
-MSG_HASH(
+MSG_HASH( /* FIXME More context */
    MENU_ENUM_SUBLABEL_CHEAT_FILE_SAVE_AS,
-   "Speichere die aktuellen Cheats." /*TODO: More context*/
+   "Speichere die aktuellen Cheats."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SETTINGS,
