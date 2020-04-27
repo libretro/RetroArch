@@ -278,6 +278,7 @@ enum retro_language
    RETRO_LANGUAGE_ARABIC              = 16,
    RETRO_LANGUAGE_GREEK               = 17,
    RETRO_LANGUAGE_TURKISH             = 18,
+   RETRO_LANGUAGE_SLOVAK              = 19,
    RETRO_LANGUAGE_LAST,
 
    /* Ensure sizeof(enum) == sizeof(int) */
@@ -1087,10 +1088,10 @@ enum retro_mod
 
 #define RETRO_ENVIRONMENT_GET_TARGET_REFRESH_RATE (50 | RETRO_ENVIRONMENT_EXPERIMENTAL)
                                             /* float * --
-                                            * Float value that lets us know what target refresh rate 
+                                            * Float value that lets us know what target refresh rate
                                             * is curently in use by the frontend.
                                             *
-                                            * The core can use the returned value to set an ideal 
+                                            * The core can use the returned value to set an ideal
                                             * refresh rate/framerate.
                                             */
 
@@ -1098,7 +1099,7 @@ enum retro_mod
                                             /* bool * --
                                             * Boolean value that indicates whether or not the frontend supports
                                             * input bitmasks being returned by retro_input_state_t. The advantage
-                                            * of this is that retro_input_state_t has to be only called once to 
+                                            * of this is that retro_input_state_t has to be only called once to
                                             * grab all button states instead of multiple times.
                                             *
                                             * If it returns true, you can pass RETRO_DEVICE_ID_JOYPAD_MASK as 'id'

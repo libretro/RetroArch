@@ -1144,6 +1144,7 @@ RETROARCH
 #include "../intl/msg_hash_ar.c"
 #include "../intl/msg_hash_el.c"
 #include "../intl/msg_hash_tr.c"
+#include "../intl/msg_hash_sk.c"
 #endif
 
 #include "../intl/msg_hash_us.c"

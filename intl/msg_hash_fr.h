@@ -759,14 +759,6 @@ MSG_HASH(
    "Nom"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DESCRIPTION,
-   "Description"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_GENRE,
-   "Genre"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PUBLISHER,
    "Éditeur"
    )
@@ -777,10 +769,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ORIGIN,
    "Origine"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_FRANCHISE,
-   "Franchise"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_TGDB_RATING,
@@ -850,18 +838,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_COOP,
    "Coopératif pris en charge"
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CRC32,
-   "CRC32"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SHA1,
-   "SHA1"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_MD5,
-   "MD5"
-   )
 
 /* Main Menu > Configuration File */
 
@@ -906,10 +882,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_CONFIRM,
    "Confirmer"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_INFO,
-   "Info"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_START,
@@ -977,10 +949,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_SETTINGS,
    "Modifier les réglages du cœur."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONFIGURATION_SETTINGS,
-   "Configuration"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONFIGURATION_SETTINGS,
@@ -1633,10 +1601,6 @@ MSG_HASH(
    "Changer les réglages de la synchronisation audio."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MIDI_SETTINGS,
-   "MIDI"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MIDI_SETTINGS,
    "Modifier les réglages MIDI."
    )
@@ -1809,10 +1773,6 @@ MSG_HASH(
    "Sélectionner le périphérique de sortie."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MIDI_VOLUME,
-   "Volume"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MIDI_VOLUME,
    "Régler le volume de sortie (%)."
    )
@@ -1858,10 +1818,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MIXER_ACTION_REMOVE,
    "Cela arrêtera la lecture du flux audio et le supprimera entièrement de la mémoire."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MIXER_ACTION_VOLUME,
-   "Volume"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MIXER_ACTION_VOLUME,
@@ -2195,14 +2151,6 @@ MSG_HASH(
    "Raccourcis"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_VOLUME_UP,
-   "Volume +"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_VOLUME_DOWN,
-   "Volume -"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_OVERLAY_NEXT,
    "Surimpression suivante"
    )
@@ -2416,10 +2364,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_RIGHT,
    "Croix pistolet Droite"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ENABLE,
-   "Turbo"
    )
 
 /* Settings > Latency */
@@ -4613,14 +4557,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_ACCOUNTS_RETRO_ACHIEVEMENTS,
    "Service de RetroSuccès (RetroAchievements). Pour plus d'informations, veuillez visiter http://retroachievements.org"
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ACCOUNTS_YOUTUBE,
-   "YouTube"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ACCOUNTS_TWITCH,
-   "Twitch"
-   )
 
 /* Settings > User > Accounts > RetroAchievements */
 
@@ -5282,10 +5218,6 @@ MSG_HASH(
    "Arrête le streaming."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_OPTIONS,
-   "Options"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_OPTIONS,
    "Modifier les options pour le contenu en cours d'exécution."
    )
@@ -5298,10 +5230,6 @@ MSG_HASH(
    "Modifier les contrôles pour le contenu en cours d'exécution."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_CHEAT_OPTIONS,
-   "Cheats"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_CHEAT_OPTIONS,
    "Configurer des cheat codes."
    )
@@ -5312,10 +5240,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_OPTIONS,
    "Gestionnaire d'images disque."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SHADER_OPTIONS,
-   "Shaders"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SHADER_OPTIONS,
@@ -5390,10 +5314,6 @@ MSG_HASH(
    "Lancer/continuer la recherche de cheats"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEAT_START_OR_CONT,
-   ""
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD,
    "Charger des cheats (Remplacer)"
    )
@@ -5414,10 +5334,6 @@ MSG_HASH(
    "Recharger les cheats du jeu"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEAT_RELOAD_CHEATS,
-   ""
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_FILE_SAVE_AS,
    "Enregistrer les cheats sous"
    )
@@ -5430,24 +5346,12 @@ MSG_HASH(
    "Ajouter un nouveau code (en haut)"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEAT_ADD_NEW_TOP,
-   ""
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_BOTTOM,
    "Ajouter un nouveau code (en bas)"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEAT_ADD_NEW_BOTTOM,
-   ""
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_ALL,
    "Supprimer tous les codes"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEAT_DELETE_ALL,
-   ""
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_AFTER_LOAD,
@@ -5472,10 +5376,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_APPLY_CHANGES,
    "Les changements du cheat prendront effet immédiatement."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT,
-   "Cheat"
    )
 
 /* Quick Menu > Cheats > Start or Continue Cheat Search */
@@ -5514,20 +5414,12 @@ MSG_HASH(
    "Recherche d'une valeur mémoire"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEAT_SEARCH_LT,
-   ""
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_SEARCH_LT_VAL,
    "Inférieure à la précédente"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_LTE,
    "Recherche d'une valeur mémoire"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEAT_SEARCH_LTE,
-   ""
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_SEARCH_LTE_VAL,
@@ -5538,20 +5430,12 @@ MSG_HASH(
    "Recherche d'une valeur mémoire"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEAT_SEARCH_GT,
-   ""
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_SEARCH_GT_VAL,
    "Supérieure à la précédente"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_GTE,
    "Recherche d'une valeur mémoire"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEAT_SEARCH_GTE,
-   ""
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_SEARCH_GTE_VAL,
@@ -5562,20 +5446,12 @@ MSG_HASH(
    "Recherche d'une valeur mémoire"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEAT_SEARCH_EQ,
-   ""
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_SEARCH_EQ_VAL,
    "Égale à la précédente"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_NEQ,
    "Recherche d'une valeur mémoire"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEAT_SEARCH_NEQ,
-   ""
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_SEARCH_NEQ_VAL,
@@ -5608,10 +5484,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_ADD_MATCHES,
    "Ajouter les %u correspondances à votre liste"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEAT_ADD_MATCHES,
-   ""
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_MATCH,
@@ -5647,10 +5519,6 @@ MSG_HASH(
    "Détails des cheats"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_IDX,
-   "Index"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_IDX,
    "Position d'index dans la liste."
    )
@@ -5659,20 +5527,12 @@ MSG_HASH(
    "Activé"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_DESC,
-   "Description"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_HANDLER,
    "Gestionnaire"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_MEMORY_SEARCH_SIZE,
    "Taille de la recherche dans la mémoire"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_TYPE,
-   "Type"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_VALUE,
@@ -5746,10 +5606,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_SECONDARY_DURATION,
    "Durée secondaire de la vibration (ms)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_CODE,
-   "Code"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_AFTER,
@@ -5868,10 +5724,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_NUM_PASSES,
    "Augmenter ou diminuer le nombre de passages du pipeline des shaders. Vous pouvez assigner un shader distinct à chaque passage du pipeline et configurer son échelle et son mode de filtrage."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SHADER,
-   "Shader"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FILTER,
@@ -6119,20 +5971,12 @@ MSG_HASH(
    "Aucun élément."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MORE,
-   "..."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SELECT_FILE,
    "Sélectionner un fichier"
    )
 
 /* Settings Options */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_AFRIKAANS,
-   "Afrikaans"
-   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_ALBANIAN,
    "Albanais"
@@ -6146,20 +5990,8 @@ MSG_HASH(
    "Azerbaïdjanais"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_BASQUE,
-   "Basque"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_BENGALI,
-   "Bengali"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_BULGARIAN,
    "Bulgare"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_CATALAN,
-   "Catalan"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_CHINESE_SIMPLIFIED,
@@ -6226,20 +6058,12 @@ MSG_HASH(
    "Grec"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_GUJARATI,
-   "Gujarati"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_HAITIAN_CREOLE,
    "Créole haïtien"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_HEBREW,
    "Hébreu"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_HINDI,
-   "Hindi"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_HUNGARIAN,
@@ -6266,16 +6090,8 @@ MSG_HASH(
    "Japonais"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_KANNADA,
-   "Kannada"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_KOREAN,
    "Coréen"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_LATIN,
-   "Latin"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_LATVIAN,
@@ -6342,20 +6158,8 @@ MSG_HASH(
    "Espagnol"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_SWAHILI,
-   "Swahili"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_SWEDISH,
    "Suédois"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_TAMIL,
-   "Tamil"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_TELUGU,
-   "Telugu"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_THAI,
@@ -6380,10 +6184,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_WELSH,
    "Gallois"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_YIDDISH,
-   "Yiddish"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_DIGITAL_OR,
@@ -6574,70 +6374,6 @@ MSG_HASH(
    "Diminue par la valeur de vibration"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_RUMBLE_PORT_0,
-   "1"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_RUMBLE_PORT_1,
-   "2"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_RUMBLE_PORT_2,
-   "3"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_RUMBLE_PORT_3,
-   "4"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_RUMBLE_PORT_4,
-   "5"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_RUMBLE_PORT_5,
-   "6"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_RUMBLE_PORT_6,
-   "7"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_RUMBLE_PORT_7,
-   "8"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_RUMBLE_PORT_8,
-   "9"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_RUMBLE_PORT_9,
-   "10"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_RUMBLE_PORT_10,
-   "11"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_RUMBLE_PORT_11,
-   "12"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_RUMBLE_PORT_12,
-   "13"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_RUMBLE_PORT_13,
-   "14"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_RUMBLE_PORT_14,
-   "15"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_RUMBLE_PORT_15,
-   "16"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_RUMBLE_PORT_16,
    "Tous"
    )
@@ -6676,10 +6412,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_HANDLER_TYPE_EMU,
    "Emulateur"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_CHEAT_HANDLER_TYPE_RETRO,
-   "RetroArch"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_1,
@@ -6812,10 +6544,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ENTRY,
    "Débloqué"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ENTRY_HARDCORE,
-   "Hardcore"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_UNOFFICIAL_ENTRY,
@@ -6966,14 +6694,6 @@ MSG_HASH(
    "JJ/MM"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_HMS,
-   "HH:MM:SS"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_HM,
-   "HH:MM"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_YMD_HMS_AM_PM,
    "AAAA-MM-JJ HH:MM:SS (AM/PM)"
    )
@@ -7004,14 +6724,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_DDMM_HM_AM_PM,
    "JJ/MM HH:MM (AM/PM)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_HMS_AM_PM,
-   "HH:MM:SS (AM/PM)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_HM_AM_PM,
-   "HH:MM (AM/PM)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE_YMD_HMS,
@@ -7276,56 +6988,8 @@ MSG_HASH(
    "Aucune"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_AUTO,
-   "Auto"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_X2,
-   "x2"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_X3,
-   "x3"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_X4,
-   "x4"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_X5,
-   "x5"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_X6,
-   "x6"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_X7,
-   "x7"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_X8,
-   "x8"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_X9,
-   "x9"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_4_3,
-   "4:3"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_16_9,
-   "16:9"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_16_9_CENTRE,
    "16:9 (Centré)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_16_10,
-   "16:10"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_16_10_CENTRE,
@@ -7412,10 +7076,6 @@ MSG_HASH(
    "Brogrammeur"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_DRACULA,
-   "Dracula"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_FAIRYFLOSS,
    "Soie de fée"
    )
@@ -7436,22 +7096,6 @@ MSG_HASH(
    "Pirater le kernel"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_NORD,
-   "Nord"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_NOVA,
-   "Nova"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_ONE_DARK,
-   "One Dark"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_PALENIGHT,
-   "Palenight"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_SOLARIZED_DARK,
    "Solarisé sombre"
    )
@@ -7468,18 +7112,6 @@ MSG_HASH(
    "Tango clair"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_ZENBURN,
-   "Zenburn"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_ANTI_ZENBURN,
-   "Anti-Zenburn"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_FLUX,
-   "Flux"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_NONE,
    "Désactivée"
    )
@@ -7494,10 +7126,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_RAIN,
    "Pluie"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_VORTEX,
-   "Vortex"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_STARFIELD,
@@ -7663,10 +7291,6 @@ MSG_HASH(
    "Neige"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_BOKEH,
-   "Bokeh"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_SNOWFLAKE,
    "Flocon de neige"
    )
@@ -7679,10 +7303,6 @@ MSG_HASH(
    "Minimaliste"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_MONOCHROME,
-   "Monochrome"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_MONOCHROME_INVERTED,
    "Monochrome inversé"
    )
@@ -7693,10 +7313,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_NEOACTIVE,
    "NéoActif"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_PIXEL,
-   "Pixel"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_RETROACTIVE,
@@ -7794,10 +7410,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_ICE_COLD,
    "Glacial"
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_MIDGAR,
-   "Midgar"
-   )
 
 /* Ozone: Settings > User Interface > Appearance */
 
@@ -7832,10 +7444,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BASIC_BLACK,
    "Noir basique"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_NORD,
-   "Nord"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_GRUVBOX_DARK,
@@ -7988,20 +7596,12 @@ MSG_HASH(
    "Jaune"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_MATERIALUI,
-   "Material UI"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_MATERIALUI_DARK,
    "Material UI sombre"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_OZONE_DARK,
    "Ozone sombre"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_NORD,
-   "Nord"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_GRUVBOX_DARK,
@@ -8038,14 +7638,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_CUTIE_RED,
    "Cutie rouge"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_VIRTUAL_BOY,
-   "Virtual Boy"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIM_AUTO,
-   "Auto"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIM_FADE,
@@ -8195,10 +7787,6 @@ MSG_HASH(
    "À propos de RetroArch"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_DOCUMENTATION,
-   "Documentation"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_LOAD_CUSTOM_CORE,
    "Charger un cœur personnalisé..."
    )
@@ -8213,10 +7801,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_NAME,
    "Nom"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_CORE_VERSION,
-   "Version"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_TAB_PLAYLISTS,
@@ -8417,10 +8001,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_CONFIRM_DELETE_PLAYLIST,
    "Êtes-vous sûr de vouloir supprimer la liste de lecture \"%1\"?"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_QUESTION,
-   "Question"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_DELETE_FILE,
@@ -8666,10 +8246,6 @@ MSG_HASH(
    "Point de terminaison de la liste des comptes"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_TURBO_DEADZONE_LIST,
-   "Turbo/Deadzone"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_SETTINGS,
    "RetroSuccès"
    )
@@ -8732,10 +8308,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONLINE,
    "En ligne"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PORT,
-   "Port"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_SETTINGS,
@@ -8885,24 +8457,12 @@ MSG_HASH(
    "Voir la liste des %u correspondances"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEAT_VIEW_MATCHES,
-   ""
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_CREATE_OPTION,
    "Créer un code à partir de cette correspondance"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEAT_CREATE_OPTION,
-   ""
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_OPTION,
    "Supprimer cette correspondance"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEAT_DELETE_OPTION,
-   ""
    )
 MSG_HASH( /* FIXME Still exists in a comment about being removed */
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_FOOTER_OPACITY,
@@ -8995,10 +8555,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SPECTATOR_MODE_ENABLE,
    "Spectateur de jeu en réseau"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_DESCRIPTION,
-   "Description"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_ENABLE,
@@ -9284,10 +8840,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_SORRY_UNIMPLEMENTED_CORES_DONT_DEMAND_CONTENT_NETPLAY,
    "Désolé, non implémenté : les cœurs qui ne demandent pas de contenu ne peuvent pas participer au jeu en réseau."
-   )
-MSG_HASH(
-   MSG_NATIVE,
-   "Native"
    )
 MSG_HASH(
    MSG_DEVICE_DISCONNECTED_FROM_PORT,
@@ -9982,10 +9534,6 @@ MSG_HASH(
    "Entrez le nouveau nom"
    )
 MSG_HASH(
-   MSG_INTERFACE,
-   "Interface"
-   )
-MSG_HASH(
    MSG_INTERNAL_STORAGE,
    "Stockage interne"
    )
@@ -10096,10 +9644,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_PAUSED,
    "En pause."
-   )
-MSG_HASH(
-   MSG_PROGRAM,
-   "RetroArch"
    )
 MSG_HASH(
    MSG_READING_FIRST_DATA_TRACK,
@@ -10228,10 +9772,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_SEVERAL_PATCHES_ARE_EXPLICITLY_DEFINED,
    "Plusieurs patchs sont explicitement définis, tous sont ignorés..."
-   )
-MSG_HASH(
-   MSG_SHADER,
-   "Shader"
    )
 MSG_HASH(
    MSG_SHADER_PRESET_SAVED_SUCCESSFULLY,
@@ -10712,10 +10252,6 @@ MSG_HASH(
    "Filtre logiciel"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_WIFI_SETTINGS,
-   "Wi-Fi"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_WIFI_SETTINGS,
    "Analyser les réseaux sans fil et établir la connexion."
    )
@@ -10838,32 +10374,16 @@ MSG_HASH(
 #endif
 #ifdef HAVE_LAKKA
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BLUETOOTH_ENABLE,
-   "Bluetooth"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_BLUETOOTH_ENABLE,
    "Déterminer l'état de Bluetooth."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LAKKA_SERVICES,
-   "Services"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SERVICES_SETTINGS,
    "Gérer les services au niveau du système d'exploitation."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAMBA_ENABLE,
-   "SAMBA"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_SAMBA_ENABLE,
    "Partage des dossiers réseau via le protocole SMB."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SSH_ENABLE,
-   "SSH"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SSH_ENABLE,
@@ -10951,14 +10471,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_3DS_DISPLAY_MODE,
    "Sélectionne le mode d'affichage entre les modes 2D et 3D. En mode '3D', les pixels sont carrés et un effet de profondeur est appliqué lors de l'affichage du menu rapide. Le mode '2D' offre la meilleure performance."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CTR_VIDEO_MODE_3D,
-   "3D"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CTR_VIDEO_MODE_2D,
-   "2D"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CTR_VIDEO_MODE_2D_400x240,
