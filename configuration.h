@@ -111,6 +111,7 @@ typedef struct settings
       bool video_statistics_show;
       bool video_framecount_show;
       bool video_memory_show;
+      bool video_onscreen_time_show;
       bool video_msg_bgcolor_enable;
       bool video_3ds_lcd_bottom;
 #ifdef HAVE_VIDEO_LAYOUT

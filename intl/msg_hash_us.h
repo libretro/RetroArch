@@ -3126,6 +3126,14 @@ MSG_HASH(
    "Includes the current memory usage/total onscreen with FPS/Frames."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ONSCREEN_TIME_SHOW,
+   "Display Onscreen Time"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ONSCREEN_TIME_SHOW,
+   "Displays a persisting onscreen indication of the current time in HH:MM:SS format."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FONT_PATH,
    "Notification Font"
    )

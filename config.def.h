@@ -817,6 +817,9 @@ static const bool audio_enable_menu_bgm    = false;
 /* Includes displaying the current memory usage/total with FPS/Frames. */
 #define DEFAULT_MEMORY_SHOW false
 
+/* Displays a persisting onscreen indication of the current time in HH:MM:SS format. */
+#define DEFAULT_ONSCREEN_TIME_SHOW false
+
 /* Enables displaying various timing statistics. */
 #define DEFAULT_STATISTICS_SHOW false
 

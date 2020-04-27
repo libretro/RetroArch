@@ -652,6 +652,11 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
                      "y total de memoria al contador de FPS/\n"
                      "fotogramas.");
             break;
+        case MENU_ENUM_LABEL_ONSCREEN_TIME_SHOW:
+            snprintf(s, len,
+                     "Muestra en la pantalla una indicación de \n"
+                     "la hora actual en el formato HH:MM:SS.");
+            break;
         case MENU_ENUM_LABEL_VIDEO_FONT_ENABLE:
             snprintf(s, len,
                      "Muestra los mensajes en pantalla.");

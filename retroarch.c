@@ -74,6 +74,7 @@
 #include <gfx/scaler/pixconv.h>
 #include <gfx/scaler/scaler.h>
 #include <gfx/video_frame.h>
+#include <time.h>
 #include <libretro.h>
 #define VFS_FRONTEND
 #include <vfs/vfs_implementation.h>
@@ -24061,6 +24062,21 @@ static void video_driver_frame(const void *data, unsigned width,
          strlcat(video_info.fps_text, mem, sizeof(video_info.fps_text));
       }
 
+      if (video_info.onscreen_time_show)
+      {
+         char osd_time[128];
+         time_t time_;
+         time(&time_);
+
+         osd_time[0] = '\0';
+         strftime(
+               osd_time, sizeof(osd_time),
+               "%H:%M:%S", localtime(&time_));
+         if (video_info.fps_text[buf_pos-1] != '\0')
+            strlcat(video_info.fps_text, " || ", sizeof(video_info.fps_text));
+         strlcat(video_info.fps_text, osd_time, sizeof(video_info.fps_text));
+      }
+
       if ((video_driver_frame_count % video_info.fps_update_interval) == 0)
       {
          last_fps = TIME_TO_FPS(curr_time, new_time,
@@ -24268,6 +24284,7 @@ static void video_driver_frame(const void *data, unsigned width,
    if (     video_info.fps_show
          || video_info.framecount_show
          || video_info.memory_show
+         || video_info.onscreen_time_show
          )
    {
 #if defined(HAVE_GFX_WIDGETS)
@@ -24414,6 +24431,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->hard_sync_frames      = settings->uints.video_hard_sync_frames;
    video_info->fps_show              = settings->bools.video_fps_show;
    video_info->memory_show           = settings->bools.video_memory_show;
+   video_info->onscreen_time_show    = settings->bools.video_onscreen_time_show;
    video_info->fps_update_interval   = settings->uints.fps_update_interval;
    video_info->statistics_show       = settings->bools.video_statistics_show;
    video_info->framecount_show       = settings->bools.video_framecount_show;

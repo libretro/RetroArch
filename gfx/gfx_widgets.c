@@ -1499,6 +1499,7 @@ void gfx_widgets_frame(void *data)
    video_frame_info_t *video_info;
    bool framecount_show;
    bool memory_show;
+   bool onscreen_time_show;
    void *userdata;
    unsigned video_width;
    unsigned video_height;
@@ -1518,6 +1519,7 @@ void gfx_widgets_frame(void *data)
    video_info                = (video_frame_info_t*)data;
    framecount_show           = video_info->framecount_show;
    memory_show               = video_info->memory_show;
+   onscreen_time_show        = video_info->onscreen_time_show;
    userdata                  = video_info->userdata;
    video_width               = video_info->width;
    video_height              = video_info->height;
@@ -1723,6 +1725,7 @@ void gfx_widgets_frame(void *data)
    if (     fps_show 
          || framecount_show
          || memory_show
+         || onscreen_time_show
          )
    {
       const char *text      = *gfx_widgets_fps_text == '\0' ? "N/A" : gfx_widgets_fps_text;

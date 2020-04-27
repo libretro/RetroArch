@@ -3681,6 +3681,10 @@ MSG_HASH(
    "memory_show"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_ONSCREEN_TIME_SHOW,
+   "onscreen_time_show"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_WINDOW_OPACITY,
    "video_window_opacity"
    )

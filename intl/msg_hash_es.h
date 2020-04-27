@@ -1001,6 +1001,10 @@ MSG_HASH(
    "Incluir datos de memoria"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ONSCREEN_TIME_SHOW,
+   "Mostrar indicación en pantalla de la hora actual"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_ENABLE,
    "Limitar velocidad máxima de ejecución"
    )
@@ -4767,6 +4771,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MEMORY_SHOW,
    "Añade el indicador de memoria usada/total en el contador de FPS/fotogramas."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ONSCREEN_TIME_SHOW,
+   "Muestra en la pantalla una indicación de la hora actual en el formato HH:MM:SS."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BINDS,

@@ -741,6 +741,10 @@ MSG_HASH(
    "Visualizzazione framerate"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ONSCREEN_TIME_SHOW,
+   "Visualizza ora su schermo"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_ENABLE,
    "Limita la velocità massima di esercizio"
    )
@@ -3308,6 +3312,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FPS_SHOW,
    "Consente di visualizzare la frequenza dei fotogrammi corrente al secondo sullo schermo."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ONSCREEN_TIME_SHOW,
+   "Visualizza sullo schermo un'indicazione permanente dell'ora attuale nel formato HH:MM:SS."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BINDS,
