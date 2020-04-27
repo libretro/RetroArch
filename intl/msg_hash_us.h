@@ -522,7 +522,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_DPI,
-   "Display Metric DPI"
+   "Display DPI"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LIBRETRODB_SUPPORT,
@@ -1394,7 +1394,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_SRGB_DISABLE,
-   "Force-disable sRGB FBO"
+   "Force-Disable sRGB FBO"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FORCE_SRGB_DISABLE,
@@ -1880,15 +1880,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SOUND_CANCEL,
-   "Enable cancel sound"
+   "Enable Cancel Sound"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SOUND_NOTICE,
-   "Enable notice sound"
+   "Enable Notice Sound"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SOUND_BGM,
-   "Enable BGM sound"
+   "Enable BGM Sound"
    )
 
 /* Settings > Input */
@@ -2485,7 +2485,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHECK_FOR_MISSING_FIRMWARE,
-   "Check for Missing Firmware Before Loading"
+   "Check for Missing Firmware before Loading"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHECK_FOR_MISSING_FIRMWARE,
@@ -2824,7 +2824,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
-   "Reset After Fast-Forward"
+   "Reset after Fast-Forward"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
@@ -2832,7 +2832,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
-   "Reset After Load State"
+   "Reset after Load State"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
@@ -2840,7 +2840,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-   "Reset After Save State"
+   "Reset after Save State"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
@@ -3091,7 +3091,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FPS_UPDATE_INTERVAL,
-   "Framerate Update Interval (in frames)"
+   "Framerate Update Interval (In Frames)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FPS_UPDATE_INTERVAL,
@@ -3246,7 +3246,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SAVESTATE_RESUME,
-   "Resume Content After Using Save States"
+   "Resume Content after Using Save States"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SAVESTATE_RESUME,
@@ -3254,7 +3254,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_INSERT_DISK_RESUME,
-   "Resume Content After Changing Discs"
+   "Resume Content after Changing Discs"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_INSERT_DISK_RESUME,
@@ -5749,11 +5749,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_AFTER,
-   "Add New Cheat After This One"
+   "Add New Cheat after This One"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_BEFORE,
-   "Add New Cheat Before This One"
+   "Add New Cheat before This One"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_COPY_AFTER,
@@ -6487,11 +6487,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USE_THIS_DIRECTORY,
-   "<Use this directory>"
+   "<Use This Directory>"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DIRECTORY_CONTENT,
-   "<Content dir>"
+   "<Content Directory>"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DIRECTORY_DEFAULT,
@@ -6647,31 +6647,31 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_TYPE_SET_TO_VALUE,
-   "Set To Value"
+   "Set to Value"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_TYPE_INCREASE_VALUE,
-   "Increase By Value"
+   "Increase by Value"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_TYPE_DECREASE_VALUE,
-   "Decrease By Value"
+   "Decrease by Value"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_EQ,
-   "Run next cheat if value = memory"
+   "Run Next Cheat If Value = Memory"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_NEQ,
-   "Run next cheat if value != memory"
+   "Run Next Cheat If Value != Memory"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_LT,
-   "Run next cheat if value < memory"
+   "Run Next Cheat If Value < Memory"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_GT,
-   "Run next cheat if value > memory"
+   "Run Next Cheat If Value > Memory"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_HANDLER_TYPE_EMU,
@@ -6683,27 +6683,27 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_1,
-   "1-bit, max value = 0x01"
+   "1-Bit, Maximum Value = 0x01"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_2,
-   "2-bit, max value = 0x03"
+   "2-Bit, Maximum Value = 0x03"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_4,
-   "4-bit, max value = 0x0F"
+   "4-Bit, Maximum Value = 0x0F"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_8,
-   "8-bit, max value = 0xFF"
+   "8-Bit, Maximum Value = 0xFF"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_16,
-   "16-bit, max value = 0xFFFF"
+   "16-Bit, Maximum Value = 0xFFFF"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_32,
-   "32-bit, max value = 0xFFFFFFFF"
+   "32-Bit, Maximum Value = 0xFFFFFFFF"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_SORT_MODE_DEFAULT,
@@ -6719,15 +6719,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_DEFAULT,
-   "Show full labels"
+   "Show Full Labels"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_REMOVE_PARENS,
-   "Remove () content"
+   "Remove () Content"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_REMOVE_BRACKETS,
-   "Remove [] content"
+   "Remove [] Content"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_REMOVE_PARENS_AND_BRACKETS,
@@ -6735,15 +6735,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_KEEP_REGION,
-   "Keep region"
+   "Keep Region"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_KEEP_DISC_INDEX,
-   "Keep disc index"
+   "Keep Disc Index"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_KEEP_REGION_AND_DISC_INDEX,
-   "Keep region and disc index"
+   "Keep Region and Disc Index"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_THUMBNAIL_MODE_DEFAULT,
@@ -7106,7 +7106,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_BORDER_FILLER_ENABLE,
-   "Border filler"
+   "Border Filler"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_BORDER_FILLER_ENABLE,
@@ -7114,7 +7114,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_BACKGROUND_FILLER_THICKNESS_ENABLE,
-   "Background filler thickness"
+   "Background Filler Thickness"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_BACKGROUND_FILLER_THICKNESS_ENABLE,
@@ -7568,15 +7568,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_RED,
-   "Menu Font Red Color"
+   "Menu Font Color (Red)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_GREEN,
-   "Menu Font Green Color"
+   "Menu Font Color (Green)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_BLUE,
-   "Menu Font Blue Color"
+   "Menu Font Color (Blue)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_LAYOUT,
@@ -7803,7 +7803,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_COLLAPSE_SIDEBAR,
-   "Collapse the sidebar"
+   "Collapse the Sidebar"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_COLLAPSE_SIDEBAR,
@@ -7811,7 +7811,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_TRUNCATE_PLAYLIST_NAME,
-   "Truncate Playlist names"
+   "Truncate Playlist Names"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_TRUNCATE_PLAYLIST_NAME,
@@ -7851,7 +7851,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_SCROLL_CONTENT_METADATA,
-   "Use Ticker Text For Content Metadata"
+   "Use Ticker Text for Content Metadata"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_SCROLL_CONTENT_METADATA,
