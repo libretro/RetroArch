@@ -31152,7 +31152,7 @@ void set_gamepad_input_override(unsigned i, bool val)
    if (val)
       gamepad_input_override = gamepad_input_override | (1<<i);
    else
-      gamepad_input_override = gamepad_input_override & ((1<<i) ^ 0);
+      gamepad_input_override = gamepad_input_override & ((1<<i) ^ (~0));
 }
 
 void reset_gamepad_input_override(void)
