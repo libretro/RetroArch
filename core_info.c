@@ -140,15 +140,17 @@ static void core_info_list_resolve_all_firmware(
          snprintf(desc_key, sizeof(desc_key), "firmware%u_desc", c);
          snprintf(opt_key,  sizeof(opt_key),  "firmware%u_opt",  c);
 
-         if (config_get_string(config, path_key, &tmp) && !string_is_empty(tmp))
+         if (config_get_string(config, path_key, &tmp))
          {
-            info->firmware[c].path = strdup(tmp);
+            if (!string_is_empty(tmp))
+               info->firmware[c].path = strdup(tmp);
             free(tmp);
             tmp = NULL;
          }
-         if (config_get_string(config, desc_key, &tmp) && !string_is_empty(tmp))
+         if (config_get_string(config, desc_key, &tmp))
          {
-            info->firmware[c].desc = strdup(tmp);
+            if (!string_is_empty(tmp))
+               info->firmware[c].desc = strdup(tmp);
             free(tmp);
             tmp = NULL;
          }
@@ -315,48 +317,48 @@ static core_info_list_t *core_info_list_new(const char *path,
       {
          char *tmp           = NULL;
 
-         if (config_get_string(conf, "display_name", &tmp)
-               && !string_is_empty(tmp))
+         if (config_get_string(conf, "display_name", &tmp))
          {
-            core_info[i].display_name = strdup(tmp);
+            if (!string_is_empty(tmp))
+               core_info[i].display_name = strdup(tmp);
             free(tmp);
             tmp = NULL;
          }
-         if (config_get_string(conf, "display_version", &tmp)
-               && !string_is_empty(tmp))
+         if (config_get_string(conf, "display_version", &tmp))
          {
-            core_info[i].display_version = strdup(tmp);
+            if (!string_is_empty(tmp))
+               core_info[i].display_version = strdup(tmp);
             free(tmp);
             tmp = NULL;
          }
-         if (config_get_string(conf, "corename", &tmp)
-               && !string_is_empty(tmp))
+         if (config_get_string(conf, "corename", &tmp))
          {
-            core_info[i].core_name = strdup(tmp);
-            free(tmp);
-            tmp = NULL;
-         }
-
-         if (config_get_string(conf, "systemname", &tmp)
-               && !string_is_empty(tmp))
-         {
-            core_info[i].systemname = strdup(tmp);
+            if (!string_is_empty(tmp))
+               core_info[i].core_name = strdup(tmp);
             free(tmp);
             tmp = NULL;
          }
 
-         if (config_get_string(conf, "systemid", &tmp)
-               && !string_is_empty(tmp))
+         if (config_get_string(conf, "systemname", &tmp))
          {
-            core_info[i].system_id = strdup(tmp);
+            if (!string_is_empty(tmp))
+               core_info[i].systemname = strdup(tmp);
             free(tmp);
             tmp = NULL;
          }
 
-         if (config_get_string(conf, "manufacturer", &tmp)
-               && !string_is_empty(tmp))
+         if (config_get_string(conf, "systemid", &tmp))
          {
-            core_info[i].system_manufacturer = strdup(tmp);
+            if (!string_is_empty(tmp))
+               core_info[i].system_id = strdup(tmp);
+            free(tmp);
+            tmp = NULL;
+         }
+
+         if (config_get_string(conf, "manufacturer", &tmp))
+         {
+            if (!string_is_empty(tmp))
+               core_info[i].system_manufacturer = strdup(tmp);
             free(tmp);
             tmp = NULL;
          }
@@ -367,87 +369,103 @@ static core_info_list_t *core_info_list_new(const char *path,
             core_info[i].firmware_count = count;
          }
 
-         if (config_get_string(conf, "supported_extensions", &tmp)
-               && !string_is_empty(tmp))
+         if (config_get_string(conf, "supported_extensions", &tmp))
          {
-            core_info[i].supported_extensions      = strdup(tmp);
-            core_info[i].supported_extensions_list =
-               string_split(core_info[i].supported_extensions, "|");
+            if (!string_is_empty(tmp))
+            {
+               core_info[i].supported_extensions      = strdup(tmp);
+               core_info[i].supported_extensions_list =
+                  string_split(core_info[i].supported_extensions, "|");
+            }
 
             free(tmp);
             tmp = NULL;
          }
 
-         if (config_get_string(conf, "authors", &tmp)
-               && !string_is_empty(tmp))
+         if (config_get_string(conf, "authors", &tmp))
          {
-            core_info[i].authors      = strdup(tmp);
-            core_info[i].authors_list =
-               string_split(core_info[i].authors, "|");
+            if (!string_is_empty(tmp))
+            {
+               core_info[i].authors      = strdup(tmp);
+               core_info[i].authors_list =
+                  string_split(core_info[i].authors, "|");
+            }
 
             free(tmp);
             tmp = NULL;
          }
 
-         if (config_get_string(conf, "permissions", &tmp)
-               && !string_is_empty(tmp))
+         if (config_get_string(conf, "permissions", &tmp))
          {
-            core_info[i].permissions      = strdup(tmp);
-            core_info[i].permissions_list =
-               string_split(core_info[i].permissions, "|");
+            if (!string_is_empty(tmp))
+            {
+               core_info[i].permissions      = strdup(tmp);
+               core_info[i].permissions_list =
+                  string_split(core_info[i].permissions, "|");
+            }
 
             free(tmp);
             tmp = NULL;
          }
 
-         if (config_get_string(conf, "license", &tmp)
-               && !string_is_empty(tmp))
+         if (config_get_string(conf, "license", &tmp))
          {
-            core_info[i].licenses      = strdup(tmp);
-            core_info[i].licenses_list =
-               string_split(core_info[i].licenses, "|");
+            if (!string_is_empty(tmp))
+            {
+               core_info[i].licenses      = strdup(tmp);
+               core_info[i].licenses_list =
+                  string_split(core_info[i].licenses, "|");
+            }
 
             free(tmp);
             tmp = NULL;
          }
 
-         if (config_get_string(conf, "categories", &tmp)
-               && !string_is_empty(tmp))
+         if (config_get_string(conf, "categories", &tmp))
          {
-            core_info[i].categories      = strdup(tmp);
-            core_info[i].categories_list =
-               string_split(core_info[i].categories, "|");
+            if (!string_is_empty(tmp))
+            {
+               core_info[i].categories      = strdup(tmp);
+               core_info[i].categories_list =
+                  string_split(core_info[i].categories, "|");
+            }
 
             free(tmp);
             tmp = NULL;
          }
 
-         if (config_get_string(conf, "database", &tmp)
-               && !string_is_empty(tmp))
+         if (config_get_string(conf, "database", &tmp))
          {
-            core_info[i].databases      = strdup(tmp);
-            core_info[i].databases_list =
-               string_split(core_info[i].databases, "|");
+            if (!string_is_empty(tmp))
+            {
+               core_info[i].databases      = strdup(tmp);
+               core_info[i].databases_list =
+                  string_split(core_info[i].databases, "|");
+            }
 
             free(tmp);
             tmp = NULL;
          }
 
-         if (config_get_string(conf, "notes", &tmp)
-               && !string_is_empty(tmp))
+         if (config_get_string(conf, "notes", &tmp))
          {
-            core_info[i].notes     = strdup(tmp);
-            core_info[i].note_list = string_split(core_info[i].notes, "|");
+            if (!string_is_empty(tmp))
+            {
+               core_info[i].notes     = strdup(tmp);
+               core_info[i].note_list = string_split(core_info[i].notes, "|");
+            }
 
             free(tmp);
             tmp = NULL;
          }
 
-         if (config_get_string(conf, "required_hw_api", &tmp)
-               && !string_is_empty(tmp))
+         if (config_get_string(conf, "required_hw_api", &tmp))
          {
-            core_info[i].required_hw_api = strdup(tmp);
-            core_info[i].required_hw_api_list = string_split(core_info[i].required_hw_api, "|");
+            if (!string_is_empty(tmp))
+            {
+               core_info[i].required_hw_api = strdup(tmp);
+               core_info[i].required_hw_api_list = string_split(core_info[i].required_hw_api, "|");
+            }
 
             free(tmp);
             tmp = NULL;
