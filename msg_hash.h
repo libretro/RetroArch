@@ -2868,6 +2868,9 @@ int menu_hash_get_help_el_enum(enum msg_hash_enums msg, char *s, size_t len);
 const char *msg_hash_to_str_tr(enum msg_hash_enums msg);
 int menu_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len);
 
+const char *msg_hash_to_str_sk(enum msg_hash_enums msg);
+int menu_hash_get_help_sk_enum(enum msg_hash_enums msg, char *s, size_t len);
+
 int menu_hash_get_help_enum(enum msg_hash_enums msg, char *s, size_t len);
 
 enum msg_file_type msg_hash_to_file_type(uint32_t hash);
