@@ -74,7 +74,17 @@ static config_file_t *config_file_new_internal(
 static int config_sort_compare_func(struct config_entry_list *a,
       struct config_entry_list *b)
 {
-   return (a && b) ? strcasecmp(a->key, b->key) : 0;
+   if (a && b)
+   {
+      if (a->key && b->key)
+         return strcasecmp(a->key, b->key);
+      else if (a->key)
+         return 1;
+      else if (b->key)
+         return -1;
+   }
+
+   return 0;
 }
 
 /* https://stackoverflow.com/questions/7685/merge-sort-a-linked-list */
@@ -206,12 +216,19 @@ static char *extract_value(char *line, bool is_value)
    while (isspace((int)*line))
       line++;
 
+   /* Note: From this point on, an empty value
+    * string is valid - and in this case, strdup("")
+    * will be returned
+    * > If we instead return NULL, the the entry
+    *   is ignored completely - which means we cannot
+    *   track *changes* in entry value */
+
    /* We have a full string. Read until next ". */
    if (*line == '"')
    {
       line++;
       if (*line == '"')
-         return NULL;
+         return strdup("");
       tok = strtok_r(line, "\"", &save);
    }
    /* We don't have that. Read until next space. */
@@ -220,7 +237,7 @@ static char *extract_value(char *line, bool is_value)
 
    if (tok && *tok)
       return strdup(tok);
-   return NULL;
+   return strdup("");
 }
 
 /* Move semantics? */
@@ -342,7 +359,7 @@ static bool parse_line(config_file_t *conf,
          char *include_line = comment + STRLEN_CONST("include ");
          char *path         = extract_value(include_line, false);
 
-         if (!path)
+         if (string_is_empty(path))
             return false;
 
          if (conf->include_depth >= MAX_INCLUDE_DEPTH)
@@ -548,7 +565,8 @@ config_file_t *config_file_new_from_string(const char *from_string,
    conf->last                     = NULL;
    conf->includes                 = NULL;
    conf->include_depth            = 0;
-   conf->guaranteed_no_duplicates = false ;
+   conf->guaranteed_no_duplicates = false;
+   conf->modified                 = false;
 
    if (!string_is_empty(path))
       conf->path                  = strdup(path);
@@ -640,7 +658,8 @@ config_file_t *config_file_new_alloc(void)
    conf->last                     = NULL;
    conf->includes                 = NULL;
    conf->include_depth            = 0;
-   conf->guaranteed_no_duplicates = false ;
+   conf->guaranteed_no_duplicates = false;
+   conf->modified                 = false;
 
    return conf;
 }
@@ -804,7 +823,7 @@ bool config_get_string(config_file_t *conf, const char *key, char **str)
 {
    const struct config_entry_list *entry = config_get_entry(conf, key, NULL);
 
-   if (!entry)
+   if (!entry || !entry->value)
       return false;
 
    *str = strdup(entry->value);
@@ -869,20 +888,44 @@ bool config_get_bool(config_file_t *conf, const char *key, bool *in)
 
 void config_set_string(config_file_t *conf, const char *key, const char *val)
 {
-   struct config_entry_list *last  = (conf->guaranteed_no_duplicates && conf->last) ? conf->last : conf->entries;
-   struct config_entry_list *entry = conf->guaranteed_no_duplicates?NULL:config_get_entry(conf, key, &last);
+   struct config_entry_list *last  = NULL;
+   struct config_entry_list *entry = NULL;
 
-   if (entry && !entry->readonly)
+   if (!conf || !key || !val)
+      return;
+
+   last  = (conf->guaranteed_no_duplicates && conf->last) ?
+         conf->last : conf->entries;
+   entry = conf->guaranteed_no_duplicates ?
+         NULL : config_get_entry(conf, key, &last);
+
+   if (entry)
    {
+      /* An entry corresponding to 'key' already exists
+       * > Check if it's read only */
+      if (entry->readonly)
+         return;
+
+      /* Check whether value is currently set */
       if (entry->value)
+      {
+         /* Do nothing if value is unchanged */
+         if (string_is_equal(entry->value, val))
+            return;
+
+         /* Value is to be updated
+          * > Free existing */
          free(entry->value);
-      entry->value = strdup(val);
+      }
+
+      /* Update value */
+      entry->value   = strdup(val);
+      conf->modified = true;
       return;
    }
 
-   if (!val)
-      return;
-
+   /* Entry corresponding to 'key' does not exist
+    * > Create new entry */
    entry = (struct config_entry_list*)malloc(sizeof(*entry));
    if (!entry)
       return;
@@ -891,6 +934,7 @@ void config_set_string(config_file_t *conf, const char *key, const char *val)
    entry->key       = strdup(key);
    entry->value     = strdup(val);
    entry->next      = NULL;
+   conf->modified   = true;
 
    if (last)
       last->next    = entry;
@@ -902,16 +946,27 @@ void config_set_string(config_file_t *conf, const char *key, const char *val)
 
 void config_unset(config_file_t *conf, const char *key)
 {
-   struct config_entry_list *last  = conf->entries;
-   struct config_entry_list *entry = config_get_entry(conf, key, &last);
+   struct config_entry_list *last  = NULL;
+   struct config_entry_list *entry = NULL;
+
+   if (!conf || !key)
+      return;
+
+   last  = conf->entries;
+   entry = config_get_entry(conf, key, &last);
 
    if (!entry)
       return;
 
-   entry->key   = NULL;
-   entry->value = NULL;
-   free(entry->key);
-   free(entry->value);
+   if (entry->key)
+      free(entry->key);
+
+   if (entry->value)
+      free(entry->value);
+
+   entry->key     = NULL;
+   entry->value   = NULL;
+   conf->modified = true;
 }
 
 void config_set_path(config_file_t *conf, const char *entry, const char *val)
@@ -1003,6 +1058,12 @@ void config_set_bool(config_file_t *conf, const char *key, bool val)
 
 bool config_file_write(config_file_t *conf, const char *path, bool sort)
 {
+   if (!conf)
+      return false;
+
+   if (!conf->modified)
+      return true;
+
    if (!string_is_empty(path))
    {
 #ifdef ORBIS
@@ -1030,6 +1091,10 @@ bool config_file_write(config_file_t *conf, const char *path, bool sort)
       if (buf)
          free(buf);
 #endif
+
+      /* Only update modified flag if config file
+       * is actually written to disk */
+      conf->modified = false;
    }
    else
       config_file_dump(conf, stdout, sort);

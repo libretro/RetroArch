@@ -4248,6 +4248,7 @@ bool config_save_overrides(enum override_type type, void *data)
    free(override_directory);
    free(core_path);
    free(game_path);
+   free(content_path);
 
    return ret;
 }
