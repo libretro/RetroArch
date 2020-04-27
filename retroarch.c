@@ -10592,8 +10592,7 @@ error:
  **/
 static void core_option_manager_flush(
       config_file_t *conf,
-      core_option_manager_t *opt,
-      const char *path)
+      core_option_manager_t *opt)
 {
    size_t i;
 
@@ -28649,21 +28648,30 @@ static void retroarch_deinit_core_options(void)
    if (!runloop_core_options)
       return;
 
-   /* check if game options file was just created and flush
-      to that file instead */
+   /* Check whether game-specific options file is being used */
    if (!path_is_empty(RARCH_PATH_CORE_OPTIONS))
    {
+      const char *path        = path_get(RARCH_PATH_CORE_OPTIONS);
+      config_file_t *conf_tmp = NULL;
+
       /* We only need to save configuration settings for
-       * the current core, so create a temporary config_file
-       * object and populate the required values. */
-      config_file_t *conf_tmp = config_file_new_alloc();
+       * the current core
+       * > If game-specific options file exists, have
+       *   to read it (to ensure file only gets written
+       *   if config values change)
+       * > Otherwise, create a new, empty config_file_t
+       *   object */
+      if (path_is_valid(path))
+         conf_tmp = config_file_new_from_path_to_string(path);
+
+      if (!conf_tmp)
+         conf_tmp = config_file_new_alloc();
 
       if (conf_tmp)
       {
-         const char *path = path_get(RARCH_PATH_CORE_OPTIONS);
          core_option_manager_flush(
                conf_tmp,
-               runloop_core_options, path);
+               runloop_core_options);
          RARCH_LOG("[Core Options]: Saved game-specific core options to \"%s\"\n", path);
          config_file_write(conf_tmp, path, true);
          config_file_free(conf_tmp);
@@ -28676,7 +28684,7 @@ static void retroarch_deinit_core_options(void)
       const char *path = runloop_core_options->conf_path;
       core_option_manager_flush(
             runloop_core_options->conf,
-            runloop_core_options, path);
+            runloop_core_options);
       RARCH_LOG("[Core Options]: Saved core options file to \"%s\"\n", path);
       config_file_write(runloop_core_options->conf, path, true);
    }
@@ -31152,7 +31160,7 @@ void set_gamepad_input_override(unsigned i, bool val)
    if (val)
       gamepad_input_override = gamepad_input_override | (1<<i);
    else
-      gamepad_input_override = gamepad_input_override & ((1<<i) ^ 0);
+      gamepad_input_override = gamepad_input_override & ((1<<i) ^ (~0));
 }
 
 void reset_gamepad_input_override(void)
