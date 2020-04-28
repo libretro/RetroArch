@@ -764,7 +764,7 @@ end:
 size_t path_relative_to(char *out,
       const char *path, const char *base, size_t size)
 {
-   size_t i;
+   size_t i, j;
    const char *trimmed_path, *trimmed_base;
 
 #ifdef _WIN32
@@ -776,9 +776,11 @@ size_t path_relative_to(char *out,
 #endif
 
    /* Trim common beginning */
-   for (i = 0; path[i] && base[i] && path[i] == base[i]; )
-      i++;
-   trimmed_path = path+i;
+   for (i = 0, j = 0; path[i] && base[i] && path[i] == base[i]; i++)
+      if (path[i] == path_default_slash_c())
+         j = i + 1;
+
+   trimmed_path = path+j;
    trimmed_base = base+i;
 
    /* Each segment of base turns into ".." */
