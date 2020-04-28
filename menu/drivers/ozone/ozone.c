@@ -3055,10 +3055,15 @@ static int ozone_pointer_up(void *userdata,
                   ozone_leave_sidebar(ozone, sidebar_tag);
                /* Otherwise perform a MENU_ACTION_SELECT on currently
                 * active item
-                * NOTE: Cannot perform a 'leave sidebar' operation
-                * and a MENU_ACTION_SELECT at the same time... */
+                * > NOTE 1: Cannot perform a 'leave sidebar' operation
+                *   and a MENU_ACTION_SELECT at the same time...
+                * > NOTE 2: We still use 'selection' (i.e. old selection
+                *   value) here. This ensures that ozone_menu_entry_action()
+                *   registers any change due to the above automatic
+                *   'pointer item' activation, and thus operates
+                *   on the correct target entry */
                else
-                  return ozone_menu_entry_action(ozone, entry, (size_t)ptr, MENU_ACTION_SELECT);
+                  return ozone_menu_entry_action(ozone, entry, selection, MENU_ACTION_SELECT);
             }
             else
             {
@@ -3430,11 +3435,33 @@ static int ozone_menu_entry_action(
       size_t i, enum menu_action action)
 {
    ozone_handle_t *ozone       = (ozone_handle_t*)userdata;
+   menu_entry_t *entry_ptr     = entry;
+   size_t selection            = i;
+   size_t new_selection;
+   menu_entry_t new_entry;
    /* Process input action */
    enum menu_action new_action = ozone_parse_menu_entry_action(ozone, action);
 
+   /* Check whether current selection has changed
+    * (due to automatic on screen entry selection...) */
+   new_selection = menu_navigation_get_selection();
+
+   if (new_selection != selection)
+   {
+      /* Selection has changed - must update
+       * entry pointer */
+      menu_entry_init(&new_entry);
+      new_entry.path_enabled       = false;
+      new_entry.label_enabled      = false;
+      new_entry.rich_label_enabled = false;
+      new_entry.value_enabled      = false;
+      new_entry.sublabel_enabled   = false;
+      menu_entry_get(&new_entry, 0, new_selection, NULL, true);
+      entry_ptr                    = &new_entry;
+   }
+
    /* Call standard generic_menu_entry_action() function */
-   return generic_menu_entry_action(userdata, entry, i, new_action);
+   return generic_menu_entry_action(userdata, entry_ptr, new_selection, new_action);
 }
 
 menu_ctx_driver_t menu_ctx_ozone = {
