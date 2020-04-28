@@ -917,7 +917,7 @@ static const bool savestate_thumbnail_enable = false;
 
 /* When creating save state files, compress
  * written data */
-#define DEFAULT_SAVESTATE_FILE_COMPRESSION false
+#define DEFAULT_SAVESTATE_FILE_COMPRESSION true
 
 /* Slowmotion ratio. */
 #define DEFAULT_SLOWMOTION_RATIO 3.0
