@@ -57,6 +57,9 @@ extern unsigned int size_usbd_irx;
 extern unsigned char usbhdfsd_irx;
 extern unsigned int size_usbhdfsd_irx;
 
+extern unsigned char cdfs_irx;
+extern unsigned int size_cdfs_irx;
+
 extern unsigned char audsrv_irx;
 extern unsigned int size_audsrv_irx;
 

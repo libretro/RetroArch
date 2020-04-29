@@ -174,7 +174,8 @@ retroarch_switch.nso
 
 # PS2
 ps2/irx/*.c
-ps2/libcdvd/lib/
+*.irx
+ps2/libcdfs/lib/
 
 # Wayland
 gfx/common/wayland/idle-inhibit-unstable-v1.c

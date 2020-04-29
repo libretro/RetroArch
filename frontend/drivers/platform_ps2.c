@@ -39,9 +39,13 @@ static void create_path_names(void)
    char cwd[FILENAME_MAX];
    int bootDeviceID;
 
+#if defined(BUILD_FOR_PCSX2)
+   strlcpy(cwd, rootDevicePath(BOOT_DEVICE_MC0), sizeof(cwd));
+#else
    getcwd(cwd, sizeof(cwd));
    bootDeviceID=getBootDeviceID(cwd);
    strlcpy(cwd, rootDevicePath(bootDeviceID), sizeof(cwd));
+#endif
    strcat(cwd, "RETROARCH");
 
    strlcpy(eboot_path, cwd, sizeof(eboot_path));
@@ -180,6 +184,9 @@ static void frontend_ps2_init(void *data)
    /* Audio */
    SifExecModuleBuffer(&freesd_irx, size_freesd_irx, 0, NULL, NULL);
    SifExecModuleBuffer(&audsrv_irx, size_audsrv_irx, 0, NULL, NULL);
+
+   /* CDVD */
+   SifExecModuleBuffer(&cdfs_irx, size_cdfs_irx, 0, NULL, NULL);
 
    if (mcInit(MC_TYPE_XMC)) {
       RARCH_ERR("mcInit library not initalizated\n");
