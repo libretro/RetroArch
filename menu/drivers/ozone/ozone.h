@@ -144,6 +144,7 @@ struct ozone_handle
       float thumbnail_bar_position;
 
       float fullscreen_thumbnail_alpha;
+      float left_thumbnail_alpha;
    } animations;
 
    bool fade_direction; /* false = left to right, true = right to left */
@@ -276,6 +277,8 @@ struct ozone_handle
    unsigned selection_core_name_lines;
    unsigned selection_lastplayed_lines;
    bool selection_core_is_viewer;
+
+   bool force_metadata_display;
 
    bool is_db_manager_list;
    bool is_file_list;

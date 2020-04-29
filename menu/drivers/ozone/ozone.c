@@ -190,6 +190,9 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
    ozone->fullscreen_thumbnail_selection        = 0;
    ozone->fullscreen_thumbnail_label[0]         = '\0';
 
+   ozone->animations.left_thumbnail_alpha       = 1.0f;
+   ozone->force_metadata_display                = false;
+
    gfx_thumbnail_set_stream_delay(-1.0f);
    gfx_thumbnail_set_fade_duration(-1.0f);
 
@@ -2989,6 +2992,62 @@ void ozone_show_fullscreen_thumbnails(ozone_handle_t *ozone)
    ozone->show_fullscreen_thumbnails     = true;
 }
 
+static bool INLINE ozone_metadata_override_available(ozone_handle_t *ozone)
+{
+   /* Ugly construct...
+    * Content metadata display override may be
+    * toggled if the following are true:
+    * - We are viewing playlist thumbnails
+    * - This is *not* an image viewer playlist
+    * - Both right and left thumbnails are
+    *   enabled/available
+    * Short circuiting means that in most cases
+    * only 'ozone->is_playlist' will be evaluated,
+    * so this isn't too much of a performance hog... */
+   return ozone->is_playlist &&
+          ozone->show_thumbnail_bar &&
+          !ozone->selection_core_is_viewer &&
+          (ozone->thumbnails.left.status != GFX_THUMBNAIL_STATUS_MISSING) &&
+          gfx_thumbnail_is_enabled(ozone->thumbnail_path_data, GFX_THUMBNAIL_LEFT) &&
+          (ozone->thumbnails.right.status != GFX_THUMBNAIL_STATUS_MISSING) &&
+          gfx_thumbnail_is_enabled(ozone->thumbnail_path_data, GFX_THUMBNAIL_RIGHT);
+}
+
+void ozone_toggle_metadata_override(ozone_handle_t *ozone)
+{
+   gfx_animation_ctx_tag alpha_tag = (uintptr_t)&ozone->animations.left_thumbnail_alpha;
+   gfx_animation_ctx_entry_t animation_entry;
+
+   /* Kill any existing fade in/out animations */
+   gfx_animation_kill_by_tag(&alpha_tag);
+
+   /* Set common animation parameters */
+   animation_entry.easing_enum = EASING_OUT_QUAD;
+   animation_entry.tag         = alpha_tag;
+   animation_entry.duration    = gfx_thumbnail_get_fade_duration();
+   animation_entry.subject     = &ozone->animations.left_thumbnail_alpha;
+   animation_entry.cb          = NULL;
+   animation_entry.userdata    = NULL;
+
+   /* Check whether metadata override is
+    * currently enabled */
+   if (ozone->force_metadata_display)
+   {
+      /* Thumbnail will fade in */
+      animation_entry.target_value  = 1.0f;
+      ozone->force_metadata_display = false;
+   }
+   else
+   {
+      /* Thumbnail will fade out */
+      animation_entry.target_value  = 0.0f;
+      ozone->force_metadata_display = true;
+   }
+
+   /* Push animation */
+   gfx_animation_push(&animation_entry);
+}
+
 /* Forward declaration */
 static int ozone_menu_entry_action(
       void *userdata, menu_entry_t *entry,
@@ -3088,6 +3147,17 @@ static int ozone_pointer_up(void *userdata,
                   ozone_update_thumbnail_image(ozone);
                }
             }
+         }
+         /* Tap/press thumbnail bar: toggle content metadata
+          * override */
+         else if (x > width - ozone->animations.thumbnail_bar_position)
+         {
+            /* Want to capture all input here, but only act
+             * upon it if the content metadata toggle is
+             * available (i.e. viewing a playlist with dual
+             * thumbnails) */
+            if (ozone_metadata_override_available(ozone))
+               return ozone_menu_entry_action(ozone, entry, selection, MENU_ACTION_INFO);
          }
          /* Tap/press sidebar: return to sidebar or select
           * category */
@@ -3420,6 +3490,32 @@ static enum menu_action ozone_parse_menu_entry_action(
 
          ozone->cursor_mode = false;
          break;
+
+      case MENU_ACTION_INFO:
+         /* If we currently viewing a playlist with
+          * dual thumbnails, toggle the content metadata
+          * override */
+         if (ozone_metadata_override_available(ozone))
+         {
+            ozone_toggle_metadata_override(ozone);
+            new_action = MENU_ACTION_NOOP;
+         }
+         /* ...and since the user is likely to trigger
+          * 'INFO' actions on invalid playlist entries,
+          * suppress this action entirely when viewing
+          * playlists under all other conditions
+          * > Playlists have no 'INFO' entries - the
+          *   user is just greeted with a useless
+          *   'no information available' message
+          * > It is incredibly annoying to inadvertently
+          *   trigger this message when you just want to
+          *   toggle metadata... */
+         else if (ozone->is_playlist && ozone->show_thumbnail_bar)
+            new_action = MENU_ACTION_NOOP;
+
+         ozone->cursor_mode = false;
+         break;
+
       default:
          /* In all other cases, pass through input
           * menu action without intervention */
