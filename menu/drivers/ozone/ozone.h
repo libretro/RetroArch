@@ -98,6 +98,13 @@ typedef struct
    int line_centre_offset;
 } ozone_font_data_t;
 
+/* Container for a footer text label */
+typedef struct
+{
+   const char *str;
+   int width;
+} ozone_footer_label_t;
+
 struct ozone_handle
 {
    struct
@@ -109,6 +116,16 @@ struct ozone_handle
       ozone_font_data_t entries_sublabel;
       ozone_font_data_t sidebar;
    } fonts;
+
+   struct
+   {
+      unsigned lanuage;
+      ozone_footer_label_t ok;
+      ozone_footer_label_t back;
+      ozone_footer_label_t search;
+      ozone_footer_label_t fullscreen_thumbs;
+      ozone_footer_label_t metadata_toggle;
+   } footer_labels;
 
    uintptr_t textures[OZONE_THEME_TEXTURE_LAST];
    uintptr_t icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_LAST];
