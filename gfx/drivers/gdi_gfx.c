@@ -349,8 +349,9 @@ static bool gdi_gfx_frame(void *data, const void *frame,
 
    InvalidateRect(hwnd, NULL, false);
 
-   gdi->ctx_driver->update_window_title(
-         video_info->context_data);
+   if (gdi->ctx_driver->update_window_title)
+      gdi->ctx_driver->update_window_title(
+            video_info->context_data);
 
    return true;
 }
