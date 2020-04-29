@@ -26862,8 +26862,8 @@ static void retroarch_print_help(const char *arg0)
             "--menu as only argument.\n", sizeof(buf));
 #endif
 
-      strlcat(buf, "  -s, --save=PATH       Path for save files (*.srm).\n", sizeof(buf));
-      strlcat(buf, "  -S, --savestate=PATH  Path for the save state files (*.state).\n", sizeof(buf));
+      strlcat(buf, "  -s, --save=PATH       Path for save files (*.srm). (DEPRECATED, use --appendconfig and savefile_directory)\n", sizeof(buf));
+      strlcat(buf, "  -S, --savestate=PATH  Path for the save state files (*.state). (DEPRECATED, use --apendconfig and savestate_directory)\n", sizeof(buf));
       strlcat(buf, "      --set-shader PATH Path to a shader (preset) that will be loaded each time content is loaded.\n"
             "                        Effectively overrides automatic shader presets.\n"
             "                        An empty argument \"\" will disable automatic shader presets.\n", sizeof(buf));
