@@ -412,6 +412,11 @@ static void gfx_ctx_go2_drm_bind_hw_render(void *data, bool enable)
    }
 }
 
+static void gfx_ctx_go2_drm_update_title(void *data)
+{
+    (void)data;
+}
+
 const gfx_ctx_driver_t gfx_ctx_go2_drm = {
    gfx_ctx_go2_drm_init,
    gfx_ctx_go2_drm_destroy,
@@ -426,7 +431,7 @@ const gfx_ctx_driver_t gfx_ctx_go2_drm = {
    NULL, /* get_video_output_next */
    NULL, /* get_metrics */
    NULL,
-   NULL, /* update_title */
+   gfx_ctx_go2_drm_update_title,
    gfx_ctx_go2_drm_check_window,
    NULL, /* set_resize */
    gfx_ctx_go2_drm_has_focus,
