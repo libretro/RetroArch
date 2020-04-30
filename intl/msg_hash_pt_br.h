@@ -4127,7 +4127,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO,
-   "Configurar proporção de tela"
+   "Proporção de tela personalizada"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_AUTO,
@@ -4277,7 +4277,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
-   "Taxa de quadros estimada da tela"
+   "Taxa de atualização estimada da tela"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_POLLED,
@@ -6229,7 +6229,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER,
-   "Apenas dimensiona o vídeo em valores inteiros. O tamanho de base depende da geometria relatada pelo sistema e da proporção de tela. Se 'Forçar proporção' não estiver definido, X / Y serão dimensionados independentemente em valores inteiros."
+   "Apenas dimensiona o vídeo em valores inteiros. O tamanho de base depende da geometria relatada pelo sistema e da proporção de tela. Se 'Forçar proporção da tela' não estiver definido, X / Y serão dimensionados independentemente em valores inteiros."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
@@ -7154,15 +7154,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO,
-   "Valor em ponto flutuante da proporção de tela (largura/altura), utilizado se a proporção de tela estiver definido como 'Configuração'."
+   "Valor em ponto flutuante da proporção de tela (largura/altura), utilizado se a proporção de tela estiver definido como 'Proporção de tela personalizada'."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
-   "Personaliza a altura da janela de exibição que é usada se a proporção de tela estiver definida como 'Personalizada'."
+   "Personaliza a altura da janela de exibição que é usada se a proporção de tela estiver definida como 'Proporção de tela personalizada'."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH,
-   "Personaliza a largura da janela de exibição que é usada se a proporção de tela estiver definida como 'Personalizada'."
+   "Personaliza a largura da janela de exibição que é usada se a proporção de tela estiver definida como 'Proporção personalizada'."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
@@ -7966,11 +7966,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_SETTINGS,
-   "Configurações do mixer"
+   "Mixer"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_MIXER_SETTINGS,
-   "Visualiza e/ou modifica as configurações do mixer de áudio."
+   "Altera as configurações do mixer de áudio."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_INFO,
