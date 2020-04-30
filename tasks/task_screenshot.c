@@ -146,31 +146,27 @@ static bool screenshot_dump_direct(screenshot_task_state_t *state)
  **/
 static void task_screenshot_handler(retro_task_t *task)
 {
-   screenshot_task_state_t *state = (screenshot_task_state_t*)task->state;
+   screenshot_task_state_t *state = NULL;
    bool ret                       = false;
 
-   if (task_get_progress(task) == 100)
-   {
-      task_set_finished(task, true);
-
-      if (task->title)
-         task_free_title(task);
-
-      if (state->userbuf)
-         free(state->userbuf);
-
-#if defined(HAVE_GFX_WIDGETS)
-      /* If display widgets are enabled, state is freed
-         in the callback after the notification
-         is displayed */
-      if (!state->widgets_ready)
-#endif
-         free(state);
+   if (!task)
       return;
-   }
 
+   state = (screenshot_task_state_t*)task->state;
+
+   if (!state)
+      goto task_finished;
+
+   if (task_get_cancelled(task))
+      goto task_finished;
+
+   if (task_get_progress(task) == 100)
+      goto task_finished;
+
+   /* Take screenshot */
    ret = screenshot_dump_direct(state);
 
+   /* Push screenshot to image history playlist */
 #ifdef HAVE_IMAGEVIEWER
    if (  ret                        &&
          !state->silence            &&
@@ -193,6 +189,7 @@ static void task_screenshot_handler(retro_task_t *task)
 
    task_set_progress(task, 100);
 
+   /* Report any errors */
    if (!ret)
    {
       char *msg = strdup(msg_hash_to_str(MSG_FAILED_TO_TAKE_SCREENSHOT));
@@ -202,6 +199,32 @@ static void task_screenshot_handler(retro_task_t *task)
 
    if (task->title)
       task_free_title(task);
+
+   return;
+
+task_finished:
+
+   task_set_finished(task, true);
+
+   if (task->title)
+      task_free_title(task);
+
+   if (state && state->userbuf)
+      free(state->userbuf);
+
+#if defined(HAVE_GFX_WIDGETS)
+   /* If display widgets are enabled, state is freed
+      in the callback after the notification
+      is displayed */
+   if (state && !state->widgets_ready)
+#endif
+   {
+      free(state);
+      /* Must explicitly set task->state to NULL here,
+       * to avoid potential heap-use-after-free errors */
+      state       = NULL;
+      task->state = NULL;
+   }
 }
 
 #if defined(HAVE_GFX_WIDGETS)
@@ -209,15 +232,24 @@ static void task_screenshot_callback(retro_task_t *task,
       void *task_data,
       void *user_data, const char *error)
 {
-   screenshot_task_state_t *state = (screenshot_task_state_t*)task->state;
+   screenshot_task_state_t *state = NULL;
 
-   if (!state->widgets_ready)
+   if (!task)
       return;
 
-   if (state && !state->silence && state->widgets_ready)
+   state = (screenshot_task_state_t*)task->state;
+
+   if (!state)
+      return;
+
+   if (!state->silence && state->widgets_ready)
       gfx_widget_screenshot_taken(state->shotname, state->filename);
 
    free(state);
+   /* Must explicitly set task->state to NULL here,
+    * to avoid potential heap-use-after-free errors */
+   state       = NULL;
+   task->state = NULL;
 }
 #endif
 
@@ -340,8 +372,12 @@ static bool screenshot_dump(
       task->type        = TASK_TYPE_BLOCKING;
       task->state       = state;
       task->handler     = task_screenshot_handler;
+      task->mute        = savestate;
 #if defined(HAVE_GFX_WIDGETS)
-      task->callback    = task_screenshot_callback;
+      /* This callback is only required when
+       * widgets are enabled */
+      task->callback    = state->widgets_ready ?
+            task_screenshot_callback : NULL;
       if (state->widgets_ready && !savestate)
          task_free_title(task);
       else
