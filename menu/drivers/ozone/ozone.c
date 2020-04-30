@@ -1722,6 +1722,7 @@ static void ozone_draw_footer(ozone_handle_t *ozone,
    bool fullscreen_thumbnails_available =
          ozone->fullscreen_thumbnails_available &&
          !ozone->cursor_in_sidebar &&
+         ozone->show_thumbnail_bar &&
          ((ozone->thumbnails.right.status != GFX_THUMBNAIL_STATUS_MISSING) ||
           (ozone->thumbnails.left.status  != GFX_THUMBNAIL_STATUS_MISSING)) &&
          (gfx_thumbnail_is_enabled(ozone->thumbnail_path_data, GFX_THUMBNAIL_RIGHT) ||
