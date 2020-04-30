@@ -10290,6 +10290,14 @@ MSG_HASH(
    "Change thumbnail type"
    )
 MSG_HASH(
+   MSG_TOGGLE_FULLSCREEN_THUMBNAILS,
+   "Fullscreen thumbnails"
+   )
+MSG_HASH(
+   MSG_TOGGLE_CONTENT_METADATA,
+   "Toggle metadata"
+   )
+MSG_HASH(
    MSG_NO_THUMBNAIL_AVAILABLE,
    "No thumbnail available"
    )
