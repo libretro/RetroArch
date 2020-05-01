@@ -21075,12 +21075,14 @@ error:
  * perform DSP processing (if enabled) and resampling.
  **/
 static void audio_driver_flush(const int16_t *data, size_t samples,
-      bool is_slowmotion)
+      bool is_slowmotion, bool is_fastmotion)
 {
    struct resampler_data src_data;
    float slowmotion_ratio            = configuration_settings->floats.slowmotion_ratio;
-   float audio_volume_gain           = !audio_driver_mute_enable ?
-      audio_driver_volume_gain : 0.0f;
+   bool audio_fastforward_mute       = configuration_settings->bools.audio_fastforward_mute;
+   float audio_volume_gain           = (audio_driver_mute_enable ||
+         (audio_fastforward_mute && is_fastmotion)) ?
+               0.0f : audio_driver_volume_gain;
 
    src_data.data_out                 = NULL;
    src_data.output_frames            = 0;
@@ -21147,6 +21149,23 @@ static void audio_driver_flush(const int16_t *data, size_t samples,
 
    if (is_slowmotion)
       src_data.ratio       *= slowmotion_ratio;
+
+   /* Note: Ideally we would divide by the user-configured
+    * 'fastforward_ratio' when fast forward is enabled,
+    * but in practice this doesn't work:
+    * - 'fastforward_ratio' is only a limit. If the host
+    *   cannot push frames fast enough, the actual ratio
+    *   will be lower - and crackling will ensue
+    * - Most of the time 'fastforward_ratio' will be
+    *   zero (unlimited)
+    * So what we would need to do is measure the time since
+    * the last audio flush operation, and calculate a 'real'
+    * fast-forward ratio - but this doesn't work either.
+    * The measurement is inaccurate and the frame-by-frame
+    * fluctuations are too large, so crackling is unavoidable.
+    * Since it's going to crackle anyway, there's no point
+    * trying to do anything. Just leave the ratio as-is,
+    * and hope for the best... */
 
    audio_driver_resampler->process(audio_driver_resampler_data, &src_data);
 
@@ -21216,7 +21235,7 @@ static void audio_driver_sample(int16_t left, int16_t right)
 		   !audio_driver_input_data ||
 		   !audio_driver_output_samples_buf))
       audio_driver_flush(audio_driver_output_samples_conv_buf,
-            audio_driver_data_ptr, runloop_slowmotion);
+            audio_driver_data_ptr, runloop_slowmotion, runloop_fastmotion);
 
    audio_driver_data_ptr = 0;
 }
@@ -21247,7 +21266,7 @@ static void audio_driver_menu_sample(void)
          recording_driver->push_audio(recording_data, &ffemu_data);
       }
       if (check_flush)
-         audio_driver_flush(samples_buf, 1024, runloop_slowmotion);
+         audio_driver_flush(samples_buf, 1024, runloop_slowmotion, runloop_fastmotion);
       sample_count -= 1024;
    }
    if (recording_data && recording_driver && recording_driver->push_audio)
@@ -21260,7 +21279,7 @@ static void audio_driver_menu_sample(void)
       recording_driver->push_audio(recording_data, &ffemu_data);
    }
    if (check_flush)
-      audio_driver_flush(samples_buf, sample_count, runloop_slowmotion);
+      audio_driver_flush(samples_buf, sample_count, runloop_slowmotion, runloop_fastmotion);
 }
 #endif
 
@@ -21297,7 +21316,7 @@ static size_t audio_driver_sample_batch(const int16_t *data, size_t frames)
          !audio_driver_active     ||
          !audio_driver_input_data ||
          !audio_driver_output_samples_buf))
-      audio_driver_flush(data, frames << 1, runloop_slowmotion);
+      audio_driver_flush(data, frames << 1, runloop_slowmotion, runloop_fastmotion);
 
    return frames;
 }
@@ -22101,7 +22120,7 @@ void audio_driver_frame_is_reverse(void)
       audio_driver_flush(
             audio_driver_rewind_buf + audio_driver_rewind_ptr,
             audio_driver_rewind_size - audio_driver_rewind_ptr,
-            runloop_slowmotion);
+            runloop_slowmotion, runloop_fastmotion);
 }
 
 void audio_set_float(enum audio_action action, float val)
