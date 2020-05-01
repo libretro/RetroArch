@@ -5706,6 +5706,14 @@ MSG_HASH(
    "Alterar o tipo de miniatura"
    )
 MSG_HASH(
+   MSG_TOGGLE_FULLSCREEN_THUMBNAILS,
+   "Miniaturas em tela cheia"
+   )
+MSG_HASH(
+   MSG_TOGGLE_CONTENT_METADATA,
+   "Alternar metadados"
+   )
+MSG_HASH(
    MSG_NO_THUMBNAIL_AVAILABLE,
    "Nenhuma miniatura disponível"
    )
@@ -7229,8 +7237,16 @@ MSG_HASH(
    "Silencia o mixer de áudio"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_MUTE,
+   "Silenciar no avanço rápido"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_MUTE,
+   "Silenciar automaticamente o áudio ao usar o avanço rápido."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_ONLINE_UPDATER,
-   "Exibir Atualizador on-line"
+   "Exibir 'Atualizador on-line'"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_ONLINE_UPDATER,
