@@ -263,7 +263,7 @@ static INLINE uint32_t load32be(const uint32_t *addr)
  *
  * Convert unsigned 16-bit value from system to little-endian.
  *
- * Returns: Little-endian represantation of val.
+ * Returns: Little-endian representation of val.
  **/
 
 #define retro_cpu_to_le16(val) swap_if_big16(val)
@@ -274,7 +274,7 @@ static INLINE uint32_t load32be(const uint32_t *addr)
  *
  * Convert unsigned 32-bit value from system to little-endian.
  *
- * Returns: Little-endian represantation of val.
+ * Returns: Little-endian representation of val.
  **/
 
 #define retro_cpu_to_le32(val) swap_if_big32(val)
@@ -285,7 +285,7 @@ static INLINE uint32_t load32be(const uint32_t *addr)
  *
  * Convert unsigned 64-bit value from system to little-endian.
  *
- * Returns: Little-endian represantation of val.
+ * Returns: Little-endian representation of val.
  **/
 
 #define retro_cpu_to_le64(val) swap_if_big64(val)
@@ -296,7 +296,7 @@ static INLINE uint32_t load32be(const uint32_t *addr)
  *
  * Convert unsigned 16-bit value from little-endian to native.
  *
- * Returns: Native represantation of little-endian val.
+ * Returns: Native representation of little-endian val.
  **/
 
 #define retro_le_to_cpu16(val) swap_if_big16(val)
@@ -307,7 +307,7 @@ static INLINE uint32_t load32be(const uint32_t *addr)
  *
  * Convert unsigned 32-bit value from little-endian to native.
  *
- * Returns: Native represantation of little-endian val.
+ * Returns: Native representation of little-endian val.
  **/
 
 #define retro_le_to_cpu32(val) swap_if_big32(val)
@@ -318,7 +318,7 @@ static INLINE uint32_t load32be(const uint32_t *addr)
  *
  * Convert unsigned 64-bit value from little-endian to native.
  *
- * Returns: Native represantation of little-endian val.
+ * Returns: Native representation of little-endian val.
  **/
 
 #define retro_le_to_cpu64(val) swap_if_big64(val)
@@ -329,7 +329,7 @@ static INLINE uint32_t load32be(const uint32_t *addr)
  *
  * Convert unsigned 16-bit value from system to big-endian.
  *
- * Returns: Big-endian represantation of val.
+ * Returns: Big-endian representation of val.
  **/
 
 #define retro_cpu_to_be16(val) swap_if_little16(val)
@@ -340,7 +340,7 @@ static INLINE uint32_t load32be(const uint32_t *addr)
  *
  * Convert unsigned 32-bit value from system to big-endian.
  *
- * Returns: Big-endian represantation of val.
+ * Returns: Big-endian representation of val.
  **/
 
 #define retro_cpu_to_be32(val) swap_if_little32(val)
@@ -351,7 +351,7 @@ static INLINE uint32_t load32be(const uint32_t *addr)
  *
  * Convert unsigned 64-bit value from system to big-endian.
  *
- * Returns: Big-endian represantation of val.
+ * Returns: Big-endian representation of val.
  **/
 
 #define retro_cpu_to_be64(val) swap_if_little64(val)
@@ -362,7 +362,7 @@ static INLINE uint32_t load32be(const uint32_t *addr)
  *
  * Convert unsigned 16-bit value from big-endian to native.
  *
- * Returns: Native represantation of big-endian val.
+ * Returns: Native representation of big-endian val.
  **/
 
 #define retro_be_to_cpu16(val) swap_if_little16(val)
@@ -373,7 +373,7 @@ static INLINE uint32_t load32be(const uint32_t *addr)
  *
  * Convert unsigned 32-bit value from big-endian to native.
  *
- * Returns: Native represantation of big-endian val.
+ * Returns: Native representation of big-endian val.
  **/
 
 #define retro_be_to_cpu32(val) swap_if_little32(val)
@@ -384,7 +384,7 @@ static INLINE uint32_t load32be(const uint32_t *addr)
  *
  * Convert unsigned 64-bit value from big-endian to native.
  *
- * Returns: Native represantation of big-endian val.
+ * Returns: Native representation of big-endian val.
  **/
 
 #define retro_be_to_cpu64(val) swap_if_little64(val)
@@ -428,7 +428,7 @@ typedef struct retro_unaligned_uint64_s retro_unaligned_uint64_t;
  *
  * Convert unsigned unaligned 16-bit value from big-endian to native.
  *
- * Returns: Native represantation of big-endian val.
+ * Returns: Native representation of big-endian val.
  **/
 
 static INLINE uint16_t retro_get_unaligned_16be(void *addr) {
@@ -441,7 +441,7 @@ static INLINE uint16_t retro_get_unaligned_16be(void *addr) {
  *
  * Convert unsigned unaligned 32-bit value from big-endian to native.
  *
- * Returns: Native represantation of big-endian val.
+ * Returns: Native representation of big-endian val.
  **/
 
 static INLINE uint32_t retro_get_unaligned_32be(void *addr) {
@@ -454,7 +454,7 @@ static INLINE uint32_t retro_get_unaligned_32be(void *addr) {
  *
  * Convert unsigned unaligned 64-bit value from big-endian to native.
  *
- * Returns: Native represantation of big-endian val.
+ * Returns: Native representation of big-endian val.
  **/
 
 static INLINE uint64_t retro_get_unaligned_64be(void *addr) {
@@ -467,7 +467,7 @@ static INLINE uint64_t retro_get_unaligned_64be(void *addr) {
  *
  * Convert unsigned unaligned 16-bit value from little-endian to native.
  *
- * Returns: Native represantation of little-endian val.
+ * Returns: Native representation of little-endian val.
  **/
 
 static INLINE uint16_t retro_get_unaligned_16le(void *addr) {
@@ -480,7 +480,7 @@ static INLINE uint16_t retro_get_unaligned_16le(void *addr) {
  *
  * Convert unsigned unaligned 32-bit value from little-endian to native.
  *
- * Returns: Native represantation of little-endian val.
+ * Returns: Native representation of little-endian val.
  **/
 
 static INLINE uint32_t retro_get_unaligned_32le(void *addr) {
@@ -493,7 +493,7 @@ static INLINE uint32_t retro_get_unaligned_32le(void *addr) {
  *
  * Convert unsigned unaligned 64-bit value from little-endian to native.
  *
- * Returns: Native represantation of little-endian val.
+ * Returns: Native representation of little-endian val.
  **/
 
 static INLINE uint64_t retro_get_unaligned_64le(void *addr) {
