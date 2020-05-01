@@ -1665,6 +1665,14 @@ MSG_HASH(
    "Mute/unmute mixer audio."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_MUTE,
+   "Mute When Fast-Forwarding"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_MUTE,
+   "Automatically mute audio when using fast-forward."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
    "Volume Gain (dB)"
    )
