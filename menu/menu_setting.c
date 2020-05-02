@@ -2567,7 +2567,7 @@ static int setting_action_ok_bind_all_save_autoconfig(rarch_setting_t *setting,
    index_offset = setting->index_offset;
    name         = input_config_get_device_name(index_offset);
 
-   if (!string_is_empty(name) && 
+   if (!string_is_empty(name) &&
          config_save_autoconf_profile(name, index_offset))
       runloop_msg_queue_push(
             msg_hash_to_str(MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY), 1, 100, true,
@@ -5854,6 +5854,7 @@ static void setting_get_string_representation_uint_user_language(
    modes[RETRO_LANGUAGE_ARABIC]                 = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LANG_ARABIC);
    modes[RETRO_LANGUAGE_GREEK]                  = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LANG_GREEK);
    modes[RETRO_LANGUAGE_TURKISH]                = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LANG_TURKISH);
+   modes[RETRO_LANGUAGE_SLOVAK]                 = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LANG_SLOVAK);
    strlcpy(s, modes[*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE)], len);
 }
 #endif
@@ -7110,7 +7111,7 @@ static void change_handler_video_layout_enable(rarch_setting_t *setting)
 static void change_handler_video_layout_path(rarch_setting_t *setting)
 {
    settings_t *settings = config_get_ptr();
-   configuration_set_uint(settings, 
+   configuration_set_uint(settings,
          settings->uints.video_layout_selected_view, 0);
 
    video_layout_load(setting->value.target.string);
