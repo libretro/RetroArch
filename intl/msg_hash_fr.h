@@ -9830,6 +9830,14 @@ MSG_HASH(
    "Changer le type de miniatures"
    )
 MSG_HASH(
+   MSG_TOGGLE_FULLSCREEN_THUMBNAILS,
+   "Miniatures en plein écran"
+   )
+MSG_HASH(
+   MSG_TOGGLE_CONTENT_METADATA,
+   "Afficher/masquer les métadonnées"
+   )
+MSG_HASH(
    MSG_NO_THUMBNAIL_AVAILABLE,
    "Aucune miniature disponible"
    )
