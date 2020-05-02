@@ -2567,7 +2567,7 @@ static int setting_action_ok_bind_all_save_autoconfig(rarch_setting_t *setting,
    index_offset = setting->index_offset;
    name         = input_config_get_device_name(index_offset);
 
-   if (!string_is_empty(name) && 
+   if (!string_is_empty(name) &&
          config_save_autoconf_profile(name, index_offset))
       runloop_msg_queue_push(
             msg_hash_to_str(MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY), 1, 100, true,
@@ -7110,7 +7110,7 @@ static void change_handler_video_layout_enable(rarch_setting_t *setting)
 static void change_handler_video_layout_path(rarch_setting_t *setting)
 {
    settings_t *settings = config_get_ptr();
-   configuration_set_uint(settings, 
+   configuration_set_uint(settings,
          settings->uints.video_layout_selected_view, 0);
 
    video_layout_load(setting->value.target.string);
@@ -9920,6 +9920,7 @@ static bool setting_append_list(
                }
             }
 
+#ifdef _WIN32
             if (string_is_equal(settings->arrays.video_driver, "gl"))
             {
                CONFIG_BOOL(
@@ -9939,6 +9940,7 @@ static bool setting_append_list(
                      );
                menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_REINIT);
             }
+#endif
 
             END_SUB_GROUP(list, list_info, parent_group);
             START_SUB_GROUP(list, list_info, "Aspect", &group_info, &subgroup_info, parent_group);
