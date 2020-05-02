@@ -1633,6 +1633,14 @@ MSG_HASH(
    "Couper/rétablir le son du mixeur audio."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_MUTE,
+   "Couper le son lors de l'avance rapide"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_MUTE,
+   "Couper automatiquement le son lors de l'avance rapide."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
    "Gain de volume (dB)"
    )
