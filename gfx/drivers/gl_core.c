@@ -1949,7 +1949,8 @@ static bool gl_core_frame(void *data, const void *frame,
       font_driver_render_msg(gl, msg, NULL, NULL);
    }
 
-   gl->ctx_driver->update_window_title(context_data);
+   if (gl->ctx_driver->update_window_title)
+      gl->ctx_driver->update_window_title(context_data);
 
    if (gl->readback_buffer_screenshot)
    {

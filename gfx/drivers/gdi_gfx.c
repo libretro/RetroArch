@@ -349,8 +349,9 @@ static bool gdi_gfx_frame(void *data, const void *frame,
 
    InvalidateRect(hwnd, NULL, false);
 
-   gdi->ctx_driver->update_window_title(
-         video_info->context_data);
+   if (gdi->ctx_driver->update_window_title)
+      gdi->ctx_driver->update_window_title(
+            video_info->context_data);
 
    return true;
 }
@@ -490,25 +491,6 @@ static void gdi_set_texture_frame(void *data,
    }
 }
 
-static void gdi_get_video_output_size(void *data,
-      unsigned *width, unsigned *height)
-{
-   gfx_ctx_size_t size_data;
-   size_data.width  = width;
-   size_data.height = height;
-   video_context_driver_get_video_output_size(&size_data);
-}
-
-static void gdi_get_video_output_prev(void *data)
-{
-   video_context_driver_get_video_output_prev();
-}
-
-static void gdi_get_video_output_next(void *data)
-{
-   video_context_driver_get_video_output_next();
-}
-
 static void gdi_set_video_mode(void *data, unsigned width, unsigned height,
       bool fullscreen)
 {
@@ -589,9 +571,9 @@ static const video_poke_interface_t gdi_poke_interface = {
    gdi_set_video_mode,
    win32_get_refresh_rate,
    NULL,
-   gdi_get_video_output_size,
-   gdi_get_video_output_prev,
-   gdi_get_video_output_next,
+   NULL,                         /* get_video_output_size */
+   NULL,                         /* get_video_output_prev */
+   NULL,                         /* get_video_output_next */
    NULL,
    NULL,
    NULL,

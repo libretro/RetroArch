@@ -643,6 +643,10 @@ bool video_shader_write_preset(const char *path,
       config_file_t *conf;
       bool ret;
 
+      /* Note: We always create a new/blank config
+       * file here. Loading and updating an existing
+       * file could leave us with unwanted/invalid
+       * parameters. */
       if (!(conf = config_file_new_alloc()))
          return false;
 

@@ -1286,8 +1286,8 @@ static JSON_Status JSON_CALL JSON_Writer_WriteSpace_NULL(JSON_Writer writer, siz
    return JSON_Success;
 }
 
-static JSON_Status JSON_CALL (*json_write_new_line)(JSON_Writer writer) = JSON_Writer_WriteNewLine;
-static JSON_Status JSON_CALL (*json_write_space)(JSON_Writer writer, size_t numberOfSpaces) = JSON_Writer_WriteSpace;
+static JSON_Status (JSON_CALL *json_write_new_line)(JSON_Writer writer) = JSON_Writer_WriteNewLine;
+static JSON_Status (JSON_CALL *json_write_space)(JSON_Writer writer, size_t numberOfSpaces) = JSON_Writer_WriteSpace;
 
 void playlist_write_file(
       playlist_t *playlist,

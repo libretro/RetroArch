@@ -90,8 +90,13 @@ bool image_texture_color_convert(unsigned r_shift,
          uint8_t r    = (uint8_t)(col >> 16);
          uint8_t g    = (uint8_t)(col >>  8);
          uint8_t b    = (uint8_t)(col >>  0);
-         pixels[i]    = (a << a_shift) |
-            (r << r_shift) | (g << g_shift) | (b << b_shift);
+         /* Explicitly cast these to uint32_t to prevent
+          * ASAN runtime error: left shift of 255 by 24 places
+          * cannot be represented in type 'int' */
+         pixels[i]    = ((uint32_t)a << a_shift) |
+                        ((uint32_t)r << r_shift) |
+                        ((uint32_t)g << g_shift) |
+                        ((uint32_t)b << b_shift);
       }
 
       return true;

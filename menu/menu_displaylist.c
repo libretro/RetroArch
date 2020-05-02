@@ -4653,6 +4653,10 @@ unsigned menu_displaylist_build_list(
                   PARSE_ONLY_BOOL, false) == 0)
             count++;
          if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_AUDIO_FASTFORWARD_MUTE,
+                  PARSE_ONLY_BOOL, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
                   MENU_ENUM_LABEL_AUDIO_VOLUME,
                   PARSE_ONLY_FLOAT, false) == 0)
             count++;

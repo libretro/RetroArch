@@ -805,6 +805,7 @@ static void ozone_content_metadata_line(
       unsigned *y,
       unsigned column_x,
       const char *text,
+      uint32_t color,
       unsigned lines_count)
 {
    ozone_draw_text(ozone,
@@ -814,7 +815,7 @@ static void ozone_content_metadata_line(
       TEXT_ALIGN_LEFT,
       video_width, video_height,
       &ozone->fonts.footer,
-      ozone->theme->text_rgba,
+      color,
       true
    );
 
@@ -961,8 +962,11 @@ void ozone_draw_thumbnail_bar(ozone_handle_t *ozone,
    /* Bottom row
     * > Displays one item, with the following order
     *   of preference:
-    *   1) Left thumbnail, if available *and* right
-    *      thumbnail has been placed in the top row
+    *   1) Left thumbnail, if available
+    *      *and*
+    *      right thumbnail has been placed in the top row
+    *      *and*
+    *      content metadata override is not enabled
     *   2) Content metadata */
 
    /* > Get baseline 'start' position of bottom row */
@@ -973,6 +977,8 @@ void ozone_draw_thumbnail_bar(ozone_handle_t *ozone,
    /* > If we have a left thumbnail, show it */
    if (show_left_thumbnail)
    {
+      float left_thumbnail_alpha;
+
       /* Normally a right thumbnail will be shown
        * in the top row - if so, left thumbnail
        * goes at the bottom */
@@ -980,6 +986,12 @@ void ozone_draw_thumbnail_bar(ozone_handle_t *ozone,
       {
          left_thumbnail_y_position = bottom_row_y_position;
          left_thumbnail_alignment  = GFX_THUMBNAIL_ALIGN_TOP;
+         /* In this case, thumbnail opacity is dependent
+          * upon the content metadata override
+          * > i.e. Need to handle fade in/out animations
+          *   and set opacity to zero when override
+          *   is fully active */
+         left_thumbnail_alpha      = ozone->animations.left_thumbnail_alpha;
       }
       /* If right thumbnail is missing, shift left
        * thumbnail up to the top row */
@@ -987,8 +999,15 @@ void ozone_draw_thumbnail_bar(ozone_handle_t *ozone,
       {
          left_thumbnail_y_position = right_thumbnail_y_position;
          left_thumbnail_alignment  = right_thumbnail_alignment;
+         /* In this case, there is no dependence on content
+          * metadata - thumbnail is always shown at full
+          * opacity */
+         left_thumbnail_alpha      = 1.0f;
       }
 
+      /* Note: This is a NOOP when alpha is zero
+       * (i.e. no performance impact when content
+       * metadata override is fully active) */
       gfx_thumbnail_draw(
             userdata,
             video_width,
@@ -999,17 +1018,25 @@ void ozone_draw_thumbnail_bar(ozone_handle_t *ozone,
             thumbnail_width,
             thumbnail_height,
             left_thumbnail_alignment,
-            1.0f, 1.0f, NULL);
+            left_thumbnail_alpha,
+            1.0f, NULL);
    }
 
    /* > Display content metadata in the bottom
     *   row if:
     *   - This is *not* image viewer content
-    *   - There is no left thumbnail *or*
+    *     *and*
+    *   - There is no left thumbnail
+    *     *or*
     *     left thumbnail has been shifted to
-    *     the top row */
+    *     the top row
+    *     *or*
+    *     content metadata override is enabled
+    *     (i.e. fade in, fade out, or fully
+    *     active) */
    if (!ozone->selection_core_is_viewer &&
-       (!show_left_thumbnail || !show_right_thumbnail))
+       (!show_left_thumbnail || !show_right_thumbnail ||
+        (ozone->animations.left_thumbnail_alpha < 1.0f)))
    {
       char ticker_buf[255];
       gfx_animation_ctx_ticker_t ticker;
@@ -1025,6 +1052,13 @@ void ozone_draw_thumbnail_bar(ozone_handle_t *ozone,
       unsigned y                             = (unsigned)bottom_row_y_position;
       unsigned separator_padding             = ozone->dimensions.sidebar_entry_icon_padding*2;
       unsigned column_x                      = x_position + separator_padding;
+      bool metadata_override_enabled         = show_left_thumbnail &&
+                                               show_right_thumbnail &&
+                                               (ozone->animations.left_thumbnail_alpha < 1.0f);
+      float metadata_alpha                   = metadata_override_enabled ?
+            (1.0f - ozone->animations.left_thumbnail_alpha) : 1.0f;
+      uint32_t text_color                    = COLOR_TEXT_ALPHA(
+            ozone->theme->text_rgba, (uint32_t)(metadata_alpha * 255.0f));
 
       if (scroll_content_metadata)
       {
@@ -1059,6 +1093,8 @@ void ozone_draw_thumbnail_bar(ozone_handle_t *ozone,
       /* Content metadata */
 
       /* Separator */
+      gfx_display_set_alpha(ozone->theme_dynamic.entries_border, metadata_alpha);
+
       gfx_display_draw_quad(
             userdata,
             video_width,
@@ -1096,6 +1132,7 @@ void ozone_draw_thumbnail_bar(ozone_handle_t *ozone,
                &y,
                ticker_x_offset + column_x,
                ticker_buf,
+               text_color,
                1);
 
          /* Playtime
@@ -1123,6 +1160,7 @@ void ozone_draw_thumbnail_bar(ozone_handle_t *ozone,
                &y,
                ticker_x_offset + column_x,
                ticker_buf,
+               text_color,
                1);
 
          /* Last played */
@@ -1146,6 +1184,7 @@ void ozone_draw_thumbnail_bar(ozone_handle_t *ozone,
                &y,
                ticker_x_offset + column_x,
                ticker_buf,
+               text_color,
                1);
       }
       else
@@ -1158,6 +1197,7 @@ void ozone_draw_thumbnail_bar(ozone_handle_t *ozone,
                &y,
                column_x,
                ozone->selection_core_name,
+               text_color,
                ozone->selection_core_name_lines);
 
          /* Playtime */
@@ -1168,6 +1208,7 @@ void ozone_draw_thumbnail_bar(ozone_handle_t *ozone,
                &y,
                column_x,
                ozone->selection_playtime,
+               text_color,
                1);
 
          /* Last played */
@@ -1178,9 +1219,38 @@ void ozone_draw_thumbnail_bar(ozone_handle_t *ozone,
                &y,
                column_x,
                ozone->selection_lastplayed,
+               text_color,
                ozone->selection_lastplayed_lines);
+      }
+
+      /* If metadata override is active, display an
+       * icon to notify that a left thumbnail image
+       * is available */
+      if (metadata_override_enabled)
+      {
+         /* Icon should be small and unobtrusive
+          * > Make it 80% of the normal entry icon size */
+         unsigned icon_size = (unsigned)((float)ozone->dimensions.sidebar_entry_icon_size * 0.8f);
+
+         /* > Set its opacity to a maximum of 80% */
+         gfx_display_set_alpha(ozone->theme_dynamic.entries_icon, metadata_alpha * 0.8f);
+
+         /* Draw icon in the bottom right corner of
+          * the thumbnail bar */
+         gfx_display_blend_begin(userdata);
+         ozone_draw_icon(
+               userdata,
+               video_width,
+               video_height,
+               icon_size,
+               icon_size,
+               ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_IMAGE],
+               x_position + sidebar_width - separator_padding - icon_size,
+               video_height - ozone->dimensions.footer_height - ozone->dimensions.sidebar_entry_icon_padding - icon_size,
+               video_width,
+               video_height,
+               0, 1, ozone->theme_dynamic.entries_icon);
+         gfx_display_blend_end(userdata);
       }
    }
 }
-
-

@@ -7669,8 +7669,14 @@ static int materialui_pointer_up(void *userdata,
                      menu_navigation_set_selection(ptr);
 
                   /* Perform a MENU_ACTION_SELECT on currently
-                   * active item */
-                  return materialui_menu_entry_action(mui, entry, (size_t)ptr, MENU_ACTION_SELECT);
+                   * active item
+                   * > Note that we still use 'selection'
+                   *   (i.e. old selection value) here. This
+                   *   ensures that materialui_menu_entry_action()
+                   *   registers any change due to the above automatic
+                   *   'pointer item' activation, and thus operates
+                   *   on the correct target entry */
+                  return materialui_menu_entry_action(mui, entry, selection, MENU_ACTION_SELECT);
                }
                else
                {

@@ -869,8 +869,9 @@ static bool gl1_gfx_frame(void *data, const void *frame,
    if (msg)
       font_driver_render_msg(gl1, msg, NULL, NULL);
 
-   gl1->ctx_driver->update_window_title(
-         video_info->context_data);
+   if (gl1->ctx_driver->update_window_title)
+      gl1->ctx_driver->update_window_title(
+            video_info->context_data);
 
    /* Screenshots. */
    if (gl1->readback_buffer_screenshot)

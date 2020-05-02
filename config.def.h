@@ -803,6 +803,10 @@ static const bool audio_enable_menu_bgm    = false;
 #define DEFAULT_WASAPI_SH_BUFFER_LENGTH -16
 #endif
 
+/* Automatically mute audio when fast forward
+ * is enabled */
+#define DEFAULT_AUDIO_FASTFORWARD_MUTE false
+
 /* MISC */
 
 /* Enables displaying the current frames per second. */
@@ -917,7 +921,7 @@ static const bool savestate_thumbnail_enable = false;
 
 /* When creating save state files, compress
  * written data */
-#define DEFAULT_SAVESTATE_FILE_COMPRESSION false
+#define DEFAULT_SAVESTATE_FILE_COMPRESSION true
 
 /* Slowmotion ratio. */
 #define DEFAULT_SLOWMOTION_RATIO 3.0

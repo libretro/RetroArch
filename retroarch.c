@@ -10592,8 +10592,7 @@ error:
  **/
 static void core_option_manager_flush(
       config_file_t *conf,
-      core_option_manager_t *opt,
-      const char *path)
+      core_option_manager_t *opt)
 {
    size_t i;
 
@@ -21076,12 +21075,14 @@ error:
  * perform DSP processing (if enabled) and resampling.
  **/
 static void audio_driver_flush(const int16_t *data, size_t samples,
-      bool is_slowmotion)
+      bool is_slowmotion, bool is_fastmotion)
 {
    struct resampler_data src_data;
    float slowmotion_ratio            = configuration_settings->floats.slowmotion_ratio;
-   float audio_volume_gain           = !audio_driver_mute_enable ?
-      audio_driver_volume_gain : 0.0f;
+   bool audio_fastforward_mute       = configuration_settings->bools.audio_fastforward_mute;
+   float audio_volume_gain           = (audio_driver_mute_enable ||
+         (audio_fastforward_mute && is_fastmotion)) ?
+               0.0f : audio_driver_volume_gain;
 
    src_data.data_out                 = NULL;
    src_data.output_frames            = 0;
@@ -21148,6 +21149,23 @@ static void audio_driver_flush(const int16_t *data, size_t samples,
 
    if (is_slowmotion)
       src_data.ratio       *= slowmotion_ratio;
+
+   /* Note: Ideally we would divide by the user-configured
+    * 'fastforward_ratio' when fast forward is enabled,
+    * but in practice this doesn't work:
+    * - 'fastforward_ratio' is only a limit. If the host
+    *   cannot push frames fast enough, the actual ratio
+    *   will be lower - and crackling will ensue
+    * - Most of the time 'fastforward_ratio' will be
+    *   zero (unlimited)
+    * So what we would need to do is measure the time since
+    * the last audio flush operation, and calculate a 'real'
+    * fast-forward ratio - but this doesn't work either.
+    * The measurement is inaccurate and the frame-by-frame
+    * fluctuations are too large, so crackling is unavoidable.
+    * Since it's going to crackle anyway, there's no point
+    * trying to do anything. Just leave the ratio as-is,
+    * and hope for the best... */
 
    audio_driver_resampler->process(audio_driver_resampler_data, &src_data);
 
@@ -21217,7 +21235,7 @@ static void audio_driver_sample(int16_t left, int16_t right)
 		   !audio_driver_input_data ||
 		   !audio_driver_output_samples_buf))
       audio_driver_flush(audio_driver_output_samples_conv_buf,
-            audio_driver_data_ptr, runloop_slowmotion);
+            audio_driver_data_ptr, runloop_slowmotion, runloop_fastmotion);
 
    audio_driver_data_ptr = 0;
 }
@@ -21248,7 +21266,7 @@ static void audio_driver_menu_sample(void)
          recording_driver->push_audio(recording_data, &ffemu_data);
       }
       if (check_flush)
-         audio_driver_flush(samples_buf, 1024, runloop_slowmotion);
+         audio_driver_flush(samples_buf, 1024, runloop_slowmotion, runloop_fastmotion);
       sample_count -= 1024;
    }
    if (recording_data && recording_driver && recording_driver->push_audio)
@@ -21261,7 +21279,7 @@ static void audio_driver_menu_sample(void)
       recording_driver->push_audio(recording_data, &ffemu_data);
    }
    if (check_flush)
-      audio_driver_flush(samples_buf, sample_count, runloop_slowmotion);
+      audio_driver_flush(samples_buf, sample_count, runloop_slowmotion, runloop_fastmotion);
 }
 #endif
 
@@ -21298,7 +21316,7 @@ static size_t audio_driver_sample_batch(const int16_t *data, size_t frames)
          !audio_driver_active     ||
          !audio_driver_input_data ||
          !audio_driver_output_samples_buf))
-      audio_driver_flush(data, frames << 1, runloop_slowmotion);
+      audio_driver_flush(data, frames << 1, runloop_slowmotion, runloop_fastmotion);
 
    return frames;
 }
@@ -22102,7 +22120,7 @@ void audio_driver_frame_is_reverse(void)
       audio_driver_flush(
             audio_driver_rewind_buf + audio_driver_rewind_ptr,
             audio_driver_rewind_size - audio_driver_rewind_ptr,
-            runloop_slowmotion);
+            runloop_slowmotion, runloop_fastmotion);
 }
 
 void audio_set_float(enum audio_action action, float val)
@@ -26863,8 +26881,8 @@ static void retroarch_print_help(const char *arg0)
             "--menu as only argument.\n", sizeof(buf));
 #endif
 
-      strlcat(buf, "  -s, --save=PATH       Path for save files (*.srm).\n", sizeof(buf));
-      strlcat(buf, "  -S, --savestate=PATH  Path for the save state files (*.state).\n", sizeof(buf));
+      strlcat(buf, "  -s, --save=PATH       Path for save files (*.srm). (DEPRECATED, use --appendconfig and savefile_directory)\n", sizeof(buf));
+      strlcat(buf, "  -S, --savestate=PATH  Path for the save state files (*.state). (DEPRECATED, use --apendconfig and savestate_directory)\n", sizeof(buf));
       strlcat(buf, "      --set-shader PATH Path to a shader (preset) that will be loaded each time content is loaded.\n"
             "                        Effectively overrides automatic shader presets.\n"
             "                        An empty argument \"\" will disable automatic shader presets.\n", sizeof(buf));
@@ -28649,21 +28667,30 @@ static void retroarch_deinit_core_options(void)
    if (!runloop_core_options)
       return;
 
-   /* check if game options file was just created and flush
-      to that file instead */
+   /* Check whether game-specific options file is being used */
    if (!path_is_empty(RARCH_PATH_CORE_OPTIONS))
    {
+      const char *path        = path_get(RARCH_PATH_CORE_OPTIONS);
+      config_file_t *conf_tmp = NULL;
+
       /* We only need to save configuration settings for
-       * the current core, so create a temporary config_file
-       * object and populate the required values. */
-      config_file_t *conf_tmp = config_file_new_alloc();
+       * the current core
+       * > If game-specific options file exists, have
+       *   to read it (to ensure file only gets written
+       *   if config values change)
+       * > Otherwise, create a new, empty config_file_t
+       *   object */
+      if (path_is_valid(path))
+         conf_tmp = config_file_new_from_path_to_string(path);
+
+      if (!conf_tmp)
+         conf_tmp = config_file_new_alloc();
 
       if (conf_tmp)
       {
-         const char *path = path_get(RARCH_PATH_CORE_OPTIONS);
          core_option_manager_flush(
                conf_tmp,
-               runloop_core_options, path);
+               runloop_core_options);
          RARCH_LOG("[Core Options]: Saved game-specific core options to \"%s\"\n", path);
          config_file_write(conf_tmp, path, true);
          config_file_free(conf_tmp);
@@ -28676,7 +28703,7 @@ static void retroarch_deinit_core_options(void)
       const char *path = runloop_core_options->conf_path;
       core_option_manager_flush(
             runloop_core_options->conf,
-            runloop_core_options, path);
+            runloop_core_options);
       RARCH_LOG("[Core Options]: Saved core options file to \"%s\"\n", path);
       config_file_write(runloop_core_options->conf, path, true);
    }
@@ -31152,7 +31179,7 @@ void set_gamepad_input_override(unsigned i, bool val)
    if (val)
       gamepad_input_override = gamepad_input_override | (1<<i);
    else
-      gamepad_input_override = gamepad_input_override & ((1<<i) ^ 0);
+      gamepad_input_override = gamepad_input_override & ((1<<i) ^ (~0));
 }
 
 void reset_gamepad_input_override(void)
