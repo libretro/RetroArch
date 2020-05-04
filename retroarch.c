@@ -22555,6 +22555,21 @@ static void video_driver_init_filter(enum retro_pixel_format colfmt_int)
    pow2_x                              = next_pow2(width);
    pow2_y                              = next_pow2(height);
    maxsize                             = MAX(pow2_x, pow2_y);
+
+#ifdef _3DS
+   /* On 3DS, video is disabled if the output resolution
+    * exceeds 2048x2048. To avoid the user being presented
+    * with a black screen, we therefore have to check that
+    * the filter upscaling buffer fits within this limit. */
+   if (maxsize >= 2048)
+   {
+      RARCH_ERR("[Video]: Softfilter initialization failed."
+            " Upscaling buffer exceeds hardware limitations.\n");
+      video_driver_filter_free();
+      return;
+   }
+#endif
+
    video_driver_state_scale            = maxsize / RARCH_SCALE_BASE;
    video_driver_state_out_rgb32        = rarch_softfilter_get_output_format(
                                          video_driver_state_filter) ==
