@@ -1,9 +1,8 @@
 #include "internal.h"
 
+#include "compat.h"
+
 #include <ctype.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 
 /* special formats only used by rc_richpresence_display_part_t.display_type. must not overlap other RC_FORMAT values */
 enum {
@@ -116,6 +115,7 @@ static rc_richpresence_display_t* rc_parse_richpresence_display_internal(const c
           /* just calculating size, can't confirm lookup exists */
           part = RC_ALLOC(rc_richpresence_display_part_t, parse);
 
+          in = line;
           line = ++ptr;
           while (ptr < endline && *ptr != ')')
             ++ptr;
@@ -124,6 +124,10 @@ static rc_richpresence_display_t* rc_parse_richpresence_display_internal(const c
             if (parse->offset < 0)
               return 0;
             ++ptr;
+          } else {
+            /* no closing parenthesis - allocate space for the invalid string */
+            --in; /* already skipped over @ */
+            rc_alloc_str(parse, line, (int)(ptr - in));
           }
 
         } else {
@@ -139,6 +143,7 @@ static rc_richpresence_display_t* rc_parse_richpresence_display_internal(const c
               part->first_lookup_item = lookup->first_item;
               part->display_type = lookup->format;
 
+              in = line;
               line = ++ptr;
               while (ptr < endline && *ptr != ')')
                 ++ptr;
@@ -148,6 +153,12 @@ static rc_richpresence_display_t* rc_parse_richpresence_display_internal(const c
                 if (parse->offset < 0)
                   return 0;
                 ++ptr;
+              }
+              else {
+                /* non-terminated macro, dump the macro and the remaining portion of the line */
+                --in; /* already skipped over @ */
+                part->display_type = RC_FORMAT_STRING;
+                part->text = rc_alloc_str(parse, in, (int)(ptr - in));
               }
 
               break;
@@ -170,7 +181,7 @@ static rc_richpresence_display_t* rc_parse_richpresence_display_internal(const c
 
             /* assert: the allocated string is going to be smaller than the memory used for the parameter of the macro */
             part->display_type = RC_FORMAT_UNKNOWN_MACRO;
-            part->text = rc_alloc_str(parse, line, ptr - line);
+            part->text = rc_alloc_str(parse, line, (int)(ptr - line));
           }
         }
       }
@@ -194,7 +205,7 @@ static const char* rc_parse_richpresence_lookup(rc_richpresence_lookup_t* lookup
   const char* defaultlabel = 0;
   char* endptr = 0;
   unsigned key;
-  int chars;
+  unsigned chars;
 
   next = &lookup->first_item;
 
@@ -372,7 +383,7 @@ int rc_richpresence_size(const char* script) {
   rc_richpresence_t* self;
   rc_parse_state_t parse;
   rc_init_parse_state(&parse, 0, 0, 0);
-  
+
   self = RC_ALLOC(rc_richpresence_t, &parse);
   rc_parse_richpresence_internal(self, script, &parse);
 
@@ -389,7 +400,7 @@ rc_richpresence_t* rc_parse_richpresence(void* buffer, const char* script, lua_S
   rc_init_parse_state_memrefs(&parse, &self->memrefs);
 
   rc_parse_richpresence_internal(self, script, &parse);
-  
+
   rc_destroy_parse_state(&parse);
   return parse.offset >= 0 ? self : 0;
 }
@@ -398,8 +409,10 @@ int rc_evaluate_richpresence(rc_richpresence_t* richpresence, char* buffer, unsi
   rc_richpresence_display_t* display;
   rc_richpresence_display_part_t* part;
   rc_richpresence_lookup_item_t* item;
+  char tmp[256];
   char* ptr;
-  int chars;
+  const char* text;
+  size_t chars;
   unsigned value;
 
   rc_update_memref_values(richpresence->memrefs, peek, peek_ud);
@@ -412,37 +425,52 @@ int rc_evaluate_richpresence(rc_richpresence_t* richpresence, char* buffer, unsi
       while (part) {
         switch (part->display_type) {
           case RC_FORMAT_STRING:
-            chars = snprintf(ptr, buffersize, "%s", part->text);
+            text = part->text;
+            chars = strlen(text);
             break;
 
           case RC_FORMAT_LOOKUP:
             value = rc_evaluate_value(&part->value, peek, peek_ud, L);
             item = part->first_lookup_item;
             if (!item) {
+              text = "";
               chars = 0;
             } else {
               while (item->next_item && item->value != value)
                 item = item->next_item;
 
-              chars = snprintf(ptr, buffersize, "%s", item->label);
+              text = item->label;
+              chars = strlen(text);
             }
             break;
 
           case RC_FORMAT_UNKNOWN_MACRO:
-            chars = snprintf(ptr, buffersize, "[Unknown macro]%s", part->text);
+            chars = snprintf(tmp, sizeof(tmp), "[Unknown macro]%s", part->text);
+            text = tmp;
             break;
 
           default:
             value = rc_evaluate_value(&part->value, peek, peek_ud, L);
-            chars = rc_format_value(ptr, buffersize, value, part->display_type);
+            chars = rc_format_value(tmp, sizeof(tmp), value, part->display_type);
+            text = tmp;
             break;
         }
 
-        if (chars > 0) {
-          ptr += chars;
-          buffersize -= chars;
+        if (chars > 0 && buffersize > 0) {
+          if ((unsigned)chars >= buffersize) {
+            /* prevent write past end of buffer */
+            memcpy(ptr, text, buffersize - 1);
+            ptr[buffersize - 1] = '\0';
+            buffersize = 0;
+          }
+          else {
+            memcpy(ptr, text, chars);
+            ptr[chars] = '\0';
+            buffersize -= (unsigned)chars;
+          }
         }
 
+        ptr += chars;
         part = part->next;
       }
 
