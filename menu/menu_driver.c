@@ -118,7 +118,7 @@ static int generic_menu_iterate(void *data,
       retro_time_t current_time)
 {
 #ifdef HAVE_ACCESSIBILITY
-   static enum action_iterate_type 
+   static enum action_iterate_type
       last_iterate_type           = ITERATE_TYPE_DEFAULT;
 #endif
    enum action_iterate_type iterate_type;
@@ -161,7 +161,7 @@ static int generic_menu_iterate(void *data,
 
          {
             bool pop_stack = false;
-            if (  ret == 1 || 
+            if (  ret == 1 ||
                   action == MENU_ACTION_OK ||
                   action == MENU_ACTION_CANCEL
                )
@@ -442,8 +442,8 @@ int generic_menu_entry_action(
    }
 
 #ifdef HAVE_ACCESSIBILITY
-   if (     action != 0 
-         && is_accessibility_enabled() 
+   if (     action != 0
+         && is_accessibility_enabled()
          && !is_input_keyboard_display_on())
    {
       char current_label[255];
@@ -689,8 +689,8 @@ enum menu_entry_type menu_entry_get_type(uint32_t i)
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr_internal(0);
    menu_file_list_cbs_t *cbs  = NULL;
    rarch_setting_t *setting   = NULL;
-   
-   /* FIXME/TODO - XXX Really a special kind of ST_ACTION, 
+
+   /* FIXME/TODO - XXX Really a special kind of ST_ACTION,
     * but this should be changed */
    if (menu_setting_ctl(MENU_SETTING_CTL_IS_OF_PATH_TYPE, (void*)setting))
       return MENU_ENTRY_PATH;
@@ -1319,8 +1319,8 @@ void menu_entries_get_at_offset(const file_list_t *list, size_t idx,
 {
    file_list_get_at_offset(list, idx, path, label, file_type, entry_idx);
    if (list && alt)
-      *alt = list->list[idx].alt 
-         ? list->list[idx].alt 
+      *alt = list->list[idx].alt
+         ? list->list[idx].alt
          : list->list[idx].path;
 }
 
@@ -1342,7 +1342,7 @@ static int menu_entries_elem_get_first_char(
 
    if (list)
       if ((path = list->list[offset].alt
-         ? list->list[offset].alt 
+         ? list->list[offset].alt
          : list->list[offset].path))
          ret = tolower((int)*path);
 
@@ -1449,9 +1449,9 @@ int menu_entries_get_title(char *s, size_t len)
    unsigned menu_type            = 0;
    const char *path              = NULL;
    const char *label             = NULL;
-   const file_list_t *list       = menu_entries_list ? 
+   const file_list_t *list       = menu_entries_list ?
       menu_list_get(menu_entries_list, 0) : NULL;
-   menu_file_list_cbs_t *cbs     = list 
+   menu_file_list_cbs_t *cbs     = list
       ? (menu_file_list_cbs_t*)list->list[list->size - 1].actiondata
       : NULL;
 
@@ -2135,7 +2135,7 @@ bool menu_driver_get_load_content_animation_data(uintptr_t *icon, char **playlis
 
 /* Time format strings with AM-PM designation require special
  * handling due to platform dependence */
-static void strftime_am_pm(char* ptr, size_t maxsize, const char* format,
+static void strftime_AMPM(char* ptr, size_t maxsize, const char* format,
       const struct tm* timeptr)
 {
    char *local = NULL;
@@ -2185,41 +2185,41 @@ void menu_display_timedate(gfx_display_ctx_datetime_t *datetime)
       /* Format string representation */
       switch (datetime->time_mode)
       {
-         case MENU_TIMEDATE_STYLE_YMD_HMS: /* YYYY-MM-DD HH:MM:SS */
+         case MENU_TIMEDATE_STYLE_YMD_HMS: /* YYYY/MM/DD HH:MM:SS */
             strftime(menu_datetime_cache, sizeof(menu_datetime_cache),
-                  "%Y-%m-%d %H:%M:%S", tm_);
+                  "%Y/%m/%d %H:%M:%S", tm_);
             break;
-         case MENU_TIMEDATE_STYLE_YMD_HM: /* YYYY-MM-DD HH:MM */
+         case MENU_TIMEDATE_STYLE_YMD_HM: /* YYYY/MM/DD HH:MM */
             strftime(menu_datetime_cache, sizeof(menu_datetime_cache),
-                  "%Y-%m-%d %H:%M", tm_);
+                  "%Y/%m/%d %H:%M", tm_);
             break;
-         case MENU_TIMEDATE_STYLE_YMD: /* YYYY-MM-DD */
+         case MENU_TIMEDATE_STYLE_YMD: /* YYYY/MM/DD */
             strftime(menu_datetime_cache, sizeof(menu_datetime_cache),
-                  "%Y-%m-%d", tm_);
+                  "%Y/%m/%d", tm_);
             break;
-         case MENU_TIMEDATE_STYLE_YM: /* YYYY-MM */
+         case MENU_TIMEDATE_STYLE_YM: /* YYYY/MM */
             strftime(menu_datetime_cache, sizeof(menu_datetime_cache),
-                  "%Y-%m", tm_);
+                  "%Y/%m", tm_);
             break;
-         case MENU_TIMEDATE_STYLE_MDYYYY_HMS: /* MM-DD-YYYY HH:MM:SS */
+         case MENU_TIMEDATE_STYLE_MDYYYY_HMS: /* MM/DD/YYYY HH:MM:SS */
             strftime(menu_datetime_cache, sizeof(menu_datetime_cache),
-                  "%m-%d-%Y %H:%M:%S", tm_);
+                  "%m/%d/%Y %H:%M:%S", tm_);
             break;
-         case MENU_TIMEDATE_STYLE_MDYYYY_HM: /* MM-DD-YYYY HH:MM */
+         case MENU_TIMEDATE_STYLE_MDYYYY_HM: /* MM/DD/YYYY HH:MM */
             strftime(menu_datetime_cache, sizeof(menu_datetime_cache),
-                  "%m-%d-%Y %H:%M", tm_);
+                  "%m/%d/%Y %H:%M", tm_);
             break;
          case MENU_TIMEDATE_STYLE_MD_HM: /* MM/DD HH:MM */
             strftime(menu_datetime_cache, sizeof(menu_datetime_cache),
                   "%m/%d %H:%M", tm_);
             break;
-         case MENU_TIMEDATE_STYLE_MDYYYY: /* MM-DD-YYYY */
+         case MENU_TIMEDATE_STYLE_MDYYYY: /* MM/DD/YYYY */
             strftime(menu_datetime_cache, sizeof(menu_datetime_cache),
-                  "%m-%d-%Y", tm_);
+                  "%m/%d/%Y", tm_);
             break;
-         case MENU_TIMEDATE_STYLE_MD: /* MM-DD */
+         case MENU_TIMEDATE_STYLE_MD: /* MM/DD */
             strftime(menu_datetime_cache, sizeof(menu_datetime_cache),
-                  "%m-%d", tm_);
+                  "%m/%d", tm_);
             break;
          case MENU_TIMEDATE_STYLE_DDMMYYYY_HMS: /* DD/MM/YYYY HH:MM:SS */
             strftime(menu_datetime_cache, sizeof(menu_datetime_cache),
@@ -2249,44 +2249,44 @@ void menu_display_timedate(gfx_display_ctx_datetime_t *datetime)
             strftime(menu_datetime_cache, sizeof(menu_datetime_cache),
                   "%H:%M", tm_);
             break;
-         case MENU_TIMEDATE_STYLE_YMD_HMS_AM_PM: /* YYYY-MM-DD HH:MM:SS (am/pm) */
-            strftime_am_pm(menu_datetime_cache, sizeof(menu_datetime_cache),
-                  "%Y-%m-%d %I:%M:%S %p", tm_);
+         case MENU_TIMEDATE_STYLE_YMD_HMS_AMPM: /* YYYY/MM/DD HH:MM:SS (AM/PM) */
+            strftime_AMPM(menu_datetime_cache, sizeof(menu_datetime_cache),
+                  "%Y/%m/%d %I:%M:%S %p", tm_);
             break;
-         case MENU_TIMEDATE_STYLE_YMD_HM_AM_PM: /* YYYY-MM-DD HH:MM (am/pm) */
-            strftime_am_pm(menu_datetime_cache, sizeof(menu_datetime_cache),
-                  "%Y-%m-%d %I:%M %p", tm_);
+         case MENU_TIMEDATE_STYLE_YMD_HM_AMPM: /* YYYY/MM/DD HH:MM (AM/PM) */
+            strftime_AMPM(menu_datetime_cache, sizeof(menu_datetime_cache),
+                  "%Y/%m/%d %I:%M %p", tm_);
             break;
-         case MENU_TIMEDATE_STYLE_MDYYYY_HMS_AM_PM: /* MM-DD-YYYY HH:MM:SS (am/pm) */
-            strftime_am_pm(menu_datetime_cache, sizeof(menu_datetime_cache),
-                  "%m-%d-%Y %I:%M:%S %p", tm_);
+         case MENU_TIMEDATE_STYLE_MDYYYY_HMS_AMPM: /* MM/DD/YYYY HH:MM:SS (AM/PM) */
+            strftime_AMPM(menu_datetime_cache, sizeof(menu_datetime_cache),
+                  "%m/%d/%Y %I:%M:%S %p", tm_);
             break;
-         case MENU_TIMEDATE_STYLE_MDYYYY_HM_AM_PM: /* MM-DD-YYYY HH:MM (am/pm) */
-            strftime_am_pm(menu_datetime_cache, sizeof(menu_datetime_cache),
-                  "%m-%d-%Y %I:%M %p", tm_);
+         case MENU_TIMEDATE_STYLE_MDYYYY_HM_AMPM: /* MM/DD/YYYY HH:MM (AM/PM) */
+            strftime_AMPM(menu_datetime_cache, sizeof(menu_datetime_cache),
+                  "%m/%d/%Y %I:%M %p", tm_);
             break;
-         case MENU_TIMEDATE_STYLE_MD_HM_AM_PM: /* MM/DD HH:MM (am/pm) */
-            strftime_am_pm(menu_datetime_cache, sizeof(menu_datetime_cache),
+         case MENU_TIMEDATE_STYLE_MD_HM_AMPM: /* MM/DD HH:MM (AM/PM) */
+            strftime_AMPM(menu_datetime_cache, sizeof(menu_datetime_cache),
                   "%m/%d %I:%M %p", tm_);
             break;
-         case MENU_TIMEDATE_STYLE_DDMMYYYY_HMS_AM_PM: /* DD/MM/YYYY HH:MM:SS (am/pm) */
-            strftime_am_pm(menu_datetime_cache, sizeof(menu_datetime_cache),
+         case MENU_TIMEDATE_STYLE_DDMMYYYY_HMS_AMPM: /* DD/MM/YYYY HH:MM:SS (AM/PM) */
+            strftime_AMPM(menu_datetime_cache, sizeof(menu_datetime_cache),
                   "%d/%m/%Y %I:%M:%S %p", tm_);
             break;
-         case MENU_TIMEDATE_STYLE_DDMMYYYY_HM_AM_PM: /* DD/MM/YYYY HH:MM (am/pm) */
-            strftime_am_pm(menu_datetime_cache, sizeof(menu_datetime_cache),
+         case MENU_TIMEDATE_STYLE_DDMMYYYY_HM_AMPM: /* DD/MM/YYYY HH:MM (AM/PM) */
+            strftime_AMPM(menu_datetime_cache, sizeof(menu_datetime_cache),
                   "%d/%m/%Y %I:%M %p", tm_);
             break;
-         case MENU_TIMEDATE_STYLE_DDMM_HM_AM_PM: /* DD/MM HH:MM (am/pm) */
-            strftime_am_pm(menu_datetime_cache, sizeof(menu_datetime_cache),
+         case MENU_TIMEDATE_STYLE_DDMM_HM_AMPM: /* DD/MM HH:MM (AM/PM) */
+            strftime_AMPM(menu_datetime_cache, sizeof(menu_datetime_cache),
                   "%d/%m %I:%M %p", tm_);
             break;
-         case MENU_TIMEDATE_STYLE_HMS_AM_PM: /* HH:MM:SS (am/pm) */
-            strftime_am_pm(menu_datetime_cache, sizeof(menu_datetime_cache),
+         case MENU_TIMEDATE_STYLE_HMS_AMPM: /* HH:MM:SS (AM/PM) */
+            strftime_AMPM(menu_datetime_cache, sizeof(menu_datetime_cache),
                   "%I:%M:%S %p", tm_);
             break;
-         case MENU_TIMEDATE_STYLE_HM_AM_PM: /* HH:MM (am/pm) */
-            strftime_am_pm(menu_datetime_cache, sizeof(menu_datetime_cache),
+         case MENU_TIMEDATE_STYLE_HM_AMPM: /* HH:MM (AM/PM) */
+            strftime_AMPM(menu_datetime_cache, sizeof(menu_datetime_cache),
                   "%I:%M %p", tm_);
             break;
       }
@@ -2519,7 +2519,7 @@ bool menu_driver_init(bool video_is_threaded)
    command_event(CMD_EVENT_CORE_INFO_INIT, NULL);
    command_event(CMD_EVENT_LOAD_CORE_PERSIST, NULL);
 
-   if (  menu_driver_data || 
+   if (  menu_driver_data ||
          menu_driver_init_internal(video_is_threaded))
    {
       if (menu_driver_ctx && menu_driver_ctx->context_reset)
@@ -3084,7 +3084,7 @@ void get_current_menu_sublabel(char* retstr, size_t max)
    menu_driver_selection_ptr = menu_navigation_get_selection();
    menu_entry_init(&entry);
    menu_entry_get(&entry, 0, menu_navigation_get_selection(), NULL, true);
- 
+
    menu_entry_get_sublabel(&entry, &entry_sublabel);
    strlcpy(retstr, entry_sublabel, max);
 }
