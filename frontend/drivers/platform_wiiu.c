@@ -61,6 +61,7 @@
 
 #define WIIU_SD_PATH "sd:/"
 #define WIIU_USB_PATH "usb:/"
+#define WIIU_STORAGE_USB_PATH "storage_usb:/"
 
 /**
  * The Wii U frontend driver, along with the main() method.
@@ -188,6 +189,10 @@ static int frontend_wiiu_parse_drive_list(void *data, bool load_content)
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
          enum_idx,
          FILE_TYPE_DIRECTORY, 0, 0);
+   menu_entries_append_enum(list, WIIU_STORAGE_USB_PATH,
+      msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+      enum_idx,
+      FILE_TYPE_DIRECTORY, 0, 0);
 #endif
    return 0;
 }

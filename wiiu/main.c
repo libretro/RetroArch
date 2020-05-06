@@ -22,6 +22,7 @@
 #if defined(HAVE_IOSUHAX) && defined(HAVE_LIBFAT)
 #include <fat.h>
 #include <iosuhax.h>
+#include <iosuhax_devoptab.h>
 #include <sys/iosupport.h>
 #endif
 
@@ -29,6 +30,7 @@
 
 #include "fs/fs_utils.h"
 #include "fs/sd_fat_devoptab.h"
+#include "fs/virtualpath.h"
 
 #include "system/dynamic.h"
 #include "system/memory.h"
@@ -54,6 +56,7 @@ static void fsdev_init(void);
 static void fsdev_exit(void);
 
 bool iosuhaxMount = 0;
+int fsaFd = -1;
 
 static int mcp_hook_fd = -1;
 
@@ -204,7 +207,15 @@ void __mount_filesystems(void)
 {
 #ifdef HAVE_LIBFAT
    if(iosuhaxMount)
+   {
       fatInitDefault();
+	  fsaFd = IOSUHAX_FSA_Open();
+      mount_fs("storage_usb", fsaFd, NULL, "/vol/storage_usb01");
+	   
+      VirtualMountDevice("sd:/");
+      VirtualMountDevice("storage_usb:/");
+      VirtualMountDevice("usb:/");
+	} 
    else
       mount_sd_fat("sd");
 #else
@@ -224,12 +235,25 @@ void __unmount_filesystems(void)
    {
       fatUnmount("sd:");
       fatUnmount("usb:");
+	  
+    IOSUHAX_sdio_disc_interface.shutdown();
+    IOSUHAX_usb_disc_interface.shutdown();
+	
+	unmount_fs("storage_usb");
+	IOSUHAX_FSA_Close(fsaFd);
+	
+	if(mcp_hook_fd >= 0)
+		MCPHookClose();
+	else
+		IOSUHAX_Close();
+	
    }
    else
       unmount_sd_fat("sd");
 #else
    unmount_sd_fat("sd");
 #endif
+UnmountVirtualPaths();
 }
 
 static void fsdev_init(void)
