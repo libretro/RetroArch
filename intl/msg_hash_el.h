@@ -2384,39 +2384,39 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIMEDATE_YMD_HMS,
-   "ΧΧΧΧ-ΜΜ-ΗΗ ΩΩ:ΛΛ:ΔΔ"
+   "ΧΧΧΧ/ΜΜ/ΗΗ ΩΩ:ΛΛ:ΔΔ"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIMEDATE_YMD_HM,
-   "ΧΧΧΧ-ΜΜ-ΗΗ ΩΩ:ΛΛ"
+   "ΧΧΧΧ/ΜΜ/ΗΗ ΩΩ:ΛΛ"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIMEDATE_YMD,
-   "ΧΧΧΧ-ΜΜ-ΗΗ"
+   "ΧΧΧΧ/ΜΜ/ΗΗ"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIMEDATE_YM,
-   "ΧΧΧΧ-ΜΜ"
+   "ΧΧΧΧ/ΜΜ"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIMEDATE_MDYYYY_HMS,
-   "ΜΜ-ΗΗ-ΧΧΧΧ ΩΩ:ΛΛ:ΔΔ"
+   "ΜΜ/ΗΗ/ΧΧΧΧ ΩΩ:ΛΛ:ΔΔ"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIMEDATE_MDYYYY_HM,
-   "ΜΜ-ΗΗ-ΧΧΧΧ ΩΩ:ΛΛ"
+   "ΜΜ/ΗΗ/ΧΧΧΧ ΩΩ:ΛΛ"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIMEDATE_MD_HM,
-   "ΜΜ-ΗΗ ΩΩ:ΛΛ"
+   "ΜΜ/ΗΗ ΩΩ:ΛΛ"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIMEDATE_MDYYYY,
-   "ΜΜ-ΗΗ-ΧΧΧΧ"
+   "ΜΜ/ΗΗ/ΧΧΧΧ"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIMEDATE_MD,
-   "ΜΜ-ΗΗ"
+   "ΜΜ/ΗΗ"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIMEDATE_DDMMYYYY_HMS,
@@ -2448,23 +2448,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIMEDATE_YMD_HMS_AMPM,
-   "ΧΧΧΧ-ΜΜ-ΗΗ ΩΩ:ΛΛ:ΔΔ (ΠΜ/ΜΜ)"
+   "ΧΧΧΧ/ΜΜ/ΗΗ ΩΩ:ΛΛ:ΔΔ (ΠΜ/ΜΜ)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIMEDATE_YMD_HM_AMPM,
-   "ΧΧΧΧ-ΜΜ-ΗΗ ΩΩ:ΛΛ (ΠΜ/ΜΜ)"
+   "ΧΧΧΧ/ΜΜ/ΗΗ ΩΩ:ΛΛ (ΠΜ/ΜΜ)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIMEDATE_MDYYYY_HMS_AMPM,
-   "ΜΜ-ΗΗ-ΧΧΧΧ ΩΩ:ΛΛ:ΔΔ (ΠΜ/ΜΜ)"
+   "ΜΜ/ΗΗ/ΧΧΧΧ ΩΩ:ΛΛ:ΔΔ (ΠΜ/ΜΜ)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIMEDATE_MDYYYY_HM_AMPM,
-   "ΜΜ-ΗΗ-ΧΧΧΧ ΩΩ:ΛΛ (ΠΜ/ΜΜ)"
+   "ΜΜ/ΗΗ/ΧΧΧΧ ΩΩ:ΛΛ (ΠΜ/ΜΜ)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIMEDATE_MD_HM_AMPM,
-   "ΜΜ-ΗΗ ΩΩ:ΛΛ (ΠΜ/ΜΜ)"
+   "ΜΜ/ΗΗ ΩΩ:ΛΛ (ΠΜ/ΜΜ)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIMEDATE_DDMMYYYY_HMS_AMPM,
