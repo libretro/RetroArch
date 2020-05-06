@@ -1645,14 +1645,6 @@ MSG_HASH(
    "Change audio mixer settings."
    )
 MSG_HASH(
-    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_AUTO_HIDE,
-    "Hide Overlay When Gamepad(s) Connected"
-    )
-MSG_HASH(
-    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_AUTO_HIDE,
-    "Automatically hide the overlay when an input device such as a controller is connected."
-    )
-MSG_HASH(
     MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS_PORT,
     "Show Inputs Listen Port"
     )
@@ -2976,10 +2968,6 @@ MSG_HASH(
    "Show keyboard/controller inputs on the on-screen overlay."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS_PORT,
-   "Show Inputs Listen Port"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS_PORT,
    "Select the port for the overlay to listen to if Show Inputs On Overlay is enabled."
    )
@@ -3031,6 +3019,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_SCALE,
    "Scale of all UI elements of the overlay."
    )
+MSG_HASH(
+    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_AUTO_HIDE,
+    "Hide Overlay When Gamepad(s) Connected"
+    )
+MSG_HASH(
+    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_AUTO_HIDE,
+    "Automatically hide the overlay when an input device such as a controller is connected."
+    )
 
 /* Settings > On-Screen Display > Video Layout */
 
