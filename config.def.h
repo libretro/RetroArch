@@ -805,6 +805,10 @@ static const bool audio_enable_menu_bgm    = false;
 #define DEFAULT_WASAPI_SH_BUFFER_LENGTH -16
 #endif
 
+/* Automatically mute audio when fast forward
+ * is enabled */
+#define DEFAULT_AUDIO_FASTFORWARD_MUTE false
+
 /* MISC */
 
 /* Enables displaying the current frames per second. */
@@ -913,6 +917,14 @@ static const bool savestate_auto_load = false;
 
 static const bool savestate_thumbnail_enable = false;
 
+/* When creating save (srm) files, compress
+ * written data */
+#define DEFAULT_SAVE_FILE_COMPRESSION false
+
+/* When creating save state files, compress
+ * written data */
+#define DEFAULT_SAVESTATE_FILE_COMPRESSION true
+
 /* Slowmotion ratio. */
 #define DEFAULT_SLOWMOTION_RATIO 3.0
 
@@ -952,22 +964,25 @@ static const unsigned default_content_history_size = 200;
 static const int default_content_favorites_size = 200;
 
 /* Sort all playlists (apart from histories) alphabetically */
-static const bool playlist_sort_alphabetical = true;
+#define DEFAULT_PLAYLIST_SORT_ALPHABETICAL true
 
 /* File format to use when writing playlists to disk */
-static const bool playlist_use_old_format = false;
+#define DEFAULT_PLAYLIST_USE_OLD_FORMAT false
+
+/* When creating/updating playlists, compress written data */
+#define DEFAULT_PLAYLIST_COMPRESSION false
 
 #ifdef HAVE_MENU
 /* Specify when to display 'core name' inline on playlist entries */
-static const unsigned playlist_show_inline_core_name = PLAYLIST_INLINE_CORE_DISPLAY_HIST_FAV;
+#define DEFAULT_PLAYLIST_SHOW_INLINE_CORE_NAME PLAYLIST_INLINE_CORE_DISPLAY_HIST_FAV
 
 /* Specifies which runtime record to use on playlist sublabels */
-static const unsigned playlist_sublabel_runtime_type = PLAYLIST_RUNTIME_PER_CORE;
+#define DEFAULT_PLAYLIST_SUBLABEL_RUNTIME_TYPE PLAYLIST_RUNTIME_PER_CORE
 
 /* Specifies time/date display format for runtime 'last played' data */
 #define DEFAULT_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE PLAYLIST_LAST_PLAYED_STYLE_YMD_HMS
 
-static const unsigned playlist_entry_remove_enable = PLAYLIST_ENTRY_REMOVE_ENABLE_ALL;
+#define DEFAULT_PLAYLIST_ENTRY_REMOVE_ENABLE PLAYLIST_ENTRY_REMOVE_ENABLE_ALL
 #endif
 
 #define DEFAULT_SCAN_WITHOUT_CORE_MATCH false

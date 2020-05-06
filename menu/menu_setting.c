@@ -8950,6 +8950,39 @@ static bool setting_append_list(
                   general_read_handler,
                   SD_FLAG_NONE);
 
+#if defined(HAVE_ZLIB)
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.save_file_compression,
+                  MENU_ENUM_LABEL_SAVE_FILE_COMPRESSION,
+                  MENU_ENUM_LABEL_VALUE_SAVE_FILE_COMPRESSION,
+                  DEFAULT_SAVE_FILE_COMPRESSION,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
+
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.savestate_file_compression,
+                  MENU_ENUM_LABEL_SAVESTATE_FILE_COMPRESSION,
+                  MENU_ENUM_LABEL_VALUE_SAVESTATE_FILE_COMPRESSION,
+                  DEFAULT_SAVESTATE_FILE_COMPRESSION,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
+#endif
+
+            /* TODO/FIXME: This is in the wrong group... */
             CONFIG_BOOL(
                   list, list_info,
                   &settings->bools.scan_without_core_match,
@@ -10810,6 +10843,21 @@ static bool setting_append_list(
                SD_FLAG_LAKKA_ADVANCED
                );
 #endif
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.audio_fastforward_mute,
+               MENU_ENUM_LABEL_AUDIO_FASTFORWARD_MUTE,
+               MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_MUTE,
+               DEFAULT_AUDIO_FASTFORWARD_MUTE,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE
+               );
 
          CONFIG_FLOAT(
                list, list_info,
@@ -14587,6 +14635,9 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler,
                SD_FLAG_NONE);
+         (*list)[list_info->index - 1].action_ok     = setting_bool_action_left_with_refresh;
+         (*list)[list_info->index - 1].action_left   = setting_bool_action_left_with_refresh;
+         (*list)[list_info->index - 1].action_right  = setting_bool_action_right_with_refresh;
 
          CONFIG_BOOL(
                list, list_info,
@@ -15585,7 +15636,7 @@ static bool setting_append_list(
                &settings->uints.playlist_entry_remove_enable,
                MENU_ENUM_LABEL_PLAYLIST_ENTRY_REMOVE,
                MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE,
-               playlist_entry_remove_enable,
+               DEFAULT_PLAYLIST_ENTRY_REMOVE_ENABLE,
                &group_info,
                &subgroup_info,
                parent_group,
@@ -15601,7 +15652,7 @@ static bool setting_append_list(
                &settings->bools.playlist_sort_alphabetical,
                MENU_ENUM_LABEL_PLAYLIST_SORT_ALPHABETICAL,
                MENU_ENUM_LABEL_VALUE_PLAYLIST_SORT_ALPHABETICAL,
-               playlist_sort_alphabetical,
+               DEFAULT_PLAYLIST_SORT_ALPHABETICAL,
                MENU_ENUM_LABEL_VALUE_OFF,
                MENU_ENUM_LABEL_VALUE_ON,
                &group_info,
@@ -15617,7 +15668,7 @@ static bool setting_append_list(
                &settings->bools.playlist_use_old_format,
                MENU_ENUM_LABEL_PLAYLIST_USE_OLD_FORMAT,
                MENU_ENUM_LABEL_VALUE_PLAYLIST_USE_OLD_FORMAT,
-               playlist_use_old_format,
+               DEFAULT_PLAYLIST_USE_OLD_FORMAT,
                MENU_ENUM_LABEL_VALUE_OFF,
                MENU_ENUM_LABEL_VALUE_ON,
                &group_info,
@@ -15627,6 +15678,24 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_NONE
                );
+
+#if defined(HAVE_ZLIB)
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.playlist_compression,
+               MENU_ENUM_LABEL_PLAYLIST_COMPRESSION,
+               MENU_ENUM_LABEL_VALUE_PLAYLIST_COMPRESSION,
+               DEFAULT_PLAYLIST_COMPRESSION,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE
+               );
+#endif
 
          CONFIG_BOOL(
                list, list_info,
@@ -15652,7 +15721,7 @@ static bool setting_append_list(
                &settings->uints.playlist_sublabel_runtime_type,
                MENU_ENUM_LABEL_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
                MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
-               playlist_sublabel_runtime_type,
+               DEFAULT_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
                &group_info,
                &subgroup_info,
                parent_group,
@@ -15684,7 +15753,7 @@ static bool setting_append_list(
                &settings->uints.playlist_show_inline_core_name,
                MENU_ENUM_LABEL_PLAYLIST_SHOW_INLINE_CORE_NAME,
                MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_INLINE_CORE_NAME,
-               playlist_show_inline_core_name,
+               DEFAULT_PLAYLIST_SHOW_INLINE_CORE_NAME,
                &group_info,
                &subgroup_info,
                parent_group,

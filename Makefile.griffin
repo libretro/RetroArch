@@ -155,7 +155,7 @@ else ifeq ($(libogc_platform), 1)
    endif
 
    LIBDIRS += -L.
-   MACHDEP += -DGEKKO -mcpu=750 -meabi -mhard-float -DMSB_FIRST
+   MACHDEP += -DGEKKO -mcpu=750 -meabi -mhard-float
 
    ifeq ($(platform), ngc)
       LDFLAGS += $(MACHDEP) -Wl,-Map,$(notdir $(EXT_INTER_TARGET)).map

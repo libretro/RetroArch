@@ -869,8 +869,9 @@ static bool gl1_gfx_frame(void *data, const void *frame,
    if (msg)
       font_driver_render_msg(gl1, msg, NULL, NULL);
 
-   video_info->cb_update_window_title(
-         video_info->context_data);
+   if (gl1->ctx_driver->update_window_title)
+      gl1->ctx_driver->update_window_title(
+            video_info->context_data);
 
    /* Screenshots. */
    if (gl1->readback_buffer_screenshot)
@@ -888,12 +889,12 @@ static bool gl1_gfx_frame(void *data, const void *frame,
          && !video_info->runloop_is_slowmotion
          && !video_info->runloop_is_paused)
    {
-      video_info->cb_swap_buffers(video_info->context_data);
+      gl1->ctx_driver->swap_buffers(video_info->context_data);
       glClear(GL_COLOR_BUFFER_BIT);
    }
 #endif
 
-   video_info->cb_swap_buffers(video_info->context_data);
+   gl1->ctx_driver->swap_buffers(video_info->context_data);
 
    /* check if we are fast forwarding or in menu, if we are ignore hard sync */
    if (video_info->hard_sync

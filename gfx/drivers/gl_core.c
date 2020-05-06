@@ -1949,7 +1949,8 @@ static bool gl_core_frame(void *data, const void *frame,
       font_driver_render_msg(gl, msg, NULL, NULL);
    }
 
-   video_info->cb_update_window_title(context_data);
+   if (gl->ctx_driver->update_window_title)
+      gl->ctx_driver->update_window_title(context_data);
 
    if (gl->readback_buffer_screenshot)
    {
@@ -1973,11 +1974,11 @@ static bool gl_core_frame(void *data, const void *frame,
          && !runloop_is_slowmotion
          && !runloop_is_paused)
    {
-      video_info->cb_swap_buffers(context_data);
+      gl->ctx_driver->swap_buffers(context_data);
       glClear(GL_COLOR_BUFFER_BIT);
    }
 
-   video_info->cb_swap_buffers(context_data);
+   gl->ctx_driver->swap_buffers(context_data);
 
    if (video_info->hard_sync &&
        !input_driver_nonblock_state &&

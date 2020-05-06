@@ -280,12 +280,12 @@ typedef struct global
 #ifdef HAVE_MENU
    struct
    {
-      retro_time_t prev_start_time ;
-      retro_time_t noop_press_time ;
-      retro_time_t noop_start_time  ;
-      retro_time_t action_start_time  ;
-      retro_time_t action_press_time ;
-      enum menu_action prev_action ;
+      retro_time_t prev_start_time;
+      retro_time_t noop_press_time;
+      retro_time_t noop_start_time;
+      retro_time_t action_start_time;
+      retro_time_t action_press_time;
+      enum menu_action prev_action;
    } menu;
 #endif
 } global_t;
@@ -1188,10 +1188,7 @@ typedef struct video_frame_info
       enum text_alignment text_align;
    } osd_stat_params;
 
-   void (*cb_update_window_title)(void*);
    void (*cb_swap_buffers)(void*);
-   bool (*cb_get_metrics)(void *data, enum display_metric_types type,
-      float *value);
    bool (*cb_set_resize)(void*, unsigned, unsigned);
 
    void *context_data;
@@ -1801,7 +1798,7 @@ bool video_context_driver_set_flags(gfx_ctx_flags_t *flags);
 
 bool video_context_driver_get_metrics(gfx_ctx_metrics_t *metrics);
 
-bool video_context_driver_translate_aspect(gfx_ctx_aspect_t *aspect);
+void video_context_driver_translate_aspect(gfx_ctx_aspect_t *aspect);
 
 bool video_context_driver_input_driver(gfx_ctx_input_t *inp);
 
@@ -2009,6 +2006,13 @@ unsigned int retroarch_get_rotation(void);
 void retroarch_init_task_queue(void);
 
 bool is_input_keyboard_display_on(void);
+
+
+/* Input overrides  */
+
+extern unsigned get_gamepad_input_override(void);
+extern void set_gamepad_input_override(unsigned i, bool val);
+extern void reset_gamepad_input_override(void);
 
 RETRO_END_DECLS
 

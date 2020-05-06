@@ -454,9 +454,10 @@ static bool vg_frame(void *data, const void *frame,
       vg_draw_message(vg, msg);
 #endif
 
-   video_info->cb_update_window_title(
-         video_info->context_data);
-   video_info->cb_swap_buffers(video_info->context_data);
+   if (vg->ctx_driver->update_window_title)
+      vg->ctx_driver->update_window_title(video_info->context_data);
+
+   vg->ctx_driver->swap_buffers(video_info->context_data);
 
    return true;
 }

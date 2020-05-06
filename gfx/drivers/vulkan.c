@@ -1659,7 +1659,7 @@ static void vulkan_inject_black_frame(vk_t *vk, video_frame_info_t *video_info,
    slock_unlock(vk->context->queue_lock);
 #endif
 
-   video_info->cb_swap_buffers(context_data);
+   vk->ctx_driver->swap_buffers(context_data);
 }
 
 static bool vulkan_frame(void *data, const void *frame,
@@ -1685,7 +1685,6 @@ static bool vulkan_frame(void *data, const void *frame,
    unsigned video_height                         = video_info->height;
    struct font_params *osd_params                = (struct font_params*)
       &video_info->osd_stat_params;
-
 
    VkCommandBufferBeginInfo begin_info           = {
       VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
@@ -1974,7 +1973,7 @@ static bool vulkan_frame(void *data, const void *frame,
          if (osd_params)
             font_driver_render_msg(vk,
                   stat_text,
-                  &osd_params, NULL);
+                  osd_params, NULL);
       }
 #endif
 
@@ -2116,10 +2115,13 @@ static bool vulkan_frame(void *data, const void *frame,
    slock_unlock(vk->context->queue_lock);
 #endif
 
-   video_info->cb_swap_buffers(context_data);
+   vk->ctx_driver->swap_buffers(context_data);
 
    if (!vk->context->swap_interval_emulation_lock)
-      video_info->cb_update_window_title(context_data);
+   {
+      if (vk->ctx_driver->update_window_title)
+         vk->ctx_driver->update_window_title(context_data);
+   }
 
    /* Handle spurious swapchain invalidations as soon as we can,
     * i.e. right after swap buffers. */

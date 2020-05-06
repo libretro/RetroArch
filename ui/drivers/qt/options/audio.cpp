@@ -1,4 +1,5 @@
 #include <QApplication>
+#include <QLabel>
 
 #include "options.h"
 
@@ -26,15 +27,15 @@ AudioPage::AudioPage(QObject *parent) :
 
 QWidget *AudioPage::widget()
 {
-   QWidget *widget               = new QWidget;
-   QVBoxLayout *layout           = new QVBoxLayout;
-   SettingsGroup *outputGroup    = new SettingsGroup("Output");
-   SettingsGroup *resamplerGroup = new SettingsGroup("Resampler");
-   SettingsGroup *syncGroup      = new SettingsGroup(msg_hash_to_str(
+   QWidget *widget                = new QWidget;
+   QVBoxLayout *layout            = new QVBoxLayout;
+   SettingsGroup *outputGroup     = new SettingsGroup("Output");
+   SettingsGroup *resamplerGroup  = new SettingsGroup("Resampler");
+   SettingsGroup *syncGroup       = new SettingsGroup(msg_hash_to_str(
             MENU_ENUM_LABEL_VALUE_AUDIO_SYNC));
-   SettingsGroup *dspGroup       = new SettingsGroup("DSP plugin");
-   SettingsGroup *volumeGroup    = new SettingsGroup("Volume");
-   QHBoxLayout *volumeLayout     = new QHBoxLayout();
+   SettingsGroup *dspGroup        = new SettingsGroup("DSP plugin");
+   SettingsGroup *volumeGroup     = new SettingsGroup("Volume");
+   QGridLayout *volumeLayout      = new QGridLayout();
 
    outputGroup->add(MENU_ENUM_LABEL_AUDIO_ENABLE);
    outputGroup->add(MENU_ENUM_LABEL_AUDIO_DRIVER);
@@ -51,9 +52,22 @@ QWidget *AudioPage::widget()
 
    dspGroup->add(MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN);
 
-   volumeLayout->addWidget(new CheckableIcon(MENU_ENUM_LABEL_AUDIO_MUTE, qApp->style()->standardIcon(QStyle::SP_MediaVolumeMuted)));
-   volumeLayout->addLayout(new FloatSliderAndSpinBox(MENU_ENUM_LABEL_AUDIO_VOLUME));
+   volumeLayout->addWidget(new QLabel(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME), widget),
+         1, 1);
+   volumeLayout->addWidget(new CheckableIcon(MENU_ENUM_LABEL_AUDIO_MUTE, qApp->style()->standardIcon(QStyle::SP_MediaVolumeMuted)),
+         1, 2);
+   volumeLayout->addLayout(new FloatSliderAndSpinBox(MENU_ENUM_LABEL_AUDIO_VOLUME),
+         1, 3, 1, 1);
+
+   volumeLayout->addWidget(new QLabel(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_VOLUME), widget),
+         2, 1);
+   volumeLayout->addWidget(new CheckableIcon(MENU_ENUM_LABEL_AUDIO_MIXER_MUTE, qApp->style()->standardIcon(QStyle::SP_MediaVolumeMuted)),
+         2, 2);
+   volumeLayout->addLayout(new FloatSliderAndSpinBox(MENU_ENUM_LABEL_AUDIO_MIXER_VOLUME),
+         2, 3, 1, 1);
+
    volumeGroup->addRow(volumeLayout);
+   volumeGroup->add(MENU_ENUM_LABEL_AUDIO_FASTFORWARD_MUTE);
 
    layout->addWidget(outputGroup);
    layout->addWidget(resamplerGroup);

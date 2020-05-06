@@ -131,6 +131,7 @@ typedef struct settings
       bool audio_rate_control;
       bool audio_wasapi_exclusive_mode;
       bool audio_wasapi_float_format;
+      bool audio_fastforward_mute;
 
       /* Input */
       bool input_remap_binds_enable;
@@ -345,6 +346,8 @@ typedef struct settings
       bool savestate_auto_save;
       bool savestate_auto_load;
       bool savestate_thumbnail_enable;
+      bool save_file_compression;
+      bool savestate_file_compression;
       bool network_cmd_enable;
       bool stdin_cmd_enable;
       bool keymapper_enable;
@@ -378,6 +381,7 @@ typedef struct settings
 
       bool sustained_performance_mode;
       bool playlist_use_old_format;
+      bool playlist_compression;
       bool content_runtime_log;
       bool content_runtime_log_aggregate;
 

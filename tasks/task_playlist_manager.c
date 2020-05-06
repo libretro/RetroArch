@@ -50,6 +50,7 @@ enum pl_manager_status
 typedef struct pl_manager_handle
 {
    bool use_old_format;
+   bool compress;
    bool fuzzy_archive_match;
    enum pl_manager_status status;
    size_t list_size;
@@ -99,7 +100,8 @@ static void free_pl_manager_handle(pl_manager_handle_t *pl_manager)
 }
 
 static void pl_manager_write_playlist(
-      playlist_t *playlist, const char *playlist_path, bool use_old_format)
+      playlist_t *playlist, const char *playlist_path,
+      bool use_old_format, bool compress)
 {
    playlist_t *cached_playlist = playlist_get_cached();
    
@@ -108,7 +110,7 @@ static void pl_manager_write_playlist(
       return;
    
    /* Write any changes to playlist file */
-   playlist_write_file(playlist, use_old_format);
+   playlist_write_file(playlist, use_old_format, compress);
    
    /* If this is the currently cached playlist, then
     * it must be re-cached (otherwise changes will be
@@ -119,7 +121,8 @@ static void pl_manager_write_playlist(
       if (string_is_equal(playlist_path, playlist_get_conf_path(cached_playlist)))
       {
          playlist_free_cached();
-         playlist_init_cached(playlist_path, COLLECTION_SIZE);
+         playlist_init_cached(
+               playlist_path, COLLECTION_SIZE, use_old_format, compress);
       }
    }
 }
@@ -227,7 +230,8 @@ static void task_pl_manager_reset_cores_handler(retro_task_t *task)
             pl_manager_write_playlist(
                   pl_manager->playlist,
                   pl_manager->playlist_path,
-                  pl_manager->use_old_format);
+                  pl_manager->use_old_format,
+                  pl_manager->compress);
             
             /* Update progress display */
             task_free_title(task);
@@ -326,6 +330,7 @@ bool task_push_pl_manager_reset_cores(const char *playlist_path)
    pl_manager->m3u_index           = 0;
    pl_manager->status              = PL_MANAGER_BEGIN;
    pl_manager->use_old_format      = settings->bools.playlist_use_old_format;
+   pl_manager->compress            = settings->bools.playlist_compression;
    pl_manager->fuzzy_archive_match = false; /* Not relevant here */
    
    task_queue_push(task);
@@ -772,7 +777,8 @@ static void task_pl_manager_clean_playlist_handler(retro_task_t *task)
             pl_manager_write_playlist(
                   pl_manager->playlist,
                   pl_manager->playlist_path,
-                  pl_manager->use_old_format);
+                  pl_manager->use_old_format,
+                  pl_manager->compress);
             
             /* Update progress display */
             task_free_title(task);
@@ -871,6 +877,7 @@ bool task_push_pl_manager_clean_playlist(const char *playlist_path)
    pl_manager->m3u_index           = 0;
    pl_manager->status              = PL_MANAGER_BEGIN;
    pl_manager->use_old_format      = settings->bools.playlist_use_old_format;
+   pl_manager->compress            = settings->bools.playlist_compression;
    pl_manager->fuzzy_archive_match = settings->bools.playlist_fuzzy_archive_match;
    
    if (!pl_manager->m3u_list)

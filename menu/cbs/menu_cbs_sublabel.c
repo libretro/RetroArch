@@ -146,6 +146,7 @@ default_sublabel_macro(action_bind_sublabel_playlist_manager_list,         MENU_
 default_sublabel_macro(action_bind_sublabel_playlist_manager_default_core, MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_DEFAULT_CORE)
 default_sublabel_macro(action_bind_sublabel_playlist_manager_reset_cores,  MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_RESET_CORES)
 default_sublabel_macro(action_bind_sublabel_playlist_manager_label_display_mode, MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE)
+default_sublabel_macro(action_bind_sublabel_playlist_manager_sort_mode, MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_SORT_MODE)
 default_sublabel_macro(action_bind_sublabel_playlist_manager_clean_playlist, MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_CLEAN_PLAYLIST)
 default_sublabel_macro(action_bind_sublabel_delete_playlist,               MENU_ENUM_SUBLABEL_DELETE_PLAYLIST)
 default_sublabel_macro(action_bind_sublabel_network_settings_list,         MENU_ENUM_SUBLABEL_NETWORK_SETTINGS)
@@ -249,6 +250,7 @@ default_sublabel_macro(action_bind_sublabel_audio_mute,                    MENU_
 #ifdef HAVE_AUDIOMIXER
 default_sublabel_macro(action_bind_sublabel_audio_mixer_mute,              MENU_ENUM_SUBLABEL_AUDIO_MIXER_MUTE)
 #endif
+default_sublabel_macro(action_bind_sublabel_audio_fastforward_mute,        MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_MUTE)
 default_sublabel_macro(action_bind_sublabel_camera_allow,                  MENU_ENUM_SUBLABEL_CAMERA_ALLOW)
 default_sublabel_macro(action_bind_sublabel_location_allow,                MENU_ENUM_SUBLABEL_LOCATION_ALLOW)
 default_sublabel_macro(action_bind_sublabel_input_max_users,               MENU_ENUM_SUBLABEL_INPUT_MAX_USERS)
@@ -381,6 +383,8 @@ default_sublabel_macro(action_bind_sublabel_perfcnt_enable,                MENU_
 default_sublabel_macro(action_bind_sublabel_savestate_auto_save,           MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_SAVE)
 default_sublabel_macro(action_bind_sublabel_savestate_auto_load,           MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_LOAD)
 default_sublabel_macro(action_bind_sublabel_savestate_thumbnail_enable,    MENU_ENUM_SUBLABEL_SAVESTATE_THUMBNAIL_ENABLE)
+default_sublabel_macro(action_bind_sublabel_save_file_compression,         MENU_ENUM_SUBLABEL_SAVE_FILE_COMPRESSION)
+default_sublabel_macro(action_bind_sublabel_savestate_file_compression,    MENU_ENUM_SUBLABEL_SAVESTATE_FILE_COMPRESSION)
 default_sublabel_macro(action_bind_sublabel_autosave_interval,             MENU_ENUM_SUBLABEL_AUTOSAVE_INTERVAL)
 default_sublabel_macro(action_bind_sublabel_input_remap_binds_enable,      MENU_ENUM_SUBLABEL_INPUT_REMAP_BINDS_ENABLE)
 default_sublabel_macro(action_bind_sublabel_input_autodetect_enable,       MENU_ENUM_SUBLABEL_INPUT_AUTODETECT_ENABLE)
@@ -757,6 +761,8 @@ default_sublabel_macro(action_bind_sublabel_menu_ticker_smooth,                 
 default_sublabel_macro(action_bind_sublabel_playlist_show_inline_core_name,                MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_INLINE_CORE_NAME)
 default_sublabel_macro(action_bind_sublabel_playlist_sort_alphabetical,                    MENU_ENUM_SUBLABEL_PLAYLIST_SORT_ALPHABETICAL)
 default_sublabel_macro(action_bind_sublabel_playlist_fuzzy_archive_match,                  MENU_ENUM_SUBLABEL_PLAYLIST_FUZZY_ARCHIVE_MATCH)
+default_sublabel_macro(action_bind_sublabel_playlist_use_old_format,                       MENU_ENUM_SUBLABEL_PLAYLIST_USE_OLD_FORMAT)
+default_sublabel_macro(action_bind_sublabel_playlist_compression,                          MENU_ENUM_SUBLABEL_PLAYLIST_COMPRESSION)
 default_sublabel_macro(action_bind_sublabel_menu_rgui_full_width_layout,                   MENU_ENUM_SUBLABEL_MENU_RGUI_FULL_WIDTH_LAYOUT)
 default_sublabel_macro(action_bind_sublabel_menu_rgui_extended_ascii,                      MENU_ENUM_SUBLABEL_MENU_RGUI_EXTENDED_ASCII)
 default_sublabel_macro(action_bind_sublabel_thumbnails_updater_list,                       MENU_ENUM_SUBLABEL_THUMBNAILS_UPDATER_LIST)
@@ -1104,9 +1110,12 @@ static int action_bind_sublabel_playlist_entry(
    /* Read playlist entry */
    playlist_get_index(playlist, i, &entry);
 
-   /* Only add sublabel if a core is currently assigned */
+   /* Only add sublabel if a core is currently assigned
+    * > Both core name and core path must be valid */
    if (  string_is_empty(entry->core_name) || 
-         string_is_equal(entry->core_name, "DETECT"))
+         string_is_equal(entry->core_name, "DETECT") ||
+         string_is_empty(entry->core_path) ||
+         string_is_equal(entry->core_path, "DETECT"))
       return 0;
 
    /* Add core name */
@@ -2324,6 +2333,12 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_SAVESTATE_THUMBNAIL_ENABLE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_savestate_thumbnail_enable);
             break;
+         case MENU_ENUM_LABEL_SAVE_FILE_COMPRESSION:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_save_file_compression);
+            break;
+         case MENU_ENUM_LABEL_SAVESTATE_FILE_COMPRESSION:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_savestate_file_compression);
+            break;
          case MENU_ENUM_LABEL_SAVESTATE_AUTO_SAVE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_savestate_auto_save);
             break;
@@ -2687,6 +2702,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_audio_mixer_mute);
 #endif
             break;
+         case MENU_ENUM_LABEL_AUDIO_FASTFORWARD_MUTE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_audio_fastforward_mute);
+            break;
          case MENU_ENUM_LABEL_AUDIO_LATENCY:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_audio_latency);
             break;
@@ -2928,6 +2946,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_playlist_manager_label_display_mode);
+            break;
+         case MENU_ENUM_LABEL_PLAYLIST_MANAGER_SORT_MODE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_playlist_manager_sort_mode);
             break;
          case MENU_ENUM_LABEL_PLAYLIST_MANAGER_CLEAN_PLAYLIST:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_playlist_manager_clean_playlist);
@@ -3274,6 +3295,12 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_PLAYLIST_FUZZY_ARCHIVE_MATCH:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_playlist_fuzzy_archive_match);
+            break;
+         case MENU_ENUM_LABEL_PLAYLIST_USE_OLD_FORMAT:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_playlist_use_old_format);
+            break;
+         case MENU_ENUM_LABEL_PLAYLIST_COMPRESSION:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_playlist_compression);
             break;
          case MENU_ENUM_LABEL_MENU_RGUI_FULL_WIDTH_LAYOUT:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_rgui_full_width_layout);

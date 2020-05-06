@@ -965,7 +965,9 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
 
          if (show_inline_core_name)
          {
-            if (!string_is_empty(entry->core_name) && !string_is_equal(entry->core_name, "DETECT"))
+            /* Both core name and core path must be valid */
+            if (!string_is_empty(entry->core_name) && !string_is_equal(entry->core_name, "DETECT") &&
+                !string_is_empty(entry->core_path) && !string_is_equal(entry->core_path, "DETECT"))
             {
                strlcat(menu_entry_label, label_spacer, sizeof(menu_entry_label));
                strlcat(menu_entry_label, entry->core_name, sizeof(menu_entry_label));
@@ -977,11 +979,19 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
       }
       else
       {
-         if (entry->core_name)
+         /* Playlist entry without content...
+          * This is useless/broken, but have to include
+          * it otherwise synchronisation between the menu
+          * and the underlying playlist will be lost...
+          * > Use label if available, otherwise core name
+          * > If both are missing, add an empty menu entry */
+         if (!string_is_empty(entry->label))
+            strlcpy(menu_entry_label, entry->label, sizeof(menu_entry_label));
+         else if (!string_is_empty(entry->core_name))
             strlcpy(menu_entry_label, entry->core_name, sizeof(menu_entry_label));
 
          menu_entries_append_enum(info->list, menu_entry_label, path_playlist,
-               MENU_ENUM_LABEL_PLAYLIST_ENTRY, FILE_TYPE_PLAYLIST_ENTRY, 0, i);
+               MENU_ENUM_LABEL_PLAYLIST_ENTRY, FILE_TYPE_RPL_ENTRY, 0, i);
       }
 
       info->count++;
@@ -1719,21 +1729,24 @@ end:
 }
 
 static void menu_displaylist_set_new_playlist(
-      menu_handle_t *menu, const char *path)
+      menu_handle_t *menu, const char *path, bool sort_enabled)
 {
-   unsigned playlist_size         = COLLECTION_SIZE;
-   const char *playlist_file_name = path_basename(path);
-   settings_t *settings           = config_get_ptr();
-   int content_favorites_size     = settings->ints.content_favorites_size;
-   unsigned content_history_size  = settings->uints.content_history_size;
+   unsigned playlist_size          = COLLECTION_SIZE;
+   const char *playlist_file_name  = path_basename(path);
+   settings_t *settings            = config_get_ptr();
+   int content_favorites_size      = settings->ints.content_favorites_size;
+   unsigned content_history_size   = settings->uints.content_history_size;
+   bool playlist_sort_alphabetical = settings->bools.playlist_sort_alphabetical;
+   bool playlist_use_old_format    = settings->bools.playlist_use_old_format;
+   bool playlist_compression       = settings->bools.playlist_compression;
 
-   menu->db_playlist_file[0]      = '\0';
+   menu->db_playlist_file[0]       = '\0';
 
    if (playlist_get_cached())
       playlist_free_cached();
 
    /* Get proper playlist capacity */
-   if (settings && !string_is_empty(playlist_file_name))
+   if (!string_is_empty(playlist_file_name))
    {
       if (string_is_equal(playlist_file_name, file_path_str(FILE_PATH_CONTENT_HISTORY)) ||
           string_is_equal(playlist_file_name, file_path_str(FILE_PATH_CONTENT_MUSIC_HISTORY)) ||
@@ -1745,17 +1758,29 @@ static void menu_displaylist_set_new_playlist(
             playlist_size = (unsigned)content_favorites_size;
    }
 
-   if (playlist_init_cached(path, playlist_size))
+   if (playlist_init_cached(
+         path, playlist_size,
+         playlist_use_old_format, playlist_compression))
+   {
+      playlist_t *playlist                      = playlist_get_cached();
+      enum playlist_sort_mode current_sort_mode = playlist_get_sort_mode(playlist);
+
+      /* Sort playlist, if required */
+      if (sort_enabled &&
+          ((playlist_sort_alphabetical && (current_sort_mode == PLAYLIST_SORT_MODE_DEFAULT)) ||
+           (current_sort_mode == PLAYLIST_SORT_MODE_ALPHABETICAL)))
+         playlist_qsort(playlist);
+
       strlcpy(
             menu->db_playlist_file,
             path,
             sizeof(menu->db_playlist_file));
+   }
 }
 
 static int menu_displaylist_parse_horizontal_list(
       menu_handle_t *menu,
-      menu_displaylist_info_t *info,
-      bool sort)
+      menu_displaylist_info_t *info)
 {
    menu_ctx_list_t list_info;
    menu_ctx_list_t list_horiz_info;
@@ -1790,7 +1815,10 @@ static int menu_displaylist_parse_horizontal_list(
 
       fill_pathname_join(path_playlist, dir_playlist, item->path,
             sizeof(path_playlist));
-      menu_displaylist_set_new_playlist(menu, path_playlist);
+
+      /* Horizontal lists are always 'collections'
+       * > Enable sorting (if allowed by user config) */
+      menu_displaylist_set_new_playlist(menu, path_playlist, true);
 
       /* Thumbnail system must be set *after* playlist
        * is loaded/cached */
@@ -1801,14 +1829,9 @@ static int menu_displaylist_parse_horizontal_list(
    playlist = playlist_get_cached();
 
    if (playlist)
-   {
-      if (sort)
-         playlist_qsort(playlist);
-
       menu_displaylist_parse_playlist(info,
             playlist,
             msg_hash_to_str(MENU_ENUM_LABEL_COLLECTION), true);
-   }
 
    return 0;
 }
@@ -2869,9 +2892,12 @@ static bool menu_displaylist_parse_playlist_manager_settings(
 {
    enum msg_hash_enums right_thumbnail_label_value;
    enum msg_hash_enums left_thumbnail_label_value;
-   const char *playlist_file = NULL;
-   playlist_t *playlist      = NULL;
-   const char *menu_driver   = menu_driver_ident();
+   bool is_content_history;
+   const char *playlist_file    = NULL;
+   playlist_t *playlist         = NULL;
+   const char *menu_driver      = menu_driver_ident();
+   settings_t *settings         = config_get_ptr();
+   bool playlist_use_old_format = settings->bools.playlist_use_old_format;
 
    if (string_is_empty(playlist_path))
       return false;
@@ -2881,20 +2907,29 @@ static bool menu_displaylist_parse_playlist_manager_settings(
    if (string_is_empty(playlist_file))
       return false;
 
-   menu_displaylist_set_new_playlist(menu, playlist_path);
+   /* Note: We are caching the current playlist
+    * here so we can get its path and/or modify
+    * its metadata when performing management
+    * tasks. We *don't* care about entry order
+    * at this stage, so we can save a few clock
+    * cycles by disabling sorting */
+   menu_displaylist_set_new_playlist(menu, playlist_path, false);
 
    playlist = playlist_get_cached();
 
    if (!playlist)
       return false;
 
+   /* Check whether this is a content history playlist */
+   is_content_history = string_is_equal(playlist_file, file_path_str(FILE_PATH_CONTENT_HISTORY)) ||
+                        string_is_equal(playlist_file, file_path_str(FILE_PATH_CONTENT_MUSIC_HISTORY)) ||
+                        string_is_equal(playlist_file, file_path_str(FILE_PATH_CONTENT_VIDEO_HISTORY)) ||
+                        string_is_equal(playlist_file, file_path_str(FILE_PATH_CONTENT_IMAGE_HISTORY));
+
    /* Default core association
     * > This is only shown for collection playlists
     *   (i.e. it is not relevant for history/favourites) */
-   if (!string_is_equal(playlist_file, file_path_str(FILE_PATH_CONTENT_HISTORY)) &&
-       !string_is_equal(playlist_file, file_path_str(FILE_PATH_CONTENT_MUSIC_HISTORY)) &&
-       !string_is_equal(playlist_file, file_path_str(FILE_PATH_CONTENT_VIDEO_HISTORY)) &&
-       !string_is_equal(playlist_file, file_path_str(FILE_PATH_CONTENT_IMAGE_HISTORY)) &&
+   if (!is_content_history &&
        !string_is_equal(playlist_file, file_path_str(FILE_PATH_CONTENT_FAVORITES)))
       menu_entries_append_enum(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_DEFAULT_CORE),
@@ -2956,6 +2991,15 @@ static bool menu_displaylist_parse_playlist_manager_settings(
          msg_hash_to_str(MENU_ENUM_LABEL_PLAYLIST_MANAGER_LEFT_THUMBNAIL_MODE),
          MENU_ENUM_LABEL_PLAYLIST_MANAGER_LEFT_THUMBNAIL_MODE,
          MENU_SETTING_PLAYLIST_MANAGER_LEFT_THUMBNAIL_MODE, 0, 0);
+
+   /* Sorting mode
+    * > Not relevant for history playlists  */
+   if (!is_content_history)
+      menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_SORT_MODE),
+            msg_hash_to_str(MENU_ENUM_LABEL_PLAYLIST_MANAGER_SORT_MODE),
+            MENU_ENUM_LABEL_PLAYLIST_MANAGER_SORT_MODE,
+            MENU_SETTING_PLAYLIST_MANAGER_SORT_MODE, 0, 0);
 
    /* Clean playlist */
    menu_entries_append_enum(info->list,
@@ -3086,7 +3130,12 @@ static unsigned menu_displaylist_parse_content_information(
          core_path     = entry->core_path;
          db_name       = entry->db_name;
 
-         strlcpy(core_name, entry->core_name, sizeof(core_name));
+         /* Only display core name if both core name and
+          * core path are valid */
+         if (!string_is_empty(entry->core_name) &&
+             !string_is_empty(core_path) &&
+             !string_is_equal(core_path, "DETECT"))
+            strlcpy(core_name, entry->core_name, sizeof(core_name));
       }
    }
    else
@@ -3580,22 +3629,19 @@ static void menu_displaylist_parse_playlist_generic(
       const char *playlist_name,
       const char *playlist_path,
       bool is_collection,
-      bool sort,
+      bool sort_enabled,
       int *ret)
 {
    playlist_t *playlist = NULL;
 
-   menu_displaylist_set_new_playlist(menu, playlist_path);
+   menu_displaylist_set_new_playlist(menu, playlist_path, sort_enabled);
 
    playlist             = playlist_get_cached();
 
    if (!playlist)
       return;
 
-   if (sort)
-      playlist_qsort(playlist);
-
-   *ret              = menu_displaylist_parse_playlist(info,
+   *ret                 = menu_displaylist_parse_playlist(info,
          playlist, playlist_name, is_collection);
 }
 
@@ -4220,6 +4266,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_PLAYLIST_ENTRY_REMOVE,               PARSE_ONLY_UINT, true},
                {MENU_ENUM_LABEL_PLAYLIST_SORT_ALPHABETICAL,          PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_PLAYLIST_USE_OLD_FORMAT,             PARSE_ONLY_BOOL, true},
+               {MENU_ENUM_LABEL_PLAYLIST_COMPRESSION,                PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_PLAYLIST_SHOW_INLINE_CORE_NAME,      PARSE_ONLY_UINT, true},
                {MENU_ENUM_LABEL_PLAYLIST_SHOW_SUBLABELS,             PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_PLAYLIST_SUBLABEL_RUNTIME_TYPE,      PARSE_ONLY_UINT, false},
@@ -4603,6 +4650,10 @@ unsigned menu_displaylist_build_list(
             count++;
          if (menu_displaylist_parse_settings_enum(list,
                   MENU_ENUM_LABEL_AUDIO_MIXER_MUTE,
+                  PARSE_ONLY_BOOL, false) == 0)
+            count++;
+         if (menu_displaylist_parse_settings_enum(list,
+                  MENU_ENUM_LABEL_AUDIO_FASTFORWARD_MUTE,
                   PARSE_ONLY_BOOL, false) == 0)
             count++;
          if (menu_displaylist_parse_settings_enum(list,
@@ -5047,17 +5098,40 @@ unsigned menu_displaylist_build_list(
          break;
       case DISPLAYLIST_AI_SERVICE_SETTINGS_LIST:
          {
+            settings_t      *settings      = config_get_ptr();
+            bool ai_service_enable         = settings->bools.ai_service_enable;
+
             menu_displaylist_build_info_selective_t build_list[] = {
-               {MENU_ENUM_LABEL_AI_SERVICE_MODE,                               PARSE_ONLY_UINT, true  },
-               {MENU_ENUM_LABEL_AI_SERVICE_URL,                               PARSE_ONLY_STRING, true },
-               {MENU_ENUM_LABEL_AI_SERVICE_ENABLE,                                   PARSE_ONLY_BOOL, true},
-               {MENU_ENUM_LABEL_AI_SERVICE_PAUSE,                                   PARSE_ONLY_BOOL, true},
-               {MENU_ENUM_LABEL_AI_SERVICE_SOURCE_LANG,                                   PARSE_ONLY_UINT, true},
-               {MENU_ENUM_LABEL_AI_SERVICE_TARGET_LANG,                                   PARSE_ONLY_UINT, true},
+               {MENU_ENUM_LABEL_AI_SERVICE_ENABLE,      PARSE_ONLY_BOOL,   true},
+               {MENU_ENUM_LABEL_AI_SERVICE_MODE,        PARSE_ONLY_UINT,   false},
+               {MENU_ENUM_LABEL_AI_SERVICE_URL,         PARSE_ONLY_STRING, false},
+               {MENU_ENUM_LABEL_AI_SERVICE_PAUSE,       PARSE_ONLY_BOOL,   false},
+               {MENU_ENUM_LABEL_AI_SERVICE_SOURCE_LANG, PARSE_ONLY_UINT,   false},
+               {MENU_ENUM_LABEL_AI_SERVICE_TARGET_LANG, PARSE_ONLY_UINT,   false},
             };
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
             {
+               switch (build_list[i].enum_idx)
+               {
+                  case MENU_ENUM_LABEL_AI_SERVICE_MODE:
+                  case MENU_ENUM_LABEL_AI_SERVICE_URL:
+                  case MENU_ENUM_LABEL_AI_SERVICE_PAUSE:
+                  case MENU_ENUM_LABEL_AI_SERVICE_SOURCE_LANG:
+                  case MENU_ENUM_LABEL_AI_SERVICE_TARGET_LANG:
+                     if (ai_service_enable)
+                        build_list[i].checked = true;
+                     break;
+                  default:
+                     break;
+               }
+            }
+
+            for (i = 0; i < ARRAY_SIZE(build_list); i++)
+            {
+               if (!build_list[i].checked && !include_everything)
+                  continue;
+
                if (menu_displaylist_parse_settings_enum(list,
                         build_list[i].enum_idx,  build_list[i].parse_type,
                         false) == 0)
@@ -5359,6 +5433,58 @@ unsigned menu_displaylist_build_list(
          break;
       case DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_LEFT_THUMBNAIL_MODE:
          count = populate_playlist_thumbnail_mode_dropdown_list(list, PLAYLIST_THUMBNAIL_LEFT);
+         break;
+      case DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_SORT_MODE:
+         {
+            playlist_t *playlist = playlist_get_cached();
+
+            if (playlist)
+            {
+               size_t i;
+               /* Get current sort mode */
+               enum playlist_sort_mode current_sort_mode =
+                  playlist_get_sort_mode(playlist);
+
+               /* Loop over all defined sort modes */
+               for (i = 0; i <= (unsigned)PLAYLIST_SORT_MODE_OFF; i++)
+               {
+                  enum msg_hash_enums label_value;
+                  enum playlist_sort_mode sort_mode =
+                     (enum playlist_sort_mode)i;
+
+                  /* Get appropriate entry label */
+                  switch (sort_mode)
+                  {
+                     case PLAYLIST_SORT_MODE_ALPHABETICAL:
+                        label_value = MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_SORT_MODE_ALPHABETICAL;
+                        break;
+                     case PLAYLIST_SORT_MODE_OFF:
+                        label_value = MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_SORT_MODE_OFF;
+                        break;
+                     case PLAYLIST_SORT_MODE_DEFAULT:
+                     default:
+                        label_value = MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_SORT_MODE_DEFAULT;
+                        break;
+                  }
+
+                  /* Add entry */
+                  if (menu_entries_append_enum(list,
+                           msg_hash_to_str(label_value),
+                           "",
+                           MENU_ENUM_LABEL_NO_ITEMS,
+                           MENU_SETTING_DROPDOWN_ITEM_PLAYLIST_SORT_MODE,
+                           0, 0))
+                     count++;
+
+                  /* Check whether current entry is checked */
+                  if (current_sort_mode == sort_mode)
+                  {
+                     menu_entries_set_checked(list, i, true);
+                     menu_navigation_set_selection(i);
+                  }
+               }
+            }
+         }
          break;
       case DISPLAYLIST_DROPDOWN_LIST_MANUAL_CONTENT_SCAN_SYSTEM_NAME:
          /* Get system name list */
@@ -6739,6 +6865,8 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_SAVESTATE_AUTO_SAVE,   PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_SAVESTATE_AUTO_LOAD,   PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_SAVESTATE_THUMBNAIL_ENABLE,   PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_SAVE_FILE_COMPRESSION,        PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_SAVESTATE_FILE_COMPRESSION,   PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_SAVEFILES_IN_CONTENT_DIR_ENABLE,   PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_SAVESTATES_IN_CONTENT_DIR_ENABLE,   PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_SYSTEMFILES_IN_CONTENT_DIR_ENABLE,   PARSE_ONLY_BOOL},
@@ -8809,7 +8937,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             char path_playlist[PATH_MAX_LENGTH];
             playlist_t *playlist            = NULL;
             settings_t      *settings       = config_get_ptr();
-            bool playlist_sort_alphabetical = settings->bools.playlist_sort_alphabetical;
             const char *dir_playlist        = settings->paths.directory_playlist;
 
             path_playlist[0] = '\0';
@@ -8820,7 +8947,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   info->path,
                   sizeof(path_playlist));
 
-            menu_displaylist_set_new_playlist(menu, path_playlist);
+            menu_displaylist_set_new_playlist(menu, path_playlist, true);
 
             strlcpy(path_playlist,
                   msg_hash_to_str(MENU_ENUM_LABEL_COLLECTION),
@@ -8829,17 +8956,15 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             playlist = playlist_get_cached();
 
             if (playlist)
-            {
-               if (playlist_sort_alphabetical)
-                  playlist_qsort(playlist);
-
                ret = menu_displaylist_parse_playlist(info,
                      playlist, path_playlist, true);
-            }
 
             if (ret == 0)
             {
-               info->need_sort    = playlist_sort_alphabetical;
+               /* Playlists themselves are sorted
+                * > Display lists generated from playlists
+                *   must never be sorted */
+               info->need_sort    = false;
                info->need_refresh = true;
                info->need_push    = true;
             }
@@ -8869,6 +8994,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          }
 
          ret                         = 0;
+         /* Playlists themselves are sorted
+          * > Display lists generated from playlists
+          *   must never be sorted */
+         info->need_sort             = false;
          info->need_refresh          = true;
          info->need_push             = true;
 #ifndef IS_SALAMANDER
@@ -8881,7 +9010,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          {
             settings_t      *settings          = config_get_ptr();
             const char *path_content_favorites = settings->paths.path_content_favorites;
-            bool playlist_sort_alphabetical    = settings->bools.playlist_sort_alphabetical;
 
             info->count                   = 0;
 
@@ -8890,7 +9018,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   "favorites",
                   path_content_favorites,
                   false, /* Not a conventional collection */
-                  playlist_sort_alphabetical,
+                  true,  /* Enable sorting (if allowed by user config) */
                   &ret);
 
             if (info->count == 0)
@@ -8905,7 +9033,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             }
 
             ret                   = 0;
-            info->need_sort       = playlist_sort_alphabetical;
+            /* Playlists themselves are sorted
+             * > Display lists generated from playlists
+             *   must never be sorted */
+            info->need_sort       = false;
             info->need_refresh    = true;
             info->need_push       = true;
          }
@@ -8940,6 +9071,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
          if (ret == 0)
          {
+            /* Playlists themselves are sorted
+             * > Display lists generated from playlists
+             *   must never be sorted */
+            info->need_sort             = false;
             info->need_refresh          = true;
             info->need_push             = true;
 #ifndef IS_SALAMANDER
@@ -8984,6 +9119,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
          if (ret == 0)
          {
+            /* Playlists themselves are sorted
+             * > Display lists generated from playlists
+             *   must never be sorted */
+            info->need_sort             = false;
             info->need_refresh          = true;
             info->need_push             = true;
 #if !defined(IS_SALAMANDER) && (defined(HAVE_FFMPEG) || defined(HAVE_MPV))
@@ -9433,6 +9572,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
       case DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_LABEL_DISPLAY_MODE:
       case DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_RIGHT_THUMBNAIL_MODE:
       case DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_LEFT_THUMBNAIL_MODE:
+      case DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_SORT_MODE:
       case DISPLAYLIST_DROPDOWN_LIST_MANUAL_CONTENT_SCAN_SYSTEM_NAME:
       case DISPLAYLIST_DROPDOWN_LIST_MANUAL_CONTENT_SCAN_CORE_NAME:
       case DISPLAYLIST_DROPDOWN_LIST_DISK_INDEX:
@@ -9492,6 +9632,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                case DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_LABEL_DISPLAY_MODE:
                case DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_RIGHT_THUMBNAIL_MODE:
                case DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_LEFT_THUMBNAIL_MODE:
+               case DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_SORT_MODE:
                case DISPLAYLIST_DROPDOWN_LIST_MANUAL_CONTENT_SCAN_SYSTEM_NAME:
                case DISPLAYLIST_DROPDOWN_LIST_MANUAL_CONTENT_SCAN_CORE_NAME:
                case DISPLAYLIST_DROPDOWN_LIST_DISK_INDEX:
@@ -9545,17 +9686,15 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          info->need_push    = true;
          break;
       case DISPLAYLIST_HORIZONTAL:
-         {
-            settings_t *settings            = config_get_ptr();
-            bool playlist_sort_alphabetical = settings->bools.playlist_sort_alphabetical;
+         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+         ret = menu_displaylist_parse_horizontal_list(menu, info);
 
-            menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-            ret = menu_displaylist_parse_horizontal_list(menu, info, playlist_sort_alphabetical);
-
-            info->need_sort    = playlist_sort_alphabetical;
-            info->need_refresh = true;
-            info->need_push    = true;
-         }
+         /* Playlists themselves are sorted
+          * > Display lists generated from playlists
+          *   must never be sorted */
+         info->need_sort    = false;
+         info->need_refresh = true;
+         info->need_push    = true;
          break;
       case DISPLAYLIST_HORIZONTAL_CONTENT_ACTIONS:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
@@ -10177,24 +10316,22 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          use_filebrowser    = true;
          break;
       case DISPLAYLIST_PLAYLIST:
+         menu_displaylist_parse_playlist_generic(menu, info,
+               path_basename(info->path),
+               info->path,
+               true, /* Is a collection */
+               true, /* Enable sorting (if allowed by user config) */
+               &ret);
+         ret = 0; /* Why do we do this...? */
+
+         if (ret == 0)
          {
-            settings_t *settings            = config_get_ptr();
-            bool playlist_sort_alphabetical = settings->bools.playlist_sort_alphabetical;
-
-            menu_displaylist_parse_playlist_generic(menu, info,
-                  path_basename(info->path),
-                  info->path,
-                  true, /* Is a collection */
-                  playlist_sort_alphabetical,
-                  &ret);
-            ret = 0; /* Why do we do this...? */
-
-            if (ret == 0)
-            {
-               info->need_sort    = playlist_sort_alphabetical;
-               info->need_refresh = true;
-               info->need_push    = true;
-            }
+            /* Playlists themselves are sorted
+             * > Display lists generated from playlists
+             *   must never be sorted */
+            info->need_sort    = false;
+            info->need_refresh = true;
+            info->need_push    = true;
          }
          break;
       case DISPLAYLIST_IMAGES_HISTORY:
@@ -10229,6 +10366,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          }
 
          ret                         = 0;
+         /* Playlists themselves are sorted
+          * > Display lists generated from playlists
+          *   must never be sorted */
+         info->need_sort             = false;
          info->need_refresh          = true;
          info->need_push             = true;
 #if !defined(IS_SALAMANDER) && defined(HAVE_IMAGEVIEWER)

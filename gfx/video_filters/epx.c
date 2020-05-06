@@ -18,6 +18,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <retro_endianness.h>
+
 #ifdef RARCH_INTERNAL
 #define softfilter_get_implementation epx_get_implementation
 #define softfilter_thread_data epx_softfilter_thread_data

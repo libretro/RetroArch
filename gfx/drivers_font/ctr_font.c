@@ -243,7 +243,7 @@ static void ctr_font_render_line(
                  GPU_TEVSOURCES(GPU_TEXTURE0, GPU_CONSTANT, 0),
                  GPU_TEVSOURCES(GPU_TEXTURE0, GPU_CONSTANT, 0),
                  0,
-                 GPU_TEVOPERANDS(GPU_TEVOP_RGB_SRC_R, GPU_TEVOP_RGB_SRC_ALPHA, 0),
+                 GPU_TEVOPERANDS(GPU_TEVOP_RGB_SRC_ALPHA, 0, 0),
                  GPU_MODULATE, GPU_MODULATE,
                  color);
 
@@ -329,7 +329,7 @@ static void ctr_font_render_message(
       return;
    }
 
-   line_height = scale / line_metrics->height;
+   line_height = (float)line_metrics->height * scale / (float)height;
 
    for (;;)
    {
@@ -369,8 +369,8 @@ static void ctr_font_render_msg(
             alpha, r_dark, g_dark, b_dark, alpha_dark;
    ctr_font_t                * font = (ctr_font_t*)data;
    ctr_video_t                *ctr  = (ctr_video_t*)userdata;
-   unsigned width                   = ctr->vp.width;
-   unsigned height                  = ctr->vp.height;
+   unsigned width                   = ctr->vp.full_width;
+   unsigned height                  = ctr->vp.full_height;
    settings_t *settings             = config_get_ptr();
    float video_msg_pos_x            = settings->floats.video_msg_pos_x;
    float video_msg_pos_y            = settings->floats.video_msg_pos_y;
@@ -397,7 +397,7 @@ static void ctr_font_render_msg(
       b                    = FONT_COLOR_GET_BLUE(params->color);
       alpha                = FONT_COLOR_GET_ALPHA(params->color);
 
-      color                = params->color;
+      color                = COLOR_ABGR(r, g, b, alpha);
    }
    else
    {
@@ -412,10 +412,10 @@ static void ctr_font_render_msg(
       alpha          = 255;
       color          = COLOR_ABGR(r, g, b, alpha);
 
-      drop_x         = -2;
-      drop_y         = -2;
-      drop_mod       = 0.3f;
-      drop_alpha     = 1.0f;
+      drop_x         = 1;
+      drop_y         = -1;
+      drop_mod       = 0.0f;
+      drop_alpha     = 0.75f;
    }
 
    max_glyphs        = strlen(msg);
