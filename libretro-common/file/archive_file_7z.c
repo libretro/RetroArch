@@ -147,7 +147,8 @@ static int sevenzip_file_read(
 #if defined(_WIN32) && defined(USE_WINDOWS_FILE) && !defined(LEGACY_WIN32)
    if (!string_is_empty(path))
    {
-      wchar_t *pathW = utf8_to_utf16_string_alloc(path);
+      char* resolvedpath = get_substitute_path(path);
+      wchar_t *pathW = utf8_to_utf16_string_alloc(resolvedpath);
 
       if (pathW)
       {
@@ -160,6 +161,8 @@ static int sevenzip_file_read(
 
          free(pathW);
       }
+
+      free(resolvedpath);
    }
 #else
    /* Could not open 7zip archive? */
@@ -360,7 +363,8 @@ static int sevenzip_parse_file_init(file_archive_transfer_t *state,
 #if defined(_WIN32) && defined(USE_WINDOWS_FILE) && !defined(LEGACY_WIN32)
    if (!string_is_empty(file))
    {
-      wchar_t *fileW = utf8_to_utf16_string_alloc(file);
+      char* resolvedpath = get_substitute_path(file);
+      wchar_t *fileW = utf8_to_utf16_string_alloc(resolvedpath);
 
       if (fileW)
       {
@@ -373,6 +377,8 @@ static int sevenzip_parse_file_init(file_archive_transfer_t *state,
 
          free(fileW);
       }
+
+      free(resolvedpath);
    }
 #else
    /* could not open 7zip archive? */
