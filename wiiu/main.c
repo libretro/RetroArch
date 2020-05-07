@@ -22,6 +22,7 @@
 #if defined(HAVE_IOSUHAX) && defined(HAVE_LIBFAT)
 #include <fat.h>
 #include <iosuhax.h>
+#include <iosuhax_devoptab.h>
 #include <sys/iosupport.h>
 #endif
 
@@ -54,7 +55,7 @@ static void fsdev_init(void);
 static void fsdev_exit(void);
 
 bool iosuhaxMount = 0;
-
+int fsaFd = -1;
 static int mcp_hook_fd = -1;
 
 /* HBL elf entry point */
@@ -204,7 +205,11 @@ void __mount_filesystems(void)
 {
 #ifdef HAVE_LIBFAT
    if(iosuhaxMount)
+   {
       fatInitDefault();
+      fsaFd = IOSUHAX_FSA_Open();
+      mount_fs("storage_usb", fsaFd, NULL, "/vol/storage_usb01");
+	} 
    else
       mount_sd_fat("sd");
 #else
@@ -224,6 +229,17 @@ void __unmount_filesystems(void)
    {
       fatUnmount("sd:");
       fatUnmount("usb:");
+	  
+      IOSUHAX_sdio_disc_interface.shutdown();
+      IOSUHAX_usb_disc_interface.shutdown();
+
+      unmount_fs("storage_usb");
+      IOSUHAX_FSA_Close(fsaFd);
+	
+	   if(mcp_hook_fd >= 0)
+		   MCPHookClose();
+	   else
+		   IOSUHAX_Close();
    }
    else
       unmount_sd_fat("sd");
