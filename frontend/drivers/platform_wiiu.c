@@ -80,7 +80,8 @@ static bool exists(char *path)
    return (stat(path, &stat_buf) == 0);
 }
 
-static void fix_asset_directory(void) {
+static void fix_asset_directory(void)
+{
    char src_path_buf[PATH_MAX_LENGTH] = {0};
    char dst_path_buf[PATH_MAX_LENGTH] = {0};
 
@@ -190,16 +191,15 @@ static int frontend_wiiu_parse_drive_list(void *data, bool load_content)
          enum_idx,
          FILE_TYPE_DIRECTORY, 0, 0);
    menu_entries_append_enum(list, WIIU_STORAGE_USB_PATH,
-      msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
-      enum_idx,
-      FILE_TYPE_DIRECTORY, 0, 0);
+         msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+         enum_idx,
+         FILE_TYPE_DIRECTORY, 0, 0);
 #endif
    return 0;
 }
 
 static void frontend_wiiu_exec(const char *path, bool should_load_content)
 {
-
    struct
    {
       u32 magic;
