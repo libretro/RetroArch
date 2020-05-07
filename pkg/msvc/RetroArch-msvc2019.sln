@@ -1,0 +1,115 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.28803.452
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RetroArch-msvc2019", "msvc-2019\RetroArch-msvc2019.vcxproj", "{27FF7CE1-4059-4AA1-8062-FD529560FA54}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug Cg|ARM = Debug Cg|ARM
+		Debug Cg|ARM64 = Debug Cg|ARM64
+		Debug Cg|x64 = Debug Cg|x64
+		Debug Cg|x86 = Debug Cg|x86
+		Debug QT|ARM = Debug QT|ARM
+		Debug QT|ARM64 = Debug QT|ARM64
+		Debug QT|x64 = Debug QT|x64
+		Debug QT|x86 = Debug QT|x86
+		Debug QT+CG|ARM = Debug QT+CG|ARM
+		Debug QT+CG|ARM64 = Debug QT+CG|ARM64
+		Debug QT+CG|x64 = Debug QT+CG|x64
+		Debug QT+CG|x86 = Debug QT+CG|x86
+		Debug|ARM = Debug|ARM
+		Debug|ARM64 = Debug|ARM64
+		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
+		Release Cg|ARM = Release Cg|ARM
+		Release Cg|ARM64 = Release Cg|ARM64
+		Release Cg|x64 = Release Cg|x64
+		Release Cg|x86 = Release Cg|x86
+		Release QT|ARM = Release QT|ARM
+		Release QT|ARM64 = Release QT|ARM64
+		Release QT|x64 = Release QT|x64
+		Release QT|x86 = Release QT|x86
+		Release QT+CG|ARM = Release QT+CG|ARM
+		Release QT+CG|ARM64 = Release QT+CG|ARM64
+		Release QT+CG|x64 = Release QT+CG|x64
+		Release QT+CG|x86 = Release QT+CG|x86
+		Release|ARM = Release|ARM
+		Release|ARM64 = Release|ARM64
+		Release|x64 = Release|x64
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{27FF7CE1-4059-4AA1-8062-FD529560FA54}.Debug Cg|ARM.ActiveCfg = Debug Cg|ARM
+		{27FF7CE1-4059-4AA1-8062-FD529560FA54}.Debug Cg|ARM.Build.0 = Debug Cg|ARM
+		{27FF7CE1-4059-4AA1-8062-FD529560FA54}.Debug Cg|ARM64.ActiveCfg = Debug Cg|ARM64
+		{27FF7CE1-4059-4AA1-8062-FD529560FA54}.Debug Cg|ARM64.Build.0 = Debug Cg|ARM64
+		{27FF7CE1-4059-4AA1-8062-FD529560FA54}.Debug Cg|x64.ActiveCfg = Debug Cg|x64
+		{27FF7CE1-4059-4AA1-8062-FD529560FA54}.Debug Cg|x64.Build.0 = Debug Cg|x64
+		{27FF7CE1-4059-4AA1-8062-FD529560FA54}.Debug Cg|x86.ActiveCfg = Debug Cg|Win32
+		{27FF7CE1-4059-4AA1-8062-FD529560FA54}.Debug Cg|x86.Build.0 = Debug Cg|Win32
+		{27FF7CE1-4059-4AA1-8062-FD529560FA54}.Debug QT|ARM.ActiveCfg = Debug QT|ARM
+		{27FF7CE1-4059-4AA1-8062-FD529560FA54}.Debug QT|ARM.Build.0 = Debug QT|ARM
+		{27FF7CE1-4059-4AA1-8062-FD529560FA54}.Debug QT|ARM64.ActiveCfg = Debug QT|ARM64
+		{27FF7CE1-4059-4AA1-8062-FD529560FA54}.Debug QT|ARM64.Build.0 = Debug QT|ARM64
+		{27FF7CE1-4059-4AA1-8062-FD529560FA54}.Debug QT|x64.ActiveCfg = Debug QT|x64
+		{27FF7CE1-4059-4AA1-8062-FD529560FA54}.Debug QT|x64.Build.0 = Debug QT|x64
+		{27FF7CE1-4059-4AA1-8062-FD529560FA54}.Debug QT|x86.ActiveCfg = Debug QT|Win32
+		{27FF7CE1-4059-4AA1-8062-FD529560FA54}.Debug QT|x86.Build.0 = Debug QT|Win32
+		{27FF7CE1-4059-4AA1-8062-FD529560FA54}.Debug QT+CG|ARM.ActiveCfg = Debug QT+CG|ARM
+		{27FF7CE1-4059-4AA1-8062-FD529560FA54}.Debug QT+CG|ARM.Build.0 = Debug QT+CG|ARM
+		{27FF7CE1-4059-4AA1-8062-FD529560FA54}.Debug QT+CG|ARM64.ActiveCfg = Debug QT+CG|ARM64
+		{27FF7CE1-4059-4AA1-8062-FD529560FA54}.Debug QT+CG|ARM64.Build.0 = Debug QT+CG|ARM64
+		{27FF7CE1-4059-4AA1-8062-FD529560FA54}.Debug QT+CG|x64.ActiveCfg = Debug QT+CG|x64
+		{27FF7CE1-4059-4AA1-8062-FD529560FA54}.Debug QT+CG|x64.Build.0 = Debug QT+CG|x64
+		{27FF7CE1-4059-4AA1-8062-FD529560FA54}.Debug QT+CG|x86.ActiveCfg = Debug QT+CG|Win32
+		{27FF7CE1-4059-4AA1-8062-FD529560FA54}.Debug QT+CG|x86.Build.0 = Debug QT+CG|Win32
+		{27FF7CE1-4059-4AA1-8062-FD529560FA54}.Debug|ARM.ActiveCfg = Debug|ARM
+		{27FF7CE1-4059-4AA1-8062-FD529560FA54}.Debug|ARM.Build.0 = Debug|ARM
+		{27FF7CE1-4059-4AA1-8062-FD529560FA54}.Debug|ARM64.ActiveCfg = Debug|ARM64
+		{27FF7CE1-4059-4AA1-8062-FD529560FA54}.Debug|ARM64.Build.0 = Debug|ARM64
+		{27FF7CE1-4059-4AA1-8062-FD529560FA54}.Debug|x64.ActiveCfg = Debug|x64
+		{27FF7CE1-4059-4AA1-8062-FD529560FA54}.Debug|x64.Build.0 = Debug|x64
+		{27FF7CE1-4059-4AA1-8062-FD529560FA54}.Debug|x86.ActiveCfg = Debug|Win32
+		{27FF7CE1-4059-4AA1-8062-FD529560FA54}.Debug|x86.Build.0 = Debug|Win32
+		{27FF7CE1-4059-4AA1-8062-FD529560FA54}.Release Cg|ARM.ActiveCfg = Release Cg|ARM
+		{27FF7CE1-4059-4AA1-8062-FD529560FA54}.Release Cg|ARM.Build.0 = Release Cg|ARM
+		{27FF7CE1-4059-4AA1-8062-FD529560FA54}.Release Cg|ARM64.ActiveCfg = Release Cg|ARM64
+		{27FF7CE1-4059-4AA1-8062-FD529560FA54}.Release Cg|ARM64.Build.0 = Release Cg|ARM64
+		{27FF7CE1-4059-4AA1-8062-FD529560FA54}.Release Cg|x64.ActiveCfg = Release Cg|x64
+		{27FF7CE1-4059-4AA1-8062-FD529560FA54}.Release Cg|x64.Build.0 = Release Cg|x64
+		{27FF7CE1-4059-4AA1-8062-FD529560FA54}.Release Cg|x86.ActiveCfg = Release Cg|Win32
+		{27FF7CE1-4059-4AA1-8062-FD529560FA54}.Release Cg|x86.Build.0 = Release Cg|Win32
+		{27FF7CE1-4059-4AA1-8062-FD529560FA54}.Release QT|ARM.ActiveCfg = Release QT|ARM
+		{27FF7CE1-4059-4AA1-8062-FD529560FA54}.Release QT|ARM.Build.0 = Release QT|ARM
+		{27FF7CE1-4059-4AA1-8062-FD529560FA54}.Release QT|ARM64.ActiveCfg = Release QT|ARM64
+		{27FF7CE1-4059-4AA1-8062-FD529560FA54}.Release QT|ARM64.Build.0 = Release QT|ARM64
+		{27FF7CE1-4059-4AA1-8062-FD529560FA54}.Release QT|x64.ActiveCfg = Release QT|x64
+		{27FF7CE1-4059-4AA1-8062-FD529560FA54}.Release QT|x64.Build.0 = Release QT|x64
+		{27FF7CE1-4059-4AA1-8062-FD529560FA54}.Release QT|x86.ActiveCfg = Release QT|Win32
+		{27FF7CE1-4059-4AA1-8062-FD529560FA54}.Release QT|x86.Build.0 = Release QT|Win32
+		{27FF7CE1-4059-4AA1-8062-FD529560FA54}.Release QT+CG|ARM.ActiveCfg = Release QT+CG|ARM
+		{27FF7CE1-4059-4AA1-8062-FD529560FA54}.Release QT+CG|ARM.Build.0 = Release QT+CG|ARM
+		{27FF7CE1-4059-4AA1-8062-FD529560FA54}.Release QT+CG|ARM64.ActiveCfg = Release QT+CG|ARM64
+		{27FF7CE1-4059-4AA1-8062-FD529560FA54}.Release QT+CG|ARM64.Build.0 = Release QT+CG|ARM64
+		{27FF7CE1-4059-4AA1-8062-FD529560FA54}.Release QT+CG|x64.ActiveCfg = Release QT+CG|x64
+		{27FF7CE1-4059-4AA1-8062-FD529560FA54}.Release QT+CG|x64.Build.0 = Release QT+CG|x64
+		{27FF7CE1-4059-4AA1-8062-FD529560FA54}.Release QT+CG|x86.ActiveCfg = Release QT+CG|Win32
+		{27FF7CE1-4059-4AA1-8062-FD529560FA54}.Release QT+CG|x86.Build.0 = Release QT+CG|Win32
+		{27FF7CE1-4059-4AA1-8062-FD529560FA54}.Release|ARM.ActiveCfg = Release|ARM
+		{27FF7CE1-4059-4AA1-8062-FD529560FA54}.Release|ARM.Build.0 = Release|ARM
+		{27FF7CE1-4059-4AA1-8062-FD529560FA54}.Release|ARM64.ActiveCfg = Release|ARM64
+		{27FF7CE1-4059-4AA1-8062-FD529560FA54}.Release|ARM64.Build.0 = Release|ARM64
+		{27FF7CE1-4059-4AA1-8062-FD529560FA54}.Release|x64.ActiveCfg = Release|x64
+		{27FF7CE1-4059-4AA1-8062-FD529560FA54}.Release|x64.Build.0 = Release|x64
+		{27FF7CE1-4059-4AA1-8062-FD529560FA54}.Release|x86.ActiveCfg = Release|Win32
+		{27FF7CE1-4059-4AA1-8062-FD529560FA54}.Release|x86.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {EFD819B9-B842-45B3-9E6A-B019D8898BE8}
+	EndGlobalSection
+EndGlobal
