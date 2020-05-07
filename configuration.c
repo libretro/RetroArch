@@ -1308,6 +1308,9 @@ static struct config_path_setting *populate_settings_path(settings_t *settings, 
          "screenshot_directory",
          settings->paths.directory_screenshot, true, NULL, false);
 
+   SETTING_PATH("path_substitution",
+      settings->paths.path_substitution, true, NULL, true);
+
    {
       global_t   *global                  = global_get_ptr();
       if (global)
@@ -2289,6 +2292,8 @@ void config_set_defaults(void *data)
    *settings->paths.path_audio_dsp_plugin = '\0';
 
    *settings->paths.log_dir = '\0';
+
+   *settings->paths.path_substitution = '\0';
 
    video_driver_default_settings();
 

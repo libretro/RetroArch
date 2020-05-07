@@ -733,6 +733,8 @@ typedef struct settings
       char streaming_title[PATH_MAX_LENGTH];
 
       char log_dir[PATH_MAX_LENGTH];
+
+      char path_substitution[PATH_MAX_LENGTH];
    } paths;
 
    bool modified;

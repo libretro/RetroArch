@@ -189,6 +189,8 @@
 #include <vfs/vfs_implementation_cdrom.h>
 #endif
 
+#include <libretro-common/pathsubstition/path_substition.h>
+
 #define RFILE_HINT_UNBUFFERED (1 << 8)
 
 int64_t retro_vfs_file_seek_internal(libretro_vfs_implementation_file *stream, int64_t offset, int whence)
@@ -279,7 +281,7 @@ int64_t retro_vfs_file_seek_internal(libretro_vfs_implementation_file *stream, i
  * Returns a pointer to an RFILE if opened successfully, otherwise NULL.
  **/
 
-libretro_vfs_implementation_file *retro_vfs_file_open_impl(
+libretro_vfs_implementation_file *retro_vfs_file_open_impl_direct(
       const char *path, unsigned mode, unsigned hints)
 {
    int                                flags = 0;
@@ -521,6 +523,17 @@ error:
    return NULL;
 }
 
+libretro_vfs_implementation_file* retro_vfs_file_open_impl(
+   const char* path, unsigned mode, unsigned hints)
+{
+   char* resolvedpath = get_substitute_path(path);
+   libretro_vfs_implementation_file* result = retro_vfs_file_open_impl_direct(resolvedpath, mode, hints);
+   if (resolvedpath)
+      free(resolvedpath);
+
+   return result;
+}
+
 int retro_vfs_file_close_impl(libretro_vfs_implementation_file *stream)
 {
    if (!stream)
@@ -743,7 +756,7 @@ int retro_vfs_file_flush_impl(libretro_vfs_implementation_file *stream)
 #endif
 }
 
-int retro_vfs_file_remove_impl(const char *path)
+int retro_vfs_file_remove_impl_direct(const char *path)
 {
 #if defined(_WIN32) && !defined(_XBOX)
    /* Win32 (no Xbox) */
@@ -788,6 +801,16 @@ int retro_vfs_file_remove_impl(const char *path)
       return 0;
    return -1;
 #endif
+}
+
+int retro_vfs_file_remove_impl(const char* path)
+{
+   char* resolvedpath = get_substitute_path(path);
+   int result = retro_vfs_file_remove_impl_direct(resolvedpath);
+   if (resolvedpath)
+      free(resolvedpath);
+
+   return result;
 }
 
 int retro_vfs_file_rename_impl(const char *old_path, const char *new_path)
@@ -863,7 +886,7 @@ const char *retro_vfs_file_get_path_impl(
    return stream->orig_path;
 }
 
-int retro_vfs_stat_impl(const char *path, int32_t *size)
+int retro_vfs_stat_impl_direct(const char * path, int32_t *size)
 {
 #if defined(VITA) || defined(PSP)
    /* Vita / PSP */
@@ -1029,6 +1052,18 @@ int retro_vfs_stat_impl(const char *path, int32_t *size)
 
    return RETRO_VFS_STAT_IS_VALID | (is_dir ? RETRO_VFS_STAT_IS_DIRECTORY : 0) | (is_character_special ? RETRO_VFS_STAT_IS_CHARACTER_SPECIAL : 0);
 #endif
+}
+
+int retro_vfs_stat_impl(const char* path, int32_t* size)
+{
+   if (string_is_empty(path))
+      return retro_vfs_stat_impl_direct(path, size);
+
+   char* resolvedpath = get_substitute_path(path);
+   int result = retro_vfs_stat_impl_direct(resolvedpath, size);
+   free(resolvedpath);
+
+   return result;
 }
 
 #if defined(VITA)

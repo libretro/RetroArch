@@ -1611,3 +1611,8 @@ DISK CONTROL INTERFACE
 MISC FILE FORMATS
 ============================================================ */
 #include "../libretro-common/formats/m3u/m3u_file.c"
+
+/*============================================================
+PATH SUBSTITION
+============================================================ */
+#include "../libretro-common/pathsubstition/path_substition.c"

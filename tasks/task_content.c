@@ -1199,7 +1199,7 @@ static void content_file_init_set_attribs(
             && content_ctx->set_supports_no_game_enable)
          string_list_append(content, "", *attr);
       else if (!content_path_is_empty)
-         string_list_append(content, path_get(RARCH_PATH_CONTENT), *attr);
+         string_list_append(content, get_substitute_path(path_get(RARCH_PATH_CONTENT)), *attr);
    }
 }
 
