@@ -1,0 +1,42 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ResourceCompile Include="..\..\..\media\rarch.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="griffin">
+      <UniqueIdentifier>{9fc175c7-a869-47cf-a0ce-5447d6015ce9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="QT">
+      <UniqueIdentifier>{e6159cab-0a32-493f-a119-a2f0fd0cc6ef}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\..\griffin\griffin.c">
+      <Filter>griffin</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\griffin\griffin_cpp.cpp">
+      <Filter>griffin</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\griffin\griffin_glslang.cpp">
+      <Filter>griffin</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="..\..\..\ui\drivers\ui_qt.h">
+      <Filter>QT</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\..\..\ui\drivers\qt\ui_qt_load_core_window.h">
+      <Filter>QT</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\..\..\ui\drivers\qt\shaderparamsdialog.h" />
+    <CustomBuild Include="..\..\..\ui\drivers\qt\viewoptionsdialog.h" />
+    <CustomBuild Include="..\..\..\ui\drivers\qt\playlistentrydialog.h" />
+    <CustomBuild Include="..\..\..\ui\drivers\qt\gridview.h" />
+    <CustomBuild Include="..\..\..\ui\drivers\qt\coreoptionsdialog.h" />
+    <CustomBuild Include="..\..\..\ui\drivers\qt\coreinfodialog.h" />
+    <CustomBuild Include="..\..\..\ui\drivers\qt\filedropwidget.h" />
+    <CustomBuild Include="..\..\..\ui\drivers\qt\settingswidgets.h" />
+    <CustomBuild Include="..\..\..\ui\drivers\qt\options\options.h" />
+  </ItemGroup>
+</Project>
