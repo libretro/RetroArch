@@ -51,6 +51,10 @@ struct gfx_thumbnail_state
    /* Duration in ms of the thumbnail 'fade in' animation */
    float fade_duration;
 
+   /* When true, 'fade in' animation will also be
+    * triggered for missing thumbnails */
+   bool fade_missing;
+
    /* Due to the asynchronous nature of thumbnail
     * loading, it is quite possible to trigger a load
     * then navigate to a different menu list before
@@ -111,6 +115,17 @@ void gfx_thumbnail_set_fade_duration(float duration)
          duration : DEFAULT_GFX_THUMBNAIL_FADE_DURATION;
 }
 
+/* Specifies whether 'fade in' animation should be
+ * triggered for missing thumbnails
+ * > When 'true', allows menu driver to animate
+ *   any 'thumbnail unavailable' notifications */
+void gfx_thumbnail_set_fade_missing(bool fade_missing)
+{
+   gfx_thumbnail_state_t *p_gfx_thumb = gfx_thumb_get_ptr();
+
+   p_gfx_thumb->fade_missing = fade_missing;
+}
+
 /* Getters */
 
 /* Fetches current streaming thumbnails request delay */
@@ -129,17 +144,63 @@ float gfx_thumbnail_get_fade_duration(void)
    return p_gfx_thumb->fade_duration;
 }
 
+/* Fetches current enable state for missing
+ * thumbnail 'fade in' animations */
+bool gfx_thumbnail_get_fade_missing(bool fade_missing)
+{
+   gfx_thumbnail_state_t *p_gfx_thumb = gfx_thumb_get_ptr();
+
+   return p_gfx_thumb->fade_missing;
+}
+
 /* Callbacks */
+
+/* Initialises thumbnail 'fade in' animation */
+static void gfx_thumbnail_init_fade(gfx_thumbnail_t *thumbnail)
+{
+   gfx_thumbnail_state_t *p_gfx_thumb = gfx_thumb_get_ptr();
+
+   /* Sanity check */
+   if (!thumbnail)
+      return;
+
+   /* A 'fade in' animation is triggered if:
+    * - Thumbnail is available
+    * - Thumbnail is missing and 'fade_missing' is enabled */
+   if ((thumbnail->status == GFX_THUMBNAIL_STATUS_AVAILABLE) ||
+       (p_gfx_thumb->fade_missing &&
+            (thumbnail->status == GFX_THUMBNAIL_STATUS_MISSING)))
+   {
+      if (p_gfx_thumb->fade_duration > 0.0f)
+      {
+         gfx_animation_ctx_entry_t animation_entry;
+
+         thumbnail->alpha = 0.0f;
+
+         animation_entry.easing_enum      = EASING_OUT_QUAD;
+         animation_entry.tag              = (uintptr_t)&thumbnail->alpha;
+         animation_entry.duration         = p_gfx_thumb->fade_duration;
+         animation_entry.target_value     = 1.0f;
+         animation_entry.subject          = &thumbnail->alpha;
+         animation_entry.cb               = NULL;
+         animation_entry.userdata         = NULL;
+
+         gfx_animation_push(&animation_entry);
+      }
+      else
+         thumbnail->alpha = 1.0f;
+   }
+}
 
 /* Used to process thumbnail data following completion
  * of image load task */
 static void gfx_thumbnail_handle_upload(
       retro_task_t *task, void *task_data, void *user_data, const char *err)
 {
-   gfx_animation_ctx_entry_t animation_entry;
    gfx_thumbnail_state_t *p_gfx_thumb = gfx_thumb_get_ptr();
    struct texture_image *img          = (struct texture_image*)task_data;
    gfx_thumbnail_tag_t *thumbnail_tag = (gfx_thumbnail_tag_t*)user_data;
+   bool fade_enabled                  = false;
 
    /* Sanity check */
    if (!thumbnail_tag)
@@ -165,6 +226,11 @@ static void gfx_thumbnail_handle_upload(
     * (saves a number of checks later) */
    thumbnail_tag->thumbnail->status = GFX_THUMBNAIL_STATUS_MISSING;
 
+   /* If we reach this stage, thumbnail 'fade in'
+    * animations should be applied (based on current
+    * thumbnail status and global configuration) */
+   fade_enabled = true;
+
    /* Check we have a valid image */
    if (!img)
       goto end;
@@ -184,24 +250,6 @@ static void gfx_thumbnail_handle_upload(
    /* Update thumbnail status */
    thumbnail_tag->thumbnail->status = GFX_THUMBNAIL_STATUS_AVAILABLE;
 
-   /* Trigger 'fade in' animation, if required */
-   if (p_gfx_thumb->fade_duration > 0.0f)
-   {
-      thumbnail_tag->thumbnail->alpha  = 0.0f;
-
-      animation_entry.easing_enum      = EASING_OUT_QUAD;
-      animation_entry.tag              = (uintptr_t)&thumbnail_tag->thumbnail->alpha;
-      animation_entry.duration         = p_gfx_thumb->fade_duration;
-      animation_entry.target_value     = 1.0f;
-      animation_entry.subject          = &thumbnail_tag->thumbnail->alpha;
-      animation_entry.cb               = NULL;
-      animation_entry.userdata         = NULL;
-
-      gfx_animation_push(&animation_entry);
-   }
-   else
-      thumbnail_tag->thumbnail->alpha  = 1.0f;
-
 end:
    /* Clean up */
    if (img)
@@ -211,7 +259,13 @@ end:
    }
 
    if (thumbnail_tag)
+   {
+      /* Trigger 'fade in' animation, if required */
+      if (fade_enabled)
+         gfx_thumbnail_init_fade(thumbnail_tag->thumbnail);
+
       free(thumbnail_tag);
+   }
 }
 
 /* Core interface */
@@ -248,8 +302,8 @@ void gfx_thumbnail_request(
       bool network_on_demand_thumbnails
       )
 {
-   const char *thumbnail_path          = NULL;
-   bool has_thumbnail                  = false;
+   const char *thumbnail_path = NULL;
+   bool has_thumbnail         = false;
 
    if (!path_data || !thumbnail)
       return;
@@ -274,7 +328,7 @@ void gfx_thumbnail_request(
                (gfx_thumbnail_tag_t*)calloc(1, sizeof(gfx_thumbnail_tag_t));
 
          if (!thumbnail_tag)
-            return;
+            goto end;
 
          /* Configure user data */
          thumbnail_tag->thumbnail = thumbnail;
@@ -297,11 +351,11 @@ void gfx_thumbnail_request(
          static char last_img_name[PATH_MAX_LENGTH] = {0};
 
          if (!playlist)
-            return;
+            goto end;
 
          /* Get current image name */
          if (!gfx_thumbnail_get_img_name(path_data, &img_name))
-            return;
+            goto end;
 
          /* Only trigger a thumbnail download if image
           * name has changed since the last call of
@@ -316,13 +370,13 @@ void gfx_thumbnail_request(
           *   overheads. We can avoid this entirely with
           *   a simple string comparison) */
          if (string_is_equal(img_name, last_img_name))
-            return;
+            goto end;
 
          strlcpy(last_img_name, img_name, sizeof(last_img_name));
 
          /* Get system name */
          if (!gfx_thumbnail_get_system(path_data, &system))
-            return;
+            goto end;
 
          /* Trigger thumbnail download */
          task_push_pl_entry_thumbnail_download(
@@ -331,6 +385,11 @@ void gfx_thumbnail_request(
       }
 #endif
    }
+
+end:
+   /* Trigger 'fade in' animation, if required */
+   if (thumbnail->status != GFX_THUMBNAIL_STATUS_PENDING)
+      gfx_thumbnail_init_fade(thumbnail);
 }
 
 /* Requests loading of a specific thumbnail image file

@@ -4133,6 +4133,11 @@ static void setting_get_string_representation_uint_materialui_menu_thumbnail_vie
                msg_hash_to_str(
                   MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE_LIST_LARGE), len);
          break;
+      case MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE_DESKTOP:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE_DESKTOP), len);
+         break;
       default:
          break;
    }

@@ -5380,6 +5380,7 @@ static void *xmb_init(void **userdata, bool video_is_threaded)
 
    gfx_thumbnail_set_stream_delay(-1.0f);
    gfx_thumbnail_set_fade_duration(-1.0f);
+   gfx_thumbnail_set_fade_missing(false);
 
    xmb->use_ps3_layout      = xmb_use_ps3_layout(settings, width, height);
    xmb->last_use_ps3_layout = xmb->use_ps3_layout;
