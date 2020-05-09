@@ -22363,21 +22363,20 @@ bool video_driver_is_threaded(void)
    return video_driver_is_threaded_internal();
 }
 
-#ifdef HAVE_VULKAN
+#if defined(HAVE_VULKAN)
 static bool hw_render_context_is_vulkan(enum retro_hw_context_type type)
 {
    return type == RETRO_HW_CONTEXT_VULKAN;
 }
 #endif
 
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGL_CORE)
+#if defined(HAVE_OPENGL)
 static bool hw_render_context_is_gl(enum retro_hw_context_type type)
 {
    switch (type)
    {
       case RETRO_HW_CONTEXT_OPENGL:
       case RETRO_HW_CONTEXT_OPENGLES2:
-      case RETRO_HW_CONTEXT_OPENGL_CORE:
       case RETRO_HW_CONTEXT_OPENGLES3:
       case RETRO_HW_CONTEXT_OPENGLES_VERSION:
          return true;
@@ -22386,6 +22385,13 @@ static bool hw_render_context_is_gl(enum retro_hw_context_type type)
    }
 
    return false;
+}
+#endif
+
+#if defined(HAVE_OPENGL_CORE)
+static bool hw_render_context_is_glcore(enum retro_hw_context_type type)
+{
+   return type == RETRO_HW_CONTEXT_OPENGL_CORE;
 }
 #endif
 
@@ -23699,6 +23705,23 @@ static bool video_driver_find_driver(void)
             RARCH_LOG("[Video]: Using configured \"%s\" driver for GL HW render.\n",
                   settings->arrays.video_driver);
          }
+      }
+#endif
+
+#if defined(HAVE_OPENGL_CORE)
+      if (hwr && hw_render_context_is_glcore(hwr->context_type))
+      {
+         RARCH_LOG("[Video]: Using HW render, OpenGL core driver forced.\n");
+         if (!string_is_equal(settings->arrays.video_driver, "glcore"))
+         {
+            RARCH_LOG("[Video]: \"%s\" saved as cached driver.\n", settings->arrays.video_driver);
+            strlcpy(cached_video_driver, settings->arrays.video_driver,
+                  sizeof(cached_video_driver));
+            configuration_set_string(settings,
+                  settings->arrays.video_driver,
+                  "glcore");
+         }
+         current_video = &video_gl_core;
       }
 #endif
 
