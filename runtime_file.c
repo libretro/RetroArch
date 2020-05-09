@@ -1020,7 +1020,7 @@ void runtime_update_playlist(
    runtime_log_t *runtime_log             = NULL;
    const struct playlist_entry *entry     = NULL;
    struct playlist_entry update_entry     = {0};
-#if defined(HAVE_MENU) && defined(HAVE_OZONE)
+#if defined(HAVE_MENU) && (defined(HAVE_OZONE) || defined(HAVE_MATERIALUI))
    const char *menu_ident                 = menu_driver_ident();
 #endif
    
@@ -1078,15 +1078,20 @@ void runtime_update_playlist(
       free(runtime_log);
    }
    
-#if defined(HAVE_MENU) && defined(HAVE_OZONE)
-   /* Ozone requires runtime/last played strings to be
-    * populated even when no runtime is recorded */
-   if (string_is_equal(menu_ident, "ozone"))
+#if defined(HAVE_MENU) && (defined(HAVE_OZONE) || defined(HAVE_MATERIALUI))
+   /* Ozone and GLUI require runtime/last played strings
+    * to be populated even when no runtime is recorded */
+   if (update_entry.runtime_status != PLAYLIST_RUNTIME_VALID)
    {
-      if (update_entry.runtime_status != PLAYLIST_RUNTIME_VALID)
+      if (string_is_equal(menu_ident, "ozone") ||
+          string_is_equal(menu_ident, "glui"))
       {
          runtime_log_get_runtime_str(NULL, runtime_str, sizeof(runtime_str));
          runtime_log_get_last_played_str(NULL, last_played_str, sizeof(last_played_str), timedate_style);
+
+         /* While runtime data does not exist, the playlist
+          * entry does now contain valid information... */
+         update_entry.runtime_status = PLAYLIST_RUNTIME_VALID;
       }
    }
 #endif

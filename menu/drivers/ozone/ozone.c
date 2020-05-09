@@ -195,6 +195,7 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
 
    gfx_thumbnail_set_stream_delay(-1.0f);
    gfx_thumbnail_set_fade_duration(-1.0f);
+   gfx_thumbnail_set_fade_missing(false);
 
    ozone_sidebar_update_collapse(ozone, false);
 
