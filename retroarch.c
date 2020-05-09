@@ -4536,7 +4536,6 @@ bool ai_service_speech_stop(void)
 
 static void task_auto_translate_handler(retro_task_t *task)
 {
-   http_transfer_data_t *data = NULL;
    int* mode_ptr = (int*)task->user_data;
 
    if (task_get_cancelled(task))
@@ -4545,20 +4544,16 @@ static void task_auto_translate_handler(retro_task_t *task)
    if (*mode_ptr == 2)
    {
 #ifdef HAVE_ACCESSIBILITY
-      if (is_narrator_running() == false)
-      {
+      if (!is_narrator_running())
          goto task_finished;
-      }
 #endif
    }
    /* Speech Mode */
    else if (*mode_ptr == 1)
    {
 #ifdef HAVE_AUDIOMIXER
-      if (is_ai_service_speech_running() == false)
-      {
+      if (!is_ai_service_speech_running())
          goto task_finished;
-      }
 #endif
    }
    return;

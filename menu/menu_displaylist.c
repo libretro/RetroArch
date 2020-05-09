@@ -2896,8 +2896,6 @@ static bool menu_displaylist_parse_playlist_manager_settings(
    const char *playlist_file    = NULL;
    playlist_t *playlist         = NULL;
    const char *menu_driver      = menu_driver_ident();
-   settings_t *settings         = config_get_ptr();
-   bool playlist_use_old_format = settings->bools.playlist_use_old_format;
 
    if (string_is_empty(playlist_path))
       return false;
