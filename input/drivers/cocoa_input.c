@@ -192,35 +192,41 @@ static void cocoa_input_poll(void *data)
       apple->joypad->poll();
    if (apple->sec_joypad)
        apple->sec_joypad->poll();
-
-    apple->mouse_x_last = apple->mouse_rel_x;
-    apple->mouse_y_last = apple->mouse_rel_y;
 }
 
 static int16_t cocoa_mouse_state(cocoa_input_data_t *apple,
       unsigned id)
 {
-   switch (id)
-   {
-      case RETRO_DEVICE_ID_MOUSE_X:
-           return apple->mouse_rel_x - apple->mouse_x_last;
-      case RETRO_DEVICE_ID_MOUSE_Y:
-         return apple->mouse_rel_y - apple->mouse_y_last;
-      case RETRO_DEVICE_ID_MOUSE_LEFT:
-         return apple->mouse_buttons & 1;
-      case RETRO_DEVICE_ID_MOUSE_RIGHT:
-         return apple->mouse_buttons & 2;
-       case RETRO_DEVICE_ID_MOUSE_WHEELUP:
-           return apple->mouse_wu;
-       case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
-           return apple->mouse_wd;
-       case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:
-           return apple->mouse_wl;
-       case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN:
-           return apple->mouse_wr;
-   }
+  int16_t val;
+  switch (id)
+  {
+     case RETRO_DEVICE_ID_MOUSE_X:
+        val = apple->mouse_rel_x;
+        // NOTE: Because cocoa events are effectively handled async we reset
+        // the delta which we cumulate on each event
+        apple->mouse_rel_x = 0;
+        return val;
+     case RETRO_DEVICE_ID_MOUSE_Y:
+        val = apple->mouse_rel_y;
+        // NOTE: Because cocoa events are effectively handled async we reset
+        // the delta which we cumulate on each event
+        apple->mouse_rel_y = 0;
+        return val;
+     case RETRO_DEVICE_ID_MOUSE_LEFT:
+          return apple->mouse_buttons & 1;
+     case RETRO_DEVICE_ID_MOUSE_RIGHT:
+          return apple->mouse_buttons & 2;
+      case RETRO_DEVICE_ID_MOUSE_WHEELUP:
+          return apple->mouse_wu;
+      case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
+          return apple->mouse_wd;
+      case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:
+          return apple->mouse_wl;
+      case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN:
+          return apple->mouse_wr;
+  }
 
-   return 0;
+  return 0;
 }
 
 static int16_t cocoa_mouse_state_screen(cocoa_input_data_t *apple,
