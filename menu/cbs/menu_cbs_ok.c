@@ -2121,29 +2121,14 @@ static int action_ok_playlist_entry_collection(const char *path,
    /* Check whether playlist already has core path/name
     * assignments
     * > Both core name and core path must be valid */
-   if (     string_is_empty(entry->core_path)
-         || string_is_empty(entry->core_name)
-         || string_is_equal(entry->core_path, "DETECT")
-         || string_is_equal(entry->core_name, "DETECT"))
+   if (!playlist_entry_core_defined(entry))
    {
-      core_info_ctx_find_t core_info;
+      core_info_t* core_info_t = playlist_get_default_core(playlist);
       const char *entry_path                 = NULL;
-      const char *default_core_path          =
-            playlist_get_default_core_path(playlist);
       bool found_associated_core             = false;
       struct playlist_entry update_entry     = {0};
 
-      if (!string_is_empty(default_core_path))
-      {
-         strlcpy(new_core_path, default_core_path, sizeof(new_core_path));
-         playlist_resolve_path(PLAYLIST_LOAD, new_core_path, sizeof(new_core_path));
-         found_associated_core = true;
-      }
-
-      core_info.inf       = NULL;
-      core_info.path      = new_core_path;
-
-      if (!core_info_find(&core_info, new_core_path))
+      if (!core_info_t)
          found_associated_core = false;
 
       if (!found_associated_core)
@@ -2157,8 +2142,8 @@ static int action_ok_playlist_entry_collection(const char *path,
          return ret;
       }
 
-      update_entry.core_path = (char*)default_core_path;
-      update_entry.core_name = core_info.inf->display_name;
+      update_entry.core_path = core_info_t->path;
+      update_entry.core_name = core_info_t->display_name;
 
       command_playlist_update_write(
             playlist,
@@ -2169,7 +2154,13 @@ static int action_ok_playlist_entry_collection(const char *path,
    }
    else
    {
-      strlcpy(new_core_path, entry->core_path, sizeof(new_core_path));
+      core_info_t* entry_core = playlist_entry_get_core(entry);
+      if (entry_core)
+         strcpy(new_core_path, entry_core->path);
+      else
+         // old logic, if a core is not found this will never work..
+         strlcpy(new_core_path, entry->core_path, sizeof(new_core_path));
+
       playlist_resolve_path(PLAYLIST_LOAD, new_core_path, sizeof(new_core_path));
    }
 
@@ -2223,27 +2214,12 @@ static int action_ok_playlist_entry(const char *path,
    /* Check whether playlist already has core path/name
     * assignments
     * > Both core name and core path must be valid */
-   if (     string_is_empty(entry->core_path)
-         || string_is_empty(entry->core_name)
-         || string_is_equal(entry->core_path, "DETECT")
-         || string_is_equal(entry->core_name, "DETECT"))
+   if (!playlist_entry_core_defined(entry))
    {
-      core_info_ctx_find_t core_info;
-      const char *default_core_path          =
-            playlist_get_default_core_path(playlist);
-      bool found_associated_core             = false;
+      core_info_t* core_info_t   = playlist_get_default_core(playlist);
+      bool found_associated_core = false;
 
-      if (!string_is_empty(default_core_path))
-      {
-         strlcpy(new_core_path, default_core_path, sizeof(new_core_path));
-         playlist_resolve_path(PLAYLIST_LOAD, new_core_path, sizeof(new_core_path));
-         found_associated_core = true;
-      }
-
-      core_info.inf                          = NULL;
-      core_info.path                         = new_core_path;
-
-      if (!core_info_find(&core_info, new_core_path))
+      if (!core_info_t)
          found_associated_core = false;
 
       if (!found_associated_core)
@@ -2255,8 +2231,8 @@ static int action_ok_playlist_entry(const char *path,
       {
          struct playlist_entry entry = {0};
 
-         entry.core_path = (char*)default_core_path;
-         entry.core_name = core_info.inf->display_name;
+         entry.core_path = core_info_t->path;
+         entry.core_name = core_info_t->display_name;
 
          command_playlist_update_write(NULL,
                selection_ptr,
@@ -2267,7 +2243,13 @@ static int action_ok_playlist_entry(const char *path,
    }
    else
    {
-      strlcpy(new_core_path, entry->core_path, sizeof(new_core_path));
+      core_info_t* entry_core = playlist_entry_get_core(entry);
+      if (entry_core)
+         strcpy(new_core_path, entry_core->path);
+      else
+         // old logic, if a core is not found this will never work..
+         strlcpy(new_core_path, entry->core_path, sizeof(new_core_path));
+
       playlist_resolve_path(PLAYLIST_LOAD, new_core_path, sizeof(new_core_path));
    }
 
@@ -2308,30 +2290,13 @@ static int action_ok_playlist_entry_start_content(const char *path,
    /* Check whether playlist already has core path/name
     * assignments
     * > Both core name and core path must be valid */
-   if (     string_is_empty(entry->core_path)
-         || string_is_empty(entry->core_name)
-         || string_is_equal(entry->core_path, "DETECT")
-         || string_is_equal(entry->core_name, "DETECT"))
+   if (!playlist_entry_core_defined(entry))
    {
-      core_info_ctx_find_t core_info;
-      char new_core_path[PATH_MAX_LENGTH];
+      core_info_t* core_info_t               = playlist_get_default_core(playlist);
       const char *entry_path                 = NULL;
-      const char *default_core_path          =
-            playlist_get_default_core_path(playlist);
       bool found_associated_core             = false;
 
-      new_core_path[0]                       = '\0';
-
-      if (!string_is_empty(default_core_path))
-      {
-         strlcpy(new_core_path, default_core_path, sizeof(new_core_path));
-         found_associated_core = true;
-      }
-
-      core_info.inf                          = NULL;
-      core_info.path                         = new_core_path;
-
-      if (!core_info_find(&core_info, new_core_path))
+      if (!core_info_t)
          found_associated_core = false;
 
       /* TODO: figure out if this should refer to
@@ -2345,8 +2310,8 @@ static int action_ok_playlist_entry_start_content(const char *path,
       {
          struct playlist_entry entry = {0};
 
-         entry.core_path = new_core_path;
-         entry.core_name = core_info.inf->display_name;
+         entry.core_path = core_info_t->path;
+         entry.core_name = core_info_t->display_name;
 
          command_playlist_update_write(
                playlist,
@@ -4787,7 +4752,7 @@ static int action_ok_add_to_favorites(const char *path,
             core_info.inf  = NULL;
             core_info.path = core_path;
 
-            if (core_info_find(&core_info, core_path))
+            if (core_info_find(&core_info))
                if (!string_is_empty(core_info.inf->display_name))
                   strlcpy(core_name, core_info.inf->display_name, sizeof(core_name));
          }
@@ -4916,7 +4881,7 @@ static int action_ok_add_to_favorites_playlist(const char *path,
          core_info.inf  = NULL;
          core_info.path = entry->core_path;
 
-         if (core_info_find(&core_info, entry->core_path))
+         if (core_info_find(&core_info))
             if (!string_is_empty(core_info.inf->display_name))
                strlcpy(core_display_name, core_info.inf->display_name, sizeof(core_display_name));
 

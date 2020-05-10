@@ -23,6 +23,7 @@
 #include <retro_common_api.h>
 #include <boolean.h>
 #include <lists/string_list.h>
+#include <core_info.h>
 
 RETRO_BEGIN_DECLS
 
@@ -241,6 +242,10 @@ void playlist_get_index_by_path(playlist_t *playlist,
 
 bool playlist_entry_exists(playlist_t *playlist,
       const char *path, bool fuzzy_archive_match);
+
+bool playlist_entry_core_defined(const struct playlist_entry* entry);
+
+core_info_t *playlist_entry_get_core(const struct playlist_entry* entry);
 
 char *playlist_get_conf_path(playlist_t *playlist);
 

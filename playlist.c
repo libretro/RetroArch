@@ -437,6 +437,17 @@ bool playlist_entry_exists(playlist_t *playlist,
    return false;
 }
 
+bool playlist_entry_core_defined(const struct playlist_entry *entry)
+{
+   if (string_is_empty(entry->core_path)
+      || string_is_empty(entry->core_name)
+      || string_is_equal(entry->core_path, "DETECT")
+      || string_is_equal(entry->core_name, "DETECT"))
+      return false;
+
+   return true;
+}
+
 void playlist_update(playlist_t *playlist, size_t idx,
       const struct playlist_entry *update_entry)
 {
@@ -2768,6 +2779,56 @@ void playlist_get_db_name(playlist_t *playlist, size_t idx,
       }
    }
 }
+
+core_info_t *playlist_entry_get_core(const struct playlist_entry* entry)
+{
+   core_info_ctx_find_t core_info;
+
+   core_info.inf = NULL;
+   core_info.path = entry->core_path;
+   core_info.display_name = entry->core_name;
+
+   if (!core_info_find(&core_info))
+      return NULL;
+
+   if (strcmp(core_info.inf->path, entry->core_path))
+   {
+      RARCH_LOG("[CORE] Found core '%s' path '%s' does not match requested path '%s'", core_info.inf->display_name, core_info.inf->path, entry->core_path);
+   }
+
+   return core_info.inf;
+}
+
+core_info_t *playlist_get_default_core(playlist_t* playlist)
+{
+   core_info_ctx_find_t core_info;
+   const char* default_core_path =
+      playlist_get_default_core_path(playlist);
+   const char* default_core_name =
+      playlist_get_default_core_path(playlist);
+
+   if (!default_core_path && !default_core_name)
+      return NULL;
+
+   char new_core_path[PATH_MAX_LENGTH];
+   new_core_path[0] = '\0';
+
+   if (!string_is_empty(default_core_path))
+   {
+      strlcpy(new_core_path, default_core_path, sizeof(new_core_path));
+      playlist_resolve_path(PLAYLIST_LOAD, new_core_path, sizeof(new_core_path));
+   }
+
+   core_info.inf = NULL;
+   core_info.path = new_core_path;
+   core_info.path = default_core_name;
+
+   if (!core_info_find(&core_info))
+      return NULL;
+
+   return core_info.inf;
+}
+
 
 char *playlist_get_default_core_path(playlist_t *playlist)
 {
