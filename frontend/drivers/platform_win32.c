@@ -52,7 +52,7 @@
 #include "platform_win32.h"
 
 #ifdef HAVE_NVDA
-#include "../../nvdaController.h"
+#include "../../nvda_controller.h"
 #endif
 
 #ifndef SM_SERVERR2
