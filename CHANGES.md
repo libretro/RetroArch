@@ -1,4 +1,7 @@
 # Future
+- GLCORE: Switch to glcore video driver when requested by a core
+- LINUX/XDG: Use GenericName correctly in desktop entry
+- MENU/MATERIALUI: Add desktop-style playlist view mode
 
 # 1.8.6
 - 3DS: Add IDs for UZEM, TGB Dual, and NeoCD
