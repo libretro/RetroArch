@@ -2809,8 +2809,7 @@ enum msg_hash_enums
 };
 
 /* Callback strings */
-/* TODO/FIXME - get rid of these two */
-#define CB_UPDATE_ASSETS                                                       0xbf85795eU
+/* TODO/FIXME - get rid of this */
 
 #define MENU_LABEL_SCREEN_RESOLUTION                                           0x5c9b3a58U
 

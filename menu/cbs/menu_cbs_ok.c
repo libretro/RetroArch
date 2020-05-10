@@ -4028,11 +4028,11 @@ static void cb_decompressed(retro_task_t *task,
 
    if (dec && !err)
    {
-      unsigned type_hash = (unsigned)(uintptr_t)user_data;
+      unsigned enum_idx = (unsigned)(uintptr_t)user_data;
 
-      switch (type_hash)
+      switch (enum_idx)
       {
-         case CB_UPDATE_ASSETS:
+         case MENU_ENUM_LABEL_CB_UPDATE_ASSETS:
             generic_action_ok_command(CMD_EVENT_REINIT);
             break;
          default:
@@ -4346,8 +4346,8 @@ void cb_generic_download(retro_task_t *task,
       decompress_task = (retro_task_t*)task_push_decompress(
             output_path, dir_path,
             NULL, NULL, NULL,
-            cb_decompressed, (void*)(uintptr_t)
-            msg_hash_calculate(msg_hash_to_str(transf->enum_idx)),
+            cb_decompressed,
+            (void*)(uintptr_t)transf->enum_idx,
             frontend_userdata, false);
 
       if (!decompress_task)
