@@ -145,6 +145,7 @@ static enum action_iterate_type action_iterate_type(const char *label)
    return ITERATE_TYPE_DEFAULT;
 }
 
+#ifdef HAVE_ACCESSIBILITY
 static void get_current_menu_value(char* retstr, size_t max)
 {
    const char*      entry_label;
@@ -171,7 +172,6 @@ static void get_current_menu_label(char* retstr, size_t max)
    strlcpy(retstr, entry_label, max);
 }
 
-
 static void get_current_menu_sublabel(char* retstr, size_t max)
 {
    const char*      entry_sublabel;
@@ -184,6 +184,7 @@ static void get_current_menu_sublabel(char* retstr, size_t max)
    menu_entry_get_sublabel(&entry, &entry_sublabel);
    strlcpy(retstr, entry_sublabel, max);
 }
+#endif
 
 /**
  * menu_iterate:
