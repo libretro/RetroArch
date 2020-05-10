@@ -132,8 +132,8 @@ static void app_terminate(void)
             pos.y              = 0;
 
             /* Relative */
-            apple->mouse_rel_x = (int16_t)event.deltaX;
-            apple->mouse_rel_y = (int16_t)event.deltaY;
+            apple->mouse_rel_x += (int16_t)event.deltaX;
+            apple->mouse_rel_y += (int16_t)event.deltaY;
 
             /* Absolute */
 #if defined(HAVE_COCOA_METAL)
