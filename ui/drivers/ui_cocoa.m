@@ -137,10 +137,11 @@ static void app_terminate(void)
             pos = [[CocoaView get] convertPoint:[event locationInWindow] fromView:nil];
 #endif
 
-            NSInteger window_number = [[[NSApplication sharedApplication] keyWindow] windowNumber];
-            if ([NSWindow windowNumberAtPoint:pos belowWindowWithWindowNumber:0] != window_number) {
-              return;
-            }
+            // FIXME: Disable clipping until graphical offset issues are fixed
+            //NSInteger window_number = [[[NSApplication sharedApplication] keyWindow] windowNumber];
+            //if ([NSWindow windowNumberAtPoint:pos belowWindowWithWindowNumber:0] != window_number) {
+            //  return;
+            //}
 
             /* Relative */
             apple->mouse_rel_x += (int16_t)event.deltaX;
