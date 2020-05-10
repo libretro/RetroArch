@@ -539,11 +539,15 @@ static const bool content_show_music        = true;
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
 static const bool content_show_video        = true;
 #endif
-#ifdef HAVE_NETWORKING
+#if defined(HAVE_NETWORKING)
+#if defined(_3DS)
+static const bool content_show_netplay      = false;
+#else
 static const bool content_show_netplay      = true;
 #endif
+#endif
 static const bool content_show_history      = true;
-static const bool content_show_add     	  = true;
+static const bool content_show_add     	    = true;
 static const bool content_show_playlists    = true;
 
 #ifdef HAVE_XMB
