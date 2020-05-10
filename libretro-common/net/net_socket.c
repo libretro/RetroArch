@@ -144,8 +144,6 @@ int socket_close(int fd)
    return closesocket(fd);
 #elif defined(__CELLOS_LV2__) || defined(WIIU)
    return socketclose(fd);
-#elif defined(VITA)
-   return sceNetSocketClose(fd);
 #else
    return close(fd);
 #endif
@@ -156,20 +154,6 @@ int socket_select(int nfds, fd_set *readfs, fd_set *writefds,
 {
 #if defined(__CELLOS_LV2__)
    return socketselect(nfds, readfs, writefds, errorfds, timeout);
-#elif defined(VITA)
-   extern int retro_epoll_fd;
-   SceNetEpollEvent ev = {0};
-
-   ev.events = SCE_NET_EPOLLIN | SCE_NET_EPOLLHUP;
-   ev.data.fd = nfds;
-
-   if((sceNetEpollControl(retro_epoll_fd, SCE_NET_EPOLL_CTL_ADD, nfds, &ev)))
-   {
-      int ret = sceNetEpollWait(retro_epoll_fd, &ev, 1, 0);
-      sceNetEpollControl(retro_epoll_fd, SCE_NET_EPOLL_CTL_DEL, nfds, NULL);
-      return ret;
-   }
-   return 0;
 #else
    return select(nfds, readfs, writefds, errorfds, timeout);
 #endif
@@ -242,7 +226,7 @@ int socket_connect(int fd, void *data, bool timeout_enable)
 {
    struct addrinfo *addr = (struct addrinfo*)data;
 
-#if !defined(_WIN32) && !defined(VITA) && !defined(WIIU) && !defined(_3DS)
+#if !defined(_WIN32) && !defined(WIIU) && !defined(_3DS)
    if (timeout_enable)
    {
       struct timeval timeout;
@@ -261,11 +245,7 @@ static int domain_get(enum socket_domain type)
    switch (type)
    {
       case SOCKET_DOMAIN_INET:
-#ifdef VITA
-         return SCE_NET_AF_INET;
-#else
          return AF_INET;
-#endif
       default:
          break;
    }
@@ -282,36 +262,7 @@ int socket_create(
    int type     = 0;
    int protocol = 0;
    int domain   = domain_get(domain_type);
-#ifdef VITA
 
-   switch (socket_type)
-   {
-      case SOCKET_TYPE_DATAGRAM:
-         type = SCE_NET_SOCK_DGRAM;
-         break;
-      case SOCKET_TYPE_STREAM:
-         type = SCE_NET_SOCK_STREAM;
-         break;
-      case SOCKET_TYPE_SEQPACKET:
-         /* TODO/FIXME - implement */
-         break;
-   }
-
-   switch (protocol_type)
-   {
-      case SOCKET_PROTOCOL_NONE:
-         protocol = 0;
-         break;
-      case SOCKET_PROTOCOL_TCP:
-         protocol = SCE_NET_IPPROTO_TCP;
-         break;
-      case SOCKET_PROTOCOL_UDP:
-         protocol = SCE_NET_IPPROTO_UDP;
-         break;
-   }
-
-   return sceNetSocket(name, domain, type, protocol);
-#else
    switch (socket_type)
    {
       case SOCKET_TYPE_DATAGRAM:
@@ -339,7 +290,6 @@ int socket_create(
    }
 
    return socket(domain, type, protocol);
-#endif
 }
 
 void socket_set_target(void *data, socket_target_t *in_addr)
@@ -348,14 +298,11 @@ void socket_set_target(void *data, socket_target_t *in_addr)
 
    out_target->sin_port   = inet_htons(in_addr->port);
    out_target->sin_family = domain_get(in_addr->domain);
-#ifdef VITA
-   out_target->sin_addr   = inet_aton(in_addr->server);
-#else
+
 #ifdef GEKKO
    out_target->sin_len    = 8;
 #endif
 
    inet_ptrton(AF_INET, in_addr->server, &out_target->sin_addr);
 
-#endif
 }

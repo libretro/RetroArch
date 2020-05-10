@@ -80,68 +80,6 @@ error:
 #elif defined(VITA)
 static void *_net_compat_net_memory = NULL;
 #define COMPAT_NET_INIT_SIZE 512*1024
-#define INET_ADDRSTRLEN sizeof(struct sockaddr_in)
-#define MAX_NAME 512
-
-typedef uint32_t in_addr_t;
-
-struct in_addr
-{
-   in_addr_t s_addr;
-};
-
-char *inet_ntoa(struct SceNetInAddr in)
-{
-	static char ip_addr[INET_ADDRSTRLEN + 1];
-
-   if (!inet_ntop_compat(AF_INET, &in, ip_addr, INET_ADDRSTRLEN))
-		strlcpy(ip_addr, "Invalid", sizeof(ip_addr));
-
-	return ip_addr;
-}
-
-struct SceNetInAddr inet_aton(const char *ip_addr)
-{
-   SceNetInAddr inaddr;
-
-   inet_ptrton(AF_INET, ip_addr, &inaddr);
-   return inaddr;
-}
-
-unsigned int inet_addr(const char *cp)
-{
-   return inet_aton(cp).s_addr;
-}
-
-struct hostent *gethostbyname(const char *name)
-{
-   int err;
-   static struct hostent ent;
-   static char sname[MAX_NAME]      = {0};
-   static struct SceNetInAddr saddr = {0};
-   static char *addrlist[2]         = {(char *) &saddr, NULL };
-   int rid = sceNetResolverCreate("resolver", NULL, 0);
-
-   if(rid < 0)
-      return NULL;
-
-   err = sceNetResolverStartNtoa(rid, name, &saddr, 0,0,0);
-   sceNetResolverDestroy(rid);
-   if(err < 0)
-      return NULL;
-
-   addrlist[0]     = inet_ntoa(saddr);
-   ent.h_name      = sname;
-   ent.h_aliases   = 0;
-   ent.h_addrtype  = AF_INET;
-   ent.h_length    = sizeof(struct in_addr);
-   ent.h_addr_list = addrlist;
-   ent.h_addr      = addrlist[0];
-
-   return &ent;
-}
-
-int retro_epoll_fd;
 #elif defined(_3DS)
 #include <malloc.h>
 #include <3ds/types.h>
@@ -325,7 +263,6 @@ bool network_init(void)
       sceNetCtlInit();
    }
 
-   retro_epoll_fd = sceNetEpollCreate("epoll", 0);
 #elif defined(GEKKO)
    char t[16];
    if (if_config(t, NULL, NULL, TRUE, 10) < 0)

@@ -268,7 +268,6 @@ bool netplay_lan_ad_server(netplay_t *netplay)
          break;
       if (!FD_ISSET(lan_ad_server_fd, &fds))
          break;
-
       /* Somebody queried, so check that it's valid */
       addr_size = sizeof(their_addr);
       ret       = (int)recvfrom(lan_ad_server_fd, (char*)&ad_packet_buffer,
@@ -436,10 +435,8 @@ static bool netplay_lan_ad_client(void)
 
       if (!FD_ISSET(lan_ad_client_fd, &fds))
          break;
-
       /* Somebody queried, so check that it's valid */
       addr_size = sizeof(their_addr);
-
       if (recvfrom(lan_ad_client_fd, (char*)&ad_packet_buffer,
             sizeof(struct ad_packet), 0, &their_addr, &addr_size) >=
             (ssize_t) sizeof(struct ad_packet))
