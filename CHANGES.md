@@ -2,6 +2,7 @@
 - 3DS: Enable basic networking / cheevos
 - GLCORE: Switch to glcore video driver when requested by a core
 - LINUX/XDG: Use GenericName correctly in desktop entry
+- MAC/COCOA: Fix mouse cursor tracking
 - MENU/MATERIALUI: Add desktop-style playlist view mode
 - WIIU: Enable graphics widgets
 
