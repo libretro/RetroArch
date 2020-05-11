@@ -26169,7 +26169,7 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
       dir_set(RARCH_DIR_SAVESTATE, global->name.savestate);
 }
 
-bool retroarch_validate_game_options(char *s, size_t len, bool mkdir)
+static bool retroarch_validate_game_options(char *s, size_t len, bool mkdir)
 {
    char *config_directory                 = NULL;
    size_t str_size                        = PATH_MAX_LENGTH * sizeof(char);
@@ -29678,3 +29678,37 @@ void reset_gamepad_input_override(void)
     gamepad_input_override = 0;
 }
 #endif
+
+/* creates folder and core options stub file for subsequent runs */
+bool create_folder_and_core_options(void)
+{
+   char game_path[PATH_MAX_LENGTH];
+   config_file_t *conf             = NULL;
+
+   game_path[0] = '\0';
+
+   if (!retroarch_validate_game_options(game_path, sizeof(game_path), true))
+   {
+      runloop_msg_queue_push(
+            msg_hash_to_str(MSG_ERROR_SAVING_CORE_OPTIONS_FILE),
+            1, 100, true,
+            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      return false;
+   }
+
+   if (!(conf = config_file_new_from_path_to_string(game_path)))
+      if (!(conf = config_file_new_alloc()))
+         return false;
+
+   if (config_file_write(conf, game_path, true))
+   {
+      runloop_msg_queue_push(
+            msg_hash_to_str(MSG_CORE_OPTIONS_FILE_CREATED_SUCCESSFULLY),
+            1, 100, true,
+            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      path_set(RARCH_PATH_CORE_OPTIONS, game_path);
+   }
+   config_file_free(conf);
+
+   return true;
+}
