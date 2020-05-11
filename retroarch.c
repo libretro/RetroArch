@@ -19392,6 +19392,14 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
    }
 
    audio_driver_find_driver();
+
+   if (current_audio == NULL || current_audio->init == NULL)
+   {
+      RARCH_ERR("Failed to initialize audio driver. Will continue without audio.\n");
+      audio_driver_active = false;
+      return false;
+   }
+
 #ifdef HAVE_THREADS
    if (audio_cb_inited)
    {
