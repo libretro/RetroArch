@@ -4,7 +4,7 @@
 - LINUX/XDG: Use GenericName correctly in desktop entry
 - MAC/COCOA: Fix mouse cursor tracking
 - MENU/MATERIALUI: Add desktop-style playlist view mode
-- MENU/MATERIALUI: Desktop View: When scrolling playlists, show last selected thumbnails while waiting for next entry to load
+- MENU/MATERIALUI/DESKTOPVIEW: When scrolling playlists, show last selected thumbnails while waiting for next entry to load
 - NETPLAY: Fix regressions introduced in 1.8.5
 - RGUI: Add option to always stretch menu to fill the screen
 - WIIU: Enable graphics widgets
