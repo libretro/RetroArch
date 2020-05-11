@@ -824,6 +824,20 @@ int setting_generic_action_ok_default(rarch_setting_t *setting, bool wraparound)
    return 0;
 }
 
+void setting_generic_handle_change(rarch_setting_t *setting)
+{
+   settings_t *settings = config_get_ptr();
+
+   settings->modified = true;
+
+   if (setting->change_handler)
+      setting->change_handler(setting);
+
+   if (setting->cmd_trigger.idx && !setting->cmd_trigger.triggered)
+      command_event(setting->cmd_trigger.idx, NULL);
+}
+
+
 static void setting_get_string_representation_int_gpu_index(rarch_setting_t *setting,
       char *s, size_t len)
 {
