@@ -4,6 +4,7 @@
 - LINUX/XDG: Use GenericName correctly in desktop entry
 - MAC/COCOA: Fix mouse cursor tracking
 - MENU/MATERIALUI: Add desktop-style playlist view mode
+- NETPLAY: Fix regressions introduced in 1.8.5
 - WIIU: Enable graphics widgets
 
 # 1.8.6
