@@ -2201,7 +2201,7 @@ static void load_custom_theme(rgui_t *rgui, rgui_theme_t *theme_colors, const ch
    unsigned shadow_color       = 0;
    unsigned particle_color     = 0;
    config_file_t *conf         = NULL;
-   char *wallpaper_key         = NULL;
+   const char *wallpaper_key   = NULL;
    settings_t *settings        = config_get_ptr();
    bool success                = false;
    unsigned rgui_aspect_ratio  = settings->uints.menu_rgui_aspect_ratio;
@@ -4078,7 +4078,16 @@ static void rgui_update_menu_viewport(rgui_t *rgui)
             do_integer_scaling = false;
       }
       
-      if (!do_integer_scaling)
+      /* Check whether menu should be stretched to
+       * fill the screen, regardless of internal
+       * aspect ratio */
+      if (aspect_ratio_lock == RGUI_ASPECT_RATIO_LOCK_FILL_SCREEN)
+      {
+         rgui->menu_video_settings.viewport.width  = vp.full_width;
+         rgui->menu_video_settings.viewport.height = vp.full_height;
+      }
+      /* Normal non-integer aspect-ratio-correct scaling */
+      else if (!do_integer_scaling)
       {
          float display_aspect_ratio = (float)vp.full_width 
             / (float)vp.full_height;
