@@ -588,10 +588,11 @@ static int core_info_qsort_cmp(const void *a_, const void *b_)
 
 static core_info_t *core_info_find_internal(
       core_info_list_t *list,
-      const char *core)
+      const char *core,
+      const char *core_display_name)
 {
    size_t i;
-   const char *core_path_basename = path_basename(core);
+   const char *core_path_basename = core != NULL ? path_basename(core) : NULL;
 
    for (i = 0; i < list->count; i++)
    {
@@ -599,7 +600,7 @@ static core_info_t *core_info_find_internal(
 
       if (!info || !info->path)
          continue;
-      if (string_is_equal(path_basename(info->path), core_path_basename))
+      if (string_is_equal(path_basename(info->path), core_path_basename) || string_is_equal(info->display_name, core_display_name))
          return info;
    }
 
@@ -620,7 +621,7 @@ static bool core_info_list_update_missing_firmware_internal(
    if (!core_info_list || !core)
       return false;
 
-   info                   = core_info_find_internal(core_info_list, core);
+   info                   = core_info_find_internal(core_info_list, core, NULL);
 
    if (!info)
       return false;
@@ -739,12 +740,12 @@ bool core_info_load(core_info_ctx_find_t *info)
    return true;
 }
 
-bool core_info_find(core_info_ctx_find_t *info, const char *core_path)
+bool core_info_find(core_info_ctx_find_t *info)
 {
    core_info_state_t *p_coreinfo = coreinfo_get_ptr();
    if (!info || !p_coreinfo->curr_list)
       return false;
-   info->inf = core_info_find_internal(p_coreinfo->curr_list, core_path);
+   info->inf = core_info_find_internal(p_coreinfo->curr_list, info->path, info->display_name);
    if (!info->inf)
       return false;
    return true;

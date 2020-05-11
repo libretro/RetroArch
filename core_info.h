@@ -88,6 +88,7 @@ typedef struct core_info_ctx_find
 {
    core_info_t *inf;
    const char *path;
+   const char* display_name;
 } core_info_ctx_find_t;
 
 enum core_info_list_qsort_type
@@ -132,7 +133,7 @@ bool core_info_get_list(core_info_list_t **core);
 bool core_info_list_update_missing_firmware(core_info_ctx_firmware_t *info,
       bool *set_missing_bios);
 
-bool core_info_find(core_info_ctx_find_t *info, const char *name);
+bool core_info_find(core_info_ctx_find_t *info);
 
 bool core_info_load(core_info_ctx_find_t *info);
 

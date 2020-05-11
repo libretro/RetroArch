@@ -3149,7 +3149,7 @@ static unsigned menu_displaylist_parse_content_information(
       core_info.inf  = NULL;
       core_info.path = core_path;
 
-      if (core_info_find(&core_info, core_path))
+      if (core_info_find(&core_info))
          if (!string_is_empty(core_info.inf->display_name))
             strlcpy(core_name, core_info.inf->display_name, sizeof(core_name));
    }
