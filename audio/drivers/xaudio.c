@@ -1,6 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2017 - Daniel De Matteis
+ *  Copyright (C) 2011-2020 - Daniel De Matteis
+ *  Copyright (C) 2020      - neil4
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -42,6 +43,7 @@
 #include "../common/mmdevice_common.h"
 #endif
 
+#include "../../command.h"
 #include "../../retroarch.h"
 #include "../../verbosity.h"
 
@@ -56,6 +58,8 @@ typedef struct xaudio2 xaudio2_t;
 #endif
 
 #define XAUDIO2_WRITE_AVAILABLE(handle) ((handle)->bufsize * (MAX_BUFFERS - (handle)->buffers - 1))
+
+static unsigned xaudio2_device_count;
 
 typedef struct
 {
@@ -280,6 +284,8 @@ static xaudio2_t *xaudio2_new(unsigned samplerate, unsigned channels,
                XAUDIO2_COMMIT_NOW)))
       goto error;
 
+   IXAudio2_GetDeviceCount(handle->pXAudio2, &xaudio2_device_count);
+
    if (list)
       string_list_free(list);
    return handle;
@@ -324,9 +330,20 @@ static void *xa_init(const char *device, unsigned rate, unsigned latency,
 static ssize_t xa_write(void *data, const void *buf, size_t size)
 {
    unsigned bytes;
+   unsigned dev_count;
    xa_t *xa              = (xa_t*)data;
    xaudio2_t *handle     = xa->xa;
    const uint8_t *buffer = (const uint8_t*)buf;
+
+   /* TODO/FIXME - register a callback instead */
+   IXAudio2_GetDeviceCount(handle->pXAudio2, &dev_count);
+
+   if (dev_count != xaudio2_device_count)
+   {
+      xaudio2_device_count = dev_count;
+      command_event(CMD_EVENT_AUDIO_REINIT, NULL);
+      return 0;
+   }
 
    if (xa->nonblock)
    {
@@ -458,7 +475,6 @@ static void *xa_list_new(void *u)
 #if defined(_XBOX) || !(_WIN32_WINNT >= 0x0602 /*_WIN32_WINNT_WIN8*/)
    unsigned i;
    union string_list_elem_attr attr;
-   uint32_t dev_count              = 0;
    IXAudio2 *ixa2                  = NULL;
    struct string_list *sl          = string_list_new();
 
@@ -470,9 +486,9 @@ static void *xa_list_new(void *u)
    if (FAILED(XAudio2Create(&ixa2, 0, XAUDIO2_DEFAULT_PROCESSOR)))
       return NULL;
 
-   IXAudio2_GetDeviceCount(ixa2, &dev_count);
+   IXAudio2_GetDeviceCount(ixa2, &xaudio2_device_count);
 
-   for (i = 0; i < dev_count; i++)
+   for (i = 0; i < xaudio2_device_count; i++)
    {
       XAUDIO2_DEVICE_DETAILS dev_detail;
       if (IXAudio2_GetDeviceDetails(ixa2, i, &dev_detail) == S_OK)
