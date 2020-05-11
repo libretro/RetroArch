@@ -247,9 +247,9 @@ retro_time_t cpu_features_get_time_usec(void)
    return tv.tv_sec * INT64_C(1000000) + (tv.tv_nsec + 500) / 1000;
 #elif defined(EMSCRIPTEN)
    return emscripten_get_now() * 1000;
-#elif defined(PS2)
-      return clock()*1000;
-#elif defined(__mips__) || defined(DJGPP)
+#elif defined(PS2) || defined(DJGPP)
+   return clock()*(1000000LL/CLOCKS_PER_SEC);
+#elif defined(__mips__)
    struct timeval tv;
    gettimeofday(&tv,NULL);
    return (1000000 * tv.tv_sec + tv.tv_usec);
