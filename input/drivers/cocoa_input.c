@@ -201,16 +201,12 @@ static int16_t cocoa_mouse_state(cocoa_input_data_t *apple,
   switch (id)
   {
      case RETRO_DEVICE_ID_MOUSE_X:
-        val = apple->mouse_rel_x;
-        // NOTE: Because cocoa events are effectively handled async we reset
-        // the delta which we cumulate on each event
-        apple->mouse_rel_x = 0;
+        val = apple->window_pos_x - apple->mouse_x_last;
+        apple->mouse_x_last = apple->window_pos_x;
         return val;
      case RETRO_DEVICE_ID_MOUSE_Y:
-        val = apple->mouse_rel_y;
-        // NOTE: Because cocoa events are effectively handled async we reset
-        // the delta which we cumulate on each event
-        apple->mouse_rel_y = 0;
+        val = apple->window_pos_y - apple->mouse_y_last;
+        apple->mouse_y_last = apple->window_pos_y;
         return val;
      case RETRO_DEVICE_ID_MOUSE_LEFT:
           return apple->mouse_buttons & 1;
