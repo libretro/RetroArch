@@ -1,6 +1,5 @@
 # Future
 - 3DS: Enable basic networking / cheevos
-- AUDIO/WINDOWS: XAudio2 - Inserting/removing an audio device (e.g. headphones, speakers) will no longer crash RetroArch
 - GLCORE: Switch to glcore video driver when requested by a core
 - LINUX/XDG: Use GenericName correctly in desktop entry
 - MAC/COCOA: Fix mouse cursor tracking
