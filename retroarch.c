@@ -4864,15 +4864,15 @@ static void handle_translation_cb(
             rpng_t *rpng = NULL;
             /* PNG coming back from the url */
             image_width  =
-                ((uint32_t) ((uint8_t)raw_image_file_data[16])<<24)+
-                ((uint32_t) ((uint8_t)raw_image_file_data[17])<<16)+
-                ((uint32_t) ((uint8_t)raw_image_file_data[18])<<8)+
-                ((uint32_t) ((uint8_t)raw_image_file_data[19])<<0);
+                ((uint32_t) ((uint8_t)raw_image_file_data[16]) << 24)+
+                ((uint32_t) ((uint8_t)raw_image_file_data[17]) << 16)+
+                ((uint32_t) ((uint8_t)raw_image_file_data[18]) << 8)+
+                ((uint32_t) ((uint8_t)raw_image_file_data[19]) << 0);
             image_height =
-                ((uint32_t) ((uint8_t)raw_image_file_data[20])<<24)+
-                ((uint32_t) ((uint8_t)raw_image_file_data[21])<<16)+
-                ((uint32_t) ((uint8_t)raw_image_file_data[22])<<8)+
-                ((uint32_t) ((uint8_t)raw_image_file_data[23])<<0);
+                ((uint32_t) ((uint8_t)raw_image_file_data[20]) << 24)+
+                ((uint32_t) ((uint8_t)raw_image_file_data[21]) << 16)+
+                ((uint32_t) ((uint8_t)raw_image_file_data[22]) << 8)+
+                ((uint32_t) ((uint8_t)raw_image_file_data[23]) << 0);
             rpng = rpng_alloc();
 
             if (!rpng)
@@ -14543,10 +14543,10 @@ static int16_t input_state_device(
 
                /* Avoid detecting the turbo button being held as multiple toggles */
                if (!input_driver_turbo_btns.frame_enable[port])
-                  input_driver_turbo_btns.turbo_pressed[port] &= ~(1<<31);
+                  input_driver_turbo_btns.turbo_pressed[port] &= ~(1 << 31);
                else if (input_driver_turbo_btns.turbo_pressed[port]>=0)
                {
-                  input_driver_turbo_btns.turbo_pressed[port] |= (1<<31);
+                  input_driver_turbo_btns.turbo_pressed[port] |= (1 << 31);
                   /* Toggle turbo for selected buttons. */
                   if (!input_driver_turbo_btns.enable[port])
                   {
@@ -14569,7 +14569,7 @@ static int16_t input_state_device(
                   input_driver_turbo_btns.mode1_enable[port] ^= 1;
                }
 
-               if (input_driver_turbo_btns.turbo_pressed[port] & 1<<31)
+               if (input_driver_turbo_btns.turbo_pressed[port] & (1 << 31))
                {
                   /* Avoid detecting buttons being held as multiple toggles */
                   if (!res)
@@ -29668,9 +29668,9 @@ unsigned get_gamepad_input_override(void)
 void set_gamepad_input_override(unsigned i, bool val)
 {
    if (val)
-      gamepad_input_override = gamepad_input_override | (1<<i);
+      gamepad_input_override = gamepad_input_override | (1 << i);
    else
-      gamepad_input_override = gamepad_input_override & ((1<<i) ^ (~0));
+      gamepad_input_override = gamepad_input_override & ((1 << i) ^ (~0));
 }
 
 void reset_gamepad_input_override(void)
