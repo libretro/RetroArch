@@ -33,7 +33,7 @@
 
 static void vga_set_mode_13h(void)
 {
-   __dpmi_regs r;
+  __dpmi_regs r = {0};
 
    r.x.ax = 0x13;
    __dpmi_int(0x10, &r);
@@ -41,7 +41,7 @@ static void vga_set_mode_13h(void)
 
 static void vga_return_to_text_mode(void)
 {
-   __dpmi_regs r;
+   __dpmi_regs r = {0};
 
    r.x.ax = 3;
    __dpmi_int(0x10, &r);
