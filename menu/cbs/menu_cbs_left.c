@@ -22,7 +22,6 @@
 #include "../../config.h"
 #endif
 
-#include "../menu_content.h"
 #include "../menu_driver.h"
 #include "../menu_entries.h"
 #include "../menu_cbs.h"

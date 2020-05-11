@@ -68,7 +68,6 @@
 #endif
 
 #include "menu_cbs.h"
-#include "menu_content.h"
 #include "menu_driver.h"
 #include "menu_entries.h"
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)

@@ -52,7 +52,6 @@
 #include "../widgets/menu_input_bind_dialog.h"
 #include "../menu_input.h"
 #include "../menu_networking.h"
-#include "../menu_content.h"
 
 #include "../../core.h"
 #include "../../configuration.h"

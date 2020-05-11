@@ -208,7 +208,6 @@ enum menu_settings_type
    MENU_SETTINGS_LAST
 };
 
-
 typedef struct menu_ctx_driver
 {
    /* Set a framebuffer texture. This is used for instance by RGUI. */
@@ -322,6 +321,16 @@ typedef struct
    const menu_ctx_driver_t *driver_ctx;
    void *userdata;
 } menu_handle_t;
+
+typedef struct menu_content_ctx_defer_info
+{
+   void *data;
+   const char *dir;
+   const char *path;
+   const char *menu_label;
+   char *s;
+   size_t len;
+} menu_content_ctx_defer_info_t;
 
 typedef struct menu_ctx_displaylist
 {
