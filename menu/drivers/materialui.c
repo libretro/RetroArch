@@ -1073,6 +1073,20 @@ typedef struct
  * Colour Themes END
  * ============================== */
 
+/* Animation defines */
+#define MUI_ANIM_DURATION_SCROLL 166.66667f
+#define MUI_ANIM_DURATION_SCROLL_RESET 83.333333f
+/* According to Material UI specifications, animations
+ * that affect a large portion of the screen should
+ * have a duration of between 250ms and 300ms. This
+ * should therefore be the value used for menu
+ * transitions - but even 250ms feels too slow...
+ * We compromise by setting a time of 200ms, which
+ * is the same as the 'short press' duration.
+ * This is reasonably fast, without making slide
+ * animations too 'jarring'... */
+#define MUI_ANIM_DURATION_MENU_TRANSITION 200.0f
+
 /* Set a baseline aspect ratio of 4:3 for thumbnail
  * images */
 #define MUI_THUMBNAIL_DEFAULT_ASPECT_RATIO 1.3333333f
@@ -1096,6 +1110,13 @@ typedef struct
  *   too easy to enqueue vast numbers of image
  *   requests... */
 #define MUI_THUMBNAIL_STREAM_DELAY_SCROLLBAR_DRAG 166.66667f
+/* Thumbnail stream delay when viewing
+ * 'desktop'-layout playlists
+ * > In this case, thumbnails are loaded
+ *   as the entry selection is changed. We
+ *   therefore want the stream delay to match
+ *   the scroll animation duration */
+#define MUI_THUMBNAIL_STREAM_DELAY_PLAYLIST_DESKTOP MUI_ANIM_DURATION_SCROLL
 
 /* Defines the various types of supported menu
  * list views
@@ -1365,20 +1386,6 @@ typedef struct
    char last_played_fallback_str[255];
 } materialui_status_bar_t;
 
-/* Animation defines */
-#define MUI_ANIM_DURATION_SCROLL 166.66667f
-#define MUI_ANIM_DURATION_SCROLL_RESET 83.333333f
-/* According to Material UI specifications, animations
- * that affect a large portion of the screen should
- * have a duration of between 250ms and 300ms. This
- * should therefore be the value used for menu
- * transitions - but even 250ms feels too slow...
- * We compromise by setting a time of 200ms, which
- * is the same as the 'short press' duration.
- * This is reasonably fast, without making slide
- * animations too 'jarring'... */
-#define MUI_ANIM_DURATION_MENU_TRANSITION 200.0f
-
 /* Defines common positions when referencing
  * the list of currently on screen menu entries
  * > Used to specify a target when the current
@@ -1506,6 +1513,7 @@ typedef struct materialui_handle
 
    /* Thumbnail helpers */
    gfx_thumbnail_path_data_t *thumbnail_path_data;
+   float thumbnail_stream_delay;
    unsigned thumbnail_width_max;
    unsigned thumbnail_height_max;
    bool primary_thumbnail_available;
@@ -1514,6 +1522,12 @@ typedef struct materialui_handle
    size_t fullscreen_thumbnail_selection;
    float fullscreen_thumbnail_alpha;
    char fullscreen_thumbnail_label[255];
+   /* > When viewing 'desktop'-layout playlists,
+    *   need to cache the index of the last
+    *   selected entry so we can keep displaying
+    *   its thumbnails while waiting for next
+    *   to load after the selection has changed */
+   size_t desktop_thumbnail_last_selection;
 
    /* Status bar */
    materialui_status_bar_t status_bar;
@@ -2795,21 +2809,45 @@ static bool materialui_render_process_entry_playlist_desktop(
       unsigned thumbnail_upscale_threshold,
       bool network_on_demand_thumbnails)
 {
-   bool is_selected = (entry_idx == selection);
+   bool is_selected  = (entry_idx == selection);
+   /* We want to load (and keep in memory)
+    * thumbnails for the currently selected
+    * entry *and* the last entry for which
+    * thumbnail data was available. This allows
+    * us to keep showing 'old' thumbnails in the
+    * sidebar while waiting for new ones to load
+    * (otherwise the sidebar is left blank,
+    * which looks ugly...) */
+   bool is_on_screen = is_selected ||
+         (entry_idx == mui->desktop_thumbnail_last_selection);
 
-   /* Load thumbnails for selected entry and free
-    * thumbnails for all other entries
+   /* Load thumbnails for selected (and last
+    * selected) entry and free thumbnails for
+    * all other entries
     * > Note that secondary thumbnail is force
     *   enabled */
    gfx_thumbnail_process_streams(
       mui->thumbnail_path_data, mui->playlist, entry_idx,
       &node->thumbnails.primary, &node->thumbnails.secondary,
-      is_selected,
+      is_on_screen,
       thumbnail_upscale_threshold,
       network_on_demand_thumbnails);
 
+   /* If this is *not* the currently selected
+    * entry, then our work is done */
+   if (!is_selected)
+      return true;
+
+   /* If thumbnails have been requested for the
+    * selected entry, then it has valid content
+    * to display in the sidebar -> cache this as
+    * the 'last selected' entry */
+   if ((node->thumbnails.primary.status   != GFX_THUMBNAIL_STATUS_UNKNOWN) &&
+       (node->thumbnails.secondary.status != GFX_THUMBNAIL_STATUS_UNKNOWN))
+      mui->desktop_thumbnail_last_selection = selection;
+
    /* Fetch metadata for selected entry */
-   if (is_selected && mui->status_bar.enabled)
+   if (mui->status_bar.enabled)
    {
       gfx_animation_ctx_tag alpha_tag = (uintptr_t)&mui->status_bar.alpha;
 
@@ -2832,7 +2870,7 @@ static bool materialui_render_process_entry_playlist_desktop(
          /* Check if delay timer has elapsed */
          mui->status_bar.delay_timer += gfx_animation_get_delta_time();
 
-         if (mui->status_bar.delay_timer > gfx_thumbnail_get_stream_delay())
+         if (mui->status_bar.delay_timer > mui->thumbnail_stream_delay)
          {
             settings_t *settings               = config_get_ptr();
             bool content_runtime_log           = settings->bools.content_runtime_log;
@@ -4219,12 +4257,35 @@ static void materialui_render_selected_entry_aux_playlist_desktop(
             mui->colors.entry_divider);
 
    /* Draw thumbnails */
-
-   /* > Primary */
    if (node)
+   {
+      gfx_thumbnail_t *primary_thumbnail   = &node->thumbnails.primary;
+      gfx_thumbnail_t *secondary_thumbnail = &node->thumbnails.secondary;
+
+      /* If we have not yet requested thumbnails
+       * for the currently selected entry, keep
+       * drawing thumbnails for the last 'valid'
+       * entry instead (this ensures we always
+       * display *something* in the sidebar
+       * - leaving it blank is ugly...) */
+      if ((primary_thumbnail->status   == GFX_THUMBNAIL_STATUS_UNKNOWN) &&
+          (secondary_thumbnail->status == GFX_THUMBNAIL_STATUS_UNKNOWN))
+      {
+         materialui_node_t *last_node = (materialui_node_t*)
+               file_list_get_userdata_at_offset(list,
+                     mui->desktop_thumbnail_last_selection);
+
+         if (last_node)
+         {
+            primary_thumbnail   = &last_node->thumbnails.primary;
+            secondary_thumbnail = &last_node->thumbnails.secondary;
+         }
+      }
+
+      /* Draw primary */
       materialui_draw_thumbnail(
             mui,
-            &node->thumbnails.primary,
+            primary_thumbnail,
             userdata,
             video_width,
             video_height,
@@ -4232,17 +4293,17 @@ static void materialui_render_selected_entry_aux_playlist_desktop(
             thumbnail_y,
             1.0f);
 
-   /* > Secondary */
-   if (node)
+      /* Draw secondary */
       materialui_draw_thumbnail(
             mui,
-            &node->thumbnails.secondary,
+            secondary_thumbnail,
             userdata,
             video_width,
             video_height,
             thumbnail_x,
             thumbnail_y + (float)mui->thumbnail_height_max + (float)mui->margin,
             1.0f);
+   }
 
    /* Draw status bar */
    if (mui->status_bar.enabled)
@@ -6754,6 +6815,22 @@ static void materialui_update_list_view(materialui_handle_t *mui)
    materialui_set_thumbnail_dimensions(mui);
    materialui_set_secondary_thumbnail_enable(mui, settings);
 
+   /* Miscellaneous post-list-switch configuration:
+    * > Set appropriate thumbnail stream delay */
+   mui->thumbnail_stream_delay =
+         (mui->list_view_type == MUI_LIST_VIEW_PLAYLIST_THUMB_DESKTOP) ?
+               MUI_THUMBNAIL_STREAM_DELAY_PLAYLIST_DESKTOP :
+               MUI_THUMBNAIL_STREAM_DELAY_DEFAULT;
+   gfx_thumbnail_set_stream_delay(mui->thumbnail_stream_delay);
+   /* > Reset 'desktop'-layout last selected
+    *   entry index (we only need to do this if
+    *   list_view_type == MUI_LIST_VIEW_PLAYLIST_THUMB_DESKTOP,
+    *   but it's faster to always set the variable
+    *   than it is to perform a check...) */
+   mui->desktop_thumbnail_last_selection = 0;
+
+   /* List view configuration complete - signal
+    * that entry dimensions must be recalculated */
    mui->need_compute = true;
 }
 
@@ -7049,7 +7126,8 @@ static void *materialui_init(void **userdata, bool video_is_threaded)
    materialui_init_nav_bar(mui);
 
    /* Set initial thumbnail stream delay */
-   gfx_thumbnail_set_stream_delay(MUI_THUMBNAIL_STREAM_DELAY_DEFAULT);
+   mui->thumbnail_stream_delay = MUI_THUMBNAIL_STREAM_DELAY_DEFAULT;
+   gfx_thumbnail_set_stream_delay(mui->thumbnail_stream_delay);
 
    /* Set thumbnail fade duration to default */
    gfx_thumbnail_set_fade_duration(-1.0f);
@@ -8644,8 +8722,8 @@ static int materialui_pointer_up(void *userdata,
        * list will continue to 'drift' in drag direction */
       menu_input_set_pointer_y_accel(0.0f);
 
-      /* Reset thumbnail stream delay to default */
-      gfx_thumbnail_set_stream_delay(MUI_THUMBNAIL_STREAM_DELAY_DEFAULT);
+      /* Reset thumbnail stream delay */
+      gfx_thumbnail_set_stream_delay(mui->thumbnail_stream_delay);
 
       mui->scrollbar.dragged = false;
       return 0;
