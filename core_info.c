@@ -17,6 +17,7 @@
 
 #include <compat/strl.h>
 #include <string/stdstring.h>
+#include <string.h>
 #include <file/config_file.h>
 #include <file/file_path.h>
 #include <lists/dir_list.h>
@@ -588,11 +589,11 @@ static int core_info_qsort_cmp(const void *a_, const void *b_)
 
 static core_info_t *core_info_find_internal(
       core_info_list_t *list,
-      const char *core,
-      const char *core_display_name)
+      const char *core)
 {
    size_t i;
    const char *core_path_basename = core != NULL ? path_basename(core) : NULL;
+   char* libretro_pos = core_path_basename != NULL ? strstr(core_path_basename, "_libretro") : NULL;
 
    for (i = 0; i < list->count; i++)
    {
@@ -600,8 +601,15 @@ static core_info_t *core_info_find_internal(
 
       if (!info || !info->path)
          continue;
-      if (string_is_equal(path_basename(info->path), core_path_basename) || string_is_equal(info->display_name, core_display_name))
+      if (string_is_equal(path_basename(info->path), core_path_basename))
          return info;
+
+      if (libretro_pos)
+      {
+         size_t core_name_length = libretro_pos - core_path_basename;
+         if (strncmp(path_basename(info->path), core_path_basename, core_name_length) == 0)
+            return info;
+      }
    }
 
    return NULL;
@@ -745,7 +753,7 @@ bool core_info_find(core_info_ctx_find_t *info)
    core_info_state_t *p_coreinfo = coreinfo_get_ptr();
    if (!info || !p_coreinfo->curr_list)
       return false;
-   info->inf = core_info_find_internal(p_coreinfo->curr_list, info->path, info->display_name);
+   info->inf = core_info_find_internal(p_coreinfo->curr_list, info->path);
    if (!info->inf)
       return false;
    return true;

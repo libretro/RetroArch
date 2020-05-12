@@ -2786,7 +2786,6 @@ core_info_t *playlist_entry_get_core(const struct playlist_entry* entry)
 
    core_info.inf = NULL;
    core_info.path = entry->core_path;
-   core_info.display_name = entry->core_name;
 
    if (!core_info_find(&core_info))
       return NULL;

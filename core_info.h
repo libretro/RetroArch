@@ -88,7 +88,6 @@ typedef struct core_info_ctx_find
 {
    core_info_t *inf;
    const char *path;
-   const char* display_name;
 } core_info_ctx_find_t;
 
 enum core_info_list_qsort_type
