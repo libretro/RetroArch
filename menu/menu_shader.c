@@ -278,8 +278,9 @@ static bool menu_shader_manager_save_preset_internal(
    }
    else
    {
-      const char *dirs[3]  = {0};
+      const char *dirs[3] = {0};
       char config_directory[PATH_MAX_LENGTH];
+      char basedir[PATH_MAX_LENGTH];
 
       config_directory[0] = '\0';
 
@@ -300,6 +301,19 @@ static bool menu_shader_manager_save_preset_internal(
 
          fill_pathname_join(buffer, dirs[i],
                fullname, sizeof(buffer));
+
+         strlcpy(basedir, buffer, sizeof(basedir));
+         path_basedir(basedir);
+
+         if (!path_is_directory(basedir)) {
+            ret = path_mkdir(basedir);
+
+            if (!ret)
+            {
+                RARCH_WARN("Failed to create preset directory %s.\n", basedir);
+                continue;
+            }
+         }
 
          preset_path = buffer;
 
@@ -337,43 +351,25 @@ static bool menu_shader_manager_operate_auto_preset(
    char tmp[PATH_MAX_LENGTH];
    char directory[PATH_MAX_LENGTH];
    char file[PATH_MAX_LENGTH];
-   bool success                      = false;
    struct retro_system_info *system  = runloop_get_libretro_system_info();
    const char *core_name             = system ? system->library_name : NULL;
 
    tmp[0] = directory[0] = file[0] = '\0';
 
-   if (type == SHADER_PRESET_GLOBAL)
-      fill_pathname_join(
-            directory,
-            dir_video_shader,
-            "presets",
-            sizeof(directory));
-   else if (string_is_empty(core_name))
+   if (type != SHADER_PRESET_GLOBAL && string_is_empty(core_name))
       return false;
-   else
-   {
-      fill_pathname_join(
-            tmp,
-            dir_video_shader,
-            "presets",
-            sizeof(tmp));
-      fill_pathname_join(
-            directory,
-            tmp,
-            core_name,
-            sizeof(directory));
-   }
 
    switch (type)
    {
       case SHADER_PRESET_GLOBAL:
-         fill_pathname_join(file, directory, "global", sizeof(file));
+         fill_pathname_join(file, "presets", "global", sizeof(file));
          break;
       case SHADER_PRESET_CORE:
+         fill_pathname_join(directory, "presets", core_name, sizeof(directory));
          fill_pathname_join(file, directory, core_name, sizeof(file));
          break;
       case SHADER_PRESET_PARENT:
+         fill_pathname_join(directory, "presets", core_name, sizeof(directory));
          fill_pathname_parent_dir_name(tmp,
                path_get(RARCH_PATH_BASENAME), sizeof(tmp));
          fill_pathname_join(file, directory, tmp, sizeof(file));
@@ -384,6 +380,7 @@ static bool menu_shader_manager_operate_auto_preset(
                path_basename(path_get(RARCH_PATH_BASENAME));
             if (string_is_empty(game_name))
                return false;
+            fill_pathname_join(directory, "presets", core_name, sizeof(directory));
             fill_pathname_join(file, directory, game_name, sizeof(file));
             break;
          }
@@ -394,9 +391,6 @@ static bool menu_shader_manager_operate_auto_preset(
    switch (op)
    {
       case AUTO_SHADER_OP_SAVE:
-         if (!path_is_directory(directory))
-            path_mkdir(directory);
-
          return menu_shader_manager_save_preset_internal(
                shader, file,
                dir_video_shader,
@@ -405,41 +399,106 @@ static bool menu_shader_manager_operate_auto_preset(
       case AUTO_SHADER_OP_REMOVE:
          {
             /* remove all supported auto-shaders of given type */
-            char *end = file + strlen(file);
-            size_t i;
-            for (i = 0; i < ARRAY_SIZE(shader_types); i++)
-            {
-               const char *preset_ext;
+            char *end;
+            size_t i, j;
+            size_t n, m;
 
-               if (!video_shader_is_supported(shader_types[i]))
+            n = m = 0;
+
+            const char *dirs[3] = {0};
+            char config_directory[PATH_MAX_LENGTH];
+            char preset_path[PATH_MAX_LENGTH];
+
+            config_directory[0] = '\0';
+
+            if (!path_is_empty(RARCH_PATH_CONFIG))
+               fill_pathname_basedir(
+                     config_directory,
+                     path_get(RARCH_PATH_CONFIG),
+                     sizeof(config_directory));
+
+            dirs[0] = dir_video_shader;
+            dirs[1] = dir_menu_config;
+            dirs[2] = config_directory;
+
+            for (i = 0; i < ARRAY_SIZE(dirs); i++)
+            {
+               if (string_is_empty(dirs[i]))
                   continue;
 
-               preset_ext = video_shader_get_preset_extension(shader_types[i]);
-               strlcpy(end, preset_ext, sizeof(file) - (end-file));
+               fill_pathname_join(preset_path, dirs[i], file, sizeof(preset_path));
+               end = preset_path + strlen(preset_path);
 
-               if (!filestream_delete(file))
-                  success = true;
+               for (j = 0; j < ARRAY_SIZE(shader_types); j++)
+               {
+                  const char *preset_ext;
+
+                  if (!video_shader_is_supported(shader_types[j]))
+                     continue;
+
+                  preset_ext = video_shader_get_preset_extension(shader_types[j]);
+                  strlcpy(end, preset_ext, sizeof(preset_path) - (end - preset_path));
+
+                  if (path_is_valid(preset_path))
+                  {
+                     n++;
+
+                     if (!filestream_delete(preset_path))
+                     {
+                        m++;
+                        RARCH_LOG("Deleted shader preset from %s.\n", preset_path);
+                     }
+                     else
+                        RARCH_WARN("Failed to remove shader preset at %s.\n", preset_path);
+                  }
+               }
             }
+
+            return n == m;
          }
-         return success;
       case AUTO_SHADER_OP_EXISTS:
          {
             /* test if any supported auto-shaders of given type exists */
-            char *end = file + strlen(file);
-            size_t i;
+            char *end;
+            size_t i, j;
 
-            for (i = 0; i < ARRAY_SIZE(shader_types); i++)
+            const char *dirs[3] = {0};
+            char config_directory[PATH_MAX_LENGTH];
+            char preset_path[PATH_MAX_LENGTH];
+
+            config_directory[0] = '\0';
+
+            if (!path_is_empty(RARCH_PATH_CONFIG))
+               fill_pathname_basedir(
+                     config_directory,
+                     path_get(RARCH_PATH_CONFIG),
+                     sizeof(config_directory));
+
+            dirs[0] = dir_video_shader;
+            dirs[1] = dir_menu_config;
+            dirs[2] = config_directory;
+
+            for (i = 0; i < ARRAY_SIZE(dirs); i++)
             {
-               const char *preset_ext;
-
-               if (!video_shader_is_supported(shader_types[i]))
+               if (string_is_empty(dirs[i]))
                   continue;
 
-               preset_ext = video_shader_get_preset_extension(shader_types[i]);
-               strlcpy(end, preset_ext, sizeof(file) - (end-file));
+               fill_pathname_join(preset_path, dirs[i], file, sizeof(preset_path));
+               end = preset_path + strlen(preset_path);
 
-               if (path_is_valid(file))
-                  return true;
+               for (j = 0; j < ARRAY_SIZE(shader_types); j++)
+               {
+                  const char *preset_ext;
+
+                  if (!video_shader_is_supported(shader_types[j]))
+                     continue;
+
+                  preset_ext = video_shader_get_preset_extension(shader_types[j]);
+                  strlcpy(end, preset_ext, sizeof(preset_path) - (end - preset_path));
+
+                  if (path_is_valid(preset_path))
+                     return true;
+               }
             }
          }
          break;
