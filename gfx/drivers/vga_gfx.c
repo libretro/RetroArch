@@ -197,7 +197,26 @@ static bool vga_gfx_frame(void *data, const void *frame,
       {
          if (bits == 32)
          {
-            /* TODO/FIXME - needs to be implemented */
+            unsigned x, y;
+            for (y = 0; y < VGA_HEIGHT; y++)
+            {
+               for (x = 0; x < VGA_WIDTH; x++)
+               {
+                  /* scale incoming frame to fit the screen */
+                  unsigned    scaled_x = (width * x) / VGA_WIDTH;
+                  unsigned    scaled_y = (height * y) / VGA_HEIGHT;
+                  uint32_t pixel = ((uint32_t*)frame_to_copy)[width * scaled_y + scaled_x];
+
+                  /* convert RGB888 to BGR332 */
+                  unsigned r = ((pixel & 0xFF0000) >> 21);
+                  unsigned g = ((pixel & 0x00FF00) >> 13);
+                  unsigned b = ((pixel & 0x0000FF) >> 6);
+
+                  vga->vga_frame[VGA_WIDTH * y + x] = (b << 6) | (g << 3) | r;
+               }
+            }
+
+            dosmemput(vga->vga_frame, VGA_WIDTH*VGA_HEIGHT, 0xA0000);
          }
          else if (bits == 16)
          {
