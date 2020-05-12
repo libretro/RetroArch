@@ -1,5 +1,7 @@
 # Future
+- 3DS: Add IDs for Frodo
 - 3DS: Enable basic networking / cheevos
+- CHEEVOS/BUGFIX: Opening achievements list would crash RetroArch with badges enabled (on new games)
 - GLCORE: Switch to glcore video driver when requested by a core
 - LINUX/XDG: Use GenericName correctly in desktop entry
 - MAC/COCOA: Fix mouse cursor tracking
