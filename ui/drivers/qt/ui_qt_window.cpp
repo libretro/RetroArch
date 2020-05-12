@@ -151,13 +151,11 @@ static void scan_finished_handler(retro_task_t *task,
 /* https://stackoverflow.com/questions/7246622/how-to-create-a-slider-with-a-non-linear-scale */
 static double expScale(double inputValue, double midValue, double maxValue)
 {
-   double returnValue = 0;
-   double M = maxValue / midValue;
-   double C = log(pow(M - 1, 2));
-   double B = maxValue / (exp(C) - 1);
-   double A = -1 * B;
-
-   returnValue = A + B * exp(C * inputValue);
+   double           M = maxValue / midValue;
+   double           C = log(pow(M - 1, 2));
+   double           B = maxValue / (exp(C) - 1);
+   double           A = -1 * B;
+   double returnValue = A + B * exp(C * inputValue);
 
    return returnValue;
 }
@@ -2891,15 +2889,6 @@ void MainWindow::updateItemsCount()
 
 void MainWindow::keyPressEvent(QKeyEvent *event)
 {
-#if 0
-   if (event->key() == Qt::Key_F5)
-   {
-      event->accept();
-      hide();
-
-      return;
-   }
-#endif
    QMainWindow::keyPressEvent(event);
 }
 
