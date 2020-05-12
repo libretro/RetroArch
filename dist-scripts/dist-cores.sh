@@ -307,7 +307,8 @@ for f in `ls -v *_${platform}.${EXT}`; do
    elif [ $PLATFORM = "wii" ] ; then
        mv -f ../retroarch_${platform}.dol ../pkg/${platform}/${name}_libretro_${platform}.dol
    elif [ $PLATFORM = "dos" ] ; then
-      mv -f ../retroarch_${platform}.exe ../pkg/${platform}/${name}_libretro_${platform}.exe
+      mkdir -p ../pkg/${platform}
+      mv -f ../retrodos.exe ../pkg/${platform}/${name}_libretro_${platform}.exe
    elif [ $PLATFORM = "emscripten" ] ; then
       mkdir -p ../pkg/emscripten/
       mv -f ../${name}_libretro.js ../pkg/emscripten/${name}_libretro.js
