@@ -66,13 +66,12 @@
 
 typedef struct
 {
-
-  int height;
-  int width;
-  int id;
-  uint32_t *ptr;
-  // Internal stuff
-  uint32_t offset;
+   int height;
+   int width;
+   int id;
+   uint32_t *ptr;
+   /* Internal stuff */
+   uint32_t offset;
 } rsxBuffer;
 
 typedef struct
@@ -91,26 +90,25 @@ typedef struct
 
 typedef struct gcm_video
 {
-  video_viewport_t vp;
-  rsxBuffer buffers[MAX_BUFFERS];
-  rsxBuffer menuBuffers[MAX_BUFFERS];
-  int currentBuffer, menuBuffer;
-  gcmContextData *context;
-  u16 width;
-  u16 height;
-  bool menu_frame_enable;
-  bool rgb32;
-  bool vsync;
-  u32 depth_pitch;
-  u32 depth_offset;
-  u32 *depth_buffer;
+   video_viewport_t vp;
+   rsxBuffer buffers[MAX_BUFFERS];
+   rsxBuffer menuBuffers[MAX_BUFFERS];
+   int currentBuffer, menuBuffer;
+   gcmContextData *context;
+   u16 width;
+   u16 height;
+   bool menu_frame_enable;
+   bool rgb32;
+   bool vsync;
+   u32 depth_pitch;
+   u32 depth_offset;
+   u32 *depth_buffer;
 
    bool smooth;
    unsigned rotation;
    bool keep_aspect;
    bool should_resize;
    bool msg_rendering_enabled;
-
 } gcm_video_t;
 
 #ifndef HAVE_THREADS
@@ -121,136 +119,138 @@ static bool gcm_tasks_finder(retro_task_t *task,void *userdata)
 task_finder_data_t gcm_tasks_finder_data = {gcm_tasks_finder, NULL};
 #endif
 
-static int
-makeBuffer (rsxBuffer * buffer, u16 width, u16 height, int id)
+static int gcm_make_buffer(rsxBuffer * buffer, u16 width, u16 height, int id)
 {
-  int depth = sizeof(u32);
-  int pitch = depth * width;
-  int size = depth * width * height;
+   int depth = sizeof(u32);
+   int pitch = depth * width;
+   int size = depth * width * height;
 
-  buffer->ptr = (uint32_t*) rsxMemalign (64, size);
-  if (buffer->ptr == NULL)
-    goto error;
+   buffer->ptr = (uint32_t*)rsxMemalign (64, size);
+   if (!buffer->ptr)
+      goto error;
 
-  if (rsxAddressToOffset (buffer->ptr, &buffer->offset) != 0)
-    goto error;
+   if (rsxAddressToOffset (buffer->ptr, &buffer->offset) != 0)
+      goto error;
 
-  /* Register the display buffer with the RSX */
-  if (gcmSetDisplayBuffer (id, buffer->offset, pitch, width, height) != 0)
-    goto error;
+   /* Register the display buffer with the RSX */
+   if (gcmSetDisplayBuffer (id, buffer->offset, pitch, width, height) != 0)
+      goto error;
 
-  buffer->width = width;
-  buffer->height = height;
-  buffer->id = id;
+   buffer->width = width;
+   buffer->height = height;
+   buffer->id = id;
 
-  return TRUE;
+   return TRUE;
 
- error:
-  if (buffer->ptr != NULL)
-    rsxFree (buffer->ptr);
+error:
+   if (buffer->ptr)
+      rsxFree (buffer->ptr);
 
-  return FALSE;
+   return FALSE;
 }
 
-static int
-flip (gcmContextData *context, s32 buffer)
+static int gcm_flip(gcmContextData *context, s32 buffer)
 {
-  if (gcmSetFlip (context, buffer) == 0) {
-    rsxFlushBuffer (context);
-    // Prevent the RSX from continuing until the flip has finished.
-    gcmSetWaitFlip (context);
+   if (gcmSetFlip(context, buffer) == 0)
+   {
+      rsxFlushBuffer (context);
+      /* Prevent the RSX from continuing until the flip has finished. */
+      gcmSetWaitFlip (context);
 
-    return TRUE;
-  }
-  return FALSE;
+      return TRUE;
+   }
+   return FALSE;
 }
 
 #define GCM_LABEL_INDEX		255
 
-static void waitRSXIdle(gcmContextData *context);
+static void gcm_wait_rsx_idle(gcmContextData *context);
 
-static void
-waitFlip ()
+static void gcm_wait_flip(void)
 {
-  while (gcmGetFlipStatus () != 0)
+  while (gcmGetFlipStatus() != 0)
     usleep (200);  /* Sleep, to not stress the cpu. */
-  gcmResetFlipStatus ();
+  gcmResetFlipStatus();
 }
 
-static gcmContextData *
-initScreen (gcm_video_t* gcm)
+static gcmContextData *gcm_init_screen(gcm_video_t* gcm)
 {
-  gcmContextData *context = NULL; /* Context to keep track of the RSX buffer. */
-  static gcmContextData *saved_context = NULL;
-  videoState state;
-  videoConfiguration vconfig;
-  videoResolution res; /* Screen Resolution */
+   /* Context to keep track of the RSX buffer. */
+   gcmContextData              *context = NULL;
+   static gcmContextData *saved_context = NULL;
+   videoState state;
+   videoConfiguration vconfig;
+   videoResolution res; /* Screen Resolution */
 
-  if (!saved_context) {
-    /* Allocate a 1Mb buffer, alligned to a 1Mb boundary                          
-     * to be our shared IO memory with the RSX. */
-    void *host_addr = memalign (1024*1024, HOST_SIZE);
+   if (!saved_context)
+   {
+      /* Allocate a 1Mb buffer, alligned to a 1Mb boundary                          
+       * to be our shared IO memory with the RSX. */
+      void *host_addr = memalign (1024*1024, HOST_SIZE);
 
-    if (host_addr == NULL)
+      if (!host_addr)
+         goto error;
+
+      /* Initialise Reality, which sets up the 
+       * command buffer and shared I/O memory */
+      context = rsxInit (CB_SIZE, HOST_SIZE, host_addr);
+      if (!context)
+         goto error;
+      saved_context = context;
+   }
+   else
+      context = saved_context;
+
+   /* Get the state of the display */
+   if (videoGetState (0, 0, &state) != 0)
       goto error;
 
-    /* Initilise Reality, which sets up the command buffer and shared IO memory */
-    context = rsxInit (CB_SIZE, HOST_SIZE, host_addr);
-    if (context == NULL)
+   /* Make sure display is enabled */
+   if (state.state != 0)
       goto error;
-    saved_context = context;
-  } else {
-    context = saved_context;
-  }
 
-  /* Get the state of the display */
-  if (videoGetState (0, 0, &state) != 0)
-    goto error;
+   /* Get the current resolution */
+   if (videoGetResolution (state.displayMode.resolution, &res) != 0)
+      goto error;
 
-  /* Make sure display is enabled */
-  if (state.state != 0)
-    goto error;
+   /* Configure the buffer format to xRGB */
+   memset (&vconfig, 0, sizeof(videoConfiguration));
+   vconfig.resolution = state.displayMode.resolution;
+   vconfig.format     = VIDEO_BUFFER_FORMAT_XRGB;
+   vconfig.pitch      = res.width * sizeof(u32);
+   vconfig.aspect     = state.displayMode.aspect;
 
-  /* Get the current resolution */
-  if (videoGetResolution (state.displayMode.resolution, &res) != 0)
-    goto error;
+   gcm->width         = res.width;
+   gcm->height        = res.height;
 
-  /* Configure the buffer format to xRGB */
-  memset (&vconfig, 0, sizeof(videoConfiguration));
-  vconfig.resolution = state.displayMode.resolution;
-  vconfig.format = VIDEO_BUFFER_FORMAT_XRGB;
-  vconfig.pitch = res.width * sizeof(u32);
-  vconfig.aspect = state.displayMode.aspect;
+   gcm_wait_rsx_idle(context);
 
-  gcm->width = res.width;
-  gcm->height = res.height;
+   if (videoConfigure (0, &vconfig, NULL, 0) != 0)
+      goto error;
 
-  waitRSXIdle(context);
+   if (videoGetState (0, 0, &state) != 0)
+      goto error;
 
-  if (videoConfigure (0, &vconfig, NULL, 0) != 0)
-    goto error;
+   gcmSetFlipMode (GCM_FLIP_VSYNC); /* Wait for VSYNC to flip */
 
-  if (videoGetState (0, 0, &state) != 0)
-    goto error;
+   gcm->depth_pitch = res.width * sizeof(u32);
+   gcm->depth_buffer = (u32 *) rsxMemalign (64, (res.height * gcm->depth_pitch)* 2);
+   rsxAddressToOffset (gcm->depth_buffer, &gcm->depth_offset);
 
-  gcmSetFlipMode (GCM_FLIP_VSYNC); // Wait for VSYNC to flip
+   gcmResetFlipStatus();
 
-  gcm->depth_pitch = res.width * sizeof(u32);
-  gcm->depth_buffer = (u32 *) rsxMemalign (64, (res.height * gcm->depth_pitch)* 2);
-  rsxAddressToOffset (gcm->depth_buffer, &gcm->depth_offset);
+   return context;
 
-  gcmResetFlipStatus();
+error:
+#if 0
+   if (context)
+      rsxFinish (context, 0);
 
-  return context;
+   if (gcm->host_addr)
+      free (gcm->host_addr);
+#endif
 
- error:
-     //  if (context)
-     // rsxFinish (context, 0);
-
-   //  if (gcm->host_addr)
-   // free (gcm->host_addr);
-
-  return NULL;
+   return NULL;
 }
 
 
@@ -267,8 +267,7 @@ waitFinish(gcmContextData *context, u32 sLabelVal)
   sLabelVal++;
 }
 
-static void
-waitRSXIdle(gcmContextData *context)
+static void gcm_wait_rsx_idle(gcmContextData *context)
 {
   u32 sLabelVal = 1;
 
@@ -283,7 +282,7 @@ waitRSXIdle(gcmContextData *context)
 static void* gcm_init(const video_info_t* video,
       input_driver_t** input, void** input_data)
 {
-   RARCH_LOG("Reached gcm_init\n");
+   int i;
    gcm_video_t* gcm     = malloc(sizeof(gcm_video_t));
 
    if (!gcm)
@@ -291,17 +290,15 @@ static void* gcm_init(const video_info_t* video,
 
    memset(gcm, 0, sizeof(gcm_video_t));
 
-   int i;
-	
-   gcm->context = initScreen (gcm);
+   gcm->context = gcm_init_screen(gcm);
 
    for (i = 0; i < MAX_BUFFERS; i++)
-     makeBuffer( &gcm->buffers[i], gcm->width, gcm->height, i);
+     gcm_make_buffer(&gcm->buffers[i], gcm->width, gcm->height, i);
 
    for (i = 0; i < MAX_BUFFERS; i++)
-     makeBuffer( &gcm->menuBuffers[i], gcm->width, gcm->height, i + MAX_BUFFERS);
+     gcm_make_buffer(&gcm->menuBuffers[i], gcm->width, gcm->height, i + MAX_BUFFERS);
 
-   flip(gcm->context, MAX_BUFFERS - 1);
+   gcm_flip(gcm->context, MAX_BUFFERS - 1);
 
    gcm->vp.x                = 0;
    gcm->vp.y                = 0;
@@ -318,41 +315,44 @@ static void* gcm_init(const video_info_t* video,
       *input               = ps3input ? &input_ps3 : NULL;
       *input_data          = ps3input;
    }
-   RARCH_LOG("gcm_init done\n");
 
    return gcm;
 }
 
-static void black (uint32_t *dst, uint32_t *dst_end, size_t sz)
+static void gcm_fill_black(uint32_t *dst, uint32_t *dst_end, size_t sz)
 {
   if (sz > dst_end - dst)
     sz = dst_end - dst;
   memset (dst, 0, sz * 4);
 }
 
-static void blitBuffer(rsxBuffer *buffer, const void *frame, unsigned width,
-		       unsigned height, unsigned pitch, int rgb32, bool do_scaling)
+static void gcm_blit_buffer(
+      rsxBuffer *buffer, const void *frame, unsigned width,
+      unsigned height, unsigned pitch, int rgb32, bool do_scaling)
 {
-  if (width > buffer->width)
+   int scale = 1, xofs = 0, yofs = 0;
+   if (width > buffer->width)
       width = buffer->width;
    if (height > buffer->height)
       height = buffer->height;
-   int scale = 1, xofs = 0, yofs = 0;
 
-   if (do_scaling) {
-     scale = buffer->width / width;
-     if (scale > buffer->height / height)
-       scale = buffer->height / height;
-     if (scale >= 10)
-       scale = 10;
-     if (scale >= 1) {
-       xofs = (buffer->width - width * scale) / 2;
-       yofs = (buffer->height - height * scale) / 2;
-     } else
-       scale = 1;
+   if (do_scaling)
+   {
+      scale = buffer->width / width;
+      if (scale > buffer->height / height)
+         scale = buffer->height / height;
+      if (scale >= 10)
+         scale = 10;
+      if (scale >= 1)
+      {
+         xofs = (buffer->width - width * scale) / 2;
+         yofs = (buffer->height - height * scale) / 2;
+      }
+      else
+         scale = 1;
    }
 
-   // TODO: let rsx do the copy
+   /* TODO: let rsx do the copy */
    int i;
    int pre_clean = xofs + buffer->width * yofs;
    uint32_t      *dst = buffer->ptr;
@@ -361,83 +361,94 @@ static void blitBuffer(rsxBuffer *buffer, const void *frame, unsigned width,
    memset (dst, 0, pre_clean * 4);
    dst += pre_clean;
 
-   if (scale == 1) {
-     if (rgb32) {
-       const uint8_t *src = frame;
-       for (i = 0; i < height; i++)
-	 {
-	   memcpy(dst, src, width * 4);
-	   black(dst + width, dst_end, buffer->width - width);
-	   dst += buffer->width;
-	   src += pitch;
-	 }
-     } else {
-       const uint16_t *src = frame;
-       for (i = 0; i < height; i++)
-	 {
-	   for (int j = 0; j < width; j++, src++, dst++) {
-	     u16 rgb565 = *src;
-	     u8 r = ((rgb565 >> 8) & 0xf8);
-	     u8 g = ((rgb565 >> 3) & 0xfc);
-	     u8 b = ((rgb565 << 3) & 0xfc);
-	     *dst = (r<<16) | (g<<8) | b;
-	   }
-	   black(dst, dst_end, buffer->width - width);
+   if (scale == 1)
+   {
+      if (rgb32)
+      {
+         const uint8_t *src = frame;
+         for (i = 0; i < height; i++)
+         {
+            memcpy(dst, src, width * 4);
+            gcm_fill_black(dst + width, dst_end, buffer->width - width);
+            dst += buffer->width;
+            src += pitch;
+         }
+      }
+      else
+      {
+         const uint16_t *src = frame;
+         for (i = 0; i < height; i++)
+         {
+            for (int j = 0; j < width; j++, src++, dst++)
+            {
+               u16 rgb565 = *src;
+               u8 r = ((rgb565 >> 8) & 0xf8);
+               u8 g = ((rgb565 >> 3) & 0xfc);
+               u8 b = ((rgb565 << 3) & 0xfc);
+               *dst = (r<<16) | (g<<8) | b;
+            }
+            gcm_fill_black(dst, dst_end, buffer->width - width);
 
-	   dst += buffer->width - width;
-	   src += pitch / 2 - width;
-	 }
-     }
-   } else {
-     if (rgb32) {
-       const uint32_t *src = frame;
-       for (i = 0; i < height; i++)
-	 {
-	   for (int j = 0; j < width; j++, src++) {
-	     u32 c = *src;
-	     for (int k = 0; k < scale; k++, dst++)
-	       for (int l = 0; l < scale; l++)
-		 dst[l * buffer->width] = c;
-	   }
-	   for (int l = 0; l < scale; l++)
-	     black(dst + l * buffer->width, dst_end, buffer->width - width * scale);
+            dst += buffer->width - width;
+            src += pitch / 2 - width;
+         }
+      }
+   }
+   else
+   {
+      if (rgb32)
+      {
+         const uint32_t *src = frame;
+         for (i = 0; i < height; i++)
+         {
+            for (int j = 0; j < width; j++, src++)
+            {
+               u32 c = *src;
+               for (int k = 0; k < scale; k++, dst++)
+                  for (int l = 0; l < scale; l++)
+                     dst[l * buffer->width] = c;
+            }
+            for (int l = 0; l < scale; l++)
+               gcm_fill_black(dst + l * buffer->width, dst_end, buffer->width - width * scale);
 
-	   dst += buffer->width * scale - width * scale;
-	   src += pitch / 4 - width;
-	 }
-     } else {
-       const uint16_t *src = frame;
-       for (i = 0; i < height; i++)
-	 {
-	   for (int j = 0; j < width; j++, src++) {
-	     u16 rgb565 = *src;
-	     u8 r = ((rgb565 >> 8) & 0xf8);
-	     u8 g = ((rgb565 >> 3) & 0xfc);
-	     u8 b = ((rgb565 << 3) & 0xfc);
-	     u32 c = (r<<16) | (g<<8) | b;
-	     for (int k = 0; k < scale; k++, dst++)
-	       for (int l = 0; l < scale; l++)
-		 dst[l * buffer->width] = c;
-	   }
-	   for (int l = 0; l < scale; l++)
-	     black(dst + l * buffer->width, dst_end, buffer->width - width * scale);
+            dst += buffer->width * scale - width * scale;
+            src += pitch / 4 - width;
+         }
+      } else {
+         const uint16_t *src = frame;
+         for (i = 0; i < height; i++)
+         {
+            for (int j = 0; j < width; j++, src++)
+            {
+               u16 rgb565 = *src;
+               u8 r = ((rgb565 >> 8) & 0xf8);
+               u8 g = ((rgb565 >> 3) & 0xfc);
+               u8 b = ((rgb565 << 3) & 0xfc);
+               u32 c = (r<<16) | (g<<8) | b;
+               for (int k = 0; k < scale; k++, dst++)
+                  for (int l = 0; l < scale; l++)
+                     dst[l * buffer->width] = c;
+            }
+            for (int l = 0; l < scale; l++)
+               gcm_fill_black(dst + l * buffer->width, dst_end, buffer->width - width * scale);
 
-	   dst += buffer->width * scale - width * scale;
-	   src += pitch / 2 - width;
-	 }
-     }
+            dst += buffer->width * scale - width * scale;
+            src += pitch / 2 - width;
+         }
+      }
    }
    if (dst < dst_end)
-     memset(dst, 0, 4 * (dst_end - dst));
+      memset(dst, 0, 4 * (dst_end - dst));
 }
 
-static void gcm_update_screen(gcm_video_t *gcm) {
-  rsxBuffer *buffer = gcm->menu_frame_enable
-	? &gcm->menuBuffers[gcm->menuBuffer]
-    : &gcm->buffers[gcm->currentBuffer];
-  flip(gcm->context, buffer->id);
-  if (gcm->vsync)
-    waitFlip();
+static void gcm_update_screen(gcm_video_t *gcm)
+{
+   rsxBuffer *buffer = gcm->menu_frame_enable
+      ? &gcm->menuBuffers[gcm->menuBuffer]
+      : &gcm->buffers[gcm->currentBuffer];
+   gcm_flip(gcm->context, buffer->id);
+   if (gcm->vsync)
+      gcm_wait_flip();
 #ifdef HAVE_SYSUTILS
    cellSysutilCheckCallback();
 #endif
@@ -452,14 +463,15 @@ static bool gcm_frame(void* data, const void* frame,
 
    if(frame && width && height)
    {
-     gcm->currentBuffer++;
-     if (gcm->currentBuffer >= MAX_BUFFERS)
-       gcm->currentBuffer = 0;
-     blitBuffer(&gcm->buffers[gcm->currentBuffer], frame, width, height, pitch,
-		gcm->rgb32, true);
+      gcm->currentBuffer++;
+      if (gcm->currentBuffer >= MAX_BUFFERS)
+         gcm->currentBuffer = 0;
+      gcm_blit_buffer(
+            &gcm->buffers[gcm->currentBuffer], frame, width, height, pitch,
+            gcm->rgb32, true);
    }
 
-   // TODO: translucid menu
+   /* TODO: translucid menu */
    gcm_update_screen(gcm);
 
    return true;
@@ -524,21 +536,23 @@ static void gcm_free(void* data)
    for (int i = 0; i < MAX_BUFFERS; i++)
      rsxFree(gcm->menuBuffers[i].ptr);
 
-   //rsxFinish(gcm->context, 1);
-   //   free(gcm->host_addr);
+#if 0
+   rsxFinish(gcm->context, 1);
+   free(gcm->host_addr);
+#endif
    free (gcm);
 }
 
 static void gcm_set_texture_frame(void* data, const void* frame, bool rgb32,
-                                  unsigned width, unsigned height, float alpha)
+      unsigned width, unsigned height, float alpha)
 {
   gcm_video_t* gcm = (gcm_video_t*)data;
 
   int newBuffer = gcm->menuBuffer + 1;
   if (newBuffer >= MAX_BUFFERS)
     newBuffer = 0;
-  // TODO: respect alpha
-  blitBuffer(&gcm->menuBuffers[newBuffer], frame, width, height,
+  /* TODO: respect alpha */
+  gcm_blit_buffer(&gcm->menuBuffers[newBuffer], frame, width, height,
 	     width * (rgb32 ? 4 : 2), rgb32, true);
   gcm->menuBuffer = newBuffer;
 
@@ -605,7 +619,6 @@ static void gcm_viewport_info(void* data, struct video_viewport* vp)
       *vp = gcm->vp;
 }
 
-
 static void gcm_set_osd_msg(void *data,
       video_frame_info_t *video_info,
       const char *msg,
@@ -649,14 +662,14 @@ static const video_poke_interface_t gcm_poke_interface = {
 };
 
 static void gcm_get_poke_interface(void* data,
-                                   const video_poke_interface_t** iface)
+      const video_poke_interface_t** iface)
 {
    (void)data;
    *iface = &gcm_poke_interface;
 }
 
 static bool gcm_set_shader(void* data,
-                           enum rarch_shader_type type, const char* path)
+      enum rarch_shader_type type, const char* path)
 {
    (void)data;
    (void)type;
