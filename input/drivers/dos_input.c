@@ -43,7 +43,7 @@ static bool dos_keyboard_port_input_pressed(
       const struct retro_keybind *binds, unsigned id)
 {
    if (id < RARCH_BIND_LIST_END)
-      return dos_key_state[DOS_KEYBOARD_PORT][rarch_keysym_lut[&binds[id].key]];
+      return dos_key_state[DOS_KEYBOARD_PORT][rarch_keysym_lut[binds[id].key]];
    return false;
 }
 
