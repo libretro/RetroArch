@@ -129,6 +129,7 @@ elif [ $PLATFORM = "dos" ]; then
     platform=dos
     MAKEFILE_GRIFFIN=yes
     EXT=a
+    SALAMANDER=yes
 fi
 
 # Cleanup Salamander core if it exists
@@ -152,6 +153,10 @@ if [ $SALAMANDER = "yes" ]; then
    make -C ../ -f Makefile.${platform}.salamander $OPTS || exit 1
    if [ $PLATFORM = "psp1" ] ; then
    mv -f ../EBOOT.PBP ../pkg/${platform}/EBOOT.PBP
+   fi
+   if [ $platform = "dos" ] ; then
+   mkdir -p ../pkg/${platform}
+   mv -f ../retrodos_salamander.exe ../pkg/${platform}/RETRODOS.EXE
    fi
    if [ $PLATFORM = "vita" ] ; then
      mkdir -p ../pkg/${platform}/retroarch.vpk/vpk/sce_sys/livearea/contents
@@ -307,8 +312,8 @@ for f in `ls -v *_${platform}.${EXT}`; do
    elif [ $PLATFORM = "wii" ] ; then
        mv -f ../retroarch_${platform}.dol ../pkg/${platform}/${name}_libretro_${platform}.dol
    elif [ $PLATFORM = "dos" ] ; then
-      mkdir -p ../pkg/${platform}
-      mv -f ../retrodos.exe ../pkg/${platform}/${name}_libretro_${platform}.exe
+      mkdir -p ../pkg/${platform}/cores
+      mv -f ../retrodos.exe ../pkg/${platform}/cores/${name}.exe
    elif [ $PLATFORM = "emscripten" ] ; then
       mkdir -p ../pkg/emscripten/
       mv -f ../${name}_libretro.js ../pkg/emscripten/${name}_libretro.js
