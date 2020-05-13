@@ -290,8 +290,8 @@ static bool menu_shader_manager_save_preset_internal(
                path_get(RARCH_PATH_CONFIG),
                sizeof(config_directory));
 
-      dirs[0] = dir_video_shader;
-      dirs[1] = dir_menu_config;
+      dirs[0] = dir_menu_config;
+      dirs[1] = dir_video_shader;
       dirs[2] = config_directory;
 
       for (i = 0; i < ARRAY_SIZE(dirs); i++)
@@ -417,8 +417,8 @@ static bool menu_shader_manager_operate_auto_preset(
                      path_get(RARCH_PATH_CONFIG),
                      sizeof(config_directory));
 
-            dirs[0] = dir_video_shader;
-            dirs[1] = dir_menu_config;
+            dirs[0] = dir_menu_config;
+            dirs[1] = dir_video_shader;
             dirs[2] = config_directory;
 
             for (i = 0; i < ARRAY_SIZE(dirs); i++)
@@ -474,8 +474,8 @@ static bool menu_shader_manager_operate_auto_preset(
                      path_get(RARCH_PATH_CONFIG),
                      sizeof(config_directory));
 
-            dirs[0] = dir_video_shader;
-            dirs[1] = dir_menu_config;
+            dirs[0] = dir_menu_config;
+            dirs[1] = dir_video_shader;
             dirs[2] = config_directory;
 
             for (i = 0; i < ARRAY_SIZE(dirs); i++)

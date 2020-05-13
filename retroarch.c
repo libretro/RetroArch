@@ -27321,8 +27321,8 @@ static bool retroarch_load_shader_preset_internal(
  * $SHADER_DIR is composed by three different locations which will be searched
  * in the following order (search will stop on first match):
  *
- * 1. The Video Shader directory
- * 2. The Menu Config directory
+ * 1. The Menu Config directory
+ * 2. The Video Shader directory
  * 3. The directory where the configuration file is stored
  *
  * Note: Uses video_shader_is_supported() which only works after
@@ -27376,8 +27376,8 @@ static bool retroarch_load_shader_preset(void)
       fill_pathname_basedir(config_file_directory,
             path_get(RARCH_PATH_CONFIG), PATH_MAX_LENGTH);
 
-   dirs[0] = video_shader_directory;
-   dirs[1] = menu_config_directory;
+   dirs[0] = menu_config_directory;
+   dirs[1] = video_shader_directory;
    dirs[2] = config_file_directory;
 
    for (i = 0; i < ARRAY_SIZE(dirs); i++)
