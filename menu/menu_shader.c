@@ -400,14 +400,13 @@ static bool menu_shader_manager_operate_auto_preset(
          {
             /* remove all supported auto-shaders of given type */
             char *end;
-            size_t i, j;
-            size_t n, m;
-
-            n = m = 0;
+            size_t i, j, n, m;
 
             const char *dirs[3] = {0};
             char config_directory[PATH_MAX_LENGTH];
             char preset_path[PATH_MAX_LENGTH];
+
+            n = m = 0;
 
             config_directory[0] = '\0';
 
