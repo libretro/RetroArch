@@ -614,7 +614,7 @@ static const bool rgui_extended_ascii = false;
 static const bool default_game_specific_options = true;
 static const bool default_auto_overrides_enable = true;
 static const bool default_auto_remaps_enable = true;
-static const bool default_global_core_options = true;
+static const bool default_global_core_options = false;
 static const bool default_auto_shaders_enable = true;
 
 static const bool default_sort_savefiles_enable = false;
