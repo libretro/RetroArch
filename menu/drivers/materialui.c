@@ -1073,6 +1073,23 @@ typedef struct
  * Colour Themes END
  * ============================== */
 
+/* Specifies minimum period (in usec) between
+ * tab switch events when input repeat is
+ * active (i.e. when navigating between top level
+ * menu categories by *holding* left/right on
+ * RetroPad or keyboard)
+ * > Note: We want to set a value of 300 ms
+ *   here, but doing so leads to bad pacing when
+ *   running at 60 Hz (due to random frame time
+ *   deviations - input repeat cycles always take
+ *   slightly more or less than 300 ms, so tab
+ *   switches occur every n or (n + 1) frames,
+ *   which gives the appearance of stuttering).
+ *   Reducing the delay by 1 ms accommodates
+ *   any timing fluctuations, resulting in
+ *   smooth motion */
+#define MUI_TAB_SWITCH_REPEAT_DELAY 299000
+
 /* Animation defines */
 #define MUI_ANIM_DURATION_SCROLL 166.66667f
 #define MUI_ANIM_DURATION_SCROLL_RESET 83.333333f
@@ -1411,6 +1428,10 @@ typedef struct materialui_handle
    bool last_show_nav_bar;
    bool last_auto_rotate_nav_bar;
    bool menu_stack_flushed;
+
+   /* Keeps track of the last time tabs were switched
+    * via a MENU_ACTION_LEFT/MENU_ACTION_RIGHT event */
+   retro_time_t last_tab_switch_time;
 
    enum materialui_landscape_layout_optimization_type
          last_landscape_layout_optimization;
@@ -7949,6 +7970,30 @@ static enum menu_action materialui_parse_menu_entry_action(
          if ((mui->nav_bar.location != MUI_NAV_BAR_LOCATION_HIDDEN) &&
              (materialui_list_get_size(mui, MENU_LIST_PLAIN) == 1))
          {
+            retro_time_t current_time = menu_driver_get_current_time();
+            size_t scroll_accel       = 0;
+
+            /* Determine whether input repeat is
+             * currently active
+             * > This is always true when scroll
+             *   acceleration is greater than zero */
+            menu_driver_ctl(MENU_NAVIGATION_CTL_GET_SCROLL_ACCEL,
+                  &scroll_accel);
+
+            if (scroll_accel > 0)
+            {
+               /* Ignore input action if tab switch period
+                * is less than defined limit */
+               if ((current_time - mui->last_tab_switch_time) <
+                     MUI_TAB_SWITCH_REPEAT_DELAY)
+               {
+                  new_action = MENU_ACTION_NOOP;
+                  break;
+               }
+            }
+            mui->last_tab_switch_time = current_time;
+
+            /* Perform tab switch */
             materialui_switch_tabs(mui, NULL, action);
             new_action = MENU_ACTION_ACCESSIBILITY_SPEAK_TITLE_LABEL;
          }

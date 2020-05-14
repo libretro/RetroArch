@@ -34,7 +34,6 @@
 
 #include <retro_inline.h>
 #include <gfx/scaler/scaler.h>
-#include <features/features_cpu.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -4768,7 +4767,7 @@ static void rgui_scan_selected_entry_thumbnail(rgui_t *rgui, bool force_load)
       {
          /* Schedule a delayed load */
          rgui->thumbnail_load_pending      = true;
-         rgui->thumbnail_load_trigger_time = cpu_features_get_time_usec();
+         rgui->thumbnail_load_trigger_time = menu_driver_get_current_time();
       }
    }
 }
@@ -5291,7 +5290,7 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
        * Note: Delay is increased when viewing fullscreen thumbnails,
        * since the flicker when switching between playlist view and
        * fullscreen thumbnail view is incredibly jarring...) */
-      if ((cpu_features_get_time_usec() - rgui->thumbnail_load_trigger_time) >=
+      if ((menu_driver_get_current_time() - rgui->thumbnail_load_trigger_time) >=
           (settings->uints.menu_rgui_thumbnail_delay * 1000 * (rgui->show_fs_thumbnail ? 1.5f : 1.0f)))
          rgui_load_current_thumbnails(rgui,
                settings->bools.network_on_demand_thumbnails);

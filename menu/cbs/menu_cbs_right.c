@@ -265,11 +265,10 @@ static int action_right_mainmenu(unsigned type, const char *label,
 
    menu_driver_list_get_size(&list_info);
 
-   /* Tab switching functionality does not
-    * apply to RGUI or MaterialUI */
+   /* Tab switching functionality only applies
+    * to XMB */
    if ((list_info.size == 1) &&
-       !string_is_equal(menu_ident, "rgui") &&
-       !string_is_equal(menu_ident, "glui"))
+       string_is_equal(menu_ident, "xmb"))
    {
       menu_ctx_list_t list_horiz_info;
       menu_ctx_list_t list_tabs_info;

@@ -2662,6 +2662,10 @@ bool menu_driver_list_get_size(menu_ctx_list_t *list)
    return true;
 }
 
+retro_time_t menu_driver_get_current_time(void)
+{
+   return menu_driver_current_time_us;
+}
 
 bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
 {
