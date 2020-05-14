@@ -2,13 +2,17 @@
 - 3DS: Add IDs for Frodo
 - 3DS: Enable basic networking / cheevos
 - CHEEVOS/BUGFIX: Opening achievements list would crash RetroArch with badges enabled (on new games)
+- CORE OPTIONS: Disable 'Use Global Core Options File' by default
 - DOS/DJGPP: Add 32bit color support for cores
 - GLCORE: Switch to glcore video driver when requested by a core
 - LINUX/XDG: Use GenericName correctly in desktop entry
 - MAC/COCOA: Fix mouse cursor tracking
 - MENU/MATERIALUI: Add desktop-style playlist view mode
 - MENU/MATERIALUI/DESKTOPVIEW: When scrolling playlists, show last selected thumbnails while waiting for next entry to load
+- MENU/MATERIALUI: Limit tab switch rate when input repeat is active
 - MENU/RGUI: Adjusted menu defaults, adjusted default scrolling speed
+- MENU/RGUI: Enable custom wallpaper when menu size is reduced at low resolutions
+- MENU/XMB: Limit tab switch rate when input repeat is active
 - NETPLAY: Fix regressions introduced in 1.8.5
 - RGUI: Add option to always stretch menu to fill the screen
 - WIIU: Enable graphics widgets
