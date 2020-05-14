@@ -463,6 +463,8 @@ bool menu_driver_list_get_entry(menu_ctx_list_t *list);
 
 bool menu_driver_list_get_size(menu_ctx_list_t *list);
 
+retro_time_t menu_driver_get_current_time(void);
+
 size_t menu_navigation_get_selection(void);
 
 void menu_navigation_set_selection(size_t val);
