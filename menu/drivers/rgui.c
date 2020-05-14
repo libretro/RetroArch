@@ -1620,22 +1620,29 @@ static void rgui_render_particle_effect(rgui_t *rgui)
 static void process_wallpaper(rgui_t *rgui, struct texture_image *image)
 {
    unsigned x, y;
-
-   /* Note: Ugly hacks required for the Wii, since GEKKO
-    * platforms only support a 16:9 framebuffer width of
-    * 424 instead of the usual 426... */
+   unsigned x_crop_offset;
+   unsigned y_crop_offset;
 
    /* Sanity check */
    if (!image->pixels ||
-#if defined(GEKKO)
-       (image->width != ((rgui_background_buf.width == 424) ?
-            (rgui_background_buf.width + 2) : rgui_background_buf.width)) ||
-#else
-       (image->width != rgui_background_buf.width) ||
-#endif
-       (image->height != rgui_background_buf.height) ||
+       (image->width  < rgui_background_buf.width)  ||
+       (image->height < rgui_background_buf.height) ||
        !rgui_background_buf.data)
       return;
+
+   /* In most cases, image size will be identical
+    * to wallpaper buffer size - but wallpaper buffer
+    * will be smaller than expected if:
+    * - This is a GEKKO platform (these only support
+    *   a 16:9 framebuffer width of 424 instead of
+    *   the usual 426...)
+    * - The current display resolution is less than
+    *   240p - in which case, the framebuffer will
+    *   scale down to a minimum of 192p
+    * If the wallpaper buffer is undersized, we have
+    * to crop the source image */
+   x_crop_offset = (image->width  - rgui_background_buf.width)  >> 1;
+   y_crop_offset = (image->height - rgui_background_buf.height) >> 1;
 
    /* Copy image to wallpaper buffer, performing pixel format conversion */
    for (x = 0; x < rgui_background_buf.width; x++)
@@ -1643,13 +1650,9 @@ static void process_wallpaper(rgui_t *rgui, struct texture_image *image)
       for (y = 0; y < rgui_background_buf.height; y++)
       {
          rgui_background_buf.data[x + (y * rgui_background_buf.width)] =
-#if defined(GEKKO)
-            argb32_to_pixel_platform_format(image->pixels[
-                  x + ((rgui_background_buf.width == 424) ? 1 : 0) +
-                  (y * image->width)]);
-#else
-            argb32_to_pixel_platform_format(image->pixels[x + (y * rgui_background_buf.width)]);
-#endif
+               argb32_to_pixel_platform_format(image->pixels[
+                     (x + x_crop_offset) +
+                     ((y + y_crop_offset) * image->width)]);
       }
    }
 
