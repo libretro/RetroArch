@@ -2803,24 +2803,12 @@ core_info_t *playlist_get_default_core(playlist_t* playlist)
    core_info_ctx_find_t core_info;
    const char* default_core_path =
       playlist_get_default_core_path(playlist);
-   const char* default_core_name =
-      playlist_get_default_core_path(playlist);
 
-   if (!default_core_path && !default_core_name)
+   if (!default_core_path)
       return NULL;
 
-   char new_core_path[PATH_MAX_LENGTH];
-   new_core_path[0] = '\0';
-
-   if (!string_is_empty(default_core_path))
-   {
-      strlcpy(new_core_path, default_core_path, sizeof(new_core_path));
-      playlist_resolve_path(PLAYLIST_LOAD, new_core_path, sizeof(new_core_path));
-   }
-
    core_info.inf = NULL;
-   core_info.path = new_core_path;
-   core_info.path = default_core_name;
+   core_info.path = default_core_path;
 
    if (!core_info_find(&core_info))
       return NULL;
@@ -2828,19 +2816,11 @@ core_info_t *playlist_get_default_core(playlist_t* playlist)
    return core_info.inf;
 }
 
-
 char *playlist_get_default_core_path(playlist_t *playlist)
 {
    if (!playlist)
       return NULL;
    return playlist->default_core_path;
-}
-
-char *playlist_get_default_core_name(playlist_t *playlist)
-{
-   if (!playlist)
-      return NULL;
-   return playlist->default_core_name;
 }
 
 enum playlist_label_display_mode playlist_get_label_display_mode(playlist_t *playlist)

@@ -594,22 +594,20 @@ static core_info_t *core_info_find_internal(
    size_t i;
    const char *core_path_basename = core != NULL ? path_basename(core) : NULL;
    char* libretro_pos = core_path_basename != NULL ? strstr(core_path_basename, "_libretro") : NULL;
+   size_t core_name_length = libretro_pos != NULL ? (libretro_pos - core_path_basename) : 0;
 
    for (i = 0; i < list->count; i++)
    {
       core_info_t *info = core_info_get(list, i);
+      char* info_path_basename = path_basename(info->path);
 
       if (!info || !info->path)
          continue;
-      if (string_is_equal(path_basename(info->path), core_path_basename))
+      if (string_is_equal(info_path_basename, core_path_basename))
          return info;
 
-      if (libretro_pos)
-      {
-         size_t core_name_length = libretro_pos - core_path_basename;
-         if (strncmp(path_basename(info->path), core_path_basename, core_name_length) == 0)
-            return info;
-      }
+      if (libretro_pos && (strncmp(info_path_basename, core_path_basename, core_name_length) == 0))
+         return info;
    }
 
    return NULL;
