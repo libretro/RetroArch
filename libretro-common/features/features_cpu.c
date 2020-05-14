@@ -249,14 +249,10 @@ retro_time_t cpu_features_get_time_usec(void)
    return emscripten_get_now() * 1000;
 #elif defined(PS2)
    return clock()*(1000000LL/CLOCKS_PER_SEC);
-#elif defined(__mips__)
-   struct timeval tv;
-   gettimeofday(&tv,NULL);
-   return (1000000 * tv.tv_sec + tv.tv_usec);
 #elif defined(_3DS)
    return osGetTime() * 1000;
-#elif defined(VITA)
-   return sceKernelGetProcessTimeWide();
+#elif defined(VITA) || defined(PSP)
+   return sceKernelGetSystemTimeWide();
 #else
 #error "Your platform does not have a timer function implemented in cpu_features_get_time_usec(). Cannot continue."
 #endif
