@@ -1552,7 +1552,7 @@ static int rcheevos_prepare_hash_psx(rcheevos_coro_t* coro)
 
    /* find the data track - it should be the first one */
    coro->track    = cdfs_open_data_track(coro->path);
-    
+
    if (!coro->track)
    {
       CHEEVOS_LOG(RCHEEVOS_TAG "could not open CD\n");
@@ -1991,7 +1991,8 @@ found:
          * Inputs:  CHEEVOS_VAR_GAMEID
          * Outputs:
          */
-      CORO_GOSUB(RCHEEVOS_DEACTIVATE);
+      if (!coro->settings->bools.cheevos_start_active)
+         CORO_GOSUB(RCHEEVOS_DEACTIVATE);
 
       /*
          * Inputs:  CHEEVOS_VAR_GAMEID
@@ -2021,15 +2022,33 @@ found:
 
          if (!number_of_unsupported)
          {
-            snprintf(msg, sizeof(msg),
-               "You have %d of %d achievements unlocked.",
-               number_of_unlocked, rcheevos_locals.patchdata.core_count);
+            if (coro->settings->bools.cheevos_start_active) {
+               snprintf(msg, sizeof(msg),
+                  "All %d achievements activated for this session.",
+                  rcheevos_locals.patchdata.core_count);
+            }
+            else
+            {
+               snprintf(msg, sizeof(msg),
+                  "You have %d of %d achievements unlocked.",
+                  number_of_unlocked, rcheevos_locals.patchdata.core_count);
+            }
          }
          else
          {
-            snprintf(msg, sizeof(msg),
-               "You have %d of %d achievements unlocked (%d unsupported).",
-               number_of_unlocked - number_of_unsupported, rcheevos_locals.patchdata.core_count, number_of_unsupported);
+            if (coro->settings->bools.cheevos_start_active) {
+               snprintf(msg, sizeof(msg),
+                  "All %d achievements activated for this session (%d unsupported).",
+                  rcheevos_locals.patchdata.core_count,
+                  number_of_unsupported);
+            }
+            else{
+               snprintf(msg, sizeof(msg),
+                  "You have %d of %d achievements unlocked (%d unsupported).",
+                  number_of_unlocked - number_of_unsupported,
+                  rcheevos_locals.patchdata.core_count,
+                  number_of_unsupported);
+            }
          }
 
          msg[sizeof(msg) - 1] = 0;

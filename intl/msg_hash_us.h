@@ -4155,6 +4155,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_AUTO_SCREENSHOT,
    "Automatically take a screenshot when an achievement is triggered."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_START_ACTIVE,
+   "Start Active"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_START_ACTIVE,
+   "Start the session with all achievements active (even the ones you previously unlocked)."
+   )
 
 /* Settings > Network */
 
