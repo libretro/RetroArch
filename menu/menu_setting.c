@@ -2581,7 +2581,7 @@ static int setting_action_ok_bind_all_save_autoconfig(rarch_setting_t *setting,
    index_offset = setting->index_offset;
    name         = input_config_get_device_name(index_offset);
 
-   if (!string_is_empty(name) && 
+   if (!string_is_empty(name) &&
          config_save_autoconf_profile(name, index_offset))
       runloop_msg_queue_push(
             msg_hash_to_str(MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY), 1, 100, true,
@@ -7135,7 +7135,7 @@ static void change_handler_video_layout_enable(rarch_setting_t *setting)
 static void change_handler_video_layout_path(rarch_setting_t *setting)
 {
    settings_t *settings = config_get_ptr();
-   configuration_set_uint(settings, 
+   configuration_set_uint(settings,
          settings->uints.video_layout_selected_view, 0);
 
    video_layout_load(setting->value.target.string);
@@ -15925,6 +15925,22 @@ static bool setting_append_list(
                &settings->bools.cheevos_auto_screenshot,
                MENU_ENUM_LABEL_CHEEVOS_AUTO_SCREENSHOT,
                MENU_ENUM_LABEL_VALUE_CHEEVOS_AUTO_SCREENSHOT,
+               false,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE
+               );
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.cheevos_start_active,
+               MENU_ENUM_LABEL_CHEEVOS_START_ACTIVE,
+               MENU_ENUM_LABEL_VALUE_CHEEVOS_START_ACTIVE,
                false,
                MENU_ENUM_LABEL_VALUE_OFF,
                MENU_ENUM_LABEL_VALUE_ON,
