@@ -2921,11 +2921,13 @@ bool rcheevos_load(const void *data)
    retro_task_t *task                 = NULL;
    const struct retro_game_info *info = NULL;
    rcheevos_coro_t *coro              = NULL;
+   settings_t *settings               = config_get_ptr();
+   bool cheevos_enable                = settings && settings->bools.cheevos_enable;
 
    rcheevos_loaded                    = false;
    rcheevos_hardcore_paused           = false;
 
-   if (!rcheevos_locals.core_supports || !data)
+   if (!cheevos_enable || !rcheevos_locals.core_supports || !data)
    {
       rcheevos_hardcore_paused        = true;
       return false;
