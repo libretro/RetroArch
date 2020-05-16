@@ -33,6 +33,8 @@
 #include <retro_assert.h>
 #include <string/stdstring.h>
 
+#include "configuration.h"
+#include "verbosity.h"
 /* TODO: There are probably some unnecessary things on this huge include list now but I'm too afraid to touch it */
 #ifdef __APPLE__
 #include <CoreFoundation/CoreFoundation.h>
@@ -676,7 +678,7 @@ void path_resolve_to_local_file_system(char* buf, const char* path)
    strcpy(buf, path);
 
    // if relative paths save is disabled, or no directory_menu_content path is defined, we abort
-   settings_t* settings = config_get_ptr();
+   const settings_t *settings = config_get_ptr();
    if (!settings->bools.playlist_save_relative_paths || string_is_empty(settings->paths.directory_menu_content))
       return;
 
@@ -704,7 +706,7 @@ void path_resolve_to_local_file_system(char* buf, const char* path)
 
    strcpy(buf, settings->paths.directory_menu_content);
 
-   char fs_delimeter = local_file_system_path_delimeter;
+   const char fs_delimeter = local_file_system_path_delimeter;
    if (buf[strlen(buf) - 1] != fs_delimeter && tmp[0] != fs_delimeter)
       strncat(buf, &fs_delimeter, 1);
    strcat(buf, tmp);

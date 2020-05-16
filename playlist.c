@@ -35,6 +35,8 @@
 #include "verbosity.h"
 #include "file_path_special.h"
 
+#include "configuration.h"
+
 #ifndef PLAYLIST_ENTRIES
 #define PLAYLIST_ENTRIES 6
 #endif
