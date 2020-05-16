@@ -1,4 +1,6 @@
 # Future
+
+# 1.8.7
 - 3DS: Add IDs for Frodo
 - 3DS: Enable basic networking / cheevos
 - CHEEVOS/BUGFIX: Opening achievements list would crash RetroArch with badges enabled (on new games)
