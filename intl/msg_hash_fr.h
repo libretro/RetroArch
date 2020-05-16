@@ -4103,6 +4103,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_AUTO_SCREENSHOT,
    "Prendre automatiquement une capture d'écran lorsqu'un succès est débloqué."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_START_ACTIVE,
+   "Activer au démarrage"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_START_ACTIVE,
+   "Démarrer la session avec tous les succès actifs (les succès précédemment débloqués inclus)."
+   )
 
 /* Settings > Network */
 
