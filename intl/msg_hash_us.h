@@ -10583,7 +10583,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_MODE_DISABLED,
-   "A save state was loaded, Achievements Hardcore Mode disabled for the current session. Restart to enable hardcore mode."
+   "A save state was loaded. Achievements Hardcore Mode disabled for the current session. Restart to enable hardcore mode."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_MODE_DISABLED_CHEAT,
+   "A cheat was activated. Achievements Hardcore Mode disabled for the current session. Disable cheats and restart to enable hardcore mode."
    )
 MSG_HASH(
    MSG_RESAMPLER_QUALITY_LOWEST,
