@@ -308,6 +308,8 @@ void playlist_get_crc32(playlist_t *playlist, size_t idx,
 void playlist_get_db_name(playlist_t *playlist, size_t idx,
       const char **db_name);
 
+core_info_t *playlist_entry_get_core(const struct playlist_entry* entry);
+core_info_t *playlist_get_default_core(playlist_t* playlist);
 char *playlist_get_default_core_path(playlist_t *playlist);
 char *playlist_get_default_core_name(playlist_t *playlist);
 enum playlist_label_display_mode playlist_get_label_display_mode(playlist_t *playlist);

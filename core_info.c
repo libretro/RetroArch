@@ -599,7 +599,7 @@ static core_info_t *core_info_find_internal(
    for (i = 0; i < list->count; i++)
    {
       core_info_t *info = core_info_get(list, i);
-      char* info_path_basename = path_basename(info->path);
+      const char* info_path_basename = path_basename(info->path);
 
       if (!info || !info->path)
          continue;
