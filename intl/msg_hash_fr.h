@@ -7024,6 +7024,10 @@ MSG_HASH(
    "Échelle à l'entier"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_FILL_SCREEN,
+   "Remplir l'écran (Étiré)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CUSTOM,
    "Personnalisé"
    )
