@@ -33,8 +33,6 @@
 #include <retro_assert.h>
 #include <string/stdstring.h>
 
-#include "configuration.h"
-#include "verbosity.h"
 /* TODO: There are probably some unnecessary things on this huge include list now but I'm too afraid to touch it */
 #ifdef __APPLE__
 #include <CoreFoundation/CoreFoundation.h>
@@ -649,40 +647,40 @@ bool is_windows_path(const char* path)
 
 /**
  * path_resolve_to_local_file_system:
- * @buf                : output buffer
- * @path               : original path
+ * @buf                    : output buffer
+ * @path                   : original relative path
+ * @base_content_directory : base content directory
  *
  * Resolves @path to local file system, switching '\' with '/' if needed (and viceversa)
- * Also appends @path to configuration parameter 'directory_menu_content' if defined
+ * Appends @path to @base_content_directory
  *
  * Example[1]
  *  @path = 'roms\zelda3.zip'
- *  directory_menu_content = '/retroarch/'
+ *  @base_content_directory = '/retroarch/'
  *
  *  Under linux/android returns '/retroarch/roms/zelda3.zip'
  *
  * Example[2]
  *  @path = 'roms\zelda3.zip'
- *  directory_menu_content = 'c:\games\retroarch\'
+ *  @base_content_directory = 'c:\games\retroarch\'
  *
  *  Under windows returns 'c:\games\retroarch\roms\zelda3.zip'
  *
  * Example[3]
  *  @path = 'roms/zelda3.zip'
- *  directory_menu_content = 'c:\games\retroarch\'
+ *  @base_content_directory = 'c:\games\retroarch\'
  *
  *  Under windows returns 'c:\games\retroarch\roms\zelda3.zip'
  **/
-void path_resolve_to_local_file_system(char* buf, const char* path)
+void path_resolve_to_local_file_system(char* buf, const char* path, const char* base_content_directory)
 {
    strcpy(buf, path);
 
-   // if relative paths save is disabled, or no directory_menu_content path is defined, we abort
-   const settings_t *settings = config_get_ptr();
-   if (!settings->bools.playlist_save_relative_paths || string_is_empty(settings->paths.directory_menu_content))
+   /* if no base_content_directory path is defined, we abort */
+   if (string_is_empty(base_content_directory))
       return;
 
-   // if path is already absolute, we cant do anything to try and fix it
+   /* if path is already absolute, we cant do anything to try and fix it */
    if (path_is_absolute(path))
       return;
 
@@ -690,7 +688,7 @@ void path_resolve_to_local_file_system(char* buf, const char* path)
    strcpy(tmp, path);
 
 #ifdef using_windows_file_system
-   // if we are running under a win fs, '/' characters are not allowed anywhere. we replace with '\' and hope for the best..
+   /* if we are running under a win fs, '/' characters are not allowed anywhere. we replace with '\' and hope for the best.. */
    if (is_posix_path(path))
    {
       string_replace_all_chars(tmp, posix_path_delimiter, windows_path_delimiter);
@@ -704,14 +702,12 @@ void path_resolve_to_local_file_system(char* buf, const char* path)
    }
 #endif
 
-   strcpy(buf, settings->paths.directory_menu_content);
+   strcpy(buf, base_content_directory);
 
    const char fs_delimeter = local_file_system_path_delimeter;
    if (buf[strlen(buf) - 1] != fs_delimeter && tmp[0] != fs_delimeter)
       strncat(buf, &fs_delimeter, 1);
    strcat(buf, tmp);
-
-   RARCH_LOG("Path '%s' resolved to '%s'\n", path, buf);
 }
 
 /**

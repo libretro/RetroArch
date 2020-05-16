@@ -2612,7 +2612,9 @@ playlist_t *playlist_init(const char *path, size_t size)
          {
             if (!entry->path)
                entry->path = (char*)malloc(PATH_MAX_LENGTH);
-            path_resolve_to_local_file_system(entry->path, entry->relative_path);
+            path_resolve_to_local_file_system(entry->path, entry->relative_path, settings->paths.directory_menu_content);
+
+            RARCH_LOG("Path '%s' resolved to '%s'\n", entry->relative_path, entry->path);
          }
       }
    }
