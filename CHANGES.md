@@ -2,6 +2,8 @@
 - 3DS: Add IDs for Frodo
 - 3DS: Enable basic networking / cheevos
 - CHEEVOS/BUGFIX: Opening achievements list would crash RetroArch with badges enabled (on new games)
+- CHEEVOS: Option to start a session with all achievements active
+- CHEEVOS: Don't perform unnecessary cheevos initialisation when cheevos are disabled. Should reduce startup times when loading content.
 - CORE OPTIONS: Disable 'Use Global Core Options File' by default
 - DOS/DJGPP: Add 32bit color support for cores
 - GLCORE: Switch to glcore video driver when requested by a core
@@ -10,6 +12,7 @@
 - MENU/MATERIALUI: Add desktop-style playlist view mode
 - MENU/MATERIALUI/DESKTOPVIEW: When scrolling playlists, show last selected thumbnails while waiting for next entry to load
 - MENU/MATERIALUI: Limit tab switch rate when input repeat is active
+- MENU/OZONE: Fix sidebar playlist sort order when 'Truncate Playlist Names' is enabled
 - MENU/RGUI: Adjusted menu defaults, adjusted default scrolling speed
 - MENU/RGUI: Enable custom wallpaper when menu size is reduced at low resolutions
 - MENU/XMB: Limit tab switch rate when input repeat is active
