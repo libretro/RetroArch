@@ -1633,6 +1633,14 @@ MSG_HASH(
    "Silencia o mixer de áudio"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_MUTE,
+   "Silenciar no avanço rápido"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_MUTE,
+   "Silenciar automaticamente o áudio ao usar o avanço rápido."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
    "Nível de volume de áudio (dB)"
    )
@@ -2574,6 +2582,14 @@ MSG_HASH(
    "Salva arquivos SaveRAM não voláteis em um formato arquivado. Reduz drasticamente o tamanho do arquivo às custas do (insignificante) aumento de tempo de salvamento/carregamento. Nota: Aplica-se apenas a núcleos que permitem salvar através da interface padrão libretro de SaveRAM."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATE_FILE_COMPRESSION,
+   "Compressão do jogo salvo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVESTATE_FILE_COMPRESSION,
+   "Salva arquivos de jogos salvos em um formato arquivado. Reduz drasticamente o tamanho do arquivo às custas do aumento de tempo de salvamento/carregamento."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVEFILES_IN_CONTENT_DIR_ENABLE,
    "Gravar arquivos de dados da memória do jogo no diretório de conteúdo"
    )
@@ -3325,7 +3341,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_ONLINE_UPDATER,
-   "Exibir Atualizador on-line"
+   "Exibir 'Atualizador on-line'"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_ONLINE_UPDATER,
@@ -9799,6 +9815,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_CHANGE_THUMBNAIL_TYPE,
    "Alterar o tipo de miniatura"
+   )
+MSG_HASH(
+   MSG_TOGGLE_FULLSCREEN_THUMBNAILS,
+   "Miniaturas em tela cheia"
+   )
+MSG_HASH(
+   MSG_TOGGLE_CONTENT_METADATA,
+   "Alternar metadados"
    )
 MSG_HASH(
    MSG_NO_THUMBNAIL_AVAILABLE,
