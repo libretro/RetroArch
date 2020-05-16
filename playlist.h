@@ -23,7 +23,7 @@
 #include <retro_common_api.h>
 #include <boolean.h>
 #include <lists/string_list.h>
-#include <core_info.h>
+#include "core_info.h"
 
 RETRO_BEGIN_DECLS
 

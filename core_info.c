@@ -593,8 +593,8 @@ static core_info_t *core_info_find_internal(
 {
    size_t i;
    const char *core_path_basename = core != NULL ? path_basename(core) : NULL;
-   char* libretro_pos = core_path_basename != NULL ? strstr(core_path_basename, "_libretro") : NULL;
-   size_t core_name_length = libretro_pos != NULL ? (libretro_pos - core_path_basename) : 0;
+   const char* libretro_pos = core_path_basename != NULL ? strstr(core_path_basename, "_libretro") : NULL;
+   const size_t core_name_length = libretro_pos != NULL ? (libretro_pos - core_path_basename) : 0;
 
    for (i = 0; i < list->count; i++)
    {

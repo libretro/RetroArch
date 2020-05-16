@@ -2158,7 +2158,7 @@ static int action_ok_playlist_entry_collection(const char *path,
       if (entry_core)
          strcpy(new_core_path, entry_core->path);
       else
-         // old logic, if a core is not found this will never work..
+         /* old logic, if a core is not found this will never work.. */
          strlcpy(new_core_path, entry->core_path, sizeof(new_core_path));
 
       playlist_resolve_path(PLAYLIST_LOAD, new_core_path, sizeof(new_core_path));
