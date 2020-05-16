@@ -627,7 +627,7 @@ static bool core_info_list_update_missing_firmware_internal(
    if (!core_info_list || !core)
       return false;
 
-   info                   = core_info_find_internal(core_info_list, core, NULL);
+   info                   = core_info_find_internal(core_info_list, core);
 
    if (!info)
       return false;

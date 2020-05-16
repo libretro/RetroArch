@@ -2823,6 +2823,13 @@ char *playlist_get_default_core_path(playlist_t *playlist)
    return playlist->default_core_path;
 }
 
+char *playlist_get_default_core_name(playlist_t *playlist)
+{
+   if (!playlist)
+      return NULL;
+   return playlist->default_core_name;
+}
+
 enum playlist_label_display_mode playlist_get_label_display_mode(playlist_t *playlist)
 {
    if (!playlist)
