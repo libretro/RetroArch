@@ -995,6 +995,8 @@ static const int default_content_favorites_size = 200;
 
 #define DEFAULT_PLAYLIST_FUZZY_ARCHIVE_MATCH false
 
+#define DEFAULT_PLAYLIST_SAVE_RELATIVE_PATHS false
+
 /* Show Menu start-up screen on boot. */
 #define DEFAULT_MENU_SHOW_START_SCREEN true
 

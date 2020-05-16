@@ -526,6 +526,12 @@ int32_t path_get_size(const char *path);
 
 bool is_path_accessible_using_standard_io(const char *path);
 
+void path_resolve_to_local_file_system(char* buf, const char* path);
+
+bool is_windows_path(const char* path);
+
+bool is_posix_path(const char* path);
+
 RETRO_END_DECLS
 
 #endif

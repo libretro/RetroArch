@@ -87,6 +87,7 @@ enum playlist_thumbnail_id
 struct playlist_entry
 {
    char *path;
+   char *relative_path;
    char *label;
    char *core_path;
    char *core_name;

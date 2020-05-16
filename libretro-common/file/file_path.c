@@ -112,6 +112,17 @@
 
 #endif
 
+#define windows_path_delimiter '\\'
+#define posix_path_delimiter '/'
+
+#ifdef _WIN32
+#define local_file_system_path_delimeter windows_path_delimiter
+#define using_windows_file_system
+#else
+#define local_file_system_path_delimeter posix_path_delimiter
+#define using_posix_file_system
+#endif
+
 /**
  * path_get_archive_delim:
  * @path               : path
@@ -616,6 +627,89 @@ bool path_is_absolute(const char *path)
       return true;
 #endif
    return false;
+}
+
+bool is_posix_path(const char* path)
+{
+   if (strchr(path, posix_path_delimiter))
+      return true;
+
+   return false;
+}
+
+bool is_windows_path(const char* path)
+{
+   if (strchr(path, posix_path_delimiter))
+      return false;
+
+   return true;
+}
+
+/**
+ * path_resolve_to_local_file_system:
+ * @buf                : output buffer
+ * @path               : original path
+ *
+ * Resolves @path to local file system, switching '\' with '/' if needed (and viceversa)
+ * Also appends @path to configuration parameter 'directory_menu_content' if defined
+ *
+ * Example[1]
+ *  @path = 'roms\zelda3.zip'
+ *  directory_menu_content = '/retroarch/'
+ *
+ *  Under linux/android returns '/retroarch/roms/zelda3.zip'
+ *
+ * Example[2]
+ *  @path = 'roms\zelda3.zip'
+ *  directory_menu_content = 'c:\games\retroarch\'
+ *
+ *  Under windows returns 'c:\games\retroarch\roms\zelda3.zip'
+ *
+ * Example[3]
+ *  @path = 'roms/zelda3.zip'
+ *  directory_menu_content = 'c:\games\retroarch\'
+ *
+ *  Under windows returns 'c:\games\retroarch\roms\zelda3.zip'
+ **/
+void path_resolve_to_local_file_system(char* buf, const char* path)
+{
+   strcpy(buf, path);
+
+   // if relative paths save is disabled, or no directory_menu_content path is defined, we abort
+   settings_t* settings = config_get_ptr();
+   if (!settings->bools.playlist_save_relative_paths || string_is_empty(settings->paths.directory_menu_content))
+      return;
+
+   // if path is already absolute, we cant do anything to try and fix it
+   if (path_is_absolute(path))
+      return;
+
+   char tmp[PATH_MAX_LENGTH];
+   strcpy(tmp, path);
+
+#ifdef using_windows_file_system
+   // if we are running under a win fs, '/' characters are not allowed anywhere. we replace with '\' and hope for the best..
+   if (is_posix_path(path))
+   {
+      string_replace_all_chars(tmp, posix_path_delimiter, windows_path_delimiter);
+   }
+#endif
+
+#ifdef using_posix_file_system
+   if (is_windows_path(path))
+   {
+      string_replace_all_chars(tmp, windows_path_delimiter, posix_path_delimiter);
+   }
+#endif
+
+   strcpy(buf, settings->paths.directory_menu_content);
+
+   char fs_delimeter = local_file_system_path_delimeter;
+   if (buf[strlen(buf) - 1] != fs_delimeter && tmp[0] != fs_delimeter)
+      strncat(buf, &fs_delimeter, 1);
+   strcat(buf, tmp);
+
+   RARCH_LOG("Path '%s' resolved to '%s'\n", path, buf);
 }
 
 /**

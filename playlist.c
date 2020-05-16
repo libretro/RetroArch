@@ -268,6 +268,8 @@ static void playlist_free_entry(struct playlist_entry *entry)
 
    if (entry->path != NULL)
       free(entry->path);
+   if (entry->relative_path != NULL)
+      free(entry->relative_path);
    if (entry->label != NULL)
       free(entry->label);
    if (entry->core_path != NULL)
@@ -290,6 +292,7 @@ static void playlist_free_entry(struct playlist_entry *entry)
       string_list_free(entry->subsystem_roms);
 
    entry->path      = NULL;
+   entry->relative_path = NULL;
    entry->label     = NULL;
    entry->core_path = NULL;
    entry->core_name = NULL;
@@ -779,15 +782,26 @@ bool playlist_push(playlist_t *playlist,
 {
    size_t i;
    char real_path[PATH_MAX_LENGTH];
+   char relative_path[PATH_MAX_LENGTH];
    char real_core_path[PATH_MAX_LENGTH];
    const char *core_name = entry->core_name;
    bool entry_updated    = false;
 
    real_path[0] = '\0';
+   relative_path[0] = '\0';
    real_core_path[0] = '\0';
 
    if (!playlist || !entry)
       return false;
+
+   settings_t* settings = config_get_ptr();
+
+   // use relative paths if enabled and entry file path is inside the content folder
+   bool use_relative_path = (settings != NULL)
+      && settings->bools.playlist_save_relative_paths
+      && !string_is_empty(settings->paths.directory_menu_content)
+      && !string_is_empty(entry->path)
+      && (strncmp(entry->path, settings->paths.directory_menu_content, strlen(settings->paths.directory_menu_content)) == 0);
 
    if (string_is_empty(entry->core_path))
    {
@@ -795,11 +809,18 @@ bool playlist_push(playlist_t *playlist,
       return false;
    }
 
-   /* Get 'real' path */
    if (!string_is_empty(entry->path))
    {
+      /* Get 'real' path */
       strlcpy(real_path, entry->path, sizeof(real_path));
       playlist_resolve_path(PLAYLIST_SAVE, real_path, sizeof(real_path));
+
+      if (use_relative_path)
+      {
+         // build relative path, and convert to unix path syntax
+         strncpy(relative_path, entry->path + strlen(settings->paths.directory_menu_content) + 1, strlen(entry->path) - strlen(settings->paths.directory_menu_content));
+         string_replace_all_chars(relative_path, '\\', '/');
+      }
    }
 
    /* Get 'real' core path */
@@ -830,9 +851,10 @@ bool playlist_push(playlist_t *playlist,
    {
       struct playlist_entry tmp;
       const char *entry_path = playlist->entries[i].path;
-      bool equal_path        =
-         (string_is_empty(real_path) && string_is_empty(entry_path)) ||
-         playlist_path_equal(real_path, entry_path, fuzzy_archive_match);
+      const char* entry_relative_path = playlist->entries[i].relative_path;
+      bool equal_path =
+         (!string_is_empty(real_path) && !string_is_empty(entry_path) && playlist_path_equal(real_path, entry_path, fuzzy_archive_match)) ||
+         (!string_is_empty(relative_path) && !string_is_empty(entry_relative_path) && (strcmp(relative_path, entry_relative_path) == 0));
 
       /* Core name can have changed while still being the same core.
        * Differentiate based on the core path only. */
@@ -978,6 +1000,8 @@ bool playlist_push(playlist_t *playlist,
       playlist->entries[0].last_played_second = 0;
       if (!string_is_empty(real_path))
          playlist->entries[0].path            = strdup(real_path);
+      if (!string_is_empty(relative_path))
+         playlist->entries[0].relative_path   = strdup(relative_path);
       if (!string_is_empty(entry->label))
          playlist->entries[0].label           = strdup(entry->label);
       if (!string_is_empty(real_core_path))
@@ -1502,6 +1526,8 @@ void playlist_write_file(
          json_write_space(context.writer, 4);
          JSON_Writer_WriteStartObject(context.writer);
 
+         char* path = string_is_empty(playlist->entries[i].relative_path) ? playlist->entries[i].path : NULL;
+
          json_write_new_line(context.writer);
          json_write_space(context.writer, 6);
          JSON_Writer_WriteString(context.writer, "path",
@@ -1509,14 +1535,33 @@ void playlist_write_file(
          JSON_Writer_WriteColon(context.writer);
          json_write_space(context.writer, 1);
          JSON_Writer_WriteString(context.writer,
-               playlist->entries[i].path
-               ? playlist->entries[i].path
+            path
+            ? path
+            : "",
+            path
+            ? strlen(path)
+            : 0,
+            JSON_UTF8);
+         JSON_Writer_WriteComma(context.writer);
+
+         if (!string_is_empty(playlist->entries[i].relative_path))
+         {
+            json_write_new_line(context.writer);
+            json_write_space(context.writer, 6);
+            JSON_Writer_WriteString(context.writer, "relative_path",
+               STRLEN_CONST("relative_path"), JSON_UTF8);
+            JSON_Writer_WriteColon(context.writer);
+            json_write_space(context.writer, 1);
+            JSON_Writer_WriteString(context.writer,
+               playlist->entries[i].relative_path
+               ? playlist->entries[i].relative_path
                : "",
-               playlist->entries[i].path
-               ? strlen(playlist->entries[i].path)
+               playlist->entries[i].relative_path
+               ? strlen(playlist->entries[i].relative_path)
                : 0,
                JSON_UTF8);
-         JSON_Writer_WriteComma(context.writer);
+            JSON_Writer_WriteComma(context.writer);
+         }
 
          json_write_new_line(context.writer);
          json_write_space(context.writer, 6);
@@ -2030,6 +2075,8 @@ static JSON_Parser_HandlerResult JSONObjectMemberHandler(JSON_Parser parser, cha
             {
                if (string_is_equal(pValue, "path"))
                   pCtx->current_entry_val = &pCtx->current_entry->path;
+               else if (string_is_equal(pValue, "relative_path"))
+                  pCtx->current_entry_val = &pCtx->current_entry->relative_path;
                else if (string_is_equal(pValue, "label"))
                   pCtx->current_entry_val = &pCtx->current_entry->label;
                else if (string_is_equal(pValue, "core_path"))
@@ -2470,6 +2517,7 @@ json_cleanup:
 end:
    intfstream_close(file);
    free(file);
+
    return true;
 }
 
@@ -2546,6 +2594,26 @@ playlist_t *playlist_init(const char *path, size_t size)
    playlist->sort_mode            = PLAYLIST_SORT_MODE_DEFAULT;
 
    playlist_read_file(playlist, path);
+
+   settings_t* settings = config_get_ptr();
+
+   // try use relative paths if enabled 
+   bool use_relative_path = (settings != NULL)
+      && settings->bools.playlist_save_relative_paths
+      && !string_is_empty(settings->paths.directory_menu_content);
+   if (use_relative_path)
+   {
+      for (int j = 0; j < playlist->size; j++)
+      {
+         struct playlist_entry* entry = playlist->entries + j;
+         if (!string_is_empty(entry->relative_path))
+         {
+            if (!entry->path)
+               entry->path = (char*)malloc(PATH_MAX_LENGTH);
+            path_resolve_to_local_file_system(entry->path, entry->relative_path);
+         }
+      }
+   }
 
    return playlist;
 }
