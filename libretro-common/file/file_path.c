@@ -675,6 +675,7 @@ bool is_windows_path(const char* path)
 void path_resolve_to_local_file_system(char* buf, const char* path, const char* base_content_directory)
 {
    char* tmp = NULL;
+   const char fs_delimeter = local_file_system_path_delimeter;
 
    strcpy(buf, path);
 
@@ -705,8 +706,7 @@ void path_resolve_to_local_file_system(char* buf, const char* path, const char* 
 #endif
 
    strcpy(buf, base_content_directory);
-
-   const char fs_delimeter = local_file_system_path_delimeter;
+   
    if (buf[strlen(buf) - 1] != fs_delimeter && *tmp != fs_delimeter)
       strncat(buf, &fs_delimeter, 1);
    strcat(buf, tmp);
