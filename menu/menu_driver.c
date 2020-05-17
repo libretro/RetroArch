@@ -75,6 +75,50 @@ typedef struct menu_ctx_load_image
    enum menu_image_type type;
 } menu_ctx_load_image_t;
 
+struct menu_list
+{
+   size_t menu_stack_size;
+   size_t selection_buf_size;
+   file_list_t **menu_stack;
+   file_list_t **selection_buf;
+};
+
+/* Storage container for current menu datetime
+ * representation string */
+static char menu_datetime_cache[255]             = {0};
+
+/* when enabled, on next iteration the 'Quick Menu' list will
+ * be pushed onto the stack */
+static bool menu_driver_pending_quick_menu      = false;
+
+static bool menu_driver_prevent_populate        = false;
+
+/* The menu driver owns the userdata */
+static bool menu_driver_data_own                = false;
+
+static menu_handle_t *menu_driver_data          = NULL;
+static const menu_ctx_driver_t *menu_driver_ctx = NULL;
+static void *menu_userdata                      = NULL;
+
+/* Quick jumping indices with L/R.
+ * Rebuilt when parsing directory. */
+static size_t   scroll_index_list[SCROLL_INDEX_SIZE];
+static unsigned scroll_index_size               = 0;
+static unsigned scroll_acceleration             = 0;
+static size_t menu_driver_selection_ptr         = 0;
+
+/* Timers */
+static retro_time_t menu_driver_current_time_us         = 0;
+static retro_time_t menu_driver_powerstate_last_time_us = 0;
+static retro_time_t menu_driver_datetime_last_time_us   = 0;
+
+/* Flagged when menu entries need to be refreshed */
+static bool menu_entries_need_refresh              = false;
+static bool menu_entries_nonblocking_refresh       = false;
+static size_t menu_entries_begin                   = 0;
+static rarch_setting_t *menu_entries_list_settings = NULL;
+static menu_list_t *menu_entries_list              = NULL;
+
 static enum action_iterate_type action_iterate_type(const char *label)
 {
    if (string_is_equal(label, "info_screen"))
@@ -101,6 +145,46 @@ static enum action_iterate_type action_iterate_type(const char *label)
    return ITERATE_TYPE_DEFAULT;
 }
 
+#ifdef HAVE_ACCESSIBILITY
+static void get_current_menu_value(char* retstr, size_t max)
+{
+   const char*      entry_label;
+   menu_entry_t     entry;
+
+   menu_driver_selection_ptr = menu_navigation_get_selection();
+   menu_entry_init(&entry);
+   menu_entry_get(&entry, 0, menu_navigation_get_selection(), NULL, true);
+   menu_entry_get_value(&entry, &entry_label);
+
+   strlcpy(retstr, entry_label, max);
+}
+
+static void get_current_menu_label(char* retstr, size_t max)
+{
+   const char*      entry_label;
+   menu_entry_t     entry;
+
+   menu_driver_selection_ptr = menu_navigation_get_selection();
+   menu_entry_init(&entry);
+   menu_entry_get(&entry, 0, menu_navigation_get_selection(), NULL, true);
+   menu_entry_get_rich_label(&entry, &entry_label);
+
+   strlcpy(retstr, entry_label, max);
+}
+
+static void get_current_menu_sublabel(char* retstr, size_t max)
+{
+   const char*      entry_sublabel;
+   menu_entry_t     entry;
+
+   menu_driver_selection_ptr = menu_navigation_get_selection();
+   menu_entry_init(&entry);
+   menu_entry_get(&entry, 0, menu_navigation_get_selection(), NULL, true);
+ 
+   menu_entry_get_sublabel(&entry, &entry_sublabel);
+   strlcpy(retstr, entry_sublabel, max);
+}
+#endif
 
 /**
  * menu_iterate:
@@ -600,50 +684,6 @@ static const menu_ctx_driver_t *menu_ctx_drivers[] = {
 #endif
    &menu_ctx_null,
    NULL
-};
-
-/* Storage container for current menu datetime
- * representation string */
-static char menu_datetime_cache[255]             = {0};
-
-/* when enabled, on next iteration the 'Quick Menu' list will
- * be pushed onto the stack */
-static bool menu_driver_pending_quick_menu      = false;
-
-static bool menu_driver_prevent_populate        = false;
-
-/* The menu driver owns the userdata */
-static bool menu_driver_data_own                = false;
-
-static menu_handle_t *menu_driver_data          = NULL;
-static const menu_ctx_driver_t *menu_driver_ctx = NULL;
-static void *menu_userdata                      = NULL;
-
-/* Quick jumping indices with L/R.
- * Rebuilt when parsing directory. */
-static size_t   scroll_index_list[SCROLL_INDEX_SIZE];
-static unsigned scroll_index_size               = 0;
-static unsigned scroll_acceleration             = 0;
-static size_t menu_driver_selection_ptr         = 0;
-
-/* Timers */
-static retro_time_t menu_driver_current_time_us         = 0;
-static retro_time_t menu_driver_powerstate_last_time_us = 0;
-static retro_time_t menu_driver_datetime_last_time_us   = 0;
-
-/* Flagged when menu entries need to be refreshed */
-static bool menu_entries_need_refresh              = false;
-static bool menu_entries_nonblocking_refresh       = false;
-static size_t menu_entries_begin                   = 0;
-static rarch_setting_t *menu_entries_list_settings = NULL;
-static menu_list_t *menu_entries_list              = NULL;
-
-struct menu_list
-{
-   size_t menu_stack_size;
-   size_t selection_buf_size;
-   file_list_t **menu_stack;
-   file_list_t **selection_buf;
 };
 
 menu_handle_t *menu_driver_get_ptr(void)
@@ -2622,6 +2662,10 @@ bool menu_driver_list_get_size(menu_ctx_list_t *list)
    return true;
 }
 
+retro_time_t menu_driver_get_current_time(void)
+{
+   return menu_driver_current_time_us;
+}
 
 bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
 {
@@ -3048,43 +3092,4 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
    }
 
    return true;
-}
-
-void get_current_menu_value(char* retstr, size_t max)
-{
-   const char*      entry_label;
-   menu_entry_t     entry;
-
-   menu_driver_selection_ptr = menu_navigation_get_selection();
-   menu_entry_init(&entry);
-   menu_entry_get(&entry, 0, menu_navigation_get_selection(), NULL, true);
-   menu_entry_get_value(&entry, &entry_label);
-
-   strlcpy(retstr, entry_label, max);
-}
-
-void get_current_menu_label(char* retstr, size_t max)
-{
-   const char*      entry_label;
-   menu_entry_t     entry;
-
-   menu_driver_selection_ptr = menu_navigation_get_selection();
-   menu_entry_init(&entry);
-   menu_entry_get(&entry, 0, menu_navigation_get_selection(), NULL, true);
-   menu_entry_get_rich_label(&entry, &entry_label);
-
-   strlcpy(retstr, entry_label, max);
-}
-
-void get_current_menu_sublabel(char* retstr, size_t max)
-{
-   const char*      entry_sublabel;
-   menu_entry_t     entry;
-
-   menu_driver_selection_ptr = menu_navigation_get_selection();
-   menu_entry_init(&entry);
-   menu_entry_get(&entry, 0, menu_navigation_get_selection(), NULL, true);
- 
-   menu_entry_get_sublabel(&entry, &entry_sublabel);
-   strlcpy(retstr, entry_sublabel, max);
 }

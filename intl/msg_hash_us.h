@@ -4163,6 +4163,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_AUTO_SCREENSHOT,
    "Automatically take a screenshot when an achievement is triggered."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_START_ACTIVE,
+   "Start Active"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_START_ACTIVE,
+   "Start the session with all achievements active (even the ones you previously unlocked)."
+   )
 
 /* Settings > Network */
 
@@ -7121,20 +7129,28 @@ MSG_HASH(
 /* RGUI: Settings > User Interface > Appearance */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_RGUI_BORDER_FILLER_ENABLE,
-   "Border Filler"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_RGUI_BORDER_FILLER_ENABLE,
-   "Display menu border."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_BACKGROUND_FILLER_THICKNESS_ENABLE,
    "Background Filler Thickness"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_BACKGROUND_FILLER_THICKNESS_ENABLE,
-   "Increase coarseness of menu background chequerboard pattern."
+   "Increase coarseness of menu background checkerboard pattern."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_BORDER_FILLER_ENABLE,
+   "Border Filler"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_BORDER_FILLER_THICKNESS_ENABLE,
+   "Border Filler Thickness"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_BORDER_FILLER_THICKNESS_ENABLE,
+   "Increase coarseness of menu border checkerboard."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_BORDER_FILLER_ENABLE,
+   "Display menu border."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_FULL_WIDTH_LAYOUT,
@@ -7358,6 +7374,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_INTEGER,
    "Integer Scale"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_FILL_SCREEN,
+   "Fill Screen (Stretched)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CUSTOM,
@@ -8106,6 +8126,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE_LIST_LARGE,
    "List (Large)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE_DESKTOP,
+   "Desktop"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION_DISABLED,

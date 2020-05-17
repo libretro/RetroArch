@@ -122,38 +122,8 @@ void CoreOptionsDialog::reload()
 
 void CoreOptionsDialog::onSaveGameSpecificOptions()
 {
-   char game_path[PATH_MAX_LENGTH];
-   config_file_t *conf = NULL;
-
-   game_path[0] = '\0';
-
-   if (!retroarch_validate_game_options(game_path, sizeof(game_path), true))
-   {
+   if (!create_folder_and_core_options())
       QMessageBox::critical(this, msg_hash_to_str(MSG_ERROR), msg_hash_to_str(MSG_ERROR_SAVING_CORE_OPTIONS_FILE));
-      return;
-   }
-
-   if (!(conf = config_file_new_from_path_to_string(game_path)))
-   {
-      if (!(conf = config_file_new_alloc()))
-      {
-         QMessageBox::critical(this, msg_hash_to_str(MSG_ERROR), msg_hash_to_str(MSG_ERROR_SAVING_CORE_OPTIONS_FILE));
-         return;
-      }
-   }
-
-   if (config_file_write(conf, game_path, true))
-   {
-      runloop_msg_queue_push(
-            msg_hash_to_str(MSG_CORE_OPTIONS_FILE_CREATED_SUCCESSFULLY),
-            1, 100, true, NULL,
-            MESSAGE_QUEUE_ICON_DEFAULT,
-            MESSAGE_QUEUE_CATEGORY_INFO
-            );
-      path_set(RARCH_PATH_CORE_OPTIONS, game_path);
-   }
-
-   config_file_free(conf);
 }
 
 void CoreOptionsDialog::onCoreOptionComboBoxCurrentIndexChanged(int index)

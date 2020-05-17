@@ -52,7 +52,7 @@
 #include "platform_win32.h"
 
 #ifdef HAVE_NVDA
-#include "../../nvdaController.h"
+#include "../../nvda_controller.h"
 #endif
 
 #ifndef SM_SERVERR2
@@ -616,15 +616,17 @@ static void frontend_win32_attach_console(void)
    bool need_stderr = (GetFileType(GetStdHandle(STD_ERROR_HANDLE))
          == FILE_TYPE_UNKNOWN);
 
-   if(need_stdout || need_stderr)
+   if (need_stdout || need_stderr)
    {
-      if(!AttachConsole( ATTACH_PARENT_PROCESS))
+      if (!AttachConsole( ATTACH_PARENT_PROCESS))
          AllocConsole();
 
       SetConsoleTitle("Log Console");
 
-      if(need_stdout) freopen( "CONOUT$", "w", stdout );
-      if(need_stderr) freopen( "CONOUT$", "w", stderr );
+      if (need_stdout)
+         freopen( "CONOUT$", "w", stdout );
+      if (need_stderr)
+         freopen( "CONOUT$", "w", stderr );
 
       console_needs_free = true;
    }
@@ -637,7 +639,7 @@ static void frontend_win32_detach_console(void)
 {
 #if defined(_WIN32) && !defined(_XBOX)
 #ifdef _WIN32_WINNT_WINXP
-   if(console_needs_free)
+   if (console_needs_free)
    {
       /* we don't reconnect stdout/stderr to anything here,
        * because by definition, they weren't connected to
@@ -693,7 +695,7 @@ static void frontend_win32_respawn(char *s, size_t len, char *args)
    si.cb = sizeof(si);
    memset(&pi, 0, sizeof(pi));
 
-   if(!CreateProcess( executable_path, args,
+   if (!CreateProcess( executable_path, args,
       NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi))
    {
       RARCH_LOG("Failed to restart RetroArch\n");

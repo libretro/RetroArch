@@ -824,6 +824,20 @@ int setting_generic_action_ok_default(rarch_setting_t *setting, bool wraparound)
    return 0;
 }
 
+void setting_generic_handle_change(rarch_setting_t *setting)
+{
+   settings_t *settings = config_get_ptr();
+
+   settings->modified = true;
+
+   if (setting->change_handler)
+      setting->change_handler(setting);
+
+   if (setting->cmd_trigger.idx && !setting->cmd_trigger.triggered)
+      command_event(setting->cmd_trigger.idx, NULL);
+}
+
+
 static void setting_get_string_representation_int_gpu_index(rarch_setting_t *setting,
       char *s, size_t len)
 {
@@ -2567,7 +2581,7 @@ static int setting_action_ok_bind_all_save_autoconfig(rarch_setting_t *setting,
    index_offset = setting->index_offset;
    name         = input_config_get_device_name(index_offset);
 
-   if (!string_is_empty(name) && 
+   if (!string_is_empty(name) &&
          config_save_autoconf_profile(name, index_offset))
       runloop_msg_queue_push(
             msg_hash_to_str(MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY), 1, 100, true,
@@ -3693,6 +3707,12 @@ static void setting_get_string_representation_uint_rgui_aspect_ratio_lock(
                   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_INTEGER),
                len);
          break;
+      case RGUI_ASPECT_RATIO_LOCK_FILL_SCREEN:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_FILL_SCREEN),
+               len);
+         break;
    }
 }
 
@@ -4132,6 +4152,11 @@ static void setting_get_string_representation_uint_materialui_menu_thumbnail_vie
          strlcpy(s,
                msg_hash_to_str(
                   MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE_LIST_LARGE), len);
+         break;
+      case MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE_DESKTOP:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE_DESKTOP), len);
          break;
       default:
          break;
@@ -7110,7 +7135,7 @@ static void change_handler_video_layout_enable(rarch_setting_t *setting)
 static void change_handler_video_layout_path(rarch_setting_t *setting)
 {
    settings_t *settings = config_get_ptr();
-   configuration_set_uint(settings, 
+   configuration_set_uint(settings,
          settings->uints.video_layout_selected_view, 0);
 
    video_layout_load(setting->value.target.string);
@@ -12921,7 +12946,7 @@ static bool setting_append_list(
                (*list)[list_info->index - 1].get_string_representation =
                   &setting_get_string_representation_uint_rgui_aspect_ratio_lock;
 #if defined(GEKKO)
-            menu_settings_list_current_add_range(list, list_info, 0, RGUI_ASPECT_RATIO_LOCK_LAST-2, 1, true, true);
+            menu_settings_list_current_add_range(list, list_info, 0, RGUI_ASPECT_RATIO_LOCK_LAST-3, 1, true, true);
 #else
             menu_settings_list_current_add_range(list, list_info, 0, RGUI_ASPECT_RATIO_LOCK_LAST-1, 1, true, true);
 #endif
@@ -15917,6 +15942,22 @@ static bool setting_append_list(
                &settings->bools.cheevos_auto_screenshot,
                MENU_ENUM_LABEL_CHEEVOS_AUTO_SCREENSHOT,
                MENU_ENUM_LABEL_VALUE_CHEEVOS_AUTO_SCREENSHOT,
+               false,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE
+               );
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.cheevos_start_active,
+               MENU_ENUM_LABEL_CHEEVOS_START_ACTIVE,
+               MENU_ENUM_LABEL_VALUE_CHEEVOS_START_ACTIVE,
                false,
                MENU_ENUM_LABEL_VALUE_OFF,
                MENU_ENUM_LABEL_VALUE_ON,

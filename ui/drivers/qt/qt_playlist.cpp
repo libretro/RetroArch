@@ -263,7 +263,7 @@ void PlaylistModel::onImageLoaded(const QImage image, const QModelIndex &index, 
    m_pendingImages.remove(path);
 }
 
-inline static bool comp_hash_name_key_lower(const QHash<QString, QString> &lhs, const QHash<QString, QString> &rhs)
+static inline bool comp_hash_name_key_lower(const QHash<QString, QString> &lhs, const QHash<QString, QString> &rhs)
 {
    return lhs.value("name").toLower() < rhs.value("name").toLower();
 }

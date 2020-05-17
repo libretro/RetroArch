@@ -88,7 +88,7 @@ static bool log_file_override_active                = false;
 static char log_file_override_path[PATH_MAX_LENGTH] = {0};
 
 #ifdef HAVE_LIBNX
-static Mutex logging_mtx;
+static Mutex log_mutex;
 
 #ifdef NXLINK
 /* TODO/FIXME - global referenced in platform_switch.c - not
@@ -142,7 +142,7 @@ void retro_main_log_file_init(const char *path, bool append)
       return;
 
 #ifdef HAVE_LIBNX
-   mutexInit(&logging_mtx);
+   mutexInit(&log_mutex);
 #endif
 
    log_file_fp          = stderr;
@@ -275,7 +275,7 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
 #endif
 #else
 #if defined(HAVE_LIBNX)
-      mutexLock(&logging_mtx);
+      mutexLock(&log_mutex);
 #endif
       if (fp)
       {
@@ -284,7 +284,7 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
          fflush(fp);
       }
 #if defined(HAVE_LIBNX)
-      mutexUnlock(&logging_mtx);
+      mutexUnlock(&log_mutex);
 #endif
 
 #endif

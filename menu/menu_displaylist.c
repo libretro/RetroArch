@@ -68,7 +68,6 @@
 #endif
 
 #include "menu_cbs.h"
-#include "menu_content.h"
 #include "menu_driver.h"
 #include "menu_entries.h"
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
@@ -102,7 +101,7 @@
 #include "../runtime_file.h"
 #include "../manual_content_scan.h"
 
-/* TODO/FIXME - globals - need to find a way to 
+/* TODO/FIXME - globals - need to find a way to
  * get rid of these */
 static char new_path_entry[4096]        = {0};
 static char new_lbl_entry[4096]         = {0};
@@ -2260,7 +2259,7 @@ static int menu_displaylist_parse_horizontal_content_actions(
                MENU_ENUM_LABEL_ADD_TO_FAVORITES_PLAYLIST, FILE_TYPE_PLAYLIST_ENTRY, 0, 0);
       }
 
-      if (   settings->bools.quick_menu_show_set_core_association && 
+      if (   settings->bools.quick_menu_show_set_core_association &&
             !settings->bools.kiosk_mode_enable)
       {
          menu_entries_append_enum(info->list,
@@ -2270,7 +2269,7 @@ static int menu_displaylist_parse_horizontal_content_actions(
       }
 
       if (
-             settings->bools.quick_menu_show_reset_core_association && 
+             settings->bools.quick_menu_show_reset_core_association &&
             !settings->bools.kiosk_mode_enable)
       {
          menu_entries_append_enum(info->list,
@@ -2290,7 +2289,7 @@ static int menu_displaylist_parse_horizontal_content_actions(
 
 #ifdef HAVE_NETWORKING
    if (
-          settings->bools.quick_menu_show_download_thumbnails && 
+          settings->bools.quick_menu_show_download_thumbnails &&
          !settings->bools.kiosk_mode_enable)
    {
       bool download_enabled = true;
@@ -2322,7 +2321,7 @@ static int menu_displaylist_parse_horizontal_content_actions(
                                !string_is_equal(system, "music_history") &&
                                !string_is_equal(system, "video_history");
       }
-      
+
       if (settings->bools.network_on_demand_thumbnails)
          download_enabled = false;
 
@@ -2896,8 +2895,6 @@ static bool menu_displaylist_parse_playlist_manager_settings(
    const char *playlist_file    = NULL;
    playlist_t *playlist         = NULL;
    const char *menu_driver      = menu_driver_ident();
-   settings_t *settings         = config_get_ptr();
-   bool playlist_use_old_format = settings->bools.playlist_use_old_format;
 
    if (string_is_empty(playlist_path))
       return false;
@@ -4071,13 +4068,13 @@ static unsigned menu_displaylist_populate_subsystem(
    unsigned   i = 0;
    int        n = 0;
    bool is_rgui = string_is_equal(menu_driver, "rgui");
-   
+
    /* Select appropriate 'star' marker for subsystem menu entries
     * (i.e. RGUI does not support unicode, so use a 'standard'
     * character fallback) */
    snprintf(star_char, sizeof(star_char),
          "%s", is_rgui ? "*" : utf8_star_char);
-   
+
    if (menu_displaylist_has_subsystems())
    {
       for (i = 0; i < subsystem_current_count; i++, subsystem++)
@@ -4091,13 +4088,13 @@ static unsigned menu_displaylist_populate_subsystem(
                   "Load %s %s",
                   subsystem->desc,
                   star_char);
-               
+
                /* If using RGUI with sublabels disabled, add the
                 * appropriate text to the menu entry itself... */
                if (is_rgui && !menu_show_sublabels)
                {
                   char tmp[PATH_MAX_LENGTH];
-                  
+
                   n = snprintf(tmp, sizeof(tmp),
                      "%s [%s %s]", s, "Current Content:",
                      subsystem->roms[content_get_subsystem_rom_id()].desc);
@@ -4124,7 +4121,7 @@ static unsigned menu_displaylist_populate_subsystem(
 
                   strlcpy(s, tmp, sizeof(s));
                }
-               
+
                if (menu_entries_append_enum(list,
                   s,
                   msg_hash_to_str(MENU_ENUM_LABEL_SUBSYSTEM_ADD),
@@ -4138,7 +4135,7 @@ static unsigned menu_displaylist_populate_subsystem(
                   "Start %s %s",
                   subsystem->desc,
                   star_char);
-               
+
                /* If using RGUI with sublabels disabled, add the
                 * appropriate text to the menu entry itself... */
                if (is_rgui && !menu_show_sublabels)
@@ -4159,7 +4156,7 @@ static unsigned menu_displaylist_populate_subsystem(
                   if (!string_is_empty(rom_buff))
                   {
                      n = snprintf(tmp, sizeof(tmp), "%s [%s]", s, rom_buff);
-                     
+
                      /* More snprintf() gcc warning suppression... */
                      if ((n < 0) || (n >= PATH_MAX_LENGTH))
                      {
@@ -4168,11 +4165,11 @@ static unsigned menu_displaylist_populate_subsystem(
                            RARCH_WARN("Menu subsystem entry: Description label truncated.\n");
                         }
                      }
-                     
+
                      strlcpy(s, tmp, sizeof(s));
                   }
                }
-               
+
                if (menu_entries_append_enum(list,
                   s,
                   msg_hash_to_str(MENU_ENUM_LABEL_SUBSYSTEM_LOAD),
@@ -4186,7 +4183,7 @@ static unsigned menu_displaylist_populate_subsystem(
             snprintf(s, sizeof(s),
                "Load %s",
                subsystem->desc);
-            
+
             /* If using RGUI with sublabels disabled, add the
              * appropriate text to the menu entry itself... */
             if (is_rgui && !menu_show_sublabels)
@@ -4197,11 +4194,11 @@ static unsigned menu_displaylist_populate_subsystem(
                if (subsystem->num_roms > 0)
                {
                   char tmp[PATH_MAX_LENGTH];
-                  
+
                   n = snprintf(tmp, sizeof(tmp),
                      "%s [%s %s]", s, "Current Content:",
                      subsystem->roms[0].desc);
-                  
+
                   /* More snprintf() gcc warning suppression... */
                   if ((n < 0) || (n >= PATH_MAX_LENGTH))
                   {
@@ -4214,7 +4211,7 @@ static unsigned menu_displaylist_populate_subsystem(
                   strlcpy(s, tmp, sizeof(s));
                }
             }
-            
+
             if (menu_entries_append_enum(list,
                s,
                msg_hash_to_str(MENU_ENUM_LABEL_SUBSYSTEM_ADD),
@@ -4241,7 +4238,7 @@ unsigned menu_displaylist_build_list(
       case DISPLAYLIST_SUBSYSTEM_SETTINGS_LIST:
          {
             const struct retro_subsystem_info* subsystem = subsystem_data;
-            rarch_system_info_t *sys_info                = 
+            rarch_system_info_t *sys_info                =
                runloop_get_system_info();
             /* Core not loaded completely, use the data we
              * peeked on load core */
@@ -5493,12 +5490,12 @@ unsigned menu_displaylist_build_list(
             bool show_hidden_files            = settings->bools.show_hidden_files;
 #ifdef HAVE_LIBRETRODB
             const char *path_content_database = settings->paths.path_content_database;
-            struct string_list *system_name_list = 
+            struct string_list *system_name_list =
                manual_content_scan_get_menu_system_name_list(
                      path_content_database,
                      show_hidden_files);
 #else
-            struct string_list *system_name_list = 
+            struct string_list *system_name_list =
                manual_content_scan_get_menu_system_name_list(NULL,
                      show_hidden_files);
 #endif
@@ -5543,7 +5540,7 @@ unsigned menu_displaylist_build_list(
       case DISPLAYLIST_DROPDOWN_LIST_MANUAL_CONTENT_SCAN_CORE_NAME:
          {
             /* Get core name list */
-            struct string_list *core_name_list = 
+            struct string_list *core_name_list =
                manual_content_scan_get_menu_core_name_list();
 
             if (core_name_list)
@@ -6078,6 +6075,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_CHEEVOS_TEST_UNOFFICIAL,                               PARSE_ONLY_BOOL,   false  },
                {MENU_ENUM_LABEL_CHEEVOS_VERBOSE_ENABLE,                                PARSE_ONLY_BOOL,   false  },
                {MENU_ENUM_LABEL_CHEEVOS_AUTO_SCREENSHOT,                               PARSE_ONLY_BOOL,   false  },
+               {MENU_ENUM_LABEL_CHEEVOS_START_ACTIVE,                                  PARSE_ONLY_BOOL,   false  },
             };
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
@@ -6682,7 +6680,7 @@ unsigned menu_displaylist_build_list(
                   count++;
                }
             }
-            
+
             {
                settings_t      *settings     = config_get_ptr();
                bool runahead_enabled         = settings->bools.run_ahead_enabled;
@@ -7743,7 +7741,7 @@ unsigned menu_displaylist_netplay_refresh_rooms(file_list_t *list)
 bool menu_displaylist_has_subsystems(void)
 {
    const struct retro_subsystem_info* subsystem = subsystem_data;
-   rarch_system_info_t *sys_info                = 
+   rarch_system_info_t *sys_info                =
       runloop_get_system_info();
    /* Core not loaded completely, use the data we
     * peeked on load core */

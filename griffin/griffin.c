@@ -181,17 +181,20 @@ ACHIEVEMENTS
 #include "../cheevos-new/parser.c"
 
 #include "../deps/rcheevos/src/rcheevos/alloc.c"
+#include "../deps/rcheevos/src/rcheevos/compat.c"
 #include "../deps/rcheevos/src/rcheevos/condition.c"
 #include "../deps/rcheevos/src/rcheevos/condset.c"
-#include "../deps/rcheevos/src/rcheevos/expression.c"
+#include "../deps/rcheevos/src/rcheevos/consoleinfo.c"
 #include "../deps/rcheevos/src/rcheevos/format.c"
 #include "../deps/rcheevos/src/rcheevos/lboard.c"
+#include "../deps/rcheevos/src/rcheevos/memref.c"
 #include "../deps/rcheevos/src/rcheevos/operand.c"
-#include "../deps/rcheevos/src/rcheevos/term.c"
+#include "../deps/rcheevos/src/rcheevos/richpresence.c"
+#include "../deps/rcheevos/src/rcheevos/runtime.c"
+#include "../deps/rcheevos/src/rcheevos/runtime_progress.c"
 #include "../deps/rcheevos/src/rcheevos/trigger.c"
 #include "../deps/rcheevos/src/rcheevos/value.c"
-#include "../deps/rcheevos/src/rcheevos/memref.c"
-#include "../deps/rcheevos/src/rcheevos/richpresence.c"
+#include "../deps/rcheevos/src/rhash/hash.c"
 #include "../deps/rcheevos/src/rurl/url.c"
 
 #endif
@@ -1205,6 +1208,7 @@ NETPLAY
 #ifdef HAVE_NETWORKING
 #include "../network/netplay/netplay_delta.c"
 #include "../network/netplay/netplay_handshake.c"
+#include "../network/netplay/netplay_frontend.c"
 #include "../network/netplay/netplay_init.c"
 #include "../network/netplay/netplay_io.c"
 #include "../network/netplay/netplay_keyboard.c"

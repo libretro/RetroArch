@@ -1830,6 +1830,7 @@ ifeq ($(HAVE_NETWORKING), 1)
    # Netplay
    DEFINES += -DHAVE_NETWORK_CMD
    OBJ += network/netplay/netplay_delta.o \
+               network/netplay/netplay_frontend.o \
                network/netplay/netplay_handshake.o \
                network/netplay/netplay_init.o \
                network/netplay/netplay_io.o \
@@ -1850,18 +1851,21 @@ ifeq ($(HAVE_NETWORKING), 1)
              cheevos-new/parser.o \
              cheevos-new/hash.o \
              $(LIBRETRO_COMM_DIR)/formats/cdfs/cdfs.o \
-             deps/rcheevos/src/rcheevos/trigger.o \
-             deps/rcheevos/src/rcheevos/condset.o \
-             deps/rcheevos/src/rcheevos/condition.o \
-             deps/rcheevos/src/rcheevos/operand.o \
-             deps/rcheevos/src/rcheevos/term.o \
-             deps/rcheevos/src/rcheevos/expression.o \
-             deps/rcheevos/src/rcheevos/value.o \
-             deps/rcheevos/src/rcheevos/lboard.o \
              deps/rcheevos/src/rcheevos/alloc.o \
+             deps/rcheevos/src/rcheevos/compat.o \
+             deps/rcheevos/src/rcheevos/condition.o \
+             deps/rcheevos/src/rcheevos/condset.o \
+             deps/rcheevos/src/rcheevos/consoleinfo.o \
              deps/rcheevos/src/rcheevos/format.o \
+             deps/rcheevos/src/rcheevos/lboard.o \
              deps/rcheevos/src/rcheevos/memref.o \
+             deps/rcheevos/src/rcheevos/operand.o \
              deps/rcheevos/src/rcheevos/richpresence.o \
+             deps/rcheevos/src/rcheevos/runtime.o \
+             deps/rcheevos/src/rcheevos/runtime_progress.o \
+             deps/rcheevos/src/rcheevos/trigger.o \
+             deps/rcheevos/src/rcheevos/value.o \
+             deps/rcheevos/src/rhash/hash.o \
              deps/rcheevos/src/rurl/url.o
 
       ifeq ($(HAVE_LUA), 1)

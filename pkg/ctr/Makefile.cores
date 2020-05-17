@@ -160,6 +160,13 @@ else ifeq ($(LIBRETRO), freechaf)
 	APP_ICON             = pkg/ctr/assets/default.png
 	APP_BANNER           = pkg/ctr/assets/libretro_banner.png
 
+else ifeq ($(LIBRETRO), frodo)
+	APP_TITLE            = Frodo
+	APP_PRODUCT_CODE     = RARCH-FRODO
+	APP_UNIQUE_ID        = 0xBACB9
+	APP_ICON             = pkg/ctr/assets/default.png
+	APP_BANNER           = pkg/ctr/assets/libretro_banner.png
+
 else ifeq ($(LIBRETRO), freeintv)
 	APP_TITLE            = FreeIntv
 	APP_AUTHOR           = various
