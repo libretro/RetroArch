@@ -9604,6 +9604,14 @@ MSG_HASH(
    "Búsqueda difusa de archivos"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_SAVE_RELATIVE_PATHS,
+   "Save relative paths in playlists"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_SAVE_RELATIVE_PATHS,
+   "When enabled, paths stored in playlists are relative to 'File Browser' directory"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_FUZZY_ARCHIVE_MATCH,
    "Al buscar entradas asociadas a archivos comprimidos en las listas de reproducción, solo se buscará una coincidencia en el nombre del archivo, en vez de [nombre de archivo]+[contenido]. Activar para evitar duplicados en el historial al cargar archivos comprimidos."
    )

@@ -4469,6 +4469,14 @@ MSG_HASH(
    "Correspondance approximative pour les archives"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_SAVE_RELATIVE_PATHS,
+   "Save relative paths in playlists"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_SAVE_RELATIVE_PATHS,
+   "When enabled, paths stored in playlists are relative to 'File Browser' directory"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_FUZZY_ARCHIVE_MATCH,
    "Lors de la recherche de fichiers compressés dans les listes de lecture, faire correspondre le nom de l'archive uniquement et non [nom]+[contenu]. Activez cette option pour éviter les doublons dans l'historique lors du chargement d'archives."
    )

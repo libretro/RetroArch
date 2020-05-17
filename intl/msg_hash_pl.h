@@ -6506,6 +6506,14 @@ MSG_HASH(
    "Dopasowanie rozmycia archiwum"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_SAVE_RELATIVE_PATHS,
+   "Save relative paths in playlists"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_SAVE_RELATIVE_PATHS,
+   "When enabled, paths stored in playlists are relative to 'File Browser' directory"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LIST,
    "Zarządzanie listami odtwarzania"
    )

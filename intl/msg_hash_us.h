@@ -4473,6 +4473,14 @@ MSG_HASH(
    "Fuzzy Archive Matching"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_SAVE_RELATIVE_PATHS,
+   "Save relative paths in playlists"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_SAVE_RELATIVE_PATHS,
+   "When enabled, paths stored in playlists are relative to 'File Browser' directory"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_FUZZY_ARCHIVE_MATCH,
    "When searching playlists for entries associated with compressed files, match only the archive file name instead of [file name]+[content]. Enable this to avoid duplicate content history entries when loading compressed files."
    )

@@ -762,6 +762,7 @@ default_sublabel_macro(action_bind_sublabel_playlist_sort_alphabetical,         
 default_sublabel_macro(action_bind_sublabel_playlist_fuzzy_archive_match,                  MENU_ENUM_SUBLABEL_PLAYLIST_FUZZY_ARCHIVE_MATCH)
 default_sublabel_macro(action_bind_sublabel_playlist_use_old_format,                       MENU_ENUM_SUBLABEL_PLAYLIST_USE_OLD_FORMAT)
 default_sublabel_macro(action_bind_sublabel_playlist_compression,                          MENU_ENUM_SUBLABEL_PLAYLIST_COMPRESSION)
+default_sublabel_macro(action_bind_sublabel_playlist_save_relative_paths,                  MENU_ENUM_SUBLABEL_PLAYLIST_SAVE_RELATIVE_PATHS)
 default_sublabel_macro(action_bind_sublabel_menu_rgui_full_width_layout,                   MENU_ENUM_SUBLABEL_MENU_RGUI_FULL_WIDTH_LAYOUT)
 default_sublabel_macro(action_bind_sublabel_menu_rgui_extended_ascii,                      MENU_ENUM_SUBLABEL_MENU_RGUI_EXTENDED_ASCII)
 default_sublabel_macro(action_bind_sublabel_thumbnails_updater_list,                       MENU_ENUM_SUBLABEL_THUMBNAILS_UPDATER_LIST)
@@ -3291,6 +3292,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_PLAYLIST_FUZZY_ARCHIVE_MATCH:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_playlist_fuzzy_archive_match);
+            break;
+         case MENU_ENUM_LABEL_PLAYLIST_SAVE_RELATIVE_PATHS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_playlist_save_relative_paths);
             break;
          case MENU_ENUM_LABEL_PLAYLIST_USE_OLD_FORMAT:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_playlist_use_old_format);

@@ -8545,6 +8545,14 @@ MSG_HASH(
    "Bulanık arşiv eşleştirme"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_SAVE_RELATIVE_PATHS,
+   "Save relative paths in playlists"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_SAVE_RELATIVE_PATHS,
+   "When enabled, paths stored in playlists are relative to 'File Browser' directory"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_FUZZY_ARCHIVE_MATCH,
    "Sıkıştırılmış dosyalarla ilişkili girişler için oynatma listelerini ararken, [dosya adı] + [içerik] yerine yalnızca arşiv dosya adıyla eşleştirin. Sıkıştırılmış dosyaları yüklerken yinelenen içerik geçmişi girişlerini önlemek için bunu etkinleştirin."
    )

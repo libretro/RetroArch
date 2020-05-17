@@ -4143,6 +4143,10 @@ MSG_HASH(
    "content_runtime_log_aggregate"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_PLAYLIST_SAVE_RELATIVE_PATHS,
+   "playlist_save_relative_paths"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_PLAYLIST_SHOW_INLINE_CORE_NAME,
    "playlist_show_inline_core_name"
    )

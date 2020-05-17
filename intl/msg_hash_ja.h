@@ -7628,6 +7628,14 @@ MSG_HASH(
    "アーカイブのファジーマッチング"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_SAVE_RELATIVE_PATHS,
+   "Save relative paths in playlists"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_SAVE_RELATIVE_PATHS,
+   "When enabled, paths stored in playlists are relative to 'File Browser' directory"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_FUZZY_ARCHIVE_MATCH,
    "圧縮ファイルに関連付けられたエントリをプレイリストで検索するときは, [ファイル名]+[内容]ではなく, アーカイブファイル名のみを一致させます。\n"
    "圧縮ファイルをロードするときに重複するコンテンツ履歴エントリを避けるためにこれを有効にしてください。"

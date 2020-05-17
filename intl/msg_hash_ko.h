@@ -9365,6 +9365,14 @@ MSG_HASH(
    "압축파일 단순 확인"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_SAVE_RELATIVE_PATHS,
+   "Save relative paths in playlists"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_SAVE_RELATIVE_PATHS,
+   "When enabled, paths stored in playlists are relative to 'File Browser' directory"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_FUZZY_ARCHIVE_MATCH,
    "압축 파일과 연결된 실행목록 검색시 [파일명]+[컨텐츠] 대신에 파일명 기준으로만 검색합니다. 압축 파일을 불러올 때 실행 기록에 중복된 항목이 생기지 않도록 해줍니다."
    )
