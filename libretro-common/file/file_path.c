@@ -674,6 +674,8 @@ bool is_windows_path(const char* path)
  **/
 void path_resolve_to_local_file_system(char* buf, const char* path, const char* base_content_directory)
 {
+   char* tmp = NULL;
+
    strcpy(buf, path);
 
    /* if no base_content_directory path is defined, we abort */
@@ -684,7 +686,7 @@ void path_resolve_to_local_file_system(char* buf, const char* path, const char* 
    if (path_is_absolute(path))
       return;
 
-   char tmp[PATH_MAX_LENGTH];
+   tmp = (char*)malloc(PATH_MAX_LENGTH);
    strcpy(tmp, path);
 
 #ifdef using_windows_file_system
@@ -705,9 +707,11 @@ void path_resolve_to_local_file_system(char* buf, const char* path, const char* 
    strcpy(buf, base_content_directory);
 
    const char fs_delimeter = local_file_system_path_delimeter;
-   if (buf[strlen(buf) - 1] != fs_delimeter && tmp[0] != fs_delimeter)
+   if (buf[strlen(buf) - 1] != fs_delimeter && *tmp != fs_delimeter)
       strncat(buf, &fs_delimeter, 1);
    strcat(buf, tmp);
+
+   free(tmp);
 }
 
 /**

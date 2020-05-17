@@ -798,7 +798,7 @@ bool playlist_push(playlist_t *playlist,
 
    settings_t* settings = config_get_ptr();
 
-   // use relative paths if enabled and entry file path is inside the content folder
+   /* use relative paths if enabled and entry file path is inside the content folder */
    bool use_relative_path = (settings != NULL)
       && settings->bools.playlist_save_relative_paths
       && !string_is_empty(settings->paths.directory_menu_content)
@@ -819,7 +819,7 @@ bool playlist_push(playlist_t *playlist,
 
       if (use_relative_path)
       {
-         // build relative path, and convert to unix path syntax
+         /* build relative path, and convert to unix path syntax */
          strncpy(relative_path, entry->path + strlen(settings->paths.directory_menu_content) + 1, strlen(entry->path) - strlen(settings->paths.directory_menu_content));
          string_replace_all_chars(relative_path, '\\', '/');
       }
@@ -2597,17 +2597,18 @@ playlist_t *playlist_init(const char *path, size_t size)
 
    playlist_read_file(playlist, path);
 
+   size_t i;
    settings_t* settings = config_get_ptr();
 
-   // try use relative paths if enabled 
+   /* try use relative paths if enabled */
    bool use_relative_path = (settings != NULL)
       && settings->bools.playlist_save_relative_paths
       && !string_is_empty(settings->paths.directory_menu_content);
    if (use_relative_path)
    {
-      for (int j = 0; j < playlist->size; j++)
+      for (i = 0; i < playlist-> size; i++)
       {
-         struct playlist_entry* entry = playlist->entries + j;
+         struct playlist_entry* entry = playlist->entries + i;
          if (!string_is_empty(entry->relative_path))
          {
             if (!entry->path)
