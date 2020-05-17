@@ -1,4 +1,6 @@
 # Future
+- WIIU: Gamepad hotplugging support
+- WIIU: Theoretical multi-gamepad support
 
 # 1.8.7
 - 3DS: Add IDs for Frodo
