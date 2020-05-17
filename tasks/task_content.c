@@ -1077,8 +1077,6 @@ static bool content_file_load(
       const char *content_path     = content->elems[0].data;
       enum rarch_content_type type = path_is_media_type(content_path);
 
-      rcheevos_set_cheats();
-
       if (type == RARCH_CONTENT_NONE && !string_is_empty(content_path))
          rcheevos_load(info);
       else

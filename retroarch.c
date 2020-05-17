@@ -7116,9 +7116,6 @@ bool command_event(enum event_command cmd, void *data)
          RARCH_LOG("%s.\n", msg_hash_to_str(MSG_RESET));
          runloop_msg_queue_push(msg_hash_to_str(MSG_RESET), 1, 120, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
-#ifdef HAVE_CHEEVOS
-         rcheevos_set_cheats();
-#endif
          core_reset();
 #ifdef HAVE_CHEEVOS
          rcheevos_reset_game();
@@ -29001,10 +28998,7 @@ int runloop_iterate(void)
    libretro_core_runtime_usec += rarch_core_runtime_tick(current_time);
 
 #ifdef HAVE_CHEEVOS
-   if (  settings->bools.cheevos_enable &&
-         rcheevos_loaded                &&
-         (!rcheevos_cheats_are_enabled && !rcheevos_cheats_were_enabled)
-      )
+   if (settings->bools.cheevos_enable && rcheevos_loaded)
       rcheevos_test();
 #endif
    cheat_manager_apply_retro_cheats();
