@@ -1,4 +1,5 @@
 # Future
+- CHEEVOS: Disable hardcore when cheats are enabled
 - WIIU: Gamepad hotplugging support
 - WIIU: Theoretical multi-gamepad support
 
