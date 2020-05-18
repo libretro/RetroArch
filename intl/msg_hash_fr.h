@@ -10123,7 +10123,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_MODE_DISABLED,
-   "Une sauvegarde instantanée a été chargée, succès en mode Hardcore désactivés pour la session en cours. Redémarrer pour activer le mode hardcore."
+   "Une sauvegarde instantanée a été chargée. Succès en mode Hardcore désactivés pour la session en cours."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_MODE_DISABLED_CHEAT,
+   "Un cheat a été activé. Succès en mode Hardcore désactivés pour la session en cours."
    )
 MSG_HASH(
    MSG_RESAMPLER_QUALITY_LOWEST,
