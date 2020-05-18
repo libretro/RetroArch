@@ -1,5 +1,6 @@
 # Future
 - CHEEVOS: Disable hardcore when cheats are enabled
+- CHD: Return false when special track cannot be found
 - WIIU: Gamepad hotplugging support
 - WIIU: Theoretical multi-gamepad support
 
