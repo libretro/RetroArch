@@ -1850,6 +1850,8 @@ static bool gl_core_frame(void *data, const void *frame,
    bool runloop_is_paused                      = video_info->runloop_is_paused;
    bool runloop_is_slowmotion                  = video_info->runloop_is_slowmotion;
    bool input_driver_nonblock_state            = video_info->input_driver_nonblock_state;
+   bool menu_is_alive                          = video_info->menu_is_alive;
+
    if (!gl)
       return false;
 
@@ -1919,7 +1921,7 @@ static bool gl_core_frame(void *data, const void *frame,
 #if defined(HAVE_MENU)
    if (gl->menu_texture_enable)
    {
-      menu_driver_frame(video_info);
+      menu_driver_frame(menu_is_alive, video_info);
       if (gl->menu_texture_enable && gl->menu_texture)
          gl_core_draw_menu_texture(gl, width, height);
    }

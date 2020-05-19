@@ -757,6 +757,7 @@ static bool drm_gfx_frame(void *data, const void *frame, unsigned width,
       video_frame_info_t *video_info)
 {
    struct drm_video *_drmvars = data;
+   bool menu_is_alive         = video_info->menu_is_alive;
 
    if (  ( width != _drmvars->core_width) ||
          (height != _drmvars->core_height))
@@ -790,7 +791,7 @@ static bool drm_gfx_frame(void *data, const void *frame, unsigned width,
    }
 
 #ifdef HAVE_MENU
-   menu_driver_frame(video_info);
+   menu_driver_frame(menu_is_alive, video_info);
 #endif
 
    /* Update main surface: locate free page, blit and flip. */

@@ -1211,6 +1211,7 @@ static bool d3d10_gfx_frame(
       *osd_params             = (struct font_params*)
       &video_info->osd_stat_params;
    const char *stat_text      = video_info->stat_text;
+   bool menu_is_alive         = video_info->menu_is_alive;
 
    if (d3d10->resize_chain)
    {
@@ -1471,7 +1472,7 @@ static bool d3d10_gfx_frame(
 
 #ifdef HAVE_MENU
    if (d3d10->menu.enabled)
-      menu_driver_frame(video_info);
+      menu_driver_frame(menu_is_alive, video_info);
    else
 #endif
       if (statistics_show)
