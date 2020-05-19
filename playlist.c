@@ -798,13 +798,6 @@ bool playlist_push(playlist_t *playlist,
 
    settings_t* settings = config_get_ptr();
 
-   /* use relative paths if enabled and entry file path is inside the content folder */
-   bool use_relative_path = (settings != NULL)
-      && settings->bools.playlist_save_relative_paths
-      && !string_is_empty(settings->paths.directory_menu_content)
-      && !string_is_empty(entry->path)
-      && (strncmp(entry->path, settings->paths.directory_menu_content, strlen(settings->paths.directory_menu_content)) == 0);
-
    if (string_is_empty(entry->core_path))
    {
       RARCH_ERR("cannot push NULL or empty core path into the playlist.\n");
@@ -816,6 +809,12 @@ bool playlist_push(playlist_t *playlist,
       /* Get 'real' path */
       strlcpy(real_path, entry->path, sizeof(real_path));
       playlist_resolve_path(PLAYLIST_SAVE, real_path, sizeof(real_path));
+
+      /* use relative paths if enabled and entry file path is inside the content folder */
+      bool use_relative_path = (settings != NULL)
+         && settings->bools.playlist_save_relative_paths
+         && !string_is_empty(settings->paths.directory_menu_content)
+         && (strncmp(entry->path, settings->paths.directory_menu_content, strlen(settings->paths.directory_menu_content)) == 0);
 
       if (use_relative_path)
       {
@@ -853,10 +852,8 @@ bool playlist_push(playlist_t *playlist,
    {
       struct playlist_entry tmp;
       const char *entry_path = playlist->entries[i].path;
-      const char* entry_relative_path = playlist->entries[i].relative_path;
       bool equal_path =
-         (!string_is_empty(real_path) && !string_is_empty(entry_path) && playlist_path_equal(real_path, entry_path, fuzzy_archive_match)) ||
-         (!string_is_empty(relative_path) && !string_is_empty(entry_relative_path) && (strcmp(relative_path, entry_relative_path) == 0));
+         (!string_is_empty(real_path) && !string_is_empty(entry_path) && playlist_path_equal(real_path, entry_path, fuzzy_archive_match));
 
       /* Core name can have changed while still being the same core.
        * Differentiate based on the core path only. */
@@ -1528,25 +1525,25 @@ void playlist_write_file(
          json_write_space(context.writer, 4);
          JSON_Writer_WriteStartObject(context.writer);
 
-         char* path = string_is_empty(playlist->entries[i].relative_path) ? playlist->entries[i].path : NULL;
-
-         json_write_new_line(context.writer);
-         json_write_space(context.writer, 6);
-         JSON_Writer_WriteString(context.writer, "path",
+         if (string_is_empty(playlist->entries[i].relative_path))
+         {
+            json_write_new_line(context.writer);
+            json_write_space(context.writer, 6);
+            JSON_Writer_WriteString(context.writer, "path",
                STRLEN_CONST("path"), JSON_UTF8);
-         JSON_Writer_WriteColon(context.writer);
-         json_write_space(context.writer, 1);
-         JSON_Writer_WriteString(context.writer,
-            path
-            ? path
-            : "",
-            path
-            ? strlen(path)
-            : 0,
-            JSON_UTF8);
-         JSON_Writer_WriteComma(context.writer);
-
-         if (!string_is_empty(playlist->entries[i].relative_path))
+            JSON_Writer_WriteColon(context.writer);
+            json_write_space(context.writer, 1);
+            JSON_Writer_WriteString(context.writer,
+               playlist->entries[i].path
+               ? playlist->entries[i].path
+               : "",
+               playlist->entries[i].path
+               ? strlen(playlist->entries[i].path)
+               : 0,
+               JSON_UTF8);
+            JSON_Writer_WriteComma(context.writer);
+         }
+         else
          {
             json_write_new_line(context.writer);
             json_write_space(context.writer, 6);
@@ -2571,6 +2568,8 @@ playlist_t *playlist_init(const char *path, size_t size)
 {
    struct playlist_entry *entries = NULL;
    playlist_t           *playlist = (playlist_t*)malloc(sizeof(*playlist));
+   char tmp_entry_path[PATH_MAX_LENGTH];
+
    if (!playlist)
       return NULL;
 
@@ -2608,14 +2607,12 @@ playlist_t *playlist_init(const char *path, size_t size)
    {
       for (i = 0; i < playlist-> size; i++)
       {
-         struct playlist_entry* entry = playlist->entries + i;
+         struct playlist_entry *entry = &playlist->entries[i];
          if (!string_is_empty(entry->relative_path))
          {
-            if (!entry->path)
-               entry->path = (char*)malloc(PATH_MAX_LENGTH);
-            path_resolve_to_local_file_system(entry->path, entry->relative_path, settings->paths.directory_menu_content);
-
-            RARCH_LOG("Path '%s' resolved to '%s'\n", entry->relative_path, entry->path);
+            tmp_entry_path[0] = '\0';
+            path_resolve_to_local_file_system(tmp_entry_path, entry->relative_path, settings->paths.directory_menu_content, PATH_MAX_LENGTH);
+            entry->path = strdup(tmp_entry_path);
          }
       }
    }

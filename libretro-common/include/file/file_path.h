@@ -526,7 +526,7 @@ int32_t path_get_size(const char *path);
 
 bool is_path_accessible_using_standard_io(const char *path);
 
-void path_resolve_to_local_file_system(char* buf, const char* path, const char* base_content_directory);
+void path_resolve_to_local_file_system(char* buf, const char* path, const char* base_content_directory, size_t count);
 
 bool is_windows_path(const char* path);
 

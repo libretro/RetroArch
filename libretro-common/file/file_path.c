@@ -672,12 +672,12 @@ bool is_windows_path(const char* path)
  *
  *  Under windows returns 'c:\games\retroarch\roms\zelda3.zip'
  **/
-void path_resolve_to_local_file_system(char* buf, const char* path, const char* base_content_directory)
+void path_resolve_to_local_file_system(char* buf, const char* path, const char* base_content_directory, size_t count)
 {
    char* tmp = NULL;
    const char fs_delimeter = local_file_system_path_delimeter;
 
-   strcpy(buf, path);
+   strncpy(buf, path, count);
 
    /* if no base_content_directory path is defined, we abort */
    if (string_is_empty(base_content_directory))
@@ -688,7 +688,7 @@ void path_resolve_to_local_file_system(char* buf, const char* path, const char* 
       return;
 
    tmp = (char*)malloc(PATH_MAX_LENGTH);
-   strcpy(tmp, path);
+   strncpy(tmp, path, count);
 
 #ifdef using_windows_file_system
    /* if we are running under a win fs, '/' characters are not allowed anywhere. we replace with '\' and hope for the best.. */
@@ -705,11 +705,11 @@ void path_resolve_to_local_file_system(char* buf, const char* path, const char* 
    }
 #endif
 
-   strcpy(buf, base_content_directory);
+   strncpy(buf, base_content_directory, count);
    
    if (buf[strlen(buf) - 1] != fs_delimeter && *tmp != fs_delimeter)
       strncat(buf, &fs_delimeter, 1);
-   strcat(buf, tmp);
+   strncat(buf, tmp, count);
 
    free(tmp);
 }
