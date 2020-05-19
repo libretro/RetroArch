@@ -101,13 +101,6 @@
 #include "../runtime_file.h"
 #include "../manual_content_scan.h"
 
-/* TODO/FIXME - globals - need to find a way to
- * get rid of these */
-static char new_path_entry[4096]        = {0};
-static char new_lbl_entry[4096]         = {0};
-static char new_entry[4096]             = {0};
-static enum msg_hash_enums new_type     = MSG_UNKNOWN;
-
 #define menu_displaylist_parse_settings_enum(list, label, parse_type, add_empty_entry) menu_displaylist_parse_settings_internal_enum(list, parse_type, add_empty_entry, menu_setting_find_enum(label), label, true)
 
 #define menu_displaylist_parse_settings(list, label, parse_type, add_empty_entry, entry_type) menu_displaylist_parse_settings_internal_enum(list, parse_type, add_empty_entry, menu_setting_find(label), entry_type, false)
@@ -123,6 +116,18 @@ static enum msg_hash_enums new_type     = MSG_UNKNOWN;
 #include <net/net_ifinfo.h>
 #endif
 #endif
+
+/* TODO/FIXME - globals - need to find a way to
+ * get rid of these */
+struct menu_displaylist_state
+{
+   enum msg_hash_enums new_type;
+   char new_path_entry[4096];
+   char new_lbl_entry[4096];
+   char new_entry[4096];
+};
+
+static struct menu_displaylist_state menu_displist_st;
 
 static int menu_displaylist_parse_core_info(file_list_t *list)
 {
@@ -3685,9 +3690,10 @@ static void wifi_scan_callback(retro_task_t *task,
 
 bool menu_displaylist_process(menu_displaylist_info_t *info)
 {
-   size_t idx   = 0;
+   size_t                              idx   = 0;
+   struct menu_displaylist_state *p_displist = &menu_displist_st;
 #if defined(HAVE_NETWORKING)
-   settings_t *settings         = config_get_ptr();
+   settings_t              *settings         = config_get_ptr();
 #endif
 
    if (info->need_navigation_clear)
@@ -3757,20 +3763,20 @@ bool menu_displaylist_process(menu_displaylist_info_t *info)
 #endif
    }
 
-   if (!string_is_empty(new_entry))
+   if (!string_is_empty(p_displist->new_entry))
    {
       menu_entries_prepend(info->list,
-            new_path_entry,
-            new_lbl_entry,
-            new_type,
+            p_displist->new_path_entry,
+            p_displist->new_lbl_entry,
+            p_displist->new_type,
             FILE_TYPE_CORE, 0, 0);
       file_list_set_alt_at_offset(info->list, 0,
-            new_entry);
+            p_displist->new_entry);
 
-      new_type          = MSG_UNKNOWN;
-      new_lbl_entry[0]  = '\0';
-      new_path_entry[0] = '\0';
-      new_entry[0]      = '\0';
+      p_displist->new_type          = MSG_UNKNOWN;
+      p_displist->new_lbl_entry[0]  = '\0';
+      p_displist->new_path_entry[0] = '\0';
+      p_displist->new_entry[0]      = '\0';
    }
 
    if (info->need_refresh)
@@ -9201,7 +9207,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
             if (cores_names_size != 0)
             {
-               unsigned j = 0;
+               unsigned                      j = 0;
+               struct menu_displaylist_state 
+                  *p_displist                  = &menu_displist_st;
                struct string_list *cores_paths =
                   string_list_new_special(STRING_LIST_SUPPORTED_CORES_PATHS,
                         (void*)menu->deferred_path,
@@ -9215,12 +9223,16 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   if (     !path_is_empty(RARCH_PATH_CORE) &&
                         string_is_equal(core_path, path_get(RARCH_PATH_CORE)))
                   {
-                     strlcpy(new_path_entry, core_path, sizeof(new_path_entry));
-                     snprintf(new_entry, sizeof(new_entry), "%s (%s)",
+                     strlcpy(p_displist->new_path_entry,
+                           core_path, sizeof(p_displist->new_path_entry));
+                     snprintf(p_displist->new_entry,
+                           sizeof(p_displist->new_entry), "%s (%s)",
                            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DETECT_CORE_LIST_OK_CURRENT_CORE),
                            core_name);
-                     strlcpy(new_lbl_entry, core_path, sizeof(new_lbl_entry));
-                     new_type = MENU_ENUM_LABEL_DETECT_CORE_LIST_OK_CURRENT_CORE;
+                     strlcpy(p_displist->new_lbl_entry,
+                           core_path, sizeof(p_displist->new_lbl_entry));
+                     p_displist->new_type = 
+                        MENU_ENUM_LABEL_DETECT_CORE_LIST_OK_CURRENT_CORE;
                   }
                   else if (core_path)
                   {
@@ -9296,6 +9308,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             if (cores_names_size != 0)
             {
                unsigned j = 0;
+               struct menu_displaylist_state 
+                  *p_displist                  = &menu_displist_st;
                struct string_list *cores_paths =
                   string_list_new_special(STRING_LIST_SUPPORTED_CORES_PATHS,
                         (void*)menu->deferred_path,
@@ -9309,12 +9323,15 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   if (     !path_is_empty(RARCH_PATH_CORE) &&
                         string_is_equal(core_path, path_get(RARCH_PATH_CORE)))
                   {
-                     strlcpy(new_path_entry, core_path, sizeof(new_path_entry));
-                     snprintf(new_entry, sizeof(new_entry), "%s (%s)",
+                     strlcpy(p_displist->new_path_entry,
+                           core_path, sizeof(p_displist->new_path_entry));
+                     snprintf(p_displist->new_entry,
+                           sizeof(p_displist->new_entry), "%s (%s)",
                            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DETECT_CORE_LIST_OK_CURRENT_CORE),
                            core_name);
-                     new_lbl_entry[0] = '\0';
-                     new_type         = MENU_ENUM_LABEL_FILE_BROWSER_CORE_SELECT_FROM_COLLECTION_CURRENT_CORE;
+                     p_displist->new_lbl_entry[0] = '\0';
+                     p_displist->new_type         = 
+                        MENU_ENUM_LABEL_FILE_BROWSER_CORE_SELECT_FROM_COLLECTION_CURRENT_CORE;
                   }
                   else if (core_path)
                   {
