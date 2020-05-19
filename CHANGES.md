@@ -3,6 +3,7 @@
 - CHD: Return false when special track cannot be found
 - INPUT MAPPING/REMAPPING: Restore broken 'reset to default' functionality with RetroPad 'start' button
 - MENU/THUMBNAILS/BUGFIX: Fix heap-use-after-free error
+- OVERLAYS: Fix memory leak when loading overlays
 - WIIU: Gamepad hotplugging support
 - WIIU: Theoretical multi-gamepad support
 
