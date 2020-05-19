@@ -13341,21 +13341,19 @@ void input_overlay_free_overlay(struct overlay *overlay)
       free(overlay->descs);
    overlay->descs       = NULL;
    image_texture_free(&overlay->image);
-
-   if (overlay_ptr)
-      free(overlay_ptr);
-   overlay_ptr = NULL;
 }
 
 static void input_overlay_free_overlays(input_overlay_t *ol)
 {
    size_t i;
 
+   if (!ol || !ol->overlays)
+      return;
+
    for (i = 0; i < ol->size; i++)
       input_overlay_free_overlay(&ol->overlays[i]);
 
-   if (ol->overlays)
-      free(ol->overlays);
+   free(ol->overlays);
    ol->overlays = NULL;
 }
 
@@ -13722,7 +13720,6 @@ static void input_overlay_free(input_overlay_t *ol)
 {
    if (!ol)
       return;
-   overlay_ptr = NULL;
 
    input_overlay_free_overlays(ol);
 
@@ -13785,7 +13782,16 @@ static void input_overlay_loaded(retro_task_t *task,
    ol->next_index = (unsigned)((ol->index + 1) % ol->size);
    ol->state      = OVERLAY_STATUS_NONE;
    ol->alive      = true;
-   overlay_ptr    = ol;
+
+   /* Due to the asynchronous nature of overlay loading
+    * it is possible for overlay_ptr to be non-NULL here
+    * > Ensure it is free()'d before assigning new pointer */
+   if (overlay_ptr)
+   {
+      input_overlay_free_overlays(overlay_ptr);
+      free(overlay_ptr);
+   }
+   overlay_ptr = ol;
 
    free(data);
 
@@ -14012,6 +14018,7 @@ static void retroarch_overlay_init(void)
    float overlay_opacity     = settings->floats.input_overlay_opacity;
    float overlay_scale       = settings->floats.input_overlay_scale;
    bool overlay_hide_in_menu = settings->bools.input_overlay_hide_in_menu;
+   bool load_enabled         = input_overlay_enable;
 #if defined(GEKKO)
    /* Avoid a crash at startup or even when toggling overlay in rgui */
    uint64_t memory_free      = frontend_driver_get_free_memory();
@@ -14021,7 +14028,12 @@ static void retroarch_overlay_init(void)
 
    retroarch_overlay_deinit();
 
-   if (input_overlay_enable)
+   /* Cancel load if 'hide_in_menu' is enabled and
+    * menu is currently active */
+   if (overlay_hide_in_menu)
+      load_enabled = load_enabled && !menu_driver_alive;
+
+   if (load_enabled)
       task_push_overlay_load_default(input_overlay_loaded,
             path_overlay,
             overlay_hide_in_menu,
