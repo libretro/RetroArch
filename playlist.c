@@ -35,8 +35,6 @@
 #include "verbosity.h"
 #include "file_path_special.h"
 
-#include "configuration.h"
-
 #ifndef PLAYLIST_ENTRIES
 #define PLAYLIST_ENTRIES 6
 #endif
@@ -460,6 +458,14 @@ void playlist_update(playlist_t *playlist, size_t idx,
       playlist->modified = true;
    }
 
+   if (update_entry->relative_path && (update_entry->relative_path != entry->relative_path))
+   {
+      if (entry->relative_path != NULL)
+         free(entry->relative_path);
+      entry->relative_path = strdup(update_entry->relative_path);
+      playlist->modified = true;
+   }
+
    if (update_entry->label && (update_entry->label != entry->label))
    {
       if (entry->label != NULL)
@@ -519,6 +525,15 @@ void playlist_update_runtime(playlist_t *playlist, size_t idx,
          free(entry->path);
       entry->path        = NULL;
       entry->path        = strdup(update_entry->path);
+      playlist->modified = playlist->modified || register_update;
+   }
+
+   if (update_entry->relative_path && (update_entry->relative_path != entry->relative_path))
+   {
+      if (entry->relative_path != NULL)
+         free(entry->relative_path);
+      entry->relative_path = NULL;
+      entry->relative_path = strdup(update_entry->relative_path);
       playlist->modified = playlist->modified || register_update;
    }
 
@@ -780,7 +795,8 @@ void playlist_resolve_path(enum playlist_file_mode mode,
  **/
 bool playlist_push(playlist_t *playlist,
       const struct playlist_entry *entry,
-      bool fuzzy_archive_match)
+      bool fuzzy_archive_match,
+      const char* base_content_directory)
 {
    size_t i;
    char real_path[PATH_MAX_LENGTH];
@@ -796,8 +812,6 @@ bool playlist_push(playlist_t *playlist,
    if (!playlist || !entry)
       return false;
 
-   settings_t* settings = config_get_ptr();
-
    if (string_is_empty(entry->core_path))
    {
       RARCH_ERR("cannot push NULL or empty core path into the playlist.\n");
@@ -811,16 +825,14 @@ bool playlist_push(playlist_t *playlist,
       playlist_resolve_path(PLAYLIST_SAVE, real_path, sizeof(real_path));
 
       /* use relative paths if enabled and entry file path is inside the content folder */
-      bool use_relative_path = (settings != NULL)
-         && settings->bools.playlist_save_relative_paths
-         && !string_is_empty(settings->paths.directory_menu_content)
-         && (strncmp(entry->path, settings->paths.directory_menu_content, strlen(settings->paths.directory_menu_content)) == 0);
+      bool use_relative_path = !string_is_empty(base_content_directory)
+         && (strncmp(entry->path, base_content_directory, strlen(base_content_directory)) == 0);
 
       if (use_relative_path)
       {
          /* build relative path, and convert to unix path syntax */
-         strncpy(relative_path, entry->path + strlen(settings->paths.directory_menu_content) + 1, strlen(entry->path) - strlen(settings->paths.directory_menu_content));
-         string_replace_all_chars(relative_path, '\\', '/');
+         strncpy(relative_path, entry->path + strlen(base_content_directory) + 1, strlen(entry->path) - strlen(base_content_directory));
+         string_replace_all_chars(relative_path, windows_path_delimiter, posix_path_delimiter);
       }
    }
 
@@ -2534,10 +2546,10 @@ playlist_t *playlist_get_cached(void)
 }
 
 bool playlist_init_cached(
-      const char *path, size_t size,
+      const char *path, size_t size, const char* base_content_directory,
       bool use_old_format, bool compress)
 {
-   playlist_t *playlist = playlist_init(path, size);
+   playlist_t *playlist = playlist_init(path, size, base_content_directory);
    if (!playlist)
       return false;
 
@@ -2557,17 +2569,19 @@ bool playlist_init_cached(
 
 /**
  * playlist_init:
- * @path            	   : Path to playlist contents file.
- * @size                : Maximum capacity of playlist size.
+ * @path            	      : Path to playlist contents file.
+ * @size                   : Maximum capacity of playlist size.
+ * @base_content_directory : Optional base content directory for relative paths
  *
  * Creates and initializes a playlist.
  *
  * Returns: handle to new playlist if successful, otherwise NULL
  **/
-playlist_t *playlist_init(const char *path, size_t size)
+playlist_t *playlist_init(const char *path, size_t size, const char* base_content_directory)
 {
    struct playlist_entry *entries = NULL;
    playlist_t           *playlist = (playlist_t*)malloc(sizeof(*playlist));
+   size_t i                       = 0;
    char tmp_entry_path[PATH_MAX_LENGTH];
 
    if (!playlist)
@@ -2594,15 +2608,10 @@ playlist_t *playlist_init(const char *path, size_t size)
    playlist->left_thumbnail_mode  = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
    playlist->sort_mode            = PLAYLIST_SORT_MODE_DEFAULT;
 
-   playlist_read_file(playlist, path);
-
-   size_t i;
-   settings_t* settings = config_get_ptr();
+   playlist_read_file(playlist, path);   
 
    /* try use relative paths if enabled */
-   bool use_relative_path = (settings != NULL)
-      && settings->bools.playlist_save_relative_paths
-      && !string_is_empty(settings->paths.directory_menu_content);
+   bool use_relative_path = !string_is_empty(base_content_directory);
    if (use_relative_path)
    {
       for (i = 0; i < playlist-> size; i++)
@@ -2611,7 +2620,7 @@ playlist_t *playlist_init(const char *path, size_t size)
          if (!string_is_empty(entry->relative_path))
          {
             tmp_entry_path[0] = '\0';
-            path_resolve_to_local_file_system(tmp_entry_path, entry->relative_path, settings->paths.directory_menu_content, PATH_MAX_LENGTH);
+            path_resolve_to_local_file_system(tmp_entry_path, entry->relative_path, base_content_directory, PATH_MAX_LENGTH);
             entry->path = strdup(tmp_entry_path);
          }
       }
@@ -2716,13 +2725,14 @@ void command_playlist_push_write(
       playlist_t *playlist,
       const struct playlist_entry *entry,
       bool fuzzy_archive_match,
+      const char *base_content_directory,
       bool use_old_format,
       bool compress)
 {
    if (!playlist)
       return;
 
-   if (playlist_push(playlist, entry, fuzzy_archive_match))
+   if (playlist_push(playlist, entry, fuzzy_archive_match, base_content_directory))
       playlist_write_file(playlist, use_old_format, compress);
 }
 

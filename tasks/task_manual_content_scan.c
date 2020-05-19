@@ -158,7 +158,7 @@ static void task_manual_content_scan_handler(retro_task_t *task)
 
             /* Open playlist */
             manual_scan->playlist = playlist_init(
-                  manual_scan->task_config->playlist_file, COLLECTION_SIZE);
+                  manual_scan->task_config->playlist_file, COLLECTION_SIZE, config_get_base_content_directory_if_enabled());
 
             if (!manual_scan->playlist)
                goto task_finished;
@@ -327,7 +327,7 @@ static void task_manual_content_scan_handler(retro_task_t *task)
                {
                   playlist_free_cached();
                   playlist_init_cached(
-                        manual_scan->task_config->playlist_file, COLLECTION_SIZE,
+                        manual_scan->task_config->playlist_file, COLLECTION_SIZE, config_get_base_content_directory_if_enabled(),
                         manual_scan->use_old_format, manual_scan->compress);
                }
             }

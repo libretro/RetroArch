@@ -348,7 +348,7 @@ static void task_pl_thumbnail_download_handler(retro_task_t *task)
             if (!path_is_valid(pl_thumb->playlist_path))
                goto task_finished;
             
-            pl_thumb->playlist = playlist_init(pl_thumb->playlist_path, COLLECTION_SIZE);
+            pl_thumb->playlist = playlist_init(pl_thumb->playlist_path, COLLECTION_SIZE, config_get_base_content_directory_if_enabled());
             
             if (!pl_thumb->playlist)
                goto task_finished;

@@ -115,14 +115,15 @@ struct playlist_entry
 
 /**
  * playlist_init:
- * @path            	   : Path to playlist contents file.
- * @size                : Maximum capacity of playlist size.
+ * @path            	      : Path to playlist contents file.
+ * @size                   : Maximum capacity of playlist size.
+ * @base_content_directory : Optional base content directory for relative paths
  *
  * Creates and initializes a playlist.
  *
  * Returns: handle to new playlist if successful, otherwise NULL
  **/
-playlist_t *playlist_init(const char *path, size_t size);
+playlist_t *playlist_init(const char *path, size_t size, const char* base_content_directory);
 
 /**
  * playlist_free:
@@ -208,16 +209,17 @@ void playlist_resolve_path(enum playlist_file_mode mode,
 
 /**
  * playlist_push:
- * @playlist        	   : Playlist handle.
- * @path                : Path of new playlist entry.
- * @core_path           : Core path of new playlist entry.
- * @core_name           : Core name of new playlist entry.
+ * @playlist        	      : Playlist handle.
+ * @entry                  : New entry handle.
+ * @fuzzy_archive_match    : Use fuzzy match
+ * @base_content_directory : Optional base content directory for storing relative paths
  *
  * Push entry to top of playlist.
  **/
 bool playlist_push(playlist_t *playlist,
       const struct playlist_entry *entry,
-      bool fuzzy_archive_match);
+      bool fuzzy_archive_match,
+      const char* base_content_directory);
 
 bool playlist_push_runtime(playlist_t *playlist,
       const struct playlist_entry *entry,
@@ -268,13 +270,14 @@ playlist_t *playlist_get_cached(void);
  *   a simple method for ensuring that files
  *   are always kept synced with user settings */
 bool playlist_init_cached(
-      const char *path, size_t size,
+      const char *path, size_t size, const char* base_content_directory,
       bool use_old_format, bool compress);
 
 void command_playlist_push_write(
       playlist_t *playlist,
       const struct playlist_entry *entry,
       bool fuzzy_archive_match,
+      const char *base_content_directory,
       bool use_old_format,
       bool compress);
 

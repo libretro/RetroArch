@@ -122,7 +122,7 @@ static void pl_manager_write_playlist(
       {
          playlist_free_cached();
          playlist_init_cached(
-               playlist_path, COLLECTION_SIZE, use_old_format, compress);
+               playlist_path, COLLECTION_SIZE, config_get_base_content_directory_if_enabled(), use_old_format, compress);
       }
    }
 }
@@ -154,7 +154,7 @@ static void task_pl_manager_reset_cores_handler(retro_task_t *task)
             if (!path_is_valid(pl_manager->playlist_path))
                goto task_finished;
             
-            pl_manager->playlist = playlist_init(pl_manager->playlist_path, COLLECTION_SIZE);
+            pl_manager->playlist = playlist_init(pl_manager->playlist_path, COLLECTION_SIZE, config_get_base_content_directory_if_enabled());
             
             if (!pl_manager->playlist)
                goto task_finished;
@@ -541,7 +541,7 @@ static void task_pl_manager_clean_playlist_handler(retro_task_t *task)
             if (!path_is_valid(pl_manager->playlist_path))
                goto task_finished;
             
-            pl_manager->playlist = playlist_init(pl_manager->playlist_path, COLLECTION_SIZE);
+            pl_manager->playlist = playlist_init(pl_manager->playlist_path, COLLECTION_SIZE, config_get_base_content_directory_if_enabled());
             
             if (!pl_manager->playlist)
                goto task_finished;

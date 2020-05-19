@@ -182,6 +182,7 @@ static void task_screenshot_handler(retro_task_t *task)
 
       command_playlist_push_write(g_defaults.image_history, &entry,
             state->pl_fuzzy_archive_match,
+            config_get_base_content_directory_if_enabled(),
             state->pl_use_old_format,
             state->pl_compression);
    }

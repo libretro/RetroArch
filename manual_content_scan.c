@@ -1137,6 +1137,6 @@ void manual_content_scan_add_content_to_playlist(
       entry.db_name   = task_config->database_name;
 
       /* Add entry to playlist */
-      playlist_push(playlist, &entry, fuzzy_archive_match);
+      playlist_push(playlist, &entry, fuzzy_archive_match, config_get_base_content_directory_if_enabled());
    }
 }

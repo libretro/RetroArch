@@ -828,6 +828,14 @@ const char *config_get_midi_driver_options(void);
 
 const char *config_get_default_record(void);
 
+/**
+ * config_get_base_content_directory_if_enabled:
+ *
+ * Returns: value of parameter directory_menu_content, if parameter playlist_save_relative_paths is enabled
+ */
+const char* config_get_base_content_directory_if_enabled(void);
+
+
 #ifdef HAVE_CONFIGFILE
 /**
  * config_load_override:

@@ -811,7 +811,7 @@ static int database_info_list_iterate_found_match(
       fill_pathname_join(db_playlist_path, _db->playlist_directory,
             db_playlist_base_str, PATH_MAX_LENGTH * sizeof(char));
 
-   playlist = playlist_init(db_playlist_path, COLLECTION_SIZE);
+   playlist = playlist_init(db_playlist_path, COLLECTION_SIZE, config_get_base_content_directory_if_enabled());
 
    snprintf(db_crc, PATH_MAX_LENGTH * sizeof(char),
          "%08X|crc", db_info_entry->crc32);
@@ -878,7 +878,7 @@ static int database_info_list_iterate_found_match(
       entry.last_played_minute= 0;
       entry.last_played_second= 0;
 
-      playlist_push(playlist, &entry, _db->pl_fuzzy_archive_match);
+      playlist_push(playlist, &entry, _db->pl_fuzzy_archive_match, config_get_base_content_directory_if_enabled());
    }
 
    playlist_write_file(
@@ -1053,7 +1053,7 @@ static int task_database_iterate_playlist_lutro(
             "Lutro.lpl",
             PATH_MAX_LENGTH * sizeof(char));
 
-   playlist = playlist_init(db_playlist_path, COLLECTION_SIZE);
+   playlist = playlist_init(db_playlist_path, COLLECTION_SIZE, config_get_base_content_directory_if_enabled());
 
    free(db_playlist_path);
 
@@ -1088,7 +1088,7 @@ static int task_database_iterate_playlist_lutro(
       entry.last_played_minute= 0;
       entry.last_played_second= 0;
 
-      playlist_push(playlist, &entry, _db->pl_fuzzy_archive_match);
+      playlist_push(playlist, &entry, _db->pl_fuzzy_archive_match, config_get_base_content_directory_if_enabled());
 
       free(game_title);
    }

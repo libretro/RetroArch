@@ -2067,7 +2067,7 @@ static int action_ok_playlist_entry_collection(const char *path,
       enum playlist_sort_mode current_sort_mode;
 
       tmp_playlist = playlist_init(
-            menu->db_playlist_file, COLLECTION_SIZE);
+            menu->db_playlist_file, COLLECTION_SIZE, config_get_base_content_directory_if_enabled());
 
       if (!tmp_playlist)
          return menu_cbs_exit();
@@ -2634,6 +2634,7 @@ static int action_ok_audio_add_to_mixer_and_collection(const char *path,
 
    command_playlist_push_write(g_defaults.music_history, &entry,
          playlist_fuzzy_archive_match,
+         config_get_base_content_directory_if_enabled(),
          playlist_use_old_format,
          playlist_compression);
 
@@ -2672,6 +2673,7 @@ static int action_ok_audio_add_to_mixer_and_collection_and_play(const char *path
 
    command_playlist_push_write(g_defaults.music_history, &entry,
          playlist_fuzzy_archive_match,
+         config_get_base_content_directory_if_enabled(),
          playlist_use_old_format,
          playlist_compression);
 
