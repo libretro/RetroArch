@@ -1108,7 +1108,6 @@ typedef struct video_frame_info
    bool memory_show;
    bool statistics_show;
    bool framecount_show;
-   bool scale_integer;
    bool post_filter_record;
    bool windowed_fullscreen;
    bool fullscreen;
