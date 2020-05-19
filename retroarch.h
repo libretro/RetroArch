@@ -1101,7 +1101,6 @@ typedef struct video_frame_info
    bool widgets_is_rewinding;
    bool input_menu_swap_ok_cancel_buttons;
    bool input_driver_nonblock_state;
-   bool shared_context;
    bool black_frame_insertion;
    bool hard_sync;
    bool fps_show;
@@ -1156,9 +1155,7 @@ typedef struct video_frame_info
    float font_msg_color_b;
    float xmb_alpha_factor;
 
-   char fps_text[128];
    char stat_text[512];
-   char chat_text[256];
 
    struct
    {

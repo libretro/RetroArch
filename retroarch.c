@@ -22507,6 +22507,7 @@ unsigned video_pixel_get_alignment(unsigned pitch)
 static void video_driver_frame(const void *data, unsigned width,
       unsigned height, size_t pitch)
 {
+   char fps_text[128];
    static char video_driver_msg[256];
    video_frame_info_t video_info;
    static retro_time_t curr_time;
@@ -22560,19 +22561,19 @@ static void video_driver_frame(const void *data, unsigned width,
 
       if (video_info.fps_show)
          buf_pos = snprintf(
-               video_info.fps_text, sizeof(video_info.fps_text),
+               fps_text, sizeof(fps_text),
                "FPS: %6.2f", last_fps);
 
       if (video_info.framecount_show)
       {
          char frames_text[64];
-         if (video_info.fps_text[buf_pos-1] != '\0')
-            strlcat(video_info.fps_text, " || ", sizeof(video_info.fps_text));
+         if (fps_text[buf_pos-1] != '\0')
+            strlcat(fps_text, " || ", sizeof(fps_text));
          snprintf(frames_text,
                sizeof(frames_text),
                "%s: %" PRIu64, msg_hash_to_str(MSG_FRAMES),
                (uint64_t)video_driver_frame_count);
-         buf_pos = strlcat(video_info.fps_text, frames_text, sizeof(video_info.fps_text));
+         buf_pos = strlcat(fps_text, frames_text, sizeof(fps_text));
       }
 
       if (video_info.memory_show)
@@ -22585,9 +22586,9 @@ static void video_driver_frame(const void *data, unsigned width,
          snprintf(
                mem, sizeof(mem), "MEM: %.2f/%.2fMB", mem_bytes_used / (1024.0f * 1024.0f),
                mem_bytes_total / (1024.0f * 1024.0f));
-         if (video_info.fps_text[buf_pos-1] != '\0')
-            strlcat(video_info.fps_text, " || ", sizeof(video_info.fps_text));
-         strlcat(video_info.fps_text, mem, sizeof(video_info.fps_text));
+         if (fps_text[buf_pos-1] != '\0')
+            strlcat(fps_text, " || ", sizeof(fps_text));
+         strlcat(fps_text, mem, sizeof(fps_text));
       }
 
       if ((video_driver_frame_count % fps_update_interval) == 0)
@@ -22598,12 +22599,12 @@ static void video_driver_frame(const void *data, unsigned width,
          strlcpy(video_driver_window_title,
                video_driver_title_buf, sizeof(video_driver_window_title));
 
-         if (!string_is_empty(video_info.fps_text))
+         if (!string_is_empty(fps_text))
          {
             strlcat(video_driver_window_title,
                   " || ", sizeof(video_driver_window_title));
             strlcat(video_driver_window_title,
-                  video_info.fps_text, sizeof(video_driver_window_title));
+                  fps_text, sizeof(video_driver_window_title));
          }
 
          curr_time                        = new_time;
@@ -22619,9 +22620,9 @@ static void video_driver_frame(const void *data, unsigned width,
             sizeof(video_driver_window_title));
 
       if (video_info.fps_show)
-         strlcpy(video_info.fps_text,
+         strlcpy(fps_text,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
-               sizeof(video_info.fps_text));
+               sizeof(fps_text));
 
       video_driver_window_title_update = true;
    }
@@ -22775,10 +22776,6 @@ static void video_driver_frame(const void *data, unsigned width,
             av_info->timing.sample_rate);
 
       /* TODO/FIXME - add OSD chat text here */
-#if 0
-      snprintf(video_info.chat_text, sizeof(video_info.chat_text),
-            "anon: does retroarch netplay have in-game chat?\nradius: I don't know \u2605");
-#endif
    }
 
    if (current_video && current_video->frame)
@@ -22797,11 +22794,12 @@ static void video_driver_frame(const void *data, unsigned width,
    {
 #if defined(HAVE_GFX_WIDGETS)
       if (widgets_active)
-         gfx_widgets_set_fps_text(video_info.fps_text);
+         gfx_widgets_set_fps_text(fps_text);
       else
 #endif
       {
-         runloop_msg_queue_push(video_info.fps_text, 2, 1, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         runloop_msg_queue_push(fps_text, 2, 1, true, NULL,
+               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       }
    }
 
@@ -22949,10 +22947,6 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->fullscreen            = settings->bools.video_fullscreen || retroarch_is_forced_fullscreen();
    video_info->menu_mouse_enable     = settings->bools.menu_mouse_enable;
    video_info->monitor_index         = settings->uints.video_monitor_index;
-   video_info->shared_context        = settings->bools.video_shared_context;
-
-   if (core_set_shared_context && hwr && hwr->context_type != RETRO_HW_CONTEXT_NONE)
-      video_info->shared_context     = true;
 
    video_info->font_enable           = settings->bools.video_font_enable;
    video_info->font_msg_pos_x        = settings->floats.video_msg_pos_x;
@@ -22966,8 +22960,6 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->custom_vp_height      = custom_vp->height;
    video_info->custom_vp_full_width  = custom_vp->full_width;
    video_info->custom_vp_full_height = custom_vp->full_height;
-
-   video_info->fps_text[0]           = '\0';
 
 #if defined(HAVE_GFX_WIDGETS)
    video_info->widgets_is_paused          = gfx_widgets_paused;
