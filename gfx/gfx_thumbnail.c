@@ -155,6 +155,18 @@ bool gfx_thumbnail_get_fade_missing(bool fade_missing)
 
 /* Callbacks */
 
+/* Fade animation callback - simply resets thumbnail
+ * 'fade_active' status */
+static void gfx_thumbnail_fade_cb(void *userdata)
+{
+   gfx_thumbnail_t *thumbnail = (gfx_thumbnail_t*)userdata;
+
+   if (!thumbnail)
+      return;
+
+   thumbnail->fade_active = false;
+}
+
 /* Initialises thumbnail 'fade in' animation */
 static void gfx_thumbnail_init_fade(gfx_thumbnail_t *thumbnail)
 {
@@ -175,15 +187,16 @@ static void gfx_thumbnail_init_fade(gfx_thumbnail_t *thumbnail)
       {
          gfx_animation_ctx_entry_t animation_entry;
 
-         thumbnail->alpha = 0.0f;
+         thumbnail->alpha                 = 0.0f;
+         thumbnail->fade_active           = true;
 
          animation_entry.easing_enum      = EASING_OUT_QUAD;
          animation_entry.tag              = (uintptr_t)&thumbnail->alpha;
          animation_entry.duration         = p_gfx_thumb->fade_duration;
          animation_entry.target_value     = 1.0f;
          animation_entry.subject          = &thumbnail->alpha;
-         animation_entry.cb               = NULL;
-         animation_entry.userdata         = NULL;
+         animation_entry.cb               = gfx_thumbnail_fade_cb;
+         animation_entry.userdata         = thumbnail;
 
          gfx_animation_push(&animation_entry);
       }
@@ -449,14 +462,14 @@ void gfx_thumbnail_reset(gfx_thumbnail_t *thumbnail)
    if (!thumbnail)
       return;
 
+   /* Unload texture */
    if (thumbnail->texture)
-   {
-      gfx_animation_ctx_tag tag = (uintptr_t)&thumbnail->alpha;
-
-      /* Unload texture */
       video_driver_texture_unload(&thumbnail->texture);
 
-      /* Ensure any 'fade in' animation is killed */
+   /* Ensure any 'fade in' animation is killed */
+   if (thumbnail->fade_active)
+   {
+      gfx_animation_ctx_tag tag = (uintptr_t)&thumbnail->alpha;
       gfx_animation_kill_by_tag(&tag);
    }
 
@@ -467,6 +480,7 @@ void gfx_thumbnail_reset(gfx_thumbnail_t *thumbnail)
    thumbnail->height      = 0;
    thumbnail->alpha       = 0.0f;
    thumbnail->delay_timer = 0.0f;
+   thumbnail->fade_active = false;
 }
 
 /* Stream processing */
