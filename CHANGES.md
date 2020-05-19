@@ -1,6 +1,7 @@
 # Future
 - CHEEVOS: Disable hardcore when cheats are enabled
 - CHD: Return false when special track cannot be found
+- INPUT MAPPING/REMAPPING: Restore broken 'reset to default' functionality with RetroPad 'start' button
 - WIIU: Gamepad hotplugging support
 - WIIU: Theoretical multi-gamepad support
 
