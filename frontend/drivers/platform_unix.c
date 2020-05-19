@@ -164,7 +164,7 @@ int system_property_get(const char *command,
 
    while (!feof(pipe))
    {
-      if (fgets(buffer, 128, pipe) != NULL)
+      if (fgets(buffer, 128, pipe))
       {
          int curlen = strlen(buffer);
 
@@ -306,11 +306,11 @@ static void* onSaveInstanceState(
    while (!android_app->stateSaved)
       scond_wait(android_app->cond, android_app->mutex);
 
-   if (android_app->savedState != NULL)
+   if (android_app->savedState)
    {
-      savedState = android_app->savedState;
-      *outLen    = android_app->savedStateSize;
-      android_app->savedState = NULL;
+      savedState                  = android_app->savedState;
+      *outLen                     = android_app->savedStateSize;
+      android_app->savedState     = NULL;
       android_app->savedStateSize = 0;
    }
 
@@ -451,9 +451,9 @@ static struct android_app* android_app_create(ANativeActivity* activity,
    android_app->mutex    = slock_new();
    android_app->cond     = scond_new();
 
-   if (savedState != NULL)
+   if (savedState)
    {
-      android_app->savedState = malloc(savedStateSize);
+      android_app->savedState     = malloc(savedStateSize);
       android_app->savedStateSize = savedStateSize;
       memcpy(android_app->savedState, savedState, savedStateSize);
    }
@@ -1783,10 +1783,10 @@ static void free_saved_state(struct android_app* android_app)
 {
     slock_lock(android_app->mutex);
 
-    if (android_app->savedState != NULL)
+    if (android_app->savedState)
     {
         free(android_app->savedState);
-        android_app->savedState = NULL;
+        android_app->savedState     = NULL;
         android_app->savedStateSize = 0;
     }
 
@@ -2414,7 +2414,7 @@ enum retro_language frontend_unix_get_user_language(void)
 #else
    char *envvar = getenv("LANG");
 
-   if (envvar != NULL)
+   if (envvar)
       lang = rarch_get_language_from_iso(envvar);
 #endif
 #endif

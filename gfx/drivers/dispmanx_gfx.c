@@ -457,7 +457,7 @@ static bool dispmanx_gfx_frame(void *data, const void *frame, unsigned width,
       _dispvars->core_pitch    = pitch;
       _dispvars->aspect_ratio  = aspect;
 
-      if (_dispvars->main_surface != NULL)
+      if (_dispvars->main_surface)
          dispmanx_surface_free(_dispvars, &_dispvars->main_surface);
 
       /* Internal resolution or ratio has changed, so we need

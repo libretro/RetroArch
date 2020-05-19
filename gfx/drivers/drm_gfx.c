@@ -770,7 +770,7 @@ static bool drm_gfx_frame(void *data, const void *frame, unsigned width,
       _drmvars->core_height = height;
       _drmvars->core_pitch  = pitch;
 
-      if (_drmvars->main_surface != NULL)
+      if (_drmvars->main_surface)
          drm_surface_free(_drmvars, &_drmvars->main_surface);
 
       /* We need to recreate the main surface and it's pages (buffers). */

@@ -247,7 +247,7 @@ static void exynos_clean_up_pages(struct exynos_page *p, unsigned cnt)
 
    for (i = 0; i < cnt; ++i)
    {
-      if (p[i].bo != NULL)
+      if (p[i].bo)
       {
          if (p[i].buf_id != 0)
             drmModeRmFB(p[i].buf_id, p[i].bo->handle);
@@ -1271,7 +1271,7 @@ static void exynos_gfx_free(void *data)
 
    free(pdata);
 
-   if (vid->font != NULL && vid->font_driver != NULL)
+   if (vid->font && vid->font_driver)
       vid->font_driver->free(vid->font);
 
    free(vid);

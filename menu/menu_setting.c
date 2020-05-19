@@ -950,7 +950,7 @@ int setting_set_with_string_representation(rarch_setting_t* setting,
       case ST_STRING:
       case ST_STRING_OPTIONS:
       case ST_ACTION:
-         if ( setting->value.target.string != NULL)
+         if (setting->value.target.string)
             strlcpy(setting->value.target.string, value, setting->size);
          break;
       case ST_BOOL:
