@@ -22546,7 +22546,11 @@ static void video_driver_frame(const void *data, unsigned width,
    /* Get the amount of frames per seconds. */
    if (video_driver_frame_count)
    {
-      size_t buf_pos       = 1; /* set this to 1 to avoid an offset issue */
+      settings_t *settings                         = configuration_settings;
+      unsigned fps_update_interval                 = 
+         settings->uints.fps_update_interval;
+      size_t buf_pos                               = 1;
+      /* set this to 1 to avoid an offset issue */
       unsigned write_index                         =
          video_driver_frame_time_count++ &
          (MEASURE_FRAME_TIME_SAMPLES_COUNT - 1);
@@ -22586,10 +22590,10 @@ static void video_driver_frame(const void *data, unsigned width,
          strlcat(video_info.fps_text, mem, sizeof(video_info.fps_text));
       }
 
-      if ((video_driver_frame_count % video_info.fps_update_interval) == 0)
+      if ((video_driver_frame_count % fps_update_interval) == 0)
       {
          last_fps = TIME_TO_FPS(curr_time, new_time,
-               video_info.fps_update_interval);
+               fps_update_interval);
 
          strlcpy(video_driver_window_title,
                video_driver_title_buf, sizeof(video_driver_window_title));
@@ -22622,10 +22626,6 @@ static void video_driver_frame(const void *data, unsigned width,
       video_driver_window_title_update = true;
    }
 
-   video_info.frame_rate  = last_fps;
-   video_info.frame_time  = frame_time / 1000.0f;
-   video_info.frame_count = (uint64_t) video_driver_frame_count;
-
    /* Slightly messy code,
     * but we really need to do processing before blocking on VSync
     * for best possible scheduling.
@@ -22639,7 +22639,7 @@ static void video_driver_frame(const void *data, unsigned width,
          ) && recording_data
            && recording_driver && recording_driver->push_video)
       recording_dump_frame(data, width, height,
-            pitch, video_info.runloop_is_idle);
+            pitch, runloop_idle);
 
    if (data && video_driver_state_filter)
    {
@@ -22660,7 +22660,7 @@ static void video_driver_frame(const void *data, unsigned width,
            && recording_driver && recording_driver->push_video)
          recording_dump_frame(video_driver_state_buffer,
                output_width, output_height, output_pitch,
-               video_info.runloop_is_idle);
+               runloop_idle);
 
       data   = video_driver_state_buffer;
       width  = output_width;
@@ -22754,10 +22754,10 @@ static void video_driver_frame(const void *data, unsigned width,
             " -Frame count: %" PRIu64"\n -Viewport: %d x %d x %3.2f\n"
             "Audio Statistics:\n -Average buffer saturation: %.2f %%\n -Standard deviation: %.2f %%\n -Time spent close to underrun: %.2f %%\n -Time spent close to blocking: %.2f %%\n -Sample count: %d\n"
             "Core Geometry:\n -Size: %u x %u\n -Max Size: %u x %u\n -Aspect: %3.2f\nCore Timing:\n -FPS: %3.2f\n -Sample Rate: %6.2f\n",
-            video_info.frame_rate,
-            video_info.frame_time,
+            last_fps,
+            frame_time / 1000.0f,
             100.0 * stddev,
-            video_info.frame_count,
+            video_driver_frame_count,
             video_info.width,
             video_info.height,
             video_info.refresh_rate,
@@ -22939,7 +22939,6 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->hard_sync_frames      = settings->uints.video_hard_sync_frames;
    video_info->fps_show              = settings->bools.video_fps_show;
    video_info->memory_show           = settings->bools.video_memory_show;
-   video_info->fps_update_interval   = settings->uints.fps_update_interval;
    video_info->statistics_show       = settings->bools.video_statistics_show;
    video_info->framecount_show       = settings->bools.video_framecount_show;
    video_info->scale_integer         = settings->bools.video_scale_integer;
@@ -23026,9 +23025,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->menu_wallpaper_opacity      = 0.0f;
 #endif
 
-   video_info->is_perfcnt_enable           = runloop_perfcnt_enable;
    video_info->runloop_is_paused           = runloop_paused;
-   video_info->runloop_is_idle             = runloop_idle;
    video_info->runloop_is_slowmotion       = runloop_slowmotion;
 
    video_info->input_driver_nonblock_state = input_driver_nonblock_state;

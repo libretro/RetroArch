@@ -1119,9 +1119,7 @@ typedef struct video_frame_info
    bool battery_level_enable;
    bool timedate_enable;
    bool runloop_is_slowmotion;
-   bool runloop_is_idle;
    bool runloop_is_paused;
-   bool is_perfcnt_enable;
    bool menu_is_alive;
    bool msg_bgcolor_enable;
 
@@ -1129,7 +1127,6 @@ typedef struct video_frame_info
    int custom_vp_y;
    int crt_switch_center_adjust;
 
-   unsigned fps_update_interval;
    unsigned hard_sync_frames;
    unsigned aspect_ratio_idx;
    unsigned max_swapchain_images;
@@ -1163,10 +1160,6 @@ typedef struct video_frame_info
    char fps_text[128];
    char stat_text[512];
    char chat_text[256];
-
-   uint64_t frame_count;
-   float frame_time;
-   float frame_rate;
 
    struct
    {
