@@ -549,7 +549,7 @@ static int menu_cbs_init_bind_start_compare_label(menu_file_list_cbs_t *cbs)
       }
    }
 
-   return 0;
+   return -1;
 }
 
 static int menu_cbs_init_bind_start_compare_type(menu_file_list_cbs_t *cbs,
