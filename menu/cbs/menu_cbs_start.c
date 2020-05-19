@@ -548,8 +548,10 @@ static int menu_cbs_init_bind_start_compare_label(menu_file_list_cbs_t *cbs)
             return -1;
       }
    }
+   else
+      return -1;
 
-   return -1;
+   return 0;
 }
 
 static int menu_cbs_init_bind_start_compare_type(menu_file_list_cbs_t *cbs,
@@ -587,11 +589,6 @@ static int menu_cbs_init_bind_start_compare_type(menu_file_list_cbs_t *cbs,
             (type < MENU_SETTINGS_CHEEVOS_START))
    {
       BIND_ACTION_START(cbs, action_start_core_setting);
-   }
-   /* TODO/FIXME - refactor this */
-   else if (type == MENU_LABEL_SCREEN_RESOLUTION)
-   {
-      BIND_ACTION_START(cbs, action_start_video_resolution);
    }
    else
    {
