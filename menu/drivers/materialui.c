@@ -8049,10 +8049,22 @@ static enum menu_action materialui_parse_menu_entry_action(
             materialui_auto_select_onscreen_entry(mui, MUI_ONSCREEN_ENTRY_FIRST);
          break;
       case MENU_ACTION_SCAN:
-         /* 'Scan' command is used to cycle current
-          * thumbnail view mode */
-         materialui_switch_list_view(mui);
-         new_action = MENU_ACTION_NOOP;
+         /* - If this is a playlist, 'scan' command is used
+          *   to cycle current thumbnail view
+          * - If this is not a playlist, perform default
+          *   'scan' action *if* current selection is
+          *   on screen */
+         {
+            size_t selection = menu_navigation_get_selection();
+
+            if (mui->is_playlist)
+            {
+               materialui_switch_list_view(mui);
+               new_action = MENU_ACTION_NOOP;
+            }
+            else if (!materialui_entry_onscreen(mui, selection))
+               new_action = MENU_ACTION_NOOP;
+         }
          break;
       case MENU_ACTION_START:
          /* - If this is a playlist, attempt to show

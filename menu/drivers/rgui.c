@@ -5403,10 +5403,13 @@ static enum menu_action rgui_parse_menu_entry_action(
    switch (action)
    {
       case MENU_ACTION_SCAN:
-         /* 'Scan' command is used to toggle
-          * fullscreen thumbnail view */
-         rgui_toggle_fs_thumbnail(rgui);
-         new_action = MENU_ACTION_NOOP;
+         /* If this is a playlist, 'scan' command is
+          * used to toggle fullscreen thumbnail view */
+         if (rgui->is_playlist)
+         {
+            rgui_toggle_fs_thumbnail(rgui);
+            new_action = MENU_ACTION_NOOP;
+         }
          break;
       default:
          /* In all other cases, pass through input
