@@ -26,14 +26,10 @@ void Discord_RegisterSteamGame(const char *a, const char *b);
 }
 #endif
 
-constexpr size_t MaxMessageSize{16 * 1024};
-constexpr size_t MessageQueueSize{8};
-constexpr size_t JoinQueueSize{8};
-
 struct QueuedMessage
 {
    size_t length;
-   char buffer[MaxMessageSize];
+   char buffer[16384];
 
    void Copy(const QueuedMessage& other)
    {
@@ -61,25 +57,32 @@ struct User
      * from future changes in these sizes */
 };
 
+static int Pid{0};
+static int Nonce{1};
+static int LastErrorCode{0};
+static int LastDisconnectErrorCode{0};
+
+static char JoinGameSecret[256];
+static char SpectateGameSecret[256];
+static char LastErrorMessage[256];
+static char LastDisconnectErrorMessage[256];
+
 static RpcConnection* Connection{nullptr};
+
 static DiscordEventHandlers QueuedHandlers{};
 static DiscordEventHandlers Handlers{};
+
 static std::atomic_bool WasJustConnected{false};
 static std::atomic_bool WasJustDisconnected{false};
 static std::atomic_bool GotErrorMessage{false};
 static std::atomic_bool WasJoinGame{false};
 static std::atomic_bool WasSpectateGame{false};
-static char JoinGameSecret[256];
-static char SpectateGameSecret[256];
-static int LastErrorCode{0};
-static char LastErrorMessage[256];
-static int LastDisconnectErrorCode{0};
-static char LastDisconnectErrorMessage[256];
+
 static std::mutex PresenceMutex;
 static std::mutex HandlerMutex;
 static QueuedMessage QueuedPresence{};
-static MsgQueue<QueuedMessage, MessageQueueSize> SendQueue;
-static MsgQueue<User, JoinQueueSize> JoinAskQueue;
+static MsgQueue<QueuedMessage, 8> SendQueue;
+static MsgQueue<User, 8> JoinAskQueue;
 static User connectedUser;
 
 /* We want to auto connect, and retry on failure, 
@@ -87,57 +90,57 @@ static User connectedUser;
  * backoff from 0.5 seconds to 1 minute */
 static Backoff ReconnectTimeMs(500, 60 * 1000);
 static auto NextConnect = std::chrono::system_clock::now();
-static int Pid{0};
-static int Nonce{1};
 
 #ifndef DISCORD_DISABLE_IO_THREAD
 static void Discord_UpdateConnection(void);
-class IoThreadHolder {
-private:
-    std::atomic_bool keepRunning{true};
-    std::mutex waitForIOMutex;
-    std::condition_variable waitForIOActivity;
-    std::thread ioThread;
+class IoThreadHolder
+{
+   private:
+      std::atomic_bool keepRunning{true};
+      std::mutex waitForIOMutex;
+      std::condition_variable waitForIOActivity;
+      std::thread ioThread;
 
-public:
-    void Start()
-    {
-        keepRunning.store(true);
-        ioThread = std::thread([&]() {
-            const std::chrono::duration<int64_t, std::milli> maxWait{500LL};
-            Discord_UpdateConnection();
-            while (keepRunning.load()) {
-                std::unique_lock<std::mutex> lock(waitForIOMutex);
-                waitForIOActivity.wait_for(lock, maxWait);
-                Discord_UpdateConnection();
-            }
-        });
-    }
+   public:
+      void Start()
+      {
+         keepRunning.store(true);
+         ioThread = std::thread([&]() {
+               const std::chrono::duration<int64_t, std::milli> maxWait{500LL};
+               Discord_UpdateConnection();
+               while (keepRunning.load()) {
+               std::unique_lock<std::mutex> lock(waitForIOMutex);
+               waitForIOActivity.wait_for(lock, maxWait);
+               Discord_UpdateConnection();
+               }
+               });
+      }
 
-    void Notify() { waitForIOActivity.notify_all(); }
+      void Notify() { waitForIOActivity.notify_all(); }
 
-    void Stop()
-    {
-        keepRunning.exchange(false);
-        Notify();
-        if (ioThread.joinable())
+      void Stop()
+      {
+         keepRunning.exchange(false);
+         Notify();
+         if (ioThread.joinable())
             ioThread.join();
-    }
+      }
 
-    ~IoThreadHolder() { Stop(); }
+      ~IoThreadHolder() { Stop(); }
 };
 #else
-class IoThreadHolder {
-public:
-    void Start() {}
-    void Stop() {}
-    void Notify() {}
+class IoThreadHolder
+{
+   public:
+      void Start() {}
+      void Stop() {}
+      void Notify() {}
 };
 #endif /* DISCORD_DISABLE_IO_THREAD */
 
 static IoThreadHolder* IoThread{nullptr};
 
-static void UpdateReconnectTime()
+static void UpdateReconnectTime(void)
 {
    NextConnect = std::chrono::system_clock::now() +
       std::chrono::duration<int64_t, std::milli>{ReconnectTimeMs.nextDelay()};
