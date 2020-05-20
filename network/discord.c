@@ -22,15 +22,14 @@
 #include <file/file_path.h>
 #include <features/features_cpu.h>
 
-#include "discord.h"
+#include <discord_rpc.h>
 
-#include "../deps/discord-rpc/include/discord_rpc.h"
+#include "discord.h"
 
 #include "../retroarch.h"
 #include "../core.h"
 #include "../core_info.h"
 #include "../paths.h"
-#include "../playlist.h"
 #include "../verbosity.h"
 
 #include "../msg_hash.h"
@@ -317,22 +316,26 @@ static void handle_discord_join_request(const DiscordUser* request)
 
 #ifdef HAVE_MENU
    discord_download_avatar(request->userId, request->avatar);
-   /* To-Do: needs in-game widgets
-      retroarch_menu_running();
-      */
+
+#if 0
+   /* TODO/FIXME: Needs in-game widgets */
+   retroarch_menu_running();
 
    memset(&line, 0, sizeof(line));
-   snprintf(buf, sizeof(buf), "%s %s?", msg_hash_to_str(MSG_DISCORD_CONNECTION_REQUEST), request->username);
+   snprintf(buf, sizeof(buf), "%s %s?",
+         msg_hash_to_str(MSG_DISCORD_CONNECTION_REQUEST), request->username);
    line.label         = buf;
    line.label_setting = "no_setting";
    line.cb            = handle_discord_join_response;
 
-   /* To-Do: needs in-game widgets
-      To-Do: bespoke dialog, should show while in-game and have a hotkey to accept
-      To-Do: show avatar of the user connecting
-      if (!menu_input_dialog_start(&line))
+   /* TODO/FIXME: needs in-game widgets
+    * TODO/FIXME: bespoke dialog, should show while in-game 
+    * and have a hotkey to accept
+    * TODO/FIXME: show avatar of the user connecting
+    */
+   if (!menu_input_dialog_start(&line))
       return;
-      */
+#endif
 #endif
 }
 
