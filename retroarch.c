@@ -14016,8 +14016,12 @@ static void retroarch_overlay_init(void)
    const char *path_overlay  = settings->paths.path_overlay;
    float overlay_opacity     = settings->floats.input_overlay_opacity;
    float overlay_scale       = settings->floats.input_overlay_scale;
-   bool overlay_hide_in_menu = settings->bools.input_overlay_hide_in_menu;
    bool load_enabled         = input_overlay_enable;
+#ifdef HAVE_MENU
+   bool overlay_hide_in_menu = settings->bools.input_overlay_hide_in_menu;
+#else
+   bool overlay_hide_in_menu = false;
+#endif
 #if defined(GEKKO)
    /* Avoid a crash at startup or even when toggling overlay in rgui */
    uint64_t memory_free      = frontend_driver_get_free_memory();
@@ -14027,10 +14031,12 @@ static void retroarch_overlay_init(void)
 
    retroarch_overlay_deinit();
 
+#ifdef HAVE_MENU
    /* Cancel load if 'hide_in_menu' is enabled and
     * menu is currently active */
    if (overlay_hide_in_menu)
       load_enabled = load_enabled && !menu_driver_alive;
+#endif
 
    if (load_enabled)
       task_push_overlay_load_default(input_overlay_loaded,
