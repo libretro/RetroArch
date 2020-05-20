@@ -2040,6 +2040,10 @@ static bool recording_deinit(void);
 #ifdef HAVE_OVERLAY
 static void retroarch_overlay_init(void);
 static void retroarch_overlay_deinit(void);
+static void input_overlay_set_alpha_mod(input_overlay_t *ol, float mod);
+static void input_overlay_set_scale_factor(input_overlay_t *ol, float scale);
+static void input_overlay_load_active(input_overlay_t *ol, float opacity);
+static void input_overlay_auto_rotate(input_overlay_t *ol);
 #endif
 
 #ifdef HAVE_AUDIOMIXER
@@ -2058,13 +2062,6 @@ static bool video_driver_find_driver(void);
 
 static int16_t input_state(unsigned port, unsigned device,
       unsigned idx, unsigned id);
-
-#ifdef HAVE_OVERLAY
-static void input_overlay_set_alpha_mod(input_overlay_t *ol, float mod);
-static void input_overlay_set_scale_factor(input_overlay_t *ol, float scale);
-static void input_overlay_load_active(input_overlay_t *ol, float opacity);
-static void input_overlay_auto_rotate(input_overlay_t *ol);
-#endif
 
 static void bsv_movie_deinit(void);
 static bool bsv_movie_init(void);
