@@ -1000,7 +1000,7 @@ bool netplay_pre_frame(netplay_t *netplay)
    if (settings->bools.netplay_public_announce)
    {
       reannounce++;
-      if ((netplay->is_server || is_mitm) && (reannounce % 600 == 0))
+      if ((netplay->is_server || is_mitm) && (reannounce % 300 == 0))
          netplay_announce();
    }
    /* Make sure that if announcement is turned on mid-game, it gets announced */
