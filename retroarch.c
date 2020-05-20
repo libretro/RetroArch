@@ -1335,6 +1335,14 @@ enum cmd_source_t
    CMD_NETWORK
 };
 
+enum poll_type_t
+{
+   POLL_TYPE_OVERRIDE_DONTCARE = 0,
+   POLL_TYPE_OVERRIDE_EARLY,
+   POLL_TYPE_OVERRIDE_NORMAL,
+   POLL_TYPE_OVERRIDE_LATE
+};
+
 typedef struct runloop_ctx_msg_info
 {
    const char *msg;
@@ -1580,6 +1588,8 @@ static enum rarch_core_type last_core_type;
 static enum overlay_visibility *visibility                      = NULL;
 #endif
 
+static enum poll_type_t core_poll_type_override                 = POLL_TYPE_OVERRIDE_DONTCARE;
+
 #ifdef HAVE_THREAD_STORAGE
 static sthread_tls_t rarch_tls;
 const void *MAGIC_POINTER                                       = (void*)(uintptr_t)0x0DEFACED;
@@ -1818,16 +1828,6 @@ static size_t audio_driver_data_ptr                             = 0;
 #ifdef HAVE_RUNAHEAD
 static size_t runahead_save_state_size                          = 0;
 #endif
-
-/*
- * Override poll type behavior, is set by the core.
- *
- * 0 - Don't Care
- * 1 - Early
- * 2 - Normal
- * 3 - Late
- */
-static unsigned core_poll_type_override                         = 0;
 
 static unsigned runloop_pending_windowed_scale                  = 0;
 static unsigned runloop_max_frames                              = 0;
@@ -11207,7 +11207,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
             const unsigned *poll_type_data = (const unsigned*)data;
 
             if (poll_type_data)
-               core_poll_type_override = *poll_type_data;
+               core_poll_type_override = (enum poll_type_t)*poll_type_data;
          }
          break;
 
@@ -11700,7 +11700,7 @@ static void secondary_core_destroy(void)
    /* unload game from core */
    if (secondary_core.retro_unload_game)
       secondary_core.retro_unload_game();
-   core_poll_type_override = 0;
+   core_poll_type_override = POLL_TYPE_OVERRIDE_DONTCARE;
 
    /* deinit */
    if (secondary_core.retro_deinit)
@@ -25045,7 +25045,7 @@ static void unload_hook(void)
    secondary_core_destroy();
    if (current_core.retro_unload_game)
       current_core.retro_unload_game();
-   core_poll_type_override = 0;
+   core_poll_type_override = POLL_TYPE_OVERRIDE_DONTCARE;
 }
 
 static void runahead_deinit_hook(void)
@@ -29313,7 +29313,7 @@ static int16_t core_input_state_poll_late(unsigned port,
 
 static retro_input_state_t core_input_state_poll_return_cb(void)
 {
-   unsigned new_poll_type = (core_poll_type_override > 0)
+   unsigned new_poll_type = (core_poll_type_override > POLL_TYPE_OVERRIDE_DONTCARE)
       ? (core_poll_type_override - 1)
       : current_core.poll_type;
    if (new_poll_type == POLL_TYPE_LATE)
@@ -29323,7 +29323,7 @@ static retro_input_state_t core_input_state_poll_return_cb(void)
 
 static void core_input_state_poll_maybe(void)
 {
-   unsigned new_poll_type = (core_poll_type_override > 0)
+   unsigned new_poll_type = (core_poll_type_override > POLL_TYPE_OVERRIDE_DONTCARE)
       ? (core_poll_type_override - 1)
       : current_core.poll_type;
    if (new_poll_type == POLL_TYPE_NORMAL)
@@ -29566,7 +29566,7 @@ static bool core_unload_game(void)
    if (current_core.game_loaded)
    {
       current_core.retro_unload_game();
-      core_poll_type_override  = 0;
+      core_poll_type_override  = POLL_TYPE_OVERRIDE_DONTCARE;
       current_core.game_loaded = false;
    }
 
@@ -29577,7 +29577,7 @@ static bool core_unload_game(void)
 
 bool core_run(void)
 {
-   unsigned new_poll_type = (core_poll_type_override != 0)
+   unsigned new_poll_type = (core_poll_type_override != POLL_TYPE_OVERRIDE_DONTCARE)
       ? (core_poll_type_override - 1)
       : current_core.poll_type;
    bool early_polling     = new_poll_type == POLL_TYPE_EARLY;
