@@ -22636,6 +22636,9 @@ static void video_driver_frame(const void *data, unsigned width,
    bool widgets_active   = gfx_widgets_active();
 #endif
 
+   fps_text[0]         = '\0';
+   video_driver_msg[0] = '\0';
+
    if (!video_driver_active)
       return;
 
@@ -22786,8 +22789,6 @@ static void video_driver_frame(const void *data, unsigned width,
       height = output_height;
       pitch  = output_pitch;
    }
-
-   video_driver_msg[0] = '\0';
 
    if (runloop_msg_queue_size > 0)
    {
