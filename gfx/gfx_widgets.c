@@ -1407,6 +1407,7 @@ static void gfx_widgets_draw_regular_msg(
    }
 }
 
+#ifdef HAVE_MENU
 static void gfx_widgets_draw_backdrop(
       void *userdata,
       unsigned video_width,
@@ -1425,7 +1426,6 @@ static void gfx_widgets_draw_load_content_animation(
       unsigned video_width,
       unsigned video_height)
 {
-#ifdef HAVE_MENU
    /* TODO: change metrics? */
    int icon_size         = (int)load_content_animation_icon_size;
    uint32_t text_alpha   = load_content_animation_fade_alpha * 255.0f;
@@ -1476,8 +1476,8 @@ static void gfx_widgets_draw_load_content_animation(
    gfx_widgets_draw_backdrop(userdata,
          video_width, video_height,
          load_content_animation_final_fade_alpha);
-#endif
 }
+#endif
 
 static void INLINE gfx_widgets_font_bind(gfx_widget_font_data_t *font_data)
 {
@@ -2287,6 +2287,7 @@ void gfx_widgets_ai_service_overlay_unload(void)
 }
 #endif
 
+#ifdef HAVE_MENU
 static void gfx_widgets_end_load_content_animation(void *userdata)
 {
 #if 0
@@ -2296,13 +2297,12 @@ static void gfx_widgets_end_load_content_animation(void *userdata)
 
 void gfx_widgets_cleanup_load_content_animation(void)
 {
-#ifdef HAVE_MENU
    load_content_animation_running = false;
    if (load_content_animation_content_name)
       free(load_content_animation_content_name);
    load_content_animation_content_name = NULL;
-#endif
 }
+#endif
 
 void gfx_widgets_start_load_content_animation(const char *content_name, bool remove_extension)
 {
