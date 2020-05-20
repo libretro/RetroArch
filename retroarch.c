@@ -1071,6 +1071,8 @@ static const camera_driver_t *camera_drivers[] = {
 #define DECLARE_BIND(x, bind, desc) { true, 0, #x, desc, bind }
 #define DECLARE_META_BIND(level, x, bind, desc) { true, level, #x, desc, bind }
 
+#define DEFAULT_NETWORK_CMD_PORT 55355
+#define STDIN_BUF_SIZE           4096
 
 /* Descriptive names for options without short variant.
  *
@@ -1118,6 +1120,12 @@ enum rarch_movie_type
    RARCH_MOVIE_RECORD
 };
 
+enum cmd_source_t
+{
+   CMD_NONE = 0,
+   CMD_STDIN,
+   CMD_NETWORK
+};
 
 typedef struct runloop_ctx_msg_info
 {
@@ -1178,6 +1186,160 @@ typedef struct
    enum gfx_ctx_api api;
    struct string_list *list;
 } gfx_api_gpu_map;
+
+struct remote_message
+{
+   int port;
+   int device;
+   int index;
+   int id;
+   uint16_t state;
+};
+
+struct input_remote
+{
+   bool state[RARCH_BIND_LIST_END];
+#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
+   int net_fd[MAX_USERS];
+#endif
+};
+
+typedef struct bsv_movie bsv_movie_t;
+
+typedef struct input_remote input_remote_t;
+
+typedef struct input_remote_state
+{
+   /* Left X, Left Y, Right X, Right Y */
+   int16_t analog[4][MAX_USERS];
+   /* This is a bitmask of (1 << key_bind_id). */
+   uint64_t buttons[MAX_USERS];
+} input_remote_state_t;
+
+typedef struct input_list_element_t
+{
+   unsigned port;
+   unsigned device;
+   unsigned index;
+   int16_t *state;
+   unsigned int state_size;
+} input_list_element;
+
+typedef void *(*constructor_t)(void);
+typedef void  (*destructor_t )(void*);
+
+typedef struct MyList_t
+{
+   void **data;
+   int capacity;
+   int size;
+   constructor_t constructor;
+   destructor_t destructor;
+} MyList;
+
+#ifdef HAVE_OVERLAY
+typedef struct input_overlay_state
+{
+   /* Left X, Left Y, Right X, Right Y */
+   int16_t analog[4];
+   uint32_t keys[RETROK_LAST / 32 + 1];
+   /* This is a bitmask of (1 << key_bind_id). */
+   input_bits_t buttons;
+} input_overlay_state_t;
+
+struct input_overlay
+{
+   enum overlay_status state;
+
+   bool enable;
+   bool blocked;
+   bool alive;
+
+   unsigned next_index;
+
+   size_t index;
+   size_t size;
+
+   struct overlay *overlays;
+   const struct overlay *active;
+   void *iface_data;
+   const video_overlay_interface_t *iface;
+
+   input_overlay_state_t overlay_state;
+};
+#endif
+
+struct cmd_map
+{
+   const char *str;
+   unsigned id;
+};
+
+#if defined(HAVE_COMMAND)
+struct cmd_action_map
+{
+   const char *str;
+   bool (*action)(const char *arg);
+   const char *arg_desc;
+};
+#endif
+
+struct command
+{
+   bool stdin_enable;
+   bool state[RARCH_BIND_LIST_END];
+#ifdef HAVE_STDIN_CMD
+   char stdin_buf[STDIN_BUF_SIZE];
+   size_t stdin_buf_ptr;
+#endif
+#ifdef HAVE_NETWORK_CMD
+   int net_fd;
+#endif
+};
+
+/* Input config. */
+struct input_bind_map
+{
+   bool valid;
+
+   /* Meta binds get input as prefix, not input_playerN".
+    * 0 = libretro related.
+    * 1 = Common hotkey.
+    * 2 = Uncommon/obscure hotkey.
+    */
+   uint8_t meta;
+
+   const char *base;
+   enum msg_hash_enums desc;
+   uint8_t retro_key;
+};
+
+typedef struct turbo_buttons turbo_buttons_t;
+
+/* Turbo support. */
+struct turbo_buttons
+{
+   bool frame_enable[MAX_USERS];
+   uint16_t enable[MAX_USERS];
+   bool mode1_enable[MAX_USERS];
+   int32_t turbo_pressed[MAX_USERS];
+   unsigned count;
+};
+
+struct input_keyboard_line
+{
+   char *buffer;
+   size_t ptr;
+   size_t size;
+
+   /** Line complete callback.
+    * Calls back after return is
+    * pressed with the completed line.
+    * Line can be NULL.
+    **/
+   input_keyboard_line_complete_t cb;
+   void *userdata;
+};
 
 
 static struct global              g_extern;
@@ -1410,8 +1572,6 @@ static void                    *current_display_server_data = NULL;
 static enum rotation initial_screen_orientation          = ORIENTATION_NORMAL;
 static enum rotation current_screen_orientation          = ORIENTATION_NORMAL;
 
-typedef struct bsv_movie bsv_movie_t;
-
 static bsv_movie_t     *bsv_movie_state_handle = NULL;
 static struct bsv_state bsv_movie_state;
 
@@ -1603,34 +1763,12 @@ static void *audio_driver_context_audio_data             = NULL;
 static bool audio_suspended                              = false;
 static bool audio_is_threaded                            = false;
 
-typedef struct input_list_element_t
-{
-   unsigned port;
-   unsigned device;
-   unsigned index;
-   int16_t *state;
-   unsigned int state_size;
-} input_list_element;
-
 #ifdef HAVE_RUNAHEAD
 static size_t runahead_save_state_size          = 0;
 
 static bool runahead_save_state_size_known      = false;
 static bool request_fast_savestate              = false;
 static bool hard_disable_audio                  = false;
-
-/* Save State List for Run Ahead */
-typedef void *(*constructor_t)(void);
-typedef void  (*destructor_t )(void*);
-
-typedef struct MyList_t
-{
-   void **data;
-   int capacity;
-   int size;
-   constructor_t constructor;
-   destructor_t destructor;
-} MyList;
 
 static MyList *runahead_save_state_list         = NULL;
 static MyList *input_state_list                 = NULL;
@@ -1662,32 +1800,15 @@ static bool has_set_netplay_stateless_mode      = false;
 static bool has_set_netplay_check_frames        = false;
 #endif
 
-struct remote_message
-{
-   int port;
-   int device;
-   int index;
-   int id;
-   uint16_t state;
-};
-
-struct input_remote
-{
-   bool state[RARCH_BIND_LIST_END];
-#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
-   int net_fd[MAX_USERS];
+#if defined(HAVE_COMMAND)
+static enum cmd_source_t lastcmd_source;
+#ifdef HAVE_NETWORK_CMD
+static int lastcmd_net_fd;
+static struct sockaddr_storage lastcmd_net_source;
+static socklen_t lastcmd_net_source_len;
 #endif
-};
+#endif
 
-typedef struct input_remote input_remote_t;
-
-typedef struct input_remote_state
-{
-   /* Left X, Left Y, Right X, Right Y */
-   int16_t analog[4][MAX_USERS];
-   /* This is a bitmask of (1 << key_bind_id). */
-   uint64_t buttons[MAX_USERS];
-} input_remote_state_t;
 
 #if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
 static input_remote_state_t remote_st_ptr;
@@ -1696,55 +1817,8 @@ static input_remote_state_t remote_st_ptr;
 #ifdef HAVE_OVERLAY
 static enum overlay_visibility* visibility = NULL;
 
-typedef struct input_overlay_state
-{
-   /* Left X, Left Y, Right X, Right Y */
-   int16_t analog[4];
-   uint32_t keys[RETROK_LAST / 32 + 1];
-   /* This is a bitmask of (1 << key_bind_id). */
-   input_bits_t buttons;
-} input_overlay_state_t;
-
-struct input_overlay
-{
-   enum overlay_status state;
-
-   bool enable;
-   bool blocked;
-   bool alive;
-
-   unsigned next_index;
-
-   size_t index;
-   size_t size;
-
-   struct overlay *overlays;
-   const struct overlay *active;
-   void *iface_data;
-   const video_overlay_interface_t *iface;
-
-   input_overlay_state_t overlay_state;
-};
-
 static input_overlay_t *overlay_ptr = NULL;
 #endif
-
-/* Input config. */
-struct input_bind_map
-{
-   bool valid;
-
-   /* Meta binds get input as prefix, not input_playerN".
-    * 0 = libretro related.
-    * 1 = Common hotkey.
-    * 2 = Uncommon/obscure hotkey.
-    */
-   uint8_t meta;
-
-   const char *base;
-   enum msg_hash_enums desc;
-   uint8_t retro_key;
-};
 
 static pad_connection_listener_t *pad_connection_listener = NULL;
 
@@ -1848,33 +1922,6 @@ const struct input_bind_map input_config_bind_map[RARCH_BIND_LIST_END_NULL] = {
       DECLARE_META_BIND(2, recording_toggle,      RARCH_RECORDING_TOGGLE,      MENU_ENUM_LABEL_VALUE_INPUT_META_RECORDING_TOGGLE),
       DECLARE_META_BIND(2, streaming_toggle,      RARCH_STREAMING_TOGGLE,      MENU_ENUM_LABEL_VALUE_INPUT_META_STREAMING_TOGGLE),
       DECLARE_META_BIND(2, ai_service,            RARCH_AI_SERVICE,            MENU_ENUM_LABEL_VALUE_INPUT_META_AI_SERVICE),
-};
-
-typedef struct turbo_buttons turbo_buttons_t;
-
-/* Turbo support. */
-struct turbo_buttons
-{
-   bool frame_enable[MAX_USERS];
-   uint16_t enable[MAX_USERS];
-   bool mode1_enable[MAX_USERS];
-   int32_t turbo_pressed[MAX_USERS];
-   unsigned count;
-};
-
-struct input_keyboard_line
-{
-   char *buffer;
-   size_t ptr;
-   size_t size;
-
-   /** Line complete callback.
-    * Calls back after return is
-    * pressed with the completed line.
-    * Line can be NULL.
-    **/
-   input_keyboard_line_complete_t cb;
-   void *userdata;
 };
 
 static bool input_driver_keyboard_linefeed_enable = false;
@@ -3746,52 +3793,7 @@ static void retroarch_autosave_deinit(void)
 
 /* COMMAND */
 
-#define DEFAULT_NETWORK_CMD_PORT 55355
-#define STDIN_BUF_SIZE           4096
-
-enum cmd_source_t
-{
-   CMD_NONE = 0,
-   CMD_STDIN,
-   CMD_NETWORK
-};
-
-struct cmd_map
-{
-   const char *str;
-   unsigned id;
-};
-
-#ifdef HAVE_COMMAND
-struct cmd_action_map
-{
-   const char *str;
-   bool (*action)(const char *arg);
-   const char *arg_desc;
-};
-#endif
-
-struct command
-{
-   bool stdin_enable;
-   bool state[RARCH_BIND_LIST_END];
-#ifdef HAVE_STDIN_CMD
-   char stdin_buf[STDIN_BUF_SIZE];
-   size_t stdin_buf_ptr;
-#endif
-#ifdef HAVE_NETWORK_CMD
-   int net_fd;
-#endif
-};
-
 #if defined(HAVE_COMMAND)
-static enum cmd_source_t lastcmd_source;
-#ifdef HAVE_NETWORK_CMD
-static int lastcmd_net_fd;
-static struct sockaddr_storage lastcmd_net_source;
-static socklen_t lastcmd_net_source_len;
-#endif
-
 #if (defined(HAVE_STDIN_CMD) || defined(HAVE_NETWORK_CMD))
 static void command_reply(const char * data, size_t len)
 {
