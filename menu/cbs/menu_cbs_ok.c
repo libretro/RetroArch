@@ -5448,6 +5448,7 @@ finish:
 
 }
 
+#ifndef RARCH_CONSOLE
 static void netplay_lan_scan_callback(retro_task_t *task,
       void *task_data,
       void *user_data, const char *error)
@@ -5503,6 +5504,7 @@ static void netplay_lan_scan_callback(retro_task_t *task,
       }
    }
 }
+#endif
 
 static int action_ok_push_netplay_refresh_rooms(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
