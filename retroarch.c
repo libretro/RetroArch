@@ -1973,6 +1973,8 @@ static char *secondary_library_path                = NULL;
 static int g_ai_service_auto = 0;
 #endif
 
+static unsigned gamepad_input_override = 0;
+
 /* Forward declarations */
 static void retroarch_core_options_intl_init(const struct 
       retro_core_options_intl *core_options_intl);
@@ -2038,6 +2040,15 @@ static bool recording_deinit(void);
 #ifdef HAVE_OVERLAY
 static void retroarch_overlay_init(void);
 static void retroarch_overlay_deinit(void);
+#endif
+
+#ifdef HAVE_AUDIOMIXER
+static void audio_mixer_play_stop_sequential_cb(
+      audio_mixer_sound_t *sound, unsigned reason);
+static void audio_mixer_play_stop_cb(
+      audio_mixer_sound_t *sound, unsigned reason);
+static void audio_mixer_menu_stop_cb(
+      audio_mixer_sound_t *sound, unsigned reason);
 #endif
 
 static void video_driver_gpu_record_deinit(void);
@@ -19046,15 +19057,6 @@ size_t midi_driver_get_event_size(uint8_t status)
 
 /* AUDIO */
 
-#ifdef HAVE_AUDIOMIXER
-static void audio_mixer_play_stop_sequential_cb(
-      audio_mixer_sound_t *sound, unsigned reason);
-static void audio_mixer_play_stop_cb(
-      audio_mixer_sound_t *sound, unsigned reason);
-static void audio_mixer_menu_stop_cb(
-      audio_mixer_sound_t *sound, unsigned reason);
-#endif
-
 static enum resampler_quality audio_driver_get_resampler_quality(void)
 {
    settings_t *settings    = configuration_settings;
@@ -24596,7 +24598,6 @@ static void mylist_destroy(MyList **list_p)
    }
 }
 
-
 static void mylist_create(MyList **list_p, int initial_capacity,
       constructor_t constructor, destructor_t destructor)
 {
@@ -29675,9 +29676,6 @@ static bool accessibility_startup_message(void)
          10);
    return true;
 }
-
-
-static unsigned gamepad_input_override = 0;
 
 unsigned get_gamepad_input_override(void)
 {
