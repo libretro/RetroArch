@@ -26149,15 +26149,12 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
       dir_set(RARCH_DIR_SAVESTATE, global->name.savestate);
 }
 
-static bool retroarch_validate_game_options(char *s, size_t len, bool mkdir)
+static bool retroarch_validate_per_core_options(char *s,
+      size_t len, bool mkdir,
+      const char *core_name, const char *game_name)
 {
    char *config_directory                 = NULL;
    size_t str_size                        = PATH_MAX_LENGTH * sizeof(char);
-   const char *core_name                  = runloop_system.info.library_name;
-   const char *game_name                  = path_basename(path_get(RARCH_PATH_BASENAME));
-
-   if (string_is_empty(core_name) || string_is_empty(game_name))
-      return false;
 
    config_directory                       = (char*)malloc(str_size);
    config_directory[0]                    = '\0';
@@ -26165,7 +26162,6 @@ static bool retroarch_validate_game_options(char *s, size_t len, bool mkdir)
    fill_pathname_application_special(config_directory,
          str_size, APPLICATION_SPECIAL_DIRECTORY_CONFIG);
 
-   /* Concatenate strings into full paths for game_path */
    fill_pathname_join_special_ext(s,
          config_directory, core_name, game_name,
          ".opt", len);
@@ -26173,59 +26169,32 @@ static bool retroarch_validate_game_options(char *s, size_t len, bool mkdir)
    /* No need to make a directory if file already exists... */
    if (mkdir && !path_is_valid(s))
    {
-      char *core_path  = (char*)malloc(str_size);
-      core_path[0]     = '\0';
+      char *new_path          = (char*)malloc(str_size);
+      new_path[0]             = '\0';
 
-      fill_pathname_join(core_path,
+      fill_pathname_join(new_path,
             config_directory, core_name, str_size);
 
-      if (!path_is_directory(core_path))
-         path_mkdir(core_path);
+      if (!path_is_directory(new_path))
+         path_mkdir(new_path);
 
-      free(core_path);
+      free(new_path);
    }
 
    free(config_directory);
    return true;
 }
 
-static bool retroarch_validate_per_core_options(char *s, size_t len, bool mkdir)
+static bool retroarch_validate_game_options(char *s, size_t len, bool mkdir)
 {
-   char *config_directory                 = NULL;
-   size_t str_size                        = PATH_MAX_LENGTH * sizeof(char);
    const char *core_name                  = runloop_system.info.library_name;
+   const char *game_name                  = path_basename(path_get(RARCH_PATH_BASENAME));
 
-   if (string_is_empty(core_name))
+   if (string_is_empty(core_name) || string_is_empty(game_name))
       return false;
 
-   config_directory                       = (char*)malloc(str_size);
-   config_directory[0]                    = '\0';
-
-   fill_pathname_application_special(config_directory,
-         str_size, APPLICATION_SPECIAL_DIRECTORY_CONFIG);
-
-   /* Concatenate strings into full paths for core options path */
-   fill_pathname_join_special_ext(s,
-         config_directory, core_name, core_name,
-         ".opt", len);
-
-   /* No need to make a directory if file already exists... */
-   if (mkdir && !path_is_valid(s))
-   {
-      char *core_options_dir  = (char*)malloc(str_size);
-      core_options_dir[0]     = '\0';
-
-      fill_pathname_join(core_options_dir,
-            config_directory, core_name, str_size);
-
-      if (!path_is_directory(core_options_dir))
-         path_mkdir(core_options_dir);
-
-      free(core_options_dir);
-   }
-
-   free(config_directory);
-   return true;
+   return retroarch_validate_per_core_options(s, len, mkdir,
+   core_name, game_name);
 }
 
 /* Validates CPU features for given processor architecture.
@@ -26799,12 +26768,19 @@ static void rarch_init_core_options_path(
 
       if (per_core_options)
       {
+         const char *core_name      = runloop_system.info.library_name;
          /* Get core-specific options path
           * > if retroarch_validate_per_core_options() returns
           *   false, then per-core options are disabled (due to
           *   unknown system errors...) */
-         per_core_options = retroarch_validate_per_core_options(
-               per_core_options_path, sizeof(per_core_options_path), true);
+
+         if (string_is_empty(core_name))
+            per_core_options = false;
+         else
+            per_core_options = retroarch_validate_per_core_options(
+                  per_core_options_path, sizeof(per_core_options_path), true,
+                  core_name, core_name
+                  );
 
          /* If we can use per-core options, check whether an options
           * file already exists */
