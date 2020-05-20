@@ -645,8 +645,8 @@ void d3d9_make_d3dpp(void *data,
 #ifdef _XBOX
    /* TODO/FIXME - get rid of global state dependencies. */
    global_t *global               = global_get_ptr();
-   bool gamma_enable              = global ?
-      global->console.screen.gamma_correction : false;
+   int gamma_enable               = global ?
+      global->console.screen.gamma_correction : 0;
 #endif
    bool windowed_enable           = d3d9_is_windowed_enable(info->fullscreen);
 
