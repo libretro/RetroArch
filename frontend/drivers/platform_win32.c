@@ -956,8 +956,6 @@ static bool accessibility_speak_windows(int speed,
    bool res               = false;
    const char* speeds[10] = {"-10", "-7.5", "-5", "-2.5", "0", "2", "4", "6", "8", "10"};
 
-   HRESULT hr;
-
    if (speed < 1)
       speed = 1;
    else if (speed > 10)
@@ -973,7 +971,7 @@ static bool accessibility_speak_windows(int speed,
    {
       if (strlen(language) > 0) 
          snprintf(cmd, sizeof(cmd),
-                  "powershell.exe -NoProfile -WindowStyle Hidden -Command \"Add-Type -AssemblyName System.Speech; $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer; $synth.SelectVoice(\\\"%s\\\"); $synth.Rate = %s; $synth.Speak(\\\"%s\\\");\"", language, speeds[speed-1], (char*) speak_text); 
+               "powershell.exe -NoProfile -WindowStyle Hidden -Command \"Add-Type -AssemblyName System.Speech; $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer; $synth.SelectVoice(\\\"%s\\\"); $synth.Rate = %s; $synth.Speak(\\\"%s\\\");\"", language, speeds[speed-1], (char*) speak_text); 
       else
          snprintf(cmd, sizeof(cmd),
                "powershell.exe -NoProfile -WindowStyle Hidden -Command \"Add-Type -AssemblyName System.Speech; $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer; $synth.Rate = %s; $synth.Speak(\\\"%s\\\");\"", speeds[speed-1], (char*) speak_text); 
@@ -986,7 +984,6 @@ static bool accessibility_speak_windows(int speed,
          return true;
       }
       pi_set = true;
-      return true;
    }
 #ifdef HAVE_NVDA
    else if (USE_NVDA)
@@ -1002,23 +999,19 @@ static bool accessibility_speak_windows(int speed,
          RARCH_LOG("Error communicating with NVDA\n");
          return false;
       }
-      else
-      {
-         nvdaController_cancelSpeech();
-      }
+
+      nvdaController_cancelSpeech();
 
       if (USE_NVDA_BRAILLE)
          nvdaController_brailleMessage(wc);
       else
-      {
          nvdaController_speakText(wc);
-      }
-      return true;
    }
 #endif
 #ifdef HAVE_SAPI
    else
    {
+      HRESULT hr;
       /* stop the old voice if running */
       if (pVoice)
       {
@@ -1038,14 +1031,14 @@ static bool accessibility_speak_windows(int speed,
       {
          wchar_t wtext[1200];
          snprintf(cmd, sizeof(cmd),
-                  "<rate speed=\"%s\"/><volume level=\"80\"/><lang langid=\"%s\"/>%s", speeds[speed], langid, speak_text);
+               "<rate speed=\"%s\"/><volume level=\"80\"/><lang langid=\"%s\"/>%s", speeds[speed], langid, speak_text);
          mbstowcs(wtext, speak_text, sizeof(wtext));
- 
+
          hr = ISpVoice_Speak(pVoice, wtext, SPF_ASYNC /*SVSFlagsAsync*/, NULL);
       }
-      return true;
    }
 #endif
+
    return true;
 }
 #endif
