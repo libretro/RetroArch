@@ -1679,7 +1679,7 @@ static void frontend_unix_get_env(int *argc,
    /* For gamepad-like/console devices:
     *
     * - Explicitly disable input overlay by default
-    * - Use XMB menu driver by default
+    * - Use Ozone menu driver by default
     *
     * */
 
@@ -1687,7 +1687,7 @@ static void frontend_unix_get_env(int *argc,
    {
       g_defaults.overlay.set    = true;
       g_defaults.overlay.enable = false;
-      strlcpy(g_defaults.settings.menu, "xmb",
+      strlcpy(g_defaults.settings.menu, "ozone",
             sizeof(g_defaults.settings.menu));
    }
 #else
