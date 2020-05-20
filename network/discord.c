@@ -23,7 +23,6 @@
 #include <features/features_cpu.h>
 
 #include "discord.h"
-#include "discord_register.h"
 
 #include "../deps/discord-rpc/include/discord_rpc.h"
 
@@ -89,6 +88,18 @@ typedef struct discord_state discord_state_t;
 static discord_state_t discord_st;
 
 #define CDN_URL "https://cdn.discordapp.com/avatars"
+
+/* Forward declarations */
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+void Discord_Register(const char *a, const char *b);
+void Discord_RegisterSteamGame(const char *a, const char *b);
+
+#ifdef __cplusplus
+}
+#endif
 
 static discord_state_t *discord_get_ptr(void)
 {

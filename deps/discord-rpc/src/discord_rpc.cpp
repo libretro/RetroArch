@@ -1,7 +1,6 @@
 #include "discord_rpc.h"
 
 #include "backoff.h"
-#include "discord_register.h"
 #include "msg_queue.h"
 #include "rpc_connection.h"
 #include "serialization.h"
@@ -13,6 +12,18 @@
 #ifndef DISCORD_DISABLE_IO_THREAD
 #include <condition_variable>
 #include <thread>
+#endif
+
+/* Forward declarations */
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+void Discord_Register(const char *a, const char *b);
+void Discord_RegisterSteamGame(const char *a, const char *b);
+
+#ifdef __cplusplus
+}
 #endif
 
 constexpr size_t MaxMessageSize{16 * 1024};
