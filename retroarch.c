@@ -1853,7 +1853,9 @@ static unsigned osk_last_codepoint                              = 0;
 static unsigned osk_last_codepoint_len                          = 0;
 static unsigned input_driver_flushing_input                     = 0;
 static unsigned input_driver_max_users                          = 0;
+#ifdef HAVE_ACCESSIBILITY
 static unsigned gamepad_input_override                          = 0;
+#endif
 
 #ifdef HAVE_MENU
 static unsigned char menu_keyboard_key_state[RETROK_LAST]       = {0};
@@ -2308,7 +2310,9 @@ static void retroarch_deinit_core_options(void);
 static void retroarch_init_core_variables(const struct retro_variable *vars);
 static void rarch_init_core_options(
       const struct retro_core_option_definition *option_defs);
+#if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
 static bool secondary_core_create(void);
+#endif
 static int16_t input_state_get_last(unsigned port,
       unsigned device, unsigned index, unsigned id);
 static int16_t input_state(unsigned port, unsigned device,
@@ -7494,14 +7498,12 @@ bool command_event(enum event_command cmd, void *data)
          }
          break;
       case CMD_EVENT_AUTOSAVE_INIT:
+#ifdef HAVE_THREADS
+         retroarch_autosave_deinit();
          {
 #ifdef HAVE_NETWORKING
-            unsigned autosave_interval = configuration_settings->uints.autosave_interval;
-#endif
-
-#ifdef HAVE_THREADS
-            retroarch_autosave_deinit();
-#ifdef HAVE_NETWORKING
+            unsigned autosave_interval = 
+               configuration_settings->uints.autosave_interval;
             /* Only enable state manager if netplay is not underway
                TODO/FIXME: Add a setting for these tweaks */
             if (      (autosave_interval != 0)
@@ -7662,7 +7664,9 @@ bool command_event(enum event_command cmd, void *data)
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
             const char *path_content_video_history = settings->paths.path_content_video_history;
 #endif
+#ifdef HAVE_IMAGEVIEWER
             const char *path_content_image_history = settings->paths.path_content_image_history;
+#endif
 
             command_event(CMD_EVENT_HISTORY_DEINIT, NULL);
 
@@ -23039,8 +23043,6 @@ bool video_driver_texture_unload(uintptr_t *id)
 void video_driver_build_info(video_frame_info_t *video_info)
 {
    video_viewport_t *custom_vp       = NULL;
-   struct retro_hw_render_callback *hwr =
-      video_driver_get_hw_context_internal();
    settings_t *settings              = configuration_settings;
 #ifdef HAVE_THREADS
    bool is_threaded                  = video_driver_is_threaded_internal();
