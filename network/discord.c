@@ -283,9 +283,9 @@ static void handle_discord_spectate(const char* secret)
 }
 
 #ifdef HAVE_MENU
+#if 0
 static void handle_discord_join_response(void *ignore, const char *line)
 {
-#if 0
    /* TODO/FIXME: needs in-game widgets */
    if (strstr(line, "yes"))
       Discord_Respond(user_id, DISCORD_REPLY_YES);
@@ -294,8 +294,8 @@ static void handle_discord_join_response(void *ignore, const char *line)
    menu_input_dialog_end();
    retroarch_menu_running_finished(false);
 #endif
-#endif
 }
+#endif
 #endif
 
 static void handle_discord_join_request(const DiscordUser* request)

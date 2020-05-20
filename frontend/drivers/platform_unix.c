@@ -2432,8 +2432,8 @@ static bool accessibility_speak_unix(int speed,
 {
    int pid;
    const char *language   = get_user_language_iso639_1(true);
-   char* voice_out        = (char *)malloc(3+strlen(language));
-   char* speed_out        = (char *)malloc(3+3);
+   char* voice_out        = (char*)malloc(3+strlen(language));
+   char* speed_out        = (char*)malloc(3+3);
    const char* speeds[10] = {"80", "100", "125", "150", "170", "210", "260", "310", "380", "450"};
 
    if (speed < 1)
@@ -2482,7 +2482,7 @@ static bool accessibility_speak_unix(int speed,
       char* cmd[] = { (char*) "espeak", NULL, NULL, NULL, NULL};
       cmd[1] = voice_out;
       cmd[2] = speed_out;
-      cmd[3] = (char *) speak_text;
+      cmd[3] = (char*)speak_text;
       execvp("espeak", cmd);
    }
    return true;
