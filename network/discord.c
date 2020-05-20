@@ -38,9 +38,9 @@
 #include "../tasks/task_file_transfer.h"
 
 #ifdef HAVE_NETWORKING
-#include "../../network/netplay/netplay.h"
-#include "../../network/netplay/netplay_discovery.h"
-#include "../../tasks/tasks_internal.h"
+#include "netplay/netplay.h"
+#include "netplay/netplay_discovery.h"
+#include "../tasks/tasks_internal.h"
 #endif
 
 #ifdef HAVE_CHEEVOS
@@ -48,10 +48,10 @@
 #endif
 
 #ifdef HAVE_MENU
-#include "../../menu/menu_cbs.h"
+#include "../menu/menu_cbs.h"
 #endif
 
-#include "../network/net_http_special.h"
+#include "net_http_special.h"
 #include "../tasks/tasks_internal.h"
 #include "../file_path_special.h"
 

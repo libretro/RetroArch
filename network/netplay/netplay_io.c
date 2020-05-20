@@ -29,10 +29,12 @@
 #include "../../command.h"
 #include "../../tasks/tasks_internal.h"
 
-#include "../../discord/discord.h"
+#ifdef HAVE_DISCORD
+#include "../discord.h"
 
 /* TODO/FIXME - global */
 extern bool discord_is_inited;
+#endif
 
 static void handle_play_spectate(netplay_t *netplay, uint32_t client_num,
       struct netplay_connection *connection, uint32_t cmd, uint32_t cmd_size,

@@ -108,8 +108,9 @@
 #include "../paths.h"
 #include "../verbosity.h"
 
-#include "../discord/discord.h"
+#include "../network/discord.h"
 
+/* TODO/FIXME - get rid of this public global */
 extern bool discord_is_inited;
 
 #define MAX_ARGS 32

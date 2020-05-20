@@ -167,7 +167,7 @@
 #endif
 
 #ifdef HAVE_DISCORD
-#include "discord/discord.h"
+#include "network/discord.h"
 #endif
 
 #ifdef HAVE_NETWORKING

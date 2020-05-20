@@ -47,7 +47,7 @@
 #endif
 
 #ifdef HAVE_DISCORD
-#include "../discord/discord.h"
+#include "../network/discord.h"
 #endif
 
 #include "badges.h"

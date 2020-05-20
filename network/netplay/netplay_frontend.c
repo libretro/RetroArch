@@ -27,7 +27,7 @@
 #include <net/net_http.h>
 
 #ifdef HAVE_DISCORD
-#include <discord/discord.h>
+#include "../discord.h"
 #endif
 
 #include <file/file_path.h>
