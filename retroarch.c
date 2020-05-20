@@ -3335,14 +3335,12 @@ enum rarch_content_type path_is_media_type(const char *path)
    string_to_lower(ext_lower);
 
    /* hack, to detect livestreams so the ffmpeg core can be started */
-   if (
-      strstr(path, "udp://")  ||
-      strstr(path, "http://") ||
-      strstr(path, "https://")||
-      strstr(path, "tcp://")  ||
-      strstr(path, "rtmp://") ||
-      strstr(path, "rtp://")
-   )
+   if (string_starts_with(path, "udp://") ||
+       string_starts_with(path, "http://") ||
+       string_starts_with(path, "https://") ||
+       string_starts_with(path, "tcp://") ||
+       string_starts_with(path, "rtmp://") ||
+       string_starts_with(path, "rtp://"))
       return RARCH_CONTENT_MOVIE;
 
    switch (msg_hash_to_file_type(msg_hash_calculate(ext_lower)))
