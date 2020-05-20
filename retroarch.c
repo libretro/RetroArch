@@ -1335,7 +1335,7 @@ enum cmd_source_t
    CMD_NETWORK
 };
 
-enum poll_type_t
+enum poll_type_override_t
 {
    POLL_TYPE_OVERRIDE_DONTCARE = 0,
    POLL_TYPE_OVERRIDE_EARLY,
@@ -1588,7 +1588,8 @@ static enum rarch_core_type last_core_type;
 static enum overlay_visibility *visibility                      = NULL;
 #endif
 
-static enum poll_type_t core_poll_type_override                 = POLL_TYPE_OVERRIDE_DONTCARE;
+/* Override poll type behavior, is set by the core */
+static enum poll_type_override_t core_poll_type_override        = POLL_TYPE_OVERRIDE_DONTCARE;
 
 #ifdef HAVE_THREAD_STORAGE
 static sthread_tls_t rarch_tls;
@@ -11207,7 +11208,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
             const unsigned *poll_type_data = (const unsigned*)data;
 
             if (poll_type_data)
-               core_poll_type_override = (enum poll_type_t)*poll_type_data;
+               core_poll_type_override = (enum poll_type_override_t)*poll_type_data;
          }
          break;
 
