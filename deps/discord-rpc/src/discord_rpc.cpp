@@ -14,8 +14,6 @@
 #include <thread>
 #endif
 
-#include <string/stdstring.h>
-
 /* Forward declarations */
 #ifdef __cplusplus
 extern "C" {
@@ -184,7 +182,7 @@ static void Discord_UpdateConnection(void)
                 /* in responses only -- 
                  * should use to match up response when needed. */
 
-                if (evtName && string_is_equal(evtName, "ERROR"))
+                if (evtName && !strcmp(evtName, "ERROR"))
                 {
                     JsonValue *data = GetObjMember(&message, "data");
                     LastErrorCode   = GetIntMember(data, "code");
@@ -200,7 +198,7 @@ static void Discord_UpdateConnection(void)
 
                 JsonValue *data = GetObjMember(&message, "data");
 
-                if (string_is_equal(evtName, "ACTIVITY_JOIN"))
+                if (!strcmp(evtName, "ACTIVITY_JOIN"))
                 {
                     const char *secret = GetStrMember(data, "secret");
                     if (secret)
@@ -209,7 +207,7 @@ static void Discord_UpdateConnection(void)
                         WasJoinGame.store(true);
                     }
                 }
-                else if (string_is_equal(evtName, "ACTIVITY_SPECTATE"))
+                else if (!strcmp(evtName, "ACTIVITY_SPECTATE"))
                 {
                    const char *secret = GetStrMember(data, "secret");
                    if (secret)
@@ -218,7 +216,7 @@ static void Discord_UpdateConnection(void)
                       WasSpectateGame.store(true);
                    }
                 }
-                else if (string_is_equal(evtName, "ACTIVITY_JOIN_REQUEST"))
+                else if (!strcmp(evtName, "ACTIVITY_JOIN_REQUEST"))
                 {
                    JsonValue *user      = GetObjMember(data, "user");
                    const char *userId   = GetStrMember(user, "id");
