@@ -1609,6 +1609,7 @@ static retro_usec_t runloop_frame_time_last                     = 0;
 
 static bool has_set_core                                        = false;
 #ifdef HAVE_DISCORD
+/* TODO/FIXME - static public global variable */
 bool discord_is_inited                                          = false;
 #endif
 static bool has_set_username                                    = false;
