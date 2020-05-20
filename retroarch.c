@@ -1969,6 +1969,10 @@ static char *secondary_library_path                = NULL;
 #endif
 #endif
 
+#ifdef HAVE_TRANSLATE
+static int g_ai_service_auto = 0;
+#endif
+
 /* Forward declarations */
 static void retroarch_core_options_intl_init(const struct 
       retro_core_options_intl *core_options_intl);
@@ -4085,7 +4089,6 @@ static bool command_set_shader(const char *arg)
 }
 
 #if defined(HAVE_COMMAND)
-
 #if defined(HAVE_CHEEVOS)
 #define SMY_CMD_STR "READ_CORE_RAM"
 static bool command_read_ram(const char *arg)
@@ -4467,41 +4470,37 @@ error:
 
 /* TRANSLATION */
 #ifdef HAVE_TRANSLATE
-static int g_ai_service_auto = 0;
-
-int get_ai_service_auto(void)
+static int get_ai_service_auto(void)
 {
    return g_ai_service_auto;
 }
 
-bool set_ai_service_auto(int num)
+static bool set_ai_service_auto(int num)
 {
    g_ai_service_auto = num;
    return true;
 }
 
-bool task_auto_translate_callback()
+static bool task_auto_translate_callback(void)
 {
    bool was_paused                   = runloop_paused;
    command_event(CMD_EVENT_AI_SERVICE_CALL, &was_paused);
    return true;
 }
 
-
-/* Doesn't currently work.  Fix this. */
-bool is_ai_service_speech_running(void)
+/* TODO/FIXME - Doesn't currently work.  Fix this. */
+static bool is_ai_service_speech_running(void)
 {
 #ifdef HAVE_AUDIOMIXER
    enum audio_mixer_state res = audio_driver_mixer_get_stream_state(10);
-   if (res == AUDIO_STREAM_STATE_NONE || res == AUDIO_STREAM_STATE_STOPPED)
-      return false;
-   return true;
-#else
-   return false;
+   bool ret = (res == AUDIO_STREAM_STATE_NONE) || (res == AUDIO_STREAM_STATE_STOPPED);
+   if (!ret)
+      return true;
 #endif
+   return false;
 }
 
-bool ai_service_speech_stop(void)
+static bool ai_service_speech_stop(void)
 {
 #ifdef HAVE_AUDIOMIXER
    audio_driver_mixer_stop_stream(10);
@@ -4509,7 +4508,6 @@ bool ai_service_speech_stop(void)
 #endif
    return false;
 }
-
 
 static void task_auto_translate_handler(retro_task_t *task)
 {
@@ -4545,10 +4543,10 @@ task_finished:
        free(task->user_data);
 }
 
-bool call_auto_translate_task(bool* was_paused)
+static bool call_auto_translate_task(bool* was_paused)
 {
-   settings_t *settings                  = configuration_settings;
-   int ai_service_mode                   = settings->uints.ai_service_mode;
+   settings_t *settings = configuration_settings;
+   int ai_service_mode  = settings->uints.ai_service_mode;
 
    /*Image Mode*/
    if (ai_service_mode == 0)
@@ -4575,8 +4573,6 @@ bool call_auto_translate_task(bool* was_paused)
    }
    return true;
 }
-
-
 
 static void handle_translation_cb(
       retro_task_t *task, void *task_data, void *user_data, const char *error)
@@ -5095,10 +5091,8 @@ finish:
 
    if (string_is_equal(auto_string, "auto"))
    {
-      if (get_ai_service_auto() != 0 && settings->bools.ai_service_pause == false)
-      { 
+      if (get_ai_service_auto() != 0 && !settings->bools.ai_service_pause)
          call_auto_translate_task(&was_paused);
-      }
    }
    if (auto_string)
       free(auto_string);
@@ -8274,7 +8268,7 @@ bool command_event(enum event_command cmd, void *data)
             if (data!=NULL)
                paused = *((bool*)data);
 
-            if (get_ai_service_auto() == 0 && settings->bools.ai_service_pause == false)
+            if (get_ai_service_auto() == 0 && !settings->bools.ai_service_pause)
                set_ai_service_auto(1);
             if (get_ai_service_auto() != 2)
                RARCH_LOG("AI Service Called...\n");
