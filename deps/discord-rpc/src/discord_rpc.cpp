@@ -14,6 +14,8 @@
 #include <thread>
 #endif
 
+#include <string/stdstring.h>
+
 /* Forward declarations */
 #ifdef __cplusplus
 extern "C" {
@@ -174,18 +176,18 @@ static void Discord_UpdateConnection(void)
             if (!Connection->Read(message))
                 break;
 
-            const char* evtName = GetStrMember(&message, "evt");
-            const char* nonce = GetStrMember(&message, "nonce");
+            const char *evtName = GetStrMember(&message, "evt");
+            const char *nonce   = GetStrMember(&message, "nonce");
 
             if (nonce)
             {
                 /* in responses only -- 
                  * should use to match up response when needed. */
 
-                if (evtName && strcmp(evtName, "ERROR") == 0)
+                if (evtName && string_is_equal(evtName, "ERROR"))
                 {
-                    auto data = GetObjMember(&message, "data");
-                    LastErrorCode = GetIntMember(data, "code");
+                    JsonValue *data = GetObjMember(&message, "data");
+                    LastErrorCode   = GetIntMember(data, "code");
                     StringCopy(LastErrorMessage, GetStrMember(data, "message", ""));
                     GotErrorMessage.store(true);
                 }
@@ -196,39 +198,40 @@ static void Discord_UpdateConnection(void)
                 if (!evtName)
                     continue;
 
-                auto data = GetObjMember(&message, "data");
+                JsonValue *data = GetObjMember(&message, "data");
 
-                if (strcmp(evtName, "ACTIVITY_JOIN") == 0)
+                if (string_is_equal(evtName, "ACTIVITY_JOIN"))
                 {
-                    auto secret = GetStrMember(data, "secret");
+                    const char *secret = GetStrMember(data, "secret");
                     if (secret)
                     {
                         StringCopy(JoinGameSecret, secret);
                         WasJoinGame.store(true);
                     }
                 }
-                else if (strcmp(evtName, "ACTIVITY_SPECTATE") == 0)
+                else if (string_is_equal(evtName, "ACTIVITY_SPECTATE"))
                 {
-                   auto secret = GetStrMember(data, "secret");
+                   const char *secret = GetStrMember(data, "secret");
                    if (secret)
                    {
                       StringCopy(SpectateGameSecret, secret);
                       WasSpectateGame.store(true);
                    }
                 }
-                else if (strcmp(evtName, "ACTIVITY_JOIN_REQUEST") == 0)
+                else if (string_is_equal(evtName, "ACTIVITY_JOIN_REQUEST"))
                 {
-                   auto user     = GetObjMember(data, "user");
-                   auto userId   = GetStrMember(user, "id");
-                   auto username = GetStrMember(user, "username");
-                   auto avatar   = GetStrMember(user, "avatar");
-                   auto joinReq  = JoinAskQueue.GetNextAddMessage();
+                   JsonValue *user      = GetObjMember(data, "user");
+                   const char *userId   = GetStrMember(user, "id");
+                   const char *username = GetStrMember(user, "username");
+                   const char *avatar   = GetStrMember(user, "avatar");
+                   auto        joinReq  = JoinAskQueue.GetNextAddMessage();
 
                    if (userId && username && joinReq)
                    {
                       StringCopy(joinReq->userId, userId);
                       StringCopy(joinReq->username, username);
-                      auto discriminator = GetStrMember(user, "discriminator");
+                      const char *discriminator = GetStrMember(user,
+                            "discriminator");
                       if (discriminator)
                          StringCopy(joinReq->discriminator, discriminator);
                       if (avatar)
@@ -335,16 +338,16 @@ extern "C" DISCORD_EXPORT void Discord_Initialize(
     Connection->onConnect = [](JsonDocument& readyMessage)
     {
         Discord_UpdateHandlers(&QueuedHandlers);
-        auto data     = GetObjMember(&readyMessage, "data");
-        auto user     = GetObjMember(data, "user");
-        auto userId   = GetStrMember(user, "id");
-        auto username = GetStrMember(user, "username");
-        auto avatar   = GetStrMember(user, "avatar");
+        JsonValue *data      = GetObjMember(&readyMessage, "data");
+        JsonValue *user      = GetObjMember(data, "user");
+        const char *userId   = GetStrMember(user, "id");
+        const char *username = GetStrMember(user, "username");
+        const char *avatar   = GetStrMember(user, "avatar");
         if (userId && username)
         {
             StringCopy(connectedUser.userId, userId);
             StringCopy(connectedUser.username, username);
-            auto discriminator = GetStrMember(user, "discriminator");
+            const char *discriminator = GetStrMember(user, "discriminator");
             if (discriminator)
                 StringCopy(connectedUser.discriminator, discriminator);
             if (avatar)
