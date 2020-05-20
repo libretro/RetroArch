@@ -21465,6 +21465,8 @@ static bool video_driver_init_internal(bool *video_is_threaded)
    settings_t *settings                   = configuration_settings;
    struct retro_game_geometry *geom       = &video_driver_av_info.geometry;
    const char *path_softfilter_plugin     = settings->paths.path_softfilter_plugin;
+   char *config_file_directory            = NULL;
+   bool dir_list_is_free                  = true;
 
    if (!string_is_empty(path_softfilter_plugin))
       video_driver_init_filter(video_driver_pix_fmt);
@@ -21667,8 +21669,29 @@ static bool video_driver_init_internal(bool *video_is_threaded)
    dir_free_shader();
 
    if (!string_is_empty(settings->paths.directory_video_shader))
-      dir_init_shader(settings->paths.directory_video_shader,
+      dir_list_is_free = !dir_init_shader(
+            settings->paths.directory_video_shader,
             settings->bools.show_hidden_files);
+
+   if (dir_list_is_free && !string_is_empty(settings->paths.directory_menu_config))
+      dir_list_is_free = !dir_init_shader(
+            settings->paths.directory_menu_config,
+            settings->bools.show_hidden_files);
+
+   if (dir_list_is_free && !path_is_empty(RARCH_PATH_CONFIG))
+   {
+      config_file_directory = (char*)malloc(PATH_MAX_LENGTH);
+
+      fill_pathname_basedir(config_file_directory,
+            path_get(RARCH_PATH_CONFIG), PATH_MAX_LENGTH);
+
+      if (config_file_directory)
+      {
+         dir_list_is_free = !dir_init_shader(
+               config_file_directory,
+               settings->bools.show_hidden_files);
+      }
+   }
 
    return true;
 
