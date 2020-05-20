@@ -4704,17 +4704,6 @@ error:
 
 /* TRANSLATION */
 #ifdef HAVE_TRANSLATE
-static int get_ai_service_auto(void)
-{
-   return g_ai_service_auto;
-}
-
-static bool set_ai_service_auto(int num)
-{
-   g_ai_service_auto = num;
-   return true;
-}
-
 static bool task_auto_translate_callback(void)
 {
    bool was_paused                   = runloop_paused;
@@ -4766,11 +4755,13 @@ static void task_auto_translate_handler(retro_task_t *task)
 #endif
    }
    return;
+
 task_finished:
-   if (get_ai_service_auto() == 1)
-      set_ai_service_auto(2);
+   if (g_ai_service_auto == 1)
+      g_ai_service_auto = 2;
 
    task_set_finished(task, true);
+
    if (*mode_ptr == 1 || *mode_ptr == 2)
        task_auto_translate_callback();
    if (task->user_data)
@@ -4785,8 +4776,8 @@ static bool call_auto_translate_task(bool* was_paused)
    /*Image Mode*/
    if (ai_service_mode == 0)
    {
-      if (get_ai_service_auto() == 1)
-         set_ai_service_auto(2);
+      if (g_ai_service_auto == 1)
+         g_ai_service_auto = 2;
 
       command_event(CMD_EVENT_AI_SERVICE_CALL, was_paused);
       return true;
@@ -4794,7 +4785,7 @@ static bool call_auto_translate_task(bool* was_paused)
    else /* Speech or Narrator Mode */
    {
       retro_task_t  *t                   = NULL;
-      int* mode                          = (int*) malloc(sizeof(int));
+      int* mode                          = (int*)malloc(sizeof(int));
       *mode = ai_service_mode;
       t = task_init();
       if (!t)
@@ -4843,7 +4834,7 @@ static void handle_translation_cb(
 
 #ifdef GFX_MENU_WIDGETS
    if (gfx_widgets_ai_service_overlay_get_state() != 0 
-       && get_ai_service_auto() == 2)
+       && g_ai_service_auto == 2)
    {
       /* When auto mode is on, we turn off the overlay
        * once we have the result for the next call.*/
@@ -4852,7 +4843,7 @@ static void handle_translation_cb(
 #endif
 
 #ifdef DEBUG
-   if (get_ai_service_auto() != 2)
+   if (g_ai_service_auto != 2)
       RARCH_LOG("RESULT FROM AI SERVICE...\n");
 #endif
 
@@ -4980,7 +4971,7 @@ static void handle_translation_cb(
 #endif
    }
 
-   if (!raw_image_file_data && !raw_sound_data && !text_string && get_ai_service_auto() != 2 && !key_string)
+   if (!raw_image_file_data && !raw_sound_data && !text_string && g_ai_service_auto != 2 && !key_string)
    {
       error = "Invalid JSON body.";
       goto finish;
@@ -5325,7 +5316,7 @@ finish:
 
    if (string_is_equal(auto_string, "auto"))
    {
-      if (get_ai_service_auto() != 0 && !settings->bools.ai_service_pause)
+      if (g_ai_service_auto != 0 && !settings->bools.ai_service_pause)
          call_auto_translate_task(&was_paused);
    }
    if (auto_string)
@@ -5546,7 +5537,7 @@ static bool run_translation_service(bool paused)
    core_info_t *core_info                = NULL;
 
 #ifdef HAVE_GFX_WIDGETS
-   if (gfx_widgets_ai_service_overlay_get_state() != 0 && get_ai_service_auto() == 1)
+   if (gfx_widgets_ai_service_overlay_get_state() != 0 && g_ai_service_auto == 1)
    {
       /* For the case when ai service pause is disabled. */
       gfx_widgets_ai_service_overlay_unload();
@@ -5583,7 +5574,7 @@ static bool run_translation_service(bool paused)
 
       if (!label)
          label = path_basename(path_get(RARCH_PATH_BASENAME));
-      system_label = (char *) malloc(strlen(label)+strlen(system_id)+3);
+      system_label = (char*)malloc(strlen(label)+strlen(system_id)+3);
       memcpy(system_label, system_id, strlen(system_id));
       memcpy(system_label+strlen(system_id), "__", 2);
       memcpy(system_label+2+strlen(system_id), label, strlen(label));
@@ -5723,7 +5714,7 @@ static bool run_translation_service(bool paused)
 
    {
       state_son_length = 177;
-      state_son = (char *) malloc(state_son_length);
+      state_son        = (char*)malloc(state_son_length);
 
       memcpy(state_son, ", \"state\": {\"paused\": 0, \"a\": 0, \"b\": 0, \"select\": 0, \"start\": 0, \"up\": 0, \"down\": 0, \"left\": 0, \"right\": 0, \"x\": 0, \"y\": 0, \"l\": 0, \"r\":0, \"l2\": 0, \"r2\": 0, \"l3\":0, \"r3\": 0}}\0", state_son_length*sizeof(uint8_t));
 
@@ -5799,7 +5790,7 @@ static bool run_translation_service(bool paused)
    }
 
 #ifdef DEBUG
-   if (get_ai_service_auto()!=2)
+   if (g_ai_service_auto != 2)
       RARCH_LOG("Request size: %d\n", out_length);
 #endif
    {
@@ -5894,7 +5885,7 @@ static bool run_translation_service(bool paused)
                  sizeof(new_ai_service_url));
       }
 #ifdef DEBUG
-      if (get_ai_service_auto() != 2)
+      if (g_ai_service_auto != 2)
          RARCH_LOG("SENDING... %s\n", new_ai_service_url);
 #endif
       task_push_http_post_transfer(new_ai_service_url,
@@ -7178,11 +7169,11 @@ bool command_event(enum event_command cmd, void *data)
             * Also, this mode is required for "auto" translation
             * packages, since you don't want to pause for that.   
             */ 
-            if (get_ai_service_auto() == 2)
+            if (g_ai_service_auto == 2)
             {
                /* Auto mode was turned on, but we pressed the
                 * toggle button, so turn it off now. */
-               set_ai_service_auto(0);
+               g_ai_service_auto = 0;
 #ifdef HAVE_MENU_WIDGETS
                gfx_widgets_ai_service_overlay_unload();
 #endif
@@ -8506,9 +8497,9 @@ bool command_event(enum event_command cmd, void *data)
             if (data!=NULL)
                paused = *((bool*)data);
 
-            if (get_ai_service_auto() == 0 && !settings->bools.ai_service_pause)
-               set_ai_service_auto(1);
-            if (get_ai_service_auto() != 2)
+            if (g_ai_service_auto == 0 && !settings->bools.ai_service_pause)
+               g_ai_service_auto = 1;
+            if (g_ai_service_auto != 2)
                RARCH_LOG("AI Service Called...\n");
             run_translation_service(paused);
          }
@@ -17547,10 +17538,11 @@ void input_keyboard_event(bool down, unsigned code,
    {
       if (code != 303 && code != 0)
       {
-         char* say_char = (char*) malloc(sizeof(char)+1);
+         char* say_char = (char*)malloc(sizeof(char)+1);
+
          if (say_char)
          {
-            char c = (char) character;
+            char c    = (char) character;
             *say_char = c;
 
             if (character == 127)
