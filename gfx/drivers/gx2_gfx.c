@@ -1047,6 +1047,7 @@ static bool wiiu_gfx_frame(void *data, const void *frame,
 {
    uint32_t i;
    wiiu_video_t *wiiu = (wiiu_video_t *) data;
+   bool menu_is_alive = video_info->menu_is_alive;
 
    (void)msg;
 
@@ -1500,6 +1501,8 @@ static bool wiiu_gfx_set_shader(void *data,
 
       if (image_texture_load(&image, wiiu->shader_preset->lut[i].path))
       {
+         unsigned j;
+
          wiiu->luts[i].surface.width       = image.width;
          wiiu->luts[i].surface.height      = image.height;
          wiiu->luts[i].surface.depth       = 1;
