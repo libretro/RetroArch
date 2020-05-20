@@ -2038,6 +2038,7 @@ static int g_ai_service_auto = 0;
 static unsigned gamepad_input_override = 0;
 
 /* Forward declarations */
+static void retroarch_fail(int error_code, const char *error);
 static void retroarch_core_options_intl_init(const struct 
       retro_core_options_intl *core_options_intl);
 static void ui_companion_driver_toggle(bool force);
@@ -27579,7 +27580,7 @@ void retroarch_set_current_core_type(enum rarch_core_type type, bool explicitly_
  *
  * Sanely kills the program.
  **/
-void retroarch_fail(int error_code, const char *error)
+static void retroarch_fail(int error_code, const char *error)
 {
    /* We cannot longjmp unless we're in retroarch_main_init().
     * If not, something went very wrong, and we should

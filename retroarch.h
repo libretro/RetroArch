@@ -314,15 +314,6 @@ const char* retroarch_get_shader_preset(void);
 bool retroarch_is_switching_display_mode(void);
 
 /**
- * retroarch_fail:
- * @error_code  : Error code.
- * @error       : Error message to show.
- *
- * Sanely kills the program.
- **/
-void retroarch_fail(int error_code, const char *error);
-
-/**
  * retroarch_main_init:
  * @argc                 : Count of (commandline) arguments.
  * @argv                 : (Commandline) arguments.

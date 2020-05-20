@@ -2771,10 +2771,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
                   menu_driver_find_handle(0);
 
                if (!menu_driver_ctx)
-               {
-                  retroarch_fail(1, "find_menu_driver()");
                   return false;
-               }
             }
          }
          break;
