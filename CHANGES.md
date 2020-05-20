@@ -4,6 +4,8 @@
 - INPUT MAPPING/REMAPPING: Restore broken 'reset to default' functionality with RetroPad 'start' button
 - INPUT MAPPING/REMAPPING: Fix 'reset to default' action for analog sticks and undefined core inputs 
 - MENU/THUMBNAILS/BUGFIX: Fix heap-use-after-free error
+- MENU/OZONE/ANDROIDTV: Default to Ozone menu driver
+- MENU/OZONE/ANDROID: Gamepad-like devices default to Ozone now (Shield Portable)
 - OVERLAYS: Fix memory leak when loading overlays
 - WIIU: Gamepad hotplugging support
 - WIIU: Theoretical multi-gamepad support
