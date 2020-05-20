@@ -1762,6 +1762,22 @@ static bool audio_mixer_active                                  = false;
  */
 static bool deferred_video_context_driver_set_flags             = false;
 
+static const uint8_t midi_drv_ev_sizes[128]                     =
+{
+   3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+   3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+   3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+   3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+   2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+   2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+   3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+   0, 2, 3, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
+};
+
+static uint8_t *video_driver_record_gpu_buffer                  = NULL;
+static uint8_t *midi_drv_input_buffer                           = NULL;
+static uint8_t *midi_drv_output_buffer                          = NULL;
+
 static uint16_t input_config_vid[MAX_USERS]                     = {0};
 static uint16_t input_config_pid[MAX_USERS]                     = {0};
 
@@ -1771,16 +1787,15 @@ static int lastcmd_net_fd                                       = 0;
 #endif
 #endif
 
+#ifdef HAVE_TRANSLATE
+static int g_ai_service_auto                                    = 0;
+#endif
+
 #if defined(HAVE_RUNAHEAD)
 #if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
 static int port_map[16]                                         = {0};
 #endif
 #endif
-
-#ifdef HAVE_TRANSLATE
-static int g_ai_service_auto                                    = 0;
-#endif
-
 #if defined(HAVE_ACCESSIBILITY) && defined(HAVE_TRANSLATE)
 static int ai_gamepad_state[16]                                 = {0};
 #endif
@@ -1933,17 +1948,48 @@ static char input_device_config_paths [MAX_INPUT_DEVICES][64];
 static rarch_timer_t shader_delay_timer                         = {0};
 #endif
 
-static struct string_list *subsystem_fullpaths                  = NULL;
-
 static struct rarch_dir_list dir_shader_list;
 
 #ifdef HAVE_MENU
-static const char **menu_input_dialog_keyboard_buffer           = {NULL};
-
 /* Since these are static/global, they are initialised to zero */
 static menu_input_pointer_hw_state_t menu_input_pointer_hw_state;
 static menu_input_t menu_input_state;
 #endif
+
+static struct retro_camera_callback camera_cb;
+
+static midi_event_t midi_drv_input_event;
+static midi_event_t midi_drv_output_event;
+
+static gfx_ctx_driver_t current_video_context;
+
+/**
+ * dynamic.c:dynamic_request_hw_context will try to set flag data when the context
+ * is in the middle of being rebuilt; in these cases we will save flag
+ * data and set this to true.
+ * When the context is reinit, it checks this, reads from
+ * deferred_flag_data and cleans it.
+ *
+ * TODO - Dirty hack, fix it better
+ */
+static gfx_ctx_flags_t deferred_flag_data                       = {0};
+
+static struct retro_system_av_info video_driver_av_info;
+
+static struct bsv_state bsv_movie_state;
+
+static struct retro_hw_render_callback hw_render;
+
+typedef bool(*runahead_load_state_function)(const void*, size_t);
+
+static retro_input_state_t input_state_callback_original;
+
+#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
+static input_remote_state_t remote_st_ptr;
+#endif
+
+
+static struct string_list *subsystem_fullpaths                  = NULL;
 
 static const record_driver_t *recording_driver                  = NULL;
 static void *recording_data                                     = NULL;
@@ -1952,7 +1998,10 @@ static void *recording_data                                     = NULL;
 static slock_t *_runloop_msg_queue_lock                         = NULL;
 #endif
 
-static struct retro_camera_callback camera_cb;
+#ifdef HAVE_MENU
+static const char **menu_input_dialog_keyboard_buffer           = {NULL};
+#endif
+
 static const camera_driver_t *camera_driver                     = NULL;
 static void *camera_data                                        = NULL;
 
@@ -1960,24 +2009,6 @@ static midi_driver_t *midi_drv                                  = &midi_null;
 static void *midi_drv_data                                      = NULL;
 static struct string_list *midi_drv_inputs                      = NULL;
 static struct string_list *midi_drv_outputs                     = NULL;
-static midi_event_t midi_drv_input_event;
-static midi_event_t midi_drv_output_event;
-
-static const uint8_t midi_drv_ev_sizes[128] =
-{
-   3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
-   3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
-   3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
-   3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
-   2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-   2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-   3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
-   0, 2, 3, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
-};
-
-static uint8_t *video_driver_record_gpu_buffer                  = NULL;
-static uint8_t *midi_drv_input_buffer                           = NULL;
-static uint8_t *midi_drv_output_buffer                          = NULL;
 
 static const ui_companion_driver_t *ui_companion                = NULL;
 static void *ui_companion_data                                  = NULL;
@@ -1996,7 +2027,6 @@ static const video_display_server_t *current_display_server     = &dispserv_null
 static void                    *current_display_server_data     = NULL;
 
 static bsv_movie_t     *bsv_movie_state_handle                  = NULL;
-static struct bsv_state bsv_movie_state;
 
 struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END]      = {
    { "4:3",           1.3333f },
@@ -2047,8 +2077,6 @@ static const video_poke_interface_t *video_driver_poke          = NULL;
  * being passed to video driver. */
 static video_pixel_scaler_t *video_driver_scaler_ptr            = NULL;
 
-static struct retro_hw_render_callback hw_render;
-
 static const struct
 retro_hw_render_context_negotiation_interface *
 hw_render_context_negotiation                                   = NULL;
@@ -2061,21 +2089,6 @@ static slock_t *context_lock                                    = NULL;
 #endif
 
 static void *video_context_data                                 = NULL;
-
-static gfx_ctx_driver_t current_video_context;
-
-/**
- * dynamic.c:dynamic_request_hw_context will try to set flag data when the context
- * is in the middle of being rebuilt; in these cases we will save flag
- * data and set this to true.
- * When the context is reinit, it checks this, reads from
- * deferred_flag_data and cleans it.
- *
- * TODO - Dirty hack, fix it better
- */
-static gfx_ctx_flags_t deferred_flag_data                       = {0};
-
-static struct retro_system_av_info video_driver_av_info;
 
 #ifdef HAVE_AUDIOMIXER
 static struct audio_mixer_stream
@@ -2099,16 +2112,42 @@ static void *audio_driver_context_audio_data                    = NULL;
 static my_list *runahead_save_state_list                        = NULL;
 static my_list *input_state_list                                = NULL;
 
-typedef bool(*runahead_load_state_function)(const void*, size_t);
-
-static retro_input_state_t input_state_callback_original;
 static function_t retro_reset_callback_original                 = NULL;
 static runahead_load_state_function
 retro_unserialize_callback_original                             = NULL;
 
 static function_t original_retro_deinit                         = NULL;
 static function_t original_retro_unload                         = NULL;
+#endif
 
+#ifdef HAVE_OVERLAY
+static input_overlay_t *overlay_ptr                             = NULL;
+#endif
+
+static pad_connection_listener_t *pad_connection_listener       = NULL;
+
+static input_keyboard_line_t *g_keyboard_line                   = NULL;
+
+static void *g_keyboard_press_data                              = NULL;
+
+#ifdef HAVE_COMMAND
+static command_t *input_driver_command                          = NULL;
+#endif
+#ifdef HAVE_NETWORKGAMEPAD
+static input_remote_t *input_driver_remote                      = NULL;
+#endif
+static input_mapper_t *input_driver_mapper                      = NULL;
+static input_driver_t *current_input                            = NULL;
+static void *current_input_data                                 = NULL;
+
+#ifdef HAVE_HID
+static const void *hid_data                                     = NULL;
+#endif
+
+#if defined(HAVE_RUNAHEAD)
+#if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
+static char *secondary_library_path                             = NULL;
+#endif
 #endif
 
 #if defined(HAVE_COMMAND)
@@ -2118,19 +2157,8 @@ static socklen_t lastcmd_net_source_len;
 #endif
 #endif
 
-
-#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
-static input_remote_state_t remote_st_ptr;
-#endif
-
-#ifdef HAVE_OVERLAY
-static input_overlay_t *overlay_ptr                             = NULL;
-#endif
-
-static pad_connection_listener_t *pad_connection_listener       = NULL;
-
+/* TODO/FIXME - turn these into static global variable */
 char        input_device_names        [MAX_INPUT_DEVICES][64];
-
 struct retro_keybind input_config_binds[MAX_USERS][RARCH_BIND_LIST_END];
 struct retro_keybind input_autoconf_binds[MAX_USERS][RARCH_BIND_LIST_END];
 static const struct retro_keybind *libretro_input_binds[MAX_USERS];
@@ -2162,7 +2190,7 @@ const struct input_bind_map input_config_bind_map[RARCH_BIND_LIST_END_NULL] = {
       DECLARE_BIND(r_y_minus, RARCH_ANALOG_RIGHT_Y_MINUS,    MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_MINUS),
 
       DECLARE_BIND( gun_trigger,			RARCH_LIGHTGUN_TRIGGER,			MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_TRIGGER ),
-      DECLARE_BIND( gun_offscreen_shot,	RARCH_LIGHTGUN_RELOAD,	        MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_RELOAD ),
+      DECLARE_BIND( gun_offscreen_shot,RARCH_LIGHTGUN_RELOAD,	      MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_RELOAD ),
       DECLARE_BIND( gun_aux_a,			RARCH_LIGHTGUN_AUX_A,			MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_A ),
       DECLARE_BIND( gun_aux_b,			RARCH_LIGHTGUN_AUX_B,			MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_B ),
       DECLARE_BIND( gun_aux_c,			RARCH_LIGHTGUN_AUX_C,			MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_C ),
@@ -2173,7 +2201,7 @@ const struct input_bind_map input_config_bind_map[RARCH_BIND_LIST_END_NULL] = {
       DECLARE_BIND( gun_dpad_left,		RARCH_LIGHTGUN_DPAD_LEFT,		MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_LEFT ),
       DECLARE_BIND( gun_dpad_right,		RARCH_LIGHTGUN_DPAD_RIGHT,		MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_RIGHT ),
 
-      DECLARE_BIND(turbo,     RARCH_TURBO_ENABLE,            MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ENABLE),
+      DECLARE_BIND( turbo,             RARCH_TURBO_ENABLE,           MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ENABLE),
 
       DECLARE_META_BIND(1, toggle_fast_forward,   RARCH_FAST_FORWARD_KEY,      MENU_ENUM_LABEL_VALUE_INPUT_META_FAST_FORWARD_KEY),
       DECLARE_META_BIND(2, hold_fast_forward,     RARCH_FAST_FORWARD_HOLD_KEY, MENU_ENUM_LABEL_VALUE_INPUT_META_FAST_FORWARD_HOLD_KEY),
@@ -2224,28 +2252,9 @@ const struct input_bind_map input_config_bind_map[RARCH_BIND_LIST_END_NULL] = {
       DECLARE_META_BIND(2, ai_service,            RARCH_AI_SERVICE,            MENU_ENUM_LABEL_VALUE_INPUT_META_AI_SERVICE),
 };
 
-static input_keyboard_line_t *g_keyboard_line     = NULL;
-
-static void *g_keyboard_press_data                = NULL;
-
-
 static input_keyboard_press_t g_keyboard_press_cb;
 
 static turbo_buttons_t input_driver_turbo_btns;
-#ifdef HAVE_COMMAND
-static command_t *input_driver_command            = NULL;
-#endif
-#ifdef HAVE_NETWORKGAMEPAD
-static input_remote_t *input_driver_remote        = NULL;
-#endif
-static input_mapper_t *input_driver_mapper        = NULL;
-static input_driver_t *current_input              = NULL;
-static void *current_input_data                   = NULL;
-
-#ifdef HAVE_HID
-static const void *hid_data                       = NULL;
-#endif
-
 
 #if defined(HAVE_RUNAHEAD)
 static retro_ctx_load_content_info_t *load_content_info;
@@ -2254,7 +2263,6 @@ static retro_ctx_load_content_info_t *load_content_info;
 static dylib_t secondary_module;
 static struct retro_core_t secondary_core;
 static struct retro_callbacks secondary_callbacks;
-static char *secondary_library_path                = NULL;
 #endif
 #endif
 
