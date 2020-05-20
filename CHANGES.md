@@ -6,6 +6,7 @@
 - MENU/THUMBNAILS/BUGFIX: Fix heap-use-after-free error
 - MENU/OZONE/ANDROIDTV: Default to Ozone menu driver
 - MENU/OZONE/ANDROID: Gamepad-like devices default to Ozone now (Shield Portable)
+- NETPLAY: Lower announcement rate
 - OVERLAYS: Fix memory leak when loading overlays
 - WIIU: Gamepad hotplugging support
 - WIIU: Theoretical multi-gamepad support
