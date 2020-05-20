@@ -2,6 +2,7 @@
 - CHEEVOS: Disable hardcore when cheats are enabled
 - CHD: Return false when special track cannot be found
 - INPUT MAPPING/REMAPPING: Restore broken 'reset to default' functionality with RetroPad 'start' button
+- INPUT MAPPING/REMAPPING: Fix 'reset to default' action for analog sticks and undefined core inputs 
 - MENU/THUMBNAILS/BUGFIX: Fix heap-use-after-free error
 - OVERLAYS: Fix memory leak when loading overlays
 - WIIU: Gamepad hotplugging support
