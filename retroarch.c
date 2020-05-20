@@ -1136,6 +1136,152 @@ static const camera_driver_t *camera_drivers[] = {
 #define runloop_msg_queue_unlock()
 #endif
 
+#define BSV_MOVIE_IS_EOF() (bsv_movie_state.movie_end && bsv_movie_state.eof_exit)
+
+/* Time to exit out of the main loop?
+ * Reasons for exiting:
+ * a) Shutdown environment callback was invoked.
+ * b) Quit key was pressed.
+ * c) Frame count exceeds or equals maximum amount of frames to run.
+ * d) Video driver no longer alive.
+ * e) End of BSV movie and BSV EOF exit is true. (TODO/FIXME - explain better)
+ */
+#define TIME_TO_EXIT(quit_key_pressed) (runloop_shutdown_initiated || quit_key_pressed || !is_alive || BSV_MOVIE_IS_EOF() || ((runloop_max_frames != 0) && (frame_count >= runloop_max_frames)) || runloop_exec)
+
+/* Depends on ASCII character values */
+#define ISPRINT(c) (((int)(c) >= ' ' && (int)(c) <= '~') ? 1 : 0)
+
+#define input_config_bind_map_get(i) ((const struct input_bind_map*)&input_config_bind_map[(i)])
+
+#define video_has_focus() ((current_video_context.has_focus) ? (current_video_context.has_focus && current_video_context.has_focus(video_context_data)) : (current_video->focus) ? (current_video && current_video->focus && current_video->focus(video_driver_data)) : true)
+
+#if HAVE_DYNAMIC
+#define runahead_run_secondary() \
+   if (!secondary_core_run_use_last_input()) \
+      runahead_secondary_core_available = false
+
+#endif
+
+#define runahead_resume_video() \
+   if (runahead_video_driver_is_active) \
+      video_driver_active = true; \
+   else \
+      video_driver_active = false
+
+#define _PSUPP_BUF(buf, var, name, desc) \
+   strlcat(buf, "  ", sizeof(buf)); \
+   strlcat(buf, name, sizeof(buf)); \
+   strlcat(buf, ":\n\t\t", sizeof(buf)); \
+   strlcat(buf, desc, sizeof(buf)); \
+   strlcat(buf, ": ", sizeof(buf)); \
+   strlcat(buf, var ? "yes\n" : "no\n", sizeof(buf))
+
+#define HOTKEY_CHECK(cmd1, cmd2, cond, cond2) \
+   { \
+      static bool old_pressed                   = false; \
+      bool pressed                              = BIT256_GET(current_bits, cmd1); \
+      if (pressed && !old_pressed) \
+         if (cond) \
+            command_event(cmd2, cond2); \
+      old_pressed                               = pressed; \
+   }
+
+#define HOTKEY_CHECK3(cmd1, cmd2, cmd3, cmd4, cmd5, cmd6) \
+   { \
+      static bool old_pressed                   = false; \
+      static bool old_pressed2                  = false; \
+      static bool old_pressed3                  = false; \
+      bool pressed                              = BIT256_GET(current_bits, cmd1); \
+      bool pressed2                             = BIT256_GET(current_bits, cmd3); \
+      bool pressed3                             = BIT256_GET(current_bits, cmd5); \
+      if (pressed && !old_pressed) \
+         command_event(cmd2, (void*)(intptr_t)0); \
+      else if (pressed2 && !old_pressed2) \
+         command_event(cmd4, (void*)(intptr_t)0); \
+      else if (pressed3 && !old_pressed3) \
+         command_event(cmd6, (void*)(intptr_t)0); \
+      old_pressed                               = pressed; \
+      old_pressed2                              = pressed2; \
+      old_pressed3                              = pressed3; \
+   }
+
+#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
+#define input_remote_key_pressed(key, port) (remote_st_ptr.buttons[(port)] & (UINT64_C(1) << (key)))
+#endif
+
+/**
+ * check_input_driver_block_hotkey:
+ *
+ * Checks if 'hotkey enable' key is pressed.
+ *
+ * If we haven't bound anything to this,
+ * always allow hotkeys.
+
+ * If we hold ENABLE_HOTKEY button, block all libretro input to allow
+ * hotkeys to be bound to same keys as RetroPad.
+ **/
+#define check_input_driver_block_hotkey(normal_bind, autoconf_bind) \
+( \
+         (((normal_bind)->key      != RETROK_UNKNOWN) \
+      || ((normal_bind)->mbutton   != NO_BTN) \
+      || ((normal_bind)->joykey    != NO_BTN) \
+      || ((normal_bind)->joyaxis   != AXIS_NONE) \
+      || ((autoconf_bind)->key     != RETROK_UNKNOWN) \
+      || ((autoconf_bind)->joykey  != NO_BTN) \
+      || ((autoconf_bind)->joyaxis != AXIS_NONE)) \
+)
+
+
+#define inherit_joyaxis(binds) (((binds)[x_plus].joyaxis == (binds)[x_minus].joyaxis) || (  (binds)[y_plus].joyaxis == (binds)[y_minus].joyaxis))
+
+/**
+ * input_pop_analog_dpad:
+ * @binds                          : Binds to modify.
+ *
+ * Restores binds temporarily overridden by input_push_analog_dpad().
+ **/
+#define input_pop_analog_dpad(binds) \
+{ \
+   unsigned j; \
+   for (j = RETRO_DEVICE_ID_JOYPAD_UP; j <= RETRO_DEVICE_ID_JOYPAD_RIGHT; j++) \
+      (binds)[j].joyaxis = (binds)[j].orig_joyaxis; \
+}
+
+/**
+ * input_push_analog_dpad:
+ * @binds                          : Binds to modify.
+ * @mode                           : Which analog stick to bind D-Pad to.
+ *                                   E.g:
+ *                                   ANALOG_DPAD_LSTICK
+ *                                   ANALOG_DPAD_RSTICK
+ *
+ * Push analog to D-Pad mappings to binds.
+ **/
+#define input_push_analog_dpad(binds, mode) \
+{ \
+   unsigned k; \
+   unsigned x_plus      =  RARCH_ANALOG_RIGHT_X_PLUS; \
+   unsigned y_plus      =  RARCH_ANALOG_RIGHT_Y_PLUS; \
+   unsigned x_minus     =  RARCH_ANALOG_RIGHT_X_MINUS; \
+   unsigned y_minus     =  RARCH_ANALOG_RIGHT_Y_MINUS; \
+   if ((mode) == ANALOG_DPAD_LSTICK) \
+   { \
+      x_plus            =  RARCH_ANALOG_LEFT_X_PLUS; \
+      y_plus            =  RARCH_ANALOG_LEFT_Y_PLUS; \
+      x_minus           =  RARCH_ANALOG_LEFT_X_MINUS; \
+      y_minus           =  RARCH_ANALOG_LEFT_Y_MINUS; \
+   } \
+   for (k = RETRO_DEVICE_ID_JOYPAD_UP; k <= RETRO_DEVICE_ID_JOYPAD_RIGHT; k++) \
+      (binds)[k].orig_joyaxis = (binds)[k].joyaxis; \
+   if (!inherit_joyaxis(binds)) \
+   { \
+      unsigned j = x_plus + 3; \
+      /* Inherit joyaxis from analogs. */ \
+      for (k = RETRO_DEVICE_ID_JOYPAD_UP; k <= RETRO_DEVICE_ID_JOYPAD_RIGHT; k++) \
+         (binds)[k].joyaxis = (binds)[j--].joyaxis; \
+   } \
+}
+
 /* Descriptive names for options without short variant.
  *
  * Please keep the name in sync with the option name.
@@ -14034,8 +14180,6 @@ static void retroarch_overlay_init(void)
 /* INPUT REMOTE */
 
 #if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
-#define input_remote_key_pressed(key, port) (remote_st_ptr.buttons[(port)] & (UINT64_C(1) << (key)))
-
 static bool input_remote_init_network(input_remote_t *handle,
       uint16_t port, unsigned user)
 {
@@ -14139,29 +14283,6 @@ static void fire_connection_listener(unsigned port, input_device_driver_t *drive
    if (pad_connection_listener)
       pad_connection_listener->connected(port, driver);
 }
-
-
-/**
- * check_input_driver_block_hotkey:
- *
- * Checks if 'hotkey enable' key is pressed.
- *
- * If we haven't bound anything to this,
- * always allow hotkeys.
-
- * If we hold ENABLE_HOTKEY button, block all libretro input to allow
- * hotkeys to be bound to same keys as RetroPad.
- **/
-#define check_input_driver_block_hotkey(normal_bind, autoconf_bind) \
-( \
-         (((normal_bind)->key      != RETROK_UNKNOWN) \
-      || ((normal_bind)->mbutton   != NO_BTN) \
-      || ((normal_bind)->joykey    != NO_BTN) \
-      || ((normal_bind)->joyaxis   != AXIS_NONE) \
-      || ((autoconf_bind)->key     != RETROK_UNKNOWN) \
-      || ((autoconf_bind)->joykey  != NO_BTN) \
-      || ((autoconf_bind)->joyaxis != AXIS_NONE)) \
-)
 
 /**
  * input_driver_find_handle:
@@ -14942,56 +15063,6 @@ static int16_t input_joypad_axis(const input_device_driver_t *drv,
    }
 
    return val;
-}
-
-#define inherit_joyaxis(binds) (((binds)[x_plus].joyaxis == (binds)[x_minus].joyaxis) || (  (binds)[y_plus].joyaxis == (binds)[y_minus].joyaxis))
-
-/**
- * input_pop_analog_dpad:
- * @binds                          : Binds to modify.
- *
- * Restores binds temporarily overridden by input_push_analog_dpad().
- **/
-#define input_pop_analog_dpad(binds) \
-{ \
-   unsigned j; \
-   for (j = RETRO_DEVICE_ID_JOYPAD_UP; j <= RETRO_DEVICE_ID_JOYPAD_RIGHT; j++) \
-      (binds)[j].joyaxis = (binds)[j].orig_joyaxis; \
-}
-
-/**
- * input_push_analog_dpad:
- * @binds                          : Binds to modify.
- * @mode                           : Which analog stick to bind D-Pad to.
- *                                   E.g:
- *                                   ANALOG_DPAD_LSTICK
- *                                   ANALOG_DPAD_RSTICK
- *
- * Push analog to D-Pad mappings to binds.
- **/
-#define input_push_analog_dpad(binds, mode) \
-{ \
-   unsigned k; \
-   unsigned x_plus      =  RARCH_ANALOG_RIGHT_X_PLUS; \
-   unsigned y_plus      =  RARCH_ANALOG_RIGHT_Y_PLUS; \
-   unsigned x_minus     =  RARCH_ANALOG_RIGHT_X_MINUS; \
-   unsigned y_minus     =  RARCH_ANALOG_RIGHT_Y_MINUS; \
-   if ((mode) == ANALOG_DPAD_LSTICK) \
-   { \
-      x_plus            =  RARCH_ANALOG_LEFT_X_PLUS; \
-      y_plus            =  RARCH_ANALOG_LEFT_Y_PLUS; \
-      x_minus           =  RARCH_ANALOG_LEFT_X_MINUS; \
-      y_minus           =  RARCH_ANALOG_LEFT_Y_MINUS; \
-   } \
-   for (k = RETRO_DEVICE_ID_JOYPAD_UP; k <= RETRO_DEVICE_ID_JOYPAD_RIGHT; k++) \
-      (binds)[k].orig_joyaxis = (binds)[k].joyaxis; \
-   if (!inherit_joyaxis(binds)) \
-   { \
-      unsigned j = x_plus + 3; \
-      /* Inherit joyaxis from analogs. */ \
-      for (k = RETRO_DEVICE_ID_JOYPAD_UP; k <= RETRO_DEVICE_ID_JOYPAD_RIGHT; k++) \
-         (binds)[k].joyaxis = (binds)[j--].joyaxis; \
-   } \
 }
 
 /* MENU INPUT */
@@ -17218,9 +17289,6 @@ static void osk_update_last_codepoint(const char *word)
    }
 }
 
-/* Depends on ASCII character values */
-#define ISPRINT(c) (((int)(c) >= ' ' && (int)(c) <= '~') ? 1 : 0)
-
 /**
  * input_keyboard_line_event:
  * @state                    : Input keyboard line handle.
@@ -17577,8 +17645,6 @@ bool input_keyboard_ctl(enum rarch_input_keyboard_ctl_state state, void *data)
 
    return true;
 }
-
-#define input_config_bind_map_get(i) ((const struct input_bind_map*)&input_config_bind_map[(i)])
 
 static bool input_config_bind_map_get_valid(unsigned i)
 {
@@ -23089,8 +23155,6 @@ bool video_driver_translate_coord_viewport(
    return true;
 }
 
-#define video_has_focus() ((current_video_context.has_focus) ? (current_video_context.has_focus && current_video_context.has_focus(video_context_data)) : (current_video->focus) ? (current_video && current_video->focus && current_video->focus(video_driver_data)) : true)
-
 bool video_driver_has_focus(void)
 {
    return video_has_focus();
@@ -25029,18 +25093,7 @@ static bool runahead_load_state_secondary(void)
 
    return true;
 }
-
-#define runahead_run_secondary() \
-   if (!secondary_core_run_use_last_input()) \
-      runahead_secondary_core_available = false
-
 #endif
-
-#define runahead_resume_video() \
-   if (runahead_video_driver_is_active) \
-      video_driver_active = true; \
-   else \
-      video_driver_active = false
 
 static bool runahead_core_run_use_last_input(void)
 {
@@ -25236,14 +25289,6 @@ static retro_time_t rarch_core_runtime_tick(retro_time_t current_time)
 
    return frame_time;
 }
-
-#define _PSUPP_BUF(buf, var, name, desc) \
-   strlcat(buf, "  ", sizeof(buf)); \
-   strlcat(buf, name, sizeof(buf)); \
-   strlcat(buf, ":\n\t\t", sizeof(buf)); \
-   strlcat(buf, desc, sizeof(buf)); \
-   strlcat(buf, ": ", sizeof(buf)); \
-   strlcat(buf, var ? "yes\n" : "no\n", sizeof(buf))
 
 static void retroarch_print_features(void)
 {
@@ -27685,18 +27730,6 @@ void runloop_get_status(bool *is_paused, bool *is_idle,
    *is_perfcnt_enable = runloop_perfcnt_enable;
 }
 
-#define BSV_MOVIE_IS_EOF() (bsv_movie_state.movie_end && bsv_movie_state.eof_exit)
-
-/* Time to exit out of the main loop?
- * Reasons for exiting:
- * a) Shutdown environment callback was invoked.
- * b) Quit key was pressed.
- * c) Frame count exceeds or equals maximum amount of frames to run.
- * d) Video driver no longer alive.
- * e) End of BSV movie and BSV EOF exit is true. (TODO/FIXME - explain better)
- */
-#define TIME_TO_EXIT(quit_key_pressed) (runloop_shutdown_initiated || quit_key_pressed || !is_alive || BSV_MOVIE_IS_EOF() || ((runloop_max_frames != 0) && (frame_count >= runloop_max_frames)) || runloop_exec)
-
 #ifdef HAVE_MENU
 static bool input_driver_toggle_button_combo(
       unsigned mode,
@@ -27789,35 +27822,6 @@ static bool input_driver_toggle_button_combo(
    return true;
 }
 #endif
-
-#define HOTKEY_CHECK(cmd1, cmd2, cond, cond2) \
-   { \
-      static bool old_pressed                   = false; \
-      bool pressed                              = BIT256_GET(current_bits, cmd1); \
-      if (pressed && !old_pressed) \
-         if (cond) \
-            command_event(cmd2, cond2); \
-      old_pressed                               = pressed; \
-   }
-
-#define HOTKEY_CHECK3(cmd1, cmd2, cmd3, cmd4, cmd5, cmd6) \
-   { \
-      static bool old_pressed                   = false; \
-      static bool old_pressed2                  = false; \
-      static bool old_pressed3                  = false; \
-      bool pressed                              = BIT256_GET(current_bits, cmd1); \
-      bool pressed2                             = BIT256_GET(current_bits, cmd3); \
-      bool pressed3                             = BIT256_GET(current_bits, cmd5); \
-      if (pressed && !old_pressed) \
-         command_event(cmd2, (void*)(intptr_t)0); \
-      else if (pressed2 && !old_pressed2) \
-         command_event(cmd4, (void*)(intptr_t)0); \
-      else if (pressed3 && !old_pressed3) \
-         command_event(cmd6, (void*)(intptr_t)0); \
-      old_pressed                               = pressed; \
-      old_pressed2                              = pressed2; \
-      old_pressed3                              = pressed3; \
-   }
 
 #if defined(HAVE_MENU)
 static bool menu_display_libretro_running(void)
