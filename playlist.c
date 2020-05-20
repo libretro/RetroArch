@@ -218,6 +218,9 @@ static bool playlist_core_path_equal(const char *real_core_path, const char *ent
       return true;
 #endif
 
+   if (core_info_match_base_filename(real_core_path, entry_core_path))
+      return true;
+
    return false;
 }
 

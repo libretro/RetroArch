@@ -149,6 +149,8 @@ bool core_info_list_get_info(core_info_list_t *core_info_list,
 
 bool core_info_hw_api_supported(core_info_t *info);
 
+bool core_info_match_base_filename(const char* core_path_a, const char* core_path_b);
+
 RETRO_END_DECLS
 
 #endif /* CORE_INFO_H_ */

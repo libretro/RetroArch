@@ -813,6 +813,31 @@ void core_info_list_get_supported_cores(core_info_list_t *core_info_list,
    *num_infos = supported;
 }
 
+/*
+ * Matches core path A and B "base" filename (ignoring everything after _libretro)
+ *
+ * Ex:
+ *   snes9x_libretro.dll and snes9x_libretro_android.so are matched
+ *   snes9x__2005_libretro.dll and snes9x_libretro_android.so are NOT matched
+ */
+bool core_info_match_base_filename(const char* core_path_a, const char* core_path_b)
+{
+   if (!core_path_a || !core_path_b)
+      return false;
+
+   const char* core_path_basename_a = path_basename(core_path_a);
+   const char* core_path_basename_b = path_basename(core_path_b);
+   char* libretro_pos = core_path_basename_a != NULL ? strstr(core_path_basename_b, "_libretro") : NULL;
+   if (libretro_pos)
+   {
+      size_t core_base_filename_length = libretro_pos - core_path_basename_a;
+      if (strncmp(core_path_basename_a, core_path_basename_b, core_base_filename_length) == 0)
+         return true;
+   }
+
+   return false;
+}
+
 void core_info_get_name(const char *path, char *s, size_t len,
       const char *path_info, const char *dir_cores,
       const char *exts, bool dir_show_hidden_files,
