@@ -7041,8 +7041,6 @@ MSG_HASH(
    "Increase coarseness of menu background checkerboard pattern."
    )
 MSG_HASH(
-<<<<<<< HEAD
-=======
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE_DDMM_HM_AM_PM,
    "DD/MM - HH:MM (AM/PM)"
    )
@@ -7058,7 +7056,6 @@ MSG_HASH(
    "Increase coarseness of menu background checkerboard pattern."
    )
 MSG_HASH(
->>>>>>> master
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_BORDER_FILLER_ENABLE,
    "Border Filler"
    )
