@@ -26,7 +26,7 @@
 #include "../../managers/core_option_manager.h"
 
 #ifdef HAVE_CHEEVOS
-#include "../../cheevos-new/cheevos.h"
+#include "../../cheevos/cheevos.h"
 #endif
 #include "../../core_info.h"
 #include "../../verbosity.h"

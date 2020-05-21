@@ -24,7 +24,7 @@
 #include <file/file_path.h>
 
 #ifdef HAVE_CHEEVOS
-#include "../../../cheevos-new/badges.h"
+#include "../../../cheevos/badges.h"
 #endif
 
 #include "../../../verbosity.h"

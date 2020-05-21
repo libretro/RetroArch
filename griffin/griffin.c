@@ -174,11 +174,11 @@ ACHIEVEMENTS
 #include "../libretro-common/formats/cdfs/cdfs.c"
 #include "../network/net_http_special.c"
 
-#include "../cheevos-new/cheevos.c"
-#include "../cheevos-new/badges.c"
-#include "../cheevos-new/fixup.c"
-#include "../cheevos-new/hash.c"
-#include "../cheevos-new/parser.c"
+#include "../cheevos/cheevos.c"
+#include "../cheevos/badges.c"
+#include "../cheevos/fixup.c"
+#include "../cheevos/hash.c"
+#include "../cheevos/parser.c"
 
 #include "../deps/rcheevos/src/rcheevos/alloc.c"
 #include "../deps/rcheevos/src/rcheevos/compat.c"

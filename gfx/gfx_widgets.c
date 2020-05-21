@@ -44,7 +44,7 @@
 #include "../tasks/task_content.h"
 
 #ifdef HAVE_CHEEVOS
-#include "../cheevos-new/badges.h"
+#include "../cheevos/badges.h"
 #endif
 
 static bool widgets_inited             = false;

@@ -155,8 +155,8 @@
 #include "input/input_remapping.h"
 
 #ifdef HAVE_CHEEVOS
-#include "cheevos-new/cheevos.h"
-#include "cheevos-new/fixup.h"
+#include "cheevos/cheevos.h"
+#include "cheevos/fixup.h"
 #endif
 
 #ifdef HAVE_TRANSLATE
