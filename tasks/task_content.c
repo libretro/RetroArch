@@ -82,7 +82,7 @@
 #endif
 
 #ifdef HAVE_CHEEVOS
-#include "../cheevos-new/cheevos.h"
+#include "../cheevos/cheevos.h"
 #endif
 
 #include "task_content.h"
@@ -108,8 +108,9 @@
 #include "../paths.h"
 #include "../verbosity.h"
 
-#include "../discord/discord.h"
+#include "../network/discord.h"
 
+/* TODO/FIXME - get rid of this public global */
 extern bool discord_is_inited;
 
 #define MAX_ARGS 32
@@ -1076,8 +1077,6 @@ static bool content_file_load(
    {
       const char *content_path     = content->elems[0].data;
       enum rarch_content_type type = path_is_media_type(content_path);
-
-      rcheevos_set_cheats();
 
       if (type == RARCH_CONTENT_NONE && !string_is_empty(content_path))
          rcheevos_load(info);

@@ -195,7 +195,11 @@ static void get_current_menu_sublabel(char* retstr, size_t max)
 
    menu_entry_init(&entry);
    menu_entry_get(&entry, 0, menu_navigation_get_selection(), NULL, true);
+<<<<<<< HEAD
 
+=======
+ 
+>>>>>>> master
    menu_entry_get_sublabel(&entry, &entry_sublabel);
    strlcpy(retstr, entry_sublabel, max);
 }
@@ -1532,9 +1536,15 @@ int menu_entries_get_title(char *s, size_t len)
    const char *path              = NULL;
    const char *label             = NULL;
    struct menu_state    *menu_st = &menu_driver_state;
+<<<<<<< HEAD
    const file_list_t *list       = menu_st->entries.list ?
       menu_list_get(menu_st->entries.list, 0) : NULL;
    menu_file_list_cbs_t *cbs     = list
+=======
+   const file_list_t *list       = menu_st->entries.list ? 
+      menu_list_get(menu_st->entries.list, 0) : NULL;
+   menu_file_list_cbs_t *cbs     = list 
+>>>>>>> master
       ? (menu_file_list_cbs_t*)list->list[list->size - 1].actiondata
       : NULL;
 
@@ -2304,7 +2314,11 @@ void menu_display_timedate(gfx_display_ctx_datetime_t *datetime)
             break;
          case MENU_TIMEDATE_STYLE_MD_HM: /* MM/DD HH:MM */
             strftime(menu_st->datetime_cache, sizeof(menu_st->datetime_cache),
+<<<<<<< HEAD
                   "%m-%d %H:%M", tm_);
+=======
+                  "%m/%d %H:%M", tm_);
+>>>>>>> master
             break;
          case MENU_TIMEDATE_STYLE_MDYYYY: /* MM-DD-YYYY */
             strftime(menu_st->datetime_cache, sizeof(menu_st->datetime_cache),
@@ -2316,6 +2330,7 @@ void menu_display_timedate(gfx_display_ctx_datetime_t *datetime)
             break;
          case MENU_TIMEDATE_STYLE_DDMMYYYY_HMS: /* DD/MM/YYYY HH:MM:SS */
             strftime(menu_st->datetime_cache, sizeof(menu_st->datetime_cache),
+<<<<<<< HEAD
                   "%d-%m-%Y %H:%M:%S", tm_);
             break;
          case MENU_TIMEDATE_STYLE_DDMMYYYY_HM: /* DD/MM/YYYY HH:MM */
@@ -2333,6 +2348,25 @@ void menu_display_timedate(gfx_display_ctx_datetime_t *datetime)
          case MENU_TIMEDATE_STYLE_DDMM: /* DD/MM */
             strftime(menu_st->datetime_cache, sizeof(menu_st->datetime_cache),
                   "%d-%m", tm_);
+=======
+                  "%d/%m/%Y %H:%M:%S", tm_);
+            break;
+         case MENU_TIMEDATE_STYLE_DDMMYYYY_HM: /* DD/MM/YYYY HH:MM */
+            strftime(menu_st->datetime_cache, sizeof(menu_st->datetime_cache),
+                  "%d/%m/%Y %H:%M", tm_);
+            break;
+         case MENU_TIMEDATE_STYLE_DDMM_HM: /* DD/MM HH:MM */
+            strftime(menu_st->datetime_cache, sizeof(menu_st->datetime_cache),
+                  "%d/%m %H:%M", tm_);
+            break;
+         case MENU_TIMEDATE_STYLE_DDMMYYYY: /* DD/MM/YYYY */
+            strftime(menu_st->datetime_cache, sizeof(menu_st->datetime_cache),
+                  "%d/%m/%Y", tm_);
+            break;
+         case MENU_TIMEDATE_STYLE_DDMM: /* DD/MM */
+            strftime(menu_st->datetime_cache, sizeof(menu_st->datetime_cache),
+                  "%d/%m", tm_);
+>>>>>>> master
             break;
          case MENU_TIMEDATE_STYLE_HMS: /* HH:MM:SS */
             strftime(menu_st->datetime_cache, sizeof(menu_st->datetime_cache),
@@ -2342,6 +2376,7 @@ void menu_display_timedate(gfx_display_ctx_datetime_t *datetime)
             strftime(menu_st->datetime_cache, sizeof(menu_st->datetime_cache),
                   "%H:%M", tm_);
             break;
+<<<<<<< HEAD
          case MENU_TIMEDATE_STYLE_YMD_HMS_AMPM: /* YYYY-MM-DD HH:MM:SS (AM/PM) */
             strftime_ampm(menu_st->datetime_cache, sizeof(menu_st->datetime_cache),
                   "%Y-%m-%d %I:%M:%S %p", tm_);
@@ -2380,6 +2415,46 @@ void menu_display_timedate(gfx_display_ctx_datetime_t *datetime)
             break;
          case MENU_TIMEDATE_STYLE_HM_AMPM: /* HH:MM (AM/PM) */
             strftime_ampm(menu_st->datetime_cache, sizeof(menu_st->datetime_cache),
+=======
+         case MENU_TIMEDATE_STYLE_YMD_HMS_AM_PM: /* YYYY-MM-DD HH:MM:SS (am/pm) */
+            strftime_am_pm(menu_st->datetime_cache, sizeof(menu_st->datetime_cache),
+                  "%Y-%m-%d %I:%M:%S %p", tm_);
+            break;
+         case MENU_TIMEDATE_STYLE_YMD_HM_AM_PM: /* YYYY-MM-DD HH:MM (am/pm) */
+            strftime_am_pm(menu_st->datetime_cache, sizeof(menu_st->datetime_cache),
+                  "%Y-%m-%d %I:%M %p", tm_);
+            break;
+         case MENU_TIMEDATE_STYLE_MDYYYY_HMS_AM_PM: /* MM-DD-YYYY HH:MM:SS (am/pm) */
+            strftime_am_pm(menu_st->datetime_cache, sizeof(menu_st->datetime_cache),
+                  "%m-%d-%Y %I:%M:%S %p", tm_);
+            break;
+         case MENU_TIMEDATE_STYLE_MDYYYY_HM_AM_PM: /* MM-DD-YYYY HH:MM (am/pm) */
+            strftime_am_pm(menu_st->datetime_cache, sizeof(menu_st->datetime_cache),
+                  "%m-%d-%Y %I:%M %p", tm_);
+            break;
+         case MENU_TIMEDATE_STYLE_MD_HM_AM_PM: /* MM/DD HH:MM (am/pm) */
+            strftime_am_pm(menu_st->datetime_cache, sizeof(menu_st->datetime_cache),
+                  "%m/%d %I:%M %p", tm_);
+            break;
+         case MENU_TIMEDATE_STYLE_DDMMYYYY_HMS_AM_PM: /* DD/MM/YYYY HH:MM:SS (am/pm) */
+            strftime_am_pm(menu_st->datetime_cache, sizeof(menu_st->datetime_cache),
+                  "%d/%m/%Y %I:%M:%S %p", tm_);
+            break;
+         case MENU_TIMEDATE_STYLE_DDMMYYYY_HM_AM_PM: /* DD/MM/YYYY HH:MM (am/pm) */
+            strftime_am_pm(menu_st->datetime_cache, sizeof(menu_st->datetime_cache),
+                  "%d/%m/%Y %I:%M %p", tm_);
+            break;
+         case MENU_TIMEDATE_STYLE_DDMM_HM_AM_PM: /* DD/MM HH:MM (am/pm) */
+            strftime_am_pm(menu_st->datetime_cache, sizeof(menu_st->datetime_cache),
+                  "%d/%m %I:%M %p", tm_);
+            break;
+         case MENU_TIMEDATE_STYLE_HMS_AM_PM: /* HH:MM:SS (am/pm) */
+            strftime_am_pm(menu_st->datetime_cache, sizeof(menu_st->datetime_cache),
+                  "%I:%M:%S %p", tm_);
+            break;
+         case MENU_TIMEDATE_STYLE_HM_AM_PM: /* HH:MM (am/pm) */
+            strftime_am_pm(menu_st->datetime_cache, sizeof(menu_st->datetime_cache),
+>>>>>>> master
                   "%I:%M %p", tm_);
             break;
       }

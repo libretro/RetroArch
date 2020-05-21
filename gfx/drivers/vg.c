@@ -416,8 +416,9 @@ static bool vg_frame(void *data, const void *frame,
       video_frame_info_t *video_info)
 {
    vg_t                           *vg = (vg_t*)data;
-   unsigned width                            = video_info->width;
-   unsigned height                           = video_info->height;
+   unsigned width                     = video_info->width;
+   unsigned height                    = video_info->height;
+   bool menu_is_alive                 = video_info->menu_is_alive;
 
    if (     frame_width != vg->mRenderWidth
          || frame_height != vg->mRenderHeight
@@ -444,7 +445,7 @@ static bool vg_frame(void *data, const void *frame,
    vg_copy_frame(vg, frame, frame_width, frame_height, pitch);
 
 #ifdef HAVE_MENU
-   menu_driver_frame(video_info);
+   menu_driver_frame(menu_is_alive, video_info);
 #endif
 
    vgDrawImage(vg->mImage);

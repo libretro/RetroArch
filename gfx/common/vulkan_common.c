@@ -52,10 +52,13 @@ static VkDevice                      cached_device_vk;
 static retro_vulkan_destroy_device_t cached_destroy_device_vk;
 static struct string_list *vulkan_gpu_list = NULL;
 
-//#define WSI_HARDENING_TEST
+#if 0
+#define WSI_HARDENING_TEST
+#endif
+
 #ifdef WSI_HARDENING_TEST
-static unsigned wsi_harden_counter = 0;
-static unsigned wsi_harden_counter2 = 0;
+static unsigned wsi_harden_counter         = 0;
+static unsigned wsi_harden_counter2        = 0;
 
 static void trigger_spurious_error_vkresult(VkResult *res)
 {
@@ -1978,9 +1981,7 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
 #else
       vulkan_library = dylib_load("libvulkan.so");
       if (!vulkan_library)
-      {
          vulkan_library = dylib_load("libvulkan.so.1");
-      }
 #endif
    }
 

@@ -332,7 +332,7 @@ static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_XENON360;
 #elif defined(HAVE_D3D11)
 static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_D3D11;
 #elif defined(HAVE_D3D12)
-/* FIXME/WARNING: DX12 performance on Xbox is horrible for 
+/* FIXME/WARNING: DX12 performance on Xbox is horrible for
  * some reason. For now, we will default to D3D11 when possible. */
 static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_D3D12;
 #elif defined(HAVE_D3D10)
@@ -1454,7 +1454,7 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
 #ifdef HAVE_MENU
    SETTING_BOOL("menu_unified_controls",         &settings->bools.menu_unified_controls, true, false, false);
    SETTING_BOOL("menu_throttle_framerate",       &settings->bools.menu_throttle_framerate, true, true, false);
-   SETTING_BOOL("menu_linear_filter",            &settings->bools.menu_linear_filter, true, true, false);
+   SETTING_BOOL("menu_linear_filter",            &settings->bools.menu_linear_filter, true, DEFAULT_VIDEO_SMOOTH, false);
    SETTING_BOOL("menu_horizontal_animation",     &settings->bools.menu_horizontal_animation, true, DEFAULT_MENU_HORIZONTAL_ANIMATION, false);
    SETTING_BOOL("menu_pause_libretro",           &settings->bools.menu_pause_libretro, true, true, false);
    SETTING_BOOL("menu_savestate_resume",         &settings->bools.menu_savestate_resume, true, menu_savestate_resume, false);
@@ -1588,6 +1588,7 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
    SETTING_BOOL("cheevos_verbose_enable",       &settings->bools.cheevos_verbose_enable, true, false, false);
    SETTING_BOOL("cheevos_auto_screenshot",      &settings->bools.cheevos_auto_screenshot, true, false, false);
    SETTING_BOOL("cheevos_badges_enable",        &settings->bools.cheevos_badges_enable, true, false, false);
+   SETTING_BOOL("cheevos_start_active",         &settings->bools.cheevos_start_active, true, false, false);
 #endif
 #ifdef HAVE_OVERLAY
    SETTING_BOOL("input_overlay_enable",         &settings->bools.input_overlay_enable, true, config_overlay_enable_default(), false);
@@ -2674,7 +2675,7 @@ static config_file_t *open_default_config_file(void)
 
          skeleton_conf[0] = '\0';
 
-         /* Build a retroarch.cfg path from the 
+         /* Build a retroarch.cfg path from the
           * global config directory (/etc). */
          fill_pathname_join(skeleton_conf, GLOBAL_CONFIG_DIR,
             file_path_str(FILE_PATH_MAIN_CONFIG), path_size);
@@ -2689,7 +2690,7 @@ static config_file_t *open_default_config_file(void)
 
          if (conf)
          {
-            /* Since this is a clean config file, we can 
+            /* Since this is a clean config file, we can
              * safely use config_save_on_exit. */
             config_set_bool(conf, "config_save_on_exit", true);
             saved = config_file_write(conf, conf_path, true);

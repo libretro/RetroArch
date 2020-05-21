@@ -26,7 +26,7 @@
 #include "../../managers/core_option_manager.h"
 
 #ifdef HAVE_CHEEVOS
-#include "../../cheevos-new/cheevos.h"
+#include "../../cheevos/cheevos.h"
 #endif
 #include "../../core_info.h"
 #include "../../verbosity.h"
@@ -169,6 +169,7 @@ default_sublabel_macro(action_bind_sublabel_cheevos_richpresence_enable,   MENU_
 default_sublabel_macro(action_bind_sublabel_cheevos_badges_enable,         MENU_ENUM_SUBLABEL_CHEEVOS_BADGES_ENABLE)
 default_sublabel_macro(action_bind_sublabel_cheevos_verbose_enable,        MENU_ENUM_SUBLABEL_CHEEVOS_VERBOSE_ENABLE)
 default_sublabel_macro(action_bind_sublabel_cheevos_auto_screenshot,       MENU_ENUM_SUBLABEL_CHEEVOS_AUTO_SCREENSHOT)
+default_sublabel_macro(action_bind_sublabel_cheevos_start_active,          MENU_ENUM_SUBLABEL_CHEEVOS_START_ACTIVE)
 default_sublabel_macro(action_bind_sublabel_menu_views_settings_list,      MENU_ENUM_SUBLABEL_MENU_VIEWS_SETTINGS)
 default_sublabel_macro(action_bind_sublabel_quick_menu_views_settings_list, MENU_ENUM_SUBLABEL_QUICK_MENU_VIEWS_SETTINGS)
 default_sublabel_macro(action_bind_sublabel_settings_views_settings_list, MENU_ENUM_SUBLABEL_SETTINGS_VIEWS_SETTINGS)
@@ -1111,14 +1112,14 @@ static int action_bind_sublabel_playlist_entry(
 
    /* Only add sublabel if a core is currently assigned
     * > Both core name and core path must be valid */
-   if (  string_is_empty(entry->core_name) || 
+   if (  string_is_empty(entry->core_name) ||
          string_is_equal(entry->core_name, "DETECT") ||
          string_is_empty(entry->core_path) ||
          string_is_equal(entry->core_path, "DETECT"))
       return 0;
 
    /* Add core name */
-   strlcpy(s, 
+   strlcpy(s,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_CORE), len);
    strlcat(s, " ", len);
    strlcat(s, entry->core_name, len);
@@ -1224,7 +1225,7 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
    info_range_list_t info_list[] = {
       {
          MENU_SETTINGS_INPUT_DESC_KBD_BEGIN,
-         MENU_SETTINGS_INPUT_DESC_KBD_END, 
+         MENU_SETTINGS_INPUT_DESC_KBD_END,
          action_bind_sublabel_remap_kbd_sublabel
       },
 #ifdef HAVE_AUDIOMIXER
@@ -2745,6 +2746,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_CHEEVOS_AUTO_SCREENSHOT:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheevos_auto_screenshot);
+            break;
+         case MENU_ENUM_LABEL_CHEEVOS_START_ACTIVE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheevos_start_active);
             break;
          case MENU_ENUM_LABEL_SETTINGS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_settings);

@@ -178,26 +178,30 @@ static bool network_gfx_frame(void *data, const void *frame,
    unsigned pixfmt           = NETWORK_VIDEO_PIXELFORMAT_RGB565;
    bool draw                 = true;
    network_video_t *network  = (network_video_t*)data;
+   bool menu_is_alive        = video_info->menu_is_alive;
 
    if (!frame || !frame_width || !frame_height)
       return true;
 
 #ifdef HAVE_MENU
-   menu_driver_frame(video_info);
+   menu_driver_frame(menu_is_alive, video_info);
 #endif
 
-   if (network_video_width != frame_width || network_video_height != frame_height || network_video_pitch != pitch)
+   if (  network_video_width  != frame_width  || 
+         network_video_height != frame_height || 
+         network_video_pitch  != pitch)
    {
       if (frame_width > 4 && frame_height > 4)
       {
-         network_video_width = frame_width;
-         network_video_height = frame_height;
-         network_video_pitch = pitch;
-         network->screen_width = network_video_width;
+         network_video_width    = frame_width;
+         network_video_height   = frame_height;
+         network_video_pitch    = pitch;
+         network->screen_width  = network_video_width;
          network->screen_height = network_video_height;
       }
    }
 
+#ifdef HAVE_MENU
    if (network_menu_frame && video_info->menu_is_alive)
    {
       frame_to_copy = network_menu_frame;
@@ -207,16 +211,21 @@ static bool network_gfx_frame(void *data, const void *frame,
       bits          = network_menu_bits;
    }
    else
+#endif
    {
       width         = network_video_width;
       height        = network_video_height;
       pitch         = network_video_pitch;
 
-      if (frame_width == 4 && frame_height == 4 && (frame_width < width && frame_height < height))
+      if (  frame_width  == 4 && 
+            frame_height == 4 && 
+            (frame_width < width && frame_height < height))
          draw = false;
 
+#ifdef HAVE_MENU
       if (video_info->menu_is_alive)
          draw = false;
+#endif
    }
 
    if (network->video_width != width || network->video_height != height)
@@ -225,9 +234,7 @@ static bool network_gfx_frame(void *data, const void *frame,
       network->video_height = height;
 
       if (network_video_temp_buf)
-      {
          free(network_video_temp_buf);
-      }
 
       network_video_temp_buf = (unsigned*)malloc(network->screen_width * network->screen_height * sizeof(unsigned));
    }
@@ -246,8 +253,8 @@ static bool network_gfx_frame(void *data, const void *frame,
                for (x = 0; x < network->screen_width; x++)
                {
                   /* scale incoming frame to fit the screen */
-                  unsigned scaled_x = (width * x) / network->screen_width;
-                  unsigned scaled_y = (height * y) / network->screen_height;
+                  unsigned    scaled_x = (width * x) / network->screen_width;
+                  unsigned    scaled_y = (height * y) / network->screen_height;
                   unsigned short pixel = ((unsigned short*)frame_to_copy)[width * scaled_y + scaled_x];
 
                   /* convert RGBX4444 to RGBX8888 */
@@ -272,8 +279,8 @@ static bool network_gfx_frame(void *data, const void *frame,
                for (x = 0; x < network->screen_width; x++)
                {
                   /* scale incoming frame to fit the screen */
-                  unsigned scaled_x = (width * x) / network->screen_width;
-                  unsigned scaled_y = (height * y) / network->screen_height;
+                  unsigned    scaled_x = (width * x) / network->screen_width;
+                  unsigned    scaled_y = (height * y) / network->screen_height;
                   unsigned short pixel = ((unsigned short*)frame_to_copy)[(pitch / (bits / 8)) * scaled_y + scaled_x];
 
                   /* convert RGB565 to RGBX8888 */
@@ -306,7 +313,7 @@ static bool network_gfx_frame(void *data, const void *frame,
             /* scale incoming frame to fit the screen */
             unsigned scaled_x = (width * x) / network->screen_width;
             unsigned scaled_y = (height * y) / network->screen_height;
-            unsigned pixel = ((unsigned*)frame_to_copy)[(pitch / (bits / 8)) * scaled_y + scaled_x];
+            unsigned    pixel = ((unsigned*)frame_to_copy)[(pitch / (bits / 8)) * scaled_y + scaled_x];
 
             network_video_temp_buf[network->screen_width * y + x] = pixel;
          }

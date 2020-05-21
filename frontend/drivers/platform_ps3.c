@@ -83,7 +83,6 @@ static void frontend_ps3_shutdown(bool unused)
 static void callback_sysutil_exit(uint64_t status,
       uint64_t param, void *userdata)
 {
-
    (void)param;
    (void)userdata;
    (void)status;
@@ -107,7 +106,7 @@ static void callback_sysutil_exit(uint64_t status,
 }
 #endif
 
-static void fill_derived_paths()
+static void fill_derived_paths(void)
 {
     strlcpy(g_defaults.dirs[DEFAULT_DIR_CONTENT_HISTORY],
             g_defaults.dirs[DEFAULT_DIR_PORT],
@@ -276,7 +275,8 @@ static void frontend_ps3_get_environment_settings(int *argc, char *argv[],
    memset(&size, 0x00, sizeof(CellGameContentSize));
 
    ret = cellGameBootCheck(&get_type, &get_attributes, &size, dirName);
-   if(ret < 0)
+
+   if (ret < 0)
    {
       RARCH_ERR("cellGameBootCheck() Error: 0x%x.\n", ret);
    }
@@ -299,7 +299,7 @@ static void frontend_ps3_get_environment_settings(int *argc, char *argv[],
             break;
       }
 
-      if((get_attributes & CELL_GAME_ATTRIBUTE_APP_HOME)
+      if ((get_attributes & CELL_GAME_ATTRIBUTE_APP_HOME)
             == CELL_GAME_ATTRIBUTE_APP_HOME)
          RARCH_LOG("RetroArch was launched from host machine (APP_HOME).\n");
 
@@ -307,12 +307,10 @@ static void frontend_ps3_get_environment_settings(int *argc, char *argv[],
 
 #ifdef HAVE_MULTIMAN
       if (multiman_detected)
-      {
-	  use_app_path(content_info_path);
-      }
+         use_app_path(content_info_path);
 #endif
 
-      if(ret < 0)
+      if (ret < 0)
          RARCH_ERR("cellGameContentPermit() Error: 0x%x\n", ret);
       else
       {
@@ -468,7 +466,7 @@ static int frontend_ps3_exec_exitspawn(const char *path,
    ret = -1;
 #endif
    
-   if(ret <  0)
+   if (ret <  0)
    {
       RARCH_WARN("SELF file is not of NPDRM type, trying another approach to boot it...\n");
       sys_game_process_exitspawn(path, (const char** const)argv,

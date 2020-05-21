@@ -192,35 +192,37 @@ static void cocoa_input_poll(void *data)
       apple->joypad->poll();
    if (apple->sec_joypad)
        apple->sec_joypad->poll();
-
-    apple->mouse_x_last = apple->mouse_rel_x;
-    apple->mouse_y_last = apple->mouse_rel_y;
 }
 
 static int16_t cocoa_mouse_state(cocoa_input_data_t *apple,
       unsigned id)
 {
-   switch (id)
-   {
-      case RETRO_DEVICE_ID_MOUSE_X:
-           return apple->mouse_rel_x - apple->mouse_x_last;
-      case RETRO_DEVICE_ID_MOUSE_Y:
-         return apple->mouse_rel_y - apple->mouse_y_last;
-      case RETRO_DEVICE_ID_MOUSE_LEFT:
-         return apple->mouse_buttons & 1;
-      case RETRO_DEVICE_ID_MOUSE_RIGHT:
-         return apple->mouse_buttons & 2;
-       case RETRO_DEVICE_ID_MOUSE_WHEELUP:
-           return apple->mouse_wu;
-       case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
-           return apple->mouse_wd;
-       case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:
-           return apple->mouse_wl;
-       case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN:
-           return apple->mouse_wr;
-   }
+  int16_t val;
+  switch (id)
+  {
+     case RETRO_DEVICE_ID_MOUSE_X:
+        val = apple->window_pos_x - apple->mouse_x_last;
+        apple->mouse_x_last = apple->window_pos_x;
+        return val;
+     case RETRO_DEVICE_ID_MOUSE_Y:
+        val = apple->window_pos_y - apple->mouse_y_last;
+        apple->mouse_y_last = apple->window_pos_y;
+        return val;
+     case RETRO_DEVICE_ID_MOUSE_LEFT:
+          return apple->mouse_buttons & 1;
+     case RETRO_DEVICE_ID_MOUSE_RIGHT:
+          return apple->mouse_buttons & 2;
+      case RETRO_DEVICE_ID_MOUSE_WHEELUP:
+          return apple->mouse_wu;
+      case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
+          return apple->mouse_wd;
+      case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:
+          return apple->mouse_wl;
+      case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN:
+          return apple->mouse_wr;
+  }
 
-   return 0;
+  return 0;
 }
 
 static int16_t cocoa_mouse_state_screen(cocoa_input_data_t *apple,

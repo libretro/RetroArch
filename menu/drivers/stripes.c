@@ -59,7 +59,7 @@
 #include "../../tasks/tasks_internal.h"
 
 #ifdef HAVE_CHEEVOS
-#include "../../cheevos-new/badges.h"
+#include "../../cheevos/badges.h"
 #endif
 
 #include "../../content.h"

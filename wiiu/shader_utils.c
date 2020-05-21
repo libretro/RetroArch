@@ -100,18 +100,20 @@ void GX2SetShader(GX2Shader *shader)
 
 void dump_vs_data(GX2VertexShader* vs)
 {
+   unsigned i;
 
    DEBUG_INT(vs->size);
    DEBUG_VAR(vs->mode);
    DEBUG_INT(vs->uniformBlockCount);
-   for(int i = 0; i < vs->uniformBlockCount; i++)
+
+   for (i = 0; i < vs->uniformBlockCount; i++)
    {
       DEBUG_STR(vs->uniformBlocks[i].name);
       DEBUG_INT(vs->uniformBlocks[i].offset);
       DEBUG_INT(vs->uniformBlocks[i].size);
    }
    DEBUG_INT(vs->uniformVarCount);
-   for(int i = 0; i < vs->uniformVarCount; i++)
+   for (i = 0; i < vs->uniformVarCount; i++)
    {
       DEBUG_STR(vs->uniformVars[i].name);
       DEBUG_INT(vs->uniformVars[i].offset);
@@ -120,7 +122,7 @@ void dump_vs_data(GX2VertexShader* vs)
       DEBUG_INT(vs->uniformVars[i].block);
    }
    DEBUG_INT(vs->initialValueCount);
-   for(int i = 0; i < vs->initialValueCount; i++)
+   for (i = 0; i < vs->initialValueCount; i++)
    {
       DEBUG_INT(vs->initialValues[i].offset);
       DEBUG_FLOAT(vs->initialValues[i].value[0]);
@@ -129,20 +131,20 @@ void dump_vs_data(GX2VertexShader* vs)
       DEBUG_FLOAT(vs->initialValues[i].value[3]);
    }
    DEBUG_INT(vs->loopVarCount);
-   for(int i = 0; i < vs->loopVarCount; i++)
+   for (i = 0; i < vs->loopVarCount; i++)
    {
       DEBUG_INT(vs->loopVars[i].offset);
       DEBUG_VAR(vs->loopVars[i].value);
    }
    DEBUG_INT(vs->samplerVarCount);
-   for(int i = 0; i < vs->samplerVarCount; i++)
+   for (i = 0; i < vs->samplerVarCount; i++)
    {
       DEBUG_STR(vs->samplerVars[i].name);
       DEBUG_INT(vs->samplerVars[i].type);
       DEBUG_INT(vs->samplerVars[i].location);
    }
 
-   for(int i = 0; i < vs->attribVarCount; i++)
+   for (i = 0; i < vs->attribVarCount; i++)
    {
       DEBUG_STR(vs->attribVars[i].name);
       DEBUG_VAR(vs->attribVars[i].type);
@@ -153,17 +155,19 @@ void dump_vs_data(GX2VertexShader* vs)
 
 void dump_ps_data(GX2PixelShader* ps)
 {
+   unsigned i;
+
    DEBUG_INT(ps->size);
    DEBUG_VAR(ps->mode);
    DEBUG_INT(ps->uniformBlockCount);
-   for(int i = 0; i < ps->uniformBlockCount; i++)
+   for (i = 0; i < ps->uniformBlockCount; i++)
    {
       DEBUG_STR(ps->uniformBlocks[i].name);
       DEBUG_INT(ps->uniformBlocks[i].offset);
       DEBUG_INT(ps->uniformBlocks[i].size);
    }
    DEBUG_INT(ps->uniformVarCount);
-   for(int i = 0; i < ps->uniformVarCount; i++)
+   for (i = 0; i < ps->uniformVarCount; i++)
    {
       DEBUG_STR(ps->uniformVars[i].name);
       DEBUG_INT(ps->uniformVars[i].offset);
@@ -172,7 +176,7 @@ void dump_ps_data(GX2PixelShader* ps)
       DEBUG_INT(ps->uniformVars[i].block);
    }
    DEBUG_INT(ps->initialValueCount);
-   for(int i = 0; i < ps->initialValueCount; i++)
+   for (i = 0; i < ps->initialValueCount; i++)
    {
       DEBUG_INT(ps->initialValues[i].offset);
       DEBUG_FLOAT(ps->initialValues[i].value[0]);
@@ -181,13 +185,13 @@ void dump_ps_data(GX2PixelShader* ps)
       DEBUG_FLOAT(ps->initialValues[i].value[3]);
    }
    DEBUG_INT(ps->loopVarCount);
-   for(int i = 0; i < ps->loopVarCount; i++)
+   for (i = 0; i < ps->loopVarCount; i++)
    {
       DEBUG_INT(ps->loopVars[i].offset);
       DEBUG_VAR(ps->loopVars[i].value);
    }
    DEBUG_INT(ps->samplerVarCount);
-   for(int i = 0; i < ps->samplerVarCount; i++)
+   for (i = 0; i < ps->samplerVarCount; i++)
    {
       DEBUG_STR(ps->samplerVars[i].name);
       DEBUG_INT(ps->samplerVars[i].type);
@@ -198,6 +202,8 @@ void dump_ps_data(GX2PixelShader* ps)
 
 void check_shader_verbose(u32 *shader, u32 shader_size, u32 *org, u32 org_size, const char *name)
 {
+   unsigned i;
+
    printf("%s :\n", name);
    DEBUG_VAR(shader_size);
    DEBUG_VAR(org_size);
@@ -205,14 +211,14 @@ void check_shader_verbose(u32 *shader, u32 shader_size, u32 *org, u32 org_size, 
    if (shader_size != org_size)
       printf("size mismatch : 0x%08X should be 0x%08X\n", shader_size, org_size);
 
-   for (int i = 0; i < shader_size / 4; i += 4)
+   for (i = 0; i < shader_size / 4; i += 4)
    {
       printf("0x%08X 0x%08X 0x%08X 0x%08X          0x%08X 0x%08X 0x%08X 0x%08X\n",
              shader[i], shader[i + 1], shader[i + 2], shader[i + 3],
              org[i], org[i + 1], org[i + 2], org[i + 3]);
    }
 
-   for (int i = 0; i < shader_size / 4; i++)
+   for (i = 0; i < shader_size / 4; i++)
    {
       if (shader[i] != org[i])
          printf("%i(%X): 0x%08X(0x%08X) should be 0x%08X(0x%08X) \n", i, i, shader[i], __builtin_bswap32(shader[i]), org[i],
@@ -221,9 +227,11 @@ void check_shader_verbose(u32 *shader, u32 shader_size, u32 *org, u32 org_size, 
 }
 void check_shader(const void *shader_, u32 shader_size, const void *org_, u32 org_size, const char *name)
 {
-   u32 *shader = (u32 *)shader_;
-   u32 *org = (u32 *)org_;
+   unsigned i;
    bool different = false;
+   u32 *shader    = (u32 *)shader_;
+   u32 *org       = (u32 *)org_;
+
    printf("%-20s : ", name);
 
    if (shader_size != org_size)
@@ -232,7 +240,7 @@ void check_shader(const void *shader_, u32 shader_size, const void *org_, u32 or
       printf("\nsize mismatch : 0x%08X should be 0x%08X", shader_size, org_size);
    }
 
-   for (int i = 0; i < shader_size / 4; i++)
+   for (i = 0; i < shader_size / 4; i++)
    {
       if (shader[i] != org[i])
       {
@@ -327,7 +335,7 @@ void gfd_free(GFDFile* gfd)
 
 static bool gfd_relocate_block(GFDBlock* block)
 {
-
+   unsigned i;
    GFDRelocationHeader* rel = (GFDRelocationHeader*)(block->data + block->header.dataSize) - 1;
 
    if (rel->magic != GFD_BLOCK_RELOCATIONS_MAGIC)
@@ -344,7 +352,7 @@ static bool gfd_relocate_block(GFDBlock* block)
 
    u32* patches = (u32*)(block->data + (rel->patchOffset & GFD_RELOCATIONS_VALUE_MASK));
 
-   for(int i=0; i < rel->patchCount; i++)
+   for (i = 0; i < rel->patchCount; i++)
    {
       if(patches[i])
       {
@@ -371,7 +379,7 @@ static bool gfd_relocate_block(GFDBlock* block)
 GFDFile *gfd_open(const char *filename)
 {
    GFDFile* gfd = calloc(1, sizeof(*gfd));
-   FILE *fp = fopen(filename, "rb");
+   FILE     *fp = fopen(filename, "rb");
 
    if (!fp)
       goto error;

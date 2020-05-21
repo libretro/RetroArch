@@ -344,135 +344,138 @@ static bool switch_frame(void *data, const void *frame,
       uint64_t frame_count, unsigned pitch,
       const char *msg, video_frame_info_t *video_info)
 {
-    switch_video_t   *sw = data;
-    uint32_t *out_buffer = NULL;
-    bool       ffwd_mode = video_info->input_driver_nonblock_state;
+   uint32_t stride;
+   switch_video_t   *sw = data;
+   uint32_t *out_buffer = NULL;
+   bool       ffwd_mode = video_info->input_driver_nonblock_state;
+   bool menu_is_alive   = video_info->menu_is_alive;
 
-    if (!frame)
-        return true;
+   if (!frame)
+      return true;
 
-    if (ffwd_mode && !sw->is_threaded)
-    {
-        /* render every 4th frame when in ffwd mode and not threaded */
-        if ((frame_count % 4) != 0)
-            return true;
-    }
+   if (ffwd_mode && !sw->is_threaded)
+   {
+      /* render every 4th frame when in ffwd mode and not threaded */
+      if ((frame_count % 4) != 0)
+         return true;
+   }
 
-    if (  sw->should_resize || 
-          width  != sw->last_width || 
-          height != sw->last_height)
-    {
-        switch_update_viewport(sw, video_info);
+   if (  sw->should_resize || 
+         width  != sw->last_width || 
+         height != sw->last_height)
+   {
+      switch_update_viewport(sw, video_info);
 
-        /* Sanity check */
-        sw->vp.width  = MIN(sw->vp.width, sw->vp.full_width);
-        sw->vp.height = MIN(sw->vp.height, sw->vp.full_height);
+      /* Sanity check */
+      sw->vp.width  = MIN(sw->vp.width, sw->vp.full_width);
+      sw->vp.height = MIN(sw->vp.height, sw->vp.full_height);
 
-        scaler_ctx_gen_reset(&sw->scaler);
+      scaler_ctx_gen_reset(&sw->scaler);
 
-        sw->scaler.in_width  = width;
-        sw->scaler.in_height = height;
-        sw->scaler.in_stride = pitch;
-        sw->scaler.in_fmt    = sw->rgb32 
-           ? SCALER_FMT_ARGB8888 
-           : SCALER_FMT_RGB565;
+      sw->scaler.in_width  = width;
+      sw->scaler.in_height = height;
+      sw->scaler.in_stride = pitch;
+      sw->scaler.in_fmt    = sw->rgb32 
+         ? SCALER_FMT_ARGB8888 
+         : SCALER_FMT_RGB565;
 
-        if (!sw->smooth)
-        {
-            sw->scaler.out_width = sw->vp.width;
-            sw->scaler.out_height = sw->vp.height;
-            sw->scaler.out_stride = sw->vp.full_width * sizeof(uint32_t);
-        }
-        else
-        {
-            sw->scaler.out_width = width;
-            sw->scaler.out_height = height;
-            sw->scaler.out_stride = width * sizeof(uint32_t);
+      if (!sw->smooth)
+      {
+         sw->scaler.out_width = sw->vp.width;
+         sw->scaler.out_height = sw->vp.height;
+         sw->scaler.out_stride = sw->vp.full_width * sizeof(uint32_t);
+      }
+      else
+      {
+         sw->scaler.out_width = width;
+         sw->scaler.out_height = height;
+         sw->scaler.out_stride = width * sizeof(uint32_t);
 
-            float screen_ratio = (float)sw->vp.full_width / sw->vp.full_height;
-            float tgt_ratio = (float)sw->vp.width / sw->vp.height;
+         float screen_ratio = (float)sw->vp.full_width / sw->vp.full_height;
+         float tgt_ratio = (float)sw->vp.width / sw->vp.height;
 
-            sw->hw_scale.width = ceil(screen_ratio / tgt_ratio * sw->scaler.out_width);
-            sw->hw_scale.height = sw->scaler.out_height;
-            sw->hw_scale.x_offset = ceil((sw->hw_scale.width - sw->scaler.out_width) / 2.0);
-            if (!video_info->menu_is_alive)
-            {
-               clear_screen(sw);
-               nwindowSetDimensions(sw->win, sw->hw_scale.width, sw->hw_scale.height);
-            }
-        }
-        sw->scaler.out_fmt = SCALER_FMT_ABGR8888;
+         sw->hw_scale.width = ceil(screen_ratio / tgt_ratio * sw->scaler.out_width);
+         sw->hw_scale.height = sw->scaler.out_height;
+         sw->hw_scale.x_offset = ceil((sw->hw_scale.width - sw->scaler.out_width) / 2.0);
+         if (!video_info->menu_is_alive)
+         {
+            clear_screen(sw);
+            nwindowSetDimensions(sw->win, sw->hw_scale.width, sw->hw_scale.height);
+         }
+      }
+      sw->scaler.out_fmt = SCALER_FMT_ABGR8888;
 
-        sw->scaler.scaler_type = SCALER_TYPE_POINT;
+      sw->scaler.scaler_type = SCALER_TYPE_POINT;
 
-        if (!scaler_ctx_gen_filter(&sw->scaler))
-            return false;
+      if (!scaler_ctx_gen_filter(&sw->scaler))
+         return false;
 
-        sw->last_width = width;
-        sw->last_height = height;
+      sw->last_width = width;
+      sw->last_height = height;
 
-        sw->should_resize = false;
-    }
+      sw->should_resize = false;
+   }
 
-    uint32_t stride;
+   out_buffer     = (uint32_t *)framebufferBegin(&sw->fb, &stride);
+   sw->out_buffer = out_buffer;
+   sw->stride     = stride;
 
-    out_buffer = (uint32_t *)framebufferBegin(&sw->fb, &stride);
-    sw->out_buffer = out_buffer;
-    sw->stride = stride;
+   if (sw->in_menu && !video_info->menu_is_alive && sw->smooth)
+   {
+      memset(out_buffer, 0, stride * sw->vp.full_height);
+      nwindowSetDimensions(sw->win, sw->hw_scale.width, sw->hw_scale.height);
+   }
+   sw->in_menu = video_info->menu_is_alive;
 
-    if (sw->in_menu && !video_info->menu_is_alive && sw->smooth)
-    {
-        memset(out_buffer, 0, stride * sw->vp.full_height);
-        nwindowSetDimensions(sw->win, sw->hw_scale.width, sw->hw_scale.height);
-    }
-    sw->in_menu = video_info->menu_is_alive;
+#ifdef HAVE_MENU
+   if (sw->menu_texture.enable)
+   {
+      menu_driver_frame(menu_is_alive, video_info);
 
-    if (sw->menu_texture.enable)
-    {
-        menu_driver_frame(video_info);
+      if (sw->menu_texture.pixels)
+      {
+         memset(out_buffer, 0, stride * sw->vp.full_height);
+         scaler_ctx_scale(&sw->menu_texture.scaler, sw->tmp_image + ((sw->vp.full_height - sw->menu_texture.tgth) / 2) * sw->vp.full_width + ((sw->vp.full_width - sw->menu_texture.tgtw) / 2), sw->menu_texture.pixels);
+         gfx_cpy_dsp_buf(out_buffer, sw->tmp_image, sw->vp.full_width, sw->vp.full_height, stride, true);
+      }
+   }
+   else
+#endif
+      if (sw->smooth) /* bilinear */
+      {
+         int w, h;
+         unsigned x, y;
+         struct scaler_ctx *ctx = &sw->scaler;
+         scaler_ctx_scale_direct(ctx, sw->image, frame);
+         w = sw->scaler.out_width;
+         h = sw->scaler.out_height;
 
-        if (sw->menu_texture.pixels)
-        {
-            memset(out_buffer, 0, stride * sw->vp.full_height);
-            scaler_ctx_scale(&sw->menu_texture.scaler, sw->tmp_image + ((sw->vp.full_height - sw->menu_texture.tgth) / 2) * sw->vp.full_width + ((sw->vp.full_width - sw->menu_texture.tgtw) / 2), sw->menu_texture.pixels);
-            gfx_cpy_dsp_buf(out_buffer, sw->tmp_image, sw->vp.full_width, sw->vp.full_height, stride, true);
-        }
-    }
-    else if (sw->smooth) /* bilinear */
-    {
-        int w, h;
-        unsigned x, y;
-        struct scaler_ctx *ctx = &sw->scaler;
-        scaler_ctx_scale_direct(ctx, sw->image, frame);
-        w = sw->scaler.out_width;
-        h = sw->scaler.out_height;
-
-        for (y = 0; y < h; y++)
+         for (y = 0; y < h; y++)
             for (x = 0; x < w; x++)
-                out_buffer[y * stride / sizeof(uint32_t) + (x + sw->hw_scale.x_offset)] = sw->image[y * w + x];
-    }
-    else
-    {
-        struct scaler_ctx *ctx = &sw->scaler;
-        scaler_ctx_scale(ctx, sw->image + (sw->vp.y * sw->vp.full_width) + sw->vp.x, frame);
-        gfx_cpy_dsp_buf(out_buffer, sw->image, sw->vp.full_width, sw->vp.full_height, stride, false);
-    }
+               out_buffer[y * stride / sizeof(uint32_t) + (x + sw->hw_scale.x_offset)] = sw->image[y * w + x];
+      }
+      else
+      {
+         struct scaler_ctx *ctx = &sw->scaler;
+         scaler_ctx_scale(ctx, sw->image + (sw->vp.y * sw->vp.full_width) + sw->vp.x, frame);
+         gfx_cpy_dsp_buf(out_buffer, sw->image, sw->vp.full_width, sw->vp.full_height, stride, false);
+      }
 
-    if (video_info->statistics_show && !sw->smooth)
-    {
-        struct font_params *osd_params = (struct font_params *)&video_info->osd_stat_params;
+   if (video_info->statistics_show && !sw->smooth)
+   {
+      struct font_params *osd_params = (struct font_params *)&video_info->osd_stat_params;
 
-        if (osd_params)
-            font_driver_render_msg(sw, video_info->stat_text,
-                  (const struct font_params *)&video_info->osd_stat_params, NULL);
-    }
+      if (osd_params)
+         font_driver_render_msg(sw, video_info->stat_text,
+               (const struct font_params *)&video_info->osd_stat_params, NULL);
+   }
 
-    if (msg)
-        font_driver_render_msg(sw, msg, NULL, NULL);
+   if (msg)
+      font_driver_render_msg(sw, msg, NULL, NULL);
 
    framebufferEnd(&sw->fb);
 
-    return true;
+   return true;
 }
 
 static void switch_set_nonblock_state(void *data, bool toggle, bool c, unsigned d)

@@ -132,7 +132,7 @@ static int GLXExtensionSupported(Display *dpy, const char *extension)
    const char *client_extensions = glXGetClientString(dpy, GLX_EXTENSIONS);
    const char *pos               = strstr(extensionsString, extension);
 
-   if (  (pos != NULL) &&
+   if (  pos &&
          (pos == extensionsString || pos[-1] == ' ') &&
          (pos[strlen(extension)] == ' ' || pos[strlen(extension)] == '\0')
       )
@@ -141,7 +141,7 @@ static int GLXExtensionSupported(Display *dpy, const char *extension)
    pos = strstr(client_extensions, extension);
 
    if (
-         (pos != NULL) &&
+         pos &&
          (pos == extensionsString || pos[-1] == ' ') &&
          (pos[strlen(extension)] == ' ' || pos[strlen(extension)] == '\0')
       )
@@ -878,7 +878,7 @@ static bool gfx_ctx_x_set_video_mode(void *data,
                            x->g_glx_win, x->g_glx_win, x->g_ctx);
 
                      version = (const char*)glGetString(GL_VERSION);
-                     if (strstr(version, " Mesa ") != NULL || !x->g_core_es)
+                     if (strstr(version, " Mesa ") || !x->g_core_es)
                      {
                         /* we are done, break switch case */
                         XSetErrorHandler(old_handler);

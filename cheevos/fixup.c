@@ -21,6 +21,7 @@
 #include "../core.h"
 
 #include "../deps/rcheevos/include/rcheevos.h"
+#include "../deps/rcheevos/include/rconsoles.h"
 
 static int rcheevos_cmpaddr(const void* e1, const void* e2)
 {

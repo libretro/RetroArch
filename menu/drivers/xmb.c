@@ -56,7 +56,7 @@
 
 #include "../../tasks/tasks_internal.h"
 
-#include "../../cheevos-new/badges.h"
+#include "../../cheevos/badges.h"
 #include "../../content.h"
 
 #define XMB_RIBBON_ROWS 64
@@ -66,6 +66,23 @@
 #ifndef XMB_DELAY
 #define XMB_DELAY 166.66667f
 #endif
+
+/* Specifies minimum period (in usec) between
+ * tab switch events when input repeat is
+ * active (i.e. when navigating between top level
+ * menu categories by *holding* left/right on
+ * RetroPad or keyboard)
+ * > Note: We want to set a value of 100 ms
+ *   here, but doing so leads to bad pacing when
+ *   running at 60 Hz (due to random frame time
+ *   deviations - input repeat cycles always take
+ *   slightly more or less than 100 ms, so tab
+ *   switches occur every n or (n + 1) frames,
+ *   which gives the appearance of stuttering).
+ *   Reducing the delay by 1 ms accommodates
+ *   any timing fluctuations, resulting in
+ *   smooth motion */
+#define XMB_TAB_SWITCH_REPEAT_DELAY 99000
 
 #if 0
 #define XMB_DEBUG
@@ -345,6 +362,10 @@ typedef struct xmb_handle
    float fullscreen_thumbnail_alpha;
    size_t fullscreen_thumbnail_selection;
    char fullscreen_thumbnail_label[255];
+
+   /* Keeps track of the last time tabs were switched
+    * via a MENU_ACTION_LEFT/MENU_ACTION_RIGHT event */
+   retro_time_t last_tab_switch_time;
 
 } xmb_handle_t;
 
@@ -5380,6 +5401,7 @@ static void *xmb_init(void **userdata, bool video_is_threaded)
 
    gfx_thumbnail_set_stream_delay(-1.0f);
    gfx_thumbnail_set_fade_duration(-1.0f);
+   gfx_thumbnail_set_fade_missing(false);
 
    xmb->use_ps3_layout      = xmb_use_ps3_layout(settings, width, height);
    xmb->last_use_ps3_layout = xmb->use_ps3_layout;
@@ -6831,6 +6853,36 @@ static enum menu_action xmb_parse_menu_entry_action(
    /* Scan user inputs */
    switch (action)
    {
+      case MENU_ACTION_LEFT:
+      case MENU_ACTION_RIGHT:
+         /* Check whether left/right action will
+          * trigger a tab switch event */
+         if (xmb->depth == 1)
+         {
+            retro_time_t current_time = menu_driver_get_current_time();
+            size_t scroll_accel       = 0;
+
+            /* Determine whether input repeat is
+             * currently active
+             * > This is always true when scroll
+             *   acceleration is greater than zero */
+            menu_driver_ctl(MENU_NAVIGATION_CTL_GET_SCROLL_ACCEL,
+                  &scroll_accel);
+
+            if (scroll_accel > 0)
+            {
+               /* Ignore input action if tab switch period
+                * is less than defined limit */
+               if ((current_time - xmb->last_tab_switch_time) <
+                     XMB_TAB_SWITCH_REPEAT_DELAY)
+               {
+                  new_action = MENU_ACTION_NOOP;
+                  break;
+               }
+            }
+            xmb->last_tab_switch_time = current_time;
+         }
+         break;
       case MENU_ACTION_START:
          /* If this is a menu with thumbnails, attempt
           * to show fullscreen thumbnail view */

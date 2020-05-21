@@ -145,6 +145,7 @@ static bool vita2d_gfx_frame(void *data, const void *frame,
 {
    void *tex_p;
    vita_video_t *vita = (vita_video_t *)data;
+   bool menu_is_alive = video_info->menu_is_alive;
 
    if (frame)
    {
@@ -221,7 +222,7 @@ static bool vita2d_gfx_frame(void *data, const void *frame,
    if (vita->menu.active)
    {
 #ifdef HAVE_MENU
-      menu_driver_frame(video_info);
+      menu_driver_frame(menu_is_alive, video_info);
 #endif
 
       if(vita->menu.texture)

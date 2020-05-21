@@ -582,7 +582,7 @@ static bool udev_joypad_init(void *data)
       struct udev_device  *dev = udev_device_new_from_syspath(udev_joypad_fd, name);
       const char      *devnode = udev_device_get_devnode(dev);
 
-      if (devnode != NULL)
+      if (devnode)
          udev_check_device(dev, devnode);
       udev_device_unref(dev);
    }

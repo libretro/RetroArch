@@ -60,20 +60,32 @@ typedef struct ps3_input
    int connected[MAX_KB_PORT_NUM];
 } ps3_input_t;
 
-static void connect_keyboard(ps3_input_t *ps3, int port)
+static int mod_table[] = {
+    RETROK_RSUPER,
+    RETROK_RALT,
+    RETROK_RSHIFT,
+    RETROK_RCTRL,
+    RETROK_LSUPER,
+    RETROK_LALT,
+    RETROK_LSHIFT,
+    RETROK_LCTRL
+};
+
+static void ps3_connect_keyboard(ps3_input_t *ps3, int port)
 {
-    ioKbSetCodeType(port, KB_CODETYPE_RAW);
-    ioKbSetReadMode(port, KB_RMODE_INPUTCHAR);
-    ps3->connected[port] = 1;
+   ioKbSetCodeType(port, KB_CODETYPE_RAW);
+   ioKbSetReadMode(port, KB_RMODE_INPUTCHAR);
+   ps3->connected[port] = 1;
 }
 
-static void disconnect_keyboard(ps3_input_t *ps3, int port)
+static void ps3_disconnect_keyboard(ps3_input_t *ps3, int port)
 {
-    ps3->connected[port] = 0;
+   ps3->connected[port] = 0;
 }
 
 static void ps3_input_poll(void *data)
 {
+   unsigned i, j;
    ps3_input_t *ps3 = (ps3_input_t*)data;
    KbData last_kbdata[MAX_KB_PORT_NUM];
 
@@ -81,58 +93,70 @@ static void ps3_input_poll(void *data)
       ps3->joypad->poll();
 
    ioKbGetInfo(&ps3->kbinfo);
-   for (int i = 0; i < MAX_KB_PORT_NUM; i++) {
-     if(ps3->kbinfo.status[i] && !ps3->connected[i])
-	 connect_keyboard(ps3, i);
-//     if(!ps3->kbinfo.status[i] && ps3->connected[i])
-//	 disconnect_keyboard(ps3, i);
+   for (i = 0; i < MAX_KB_PORT_NUM; i++)
+   {
+      if (ps3->kbinfo.status[i] && !ps3->connected[i])
+         ps3_connect_keyboard(ps3, i);
+#if 0
+      if (!ps3->kbinfo.status[i] && ps3->connected[i])
+         ps3_disconnect_keyboard(ps3, i);
+#endif
    }
 
    memcpy(last_kbdata, ps3->kbdata, sizeof(last_kbdata));
-   for (int i = 0; i < MAX_KB_PORT_NUM; i++) {
-     if(ps3->kbinfo.status[i])
-       ioKbRead(i, &ps3->kbdata[i]);
+   for (i = 0; i < MAX_KB_PORT_NUM; i++)
+   {
+      if (ps3->kbinfo.status[i])
+         ioKbRead(i, &ps3->kbdata[i]);
    }
 
-   for (int i = 0; i < MAX_KB_PORT_NUM; i++) {
-     /* Set keyboard modifier based on shift,ctrl and alt state */
-     uint16_t mod          = 0;
+   for (i = 0; i < MAX_KB_PORT_NUM; i++)
+   {
+      /* Set keyboard modifier based on shift,ctrl and alt state */
+      uint16_t mod          = 0;
 
-     if (ps3->kbdata[i].mkey._KbMkeyU._KbMkeyS.l_alt || ps3->kbdata[i].mkey._KbMkeyU._KbMkeyS.r_alt)
-       mod |= RETROKMOD_ALT;
-     if (ps3->kbdata[i].mkey._KbMkeyU._KbMkeyS.l_ctrl || ps3->kbdata[i].mkey._KbMkeyU._KbMkeyS.r_ctrl)
-       mod |= RETROKMOD_CTRL;
-     if (ps3->kbdata[i].mkey._KbMkeyU._KbMkeyS.l_shift || ps3->kbdata[i].mkey._KbMkeyU._KbMkeyS.r_shift)
-       mod |= RETROKMOD_SHIFT;
-     /* TODO: windows keys.  */
+      if (ps3->kbdata[i].mkey._KbMkeyU._KbMkeyS.l_alt || ps3->kbdata[i].mkey._KbMkeyU._KbMkeyS.r_alt)
+         mod |= RETROKMOD_ALT;
+      if (ps3->kbdata[i].mkey._KbMkeyU._KbMkeyS.l_ctrl || ps3->kbdata[i].mkey._KbMkeyU._KbMkeyS.r_ctrl)
+         mod |= RETROKMOD_CTRL;
+      if (ps3->kbdata[i].mkey._KbMkeyU._KbMkeyS.l_shift || ps3->kbdata[i].mkey._KbMkeyU._KbMkeyS.r_shift)
+         mod |= RETROKMOD_SHIFT;
+      /* TODO: windows keys.  */
 
-     for (int j = 0; j < last_kbdata[i].nb_keycode; j++) {
-       int code = last_kbdata[i].keycode[j];
-       int newly_depressed = 1;
-       for (int k = 0; k < MAX_KB_PORT_NUM; i++)
-	 if (ps3->kbdata[i].keycode[k] == code) {
-	   newly_depressed = 0;
-	   break;
-	 }
-       if (newly_depressed) {
-	 unsigned keyboardcode = input_keymaps_translate_keysym_to_rk(code);
-	 input_keyboard_event(false, keyboardcode, keyboardcode, mod, RETRO_DEVICE_KEYBOARD);
-       }
-     }
+      for (j = 0; j < last_kbdata[i].nb_keycode; j++)
+      {
+         int code = last_kbdata[i].keycode[j];
+         int newly_depressed = 1;
+         for (int k = 0; k < MAX_KB_PORT_NUM; i++)
+            if (ps3->kbdata[i].keycode[k] == code)
+            {
+               newly_depressed = 0;
+               break;
+            }
 
-     for (int j = 0; j < ps3->kbdata[i].nb_keycode; j++) {
-       int code = ps3->kbdata[i].keycode[j];
-       int newly_pressed = 1;
-       for (int k = 0; k < MAX_KB_PORT_NUM; i++)
-	 if (last_kbdata[i].keycode[k] == code) {
-	   newly_pressed = 0;
-	   break;
-	 }
-       if (newly_pressed) {
-	 unsigned keyboardcode = input_keymaps_translate_keysym_to_rk(code);
-	 input_keyboard_event(true, keyboardcode, keyboardcode, mod, RETRO_DEVICE_KEYBOARD);
-       }
-     }
+         if (newly_depressed)
+         {
+            unsigned keyboardcode = input_keymaps_translate_keysym_to_rk(code);
+            input_keyboard_event(false, keyboardcode, keyboardcode, mod, RETRO_DEVICE_KEYBOARD);
+         }
+      }
+
+      for (j = 0; j < ps3->kbdata[i].nb_keycode; j++)
+      {
+         int code = ps3->kbdata[i].keycode[j];
+         int newly_pressed = 1;
+         for (int k = 0; k < MAX_KB_PORT_NUM; i++)
+            if (last_kbdata[i].keycode[k] == code)
+            {
+               newly_pressed = 0;
+               break;
+            }
+         if (newly_pressed)
+         {
+            unsigned keyboardcode = input_keymaps_translate_keysym_to_rk(code);
+            input_keyboard_event(true, keyboardcode, keyboardcode, mod, RETRO_DEVICE_KEYBOARD);
+         }
+      }
    }
 }
 
@@ -145,44 +169,42 @@ static int16_t ps3_mouse_device_state(ps3_input_t *ps3,
 
 #endif
 
-static int mod_table[] = {
-    RETROK_RSUPER,
-    RETROK_RALT,
-    RETROK_RSHIFT,
-    RETROK_RCTRL,
-    RETROK_LSUPER,
-    RETROK_LALT,
-    RETROK_LSHIFT,
-    RETROK_LCTRL
-};
-
-static bool
-psl1ght_keyboard_port_input_pressed(ps3_input_t *ps3, unsigned id)
+static bool psl1ght_keyboard_port_input_pressed(ps3_input_t *ps3, unsigned id)
 {
-  if (id >= RETROK_LAST || id == 0)
-    return false;
-  for (int i = 0; i < 8; i++) {
-      if (id == mod_table[i]) {
-	  for (int j = 0; j < MAX_KB_PORT_NUM; j++) {
-	      if(ps3->kbinfo.status[j] && (ps3->kbdata[j].mkey._KbMkeyU.mkeys &
-					   (1 << i)))
-		  return true;
-	  }
-	  return false;
-      }
-  }
+   int code;
+   unsigned i, j;
 
-  int code = rarch_keysym_lut[id];
-  if (code == 0)
-    return false;
-  for (int i = 0; i < MAX_KB_PORT_NUM; i++) {
-    if(ps3->kbinfo.status[i])
-      for (int j = 0; j < ps3->kbdata[i].nb_keycode; j++) {
-	if (ps3->kbdata[i].keycode[j] == code)
-	  return true;
+   if (id >= RETROK_LAST || id == 0)
+      return false;
+
+   for (i = 0; i < 8; i++)
+   {
+      if (id == mod_table[i])
+      {
+         for (j = 0; j < MAX_KB_PORT_NUM; j++)
+         {
+            if (ps3->kbinfo.status[j] && (ps3->kbdata[j].mkey._KbMkeyU.mkeys &
+                     (1 << i)))
+               return true;
+         }
+         return false;
       }
-  }
-  return false;
+   }
+
+   code = rarch_keysym_lut[id];
+   if (code == 0)
+      return false;
+   for (i = 0; i < MAX_KB_PORT_NUM; i++)
+   {
+      if (ps3->kbinfo.status[i])
+         for (j = 0; j < ps3->kbdata[i].nb_keycode; j++)
+         {
+            if (ps3->kbdata[i].keycode[j] == code)
+               return true;
+         }
+   }
+
+   return false;
 }
 
 static int16_t ps3_input_state(void *data,
@@ -191,7 +213,7 @@ static int16_t ps3_input_state(void *data,
       unsigned port, unsigned device,
       unsigned idx, unsigned id)
 {
-     ps3_input_t *ps3           = (ps3_input_t*)data;
+   ps3_input_t *ps3           = (ps3_input_t*)data;
 
    if (!ps3)
       return 0;
@@ -223,7 +245,7 @@ static int16_t ps3_input_state(void *data,
                   ret |= (1 << i);
                   continue;
                }
-	       else if (psl1ght_keyboard_port_input_pressed(ps3, binds[port][i].key))
+               else if (psl1ght_keyboard_port_input_pressed(ps3, binds[port][i].key))
                   ret |= (1 << i);
 
             }
@@ -243,16 +265,16 @@ static int16_t ps3_input_state(void *data,
                return true;
             if (((float)abs(ps3->joypad->axis(joypad_info->joy_idx, joyaxis)) / 0x8000) > joypad_info->axis_threshold)
                return true;
-	    if (psl1ght_keyboard_port_input_pressed(ps3, binds[port][id].key))
+            if (psl1ght_keyboard_port_input_pressed(ps3, binds[port][id].key))
                return true;
          }
          break;
       case RETRO_DEVICE_ANALOG:
-	if (binds[port])
-	    return input_joypad_analog(ps3->joypad, joypad_info, port, idx, id, binds[port]);
+         if (binds[port])
+            return input_joypad_analog(ps3->joypad, joypad_info, port, idx, id, binds[port]);
          break;
       case RETRO_DEVICE_KEYBOARD:
-	return (psl1ght_keyboard_port_input_pressed(ps3, id));
+         return (psl1ght_keyboard_port_input_pressed(ps3, id));
    }
 
    return 0;
@@ -266,6 +288,8 @@ static void ps3_input_free_input(void *data)
 
 static void* ps3_input_init(const char *joypad_driver)
 {
+   int status;
+   unsigned i;
    ps3_input_t *ps3 = (ps3_input_t*)calloc(1, sizeof(*ps3));
    if (!ps3)
       return NULL;
@@ -279,20 +303,18 @@ static void* ps3_input_init(const char *joypad_driver)
 
    input_keymaps_init_keyboard_lut(rarch_key_map_psl1ght);
 
-   int status;
-   
    status = ioKbInit(MAX_KB_PORT_NUM);
    RARCH_LOG("Calling ioKbInit(%d) returned %d\r\n", MAX_KB_PORT_NUM, status);
 
    status = ioKbGetInfo(&ps3->kbinfo);
    RARCH_LOG("Calling ioKbGetInfo() returned %d\r\n", status);
-	
+
    RARCH_LOG("KbInfo:\r\nMax Kbs: %u\r\nConnected Kbs: %u\r\nInfo Field: %08x\r\n", ps3->kbinfo.max, ps3->kbinfo.connected, ps3->kbinfo.info);
 
-   for (int i = 0; i < MAX_KB_PORT_NUM; i++) {
-       if(ps3->kbinfo.status[i]) {
-	   connect_keyboard(ps3, i);
-       }
+   for (i = 0; i < MAX_KB_PORT_NUM; i++)
+   {
+      if (ps3->kbinfo.status[i])
+         ps3_connect_keyboard(ps3, i);
    }
 
    return ps3;
@@ -313,14 +335,14 @@ static uint64_t ps3_input_get_capabilities(void *data)
 static bool ps3_input_set_sensor_state(void *data, unsigned port,
       enum retro_sensor_action action, unsigned event_rate)
 {
-     RARCH_LOG("alive " __FILE__ ":%d\n", __LINE__);
+   RARCH_LOG("alive " __FILE__ ":%d\n", __LINE__);
    return false;
 }
 
 static bool ps3_input_set_rumble(void *data, unsigned port,
       enum retro_rumble_effect effect, uint16_t strength)
 {
-       RARCH_LOG("alive " __FILE__ ":%d\n", __LINE__);
+   RARCH_LOG("alive " __FILE__ ":%d\n", __LINE__);
    return false;
 }
 
@@ -409,25 +431,26 @@ static bool ps3_joypad_init(void *data)
    return true;
 }
 
-static u16 transform_buttons(const padData *data) {
-  return (
-	  (data->BTN_CROSS << RETRO_DEVICE_ID_JOYPAD_B)
-	  | (data->BTN_SQUARE << RETRO_DEVICE_ID_JOYPAD_Y)
-	  | (data->BTN_SELECT << RETRO_DEVICE_ID_JOYPAD_SELECT)
-	  | (data->BTN_START << RETRO_DEVICE_ID_JOYPAD_START)
-	  | (data->BTN_UP << RETRO_DEVICE_ID_JOYPAD_UP)
-	  | (data->BTN_DOWN << RETRO_DEVICE_ID_JOYPAD_DOWN)
-	  | (data->BTN_LEFT << RETRO_DEVICE_ID_JOYPAD_LEFT)
-	  | (data->BTN_RIGHT << RETRO_DEVICE_ID_JOYPAD_RIGHT)
-	  | (data->BTN_CIRCLE << RETRO_DEVICE_ID_JOYPAD_A)
-	  | (data->BTN_TRIANGLE << RETRO_DEVICE_ID_JOYPAD_X)
-	  | (data->BTN_L1 << RETRO_DEVICE_ID_JOYPAD_L)
-	  | (data->BTN_R1 << RETRO_DEVICE_ID_JOYPAD_R)
-	  | (data->BTN_L2 << RETRO_DEVICE_ID_JOYPAD_L2)
-	  | (data->BTN_R2 << RETRO_DEVICE_ID_JOYPAD_R2)
-	  | (data->BTN_L3 << RETRO_DEVICE_ID_JOYPAD_L3)
-	  | (data->BTN_R3 << RETRO_DEVICE_ID_JOYPAD_R3)
-	  );
+static u16 transform_buttons(const padData *data)
+{
+   return (
+         (data->BTN_CROSS << RETRO_DEVICE_ID_JOYPAD_B)
+         | (data->BTN_SQUARE << RETRO_DEVICE_ID_JOYPAD_Y)
+         | (data->BTN_SELECT << RETRO_DEVICE_ID_JOYPAD_SELECT)
+         | (data->BTN_START << RETRO_DEVICE_ID_JOYPAD_START)
+         | (data->BTN_UP << RETRO_DEVICE_ID_JOYPAD_UP)
+         | (data->BTN_DOWN << RETRO_DEVICE_ID_JOYPAD_DOWN)
+         | (data->BTN_LEFT << RETRO_DEVICE_ID_JOYPAD_LEFT)
+         | (data->BTN_RIGHT << RETRO_DEVICE_ID_JOYPAD_RIGHT)
+         | (data->BTN_CIRCLE << RETRO_DEVICE_ID_JOYPAD_A)
+         | (data->BTN_TRIANGLE << RETRO_DEVICE_ID_JOYPAD_X)
+         | (data->BTN_L1 << RETRO_DEVICE_ID_JOYPAD_L)
+         | (data->BTN_R1 << RETRO_DEVICE_ID_JOYPAD_R)
+         | (data->BTN_L2 << RETRO_DEVICE_ID_JOYPAD_L2)
+         | (data->BTN_R2 << RETRO_DEVICE_ID_JOYPAD_R2)
+         | (data->BTN_L3 << RETRO_DEVICE_ID_JOYPAD_L3)
+         | (data->BTN_R3 << RETRO_DEVICE_ID_JOYPAD_R3)
+         );
 }
 
 static bool ps3_joypad_button(unsigned port_num, uint16_t joykey)
@@ -440,13 +463,13 @@ static bool ps3_joypad_button(unsigned port_num, uint16_t joykey)
 
 static void ps3_joypad_get_buttons(unsigned port_num, input_bits_t *state)
 {
-	if (port_num < MAX_PADS)
+   if (port_num < MAX_PADS)
    {
-     u16 v = transform_buttons(&pad_state[port_num]);
-     BITS_COPY16_PTR( state,  v);
-	}
+      u16 v = transform_buttons(&pad_state[port_num]);
+      BITS_COPY16_PTR( state,  v);
+   }
    else
-		BIT256_CLEAR_ALL_PTR(state);
+      BIT256_CLEAR_ALL_PTR(state);
 }
 
 static int16_t ps3_joypad_axis(unsigned port_num, uint32_t joyaxis)
@@ -497,23 +520,29 @@ static int16_t ps3_joypad_axis(unsigned port_num, uint32_t joyaxis)
 
 static void ps3_joypad_poll(void)
 {
-  padInfo padinfo;
-  ioPadGetInfo(&padinfo);
-    for(int port=0; port<MAX_PADS; port++){
-      if(padinfo.status[port]){
-	ioPadGetData(port, &pad_state[port]);
-      }
-      if (!pads_connected[port] && padinfo.status[port]) {
-	ps3_joypad_autodetect_add(port);
-	pads_connected[port] = 1;
-      } else
+   unsigned port;
+   padInfo padinfo;
+
+   ioPadGetInfo(&padinfo);
+
+   for (port = 0; port < MAX_PADS; port++)
+   {
+      if (padinfo.status[port])
+         ioPadGetData(port, &pad_state[port]);
+
+      if (!pads_connected[port] && padinfo.status[port])
       {
-	input_autoconfigure_disconnect(port, ps3_joypad.ident);
-	pads_connected[port] = 0;
+         ps3_joypad_autodetect_add(port);
+         pads_connected[port] = 1;
+      }
+      else
+      {
+         input_autoconfigure_disconnect(port, ps3_joypad.ident);
+         pads_connected[port] = 0;
       }
 
       pads_connected[port] = padinfo.status[port];
-    }
+   }
 }
 
 static bool ps3_joypad_query_pad(unsigned pad)
@@ -524,13 +553,11 @@ static bool ps3_joypad_query_pad(unsigned pad)
 static bool ps3_joypad_rumble(unsigned pad,
       enum retro_rumble_effect effect, uint16_t strength)
 {
-    RARCH_LOG("alive " __FILE__ ":%d\n", __LINE__);
    return true;
 }
 
 static void ps3_joypad_destroy(void)
 {
-  RARCH_LOG("alive " __FILE__ ":%d\n", __LINE__);
 }
 
 input_device_driver_t ps3_joypad = {

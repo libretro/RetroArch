@@ -33,17 +33,16 @@
 static int ozone_get_entries_padding(ozone_handle_t* ozone, bool old_list)
 {
    if (ozone->depth == 1)
-      if (old_list)
-         return ozone->dimensions.entry_padding_horizontal_full;
-      else
+   {
+      if (!old_list)
          return ozone->dimensions.entry_padding_horizontal_half;
+   }
    else if (ozone->depth == 2)
+   {
       if (old_list && !ozone->fade_direction) /* false = left to right */
          return ozone->dimensions.entry_padding_horizontal_half;
-      else
-         return ozone->dimensions.entry_padding_horizontal_full;
-   else
-      return ozone->dimensions.entry_padding_horizontal_full;
+   }
+   return ozone->dimensions.entry_padding_horizontal_full;
 }
 
 static void ozone_draw_entry_value(
@@ -146,12 +145,12 @@ static void ozone_draw_entry_value(
  */
 void ozone_update_scroll(ozone_handle_t *ozone, bool allow_animation, ozone_node_t *node)
 {
-   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
-   gfx_animation_ctx_tag tag = (uintptr_t) selection_buf;
+   unsigned video_info_height;
    gfx_animation_ctx_entry_t entry;
    float new_scroll = 0, entries_middle;
    float bottom_boundary, current_selection_middle_onscreen;
-   unsigned video_info_height;
+   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
+   gfx_animation_ctx_tag tag  = (uintptr_t) selection_buf;
 
    video_driver_get_size(NULL, &video_info_height);
 
@@ -393,16 +392,15 @@ void ozone_draw_entries(
    settings_t    *settings = config_get_ptr();
    bool menu_show_sublabels= settings->bools.menu_show_sublabels;
    bool use_smooth_ticker  = settings->bools.menu_ticker_smooth;
+   enum gfx_animation_ticker_type 
+      menu_ticker_type     = (enum gfx_animation_ticker_type)
+      settings->uints.menu_ticker_type;
    bool old_list           = selection_buf == ozone->selection_buf_old;
    int x_offset            = 0;
    size_t selection_y      = 0; /* 0 means no selection (we assume that no entry has y = 0) */
    size_t old_selection_y  = 0;
    int entry_padding       = ozone_get_entries_padding(ozone, old_list);
-
    float scale_factor      = ozone->last_scale_factor;
-   enum gfx_animation_ticker_type 
-      menu_ticker_type     = (enum gfx_animation_ticker_type)
-      settings->uints.menu_ticker_type;
 
    menu_entries_ctl(MENU_ENTRIES_CTL_START_GET, &i);
 

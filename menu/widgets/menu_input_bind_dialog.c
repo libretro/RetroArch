@@ -21,9 +21,6 @@
 #include "menu_input_bind_dialog.h"
 
 #include "../menu_driver.h"
-#include "../menu_input.h"
-
-#include "../../input/input_driver.h"
 
 #include "../../configuration.h"
 #include "../../performance_counters.h"

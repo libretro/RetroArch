@@ -76,20 +76,28 @@
 #define FILE_PATH_PROGRAM_NAME "RetroArch"
 #endif
 
-/* If this is non-NULL. RARCH_LOG and friends
- * will write to this file. */
-static FILE *log_file_fp                            = NULL;
-static void* log_file_buf                           = NULL;
+typedef struct verbosity_state
+{
+   bool verbosity;
+
+   bool initialized;
+   bool override_active;
+   char override_path[PATH_MAX_LENGTH];
+   /* If this is non-NULL. RARCH_LOG and friends
+    * will write to this file. */
+   FILE *fp;
+   void *buf;
+#ifdef HAVE_LIBNX
+   Mutex mtx;
+#endif
+} verbosity_state_t;
+
+static verbosity_state_t main_verbosity_st;
+
 static unsigned verbosity_log_level                 = 
 DEFAULT_FRONTEND_LOG_LEVEL;
-static bool main_verbosity                          = false;
-static bool log_file_initialized                    = false;
-static bool log_file_override_active                = false;
-static char log_file_override_path[PATH_MAX_LENGTH] = {0};
 
 #ifdef HAVE_LIBNX
-static Mutex logging_mtx;
-
 #ifdef NXLINK
 /* TODO/FIXME - global referenced in platform_switch.c - not
  * thread-safe */
@@ -105,85 +113,94 @@ void verbosity_set_log_level(unsigned level)
 
 void verbosity_enable(void)
 {
-   main_verbosity = true;
+   verbosity_state_t *g_verbosity = &main_verbosity_st;
+
+   g_verbosity->verbosity         = true;
 #ifdef RARCH_INTERNAL
-   if (!log_file_initialized)
+   if (!g_verbosity->initialized)
       frontend_driver_attach_console();
 #endif
 }
 
 void verbosity_disable(void)
 {
-   main_verbosity = false;
+   verbosity_state_t *g_verbosity = &main_verbosity_st;
+
+   g_verbosity->verbosity         = false;
 #ifdef RARCH_INTERNAL
-   if (!log_file_initialized)
+   if (!g_verbosity->initialized)
       frontend_driver_detach_console();
 #endif
 }
 
 bool verbosity_is_enabled(void)
 {
-   return main_verbosity;
+   verbosity_state_t *g_verbosity = &main_verbosity_st;
+   return g_verbosity->verbosity;
 }
 
 bool is_logging_to_file(void)
 {
-   return log_file_initialized;
+   verbosity_state_t *g_verbosity = &main_verbosity_st;
+   return g_verbosity->initialized;
 }
 
 bool *verbosity_get_ptr(void)
 {
-   return &main_verbosity;
+   verbosity_state_t *g_verbosity = &main_verbosity_st;
+   return &g_verbosity->verbosity;
 }
 
 void retro_main_log_file_init(const char *path, bool append)
 {
-   if (log_file_initialized)
+   FILE *tmp                      = NULL;
+   verbosity_state_t *g_verbosity = &main_verbosity_st;
+   if (g_verbosity->initialized)
       return;
 
 #ifdef HAVE_LIBNX
-   mutexInit(&logging_mtx);
+   mutexInit(&g_verbosity->mtx);
 #endif
 
-   log_file_fp          = stderr;
+   g_verbosity->fp      = stderr;
    if (!path)
       return;
 
-   log_file_fp          = (FILE*)fopen_utf8(path, append ? "ab" : "wb");
+   tmp                  = (FILE*)fopen_utf8(path, append ? "ab" : "wb");
 
-   if (!log_file_fp)
+   if (!tmp)
    {
-      log_file_fp       = stderr;
       RARCH_ERR("Failed to open system event log file: %s\n", path);
       return;
    }
 
-   log_file_initialized = true;
+   g_verbosity->fp          = tmp;
+   g_verbosity->initialized = true;
 
-#if !defined(PS2) /* TODO: PS2 IMPROVEMENT */
    /* TODO: this is only useful for a few platforms, find which and add ifdef */
-   log_file_buf = calloc(1, 0x4000);
-   setvbuf(log_file_fp, (char*)log_file_buf, _IOFBF, 0x4000);
-#endif
+   g_verbosity->buf = calloc(1, 0x4000);
+   setvbuf(g_verbosity->fp, (char*)g_verbosity->buf, _IOFBF, 0x4000);
 }
 
 void retro_main_log_file_deinit(void)
 {
-   if (log_file_fp && log_file_initialized)
-   {
-      fclose(log_file_fp);
-      log_file_fp = NULL;
-   }
-   if (log_file_buf)
-      free(log_file_buf);
-   log_file_buf = NULL;
+   verbosity_state_t *g_verbosity = &main_verbosity_st;
 
-   log_file_initialized = false;
+   if (g_verbosity->fp && g_verbosity->initialized)
+   {
+      fclose(g_verbosity->fp);
+      g_verbosity->fp       = NULL;
+   }
+   if (g_verbosity->buf)
+      free(g_verbosity->buf);
+   g_verbosity->buf         = NULL;
+   g_verbosity->initialized = false;
 }
 
 #if !defined(HAVE_LOGGER)
 void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
 {
+   verbosity_state_t *g_verbosity = &main_verbosity_st;
    if (verbosity_log_level > 1)
       return;
 
@@ -230,15 +247,15 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
             prio = ANDROID_LOG_ERROR;
       }
 
-      if (log_file_initialized)
+      if (g_verbosity->initialized)
       {
-         vfprintf(log_file_fp, fmt, ap);
-         fflush(log_file_fp);
+         vfprintf(g_verbosity->fp, fmt, ap);
+         fflush(g_verbosity->fp);
       }
       else
          __android_log_vprint(prio, FILE_PATH_PROGRAM_NAME, fmt, ap);
 #else
-      FILE *fp = (FILE*)log_file_fp;
+      FILE *fp = (FILE*)g_verbosity->fp;
 #if defined(HAVE_QT) || defined(__WINRT__)
       int ret;
       char buffer[256];
@@ -275,7 +292,7 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
 #endif
 #else
 #if defined(HAVE_LIBNX)
-      mutexLock(&logging_mtx);
+      mutexLock(&g_verbosity->mtx);
 #endif
       if (fp)
       {
@@ -284,7 +301,7 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
          fflush(fp);
       }
 #if defined(HAVE_LIBNX)
-      mutexUnlock(&logging_mtx);
+      mutexUnlock(&g_verbosity->mtx);
 #endif
 
 #endif
@@ -331,8 +348,9 @@ void RARCH_LOG_BUFFER(uint8_t *data, size_t size)
 void RARCH_LOG(const char *fmt, ...)
 {
    va_list ap;
+   verbosity_state_t *g_verbosity = &main_verbosity_st;
 
-   if (!main_verbosity)
+   if (!g_verbosity->verbosity)
       return;
    if (verbosity_log_level > 1)
       return;
@@ -353,8 +371,9 @@ void RARCH_LOG_OUTPUT(const char *msg, ...)
 void RARCH_WARN(const char *fmt, ...)
 {
    va_list ap;
+   verbosity_state_t *g_verbosity = &main_verbosity_st;
 
-   if (!main_verbosity)
+   if (!g_verbosity->verbosity)
       return;
    if (verbosity_log_level > 2)
       return;
@@ -367,8 +386,9 @@ void RARCH_WARN(const char *fmt, ...)
 void RARCH_ERR(const char *fmt, ...)
 {
    va_list ap;
+   verbosity_state_t *g_verbosity = &main_verbosity_st;
 
-   if (!main_verbosity)
+   if (!g_verbosity->verbosity)
       return;
 
    va_start(ap, fmt);
@@ -379,8 +399,11 @@ void RARCH_ERR(const char *fmt, ...)
 
 void rarch_log_file_set_override(const char *path)
 {
-   log_file_override_active = true;
-   strlcpy(log_file_override_path, path, sizeof(log_file_override_path));
+   verbosity_state_t *g_verbosity = &main_verbosity_st;
+
+   g_verbosity->override_active   = true;
+   strlcpy(g_verbosity->override_path, path,
+         sizeof(g_verbosity->override_path));
 }
 
 void rarch_log_file_init(
@@ -391,9 +414,10 @@ void rarch_log_file_init(
 {
    char log_directory[PATH_MAX_LENGTH];
    char log_file_path[PATH_MAX_LENGTH];
+   verbosity_state_t *g_verbosity            = &main_verbosity_st;
    static bool log_file_created              = false;
    static char timestamped_log_file_name[64] = {0};
-   bool logging_to_file                      = log_file_initialized;
+   bool logging_to_file                      = g_verbosity->initialized;
 
    log_directory[0]                          = '\0';
    log_file_path[0]                          = '\0';
@@ -434,28 +458,31 @@ void rarch_log_file_init(
 
    /* > Check whether we are already logging to console */
    /* De-initialise existing logger */
-   if (log_file_fp)
+   if (g_verbosity->fp)
       retro_main_log_file_deinit();
 
    /* > Get directory/file paths */
-   if (log_file_override_active)
+   if (g_verbosity->override_active)
    {
       /* Get log directory */
       const char *last_slash           = 
-         find_last_slash(log_file_override_path);
+         find_last_slash(g_verbosity->override_path);
 
       if (last_slash)
       {
          char tmp_buf[PATH_MAX_LENGTH] = {0};
-         size_t path_length            = last_slash + 1 - log_file_override_path;
+         size_t path_length            = last_slash + 1 - 
+            g_verbosity->override_path;
 
          if ((path_length > 1) && (path_length < PATH_MAX_LENGTH))
-            strlcpy(tmp_buf, log_file_override_path, path_length * sizeof(char));
+            strlcpy(tmp_buf, g_verbosity->override_path,
+                  path_length * sizeof(char));
          strlcpy(log_directory, tmp_buf, sizeof(log_directory));
       }
 
       /* Get log file path */
-      strlcpy(log_file_path, log_file_override_path, sizeof(log_file_path));
+      strlcpy(log_file_path, g_verbosity->override_path,
+            sizeof(log_file_path));
    }
    else if (!string_is_empty(log_dir))
    {
@@ -463,7 +490,8 @@ void rarch_log_file_init(
       strlcpy(log_directory, log_dir, sizeof(log_directory));
 
       /* Get log file path */
-      fill_pathname_join(log_file_path, log_dir,
+      fill_pathname_join(log_file_path,
+            log_dir,
             log_to_file_timestamp
             ? timestamped_log_file_name
             : "retroarch.log",
@@ -491,7 +519,7 @@ void rarch_log_file_init(
       /* When RetroArch is launched, log file is overwritten.
        * On subsequent calls within the same session, it is appended to. */
       retro_main_log_file_init(log_file_path, log_file_created);
-      if (log_file_initialized)
+      if (g_verbosity->initialized)
          log_file_created = true;
       return;
    }
@@ -504,11 +532,13 @@ void rarch_log_file_init(
 
 void rarch_log_file_deinit(void)
 {
+   verbosity_state_t *g_verbosity = &main_verbosity_st;
+
    /* De-initialise existing logger, if currently logging to file */
-   if (log_file_initialized)
+   if (g_verbosity->initialized)
       retro_main_log_file_deinit();
 
    /* If logging is currently disabled... */
-   if (!log_file_fp) /* ...initialise logging to console */
+   if (!g_verbosity->fp) /* ...initialise logging to console */
       retro_main_log_file_init(NULL, false);
 }

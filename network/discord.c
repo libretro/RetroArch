@@ -13,6 +13,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <retro_common_api.h>
+
 #include <file/file_path.h>
 #include <string/stdstring.h>
 #include <retro_timers.h>
@@ -22,36 +24,34 @@
 #include <file/file_path.h>
 #include <features/features_cpu.h>
 
-#include "discord.h"
-#include "discord_register.h"
+#include <discord_rpc.h>
 
-#include "../deps/discord-rpc/include/discord_rpc.h"
+#include "discord.h"
 
 #include "../retroarch.h"
 #include "../core.h"
 #include "../core_info.h"
 #include "../paths.h"
-#include "../playlist.h"
 #include "../verbosity.h"
 
 #include "../msg_hash.h"
 #include "../tasks/task_file_transfer.h"
 
 #ifdef HAVE_NETWORKING
-#include "../../network/netplay/netplay.h"
-#include "../../network/netplay/netplay_discovery.h"
-#include "../../tasks/tasks_internal.h"
+#include "netplay/netplay.h"
+#include "netplay/netplay_discovery.h"
+#include "../tasks/tasks_internal.h"
 #endif
 
 #ifdef HAVE_CHEEVOS
-#include "../cheevos-new/cheevos.h"
+#include "../cheevos/cheevos.h"
 #endif
 
 #ifdef HAVE_MENU
-#include "../../menu/menu_cbs.h"
+#include "../menu/menu_cbs.h"
 #endif
 
-#include "../network/net_http_special.h"
+#include "net_http_special.h"
 #include "../tasks/tasks_internal.h"
 #include "../file_path_special.h"
 
@@ -89,6 +89,17 @@ typedef struct discord_state discord_state_t;
 static discord_state_t discord_st;
 
 #define CDN_URL "https://cdn.discordapp.com/avatars"
+
+/* Forward declarations */
+#if defined(__cplusplus) && !defined(CXX_BUILD)
+extern "C" {
+#endif
+
+void Discord_Register(const char *a, const char *b);
+
+#if defined(__cplusplus) && !defined(CXX_BUILD)
+}
+#endif
 
 static discord_state_t *discord_get_ptr(void)
 {
@@ -273,9 +284,9 @@ static void handle_discord_spectate(const char* secret)
 }
 
 #ifdef HAVE_MENU
+#if 0
 static void handle_discord_join_response(void *ignore, const char *line)
 {
-#if 0
    /* TODO/FIXME: needs in-game widgets */
    if (strstr(line, "yes"))
       Discord_Respond(user_id, DISCORD_REPLY_YES);
@@ -284,8 +295,8 @@ static void handle_discord_join_response(void *ignore, const char *line)
    menu_input_dialog_end();
    retroarch_menu_running_finished(false);
 #endif
-#endif
 }
+#endif
 #endif
 
 static void handle_discord_join_request(const DiscordUser* request)
@@ -306,22 +317,26 @@ static void handle_discord_join_request(const DiscordUser* request)
 
 #ifdef HAVE_MENU
    discord_download_avatar(request->userId, request->avatar);
-   /* To-Do: needs in-game widgets
-      retroarch_menu_running();
-      */
+
+#if 0
+   /* TODO/FIXME: Needs in-game widgets */
+   retroarch_menu_running();
 
    memset(&line, 0, sizeof(line));
-   snprintf(buf, sizeof(buf), "%s %s?", msg_hash_to_str(MSG_DISCORD_CONNECTION_REQUEST), request->username);
+   snprintf(buf, sizeof(buf), "%s %s?",
+         msg_hash_to_str(MSG_DISCORD_CONNECTION_REQUEST), request->username);
    line.label         = buf;
    line.label_setting = "no_setting";
    line.cb            = handle_discord_join_response;
 
-   /* To-Do: needs in-game widgets
-      To-Do: bespoke dialog, should show while in-game and have a hotkey to accept
-      To-Do: show avatar of the user connecting
-      if (!menu_input_dialog_start(&line))
+   /* TODO/FIXME: needs in-game widgets
+    * TODO/FIXME: bespoke dialog, should show while in-game 
+    * and have a hotkey to accept
+    * TODO/FIXME: show avatar of the user connecting
+    */
+   if (!menu_input_dialog_start(&line))
       return;
-      */
+#endif
 #endif
 }
 

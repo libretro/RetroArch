@@ -142,7 +142,7 @@ static bool switch_frame(void *data, const void *frame,
       uint64_t frame_count, unsigned pitch,
       const char *msg, video_frame_info_t *video_info)
 {
-	static uint64_t last_frame = 0;
+   static uint64_t last_frame = 0;
 
    unsigned x, y;
    result_t r;
@@ -152,6 +152,7 @@ static bool switch_frame(void *data, const void *frame,
    int xsf                = 1280 / width;
    int ysf                = 720  / height;
    int sf                 = xsf;
+   bool menu_is_alive     = video_info->menu_is_alive;
 
    if (ysf < sf)
       sf = ysf;
@@ -170,8 +171,8 @@ static bool switch_frame(void *data, const void *frame,
 
    if(width > 0 && height > 0)
    {
-	   if(sw->last_width != width ||
-	      sw->last_height != height)
+      if(sw->last_width != width ||
+            sw->last_height != height)
       {
          scaler_ctx_gen_reset(&sw->scaler);
 
@@ -197,31 +198,31 @@ static bool switch_frame(void *data, const void *frame,
          sw->last_height        = height;
       }
 
-	   scaler_ctx_scale(&sw->scaler, sw->image + (centery * 1280) + centerx, frame);
+      scaler_ctx_scale(&sw->scaler, sw->image + (centery * 1280) + centerx, frame);
    }
 
 #if defined(HAVE_MENU)
    if (sw->menu_texture.enable)
-	{
-		menu_driver_frame(video_info);
+   {
+      menu_driver_frame(menu_is_alive, video_info);
 
-		if (sw->menu_texture.pixels)
-		{
+      if (sw->menu_texture.pixels)
+      {
 #if 0
-			if (sw->menu_texture.fullscreen)
+         if (sw->menu_texture.fullscreen)
          {
 #endif
-	         scaler_ctx_scale(&sw->menu_texture.scaler, sw->image +
-	                          ((720-sw->menu_texture.tgth)/2)*1280 +
-	                          ((1280-sw->menu_texture.tgtw)/2), sw->menu_texture.pixels);
+            scaler_ctx_scale(&sw->menu_texture.scaler, sw->image +
+                  ((720-sw->menu_texture.tgth)/2)*1280 +
+                  ((1280-sw->menu_texture.tgtw)/2), sw->menu_texture.pixels);
 #if 0
          }
          else
          {
          }
 #endif
-		}
-	}
+      }
+   }
    else if (video_info->statistics_show)
    {
       struct font_params *osd_params = (struct font_params*)
@@ -246,11 +247,11 @@ static bool switch_frame(void *data, const void *frame,
 
    r = surface_dequeue_buffer(&sw->surface, &out_buffer);
    if(r != RESULT_OK)
-	   return true; /* just skip the frame */
+      return true; /* just skip the frame */
 
    r = surface_wait_buffer(&sw->surface);
    if(r != RESULT_OK)
-	   return true;
+      return true;
    gfx_slow_swizzling_blit(out_buffer, sw->image, 1280, 720, 0, 0);
 
    r = surface_queue_buffer(&sw->surface);

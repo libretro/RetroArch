@@ -22,6 +22,7 @@
 #if defined(HAVE_IOSUHAX) && defined(HAVE_LIBFAT)
 #include <fat.h>
 #include <iosuhax.h>
+#include <iosuhax_devoptab.h>
 #include <sys/iosupport.h>
 #endif
 
@@ -53,8 +54,8 @@ void __init(void);
 static void fsdev_init(void);
 static void fsdev_exit(void);
 
-bool iosuhaxMount = 0;
-
+bool iosuhaxMount      = 0;
+int fsaFd              = -1;
 static int mcp_hook_fd = -1;
 
 /* HBL elf entry point */
@@ -90,10 +91,7 @@ void _start(int argc, char **argv)
    exit(0);
 }
 
-void __eabi(void)
-{
-
-}
+void __eabi(void) { }
 
 __attribute__((weak))
 void __init(void)
@@ -102,9 +100,8 @@ void __init(void)
    extern void (*const __CTOR_END__)(void);
 
    void (*const *ctor)(void) = &__CTOR_LIST__;
-   while (ctor < &__CTOR_END__) {
+   while (ctor < &__CTOR_END__)
       (*ctor++)();
-   }
 }
 
 __attribute__((weak))
@@ -114,30 +111,27 @@ void __fini(void)
    extern void (*const __DTOR_END__)(void);
 
    void (*const *dtor)(void) = &__DTOR_LIST__;
-   while (dtor < &__DTOR_END__) {
+   while (dtor < &__DTOR_END__)
       (*dtor++)();
-   }
 }
 
 /* libiosuhax related */
 
-//just to be able to call async
-void someFunc(void *arg)
-{
-   (void)arg;
-}
+/* just to be able to call async */
+static void some_func(void *arg) { (void)arg; }
 
 #ifdef HAVE_IOSUHAX
 int MCPHookOpen(void)
 {
-   //take over mcp thread
+   /* take over mcp thread */
    mcp_hook_fd = IOS_Open("/dev/mcp", 0);
 
    if (mcp_hook_fd < 0)
       return -1;
 
-   IOS_IoctlAsync(mcp_hook_fd, 0x62, (void *)0, 0, (void *)0, 0, someFunc, (void *)0);
-   //let wupserver start up
+   IOS_IoctlAsync(mcp_hook_fd, 0x62, (void *)0, 0,
+         (void *)0, 0, some_func, (void *)0);
+   /* let wupserver start up */
    usleep(1000);
 
    if (IOSUHAX_Open("/dev/mcp") < 0)
@@ -155,24 +149,26 @@ void MCPHookClose(void)
    if (mcp_hook_fd < 0)
       return;
 
-   //close down wupserver, return control to mcp
+   /* close down wupserver, return control to mcp */
    IOSUHAX_Close();
-   //wait for mcp to return
+   /* wait for mcp to return */
    usleep(1000);
    IOS_Close(mcp_hook_fd);
    mcp_hook_fd = -1;
 }
-#endif //HAVE_IOSUHAX
+#endif /* HAVE_IOSUHAX */
 
 static bool try_init_iosuhax(void)
 {
 #ifdef HAVE_IOSUHAX
    int result = IOSUHAX_Open(NULL);
-   if(result < 0)
+   if (result < 0)
       result = MCPHookOpen();
 
-   return (result < 0) ? false : true;
-#else //don't HAVE_IOSUHAX
+   if (result < 0)
+      return false;
+   return true;
+#else /* don't HAVE_IOSUHAX */
    return false;
 #endif
 }
@@ -180,13 +176,13 @@ static bool try_init_iosuhax(void)
 static void try_shutdown_iosuhax(void)
 {
 #ifdef HAVE_IOSUHAX
-   if(!iosuhaxMount)
-    return;
+   if (!iosuhaxMount)
+      return;
 
    if (mcp_hook_fd >= 0)
-    MCPHookClose();
+      MCPHookClose();
    else
-    IOSUHAX_Close();
+      IOSUHAX_Close();
 #endif //HAVE_IOSUHAX
 
    iosuhaxMount = false;
@@ -203,13 +199,15 @@ __attribute__((weak))
 void __mount_filesystems(void)
 {
 #ifdef HAVE_LIBFAT
-   if(iosuhaxMount)
+   if (iosuhaxMount)
+   {
       fatInitDefault();
-   else
-      mount_sd_fat("sd");
-#else
-   mount_sd_fat("sd");
+      fsaFd = IOSUHAX_FSA_Open();
+      mount_fs("storage_usb", fsaFd, NULL, "/vol/storage_usb01");
+      return;
+   } 
 #endif
+   mount_sd_fat("sd");
 }
 
 /**
@@ -224,12 +222,21 @@ void __unmount_filesystems(void)
    {
       fatUnmount("sd:");
       fatUnmount("usb:");
+
+      IOSUHAX_sdio_disc_interface.shutdown();
+      IOSUHAX_usb_disc_interface.shutdown();
+
+      unmount_fs("storage_usb");
+      IOSUHAX_FSA_Close(fsaFd);
+
+      if (mcp_hook_fd >= 0)
+         MCPHookClose();
+      else
+         IOSUHAX_Close();
+      return;
    }
-   else
-      unmount_sd_fat("sd");
-#else
-   unmount_sd_fat("sd");
 #endif
+   unmount_sd_fat("sd");
 }
 
 static void fsdev_init(void)

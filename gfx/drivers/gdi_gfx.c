@@ -189,6 +189,7 @@ static bool gdi_gfx_frame(void *data, const void *frame,
    gdi_t *gdi                = (gdi_t*)data;
    unsigned bits             = gdi->video_bits;
    HWND hwnd                 = win32_get_window();
+   bool menu_is_alive        = video_info->menu_is_alive;
 
    /* FIXME: Force these settings off as they interfere with the rendering */
    video_info->xmb_shadows_enable   = false;
@@ -198,7 +199,7 @@ static bool gdi_gfx_frame(void *data, const void *frame,
       return true;
 
 #ifdef HAVE_MENU
-   menu_driver_frame(video_info);
+   menu_driver_frame(menu_is_alive, video_info);
 #endif
 
    if (  gdi->video_width  != frame_width  ||

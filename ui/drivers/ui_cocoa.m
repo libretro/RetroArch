@@ -123,7 +123,6 @@ static void app_terminate(void)
         case NSEventTypeOtherMouseDragged:
          {
             NSPoint pos;
-            NSPoint mouse_pos;
             apple              = (cocoa_input_data_t*)input_driver_get_data();
             if (!apple)
                return;
@@ -131,26 +130,27 @@ static void app_terminate(void)
             pos.x              = 0;
             pos.y              = 0;
 
-            /* Relative */
-            apple->mouse_rel_x = (int16_t)event.deltaX;
-            apple->mouse_rel_y = (int16_t)event.deltaY;
-
-            /* Absolute */
 #if defined(HAVE_COCOA_METAL)
             pos = [apple_platform.renderView convertPoint:[event locationInWindow] fromView:nil];
 #elif defined(HAVE_COCOA)
             pos = [[CocoaView get] convertPoint:[event locationInWindow] fromView:nil];
 #endif
+
+            // FIXME: Disable clipping until graphical offset issues are fixed
+            //NSInteger window_number = [[[NSApplication sharedApplication] keyWindow] windowNumber];
+            //if ([NSWindow windowNumberAtPoint:pos belowWindowWithWindowNumber:0] != window_number) {
+            //  return;
+            //}
+
+            /* Relative */
+            apple->mouse_rel_x += (int16_t)event.deltaX;
+            apple->mouse_rel_y += (int16_t)event.deltaY;
+
+            /* Absolute */
             apple->touches[0].screen_x = (int16_t)pos.x;
             apple->touches[0].screen_y = (int16_t)pos.y;
-
-#if defined(HAVE_COCOA_METAL)
-            mouse_pos = [apple_platform.renderView convertPoint:[event locationInWindow]  fromView:nil];
-#elif defined(HAVE_COCOA)
-            mouse_pos = [[CocoaView get] convertPoint:[event locationInWindow]  fromView:nil];
-#endif
-            apple->window_pos_x = (int16_t)mouse_pos.x;
-            apple->window_pos_y = (int16_t)mouse_pos.y;
+            apple->window_pos_x = (int16_t)pos.x;
+            apple->window_pos_y = (int16_t)pos.y;
          }
          break;
 #if defined(HAVE_COCOA_METAL)

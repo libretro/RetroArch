@@ -7041,6 +7041,24 @@ MSG_HASH(
    "Increase coarseness of menu background checkerboard pattern."
    )
 MSG_HASH(
+<<<<<<< HEAD
+=======
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE_DDMM_HM_AM_PM,
+   "DD/MM - HH:MM (AM/PM)"
+   )
+
+/* RGUI: Settings > User Interface > Appearance */
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_BACKGROUND_FILLER_THICKNESS_ENABLE,
+   "Background Filler Thickness"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_BACKGROUND_FILLER_THICKNESS_ENABLE,
+   "Increase coarseness of menu background checkerboard pattern."
+   )
+MSG_HASH(
+>>>>>>> master
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_BORDER_FILLER_ENABLE,
    "Border Filler"
    )

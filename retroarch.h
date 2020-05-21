@@ -301,8 +301,6 @@ void retroarch_override_setting_unset(enum rarch_override_setting enum_idx, void
 
 bool retroarch_override_setting_is_set(enum rarch_override_setting enum_idx, void *data);
 
-bool retroarch_validate_game_options(char *s, size_t len, bool mkdir);
-
 bool retroarch_is_forced_fullscreen(void);
 
 void retroarch_set_current_core_type(
@@ -314,15 +312,6 @@ bool retroarch_apply_shader(enum rarch_shader_type type, const char *preset_path
 const char* retroarch_get_shader_preset(void);
 
 bool retroarch_is_switching_display_mode(void);
-
-/**
- * retroarch_fail:
- * @error_code  : Error code.
- * @error       : Error message to show.
- *
- * Sanely kills the program.
- **/
-void retroarch_fail(int error_code, const char *error);
 
 /**
  * retroarch_main_init:
@@ -1103,14 +1092,12 @@ typedef struct video_frame_info
    bool widgets_is_rewinding;
    bool input_menu_swap_ok_cancel_buttons;
    bool input_driver_nonblock_state;
-   bool shared_context;
    bool black_frame_insertion;
    bool hard_sync;
    bool fps_show;
    bool memory_show;
    bool statistics_show;
    bool framecount_show;
-   bool scale_integer;
    bool post_filter_record;
    bool windowed_fullscreen;
    bool fullscreen;
@@ -1121,9 +1108,7 @@ typedef struct video_frame_info
    bool battery_level_enable;
    bool timedate_enable;
    bool runloop_is_slowmotion;
-   bool runloop_is_idle;
    bool runloop_is_paused;
-   bool is_perfcnt_enable;
    bool menu_is_alive;
    bool msg_bgcolor_enable;
 
@@ -1131,7 +1116,6 @@ typedef struct video_frame_info
    int custom_vp_y;
    int crt_switch_center_adjust;
 
-   unsigned fps_update_interval;
    unsigned hard_sync_frames;
    unsigned aspect_ratio_idx;
    unsigned max_swapchain_images;
@@ -1162,13 +1146,7 @@ typedef struct video_frame_info
    float font_msg_color_b;
    float xmb_alpha_factor;
 
-   char fps_text[128];
    char stat_text[512];
-   char chat_text[256];
-
-   uint64_t frame_count;
-   float frame_time;
-   float frame_rate;
 
    struct
    {
@@ -2007,6 +1985,8 @@ void retroarch_init_task_queue(void);
 
 bool is_input_keyboard_display_on(void);
 
+/* creates folder and core options stub file for subsequent runs */
+bool create_folder_and_core_options(void);
 
 /* Input overrides  */
 

@@ -757,6 +757,7 @@ static bool drm_gfx_frame(void *data, const void *frame, unsigned width,
       video_frame_info_t *video_info)
 {
    struct drm_video *_drmvars = data;
+   bool menu_is_alive         = video_info->menu_is_alive;
 
    if (  ( width != _drmvars->core_width) ||
          (height != _drmvars->core_height))
@@ -769,7 +770,7 @@ static bool drm_gfx_frame(void *data, const void *frame, unsigned width,
       _drmvars->core_height = height;
       _drmvars->core_pitch  = pitch;
 
-      if (_drmvars->main_surface != NULL)
+      if (_drmvars->main_surface)
          drm_surface_free(_drmvars, &_drmvars->main_surface);
 
       /* We need to recreate the main surface and it's pages (buffers). */
@@ -790,7 +791,7 @@ static bool drm_gfx_frame(void *data, const void *frame, unsigned width,
    }
 
 #ifdef HAVE_MENU
-   menu_driver_frame(video_info);
+   menu_driver_frame(menu_is_alive, video_info);
 #endif
 
    /* Update main surface: locate free page, blit and flip. */

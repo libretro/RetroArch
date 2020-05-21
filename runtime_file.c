@@ -1077,7 +1077,11 @@ void runtime_update_playlist(
       /* Clean up */
       free(runtime_log);
    }
+<<<<<<< HEAD
 
+=======
+   
+>>>>>>> master
 #if defined(HAVE_MENU) && (defined(HAVE_OZONE) || defined(HAVE_MATERIALUI))
    /* Ozone and GLUI require runtime/last played strings
     * to be populated even when no runtime is recorded */
