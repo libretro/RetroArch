@@ -30,6 +30,20 @@
 
 #include "../../../input/input_osk.h"
 
+static float ozone_backdrop[16] = {
+      0.00, 0.00, 0.00, 0.75,
+      0.00, 0.00, 0.00, 0.75,
+      0.00, 0.00, 0.00, 0.75,
+      0.00, 0.00, 0.00, 0.75,
+};
+
+static float ozone_osk_backdrop[16] = {
+      0.00, 0.00, 0.00, 0.15,
+      0.00, 0.00, 0.00, 0.15,
+      0.00, 0.00, 0.00, 0.15,
+      0.00, 0.00, 0.00, 0.15,
+};
+
 static void ozone_cursor_animation_cb(void *userdata);
 
 static void ozone_animate_cursor(ozone_handle_t *ozone, float *dst, float *target)
