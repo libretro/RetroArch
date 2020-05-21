@@ -621,10 +621,6 @@ const char *path_basename(const char *path)
  **/
 bool path_is_absolute(const char *path)
 {
-#if defined(__wiiu__) || defined(VITA)
-   const char *seperator = NULL;
-#endif
-
    if (string_is_empty(path))
       return false;
 
@@ -639,9 +635,11 @@ bool path_is_absolute(const char *path)
        string_starts_with(path + 1, ":\\"))
       return true;
 #elif defined(__wiiu__) || defined(VITA)
-   seperator = strchr(path, ':');
-   if (seperator && (seperator[1] == '/'))
-      return true;
+   {
+      const char *seperator = strchr(path, ':');
+      if (seperator && (seperator[1] == '/'))
+         return true;
+   }
 #endif
 
    return false;
