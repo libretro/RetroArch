@@ -3125,59 +3125,59 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIMEDATE_YMD_HMS,
-   "年/月/日 時:分:秒"
+   "年-月-日 時:分:秒"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIMEDATE_YMD_HM,
-   "年/月/日 時:分"
+   "年-月-日 時:分"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIMEDATE_YMD,
-   "年/月/日"
+   "年-月-日"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIMEDATE_YM,
-   "年/月"
+   "年-月"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIMEDATE_MDYYYY_HMS,
-   "月/日/年 時:分:秒"
+   "月-日-年 時:分:秒"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIMEDATE_MDYYYY_HM,
-   "月/日/年 時:分"
+   "月-日-年 時:分"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIMEDATE_MD_HM,
-   "月/日 時:分"
+   "月-日 時:分"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIMEDATE_MDYYYY,
-   "月/日/年"
+   "月-日-年"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIMEDATE_MD,
-   "月/日"
+   "月-日"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIMEDATE_DDMMYYYY_HMS,
-   "日/月/年 時:分:秒"
+   "日-月-年 時:分:秒"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIMEDATE_DDMMYYYY_HM,
-   "日/月/年 時:分"
+   "日-月-年 時:分"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIMEDATE_DDMM_HM,
-   "日/月 時:分"
+   "日-月 時:分"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIMEDATE_DDMMYYYY,
-   "日/月/年"
+   "日-月-年"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIMEDATE_DDMM,
-   "日/月"
+   "日-月"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIMEDATE_HMS,
@@ -3189,35 +3189,35 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIMEDATE_YMD_HMS_AMPM,
-   "年/月/日 時:分:秒 (午前/午後)"
+   "年-月-日 時:分:秒 (午前/午後)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIMEDATE_YMD_HM_AMPM,
-   "年/月/日 時:分 (午前/午後)"
+   "年-月-日 時:分 (午前/午後)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIMEDATE_MDYYYY_HMS_AMPM,
-   "月/日/年 時:分:秒 (午前/午後)"
+   "月-日-年 時:分:秒 (午前/午後)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIMEDATE_MDYYYY_HM_AMPM,
-   "月/日/年 時:分 (午前/午後)"
+   "月-日-年 時:分 (午前/午後)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIMEDATE_MD_HM_AMPM,
-   "月/日 時:分 (午前/午後)"
+   "月-日 時:分 (午前/午後)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIMEDATE_DDMMYYYY_HMS_AMPM,
-   "日/月/年 時:分:秒 (午前/午後)"
+   "日-月-年 時:分:秒 (午前/午後)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIMEDATE_DDMMYYYY_HM_AMPM,
-   "日/月/年 時:分 (午前/午後)"
+   "日-月-年 時:分 (午前/午後)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIMEDATE_DDMM_HM_AMPM,
-   "日/月 時:分 (午前/午後)"
+   "日-月 時:分 (午前/午後)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIMEDATE_HMS_AMPM,
