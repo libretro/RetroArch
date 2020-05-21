@@ -13,6 +13,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <retro_common_api.h>
+
 #include <file/file_path.h>
 #include <string/stdstring.h>
 #include <retro_timers.h>
@@ -89,14 +91,13 @@ static discord_state_t discord_st;
 #define CDN_URL "https://cdn.discordapp.com/avatars"
 
 /* Forward declarations */
-#ifdef __cplusplus
+#if defined(__cplusplus) && !defined(CXX_BUILD)
 extern "C" {
 #endif
 
 void Discord_Register(const char *a, const char *b);
-void Discord_RegisterSteamGame(const char *a, const char *b);
 
-#ifdef __cplusplus
+#if defined(__cplusplus) && !defined(CXX_BUILD)
 }
 #endif
 
