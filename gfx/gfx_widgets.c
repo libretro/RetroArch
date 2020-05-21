@@ -1509,7 +1509,9 @@ void gfx_widgets_frame(void *data)
    bool widgets_is_rewinding;
    bool runloop_is_slowmotion;
    int top_right_x_advance;
-   int scissor_me_timbers;
+#ifdef HAVE_CHEEVOS
+   int scissor_me_timbers    = 0;
+#endif
 
    if (!widgets_active)
       return;
@@ -1528,7 +1530,6 @@ void gfx_widgets_frame(void *data)
    widgets_is_rewinding      = video_info->widgets_is_rewinding;
    runloop_is_slowmotion     = video_info->runloop_is_slowmotion;
    top_right_x_advance       = video_width;
-   scissor_me_timbers        = 0;
 
    gfx_widgets_frame_count++;
 

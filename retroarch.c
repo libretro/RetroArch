@@ -5771,26 +5771,27 @@ static bool run_translation_service(bool paused)
    json_buffer = (char*)malloc(json_length);
    if (!json_buffer)
       goto finish;
+    
    /* Image data */
-   memcpy(json_buffer, (const void*)rf1, 11*sizeof(uint8_t));
-   memcpy(json_buffer+11, bmp64_buffer, (out_length)*sizeof(uint8_t));
-   memcpy(json_buffer+11+out_length, "\"", 1*sizeof(uint8_t));
-   curr_length = 11+out_length+1;
+   memcpy(json_buffer, (const void*)rf1, 11 * sizeof(uint8_t));
+   memcpy(json_buffer + 11, bmp64_buffer, out_length * sizeof(uint8_t));
+   memcpy(json_buffer + 11 + out_length, "\"", 1 * sizeof(uint8_t));
+   curr_length = 11 + out_length + 1;
 
    /* State data */
    memcpy(json_buffer+curr_length, state_son, state_son_length*sizeof(uint8_t));
-   curr_length+= state_son_length;
+   curr_length += state_son_length;
 
    /* System Label */
    if (rf3)
    {
-      memcpy(json_buffer+curr_length, (const void*)rf3, (15+strlen(system_label))*sizeof(uint8_t));   
-      curr_length+=15+strlen(system_label);
+      memcpy(json_buffer + curr_length, (const void*)rf3, (15 + strlen(system_label)) * sizeof(uint8_t));
+      curr_length += 15 + strlen(system_label);
    }
    else
    {
-      memcpy(json_buffer+curr_length, (const void*)rf2, 3*sizeof(uint8_t));
-      curr_length+=3;
+      memcpy(json_buffer + curr_length, (const void*)rf2, 3 * sizeof(uint8_t));
+      curr_length += 3;
    }
 
 #ifdef DEBUG
@@ -21690,7 +21691,7 @@ static bool video_driver_init_internal(bool *video_is_threaded)
 
       if (config_file_directory)
       {
-         dir_list_is_free = !dir_init_shader(
+         dir_init_shader(
                config_file_directory,
                settings->bools.show_hidden_files);
          free(config_file_directory);
