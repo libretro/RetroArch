@@ -3,8 +3,6 @@
 
 #include <atomic>
 
-#include <string/stdstring.h>
-
 static const int RpcVersion = 1;
 static RpcConnection Instance;
 
@@ -41,8 +39,8 @@ void RpcConnection::Open()
           const char *cmd = GetStrMember(&message, "cmd");
           const char *evt = GetStrMember(&message, "evt");
           if (cmd && evt 
-                && string_is_equal(cmd, "DISPATCH") 
-                && string_is_equal(evt, "READY"))
+                && !strcmp(cmd, "DISPATCH") 
+                && !strcmp(evt, "READY"))
           {
              state = State::Connected;
              if (onConnect)
