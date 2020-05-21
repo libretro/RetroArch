@@ -2452,8 +2452,10 @@ struct string_list *dir_list_new_special(const char *input_dir,
             string_list_free(str_list);
             exts = ext_shaders;
          }
-#endif
          break;
+#else
+         return NULL;
+#endif
       case DIR_LIST_COLLECTIONS:
          exts = "lpl";
          break;
@@ -21668,6 +21670,7 @@ static bool video_driver_init_internal(bool *video_is_threaded)
 
    dir_free_shader();
 
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    if (!string_is_empty(settings->paths.directory_video_shader))
       dir_list_is_free = !dir_init_shader(
             settings->paths.directory_video_shader,
@@ -21680,18 +21683,18 @@ static bool video_driver_init_internal(bool *video_is_threaded)
 
    if (dir_list_is_free && !path_is_empty(RARCH_PATH_CONFIG))
    {
-      config_file_directory = (char*)malloc(PATH_MAX_LENGTH);
-
-      fill_pathname_basedir(config_file_directory,
-            path_get(RARCH_PATH_CONFIG), PATH_MAX_LENGTH);
+      config_file_directory = strdup(path_get(RARCH_PATH_CONFIG));
+      path_basedir(config_file_directory);
 
       if (config_file_directory)
       {
          dir_list_is_free = !dir_init_shader(
                config_file_directory,
                settings->bools.show_hidden_files);
+         free(config_file_directory);
       }
    }
+#endif
 
    return true;
 
