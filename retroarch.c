@@ -2456,8 +2456,10 @@ struct string_list *dir_list_new_special(const char *input_dir,
             string_list_free(str_list);
             exts = ext_shaders;
          }
-#endif
          break;
+#else
+         return NULL;
+#endif
       case DIR_LIST_COLLECTIONS:
          exts = "lpl";
          break;
@@ -21467,6 +21469,8 @@ static bool video_driver_init_internal(bool *video_is_threaded)
    settings_t *settings                   = configuration_settings;
    struct retro_game_geometry *geom       = &video_driver_av_info.geometry;
    const char *path_softfilter_plugin     = settings->paths.path_softfilter_plugin;
+   char *config_file_directory            = NULL;
+   bool dir_list_is_free                  = true;
 
    if (!string_is_empty(path_softfilter_plugin))
       video_driver_init_filter(video_driver_pix_fmt);
@@ -21668,9 +21672,31 @@ static bool video_driver_init_internal(bool *video_is_threaded)
 
    dir_free_shader();
 
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    if (!string_is_empty(settings->paths.directory_video_shader))
-      dir_init_shader(settings->paths.directory_video_shader,
+      dir_list_is_free = !dir_init_shader(
+            settings->paths.directory_video_shader,
             settings->bools.show_hidden_files);
+
+   if (dir_list_is_free && !string_is_empty(settings->paths.directory_menu_config))
+      dir_list_is_free = !dir_init_shader(
+            settings->paths.directory_menu_config,
+            settings->bools.show_hidden_files);
+
+   if (dir_list_is_free && !path_is_empty(RARCH_PATH_CONFIG))
+   {
+      config_file_directory = strdup(path_get(RARCH_PATH_CONFIG));
+      path_basedir(config_file_directory);
+
+      if (config_file_directory)
+      {
+         dir_list_is_free = !dir_init_shader(
+               config_file_directory,
+               settings->bools.show_hidden_files);
+         free(config_file_directory);
+      }
+   }
+#endif
 
    return true;
 
@@ -27373,17 +27399,16 @@ static bool retroarch_load_shader_preset_internal(
  * Tries to load a supported core-, game-, folder-specific or global
  * shader preset from its respective location:
  *
- * global:          $SHADER_DIR/presets/global.$PRESET_EXT
- * core-specific:   $SHADER_DIR/presets/$CORE_NAME/$CORE_NAME.$PRESET_EXT
- * folder-specific: $SHADER_DIR/presets/$CORE_NAME/$FOLDER_NAME.$PRESET_EXT
- * game-specific:   $SHADER_DIR/presets/$CORE_NAME/$GAME_NAME.$PRESET_EXT
+ * global:          $CONFIG_DIR/global.$PRESET_EXT
+ * core-specific:   $CONFIG_DIR/$CORE_NAME/$CORE_NAME.$PRESET_EXT
+ * folder-specific: $CONFIG_DIR/$CORE_NAME/$FOLDER_NAME.$PRESET_EXT
+ * game-specific:   $CONFIG_DIR/$CORE_NAME/$GAME_NAME.$PRESET_EXT
  *
- * $SHADER_DIR is composed by three different locations which will be searched
- * in the following order (search will stop on first match):
+ * $CONFIG_DIR is expected to be Menu Config directory, or failing that, the
+ * directory where retroarch.cfg is stored.
  *
- * 1. The Menu Config directory
- * 2. The Video Shader directory
- * 3. The directory where the configuration file is stored
+ * For compatibility purposes with versions 1.8.7 and older, the presets
+ * subdirectory on the Video Shader path is used as a fallback directory.
  *
  * Note: Uses video_shader_is_supported() which only works after
  *       context driver initialization.
@@ -27401,7 +27426,7 @@ static bool retroarch_load_shader_preset(void)
    const char *game_name              = path_basename(rarch_path_basename);
    char *content_dir_name             = NULL;
    char *config_file_directory        = NULL;
-   char *shader_directory             = NULL;
+   char *old_presets_directory        = NULL;
    bool auto_shaders_enable           = settings->bools.auto_shaders_enable;
 
    const char *dirs[3]                = {0};
@@ -27420,8 +27445,8 @@ static bool retroarch_load_shader_preset(void)
    if (!config_file_directory)
       goto end;
 
-   shader_directory = (char*)malloc(PATH_MAX_LENGTH);
-   if (!shader_directory)
+   old_presets_directory = (char*)malloc(PATH_MAX_LENGTH);
+   if (!old_presets_directory)
       goto end;
 
    content_dir_name[0] = '\0';
@@ -27436,21 +27461,24 @@ static bool retroarch_load_shader_preset(void)
       fill_pathname_basedir(config_file_directory,
             path_get(RARCH_PATH_CONFIG), PATH_MAX_LENGTH);
 
+   old_presets_directory[0] = '\0';
+
+   if (!string_is_empty(video_shader_directory))
+      fill_pathname_join(old_presets_directory,
+         video_shader_directory, "presets", PATH_MAX_LENGTH);
+
    dirs[0] = menu_config_directory;
-   dirs[1] = video_shader_directory;
-   dirs[2] = config_file_directory;
+   dirs[1] = config_file_directory;
+   dirs[2] = old_presets_directory;
 
    for (i = 0; i < ARRAY_SIZE(dirs); i++)
    {
       if (string_is_empty(dirs[i]))
          continue;
 
-      fill_pathname_join(shader_directory,
-         dirs[i], "presets", PATH_MAX_LENGTH);
+      RARCH_LOG("[Shaders]: preset directory: %s\n", dirs[i]);
 
-      RARCH_LOG("[Shaders]: preset directory: %s\n", shader_directory);
-
-      ret = retroarch_load_shader_preset_internal(shader_directory, core_name,
+      ret = retroarch_load_shader_preset_internal(dirs[i], core_name,
          game_name);
 
       if (ret)
@@ -27459,7 +27487,7 @@ static bool retroarch_load_shader_preset(void)
          break;
       }
 
-      ret = retroarch_load_shader_preset_internal(shader_directory, core_name,
+      ret = retroarch_load_shader_preset_internal(dirs[i], core_name,
             content_dir_name);
 
       if (ret)
@@ -27468,7 +27496,7 @@ static bool retroarch_load_shader_preset(void)
          break;
       }
    
-      ret = retroarch_load_shader_preset_internal(shader_directory, core_name,
+      ret = retroarch_load_shader_preset_internal(dirs[i], core_name,
          core_name);
 
       if (ret)
@@ -27477,7 +27505,7 @@ static bool retroarch_load_shader_preset(void)
          break;
       }
 
-      ret = retroarch_load_shader_preset_internal(shader_directory, NULL,
+      ret = retroarch_load_shader_preset_internal(dirs[i], NULL,
          "global");
 
       if (ret)
@@ -27490,7 +27518,7 @@ static bool retroarch_load_shader_preset(void)
 end:
    free(content_dir_name);
    free(config_file_directory);
-   free(shader_directory);
+   free(old_presets_directory);
    return ret;
 }
 #endif
