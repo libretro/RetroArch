@@ -1,4 +1,5 @@
 # Future
+- AUDIO/JACK: Fix regression introduced after 1.8.4 - would hang at startup
 - CHEEVOS: Disable hardcore when cheats are enabled
 - CHD: Return false when special track cannot be found
 - INPUT MAPPING/REMAPPING: Restore broken 'reset to default' functionality with RetroPad 'start' button
