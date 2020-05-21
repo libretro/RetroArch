@@ -46,6 +46,23 @@
 #include "../../../core_info.h"
 #include "../../../verbosity.h"
 
+static const char *OZONE_TEXTURES_FILES[OZONE_TEXTURE_LAST] = {
+   "retroarch",
+   "cursor_border"
+};
+
+static const char *OZONE_TAB_TEXTURES_FILES[OZONE_TAB_TEXTURE_LAST] = {
+   "retroarch",
+   "settings",
+   "history",
+   "favorites",
+   "music",
+   "video",
+   "image",
+   "netplay",
+   "add"
+};
+
 ozone_node_t *ozone_alloc_node(void)
 {
    ozone_node_t *node   = (ozone_node_t*)malloc(sizeof(*node));
