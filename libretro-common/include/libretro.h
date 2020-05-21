@@ -1288,6 +1288,36 @@ enum retro_mod
                                             * based systems).
                                             */
 
+#define RETRO_ENVIRONMENT_GET_MESSAGE_INTERFACE_VERSION 59
+                                           /* unsigned * --
+                                            * Unsigned value is the API version number of the message
+                                            * interface supported by the frontend. If callback returns
+                                            * false, API version is assumed to be 0.
+                                            *
+                                            * In legacy code, messages may be displayed in an
+                                            * implementation-specific manner by passing a struct
+                                            * of type retro_message to RETRO_ENVIRONMENT_SET_MESSAGE.
+                                            * This may be still be done regardless of the message
+                                            * interface version.
+                                            *
+                                            * If version is >= 1 however, messages may instead be
+                                            * displayed by passing a struct of type retro_message_ext
+                                            * to RETRO_ENVIRONMENT_SET_MESSAGE_EXT. This allows the
+                                            * core to specify message logging level, priority and
+                                            * destination (OSD, logging interface or both).
+                                            */
+
+#define RETRO_ENVIRONMENT_SET_MESSAGE_EXT 60
+                                           /* const struct retro_message_ext * --
+                                            * Sets a message to be displayed in an implementation-specific
+                                            * manner for a certain amount of 'frames'. Additionally allows
+                                            * the core to specify message logging level, priority and
+                                            * destination (OSD, logging interface or both).
+                                            * Should not be used for trivial messages, which should simply be
+                                            * logged via RETRO_ENVIRONMENT_GET_LOG_INTERFACE (or as a
+                                            * fallback, stderr).
+                                            */
+
 /* VFS functionality */
 
 /* File paths:
@@ -2505,6 +2535,22 @@ struct retro_message
 {
    const char *msg;        /* Message to be displayed. */
    unsigned    frames;     /* Duration in frames of message. */
+};
+
+enum retro_message_target
+{
+   RETRO_MESSAGE_TARGET_ALL = 0,
+   RETRO_MESSAGE_TARGET_OSD,
+   RETRO_MESSAGE_TARGET_LOG
+};
+
+struct retro_message_ext
+{
+   const char                *msg;     /* Message to be displayed/logged */
+   unsigned                  frames;   /* Duration in frames of message when targeting OSD */
+   unsigned                  priority; /* Message priority when targeting OSD */
+   enum retro_log_level      level;    /* Message logging level (info, warn, etc.) */
+   enum retro_message_target target;   /* Message destination: OSD, logging interface or both */
 };
 
 /* Describes how the libretro implementation maps a libretro input bind

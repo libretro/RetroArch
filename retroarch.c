@@ -10301,6 +10301,11 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
 
          break;
 
+      case RETRO_ENVIRONMENT_GET_MESSAGE_INTERFACE_VERSION:
+         /* Current API version is 1 */
+         *(unsigned *)data = 1;
+         break;
+
       case RETRO_ENVIRONMENT_SET_MESSAGE:
       {
          const struct retro_message *msg = (const struct retro_message*)data;
@@ -10314,6 +10319,74 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
             runloop_msg_queue_push(msg->msg, 3, msg->frames,
                   true, NULL, MESSAGE_QUEUE_ICON_DEFAULT,
                   MESSAGE_QUEUE_CATEGORY_INFO);
+         break;
+      }
+
+      case RETRO_ENVIRONMENT_SET_MESSAGE_EXT:
+      {
+         const struct retro_message_ext *msg = (const struct retro_message_ext*)data;
+
+         /* Log message, if required */
+         if (msg->target != RETRO_MESSAGE_TARGET_OSD)
+         {
+            switch (msg->level)
+            {
+               case RETRO_LOG_DEBUG:
+                  {
+                     settings_t *settings = configuration_settings;
+                     unsigned log_level   = settings->uints.frontend_log_level;
+
+                     if (log_level == RETRO_LOG_DEBUG)
+                        RARCH_LOG("[Environ]: SET_MESSAGE_EXT: %s\n", msg->msg);
+                  }
+                  break;
+               case RETRO_LOG_WARN:
+                  RARCH_WARN("[Environ]: SET_MESSAGE_EXT: %s\n", msg->msg);
+                  break;
+               case RETRO_LOG_ERROR:
+                  RARCH_ERR("[Environ]: SET_MESSAGE_EXT: %s\n", msg->msg);
+                  break;
+               case RETRO_LOG_INFO:
+               default:
+                  RARCH_LOG("[Environ]: SET_MESSAGE_EXT: %s\n", msg->msg);
+                  break;
+            }
+         }
+
+         /* Display message via OSD, if required */
+         if (msg->target != RETRO_MESSAGE_TARGET_LOG)
+         {
+#if defined(HAVE_GFX_WIDGETS)
+            if (gfx_widgets_active())
+               gfx_widget_set_libretro_message(msg->msg,
+                     roundf((float)msg->frames / 60.0f * 1000.0f));
+            else
+#endif
+            {
+               enum message_queue_category category;
+
+               switch (msg->level)
+               {
+                  case RETRO_LOG_WARN:
+                     category = MESSAGE_QUEUE_CATEGORY_WARNING;
+                     break;
+                  case RETRO_LOG_ERROR:
+                     category = MESSAGE_QUEUE_CATEGORY_ERROR;
+                     break;
+                  case RETRO_LOG_INFO:
+                  case RETRO_LOG_DEBUG:
+                  default:
+                     category = MESSAGE_QUEUE_CATEGORY_INFO;
+                     break;
+               }
+
+               runloop_msg_queue_push(msg->msg,
+                     msg->priority, msg->frames,
+                     true, NULL, MESSAGE_QUEUE_ICON_DEFAULT,
+                     category);
+            }
+         }
+
          break;
       }
 
