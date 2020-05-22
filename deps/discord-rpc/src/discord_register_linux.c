@@ -1,3 +1,5 @@
+#include "discord_rpc.h"
+#include "discord_register.h"
 #include <stdio.h>
 
 #include <errno.h>
@@ -11,11 +13,9 @@
 #include <file/file_path.h>
 #include <compat/strl.h>
 
-#include <discord_rpc.h>
-
 /* we want to register games so we can run them from 
  * Discord client as discord-<appid>:// */
-void Discord_Register(const char *applicationId, const char *command)
+void Discord_Register(const char* applicationId, const char* command)
 {
    FILE* fp;
    int fileLen;
@@ -82,7 +82,9 @@ void Discord_Register(const char *applicationId, const char *command)
       fprintf(stderr, "Failed to register mime handler\n");
 }
 
-void Discord_RegisterSteamGame(const char *applicationId, const char *steamId)
+void Discord_RegisterSteamGame(
+      const char* applicationId,
+      const char* steamId)
 {
    char command[256];
    snprintf(command, sizeof(command), "xdg-open steam://rungameid/%s", steamId);

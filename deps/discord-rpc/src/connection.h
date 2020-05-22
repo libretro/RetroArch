@@ -6,15 +6,14 @@
 #include <stdlib.h>
 
 /* not really connectiony, but need per-platform */
-int GetProcessId(void);
+int GetProcessId();
 
-struct BaseConnection
-{
-   static BaseConnection* Create();
-   static void Destroy(BaseConnection*&);
-   bool isOpen{false};
-   bool Open();
-   bool Close();
-   bool Write(const void* data, size_t length);
-   bool Read(void* data, size_t length);
+struct BaseConnection {
+    static BaseConnection* Create();
+    static void Destroy(BaseConnection*&);
+    bool isOpen{false};
+    bool Open();
+    bool Close();
+    bool Write(const void* data, size_t length);
+    bool Read(void* data, size_t length);
 };

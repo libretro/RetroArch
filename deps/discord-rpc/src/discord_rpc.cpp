@@ -1,7 +1,7 @@
-#include <retro_common_api.h>
 #include "discord_rpc.h"
 
 #include "backoff.h"
+#include "discord_register.h"
 #include "msg_queue.h"
 #include "rpc_connection.h"
 #include "serialization.h"
@@ -15,23 +15,14 @@
 #include <thread>
 #endif
 
-
-/* Forward declarations */
-#if defined(__cplusplus) && !defined(CXX_BUILD)
-extern "C" {
-#endif
-
-void Discord_Register(const char *a, const char *b);
-void Discord_RegisterSteamGame(const char *a, const char *b);
-
-#if defined(__cplusplus) && !defined(CXX_BUILD)
-}
-#endif
+constexpr size_t MaxMessageSize{16 * 1024};
+constexpr size_t MessageQueueSize{8};
+constexpr size_t JoinQueueSize{8};
 
 struct QueuedMessage
 {
    size_t length;
-   char buffer[16384];
+   char buffer[MaxMessageSize];
 
    void Copy(const QueuedMessage& other)
    {
@@ -59,32 +50,25 @@ struct User
      * from future changes in these sizes */
 };
 
-static int Pid{0};
-static int Nonce{1};
-static int LastErrorCode{0};
-static int LastDisconnectErrorCode{0};
-
-static char JoinGameSecret[256];
-static char SpectateGameSecret[256];
-static char LastErrorMessage[256];
-static char LastDisconnectErrorMessage[256];
-
 static RpcConnection* Connection{nullptr};
-
 static DiscordEventHandlers QueuedHandlers{};
 static DiscordEventHandlers Handlers{};
-
 static std::atomic_bool WasJustConnected{false};
 static std::atomic_bool WasJustDisconnected{false};
 static std::atomic_bool GotErrorMessage{false};
 static std::atomic_bool WasJoinGame{false};
 static std::atomic_bool WasSpectateGame{false};
-
+static char JoinGameSecret[256];
+static char SpectateGameSecret[256];
+static int LastErrorCode{0};
+static char LastErrorMessage[256];
+static int LastDisconnectErrorCode{0};
+static char LastDisconnectErrorMessage[256];
 static std::mutex PresenceMutex;
 static std::mutex HandlerMutex;
 static QueuedMessage QueuedPresence{};
-static MsgQueue<QueuedMessage, 8> SendQueue;
-static MsgQueue<User, 8> JoinAskQueue;
+static MsgQueue<QueuedMessage, MessageQueueSize> SendQueue;
+static MsgQueue<User, JoinQueueSize> JoinAskQueue;
 static User connectedUser;
 
 /* We want to auto connect, and retry on failure, 
@@ -92,57 +76,57 @@ static User connectedUser;
  * backoff from 0.5 seconds to 1 minute */
 static Backoff ReconnectTimeMs(500, 60 * 1000);
 static auto NextConnect = std::chrono::system_clock::now();
+static int Pid{0};
+static int Nonce{1};
 
 #ifndef DISCORD_DISABLE_IO_THREAD
 static void Discord_UpdateConnection(void);
-class IoThreadHolder
-{
-   private:
-      std::atomic_bool keepRunning{true};
-      std::mutex waitForIOMutex;
-      std::condition_variable waitForIOActivity;
-      std::thread ioThread;
+class IoThreadHolder {
+private:
+    std::atomic_bool keepRunning{true};
+    std::mutex waitForIOMutex;
+    std::condition_variable waitForIOActivity;
+    std::thread ioThread;
 
-   public:
-      void Start()
-      {
-         keepRunning.store(true);
-         ioThread = std::thread([&]() {
-               const std::chrono::duration<int64_t, std::milli> maxWait{500LL};
-               Discord_UpdateConnection();
-               while (keepRunning.load()) {
-               std::unique_lock<std::mutex> lock(waitForIOMutex);
-               waitForIOActivity.wait_for(lock, maxWait);
-               Discord_UpdateConnection();
-               }
-               });
-      }
+public:
+    void Start()
+    {
+        keepRunning.store(true);
+        ioThread = std::thread([&]() {
+            const std::chrono::duration<int64_t, std::milli> maxWait{500LL};
+            Discord_UpdateConnection();
+            while (keepRunning.load()) {
+                std::unique_lock<std::mutex> lock(waitForIOMutex);
+                waitForIOActivity.wait_for(lock, maxWait);
+                Discord_UpdateConnection();
+            }
+        });
+    }
 
-      void Notify() { waitForIOActivity.notify_all(); }
+    void Notify() { waitForIOActivity.notify_all(); }
 
-      void Stop()
-      {
-         keepRunning.exchange(false);
-         Notify();
-         if (ioThread.joinable())
+    void Stop()
+    {
+        keepRunning.exchange(false);
+        Notify();
+        if (ioThread.joinable())
             ioThread.join();
-      }
+    }
 
-      ~IoThreadHolder() { Stop(); }
+    ~IoThreadHolder() { Stop(); }
 };
 #else
-class IoThreadHolder
-{
-   public:
-      void Start() {}
-      void Stop() {}
-      void Notify() {}
+class IoThreadHolder {
+public:
+    void Start() {}
+    void Stop() {}
+    void Notify() {}
 };
 #endif /* DISCORD_DISABLE_IO_THREAD */
 
 static IoThreadHolder* IoThread{nullptr};
 
-static void UpdateReconnectTime(void)
+static void UpdateReconnectTime()
 {
    NextConnect = std::chrono::system_clock::now() +
       std::chrono::duration<int64_t, std::milli>{ReconnectTimeMs.nextDelay()};
@@ -176,18 +160,18 @@ static void Discord_UpdateConnection(void)
             if (!Connection->Read(message))
                 break;
 
-            const char *evtName = GetStrMember(&message, "evt");
-            const char *nonce   = GetStrMember(&message, "nonce");
+            const char* evtName = GetStrMember(&message, "evt");
+            const char* nonce = GetStrMember(&message, "nonce");
 
             if (nonce)
             {
                 /* in responses only -- 
                  * should use to match up response when needed. */
 
-                if (evtName && !strcmp(evtName, "ERROR"))
+                if (evtName && strcmp(evtName, "ERROR") == 0)
                 {
-                    JsonValue *data = GetObjMember(&message, "data");
-                    LastErrorCode   = GetIntMember(data, "code");
+                    auto data = GetObjMember(&message, "data");
+                    LastErrorCode = GetIntMember(data, "code");
                     StringCopy(LastErrorMessage, GetStrMember(data, "message", ""));
                     GotErrorMessage.store(true);
                 }
@@ -198,40 +182,39 @@ static void Discord_UpdateConnection(void)
                 if (!evtName)
                     continue;
 
-                JsonValue *data = GetObjMember(&message, "data");
+                auto data = GetObjMember(&message, "data");
 
-                if (!strcmp(evtName, "ACTIVITY_JOIN"))
+                if (strcmp(evtName, "ACTIVITY_JOIN") == 0)
                 {
-                    const char *secret = GetStrMember(data, "secret");
+                    auto secret = GetStrMember(data, "secret");
                     if (secret)
                     {
                         StringCopy(JoinGameSecret, secret);
                         WasJoinGame.store(true);
                     }
                 }
-                else if (!strcmp(evtName, "ACTIVITY_SPECTATE"))
+                else if (strcmp(evtName, "ACTIVITY_SPECTATE") == 0)
                 {
-                   const char *secret = GetStrMember(data, "secret");
+                   auto secret = GetStrMember(data, "secret");
                    if (secret)
                    {
                       StringCopy(SpectateGameSecret, secret);
                       WasSpectateGame.store(true);
                    }
                 }
-                else if (!strcmp(evtName, "ACTIVITY_JOIN_REQUEST"))
+                else if (strcmp(evtName, "ACTIVITY_JOIN_REQUEST") == 0)
                 {
-                   JsonValue *user      = GetObjMember(data, "user");
-                   const char *userId   = GetStrMember(user, "id");
-                   const char *username = GetStrMember(user, "username");
-                   const char *avatar   = GetStrMember(user, "avatar");
-                   auto        joinReq  = JoinAskQueue.GetNextAddMessage();
+                   auto user     = GetObjMember(data, "user");
+                   auto userId   = GetStrMember(user, "id");
+                   auto username = GetStrMember(user, "username");
+                   auto avatar   = GetStrMember(user, "avatar");
+                   auto joinReq  = JoinAskQueue.GetNextAddMessage();
 
                    if (userId && username && joinReq)
                    {
                       StringCopy(joinReq->userId, userId);
                       StringCopy(joinReq->username, username);
-                      const char *discriminator = GetStrMember(user,
-                            "discriminator");
+                      auto discriminator = GetStrMember(user, "discriminator");
                       if (discriminator)
                          StringCopy(joinReq->discriminator, discriminator);
                       if (avatar)
@@ -338,16 +321,16 @@ extern "C" DISCORD_EXPORT void Discord_Initialize(
     Connection->onConnect = [](JsonDocument& readyMessage)
     {
         Discord_UpdateHandlers(&QueuedHandlers);
-        JsonValue *data      = GetObjMember(&readyMessage, "data");
-        JsonValue *user      = GetObjMember(data, "user");
-        const char *userId   = GetStrMember(user, "id");
-        const char *username = GetStrMember(user, "username");
-        const char *avatar   = GetStrMember(user, "avatar");
+        auto data     = GetObjMember(&readyMessage, "data");
+        auto user     = GetObjMember(data, "user");
+        auto userId   = GetStrMember(user, "id");
+        auto username = GetStrMember(user, "username");
+        auto avatar   = GetStrMember(user, "avatar");
         if (userId && username)
         {
             StringCopy(connectedUser.userId, userId);
             StringCopy(connectedUser.username, username);
-            const char *discriminator = GetStrMember(user, "discriminator");
+            auto discriminator = GetStrMember(user, "discriminator");
             if (discriminator)
                 StringCopy(connectedUser.discriminator, discriminator);
             if (avatar)
