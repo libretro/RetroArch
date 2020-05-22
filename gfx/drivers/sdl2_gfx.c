@@ -490,12 +490,11 @@ static bool sdl2_gfx_frame(void *data, const void *frame, unsigned width,
    char title[128];
    sdl2_video_t *vid     = (sdl2_video_t*)data;
    bool menu_is_alive    = video_info->menu_is_alive;
-   bool libretro_running = video_info->libretro_running;
 
    if (vid->should_resize)
       sdl_refresh_viewport(vid);
 
-   if (frame && libretro_running)
+   if (frame)
    {
       SDL_RenderClear(vid->renderer);
       sdl_refresh_input_size(vid, false, vid->video.rgb32, width, height, pitch);
