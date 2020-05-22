@@ -246,12 +246,29 @@ static bool menu_shader_manager_save_preset_internal(
 
    if (!string_is_empty(basename))
    {
+      /* We are comparing against a fixed list of file
+       * extensions, the longest (slangp) being 6 characters
+       * in length. We therefore only need to extract the first
+       * 7 characters from the extension of the input path
+       * to correctly validate a match */
+      char ext_lower[8];
+      const char *ext = NULL;
+
+      ext_lower[0]    = '\0';
+
       strlcpy(fullname, basename, sizeof(fullname));
 
+      /* Get file extension */
+      ext = strrchr(basename, '.');
+
+      /* Copy and convert to lower case */
+      strlcpy(ext_lower, ext, sizeof(ext_lower));
+      string_to_lower(ext_lower);
+
       /* Append extension automatically as appropriate. */
-      if (     !string_ends_with(basename, ".cgp")
-            && !string_ends_with(basename, ".glslp")
-            && !string_ends_with(basename, ".slangp"))
+      if (     !string_is_equal(ext_lower, "cgp")
+            && !string_is_equal(ext_lower, "glslp")
+            && !string_is_equal(ext_lower, "slangp"))
       {
          const char *preset_ext = video_shader_get_preset_extension(type);
          strlcat(fullname, preset_ext, sizeof(fullname));
@@ -267,8 +284,7 @@ static bool menu_shader_manager_save_preset_internal(
    if (path_is_absolute(fullname))
    {
       preset_path = fullname;
-
-      ret = video_shader_write_preset(preset_path,
+      ret         = video_shader_write_preset(preset_path,
             dir_video_shader,
             shader, save_reference);
 
@@ -292,13 +308,14 @@ static bool menu_shader_manager_save_preset_internal(
          strlcpy(basedir, buffer, sizeof(basedir));
          path_basedir(basedir);
 
-         if (!path_is_directory(basedir)) {
+         if (!path_is_directory(basedir))
+         {
             ret = path_mkdir(basedir);
 
             if (!ret)
             {
-                RARCH_WARN("Failed to create preset directory %s.\n", basedir);
-                continue;
+               RARCH_WARN("Failed to create preset directory %s.\n", basedir);
+               continue;
             }
          }
 

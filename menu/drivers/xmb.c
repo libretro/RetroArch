@@ -1041,11 +1041,9 @@ static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
             strlcat(path, ".png", sizeof(path));
 
             if (path_is_valid(path))
-            {
                strlcpy(
                      xmb->savestate_thumbnail_file_path, path,
                      sizeof(xmb->savestate_thumbnail_file_path));
-            }
          }
       }
    }
