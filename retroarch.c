@@ -14501,7 +14501,7 @@ static void command_event_init_controllers(struct rarch_state *p_rarch)
    unsigned i;
    rarch_system_info_t *info     = &p_rarch->runloop_system;
 
-   for (i = 0; i < MAX_USERS; i++)
+   for (i = 0; i < p_rarch->input_driver_max_users; i++)
    {
       retro_ctx_controller_info_t pad;
       const char *ident                               = NULL;
@@ -20913,7 +20913,7 @@ static bool secondary_core_create(struct rarch_state *p_rarch)
    p_rarch->secondary_core.retro_set_input_state(p_rarch->secondary_callbacks.state_cb);
    p_rarch->secondary_core.retro_set_input_poll(p_rarch->secondary_callbacks.poll_cb);
 
-   for (port = 0; port < 16; port++)
+   for (port = 0; port < p_rarch->input_driver_max_users; port++)
    {
       device = p_rarch->port_map[port];
       if (device >= 0)
