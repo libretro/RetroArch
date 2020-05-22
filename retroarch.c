@@ -29486,6 +29486,7 @@ bool core_load_game(retro_ctx_load_content_info_t *load_info)
 {
    bool contentless = false;
    bool is_inited   = false;
+   bool game_loaded = false;
 
    video_driver_set_cached_frame_ptr(NULL);
 
@@ -29498,16 +29499,16 @@ bool core_load_game(retro_ctx_load_content_info_t *load_info)
    set_save_state_in_background(false);
 
    if (load_info && load_info->special)
-      current_core.game_loaded = current_core.retro_load_game_special(
+      game_loaded = current_core.retro_load_game_special(
             load_info->special->id, load_info->info, load_info->content->size);
    else if (load_info && !string_is_empty(load_info->content->elems[0].data))
-      current_core.game_loaded = current_core.retro_load_game(load_info->info);
+      game_loaded = current_core.retro_load_game(load_info->info);
    else if (contentless)
-      current_core.game_loaded = current_core.retro_load_game(NULL);
-   else
-      current_core.game_loaded = false;
+      game_loaded = current_core.retro_load_game(NULL);
 
-   return current_core.game_loaded;
+   current_core.game_loaded = game_loaded;
+
+   return game_loaded;
 }
 
 bool core_get_system_info(struct retro_system_info *system)
