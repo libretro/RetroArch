@@ -2,6 +2,7 @@
 - AUDIO/JACK: Fix regression introduced after 1.8.4 - would hang at startup
 - CHEEVOS: Disable hardcore when cheats are enabled
 - CHD: Return false when special track cannot be found
+- DISCORD/MATCHMAKING: Fix Discord 'Ask To Join' functionality
 - INPUT MAPPING/REMAPPING: Restore broken 'reset to default' functionality with RetroPad 'start' button
 - INPUT MAPPING/REMAPPING: Fix 'reset to default' action for analog sticks and undefined core inputs 
 - MENU/THUMBNAILS/BUGFIX: Fix heap-use-after-free error
