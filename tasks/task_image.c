@@ -422,7 +422,7 @@ bool task_push_image_load(const char *fullpath,
 
    nbio->path                        = strdup(fullpath);
 
-   image->type                       = IMAGE_TYPE_NONE;
+   image->type                       = image_texture_get_type(fullpath);
    image->status                     = IMAGE_STATUS_WAIT;
    image->is_blocking                = false;
    image->is_blocking_on_processing  = false;
@@ -439,26 +439,23 @@ bool task_push_image_load(const char *fullpath,
    /* TODO/FIXME - shouldn't we set this ? */
    image->ti.supports_rgba           = false;
 
-   if (strstr(fullpath, ".png"))
+   switch (image->type)
    {
-      nbio->type       = NBIO_TYPE_PNG;
-      image->type      = IMAGE_TYPE_PNG;
-   }
-   else if (strstr(fullpath, ".jpeg")
-         || strstr(fullpath, ".jpg"))
-   {
-      nbio->type       = NBIO_TYPE_JPEG;
-      image->type      = IMAGE_TYPE_JPEG;
-   }
-   else if (strstr(fullpath, ".bmp"))
-   {
-      nbio->type       = NBIO_TYPE_BMP;
-      image->type      = IMAGE_TYPE_BMP;
-   }
-   else if (strstr(fullpath, ".tga"))
-   {
-      nbio->type       = NBIO_TYPE_TGA;
-      image->type      = IMAGE_TYPE_TGA;
+      case IMAGE_TYPE_PNG:
+         nbio->type = NBIO_TYPE_PNG;
+         break;
+      case IMAGE_TYPE_JPEG:
+         nbio->type = NBIO_TYPE_JPEG;
+         break;
+      case IMAGE_TYPE_BMP:
+         nbio->type = NBIO_TYPE_BMP;
+         break;
+      case IMAGE_TYPE_TGA:
+         nbio->type = NBIO_TYPE_TGA;
+         break;
+      default:
+         nbio->type = NBIO_TYPE_NONE;
+         break;
    }
 
    nbio->data          = (struct nbio_image_handle*)image;
