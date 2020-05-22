@@ -402,7 +402,7 @@ static bool v4l_poll(void *data,
 
    if (preprocess_image(data))
    {
-      if (frame_raw_cb != NULL)
+      if (frame_raw_cb)
          frame_raw_cb(v4l->buffer_output, v4l->width,
                v4l->height, v4l->width * 4);
       return true;

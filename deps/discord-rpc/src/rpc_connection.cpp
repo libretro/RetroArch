@@ -36,8 +36,8 @@ void RpcConnection::Open()
        JsonDocument message;
        if (Read(message))
        {
-          auto cmd = GetStrMember(&message, "cmd");
-          auto evt = GetStrMember(&message, "evt");
+          const char *cmd = GetStrMember(&message, "cmd");
+          const char *evt = GetStrMember(&message, "evt");
           if (cmd && evt 
                 && !strcmp(cmd, "DISPATCH") 
                 && !strcmp(evt, "READY"))

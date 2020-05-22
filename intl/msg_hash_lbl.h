@@ -369,6 +369,10 @@ MSG_HASH(
    "cheevos_auto_screenshot"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_CHEEVOS_START_ACTIVE,
+   "cheevos_start_active"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_CLOSE_CONTENT,
    "unload_core"
    )

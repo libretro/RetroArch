@@ -546,7 +546,7 @@ static bool ctr_frame(void* data, const void* frame,
    int custom_vp_y                = video_info->custom_vp_y;
    unsigned custom_vp_width       = video_info->custom_vp_width;
    unsigned custom_vp_height      = video_info->custom_vp_height;
-
+   bool menu_is_alive             = video_info->menu_is_alive;
 
    if (!width || !height || !settings)
    {
@@ -873,9 +873,8 @@ static bool ctr_frame(void* data, const void* frame,
       }
 
       ctr->msg_rendering_enabled = true;
-      menu_driver_frame(video_info);
+      menu_driver_frame(menu_is_alive, video_info);
       ctr->msg_rendering_enabled = false;
-
    }
    else if (statistics_show)
    {

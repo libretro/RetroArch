@@ -275,11 +275,17 @@ int filestream_scanf(RFILE *stream, const char* format, ...)
          if (sizeof(void*) != sizeof(long*)) abort(); /* all pointers must have the same size */
          if (asterisk)
          {
-            if (sscanf(bufiter, subfmt, &sublen) != 0) break;
+            int v = sscanf(bufiter, subfmt, &sublen);
+            if (v == EOF)
+               return EOF;
+            if (v != 0) break;
          }
          else
          {
-            if (sscanf(bufiter, subfmt, va_arg(args, void*), &sublen) != 1) break;
+            int v = sscanf(bufiter, subfmt, va_arg(args, void*), &sublen);
+            if (v == EOF)
+               return EOF;
+            if (v != 1) break;
          }
 
          ret++;

@@ -44,23 +44,12 @@
 #include "../tasks/task_content.h"
 
 #ifdef HAVE_CHEEVOS
-#include "../cheevos-new/badges.h"
+#include "../cheevos/badges.h"
 #endif
 
-static bool widgets_inited = false;
-static bool widgets_active = false;
-
-bool gfx_widgets_active(void)
-{
-   return widgets_active;
-}
-
-static bool widgets_persisting = false;
-
-void gfx_widgets_set_persistence(bool persist)
-{
-   widgets_persisting = persist;
-}
+static bool widgets_inited             = false;
+static bool widgets_active             = false;
+static bool widgets_persisting         = false;
 
 static float msg_queue_background[16]  = COLOR_HEX_TO_FLOAT(0x3A3A3A, 1.0f);
 static float msg_queue_info[16]        = COLOR_HEX_TO_FLOAT(0x12ACF8, 1.0f);
@@ -74,6 +63,14 @@ static float color_task_progress_bar[16] = COLOR_HEX_TO_FLOAT(0x22B14C, 1.0f);
 
 static uint64_t gfx_widgets_frame_count   = 0;
 
+static float gfx_widgets_pure_white[16] = {
+      1.00, 1.00, 1.00, 1.00,
+      1.00, 1.00, 1.00, 1.00,
+      1.00, 1.00, 1.00, 1.00,
+      1.00, 1.00, 1.00, 1.00,
+};
+
+
 /* Font data */
 typedef struct
 {
@@ -83,33 +80,6 @@ typedef struct
 } gfx_widget_fonts_t;
 
 static gfx_widget_fonts_t gfx_widget_fonts;
-
-gfx_widget_font_data_t* gfx_widgets_get_font_regular(void)
-{
-   return &gfx_widget_fonts.regular;
-}
-
-gfx_widget_font_data_t* gfx_widgets_get_font_bold(void)
-{
-   return &gfx_widget_fonts.bold;
-}
-
-gfx_widget_font_data_t* gfx_widgets_get_font_msg_queue(void)
-{
-   return &gfx_widget_fonts.msg_queue;
-}
-
-static float gfx_widgets_pure_white[16] = {
-      1.00, 1.00, 1.00, 1.00,
-      1.00, 1.00, 1.00, 1.00,
-      1.00, 1.00, 1.00, 1.00,
-      1.00, 1.00, 1.00, 1.00,
-};
-
-float* gfx_widgets_get_pure_white(void)
-{
-   return gfx_widgets_pure_white;
-}
 
 /* FPS */
 static char gfx_widgets_fps_text[255]  = {0};
@@ -172,19 +142,12 @@ static float gfx_widgets_backdrop_orig[16] = {
    0.00, 0.00, 0.00, 0.75,
 };
 
-float* gfx_widgets_get_backdrop_orig(void)
-{
-   return gfx_widgets_backdrop_orig;
-}
-
 static float gfx_widgets_backdrop[16] = {
       0.00, 0.00, 0.00, 0.75,
       0.00, 0.00, 0.00, 0.75,
       0.00, 0.00, 0.00, 0.75,
       0.00, 0.00, 0.00, 0.75,
 };
-
-/* Messages queue */
 
 typedef struct menu_widget_msg
 {
@@ -243,11 +206,6 @@ static bool msg_queue_has_icons                  = false;
 
 static gfx_animation_ctx_tag gfx_widgets_generic_tag = (uintptr_t)&widgets_active;
 
-gfx_animation_ctx_tag gfx_widgets_get_generic_tag(void)
-{
-   return gfx_widgets_generic_tag;
-}
-
 /* There can only be one message animation at a time to 
  * avoid confusing users */
 static bool widgets_moving                       = false;
@@ -304,16 +262,6 @@ static float last_scale_factor            = 0.0f;
 static unsigned simple_widget_padding     = 0;
 static unsigned simple_widget_height      = 0;
 
-unsigned gfx_widgets_get_padding(void)
-{
-   return simple_widget_padding;
-}
-
-unsigned gfx_widgets_get_height(void)
-{
-   return simple_widget_height;
-}
-
 static unsigned msg_queue_height;
 static unsigned msg_queue_icon_size_x;
 static unsigned msg_queue_icon_size_y;
@@ -334,15 +282,68 @@ static unsigned msg_queue_task_hourglass_x;
 /* Used for both generic and libretro messages */
 static unsigned generic_message_height;
 
-unsigned gfx_widgets_get_generic_message_height(void)
-{
-   return generic_message_height;
-}
-
 static unsigned divider_width_1px            = 1;
 
 static unsigned last_video_width             = 0;
 static unsigned last_video_height            = 0;
+
+bool gfx_widgets_active(void)
+{
+   return widgets_active;
+}
+
+void gfx_widgets_set_persistence(bool persist)
+{
+   widgets_persisting = persist;
+}
+
+gfx_widget_font_data_t* gfx_widgets_get_font_regular(void)
+{
+   return &gfx_widget_fonts.regular;
+}
+
+gfx_widget_font_data_t* gfx_widgets_get_font_bold(void)
+{
+   return &gfx_widget_fonts.bold;
+}
+
+gfx_widget_font_data_t* gfx_widgets_get_font_msg_queue(void)
+{
+   return &gfx_widget_fonts.msg_queue;
+}
+
+float* gfx_widgets_get_pure_white(void)
+{
+   return gfx_widgets_pure_white;
+}
+
+float* gfx_widgets_get_backdrop_orig(void)
+{
+   return gfx_widgets_backdrop_orig;
+}
+
+/* Messages queue */
+
+gfx_animation_ctx_tag gfx_widgets_get_generic_tag(void)
+{
+   return gfx_widgets_generic_tag;
+}
+
+unsigned gfx_widgets_get_padding(void)
+{
+   return simple_widget_padding;
+}
+
+unsigned gfx_widgets_get_height(void)
+{
+   return simple_widget_height;
+}
+
+
+unsigned gfx_widgets_get_generic_message_height(void)
+{
+   return generic_message_height;
+}
 
 unsigned gfx_widgets_get_last_video_width(void)
 {
@@ -1406,6 +1407,7 @@ static void gfx_widgets_draw_regular_msg(
    }
 }
 
+#ifdef HAVE_MENU
 static void gfx_widgets_draw_backdrop(
       void *userdata,
       unsigned video_width,
@@ -1424,7 +1426,6 @@ static void gfx_widgets_draw_load_content_animation(
       unsigned video_width,
       unsigned video_height)
 {
-#ifdef HAVE_MENU
    /* TODO: change metrics? */
    int icon_size         = (int)load_content_animation_icon_size;
    uint32_t text_alpha   = load_content_animation_fade_alpha * 255.0f;
@@ -1475,8 +1476,8 @@ static void gfx_widgets_draw_load_content_animation(
    gfx_widgets_draw_backdrop(userdata,
          video_width, video_height,
          load_content_animation_final_fade_alpha);
-#endif
 }
+#endif
 
 static void INLINE gfx_widgets_font_bind(gfx_widget_font_data_t *font_data)
 {
@@ -1508,7 +1509,9 @@ void gfx_widgets_frame(void *data)
    bool widgets_is_rewinding;
    bool runloop_is_slowmotion;
    int top_right_x_advance;
-   int scissor_me_timbers;
+#ifdef HAVE_CHEEVOS
+   int scissor_me_timbers    = 0;
+#endif
 
    if (!widgets_active)
       return;
@@ -1527,7 +1530,6 @@ void gfx_widgets_frame(void *data)
    widgets_is_rewinding      = video_info->widgets_is_rewinding;
    runloop_is_slowmotion     = video_info->runloop_is_slowmotion;
    top_right_x_advance       = video_width;
-   scissor_me_timbers        = 0;
 
    gfx_widgets_frame_count++;
 
@@ -2286,6 +2288,7 @@ void gfx_widgets_ai_service_overlay_unload(void)
 }
 #endif
 
+#ifdef HAVE_MENU
 static void gfx_widgets_end_load_content_animation(void *userdata)
 {
 #if 0
@@ -2295,13 +2298,12 @@ static void gfx_widgets_end_load_content_animation(void *userdata)
 
 void gfx_widgets_cleanup_load_content_animation(void)
 {
-#ifdef HAVE_MENU
    load_content_animation_running = false;
    if (load_content_animation_content_name)
       free(load_content_animation_content_name);
    load_content_animation_content_name = NULL;
-#endif
 }
+#endif
 
 void gfx_widgets_start_load_content_animation(const char *content_name, bool remove_extension)
 {

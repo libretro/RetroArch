@@ -844,6 +844,7 @@ static bool xv_frame(void *data, const void *frame, unsigned width,
 {
    XWindowAttributes target;
    xv_t *xv                  = (xv_t*)data;
+   bool menu_is_alive        = video_info->menu_is_alive;
 
    if (!frame)
       return true;
@@ -859,7 +860,7 @@ static bool xv_frame(void *data, const void *frame, unsigned width,
    xv->vp.full_height = target.height;
 
 #ifdef HAVE_MENU
-   menu_driver_frame(video_info);
+   menu_driver_frame(menu_is_alive, video_info);
 #endif
 
    if (msg)

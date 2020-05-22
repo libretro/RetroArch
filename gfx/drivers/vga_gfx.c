@@ -33,7 +33,7 @@
 
 static void vga_set_mode_13h(void)
 {
-   __dpmi_regs r;
+  __dpmi_regs r = {0};
 
    r.x.ax = 0x13;
    __dpmi_int(0x10, &r);
@@ -41,7 +41,7 @@ static void vga_set_mode_13h(void)
 
 static void vga_return_to_text_mode(void)
 {
-   __dpmi_regs r;
+   __dpmi_regs r = {0};
 
    r.x.ax = 3;
    __dpmi_int(0x10, &r);
@@ -106,22 +106,22 @@ static void *vga_gfx_init(const video_info_t *video,
    *input              = NULL;
    *input_data         = NULL;
 
-   vga->video_width    = video->width;
-   vga->video_height   = video->height;
-   vga->rgb32          = video->rgb32;
+   vga->vga_video_width    = video->width;
+   vga->vga_video_height   = video->height;
+   vga->vga_rgb32          = video->rgb32;
 
    if (video->rgb32)
    {
-      vga->video_pitch = video->width * 4;
-      vga->video_bits  = 32;
+      vga->vga_video_pitch = video->width * 4;
+      vga->vga_video_bits  = 32;
    }
    else
    {
-      vga->video_pitch = video->width * 2;
-      vga->video_bits  = 16;
+      vga->vga_video_pitch = video->width * 2;
+      vga->vga_video_bits  = 16;
    }
 
-   vga->frame          = (unsigned char*)malloc(VGA_WIDTH * VGA_HEIGHT);
+   vga->vga_frame          = (unsigned char*)malloc(VGA_WIDTH * VGA_HEIGHT);
 
    vga_gfx_create();
 
@@ -144,40 +144,41 @@ static bool vga_gfx_frame(void *data, const void *frame,
    const void *frame_to_copy = frame;
    bool draw                 = true;
    vga_t *vga                = (vga_t*)data;
+   bool menu_is_alive        = video_info->menu_is_alive;
 
    if (!frame || !frame_width || !frame_height)
       return true;
 
 #ifdef HAVE_MENU
-   menu_driver_frame(video_info);
+   menu_driver_frame(menu_is_alive, video_info);
 #endif
 
-   if (  vga->video_width  != frame_width   ||
-         vga->video_height != frame_height  ||
-         vga->video_pitch  != pitch)
+   if (  vga->vga_video_width  != frame_width   ||
+         vga->vga_video_height != frame_height  ||
+         vga->vga_video_pitch  != pitch)
    {
       if (frame_width > 4 && frame_height > 4)
       {
-         vga->video_width = frame_width;
-         vga->video_height = frame_height;
-         vga->video_pitch = pitch;
+         vga->vga_video_width = frame_width;
+         vga->vga_video_height = frame_height;
+         vga->vga_video_pitch = pitch;
       }
    }
 
-   if (vga->menu_frame && video_info->menu_is_alive)
+   if (vga->vga_menu_frame && video_info->menu_is_alive)
    {
-      frame_to_copy = vga->menu_frame;
-      width         = vga->menu_width;
-      height        = vga->menu_height;
-      pitch         = vga->menu_pitch;
-      bits          = vga->menu_bits;
+      frame_to_copy = vga->vga_menu_frame;
+      width         = vga->vga_menu_width;
+      height        = vga->vga_menu_height;
+      pitch         = vga->vga_menu_pitch;
+      bits          = vga->vga_menu_bits;
    }
    else
    {
-      width         = vga->video_width;
-      height        = vga->video_height;
-      pitch         = vga->video_pitch;
-      bits          = vga->video_bits;
+      width         = vga->vga_video_width;
+      height        = vga->vga_video_height;
+      pitch         = vga->vga_video_pitch;
+      bits          = vga->vga_video_bits;
 
       if (frame_width == 4 && frame_height == 4 && (frame_width < width && frame_height < height))
          draw = false;
@@ -190,14 +191,33 @@ static bool vga_gfx_frame(void *data, const void *frame,
    {
       vga_vsync();
 
-      if (frame_to_copy == vga->menu_frame)
+      if (frame_to_copy == vga->vga_menu_frame)
          dosmemput(frame_to_copy,
                MIN(VGA_WIDTH,width)*MIN(VGA_HEIGHT,height), 0xA0000);
       else
       {
          if (bits == 32)
          {
-            /* TODO/FIXME - needs to be implemented */
+            unsigned x, y;
+            for (y = 0; y < VGA_HEIGHT; y++)
+            {
+               for (x = 0; x < VGA_WIDTH; x++)
+               {
+                  /* scale incoming frame to fit the screen */
+                  unsigned    scaled_x = (width * x) / VGA_WIDTH;
+                  unsigned    scaled_y = (height * y) / VGA_HEIGHT;
+                  uint32_t pixel = ((uint32_t*)frame_to_copy)[width * scaled_y + scaled_x];
+
+                  /* convert RGB888 to BGR332 */
+                  unsigned r = ((pixel & 0xFF0000) >> 21);
+                  unsigned g = ((pixel & 0x00FF00) >> 13);
+                  unsigned b = ((pixel & 0x0000FF) >> 6);
+
+                  vga->vga_frame[VGA_WIDTH * y + x] = (b << 6) | (g << 3) | r;
+               }
+            }
+
+            dosmemput(vga->vga_frame, VGA_WIDTH*VGA_HEIGHT, 0xA0000);
          }
          else if (bits == 16)
          {
@@ -217,11 +237,11 @@ static bool vga_gfx_frame(void *data, const void *frame,
                   unsigned g = ((pixel & 0x07E0) >> 8);
                   unsigned b = ((pixel & 0x001F) >> 3);
 
-                  vga->frame[VGA_WIDTH * y + x] = (b << 6) | (g << 3) | r;
+                  vga->vga_frame[VGA_WIDTH * y + x] = (b << 6) | (g << 3) | r;
                }
             }
 
-            dosmemput(vga->frame, VGA_WIDTH*VGA_HEIGHT, 0xA0000);
+            dosmemput(vga->vga_frame, VGA_WIDTH*VGA_HEIGHT, 0xA0000);
          }
       }
    }
@@ -239,7 +259,7 @@ static bool vga_gfx_alive(void *data)
 {
    vga_t *vga = (vga_t*)data;
    /* TODO/FIXME - check if this is valid */
-   video_driver_set_size(vga->video_width, vga->video_height);
+   video_driver_set_size(vga->vga_video_width, vga->vga_video_height);
    return true;
 }
 
@@ -263,13 +283,13 @@ static void vga_gfx_free(void *data)
    if (!vga)
       return;
 
-   if (vga->frame)
-      free(vga->frame);
-   vga->frame = NULL;
+   if (vga->vga_frame)
+      free(vga->vga_frame);
+   vga->vga_frame = NULL;
 
-   if (vga->menu_frame)
-      free(vga->menu_frame);
-   vga->menu_frame = NULL;
+   if (vga->vga_menu_frame)
+      free(vga->vga_menu_frame);
+   vga->vga_menu_frame = NULL;
 
    vga_return_to_text_mode();
 }
@@ -294,18 +314,18 @@ static void vga_set_texture_frame(void *data,
    if (rgb32)
       pitch = width * 4;
 
-   if (vga->menu_frame)
-      free(vga->menu_frame);
-   vga->menu_frame = NULL;
+   if (vga->vga_menu_frame)
+      free(vga->vga_menu_frame);
+   vga->vga_menu_frame = NULL;
 
-   if ( !vga->menu_frame ||
-         vga->menu_width  != width  ||
-         vga->menu_height != height ||
-         vga->menu_pitch  != pitch)
+   if ( !vga->vga_menu_frame ||
+         vga->vga_menu_width  != width  ||
+         vga->vga_menu_height != height ||
+         vga->vga_menu_pitch  != pitch)
       if (pitch && height)
-         vga->menu_frame = (unsigned char*)malloc(VGA_WIDTH * VGA_HEIGHT);
+         vga->vga_menu_frame = (unsigned char*)malloc(VGA_WIDTH * VGA_HEIGHT);
 
-   if (vga->menu_frame && frame && pitch && height)
+   if (vga->vga_menu_frame && frame && pitch && height)
    {
       unsigned x, y;
 
@@ -324,15 +344,15 @@ static void vga_set_texture_frame(void *data,
                unsigned r = ((pixel & 0xF000) >> 13);
                unsigned g = ((pixel & 0xF00) >> 9);
                unsigned b = ((pixel & 0xF0) >> 6);
-               vga->menu_frame[VGA_WIDTH * y + x] = (b << 6) | (g << 3) | r;
+               vga->vga_menu_frame[VGA_WIDTH * y + x] = (b << 6) | (g << 3) | r;
             }
          }
       }
 
-      vga->menu_width  = width;
-      vga->menu_height = height;
-      vga->menu_pitch  = pitch;
-      vga->menu_bits   = rgb32 ? 32 : 16;
+      vga->vga_menu_width  = width;
+      vga->vga_menu_height = height;
+      vga->vga_menu_pitch  = pitch;
+      vga->vga_menu_bits   = rgb32 ? 32 : 16;
    }
 }
 
@@ -344,7 +364,7 @@ static uint32_t vga_get_flags(void *data)
 }
 
 static const video_poke_interface_t vga_poke_interface = {
-   vga_gfx_get_flags,
+   vga_get_flags,
    NULL,
    NULL,
    NULL,

@@ -443,6 +443,8 @@
 
 - (void)_drawMenu:(video_frame_info_t *)video_info
 {
+   bool menu_is_alive = video_info->menu_is_alive;
+
    if (!_menu.enabled)
       return;
 
@@ -470,7 +472,7 @@
    {
       [rce pushDebugGroup:@"menu"];
       [_context resetRenderViewport:kFullscreenViewport];
-      menu_driver_frame(video_info);
+      menu_driver_frame(menu_is_alive, video_info);
       [rce popDebugGroup];
    }
 #endif

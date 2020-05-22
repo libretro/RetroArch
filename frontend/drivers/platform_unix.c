@@ -164,7 +164,7 @@ int system_property_get(const char *command,
 
    while (!feof(pipe))
    {
-      if (fgets(buffer, 128, pipe) != NULL)
+      if (fgets(buffer, 128, pipe))
       {
          int curlen = strlen(buffer);
 
@@ -306,11 +306,11 @@ static void* onSaveInstanceState(
    while (!android_app->stateSaved)
       scond_wait(android_app->cond, android_app->mutex);
 
-   if (android_app->savedState != NULL)
+   if (android_app->savedState)
    {
-      savedState = android_app->savedState;
-      *outLen    = android_app->savedStateSize;
-      android_app->savedState = NULL;
+      savedState                  = android_app->savedState;
+      *outLen                     = android_app->savedStateSize;
+      android_app->savedState     = NULL;
       android_app->savedStateSize = 0;
    }
 
@@ -451,9 +451,9 @@ static struct android_app* android_app_create(ANativeActivity* activity,
    android_app->mutex    = slock_new();
    android_app->cond     = scond_new();
 
-   if (savedState != NULL)
+   if (savedState)
    {
-      android_app->savedState = malloc(savedStateSize);
+      android_app->savedState     = malloc(savedStateSize);
       android_app->savedStateSize = savedStateSize;
       memcpy(android_app->savedState, savedState, savedStateSize);
    }
@@ -1679,7 +1679,7 @@ static void frontend_unix_get_env(int *argc,
    /* For gamepad-like/console devices:
     *
     * - Explicitly disable input overlay by default
-    * - Use XMB menu driver by default
+    * - Use Ozone menu driver by default
     *
     * */
 
@@ -1687,7 +1687,7 @@ static void frontend_unix_get_env(int *argc,
    {
       g_defaults.overlay.set    = true;
       g_defaults.overlay.enable = false;
-      strlcpy(g_defaults.settings.menu, "xmb",
+      strlcpy(g_defaults.settings.menu, "ozone",
             sizeof(g_defaults.settings.menu));
    }
 #else
@@ -1783,10 +1783,10 @@ static void free_saved_state(struct android_app* android_app)
 {
     slock_lock(android_app->mutex);
 
-    if (android_app->savedState != NULL)
+    if (android_app->savedState)
     {
         free(android_app->savedState);
-        android_app->savedState = NULL;
+        android_app->savedState     = NULL;
         android_app->savedStateSize = 0;
     }
 
@@ -2414,7 +2414,7 @@ enum retro_language frontend_unix_get_user_language(void)
 #else
    char *envvar = getenv("LANG");
 
-   if (envvar != NULL)
+   if (envvar)
       lang = rarch_get_language_from_iso(envvar);
 #endif
 #endif
@@ -2432,8 +2432,8 @@ static bool accessibility_speak_unix(int speed,
 {
    int pid;
    const char *language   = get_user_language_iso639_1(true);
-   char* voice_out        = (char *)malloc(3+strlen(language));
-   char* speed_out        = (char *)malloc(3+3);
+   char* voice_out        = (char*)malloc(3+strlen(language));
+   char* speed_out        = (char*)malloc(3+3);
    const char* speeds[10] = {"80", "100", "125", "150", "170", "210", "260", "310", "380", "450"};
 
    if (speed < 1)
@@ -2482,7 +2482,7 @@ static bool accessibility_speak_unix(int speed,
       char* cmd[] = { (char*) "espeak", NULL, NULL, NULL, NULL};
       cmd[1] = voice_out;
       cmd[2] = speed_out;
-      cmd[3] = (char *) speak_text;
+      cmd[3] = (char*)speak_text;
       execvp("espeak", cmd);
    }
    return true;

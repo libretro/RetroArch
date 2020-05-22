@@ -475,7 +475,8 @@ static bool psp_frame(void *data, const void *frame,
       unsigned width, unsigned height, uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
-   psp1_video_t *psp                       = (psp1_video_t*)data;
+   psp1_video_t *psp              = (psp1_video_t*)data;
+   bool menu_is_alive             = video_info->menu_is_alive;
 
    if (!width || !height)
       return false;
@@ -536,7 +537,7 @@ static bool psp_frame(void *data, const void *frame,
    sceGuFinish();
 
 #ifdef HAVE_MENU
-   menu_driver_frame(video_info);
+   menu_driver_frame(menu_is_alive, video_info);
 #endif
 
    if(psp->menu.active)

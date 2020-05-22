@@ -68,18 +68,18 @@ static const memory_values_t mem_vals_540[] =
 
 static inline void memoryAddArea(int start, int end, int cur_index)
 {
-    /* Create and copy new memory area */
-    s_mem_area * mem_area = MEM_AREA_TABLE;
-    mem_area[cur_index].address = start;
-    mem_area[cur_index].size    = end - start;
-    mem_area[cur_index].next    = 0;
+   /* Create and copy new memory area */
+   s_mem_area *mem_area        = MEM_AREA_TABLE;
 
-    /* Fill pointer to this area in the previous area */
-    if (cur_index > 0)
-    {
-        mem_area[cur_index - 1].next = &mem_area[cur_index];
-    }
+   mem_area[cur_index].address = start;
+   mem_area[cur_index].size    = end - start;
+   mem_area[cur_index].next    = 0;
+
+   /* Fill pointer to this area in the previous area */
+   if (cur_index > 0)
+      mem_area[cur_index - 1].next = &mem_area[cur_index];
 }
+
 void *getApplicationEndAddr(void)
 {
    extern u32 _end[];
@@ -200,43 +200,45 @@ static int HomebrewCopyMemory(u8 *address, u32 bytes, u32 args_size)
  */
 void log_rpx(const char *filepath, unsigned char *buf, size_t len)
 {
-  unsigned int line_buffer[LINE_LEN];
-  int i, offset;
+   unsigned int line_buffer[LINE_LEN];
+   int i, offset;
 
-  RARCH_LOG("=== BEGIN file=%s size=%d ===\n", filepath, len);
-  for(i = 0; i < len; i++)
-  {
-    offset = i % LINE_LEN;
-    line_buffer[offset] = buf[i];
+   RARCH_LOG("=== BEGIN file=%s size=%d ===\n", filepath, len);
 
-    if(offset == (LINE_LEN-1)) {
+   for (i = 0; i < len; i++)
+   {
+      offset = i % LINE_LEN;
+      line_buffer[offset] = buf[i];
+
+      if(offset == (LINE_LEN-1))
+      {
+         RARCH_LOG("%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x\n",
+               line_buffer[0], line_buffer[1], line_buffer[2], line_buffer[3],
+               line_buffer[4], line_buffer[5], line_buffer[6], line_buffer[7],
+               line_buffer[8], line_buffer[9], line_buffer[10], line_buffer[11],
+               line_buffer[12], line_buffer[13], line_buffer[14], line_buffer[15],
+               line_buffer[16], line_buffer[17], line_buffer[18], line_buffer[19],
+               line_buffer[20], line_buffer[21], line_buffer[22], line_buffer[23],
+               line_buffer[24], line_buffer[25], line_buffer[26], line_buffer[27],
+               line_buffer[28], line_buffer[29], line_buffer[30], line_buffer[31]);
+      }
+   }
+   if((len % LINE_LEN) != 0)
+   {
+      for (i = (LINE_LEN - (len % LINE_LEN)); i < LINE_LEN; i++)
+         line_buffer[i] = 0;
+
       RARCH_LOG("%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x\n",
-	line_buffer[0], line_buffer[1], line_buffer[2], line_buffer[3],
-	line_buffer[4], line_buffer[5], line_buffer[6], line_buffer[7],
-	line_buffer[8], line_buffer[9], line_buffer[10], line_buffer[11],
-	line_buffer[12], line_buffer[13], line_buffer[14], line_buffer[15],
-	line_buffer[16], line_buffer[17], line_buffer[18], line_buffer[19],
-	line_buffer[20], line_buffer[21], line_buffer[22], line_buffer[23],
-	line_buffer[24], line_buffer[25], line_buffer[26], line_buffer[27],
-	line_buffer[28], line_buffer[29], line_buffer[30], line_buffer[31]);
-    }
-  }
-  if((len % LINE_LEN) != 0) {
-    for(i = (LINE_LEN - (len % LINE_LEN)); i < LINE_LEN; i++)
-    {
-      line_buffer[i] = 0;
-    }
-    RARCH_LOG("%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x\n",
-        line_buffer[0], line_buffer[1], line_buffer[2], line_buffer[3],
-	line_buffer[4], line_buffer[5], line_buffer[6], line_buffer[7],
-	line_buffer[8], line_buffer[9], line_buffer[10], line_buffer[11],
-	line_buffer[16], line_buffer[17], line_buffer[18], line_buffer[19],
-	line_buffer[20], line_buffer[21], line_buffer[22], line_buffer[23],
-	line_buffer[24], line_buffer[25], line_buffer[26], line_buffer[27],
-	line_buffer[28], line_buffer[29], line_buffer[30], line_buffer[31]);
+            line_buffer[0], line_buffer[1], line_buffer[2], line_buffer[3],
+            line_buffer[4], line_buffer[5], line_buffer[6], line_buffer[7],
+            line_buffer[8], line_buffer[9], line_buffer[10], line_buffer[11],
+            line_buffer[16], line_buffer[17], line_buffer[18], line_buffer[19],
+            line_buffer[20], line_buffer[21], line_buffer[22], line_buffer[23],
+            line_buffer[24], line_buffer[25], line_buffer[26], line_buffer[27],
+            line_buffer[28], line_buffer[29], line_buffer[30], line_buffer[31]);
 
-  }
-  RARCH_LOG("=== END %s ===\n", filepath);
+   }
+   RARCH_LOG("=== END %s ===\n", filepath);
 
 }
 

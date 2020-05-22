@@ -1489,6 +1489,7 @@ static bool d3d8_frame(void *data, const void *frame,
    const char *stat_text               = video_info->stat_text;
    bool statistics_show                = video_info->statistics_show;
    bool black_frame_insertion          = video_info->black_frame_insertion;
+   bool menu_is_alive                  = video_info->menu_is_alive;
 
    (void)i;
 
@@ -1556,7 +1557,7 @@ static bool d3d8_frame(void *data, const void *frame,
       d3d8_set_stream_source(d3d->dev, 0, d3d->menu_display.buffer, 0, sizeof(Vertex));
 
       d3d8_set_viewports(d3d->dev, &screen_vp);
-      menu_driver_frame(video_info);
+      menu_driver_frame(menu_is_alive, video_info);
    }
    else if (statistics_show)
    {

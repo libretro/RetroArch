@@ -1,3 +1,52 @@
+# v9.0.0
+
+* new size: RC_MEMSIZE_BITCOUNT
+* new flag: RC_CONDITION_OR_NEXT
+* new flag: RC_CONDITION_TRIGGER
+* new flag: RC_CONDITION_MEASURED_IF
+* new operators: RC_OPERATOR_MULT / RC_OPERATOR_DIV
+* is_bcd removed from memref - now part of RC_MEMSIZE
+* add rc_runtime_t and associated functions
+* add rc_hash_ functions
+* add rc_error_str function
+* add game_hash parameter to rc_url_award_cheevo
+* remove hash parameter from rc_url_submit_lboard
+* add rc_url_ping function
+* add rc_console_ functions
+
+# v8.1.0
+
+* new flag: RC_CONDITION_MEASURED
+* new flag: RC_CONDITION_ADD_ADDRESS
+* add rc_evaluate_trigger - extended version of rc_test_trigger with more granular return codes
+* make rc_evaluate_value return a signed int (was unsigned int)
+* new formats: RC_FORMAT_MINUTES and RC_FORMAT_SECONDS_AS_MINUTES
+* removed " Points" text from RC_FORMAT_SCORE format
+* removed RC_FORMAT_OTHER format. "OTHER" format now parses to RC_FORMAT_SCORE
+* bugfix: AddHits will now honor AndNext on previous condition
+
+# v8.0.1
+
+* bugfix: prevent null reference exception if rich presence contains condition without display string
+* bugfix: 24-bit read from memory should only read 24-bits
+
+# v8.0.0
+
+* support for prior operand type
+* support for AndNext condition flag
+* support for rich presence
+* bugfix: update delta/prior memory values while group is paused
+* bugfix: allow floating point number without leading 0
+* bugfix: support empty alt groups
+
+# v7.1.1
+
+* Address signed/unsigned mismatch warnings
+
+# v7.1.0
+
+* Added the RC_DISABLE_LUA macro to compile rcheevos without Lua support
+
 # v7.0.2
 
 * Make sure the code is C89-compliant

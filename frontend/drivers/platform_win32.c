@@ -52,7 +52,7 @@
 #include "platform_win32.h"
 
 #ifdef HAVE_NVDA
-#include "../../nvdaController.h"
+#include "../../nvda_controller.h"
 #endif
 
 #ifndef SM_SERVERR2
@@ -616,15 +616,17 @@ static void frontend_win32_attach_console(void)
    bool need_stderr = (GetFileType(GetStdHandle(STD_ERROR_HANDLE))
          == FILE_TYPE_UNKNOWN);
 
-   if(need_stdout || need_stderr)
+   if (need_stdout || need_stderr)
    {
-      if(!AttachConsole( ATTACH_PARENT_PROCESS))
+      if (!AttachConsole( ATTACH_PARENT_PROCESS))
          AllocConsole();
 
       SetConsoleTitle("Log Console");
 
-      if(need_stdout) freopen( "CONOUT$", "w", stdout );
-      if(need_stderr) freopen( "CONOUT$", "w", stderr );
+      if (need_stdout)
+         freopen( "CONOUT$", "w", stdout );
+      if (need_stderr)
+         freopen( "CONOUT$", "w", stderr );
 
       console_needs_free = true;
    }
@@ -637,7 +639,7 @@ static void frontend_win32_detach_console(void)
 {
 #if defined(_WIN32) && !defined(_XBOX)
 #ifdef _WIN32_WINNT_WINXP
-   if(console_needs_free)
+   if (console_needs_free)
    {
       /* we don't reconnect stdout/stderr to anything here,
        * because by definition, they weren't connected to
@@ -693,7 +695,7 @@ static void frontend_win32_respawn(char *s, size_t len, char *args)
    si.cb = sizeof(si);
    memset(&pi, 0, sizeof(pi));
 
-   if(!CreateProcess( executable_path, args,
+   if (!CreateProcess( executable_path, args,
       NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi))
    {
       RARCH_LOG("Failed to restart RetroArch\n");
@@ -954,8 +956,6 @@ static bool accessibility_speak_windows(int speed,
    bool res               = false;
    const char* speeds[10] = {"-10", "-7.5", "-5", "-2.5", "0", "2", "4", "6", "8", "10"};
 
-   HRESULT hr;
-
    if (speed < 1)
       speed = 1;
    else if (speed > 10)
@@ -971,7 +971,7 @@ static bool accessibility_speak_windows(int speed,
    {
       if (strlen(language) > 0) 
          snprintf(cmd, sizeof(cmd),
-                  "powershell.exe -NoProfile -WindowStyle Hidden -Command \"Add-Type -AssemblyName System.Speech; $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer; $synth.SelectVoice(\\\"%s\\\"); $synth.Rate = %s; $synth.Speak(\\\"%s\\\");\"", language, speeds[speed-1], (char*) speak_text); 
+               "powershell.exe -NoProfile -WindowStyle Hidden -Command \"Add-Type -AssemblyName System.Speech; $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer; $synth.SelectVoice(\\\"%s\\\"); $synth.Rate = %s; $synth.Speak(\\\"%s\\\");\"", language, speeds[speed-1], (char*) speak_text); 
       else
          snprintf(cmd, sizeof(cmd),
                "powershell.exe -NoProfile -WindowStyle Hidden -Command \"Add-Type -AssemblyName System.Speech; $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer; $synth.Rate = %s; $synth.Speak(\\\"%s\\\");\"", speeds[speed-1], (char*) speak_text); 
@@ -984,7 +984,6 @@ static bool accessibility_speak_windows(int speed,
          return true;
       }
       pi_set = true;
-      return true;
    }
 #ifdef HAVE_NVDA
    else if (USE_NVDA)
@@ -1000,23 +999,19 @@ static bool accessibility_speak_windows(int speed,
          RARCH_LOG("Error communicating with NVDA\n");
          return false;
       }
-      else
-      {
-         nvdaController_cancelSpeech();
-      }
+
+      nvdaController_cancelSpeech();
 
       if (USE_NVDA_BRAILLE)
          nvdaController_brailleMessage(wc);
       else
-      {
          nvdaController_speakText(wc);
-      }
-      return true;
    }
 #endif
 #ifdef HAVE_SAPI
    else
    {
+      HRESULT hr;
       /* stop the old voice if running */
       if (pVoice)
       {
@@ -1036,14 +1031,14 @@ static bool accessibility_speak_windows(int speed,
       {
          wchar_t wtext[1200];
          snprintf(cmd, sizeof(cmd),
-                  "<rate speed=\"%s\"/><volume level=\"80\"/><lang langid=\"%s\"/>%s", speeds[speed], langid, speak_text);
+               "<rate speed=\"%s\"/><volume level=\"80\"/><lang langid=\"%s\"/>%s", speeds[speed], langid, speak_text);
          mbstowcs(wtext, speak_text, sizeof(wtext));
- 
+
          hr = ISpVoice_Speak(pVoice, wtext, SPF_ASYNC /*SVSFlagsAsync*/, NULL);
       }
-      return true;
    }
 #endif
+
    return true;
 }
 #endif

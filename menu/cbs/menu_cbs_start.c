@@ -145,22 +145,30 @@ static int action_start_input_desc(
       const char *path, const char *label,
       unsigned type, size_t idx, size_t entry_idx)
 {
-   settings_t           *settings = config_get_ptr();
-   unsigned inp_desc_index_offset = type - MENU_SETTINGS_INPUT_DESC_BEGIN;
-   unsigned inp_desc_user         = inp_desc_index_offset / (RARCH_FIRST_CUSTOM_BIND + 4);
-   unsigned inp_desc_button_index_offset = inp_desc_index_offset - (inp_desc_user * (RARCH_FIRST_CUSTOM_BIND + 4));
+   settings_t *settings        = config_get_ptr();
+   rarch_system_info_t *system = runloop_get_system_info();
+   unsigned user_idx;
+   unsigned btn_idx;
 
    (void)label;
 
-   if (inp_desc_button_index_offset < RARCH_FIRST_CUSTOM_BIND)
+   if (!settings || !system)
+      return 0;
+
+   user_idx = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) / (RARCH_FIRST_CUSTOM_BIND + 8);
+   btn_idx  = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) - (RARCH_FIRST_CUSTOM_BIND + 8) * user_idx;
+
+   if ((user_idx >= MAX_USERS) || (btn_idx >= RARCH_CUSTOM_BIND_LIST_END))
+      return 0;
+
+   /* Check whether core has defined this input */
+   if (!string_is_empty(system->input_desc_btn[user_idx][btn_idx]))
    {
-      const struct retro_keybind *keyptr = &input_config_binds[inp_desc_user]
-            [inp_desc_button_index_offset];
-      settings->uints.input_remap_ids[inp_desc_user][inp_desc_button_index_offset] = keyptr->id;
+      const struct retro_keybind *keyptr = &input_config_binds[user_idx][btn_idx];
+      settings->uints.input_remap_ids[user_idx][btn_idx] = keyptr->id;
    }
    else
-      settings->uints.input_remap_ids[inp_desc_user][inp_desc_button_index_offset] =
-         inp_desc_button_index_offset - RARCH_FIRST_CUSTOM_BIND;
+      settings->uints.input_remap_ids[user_idx][btn_idx] = RARCH_UNMAPPED;
 
    return 0;
 }
@@ -548,6 +556,8 @@ static int menu_cbs_init_bind_start_compare_label(menu_file_list_cbs_t *cbs)
             return -1;
       }
    }
+   else
+      return -1;
 
    return 0;
 }
@@ -587,11 +597,6 @@ static int menu_cbs_init_bind_start_compare_type(menu_file_list_cbs_t *cbs,
             (type < MENU_SETTINGS_CHEEVOS_START))
    {
       BIND_ACTION_START(cbs, action_start_core_setting);
-   }
-   /* TODO/FIXME - refactor this */
-   else if (type == MENU_LABEL_SCREEN_RESOLUTION)
-   {
-      BIND_ACTION_START(cbs, action_start_video_resolution);
    }
    else
    {

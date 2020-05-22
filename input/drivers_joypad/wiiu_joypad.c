@@ -45,7 +45,7 @@ static bool wiiu_joypad_query_pad(unsigned pad)
 {
    return ready                &&
       pad < MAX_USERS          &&
-      pad_drivers[pad] != NULL &&
+      pad_drivers[pad]         &&
       pad_drivers[pad]->query_pad(pad);
 }
 

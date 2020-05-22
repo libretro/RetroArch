@@ -989,7 +989,8 @@ static bool omap_gfx_frame(void *data, const void *frame, unsigned width,
       unsigned height, uint64_t frame_count, unsigned pitch, const char *msg,
       video_frame_info_t *video_info)
 {
-   omap_video_t *vid = (omap_video_t*)data;
+   omap_video_t  *vid = (omap_video_t*)data;
+   bool menu_is_alive = video_info->menu_is_alive;
 
    if (!frame)
       return true;
@@ -1012,13 +1013,13 @@ static bool omap_gfx_frame(void *data, const void *frame, unsigned width,
    omapfb_blit_frame(vid->omap, frame, vid->height, pitch);
 
 #ifdef HAVE_MENU
-   menu_driver_frame(video_info);
-#endif
+   menu_driver_frame(menu_is_alive, video_info);
 
    if (vid->menu.active)
       omapfb_blit_frame(vid->omap, vid->menu.frame,
             vid->menu.scaler.out_height,
             vid->menu.scaler.out_stride);
+#endif
 
    if (msg)
       omap_render_msg(vid, msg);

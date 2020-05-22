@@ -28,26 +28,51 @@
 #include <boolean.h>
 #include <formats/image.h>
 #include <file/nbio.h>
-
+#include <string/stdstring.h>
 
 enum image_type_enum image_texture_get_type(const char *path)
 {
-#ifdef HAVE_RTGA
-   if (strstr(path, ".tga"))
-      return IMAGE_TYPE_TGA;
-#endif
+   /* We are comparing against a fixed list of file
+    * extensions, the longest (jpeg) being 4 characters
+    * in length. We therefore only need to extract the first
+    * 5 characters from the extension of the input path
+    * to correctly validate a match */
+   const char *ext = NULL;
+   char ext_lower[6];
+
+   ext_lower[0] = '\0';
+
+   if (string_is_empty(path))
+      return IMAGE_TYPE_NONE;
+
+   /* Get file extension */
+   ext = strrchr(path, '.');
+
+   if (!ext || (*(++ext) == '\0'))
+      return IMAGE_TYPE_NONE;
+
+   /* Copy and convert to lower case */
+   strlcpy(ext_lower, ext, sizeof(ext_lower));
+   string_to_lower(ext_lower);
+
 #ifdef HAVE_RPNG
-   if (strstr(path, ".png"))
+   if (string_is_equal(ext_lower, "png"))
       return IMAGE_TYPE_PNG;
 #endif
 #ifdef HAVE_RJPEG
-   if (strstr(path, ".jpg") || strstr(path, ".jpeg"))
+   if (string_is_equal(ext_lower, "jpg") ||
+       string_is_equal(ext_lower, "jpeg"))
       return IMAGE_TYPE_JPEG;
 #endif
 #ifdef HAVE_RBMP
-   if (strstr(path, ".bmp"))
+   if (string_is_equal(ext_lower, "bmp"))
       return IMAGE_TYPE_BMP;
 #endif
+#ifdef HAVE_RTGA
+   if (string_is_equal(ext_lower, "tga"))
+      return IMAGE_TYPE_TGA;
+#endif
+
    return IMAGE_TYPE_NONE;
 }
 

@@ -111,7 +111,7 @@ static void connmanctl_tether_toggle(bool switch_on, char* apname, char* passkey
    RARCH_LOG("[CONNMANCTL] Tether toggle: command: \"%s\"\n",
          command);
 
-   while (fgets(output, sizeof(output), command_file) != NULL)
+   while (fgets(output, sizeof(output), command_file))
    {
       if (output[strlen(output)-1] == '\n')
          output[strlen(output)-1] = '\0';
@@ -176,7 +176,7 @@ static void connmanctl_scan(void)
          MESSAGE_QUEUE_CATEGORY_INFO);
 
    serv_file = popen("connmanctl services", "r");
-   while (fgets (line, 512, serv_file) != NULL)
+   while (fgets(line, 512, serv_file))
    {
       size_t len = strlen(line);
       if (len > 0 && line[len-1] == '\n')
@@ -236,7 +236,7 @@ static bool connmanctl_ssid_is_online(unsigned i)
 
       command_file = popen(command, "r");
 
-      while (fgets (ln, 512, command_file) != NULL)
+      while (fgets(ln, 512, command_file))
       {
          connman_cache[i] = true;
          return true;
@@ -333,7 +333,7 @@ static bool connmanctl_connect_ssid(unsigned idx, const char* passphrase)
 
    command_file = popen(command, "r");
 
-   while (fgets (ln, sizeof(ln), command_file) != NULL)
+   while (fgets(ln, sizeof(ln), command_file))
    {
 #ifdef HAVE_GFX_WIDGETS
       if (!gfx_widgets_ready())
@@ -414,7 +414,7 @@ static void connmanctl_get_connected_servicename(char* servicename, size_t buffe
    RARCH_LOG("[CONNMANCTL] Testing configured services for activity: command: \"%s\"\n",
          command);
 
-   while (fgets(temp, buffersize, command_file) != NULL)
+   while (fgets(temp, buffersize, command_file))
    {
       if (strlen(temp) > 0)
          if (temp[strlen(temp)-1] == '\n')
@@ -547,7 +547,7 @@ static void connmanctl_tether_start_stop(bool start, char* configfile)
          RARCH_LOG("[CONNMANCTL] Tether start stop: parsing command: \"%s\"\n",
                command);
 
-         while (fgets(ln, sizeof(ln), command_file) != NULL)
+         while (fgets(ln, sizeof(ln), command_file))
          {
             i++;
             if (strlen(ln) > 1)
@@ -632,7 +632,7 @@ static void connmanctl_tether_start_stop(bool start, char* configfile)
             RARCH_LOG("[CONNMANCTL] Tether start stop: disconnecting from service \"%s\", command: \"%s\"\n",
                   service, command);
 
-            while (fgets(ln, sizeof(ln), command_file) != NULL)
+            while (fgets(ln, sizeof(ln), command_file))
             {
                if (ln[strlen(ln)-1] == '\n')
                   ln[strlen(ln)-1] = '\0';

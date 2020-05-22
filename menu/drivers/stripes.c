@@ -59,7 +59,7 @@
 #include "../../tasks/tasks_internal.h"
 
 #ifdef HAVE_CHEEVOS
-#include "../../cheevos-new/badges.h"
+#include "../../cheevos/badges.h"
 #endif
 
 #include "../../content.h"
@@ -1839,7 +1839,7 @@ static void stripes_context_destroy_horizontal_list(stripes_handle_t *stripes)
       file_list_get_at_offset(stripes->horizontal_list, i,
             &path, NULL, NULL, NULL);
 
-      if (!path || !strstr(path, ".lpl"))
+      if (!path || !string_ends_with(path, ".lpl"))
          continue;
 
       video_driver_texture_unload(&node->icon);
@@ -1937,10 +1937,7 @@ static void stripes_context_reset_horizontal_list(
       file_list_get_at_offset(stripes->horizontal_list, i,
             &path, NULL, NULL, NULL);
 
-      if (!path)
-         continue;
-
-      if (!strstr(path, ".lpl"))
+      if (!path || !string_ends_with(path, ".lpl"))
          continue;
 
       {

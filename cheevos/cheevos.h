@@ -49,15 +49,13 @@ void rcheevos_get_achievement_state(unsigned index, char* buffer, size_t buffer_
 
 bool rcheevos_get_description(rcheevos_ctx_desc_t *desc);
 
-bool rcheevos_apply_cheats(bool *data_bool);
+void rcheevos_pause_hardcore();
 
 bool rcheevos_unload(void);
 
 bool rcheevos_toggle_hardcore_mode(void);
 
 void rcheevos_test(void);
-
-bool rcheevos_set_cheats(void);
 
 void rcheevos_set_support_cheevos(bool state);
 
@@ -73,8 +71,6 @@ extern bool rcheevos_loaded;
 extern bool rcheevos_hardcore_active;
 extern bool rcheevos_hardcore_paused;
 extern bool rcheevos_state_loaded_flag;
-extern int rcheevos_cheats_are_enabled;
-extern int rcheevos_cheats_were_enabled;
 
 RETRO_END_DECLS
 

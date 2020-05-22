@@ -41,7 +41,7 @@ extern "C" {
 }
 #endif
 
-#define CORE_NAME_COLUMN 0
+#define CORE_NAME_COLUMN    0
 #define CORE_VERSION_COLUMN 1
 
 LoadCoreTableWidget::LoadCoreTableWidget(QWidget *parent) :
@@ -150,18 +150,16 @@ void LoadCoreWindow::loadCore(const char *path)
 
 void LoadCoreWindow::onCoreEnterPressed()
 {
-   QTableWidgetItem *selectedCoreItem = NULL;
-   QString path;
    QByteArray pathArray;
-   const char *pathData = NULL;
-   QVariantHash hash;
-
-   selectedCoreItem = m_table->item(m_table->currentRow(), CORE_NAME_COLUMN);
-   hash = selectedCoreItem->data(Qt::UserRole).toHash();
-   path = hash["path"].toString();
+   const char               *pathData = NULL;
+   QTableWidgetItem *selectedCoreItem = 
+      m_table->item(m_table->currentRow(), CORE_NAME_COLUMN);
+   QVariantHash                  hash = selectedCoreItem->data(
+         Qt::UserRole).toHash();
+   QString                       path = hash["path"].toString();
 
    pathArray.append(path);
-   pathData = pathArray.constData();
+   pathData                           = pathArray.constData();
 
    loadCore(pathData);
 }
