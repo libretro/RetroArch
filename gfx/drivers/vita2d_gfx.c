@@ -210,7 +210,7 @@ static bool vita2d_gfx_frame(void *data, const void *frame,
                PSP_FB_HEIGHT / (float)vita->height);
       else
       {
-         const float radian = 90 * 0.0174532925f;
+         const float radian = 270 * 0.0174532925f;
          const float rad = vita->rotation * radian;
          float scalex = vita->vp.width / (float)vita->width;
          float scaley = vita->vp.height / (float)vita->height;
