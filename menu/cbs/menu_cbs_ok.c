@@ -5346,7 +5346,7 @@ static void netplay_refresh_rooms_cb(retro_task_t *task,
    data->data            = new_data;
    data->data[data->len] = '\0';
 
-   if (!strstr(data->data, "registry.lpl"))
+   if (!string_ends_with(data->data, "registry.lpl"))
    {
       if (string_is_empty(data->data))
          netplay_room_count = 0;
