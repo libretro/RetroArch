@@ -371,8 +371,9 @@ static void cheat_manager_new(unsigned size)
 
 static void cheat_manager_load_cb_first_pass(char *key, char *value)
 {
-   errno                       = 0;
    cheat_manager_t *cheat_st   = &cheat_manager_state;
+
+   errno                       = 0;
 
    if (string_is_equal(key, "cheats"))
    {
