@@ -249,9 +249,9 @@ static bool menu_shader_manager_save_preset_internal(
       strlcpy(fullname, basename, sizeof(fullname));
 
       /* Append extension automatically as appropriate. */
-      if (     !strstr(basename, ".cgp")
-            && !strstr(basename, ".glslp")
-            && !strstr(basename, ".slangp"))
+      if (     !string_ends_with(basename, ".cgp")
+            && !string_ends_with(basename, ".glslp")
+            && !string_ends_with(basename, ".slangp"))
       {
          const char *preset_ext = video_shader_get_preset_extension(type);
          strlcat(fullname, preset_ext, sizeof(fullname));
