@@ -6640,7 +6640,7 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             return 0;
          }
 
-         if (strstr(str, "input_binds_list"))
+         if (string_ends_with(str, "input_binds_list"))
          {
             unsigned i;
 
