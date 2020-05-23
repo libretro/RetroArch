@@ -98,6 +98,7 @@ struct playlist_entry
    char *runtime_str;
    char *last_played_str;
    struct string_list *subsystem_roms;
+   struct string_list* subsystem_roms_relative_paths;
    enum playlist_runtime_status runtime_status;
    unsigned runtime_hours;
    unsigned runtime_minutes;

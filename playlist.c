@@ -63,6 +63,7 @@ typedef struct
 {
    bool in_items;
    bool in_subsystem_roms;
+   bool in_subsystem_roms_relative_paths;
    bool capacity_exceeded;
 
    unsigned array_depth;
@@ -827,16 +828,8 @@ bool playlist_push(playlist_t *playlist,
       strlcpy(real_path, entry->path, sizeof(real_path));
       playlist_resolve_path(PLAYLIST_SAVE, real_path, sizeof(real_path));
 
-      /* use relative paths if enabled and entry file path is inside the content folder */
-      bool use_relative_path = !string_is_empty(base_content_directory)
-         && (strncmp(entry->path, base_content_directory, strlen(base_content_directory)) == 0);
-
-      if (use_relative_path)
-      {
-         /* build relative path, and convert to unix path syntax */
-         strncpy(relative_path, entry->path + strlen(base_content_directory) + 1, strlen(entry->path) - strlen(base_content_directory));
-         string_replace_all_chars(relative_path, windows_path_delimiter, posix_path_delimiter);
-      }
+      /* Build relative path, if possible*/
+      path_build_relative_path(relative_path, entry->path, base_content_directory, PATH_MAX_LENGTH);
    }
 
    /* Get 'real' core path */
@@ -1036,9 +1029,24 @@ bool playlist_push(playlist_t *playlist,
          union string_list_elem_attr attributes = {0};
 
          playlist->entries[0].subsystem_roms    = string_list_new();
+         playlist->entries[0].subsystem_roms_relative_paths = string_list_new();
 
          for (i = 0; i < entry->subsystem_roms->size; i++)
+         {
             string_list_append(playlist->entries[0].subsystem_roms, entry->subsystem_roms->elems[i].data, attributes);
+
+            /* Build relative path, if possible*/
+            path_build_relative_path(relative_path, entry->path, base_content_directory, PATH_MAX_LENGTH);
+            if (!string_is_empty(relative_path))
+               string_list_append(playlist->entries[0].subsystem_roms_relative_paths, relative_path, attributes);
+         }
+
+         /* if not all subsystem roms where converted to relative path, it means at least one was outside the base content directory
+          * delete all converted relative paths and keep only full paths */
+         if (playlist->entries[0].subsystem_roms->size != playlist->entries[0].subsystem_roms_relative_paths->size)
+         {
+            string_list_free(playlist->entries[0].subsystem_roms_relative_paths);
+         }
       }
    }
 
@@ -1684,26 +1692,29 @@ void playlist_write_file(
                   : 0, JSON_UTF8);
          }
 
-         if (  playlist->entries[i].subsystem_roms &&
-               playlist->entries[i].subsystem_roms->size > 0)
+         if (!playlist->entries[i].subsystem_roms_relative_paths ||
+            playlist->entries[i].subsystem_roms_relative_paths->size <= 0)
          {
-            unsigned j;
-
-            JSON_Writer_WriteComma(context.writer);
-            json_write_new_line(context.writer);
-            json_write_space(context.writer, 6);
-            JSON_Writer_WriteString(context.writer, "subsystem_roms",
-                  STRLEN_CONST("subsystem_roms"), JSON_UTF8);
-            JSON_Writer_WriteColon(context.writer);
-            json_write_space(context.writer, 1);
-            JSON_Writer_WriteStartArray(context.writer);
-            json_write_new_line(context.writer);
-
-            for (j = 0; j < playlist->entries[i].subsystem_roms->size; j++)
+            if (playlist->entries[i].subsystem_roms &&
+               playlist->entries[i].subsystem_roms->size > 0)
             {
-               const struct string_list *roms = playlist->entries[i].subsystem_roms;
-               json_write_space(context.writer, 8);
-               JSON_Writer_WriteString(context.writer,
+               unsigned j;
+
+               JSON_Writer_WriteComma(context.writer);
+               json_write_new_line(context.writer);
+               json_write_space(context.writer, 6);
+               JSON_Writer_WriteString(context.writer, "subsystem_roms",
+                  STRLEN_CONST("subsystem_roms"), JSON_UTF8);
+               JSON_Writer_WriteColon(context.writer);
+               json_write_space(context.writer, 1);
+               JSON_Writer_WriteStartArray(context.writer);
+               json_write_new_line(context.writer);
+
+               for (j = 0; j < playlist->entries[i].subsystem_roms->size; j++)
+               {
+                  const struct string_list* roms = playlist->entries[i].subsystem_roms;
+                  json_write_space(context.writer, 8);
+                  JSON_Writer_WriteString(context.writer,
                      !string_is_empty(roms->elems[j].data)
                      ? roms->elems[j].data
                      : "",
@@ -1712,7 +1723,46 @@ void playlist_write_file(
                      : 0,
                      JSON_UTF8);
 
-               if (j < playlist->entries[i].subsystem_roms->size - 1)
+                  if (j < playlist->entries[i].subsystem_roms->size - 1)
+                  {
+                     JSON_Writer_WriteComma(context.writer);
+                     json_write_new_line(context.writer);
+                  }
+               }
+
+               json_write_new_line(context.writer);
+               json_write_space(context.writer, 6);
+               JSON_Writer_WriteEndArray(context.writer);
+            }
+         }
+         else
+         {
+            unsigned j;
+
+            JSON_Writer_WriteComma(context.writer);
+            json_write_new_line(context.writer);
+            json_write_space(context.writer, 6);
+            JSON_Writer_WriteString(context.writer, "subsystem_roms_relative_paths",
+               STRLEN_CONST("subsystem_roms_relative_paths"), JSON_UTF8);
+            JSON_Writer_WriteColon(context.writer);
+            json_write_space(context.writer, 1);
+            JSON_Writer_WriteStartArray(context.writer);
+            json_write_new_line(context.writer);
+
+            for (j = 0; j < playlist->entries[i].subsystem_roms_relative_paths->size; j++)
+            {
+               const struct string_list* roms = playlist->entries[i].subsystem_roms_relative_paths;
+               json_write_space(context.writer, 8);
+               JSON_Writer_WriteString(context.writer,
+                  !string_is_empty(roms->elems[j].data)
+                  ? roms->elems[j].data
+                  : "",
+                  !string_is_empty(roms->elems[j].data)
+                  ? strlen(roms->elems[j].data)
+                  : 0,
+                  JSON_UTF8);
+
+               if (j < playlist->entries[i].subsystem_roms_relative_paths->size - 1)
                {
                   JSON_Writer_WriteComma(context.writer);
                   json_write_new_line(context.writer);
@@ -1857,8 +1907,12 @@ static JSON_Parser_HandlerResult JSONStartArrayHandler(JSON_Parser parser)
    else if (pCtx->object_depth == 2)
    {
       if (pCtx->array_depth == 2)
+      {
          if (string_is_equal(pCtx->current_items_string, "subsystem_roms"))
             pCtx->in_subsystem_roms = true;
+         else if (string_is_equal(pCtx->current_items_string, "subsystem_roms_relative_paths"))
+            pCtx->in_subsystem_roms_relative_paths = true;
+      }
    }
 
    return JSON_Parser_Continue;
@@ -1892,6 +1946,10 @@ static JSON_Parser_HandlerResult JSONEndArrayHandler(JSON_Parser parser)
       if (pCtx->in_subsystem_roms && string_is_equal(pCtx->current_items_string, "subsystem_roms") && pCtx->array_depth == 1)
       {
          pCtx->in_subsystem_roms = false;
+      }
+      else if (pCtx->in_subsystem_roms && string_is_equal(pCtx->current_items_string, "subsystem_roms_relative_paths") && pCtx->array_depth == 1)
+      {
+         pCtx->in_subsystem_roms_relative_paths = false;
       }
    }
 
@@ -1957,6 +2015,18 @@ static JSON_Parser_HandlerResult JSONStringHandler(JSON_Parser parser, char *pVa
       if (pCtx->current_entry_string_list_val && length && !string_is_empty(pValue))
       {
          union string_list_elem_attr attr = {0};
+
+         if (!*pCtx->current_entry_string_list_val)
+            *pCtx->current_entry_string_list_val = string_list_new();
+
+         string_list_append(*pCtx->current_entry_string_list_val, pValue, attr);
+      }
+   }
+   else if (pCtx->in_items && pCtx->in_subsystem_roms_relative_paths && pCtx->object_depth == 2 && pCtx->array_depth == 2)
+   {
+      if (pCtx->current_entry_string_list_val && length && !string_is_empty(pValue))
+      {
+         union string_list_elem_attr attr = { 0 };
 
          if (!*pCtx->current_entry_string_list_val)
             *pCtx->current_entry_string_list_val = string_list_new();
@@ -2107,6 +2177,8 @@ static JSON_Parser_HandlerResult JSONObjectMemberHandler(JSON_Parser parser, cha
                   pCtx->current_entry_val = &pCtx->current_entry->subsystem_name;
                else if (string_is_equal(pValue, "subsystem_roms"))
                   pCtx->current_entry_string_list_val = &pCtx->current_entry->subsystem_roms;
+               else if (string_is_equal(pValue, "subsystem_roms_relative_paths"))
+                  pCtx->current_entry_string_list_val = &pCtx->current_entry->subsystem_roms_relative_paths;
                else if (string_is_equal(pValue, "runtime_hours"))
                   pCtx->current_entry_uint_val = &pCtx->current_entry->runtime_hours;
                else if (string_is_equal(pValue, "runtime_minutes"))
@@ -2585,7 +2657,9 @@ playlist_t *playlist_init(const char *path, size_t size, const char* base_conten
    struct playlist_entry *entries = NULL;
    playlist_t           *playlist = (playlist_t*)malloc(sizeof(*playlist));
    size_t i                       = 0;
+   size_t j                       = 0;
    char tmp_entry_path[PATH_MAX_LENGTH];
+   union string_list_elem_attr attributes = { 0 };
 
    if (!playlist)
       return NULL;
@@ -2625,6 +2699,21 @@ playlist_t *playlist_init(const char *path, size_t size, const char* base_conten
             tmp_entry_path[0] = '\0';
             path_resolve_to_local_file_system(tmp_entry_path, entry->relative_path, base_content_directory, PATH_MAX_LENGTH);
             entry->path = strdup(tmp_entry_path);
+         }
+
+         if (entry->subsystem_roms_relative_paths && entry->subsystem_roms_relative_paths->size > 0)
+         {
+            if (entry->subsystem_roms)
+               string_list_free(entry->subsystem_roms);
+            entry->subsystem_roms = string_list_new();
+
+            struct string_list* subsystem_roms_relative_paths = entry->subsystem_roms_relative_paths;
+            for (j = 0; j < subsystem_roms_relative_paths->size; j++)
+            {
+               tmp_entry_path[0] = '\0';
+               path_resolve_to_local_file_system(tmp_entry_path, subsystem_roms_relative_paths->elems[j].data, base_content_directory, PATH_MAX_LENGTH);
+               string_list_append(entry->subsystem_roms, tmp_entry_path, attributes);
+            }
          }
       }
    }
