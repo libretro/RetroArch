@@ -5,6 +5,23 @@
 - DISCORD/MATCHMAKING: Fix Discord 'Ask To Join' functionality
 - INPUT MAPPING/REMAPPING: Restore broken 'reset to default' functionality with RetroPad 'start' button
 - INPUT MAPPING/REMAPPING: Fix 'reset to default' action for analog sticks and undefined core inputs 
+- LOCALIZATION: Update Arabic translation
+- LOCALIZATION: Update Chinese (Simplified) translation
+- LOCALIZATION: Update Chinese (Traditional) translation
+- LOCALIZATION: Update German translation
+- LOCALIZATION: Update Greek translation
+- LOCALIZATION: Update Spanish translation
+- LOCALIZATION: Update French translation
+- LOCALIZATION: Update Italian translation
+- LOCALIZATION: Update Japanese translation
+- LOCALIZATION: Update Korean translation
+- LOCALIZATION: Update Dutch translation
+- LOCALIZATION: Update Polish translation
+- LOCALIZATION: Update Portuguese Brazilian translation
+- LOCALIZATION: Update Russian translation
+- LOCALIZATION: Update Turkish translation
+- LOCALIZATION: Update Vietnamese translation
+- LOCALIZATION: Add Slovak translation
 - MENU/THUMBNAILS/BUGFIX: Fix heap-use-after-free error
 - MENU/OZONE/ANDROIDTV: Default to Ozone menu driver
 - MENU/OZONE/ANDROID: Gamepad-like devices default to Ozone now (Shield Portable)
