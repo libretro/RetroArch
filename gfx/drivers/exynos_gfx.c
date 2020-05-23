@@ -247,7 +247,7 @@ static void exynos_clean_up_pages(struct exynos_page *p, unsigned cnt)
 
    for (i = 0; i < cnt; ++i)
    {
-      if (p[i].bo)
+      if (p[i].bo != NULL)
       {
          if (p[i].buf_id != 0)
             drmModeRmFB(p[i].buf_id, p[i].bo->handle);
@@ -902,13 +902,10 @@ static void exynos_set_fake_blit(struct exynos_data *pdata)
       pdata->pages[i].clear = true;
 }
 
-static int exynos_blit_frame(
-      struct exynos_data *pdata,
-      const void *frame,
-      unsigned src_pitch)
+static int exynos_blit_frame(struct exynos_data *pdata, const void *frame,
+                             unsigned src_pitch)
 {
-   const enum exynos_buffer_type 
-      buf_type           = defaults[EXYNOS_IMAGE_FRAME].buf_type;
+   const enum exynos_buffer_type buf_type = defaults[EXYNOS_IMAGE_FRAME].buf_type;
    const unsigned size   = src_pitch * pdata->blit_params[5];
    struct g2d_image *src = pdata->src[EXYNOS_IMAGE_FRAME];
 
@@ -1271,7 +1268,7 @@ static void exynos_gfx_free(void *data)
 
    free(pdata);
 
-   if (vid->font && vid->font_driver)
+   if (vid->font != NULL && vid->font_driver != NULL)
       vid->font_driver->free(vid->font);
 
    free(vid);
@@ -1283,13 +1280,12 @@ static bool exynos_gfx_frame(void *data, const void *frame, unsigned width,
 {
    struct exynos_video *vid = data;
    struct exynos_page *page = NULL;
-   bool menu_is_alive       = video_info->menu_is_alive;
 
    /* Check if neither menu nor core framebuffer is to be displayed. */
    if (!vid->menu_active && !frame)
       return true;
 
-   if (frame)
+   if (frame != NULL)
    {
       if (width != vid->width || height != vid->height)
       {
@@ -1319,16 +1315,15 @@ static bool exynos_gfx_frame(void *data, const void *frame, unsigned width,
    if (!page)
       page = exynos_free_page(vid->data);
 
-#ifdef HAVE_MENU
    if (vid->menu_active)
    {
       if (exynos_blend_menu(vid->data, vid->menu_rotation) != 0)
          goto fail;
-      menu_driver_frame(menu_is_alive, video_info);
-   }
-   else
+#ifdef HAVE_MENU
+      menu_driver_frame(video_info);
 #endif
-      if (video_info->statistics_show)
+   }
+   else if (video_info->statistics_show)
    {
       struct font_params *osd_params = video_info ?
          (struct font_params*)&video_info->osd_stat_params : NULL;

@@ -25,24 +25,11 @@
 #include <file/file_path.h>
 #include <encodings/utf.h>
 #include <lists/string_list.h>
+#include <features/features_cpu.h>
 
 #include "../../../gfx/gfx_animation.h"
 
 #include "../../../input/input_osk.h"
-
-static float ozone_backdrop[16] = {
-      0.00, 0.00, 0.00, 0.75,
-      0.00, 0.00, 0.00, 0.75,
-      0.00, 0.00, 0.00, 0.75,
-      0.00, 0.00, 0.00, 0.75,
-};
-
-static float ozone_osk_backdrop[16] = {
-      0.00, 0.00, 0.00, 0.15,
-      0.00, 0.00, 0.00, 0.15,
-      0.00, 0.00, 0.00, 0.15,
-      0.00, 0.00, 0.00, 0.15,
-};
 
 static void ozone_cursor_animation_cb(void *userdata);
 
@@ -368,7 +355,7 @@ void ozone_draw_osk(ozone_handle_t *ozone,
    unsigned y_offset       = 0;
    bool draw_placeholder   = string_is_empty(str);
 
-   retro_time_t current_time      = menu_driver_get_current_time();
+   retro_time_t current_time      = cpu_features_get_time_usec();
    static retro_time_t last_time  = 0;
 
    if (current_time - last_time >= INTERVAL_OSK_CURSOR)
@@ -480,9 +467,9 @@ void ozone_draw_osk(ozone_handle_t *ozone,
                   video_width,
                   video_height,
                   margin + padding*2 + cursor_x,
-                  margin + padding + y_offset + ozone->fonts.entries_label.line_height - ozone->fonts.entries_label.line_ascender + ozone->dimensions.spacer_3px,
+                  margin + padding + y_offset + ozone->dimensions.spacer_3px,
                   ozone->dimensions.spacer_1px,
-                  ozone->fonts.entries_label.line_ascender,
+                  25 * scale_factor,
                   video_width,
                   video_height,
                   ozone_pure_white);

@@ -15,10 +15,9 @@
 #include <ps2_devices.h>
 
 #include <stdio.h>
-#include <stdlib.h>
 #include <kernel.h>
 #include <string.h>
-#include <dirent.h>
+#include <fileXio_rpc.h>
 
 #define DEVICE_SLASH "/"
 
@@ -161,14 +160,14 @@ enum BootDeviceIDs getBootDeviceID(char *path)
 
 bool waitUntilDeviceIsReady(enum BootDeviceIDs device_id)
 {
-   DIR *dir;
-   int ret = 0;
+   int openFile     = - 1;
+   /* just in case we tried a unit that is not working/connected */
    int retries      = 3; 
    char *rootDevice = rootDevicePath(device_id);
 
-   while(dir == NULL && retries > 0)
+   while(openFile < 0 && retries > 0)
    {
-      dir = opendir(rootDevice);
+      openFile = fileXioDopen(rootDevice);
       /* Wait untill the device is ready */
       nopdelay();
       nopdelay();
@@ -181,10 +180,9 @@ bool waitUntilDeviceIsReady(enum BootDeviceIDs device_id)
 
       retries--;
    }
-   if (dir) {
-      ret = 1;
-      closedir(dir);
-   }
+
+   if (openFile > 0)
+      fileXioDclose(openFile);
    
-   return ret;
+   return openFile >= 0;
 }

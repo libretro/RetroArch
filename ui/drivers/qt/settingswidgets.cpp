@@ -23,8 +23,20 @@ extern "C" {
 
 static const QRegularExpression decimalsRegex("%.(\\d)f");
 
-static inline void add_sublabel_and_whats_this(
-      QWidget *widget, rarch_setting_t *setting)
+inline void handleChange(rarch_setting_t *setting)
+{
+   settings_t *settings = config_get_ptr();
+
+   settings->modified = true;
+
+   if (setting->change_handler)
+      setting->change_handler(setting);
+
+   if (setting->cmd_trigger.idx && !setting->cmd_trigger.triggered)
+      command_event(setting->cmd_trigger.idx, NULL);
+}
+
+inline void addSublabelAndWhatsThis(QWidget *widget, rarch_setting_t *setting)
 {
    struct menu_file_list_cbs cbs = {};
    char tmp[512];
@@ -44,14 +56,14 @@ static inline void add_sublabel_and_whats_this(
       widget->setWhatsThis(tmp);
 }
 
-static QString sanitize_ampersand(QString input)
+static QString sanitizeAmpersand(QString input)
 {
    return input.replace("&", "&&");
 }
 
-static inline QString form_label(rarch_setting_t *setting)
+inline QString formLabel(rarch_setting_t *setting)
 {
-   return QString(sanitize_ampersand(setting->short_description)) + ":";
+   return QString(sanitizeAmpersand(setting->short_description)) + ":";
 }
 
 FormLayout::FormLayout(QWidget *parent) :
@@ -74,61 +86,61 @@ void FormLayout::addUIntRadioButtons(rarch_setting_t *setting)
 void FormLayout::addUIntComboBox(rarch_setting_t *setting)
 {
    if (setting && setting->short_description)
-      addRow(form_label(setting), new UIntComboBox(setting));
+      addRow(formLabel(setting), new UIntComboBox(setting));
 }
 
 void FormLayout::addStringComboBox(rarch_setting_t *setting)
 {
    if (setting && setting->short_description)
-      addRow(form_label(setting), new StringComboBox(setting));
+      addRow(formLabel(setting), new StringComboBox(setting));
 }
 
 void FormLayout::addStringLineEdit(rarch_setting_t *setting)
 {
    if (setting && setting->short_description)
-      addRow(form_label(setting), new StringLineEdit(setting));
+      addRow(formLabel(setting), new StringLineEdit(setting));
 }
 
 void FormLayout::addPasswordLineEdit(rarch_setting_t *setting)
 {
    if (setting && setting->short_description)
-      addRow(form_label(setting), new PasswordLineEdit(setting));
+      addRow(formLabel(setting), new PasswordLineEdit(setting));
 }
 
 void FormLayout::addUIntSpinBox(rarch_setting_t *setting)
 {
    if (setting && setting->short_description)
-      addRow(form_label(setting), new UIntSpinBox(setting));
+      addRow(formLabel(setting), new UIntSpinBox(setting));
 }
 
 void FormLayout::addSizeSpinBox(rarch_setting_t *setting, unsigned scale)
 {
    if (setting && setting->short_description)
-      addRow(form_label(setting), new SizeSpinBox(setting, scale));
+      addRow(formLabel(setting), new SizeSpinBox(setting, scale));
 }
 
 void FormLayout::addFloatSpinBox(rarch_setting_t *setting)
 {
    if (setting && setting->short_description)
-      addRow(form_label(setting), new FloatSpinBox(setting));
+      addRow(formLabel(setting), new FloatSpinBox(setting));
 }
 
 void FormLayout::addDirectorySelector(rarch_setting_t *setting)
 {
    if (setting && setting->short_description)
-      addRow(form_label(setting), new DirectorySelector(setting));
+      addRow(formLabel(setting), new DirectorySelector(setting));
 }
 
 void FormLayout::addFileSelector(rarch_setting_t *setting)
 {
    if (setting && setting->short_description)
-      addRow(form_label(setting), new FileSelector(setting));
+      addRow(formLabel(setting), new FileSelector(setting));
 }
 
 void FormLayout::addFloatSliderAndSpinBox(rarch_setting_t *setting)
 {
    if (setting && setting->short_description)
-      addRow(form_label(setting), new FloatSliderAndSpinBox(setting));
+      addRow(formLabel(setting), new FloatSliderAndSpinBox(setting));
 }
 
 void FormLayout::addUIntColorButton(const QString &title, msg_hash_enums r, msg_hash_enums g, msg_hash_enums b)
@@ -254,7 +266,7 @@ void SettingsGroup::addBindButton(rarch_setting_t *setting)
 }
 
 CheckBox::CheckBox(rarch_setting_t *setting, QWidget *parent) :
-   QCheckBox(sanitize_ampersand(setting->short_description), parent)
+   QCheckBox(sanitizeAmpersand(setting->short_description), parent)
    ,m_setting(setting)
    ,m_value(setting->value.target.boolean)
 {
@@ -264,7 +276,7 @@ CheckBox::CheckBox(rarch_setting_t *setting, QWidget *parent) :
    connect(this, SIGNAL(toggled(bool)), this, SLOT(onClicked(bool)));
    connect(this, SIGNAL(clicked(bool)), this, SLOT(onClicked(bool)));
 
-   add_sublabel_and_whats_this(this, m_setting);
+   addSublabelAndWhatsThis(this, m_setting);
 }
 
 CheckBox::CheckBox(const char *setting, QWidget *parent) :
@@ -281,7 +293,7 @@ void CheckBox::onClicked(bool checked)
 {
    *m_value = checked;
 
-   setting_generic_handle_change(m_setting);
+   handleChange(m_setting);
 }
 
 void CheckBox::paintEvent(QPaintEvent *event)
@@ -313,7 +325,7 @@ CheckableSettingsGroup::CheckableSettingsGroup(rarch_setting_t *setting, QWidget
 
       connect(this, SIGNAL(clicked(bool)), this, SLOT(onClicked(bool)));
 
-      add_sublabel_and_whats_this(this, m_setting);
+      addSublabelAndWhatsThis(this, m_setting);
    }
 }
 
@@ -331,7 +343,7 @@ void CheckableSettingsGroup::onClicked(bool checked)
 {
    *m_value = checked;
 
-   setting_generic_handle_change(m_setting);
+   handleChange(m_setting);
 }
 
 void CheckableSettingsGroup::paintEvent(QPaintEvent *event)
@@ -371,14 +383,14 @@ CheckableIcon::CheckableIcon(rarch_setting_t *setting, const QIcon &icon, QWidge
 
    connect(this, SIGNAL(toggled(bool)), this, SLOT(onToggled(bool)));
 
-   add_sublabel_and_whats_this(this, m_setting);
+   addSublabelAndWhatsThis(this, m_setting);
 }
 
 void CheckableIcon::onToggled(bool checked)
 {
    *m_value = QAbstractButton::isChecked();
 
-   setting_generic_handle_change(m_setting);
+   handleChange(m_setting);
 
    QAbstractButton::setChecked(checked);
 }
@@ -403,7 +415,7 @@ StringLineEdit::StringLineEdit(rarch_setting_t *setting, QWidget *parent) :
 {
    connect(this, SIGNAL(editingFinished()), this, SLOT(onEditingFinished()));
 
-   add_sublabel_and_whats_this(this, m_setting);
+   addSublabelAndWhatsThis(this, m_setting);
 }
 
 StringLineEdit::StringLineEdit(const char *setting, QWidget *parent) :
@@ -415,7 +427,7 @@ void StringLineEdit::onEditingFinished()
 {
    strlcpy(m_value, text().toUtf8().data(), m_setting->size);
 
-   setting_generic_handle_change(m_setting);
+   handleChange(m_setting);
 
    setModified(false);
 }
@@ -446,7 +458,7 @@ StringComboBox::StringComboBox(rarch_setting_t *setting, QWidget *parent) :
 
    connect(this, SIGNAL(currentTextChanged(const QString&)), this, SLOT(onCurrentTextChanged(const QString&)));
 
-   add_sublabel_and_whats_this(this, m_setting);
+   addSublabelAndWhatsThis(this, m_setting);
 }
 
 StringComboBox::StringComboBox(const char *setting, QWidget *parent) :
@@ -458,7 +470,7 @@ void StringComboBox::onCurrentTextChanged(const QString &text)
 {
    strlcpy(m_value, text.toUtf8().data(), sizeof(m_value));
 
-   setting_generic_handle_change(m_setting);
+   handleChange(m_setting);
 }
 
 void StringComboBox::paintEvent(QPaintEvent *event)
@@ -479,7 +491,7 @@ UIntComboBox::UIntComboBox(rarch_setting_t *setting, QWidget *parent) :
 
    connect(this, SIGNAL(currentIndexChanged(int)), this, SLOT(onCurrentIndexChanged(int)));
 
-   add_sublabel_and_whats_this(this, m_setting);
+   addSublabelAndWhatsThis(this, m_setting);
 }
 
 UIntComboBox::UIntComboBox(rarch_setting_t *setting, double min, double max, QWidget *parent) :
@@ -491,7 +503,7 @@ UIntComboBox::UIntComboBox(rarch_setting_t *setting, double min, double max, QWi
 
    connect(this, SIGNAL(currentIndexChanged(int)), this, SLOT(onCurrentIndexChanged(int)));
 
-   add_sublabel_and_whats_this(this, m_setting);
+   addSublabelAndWhatsThis(this, m_setting);
 }
 
 void UIntComboBox::populate(double min, double max)
@@ -550,7 +562,7 @@ void UIntComboBox::onCurrentIndexChanged(int index)
 
    *m_value = currentData().toUInt();
 
-   setting_generic_handle_change(m_setting);
+   handleChange(m_setting);
 }
 
 void UIntComboBox::paintEvent(QPaintEvent *event)
@@ -571,7 +583,7 @@ UIntSpinBox::UIntSpinBox(rarch_setting_t *setting, QWidget *parent) :
 
    connect(this, SIGNAL(valueChanged(int)), this, SLOT(onValueChanged(int)));
 
-   add_sublabel_and_whats_this(this, m_setting);
+   addSublabelAndWhatsThis(this, m_setting);
 }
 
 UIntSpinBox::UIntSpinBox(msg_hash_enums enum_idx, QWidget *parent) :
@@ -582,7 +594,7 @@ UIntSpinBox::UIntSpinBox(msg_hash_enums enum_idx, QWidget *parent) :
 void UIntSpinBox::onValueChanged(int value)
 {
    *m_value = value;
-   setting_generic_handle_change(m_setting);
+   handleChange(m_setting);
 }
 
 void UIntSpinBox::paintEvent(QPaintEvent *event)
@@ -614,7 +626,7 @@ SizeSpinBox::SizeSpinBox(rarch_setting_t *setting, unsigned scale, QWidget *pare
 
    connect(this, SIGNAL(valueChanged(int)), this, SLOT(onValueChanged(int)));
 
-   add_sublabel_and_whats_this(this, m_setting);
+   addSublabelAndWhatsThis(this, m_setting);
 }
 
 SizeSpinBox::SizeSpinBox(msg_hash_enums enum_idx, unsigned scale, QWidget *parent) :
@@ -625,7 +637,7 @@ SizeSpinBox::SizeSpinBox(msg_hash_enums enum_idx, unsigned scale, QWidget *paren
 void SizeSpinBox::onValueChanged(int value)
 {
    *m_value = value * m_scale;
-   setting_generic_handle_change(m_setting);
+   handleChange(m_setting);
 }
 
 void SizeSpinBox::paintEvent(QPaintEvent *event)
@@ -677,7 +689,7 @@ UIntRadioButton::UIntRadioButton(const QString &text, rarch_setting_t *setting, 
 void UIntRadioButton::onClicked(bool)
 {
    *m_target = m_value;
-   setting_generic_handle_change(m_setting);
+   handleChange(m_setting);
 }
 
 void UIntRadioButton::paintEvent(QPaintEvent *event)
@@ -731,7 +743,7 @@ UIntRadioButtons::UIntRadioButtons(rarch_setting_t *setting, QWidget *parent) :
 
       *setting->value.target.unsigned_integer = orig_value;
    }
-   add_sublabel_and_whats_this(this, m_setting);
+   addSublabelAndWhatsThis(this, m_setting);
    connect(m_buttonGroup, SIGNAL(buttonClicked(int)), this, SLOT(onButtonClicked(int)));
 }
 
@@ -749,7 +761,7 @@ void UIntRadioButtons::onButtonClicked(int id)
 {
    *m_value = id;
 
-   setting_generic_handle_change(m_setting);
+   handleChange(m_setting);
 }
 
 IntSpinBox::IntSpinBox(rarch_setting_t *setting, QWidget *parent) :
@@ -764,13 +776,13 @@ IntSpinBox::IntSpinBox(rarch_setting_t *setting, QWidget *parent) :
 
    connect(this, SIGNAL(valueChanged(int)), this, SLOT(onValueChanged(int)));
 
-   add_sublabel_and_whats_this(this, m_setting);
+   addSublabelAndWhatsThis(this, m_setting);
 }
 
 void IntSpinBox::onValueChanged(int value)
 {
    *m_value = value;
-   setting_generic_handle_change(m_setting);
+   handleChange(m_setting);
 }
 
 void IntSpinBox::paintEvent(QPaintEvent *event)
@@ -814,14 +826,14 @@ FloatSpinBox::FloatSpinBox(rarch_setting_t *setting, QWidget *parent) :
    setSingleStep(setting->step);
 
    connect(this, SIGNAL(valueChanged(double)), this, SLOT(onValueChanged(double)));
-   add_sublabel_and_whats_this(this, m_setting);
+   addSublabelAndWhatsThis(this, m_setting);
 }
 
 void FloatSpinBox::onValueChanged(double value)
 {
    *m_value = (float)value;
 
-   setting_generic_handle_change(m_setting);
+   handleChange(m_setting);
 }
 
 void FloatSpinBox::paintEvent(QPaintEvent *event)
@@ -849,7 +861,7 @@ PathButton::PathButton(rarch_setting_t *setting, QWidget *parent) :
 {
    connect(this, SIGNAL(clicked(bool)), this, SLOT(onClicked(bool)));
 
-   add_sublabel_and_whats_this(this, m_setting);
+   addSublabelAndWhatsThis(this, m_setting);
 }
 
 PathButton::PathButton(const char *setting, QWidget *parent) :
@@ -876,7 +888,7 @@ void DirectoryButton::onClicked(bool)
    {
       strlcpy(m_setting->value.target.string, QDir::toNativeSeparators(dir).toUtf8().data(), m_setting->size);
 
-      setting_generic_handle_change(m_setting);
+      handleChange(m_setting);
    }
 
    emit changed();
@@ -894,7 +906,7 @@ void FileButton::onClicked(bool)
    {
       strlcpy(m_setting->value.target.string, QDir::toNativeSeparators(file).toUtf8().data(), m_setting->size);
 
-      setting_generic_handle_change(m_setting);
+      handleChange(m_setting);
    }
 
    emit changed();
@@ -955,14 +967,14 @@ FloatSlider::FloatSlider(rarch_setting_t *setting, QWidget *parent) :
 
    connect(this, SIGNAL(valueChanged(int)), this, SLOT(onValueChanged(int)));
 
-   add_sublabel_and_whats_this(this, m_setting);
+   addSublabelAndWhatsThis(this, m_setting);
 }
 
 void FloatSlider::onValueChanged(int value)
 {
    *m_value = (float)value / m_precision;
 
-   setting_generic_handle_change(m_setting);
+   handleChange(m_setting);
 }
 
 void FloatSlider::paintEvent(QPaintEvent *event)

@@ -38,7 +38,7 @@
 #ifdef WANT_IFADDRS
 #include <compat/ifaddrs.h>
 #else
-#if !defined HAVE_LIBNX && !defined(_3DS)
+#ifndef HAVE_LIBNX
 #include <ifaddrs.h>
 #endif
 #endif
@@ -73,7 +73,7 @@ void net_ifinfo_free(net_ifinfo_t *list)
    free(list->entries);
 }
 
-#if defined(HAVE_LIBNX) || defined(_3DS)
+#ifdef HAVE_LIBNX
 static void convert_ip(char *dst, size_t size, uint32_t ip, bool inverted)
 {
    unsigned char bytes[4];
@@ -92,7 +92,7 @@ static void convert_ip(char *dst, size_t size, uint32_t ip, bool inverted)
 bool net_ifinfo_new(net_ifinfo_t *list)
 {
    unsigned k              = 0;
-#if defined(HAVE_LIBNX) || defined(_3DS)
+#ifdef HAVE_LIBNX
    uint32_t id;
    Result rc;
 
@@ -123,16 +123,12 @@ bool net_ifinfo_new(net_ifinfo_t *list)
       can be wlan or eth (with a wiiu adapter)
       so we just use "switch" as a name
    */
-#if defined(_3DS)
-   convert_ip(hostname, sizeof(hostname), gethostid(), true);
-#else
    rc = nifmGetCurrentIpAddress(&id);
 
    if (!R_SUCCEEDED(rc)) /* not connected to any network */
       return true;
 
    convert_ip(hostname, sizeof(hostname), id, true);
-#endif
 
    ptr = (struct net_ifinfo_entry*)
          realloc(list->entries, (k+1) * sizeof(struct net_ifinfo_entry));
@@ -141,11 +137,8 @@ bool net_ifinfo_new(net_ifinfo_t *list)
       goto error;
 
    list->entries          = ptr;
-#if defined(_3DS)
-   list->entries[k].name  = strdup("wlan");
-#else
+
    list->entries[k].name  = strdup("switch");
-#endif
    list->entries[k].host  = strdup(hostname);
    list->size             = k + 1;
 
@@ -249,7 +242,7 @@ error:
 #ifdef _WIN32
    if (adapter_addresses)
       free(adapter_addresses);
-#elif !defined(HAVE_LIBNX) && !defined(_3DS)
+#elif !defined(HAVE_LIBNX)
    freeifaddrs(ifaddr);
 #endif
    net_ifinfo_free(list);

@@ -54,7 +54,7 @@ void cheevos_set_menu_badge(int index, const char *badge, bool locked)
 uintptr_t cheevos_get_menu_badge_texture(int index)
 {
    if (index < CHEEVOS_MENU_BADGE_LIMIT)
-      return cheevos_badge_menu_texture_list[index];
+       return cheevos_badge_menu_texture_list[index];
 
    return 0;
 }
@@ -65,7 +65,7 @@ uintptr_t cheevos_get_badge_texture(const char *badge, bool locked)
 {
    char badge_file[24];
    char fullpath[PATH_MAX_LENGTH];
-   uintptr_t tex = 0;
+   uintptr_t tex;
 
    if (!badge)
       return 0;
@@ -76,9 +76,8 @@ uintptr_t cheevos_get_badge_texture(const char *badge, bool locked)
       PATH_MAX_LENGTH * sizeof(char),
       APPLICATION_SPECIAL_DIRECTORY_THUMBNAILS_CHEEVOS_BADGES);
 
-   if (!gfx_display_reset_textures_list(badge_file, fullpath,
-      &tex, TEXTURE_FILTER_MIPMAP_LINEAR, NULL, NULL))
-      tex = 0;
+   gfx_display_reset_textures_list(badge_file, fullpath,
+      &tex, TEXTURE_FILTER_MIPMAP_LINEAR, NULL, NULL);
 
    return tex;
 }

@@ -73,8 +73,7 @@ get_semantic_name(slang_reflection& reflection,
       "FrameCount",
       "FrameDirection",
    };
-   int size = sizeof(names) / sizeof(*names);
-   if ((int)semantic < size)
+   if ((int)semantic < sizeof(names) / sizeof(*names))
       return std::string(names[semantic]);
 
    return get_semantic_name(reflection.semantic_map, semantic, index);
@@ -87,11 +86,9 @@ get_semantic_name(slang_reflection& reflection,
    static const char* names[] = {
       "Original", "Source", "OriginalHistory", "PassOutput", "PassFeedback",
    };
-   int size;
    if ((int)semantic < (int)SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY)
       return std::string(names[semantic]);
-   size = sizeof(names) / sizeof(*names);
-   if ((int)semantic < size)
+   else if ((int)semantic < sizeof(names) / sizeof(*names))
       return std::string(names[semantic]) + to_string(index);
 
    return get_semantic_name(reflection.texture_semantic_map, semantic, index);
@@ -104,11 +101,9 @@ static string get_size_semantic_name(
    static const char* names[] = {
       "OriginalSize", "SourceSize", "OriginalHistorySize", "PassOutputSize", "PassFeedbackSize",
    };
-   int size;
    if ((int)semantic < (int)SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY)
       return std::string(names[semantic]);
-   size = sizeof(names) / sizeof(*names);
-   if ((int)semantic < size)
+   if ((int)semantic < sizeof(names) / sizeof(*names))
       return std::string(names[semantic]) + to_string(index);
 
    return get_semantic_name(reflection.texture_semantic_uniform_map, semantic, index);

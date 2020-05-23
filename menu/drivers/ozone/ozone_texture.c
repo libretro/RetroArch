@@ -24,18 +24,10 @@
 #include <file/file_path.h>
 
 #ifdef HAVE_CHEEVOS
-#include "../../../cheevos/badges.h"
+#include "../../../cheevos-new/badges.h"
 #endif
 
 #include "../../../verbosity.h"
-
-static const char *OZONE_THEME_TEXTURES_FILES[OZONE_THEME_TEXTURE_LAST] = {
-   "switch",
-   "check",
-
-   "cursor_noborder",
-   "cursor_static"
-};
 
 uintptr_t ozone_entries_icon_get_texture(ozone_handle_t *ozone,
       enum msg_hash_enums enum_idx, unsigned type, bool active)

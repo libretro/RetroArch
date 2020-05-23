@@ -340,15 +340,25 @@ int64_t retro_vfs_file_read_cdrom(libretro_vfs_implementation_file *stream,
 
    if (string_is_equal_noncase(ext, "cue"))
    {
-      if ((int64_t)len >= (int64_t)stream->cdrom.cue_len - stream->cdrom.byte_pos) len = stream->cdrom.cue_len - stream->cdrom.byte_pos - 1;
+      if ((int64_t)len < (int64_t)stream->cdrom.cue_len - stream->cdrom.byte_pos)
+      {
 #ifdef CDROM_DEBUG
-      printf("[CDROM] Read: Reading %" PRIu64 " bytes from cuesheet starting at %" PRIu64 "...\n", len, stream->cdrom.byte_pos);
-      fflush(stdout);
+         printf("[CDROM] Read: Reading %" PRIu64 " bytes from cuesheet starting at %" PRIu64 "...\n", len, stream->cdrom.byte_pos);
+         fflush(stdout);
 #endif
-      memcpy(s, stream->cdrom.cue_buf + stream->cdrom.byte_pos, len);
-      stream->cdrom.byte_pos += len;
+         memcpy(s, stream->cdrom.cue_buf + stream->cdrom.byte_pos, len);
+         stream->cdrom.byte_pos += len;
 
-      return len;
+         return len;
+      }
+      else
+      {
+#ifdef CDROM_DEBUG
+         printf("[CDROM] Read: Reading %" PRIu64 " bytes from cuesheet starting at %" PRIu64 " failed.\n", len, stream->cdrom.byte_pos);
+         fflush(stdout);
+#endif
+         return 0;
+      }
    }
    else if (string_is_equal_noncase(ext, "bin"))
    {

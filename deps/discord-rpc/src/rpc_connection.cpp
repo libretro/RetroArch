@@ -3,8 +3,7 @@
 
 #include <atomic>
 
-#define RPC_VERSION 1
-
+static const int RpcVersion = 1;
 static RpcConnection Instance;
 
 /*static*/ RpcConnection* RpcConnection::Create(const char* applicationId)
@@ -37,8 +36,8 @@ void RpcConnection::Open()
        JsonDocument message;
        if (Read(message))
        {
-          const char *cmd = GetStrMember(&message, "cmd");
-          const char *evt = GetStrMember(&message, "evt");
+          auto cmd = GetStrMember(&message, "cmd");
+          auto evt = GetStrMember(&message, "evt");
           if (cmd && evt 
                 && !strcmp(cmd, "DISPATCH") 
                 && !strcmp(evt, "READY"))
@@ -53,7 +52,7 @@ void RpcConnection::Open()
     {
         sendFrame.opcode = Opcode::Handshake;
         sendFrame.length = (uint32_t)JsonWriteHandshakeObj(
-          sendFrame.message, sizeof(sendFrame.message), RPC_VERSION, appId);
+          sendFrame.message, sizeof(sendFrame.message), RpcVersion, appId);
 
         if (connection->Write(&sendFrame,
                  sizeof(MessageFrameHeader) + sendFrame.length))

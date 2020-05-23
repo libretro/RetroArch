@@ -2829,7 +2829,6 @@ static bool gl2_frame(void *data, const void *frame,
    struct font_params *osd_params      = (struct font_params*)
       &video_info->osd_stat_params;
    const char *stat_text               = video_info->stat_text;
-   bool menu_is_alive                  = video_info->menu_is_alive;
 
    if (!gl)
       return false;
@@ -3037,7 +3036,7 @@ static bool gl2_frame(void *data, const void *frame,
 #if defined(HAVE_MENU)
    if (gl->menu_texture_enable)
    {
-      menu_driver_frame(menu_is_alive, video_info);
+      menu_driver_frame(video_info);
 
       if (gl->menu_texture)
          gl2_draw_texture(gl);

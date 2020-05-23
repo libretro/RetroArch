@@ -1,7 +1,5 @@
 #include "internal.h"
 
-#include "compat.h"
-
 #include <string.h>
 #include <stdio.h>
 
@@ -13,7 +11,7 @@ int rc_parse_format(const char* format_str) {
       }
 
       break;
-
+    
     case 'T':
       if (!strcmp(format_str, "IME")) {
         return RC_FORMAT_FRAMES;
@@ -23,7 +21,7 @@ int rc_parse_format(const char* format_str) {
       }
 
       break;
-
+    
     case 'S':
       if (!strcmp(format_str, "ECS")) {
         return RC_FORMAT_SECONDS;
@@ -36,7 +34,7 @@ int rc_parse_format(const char* format_str) {
       }
 
       break;
-
+    
     case 'M':
       if (!strcmp(format_str, "ILLISECS")) {
         return RC_FORMAT_CENTISECS;

@@ -24,7 +24,7 @@
 #endif
 
 #ifdef HAVE_CHEEVOS
-#include "../../cheevos/cheevos.h"
+#include "../../cheevos-new/cheevos.h"
 #endif
 
 #include "menu_dialog.h"

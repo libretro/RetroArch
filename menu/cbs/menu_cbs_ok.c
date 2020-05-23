@@ -32,7 +32,7 @@
 #endif
 
 #ifdef HAVE_DISCORD
-#include "../../network/discord.h"
+#include "../../discord/discord.h"
 #endif
 
 #include "../../config.def.h"
@@ -52,6 +52,7 @@
 #include "../widgets/menu_input_bind_dialog.h"
 #include "../menu_input.h"
 #include "../menu_networking.h"
+#include "../menu_content.h"
 
 #include "../../core.h"
 #include "../../configuration.h"
@@ -84,7 +85,7 @@
 #endif
 
 #ifdef HAVE_CHEEVOS
-#include "../../cheevos/cheevos.h"
+#include "../../cheevos-new/cheevos.h"
 #endif
 
 #ifdef __WINRT__
@@ -4029,11 +4030,11 @@ static void cb_decompressed(retro_task_t *task,
 
    if (dec && !err)
    {
-      unsigned enum_idx = (unsigned)(uintptr_t)user_data;
+      unsigned type_hash = (unsigned)(uintptr_t)user_data;
 
-      switch (enum_idx)
+      switch (type_hash)
       {
-         case MENU_ENUM_LABEL_CB_UPDATE_ASSETS:
+         case CB_UPDATE_ASSETS:
             generic_action_ok_command(CMD_EVENT_REINIT);
             break;
          default:
@@ -4347,8 +4348,8 @@ void cb_generic_download(retro_task_t *task,
       decompress_task = (retro_task_t*)task_push_decompress(
             output_path, dir_path,
             NULL, NULL, NULL,
-            cb_decompressed,
-            (void*)(uintptr_t)transf->enum_idx,
+            cb_decompressed, (void*)(uintptr_t)
+            msg_hash_calculate(msg_hash_to_str(transf->enum_idx)),
             frontend_userdata, false);
 
       if (!decompress_task)
@@ -4642,10 +4643,37 @@ default_action_ok_download(action_ok_update_databases, MENU_ENUM_LABEL_CB_UPDATE
 default_action_ok_download(action_ok_update_cheats, MENU_ENUM_LABEL_CB_UPDATE_CHEATS)
 default_action_ok_download(action_ok_update_autoconfig_profiles, MENU_ENUM_LABEL_CB_UPDATE_AUTOCONFIG_PROFILES)
 
+/* creates folder and core options stub file for subsequent runs */
 static int action_ok_option_create(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   create_folder_and_core_options();
+   char game_path[PATH_MAX_LENGTH];
+   config_file_t *conf             = NULL;
+
+   game_path[0] = '\0';
+
+   if (!retroarch_validate_game_options(game_path, sizeof(game_path), true))
+   {
+      runloop_msg_queue_push(
+            msg_hash_to_str(MSG_ERROR_SAVING_CORE_OPTIONS_FILE),
+            1, 100, true,
+            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      return 0;
+   }
+
+   if (!(conf = config_file_new_from_path_to_string(game_path)))
+      if (!(conf = config_file_new_alloc()))
+         return false;
+
+   if (config_file_write(conf, game_path, true))
+   {
+      runloop_msg_queue_push(
+            msg_hash_to_str(MSG_CORE_OPTIONS_FILE_CREATED_SUCCESSFULLY),
+            1, 100, true,
+            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      path_set(RARCH_PATH_CORE_OPTIONS, game_path);
+   }
+   config_file_free(conf);
 
    return 0;
 }
@@ -5348,7 +5376,7 @@ static void netplay_refresh_rooms_cb(retro_task_t *task,
    data->data            = new_data;
    data->data[data->len] = '\0';
 
-   if (!string_ends_with(data->data, "registry.lpl"))
+   if (!strstr(data->data, "registry.lpl"))
    {
       if (string_is_empty(data->data))
          netplay_room_count = 0;
@@ -5450,7 +5478,6 @@ finish:
 
 }
 
-#ifndef RARCH_CONSOLE
 static void netplay_lan_scan_callback(retro_task_t *task,
       void *task_data,
       void *user_data, const char *error)
@@ -5506,7 +5533,6 @@ static void netplay_lan_scan_callback(retro_task_t *task,
       }
    }
 }
-#endif
 
 static int action_ok_push_netplay_refresh_rooms(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -6642,7 +6668,7 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             return 0;
          }
 
-         if (string_ends_with(str, "input_binds_list"))
+         if (strstr(str, "input_binds_list"))
          {
             unsigned i;
 

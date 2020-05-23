@@ -34,7 +34,8 @@ static bool init_hid_driver(void)
 
 static bool hidpad_init(void *data)
 {
-   (void)data;
+   (void *)data;
+   int i;
 
    if(!init_hid_driver())
    {
