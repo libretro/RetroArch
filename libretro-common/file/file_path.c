@@ -714,6 +714,20 @@ void path_resolve_to_local_file_system(char* buf, const char* path, const char* 
    free(tmp);
 }
 
+void path_build_relative_path(char* buf, const char* path, const char* base_content_directory, size_t count)
+{
+   /* use relative paths if enabled and entry file path is inside the content folder */
+   bool use_relative_path = !string_is_empty(base_content_directory)
+      && (strncmp(path, base_content_directory, strlen(base_content_directory)) == 0);
+
+   if (use_relative_path)
+   {
+      /* build relative path, and convert to unix path syntax */
+      strncpy(buf, path + strlen(base_content_directory) + 1, count);
+      string_replace_all_chars(buf, windows_path_delimiter, posix_path_delimiter);
+   }
+}
+
 /**
  * path_resolve_realpath:
  * @buf                : input and output buffer for path
