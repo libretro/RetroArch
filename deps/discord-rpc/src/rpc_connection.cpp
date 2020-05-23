@@ -3,7 +3,8 @@
 
 #include <atomic>
 
-static const int RpcVersion = 1;
+#define RPC_VERSION 1
+
 static RpcConnection Instance;
 
 /*static*/ RpcConnection* RpcConnection::Create(const char* applicationId)
@@ -52,7 +53,7 @@ void RpcConnection::Open()
     {
         sendFrame.opcode = Opcode::Handshake;
         sendFrame.length = (uint32_t)JsonWriteHandshakeObj(
-          sendFrame.message, sizeof(sendFrame.message), RpcVersion, appId);
+          sendFrame.message, sizeof(sendFrame.message), RPC_VERSION, appId);
 
         if (connection->Write(&sendFrame,
                  sizeof(MessageFrameHeader) + sendFrame.length))

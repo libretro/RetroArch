@@ -15,19 +15,6 @@
 #include <thread>
 #endif
 
-
-/* Forward declarations */
-#if defined(__cplusplus) && !defined(CXX_BUILD)
-extern "C" {
-#endif
-
-void Discord_Register(const char *a, const char *b);
-void Discord_RegisterSteamGame(const char *a, const char *b);
-
-#if defined(__cplusplus) && !defined(CXX_BUILD)
-}
-#endif
-
 struct QueuedMessage
 {
    size_t length;
