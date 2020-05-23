@@ -9035,7 +9035,8 @@ bool command_event(enum event_command cmd, void *data)
                   path_content_video_history);
             g_defaults.video_history = playlist_init(
                   path_content_video_history,
-                  content_history_size);
+                  content_history_size,
+                  config_get_base_content_directory_if_enabled());
             playlist_set_sort_mode(
                   g_defaults.video_history, PLAYLIST_SORT_MODE_OFF);
 #endif

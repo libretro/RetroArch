@@ -523,7 +523,7 @@ void MainWindow::addFilesToPlaylist(QStringList files)
             MENU_ENUM_LABEL_VALUE_QT_ADDING_FILES_TO_PLAYLIST));
    dialog->setMaximum(list.count());
 
-   playlist = playlist_init(currentPlaylistData, COLLECTION_SIZE);
+   playlist = playlist_init(currentPlaylistData, COLLECTION_SIZE, config_get_base_content_directory_if_enabled());
 
    for (i = 0; i < list.count(); i++)
    {
@@ -756,7 +756,7 @@ bool MainWindow::updateCurrentPlaylistEntry(
       }
    }
 
-   playlist = playlist_init(playlistPathData, COLLECTION_SIZE);
+   playlist = playlist_init(playlistPathData, COLLECTION_SIZE, config_get_base_content_directory_if_enabled());
 
    {
       struct playlist_entry entry = {0};
@@ -980,7 +980,7 @@ void MainWindow::onPlaylistWidgetContextMenuRequested(const QPoint&)
       }
 
       if (loadPlaylist)
-         playlist = playlist_init(currentPlaylistPathCString, COLLECTION_SIZE);
+         playlist = playlist_init(currentPlaylistPathCString, COLLECTION_SIZE, config_get_base_content_directory_if_enabled());
 
       if (playlist)
       {
@@ -1371,7 +1371,7 @@ void MainWindow::deleteCurrentPlaylistItem()
    if (!showMessageBox(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CONFIRM_DELETE_PLAYLIST_ITEM)).arg(contentHash["label"]), MainWindow::MSGBOX_TYPE_QUESTION_YESNO, Qt::ApplicationModal, false))
       return;
 
-   playlist = playlist_init(playlistData, COLLECTION_SIZE);
+   playlist = playlist_init(playlistData, COLLECTION_SIZE, config_get_base_content_directory_if_enabled());
 
    playlist_delete_index(playlist, index);
    playlist_write_file(
@@ -1415,7 +1415,7 @@ QString MainWindow::getPlaylistDefaultCore(QString dbName)
    }
 
    if (loadPlaylist)
-      playlist = playlist_init(playlistPath, COLLECTION_SIZE);
+      playlist = playlist_init(playlistPath, COLLECTION_SIZE, config_get_base_content_directory_if_enabled());
 
    if (playlist)
    {
@@ -1453,7 +1453,7 @@ void PlaylistModel::getPlaylistItems(QString path)
    pathArray.append(path);
    pathData              = pathArray.constData();
 
-   playlist              = playlist_init(pathData, COLLECTION_SIZE);
+   playlist              = playlist_init(pathData, COLLECTION_SIZE, config_get_base_content_directory_if_enabled());
    playlistSize          = playlist_get_size(playlist);
 
    for (i = 0; i < playlistSize; i++)
