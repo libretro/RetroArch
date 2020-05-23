@@ -637,6 +637,12 @@ static void *xv_init(const video_info_t *video,
 
    frontend_driver_install_signal_handler();
 
+   xv_init_yuv_tables(xv);
+   xv_init_font(xv, settings->paths.path_font, settings->floats.video_font_size);
+
+   if (!x11_input_ctx_new(true))
+      goto error;
+
    if (input && input_data)
    {
       xinput = input_x.init(settings->arrays.input_joypad_driver);
@@ -648,12 +654,6 @@ static void *xv_init(const video_info_t *video,
       else
          *input = NULL;
    }
-
-   xv_init_yuv_tables(xv);
-   xv_init_font(xv, settings->paths.path_font, settings->floats.video_font_size);
-
-   if (!x11_input_ctx_new(true))
-      goto error;
 
    XGetWindowAttributes(g_x11_dpy, g_x11_win, &target);
    xv_calc_out_rect(xv->keep_aspect, &xv->vp, target.width, target.height);
