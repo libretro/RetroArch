@@ -222,31 +222,29 @@ void filebrowser_parse(
          is_dir = (file_type == FILE_TYPE_DIRECTORY);
 
          if (!is_dir)
-         {
-            if (filebrowser_types == FILEBROWSER_SELECT_DIR)
+            if (
+                  (filebrowser_types == FILEBROWSER_SELECT_DIR) ||
+                  (filebrowser_types == FILEBROWSER_SCAN_DIR)   ||
+                  (filebrowser_types == FILEBROWSER_MANUAL_SCAN_DIR)
+               )
                continue;
-            if (filebrowser_types == FILEBROWSER_SCAN_DIR)
-               continue;
-            if (filebrowser_types == FILEBROWSER_MANUAL_SCAN_DIR)
-               continue;
-         }
 
          /* Need to preserve slash first time. */
 
          if (!string_is_empty(path) && !path_is_compressed)
             path = path_basename(path);
 
-         if (filebrowser_types == FILEBROWSER_SELECT_COLLECTION)
+         if (is_dir)
          {
-            if (is_dir)
+            if (filebrowser_types == FILEBROWSER_SELECT_COLLECTION)
                file_type = FILE_TYPE_DIRECTORY;
-            else
-               file_type = FILE_TYPE_PLAYLIST_COLLECTION;
          }
-
-         if (!is_dir)
+         else
          {
             enum rarch_content_type path_type = path_is_media_type(path);
+
+            if (filebrowser_types == FILEBROWSER_SELECT_COLLECTION)
+               file_type = FILE_TYPE_PLAYLIST_COLLECTION;
 
             if (path_type == RARCH_CONTENT_MUSIC)
                file_type = FILE_TYPE_MUSIC;
