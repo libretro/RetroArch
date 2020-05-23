@@ -29,6 +29,7 @@
 - NETPLAY: Lower announcement rate
 - OVERLAYS: Fix memory leak when loading overlays
 - SHADER PRESETS: Improved shader preset dirs
+- VITA: Fix upside-down vertical games
 - WIIU: Gamepad hotplugging support
 - WIIU: Theoretical multi-gamepad support
 - XVIDEO: Fix keyboard input initialization
