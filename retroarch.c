@@ -4117,7 +4117,7 @@ static bool command_show_osd_msg(const char* arg)
 
 static bool command_get_config_param(const char* arg)
 {
-   char reply[4096]             = {0};
+   char reply[8192]             = {0};
    const char      *value       = "unsupported";
    settings_t       *settings   = configuration_settings;
    bool       video_fullscreen  = settings->bools.video_fullscreen;
