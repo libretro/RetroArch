@@ -5619,7 +5619,7 @@ unsigned menu_displaylist_build_list(
                   for (i = 0; i < num_images; i++)
                   {
                      char current_image_str[PATH_MAX_LENGTH];
-                     char image_label[PATH_MAX_LENGTH];
+                     char image_label[128];
 
                      current_image_str[0] = '\0';
                      image_label[0]       = '\0';
