@@ -4328,7 +4328,6 @@ static bool command_set_shader(const char *arg)
 
 #if defined(HAVE_COMMAND)
 #if defined(HAVE_CHEEVOS)
-#define SMY_CMD_STR "READ_CORE_RAM"
 static bool command_read_ram(const char *arg)
 {
    unsigned i;
@@ -4347,7 +4346,7 @@ static bool command_read_ram(const char *arg)
    reply                   = (char*)malloc(alloc_size);
    reply[0]                = '\0';
    reply_at                = reply + snprintf(
-         reply, alloc_size - 1, SMY_CMD_STR " %x", addr);
+         reply, alloc_size - 1, "READ_CORE_RAM" " %x", addr);
 
    if ((data = rcheevos_patch_address(addr, rcheevos_get_console())))
    {
@@ -4365,11 +4364,9 @@ static bool command_read_ram(const char *arg)
    free(reply);
    return true;
 }
-#undef SMY_CMD_STR
 
 static bool command_write_ram(const char *arg)
 {
-   unsigned nbytes      = 0;
    unsigned int addr    = strtoul(arg, (char**)&arg, 16);
    uint8_t *data        = (uint8_t *)rcheevos_patch_address(
          addr, rcheevos_get_console());
@@ -4553,7 +4550,8 @@ static void command_parse_sub_msg(command_t *handle, const char *tok)
             msg_hash_to_str(MSG_RECEIVED));
 }
 
-static void command_parse_msg(command_t *handle, char *buf, enum cmd_source_t source)
+static void command_parse_msg(command_t *handle,
+      char *buf, enum cmd_source_t source)
 {
    char *save      = NULL;
    const char *tok = strtok_r(buf, "\n", &save);
