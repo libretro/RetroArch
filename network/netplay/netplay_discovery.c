@@ -301,7 +301,7 @@ bool netplay_lan_ad_server(netplay_t *netplay)
             char *p;
             char sub[NETPLAY_HOST_STR_LEN];
             char frontend_architecture_tmp[32];
-            char frontend[NETPLAY_HOST_STR_LEN];
+            char frontend[256];
             const frontend_ctx_driver_t *frontend_drv = 
                (const frontend_ctx_driver_t*)
             frontend_driver_get_cpu_architecture_str(
