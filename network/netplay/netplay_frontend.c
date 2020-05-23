@@ -811,7 +811,7 @@ static void netplay_announce(void)
 {
    char buf[4600];
    char frontend_architecture[PATH_MAX_LENGTH];
-   char frontend_architecture_tmp[PATH_MAX_LENGTH];
+   char frontend_architecture_tmp[32];
    const frontend_ctx_driver_t *frontend_drv =  NULL;
    char url[2048]                   = "http://lobby.libretro.com/add/";
    char *username                   = NULL;
