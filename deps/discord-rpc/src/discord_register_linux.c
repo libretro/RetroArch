@@ -1,10 +1,13 @@
 #include <stdio.h>
 
 #include <errno.h>
+#include <fcntl.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/un.h>
 #include <unistd.h>
 
 #include <boolean.h>
@@ -12,6 +15,11 @@
 #include <compat/strl.h>
 
 #include <discord_rpc.h>
+
+int get_process_id(void)
+{
+    return getpid();
+}
 
 /* we want to register games so we can run them from 
  * Discord client as discord-<appid>:// */

@@ -1,5 +1,5 @@
-#include <retro_common_api.h>
 #include "discord_rpc.h"
+#include "discord_register.h"
 
 #include "backoff.h"
 #include "msg_queue.h"
@@ -149,7 +149,7 @@ static void UpdateReconnectTime(void)
 }
 
 #ifdef DISCORD_DISABLE_IO_THREAD
-extern "C" DISCORD_EXPORT void Discord_UpdateConnection(void)
+extern "C" void Discord_UpdateConnection(void)
 #else
 static void Discord_UpdateConnection(void)
 #endif
@@ -300,7 +300,7 @@ static bool DeregisterForEvent(const char* evtName)
     return false;
 }
 
-extern "C" DISCORD_EXPORT void Discord_Initialize(
+extern "C" void Discord_Initialize(
       const char* applicationId,
       DiscordEventHandlers* handlers,
       int autoRegister,
@@ -318,7 +318,7 @@ extern "C" DISCORD_EXPORT void Discord_Initialize(
           Discord_Register(applicationId, nullptr);
     }
 
-    Pid = GetProcessId();
+    Pid = get_process_id();
 
     {
         std::lock_guard<std::mutex> guard(HandlerMutex);
@@ -373,7 +373,7 @@ extern "C" DISCORD_EXPORT void Discord_Initialize(
     IoThread->Start();
 }
 
-extern "C" DISCORD_EXPORT void Discord_Shutdown(void)
+extern "C" void Discord_Shutdown(void)
 {
     if (!Connection)
         return;
@@ -390,8 +390,7 @@ extern "C" DISCORD_EXPORT void Discord_Shutdown(void)
     RpcConnection::Destroy(Connection);
 }
 
-extern "C" DISCORD_EXPORT void 
-Discord_UpdatePresence(const DiscordRichPresence* presence)
+extern "C" void  Discord_UpdatePresence(const DiscordRichPresence* presence)
 {
     {
         std::lock_guard<std::mutex> guard(PresenceMutex);
@@ -402,12 +401,12 @@ Discord_UpdatePresence(const DiscordRichPresence* presence)
        IoThread->Notify();
 }
 
-extern "C" DISCORD_EXPORT void Discord_ClearPresence(void)
+extern "C" void Discord_ClearPresence(void)
 {
     Discord_UpdatePresence(nullptr);
 }
 
-extern "C" DISCORD_EXPORT void Discord_Respond(const char* userId, /* DISCORD_REPLY_ */ int reply)
+extern "C" void Discord_Respond(const char* userId, /* DISCORD_REPLY_ */ int reply)
 {
     /* if we are not connected, let's not batch up stale messages for later */
     if (!Connection || !Connection->IsOpen())
@@ -423,7 +422,7 @@ extern "C" DISCORD_EXPORT void Discord_Respond(const char* userId, /* DISCORD_RE
     }
 }
 
-extern "C" DISCORD_EXPORT void Discord_RunCallbacks(void)
+extern "C" void Discord_RunCallbacks(void)
 {
     /* Note on some weirdness: internally we might connect, get other signals, disconnect any number
      * of times inbetween calls here. Externally, we want the sequence to seem sane, so any other
@@ -515,7 +514,7 @@ extern "C" DISCORD_EXPORT void Discord_RunCallbacks(void)
       DeregisterForEvent(event)
 #endif
 
-extern "C" DISCORD_EXPORT void Discord_UpdateHandlers(DiscordEventHandlers* newHandlers)
+extern "C" void Discord_UpdateHandlers(DiscordEventHandlers* newHandlers)
 {
    if (newHandlers)
    {

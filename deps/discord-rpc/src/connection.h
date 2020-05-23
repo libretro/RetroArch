@@ -5,9 +5,6 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-/* not really connectiony, but need per-platform */
-int GetProcessId(void);
-
 struct BaseConnection
 {
    static BaseConnection* Create();

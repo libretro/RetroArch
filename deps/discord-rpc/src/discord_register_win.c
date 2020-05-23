@@ -9,6 +9,11 @@
 #include <wchar.h>
 #include <stdio.h>
 
+int get_process_id(void)
+{
+    return (int)GetCurrentProcessId();
+}
+
 /**
  * Updated fixes for MinGW and WinXP
  * This block is written the way it does not involve changing the rest of the code
