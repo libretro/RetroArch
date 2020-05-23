@@ -28,6 +28,7 @@
 - MENU/OZONE/ANDROID: Gamepad-like devices default to Ozone now (Shield Portable)
 - NETPLAY: Lower announcement rate
 - OVERLAYS: Fix memory leak when loading overlays
+- SHADER PRESETS: Improved shader preset dirs
 - WIIU: Gamepad hotplugging support
 - WIIU: Theoretical multi-gamepad support
 - XVIDEO: Fix keyboard input initialization
