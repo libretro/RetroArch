@@ -46,6 +46,23 @@
 #include "../../../core_info.h"
 #include "../../../verbosity.h"
 
+static const char *OZONE_TEXTURES_FILES[OZONE_TEXTURE_LAST] = {
+   "retroarch",
+   "cursor_border"
+};
+
+static const char *OZONE_TAB_TEXTURES_FILES[OZONE_TAB_TEXTURE_LAST] = {
+   "retroarch",
+   "settings",
+   "history",
+   "favorites",
+   "music",
+   "video",
+   "image",
+   "netplay",
+   "add"
+};
+
 ozone_node_t *ozone_alloc_node(void)
 {
    ozone_node_t *node   = (ozone_node_t*)malloc(sizeof(*node));
@@ -195,6 +212,7 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
 
    gfx_thumbnail_set_stream_delay(-1.0f);
    gfx_thumbnail_set_fade_duration(-1.0f);
+   gfx_thumbnail_set_fade_missing(false);
 
    ozone_sidebar_update_collapse(ozone, false);
 

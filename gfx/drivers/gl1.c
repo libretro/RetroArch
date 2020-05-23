@@ -696,6 +696,7 @@ static bool gl1_gfx_frame(void *data, const void *frame,
    unsigned pot_height       = 0;
    unsigned video_width      = video_info->width;
    unsigned video_height     = video_info->height;
+   bool menu_is_alive        = video_info->menu_is_alive;
 
    gl1_context_bind_hw_render(gl1, false);
    
@@ -790,9 +791,8 @@ static bool gl1_gfx_frame(void *data, const void *frame,
    if (draw)
    {
       if (frame_to_copy)
-      {
-         draw_tex(gl1, pot_width, pot_height, width, height, gl1->tex, frame_to_copy);
-      }
+         draw_tex(gl1, pot_width, pot_height,
+               width, height, gl1->tex, frame_to_copy);
    }
 
    if (gl1->menu_frame && video_info->menu_is_alive)
@@ -837,25 +837,26 @@ static bool gl1_gfx_frame(void *data, const void *frame,
 
 #ifdef HAVE_MENU
    if (gl1->menu_texture_enable)
-      menu_driver_frame(video_info);
-   else if (video_info->statistics_show)
-   {
-      struct font_params *osd_params = (struct font_params*)
-         &video_info->osd_stat_params;
-
-      if (osd_params)
+      menu_driver_frame(menu_is_alive, video_info);
+   else
+#endif
+      if (video_info->statistics_show)
       {
-         font_driver_render_msg(gl1, video_info->stat_text,
-               (const struct font_params*)&video_info->osd_stat_params, NULL);
+         struct font_params *osd_params = (struct font_params*)
+            &video_info->osd_stat_params;
+
+         if (osd_params)
+         {
+            font_driver_render_msg(gl1, video_info->stat_text,
+                  (const struct font_params*)&video_info->osd_stat_params, NULL);
 #if 0
-         osd_params->y               = 0.350f;
-         osd_params->scale           = 0.75f;
-         font_driver_render_msg(gl1, video_info->chat_text,
-               (const struct font_params*)&video_info->osd_stat_params, NULL);
+            osd_params->y               = 0.350f;
+            osd_params->scale           = 0.75f;
+            font_driver_render_msg(gl1, video_info->chat_text,
+                  (const struct font_params*)&video_info->osd_stat_params, NULL);
 #endif
+         }
       }
-   }
-#endif
 
 #ifdef HAVE_GFX_WIDGETS
    gfx_widgets_frame(video_info);

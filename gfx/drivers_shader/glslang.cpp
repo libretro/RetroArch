@@ -400,7 +400,9 @@ bool glslang::compile_spirv(const string &source, Stage stage,
 
    EShMessages messages = static_cast<EShMessages>(EShMsgDefault | EShMsgVulkanRules | EShMsgSpvRules);
 
-   auto forbid_include = glslang::TShader::ForbidIncluder();
+   glslang::TShader::ForbidIncluder forbid_include = 
+      glslang::TShader::ForbidIncluder();
+
    if (!shader.preprocess(&process.GetResources(),
             100, ENoProfile, false, false,
             messages, &msg, forbid_include))

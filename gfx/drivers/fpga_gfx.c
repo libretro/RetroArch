@@ -209,12 +209,13 @@ static bool fpga_gfx_frame(void *data, const void *frame,
    bool draw                 = true;
    fpga_t *fpga              = (fpga_t*)data;
    unsigned bits             = fpga->video_bits;
+   bool menu_is_alive        = video_info->menu_is_alive;
 
    if (!frame || !frame_width || !frame_height)
       return true;
 
 #ifdef HAVE_MENU
-   menu_driver_frame(video_info);
+   menu_driver_frame(menu_is_alive, video_info);
 #endif
 
    if (  fpga->video_width  != frame_width  || 

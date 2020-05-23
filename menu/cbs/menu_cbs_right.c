@@ -22,7 +22,6 @@
 #include "../../config.h"
 #endif
 
-#include "../menu_content.h"
 #include "../menu_driver.h"
 #include "../menu_entries.h"
 #include "../menu_cbs.h"
@@ -266,11 +265,10 @@ static int action_right_mainmenu(unsigned type, const char *label,
 
    menu_driver_list_get_size(&list_info);
 
-   /* Tab switching functionality does not
-    * apply to RGUI or MaterialUI */
+   /* Tab switching functionality only applies
+    * to XMB */
    if ((list_info.size == 1) &&
-       !string_is_equal(menu_ident, "rgui") &&
-       !string_is_equal(menu_ident, "glui"))
+       string_is_equal(menu_ident, "xmb"))
    {
       menu_ctx_list_t list_horiz_info;
       menu_ctx_list_t list_tabs_info;
@@ -948,7 +946,8 @@ static int menu_cbs_init_bind_right_compare_label(menu_file_list_cbs_t *cbs,
       }
    }
 
-   if (strstr(label, "input_player") && strstr(label, "_joypad_index"))
+   if (  string_starts_with(label, "input_player") && 
+         string_ends_with(label, "_joypad_index"))
    {
       unsigned i;
       for (i = 0; i < MAX_USERS; i++)
@@ -972,7 +971,7 @@ static int menu_cbs_init_bind_right_compare_label(menu_file_list_cbs_t *cbs,
       return 0;
    }
 
-   if (strstr(label, "rdb_entry") || strstr(label, "content_info"))
+   if (strstr(label, "rdb_entry") || string_starts_with(label, "content_info"))
    {
       BIND_ACTION_RIGHT(cbs, action_right_scroll);
    }

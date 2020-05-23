@@ -895,7 +895,7 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
     * treatment, since the label has the format:
     *   <MENU_ENUM_LABEL_DEFERRED_RDB_ENTRY_DETAIL>|<entry_name>
     * i.e. cannot use a normal string_is_equal() */
-   if (strstr(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RDB_ENTRY_DETAIL)))
+   if (string_starts_with(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RDB_ENTRY_DETAIL)))
    {
       BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_rdb_entry_detail);
    }

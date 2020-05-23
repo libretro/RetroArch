@@ -130,19 +130,21 @@ error:
 
 static void clear_screen(void* data)
 {
-    sdl_dingux_video_t* vid = (sdl_dingux_video_t*)data;
-	SDL_FillRect(vid->screen, 0, 0);
-	SDL_Flip(vid->screen);
-	SDL_FillRect(vid->screen, 0, 0);
-	SDL_Flip(vid->screen);
-	SDL_FillRect(vid->screen, 0, 0);
-	SDL_Flip(vid->screen);
+   sdl_dingux_video_t* vid = (sdl_dingux_video_t*)data;
+   SDL_FillRect(vid->screen, 0, 0);
+   SDL_Flip(vid->screen);
+   SDL_FillRect(vid->screen, 0, 0);
+   SDL_Flip(vid->screen);
+   SDL_FillRect(vid->screen, 0, 0);
+   SDL_Flip(vid->screen);
 }
 
-static void set_output(sdl_dingux_video_t* vid, int width, int height, int pitch, bool rgb)
+static void sdl_dingux_set_output(
+      sdl_dingux_video_t* vid,
+      int width, int height, int pitch, bool rgb)
 {
 #ifdef VERBOSE
-    printf("set_output current w %d h %d pitch %d new_w %d new_h %d pitch %d rgb %d\n",
+    printf("sdl_dingux_set_output current w %d h %d pitch %d new_w %d new_h %d pitch %d rgb %d\n",
             vid->screen->w, vid->screen->h, vid->screen->pitch, width, height, pitch, (int)vid->rgb);
 #endif
 
@@ -153,61 +155,62 @@ static void set_output(sdl_dingux_video_t* vid, int width, int height, int pitch
 
 static void blit(uint32_t* d, uint32_t* s, int width, int height, int pitch)
 {
-    int skip = pitch/4 - width;
-    for (int i = 0; i < height; i++)
-    {
-        for (int j = 0; j < width; j++)
-            *(d++) = *(s++);
-        s += skip;
-    }
+   unsigned i;
+   int skip = pitch/4 - width;
+   for (i = 0; i < height; i++)
+   {
+      unsigned j;
+      for (j = 0; j < width; j++)
+         *(d++) = *(s++);
+      s += skip;
+   }
 }
 
 static bool sdl_dingux_gfx_frame(void *data, const void *frame, unsigned width,
         unsigned height, uint64_t frame_count,
         unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
-    sdl_dingux_video_t* vid = (sdl_dingux_video_t*)data;
+   sdl_dingux_video_t* vid = (sdl_dingux_video_t*)data;
+   bool menu_is_alive      = video_info->menu_is_alive;
 
-    if (unlikely(!frame))
-        return true;
+   if (unlikely(!frame))
+      return true;
 
-    if (unlikely((vid->screen->w != width || vid->screen->h != height) && !vid->menu_active))
-    {
-        set_output(vid, width, height, pitch, vid->rgb);
-    }
+   if (unlikely((vid->screen->w != width || vid->screen->h != height) && !vid->menu_active))
+      sdl_dingux_set_output(vid, width, height, pitch, vid->rgb);
 
-    menu_driver_frame(video_info);
+#ifdef HAVE_MENU
+   menu_driver_frame(menu_is_alive, video_info);
+#endif
 
-    if (likely(!vid->menu_active))
-    {
-        blit((uint32_t*)vid->screen->pixels, (uint32_t*)frame, vid->rgb ? width : width/2, height, pitch);
-        if (unlikely(vid->was_in_menu))
-            vid->was_in_menu = false;
-    }
-    else
-    {
-        if (!vid->was_in_menu)
-        {
-            set_output(vid, 320, 240, 320*2, false);
-            vid->was_in_menu = true;
-        }
-        memcpy(vid->screen->pixels, vid->menu_frame, 320*240*2);
-    }
+   if (likely(!vid->menu_active))
+   {
+      blit((uint32_t*)vid->screen->pixels, (uint32_t*)frame, vid->rgb ? width : width/2, height, pitch);
+      if (unlikely(vid->was_in_menu))
+         vid->was_in_menu = false;
+   }
+   else
+   {
+      if (!vid->was_in_menu)
+      {
+         sdl_dingux_set_output(vid, 320, 240, 320*2, false);
+         vid->was_in_menu = true;
+      }
+      memcpy(vid->screen->pixels, vid->menu_frame, 320*240*2);
+   }
 
-    SDL_Flip(vid->screen);
+   SDL_Flip(vid->screen);
 
-    return true;
+   return true;
 }
 
 static void sdl_dingux_set_texture_enable(void *data, bool state, bool full_screen)
 {
-    sdl_dingux_video_t *vid = (sdl_dingux_video_t*)data;
-    (void)full_screen;
+   sdl_dingux_video_t *vid = (sdl_dingux_video_t*)data;
+   (void)full_screen;
 
-    if (vid->menu_active != state)
-    {
-        vid->menu_active = state;
-    }
+   if (vid->menu_active != state)
+      vid->menu_active = state;
 }
 
 static void sdl_dingux_set_texture_frame(void *data, const void *frame, bool rgb32,

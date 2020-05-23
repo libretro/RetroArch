@@ -86,6 +86,32 @@ enum rarch_netplay_share_analog_preference
    RARCH_NETPLAY_SHARE_ANALOG_LAST
 };
 
+int16_t input_state_net(unsigned port, unsigned device,
+      unsigned idx, unsigned id);
+
+void video_frame_net(const void *data, unsigned width,
+      unsigned height, size_t pitch);
+
+void audio_sample_net(int16_t left, int16_t right);
+
+size_t audio_sample_batch_net(const int16_t *data, size_t frames);
+
+bool init_netplay_deferred(const char* server, unsigned port);
+
+/**
+ * init_netplay
+ * @direct_host          : Host to connect to directly, if applicable (client only)
+ * @server               : server address to connect to (client only)
+ * @port                 : TCP port to host on/connect to
+ *
+ * Initializes netplay.
+ *
+ * If netplay is already initialized, will return false (0).
+ *
+ * Returns: true (1) if successful, otherwise false (0).
+ **/
+bool init_netplay(void *direct_host, const char *server, unsigned port);
+
 void deinit_netplay(void);
 
 bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data);

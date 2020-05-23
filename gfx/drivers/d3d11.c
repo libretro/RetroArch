@@ -1290,6 +1290,7 @@ static bool d3d11_gfx_frame(
    unsigned video_height          = video_info->height;
    bool statistics_show           = video_info->statistics_show;
    struct font_params* osd_params = (struct font_params*)&video_info->osd_stat_params;
+   bool menu_is_alive             = video_info->menu_is_alive;
 
    if (d3d11->resize_chain)
    {
@@ -1544,7 +1545,7 @@ static bool d3d11_gfx_frame(
 
 #ifdef HAVE_MENU
    if (d3d11->menu.enabled)
-      menu_driver_frame(video_info);
+      menu_driver_frame(menu_is_alive, video_info);
    else
 #endif
       if (statistics_show)

@@ -327,7 +327,8 @@ ifeq ($(HAVE_LANGEXTRA), 1)
           intl/msg_hash_cht.o \
           intl/msg_hash_ar.o \
           intl/msg_hash_el.o \
-          intl/msg_hash_tr.o
+          intl/msg_hash_tr.o \
+          intl/msg_hash_sk.o
 endif
 
 ifneq ($(HAVE_GETOPT_LONG), 1)
@@ -1830,6 +1831,7 @@ ifeq ($(HAVE_NETWORKING), 1)
    # Netplay
    DEFINES += -DHAVE_NETWORK_CMD
    OBJ += network/netplay/netplay_delta.o \
+               network/netplay/netplay_frontend.o \
                network/netplay/netplay_handshake.o \
                network/netplay/netplay_init.o \
                network/netplay/netplay_io.o \
@@ -1844,24 +1846,27 @@ ifeq ($(HAVE_NETWORKING), 1)
       DEFINES += -DHAVE_CHEEVOS
       INCLUDE_DIRS += -Ideps/rcheevos/include
 
-      OBJ += cheevos-new/cheevos.o \
-             cheevos-new/badges.o \
-             cheevos-new/fixup.o \
-             cheevos-new/parser.o \
-             cheevos-new/hash.o \
+      OBJ += cheevos/cheevos.o \
+             cheevos/badges.o \
+             cheevos/fixup.o \
+             cheevos/parser.o \
+             cheevos/hash.o \
              $(LIBRETRO_COMM_DIR)/formats/cdfs/cdfs.o \
-             deps/rcheevos/src/rcheevos/trigger.o \
-             deps/rcheevos/src/rcheevos/condset.o \
-             deps/rcheevos/src/rcheevos/condition.o \
-             deps/rcheevos/src/rcheevos/operand.o \
-             deps/rcheevos/src/rcheevos/term.o \
-             deps/rcheevos/src/rcheevos/expression.o \
-             deps/rcheevos/src/rcheevos/value.o \
-             deps/rcheevos/src/rcheevos/lboard.o \
              deps/rcheevos/src/rcheevos/alloc.o \
+             deps/rcheevos/src/rcheevos/compat.o \
+             deps/rcheevos/src/rcheevos/condition.o \
+             deps/rcheevos/src/rcheevos/condset.o \
+             deps/rcheevos/src/rcheevos/consoleinfo.o \
              deps/rcheevos/src/rcheevos/format.o \
+             deps/rcheevos/src/rcheevos/lboard.o \
              deps/rcheevos/src/rcheevos/memref.o \
+             deps/rcheevos/src/rcheevos/operand.o \
              deps/rcheevos/src/rcheevos/richpresence.o \
+             deps/rcheevos/src/rcheevos/runtime.o \
+             deps/rcheevos/src/rcheevos/runtime_progress.o \
+             deps/rcheevos/src/rcheevos/trigger.o \
+             deps/rcheevos/src/rcheevos/value.o \
+             deps/rcheevos/src/rhash/hash.o \
              deps/rcheevos/src/rurl/url.o
 
       ifeq ($(HAVE_LUA), 1)
@@ -1910,7 +1915,8 @@ ifeq ($(HAVE_NETWORKING), 1)
    ifeq ($(HAVE_DISCORD), 1)
       NEED_CXX_LINKER = 1
       DEFINES += -DHAVE_DISCORD
-      INCLUDE_DIRS += -Ideps/discord-rpc/include/ -Ideps/discord-rpc/thirdparty/rapidjson-1.1.0/include/
+      INCLUDE_DIRS += -Ideps/discord-rpc/include \
+							 -Ideps/discord-rpc/thirdparty/rapidjson-1.1.0/include/
 
       ifneq ($(HAVE_THREADS), 1)
          DEFINES += -DDISCORD_DISABLE_IO_THREAD
@@ -1919,7 +1925,7 @@ ifeq ($(HAVE_NETWORKING), 1)
       OBJ     += deps/discord-rpc/src/discord_rpc.o \
                  deps/discord-rpc/src/rpc_connection.o \
                  deps/discord-rpc/src/serialization.o \
-                 discord/discord.o
+                 network/discord.o
 
       ifneq ($(findstring Win32,$(OS)),)
          OBJ  += deps/discord-rpc/src/discord_register_win.o \

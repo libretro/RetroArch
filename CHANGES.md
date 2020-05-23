@@ -1,4 +1,61 @@
 # Future
+- AUDIO/JACK: Fix regression introduced after 1.8.4 - would hang at startup
+- CHEEVOS: Disable hardcore when cheats are enabled
+- CHD: Return false when special track cannot be found
+- DISCORD/MATCHMAKING: Fix Discord 'Ask To Join' functionality
+- FILE PATH: Various file path handling optimisations 
+- INPUT MAPPING/REMAPPING: Restore broken 'reset to default' functionality with RetroPad 'start' button
+- INPUT MAPPING/REMAPPING: Fix 'reset to default' action for analog sticks and undefined core inputs 
+- LOCALIZATION: Update Arabic translation
+- LOCALIZATION: Update Chinese (Simplified) translation
+- LOCALIZATION: Update Chinese (Traditional) translation
+- LOCALIZATION: Update German translation
+- LOCALIZATION: Update Greek translation
+- LOCALIZATION: Update Spanish translation
+- LOCALIZATION: Update French translation
+- LOCALIZATION: Update Italian translation
+- LOCALIZATION: Update Japanese translation
+- LOCALIZATION: Update Korean translation
+- LOCALIZATION: Update Dutch translation
+- LOCALIZATION: Update Polish translation
+- LOCALIZATION: Update Portuguese Brazilian translation
+- LOCALIZATION: Update Russian translation
+- LOCALIZATION: Update Turkish translation
+- LOCALIZATION: Update Vietnamese translation
+- LOCALIZATION: Add Slovak translation
+- MENU/THUMBNAILS/BUGFIX: Fix heap-use-after-free error
+- MENU/OZONE/ANDROIDTV: Default to Ozone menu driver
+- MENU/OZONE/ANDROID: Gamepad-like devices default to Ozone now (Shield Portable)
+- NETPLAY: Lower announcement rate
+- OVERLAYS: Fix memory leak when loading overlays
+- SHADER PRESETS: Improved shader preset dirs
+- VITA: Fix upside-down vertical games
+- WIIU: Gamepad hotplugging support
+- WIIU: Theoretical multi-gamepad support
+- XVIDEO: Fix keyboard input initialization
+- XVIDEO/XWAYLAND: Fix XVideo support on xwayland (by supporting I420 and YZ12)
+
+# 1.8.7
+- 3DS: Add IDs for Frodo
+- 3DS: Enable basic networking / cheevos
+- CHEEVOS/BUGFIX: Opening achievements list would crash RetroArch with badges enabled (on new games)
+- CHEEVOS: Option to start a session with all achievements active
+- CHEEVOS: Don't perform unnecessary cheevos initialisation when cheevos are disabled. Should reduce startup times when loading content.
+- CORE OPTIONS: Disable 'Use Global Core Options File' by default
+- DOS/DJGPP: Add 32bit color support for cores
+- GLCORE: Switch to glcore video driver when requested by a core
+- LINUX/XDG: Use GenericName correctly in desktop entry
+- MAC/COCOA: Fix mouse cursor tracking
+- MENU/MATERIALUI: Add desktop-style playlist view mode
+- MENU/MATERIALUI/DESKTOPVIEW: When scrolling playlists, show last selected thumbnails while waiting for next entry to load
+- MENU/MATERIALUI: Limit tab switch rate when input repeat is active
+- MENU/OZONE: Fix sidebar playlist sort order when 'Truncate Playlist Names' is enabled
+- MENU/RGUI: Adjusted menu defaults, adjusted default scrolling speed
+- MENU/RGUI: Enable custom wallpaper when menu size is reduced at low resolutions
+- MENU/XMB: Limit tab switch rate when input repeat is active
+- NETPLAY: Fix regressions introduced in 1.8.5
+- RGUI: Add option to always stretch menu to fill the screen
+- WIIU: Enable graphics widgets
 
 # 1.8.6
 - 3DS: Add IDs for UZEM, TGB Dual, and NeoCD

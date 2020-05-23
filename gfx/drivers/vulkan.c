@@ -1685,6 +1685,7 @@ static bool vulkan_frame(void *data, const void *frame,
    unsigned video_height                         = video_info->height;
    struct font_params *osd_params                = (struct font_params*)
       &video_info->osd_stat_params;
+   bool menu_is_alive                            = video_info->menu_is_alive;
 
    VkCommandBufferBeginInfo begin_info           = {
       VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
@@ -1934,7 +1935,7 @@ static bool vulkan_frame(void *data, const void *frame,
          settings_t *settings    = config_get_ptr();
          bool menu_linear_filter = settings->bools.menu_linear_filter;
 
-         menu_driver_frame(video_info);
+         menu_driver_frame(menu_is_alive, video_info);
 
          if (vk->menu.textures[vk->menu.last_index].image != VK_NULL_HANDLE ||
              vk->menu.textures[vk->menu.last_index].buffer != VK_NULL_HANDLE)

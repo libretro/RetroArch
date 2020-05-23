@@ -117,97 +117,114 @@ extern bool dinput_handle_message(void *dinput, UINT message,
       WPARAM wParam, LPARAM lParam);
 #endif
 
-typedef struct DISPLAYCONFIG_RATIONAL_CUSTOM {
-  UINT32 Numerator;
-  UINT32 Denominator;
+typedef struct DISPLAYCONFIG_RATIONAL_CUSTOM
+{
+   UINT32 Numerator;
+   UINT32 Denominator;
 } DISPLAYCONFIG_RATIONAL_CUSTOM;
 
-typedef struct DISPLAYCONFIG_2DREGION_CUSTOM {
-  UINT32 cx;
-  UINT32 cy;
+typedef struct DISPLAYCONFIG_2DREGION_CUSTOM
+{
+   UINT32 cx;
+   UINT32 cy;
 } DISPLAYCONFIG_2DREGION_CUSTOM;
 
-typedef struct DISPLAYCONFIG_VIDEO_SIGNAL_INFO_CUSTOM {
-  UINT64                          pixelRate;
-  DISPLAYCONFIG_RATIONAL_CUSTOM          hSyncFreq;
-  DISPLAYCONFIG_RATIONAL_CUSTOM          vSyncFreq;
-  DISPLAYCONFIG_2DREGION_CUSTOM          activeSize;
-  DISPLAYCONFIG_2DREGION_CUSTOM          totalSize;
-  union {
-    struct {
-      UINT32 videoStandard  :16;
-      UINT32 vSyncFreqDivider  :6;
-      UINT32 reserved  :10;
-    } AdditionalSignalInfo;
-    UINT32 videoStandard;
-  } dummyunionname;
-  UINT32 scanLineOrdering;
+typedef struct DISPLAYCONFIG_VIDEO_SIGNAL_INFO_CUSTOM
+{
+   UINT64                          pixelRate;
+   DISPLAYCONFIG_RATIONAL_CUSTOM          hSyncFreq;
+   DISPLAYCONFIG_RATIONAL_CUSTOM          vSyncFreq;
+   DISPLAYCONFIG_2DREGION_CUSTOM          activeSize;
+   DISPLAYCONFIG_2DREGION_CUSTOM          totalSize;
+   union
+   {
+      struct
+      {
+         UINT32 videoStandard  :16;
+         UINT32 vSyncFreqDivider  :6;
+         UINT32 reserved  :10;
+      } AdditionalSignalInfo;
+      UINT32 videoStandard;
+   } dummyunionname;
+   UINT32 scanLineOrdering;
 } DISPLAYCONFIG_VIDEO_SIGNAL_INFO_CUSTOM;
 
-typedef struct DISPLAYCONFIG_TARGET_MODE_CUSTOM {
-  DISPLAYCONFIG_VIDEO_SIGNAL_INFO_CUSTOM targetVideoSignalInfo;
+typedef struct DISPLAYCONFIG_TARGET_MODE_CUSTOM
+{
+   DISPLAYCONFIG_VIDEO_SIGNAL_INFO_CUSTOM targetVideoSignalInfo;
 } DISPLAYCONFIG_TARGET_MODE_CUSTOM;
 
-typedef struct DISPLAYCONFIG_PATH_SOURCE_INFO_CUSTOM {
-  LUID   adapterId;
-  UINT32 id;
-  union {
-    UINT32 modeInfoIdx;
-    struct {
-      UINT32 cloneGroupId  :16;
-      UINT32 sourceModeInfoIdx  :16;
-    } dummystructname;
-  } dummyunionname;
-  UINT32 statusFlags;
+typedef struct DISPLAYCONFIG_PATH_SOURCE_INFO_CUSTOM
+{
+   LUID   adapterId;
+   UINT32 id;
+   union
+   {
+      UINT32 modeInfoIdx;
+      struct
+      {
+         UINT32 cloneGroupId  :16;
+         UINT32 sourceModeInfoIdx  :16;
+      } dummystructname;
+   } dummyunionname;
+   UINT32 statusFlags;
 } DISPLAYCONFIG_PATH_SOURCE_INFO_CUSTOM;
 
-typedef struct DISPLAYCONFIG_DESKTOP_IMAGE_INFO_CUSTOM {
-  POINTL PathSourceSize;
-  RECTL  DesktopImageRegion;
-  RECTL  DesktopImageClip;
+typedef struct DISPLAYCONFIG_DESKTOP_IMAGE_INFO_CUSTOM
+{
+   POINTL PathSourceSize;
+   RECTL  DesktopImageRegion;
+   RECTL  DesktopImageClip;
 } DISPLAYCONFIG_DESKTOP_IMAGE_INFO_CUSTOM;
 
-typedef struct DISPLAYCONFIG_SOURCE_MODE_CUSTOM {
-  UINT32                    width;
-  UINT32                    height;
-  UINT32                    pixelFormat;
-  POINTL                    position;
+typedef struct DISPLAYCONFIG_SOURCE_MODE_CUSTOM
+{
+   UINT32                    width;
+   UINT32                    height;
+   UINT32                    pixelFormat;
+   POINTL                    position;
 } DISPLAYCONFIG_SOURCE_MODE_CUSTOM;
 
-typedef struct DISPLAYCONFIG_MODE_INFO_CUSTOM {
-  UINT32                       infoType;
-  UINT32                       id;
-  LUID                         adapterId;
-  union {
-    DISPLAYCONFIG_TARGET_MODE_CUSTOM        targetMode;
-    DISPLAYCONFIG_SOURCE_MODE_CUSTOM        sourceMode;
-    DISPLAYCONFIG_DESKTOP_IMAGE_INFO_CUSTOM desktopImageInfo;
-  } dummyunionname;
+typedef struct DISPLAYCONFIG_MODE_INFO_CUSTOM
+{
+   UINT32                       infoType;
+   UINT32                       id;
+   LUID                         adapterId;
+   union
+   {
+      DISPLAYCONFIG_TARGET_MODE_CUSTOM        targetMode;
+      DISPLAYCONFIG_SOURCE_MODE_CUSTOM        sourceMode;
+      DISPLAYCONFIG_DESKTOP_IMAGE_INFO_CUSTOM desktopImageInfo;
+   } dummyunionname;
 } DISPLAYCONFIG_MODE_INFO_CUSTOM;
 
-typedef struct DISPLAYCONFIG_PATH_TARGET_INFO_CUSTOM {
-  LUID                                  adapterId;
-  UINT32                                id;
-  union {
-    UINT32 modeInfoIdx;
-    struct {
-      UINT32 desktopModeInfoIdx  :16;
-      UINT32 targetModeInfoIdx  :16;
-    } dummystructname;
-  } dummyunionname;
-  UINT32 outputTechnology;
-  UINT32 rotation;
-  UINT32 scaling;
-  DISPLAYCONFIG_RATIONAL_CUSTOM refreshRate;
-  UINT32 scanLineOrdering;
-  BOOL targetAvailable;
-  UINT32 statusFlags;
+typedef struct DISPLAYCONFIG_PATH_TARGET_INFO_CUSTOM
+{
+   LUID                                  adapterId;
+   UINT32                                id;
+   union
+   {
+      UINT32 modeInfoIdx;
+      struct
+      {
+         UINT32 desktopModeInfoIdx  :16;
+         UINT32 targetModeInfoIdx  :16;
+      } dummystructname;
+   } dummyunionname;
+   UINT32 outputTechnology;
+   UINT32 rotation;
+   UINT32 scaling;
+   DISPLAYCONFIG_RATIONAL_CUSTOM refreshRate;
+   UINT32 scanLineOrdering;
+   BOOL targetAvailable;
+   UINT32 statusFlags;
 } DISPLAYCONFIG_PATH_TARGET_INFO_CUSTOM;
 
-typedef struct DISPLAYCONFIG_PATH_INFO_CUSTOM {
-  DISPLAYCONFIG_PATH_SOURCE_INFO_CUSTOM sourceInfo;
-  DISPLAYCONFIG_PATH_TARGET_INFO_CUSTOM targetInfo;
-  UINT32                         flags;
+typedef struct DISPLAYCONFIG_PATH_INFO_CUSTOM
+{
+   DISPLAYCONFIG_PATH_SOURCE_INFO_CUSTOM sourceInfo;
+   DISPLAYCONFIG_PATH_TARGET_INFO_CUSTOM targetInfo;
+   UINT32                         flags;
 } DISPLAYCONFIG_PATH_INFO_CUSTOM;
 
 typedef LONG (WINAPI *QUERYDISPLAYCONFIG)(UINT32, UINT32*, DISPLAYCONFIG_PATH_INFO_CUSTOM*, UINT32*, DISPLAYCONFIG_MODE_INFO_CUSTOM*, UINT32*);
@@ -301,9 +318,9 @@ bool win32_taskbar_is_created(void)
    return taskbar_is_created;
 }
 
-static INT_PTR_COMPAT CALLBACK PickCoreProc(
+static INT_PTR_COMPAT CALLBACK pick_core_proc(
       HWND hDlg, UINT message,
-        WPARAM wParam, LPARAM lParam)
+      WPARAM wParam, LPARAM lParam)
 {
    size_t list_size;
    core_info_list_t *core_info_list = NULL;
@@ -528,7 +545,7 @@ bool win32_load_content_from_gui(const char *szFilename)
 
       /* Pick one core that could be compatible, ew */
       if (DialogBoxParam(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_PICKCORE),
-         main_window.hwnd, PickCoreProc, (LPARAM)NULL) == IDOK)
+         main_window.hwnd, pick_core_proc, (LPARAM)NULL) == IDOK)
       {
          task_push_load_content_with_current_core_from_companion_ui(
             NULL, &content_info, CORE_TYPE_PLAIN, NULL, NULL);
@@ -822,7 +839,8 @@ static LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
    return 0L;
 }
 
-static LRESULT CALLBACK WndProcCommon(bool *quit, HWND hwnd, UINT message,
+static LRESULT CALLBACK wnd_proc_common(
+      bool *quit, HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
 {
    bool keydown          = true;
@@ -1028,7 +1046,7 @@ LRESULT CALLBACK WndProcD3D(HWND hwnd, UINT message,
       case WM_MOVE:
       case WM_SIZE:
       case WM_COMMAND:
-         ret = WndProcCommon(&quit, hwnd, message, wparam, lparam);
+         ret = wnd_proc_common(&quit, hwnd, message, wparam, lparam);
          if (quit)
             return ret;
 #if _WIN32_WINNT >= 0x0500 /* 2K */
@@ -1092,8 +1110,7 @@ LRESULT CALLBACK WndProcWGL(HWND hwnd, UINT message,
       case WM_MOVE:
       case WM_SIZE:
       case WM_COMMAND:
-         ret = WndProcCommon(&quit,
-               hwnd, message, wparam, lparam);
+         ret = wnd_proc_common(&quit, hwnd, message, wparam, lparam);
          if (quit)
             return ret;
 #if _WIN32_WINNT >= 0x0500 /* 2K */
@@ -1195,7 +1212,7 @@ LRESULT CALLBACK WndProcGDI(HWND hwnd, UINT message,
       case WM_MOVE:
       case WM_SIZE:
       case WM_COMMAND:
-         ret = WndProcCommon(&quit, hwnd, message, wparam, lparam);
+         ret = wnd_proc_common(&quit, hwnd, message, wparam, lparam);
          if (quit)
             return ret;
 #if _WIN32_WINNT >= 0x0500 /* 2K */
@@ -1856,7 +1873,9 @@ bool win32_get_video_output(DEVMODE *dm, int mode, size_t len)
    memset(dm, 0, len);
    dm->dmSize  = len;
 
-   if (win32_internal_get_video_output((mode == -1) ? ENUM_CURRENT_SETTINGS : mode,
+   if (win32_internal_get_video_output((mode == -1) 
+            ? ENUM_CURRENT_SETTINGS 
+            : mode,
             dm) == 0)
       return false;
    return true;

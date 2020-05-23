@@ -1,4 +1,4 @@
-/*  RetroArch - A frontend for libretro.
+﻿/*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2011-2017 - Daniel De Matteis
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
@@ -12,28 +12,42 @@
  *  You should have received a copy of the GNU General Public License along with RetroArch.
  *  If not, see <http://www.gnu.org/licenses/>.
  */
-
-#ifndef __MENU_CONTENT_H__
-#define __MENU_CONTENT_H__
-
 #include <stdint.h>
-#include <stdlib.h>
+#include <string.h>
 
-#include <boolean.h>
-#include <retro_common_api.h>
+#include "../msg_hash.h"
 
-RETRO_BEGIN_DECLS
-
-typedef struct menu_content_ctx_defer_info
-{
-   void *data;
-   const char *dir;
-   const char *path;
-   const char *menu_label;
-   char *s;
-   size_t len;
-} menu_content_ctx_defer_info_t;
-
-RETRO_END_DECLS
-
+#if defined(_MSC_VER) && !defined(_XBOX) && (_MSC_VER >= 1500 && _MSC_VER < 1900)
+#if (_MSC_VER >= 1700)
+/* https://support.microsoft.com/en-us/kb/980263 */
+#pragma execution_character_set("utf-8")
 #endif
+#pragma warning(disable:4566)
+#endif
+
+int menu_hash_get_help_sk_enum(enum msg_hash_enums msg, char *s, size_t len)
+{
+   int ret = 0;
+
+   switch (msg)
+   {
+      case MSG_UNKNOWN:
+      default:
+         ret = -1;
+         break;
+   }
+
+   return ret;
+}
+
+const char *msg_hash_to_str_sk(enum msg_hash_enums msg)
+{
+   switch (msg)
+   {
+#include "msg_hash_sk.h"
+      default:
+         break;
+   }
+
+   return "null";
+}

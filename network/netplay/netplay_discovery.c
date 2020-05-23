@@ -51,7 +51,7 @@
 #include "netplay_discovery.h"
 #include "netplay_private.h"
 
-#if defined(AF_INET6) && !defined(HAVE_SOCKET_LEGACY)
+#if defined(AF_INET6) && !defined(HAVE_SOCKET_LEGACY) && !defined(_3DS)
 #define HAVE_INET6 1
 #endif
 
@@ -300,14 +300,14 @@ bool netplay_lan_ad_server(netplay_t *netplay)
          {
             char *p;
             char sub[NETPLAY_HOST_STR_LEN];
-            char frontend_tmp[NETPLAY_HOST_STR_LEN];
-            char frontend[NETPLAY_HOST_STR_LEN];
+            char frontend_architecture_tmp[32];
+            char frontend[256];
             const frontend_ctx_driver_t *frontend_drv = 
                (const frontend_ctx_driver_t*)
             frontend_driver_get_cpu_architecture_str(
-                  frontend_tmp, sizeof(frontend_tmp));
+                  frontend_architecture_tmp, sizeof(frontend_architecture_tmp));
             snprintf(frontend, sizeof(frontend), "%s %s",
-                  frontend_drv->ident, frontend_tmp);
+                  frontend_drv->ident, frontend_architecture_tmp);
 
             p=strrchr(reply_addr,'.');
             if (p)

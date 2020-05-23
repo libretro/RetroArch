@@ -70,9 +70,7 @@
 #endif
 
 #if defined(PS2)
-#include <kernel.h>
-#include <timer.h>
-#include <time.h>
+#include <ps2sdkapi.h>
 #endif
 
 #if defined(__PSL1GHT__)
@@ -189,22 +187,18 @@ retro_perf_tick_t cpu_features_get_perf_counter(void)
    time_ticks = __mftb();
 #elif defined(GEKKO)
    time_ticks = gettime();
-#elif defined(PSP)
-   sceRtcGetCurrentTick((uint64_t*)&time_ticks);
-#elif defined(VITA)
-   sceRtcGetCurrentTick((SceRtcTick*)&time_ticks);
+#elif defined(PSP) || defined(VITA)
+   time_ticks = sceKernelGetSystemTimeWide();
 #elif defined(PS2)
-   time_ticks = clock()*294912; // 294,912MHZ / 1000 msecs
+   time_ticks = ps2_clock();
 #elif defined(_3DS)
    time_ticks = svcGetSystemTick();
 #elif defined(WIIU)
    time_ticks = OSGetSystemTime();
-#elif defined(__mips__)
-   struct timeval tv;
-   gettimeofday(&tv,NULL);
-   time_ticks = (1000000 * tv.tv_sec + tv.tv_usec);
 #elif defined(HAVE_LIBNX)
    time_ticks = armGetSystemTick();
+#elif defined(EMSCRIPTEN)
+   time_ticks = emscripten_get_now() * 1000;
 #endif
 
    return time_ticks;
@@ -240,7 +234,7 @@ retro_time_t cpu_features_get_time_usec(void)
    return ticks_to_us(OSGetSystemTime());
 #elif defined(SWITCH) || defined(HAVE_LIBNX)
    return (svcGetSystemTick() * 10) / 192;
-#elif defined(_POSIX_MONOTONIC_CLOCK) || defined(__QNX__) || defined(ANDROID) || defined(__MACH__)
+#elif defined(_POSIX_MONOTONIC_CLOCK) || defined(__QNX__) || defined(ANDROID) || defined(__MACH__) || defined(DJGPP)
    struct timespec tv = {0};
    if (ra_clock_gettime(CLOCK_MONOTONIC, &tv) < 0)
       return 0;
@@ -248,15 +242,11 @@ retro_time_t cpu_features_get_time_usec(void)
 #elif defined(EMSCRIPTEN)
    return emscripten_get_now() * 1000;
 #elif defined(PS2)
-      return clock()*1000;
-#elif defined(__mips__) || defined(DJGPP)
-   struct timeval tv;
-   gettimeofday(&tv,NULL);
-   return (1000000 * tv.tv_sec + tv.tv_usec);
+   return ps2_clock() / PS2_CLOCKS_PER_MSEC * 1000;
+#elif defined(VITA) || defined(PSP)
+   return sceKernelGetSystemTimeWide();
 #elif defined(_3DS)
    return osGetTime() * 1000;
-#elif defined(VITA)
-   return sceKernelGetProcessTimeWide();
 #else
 #error "Your platform does not have a timer function implemented in cpu_features_get_time_usec(). Cannot continue."
 #endif

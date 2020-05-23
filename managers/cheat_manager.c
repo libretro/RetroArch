@@ -38,7 +38,7 @@
 #endif
 
 #ifdef HAVE_CHEEVOS
-#include "../cheevos-new/cheevos.h"
+#include "../cheevos/cheevos.h"
 #endif
 
 #include "cheat_manager.h"
@@ -53,63 +53,77 @@ cheat_manager_t cheat_manager_state;
 
 unsigned cheat_manager_get_buf_size(void)
 {
-   return cheat_manager_state.buf_size;
+   cheat_manager_t *cheat_st = &cheat_manager_state;
+   return cheat_st->buf_size;
 }
 
 unsigned cheat_manager_get_size(void)
 {
-   return cheat_manager_state.size;
+   cheat_manager_t *cheat_st = &cheat_manager_state;
+   return cheat_st->size;
 }
+
+#ifdef HAVE_CHEEVOS
+static void cheat_manager_pause_cheevos(void)
+{
+   rcheevos_pause_hardcore();
+
+   runloop_msg_queue_push(msg_hash_to_str(MSG_CHEEVOS_HARDCORE_MODE_DISABLED_CHEAT), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   RARCH_LOG("%s\n", msg_hash_to_str(MSG_CHEEVOS_HARDCORE_MODE_DISABLED_CHEAT));
+}
+#endif
 
 void cheat_manager_apply_cheats(void)
 {
-#ifdef HAVE_CHEEVOS
-   bool data_bool  = false;
-
-#endif
    unsigned i, idx = 0;
+   cheat_manager_t *cheat_st = &cheat_manager_state;
 
-   if (!cheat_manager_state.cheats)
+   if (!cheat_st->cheats)
       return;
 
    core_reset_cheat();
 
-   for (i = 0; i < cheat_manager_state.size; i++)
+   for (i = 0; i < cheat_st->size; i++)
    {
-      if (cheat_manager_state.cheats[i].state && cheat_manager_state.cheats[i].handler == CHEAT_HANDLER_TYPE_EMU)
+      if (     cheat_st->cheats[i].state 
+            && cheat_st->cheats[i].handler == CHEAT_HANDLER_TYPE_EMU)
       {
          retro_ctx_cheat_info_t cheat_info;
 
-         cheat_info.index = idx++;
+         cheat_info.index   = idx++;
          cheat_info.enabled = true;
-         cheat_info.code = cheat_manager_state.cheats[i].code;
+         cheat_info.code    = cheat_st->cheats[i].code;
 
          if (!string_is_empty(cheat_info.code))
             core_set_cheat(&cheat_info);
       }
    }
 
-   if (cheat_manager_state.size > 0)
+   if (cheat_st->size > 0)
    {
       runloop_msg_queue_push(msg_hash_to_str(MSG_APPLYING_CHEAT), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       RARCH_LOG("%s\n", msg_hash_to_str(MSG_APPLYING_CHEAT));
    }
 
 #ifdef HAVE_CHEEVOS
-   data_bool = idx != 0;
-   rcheevos_apply_cheats(&data_bool);
+   if (idx != 0)
+      if (     rcheevos_hardcore_active 
+            && rcheevos_loaded 
+            && !rcheevos_hardcore_paused)
+         cheat_manager_pause_cheevos();
 #endif
 }
 
 void cheat_manager_set_code(unsigned i, const char *str)
 {
-   if (!cheat_manager_state.cheats)
+   cheat_manager_t *cheat_st = &cheat_manager_state;
+   if (!cheat_st->cheats)
       return;
 
    if (!string_is_empty(str))
-      strcpy(cheat_manager_state.cheats[i].code, str);
+      strcpy(cheat_st->cheats[i].code, str);
 
-   cheat_manager_state.cheats[i].state = true;
+   cheat_st->cheats[i].state = true;
 }
 
 /**
@@ -120,13 +134,17 @@ void cheat_manager_set_code(unsigned i, const char *str)
  *
  * Returns: true (1) if successful, otherwise false (0).
  **/
-bool cheat_manager_save(const char *path, const char *cheat_database, bool overwrite)
+bool cheat_manager_save(
+      const char *path,
+      const char *cheat_database,
+      bool overwrite)
 {
    bool ret;
    unsigned i;
    char buf[PATH_MAX_LENGTH];
    char cheats_file[PATH_MAX_LENGTH];
-   config_file_t *conf = NULL;
+   config_file_t *conf         = NULL;
+   cheat_manager_t *cheat_st   = &cheat_manager_state;
    unsigned int* data_ptrs[16] = { NULL};
    char* keys[16] = {
       (char*)"cheat%u_handler",
@@ -149,7 +167,7 @@ bool cheat_manager_save(const char *path, const char *cheat_database, bool overw
 
    buf[0] = cheats_file[0] = '\0';
 
-   if ((!cheat_manager_state.cheats) || cheat_manager_state.size == 0)
+   if (!cheat_st->cheats || cheat_st->size == 0)
       return false;
 
    if (!cheat_database)
@@ -170,9 +188,9 @@ bool cheat_manager_save(const char *path, const char *cheat_database, bool overw
 
    conf->guaranteed_no_duplicates = true;
 
-   config_set_int(conf, "cheats", cheat_manager_state.size);
+   config_set_int(conf, "cheats", cheat_st->size);
 
-   for (i = 0; i < cheat_manager_state.size; i++)
+   for (i = 0; i < cheat_st->size; i++)
    {
       unsigned j;
       char endian_key[100];
@@ -188,31 +206,31 @@ bool cheat_manager_save(const char *path, const char *cheat_database, bool overw
       snprintf(code_key, sizeof(code_key), "cheat%u_code", i);
       snprintf(enable_key, sizeof(enable_key), "cheat%u_enable", i);
 
-      if (!string_is_empty(cheat_manager_state.cheats[i].desc))
-         config_set_string(conf, desc_key, cheat_manager_state.cheats[i].desc);
+      if (!string_is_empty(cheat_st->cheats[i].desc))
+         config_set_string(conf, desc_key, cheat_st->cheats[i].desc);
       else
-         config_set_string(conf, desc_key, cheat_manager_state.cheats[i].code);
+         config_set_string(conf, desc_key, cheat_st->cheats[i].code);
 
-      config_set_string(conf, code_key, cheat_manager_state.cheats[i].code);
-      config_set_bool(conf, enable_key, cheat_manager_state.cheats[i].state);
-      config_set_bool(conf, endian_key, cheat_manager_state.cheats[i].big_endian);
+      config_set_string(conf, code_key, cheat_st->cheats[i].code);
+      config_set_bool(conf, enable_key, cheat_st->cheats[i].state);
+      config_set_bool(conf, endian_key, cheat_st->cheats[i].big_endian);
 
-      data_ptrs[0] = &cheat_manager_state.cheats[i].handler;
-      data_ptrs[1] = &cheat_manager_state.cheats[i].memory_search_size;
-      data_ptrs[2] = &cheat_manager_state.cheats[i].cheat_type;
-      data_ptrs[3] = &cheat_manager_state.cheats[i].value;
-      data_ptrs[4] = &cheat_manager_state.cheats[i].address;
-      data_ptrs[5] = &cheat_manager_state.cheats[i].address_mask;
-      data_ptrs[6] = &cheat_manager_state.cheats[i].rumble_type;
-      data_ptrs[7] = &cheat_manager_state.cheats[i].rumble_value;
-      data_ptrs[8] = &cheat_manager_state.cheats[i].rumble_port;
-      data_ptrs[9] = &cheat_manager_state.cheats[i].rumble_primary_strength;
-      data_ptrs[10] = &cheat_manager_state.cheats[i].rumble_primary_duration;
-      data_ptrs[11] = &cheat_manager_state.cheats[i].rumble_secondary_strength;
-      data_ptrs[12] = &cheat_manager_state.cheats[i].rumble_secondary_duration;
-      data_ptrs[13] = &cheat_manager_state.cheats[i].repeat_count;
-      data_ptrs[14] = &cheat_manager_state.cheats[i].repeat_add_to_value;
-      data_ptrs[15] = &cheat_manager_state.cheats[i].repeat_add_to_address;
+      data_ptrs[0]  = &cheat_st->cheats[i].handler;
+      data_ptrs[1]  = &cheat_st->cheats[i].memory_search_size;
+      data_ptrs[2]  = &cheat_st->cheats[i].cheat_type;
+      data_ptrs[3]  = &cheat_st->cheats[i].value;
+      data_ptrs[4]  = &cheat_st->cheats[i].address;
+      data_ptrs[5]  = &cheat_st->cheats[i].address_mask;
+      data_ptrs[6]  = &cheat_st->cheats[i].rumble_type;
+      data_ptrs[7]  = &cheat_st->cheats[i].rumble_value;
+      data_ptrs[8]  = &cheat_st->cheats[i].rumble_port;
+      data_ptrs[9]  = &cheat_st->cheats[i].rumble_primary_strength;
+      data_ptrs[10] = &cheat_st->cheats[i].rumble_primary_duration;
+      data_ptrs[11] = &cheat_st->cheats[i].rumble_secondary_strength;
+      data_ptrs[12] = &cheat_st->cheats[i].rumble_secondary_duration;
+      data_ptrs[13] = &cheat_st->cheats[i].repeat_count;
+      data_ptrs[14] = &cheat_st->cheats[i].repeat_add_to_value;
+      data_ptrs[15] = &cheat_st->cheats[i].repeat_add_to_address;
 
       for (j = 0; j < 16; j++)
       {
@@ -231,40 +249,46 @@ bool cheat_manager_save(const char *path, const char *cheat_database, bool overw
 
 bool cheat_manager_copy_idx_to_working(unsigned idx)
 {
-   if ((!cheat_manager_state.cheats) || (cheat_manager_state.size < idx + 1))
+   cheat_manager_t *cheat_st   = &cheat_manager_state;
+   if (!cheat_st->cheats || (cheat_st->size < idx + 1))
       return false;
 
-   memcpy(&(cheat_manager_state.working_cheat), &(cheat_manager_state.cheats[idx]), sizeof(struct item_cheat));
+   memcpy(&cheat_st->working_cheat,
+         &cheat_st->cheats[idx], sizeof(struct item_cheat));
 
-   if (cheat_manager_state.cheats[idx].desc)
-      strlcpy(cheat_manager_state.working_desc, cheat_manager_state.cheats[idx].desc, CHEAT_DESC_SCRATCH_SIZE);
+   if (cheat_st->cheats[idx].desc)
+      strlcpy(cheat_st->working_desc, cheat_st->cheats[idx].desc, CHEAT_DESC_SCRATCH_SIZE);
    else
-      cheat_manager_state.working_desc[0] = '\0';
+      cheat_st->working_desc[0] = '\0';
 
-   if (cheat_manager_state.cheats[idx].code)
-      strlcpy(cheat_manager_state.working_code, cheat_manager_state.cheats[idx].code, CHEAT_CODE_SCRATCH_SIZE);
+   if (cheat_st->cheats[idx].code)
+      strlcpy(cheat_st->working_code,
+            cheat_st->cheats[idx].code,
+            CHEAT_CODE_SCRATCH_SIZE);
    else
-      cheat_manager_state.working_code[0] = '\0';
+      cheat_st->working_code[0] = '\0';
 
    return true;
 }
 
 bool cheat_manager_copy_working_to_idx(unsigned idx)
 {
-   if ((!cheat_manager_state.cheats) || (cheat_manager_state.size < idx + 1))
+   cheat_manager_t *cheat_st   = &cheat_manager_state;
+   if (!cheat_st->cheats || (cheat_st->size < idx + 1))
       return false;
 
-   memcpy(&(cheat_manager_state.cheats[idx]), &(cheat_manager_state.working_cheat), sizeof(struct item_cheat));
+   memcpy(&cheat_st->cheats[idx], &cheat_st->working_cheat,
+         sizeof(struct item_cheat));
 
-   if (cheat_manager_state.cheats[idx].desc)
-      free(cheat_manager_state.cheats[idx].desc);
+   if (cheat_st->cheats[idx].desc)
+      free(cheat_st->cheats[idx].desc);
 
-   cheat_manager_state.cheats[idx].desc = strdup(cheat_manager_state.working_desc);
+   cheat_st->cheats[idx].desc = strdup(cheat_st->working_desc);
 
-   if (cheat_manager_state.cheats[idx].code)
-      free(cheat_manager_state.cheats[idx].code);
+   if (cheat_st->cheats[idx].code)
+      free(cheat_st->cheats[idx].code);
 
-   cheat_manager_state.cheats[idx].code = strdup(cheat_manager_state.working_code);
+   cheat_st->cheats[idx].code = strdup(cheat_st->working_code);
 
    return true;
 }
@@ -272,89 +296,91 @@ bool cheat_manager_copy_working_to_idx(unsigned idx)
 static void cheat_manager_free(void)
 {
    unsigned i = 0;
+   cheat_manager_t *cheat_st   = &cheat_manager_state;
 
-   if (cheat_manager_state.cheats)
+   if (cheat_st->cheats)
    {
-      for (i = 0; i < cheat_manager_state.size; i++)
+      for (i = 0; i < cheat_st->size; i++)
       {
-         if (cheat_manager_state.cheats[i].desc)
-            free(cheat_manager_state.cheats[i].desc);
-         if (cheat_manager_state.cheats[i].code)
-            free(cheat_manager_state.cheats[i].code);
+         if (cheat_st->cheats[i].desc)
+            free(cheat_st->cheats[i].desc);
+         if (cheat_st->cheats[i].code)
+            free(cheat_st->cheats[i].code);
       }
 
-      free(cheat_manager_state.cheats);
+      free(cheat_st->cheats);
    }
 
-   if (cheat_manager_state.prev_memory_buf)
-      free(cheat_manager_state.prev_memory_buf);
+   if (cheat_st->prev_memory_buf)
+      free(cheat_st->prev_memory_buf);
 
-   if (cheat_manager_state.matches)
-      free(cheat_manager_state.matches);
+   if (cheat_st->matches)
+      free(cheat_st->matches);
 
-   if (cheat_manager_state.memory_buf_list)
-      free(cheat_manager_state.memory_buf_list);
+   if (cheat_st->memory_buf_list)
+      free(cheat_st->memory_buf_list);
 
-   if (cheat_manager_state.memory_size_list)
-      free(cheat_manager_state.memory_size_list);
+   if (cheat_st->memory_size_list)
+      free(cheat_st->memory_size_list);
 
-   cheat_manager_state.cheats = NULL;
-   cheat_manager_state.size = 0;
-   cheat_manager_state.buf_size = 0;
-   cheat_manager_state.prev_memory_buf = NULL;
-   cheat_manager_state.curr_memory_buf = NULL;
-   cheat_manager_state.memory_buf_list = NULL;
-   cheat_manager_state.memory_size_list = NULL;
-   cheat_manager_state.matches = NULL;
-   cheat_manager_state.num_memory_buffers = 0;
-   cheat_manager_state.total_memory_size = 0;
-   cheat_manager_state.memory_initialized = false;
-   cheat_manager_state.memory_search_initialized = false;
-
+   cheat_st->cheats                    = NULL;
+   cheat_st->size                      = 0;
+   cheat_st->buf_size                  = 0;
+   cheat_st->prev_memory_buf           = NULL;
+   cheat_st->curr_memory_buf           = NULL;
+   cheat_st->memory_buf_list           = NULL;
+   cheat_st->memory_size_list          = NULL;
+   cheat_st->matches                   = NULL;
+   cheat_st->num_memory_buffers        = 0;
+   cheat_st->total_memory_size         = 0;
+   cheat_st->memory_initialized        = false;
+   cheat_st->memory_search_initialized = false;
 }
-
 
 static void cheat_manager_new(unsigned size)
 {
    unsigned i;
+   cheat_manager_t *cheat_st   = &cheat_manager_state;
 
    cheat_manager_free();
 
-   cheat_manager_state.buf_size        = size;
-   cheat_manager_state.size            = size;
-   cheat_manager_state.search_bit_size = 3;
-   cheat_manager_state.cheats          = (struct item_cheat*)
-         calloc(cheat_manager_state.buf_size, sizeof(struct item_cheat));
+   cheat_st->buf_size          = size;
+   cheat_st->size              = size;
+   cheat_st->search_bit_size   = 3;
+   cheat_st->cheats            = (struct item_cheat*)
+         calloc(cheat_st->buf_size, sizeof(struct item_cheat));
 
-   if (!cheat_manager_state.cheats)
+   if (!cheat_st->cheats)
    {
-      cheat_manager_state.buf_size    = 0;
-      cheat_manager_state.size        = 0;
-      cheat_manager_state.cheats      = NULL;
+      cheat_st->buf_size       = 0;
+      cheat_st->size           = 0;
+      cheat_st->cheats         = NULL;
       return;
    }
 
-   for (i = 0; i < cheat_manager_state.size; i++)
+   for (i = 0; i < cheat_st->size; i++)
    {
-      cheat_manager_state.cheats[i].desc                  = NULL;
-      cheat_manager_state.cheats[i].code                  = NULL;
-      cheat_manager_state.cheats[i].state                 = false;
-      cheat_manager_state.cheats[i].repeat_count          = 1;
-      cheat_manager_state.cheats[i].repeat_add_to_value   = 0;
-      cheat_manager_state.cheats[i].repeat_add_to_address = 1;
+      cheat_st->cheats[i].desc                  = NULL;
+      cheat_st->cheats[i].code                  = NULL;
+      cheat_st->cheats[i].state                 = false;
+      cheat_st->cheats[i].repeat_count          = 1;
+      cheat_st->cheats[i].repeat_add_to_value   = 0;
+      cheat_st->cheats[i].repeat_add_to_address = 1;
    }
 }
 
 static void cheat_manager_load_cb_first_pass(char *key, char *value)
 {
-   errno = 0;
+   cheat_manager_t *cheat_st   = &cheat_manager_state;
+
+   errno                       = 0;
 
    if (string_is_equal(key, "cheats"))
    {
-      cheat_manager_state.loading_cheat_size = (unsigned)strtoul(value, NULL, 0);
+      cheat_st->loading_cheat_size = (unsigned)strtoul(value, NULL, 0);
 
       if (errno != 0)
-         cheat_manager_state.loading_cheat_size = 0;
+         cheat_st->loading_cheat_size = 0;
    }
 }
 
@@ -363,9 +389,11 @@ static void cheat_manager_load_cb_second_pass(char *key, char *value)
    char cheat_num_str[20];
    unsigned cheat_num;
    unsigned cheat_idx;
-   unsigned idx = 5;
-   size_t key_length = 0;
-   errno = 0;
+   unsigned idx                = 5;
+   size_t key_length           = 0;
+   cheat_manager_t *cheat_st   = &cheat_manager_state;
+
+   errno                       = 0;
 
    if (strncmp(key, "cheat", 5) != 0)
       return;
@@ -382,73 +410,74 @@ static void cheat_manager_load_cb_second_pass(char *key, char *value)
 
    cheat_num = (unsigned)strtoul(cheat_num_str, NULL, 0);
 
-   if (cheat_num + cheat_manager_state.loading_cheat_offset >= cheat_manager_state.size)
+   if (cheat_num + cheat_st->loading_cheat_offset >= cheat_st->size)
       return;
 
    key = key + idx + 1;
 
-   cheat_idx = cheat_num + cheat_manager_state.loading_cheat_offset;
+   cheat_idx = cheat_num + cheat_st->loading_cheat_offset;
 
    if (string_is_equal(key, "address"))
-      cheat_manager_state.cheats[cheat_idx].address = (unsigned)strtoul(value, NULL, 0);
+      cheat_st->cheats[cheat_idx].address = (unsigned)strtoul(value, NULL, 0);
    else if (string_is_equal(key, "address_bit_position"))
-      cheat_manager_state.cheats[cheat_idx].address_mask = (unsigned)strtoul(value, NULL, 0);
+      cheat_st->cheats[cheat_idx].address_mask = (unsigned)strtoul(value, NULL, 0);
    else if (string_is_equal(key, "big_endian"))
-      cheat_manager_state.cheats[cheat_idx].big_endian = (string_is_equal(value, "true") || string_is_equal(value, "1"));
+      cheat_st->cheats[cheat_idx].big_endian = (string_is_equal(value, "true") || string_is_equal(value, "1"));
    else if (string_is_equal(key, "cheat_type"))
-      cheat_manager_state.cheats[cheat_idx].cheat_type = (unsigned)strtoul(value, NULL, 0);
+      cheat_st->cheats[cheat_idx].cheat_type = (unsigned)strtoul(value, NULL, 0);
    else if (string_is_equal(key, "code"))
-      cheat_manager_state.cheats[cheat_idx].code = strdup(value);
+      cheat_st->cheats[cheat_idx].code = strdup(value);
    else if (string_is_equal(key, "desc"))
-      cheat_manager_state.cheats[cheat_idx].desc = strdup(value);
+      cheat_st->cheats[cheat_idx].desc = strdup(value);
    else if (string_is_equal(key, "enable"))
-      cheat_manager_state.cheats[cheat_idx].state = (string_is_equal(value, "true") || string_is_equal(value, "1"));
+      cheat_st->cheats[cheat_idx].state = (string_is_equal(value, "true") || string_is_equal(value, "1"));
    else if (string_is_equal(key, "handler"))
-      cheat_manager_state.cheats[cheat_idx].handler = (unsigned)strtoul(value, NULL, 0);
+      cheat_st->cheats[cheat_idx].handler = (unsigned)strtoul(value, NULL, 0);
    else if (string_is_equal(key, "memory_search_size"))
-      cheat_manager_state.cheats[cheat_idx].memory_search_size = (unsigned)strtoul(value, NULL, 0);
+      cheat_st->cheats[cheat_idx].memory_search_size = (unsigned)strtoul(value, NULL, 0);
    else if (string_is_equal(key, "repeat_add_to_address"))
-      cheat_manager_state.cheats[cheat_idx].repeat_add_to_address = (unsigned)strtoul(value, NULL, 0);
+      cheat_st->cheats[cheat_idx].repeat_add_to_address = (unsigned)strtoul(value, NULL, 0);
    else if (string_is_equal(key, "repeat_add_to_value"))
-      cheat_manager_state.cheats[cheat_idx].repeat_add_to_value = (unsigned)strtoul(value, NULL, 0);
+      cheat_st->cheats[cheat_idx].repeat_add_to_value = (unsigned)strtoul(value, NULL, 0);
    else if (string_is_equal(key, "repeat_count"))
-      cheat_manager_state.cheats[cheat_idx].repeat_count = (unsigned)strtoul(value, NULL, 0);
+      cheat_st->cheats[cheat_idx].repeat_count = (unsigned)strtoul(value, NULL, 0);
    else if (string_is_equal(key, "rumble_port"))
-      cheat_manager_state.cheats[cheat_idx].rumble_port = (unsigned)strtoul(value, NULL, 0);
+      cheat_st->cheats[cheat_idx].rumble_port = (unsigned)strtoul(value, NULL, 0);
    else if (string_is_equal(key, "rumble_primary_duration"))
-      cheat_manager_state.cheats[cheat_idx].rumble_primary_duration = (unsigned)strtoul(value, NULL, 0);
+      cheat_st->cheats[cheat_idx].rumble_primary_duration = (unsigned)strtoul(value, NULL, 0);
    else if (string_is_equal(key, "rumble_primary_strength"))
-      cheat_manager_state.cheats[cheat_idx].rumble_primary_strength = (unsigned)strtoul(value, NULL, 0);
+      cheat_st->cheats[cheat_idx].rumble_primary_strength = (unsigned)strtoul(value, NULL, 0);
    else if (string_is_equal(key, "rumble_secondary_duration"))
-      cheat_manager_state.cheats[cheat_idx].rumble_secondary_duration = (unsigned)strtoul(value, NULL, 0);
+      cheat_st->cheats[cheat_idx].rumble_secondary_duration = (unsigned)strtoul(value, NULL, 0);
    else if (string_is_equal(key, "rumble_secondary_strength"))
-      cheat_manager_state.cheats[cheat_idx].rumble_secondary_strength = (unsigned)strtoul(value, NULL, 0);
+      cheat_st->cheats[cheat_idx].rumble_secondary_strength = (unsigned)strtoul(value, NULL, 0);
    else if (string_is_equal(key, "rumble_type"))
-      cheat_manager_state.cheats[cheat_idx].rumble_type = (unsigned)strtoul(value, NULL, 0);
+      cheat_st->cheats[cheat_idx].rumble_type = (unsigned)strtoul(value, NULL, 0);
    else if (string_is_equal(key, "rumble_value"))
-      cheat_manager_state.cheats[cheat_idx].rumble_value = (unsigned)strtoul(value, NULL, 0);
+      cheat_st->cheats[cheat_idx].rumble_value = (unsigned)strtoul(value, NULL, 0);
    else if (string_is_equal(key, "value"))
-      cheat_manager_state.cheats[cheat_idx].value = (unsigned)strtoul(value, NULL, 0);
+      cheat_st->cheats[cheat_idx].value = (unsigned)strtoul(value, NULL, 0);
 }
 
 bool cheat_manager_load(const char *path, bool append)
 {
    config_file_cb_t cb;
-   unsigned orig_size  = 0;
-   unsigned cheats     = 0;
-   unsigned i          = 0;
-   config_file_t *conf = NULL;
+   unsigned          orig_size = 0;
+   unsigned             cheats = 0;
+   unsigned                  i = 0;
+   config_file_t         *conf = NULL;
+   cheat_manager_t   *cheat_st = &cheat_manager_state;
 
    cb.config_file_new_entry_cb = cheat_manager_load_cb_first_pass;
 
-   cheat_manager_state.loading_cheat_size = 0;
+   cheat_st->loading_cheat_size = 0;
 
    conf = config_file_new_with_callback(path, &cb);
 
    if (!conf)
       return false;
 
-   cheats = cheat_manager_state.loading_cheat_size;
+   cheats = cheat_st->loading_cheat_size;
 
    if (cheats == 0)
       goto error;
@@ -466,9 +495,7 @@ bool cheat_manager_load(const char *path, bool append)
       else
       {
          cheats = cheats + orig_size;
-         if (cheat_manager_realloc(cheats, CHEAT_HANDLER_TYPE_EMU))
-         {
-         }
+         if (cheat_manager_realloc(cheats, CHEAT_HANDLER_TYPE_EMU)) { }
       }
    }
    else
@@ -477,19 +504,20 @@ bool cheat_manager_load(const char *path, bool append)
       cheat_manager_new(cheats);
    }
 
-   for (i = orig_size; cheat_manager_state.cheats && i < cheats; i++)
+   for (i = orig_size; cheat_st->cheats && i < cheats; i++)
    {
-      cheat_manager_state.cheats[i].idx = i;
-      cheat_manager_state.cheats[i].desc = NULL;
-      cheat_manager_state.cheats[i].code = NULL;
-      cheat_manager_state.cheats[i].state = false;
-      cheat_manager_state.cheats[i].big_endian = false;
-      cheat_manager_state.cheats[i].cheat_type = CHEAT_TYPE_SET_TO_VALUE;
-      cheat_manager_state.cheats[i].memory_search_size = 3;
+      cheat_st->cheats[i].idx                = i;
+      cheat_st->cheats[i].desc               = NULL;
+      cheat_st->cheats[i].code               = NULL;
+      cheat_st->cheats[i].state              = false;
+      cheat_st->cheats[i].big_endian         = false;
+      cheat_st->cheats[i].cheat_type         = CHEAT_TYPE_SET_TO_VALUE;
+      cheat_st->cheats[i].memory_search_size = 3;
    }
 
-   cheat_manager_state.loading_cheat_offset = orig_size;
-   cb.config_file_new_entry_cb = cheat_manager_load_cb_second_pass;
+   cheat_st->loading_cheat_offset            = orig_size;
+   cb.config_file_new_entry_cb               = 
+      cheat_manager_load_cb_second_pass;
    conf = config_file_new_with_callback(path, &cb);
 
    if (!conf)
@@ -507,56 +535,57 @@ error:
 bool cheat_manager_realloc(unsigned new_size, unsigned default_handler)
 {
    unsigned i;
-   unsigned orig_size = 0;
+   unsigned        orig_size = 0;
+   cheat_manager_t *cheat_st = &cheat_manager_state;
 
-   if (!cheat_manager_state.cheats)
+   if (!cheat_st->cheats)
    {
-      cheat_manager_state.cheats = (struct item_cheat*)
+      cheat_st->cheats = (struct item_cheat*)
             calloc(new_size, sizeof(struct item_cheat));
-      orig_size = 0;
+      orig_size        = 0;
    }
    else
    {
       struct item_cheat *val = NULL;
-      orig_size = cheat_manager_state.size;
+      orig_size              = cheat_st->size;
 
       /* if size is decreasing, free the items that will be lost */
       for (i = new_size; i < orig_size; i++)
       {
-         if (cheat_manager_state.cheats[i].code)
-            free(cheat_manager_state.cheats[i].code);
-         if (cheat_manager_state.cheats[i].desc)
-            free(cheat_manager_state.cheats[i].desc);
+         if (cheat_st->cheats[i].code)
+            free(cheat_st->cheats[i].code);
+         if (cheat_st->cheats[i].desc)
+            free(cheat_st->cheats[i].desc);
       }
 
       val = (struct item_cheat*)
-            realloc(cheat_manager_state.cheats,
+            realloc(cheat_st->cheats,
             new_size * sizeof(struct item_cheat));
 
-      cheat_manager_state.cheats = val ? val : NULL;
+      cheat_st->cheats = val ? val : NULL;
    }
 
-   if (!cheat_manager_state.cheats)
+   if (!cheat_st->cheats)
    {
-      cheat_manager_state.buf_size = cheat_manager_state.size = 0;
-      cheat_manager_state.cheats = NULL;
+      cheat_st->buf_size = cheat_st->size = 0;
+      cheat_st->cheats   = NULL;
       return false;
    }
 
-   cheat_manager_state.buf_size = new_size;
-   cheat_manager_state.size = new_size;
+   cheat_st->buf_size = new_size;
+   cheat_st->size     = new_size;
 
-   for (i = orig_size; i < cheat_manager_state.size; i++)
+   for (i = orig_size; i < cheat_st->size; i++)
    {
-      memset(&(cheat_manager_state.cheats[i]), 0, sizeof(cheat_manager_state.cheats[i]));
-      cheat_manager_state.cheats[i].state = false;
-      cheat_manager_state.cheats[i].handler = default_handler;
-      cheat_manager_state.cheats[i].cheat_type = CHEAT_TYPE_SET_TO_VALUE;
-      cheat_manager_state.cheats[i].memory_search_size = 3;
-      cheat_manager_state.cheats[i].idx = i;
-      cheat_manager_state.cheats[i].repeat_count = 1;
-      cheat_manager_state.cheats[i].repeat_add_to_value = 0;
-      cheat_manager_state.cheats[i].repeat_add_to_address = 1;
+      memset(&cheat_st->cheats[i], 0, sizeof(cheat_st->cheats[i]));
+      cheat_st->cheats[i].state                 = false;
+      cheat_st->cheats[i].handler               = default_handler;
+      cheat_st->cheats[i].cheat_type            = CHEAT_TYPE_SET_TO_VALUE;
+      cheat_st->cheats[i].memory_search_size    = 3;
+      cheat_st->cheats[i].idx                   = i;
+      cheat_st->cheats[i].repeat_count          = 1;
+      cheat_st->cheats[i].repeat_add_to_value   = 0;
+      cheat_st->cheats[i].repeat_add_to_address = 1;
    }
 
    return true;
@@ -569,10 +598,13 @@ void cheat_manager_update(cheat_manager_t *handle, unsigned handle_idx)
    if (!handle || !handle->cheats || handle->size == 0)
       return;
 
-   snprintf(msg, sizeof(msg), "Cheat: #%u [%s]: %s",
-         handle_idx, handle->cheats[handle_idx].state ? "ON" : "OFF",
-         (handle->cheats[handle_idx].desc != NULL) ?
-         (handle->cheats[handle_idx].desc) : (handle->cheats[handle_idx].code)
+   snprintf(msg, sizeof(msg),
+         "Cheat: #%u [%s]: %s",
+         handle_idx,
+         handle->cheats[handle_idx].state ? "ON" : "OFF",
+         handle->cheats[handle_idx].desc 
+         ? (handle->cheats[handle_idx].desc) 
+         : (handle->cheats[handle_idx].code)
          );
    runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    RARCH_LOG("%s\n", msg);
@@ -581,10 +613,11 @@ void cheat_manager_update(cheat_manager_t *handle, unsigned handle_idx)
 void cheat_manager_toggle_index(bool apply_cheats_after_toggle,
       unsigned i)
 {
-   if (!cheat_manager_state.cheats || cheat_manager_state.size == 0)
+   cheat_manager_t *cheat_st = &cheat_manager_state;
+   if (!cheat_st->cheats || cheat_st->size == 0)
       return;
 
-   cheat_manager_state.cheats[i].state = !cheat_manager_state.cheats[i].state;
+   cheat_st->cheats[i].state = !cheat_st->cheats[i].state;
    cheat_manager_update(&cheat_manager_state, i);
 
    if (apply_cheats_after_toggle)
@@ -593,55 +626,61 @@ void cheat_manager_toggle_index(bool apply_cheats_after_toggle,
 
 void cheat_manager_toggle(void)
 {
-   if (!cheat_manager_state.cheats || cheat_manager_state.size == 0)
+   cheat_manager_t *cheat_st = &cheat_manager_state;
+   if (!cheat_st->cheats || cheat_st->size == 0)
       return;
 
-   cheat_manager_state.cheats[cheat_manager_state.ptr].state ^= true;
+   cheat_st->cheats[cheat_st->ptr].state ^= true;
    cheat_manager_apply_cheats();
-   cheat_manager_update(&cheat_manager_state, cheat_manager_state.ptr);
+   cheat_manager_update(&cheat_manager_state, cheat_st->ptr);
 }
 
 void cheat_manager_index_next(void)
 {
-   if (!cheat_manager_state.cheats || cheat_manager_state.size == 0)
+   cheat_manager_t *cheat_st = &cheat_manager_state;
+   if (!cheat_st->cheats || cheat_st->size == 0)
       return;
 
-   cheat_manager_state.ptr = (cheat_manager_state.ptr + 1) % cheat_manager_state.size;
-   cheat_manager_update(&cheat_manager_state, cheat_manager_state.ptr);
+   cheat_st->ptr = (cheat_st->ptr + 1) % cheat_st->size;
+   cheat_manager_update(&cheat_manager_state, cheat_st->ptr);
 }
 
 void cheat_manager_index_prev(void)
 {
-   if (!cheat_manager_state.cheats || cheat_manager_state.size == 0)
+   cheat_manager_t *cheat_st = &cheat_manager_state;
+   if (!cheat_st->cheats || cheat_st->size == 0)
       return;
 
-   if (cheat_manager_state.ptr == 0)
-      cheat_manager_state.ptr = cheat_manager_state.size - 1;
+   if (cheat_st->ptr == 0)
+      cheat_st->ptr = cheat_st->size - 1;
    else
-      cheat_manager_state.ptr--;
+      cheat_st->ptr--;
 
-   cheat_manager_update(&cheat_manager_state, cheat_manager_state.ptr);
+   cheat_manager_update(&cheat_manager_state, cheat_st->ptr);
 }
 
 const char *cheat_manager_get_code(unsigned i)
 {
-   if (!cheat_manager_state.cheats)
+   cheat_manager_t *cheat_st = &cheat_manager_state;
+   if (!cheat_st->cheats)
       return NULL;
-   return cheat_manager_state.cheats[i].code;
+   return cheat_st->cheats[i].code;
 }
 
 const char *cheat_manager_get_desc(unsigned i)
 {
-   if (!cheat_manager_state.cheats)
+   cheat_manager_t *cheat_st = &cheat_manager_state;
+   if (!cheat_st->cheats)
       return NULL;
-   return cheat_manager_state.cheats[i].desc;
+   return cheat_st->cheats[i].desc;
 }
 
 bool cheat_manager_get_code_state(unsigned i)
 {
-   if (!cheat_manager_state.cheats)
+   cheat_manager_t *cheat_st = &cheat_manager_state;
+   if (!cheat_st->cheats)
       return false;
-   return cheat_manager_state.cheats[i].state;
+   return cheat_st->cheats[i].state;
 }
 
 static bool cheat_manager_get_game_specific_filename(
@@ -721,7 +760,8 @@ void cheat_manager_state_free(void)
 
 bool cheat_manager_alloc_if_empty(void)
 {
-   if (!cheat_manager_state.cheats)
+   cheat_manager_t *cheat_st = &cheat_manager_state;
+   if (!cheat_st->cheats)
       cheat_manager_new(0);
 
    return true;
@@ -735,63 +775,65 @@ int cheat_manager_initialize_memory(rarch_setting_t *setting, bool wraparound)
    bool is_search_initialization          = (setting != NULL);
    rarch_system_info_t *system            = runloop_get_system_info();
    unsigned offset                        = 0;
+   cheat_manager_t              *cheat_st = &cheat_manager_state;
 
-   cheat_manager_state.num_memory_buffers = 0;
-   cheat_manager_state.total_memory_size  = 0;
-   cheat_manager_state.curr_memory_buf    = NULL;
+   cheat_st->num_memory_buffers           = 0;
+   cheat_st->total_memory_size            = 0;
+   cheat_st->curr_memory_buf              = NULL;
 
-   if (cheat_manager_state.memory_buf_list)
+   if (cheat_st->memory_buf_list)
    {
-      free(cheat_manager_state.memory_buf_list);
-      cheat_manager_state.memory_buf_list = NULL;
+      free(cheat_st->memory_buf_list);
+      cheat_st->memory_buf_list = NULL;
    }
 
-   if (cheat_manager_state.memory_size_list)
+   if (cheat_st->memory_size_list)
    {
-      free(cheat_manager_state.memory_size_list);
-      cheat_manager_state.memory_size_list = NULL;
+      free(cheat_st->memory_size_list);
+      cheat_st->memory_size_list = NULL;
    }
 
    if (system && system->mmaps.num_descriptors > 0)
    {
       for (i = 0; i < system->mmaps.num_descriptors; i++)
       {
-         if ((system->mmaps.descriptors[i].core.flags & RETRO_MEMDESC_SYSTEM_RAM) != 0 &&
+         if ((system->mmaps.descriptors[i].core.flags 
+                  & RETRO_MEMDESC_SYSTEM_RAM) != 0 &&
                system->mmaps.descriptors[i].core.ptr &&
                system->mmaps.descriptors[i].core.len > 0)
          {
-            cheat_manager_state.num_memory_buffers++;
+            cheat_st->num_memory_buffers++;
 
-            if (!cheat_manager_state.memory_buf_list)
-               cheat_manager_state.memory_buf_list = (uint8_t**)calloc(1, sizeof(uint8_t *));
+            if (!cheat_st->memory_buf_list)
+               cheat_st->memory_buf_list = (uint8_t**)calloc(1, sizeof(uint8_t *));
             else
-               cheat_manager_state.memory_buf_list = (uint8_t**)realloc(
-                     cheat_manager_state.memory_buf_list, sizeof(uint8_t *) * cheat_manager_state.num_memory_buffers);
+               cheat_st->memory_buf_list = (uint8_t**)realloc(
+                     cheat_st->memory_buf_list, sizeof(uint8_t *) * cheat_st->num_memory_buffers);
 
-            if (!cheat_manager_state.memory_size_list)
-               cheat_manager_state.memory_size_list = (unsigned*)calloc(1, sizeof(unsigned));
+            if (!cheat_st->memory_size_list)
+               cheat_st->memory_size_list = (unsigned*)calloc(1, sizeof(unsigned));
             else
             {
                unsigned *val = (unsigned*)realloc(
-                     cheat_manager_state.memory_size_list,
+                     cheat_st->memory_size_list,
                      sizeof(unsigned) *
-                     cheat_manager_state.num_memory_buffers);
+                     cheat_st->num_memory_buffers);
 
                if (val)
-                  cheat_manager_state.memory_size_list = val;
+                  cheat_st->memory_size_list = val;
             }
 
-            cheat_manager_state.memory_buf_list[cheat_manager_state.num_memory_buffers - 1] = (uint8_t*)system->mmaps.descriptors[i].core.ptr;
-            cheat_manager_state.memory_size_list[cheat_manager_state.num_memory_buffers - 1] = (unsigned)system->mmaps.descriptors[i].core.len;
-            cheat_manager_state.total_memory_size += system->mmaps.descriptors[i].core.len;
+            cheat_st->memory_buf_list[cheat_st->num_memory_buffers - 1] = (uint8_t*)system->mmaps.descriptors[i].core.ptr;
+            cheat_st->memory_size_list[cheat_st->num_memory_buffers - 1] = (unsigned)system->mmaps.descriptors[i].core.len;
+            cheat_st->total_memory_size += system->mmaps.descriptors[i].core.len;
 
-            if (!cheat_manager_state.curr_memory_buf)
-               cheat_manager_state.curr_memory_buf = (uint8_t*)system->mmaps.descriptors[i].core.ptr;
+            if (!cheat_st->curr_memory_buf)
+               cheat_st->curr_memory_buf = (uint8_t*)system->mmaps.descriptors[i].core.ptr;
          }
       }
    }
 
-   if (cheat_manager_state.num_memory_buffers == 0)
+   if (cheat_st->num_memory_buffers == 0)
    {
       meminfo.id = RETRO_MEMORY_SYSTEM_RAM;
       if (!core_get_memory(&meminfo))
@@ -803,70 +845,77 @@ int cheat_manager_initialize_memory(rarch_setting_t *setting, bool wraparound)
       if (meminfo.size == 0)
          return 0;
 
-      cheat_manager_state.memory_buf_list = (uint8_t**)
+      cheat_st->memory_buf_list     = (uint8_t**)
             calloc(1, sizeof(uint8_t *));
-      cheat_manager_state.memory_size_list = (unsigned*)
+      cheat_st->memory_size_list    = (unsigned*)
             calloc(1, sizeof(unsigned));
-      cheat_manager_state.num_memory_buffers = 1;
-      cheat_manager_state.memory_buf_list[0] = (uint8_t*)meminfo.data;
-      cheat_manager_state.memory_size_list[0] = (unsigned)meminfo.size;
-      cheat_manager_state.total_memory_size = (unsigned)meminfo.size;
-      cheat_manager_state.curr_memory_buf = (uint8_t*)meminfo.data;
+      cheat_st->num_memory_buffers  = 1;
+      cheat_st->memory_buf_list[0]  = (uint8_t*)meminfo.data;
+      cheat_st->memory_size_list[0] = (unsigned)meminfo.size;
+      cheat_st->total_memory_size   = (unsigned)meminfo.size;
+      cheat_st->curr_memory_buf     = (uint8_t*)meminfo.data;
 
    }
 
-   cheat_manager_state.num_matches = (cheat_manager_state.total_memory_size * 8) / ((int)pow(2, cheat_manager_state.search_bit_size));
+   cheat_st->num_matches = (cheat_st->total_memory_size * 8) 
+      / ((int)pow(2, cheat_st->search_bit_size));
 
-   /* Ensure we're aligned on 4-byte boundary */
 #if 0
+   /* Ensure we're aligned on 4-byte boundary */
    if (meminfo.size % 4 > 0)
-      cheat_manager_state.total_memory_size = cheat_manager_state.total_memory_size + (4 - (meminfo.size % 4));
+      cheat_st->total_memory_size = cheat_st->total_memory_size + (4 - (meminfo.size % 4));
 #endif
 
    if (is_search_initialization)
    {
-      if (cheat_manager_state.prev_memory_buf)
+      if (cheat_st->prev_memory_buf)
       {
-         free(cheat_manager_state.prev_memory_buf);
-         cheat_manager_state.prev_memory_buf = NULL;
+         free(cheat_st->prev_memory_buf);
+         cheat_st->prev_memory_buf = NULL;
       }
 
-      cheat_manager_state.prev_memory_buf = (uint8_t*)calloc(cheat_manager_state.total_memory_size, sizeof(uint8_t));
-      if (!cheat_manager_state.prev_memory_buf)
+      cheat_st->prev_memory_buf = (uint8_t*)calloc(
+            cheat_st->total_memory_size, sizeof(uint8_t));
+
+      if (!cheat_st->prev_memory_buf)
       {
          runloop_msg_queue_push(msg_hash_to_str(MSG_CHEAT_INIT_FAIL), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          return 0;
       }
 
-      if (cheat_manager_state.matches)
+      if (cheat_st->matches)
       {
-         free(cheat_manager_state.matches);
-         cheat_manager_state.matches = NULL;
+         free(cheat_st->matches);
+         cheat_st->matches = NULL;
       }
 
-      cheat_manager_state.matches = (uint8_t*)calloc(cheat_manager_state.total_memory_size, sizeof(uint8_t));
-      if (!cheat_manager_state.matches)
+      cheat_st->matches = (uint8_t*)calloc(
+            cheat_st->total_memory_size, sizeof(uint8_t));
+
+      if (!cheat_st->matches)
       {
-         free(cheat_manager_state.prev_memory_buf);
-         cheat_manager_state.prev_memory_buf = NULL;
+         free(cheat_st->prev_memory_buf);
+         cheat_st->prev_memory_buf = NULL;
          runloop_msg_queue_push(msg_hash_to_str(MSG_CHEAT_INIT_FAIL), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          return 0;
       }
 
-      memset(cheat_manager_state.matches, 0xFF, cheat_manager_state.total_memory_size);
+      memset(cheat_st->matches, 0xFF, cheat_st->total_memory_size);
 
       offset = 0;
 
-      for (i = 0; i < cheat_manager_state.num_memory_buffers; i++)
+      for (i = 0; i < cheat_st->num_memory_buffers; i++)
       {
-         memcpy(cheat_manager_state.prev_memory_buf + offset, cheat_manager_state.memory_buf_list[i], cheat_manager_state.memory_size_list[i]);
-         offset += cheat_manager_state.memory_size_list[i];
+         memcpy(cheat_st->prev_memory_buf + offset,
+               cheat_st->memory_buf_list[i],
+               cheat_st->memory_size_list[i]);
+         offset += cheat_st->memory_size_list[i];
       }
 
-      cheat_manager_state.memory_search_initialized = true;
+      cheat_st->memory_search_initialized = true;
    }
 
-   cheat_manager_state.memory_initialized = true;
+   cheat_st->memory_initialized = true;
 
    runloop_msg_queue_push(msg_hash_to_str(MSG_CHEAT_INIT_SUCCESS), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
@@ -883,56 +932,61 @@ int cheat_manager_initialize_memory(rarch_setting_t *setting, bool wraparound)
 
 static unsigned translate_address(unsigned address, unsigned char **curr)
 {
-   unsigned offset = 0;
-   unsigned i = 0;
+   unsigned             offset = 0;
+   unsigned                  i = 0;
+   cheat_manager_t   *cheat_st = &cheat_manager_state;
 
-   for (i = 0; i < cheat_manager_state.num_memory_buffers; i++)
+   for (i = 0; i < cheat_st->num_memory_buffers; i++)
    {
-      if ((address >= offset) && (address < offset + cheat_manager_state.memory_size_list[i]))
+      if ((address >= offset) && (address < offset + cheat_st->memory_size_list[i]))
       {
-         *curr = cheat_manager_state.memory_buf_list[i];
+         *curr = cheat_st->memory_buf_list[i];
          break;
       }
       else
-         offset += cheat_manager_state.memory_size_list[i];
+         offset += cheat_st->memory_size_list[i];
    }
 
    return offset;
 }
 
-static void cheat_manager_setup_search_meta(unsigned int bitsize, unsigned int *bytes_per_item, unsigned int *mask, unsigned int *bits)
+static void cheat_manager_setup_search_meta(
+      unsigned int bitsize,
+      unsigned int *bytes_per_item,
+      unsigned int *mask,
+      unsigned int *bits)
 {
    switch (bitsize)
    {
       case 0:
          *bytes_per_item = 1;
-         *bits = 1;
-         *mask = 0x01;
+         *bits           = 1;
+         *mask           = 0x01;
          break;
       case 1:
          *bytes_per_item = 1;
-         *bits = 2;
-         *mask = 0x03;
+         *bits           = 2;
+         *mask           = 0x03;
          break;
       case 2:
          *bytes_per_item = 1;
-         *bits = 4;
-         *mask = 0x0F;
+         *bits           = 4;
+         *mask           = 0x0F;
          break;
       case 3:
          *bytes_per_item = 1;
-         *bits = 8;
-         *mask = 0xFF;
+         *bits           = 8;
+         *mask           = 0xFF;
          break;
       case 4:
          *bytes_per_item = 2;
-         *bits = 8;
-         *mask = 0xFFFF;
+         *bits           = 8;
+         *mask           = 0xFFFF;
          break;
       case 5:
          *bytes_per_item = 4;
-         *bits = 8;
-         *mask = 0xFFFFFFFF;
+         *bits           = 8;
+         *mask           = 0xFFFFFFFF;
          break;
    }
 }
@@ -940,8 +994,9 @@ static void cheat_manager_setup_search_meta(unsigned int bitsize, unsigned int *
 static int cheat_manager_search(enum cheat_search_type search_type)
 {
    char msg[100];
-   unsigned char *curr         = cheat_manager_state.curr_memory_buf;
-   unsigned char *prev         = cheat_manager_state.prev_memory_buf;
+   cheat_manager_t   *cheat_st = &cheat_manager_state;
+   unsigned char *curr         = cheat_st->curr_memory_buf;
+   unsigned char *prev         = cheat_st->prev_memory_buf;
    unsigned int idx            = 0;
    unsigned int curr_val       = 0;
    unsigned int prev_val       = 0;
@@ -952,16 +1007,16 @@ static int cheat_manager_search(enum cheat_search_type search_type)
    unsigned int i              = 0;
    bool refresh                = false;
 
-   if (cheat_manager_state.num_memory_buffers == 0)
+   if (cheat_st->num_memory_buffers == 0)
    {
       runloop_msg_queue_push(msg_hash_to_str(MSG_CHEAT_SEARCH_NOT_INITIALIZED), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       return 0;
    }
 
-   cheat_manager_setup_search_meta(cheat_manager_state.search_bit_size, &bytes_per_item, &mask, &bits);
+   cheat_manager_setup_search_meta(cheat_st->search_bit_size, &bytes_per_item, &mask, &bits);
 
    /* little endian FF000000 = 256 */
-   for (idx = 0; idx < cheat_manager_state.total_memory_size; idx = idx + bytes_per_item)
+   for (idx = 0; idx < cheat_st->total_memory_size; idx = idx + bytes_per_item)
    {
       unsigned byte_part;
 
@@ -970,18 +1025,18 @@ static int cheat_manager_search(enum cheat_search_type search_type)
       switch (bytes_per_item)
       {
          case 2:
-            curr_val = cheat_manager_state.big_endian ?
+            curr_val = cheat_st->big_endian ?
                (*(curr + idx - offset) * 256) + *(curr + idx + 1 - offset) :
                *(curr + idx - offset) + (*(curr + idx + 1 - offset) * 256);
-            prev_val = cheat_manager_state.big_endian ?
+            prev_val = cheat_st->big_endian ?
                (*(prev + idx) * 256) + *(prev + idx + 1) :
                *(prev + idx) + (*(prev + idx + 1) * 256);
             break;
          case 4:
-            curr_val = cheat_manager_state.big_endian ?
+            curr_val = cheat_st->big_endian ?
                (*(curr + idx - offset) * 256 * 256 * 256) + (*(curr + idx + 1 - offset) * 256 * 256) + (*(curr + idx + 2 - offset) * 256) + *(curr + idx + 3 - offset) :
                *(curr + idx - offset) + (*(curr + idx + 1 - offset) * 256) + (*(curr + idx + 2 - offset) * 256 * 256) + (*(curr + idx + 3 - offset) * 256 * 256 * 256);
-            prev_val = cheat_manager_state.big_endian ?
+            prev_val = cheat_st->big_endian ?
                (*(prev + idx) * 256 * 256 * 256) + (*(prev + idx + 1) * 256 * 256) + (*(prev + idx + 2) * 256) + *(prev + idx + 3) :
                *(prev + idx) + (*(prev + idx + 1) * 256) + (*(prev + idx + 2) * 256 * 256) + (*(prev + idx + 3) * 256 * 256 * 256);
             break;
@@ -999,9 +1054,9 @@ static int cheat_manager_search(enum cheat_search_type search_type)
          unsigned int prev_match;
 
          if (bits < 8)
-            prev_match = *(cheat_manager_state.matches + idx) & (mask << (byte_part * bits));
+            prev_match = *(cheat_st->matches + idx) & (mask << (byte_part * bits));
          else
-            prev_match = *(cheat_manager_state.matches + idx);
+            prev_match = *(cheat_st->matches + idx);
 
          if (prev_match > 0)
          {
@@ -1009,7 +1064,7 @@ static int cheat_manager_search(enum cheat_search_type search_type)
             switch (search_type)
             {
                case CHEAT_SEARCH_TYPE_EXACT:
-                  match = (curr_subval == cheat_manager_state.search_exact_value);
+                  match = (curr_subval == cheat_st->search_exact_value);
                   break;
                case CHEAT_SEARCH_TYPE_LT:
                   match = (curr_subval < prev_subval);
@@ -1030,22 +1085,22 @@ static int cheat_manager_search(enum cheat_search_type search_type)
                   match = (curr_subval != prev_subval);
                   break;
                case CHEAT_SEARCH_TYPE_EQPLUS:
-                  match = (curr_subval == prev_subval + cheat_manager_state.search_eqplus_value);
+                  match = (curr_subval == prev_subval + cheat_st->search_eqplus_value);
                   break;
                case CHEAT_SEARCH_TYPE_EQMINUS:
-                  match = (curr_subval == prev_subval - cheat_manager_state.search_eqminus_value);
+                  match = (curr_subval == prev_subval - cheat_st->search_eqminus_value);
                   break;
             }
 
             if (!match)
             {
                if (bits < 8)
-                  *(cheat_manager_state.matches + idx) = *(cheat_manager_state.matches + idx) &
+                  *(cheat_st->matches + idx) = *(cheat_st->matches + idx) &
                      ((~(mask << (byte_part * bits))) & 0xFF);
                else
-                  memset(cheat_manager_state.matches + idx, 0, bytes_per_item);
-               if (cheat_manager_state.num_matches > 0)
-                  cheat_manager_state.num_matches--;
+                  memset(cheat_st->matches + idx, 0, bytes_per_item);
+               if (cheat_st->num_matches > 0)
+                  cheat_st->num_matches--;
             }
          }
       }
@@ -1053,13 +1108,13 @@ static int cheat_manager_search(enum cheat_search_type search_type)
 
    offset = 0;
 
-   for (i = 0; i < cheat_manager_state.num_memory_buffers; i++)
+   for (i = 0; i < cheat_st->num_memory_buffers; i++)
    {
-      memcpy(cheat_manager_state.prev_memory_buf + offset, cheat_manager_state.memory_buf_list[i], cheat_manager_state.memory_size_list[i]);
-      offset += cheat_manager_state.memory_size_list[i];
+      memcpy(cheat_st->prev_memory_buf + offset, cheat_st->memory_buf_list[i], cheat_st->memory_size_list[i]);
+      offset += cheat_st->memory_size_list[i];
    }
 
-   snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_CHEAT_SEARCH_FOUND_MATCHES), cheat_manager_state.num_matches);
+   snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_CHEAT_SEARCH_FOUND_MATCHES), cheat_st->num_matches);
    msg[sizeof(msg) - 1] = 0;
 
    runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
@@ -1070,7 +1125,6 @@ static int cheat_manager_search(enum cheat_search_type search_type)
 #endif
    return 0;
 }
-
 
 int cheat_manager_search_exact(rarch_setting_t *setting, bool wraparound)
 {
@@ -1120,61 +1174,64 @@ int cheat_manager_search_eqminus(rarch_setting_t *setting, bool wraparound)
 bool cheat_manager_add_new_code(unsigned int memory_search_size, unsigned int address, unsigned int address_mask,
       bool big_endian, unsigned int value)
 {
-   int new_size = cheat_manager_get_size() + 1;
+   cheat_manager_t   *cheat_st = &cheat_manager_state;
+   int                new_size = cheat_manager_get_size() + 1;
 
    if (!cheat_manager_realloc(new_size, CHEAT_HANDLER_TYPE_RETRO))
       return false;
 
-   cheat_manager_state.cheats[cheat_manager_state.size - 1].address = address;
-   cheat_manager_state.cheats[cheat_manager_state.size - 1].address_mask = address_mask;
-   cheat_manager_state.cheats[cheat_manager_state.size - 1].memory_search_size = memory_search_size;
-   cheat_manager_state.cheats[cheat_manager_state.size - 1].value = value;
-   cheat_manager_state.cheats[cheat_manager_state.size - 1].big_endian = big_endian;
+   cheat_st->cheats[cheat_st->size - 1].address = address;
+   cheat_st->cheats[cheat_st->size - 1].address_mask = address_mask;
+   cheat_st->cheats[cheat_st->size - 1].memory_search_size = memory_search_size;
+   cheat_st->cheats[cheat_st->size - 1].value = value;
+   cheat_st->cheats[cheat_st->size - 1].big_endian = big_endian;
 
    return true;
 }
+
 int cheat_manager_add_matches(const char *path,
       const char *label, unsigned type, size_t menuidx, size_t entry_idx)
 {
    char msg[100];
-   bool refresh = false;
-   unsigned byte_part = 0;
-   unsigned int idx = 0;
-   unsigned int mask = 0;
+   bool                refresh = false;
+   unsigned          byte_part = 0;
+   unsigned            int idx = 0;
+   unsigned           int mask = 0;
    unsigned int bytes_per_item = 1;
-   unsigned int bits = 8;
-   unsigned int curr_val = 0;
-   unsigned int num_added = 0;
-   unsigned int offset = 0;
-   unsigned char *curr = cheat_manager_state.curr_memory_buf;
+   unsigned           int bits = 8;
+   unsigned       int curr_val = 0;
+   unsigned      int num_added = 0;
+   unsigned         int offset = 0;
+   cheat_manager_t   *cheat_st = &cheat_manager_state;
+   unsigned char         *curr = cheat_st->curr_memory_buf;
 
-   if (cheat_manager_state.num_matches + cheat_manager_state.size > 100)
+   if (cheat_st->num_matches + cheat_st->size > 100)
    {
       runloop_msg_queue_push(msg_hash_to_str(MSG_CHEAT_SEARCH_ADDED_MATCHES_TOO_MANY), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       return 0;
    }
-   cheat_manager_setup_search_meta(cheat_manager_state.search_bit_size, &bytes_per_item, &mask, &bits);
+   cheat_manager_setup_search_meta(cheat_st->search_bit_size, &bytes_per_item, &mask, &bits);
 
-   for (idx = 0; idx < cheat_manager_state.total_memory_size; idx = idx + bytes_per_item)
+   for (idx = 0; idx < cheat_st->total_memory_size; idx = idx + bytes_per_item)
    {
       offset = translate_address(idx, &curr);
 
       switch (bytes_per_item)
       {
-      case 2:
-         curr_val = cheat_manager_state.big_endian ?
+         case 2:
+            curr_val = cheat_st->big_endian ?
                (*(curr + idx - offset) * 256) + *(curr + idx + 1 - offset) :
                *(curr + idx - offset) + (*(curr + idx + 1 - offset) * 256);
-         break;
-      case 4:
-         curr_val = cheat_manager_state.big_endian ?
+            break;
+         case 4:
+            curr_val = cheat_st->big_endian ?
                (*(curr + idx - offset) * 256 * 256 * 256) + (*(curr + idx + 1 - offset) * 256 * 256) + (*(curr + idx + 2 - offset) * 256) + *(curr + idx + 3 - offset) :
                *(curr + idx - offset) + (*(curr + idx + 1 - offset) * 256) + (*(curr + idx + 2 - offset) * 256 * 256) + (*(curr + idx + 3 - offset) * 256 * 256 * 256);
-         break;
-      case 1:
-      default:
-         curr_val = *(curr - offset + idx);
-         break;
+            break;
+         case 1:
+         default:
+            curr_val = *(curr - offset + idx);
+            break;
       }
       for (byte_part = 0; byte_part < 8 / bits; byte_part++)
       {
@@ -1182,11 +1239,11 @@ int cheat_manager_add_matches(const char *path,
 
          if (bits < 8)
          {
-            prev_match = *(cheat_manager_state.matches + idx) & (mask << (byte_part * bits));
+            prev_match = *(cheat_st->matches + idx) & (mask << (byte_part * bits));
             if (prev_match)
             {
-               if (!cheat_manager_add_new_code(cheat_manager_state.search_bit_size, idx, (mask << (byte_part * bits)),
-                     cheat_manager_state.big_endian, curr_val))
+               if (!cheat_manager_add_new_code(cheat_st->search_bit_size, idx, (mask << (byte_part * bits)),
+                        cheat_st->big_endian, curr_val))
                {
                   runloop_msg_queue_push(msg_hash_to_str(MSG_CHEAT_SEARCH_ADDED_MATCHES_FAIL), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
                   return 0;
@@ -1196,11 +1253,11 @@ int cheat_manager_add_matches(const char *path,
          }
          else
          {
-            prev_match = *(cheat_manager_state.matches + idx);
+            prev_match = *(cheat_st->matches + idx);
             if (prev_match)
             {
-               if (!cheat_manager_add_new_code(cheat_manager_state.search_bit_size, idx, 0xFF,
-                     cheat_manager_state.big_endian, curr_val))
+               if (!cheat_manager_add_new_code(cheat_st->search_bit_size, idx, 0xFF,
+                        cheat_st->big_endian, curr_val))
                {
                   runloop_msg_queue_push(msg_hash_to_str(MSG_CHEAT_SEARCH_ADDED_MATCHES_FAIL), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
                   return 0;
@@ -1212,7 +1269,7 @@ int cheat_manager_add_matches(const char *path,
       }
    }
 
-   snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_CHEAT_SEARCH_ADDED_MATCHES_SUCCESS), cheat_manager_state.num_matches);
+   snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_CHEAT_SEARCH_ADDED_MATCHES_SUCCESS), cheat_st->num_matches);
    msg[sizeof(msg) - 1] = 0;
 
    runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
@@ -1318,27 +1375,29 @@ void cheat_manager_apply_retro_cheats(void)
    unsigned int bits           = 8;
    unsigned int curr_val       = 0;
    bool run_cheat              = true;
+   bool cheat_applied          = false;
+   cheat_manager_t   *cheat_st = &cheat_manager_state;
 
-   if ((!cheat_manager_state.cheats))
+   if ((!cheat_st->cheats))
       return;
 
-   for (i = 0; i < cheat_manager_state.size; i++)
+   for (i = 0; i < cheat_st->size; i++)
    {
       unsigned char *curr       = NULL;
       bool set_value            = false;
       unsigned int idx          = 0;
       unsigned int value_to_set = 0;
       unsigned int repeat_iter  = 0;
-      unsigned int address_mask = cheat_manager_state.cheats[i].address_mask;
+      unsigned int address_mask = cheat_st->cheats[i].address_mask;
 
-      if (cheat_manager_state.cheats[i].handler != CHEAT_HANDLER_TYPE_RETRO || !cheat_manager_state.cheats[i].state)
+      if (cheat_st->cheats[i].handler != CHEAT_HANDLER_TYPE_RETRO || !cheat_st->cheats[i].state)
          continue;
-      if (!cheat_manager_state.memory_initialized)
+      if (!cheat_st->memory_initialized)
          cheat_manager_initialize_memory(NULL, false);
 
       /* If we're still not initialized, something
        * must have gone wrong - just bail */
-      if (!cheat_manager_state.memory_initialized)
+      if (!cheat_st->memory_initialized)
          return;
 
       if (!run_cheat)
@@ -1346,22 +1405,22 @@ void cheat_manager_apply_retro_cheats(void)
          run_cheat = true;
          continue;
       }
-      cheat_manager_setup_search_meta(cheat_manager_state.cheats[i].memory_search_size, &bytes_per_item, &mask, &bits);
+      cheat_manager_setup_search_meta(cheat_st->cheats[i].memory_search_size, &bytes_per_item, &mask, &bits);
 
-      curr   = cheat_manager_state.curr_memory_buf;
-      idx    = cheat_manager_state.cheats[i].address;
+      curr   = cheat_st->curr_memory_buf;
+      idx    = cheat_st->cheats[i].address;
 
       offset = translate_address(idx, &curr);
 
       switch (bytes_per_item)
       {
          case 2:
-            curr_val = cheat_manager_state.big_endian ?
+            curr_val = cheat_st->big_endian ?
                (*(curr + idx - offset) * 256) + *(curr + idx + 1 - offset) :
                *(curr + idx - offset) + (*(curr + idx + 1 - offset) * 256);
             break;
          case 4:
-            curr_val = cheat_manager_state.big_endian ?
+            curr_val = cheat_st->big_endian ?
                (*(curr + idx - offset) * 256 * 256 * 256) + (*(curr + idx + 1 - offset) * 256 * 256) + (*(curr + idx + 2 - offset) * 256) + *(curr + idx + 3 - offset) :
                *(curr + idx - offset) + (*(curr + idx + 1 - offset) * 256) + (*(curr + idx + 2 - offset) * 256 * 256) + (*(curr + idx + 3 - offset) * 256 * 256 * 256);
             break;
@@ -1371,48 +1430,49 @@ void cheat_manager_apply_retro_cheats(void)
             break;
       }
 
-      cheat_manager_apply_rumble(&cheat_manager_state.cheats[i], curr_val);
+      cheat_manager_apply_rumble(&cheat_st->cheats[i], curr_val);
 
-      switch (cheat_manager_state.cheats[i].cheat_type)
+      switch (cheat_st->cheats[i].cheat_type)
       {
          case CHEAT_TYPE_SET_TO_VALUE:
             set_value = true;
-            value_to_set = cheat_manager_state.cheats[i].value;
+            value_to_set = cheat_st->cheats[i].value;
             break;
          case CHEAT_TYPE_INCREASE_VALUE:
             set_value = true;
-            value_to_set = curr_val + cheat_manager_state.cheats[i].value;
+            value_to_set = curr_val + cheat_st->cheats[i].value;
             break;
          case CHEAT_TYPE_DECREASE_VALUE:
             set_value = true;
-            value_to_set = curr_val - cheat_manager_state.cheats[i].value;
+            value_to_set = curr_val - cheat_st->cheats[i].value;
             break;
          case CHEAT_TYPE_RUN_NEXT_IF_EQ:
-            if (!(curr_val == cheat_manager_state.cheats[i].value))
+            if (!(curr_val == cheat_st->cheats[i].value))
                run_cheat = false;
             break;
          case CHEAT_TYPE_RUN_NEXT_IF_NEQ:
-            if (!(curr_val != cheat_manager_state.cheats[i].value))
+            if (!(curr_val != cheat_st->cheats[i].value))
                run_cheat = false;
             break;
          case CHEAT_TYPE_RUN_NEXT_IF_LT:
-            if (!(cheat_manager_state.cheats[i].value < curr_val))
+            if (!(cheat_st->cheats[i].value < curr_val))
                run_cheat = false;
             break;
          case CHEAT_TYPE_RUN_NEXT_IF_GT:
-            if (!(cheat_manager_state.cheats[i].value > curr_val))
+            if (!(cheat_st->cheats[i].value > curr_val))
                run_cheat = false;
             break;
       }
 
       if (set_value)
       {
-         for (repeat_iter = 1; repeat_iter <= cheat_manager_state.cheats[i].repeat_count; repeat_iter++)
+         cheat_applied = true;
+         for (repeat_iter = 1; repeat_iter <= cheat_st->cheats[i].repeat_count; repeat_iter++)
          {
             switch (bytes_per_item)
             {
                case 2:
-                  if (cheat_manager_state.cheats[i].big_endian)
+                  if (cheat_st->cheats[i].big_endian)
                   {
                      *(curr + idx - offset) = (value_to_set >> 8) & 0xFF;
                      *(curr + idx + 1 - offset) = value_to_set & 0xFF;
@@ -1424,7 +1484,7 @@ void cheat_manager_apply_retro_cheats(void)
                   }
                   break;
                case 4:
-                  if (cheat_manager_state.cheats[i].big_endian)
+                  if (cheat_st->cheats[i].big_endian)
                   {
                      *(curr + idx - offset) = (value_to_set >> 24) & 0xFF;
                      *(curr + idx + 1 - offset) = (value_to_set >> 16) & 0xFF;
@@ -1467,7 +1527,7 @@ void cheat_manager_apply_retro_cheats(void)
                   break;
             }
 
-            value_to_set += cheat_manager_state.cheats[i].repeat_add_to_value;
+            value_to_set += cheat_st->cheats[i].repeat_add_to_value;
 
             if (mask != 0)
                value_to_set = value_to_set % mask;
@@ -1475,7 +1535,7 @@ void cheat_manager_apply_retro_cheats(void)
             if (bits < 8)
             {
                unsigned int bit_iter;
-               for (bit_iter = 0; bit_iter < cheat_manager_state.cheats[i].repeat_add_to_address; bit_iter++)
+               for (bit_iter = 0; bit_iter < cheat_st->cheats[i].repeat_add_to_address; bit_iter++)
                {
                   address_mask = (address_mask << mask) & 0xFF;
 
@@ -1487,14 +1547,22 @@ void cheat_manager_apply_retro_cheats(void)
                }
             }
             else
-               idx += (cheat_manager_state.cheats[i].repeat_add_to_address * bytes_per_item);
+               idx += (cheat_st->cheats[i].repeat_add_to_address * bytes_per_item);
 
-            idx = idx % cheat_manager_state.total_memory_size;
+            idx = idx % cheat_st->total_memory_size;
 
             offset = translate_address(idx, &curr);
          }
       }
    }
+
+#ifdef HAVE_CHEEVOS
+   if (cheat_applied)
+      if (     rcheevos_hardcore_active 
+            && rcheevos_loaded 
+            && !rcheevos_hardcore_paused)
+         cheat_manager_pause_cheevos();
+#endif
 }
 
 void cheat_manager_match_action(enum cheat_match_action_type match_action, unsigned int target_match_idx, unsigned int *address, unsigned int *address_mask,
@@ -1503,50 +1571,51 @@ void cheat_manager_match_action(enum cheat_match_action_type match_action, unsig
    unsigned int byte_part;
    unsigned int idx;
    unsigned int start_idx;
-   unsigned int mask = 0;
+   unsigned int           mask = 0;
    unsigned int bytes_per_item = 1;
-   unsigned int bits = 8;
-   unsigned int curr_val = 0;
-   unsigned int prev_val = 0;
-   unsigned int offset = 0;
-   unsigned char *curr = cheat_manager_state.curr_memory_buf;
-   unsigned char *prev = cheat_manager_state.prev_memory_buf;
+   unsigned int           bits = 8;
+   unsigned int       curr_val = 0;
+   unsigned int       prev_val = 0;
+   unsigned int         offset = 0;
+   cheat_manager_t   *cheat_st = &cheat_manager_state;
+   unsigned char         *curr = cheat_st->curr_memory_buf;
+   unsigned char         *prev = cheat_st->prev_memory_buf;
    unsigned int curr_match_idx = 0;
 
-   if (target_match_idx > cheat_manager_state.num_matches - 1)
+   if (target_match_idx > cheat_st->num_matches - 1)
       return;
 
-   if (cheat_manager_state.num_memory_buffers == 0)
+   if (cheat_st->num_memory_buffers == 0)
       return;
 
-   cheat_manager_setup_search_meta(cheat_manager_state.search_bit_size, &bytes_per_item, &mask, &bits);
+   cheat_manager_setup_search_meta(cheat_st->search_bit_size, &bytes_per_item, &mask, &bits);
 
    if (match_action == CHEAT_MATCH_ACTION_TYPE_BROWSE)
       start_idx = *address;
    else
       start_idx = 0;
 
-   for (idx = start_idx; idx < cheat_manager_state.total_memory_size; idx = idx + bytes_per_item)
+   for (idx = start_idx; idx < cheat_st->total_memory_size; idx = idx + bytes_per_item)
    {
       offset = translate_address(idx, &curr);
 
       switch (bytes_per_item)
       {
       case 2:
-         curr_val = cheat_manager_state.big_endian ?
+         curr_val = cheat_st->big_endian ?
                (*(curr + idx - offset) * 256) + *(curr + idx + 1 - offset) :
                *(curr + idx - offset) + (*(curr + idx + 1 - offset) * 256);
          if (prev)
-            prev_val = cheat_manager_state.big_endian ?
+            prev_val = cheat_st->big_endian ?
                   (*(prev + idx) * 256) + *(prev + idx + 1) :
                   *(prev + idx) + (*(prev + idx + 1) * 256);
          break;
       case 4:
-         curr_val = cheat_manager_state.big_endian ?
+         curr_val = cheat_st->big_endian ?
                (*(curr + idx - offset) * 256 * 256 * 256) + (*(curr + idx + 1 - offset) * 256 * 256) + (*(curr + idx + 2 - offset) * 256) + *(curr + idx + 3 - offset) :
                *(curr + idx - offset) + (*(curr + idx + 1 - offset) * 256) + (*(curr + idx + 2 - offset) * 256 * 256) + (*(curr + idx + 3 - offset) * 256 * 256 * 256);
          if (prev)
-            prev_val = cheat_manager_state.big_endian ?
+            prev_val = cheat_st->big_endian ?
                   (*(prev + idx) * 256 * 256 * 256) + (*(prev + idx + 1) * 256 * 256) + (*(prev + idx + 2) * 256) + *(prev + idx + 3) :
                   *(prev + idx) + (*(prev + idx + 1) * 256) + (*(prev + idx + 2) * 256 * 256) + (*(prev + idx + 3) * 256 * 256 * 256);
          break;
@@ -1574,7 +1643,7 @@ void cheat_manager_match_action(enum cheat_match_action_type match_action, unsig
 
          if (bits < 8)
          {
-            prev_match = *(cheat_manager_state.matches + idx) & (mask << (byte_part * bits));
+            prev_match = *(cheat_st->matches + idx) & (mask << (byte_part * bits));
             if (prev_match)
             {
                if (target_match_idx == curr_match_idx)
@@ -1590,20 +1659,20 @@ void cheat_manager_match_action(enum cheat_match_action_type match_action, unsig
                      *prev_value = prev_val;
                      return;
                   case CHEAT_MATCH_ACTION_TYPE_COPY:
-                     if (!cheat_manager_add_new_code(cheat_manager_state.search_bit_size, idx, (mask << (byte_part * bits)),
-                           cheat_manager_state.big_endian, curr_val))
+                     if (!cheat_manager_add_new_code(cheat_st->search_bit_size, idx, (mask << (byte_part * bits)),
+                           cheat_st->big_endian, curr_val))
                         runloop_msg_queue_push(msg_hash_to_str(MSG_CHEAT_SEARCH_ADD_MATCH_FAIL), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
                      else
                         runloop_msg_queue_push(msg_hash_to_str(MSG_CHEAT_SEARCH_ADD_MATCH_SUCCESS), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
                      return;
                   case CHEAT_MATCH_ACTION_TYPE_DELETE:
                      if (bits < 8)
-                        *(cheat_manager_state.matches + idx) = *(cheat_manager_state.matches + idx) &
+                        *(cheat_st->matches + idx) = *(cheat_st->matches + idx) &
                               ((~(mask << (byte_part * bits))) & 0xFF);
                      else
-                        memset(cheat_manager_state.matches + idx, 0, bytes_per_item);
-                     if (cheat_manager_state.num_matches > 0)
-                        cheat_manager_state.num_matches--;
+                        memset(cheat_st->matches + idx, 0, bytes_per_item);
+                     if (cheat_st->num_matches > 0)
+                        cheat_st->num_matches--;
                      runloop_msg_queue_push(msg_hash_to_str(MSG_CHEAT_SEARCH_DELETE_MATCH_SUCCESS), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
                      return;
                   }
@@ -1614,7 +1683,7 @@ void cheat_manager_match_action(enum cheat_match_action_type match_action, unsig
          }
          else
          {
-            prev_match = *(cheat_manager_state.matches + idx);
+            prev_match = *(cheat_st->matches + idx);
             if (prev_match)
             {
                if (target_match_idx == curr_match_idx)
@@ -1630,20 +1699,20 @@ void cheat_manager_match_action(enum cheat_match_action_type match_action, unsig
                      *prev_value = prev_val;
                      return;
                   case CHEAT_MATCH_ACTION_TYPE_COPY:
-                     if (!cheat_manager_add_new_code(cheat_manager_state.search_bit_size, idx, 0xFF,
-                           cheat_manager_state.big_endian, curr_val))
+                     if (!cheat_manager_add_new_code(cheat_st->search_bit_size, idx, 0xFF,
+                           cheat_st->big_endian, curr_val))
                         runloop_msg_queue_push(msg_hash_to_str(MSG_CHEAT_SEARCH_ADD_MATCH_FAIL), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
                      else
                         runloop_msg_queue_push(msg_hash_to_str(MSG_CHEAT_SEARCH_ADD_MATCH_SUCCESS), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
                      return;
                   case CHEAT_MATCH_ACTION_TYPE_DELETE:
                      if (bits < 8)
-                        *(cheat_manager_state.matches + idx) = *(cheat_manager_state.matches + idx) &
+                        *(cheat_st->matches + idx) = *(cheat_st->matches + idx) &
                               ((~(mask << (byte_part * bits))) & 0xFF);
                      else
-                        memset(cheat_manager_state.matches + idx, 0, bytes_per_item);
-                     if (cheat_manager_state.num_matches > 0)
-                        cheat_manager_state.num_matches--;
+                        memset(cheat_st->matches + idx, 0, bytes_per_item);
+                     if (cheat_st->num_matches > 0)
+                        cheat_st->num_matches--;
                      runloop_msg_queue_push(msg_hash_to_str(MSG_CHEAT_SEARCH_DELETE_MATCH_SUCCESS), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
                      return;
                   }
@@ -1654,20 +1723,23 @@ void cheat_manager_match_action(enum cheat_match_action_type match_action, unsig
          }
       }
    }
-
 }
+
 int cheat_manager_copy_match(rarch_setting_t *setting, bool wraparound)
 {
+   cheat_manager_t *cheat_st = &cheat_manager_state;
    cheat_manager_match_action(CHEAT_MATCH_ACTION_TYPE_COPY,
-         cheat_manager_state.match_idx, NULL, NULL, NULL, NULL);
+         cheat_st->match_idx, NULL, NULL, NULL, NULL);
    return 0;
 }
 
 int cheat_manager_delete_match(rarch_setting_t *setting, bool wraparound)
 {
-   bool refresh = false;
+   bool              refresh = false;
+   cheat_manager_t *cheat_st = &cheat_manager_state;
+
    cheat_manager_match_action(CHEAT_MATCH_ACTION_TYPE_DELETE,
-         cheat_manager_state.match_idx, NULL, NULL, NULL, NULL);
+         cheat_st->match_idx, NULL, NULL, NULL, NULL);
 #ifdef HAVE_MENU
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
    menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);

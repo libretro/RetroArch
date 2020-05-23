@@ -1174,6 +1174,7 @@ static bool d3d12_gfx_frame(
    unsigned video_height          = video_info->height;
    struct font_params *osd_params = (struct font_params*)
       &video_info->osd_stat_params;
+   bool menu_is_alive             = video_info->menu_is_alive;
 
 
    d3d12_gfx_sync(d3d12);
@@ -1513,7 +1514,7 @@ static bool d3d12_gfx_frame(
 
 #ifdef HAVE_MENU
    if (d3d12->menu.enabled)
-      menu_driver_frame(video_info);
+      menu_driver_frame(menu_is_alive, video_info);
    else
 #endif
       if (statistics_show)

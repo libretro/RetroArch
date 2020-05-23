@@ -16,64 +16,199 @@
 
 #include <stdint.h>
 #include <stdio.h>
+#include <process.h>
+#include <string/stdstring.h>
+#include <file/file_path.h>
 
 #include "../frontend_driver.h"
+#include "../../defaults.h"
+
+static enum frontend_fork dos_fork_mode = FRONTEND_FORK_NONE;
 
 static void frontend_dos_init(void *data)
 {
-   printf("Loading RetroArch...\n");
+	printf("Loading RetroArch...\n");
 }
 
 static void frontend_dos_shutdown(bool unused)
 {
-   (void)unused;
+	(void)unused;
 }
 
 static int frontend_dos_get_rating(void)
 {
-   return -1;
+	return -1;
 }
 
 enum frontend_architecture frontend_dos_get_architecture(void)
 {
-   return FRONTEND_ARCH_X86;
+	return FRONTEND_ARCH_X86;
 }
 
 static void frontend_dos_get_env_settings(int *argc, char *argv[],
       void *data, void *params_data)
 {
+	char base_path[PATH_MAX] = {0};
+	int i;
+
+	retro_main_log_file_init("retrodos.txt", false);
+
+	strlcpy(base_path, argv[0], sizeof(base_path));
+	char *slash = strrchr(base_path, '/');
+	if (slash)
+	  *slash = '\0';
+	slash = strrchr(base_path, '/');
+	if (slash && strcasecmp(slash, "/cores"))
+	  *slash = '\0';
+
+	fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE], base_path,
+			   "cores", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
+	fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_INFO], base_path,
+			   "coreinfo", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]));
+	fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG], base_path,
+			   "autoconf", sizeof(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG]));
+
+	fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_ASSETS], base_path,
+			   "assets", sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]));
+
+	fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG], base_path,
+			   "config", sizeof(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG]));
+	fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_REMAP],
+			   g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG],
+			   "remaps", sizeof(g_defaults.dirs[DEFAULT_DIR_REMAP]));
+	fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_PLAYLIST], base_path,
+			   "playlist", sizeof(g_defaults.dirs[DEFAULT_DIR_PLAYLIST]));
+	fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_RECORD_CONFIG], base_path,
+			   "recrdcfg", sizeof(g_defaults.dirs[DEFAULT_DIR_RECORD_CONFIG]));
+	fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_RECORD_OUTPUT], base_path,
+			   "records", sizeof(g_defaults.dirs[DEFAULT_DIR_RECORD_OUTPUT]));
+	fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CURSOR], base_path,
+			   "database/cursors", sizeof(g_defaults.dirs[DEFAULT_DIR_CURSOR]));
+	fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_DATABASE], base_path,
+			   "database/rdb", sizeof(g_defaults.dirs[DEFAULT_DIR_DATABASE]));
+	fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SHADER], base_path,
+			   "shaders", sizeof(g_defaults.dirs[DEFAULT_DIR_SHADER]));
+	fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CHEATS], base_path,
+			   "cheats", sizeof(g_defaults.dirs[DEFAULT_DIR_CHEATS]));
+	fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_OVERLAY], base_path,
+			   "overlay", sizeof(g_defaults.dirs[DEFAULT_DIR_OVERLAY]));
+#ifdef HAVE_VIDEO_LAYOUT
+	fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_VIDEO_LAYOUT], base_path,
+			   "layouts", sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_LAYOUT]));
+#endif
+	fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS], base_path,
+			   "download", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]));
+	fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT], base_path,
+			   "scrnshot", sizeof(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT]));
+	fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS], base_path,
+			   "thumbs", sizeof(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS]));
+	fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_LOGS], base_path,
+			   "logs", sizeof(g_defaults.dirs[DEFAULT_DIR_LOGS]));
+
+	for (i = 0; i < DEFAULT_DIR_LAST; i++)
+	{
+		const char *dir_path = g_defaults.dirs[i];
+		if (!string_is_empty(dir_path))
+			path_mkdir(dir_path);
+	}
+}
+
+static void frontend_dos_exec(const char *path, bool should_load_game)
+{
+	printf("Loading %s, %d\n", path, should_load_game);
+
+	char *newargv[]    = { NULL, NULL };
+	size_t len         = strlen(path);
+
+	newargv[0] = (char*)malloc(len);
+
+	strlcpy(newargv[0], path, len);
+
+	execv(path, newargv);
+}
+
+static void frontend_dos_exitspawn(char *s, size_t len, char *args)
+{
+	bool should_load_content = false;
+
+	if (dos_fork_mode == FRONTEND_FORK_NONE)
+		return;
+	
+	switch (dos_fork_mode)
+	{
+	case FRONTEND_FORK_CORE_WITH_ARGS:
+		should_load_content = true;
+		break;
+	case FRONTEND_FORK_NONE:
+	default:
+		break;
+	}
+
+	frontend_dos_exec(s, should_load_content);
+}
+
+static bool frontend_unix_set_fork(enum frontend_fork fork_mode)
+{
+   switch (fork_mode)
+   {
+      case FRONTEND_FORK_CORE:
+         RARCH_LOG("FRONTEND_FORK_CORE\n");
+         unix_fork_mode  = fork_mode;
+         break;
+      case FRONTEND_FORK_CORE_WITH_ARGS:
+         RARCH_LOG("FRONTEND_FORK_CORE_WITH_ARGS\n");
+         unix_fork_mode  = fork_mode;
+         break;
+      case FRONTEND_FORK_RESTART:
+         RARCH_LOG("FRONTEND_FORK_RESTART\n");
+         unix_fork_mode  = FRONTEND_FORK_CORE;
+
+         {
+            char executable_path[PATH_MAX_LENGTH] = {0};
+            fill_pathname_application_path(executable_path,
+                  sizeof(executable_path));
+            path_set(RARCH_PATH_CORE, executable_path);
+         }
+         command_event(CMD_EVENT_QUIT, NULL);
+         break;
+      case FRONTEND_FORK_NONE:
+      default:
+         return false;
+   }
+
+   return true;
 }
 
 frontend_ctx_driver_t frontend_ctx_dos = {
-   frontend_dos_get_env_settings,/* environment_get */
-   frontend_dos_init,            /* init */
-   NULL,                         /* deinit */
-   NULL,                         /* exitspawn */
-   NULL,                         /* process_args */
-   NULL,                         /* exec */
-   NULL,                         /* set_fork */
-   frontend_dos_shutdown,        /* shutdown */
-   NULL,                         /* get_name */
-   NULL,                         /* get_os */
-   frontend_dos_get_rating,      /* get_rating */
-   NULL,                         /* load_content */
-   frontend_dos_get_architecture,/* get_architecture */
-   NULL,                         /* get_powerstate */
-   NULL,                         /* parse_drive_list */
-   NULL,                         /* get_mem_total */
-   NULL,                         /* get_mem_free */
-   NULL,                         /* install_signal_handler */
-   NULL,                         /* get_sighandler_state */
-   NULL,                         /* set_sighandler_state */
-   NULL,                         /* destroy_sighandler_state */
-   NULL,                         /* attach_console */
-   NULL,                         /* detach_console */
-   NULL,                         /* watch_path_for_changes */
-   NULL,                         /* check_for_path_changes */
-   NULL,                         /* set_sustained_performance_mode */
-   NULL,                         /* get_cpu_model_name */
-   NULL,                         /* get_user_language */
-   NULL,                         /* is_narrator_running */
-   NULL,                         /* accessibility_speak */
-   "dos",
+	frontend_dos_get_env_settings,/* environment_get */
+	frontend_dos_init,            /* init */
+	NULL,                         /* deinit */
+	frontend_dos_exitspawn,       /* exitspawn */
+	NULL,                         /* process_args */
+	frontend_dos_exec,            /* exec */
+	frontend_dos_set_fork,        /* set_fork */
+	frontend_dos_shutdown,        /* shutdown */
+	NULL,                         /* get_name */
+	NULL,                         /* get_os */
+	frontend_dos_get_rating,      /* get_rating */
+	NULL,                         /* load_content */
+	frontend_dos_get_architecture,/* get_architecture */
+	NULL,                         /* get_powerstate */
+	NULL,                         /* parse_drive_list */
+	NULL,                         /* get_mem_total */
+	NULL,                         /* get_mem_free */
+	NULL,                         /* install_signal_handler */
+	NULL,                         /* get_sighandler_state */
+	NULL,                         /* set_sighandler_state */
+	NULL,                         /* destroy_sighandler_state */
+	NULL,                         /* attach_console */
+	NULL,                         /* detach_console */
+	NULL,                         /* watch_path_for_changes */
+	NULL,                         /* check_for_path_changes */
+	NULL,                         /* set_sustained_performance_mode */
+	NULL,                         /* get_cpu_model_name */
+	NULL,                         /* get_user_language */
+	NULL,                         /* is_narrator_running */
+	NULL,                         /* accessibility_speak */
+	"dos",
 };

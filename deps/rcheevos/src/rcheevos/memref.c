@@ -5,7 +5,7 @@
 
 #define MEMREF_PLACEHOLDER_ADDRESS 0xFFFFFFFF
 
-static rc_memref_value_t* rc_alloc_memref_value_sizing_mode(rc_parse_state_t* parse, unsigned address, char size, char is_bcd, char is_indirect) {
+static rc_memref_value_t* rc_alloc_memref_value_sizing_mode(rc_parse_state_t* parse, unsigned address, char size, char is_indirect) {
   rc_memref_t* memref;
   int i;
 
@@ -20,7 +20,7 @@ static rc_memref_value_t* rc_alloc_memref_value_sizing_mode(rc_parse_state_t* pa
   /* have to track unique address/size/bcd combinations - use scratch.memref for sizing mode */
   for (i = 0; i < parse->scratch.memref_count; ++i) {
     memref = &parse->scratch.memref[i];
-    if (memref->address == address && memref->size == size && memref->is_bcd == is_bcd) {
+    if (memref->address == address && memref->size == size) {
       return &parse->scratch.obj.memref_value;
     }
   }
@@ -57,7 +57,6 @@ static rc_memref_value_t* rc_alloc_memref_value_sizing_mode(rc_parse_state_t* pa
     memref = &parse->scratch.memref[parse->scratch.memref_count++];
     memref->address = address;
     memref->size = size;
-    memref->is_bcd = is_bcd;
     memref->is_indirect = is_indirect;
   }
   
@@ -65,7 +64,7 @@ static rc_memref_value_t* rc_alloc_memref_value_sizing_mode(rc_parse_state_t* pa
   return RC_ALLOC(rc_memref_value_t, parse);
 }
 
-static rc_memref_value_t* rc_alloc_memref_value_constuct_mode(rc_parse_state_t* parse, unsigned address, char size, char is_bcd, char is_indirect) {
+static rc_memref_value_t* rc_alloc_memref_value_constuct_mode(rc_parse_state_t* parse, unsigned address, char size, char is_indirect) {
   rc_memref_value_t** next_memref_value;
   rc_memref_value_t* memref_value;
   rc_memref_value_t* indirect_memref_value;
@@ -75,8 +74,8 @@ static rc_memref_value_t* rc_alloc_memref_value_constuct_mode(rc_parse_state_t* 
     next_memref_value = parse->first_memref;
     while (*next_memref_value) {
       memref_value = *next_memref_value;
-      if (!memref_value->memref.is_indirect && memref_value->memref.address == address && 
-          memref_value->memref.size == size && memref_value->memref.is_bcd == is_bcd) {
+      if (!memref_value->memref.is_indirect && memref_value->memref.address == address &&
+          memref_value->memref.size == size) {
         return memref_value;
       }
 
@@ -96,7 +95,6 @@ static rc_memref_value_t* rc_alloc_memref_value_constuct_mode(rc_parse_state_t* 
   memref_value = RC_ALLOC(rc_memref_value_t, parse);
   memref_value->memref.address = address;
   memref_value->memref.size = size;
-  memref_value->memref.is_bcd = is_bcd;
   memref_value->memref.is_indirect = is_indirect;
   memref_value->value = 0;
   memref_value->previous = 0;
@@ -110,7 +108,6 @@ static rc_memref_value_t* rc_alloc_memref_value_constuct_mode(rc_parse_state_t* 
     indirect_memref_value = RC_ALLOC(rc_memref_value_t, parse);
     indirect_memref_value->memref.address = MEMREF_PLACEHOLDER_ADDRESS;
     indirect_memref_value->memref.size = size;
-    indirect_memref_value->memref.is_bcd = is_bcd;
     indirect_memref_value->memref.is_indirect = 1;
     indirect_memref_value->value = 0;
     indirect_memref_value->previous = 0;
@@ -123,15 +120,18 @@ static rc_memref_value_t* rc_alloc_memref_value_constuct_mode(rc_parse_state_t* 
   return memref_value;
 }
 
-rc_memref_value_t* rc_alloc_memref_value(rc_parse_state_t* parse, unsigned address, char size, char is_bcd, char is_indirect) {
+rc_memref_value_t* rc_alloc_memref_value(rc_parse_state_t* parse, unsigned address, char size, char is_indirect) {
   if (!parse->first_memref)
-    return rc_alloc_memref_value_sizing_mode(parse, address, size, is_bcd, is_indirect);
+    return rc_alloc_memref_value_sizing_mode(parse, address, size, is_indirect);
 
-  return rc_alloc_memref_value_constuct_mode(parse, address, size, is_bcd, is_indirect);
+  return rc_alloc_memref_value_constuct_mode(parse, address, size, is_indirect);
 }
 
 static unsigned rc_memref_get_value(rc_memref_t* self, rc_peek_t peek, void* ud) {
   unsigned value;
+
+  if (!peek)
+    return 0;
 
   switch (self->size)
   {
@@ -177,56 +177,19 @@ static unsigned rc_memref_get_value(rc_memref_t* self, rc_peek_t peek, void* ud)
 
     case RC_MEMSIZE_8_BITS:
       value = peek(self->address, 1, ud);
-
-      if (self->is_bcd) {
-         value = ((value >> 4) & 0x0f) * 10 + (value & 0x0f);
-      }
-
       break;
 
     case RC_MEMSIZE_16_BITS:
       value = peek(self->address, 2, ud);
-
-      if (self->is_bcd) {
-         value = ((value >> 12) & 0x0f) * 1000
-               + ((value >> 8) & 0x0f) * 100
-               + ((value >> 4) & 0x0f) * 10
-               + ((value >> 0) & 0x0f) * 1;
-      }
-
       break;
 
     case RC_MEMSIZE_24_BITS:
       /* peek 4 bytes - don't expect the caller to understand 24-bit numbers */
-      value = peek(self->address, 4, ud);
-
-      if (self->is_bcd) {
-        value = ((value >> 20) & 0x0f) * 100000
-              + ((value >> 16) & 0x0f) * 10000
-              + ((value >> 12) & 0x0f) * 1000
-              + ((value >> 8) & 0x0f) * 100
-              + ((value >> 4) & 0x0f) * 10
-              + ((value >> 0) & 0x0f) * 1;
-      } else {
-        value &= 0x00FFFFFF;
-      }
-
+      value = peek(self->address, 4, ud) & 0x00FFFFFF;
       break;
 
     case RC_MEMSIZE_32_BITS:
       value = peek(self->address, 4, ud);
-
-      if (self->is_bcd) {
-        value = ((value >> 28) & 0x0f) * 10000000
-              + ((value >> 24) & 0x0f) * 1000000
-              + ((value >> 20) & 0x0f) * 100000
-              + ((value >> 16) & 0x0f) * 10000
-              + ((value >> 12) & 0x0f) * 1000
-              + ((value >> 8) & 0x0f) * 100
-              + ((value >> 4) & 0x0f) * 10
-              + ((value >> 0) & 0x0f) * 1;
-      }
-
       break;
 
     default:

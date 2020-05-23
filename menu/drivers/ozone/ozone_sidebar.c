@@ -716,9 +716,13 @@ void ozone_change_tab(ozone_handle_t *ozone,
 void ozone_init_horizontal_list(ozone_handle_t *ozone)
 {
    menu_displaylist_info_t info;
-   settings_t *settings             = config_get_ptr();
-   const char *dir_playlist         = settings->paths.directory_playlist;
-   bool menu_content_show_playlists = settings->bools.menu_content_show_playlists;
+   size_t list_size;
+   size_t i;
+   settings_t *settings              = config_get_ptr();
+   const char *dir_playlist          = settings->paths.directory_playlist;
+   bool menu_content_show_playlists  = settings->bools.menu_content_show_playlists;
+   bool ozone_truncate_playlist_name = settings->bools.ozone_truncate_playlist_name;
+
    menu_displaylist_info_init(&info);
 
    info.list                    = ozone->horizontal_list;
@@ -736,6 +740,70 @@ void ozone_init_horizontal_list(ozone_handle_t *ozone)
    }
 
    menu_displaylist_info_free(&info);
+
+   /* Loop through list and set console names */
+   list_size = ozone_list_get_size(ozone, MENU_LIST_HORIZONTAL);
+
+   for (i = 0; i < list_size; i++)
+   {
+      const char *playlist_file = NULL;
+      char *console_name        = NULL;
+      char playlist_file_noext[255];
+
+      playlist_file_noext[0] = '\0';
+
+      /* Get playlist file name */
+      file_list_get_at_offset(ozone->horizontal_list, i,
+            &playlist_file, NULL, NULL, NULL);
+
+      if (!playlist_file)
+      {
+         file_list_set_alt_at_offset(ozone->horizontal_list, i, NULL);
+         continue;
+      }
+
+      /* Remove extension */
+      fill_pathname_base_noext(playlist_file_noext,
+            playlist_file, sizeof(playlist_file_noext));
+
+      console_name = playlist_file_noext;
+
+      /* Truncate playlist names, if required
+       * > Format: "Vendor - Console"
+           Remove everything before the hyphen
+           and the subsequent space */
+      if (ozone_truncate_playlist_name)
+      {
+         bool hyphen_found = false;
+
+         for (;;)
+         {
+            /* Check for "- " */
+            if (*console_name == '\0')
+               break;
+            else if (*console_name == '-' && *(console_name + 1) == ' ')
+            {
+               hyphen_found = true;
+               break;
+            }
+
+            console_name++;
+         }
+
+         if (hyphen_found)
+            console_name += 2;
+         else
+            console_name = playlist_file_noext;
+      }
+
+      /* Assign console name to list */
+      file_list_set_alt_at_offset(ozone->horizontal_list, i, console_name);
+   }
+
+   /* If playlist names were truncated, re-sort list
+    * by console name */
+   if (ozone_truncate_playlist_name && (list_size > 0))
+      file_list_sort_on_alt(ozone->horizontal_list);
 }
 
 void ozone_refresh_horizontal_list(ozone_handle_t *ozone)
@@ -762,17 +830,13 @@ void ozone_refresh_horizontal_list(ozone_handle_t *ozone)
 void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
 {
    unsigned i;
-   const char *title;
-   char title_noext[255];
-   char *console_name                = NULL;
-   settings_t *settings              = config_get_ptr();
-   bool ozone_truncate_playlist_name = settings->bools.ozone_truncate_playlist_name;
-   size_t list_size                  = ozone_list_get_size(ozone, MENU_LIST_HORIZONTAL);
+   size_t list_size = ozone_list_get_size(ozone, MENU_LIST_HORIZONTAL);
 
    for (i = 0; i < list_size; i++)
    {
-      const char *path     = NULL;
-      ozone_node_t *node   = (ozone_node_t*)file_list_get_userdata_at_offset(ozone->horizontal_list, i);
+      const char *path         = NULL;
+      const char *console_name = NULL;
+      ozone_node_t *node       = (ozone_node_t*)file_list_get_userdata_at_offset(ozone->horizontal_list, i);
 
       if (!node)
       {
@@ -787,7 +851,7 @@ void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
       if (!path)
          continue;
 
-      if (!strstr(path, ".lpl"))
+      if (!string_ends_with(path, ".lpl"))
          continue;
 
       {
@@ -868,45 +932,17 @@ void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
 
          /* Console name */
          menu_entries_get_at_offset(
-            ozone->horizontal_list,
-            i,
-            &title, NULL, NULL, NULL, NULL);
-
-         fill_pathname_base_noext(title_noext, title, sizeof(title_noext));
-
-         console_name = title_noext;
-
-         /* Format : "Vendor - Console"
-            Remove everything before the hyphen
-            and the subsequent space */
-         if (ozone_truncate_playlist_name)
-         {
-            bool hyphen_found = false;
-
-            for (;;)
-            {
-               /* Check for "- " */
-               if (*console_name == '-' && *(console_name + 1) == ' ')
-               {
-                  hyphen_found = true;
-                  break;
-               }
-               else if (*console_name == '\0')
-                  break;
-
-               console_name++;
-            }
-
-            if (hyphen_found)
-               console_name += 2;
-            else
-               console_name = title_noext;
-         }
+            ozone->horizontal_list, i,
+            NULL, NULL, NULL, NULL, &console_name);
 
          if (node->console_name)
             free(node->console_name);
 
-         node->console_name = strdup(console_name);
+         /* Note: console_name will *always* be valid here,
+          * but provide a fallback to prevent NULL pointer
+          * dereferencing in case of unknown errors... */
+         node->console_name = strdup(
+               console_name ? console_name : path);
 
          free(sysname);
          free(texturepath);
@@ -932,7 +968,7 @@ void ozone_context_destroy_horizontal_list(ozone_handle_t *ozone)
       file_list_get_at_offset(ozone->horizontal_list, i,
             &path, NULL, NULL, NULL);
 
-      if (!path || !strstr(path, ".lpl"))
+      if (!path || !string_ends_with(path, ".lpl"))
          continue;
 
       video_driver_texture_unload(&node->icon);

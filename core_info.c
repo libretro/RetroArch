@@ -232,7 +232,7 @@ static config_file_t *core_info_list_iterate(
          current_path,
          info_path_base_size);
 
-#if defined(RARCH_MOBILE) || (defined(RARCH_CONSOLE) && !defined(PSP) && !defined(_3DS) && !defined(VITA) && !defined(PS2) && !defined(HW_WUP))
+#if defined(RARCH_MOBILE) || (defined(RARCH_CONSOLE) && !defined(PSP) && !defined(_3DS) && !defined(VITA) && !defined(HW_WUP))
    {
       char *substr = strrchr(info_path_base, '_');
       if (substr)

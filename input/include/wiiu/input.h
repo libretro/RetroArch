@@ -29,7 +29,6 @@
 #include <wiiu/vpad.h>
 #include <wiiu/kpad.h>
 #include <wiiu/pad_strings.h>
-#include "hid.h"
 
 #include "../../common/hid/hid_device_driver.h"
 #include "../../connect/joypad_connection.h"
@@ -51,7 +50,7 @@
 
 #define WIIU_DEVICE_INDEX_TOUCHPAD 2
 
-#define PAD_GAMEPAD 0
+#define WIIU_GAMEPAD_CHANNELS 2
 #define WIIU_WIIMOTE_CHANNELS 4
 
 #define WIIU_ANALOG_FACTOR 0x7ff0
@@ -64,5 +63,12 @@ struct _wiiu_pad_functions {
    void (*read_axis_data)(uint32_t axis, axis_data *data);
    void (*connect)(unsigned pad, input_device_driver_t *driver);
 };
+
+extern wiiu_pad_functions_t pad_functions;
+extern input_device_driver_t wiiu_joypad;
+extern input_device_driver_t wpad_driver;
+extern input_device_driver_t kpad_driver;
+extern input_device_driver_t hidpad_driver;
+extern hid_driver_t wiiu_hid;
 
 #endif /* __WIIU_INPUT__H */

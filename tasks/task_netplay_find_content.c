@@ -266,7 +266,7 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
          const char *lpl_path   = state->lpl_list->elems[i].data;
 
          /* skip files without .lpl file extension */
-         if (!strstr(lpl_path, ".lpl"))
+         if (!string_ends_with(lpl_path, ".lpl"))
             continue;
 
          RARCH_LOG("[Lobby] Searching playlist: %s\n", lpl_path);
@@ -340,7 +340,7 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
             const char *lpl_path   = state->lpl_list->elems[j].data;
 
             /* skip files without .lpl file extension */
-            if (!strstr(lpl_path, ".lpl"))
+            if (!string_ends_with(lpl_path, ".lpl"))
                continue;
 
             RARCH_LOG("[Lobby] Searching content %d/%d (%s) in playlist: %s\n", i + 1, game_list->size, game_list->elems[i].data, lpl_path);

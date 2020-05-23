@@ -141,7 +141,7 @@ static bool caca_gfx_frame(void *data, const void *frame,
    caca_clear_canvas(caca->cv);
 
 #ifdef HAVE_MENU
-   menu_driver_frame(video_info);
+   menu_driver_frame(menu_is_alive, video_info);
 #endif
 
    if (msg)

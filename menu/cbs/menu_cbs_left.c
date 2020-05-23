@@ -22,7 +22,6 @@
 #include "../../config.h"
 #endif
 
-#include "../menu_content.h"
 #include "../menu_driver.h"
 #include "../menu_entries.h"
 #include "../menu_cbs.h"
@@ -221,12 +220,32 @@ static int action_left_scroll(unsigned type, const char *label,
    return 0;
 }
 
+static int action_left_goto_tab(void)
+{
+   menu_ctx_list_t list_info;
+   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
+   file_list_t *menu_stack    = menu_entries_get_menu_stack_ptr(0);
+   size_t selection           = menu_navigation_get_selection();
+   menu_file_list_cbs_t *cbs  = selection_buf ? (menu_file_list_cbs_t*)
+      selection_buf->list[selection].actiondata : NULL;
+
+   list_info.type             = MENU_LIST_HORIZONTAL;
+   list_info.action           = MENU_ACTION_LEFT;
+
+   menu_driver_list_cache(&list_info);
+
+   if (cbs && cbs->action_content_list_switch)
+      return cbs->action_content_list_switch(selection_buf, menu_stack,
+            "", "", 0);
+
+   return 0;
+}
+
 static int action_left_mainmenu(unsigned type, const char *label,
       bool wraparound)
 {
    menu_ctx_list_t list_info;
-   unsigned        push_list       = 0;
-   settings_t       *settings      = config_get_ptr();
+   settings_t            *settings = config_get_ptr();
    bool menu_nav_wraparound_enable = settings->bools.menu_navigation_wraparound_enable;
    const char *menu_ident          = menu_driver_ident();
 
@@ -236,48 +255,16 @@ static int action_left_mainmenu(unsigned type, const char *label,
 
    menu_driver_list_get_size(&list_info);
 
-   /* List switching functionality does not
-    * apply to RGUI or MaterialUI */
+   /* Tab switching functionality only applies
+    * to XMB */
    if ((list_info.size == 1) &&
-       !string_is_equal(menu_ident, "rgui") &&
-       !string_is_equal(menu_ident, "glui"))
+       string_is_equal(menu_ident, "xmb"))
    {
-      if ((list_info.selection != 0)
-         || menu_nav_wraparound_enable)
-         push_list = 1;
+      if ((list_info.selection != 0) || menu_nav_wraparound_enable)
+         return action_left_goto_tab();
    }
    else
-      push_list = 2;
-
-   switch (push_list)
-   {
-      case 1:
-         {
-            menu_ctx_list_t list_info;
-            file_list_t *menu_stack    = menu_entries_get_menu_stack_ptr(0);
-            file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
-            size_t selection           = menu_navigation_get_selection();
-            menu_file_list_cbs_t *cbs  = selection_buf ?
-               (menu_file_list_cbs_t*)
-               selection_buf->list[selection].actiondata : NULL;
-
-            list_info.type             = MENU_LIST_HORIZONTAL;
-            list_info.action           = MENU_ACTION_LEFT;
-
-            menu_driver_list_cache(&list_info);
-
-            if (cbs && cbs->action_content_list_switch)
-               return cbs->action_content_list_switch(
-                     selection_buf, menu_stack, "", "", 0);
-         }
-         break;
-      case 2:
-         action_left_scroll(0, "", false);
-         break;
-      case 0:
-      default:
-         break;
-   }
+      action_left_scroll(0, "", false);
 
    return 0;
 }
@@ -834,7 +821,8 @@ static int menu_cbs_init_bind_left_compare_label(menu_file_list_cbs_t *cbs,
       }
    }
 
-   if (strstr(label, "input_player") && strstr(label, "_joypad_index"))
+   if (  string_starts_with(label, "input_player") && 
+         string_ends_with(label, "_joypad_index"))
    {
       unsigned i;
       for (i = 0; i < MAX_USERS; i++)
@@ -842,7 +830,8 @@ static int menu_cbs_init_bind_left_compare_label(menu_file_list_cbs_t *cbs,
          char label_setting[128];
          label_setting[0] = '\0';
 
-         snprintf(label_setting, sizeof(label_setting), "input_player%d_joypad_index", i + 1);
+         snprintf(label_setting,
+               sizeof(label_setting), "input_player%d_joypad_index", i + 1);
 
          if (!string_is_equal(label, label_setting))
             continue;
@@ -858,7 +847,7 @@ static int menu_cbs_init_bind_left_compare_label(menu_file_list_cbs_t *cbs,
       return 0;
    }
 
-   if (strstr(label, "rdb_entry") || strstr(label, "content_info"))
+   if (strstr(label, "rdb_entry") || string_starts_with(label, "content_info"))
    {
       BIND_ACTION_LEFT(cbs, action_left_scroll);
    }
