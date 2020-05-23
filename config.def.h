@@ -921,7 +921,11 @@ static const bool savestate_thumbnail_enable = false;
 
 /* When creating save (srm) files, compress
  * written data */
+#if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
+#define DEFAULT_SAVE_FILE_COMPRESSION true
+#else
 #define DEFAULT_SAVE_FILE_COMPRESSION false
+#endif
 
 /* When creating save state files, compress
  * written data */
@@ -972,7 +976,11 @@ static const int default_content_favorites_size = 200;
 #define DEFAULT_PLAYLIST_USE_OLD_FORMAT false
 
 /* When creating/updating playlists, compress written data */
+#if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
+#define DEFAULT_PLAYLIST_COMPRESSION true
+#else
 #define DEFAULT_PLAYLIST_COMPRESSION false
+#endif
 
 #ifdef HAVE_MENU
 /* Specify when to display 'core name' inline on playlist entries */
