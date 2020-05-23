@@ -15506,6 +15506,7 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_ADVANCED);
 
+#ifdef WIN32
          CONFIG_BOOL(
                list, list_info,
                &settings->bools.ui_menubar_enable,
@@ -15520,6 +15521,7 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler,
                SD_FLAG_NONE);
+#endif
 
 #ifdef HAVE_QT
          CONFIG_BOOL(
