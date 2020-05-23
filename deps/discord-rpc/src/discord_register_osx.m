@@ -3,6 +3,11 @@
 
 #import <AppKit/AppKit.h>
 
+int get_process_id(void)
+{
+    return getpid();
+}
+
 static void RegisterCommand(const char* applicationId, const char* command)
 {
    /* There does not appear to be a way to register arbitrary commands on OSX, so instead we'll save the command
