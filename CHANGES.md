@@ -29,6 +29,8 @@
 - OVERLAYS: Fix memory leak when loading overlays
 - WIIU: Gamepad hotplugging support
 - WIIU: Theoretical multi-gamepad support
+- XVIDEO: Fix keyboard input initialization
+- XVIDEO/XWAYLAND: Fix XVideo support on xwayland (by supporting I420 and YZ12)
 
 # 1.8.7
 - 3DS: Add IDs for Frodo
