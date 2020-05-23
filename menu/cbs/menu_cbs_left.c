@@ -830,7 +830,8 @@ static int menu_cbs_init_bind_left_compare_label(menu_file_list_cbs_t *cbs,
          char label_setting[128];
          label_setting[0] = '\0';
 
-         snprintf(label_setting, sizeof(label_setting), "input_player%d_joypad_index", i + 1);
+         snprintf(label_setting,
+               sizeof(label_setting), "input_player%d_joypad_index", i + 1);
 
          if (!string_is_equal(label, label_setting))
             continue;
@@ -846,7 +847,7 @@ static int menu_cbs_init_bind_left_compare_label(menu_file_list_cbs_t *cbs,
       return 0;
    }
 
-   if (strstr(label, "rdb_entry") || strstr(label, "content_info"))
+   if (strstr(label, "rdb_entry") || string_starts_with(label, "content_info"))
    {
       BIND_ACTION_LEFT(cbs, action_left_scroll);
    }
