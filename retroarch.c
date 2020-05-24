@@ -4986,12 +4986,16 @@ static void handle_translation_cb(
             start = i;
          else
          {
+            size_t found_string_len;
             found_string = (char*)malloc(i-start+1);
             strlcpy(found_string, body_copy+start+1, i-start);
+
+            found_string_len = strlen(found_string);
+
             if (curr_state == 1)/*image*/
             {
                raw_image_file_data = (char*)unbase64(found_string,
-                    strlen(found_string),
+                    found_string_len,
                     &new_image_size);
                curr_state = 0;
             }
@@ -4999,7 +5003,7 @@ static void handle_translation_cb(
             else if (curr_state == 2)
             {
                raw_sound_data = (void*)unbase64(found_string,
-                    strlen(found_string), &new_sound_size);
+                    found_string_len, &new_sound_size);
                curr_state = 0;
             }
 #endif
@@ -5194,6 +5198,7 @@ static void handle_translation_cb(
                error = "Can't allocate memory.";
                goto finish;
             }
+
             rpng_set_buf_ptr(rpng, raw_image_file_data, new_image_size);
             rpng_start(rpng);
             while (rpng_iterate_image(rpng));
@@ -5211,13 +5216,13 @@ static void handle_translation_cb(
                int d,tw,th,tc;
                d=0;
                raw_image_data = (void*)malloc(image_width*image_height*3*sizeof(uint8_t));
-               for (ui=0;ui<image_width*image_height*4;ui++)
+               for (ui = 0; ui < image_width * image_height * 4; ui++)
                {
-                  if (ui%4 != 3)
+                  if (ui % 4 != 3)
                   {
                      tc = d%3;
-                     th = image_height-d/(3*image_width)-1;
-                     tw = (d%(image_width*3))/3;
+                     th = image_height-d / (3*image_width)-1;
+                     tw = (d%(image_width*3)) / 3;
                      ((uint8_t*) raw_image_data)[tw*3+th*3*image_width+tc] = ((uint8_t *)raw_image_data_alpha)[ui];
                      d+=1;
                   }
@@ -5322,13 +5327,13 @@ static void handle_translation_cb(
 
    if (key_string)
    {
-      int length = strlen(key_string);
-      int i = 0;
-      int start = 0;
-      char t = ' ';
       char key[8];
+      int length = strlen(key_string);
+      int i      = 0;
+      int start  = 0;
+      char t     = ' ';
 
-      for (i=1;i<length;i++)
+      for (i = 1; i < length; i++)
       {
          t = key_string[i];
          if (i == length-1 || t == ' ' || t == ',')
@@ -5672,11 +5677,12 @@ static bool run_translation_service(bool paused)
 
    if (core_info)
    {
-      const char *system_id        = core_info->system_id
+      size_t label_len;
+      const char *system_id               = core_info->system_id
          ? core_info->system_id : "core";
-
+      size_t system_id_len                = strlen(system_id);
       const struct playlist_entry *entry  = NULL;
-      playlist_t *current_playlist = playlist_get_cached();
+      playlist_t *current_playlist        = playlist_get_cached();
 
       if (current_playlist)
       {
@@ -5689,12 +5695,13 @@ static bool run_translation_service(bool paused)
       }
 
       if (!label)
-         label = path_basename(path_get(RARCH_PATH_BASENAME));
-      system_label = (char*)malloc(strlen(label)+strlen(system_id)+3);
-      memcpy(system_label, system_id, strlen(system_id));
-      memcpy(system_label+strlen(system_id), "__", 2);
-      memcpy(system_label+2+strlen(system_id), label, strlen(label));
-      system_label[strlen(system_id)+2+strlen(label)] = '\0';
+         label     = path_basename(path_get(RARCH_PATH_BASENAME));
+      label_len    = strlen(label);
+      system_label = (char*)malloc(label_len + system_id_len + 3);
+      memcpy(system_label, system_id, system_id_len);
+      memcpy(system_label + system_id_len, "__", 2);
+      memcpy(system_label + 2 + system_id_len, label, label_len);
+      system_label[system_id_len + 2 + label_len] = '\0';
    }
 
    if (!scaler)
@@ -5813,20 +5820,22 @@ static bool run_translation_service(bool paused)
    if (system_label)
    {
       unsigned i;
+      size_t system_label_len = strlen(system_label);
+
       /* include game label if provided */
-      rf3 = (char *)malloc(15+strlen(system_label));
+      rf3 = (char *)malloc(15 + system_label_len);
       memcpy(rf3, ", \"label\": \"", 12*sizeof(uint8_t));
-      memcpy(rf3+12, system_label, strlen(system_label));
-      memcpy(rf3+12+strlen(system_label), "\"}\0", 3*sizeof(uint8_t));
-      for (i=12;i<strlen(system_label)+12;i++)
+      memcpy(rf3 + 12, system_label, system_label_len);
+      memcpy(rf3 + 12 + system_label_len, "\"}\0", 3*sizeof(uint8_t));
+      for (i = 12; i < system_label_len + 12; i++)
       {
          if (rf3[i] == '\"')
             rf3[i] = ' ';
       }
-      json_length = 11+out_length+15+strlen(system_label);
+      json_length = 11 + out_length + 15 + system_label_len;
    }
    else
-      json_length = 11+out_length+1;
+      json_length = 11 + out_length + 1;
 
    {
       state_son_length = 177;
@@ -5897,8 +5906,9 @@ static bool run_translation_service(bool paused)
    /* System Label */
    if (rf3)
    {
-      memcpy(json_buffer + curr_length, (const void*)rf3, (15 + strlen(system_label)) * sizeof(uint8_t));
-      curr_length += 15 + strlen(system_label);
+      size_t system_label_len = strlen(system_label);
+      memcpy(json_buffer + curr_length, (const void*)rf3, (15 + system_label_len) * sizeof(uint8_t));
+      curr_length += 15 + system_label_len;
    }
    else
    {
