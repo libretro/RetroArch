@@ -1446,6 +1446,14 @@ typedef struct runloop_ctx_msg_info
    bool flush;
 } runloop_ctx_msg_info_t;
 
+typedef struct
+{
+   char str[128];
+   unsigned priority;
+   float duration;
+   bool set;
+} runloop_core_status_msg_t;
+
 struct rarch_dir_list
 {
    struct string_list *list;
@@ -1771,6 +1779,14 @@ static retro_keyboard_event_t runloop_key_event                 = NULL;
 static retro_keyboard_event_t runloop_frontend_key_event        = NULL;
 static core_option_manager_t *runloop_core_options              = NULL;
 static msg_queue_t *runloop_msg_queue                           = NULL;
+
+static runloop_core_status_msg_t runloop_core_status_msg        =
+{
+   "",
+   0,
+   0.0f,
+   false
+};
 
 static retro_usec_t runloop_frame_time_last                     = 0;
 
@@ -10324,7 +10340,8 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
 
       case RETRO_ENVIRONMENT_SET_MESSAGE_EXT:
       {
-         const struct retro_message_ext *msg = (const struct retro_message_ext*)data;
+         const struct retro_message_ext *msg  = (const struct retro_message_ext*)data;
+         struct retro_system_av_info *av_info = &video_driver_av_info;
 
          /* Log message, if required */
          if (msg->target != RETRO_MESSAGE_TARGET_OSD)
@@ -10356,15 +10373,60 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
          /* Display message via OSD, if required */
          if (msg->target != RETRO_MESSAGE_TARGET_LOG)
          {
+            /* Handle 'status' messages */
+            if (msg->type == RETRO_MESSAGE_TYPE_STATUS)
+            {
+               /* Note: We need to lock a mutex here. Strictly
+                * speaking, runloop_core_status_msg is not part
+                * of the message queue, but:
+                * - It may be implemented as a queue in the future
+                * - It seems unnecessary to create a new slock_t
+                *   object for this type of message when
+                *   _runloop_msg_queue_lock is already available
+                * We therefore just call runloop_msg_queue_lock()/
+                * runloop_msg_queue_unlock() in this case */
+               runloop_msg_queue_lock();
+
+               /* If a message is already set, only overwrite
+                * it if the new message has the same or higher
+                * priority */
+               if (!runloop_core_status_msg.set ||
+                   (runloop_core_status_msg.priority <= msg->priority))
+               {
+                  if (!string_is_empty(msg->msg))
+                  {
+                     strlcpy(runloop_core_status_msg.str, msg->msg,
+                           sizeof(runloop_core_status_msg.str));
+
+                     runloop_core_status_msg.duration = (float)msg->duration;
+                     runloop_core_status_msg.set      = true;
+                  }
+                  else
+                  {
+                     /* Ensure sane behaviour if core sends an
+                      * empty message */
+                     runloop_core_status_msg.str[0] = '\0';
+                     runloop_core_status_msg.priority = 0;
+                     runloop_core_status_msg.duration = 0.0f;
+                     runloop_core_status_msg.set      = false;
+                  }
+               }
+
+               runloop_msg_queue_unlock();
+            }
+            /* Handle 'alternate' non-queued notifications */
 #if defined(HAVE_GFX_WIDGETS)
-            if (gfx_widgets_active())
-               gfx_widget_set_libretro_message(msg->msg,
-                     roundf((float)msg->frames / 60.0f * 1000.0f));
-            else
+            else if ((msg->type == RETRO_MESSAGE_TYPE_NOTIFICATION_ALT) &&
+                     gfx_widgets_active())
+               gfx_widget_set_libretro_message(msg->msg, msg->duration);
 #endif
+            /* Handle standard (queued) notifications */
+            else
             {
                enum message_queue_category category;
+               unsigned duration_frames = 0;
 
+               /* Assign category */
                switch (msg->level)
                {
                   case RETRO_LOG_WARN:
@@ -10380,8 +10442,13 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
                      break;
                }
 
+               /* Get duration in frames */
+               if (av_info)
+                  duration_frames = (unsigned)((av_info->timing.fps *
+                        (float)msg->duration / 1000.0f) + 0.5f);
+
                runloop_msg_queue_push(msg->msg,
-                     msg->priority, msg->frames,
+                     msg->priority, duration_frames,
                      true, NULL, MESSAGE_QUEUE_ICON_DEFAULT,
                      category);
             }
@@ -22978,6 +23045,52 @@ static void video_driver_frame(const void *data, unsigned width,
       video_driver_window_title_update = true;
    }
 
+   /* Add core status message to 'fps_text' string
+    * TODO/FIXME: fps_text is used for several status
+    * parameters, not just FPS. It should probably be
+    * renamed to reflect this... */
+   if (video_info.core_status_msg_show)
+   {
+      /* Note: We need to lock a mutex here. Strictly
+       * speaking, runloop_core_status_msg is not part
+       * of the message queue, but:
+       * - It may be implemented as a queue in the future
+       * - It seems unnecessary to create a new slock_t
+       *   object for this type of message when
+       *   _runloop_msg_queue_lock is already available
+       * We therefore just call runloop_msg_queue_lock()/
+       * runloop_msg_queue_unlock() in this case */
+      runloop_msg_queue_lock();
+
+      /* Check whether duration timer has elapsed */
+      runloop_core_status_msg.duration -= gfx_animation_get_delta_time();
+
+      if (runloop_core_status_msg.duration < 0.0f)
+      {
+         runloop_core_status_msg.str[0]   = '\0';
+         runloop_core_status_msg.priority = 0;
+         runloop_core_status_msg.duration = 0.0f;
+         runloop_core_status_msg.set      = false;
+      }
+      else
+      {
+         /* If 'fps_text' is already set, add status
+          * message at the end */
+         if (!string_is_empty(fps_text))
+         {
+            strlcat(fps_text,
+                  " || ", sizeof(fps_text));
+            strlcat(fps_text,
+                  runloop_core_status_msg.str, sizeof(fps_text));
+         }
+         else
+            strlcpy(fps_text, runloop_core_status_msg.str,
+                  sizeof(fps_text));
+      }
+
+      runloop_msg_queue_unlock();
+   }
+
    /* Slightly messy code,
     * but we really need to do processing before blocking on VSync
     * for best possible scheduling.
@@ -23139,6 +23252,7 @@ static void video_driver_frame(const void *data, unsigned width,
    if (     video_info.fps_show
          || video_info.framecount_show
          || video_info.memory_show
+         || video_info.core_status_msg_show
          )
    {
 #if defined(HAVE_GFX_WIDGETS)
@@ -23289,6 +23403,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->memory_show           = settings->bools.video_memory_show;
    video_info->statistics_show       = settings->bools.video_statistics_show;
    video_info->framecount_show       = settings->bools.video_framecount_show;
+   video_info->core_status_msg_show  = runloop_core_status_msg.set;
    video_info->aspect_ratio_idx      = settings->uints.video_aspect_ratio_idx;
    video_info->post_filter_record    = settings->bools.video_post_filter_record;
    video_info->input_menu_swap_ok_cancel_buttons    = settings->bools.input_menu_swap_ok_cancel_buttons;

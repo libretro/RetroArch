@@ -2544,13 +2544,72 @@ enum retro_message_target
    RETRO_MESSAGE_TARGET_LOG
 };
 
+enum retro_message_type
+{
+   RETRO_MESSAGE_TYPE_NOTIFICATION = 0,
+   RETRO_MESSAGE_TYPE_NOTIFICATION_ALT,
+   RETRO_MESSAGE_TYPE_STATUS
+};
+
 struct retro_message_ext
 {
-   const char                *msg;     /* Message to be displayed/logged */
-   unsigned                  frames;   /* Duration in frames of message when targeting OSD */
-   unsigned                  priority; /* Message priority when targeting OSD */
-   enum retro_log_level      level;    /* Message logging level (info, warn, etc.) */
-   enum retro_message_target target;   /* Message destination: OSD, logging interface or both */
+   /* Message string to be displayed/logged */
+   const char *msg;
+   /* Duration (in ms) of message when targeting the OSD */
+   unsigned duration;
+   /* Message priority when targeting the OSD
+    * > When multiple concurrent messages are sent to
+    *   the frontend and the frontend does not have the
+    *   capacity to display them all, messages with the
+    *   *highest* priority value should be shown
+    * > There is no upper limit to a message priority
+    *   value (within the bounds of the unsigned data type)
+    * > In the reference frontend (RetroArch), the same
+    *   priority values are used for frontend-generated
+    *   notifications, which are typically assigned values
+    *   between 0 and 3 depending upon importance */
+   unsigned priority;
+   /* Message logging level (info, warn, error, etc.) */
+   enum retro_log_level level;
+   /* Message destination: OSD, logging interface or both */
+   enum retro_message_target target;
+   /* Message 'type' when targeting the OSD
+    * > RETRO_MESSAGE_TYPE_NOTIFICATION: Specifies that a
+    *   message should be handled in identical fashion to
+    *   a standard frontend-generated notification
+    * > RETRO_MESSAGE_TYPE_NOTIFICATION_ALT: Specifies that
+    *   message is a notification that requires user attention
+    *   or action, but that it should be displayed in a manner
+    *   that differs from standard frontend-generated notifications.
+    *   This would typically correspond to messages that should be
+    *   displayed immediately (independently from any internal
+    *   frontend message queue), and/or which should be visually
+    *   distinguishable from frontend-generated notifications.
+    *   For example, a core may wish to inform the user of
+    *   information related to a disk-change event. It is
+    *   expected that the frontend itself may provide a
+    *   notification in this case; if the core sends a
+    *   message of type RETRO_MESSAGE_TYPE_NOTIFICATION, an
+    *   uncomfortable 'double-notification' may occur. A message
+    *   of RETRO_MESSAGE_TYPE_NOTIFICATION_ALT should therefore
+    *   be presented such that visual conflict with regular
+    *   notifications does not occur
+    * > RETRO_MESSAGE_TYPE_STATUS: Indicates that message
+    *   is not a standard notification. This typically
+    *   corresponds to 'status' indicators, such as a core's
+    *   internal FPS, which are intended to be displayed
+    *   either permanently while a core is running, or in
+    *   a manner that does not suggest user attention or action
+    *   is required. 'Status' type messages should therefore be
+    *   displayed in a different on-screen location and in a manner
+    *   easily distinguishable from both standard frontend-generated
+    *   notifications and messages of type RETRO_MESSAGE_TYPE_NOTIFICATION_ALT
+    * NOTE: Message type is a *hint*, and may be ignored
+    * by the frontend. If a frontend lacks support for
+    * displaying messages via alternate means than standard
+    * frontend-generated notifications, it will treat *all*
+    * messages as having the type RETRO_MESSAGE_TYPE_NOTIFICATION */
+   enum retro_message_type type;
 };
 
 /* Describes how the libretro implementation maps a libretro input bind
