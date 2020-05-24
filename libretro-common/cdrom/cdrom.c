@@ -1392,7 +1392,9 @@ struct string_list* cdrom_get_available_drives(void)
 
       if (filestream_read_file("/proc/modules", (void**)&buf, &len))
       {
+#ifdef CDROM_DEBUG
          bool found = false;
+#endif
          struct string_list *mods = string_split(buf, "\n");
 
          if (mods)
@@ -1401,7 +1403,9 @@ struct string_list* cdrom_get_available_drives(void)
             {
                if (strcasestr(mods->elems[i].data, "sg "))
                {
+#ifdef CDROM_DEBUG
                   found = true;
+#endif
                   break;
                }
             }
