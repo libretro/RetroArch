@@ -1,4 +1,6 @@
 # Future
+
+# 1.8.8
 - AUDIO/JACK: Fix regression introduced after 1.8.4 - would hang at startup
 - CHEEVOS: Disable hardcore when cheats are enabled
 - CHD: Return false when special track cannot be found
@@ -23,6 +25,7 @@
 - LOCALIZATION: Update Turkish translation
 - LOCALIZATION: Update Vietnamese translation
 - LOCALIZATION: Add Slovak translation
+- MENU: Small buffer optimizations
 - MENU/THUMBNAILS/BUGFIX: Fix heap-use-after-free error
 - MENU/OZONE/ANDROIDTV: Default to Ozone menu driver
 - MENU/OZONE/ANDROID: Gamepad-like devices default to Ozone now (Shield Portable)
