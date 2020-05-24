@@ -239,29 +239,6 @@
 
 /* DRIVERS */
 
-#define DRIVERS_CMD_ALL \
-      ( DRIVER_AUDIO_MASK \
-      | DRIVER_VIDEO_MASK \
-      | DRIVER_INPUT_MASK \
-      | DRIVER_CAMERA_MASK \
-      | DRIVER_LOCATION_MASK \
-      | DRIVER_MENU_MASK \
-      | DRIVERS_VIDEO_INPUT_MASK \
-      | DRIVER_WIFI_MASK \
-      | DRIVER_LED_MASK \
-      | DRIVER_MIDI_MASK )
-
-#define DRIVERS_CMD_ALL_BUT_MENU \
-      ( DRIVER_AUDIO_MASK \
-      | DRIVER_VIDEO_MASK \
-      | DRIVER_INPUT_MASK \
-      | DRIVER_CAMERA_MASK \
-      | DRIVER_LOCATION_MASK \
-      | DRIVERS_VIDEO_INPUT_MASK \
-      | DRIVER_WIFI_MASK \
-      | DRIVER_LED_MASK \
-      | DRIVER_MIDI_MASK )
-
 audio_driver_t audio_null = {
    NULL, /* init */
    NULL, /* write */
@@ -1007,6 +984,30 @@ static const camera_driver_t *camera_drivers[] = {
 
 /* MAIN GLOBAL VARIABLES */
 
+#define DRIVERS_CMD_ALL \
+      ( DRIVER_AUDIO_MASK \
+      | DRIVER_VIDEO_MASK \
+      | DRIVER_INPUT_MASK \
+      | DRIVER_CAMERA_MASK \
+      | DRIVER_LOCATION_MASK \
+      | DRIVER_MENU_MASK \
+      | DRIVERS_VIDEO_INPUT_MASK \
+      | DRIVER_WIFI_MASK \
+      | DRIVER_LED_MASK \
+      | DRIVER_MIDI_MASK )
+
+#define DRIVERS_CMD_ALL_BUT_MENU \
+      ( DRIVER_AUDIO_MASK \
+      | DRIVER_VIDEO_MASK \
+      | DRIVER_INPUT_MASK \
+      | DRIVER_CAMERA_MASK \
+      | DRIVER_LOCATION_MASK \
+      | DRIVERS_VIDEO_INPUT_MASK \
+      | DRIVER_WIFI_MASK \
+      | DRIVER_LED_MASK \
+      | DRIVER_MIDI_MASK )
+
+
 #define _PSUPP(var, name, desc) printf("  %s:\n\t\t%s: %s\n", name, desc, var ? "yes" : "no")
 
 #define FAIL_CPU(simd_type) do { \
@@ -1367,6 +1368,13 @@ static const camera_driver_t *camera_drivers[] = {
 
 #ifdef HAVE_LIBNX
 #define LIBNX_SWKBD_LIMIT 500 /* enforced by HOS */
+#endif
+
+/* Griffin hack */
+#ifdef HAVE_QT
+#ifndef HAVE_MAIN
+#define HAVE_MAIN
+#endif
 #endif
 
 /* Descriptive names for options without short variant.
@@ -2373,8 +2381,10 @@ static struct retro_callbacks secondary_callbacks;
 #endif
 #endif
 
+/* TODO/FIXME - public global variable */
 struct retro_subsystem_info subsystem_data[SUBSYSTEM_MAX_SUBSYSTEMS];
-struct retro_subsystem_rom_info subsystem_data_roms[SUBSYSTEM_MAX_SUBSYSTEMS][SUBSYSTEM_MAX_SUBSYSTEM_ROMS];
+
+static struct retro_subsystem_rom_info subsystem_data_roms[SUBSYSTEM_MAX_SUBSYSTEMS][SUBSYSTEM_MAX_SUBSYSTEM_ROMS];
 
 /* Forward declarations */
 static void retroarch_fail(int error_code, const char *error);
@@ -8621,13 +8631,6 @@ bool command_event(enum event_command cmd, void *data)
 }
 
 /* FRONTEND */
-
-/* Griffin hack */
-#ifdef HAVE_QT
-#ifndef HAVE_MAIN
-#define HAVE_MAIN
-#endif
-#endif
 
 void retroarch_override_setting_set(
       enum rarch_override_setting enum_idx, void *data)
