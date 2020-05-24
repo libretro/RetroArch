@@ -2884,7 +2884,7 @@ static void rgui_blit_cursor(rgui_t *rgui)
    }
 }
 
-int rgui_osk_ptr_at_pos(void *data, int x, int y,
+static int rgui_osk_ptr_at_pos(void *data, int x, int y,
       unsigned width, unsigned height)
 {
    /* This is a lazy copy/paste from rgui_render_osk(),
