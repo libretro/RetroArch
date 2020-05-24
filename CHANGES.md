@@ -33,6 +33,7 @@
 - OVERLAYS: Fix memory leak when loading overlays
 - SHADER PRESETS: Improved shader preset dirs
 - VITA: Fix upside-down vertical games
+- UWP: Enable playlist and savefile compression by default (because of slow file I/O)
 - WIIU: Gamepad hotplugging support
 - WIIU: Theoretical multi-gamepad support
 - X11: Fix crash in x11_display_server_get_screen_orientation
