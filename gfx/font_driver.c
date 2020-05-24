@@ -946,13 +946,12 @@ static char* font_driver_reshape_msg(const char* msg, unsigned char *buffer, siz
    const unsigned char* src     = (const unsigned char*)msg;
    unsigned char*       dst;
    bool                 reverse = false;
+   size_t              msg_size = (strlen(msg) * 2) + 1;
 
    /* fallback to heap allocated buffer if the buffer is too small */
-   if (buffer_size < (strlen(msg) * 2) + 1)
-   {
-      /* worst case transformations are 2 bytes to 4 bytes -- aliaspider */
-      dst_buffer = (unsigned char*)malloc((strlen(msg) * 2) + 1);
-   }
+   /* worst case transformations are 2 bytes to 4 bytes -- aliaspider */
+   if (buffer_size < msg_size)
+      dst_buffer = (unsigned char*)malloc(msg_size);
 
    dst = (unsigned char*)dst_buffer;
 
