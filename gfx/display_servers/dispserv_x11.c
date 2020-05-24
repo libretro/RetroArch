@@ -482,6 +482,8 @@ static enum rotation x11_display_server_get_screen_orientation(void)
    int i, j;
    Display *dpy = x11_display_server_open_display();
    XRRScreenResources *screen = XRRGetScreenResources(dpy, DefaultRootWindow(dpy));
+   if (!screen)
+     return ORIENTATION_NORMAL;
    XRRScreenConfiguration *config = XRRGetScreenInfo(dpy, DefaultRootWindow(dpy));
    enum rotation rotation = ORIENTATION_NORMAL;
 
