@@ -2889,39 +2889,29 @@ int rgui_osk_ptr_at_pos(void *data, int x, int y,
 {
    /* This is a lazy copy/paste from rgui_render_osk(),
     * but it will do for now... */
-   size_t fb_pitch;
+   size_t fb_pitch, key_index;
    unsigned fb_width, fb_height;
-   size_t key_index;
    
-   unsigned key_width, key_height;
-   unsigned key_text_offset_x, key_text_offset_y;
-   unsigned ptr_width, ptr_height;
-   unsigned ptr_offset_x, ptr_offset_y;
-   
-   unsigned keyboard_width, keyboard_height;
-   unsigned keyboard_offset_x, keyboard_offset_y;
-   
-   unsigned osk_width, osk_height;
    unsigned osk_x, osk_y;
+   unsigned key_text_offset_x  = 8;
+   unsigned key_text_offset_y  = 6;
+   unsigned ptr_offset_x       = 2;
+   unsigned ptr_offset_y       = 2;
+   unsigned keyboard_offset_x  = 10;
+   unsigned key_width          = FONT_WIDTH  + (key_text_offset_x * 2);
+   unsigned key_height         = FONT_HEIGHT + (key_text_offset_y * 2);
+   unsigned ptr_width          = key_width  - (ptr_offset_x * 2);
+   unsigned ptr_height         = key_height - (ptr_offset_y * 2);
+   unsigned keyboard_width     = key_width  * OSK_CHARS_PER_LINE;
+   unsigned keyboard_height    = key_height * 4;
+   unsigned keyboard_offset_y  = 10 + 15 + (2 * FONT_HEIGHT_STRIDE);
+   unsigned osk_width          = keyboard_width + 20;
+   unsigned osk_height         = keyboard_offset_y + keyboard_height + 10;
 
    /* Get dimensions/layout */
    gfx_display_get_fb_size(&fb_width, &fb_height, &fb_pitch);
 
-   key_text_offset_x      = 8;
-   key_text_offset_y      = 6;
-   key_width              = FONT_WIDTH  + (key_text_offset_x * 2);
-   key_height             = FONT_HEIGHT + (key_text_offset_y * 2);
-   ptr_offset_x           = 2;
-   ptr_offset_y           = 2;
-   ptr_width              = key_width  - (ptr_offset_x * 2);
-   ptr_height             = key_height - (ptr_offset_y * 2);
-   keyboard_width         = key_width  * OSK_CHARS_PER_LINE;
-   keyboard_height        = key_height * 4;
-   keyboard_offset_x      = 10;
-   keyboard_offset_y      = 10 + 15 + (2 * FONT_HEIGHT_STRIDE);
-   osk_width              = keyboard_width + 20;
-   osk_height             = keyboard_offset_y + keyboard_height + 10;
-   osk_x                  = (fb_width - osk_width) / 2;
+   osk_x                  = (fb_width  - osk_width)  / 2;
    osk_y                  = (fb_height - osk_height) / 2;
 
    for (key_index = 0; key_index < 44; key_index++)
