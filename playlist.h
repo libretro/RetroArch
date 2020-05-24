@@ -89,6 +89,7 @@ enum playlist_thumbnail_id
 struct playlist_entry
 {
    char *path;
+   char *relative_path;
    char *label;
    char *core_path;
    char *core_name;
@@ -99,6 +100,7 @@ struct playlist_entry
    char *runtime_str;
    char *last_played_str;
    struct string_list *subsystem_roms;
+   struct string_list* subsystem_roms_relative_paths;
    enum playlist_runtime_status runtime_status;
    unsigned runtime_hours;
    unsigned runtime_minutes;
@@ -119,15 +121,21 @@ struct playlist_entry
 typedef struct
 {
    char path[PATH_MAX_LENGTH];
+   char base_content_directory[PATH_MAX_LENGTH];
    size_t capacity;
    bool old_format;
    bool compress;
    bool fuzzy_archive_match;
+   bool relative_paths;   
 } playlist_config_t;
 
 /* Convenience function: copies specified playlist
  * path to specified playlist configuration object */
 void playlist_config_set_path(playlist_config_t *config, const char *path);
+
+/* Convenience function: copies base content directory
+ * path to specified playlist configuration object */
+void playlist_config_set_base_content_directory(playlist_config_t* config, const char* path);
 
 /* Creates a copy of the specified playlist configuration.
  * Returns false in the event of an error */
@@ -231,7 +239,8 @@ void playlist_resolve_path(enum playlist_file_mode mode,
 
 /**
  * playlist_push:
- * @playlist        	   : Playlist handle.
+ * @playlist        	      : Playlist handle.
+ * @entry                  : New entry handle.
  *
  * Push entry to top of playlist.
  **/
@@ -344,6 +353,31 @@ core_info_t *playlist_entry_get_core_info(const struct playlist_entry* entry);
  * Returns NULL if playlist does not have a valid
  * default core association */
 core_info_t *playlist_get_default_core_info(playlist_t* playlist);
+
+/*
+ * path_resolve_to_local_file_system:
+ * @out_path   : output path buffer
+ * @in_path    : original relative path
+ * @in_refpath : base absolute path
+ *
+ * Resolves @in_path to local file system, switching '\' with '/' if needed (and viceversa)
+ * Appends @in_path to @in_refpath, and returns the merged path as @out_path.
+ *
+ * If @in_path is already an absolute path, the function will return it as @out_path, unchanged.
+ *
+ * @in_refpath is expected to already be in the local file system format, it will not be converted. */
+void path_resolve_to_local_file_system(char* out_path, const char* in_path, const char* in_refpath, size_t size);
+
+/*
+ * path_extract_relative_path:
+ * @out_path   : output relative path buffer
+ * @in_path    : original absolute path
+ * @in_refpath : base absolute path
+ * @size       : size of @out_path parameter
+ *
+ * If @in_path is a subpath of @in_refpath, returns the relative part of @in_path in @out_path, converted to posix format.
+ * If not, @out_path is set to '\0' */
+void path_extract_relative_path(char* out_path, const char* in_path, const char* in_refpath, size_t size);
 
 RETRO_END_DECLS
 

@@ -15908,7 +15908,7 @@ bool command_event(enum event_command cmd, void *data)
             playlist_config_t playlist_config;
             bool history_list_enable               = settings->bools.history_list_enable;
             const char *path_content_history       = settings->paths.path_content_history;
-            const char *path_content_music_history = settings->paths.path_content_music_history;
+            const char* path_content_music_history = settings->paths.path_content_music_history;
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
             const char *path_content_video_history = settings->paths.path_content_video_history;
 #endif
@@ -15919,6 +15919,8 @@ bool command_event(enum event_command cmd, void *data)
             playlist_config.old_format             = settings->bools.playlist_use_old_format;
             playlist_config.compress               = settings->bools.playlist_compression;
             playlist_config.fuzzy_archive_match    = settings->bools.playlist_fuzzy_archive_match;
+            /* don't use relative paths for content, music, video, and image histories */
+            playlist_config_set_base_content_directory(&playlist_config, NULL);
 
             command_event(CMD_EVENT_HISTORY_DEINIT, NULL);
 
@@ -39223,6 +39225,7 @@ void rarch_favorites_init(void)
    playlist_config.old_format          = settings ? settings->bools.playlist_use_old_format : false;
    playlist_config.compress            = settings ? settings->bools.playlist_compression : false;
    playlist_config.fuzzy_archive_match = settings ? settings->bools.playlist_fuzzy_archive_match : false;
+   playlist_config_set_base_content_directory(&playlist_config, settings->bools.playlist_save_relative_paths ? settings->paths.directory_menu_content : NULL);
 
    if (!settings)
       return;

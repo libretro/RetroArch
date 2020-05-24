@@ -437,6 +437,7 @@ bool task_push_netplay_crc_scan(uint32_t crc, char* name,
    state->playlist_config.old_format          = settings->bools.playlist_use_old_format;
    state->playlist_config.compress            = settings->bools.playlist_compression;
    state->playlist_config.fuzzy_archive_match = settings->bools.playlist_fuzzy_archive_match;
+   playlist_config_set_base_content_directory(&state->playlist_config, settings->bools.playlist_save_relative_paths ? settings->paths.directory_menu_content : NULL);
 
    state->content_crc[0]    = '\0';
    state->content_path[0]   = '\0';

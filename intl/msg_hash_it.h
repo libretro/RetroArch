@@ -4638,6 +4638,16 @@ MSG_HASH(
    "Comprimi Scalette"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_SAVE_RELATIVE_PATHS,
+   "Salva percorsi relativi nelle playlist"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_SAVE_RELATIVE_PATHS,
+   "Se attivato, i percorsi salvati nelle playlist sono relativi alla cartella 'File Browser'"
+   )
+
+/* Settings > User */
+MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_COMPRESSION,
    "Archivia i dati della scaletta quando si scrive su disco. Riduce le dimensioni del file e i tempi di caricamento a scapito di un maggiore utilizzo della CPU (trascurabile). Può essere utilizzato con scalette vecchie o di nuovo formato."
    )
