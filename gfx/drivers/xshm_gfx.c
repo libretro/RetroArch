@@ -33,15 +33,16 @@
 #endif
 
 #include "../../configuration.h"
-
 #include "../font_driver.h"
-
 #include "../common/x11_common.h"
+#include "../../verbosity.h"
 
 typedef struct xshm
 {
    int width;
    int height;
+   bool use_shm;
+   uint8_t *fbptr;
 
    XShmSegmentInfo shmInfo;
    XImage* image;
@@ -58,6 +59,14 @@ static void *xshm_gfx_init(const video_info_t *video,
 
    g_x11_dpy = XOpenDisplay(NULL);
 
+   xshm->use_shm = true;
+
+   if (!XShmQueryExtension(g_x11_dpy))
+   {
+      RARCH_LOG("[X11]: XShm extension not found.\n");
+      xshm->use_shm = false;
+   }
+
 #ifdef RARCH_INTERNAL
    parent = DefaultRootWindow(g_x11_dpy);
 #else
@@ -71,16 +80,28 @@ static void *xshm_gfx_init(const video_info_t *video,
    XSetWindowBackground(g_x11_dpy, g_x11_win, 0);
    XMapWindow(g_x11_dpy, g_x11_win);
 
-   xshm->shmInfo.shmid = shmget(IPC_PRIVATE, sizeof(uint32_t) * video->width * video->height,
-                                IPC_CREAT|0600);
-   if (xshm->shmInfo.shmid<0) abort();//seems like an out of memory situation... let's just blow up
+   if (xshm->use_shm)
+   {
+      xshm->shmInfo.shmid = shmget(IPC_PRIVATE, sizeof(uint32_t) * video->width * video->height,
+				   IPC_CREAT|0600);
+      if (xshm->shmInfo.shmid<0) abort();//seems like an out of memory situation... let's just blow up
 
-   xshm->shmInfo.shmaddr = (char*)shmat(xshm->shmInfo.shmid, 0, 0);
-   xshm->shmInfo.readOnly = False;
-   XShmAttach(g_x11_dpy, &xshm->shmInfo);
-   XSync(g_x11_dpy, False);//no idea why this is required, but I get weird errors without it
-   xshm->image = XShmCreateImage(g_x11_dpy, NULL, 24, ZPixmap,
-                                 xshm->shmInfo.shmaddr, &xshm->shmInfo, video->width, video->height);
+      xshm->shmInfo.shmaddr = (char*)shmat(xshm->shmInfo.shmid, 0, 0);
+      xshm->shmInfo.readOnly = False;
+      XShmAttach(g_x11_dpy, &xshm->shmInfo);
+      XSync(g_x11_dpy, False);//no idea why this is required, but I get weird errors without it
+      xshm->image = XShmCreateImage(g_x11_dpy, NULL, 24, ZPixmap,
+				    xshm->shmInfo.shmaddr, &xshm->shmInfo, video->width, video->height);
+      xshm->fbptr = (uint8_t*)xshm->shmInfo.shmaddr;
+   } else {
+      size_t pitch = video->width * 4;
+      void *data = malloc (pitch * video->height);
+      if (!data) abort();//seems like an out of memory situation... let's just blow up
+      xshm->image = XCreateImage(g_x11_dpy, NULL, 24, ZPixmap, 0,
+				 data, video->width, video->height, 8, pitch);
+      xshm->fbptr = data;
+      XSync(g_x11_dpy, False);
+   }
 
    xshm->gc = XCreateGC(g_x11_dpy, g_x11_win, 0, NULL);
 
@@ -119,15 +140,19 @@ static bool xshm_gfx_frame(void *data, const void *frame, unsigned width,
    bool menu_is_alive = video_info->menu_is_alive;
 
    for (y = 0; y < height; y++)
-      memcpy((uint8_t*)xshm->shmInfo.shmaddr + sizeof(uint32_t)*xshm->width*y,
+      memcpy(xshm->fbptr + sizeof(uint32_t)*xshm->width*y,
             (uint8_t*)frame + pitch*y, pitch);
 
 #ifdef HAVE_MENU
    menu_driver_frame(menu_is_alive, video_info);
 #endif
 
-   XShmPutImage(g_x11_dpy, g_x11_win, xshm->gc, xshm->image,
-                0, 0, 0, 0, xshm->width, xshm->height, False);
+   if (xshm->use_shm)
+      XShmPutImage(g_x11_dpy, g_x11_win, xshm->gc, xshm->image,
+		   0, 0, 0, 0, xshm->width, xshm->height, False);
+   else
+      XPutImage(g_x11_dpy, g_x11_win, xshm->gc, xshm->image,
+		0, 0, 0, 0, xshm->width, xshm->height);
    XFlush(g_x11_dpy);
 
    return true;
