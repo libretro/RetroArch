@@ -75,8 +75,6 @@ struct ad_packet
 int netplay_room_count                 = 0;
 struct netplay_room *netplay_room_list = NULL;
 
-static bool netplay_lan_ad_client(void);
-
 /* LAN discovery sockets */
 static int lan_ad_server_fd            = -1;
 static int lan_ad_client_fd            = -1;
@@ -89,6 +87,9 @@ static struct netplay_host_list discovered_hosts;
 static size_t discovered_hosts_allocated;
 
 static struct netplay_room netplay_host_room = {0};
+
+/* Forward declarations */
+static bool netplay_lan_ad_client(void);
 
 struct netplay_room* netplay_get_host_room(void)
 {

@@ -269,7 +269,7 @@ static bool netplay_init_socket_buffers(netplay_t *netplay)
    return true;
 }
 
-bool netplay_init_serialization(netplay_t *netplay)
+static bool netplay_init_serialization(netplay_t *netplay)
 {
    unsigned i;
    retro_ctx_size_info_t info;
