@@ -419,7 +419,7 @@ static bool sixel_gfx_frame(void *data, const void *frame,
 
       if (SIXEL_FAILED(sixel->sixel_status))
       {
-         fprintf(stderr, "%s\n%s\n",
+         RARCH_ERR("%s\n%s\n",
                sixel_helper_format_error(sixel->sixel_status),
                sixel_helper_get_additional_message());
       }

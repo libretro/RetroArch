@@ -70,9 +70,10 @@ static void *sdl_dingux_gfx_init(const video_info_t *video,
    settings_t *settings = config_get_ptr();
 
     FILE* f = fopen("/sys/devices/platform/jz-lcd.0/allow_downscaling", "w");
-    if (f) {
-        fprintf(f, "%d", 1);
-        fclose(f);
+    if (f)
+    {
+       fprintf(f, "%d", 1);
+       fclose(f);
     }
 
    if (SDL_WasInit(0) == 0)

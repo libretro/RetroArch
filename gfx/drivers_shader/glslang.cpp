@@ -407,7 +407,7 @@ bool glslang::compile_spirv(const string &source, Stage stage,
             100, ENoProfile, false, false,
             messages, &msg, forbid_include))
    {
-      fprintf(stderr, "%s\n", msg.c_str());
+      RARCH_ERR("%s\n", msg.c_str());
       return false;
    }
 
