@@ -503,8 +503,8 @@ int64_t filestream_read_file(const char *path, void **buf, int64_t *len)
 
    if (!file)
    {
-      fprintf(stderr, "Failed to open %s: %s\n", path, strerror(errno));
-      goto error;
+      *buf = NULL;
+      return 0;
    }
 
    content_buf_size = filestream_get_size(file);
@@ -521,10 +521,7 @@ int64_t filestream_read_file(const char *path, void **buf, int64_t *len)
 
    ret = filestream_read(file, content_buf, (int64_t)content_buf_size);
    if (ret < 0)
-   {
-      fprintf(stderr, "Failed to read %s: %s\n", path, strerror(errno));
       goto error;
-   }
 
    filestream_close(file);
 
