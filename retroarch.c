@@ -382,8 +382,6 @@ static const video_display_server_t dispserv_null = {
    "null"
 };
 
-static void video_null_free(void *data) { }
-
 static void *video_null_init(const video_info_t *video,
       input_driver_t **input, void **input_data)
 {
@@ -400,6 +398,7 @@ static bool video_null_frame(void *data, const void *frame,
    return true;
 }
 
+static void video_null_free(void *data) { }
 static void video_null_set_nonblock_state(void *a, bool b, bool c, unsigned d) { }
 static bool video_null_alive(void *data) { return true; }
 static bool video_null_focus(void *data) { return true; }
@@ -1344,6 +1343,32 @@ static const camera_driver_t *camera_drivers[] = {
             x(retro_get_memory_data); \
             x(retro_get_memory_size);
 
+#define FFMPEG_RECORD_ARG "r:"
+
+#ifdef HAVE_DYNAMIC
+#define DYNAMIC_ARG "L:"
+#else
+#define DYNAMIC_ARG
+#endif
+
+#ifdef HAVE_NETWORKING
+#define NETPLAY_ARG "HC:F:"
+#else
+#define NETPLAY_ARG
+#endif
+
+#ifdef HAVE_CONFIGFILE
+#define CONFIG_FILE_ARG "c:"
+#else
+#define CONFIG_FILE_ARG
+#endif
+
+#define BSV_MOVIE_ARG "P:R:M:"
+
+#ifdef HAVE_LIBNX
+#define LIBNX_SWKBD_LIMIT 500 /* enforced by HOS */
+#endif
+
 /* Descriptive names for options without short variant.
  *
  * Please keep the name in sync with the option name.
@@ -1900,6 +1925,11 @@ static size_t runahead_save_state_size                          = 0;
 /* TODO/FIXME - public global variable */
 unsigned subsystem_current_count                                = 0;
 
+#ifdef HAVE_LIBNX
+/* TODO/FIXME - public global variable */
+extern u32 __nx_applet_type;
+#endif
+
 static unsigned runloop_pending_windowed_scale                  = 0;
 static unsigned runloop_max_frames                              = 0;
 static unsigned fastforward_after_frames                        = 0;
@@ -2360,6 +2390,9 @@ static const void *wifi_driver_find_handle(int idx);
 static const void *camera_driver_find_handle(int idx);
 static const void *input_driver_find_handle(int idx);
 static const void *joypad_driver_find_handle(int idx);
+#ifdef HAVE_LIBNX
+void libnx_apply_overclock(void);
+#endif
 #ifdef HAVE_HID
 static const void *hid_driver_find_handle(int idx);
 #endif
@@ -3791,11 +3824,6 @@ bool gfx_widgets_ready(void)
 }
 
 #ifdef HAVE_MENU
-#ifdef HAVE_LIBNX
-#define LIBNX_SWKBD_LIMIT 500 /* enforced by HOS */
-extern u32 __nx_applet_type;
-extern void libnx_apply_overclock(void);
-#endif
 
 static void menu_input_search_cb(void *userdata, const char *str)
 {
@@ -5701,17 +5729,17 @@ static bool run_translation_service(bool paused)
       }
 
       /* TODO: Rescale down to regular resolution */
-      scaler->in_fmt = SCALER_FMT_BGR24;
-      scaler->out_fmt = SCALER_FMT_BGR24;
+      scaler->in_fmt      = SCALER_FMT_BGR24;
+      scaler->out_fmt     = SCALER_FMT_BGR24;
       scaler->scaler_type = SCALER_TYPE_POINT;
-      scaler->in_width = vp.width;
-      scaler->in_height = vp.height;
-      scaler->out_width = width;
-      scaler->out_height = height;
+      scaler->in_width    = vp.width;
+      scaler->in_height   = vp.height;
+      scaler->out_width   = width;
+      scaler->out_height  = height;
       scaler_ctx_gen_filter(scaler);
 
-      scaler->in_stride  = vp.width*3;
-      scaler->out_stride = width*3;
+      scaler->in_stride   = vp.width*3;
+      scaler->out_stride  = width*3;
       scaler_ctx_scale_direct(scaler, bit24_image, bit24_image_prev);
       scaler_ctx_gen_reset(scaler);
    }
@@ -18823,7 +18851,6 @@ static void midi_driver_free(void)
    midi_drv_output_enabled = false;
 }
 
-
 static bool midi_driver_init(void)
 {
    settings_t *settings             = configuration_settings;
@@ -19242,7 +19269,6 @@ static void audio_driver_mixer_deinit(void)
 
    audio_mixer_done();
 }
-
 #endif
 
 /**
@@ -25605,28 +25631,6 @@ static void retroarch_print_help(const char *arg0)
    printf("      --accessibility\n"
           "                        Enables accessibilty for blind users using text-to-speech.\n");
 }
-
-#define FFMPEG_RECORD_ARG "r:"
-
-#ifdef HAVE_DYNAMIC
-#define DYNAMIC_ARG "L:"
-#else
-#define DYNAMIC_ARG
-#endif
-
-#ifdef HAVE_NETWORKING
-#define NETPLAY_ARG "HC:F:"
-#else
-#define NETPLAY_ARG
-#endif
-
-#ifdef HAVE_CONFIGFILE
-#define CONFIG_FILE_ARG "c:"
-#else
-#define CONFIG_FILE_ARG
-#endif
-
-#define BSV_MOVIE_ARG "P:R:M:"
 
 /**
  * retroarch_parse_input_and_config:

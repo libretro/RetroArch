@@ -178,7 +178,7 @@ void retro_main_log_file_init(const char *path, bool append)
    g_verbosity->initialized = true;
 
    /* TODO: this is only useful for a few platforms, find which and add ifdef */
-   g_verbosity->buf = calloc(1, 0x4000);
+   g_verbosity->buf         = calloc(1, 0x4000);
    setvbuf(g_verbosity->fp, (char*)g_verbosity->buf, _IOFBF, 0x4000);
 }
 
@@ -465,24 +465,21 @@ void rarch_log_file_init(
    if (g_verbosity->override_active)
    {
       /* Get log directory */
-      const char *last_slash           = 
-         find_last_slash(g_verbosity->override_path);
+      const char *override_path        = g_verbosity->override_path;
+      const char *last_slash           = find_last_slash(override_path);
 
       if (last_slash)
       {
          char tmp_buf[PATH_MAX_LENGTH] = {0};
-         size_t path_length            = last_slash + 1 - 
-            g_verbosity->override_path;
+         size_t path_length            = last_slash + 1 - override_path;
 
          if ((path_length > 1) && (path_length < PATH_MAX_LENGTH))
-            strlcpy(tmp_buf, g_verbosity->override_path,
-                  path_length * sizeof(char));
+            strlcpy(tmp_buf, override_path, path_length * sizeof(char));
          strlcpy(log_directory, tmp_buf, sizeof(log_directory));
       }
 
       /* Get log file path */
-      strlcpy(log_file_path, g_verbosity->override_path,
-            sizeof(log_file_path));
+      strlcpy(log_file_path, override_path, sizeof(log_file_path));
    }
    else if (!string_is_empty(log_dir))
    {
