@@ -274,7 +274,7 @@ video_driver_t video_xshm = {
    NULL, /* has_windowed */
    xshm_gfx_set_shader,
    xshm_gfx_free,
-   "xshm",
+   "x11",
 
    NULL,
    NULL, /* set_rotation */
