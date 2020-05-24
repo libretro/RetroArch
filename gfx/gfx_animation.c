@@ -1706,9 +1706,15 @@ bool gfx_animation_ticker_smooth(gfx_animation_ctx_ticker_smooth_t *ticker)
    if (src_str_len < 1)
       goto end;
 
-   src_char_widths = (unsigned*)calloc(src_str_len, sizeof(unsigned));
-   if (!src_char_widths)
-      goto end;
+   unsigned small_src_char_widths[64] = {0};
+   src_char_widths = small_src_char_widths;
+
+   if (src_str_len > ARRAY_SIZE(small_src_char_widths))
+   {
+      src_char_widths = (unsigned*)calloc(src_str_len, sizeof(unsigned));
+      if (!src_char_widths)
+         goto end;
+   }
 
    str_ptr = ticker->src_str;
    for (i = 0; i < src_str_len; i++)
@@ -1881,7 +1887,7 @@ bool gfx_animation_ticker_smooth(gfx_animation_ctx_ticker_smooth_t *ticker)
 
 end:
 
-   if (src_char_widths)
+   if (src_char_widths != small_src_char_widths && src_char_widths)
    {
       free(src_char_widths);
       src_char_widths = NULL;
