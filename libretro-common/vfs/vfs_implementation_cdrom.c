@@ -137,11 +137,11 @@ void retro_vfs_file_open_cdrom(
    if (!string_is_equal_noncase(ext, "cue") && !string_is_equal_noncase(ext, "bin"))
       return;
 
-   if (path_len >= strlen("drive1-track01.bin"))
+   if (path_len >= STRLEN_CONST("drive1-track01.bin"))
    {
-      if (!memcmp(path, "drive", strlen("drive")))
+      if (!memcmp(path, "drive", STRLEN_CONST("drive")))
       {
-         if (!memcmp(path + 6, "-track", strlen("-track")))
+         if (!memcmp(path + 6, "-track", STRLEN_CONST("-track")))
          {
             if (sscanf(path + 12, "%02u", (unsigned*)&stream->cdrom.cur_track))
             {
@@ -154,9 +154,9 @@ void retro_vfs_file_open_cdrom(
       }
    }
 
-   if (path_len >= strlen("drive1.cue"))
+   if (path_len >= STRLEN_CONST("drive1.cue"))
    {
-      if (!memcmp(path, "drive", strlen("drive")))
+      if (!memcmp(path, "drive", STRLEN_CONST("drive")))
       {
          if (path[5] >= '0' && path[5] <= '9')
          {
@@ -209,9 +209,9 @@ void retro_vfs_file_open_cdrom(
    if (!string_is_equal_noncase(ext, "cue") && !string_is_equal_noncase(ext, "bin"))
       return;
 
-   if (path_len >= strlen("d:/drive-track01.bin"))
+   if (path_len >= STRLEN_CONST("d:/drive-track01.bin"))
    {
-      if (!memcmp(path + 1, ":/drive-track", strlen(":/drive-track")))
+      if (!memcmp(path + 1, ":/drive-track", STRLEN_CONST(":/drive-track")))
       {
          if (sscanf(path + 14, "%02u", (unsigned*)&stream->cdrom.cur_track))
          {
@@ -223,9 +223,9 @@ void retro_vfs_file_open_cdrom(
       }
    }
 
-   if (path_len >= strlen("d:/drive.cue"))
+   if (path_len >= STRLEN_CONST("d:/drive.cue"))
    {
-      if (!memcmp(path + 1, ":/drive", strlen(":/drive")))
+      if (!memcmp(path + 1, ":/drive", STRLEN_CONST(":/drive")))
       {
          if ((path[0] >= 'A' && path[0] <= 'Z') || (path[0] >= 'a' && path[0] <= 'z'))
          {

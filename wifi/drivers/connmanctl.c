@@ -58,6 +58,7 @@ static bool connmanctl_tether_status(void)
    /* Returns true if the tethering is active
     * false when tethering is not active
     */
+   size_t ln_size;
    FILE *command_file = NULL;
    char ln[3]         = {0};
 
@@ -78,8 +79,9 @@ static bool connmanctl_tether_status(void)
 
    fgets(ln, sizeof(ln), command_file);
 
-   if (ln[strlen(ln)-1] == '\n')
-      ln[strlen(ln)-1] = '\0';
+   ln_size = strlen(ln)-1;
+   if (ln[ln_size] == '\n')
+      ln[ln_size] = '\0';
 
    RARCH_LOG("[CONNMANCTL] Tether Status: command: \"%s\", output: \"%s\"\n",
          command, ln);
@@ -113,8 +115,9 @@ static void connmanctl_tether_toggle(bool switch_on, char* apname, char* passkey
 
    while (fgets(output, sizeof(output), command_file))
    {
-      if (output[strlen(output)-1] == '\n')
-         output[strlen(output)-1] = '\0';
+      size_t output_size = strlen(output) - 1;
+      if (output[output_size] == '\n')
+         output[output_size] = '\0';
 
       RARCH_LOG("[CONNMANCTL] Tether toggle: output: \"%s\"\n",
             output);
@@ -349,6 +352,7 @@ static bool connmanctl_connect_ssid(unsigned idx, const char* passphrase)
 
 static void connmanctl_get_connected_ssid(char* ssid, size_t buffersize)
 {
+   size_t ssid_size;
    /* Stores the SSID of the currently connected Wi-Fi
     * network in ssid
     */
@@ -373,12 +377,14 @@ static void connmanctl_get_connected_ssid(char* ssid, size_t buffersize)
 
    pclose(command_file);
 
-   if (strlen(ssid) > 0)
-      if (ssid[strlen(ssid)-1] == '\n')
-         ssid[strlen(ssid)-1] = '\0';
+   ssid_size = strlen(ssid) - 1;
+
+   if ((ssid_size + 1) > 0)
+      if (ssid[ssid_size] == '\n')
+         ssid[ssid_size] = '\0';
 
    RARCH_LOG("[CONNMANCTL] Get Connected SSID: command: \"%s\", output: \"%s\"\n",
-         command, strlen(ssid) ? ssid : "<nothing_found>");
+         command, (ssid_size + 1) ? ssid : "<nothing_found>");
 }
 
 static void connmanctl_get_connected_servicename(char* servicename, size_t buffersize)
@@ -416,11 +422,14 @@ static void connmanctl_get_connected_servicename(char* servicename, size_t buffe
 
    while (fgets(temp, buffersize, command_file))
    {
-      if (strlen(temp) > 0)
-         if (temp[strlen(temp)-1] == '\n')
-            temp[strlen(temp)-1] = '\0';
+      size_t ln_size;
+      size_t temp_size = strlen(temp) - 1;
 
-      if (strlen(temp) == 0)
+      if ((temp_size + 1) > 0)
+         if (temp[temp_size] == '\n')
+            temp[temp_size] = '\0';
+
+      if ((temp_size + 1) == 0)
       {
          RARCH_WARN("[CONNMANCTL] Service name empty.\n");
          continue;
@@ -439,9 +448,10 @@ static void connmanctl_get_connected_servicename(char* servicename, size_t buffe
       service_file = popen(command, "r");
 
       fgets(ln, sizeof(ln), service_file);
+      ln_size = strlen(ln) - 1;
 
-      if (ln[strlen(ln)-1] == '\n')
-         ln[strlen(ln)-1] = '\0';
+      if (ln[ln_size] == '\n')
+         ln[ln_size] = '\0';
 
       pclose(service_file);
 
@@ -549,11 +559,13 @@ static void connmanctl_tether_start_stop(bool start, char* configfile)
 
          while (fgets(ln, sizeof(ln), command_file))
          {
+            size_t ln_size = strlen(ln) - 1;
+
             i++;
-            if (strlen(ln) > 1)
+            if ((ln_size + 1) > 1)
             {
-               if (ln[strlen(ln)-1] == '\n')
-                  ln[strlen(ln)-1] = '\0';
+               if (ln[ln_size] == '\n')
+                  ln[ln_size] = '\0';
 
                if (i == 1)
                {
@@ -634,8 +646,9 @@ static void connmanctl_tether_start_stop(bool start, char* configfile)
 
             while (fgets(ln, sizeof(ln), command_file))
             {
-               if (ln[strlen(ln)-1] == '\n')
-                  ln[strlen(ln)-1] = '\0';
+               size_t ln_size = strlen(ln) - 1;
+               if (ln[ln_size] == '\n')
+                  ln[ln_size] = '\0';
 
                RARCH_LOG("[CONNMANCTL] Tether start stop: output: \"%s\"\n",
                      ln);

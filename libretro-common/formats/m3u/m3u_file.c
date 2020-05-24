@@ -122,26 +122,28 @@ static bool m3u_file_load(m3u_file_t *m3u_file)
    /* Parse lines of file */
    for (i = 0; i < lines->size; i++)
    {
+      size_t m3u_size;
       const char *line = lines->elems[i].data;
 
       if (string_is_empty(line))
          continue;
 
       /* Determine line 'type' */
+      m3u_size = strlen(M3U_FILE_NONSTD_LABEL);
 
       /* > '#LABEL:' */
       if (!strncmp(
             line, M3U_FILE_NONSTD_LABEL,
-            strlen(M3U_FILE_NONSTD_LABEL)))
+            m3u_size))
       {
          /* Label is the string to the right
           * of '#LABEL:' */
-         const char *label = line + strlen(M3U_FILE_NONSTD_LABEL);
+         const char *label = line + m3u_size;
 
          if (!string_is_empty(label))
          {
             strlcpy(
-                  entry_label, line + strlen(M3U_FILE_NONSTD_LABEL),
+                  entry_label, line + m3u_size,
                   sizeof(entry_label));
             string_trim_whitespace(entry_label);
          }
