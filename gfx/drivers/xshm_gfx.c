@@ -54,6 +54,7 @@ static void *xshm_gfx_init(const video_info_t *video,
 {
    xshm_t* xshm = (xshm_t*)malloc(sizeof(xshm_t));
    Window parent;
+   XSetWindowAttributes attributes;
 
    XInitThreads();
 
@@ -72,7 +73,6 @@ static void *xshm_gfx_init(const video_info_t *video,
 #else
    parent = video->parent;
 #endif
-   XSetWindowAttributes attributes;
    attributes.border_pixel=0;
    g_x11_win = XCreateWindow(g_x11_dpy, parent,
 			     0, 0, video->width, video->height,
