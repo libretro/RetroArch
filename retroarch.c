@@ -1159,7 +1159,6 @@ static const camera_driver_t *camera_drivers[] = {
 #define runahead_run_secondary() \
    if (!secondary_core_run_use_last_input()) \
       runahead_secondary_core_available = false
-
 #endif
 
 #define runahead_resume_video() \
@@ -1281,6 +1280,69 @@ static const camera_driver_t *camera_drivers[] = {
          (binds)[k].joyaxis = (binds)[j--].joyaxis; \
    } \
 }
+
+#ifdef HAVE_DYNAMIC
+#define SYMBOL(x) do { \
+   function_t func = dylib_proc(lib_handle_local, #x); \
+   memcpy(&current_core->x, &func, sizeof(func)); \
+   if (!current_core->x) { RARCH_ERR("Failed to load symbol: \"%s\"\n", #x); retroarch_fail(1, "init_libretro_symbols()"); } \
+} while (0)
+#else
+#define SYMBOL(x) current_core->x = x
+#endif
+
+#define SYMBOL_DUMMY(x) current_core->x = libretro_dummy_##x
+
+#ifdef HAVE_FFMPEG
+#define SYMBOL_FFMPEG(x) current_core->x = libretro_ffmpeg_##x
+#endif
+
+#ifdef HAVE_MPV
+#define SYMBOL_MPV(x) current_core->x = libretro_mpv_##x
+#endif
+
+#ifdef HAVE_IMAGEVIEWER
+#define SYMBOL_IMAGEVIEWER(x) current_core->x = libretro_imageviewer_##x
+#endif
+
+#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
+#define SYMBOL_NETRETROPAD(x) current_core->x = libretro_netretropad_##x
+#endif
+
+#if defined(HAVE_VIDEOPROCESSOR)
+#define SYMBOL_VIDEOPROCESSOR(x) current_core->x = libretro_videoprocessor_##x
+#endif
+
+#ifdef HAVE_GONG
+#define SYMBOL_GONG(x) current_core->x = libretro_gong_##x
+#endif
+
+#define CORE_SYMBOLS(x) \
+            x(retro_init); \
+            x(retro_deinit); \
+            x(retro_api_version); \
+            x(retro_get_system_info); \
+            x(retro_get_system_av_info); \
+            x(retro_set_environment); \
+            x(retro_set_video_refresh); \
+            x(retro_set_audio_sample); \
+            x(retro_set_audio_sample_batch); \
+            x(retro_set_input_poll); \
+            x(retro_set_input_state); \
+            x(retro_set_controller_port_device); \
+            x(retro_reset); \
+            x(retro_run); \
+            x(retro_serialize_size); \
+            x(retro_serialize); \
+            x(retro_unserialize); \
+            x(retro_cheat_reset); \
+            x(retro_cheat_set); \
+            x(retro_load_game); \
+            x(retro_load_game_special); \
+            x(retro_unload_game); \
+            x(retro_get_region); \
+            x(retro_get_memory_data); \
+            x(retro_get_memory_size);
 
 /* Descriptive names for options without short variant.
  *
@@ -1774,6 +1836,10 @@ static bool audio_mixer_active                                  = false;
  */
 static bool deferred_video_context_driver_set_flags             = false;
 
+static bool ignore_environment_cb                               = false;
+static bool core_set_shared_context                             = false;
+static bool *load_no_content_hook                               = NULL;
+
 static const uint8_t midi_drv_ev_sizes[128]                     =
 {
    3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
@@ -1830,6 +1896,9 @@ static size_t audio_driver_data_ptr                             = 0;
 #ifdef HAVE_RUNAHEAD
 static size_t runahead_save_state_size                          = 0;
 #endif
+
+/* TODO/FIXME - public global variable */
+unsigned subsystem_current_count                                = 0;
 
 static unsigned runloop_pending_windowed_scale                  = 0;
 static unsigned runloop_max_frames                              = 0;
@@ -2260,6 +2329,10 @@ static input_keyboard_press_t g_keyboard_press_cb;
 
 static turbo_buttons_t input_driver_turbo_btns;
 
+#ifdef HAVE_DYNAMIC
+static dylib_t lib_handle;
+#endif
+
 #if defined(HAVE_RUNAHEAD)
 static retro_ctx_load_content_info_t *load_content_info;
 
@@ -2269,6 +2342,9 @@ static struct retro_core_t secondary_core;
 static struct retro_callbacks secondary_callbacks;
 #endif
 #endif
+
+struct retro_subsystem_info subsystem_data[SUBSYSTEM_MAX_SUBSYSTEMS];
+struct retro_subsystem_rom_info subsystem_data_roms[SUBSYSTEM_MAX_SUBSYSTEMS][SUBSYSTEM_MAX_SUBSYSTEM_ROMS];
 
 /* Forward declarations */
 static void retroarch_fail(int error_code, const char *error);
@@ -8654,7 +8730,6 @@ void retroarch_override_setting_unset(enum rarch_override_setting enum_idx, void
    }
 }
 
-
 static void retroarch_override_setting_free_state(void)
 {
    unsigned i;
@@ -8672,7 +8747,6 @@ static void retroarch_override_setting_free_state(void)
                (enum rarch_override_setting)(i), NULL);
    }
 }
-
 
 static void global_free(void)
 {
@@ -8714,7 +8788,6 @@ static void global_free(void)
    }
    retroarch_override_setting_free_state();
 }
-
 
 /**
  * main_exit:
@@ -9555,79 +9628,6 @@ static void core_option_manager_set_display(core_option_manager_t *opt,
 }
 
 /* DYNAMIC LIBRETRO CORE  */
-
-#ifdef HAVE_DYNAMIC
-#define SYMBOL(x) do { \
-   function_t func = dylib_proc(lib_handle_local, #x); \
-   memcpy(&current_core->x, &func, sizeof(func)); \
-   if (!current_core->x) { RARCH_ERR("Failed to load symbol: \"%s\"\n", #x); retroarch_fail(1, "init_libretro_symbols()"); } \
-} while (0)
-
-static dylib_t lib_handle;
-#else
-#define SYMBOL(x) current_core->x = x
-#endif
-
-#define SYMBOL_DUMMY(x) current_core->x = libretro_dummy_##x
-
-#ifdef HAVE_FFMPEG
-#define SYMBOL_FFMPEG(x) current_core->x = libretro_ffmpeg_##x
-#endif
-
-#ifdef HAVE_MPV
-#define SYMBOL_MPV(x) current_core->x = libretro_mpv_##x
-#endif
-
-#ifdef HAVE_IMAGEVIEWER
-#define SYMBOL_IMAGEVIEWER(x) current_core->x = libretro_imageviewer_##x
-#endif
-
-#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
-#define SYMBOL_NETRETROPAD(x) current_core->x = libretro_netretropad_##x
-#endif
-
-#if defined(HAVE_VIDEOPROCESSOR)
-#define SYMBOL_VIDEOPROCESSOR(x) current_core->x = libretro_videoprocessor_##x
-#endif
-
-#ifdef HAVE_GONG
-#define SYMBOL_GONG(x) current_core->x = libretro_gong_##x
-#endif
-
-#define CORE_SYMBOLS(x) \
-            x(retro_init); \
-            x(retro_deinit); \
-            x(retro_api_version); \
-            x(retro_get_system_info); \
-            x(retro_get_system_av_info); \
-            x(retro_set_environment); \
-            x(retro_set_video_refresh); \
-            x(retro_set_audio_sample); \
-            x(retro_set_audio_sample_batch); \
-            x(retro_set_input_poll); \
-            x(retro_set_input_state); \
-            x(retro_set_controller_port_device); \
-            x(retro_reset); \
-            x(retro_run); \
-            x(retro_serialize_size); \
-            x(retro_serialize); \
-            x(retro_unserialize); \
-            x(retro_cheat_reset); \
-            x(retro_cheat_set); \
-            x(retro_load_game); \
-            x(retro_load_game_special); \
-            x(retro_unload_game); \
-            x(retro_get_region); \
-            x(retro_get_memory_data); \
-            x(retro_get_memory_size);
-
-static bool ignore_environment_cb   = false;
-static bool core_set_shared_context = false;
-static bool *load_no_content_hook   = NULL;
-
-struct retro_subsystem_info subsystem_data[SUBSYSTEM_MAX_SUBSYSTEMS];
-struct retro_subsystem_rom_info subsystem_data_roms[SUBSYSTEM_MAX_SUBSYSTEMS][SUBSYSTEM_MAX_SUBSYSTEM_ROMS];
-unsigned subsystem_current_count;
 
 const struct retro_subsystem_info *libretro_find_subsystem_info(
       const struct retro_subsystem_info *info, unsigned num_info,
@@ -12010,7 +12010,7 @@ error:
 
 static void secondary_core_input_poll_null(void) { }
 
-bool secondary_core_run_use_last_input(void)
+static bool secondary_core_run_use_last_input(void)
 {
    retro_input_poll_t old_poll_function;
    retro_input_state_t old_input_function;
@@ -12041,7 +12041,7 @@ bool secondary_core_run_use_last_input(void)
    return true;
 }
 #else
-bool secondary_core_deserialize(const void *buffer, int size) { return false; }
+static bool secondary_core_deserialize(const void *buffer, int size) { return false; }
 static void secondary_core_destroy(void) { }
 static void remember_controller_port_device(long port, long device) { }
 static void clear_controller_port_map(void) { }
