@@ -262,8 +262,11 @@ static bool menu_shader_manager_save_preset_internal(
       ext = strrchr(basename, '.');
 
       /* Copy and convert to lower case */
-      strlcpy(ext_lower, ext, sizeof(ext_lower));
-      string_to_lower(ext_lower);
+      if (ext && (*(++ext) != '\0'))
+      {
+         strlcpy(ext_lower, ext, sizeof(ext_lower));
+         string_to_lower(ext_lower);
+      }
 
       /* Append extension automatically as appropriate. */
       if (     !string_is_equal(ext_lower, "cgp")
