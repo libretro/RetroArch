@@ -35,6 +35,9 @@
 - VITA: Fix upside-down vertical games
 - WIIU: Gamepad hotplugging support
 - WIIU: Theoretical multi-gamepad support
+- X11: Fix crash in x11_display_server_get_screen_orientation
+- X11/XSHM: Allow X11/XHSM video driver to operate without SHM extension
+- X11/XSHM: Fix compatibility with X11 input driver
 - XVIDEO: Fix keyboard input initialization
 - XVIDEO/XWAYLAND: Fix XVideo support on xwayland (by supporting I420 and YZ12)
 
