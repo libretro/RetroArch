@@ -940,13 +940,21 @@ static INLINE unsigned font_get_replacement(const char* src, const char* start)
    return 0;
 }
 
-static char* font_driver_reshape_msg(const char* msg)
+static char* font_driver_reshape_msg(const char* msg, unsigned char *buffer, size_t buffer_size)
 {
-   /* worst case transformations are 2 bytes to 4 bytes */
-   unsigned char*       buffer  = (unsigned char*)malloc((strlen(msg) * 2) + 1);
+   unsigned char*       dst_buffer = buffer;
    const unsigned char* src     = (const unsigned char*)msg;
-   unsigned char*       dst     = (unsigned char*)buffer;
+   unsigned char*       dst;
    bool                 reverse = false;
+
+   /* fallback to heap allocated buffer if the buffer is too small */
+   if (buffer_size < (strlen(msg) * 2) + 1)
+   {
+      /* worst case transformations are 2 bytes to 4 bytes -- aliaspider */
+      dst_buffer = (unsigned char*)malloc((strlen(msg) * 2) + 1);
+   }
+
+   dst = (unsigned char*)dst_buffer;
 
    while (*src || reverse)
    {
@@ -1025,7 +1033,7 @@ static char* font_driver_reshape_msg(const char* msg)
 end:
    *dst = '\0';
 
-   return (char*)buffer;
+   return (char*)dst_buffer;
 }
 #endif
 
@@ -1042,15 +1050,16 @@ void font_driver_render_msg(
    if (msg && *msg && font && font->renderer && font->renderer->render_msg)
    {
 #ifdef HAVE_LANGEXTRA
-      char *new_msg = font_driver_reshape_msg(msg);
+      unsigned char tmp_buffer[64];
+      char *new_msg = font_driver_reshape_msg(msg, tmp_buffer, sizeof(tmp_buffer));
 #else
       char *new_msg = (char*)msg;
 #endif
-
       font->renderer->render_msg(data,
             font->renderer_data, new_msg, params);
 #ifdef HAVE_LANGEXTRA
-      free(new_msg);
+      if (new_msg != (char*)tmp_buffer)
+         free(new_msg);
 #endif
    }
 }
