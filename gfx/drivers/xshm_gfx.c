@@ -84,19 +84,19 @@ static void *xshm_gfx_init(const video_info_t *video,
    {
       xshm->shmInfo.shmid = shmget(IPC_PRIVATE, sizeof(uint32_t) * video->width * video->height,
 				   IPC_CREAT|0600);
-      if (xshm->shmInfo.shmid<0) abort();//seems like an out of memory situation... let's just blow up
+      if (xshm->shmInfo.shmid<0) abort();/* seems like an out of memory situation... let's just blow up. */
 
       xshm->shmInfo.shmaddr = (char*)shmat(xshm->shmInfo.shmid, 0, 0);
       xshm->shmInfo.readOnly = False;
       XShmAttach(g_x11_dpy, &xshm->shmInfo);
-      XSync(g_x11_dpy, False);//no idea why this is required, but I get weird errors without it
+      XSync(g_x11_dpy, False);/* no idea why this is required, but I get weird errors without it. */
       xshm->image = XShmCreateImage(g_x11_dpy, NULL, 24, ZPixmap,
 				    xshm->shmInfo.shmaddr, &xshm->shmInfo, video->width, video->height);
       xshm->fbptr = (uint8_t*)xshm->shmInfo.shmaddr;
    } else {
       size_t pitch = video->width * 4;
       void *data = malloc (pitch * video->height);
-      if (!data) abort();//seems like an out of memory situation... let's just blow up
+      if (!data) abort();/* seems like an out of memory situation... let's just blow up. */
       xshm->image = XCreateImage(g_x11_dpy, NULL, 24, ZPixmap, 0,
 				 data, video->width, video->height, 8, pitch);
       xshm->fbptr = data;
