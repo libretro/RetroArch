@@ -1525,7 +1525,7 @@ static struct pcm_params *pcm_params_get(unsigned int card, unsigned int device,
    fd = open(fn, O_RDWR|O_NONBLOCK);
    if (fd < 0)
    {
-      fprintf(stderr, "cannot open device '%s'\n", fn);
+      RARCH_ERR("[TINYALSA] Cannot open device '%s'\n", fn);
       goto err_open;
    }
 
