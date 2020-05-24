@@ -5,7 +5,8 @@
 - CHEEVOS: Disable hardcore when cheats are enabled
 - CHD: Return false when special track cannot be found
 - DISCORD/MATCHMAKING: Fix Discord 'Ask To Join' functionality
-- FILE PATH: Various file path handling optimisations 
+- FILE PATH: Various file path handling optimisations
+- FONT: Fix Arabic, Chinese and Korean font rendering
 - INPUT MAPPING/REMAPPING: Restore broken 'reset to default' functionality with RetroPad 'start' button
 - INPUT MAPPING/REMAPPING: Fix 'reset to default' action for analog sticks and undefined core inputs 
 - LOCALIZATION: Update Arabic translation
