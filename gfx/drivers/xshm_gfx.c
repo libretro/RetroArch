@@ -98,8 +98,9 @@ static void *xshm_gfx_init(const video_info_t *video,
       void *data = malloc (pitch * video->height);
       if (!data) abort();/* seems like an out of memory situation... let's just blow up. */
       xshm->image = XCreateImage(g_x11_dpy, NULL, 24, ZPixmap, 0,
-				 data, video->width, video->height, 8, pitch);
-      xshm->fbptr = data;
+				 (char *) data, video->width,
+				 video->height, 8, pitch);
+      xshm->fbptr = (uint8_t*)data;
       XSync(g_x11_dpy, False);
    }
 
