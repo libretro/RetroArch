@@ -8749,7 +8749,7 @@ MSG_HASH( /* FIXME Should be MSG_ */
    "O jogo em rede irá iniciar quando o conteúdo for carregado."
    )
 MSG_HASH( /* FIXME Should be MSG_ */
-   MENU_ENUM_LABEL_VALUE_NETPLAY_LOAD_CONTENT_MANUALLY,
+   MSG_NETPLAY_LOAD_CONTENT_MANUALLY,
    "Não foi possível encontrar um núcleo adequado ou arquivo de conteúdo, carregue manualmente."
    )
 MSG_HASH( /* FIXME Should be MSG_ */

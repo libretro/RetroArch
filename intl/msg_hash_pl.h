@@ -8718,7 +8718,7 @@ MSG_HASH( /* FIXME Should be MSG_ */
    "Gra online rozpocznie się po załadowaniu zawartości."
    )
 MSG_HASH( /* FIXME Should be MSG_ */
-   MENU_ENUM_LABEL_VALUE_NETPLAY_LOAD_CONTENT_MANUALLY,
+   MSG_NETPLAY_LOAD_CONTENT_MANUALLY,
    "Nie można znaleźć odpowiedniego pliku rdzenia lub treści, załaduj ręcznie."
    )
 MSG_HASH( /* FIXME Should be MSG_ */

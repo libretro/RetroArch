@@ -8830,7 +8830,7 @@ MSG_HASH( /* FIXME Should be MSG_ */
    "Netplay İçerik yüklendiğinde başlayacaktır."
    )
 MSG_HASH( /* FIXME Should be MSG_ */
-   MENU_ENUM_LABEL_VALUE_NETPLAY_LOAD_CONTENT_MANUALLY,
+   MSG_NETPLAY_LOAD_CONTENT_MANUALLY,
    "Uygun bir çekirdek veya içerik dosyası bulunamadı, el ile yükleyin."
    )
 MSG_HASH( /* FIXME Should be MSG_ */

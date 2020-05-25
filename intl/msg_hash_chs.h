@@ -7424,7 +7424,7 @@ MSG_HASH( /* FIXME Should be MSG_ */
    "联机游戏将在内容加载后开始。"
    )
 MSG_HASH( /* FIXME Should be MSG_ */
-   MENU_ENUM_LABEL_VALUE_NETPLAY_LOAD_CONTENT_MANUALLY,
+   MSG_NETPLAY_LOAD_CONTENT_MANUALLY,
    "无法找到合适的核心或游戏文件，请手动加载。"
    )
 MSG_HASH( /* FIXME Should be MSG_ */

@@ -9174,7 +9174,7 @@ MSG_HASH( /* FIXME Should be MSG_ */
    "Netplay will start when content is loaded."
    )
 MSG_HASH( /* FIXME Should be MSG_ */
-   MENU_ENUM_LABEL_VALUE_NETPLAY_LOAD_CONTENT_MANUALLY,
+   MSG_NETPLAY_LOAD_CONTENT_MANUALLY,
    "Couldn't find a suitable core or content file, load manually."
    )
 MSG_HASH( /* FIXME Should be MSG_ */

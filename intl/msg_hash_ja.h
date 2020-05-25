@@ -7399,7 +7399,7 @@ MSG_HASH( /* FIXME Should be MSG_ */
    "ネットプレイはコンテンツロード後に開始します。"
    )
 MSG_HASH( /* FIXME Should be MSG_ */
-   MENU_ENUM_LABEL_VALUE_NETPLAY_LOAD_CONTENT_MANUALLY,
+   MSG_NETPLAY_LOAD_CONTENT_MANUALLY,
    "該当するコアやコンテンツファイルが見つかりませんでした。\n"
    "手動でロードしてください。"
    )

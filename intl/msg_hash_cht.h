@@ -3717,7 +3717,7 @@ MSG_HASH( /* FIXME Should be MSG_ */
    "連線遊戲將在內容戴入後開始。"
    )
 MSG_HASH( /* FIXME Should be MSG_ */
-   MENU_ENUM_LABEL_VALUE_NETPLAY_LOAD_CONTENT_MANUALLY,
+   MSG_NETPLAY_LOAD_CONTENT_MANUALLY,
    "無法找到合適的核心或內容文件，手動戴入。"
    )
 MSG_HASH(

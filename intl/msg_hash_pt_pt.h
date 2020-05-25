@@ -4697,7 +4697,7 @@ MSG_HASH( /* FIXME Should be MSG_ */
    "O Netplay irá iniciar quando o conteúdo for carregado."
    )
 MSG_HASH( /* FIXME Should be MSG_ */
-   MENU_ENUM_LABEL_VALUE_NETPLAY_LOAD_CONTENT_MANUALLY,
+   MSG_NETPLAY_LOAD_CONTENT_MANUALLY,
    "Não foi possível encontrar um núcleo adequado ou um ficheiro de conteúdo. Por favor, carregue manualmente."
    )
 MSG_HASH(
