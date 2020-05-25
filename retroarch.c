@@ -1652,39 +1652,35 @@ struct input_keyboard_line
    void *userdata;
 };
 
+struct rarch_state
+{
+   enum rarch_core_type current_core_type;
+   enum rarch_core_type explicit_current_core_type;
+   enum rotation initial_screen_orientation;
+   enum rotation current_screen_orientation;
+   enum retro_pixel_format video_driver_pix_fmt;
+#if defined(HAVE_COMMAND)
+   enum cmd_source_t lastcmd_source;
+#endif
+#if defined(HAVE_RUNAHEAD)
+   enum rarch_core_type last_core_type;
+#endif
+   enum rarch_display_type video_driver_display_type;
+   enum poll_type_override_t core_poll_type_override;
+#ifdef HAVE_OVERLAY
+   enum overlay_visibility *overlay_visibility;
+#endif
+};
+
 
 static struct global              g_extern;
 static struct retro_callbacks     retro_ctx;
 static struct retro_core_t        current_core;
+static struct rarch_state         rarch_st;
 
 static jmp_buf error_sjlj_context;
 
 static settings_t *configuration_settings                       = NULL;
-
-static enum rarch_core_type current_core_type                   = CORE_TYPE_PLAIN;
-static enum rarch_core_type explicit_current_core_type          = CORE_TYPE_PLAIN;
-
-static enum rotation initial_screen_orientation                 = ORIENTATION_NORMAL;
-static enum rotation current_screen_orientation                 = ORIENTATION_NORMAL;
-
-static enum retro_pixel_format video_driver_pix_fmt             = RETRO_PIXEL_FORMAT_0RGB1555;
-
-static enum rarch_display_type video_driver_display_type        = RARCH_DISPLAY_NONE;
-
-#if defined(HAVE_COMMAND)
-static enum cmd_source_t lastcmd_source;
-#endif
-
-#if defined(HAVE_RUNAHEAD)
-static enum rarch_core_type last_core_type;
-#endif
-
-#ifdef HAVE_OVERLAY
-static enum overlay_visibility *visibility                      = NULL;
-#endif
-
-/* Override poll type behavior, is set by the core */
-static enum poll_type_override_t core_poll_type_override        = POLL_TYPE_OVERRIDE_DONTCARE;
 
 #ifdef HAVE_THREAD_STORAGE
 static sthread_tls_t rarch_tls;
@@ -4153,6 +4149,9 @@ static void retroarch_autosave_deinit(void)
 #if (defined(HAVE_STDIN_CMD) || defined(HAVE_NETWORK_CMD))
 static void command_reply(const char * data, size_t len)
 {
+   struct rarch_state            *p_rarch = &rarch_st;
+   const enum cmd_source_t lastcmd_source = p_rarch->lastcmd_source;
+
    switch (lastcmd_source)
    {
       case CMD_STDIN:
@@ -4667,17 +4666,19 @@ static void command_parse_sub_msg(command_t *handle, const char *tok)
 static void command_parse_msg(command_t *handle,
       char *buf, enum cmd_source_t source)
 {
-   char *save      = NULL;
-   const char *tok = strtok_r(buf, "\n", &save);
+   char                            *save  = NULL;
+   const char                        *tok = strtok_r(buf, "\n", &save);
+   struct rarch_state            *p_rarch = &rarch_st;
 
-   lastcmd_source = source;
+   p_rarch->lastcmd_source                = source;
 
    while (tok)
    {
       command_parse_sub_msg(handle, tok);
       tok = strtok_r(NULL, "\n", &save);
    }
-   lastcmd_source = CMD_NONE;
+
+   p_rarch->lastcmd_source = CMD_NONE;
 }
 
 static void command_network_poll(command_t *handle)
@@ -4946,7 +4947,9 @@ static void handle_translation_cb(
    int curr_state                    = 0;
    settings_t* settings              = configuration_settings;
    bool was_paused                   = runloop_paused;
-
+   struct rarch_state *p_rarch       = &rarch_st;
+   const enum retro_pixel_format 
+      video_driver_pix_fmt           = p_rarch->video_driver_pix_fmt;
 
 #ifdef GFX_MENU_WIDGETS
    if (gfx_widgets_ai_service_overlay_get_state() != 0 
@@ -5656,6 +5659,9 @@ static bool run_translation_service(bool paused)
    const char *label                     = NULL;
    char* system_label                    = NULL;
    core_info_t *core_info                = NULL;
+   struct rarch_state *p_rarch           = &rarch_st;
+   const enum retro_pixel_format 
+      video_driver_pix_fmt               = p_rarch->video_driver_pix_fmt;
 
 #ifdef HAVE_GFX_WIDGETS
    if (gfx_widgets_ai_service_overlay_get_state() != 0 && g_ai_service_auto == 1)
@@ -6413,8 +6419,10 @@ static void command_event_set_savestate_auto_index(void)
 
 static bool event_init_content(void)
 {
-   bool contentless = false;
-   bool is_inited   = false;
+   bool contentless                             = false;
+   bool is_inited                               = false;
+   struct rarch_state *p_rarch                  = &rarch_st;
+   const enum rarch_core_type current_core_type = p_rarch->current_core_type;
 
    content_get_status(&contentless, &is_inited);
 
@@ -6593,6 +6601,7 @@ static bool command_event_init_core(enum rarch_core_type type)
 #endif
    unsigned poll_type_behavior     = settings->uints.input_poll_type_behavior;
    float fastforward_ratio         = settings->floats.fastforward_ratio;
+   struct rarch_state *p_rarch     = &rarch_st;
 
    if (!init_libretro_symbols(type, &current_core))
       return false;
@@ -6637,7 +6646,7 @@ static bool command_event_init_core(enum rarch_core_type type)
 #endif
 
    /* reset video format to libretro's default */
-   video_driver_pix_fmt = RETRO_PIXEL_FORMAT_0RGB1555;
+   p_rarch->video_driver_pix_fmt = RETRO_PIXEL_FORMAT_0RGB1555;
 
    current_core.retro_set_environment(rarch_environment_cb);
 
@@ -6682,7 +6691,10 @@ static bool command_event_save_auto_state(void)
       savestate_name_auto_size = PATH_MAX_LENGTH * sizeof(char);
    settings_t *settings        = configuration_settings;
    global_t   *global          = &g_extern;
+   struct rarch_state *p_rarch = &rarch_st;
    bool savestate_auto_save    = settings->bools.savestate_auto_save;
+   const enum rarch_core_type 
+      current_core_type        = p_rarch->current_core_type;
 
    if (!global || !savestate_auto_save)
       return false;
@@ -10147,6 +10159,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
    unsigned p;
    settings_t         *settings = configuration_settings;
    rarch_system_info_t *system  = &runloop_system;
+   struct rarch_state *p_rarch  = &rarch_st;
 
    if (ignore_environment_cb)
       return false;
@@ -10401,7 +10414,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
                return false;
          }
 
-         video_driver_pix_fmt = pix_fmt;
+         p_rarch->video_driver_pix_fmt = pix_fmt;
          break;
       }
 
@@ -11244,7 +11257,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
             const unsigned *poll_type_data = (const unsigned*)data;
 
             if (poll_type_data)
-               core_poll_type_override = (enum poll_type_override_t)*poll_type_data;
+               p_rarch->core_poll_type_override = (enum poll_type_override_t)*poll_type_data;
          }
          break;
 
@@ -11582,9 +11595,12 @@ static bool init_libretro_symbols(enum rarch_core_type type,
       return false;
 
 #ifdef HAVE_RUNAHEAD
-   /* remember last core type created, so creating a
-    * secondary core will know what core type to use. */
-   last_core_type = type;
+   {
+      /* remember last core type created, so creating a
+       * secondary core will know what core type to use. */
+      struct rarch_state *p_rarch = &rarch_st;
+      p_rarch->last_core_type = type;
+   }
 #endif
    return true;
 }
@@ -11731,13 +11747,14 @@ static void strcat_alloc(char **dst, const char *s)
 
 static void secondary_core_destroy(void)
 {
+   struct rarch_state *p_rarch = &rarch_st;
    if (!secondary_module)
       return;
 
    /* unload game from core */
    if (secondary_core.retro_unload_game)
       secondary_core.retro_unload_game();
-   core_poll_type_override = POLL_TYPE_OVERRIDE_DONTCARE;
+   p_rarch->core_poll_type_override = POLL_TYPE_OVERRIDE_DONTCARE;
 
    /* deinit */
    if (secondary_core.retro_deinit)
@@ -11966,8 +11983,11 @@ static bool rarch_environment_secondary_core_hook(unsigned cmd, void *data)
 static bool secondary_core_create(void)
 {
    long port, device;
-   bool contentless       = false;
-   bool is_inited         = false;
+   bool contentless            = false;
+   bool is_inited              = false;
+   struct rarch_state *p_rarch = &rarch_st;
+   const enum rarch_core_type 
+      last_core_type           = p_rarch->last_core_type;
 
    if (   last_core_type != CORE_TYPE_PLAIN ||
          !load_content_info                 ||
@@ -12724,6 +12744,11 @@ static bool recording_init(void)
    global_t *global                     = &g_extern;
    bool video_gpu_record                = settings->bools.video_gpu_record;
    bool video_force_aspect              = settings->bools.video_force_aspect;
+   struct rarch_state *p_rarch          = &rarch_st;
+   const enum rarch_core_type 
+      current_core_type                 = p_rarch->current_core_type;
+   const enum retro_pixel_format 
+      video_driver_pix_fmt              = p_rarch->video_driver_pix_fmt;
 
    if (!recording_enable)
       return false;
@@ -13603,6 +13628,9 @@ static void input_overlay_free_overlays(input_overlay_t *ol)
 
 static enum overlay_visibility input_overlay_get_visibility(int overlay_idx)
 {
+   struct rarch_state         *p_rarch = &rarch_st;
+   enum overlay_visibility *visibility = p_rarch->overlay_visibility;;
+
     if (!visibility)
        return OVERLAY_VISIBILITY_DEFAULT;
     if ((overlay_idx < 0) || (overlay_idx >= MAX_VISIBILITY))
@@ -14059,23 +14087,24 @@ abort_load:
 void input_overlay_set_visibility(int overlay_idx,
       enum overlay_visibility vis)
 {
-    input_overlay_t *ol = overlay_ptr;
+   struct rarch_state         *p_rarch = &rarch_st;
+   input_overlay_t                 *ol = overlay_ptr;
 
-    if (!visibility)
-    {
-       unsigned i;
-       visibility = (enum overlay_visibility *)calloc(
-             MAX_VISIBILITY, sizeof(enum overlay_visibility));
+   if (!p_rarch->overlay_visibility)
+   {
+      unsigned i;
+      p_rarch->overlay_visibility = (enum overlay_visibility *)calloc(
+            MAX_VISIBILITY, sizeof(enum overlay_visibility));
 
-       for (i = 0; i < MAX_VISIBILITY; i++)
-          visibility[i] = OVERLAY_VISIBILITY_DEFAULT;
-    }
+      for (i = 0; i < MAX_VISIBILITY; i++)
+         p_rarch->overlay_visibility[i] = OVERLAY_VISIBILITY_DEFAULT;
+   }
 
-    visibility[overlay_idx] = vis;
+   p_rarch->overlay_visibility[overlay_idx] = vis;
 
-    if (!ol)
-       return;
-    if (vis == OVERLAY_VISIBILITY_HIDDEN)
+   if (!ol)
+      return;
+   if (vis == OVERLAY_VISIBILITY_HIDDEN)
       ol->iface->set_alpha(ol->iface_data, overlay_idx, 0.0);
 }
 
@@ -20828,6 +20857,8 @@ const char *video_display_server_get_ident(void)
 
 void* video_display_server_init(enum rarch_display_type type)
 {
+   struct rarch_state            *p_rarch = &rarch_st;
+
    video_display_server_destroy();
 
    switch (type)
@@ -20857,14 +20888,18 @@ void* video_display_server_init(enum rarch_display_type type)
    RARCH_LOG("[Video]: Found display server: %s\n",
 		   current_display_server->ident);
 
-   initial_screen_orientation = video_display_server_get_screen_orientation();
-   current_screen_orientation = initial_screen_orientation;
+   p_rarch->initial_screen_orientation = video_display_server_get_screen_orientation();
+   p_rarch->current_screen_orientation = p_rarch->initial_screen_orientation;
 
    return current_display_server_data;
 }
 
 void video_display_server_destroy(void)
 {
+   struct rarch_state                    *p_rarch = &rarch_st;
+   const enum rotation initial_screen_orientation = p_rarch->initial_screen_orientation;
+   const enum rotation current_screen_orientation = p_rarch->current_screen_orientation;
+
    if (initial_screen_orientation != current_screen_orientation)
       video_display_server_set_screen_orientation(initial_screen_orientation);
 
@@ -20926,8 +20961,10 @@ void video_display_server_set_screen_orientation(enum rotation rotation)
 {
    if (current_display_server && current_display_server->set_screen_orientation)
    {
+      struct rarch_state            *p_rarch = &rarch_st;
+
       RARCH_LOG("[Video]: Setting screen orientation to %d.\n", rotation);
-      current_screen_orientation = rotation;
+      p_rarch->current_screen_orientation = rotation;
       current_display_server->set_screen_orientation(rotation);
    }
 }
@@ -21370,6 +21407,9 @@ static bool video_driver_pixel_converter_init(unsigned size)
    void *scalr_out                      = NULL;
    video_pixel_scaler_t          *scalr = NULL;
    struct scaler_ctx        *scalr_ctx  = NULL;
+   struct rarch_state          *p_rarch = &rarch_st;
+   const enum retro_pixel_format 
+      video_driver_pix_fmt              = p_rarch->video_driver_pix_fmt;
 
    /* If pixel format is not 0RGB1555, we don't need to do
     * any internal pixel conversion. */
@@ -21503,6 +21543,9 @@ static bool video_driver_init_internal(bool *video_is_threaded)
    const char *path_softfilter_plugin     = settings->paths.path_softfilter_plugin;
    char *config_file_directory            = NULL;
    bool dir_list_is_free                  = true;
+   struct rarch_state            *p_rarch = &rarch_st;
+   const enum retro_pixel_format 
+      video_driver_pix_fmt                = p_rarch->video_driver_pix_fmt;
 
    if (!string_is_empty(path_softfilter_plugin))
       video_driver_init_filter(video_driver_pix_fmt);
@@ -21697,7 +21740,7 @@ static bool video_driver_init_internal(bool *video_is_threaded)
 
    video_context_driver_reset();
 
-   video_display_server_init(video_driver_display_type);
+   video_display_server_init(p_rarch->video_driver_display_type);
 
    if ((enum rotation)settings->uints.screen_orientation != ORIENTATION_NORMAL)
       video_display_server_set_screen_orientation((enum rotation)settings->uints.screen_orientation);
@@ -21990,7 +22033,8 @@ void video_driver_set_aspect_ratio_value(float value)
 
 enum retro_pixel_format video_driver_get_pixel_format(void)
 {
-   return video_driver_pix_fmt;
+   struct rarch_state *p_rarch = &rarch_st;
+   return p_rarch->video_driver_pix_fmt;
 }
 
 /**
@@ -22676,10 +22720,13 @@ static void video_driver_frame(const void *data, unsigned width,
    static retro_time_t curr_time;
    static retro_time_t fps_time;
    static float last_fps, frame_time;
-   retro_time_t new_time = cpu_features_get_time_usec();
+   retro_time_t new_time       = cpu_features_get_time_usec();
 #if defined(HAVE_GFX_WIDGETS)
-   bool widgets_active   = gfx_widgets_active();
+   bool widgets_active         = gfx_widgets_active();
 #endif
+   struct rarch_state *p_rarch = &rarch_st;
+   const enum retro_pixel_format 
+      video_driver_pix_fmt     = p_rarch->video_driver_pix_fmt;
 
    fps_text[0]         = '\0';
    video_driver_msg[0] = '\0';
@@ -23001,7 +23048,8 @@ void crt_switch_driver_reinit(void)
 
 void video_driver_display_type_set(enum rarch_display_type type)
 {
-   video_driver_display_type = type;
+   struct rarch_state            *p_rarch = &rarch_st;
+   p_rarch->video_driver_display_type     = type;
 }
 
 uintptr_t video_driver_display_get(void)
@@ -23026,7 +23074,8 @@ void video_driver_display_set(uintptr_t idx)
 
 enum rarch_display_type video_driver_display_type_get(void)
 {
-   return video_driver_display_type;
+   struct rarch_state            *p_rarch = &rarch_st;
+   return p_rarch->video_driver_display_type;
 }
 
 void video_driver_window_set(uintptr_t idx)
@@ -25066,12 +25115,14 @@ static void runahead_destroy(void)
 
 static void unload_hook(void)
 {
+   struct rarch_state *p_rarch = &rarch_st;
+
    runahead_remove_hooks();
    runahead_destroy();
    secondary_core_destroy();
    if (current_core.retro_unload_game)
       current_core.retro_unload_game();
-   core_poll_type_override = POLL_TYPE_OVERRIDE_DONTCARE;
+   p_rarch->core_poll_type_override = POLL_TYPE_OVERRIDE_DONTCARE;
 }
 
 static void runahead_deinit_hook(void)
@@ -26366,11 +26417,12 @@ static void retroarch_validate_cpu_features(void)
  **/
 bool retroarch_main_init(int argc, char *argv[])
 {
-   bool init_failed  = false;
-   global_t  *global = &g_extern;
 #if defined(DEBUG) && defined(HAVE_DRMINGW)
    char log_file_name[128];
 #endif
+   bool           init_failed  = false;
+   global_t            *global = &g_extern;
+   struct rarch_state *p_rarch = &rarch_st;
 
    video_driver_active = true;
    audio_driver_active = true;
@@ -26518,10 +26570,10 @@ bool retroarch_main_init(int argc, char *argv[])
    if (has_set_core)
    {
       has_set_core = false;
-      if (!command_event(CMD_EVENT_CORE_INIT, &explicit_current_core_type))
+      if (!command_event(CMD_EVENT_CORE_INIT, &p_rarch->explicit_current_core_type))
          init_failed = true;
    }
-   else if (!command_event(CMD_EVENT_CORE_INIT, &current_core_type))
+   else if (!command_event(CMD_EVENT_CORE_INIT, &p_rarch->current_core_type))
       init_failed = true;
 
    /* Handle core initialization failure */
@@ -26535,8 +26587,8 @@ bool retroarch_main_init(int argc, char *argv[])
          )
       {
          /* Attempt initializing dummy core */
-         current_core_type = CORE_TYPE_DUMMY;
-         if (!command_event(CMD_EVENT_CORE_INIT, &current_core_type))
+         p_rarch->current_core_type = CORE_TYPE_DUMMY;
+         if (!command_event(CMD_EVENT_CORE_INIT, &p_rarch->current_core_type))
             goto error;
       }
       else
@@ -27003,6 +27055,8 @@ static void retroarch_core_options_intl_init(const struct
 
 bool rarch_ctl(enum rarch_ctl_state state, void *data)
 {
+   struct rarch_state *p_rarch = &rarch_st;
+
    switch(state)
    {
       case RARCH_CTL_HAS_SET_SUBSYSTEMS:
@@ -27029,7 +27083,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          rarch_ips_pref = false;
          break;
       case RARCH_CTL_IS_DUMMY_CORE:
-         return (current_core_type == CORE_TYPE_DUMMY);
+         return (p_rarch->current_core_type == CORE_TYPE_DUMMY);
       case RARCH_CTL_HAS_SET_USERNAME:
          return has_set_username;
       case RARCH_CTL_IS_INITED:
@@ -27694,14 +27748,15 @@ int retroarch_get_capabilities(enum rarch_capabilities type,
 
 void retroarch_set_current_core_type(enum rarch_core_type type, bool explicitly_set)
 {
+   struct rarch_state *p_rarch = &rarch_st;
    if (explicitly_set && !has_set_core)
    {
-      has_set_core                = true;
-      explicit_current_core_type  = type;
-      current_core_type           = type;
+      has_set_core                         = true;
+      p_rarch->explicit_current_core_type  = type;
+      p_rarch->current_core_type           = type;
    }
    else if (!has_set_core)
-      current_core_type           = type;
+      p_rarch->current_core_type           = type;
 }
 
 /**
@@ -27912,11 +27967,12 @@ static bool input_driver_toggle_button_combo(
 #if defined(HAVE_MENU)
 static bool menu_display_libretro_running(void)
 {
-   settings_t *settings     = configuration_settings;
-   bool menu_pause_libretro = settings->bools.menu_pause_libretro;
-   bool check               = !menu_pause_libretro
+   settings_t *settings        = configuration_settings;
+   struct rarch_state *p_rarch = &rarch_st;
+   bool menu_pause_libretro    = settings->bools.menu_pause_libretro;
+   bool check                  = !menu_pause_libretro
       && rarch_is_inited
-      && (current_core_type != CORE_TYPE_DUMMY);
+      && (p_rarch->current_core_type != CORE_TYPE_DUMMY);
    return check;
 }
 
@@ -28008,6 +28064,7 @@ static enum runloop_state runloop_check_state(retro_time_t current_time)
 #endif
    static bool old_focus               = true;
    settings_t *settings                = configuration_settings;
+   struct rarch_state *p_rarch         = &rarch_st;
    bool is_focused                     = false;
    bool is_alive                       = false;
    uint64_t frame_count                = 0;
@@ -28493,7 +28550,7 @@ static enum runloop_state runloop_check_state(retro_time_t current_time)
       bool pressed            = BIT256_GET(
             current_bits, RARCH_MENU_TOGGLE) &&
          !string_is_equal(menu_driver, "null");
-      bool core_type_is_dummy = current_core_type == CORE_TYPE_DUMMY;
+      bool core_type_is_dummy = p_rarch->current_core_type == CORE_TYPE_DUMMY;
 
       if (menu_keyboard_key_state[RETROK_F1] == 1)
       {
@@ -29319,7 +29376,10 @@ static int16_t core_input_state_poll_late(unsigned port,
 
 static retro_input_state_t core_input_state_poll_return_cb(void)
 {
-   unsigned new_poll_type = (core_poll_type_override > POLL_TYPE_OVERRIDE_DONTCARE)
+   struct rarch_state *p_rarch = &rarch_st;
+   const enum poll_type_override_t 
+      core_poll_type_override  = p_rarch->core_poll_type_override;
+   unsigned new_poll_type      = (core_poll_type_override > POLL_TYPE_OVERRIDE_DONTCARE)
       ? (core_poll_type_override - 1)
       : current_core.poll_type;
    if (new_poll_type == POLL_TYPE_LATE)
@@ -29329,7 +29389,10 @@ static retro_input_state_t core_input_state_poll_return_cb(void)
 
 static void core_input_state_poll_maybe(void)
 {
-   unsigned new_poll_type = (core_poll_type_override > POLL_TYPE_OVERRIDE_DONTCARE)
+   struct rarch_state *p_rarch = &rarch_st;
+   const enum poll_type_override_t 
+      core_poll_type_override  = p_rarch->core_poll_type_override;
+   unsigned new_poll_type      = (core_poll_type_override > POLL_TYPE_OVERRIDE_DONTCARE)
       ? (core_poll_type_override - 1)
       : current_core.poll_type;
    if (new_poll_type == POLL_TYPE_NORMAL)
@@ -29566,6 +29629,8 @@ bool core_reset(void)
 
 static bool core_unload_game(void)
 {
+   struct rarch_state *p_rarch = &rarch_st;
+
    video_driver_free_hw_context();
 
    video_driver_set_cached_frame_ptr(NULL);
@@ -29573,7 +29638,7 @@ static bool core_unload_game(void)
    if (current_core.game_loaded)
    {
       current_core.retro_unload_game();
-      core_poll_type_override  = POLL_TYPE_OVERRIDE_DONTCARE;
+      p_rarch->core_poll_type_override  = POLL_TYPE_OVERRIDE_DONTCARE;
       current_core.game_loaded = false;
    }
 
@@ -29584,13 +29649,17 @@ static bool core_unload_game(void)
 
 bool core_run(void)
 {
-   unsigned new_poll_type = (core_poll_type_override != POLL_TYPE_OVERRIDE_DONTCARE)
+   struct rarch_state 
+      *p_rarch                 = &rarch_st;
+   const enum poll_type_override_t 
+      core_poll_type_override  = p_rarch->core_poll_type_override;
+   unsigned new_poll_type      = (core_poll_type_override != POLL_TYPE_OVERRIDE_DONTCARE)
       ? (core_poll_type_override - 1)
       : current_core.poll_type;
-   bool early_polling     = new_poll_type == POLL_TYPE_EARLY;
-   bool late_polling      = new_poll_type == POLL_TYPE_LATE;
+   bool early_polling          = new_poll_type == POLL_TYPE_EARLY;
+   bool late_polling           = new_poll_type == POLL_TYPE_LATE;
 #ifdef HAVE_NETWORKING
-   bool netplay_preframe = netplay_driver_ctl(
+   bool netplay_preframe       = netplay_driver_ctl(
          RARCH_NETPLAY_CTL_PRE_FRAME, NULL);
 
    if (!netplay_preframe)
