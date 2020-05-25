@@ -3244,11 +3244,11 @@ MSG_HASH( /* FIXME Not RGUI specific */
    "Lege das Startverzeichnis für den Dateibrowser fest."
    )
 MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY,
+   MENU_ENUM_LABEL_VALUE_CONFIG_DIRECTORY,
    "Konfigurationen"
    )
 MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_SUBLABEL_RGUI_CONFIG_DIRECTORY,
+   MENU_ENUM_SUBLABEL_CONFIG_DIRECTORY,
    "Legt das Verzeichnis fest, in dem das Menü mit der Suche nach Konfigurationen beginnt."
    )
 MSG_HASH(

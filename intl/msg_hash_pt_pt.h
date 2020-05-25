@@ -2972,11 +2972,11 @@ MSG_HASH( /* FIXME Not RGUI specific */
    "Define a pasta inicial para o explorador de ficheiros."
    )
 MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY,
+   MENU_ENUM_LABEL_VALUE_CONFIG_DIRECTORY,
    "Configuração"
    )
 MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_SUBLABEL_RGUI_CONFIG_DIRECTORY,
+   MENU_ENUM_SUBLABEL_CONFIG_DIRECTORY,
    "Define o pasta inicial para o menu de configuração do explorador de ficheiros."
    )
 MSG_HASH(

@@ -4718,11 +4718,11 @@ MSG_HASH( /* FIXME Not RGUI specific */
    "Sets start directory for the filebrowser."
    )
 MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY,
+   MENU_ENUM_LABEL_VALUE_CONFIG_DIRECTORY,
    "Config"
    )
 MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_SUBLABEL_RGUI_CONFIG_DIRECTORY,
+   MENU_ENUM_SUBLABEL_CONFIG_DIRECTORY,
    "Sets start directory for menu configuration browser."
    )
 MSG_HASH(

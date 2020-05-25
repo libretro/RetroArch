@@ -2312,7 +2312,7 @@ MSG_HASH( /* FIXME Not RGUI specific */
    "文件瀏覽器目錄"
    )
 MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY,
+   MENU_ENUM_LABEL_VALUE_CONFIG_DIRECTORY,
    "設定目錄"
    )
 MSG_HASH(

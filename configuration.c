@@ -1289,7 +1289,7 @@ static struct config_path_setting *populate_settings_path(settings_t *settings, 
 #ifdef HAVE_MENU
    SETTING_PATH("browser_directory",
          settings->paths.directory_menu_content, true, NULL, true);
-   SETTING_PATH("rgui_config_directory",
+   SETTING_PATH("config_directory",
          settings->paths.directory_menu_config, true, NULL, true);
 #endif
 #ifdef HAVE_OVERLAY

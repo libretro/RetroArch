@@ -4634,7 +4634,7 @@ MSG_HASH( /* FIXME Not RGUI specific */
    "Ustawia katalog startowy dla przeglądarki plików."
    )
 MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY,
+   MENU_ENUM_LABEL_VALUE_CONFIG_DIRECTORY,
    "Konfiguracja"
    )
 MSG_HASH(

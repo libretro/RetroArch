@@ -3625,11 +3625,11 @@ MSG_HASH( /* FIXME Not RGUI specific */
    "Установить начальный каталог для файлового браузера."
    )
 MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY,
+   MENU_ENUM_LABEL_VALUE_CONFIG_DIRECTORY,
    "Конфигурация"
    )
 MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_SUBLABEL_RGUI_CONFIG_DIRECTORY,
+   MENU_ENUM_SUBLABEL_CONFIG_DIRECTORY,
    "Каталог с настройками."
    )
 MSG_HASH(

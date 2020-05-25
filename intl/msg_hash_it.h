@@ -3309,11 +3309,11 @@ MSG_HASH( /* FIXME Not RGUI specific */
    "Imposta la directory di avvio per il filebrowser."
    )
 MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY,
+   MENU_ENUM_LABEL_VALUE_CONFIG_DIRECTORY,
    "Configurazione"
    )
 MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_SUBLABEL_RGUI_CONFIG_DIRECTORY,
+   MENU_ENUM_SUBLABEL_CONFIG_DIRECTORY,
    "Imposta la directory di avvio per il browser di configurazione del menu."
    )
 MSG_HASH(

@@ -523,7 +523,7 @@ default_sublabel_macro(action_bind_sublabel_browser_directory,                ME
 default_sublabel_macro(action_bind_sublabel_content_dir,                           MENU_ENUM_SUBLABEL_CONTENT_DIR)
 default_sublabel_macro(action_bind_dynamic_wallpapers_directory,                   MENU_ENUM_SUBLABEL_DYNAMIC_WALLPAPERS_DIRECTORY)
 default_sublabel_macro(action_bind_thumbnails_directory,                           MENU_ENUM_SUBLABEL_THUMBNAILS_DIRECTORY)
-default_sublabel_macro(action_bind_rgui_config_directory,                          MENU_ENUM_SUBLABEL_RGUI_CONFIG_DIRECTORY)
+default_sublabel_macro(action_bind_config_directory,                          MENU_ENUM_SUBLABEL_CONFIG_DIRECTORY)
 default_sublabel_macro(action_bind_sublabel_input_latency_frames,                  MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_MIN)
 default_sublabel_macro(action_bind_sublabel_input_latency_frames_range,            MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_RANGE)
 default_sublabel_macro(action_bind_sublabel_disk_tray_eject,                       MENU_ENUM_SUBLABEL_DISK_TRAY_EJECT)
@@ -1935,8 +1935,8 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_NETPLAY_INPUT_LATENCY_FRAMES_MIN:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_latency_frames);
             break;
-         case MENU_ENUM_LABEL_RGUI_CONFIG_DIRECTORY:
-            BIND_ACTION_SUBLABEL(cbs, action_bind_rgui_config_directory);
+         case MENU_ENUM_LABEL_CONFIG_DIRECTORY:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_config_directory);
             break;
          case MENU_ENUM_LABEL_THUMBNAILS_DIRECTORY:
             BIND_ACTION_SUBLABEL(cbs, action_bind_thumbnails_directory);

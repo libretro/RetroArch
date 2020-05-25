@@ -2343,8 +2343,8 @@ MSG_HASH(
    "browser_directory"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_RGUI_CONFIG_DIRECTORY,
-   "rgui_config_directory"
+   MENU_ENUM_LABEL_CONFIG_DIRECTORY,
+   "config_directory"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_SHOW_START_SCREEN,

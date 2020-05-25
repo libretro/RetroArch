@@ -4629,11 +4629,11 @@ MSG_HASH( /* FIXME Not RGUI specific */
    "Establece la carpeta inicial del explorador de archivos."
    )
 MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY,
+   MENU_ENUM_LABEL_VALUE_CONFIG_DIRECTORY,
    "Configuración"
    )
 MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_SUBLABEL_RGUI_CONFIG_DIRECTORY,
+   MENU_ENUM_SUBLABEL_CONFIG_DIRECTORY,
    "Establece la ubicación inicial del explorador del menú."
    )
 MSG_HASH(

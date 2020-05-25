@@ -4646,11 +4646,11 @@ MSG_HASH( /* FIXME Not RGUI specific */
    "Define o diretório inicial do navegador de arquivos."
    )
 MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY,
+   MENU_ENUM_LABEL_VALUE_CONFIG_DIRECTORY,
    "Configuração"
    )
 MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_SUBLABEL_RGUI_CONFIG_DIRECTORY,
+   MENU_ENUM_SUBLABEL_CONFIG_DIRECTORY,
    "Define o diretório inicial para o navegador de configurações do menu."
    )
 MSG_HASH(

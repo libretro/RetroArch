@@ -4412,11 +4412,11 @@ MSG_HASH( /* FIXME Not RGUI specific */
    "파일 탐색기의 시작 디렉토리를 설정합니다."
    )
 MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY,
+   MENU_ENUM_LABEL_VALUE_CONFIG_DIRECTORY,
    "설정"
    )
 MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_SUBLABEL_RGUI_CONFIG_DIRECTORY,
+   MENU_ENUM_SUBLABEL_CONFIG_DIRECTORY,
    "메뉴 환경설정 디렉토리를 설정합니다."
    )
 MSG_HASH(

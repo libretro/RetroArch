@@ -4638,11 +4638,11 @@ MSG_HASH( /* FIXME Not RGUI specific */
    "Dosya Gezgini için başlangıç dizinini ayarlar."
    )
 MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY,
+   MENU_ENUM_LABEL_VALUE_CONFIG_DIRECTORY,
    "Yapılandırma"
    )
 MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_SUBLABEL_RGUI_CONFIG_DIRECTORY,
+   MENU_ENUM_SUBLABEL_CONFIG_DIRECTORY,
    "Menü yapılandırma tarayıcısı için başlangıç dizinini ayarlar."
    )
 MSG_HASH(

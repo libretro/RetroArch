@@ -784,7 +784,7 @@ MSG_HASH(
    "Thumbnails Danh mục"
    )
 MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY,
+   MENU_ENUM_LABEL_VALUE_CONFIG_DIRECTORY,
    "Config Danh mục"
    )
 MSG_HASH(

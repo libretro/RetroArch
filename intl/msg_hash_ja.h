@@ -4437,11 +4437,11 @@ MSG_HASH( /* FIXME Not RGUI specific */
    "ファイルブラウザの開始ディレクトリを指定します。"
    )
 MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY,
+   MENU_ENUM_LABEL_VALUE_CONFIG_DIRECTORY,
    "設定"
    )
 MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_SUBLABEL_RGUI_CONFIG_DIRECTORY,
+   MENU_ENUM_SUBLABEL_CONFIG_DIRECTORY,
    "設定ファイルブラウザの初期ディレクトリを指定します。"
    )
 MSG_HASH(
