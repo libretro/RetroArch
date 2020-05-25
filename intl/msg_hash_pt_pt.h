@@ -389,7 +389,7 @@ MSG_HASH(
    "Versão Git"
    )
 MSG_HASH( /* FIXME Should be MENU_LABEL_VALUE */
-   MSG_COMPILER,
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COMPILER,
    "Compilador"
    )
 MSG_HASH( /* FIXME Should be MENU_LABEL_VALUE */

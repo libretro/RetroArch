@@ -117,7 +117,7 @@ MSG_HASH(
 /* Main Menu > Information > System Information */
 
 MSG_HASH( /* FIXME Should be MENU_LABEL_VALUE */
-   MSG_COMPILER,
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COMPILER,
    "Kompiler"
    )
 MSG_HASH( /* FIXME Should be MENU_LABEL_VALUE */

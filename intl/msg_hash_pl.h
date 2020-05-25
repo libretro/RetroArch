@@ -469,7 +469,7 @@ MSG_HASH(
    "Wersja Git"
    )
 MSG_HASH( /* FIXME Should be MENU_LABEL_VALUE */
-   MSG_COMPILER,
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COMPILER,
    "Kompilator"
    )
 MSG_HASH( /* FIXME Should be MENU_LABEL_VALUE */
