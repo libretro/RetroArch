@@ -1796,7 +1796,6 @@ static bool audio_driver_use_float                              = false;
 static bool audio_driver_active                                 = false;
 
 static bool audio_suspended                                     = false;
-static bool audio_is_threaded                                   = false;
 
 #ifdef HAVE_RUNAHEAD
 static bool runahead_save_state_size_known                      = false;
@@ -7112,15 +7111,19 @@ static void retroarch_pause_checks(void)
 #endif
    bool is_paused            = runloop_paused;
    bool is_idle              = runloop_idle;
+#if defined(HAVE_GFX_WIDGETS)
+   bool widgets_active       = gfx_widgets_active();
+
+   if (widgets_active)
+      gfx_widgets_paused     = is_paused;
+#endif
 
    if (is_paused)
    {
       RARCH_LOG("%s\n", msg_hash_to_str(MSG_PAUSED));
 
 #if defined(HAVE_GFX_WIDGETS)
-      if (gfx_widgets_active())
-         gfx_widgets_paused = is_paused;
-      else
+      if (!widgets_active)
 #endif
          runloop_msg_queue_push(msg_hash_to_str(MSG_PAUSED), 1,
                1, true,
@@ -7137,12 +7140,7 @@ static void retroarch_pause_checks(void)
    }
    else
    {
-#if defined(HAVE_GFX_WIDGETS)
-      if (gfx_widgets_active())
-         gfx_widgets_paused = is_paused;
-#endif
       RARCH_LOG("%s\n", msg_hash_to_str(MSG_UNPAUSED));
-
    }
 
 #if defined(HAVE_TRANSLATE) && defined(HAVE_GFX_WIDGETS)
@@ -19601,7 +19599,6 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
 #ifdef HAVE_THREADS
    if (audio_cb_inited)
    {
-      audio_is_threaded = true;
       RARCH_LOG("[Audio]: Starting threaded audio driver ...\n");
       if (!audio_init_thread(
                &current_audio,
@@ -19620,7 +19617,6 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
    else
 #endif
    {
-      audio_is_threaded = false;
       audio_driver_context_audio_data =
          current_audio->init(*settings->arrays.audio_device ?
                settings->arrays.audio_device : NULL,
@@ -22716,29 +22712,34 @@ static void video_driver_frame(const void *data, unsigned width,
 {
    char fps_text[128];
    static char video_driver_msg[256];
-   video_frame_info_t video_info;
    static retro_time_t curr_time;
    static retro_time_t fps_time;
    static float last_fps, frame_time;
-   retro_time_t new_time       = cpu_features_get_time_usec();
+   retro_time_t new_time;
+   video_frame_info_t video_info;
 #if defined(HAVE_GFX_WIDGETS)
-   bool widgets_active         = gfx_widgets_active();
+   bool widgets_active;
 #endif
    struct rarch_state *p_rarch = &rarch_st;
    const enum retro_pixel_format 
       video_driver_pix_fmt     = p_rarch->video_driver_pix_fmt;
 
-   fps_text[0]         = '\0';
-   video_driver_msg[0] = '\0';
+   fps_text[0]                 = '\0';
+   video_driver_msg[0]         = '\0';
 
    if (!video_driver_active)
       return;
 
+   new_time                    = cpu_features_get_time_usec();
+#if defined(HAVE_GFX_WIDGETS)
+   widgets_active              = gfx_widgets_active();
+#endif
+
    if (data)
-      frame_cache_data = data;
-   frame_cache_width   = width;
-   frame_cache_height  = height;
-   frame_cache_pitch   = pitch;
+      frame_cache_data         = data;
+   frame_cache_width           = width;
+   frame_cache_height          = height;
+   frame_cache_pitch           = pitch;
 
    if (
          video_driver_scaler_ptr
@@ -27749,14 +27750,16 @@ int retroarch_get_capabilities(enum rarch_capabilities type,
 void retroarch_set_current_core_type(enum rarch_core_type type, bool explicitly_set)
 {
    struct rarch_state *p_rarch = &rarch_st;
-   if (explicitly_set && !has_set_core)
+
+   if (has_set_core)
+      return;
+
+   if (explicitly_set)
    {
       has_set_core                         = true;
       p_rarch->explicit_current_core_type  = type;
-      p_rarch->current_core_type           = type;
    }
-   else if (!has_set_core)
-      p_rarch->current_core_type           = type;
+   p_rarch->current_core_type              = type;
 }
 
 /**
@@ -28028,32 +28031,19 @@ static void update_savestate_slot(void)
    RARCH_LOG("%s\n", msg);
 }
 
-
+#if defined(HAVE_GFX_WIDGETS)
 /* Display the fast forward state to the user, if needed. */
 static void update_fastforwarding_state(void)
 {
-   if (runloop_fastmotion)
+   gfx_widgets_fast_forward = runloop_fastmotion;
+   if (!runloop_fastmotion)
    {
-#if defined(HAVE_GFX_WIDGETS)
-      if (gfx_widgets_active())
-         gfx_widgets_fast_forward = true;
-#endif
+      settings_t *settings   = configuration_settings;
+      if (settings->bools.frame_time_counter_reset_after_fastforwarding)
+         video_driver_frame_time_count = 0;
    }
-#if defined(HAVE_GFX_WIDGETS)
-   else
-   {
-      if (gfx_widgets_active())
-      {
-         gfx_widgets_fast_forward = false;
-         {
-            settings_t *settings   = configuration_settings;
-            if (settings->bools.frame_time_counter_reset_after_fastforwarding)
-               video_driver_frame_time_count = 0;
-         }
-      }
-   }
-#endif
 }
+#endif
 
 static enum runloop_state runloop_check_state(retro_time_t current_time)
 {
@@ -28738,7 +28728,10 @@ static enum runloop_state runloop_check_state(retro_time_t current_time)
             runloop_fastmotion          = true;
          }
          driver_set_nonblock_state();
-         update_fastforwarding_state();
+#if defined(HAVE_GFX_WIDGETS)
+         if (widgets_active)
+            update_fastforwarding_state();
+#endif
       }
 
       old_button_state                  = new_button_state;
@@ -28996,12 +28989,12 @@ int runloop_iterate(void)
          : (current - runloop_last_frame_time);
 
       if (is_locked_fps)
-         runloop_frame_time_last = 0;
+         runloop_frame_time_last           = 0;
       else
       {
-         float slowmotion_ratio  = settings->floats.slowmotion_ratio;
+         float slowmotion_ratio            = settings->floats.slowmotion_ratio;
 
-         runloop_frame_time_last = current;
+         runloop_frame_time_last           = current;
 
          if (runloop_slowmotion)
             delta /= slowmotion_ratio;
