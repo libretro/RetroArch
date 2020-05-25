@@ -8722,7 +8722,7 @@ MSG_HASH( /* FIXME Should be MSG_ */
    "Nie można znaleźć odpowiedniego pliku rdzenia lub treści, załaduj ręcznie."
    )
 MSG_HASH( /* FIXME Should be MSG_ */
-   MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER_FALLBACK,
+   MSG_VIDEO_DRIVER_FALLBACK,
    "Sterownik grafiki nie jest kompatybilny z bieżącym sterownikiem wideo w RetroArch, powrót do sterownika %s. Uruchom ponownie RetroArch, aby zmiany odniosły skutek."
    )
 MSG_HASH( /* FIXME Should be MSG_ */

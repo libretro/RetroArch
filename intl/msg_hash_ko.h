@@ -8145,7 +8145,7 @@ MSG_HASH( /* FIXME Should be MSG_ */
    "적합한 코어 또는 컨텐츠 파일을 찾지 못했습니다. 수동으로 불러오십시오."
    )
 MSG_HASH( /* FIXME Should be MSG_ */
-   MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER_FALLBACK,
+   MSG_VIDEO_DRIVER_FALLBACK,
    "그래픽 드라이버가 현재의 RetroArch 비디오 드라이버와 호환되지 않아 %s 드라이버로 되돌립니다. 변경사항 적용하려면 RetroArch를 다시 시작하십시오."
    )
 MSG_HASH( /* FIXME Should be MSG_ */

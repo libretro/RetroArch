@@ -8753,7 +8753,7 @@ MSG_HASH( /* FIXME Should be MSG_ */
    "Não foi possível encontrar um núcleo adequado ou arquivo de conteúdo, carregue manualmente."
    )
 MSG_HASH( /* FIXME Should be MSG_ */
-   MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER_FALLBACK,
+   MSG_VIDEO_DRIVER_FALLBACK,
    "Seu driver de gráficos não é compatível com o driver de vídeo atual no RetroArch, voltando para o driver %s. Por favor, reinicie o RetroArch para que as mudanças entrem em vigor."
    )
 MSG_HASH( /* FIXME Should be MSG_ */

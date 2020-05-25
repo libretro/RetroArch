@@ -8750,7 +8750,7 @@ MSG_HASH( /* FIXME Should be MSG_ */
    "Impossible de trouver un cœur ou un jeu adapté, veuillez charger le contenu manuellement."
    )
 MSG_HASH( /* FIXME Should be MSG_ */
-   MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER_FALLBACK,
+   MSG_VIDEO_DRIVER_FALLBACK,
    "Votre pilote graphique n'est pas compatible avec le pilote vidéo actuel de RetroArch, retour au pilote %s. Veuillez redémarrer RetroArch pour que les modifications prennent effet."
    )
 MSG_HASH( /* FIXME Should be MSG_ */

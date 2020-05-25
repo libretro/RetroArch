@@ -29195,7 +29195,7 @@ void retroarch_force_video_driver_fallback(const char *driver)
       text[0]              = '\0';
 
       snprintf(text, sizeof(text),
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER_FALLBACK),
+            msg_hash_to_str(MSG_VIDEO_DRIVER_FALLBACK),
             driver);
 
       window_state.buttons = UI_MSG_WINDOW_OK;

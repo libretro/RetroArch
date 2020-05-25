@@ -8834,7 +8834,7 @@ MSG_HASH( /* FIXME Should be MSG_ */
    "Uygun bir çekirdek veya içerik dosyası bulunamadı, el ile yükleyin."
    )
 MSG_HASH( /* FIXME Should be MSG_ */
-   MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER_FALLBACK,
+   MSG_VIDEO_DRIVER_FALLBACK,
    "Grafik sürücünüz RetroArch'taki mevcut video sürücüsü ile uyumlu değil ve %s sürücüsüne geri dönülüyor. Lütfen değişikliklerin geçerli olması için RetroArch'ı yeniden başlatın."
    )
 MSG_HASH( /* FIXME Should be MSG_ */
