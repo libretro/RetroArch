@@ -28,11 +28,13 @@
 - LOCALIZATION: Add Slovak translation
 - MENU: Small buffer optimizations
 - MENU/THUMBNAILS/BUGFIX: Fix heap-use-after-free error
+- MENU/OZONE: Add option to sort playlists after name truncation
 - MENU/OZONE/ANDROIDTV: Default to Ozone menu driver
 - MENU/OZONE/ANDROID: Gamepad-like devices default to Ozone now (Shield Portable)
 - NETPLAY: Lower announcement rate
 - OVERLAYS: Fix memory leak when loading overlays
 - SHADER PRESETS: Improved shader preset dirs
+- TIME/DATE: Enable configuration of date seperator in clock and runtime 'last played' displays
 - VITA: Fix upside-down vertical games
 - UWP: Enable playlist and savefile compression by default (because of slow file I/O)
 - WIIU: Gamepad hotplugging support
