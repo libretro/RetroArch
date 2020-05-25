@@ -3251,7 +3251,8 @@ static unsigned menu_displaylist_parse_content_information(
             /* Last Played */
             tmp[0] = '\0';
             runtime_log_get_last_played_str(runtime_log, tmp, sizeof(tmp),
-                  (enum playlist_sublabel_last_played_style_type)settings->uints.playlist_sublabel_last_played_style);
+                  (enum playlist_sublabel_last_played_style_type)settings->uints.playlist_sublabel_last_played_style,
+                  (enum playlist_sublabel_last_played_date_separator_type)settings->uints.menu_timedate_date_separator);
 
             if (!string_is_empty(tmp))
                if (menu_entries_append_enum(info->list, tmp,
@@ -6497,6 +6498,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_CONTENT_SHOW_PLAYLISTS,                                PARSE_ONLY_BOOL, true  },
                {MENU_ENUM_LABEL_TIMEDATE_ENABLE,                                       PARSE_ONLY_BOOL, true  },
                {MENU_ENUM_LABEL_TIMEDATE_STYLE,                                        PARSE_ONLY_UINT, true  },
+               {MENU_ENUM_LABEL_TIMEDATE_DATE_SEPARATOR,                               PARSE_ONLY_UINT, true  },
                {MENU_ENUM_LABEL_BATTERY_LEVEL_ENABLE,                                  PARSE_ONLY_BOOL, true  },
                {MENU_ENUM_LABEL_CORE_ENABLE,                                           PARSE_ONLY_BOOL, true  },
                {MENU_ENUM_LABEL_MENU_SHOW_SUBLABELS,                                   PARSE_ONLY_BOOL, true  },

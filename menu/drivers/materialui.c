@@ -2903,6 +2903,10 @@ static bool materialui_render_process_entry_playlist_desktop(
                   runtime_last_played_style    =
                         (enum playlist_sublabel_last_played_style_type)
                               settings->uints.playlist_sublabel_last_played_style;
+            enum playlist_sublabel_last_played_date_separator_type
+                  runtime_date_separator       =
+                        (enum playlist_sublabel_last_played_date_separator_type)
+                              settings->uints.menu_timedate_date_separator;
             float fade_duration                = gfx_thumbnail_get_fade_duration();
             const struct playlist_entry *entry = NULL;
             const char *core_name              = NULL;
@@ -2942,7 +2946,8 @@ static bool materialui_render_process_entry_playlist_desktop(
                         directory_runtime_log,
                         directory_playlist,
                         (runtime_type == PLAYLIST_RUNTIME_PER_CORE),
-                        runtime_last_played_style);
+                        runtime_last_played_style,
+                        runtime_date_separator);
 
                if (!string_is_empty(entry->runtime_str))
                   runtime_str = entry->runtime_str;
@@ -4804,24 +4809,25 @@ static void materialui_render_header(
       unsigned video_width, unsigned video_height)
 {
    char menu_title_buf[255];
-   settings_t *settings          = config_get_ptr();
-   size_t menu_title_margin      = 0;
-   int usable_sys_bar_width      = (int)video_width - (int)mui->nav_bar_layout_width;
-   int usable_title_bar_width    = usable_sys_bar_width;
-   size_t sys_bar_battery_width  = 0;
-   size_t sys_bar_clock_width    = 0;
-   int sys_bar_text_y            = (int)(((float)mui->sys_bar_height / 2.0f) + (float)mui->font_data.hint.line_centre_offset);
-   int title_x                   = 0;
-   bool show_back_icon           = menu_entries_ctl(MENU_ENTRIES_CTL_SHOW_BACK, NULL);
-   bool show_search_icon         = mui->is_playlist || mui->is_file_list;
-   bool show_switch_view_icon    = mui->is_playlist && mui->primary_thumbnail_available;
-   bool use_landscape_layout     = !mui->is_portrait &&
+   settings_t *settings                  = config_get_ptr();
+   size_t menu_title_margin              = 0;
+   int usable_sys_bar_width              = (int)video_width - (int)mui->nav_bar_layout_width;
+   int usable_title_bar_width            = usable_sys_bar_width;
+   size_t sys_bar_battery_width          = 0;
+   size_t sys_bar_clock_width            = 0;
+   int sys_bar_text_y                    = (int)(((float)mui->sys_bar_height / 2.0f) + (float)mui->font_data.hint.line_centre_offset);
+   int title_x                           = 0;
+   bool show_back_icon                   = menu_entries_ctl(MENU_ENTRIES_CTL_SHOW_BACK, NULL);
+   bool show_search_icon                 = mui->is_playlist || mui->is_file_list;
+   bool show_switch_view_icon            = mui->is_playlist && mui->primary_thumbnail_available;
+   bool use_landscape_layout             = !mui->is_portrait &&
          (mui->last_landscape_layout_optimization != MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION_DISABLED);
-   const char *menu_title        = mui->menu_title;
-   bool battery_level_enable     = settings->bools.menu_battery_level_enable;
-   bool menu_timedate_enable     = settings->bools.menu_timedate_enable;
-   unsigned menu_timedate_style  = settings->uints.menu_timedate_style;
-   bool menu_core_enable         = settings->bools.menu_core_enable;
+   const char *menu_title                = mui->menu_title;
+   bool battery_level_enable             = settings->bools.menu_battery_level_enable;
+   bool menu_timedate_enable             = settings->bools.menu_timedate_enable;
+   unsigned menu_timedate_style          = settings->uints.menu_timedate_style;
+   unsigned menu_timedate_date_separator = settings->uints.menu_timedate_date_separator;
+   bool menu_core_enable                 = settings->bools.menu_core_enable;
 
    menu_title_buf[0]  = '\0';
 
@@ -4970,9 +4976,10 @@ static void materialui_render_header(
 
       timedate_str[0] = '\0';
 
-      datetime.s         = timedate_str;
-      datetime.len       = sizeof(timedate_str);
-      datetime.time_mode = menu_timedate_style;
+      datetime.s              = timedate_str;
+      datetime.len            = sizeof(timedate_str);
+      datetime.time_mode      = menu_timedate_style;
+      datetime.date_separator = menu_timedate_date_separator;
 
       menu_display_timedate(&datetime);
 

@@ -3182,6 +3182,32 @@ static void setting_get_string_representation_uint_menu_left_thumbnails(
    }
 }
 
+static void setting_set_string_representation_timedate_date_seperator(char *s)
+{
+   settings_t *settings                  = config_get_ptr();
+   unsigned menu_timedate_date_separator = settings ?
+         settings->uints.menu_timedate_date_separator :
+         MENU_TIMEDATE_DATE_SEPARATOR_HYPHEN;
+   char separator_char;
+
+   switch (menu_timedate_date_separator)
+   {
+      case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
+         separator_char = '/';
+         break;
+      case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
+         separator_char = '.';
+         break;
+      case MENU_TIMEDATE_DATE_SEPARATOR_HYPHEN:
+      default:
+         separator_char = '-';
+         break;
+   }
+
+   if (separator_char != '-')
+      string_replace_all_chars(s, '-', separator_char);
+}
+
 static void setting_get_string_representation_uint_menu_timedate_style(
    rarch_setting_t *setting,
    char *s, size_t len)
@@ -3316,6 +3342,30 @@ static void setting_get_string_representation_uint_menu_timedate_style(
          strlcpy(s,
             msg_hash_to_str(
                MENU_ENUM_LABEL_VALUE_TIMEDATE_HM_AMPM), len);
+         break;
+   }
+
+   /* Change date separator, if required */
+   setting_set_string_representation_timedate_date_seperator(s);
+}
+
+static void setting_get_string_representation_uint_menu_timedate_date_separator(
+   rarch_setting_t *setting,
+   char *s, size_t len)
+{
+   if (!setting)
+      return;
+
+   switch (*setting->value.target.unsigned_integer)
+   {
+      case MENU_TIMEDATE_DATE_SEPARATOR_HYPHEN:
+         strlcpy(s, "'-'", len);
+         break;
+      case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
+         strlcpy(s, "'/'", len);
+         break;
+      case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
+         strlcpy(s, "'.'", len);
          break;
    }
 }
@@ -4677,6 +4727,9 @@ static void setting_get_string_representation_uint_playlist_sublabel_last_played
                len);
          break;
    }
+
+   /* Change date separator, if required */
+   setting_set_string_representation_timedate_date_seperator(s);
 }
 
 static void setting_get_string_representation_uint_playlist_inline_core_display_type(
@@ -14372,7 +14425,7 @@ static bool setting_append_list(
             &settings->uints.menu_timedate_style,
             MENU_ENUM_LABEL_TIMEDATE_STYLE,
             MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE,
-            menu_timedate_style,
+            DEFAULT_MENU_TIMEDATE_STYLE,
             &group_info,
             &subgroup_info,
             parent_group,
@@ -14382,6 +14435,22 @@ static bool setting_append_list(
          (*list)[list_info->index - 1].get_string_representation =
             &setting_get_string_representation_uint_menu_timedate_style;
          menu_settings_list_current_add_range(list, list_info, 0, MENU_TIMEDATE_STYLE_LAST - 1, 1, true, true);
+         (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
+
+         CONFIG_UINT(list, list_info,
+            &settings->uints.menu_timedate_date_separator,
+            MENU_ENUM_LABEL_TIMEDATE_DATE_SEPARATOR,
+            MENU_ENUM_LABEL_VALUE_TIMEDATE_DATE_SEPARATOR,
+            DEFAULT_MENU_TIMEDATE_DATE_SEPARATOR,
+            &group_info,
+            &subgroup_info,
+            parent_group,
+            general_write_handler,
+            general_read_handler);
+         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+         (*list)[list_info->index - 1].get_string_representation =
+            &setting_get_string_representation_uint_menu_timedate_date_separator;
+         menu_settings_list_current_add_range(list, list_info, 0, MENU_TIMEDATE_DATE_SEPARATOR_LAST - 1, 1, true, true);
          (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
 
          CONFIG_BOOL(

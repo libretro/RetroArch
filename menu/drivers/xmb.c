@@ -4796,11 +4796,12 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          gfx_display_blend_end(userdata);
       }
 
-      timedate[0]        = '\0';
+      timedate[0]             = '\0';
 
-      datetime.s         = timedate;
-      datetime.len       = sizeof(timedate);
-      datetime.time_mode = settings->uints.menu_timedate_style;
+      datetime.s              = timedate;
+      datetime.len            = sizeof(timedate);
+      datetime.time_mode      = settings->uints.menu_timedate_style;
+      datetime.date_separator = settings->uints.menu_timedate_date_separator;
 
       menu_display_timedate(&datetime);
 

@@ -455,6 +455,7 @@ default_sublabel_macro(action_bind_sublabel_ozone_scroll_content_metadata,      
 default_sublabel_macro(action_bind_sublabel_menu_thumbnail_upscale_threshold, MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_UPSCALE_THRESHOLD)
 default_sublabel_macro(action_bind_sublabel_timedate_enable,               MENU_ENUM_SUBLABEL_TIMEDATE_ENABLE)
 default_sublabel_macro(action_bind_sublabel_timedate_style,                MENU_ENUM_SUBLABEL_TIMEDATE_STYLE)
+default_sublabel_macro(action_bind_sublabel_timedate_date_separator,       MENU_ENUM_SUBLABEL_TIMEDATE_DATE_SEPARATOR)
 default_sublabel_macro(action_bind_sublabel_battery_level_enable,          MENU_ENUM_SUBLABEL_BATTERY_LEVEL_ENABLE)
 default_sublabel_macro(action_bind_sublabel_menu_show_sublabels,           MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS)
 default_sublabel_macro(action_bind_sublabel_navigation_wraparound,         MENU_ENUM_SUBLABEL_NAVIGATION_WRAPAROUND)
@@ -1091,6 +1092,10 @@ static int action_bind_sublabel_playlist_entry(
          playlist_sublabel_last_played_style =
                (enum playlist_sublabel_last_played_style_type)
                      settings->uints.playlist_sublabel_last_played_style;
+   enum playlist_sublabel_last_played_date_separator_type
+         menu_timedate_date_separator        =
+               (enum playlist_sublabel_last_played_date_separator_type)
+                     settings->uints.menu_timedate_date_separator;
 
    if (!playlist_show_sublabels)
       return 0;
@@ -1150,7 +1155,8 @@ static int action_bind_sublabel_playlist_entry(
             directory_runtime_log,
             directory_playlist,
             (playlist_sublabel_runtime_type == PLAYLIST_RUNTIME_PER_CORE),
-            playlist_sublabel_last_played_style);
+            playlist_sublabel_last_played_style,
+            menu_timedate_date_separator);
 
    /* Check whether runtime info is valid */
    if (entry->runtime_status == PLAYLIST_RUNTIME_VALID)
@@ -2138,6 +2144,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_TIMEDATE_STYLE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_timedate_style);
+            break;
+         case MENU_ENUM_LABEL_TIMEDATE_DATE_SEPARATOR:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_timedate_date_separator);
             break;
          case MENU_ENUM_LABEL_THUMBNAILS:
             {

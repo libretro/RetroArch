@@ -3870,11 +3870,12 @@ static void rgui_render(void *data,
          gfx_display_ctx_datetime_t datetime;
          char timedate[16];
 
-         timedate[0] = '\0';
+         timedate[0]             = '\0';
 
-         datetime.s = timedate;
-         datetime.len = sizeof(timedate);
-         datetime.time_mode = MENU_TIMEDATE_STYLE_HM;
+         datetime.s              = timedate;
+         datetime.len            = sizeof(timedate);
+         datetime.time_mode      = MENU_TIMEDATE_STYLE_HM;
+         datetime.date_separator = MENU_TIMEDATE_DATE_SEPARATOR_HYPHEN;
 
          menu_display_timedate(&datetime);
 

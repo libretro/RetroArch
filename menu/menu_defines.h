@@ -116,6 +116,17 @@ enum menu_timedate_style_type
    MENU_TIMEDATE_STYLE_LAST
 };
 
+/* Note: These must be kept synchronised with
+ * 'enum playlist_sublabel_last_played_date_separator_type'
+ * in 'runtime_file.h' */
+enum menu_timedate_date_separator_type
+{
+   MENU_TIMEDATE_DATE_SEPARATOR_HYPHEN = 0,
+   MENU_TIMEDATE_DATE_SEPARATOR_SLASH,
+   MENU_TIMEDATE_DATE_SEPARATOR_PERIOD,
+   MENU_TIMEDATE_DATE_SEPARATOR_LAST
+};
+
 enum rgui_color_theme
 {
    RGUI_THEME_CUSTOM = 0,
