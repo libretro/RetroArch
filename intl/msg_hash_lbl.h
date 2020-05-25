@@ -1539,6 +1539,10 @@ MSG_HASH(
    "ozone_truncate_playlist_name"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME,
+   "ozone_sort_after_truncate_playlist_name"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_OZONE_SCROLL_CONTENT_METADATA,
    "ozone_scroll_content_metadata"
    )

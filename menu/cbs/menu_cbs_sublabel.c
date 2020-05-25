@@ -449,6 +449,7 @@ default_sublabel_macro(action_bind_sublabel_left_thumbnails_ozone,         MENU_
 default_sublabel_macro(action_bind_sublabel_ozone_menu_color_theme,                MENU_ENUM_SUBLABEL_OZONE_MENU_COLOR_THEME)
 default_sublabel_macro(action_bind_sublabel_ozone_collapse_sidebar,                MENU_ENUM_SUBLABEL_OZONE_COLLAPSE_SIDEBAR)
 default_sublabel_macro(action_bind_sublabel_ozone_truncate_playlist_name,          MENU_ENUM_SUBLABEL_OZONE_TRUNCATE_PLAYLIST_NAME)
+default_sublabel_macro(action_bind_sublabel_ozone_sort_after_truncate_playlist_name, MENU_ENUM_SUBLABEL_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME)
 default_sublabel_macro(action_bind_sublabel_ozone_scroll_content_metadata,         MENU_ENUM_SUBLABEL_OZONE_SCROLL_CONTENT_METADATA)
 #endif
 default_sublabel_macro(action_bind_sublabel_menu_thumbnail_upscale_threshold, MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_UPSCALE_THRESHOLD)
@@ -1854,6 +1855,11 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_OZONE_TRUNCATE_PLAYLIST_NAME:
 #ifdef HAVE_OZONE
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_ozone_truncate_playlist_name);
+#endif
+            break;
+         case MENU_ENUM_LABEL_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME:
+#ifdef HAVE_OZONE
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_ozone_sort_after_truncate_playlist_name);
 #endif
             break;
          case MENU_ENUM_LABEL_OZONE_SCROLL_CONTENT_METADATA:

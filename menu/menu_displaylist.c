@@ -4277,6 +4277,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_PLAYLIST_FUZZY_ARCHIVE_MATCH,        PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_SCAN_WITHOUT_CORE_MATCH,             PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_OZONE_TRUNCATE_PLAYLIST_NAME,        PARSE_ONLY_BOOL, true},
+               {MENU_ENUM_LABEL_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME, PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_CONTENT_RUNTIME_LOG,                 PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_CONTENT_RUNTIME_LOG_AGGREGATE,       PARSE_ONLY_BOOL, true},
             };
@@ -7464,6 +7465,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_XMB_MENU_COLOR_THEME,                         PARSE_ONLY_UINT,   true},
                {MENU_ENUM_LABEL_OZONE_COLLAPSE_SIDEBAR,                       PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_OZONE_TRUNCATE_PLAYLIST_NAME,                 PARSE_ONLY_BOOL,   true},
+               {MENU_ENUM_LABEL_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME,      PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_MATERIALUI_ICONS_ENABLE,                      PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION,     PARSE_ONLY_UINT,   true},
                {MENU_ENUM_LABEL_MATERIALUI_SHOW_NAV_BAR,                      PARSE_ONLY_BOOL,   true},
