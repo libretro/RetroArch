@@ -2471,11 +2471,11 @@ MSG_HASH(
    "Mostrar o nome do núcleo atual no menu."
    )
 MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_LABEL_VALUE_RGUI_SHOW_START_SCREEN,
+   MENU_ENUM_LABEL_VALUE_SHOW_START_SCREEN,
    "Mostrar menu de início"
    )
 MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_SUBLABEL_RGUI_SHOW_START_SCREEN,
+   MENU_ENUM_SUBLABEL_SHOW_START_SCREEN,
    "Mostrar o ecrã inicial no menu. Esta opção é desativada automaticamente após o primeiro arranque do RetroArch."
    )
 

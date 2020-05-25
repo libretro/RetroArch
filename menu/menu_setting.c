@@ -14159,8 +14159,8 @@ static bool setting_append_list(
          CONFIG_BOOL(
                list, list_info,
                &settings->bools.menu_show_start_screen,
-               MENU_ENUM_LABEL_RGUI_SHOW_START_SCREEN,
-               MENU_ENUM_LABEL_VALUE_RGUI_SHOW_START_SCREEN,
+               MENU_ENUM_LABEL_SHOW_START_SCREEN,
+               MENU_ENUM_LABEL_VALUE_SHOW_START_SCREEN,
                DEFAULT_MENU_SHOW_START_SCREEN,
                MENU_ENUM_LABEL_VALUE_OFF,
                MENU_ENUM_LABEL_VALUE_ON,

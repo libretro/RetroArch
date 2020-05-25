@@ -1463,7 +1463,7 @@ MSG_HASH(
    "Core naam weergeven"
    )
 MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_LABEL_VALUE_RGUI_SHOW_START_SCREEN,
+   MENU_ENUM_LABEL_VALUE_SHOW_START_SCREEN,
    "Start Scherm Weergeven"
    )
 

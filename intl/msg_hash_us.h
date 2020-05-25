@@ -3572,11 +3572,11 @@ MSG_HASH(
    "Shows additional information for the currently selected menu entry."
    )
 MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_LABEL_VALUE_RGUI_SHOW_START_SCREEN,
+   MENU_ENUM_LABEL_VALUE_SHOW_START_SCREEN,
    "Display Start Screen"
    )
 MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_SUBLABEL_RGUI_SHOW_START_SCREEN,
+   MENU_ENUM_SUBLABEL_SHOW_START_SCREEN,
    "Show startup screen in menu. This is automatically set to false after the program starts for the first time."
    )
 

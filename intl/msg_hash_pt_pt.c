@@ -705,7 +705,7 @@ int menu_hash_get_help_pt_pt_enum(enum msg_hash_enums msg, char *s, size_t len)
                "ser configurada para 60 Hz \n"
                "(divida a taxa de atualização por 2).");
          break;
-      case MENU_ENUM_LABEL_RGUI_SHOW_START_SCREEN:
+      case MENU_ENUM_LABEL_SHOW_START_SCREEN:
          snprintf(s, len,
                "Mostra o ecrã inicial no menu.\n"
                "Esta definição é desativada automaticamente quando\n"

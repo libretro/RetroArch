@@ -1416,7 +1416,7 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
                "werden, dass sie einem 60 Hz-Monitor entspricht. \n"
                "(Bildwiederholrate durch 2 teilen).");
          break;
-      case MENU_ENUM_LABEL_RGUI_SHOW_START_SCREEN:
+      case MENU_ENUM_LABEL_SHOW_START_SCREEN:
          snprintf(s, len,
                "Startbildschirm im Menü anzeigen.\n"
                "Wird automatisch deaktiviert, wenn er zum\n"

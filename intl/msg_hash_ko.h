@@ -3362,11 +3362,11 @@ MSG_HASH(
    "선택된 메뉴 항목의 추가 정보를 보여줍니다."
    )
 MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_LABEL_VALUE_RGUI_SHOW_START_SCREEN,
+   MENU_ENUM_LABEL_VALUE_SHOW_START_SCREEN,
    "시작 화면 표시"
    )
 MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_SUBLABEL_RGUI_SHOW_START_SCREEN,
+   MENU_ENUM_SUBLABEL_SHOW_START_SCREEN,
    "시작 화면을 메뉴에 보입니다. 프로그램 첫 실행 후 자동으로 비활성 됩니다."
    )
 

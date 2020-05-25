@@ -638,7 +638,7 @@ default_sublabel_macro(action_bind_sublabel_menu_history_tab,                   
 default_sublabel_macro(action_bind_sublabel_menu_import_content_tab,               MENU_ENUM_SUBLABEL_CONTENT_SHOW_ADD)
 default_sublabel_macro(action_bind_sublabel_menu_playlist_tabs,                    MENU_ENUM_SUBLABEL_CONTENT_SHOW_PLAYLISTS)
 default_sublabel_macro(action_bind_sublabel_main_menu_enable_settings,             MENU_ENUM_SUBLABEL_XMB_MAIN_MENU_ENABLE_SETTINGS)
-default_sublabel_macro(action_bind_sublabel_rgui_show_start_screen,                MENU_ENUM_SUBLABEL_RGUI_SHOW_START_SCREEN)
+default_sublabel_macro(action_bind_sublabel_show_start_screen,                MENU_ENUM_SUBLABEL_SHOW_START_SCREEN)
 default_sublabel_macro(action_bind_sublabel_menu_header_opacity,                   MENU_ENUM_SUBLABEL_MATERIALUI_MENU_HEADER_OPACITY)
 default_sublabel_macro(action_bind_sublabel_menu_footer_opacity,                   MENU_ENUM_SUBLABEL_MATERIALUI_MENU_FOOTER_OPACITY)
 default_sublabel_macro(action_bind_sublabel_core_assets_directory,                 MENU_ENUM_SUBLABEL_CORE_ASSETS_DIRECTORY)
@@ -1544,8 +1544,8 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_MATERIALUI_MENU_HEADER_OPACITY:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_header_opacity);
             break;
-         case MENU_ENUM_LABEL_RGUI_SHOW_START_SCREEN:
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_rgui_show_start_screen);
+         case MENU_ENUM_LABEL_SHOW_START_SCREEN:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_show_start_screen);
             break;
          case MENU_ENUM_LABEL_CONTENT_SHOW_ADD:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_import_content_tab);

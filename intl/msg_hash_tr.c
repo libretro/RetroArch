@@ -1469,7 +1469,7 @@ int menu_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
                              "configured as if it is a 60 Hz monitor \n"
                              "(divide refresh rate by 2).");
             break;
-        case MENU_ENUM_LABEL_RGUI_SHOW_START_SCREEN:
+        case MENU_ENUM_LABEL_SHOW_START_SCREEN:
             snprintf(s, len,
                      "Menüde başlangıç ekranını göster.\n"
                              "İlk kez görüldüğünde otomatik olarak \n"

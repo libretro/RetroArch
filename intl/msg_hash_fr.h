@@ -3520,11 +3520,11 @@ MSG_HASH(
    "Affiche des informations supplémentaires pour l'entrée actuellement sélectionnée dans le menu."
    )
 MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_LABEL_VALUE_RGUI_SHOW_START_SCREEN,
+   MENU_ENUM_LABEL_VALUE_SHOW_START_SCREEN,
    "Afficher l'écran de configuration initiale"
    )
 MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_SUBLABEL_RGUI_SHOW_START_SCREEN,
+   MENU_ENUM_SUBLABEL_SHOW_START_SCREEN,
    "Affiche à nouveau l'écran de configuration initiale dans le menu au prochain lancement. Cette option est automatiquement désactivée après le premier démarrage du programme."
    )
 

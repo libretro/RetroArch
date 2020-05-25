@@ -1515,7 +1515,7 @@ int menu_hash_get_help_fr_enum(enum msg_hash_enums msg, char *s, size_t len)
                              "être configurée comme s'il s'agissait d'un moniteur \n"
                              "60 Hz (divisez le taux de rafraîchissement par 2).");
             break;
-        case MENU_ENUM_LABEL_RGUI_SHOW_START_SCREEN:
+        case MENU_ENUM_LABEL_SHOW_START_SCREEN:
             snprintf(s, len,
                      "Afficher l'écran de configuration initiale.\n"
                              "Cette option est automatiquement désactivée\n"

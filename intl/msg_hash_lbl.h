@@ -2347,8 +2347,8 @@ MSG_HASH(
    "rgui_config_directory"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_RGUI_SHOW_START_SCREEN,
-   "rgui_show_start_screen"
+   MENU_ENUM_LABEL_SHOW_START_SCREEN,
+   "show_start_screen"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_ADD_TO_FAVORITES,

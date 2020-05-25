@@ -3313,7 +3313,7 @@ MSG_HASH(
    "在内部菜单中显示当前核心名称。"
    )
 MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_LABEL_VALUE_RGUI_SHOW_START_SCREEN,
+   MENU_ENUM_LABEL_VALUE_SHOW_START_SCREEN,
    "显示开始屏幕"
    )
 

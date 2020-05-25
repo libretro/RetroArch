@@ -1612,7 +1612,7 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
                      "un monitor de 60 Hz (divide la frecuencia\n"
                      "de actualización entre 2).");
             break;
-        case MENU_ENUM_LABEL_RGUI_SHOW_START_SCREEN:
+        case MENU_ENUM_LABEL_SHOW_START_SCREEN:
             snprintf(s, len,
                      "Muestra la pantalla de inicio en el menú.\n"
                      "Esta pantalla se desactiva automáticamente\n"

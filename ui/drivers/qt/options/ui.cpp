@@ -172,7 +172,7 @@ QWidget *ViewsPage::widget()
       file_list_free(list);
    }
 
-   startScreen->add(MENU_ENUM_LABEL_RGUI_SHOW_START_SCREEN);
+   startScreen->add(MENU_ENUM_LABEL_SHOW_START_SCREEN);
 
    quickMenu->layout()->setContentsMargins(0, 0, 0, 0);
    quickMenu->addRow(quickPage->widget());

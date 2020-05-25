@@ -1557,7 +1557,7 @@ int menu_hash_get_help_pt_br_enum(enum msg_hash_enums msg, char *s, size_t len)
                              "ser configurada como se fosse uma tela de \n"
                              "60Hz (dividir a taxa de atualização por 2).");
             break;
-        case MENU_ENUM_LABEL_RGUI_SHOW_START_SCREEN:
+        case MENU_ENUM_LABEL_SHOW_START_SCREEN:
             snprintf(s, len,
                      "Exibir a tela inicial no menu.\n"
                              "É automaticamente definido como falso após \n"

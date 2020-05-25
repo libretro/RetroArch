@@ -3524,11 +3524,11 @@ MSG_HASH(
    "Mostra informações adicionais para a entrada de menu atualmente selecionada."
    )
 MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_LABEL_VALUE_RGUI_SHOW_START_SCREEN,
+   MENU_ENUM_LABEL_VALUE_SHOW_START_SCREEN,
    "Mostrar Tela Inicial"
    )
 MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_SUBLABEL_RGUI_SHOW_START_SCREEN,
+   MENU_ENUM_SUBLABEL_SHOW_START_SCREEN,
    "Exibe a tela inicial no menu. É automaticamente definido como falso após o programa iniciar pela primeira vez."
    )
 

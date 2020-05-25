@@ -1364,7 +1364,7 @@ int menu_hash_get_help_cht_enum(enum msg_hash_enums msg, char *s, size_t len)
                "configured as if it is a 60 Hz monitor \n"
                "(divide refresh rate by 2).");
          break;
-      case MENU_ENUM_LABEL_RGUI_SHOW_START_SCREEN:
+      case MENU_ENUM_LABEL_SHOW_START_SCREEN:
          snprintf(s, len,
                "Show startup screen in menu.\n"
                "Is automatically set to false when seen\n"
