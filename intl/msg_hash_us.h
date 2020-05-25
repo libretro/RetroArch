@@ -9170,7 +9170,7 @@ MSG_HASH(
 /* Notifications */
 
 MSG_HASH( /* FIXME Should be MSG_ */
-   MENU_ENUM_LABEL_VALUE_NETPLAY_START_WHEN_LOADED,
+   MSG_NETPLAY_START_WHEN_LOADED,
    "Netplay will start when content is loaded."
    )
 MSG_HASH( /* FIXME Should be MSG_ */

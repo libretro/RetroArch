@@ -8264,7 +8264,7 @@ bool command_event(enum event_command cmd, void *data)
             if (!is_inited)
             {
                runloop_msg_queue_push(
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_START_WHEN_LOADED),
+                     msg_hash_to_str(MSG_NETPLAY_START_WHEN_LOADED),
                      1, 480, true,
                      NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
                return false;
