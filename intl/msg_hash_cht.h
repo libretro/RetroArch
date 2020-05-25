@@ -356,7 +356,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION,
    "Git版本"
    )
-MSG_HASH( /* FIXME Should be MENU_LABEL_VALUE */
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COMPILER,
    "編譯器"
    )
@@ -2026,7 +2026,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_ENABLE,
    "顯示核心名稱"
    )
-MSG_HASH( /* FIXME Not RGUI specific */
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_START_SCREEN,
    "顯示開始營幕"
    )
@@ -2307,11 +2307,11 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS_DIRECTORY,
    "縮略圖目錄"
    )
-MSG_HASH( /* FIXME Not RGUI specific */
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BROWSER_DIRECTORY,
    "文件瀏覽器目錄"
    )
-MSG_HASH( /* FIXME Not RGUI specific */
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONFIG_DIRECTORY,
    "設定目錄"
    )
@@ -3704,11 +3704,11 @@ MSG_HASH(
 
 /* Notifications */
 
-MSG_HASH( /* FIXME Should be MSG_ */
+MSG_HASH(
    MSG_NETPLAY_START_WHEN_LOADED,
    "連線遊戲將在內容戴入後開始。"
    )
-MSG_HASH( /* FIXME Should be MSG_ */
+MSG_HASH(
    MSG_NETPLAY_LOAD_CONTENT_MANUALLY,
    "無法找到合適的核心或內容文件，手動戴入。"
    )

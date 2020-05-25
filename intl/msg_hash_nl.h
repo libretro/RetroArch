@@ -1462,7 +1462,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_ENABLE,
    "Core naam weergeven"
    )
-MSG_HASH( /* FIXME Not RGUI specific */
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_START_SCREEN,
    "Start Scherm Weergeven"
    )
@@ -1743,11 +1743,11 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPERS_DIRECTORY,
    "Dynamische Wallpapers"
    )
-MSG_HASH( /* FIXME Not RGUI specific */
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BROWSER_DIRECTORY,
    "Bestandsbeheer"
    )
-MSG_HASH( /* FIXME Not RGUI specific */
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONFIG_DIRECTORY,
    "Configuratie"
    )

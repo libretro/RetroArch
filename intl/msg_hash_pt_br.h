@@ -464,7 +464,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION,
    "Versão Git"
    )
-MSG_HASH( /* FIXME Should be MENU_LABEL_VALUE */
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COMPILER,
    "Compilador"
    )
@@ -3523,11 +3523,11 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS,
    "Mostra informações adicionais para a entrada de menu atualmente selecionada."
    )
-MSG_HASH( /* FIXME Not RGUI specific */
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_START_SCREEN,
    "Mostrar Tela Inicial"
    )
-MSG_HASH( /* FIXME Not RGUI specific */
+MSG_HASH(
    MENU_ENUM_SUBLABEL_SHOW_START_SCREEN,
    "Exibe a tela inicial no menu. É automaticamente definido como falso após o programa iniciar pela primeira vez."
    )
@@ -4637,19 +4637,19 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_THUMBNAILS_DIRECTORY,
    "Miniaturas auxiliares (arte da caixa/imagens diversas e etc.) são armazenadas aqui."
    )
-MSG_HASH( /* FIXME Not RGUI specific */
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BROWSER_DIRECTORY,
    "Navegador de Arquivos"
    )
-MSG_HASH( /* FIXME Not RGUI specific */
+MSG_HASH(
    MENU_ENUM_SUBLABEL_BROWSER_DIRECTORY,
    "Define o diretório inicial do navegador de arquivos."
    )
-MSG_HASH( /* FIXME Not RGUI specific */
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONFIG_DIRECTORY,
    "Configuração"
    )
-MSG_HASH( /* FIXME Not RGUI specific */
+MSG_HASH(
    MENU_ENUM_SUBLABEL_CONFIG_DIRECTORY,
    "Define o diretório inicial para o navegador de configurações do menu."
    )
@@ -8728,15 +8728,15 @@ MSG_HASH(
 
 /* Notifications */
 
-MSG_HASH( /* FIXME Should be MSG_ */
+MSG_HASH(
    MSG_NETPLAY_START_WHEN_LOADED,
    "O jogo em rede irá iniciar quando o conteúdo for carregado."
    )
-MSG_HASH( /* FIXME Should be MSG_ */
+MSG_HASH(
    MSG_NETPLAY_LOAD_CONTENT_MANUALLY,
    "Não foi possível encontrar um núcleo adequado ou arquivo de conteúdo, carregue manualmente."
    )
-MSG_HASH( /* FIXME Should be MSG_ */
+MSG_HASH(
    MSG_VIDEO_DRIVER_FALLBACK,
    "Seu driver de gráficos não é compatível com o driver de vídeo atual no RetroArch, voltando para o driver %s. Por favor, reinicie o RetroArch para que as mudanças entrem em vigor."
    )

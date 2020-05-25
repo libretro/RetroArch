@@ -468,7 +468,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION,
    "Версия Git"
    )
-MSG_HASH( /* FIXME Should be MENU_LABEL_VALUE */
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COMPILER,
    "Компилятор"
    )
@@ -3023,11 +3023,11 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_ENABLE,
    "Показывать название ядра в главном меню."
    )
-MSG_HASH( /* FIXME Not RGUI specific */
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_START_SCREEN,
    "Показ приветствия"
    )
-MSG_HASH( /* FIXME Not RGUI specific */
+MSG_HASH(
    MENU_ENUM_SUBLABEL_SHOW_START_SCREEN,
    "Показать начальный экран. Этот параметре автомотически выключается после первого включения."
    )
@@ -3616,19 +3616,19 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_THUMBNAILS_DIRECTORY,
    "Дополнительные миниатюры (бокс-арты/другие изображения и т.д.) хранятся здесь."
    )
-MSG_HASH( /* FIXME Not RGUI specific */
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BROWSER_DIRECTORY,
    "Браузер файлов"
    )
-MSG_HASH( /* FIXME Not RGUI specific */
+MSG_HASH(
    MENU_ENUM_SUBLABEL_BROWSER_DIRECTORY,
    "Установить начальный каталог для файлового браузера."
    )
-MSG_HASH( /* FIXME Not RGUI specific */
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONFIG_DIRECTORY,
    "Конфигурация"
    )
-MSG_HASH( /* FIXME Not RGUI specific */
+MSG_HASH(
    MENU_ENUM_SUBLABEL_CONFIG_DIRECTORY,
    "Каталог с настройками."
    )
@@ -5449,11 +5449,11 @@ MSG_HASH(
 
 /* Notifications */
 
-MSG_HASH( /* FIXME Should be MSG_ */
+MSG_HASH(
    MSG_NETPLAY_START_WHEN_LOADED,
    "Netplay заработает, когда вы запустите игру."
    )
-MSG_HASH( /* FIXME Should be MSG_ */
+MSG_HASH(
    MSG_NETPLAY_LOAD_CONTENT_MANUALLY,
    "Не удается найти требуемое ядро или файл контента, загрузите его вручную."
    )

@@ -384,7 +384,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION,
    "Έκδοση Git"
    )
-MSG_HASH( /* FIXME Should be MENU_LABEL_VALUE */
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COMPILER,
    "Μεταγλωττιστής"
    )
@@ -2468,11 +2468,11 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_ENABLE,
    "Εμφανίζει το όνομα του τρέχων πυρήνα μέσα στο μενού."
    )
-MSG_HASH( /* FIXME Not RGUI specific */
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_START_SCREEN,
    "Εμφάνιση Αρχικής Οθόνης"
    )
-MSG_HASH( /* FIXME Not RGUI specific */
+MSG_HASH(
    MENU_ENUM_SUBLABEL_SHOW_START_SCREEN,
    "Προβολή οθόνης εκκίνησης στο μενού. Τίθεται αυτόματα σε αρνητικό μετά την πρώτη εκκίνηση του προγράμματος."
    )
@@ -2822,11 +2822,11 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS_DIRECTORY,
    "Σκίτσα"
    )
-MSG_HASH( /* FIXME Not RGUI specific */
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BROWSER_DIRECTORY,
    "Περιηγητής Αρχείων"
    )
-MSG_HASH( /* FIXME Not RGUI specific */
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONFIG_DIRECTORY,
    "Διαμόρφωση"
    )

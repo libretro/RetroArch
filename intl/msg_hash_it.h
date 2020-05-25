@@ -400,7 +400,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION,
    "Versione Git"
    )
-MSG_HASH( /* FIXME Should be MENU_LABEL_VALUE */
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COMPILER,
    "Compilatore"
    )
@@ -2679,11 +2679,11 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_ENABLE,
    "Visualizza il nome corrente del core all'interno del menu."
    )
-MSG_HASH( /* FIXME Not RGUI specific */
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_START_SCREEN,
    "Visualizzazione schermata Start"
    )
-MSG_HASH( /* FIXME Not RGUI specific */
+MSG_HASH(
    MENU_ENUM_SUBLABEL_SHOW_START_SCREEN,
    "Mostra la schermata di avvio nel menu. Questo viene automaticamente impostato su off dopo l'avvio del programma per la prima volta."
    )
@@ -5173,11 +5173,11 @@ MSG_HASH(
 
 /* Notifications */
 
-MSG_HASH( /* FIXME Should be MSG_ */
+MSG_HASH(
    MSG_NETPLAY_START_WHEN_LOADED,
    "Il Netplay verrà avviato quando il contenuto sarà caricato."
    )
-MSG_HASH( /* FIXME Should be MSG_ */
+MSG_HASH(
    MSG_NETPLAY_LOAD_CONTENT_MANUALLY,
    "Non è possibile trovare un core o un file di contenuto adatto, caricare manualmente."
    )

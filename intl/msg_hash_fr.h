@@ -468,7 +468,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION,
    "Version Git "
    )
-MSG_HASH( /* FIXME Should be MENU_LABEL_VALUE */
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COMPILER,
    "Compilateur "
    )
@@ -3519,11 +3519,11 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS,
    "Affiche des informations supplémentaires pour l'entrée actuellement sélectionnée dans le menu."
    )
-MSG_HASH( /* FIXME Not RGUI specific */
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_START_SCREEN,
    "Afficher l'écran de configuration initiale"
    )
-MSG_HASH( /* FIXME Not RGUI specific */
+MSG_HASH(
    MENU_ENUM_SUBLABEL_SHOW_START_SCREEN,
    "Affiche à nouveau l'écran de configuration initiale dans le menu au prochain lancement. Cette option est automatiquement désactivée après le premier démarrage du programme."
    )
@@ -4649,19 +4649,19 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_THUMBNAILS_DIRECTORY,
    "Les miniatures supplémentaires (jaquettes/images diverses, etc.) seront conservées dans ce dossier."
    )
-MSG_HASH( /* FIXME Not RGUI specific */
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BROWSER_DIRECTORY,
    "Navigateur de fichiers "
    )
-MSG_HASH( /* FIXME Not RGUI specific */
+MSG_HASH(
    MENU_ENUM_SUBLABEL_BROWSER_DIRECTORY,
    "Définit le dossier de départ du navigateur de fichiers."
    )
-MSG_HASH( /* FIXME Not RGUI specific */
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONFIG_DIRECTORY,
    "Fichiers de configuration "
    )
-MSG_HASH( /* FIXME Not RGUI specific */
+MSG_HASH(
    MENU_ENUM_SUBLABEL_CONFIG_DIRECTORY,
    "Définit le dossier de départ du navigateur de configurations du menu."
    )
@@ -8725,15 +8725,15 @@ MSG_HASH(
 
 /* Notifications */
 
-MSG_HASH( /* FIXME Should be MSG_ */
+MSG_HASH(
    MSG_NETPLAY_START_WHEN_LOADED,
    "Le jeu en réseau débutera quand un contenu sera chargé."
    )
-MSG_HASH( /* FIXME Should be MSG_ */
+MSG_HASH(
    MSG_NETPLAY_LOAD_CONTENT_MANUALLY,
    "Impossible de trouver un cœur ou un jeu adapté, veuillez charger le contenu manuellement."
    )
-MSG_HASH( /* FIXME Should be MSG_ */
+MSG_HASH(
    MSG_VIDEO_DRIVER_FALLBACK,
    "Votre pilote graphique n'est pas compatible avec le pilote vidéo actuel de RetroArch, retour au pilote %s. Veuillez redémarrer RetroArch pour que les modifications prennent effet."
    )

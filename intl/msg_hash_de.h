@@ -2690,7 +2690,7 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_ENABLE,
    "Zeige den Namen des aktuellen Cores im Menü an."
    )
-MSG_HASH( /* FIXME Not RGUI specific */
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_START_SCREEN,
    "Zeige Startbildschirm"
    )
@@ -3235,19 +3235,19 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_THUMBNAILS_DIRECTORY,
    "Ergänzende Miniaturansichte (Boxarts, Bildschirmfotos...) werden hier gespeichert."
    )
-MSG_HASH( /* FIXME Not RGUI specific */
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BROWSER_DIRECTORY,
    "Dateibrowser"
    )
-MSG_HASH( /* FIXME Not RGUI specific */
+MSG_HASH(
    MENU_ENUM_SUBLABEL_BROWSER_DIRECTORY,
    "Lege das Startverzeichnis für den Dateibrowser fest."
    )
-MSG_HASH( /* FIXME Not RGUI specific */
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONFIG_DIRECTORY,
    "Konfigurationen"
    )
-MSG_HASH( /* FIXME Not RGUI specific */
+MSG_HASH(
    MENU_ENUM_SUBLABEL_CONFIG_DIRECTORY,
    "Legt das Verzeichnis fest, in dem das Menü mit der Suche nach Konfigurationen beginnt."
    )
@@ -4848,11 +4848,11 @@ MSG_HASH(
 
 /* Notifications */
 
-MSG_HASH( /* FIXME Should be MSG_ */
+MSG_HASH(
    MSG_NETPLAY_START_WHEN_LOADED,
    "Netplay wird gestartet, sobald ein Inhalt geladen wurde."
    )
-MSG_HASH( /* FIXME Should be MSG_ */
+MSG_HASH(
    MSG_NETPLAY_LOAD_CONTENT_MANUALLY,
    "Konnte keinen geeigneten Core oder Inhalt finden, lade manuell."
    )
