@@ -4650,11 +4650,11 @@ MSG_HASH(
    "Les miniatures supplémentaires (jaquettes/images diverses, etc.) seront conservées dans ce dossier."
    )
 MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
+   MENU_ENUM_LABEL_VALUE_BROWSER_DIRECTORY,
    "Navigateur de fichiers "
    )
 MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_SUBLABEL_RGUI_BROWSER_DIRECTORY,
+   MENU_ENUM_SUBLABEL_BROWSER_DIRECTORY,
    "Définit le dossier de départ du navigateur de fichiers."
    )
 MSG_HASH( /* FIXME Not RGUI specific */

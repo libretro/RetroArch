@@ -4630,11 +4630,11 @@ MSG_HASH(
    "İlave küçük resimler (kutu resimleri / çeşitli görüntüler vb.) Burada saklanır."
    )
 MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
+   MENU_ENUM_LABEL_VALUE_BROWSER_DIRECTORY,
    "Dosya Yöneticisi"
    )
 MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_SUBLABEL_RGUI_BROWSER_DIRECTORY,
+   MENU_ENUM_SUBLABEL_BROWSER_DIRECTORY,
    "Dosya Gezgini için başlangıç dizinini ayarlar."
    )
 MSG_HASH( /* FIXME Not RGUI specific */

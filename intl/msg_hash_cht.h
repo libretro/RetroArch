@@ -2308,7 +2308,7 @@ MSG_HASH(
    "縮略圖目錄"
    )
 MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
+   MENU_ENUM_LABEL_VALUE_BROWSER_DIRECTORY,
    "文件瀏覽器目錄"
    )
 MSG_HASH( /* FIXME Not RGUI specific */

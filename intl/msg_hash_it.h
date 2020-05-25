@@ -3305,7 +3305,7 @@ MSG_HASH(
    "Qui vengono memorizzate miniature aggiuntive (boxarts / immagini , ecc.)"
    )
 MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_SUBLABEL_RGUI_BROWSER_DIRECTORY,
+   MENU_ENUM_SUBLABEL_BROWSER_DIRECTORY,
    "Imposta la directory di avvio per il filebrowser."
    )
 MSG_HASH( /* FIXME Not RGUI specific */

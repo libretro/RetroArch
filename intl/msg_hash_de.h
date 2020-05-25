@@ -3236,11 +3236,11 @@ MSG_HASH(
    "Ergänzende Miniaturansichte (Boxarts, Bildschirmfotos...) werden hier gespeichert."
    )
 MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
+   MENU_ENUM_LABEL_VALUE_BROWSER_DIRECTORY,
    "Dateibrowser"
    )
 MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_SUBLABEL_RGUI_BROWSER_DIRECTORY,
+   MENU_ENUM_SUBLABEL_BROWSER_DIRECTORY,
    "Lege das Startverzeichnis für den Dateibrowser fest."
    )
 MSG_HASH( /* FIXME Not RGUI specific */

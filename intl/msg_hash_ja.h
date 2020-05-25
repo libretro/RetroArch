@@ -4429,11 +4429,11 @@ MSG_HASH(
    "サムネイルファイルの保存フォルダです。"
    )
 MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
+   MENU_ENUM_LABEL_VALUE_BROWSER_DIRECTORY,
    "ファイルブラウザ"
    )
 MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_SUBLABEL_RGUI_BROWSER_DIRECTORY,
+   MENU_ENUM_SUBLABEL_BROWSER_DIRECTORY,
    "ファイルブラウザの開始ディレクトリを指定します。"
    )
 MSG_HASH( /* FIXME Not RGUI specific */

@@ -4621,11 +4621,11 @@ MSG_HASH(
    "Carpeta de miniaturas adicionales (cajas, capturas, etc.)."
    )
 MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
+   MENU_ENUM_LABEL_VALUE_BROWSER_DIRECTORY,
    "Explorador"
    )
 MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_SUBLABEL_RGUI_BROWSER_DIRECTORY,
+   MENU_ENUM_SUBLABEL_BROWSER_DIRECTORY,
    "Establece la carpeta inicial del explorador de archivos."
    )
 MSG_HASH( /* FIXME Not RGUI specific */

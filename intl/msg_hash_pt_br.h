@@ -4638,11 +4638,11 @@ MSG_HASH(
    "Miniaturas auxiliares (arte da caixa/imagens diversas e etc.) são armazenadas aqui."
    )
 MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
+   MENU_ENUM_LABEL_VALUE_BROWSER_DIRECTORY,
    "Navegador de Arquivos"
    )
 MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_SUBLABEL_RGUI_BROWSER_DIRECTORY,
+   MENU_ENUM_SUBLABEL_BROWSER_DIRECTORY,
    "Define o diretório inicial do navegador de arquivos."
    )
 MSG_HASH( /* FIXME Not RGUI specific */

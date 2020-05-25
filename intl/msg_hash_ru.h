@@ -3617,11 +3617,11 @@ MSG_HASH(
    "Дополнительные миниатюры (бокс-арты/другие изображения и т.д.) хранятся здесь."
    )
 MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
+   MENU_ENUM_LABEL_VALUE_BROWSER_DIRECTORY,
    "Браузер файлов"
    )
 MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_SUBLABEL_RGUI_BROWSER_DIRECTORY,
+   MENU_ENUM_SUBLABEL_BROWSER_DIRECTORY,
    "Установить начальный каталог для файлового браузера."
    )
 MSG_HASH( /* FIXME Not RGUI specific */

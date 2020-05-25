@@ -1287,7 +1287,7 @@ static struct config_path_setting *populate_settings_path(settings_t *settings, 
    SETTING_PATH("savestate_directory",
          dir_get_ptr(RARCH_DIR_SAVESTATE), true, NULL, false);
 #ifdef HAVE_MENU
-   SETTING_PATH("rgui_browser_directory",
+   SETTING_PATH("browser_directory",
          settings->paths.directory_menu_content, true, NULL, true);
    SETTING_PATH("rgui_config_directory",
          settings->paths.directory_menu_config, true, NULL, true);

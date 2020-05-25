@@ -4710,11 +4710,11 @@ MSG_HASH(
    "Supplementary thumbnails (boxarts/misc. images, etc.) are stored here."
    )
 MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
+   MENU_ENUM_LABEL_VALUE_BROWSER_DIRECTORY,
    "File Browser"
    )
 MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_SUBLABEL_RGUI_BROWSER_DIRECTORY,
+   MENU_ENUM_SUBLABEL_BROWSER_DIRECTORY,
    "Sets start directory for the filebrowser."
    )
 MSG_HASH( /* FIXME Not RGUI specific */

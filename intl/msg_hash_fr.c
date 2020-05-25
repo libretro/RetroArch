@@ -507,7 +507,7 @@ int menu_hash_get_help_fr_enum(enum msg_hash_enums msg, char *s, size_t len)
                              "sera automatiquement ajouté \n"
                              "à la liste de l'historique récent.");
             break;
-        case MENU_ENUM_LABEL_RGUI_BROWSER_DIRECTORY:
+        case MENU_ENUM_LABEL_BROWSER_DIRECTORY:
             snprintf(s, len,
                      "Dossier du navigateur de fichiers. \n"
                              " \n"

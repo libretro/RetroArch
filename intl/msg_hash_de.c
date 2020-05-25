@@ -466,7 +466,7 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
                "geöffnet wird, automatisch in \n"
                "die Verlaufsliste aufgenommen.");
          break;
-      case MENU_ENUM_LABEL_RGUI_BROWSER_DIRECTORY:
+      case MENU_ENUM_LABEL_BROWSER_DIRECTORY:
          snprintf(s, len,
                "Dateibrowser-Verzeichnis. \n"
                " \n"

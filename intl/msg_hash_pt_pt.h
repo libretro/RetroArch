@@ -2964,11 +2964,11 @@ MSG_HASH(
    "Miniaturas auxiliares (capas e imagens diversas) são armazenadas aqui."
    )
 MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
+   MENU_ENUM_LABEL_VALUE_BROWSER_DIRECTORY,
    "Explorador de ficheiros"
    )
 MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_SUBLABEL_RGUI_BROWSER_DIRECTORY,
+   MENU_ENUM_SUBLABEL_BROWSER_DIRECTORY,
    "Define a pasta inicial para o explorador de ficheiros."
    )
 MSG_HASH( /* FIXME Not RGUI specific */

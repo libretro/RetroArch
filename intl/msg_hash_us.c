@@ -497,7 +497,7 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                              "in RetroArch will be automatically \n"
                              "added to the recent history list.");
             break;
-        case MENU_ENUM_LABEL_RGUI_BROWSER_DIRECTORY:
+        case MENU_ENUM_LABEL_BROWSER_DIRECTORY:
             snprintf(s, len,
                      "File Browser Directory. \n"
                              " \n"

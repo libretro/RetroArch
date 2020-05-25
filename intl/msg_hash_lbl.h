@@ -2339,8 +2339,8 @@ MSG_HASH(
    "cheat_settings"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_RGUI_BROWSER_DIRECTORY,
-   "rgui_browser_directory"
+   MENU_ENUM_LABEL_BROWSER_DIRECTORY,
+   "browser_directory"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_RGUI_CONFIG_DIRECTORY,

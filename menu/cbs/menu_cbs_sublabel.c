@@ -519,7 +519,7 @@ default_sublabel_macro(action_bind_sublabel_threaded_data_runloop_enable,       
 default_sublabel_macro(action_bind_sublabel_playlist_entry_rename,                 MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_RENAME)
 default_sublabel_macro(action_bind_sublabel_playlist_entry_remove,                 MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_REMOVE)
 default_sublabel_macro(action_bind_sublabel_system_directory,                      MENU_ENUM_SUBLABEL_SYSTEM_DIRECTORY)
-default_sublabel_macro(action_bind_sublabel_rgui_browser_directory,                MENU_ENUM_SUBLABEL_RGUI_BROWSER_DIRECTORY)
+default_sublabel_macro(action_bind_sublabel_browser_directory,                MENU_ENUM_SUBLABEL_BROWSER_DIRECTORY)
 default_sublabel_macro(action_bind_sublabel_content_dir,                           MENU_ENUM_SUBLABEL_CONTENT_DIR)
 default_sublabel_macro(action_bind_dynamic_wallpapers_directory,                   MENU_ENUM_SUBLABEL_DYNAMIC_WALLPAPERS_DIRECTORY)
 default_sublabel_macro(action_bind_thumbnails_directory,                           MENU_ENUM_SUBLABEL_THUMBNAILS_DIRECTORY)
@@ -1947,8 +1947,8 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_CONTENT_DIR:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_content_dir);
             break;
-         case MENU_ENUM_LABEL_RGUI_BROWSER_DIRECTORY:
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_rgui_browser_directory);
+         case MENU_ENUM_LABEL_BROWSER_DIRECTORY:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_browser_directory);
             break;
          case MENU_ENUM_LABEL_SYSTEM_DIRECTORY:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_system_directory);

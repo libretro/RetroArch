@@ -1744,7 +1744,7 @@ MSG_HASH(
    "Dynamische Wallpapers"
    )
 MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
+   MENU_ENUM_LABEL_VALUE_BROWSER_DIRECTORY,
    "Bestandsbeheer"
    )
 MSG_HASH( /* FIXME Not RGUI specific */

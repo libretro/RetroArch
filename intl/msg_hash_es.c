@@ -545,7 +545,7 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
                      "contenidos cargados en RetroArch se agregarán\n"
                      "automáticamente al historial reciente.");
             break;
-        case MENU_ENUM_LABEL_RGUI_BROWSER_DIRECTORY:
+        case MENU_ENUM_LABEL_BROWSER_DIRECTORY:
             snprintf(s, len,
                      "Carpeta del explorador de archivos.\n"
                      " \n"

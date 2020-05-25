@@ -456,7 +456,7 @@ default_fill_title_macro(action_get_title_input_remapping_directory,    MENU_ENU
 default_fill_title_macro(action_get_title_autoconfig_directory,  MENU_ENUM_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR )
 default_fill_title_macro(action_get_title_playlist_directory,    MENU_ENUM_LABEL_VALUE_PLAYLIST_DIRECTORY)
 default_fill_title_macro(action_get_title_runtime_log_directory, MENU_ENUM_LABEL_VALUE_RUNTIME_LOG_DIRECTORY)
-default_fill_title_macro(action_get_title_browser_directory,     MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY)
+default_fill_title_macro(action_get_title_browser_directory,     MENU_ENUM_LABEL_VALUE_BROWSER_DIRECTORY)
 default_fill_title_macro(action_get_title_content_directory,     MENU_ENUM_LABEL_VALUE_CONTENT_DIR)
 default_fill_title_macro(action_get_title_screenshot_directory,  MENU_ENUM_LABEL_VALUE_SCREENSHOT_DIRECTORY)
 default_fill_title_macro(action_get_title_cursor_directory,      MENU_ENUM_LABEL_VALUE_CURSOR_DIRECTORY)
@@ -769,7 +769,7 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
       {MENU_ENUM_LABEL_VIDEO_LAYOUT_DIRECTORY,
          action_get_title_video_layout_directory},
 #endif
-      {MENU_ENUM_LABEL_RGUI_BROWSER_DIRECTORY,
+      {MENU_ENUM_LABEL_BROWSER_DIRECTORY,
          action_get_title_browser_directory},
       {MENU_ENUM_LABEL_PLAYLIST_DIRECTORY,
          action_get_title_playlist_directory},
@@ -1037,7 +1037,7 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
             BIND_ACTION_GET_TITLE(cbs, action_get_title_video_layout_directory);
             break;
 #endif
-         case MENU_ENUM_LABEL_RGUI_BROWSER_DIRECTORY:
+         case MENU_ENUM_LABEL_BROWSER_DIRECTORY:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_browser_directory);
             break;
          case MENU_ENUM_LABEL_PLAYLIST_DIRECTORY:

@@ -2823,7 +2823,7 @@ MSG_HASH(
    "Σκίτσα"
    )
 MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
+   MENU_ENUM_LABEL_VALUE_BROWSER_DIRECTORY,
    "Περιηγητής Αρχείων"
    )
 MSG_HASH( /* FIXME Not RGUI specific */

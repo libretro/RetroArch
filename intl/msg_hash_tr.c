@@ -496,7 +496,7 @@ int menu_hash_get_help_tr_enum(enum msg_hash_enums msg, char *s, size_t len)
                              "her içerik otomatik olarak en son \n"
                              "geçmiş listesine eklenir.");
             break;
-        case MENU_ENUM_LABEL_RGUI_BROWSER_DIRECTORY:
+        case MENU_ENUM_LABEL_BROWSER_DIRECTORY:
             snprintf(s, len,
                      "Dosya Tarayıcı Dizini. \n"
                              " \n"
