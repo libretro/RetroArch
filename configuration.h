@@ -545,6 +545,7 @@ typedef struct settings
       unsigned accessibility_narrator_speech_speed;
 
       unsigned menu_timedate_style;
+      unsigned menu_timedate_date_separator;
       unsigned gfx_thumbnails;
       unsigned menu_left_thumbnails;
       unsigned gfx_thumbnail_upscale_threshold;

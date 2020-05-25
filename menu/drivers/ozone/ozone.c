@@ -1730,11 +1730,12 @@ static void ozone_draw_header(ozone_handle_t *ozone,
       gfx_display_ctx_datetime_t datetime;
       char timedate[255];
 
-      timedate[0]        = '\0';
+      timedate[0]             = '\0';
 
-      datetime.s         = timedate;
-      datetime.time_mode = settings->uints.menu_timedate_style;
-      datetime.len       = sizeof(timedate);
+      datetime.s              = timedate;
+      datetime.time_mode      = settings->uints.menu_timedate_style;
+      datetime.date_separator = settings->uints.menu_timedate_date_separator;
+      datetime.len            = sizeof(timedate);
 
       menu_display_timedate(&datetime);
 
@@ -2059,6 +2060,10 @@ void ozone_update_content_metadata(ozone_handle_t *ozone)
          runtime_last_played_style   =
                (enum playlist_sublabel_last_played_style_type)
                      settings->uints.playlist_sublabel_last_played_style;
+   enum playlist_sublabel_last_played_date_separator_type
+         runtime_date_separator      =
+               (enum playlist_sublabel_last_played_date_separator_type)
+                     settings->uints.menu_timedate_date_separator;
 
    /* Must check whether core corresponds to 'viewer'
     * content even when not using a playlist, otherwise
@@ -2108,7 +2113,8 @@ void ozone_update_content_metadata(ozone_handle_t *ozone)
                   directory_runtime_log,
                   directory_playlist,
                   (runtime_type == PLAYLIST_RUNTIME_PER_CORE),
-                  runtime_last_played_style);
+                  runtime_last_played_style,
+                  runtime_date_separator);
 
          if (!string_is_empty(entry->runtime_str))
             strlcpy(ozone->selection_playtime, entry->runtime_str, sizeof(ozone->selection_playtime));

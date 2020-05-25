@@ -84,14 +84,23 @@ enum playlist_sublabel_last_played_style_type
    PLAYLIST_LAST_PLAYED_STYLE_LAST
 };
 
+/* Note: These must be kept synchronised with
+ * 'enum menu_timedate_date_separator_type' in
+ * 'menu_defines.h' */
+enum playlist_sublabel_last_played_date_separator_type
+{
+   PLAYLIST_LAST_PLAYED_DATE_SEPARATOR_HYPHEN = 0,
+   PLAYLIST_LAST_PLAYED_DATE_SEPARATOR_SLASH,
+   PLAYLIST_LAST_PLAYED_DATE_SEPARATOR_PERIOD,
+   PLAYLIST_LAST_PLAYED_DATE_SEPARATOR_LAST
+};
+
 enum playlist_sublabel_runtime
 {
    PLAYLIST_RUNTIME_PER_CORE = 0,
    PLAYLIST_RUNTIME_AGGREGATE,
    PLAYLIST_RUNTIME_LAST
 };
-
-
 
 /* Initialisation */
 
@@ -155,7 +164,9 @@ void runtime_log_get_last_played_time(runtime_log_t *runtime_log, struct tm *tim
 
 /* Gets last played entry value as a pre-formatted string */
 void runtime_log_get_last_played_str(runtime_log_t *runtime_log,
-      char *str, size_t len, enum playlist_sublabel_last_played_style_type timedate_style);
+      char *str, size_t len,
+      enum playlist_sublabel_last_played_style_type timedate_style,
+      enum playlist_sublabel_last_played_date_separator_type date_separator);
 
 /* Status */
 
@@ -187,7 +198,8 @@ void runtime_update_playlist(
       const char *dir_runtime_log,
       const char *dir_playlist,
       bool log_per_core,
-      enum playlist_sublabel_last_played_style_type timedate_style);
+      enum playlist_sublabel_last_played_style_type timedate_style,
+      enum playlist_sublabel_last_played_date_separator_type date_separator);
 
 RETRO_END_DECLS
 

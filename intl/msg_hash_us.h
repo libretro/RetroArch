@@ -3548,6 +3548,14 @@ MSG_HASH(
    "Changes the style current date and/or time is shown inside the menu."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIMEDATE_DATE_SEPARATOR,
+   "Date Separator"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_TIMEDATE_DATE_SEPARATOR,
+   "Specifies character to use as a separator between year/month/day components when current date is shown inside the menu."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BATTERY_LEVEL_ENABLE,
    "Show Battery Level"
    )
