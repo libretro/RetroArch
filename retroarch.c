@@ -6230,9 +6230,6 @@ static void command_event_init_controllers(void)
 #ifdef HAVE_CONFIGFILE
 static void command_event_disable_overrides(void)
 {
-   if (!runloop_overrides_active)
-      return;
-
    /* reload the original config */
    config_unload_override();
    runloop_overrides_active = false;
@@ -6263,7 +6260,8 @@ static void command_event_deinit_core(bool reinit)
       driver_uninit(DRIVERS_CMD_ALL);
 
 #ifdef HAVE_CONFIGFILE
-   command_event_disable_overrides();
+   if (runloop_overrides_active)
+      command_event_disable_overrides();
 #endif
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    retroarch_unset_runtime_shader_preset();
@@ -7524,7 +7522,8 @@ bool command_event(enum event_command cmd, void *data)
             command_event_runtime_log_deinit();
             command_event_save_auto_state();
 #ifdef HAVE_CONFIGFILE
-            command_event_disable_overrides();
+            if (runloop_overrides_active)
+               command_event_disable_overrides();
 #endif
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
             retroarch_unset_runtime_shader_preset();
@@ -27799,7 +27798,8 @@ bool retroarch_main_quit(void)
    {
       command_event_save_auto_state();
 #ifdef HAVE_CONFIGFILE
-      command_event_disable_overrides();
+      if (runloop_overrides_active)
+         command_event_disable_overrides();
 #endif
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
       retroarch_unset_runtime_shader_preset();
