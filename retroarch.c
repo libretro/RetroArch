@@ -4139,7 +4139,8 @@ static void retroarch_msg_queue_init(void)
 static void retroarch_autosave_deinit(void)
 {
    struct rarch_state *p_rarch = &rarch_st;
-   if (p_rarch->rarch_use_sram)
+   const bool rarch_use_sram   = p_rarch->rarch_use_sram;
+   if (rarch_use_sram)
       autosave_deinit();
 }
 #endif
@@ -4953,6 +4954,7 @@ static void handle_translation_cb(
    bool was_paused                   = p_rarch->runloop_paused;
    const enum retro_pixel_format 
       video_driver_pix_fmt           = p_rarch->video_driver_pix_fmt;
+   bool gfx_widgets_paused           = p_rarch->gfx_widgets_paused;
 
 #ifdef GFX_MENU_WIDGETS
    if (gfx_widgets_ai_service_overlay_get_state() != 0 
@@ -5088,7 +5090,7 @@ static void handle_translation_cb(
 
       strlcpy(text_string, error_string, 15);
 #ifdef HAVE_GFX_WIDGETS
-      if (p_rarch->gfx_widgets_paused)
+      if (gfx_widgets_paused)
       {
          /* In this case we have to unpause and then repause for a frame */
          gfx_widgets_ai_service_overlay_set_state(2);
@@ -5148,7 +5150,7 @@ static void handle_translation_cb(
                1, 180, true,
                NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          }
-         else if (p_rarch->gfx_widgets_paused)
+         else if (gfx_widgets_paused)
          {
             /* In this case we have to unpause and then repause for a frame */
 #ifdef HAVE_TRANSLATE
@@ -10175,8 +10177,9 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
    settings_t         *settings = configuration_settings;
    rarch_system_info_t *system  = &runloop_system;
    struct rarch_state *p_rarch  = &rarch_st;
+   bool ignore_environment_cb   = p_rarch->ignore_environment_cb;
 
-   if (p_rarch->ignore_environment_cb)
+   if (ignore_environment_cb)
       return false;
 
    switch (cmd)
@@ -11628,8 +11631,9 @@ static bool init_libretro_symbols(enum rarch_core_type type,
 
 bool libretro_get_shared_context(void)
 {
-   struct rarch_state *p_rarch = &rarch_st;
-   return p_rarch->core_set_shared_context;
+   struct rarch_state *p_rarch  = &rarch_st;
+   bool core_set_shared_context = p_rarch->core_set_shared_context;
+   return core_set_shared_context;
 }
 
 /**
@@ -12347,13 +12351,14 @@ void ui_companion_driver_init_first(void)
 {
    struct rarch_state     *p_rarch = &rarch_st;
    settings_t      *settings       = configuration_settings;
+#ifdef HAVE_QT
+   bool desktop_menu_enable        = settings->bools.desktop_menu_enable;
+   bool ui_companion_toggle        = settings->bools.ui_companion_toggle;
+#endif
 
    ui_companion                    = (ui_companion_driver_t*)ui_companion_drivers[0];
 
 #ifdef HAVE_QT
-   bool desktop_menu_enable        = settings->bools.desktop_menu_enable;
-   bool ui_companion_toggle        = settings->bools.ui_companion_toggle;
-
    if (desktop_menu_enable && ui_companion_toggle)
    {
       ui_companion_qt_data  = ui_companion_qt.init();
