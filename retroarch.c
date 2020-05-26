@@ -1163,9 +1163,9 @@ static const camera_driver_t *camera_drivers[] = {
 
 #define runahead_resume_video() \
    if (runahead_video_driver_is_active) \
-      video_driver_active = true; \
+      p_rarch->video_driver_active = true; \
    else \
-      video_driver_active = false
+      p_rarch->video_driver_active = false
 
 #define _PSUPP_BUF(buf, var, name, desc) \
    strlcat(buf, "  ", sizeof(buf)); \
@@ -1706,8 +1706,48 @@ struct rarch_state
    bool runloop_core_shutdown_initiated;
    bool runloop_core_running;
    bool runloop_perfcnt_enable;
-};
 
+   /**
+    * dynamic.c:dynamic_request_hw_context will try to set 
+    * flag data when the context
+    * is in the middle of being rebuilt; in these cases we will save flag
+    * data and set this to true.
+    * When the context is reinit, it checks this, reads from
+    * deferred_flag_data and cleans it.
+    *
+    * TODO - Dirty hack, fix it better
+    */
+   bool deferred_video_context_driver_set_flags;
+   bool ignore_environment_cb;
+   bool core_set_shared_context;
+
+   /* Graphics driver requires RGBA byte order data (ABGR on little-endian)
+    * for 32-bit.
+    * This takes effect for overlay and shader cores that wants to load
+    * data into graphics driver. Kinda hackish to place it here, it is only
+    * used for GLES.
+    * TODO: Refactor this better. */
+   bool video_driver_use_rgba;
+   bool video_driver_active;
+
+   /* If set during context deinit, the driver should keep
+    * graphics context alive to avoid having to reset all
+    * context state. */
+   bool video_driver_cache_context;
+
+   /* Set to true by driver if context caching succeeded. */
+   bool video_driver_cache_context_ack;
+
+#ifdef HAVE_GFX_WIDGETS
+   bool gfx_widgets_paused;
+   bool gfx_widgets_fast_forward;
+   bool gfx_widgets_rewinding;
+#endif
+#ifdef HAVE_ACCESSIBILITY
+/* Is text-to-speech accessibility turned on? */
+   bool accessibility_enabled;
+#endif
+};
 
 static struct global              g_extern;
 static struct retro_callbacks     retro_ctx;
@@ -1752,15 +1792,6 @@ static bool runloop_max_frames_screenshot                       = false;
 static bool shader_presets_need_reload                          = true;
 static bool cli_shader_disable                                  = false;
 #endif
-#ifdef HAVE_GFX_WIDGETS
-static bool gfx_widgets_paused                                  = false;
-static bool gfx_widgets_fast_forward                            = false;
-static bool gfx_widgets_rewinding                               = false;
-#endif
-#ifdef HAVE_ACCESSIBILITY
-/* Is text-to-speech accessibility turned on? */
-static bool accessibility_enabled                               = false;
-#endif
 
 static bool location_driver_active                              = false;
 
@@ -1771,23 +1802,6 @@ static bool video_driver_crt_switching_active                   = false;
 static bool video_driver_crt_dynamic_super_width                = false;
 static bool video_driver_threaded                               = false;
 static bool video_driver_window_title_update                    = true;
-
-/* Graphics driver requires RGBA byte order data (ABGR on little-endian)
- * for 32-bit.
- * This takes effect for overlay and shader cores that wants to load
- * data into graphics driver. Kinda hackish to place it here, it is only
- * used for GLES.
- * TODO: Refactor this better. */
-static bool video_driver_use_rgba                               = false;
-static bool video_driver_active                                 = false;
-
-/* If set during context deinit, the driver should keep
- * graphics context alive to avoid having to reset all
- * context state. */
-static bool video_driver_cache_context                          = false;
-
-/* Set to true by driver if context caching succeeded. */
-static bool video_driver_cache_context_ack                      = false;
 
 static bool video_started_fullscreen                            = false;
 
@@ -1851,19 +1865,6 @@ static bool audio_driver_mixer_mute_enable                      = false;
 static bool audio_mixer_active                                  = false;
 #endif
 
-/**
- * dynamic.c:dynamic_request_hw_context will try to set flag data when the context
- * is in the middle of being rebuilt; in these cases we will save flag
- * data and set this to true.
- * When the context is reinit, it checks this, reads from
- * deferred_flag_data and cleans it.
- *
- * TODO - Dirty hack, fix it better
- */
-static bool deferred_video_context_driver_set_flags             = false;
-
-static bool ignore_environment_cb                               = false;
-static bool core_set_shared_context                             = false;
 static bool *load_no_content_hook                               = NULL;
 
 static const uint8_t midi_drv_ev_sizes[128]                     =
@@ -3810,9 +3811,10 @@ void dir_check_defaults(void)
 #ifdef HAVE_ACCESSIBILITY
 bool is_accessibility_enabled(void)
 {
-   settings_t *settings      = configuration_settings;
-   bool accessibility_enable = settings->bools.accessibility_enable;
-   if (accessibility_enabled || accessibility_enable)
+   settings_t *settings        = configuration_settings;
+   struct rarch_state *p_rarch = &rarch_st;
+   bool accessibility_enable   = settings->bools.accessibility_enable;
+   if (p_rarch->accessibility_enabled || accessibility_enable)
       return true;
    return false;
 }
@@ -5086,7 +5088,7 @@ static void handle_translation_cb(
 
       strlcpy(text_string, error_string, 15);
 #ifdef HAVE_GFX_WIDGETS
-      if (gfx_widgets_paused)
+      if (p_rarch->gfx_widgets_paused)
       {
          /* In this case we have to unpause and then repause for a frame */
          gfx_widgets_ai_service_overlay_set_state(2);
@@ -5146,7 +5148,7 @@ static void handle_translation_cb(
                1, 180, true,
                NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          }
-         else if (gfx_widgets_paused)
+         else if (p_rarch->gfx_widgets_paused)
          {
             /* In this case we have to unpause and then repause for a frame */
 #ifdef HAVE_TRANSLATE
@@ -7112,14 +7114,14 @@ static void retroarch_pause_checks(void)
    discord_userdata_t userdata;
 #endif
    struct rarch_state
-      *p_rarch               = &rarch_st;
-   bool is_paused            = p_rarch->runloop_paused;
-   bool is_idle              = p_rarch->runloop_idle;
+      *p_rarch                    = &rarch_st;
+   bool is_paused                 = p_rarch->runloop_paused;
+   bool is_idle                   = p_rarch->runloop_idle;
 #if defined(HAVE_GFX_WIDGETS)
-   bool widgets_active       = gfx_widgets_active();
+   bool widgets_active            = gfx_widgets_active();
 
    if (widgets_active)
-      gfx_widgets_paused     = is_paused;
+      p_rarch->gfx_widgets_paused = is_paused;
 #endif
 
    if (is_paused)
@@ -8974,7 +8976,7 @@ int rarch_main(int argc, char *argv[], void *data)
    sthread_tls_create(&rarch_tls);
    sthread_tls_set(&rarch_tls, MAGIC_POINTER);
 #endif
-   video_driver_active = true;
+   p_rarch->video_driver_active = true;
    audio_driver_active = true;
    {
       uint8_t i;
@@ -10174,7 +10176,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
    rarch_system_info_t *system  = &runloop_system;
    struct rarch_state *p_rarch  = &rarch_st;
 
-   if (ignore_environment_cb)
+   if (p_rarch->ignore_environment_cb)
       return false;
 
    switch (cmd)
@@ -11133,7 +11135,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
           * until shared HW context can work there */
          return false;
 #else
-         core_set_shared_context = true;
+         p_rarch->core_set_shared_context = true;
 #endif
          break;
 
@@ -11197,7 +11199,8 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
          int result = 0;
          if (!audio_suspended && audio_driver_active)
             result |= 2;
-         if (video_driver_active && !(current_video->frame == video_null.frame))
+         if (p_rarch->video_driver_active 
+               && !(current_video->frame == video_null.frame))
             result |= 1;
 #ifdef HAVE_RUNAHEAD
          if (request_fast_savestate)
@@ -11321,7 +11324,9 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
 static void libretro_get_environment_info(void (*func)(retro_environment_t),
       bool *load_no_content)
 {
-   load_no_content_hook = load_no_content;
+   struct rarch_state *p_rarch = &rarch_st;
+
+   load_no_content_hook        = load_no_content;
 
    /* load_no_content gets set in this callback. */
    func(environ_cb_get_system_info);
@@ -11332,9 +11337,9 @@ static void libretro_get_environment_info(void (*func)(retro_environment_t),
     * Make sure we reset it to the actual environment callback.
     * Ignore any environment callbacks here in case we're running
     * on the non-current core. */
-   ignore_environment_cb = true;
+   p_rarch->ignore_environment_cb = true;
    func(rarch_environment_cb);
-   ignore_environment_cb = false;
+   p_rarch->ignore_environment_cb = false;
 }
 
 static bool load_dynamic_core(const char *path, char *buf, size_t size)
@@ -11623,7 +11628,8 @@ static bool init_libretro_symbols(enum rarch_core_type type,
 
 bool libretro_get_shared_context(void)
 {
-   return core_set_shared_context;
+   struct rarch_state *p_rarch = &rarch_st;
+   return p_rarch->core_set_shared_context;
 }
 
 /**
@@ -11637,6 +11643,8 @@ bool libretro_get_shared_context(void)
  **/
 static void uninit_libretro_symbols(struct retro_core_t *current_core)
 {
+   struct rarch_state *p_rarch = &rarch_st;
+
 #ifdef HAVE_DYNAMIC
    if (lib_handle)
       dylib_close(lib_handle);
@@ -11645,7 +11653,7 @@ static void uninit_libretro_symbols(struct retro_core_t *current_core)
 
    memset(current_core, 0, sizeof(struct retro_core_t));
 
-   core_set_shared_context = false;
+   p_rarch->core_set_shared_context = false;
 
    if (runloop_core_options)
       retroarch_deinit_core_options();
@@ -22221,23 +22229,26 @@ void video_driver_reset_custom_viewport(void)
 
 void video_driver_set_rgba(void)
 {
+   struct rarch_state *p_rarch = &rarch_st;
    video_driver_lock();
-   video_driver_use_rgba = true;
+   p_rarch->video_driver_use_rgba = true;
    video_driver_unlock();
 }
 
 void video_driver_unset_rgba(void)
 {
+   struct rarch_state *p_rarch = &rarch_st;
    video_driver_lock();
-   video_driver_use_rgba = false;
+   p_rarch->video_driver_use_rgba = false;
    video_driver_unlock();
 }
 
 bool video_driver_supports_rgba(void)
 {
    bool tmp;
+   struct rarch_state *p_rarch = &rarch_st;
    video_driver_lock();
-   tmp = video_driver_use_rgba;
+   tmp = p_rarch->video_driver_use_rgba;
    video_driver_unlock();
    return tmp;
 }
@@ -22596,15 +22607,16 @@ void video_driver_reinit(int flags)
 {
    struct retro_hw_render_callback *hwr =
       video_driver_get_hw_context_internal();
+   struct rarch_state *p_rarch = &rarch_st;
 
    if (hwr->cache_context)
-      video_driver_cache_context    = true;
+      p_rarch->video_driver_cache_context    = true;
    else
-      video_driver_cache_context = false;
+      p_rarch->video_driver_cache_context = false;
 
-   video_driver_cache_context_ack = false;
+   p_rarch->video_driver_cache_context_ack = false;
    video_driver_reinit_context(flags);
-   video_driver_cache_context = false;
+   p_rarch->video_driver_cache_context = false;
 }
 
 bool video_driver_is_hw_context(void)
@@ -22626,12 +22638,14 @@ const struct retro_hw_render_context_negotiation_interface *
 
 bool video_driver_is_video_cache_context(void)
 {
-   return video_driver_cache_context;
+   struct rarch_state *p_rarch = &rarch_st;
+   return p_rarch->video_driver_cache_context;
 }
 
 void video_driver_set_video_cache_context_ack(void)
 {
-   video_driver_cache_context_ack = true;
+   struct rarch_state *p_rarch = &rarch_st;
+   p_rarch->video_driver_cache_context_ack = true;
 }
 
 bool video_driver_get_viewport_info(struct video_viewport *viewport)
@@ -22771,7 +22785,7 @@ static void video_driver_frame(const void *data, unsigned width,
    fps_text[0]                 = '\0';
    video_driver_msg[0]         = '\0';
 
-   if (!video_driver_active)
+   if (!p_rarch->video_driver_active)
       return;
 
    new_time                    = cpu_features_get_time_usec();
@@ -23035,7 +23049,7 @@ static void video_driver_frame(const void *data, unsigned width,
    }
 
    if (current_video && current_video->frame)
-      video_driver_active = current_video->frame(
+      p_rarch->video_driver_active = current_video->frame(
             video_driver_data, data, width, height,
             video_driver_frame_count,
             (unsigned)pitch, video_driver_msg, &video_info);
@@ -23219,19 +23233,19 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->custom_vp_full_height = custom_vp->full_height;
 
 #if defined(HAVE_GFX_WIDGETS)
-   video_info->widgets_is_paused          = gfx_widgets_paused;
-   video_info->widgets_is_fast_forwarding = gfx_widgets_fast_forward;
-   video_info->widgets_is_rewinding       = gfx_widgets_rewinding;
+   video_info->widgets_is_paused          = p_rarch->gfx_widgets_paused;
+   video_info->widgets_is_fast_forwarding = p_rarch->gfx_widgets_fast_forward;
+   video_info->widgets_is_rewinding       = p_rarch->gfx_widgets_rewinding;
 #else
    video_info->widgets_is_paused          = false;
    video_info->widgets_is_fast_forwarding = false;
    video_info->widgets_is_rewinding       = false;
 #endif
 
-   video_info->width                 = video_driver_width;
-   video_info->height                = video_driver_height;
+   video_info->width                  = video_driver_width;
+   video_info->height                 = video_driver_height;
 
-   video_info->use_rgba              = video_driver_use_rgba;
+   video_info->use_rgba               = p_rarch->video_driver_use_rgba;
 
    video_info->libretro_running       = false;
    video_info->msg_bgcolor_enable     = settings->bools.video_msg_bgcolor_enable;
@@ -23660,13 +23674,15 @@ bool video_context_driver_get_video_size(gfx_ctx_mode_t *mode_info)
 
 bool video_context_driver_get_flags(gfx_ctx_flags_t *flags)
 {
+   struct rarch_state *p_rarch = &rarch_st;
    if (!current_video_context.get_flags)
       return false;
 
-   if (deferred_video_context_driver_set_flags)
+   if (p_rarch->deferred_video_context_driver_set_flags)
    {
-      flags->flags                            = deferred_flag_data.flags;
-      deferred_video_context_driver_set_flags = false;
+      flags->flags                                     = 
+         deferred_flag_data.flags;
+      p_rarch->deferred_video_context_driver_set_flags = false;
       return true;
    }
 
@@ -23706,12 +23722,14 @@ bool video_driver_test_all_flags(enum display_flags testflag)
 
 bool video_context_driver_set_flags(gfx_ctx_flags_t *flags)
 {
+   struct rarch_state *p_rarch = &rarch_st;
    if (!flags)
       return false;
+
    if (!current_video_context.set_flags)
    {
-      deferred_flag_data.flags                = flags->flags;
-      deferred_video_context_driver_set_flags = true;
+      deferred_flag_data.flags                         = flags->flags;
+      p_rarch->deferred_video_context_driver_set_flags = true;
       return false;
    }
 
@@ -24399,7 +24417,7 @@ void driver_set_nonblock_state(void)
    unsigned swap_interval      = settings->uints.video_swap_interval;
 
    /* Only apply non-block-state for video if we're using vsync. */
-   if (video_driver_active && video_driver_get_ptr_internal(false))
+   if (p_rarch->video_driver_active && video_driver_get_ptr_internal(false))
    {
       if (current_video->set_nonblock_state)
       {
@@ -24461,10 +24479,10 @@ static void drivers_init(int flags)
       video_driver_set_cached_frame_ptr(NULL);
       video_driver_init_internal(&video_is_threaded);
 
-      if (!video_driver_cache_context_ack
+      if (!p_rarch->video_driver_cache_context_ack
             && hwr->context_reset)
          hwr->context_reset();
-      video_driver_cache_context_ack = false;
+      p_rarch->video_driver_cache_context_ack = false;
       runloop_frame_time_last        = 0;
    }
 
@@ -24665,6 +24683,8 @@ static void driver_uninit(int flags)
 
 static void retroarch_deinit_drivers(void)
 {
+   struct rarch_state *p_rarch = &rarch_st;
+
 #if defined(HAVE_GFX_WIDGETS)
    /* Tear down display widgets no matter what
     * in case the handle is lost in the threaded
@@ -24677,12 +24697,12 @@ static void retroarch_deinit_drivers(void)
    video_display_server_destroy();
    crt_video_restore();
 
-   video_driver_use_rgba          = false;
-   video_driver_active            = false;
-   video_driver_cache_context     = false;
-   video_driver_cache_context_ack = false;
-   video_driver_record_gpu_buffer = NULL;
-   current_video                  = NULL;
+   p_rarch->video_driver_use_rgba          = false;
+   p_rarch->video_driver_active            = false;
+   p_rarch->video_driver_cache_context     = false;
+   p_rarch->video_driver_cache_context_ack = false;
+   video_driver_record_gpu_buffer          = NULL;
+   current_video                           = NULL;
    video_driver_set_cached_frame_ptr(NULL);
 
    /* Audio */
@@ -25216,12 +25236,14 @@ static bool runahead_create(void)
 {
    /* get savestate size and allocate buffer */
    retro_ctx_size_info_t info;
+   struct rarch_state *p_rarch = &rarch_st;
+
    request_fast_savestate = true;
    core_serialize_size(&info);
    request_fast_savestate = false;
 
    runahead_save_state_list_init(info.size);
-   runahead_video_driver_is_active = video_driver_active;
+   runahead_video_driver_is_active = p_rarch->video_driver_active;
 
    if (runahead_save_state_size == 0 || !runahead_save_state_size_known)
    {
@@ -25335,6 +25357,8 @@ static void do_runahead(int runahead_count, bool use_secondary)
 #else
    const bool have_dynamic = false;
 #endif
+   struct rarch_state 
+      *p_rarch             = &rarch_st;
    uint64_t frame_count    = video_driver_frame_count;
 
    if (runahead_count <= 0 || !runahead_available)
@@ -25371,8 +25395,8 @@ static void do_runahead(int runahead_count, bool use_secondary)
 
          if (suspended_frame)
          {
-            audio_suspended     = true;
-            video_driver_active = false;
+            audio_suspended              = true;
+            p_rarch->video_driver_active = false;
          }
 
          if (frame_number == 0)
@@ -25417,7 +25441,7 @@ static void do_runahead(int runahead_count, bool use_secondary)
       }
 
       /* run main core with video suspended */
-      video_driver_active = false;
+      p_rarch->video_driver_active = false;
       core_run();
       runahead_resume_video();
 
@@ -25439,12 +25463,12 @@ static void do_runahead(int runahead_count, bool use_secondary)
 
          for (frame_number = 0; frame_number < runahead_count - 1; frame_number++)
          {
-            video_driver_active = false;
-            audio_suspended     = true;
-            hard_disable_audio  = true;
+            p_rarch->video_driver_active = false;
+            audio_suspended              = true;
+            hard_disable_audio           = true;
             runahead_run_secondary();
-            hard_disable_audio  = false;
-            audio_suspended     = false;
+            hard_disable_audio           = false;
+            audio_suspended              = false;
             runahead_resume_video();
          }
       }
@@ -26320,7 +26344,7 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
                retroarch_fail(1, "retroarch_parse_input()");
             case RA_OPT_ACCESSIBILITY:
 #ifdef HAVE_ACCESSIBILITY
-               accessibility_enabled = true;
+               p_rarch->accessibility_enabled = true;
 #endif
                break;
             default:
@@ -26473,12 +26497,12 @@ bool retroarch_main_init(int argc, char *argv[])
 #if defined(DEBUG) && defined(HAVE_DRMINGW)
    char log_file_name[128];
 #endif
-   bool           init_failed  = false;
-   global_t            *global = &g_extern;
-   struct rarch_state *p_rarch = &rarch_st;
+   bool           init_failed   = false;
+   global_t            *global  = &g_extern;
+   struct rarch_state *p_rarch  = &rarch_st;
 
-   video_driver_active = true;
-   audio_driver_active = true;
+   p_rarch->video_driver_active = true;
+   audio_driver_active          = true;
 
    if (setjmp(error_sjlj_context) > 0)
    {
@@ -28093,9 +28117,9 @@ static void update_savestate_slot(void)
 /* Display the fast forward state to the user, if needed. */
 static void update_fastforwarding_state(void)
 {
-   struct rarch_state *p_rarch = &rarch_st;
+   struct rarch_state *p_rarch       = &rarch_st;
 
-   gfx_widgets_fast_forward    = p_rarch->runloop_fastmotion;
+   p_rarch->gfx_widgets_fast_forward = p_rarch->runloop_fastmotion;
 
    if (!p_rarch->runloop_fastmotion)
    {
@@ -28883,7 +28907,7 @@ static enum runloop_state runloop_check_state(retro_time_t current_time)
 
 #if defined(HAVE_GFX_WIDGETS)
       if (widgets_active)
-         gfx_widgets_rewinding = rewinding;
+         p_rarch->gfx_widgets_rewinding = rewinding;
       else
 #endif
       {
