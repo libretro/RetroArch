@@ -2456,7 +2456,7 @@ static void retroarch_overlay_deinit(void);
 static void input_overlay_set_alpha_mod(input_overlay_t *ol, float mod);
 static void input_overlay_set_scale_factor(input_overlay_t *ol, float scale);
 static void input_overlay_load_active(input_overlay_t *ol, float opacity);
-static void input_overlay_auto_rotate(input_overlay_t *ol);
+static void input_overlay_auto_rotate_(input_overlay_t *ol);
 #endif
 
 #ifdef HAVE_AUDIOMIXER
@@ -7710,7 +7710,7 @@ bool command_event(enum event_command cmd, void *data)
             if (inp_overlay_auto_rotate)
                if (check_rotation)
                   if (*check_rotation)
-                     input_overlay_auto_rotate(overlay_ptr);
+                     input_overlay_auto_rotate_(overlay_ptr);
          }
 #endif
          break;
@@ -13690,7 +13690,7 @@ static void input_overlay_load_active(input_overlay_t *ol, float opacity)
 /* Attempts to automatically rotate the specified overlay.
  * Depends upon proper naming conventions in overlay
  * config file. */
-static void input_overlay_auto_rotate(input_overlay_t *ol)
+static void input_overlay_auto_rotate_(input_overlay_t *ol)
 {
    enum overlay_orientation screen_orientation         = OVERLAY_ORIENTATION_NONE;
    enum overlay_orientation active_overlay_orientation = OVERLAY_ORIENTATION_NONE;
@@ -13763,7 +13763,7 @@ static void input_overlay_auto_rotate(input_overlay_t *ol)
    /* We have a valid target overlay
     * > Trigger 'overly next' command event
     * Note: tmp == false. This prevents CMD_EVENT_OVERLAY_NEXT
-    * from calling input_overlay_auto_rotate() again */
+    * from calling input_overlay_auto_rotate_() again */
    ol->next_index = next_overlay_index;
    command_event(CMD_EVENT_OVERLAY_NEXT, &tmp);
 }
@@ -14076,7 +14076,7 @@ static void input_overlay_loaded(retro_task_t *task,
 
    /* Attempt to automatically rotate overlay, if required */
    if (inp_overlay_auto_rotate)
-      input_overlay_auto_rotate(overlay_ptr);
+      input_overlay_auto_rotate_(overlay_ptr);
 
    return;
 
@@ -28263,7 +28263,7 @@ static enum runloop_state runloop_check_state(retro_time_t current_time)
          if ((video_driver_width  != last_width) ||
              (video_driver_height != last_height))
          {
-            input_overlay_auto_rotate(overlay_ptr);
+            input_overlay_auto_rotate_(overlay_ptr);
             last_width  = video_driver_width;
             last_height = video_driver_height;
          }
