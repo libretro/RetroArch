@@ -7285,10 +7285,9 @@ bool command_event(enum event_command cmd, void *data)
          bool ai_service_pause     = settings->bools.ai_service_pause;
 
          if (!settings->bools.ai_service_enable)
-         {
             break;
-         }
-         else if (ai_service_pause)
+
+         if (ai_service_pause)
          {
             /* pause on call, unpause on second press. */
             if (!p_rarch->runloop_paused)
@@ -7405,7 +7404,7 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_LOAD_CORE:
          {
-            bool success   = false;
+            bool success            = false;
             subsystem_current_count = 0;
             content_clear_subsystem();
             success = command_event(CMD_EVENT_LOAD_CORE_PERSIST, NULL);
