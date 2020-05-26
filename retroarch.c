@@ -3559,6 +3559,7 @@ static bool dir_free_shader(void)
 }
 
 
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 static bool dir_init_shader(const char *path_dir_shader,
       bool show_hidden_files)
 {
@@ -3588,6 +3589,7 @@ static bool dir_init_shader(const char *path_dir_shader,
 
    return true;
 }
+#endif
 
 /* check functions */
 
@@ -11591,12 +11593,11 @@ static bool libretro_get_system_info(const char *path,
 #ifdef HAVE_DYNAMIC
    dylib_t lib;
 #endif
-
-   dummy_info.library_name     = NULL;
-   dummy_info.library_version  = NULL;
-   dummy_info.valid_extensions = NULL;
-   dummy_info.need_fullpath    = false;
-   dummy_info.block_extract    = false;
+   dummy_info.library_name      = NULL;
+   dummy_info.library_version   = NULL;
+   dummy_info.valid_extensions  = NULL;
+   dummy_info.need_fullpath     = false;
+   dummy_info.block_extract     = false;
 
 #ifdef HAVE_DYNAMIC
    lib                         = libretro_get_system_info_lib(
@@ -11613,7 +11614,10 @@ static bool libretro_get_system_info(const char *path,
 #else
    if (load_no_content)
    {
-      load_no_content_hook = load_no_content;
+      struct rarch_state *p_rarch  = &rarch_st;
+      bool ignore_environment_cb   = p_rarch->ignore_environment_cb;
+
+      load_no_content_hook         = load_no_content;
 
       /* load_no_content gets set in this callback. */
       retro_set_environment(environ_cb_get_system_info);
@@ -11972,6 +11976,7 @@ static bool secondary_core_ensure_exists(void)
    return true;
 }
 
+#if defined(HAVE_RUNAHEAD) && defined(HAVE_DYNAMIC)
 static bool secondary_core_deserialize(const void *buffer, int size)
 {
    if (secondary_core_ensure_exists())
@@ -11979,6 +11984,7 @@ static bool secondary_core_deserialize(const void *buffer, int size)
    secondary_core_destroy();
    return false;
 }
+#endif
 
 static void remember_controller_port_device(long port, long device)
 {
@@ -12295,7 +12301,6 @@ static bool secondary_core_run_use_last_input(void)
    return true;
 }
 #else
-static bool secondary_core_deserialize(const void *buffer, int size) { return false; }
 static void secondary_core_destroy(void) { }
 static void remember_controller_port_device(long port, long device) { }
 static void clear_controller_port_map(void) { }
@@ -21764,8 +21769,6 @@ static bool video_driver_init_internal(bool *video_is_threaded)
    settings_t *settings                   = configuration_settings;
    struct retro_game_geometry *geom       = &video_driver_av_info.geometry;
    const char *path_softfilter_plugin     = settings->paths.path_softfilter_plugin;
-   char *config_file_directory            = NULL;
-   bool dir_list_is_free                  = true;
    struct rarch_state            *p_rarch = &rarch_st;
    const enum retro_pixel_format 
       video_driver_pix_fmt                = p_rarch->video_driver_pix_fmt;
@@ -21972,27 +21975,36 @@ static bool video_driver_init_internal(bool *video_is_threaded)
    dir_free_shader();
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-   if (!string_is_empty(settings->paths.directory_video_shader))
-      dir_list_is_free = !dir_init_shader(
-            settings->paths.directory_video_shader,
-            settings->bools.show_hidden_files);
-
-   if (dir_list_is_free && !string_is_empty(settings->paths.directory_menu_config))
-      dir_list_is_free = !dir_init_shader(
-            settings->paths.directory_menu_config,
-            settings->bools.show_hidden_files);
-
-   if (dir_list_is_free && !path_is_empty(RARCH_PATH_CONFIG))
    {
-      config_file_directory = strdup(path_get(RARCH_PATH_CONFIG));
-      path_basedir(config_file_directory);
+      bool dir_list_is_free              = true;
+      bool show_hidden_files             = settings->bools.show_hidden_files;
+      const char *directory_video_shader = settings->paths.directory_video_shader;
+      const char *directory_menu_config  = settings->paths.directory_menu_config;
 
-      if (config_file_directory)
+      if (!string_is_empty(directory_video_shader))
+         dir_list_is_free = !dir_init_shader(
+               directory_video_shader,
+               show_hidden_files);
+
+      if (dir_list_is_free && 
+            !string_is_empty(directory_menu_config))
+         dir_list_is_free = !dir_init_shader(
+               directory_menu_config,
+               show_hidden_files);
+
+      if (dir_list_is_free && 
+            !path_is_empty(RARCH_PATH_CONFIG))
       {
-         dir_init_shader(
-               config_file_directory,
-               settings->bools.show_hidden_files);
-         free(config_file_directory);
+         char *config_file_directory = strdup(path_get(RARCH_PATH_CONFIG));
+         path_basedir(config_file_directory);
+
+         if (config_file_directory)
+         {
+            dir_init_shader(
+                  config_file_directory,
+                  settings->bools.show_hidden_files);
+            free(config_file_directory);
+         }
       }
    }
 #endif
@@ -24674,11 +24686,10 @@ static void drivers_init(int flags)
 {
    bool video_is_threaded      = video_driver_is_threaded_internal();
    settings_t *settings        = configuration_settings;
-   bool menu_enable_widgets    = settings->bools.menu_enable_widgets;
    struct rarch_state *p_rarch = &rarch_st;
-   bool rarch_force_fullscreen = p_rarch->rarch_force_fullscreen;
-
 #if defined(HAVE_GFX_WIDGETS)
+   bool menu_enable_widgets    = settings->bools.menu_enable_widgets;
+
    /* By default, we want display widgets to persist through driver reinits. */
    gfx_widgets_set_persistence(true);
 #endif
@@ -24767,7 +24778,8 @@ static void drivers_init(int flags)
 #if defined(HAVE_GFX_WIDGETS)
    if (menu_enable_widgets && video_driver_has_widgets())
    {
-      bool video_is_fullscreen = settings->bools.video_fullscreen ||
+      bool rarch_force_fullscreen = p_rarch->rarch_force_fullscreen;
+      bool video_is_fullscreen    = settings->bools.video_fullscreen ||
             rarch_force_fullscreen;
 
       gfx_widgets_init(video_is_threaded,
@@ -28380,7 +28392,6 @@ static enum runloop_state runloop_check_state(retro_time_t current_time)
 #if defined(HAVE_GFX_WIDGETS)
    bool widgets_active                 = gfx_widgets_active();
 #endif
-   bool rarch_force_fullscreen         = p_rarch->rarch_force_fullscreen;
 
 #if defined(HAVE_TRANSLATE) && defined(HAVE_GFX_WIDGETS)
    if (gfx_widgets_ai_service_overlay_get_state() == 3)
@@ -28690,7 +28701,8 @@ static enum runloop_state runloop_check_state(retro_time_t current_time)
 #if defined(HAVE_GFX_WIDGETS)
    if (widgets_active)
    {
-      bool video_is_fullscreen = settings->bools.video_fullscreen ||
+      bool rarch_force_fullscreen = p_rarch->rarch_force_fullscreen;
+      bool video_is_fullscreen    = settings->bools.video_fullscreen ||
             rarch_force_fullscreen;
 
       runloop_msg_queue_lock();

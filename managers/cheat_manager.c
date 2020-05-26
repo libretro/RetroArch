@@ -1375,7 +1375,9 @@ void cheat_manager_apply_retro_cheats(void)
    unsigned int bits           = 8;
    unsigned int curr_val       = 0;
    bool run_cheat              = true;
+#ifdef HAVE_CHEEVOS
    bool cheat_applied          = false;
+#endif
    cheat_manager_t   *cheat_st = &cheat_manager_state;
 
    if ((!cheat_st->cheats))
@@ -1466,7 +1468,9 @@ void cheat_manager_apply_retro_cheats(void)
 
       if (set_value)
       {
+#ifdef HAVE_CHEEVOS
          cheat_applied = true;
+#endif
          for (repeat_iter = 1; repeat_iter <= cheat_st->cheats[i].repeat_count; repeat_iter++)
          {
             switch (bytes_per_item)

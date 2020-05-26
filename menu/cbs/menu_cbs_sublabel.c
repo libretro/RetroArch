@@ -1080,7 +1080,9 @@ static int action_bind_sublabel_playlist_entry(
 {
    playlist_t *playlist                      = NULL;
    const struct playlist_entry *entry        = NULL;
+#ifdef HAVE_OZONE
    const char *menu_ident                    = menu_driver_ident();
+#endif
    settings_t *settings                      = config_get_ptr();
    bool playlist_show_sublabels              = settings->bools.playlist_show_sublabels;
    unsigned playlist_sublabel_runtime_type   = settings->uints.playlist_sublabel_runtime_type;

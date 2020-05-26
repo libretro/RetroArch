@@ -210,11 +210,11 @@ enum menu_driver_id_type gfx_display_get_driver_id(void)
 static float gfx_display_get_adjusted_scale_internal(
       float base_scale, float scale_factor, unsigned width)
 {
-   gfx_display_t *p_disp  = disp_get_ptr();
    /* Apply user-set scaling factor */
    float adjusted_scale   = base_scale * scale_factor;
-
 #ifdef HAVE_OZONE
+   gfx_display_t *p_disp  = disp_get_ptr();
+
    /* Ozone has a capped scale factor */
    if (p_disp->menu_driver_id == MENU_DRIVER_ID_OZONE)
    {
