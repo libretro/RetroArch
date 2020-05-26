@@ -6425,6 +6425,8 @@ static bool event_init_content(void)
 
    content_get_status(&contentless, &is_inited);
 
+   /* TODO/FIXME - just because we have a contentless core does not
+    * necessarily mean there should be no SRAM, try to find a solution here */
    rarch_use_sram   = (current_core_type == CORE_TYPE_PLAIN)
       && !contentless;
 
@@ -10241,7 +10243,8 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
       case RETRO_ENVIRONMENT_SET_VARIABLES:
          RARCH_LOG("[Environ]: SET_VARIABLES.\n");
 
-         retroarch_deinit_core_options();
+         if (runloop_core_options)
+            retroarch_deinit_core_options();
          retroarch_init_core_variables((const struct retro_variable *)data);
 
          break;
@@ -10249,7 +10252,8 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
       case RETRO_ENVIRONMENT_SET_CORE_OPTIONS:
          RARCH_LOG("[Environ]: SET_CORE_OPTIONS.\n");
 
-         retroarch_deinit_core_options();
+         if (runloop_core_options)
+            retroarch_deinit_core_options();
          rarch_init_core_options(
                (const struct retro_core_option_definition*)data);
 
@@ -10258,7 +10262,8 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
       case RETRO_ENVIRONMENT_SET_CORE_OPTIONS_INTL:
          RARCH_LOG("[Environ]: RETRO_ENVIRONMENT_SET_CORE_OPTIONS_INTL.\n");
 
-         retroarch_deinit_core_options();
+         if (runloop_core_options)
+            retroarch_deinit_core_options();
          retroarch_core_options_intl_init((const struct 
                   retro_core_options_intl *)data);
 
@@ -11629,7 +11634,8 @@ static void uninit_libretro_symbols(struct retro_core_t *current_core)
 
    core_set_shared_context = false;
 
-   retroarch_deinit_core_options();
+   if (runloop_core_options)
+      retroarch_deinit_core_options();
    retroarch_system_info_free();
    retroarch_frame_time_free();
    camera_driver_active      = false;
@@ -27304,9 +27310,6 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
 
 static void retroarch_deinit_core_options(void)
 {
-   if (!runloop_core_options)
-      return;
-
    /* Check whether game-specific options file is being used */
    if (!path_is_empty(RARCH_PATH_CORE_OPTIONS))
    {
@@ -27472,7 +27475,6 @@ static bool retroarch_load_shader_preset(void)
    const char *rarch_path_basename    = path_get(RARCH_PATH_BASENAME);
 
    const char *game_name              = path_basename(rarch_path_basename);
-   char *content_dir_name             = NULL;
    char *config_file_directory        = NULL;
    char *old_presets_directory        = NULL;
    bool auto_shaders_enable           = settings->bools.auto_shaders_enable;
@@ -27481,13 +27483,9 @@ static bool retroarch_load_shader_preset(void)
    size_t i                           = 0;
 
    bool ret                           = false;
-
-   if (!auto_shaders_enable)
-      return false;
-
-   content_dir_name = (char*)malloc(PATH_MAX_LENGTH);
+   char *content_dir_name             = (char*)malloc(PATH_MAX_LENGTH);
    if (!content_dir_name)
-      goto end;
+      return false;
 
    config_file_directory = (char*)malloc(PATH_MAX_LENGTH);
    if (!config_file_directory)
@@ -27579,6 +27577,8 @@ const char* retroarch_get_shader_preset(void)
    const char *core_name       = runloop_system.info.library_name;
    bool video_shader_enable    = settings->bools.video_shader_enable;
    unsigned video_shader_delay = settings->uints.video_shader_delay;
+   bool auto_shaders_enable    = settings->bools.auto_shaders_enable;
+
 
    if (!video_shader_enable)
       return NULL;
@@ -27600,7 +27600,8 @@ const char* retroarch_get_shader_preset(void)
       if (video_shader_is_supported(video_shader_parse_type(cli_shader)))
          strlcpy(runtime_shader_preset, cli_shader, sizeof(runtime_shader_preset));
       else
-         retroarch_load_shader_preset(); /* sets runtime_shader_preset */
+         if (auto_shaders_enable)
+            retroarch_load_shader_preset(); /* sets runtime_shader_preset */
       return runtime_shader_preset;
    }
 #endif
@@ -28236,9 +28237,11 @@ static enum runloop_state runloop_check_state(retro_time_t current_time)
    if (settings->bools.input_overlay_enable)
    {
       static char prev_overlay_restore = false;
-      bool check_next_rotation         = true;
       static unsigned last_width       = 0;
       static unsigned last_height      = 0;
+      bool check_next_rotation         = true;
+      bool input_overlay_hide_in_menu  = settings->bools.input_overlay_hide_in_menu;
+      bool input_overlay_auto_rotate   = settings->bools.input_overlay_auto_rotate;
 
       /* Check next overlay */
       HOTKEY_CHECK(RARCH_OVERLAY_NEXT, CMD_EVENT_OVERLAY_NEXT, true, &check_next_rotation);
@@ -28248,14 +28251,14 @@ static enum runloop_state runloop_check_state(retro_time_t current_time)
          prev_overlay_restore = true;
       else if (prev_overlay_restore)
       {
-         if (!settings->bools.input_overlay_hide_in_menu)
+         if (!input_overlay_hide_in_menu)
             retroarch_overlay_init();
          prev_overlay_restore = false;
       }
 
       /* If video aspect ratio has changed, check overlay
        * rotation (if required) */
-      if (settings->bools.input_overlay_auto_rotate)
+      if (input_overlay_auto_rotate)
       {
          if ((video_driver_width  != last_width) ||
              (video_driver_height != last_height))
@@ -28270,7 +28273,7 @@ static enum runloop_state runloop_check_state(retro_time_t current_time)
 
    /* Check quit key */
    {
-      bool trig_quit_key;
+      bool trig_quit_key, quit_press_twice;
       static bool quit_key     = false;
       static bool old_quit_key = false;
       static bool runloop_exec = false;
@@ -28278,14 +28281,15 @@ static enum runloop_state runloop_check_state(retro_time_t current_time)
             current_bits, RARCH_QUIT_KEY);
       trig_quit_key            = quit_key && !old_quit_key;
       old_quit_key             = quit_key;
+      quit_press_twice         = settings->bools.quit_press_twice;
 
       /* Check double press if enabled */
-      if (trig_quit_key && settings->bools.quit_press_twice)
+      if (trig_quit_key && quit_press_twice)
       {
          static retro_time_t quit_key_time   = 0;
-         retro_time_t cur_time = current_time;
-         trig_quit_key         = (cur_time - quit_key_time < QUIT_DELAY_USEC);
-         quit_key_time         = cur_time;
+         retro_time_t cur_time               = current_time;
+         trig_quit_key                       = (cur_time - quit_key_time < QUIT_DELAY_USEC);
+         quit_key_time                       = cur_time;
 
          if (!trig_quit_key)
          {
@@ -29141,9 +29145,10 @@ end:
    if (vrr_runloop_enable)
    {
       struct retro_system_av_info *av_info = &video_driver_av_info;
+      bool audio_sync                      = settings->bools.audio_sync;
 
       /* Sync on video only, block audio later. */
-      if (fastforward_after_frames && settings->bools.audio_sync)
+      if (fastforward_after_frames && audio_sync)
       {
          if (fastforward_after_frames == 1)
          {
@@ -29161,7 +29166,7 @@ end:
             if (audio_driver_active && audio_driver_context_audio_data)
                current_audio->set_nonblock_state(
                      audio_driver_context_audio_data,
-                     settings->bools.audio_sync ? false : true);
+                     audio_sync ? false : true);
             audio_driver_chunk_size = audio_driver_chunk_block_size;
             fastforward_after_frames = 0;
          }
@@ -29760,12 +29765,14 @@ bool accessibility_speak_priority(const char* speak_text, int priority)
 
    if (is_accessibility_enabled())
    {
-      int speed                       = 
-         configuration_settings->uints.accessibility_narrator_speech_speed;
       frontend_ctx_driver_t *frontend = frontend_get_ptr();
       if (frontend && frontend->accessibility_speak)
+      {
+         int speed                       = 
+            configuration_settings->uints.accessibility_narrator_speech_speed;
          return frontend->accessibility_speak(speed, speak_text,
                priority);
+      }
 
       RARCH_LOG("Platform not supported for accessibility.\n");
       /* The following method is a fallback for other platforms to use the
