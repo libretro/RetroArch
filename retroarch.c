@@ -12315,7 +12315,9 @@ bool ui_companion_is_on_foreground(void)
 
 void ui_companion_event_command(enum event_command action)
 {
+#ifdef HAVE_QT
    struct rarch_state     *p_rarch = &rarch_st;
+#endif
    const ui_companion_driver_t *ui = ui_companion;
 
    if (ui && ui->event_command)
@@ -27554,7 +27556,6 @@ static bool retroarch_load_shader_preset(void)
    const char *game_name              = path_basename(rarch_path_basename);
    char *config_file_directory        = NULL;
    char *old_presets_directory        = NULL;
-   bool auto_shaders_enable           = settings->bools.auto_shaders_enable;
 
    const char *dirs[3]                = {0};
    size_t i                           = 0;
