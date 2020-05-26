@@ -1146,7 +1146,7 @@ static const camera_driver_t *camera_drivers[] = {
  * d) Video driver no longer alive.
  * e) End of BSV movie and BSV EOF exit is true. (TODO/FIXME - explain better)
  */
-#define TIME_TO_EXIT(quit_key_pressed) (runloop_shutdown_initiated || quit_key_pressed || !is_alive || BSV_MOVIE_IS_EOF() || ((runloop_max_frames != 0) && (frame_count >= runloop_max_frames)) || runloop_exec)
+#define TIME_TO_EXIT(quit_key_pressed) (p_rarch->runloop_shutdown_initiated || quit_key_pressed || !is_alive || BSV_MOVIE_IS_EOF() || ((runloop_max_frames != 0) && (frame_count >= runloop_max_frames)) || runloop_exec)
 
 /* Depends on ASCII character values */
 #define ISPRINT(c) (((int)(c) >= ' ' && (int)(c) <= '~') ? 1 : 0)
@@ -1691,6 +1691,21 @@ struct rarch_state
    bool rarch_is_switching_display_mode;
    bool rarch_is_sram_load_disabled;
    bool rarch_is_sram_save_disabled;
+   bool rarch_use_sram;
+   bool rarch_ups_pref;
+   bool rarch_bps_pref;
+   bool rarch_ips_pref;
+   bool rarch_patch_blocked;
+   bool runloop_missing_bios;
+   bool runloop_force_nonblock;
+   bool runloop_paused;
+   bool runloop_idle;
+   bool runloop_slowmotion;
+   bool runloop_fastmotion;
+   bool runloop_shutdown_initiated;
+   bool runloop_core_shutdown_initiated;
+   bool runloop_core_running;
+   bool runloop_perfcnt_enable;
 };
 
 
@@ -1723,21 +1738,6 @@ static retro_usec_t runloop_frame_time_last                     = 0;
 /* TODO/FIXME - static public global variable */
 bool discord_is_inited                                          = false;
 #endif
-static bool rarch_use_sram                                      = false;
-static bool rarch_ups_pref                                      = false;
-static bool rarch_bps_pref                                      = false;
-static bool rarch_ips_pref                                      = false;
-static bool rarch_patch_blocked                                 = false;
-static bool runloop_missing_bios                                = false;
-static bool runloop_force_nonblock                              = false;
-static bool runloop_paused                                      = false;
-static bool runloop_idle                                        = false;
-static bool runloop_slowmotion                                  = false;
-static bool runloop_fastmotion                                  = false;
-static bool runloop_shutdown_initiated                          = false;
-static bool runloop_core_shutdown_initiated                     = false;
-static bool runloop_core_running                                = false;
-static bool runloop_perfcnt_enable                              = false;
 #ifdef HAVE_CONFIGFILE
 static bool rarch_block_config_read                             = false;
 static bool runloop_overrides_active                            = false;
@@ -1748,9 +1748,6 @@ static bool runloop_remaps_content_dir_active                   = false;
 static bool runloop_game_options_active                         = false;
 static bool runloop_autosave                                    = false;
 static bool runloop_max_frames_screenshot                       = false;
-#ifdef HAVE_RUNAHEAD
-static bool has_variable_update                                 = false;
-#endif
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 static bool shader_presets_need_reload                          = true;
 static bool cli_shader_disable                                  = false;
@@ -1802,6 +1799,7 @@ static bool audio_driver_active                                 = false;
 static bool audio_suspended                                     = false;
 
 #ifdef HAVE_RUNAHEAD
+static bool has_variable_update                                 = false;
 static bool runahead_save_state_size_known                      = false;
 static bool request_fast_savestate                              = false;
 static bool hard_disable_audio                                  = false;
@@ -3129,12 +3127,12 @@ static bool path_init_subsystem(void)
 static void path_init_savefile(void)
 {
    struct rarch_state *p_rarch = &rarch_st;
-   bool    should_sram_be_used = rarch_use_sram
+   bool    should_sram_be_used = p_rarch->rarch_use_sram
       && !p_rarch->rarch_is_sram_save_disabled;
 
-   rarch_use_sram    = should_sram_be_used;
+   p_rarch->rarch_use_sram     = should_sram_be_used;
 
-   if (!rarch_use_sram)
+   if (!p_rarch->rarch_use_sram)
    {
       RARCH_LOG("%s\n",
             msg_hash_to_str(MSG_SRAM_WILL_NOT_BE_SAVED));
@@ -4138,7 +4136,8 @@ static void retroarch_msg_queue_init(void)
 #ifdef HAVE_THREADS
 static void retroarch_autosave_deinit(void)
 {
-   if (rarch_use_sram)
+   struct rarch_state *p_rarch = &rarch_st;
+   if (p_rarch->rarch_use_sram)
       autosave_deinit();
 }
 #endif
@@ -4186,9 +4185,10 @@ static bool command_version(const char* arg)
 
 static bool command_get_status(const char* arg)
 {
-   char reply[4096] = {0};
-   bool contentless = false;
-   bool is_inited   = false;
+   char reply[4096]            = {0};
+   bool contentless            = false;
+   bool is_inited              = false;
+   struct rarch_state *p_rarch = &rarch_st;
 
    content_get_status(&contentless, &is_inited);
     
@@ -4205,7 +4205,7 @@ static bool command_get_status(const char* arg)
 
        core_info_get_current_core(&core_info);
 
-       if (runloop_paused)
+       if (p_rarch->runloop_paused)
           status                = "PAUSED";
        if (core_info)
           system_id             = core_info->system_id;
@@ -4823,7 +4823,8 @@ error:
 #ifdef HAVE_TRANSLATE
 static bool task_auto_translate_callback(void)
 {
-   bool was_paused                   = runloop_paused;
+   struct rarch_state       *p_rarch = &rarch_st;
+   bool was_paused                   = p_rarch->runloop_paused;
    command_event(CMD_EVENT_AI_SERVICE_CALL, &was_paused);
    return true;
 }
@@ -4946,8 +4947,8 @@ static void handle_translation_cb(
    char* key_string                  = NULL;
    int curr_state                    = 0;
    settings_t* settings              = configuration_settings;
-   bool was_paused                   = runloop_paused;
    struct rarch_state *p_rarch       = &rarch_st;
+   bool was_paused                   = p_rarch->runloop_paused;
    const enum retro_pixel_format 
       video_driver_pix_fmt           = p_rarch->video_driver_pix_fmt;
 
@@ -6426,7 +6427,7 @@ static bool event_init_content(void)
 
    /* TODO/FIXME - just because we have a contentless core does not
     * necessarily mean there should be no SRAM, try to find a solution here */
-   rarch_use_sram   = (current_core_type == CORE_TYPE_PLAIN)
+   p_rarch->rarch_use_sram   = (current_core_type == CORE_TYPE_PLAIN)
       && !contentless;
 
    /* No content to be loaded for dummy core,
@@ -6443,7 +6444,7 @@ static bool event_init_content(void)
 
    if (!content_init())
    {
-      runloop_core_running = false;
+      p_rarch->runloop_core_running = false;
       return false;
    }
 
@@ -7110,8 +7111,10 @@ static void retroarch_pause_checks(void)
 #ifdef HAVE_DISCORD
    discord_userdata_t userdata;
 #endif
-   bool is_paused            = runloop_paused;
-   bool is_idle              = runloop_idle;
+   struct rarch_state
+      *p_rarch               = &rarch_st;
+   bool is_paused            = p_rarch->runloop_paused;
+   bool is_idle              = p_rarch->runloop_idle;
 #if defined(HAVE_GFX_WIDGETS)
    bool widgets_active       = gfx_widgets_active();
 
@@ -7228,7 +7231,7 @@ bool command_event(enum event_command cmd, void *data)
    switch (cmd)
    {
       case CMD_EVENT_SAVE_FILES:
-         event_save_files(rarch_use_sram);
+         event_save_files(p_rarch->rarch_use_sram);
          break;
       case CMD_EVENT_OVERLAY_DEINIT:
 #ifdef HAVE_OVERLAY
@@ -7284,7 +7287,7 @@ bool command_event(enum event_command cmd, void *data)
          else if (ai_service_pause)
          {
             /* pause on call, unpause on second press. */
-            if (!runloop_paused)
+            if (!p_rarch->runloop_paused)
             {
                command_event(CMD_EVENT_PAUSE, NULL);
                command_event(CMD_EVENT_AI_SERVICE_CALL, NULL);
@@ -7515,7 +7518,7 @@ bool command_event(enum event_command cmd, void *data)
 
             content_get_status(&contentless, &is_inited);
 
-            runloop_core_running            = false;
+            p_rarch->runloop_core_running   = false;
 
             /* Save last selected disk index, if required */
             if (sys_info)
@@ -7658,7 +7661,7 @@ bool command_event(enum event_command cmd, void *data)
             return false;
          break;
       case CMD_EVENT_AUDIO_START:
-         if (!audio_driver_start(runloop_shutdown_initiated))
+         if (!audio_driver_start(p_rarch->runloop_shutdown_initiated))
             return false;
          break;
       case CMD_EVENT_AUDIO_MUTE_TOGGLE:
@@ -8104,7 +8107,7 @@ bool command_event(enum event_command cmd, void *data)
          ui_companion_event_command(cmd);
          break;
       case CMD_EVENT_PAUSE_TOGGLE:
-         boolean        = runloop_paused;
+         boolean        = p_rarch->runloop_paused;
          boolean        = !boolean;
 
 #ifdef HAVE_ACCESSIBILITY
@@ -8117,17 +8120,17 @@ bool command_event(enum event_command cmd, void *data)
          }
 #endif
 
-         runloop_paused = boolean;
+         p_rarch->runloop_paused = boolean;
          retroarch_pause_checks();
          break;
       case CMD_EVENT_UNPAUSE:
-         boolean        = false;
-         runloop_paused = boolean;
+         boolean                 = false;
+         p_rarch->runloop_paused = boolean;
          retroarch_pause_checks();
          break;
       case CMD_EVENT_PAUSE:
-         boolean        = true;
-         runloop_paused = boolean;
+         boolean                 = true;
+         p_rarch->runloop_paused = boolean;
          retroarch_pause_checks();
          break;
       case CMD_EVENT_MENU_PAUSE_LIBRETRO:
@@ -8633,7 +8636,7 @@ bool command_event(enum event_command cmd, void *data)
 #endif
          else
          {
-            bool paused = runloop_paused;
+            bool paused = p_rarch->runloop_paused;
             if (data!=NULL)
                paused = *((bool*)data);
 
@@ -8819,11 +8822,11 @@ static void global_free(void)
 
    p_rarch->rarch_is_sram_load_disabled  = false;
    p_rarch->rarch_is_sram_save_disabled  = false;
-   rarch_use_sram                        = false;
+   p_rarch->rarch_use_sram               = false;
    rarch_ctl(RARCH_CTL_UNSET_BPS_PREF, NULL);
    rarch_ctl(RARCH_CTL_UNSET_IPS_PREF, NULL);
    rarch_ctl(RARCH_CTL_UNSET_UPS_PREF, NULL);
-   rarch_patch_blocked                   = false;
+   p_rarch->rarch_patch_blocked          = false;
 #ifdef HAVE_CONFIGFILE
    rarch_block_config_read               = false;
    runloop_overrides_active              = false;
@@ -8885,7 +8888,7 @@ void main_exit(void *args)
 #endif
    rarch_ctl(RARCH_CTL_MAIN_DEINIT, NULL);
 
-   if (runloop_perfcnt_enable)
+   if (p_rarch->runloop_perfcnt_enable)
       rarch_perf_log();
 
 #if defined(HAVE_LOGGER) && !defined(ANDROID)
@@ -10024,7 +10027,8 @@ static void rarch_log_libretro(enum retro_log_level level,
 
 static void core_performance_counter_start(struct retro_perf_counter *perf)
 {
-   if (runloop_perfcnt_enable)
+   struct rarch_state *p_rarch = &rarch_st;
+   if (p_rarch->runloop_perfcnt_enable)
    {
       perf->call_cnt++;
       perf->start      = cpu_features_get_perf_counter();
@@ -10033,7 +10037,8 @@ static void core_performance_counter_start(struct retro_perf_counter *perf)
 
 static void core_performance_counter_stop(struct retro_perf_counter *perf)
 {
-   if (runloop_perfcnt_enable)
+   struct rarch_state *p_rarch = &rarch_st;
+   if (p_rarch->runloop_perfcnt_enable)
       perf->total += cpu_features_get_perf_counter() - perf->start;
 }
 
@@ -10335,8 +10340,8 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
           * been cleared (causing log to be skipped) */
          command_event_runtime_log_deinit();
 
-         runloop_shutdown_initiated      = true;
-         runloop_core_shutdown_initiated = true;
+         p_rarch->runloop_shutdown_initiated      = true;
+         p_rarch->runloop_core_shutdown_initiated = true;
          break;
 
       case RETRO_ENVIRONMENT_SET_PERFORMANCE_LEVEL:
@@ -11231,7 +11236,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
       }
 
       case RETRO_ENVIRONMENT_GET_FASTFORWARDING:
-         *(bool *)data = runloop_fastmotion;
+         *(bool *)data = p_rarch->runloop_fastmotion;
          break;
 
       case RETRO_ENVIRONMENT_GET_INPUT_BITMASKS:
@@ -19901,6 +19906,7 @@ static void audio_driver_flush(const int16_t *data, size_t samples,
  **/
 static void audio_driver_sample(int16_t left, int16_t right)
 {
+   struct rarch_state *p_rarch = &rarch_st;
    if (audio_suspended)
       return;
 
@@ -19920,12 +19926,13 @@ static void audio_driver_sample(int16_t left, int16_t right)
       recording_driver->push_audio(recording_data, &ffemu_data);
    }
 
-   if (!(runloop_paused                ||
+   if (!(p_rarch->runloop_paused  ||
 		   !audio_driver_active     ||
 		   !audio_driver_input_data ||
 		   !audio_driver_output_samples_buf))
       audio_driver_flush(audio_driver_output_samples_conv_buf,
-            audio_driver_data_ptr, runloop_slowmotion, runloop_fastmotion);
+            audio_driver_data_ptr, p_rarch->runloop_slowmotion,
+            p_rarch->runloop_fastmotion);
 
    audio_driver_data_ptr = 0;
 }
@@ -19938,8 +19945,9 @@ static void audio_driver_menu_sample(void)
    const struct retro_system_timing *info =
       (const struct retro_system_timing*)&av_info->timing;
    unsigned sample_count                  = (info->sample_rate / info->fps) * 2;
+   struct rarch_state            *p_rarch = &rarch_st;
    bool check_flush                       = !(
-         runloop_paused           ||
+         p_rarch->runloop_paused  ||
          !audio_driver_active     ||
          !audio_driver_input_data ||
          !audio_driver_output_samples_buf);
@@ -19956,7 +19964,9 @@ static void audio_driver_menu_sample(void)
          recording_driver->push_audio(recording_data, &ffemu_data);
       }
       if (check_flush)
-         audio_driver_flush(samples_buf, 1024, runloop_slowmotion, runloop_fastmotion);
+         audio_driver_flush(samples_buf, 1024,
+               p_rarch->runloop_slowmotion,
+               p_rarch->runloop_fastmotion);
       sample_count -= 1024;
    }
    if (recording_data && recording_driver && recording_driver->push_audio)
@@ -19969,7 +19979,9 @@ static void audio_driver_menu_sample(void)
       recording_driver->push_audio(recording_data, &ffemu_data);
    }
    if (check_flush)
-      audio_driver_flush(samples_buf, sample_count, runloop_slowmotion, runloop_fastmotion);
+      audio_driver_flush(samples_buf, sample_count,
+            p_rarch->runloop_slowmotion,
+            p_rarch->runloop_fastmotion);
 }
 #endif
 
@@ -19985,6 +19997,7 @@ static void audio_driver_menu_sample(void)
  **/
 static size_t audio_driver_sample_batch(const int16_t *data, size_t frames)
 {
+   struct rarch_state            *p_rarch = &rarch_st;
    if (frames > (AUDIO_CHUNK_SIZE_NONBLOCKING >> 1))
       frames = AUDIO_CHUNK_SIZE_NONBLOCKING >> 1;
 
@@ -20002,11 +20015,13 @@ static size_t audio_driver_sample_batch(const int16_t *data, size_t frames)
    }
 
    if (!(
-         runloop_paused           ||
+         p_rarch->runloop_paused  ||
          !audio_driver_active     ||
          !audio_driver_input_data ||
          !audio_driver_output_samples_buf))
-      audio_driver_flush(data, frames << 1, runloop_slowmotion, runloop_fastmotion);
+      audio_driver_flush(data, frames << 1,
+            p_rarch->runloop_slowmotion,
+            p_rarch->runloop_fastmotion);
 
    return frames;
 }
@@ -20791,6 +20806,7 @@ static bool audio_driver_stop(void)
 
 void audio_driver_frame_is_reverse(void)
 {
+   struct rarch_state            *p_rarch = &rarch_st;
    /* We just rewound. Flush rewind audio buffer. */
    if (recording_data && recording_driver && recording_driver->push_audio)
    {
@@ -20803,14 +20819,15 @@ void audio_driver_frame_is_reverse(void)
    }
 
    if (!(
-         runloop_paused           ||
+         p_rarch->runloop_paused  ||
          !audio_driver_active     ||
          !audio_driver_input_data ||
          !audio_driver_output_samples_buf))
       audio_driver_flush(
             audio_driver_rewind_buf + audio_driver_rewind_ptr,
             audio_driver_rewind_size - audio_driver_rewind_ptr,
-            runloop_slowmotion, runloop_fastmotion);
+            p_rarch->runloop_slowmotion,
+            p_rarch->runloop_fastmotion);
 }
 
 void audio_set_float(enum audio_action action, float val)
@@ -21654,7 +21671,8 @@ static bool video_driver_init_internal(bool *video_is_threaded)
    video.width         = width;
    video.height        = height;
    video.fullscreen    = settings->bools.video_fullscreen || retroarch_is_forced_fullscreen();
-   video.vsync         = settings->bools.video_vsync && !runloop_force_nonblock;
+   video.vsync         = settings->bools.video_vsync && 
+      !p_rarch->runloop_force_nonblock;
    video.force_aspect  = settings->bools.video_force_aspect;
    video.font_enable   = settings->bools.video_font_enable;
    video.swap_interval  = settings->uints.video_swap_interval;
@@ -22082,6 +22100,7 @@ void video_driver_cached_frame(void)
 
 static void video_driver_monitor_adjust_system_rates(void)
 {
+   struct rarch_state            *p_rarch = &rarch_st;
    float timing_skew                      = 0.0f;
    settings_t *settings                   = configuration_settings;
    const struct retro_system_timing *info = (const struct retro_system_timing*)&video_driver_av_info.timing;
@@ -22117,7 +22136,7 @@ static void video_driver_monitor_adjust_system_rates(void)
       return;
 
    /* We won't be able to do VSync reliably when game FPS > monitor FPS. */
-   runloop_force_nonblock = true;
+   p_rarch->runloop_force_nonblock = true;
    RARCH_LOG("[Video]: Game FPS > Monitor FPS. Cannot rely on VSync.\n");
 }
 
@@ -22879,7 +22898,7 @@ static void video_driver_frame(const void *data, unsigned width,
          ) && recording_data
            && recording_driver && recording_driver->push_video)
       recording_dump_frame(data, width, height,
-            pitch, runloop_idle);
+            pitch, p_rarch->runloop_idle);
 
    if (data && video_driver_state_filter)
    {
@@ -22900,7 +22919,7 @@ static void video_driver_frame(const void *data, unsigned width,
            && recording_driver && recording_driver->push_video)
          recording_dump_frame(video_driver_state_buffer,
                output_width, output_height, output_pitch,
-               runloop_idle);
+               p_rarch->runloop_idle);
 
       data   = video_driver_state_buffer;
       width  = output_width;
@@ -23159,6 +23178,7 @@ bool video_driver_texture_unload(uintptr_t *id)
 void video_driver_build_info(video_frame_info_t *video_info)
 {
    video_viewport_t *custom_vp       = NULL;
+   struct rarch_state       *p_rarch = &rarch_st;
    settings_t *settings              = configuration_settings;
 #ifdef HAVE_THREADS
    bool is_threaded                  = video_driver_is_threaded_internal();
@@ -23253,8 +23273,8 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->menu_wallpaper_opacity      = 0.0f;
 #endif
 
-   video_info->runloop_is_paused           = runloop_paused;
-   video_info->runloop_is_slowmotion       = runloop_slowmotion;
+   video_info->runloop_is_paused           = p_rarch->runloop_paused;
+   video_info->runloop_is_slowmotion       = p_rarch->runloop_slowmotion;
 
    video_info->input_driver_nonblock_state = input_driver_nonblock_state;
    video_info->context_data                = video_context_data;
@@ -24332,16 +24352,18 @@ static bool driver_find_next(const char *label, char *s, size_t len)
 
 static void driver_adjust_system_rates(void)
 {
+   struct rarch_state *p_rarch = &rarch_st;
+
    audio_driver_monitor_adjust_system_rates();
 
-   runloop_force_nonblock                 = false;
+   p_rarch->runloop_force_nonblock = false;
 
    video_driver_monitor_adjust_system_rates();
 
    if (!video_driver_get_ptr_internal(false))
       return;
 
-   if (runloop_force_nonblock)
+   if (p_rarch->runloop_force_nonblock)
    {
       settings_t *settings         = configuration_settings;
       bool video_adaptive_vsync    = settings->bools.video_adaptive_vsync;
@@ -24368,6 +24390,7 @@ static void driver_adjust_system_rates(void)
  **/
 void driver_set_nonblock_state(void)
 {
+   struct rarch_state *p_rarch = &rarch_st;
    bool                 enable = input_driver_nonblock_state;
    settings_t       *settings  = configuration_settings;
    bool audio_sync             = settings->bools.audio_sync;
@@ -24381,7 +24404,7 @@ void driver_set_nonblock_state(void)
       if (current_video->set_nonblock_state)
       {
          bool video_nonblock        = enable;
-         if (!video_vsync || runloop_force_nonblock)
+         if (!video_vsync || p_rarch->runloop_force_nonblock)
             video_nonblock = true;
          current_video->set_nonblock_state(video_driver_data, video_nonblock,
                video_driver_test_all_flags(GFX_CTX_FLAGS_ADAPTIVE_VSYNC) &&
@@ -25443,11 +25466,12 @@ force_input_dirty:
 
 static retro_time_t rarch_core_runtime_tick(retro_time_t current_time)
 {
+   struct rarch_state          *p_rarch = &rarch_st;
    retro_time_t frame_time              =
       (1.0 / video_driver_av_info.timing.fps) * 1000000;
 
    /* Account for slow motion */
-   if (runloop_slowmotion)
+   if (p_rarch->runloop_slowmotion)
    {
       settings_t *settings       = configuration_settings;
       float slowmotion_ratio     = settings->floats.slowmotion_ratio;
@@ -25455,7 +25479,7 @@ static retro_time_t rarch_core_runtime_tick(retro_time_t current_time)
    }
 
    /* Account for fast forward */
-   if (runloop_fastmotion)
+   if (p_rarch->runloop_fastmotion)
    {
       /* Doing it this way means we miss the first frame after
        * turning fast forward on, but it saves the overhead of
@@ -26185,26 +26209,26 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
             case RA_OPT_BPS:
                strlcpy(global->name.bps, optarg,
                      sizeof(global->name.bps));
-               rarch_bps_pref = true;
+               p_rarch->rarch_bps_pref = true;
                retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_BPS_PREF, NULL);
                break;
 
             case 'U':
                strlcpy(global->name.ups, optarg,
                      sizeof(global->name.ups));
-               rarch_ups_pref = true;
+               p_rarch->rarch_ups_pref = true;
                retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_UPS_PREF, NULL);
                break;
 
             case RA_OPT_IPS:
                strlcpy(global->name.ips, optarg,
                      sizeof(global->name.ips));
-               rarch_ips_pref = true;
+               p_rarch->rarch_ips_pref = true;
                retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_IPS_PREF, NULL);
                break;
 
             case RA_OPT_NO_PATCH:
-               rarch_patch_blocked = true;
+               p_rarch->rarch_patch_blocked = true;
                break;
 
             case 'D':
@@ -26721,6 +26745,7 @@ static void menu_driver_toggle(bool on)
     */
    retro_keyboard_event_t *key_event          = &runloop_key_event;
    retro_keyboard_event_t *frontend_key_event = &runloop_frontend_key_event;
+   struct rarch_state                *p_rarch = &rarch_st;
    settings_t                 *settings       = configuration_settings;
    bool pause_libretro                        = settings ?
       settings->bools.menu_pause_libretro : false;
@@ -26794,7 +26819,7 @@ static void menu_driver_toggle(bool on)
       IMDisableDim();
 #endif
 
-      if (!runloop_shutdown_initiated)
+      if (!p_rarch->runloop_shutdown_initiated)
          driver_set_nonblock_state();
 
       if (pause_libretro && !audio_enable_menu)
@@ -27091,25 +27116,25 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
       case RARCH_CTL_HAS_SET_SUBSYSTEMS:
          return (current_core.has_set_subsystems);
       case RARCH_CTL_CORE_IS_RUNNING:
-         return runloop_core_running;
+         return p_rarch->runloop_core_running;
       case RARCH_CTL_BSV_MOVIE_IS_INITED:
          return (bsv_movie_state_handle != NULL);
       case RARCH_CTL_IS_PATCH_BLOCKED:
-         return rarch_patch_blocked;
+         return p_rarch->rarch_patch_blocked;
       case RARCH_CTL_IS_BPS_PREF:
-         return rarch_bps_pref;
+         return p_rarch->rarch_bps_pref;
       case RARCH_CTL_UNSET_BPS_PREF:
-         rarch_bps_pref = false;
+         p_rarch->rarch_bps_pref = false;
          break;
       case RARCH_CTL_IS_UPS_PREF:
-         return rarch_ups_pref;
+         return p_rarch->rarch_ups_pref;
       case RARCH_CTL_UNSET_UPS_PREF:
-         rarch_ups_pref = false;
+         p_rarch->rarch_ups_pref = false;
          break;
       case RARCH_CTL_IS_IPS_PREF:
-         return rarch_ips_pref;
+         return p_rarch->rarch_ips_pref;
       case RARCH_CTL_UNSET_IPS_PREF:
-         rarch_ips_pref = false;
+         p_rarch->rarch_ips_pref = false;
          break;
       case RARCH_CTL_IS_DUMMY_CORE:
          return (p_rarch->current_core_type == CORE_TYPE_DUMMY);
@@ -27208,13 +27233,13 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          return runloop_remaps_content_dir_active;
 #endif
       case RARCH_CTL_SET_MISSING_BIOS:
-         runloop_missing_bios = true;
+         p_rarch->runloop_missing_bios = true;
          break;
       case RARCH_CTL_UNSET_MISSING_BIOS:
-         runloop_missing_bios = false;
+         p_rarch->runloop_missing_bios = false;
          break;
       case RARCH_CTL_IS_MISSING_BIOS:
-         return runloop_missing_bios;
+         return p_rarch->runloop_missing_bios;
       case RARCH_CTL_IS_GAME_OPTIONS_ACTIVE:
          return runloop_game_options_active;
       case RARCH_CTL_GET_PERFCNT:
@@ -27222,17 +27247,17 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
             bool **perfcnt = (bool**)data;
             if (!perfcnt)
                return false;
-            *perfcnt = &runloop_perfcnt_enable;
+            *perfcnt = &p_rarch->runloop_perfcnt_enable;
          }
          break;
       case RARCH_CTL_SET_PERFCNT_ENABLE:
-         runloop_perfcnt_enable = true;
+         p_rarch->runloop_perfcnt_enable = true;
          break;
       case RARCH_CTL_UNSET_PERFCNT_ENABLE:
-         runloop_perfcnt_enable = false;
+         p_rarch->runloop_perfcnt_enable = false;
          break;
       case RARCH_CTL_IS_PERFCNT_ENABLE:
-         return runloop_perfcnt_enable;
+         return p_rarch->runloop_perfcnt_enable;
       case RARCH_CTL_SET_WINDOWED_SCALE:
          {
             unsigned *idx = (unsigned*)data;
@@ -27242,10 +27267,10 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          }
          break;
       case RARCH_CTL_STATE_FREE:
-         runloop_perfcnt_enable            = false;
-         runloop_idle                      = false;
-         runloop_paused                    = false;
-         runloop_slowmotion                = false;
+         p_rarch->runloop_perfcnt_enable   = false;
+         p_rarch->runloop_idle             = false;
+         p_rarch->runloop_paused           = false;
+         p_rarch->runloop_slowmotion       = false;
 #ifdef HAVE_CONFIGFILE
          runloop_overrides_active          = false;
 #endif
@@ -27253,13 +27278,13 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          retroarch_frame_time_free();
          break;
       case RARCH_CTL_IS_IDLE:
-         return runloop_idle;
+         return p_rarch->runloop_idle;
       case RARCH_CTL_SET_IDLE:
          {
             bool *ptr = (bool*)data;
             if (!ptr)
                return false;
-            runloop_idle = *ptr;
+            p_rarch->runloop_idle = *ptr;
          }
          break;
       case RARCH_CTL_SET_PAUSED:
@@ -27267,13 +27292,13 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
             bool *ptr = (bool*)data;
             if (!ptr)
                return false;
-            runloop_paused = *ptr;
+            p_rarch->runloop_paused = *ptr;
          }
          break;
       case RARCH_CTL_IS_PAUSED:
-         return runloop_paused;
+         return p_rarch->runloop_paused;
       case RARCH_CTL_SET_SHUTDOWN:
-         runloop_shutdown_initiated = true;
+         p_rarch->runloop_shutdown_initiated = true;
          break;
       case RARCH_CTL_CORE_OPTION_PREV:
          /*
@@ -27810,6 +27835,7 @@ static void retroarch_fail(int error_code, const char *error)
 
 bool retroarch_main_quit(void)
 {
+   struct rarch_state *p_rarch = &rarch_st;
 #ifdef HAVE_DISCORD
    if (discord_is_inited)
    {
@@ -27822,7 +27848,7 @@ bool retroarch_main_quit(void)
    discord_is_inited          = false;
 #endif
 
-   if (!runloop_shutdown_initiated)
+   if (!p_rarch->runloop_shutdown_initiated)
    {
       command_event_save_auto_state();
 #ifdef HAVE_CONFIGFILE
@@ -27842,7 +27868,7 @@ bool retroarch_main_quit(void)
 #endif
    }
 
-   runloop_shutdown_initiated = true;
+   p_rarch->runloop_shutdown_initiated = true;
    retroarch_menu_running_finished(true);
 
    return true;
@@ -27897,10 +27923,11 @@ void runloop_msg_queue_push(const char *msg,
 void runloop_get_status(bool *is_paused, bool *is_idle,
       bool *is_slowmotion, bool *is_perfcnt_enable)
 {
-   *is_paused         = runloop_paused;
-   *is_idle           = runloop_idle;
-   *is_slowmotion     = runloop_slowmotion;
-   *is_perfcnt_enable = runloop_perfcnt_enable;
+   struct rarch_state *p_rarch = &rarch_st;
+   *is_paused                  = p_rarch->runloop_paused;
+   *is_idle                    = p_rarch->runloop_idle;
+   *is_slowmotion              = p_rarch->runloop_slowmotion;
+   *is_perfcnt_enable          = p_rarch->runloop_perfcnt_enable;
 }
 
 #ifdef HAVE_MENU
@@ -28012,6 +28039,7 @@ static bool menu_display_libretro_running(void)
 /* Display the libretro core's framebuffer onscreen. */
 static bool menu_display_libretro(retro_time_t current_time)
 {
+   struct rarch_state *p_rarch = &rarch_st;
    if (video_driver_poke && video_driver_poke->set_texture_enable)
       video_driver_poke->set_texture_enable(video_driver_data,
             true, false);
@@ -28028,7 +28056,7 @@ static bool menu_display_libretro(retro_time_t current_time)
       return true;
    }
 
-   if (runloop_idle)
+   if (p_rarch->runloop_idle)
    {
 #ifdef HAVE_DISCORD
       discord_userdata_t userdata;
@@ -28065,8 +28093,11 @@ static void update_savestate_slot(void)
 /* Display the fast forward state to the user, if needed. */
 static void update_fastforwarding_state(void)
 {
-   gfx_widgets_fast_forward = runloop_fastmotion;
-   if (!runloop_fastmotion)
+   struct rarch_state *p_rarch = &rarch_st;
+
+   gfx_widgets_fast_forward    = p_rarch->runloop_fastmotion;
+
+   if (!p_rarch->runloop_fastmotion)
    {
       settings_t *settings   = configuration_settings;
       if (settings->bools.frame_time_counter_reset_after_fastforwarding)
@@ -28225,7 +28256,7 @@ static enum runloop_state runloop_check_state(retro_time_t current_time)
       if (input_active || (input_driver_flushing_input > 0))
       {
          BIT256_CLEAR_ALL(current_bits);
-         if (runloop_paused)
+         if (p_rarch->runloop_paused)
             BIT256_SET(current_bits, RARCH_PAUSE_TOGGLE);
       }
    }
@@ -28250,7 +28281,7 @@ static enum runloop_state runloop_check_state(retro_time_t current_time)
 
    /* Check fullscreen toggle */
    {
-      bool fullscreen_toggled = !runloop_paused
+      bool fullscreen_toggled = !p_rarch->runloop_paused
 #ifdef HAVE_MENU
          || menu_is_alive;
 #else
@@ -28367,7 +28398,7 @@ static enum runloop_state runloop_check_state(retro_time_t current_time)
          if (runloop_exec)
             runloop_exec = false;
 
-         if (runloop_core_shutdown_initiated &&
+         if (p_rarch->runloop_core_shutdown_initiated &&
                settings->bools.load_dummy_on_core_shutdown)
          {
             content_ctx_info_t content_info;
@@ -28381,8 +28412,8 @@ static enum runloop_state runloop_check_state(retro_time_t current_time)
             {
                /* Loads dummy core instead of exiting RetroArch completely.
                 * Aborts core shutdown if invoked. */
-               runloop_shutdown_initiated      = false;
-               runloop_core_shutdown_initiated = false;
+               p_rarch->runloop_shutdown_initiated      = false;
+               p_rarch->runloop_core_shutdown_initiated = false;
             }
             else
                quit_runloop   = true;
@@ -28390,7 +28421,7 @@ static enum runloop_state runloop_check_state(retro_time_t current_time)
          else
             quit_runloop      = true;
 
-         runloop_core_running = false;
+         p_rarch->runloop_core_running = false;
 
          if (quit_runloop)
          {
@@ -28491,7 +28522,7 @@ static enum runloop_state runloop_check_state(retro_time_t current_time)
       if (!menu_driver_iterate(&iter, current_time))
          retroarch_menu_running_finished(false);
 
-      if (focused || !runloop_idle)
+      if (focused || !p_rarch->runloop_idle)
       {
          bool libretro_running    = menu_display_libretro_running();
          menu_handle_t *menu_data = menu_driver_get_ptr();
@@ -28527,10 +28558,10 @@ static enum runloop_state runloop_check_state(retro_time_t current_time)
                         menu_data->userdata,
                         video_driver_width,
                         video_driver_height,
-                        runloop_idle);
+                        p_rarch->runloop_idle);
             }
 
-            if (menu_driver_alive && !runloop_idle)
+            if (menu_driver_alive && !p_rarch->runloop_idle)
                menu_display_libretro(current_time);
 
             if (menu_data->driver_ctx->set_texture)
@@ -28547,14 +28578,14 @@ static enum runloop_state runloop_check_state(retro_time_t current_time)
       old_input                 = current_bits;
       old_action                = action;
 
-      if (!focused || runloop_idle)
+      if (!focused || p_rarch->runloop_idle)
          return RUNLOOP_STATE_POLLED_AND_SLEEP;
    }
    else
 #endif
 #endif
    {
-      if (runloop_idle)
+      if (p_rarch->runloop_idle)
       {
          retro_ctx.poll_cb();
          return RUNLOOP_STATE_POLLED_AND_SLEEP;
@@ -28667,7 +28698,8 @@ static enum runloop_state runloop_check_state(retro_time_t current_time)
        * unpause the libretro core. */
 
       /* FRAMEADVANCE will set us into pause mode. */
-      pause_pressed                |= !runloop_paused && trig_frameadvance;
+      pause_pressed                |= !p_rarch->runloop_paused 
+         && trig_frameadvance;
 
       if (focused && pause_pressed && !old_pause_pressed)
          command_event(CMD_EVENT_PAUSE_TOGGLE, NULL);
@@ -28680,9 +28712,9 @@ static enum runloop_state runloop_check_state(retro_time_t current_time)
       old_pause_pressed   = pause_pressed;
       old_frameadvance    = frameadvance_pressed;
 
-      if (runloop_paused)
+      if (p_rarch->runloop_paused)
       {
-         bool toggle = !runloop_idle ? true : false;
+         bool toggle = !p_rarch->runloop_idle ? true : false;
 
          HOTKEY_CHECK(RARCH_FULLSCREEN_TOGGLE_KEY,
                CMD_EVENT_FULLSCREEN_TOGGLE, true, &toggle);
@@ -28753,13 +28785,13 @@ static enum runloop_state runloop_check_state(retro_time_t current_time)
          if (check1)
          {
             input_driver_nonblock_state = false;
-            runloop_fastmotion          = false;
+            p_rarch->runloop_fastmotion = false;
             fastforward_after_frames    = 1;
          }
          else
          {
             input_driver_nonblock_state = true;
-            runloop_fastmotion          = true;
+            p_rarch->runloop_fastmotion = true;
          }
          driver_set_nonblock_state();
 #if defined(HAVE_GFX_WIDGETS)
@@ -28774,9 +28806,9 @@ static enum runloop_state runloop_check_state(retro_time_t current_time)
       /* Show the fast-forward OSD for 1 frame every frame if 
        * display widgets are disabled */
 #if defined(HAVE_GFX_WIDGETS)
-      if (!widgets_active && runloop_fastmotion)
+      if (!widgets_active && p_rarch->runloop_fastmotion)
 #else
-      if (runloop_fastmotion)
+      if (p_rarch->runloop_fastmotion)
 #endif
       {
          runloop_msg_queue_push(
@@ -28846,7 +28878,8 @@ static enum runloop_state runloop_check_state(retro_time_t current_time)
       rewinding      = state_manager_check_rewind(
             BIT256_GET(current_bits, RARCH_REWIND),
             settings->uints.rewind_granularity,
-            runloop_paused, s, sizeof(s), &t);
+            p_rarch->runloop_paused,
+            s, sizeof(s), &t);
 
 #if defined(HAVE_GFX_WIDGETS)
       if (widgets_active)
@@ -28873,14 +28906,14 @@ static enum runloop_state runloop_check_state(retro_time_t current_time)
             current_bits, RARCH_SLOWMOTION_HOLD_KEY);
 
       if (new_slowmotion_button_state && !old_slowmotion_button_state)
-         runloop_slowmotion = !runloop_slowmotion;
+         p_rarch->runloop_slowmotion = !p_rarch->runloop_slowmotion;
       else if (old_slowmotion_hold_button_state != new_slowmotion_hold_button_state)
-         runloop_slowmotion = new_slowmotion_hold_button_state;
+         p_rarch->runloop_slowmotion = new_slowmotion_hold_button_state;
 
-      if (runloop_slowmotion)
+      if (p_rarch->runloop_slowmotion)
       {
          if (settings->bools.video_black_frame_insertion)
-            if (!runloop_idle)
+            if (!p_rarch->runloop_idle)
                video_driver_cached_frame();
 
 #if defined(HAVE_GFX_WIDGETS)
@@ -28999,6 +29032,7 @@ int runloop_iterate(void)
 {
    unsigned i;
    settings_t *settings                         = configuration_settings;
+   struct rarch_state                  *p_rarch = &rarch_st;
    float fastforward_ratio                      = settings->floats.fastforward_ratio;
    unsigned video_frame_delay                   = settings->uints.video_frame_delay;
    bool vrr_runloop_enable                      = settings->bools.vrr_runloop_enable;
@@ -29016,8 +29050,9 @@ int runloop_iterate(void)
        * Limits frame time if fast forward ratio throttle is enabled. */
       retro_usec_t runloop_last_frame_time = runloop_frame_time_last;
       retro_time_t current                 = current_time;
-      bool is_locked_fps                   = (runloop_paused || input_driver_nonblock_state)
-         | !!recording_data;
+      bool is_locked_fps                   = (p_rarch->runloop_paused 
+            || input_driver_nonblock_state)
+            | !!recording_data;
       retro_time_t delta                   = (!runloop_last_frame_time || is_locked_fps) ?
          runloop_frame_time.reference
          : (current - runloop_last_frame_time);
@@ -29030,7 +29065,7 @@ int runloop_iterate(void)
 
          runloop_frame_time_last           = current;
 
-         if (runloop_slowmotion)
+         if (p_rarch->runloop_slowmotion)
             delta /= slowmotion_ratio;
       }
 
@@ -29041,7 +29076,7 @@ int runloop_iterate(void)
    {
       case RUNLOOP_STATE_QUIT:
          frame_limit_last_time = 0.0;
-         runloop_core_running  = false;
+         p_rarch->runloop_core_running  = false;
          command_event(CMD_EVENT_QUIT, NULL);
          return -1;
       case RUNLOOP_STATE_POLLED_AND_SLEEP:
@@ -29070,7 +29105,7 @@ int runloop_iterate(void)
 #endif
          return 0;
       case RUNLOOP_STATE_ITERATE:
-         runloop_core_running = true;
+         p_rarch->runloop_core_running = true;
          break;
    }
 
@@ -29203,12 +29238,13 @@ end:
       }
 
       /* Fast Forward for max speed x0.0 */
-      if (!fastforward_ratio && runloop_fastmotion)
+      if (!fastforward_ratio && p_rarch->runloop_fastmotion)
          return 0;
 
       frame_limit_minimum_time =
          (retro_time_t)roundf(1000000.0f / (av_info->timing.fps *
-                  (runloop_fastmotion ? fastforward_ratio : 1.0f)));
+                  (p_rarch->runloop_fastmotion 
+                   ? fastforward_ratio : 1.0f)));
    }
 
    {
