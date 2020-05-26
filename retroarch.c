@@ -10174,7 +10174,38 @@ static bool rarch_clear_all_thread_waits(unsigned clear_threads, void *data)
    return true;
 }
 
+static void runloop_core_msg_queue_push(const struct retro_message_ext *msg)
+{
+   struct retro_system_av_info *av_info = &video_driver_av_info;
+   enum message_queue_category category;
+   double fps;
+   unsigned duration_frames;
 
+   /* Assign category */
+   switch (msg->level)
+   {
+      case RETRO_LOG_WARN:
+         category = MESSAGE_QUEUE_CATEGORY_WARNING;
+         break;
+      case RETRO_LOG_ERROR:
+         category = MESSAGE_QUEUE_CATEGORY_ERROR;
+         break;
+      case RETRO_LOG_INFO:
+      case RETRO_LOG_DEBUG:
+      default:
+         category = MESSAGE_QUEUE_CATEGORY_INFO;
+         break;
+   }
+
+   /* Get duration in frames */
+   fps = av_info ? av_info->timing.fps : 60.0;
+   duration_frames = (unsigned)((fps * (float)msg->duration / 1000.0f) + 0.5f);
+
+   runloop_msg_queue_push(msg->msg,
+         msg->priority, duration_frames,
+         true, NULL, MESSAGE_QUEUE_ICON_DEFAULT,
+         category);
+}
 
 /**
  * rarch_environment_cb:
@@ -10340,8 +10371,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
 
       case RETRO_ENVIRONMENT_SET_MESSAGE_EXT:
       {
-         const struct retro_message_ext *msg  = (const struct retro_message_ext*)data;
-         struct retro_system_av_info *av_info = &video_driver_av_info;
+         const struct retro_message_ext *msg = (const struct retro_message_ext*)data;
 
          /* Log message, if required */
          if (msg->target != RETRO_MESSAGE_TARGET_OSD)
@@ -10373,84 +10403,81 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
          /* Display message via OSD, if required */
          if (msg->target != RETRO_MESSAGE_TARGET_LOG)
          {
-            /* Handle 'status' messages */
-            if (msg->type == RETRO_MESSAGE_TYPE_STATUS)
+            switch (msg->type)
             {
-               /* Note: We need to lock a mutex here. Strictly
-                * speaking, runloop_core_status_msg is not part
-                * of the message queue, but:
-                * - It may be implemented as a queue in the future
-                * - It seems unnecessary to create a new slock_t
-                *   object for this type of message when
-                *   _runloop_msg_queue_lock is already available
-                * We therefore just call runloop_msg_queue_lock()/
-                * runloop_msg_queue_unlock() in this case */
-               runloop_msg_queue_lock();
+               /* Handle 'status' messages */
+               case RETRO_MESSAGE_TYPE_STATUS:
 
-               /* If a message is already set, only overwrite
-                * it if the new message has the same or higher
-                * priority */
-               if (!runloop_core_status_msg.set ||
-                   (runloop_core_status_msg.priority <= msg->priority))
-               {
-                  if (!string_is_empty(msg->msg))
+                  /* Note: We need to lock a mutex here. Strictly
+                   * speaking, runloop_core_status_msg is not part
+                   * of the message queue, but:
+                   * - It may be implemented as a queue in the future
+                   * - It seems unnecessary to create a new slock_t
+                   *   object for this type of message when
+                   *   _runloop_msg_queue_lock is already available
+                   * We therefore just call runloop_msg_queue_lock()/
+                   * runloop_msg_queue_unlock() in this case */
+                  runloop_msg_queue_lock();
+
+                  /* If a message is already set, only overwrite
+                   * it if the new message has the same or higher
+                   * priority */
+                  if (!runloop_core_status_msg.set ||
+                      (runloop_core_status_msg.priority <= msg->priority))
                   {
-                     strlcpy(runloop_core_status_msg.str, msg->msg,
-                           sizeof(runloop_core_status_msg.str));
+                     if (!string_is_empty(msg->msg))
+                     {
+                        strlcpy(runloop_core_status_msg.str, msg->msg,
+                              sizeof(runloop_core_status_msg.str));
 
-                     runloop_core_status_msg.duration = (float)msg->duration;
-                     runloop_core_status_msg.set      = true;
+                        runloop_core_status_msg.duration = (float)msg->duration;
+                        runloop_core_status_msg.set      = true;
+                     }
+                     else
+                     {
+                        /* Ensure sane behaviour if core sends an
+                         * empty message */
+                        runloop_core_status_msg.str[0] = '\0';
+                        runloop_core_status_msg.priority = 0;
+                        runloop_core_status_msg.duration = 0.0f;
+                        runloop_core_status_msg.set      = false;
+                     }
                   }
-                  else
-                  {
-                     /* Ensure sane behaviour if core sends an
-                      * empty message */
-                     runloop_core_status_msg.str[0] = '\0';
-                     runloop_core_status_msg.priority = 0;
-                     runloop_core_status_msg.duration = 0.0f;
-                     runloop_core_status_msg.set      = false;
-                  }
-               }
 
-               runloop_msg_queue_unlock();
-            }
-            /* Handle 'alternate' non-queued notifications */
+                  runloop_msg_queue_unlock();
+                  break;
+
 #if defined(HAVE_GFX_WIDGETS)
-            else if ((msg->type == RETRO_MESSAGE_TYPE_NOTIFICATION_ALT) &&
-                     gfx_widgets_active())
-               gfx_widget_set_libretro_message(msg->msg, msg->duration);
+               /* Handle 'alternate' non-queued notifications */
+               case RETRO_MESSAGE_TYPE_NOTIFICATION_ALT:
+
+                  if (gfx_widgets_active())
+                     gfx_widget_set_libretro_message(msg->msg, msg->duration);
+                  else
+                     runloop_core_msg_queue_push(msg);
+
+                  break;
+
+               /* Handle 'progress' messages
+                * TODO/FIXME: At present, we also display messages
+                * of type RETRO_MESSAGE_TYPE_PROGRESS via
+                * gfx_widget_set_libretro_message(). We need to
+                * implement a separate 'progress bar' widget to
+                * handle these correctly */
+               case RETRO_MESSAGE_TYPE_PROGRESS:
+
+                  if (gfx_widgets_active())
+                     gfx_widget_set_libretro_message(msg->msg, msg->duration);
+                  else
+                     runloop_core_msg_queue_push(msg);
+
+                  break;
 #endif
-            /* Handle standard (queued) notifications */
-            else
-            {
-               enum message_queue_category category;
-               unsigned duration_frames = 0;
-
-               /* Assign category */
-               switch (msg->level)
-               {
-                  case RETRO_LOG_WARN:
-                     category = MESSAGE_QUEUE_CATEGORY_WARNING;
-                     break;
-                  case RETRO_LOG_ERROR:
-                     category = MESSAGE_QUEUE_CATEGORY_ERROR;
-                     break;
-                  case RETRO_LOG_INFO:
-                  case RETRO_LOG_DEBUG:
-                  default:
-                     category = MESSAGE_QUEUE_CATEGORY_INFO;
-                     break;
-               }
-
-               /* Get duration in frames */
-               if (av_info)
-                  duration_frames = (unsigned)((av_info->timing.fps *
-                        (float)msg->duration / 1000.0f) + 0.5f);
-
-               runloop_msg_queue_push(msg->msg,
-                     msg->priority, duration_frames,
-                     true, NULL, MESSAGE_QUEUE_ICON_DEFAULT,
-                     category);
+               /* Handle standard (queued) notifications */
+               case RETRO_MESSAGE_TYPE_NOTIFICATION:
+               default:
+                  runloop_core_msg_queue_push(msg);
+                  break;
             }
          }
 

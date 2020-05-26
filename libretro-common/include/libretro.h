@@ -2548,7 +2548,8 @@ enum retro_message_type
 {
    RETRO_MESSAGE_TYPE_NOTIFICATION = 0,
    RETRO_MESSAGE_TYPE_NOTIFICATION_ALT,
-   RETRO_MESSAGE_TYPE_STATUS
+   RETRO_MESSAGE_TYPE_STATUS,
+   RETRO_MESSAGE_TYPE_PROGRESS
 };
 
 struct retro_message_ext
@@ -2604,12 +2605,34 @@ struct retro_message_ext
     *   displayed in a different on-screen location and in a manner
     *   easily distinguishable from both standard frontend-generated
     *   notifications and messages of type RETRO_MESSAGE_TYPE_NOTIFICATION_ALT
+    * > RETRO_MESSAGE_TYPE_PROGRESS: Indicates that message reports
+    *   the progress of an internal core task. For example, in cases
+    *   where a core itself handles the loading of content from a file,
+    *   this may correspond to the percentage of the file that has been
+    *   read. Alternatively, an audio/video playback core may use a
+    *   message of type RETRO_MESSAGE_TYPE_PROGRESS to display the current
+    *   playback position as a percentage of the runtime. 'Progress' type
+    *   messages should therefore be displayed as a literal progress bar,
+    *   where:
+    *   - 'retro_message_ext.msg' is the progress bar title/label
+    *   - 'retro_message_ext.progress' determines the length of
+    *     the progress bar
     * NOTE: Message type is a *hint*, and may be ignored
     * by the frontend. If a frontend lacks support for
     * displaying messages via alternate means than standard
     * frontend-generated notifications, it will treat *all*
     * messages as having the type RETRO_MESSAGE_TYPE_NOTIFICATION */
    enum retro_message_type type;
+   /* Task progress when targeting the OSD and message is
+    * of type RETRO_MESSAGE_TYPE_PROGRESS
+    * > -1:    Unmetered/indeterminate
+    * > 0-100: Current progress percentage
+    * NOTE: Since message type is a hint, a frontend may ignore
+    * progress values. Where relevant, a core should therefore
+    * include progress percentage within the message string,
+    * such that the message intent remains clear when displayed
+    * as a standard frontend-generated notification */
+   int8_t progress;
 };
 
 /* Describes how the libretro implementation maps a libretro input bind
