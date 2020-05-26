@@ -103,6 +103,7 @@ static void gfx_widget_libretro_message_frame(void *data)
       float* backdrop_orign                = gfx_widgets_get_backdrop_orig();
       unsigned text_color                  = COLOR_TEXT_ALPHA(0xffffffff, (unsigned)(state->alpha*255.0f));
       gfx_widget_font_data_t* font_regular = gfx_widgets_get_font_regular();
+      size_t msg_queue_size                = gfx_widgets_get_msg_queue_size();
 
       gfx_display_set_alpha(backdrop_orign, state->alpha);
 
@@ -119,6 +120,11 @@ static void gfx_widget_libretro_message_frame(void *data)
             video_width, video_height,
             text_color, TEXT_ALIGN_LEFT,
             false);
+
+      /* If the message queue is active, must flush the
+       * text here to avoid overlaps */
+      if (msg_queue_size > 0)
+         gfx_widgets_flush_text(video_width, video_height, font_regular);
    }
 }
 
