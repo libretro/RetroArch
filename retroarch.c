@@ -12330,7 +12330,9 @@ void ui_companion_event_command(enum event_command action)
 
 static void ui_companion_driver_deinit(void)
 {
+#ifdef HAVE_QT
    struct rarch_state     *p_rarch = &rarch_st;
+#endif
    const ui_companion_driver_t *ui = ui_companion;
 
    if (!ui)
@@ -12350,9 +12352,9 @@ static void ui_companion_driver_deinit(void)
 
 void ui_companion_driver_init_first(void)
 {
-   struct rarch_state     *p_rarch = &rarch_st;
    settings_t      *settings       = configuration_settings;
 #ifdef HAVE_QT
+   struct rarch_state     *p_rarch = &rarch_st;
    bool desktop_menu_enable        = settings->bools.desktop_menu_enable;
    bool ui_companion_toggle        = settings->bools.ui_companion_toggle;
 #endif
@@ -12384,9 +12386,9 @@ void ui_companion_driver_init_first(void)
 
 static void ui_companion_driver_toggle(bool force)
 {
-   struct rarch_state 
-      *p_rarch              = &rarch_st;
 #ifdef HAVE_QT
+    struct rarch_state
+    *p_rarch              = &rarch_st;
    settings_t *settings     = configuration_settings;
    bool desktop_menu_enable = settings->bools.desktop_menu_enable;
    bool ui_companion_toggle = settings->bools.ui_companion_toggle;
@@ -12412,10 +12414,10 @@ static void ui_companion_driver_toggle(bool force)
 
 void ui_companion_driver_notify_refresh(void)
 {
-   struct rarch_state 
-      *p_rarch                     = &rarch_st;
    const ui_companion_driver_t *ui = ui_companion;
 #ifdef HAVE_QT
+    struct rarch_state
+    *p_rarch                     = &rarch_st;
    settings_t      *settings       = configuration_settings;
    bool desktop_menu_enable        = settings->bools.desktop_menu_enable;
 #endif
@@ -12478,8 +12480,10 @@ const ui_browser_window_t *ui_companion_driver_get_browser_window_ptr(void)
 static void ui_companion_driver_msg_queue_push(
       const char *msg, unsigned priority, unsigned duration, bool flush)
 {
+#ifdef HAVE_QT
    struct rarch_state 
       *p_rarch                     = &rarch_st;
+#endif
    const ui_companion_driver_t *ui = ui_companion;
 
    if (ui && ui->msg_queue_push)
