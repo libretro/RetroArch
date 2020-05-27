@@ -4321,6 +4321,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE,
    "Après le téléchargement, extraire automatiquement les fichiers contenus dans les archives téléchargées."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_UPDATER_SHOW_EXPERIMENTAL_CORES,
+   "Afficher les cœurs expérimentaux"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_UPDATER_SHOW_EXPERIMENTAL_CORES,
+   "Inclure les cœurs 'expérimentaux' dans la liste des téléchargements de 'Mise à jour des cœurs'. Ils sont généralement destinés à des fins de développement/test uniquement, et ne sont pas recommandés pour une utilisation générale."
+   )
 
 /* Settings > Playlists */
 
