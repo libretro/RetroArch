@@ -39,6 +39,7 @@
 - UWP: Enable playlist and savefile compression by default (because of slow file I/O)
 - WIIU: Gamepad hotplugging support
 - WIIU: Theoretical multi-gamepad support
+- VIDEO/WIDGETS: Fix overlapping text when simultaneous pop-up notifications and core/shader messages are being displayed
 - X11: Fix crash in x11_display_server_get_screen_orientation
 - X11/XSHM: Allow X11/XHSM video driver to operate without SHM extension
 - X11/XSHM: Fix compatibility with X11 input driver
