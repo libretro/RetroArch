@@ -1,4 +1,8 @@
 # Future
+- CORE UPDATER: Add 'Show Experimental Cores' setting under Settings > Network > Updater
+- CORE UPDATER: Core licenses are now shown for all entries in the Core Updater menu
+- CORE UPDATER: Pressing RetroPad select on a Core Updater entry will now display any text in the description field of its info file
+- MENU: Proper line wrapping for message dialog boxes
 
 # 1.8.8
 - AUDIO/JACK: Fix regression introduced after 1.8.4 - would hang at startup
