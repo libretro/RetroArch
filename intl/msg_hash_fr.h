@@ -7386,6 +7386,14 @@ MSG_HASH(
    "Si cette option est activée, le nom des systèmes sera retiré des listes de lecture. Par exemple, 'PlayStation' sera affiché au lieu de 'Sony - PlayStation'. Les changements requièrent un redémarrage pour prendre effet."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME,
+   "Trier les listes de lecture après la troncature du nom"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME,
+   "Si cette option est activée, les listes de lecture seront re-triées par ordre alphabétique après avoir supprimé le composant 'système' de leurs noms. Les changements requièrent un redémarrage pour prendre effet."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_MENU_COLOR_THEME,
    "Thème de couleur du menu"
    )
