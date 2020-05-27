@@ -39,6 +39,7 @@ typedef struct
 {
    bool supports_no_game;
    bool database_match_archive_member;
+   bool is_experimental;
    size_t firmware_count;
    char *path;
    void *config_data;
@@ -56,6 +57,7 @@ typedef struct
    char *databases;
    char *notes;
    char *required_hw_api;
+   char *description;
    struct string_list *categories_list;
    struct string_list *databases_list;
    struct string_list *note_list;
@@ -67,6 +69,16 @@ typedef struct
    core_info_firmware_t *firmware;
    void *userdata;
 } core_info_t;
+
+/* A subset of core_info parameters required for
+ * core updater tasks */
+typedef struct
+{
+   bool is_experimental;
+   char *display_name;
+   char *description;
+   char *licenses;
+} core_updater_info_t;
 
 typedef struct
 {
@@ -108,6 +120,14 @@ bool core_info_list_get_display_name(core_info_list_t *list,
       const char *path, char *s, size_t len);
 
 bool core_info_get_display_name(const char *path, char *s, size_t len);
+
+/* Returns core_info parameters required for
+ * core updater tasks, read from specified file.
+ * Returned core_updater_info_t object must be
+ * freed using core_info_free_core_updater_info().
+ * Returns NULL if 'path' is invalid. */
+core_updater_info_t *core_info_get_core_updater_info(const char *path);
+void core_info_free_core_updater_info(core_updater_info_t *info);
 
 void core_info_get_name(const char *path, char *s, size_t len,
       const char *path_info, const char *dir_cores,

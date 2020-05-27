@@ -60,35 +60,31 @@
 
 static int menu_action_sublabel_file_browser_core(file_list_t *list, unsigned type, unsigned i, const char *label, const char *path, char *s, size_t len)
 {
-   core_info_list_t *core_list = NULL;
+   core_info_ctx_find_t core_info;
 
-   core_info_get_list(&core_list);
+   /* Set sublabel prefix */
+   strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES), len);
+   strlcat(s, ": ", len);
 
-   strlcpy(s, "License: ", len);
+   /* Search for specified core */
+   core_info.inf  = NULL;
+   core_info.path = path;
 
-   if (core_list)
+   if (core_info_find(&core_info, path) &&
+       core_info.inf->licenses_list)
    {
-      unsigned j;
-      for (j = 0; j < core_list->count; j++)
-      {
-         if (string_is_equal(path_basename(core_list->list[j].path),
-                  path))
-         {
-            if (core_list->list[j].licenses_list)
-            {
-               char tmp[PATH_MAX_LENGTH];
-               tmp[0]  = '\0';
+      char tmp[MENU_SUBLABEL_MAX_LENGTH];
+      tmp[0]  = '\0';
 
-               string_list_join_concat(tmp, sizeof(tmp),
-                     core_list->list[j].licenses_list, ", ");
-               strlcat(s, tmp, len);
-               return 1;
-            }
-         }
-      }
+      /* Add license text */
+      string_list_join_concat(tmp, sizeof(tmp),
+            core_info.inf->licenses_list, ", ");
+      strlcat(s, tmp, len);
+      return 1;
    }
 
-   strlcat(s, "N/A", len);
+   /* No license found - set to N/A */
+   strlcat(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), len);
    return 1;
 }
 
@@ -473,6 +469,7 @@ default_sublabel_macro(action_bind_sublabel_input_overlay_show_physical_inputs, 
 default_sublabel_macro(action_bind_sublabel_input_overlay_show_physical_inputs_port,    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS_PORT)
 default_sublabel_macro(action_bind_sublabel_core_updater_buildbot_assets_url,      MENU_ENUM_SUBLABEL_BUILDBOT_ASSETS_URL)
 default_sublabel_macro(action_bind_sublabel_core_updater_auto_extract_archive,     MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE)
+default_sublabel_macro(action_bind_sublabel_core_updater_show_experimental_cores,  MENU_ENUM_SUBLABEL_CORE_UPDATER_SHOW_EXPERIMENTAL_CORES)
 default_sublabel_macro(action_bind_sublabel_netplay_refresh_rooms,                 MENU_ENUM_SUBLABEL_NETPLAY_REFRESH_ROOMS)
 default_sublabel_macro(action_bind_sublabel_rename_entry,                          MENU_ENUM_SUBLABEL_RENAME_ENTRY)
 default_sublabel_macro(action_bind_sublabel_delete_entry,                          MENU_ENUM_SUBLABEL_DELETE_ENTRY)
@@ -1208,6 +1205,39 @@ static int action_bind_sublabel_core_option(
    return 0;
 }
 
+static int action_bind_sublabel_core_updater_entry(
+      file_list_t *list,
+      unsigned type, unsigned i,
+      const char *label, const char *path,
+      char *s, size_t len)
+{
+   core_updater_list_t *core_list         = core_updater_list_get_cached();
+   const core_updater_list_entry_t *entry = NULL;
+
+   /* Set sublabel prefix */
+   strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES), len);
+   strlcat(s, ": ", len);
+
+   /* Search for specified core */
+   if (core_list &&
+       core_updater_list_get_filename(core_list, path, &entry) &&
+       entry->licenses_list)
+   {
+      char tmp[MENU_SUBLABEL_MAX_LENGTH];
+      tmp[0] = '\0';
+
+      /* Add license text */
+      string_list_join_concat(tmp, sizeof(tmp),
+            entry->licenses_list, ", ");
+      strlcat(s, tmp, len);
+      return 1;
+   }
+
+   /* No license found - set to N/A */
+   strlcat(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), len);
+   return 1;
+}
+
 static int action_bind_sublabel_generic(
       file_list_t *list,
       unsigned type, unsigned i,
@@ -1304,6 +1334,12 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
        (type < MENU_SETTINGS_CHEEVOS_START))
    {
       BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_core_option);
+      return 0;
+   }
+
+   if (type == FILE_TYPE_DOWNLOAD_CORE)
+   {
+      BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_core_updater_entry);
       return 0;
    }
 
@@ -2101,6 +2137,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_core_updater_auto_extract_archive);
+            break;
+         case MENU_ENUM_LABEL_CORE_UPDATER_SHOW_EXPERIMENTAL_CORES:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_core_updater_show_experimental_cores);
             break;
          case MENU_ENUM_LABEL_CORE_UPDATER_BUILDBOT_URL:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_core_updater_buildbot_url);

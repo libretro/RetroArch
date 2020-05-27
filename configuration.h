@@ -285,6 +285,7 @@ typedef struct settings
 
       /* Network */
       bool network_buildbot_auto_extract_archive;
+      bool network_buildbot_show_experimental_cores;
       bool network_on_demand_thumbnails;
 
       /* UI */

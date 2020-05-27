@@ -1425,6 +1425,7 @@ typedef struct materialui_handle
    bool is_playlist;
    bool is_file_list;
    bool is_dropdown_list;
+   bool is_core_updater_list;
    bool last_show_nav_bar;
    bool last_auto_rotate_nav_bar;
    bool menu_stack_flushed;
@@ -2149,16 +2150,32 @@ static void materialui_render_messagebox(materialui_handle_t *mui,
    unsigned i;
    int x                    = 0;
    int y                    = 0;
+   int usable_width         = 0;
    int longest_width        = 0;
    size_t longest_len       = 0;
    struct string_list *list = NULL;
+   char wrapped_message[MENU_SUBLABEL_MAX_LENGTH];
+
+   wrapped_message[0] = '\0';
 
    /* Sanity check */
-   if (!mui || !mui->font_data.list.font)
+   if (string_is_empty(message) ||
+       !mui ||
+       !mui->font_data.list.font)
+      goto end;
+
+   usable_width = (int)video_width - (mui->margin * 4.0);
+
+   if (usable_width < 1)
       goto end;
 
    /* Split message into lines */
-   list = string_split(message, "\n");
+   word_wrap(
+         wrapped_message, message,
+         usable_width / (int)mui->font_data.list.glyph_width,
+         true, 0);
+
+   list = string_split(wrapped_message, "\n");
 
    if (!list || list->elems == 0)
       goto end;
@@ -2177,14 +2194,11 @@ static void materialui_render_messagebox(materialui_handle_t *mui,
 
       if (!string_is_empty(line))
       {
-         size_t len = utf8len(line);
+         int width = font_driver_get_message_width(
+               mui->font_data.list.font, line, (unsigned)strlen(line), 1);
 
-         if (len > longest_len)
-         {
-            longest_len   = len;
-            longest_width = font_driver_get_message_width(
-                  mui->font_data.list.font, line, (unsigned)strlen(line), 1);
-         }
+         longest_width = (width > longest_width) ?
+               width : longest_width;
       }
    }
 
@@ -2321,7 +2335,7 @@ static unsigned materialui_count_sublabel_lines(
    word_wrap(
          wrapped_sublabel_str, sublabel_str,
          sublabel_width_max / (int)mui->font_data.hint.glyph_width,
-         false, 0);
+         true, 0);
 
    /* Return number of lines in wrapped string */
    return materialui_count_lines(wrapped_sublabel_str);
@@ -7121,6 +7135,7 @@ static void *materialui_init(void **userdata, bool video_is_threaded)
    mui->is_playlist          = false;
    mui->is_file_list         = false;
    mui->is_dropdown_list     = false;
+   mui->is_core_updater_list = false;
    mui->menu_stack_flushed   = false;
 
    mui->first_onscreen_entry = 0;
@@ -7575,6 +7590,11 @@ static void materialui_populate_entries(
     * scrolling via an alphabet search) */
    mui->is_playlist_tab = string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB));
 
+   /* Check whether this is the core updater menu
+    * (this requires special handling when long
+    * pressing an entry) */
+   mui->is_core_updater_list = string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CORE_UPDATER_LIST));
+
    /* Check whether we are currently viewing a playlist,
     * file-browser-type list or dropdown list
     * (each of these is regarded as a 'plain' list,
@@ -7594,7 +7614,7 @@ static void materialui_populate_entries(
        *   Note: MENU_ENUM_LABEL_FAVORITES is always set
        *   as the 'label' when navigating directories after
        *   selecting load content */
-      mui->is_file_list = string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CORE_UPDATER_LIST)) ||
+      mui->is_file_list = mui->is_core_updater_list ||
                           string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SCAN_DIRECTORY)) ||
                           string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SCAN_FILE)) ||
                           string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_IMAGES_LIST)) ||
@@ -8942,9 +8962,17 @@ static int materialui_pointer_up(void *userdata,
          }
          break;
       case MENU_INPUT_GESTURE_LONG_PRESS:
-         /* 'Reset to default' action */
          if ((ptr < entries_end) && (ptr == selection))
-            return materialui_menu_entry_action(mui, entry, selection, MENU_ACTION_START);
+         {
+            /* If this is the core updater list, show info
+             * message box for current entry.
+             * In all other cases, perform 'reset to default'
+             * action */
+            if (mui->is_core_updater_list)
+               return materialui_menu_entry_action(mui, entry, selection, MENU_ACTION_INFO);
+            else
+               return materialui_menu_entry_action(mui, entry, selection, MENU_ACTION_START);
+         }
          break;
       case MENU_INPUT_GESTURE_SWIPE_LEFT:
          {

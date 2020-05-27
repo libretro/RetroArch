@@ -4373,6 +4373,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE,
    "After downloading, automatically extract files contained in the downloaded archives."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_UPDATER_SHOW_EXPERIMENTAL_CORES,
+   "Show Experimental Cores"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_UPDATER_SHOW_EXPERIMENTAL_CORES,
+   "Include 'experimental' cores in the Core Updater download list. These are typically for development/testing purposes only, and are not recommended for general use."
+   )
 
 /* Settings > Playlists */
 

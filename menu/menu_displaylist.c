@@ -7070,6 +7070,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_CORE_UPDATER_BUILDBOT_URL,             PARSE_ONLY_STRING},
                {MENU_ENUM_LABEL_BUILDBOT_ASSETS_URL,                   PARSE_ONLY_STRING},
                {MENU_ENUM_LABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE,     PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_CORE_UPDATER_SHOW_EXPERIMENTAL_CORES,  PARSE_ONLY_BOOL},
             };
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
@@ -8828,9 +8829,12 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 #ifdef HAVE_NETWORKING
          {
             core_updater_list_t *core_list = core_updater_list_get_cached();
+            settings_t *settings           = config_get_ptr();
+            bool show_experimental_cores   = settings->bools.network_buildbot_show_experimental_cores;
 
             if (core_list)
             {
+               size_t menu_index = 0;
                size_t i;
 
                for (i = 0; i < core_updater_list_size(core_list); i++)
@@ -8839,15 +8843,25 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                   if (core_updater_list_get_index(core_list, i, &entry))
                   {
+                     /* Skip 'experimental' cores, if required
+                      * > Note: We always show cores that are already
+                      *   installed, regardless of status (a user should
+                      *   always have the option to update existing cores) */
+                     if (!show_experimental_cores &&
+                         (entry->is_experimental &&
+                              !path_is_valid(entry->local_core_path)))
+                        continue;
+
                      if (menu_entries_append_enum(info->list,
                            entry->remote_filename,
                            "",
-                           MENU_ENUM_LABEL_URL_ENTRY,
+                           MENU_ENUM_LABEL_CORE_UPDATER_ENTRY,
                            FILE_TYPE_DOWNLOAD_CORE, 0, 0))
                      {
                         file_list_set_alt_at_offset(
-                              info->list, i, entry->display_name);
+                              info->list, menu_index, entry->display_name);
 
+                        menu_index++;
                         count++;
                      }
                   }
