@@ -189,6 +189,7 @@ static void core_info_list_free(core_info_list_t *core_info_list)
       free(info->databases);
       free(info->notes);
       free(info->required_hw_api);
+      free(info->description);
       string_list_free(info->supported_extensions_list);
       string_list_free(info->authors_list);
       string_list_free(info->note_list);
@@ -471,6 +472,14 @@ static core_info_list_t *core_info_list_new(const char *path,
             tmp = NULL;
          }
 
+         if (config_get_string(conf, "description", &tmp))
+         {
+            if (!string_is_empty(tmp))
+               core_info[i].description = strdup(tmp);
+            free(tmp);
+            tmp = NULL;
+         }
+
          if (tmp)
             free(tmp);
          tmp    = NULL;
@@ -484,6 +493,10 @@ static core_info_list_t *core_info_list_new(const char *path,
             if (config_get_bool(conf, "database_match_archive_member",
                      &tmp_bool))
                core_info[i].database_match_archive_member = tmp_bool;
+
+            if (config_get_bool(conf, "is_experimental",
+                     &tmp_bool))
+               core_info[i].is_experimental = tmp_bool;
          }
 
          core_info[i].config_data = conf;
@@ -1001,6 +1014,100 @@ bool core_info_get_display_name(const char *path, char *s, size_t len)
 
    config_file_free(conf);
    return true;
+}
+
+/* Returns core_info parameters required for
+ * core updater tasks, read from specified file.
+ * Returned core_updater_info_t object must be
+ * freed using core_info_free_core_updater_info().
+ * Returns NULL if 'path' is invalid. */
+core_updater_info_t *core_info_get_core_updater_info(const char *path)
+{
+   char *tmp_str             = NULL;
+   bool tmp_bool             = false;
+   core_updater_info_t *info = NULL;
+   config_file_t *conf       = NULL;
+
+   if (string_is_empty(path))
+      return NULL;
+
+   /* Read config file */
+   conf = config_file_new_from_path_to_string(path);
+
+   if (!conf)
+      return NULL;
+
+   /* Create info struct */
+   info = (core_updater_info_t*)calloc(1, sizeof(*info));
+
+   if (!info)
+      return NULL;
+
+   /* Fetch required parameters */
+
+   /* > is_experimental */
+   info->is_experimental = false;
+   if (config_get_bool(conf, "is_experimental", &tmp_bool))
+      info->is_experimental = tmp_bool;
+
+   /* > display_name */
+   info->display_name = NULL;
+   if (config_get_string(conf, "display_name", &tmp_str))
+   {
+      if (!string_is_empty(tmp_str))
+         info->display_name = tmp_str;
+      else
+         free(tmp_str);
+
+      tmp_str = NULL;
+   }
+
+   /* > description */
+   info->description = NULL;
+   if (config_get_string(conf, "description", &tmp_str))
+   {
+      if (!string_is_empty(tmp_str))
+         info->description = tmp_str;
+      else
+         free(tmp_str);
+
+      tmp_str = NULL;
+   }
+
+   /* > licenses */
+   info->licenses = NULL;
+   if (config_get_string(conf, "license", &tmp_str))
+   {
+      if (!string_is_empty(tmp_str))
+         info->licenses = tmp_str;
+      else
+         free(tmp_str);
+
+      tmp_str = NULL;
+   }
+
+   /* Clean up */
+   config_file_free(conf);
+
+   return info;
+}
+
+void core_info_free_core_updater_info(core_updater_info_t *info)
+{
+   if (!info)
+      return;
+
+   if (info->display_name)
+      free(info->display_name);
+
+   if (info->description)
+      free(info->description);
+
+   if (info->licenses)
+      free(info->licenses);
+
+   free(info);
+   info = NULL;
 }
 
 static int core_info_qsort_func_path(const core_info_t *a,

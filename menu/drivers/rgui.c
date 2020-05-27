@@ -2768,20 +2768,27 @@ static void rgui_render_messagebox(rgui_t *rgui, const char *message)
    int x, y;
    size_t i, fb_pitch;
    unsigned fb_width, fb_height;
-   unsigned width, glyphs_width, height;
-   struct string_list *list   = NULL;
+   unsigned width           = 0;
+   unsigned glyphs_width    = 0;
+   unsigned height          = 0;
+   struct string_list *list = NULL;
+   char wrapped_message[MENU_SUBLABEL_MAX_LENGTH];
 
-   if (!message || !*message)
+   wrapped_message[0] = '\0';
+
+   if (string_is_empty(message))
       return;
 
-   list = string_split(message, "\n");
-   if (!list)
-      return;
-   if (list->elems == 0)
+   /* Split message into lines */
+   word_wrap(
+         wrapped_message, message,
+         rgui_term_layout.width,
+         false, 0);
+
+   list = string_split(wrapped_message, "\n");
+
+   if (!list || list->elems == 0)
       goto end;
-
-   width        = 0;
-   glyphs_width = 0;
 
    gfx_display_get_fb_size(&fb_width, &fb_height,
          &fb_pitch);
@@ -2792,23 +2799,18 @@ static void rgui_render_messagebox(rgui_t *rgui, const char *message)
       char     *msg   = list->elems[i].data;
       unsigned msglen = (unsigned)utf8len(msg);
 
-      if (msglen > rgui_term_layout.width)
-      {
-         msg[rgui_term_layout.width - 2] = '.';
-         msg[rgui_term_layout.width - 1] = '.';
-         msg[rgui_term_layout.width - 0] = '.';
-         msg[rgui_term_layout.width + 1] = '\0';
-         msglen = rgui_term_layout.width;
-      }
-
       line_width   = msglen * FONT_WIDTH_STRIDE - 1 + 6 + 10;
       width        = MAX(width, line_width);
       glyphs_width = MAX(glyphs_width, msglen);
    }
 
    height = (unsigned)(FONT_HEIGHT_STRIDE * list->size + 6 + 10);
-   x      = (fb_width  - width) / 2;
-   y      = (fb_height - height) / 2;
+   x      = ((int)fb_width  - (int)width) / 2;
+   y      = ((int)fb_height - (int)height) / 2;
+
+   height = (height > fb_height) ? fb_height : height;
+   x      = (x < 0)              ? 0 : x;
+   y      = (y < 0)              ? 0 : y;
 
    if (rgui_frame_buf.data)
    {
@@ -2854,19 +2856,30 @@ static void rgui_render_messagebox(rgui_t *rgui, const char *message)
             border_dark_color, border_light_color, border_thickness);
    }
 
-   for (i = 0; i < list->size; i++)
+   /* Draw text */
+   if (rgui_frame_buf.data)
    {
-      const char *msg = list->elems[i].data;
-      int offset_x    = (int)(FONT_WIDTH_STRIDE * (glyphs_width - utf8len(msg)) / 2);
-      int offset_y    = (int)(FONT_HEIGHT_STRIDE * i);
+      for (i = 0; i < list->size; i++)
+      {
+         const char *msg = list->elems[i].data;
+         int offset_x    = (int)(FONT_WIDTH_STRIDE * (glyphs_width - utf8len(msg)) / 2);
+         int offset_y    = (int)(FONT_HEIGHT_STRIDE * i);
+         int text_x      = x + 8 + offset_x;
+         int text_y      = y + 8 + offset_y;
 
-      if (rgui_frame_buf.data)
-         blit_line(fb_width, x + 8 + offset_x, y + 8 + offset_y, msg,
+         /* Ensure we remain within the bounds of the
+          * framebuffer */
+         if (text_y > (int)fb_height - 10 - (int)FONT_HEIGHT_STRIDE)
+            break;
+
+         blit_line(fb_width, text_x, text_y, msg,
                rgui->colors.normal_color, rgui->colors.shadow_color);
+      }
    }
 
 end:
-   string_list_free(list);
+   if (list)
+      string_list_free(list);
 }
 
 static void rgui_blit_cursor(rgui_t *rgui)

@@ -493,6 +493,10 @@ MSG_HASH(
    "core_updater_auto_extract_archive"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_CORE_UPDATER_SHOW_EXPERIMENTAL_CORES,
+   "core_updater_show_experimental_cores"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_CORE_UPDATER_BUILDBOT_URL,
    "core_updater_buildbot_url"
    )

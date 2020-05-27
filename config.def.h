@@ -957,10 +957,13 @@ static const bool stdin_cmd_enable = false;
 
 static const uint16_t network_remote_base_port = 55400;
 
+#define DEFAULT_NETWORK_BUILDBOT_AUTO_EXTRACT_ARCHIVE true
+#define DEFAULT_NETWORK_BUILDBOT_SHOW_EXPERIMENTAL_CORES false
+
 #if defined(ANDROID) || defined(IOS)
-static const bool network_on_demand_thumbnails = true;
+#define DEFAULT_NETWORK_ON_DEMAND_THUMBNAILS true
 #else
-static const bool network_on_demand_thumbnails = false;
+#define DEFAULT_NETWORK_ON_DEMAND_THUMBNAILS false
 #endif
 
 /* Number of entries that will be kept in content history playlist file. */
