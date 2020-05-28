@@ -40,7 +40,9 @@
 #include "../../content.h"
 #include "../../dynamic.h"
 #include "../../configuration.h"
+#ifdef HAVE_NETWORKING
 #include "../../core_updater_list.h"
+#endif
 #include "../../managers/cheat_manager.h"
 #include "../../tasks/tasks_internal.h"
 
@@ -1206,6 +1208,7 @@ static int action_bind_sublabel_core_option(
    return 0;
 }
 
+#ifdef HAVE_NETWORKING
 static int action_bind_sublabel_core_updater_entry(
       file_list_t *list,
       unsigned type, unsigned i,
@@ -1238,6 +1241,7 @@ static int action_bind_sublabel_core_updater_entry(
    strlcat(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), len);
    return 1;
 }
+#endif
 
 static int action_bind_sublabel_generic(
       file_list_t *list,
@@ -1338,11 +1342,13 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
       return 0;
    }
 
+#ifdef HAVE_NETWORKING
    if (type == FILE_TYPE_DOWNLOAD_CORE)
    {
       BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_core_updater_entry);
       return 0;
    }
+#endif
 
    if (cbs->enum_idx != MSG_UNKNOWN)
    {
