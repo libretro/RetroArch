@@ -11615,7 +11615,6 @@ static bool libretro_get_system_info(const char *path,
    if (load_no_content)
    {
       struct rarch_state *p_rarch  = &rarch_st;
-      bool ignore_environment_cb   = p_rarch->ignore_environment_cb;
 
       load_no_content_hook         = load_no_content;
 
@@ -11628,9 +11627,9 @@ static bool libretro_get_system_info(const char *path,
        * Make sure we reset it to the actual environment callback.
        * Ignore any environment callbacks here in case we're running
        * on the non-current core. */
-      ignore_environment_cb = true;
+      p_rarch->ignore_environment_cb = true;
       retro_set_environment(rarch_environment_cb);
-      ignore_environment_cb = false;
+      p_rarch->ignore_environment_cb = false;
    }
 
    retro_get_system_info(&dummy_info);

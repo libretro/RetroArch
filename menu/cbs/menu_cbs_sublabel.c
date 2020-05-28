@@ -40,6 +40,7 @@
 #include "../../content.h"
 #include "../../dynamic.h"
 #include "../../configuration.h"
+#include "../../core_updater_list.h"
 #include "../../managers/cheat_manager.h"
 #include "../../tasks/tasks_internal.h"
 
