@@ -2,6 +2,9 @@
 - CORE UPDATER: Add 'Show Experimental Cores' setting under Settings > Network > Updater
 - CORE UPDATER: Core licenses are now shown for all entries in the Core Updater menu
 - CORE UPDATER: Pressing RetroPad select on a Core Updater entry will now display any text in the description field of its info file
+- CORE UPDATER: Installed cores are now highlighted via a [#] symbol
+- CORE UPDATER: Pressing RetroPad start on a selected, installed entry opens the Core Information menu (when using Material UI, swiping left or right triggers the same action). This means we can now view bios info etc. - and more importantly delete cores - without jumping through all the hoops of loading a core first and navigating all over the place 
+- LINUX: Set default saves/save states/system paths 
 - MENU: Proper line wrapping for message dialog boxes
 
 # 1.8.8
