@@ -41,6 +41,8 @@ matrix:
     - compiler: gcc
       env: DISABLE_MENU=1 CC=gcc-8 CXX=g++-8
     - compiler: gcc
+      env: DISABLE_NETWORKING=1 CC=gcc-8 CXX=g++-8
+    - compiler: gcc
       env: DISABLE_OVERLAY=1 CC=gcc-8 CXX=g++-8
     - compiler: gcc
       env: DISABLE_CDROM=1 CC=gcc-8 CXX=g++-8
