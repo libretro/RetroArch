@@ -139,6 +139,10 @@ before_script:
        ARGS="$ARGS --disable-overlay"
      fi
   - |
+     if [ -n "$DISABLE_NETWORKING" ]; then
+       ARGS="$ARGS --disable-networking"
+     fi
+  - |
      if [ -n "$DISABLE_CDROM" ]; then
        ARGS="$ARGS --disable-cdrom"
      fi
