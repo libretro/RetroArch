@@ -2152,7 +2152,6 @@ static void materialui_render_messagebox(materialui_handle_t *mui,
    int y                    = 0;
    int usable_width         = 0;
    int longest_width        = 0;
-   size_t longest_len       = 0;
    struct string_list *list = NULL;
    char wrapped_message[MENU_SUBLABEL_MAX_LENGTH];
 

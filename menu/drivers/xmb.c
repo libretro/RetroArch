@@ -900,7 +900,7 @@ static void xmb_render_messagebox_internal(
       xmb_handle_t *xmb, const char *message)
 {
    unsigned i, y_position;
-   int x, y, longest = 0, longest_width = 0;
+   int x, y, longest_width = 0;
    float line_height        = 0;
    int usable_width         = 0;
    struct string_list *list = NULL;
