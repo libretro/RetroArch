@@ -442,6 +442,15 @@ error:
 /* Download core */
 /*****************/
 
+static void cb_task_core_updater_download(
+      retro_task_t *task, void *task_data,
+      void *user_data, const char *err)
+{
+   /* Reload core info files
+    * > This must be done on the main thread */
+   command_event(CMD_EVENT_CORE_INFO_INIT, NULL);
+}
+
 static void cb_decompress_task_core_updater_download(
       retro_task_t *task, void *task_data,
       void *user_data, const char *err)
@@ -757,9 +766,6 @@ static void task_core_updater_download_handler(retro_task_t *task)
 
             task_title[0] = '\0';
 
-            /* Reload core info files */
-            command_event(CMD_EVENT_CORE_INFO_INIT, NULL);
-
             /* Set final task title */
             task_free_title(task);
 
@@ -894,6 +900,7 @@ void *task_push_core_updater_download(
    task->title            = strdup(task_title);
    task->alternative_look = true;
    task->progress         = 0;
+   task->callback         = cb_task_core_updater_download;
 
    /* Push task */
    task_queue_push(task);

@@ -44,14 +44,18 @@
 
 #include "../../config.def.h"
 
+#ifdef HAVE_NETWORKING
+#include "../../core_updater_list.h"
+#endif
+
 #ifndef BIND_ACTION_START
 #define BIND_ACTION_START(cbs, name) (cbs)->action_start = (name)
 #endif
 
 /* Forward declarations */
 int generic_action_ok_command(enum event_command cmd);
-
 int action_ok_push_playlist_manager_settings(const char *path, const char *label, unsigned type, size_t idx, size_t entry_idx);
+int action_ok_push_core_information_list(const char *path, const char *label, unsigned type, size_t idx, size_t entry_idx);
 
 #ifdef HAVE_AUDIOMIXER
 static int action_start_audio_mixer_stream_volume(
@@ -469,6 +473,28 @@ static int action_start_load_core(
    return ret;
 }
 
+#ifdef HAVE_NETWORKING
+static int action_start_core_updater_entry(
+      const char *path, const char *label,
+      unsigned type, size_t idx, size_t entry_idx)
+{
+   core_updater_list_t *core_list         = core_updater_list_get_cached();
+   const core_updater_list_entry_t *entry = NULL;
+
+   /* If specified core is installed, go to core
+    * information menu */
+   if (core_list &&
+       core_updater_list_get_filename(core_list, path, &entry) &&
+       !string_is_empty(entry->local_core_path) &&
+       path_is_valid(entry->local_core_path))
+      return action_ok_push_core_information_list(
+            entry->local_core_path, label, type, idx, entry_idx);
+
+   /* Otherwise do nothing */
+   return 0;
+}
+#endif
+
 static int action_start_lookup_setting(
       const char *path, const char *label,
       unsigned type, size_t idx, size_t entry_idx)
@@ -605,6 +631,11 @@ static int menu_cbs_init_bind_start_compare_type(menu_file_list_cbs_t *cbs,
          case FILE_TYPE_PLAYLIST_COLLECTION:
             BIND_ACTION_START(cbs, action_ok_push_playlist_manager_settings);
             break;
+#ifdef HAVE_NETWORKING
+         case FILE_TYPE_DOWNLOAD_CORE:
+            BIND_ACTION_START(cbs, action_start_core_updater_entry);
+            break;
+#endif
          default:
             return -1;
       }

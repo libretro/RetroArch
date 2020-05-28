@@ -134,7 +134,6 @@ generic_deferred_push(deferred_push_video_layout_path,              DISPLAYLIST_
 generic_deferred_push(deferred_push_video_font_path,                DISPLAYLIST_FONTS)
 generic_deferred_push(deferred_push_xmb_font_path,                  DISPLAYLIST_FONTS)
 generic_deferred_push(deferred_push_content_history_path,           DISPLAYLIST_CONTENT_HISTORY)
-generic_deferred_push(deferred_push_core_information,               DISPLAYLIST_CORE_INFO)
 generic_deferred_push(deferred_push_disc_information,               DISPLAYLIST_DISC_INFO)
 generic_deferred_push(deferred_push_system_information,             DISPLAYLIST_SYSTEM_INFO)
 generic_deferred_push(deferred_push_network_information,            DISPLAYLIST_NETWORK_INFO)
@@ -146,6 +145,7 @@ generic_deferred_push(deferred_user_binds_list,                     DISPLAYLIST_
 generic_deferred_push(deferred_push_accounts_list,                  DISPLAYLIST_ACCOUNTS_LIST)
 generic_deferred_push(deferred_push_driver_settings_list,           DISPLAYLIST_DRIVER_SETTINGS_LIST)
 generic_deferred_push(deferred_push_core_settings_list,             DISPLAYLIST_CORE_SETTINGS_LIST)
+generic_deferred_push(deferred_push_core_information_list,          DISPLAYLIST_CORE_INFO)
 generic_deferred_push(deferred_push_video_settings_list,            DISPLAYLIST_VIDEO_SETTINGS_LIST)
 generic_deferred_push(deferred_push_video_fullscreen_mode_settings_list,    DISPLAYLIST_VIDEO_FULLSCREEN_MODE_SETTINGS_LIST)
 generic_deferred_push(deferred_push_video_windowed_mode_settings_list,    DISPLAYLIST_VIDEO_WINDOWED_MODE_SETTINGS_LIST)
@@ -705,6 +705,7 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       {MENU_ENUM_LABEL_DEFERRED_BROWSE_URL_LIST, deferred_push_browse_url_list},
       {MENU_ENUM_LABEL_DEFERRED_BROWSE_URL_START, deferred_push_browse_url_start},
       {MENU_ENUM_LABEL_DEFERRED_CORE_SETTINGS_LIST, deferred_push_core_settings_list},
+      {MENU_ENUM_LABEL_DEFERRED_CORE_INFORMATION_LIST, deferred_push_core_information_list},
       {MENU_ENUM_LABEL_DEFERRED_CONFIGURATION_SETTINGS_LIST, deferred_push_configuration_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_SAVING_SETTINGS_LIST, deferred_push_saving_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_MIXER_STREAM_SETTINGS_LIST, deferred_push_mixer_stream_settings_list},
@@ -757,7 +758,6 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       {MENU_ENUM_LABEL_DEFERRED_INPUT_HAPTIC_FEEDBACK_SETTINGS_LIST, deferred_push_input_haptic_feedback_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_AI_SERVICE_SETTINGS_LIST, deferred_push_ai_service_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_ACCESSIBILITY_SETTINGS_LIST, deferred_push_accessibility_settings_list},
-      {MENU_ENUM_LABEL_CORE_INFORMATION, deferred_push_core_information},
       {MENU_ENUM_LABEL_DISC_INFORMATION, deferred_push_disc_information},
       {MENU_ENUM_LABEL_SYSTEM_INFORMATION, deferred_push_system_information},
       {MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS, deferred_push_rpl_entry_actions},
@@ -1245,6 +1245,9 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
             break;
          case MENU_ENUM_LABEL_DEFERRED_CORE_SETTINGS_LIST:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_settings_list);
+            break;
+         case MENU_ENUM_LABEL_DEFERRED_CORE_INFORMATION_LIST:
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_information_list);
             break;
          case MENU_ENUM_LABEL_DEFERRED_DUMP_DISC_LIST:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_dump_disk_list);

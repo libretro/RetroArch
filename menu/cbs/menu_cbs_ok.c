@@ -210,6 +210,8 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
          return MENU_ENUM_LABEL_DEFERRED_DRIVER_SETTINGS_LIST;
       case ACTION_OK_DL_CORE_SETTINGS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_CORE_SETTINGS_LIST;
+      case ACTION_OK_DL_CORE_INFORMATION_LIST:
+         return MENU_ENUM_LABEL_DEFERRED_CORE_INFORMATION_LIST;
       case ACTION_OK_DL_VIDEO_SETTINGS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_VIDEO_SETTINGS_LIST;
       case ACTION_OK_DL_VIDEO_SYNCHRONIZATION_SETTINGS_LIST:
@@ -1106,6 +1108,7 @@ int generic_action_ok_displaylist_push(const char *path,
       case ACTION_OK_DL_LATENCY_SETTINGS_LIST:
       case ACTION_OK_DL_DRIVER_SETTINGS_LIST:
       case ACTION_OK_DL_CORE_SETTINGS_LIST:
+      case ACTION_OK_DL_CORE_INFORMATION_LIST:
       case ACTION_OK_DL_VIDEO_SETTINGS_LIST:
       case ACTION_OK_DL_VIDEO_SYNCHRONIZATION_SETTINGS_LIST:
       case ACTION_OK_DL_VIDEO_FULLSCREEN_MODE_SETTINGS_LIST:
@@ -5144,6 +5147,7 @@ default_action_ok_func(action_ok_push_video_scaling_settings_list, ACTION_OK_DL_
 default_action_ok_func(action_ok_push_video_output_settings_list, ACTION_OK_DL_VIDEO_OUTPUT_SETTINGS_LIST)
 default_action_ok_func(action_ok_push_configuration_settings_list, ACTION_OK_DL_CONFIGURATION_SETTINGS_LIST)
 default_action_ok_func(action_ok_push_core_settings_list, ACTION_OK_DL_CORE_SETTINGS_LIST)
+default_action_ok_func(action_ok_push_core_information_list, ACTION_OK_DL_CORE_INFORMATION_LIST)
 default_action_ok_func(action_ok_push_audio_settings_list, ACTION_OK_DL_AUDIO_SETTINGS_LIST)
 default_action_ok_func(action_ok_push_audio_output_settings_list, ACTION_OK_DL_AUDIO_OUTPUT_SETTINGS_LIST)
 default_action_ok_func(action_ok_push_audio_resampler_settings_list, ACTION_OK_DL_AUDIO_RESAMPLER_SETTINGS_LIST)
@@ -6463,21 +6467,38 @@ static int action_ok_netplay_disconnect(const char *path,
 static int action_ok_core_delete(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   const char *path_core = path_get(RARCH_PATH_CORE);
-   char *core_path       = !string_is_empty(path_core)
-      ? strdup(path_core) : NULL;
+   const char *core_path         = label;
+   const char *core              = NULL;
+   const char *running_core_path = NULL;
+   const char *running_core      = NULL;
 
-   if (!core_path)
-      return 0;
+   if (string_is_empty(core_path))
+      return -1;
 
-   generic_action_ok_command(CMD_EVENT_UNLOAD_CORE);
-   menu_entries_flush_stack(0, 0);
+   /* Get core file name */
+   core = path_basename(core_path);
+   if (string_is_empty(core))
+      return -1;
 
-   if (filestream_delete(core_path) != 0) { }
+   /* Get running core file name */
+   running_core_path = path_get(RARCH_PATH_CORE);
+   if (!string_is_empty(running_core_path))
+      running_core = path_basename(running_core_path);
 
-   free(core_path);
+   /* Check if core to be deleted is currently
+    * running - if so, unload it */
+   if (!string_is_empty(running_core) &&
+       string_is_equal(core, running_core))
+      generic_action_ok_command(CMD_EVENT_UNLOAD_CORE);
 
-   return 0;
+   /* Delete core file */
+   filestream_delete(core_path);
+
+   /* Reload core info files */
+   command_event(CMD_EVENT_CORE_INFO_INIT, NULL);
+
+   /* Return to higher level menu */
+   return action_cancel_pop_default(NULL, NULL, 0, 0);
 }
 
 static int action_ok_delete_playlist(const char *path,
@@ -6841,6 +6862,7 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_AUDIO_RESAMPLER_SETTINGS,            action_ok_push_audio_resampler_settings_list},
          {MENU_ENUM_LABEL_LATENCY_SETTINGS,                    action_ok_push_latency_settings_list},
          {MENU_ENUM_LABEL_CORE_SETTINGS,                       action_ok_push_core_settings_list},
+         {MENU_ENUM_LABEL_CORE_INFORMATION,                    action_ok_push_core_information_list},
          {MENU_ENUM_LABEL_CONFIGURATION_SETTINGS,              action_ok_push_configuration_settings_list},
          {MENU_ENUM_LABEL_PLAYLIST_SETTINGS,                   action_ok_push_playlist_settings_list},
          {MENU_ENUM_LABEL_PLAYLIST_MANAGER_LIST,               action_ok_push_playlist_manager_list},
@@ -6858,7 +6880,6 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_CORE_OPTIONS,                        action_ok_push_default},
          {MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS,                  action_ok_push_default},
          {MENU_ENUM_LABEL_CORE_INPUT_REMAPPING_OPTIONS,        action_ok_push_default},
-         {MENU_ENUM_LABEL_CORE_INFORMATION,                    action_ok_push_default},
          {MENU_ENUM_LABEL_DISC_INFORMATION,                    action_ok_push_default},
          {MENU_ENUM_LABEL_SYSTEM_INFORMATION,                  action_ok_push_default},
          {MENU_ENUM_LABEL_NETWORK_INFORMATION,                 action_ok_push_default},
