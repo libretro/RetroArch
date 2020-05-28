@@ -426,6 +426,51 @@ static void menu_action_setting_disp_set_label_menu_file_core(
       strlcpy(s2, alt, len2);
 }
 
+#ifdef HAVE_NETWORKING
+static void menu_action_setting_disp_set_label_core_updater_entry(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *s, size_t len,
+      const char *path,
+      char *s2, size_t len2)
+{
+   core_updater_list_t *core_list         = core_updater_list_get_cached();
+   const core_updater_list_entry_t *entry = NULL;
+   const char *alt                        = NULL;
+
+   *s = '\0';
+   *w = 0;
+
+   menu_entries_get_at_offset(list, i, NULL,
+         NULL, NULL, NULL, &alt);
+
+   if (alt)
+      strlcpy(s2, alt, len2);
+
+   /* Search for specified core */
+   if (core_list &&
+       core_updater_list_get_filename(core_list, path, &entry) &&
+       !string_is_empty(entry->local_core_path))
+   {
+      core_info_ctx_find_t core_info;
+
+      /* Check whether core is installed
+       * > Note: We search core_info here instead
+       *   of calling path_is_valid() since we don't
+       *   want to perform disk access every frame */
+      core_info.inf  = NULL;
+      core_info.path = entry->local_core_path;
+
+      if (core_info_find(&core_info, entry->local_core_path))
+      {
+         strlcpy(s, "[#]", len);
+         *w = (unsigned)STRLEN_CONST("[#]");
+      }
+   }
+}
+#endif
+
 static void menu_action_setting_disp_set_label_input_desc(
       file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
@@ -970,25 +1015,6 @@ static void menu_action_setting_disp_set_label_menu_file_filter(
 {
    menu_action_setting_generic_disp_set_label(w, s, len,
          path, "(FILTER)", s2, len2);
-}
-
-static void menu_action_setting_disp_set_label_menu_file_url_core(
-      file_list_t* list,
-      unsigned *w, unsigned type, unsigned i,
-      const char *label,
-      char *s, size_t len,
-      const char *path,
-      char *s2, size_t len2)
-{
-   const char *alt = NULL;
-   strlcpy(s, "(CORE)", len);
-
-   menu_entries_get_at_offset(list, i, NULL,
-         NULL, NULL, NULL, &alt);
-
-   *w = (unsigned)strlen(s);
-   if (alt)
-      strlcpy(s2, alt, len2);
 }
 
 static void menu_action_setting_disp_set_label_menu_file_rdb(
@@ -1647,6 +1673,12 @@ static int menu_cbs_init_bind_get_string_representation_compare_type(
          BIND_ACTION_GET_VALUE(cbs,
                menu_action_setting_disp_set_label_menu_file_core);
          break;
+#ifdef HAVE_NETWORKING
+      case FILE_TYPE_DOWNLOAD_CORE:
+         BIND_ACTION_GET_VALUE(cbs,
+               menu_action_setting_disp_set_label_core_updater_entry);
+         break;
+#endif
       case FILE_TYPE_PLAIN:
          BIND_ACTION_GET_VALUE(cbs,
                menu_action_setting_disp_set_label_menu_file_plain);
@@ -1714,10 +1746,6 @@ static int menu_cbs_init_bind_get_string_representation_compare_type(
       case FILE_TYPE_AUDIOFILTER:
          BIND_ACTION_GET_VALUE(cbs,
                menu_action_setting_disp_set_label_menu_file_filter);
-         break;
-      case FILE_TYPE_DOWNLOAD_CORE:
-         BIND_ACTION_GET_VALUE(cbs,
-               menu_action_setting_disp_set_label_menu_file_url_core);
          break;
       case FILE_TYPE_RDB:
          BIND_ACTION_GET_VALUE(cbs,

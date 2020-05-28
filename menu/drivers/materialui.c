@@ -7614,8 +7614,7 @@ static void materialui_populate_entries(
        *   Note: MENU_ENUM_LABEL_FAVORITES is always set
        *   as the 'label' when navigating directories after
        *   selecting load content */
-      mui->is_file_list = mui->is_core_updater_list ||
-                          string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SCAN_DIRECTORY)) ||
+      mui->is_file_list = string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SCAN_DIRECTORY)) ||
                           string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SCAN_FILE)) ||
                           string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_IMAGES_LIST)) ||
                           string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_MUSIC_LIST)) ||
@@ -8991,6 +8990,10 @@ static int materialui_pointer_up(void *userdata,
                return materialui_pointer_up_swipe_horz_plain_list(
                      mui, entry, height, header_height, y,
                      selection, true);
+            /* If this is the core updater list, swipes are used
+             * to open the core information menu */
+            else if (mui->is_core_updater_list)
+               return materialui_menu_entry_action(mui, entry, selection, MENU_ACTION_START);
             /* In all other cases, just perform a normal 'left'
              * navigation event */
             else
@@ -9015,6 +9018,10 @@ static int materialui_pointer_up(void *userdata,
                return materialui_pointer_up_swipe_horz_plain_list(
                      mui, entry, height, header_height, y,
                      selection, false);
+            /* If this is the core updater list, swipes are used
+             * to open the core information menu */
+            else if (mui->is_core_updater_list)
+               return materialui_menu_entry_action(mui, entry, selection, MENU_ACTION_START);
             /* In all other cases, just perform a normal 'right'
              * navigation event */
             else
@@ -9150,6 +9157,10 @@ static void materialui_list_insert(
             node->icon_texture_index = MUI_TEXTURE_SETTINGS;
             node->has_icon           = true;
             break;
+         case MENU_SETTING_ACTION_CORE_DELETE:
+            node->icon_texture_index = MUI_TEXTURE_REMOVE;
+            node->has_icon           = true;
+            break;
          default:
             if (
                   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_INFORMATION_LIST))              ||
@@ -9241,7 +9252,8 @@ static void materialui_list_insert(
                node->icon_texture_index = MUI_TEXTURE_SHADERS;
                node->has_icon           = true;
             }
-            else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CORE_LIST)))
+            else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CORE_LIST)) ||
+                     string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CORE_INFORMATION)))
             {
                node->icon_texture_index = MUI_TEXTURE_CORES;
                node->has_icon           = true;

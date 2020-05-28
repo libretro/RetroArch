@@ -733,6 +733,10 @@ MSG_HASH(
    "deferred_core_settings_list"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_CORE_INFORMATION_LIST,
+   "deferred_core_information_list"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_CORE_UPDATER_LIST,
    "core_updater"
    )
