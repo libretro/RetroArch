@@ -924,7 +924,9 @@ static bool content_file_load(
       if (!path_empty)
          info[i].path = path;
 
-      if (!need_fullpath && !path_empty)
+      bool has_patch = !content_ctx->patch_is_blocked && ((!string_is_empty(content_ctx->name_ips) && path_is_valid(content_ctx->name_ips)) || (!string_is_empty(content_ctx->name_ups) && path_is_valid(content_ctx->name_ups)) || (!string_is_empty(content_ctx->name_bps) && path_is_valid(content_ctx->name_bps)));
+      
+      if ((!need_fullpath || have_patch) && !path_empty)
       {
          /* Load the content into memory. */
 
