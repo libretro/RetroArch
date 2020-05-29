@@ -84,7 +84,9 @@ typedef struct gfx_animation gfx_animation_t;
 static const float ticker_pixel_period = (1.0f / 60.0f) * 1000.0f;
 
 static const char ticker_spacer_default[] = TICKER_SPACER_DEFAULT;
-
+ 
+/* TODO/FIXME - global that gets referenced outside,
+ * needs to be refactored */
 static gfx_animation_t anim;
 
 /* Forward declarations */

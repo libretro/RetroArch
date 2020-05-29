@@ -45,6 +45,7 @@ static const font_renderer_driver_t *font_backends[] = {
    NULL
 };
 
+/* TODO/FIXME - global */
 static void *video_font_driver = NULL;
 
 int font_renderer_create_default(
