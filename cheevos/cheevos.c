@@ -3002,7 +3002,7 @@ bool rcheevos_load(const void *data)
             tmp = m3u_contents;
             while (*tmp && *tmp != '\n')
                ++tmp;
-            if (tmp > buffer && tmp[-1] == '\r')
+            if (tmp > m3u_contents && tmp[-1] == '\r')
                --tmp;
             *tmp = '\0';
 
