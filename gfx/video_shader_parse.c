@@ -43,6 +43,7 @@
 #include "drivers_shader/slang_process.h"
 #endif
 
+/* TODO/FIXME - global state - perhaps move outside this file */
 static path_change_data_t *file_change_data = NULL;
 
 /**
