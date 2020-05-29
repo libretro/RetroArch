@@ -142,7 +142,6 @@ ENCODINGS
 PERFORMANCE
 ============================================================ */
 #include "../libretro-common/features/features_cpu.c"
-#include "../performance_counters.c"
 
 /*============================================================
 CONFIG FILE

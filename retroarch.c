@@ -1377,6 +1377,12 @@ static const camera_driver_t *camera_drivers[] = {
 #endif
 #endif
 
+#ifdef _WIN32
+#define PERF_LOG_FMT "[PERF]: Avg (%s): %I64u ticks, %I64u runs.\n"
+#else
+#define PERF_LOG_FMT "[PERF]: Avg (%s): %llu ticks, %llu runs.\n"
+#endif
+
 /* Descriptive names for options without short variant.
  *
  * Please keep the name in sync with the option name.
@@ -2280,6 +2286,11 @@ static socklen_t lastcmd_net_source_len;
 #endif
 #endif
 
+static struct retro_perf_counter *perf_counters_rarch[MAX_COUNTERS];
+static struct retro_perf_counter *perf_counters_libretro[MAX_COUNTERS];
+static unsigned perf_ptr_rarch;
+static unsigned perf_ptr_libretro;
+
 /* TODO/FIXME - turn these into static global variable */
 char        input_device_names        [MAX_INPUT_DEVICES][64];
 struct retro_keybind input_config_binds[MAX_USERS][RARCH_BIND_LIST_END];
@@ -2513,6 +2524,139 @@ static void driver_location_stop(void);
 static bool driver_location_start(void);
 static void driver_camera_stop(void);
 static bool driver_camera_start(void);
+
+static void log_counters(struct retro_perf_counter **counters, unsigned num)
+{
+   unsigned i;
+   for (i = 0; i < num; i++)
+   {
+      if (counters[i]->call_cnt)
+      {
+         RARCH_LOG(PERF_LOG_FMT,
+               counters[i]->ident,
+               (uint64_t)counters[i]->total /
+               (uint64_t)counters[i]->call_cnt,
+               (uint64_t)counters[i]->call_cnt);
+      }
+   }
+}
+
+static void rarch_perf_log(void)
+{
+   RARCH_LOG("[PERF]: Performance counters (RetroArch):\n");
+   log_counters(perf_counters_rarch, perf_ptr_rarch);
+}
+
+static void retro_perf_log(void)
+{
+   RARCH_LOG("[PERF]: Performance counters (libretro):\n");
+   log_counters(perf_counters_libretro, perf_ptr_libretro);
+}
+
+
+struct retro_perf_counter **retro_get_perf_counter_rarch(void)
+{
+   return perf_counters_rarch;
+}
+
+struct retro_perf_counter **retro_get_perf_counter_libretro(void)
+{
+   return perf_counters_libretro;
+}
+
+unsigned retro_get_perf_count_rarch(void)
+{
+   return perf_ptr_rarch;
+}
+
+unsigned retro_get_perf_count_libretro(void)
+{
+   return perf_ptr_libretro;
+}
+
+void rarch_perf_register(struct retro_perf_counter *perf)
+{
+   if (
+            !rarch_ctl(RARCH_CTL_IS_PERFCNT_ENABLE, NULL)
+         || perf->registered
+         || perf_ptr_rarch >= MAX_COUNTERS
+      )
+      return;
+
+   perf_counters_rarch[perf_ptr_rarch++] = perf;
+   perf->registered = true;
+}
+
+void performance_counter_register(struct retro_perf_counter *perf)
+{
+   if (perf->registered || perf_ptr_libretro >= MAX_COUNTERS)
+      return;
+
+   perf_counters_libretro[perf_ptr_libretro++] = perf;
+   perf->registered = true;
+}
+
+void performance_counters_clear(void)
+{
+   perf_ptr_libretro = 0;
+   memset(perf_counters_libretro, 0, sizeof(perf_counters_libretro));
+}
+
+void rarch_timer_tick(rarch_timer_t *timer, retro_time_t current_time)
+{
+   if (!timer)
+      return;
+   timer->current    = current_time;
+   timer->timeout_us = (timer->timeout_end - timer->current);
+}
+
+int rarch_timer_get_timeout(rarch_timer_t *timer)
+{
+   if (!timer)
+      return 0;
+   return (int)(timer->timeout_us / 1000000);
+}
+
+bool rarch_timer_is_running(rarch_timer_t *timer)
+{
+   if (!timer)
+      return false;
+   return timer->timer_begin;
+}
+
+bool rarch_timer_has_expired(rarch_timer_t *timer)
+{
+   if (!timer || timer->timeout_us <= 0)
+      return true;
+   return false;
+}
+
+void rarch_timer_end(rarch_timer_t *timer)
+{
+   if (!timer)
+      return;
+   timer->timer_end   = true;
+   timer->timer_begin = false;
+   timer->timeout_end = 0;
+}
+
+void rarch_timer_begin_new_time_us(rarch_timer_t *timer, uint64_t usec)
+{
+   if (!timer)
+      return;
+   timer->timeout_us  = usec;
+   timer->current     = cpu_features_get_time_usec();
+   timer->timeout_end = timer->current + timer->timeout_us;
+}
+
+void rarch_timer_begin_us(rarch_timer_t *timer, uint64_t usec)
+{
+   if (!timer)
+      return;
+   rarch_timer_begin_new_time_us(timer, usec);
+   timer->timer_begin = true;
+   timer->timer_end   = false;
+}
 
 struct string_list *dir_list_new_special(const char *input_dir,
       enum dir_list_type type, const char *filter,

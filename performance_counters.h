@@ -51,10 +51,6 @@ void performance_counter_register(struct retro_perf_counter *perf);
 
 void performance_counters_clear(void);
 
-void retro_perf_log(void);
-
-void rarch_perf_log(void);
-
 void rarch_perf_register(struct retro_perf_counter *perf);
 
 #define performance_counter_init(perf, name) \
