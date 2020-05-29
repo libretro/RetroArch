@@ -2957,8 +2957,8 @@ static void path_set_redirect(void)
    char *new_savefile_dir                      = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
    char *new_savestate_dir                     = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
    global_t   *global                          = &g_extern;
-   const char *old_savefile_dir                = dir_get(RARCH_DIR_SAVEFILE);
-   const char *old_savestate_dir               = dir_get(RARCH_DIR_SAVESTATE);
+   const char *old_savefile_dir                = dir_savefile;
+   const char *old_savestate_dir               = dir_savestate;
    struct retro_system_info *system            = &runloop_system.info;
    settings_t *settings                        = configuration_settings;
    bool sort_savefiles_enable                  = settings->bools.sort_savefiles_enable;
@@ -3168,8 +3168,10 @@ void path_set_special(char **argv, unsigned num_content)
     * It is more complicated for special content types. */
    if (global)
    {
-      if (path_is_directory(dir_get(RARCH_DIR_CURRENT_SAVESTATE)))
-         strlcpy(global->name.savestate, dir_get(RARCH_DIR_CURRENT_SAVESTATE),
+      const char *savestate_dir = current_savestate_dir;
+
+      if (path_is_directory(savestate_dir))
+         strlcpy(global->name.savestate, savestate_dir,
                sizeof(global->name.savestate));
       if (path_is_directory(global->name.savestate))
       {
@@ -3231,17 +3233,21 @@ static bool path_init_subsystem(void)
             strlcpy(savename, subsystem_fullpaths->elems[i].data, sizeof(savename));
             path_remove_extension(savename);
 
-            if (path_is_directory(dir_get(RARCH_DIR_CURRENT_SAVEFILE)))
             {
-               /* Use SRAM dir */
-               /* Redirect content fullpath to save directory. */
-               strlcpy(path, dir_get(RARCH_DIR_CURRENT_SAVEFILE), path_size);
-               fill_pathname_dir(path,
-                     savename, ext,
-                     path_size);
+               const char *savefile_dir = current_savefile_dir;
+
+               if (path_is_directory(savefile_dir))
+               {
+                  /* Use SRAM dir */
+                  /* Redirect content fullpath to save directory. */
+                  strlcpy(path, savefile_dir, path_size);
+                  fill_pathname_dir(path,
+                        savename, ext,
+                        path_size);
+               }
+               else
+                  fill_pathname(path, savename, ext, path_size);
             }
-            else
-               fill_pathname(path, savename, ext, path_size);
 
             RARCH_LOG("%s \"%s\".\n",
                msg_hash_to_str(MSG_REDIRECTING_SAVEFILE_TO),
@@ -3769,29 +3775,6 @@ static void dir_check_shader(bool pressed_next, bool pressed_prev)
    command_set_shader(dir_list->list->elems[dir_list->ptr].data);
 }
 
-/* empty functions */
-
-bool dir_is_empty(enum rarch_dir_type type)
-{
-   switch (type)
-   {
-      case RARCH_DIR_SYSTEM:
-         return string_is_empty(dir_system);
-      case RARCH_DIR_SAVEFILE:
-         return string_is_empty(dir_savefile);
-      case RARCH_DIR_CURRENT_SAVEFILE:
-         return string_is_empty(current_savefile_dir);
-      case RARCH_DIR_SAVESTATE:
-         return string_is_empty(dir_savestate);
-      case RARCH_DIR_CURRENT_SAVESTATE:
-         return string_is_empty(current_savestate_dir);
-      case RARCH_DIR_NONE:
-         break;
-   }
-
-   return false;
-}
-
 /* get size functions */
 
 size_t dir_get_size(enum rarch_dir_type type)
@@ -3851,27 +3834,6 @@ static void dir_clear_all(void)
 /* get ptr functions */
 
 char *dir_get_ptr(enum rarch_dir_type type)
-{
-   switch (type)
-   {
-      case RARCH_DIR_SAVEFILE:
-         return dir_savefile;
-      case RARCH_DIR_CURRENT_SAVEFILE:
-         return current_savefile_dir;
-      case RARCH_DIR_SAVESTATE:
-         return dir_savestate;
-      case RARCH_DIR_CURRENT_SAVESTATE:
-         return current_savestate_dir;
-      case RARCH_DIR_SYSTEM:
-         return dir_system;
-      case RARCH_DIR_NONE:
-         break;
-   }
-
-   return NULL;
-}
-
-const char *dir_get(enum rarch_dir_type type)
 {
    switch (type)
    {
@@ -4407,9 +4369,9 @@ static bool command_get_config_param(const char* arg)
          value = "false";
    }
    else if (string_is_equal(arg, "savefile_directory"))
-      value = dir_get(RARCH_DIR_SAVEFILE);
+      value = dir_savefile;
    else if (string_is_equal(arg, "savestate_directory"))
-      value = dir_get(RARCH_DIR_SAVESTATE);
+      value = dir_savestate;
    else if (string_is_equal(arg, "runtime_log_directory"))
       value = dir_runtime_log;
    else if (string_is_equal(arg, "log_dir"))
@@ -6833,7 +6795,7 @@ static bool command_event_init_core(enum rarch_core_type type)
    disk_control_set_initial_index(
          &runloop_system.disk_control,
          path_get(RARCH_PATH_CONTENT),
-         dir_get(RARCH_DIR_CURRENT_SAVEFILE));
+         current_savefile_dir);
 
    if (!event_init_content())
       return false;
@@ -10697,7 +10659,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
 
                *(const char**)data = dir_get_ptr(RARCH_DIR_SYSTEM);
                RARCH_LOG("[Environ]: SYSTEM_DIRECTORY: \"%s\".\n",
-                     dir_get(RARCH_DIR_SYSTEM));
+                     dir_system);
             }
             else
             {
@@ -10709,7 +10671,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
          break;
 
       case RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY:
-         *(const char**)data = dir_get(RARCH_DIR_CURRENT_SAVEFILE);
+         *(const char**)data = current_savefile_dir;
          break;
 
       case RETRO_ENVIRONMENT_GET_USERNAME:
@@ -30404,10 +30366,10 @@ void menu_content_environment_get(int *argc, char *argv[],
 
    if (!path_is_empty(RARCH_PATH_CONFIG))
       wrap_args->config_path   = path_get(RARCH_PATH_CONFIG);
-   if (!dir_is_empty(RARCH_DIR_SAVEFILE))
-      wrap_args->sram_path     = dir_get(RARCH_DIR_SAVEFILE);
-   if (!dir_is_empty(RARCH_DIR_SAVESTATE))
-      wrap_args->state_path    = dir_get(RARCH_DIR_SAVESTATE);
+   if (!string_is_empty(dir_savefile))
+      wrap_args->sram_path     = dir_savefile;
+   if (!string_is_empty(dir_savestate))
+      wrap_args->state_path    = dir_savestate;
    if (!path_is_empty(RARCH_PATH_CONTENT))
       wrap_args->content_path  = path_get(RARCH_PATH_CONTENT);
    if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_LIBRETRO, NULL))

@@ -57,15 +57,11 @@ enum rarch_path_type
    RARCH_PATH_SUBSYSTEM
 };
 
-bool dir_is_empty(enum rarch_dir_type type);
-
 void dir_clear(enum rarch_dir_type type);
 
 size_t dir_get_size(enum rarch_dir_type type);
 
 char *dir_get_ptr(enum rarch_dir_type type);
-
-const char *dir_get(enum rarch_dir_type type);
 
 void dir_set(enum rarch_dir_type type, const char *path);
 
