@@ -4490,9 +4490,16 @@ bool retroarch_apply_shader(enum rarch_shader_type type, const char *preset_path
       if (message)
       {
          /* Display message */
-         snprintf(msg, sizeof(msg),
-               preset_file ? "Shader: \"%s\"" : "Shader: %s",
-               preset_file ? preset_file : "None");
+         if (preset_file)
+            snprintf(msg, sizeof(msg),
+                  "%s: \"%s\"",
+                  msg_hash_to_str(MSG_SHADER),
+                  preset_file);
+         else
+            snprintf(msg, sizeof(msg),
+                  "%s: %s",
+                  msg_hash_to_str(MSG_SHADER),
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE));
 #ifdef HAVE_GFX_WIDGETS
          if (gfx_widgets_active())
             gfx_widget_set_message(msg);
