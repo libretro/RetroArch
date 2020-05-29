@@ -39,6 +39,32 @@
 #define BIND_ACTION_DEFERRED_PUSH(cbs, name) (cbs)->action_deferred_push = (name)
 #endif
 
+#define generic_deferred_push(name, type) \
+static int (name)(menu_displaylist_info_t *info) \
+{ \
+   return deferred_push_dlist(info, type); \
+}
+
+#define generic_deferred_cursor_manager(name, type) \
+static int (name)(menu_displaylist_info_t *info) \
+{ \
+   return deferred_push_cursor_manager_list_generic(info, type); \
+}
+
+#define generic_deferred_push_general(name, a, b) \
+static int (name)(menu_displaylist_info_t *info) \
+{ \
+   return general_push(info, a, b); \
+}
+
+#define generic_deferred_push_clear_general(name, a, b) \
+static int (name)(menu_displaylist_info_t *info) \
+{ \
+   menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list); \
+   return general_push(info, a, b); \
+}
+
+
 enum
 {
    PUSH_ARCHIVE_OPEN_DETECT_CORE = 0,
@@ -67,12 +93,6 @@ static int deferred_push_database_manager_list_deferred(
    info->path_c    = NULL;
 
    return deferred_push_dlist(info, DISPLAYLIST_DATABASE_QUERY);
-}
-
-#define generic_deferred_push(name, type) \
-static int (name)(menu_displaylist_info_t *info) \
-{ \
-   return deferred_push_dlist(info, type); \
 }
 
 static int deferred_push_remappings_port(menu_displaylist_info_t *info)
@@ -329,12 +349,6 @@ static int deferred_push_cursor_manager_list_generic(
 end:
    string_list_free(str_list);
    return ret;
-}
-
-#define generic_deferred_cursor_manager(name, type) \
-static int (name)(menu_displaylist_info_t *info) \
-{ \
-   return deferred_push_cursor_manager_list_generic(info, type); \
 }
 
 generic_deferred_cursor_manager(deferred_push_cursor_manager_list_deferred_query_rdb_entry_max_users, DATABASE_QUERY_ENTRY_MAX_USERS)
@@ -635,19 +649,6 @@ static int general_push(menu_displaylist_info_t *info,
    free(newstring2);
 
    return deferred_push_dlist(info, state);
-}
-
-#define generic_deferred_push_general(name, a, b) \
-static int (name)(menu_displaylist_info_t *info) \
-{ \
-   return general_push(info, a, b); \
-}
-
-#define generic_deferred_push_clear_general(name, a, b) \
-static int (name)(menu_displaylist_info_t *info) \
-{ \
-   menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list); \
-   return general_push(info, a, b); \
 }
 
 generic_deferred_push_general(deferred_push_detect_core_list, PUSH_DETECT_CORE_LIST, DISPLAYLIST_CORES_DETECTED)
