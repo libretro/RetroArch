@@ -148,14 +148,13 @@ static bool get_thumbnail_paths(
       return false;
    
    /* Generate remote path */
-   strlcpy(raw_url, file_path_str(FILE_PATH_CORE_THUMBNAILS_URL), sizeof(raw_url));
-   strlcat(raw_url, "/", sizeof(raw_url));
-   strlcat(raw_url, system_name, sizeof(raw_url));
-   strlcat(raw_url, "/", sizeof(raw_url));
-   strlcat(raw_url, sub_dir, sizeof(raw_url));
-   strlcat(raw_url, "/", sizeof(raw_url));
-   strlcat(raw_url, img_name, sizeof(raw_url));
-   
+   snprintf(raw_url, sizeof(raw_url), "%s/%s/%s/%s",
+         file_path_str(FILE_PATH_CORE_THUMBNAILS_URL),
+         system_name,
+         sub_dir,
+         img_name
+         );
+
    if (string_is_empty(raw_url))
       return false;
    
