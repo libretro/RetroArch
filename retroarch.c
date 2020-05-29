@@ -2649,15 +2649,6 @@ void rarch_timer_begin_new_time_us(rarch_timer_t *timer, uint64_t usec)
    timer->timeout_end = timer->current + timer->timeout_us;
 }
 
-void rarch_timer_begin_us(rarch_timer_t *timer, uint64_t usec)
-{
-   if (!timer)
-      return;
-   rarch_timer_begin_new_time_us(timer, usec);
-   timer->timer_begin = true;
-   timer->timer_end   = false;
-}
-
 struct string_list *dir_list_new_special(const char *input_dir,
       enum dir_list_type type, const char *filter,
       bool show_hidden_files)
@@ -28440,7 +28431,12 @@ static bool input_driver_toggle_button_combo(
 
          /* user started holding down the start button, start the timer */
          if (!rarch_timer_is_running(&timer))
-            rarch_timer_begin_us(&timer, HOLD_START_DELAY_SEC * 1000000);
+         {
+            rarch_timer_begin_new_time_us(&timer,
+                  HOLD_START_DELAY_SEC * 1000000);
+            timer.timer_begin = true;
+            timer.timer_end   = false;
+         }
 
          rarch_timer_tick(&timer, current_time);
 
@@ -29413,7 +29409,12 @@ static enum runloop_state runloop_check_state(retro_time_t current_time)
          need_to_apply = true;
 
          if (!rarch_timer_is_running(&timer))
-            rarch_timer_begin_us(&timer, SHADER_FILE_WATCH_DELAY_MSEC * 1000);
+         {
+            rarch_timer_begin_new_time_us(&timer,
+                  SHADER_FILE_WATCH_DELAY_MSEC * 1000);
+            timer.timer_begin = true;
+            timer.timer_end   = false;
+         }
       }
 
       /* If a file is modified atomically (moved/renamed from a different file),
@@ -29440,8 +29441,12 @@ static enum runloop_state runloop_check_state(retro_time_t current_time)
    if (settings->uints.video_shader_delay && !shader_delay_timer.timer_end)
    {
       if (!rarch_timer_is_running(&shader_delay_timer))
-         rarch_timer_begin_us(&shader_delay_timer,
+      {
+         rarch_timer_begin_new_time_us(&shader_delay_timer,
                settings->uints.video_shader_delay * 1000);
+         shader_delay_timer.timer_begin = true;
+         shader_delay_timer.timer_end   = false;
+      }
       else
       {
          rarch_timer_tick(&shader_delay_timer, current_time);

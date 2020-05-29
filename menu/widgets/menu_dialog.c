@@ -64,7 +64,12 @@ int menu_dialog_iterate(char *s, size_t len,
             static rarch_timer_t timer;
 
             if (!rarch_timer_is_running(&timer))
-               rarch_timer_begin_us(&timer, 3 * 1000000);
+            {
+               rarch_timer_begin_new_time_us(&timer,
+                     3 * 1000000);
+               timer.timer_begin = true;
+               timer.timer_end   = false;
+            }
 
             rarch_timer_tick(&timer, current_time);
 

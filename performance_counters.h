@@ -91,8 +91,6 @@ bool rarch_timer_is_running(rarch_timer_t *timer);
 
 bool rarch_timer_has_expired(rarch_timer_t *timer);
 
-void rarch_timer_begin_us(rarch_timer_t *timer, uint64_t usec);
-
 void rarch_timer_begin_new_time_us(rarch_timer_t *timer, uint64_t usec);
 
 void rarch_timer_end(rarch_timer_t *timer);
