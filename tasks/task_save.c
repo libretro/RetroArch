@@ -142,10 +142,10 @@ static struct save_state_buf undo_save_buf;
  * Can be restored with undo_load_state(). */
 static struct save_state_buf undo_load_buf;
 
+#ifdef HAVE_THREADS
 /* TODO/FIXME - global state - perhaps move outside this file */
 static struct autosave_st autosave_state;
 
-#ifdef HAVE_THREADS
 /**
  * autosave_thread:
  * @data            : pointer to autosave object
