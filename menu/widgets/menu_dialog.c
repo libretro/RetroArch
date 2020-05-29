@@ -45,6 +45,7 @@ struct menu_dialog
 
 typedef struct menu_dialog menu_dialog_t;
 
+/* TODO/FIXME - static public global variables */
 static menu_dialog_t dialog;
 
 static menu_dialog_t *dialog_get_ptr(void)

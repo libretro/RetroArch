@@ -49,6 +49,7 @@
 #include "../core.h"
 #include "../verbosity.h"
 
+/* TODO/FIXME - public global variables */
 cheat_manager_t cheat_manager_state;
 
 unsigned cheat_manager_get_buf_size(void)

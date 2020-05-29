@@ -66,6 +66,7 @@ struct menu_bind_state
    struct menu_bind_axis_state axis_state[MAX_USERS];
 };
 
+/* TODO/FIXME - static public global variables */
 static struct menu_bind_state menu_input_binds = {0};
 
 static bool input_joypad_button_raw(const input_device_driver_t *drv,

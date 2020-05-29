@@ -78,6 +78,7 @@ typedef struct
    retro_time_t list_id;
 } gfx_thumbnail_tag_t;
 
+/* TODO/FIXME */
 /* Global gfx_thumbnail_state structure */
 static gfx_thumbnail_state_t gfx_thumb_state;
 

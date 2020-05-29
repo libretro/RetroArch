@@ -31,8 +31,8 @@
 #include "input_osk.h"
 #include "input_driver.h"
 
+/* TODO/FIXME - static public global variables */
 static char *osk_grid[45]        = {NULL};
-
 static int osk_ptr               = 0;
 static enum osk_type osk_idx     = OSK_LOWERCASE_LATIN;
 

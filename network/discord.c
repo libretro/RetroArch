@@ -86,6 +86,7 @@ struct discord_state
 
 typedef struct discord_state discord_state_t;
 
+/* TODO/FIXME - static public global variables */
 static discord_state_t discord_st;
 
 #define CDN_URL "https://cdn.discordapp.com/avatars"
