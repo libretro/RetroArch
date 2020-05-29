@@ -49,6 +49,8 @@ matrix:
     - compiler: gcc
       env: DISABLE_VIDEO_LAYOUT=1 CC=gcc-8 CXX=g++-8
     - compiler: gcc
+      env: DISABLE_THREADS=1 CC=gcc-8 CXX=g++-8
+    - compiler: gcc
       env: DISABLE_AUDIOMIXER=1 CC=gcc-8 CXX=g++-8
     - compiler: gcc
       env: ENABLE_GLES=1 CC=gcc-8 CXX=g++-8
@@ -149,6 +151,10 @@ before_script:
   - |
      if [ -n "$DISABLE_VIDEO_LAYOUT" ]; then
        ARGS="$ARGS --disable-video_layout"
+     fi
+  - |
+     if [ -n "$DISABLE_THREADS" ]; then
+       ARGS="$ARGS --disable-threads"
      fi
   - |
      if [ -n "$DISABLE_AUDIOMIXER" ]; then
