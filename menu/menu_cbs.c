@@ -24,6 +24,7 @@
 #define DEBUG_LOG
 #endif
 
+/* TODO/FIXME - public global variables */
 struct key_desc key_descriptors[RARCH_MAX_KEYS] =
 {
    {RETROK_FIRST,         "Unmapped"},

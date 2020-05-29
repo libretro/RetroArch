@@ -113,79 +113,6 @@
 #include <3ds/services/cfgu.h>
 #endif
 
-enum settings_list_type
-{
-   SETTINGS_LIST_NONE = 0,
-   SETTINGS_LIST_MAIN_MENU,
-   SETTINGS_LIST_DRIVERS,
-   SETTINGS_LIST_CORE,
-   SETTINGS_LIST_CONFIGURATION,
-   SETTINGS_LIST_LOGGING,
-   SETTINGS_LIST_SAVING,
-   SETTINGS_LIST_REWIND,
-   SETTINGS_LIST_CHEAT_DETAILS,
-   SETTINGS_LIST_CHEAT_SEARCH,
-   SETTINGS_LIST_CHEATS,
-   SETTINGS_LIST_VIDEO,
-   SETTINGS_LIST_CRT_SWITCHRES,
-   SETTINGS_LIST_AUDIO,
-   SETTINGS_LIST_INPUT,
-   SETTINGS_LIST_INPUT_HOTKEY,
-   SETTINGS_LIST_RECORDING,
-   SETTINGS_LIST_FRAME_THROTTLING,
-   SETTINGS_LIST_FRAME_TIME_COUNTER,
-   SETTINGS_LIST_FONT,
-   SETTINGS_LIST_OVERLAY,
-#ifdef HAVE_VIDEO_LAYOUT
-   SETTINGS_LIST_VIDEO_LAYOUT,
-#endif
-   SETTINGS_LIST_MENU,
-   SETTINGS_LIST_MENU_FILE_BROWSER,
-   SETTINGS_LIST_MULTIMEDIA,
-   SETTINGS_LIST_AI_SERVICE,
-   SETTINGS_LIST_ACCESSIBILITY,
-   SETTINGS_LIST_USER_INTERFACE,
-   SETTINGS_LIST_POWER_MANAGEMENT,
-   SETTINGS_LIST_MENU_SOUNDS,
-   SETTINGS_LIST_PLAYLIST,
-   SETTINGS_LIST_CHEEVOS,
-   SETTINGS_LIST_CORE_UPDATER,
-   SETTINGS_LIST_NETPLAY,
-   SETTINGS_LIST_LAKKA_SERVICES,
-   SETTINGS_LIST_USER,
-   SETTINGS_LIST_USER_ACCOUNTS,
-   SETTINGS_LIST_USER_ACCOUNTS_CHEEVOS,
-   SETTINGS_LIST_USER_ACCOUNTS_YOUTUBE,
-   SETTINGS_LIST_USER_ACCOUNTS_TWITCH,
-   SETTINGS_LIST_DIRECTORY,
-   SETTINGS_LIST_PRIVACY,
-   SETTINGS_LIST_MIDI,
-   SETTINGS_LIST_MANUAL_CONTENT_SCAN
-};
-
-struct bool_entry
-{
-   bool default_value;
-   bool *target;
-   uint32_t flags;
-   enum msg_hash_enums name_enum_idx;
-   enum msg_hash_enums SHORT_enum_idx;
-   enum msg_hash_enums off_enum_idx;
-   enum msg_hash_enums on_enum_idx;
-};
-
-struct string_options_entry
-{
-   enum msg_hash_enums name_enum_idx;
-   enum msg_hash_enums SHORT_enum_idx;
-   const char *default_value;
-   const char *values;
-   char *target;
-   size_t len;
-};
-
-/* SETTINGS LIST */
-
 #define _3_SECONDS  3000000
 #define _6_SECONDS  6000000
 #define _9_SECONDS  9000000
@@ -278,6 +205,112 @@ struct string_options_entry
 
 #define MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_VALUE_IDX(a, b, c) \
    (*a)[b->index - 1].enum_value_idx = c
+
+#define SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(a, b, c) \
+{ \
+   (*a)[b->index - 1].flags |= c; \
+   setting_add_special_callbacks(a, b, c); \
+}
+
+#define settings_list_append(a, b) ((a && *a && b) ? ((((b)->index == (b)->size)) ? settings_list_append_internal(a, b) : true) : false)
+
+#define menu_settings_list_current_idx(list_info) (list_info->index - 1)
+
+#define menu_settings_list_current_add_values(list, list_info, str) ((*(list))[menu_settings_list_current_idx((list_info))].values = (str))
+
+#define menu_settings_list_current_add_cmd(list, list_info, str) (*(list))[menu_settings_list_current_idx(list_info)].cmd_trigger.idx = (str)
+
+
+#define config_uint_cbs(var, label, left, right, msg_enum_base, string_rep, min, max, step) \
+      CONFIG_UINT( \
+            list, list_info, \
+            &(var), \
+            MENU_ENUM_LABEL_##label, \
+            MENU_ENUM_LABEL_VALUE_##label, \
+            var, \
+            &group_info, \
+            &subgroup_info, \
+            parent_group, \
+            general_write_handler, \
+            general_read_handler); \
+      (*list)[list_info->index - 1].action_left = left; \
+      (*list)[list_info->index - 1].action_right = right; \
+      (*list)[list_info->index - 1].get_string_representation = string_rep; \
+      (*list)[list_info->index - 1].index_offset = msg_enum_base; \
+      menu_settings_list_current_add_range(list, list_info, min, max, step, true, true);
+
+enum settings_list_type
+{
+   SETTINGS_LIST_NONE = 0,
+   SETTINGS_LIST_MAIN_MENU,
+   SETTINGS_LIST_DRIVERS,
+   SETTINGS_LIST_CORE,
+   SETTINGS_LIST_CONFIGURATION,
+   SETTINGS_LIST_LOGGING,
+   SETTINGS_LIST_SAVING,
+   SETTINGS_LIST_REWIND,
+   SETTINGS_LIST_CHEAT_DETAILS,
+   SETTINGS_LIST_CHEAT_SEARCH,
+   SETTINGS_LIST_CHEATS,
+   SETTINGS_LIST_VIDEO,
+   SETTINGS_LIST_CRT_SWITCHRES,
+   SETTINGS_LIST_AUDIO,
+   SETTINGS_LIST_INPUT,
+   SETTINGS_LIST_INPUT_HOTKEY,
+   SETTINGS_LIST_RECORDING,
+   SETTINGS_LIST_FRAME_THROTTLING,
+   SETTINGS_LIST_FRAME_TIME_COUNTER,
+   SETTINGS_LIST_FONT,
+   SETTINGS_LIST_OVERLAY,
+#ifdef HAVE_VIDEO_LAYOUT
+   SETTINGS_LIST_VIDEO_LAYOUT,
+#endif
+   SETTINGS_LIST_MENU,
+   SETTINGS_LIST_MENU_FILE_BROWSER,
+   SETTINGS_LIST_MULTIMEDIA,
+   SETTINGS_LIST_AI_SERVICE,
+   SETTINGS_LIST_ACCESSIBILITY,
+   SETTINGS_LIST_USER_INTERFACE,
+   SETTINGS_LIST_POWER_MANAGEMENT,
+   SETTINGS_LIST_MENU_SOUNDS,
+   SETTINGS_LIST_PLAYLIST,
+   SETTINGS_LIST_CHEEVOS,
+   SETTINGS_LIST_CORE_UPDATER,
+   SETTINGS_LIST_NETPLAY,
+   SETTINGS_LIST_LAKKA_SERVICES,
+   SETTINGS_LIST_USER,
+   SETTINGS_LIST_USER_ACCOUNTS,
+   SETTINGS_LIST_USER_ACCOUNTS_CHEEVOS,
+   SETTINGS_LIST_USER_ACCOUNTS_YOUTUBE,
+   SETTINGS_LIST_USER_ACCOUNTS_TWITCH,
+   SETTINGS_LIST_DIRECTORY,
+   SETTINGS_LIST_PRIVACY,
+   SETTINGS_LIST_MIDI,
+   SETTINGS_LIST_MANUAL_CONTENT_SCAN
+};
+
+struct bool_entry
+{
+   bool default_value;
+   bool *target;
+   uint32_t flags;
+   enum msg_hash_enums name_enum_idx;
+   enum msg_hash_enums SHORT_enum_idx;
+   enum msg_hash_enums off_enum_idx;
+   enum msg_hash_enums on_enum_idx;
+};
+
+struct string_options_entry
+{
+   enum msg_hash_enums name_enum_idx;
+   enum msg_hash_enums SHORT_enum_idx;
+   const char *default_value;
+   const char *values;
+   char *target;
+   size_t len;
+};
+
+/* SETTINGS LIST */
 
 static void menu_input_st_uint_cb(void *userdata, const char *str)
 {
@@ -435,12 +468,6 @@ static void setting_add_special_callbacks(
    }
 }
 
-#define SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(a, b, c) \
-{ \
-   (*a)[b->index - 1].flags |= c; \
-   setting_add_special_callbacks(a, b, c); \
-}
-
 static bool settings_list_append_internal(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info)
@@ -456,8 +483,6 @@ static bool settings_list_append_internal(
 
    return true;
 }
-
-#define settings_list_append(a, b) ((a && *a && b) ? ((((b)->index == (b)->size)) ? settings_list_append_internal(a, b) : true) : false)
 
 unsigned setting_get_bind_type(rarch_setting_t *setting)
 {
@@ -5982,12 +6007,6 @@ static void menu_settings_list_current_add_range(
    (*list)[list_info->index - 1].flags |= SD_FLAG_HAS_RANGE;
 }
 
-#define menu_settings_list_current_idx(list_info) (list_info->index - 1)
-
-#define menu_settings_list_current_add_values(list, list_info, str) ((*(list))[menu_settings_list_current_idx((list_info))].values = (str))
-
-#define menu_settings_list_current_add_cmd(list, list_info, str) (*(list))[menu_settings_list_current_idx(list_info)].cmd_trigger.idx = (str)
-
 int menu_setting_generic(rarch_setting_t *setting, bool wraparound)
 {
    uint64_t flags = setting->flags;
@@ -7636,24 +7655,6 @@ static int directory_action_start_generic(rarch_setting_t *setting)
 
    return 0;
 }
-
-#define config_uint_cbs(var, label, left, right, msg_enum_base, string_rep, min, max, step) \
-      CONFIG_UINT( \
-            list, list_info, \
-            &(var), \
-            MENU_ENUM_LABEL_##label, \
-            MENU_ENUM_LABEL_VALUE_##label, \
-            var, \
-            &group_info, \
-            &subgroup_info, \
-            parent_group, \
-            general_write_handler, \
-            general_read_handler); \
-      (*list)[list_info->index - 1].action_left = left; \
-      (*list)[list_info->index - 1].action_right = right; \
-      (*list)[list_info->index - 1].get_string_representation = string_rep; \
-      (*list)[list_info->index - 1].index_offset = msg_enum_base; \
-      menu_settings_list_current_add_range(list, list_info, min, max, step, true, true);
 
 static bool setting_append_list(
       enum settings_list_type type,

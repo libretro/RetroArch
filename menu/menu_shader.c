@@ -35,20 +35,21 @@
 #include "../retroarch.h"
 #include "../verbosity.h"
 
-/* Menu shader */
-
-static struct video_shader *menu_driver_shader = NULL;
-
-static enum rarch_shader_type shader_types[] =
-{
-   RARCH_SHADER_GLSL, RARCH_SHADER_SLANG, RARCH_SHADER_CG
-};
-
 enum auto_shader_operation
 {
    AUTO_SHADER_OP_SAVE = 0,
    AUTO_SHADER_OP_REMOVE,
    AUTO_SHADER_OP_EXISTS
+};
+
+/* Menu shader */
+
+/* TODO/FIXME - static public global variables */
+static struct video_shader *menu_driver_shader = NULL;
+
+static enum rarch_shader_type shader_types[] =
+{
+   RARCH_SHADER_GLSL, RARCH_SHADER_SLANG, RARCH_SHADER_CG
 };
 
 struct video_shader *menu_shader_get(void)
