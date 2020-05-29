@@ -796,7 +796,8 @@ static int action_bind_sublabel_systeminfo_controller_entry(
    {
       if (input_is_autoconfigured(controller))
       {
-            snprintf(tmp, sizeof(tmp), "Port #%d device name: %s (#%d)",
+            snprintf(tmp, sizeof(tmp), "%s #%d device name: %s (#%d)",
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT),
                controller,
                input_config_get_device_name(controller),
                input_autoconfigure_get_device_name_index(controller));
@@ -806,8 +807,8 @@ static int action_bind_sublabel_systeminfo_controller_entry(
       }
    }
    snprintf(tmp, sizeof(tmp), "Device display name: %s\nDevice config name: %s\nDevice identifiers: %d/%d",
-      input_config_get_device_display_name(controller) ? input_config_get_device_display_name(controller) : "N/A",
-      input_config_get_device_display_name(controller) ? input_config_get_device_config_name(controller) : "N/A",
+      input_config_get_device_display_name(controller) ? input_config_get_device_display_name(controller) : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
+      input_config_get_device_display_name(controller) ? input_config_get_device_config_name(controller) : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
       input_config_get_vid(controller), input_config_get_pid(controller));
    strlcpy(s, tmp, len);
 
@@ -1024,9 +1025,11 @@ static int action_bind_sublabel_netplay_room(
    if (string_is_empty(subsystem) || string_is_equal(subsystem, "N/A"))
    {
       snprintf(s, len,
-         "RetroArch: %s (%s)\nCore: %s (%s)\nGame: %s (%08x)",
+         "%s: %s (%s)\n%s: %s (%s)\nGame: %s (%08x)",
+         msg_hash_to_str(MSG_PROGRAM),
          string_is_empty(ra_version)    ? na : ra_version,
          string_is_empty(frontend)      ? na : frontend,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CORE_NAME),
          corename, core_ver,
          !string_is_equal(gamename, na) ? gamename : na,
          gamecrc);
@@ -1049,9 +1052,11 @@ static int action_bind_sublabel_netplay_room(
                strlcat(buf, "\n", sizeof(buf));
          }
          snprintf(s, len,
-            "RetroArch: %s (%s)\nCore: %s (%s)\nSubsystem: %s\nGames:\n%s",
+            "%s: %s (%s)\n%s: %s (%s)\nSubsystem: %s\nGames:\n%s",
+            msg_hash_to_str(MSG_PROGRAM),
             string_is_empty(ra_version)    ? na : ra_version,
             string_is_empty(frontend)      ? na : frontend,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CORE_NAME),
             corename, core_ver, subsystem,
             !string_is_equal(gamename, na) ? buf : na
             );
@@ -1060,9 +1065,11 @@ static int action_bind_sublabel_netplay_room(
       else
       {
          snprintf(s, len,
-            "RetroArch: %s (%s)\nCore: %s (%s)\nSubsystem: %s\nGame: %s (%08x)",
+            "%s: %s (%s)\n%s: %s (%s)\nSubsystem: %s\nGame: %s (%08x)",
+            msg_hash_to_str(MSG_PROGRAM),
             string_is_empty(ra_version)    ? na : ra_version,
             string_is_empty(frontend)      ? na : frontend,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CORE_NAME),
             corename, core_ver, subsystem,
             !string_is_equal(gamename, na) ? gamename : na,
             gamecrc);
