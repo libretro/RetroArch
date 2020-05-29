@@ -30,6 +30,12 @@
 #define BIND_ACTION_GET_TITLE(cbs, name) (cbs)->action_get_title = (name)
 #endif
 
+#define default_title_generic_macro(func_name, lbl) \
+   static int (func_name)(const char *path, const char *label, unsigned menu_type, char *s, size_t len) \
+  { \
+   return action_get_title_generic(s, len, path, msg_hash_to_str(lbl)); \
+} \
+
 #define sanitize_to_string(s, label, len) \
    { \
       char *pos = NULL; \
@@ -37,16 +43,6 @@
       while((pos = strchr(s, '_'))) \
          *pos = ' '; \
    }
-
-static int action_get_title_action_generic(const char *path, const char *label,
-      unsigned menu_type, char *s, size_t len)
-{
-   if (s && !string_is_empty(label))
-   {
-      sanitize_to_string(s, label, len);
-   }
-   return 1;
-}
 
 #define default_title_macro(func_name, lbl) \
   static int (func_name)(const char *path, const char *label, unsigned menu_type, char *s, size_t len) \
@@ -75,6 +71,17 @@ static int action_get_title_action_generic(const char *path, const char *label,
 { \
    strlcpy(s, msg_hash_to_str(lbl), len); \
    return 1; \
+}
+
+
+static int action_get_title_action_generic(const char *path, const char *label,
+      unsigned menu_type, char *s, size_t len)
+{
+   if (s && !string_is_empty(label))
+   {
+      sanitize_to_string(s, label, len);
+   }
+   return 1;
 }
 
 static int action_get_title_remap_port(const char *path, const char *label,
@@ -527,12 +534,6 @@ static int action_get_title_generic(char *s, size_t len, const char *path,
 
    return 0;
 }
-
-#define default_title_generic_macro(func_name, lbl) \
-   static int (func_name)(const char *path, const char *label, unsigned menu_type, char *s, size_t len) \
-  { \
-   return action_get_title_generic(s, len, path, msg_hash_to_str(lbl)); \
-} \
 
 default_title_generic_macro(action_get_title_deferred_database_manager_list,MENU_ENUM_LABEL_VALUE_DATABASE_SELECTION)
 default_title_generic_macro(action_get_title_deferred_cursor_manager_list,MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST)

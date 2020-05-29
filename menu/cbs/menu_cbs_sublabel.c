@@ -53,7 +53,6 @@
 #define BIND_ACTION_SUBLABEL(cbs, name) (cbs)->action_sublabel = (name)
 #endif
 
-
 #define default_sublabel_macro(func_name, lbl) \
   static int (func_name)(file_list_t *list, unsigned type, unsigned i, const char *label, const char *path, char *s, size_t len) \
 { \
