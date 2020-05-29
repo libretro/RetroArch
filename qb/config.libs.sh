@@ -181,7 +181,6 @@ check_lib '' NETWORKING "$SOCKETLIB" socket "" "$SOCKETHEADER"
 if [ "$HAVE_NETWORKING" != 'no' ]; then
    add_opt GETADDRINFO auto
    add_opt SOCKET_LEGACY no
-   add_opt GLSLANG no
 
    # WinXP+ implements getaddrinfo()
    if [ "$OS" = 'Win32' ]; then
