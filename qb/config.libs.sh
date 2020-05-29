@@ -181,6 +181,7 @@ check_lib '' NETWORKING "$SOCKETLIB" socket "" "$SOCKETHEADER"
 if [ "$HAVE_NETWORKING" != 'no' ]; then
    add_opt GETADDRINFO auto
    add_opt SOCKET_LEGACY no
+   add_opt GLSLANG no
 
    # WinXP+ implements getaddrinfo()
    if [ "$OS" = 'Win32' ]; then
@@ -198,6 +199,7 @@ else
    add_opt NETWORK_CMD no
 fi
 
+check_enabled NETWORKING GLSLANG glslang 'Networking is' false
 check_enabled NETWORKING CHEEVOS cheevos 'Networking is' false
 check_enabled NETWORKING DISCORD discord 'Networking is' false
 check_enabled NETWORKING MINIUPNPC miniupnpc 'Networking is' false
