@@ -177,7 +177,9 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
    {
       static bool remote_is_bound        = false;
       const char *autoconfig_str         = (string_is_empty(display_name) &&
-            !string_is_empty(params->name)) ? params->name : (!string_is_empty(display_name) ? display_name : "N/A");
+            !string_is_empty(params->name)) ? params->name : (!string_is_empty(display_name) 
+            ? display_name 
+            : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
       strlcpy(msg, autoconfig_str, sizeof(msg));
       strlcat(msg, " configured.", sizeof(msg));
 
@@ -195,7 +197,9 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
       bool tmp                    = false;
       const char *autoconfig_str  = (string_is_empty(display_name) &&
             !string_is_empty(params->name))
-            ? params->name : (!string_is_empty(display_name) ? display_name : "N/A");
+            ? params->name : (!string_is_empty(display_name) 
+                  ? display_name 
+                  : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
 
       snprintf(msg, sizeof(msg), "%s %s #%u.",
             autoconfig_str,
@@ -228,8 +232,8 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
    }
    else
    {
-      input_config_set_device_config_name(params->idx, "N/A");
-      input_config_set_device_config_path(params->idx, "N/A");
+      input_config_set_device_config_name(params->idx, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
+      input_config_set_device_config_path(params->idx, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
    }
 
    input_autoconfigure_joypad_reindex_devices();
@@ -375,13 +379,17 @@ static void input_autoconfigure_connect_handler(retro_task_t *task)
       if (input_autoconfigure_joypad_from_conf_internal(params, task))
       {
          snprintf(msg, sizeof(msg), "%s (%ld/%ld) %s.",
-               !string_is_empty(params->name) ? params->name : "N/A",
+               !string_is_empty(params->name) 
+               ? params->name 
+               : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
                (long)params->vid, (long)params->pid,
                msg_hash_to_str(MSG_DEVICE_NOT_CONFIGURED_FALLBACK));
       }
 #else
       snprintf(msg, sizeof(msg), "%s (%ld/%ld) %s.",
-            !string_is_empty(params->name) ? params->name : "N/A",
+            !string_is_empty(params->name) 
+            ? params->name 
+            : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
             (long)params->vid, (long)params->pid,
             msg_hash_to_str(MSG_DEVICE_NOT_CONFIGURED));
 #endif

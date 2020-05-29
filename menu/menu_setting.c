@@ -7233,7 +7233,6 @@ static void achievement_hardcore_mode_write_handler(rarch_setting_t *setting)
    {
       rcheevos_toggle_hardcore_mode();
       command_event(CMD_EVENT_RESET, NULL);
-      return;
    }
 }
 #endif
