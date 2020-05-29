@@ -516,7 +516,8 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
    {
       if (input_is_autoconfigured(controller))
       {
-         snprintf(tmp, sizeof(tmp), "Port #%d device name: %s (#%d)",
+         snprintf(tmp, sizeof(tmp), "%s #%d device name: %s (#%d)",
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT),
             controller,
             input_config_get_device_name(controller),
             input_autoconfigure_get_device_name_index(controller));
@@ -4833,7 +4834,11 @@ unsigned menu_displaylist_build_list(
             for (p = 0; p < max_users; p++)
             {
                char val_s[16], val_d[16];
-               snprintf(val_s, sizeof(val_s), "Port %d Controls", p+1);
+               snprintf(val_s, sizeof(val_s), "%s %d %s",
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT),
+                     p+1,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS)
+                     );
                snprintf(val_d, sizeof(val_d), "%d", p);
                if (menu_entries_append_enum(list, val_s, val_d,
                         MSG_UNKNOWN,
@@ -8089,7 +8094,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                      serial[0] = '\0';
 
-                     strlcpy(serial, "Serial#: ", sizeof(serial));
+                     snprintf(serial, sizeof(serial),
+                           "%s#: ", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SERIAL));
                      strlcat(serial, cd_info.serial, sizeof(serial));
 
                      if (menu_entries_append_enum(info->list,
@@ -8106,8 +8112,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                      version[0] = '\0';
 
-                     strlcpy(version, "Version: ", sizeof(version));
-                     strlcat(version, cd_info.version, sizeof(version));
+                     snprintf(version, sizeof(version),
+                           "%s: %s", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CORE_VERSION), cd_info.version);
 
                      if (menu_entries_append_enum(info->list,
                            version,
