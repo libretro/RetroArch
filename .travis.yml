@@ -154,7 +154,7 @@ before_script:
      fi
   - |
      if [ -n "$DISABLE_THREADS" ]; then
-       ARGS="$ARGS --disable-threads"
+       ARGS="$ARGS --disable-threads --disable-glslang"
      fi
   - |
      if [ -n "$DISABLE_AUDIOMIXER" ]; then
