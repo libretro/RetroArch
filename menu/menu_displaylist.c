@@ -111,6 +111,9 @@
 #define PL_LABEL_SPACER_RGUI    " | "
 #define PL_LABEL_SPACER_MAXLEN  8
 
+#define BYTES_TO_MB(bytes) ((bytes) / 1024 / 1024)
+#define BYTES_TO_GB(bytes) (((bytes) / 1024) / 1024 / 1024)
+
 #ifdef HAVE_NETWORKING
 #if !defined(HAVE_SOCKET_LEGACY) && (!defined(SWITCH) || defined(SWITCH) && defined(HAVE_LIBNX))
 #include <net/net_ifinfo.h>
@@ -380,9 +383,6 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
 
    return count;
 }
-
-#define BYTES_TO_MB(bytes) ((bytes) / 1024 / 1024)
-#define BYTES_TO_GB(bytes) (((bytes) / 1024) / 1024 / 1024)
 
 static unsigned menu_displaylist_parse_system_info(file_list_t *list)
 {

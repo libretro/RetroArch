@@ -42,7 +42,8 @@ static void disk_control_reset_callback(
    if (!disk_control)
       return;
 
-   memset(&disk_control->cb, 0, sizeof(struct retro_disk_control_ext_callback));
+   memset(&disk_control->cb, 0,
+         sizeof(struct retro_disk_control_ext_callback));
 }
 
 /* Set v0 disk interface callback functions */
