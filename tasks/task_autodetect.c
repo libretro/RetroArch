@@ -42,6 +42,7 @@ struct autoconfig_disconnect
    char *msg;
 };
 
+/* TODO/FIXME - global state - perhaps move outside this file */
 static bool input_autoconfigured[MAX_USERS];
 static unsigned input_device_name_index[MAX_INPUT_DEVICES];
 static bool input_autoconfigure_swap_override;

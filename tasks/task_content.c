@@ -206,6 +206,7 @@ typedef struct content_state
    struct string_list *temporary_content;
 } content_state_t;
 
+/* TODO/FIXME - global state - perhaps move outside this file */
 static content_state_t content_st;
 
 #ifdef HAVE_CDROM
