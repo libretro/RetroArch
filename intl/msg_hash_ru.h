@@ -4443,80 +4443,8 @@ MSG_HASH(
 /* Settings Options */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_ARABIC,
-   "Aрабский"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_CHINESE_SIMPLIFIED,
-   "Китайский (Простой)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_CHINESE_TRADITIONAL,
-   "Китайский (Традициональный)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_DUTCH,
-   "Голландский"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_ENGLISH,
-   "Английский"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_ESPERANTO,
-   "Эсперанто"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_FRENCH,
-   "Французский"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_GERMAN,
-   "Немецкий"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_GREEK,
-   "Греческий"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_ITALIAN,
-   "Итальянский"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_JAPANESE,
-   "Японский"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_KOREAN,
-   "Корейский"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_POLISH,
-   "Польский"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_PORTUGUESE_BRAZIL,
-   "Португальский (Бразилия)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_PORTUGUESE_PORTUGAL,
-   "Португальский (Португалия)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_RUSSIAN,
-   "Русский"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_SPANISH,
-   "Испанский"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_TURKISH,
-   "Турецкий"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_VIETNAMESE,
-   "Вьетнамский"
+   "Russian - Русский"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_NONE,

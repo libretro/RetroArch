@@ -467,7 +467,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_ARABIC,
-   "عربى"
+   "Arabic - عربى (Restart)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_HANDLER_TYPE_RETRO,

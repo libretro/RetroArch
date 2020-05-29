@@ -6167,7 +6167,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_ARABIC,
-   "Arabic"
+   "Arabic - عربى (Restart)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_AZERBAIJANI,
@@ -6191,11 +6191,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_CHINESE_SIMPLIFIED,
-   "Chinese (Simplified)"
+   "Chinese (Simplified) - 简体中文 (Restart)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_CHINESE_TRADITIONAL,
-   "Chinese (Traditional)"
+   "Chinese (Traditional) - 繁體中文 (Restart)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_CROATIAN,
@@ -6211,7 +6211,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_DUTCH,
-   "Dutch"
+   "Dutch - Nederlands"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_ENGLISH,
@@ -6219,7 +6219,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_ESPERANTO,
-   "Esperanto"
+   "Esperanto - Esperanto"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_ESTONIAN,
@@ -6235,7 +6235,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_FRENCH,
-   "French"
+   "French - Français"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_GALICIAN,
@@ -6247,11 +6247,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_GERMAN,
-   "German"
+   "German - Deutsch"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_GREEK,
-   "Greek"
+   "Greek - Ελληνικά"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_GUJARATI,
@@ -6287,11 +6287,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_ITALIAN,
-   "Italian"
+   "Italian - Italiano"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_JAPANESE,
-   "Japanese"
+   "Japanese - 日本語"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_KANNADA,
@@ -6299,7 +6299,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_KOREAN,
-   "Korean"
+   "Korean - 한국어 (Restart)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_LATIN,
@@ -6335,15 +6335,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_POLISH,
-   "Polish"
+   "Polish - Polski"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_PORTUGUESE_BRAZIL,
-   "Portuguese (Brazil)"
+   "Portuguese (Brazil) - Português (Brasil)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_PORTUGUESE_PORTUGAL,
-   "Portuguese (Portugal)"
+   "Portuguese (Portugal) - Português (Portugal)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_ROMANIAN,
@@ -6351,7 +6351,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_RUSSIAN,
-   "Russian"
+   "Russian - Русский"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_SERBIAN,
@@ -6359,7 +6359,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_SLOVAK,
-   "Slovak"
+   "Slovak - Slovenský"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_SLOVENIAN,
@@ -6367,7 +6367,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_SPANISH,
-   "Spanish"
+   "Spanish - Español"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_SWAHILI,
@@ -6391,7 +6391,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_TURKISH,
-   "Turkish"
+   "Turkish - Türkçe"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_UKRAINIAN,
@@ -6403,7 +6403,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_VIETNAMESE,
-   "Vietnamese"
+   "Vietnamese - Tiếng Việt"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_WELSH,
