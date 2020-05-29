@@ -92,9 +92,9 @@ typedef struct verbosity_state
 #endif
 } verbosity_state_t;
 
+/* TODO/FIXME - static public global variables */
 static verbosity_state_t main_verbosity_st;
-
-static unsigned verbosity_log_level                 = 
+static unsigned verbosity_log_level           = 
 DEFAULT_FRONTEND_LOG_LEVEL;
 
 #ifdef HAVE_LIBNX

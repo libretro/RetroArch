@@ -124,8 +124,8 @@ struct menu_state
 
 };
 
+/* TODO/FIXME - static public global variables */
 static struct menu_state menu_driver_state;
-
 static menu_handle_t *menu_driver_data          = NULL;
 static const menu_ctx_driver_t *menu_driver_ctx = NULL;
 static void *menu_userdata                      = NULL;
