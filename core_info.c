@@ -57,6 +57,7 @@ struct core_info_state
 
 typedef struct core_info_state core_info_state_t;
 
+/* TODO/FIXME - global state - perhaps move outside this file */
 static core_info_state_t core_info_st;
 
 static core_info_state_t *coreinfo_get_ptr(void)

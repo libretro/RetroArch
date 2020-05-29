@@ -85,6 +85,7 @@ typedef struct
    enum playlist_sort_mode *current_meta_sort_mode_val;
 } JSONContext;
 
+/* TODO/FIXME - global state - perhaps move outside this file */
 static playlist_t *playlist_cached = NULL;
 
 typedef int (playlist_sort_fun_t)(
