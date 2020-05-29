@@ -269,7 +269,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST,
-   "Mise à jour des cœurs"
+   "Téléchargement de cœurs"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_INSTALLED_CORES,
@@ -3345,7 +3345,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_CORE_UPDATER,
-   "Afficher la mise à jour des cœurs"
+   "Afficher 'Téléchargement de cœurs'"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_CORE_UPDATER,
@@ -4327,7 +4327,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_UPDATER_SHOW_EXPERIMENTAL_CORES,
-   "Inclure les cœurs 'expérimentaux' dans la liste des téléchargements de 'Mise à jour des cœurs'. Ils sont généralement destinés à des fins de développement/test uniquement, et ne sont pas recommandés pour une utilisation générale."
+   "Inclure les cœurs 'expérimentaux' dans la liste de 'Téléchargement de cœurs'. Ils sont généralement destinés à des fins de développement/test uniquement, et ne sont pas recommandés pour une utilisation générale."
    )
 
 /* Settings > Playlists */
