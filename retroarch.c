@@ -4349,7 +4349,8 @@ static bool command_get_status(const char* arg)
 
 static bool command_show_osd_msg(const char* arg)
 {
-    runloop_msg_queue_push(arg, 1, 180, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+    runloop_msg_queue_push(arg, 1, 180, false, NULL,
+          MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
     return true;    
 }
 
@@ -20235,10 +20236,17 @@ static void audio_driver_flush(const int16_t *data, size_t samples,
 #ifdef HAVE_AUDIOMIXER
    if (p_rarch->audio_mixer_active)
    {
-      bool override     = p_rarch->audio_driver_mixer_mute_enable ? true :
-         (audio_driver_mixer_volume_gain != 1.0f) ? true : false;
-      float mixer_gain  = !p_rarch->audio_driver_mixer_mute_enable ?
-         audio_driver_mixer_volume_gain : 0.0f;
+      bool override                       = true;
+      float mixer_gain                    = 0.0f;
+      bool audio_driver_mixer_mute_enable = 
+         p_rarch->audio_driver_mixer_mute_enable;
+
+      if (!audio_driver_mixer_mute_enable)
+      {
+         override                         = 
+            (audio_driver_mixer_volume_gain != 1.0f) ? true : false;
+         mixer_gain                       = audio_driver_mixer_volume_gain;
+      }
       audio_mixer_mix(audio_driver_output_samples_buf,
             src_data.output_frames, mixer_gain, override);
    }
@@ -20298,8 +20306,10 @@ static void audio_driver_sample(int16_t left, int16_t right)
 		   !p_rarch->audio_driver_active     ||
 		   !audio_driver_input_data          ||
 		   !audio_driver_output_samples_buf))
-      audio_driver_flush(audio_driver_output_samples_conv_buf,
-            audio_driver_data_ptr, p_rarch->runloop_slowmotion,
+      audio_driver_flush(
+            audio_driver_output_samples_conv_buf,
+            audio_driver_data_ptr,
+            p_rarch->runloop_slowmotion,
             p_rarch->runloop_fastmotion);
 
    audio_driver_data_ptr = 0;
@@ -22620,7 +22630,7 @@ void video_driver_reset_custom_viewport(void)
 
 void video_driver_set_rgba(void)
 {
-   struct rarch_state *p_rarch = &rarch_st;
+   struct rarch_state *p_rarch    = &rarch_st;
    video_driver_lock();
    p_rarch->video_driver_use_rgba = true;
    video_driver_unlock();
@@ -22628,7 +22638,7 @@ void video_driver_set_rgba(void)
 
 void video_driver_unset_rgba(void)
 {
-   struct rarch_state *p_rarch = &rarch_st;
+   struct rarch_state *p_rarch    = &rarch_st;
    video_driver_lock();
    p_rarch->video_driver_use_rgba = false;
    video_driver_unlock();
@@ -23011,7 +23021,7 @@ bool video_driver_is_hw_context(void)
    bool is_hw_context = false;
 
    video_driver_context_lock();
-   is_hw_context = (hw_render.context_type != RETRO_HW_CONTEXT_NONE);
+   is_hw_context      = (hw_render.context_type != RETRO_HW_CONTEXT_NONE);
    video_driver_context_unlock();
 
    return is_hw_context;
@@ -25740,7 +25750,7 @@ static bool runahead_save_state(void)
       (retro_ctx_serialize_info_t*)runahead_save_state_list->data[0];
 
    p_rarch->request_fast_savestate = true;
-   okay                   = core_serialize(serialize_info);
+   okay                            = core_serialize(serialize_info);
    p_rarch->request_fast_savestate = false;
 
    if (okay)
@@ -25914,7 +25924,7 @@ static void do_runahead(int runahead_count, bool use_secondary)
       }
 
       /* run main core with video suspended */
-      p_rarch->video_driver_active = false;
+      p_rarch->video_driver_active     = false;
       core_run();
       runahead_resume_video();
 
@@ -28935,12 +28945,12 @@ static enum runloop_state runloop_check_state(retro_time_t current_time)
                p_rarch->runloop_core_shutdown_initiated = false;
             }
             else
-               quit_runloop   = true;
+               quit_runloop              = true;
          }
          else
-            quit_runloop      = true;
+            quit_runloop                 = true;
 
-         p_rarch->runloop_core_running = false;
+         p_rarch->runloop_core_running   = false;
 
          if (quit_runloop)
          {
@@ -28979,14 +28989,13 @@ static enum runloop_state runloop_check_state(retro_time_t current_time)
    if (menu_is_alive)
    {
       enum menu_action action;
+      menu_ctx_iterate_t iter;
       static input_bits_t old_input = {{0}};
       static enum menu_action
-         old_action              = MENU_ACTION_CANCEL;
-      bool focused               = false;
-      input_bits_t trigger_input = current_bits;
-      global_t *global           = &g_extern;
-
-      menu_ctx_iterate_t iter;
+         old_action                 = MENU_ACTION_CANCEL;
+      bool focused                  = false;
+      input_bits_t trigger_input    = current_bits;
+      global_t *global              = &g_extern;
 
       retro_ctx.poll_cb();
 
