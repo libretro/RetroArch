@@ -1838,6 +1838,33 @@ struct rarch_state
    bool audio_mixer_active;
 #endif
    bool *load_no_content_hook;
+
+#if defined(HAVE_COMMAND)
+#ifdef HAVE_NETWORK_CMD
+   int lastcmd_net_fd;
+#endif
+#endif
+
+#ifdef HAVE_TRANSLATE
+   int ai_service_auto;
+#endif
+
+#if defined(HAVE_RUNAHEAD)
+#if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
+   int port_map[16];
+#endif
+#endif
+
+#if defined(HAVE_ACCESSIBILITY) && defined(HAVE_TRANSLATE)
+   int ai_gamepad_state[16];
+#endif
+
+   uint8_t *video_driver_record_gpu_buffer;
+   uint8_t *midi_drv_input_buffer;
+   uint8_t *midi_drv_output_buffer;
+
+   uint16_t input_config_vid[MAX_USERS];
+   uint16_t input_config_pid[MAX_USERS];
 };
 
 static struct global              g_extern;
@@ -1899,32 +1926,6 @@ static const uint8_t midi_drv_ev_sizes[128]                     =
    3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
    0, 2, 3, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
 };
-
-static uint8_t *video_driver_record_gpu_buffer                  = NULL;
-static uint8_t *midi_drv_input_buffer                           = NULL;
-static uint8_t *midi_drv_output_buffer                          = NULL;
-
-static uint16_t input_config_vid[MAX_USERS]                     = {0};
-static uint16_t input_config_pid[MAX_USERS]                     = {0};
-
-#if defined(HAVE_COMMAND)
-#ifdef HAVE_NETWORK_CMD
-static int lastcmd_net_fd                                       = 0;
-#endif
-#endif
-
-#ifdef HAVE_TRANSLATE
-static int ai_service_auto                                      = 0;
-#endif
-
-#if defined(HAVE_RUNAHEAD)
-#if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
-static int port_map[16]                                         = {0};
-#endif
-#endif
-#if defined(HAVE_ACCESSIBILITY) && defined(HAVE_TRANSLATE)
-static int ai_gamepad_state[16]                                 = {0};
-#endif
 
 static size_t runloop_msg_queue_size                            = 0;
 static size_t recording_gpu_width                               = 0;
@@ -4286,7 +4287,7 @@ static void command_reply(const char * data, size_t len)
          break;
       case CMD_NETWORK:
 #ifdef HAVE_NETWORK_CMD
-         sendto(lastcmd_net_fd, data, len, 0,
+         sendto(p_rarch->lastcmd_net_fd, data, len, 0,
                (struct sockaddr*)&lastcmd_net_source, lastcmd_net_source_len);
 #endif
          break;
@@ -4818,7 +4819,8 @@ static void command_parse_msg(command_t *handle,
 static void command_network_poll(command_t *handle)
 {
    fd_set fds;
-   struct timeval tmp_tv = {0};
+   struct timeval       tmp_tv = {0};
+   struct rarch_state *p_rarch = &rarch_st;
 
    if (handle->net_fd < 0)
       return;
@@ -4839,9 +4841,9 @@ static void command_network_poll(command_t *handle)
 
       buf[0] = '\0';
 
-      lastcmd_net_fd         = handle->net_fd;
-      lastcmd_net_source_len = sizeof(lastcmd_net_source);
-      ret                    = recvfrom(handle->net_fd, buf,
+      p_rarch->lastcmd_net_fd  = handle->net_fd;
+      lastcmd_net_source_len   = sizeof(lastcmd_net_source);
+      ret                      = recvfrom(handle->net_fd, buf,
             sizeof(buf) - 1, 0,
             (struct sockaddr*)&lastcmd_net_source,
             &lastcmd_net_source_len);
@@ -4986,10 +4988,12 @@ static bool ai_service_speech_stop(void)
 
 static void task_auto_translate_handler(retro_task_t *task)
 {
-   int* mode_ptr = (int*)task->user_data;
+   int               *mode_ptr = (int*)task->user_data;
+   struct rarch_state *p_rarch = &rarch_st;
 
    if (task_get_cancelled(task))
       goto task_finished;
+
    /* Narrator Mode */
    if (*mode_ptr == 2)
    {
@@ -5009,8 +5013,8 @@ static void task_auto_translate_handler(retro_task_t *task)
    return;
 
 task_finished:
-   if (ai_service_auto == 1)
-      ai_service_auto = 2;
+   if (p_rarch->ai_service_auto == 1)
+      p_rarch->ai_service_auto = 2;
 
    task_set_finished(task, true);
 
@@ -5022,14 +5026,15 @@ task_finished:
 
 static bool call_auto_translate_task(bool* was_paused)
 {
-   settings_t *settings = configuration_settings;
-   int ai_service_mode  = settings->uints.ai_service_mode;
+   settings_t        *settings = configuration_settings;
+   int        ai_service_mode  = settings->uints.ai_service_mode;
+   struct rarch_state *p_rarch = &rarch_st;
 
    /*Image Mode*/
    if (ai_service_mode == 0)
    {
-      if (ai_service_auto == 1)
-         ai_service_auto = 2;
+      if (p_rarch->ai_service_auto == 1)
+         p_rarch->ai_service_auto = 2;
 
       command_event(CMD_EVENT_AI_SERVICE_CALL, was_paused);
       return true;
@@ -5089,7 +5094,7 @@ static void handle_translation_cb(
 
 #ifdef GFX_MENU_WIDGETS
    if (gfx_widgets_ai_service_overlay_get_state() != 0 
-       && ai_service_auto == 2)
+       && p_rarch->ai_service_auto == 2)
    {
       /* When auto mode is on, we turn off the overlay
        * once we have the result for the next call.*/
@@ -5098,7 +5103,7 @@ static void handle_translation_cb(
 #endif
 
 #ifdef DEBUG
-   if (ai_service_auto != 2)
+   if (p_rarch->ai_service_auto != 2)
       RARCH_LOG("RESULT FROM AI SERVICE...\n");
 #endif
 
@@ -5233,7 +5238,7 @@ static void handle_translation_cb(
    if (     !raw_image_file_data 
          && !raw_sound_data 
          && !text_string 
-         && (ai_service_auto != 2)
+         && (p_rarch->ai_service_auto != 2)
          && !key_string)
    {
       error = "Invalid JSON body.";
@@ -5496,40 +5501,40 @@ static void handle_translation_cb(
 #ifdef HAVE_ACCESSIBILITY
 #ifdef HAVE_TRANSLATE
             if (string_is_equal(key, "b"))
-               ai_gamepad_state[0] = 2;
+               p_rarch->ai_gamepad_state[0] = 2;
             if (string_is_equal(key, "y"))
-               ai_gamepad_state[1] = 2;
+               p_rarch->ai_gamepad_state[1] = 2;
             if (string_is_equal(key, "select"))
-               ai_gamepad_state[2] = 2;
+               p_rarch->ai_gamepad_state[2] = 2;
             if (string_is_equal(key, "start"))
-               ai_gamepad_state[3] = 2;
+               p_rarch->ai_gamepad_state[3] = 2;
 
             if (string_is_equal(key, "up"))
-               ai_gamepad_state[4] = 2;
+               p_rarch->ai_gamepad_state[4] = 2;
             if (string_is_equal(key, "down"))
-               ai_gamepad_state[5] = 2;
+               p_rarch->ai_gamepad_state[5] = 2;
             if (string_is_equal(key, "left"))
-               ai_gamepad_state[6] = 2;
+               p_rarch->ai_gamepad_state[6] = 2;
             if (string_is_equal(key, "right"))
-               ai_gamepad_state[7] = 2;
+               p_rarch->ai_gamepad_state[7] = 2;
 
             if (string_is_equal(key, "a"))
-               ai_gamepad_state[8] = 2;
+               p_rarch->ai_gamepad_state[8] = 2;
             if (string_is_equal(key, "x"))
-               ai_gamepad_state[9] = 2;
+               p_rarch->ai_gamepad_state[9] = 2;
             if (string_is_equal(key, "l"))
-               ai_gamepad_state[10] = 2;
+               p_rarch->ai_gamepad_state[10] = 2;
             if (string_is_equal(key, "r"))
-               ai_gamepad_state[11] = 2;
+               p_rarch->ai_gamepad_state[11] = 2;
 
             if (string_is_equal(key, "l2"))
-               ai_gamepad_state[12] = 2;
+               p_rarch->ai_gamepad_state[12] = 2;
             if (string_is_equal(key, "r2"))
-               ai_gamepad_state[13] = 2;
+               p_rarch->ai_gamepad_state[13] = 2;
             if (string_is_equal(key, "l3"))
-               ai_gamepad_state[14] = 2;
+               p_rarch->ai_gamepad_state[14] = 2;
             if (string_is_equal(key, "r3"))
-               ai_gamepad_state[15] = 2;
+               p_rarch->ai_gamepad_state[15] = 2;
 #endif
 #endif
 
@@ -5580,7 +5585,7 @@ finish:
 
    if (string_is_equal(auto_string, "auto"))
    {
-      if (     (ai_service_auto != 0)
+      if (     (p_rarch->ai_service_auto != 0)
             && !settings->bools.ai_service_pause)
          call_auto_translate_task(&was_paused);
    }
@@ -5806,7 +5811,7 @@ static bool run_translation_service(bool paused)
 
 #ifdef HAVE_GFX_WIDGETS
    if (  (gfx_widgets_ai_service_overlay_get_state() != 0)
-         && (ai_service_auto == 1))
+         && (p_rarch->ai_service_auto == 1))
    {
       /* For the case when ai service pause is disabled. */
       gfx_widgets_ai_service_overlay_unload();
@@ -5996,40 +6001,40 @@ static bool run_translation_service(bool paused)
 
 #ifdef HAVE_ACCESSIBILITY
 #ifdef HAVE_TRANSLATE
-      if (ai_gamepad_state[8]) /* a */
+      if (p_rarch->ai_gamepad_state[8]) /* a */
          state_son[30] = '1';
-      if (ai_gamepad_state[0]) /* b */
+      if (p_rarch->ai_gamepad_state[0]) /* b */
          state_son[38] = '1';
-      if (ai_gamepad_state[2]) /* select */
+      if (p_rarch->ai_gamepad_state[2]) /* select */
          state_son[51] = '1';
-      if (ai_gamepad_state[3]) /* start */
+      if (p_rarch->ai_gamepad_state[3]) /* start */
          state_son[63] = '1';
 
-      if (ai_gamepad_state[4]) /* up */
+      if (p_rarch->ai_gamepad_state[4]) /* up */
          state_son[72] = '1';
-      if (ai_gamepad_state[5]) /* down */
+      if (p_rarch->ai_gamepad_state[5]) /* down */
          state_son[83] = '1';
-      if (ai_gamepad_state[6]) /* left */
+      if (p_rarch->ai_gamepad_state[6]) /* left */
          state_son[94] = '1';
-      if (ai_gamepad_state[7]) /* right */
+      if (p_rarch->ai_gamepad_state[7]) /* right */
          state_son[106] = '1';
 
-      if (ai_gamepad_state[9]) /* x */
+      if (p_rarch->ai_gamepad_state[9]) /* x */
          state_son[114] = '1';
-      if (ai_gamepad_state[1]) /* y */
+      if (p_rarch->ai_gamepad_state[1]) /* y */
          state_son[122] = '1';
-      if (ai_gamepad_state[10]) /* l */
+      if (p_rarch->ai_gamepad_state[10]) /* l */
          state_son[130] = '1';
-      if (ai_gamepad_state[11]) /* r */
+      if (p_rarch->ai_gamepad_state[11]) /* r */
          state_son[138] = '1';
 
-      if (ai_gamepad_state[12]) /* l2 */
+      if (p_rarch->ai_gamepad_state[12]) /* l2 */
          state_son[147] = '1';
-      if (ai_gamepad_state[13]) /* r2 */
+      if (p_rarch->ai_gamepad_state[13]) /* r2 */
          state_son[156] = '1';
-      if (ai_gamepad_state[14]) /* l3 */
+      if (p_rarch->ai_gamepad_state[14]) /* l3 */
          state_son[165] = '1';
-      if (ai_gamepad_state[15]) /* r3 */
+      if (p_rarch->ai_gamepad_state[15]) /* r3 */
          state_son[174] = '1';
 #endif
 #endif
@@ -6065,7 +6070,7 @@ static bool run_translation_service(bool paused)
    }
 
 #ifdef DEBUG
-   if (ai_service_auto != 2)
+   if (p_rarch->ai_service_auto != 2)
       RARCH_LOG("Request size: %d\n", out_length);
 #endif
    {
@@ -6160,7 +6165,7 @@ static bool run_translation_service(bool paused)
                  sizeof(new_ai_service_url));
       }
 #ifdef DEBUG
-      if (ai_service_auto != 2)
+      if (p_rarch->ai_service_auto != 2)
          RARCH_LOG("SENDING... %s\n", new_ai_service_url);
 #endif
       task_push_http_post_transfer(new_ai_service_url,
@@ -7460,11 +7465,11 @@ bool command_event(enum event_command cmd, void *data)
             * Also, this mode is required for "auto" translation
             * packages, since you don't want to pause for that.   
             */ 
-            if (ai_service_auto == 2)
+            if (p_rarch->ai_service_auto == 2)
             {
                /* Auto mode was turned on, but we pressed the
                 * toggle button, so turn it off now. */
-               ai_service_auto = 0;
+               p_rarch->ai_service_auto = 0;
 #ifdef HAVE_MENU_WIDGETS
                gfx_widgets_ai_service_overlay_unload();
 #endif
@@ -8792,9 +8797,9 @@ bool command_event(enum event_command cmd, void *data)
             if (data!=NULL)
                paused = *((bool*)data);
 
-            if (ai_service_auto == 0 && !settings->bools.ai_service_pause)
-               ai_service_auto = 1;
-            if (ai_service_auto != 2)
+            if (p_rarch->ai_service_auto == 0 && !settings->bools.ai_service_pause)
+               p_rarch->ai_service_auto = 1;
+            if (p_rarch->ai_service_auto != 2)
                RARCH_LOG("AI Service Called...\n");
             run_translation_service(paused);
          }
@@ -12126,8 +12131,10 @@ static bool secondary_core_deserialize(const void *buffer, int size)
 
 static void remember_controller_port_device(long port, long device)
 {
+   struct rarch_state *p_rarch = &rarch_st;
+
    if (port >= 0 && port < 16)
-      port_map[port] = (int)device;
+      p_rarch->port_map[port] = (int)device;
    if (secondary_module && secondary_core.retro_set_controller_port_device)
       secondary_core.retro_set_controller_port_device((unsigned)port, (unsigned)device);
 }
@@ -12135,8 +12142,10 @@ static void remember_controller_port_device(long port, long device)
 static void clear_controller_port_map(void)
 {
    unsigned port;
+   struct rarch_state *p_rarch = &rarch_st;
+
    for (port = 0; port < 16; port++)
-      port_map[port] = -1;
+      p_rarch->port_map[port] = -1;
 }
 
 static char *get_temp_directory_alloc(const char *override_dir)
@@ -12394,7 +12403,7 @@ static bool secondary_core_create(void)
 
    for (port = 0; port < 16; port++)
    {
-      device = port_map[port];
+      device = p_rarch->port_map[port];
       if (device >= 0)
          secondary_core.retro_set_controller_port_device(
                (unsigned)port, (unsigned)device);
@@ -12985,6 +12994,7 @@ static void recording_dump_frame(const void *data, unsigned width,
       unsigned height, size_t pitch, bool is_idle)
 {
    struct record_video_data ffemu_data;
+   struct rarch_state *p_rarch = &rarch_st;
 
    ffemu_data.data     = data;
    ffemu_data.width    = width;
@@ -12992,7 +13002,7 @@ static void recording_dump_frame(const void *data, unsigned width,
    ffemu_data.pitch    = (int)pitch;
    ffemu_data.is_dupe  = false;
 
-   if (video_driver_record_gpu_buffer)
+   if (p_rarch->video_driver_record_gpu_buffer)
    {
       struct video_viewport vp;
 
@@ -13031,13 +13041,13 @@ static void recording_dump_frame(const void *data, unsigned width,
       /* Big bottleneck.
        * Since we might need to do read-backs asynchronously,
        * it might take 3-4 times before this returns true. */
-      if (!video_driver_read_viewport(video_driver_record_gpu_buffer, is_idle))
+      if (!video_driver_read_viewport(p_rarch->video_driver_record_gpu_buffer, is_idle))
          return;
 
       ffemu_data.pitch  = (int)(recording_gpu_width * 3);
       ffemu_data.width  = (unsigned)recording_gpu_width;
       ffemu_data.height = (unsigned)recording_gpu_height;
-      ffemu_data.data   = video_driver_record_gpu_buffer + (ffemu_data.height - 1) * ffemu_data.pitch;
+      ffemu_data.data   = p_rarch->video_driver_record_gpu_buffer + (ffemu_data.height - 1) * ffemu_data.pitch;
 
       ffemu_data.pitch  = -ffemu_data.pitch;
    }
@@ -13086,16 +13096,19 @@ void streaming_set_state(bool state)
 
 static bool video_driver_gpu_record_init(unsigned size)
 {
-   video_driver_record_gpu_buffer = (uint8_t*)malloc(size);
-   if (!video_driver_record_gpu_buffer)
+   struct rarch_state *p_rarch = &rarch_st;
+   p_rarch->video_driver_record_gpu_buffer = (uint8_t*)malloc(size);
+   if (!p_rarch->video_driver_record_gpu_buffer)
       return false;
    return true;
 }
 
 static void video_driver_gpu_record_deinit(void)
 {
-   free(video_driver_record_gpu_buffer);
-   video_driver_record_gpu_buffer = NULL;
+   struct rarch_state *p_rarch = &rarch_st;
+   if (p_rarch->video_driver_record_gpu_buffer)
+      free(p_rarch->video_driver_record_gpu_buffer);
+   p_rarch->video_driver_record_gpu_buffer = NULL;
 }
 
 /**
@@ -18831,27 +18844,32 @@ const struct retro_keybind *input_config_get_bind_auto(
 
 void input_config_set_pid(unsigned port, uint16_t pid)
 {
-   input_config_pid[port] = pid;
+   struct rarch_state *p_rarch = &rarch_st;
+   p_rarch->input_config_pid[port] = pid;
 }
 
 uint16_t input_config_get_pid(unsigned port)
 {
-   return input_config_pid[port];
+   struct rarch_state *p_rarch = &rarch_st;
+   return p_rarch->input_config_pid[port];
 }
 
 void input_config_set_vid(unsigned port, uint16_t vid)
 {
-   input_config_vid[port] = vid;
+   struct rarch_state *p_rarch = &rarch_st;
+   p_rarch->input_config_vid[port] = vid;
 }
 
 uint16_t input_config_get_vid(unsigned port)
 {
-   return input_config_vid[port];
+   struct rarch_state *p_rarch = &rarch_st;
+   return p_rarch->input_config_vid[port];
 }
 
 void input_config_reset(void)
 {
    unsigned i, j;
+   struct rarch_state *p_rarch = &rarch_st;
 
    retro_assert(sizeof(input_config_binds[0]) >= sizeof(retro_keybinds_1));
    retro_assert(sizeof(input_config_binds[1]) >= sizeof(retro_keybinds_rest));
@@ -18864,12 +18882,12 @@ void input_config_reset(void)
 
    for (i = 0; i < MAX_USERS; i++)
    {
-      input_config_vid[i]     = 0;
-      input_config_pid[i]     = 0;
-      libretro_input_binds[i] = input_config_binds[i];
+      p_rarch->input_config_vid[i]     = 0;
+      p_rarch->input_config_pid[i]     = 0;
+      libretro_input_binds[i]          = input_config_binds[i];
 
       for (j = 0; j < 64; j++)
-         input_device_names[i][j] = 0;
+         input_device_names[i][j]      = 0;
    }
 }
 
@@ -19229,16 +19247,20 @@ bool midi_driver_set_volume(unsigned volume)
 
 static bool midi_driver_init_io_buffers(void)
 {
-   midi_drv_input_buffer  = (uint8_t*)malloc(MIDI_DRIVER_BUF_SIZE);
-   midi_drv_output_buffer = (uint8_t*)malloc(MIDI_DRIVER_BUF_SIZE);
+   struct rarch_state     *p_rarch = &rarch_st;
+   uint8_t *midi_drv_input_buffer  = (uint8_t*)malloc(MIDI_DRIVER_BUF_SIZE);
+   uint8_t *midi_drv_output_buffer = (uint8_t*)malloc(MIDI_DRIVER_BUF_SIZE);
 
    if (!midi_drv_input_buffer || !midi_drv_output_buffer)
       return false;
+   
+   p_rarch->midi_drv_input_buffer  = midi_drv_input_buffer;
+   p_rarch->midi_drv_output_buffer = midi_drv_output_buffer;
 
-   midi_drv_input_event.data = midi_drv_input_buffer;
-   midi_drv_input_event.data_size = 0;
+   midi_drv_input_event.data       = midi_drv_input_buffer;
+   midi_drv_input_event.data_size  = 0;
 
-   midi_drv_output_event.data = midi_drv_output_buffer;
+   midi_drv_output_event.data      = midi_drv_output_buffer;
    midi_drv_output_event.data_size = 0;
 
    return true;
@@ -19265,15 +19287,16 @@ static void midi_driver_free(void)
       midi_drv_outputs = NULL;
    }
 
-   if (midi_drv_input_buffer)
+   if (p_rarch->midi_drv_input_buffer)
    {
-      free(midi_drv_input_buffer);
-      midi_drv_input_buffer = NULL;
+      free(p_rarch->midi_drv_input_buffer);
+      p_rarch->midi_drv_input_buffer = NULL;
    }
-   if (midi_drv_output_buffer)
+
+   if (p_rarch->midi_drv_output_buffer)
    {
-      free(midi_drv_output_buffer);
-      midi_drv_output_buffer = NULL;
+      free(p_rarch->midi_drv_output_buffer);
+      p_rarch->midi_drv_output_buffer = NULL;
    }
 
    p_rarch->midi_drv_input_enabled  = false;
@@ -23353,7 +23376,7 @@ static void video_driver_frame(const void *data, unsigned width,
              !video_driver_state_filter
           || !video_info.post_filter_record
           || !data
-          || video_driver_record_gpu_buffer
+          || p_rarch->video_driver_record_gpu_buffer
          ) && recording_data
            && recording_driver && recording_driver->push_video)
       recording_dump_frame(data, width, height,
@@ -25164,7 +25187,7 @@ static void retroarch_deinit_drivers(void)
    p_rarch->video_driver_active            = false;
    p_rarch->video_driver_cache_context     = false;
    p_rarch->video_driver_cache_context_ack = false;
-   video_driver_record_gpu_buffer          = NULL;
+   p_rarch->video_driver_record_gpu_buffer = NULL;
    current_video                           = NULL;
    video_driver_set_cached_frame_ptr(NULL);
 
@@ -28756,9 +28779,9 @@ static enum runloop_state runloop_check_state(retro_time_t current_time)
       
          for (i = 0; i < 16; i++)
          {
-            if (ai_gamepad_state[i] == 2)
+            if (p_rarch->ai_gamepad_state[i] == 2)
                set_gamepad_input_override(i, true);
-            ai_gamepad_state[i] = 0;
+            p_rarch->ai_gamepad_state[i] = 0;
          }
       }      
 #endif
@@ -29261,25 +29284,25 @@ static enum runloop_state runloop_check_state(retro_time_t current_time)
       to send off if it's run. */
    if (settings->bools.ai_service_enable)
    {
-      ai_gamepad_state[0]  = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_B);
-      ai_gamepad_state[1]  = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_Y);
-      ai_gamepad_state[2]  = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_SELECT);
-      ai_gamepad_state[3]  = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_START);
+      p_rarch->ai_gamepad_state[0]  = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_B);
+      p_rarch->ai_gamepad_state[1]  = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_Y);
+      p_rarch->ai_gamepad_state[2]  = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_SELECT);
+      p_rarch->ai_gamepad_state[3]  = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_START);
 
-      ai_gamepad_state[4]  = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_UP);
-      ai_gamepad_state[5]  = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_DOWN);
-      ai_gamepad_state[6]  = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_LEFT);
-      ai_gamepad_state[7]  = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_RIGHT);
+      p_rarch->ai_gamepad_state[4]  = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_UP);
+      p_rarch->ai_gamepad_state[5]  = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_DOWN);
+      p_rarch->ai_gamepad_state[6]  = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_LEFT);
+      p_rarch->ai_gamepad_state[7]  = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_RIGHT);
 
-      ai_gamepad_state[8]  = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_A);
-      ai_gamepad_state[9]  = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_X);
-      ai_gamepad_state[10] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_L);
-      ai_gamepad_state[11] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_R);
+      p_rarch->ai_gamepad_state[8]  = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_A);
+      p_rarch->ai_gamepad_state[9]  = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_X);
+      p_rarch->ai_gamepad_state[10] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_L);
+      p_rarch->ai_gamepad_state[11] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_R);
 
-      ai_gamepad_state[12] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_L2);
-      ai_gamepad_state[13] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_R2);
-      ai_gamepad_state[14] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_L3);
-      ai_gamepad_state[15] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_R3);
+      p_rarch->ai_gamepad_state[12] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_L2);
+      p_rarch->ai_gamepad_state[13] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_R2);
+      p_rarch->ai_gamepad_state[14] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_L3);
+      p_rarch->ai_gamepad_state[15] = BIT256_GET(current_bits, RETRO_DEVICE_ID_JOYPAD_R3);
    }
 #endif
 #endif
