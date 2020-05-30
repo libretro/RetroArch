@@ -27,6 +27,7 @@
 
 #include "msg_hash.h"
 
+/* TODO/FIXME - static public global variable */
 static unsigned uint_user_language;
 
 int menu_hash_get_help_enum(enum msg_hash_enums msg, char *s, size_t len)
