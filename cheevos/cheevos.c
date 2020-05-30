@@ -2990,7 +2990,9 @@ bool rcheevos_load(const void *data)
       /* Check whether this is an m3u file */
       if (m3u_file_is_m3u(coro->path))
       {
-         m3u_file_t *m3u_file = m3u_file_init(coro->path, M3U_FILE_SIZE);
+         /* Note: We only need the first entry, so limit
+          * capacity of m3u_file object to 1 */
+         m3u_file_t *m3u_file = m3u_file_init(coro->path, 1);
 
          if (m3u_file)
          {
@@ -3037,6 +3039,5 @@ bool rcheevos_load(const void *data)
    CHEEVOS_UNLOCK(rcheevos_locals.task_lock);
 
    task_queue_push(task);
-
    return true;
 }
