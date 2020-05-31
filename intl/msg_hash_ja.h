@@ -1755,10 +1755,6 @@ MSG_HASH(
     "ゲームコントローラー接続時にオーバーレイを非表示"
     )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_PHYSICAL_INPUTS_PORT,
-   "入力表示のポート番号"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_MAX_TIMING_SKEW,
    "音声入力レートの最大変化量です。\n"
    "NTSCディスプレイでPALコアを実行するなど, オーディオピッチの正確さを犠牲にしてタイミングを非常に大きく変更できるようにするには, これを増やすことをお勧めします。"
