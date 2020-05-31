@@ -1666,6 +1666,10 @@ struct input_keyboard_line
    void *userdata;
 };
 
+#ifdef HAVE_RUNAHEAD
+typedef bool(*runahead_load_state_function)(const void*, size_t);
+#endif
+
 struct rarch_state
 {
    enum rarch_core_type current_core_type;
@@ -2069,6 +2073,12 @@ static char input_device_display_names[MAX_INPUT_DEVICES][64];
 static char input_device_config_names [MAX_INPUT_DEVICES][64];
 static char input_device_config_paths [MAX_INPUT_DEVICES][64];
 
+#if defined(HAVE_RUNAHEAD)
+#if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
+static char *secondary_library_path                             = NULL;
+#endif
+#endif
+
 static midi_driver_t *midi_drv                                  = &midi_null;
 static const video_display_server_t *current_display_server     = &dispserv_null;
 
@@ -2299,8 +2309,6 @@ static const audio_driver_t *current_audio                      = NULL;
 static void *audio_driver_context_audio_data                    = NULL;
 
 #ifdef HAVE_RUNAHEAD
-typedef bool(*runahead_load_state_function)(const void*, size_t);
-
 static my_list *runahead_save_state_list                        = NULL;
 static my_list *input_state_list                                = NULL;
 
@@ -2334,12 +2342,6 @@ static void *current_input_data                                 = NULL;
 
 #ifdef HAVE_HID
 static const void *hid_data                                     = NULL;
-#endif
-
-#if defined(HAVE_RUNAHEAD)
-#if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
-static char *secondary_library_path                             = NULL;
-#endif
 #endif
 
 #if defined(HAVE_COMMAND)
