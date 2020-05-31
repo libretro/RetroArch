@@ -105,8 +105,11 @@ static bool ra_alive(void *data)
 static void ra_set_nonblock_state(void *data, bool state)
 {
    roar_t *roar = (roar_t*)data;
+
    if (roar_vs_blocking(roar->vss, (state) ? ROAR_VS_FALSE : ROAR_VS_TRUE, NULL) < 0)
-      fprintf(stderr, "RetroArch [ERROR]: Can't set nonblocking. Will not be able to fast-forward.\n");
+   {
+      RARCH_ERR("Can't set nonblocking. Will not be able to fast-forward.\n");
+   }
    roar->nonblocking = state;
 }
 

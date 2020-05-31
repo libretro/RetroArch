@@ -75,8 +75,6 @@ struct ad_packet
 int netplay_room_count                 = 0;
 struct netplay_room *netplay_room_list = NULL;
 
-static bool netplay_lan_ad_client(void);
-
 /* LAN discovery sockets */
 static int lan_ad_server_fd            = -1;
 static int lan_ad_client_fd            = -1;
@@ -89,6 +87,9 @@ static struct netplay_host_list discovered_hosts;
 static size_t discovered_hosts_allocated;
 
 static struct netplay_room netplay_host_room = {0};
+
+/* Forward declarations */
+static bool netplay_lan_ad_client(void);
 
 struct netplay_room* netplay_get_host_room(void)
 {
@@ -300,14 +301,14 @@ bool netplay_lan_ad_server(netplay_t *netplay)
          {
             char *p;
             char sub[NETPLAY_HOST_STR_LEN];
-            char frontend_tmp[NETPLAY_HOST_STR_LEN];
-            char frontend[NETPLAY_HOST_STR_LEN];
+            char frontend_architecture_tmp[32];
+            char frontend[256];
             const frontend_ctx_driver_t *frontend_drv = 
                (const frontend_ctx_driver_t*)
             frontend_driver_get_cpu_architecture_str(
-                  frontend_tmp, sizeof(frontend_tmp));
+                  frontend_architecture_tmp, sizeof(frontend_architecture_tmp));
             snprintf(frontend, sizeof(frontend), "%s %s",
-                  frontend_drv->ident, frontend_tmp);
+                  frontend_drv->ident, frontend_architecture_tmp);
 
             p=strrchr(reply_addr,'.');
             if (p)

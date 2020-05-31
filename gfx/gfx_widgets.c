@@ -44,7 +44,7 @@
 #include "../tasks/task_content.h"
 
 #ifdef HAVE_CHEEVOS
-#include "../cheevos-new/badges.h"
+#include "../cheevos/badges.h"
 #endif
 
 static bool widgets_inited             = false;
@@ -339,7 +339,6 @@ unsigned gfx_widgets_get_height(void)
    return simple_widget_height;
 }
 
-
 unsigned gfx_widgets_get_generic_message_height(void)
 {
    return generic_message_height;
@@ -353,6 +352,11 @@ unsigned gfx_widgets_get_last_video_width(void)
 unsigned gfx_widgets_get_last_video_height(void)
 {
    return last_video_height;
+}
+
+size_t gfx_widgets_get_msg_queue_size(void)
+{
+   return current_msgs ? current_msgs->size : 0;
 }
 
 /* Widgets list */
@@ -1407,6 +1411,7 @@ static void gfx_widgets_draw_regular_msg(
    }
 }
 
+#ifdef HAVE_MENU
 static void gfx_widgets_draw_backdrop(
       void *userdata,
       unsigned video_width,
@@ -1425,7 +1430,6 @@ static void gfx_widgets_draw_load_content_animation(
       unsigned video_width,
       unsigned video_height)
 {
-#ifdef HAVE_MENU
    /* TODO: change metrics? */
    int icon_size         = (int)load_content_animation_icon_size;
    uint32_t text_alpha   = load_content_animation_fade_alpha * 255.0f;
@@ -1476,8 +1480,8 @@ static void gfx_widgets_draw_load_content_animation(
    gfx_widgets_draw_backdrop(userdata,
          video_width, video_height,
          load_content_animation_final_fade_alpha);
-#endif
 }
+#endif
 
 static void INLINE gfx_widgets_font_bind(gfx_widget_font_data_t *font_data)
 {
@@ -1500,6 +1504,7 @@ void gfx_widgets_frame(void *data)
    video_frame_info_t *video_info;
    bool framecount_show;
    bool memory_show;
+   bool core_status_msg_show;
    void *userdata;
    unsigned video_width;
    unsigned video_height;
@@ -1509,7 +1514,9 @@ void gfx_widgets_frame(void *data)
    bool widgets_is_rewinding;
    bool runloop_is_slowmotion;
    int top_right_x_advance;
-   int scissor_me_timbers;
+#ifdef HAVE_CHEEVOS
+   int scissor_me_timbers    = 0;
+#endif
 
    if (!widgets_active)
       return;
@@ -1519,6 +1526,7 @@ void gfx_widgets_frame(void *data)
    video_info                = (video_frame_info_t*)data;
    framecount_show           = video_info->framecount_show;
    memory_show               = video_info->memory_show;
+   core_status_msg_show      = video_info->core_status_msg_show;
    userdata                  = video_info->userdata;
    video_width               = video_info->width;
    video_height              = video_info->height;
@@ -1528,7 +1536,6 @@ void gfx_widgets_frame(void *data)
    widgets_is_rewinding      = video_info->widgets_is_rewinding;
    runloop_is_slowmotion     = video_info->runloop_is_slowmotion;
    top_right_x_advance       = video_width;
-   scissor_me_timbers        = 0;
 
    gfx_widgets_frame_count++;
 
@@ -1704,26 +1711,11 @@ void gfx_widgets_frame(void *data)
    }
 #endif
 
-   /* Draw all messages */
-   for (i = 0; i < current_msgs->size; i++)
-   {
-      menu_widget_msg_t *msg = (menu_widget_msg_t*)current_msgs->list[i].userdata;
-
-      if (!msg)
-         continue;
-
-      if (msg->task_ptr)
-         gfx_widgets_draw_task_msg(msg, userdata,
-               video_width, video_height);
-      else
-         gfx_widgets_draw_regular_msg(msg, userdata,
-               video_width, video_height);
-   }
-
    /* FPS Counter */
    if (     fps_show 
          || framecount_show
          || memory_show
+         || core_status_msg_show
          )
    {
       const char *text      = *gfx_widgets_fps_text == '\0' ? "N/A" : gfx_widgets_fps_text;
@@ -1795,6 +1787,22 @@ void gfx_widgets_frame(void *data)
 
       if (widget->frame)
          widget->frame(data);
+   }
+
+   /* Draw all messages */
+   for (i = 0; i < current_msgs->size; i++)
+   {
+      menu_widget_msg_t *msg = (menu_widget_msg_t*)current_msgs->list[i].userdata;
+
+      if (!msg)
+         continue;
+
+      if (msg->task_ptr)
+         gfx_widgets_draw_task_msg(msg, userdata,
+               video_width, video_height);
+      else
+         gfx_widgets_draw_regular_msg(msg, userdata,
+               video_width, video_height);
    }
 
 #ifdef HAVE_MENU
@@ -2287,6 +2295,7 @@ void gfx_widgets_ai_service_overlay_unload(void)
 }
 #endif
 
+#ifdef HAVE_MENU
 static void gfx_widgets_end_load_content_animation(void *userdata)
 {
 #if 0
@@ -2296,13 +2305,12 @@ static void gfx_widgets_end_load_content_animation(void *userdata)
 
 void gfx_widgets_cleanup_load_content_animation(void)
 {
-#ifdef HAVE_MENU
    load_content_animation_running = false;
    if (load_content_animation_content_name)
       free(load_content_animation_content_name);
    load_content_animation_content_name = NULL;
-#endif
 }
+#endif
 
 void gfx_widgets_start_load_content_animation(const char *content_name, bool remove_extension)
 {

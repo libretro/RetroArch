@@ -427,7 +427,7 @@ const char *menu_driver_ident(void);
 
 bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data);
 
-void menu_driver_frame(video_frame_info_t *video_info);
+void menu_driver_frame(bool menu_is_alive, video_frame_info_t *video_info);
 
 bool menu_driver_get_load_content_animation_data(
       uintptr_t *icon, char **playlist_name);

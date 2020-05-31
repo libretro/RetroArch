@@ -1574,6 +1574,7 @@ static bool gx_frame(void *data, const void *frame,
    unsigned overscan_corr_bottom      = settings->uints.video_overscan_correction_bottom;
    bool video_smooth                  = settings->bools.video_smooth;
    unsigned video_aspect_ratio_idx    = settings->uints.video_aspect_ratio_idx;
+   bool menu_is_alive                 = video_info->menu_is_alive;
 
    fps_text_buf[0]                    = '\0';
 
@@ -1615,7 +1616,7 @@ static bool gx_frame(void *data, const void *frame,
       gx->old_height = height;
    }
 
-   g_draw_done = false;
+   g_draw_done           = false;
    gx->current_framebuf ^= 1;
 
    if (frame)
@@ -1649,7 +1650,7 @@ static bool gx_frame(void *data, const void *frame,
    }
 
 #ifdef HAVE_MENU
-   menu_driver_frame(video_info);
+   menu_driver_frame(menu_is_alive, video_info);
 #endif
 
    GX_InvalidateTexAll();

@@ -72,6 +72,7 @@ typedef struct
    unsigned height;
    float alpha;
    float delay_timer;
+   bool fade_active;
 } gfx_thumbnail_t;
 
 /* Holds all configuration parameters associated

@@ -174,11 +174,11 @@ ACHIEVEMENTS
 #include "../libretro-common/formats/cdfs/cdfs.c"
 #include "../network/net_http_special.c"
 
-#include "../cheevos-new/cheevos.c"
-#include "../cheevos-new/badges.c"
-#include "../cheevos-new/fixup.c"
-#include "../cheevos-new/hash.c"
-#include "../cheevos-new/parser.c"
+#include "../cheevos/cheevos.c"
+#include "../cheevos/badges.c"
+#include "../cheevos/fixup.c"
+#include "../cheevos/hash.c"
+#include "../cheevos/parser.c"
 
 #include "../deps/rcheevos/src/rcheevos/alloc.c"
 #include "../deps/rcheevos/src/rcheevos/compat.c"
@@ -1147,6 +1147,7 @@ RETROARCH
 #include "../intl/msg_hash_ar.c"
 #include "../intl/msg_hash_el.c"
 #include "../intl/msg_hash_tr.c"
+#include "../intl/msg_hash_sk.c"
 #endif
 
 #include "../intl/msg_hash_us.c"
@@ -1495,7 +1496,7 @@ XML
 HTTP SERVER
 ============================================================ */
 #if defined(HAVE_DISCORD)
-#include "../discord/discord.c"
+#include "../network/discord.c"
 
 #if defined(_WIN32)
 #include "../deps/discord-rpc/src/discord_register_win.c"

@@ -37,14 +37,48 @@
 #include "../../retroarch.h"
 #include "../../version.h"
 
+struct nick_buf_s
+{
+   uint32_t cmd[2];
+   char nick[NETPLAY_NICK_LEN];
+};
+
+struct password_buf_s
+{
+   uint32_t cmd[2];
+   char password[NETPLAY_PASS_HASH_LEN];
+};
+
+struct info_buf_s
+{
+   uint32_t cmd[2];
+   char core_name[NETPLAY_NICK_LEN];
+   char core_version[NETPLAY_NICK_LEN];
+   uint32_t content_crc;
+};
+
+#define RECV(buf, sz) \
+   recvd = netplay_recv(&connection->recv_packet_buffer, connection->fd, (buf), (sz), false); \
+   if (recvd >= 0 && recvd < (ssize_t) (sz)) \
+   { \
+      netplay_recv_reset(&connection->recv_packet_buffer); \
+      return true; \
+   } \
+   else if (recvd < 0)
+
+static netplay_t *handshake_password_netplay = NULL;
+
 const uint32_t netplay_magic = 0x52414E50; /* RANP */
+
+static unsigned long simple_rand_next = 1;
 
 /* TODO/FIXME - replace netplay_log_connection with calls
  * to inet_ntop_compat and move runloop message queue pushing
  * outside */
 #if !defined(HAVE_SOCKET_LEGACY) && !defined(WIIU) && !defined(_3DS)
 /* Custom inet_ntop. Win32 doesn't seem to support this ... */
-void netplay_log_connection(const struct sockaddr_storage *their_addr,
+static void netplay_log_connection(
+      const struct sockaddr_storage *their_addr,
       unsigned slot, const char *nick, char *s, size_t len)
 {
    union
@@ -104,16 +138,15 @@ void netplay_log_connection(const struct sockaddr_storage *their_addr,
             nick);
    }
 }
-
 #else
-void netplay_log_connection(const struct sockaddr_storage *their_addr,
+static void netplay_log_connection(
+      const struct sockaddr_storage *their_addr,
       unsigned slot, const char *nick, char *s, size_t len)
 {
    /* Stub code - will need to be implemented */
    snprintf(s, len, msg_hash_to_str(MSG_GOT_CONNECTION_FROM),
          nick);
 }
-
 #endif
 
 /**
@@ -122,7 +155,7 @@ void netplay_log_connection(const struct sockaddr_storage *their_addr,
  * A pseudo-hash of the RetroArch and Netplay version, so only compatible
  * versions play together.
  */
-uint32_t netplay_impl_magic(void)
+static uint32_t netplay_impl_magic(void)
 {
    size_t i;
    uint32_t res                        = 0;
@@ -168,8 +201,6 @@ static bool netplay_endian_mismatch(uint32_t pma, uint32_t pmb)
    uint32_t ebit = (1<<30);
    return (pma & ebit) != (pmb & ebit);
 }
-
-static unsigned long simple_rand_next = 1;
 
 static int simple_rand(void)
 {
@@ -234,37 +265,6 @@ bool netplay_handshake_init_send(netplay_t *netplay,
 
    return true;
 }
-
-struct nick_buf_s
-{
-   uint32_t cmd[2];
-   char nick[NETPLAY_NICK_LEN];
-};
-
-struct password_buf_s
-{
-   uint32_t cmd[2];
-   char password[NETPLAY_PASS_HASH_LEN];
-};
-
-struct info_buf_s
-{
-   uint32_t cmd[2];
-   char core_name[NETPLAY_NICK_LEN];
-   char core_version[NETPLAY_NICK_LEN];
-   uint32_t content_crc;
-};
-
-#define RECV(buf, sz) \
-   recvd = netplay_recv(&connection->recv_packet_buffer, connection->fd, (buf), (sz), false); \
-   if (recvd >= 0 && recvd < (ssize_t) (sz)) \
-   { \
-      netplay_recv_reset(&connection->recv_packet_buffer); \
-      return true; \
-   } \
-   else if (recvd < 0)
-
-static netplay_t *handshake_password_netplay = NULL;
 
 #ifdef HAVE_MENU
 static void handshake_password(void *ignore, const char *line)
@@ -496,7 +496,7 @@ static void netplay_handshake_ready(netplay_t *netplay,
  *
  * Send an INFO command.
  */
-bool netplay_handshake_info(netplay_t *netplay,
+static bool netplay_handshake_info(netplay_t *netplay,
       struct netplay_connection *connection)
 {
    struct info_buf_s info_buf;
@@ -545,7 +545,7 @@ bool netplay_handshake_info(netplay_t *netplay,
  *
  * Send a SYNC command.
  */
-bool netplay_handshake_sync(netplay_t *netplay,
+static bool netplay_handshake_sync(netplay_t *netplay,
       struct netplay_connection *connection)
 {
    /* If we're the server, now we send sync info */
@@ -690,7 +690,7 @@ bool netplay_handshake_sync(netplay_t *netplay,
  * Data receiver for the second stage of handshake, receiving the other side's
  * nickname.
  */
-bool netplay_handshake_pre_nick(netplay_t *netplay,
+static bool netplay_handshake_pre_nick(netplay_t *netplay,
    struct netplay_connection *connection, bool *had_input)
 {
    struct nick_buf_s nick_buf;
@@ -753,7 +753,7 @@ bool netplay_handshake_pre_nick(netplay_t *netplay,
  * Data receiver for the third, optional stage of server handshake, receiving
  * the password and sending core/content info.
  */
-bool netplay_handshake_pre_password(netplay_t *netplay,
+static bool netplay_handshake_pre_password(netplay_t *netplay,
    struct netplay_connection *connection, bool *had_input)
 {
    struct password_buf_s password_buf;
@@ -833,7 +833,7 @@ bool netplay_handshake_pre_password(netplay_t *netplay,
  * Data receiver for the third stage of server handshake, receiving
  * the password.
  */
-bool netplay_handshake_pre_info(netplay_t *netplay,
+static bool netplay_handshake_pre_info(netplay_t *netplay,
    struct netplay_connection *connection, bool *had_input)
 {
    struct info_buf_s info_buf;
@@ -937,7 +937,7 @@ bool netplay_handshake_pre_info(netplay_t *netplay,
  * Data receiver for the client's third handshake stage, receiving the
  * synchronization information.
  */
-bool netplay_handshake_pre_sync(netplay_t *netplay,
+static bool netplay_handshake_pre_sync(netplay_t *netplay,
    struct netplay_connection *connection, bool *had_input)
 {
    uint32_t cmd[2];

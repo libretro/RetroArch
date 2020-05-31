@@ -100,7 +100,6 @@ bool libretro_get_shared_context(void);
 #define SUBSYSTEM_MAX_SUBSYSTEM_ROMS 10
 
 extern struct retro_subsystem_info subsystem_data[SUBSYSTEM_MAX_SUBSYSTEMS];
-extern struct retro_subsystem_rom_info subsystem_data_roms[SUBSYSTEM_MAX_SUBSYSTEMS][SUBSYSTEM_MAX_SUBSYSTEM_ROMS];
 extern unsigned subsystem_current_count;
 
 RETRO_END_DECLS

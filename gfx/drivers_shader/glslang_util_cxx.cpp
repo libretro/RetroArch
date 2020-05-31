@@ -54,7 +54,7 @@ static std::string build_stage_source(
       return "";
 
    /* Version header. */
-   str << lines->elems[0].data;;
+   str << lines->elems[0].data;
    str << '\n';
 
    for (i = 1; i < lines->size; i++)

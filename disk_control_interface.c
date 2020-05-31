@@ -234,7 +234,7 @@ static void disk_control_get_index_set_msg(
       unsigned *msg_duration, char *msg, size_t len)
 {
    bool has_label = false;
-   char image_label[PATH_MAX_LENGTH];
+   char image_label[128];
 
    image_label[0] = '\0';
 

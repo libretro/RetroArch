@@ -645,8 +645,8 @@ void d3d9_make_d3dpp(void *data,
 #ifdef _XBOX
    /* TODO/FIXME - get rid of global state dependencies. */
    global_t *global               = global_get_ptr();
-   bool gamma_enable              = global ?
-      global->console.screen.gamma_correction : false;
+   int gamma_enable               = global ?
+      global->console.screen.gamma_correction : 0;
 #endif
    bool windowed_enable           = d3d9_is_windowed_enable(info->fullscreen);
 
@@ -1532,7 +1532,7 @@ static bool d3d9_frame(void *data, const void *frame,
    struct font_params *osd_params      = (struct font_params*)
       &video_info->osd_stat_params;
    const char *stat_text               = video_info->stat_text;
-
+   bool menu_is_alive                  = video_info->menu_is_alive;
 
    if (!frame)
       return true;
@@ -1602,7 +1602,7 @@ static bool d3d9_frame(void *data, const void *frame,
       d3d9_set_stream_source(d3d->dev, 0, (LPDIRECT3DVERTEXBUFFER9)d3d->menu_display.buffer, 0, sizeof(Vertex));
 
       d3d9_set_viewports(d3d->dev, &screen_vp);
-      menu_driver_frame(video_info);
+      menu_driver_frame(menu_is_alive, video_info);
    }
    else if (statistics_show)
    {

@@ -47,7 +47,7 @@
 #endif
 
 #ifdef HAVE_DISCORD
-#include "../discord/discord.h"
+#include "../network/discord.h"
 #endif
 
 #include "badges.h"
@@ -207,8 +207,6 @@ bool rcheevos_loaded = false;
 bool rcheevos_hardcore_active = false;
 bool rcheevos_hardcore_paused = false;
 bool rcheevos_state_loaded_flag = false;
-int rcheevos_cheats_are_enabled = 0;
-int rcheevos_cheats_were_enabled = 0;
 char rcheevos_user_agent_prefix[128] = "";
 
 #ifdef HAVE_THREADS
@@ -1269,12 +1267,9 @@ bool rcheevos_get_description(rcheevos_ctx_desc_t* desc)
    return true;
 }
 
-bool rcheevos_apply_cheats(bool* data_bool)
+void rcheevos_pause_hardcore()
 {
-   rcheevos_cheats_are_enabled   = *data_bool;
-   rcheevos_cheats_were_enabled |= rcheevos_cheats_are_enabled;
-
-   return true;
+   rcheevos_hardcore_paused = true;
 }
 
 bool rcheevos_unload(void)
@@ -1396,12 +1391,6 @@ void rcheevos_test(void)
           !rcheevos_hardcore_paused)
          rcheevos_test_leaderboards();
    }
-}
-
-bool rcheevos_set_cheats(void)
-{
-   rcheevos_cheats_were_enabled = rcheevos_cheats_are_enabled;
-   return true;
 }
 
 void rcheevos_set_support_cheevos(bool state)

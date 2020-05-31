@@ -99,7 +99,7 @@ void* rc_file_open(const char* path)
   handle = filereader->open(path);
   if (handle && verbose_message_callback)
   {
-    char message[1024];
+    char message[2048];
     snprintf(message, sizeof(message), "Opened %s", rc_path_get_filename(path));
     verbose_message_callback(message);
   }
@@ -363,7 +363,7 @@ static int rc_hash_3do(char hash[33], const char* path)
   {
     if (verbose_message_callback)
     {
-      char message[128];
+      char message[4096];
       snprintf(message, sizeof(message), "Found 3DO CD, title=%s", &buffer[0x28]);
       verbose_message_callback(message);
     }
@@ -653,7 +653,7 @@ static int rc_hash_pce_cd(char hash[33], const char* path)
 
     if (verbose_message_callback)
     {
-      char message[128];
+      char message[4096];
       buffer[128] = '\0';
       snprintf(message, sizeof(message), "Found PC Engine CD, title=%s", &buffer[106]);
       verbose_message_callback(message);
@@ -1075,7 +1075,7 @@ static const char* rc_hash_get_first_item_from_playlist(const char* path)
 
   if (verbose_message_callback)
   {
-    char message[1024];
+    char message[2048];
     snprintf(message, sizeof(message), "Extracted %s from playlist", buffer);
     verbose_message_callback(message);
   }

@@ -2768,20 +2768,27 @@ static void rgui_render_messagebox(rgui_t *rgui, const char *message)
    int x, y;
    size_t i, fb_pitch;
    unsigned fb_width, fb_height;
-   unsigned width, glyphs_width, height;
-   struct string_list *list   = NULL;
+   unsigned width           = 0;
+   unsigned glyphs_width    = 0;
+   unsigned height          = 0;
+   struct string_list *list = NULL;
+   char wrapped_message[MENU_SUBLABEL_MAX_LENGTH];
 
-   if (!message || !*message)
+   wrapped_message[0] = '\0';
+
+   if (string_is_empty(message))
       return;
 
-   list = string_split(message, "\n");
-   if (!list)
-      return;
-   if (list->elems == 0)
+   /* Split message into lines */
+   word_wrap(
+         wrapped_message, message,
+         rgui_term_layout.width,
+         false, 0);
+
+   list = string_split(wrapped_message, "\n");
+
+   if (!list || list->elems == 0)
       goto end;
-
-   width        = 0;
-   glyphs_width = 0;
 
    gfx_display_get_fb_size(&fb_width, &fb_height,
          &fb_pitch);
@@ -2792,23 +2799,18 @@ static void rgui_render_messagebox(rgui_t *rgui, const char *message)
       char     *msg   = list->elems[i].data;
       unsigned msglen = (unsigned)utf8len(msg);
 
-      if (msglen > rgui_term_layout.width)
-      {
-         msg[rgui_term_layout.width - 2] = '.';
-         msg[rgui_term_layout.width - 1] = '.';
-         msg[rgui_term_layout.width - 0] = '.';
-         msg[rgui_term_layout.width + 1] = '\0';
-         msglen = rgui_term_layout.width;
-      }
-
       line_width   = msglen * FONT_WIDTH_STRIDE - 1 + 6 + 10;
       width        = MAX(width, line_width);
       glyphs_width = MAX(glyphs_width, msglen);
    }
 
    height = (unsigned)(FONT_HEIGHT_STRIDE * list->size + 6 + 10);
-   x      = (fb_width  - width) / 2;
-   y      = (fb_height - height) / 2;
+   x      = ((int)fb_width  - (int)width) / 2;
+   y      = ((int)fb_height - (int)height) / 2;
+
+   height = (height > fb_height) ? fb_height : height;
+   x      = (x < 0)              ? 0 : x;
+   y      = (y < 0)              ? 0 : y;
 
    if (rgui_frame_buf.data)
    {
@@ -2854,19 +2856,30 @@ static void rgui_render_messagebox(rgui_t *rgui, const char *message)
             border_dark_color, border_light_color, border_thickness);
    }
 
-   for (i = 0; i < list->size; i++)
+   /* Draw text */
+   if (rgui_frame_buf.data)
    {
-      const char *msg = list->elems[i].data;
-      int offset_x    = (int)(FONT_WIDTH_STRIDE * (glyphs_width - utf8len(msg)) / 2);
-      int offset_y    = (int)(FONT_HEIGHT_STRIDE * i);
+      for (i = 0; i < list->size; i++)
+      {
+         const char *msg = list->elems[i].data;
+         int offset_x    = (int)(FONT_WIDTH_STRIDE * (glyphs_width - utf8len(msg)) / 2);
+         int offset_y    = (int)(FONT_HEIGHT_STRIDE * i);
+         int text_x      = x + 8 + offset_x;
+         int text_y      = y + 8 + offset_y;
 
-      if (rgui_frame_buf.data)
-         blit_line(fb_width, x + 8 + offset_x, y + 8 + offset_y, msg,
+         /* Ensure we remain within the bounds of the
+          * framebuffer */
+         if (text_y > (int)fb_height - 10 - (int)FONT_HEIGHT_STRIDE)
+            break;
+
+         blit_line(fb_width, text_x, text_y, msg,
                rgui->colors.normal_color, rgui->colors.shadow_color);
+      }
    }
 
 end:
-   string_list_free(list);
+   if (list)
+      string_list_free(list);
 }
 
 static void rgui_blit_cursor(rgui_t *rgui)
@@ -2884,44 +2897,34 @@ static void rgui_blit_cursor(rgui_t *rgui)
    }
 }
 
-int rgui_osk_ptr_at_pos(void *data, int x, int y,
+static int rgui_osk_ptr_at_pos(void *data, int x, int y,
       unsigned width, unsigned height)
 {
    /* This is a lazy copy/paste from rgui_render_osk(),
     * but it will do for now... */
-   size_t fb_pitch;
+   size_t fb_pitch, key_index;
    unsigned fb_width, fb_height;
-   size_t key_index;
    
-   unsigned key_width, key_height;
-   unsigned key_text_offset_x, key_text_offset_y;
-   unsigned ptr_width, ptr_height;
-   unsigned ptr_offset_x, ptr_offset_y;
-   
-   unsigned keyboard_width, keyboard_height;
-   unsigned keyboard_offset_x, keyboard_offset_y;
-   
-   unsigned osk_width, osk_height;
    unsigned osk_x, osk_y;
+   unsigned key_text_offset_x  = 8;
+   unsigned key_text_offset_y  = 6;
+   unsigned ptr_offset_x       = 2;
+   unsigned ptr_offset_y       = 2;
+   unsigned keyboard_offset_x  = 10;
+   unsigned key_width          = FONT_WIDTH  + (key_text_offset_x * 2);
+   unsigned key_height         = FONT_HEIGHT + (key_text_offset_y * 2);
+   unsigned ptr_width          = key_width  - (ptr_offset_x * 2);
+   unsigned ptr_height         = key_height - (ptr_offset_y * 2);
+   unsigned keyboard_width     = key_width  * OSK_CHARS_PER_LINE;
+   unsigned keyboard_height    = key_height * 4;
+   unsigned keyboard_offset_y  = 10 + 15 + (2 * FONT_HEIGHT_STRIDE);
+   unsigned osk_width          = keyboard_width + 20;
+   unsigned osk_height         = keyboard_offset_y + keyboard_height + 10;
 
    /* Get dimensions/layout */
    gfx_display_get_fb_size(&fb_width, &fb_height, &fb_pitch);
 
-   key_text_offset_x      = 8;
-   key_text_offset_y      = 6;
-   key_width              = FONT_WIDTH  + (key_text_offset_x * 2);
-   key_height             = FONT_HEIGHT + (key_text_offset_y * 2);
-   ptr_offset_x           = 2;
-   ptr_offset_y           = 2;
-   ptr_width              = key_width  - (ptr_offset_x * 2);
-   ptr_height             = key_height - (ptr_offset_y * 2);
-   keyboard_width         = key_width  * OSK_CHARS_PER_LINE;
-   keyboard_height        = key_height * 4;
-   keyboard_offset_x      = 10;
-   keyboard_offset_y      = 10 + 15 + (2 * FONT_HEIGHT_STRIDE);
-   osk_width              = keyboard_width + 20;
-   osk_height             = keyboard_offset_y + keyboard_height + 10;
-   osk_x                  = (fb_width - osk_width) / 2;
+   osk_x                  = (fb_width  - osk_width)  / 2;
    osk_y                  = (fb_height - osk_height) / 2;
 
    for (key_index = 0; key_index < 44; key_index++)
@@ -2929,8 +2932,8 @@ int rgui_osk_ptr_at_pos(void *data, int x, int y,
       unsigned key_row     = (unsigned)(key_index / OSK_CHARS_PER_LINE);
       unsigned key_column  = (unsigned)(key_index - (key_row * OSK_CHARS_PER_LINE));
 
-      unsigned osk_ptr_x = osk_x + keyboard_offset_x + ptr_offset_x + (key_column * key_width);
-      unsigned osk_ptr_y = osk_y + keyboard_offset_y + ptr_offset_y + (key_row    * key_height);
+      unsigned osk_ptr_x   = osk_x + keyboard_offset_x + ptr_offset_x + (key_column * key_width);
+      unsigned osk_ptr_y   = osk_y + keyboard_offset_y + ptr_offset_y + (key_row    * key_height);
 
       if (x > osk_ptr_x && x < osk_ptr_x + ptr_width &&
           y > osk_ptr_y && y < osk_ptr_y + ptr_height)
@@ -3880,11 +3883,12 @@ static void rgui_render(void *data,
          gfx_display_ctx_datetime_t datetime;
          char timedate[16];
 
-         timedate[0] = '\0';
+         timedate[0]             = '\0';
 
-         datetime.s = timedate;
-         datetime.len = sizeof(timedate);
-         datetime.time_mode = MENU_TIMEDATE_STYLE_HM;
+         datetime.s              = timedate;
+         datetime.len            = sizeof(timedate);
+         datetime.time_mode      = MENU_TIMEDATE_STYLE_HM;
+         datetime.date_separator = MENU_TIMEDATE_DATE_SEPARATOR_HYPHEN;
 
          menu_display_timedate(&datetime);
 
@@ -5403,10 +5407,13 @@ static enum menu_action rgui_parse_menu_entry_action(
    switch (action)
    {
       case MENU_ACTION_SCAN:
-         /* 'Scan' command is used to toggle
-          * fullscreen thumbnail view */
-         rgui_toggle_fs_thumbnail(rgui);
-         new_action = MENU_ACTION_NOOP;
+         /* If this is a playlist, 'scan' command is
+          * used to toggle fullscreen thumbnail view */
+         if (rgui->is_playlist)
+         {
+            rgui_toggle_fs_thumbnail(rgui);
+            new_action = MENU_ACTION_NOOP;
+         }
          break;
       default:
          /* In all other cases, pass through input

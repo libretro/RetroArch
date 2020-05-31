@@ -27,6 +27,11 @@
 #include "../../driver.h"
 #include "../../input/input_driver.h"
 
+struct vote_count
+{
+   uint16_t votes[32];
+};
+
 #if 0
 #define DEBUG_NONDETERMINISTIC_CORES
 #endif
@@ -85,10 +90,6 @@ void netplay_update_unread_ptr(netplay_t *netplay)
       }
    }
 }
-
-struct vote_count {
-   uint16_t votes[32];
-};
 
 /**
  * netplay_device_client_state

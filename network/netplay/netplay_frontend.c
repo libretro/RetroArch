@@ -27,7 +27,7 @@
 #include <net/net_http.h>
 
 #ifdef HAVE_DISCORD
-#include <discord/discord.h>
+#include "../discord.h"
 #endif
 
 #include <file/file_path.h>
@@ -811,7 +811,7 @@ static void netplay_announce(void)
 {
    char buf[4600];
    char frontend_architecture[PATH_MAX_LENGTH];
-   char frontend_architecture_tmp[PATH_MAX_LENGTH];
+   char frontend_architecture_tmp[32];
    const frontend_ctx_driver_t *frontend_drv =  NULL;
    char url[2048]                   = "http://lobby.libretro.com/add/";
    char *username                   = NULL;
@@ -1000,7 +1000,7 @@ bool netplay_pre_frame(netplay_t *netplay)
    if (settings->bools.netplay_public_announce)
    {
       reannounce++;
-      if ((netplay->is_server || is_mitm) && (reannounce % 600 == 0))
+      if ((netplay->is_server || is_mitm) && (reannounce % 300 == 0))
          netplay_announce();
    }
    /* Make sure that if announcement is turned on mid-game, it gets announced */

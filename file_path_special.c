@@ -63,6 +63,7 @@
 #include "configuration.h"
 #include "file_path_special.h"
 
+#include "msg_hash.h"
 #include "paths.h"
 #include "verbosity.h"
 
@@ -163,6 +164,18 @@ void fill_pathname_application_special(char *s,
                strlcpy(s, dir_menu_config, len);
             else if (!path_is_empty(RARCH_PATH_CONFIG))
                fill_pathname_basedir(s, path_get(RARCH_PATH_CONFIG), len);
+         }
+         break;
+      case APPLICATION_SPECIAL_DIRECTORY_ASSETS_PKG:
+         {
+            settings_t *settings   = config_get_ptr();
+            char               *s1 = (char*)malloc(
+                  PATH_MAX_LENGTH * sizeof(char));
+            const char *dir_assets = settings->paths.directory_assets;
+            s1[0] = '\0';
+            fill_pathname_join(s1, dir_assets, "pkg", PATH_MAX_LENGTH * sizeof(char));
+            strlcpy(s, s1, len);
+            free(s1);
          }
          break;
       case APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_ICONS:
@@ -327,10 +340,33 @@ void fill_pathname_application_special(char *s,
 
             s1[0] = '\0';
 
-            fill_pathname_application_special(s1,
-                  PATH_MAX_LENGTH * sizeof(char),
-                  APPLICATION_SPECIAL_DIRECTORY_ASSETS_MATERIALUI);
-            fill_pathname_join(s, s1, "font.ttf", len);
+            switch (*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE))
+            {
+               case RETRO_LANGUAGE_ARABIC:
+                  fill_pathname_application_special(s1,
+                        PATH_MAX_LENGTH * sizeof(char),
+                        APPLICATION_SPECIAL_DIRECTORY_ASSETS_PKG);
+                  fill_pathname_join(s, s1, "fallback-font.ttf", len);
+                  break;
+               case RETRO_LANGUAGE_CHINESE_SIMPLIFIED:
+               case RETRO_LANGUAGE_CHINESE_TRADITIONAL:
+                  fill_pathname_application_special(s1,
+                        PATH_MAX_LENGTH * sizeof(char),
+                        APPLICATION_SPECIAL_DIRECTORY_ASSETS_PKG);
+                  fill_pathname_join(s, s1, "chinese-fallback-font.ttf", len);
+                  break;
+               case RETRO_LANGUAGE_KOREAN:
+                  fill_pathname_application_special(s1,
+                        PATH_MAX_LENGTH * sizeof(char),
+                        APPLICATION_SPECIAL_DIRECTORY_ASSETS_PKG);
+                  fill_pathname_join(s, s1, "korean-fallback-font.ttf", len);
+                  break;
+               default:
+                  fill_pathname_application_special(s1,
+                        PATH_MAX_LENGTH * sizeof(char),
+                        APPLICATION_SPECIAL_DIRECTORY_ASSETS_MATERIALUI);
+                  fill_pathname_join(s, s1, "font.ttf", len);
+            }
 
             free(s1);
          }
@@ -350,10 +386,33 @@ void fill_pathname_application_special(char *s,
 
                s1[0] = '\0';
 
-               fill_pathname_application_special(s1,
-                     PATH_MAX_LENGTH * sizeof(char),
-                     APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB);
-               fill_pathname_join(s, s1, "font.ttf", len);
+               switch (*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE))
+               {
+                  case RETRO_LANGUAGE_ARABIC:
+                     fill_pathname_application_special(s1,
+                           PATH_MAX_LENGTH * sizeof(char),
+                           APPLICATION_SPECIAL_DIRECTORY_ASSETS_PKG);
+                     fill_pathname_join(s, s1, "fallback-font.ttf", len);
+                     break;
+                  case RETRO_LANGUAGE_CHINESE_SIMPLIFIED:
+                  case RETRO_LANGUAGE_CHINESE_TRADITIONAL:
+                     fill_pathname_application_special(s1,
+                           PATH_MAX_LENGTH * sizeof(char),
+                           APPLICATION_SPECIAL_DIRECTORY_ASSETS_PKG);
+                     fill_pathname_join(s, s1, "chinese-fallback-font.ttf", len);
+                     break;
+                  case RETRO_LANGUAGE_KOREAN:
+                     fill_pathname_application_special(s1,
+                           PATH_MAX_LENGTH * sizeof(char),
+                           APPLICATION_SPECIAL_DIRECTORY_ASSETS_PKG);
+                     fill_pathname_join(s, s1, "korean-fallback-font.ttf", len);
+                     break;
+                  default:
+                     fill_pathname_application_special(s1,
+                           PATH_MAX_LENGTH * sizeof(char),
+                           APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB);
+                     fill_pathname_join(s, s1, "font.ttf", len);
+               }
                free(s1);
             }
          }

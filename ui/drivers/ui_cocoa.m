@@ -123,7 +123,6 @@ static void app_terminate(void)
         case NSEventTypeOtherMouseDragged:
          {
             NSPoint pos;
-            NSPoint mouse_pos;
             apple              = (cocoa_input_data_t*)input_driver_get_data();
             if (!apple)
                return;

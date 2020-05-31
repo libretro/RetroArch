@@ -30,6 +30,20 @@
 
 #include "../../../input/input_osk.h"
 
+static float ozone_backdrop[16] = {
+      0.00, 0.00, 0.00, 0.75,
+      0.00, 0.00, 0.00, 0.75,
+      0.00, 0.00, 0.00, 0.75,
+      0.00, 0.00, 0.00, 0.75,
+};
+
+static float ozone_osk_backdrop[16] = {
+      0.00, 0.00, 0.00, 0.15,
+      0.00, 0.00, 0.00, 0.15,
+      0.00, 0.00, 0.00, 0.15,
+      0.00, 0.00, 0.00, 0.15,
+};
+
 static void ozone_cursor_animation_cb(void *userdata);
 
 static void ozone_animate_cursor(ozone_handle_t *ozone, float *dst, float *target)
@@ -502,21 +516,37 @@ void ozone_draw_messagebox(
       const char *message)
 {
    unsigned i, y_position;
-   int x, y, longest = 0, longest_width = 0;
-   struct string_list *list = !string_is_empty(message)
-      ? string_split(message, "\n") : NULL;
-   float scale_factor       = ozone->last_scale_factor;
+   int x, y, longest_width  = 0;
+   int usable_width         = 0;
+   struct string_list *list = NULL;
+   float scale_factor       = 0.0f;
    unsigned width           = video_width;
    unsigned height          = video_height;
+   char wrapped_message[MENU_SUBLABEL_MAX_LENGTH];
 
-   if (!list || !ozone || !ozone->fonts.footer.font)
-   {
-      if (list)
-         string_list_free(list);
-      return;
-   }
+   wrapped_message[0] = '\0';
 
-   if (list->elems == 0)
+   /* Sanity check */
+   if (string_is_empty(message) ||
+       !ozone ||
+       !ozone->fonts.footer.font)
+      goto end;
+
+   scale_factor = ozone->last_scale_factor;
+   usable_width = (int)width - (48 * 8 * scale_factor);
+
+   if (usable_width < 1)
+      goto end;
+
+   /* Split message into lines */
+   word_wrap(
+         wrapped_message, message,
+         usable_width / (int)ozone->fonts.footer.glyph_width,
+         true, 0);
+
+   list = string_split(wrapped_message, "\n");
+
+   if (!list || list->elems == 0)
       goto end;
 
    y_position       = height / 2;
@@ -530,13 +560,14 @@ void ozone_draw_messagebox(
    for (i = 0; i < list->size; i++)
    {
       const char *msg  = list->elems[i].data;
-      int len          = (int)utf8len(msg);
 
-      if (len > longest)
+      if (!string_is_empty(msg))
       {
-         longest       = len;
-         longest_width = font_driver_get_message_width(
+         int width = font_driver_get_message_width(
                ozone->fonts.footer.font, msg, (unsigned)strlen(msg), 1);
+
+         longest_width = (width > longest_width) ?
+               width : longest_width;
       }
    }
 
@@ -592,7 +623,8 @@ void ozone_draw_messagebox(
    }
 
 end:
-   string_list_free(list);
+   if (list)
+      string_list_free(list);
 }
 
 void ozone_draw_fullscreen_thumbnails(

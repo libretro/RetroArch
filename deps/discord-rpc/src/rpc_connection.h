@@ -5,7 +5,7 @@
 
 /* I took this from the buffer size libuv uses for named pipes; 
  * I suspect ours would usually be much smaller. */
-constexpr size_t MaxRpcFrameSize = 64 * 1024;
+#define MAX_RPC_FRAMESIZE 65536
 
 struct RpcConnection
 {
@@ -33,7 +33,7 @@ struct RpcConnection
 
    struct MessageFrame : public MessageFrameHeader
    {
-      char message[MaxRpcFrameSize - sizeof(MessageFrameHeader)];
+      char message[MAX_RPC_FRAMESIZE - sizeof(MessageFrameHeader)];
    };
 
    enum class State : uint32_t

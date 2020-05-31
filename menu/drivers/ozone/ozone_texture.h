@@ -25,7 +25,8 @@
 
 #include "../../menu_driver.h"
 
-enum OZONE_TEXTURE {
+enum OZONE_TEXTURE
+{
    OZONE_TEXTURE_RETROARCH = 0,
    OZONE_TEXTURE_CURSOR_BORDER,
 #if 0
@@ -34,12 +35,8 @@ enum OZONE_TEXTURE {
    OZONE_TEXTURE_LAST
 };
 
-static const char *OZONE_TEXTURES_FILES[OZONE_TEXTURE_LAST] = {
-   "retroarch",
-   "cursor_border"
-};
-
-enum OZONE_THEME_TEXTURES {
+enum OZONE_THEME_TEXTURES
+{
    OZONE_THEME_TEXTURE_SWITCH = 0,
    OZONE_THEME_TEXTURE_CHECK,
 
@@ -49,15 +46,8 @@ enum OZONE_THEME_TEXTURES {
    OZONE_THEME_TEXTURE_LAST
 };
 
-static const char *OZONE_THEME_TEXTURES_FILES[OZONE_THEME_TEXTURE_LAST] = {
-   "switch",
-   "check",
-
-   "cursor_noborder",
-   "cursor_static"
-};
-
-enum OZONE_TAB_TEXTURES {
+enum OZONE_TAB_TEXTURES
+{
    OZONE_TAB_TEXTURE_MAIN_MENU = 0,
    OZONE_TAB_TEXTURE_SETTINGS,
    OZONE_TAB_TEXTURE_HISTORY,
@@ -69,18 +59,6 @@ enum OZONE_TAB_TEXTURES {
    OZONE_TAB_TEXTURE_SCAN_CONTENT,
 
    OZONE_TAB_TEXTURE_LAST
-};
-
-static const char *OZONE_TAB_TEXTURES_FILES[OZONE_TAB_TEXTURE_LAST] = {
-   "retroarch",
-   "settings",
-   "history",
-   "favorites",
-   "music",
-   "video",
-   "image",
-   "netplay",
-   "add"
 };
 
 enum

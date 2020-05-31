@@ -1,4 +1,54 @@
 # Future
+- CORE UPDATER: Add 'Show Experimental Cores' setting under Settings > Network > Updater
+- CORE UPDATER: Core licenses are now shown for all entries in the Core Updater menu
+- CORE UPDATER: Pressing RetroPad select on a Core Updater entry will now display any text in the description field of its info file
+- MENU: Proper line wrapping for message dialog boxes
+
+# 1.8.8
+- AUDIO/JACK: Fix regression introduced after 1.8.4 - would hang at startup
+- CHEEVOS: Disable hardcore when cheats are enabled
+- CHD: Return false when special track cannot be found
+- DISCORD/MATCHMAKING: Fix Discord 'Ask To Join' functionality
+- FILE PATH: Various file path handling optimisations
+- FONT: Fix Arabic, Chinese and Korean font rendering
+- INPUT MAPPING/REMAPPING: Restore broken 'reset to default' functionality with RetroPad 'start' button
+- INPUT MAPPING/REMAPPING: Fix 'reset to default' action for analog sticks and undefined core inputs 
+- LOCALIZATION: Update Arabic translation
+- LOCALIZATION: Update Chinese (Simplified) translation
+- LOCALIZATION: Update Chinese (Traditional) translation
+- LOCALIZATION: Update German translation
+- LOCALIZATION: Update Greek translation
+- LOCALIZATION: Update Spanish translation
+- LOCALIZATION: Update French translation
+- LOCALIZATION: Update Italian translation
+- LOCALIZATION: Update Japanese translation
+- LOCALIZATION: Update Korean translation
+- LOCALIZATION: Update Dutch translation
+- LOCALIZATION: Update Polish translation
+- LOCALIZATION: Update Portuguese Brazilian translation
+- LOCALIZATION: Update Russian translation
+- LOCALIZATION: Update Turkish translation
+- LOCALIZATION: Update Vietnamese translation
+- LOCALIZATION: Add Slovak translation
+- MENU: Small buffer optimizations
+- MENU/THUMBNAILS/BUGFIX: Fix heap-use-after-free error
+- MENU/OZONE: Add option to sort playlists after name truncation
+- MENU/OZONE/ANDROIDTV: Default to Ozone menu driver
+- MENU/OZONE/ANDROID: Gamepad-like devices default to Ozone now (Shield Portable)
+- NETPLAY: Lower announcement rate
+- OVERLAYS: Fix memory leak when loading overlays
+- SHADER PRESETS: Improved shader preset dirs
+- TIME/DATE: Enable configuration of date seperator in clock and runtime 'last played' displays
+- VITA: Fix upside-down vertical games
+- UWP: Enable playlist and savefile compression by default (because of slow file I/O)
+- WIIU: Gamepad hotplugging support
+- WIIU: Theoretical multi-gamepad support
+- VIDEO/WIDGETS: Fix overlapping text when simultaneous pop-up notifications and core/shader messages are being displayed
+- X11: Fix crash in x11_display_server_get_screen_orientation
+- X11/XSHM: Allow X11/XHSM video driver to operate without SHM extension
+- X11/XSHM: Fix compatibility with X11 input driver
+- XVIDEO: Fix keyboard input initialization
+- XVIDEO/XWAYLAND: Fix XVideo support on xwayland (by supporting I420 and YZ12)
 
 # 1.8.7
 - 3DS: Add IDs for Frodo

@@ -63,7 +63,9 @@ typedef struct
    unsigned orig_width;
    unsigned orig_height;
    unsigned orig_refresh;
+#ifdef HAS_TASKBAR_EXT
    ITaskbarList3 *taskbar_list;
+#endif
 } dispserv_win32_t;
 
 /*

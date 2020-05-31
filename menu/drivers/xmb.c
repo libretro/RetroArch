@@ -56,7 +56,7 @@
 
 #include "../../tasks/tasks_internal.h"
 
-#include "../../cheevos-new/badges.h"
+#include "../../cheevos/badges.h"
 #include "../../content.h"
 
 #define XMB_RIBBON_ROWS 64
@@ -902,17 +902,32 @@ static void xmb_render_messagebox_internal(
    unsigned i, y_position;
    int x, y, longest = 0, longest_width = 0;
    float line_height        = 0;
-   struct string_list *list = !string_is_empty(message)
-      ? string_split(message, "\n") : NULL;
+   int usable_width         = 0;
+   struct string_list *list = NULL;
+   char wrapped_message[MENU_SUBLABEL_MAX_LENGTH];
 
-   if (!list || !xmb || !xmb->font)
-   {
-      if (list)
-         string_list_free(list);
-      return;
-   }
+   wrapped_message[0] = '\0';
 
-   if (list->elems == 0)
+   /* Sanity check */
+   if (string_is_empty(message) ||
+       !xmb ||
+       !xmb->font)
+      goto end;
+
+   usable_width = (int)video_width - (xmb->margins_dialog * 8);
+
+   if (usable_width < 1)
+      goto end;
+
+   /* Split message into lines */
+   word_wrap(
+         wrapped_message, message,
+         usable_width / (xmb->font_size * 0.6f),
+         true, 0);
+
+   list = string_split(wrapped_message, "\n");
+
+   if (!list || list->elems == 0)
       goto end;
 
    line_height      = xmb->font->size * 1.2;
@@ -927,14 +942,15 @@ static void xmb_render_messagebox_internal(
    /* find the longest line width */
    for (i = 0; i < list->size; i++)
    {
-      const char *msg  = list->elems[i].data;
-      int len          = (int)utf8len(msg);
+      const char *msg = list->elems[i].data;
 
-      if (len > longest)
+      if (!string_is_empty(msg))
       {
-         longest       = len;
-         longest_width = font_driver_get_message_width(
+         int width = font_driver_get_message_width(
                xmb->font, msg, (unsigned)strlen(msg), 1);
+
+         longest_width = (width > longest_width) ?
+               width : longest_width;
       }
    }
 
@@ -978,7 +994,8 @@ static void xmb_render_messagebox_internal(
             0xffffffff);
 
 end:
-   string_list_free(list);
+   if (list)
+      string_list_free(list);
 }
 
 static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
@@ -1041,11 +1058,9 @@ static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
             strlcat(path, ".png", sizeof(path));
 
             if (path_is_valid(path))
-            {
                strlcpy(
                      xmb->savestate_thumbnail_file_path, path,
                      sizeof(xmb->savestate_thumbnail_file_path));
-            }
          }
       }
    }
@@ -2016,7 +2031,7 @@ static void xmb_context_destroy_horizontal_list(xmb_handle_t *xmb)
       file_list_get_at_offset(xmb->horizontal_list, i,
             &path, NULL, NULL, NULL);
 
-      if (!path || !strstr(path, ".lpl"))
+      if (!path || !string_ends_with(path, ".lpl"))
          continue;
 
       video_driver_texture_unload(&node->icon);
@@ -2115,7 +2130,7 @@ static void xmb_context_reset_horizontal_list(
       if (!path)
          continue;
 
-      if (!strstr(path, ".lpl"))
+      if (!string_ends_with(path, ".lpl"))
          continue;
 
       {
@@ -4798,11 +4813,12 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          gfx_display_blend_end(userdata);
       }
 
-      timedate[0]        = '\0';
+      timedate[0]             = '\0';
 
-      datetime.s         = timedate;
-      datetime.len       = sizeof(timedate);
-      datetime.time_mode = settings->uints.menu_timedate_style;
+      datetime.s              = timedate;
+      datetime.len            = sizeof(timedate);
+      datetime.time_mode      = settings->uints.menu_timedate_style;
+      datetime.date_separator = settings->uints.menu_timedate_date_separator;
 
       menu_display_timedate(&datetime);
 

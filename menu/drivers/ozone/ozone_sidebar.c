@@ -722,6 +722,7 @@ void ozone_init_horizontal_list(ozone_handle_t *ozone)
    const char *dir_playlist          = settings->paths.directory_playlist;
    bool menu_content_show_playlists  = settings->bools.menu_content_show_playlists;
    bool ozone_truncate_playlist_name = settings->bools.ozone_truncate_playlist_name;
+   bool ozone_sort_after_truncate    = settings->bools.ozone_sort_after_truncate_playlist_name;
 
    menu_displaylist_info_init(&info);
 
@@ -800,9 +801,11 @@ void ozone_init_horizontal_list(ozone_handle_t *ozone)
       file_list_set_alt_at_offset(ozone->horizontal_list, i, console_name);
    }
 
-   /* If playlist names were truncated, re-sort list
-    * by console name */
-   if (ozone_truncate_playlist_name && (list_size > 0))
+   /* If playlist names were truncated and option is
+    * enabled, re-sort list by console name */
+   if (ozone_truncate_playlist_name &&
+       ozone_sort_after_truncate &&
+       (list_size > 0))
       file_list_sort_on_alt(ozone->horizontal_list);
 }
 
@@ -851,7 +854,7 @@ void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
       if (!path)
          continue;
 
-      if (!strstr(path, ".lpl"))
+      if (!string_ends_with(path, ".lpl"))
          continue;
 
       {
@@ -968,7 +971,7 @@ void ozone_context_destroy_horizontal_list(ozone_handle_t *ozone)
       file_list_get_at_offset(ozone->horizontal_list, i,
             &path, NULL, NULL, NULL);
 
-      if (!path || !strstr(path, ".lpl"))
+      if (!path || !string_ends_with(path, ".lpl"))
          continue;
 
       video_driver_texture_unload(&node->icon);

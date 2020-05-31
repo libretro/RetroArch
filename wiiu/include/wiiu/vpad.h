@@ -103,6 +103,11 @@ typedef enum VPADReadError
    VPAD_READ_INVALID_CONTROLLER  = -2,
 } VPADReadError;
 
+typedef enum VPADChan
+{
+   VPAD_CHAN_0 = 0,
+} VPADChan;
+
 typedef struct VPADVec2D
 {
    float x;

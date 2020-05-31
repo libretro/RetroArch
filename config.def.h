@@ -415,6 +415,7 @@
 #define DEFAULT_OZONE_COLOR_THEME 1
 #define DEFAULT_OZONE_COLLAPSE_SIDEBAR false
 #define DEFAULT_OZONE_TRUNCATE_PLAYLIST_NAME true
+#define DEFAULT_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME true
 #define DEFAULT_OZONE_SCROLL_CONTENT_METADATA false
 #endif
 
@@ -923,7 +924,11 @@ static const bool savestate_thumbnail_enable = false;
 
 /* When creating save (srm) files, compress
  * written data */
+#if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
+#define DEFAULT_SAVE_FILE_COMPRESSION true
+#else
 #define DEFAULT_SAVE_FILE_COMPRESSION false
+#endif
 
 /* When creating save state files, compress
  * written data */
@@ -954,10 +959,13 @@ static const bool stdin_cmd_enable = false;
 
 static const uint16_t network_remote_base_port = 55400;
 
+#define DEFAULT_NETWORK_BUILDBOT_AUTO_EXTRACT_ARCHIVE true
+#define DEFAULT_NETWORK_BUILDBOT_SHOW_EXPERIMENTAL_CORES false
+
 #if defined(ANDROID) || defined(IOS)
-static const bool network_on_demand_thumbnails = true;
+#define DEFAULT_NETWORK_ON_DEMAND_THUMBNAILS true
 #else
-static const bool network_on_demand_thumbnails = false;
+#define DEFAULT_NETWORK_ON_DEMAND_THUMBNAILS false
 #endif
 
 /* Number of entries that will be kept in content history playlist file. */
@@ -974,7 +982,11 @@ static const int default_content_favorites_size = 200;
 #define DEFAULT_PLAYLIST_USE_OLD_FORMAT false
 
 /* When creating/updating playlists, compress written data */
+#if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
+#define DEFAULT_PLAYLIST_COMPRESSION true
+#else
 #define DEFAULT_PLAYLIST_COMPRESSION false
+#endif
 
 #ifdef HAVE_MENU
 /* Specify when to display 'core name' inline on playlist entries */
@@ -1072,7 +1084,8 @@ static const unsigned menu_left_thumbnails_default = 0;
 static const unsigned gfx_thumbnail_upscale_threshold = 0;
 
 #ifdef HAVE_MENU
-static const unsigned menu_timedate_style = MENU_TIMEDATE_STYLE_DDMM_HM;
+#define DEFAULT_MENU_TIMEDATE_STYLE          MENU_TIMEDATE_STYLE_DDMM_HM
+#define DEFAULT_MENU_TIMEDATE_DATE_SEPARATOR MENU_TIMEDATE_DATE_SEPARATOR_HYPHEN
 #endif
 
 static const bool xmb_vertical_thumbnails = false;

@@ -487,13 +487,14 @@ static bool sdl2_gfx_frame(void *data, const void *frame, unsigned width,
       unsigned height, uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
-   sdl2_video_t *vid = (sdl2_video_t*)data;
    char title[128];
+   sdl2_video_t *vid     = (sdl2_video_t*)data;
+   bool menu_is_alive    = video_info->menu_is_alive;
 
    if (vid->should_resize)
       sdl_refresh_viewport(vid);
 
-   if (frame && video_info->libretro_running)
+   if (frame)
    {
       SDL_RenderClear(vid->renderer);
       sdl_refresh_input_size(vid, false, vid->video.rgb32, width, height, pitch);
@@ -503,7 +504,7 @@ static bool sdl2_gfx_frame(void *data, const void *frame, unsigned width,
    SDL_RenderCopyEx(vid->renderer, vid->frame.tex, NULL, NULL, vid->rotation, NULL, SDL_FLIP_NONE);
 
 #ifdef HAVE_MENU
-   menu_driver_frame(video_info);
+   menu_driver_frame(menu_is_alive, video_info);
 #endif
 
    if (vid->menu.active)

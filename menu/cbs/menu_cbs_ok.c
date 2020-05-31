@@ -32,7 +32,7 @@
 #endif
 
 #ifdef HAVE_DISCORD
-#include "../../discord/discord.h"
+#include "../../network/discord.h"
 #endif
 
 #include "../../config.def.h"
@@ -84,7 +84,7 @@
 #endif
 
 #ifdef HAVE_CHEEVOS
-#include "../../cheevos-new/cheevos.h"
+#include "../../cheevos/cheevos.h"
 #endif
 
 #ifdef __WINRT__
@@ -5346,7 +5346,7 @@ static void netplay_refresh_rooms_cb(retro_task_t *task,
    data->data            = new_data;
    data->data[data->len] = '\0';
 
-   if (!strstr(data->data, "registry.lpl"))
+   if (!string_ends_with(data->data, "registry.lpl"))
    {
       if (string_is_empty(data->data))
          netplay_room_count = 0;
@@ -5448,6 +5448,7 @@ finish:
 
 }
 
+#ifndef RARCH_CONSOLE
 static void netplay_lan_scan_callback(retro_task_t *task,
       void *task_data,
       void *user_data, const char *error)
@@ -5503,6 +5504,7 @@ static void netplay_lan_scan_callback(retro_task_t *task,
       }
    }
 }
+#endif
 
 static int action_ok_push_netplay_refresh_rooms(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -6638,7 +6640,7 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             return 0;
          }
 
-         if (strstr(str, "input_binds_list"))
+         if (string_ends_with(str, "input_binds_list"))
          {
             unsigned i;
 

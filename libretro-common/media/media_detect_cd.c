@@ -101,8 +101,7 @@ bool media_detect_cd_info_cue(const char *path, media_detect_cd_info_t *info)
          continue;
       }
 
-      len = strlen(line);
-
+      len     = strlen(line);
       command = line;
 
       media_skip_spaces(&command, len);
@@ -332,7 +331,8 @@ bool media_detect_cd_info(const char *path, uint64_t pregap_bytes, media_detect_
          sector_size = 2048;
       }
 
-      if (!memcmp(buf + offset, "SEGADISCSYSTEM", strlen("SEGADISCSYSTEM")))
+      if (!memcmp(buf + offset, "SEGADISCSYSTEM",
+               STRLEN_CONST("SEGADISCSYSTEM")))
       {
          const char *title_pos  = NULL;
          const char *serial_pos = NULL;
@@ -366,7 +366,8 @@ bool media_detect_cd_info(const char *path, uint64_t pregap_bytes, media_detect_
          else
             strlcpy(info->serial, "N/A", sizeof(info->serial));
       }
-      else if (!memcmp(buf + offset, "SEGA SEGASATURN", strlen("SEGA SEGASATURN")))
+      else if (!memcmp(buf + offset, "SEGA SEGASATURN",
+               STRLEN_CONST("SEGA SEGASATURN")))
       {
          const char *title_pos        = NULL;
          const char *serial_pos       = NULL;
@@ -420,7 +421,7 @@ bool media_detect_cd_info(const char *path, uint64_t pregap_bytes, media_detect_
          else
             strlcpy(info->release_date, "N/A", sizeof(info->release_date));
       }
-      else if (!memcmp(buf + offset, "SEGA SEGAKATANA", strlen("SEGA SEGAKATANA")))
+      else if (!memcmp(buf + offset, "SEGA SEGAKATANA", STRLEN_CONST("SEGA SEGAKATANA")))
       {
          const char *title_pos        = NULL;
          const char *serial_pos       = NULL;

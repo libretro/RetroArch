@@ -113,6 +113,8 @@ float* gfx_widgets_get_backdrop_orig(void);
 unsigned gfx_widgets_get_last_video_width(void);
 unsigned gfx_widgets_get_last_video_height(void);
 unsigned gfx_widgets_get_generic_message_height(void);
+/* Warning: not thread safe! */
+size_t gfx_widgets_get_msg_queue_size(void);
 
 float gfx_widgets_get_thumbnail_scale_factor(
       const float dst_width, const float dst_height,

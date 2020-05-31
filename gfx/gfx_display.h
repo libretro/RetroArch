@@ -187,6 +187,7 @@ typedef struct gfx_display_ctx_datetime
    char *s;
    size_t len;
    unsigned time_mode;
+   unsigned date_separator;
 } gfx_display_ctx_datetime_t;
 
 typedef struct gfx_display_ctx_powerstate

@@ -493,6 +493,10 @@ MSG_HASH(
    "core_updater_auto_extract_archive"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_CORE_UPDATER_SHOW_EXPERIMENTAL_CORES,
+   "core_updater_show_experimental_cores"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_CORE_UPDATER_BUILDBOT_URL,
    "core_updater_buildbot_url"
    )
@@ -1541,6 +1545,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_OZONE_TRUNCATE_PLAYLIST_NAME,
    "ozone_truncate_playlist_name"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME,
+   "ozone_sort_after_truncate_playlist_name"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_OZONE_SCROLL_CONTENT_METADATA,
@@ -2669,6 +2677,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_TIMEDATE_STYLE,
    "menu_timedate_style"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_TIMEDATE_DATE_SEPARATOR,
+   "menu_timedate_date_separator"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_MENU_TICKER_TYPE,

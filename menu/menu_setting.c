@@ -53,7 +53,7 @@
 #endif
 
 #ifdef HAVE_CHEEVOS
-#include "../cheevos-new/cheevos.h"
+#include "../cheevos/cheevos.h"
 #endif
 
 #ifdef HAVE_TRANSLATE
@@ -950,7 +950,7 @@ int setting_set_with_string_representation(rarch_setting_t* setting,
       case ST_STRING:
       case ST_STRING_OPTIONS:
       case ST_ACTION:
-         if ( setting->value.target.string != NULL)
+         if (setting->value.target.string)
             strlcpy(setting->value.target.string, value, setting->size);
          break;
       case ST_BOOL:
@@ -3182,6 +3182,32 @@ static void setting_get_string_representation_uint_menu_left_thumbnails(
    }
 }
 
+static void setting_set_string_representation_timedate_date_seperator(char *s)
+{
+   settings_t *settings                  = config_get_ptr();
+   unsigned menu_timedate_date_separator = settings ?
+         settings->uints.menu_timedate_date_separator :
+         MENU_TIMEDATE_DATE_SEPARATOR_HYPHEN;
+   char separator_char;
+
+   switch (menu_timedate_date_separator)
+   {
+      case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
+         separator_char = '/';
+         break;
+      case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
+         separator_char = '.';
+         break;
+      case MENU_TIMEDATE_DATE_SEPARATOR_HYPHEN:
+      default:
+         separator_char = '-';
+         break;
+   }
+
+   if (separator_char != '-')
+      string_replace_all_chars(s, '-', separator_char);
+}
+
 static void setting_get_string_representation_uint_menu_timedate_style(
    rarch_setting_t *setting,
    char *s, size_t len)
@@ -3193,129 +3219,153 @@ static void setting_get_string_representation_uint_menu_timedate_style(
    {
       case MENU_TIMEDATE_STYLE_YMD_HMS:
          strlcpy(s, msg_hash_to_str(
-            MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_YMD_HMS), len);
+            MENU_ENUM_LABEL_VALUE_TIMEDATE_YMD_HMS), len);
          break;
       case MENU_TIMEDATE_STYLE_YMD_HM:
          strlcpy(s, msg_hash_to_str(
-            MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_YMD_HM), len);
+            MENU_ENUM_LABEL_VALUE_TIMEDATE_YMD_HM), len);
          break;
       case MENU_TIMEDATE_STYLE_YMD:
          strlcpy(s, msg_hash_to_str(
-            MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_YMD), len);
+            MENU_ENUM_LABEL_VALUE_TIMEDATE_YMD), len);
          break;
       case MENU_TIMEDATE_STYLE_YM:
          strlcpy(s, msg_hash_to_str(
-            MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_YM), len);
+            MENU_ENUM_LABEL_VALUE_TIMEDATE_YM), len);
          break;
       case MENU_TIMEDATE_STYLE_MDYYYY_HMS:
          strlcpy(s,
             msg_hash_to_str(
-               MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_MDYYYY_HMS), len);
+               MENU_ENUM_LABEL_VALUE_TIMEDATE_MDYYYY_HMS), len);
          break;
       case MENU_TIMEDATE_STYLE_MDYYYY_HM:
          strlcpy(s,
             msg_hash_to_str(
-               MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_MDYYYY_HM), len);
+               MENU_ENUM_LABEL_VALUE_TIMEDATE_MDYYYY_HM), len);
          break;
       case MENU_TIMEDATE_STYLE_MD_HM:
          strlcpy(s,
             msg_hash_to_str(
-               MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_MD_HM), len);
+               MENU_ENUM_LABEL_VALUE_TIMEDATE_MD_HM), len);
          break;
       case MENU_TIMEDATE_STYLE_MDYYYY:
          strlcpy(s,
             msg_hash_to_str(
-               MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_MDYYYY), len);
+               MENU_ENUM_LABEL_VALUE_TIMEDATE_MDYYYY), len);
          break;
       case MENU_TIMEDATE_STYLE_MD:
          strlcpy(s,
             msg_hash_to_str(
-               MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_MD), len);
+               MENU_ENUM_LABEL_VALUE_TIMEDATE_MD), len);
          break;
       case MENU_TIMEDATE_STYLE_DDMMYYYY_HMS:
          strlcpy(s,
             msg_hash_to_str(
-               MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_DDMMYYYY_HMS), len);
+               MENU_ENUM_LABEL_VALUE_TIMEDATE_DDMMYYYY_HMS), len);
          break;
       case MENU_TIMEDATE_STYLE_DDMMYYYY_HM:
          strlcpy(s,
             msg_hash_to_str(
-               MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_DDMMYYYY_HM), len);
+               MENU_ENUM_LABEL_VALUE_TIMEDATE_DDMMYYYY_HM), len);
          break;
       case MENU_TIMEDATE_STYLE_DDMM_HM:
          strlcpy(s,
             msg_hash_to_str(
-               MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_DDMM_HM), len);
+               MENU_ENUM_LABEL_VALUE_TIMEDATE_DDMM_HM), len);
          break;
       case MENU_TIMEDATE_STYLE_DDMMYYYY:
          strlcpy(s,
             msg_hash_to_str(
-               MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_DDMMYYYY), len);
+               MENU_ENUM_LABEL_VALUE_TIMEDATE_DDMMYYYY), len);
          break;
       case MENU_TIMEDATE_STYLE_DDMM:
          strlcpy(s,
             msg_hash_to_str(
-               MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_DDMM), len);
+               MENU_ENUM_LABEL_VALUE_TIMEDATE_DDMM), len);
          break;
       case MENU_TIMEDATE_STYLE_HMS:
          strlcpy(s,
             msg_hash_to_str(
-               MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_HMS), len);
+               MENU_ENUM_LABEL_VALUE_TIMEDATE_HMS), len);
          break;
       case MENU_TIMEDATE_STYLE_HM:
          strlcpy(s,
             msg_hash_to_str(
-               MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_HM), len);
+               MENU_ENUM_LABEL_VALUE_TIMEDATE_HM), len);
          break;
-      case MENU_TIMEDATE_STYLE_YMD_HMS_AM_PM:
+      case MENU_TIMEDATE_STYLE_YMD_HMS_AMPM:
          strlcpy(s,
             msg_hash_to_str(
-               MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_YMD_HMS_AM_PM), len);
+               MENU_ENUM_LABEL_VALUE_TIMEDATE_YMD_HMS_AMPM), len);
          break;
-      case MENU_TIMEDATE_STYLE_YMD_HM_AM_PM:
+      case MENU_TIMEDATE_STYLE_YMD_HM_AMPM:
          strlcpy(s,
             msg_hash_to_str(
-               MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_YMD_HM_AM_PM), len);
+               MENU_ENUM_LABEL_VALUE_TIMEDATE_YMD_HM_AMPM), len);
          break;
-      case MENU_TIMEDATE_STYLE_MDYYYY_HMS_AM_PM:
+      case MENU_TIMEDATE_STYLE_MDYYYY_HMS_AMPM:
          strlcpy(s,
             msg_hash_to_str(
-               MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_MDYYYY_HMS_AM_PM), len);
+               MENU_ENUM_LABEL_VALUE_TIMEDATE_MDYYYY_HMS_AMPM), len);
          break;
-      case MENU_TIMEDATE_STYLE_MDYYYY_HM_AM_PM:
+      case MENU_TIMEDATE_STYLE_MDYYYY_HM_AMPM:
          strlcpy(s,
             msg_hash_to_str(
-               MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_MDYYYY_HM_AM_PM), len);
+               MENU_ENUM_LABEL_VALUE_TIMEDATE_MDYYYY_HM_AMPM), len);
          break;
-      case MENU_TIMEDATE_STYLE_MD_HM_AM_PM:
+      case MENU_TIMEDATE_STYLE_MD_HM_AMPM:
          strlcpy(s,
             msg_hash_to_str(
-               MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_MD_HM_AM_PM), len);
+               MENU_ENUM_LABEL_VALUE_TIMEDATE_MD_HM_AMPM), len);
          break;
-      case MENU_TIMEDATE_STYLE_DDMMYYYY_HMS_AM_PM:
+      case MENU_TIMEDATE_STYLE_DDMMYYYY_HMS_AMPM:
          strlcpy(s,
             msg_hash_to_str(
-               MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_DDMMYYYY_HMS_AM_PM), len);
+               MENU_ENUM_LABEL_VALUE_TIMEDATE_DDMMYYYY_HMS_AMPM), len);
          break;
-      case MENU_TIMEDATE_STYLE_DDMMYYYY_HM_AM_PM:
+      case MENU_TIMEDATE_STYLE_DDMMYYYY_HM_AMPM:
          strlcpy(s,
             msg_hash_to_str(
-               MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_DDMMYYYY_HM_AM_PM), len);
+               MENU_ENUM_LABEL_VALUE_TIMEDATE_DDMMYYYY_HM_AMPM), len);
          break;
-      case MENU_TIMEDATE_STYLE_DDMM_HM_AM_PM:
+      case MENU_TIMEDATE_STYLE_DDMM_HM_AMPM:
          strlcpy(s,
             msg_hash_to_str(
-               MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_DDMM_HM_AM_PM), len);
+               MENU_ENUM_LABEL_VALUE_TIMEDATE_DDMM_HM_AMPM), len);
          break;
-      case MENU_TIMEDATE_STYLE_HMS_AM_PM:
+      case MENU_TIMEDATE_STYLE_HMS_AMPM:
          strlcpy(s,
             msg_hash_to_str(
-               MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_HMS_AM_PM), len);
+               MENU_ENUM_LABEL_VALUE_TIMEDATE_HMS_AMPM), len);
          break;
-      case MENU_TIMEDATE_STYLE_HM_AM_PM:
+      case MENU_TIMEDATE_STYLE_HM_AMPM:
          strlcpy(s,
             msg_hash_to_str(
-               MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE_HM_AM_PM), len);
+               MENU_ENUM_LABEL_VALUE_TIMEDATE_HM_AMPM), len);
+         break;
+   }
+
+   /* Change date separator, if required */
+   setting_set_string_representation_timedate_date_seperator(s);
+}
+
+static void setting_get_string_representation_uint_menu_timedate_date_separator(
+   rarch_setting_t *setting,
+   char *s, size_t len)
+{
+   if (!setting)
+      return;
+
+   switch (*setting->value.target.unsigned_integer)
+   {
+      case MENU_TIMEDATE_DATE_SEPARATOR_HYPHEN:
+         strlcpy(s, "'-'", len);
+         break;
+      case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
+         strlcpy(s, "'/'", len);
+         break;
+      case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
+         strlcpy(s, "'.'", len);
          break;
    }
 }
@@ -4547,136 +4597,139 @@ static void setting_get_string_representation_uint_playlist_sublabel_last_played
       case PLAYLIST_LAST_PLAYED_STYLE_YMD_HMS:
          strlcpy(s,
                msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE_YMD_HMS),
+                  MENU_ENUM_LABEL_VALUE_TIMEDATE_YMD_HMS),
                len);
          break;
       case PLAYLIST_LAST_PLAYED_STYLE_YMD_HM:
          strlcpy(s,
                msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE_YMD_HM),
+                  MENU_ENUM_LABEL_VALUE_TIMEDATE_YMD_HM),
                len);
          break;
       case PLAYLIST_LAST_PLAYED_STYLE_YMD:
          strlcpy(s,
                msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE_YMD),
+                  MENU_ENUM_LABEL_VALUE_TIMEDATE_YMD),
                len);
          break;
       case PLAYLIST_LAST_PLAYED_STYLE_YM:
          strlcpy(s,
                msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE_YM),
+                  MENU_ENUM_LABEL_VALUE_TIMEDATE_YM),
                len);
          break;
       case PLAYLIST_LAST_PLAYED_STYLE_MDYYYY_HMS:
          strlcpy(s,
                msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE_MDYYYY_HMS),
+                  MENU_ENUM_LABEL_VALUE_TIMEDATE_MDYYYY_HMS),
                len);
          break;
       case PLAYLIST_LAST_PLAYED_STYLE_MDYYYY_HM:
          strlcpy(s,
                msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE_MDYYYY_HM),
+                  MENU_ENUM_LABEL_VALUE_TIMEDATE_MDYYYY_HM),
                len);
          break;
       case PLAYLIST_LAST_PLAYED_STYLE_MD_HM:
          strlcpy(s,
                msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE_MD_HM),
+                  MENU_ENUM_LABEL_VALUE_TIMEDATE_MD_HM),
                len);
          break;
       case PLAYLIST_LAST_PLAYED_STYLE_MDYYYY:
          strlcpy(s,
                msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE_MDYYYY),
+                  MENU_ENUM_LABEL_VALUE_TIMEDATE_MDYYYY),
                len);
          break;
       case PLAYLIST_LAST_PLAYED_STYLE_MD:
          strlcpy(s,
                msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE_MD),
+                  MENU_ENUM_LABEL_VALUE_TIMEDATE_MD),
                len);
          break;
       case PLAYLIST_LAST_PLAYED_STYLE_DDMMYYYY_HMS:
          strlcpy(s,
                msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE_DDMMYYYY_HMS),
+                  MENU_ENUM_LABEL_VALUE_TIMEDATE_DDMMYYYY_HMS),
                len);
          break;
       case PLAYLIST_LAST_PLAYED_STYLE_DDMMYYYY_HM:
          strlcpy(s,
                msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE_DDMMYYYY_HM),
+                  MENU_ENUM_LABEL_VALUE_TIMEDATE_DDMMYYYY_HM),
                len);
          break;
       case PLAYLIST_LAST_PLAYED_STYLE_DDMM_HM:
          strlcpy(s,
                msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE_DDMM_HM),
+                  MENU_ENUM_LABEL_VALUE_TIMEDATE_DDMM_HM),
                len);
          break;
       case PLAYLIST_LAST_PLAYED_STYLE_DDMMYYYY:
          strlcpy(s,
                msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE_DDMMYYYY),
+                  MENU_ENUM_LABEL_VALUE_TIMEDATE_DDMMYYYY),
                len);
          break;
       case PLAYLIST_LAST_PLAYED_STYLE_DDMM:
          strlcpy(s,
                msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE_DDMM),
+                  MENU_ENUM_LABEL_VALUE_TIMEDATE_DDMM),
                len);
          break;
-      case PLAYLIST_LAST_PLAYED_STYLE_YMD_HMS_AM_PM:
+      case PLAYLIST_LAST_PLAYED_STYLE_YMD_HMS_AMPM:
          strlcpy(s,
                msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE_YMD_HMS_AM_PM),
+                  MENU_ENUM_LABEL_VALUE_TIMEDATE_YMD_HMS_AMPM),
                len);
          break;
-      case PLAYLIST_LAST_PLAYED_STYLE_YMD_HM_AM_PM:
+      case PLAYLIST_LAST_PLAYED_STYLE_YMD_HM_AMPM:
          strlcpy(s,
                msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE_YMD_HM_AM_PM),
+                  MENU_ENUM_LABEL_VALUE_TIMEDATE_YMD_HM_AMPM),
                len);
          break;
-      case PLAYLIST_LAST_PLAYED_STYLE_MDYYYY_HMS_AM_PM:
+      case PLAYLIST_LAST_PLAYED_STYLE_MDYYYY_HMS_AMPM:
          strlcpy(s,
                msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE_MDYYYY_HMS_AM_PM),
+                  MENU_ENUM_LABEL_VALUE_TIMEDATE_MDYYYY_HMS_AMPM),
                len);
          break;
-      case PLAYLIST_LAST_PLAYED_STYLE_MDYYYY_HM_AM_PM:
+      case PLAYLIST_LAST_PLAYED_STYLE_MDYYYY_HM_AMPM:
          strlcpy(s,
                msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE_MDYYYY_HM_AM_PM),
+                  MENU_ENUM_LABEL_VALUE_TIMEDATE_MDYYYY_HM_AMPM),
                len);
          break;
-      case PLAYLIST_LAST_PLAYED_STYLE_MD_HM_AM_PM:
+      case PLAYLIST_LAST_PLAYED_STYLE_MD_HM_AMPM:
          strlcpy(s,
                msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE_MD_HM_AM_PM),
+                  MENU_ENUM_LABEL_VALUE_TIMEDATE_MD_HM_AMPM),
                len);
          break;
-      case PLAYLIST_LAST_PLAYED_STYLE_DDMMYYYY_HMS_AM_PM:
+      case PLAYLIST_LAST_PLAYED_STYLE_DDMMYYYY_HMS_AMPM:
          strlcpy(s,
                msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE_DDMMYYYY_HMS_AM_PM),
+                  MENU_ENUM_LABEL_VALUE_TIMEDATE_DDMMYYYY_HMS_AMPM),
                len);
          break;
-      case PLAYLIST_LAST_PLAYED_STYLE_DDMMYYYY_HM_AM_PM:
+      case PLAYLIST_LAST_PLAYED_STYLE_DDMMYYYY_HM_AMPM:
          strlcpy(s,
                msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE_DDMMYYYY_HM_AM_PM),
+                  MENU_ENUM_LABEL_VALUE_TIMEDATE_DDMMYYYY_HM_AMPM),
                len);
          break;
-      case PLAYLIST_LAST_PLAYED_STYLE_DDMM_HM_AM_PM:
+      case PLAYLIST_LAST_PLAYED_STYLE_DDMM_HM_AMPM:
          strlcpy(s,
                msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE_DDMM_HM_AM_PM),
+                  MENU_ENUM_LABEL_VALUE_TIMEDATE_DDMM_HM_AMPM),
                len);
          break;
    }
+
+   /* Change date separator, if required */
+   setting_set_string_representation_timedate_date_seperator(s);
 }
 
 static void setting_get_string_representation_uint_playlist_inline_core_display_type(
@@ -5879,6 +5932,7 @@ static void setting_get_string_representation_uint_user_language(
    modes[RETRO_LANGUAGE_ARABIC]                 = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LANG_ARABIC);
    modes[RETRO_LANGUAGE_GREEK]                  = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LANG_GREEK);
    modes[RETRO_LANGUAGE_TURKISH]                = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LANG_TURKISH);
+   modes[RETRO_LANGUAGE_SLOVAK]                 = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LANG_SLOVAK);
    strlcpy(s, modes[*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE)], len);
 }
 #endif
@@ -14388,7 +14442,7 @@ static bool setting_append_list(
             &settings->uints.menu_timedate_style,
             MENU_ENUM_LABEL_TIMEDATE_STYLE,
             MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE,
-            menu_timedate_style,
+            DEFAULT_MENU_TIMEDATE_STYLE,
             &group_info,
             &subgroup_info,
             parent_group,
@@ -14398,6 +14452,22 @@ static bool setting_append_list(
          (*list)[list_info->index - 1].get_string_representation =
             &setting_get_string_representation_uint_menu_timedate_style;
          menu_settings_list_current_add_range(list, list_info, 0, MENU_TIMEDATE_STYLE_LAST - 1, 1, true, true);
+         (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
+
+         CONFIG_UINT(list, list_info,
+            &settings->uints.menu_timedate_date_separator,
+            MENU_ENUM_LABEL_TIMEDATE_DATE_SEPARATOR,
+            MENU_ENUM_LABEL_VALUE_TIMEDATE_DATE_SEPARATOR,
+            DEFAULT_MENU_TIMEDATE_DATE_SEPARATOR,
+            &group_info,
+            &subgroup_info,
+            parent_group,
+            general_write_handler,
+            general_read_handler);
+         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+         (*list)[list_info->index - 1].get_string_representation =
+            &setting_get_string_representation_uint_menu_timedate_date_separator;
+         menu_settings_list_current_add_range(list, list_info, 0, MENU_TIMEDATE_DATE_SEPARATOR_LAST - 1, 1, true, true);
          (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
 
          CONFIG_BOOL(
@@ -15822,6 +15892,21 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler,
                   SD_FLAG_NONE);
+
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.ozone_sort_after_truncate_playlist_name,
+                  MENU_ENUM_LABEL_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME,
+                  MENU_ENUM_LABEL_VALUE_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME,
+                  DEFAULT_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
          }
 #endif
 
@@ -16032,7 +16117,23 @@ static bool setting_append_list(
                &settings->bools.network_buildbot_auto_extract_archive,
                MENU_ENUM_LABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE,
                MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE,
-               true,
+               DEFAULT_NETWORK_BUILDBOT_AUTO_EXTRACT_ARCHIVE,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE
+               );
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.network_buildbot_show_experimental_cores,
+               MENU_ENUM_LABEL_CORE_UPDATER_SHOW_EXPERIMENTAL_CORES,
+               MENU_ENUM_LABEL_VALUE_CORE_UPDATER_SHOW_EXPERIMENTAL_CORES,
+               DEFAULT_NETWORK_BUILDBOT_SHOW_EXPERIMENTAL_CORES,
                MENU_ENUM_LABEL_VALUE_OFF,
                MENU_ENUM_LABEL_VALUE_ON,
                &group_info,
@@ -16484,7 +16585,7 @@ static bool setting_append_list(
                   &settings->bools.network_on_demand_thumbnails,
                   MENU_ENUM_LABEL_NETWORK_ON_DEMAND_THUMBNAILS,
                   MENU_ENUM_LABEL_VALUE_NETWORK_ON_DEMAND_THUMBNAILS,
-                  network_on_demand_thumbnails,
+                  DEFAULT_NETWORK_ON_DEMAND_THUMBNAILS,
                   MENU_ENUM_LABEL_VALUE_OFF,
                   MENU_ENUM_LABEL_VALUE_ON,
                   &group_info,

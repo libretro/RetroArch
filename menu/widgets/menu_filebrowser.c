@@ -222,64 +222,64 @@ void filebrowser_parse(
          is_dir = (file_type == FILE_TYPE_DIRECTORY);
 
          if (!is_dir)
-         {
-            if (filebrowser_types == FILEBROWSER_SELECT_DIR)
+            if (
+                  (filebrowser_types == FILEBROWSER_SELECT_DIR) ||
+                  (filebrowser_types == FILEBROWSER_SCAN_DIR)   ||
+                  (filebrowser_types == FILEBROWSER_MANUAL_SCAN_DIR)
+               )
                continue;
-            if (filebrowser_types == FILEBROWSER_SCAN_DIR)
-               continue;
-            if (filebrowser_types == FILEBROWSER_MANUAL_SCAN_DIR)
-               continue;
-         }
 
          /* Need to preserve slash first time. */
 
          if (!string_is_empty(path) && !path_is_compressed)
             path = path_basename(path);
 
-         if (filebrowser_types == FILEBROWSER_SELECT_COLLECTION)
+         if (is_dir)
          {
-            if (is_dir)
+            if (filebrowser_types == FILEBROWSER_SELECT_COLLECTION)
                file_type = FILE_TYPE_DIRECTORY;
-            else
-               file_type = FILE_TYPE_PLAYLIST_COLLECTION;
          }
-
-         if (!is_dir && path_is_media_type(path) == RARCH_CONTENT_MUSIC)
-            file_type = FILE_TYPE_MUSIC;
-         else if (!is_dir &&
-               (builtin_mediaplayer_enable ||
-                builtin_imageviewer_enable))
+         else
          {
-            switch (path_is_media_type(path))
+            enum rarch_content_type path_type = path_is_media_type(path);
+
+            if (filebrowser_types == FILEBROWSER_SELECT_COLLECTION)
+               file_type = FILE_TYPE_PLAYLIST_COLLECTION;
+
+            if (path_type == RARCH_CONTENT_MUSIC)
+               file_type = FILE_TYPE_MUSIC;
+            else if (
+                  builtin_mediaplayer_enable ||
+                  builtin_imageviewer_enable)
             {
-               case RARCH_CONTENT_MOVIE:
+               switch (path_type)
+               {
+                  case RARCH_CONTENT_MOVIE:
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
-                  if (builtin_mediaplayer_enable)
-                     file_type = FILE_TYPE_MOVIE;
+                     if (builtin_mediaplayer_enable)
+                        file_type = FILE_TYPE_MOVIE;
 #endif
-                  break;
-               case RARCH_CONTENT_IMAGE:
+                     break;
+                  case RARCH_CONTENT_IMAGE:
 #ifdef HAVE_IMAGEVIEWER
-                  if (builtin_imageviewer_enable
-                        && type != DISPLAYLIST_IMAGES)
-                     file_type = FILE_TYPE_IMAGEVIEWER;
-                  else
-                     file_type = FILE_TYPE_IMAGE;
+                     if (builtin_imageviewer_enable
+                           && type != DISPLAYLIST_IMAGES)
+                        file_type = FILE_TYPE_IMAGEVIEWER;
+                     else
+                        file_type = FILE_TYPE_IMAGE;
 #endif
-                  if (filebrowser_types == FILEBROWSER_SELECT_IMAGE)
-                     file_type = FILE_TYPE_IMAGE;
-                  break;
-               default:
-                  break;
+                     if (filebrowser_types == FILEBROWSER_SELECT_IMAGE)
+                        file_type = FILE_TYPE_IMAGE;
+                     break;
+                  default:
+                     break;
+               }
             }
          }
 
          switch (file_type)
          {
             case FILE_TYPE_PLAIN:
-#if 0
-               enum_idx = MENU_ENUM_LABEL_FILE_BROWSER_PLAIN_FILE;
-#endif
                files_count++;
                break;
             case FILE_TYPE_MOVIE:

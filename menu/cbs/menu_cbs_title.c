@@ -156,7 +156,7 @@ static int action_get_title_dropdown_item(
    if (string_is_empty(path))
       return 0;
 
-   if (strstr(path, "core_option_"))
+   if (string_starts_with(path, "core_option_"))
    {
       /* This is a core options item */
       struct string_list *tmp_str_list = string_split(path, "_");
@@ -1406,7 +1406,7 @@ int menu_cbs_init_bind_title(menu_file_list_cbs_t *cbs,
     * treatment, since the label has the format:
     *   <MENU_ENUM_LABEL_DEFERRED_RDB_ENTRY_DETAIL>|<entry_name>
     * i.e. cannot use a normal string_is_equal() */
-   if (strstr(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RDB_ENTRY_DETAIL)))
+   if (string_starts_with(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RDB_ENTRY_DETAIL)))
    {
       BIND_ACTION_GET_TITLE(cbs, action_get_title_list_rdb_entry_database_info);
       return 0;

@@ -872,7 +872,7 @@ bool scond_wait_timeout(scond_t *cond, slock_t *lock, int64_t timeout_us)
    now.tv_sec  = s;
    now.tv_nsec = n;
 #elif defined(PS2)
-   int tickms = clock();
+   int tickms = ps2_clock();
    now.tv_sec = tickms/1000;
    now.tv_nsec = tickms * 1000;
 #elif defined(__mips__) || defined(VITA) || defined(_3DS)

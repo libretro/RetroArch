@@ -648,8 +648,8 @@ bool rzipstream_read_file(const char *path, void **buf, int64_t *len)
 
    if (!stream)
    {
-      fprintf(stderr, "[rzipstream] Failed to open file: %s\n", path ? path : "");
-      goto error;
+      *buf = NULL;
+      return false;
    }
 
    /* Get file size */
@@ -671,10 +671,7 @@ bool rzipstream_read_file(const char *path, void **buf, int64_t *len)
    bytes_read = rzipstream_read(stream, content_buf, content_buf_size);
 
    if (bytes_read < 0)
-   {
-      fprintf(stderr, "[rzipstream] Failed to read file: %s\n", path);
       goto error;
-   }
 
    /* Close file */
    rzipstream_close(stream);
@@ -888,28 +885,19 @@ bool rzipstream_write_file(const char *path, const void *data, int64_t len)
    stream = rzipstream_open(path, RETRO_VFS_FILE_ACCESS_WRITE);
 
    if (!stream)
-   {
-      fprintf(stderr, "[rzipstream] Failed to open file: %s\n", path ? path : "");
       return false;
-   }
 
    /* Write contents of data buffer to file */
    bytes_written = rzipstream_write(stream, data, len);
 
    /* Close file */
    if (rzipstream_close(stream) == -1)
-   {
-      fprintf(stderr, "[rzipstream] Failed to close file: %s\nData will be lost...\n", path);
       return false;
-   }
 
    /* Check that the correct number of bytes
     * were written */
    if (bytes_written != len)
-   {
-      fprintf(stderr, "[rzipstream] Wrote incorrect number of bytes to file: %s\n", path);
       return false;
-   }
 
    return true;
 }
