@@ -1153,7 +1153,7 @@ static const camera_driver_t *camera_drivers[] = {
 
 #define input_config_bind_map_get(i) ((const struct input_bind_map*)&input_config_bind_map[(i)])
 
-#define video_has_focus() ((p_rarch->current_video_context.has_focus) ? (p_rarch->current_video_context.has_focus && p_rarch->current_video_context.has_focus(p_rarch->video_context_data)) : (p_rarch->current_video->focus) ? (p_rarch->current_video && p_rarch->current_video->focus && p_rarch->current_video->focus(p_rarch->video_driver_data)) : true)
+#define video_has_focus() (p_rarch->current_video_context.has_focus ? p_rarch->current_video_context.has_focus(p_rarch->video_context_data) : p_rarch->current_video->focus ? (p_rarch->current_video && p_rarch->current_video->focus && p_rarch->current_video->focus(p_rarch->video_driver_data)) : true)
 
 #if HAVE_DYNAMIC
 #define runahead_run_secondary() \
