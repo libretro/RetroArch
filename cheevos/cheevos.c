@@ -22,6 +22,7 @@
 #include <streams/file_stream.h>
 #include <features/features_cpu.h>
 #include <formats/cdfs.h>
+#include <formats/m3u_file.h>
 #include <compat/strl.h>
 #include <../libretro-common/include/rhash.h>
 #include <retro_miscellaneous.h>
@@ -2932,6 +2933,8 @@ bool rcheevos_load(const void *data)
    settings_t *settings               = config_get_ptr();
    bool cheevos_enable                = settings && settings->bools.cheevos_enable;
 
+   buffer[0] = '\0';
+
    rcheevos_loaded                    = false;
    rcheevos_hardcore_paused           = false;
 
@@ -2984,35 +2987,31 @@ bool rcheevos_load(const void *data)
       coro->data       = NULL;
       coro->path       = strdup(info->path);
 
-      /* if we're looking at an m3u file, get the first disc from the playlist */
-      if (string_is_equal_noncase(path_get_extension(coro->path), "m3u"))
+      /* Check whether this is an m3u file */
+      if (m3u_file_is_m3u(coro->path))
       {
-         intfstream_t* m3u_stream = intfstream_open_file(coro->path, RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
-         if (m3u_stream)
+         /* Note: We only need the first entry, so limit
+          * capacity of m3u_file object to 1 */
+         m3u_file_t *m3u_file = m3u_file_init(coro->path, 1);
+
+         if (m3u_file)
          {
-            char m3u_contents[1024];
-            char disc_path[PATH_MAX_LENGTH];
-            char* tmp;
-            int64_t num_read = intfstream_read(
-                  m3u_stream, m3u_contents, sizeof(m3u_contents) - 1);
+            m3u_file_entry_t *m3u_entry = NULL;
 
-            intfstream_close(m3u_stream);
-            m3u_contents[num_read] = '\0';
+            /* Get first disk from the playlist */
+            if (m3u_file_get_entry(m3u_file, 0, &m3u_entry) &&
+                !string_is_empty(m3u_entry->full_path))
+            {
+               const char *disk_ext = path_get_extension(m3u_entry->full_path);
 
-            tmp = m3u_contents;
-            while (*tmp && *tmp != '\n')
-               ++tmp;
-            if (tmp > buffer && tmp[-1] == '\r')
-               --tmp;
-            *tmp = '\0';
+               free((void*)coro->path);
+               coro->path = strdup(m3u_entry->full_path);
 
-            fill_pathname_basedir(disc_path, coro->path, sizeof(disc_path));
-            strlcat(disc_path, m3u_contents, sizeof(disc_path));
+               if (!string_is_empty(disk_ext))
+                  strlcpy(buffer, disk_ext, sizeof(buffer));
+            }
 
-            free((void*)coro->path);
-            coro->path = strdup(disc_path);
-
-            strlcpy(buffer, path_get_extension(disc_path), sizeof(buffer));
+            m3u_file_free(m3u_file);
          }
       }
    }
@@ -3040,6 +3039,5 @@ bool rcheevos_load(const void *data)
    CHEEVOS_UNLOCK(rcheevos_locals.task_lock);
 
    task_queue_push(task);
-
    return true;
 }
