@@ -1865,6 +1865,25 @@ struct rarch_state
 
    uint16_t input_config_vid[MAX_USERS];
    uint16_t input_config_pid[MAX_USERS];
+
+   size_t runloop_msg_queue_size;
+   size_t recording_gpu_width;
+   size_t recording_gpu_height;
+
+   size_t frame_cache_pitch;
+
+   size_t audio_driver_chunk_size;
+   size_t audio_driver_chunk_nonblock_size;
+   size_t audio_driver_chunk_block_size;
+
+   size_t audio_driver_rewind_ptr;
+   size_t audio_driver_rewind_size;
+   size_t audio_driver_buffer_size;
+   size_t audio_driver_data_ptr;
+
+#ifdef HAVE_RUNAHEAD
+   size_t runahead_save_state_size;
+#endif
 };
 
 static struct global              g_extern;
@@ -1926,25 +1945,6 @@ static const uint8_t midi_drv_ev_sizes[128]                     =
    3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
    0, 2, 3, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
 };
-
-static size_t runloop_msg_queue_size                            = 0;
-static size_t recording_gpu_width                               = 0;
-static size_t recording_gpu_height                              = 0;
-
-static size_t frame_cache_pitch                                 = 0;
-
-static size_t audio_driver_chunk_size                           = 0;
-static size_t audio_driver_chunk_nonblock_size                  = 0;
-static size_t audio_driver_chunk_block_size                     = 0;
-
-static size_t audio_driver_rewind_ptr                           = 0;
-static size_t audio_driver_rewind_size                          = 0;
-static size_t audio_driver_buffer_size                          = 0;
-static size_t audio_driver_data_ptr                             = 0;
-
-#ifdef HAVE_RUNAHEAD
-static size_t runahead_save_state_size                          = 0;
-#endif
 
 /* TODO/FIXME - public global variable */
 unsigned subsystem_current_count                                = 0;
@@ -4232,6 +4232,8 @@ void *video_driver_get_ptr(bool force_nonthreaded_data)
 
 static void retroarch_msg_queue_deinit(void)
 {
+   struct rarch_state *p_rarch = &rarch_st;
+
    runloop_msg_queue_lock();
 
    if (!runloop_msg_queue)
@@ -4242,11 +4244,11 @@ static void retroarch_msg_queue_deinit(void)
    runloop_msg_queue_unlock();
 #ifdef HAVE_THREADS
    slock_free(_runloop_msg_queue_lock);
-   _runloop_msg_queue_lock = NULL;
+   _runloop_msg_queue_lock         = NULL;
 #endif
 
-   runloop_msg_queue      = NULL;
-   runloop_msg_queue_size = 0;
+   runloop_msg_queue               = NULL;
+   p_rarch->runloop_msg_queue_size = 0;
 }
 
 static void retroarch_msg_queue_init(void)
@@ -12950,8 +12952,8 @@ static const record_driver_t *ffemu_find_backend(const char *ident)
 static void recording_driver_free_state(void)
 {
    /* TODO/FIXME - this is not being called anywhere */
-   recording_gpu_width      = 0;
-   recording_gpu_height     = 0;
+   p_rarch->recording_gpu_width      = 0;
+   p_rarch->recording_gpu_height     = 0;
    recording_width          = 0;
    recording_height         = 0;
 }
@@ -13023,10 +13025,11 @@ static void recording_dump_frame(const void *data, unsigned width,
       }
 
       /* User has resized. We kinda have a problem now. */
-      if (  vp.width  != recording_gpu_width ||
-            vp.height != recording_gpu_height)
+      if (  vp.width  != p_rarch->recording_gpu_width ||
+            vp.height != p_rarch->recording_gpu_height)
       {
-         RARCH_WARN("[recording] %s\n", msg_hash_to_str(MSG_RECORDING_TERMINATED_DUE_TO_RESIZE));
+         RARCH_WARN("[recording] %s\n",
+               msg_hash_to_str(MSG_RECORDING_TERMINATED_DUE_TO_RESIZE));
 
          runloop_msg_queue_push(
                msg_hash_to_str(MSG_RECORDING_TERMINATED_DUE_TO_RESIZE),
@@ -13042,9 +13045,9 @@ static void recording_dump_frame(const void *data, unsigned width,
       if (!video_driver_read_viewport(p_rarch->video_driver_record_gpu_buffer, is_idle))
          return;
 
-      ffemu_data.pitch  = (int)(recording_gpu_width * 3);
-      ffemu_data.width  = (unsigned)recording_gpu_width;
-      ffemu_data.height = (unsigned)recording_gpu_height;
+      ffemu_data.pitch  = (int)(p_rarch->recording_gpu_width * 3);
+      ffemu_data.width  = (unsigned)p_rarch->recording_gpu_width;
+      ffemu_data.height = (unsigned)p_rarch->recording_gpu_height;
       ffemu_data.data   = p_rarch->video_driver_record_gpu_buffer + (ffemu_data.height - 1) * ffemu_data.pitch;
 
       ffemu_data.pitch  = -ffemu_data.pitch;
@@ -13262,20 +13265,20 @@ static bool recording_init(void)
          return false;
       }
 
-      params.out_width  = vp.width;
-      params.out_height = vp.height;
-      params.fb_width   = next_pow2(vp.width);
-      params.fb_height  = next_pow2(vp.height);
+      params.out_width                    = vp.width;
+      params.out_height                   = vp.height;
+      params.fb_width                     = next_pow2(vp.width);
+      params.fb_height                    = next_pow2(vp.height);
 
       if (video_force_aspect &&
             (video_driver_aspect_ratio > 0.0f))
-         params.aspect_ratio  = video_driver_aspect_ratio;
+         params.aspect_ratio              = video_driver_aspect_ratio;
       else
-         params.aspect_ratio  = (float)vp.width / vp.height;
+         params.aspect_ratio              = (float)vp.width / vp.height;
 
-      params.pix_fmt             = FFEMU_PIX_BGR24;
-      recording_gpu_width        = vp.width;
-      recording_gpu_height       = vp.height;
+      params.pix_fmt                      = FFEMU_PIX_BGR24;
+      p_rarch->recording_gpu_width        = vp.width;
+      p_rarch->recording_gpu_height       = vp.height;
 
       RARCH_LOG("[recording] %s %u x %u\n", msg_hash_to_str(MSG_DETECTED_VIEWPORT_OF),
             vp.width, vp.height);
@@ -19741,6 +19744,7 @@ static bool audio_compute_buffer_statistics(audio_statistics_t *stats)
    unsigned samples              = MIN(
          (unsigned)audio_driver_free_samples_count,
          AUDIO_BUFFER_FREE_SAMPLES_COUNT);
+   struct rarch_state *p_rarch   = &rarch_st;
 
    if (!stats || samples < 3)
       return false;
@@ -19772,13 +19776,13 @@ static bool audio_compute_buffer_statistics(audio_statistics_t *stats)
       sqrt((double)accum_var / (samples - 2));
 
    stats->average_buffer_saturation      = (1.0f - (float)avg
-         / audio_driver_buffer_size) * 100.0;
+         / p_rarch->audio_driver_buffer_size) * 100.0;
    stats->std_deviation_percentage       = ((float)stddev
-         / audio_driver_buffer_size)  * 100.0;
+         / p_rarch->audio_driver_buffer_size)  * 100.0;
 #endif
 
-   low_water_size  = (unsigned)(audio_driver_buffer_size * 3 / 4);
-   high_water_size = (unsigned)(audio_driver_buffer_size     / 4);
+   low_water_size  = (unsigned)(p_rarch->audio_driver_buffer_size * 3 / 4);
+   high_water_size = (unsigned)(p_rarch->audio_driver_buffer_size     / 4);
 
    for (i = 1; i < samples; i++)
    {
@@ -19863,19 +19867,19 @@ static bool audio_driver_deinit_internal(void)
 
    if (audio_driver_output_samples_conv_buf)
       free(audio_driver_output_samples_conv_buf);
-   audio_driver_output_samples_conv_buf = NULL;
+   audio_driver_output_samples_conv_buf     = NULL;
 
-   audio_driver_data_ptr           = 0;
+   p_rarch->audio_driver_data_ptr           = 0;
 
    if (audio_driver_rewind_buf)
       free(audio_driver_rewind_buf);
-   audio_driver_rewind_buf         = NULL;
+   audio_driver_rewind_buf                  = NULL;
 
-   audio_driver_rewind_size        = 0;
+   p_rarch->audio_driver_rewind_size        = 0;
 
    if (!audio_enable)
    {
-      p_rarch->audio_driver_active = false;
+      p_rarch->audio_driver_active          = false;
       return false;
    }
 
@@ -19984,10 +19988,10 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
    if (!conv_buf)
       goto error;
 
-   audio_driver_output_samples_conv_buf = conv_buf;
-   audio_driver_chunk_block_size        = AUDIO_CHUNK_SIZE_BLOCKING;
-   audio_driver_chunk_nonblock_size     = AUDIO_CHUNK_SIZE_NONBLOCKING;
-   audio_driver_chunk_size              = audio_driver_chunk_block_size;
+   audio_driver_output_samples_conv_buf         = conv_buf;
+   p_rarch->audio_driver_chunk_block_size       = AUDIO_CHUNK_SIZE_BLOCKING;
+   p_rarch->audio_driver_chunk_nonblock_size    = AUDIO_CHUNK_SIZE_NONBLOCKING;
+   p_rarch->audio_driver_chunk_size             = p_rarch->audio_driver_chunk_block_size;
 
    /* Needs to be able to hold full content of a full max_bufsamples
     * in addition to its own. */
@@ -19997,8 +20001,8 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
    if (!rewind_buf)
       goto error;
 
-   audio_driver_rewind_buf              = rewind_buf;
-   audio_driver_rewind_size             = max_bufsamples;
+   audio_driver_rewind_buf                       = rewind_buf;
+   p_rarch->audio_driver_rewind_size             = max_bufsamples;
 
    if (!audio_enable)
    {
@@ -20008,7 +20012,7 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
 
    audio_driver_find_driver();
 
-   if (current_audio == NULL || current_audio->init == NULL)
+   if (!current_audio || !current_audio->init)
    {
       RARCH_ERR("Failed to initialize audio driver. Will continue without audio.\n");
       p_rarch->audio_driver_active = false;
@@ -20061,9 +20065,13 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
 
    if (!audio_sync && p_rarch->audio_driver_active)
    {
-      if (p_rarch->audio_driver_active && audio_driver_context_audio_data)
-         current_audio->set_nonblock_state(audio_driver_context_audio_data, true);
-      audio_driver_chunk_size = audio_driver_chunk_nonblock_size;
+      if (p_rarch->audio_driver_active && 
+            audio_driver_context_audio_data)
+         current_audio->set_nonblock_state(
+               audio_driver_context_audio_data, true);
+
+      p_rarch->audio_driver_chunk_size = 
+         p_rarch->audio_driver_chunk_nonblock_size;
    }
 
    if (audio_driver_input <= 0.0f)
@@ -20095,8 +20103,8 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
    if (!aud_inp_data)
       goto error;
 
-   audio_driver_input_data = aud_inp_data;
-   audio_driver_data_ptr   = 0;
+   audio_driver_input_data          = aud_inp_data;
+   p_rarch->audio_driver_data_ptr   = 0;
 
    retro_assert(settings->uints.audio_out_rate <
          audio_driver_input * AUDIO_MAX_RATIO);
@@ -20121,7 +20129,7 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
        * and buffer_size to be implemented. */
       if (current_audio->buffer_size)
       {
-         audio_driver_buffer_size          =
+         p_rarch->audio_driver_buffer_size =
             current_audio->buffer_size(audio_driver_context_audio_data);
          p_rarch->audio_driver_control     = true;
       }
@@ -20204,7 +20212,7 @@ static void audio_driver_flush(const int16_t *data, size_t samples,
    if (p_rarch->audio_driver_control)
    {
       /* Readjust the audio input rate. */
-      int      half_size   = (int)(audio_driver_buffer_size / 2);
+      int      half_size   = (int)(p_rarch->audio_driver_buffer_size / 2);
       int      avail       =
          (int)current_audio->write_avail(audio_driver_context_audio_data);
       int      delta_mid   = avail - half_size;
@@ -20222,7 +20230,8 @@ static void audio_driver_flush(const int16_t *data, size_t samples,
       if (verbosity_is_enabled())
       {
          RARCH_LOG_OUTPUT("[Audio]: Audio buffer is %u%% full\n",
-               (unsigned)(100 - (avail * 100) / audio_driver_buffer_size));
+               (unsigned)(100 - (avail * 100) / 
+                  p_rarch->audio_driver_buffer_size));
          RARCH_LOG_OUTPUT("[Audio]: New rate: %lf, Orig rate: %lf\n",
                audio_source_ratio_current,
                audio_source_ratio_original);
@@ -20307,10 +20316,10 @@ static void audio_driver_sample(int16_t left, int16_t right)
    if (p_rarch->audio_suspended)
       return;
 
-   audio_driver_output_samples_conv_buf[audio_driver_data_ptr++] = left;
-   audio_driver_output_samples_conv_buf[audio_driver_data_ptr++] = right;
+   audio_driver_output_samples_conv_buf[p_rarch->audio_driver_data_ptr++] = left;
+   audio_driver_output_samples_conv_buf[p_rarch->audio_driver_data_ptr++] = right;
 
-   if (audio_driver_data_ptr < audio_driver_chunk_size)
+   if (p_rarch->audio_driver_data_ptr < p_rarch->audio_driver_chunk_size)
       return;
 
    if (recording_data && recording_driver && recording_driver->push_audio)
@@ -20318,7 +20327,7 @@ static void audio_driver_sample(int16_t left, int16_t right)
       struct record_audio_data ffemu_data;
 
       ffemu_data.data                    = audio_driver_output_samples_conv_buf;
-      ffemu_data.frames                  = audio_driver_data_ptr / 2;
+      ffemu_data.frames                  = p_rarch->audio_driver_data_ptr / 2;
 
       recording_driver->push_audio(recording_data, &ffemu_data);
    }
@@ -20329,11 +20338,11 @@ static void audio_driver_sample(int16_t left, int16_t right)
 		   !audio_driver_output_samples_buf))
       audio_driver_flush(
             audio_driver_output_samples_conv_buf,
-            audio_driver_data_ptr,
+            p_rarch->audio_driver_data_ptr,
             p_rarch->runloop_slowmotion,
             p_rarch->runloop_fastmotion);
 
-   audio_driver_data_ptr = 0;
+   p_rarch->audio_driver_data_ptr = 0;
 }
 
 #ifdef HAVE_MENU
@@ -20436,11 +20445,12 @@ static size_t audio_driver_sample_batch(const int16_t *data, size_t frames)
  **/
 static void audio_driver_sample_rewind(int16_t left, int16_t right)
 {
-   if (audio_driver_rewind_ptr == 0)
+   struct rarch_state *p_rarch   = &rarch_st;
+   if (p_rarch->audio_driver_rewind_ptr == 0)
       return;
 
-   audio_driver_rewind_buf[--audio_driver_rewind_ptr] = right;
-   audio_driver_rewind_buf[--audio_driver_rewind_ptr] = left;
+   audio_driver_rewind_buf[--p_rarch->audio_driver_rewind_ptr] = right;
+   audio_driver_rewind_buf[--p_rarch->audio_driver_rewind_ptr] = left;
 }
 
 /**
@@ -20460,12 +20470,13 @@ static size_t audio_driver_sample_batch_rewind(
       const int16_t *data, size_t frames)
 {
    size_t i;
-   size_t samples   = frames << 1;
+   struct rarch_state *p_rarch   = &rarch_st;
+   size_t              samples   = frames << 1;
 
    for (i = 0; i < samples; i++)
    {
-      if (audio_driver_rewind_ptr > 0)
-         audio_driver_rewind_buf[--audio_driver_rewind_ptr] = data[i];
+      if (p_rarch->audio_driver_rewind_ptr > 0)
+         audio_driver_rewind_buf[--p_rarch->audio_driver_rewind_ptr] = data[i];
    }
 
    return frames;
@@ -20510,7 +20521,8 @@ bool audio_driver_dsp_filter_init(const char *device)
 
 void audio_driver_set_buffer_size(size_t bufsize)
 {
-   audio_driver_buffer_size = bufsize;
+   struct rarch_state *p_rarch       = &rarch_st;
+   p_rarch->audio_driver_buffer_size = bufsize;
 }
 
 static void audio_driver_monitor_adjust_system_rates(void)
@@ -20541,22 +20553,23 @@ static void audio_driver_monitor_adjust_system_rates(void)
 void audio_driver_setup_rewind(void)
 {
    unsigned i;
+   struct rarch_state *p_rarch      = &rarch_st;
 
    /* Push audio ready to be played. */
-   audio_driver_rewind_ptr = audio_driver_rewind_size;
+   p_rarch->audio_driver_rewind_ptr = p_rarch->audio_driver_rewind_size;
 
-   for (i = 0; i < audio_driver_data_ptr; i += 2)
+   for (i = 0; i < p_rarch->audio_driver_data_ptr; i += 2)
    {
-      if (audio_driver_rewind_ptr > 0)
-         audio_driver_rewind_buf[--audio_driver_rewind_ptr] =
+      if (p_rarch->audio_driver_rewind_ptr > 0)
+         audio_driver_rewind_buf[--p_rarch->audio_driver_rewind_ptr] =
             audio_driver_output_samples_conv_buf[i + 1];
 
-      if (audio_driver_rewind_ptr > 0)
-         audio_driver_rewind_buf[--audio_driver_rewind_ptr] =
+      if (p_rarch->audio_driver_rewind_ptr > 0)
+         audio_driver_rewind_buf[--p_rarch->audio_driver_rewind_ptr] =
             audio_driver_output_samples_conv_buf[i + 0];
    }
 
-   audio_driver_data_ptr = 0;
+   p_rarch->audio_driver_data_ptr = 0;
 }
 
 
@@ -21215,8 +21228,10 @@ void audio_driver_frame_is_reverse(void)
    {
       struct record_audio_data ffemu_data;
 
-      ffemu_data.data                    = audio_driver_rewind_buf + audio_driver_rewind_ptr;
-      ffemu_data.frames                  = (audio_driver_rewind_size - audio_driver_rewind_ptr) / 2;
+      ffemu_data.data                    = audio_driver_rewind_buf + 
+         p_rarch->audio_driver_rewind_ptr;
+      ffemu_data.frames                  = (p_rarch->audio_driver_rewind_size - 
+            p_rarch->audio_driver_rewind_ptr) / 2;
 
       recording_driver->push_audio(recording_data, &ffemu_data);
    }
@@ -21227,8 +21242,10 @@ void audio_driver_frame_is_reverse(void)
          !audio_driver_input_data          ||
          !audio_driver_output_samples_buf))
       audio_driver_flush(
-            audio_driver_rewind_buf + audio_driver_rewind_ptr,
-            audio_driver_rewind_size - audio_driver_rewind_ptr,
+            audio_driver_rewind_buf  + 
+            p_rarch->audio_driver_rewind_ptr,
+            p_rarch->audio_driver_rewind_size - 
+            p_rarch->audio_driver_rewind_ptr,
             p_rarch->runloop_slowmotion,
             p_rarch->runloop_fastmotion);
 }
@@ -22349,16 +22366,20 @@ void video_driver_set_filtering(unsigned index, bool smooth, bool ctx_scaling)
 void video_driver_cached_frame_set(const void *data, unsigned width,
       unsigned height, size_t pitch)
 {
+   struct rarch_state *p_rarch  = &rarch_st;
+
    if (data)
-      frame_cache_data = data;
-   frame_cache_width   = width;
-   frame_cache_height  = height;
-   frame_cache_pitch   = pitch;
+      frame_cache_data          = data;
+
+   frame_cache_width            = width;
+   frame_cache_height           = height;
+   p_rarch->frame_cache_pitch   = pitch;
 }
 
 void video_driver_cached_frame_get(const void **data, unsigned *width,
       unsigned *height, size_t *pitch)
 {
+   struct rarch_state *p_rarch  = &rarch_st;
    if (data)
       *data    = frame_cache_data;
    if (width)
@@ -22366,7 +22387,7 @@ void video_driver_cached_frame_get(const void **data, unsigned *width,
    if (height)
       *height  = frame_cache_height;
    if (pitch)
-      *pitch   = frame_cache_pitch;
+      *pitch   = p_rarch->frame_cache_pitch;
 }
 
 void video_driver_get_size(unsigned *width, unsigned *height)
@@ -22513,17 +22534,19 @@ enum retro_pixel_format video_driver_get_pixel_format(void)
  **/
 void video_driver_cached_frame(void)
 {
-   void *recording  = recording_data;
+   void             *recording  = recording_data;
+   struct rarch_state *p_rarch  = &rarch_st;
 
    /* Cannot allow recording when pushing duped frames. */
-   recording_data   = NULL;
+   recording_data               = NULL;
 
    if (current_core.inited)
       retro_ctx.frame_cb(
             (frame_cache_data != RETRO_HW_FRAME_BUFFER_VALID)
             ? frame_cache_data : NULL,
             frame_cache_width,
-            frame_cache_height, frame_cache_pitch);
+            frame_cache_height,
+            p_rarch->frame_cache_pitch);
 
    recording_data   = recording;
 }
@@ -23217,7 +23240,7 @@ static void video_driver_frame(const void *data, unsigned width,
       frame_cache_data         = data;
    frame_cache_width           = width;
    frame_cache_height          = height;
-   frame_cache_pitch           = pitch;
+   p_rarch->frame_cache_pitch  = pitch;
 
    if (
          video_driver_scaler_ptr
@@ -23407,7 +23430,7 @@ static void video_driver_frame(const void *data, unsigned width,
       pitch  = output_pitch;
    }
 
-   if (runloop_msg_queue_size > 0)
+   if (p_rarch->runloop_msg_queue_size > 0)
    {
       /* If widgets are currently enabled, then
        * messages were pushed to the queue before
@@ -23422,8 +23445,10 @@ static void video_driver_frame(const void *data, unsigned width,
          msg_queue_entry_t msg_entry;
 
          runloop_msg_queue_lock();
-         msg_found = msg_queue_extract(runloop_msg_queue, &msg_entry);
-         runloop_msg_queue_size = msg_queue_size(runloop_msg_queue);
+         msg_found                       = msg_queue_extract(
+               runloop_msg_queue, &msg_entry);
+         p_rarch->runloop_msg_queue_size = msg_queue_size(
+               runloop_msg_queue);
          runloop_msg_queue_unlock();
 
          if (msg_found)
@@ -23450,10 +23475,10 @@ static void video_driver_frame(const void *data, unsigned width,
       if (video_info.font_enable)
 #endif
       {
-         const char *msg = NULL;
+         const char *msg                 = NULL;
          runloop_msg_queue_lock();
-         msg = msg_queue_pull(runloop_msg_queue);
-         runloop_msg_queue_size = msg_queue_size(runloop_msg_queue);
+         msg                             = msg_queue_pull(runloop_msg_queue);
+         p_rarch->runloop_msg_queue_size = msg_queue_size(runloop_msg_queue);
          if (msg)
             strlcpy(video_driver_msg, msg, sizeof(video_driver_msg));
          runloop_msg_queue_unlock();
@@ -24917,9 +24942,10 @@ void driver_set_nonblock_state(void)
    if (audio_driver_active && audio_driver_context_audio_data)
       current_audio->set_nonblock_state(audio_driver_context_audio_data,
             audio_sync ? enable : true);
-   audio_driver_chunk_size = enable
-      ? audio_driver_chunk_nonblock_size
-      : audio_driver_chunk_block_size;
+
+   p_rarch->audio_driver_chunk_size = enable
+      ? p_rarch->audio_driver_chunk_nonblock_size
+      : p_rarch->audio_driver_chunk_block_size;
 }
 
 /**
@@ -25614,12 +25640,12 @@ static void *runahead_save_state_alloc(void)
    savestate->data_const    = NULL;
    savestate->size          = 0;
 
-   if (  (runahead_save_state_size > 0) && 
+   if (  (p_rarch->runahead_save_state_size > 0) && 
          p_rarch->runahead_save_state_size_known)
    {
-      savestate->data       = malloc(runahead_save_state_size);
+      savestate->data       = malloc(p_rarch->runahead_save_state_size);
       savestate->data_const = savestate->data;
-      savestate->size       = runahead_save_state_size;
+      savestate->size       = p_rarch->runahead_save_state_size;
    }
 
    return savestate;
@@ -25638,7 +25664,7 @@ static void runahead_save_state_list_init(size_t save_state_size)
 {
    struct rarch_state             *p_rarch = &rarch_st;
 
-   runahead_save_state_size                = save_state_size;
+   p_rarch->runahead_save_state_size       = save_state_size;
    p_rarch->runahead_save_state_size_known = true;
 
    mylist_create(&runahead_save_state_list, 16,
@@ -25666,7 +25692,7 @@ static void runahead_clear_variables(void)
 {
    struct rarch_state *p_rarch                = &rarch_st;
 
-   runahead_save_state_size                   = 0;
+   p_rarch->runahead_save_state_size          = 0;
    p_rarch->runahead_save_state_size_known    = false;
    runahead_video_driver_is_active            = true;
    runahead_available                         = true;
@@ -25728,7 +25754,7 @@ static void runahead_error(void)
    runahead_available                      = false;
    mylist_destroy(&runahead_save_state_list);
    runahead_remove_hooks();
-   runahead_save_state_size                = 0;
+   p_rarch->runahead_save_state_size       = 0;
    p_rarch->runahead_save_state_size_known = true;
 }
 
@@ -25745,7 +25771,7 @@ static bool runahead_create(void)
    runahead_save_state_list_init(info.size);
    runahead_video_driver_is_active = p_rarch->video_driver_active;
 
-   if (  (runahead_save_state_size == 0) || 
+   if (  (p_rarch->runahead_save_state_size == 0) || 
          !p_rarch->runahead_save_state_size_known)
    {
       runahead_error();
@@ -28451,7 +28477,7 @@ void runloop_msg_queue_push(const char *msg,
                prio, duration,
                title, icon, category);
 
-      runloop_msg_queue_size = msg_queue_size(runloop_msg_queue);
+      p_rarch->runloop_msg_queue_size = msg_queue_size(runloop_msg_queue);
    }
 
    ui_companion_driver_msg_queue_push(msg,
@@ -29780,7 +29806,8 @@ end:
             /* Nonblocking audio */
             if (p_rarch->audio_driver_active && audio_driver_context_audio_data)
                current_audio->set_nonblock_state(audio_driver_context_audio_data, true);
-            audio_driver_chunk_size = audio_driver_chunk_nonblock_size;
+            p_rarch->audio_driver_chunk_size = 
+               p_rarch->audio_driver_chunk_nonblock_size;
          }
 
          fastforward_after_frames++;
@@ -29792,8 +29819,10 @@ end:
                current_audio->set_nonblock_state(
                      audio_driver_context_audio_data,
                      audio_sync ? false : true);
-            audio_driver_chunk_size = audio_driver_chunk_block_size;
-            fastforward_after_frames = 0;
+
+            p_rarch->audio_driver_chunk_size = 
+               p_rarch->audio_driver_chunk_block_size;
+            fastforward_after_frames         = 0;
          }
       }
 
