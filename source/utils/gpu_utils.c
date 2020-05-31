@@ -255,7 +255,7 @@ void gpu_free_texture(texture *tex) {
 	tex->valid = 0;
 }
 
-void gpu_alloc_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, const void *data, texture *tex, uint8_t src_bpp, uint32_t (*read_cb)(void *), void (*write_cb)(void *, uint32_t)) {
+void gpu_alloc_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, const void *data, texture *tex, uint8_t src_bpp, uint32_t (*read_cb)(void *), void (*write_cb)(void *, uint32_t), uint8_t fast_store) {
 	// If there's already a texture in passed texture object we first dealloc it
 	if (tex->valid)
 		gpu_free_texture(tex);
@@ -274,13 +274,22 @@ void gpu_alloc_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, const
 			int i, j;
 			uint8_t *src = (uint8_t *)data;
 			uint8_t *dst;
-			for (i = 0; i < h; i++) {
-				dst = ((uint8_t *)texture_data) + (ALIGN(w, 8) * bpp) * i;
-				for (j = 0; j < w; j++) {
-					uint32_t clr = read_cb(src);
-					write_cb(dst, clr);
-					src += src_bpp;
-					dst += bpp;
+			if (fast_store) { // Internal Format and Data Format are the same, we can just use memcpy for better performance
+				uint32_t line_size = w * bpp;
+				for (i = 0; i < h; i++) {
+					dst = ((uint8_t *)texture_data) + (ALIGN(w, 8) * bpp) * i;
+					memcpy(dst, src, line_size);
+					src += line_size;
+				}
+			} else { // Different internal and data formats, we need to go with slower callbacks system
+				for (i = 0; i < h; i++) {
+					dst = ((uint8_t *)texture_data) + (ALIGN(w, 8) * bpp) * i;
+					for (j = 0; j < w; j++) {
+						uint32_t clr = read_cb(src);
+						write_cb(dst, clr);
+						src += src_bpp;
+						dst += bpp;
+					}
 				}
 			}
 		} else
