@@ -100,7 +100,7 @@ void sqrtfv_c(float *x, int n, float *r)
 
 void sqrtfv_neon(float *x, int n, float *r)
 {
-#if 0
+#ifdef __MATH_NEON
 	asm volatile (
 
 	"tst 			r1, #1 					\n\t"	//r1 & 1

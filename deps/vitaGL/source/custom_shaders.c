@@ -357,8 +357,7 @@ void glUniformMatrix4fv(GLint location, GLsizei count, GLboolean transpose, cons
  * ------------------------------
  */
 
-// Equivalent of glBindAttribLocation but for sceGxm architecture
-void vglBindAttribLocation(GLuint prog, GLuint index, const GLchar *name, const GLuint num, const GLenum type) {
+void vglBindPackedAttribLocation(GLuint prog, GLuint index, const GLchar *name, const GLuint num, const GLenum type, GLuint offset) {
 	// Grabbing passed program
 	program *p = &progs[prog - 1];
 	SceGxmVertexAttribute *attributes = &p->attr[index];
@@ -369,7 +368,7 @@ void vglBindAttribLocation(GLuint prog, GLuint index, const GLchar *name, const 
 
 	// Setting stream index and offset values
 	attributes->streamIndex = index;
-	attributes->offset = 0;
+	attributes->offset = offset;
 
 	// Detecting attribute format and size
 	int bpe;
@@ -396,7 +395,12 @@ void vglBindAttribLocation(GLuint prog, GLuint index, const GLchar *name, const 
 		p->attr_num = index + 1;
 }
 
-// Equivalent of glVertexAttribLocation but for sceGxm architecture
+// Equivalent of glBindAttribLocation but for sceGxm architecture
+void vglBindAttribLocation(GLuint prog, GLuint index, const GLchar *name, const GLuint num, const GLenum type) {
+	vglBindPackedAttribLocation(prog, index, name, num, type, 0);
+}
+
+// Equivalent of glVertexAttribPointer but for sceGxm architecture
 void vglVertexAttribPointer(GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, GLuint count, const GLvoid *pointer) {
 #ifndef SKIP_ERROR_HANDLING
 	// Error handling
