@@ -1983,10 +1983,6 @@ static retro_bits_t has_set_libretro_device;
 
 static rarch_system_info_t runloop_system;
 static struct retro_frame_time_callback runloop_frame_time;
-static retro_keyboard_event_t runloop_key_event                 = NULL;
-static retro_keyboard_event_t runloop_frontend_key_event        = NULL;
-static core_option_manager_t *runloop_core_options              = NULL;
-static msg_queue_t *runloop_msg_queue                           = NULL;
 
 static runloop_core_status_msg_t runloop_core_status_msg        =
 {
@@ -2073,88 +2069,8 @@ static char input_device_display_names[MAX_INPUT_DEVICES][64];
 static char input_device_config_names [MAX_INPUT_DEVICES][64];
 static char input_device_config_paths [MAX_INPUT_DEVICES][64];
 
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-static rarch_timer_t shader_delay_timer                         = {0};
-#endif
-
-static struct rarch_dir_list dir_shader_list;
-
-#ifdef HAVE_MENU
-/* Since these are static/global, they are initialised to zero */
-static menu_input_pointer_hw_state_t menu_input_pointer_hw_state;
-static menu_input_t menu_input_state;
-#endif
-
-static struct retro_camera_callback camera_cb;
-
-static midi_event_t midi_drv_input_event;
-static midi_event_t midi_drv_output_event;
-
-static gfx_ctx_driver_t current_video_context;
-
-/**
- * dynamic.c:dynamic_request_hw_context will try to set flag data when the context
- * is in the middle of being rebuilt; in these cases we will save flag
- * data and set this to true.
- * When the context is reinit, it checks this, reads from
- * deferred_flag_data and cleans it.
- *
- * TODO - Dirty hack, fix it better
- */
-static gfx_ctx_flags_t deferred_flag_data                       = {0};
-
-static struct retro_system_av_info video_driver_av_info;
-
-static struct bsv_state bsv_movie_state;
-
-static struct retro_hw_render_callback hw_render;
-
-typedef bool(*runahead_load_state_function)(const void*, size_t);
-
-static retro_input_state_t input_state_callback_original;
-
-#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
-static input_remote_state_t remote_st_ptr;
-#endif
-
-static struct string_list *subsystem_fullpaths                  = NULL;
-
-static const record_driver_t *recording_driver                  = NULL;
-static void *recording_data                                     = NULL;
-
-#ifdef HAVE_THREADS
-static slock_t *_runloop_msg_queue_lock                         = NULL;
-#endif
-
-#ifdef HAVE_MENU
-static const char **menu_input_dialog_keyboard_buffer           = {NULL};
-#endif
-
-static const camera_driver_t *camera_driver                     = NULL;
-static void *camera_data                                        = NULL;
-
 static midi_driver_t *midi_drv                                  = &midi_null;
-static void *midi_drv_data                                      = NULL;
-static struct string_list *midi_drv_inputs                      = NULL;
-static struct string_list *midi_drv_outputs                     = NULL;
-
-static const ui_companion_driver_t *ui_companion                = NULL;
-static void *ui_companion_data                                  = NULL;
-
-#ifdef HAVE_QT
-static void *ui_companion_qt_data                               = NULL;
-#endif
-
-static const location_driver_t *location_driver                 = NULL;
-static void *location_data                                      = NULL;
-
-static const wifi_driver_t *wifi_driver                         = NULL;
-static void *wifi_data                                          = NULL;
-
 static const video_display_server_t *current_display_server     = &dispserv_null;
-static void                    *current_display_server_data     = NULL;
-
-static bsv_movie_t     *bsv_movie_state_handle                  = NULL;
 
 struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END]      = {
    { "4:3",           1.3333f },
@@ -2189,110 +2105,6 @@ static gfx_api_gpu_map gpu_map[] = {
    { GFX_CTX_DIRECT3D11_API, NULL },
    { GFX_CTX_DIRECT3D12_API, NULL }
 };
-
-static rarch_softfilter_t *video_driver_state_filter            = NULL;
-static void               *video_driver_state_buffer            = NULL;
-
-static const void *frame_cache_data                             = NULL;
-
-static void *video_driver_data                                  = NULL;
-static video_driver_t *current_video                            = NULL;
-
-/* Interface for "poking". */
-static const video_poke_interface_t *video_driver_poke          = NULL;
-
-/* Used for 15-bit -> 16-bit conversions that take place before
- * being passed to video driver. */
-static video_pixel_scaler_t *video_driver_scaler_ptr            = NULL;
-
-static const struct
-retro_hw_render_context_negotiation_interface *
-hw_render_context_negotiation                                   = NULL;
-
-static video_driver_frame_t frame_bak                           = NULL;
-
-#ifdef HAVE_THREADS
-static slock_t *display_lock                                    = NULL;
-static slock_t *context_lock                                    = NULL;
-#endif
-
-static void *video_context_data                                 = NULL;
-
-#ifdef HAVE_AUDIOMIXER
-static struct audio_mixer_stream
-audio_mixer_streams[AUDIO_MIXER_MAX_SYSTEM_STREAMS]             = {{0}};
-#endif
-
-static int16_t *audio_driver_rewind_buf                         = NULL;
-static int16_t *audio_driver_output_samples_conv_buf            = NULL;
-
-static struct retro_audio_callback audio_callback               = {0};
-
-static retro_dsp_filter_t *audio_driver_dsp                     = NULL;
-static struct string_list *audio_driver_devices_list            = NULL;
-static const retro_resampler_t *audio_driver_resampler          = NULL;
-
-static void *audio_driver_resampler_data                        = NULL;
-static const audio_driver_t *current_audio                      = NULL;
-static void *audio_driver_context_audio_data                    = NULL;
-
-#ifdef HAVE_RUNAHEAD
-static my_list *runahead_save_state_list                        = NULL;
-static my_list *input_state_list                                = NULL;
-
-static function_t retro_reset_callback_original                 = NULL;
-static runahead_load_state_function
-retro_unserialize_callback_original                             = NULL;
-
-static function_t original_retro_deinit                         = NULL;
-static function_t original_retro_unload                         = NULL;
-#endif
-
-#ifdef HAVE_OVERLAY
-static input_overlay_t *overlay_ptr                             = NULL;
-#endif
-
-static pad_connection_listener_t *pad_connection_listener       = NULL;
-
-static input_keyboard_line_t *g_keyboard_line                   = NULL;
-
-static void *g_keyboard_press_data                              = NULL;
-
-#ifdef HAVE_COMMAND
-static command_t *input_driver_command                          = NULL;
-#endif
-#ifdef HAVE_NETWORKGAMEPAD
-static input_remote_t *input_driver_remote                      = NULL;
-#endif
-static input_mapper_t *input_driver_mapper                      = NULL;
-static input_driver_t *current_input                            = NULL;
-static void *current_input_data                                 = NULL;
-
-#ifdef HAVE_HID
-static const void *hid_data                                     = NULL;
-#endif
-
-#if defined(HAVE_RUNAHEAD)
-#if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
-static char *secondary_library_path                             = NULL;
-#endif
-#endif
-
-#if defined(HAVE_COMMAND)
-#ifdef HAVE_NETWORK_CMD
-static struct sockaddr_storage lastcmd_net_source;
-static socklen_t lastcmd_net_source_len;
-#endif
-#endif
-
-static struct retro_perf_counter *perf_counters_rarch[MAX_COUNTERS];
-static struct retro_perf_counter *perf_counters_libretro[MAX_COUNTERS];
-
-/* TODO/FIXME - turn these into static global variable */
-char        input_device_names        [MAX_INPUT_DEVICES][64];
-struct retro_keybind input_config_binds[MAX_USERS][RARCH_BIND_LIST_END];
-struct retro_keybind input_autoconf_binds[MAX_USERS][RARCH_BIND_LIST_END];
-static const struct retro_keybind *libretro_input_binds[MAX_USERS];
 
 const struct input_bind_map input_config_bind_map[RARCH_BIND_LIST_END_NULL] = {
       DECLARE_BIND(b,         RETRO_DEVICE_ID_JOYPAD_B,      MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_B),
@@ -2383,6 +2195,169 @@ const struct input_bind_map input_config_bind_map[RARCH_BIND_LIST_END_NULL] = {
       DECLARE_META_BIND(2, ai_service,            RARCH_AI_SERVICE,            MENU_ENUM_LABEL_VALUE_INPUT_META_AI_SERVICE),
 };
 
+/**
+ * dynamic.c:dynamic_request_hw_context will try to set flag data when the context
+ * is in the middle of being rebuilt; in these cases we will save flag
+ * data and set this to true.
+ * When the context is reinit, it checks this, reads from
+ * deferred_flag_data and cleans it.
+ *
+ * TODO - Dirty hack, fix it better
+ */
+static gfx_ctx_flags_t deferred_flag_data                       = {0};
+
+#ifdef HAVE_AUDIOMIXER
+static struct audio_mixer_stream
+audio_mixer_streams[AUDIO_MIXER_MAX_SYSTEM_STREAMS]             = {{0}};
+#endif
+
+#ifdef HAVE_MENU
+static const char **menu_input_dialog_keyboard_buffer           = {NULL};
+#endif
+
+static struct retro_audio_callback audio_callback               = {0};
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+static rarch_timer_t shader_delay_timer                         = {0};
+#endif
+
+static retro_keyboard_event_t runloop_key_event                 = NULL;
+static retro_keyboard_event_t runloop_frontend_key_event        = NULL;
+static core_option_manager_t *runloop_core_options              = NULL;
+static msg_queue_t *runloop_msg_queue                           = NULL;
+
+static struct string_list *subsystem_fullpaths                  = NULL;
+
+static const record_driver_t *recording_driver                  = NULL;
+static void *recording_data                                     = NULL;
+
+#ifdef HAVE_THREADS
+static slock_t *_runloop_msg_queue_lock                         = NULL;
+#endif
+
+static const camera_driver_t *camera_driver                     = NULL;
+static void *camera_data                                        = NULL;
+
+static void *midi_drv_data                                      = NULL;
+static struct string_list *midi_drv_inputs                      = NULL;
+static struct string_list *midi_drv_outputs                     = NULL;
+
+static const ui_companion_driver_t *ui_companion                = NULL;
+static void *ui_companion_data                                  = NULL;
+
+#ifdef HAVE_QT
+static void *ui_companion_qt_data                               = NULL;
+#endif
+
+static const location_driver_t *location_driver                 = NULL;
+static void *location_data                                      = NULL;
+
+static const wifi_driver_t *wifi_driver                         = NULL;
+static void *wifi_data                                          = NULL;
+
+static void                    *current_display_server_data     = NULL;
+
+static bsv_movie_t     *bsv_movie_state_handle                  = NULL;
+
+static rarch_softfilter_t *video_driver_state_filter            = NULL;
+static void               *video_driver_state_buffer            = NULL;
+
+static const void *frame_cache_data                             = NULL;
+
+static void *video_driver_data                                  = NULL;
+static video_driver_t *current_video                            = NULL;
+
+/* Interface for "poking". */
+static const video_poke_interface_t *video_driver_poke          = NULL;
+
+/* Used for 15-bit -> 16-bit conversions that take place before
+ * being passed to video driver. */
+static video_pixel_scaler_t *video_driver_scaler_ptr            = NULL;
+
+static const struct
+retro_hw_render_context_negotiation_interface *
+hw_render_context_negotiation                                   = NULL;
+
+static video_driver_frame_t frame_bak                           = NULL;
+
+#ifdef HAVE_THREADS
+static slock_t *display_lock                                    = NULL;
+static slock_t *context_lock                                    = NULL;
+#endif
+
+static void *video_context_data                                 = NULL;
+
+
+static int16_t *audio_driver_rewind_buf                         = NULL;
+static int16_t *audio_driver_output_samples_conv_buf            = NULL;
+
+static retro_dsp_filter_t *audio_driver_dsp                     = NULL;
+static struct string_list *audio_driver_devices_list            = NULL;
+static const retro_resampler_t *audio_driver_resampler          = NULL;
+
+static void *audio_driver_resampler_data                        = NULL;
+static const audio_driver_t *current_audio                      = NULL;
+static void *audio_driver_context_audio_data                    = NULL;
+
+#ifdef HAVE_RUNAHEAD
+typedef bool(*runahead_load_state_function)(const void*, size_t);
+
+static my_list *runahead_save_state_list                        = NULL;
+static my_list *input_state_list                                = NULL;
+
+static function_t retro_reset_callback_original                 = NULL;
+static runahead_load_state_function
+retro_unserialize_callback_original                             = NULL;
+
+static function_t original_retro_deinit                         = NULL;
+static function_t original_retro_unload                         = NULL;
+#endif
+
+#ifdef HAVE_OVERLAY
+static input_overlay_t *overlay_ptr                             = NULL;
+#endif
+
+static pad_connection_listener_t *pad_connection_listener       = NULL;
+
+static input_keyboard_line_t *g_keyboard_line                   = NULL;
+
+static void *g_keyboard_press_data                              = NULL;
+
+#ifdef HAVE_COMMAND
+static command_t *input_driver_command                          = NULL;
+#endif
+#ifdef HAVE_NETWORKGAMEPAD
+static input_remote_t *input_driver_remote                      = NULL;
+#endif
+static input_mapper_t *input_driver_mapper                      = NULL;
+static input_driver_t *current_input                            = NULL;
+static void *current_input_data                                 = NULL;
+
+#ifdef HAVE_HID
+static const void *hid_data                                     = NULL;
+#endif
+
+#if defined(HAVE_RUNAHEAD)
+#if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
+static char *secondary_library_path                             = NULL;
+#endif
+#endif
+
+#if defined(HAVE_COMMAND)
+#ifdef HAVE_NETWORK_CMD
+static struct sockaddr_storage lastcmd_net_source;
+static socklen_t lastcmd_net_source_len;
+#endif
+#endif
+
+static struct retro_perf_counter *perf_counters_rarch[MAX_COUNTERS];
+static struct retro_perf_counter *perf_counters_libretro[MAX_COUNTERS];
+
+/* TODO/FIXME - turn these into static global variable */
+char        input_device_names        [MAX_INPUT_DEVICES][64];
+struct retro_keybind input_config_binds[MAX_USERS][RARCH_BIND_LIST_END];
+struct retro_keybind input_autoconf_binds[MAX_USERS][RARCH_BIND_LIST_END];
+static const struct retro_keybind *libretro_input_binds[MAX_USERS];
+
 static input_keyboard_press_t g_keyboard_press_cb;
 
 static turbo_buttons_t input_driver_turbo_btns;
@@ -2401,10 +2376,38 @@ static struct retro_callbacks secondary_callbacks;
 #endif
 #endif
 
+static struct rarch_dir_list dir_shader_list;
+
+#ifdef HAVE_MENU
+/* Since these are static/global, they are initialised to zero */
+static menu_input_pointer_hw_state_t menu_input_pointer_hw_state;
+static menu_input_t menu_input_state;
+#endif
+
+static struct retro_camera_callback camera_cb;
+
+static midi_event_t midi_drv_input_event;
+static midi_event_t midi_drv_output_event;
+
+static gfx_ctx_driver_t current_video_context;
+
+static struct retro_system_av_info video_driver_av_info;
+
+static struct bsv_state bsv_movie_state;
+
+static struct retro_hw_render_callback hw_render;
+
+static retro_input_state_t input_state_callback_original;
+
+#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
+static input_remote_state_t remote_st_ptr;
+#endif
+
 /* TODO/FIXME - public global variable */
 struct retro_subsystem_info subsystem_data[SUBSYSTEM_MAX_SUBSYSTEMS];
 
 static struct retro_subsystem_rom_info subsystem_data_roms[SUBSYSTEM_MAX_SUBSYSTEMS][SUBSYSTEM_MAX_SUBSYSTEM_ROMS];
+
 
 /* Forward declarations */
 static void retroarch_fail(int error_code, const char *error);
