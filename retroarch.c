@@ -6718,7 +6718,7 @@ static void update_runtime_log(bool log_per_core)
    const char  *dir_playlist    = settings->paths.directory_playlist;
 
    /* Initialise runtime log file */
-   runtime_log_t *runtime_log = runtime_log_init(
+   runtime_log_t *runtime_log   = runtime_log_init(
          p_rarch->runtime_content_path,
          p_rarch->runtime_core_path,
          dir_runtime_log,
@@ -7219,6 +7219,7 @@ static bool command_event_main_state(unsigned cmd)
    char *state_path            = (char*)malloc(state_path_size);
    struct rarch_state *p_rarch = &rarch_st;
    const global_t *global      = &p_rarch->g_extern;
+   settings_t *settings        = p_rarch->configuration_settings;
    bool ret                    = false;
    bool push_msg               = true;
 
@@ -7226,7 +7227,6 @@ static bool command_event_main_state(unsigned cmd)
 
    if (global)
    {
-      settings_t *settings       = p_rarch->configuration_settings;
       int state_slot             = settings->ints.state_slot;
       const char *name_savestate = global->name.savestate;
 
@@ -7249,7 +7249,6 @@ static bool command_event_main_state(unsigned cmd)
          case CMD_EVENT_SAVE_STATE:
             content_save_state(state_path, true, false);
             {
-               settings_t *settings = p_rarch->configuration_settings;
                bool frame_time_counter_reset_after_save_state = 
                   settings->bools.frame_time_counter_reset_after_save_state;
                if (frame_time_counter_reset_after_save_state)
@@ -7270,7 +7269,6 @@ static bool command_event_main_state(unsigned cmd)
                netplay_driver_ctl(RARCH_NETPLAY_CTL_LOAD_SAVESTATE, NULL);
 #endif
                {
-                  settings_t *settings   = p_rarch->configuration_settings;
                   bool frame_time_counter_reset_after_load_state = 
                      settings->bools.frame_time_counter_reset_after_load_state;
                   if (frame_time_counter_reset_after_load_state)
@@ -10019,13 +10017,14 @@ static bool environ_cb_get_system_info(unsigned cmd, void *data)
             }
          }
 
-         if (log_level == RETRO_LOG_DEBUG)
-            RARCH_LOG("Subsystems: %d\n", i);
          size = i;
 
          if (log_level == RETRO_LOG_DEBUG)
+         {
+            RARCH_LOG("Subsystems: %d\n", i);
             if (size > SUBSYSTEM_MAX_SUBSYSTEMS)
                RARCH_WARN("Subsystems exceed subsystem max, clamping to %d\n", SUBSYSTEM_MAX_SUBSYSTEMS);
+         }
 
          if (system)
          {
@@ -10038,9 +10037,9 @@ static bool environ_cb_get_system_info(unsigned cmd, void *data)
                   free((char *)subsystem_data[i].desc);
                if (!string_is_empty(subsystem_data[i].ident))
                   free((char *)subsystem_data[i].ident);
-               subsystem_data[i].desc = strdup(info[i].desc);
-               subsystem_data[i].ident = strdup(info[i].ident);
-               subsystem_data[i].id = info[i].id;
+               subsystem_data[i].desc     = strdup(info[i].desc);
+               subsystem_data[i].ident    = strdup(info[i].ident);
+               subsystem_data[i].id       = info[i].id;
                subsystem_data[i].num_roms = info[i].num_roms;
 
                if (log_level == RETRO_LOG_DEBUG)
@@ -12328,7 +12327,8 @@ static char *copy_core_to_temp_file(void)
    const char  *core_path      = path_get(RARCH_PATH_CORE);
    const char  *core_base_name = path_basename(core_path);
    struct rarch_state *p_rarch = &rarch_st;
-   const char  *dir_libretro   = p_rarch->configuration_settings->paths.directory_libretro;
+   settings_t *settings        = p_rarch->configuration_settings;
+   const char  *dir_libretro   = settings->paths.directory_libretro;
 
    if (strlen(core_base_name) == 0)
       return NULL;
@@ -15619,10 +15619,12 @@ static int16_t input_state(unsigned port, unsigned device,
 {
    rarch_joypad_info_t joypad_info;
    struct rarch_state *p_rarch = &rarch_st;
+   settings_t *settings        = p_rarch->configuration_settings;
    int16_t result              = 0;
    int16_t ret                 = 0;
+
    joypad_info.axis_threshold  = p_rarch->input_driver_axis_threshold;
-   joypad_info.joy_idx         = p_rarch->configuration_settings->uints.input_joypad_map[port];
+   joypad_info.joy_idx         = settings->uints.input_joypad_map[port];
    joypad_info.auto_binds      = input_autoconf_binds[joypad_info.joy_idx];
 
    if (BSV_MOVIE_IS_PLAYBACK_ON())
@@ -17731,7 +17733,8 @@ int16_t input_joypad_analog(const input_device_driver_t *drv,
 {
    int16_t res = 0;
    struct rarch_state *p_rarch = &rarch_st;
-   float input_analog_deadzone = p_rarch->configuration_settings->floats.input_analog_deadzone;
+   settings_t *settings        = p_rarch->configuration_settings;
+   float input_analog_deadzone = settings->floats.input_analog_deadzone;
 
    if (idx == RETRO_DEVICE_INDEX_ANALOG_BUTTON)
    {
@@ -20426,8 +20429,9 @@ static void audio_driver_flush(const int16_t *data, size_t samples,
 {
    struct resampler_data src_data;
    struct rarch_state       *p_rarch = &rarch_st;
-   float slowmotion_ratio            = p_rarch->configuration_settings->floats.slowmotion_ratio;
-   bool audio_fastforward_mute       = p_rarch->configuration_settings->bools.audio_fastforward_mute;
+   settings_t       *settings        = p_rarch->configuration_settings;
+   float slowmotion_ratio            = settings->floats.slowmotion_ratio;
+   bool audio_fastforward_mute       = settings->bools.audio_fastforward_mute;
    float audio_volume_gain           = (p_rarch->audio_driver_mute_enable ||
          (audio_fastforward_mute && is_fastmotion)) ?
                0.0f : p_rarch->audio_driver_volume_gain;
@@ -23654,6 +23658,7 @@ static void video_driver_frame(const void *data, unsigned width,
       video_driver_pix_fmt      = p_rarch->video_driver_pix_fmt;
    bool runloop_idle            = p_rarch->runloop_idle;
    bool video_driver_active     = p_rarch->video_driver_active;
+   settings_t *settings         = p_rarch->configuration_settings;
 
    fps_text[0]                  = '\0';
    video_driver_msg[0]          = '\0';
@@ -23692,7 +23697,6 @@ static void video_driver_frame(const void *data, unsigned width,
    /* Get the amount of frames per seconds. */
    if (p_rarch->video_driver_frame_count)
    {
-      settings_t *settings                         = p_rarch->configuration_settings;
       unsigned fps_update_interval                 = 
          settings->uints.fps_update_interval;
       size_t buf_pos                               = 1;
@@ -27144,7 +27148,8 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
                /* rebase on shader directory */
                if (!path_is_absolute(optarg))
                {
-                  char *ref_path = p_rarch->configuration_settings->paths.directory_video_shader;
+                  settings_t *settings = p_rarch->configuration_settings;
+                  char       *ref_path = settings->paths.directory_video_shader;
                   fill_pathname_join(p_rarch->cli_shader,
                         ref_path, optarg, sizeof(p_rarch->cli_shader));
                   break;
