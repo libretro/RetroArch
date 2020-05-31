@@ -1967,6 +1967,51 @@ struct rarch_state
 
    double audio_source_ratio_original;
    double audio_source_ratio_current;
+
+   char cached_video_driver[32];
+   char video_driver_title_buf[64];
+   char video_driver_gpu_device_string[128];
+   char video_driver_gpu_api_version_string[128];
+   char error_string[255];
+#ifdef HAVE_MENU
+   char menu_input_dialog_keyboard_label_setting[256];
+   char menu_input_dialog_keyboard_label[256];
+#endif
+   char video_driver_window_title[512];
+   char current_library_name[1024];
+   char current_library_version[1024];
+   char current_valid_extensions[1024];
+   char launch_arguments[4096];
+   char path_main_basename[8192];
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+   char cli_shader[PATH_MAX_LENGTH];
+   char runtime_shader_preset[PATH_MAX_LENGTH];
+#endif
+   char runloop_max_frames_screenshot_path[PATH_MAX_LENGTH];
+   char runtime_content_path[PATH_MAX_LENGTH];
+   char runtime_core_path[PATH_MAX_LENGTH];
+   char subsystem_path[PATH_MAX_LENGTH];
+   char path_default_shader_preset[PATH_MAX_LENGTH];
+   char path_content[PATH_MAX_LENGTH];
+   char path_libretro[PATH_MAX_LENGTH];
+   char path_config_file[PATH_MAX_LENGTH];
+   char path_config_append_file[PATH_MAX_LENGTH];
+   char path_core_options_file[PATH_MAX_LENGTH];
+   char dir_system[PATH_MAX_LENGTH];
+   char dir_savefile[PATH_MAX_LENGTH];
+   char current_savefile_dir[PATH_MAX_LENGTH];
+   char current_savestate_dir[PATH_MAX_LENGTH];
+   char dir_savestate[PATH_MAX_LENGTH];
+
+   char input_device_display_names[MAX_INPUT_DEVICES][64];
+   char input_device_config_names [MAX_INPUT_DEVICES][64];
+   char input_device_config_paths [MAX_INPUT_DEVICES][64];
+
+#if defined(HAVE_RUNAHEAD)
+#if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
+   char *secondary_library_path;
+#endif
+#endif
 };
 
 static struct global              g_extern;
@@ -2032,52 +2077,6 @@ extern u32 __nx_applet_type;
 #endif
 
 uint64_t lifecycle_state                                        = 0;
-
-static char cached_video_driver[32]                             = {0};
-static char video_driver_title_buf[64]                          = {0};
-static char video_driver_gpu_device_string[128]                 = {0};
-static char video_driver_gpu_api_version_string[128]            = {0};
-static char error_string[255]                                   = {0};
-#ifdef HAVE_MENU
-static char menu_input_dialog_keyboard_label_setting[256]       = {0};
-static char menu_input_dialog_keyboard_label[256]               = {0};
-#endif
-static char video_driver_window_title[512]                      = {0};
-static char current_library_name[1024]                          = {0};
-static char current_library_version[1024]                       = {0};
-static char current_valid_extensions[1024]                      = {0};
-static char launch_arguments[4096]                              = {0};
-static char path_main_basename[8192]                            = {0};
-
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-static char cli_shader[PATH_MAX_LENGTH]                         = {0};
-static char runtime_shader_preset[PATH_MAX_LENGTH]              = {0};
-#endif
-static char runloop_max_frames_screenshot_path[PATH_MAX_LENGTH] = {0};
-static char runtime_content_path[PATH_MAX_LENGTH]               = {0};
-static char runtime_core_path[PATH_MAX_LENGTH]                  = {0};
-static char subsystem_path[PATH_MAX_LENGTH]                     = {0};
-static char path_default_shader_preset[PATH_MAX_LENGTH]         = {0};
-static char path_content[PATH_MAX_LENGTH]                       = {0};
-static char path_libretro[PATH_MAX_LENGTH]                      = {0};
-static char path_config_file[PATH_MAX_LENGTH]                   = {0};
-static char path_config_append_file[PATH_MAX_LENGTH]            = {0};
-static char path_core_options_file[PATH_MAX_LENGTH]             = {0};
-static char dir_system[PATH_MAX_LENGTH]                         = {0};
-static char dir_savefile[PATH_MAX_LENGTH]                       = {0};
-static char current_savefile_dir[PATH_MAX_LENGTH]               = {0};
-static char current_savestate_dir[PATH_MAX_LENGTH]              = {0};
-static char dir_savestate[PATH_MAX_LENGTH]                      = {0};
-
-static char input_device_display_names[MAX_INPUT_DEVICES][64];
-static char input_device_config_names [MAX_INPUT_DEVICES][64];
-static char input_device_config_paths [MAX_INPUT_DEVICES][64];
-
-#if defined(HAVE_RUNAHEAD)
-#if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
-static char *secondary_library_path                             = NULL;
-#endif
-#endif
 
 static midi_driver_t *midi_drv                                  = &midi_null;
 static const video_display_server_t *current_display_server     = &dispserv_null;
@@ -2966,8 +2965,9 @@ static void path_set_redirect(void)
    char *new_savefile_dir                      = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
    char *new_savestate_dir                     = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
    global_t   *global                          = &g_extern;
-   const char *old_savefile_dir                = dir_savefile;
-   const char *old_savestate_dir               = dir_savestate;
+   struct rarch_state *p_rarch                 = &rarch_st;
+   const char *old_savefile_dir                = p_rarch->dir_savefile;
+   const char *old_savestate_dir               = p_rarch->dir_savestate;
    struct retro_system_info *system            = &runloop_system.info;
    settings_t *settings                        = configuration_settings;
    bool sort_savefiles_enable                  = settings->bools.sort_savefiles_enable;
@@ -3040,7 +3040,7 @@ static void path_set_redirect(void)
    /* Set savefile directory if empty to content directory */
    if (string_is_empty(new_savefile_dir) || savefiles_in_content_dir)
    {
-      strlcpy(new_savefile_dir, path_main_basename,
+      strlcpy(new_savefile_dir, p_rarch->path_main_basename,
             path_size);
       path_basedir(new_savefile_dir);
    }
@@ -3048,7 +3048,7 @@ static void path_set_redirect(void)
    /* Set savestate directory if empty based on content directory */
    if (string_is_empty(new_savestate_dir) || savestates_in_content_dir)
    {
-      strlcpy(new_savestate_dir, path_main_basename,
+      strlcpy(new_savestate_dir, p_rarch->path_main_basename,
             path_size);
       path_basedir(new_savestate_dir);
    }
@@ -3066,8 +3066,11 @@ static void path_set_redirect(void)
       if (path_is_directory(global->name.savefile))
       {
          fill_pathname_dir(global->name.savefile,
-               !string_is_empty(path_main_basename) ? path_main_basename :
-                  system && !string_is_empty(system->library_name) ? system->library_name : "",
+               !string_is_empty(p_rarch->path_main_basename) 
+               ? p_rarch->path_main_basename 
+               : system && !string_is_empty(system->library_name) 
+               ? system->library_name 
+               : "",
                file_path_str(FILE_PATH_SRM_EXTENSION),
                sizeof(global->name.savefile));
          RARCH_LOG("%s \"%s\".\n",
@@ -3078,8 +3081,11 @@ static void path_set_redirect(void)
       if (path_is_directory(global->name.savestate))
       {
          fill_pathname_dir(global->name.savestate,
-               !string_is_empty(path_main_basename) ? path_main_basename :
-                  system && !string_is_empty(system->library_name) ? system->library_name : "",
+               !string_is_empty(p_rarch->path_main_basename) 
+               ? p_rarch->path_main_basename 
+               : system && !string_is_empty(system->library_name) 
+               ? system->library_name 
+               : "",
                file_path_str(FILE_PATH_STATE_EXTENSION),
                sizeof(global->name.savestate));
          RARCH_LOG("%s \"%s\".\n",
@@ -3091,7 +3097,9 @@ static void path_set_redirect(void)
       {
          /* FIXME: Should this optionally use system->library_name like the others? */
          fill_pathname_dir(global->name.cheatfile,
-               !string_is_empty(path_main_basename) ? path_main_basename : "",
+               !string_is_empty(p_rarch->path_main_basename) 
+               ? p_rarch->path_main_basename 
+               : "",
                file_path_str(FILE_PATH_CHT_EXTENSION),
                sizeof(global->name.cheatfile));
          RARCH_LOG("%s \"%s\".\n",
@@ -3108,7 +3116,8 @@ static void path_set_redirect(void)
 
 static void path_set_basename(const char *path)
 {
-   char *dst          = NULL;
+   char *dst                   = NULL;
+   struct rarch_state *p_rarch = &rarch_st;
 
    path_set(RARCH_PATH_CONTENT,  path);
    path_set(RARCH_PATH_BASENAME, path);
@@ -3133,11 +3142,11 @@ static void path_set_basename(const char *path)
     * directory then and the name of srm and states are meaningful.
     *
     */
-   path_basedir_wrapper(path_main_basename);
-   fill_pathname_dir(path_main_basename, path, "", sizeof(path_main_basename));
+   path_basedir_wrapper(p_rarch->path_main_basename);
+   fill_pathname_dir(p_rarch->path_main_basename, path, "", sizeof(p_rarch->path_main_basename));
 #endif
 
-   if ((dst = strrchr(path_main_basename, '.')))
+   if ((dst = strrchr(p_rarch->path_main_basename, '.')))
       *dst = '\0';
 }
 
@@ -3177,7 +3186,8 @@ void path_set_special(char **argv, unsigned num_content)
     * It is more complicated for special content types. */
    if (global)
    {
-      const char *savestate_dir = current_savestate_dir;
+      struct rarch_state *p_rarch = &rarch_st;
+      const char *savestate_dir   = p_rarch->current_savestate_dir;
 
       if (path_is_directory(savestate_dir))
          strlcpy(global->name.savestate, savestate_dir,
@@ -3202,6 +3212,7 @@ static bool path_init_subsystem(void)
 {
    unsigned i, j;
    const struct retro_subsystem_info *info = NULL;
+   struct rarch_state             *p_rarch = &rarch_st;
    global_t   *global                      = &g_extern;
    rarch_system_info_t             *system = &runloop_system;
    bool subsystem_path_empty               = path_is_empty(RARCH_PATH_SUBSYSTEM);
@@ -3243,7 +3254,7 @@ static bool path_init_subsystem(void)
             path_remove_extension(savename);
 
             {
-               const char *savefile_dir = current_savefile_dir;
+               const char    *savefile_dir = p_rarch->current_savefile_dir;
 
                if (path_is_directory(savefile_dir))
                {
@@ -3274,14 +3285,14 @@ static bool path_init_subsystem(void)
       /* Let other relevant paths be inferred from the main SRAM location. */
       if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL))
          fill_pathname_noext(global->name.savefile,
-               path_main_basename,
+               p_rarch->path_main_basename,
                ".srm",
                sizeof(global->name.savefile));
 
       if (path_is_directory(global->name.savefile))
       {
          fill_pathname_dir(global->name.savefile,
-               path_main_basename,
+               p_rarch->path_main_basename,
                ".srm",
                sizeof(global->name.savefile));
          RARCH_LOG("%s \"%s\".\n",
@@ -3326,7 +3337,8 @@ static void path_init_savefile_internal(void)
 
 static void path_fill_names(void)
 {
-   global_t   *global = &g_extern;
+   global_t            *global = &g_extern;
+   struct rarch_state *p_rarch = &rarch_st;
 
    path_init_savefile_internal();
 
@@ -3335,23 +3347,26 @@ static void path_fill_names(void)
             global->name.savefile,
             sizeof(bsv_movie_state.movie_path));
 
-   if (string_is_empty(path_main_basename))
+   if (string_is_empty(p_rarch->path_main_basename))
       return;
 
    if (global)
    {
       if (string_is_empty(global->name.ups))
-         fill_pathname_noext(global->name.ups, path_main_basename,
+         fill_pathname_noext(global->name.ups,
+               p_rarch->path_main_basename,
                ".ups",
                sizeof(global->name.ups));
 
       if (string_is_empty(global->name.bps))
-         fill_pathname_noext(global->name.bps, path_main_basename,
+         fill_pathname_noext(global->name.bps,
+               p_rarch->path_main_basename,
                ".bps",
                sizeof(global->name.bps));
 
       if (string_is_empty(global->name.ips))
-         fill_pathname_noext(global->name.ips, path_main_basename,
+         fill_pathname_noext(global->name.ips,
+               p_rarch->path_main_basename,
                ".ips",
                sizeof(global->name.ips));
    }
@@ -3359,30 +3374,32 @@ static void path_fill_names(void)
 
 char *path_get_ptr(enum rarch_path_type type)
 {
+   struct rarch_state *p_rarch = &rarch_st;
+
    switch (type)
    {
       case RARCH_PATH_CONTENT:
-         return path_content;
+         return p_rarch->path_content;
       case RARCH_PATH_DEFAULT_SHADER_PRESET:
-         return path_default_shader_preset;
+         return p_rarch->path_default_shader_preset;
       case RARCH_PATH_BASENAME:
-         return path_main_basename;
+         return p_rarch->path_main_basename;
       case RARCH_PATH_CORE_OPTIONS:
          if (!path_is_empty(RARCH_PATH_CORE_OPTIONS))
-            return path_core_options_file;
+            return p_rarch->path_core_options_file;
          break;
       case RARCH_PATH_SUBSYSTEM:
-         return subsystem_path;
+         return p_rarch->subsystem_path;
       case RARCH_PATH_CONFIG:
          if (!path_is_empty(RARCH_PATH_CONFIG))
-            return path_config_file;
+            return p_rarch->path_config_file;
          break;
       case RARCH_PATH_CONFIG_APPEND:
          if (!path_is_empty(RARCH_PATH_CONFIG_APPEND))
-            return path_config_append_file;
+            return p_rarch->path_config_append_file;
          break;
       case RARCH_PATH_CORE:
-         return path_libretro;
+         return p_rarch->path_libretro;
       case RARCH_PATH_NONE:
       case RARCH_PATH_NAMES:
          break;
@@ -3393,30 +3410,32 @@ char *path_get_ptr(enum rarch_path_type type)
 
 const char *path_get(enum rarch_path_type type)
 {
+   struct rarch_state *p_rarch = &rarch_st;
+
    switch (type)
    {
       case RARCH_PATH_CONTENT:
-         return path_content;
+         return p_rarch->path_content;
       case RARCH_PATH_DEFAULT_SHADER_PRESET:
-         return path_default_shader_preset;
+         return p_rarch->path_default_shader_preset;
       case RARCH_PATH_BASENAME:
-         return path_main_basename;
+         return p_rarch->path_main_basename;
       case RARCH_PATH_CORE_OPTIONS:
          if (!path_is_empty(RARCH_PATH_CORE_OPTIONS))
-            return path_core_options_file;
+            return p_rarch->path_core_options_file;
          break;
       case RARCH_PATH_SUBSYSTEM:
-         return subsystem_path;
+         return p_rarch->subsystem_path;
       case RARCH_PATH_CONFIG:
          if (!path_is_empty(RARCH_PATH_CONFIG))
-            return path_config_file;
+            return p_rarch->path_config_file;
          break;
       case RARCH_PATH_CONFIG_APPEND:
          if (!path_is_empty(RARCH_PATH_CONFIG_APPEND))
-            return path_config_append_file;
+            return p_rarch->path_config_append_file;
          break;
       case RARCH_PATH_CORE:
-         return path_libretro;
+         return p_rarch->path_libretro;
       case RARCH_PATH_NONE:
       case RARCH_PATH_NAMES:
          break;
@@ -3427,24 +3446,26 @@ const char *path_get(enum rarch_path_type type)
 
 size_t path_get_realsize(enum rarch_path_type type)
 {
+   struct rarch_state *p_rarch = &rarch_st;
+
    switch (type)
    {
       case RARCH_PATH_CONTENT:
-         return sizeof(path_content);
+         return sizeof(p_rarch->path_content);
       case RARCH_PATH_DEFAULT_SHADER_PRESET:
-         return sizeof(path_default_shader_preset);
+         return sizeof(p_rarch->path_default_shader_preset);
       case RARCH_PATH_BASENAME:
-         return sizeof(path_main_basename);
+         return sizeof(p_rarch->path_main_basename);
       case RARCH_PATH_CORE_OPTIONS:
-         return sizeof(path_core_options_file);
+         return sizeof(p_rarch->path_core_options_file);
       case RARCH_PATH_SUBSYSTEM:
-         return sizeof(subsystem_path);
+         return sizeof(p_rarch->subsystem_path);
       case RARCH_PATH_CONFIG:
-         return sizeof(path_config_file);
+         return sizeof(p_rarch->path_config_file);
       case RARCH_PATH_CONFIG_APPEND:
-         return sizeof(path_config_append_file);
+         return sizeof(p_rarch->path_config_append_file);
       case RARCH_PATH_CORE:
-         return sizeof(path_libretro);
+         return sizeof(p_rarch->path_libretro);
       case RARCH_PATH_NONE:
       case RARCH_PATH_NAMES:
          break;
@@ -3455,21 +3476,25 @@ size_t path_get_realsize(enum rarch_path_type type)
 
 static void path_set_names(const char *path)
 {
-   global_t   *global = &g_extern;
+   global_t            *global = &g_extern;
+   struct rarch_state *p_rarch = &rarch_st;
 
    path_set_basename(path);
 
    if (global)
    {
       if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL))
-         fill_pathname_noext(global->name.savefile, path_main_basename,
+         fill_pathname_noext(global->name.savefile,
+               p_rarch->path_main_basename,
                ".srm", sizeof(global->name.savefile));
 
       if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_STATE_PATH, NULL))
-         fill_pathname_noext(global->name.savestate, path_main_basename,
+         fill_pathname_noext(global->name.savestate,
+               p_rarch->path_main_basename,
                ".state", sizeof(global->name.savestate));
 
-      fill_pathname_noext(global->name.cheatfile, path_main_basename,
+      fill_pathname_noext(global->name.cheatfile,
+            p_rarch->path_main_basename,
             ".cht", sizeof(global->name.cheatfile));
    }
 
@@ -3478,45 +3503,47 @@ static void path_set_names(const char *path)
 
 bool path_set(enum rarch_path_type type, const char *path)
 {
+   struct rarch_state *p_rarch = &rarch_st;
+
    if (!path)
       return false;
 
    switch (type)
    {
       case RARCH_PATH_BASENAME:
-         strlcpy(path_main_basename, path,
-               sizeof(path_main_basename));
+         strlcpy(p_rarch->path_main_basename, path,
+               sizeof(p_rarch->path_main_basename));
          break;
       case RARCH_PATH_NAMES:
          path_set_names(path);
          break;
       case RARCH_PATH_CORE:
-         strlcpy(path_libretro, path,
-               sizeof(path_libretro));
+         strlcpy(p_rarch->path_libretro, path,
+               sizeof(p_rarch->path_libretro));
          break;
       case RARCH_PATH_DEFAULT_SHADER_PRESET:
-         strlcpy(path_default_shader_preset, path,
-               sizeof(path_default_shader_preset));
+         strlcpy(p_rarch->path_default_shader_preset, path,
+               sizeof(p_rarch->path_default_shader_preset));
          break;
       case RARCH_PATH_CONFIG_APPEND:
-         strlcpy(path_config_append_file, path,
-               sizeof(path_config_append_file));
+         strlcpy(p_rarch->path_config_append_file, path,
+               sizeof(p_rarch->path_config_append_file));
          break;
       case RARCH_PATH_CONFIG:
-         strlcpy(path_config_file, path,
-               sizeof(path_config_file));
+         strlcpy(p_rarch->path_config_file, path,
+               sizeof(p_rarch->path_config_file));
          break;
       case RARCH_PATH_SUBSYSTEM:
-         strlcpy(subsystem_path, path,
-               sizeof(subsystem_path));
+         strlcpy(p_rarch->subsystem_path, path,
+               sizeof(p_rarch->subsystem_path));
          break;
       case RARCH_PATH_CORE_OPTIONS:
-         strlcpy(path_core_options_file, path,
-               sizeof(path_core_options_file));
+         strlcpy(p_rarch->path_core_options_file, path,
+               sizeof(p_rarch->path_core_options_file));
          break;
       case RARCH_PATH_CONTENT:
-         strlcpy(path_content, path,
-               sizeof(path_content));
+         strlcpy(p_rarch->path_content, path,
+               sizeof(p_rarch->path_content));
          break;
       case RARCH_PATH_NONE:
          break;
@@ -3527,38 +3554,40 @@ bool path_set(enum rarch_path_type type, const char *path)
 
 bool path_is_empty(enum rarch_path_type type)
 {
+   struct rarch_state *p_rarch = &rarch_st;
+
    switch (type)
    {
       case RARCH_PATH_DEFAULT_SHADER_PRESET:
-         if (string_is_empty(path_default_shader_preset))
+         if (string_is_empty(p_rarch->path_default_shader_preset))
             return true;
          break;
       case RARCH_PATH_SUBSYSTEM:
-         if (string_is_empty(subsystem_path))
+         if (string_is_empty(p_rarch->subsystem_path))
             return true;
          break;
       case RARCH_PATH_CONFIG:
-         if (string_is_empty(path_config_file))
+         if (string_is_empty(p_rarch->path_config_file))
             return true;
          break;
       case RARCH_PATH_CORE_OPTIONS:
-         if (string_is_empty(path_core_options_file))
+         if (string_is_empty(p_rarch->path_core_options_file))
             return true;
          break;
       case RARCH_PATH_CONFIG_APPEND:
-         if (string_is_empty(path_config_append_file))
+         if (string_is_empty(p_rarch->path_config_append_file))
             return true;
          break;
       case RARCH_PATH_CONTENT:
-         if (string_is_empty(path_content))
+         if (string_is_empty(p_rarch->path_content))
             return true;
          break;
       case RARCH_PATH_CORE:
-         if (string_is_empty(path_libretro))
+         if (string_is_empty(p_rarch->path_libretro))
             return true;
          break;
       case RARCH_PATH_BASENAME:
-         if (string_is_empty(path_main_basename))
+         if (string_is_empty(p_rarch->path_main_basename))
             return true;
          break;
       case RARCH_PATH_NONE:
@@ -3571,31 +3600,33 @@ bool path_is_empty(enum rarch_path_type type)
 
 void path_clear(enum rarch_path_type type)
 {
+   struct rarch_state *p_rarch = &rarch_st;
+
    switch (type)
    {
       case RARCH_PATH_SUBSYSTEM:
-         *subsystem_path = '\0';
+         *p_rarch->subsystem_path = '\0';
          break;
       case RARCH_PATH_CORE:
-         *path_libretro = '\0';
+         *p_rarch->path_libretro = '\0';
          break;
       case RARCH_PATH_CONFIG:
-         *path_config_file = '\0';
+         *p_rarch->path_config_file = '\0';
          break;
       case RARCH_PATH_CONTENT:
-         *path_content = '\0';
+         *p_rarch->path_content = '\0';
          break;
       case RARCH_PATH_BASENAME:
-         *path_main_basename = '\0';
+         *p_rarch->path_main_basename = '\0';
          break;
       case RARCH_PATH_CORE_OPTIONS:
-         *path_core_options_file = '\0';
+         *p_rarch->path_core_options_file = '\0';
          break;
       case RARCH_PATH_DEFAULT_SHADER_PRESET:
-         *path_default_shader_preset = '\0';
+         *p_rarch->path_default_shader_preset = '\0';
          break;
       case RARCH_PATH_CONFIG_APPEND:
-         *path_config_append_file = '\0';
+         *p_rarch->path_config_append_file = '\0';
          break;
       case RARCH_PATH_NONE:
       case RARCH_PATH_NAMES:
@@ -3788,18 +3819,20 @@ static void dir_check_shader(bool pressed_next, bool pressed_prev)
 
 size_t dir_get_size(enum rarch_dir_type type)
 {
+   struct rarch_state *p_rarch = &rarch_st;
+
    switch (type)
    {
       case RARCH_DIR_SYSTEM:
-         return sizeof(dir_system);
+         return sizeof(p_rarch->dir_system);
       case RARCH_DIR_SAVESTATE:
-         return sizeof(dir_savestate);
+         return sizeof(p_rarch->dir_savestate);
       case RARCH_DIR_CURRENT_SAVESTATE:
-         return sizeof(current_savestate_dir);
+         return sizeof(p_rarch->current_savestate_dir);
       case RARCH_DIR_SAVEFILE:
-         return sizeof(dir_savefile);
+         return sizeof(p_rarch->dir_savefile);
       case RARCH_DIR_CURRENT_SAVEFILE:
-         return sizeof(current_savefile_dir);
+         return sizeof(p_rarch->current_savefile_dir);
       case RARCH_DIR_NONE:
          break;
    }
@@ -3811,22 +3844,24 @@ size_t dir_get_size(enum rarch_dir_type type)
 
 void dir_clear(enum rarch_dir_type type)
 {
+   struct rarch_state *p_rarch = &rarch_st;
+
    switch (type)
    {
       case RARCH_DIR_SAVEFILE:
-         *dir_savefile = '\0';
+         *p_rarch->dir_savefile = '\0';
          break;
       case RARCH_DIR_CURRENT_SAVEFILE:
-         *current_savefile_dir = '\0';
+         *p_rarch->current_savefile_dir = '\0';
          break;
       case RARCH_DIR_SAVESTATE:
-         *dir_savestate = '\0';
+         *p_rarch->dir_savestate = '\0';
          break;
       case RARCH_DIR_CURRENT_SAVESTATE:
-         *current_savestate_dir = '\0';
+         *p_rarch->current_savestate_dir = '\0';
          break;
       case RARCH_DIR_SYSTEM:
-         *dir_system = '\0';
+         *p_rarch->dir_system = '\0';
          break;
       case RARCH_DIR_NONE:
          break;
@@ -3844,18 +3879,20 @@ static void dir_clear_all(void)
 
 char *dir_get_ptr(enum rarch_dir_type type)
 {
+   struct rarch_state *p_rarch = &rarch_st;
+
    switch (type)
    {
       case RARCH_DIR_SAVEFILE:
-         return dir_savefile;
+         return p_rarch->dir_savefile;
       case RARCH_DIR_CURRENT_SAVEFILE:
-         return current_savefile_dir;
+         return p_rarch->current_savefile_dir;
       case RARCH_DIR_SAVESTATE:
-         return dir_savestate;
+         return p_rarch->dir_savestate;
       case RARCH_DIR_CURRENT_SAVESTATE:
-         return current_savestate_dir;
+         return p_rarch->current_savestate_dir;
       case RARCH_DIR_SYSTEM:
-         return dir_system;
+         return p_rarch->dir_system;
       case RARCH_DIR_NONE:
          break;
    }
@@ -3865,27 +3902,29 @@ char *dir_get_ptr(enum rarch_dir_type type)
 
 void dir_set(enum rarch_dir_type type, const char *path)
 {
+   struct rarch_state *p_rarch = &rarch_st;
+
    switch (type)
    {
       case RARCH_DIR_CURRENT_SAVEFILE:
-         strlcpy(current_savefile_dir, path,
-               sizeof(current_savefile_dir));
+         strlcpy(p_rarch->current_savefile_dir, path,
+               sizeof(p_rarch->current_savefile_dir));
          break;
       case RARCH_DIR_SAVEFILE:
-         strlcpy(dir_savefile, path,
-               sizeof(dir_savefile));
+         strlcpy(p_rarch->dir_savefile, path,
+               sizeof(p_rarch->dir_savefile));
          break;
       case RARCH_DIR_CURRENT_SAVESTATE:
-         strlcpy(current_savestate_dir, path,
-               sizeof(current_savestate_dir));
+         strlcpy(p_rarch->current_savestate_dir, path,
+               sizeof(p_rarch->current_savestate_dir));
          break;
       case RARCH_DIR_SAVESTATE:
-         strlcpy(dir_savestate, path,
-               sizeof(dir_savestate));
+         strlcpy(p_rarch->dir_savestate, path,
+               sizeof(p_rarch->dir_savestate));
          break;
       case RARCH_DIR_SYSTEM:
-         strlcpy(dir_system, path,
-               sizeof(dir_system));
+         strlcpy(p_rarch->dir_system, path,
+               sizeof(p_rarch->dir_system));
          break;
       case RARCH_DIR_NONE:
          break;
@@ -3977,22 +4016,24 @@ static void menu_input_search_cb(void *userdata, const char *str)
 
 const char *menu_input_dialog_get_label_buffer(void)
 {
-   return menu_input_dialog_keyboard_label;
+   struct rarch_state *p_rarch                           = &rarch_st;
+   return p_rarch->menu_input_dialog_keyboard_label;
 }
 
 const char *menu_input_dialog_get_label_setting_buffer(void)
 {
-   return menu_input_dialog_keyboard_label_setting;
+   struct rarch_state *p_rarch                           = &rarch_st;
+   return p_rarch->menu_input_dialog_keyboard_label_setting;
 }
 
 void menu_input_dialog_end(void)
 {
-   struct rarch_state *p_rarch                  = &rarch_st;
-   p_rarch->menu_input_dialog_keyboard_type     = 0;
-   p_rarch->menu_input_dialog_keyboard_idx      = 0;
-   p_rarch->menu_input_dialog_keyboard_display  = false;
-   menu_input_dialog_keyboard_label[0]          = '\0';
-   menu_input_dialog_keyboard_label_setting[0]  = '\0';
+   struct rarch_state *p_rarch                           = &rarch_st;
+   p_rarch->menu_input_dialog_keyboard_type              = 0;
+   p_rarch->menu_input_dialog_keyboard_idx               = 0;
+   p_rarch->menu_input_dialog_keyboard_display           = false;
+   p_rarch->menu_input_dialog_keyboard_label[0]          = '\0';
+   p_rarch->menu_input_dialog_keyboard_label_setting[0]  = '\0';
 
    /* Avoid triggering tates on pressing return. */
    input_driver_set_flushing_input();
@@ -4020,9 +4061,9 @@ bool menu_input_dialog_start_search(void)
       return false;
 
    p_rarch->menu_input_dialog_keyboard_display = true;
-   strlcpy(menu_input_dialog_keyboard_label,
+   strlcpy(p_rarch->menu_input_dialog_keyboard_label,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SEARCH),
-         sizeof(menu_input_dialog_keyboard_label));
+         sizeof(p_rarch->menu_input_dialog_keyboard_label));
 
    input_keyboard_ctl(RARCH_INPUT_KEYBOARD_CTL_LINE_FREE, NULL);
 
@@ -4049,12 +4090,13 @@ bool menu_input_dialog_start(menu_input_ctx_line_t *line)
 
    /* Only copy over the menu label and setting if they exist. */
    if (line->label)
-      strlcpy(menu_input_dialog_keyboard_label, line->label,
-            sizeof(menu_input_dialog_keyboard_label));
+      strlcpy(p_rarch->menu_input_dialog_keyboard_label,
+            line->label,
+            sizeof(p_rarch->menu_input_dialog_keyboard_label));
    if (line->label_setting)
-      strlcpy(menu_input_dialog_keyboard_label_setting,
+      strlcpy(p_rarch->menu_input_dialog_keyboard_label_setting,
             line->label_setting,
-            sizeof(menu_input_dialog_keyboard_label_setting));
+            sizeof(p_rarch->menu_input_dialog_keyboard_label_setting));
 
    p_rarch->menu_input_dialog_keyboard_type   = line->type;
    p_rarch->menu_input_dialog_keyboard_idx    = line->idx;
@@ -4162,15 +4204,19 @@ void menu_driver_set_binding_state(bool on)
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 static void retroarch_set_runtime_shader_preset(const char *arg)
 {
+   struct rarch_state *p_rarch       = &rarch_st;
    if (!string_is_empty(arg))
-      strlcpy(runtime_shader_preset, arg, sizeof(runtime_shader_preset));
+      strlcpy(p_rarch->runtime_shader_preset,
+            arg,
+            sizeof(p_rarch->runtime_shader_preset));
    else
-      runtime_shader_preset[0] = '\0';
+      p_rarch->runtime_shader_preset[0] = '\0';
 }
 
 static void retroarch_unset_runtime_shader_preset(void)
 {
-   runtime_shader_preset[0] = '\0';
+   struct rarch_state *p_rarch       = &rarch_st;
+   p_rarch->runtime_shader_preset[0] = '\0';
 }
 #endif
 
@@ -4373,6 +4419,7 @@ static bool command_show_osd_msg(const char* arg)
 static bool command_get_config_param(const char* arg)
 {
    char reply[8192]             = {0};
+   struct rarch_state  *p_rarch = &rarch_st;
    const char      *value       = "unsupported";
    settings_t       *settings   = configuration_settings;
    bool       video_fullscreen  = settings->bools.video_fullscreen;
@@ -4390,9 +4437,9 @@ static bool command_get_config_param(const char* arg)
          value = "false";
    }
    else if (string_is_equal(arg, "savefile_directory"))
-      value = dir_savefile;
+      value = p_rarch->dir_savefile;
    else if (string_is_equal(arg, "savestate_directory"))
-      value = dir_savestate;
+      value = p_rarch->dir_savestate;
    else if (string_is_equal(arg, "runtime_log_directory"))
       value = dir_runtime_log;
    else if (string_is_equal(arg, "log_dir"))
@@ -5094,7 +5141,7 @@ static void handle_translation_cb(
    int i                             = 0;
    int start                         = -1;
    char* found_string                = NULL;
-   char* error_string                = NULL;
+   char* err_string                  = NULL;
    char* text_string                 = NULL;
    char* auto_string                 = NULL;
    char* key_string                  = NULL;
@@ -5173,8 +5220,8 @@ static void handle_translation_cb(
             }
             else if (curr_state == 4)
             {
-               error_string = (char*)malloc(i-start+1);
-               strlcpy(error_string, body_copy+start+1, i-start);
+               err_string = (char*)malloc(i-start+1);
+               strlcpy(err_string, body_copy+start+1, i-start);
                curr_state = 0;
             }
             else if (curr_state == 5)
@@ -5230,7 +5277,7 @@ static void handle_translation_cb(
       i++;
    }
 
-   if (string_is_equal(error_string, "No text found."))
+   if (string_is_equal(err_string, "No text found."))
    {
 #ifdef DEBUG
       RARCH_LOG("No text found...\n");
@@ -5238,7 +5285,7 @@ static void handle_translation_cb(
       if (!text_string)
          text_string = (char*)malloc(15);
 
-      strlcpy(text_string, error_string, 15);
+      strlcpy(text_string, err_string, 15);
 #ifdef HAVE_GFX_WIDGETS
       if (gfx_widgets_paused)
       {
@@ -5590,8 +5637,8 @@ finish:
       free(raw_image_data);
    if (scaler)
       free(scaler);
-   if (error_string)
-      free(error_string);
+   if (err_string)
+      free(err_string);
    if (text_string)
       free(text_string);
    if (raw_output_data)
@@ -6657,8 +6704,8 @@ static void update_runtime_log(bool log_per_core)
 
    /* Initialise runtime log file */
    runtime_log_t *runtime_log = runtime_log_init(
-         runtime_content_path,
-         runtime_core_path,
+         p_rarch->runtime_content_path,
+         p_rarch->runtime_core_path,
          dir_runtime_log,
          dir_playlist,
          log_per_core);
@@ -6720,8 +6767,8 @@ static void command_event_runtime_log_deinit(void)
    /* Reset runtime + content/core paths, to prevent any
     * possibility of duplicate logging */
    p_rarch->libretro_core_runtime_usec = 0;
-   memset(runtime_content_path, 0, sizeof(runtime_content_path));
-   memset(runtime_core_path, 0, sizeof(runtime_core_path));
+   memset(p_rarch->runtime_content_path, 0, sizeof(p_rarch->runtime_content_path));
+   memset(p_rarch->runtime_core_path, 0, sizeof(p_rarch->runtime_core_path));
 }
 
 static void command_event_runtime_log_init(void)
@@ -6744,14 +6791,18 @@ static void command_event_runtime_log_init(void)
     *    can therefore lead to the runtime of the currently
     *    loaded content getting written to the *new*
     *    content's log file... */
-   memset(runtime_content_path, 0, sizeof(runtime_content_path));
-   memset(runtime_core_path,    0, sizeof(runtime_core_path));
+   memset(p_rarch->runtime_content_path, 0, sizeof(p_rarch->runtime_content_path));
+   memset(p_rarch->runtime_core_path,    0, sizeof(p_rarch->runtime_core_path));
 
    if (!string_is_empty(content_path))
-      strlcpy(runtime_content_path, content_path, sizeof(runtime_content_path));
+      strlcpy(p_rarch->runtime_content_path,
+            content_path,
+            sizeof(p_rarch->runtime_content_path));
 
    if (!string_is_empty(core_path))
-      strlcpy(runtime_core_path, core_path, sizeof(runtime_core_path));
+      strlcpy(p_rarch->runtime_core_path,
+            core_path,
+            sizeof(p_rarch->runtime_core_path));
 }
 
 static void retroarch_set_frame_limit(float fastforward_ratio_orig)
@@ -6792,16 +6843,16 @@ static bool command_event_init_core(enum rarch_core_type type)
       runloop_system.info.library_version = "v0";
 
    fill_pathname_join_concat_noext(
-         video_driver_title_buf,
+         p_rarch->video_driver_title_buf,
          msg_hash_to_str(MSG_PROGRAM),
          " ",
          runloop_system.info.library_name,
-         sizeof(video_driver_title_buf));
-   strlcat(video_driver_title_buf, " ",
-         sizeof(video_driver_title_buf));
-   strlcat(video_driver_title_buf,
+         sizeof(p_rarch->video_driver_title_buf));
+   strlcat(p_rarch->video_driver_title_buf, " ",
+         sizeof(p_rarch->video_driver_title_buf));
+   strlcat(p_rarch->video_driver_title_buf,
          runloop_system.info.library_version,
-         sizeof(video_driver_title_buf));
+         sizeof(p_rarch->video_driver_title_buf));
 
    strlcpy(runloop_system.valid_extensions,
          runloop_system.info.valid_extensions ?
@@ -6843,7 +6894,7 @@ static bool command_event_init_core(enum rarch_core_type type)
    disk_control_set_initial_index(
          &runloop_system.disk_control,
          path_get(RARCH_PATH_CONTENT),
-         current_savefile_dir);
+         p_rarch->current_savefile_dir);
 
    if (!event_init_content())
       return false;
@@ -7712,13 +7763,13 @@ bool command_event(enum event_command cmd, void *data)
             retroarch_unset_runtime_shader_preset();
 #endif
 
-            if (cached_video_driver[0])
+            if (p_rarch->cached_video_driver[0])
             {
                settings_t *settings = configuration_settings;
                configuration_set_string(settings, 
-               settings->arrays.video_driver, cached_video_driver);
+               settings->arrays.video_driver, p_rarch->cached_video_driver);
 
-               cached_video_driver[0] = 0;
+               p_rarch->cached_video_driver[0] = 0;
                RARCH_LOG("[Video]: Restored video driver to \"%s\".\n",
                      settings->arrays.video_driver);
             }
@@ -8777,7 +8828,7 @@ bool command_event(enum event_command cmd, void *data)
             if (discord_is_ready())
                return true;
             discord_init(discord_app_id,
-                  launch_arguments);
+                  p_rarch->launch_arguments);
          }
 #endif
          break;
@@ -9046,12 +9097,12 @@ void main_exit(void *args)
    settings_t     *settings     = configuration_settings;
    bool     config_save_on_exit = settings->bools.config_save_on_exit;
 
-   if (cached_video_driver[0])
+   if (p_rarch->cached_video_driver[0])
    {
       configuration_set_string(settings, 
-            settings->arrays.video_driver, cached_video_driver);
+            settings->arrays.video_driver, p_rarch->cached_video_driver);
 
-      cached_video_driver[0] = 0;
+      p_rarch->cached_video_driver[0] = 0;
       RARCH_LOG("[Video]: Restored video driver to \"%s\".\n",
             settings->arrays.video_driver);
    }
@@ -9080,7 +9131,7 @@ void main_exit(void *args)
    frontend_driver_exitspawn(
          path_get_ptr(RARCH_PATH_CORE),
          path_get_realsize(RARCH_PATH_CORE),
-         launch_arguments);
+         p_rarch->launch_arguments);
 
    p_rarch->has_set_username        = false;
    p_rarch->rarch_is_inited         = false;
@@ -10727,7 +10778,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
          break;
 
       case RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY:
-         *(const char**)data = current_savefile_dir;
+         *(const char**)data = p_rarch->current_savefile_dir;
          break;
 
       case RETRO_ENVIRONMENT_GET_USERNAME:
@@ -11761,6 +11812,8 @@ static bool libretro_get_system_info(const char *path,
 #ifdef HAVE_DYNAMIC
    dylib_t lib;
 #endif
+   struct rarch_state *p_rarch  = &rarch_st;
+
    dummy_info.library_name      = NULL;
    dummy_info.library_version   = NULL;
    dummy_info.valid_extensions  = NULL;
@@ -11782,8 +11835,6 @@ static bool libretro_get_system_info(const char *path,
 #else
    if (load_no_content)
    {
-      struct rarch_state *p_rarch   = &rarch_st;
-
       p_rarch->load_no_content_hook = load_no_content;
 
       /* load_no_content gets set in this callback. */
@@ -11805,23 +11856,23 @@ static bool libretro_get_system_info(const char *path,
 
    memcpy(info, &dummy_info, sizeof(*info));
 
-   current_library_name[0] = '\0';
-   current_library_version[0] = '\0';
-   current_valid_extensions[0] = '\0';
+   p_rarch->current_library_name[0]    = '\0';
+   p_rarch->current_library_version[0] = '\0';
+   p_rarch->current_valid_extensions[0] = '\0';
 
    if (!string_is_empty(dummy_info.library_name))
-      strlcpy(current_library_name,
-            dummy_info.library_name, sizeof(current_library_name));
+      strlcpy(p_rarch->current_library_name,
+            dummy_info.library_name, sizeof(p_rarch->current_library_name));
    if (!string_is_empty(dummy_info.library_version))
-      strlcpy(current_library_version,
-            dummy_info.library_version, sizeof(current_library_version));
+      strlcpy(p_rarch->current_library_version,
+            dummy_info.library_version, sizeof(p_rarch->current_library_version));
    if (dummy_info.valid_extensions)
-      strlcpy(current_valid_extensions,
-            dummy_info.valid_extensions, sizeof(current_valid_extensions));
+      strlcpy(p_rarch->current_valid_extensions,
+            dummy_info.valid_extensions, sizeof(p_rarch->current_valid_extensions));
 
-   info->library_name     = current_library_name;
-   info->library_version  = current_library_version;
-   info->valid_extensions = current_valid_extensions;
+   info->library_name     = p_rarch->current_library_name;
+   info->library_version  = p_rarch->current_library_version;
+   info->valid_extensions = p_rarch->current_valid_extensions;
 
 #ifdef HAVE_DYNAMIC
    dylib_close(lib);
@@ -12129,10 +12180,10 @@ static void secondary_core_destroy(void)
 
    dylib_close(secondary_module);
    secondary_module = NULL;
-   filestream_delete(secondary_library_path);
-   if (secondary_library_path)
-      free(secondary_library_path);
-   secondary_library_path = NULL;
+   filestream_delete(p_rarch->secondary_library_path);
+   if (p_rarch->secondary_library_path)
+      free(p_rarch->secondary_library_path);
+   p_rarch->secondary_library_path = NULL;
 }
 
 static bool secondary_core_ensure_exists(void)
@@ -12368,18 +12419,18 @@ static bool secondary_core_create(void)
           load_content_info->special)
       return false;
 
-   if (secondary_library_path)
-      free(secondary_library_path);
-   secondary_library_path = NULL;
-   secondary_library_path = copy_core_to_temp_file();
+   if (p_rarch->secondary_library_path)
+      free(p_rarch->secondary_library_path);
+   p_rarch->secondary_library_path = NULL;
+   p_rarch->secondary_library_path = copy_core_to_temp_file();
 
-   if (!secondary_library_path)
+   if (!p_rarch->secondary_library_path)
       return false;
 
    /* Load Core */
    if (!init_libretro_symbols_custom(
             CORE_TYPE_PLAIN, &secondary_core,
-            secondary_library_path, &secondary_module))
+            p_rarch->secondary_library_path, &secondary_module))
       return false;
 
    secondary_core.symbols_inited = true;
@@ -18763,23 +18814,26 @@ const char *input_config_get_device_name(unsigned port)
 
 const char *input_config_get_device_display_name(unsigned port)
 {
-   if (string_is_empty(input_device_display_names[port]))
+   struct rarch_state *p_rarch = &rarch_st;
+   if (string_is_empty(p_rarch->input_device_display_names[port]))
       return NULL;
-   return input_device_display_names[port];
+   return p_rarch->input_device_display_names[port];
 }
 
 const char *input_config_get_device_config_path(unsigned port)
 {
-   if (string_is_empty(input_device_config_paths[port]))
+   struct rarch_state *p_rarch = &rarch_st;
+   if (string_is_empty(p_rarch->input_device_config_paths[port]))
       return NULL;
-   return input_device_config_paths[port];
+   return p_rarch->input_device_config_paths[port];
 }
 
 const char *input_config_get_device_config_name(unsigned port)
 {
-   if (string_is_empty(input_device_config_names[port]))
+   struct rarch_state *p_rarch = &rarch_st;
+   if (string_is_empty(p_rarch->input_device_config_names[port]))
       return NULL;
-   return input_device_config_names[port];
+   return p_rarch->input_device_config_names[port];
 }
 
 void input_config_set_device_name(unsigned port, const char *name)
@@ -18799,31 +18853,34 @@ void input_config_set_device_config_path(unsigned port, const char *path)
    if (!string_is_empty(path))
    {
       char parent_dir_name[128];
+      struct rarch_state *p_rarch = &rarch_st;
 
       parent_dir_name[0] = '\0';
 
       if (fill_pathname_parent_dir_name(parent_dir_name,
                path, sizeof(parent_dir_name)))
-         fill_pathname_join(input_device_config_paths[port],
+         fill_pathname_join(p_rarch->input_device_config_paths[port],
                parent_dir_name, path_basename(path),
-               sizeof(input_device_config_paths[port]));
+               sizeof(p_rarch->input_device_config_paths[port]));
    }
 }
 
 void input_config_set_device_config_name(unsigned port, const char *name)
 {
+   struct rarch_state *p_rarch = &rarch_st;
    if (!string_is_empty(name))
-      strlcpy(input_device_config_names[port],
+      strlcpy(p_rarch->input_device_config_names[port],
             name,
-            sizeof(input_device_config_names[port]));
+            sizeof(p_rarch->input_device_config_names[port]));
 }
 
 void input_config_set_device_display_name(unsigned port, const char *name)
 {
+   struct rarch_state *p_rarch = &rarch_st;
    if (!string_is_empty(name))
-      strlcpy(input_device_display_names[port],
+      strlcpy(p_rarch->input_device_display_names[port],
             name,
-            sizeof(input_device_display_names[port]));
+            sizeof(p_rarch->input_device_display_names[port]));
 }
 
 void input_config_clear_device_name(unsigned port)
@@ -18834,17 +18891,20 @@ void input_config_clear_device_name(unsigned port)
 
 void input_config_clear_device_display_name(unsigned port)
 {
-   input_device_display_names[port][0] = '\0';
+   struct rarch_state *p_rarch = &rarch_st;
+   p_rarch->input_device_display_names[port][0] = '\0';
 }
 
 void input_config_clear_device_config_path(unsigned port)
 {
-   input_device_config_paths[port][0] = '\0';
+   struct rarch_state *p_rarch = &rarch_st;
+   p_rarch->input_device_config_paths[port][0] = '\0';
 }
 
 void input_config_clear_device_config_name(unsigned port)
 {
-   input_device_config_names[port][0] = '\0';
+   struct rarch_state *p_rarch = &rarch_st;
+   p_rarch->input_device_config_names[port][0] = '\0';
 }
 
 unsigned *input_config_get_device_ptr(unsigned port)
@@ -22913,7 +22973,8 @@ static bool video_driver_find_driver(void)
 {
    int i;
    driver_ctx_info_t drv;
-   settings_t *settings = configuration_settings;
+   struct rarch_state *p_rarch             = &rarch_st;
+   settings_t          *settings           = configuration_settings;
 
    if (video_driver_is_hw_context())
    {
@@ -22930,8 +22991,9 @@ static bool video_driver_find_driver(void)
          if (!string_is_equal(settings->arrays.video_driver, "vulkan"))
          {
             RARCH_LOG("[Video]: \"%s\" saved as cached driver.\n", settings->arrays.video_driver);
-            strlcpy(cached_video_driver, settings->arrays.video_driver,
-                  sizeof(cached_video_driver));
+            strlcpy(p_rarch->cached_video_driver,
+                  settings->arrays.video_driver,
+                  sizeof(p_rarch->cached_video_driver));
             configuration_set_string(settings,
                   settings->arrays.video_driver,
                   "vulkan");
@@ -22950,8 +23012,9 @@ static bool video_driver_find_driver(void)
                !string_is_equal(settings->arrays.video_driver, "glcore"))
          {
             RARCH_LOG("[Video]: \"%s\" saved as cached driver.\n", settings->arrays.video_driver);
-            strlcpy(cached_video_driver, settings->arrays.video_driver,
-                  sizeof(cached_video_driver));
+            strlcpy(p_rarch->cached_video_driver,
+                  settings->arrays.video_driver,
+                  sizeof(p_rarch->cached_video_driver));
 #if defined(HAVE_OPENGL_CORE)
             RARCH_LOG("[Video]: Forcing \"glcore\" driver.\n");
             configuration_set_string(settings,
@@ -23378,15 +23441,16 @@ static void video_driver_frame(const void *data, unsigned width,
          last_fps = TIME_TO_FPS(curr_time, new_time,
                fps_update_interval);
 
-         strlcpy(video_driver_window_title,
-               video_driver_title_buf, sizeof(video_driver_window_title));
+         strlcpy(p_rarch->video_driver_window_title,
+               p_rarch->video_driver_title_buf,
+               sizeof(p_rarch->video_driver_window_title));
 
          if (!string_is_empty(fps_text))
          {
-            strlcat(video_driver_window_title,
-                  " || ", sizeof(video_driver_window_title));
-            strlcat(video_driver_window_title,
-                  fps_text, sizeof(video_driver_window_title));
+            strlcat(p_rarch->video_driver_window_title,
+                  " || ", sizeof(p_rarch->video_driver_window_title));
+            strlcat(p_rarch->video_driver_window_title,
+                  fps_text, sizeof(p_rarch->video_driver_window_title));
          }
 
          curr_time                        = new_time;
@@ -23397,9 +23461,9 @@ static void video_driver_frame(const void *data, unsigned width,
    {
       curr_time = fps_time = new_time;
 
-      strlcpy(video_driver_window_title,
-            video_driver_title_buf,
-            sizeof(video_driver_window_title));
+      strlcpy(p_rarch->video_driver_window_title,
+            p_rarch->video_driver_title_buf,
+            sizeof(p_rarch->video_driver_window_title));
 
       if (video_info.fps_show)
          strlcpy(fps_text,
@@ -23956,7 +24020,8 @@ void video_driver_get_window_title(char *buf, unsigned len)
 {
    if (buf && video_driver_window_title_update)
    {
-      strlcpy(buf, video_driver_window_title, len);
+      struct rarch_state *p_rarch = &rarch_st;
+      strlcpy(buf, p_rarch->video_driver_window_title, len);
       video_driver_window_title_update = false;
    }
 }
@@ -24404,24 +24469,28 @@ static bool video_driver_has_widgets(void)
 
 void video_driver_set_gpu_device_string(const char *str)
 {
-   strlcpy(video_driver_gpu_device_string, str,
-         sizeof(video_driver_gpu_device_string));
+   struct rarch_state *p_rarch = &rarch_st;
+   strlcpy(p_rarch->video_driver_gpu_device_string, str,
+         sizeof(p_rarch->video_driver_gpu_device_string));
 }
 
 const char* video_driver_get_gpu_device_string(void)
 {
-   return video_driver_gpu_device_string;
+   struct rarch_state *p_rarch = &rarch_st;
+   return p_rarch->video_driver_gpu_device_string;
 }
 
 void video_driver_set_gpu_api_version_string(const char *str)
 {
-   strlcpy(video_driver_gpu_api_version_string, str,
-         sizeof(video_driver_gpu_api_version_string));
+   struct rarch_state *p_rarch = &rarch_st;
+   strlcpy(p_rarch->video_driver_gpu_api_version_string, str,
+         sizeof(p_rarch->video_driver_gpu_api_version_string));
 }
 
 const char* video_driver_get_gpu_api_version_string(void)
 {
-   return video_driver_gpu_api_version_string;
+   struct rarch_state *p_rarch = &rarch_st;
+   return p_rarch->video_driver_gpu_api_version_string;
 }
 
 /* string list stays owned by the caller and must be available at
@@ -26445,13 +26514,13 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
       /* Copy the args into a buffer so launch arguments can be reused */
       for (i = 0; i < (unsigned)argc; i++)
       {
-         strlcat(launch_arguments,
-               argv[i], sizeof(launch_arguments));
-         strlcat(launch_arguments, " ",
-               sizeof(launch_arguments));
+         strlcat(p_rarch->launch_arguments,
+               argv[i], sizeof(p_rarch->launch_arguments));
+         strlcat(p_rarch->launch_arguments, " ",
+               sizeof(p_rarch->launch_arguments));
       }
-      string_trim_whitespace_left(launch_arguments);
-      string_trim_whitespace_right(launch_arguments);
+      string_trim_whitespace_left(p_rarch->launch_arguments);
+      string_trim_whitespace_right(p_rarch->launch_arguments);
 
       first_run = false;
    }
@@ -26692,12 +26761,12 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
                if (!path_is_absolute(optarg))
                {
                   char *ref_path = configuration_settings->paths.directory_video_shader;
-                  fill_pathname_join(cli_shader,
-                        ref_path, optarg, sizeof(cli_shader));
+                  fill_pathname_join(p_rarch->cli_shader,
+                        ref_path, optarg, sizeof(p_rarch->cli_shader));
                   break;
                }
 
-               strlcpy(cli_shader, optarg, sizeof(cli_shader));
+               strlcpy(p_rarch->cli_shader, optarg, sizeof(p_rarch->cli_shader));
 #endif
                break;
 
@@ -26907,7 +26976,9 @@ static void retroarch_parse_input_and_config(int argc, char *argv[])
                break;
 
             case RA_OPT_MAX_FRAMES_SCREENSHOT_PATH:
-               strlcpy(runloop_max_frames_screenshot_path, optarg, sizeof(runloop_max_frames_screenshot_path));
+               strlcpy(p_rarch->runloop_max_frames_screenshot_path,
+                     optarg,
+                     sizeof(p_rarch->runloop_max_frames_screenshot_path));
                break;
 
             case RA_OPT_SUBSYSTEM:
@@ -27115,7 +27186,7 @@ bool retroarch_main_init(int argc, char *argv[])
    if (setjmp(error_sjlj_context) > 0)
    {
       RARCH_ERR("%s: \"%s\"\n",
-            msg_hash_to_str(MSG_FATAL_ERROR_RECEIVED_IN), error_string);
+            msg_hash_to_str(MSG_FATAL_ERROR_RECEIVED_IN), p_rarch->error_string);
       return false;
    }
 
@@ -28284,19 +28355,21 @@ const char* retroarch_get_shader_preset(void)
    if (string_is_empty(core_name))
       return NULL;
 
-   if (!string_is_empty(runtime_shader_preset))
-      return runtime_shader_preset;
+   if (!string_is_empty(p_rarch->runtime_shader_preset))
+      return p_rarch->runtime_shader_preset;
 
    /* load auto-shader once, --set-shader works like a global auto-shader */
    if (shader_presets_need_reload && !cli_shader_disable)
    {
       shader_presets_need_reload = false;
-      if (video_shader_is_supported(video_shader_parse_type(cli_shader)))
-         strlcpy(runtime_shader_preset, cli_shader, sizeof(runtime_shader_preset));
+      if (video_shader_is_supported(video_shader_parse_type(p_rarch->cli_shader)))
+         strlcpy(p_rarch->runtime_shader_preset,
+               p_rarch->cli_shader,
+               sizeof(p_rarch->runtime_shader_preset));
       else
          if (auto_shaders_enable)
             retroarch_load_shader_preset(); /* sets runtime_shader_preset */
-      return runtime_shader_preset;
+      return p_rarch->runtime_shader_preset;
    }
 #endif
 
@@ -28474,7 +28547,8 @@ static void retroarch_fail(int error_code, const char *error)
     * just exit right away. */
    retro_assert(p_rarch->rarch_error_on_init);
 
-   strlcpy(error_string, error, sizeof(error_string));
+   strlcpy(p_rarch->error_string,
+         error, sizeof(p_rarch->error_string));
    longjmp(error_sjlj_context, error_code);
 }
 
@@ -29035,12 +29109,12 @@ static enum runloop_state runloop_check_state(retro_time_t current_time)
             const char *screenshot_path = NULL;
             bool fullpath               = false;
 
-            if (string_is_empty(runloop_max_frames_screenshot_path))
+            if (string_is_empty(p_rarch->runloop_max_frames_screenshot_path))
                screenshot_path          = path_get(RARCH_PATH_BASENAME);
             else
             {
                fullpath                 = true;
-               screenshot_path          = runloop_max_frames_screenshot_path;
+               screenshot_path          = p_rarch->runloop_max_frames_screenshot_path;
             }
 
             RARCH_LOG("Taking a screenshot before exiting...\n");
@@ -30620,6 +30694,7 @@ bool create_folder_and_core_options(void)
 void menu_content_environment_get(int *argc, char *argv[],
       void *args, void *params_data)
 {
+   struct rarch_state       *p_rarch = &rarch_st;
    struct rarch_main_wrap *wrap_args = (struct rarch_main_wrap*)params_data;
    rarch_system_info_t *sys_info     = &runloop_system;
 
@@ -30639,10 +30714,10 @@ void menu_content_environment_get(int *argc, char *argv[],
 
    if (!path_is_empty(RARCH_PATH_CONFIG))
       wrap_args->config_path   = path_get(RARCH_PATH_CONFIG);
-   if (!string_is_empty(dir_savefile))
-      wrap_args->sram_path     = dir_savefile;
-   if (!string_is_empty(dir_savestate))
-      wrap_args->state_path    = dir_savestate;
+   if (!string_is_empty(p_rarch->dir_savefile))
+      wrap_args->sram_path     = p_rarch->dir_savefile;
+   if (!string_is_empty(p_rarch->dir_savestate))
+      wrap_args->state_path    = p_rarch->dir_savestate;
    if (!path_is_empty(RARCH_PATH_CONTENT))
       wrap_args->content_path  = path_get(RARCH_PATH_CONTENT);
    if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_LIBRETRO, NULL))
