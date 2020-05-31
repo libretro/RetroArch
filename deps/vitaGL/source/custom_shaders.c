@@ -1,3 +1,21 @@
+/*
+ * This file is part of vitaGL
+ * Copyright 2017, 2018, 2019, 2020 Rinnegatamante
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, version 3 of the License, or (at your
+ * option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 /* 
  * custom_shaders.c:
  * Implementation for custom shaders feature
@@ -107,7 +125,7 @@ void _vglDrawObjects_CustomShadersIMPL(GLenum mode, GLsizei count, GLboolean imp
 GLuint glCreateShader(GLenum shaderType) {
 	// Looking for a free shader slot
 	GLuint i, res = 0;
-	for (i = 1; i <= MAX_CUSTOM_SHADERS; i++) {
+	for (i = 1; i < MAX_CUSTOM_SHADERS; i++) {
 		if (!(shaders[i - 1].valid)) {
 			res = i;
 			break;
@@ -127,7 +145,7 @@ GLuint glCreateShader(GLenum shaderType) {
 		shaders[res - 1].type = GL_VERTEX_SHADER;
 		break;
 	default:
-		_vitagl_error = GL_INVALID_ENUM;
+		error = GL_INVALID_ENUM;
 		break;
 	}
 	shaders[res - 1].valid = GL_TRUE;
@@ -176,13 +194,13 @@ void glAttachShader(GLuint prog, GLuint shad) {
 			break;
 		}
 	} else
-		_vitagl_error = GL_INVALID_VALUE;
+		error = GL_INVALID_VALUE;
 }
 
 GLuint glCreateProgram(void) {
 	// Looking for a free program slot
 	GLuint i, res = 0;
-	for (i = 1; i <= (MAX_CUSTOM_SHADERS / 2); i++) {
+	for (i = 1; i < (MAX_CUSTOM_SHADERS / 2); i++) {
 		// Program slot found, reserving and initializing it
 		if (!(progs[i - 1].valid)) {
 			res = i;
@@ -365,7 +383,7 @@ void vglBindAttribLocation(GLuint prog, GLuint index, const GLchar *name, const 
 		bpe = sizeof(uint8_t);
 		break;
 	default:
-		_vitagl_error = GL_INVALID_ENUM;
+		error = GL_INVALID_ENUM;
 		break;
 	}
 
@@ -383,7 +401,7 @@ void vglVertexAttribPointer(GLuint index, GLint size, GLenum type, GLboolean nor
 #ifndef SKIP_ERROR_HANDLING
 	// Error handling
 	if (stride < 0) {
-		_vitagl_error = GL_INVALID_VALUE;
+		error = GL_INVALID_VALUE;
 		return;
 	}
 #endif
@@ -398,7 +416,7 @@ void vglVertexAttribPointer(GLuint index, GLint size, GLenum type, GLboolean nor
 		bpe = sizeof(GLshort);
 		break;
 	default:
-		_vitagl_error = GL_INVALID_ENUM;
+		error = GL_INVALID_ENUM;
 		break;
 	}
 

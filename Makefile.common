@@ -2100,7 +2100,7 @@ ifeq ($(HAVE_MATH_NEON), 1)
 endif
 
 ifeq ($(HAVE_VITAGL), 1)
-   DEFINES += -DHAVE_VITAGL -DTRANSPOSE_MATRICES
+   DEFINES += -DHAVE_VITAGL -DSTB_DXT_IMPLEMENTATION -DSKIP_ERROR_HANDLING
    INCLUDE_DIRS += -I$(DEPS_DIR)/vitaGL/source
    SOURCES := $(DEPS_DIR)/vitaGL/source $(DEPS_DIR)/vitaGL/source/utils
    OBJ += $(patsubst %.c,%.o,$(foreach dir,$(SOURCES), $(wildcard $(dir)/*.c)))

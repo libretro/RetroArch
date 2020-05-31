@@ -1,5 +1,6 @@
 TARGET		    := retroarch_vita
 DEBUG               ?= 0
+HAVE_FILE_LOGGER	= 1
 GRIFFIN_BUILD        = 0
 WHOLE_ARCHIVE_LINK   = 0
 
@@ -180,6 +181,10 @@ vpksend: $(TARGET).vpk
 
 send: $(TARGET).self
 	curl -T $< ftp://$(PSVITAIP):1337/ux0:/app/$(VITA_TITLE_ID)/eboot.bin
+
+launch: $(TARGET).self
+	curl -T $< ftp://$(PSVITAIP):1337/ux0:/app/$(VITA_TITLE_ID)/eboot.bin
+	echo "launch $(VITA_TITLE_ID)" | nc ${PSVITAIP} 1338
 
 .PHONY: clean all send vpksend
 .PRECIOUS: %.depend
