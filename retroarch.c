@@ -13233,8 +13233,9 @@ static bool recording_init(void)
       current_core_type                 = p_rarch->current_core_type;
    const enum retro_pixel_format 
       video_driver_pix_fmt              = p_rarch->video_driver_pix_fmt;
+   bool recording_enable                = p_rarch->recording_enable;
 
-   if (!p_rarch->recording_enable)
+   if (!recording_enable)
       return false;
 
    output[0] = '\0';
@@ -13311,21 +13312,22 @@ static bool recording_init(void)
    params.video_record_threads      = settings->uints.video_record_threads;
    params.streaming_mode            = settings->uints.streaming_mode;
 
-   params.out_width  = av_info->geometry.base_width;
-   params.out_height = av_info->geometry.base_height;
-   params.fb_width   = av_info->geometry.max_width;
-   params.fb_height  = av_info->geometry.max_height;
-   params.channels   = 2;
-   params.filename   = output;
-   params.fps        = av_info->timing.fps;
-   params.samplerate = av_info->timing.sample_rate;
-   params.pix_fmt    = (video_driver_pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888)
+   params.out_width                 = av_info->geometry.base_width;
+   params.out_height                = av_info->geometry.base_height;
+   params.fb_width                  = av_info->geometry.max_width;
+   params.fb_height                 = av_info->geometry.max_height;
+   params.channels                  = 2;
+   params.filename                  = output;
+   params.fps                       = av_info->timing.fps;
+   params.samplerate                = av_info->timing.sample_rate;
+   params.pix_fmt                   = 
+      (video_driver_pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888)
       ? FFEMU_PIX_ARGB8888
       : FFEMU_PIX_RGB565;
-   params.config     = NULL;
+   params.config                    = NULL;
 
    if (!string_is_empty(global->record.config))
-      params.config = global->record.config;
+      params.config                 = global->record.config;
    else
    {
       if (p_rarch->streaming_enable)
@@ -30897,11 +30899,13 @@ bool core_run(void)
 {
    struct rarch_state 
       *p_rarch                 = &rarch_st;
+   struct retro_core_t *
+      current_core             = &p_rarch->current_core;
    const enum poll_type_override_t 
       core_poll_type_override  = p_rarch->core_poll_type_override;
    unsigned new_poll_type      = (core_poll_type_override != POLL_TYPE_OVERRIDE_DONTCARE)
       ? (core_poll_type_override - 1)
-      : p_rarch->current_core.poll_type;
+      : current_core->poll_type;
    bool early_polling          = new_poll_type == POLL_TYPE_EARLY;
    bool late_polling           = new_poll_type == POLL_TYPE_LATE;
 #ifdef HAVE_NETWORKING
@@ -30921,11 +30925,11 @@ bool core_run(void)
    if (early_polling)
       input_driver_poll();
    else if (late_polling)
-      p_rarch->current_core.input_polled = false;
+      current_core->input_polled = false;
 
-   p_rarch->current_core.retro_run();
+   current_core->retro_run();
 
-   if (late_polling && !p_rarch->current_core.input_polled)
+   if (late_polling && !current_core->input_polled)
       input_driver_poll();
 
 #ifdef HAVE_NETWORKING
