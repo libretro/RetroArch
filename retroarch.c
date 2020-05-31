@@ -2086,6 +2086,10 @@ struct rarch_state
 #endif
 #endif
 
+#ifdef HAVE_THREAD_STORAGE
+   sthread_tls_t rarch_tls;
+#endif
+
 #ifdef HAVE_AUDIOMIXER
    struct audio_mixer_stream
       audio_mixer_streams[AUDIO_MIXER_MAX_SYSTEM_STREAMS];
@@ -2099,6 +2103,8 @@ struct rarch_state
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    rarch_timer_t shader_delay_timer;
 #endif
+
+   jmp_buf error_sjlj_context;
 
    struct retro_subsystem_rom_info 
       subsystem_data_roms[SUBSYSTEM_MAX_SUBSYSTEMS]
@@ -2224,14 +2230,11 @@ static struct retro_callbacks     retro_ctx;
 static struct retro_core_t        current_core;
 static struct rarch_state         rarch_st;
 
-static jmp_buf error_sjlj_context;
-
 #ifdef HAVE_THREAD_STORAGE
-static sthread_tls_t rarch_tls;
-const void *MAGIC_POINTER        = (void*)(uintptr_t)0x0DEFACED;
+const void *MAGIC_POINTER                                        = (void*)(uintptr_t)0x0DEFACED;
 #endif
 
-static runloop_core_status_msg_t runloop_core_status_msg        =
+static runloop_core_status_msg_t runloop_core_status_msg         =
 {
    "",
    0,
@@ -2240,14 +2243,14 @@ static runloop_core_status_msg_t runloop_core_status_msg        =
 };
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-static bool shader_presets_need_reload                          = true;
+static bool shader_presets_need_reload                           = true;
 #endif
-static bool video_driver_window_title_update                    = true;
+static bool video_driver_window_title_update                     = true;
 #ifdef HAVE_RUNAHEAD
-static bool runahead_video_driver_is_active                     = true;
-static bool runahead_available                                  = true;
-static bool runahead_secondary_core_available                   = true;
-static bool runahead_force_input_dirty                          = true;
+static bool runahead_video_driver_is_active                      = true;
+static bool runahead_available                                   = true;
+static bool runahead_secondary_core_available                    = true;
+static bool runahead_force_input_dirty                           = true;
 #endif
 
 
@@ -2256,10 +2259,10 @@ static bool runahead_force_input_dirty                          = true;
 extern u32 __nx_applet_type;
 #endif
 
-static midi_driver_t *midi_drv                                  = &midi_null;
-static const video_display_server_t *current_display_server     = &dispserv_null;
+static midi_driver_t *midi_drv                                   = &midi_null;
+static const video_display_server_t *current_display_server      = &dispserv_null;
 
-struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END]      = {
+struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END] = {
    { "4:3",           1.3333f },
    { "16:9",          1.7778f },
    { "16:10",         1.6f },
@@ -2293,6 +2296,7 @@ static gfx_api_gpu_map gpu_map[] = {
    { GFX_CTX_DIRECT3D12_API, NULL }
 };
 
+/* TODO/FIXME - turn these into static global variable */
 const struct input_bind_map input_config_bind_map[RARCH_BIND_LIST_END_NULL] = {
       DECLARE_BIND(b,         RETRO_DEVICE_ID_JOYPAD_B,      MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_B),
       DECLARE_BIND(y,         RETRO_DEVICE_ID_JOYPAD_Y,      MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_Y),
@@ -2381,8 +2385,6 @@ const struct input_bind_map input_config_bind_map[RARCH_BIND_LIST_END_NULL] = {
       DECLARE_META_BIND(2, streaming_toggle,      RARCH_STREAMING_TOGGLE,      MENU_ENUM_LABEL_VALUE_INPUT_META_STREAMING_TOGGLE),
       DECLARE_META_BIND(2, ai_service,            RARCH_AI_SERVICE,            MENU_ENUM_LABEL_VALUE_INPUT_META_AI_SERVICE),
 };
-
-/* TODO/FIXME - turn these into static global variable */
 #ifdef HAVE_DISCORD
 bool discord_is_inited                                          = false;
 #endif
@@ -2392,7 +2394,6 @@ char        input_device_names        [MAX_INPUT_DEVICES][64];
 struct retro_keybind input_config_binds[MAX_USERS][RARCH_BIND_LIST_END];
 struct retro_keybind input_autoconf_binds[MAX_USERS][RARCH_BIND_LIST_END];
 struct retro_subsystem_info subsystem_data[SUBSYSTEM_MAX_SUBSYSTEMS];
-
 
 /* Forward declarations */
 static void retroarch_fail(int error_code, const char *error);
@@ -9187,8 +9188,8 @@ int rarch_main(int argc, char *argv[], void *data)
       driver_uninit(DRIVERS_CMD_ALL);
 
 #ifdef HAVE_THREAD_STORAGE
-   sthread_tls_create(&rarch_tls);
-   sthread_tls_set(&rarch_tls, MAGIC_POINTER);
+   sthread_tls_create(&p_rarch->rarch_tls);
+   sthread_tls_set(&p_rarch->rarch_tls, MAGIC_POINTER);
 #endif
    p_rarch->video_driver_active = true;
    p_rarch->audio_driver_active = true;
@@ -27546,7 +27547,7 @@ bool retroarch_main_init(int argc, char *argv[])
    p_rarch->video_driver_active = true;
    p_rarch->audio_driver_active = true;
 
-   if (setjmp(error_sjlj_context) > 0)
+   if (setjmp(p_rarch->error_sjlj_context) > 0)
    {
       RARCH_ERR("%s: \"%s\"\n",
             msg_hash_to_str(MSG_FATAL_ERROR_RECEIVED_IN), p_rarch->error_string);
@@ -27771,7 +27772,8 @@ error:
 static bool retroarch_is_on_main_thread(void)
 {
 #ifdef HAVE_THREAD_STORAGE
-   if (sthread_tls_get(&rarch_tls) != MAGIC_POINTER)
+   struct rarch_state *p_rarch = &rarch_st;
+   if (sthread_tls_get(&p_rarch->rarch_tls) != MAGIC_POINTER)
       return false;
 #endif
    return true;
@@ -28252,7 +28254,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          p_rarch->rarch_is_inited         = false;
 
 #ifdef HAVE_THREAD_STORAGE
-         sthread_tls_delete(&rarch_tls);
+         sthread_tls_delete(&p_rarch->rarch_tls);
 #endif
          break;
 #ifdef HAVE_CONFIGFILE
@@ -28917,7 +28919,7 @@ static void retroarch_fail(int error_code, const char *error)
 
    strlcpy(p_rarch->error_string,
          error, sizeof(p_rarch->error_string));
-   longjmp(error_sjlj_context, error_code);
+   longjmp(p_rarch->error_sjlj_context, error_code);
 }
 
 bool retroarch_main_quit(void)
