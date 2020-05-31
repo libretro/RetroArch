@@ -12721,8 +12721,8 @@ bool ui_companion_is_on_foreground(void)
 
 void ui_companion_event_command(enum event_command action)
 {
-#ifdef HAVE_QT
    struct rarch_state     *p_rarch = &rarch_st;
+#ifdef HAVE_QT
    bool qt_is_inited               = p_rarch->qt_is_inited;
 #endif
    const ui_companion_driver_t *ui = p_rarch->ui_companion;
@@ -12738,8 +12738,8 @@ void ui_companion_event_command(enum event_command action)
 
 static void ui_companion_driver_deinit(void)
 {
-#ifdef HAVE_QT
    struct rarch_state     *p_rarch = &rarch_st;
+#ifdef HAVE_QT
    bool qt_is_inited               = p_rarch->qt_is_inited;
 #endif
    const ui_companion_driver_t *ui = p_rarch->ui_companion;
@@ -12795,9 +12795,9 @@ void ui_companion_driver_init_first(void)
 
 static void ui_companion_driver_toggle(bool force)
 {
-#ifdef HAVE_QT
    struct rarch_state *p_rarch  = &rarch_st;
    settings_t     *settings     = p_rarch->configuration_settings;
+#ifdef HAVE_QT
    bool     desktop_menu_enable = settings->bools.desktop_menu_enable;
    bool     ui_companion_toggle = settings->bools.ui_companion_toggle;
 #endif
