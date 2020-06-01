@@ -56,6 +56,10 @@
 #include "../video_thread_wrapper.h"
 #endif
 
+#ifdef VITA
+static bool vgl_inited = false;
+#endif
+
 static struct video_ortho gl1_default_ortho = {0, 1, 0, 1, -1, 1};
 
 /* Used for the last pass when rendering to the back buffer. */
@@ -272,12 +276,12 @@ static void *gl1_gfx_init(const video_info_t *video,
    mode.width  = 0;
    mode.height = 0;
 #ifdef VITA
-   if (!gl1->vgl_inited)
+   if (!vgl_inited)
    {
       vglInitExtended(0x1400000, full_x, full_y, 0x100000, SCE_GXM_MULTISAMPLE_4X);
       vglUseVram(GL_TRUE);
       vglStartRendering();
-      gl1->vgl_inited = true;
+      vgl_inited = true;
    }
 #endif
    /* Clear out potential error flags in case we use cached context. */
