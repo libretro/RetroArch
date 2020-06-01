@@ -71,9 +71,6 @@ typedef struct gl1
    bool overlay_full_screen;
    bool shared_context_use;
 
-   /* Only used for Vita */
-   bool vgl_inited;
-
    int version_major;
    int version_minor;
 
