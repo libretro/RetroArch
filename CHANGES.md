@@ -1,4 +1,5 @@
 # Future
+- AUTO SAVESTATES: Ensure save states are correctly flushed to disk when quitting RetroArch (fixes broken save states when exiting RetroArch - without first closing content - with 'Auto Save State' enabled)
 - CORE DOWNLOADER: Rename 'Core Updater' to 'Core Downloader'
 - CORE DOWNLOADER: Add 'Show Experimental Cores' setting under Settings > Network > Updater
 - CORE DOWNLOADER: Core licenses are now shown for all entries in the Core Updater menu
