@@ -7771,6 +7771,7 @@ bool command_event(enum event_command cmd, void *data)
 
             command_event_runtime_log_deinit();
             command_event_save_auto_state();
+
 #ifdef HAVE_CONFIGFILE
             if (p_rarch->runloop_overrides_active)
                command_event_disable_overrides();
@@ -28956,6 +28957,13 @@ bool retroarch_main_quit(void)
    if (!p_rarch->runloop_shutdown_initiated)
    {
       command_event_save_auto_state();
+
+      /* If any save states are in progress, wait
+       * until all tasks are complete (otherwise
+       * save state file may be truncated) */
+      if (content_save_state_in_progress())
+         task_queue_wait(NULL, NULL);
+
 #ifdef HAVE_CONFIGFILE
       if (p_rarch->runloop_overrides_active)
          command_event_disable_overrides();
