@@ -5065,22 +5065,24 @@ static void task_auto_translate_handler(retro_task_t *task)
    if (task_get_cancelled(task))
       goto task_finished;
 
-   /* Narrator Mode */
-   if (*mode_ptr == 2)
+   switch (*mode_ptr)
    {
-#ifdef HAVE_ACCESSIBILITY
-      if (!is_narrator_running())
-         goto task_finished;
-#endif
-   }
-   /* Speech Mode */
-   else if (*mode_ptr == 1)
-   {
+      case 1: /* Speech   Mode */
 #ifdef HAVE_AUDIOMIXER
-      if (!is_ai_service_speech_running())
-         goto task_finished;
+         if (!is_ai_service_speech_running())
+            goto task_finished;
 #endif
+         break;
+      case 2: /* Narrator Mode */
+#ifdef HAVE_ACCESSIBILITY
+         if (!is_narrator_running())
+            goto task_finished;
+#endif
+         break;
+      default:
+         break;
    }
+
    return;
 
 task_finished:
@@ -5335,10 +5337,9 @@ static void handle_translation_cb(
          bool ai_res;
          enum image_type_enum image_type;
          /* Write to overlay */
-         if (raw_image_file_data[0] == 'B' && raw_image_file_data[1] == 'M')
-         {
+         if (  raw_image_file_data[0] == 'B' && 
+               raw_image_file_data[1] == 'M')
              image_type = IMAGE_TYPE_BMP;
-         }
          else if (raw_image_file_data[1] == 'P' &&
                   raw_image_file_data[2] == 'N' &&
                   raw_image_file_data[3] == 'G')
