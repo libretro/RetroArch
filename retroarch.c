@@ -1157,7 +1157,7 @@ static const camera_driver_t *camera_drivers[] = {
 
 #if HAVE_DYNAMIC
 #define runahead_run_secondary() \
-   if (!secondary_core_run_use_last_input()) \
+   if (!secondary_core_run_use_last_input(p_rarch)) \
       runahead_secondary_core_available = false
 #endif
 
@@ -2440,7 +2440,7 @@ static void retroarch_init_core_variables(const struct retro_variable *vars);
 static void rarch_init_core_options(
       const struct retro_core_option_definition *option_defs);
 #if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
-static bool secondary_core_create(void);
+static bool secondary_core_create(struct rarch_state *p_rarch);
 #endif
 static int16_t input_state_get_last(unsigned port,
       unsigned device, unsigned index, unsigned id);
@@ -12161,10 +12161,9 @@ static void strcat_alloc(char **dst, const char *s)
    strcpy(src + len1, s);
 }
 
-static void secondary_core_destroy(void)
+static void secondary_core_destroy(struct rarch_state *p_rarch)
 {
-   struct rarch_state *p_rarch = &rarch_st;
-   if (!p_rarch->secondary_module)
+   if (!p_rarch || !p_rarch->secondary_module)
       return;
 
    /* unload game from core */
@@ -12185,40 +12184,39 @@ static void secondary_core_destroy(void)
    p_rarch->secondary_library_path = NULL;
 }
 
-static bool secondary_core_ensure_exists(void)
+static bool secondary_core_ensure_exists(struct rarch_state *p_rarch)
 {
-   struct rarch_state *p_rarch = &rarch_st;
    if (!p_rarch->secondary_module)
-      if (!secondary_core_create())
+      if (!secondary_core_create(p_rarch))
          return false;
    return true;
 }
 
 #if defined(HAVE_RUNAHEAD) && defined(HAVE_DYNAMIC)
-static bool secondary_core_deserialize(const void *buffer, int size)
+static bool secondary_core_deserialize(
+      struct rarch_state *p_rarch,
+      const void *buffer, int size)
 {
-   struct rarch_state *p_rarch = &rarch_st;
-   if (secondary_core_ensure_exists())
+   if (secondary_core_ensure_exists(p_rarch))
       return p_rarch->secondary_core.retro_unserialize(buffer, size);
-   secondary_core_destroy();
+   secondary_core_destroy(p_rarch);
    return false;
 }
 #endif
 
-static void remember_controller_port_device(long port, long device)
+static void remember_controller_port_device(
+      struct rarch_state *p_rarch,
+      long port, long device)
 {
-   struct rarch_state *p_rarch = &rarch_st;
-
    if (port >= 0 && port < 16)
       p_rarch->port_map[port] = (int)device;
    if (p_rarch->secondary_module && p_rarch->secondary_core.retro_set_controller_port_device)
       p_rarch->secondary_core.retro_set_controller_port_device((unsigned)port, (unsigned)device);
 }
 
-static void clear_controller_port_map(void)
+static void clear_controller_port_map(struct rarch_state *p_rarch)
 {
    unsigned port;
-   struct rarch_state *p_rarch = &rarch_st;
 
    for (port = 0; port < 16; port++)
       p_rarch->port_map[port] = -1;
@@ -12316,7 +12314,7 @@ static bool write_file_with_random_name(char **temp_dll_path,
    return okay;
 }
 
-static char *copy_core_to_temp_file(void)
+static char *copy_core_to_temp_file(struct rarch_state *p_rarch)
 {
    bool  failed                = false;
    char  *temp_directory       = NULL;
@@ -12326,7 +12324,6 @@ static char *copy_core_to_temp_file(void)
    int64_t  dll_file_size      = 0;
    const char  *core_path      = path_get(RARCH_PATH_CORE);
    const char  *core_base_name = path_basename(core_path);
-   struct rarch_state *p_rarch = &rarch_st;
    settings_t *settings        = p_rarch->configuration_settings;
    const char  *dir_libretro   = settings->paths.directory_libretro;
 
@@ -12408,12 +12405,11 @@ static bool rarch_environment_secondary_core_hook(unsigned cmd, void *data)
    return result;
 }
 
-static bool secondary_core_create(void)
+static bool secondary_core_create(struct rarch_state *p_rarch)
 {
    long port, device;
    bool contentless            = false;
    bool is_inited              = false;
-   struct rarch_state *p_rarch = &rarch_st;
    const enum rarch_core_type 
       last_core_type           = p_rarch->last_core_type;
 
@@ -12425,7 +12421,7 @@ static bool secondary_core_create(void)
    if (p_rarch->secondary_library_path)
       free(p_rarch->secondary_library_path);
    p_rarch->secondary_library_path = NULL;
-   p_rarch->secondary_library_path = copy_core_to_temp_file();
+   p_rarch->secondary_library_path = copy_core_to_temp_file(p_rarch);
 
    if (!p_rarch->secondary_library_path)
       return false;
@@ -12488,26 +12484,25 @@ static bool secondary_core_create(void)
          p_rarch->secondary_core.retro_set_controller_port_device(
                (unsigned)port, (unsigned)device);
    }
-   clear_controller_port_map();
+   clear_controller_port_map(p_rarch);
 
    return true;
 
 error:
-   secondary_core_destroy();
+   secondary_core_destroy(p_rarch);
    return false;
 }
 
 static void secondary_core_input_poll_null(void) { }
 
-static bool secondary_core_run_use_last_input(void)
+static bool secondary_core_run_use_last_input(struct rarch_state *p_rarch)
 {
    retro_input_poll_t old_poll_function;
    retro_input_state_t old_input_function;
-   struct rarch_state *p_rarch = &rarch_st;
 
-   if (!secondary_core_ensure_exists())
+   if (!secondary_core_ensure_exists(p_rarch))
    {
-      secondary_core_destroy();
+      secondary_core_destroy(p_rarch);
       return false;
    }
 
@@ -12531,9 +12526,11 @@ static bool secondary_core_run_use_last_input(void)
    return true;
 }
 #else
-static void secondary_core_destroy(void) { }
-static void remember_controller_port_device(long port, long device) { }
-static void clear_controller_port_map(void) { }
+static void secondary_core_destroy(struct rarch_state *p_rarch) { }
+static void remember_controller_port_device(
+      struct rarch_state *p_rarch,
+      long port, long device) { }
+static void clear_controller_port_map(struct rarch_state *p_rarch) { }
 #endif
 
 #endif
@@ -26201,10 +26198,8 @@ static void runahead_save_state_list_init(size_t save_state_size)
 }
 
 /* Hooks - Hooks to cleanup, and add dirty input hooks */
-static void runahead_remove_hooks(void)
+static void runahead_remove_hooks(struct rarch_state *p_rarch)
 {
-   struct rarch_state *p_rarch       = &rarch_st;
-
    if (p_rarch->original_retro_deinit)
    {
       p_rarch->current_core.retro_deinit = p_rarch->original_retro_deinit;
@@ -26219,10 +26214,8 @@ static void runahead_remove_hooks(void)
    remove_input_state_hook();
 }
 
-static void runahead_clear_variables(void)
+static void runahead_clear_variables(struct rarch_state *p_rarch)
 {
-   struct rarch_state *p_rarch                = &rarch_st;
-
    p_rarch->runahead_save_state_size          = 0;
    p_rarch->runahead_save_state_size_known    = false;
    runahead_video_driver_is_active            = true;
@@ -26232,22 +26225,20 @@ static void runahead_clear_variables(void)
    p_rarch->runahead_last_frame_count         = 0;
 }
 
-static void runahead_destroy(void)
+static void runahead_destroy(struct rarch_state *p_rarch)
 {
-   struct rarch_state *p_rarch                = &rarch_st;
-
    mylist_destroy(&p_rarch->runahead_save_state_list);
-   runahead_remove_hooks();
-   runahead_clear_variables();
+   runahead_remove_hooks(p_rarch);
+   runahead_clear_variables(p_rarch);
 }
 
 static void unload_hook(void)
 {
    struct rarch_state *p_rarch = &rarch_st;
 
-   runahead_remove_hooks();
-   runahead_destroy();
-   secondary_core_destroy();
+   runahead_remove_hooks(p_rarch);
+   runahead_destroy(p_rarch);
+   secondary_core_destroy(p_rarch);
    if (p_rarch->current_core.retro_unload_game)
       p_rarch->current_core.retro_unload_game();
    p_rarch->core_poll_type_override = POLL_TYPE_OVERRIDE_DONTCARE;
@@ -26257,17 +26248,15 @@ static void runahead_deinit_hook(void)
 {
    struct rarch_state *p_rarch     = &rarch_st;
 
-   runahead_remove_hooks();
-   runahead_destroy();
-   secondary_core_destroy();
+   runahead_remove_hooks(p_rarch);
+   runahead_destroy(p_rarch);
+   secondary_core_destroy(p_rarch);
    if (p_rarch->current_core.retro_deinit)
       p_rarch->current_core.retro_deinit();
 }
 
-static void runahead_add_hooks(void)
+static void runahead_add_hooks(struct rarch_state *p_rarch)
 {
-   struct rarch_state *p_rarch = &rarch_st;
-
    if (!p_rarch->original_retro_deinit)
    {
       p_rarch->original_retro_deinit     = p_rarch->current_core.retro_deinit;
@@ -26284,22 +26273,19 @@ static void runahead_add_hooks(void)
 
 /* Runahead Code */
 
-static void runahead_error(void)
+static void runahead_error(struct rarch_state *p_rarch)
 {
-   struct rarch_state *p_rarch             = &rarch_st;
-
    runahead_available                      = false;
    mylist_destroy(&p_rarch->runahead_save_state_list);
-   runahead_remove_hooks();
+   runahead_remove_hooks(p_rarch);
    p_rarch->runahead_save_state_size       = 0;
    p_rarch->runahead_save_state_size_known = true;
 }
 
-static bool runahead_create(void)
+static bool runahead_create(struct rarch_state *p_rarch)
 {
    /* get savestate size and allocate buffer */
    retro_ctx_size_info_t info;
-   struct rarch_state *p_rarch     = &rarch_st;
 
    p_rarch->request_fast_savestate = true;
    core_serialize_size(&info);
@@ -26311,20 +26297,19 @@ static bool runahead_create(void)
    if (  (p_rarch->runahead_save_state_size == 0) || 
          !p_rarch->runahead_save_state_size_known)
    {
-      runahead_error();
+      runahead_error(p_rarch);
       return false;
    }
 
-   runahead_add_hooks();
+   runahead_add_hooks(p_rarch);
    runahead_force_input_dirty = true;
    mylist_resize(p_rarch->runahead_save_state_list, 1, true);
    return true;
 }
 
-static bool runahead_save_state(void)
+static bool runahead_save_state(struct rarch_state *p_rarch)
 {
    retro_ctx_serialize_info_t *serialize_info;
-   struct rarch_state     *p_rarch = &rarch_st;
    bool okay                       = false;
 
    if (!p_rarch->runahead_save_state_list)
@@ -26340,13 +26325,12 @@ static bool runahead_save_state(void)
    if (okay)
       return true;
 
-   runahead_error();
+   runahead_error(p_rarch);
    return false;
 }
 
-static bool runahead_load_state(void)
+static bool runahead_load_state(struct rarch_state *p_rarch)
 {
-   struct rarch_state                *p_rarch = &rarch_st;
    bool okay                                  = false;
    retro_ctx_serialize_info_t *serialize_info = (retro_ctx_serialize_info_t*)
       p_rarch->runahead_save_state_list->data[0];
@@ -26363,28 +26347,28 @@ static bool runahead_load_state(void)
    p_rarch->input_is_dirty                    = last_dirty;
 
    if (!okay)
-      runahead_error();
+      runahead_error(p_rarch);
 
    return okay;
 }
 
 #if HAVE_DYNAMIC
-static bool runahead_load_state_secondary(void)
+static bool runahead_load_state_secondary(struct rarch_state *p_rarch)
 {
-   struct rarch_state                *p_rarch = &rarch_st;
    bool okay                                  = false;
    retro_ctx_serialize_info_t *serialize_info =
       (retro_ctx_serialize_info_t*)p_rarch->runahead_save_state_list->data[0];
 
    p_rarch->request_fast_savestate            = true;
    okay                                       = secondary_core_deserialize(
+         p_rarch,
          serialize_info->data_const, (int)serialize_info->size);
    p_rarch->request_fast_savestate            = false;
 
    if (!okay)
    {
       runahead_secondary_core_available = false;
-      runahead_error();
+      runahead_error(p_rarch);
       return false;
    }
 
@@ -26392,9 +26376,8 @@ static bool runahead_load_state_secondary(void)
 }
 #endif
 
-static bool runahead_core_run_use_last_input(void)
+static bool runahead_core_run_use_last_input(struct rarch_state *p_rarch)
 {
-   struct rarch_state *p_rarch            = &rarch_st;
    struct retro_callbacks *cbs            = &p_rarch->retro_ctx;
    retro_input_poll_t old_poll_function   = cbs->poll_cb;
    retro_input_state_t old_input_function = cbs->state_cb;
@@ -26416,7 +26399,9 @@ static bool runahead_core_run_use_last_input(void)
    return true;
 }
 
-static void do_runahead(int runahead_count, bool use_secondary)
+static void do_runahead(
+      struct rarch_state *p_rarch,
+      int runahead_count, bool use_secondary)
 {
    int frame_number        = 0;
    bool last_frame         = false;
@@ -26426,8 +26411,6 @@ static void do_runahead(int runahead_count, bool use_secondary)
 #else
    const bool have_dynamic = false;
 #endif
-   struct rarch_state 
-      *p_rarch             = &rarch_st;
    uint64_t frame_count    = p_rarch->video_driver_frame_count;
 
    if (runahead_count <= 0 || !runahead_available)
@@ -26435,7 +26418,7 @@ static void do_runahead(int runahead_count, bool use_secondary)
 
    if (!p_rarch->runahead_save_state_size_known)
    {
-      if (!runahead_create())
+      if (!runahead_create(p_rarch))
       {
          settings_t *settings        = p_rarch->configuration_settings;
          bool runahead_hide_warnings = settings->bools.run_ahead_hide_warnings;
@@ -26471,7 +26454,7 @@ static void do_runahead(int runahead_count, bool use_secondary)
          if (frame_number == 0)
             core_run();
          else
-            runahead_core_run_use_last_input();
+            runahead_core_run_use_last_input(p_rarch);
 
          if (suspended_frame)
          {
@@ -26481,7 +26464,7 @@ static void do_runahead(int runahead_count, bool use_secondary)
 
          if (frame_number == 0)
          {
-            if (!runahead_save_state())
+            if (!runahead_save_state(p_rarch))
             {
                runloop_msg_queue_push(msg_hash_to_str(MSG_RUNAHEAD_FAILED_TO_SAVE_STATE), 0, 3 * 60, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
                return;
@@ -26490,7 +26473,7 @@ static void do_runahead(int runahead_count, bool use_secondary)
 
          if (last_frame)
          {
-            if (!runahead_load_state())
+            if (!runahead_load_state(p_rarch))
             {
                runloop_msg_queue_push(msg_hash_to_str(MSG_RUNAHEAD_FAILED_TO_LOAD_STATE), 0, 3 * 60, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
                return;
@@ -26501,9 +26484,9 @@ static void do_runahead(int runahead_count, bool use_secondary)
    else
    {
 #if HAVE_DYNAMIC
-      if (!secondary_core_ensure_exists())
+      if (!secondary_core_ensure_exists(p_rarch))
       {
-         secondary_core_destroy();
+         secondary_core_destroy(p_rarch);
          runahead_secondary_core_available = false;
          runloop_msg_queue_push(msg_hash_to_str(MSG_RUNAHEAD_FAILED_TO_CREATE_SECONDARY_INSTANCE), 0, 3 * 60, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          goto force_input_dirty;
@@ -26518,13 +26501,13 @@ static void do_runahead(int runahead_count, bool use_secondary)
       {
          p_rarch->input_is_dirty       = false;
 
-         if (!runahead_save_state())
+         if (!runahead_save_state(p_rarch))
          {
             runloop_msg_queue_push(msg_hash_to_str(MSG_RUNAHEAD_FAILED_TO_SAVE_STATE), 0, 3 * 60, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
             return;
          }
 
-         if (!runahead_load_state_secondary())
+         if (!runahead_load_state_secondary(p_rarch))
          {
             runloop_msg_queue_push(msg_hash_to_str(MSG_RUNAHEAD_FAILED_TO_LOAD_STATE), 0, 3 * 60, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
             return;
@@ -30313,7 +30296,10 @@ int runloop_iterate(void)
 #endif
 
       if (want_runahead)
-         do_runahead(run_ahead_num_frames, settings->bools.run_ahead_secondary_instance);
+         do_runahead(
+               p_rarch,
+               run_ahead_num_frames,
+               settings->bools.run_ahead_secondary_instance);
       else
 #endif
          core_run();
@@ -30786,7 +30772,7 @@ bool core_set_controller_port_device(retro_ctx_controller_info_t *pad)
       return false;
 
 #ifdef HAVE_RUNAHEAD
-   remember_controller_port_device(pad->port, pad->device);
+   remember_controller_port_device(p_rarch, pad->port, pad->device);
 #endif
 
    p_rarch->current_core.retro_set_controller_port_device(pad->port, pad->device);
@@ -30814,7 +30800,7 @@ bool core_load_game(retro_ctx_load_content_info_t *load_info)
 
 #ifdef HAVE_RUNAHEAD
    set_load_content_info(load_info);
-   clear_controller_port_map();
+   clear_controller_port_map(p_rarch);
 #endif
 
    content_get_status(&contentless, &is_inited);
