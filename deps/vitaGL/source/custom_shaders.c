@@ -279,6 +279,26 @@ GLint glGetUniformLocation(GLuint prog, const GLchar *name) {
 	return (GLint)res;
 }
 
+void glUniform1i(GLint location, GLint v0) {
+	// Grabbing passed uniform
+	uniform *u = (uniform *)location;
+	if (u->ptr == NULL)
+		return;
+
+	// Setting passed value to desired uniform
+	if (u->isVertex) {
+		if (vert_uniforms == NULL)
+			sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &vert_uniforms);
+		float v0_f = (float)v0;
+		sceGxmSetUniformDataF(vert_uniforms, u->ptr, 0, 1, &v0_f);
+	} else {
+		if (frag_uniforms == NULL)
+			sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &frag_uniforms);
+		float v0_f = (float)v0;
+		sceGxmSetUniformDataF(frag_uniforms, u->ptr, 0, 1, &v0_f);
+	}
+}
+
 void glUniform1f(GLint location, GLfloat v0) {
 	// Grabbing passed uniform
 	uniform *u = (uniform *)location;
@@ -357,7 +377,7 @@ void glUniformMatrix4fv(GLint location, GLsizei count, GLboolean transpose, cons
  * ------------------------------
  */
 
-void vglBindPackedAttribLocation(GLuint prog, GLuint index, const GLchar *name, const GLuint num, const GLenum type, GLuint offset) {
+void vglBindPackedAttribLocation(GLuint prog, GLuint index, const GLchar *name, const GLuint num, const GLenum type, GLuint offset, GLint stride) {
 	// Grabbing passed program
 	program *p = &progs[prog - 1];
 	SceGxmVertexAttribute *attributes = &p->attr[index];
@@ -389,7 +409,7 @@ void vglBindPackedAttribLocation(GLuint prog, GLuint index, const GLchar *name, 
 	// Setting various info about the stream
 	attributes->componentCount = num;
 	attributes->regIndex = sceGxmProgramParameterGetResourceIndex(param);
-	streams->stride = bpe * num;
+	streams->stride = stride ? stride : bpe * num;
 	streams->indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
 	if (index >= p->attr_num)
 		p->attr_num = index + 1;
@@ -397,7 +417,7 @@ void vglBindPackedAttribLocation(GLuint prog, GLuint index, const GLchar *name, 
 
 // Equivalent of glBindAttribLocation but for sceGxm architecture
 void vglBindAttribLocation(GLuint prog, GLuint index, const GLchar *name, const GLuint num, const GLenum type) {
-	vglBindPackedAttribLocation(prog, index, name, num, type, 0);
+	vglBindPackedAttribLocation(prog, index, name, num, type, 0, 0);
 }
 
 // Equivalent of glVertexAttribPointer but for sceGxm architecture
