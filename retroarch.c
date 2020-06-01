@@ -2423,7 +2423,7 @@ static bool is_narrator_running(void);
 static bool accessibility_startup_message(void);
 #endif
 
-static void retroarch_deinit_drivers(void);
+static void retroarch_deinit_drivers(struct rarch_state *p_rarch);
 
 static bool command_set_shader(const char *arg);
 
@@ -2492,13 +2492,14 @@ static void bsv_movie_deinit(void);
 static bool bsv_movie_init(void);
 static bool bsv_movie_check(void);
 
-static void driver_uninit(int flags);
-static void drivers_init(int flags);
+static void driver_uninit(struct rarch_state *p_rarch, int flags);
+static void drivers_init(struct rarch_state *p_rarch,  int flags);
 
 #if defined(HAVE_RUNAHEAD)
 static void core_free_retro_game_info(struct retro_game_info *dest);
 #endif
-static bool core_load(unsigned poll_type_behavior);
+static bool core_load(struct rarch_state *p_rarch, 
+      unsigned poll_type_behavior);
 static bool core_unload_game(void);
 
 static bool rarch_environment_cb(unsigned cmd, void *data);
@@ -3153,12 +3154,14 @@ void path_set_special(char **argv, unsigned num_content)
    struct string_list *subsystem_paths = NULL;
    struct rarch_state         *p_rarch = &rarch_st;
    global_t   *global                  = &p_rarch->g_extern;
+   const char *savestate_dir           = p_rarch->current_savestate_dir;
+
 
    /* First content file is the significant one. */
    path_set_basename(argv[0]);
 
-   p_rarch->subsystem_fullpaths       = string_list_new();
-   subsystem_paths = string_list_new();
+   subsystem_paths                     = string_list_new();
+   p_rarch->subsystem_fullpaths        = string_list_new();
    retro_assert(p_rarch->subsystem_fullpaths);
 
    attr.i = 0;
@@ -3170,6 +3173,7 @@ void path_set_special(char **argv, unsigned num_content)
       path_remove_extension(str);
       string_list_append(subsystem_paths, path_basename(str), attr);
    }
+
    str[0] = '\0';
    string_list_join_concat(str, sizeof(str), subsystem_paths, " + ");
 
@@ -3177,9 +3181,6 @@ void path_set_special(char **argv, unsigned num_content)
     * It is more complicated for special content types. */
    if (global)
    {
-      struct rarch_state *p_rarch = &rarch_st;
-      const char *savestate_dir   = p_rarch->current_savestate_dir;
-
       if (path_is_directory(savestate_dir))
          strlcpy(global->name.savestate, savestate_dir,
                sizeof(global->name.savestate));
@@ -3207,6 +3208,8 @@ static bool path_init_subsystem(void)
    global_t   *global                      = &p_rarch->g_extern;
    rarch_system_info_t             *system = &p_rarch->runloop_system;
    bool subsystem_path_empty               = path_is_empty(RARCH_PATH_SUBSYSTEM);
+   const char                *savefile_dir = p_rarch->current_savefile_dir;
+
 
    if (!system || subsystem_path_empty)
       return false;
@@ -3228,12 +3231,13 @@ static bool path_init_subsystem(void)
       {
          for (j = 0; j < info->roms[i].num_memory; j++)
          {
-            union string_list_elem_attr attr;
             char ext[32];
+            union string_list_elem_attr attr;
             char savename[PATH_MAX_LENGTH];
-            size_t path_size = PATH_MAX_LENGTH * sizeof(char);
-            char *path       = (char*)malloc(
-                  PATH_MAX_LENGTH * sizeof(char));
+            size_t path_size                              = 
+               PATH_MAX_LENGTH * sizeof(char);
+            char *path                                    = 
+               (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
             const struct retro_subsystem_memory_info *mem =
                (const struct retro_subsystem_memory_info*)
                &info->roms[i].memory[j];
@@ -3241,31 +3245,30 @@ static bool path_init_subsystem(void)
             path[0] = ext[0] = '\0';
 
             snprintf(ext, sizeof(ext), ".%s", mem->extension);
-            strlcpy(savename, p_rarch->subsystem_fullpaths->elems[i].data, sizeof(savename));
+            strlcpy(savename,
+                  p_rarch->subsystem_fullpaths->elems[i].data,
+                  sizeof(savename));
             path_remove_extension(savename);
 
+            if (path_is_directory(savefile_dir))
             {
-               const char    *savefile_dir = p_rarch->current_savefile_dir;
-
-               if (path_is_directory(savefile_dir))
-               {
-                  /* Use SRAM dir */
-                  /* Redirect content fullpath to save directory. */
-                  strlcpy(path, savefile_dir, path_size);
-                  fill_pathname_dir(path,
-                        savename, ext,
-                        path_size);
-               }
-               else
-                  fill_pathname(path, savename, ext, path_size);
+               /* Use SRAM dir */
+               /* Redirect content fullpath to save directory. */
+               strlcpy(path, savefile_dir, path_size);
+               fill_pathname_dir(path,
+                     savename, ext,
+                     path_size);
             }
+            else
+               fill_pathname(path, savename, ext, path_size);
 
             RARCH_LOG("%s \"%s\".\n",
                msg_hash_to_str(MSG_REDIRECTING_SAVEFILE_TO),
                path);
 
             attr.i = mem->type;
-            string_list_append((struct string_list*)savefile_ptr_get(), path, attr);
+            string_list_append((struct string_list*)savefile_ptr_get(),
+                  path, attr);
             free(path);
          }
       }
@@ -3274,7 +3277,8 @@ static bool path_init_subsystem(void)
    if (global)
    {
       /* Let other relevant paths be inferred from the main SRAM location. */
-      if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL))
+      if (!retroarch_override_setting_is_set(
+               RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL))
          fill_pathname_noext(global->name.savefile,
                p_rarch->path_main_basename,
                ".srm",
@@ -3313,12 +3317,9 @@ static void path_init_savefile(void)
    command_event(CMD_EVENT_AUTOSAVE_INIT, NULL);
 }
 
-static void path_init_savefile_internal(void)
+static void path_init_savefile_internal(struct rarch_state *p_rarch)
 {
-   struct rarch_state *p_rarch = &rarch_st;
-
    path_deinit_savefile();
-
    path_init_savefile_new();
 
    if (!path_init_subsystem())
@@ -3328,12 +3329,11 @@ static void path_init_savefile_internal(void)
    }
 }
 
-static void path_fill_names(void)
+static void path_fill_names(struct rarch_state *p_rarch)
 {
-   struct rarch_state *p_rarch = &rarch_st;
    global_t            *global = &p_rarch->g_extern;
 
-   path_init_savefile_internal();
+   path_init_savefile_internal(p_rarch);
 
    if (global)
       strlcpy(p_rarch->bsv_movie_state.movie_path,
@@ -3467,9 +3467,8 @@ size_t path_get_realsize(enum rarch_path_type type)
    return 0;
 }
 
-static void path_set_names(const char *path)
+static void path_set_names(struct rarch_state *p_rarch, const char *path)
 {
-   struct rarch_state *p_rarch = &rarch_st;
    global_t            *global = &p_rarch->g_extern;
 
    path_set_basename(path);
@@ -3508,7 +3507,7 @@ bool path_set(enum rarch_path_type type, const char *path)
                sizeof(p_rarch->path_main_basename));
          break;
       case RARCH_PATH_NAMES:
-         path_set_names(path);
+         path_set_names(p_rarch, path);
          break;
       case RARCH_PATH_CORE:
          strlcpy(p_rarch->path_libretro, path,
@@ -3723,9 +3722,8 @@ void path_deinit_subsystem(void)
    p_rarch->subsystem_fullpaths = NULL;
 }
 
-static bool dir_free_shader(void)
+static bool dir_free_shader(struct rarch_state *p_rarch)
 {
-   struct rarch_state     *p_rarch = &rarch_st;
    struct rarch_dir_list *dir_list =
       (struct rarch_dir_list*)&p_rarch->dir_shader_list;
 
@@ -6300,7 +6298,7 @@ static bool command_event_disk_control_append_image(const char *path)
        * started out in a single disk case, and that this way
        * of doing it makes the most sense. */
       path_set(RARCH_PATH_NAMES, path);
-      path_fill_names();
+      path_fill_names(p_rarch);
    }
 
    command_event(CMD_EVENT_AUTOSAVE_INIT, NULL);
@@ -6488,7 +6486,7 @@ static void command_event_deinit_core(bool reinit)
    p_rarch->current_core.symbols_inited = false;
 
    if (reinit)
-      driver_uninit(DRIVERS_CMD_ALL);
+      driver_uninit(p_rarch, DRIVERS_CMD_ALL);
 
 #ifdef HAVE_CONFIGFILE
    if (p_rarch->runloop_overrides_active)
@@ -6672,7 +6670,7 @@ static bool event_init_content(void)
    content_get_status(&contentless, &is_inited);
 
    if (!contentless)
-      path_fill_names();
+      path_fill_names(p_rarch);
 
    if (!content_init())
    {
@@ -6920,7 +6918,7 @@ static bool command_event_init_core(enum rarch_core_type type)
    /* Verify that initial disk index was set correctly */
    disk_control_verify_initial_index(&sys_info->disk_control);
 
-   if (!core_load(poll_type_behavior))
+   if (!core_load(p_rarch, poll_type_behavior))
       return false;
 
    retroarch_set_frame_limit(fastforward_ratio);
@@ -8187,8 +8185,8 @@ bool command_event(enum event_command cmd, void *data)
 #endif
          break;
       case CMD_EVENT_AUDIO_REINIT:
-         driver_uninit(DRIVER_AUDIO_MASK);
-         drivers_init(DRIVER_AUDIO_MASK);
+         driver_uninit(p_rarch, DRIVER_AUDIO_MASK);
+         drivers_init(p_rarch, DRIVER_AUDIO_MASK);
          break;
       case CMD_EVENT_SHUTDOWN:
 #if defined(__linux__) && !defined(ANDROID)
@@ -9132,7 +9130,7 @@ void main_exit(void *args)
 #endif
 
    retroarch_msg_queue_deinit();
-   driver_uninit(DRIVERS_CMD_ALL);
+   driver_uninit(p_rarch, DRIVERS_CMD_ALL);
    command_event(CMD_EVENT_LOG_FILE_DEINIT, NULL);
 
    rarch_ctl(RARCH_CTL_STATE_FREE,  NULL);
@@ -9147,7 +9145,7 @@ void main_exit(void *args)
 
    frontend_driver_shutdown(false);
 
-   retroarch_deinit_drivers();
+   retroarch_deinit_drivers(p_rarch);
    ui_companion_driver_free();
    frontend_driver_free();
 
@@ -9184,14 +9182,14 @@ int rarch_main(int argc, char *argv[], void *data)
 
    p_rarch->configuration_settings = (settings_t*)calloc(1, sizeof(settings_t));
 
-   retroarch_deinit_drivers();
+   retroarch_deinit_drivers(p_rarch);
    rarch_ctl(RARCH_CTL_STATE_FREE,  NULL);
    global_free();
 
    frontend_driver_init_first(data);
 
    if (p_rarch->rarch_is_inited)
-      driver_uninit(DRIVERS_CMD_ALL);
+      driver_uninit(p_rarch, DRIVERS_CMD_ALL);
 
 #ifdef HAVE_THREAD_STORAGE
    sthread_tls_create(&p_rarch->rarch_tls);
@@ -22222,7 +22220,7 @@ static void video_driver_free_internal(void)
    if (p_rarch->video_driver_scaler_ptr)
       video_driver_pixel_converter_free();
    video_driver_filter_free();
-   dir_free_shader();
+   dir_free_shader(p_rarch);
 
 #ifdef HAVE_THREADS
    if (is_threaded)
@@ -22232,9 +22230,10 @@ static void video_driver_free_internal(void)
    video_driver_monitor_compute_fps_statistics();
 }
 
-static bool video_driver_pixel_converter_init(unsigned size)
+static bool video_driver_pixel_converter_init(
+      struct rarch_state *p_rarch,
+      unsigned size)
 {
-   struct rarch_state          *p_rarch = &rarch_st;
    struct retro_hw_render_callback *hwr =
       video_driver_get_hw_context_internal();
    void *scalr_out                      = NULL;
@@ -22295,15 +22294,15 @@ error:
    return false;
 }
 
-static void video_driver_set_viewport_config(void)
+static void video_driver_set_viewport_config(struct rarch_state *p_rarch)
 {
-   struct rarch_state  *p_rarch   = &rarch_st;
    settings_t       *settings     = p_rarch->configuration_settings;
    float       video_aspect_ratio = settings->floats.video_aspect_ratio;
 
    if (video_aspect_ratio < 0.0f)
    {
-      struct retro_game_geometry *geom = &p_rarch->video_driver_av_info.geometry;
+      struct retro_game_geometry *geom = 
+         &p_rarch->video_driver_av_info.geometry;
 
       if (geom->aspect_ratio > 0.0f &&
             settings->bools.video_aspect_ratio_auto)
@@ -22326,10 +22325,9 @@ static void video_driver_set_viewport_config(void)
       aspectratio_lut[ASPECT_RATIO_CONFIG].value = video_aspect_ratio;
 }
 
-static void video_driver_set_viewport_square_pixel(void)
+static void video_driver_set_viewport_square_pixel(struct rarch_state *p_rarch)
 {
    unsigned len, highest, i, aspect_x, aspect_y;
-   struct rarch_state     *p_rarch   = &rarch_st;
    struct retro_game_geometry *geom  = &p_rarch->video_driver_av_info.geometry;
    unsigned width                    = geom->base_width;
    unsigned height                   = geom->base_height;
@@ -22390,9 +22388,9 @@ static bool video_driver_init_internal(bool *video_is_threaded)
       scale  = p_rarch->video_driver_state_scale;
 
    /* Update core-dependent aspect ratio values. */
-   video_driver_set_viewport_square_pixel();
+   video_driver_set_viewport_square_pixel(p_rarch);
    video_driver_set_viewport_core();
-   video_driver_set_viewport_config();
+   video_driver_set_viewport_config(p_rarch);
 
    /* Update CUSTOM viewport. */
    custom_vp = video_viewport_get_custom();
@@ -22456,7 +22454,8 @@ static bool video_driver_init_internal(bool *video_is_threaded)
    video_driver_display_userdata_set(0);
    video_driver_window_set(0);
 
-   if (!video_driver_pixel_converter_init(RARCH_SCALE_BASE * scale))
+   if (!video_driver_pixel_converter_init(p_rarch,
+            RARCH_SCALE_BASE * scale))
    {
       RARCH_ERR("[Video]: Failed to initialize pixel converter.\n");
       goto error;
@@ -22585,7 +22584,7 @@ static bool video_driver_init_internal(bool *video_is_threaded)
    if ((enum rotation)settings->uints.screen_orientation != ORIENTATION_NORMAL)
       video_display_server_set_screen_orientation((enum rotation)settings->uints.screen_orientation);
 
-   dir_free_shader();
+   dir_free_shader(p_rarch);
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    {
@@ -23145,7 +23144,7 @@ void video_driver_set_aspect_ratio(void)
    switch (aspect_ratio_idx)
    {
       case ASPECT_RATIO_SQUARE:
-         video_driver_set_viewport_square_pixel();
+         video_driver_set_viewport_square_pixel(p_rarch);
          break;
 
       case ASPECT_RATIO_CORE:
@@ -23153,7 +23152,7 @@ void video_driver_set_aspect_ratio(void)
          break;
 
       case ASPECT_RATIO_CONFIG:
-         video_driver_set_viewport_config();
+         video_driver_set_viewport_config(p_rarch);
          break;
 
       default:
@@ -23459,23 +23458,24 @@ void video_driver_save_settings(config_file_t *conf)
          global->console.screen.flicker_filter_index);
 }
 
-static void video_driver_reinit_context(int flags)
+static void video_driver_reinit_context(struct rarch_state *p_rarch,
+      int flags)
 {
    /* RARCH_DRIVER_CTL_UNINIT clears the callback struct so we
     * need to make sure to keep a copy */
    struct retro_hw_render_callback hwr_copy;
-   struct rarch_state          *p_rarch = &rarch_st;
-   struct retro_hw_render_callback *hwr = video_driver_get_hw_context_internal();
+   struct retro_hw_render_callback *hwr = 
+      video_driver_get_hw_context_internal();
    const struct retro_hw_render_context_negotiation_interface *iface =
       video_driver_get_context_negotiation_interface();
    memcpy(&hwr_copy, hwr, sizeof(hwr_copy));
 
-   driver_uninit(flags);
+   driver_uninit(p_rarch, flags);
 
    memcpy(hwr, &hwr_copy, sizeof(*hwr));
    p_rarch->hw_render_context_negotiation = iface;
 
-   drivers_init(flags);
+   drivers_init(p_rarch, flags);
 }
 
 void video_driver_reinit(int flags)
@@ -23486,7 +23486,7 @@ void video_driver_reinit(int flags)
 
    p_rarch->video_driver_cache_context     = (hwr->cache_context != false);
    p_rarch->video_driver_cache_context_ack = false;
-   video_driver_reinit_context(flags);
+   video_driver_reinit_context(p_rarch, flags);
    p_rarch->video_driver_cache_context     = false;
 }
 
@@ -23496,7 +23496,8 @@ bool video_driver_is_hw_context(void)
    struct rarch_state   *p_rarch = &rarch_st;
 
    video_driver_context_lock();
-   is_hw_context      = (p_rarch->hw_render.context_type != RETRO_HW_CONTEXT_NONE);
+   is_hw_context                 = (p_rarch->hw_render.context_type 
+         != RETRO_HW_CONTEXT_NONE);
    video_driver_context_unlock();
 
    return is_hw_context;
@@ -23569,7 +23570,8 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
       unsigned base_width;
       /* Use system reported sizes as these define the
        * geometry for the "normal" case. */
-      unsigned base_height  = p_rarch->video_driver_av_info.geometry.base_height;
+      unsigned base_height  = 
+         p_rarch->video_driver_av_info.geometry.base_height;
       unsigned int rotation = retroarch_get_rotation();
       
       if (rotation % 2)
@@ -24810,11 +24812,12 @@ float video_driver_get_refresh_rate(void)
 }
 
 #if defined(HAVE_GFX_WIDGETS)
-static bool video_driver_has_widgets(void)
+static bool video_driver_has_widgets(struct rarch_state *p_rarch)
 {
-   struct rarch_state *p_rarch = &rarch_st;
-   return p_rarch->current_video && p_rarch->current_video->gfx_widgets_enabled
-      && p_rarch->current_video->gfx_widgets_enabled(p_rarch->video_driver_data);
+   return p_rarch->current_video 
+      && p_rarch->current_video->gfx_widgets_enabled
+      && p_rarch->current_video->gfx_widgets_enabled(
+            p_rarch->video_driver_data);
 }
 #endif
 
@@ -24906,11 +24909,10 @@ const char* config_get_location_driver_options(void)
    return char_list_new_special(STRING_LIST_LOCATION_DRIVERS, NULL);
 }
 
-static void find_location_driver(void)
+static void find_location_driver(struct rarch_state *p_rarch)
 {
    int i;
    driver_ctx_info_t drv;
-   struct rarch_state  *p_rarch = &rarch_st;
    settings_t         *settings = p_rarch->configuration_settings;
 
    drv.label                    = "location_driver";
@@ -25046,7 +25048,7 @@ static void init_location(void)
    if (p_rarch->location_data)
       return;
 
-   find_location_driver();
+   find_location_driver(p_rarch);
 
    p_rarch->location_data = p_rarch->location_driver->init();
 
@@ -25386,9 +25388,8 @@ static bool driver_find_next(const char *label, char *s, size_t len)
    return false;
 }
 
-static void driver_adjust_system_rates(void)
+static void driver_adjust_system_rates(struct rarch_state *p_rarch)
 {
-   struct rarch_state *p_rarch = &rarch_st;
    settings_t *settings        = p_rarch->configuration_settings;
 
    audio_driver_monitor_adjust_system_rates();
@@ -25469,9 +25470,8 @@ void driver_set_nonblock_state(void)
  * Initializes drivers.
  * @flags determines which drivers get initialized.
  **/
-static void drivers_init(int flags)
+static void drivers_init(struct rarch_state *p_rarch, int flags)
 {
-   struct rarch_state *p_rarch = &rarch_st;
    bool video_is_threaded      = video_driver_is_threaded_internal();
    settings_t *settings        = p_rarch->configuration_settings;
 #if defined(HAVE_GFX_WIDGETS)
@@ -25487,7 +25487,7 @@ static void drivers_init(int flags)
 #endif
 
    if (flags & (DRIVER_VIDEO_MASK | DRIVER_AUDIO_MASK))
-      driver_adjust_system_rates();
+      driver_adjust_system_rates(p_rarch);
 
    /* Initialize video driver */
    if (flags & DRIVER_VIDEO_MASK)
@@ -25565,7 +25565,7 @@ static void drivers_init(int flags)
    core_info_init_current_core();
 
 #if defined(HAVE_GFX_WIDGETS)
-   if (menu_enable_widgets && video_driver_has_widgets())
+   if (menu_enable_widgets && video_driver_has_widgets(p_rarch))
    {
       bool rarch_force_fullscreen = p_rarch->rarch_force_fullscreen;
       bool video_is_fullscreen    = settings->bools.video_fullscreen ||
@@ -25626,7 +25626,8 @@ static void drivers_init(int flags)
 }
 
 /**
- * Driver ownership - set this to true if the platform in question needs to 'own'
+ * Driver ownership - set this to true if the platform in 
+ * question needs to 'own'
  * the respective handle and therefore skip regular RetroArch
  * driver teardown/reiniting procedure.
  *
@@ -25639,10 +25640,8 @@ static void drivers_init(int flags)
  * Typically, if a driver intends to make use of this, it should
  * set this to true at the end of its 'init' function.
  **/
-static void driver_uninit(int flags)
+static void driver_uninit(struct rarch_state *p_rarch, int flags)
 {
-   struct rarch_state      *p_rarch = &rarch_st;
-
    core_info_deinit_list();
    core_info_free_current_core();
 
@@ -25707,9 +25706,8 @@ static void driver_uninit(int flags)
       midi_driver_free();
 }
 
-static void retroarch_deinit_drivers(void)
+static void retroarch_deinit_drivers(struct rarch_state *p_rarch)
 {
-   struct rarch_state *p_rarch = &rarch_st;
    struct retro_callbacks *cbs = &p_rarch->retro_ctx;
 
 #if defined(HAVE_GFX_WIDGETS)
@@ -25770,6 +25768,8 @@ static void retroarch_deinit_drivers(void)
 
 bool driver_ctl(enum driver_ctl_state state, void *data)
 {
+   struct rarch_state *p_rarch = &rarch_st;
+
    switch (state)
    {
       case RARCH_DRIVER_CTL_SET_REFRESH_RATE:
@@ -25777,7 +25777,7 @@ bool driver_ctl(enum driver_ctl_state state, void *data)
             float *hz = (float*)data;
             video_monitor_set_refresh_rate(*hz);
             audio_driver_monitor_set_rate();
-            driver_adjust_system_rates();
+            driver_adjust_system_rates(p_rarch);
          }
          break;
       case RARCH_DRIVER_CTL_FIND_FIRST:
@@ -25828,7 +25828,8 @@ bool driver_ctl(enum driver_ctl_state state, void *data)
 /* RUNAHEAD */
 
 #ifdef HAVE_RUNAHEAD
-static void mylist_resize(my_list *list, int new_size, bool run_constructor)
+static void mylist_resize(my_list *list,
+      int new_size, bool run_constructor)
 {
    int i;
    int new_capacity;
@@ -26556,9 +26557,10 @@ force_input_dirty:
 }
 #endif
 
-static retro_time_t rarch_core_runtime_tick(retro_time_t current_time)
+static retro_time_t rarch_core_runtime_tick(
+      struct rarch_state *p_rarch,
+      retro_time_t current_time)
 {
-   struct rarch_state          *p_rarch = &rarch_st;
    retro_time_t frame_time              =
       (1.0 / p_rarch->video_driver_av_info.timing.fps) * 1000000;
    bool runloop_slowmotion              = p_rarch->runloop_slowmotion;
@@ -27712,7 +27714,7 @@ bool retroarch_main_init(int argc, char *argv[])
    input_driver_find_driver();
    camera_driver_find_driver();
    wifi_driver_ctl(RARCH_WIFI_CTL_FIND_DRIVER, NULL);
-   find_location_driver();
+   find_location_driver(p_rarch);
 #ifdef HAVE_MENU
    menu_driver_ctl(RARCH_MENU_CTL_FIND_DRIVER, NULL);
 #endif
@@ -27753,7 +27755,7 @@ bool retroarch_main_init(int argc, char *argv[])
 
    cheat_manager_state_free();
    command_event_init_cheats();
-   drivers_init(DRIVERS_CMD_ALL);
+   drivers_init(p_rarch, DRIVERS_CMD_ALL);
    input_driver_deinit_command();
    input_driver_init_command();
    input_driver_deinit_remote();
@@ -29182,7 +29184,7 @@ static bool menu_display_libretro(retro_time_t current_time)
 
       core_run();
       p_rarch->libretro_core_runtime_usec        += 
-         rarch_core_runtime_tick(current_time);
+         rarch_core_runtime_tick(p_rarch, current_time);
       p_rarch->input_driver_block_libretro_input  = false;
 
       return true;
@@ -29204,10 +29206,9 @@ static bool menu_display_libretro(retro_time_t current_time)
 }
 #endif
 
-static void update_savestate_slot(void)
+static void update_savestate_slot(struct rarch_state *p_rarch)
 {
    char msg[128];
-   struct rarch_state *p_rarch = &rarch_st;
    settings_t        *settings = p_rarch->configuration_settings;
    int        state_slot       = settings->ints.state_slot;
 
@@ -29225,9 +29226,8 @@ static void update_savestate_slot(void)
 
 #if defined(HAVE_GFX_WIDGETS)
 /* Display the fast forward state to the user, if needed. */
-static void update_fastforwarding_state(void)
+static void update_fastforwarding_state(struct rarch_state *p_rarch)
 {
-   struct rarch_state *p_rarch       = &rarch_st;
    bool runloop_fastmotion           = p_rarch->runloop_fastmotion;
    settings_t            *settings   = p_rarch->configuration_settings;
 
@@ -29239,7 +29239,9 @@ static void update_fastforwarding_state(void)
 }
 #endif
 
-static enum runloop_state runloop_check_state(retro_time_t current_time)
+static enum runloop_state runloop_check_state(
+      struct rarch_state *p_rarch,
+      retro_time_t current_time)
 {
    input_bits_t current_bits;
    rarch_joypad_info_t joypad_info;
@@ -29247,7 +29249,6 @@ static enum runloop_state runloop_check_state(retro_time_t current_time)
    static input_bits_t last_input      = {{0}};
 #endif
    static bool old_focus               = true;
-   struct rarch_state *p_rarch         = &rarch_st;
    struct retro_callbacks *cbs         = &p_rarch->retro_ctx;
    settings_t *settings                = p_rarch->configuration_settings;
    bool is_focused                     = false;
@@ -29942,7 +29943,7 @@ static enum runloop_state runloop_check_state(retro_time_t current_time)
          driver_set_nonblock_state();
 #if defined(HAVE_GFX_WIDGETS)
          if (widgets_active)
-            update_fastforwarding_state();
+            update_fastforwarding_state(p_rarch);
 #endif
       }
 
@@ -29990,7 +29991,7 @@ static enum runloop_state runloop_check_state(retro_time_t current_time)
          if (check1)
             configuration_set_int(settings, settings->ints.state_slot,
                   cur_state_slot + addition);
-         update_savestate_slot();
+         update_savestate_slot(p_rarch);
       }
 
       old_should_slot_increase = should_slot_increase;
@@ -30229,7 +30230,8 @@ int runloop_iterate(void)
       p_rarch->runloop_frame_time.callback(delta);
    }
 
-   switch ((enum runloop_state)runloop_check_state(current_time))
+   switch ((enum runloop_state)runloop_check_state(p_rarch,
+            current_time))
    {
       case RUNLOOP_STATE_QUIT:
          p_rarch->frame_limit_last_time = 0.0;
@@ -30319,7 +30321,8 @@ int runloop_iterate(void)
 
    /* Increment runtime tick counter after each call to
     * core_run() or run_ahead() */
-   p_rarch->libretro_core_runtime_usec += rarch_core_runtime_tick(current_time);
+   p_rarch->libretro_core_runtime_usec += rarch_core_runtime_tick(
+         p_rarch, current_time);
 
 #ifdef HAVE_CHEEVOS
    if (settings->bools.cheevos_enable && rcheevos_loaded)
@@ -30949,10 +30952,8 @@ bool core_run(void)
    return true;
 }
 
-static bool core_verify_api_version(void)
+static bool core_verify_api_version(struct rarch_state *p_rarch)
 {
-   struct rarch_state 
-      *p_rarch                 = &rarch_st;
    unsigned api_version        = p_rarch->current_core.retro_api_version();
 
    RARCH_LOG("%s: %u\n%s %s: %u\n",
@@ -30971,18 +30972,19 @@ static bool core_verify_api_version(void)
    return true;
 }
 
-static bool core_load(unsigned poll_type_behavior)
+static bool core_load(
+      struct rarch_state *p_rarch,
+      unsigned poll_type_behavior)
 {
-   struct rarch_state *p_rarch = &rarch_st;
-
    p_rarch->current_core.poll_type      = poll_type_behavior;
 
-   if (!core_verify_api_version())
+   if (!core_verify_api_version(p_rarch))
       return false;
    if (!core_init_libretro_cbs(&p_rarch->retro_ctx))
       return false;
 
-   p_rarch->current_core.retro_get_system_av_info(&p_rarch->video_driver_av_info);
+   p_rarch->current_core.retro_get_system_av_info(
+         &p_rarch->video_driver_av_info);
 
    return true;
 }
