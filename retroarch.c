@@ -4143,7 +4143,8 @@ bool menu_input_dialog_get_display_kb(void)
       char buf[LIBNX_SWKBD_LIMIT] = {'\0'};
       swkbdConfigMakePresetDefault(&kbd);
 
-      swkbdConfigSetGuideText(&kbd, menu_input_dialog_keyboard_label);
+      swkbdConfigSetGuideText(&kbd,
+            p_rarch->menu_input_dialog_keyboard_label);
 
       rc = swkbdShow(&kbd, buf, sizeof(buf));
 
@@ -11893,8 +11894,8 @@ static bool init_libretro_symbols_custom(enum rarch_core_type type,
 #ifdef HAVE_DYNAMIC
    /* the library handle for use with the SYMBOL macro */
    dylib_t lib_handle_local;
-#endif
    struct rarch_state *p_rarch = &rarch_st;
+#endif
 
    switch (type)
    {
@@ -12803,8 +12804,8 @@ void ui_companion_driver_init_first(void)
 static void ui_companion_driver_toggle(bool force)
 {
    struct rarch_state *p_rarch  = &rarch_st;
-   settings_t     *settings     = p_rarch->configuration_settings;
 #ifdef HAVE_QT
+   settings_t     *settings     = p_rarch->configuration_settings;
    bool     desktop_menu_enable = settings->bools.desktop_menu_enable;
    bool     ui_companion_toggle = settings->bools.ui_companion_toggle;
 #endif
