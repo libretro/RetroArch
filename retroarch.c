@@ -24098,8 +24098,8 @@ bool video_driver_texture_load(void *data,
       enum texture_filter_type  filter_type,
       uintptr_t *id)
 {
-#ifdef HAVE_THREADS
    struct rarch_state *p_rarch = &rarch_st;
+#ifdef HAVE_THREADS
    bool            is_threaded = video_driver_is_threaded_internal();
 #endif
    if (!id || !p_rarch->video_driver_poke || !p_rarch->video_driver_poke->load_texture)
@@ -24141,78 +24141,81 @@ bool video_driver_texture_unload(uintptr_t *id)
 
 void video_driver_build_info(video_frame_info_t *video_info)
 {
-   video_viewport_t *custom_vp       = NULL;
-   struct rarch_state       *p_rarch = &rarch_st;
-   settings_t *settings              = p_rarch->configuration_settings;
+   video_viewport_t *custom_vp             = NULL;
+   struct rarch_state       *p_rarch       = &rarch_st;
+   settings_t *settings                    = p_rarch->configuration_settings;
 #ifdef HAVE_THREADS
-   bool is_threaded                  = video_driver_is_threaded_internal();
+   bool is_threaded                        = 
+      video_driver_is_threaded_internal();
+
    video_driver_threaded_lock(is_threaded);
 #endif
-   custom_vp                         = &settings->video_viewport_custom;
-   video_info->refresh_rate          = settings->floats.video_refresh_rate;
-   video_info->crt_switch_resolution = settings->uints.crt_switch_resolution;
+   custom_vp                               = &settings->video_viewport_custom;
+   video_info->refresh_rate                = settings->floats.video_refresh_rate;
+   video_info->crt_switch_resolution       = settings->uints.crt_switch_resolution;
    video_info->crt_switch_resolution_super = settings->uints.crt_switch_resolution_super;
    video_info->crt_switch_center_adjust    = settings->ints.crt_switch_center_adjust;
-   video_info->black_frame_insertion = settings->bools.video_black_frame_insertion;
-   video_info->hard_sync             = settings->bools.video_hard_sync;
-   video_info->hard_sync_frames      = settings->uints.video_hard_sync_frames;
-   video_info->fps_show              = settings->bools.video_fps_show;
-   video_info->memory_show           = settings->bools.video_memory_show;
-   video_info->statistics_show       = settings->bools.video_statistics_show;
-   video_info->framecount_show       = settings->bools.video_framecount_show;
-   video_info->core_status_msg_show  = runloop_core_status_msg.set;
-   video_info->aspect_ratio_idx      = settings->uints.video_aspect_ratio_idx;
-   video_info->post_filter_record    = settings->bools.video_post_filter_record;
+   video_info->black_frame_insertion       = settings->bools.video_black_frame_insertion;
+   video_info->hard_sync                   = settings->bools.video_hard_sync;
+   video_info->hard_sync_frames            = settings->uints.video_hard_sync_frames;
+   video_info->fps_show                    = settings->bools.video_fps_show;
+   video_info->memory_show                 = settings->bools.video_memory_show;
+   video_info->statistics_show             = settings->bools.video_statistics_show;
+   video_info->framecount_show             = settings->bools.video_framecount_show;
+   video_info->core_status_msg_show        = runloop_core_status_msg.set;
+   video_info->aspect_ratio_idx            = settings->uints.video_aspect_ratio_idx;
+   video_info->post_filter_record          = settings->bools.video_post_filter_record;
    video_info->input_menu_swap_ok_cancel_buttons    = settings->bools.input_menu_swap_ok_cancel_buttons;
-   video_info->max_swapchain_images  = settings->uints.video_max_swapchain_images;
-   video_info->windowed_fullscreen   = settings->bools.video_windowed_fullscreen;
-   video_info->fullscreen            = settings->bools.video_fullscreen || retroarch_is_forced_fullscreen();
-   video_info->menu_mouse_enable     = settings->bools.menu_mouse_enable;
-   video_info->monitor_index         = settings->uints.video_monitor_index;
+   video_info->max_swapchain_images        = settings->uints.video_max_swapchain_images;
+   video_info->windowed_fullscreen         = settings->bools.video_windowed_fullscreen;
+   video_info->fullscreen                  = settings->bools.video_fullscreen 
+      || retroarch_is_forced_fullscreen();
+   video_info->menu_mouse_enable           = settings->bools.menu_mouse_enable;
+   video_info->monitor_index               = settings->uints.video_monitor_index;
 
-   video_info->font_enable           = settings->bools.video_font_enable;
-   video_info->font_msg_pos_x        = settings->floats.video_msg_pos_x;
-   video_info->font_msg_pos_y        = settings->floats.video_msg_pos_y;
-   video_info->font_msg_color_r      = settings->floats.video_msg_color_r;
-   video_info->font_msg_color_g      = settings->floats.video_msg_color_g;
-   video_info->font_msg_color_b      = settings->floats.video_msg_color_b;
-   video_info->custom_vp_x           = custom_vp->x;
-   video_info->custom_vp_y           = custom_vp->y;
-   video_info->custom_vp_width       = custom_vp->width;
-   video_info->custom_vp_height      = custom_vp->height;
-   video_info->custom_vp_full_width  = custom_vp->full_width;
-   video_info->custom_vp_full_height = custom_vp->full_height;
+   video_info->font_enable                 = settings->bools.video_font_enable;
+   video_info->font_msg_pos_x              = settings->floats.video_msg_pos_x;
+   video_info->font_msg_pos_y              = settings->floats.video_msg_pos_y;
+   video_info->font_msg_color_r            = settings->floats.video_msg_color_r;
+   video_info->font_msg_color_g            = settings->floats.video_msg_color_g;
+   video_info->font_msg_color_b            = settings->floats.video_msg_color_b;
+   video_info->custom_vp_x                 = custom_vp->x;
+   video_info->custom_vp_y                 = custom_vp->y;
+   video_info->custom_vp_width             = custom_vp->width;
+   video_info->custom_vp_height            = custom_vp->height;
+   video_info->custom_vp_full_width        = custom_vp->full_width;
+   video_info->custom_vp_full_height       = custom_vp->full_height;
 
 #if defined(HAVE_GFX_WIDGETS)
-   video_info->widgets_is_paused          = p_rarch->gfx_widgets_paused;
-   video_info->widgets_is_fast_forwarding = p_rarch->gfx_widgets_fast_forward;
-   video_info->widgets_is_rewinding       = p_rarch->gfx_widgets_rewinding;
+   video_info->widgets_is_paused           = p_rarch->gfx_widgets_paused;
+   video_info->widgets_is_fast_forwarding  = p_rarch->gfx_widgets_fast_forward;
+   video_info->widgets_is_rewinding        = p_rarch->gfx_widgets_rewinding;
 #else
-   video_info->widgets_is_paused          = false;
-   video_info->widgets_is_fast_forwarding = false;
-   video_info->widgets_is_rewinding       = false;
+   video_info->widgets_is_paused           = false;
+   video_info->widgets_is_fast_forwarding  = false;
+   video_info->widgets_is_rewinding        = false;
 #endif
 
-   video_info->width                      = p_rarch->video_driver_width;
-   video_info->height                     = p_rarch->video_driver_height;
+   video_info->width                       = p_rarch->video_driver_width;
+   video_info->height                      = p_rarch->video_driver_height;
 
-   video_info->use_rgba                   = p_rarch->video_driver_use_rgba;
+   video_info->use_rgba                    = p_rarch->video_driver_use_rgba;
 
-   video_info->libretro_running           = false;
-   video_info->msg_bgcolor_enable         = 
+   video_info->libretro_running            = false;
+   video_info->msg_bgcolor_enable          = 
       settings->bools.video_msg_bgcolor_enable;
 
 #ifdef HAVE_MENU
-   video_info->menu_is_alive          = p_rarch->menu_driver_alive;
-   video_info->menu_footer_opacity    = settings->floats.menu_footer_opacity;
-   video_info->menu_header_opacity    = settings->floats.menu_header_opacity;
-   video_info->materialui_color_theme = settings->uints.menu_materialui_color_theme;
-   video_info->ozone_color_theme      = settings->uints.menu_ozone_color_theme;
-   video_info->menu_shader_pipeline   = settings->uints.menu_xmb_shader_pipeline;
-   video_info->xmb_theme              = settings->uints.menu_xmb_theme;
-   video_info->xmb_color_theme        = settings->uints.menu_xmb_color_theme;
-   video_info->timedate_enable        = settings->bools.menu_timedate_enable;
-   video_info->battery_level_enable   = settings->bools.menu_battery_level_enable;
+   video_info->menu_is_alive               = p_rarch->menu_driver_alive;
+   video_info->menu_footer_opacity         = settings->floats.menu_footer_opacity;
+   video_info->menu_header_opacity         = settings->floats.menu_header_opacity;
+   video_info->materialui_color_theme      = settings->uints.menu_materialui_color_theme;
+   video_info->ozone_color_theme           = settings->uints.menu_ozone_color_theme;
+   video_info->menu_shader_pipeline        = settings->uints.menu_xmb_shader_pipeline;
+   video_info->xmb_theme                   = settings->uints.menu_xmb_theme;
+   video_info->xmb_color_theme             = settings->uints.menu_xmb_color_theme;
+   video_info->timedate_enable             = settings->bools.menu_timedate_enable;
+   video_info->battery_level_enable        = settings->bools.menu_battery_level_enable;
    video_info->xmb_shadows_enable          =
       settings->bools.menu_xmb_shadows_enable;
    video_info->xmb_alpha_factor            =
