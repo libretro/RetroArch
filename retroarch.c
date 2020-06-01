@@ -22778,8 +22778,8 @@ void video_driver_cached_frame_get(const void **data, unsigned *width,
 
 void video_driver_get_size(unsigned *width, unsigned *height)
 {
-#ifdef HAVE_THREADS
    struct rarch_state *p_rarch = &rarch_st;
+#ifdef HAVE_THREADS
    bool            is_threaded = video_driver_is_threaded_internal();
 
    video_driver_threaded_lock(is_threaded);
