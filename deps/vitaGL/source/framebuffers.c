@@ -97,8 +97,8 @@ void glDeleteFramebuffers(GLsizei n, GLuint *framebuffers) {
 			fb->target = NULL;
 		}
 		if (fb->depth_buffer_addr) {
-			mempool_free(fb->depth_buffer_addr, fb->depth_buffer_mem_type);
-			mempool_free(fb->stencil_buffer_addr, fb->stencil_buffer_mem_type);
+			vgl_mem_free(fb->depth_buffer_addr, fb->depth_buffer_mem_type);
+			vgl_mem_free(fb->stencil_buffer_addr, fb->stencil_buffer_mem_type);
 			fb->depth_buffer_addr = NULL;
 			fb->stencil_buffer_addr = NULL;
 		}

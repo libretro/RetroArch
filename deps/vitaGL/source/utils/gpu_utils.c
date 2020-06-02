@@ -87,18 +87,18 @@ void dxt_compress(uint8_t *dst, uint8_t *src, int w, int h, int isdxt5) {
 
 void *gpu_alloc_mapped(size_t size, vglMemType *type) {
 	// Allocating requested memblock
-	void *res = mempool_alloc(size, *type);
+	void *res = vgl_mempool_alloc(size, *type);
 
 	// Requested memory type finished, using other one
 	if (res == NULL) {
 		*type = *type == VGL_MEM_VRAM ? VGL_MEM_RAM : VGL_MEM_VRAM;
-		res = mempool_alloc(size, *type);
+		res = vgl_mempool_alloc(size, *type);
 	}
 
 	// Even the other one failed, using our last resort
 	if (res == NULL) {
 		*type = VGL_MEM_SLOW;
-		res = mempool_alloc(size, *type);
+		res = vgl_mempool_alloc(size, *type);
 	}
 
 	if (res == NULL && use_extra_mem) {
@@ -126,7 +126,7 @@ void gpu_vertex_usse_free_mapped(void *addr) {
 	sceGxmUnmapVertexUsseMemory(addr);
 
 	// Deallocating memblock
-	mempool_free(addr, vert_usse_type);
+	vgl_mem_free(addr, vert_usse_type);
 }
 
 void *gpu_fragment_usse_alloc_mapped(size_t size, unsigned int *usse_offset) {
@@ -146,7 +146,7 @@ void gpu_fragment_usse_free_mapped(void *addr) {
 	sceGxmUnmapFragmentUsseMemory(addr);
 
 	// Deallocating memblock
-	mempool_free(addr, frag_usse_type);
+	vgl_mem_free(addr, frag_usse_type);
 }
 
 void *gpu_pool_malloc(unsigned int size) {
@@ -249,7 +249,7 @@ palette *gpu_alloc_palette(const void *data, uint32_t w, uint32_t bpe) {
 void gpu_free_texture(texture *tex) {
 	// Deallocating texture
 	if (tex->data != NULL)
-		mempool_free(tex->data, tex->mtype);
+		vgl_mem_free(tex->data, tex->mtype);
 
 	// Invalidating texture object
 	tex->valid = 0;
@@ -468,6 +468,6 @@ void gpu_free_palette(palette *pal) {
 	// Deallocating palette memblock and object
 	if (pal == NULL)
 		return;
-	mempool_free(pal->data, pal->type);
+	vgl_mem_free(pal->data, pal->type);
 	free(pal);
 }
