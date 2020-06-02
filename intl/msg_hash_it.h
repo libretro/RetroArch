@@ -400,8 +400,8 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION,
    "Versione Git"
    )
-MSG_HASH( /* FIXME Should be MENU_LABEL_VALUE */
-   MSG_COMPILER,
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COMPILER,
    "Compilatore"
    )
 MSG_HASH( /* FIXME Should be MENU_LABEL_VALUE */
@@ -2679,12 +2679,12 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_ENABLE,
    "Visualizza il nome corrente del core all'interno del menu."
    )
-MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_LABEL_VALUE_RGUI_SHOW_START_SCREEN,
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SHOW_START_SCREEN,
    "Visualizzazione schermata Start"
    )
-MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_SUBLABEL_RGUI_SHOW_START_SCREEN,
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SHOW_START_SCREEN,
    "Mostra la schermata di avvio nel menu. Questo viene automaticamente impostato su off dopo l'avvio del programma per la prima volta."
    )
 
@@ -3305,15 +3305,15 @@ MSG_HASH(
    "Qui vengono memorizzate miniature aggiuntive (boxarts / immagini , ecc.)"
    )
 MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_SUBLABEL_RGUI_BROWSER_DIRECTORY,
+   MENU_ENUM_SUBLABEL_BROWSER_DIRECTORY,
    "Imposta la directory di avvio per il filebrowser."
    )
 MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY,
+   MENU_ENUM_LABEL_VALUE_CONFIG_DIRECTORY,
    "Configurazione"
    )
 MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_SUBLABEL_RGUI_CONFIG_DIRECTORY,
+   MENU_ENUM_SUBLABEL_CONFIG_DIRECTORY,
    "Imposta la directory di avvio per il browser di configurazione del menu."
    )
 MSG_HASH(
@@ -4788,22 +4788,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_RESUME,
    "Riprendi il contenuto corrente e chiude il menu rapido."
    )
-MSG_HASH( /* FIXME Still exists in a comment about being removed */
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_FOOTER_OPACITY,
-   "Opacità di piè di pagina"
-   )
-MSG_HASH( /* FIXME Still exists in a comment about being removed */
-   MENU_ENUM_SUBLABEL_MATERIALUI_MENU_FOOTER_OPACITY,
-   "Modifica l'opacità grafica a piè di pagina."
-   )
-MSG_HASH( /* FIXME Still exists in a comment about being removed */
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_HEADER_OPACITY,
-   "Opacità di intestazione"
-   )
-MSG_HASH( /* FIXME Still exists in a comment about being removed */
-   MENU_ENUM_SUBLABEL_MATERIALUI_MENU_HEADER_OPACITY,
-   "Modifica l'opacità dell'intestazione grafica."
-   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE,
    "Netplay Abilitato"
@@ -5041,12 +5025,12 @@ MSG_HASH(
 
 /* Notifications */
 
-MSG_HASH( /* FIXME Should be MSG_ */
-   MENU_ENUM_LABEL_VALUE_NETPLAY_START_WHEN_LOADED,
+MSG_HASH(
+   MSG_NETPLAY_START_WHEN_LOADED,
    "Il Netplay verrà avviato quando il contenuto sarà caricato."
    )
-MSG_HASH( /* FIXME Should be MSG_ */
-   MENU_ENUM_LABEL_VALUE_NETPLAY_LOAD_CONTENT_MANUALLY,
+MSG_HASH(
+   MSG_NETPLAY_LOAD_CONTENT_MANUALLY,
    "Non è possibile trovare un core o un file di contenuto adatto, caricare manualmente."
    )
 MSG_HASH(

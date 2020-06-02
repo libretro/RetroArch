@@ -2351,16 +2351,16 @@ MSG_HASH(
    "cheat_settings"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_RGUI_BROWSER_DIRECTORY,
-   "rgui_browser_directory"
+   MENU_ENUM_LABEL_BROWSER_DIRECTORY,
+   "browser_directory"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_RGUI_CONFIG_DIRECTORY,
-   "rgui_config_directory"
+   MENU_ENUM_LABEL_CONFIG_DIRECTORY,
+   "config_directory"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_RGUI_SHOW_START_SCREEN,
-   "rgui_show_start_screen"
+   MENU_ENUM_LABEL_SHOW_START_SCREEN,
+   "show_start_screen"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_ADD_TO_FAVORITES,

@@ -2690,12 +2690,12 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_ENABLE,
    "Zeige den Namen des aktuellen Cores im Menü an."
    )
-MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_LABEL_VALUE_RGUI_SHOW_START_SCREEN,
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SHOW_START_SCREEN,
    "Zeige Startbildschirm"
    )
 MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_SUBLABEL_RGUI_SHOW_START_SCREEN,
+   MENU_ENUM_SUBLABEL_SHOW_START_SCREEN,
    "Zeige einen Startbildschirm im Menü an. Wird automatisch deaktiviert, nachdem das Programm zum ersten Mal gestartet wurde."
    )
 
@@ -3235,20 +3235,20 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_THUMBNAILS_DIRECTORY,
    "Ergänzende Miniaturansichte (Boxarts, Bildschirmfotos...) werden hier gespeichert."
    )
-MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BROWSER_DIRECTORY,
    "Dateibrowser"
    )
-MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_SUBLABEL_RGUI_BROWSER_DIRECTORY,
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BROWSER_DIRECTORY,
    "Lege das Startverzeichnis für den Dateibrowser fest."
    )
-MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY,
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONFIG_DIRECTORY,
    "Konfigurationen"
    )
-MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_SUBLABEL_RGUI_CONFIG_DIRECTORY,
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONFIG_DIRECTORY,
    "Legt das Verzeichnis fest, in dem das Menü mit der Suche nach Konfigurationen beginnt."
    )
 MSG_HASH(
@@ -4527,22 +4527,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_RESUME,
    "Setze die aktuelle Anwendung wieder fort und verlasse das Spielmenü."
    )
-MSG_HASH( /* FIXME Still exists in a comment about being removed */
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_FOOTER_OPACITY,
-   "Transparenz der Fußzeile"
-   )
-MSG_HASH( /* FIXME Still exists in a comment about being removed */
-   MENU_ENUM_SUBLABEL_MATERIALUI_MENU_FOOTER_OPACITY,
-   "Ändere die Transparenz der Footer-Grafik."
-   )
-MSG_HASH( /* FIXME Still exists in a comment about being removed */
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_HEADER_OPACITY,
-   "Transparenz der Kopfzeile"
-   )
-MSG_HASH( /* FIXME Still exists in a comment about being removed */
-   MENU_ENUM_SUBLABEL_MATERIALUI_MENU_HEADER_OPACITY,
-   "Ändere die Transparenz der Header-Grafik."
-   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE,
    "Aktiviere Netplay"
@@ -4796,12 +4780,12 @@ MSG_HASH(
 
 /* Notifications */
 
-MSG_HASH( /* FIXME Should be MSG_ */
-   MENU_ENUM_LABEL_VALUE_NETPLAY_START_WHEN_LOADED,
+MSG_HASH(
+   MSG_NETPLAY_START_WHEN_LOADED,
    "Netplay wird gestartet, sobald ein Inhalt geladen wurde."
    )
-MSG_HASH( /* FIXME Should be MSG_ */
-   MENU_ENUM_LABEL_VALUE_NETPLAY_LOAD_CONTENT_MANUALLY,
+MSG_HASH(
+   MSG_NETPLAY_LOAD_CONTENT_MANUALLY,
    "Konnte keinen geeigneten Core oder Inhalt finden, lade manuell."
    )
 MSG_HASH(

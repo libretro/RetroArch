@@ -14119,41 +14119,6 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler,
                   SD_FLAG_NONE);
-
-            /* TODO: These should be removed entirely, but just
-             * comment out for now in case users complain...
-            CONFIG_FLOAT(
-                  list, list_info,
-                  &settings->floats.menu_header_opacity,
-                  MENU_ENUM_LABEL_MATERIALUI_MENU_HEADER_OPACITY,
-                  MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_HEADER_OPACITY,
-                  menu_header_opacity,
-                  "%.3f",
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler);
-            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
-            menu_settings_list_current_add_range(list, list_info, 0.0, 1.0, 0.010, true, true);
-
-            CONFIG_FLOAT(
-                  list, list_info,
-                  &settings->floats.menu_footer_opacity,
-                  MENU_ENUM_LABEL_MATERIALUI_MENU_FOOTER_OPACITY,
-                  MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_FOOTER_OPACITY,
-                  menu_footer_opacity,
-                  "%.3f",
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler);
-            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
-            menu_settings_list_current_add_range(list, list_info, 0.0, 1.0, 0.010, true, true);
-            (*list)[list_info->index - 1].ui_type
-                                  = ST_UI_TYPE_FLOAT_SLIDER_AND_SPINBOX;
-            */
          }
 #endif
 
@@ -14212,8 +14177,8 @@ static bool setting_append_list(
          CONFIG_BOOL(
                list, list_info,
                &settings->bools.menu_show_start_screen,
-               MENU_ENUM_LABEL_RGUI_SHOW_START_SCREEN,
-               MENU_ENUM_LABEL_VALUE_RGUI_SHOW_START_SCREEN,
+               MENU_ENUM_LABEL_SHOW_START_SCREEN,
+               MENU_ENUM_LABEL_VALUE_SHOW_START_SCREEN,
                DEFAULT_MENU_SHOW_START_SCREEN,
                MENU_ENUM_LABEL_VALUE_OFF,
                MENU_ENUM_LABEL_VALUE_ON,
@@ -16969,8 +16934,8 @@ static bool setting_append_list(
                list, list_info,
                settings->paths.directory_menu_content,
                sizeof(settings->paths.directory_menu_content),
-               MENU_ENUM_LABEL_RGUI_BROWSER_DIRECTORY,
-               MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
+               MENU_ENUM_LABEL_BROWSER_DIRECTORY,
+               MENU_ENUM_LABEL_VALUE_BROWSER_DIRECTORY,
                g_defaults.dirs[DEFAULT_DIR_MENU_CONTENT],
                MENU_ENUM_LABEL_VALUE_DIRECTORY_DEFAULT,
                &group_info,
@@ -16984,8 +16949,8 @@ static bool setting_append_list(
                list, list_info,
                settings->paths.directory_menu_config,
                sizeof(settings->paths.directory_menu_config),
-               MENU_ENUM_LABEL_RGUI_CONFIG_DIRECTORY,
-               MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY,
+               MENU_ENUM_LABEL_CONFIG_DIRECTORY,
+               MENU_ENUM_LABEL_VALUE_CONFIG_DIRECTORY,
                g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG],
                MENU_ENUM_LABEL_VALUE_DIRECTORY_DEFAULT,
                &group_info,

@@ -384,8 +384,8 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION,
    "Έκδοση Git"
    )
-MSG_HASH( /* FIXME Should be MENU_LABEL_VALUE */
-   MSG_COMPILER,
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COMPILER,
    "Μεταγλωττιστής"
    )
 MSG_HASH( /* FIXME Should be MENU_LABEL_VALUE */
@@ -2468,12 +2468,12 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_ENABLE,
    "Εμφανίζει το όνομα του τρέχων πυρήνα μέσα στο μενού."
    )
-MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_LABEL_VALUE_RGUI_SHOW_START_SCREEN,
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SHOW_START_SCREEN,
    "Εμφάνιση Αρχικής Οθόνης"
    )
-MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_SUBLABEL_RGUI_SHOW_START_SCREEN,
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SHOW_START_SCREEN,
    "Προβολή οθόνης εκκίνησης στο μενού. Τίθεται αυτόματα σε αρνητικό μετά την πρώτη εκκίνηση του προγράμματος."
    )
 
@@ -2822,12 +2822,12 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS_DIRECTORY,
    "Σκίτσα"
    )
-MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BROWSER_DIRECTORY,
    "Περιηγητής Αρχείων"
    )
-MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY,
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONFIG_DIRECTORY,
    "Διαμόρφωση"
    )
 MSG_HASH(
@@ -4293,14 +4293,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RESUME,
    "Συνέχιση εκτέλεσης του τρέχοντος περιεχομένου και έξοδος από το Γρήγορο Μενού."
-   )
-MSG_HASH( /* FIXME Still exists in a comment about being removed */
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_FOOTER_OPACITY,
-   "Αδιαφάνεια Υποσέλιδου"
-   )
-MSG_HASH( /* FIXME Still exists in a comment about being removed */
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_HEADER_OPACITY,
-   "Αδιαφάνεια Κεφαλίδας"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE,

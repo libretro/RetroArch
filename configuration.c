@@ -1287,9 +1287,9 @@ static struct config_path_setting *populate_settings_path(settings_t *settings, 
    SETTING_PATH("savestate_directory",
          dir_get_ptr(RARCH_DIR_SAVESTATE), true, NULL, false);
 #ifdef HAVE_MENU
-   SETTING_PATH("rgui_browser_directory",
+   SETTING_PATH("browser_directory",
          settings->paths.directory_menu_content, true, NULL, true);
-   SETTING_PATH("rgui_config_directory",
+   SETTING_PATH("config_directory",
          settings->paths.directory_menu_config, true, NULL, true);
 #endif
 #ifdef HAVE_OVERLAY
@@ -1553,7 +1553,7 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
    SETTING_BOOL("menu_show_core_updater",        &settings->bools.menu_show_core_updater, true, menu_show_core_updater, false);
    SETTING_BOOL("menu_show_legacy_thumbnail_updater", &settings->bools.menu_show_legacy_thumbnail_updater, true, menu_show_legacy_thumbnail_updater, false);
    SETTING_BOOL("filter_by_current_core",        &settings->bools.filter_by_current_core, false, false /* TODO */, false);
-   SETTING_BOOL("rgui_show_start_screen",        &settings->bools.menu_show_start_screen, false, false /* TODO */, false);
+   SETTING_BOOL("show_start_screen",        &settings->bools.menu_show_start_screen, false, false /* TODO */, false);
    SETTING_BOOL("menu_navigation_wraparound_enable", &settings->bools.menu_navigation_wraparound_enable, true, true, false);
    SETTING_BOOL("menu_navigation_browser_filter_supported_extensions_enable",
          &settings->bools.menu_navigation_browser_filter_supported_extensions_enable, true, true, false);

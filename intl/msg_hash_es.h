@@ -464,8 +464,8 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION,
    "Versión de Git"
    )
-MSG_HASH( /* FIXME Should be MENU_LABEL_VALUE */
-   MSG_COMPILER,
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COMPILER,
    "Compilador"
    )
 MSG_HASH( /* FIXME Should be MENU_LABEL_VALUE */
@@ -3519,12 +3519,12 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS,
    "Muestra información adicional sobre la entrada de menú seleccionada."
    )
-MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_LABEL_VALUE_RGUI_SHOW_START_SCREEN,
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SHOW_START_SCREEN,
    "Mostrar pantalla de inicio"
    )
-MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_SUBLABEL_RGUI_SHOW_START_SCREEN,
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SHOW_START_SCREEN,
    "Muestra la pantalla de inicio en el menú. Esta opción se desactiva automáticamente tras iniciar el programa por primera vez."
    )
 
@@ -4620,20 +4620,20 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_THUMBNAILS_DIRECTORY,
    "Carpeta de miniaturas adicionales (cajas, capturas, etc.)."
    )
-MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BROWSER_DIRECTORY,
    "Explorador"
    )
-MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_SUBLABEL_RGUI_BROWSER_DIRECTORY,
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BROWSER_DIRECTORY,
    "Establece la carpeta inicial del explorador de archivos."
    )
-MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY,
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONFIG_DIRECTORY,
    "Configuración"
    )
-MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_SUBLABEL_RGUI_CONFIG_DIRECTORY,
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONFIG_DIRECTORY,
    "Establece la ubicación inicial del explorador del menú."
    )
 MSG_HASH(
@@ -8198,22 +8198,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_OPTION,
    "Borrar esta coincidencia"
    )
-MSG_HASH( /* FIXME Still exists in a comment about being removed */
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_FOOTER_OPACITY,
-   "Opacidad del pie de página"
-   )
-MSG_HASH( /* FIXME Still exists in a comment about being removed */
-   MENU_ENUM_SUBLABEL_MATERIALUI_MENU_FOOTER_OPACITY,
-   "Modifica la opacidad del pie de página."
-   )
-MSG_HASH( /* FIXME Still exists in a comment about being removed */
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_HEADER_OPACITY,
-   "Opacidad del encabezado"
-   )
-MSG_HASH( /* FIXME Still exists in a comment about being removed */
-   MENU_ENUM_SUBLABEL_MATERIALUI_MENU_HEADER_OPACITY,
-   "Modifica la opacidad del encabezado."
-   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE,
    "Activar juego en red"
@@ -8519,16 +8503,16 @@ MSG_HASH(
 
 /* Notifications */
 
-MSG_HASH( /* FIXME Should be MSG_ */
-   MENU_ENUM_LABEL_VALUE_NETPLAY_START_WHEN_LOADED,
+MSG_HASH(
+   MSG_NETPLAY_START_WHEN_LOADED,
    "El juego en red comenzará cuando se cargue el contenido."
    )
-MSG_HASH( /* FIXME Should be MSG_ */
-   MENU_ENUM_LABEL_VALUE_NETPLAY_LOAD_CONTENT_MANUALLY,
+MSG_HASH(
+   MSG_NETPLAY_LOAD_CONTENT_MANUALLY,
    "No se encontró el núcleo o contenido, hay que cargarlo manualmente."
    )
-MSG_HASH( /* FIXME Should be MSG_ */
-   MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER_FALLBACK,
+MSG_HASH(
+   MSG_VIDEO_DRIVER_FALLBACK,
    "Tu controlador de gráficos no es compatible con el controlador de vídeo actual de RetroArch, que pasa a utilizar %s. Reinicia RetroArch para aplicar los cambios."
    )
 MSG_HASH( /* FIXME Should be MSG_ */

@@ -1462,8 +1462,8 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_ENABLE,
    "Core naam weergeven"
    )
-MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_LABEL_VALUE_RGUI_SHOW_START_SCREEN,
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SHOW_START_SCREEN,
    "Start Scherm Weergeven"
    )
 
@@ -1743,12 +1743,12 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPERS_DIRECTORY,
    "Dynamische Wallpapers"
    )
-MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BROWSER_DIRECTORY,
    "Bestandsbeheer"
    )
-MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY,
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONFIG_DIRECTORY,
    "Configuratie"
    )
 MSG_HASH(
@@ -2674,14 +2674,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESUME,
    "Hervatten"
-   )
-MSG_HASH( /* FIXME Still exists in a comment about being removed */
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_FOOTER_OPACITY,
-   "Voettekst Zichtbaarheid"
-   )
-MSG_HASH( /* FIXME Still exists in a comment about being removed */
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_HEADER_OPACITY,
-   "Header Zichtbaarheid"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE,

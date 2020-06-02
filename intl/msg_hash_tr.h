@@ -452,8 +452,8 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION,
    "Git sürümü"
    )
-MSG_HASH( /* FIXME Should be MENU_LABEL_VALUE */
-   MSG_COMPILER,
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COMPILER,
    "Derleyici"
    )
 MSG_HASH( /* FIXME Should be MENU_LABEL_VALUE */
@@ -3511,12 +3511,12 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS,
    "Seçili olan menü girişi için ek bilgi gösterir."
    )
-MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_LABEL_VALUE_RGUI_SHOW_START_SCREEN,
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SHOW_START_SCREEN,
    "Başlangıç Ekranını Görüntüle"
    )
-MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_SUBLABEL_RGUI_SHOW_START_SCREEN,
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SHOW_START_SCREEN,
    "Menüde başlangıç ekranını göster. Bu program ilk kez başladıktan sonra otomatik olarak false değerine ayarlanır."
    )
 
@@ -4629,20 +4629,20 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_THUMBNAILS_DIRECTORY,
    "İlave küçük resimler (kutu resimleri / çeşitli görüntüler vb.) Burada saklanır."
    )
-MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BROWSER_DIRECTORY,
    "Dosya Yöneticisi"
    )
-MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_SUBLABEL_RGUI_BROWSER_DIRECTORY,
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BROWSER_DIRECTORY,
    "Dosya Gezgini için başlangıç dizinini ayarlar."
    )
-MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY,
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONFIG_DIRECTORY,
    "Yapılandırma"
    )
-MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_SUBLABEL_RGUI_CONFIG_DIRECTORY,
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONFIG_DIRECTORY,
    "Menü yapılandırma tarayıcısı için başlangıç dizinini ayarlar."
    )
 MSG_HASH(
@@ -8260,22 +8260,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_OPTION,
    "Bu Eşleşmeyi Sil"
    )
-MSG_HASH( /* FIXME Still exists in a comment about being removed */
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_FOOTER_OPACITY,
-   "Alt Bilgi Şeffaflığı"
-   )
-MSG_HASH( /* FIXME Still exists in a comment about being removed */
-   MENU_ENUM_SUBLABEL_MATERIALUI_MENU_FOOTER_OPACITY,
-   "Altbilgi grafiğinin opaklığını değiştirin."
-   )
-MSG_HASH( /* FIXME Still exists in a comment about being removed */
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_HEADER_OPACITY,
-   "Başlık Şeffaflığı"
-   )
-MSG_HASH( /* FIXME Still exists in a comment about being removed */
-   MENU_ENUM_SUBLABEL_MATERIALUI_MENU_HEADER_OPACITY,
-   "Başlık grafiğinin opaklığını değiştirin."
-   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_START_CONTENT,
    "İçeriği Başlat"
@@ -8577,16 +8561,16 @@ MSG_HASH(
 
 /* Notifications */
 
-MSG_HASH( /* FIXME Should be MSG_ */
-   MENU_ENUM_LABEL_VALUE_NETPLAY_START_WHEN_LOADED,
+MSG_HASH(
+   MSG_NETPLAY_START_WHEN_LOADED,
    "Netplay İçerik yüklendiğinde başlayacaktır."
    )
-MSG_HASH( /* FIXME Should be MSG_ */
-   MENU_ENUM_LABEL_VALUE_NETPLAY_LOAD_CONTENT_MANUALLY,
+MSG_HASH(
+   MSG_NETPLAY_LOAD_CONTENT_MANUALLY,
    "Uygun bir çekirdek veya içerik dosyası bulunamadı, el ile yükleyin."
    )
-MSG_HASH( /* FIXME Should be MSG_ */
-   MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER_FALLBACK,
+MSG_HASH(
+   MSG_VIDEO_DRIVER_FALLBACK,
    "Grafik sürücünüz RetroArch'taki mevcut video sürücüsü ile uyumlu değil ve %s sürücüsüne geri dönülüyor. Lütfen değişikliklerin geçerli olması için RetroArch'ı yeniden başlatın."
    )
 MSG_HASH( /* FIXME Should be MSG_ */

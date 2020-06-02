@@ -456,8 +456,8 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION,
    "Git 버전"
    )
-MSG_HASH( /* FIXME Should be MENU_LABEL_VALUE */
-   MSG_COMPILER,
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COMPILER,
    "컴파일러"
    )
 MSG_HASH( /* FIXME Should be MENU_LABEL_VALUE */
@@ -3361,12 +3361,12 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS,
    "선택된 메뉴 항목의 추가 정보를 보여줍니다."
    )
-MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_LABEL_VALUE_RGUI_SHOW_START_SCREEN,
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SHOW_START_SCREEN,
    "시작 화면 표시"
    )
-MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_SUBLABEL_RGUI_SHOW_START_SCREEN,
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SHOW_START_SCREEN,
    "시작 화면을 메뉴에 보입니다. 프로그램 첫 실행 후 자동으로 비활성 됩니다."
    )
 
@@ -4403,20 +4403,20 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_THUMBNAILS_DIRECTORY,
    "부가적인 미리보기 이미지 저장공간입니다(박스아트/기타, 이미지 등)."
    )
-MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BROWSER_DIRECTORY,
    "파일 탐색기"
    )
-MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_SUBLABEL_RGUI_BROWSER_DIRECTORY,
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BROWSER_DIRECTORY,
    "파일 탐색기의 시작 디렉토리를 설정합니다."
    )
-MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY,
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONFIG_DIRECTORY,
    "설정"
    )
-MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_SUBLABEL_RGUI_CONFIG_DIRECTORY,
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONFIG_DIRECTORY,
    "메뉴 환경설정 디렉토리를 설정합니다."
    )
 MSG_HASH(
@@ -7563,22 +7563,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_OPTION,
    "현재 일치 항목 삭제"
    )
-MSG_HASH( /* FIXME Still exists in a comment about being removed */
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_FOOTER_OPACITY,
-   "푸터 투명도"
-   )
-MSG_HASH( /* FIXME Still exists in a comment about being removed */
-   MENU_ENUM_SUBLABEL_MATERIALUI_MENU_FOOTER_OPACITY,
-   "푸터 그래픽의 투명도를 변경합니다."
-   )
-MSG_HASH( /* FIXME Still exists in a comment about being removed */
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_HEADER_OPACITY,
-   "헤더 투명도"
-   )
-MSG_HASH( /* FIXME Still exists in a comment about being removed */
-   MENU_ENUM_SUBLABEL_MATERIALUI_MENU_HEADER_OPACITY,
-   "헤더 그래픽의 투명도를 변경합니다."
-   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE,
    "넷플레이 사용"
@@ -7884,16 +7868,16 @@ MSG_HASH(
 
 /* Notifications */
 
-MSG_HASH( /* FIXME Should be MSG_ */
-   MENU_ENUM_LABEL_VALUE_NETPLAY_START_WHEN_LOADED,
+MSG_HASH(
+   MSG_NETPLAY_START_WHEN_LOADED,
    "컨텐츠가 불러와지면 넷플레이가 시작됩니다."
    )
-MSG_HASH( /* FIXME Should be MSG_ */
-   MENU_ENUM_LABEL_VALUE_NETPLAY_LOAD_CONTENT_MANUALLY,
+MSG_HASH(
+   MSG_NETPLAY_LOAD_CONTENT_MANUALLY,
    "적합한 코어 또는 컨텐츠 파일을 찾지 못했습니다. 수동으로 불러오십시오."
    )
-MSG_HASH( /* FIXME Should be MSG_ */
-   MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER_FALLBACK,
+MSG_HASH(
+   MSG_VIDEO_DRIVER_FALLBACK,
    "그래픽 드라이버가 현재의 RetroArch 비디오 드라이버와 호환되지 않아 %s 드라이버로 되돌립니다. 변경사항 적용하려면 RetroArch를 다시 시작하십시오."
    )
 MSG_HASH( /* FIXME Should be MSG_ */

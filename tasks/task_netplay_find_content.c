@@ -145,7 +145,7 @@ static void netplay_crc_scan_callback(retro_task_t *task,
       RARCH_LOG("[Lobby] Couldn't find a suitable %s\n",
          string_is_empty(state->content_path) ? "content file" : "core");
       runloop_msg_queue_push(
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_LOAD_CONTENT_MANUALLY),
+            msg_hash_to_str(MSG_NETPLAY_LOAD_CONTENT_MANUALLY),
             1, 480, true,
             NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }

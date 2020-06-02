@@ -8507,7 +8507,7 @@ bool command_event(enum event_command cmd, void *data)
             if (!is_inited)
             {
                runloop_msg_queue_push(
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_START_WHEN_LOADED),
+                     msg_hash_to_str(MSG_NETPLAY_START_WHEN_LOADED),
                      1, 480, true,
                      NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
                return false;
@@ -28869,25 +28869,25 @@ int retroarch_get_capabilities(enum rarch_capabilities type,
       case RARCH_CAPABILITIES_COMPILER:
 #if defined(_MSC_VER)
          snprintf(s, len, "%s: MSVC (%d) %u-bit",
-               msg_hash_to_str(MSG_COMPILER),
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COMPILER),
                _MSC_VER, (unsigned)
                (CHAR_BIT * sizeof(size_t)));
 #elif defined(__SNC__)
          snprintf(s, len, "%s: SNC (%d) %u-bit",
-               msg_hash_to_str(MSG_COMPILER),
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COMPILER),
                __SN_VER__, (unsigned)(CHAR_BIT * sizeof(size_t)));
 #elif defined(_WIN32) && defined(__GNUC__)
          snprintf(s, len, "%s: MinGW (%d.%d.%d) %u-bit",
-               msg_hash_to_str(MSG_COMPILER),
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COMPILER),
                __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__, (unsigned)
                (CHAR_BIT * sizeof(size_t)));
 #elif defined(__clang__)
          snprintf(s, len, "%s: Clang/LLVM (%s) %u-bit",
-               msg_hash_to_str(MSG_COMPILER),
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COMPILER),
                __clang_version__, (unsigned)(CHAR_BIT * sizeof(size_t)));
 #elif defined(__GNUC__)
          snprintf(s, len, "%s: GCC (%d.%d.%d) %u-bit",
-               msg_hash_to_str(MSG_COMPILER),
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COMPILER),
                __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__, (unsigned)
                (CHAR_BIT * sizeof(size_t)));
 #else
@@ -30474,7 +30474,7 @@ void retroarch_force_video_driver_fallback(const char *driver)
       text[0]              = '\0';
 
       snprintf(text, sizeof(text),
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER_FALLBACK),
+            msg_hash_to_str(MSG_VIDEO_DRIVER_FALLBACK),
             driver);
 
       window_state.buttons = UI_MSG_WINDOW_OK;

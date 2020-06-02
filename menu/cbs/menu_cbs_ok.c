@@ -6407,7 +6407,7 @@ static void action_ok_netplay_enable_client_hostname_cb(
          command_event(CMD_EVENT_NETPLAY_INIT_DIRECT_DEFERRED,
                (void*)tmp_hostname);
          runloop_msg_queue_push(
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_START_WHEN_LOADED),
+            msg_hash_to_str(MSG_NETPLAY_START_WHEN_LOADED),
             1, 480, true,
             NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       }

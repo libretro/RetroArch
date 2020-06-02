@@ -6532,7 +6532,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_BATTERY_LEVEL_ENABLE,                                  PARSE_ONLY_BOOL, true  },
                {MENU_ENUM_LABEL_CORE_ENABLE,                                           PARSE_ONLY_BOOL, true  },
                {MENU_ENUM_LABEL_MENU_SHOW_SUBLABELS,                                   PARSE_ONLY_BOOL, true  },
-               {MENU_ENUM_LABEL_RGUI_SHOW_START_SCREEN,                                PARSE_ONLY_BOOL, true  },
+               {MENU_ENUM_LABEL_SHOW_START_SCREEN,                                PARSE_ONLY_BOOL, true  },
             };
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
@@ -7274,8 +7274,8 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_ASSETS_DIRECTORY,             PARSE_ONLY_DIR},
                {MENU_ENUM_LABEL_DYNAMIC_WALLPAPERS_DIRECTORY, PARSE_ONLY_DIR},
                {MENU_ENUM_LABEL_THUMBNAILS_DIRECTORY,         PARSE_ONLY_DIR},
-               {MENU_ENUM_LABEL_RGUI_BROWSER_DIRECTORY,       PARSE_ONLY_DIR},
-               {MENU_ENUM_LABEL_RGUI_CONFIG_DIRECTORY,        PARSE_ONLY_DIR},
+               {MENU_ENUM_LABEL_BROWSER_DIRECTORY,       PARSE_ONLY_DIR},
+               {MENU_ENUM_LABEL_CONFIG_DIRECTORY,        PARSE_ONLY_DIR},
                {MENU_ENUM_LABEL_LIBRETRO_DIR_PATH,            PARSE_ONLY_DIR},
                {MENU_ENUM_LABEL_LIBRETRO_INFO_PATH,           PARSE_ONLY_DIR},
                {MENU_ENUM_LABEL_CONTENT_DATABASE_DIRECTORY,   PARSE_ONLY_DIR},

@@ -445,7 +445,7 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
                "若开启，所有在 RetroArch 中加载过的文件 \n"
                "都会自动的放入最近使用历史列表中。");
          break;
-      case MENU_ENUM_LABEL_RGUI_BROWSER_DIRECTORY:
+      case MENU_ENUM_LABEL_BROWSER_DIRECTORY:
          snprintf(s, len,
                "文件浏览器文件夹 \n"
                " \n"
@@ -1325,7 +1325,7 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
                "图像刷新率仍应按照 60 Hz 显示器 \n"
                "来进行设置。（除以 2） \n");
          break;
-      case MENU_ENUM_LABEL_RGUI_SHOW_START_SCREEN:
+      case MENU_ENUM_LABEL_SHOW_START_SCREEN:
          snprintf(s, len,
                "Show startup screen in menu.\n"
                "Is automatically set to false when seen\n"
