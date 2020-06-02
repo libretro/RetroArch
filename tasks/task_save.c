@@ -1352,6 +1352,31 @@ bool content_save_state(const char *path, bool save_to_disk, bool autosave)
    return true;
 }
 
+static bool task_save_state_finder(retro_task_t *task, void *user_data)
+{
+   if (!task)
+      return false;
+
+   if (task->handler == task_save_handler)
+      return true;
+
+   return false;
+}
+
+/* Returns true if a save state task is in progress */
+bool content_save_state_in_progress(void)
+{
+   task_finder_data_t find_data;
+
+   find_data.func     = task_save_state_finder;
+   find_data.userdata = NULL;
+
+   if (task_queue_find(&find_data))
+      return true;
+
+   return false;
+}
+
 /**
  * content_load_state:
  * @path      : path that state will be loaded from.
