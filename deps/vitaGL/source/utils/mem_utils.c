@@ -295,14 +295,14 @@ int vgl_mem_init(size_t size_ram, size_t size_cdram, size_t size_phycont) {
 	return 1;
 }
 
-void mempool_free(void *ptr, vglMemType type) {
+void vgl_mem_free(void *ptr, vglMemType type) {
 	if (type == VGL_MEM_EXTERNAL)
 		free(ptr);
 	else
 		heap_free(ptr); // type is already stored in heap for alloc'd blocks
 }
 
-void *mempool_alloc(size_t size, vglMemType type) {
+void *vgl_mempool_alloc(size_t size, vglMemType type) {
 	void *res = NULL;
 	if (size <= tm_free[type])
 		res = heap_alloc(type, size, MEM_ALIGNMENT);
@@ -310,6 +310,6 @@ void *mempool_alloc(size_t size, vglMemType type) {
 }
 
 // Returns currently free space on mempool
-size_t mempool_get_free_space(vglMemType type) {
+size_t vgl_mempool_get_free_space(vglMemType type) {
 	return tm_free[type];
 }

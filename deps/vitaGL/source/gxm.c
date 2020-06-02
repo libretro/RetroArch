@@ -146,9 +146,9 @@ void initGxmContext(void) {
 
 void termGxmContext(void) {
 	// Deallocating ring buffers
-	mempool_free(vdm_ring_buffer_addr, VGL_MEM_VRAM);
-	mempool_free(vertex_ring_buffer_addr, VGL_MEM_VRAM);
-	mempool_free(fragment_ring_buffer_addr, VGL_MEM_VRAM);
+	vgl_mem_free(vdm_ring_buffer_addr, VGL_MEM_VRAM);
+	vgl_mem_free(vertex_ring_buffer_addr, VGL_MEM_VRAM);
+	vgl_mem_free(fragment_ring_buffer_addr, VGL_MEM_VRAM);
 	gpu_fragment_usse_free_mapped(fragment_usse_ring_buffer_addr);
 
 	// Destroying sceGxm context
@@ -206,7 +206,7 @@ void termDisplayColorSurfaces(void) {
 	// Deallocating display's color surfaces and destroying sync objects
 	int i;
 	for (i = 0; i < DISPLAY_BUFFER_COUNT; i++) {
-		mempool_free(gxm_color_surfaces_addr[i], VGL_MEM_VRAM);
+		vgl_mem_free(gxm_color_surfaces_addr[i], VGL_MEM_VRAM);
 		sceGxmSyncObjectDestroy(gxm_sync_objects[i]);
 	}
 }
@@ -245,8 +245,8 @@ void initDepthStencilSurfaces(void) {
 
 void termDepthStencilSurfaces(void) {
 	// Deallocating depth and stencil surfaces memblocks
-	mempool_free(gxm_depth_surface_addr, VGL_MEM_VRAM);
-	mempool_free(gxm_stencil_surface_addr, VGL_MEM_VRAM);
+	vgl_mem_free(gxm_depth_surface_addr, VGL_MEM_VRAM);
+	vgl_mem_free(gxm_stencil_surface_addr, VGL_MEM_VRAM);
 }
 
 void startShaderPatcher(void) {
@@ -300,7 +300,7 @@ void stopShaderPatcher(void) {
 	sceGxmShaderPatcherDestroy(gxm_shader_patcher);
 
 	// Freeing shader patcher buffers
-	mempool_free(gxm_shader_patcher_buffer_addr, VGL_MEM_VRAM);
+	vgl_mem_free(gxm_shader_patcher_buffer_addr, VGL_MEM_VRAM);
 	gpu_vertex_usse_free_mapped(gxm_shader_patcher_vertex_usse_addr);
 	gpu_fragment_usse_free_mapped(gxm_shader_patcher_fragment_usse_addr);
 }
