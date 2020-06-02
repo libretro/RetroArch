@@ -4839,16 +4839,16 @@ static void setting_get_string_representation_uint_video_3ds_display_mode(
                   MENU_ENUM_LABEL_VALUE_CTR_VIDEO_MODE_2D),
                len);
          break;
-      case CTR_VIDEO_MODE_2D_400x240:
+      case CTR_VIDEO_MODE_2D_400X240:
          strlcpy(s,
                msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_CTR_VIDEO_MODE_2D_400x240),
+                  MENU_ENUM_LABEL_VALUE_CTR_VIDEO_MODE_2D_400X240),
                len);
          break;
-      case CTR_VIDEO_MODE_2D_800x240:
+      case CTR_VIDEO_MODE_2D_800X240:
          strlcpy(s,
                msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_CTR_VIDEO_MODE_2D_800x240),
+                  MENU_ENUM_LABEL_VALUE_CTR_VIDEO_MODE_2D_800X240),
                len);
          break;
    }
@@ -14819,7 +14819,7 @@ static bool setting_append_list(
             /* Only O3DS and O3DSXL support running in 'dual-framebuffer'
              * mode with the parallax barrier disabled
              * (i.e. these are the only platforms that can use
-             * CTR_VIDEO_MODE_2D_400x240 and CTR_VIDEO_MODE_2D_800x240) */
+             * CTR_VIDEO_MODE_2D_400X240 and CTR_VIDEO_MODE_2D_800X240) */
             CFGU_GetSystemModel(&device_model); /* (0 = O3DS, 1 = O3DSXL, 2 = N3DS, 3 = 2DS, 4 = N3DSXL, 5 = N2DSXL) */
 
             CONFIG_UINT(
