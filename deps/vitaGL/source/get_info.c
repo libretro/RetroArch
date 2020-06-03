@@ -50,7 +50,7 @@ const GLubyte *glGetString(GLenum name) {
 		return extensions;
 		break;
 	default:
-		error = GL_INVALID_ENUM;
+		vgl_error = GL_INVALID_ENUM;
 		return NULL;
 		break;
 	}
@@ -80,7 +80,7 @@ void glGetBooleanv(GLenum pname, GLboolean *params) {
 		*params = GL_FALSE;
 		break;
 	default:
-		error = GL_INVALID_ENUM;
+		vgl_error = GL_INVALID_ENUM;
 		break;
 	}
 }
@@ -123,7 +123,7 @@ void glGetFloatv(GLenum pname, GLfloat *data) {
 		*data = GENERIC_STACK_DEPTH;
 		break;
 	default:
-		error = GL_INVALID_ENUM;
+		vgl_error = GL_INVALID_ENUM;
 		break;
 	}
 }
@@ -156,7 +156,7 @@ void glGetIntegerv(GLenum pname, GLint *data) {
 		data[3] = gl_viewport.h;
 		break;
 	default:
-		error = GL_INVALID_ENUM;
+		vgl_error = GL_INVALID_ENUM;
 		break;
 	}
 }
@@ -189,14 +189,14 @@ GLboolean glIsEnabled(GLenum cap) {
 		ret = pol_offset_point;
 		break;
 	default:
-		error = GL_INVALID_ENUM;
+		vgl_error = GL_INVALID_ENUM;
 		break;
 	}
 	return ret;
 }
 
 GLenum glGetError(void) {
-	GLenum ret = error;
-	error = GL_NO_ERROR;
+	GLenum ret = vgl_error;
+	vgl_error = GL_NO_ERROR;
 	return ret;
 }

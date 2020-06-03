@@ -50,7 +50,7 @@ uint32_t get_color_from_texture(uint32_t type) {
 		res = SCE_GXM_COLOR_FORMAT_U8_A;
 		break;
 	default:
-		error = GL_INVALID_ENUM;
+		vgl_error = GL_INVALID_ENUM;
 		break;
 	}
 	return res;
@@ -66,7 +66,7 @@ void glGenFramebuffers(GLsizei n, GLuint *ids) {
 	int i = 0, j = 0;
 #ifndef SKIP_ERROR_HANDLING
 	if (n < 0) {
-		error = GL_INVALID_VALUE;
+		vgl_error = GL_INVALID_VALUE;
 		return;
 	}
 #endif
@@ -85,7 +85,7 @@ void glGenFramebuffers(GLsizei n, GLuint *ids) {
 void glDeleteFramebuffers(GLsizei n, GLuint *framebuffers) {
 #ifndef SKIP_ERROR_HANDLING
 	if (n < 0) {
-		error = GL_INVALID_VALUE;
+		vgl_error = GL_INVALID_VALUE;
 		return;
 	}
 #endif
@@ -117,7 +117,7 @@ void glBindFramebuffer(GLenum target, GLuint fb) {
 		active_write_fb = active_read_fb = (framebuffer *)fb;
 		break;
 	default:
-		error = GL_INVALID_ENUM;
+		vgl_error = GL_INVALID_ENUM;
 		break;
 	}
 }
@@ -134,7 +134,7 @@ void glFramebufferTexture(GLenum target, GLenum attachment, GLuint tex_id, GLint
 		fb = active_read_fb;
 		break;
 	default:
-		error = GL_INVALID_ENUM;
+		vgl_error = GL_INVALID_ENUM;
 		break;
 	}
 
@@ -178,7 +178,7 @@ void glFramebufferTexture(GLenum target, GLenum attachment, GLuint tex_id, GLint
 		sceGxmCreateRenderTarget(&renderTargetParams, &fb->target);
 		break;
 	default:
-		error = GL_INVALID_ENUM;
+		vgl_error = GL_INVALID_ENUM;
 		break;
 	}
 }
