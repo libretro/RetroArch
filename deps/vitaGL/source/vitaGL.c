@@ -699,7 +699,7 @@ void glGenBuffers(GLsizei n, GLuint *res) {
 	int i = 0, j = 0;
 #ifndef SKIP_ERROR_HANDLING
 	if (n < 0) {
-		error = GL_INVALID_VALUE;
+		vgl_error = GL_INVALID_VALUE;
 		return;
 	}
 #endif
@@ -716,7 +716,7 @@ void glGenBuffers(GLsizei n, GLuint *res) {
 void glBindBuffer(GLenum target, GLuint buffer) {
 #ifndef SKIP_ERROR_HANDLING
 	if ((buffer != 0x0000) && ((buffer >= BUFFERS_ADDR + BUFFERS_NUM) || (buffer < BUFFERS_ADDR))) {
-		error = GL_INVALID_VALUE;
+		vgl_error = GL_INVALID_VALUE;
 		return;
 	}
 #endif
@@ -728,7 +728,7 @@ void glBindBuffer(GLenum target, GLuint buffer) {
 		index_array_unit = buffer - BUFFERS_ADDR;
 		break;
 	default:
-		error = GL_INVALID_ENUM;
+		vgl_error = GL_INVALID_ENUM;
 		break;
 	}
 }
@@ -736,7 +736,7 @@ void glBindBuffer(GLenum target, GLuint buffer) {
 void glDeleteBuffers(GLsizei n, const GLuint *gl_buffers) {
 #ifndef SKIP_ERROR_HANDLING
 	if (n < 0) {
-		error = GL_INVALID_VALUE;
+		vgl_error = GL_INVALID_VALUE;
 		return;
 	}
 #endif
@@ -756,7 +756,7 @@ void glDeleteBuffers(GLsizei n, const GLuint *gl_buffers) {
 void glBufferData(GLenum target, GLsizei size, const GLvoid *data, GLenum usage) {
 #ifndef SKIP_ERROR_HANDLING
 	if (size < 0) {
-		error = GL_INVALID_VALUE;
+		vgl_error = GL_INVALID_VALUE;
 		return;
 	}
 #endif
@@ -769,7 +769,7 @@ void glBufferData(GLenum target, GLsizei size, const GLvoid *data, GLenum usage)
 		idx = index_array_unit;
 		break;
 	default:
-		error = GL_INVALID_ENUM;
+		vgl_error = GL_INVALID_ENUM;
 		break;
 	}
 	vglMemType type = VGL_MEM_VRAM;
@@ -813,7 +813,7 @@ void glBlendFunc(GLenum sfactor, GLenum dfactor) {
 		blend_sfactor_rgb = blend_sfactor_a = SCE_GXM_BLEND_FACTOR_SRC_ALPHA_SATURATE;
 		break;
 	default:
-		error = GL_INVALID_ENUM;
+		vgl_error = GL_INVALID_ENUM;
 		break;
 	}
 	switch (dfactor) {
@@ -851,7 +851,7 @@ void glBlendFunc(GLenum sfactor, GLenum dfactor) {
 		blend_dfactor_rgb = blend_dfactor_a = SCE_GXM_BLEND_FACTOR_SRC_ALPHA_SATURATE;
 		break;
 	default:
-		error = GL_INVALID_ENUM;
+		vgl_error = GL_INVALID_ENUM;
 		break;
 	}
 	if (blend_state)
@@ -894,7 +894,7 @@ void glBlendFuncSeparate(GLenum srcRGB, GLenum dstRGB, GLenum srcAlpha, GLenum d
 		blend_sfactor_rgb = SCE_GXM_BLEND_FACTOR_SRC_ALPHA_SATURATE;
 		break;
 	default:
-		error = GL_INVALID_ENUM;
+		vgl_error = GL_INVALID_ENUM;
 		break;
 	}
 	switch (dstRGB) {
@@ -932,7 +932,7 @@ void glBlendFuncSeparate(GLenum srcRGB, GLenum dstRGB, GLenum srcAlpha, GLenum d
 		blend_dfactor_rgb = SCE_GXM_BLEND_FACTOR_SRC_ALPHA_SATURATE;
 		break;
 	default:
-		error = GL_INVALID_ENUM;
+		vgl_error = GL_INVALID_ENUM;
 		break;
 	}
 	switch (srcAlpha) {
@@ -970,7 +970,7 @@ void glBlendFuncSeparate(GLenum srcRGB, GLenum dstRGB, GLenum srcAlpha, GLenum d
 		blend_sfactor_a = SCE_GXM_BLEND_FACTOR_SRC_ALPHA_SATURATE;
 		break;
 	default:
-		error = GL_INVALID_ENUM;
+		vgl_error = GL_INVALID_ENUM;
 		break;
 	}
 	switch (dstAlpha) {
@@ -1008,7 +1008,7 @@ void glBlendFuncSeparate(GLenum srcRGB, GLenum dstRGB, GLenum srcAlpha, GLenum d
 		blend_dfactor_a = SCE_GXM_BLEND_FACTOR_SRC_ALPHA_SATURATE;
 		break;
 	default:
-		error = GL_INVALID_ENUM;
+		vgl_error = GL_INVALID_ENUM;
 		break;
 	}
 	if (blend_state)
@@ -1033,7 +1033,7 @@ void glBlendEquation(GLenum mode) {
 		blend_func_rgb = blend_func_a = SCE_GXM_BLEND_FUNC_MAX;
 		break;
 	default:
-		error = GL_INVALID_ENUM;
+		vgl_error = GL_INVALID_ENUM;
 		break;
 	}
 	if (blend_state)
@@ -1058,7 +1058,7 @@ void glBlendEquationSeparate(GLenum modeRGB, GLenum modeAlpha) {
 		blend_func_rgb = SCE_GXM_BLEND_FUNC_MAX;
 		break;
 	default:
-		error = GL_INVALID_ENUM;
+		vgl_error = GL_INVALID_ENUM;
 		break;
 	}
 	switch (modeAlpha) {
@@ -1078,7 +1078,7 @@ void glBlendEquationSeparate(GLenum modeRGB, GLenum modeAlpha) {
 		blend_func_a = SCE_GXM_BLEND_FUNC_MAX;
 		break;
 	default:
-		error = GL_INVALID_ENUM;
+		vgl_error = GL_INVALID_ENUM;
 		break;
 	}
 	if (blend_state)
@@ -1104,7 +1104,7 @@ void glColorMask(GLboolean red, GLboolean green, GLboolean blue, GLboolean alpha
 void glVertexPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *pointer) {
 #ifndef SKIP_ERROR_HANDLING
 	if ((stride < 0) || (size < 2) || (size > 4)) {
-		error = GL_INVALID_VALUE;
+		vgl_error = GL_INVALID_VALUE;
 		return;
 	}
 #endif
@@ -1117,7 +1117,7 @@ void glVertexPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *poin
 		tex_unit->vertex_array.size = sizeof(GLshort);
 		break;
 	default:
-		error = GL_INVALID_ENUM;
+		vgl_error = GL_INVALID_ENUM;
 		break;
 	}
 
@@ -1129,7 +1129,7 @@ void glVertexPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *poin
 void glColorPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *pointer) {
 #ifndef SKIP_ERROR_HANDLING
 	if ((stride < 0) || (size < 3) || (size > 4)) {
-		error = GL_INVALID_VALUE;
+		vgl_error = GL_INVALID_VALUE;
 		return;
 	}
 #endif
@@ -1142,7 +1142,7 @@ void glColorPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *point
 		tex_unit->color_array.size = sizeof(GLshort);
 		break;
 	default:
-		error = GL_INVALID_ENUM;
+		vgl_error = GL_INVALID_ENUM;
 		break;
 	}
 
@@ -1154,7 +1154,7 @@ void glColorPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *point
 void glTexCoordPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *pointer) {
 #ifndef SKIP_ERROR_HANDLING
 	if ((stride < 0) || (size < 2) || (size > 4)) {
-		error = GL_INVALID_VALUE;
+		vgl_error = GL_INVALID_VALUE;
 		return;
 	}
 #endif
@@ -1167,7 +1167,7 @@ void glTexCoordPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *po
 		tex_unit->texture_array.size = sizeof(GLshort);
 		break;
 	default:
-		error = GL_INVALID_ENUM;
+		vgl_error = GL_INVALID_ENUM;
 		break;
 	}
 
@@ -1209,7 +1209,7 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count) {
 				skip_draw = GL_TRUE;
 			break;
 		default:
-			error = GL_INVALID_ENUM;
+			vgl_error = GL_INVALID_ENUM;
 			break;
 		}
 		if (!skip_draw) {
@@ -1471,11 +1471,11 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *gl_in
 		GLboolean skip_draw = GL_FALSE;
 #ifndef SKIP_ERROR_HANDLING
 		if (type != GL_UNSIGNED_SHORT)
-			error = GL_INVALID_ENUM;
+			vgl_error = GL_INVALID_ENUM;
 		else if (phase == MODEL_CREATION)
-			error = GL_INVALID_OPERATION;
+			vgl_error = GL_INVALID_OPERATION;
 		else if (count < 0)
-			error = GL_INVALID_VALUE;
+			vgl_error = GL_INVALID_VALUE;
 #endif
 		switch (mode) {
 		case GL_POINTS:
@@ -1500,7 +1500,7 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *gl_in
 				skip_draw = GL_TRUE;
 			break;
 		default:
-			error = GL_INVALID_ENUM;
+			vgl_error = GL_INVALID_ENUM;
 			break;
 		}
 		if (!skip_draw) {
@@ -1734,7 +1734,7 @@ void glEnableClientState(GLenum array) {
 		tex_unit->texture_array_state = GL_TRUE;
 		break;
 	default:
-		error = GL_INVALID_ENUM;
+		vgl_error = GL_INVALID_ENUM;
 		break;
 	}
 }
@@ -1752,7 +1752,7 @@ void glDisableClientState(GLenum array) {
 		tex_unit->texture_array_state = GL_FALSE;
 		break;
 	default:
-		error = GL_INVALID_ENUM;
+		vgl_error = GL_INVALID_ENUM;
 		break;
 	}
 }
@@ -1760,7 +1760,7 @@ void glDisableClientState(GLenum array) {
 void glClientActiveTexture(GLenum texture) {
 #ifndef SKIP_ERROR_HANDLING
 	if ((texture < GL_TEXTURE0) && (texture > GL_TEXTURE31))
-		error = GL_INVALID_ENUM;
+		vgl_error = GL_INVALID_ENUM;
 	else
 #endif
 		client_texture_unit = texture - GL_TEXTURE0;
@@ -1771,7 +1771,7 @@ void glClientActiveTexture(GLenum texture) {
 void vglVertexPointer(GLint size, GLenum type, GLsizei stride, GLuint count, const GLvoid *pointer) {
 #ifndef SKIP_ERROR_HANDLING
 	if ((stride < 0) || (size < 2) || (size > 4)) {
-		error = GL_INVALID_VALUE;
+		vgl_error = GL_INVALID_VALUE;
 		return;
 	}
 #endif
@@ -1785,7 +1785,7 @@ void vglVertexPointer(GLint size, GLenum type, GLsizei stride, GLuint count, con
 		bpe = sizeof(GLshort);
 		break;
 	default:
-		error = GL_INVALID_ENUM;
+		vgl_error = GL_INVALID_ENUM;
 		break;
 	}
 	tex_unit->vertex_object = gpu_pool_memalign(count * bpe * size, bpe * size);
@@ -1806,7 +1806,7 @@ void vglVertexPointer(GLint size, GLenum type, GLsizei stride, GLuint count, con
 void vglColorPointer(GLint size, GLenum type, GLsizei stride, GLuint count, const GLvoid *pointer) {
 #ifndef SKIP_ERROR_HANDLING
 	if ((stride < 0) || (size < 3) || (size > 4)) {
-		error = GL_INVALID_VALUE;
+		vgl_error = GL_INVALID_VALUE;
 		return;
 	}
 #endif
@@ -1823,7 +1823,7 @@ void vglColorPointer(GLint size, GLenum type, GLsizei stride, GLuint count, cons
 		bpe = sizeof(uint8_t);
 		break;
 	default:
-		error = GL_INVALID_ENUM;
+		vgl_error = GL_INVALID_ENUM;
 		break;
 	}
 	tex_unit->color_object = gpu_pool_memalign(count * bpe * size, bpe * size);
@@ -1845,7 +1845,7 @@ void vglColorPointer(GLint size, GLenum type, GLsizei stride, GLuint count, cons
 void vglTexCoordPointer(GLint size, GLenum type, GLsizei stride, GLuint count, const GLvoid *pointer) {
 #ifndef SKIP_ERROR_HANDLING
 	if ((stride < 0) || (size < 2) || (size > 4)) {
-		error = GL_INVALID_VALUE;
+		vgl_error = GL_INVALID_VALUE;
 		return;
 	}
 #endif
@@ -1859,7 +1859,7 @@ void vglTexCoordPointer(GLint size, GLenum type, GLsizei stride, GLuint count, c
 		bpe = sizeof(GLshort);
 		break;
 	default:
-		error = GL_INVALID_ENUM;
+		vgl_error = GL_INVALID_ENUM;
 		break;
 	}
 	tex_unit->texture_object = gpu_pool_memalign(count * bpe * size, bpe * size);
@@ -1880,7 +1880,7 @@ void vglTexCoordPointer(GLint size, GLenum type, GLsizei stride, GLuint count, c
 void vglIndexPointer(GLenum type, GLsizei stride, GLuint count, const GLvoid *pointer) {
 #ifndef SKIP_ERROR_HANDLING
 	if (stride < 0) {
-		error = GL_INVALID_VALUE;
+		vgl_error = GL_INVALID_VALUE;
 		return;
 	}
 #endif
@@ -1894,7 +1894,7 @@ void vglIndexPointer(GLenum type, GLsizei stride, GLuint count, const GLvoid *po
 		bpe = sizeof(GLshort);
 		break;
 	default:
-		error = GL_INVALID_ENUM;
+		vgl_error = GL_INVALID_ENUM;
 		break;
 	}
 	tex_unit->index_object = gpu_pool_memalign(count * bpe, bpe);
@@ -1939,9 +1939,9 @@ void vglDrawObjects(GLenum mode, GLsizei count, GLboolean implicit_wvp) {
 	int texture2d_idx = tex_unit->tex_id;
 #ifndef SKIP_ERROR_HANDLING
 	if (phase == MODEL_CREATION)
-		error = GL_INVALID_OPERATION;
+		vgl_error = GL_INVALID_OPERATION;
 	else if (count < 0)
-		error = GL_INVALID_VALUE;
+		vgl_error = GL_INVALID_VALUE;
 #endif
 	GLboolean skip_draw = GL_FALSE;
 	switch (mode) {
@@ -1967,7 +1967,7 @@ void vglDrawObjects(GLenum mode, GLsizei count, GLboolean implicit_wvp) {
 			skip_draw = GL_TRUE;
 		break;
 	default:
-		error = GL_INVALID_ENUM;
+		vgl_error = GL_INVALID_ENUM;
 		break;
 	}
 	if (!skip_draw) {

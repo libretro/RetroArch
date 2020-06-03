@@ -124,7 +124,7 @@ extern float fullscreen_y_scale;
 extern float fullscreen_z_scale;
 
 extern SceGxmContext *gxm_context; // sceGxm context instance
-extern GLenum error; // Error returned by glGetError
+extern GLenum vgl_error; // Error returned by glGetError
 extern SceGxmShaderPatcher *gxm_shader_patcher; // sceGxmShaderPatcher shader patcher instance
 
 matrix4x4 mvp_matrix; // ModelViewProjection Matrix
