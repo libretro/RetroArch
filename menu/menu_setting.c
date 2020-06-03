@@ -10380,7 +10380,7 @@ static bool setting_append_list(
                   list, list_info,
                   &settings->bools.video_ctx_scaling,
                   MENU_ENUM_LABEL_VIDEO_CTX_SCALING,
-                  MENU_ENUM_LABEL_VALUE_VIDEO_CTX_SCALING,
+                  MENU_ENUM_LABEL_VALUE_VIDEO_RGA_SCALING,
                   DEFAULT_VIDEO_CTX_SCALING,
                   MENU_ENUM_LABEL_VALUE_OFF,
                   MENU_ENUM_LABEL_VALUE_ON,
