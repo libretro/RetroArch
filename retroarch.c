@@ -2443,8 +2443,10 @@ static void rarch_init_core_options(
 #if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
 static bool secondary_core_create(struct rarch_state *p_rarch);
 #endif
+#ifdef HAVE_RUNAHEAD
 static int16_t input_state_get_last(unsigned port,
       unsigned device, unsigned index, unsigned id);
+#endif
 static int16_t input_state(unsigned port, unsigned device,
       unsigned idx, unsigned id);
 static void video_driver_frame(const void *data, unsigned width,
@@ -21844,7 +21846,9 @@ const char* config_get_video_driver_options(void)
 
 bool video_driver_is_threaded(void)
 {
+#ifdef HAVE_THREADS
    struct rarch_state *p_rarch = &rarch_st;
+#endif
    return video_driver_is_threaded_internal();
 }
 
@@ -22992,7 +22996,9 @@ static void video_driver_monitor_adjust_system_rates(void)
 
 static void video_driver_lock_new(void)
 {
+#ifdef HAVE_THREADS
    struct rarch_state *p_rarch = &rarch_st;
+#endif
 
    video_driver_lock_free();
 #ifdef HAVE_THREADS
