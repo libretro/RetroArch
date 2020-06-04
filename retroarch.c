@@ -2233,7 +2233,7 @@ struct rarch_state
 static struct rarch_state         rarch_st;
 
 #ifdef HAVE_THREAD_STORAGE
-const void *MAGIC_POINTER                                        = (void*)(uintptr_t)0x0DEFACED;
+static const void *MAGIC_POINTER                                 = (void*)(uintptr_t)0x0DEFACED;
 #endif
 
 static runloop_core_status_msg_t runloop_core_status_msg         =
