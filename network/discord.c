@@ -55,6 +55,8 @@
 #include "../tasks/tasks_internal.h"
 #include "../file_path_special.h"
 
+#define CDN_URL "https://cdn.discordapp.com/avatars"
+
 /* The discord API specifies these variables:
 - userId --------- char[24]   - the userId of the player asking to join
 - username ------- char[344]  - the username of the player asking to join
@@ -88,8 +90,6 @@ typedef struct discord_state discord_state_t;
 
 /* TODO/FIXME - static public global variables */
 static discord_state_t discord_st;
-
-#define CDN_URL "https://cdn.discordapp.com/avatars"
 
 /* Forward declarations */
 #if defined(__cplusplus) && !defined(CXX_BUILD)

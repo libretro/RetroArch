@@ -61,9 +61,6 @@
 #define SAVE_STATE_CHUNK 4096
 #endif
 
-static bool save_state_in_background = false;
-static struct string_list *task_save_files = NULL;
-
 struct ram_type
 {
    const char *path;
@@ -145,7 +142,13 @@ static struct save_state_buf undo_load_buf;
 #ifdef HAVE_THREADS
 /* TODO/FIXME - global state - perhaps move outside this file */
 static struct autosave_st autosave_state;
+#endif
 
+/* TODO/FIXME - global state - perhaps move outside this file */
+static bool save_state_in_background       = false;
+static struct string_list *task_save_files = NULL;
+
+#ifdef HAVE_THREADS
 /**
  * autosave_thread:
  * @data            : pointer to autosave object

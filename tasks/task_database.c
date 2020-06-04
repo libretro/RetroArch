@@ -73,27 +73,20 @@ typedef struct db_handle
    database_state_handle_t state;
 } db_handle_t;
 
+/* Forward declarations */
 int cue_find_track(const char *cue_path, bool first,
       uint64_t *offset, uint64_t *size,
       char *track_path, uint64_t max_len);
-
 bool cue_next_file(intfstream_t *fd, const char *cue_path,
       char *path, uint64_t max_len);
-
 int gdi_find_track(const char *gdi_path, bool first,
       char *track_path, uint64_t max_len);
-
 bool gdi_next_file(intfstream_t *fd, const char *gdi_path,
       char *path, uint64_t max_len);
-
 int detect_system(intfstream_t *fd, const char** system_name);
-
 int detect_ps1_game(intfstream_t *fd, char *game_id);
-
 int detect_psp_game(intfstream_t *fd, char *game_id);
-
 int detect_gc_game(intfstream_t *fd, char *game_id);
-
 int detect_serial_ascii_game(intfstream_t *fd, char *game_id);
 
 static void database_info_set_type(
@@ -158,7 +151,9 @@ static int task_database_iterate_start(retro_task_t *task,
       task_free_title(task);
       task_set_title(task, strdup(msg));
       if (db->list->size != 0)
-         task_set_progress(task, roundf((float)db->list_ptr / ((float)db->list->size / 100.0f)));
+         task_set_progress(task,
+               roundf((float)db->list_ptr / 
+                  ((float)db->list->size / 100.0f)));
 #else
       fprintf(stderr, "msg: %s\n", msg);
 #endif

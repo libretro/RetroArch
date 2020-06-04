@@ -183,8 +183,6 @@ struct content_information_ctx
    struct string_list *temporary_content;
 };
 
-static bool _launched_from_cli                                = true;
-
 typedef struct content_state
 {
    bool is_inited;
@@ -207,6 +205,7 @@ typedef struct content_state
 } content_state_t;
 
 /* TODO/FIXME - global state - perhaps move outside this file */
+static bool _launched_from_cli = true;
 static content_state_t content_st;
 
 #ifdef HAVE_CDROM

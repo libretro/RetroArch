@@ -64,12 +64,13 @@ static unsigned  server_port_deferred         = 0;
 static int reannounce                         = 0;
 static bool is_mitm                           = false;
 
-static bool netplay_disconnect(netplay_t *netplay);
-
 #ifdef HAVE_DISCORD
 /* TODO/FIXME - global */
 extern bool discord_is_inited;
 #endif
+
+/* Forward declaration */
+static bool netplay_disconnect(netplay_t *netplay);
 
 /**
  * netplay_is_alive:
