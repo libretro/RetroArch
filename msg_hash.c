@@ -92,6 +92,15 @@ int menu_hash_get_help_enum(enum msg_hash_enums msg, char *s, size_t len)
       case RETRO_LANGUAGE_SLOVAK:
          ret = menu_hash_get_help_sk_enum(msg, s, len);
          break;
+      case RETRO_LANGUAGE_PERSIAN:
+         ret = menu_hash_get_help_fa_enum(msg, s, len);
+         break;
+      case RETRO_LANGUAGE_HEBREW:
+         ret = menu_hash_get_help_he_enum(msg, s, len);
+         break;
+      case RETRO_LANGUAGE_ASTURIAN:
+         ret = menu_hash_get_help_ast_enum(msg, s, len);
+         break;
       default:
          break;
    }
@@ -174,6 +183,12 @@ const char *get_user_language_iso639_1(bool limit)
          break;
       case RETRO_LANGUAGE_RUSSIAN:
          voice = "ru";
+      case RETRO_LANGUAGE_PERSIAN:
+         voice = "fa";
+      case RETRO_LANGUAGE_HEBREW:
+         voice = "he";
+      case RETRO_LANGUAGE_ASTURIAN:
+         voice = "ast";
          break;
 
    }
@@ -243,6 +258,15 @@ const char *msg_hash_to_str(enum msg_hash_enums msg)
          break;
       case RETRO_LANGUAGE_SLOVAK:
          ret = msg_hash_to_str_sk(msg);
+         break;
+      case RETRO_LANGUAGE_PERSIAN:
+         ret = msg_hash_to_str_fa(msg);
+         break;
+      case RETRO_LANGUAGE_HEBREW:
+         ret = msg_hash_to_str_he(msg);
+         break;
+      case RETRO_LANGUAGE_ASTURIAN:
+         ret = msg_hash_to_str_ast(msg);
          break;
       default:
          break;

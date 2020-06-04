@@ -2978,6 +2978,9 @@ static void setting_get_string_representation_uint_ai_service_lang(
       case TRANSLATION_LANG_CA:
          enum_idx = MENU_ENUM_LABEL_VALUE_LANG_CATALAN;
          break;
+      case TRANSLATION_LANG_AST:
+         enum_idx = MENU_ENUM_LABEL_VALUE_LANG_ASTURIAN;
+         break;
       case TRANSLATION_LANG_BG:
          enum_idx = MENU_ENUM_LABEL_VALUE_LANG_BULGARIAN;
          break;
@@ -3017,7 +3020,7 @@ static void setting_get_string_representation_uint_ai_service_lang(
       case TRANSLATION_LANG_HT:
          enum_idx = MENU_ENUM_LABEL_VALUE_LANG_HAITIAN_CREOLE;
          break;
-      case TRANSLATION_LANG_IW:
+      case TRANSLATION_LANG_HE:
          enum_idx = MENU_ENUM_LABEL_VALUE_LANG_HEBREW;
          break;
       case TRANSLATION_LANG_HI:
@@ -5958,6 +5961,9 @@ static void setting_get_string_representation_uint_user_language(
    modes[RETRO_LANGUAGE_GREEK]                  = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LANG_GREEK);
    modes[RETRO_LANGUAGE_TURKISH]                = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LANG_TURKISH);
    modes[RETRO_LANGUAGE_SLOVAK]                 = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LANG_SLOVAK);
+   modes[RETRO_LANGUAGE_PERSIAN]                = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LANG_PERSIAN);
+   modes[RETRO_LANGUAGE_HEBREW]                 = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LANG_HEBREW);
+   modes[RETRO_LANGUAGE_ASTURIAN]               = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LANG_ASTURIAN);
    strlcpy(s, modes[*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE)], len);
 }
 #endif
