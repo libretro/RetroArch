@@ -9157,7 +9157,16 @@ static void materialui_list_insert(
             node->has_icon           = true;
             break;
          case MENU_SETTING_ACTION_CORE_DELETE:
+         case MENU_SETTING_ACTION_CORE_DELETE_BACKUP:
             node->icon_texture_index = MUI_TEXTURE_REMOVE;
+            node->has_icon           = true;
+            break;
+         case MENU_SETTING_ACTION_CORE_CREATE_BACKUP:
+            node->icon_texture_index = MUI_TEXTURE_SAVE_STATE;
+            node->has_icon           = true;
+            break;
+         case MENU_SETTING_ACTION_CORE_RESTORE_BACKUP:
+            node->icon_texture_index = MUI_TEXTURE_LOAD_STATE;
             node->has_icon           = true;
             break;
          default:
@@ -9300,8 +9309,7 @@ static void materialui_list_insert(
                node->icon_texture_index = MUI_TEXTURE_START_CORE;
                node->has_icon           = true;
             }
-            else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_STATE))
-                  )
+            else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_STATE)))
             {
                node->icon_texture_index = MUI_TEXTURE_LOAD_STATE;
                node->has_icon           = true;
@@ -9326,15 +9334,12 @@ static void materialui_list_insert(
                node->icon_texture_index = MUI_TEXTURE_DISK;
                node->has_icon           = true;
             }
-            else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SAVE_STATE))
-                  ||
-                  (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE)))
-                  ||
-                  (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR)))
-                  ||
-                  (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_QUICK_MENU_OVERRIDE_OPTIONS)))
-                  ||
-                  (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME)))
+            else if (
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SAVE_STATE)) ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE)) ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR)) ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_QUICK_MENU_OVERRIDE_OPTIONS)) ||
+                  string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME))
                   )
             {
                node->icon_texture_index = MUI_TEXTURE_SAVE_STATE;

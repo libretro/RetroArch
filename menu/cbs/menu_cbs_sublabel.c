@@ -785,6 +785,9 @@ default_sublabel_macro(action_bind_sublabel_manual_content_scan_dat_file,       
 default_sublabel_macro(action_bind_sublabel_manual_content_scan_dat_file_filter,           MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_DAT_FILE_FILTER)
 default_sublabel_macro(action_bind_sublabel_manual_content_scan_overwrite,                 MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_OVERWRITE)
 default_sublabel_macro(action_bind_sublabel_manual_content_scan_start,                     MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_START)
+default_sublabel_macro(action_bind_sublabel_core_create_backup,                            MENU_ENUM_SUBLABEL_CORE_CREATE_BACKUP)
+default_sublabel_macro(action_bind_sublabel_core_restore_backup_list,                      MENU_ENUM_SUBLABEL_CORE_RESTORE_BACKUP_LIST)
+default_sublabel_macro(action_bind_sublabel_core_delete_backup_list,                       MENU_ENUM_SUBLABEL_CORE_DELETE_BACKUP_LIST)
 
 static int action_bind_sublabel_systeminfo_controller_entry(
       file_list_t *list,
@@ -1252,6 +1255,27 @@ static int action_bind_sublabel_core_updater_entry(
    return 1;
 }
 #endif
+
+static int action_bind_sublabel_core_backup_entry(
+      file_list_t *list,
+      unsigned type, unsigned i,
+      const char *label, const char *path,
+      char *s, size_t len)
+{
+   const char *crc = NULL;
+
+   /* crc is entered as 'alt' text */
+   menu_entries_get_at_offset(list, i, NULL,
+         NULL, NULL, NULL, &crc);
+
+   /* Set sublabel prefix */
+   strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_BACKUP_CRC), len);
+
+   /* Add crc string */
+   strlcat(s, (string_is_empty(crc) ? "00000000" : crc), len);
+
+   return 1;
+}
 
 static int action_bind_sublabel_generic(
       file_list_t *list,
@@ -3425,6 +3449,19 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_START:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_manual_content_scan_start);
+            break;
+         case MENU_ENUM_LABEL_CORE_CREATE_BACKUP:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_core_create_backup);
+            break;
+         case MENU_ENUM_LABEL_CORE_RESTORE_BACKUP_LIST:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_core_restore_backup_list);
+            break;
+         case MENU_ENUM_LABEL_CORE_DELETE_BACKUP_LIST:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_core_delete_backup_list);
+            break;
+         case MENU_ENUM_LABEL_CORE_RESTORE_BACKUP_ENTRY:
+         case MENU_ENUM_LABEL_CORE_DELETE_BACKUP_ENTRY:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_core_backup_entry);
             break;
          default:
          case MSG_UNKNOWN:

@@ -70,6 +70,7 @@
 #include <retro_math.h>
 #include <retro_timers.h>
 #include <encodings/utf.h>
+#include <time/rtime.h>
 
 #include <gfx/scaler/pixconv.h>
 #include <gfx/scaler/scaler.h>
@@ -9150,6 +9151,8 @@ void main_exit(void *args)
    ui_companion_driver_free();
    frontend_driver_free();
 
+   rtime_deinit();
+
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
    CoUninitialize();
 #endif
@@ -9176,6 +9179,8 @@ int rarch_main(int argc, char *argv[], void *data)
       return 1;
    }
 #endif
+
+   rtime_init();
 
    libretro_free_system_info(&p_rarch->runloop_system.info);
    command_event(CMD_EVENT_HISTORY_DEINIT, NULL);

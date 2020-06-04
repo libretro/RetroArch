@@ -32,6 +32,7 @@
 #include <file/file_path.h>
 #include <retro_assert.h>
 #include <string/stdstring.h>
+#include <time/rtime.h>
 
 /* TODO: There are probably some unnecessary things on this huge include list now but I'm too afraid to touch it */
 #ifdef __APPLE__
@@ -482,11 +483,13 @@ void fill_pathname_parent_dir(char *out_dir,
 size_t fill_dated_filename(char *out_filename,
       const char *ext, size_t size)
 {
-   time_t       cur_time = time(NULL);
-   const struct tm* tm_  = localtime(&cur_time);
+   time_t cur_time = time(NULL);
+   struct tm tm_;
+
+   rtime_localtime(&cur_time, &tm_);
 
    strftime(out_filename, size,
-         "RetroArch-%m%d-%H%M%S", tm_);
+         "RetroArch-%m%d-%H%M%S", &tm_);
    return strlcat(out_filename, ext, size);
 }
 
@@ -507,19 +510,21 @@ void fill_str_dated_filename(char *out_filename,
       const char *in_str, const char *ext, size_t size)
 {
    char format[256];
-   time_t cur_time      = time(NULL);
-   const struct tm* tm_ = localtime(&cur_time);
+   struct tm tm_;
+   time_t cur_time = time(NULL);
 
-   format[0]            = '\0';
+   format[0]       = '\0';
+
+   rtime_localtime(&cur_time, &tm_);
 
    if (string_is_empty(ext))
    {
-      strftime(format, sizeof(format), "-%y%m%d-%H%M%S", tm_);
+      strftime(format, sizeof(format), "-%y%m%d-%H%M%S", &tm_);
       fill_pathname_noext(out_filename, in_str, format, size);
    }
    else
    {
-      strftime(format, sizeof(format), "-%y%m%d-%H%M%S.", tm_);
+      strftime(format, sizeof(format), "-%y%m%d-%H%M%S.", &tm_);
 
       fill_pathname_join_concat_noext(out_filename,
             in_str, format, ext,

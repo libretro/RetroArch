@@ -37,6 +37,9 @@
 #include "../playlist.h"
 #endif
 
+/* Required for task_push_core_backup() */
+#include "../core_backup.h"
+
 RETRO_BEGIN_DECLS
 
 typedef struct nbio_buf
@@ -99,6 +102,18 @@ void *task_push_core_updater_download(
       core_updater_list_t* core_list, const char *filename,
       bool mute, bool check_crc, const char *path_dir_libretro);
 void task_push_update_installed_cores(const char *path_dir_libretro);
+
+/* Core backup/restore tasks */
+
+/* Note: If crc is set to 0, crc of core_path file will
+ * be calculated automatically */
+void *task_push_core_backup(const char *core_path,
+      uint32_t crc, enum core_backup_mode backup_mode,
+      const char *dir_core_assets, bool mute);
+/* Note: If 'core_loaded' is true, menu stack should be
+ * flushed if task_push_core_restore() returns true */
+bool task_push_core_restore(const char *backup_path, const char *dir_libretro,
+      bool *core_loaded);
 
 bool task_push_pl_entry_thumbnail_download(
       const char *system,

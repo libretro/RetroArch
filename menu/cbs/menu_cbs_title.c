@@ -25,6 +25,7 @@
 #include "../../retroarch.h"
 #include "../../configuration.h"
 #include "../../managers/core_option_manager.h"
+#include "../../core_info.h"
 
 #ifndef BIND_ACTION_GET_TITLE
 #define BIND_ACTION_GET_TITLE(cbs, name) (cbs)->action_get_title = (name)
@@ -327,6 +328,54 @@ static int action_get_title_deferred_playlist_list(const char *path, const char 
       strlcpy(s, playlist_file, len);
 
    return 0;
+}
+
+static int action_get_title_deferred_core_backup_list(
+      const char *core_path, const char *prefix, char *s, size_t len)
+{
+   core_info_ctx_find_t core_info;
+
+   if (string_is_empty(core_path) || string_is_empty(prefix))
+      return 0;
+
+   /* Set title prefix */
+   strlcpy(s, prefix, len);
+   strlcat(s, ": ", len);
+
+   /* Search for specified core */
+   core_info.inf  = NULL;
+   core_info.path = core_path;
+
+   /* If core is found, add display name */
+   if (core_info_find(&core_info, core_path) &&
+       core_info.inf->display_name)
+      strlcat(s, core_info.inf->display_name, len);
+   else
+   {
+      /* If not, use core file name */
+      const char *core_filename = path_basename(core_path);
+
+      if (!string_is_empty(core_filename))
+         strlcat(s, core_filename, len);
+   }
+
+   return 1;
+}
+
+static int action_get_title_deferred_core_restore_backup_list(
+      const char *path, const char *label, unsigned menu_type, char *s, size_t len)
+{
+   return action_get_title_deferred_core_backup_list(path,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_RESTORE_BACKUP_LIST),
+         s, len);
+}
+
+static int action_get_title_deferred_core_delete_backup_list(
+      const char *path, const char *label, unsigned menu_type, char *s, size_t len)
+{
+   return action_get_title_deferred_core_backup_list(path,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_DELETE_BACKUP_LIST),
+         s, len);
 }
 
 default_title_macro(action_get_quick_menu_override_options,     MENU_ENUM_LABEL_VALUE_QUICK_MENU_OVERRIDE_OPTIONS)
@@ -663,6 +712,8 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
       {MENU_ENUM_LABEL_DEFERRED_REMAPPINGS_PORT_LIST,                 action_get_title_remap_port},
       {MENU_ENUM_LABEL_DEFERRED_CORE_SETTINGS_LIST,                   action_get_core_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_CORE_INFORMATION_LIST,                action_get_core_information_list},
+      {MENU_ENUM_LABEL_DEFERRED_CORE_RESTORE_BACKUP_LIST,             action_get_title_deferred_core_restore_backup_list},
+      {MENU_ENUM_LABEL_DEFERRED_CORE_DELETE_BACKUP_LIST,              action_get_title_deferred_core_delete_backup_list},
       {MENU_ENUM_LABEL_DEFERRED_DUMP_DISC_LIST,                       action_get_dump_disc_list},
       {MENU_ENUM_LABEL_DEFERRED_LOAD_DISC_LIST,                       action_get_load_disc_list},
       {MENU_ENUM_LABEL_DEFERRED_CONFIGURATION_SETTINGS_LIST,          action_get_configuration_settings_list },
@@ -1216,6 +1267,12 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_DEFERRED_CORE_INFORMATION_LIST:
             BIND_ACTION_GET_TITLE(cbs, action_get_core_information_list);
+            break;
+         case MENU_ENUM_LABEL_DEFERRED_CORE_RESTORE_BACKUP_LIST:
+            BIND_ACTION_GET_TITLE(cbs, action_get_title_deferred_core_restore_backup_list);
+            break;
+         case MENU_ENUM_LABEL_DEFERRED_CORE_DELETE_BACKUP_LIST:
+            BIND_ACTION_GET_TITLE(cbs, action_get_title_deferred_core_delete_backup_list);
             break;
          case MENU_ENUM_LABEL_DEFERRED_INPUT_SETTINGS_LIST:
             BIND_ACTION_GET_TITLE(cbs, action_get_input_settings_list);

@@ -36,6 +36,7 @@
 #include <file/file_path.h>
 #include <retro_miscellaneous.h>
 #include <string/stdstring.h>
+#include <time/rtime.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../core.h"
@@ -1567,6 +1568,7 @@ static bool dump_to_file_desperate(const void *data,
       size_t size, unsigned type)
 {
    time_t time_;
+   struct tm tm_;
    char *timebuf;
    char *path;
    char *application_data = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
@@ -1584,9 +1586,11 @@ static bool dump_to_file_desperate(const void *data,
    timebuf    = (char*)malloc(256 * sizeof(char));
    timebuf[0] = '\0';
 
+   rtime_localtime(&time_, &tm_);
+
    strftime(timebuf,
          256 * sizeof(char),
-         "%Y-%m-%d-%H-%M-%S", localtime(&time_));
+         "%Y-%m-%d-%H-%M-%S", &tm_);
 
    path    = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
    path[0] = '\0';

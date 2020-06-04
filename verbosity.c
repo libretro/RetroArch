@@ -48,6 +48,7 @@
 #include <string/stdstring.h>
 #include <streams/file_stream.h>
 #include <compat/fopen_utf8.h>
+#include <time/rtime.h>
 #include <retro_miscellaneous.h>
 
 #ifdef HAVE_CONFIG_H
@@ -428,11 +429,13 @@ void rarch_log_file_init(
    if (string_is_empty(timestamped_log_file_name))
    {
       char format[256];
-      time_t cur_time      = time(NULL);
-      const struct tm *tm_ = localtime(&cur_time);
+      struct tm tm_;
+      time_t cur_time = time(NULL);
+
+      rtime_localtime(&cur_time, &tm_);
 
       format[0] = '\0';
-      strftime(format, sizeof(format), "retroarch__%Y_%m_%d__%H_%M_%S", tm_);
+      strftime(format, sizeof(format), "retroarch__%Y_%m_%d__%H_%M_%S", &tm_);
       fill_pathname_noext(timestamped_log_file_name, format,
             ".log",
             sizeof(timestamped_log_file_name));
