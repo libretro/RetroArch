@@ -343,27 +343,10 @@ static int task_database_chd_get_serial(const char *name, char* serial)
    return result;
 }
 
-static int intfstream_get_crc(intfstream_t *fd, uint32_t *crc)
-{
-   int64_t read = 0;
-   uint32_t acc = 0;
-   uint8_t buffer[4096];
-
-   while ((read = intfstream_read(fd, buffer, sizeof(buffer))) > 0)
-      acc = encoding_crc32(acc, buffer, (size_t)read);
-
-   if (read < 0)
-      return 0;
-
-   *crc = acc;
-
-   return 1;
-}
-
 static bool intfstream_file_get_crc(const char *name,
       uint64_t offset, size_t size, uint32_t *crc)
 {
-   int rv;
+   bool rv;
    intfstream_t *fd  = intfstream_open_file(name,
          RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
    uint8_t *data     = NULL;
@@ -485,7 +468,7 @@ static int task_database_gdi_get_crc(const char *name, uint32_t *crc)
 
 static bool task_database_chd_get_crc(const char *name, uint32_t *crc)
 {
-   int rv;
+   bool rv;
    intfstream_t *fd = intfstream_open_chd_track(
          name,
          RETRO_VFS_FILE_ACCESS_READ,
@@ -495,7 +478,7 @@ static bool task_database_chd_get_crc(const char *name, uint32_t *crc)
       return 0;
 
    rv = intfstream_get_crc(fd, crc);
-   if (rv == 1)
+   if (rv)
    {
       RARCH_LOG("CHD '%s' crc: %x\n", name, *crc);
    }

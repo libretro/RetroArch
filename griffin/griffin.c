@@ -1096,6 +1096,7 @@ FRONTEND
 #endif
 
 #include "../core_info.c"
+#include "../core_backup.c"
 
 #if defined(HAVE_NETWORKING)
 #include "../core_updater_list.c"
@@ -1242,6 +1243,7 @@ DATA RUNLOOP
 #include "../tasks/task_file_transfer.c"
 #include "../tasks/task_playlist_manager.c"
 #include "../tasks/task_manual_content_scan.c"
+#include "../tasks/task_core_backup.c"
 #ifdef HAVE_ZLIB
 #include "../tasks/task_decompress.c"
 #endif
@@ -1615,3 +1617,8 @@ DISK CONTROL INTERFACE
 MISC FILE FORMATS
 ============================================================ */
 #include "../libretro-common/formats/m3u/m3u_file.c"
+
+/*============================================================
+TIME
+============================================================ */
+#include "../libretro-common/time/rtime.c"

@@ -457,6 +457,34 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_DELETE,
    "Remove this core from disk."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_CREATE_BACKUP,
+   "Backup Core"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_CREATE_BACKUP,
+   "Create an archived backup of the currently installed core."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_RESTORE_BACKUP_LIST,
+   "Restore Backup"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_RESTORE_BACKUP_LIST,
+   "Install a previous version of the core from a list of archived backups."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_DELETE_BACKUP_LIST,
+   "Delete Backup"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_DELETE_BACKUP_LIST,
+   "Remove a file from the list of archived backups."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_BACKUP_CRC,
+   "CRC32: "
+   )
 
 /* Main Menu > Information > System Information */
 
@@ -6071,6 +6099,10 @@ MSG_HASH(
    "No Core Information Available"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_CORE_BACKUPS_AVAILABLE,
+   "No Core Backups Available"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_FAVORITES_AVAILABLE,
    "No Favorites Available"
    )
@@ -10603,6 +10635,62 @@ MSG_HASH(
 MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_END,
    "Scan complete: "
+   )
+MSG_HASH(
+   MSG_CORE_BACKUP_SCANNING_CORE,
+   "Scanning core: "
+   )
+MSG_HASH(
+   MSG_CORE_BACKUP_ALREADY_EXISTS,
+   "Backup of installed core already exists: "
+   )
+MSG_HASH(
+   MSG_BACKING_UP_CORE,
+   "Backing up core: "
+   )
+MSG_HASH(
+   MSG_CORE_BACKUP_COMPLETE,
+   "Core backup complete: "
+   )
+MSG_HASH(
+   MSG_CORE_RESTORATION_ALREADY_INSTALLED,
+   "Selected core backup is already installed: "
+   )
+MSG_HASH(
+   MSG_RESTORING_CORE,
+   "Restoring core: "
+   )
+MSG_HASH(
+   MSG_CORE_RESTORATION_COMPLETE,
+   "Core restoration complete: "
+   )
+MSG_HASH(
+   MSG_CORE_INSTALLATION_ALREADY_INSTALLED,
+   "Selected core file is already installed: "
+   )
+MSG_HASH(
+   MSG_INSTALLING_CORE,
+   "Installing core: "
+   )
+MSG_HASH(
+   MSG_CORE_INSTALLATION_COMPLETE,
+   "Core installation complete: "
+   )
+MSG_HASH(
+   MSG_CORE_RESTORATION_INVALID_CONTENT,
+   "Invalid core file selected: "
+   )
+MSG_HASH(
+   MSG_CORE_BACKUP_FAILED,
+   "Core backup failed: "
+   )
+MSG_HASH(
+   MSG_CORE_RESTORATION_FAILED,
+   "Core restoration failed: "
+   )
+MSG_HASH(
+   MSG_CORE_INSTALLATION_FAILED,
+   "Core installation failed: "
    )
 
 /* Lakka */

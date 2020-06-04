@@ -255,6 +255,9 @@ generic_deferred_push(deferred_push_switch_backlight_control,       DISPLAYLIST_
 generic_deferred_push(deferred_push_manual_content_scan_list,       DISPLAYLIST_MANUAL_CONTENT_SCAN_LIST)
 generic_deferred_push(deferred_push_manual_content_scan_dat_file,   DISPLAYLIST_MANUAL_CONTENT_SCAN_DAT_FILES)
 
+generic_deferred_push(deferred_push_core_restore_backup_list,       DISPLAYLIST_CORE_RESTORE_BACKUP_LIST)
+generic_deferred_push(deferred_push_core_delete_backup_list,        DISPLAYLIST_CORE_DELETE_BACKUP_LIST)
+
 generic_deferred_push(deferred_push_file_browser_select_sideload_core, DISPLAYLIST_FILE_BROWSER_SELECT_SIDELOAD_CORE)
 
 static int deferred_push_cursor_manager_list_deferred(
@@ -873,6 +876,8 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       {MENU_ENUM_LABEL_FAVORITES, deferred_push_detect_core_list},
       {MENU_ENUM_LABEL_DEFERRED_MANUAL_CONTENT_SCAN_LIST, deferred_push_manual_content_scan_list},
       {MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_DAT_FILE, deferred_push_manual_content_scan_dat_file},
+      {MENU_ENUM_LABEL_DEFERRED_CORE_RESTORE_BACKUP_LIST, deferred_push_core_restore_backup_list},
+      {MENU_ENUM_LABEL_DEFERRED_CORE_DELETE_BACKUP_LIST, deferred_push_core_delete_backup_list},
       {MENU_ENUM_LABEL_SIDELOAD_CORE_LIST, deferred_push_file_browser_select_sideload_core},
       {MENU_ENUM_LABEL_DEFERRED_ARCHIVE_ACTION_DETECT_CORE, deferred_archive_action_detect_core},
       {MENU_ENUM_LABEL_DEFERRED_ARCHIVE_ACTION, deferred_archive_action},
@@ -1265,6 +1270,12 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
             break;
          case MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_DAT_FILE:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_manual_content_scan_dat_file);
+            break;
+         case MENU_ENUM_LABEL_DEFERRED_CORE_RESTORE_BACKUP_LIST:
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_restore_backup_list);
+            break;
+         case MENU_ENUM_LABEL_DEFERRED_CORE_DELETE_BACKUP_LIST:
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_delete_backup_list);
             break;
          case MENU_ENUM_LABEL_SIDELOAD_CORE_LIST:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_file_browser_select_sideload_core);

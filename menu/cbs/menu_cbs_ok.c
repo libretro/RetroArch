@@ -302,6 +302,10 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
          return MENU_ENUM_LABEL_DEFERRED_CORE_SETTINGS_LIST;
       case ACTION_OK_DL_CORE_INFORMATION_LIST:
          return MENU_ENUM_LABEL_DEFERRED_CORE_INFORMATION_LIST;
+      case ACTION_OK_DL_CORE_RESTORE_BACKUP_LIST:
+         return MENU_ENUM_LABEL_DEFERRED_CORE_RESTORE_BACKUP_LIST;
+      case ACTION_OK_DL_CORE_DELETE_BACKUP_LIST:
+         return MENU_ENUM_LABEL_DEFERRED_CORE_DELETE_BACKUP_LIST;
       case ACTION_OK_DL_VIDEO_SETTINGS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_VIDEO_SETTINGS_LIST;
       case ACTION_OK_DL_VIDEO_SYNCHRONIZATION_SETTINGS_LIST:
@@ -1269,6 +1273,8 @@ int generic_action_ok_displaylist_push(const char *path,
          action_ok_dl_lbl(action_ok_dl_to_enum(action_type), DISPLAYLIST_GENERIC);
          break;
       case ACTION_OK_DL_CDROM_INFO_DETAIL_LIST:
+      case ACTION_OK_DL_CORE_RESTORE_BACKUP_LIST:
+      case ACTION_OK_DL_CORE_DELETE_BACKUP_LIST:
          action_ok_dl_lbl(action_ok_dl_to_enum(action_type), DISPLAYLIST_GENERIC);
          info_path          = label;
          break;
@@ -1630,88 +1636,6 @@ int generic_action_ok_command(enum event_command cmd)
    if (!command_event(cmd, NULL))
       return menu_cbs_exit();
    return 0;
-}
-
-/* TO-DO: Localization for errors */
-static bool file_copy(const char *src_path, const char *dst_path, char *msg, size_t size)
-{
-   RFILE *src = NULL;
-   RFILE *dst = NULL;
-   bool ret   = true;
-
-   /* Sanity check */
-   if (string_is_empty(src_path) || string_is_empty(dst_path))
-   {
-      strlcpy(msg, "invalid arguments", size);
-      ret = false;
-      goto end;
-   }
-
-   if (!path_is_valid(src_path))
-   {
-      strlcpy(msg, "source file does not exist", size);
-      ret = false;
-      goto end;
-   }
-
-   /* Open source file */
-   src = filestream_open(
-         src_path,
-         RETRO_VFS_FILE_ACCESS_READ,
-         RETRO_VFS_FILE_ACCESS_HINT_NONE);
-
-   if (!src)
-   {
-      strlcpy(msg, "unable to open source file", size);
-      ret = false;
-      goto end;
-   }
-
-   /* Open destination file */
-   dst = filestream_open(
-         dst_path,
-         RETRO_VFS_FILE_ACCESS_WRITE,
-         RETRO_VFS_FILE_ACCESS_HINT_NONE);
-
-   if (!dst)
-   {
-      strlcpy(msg, "unable to open destination file", size);
-      ret = false;
-      goto end;
-   }
-
-   /* Copy file contents */
-   while (!filestream_eof(src))
-   {
-      int64_t numw;
-      char buffer[100] = {0};
-      int64_t numr = filestream_read(src, buffer, sizeof(buffer));
-
-      if (filestream_error(dst) != 0)
-      {
-         strlcpy(msg, "error reading source file", size);
-         ret = false;
-         goto end;
-      }
-
-      numw = filestream_write(dst, buffer, numr);
-
-      if (numw != numr)
-      {
-         strlcpy(msg, "error writing to destination file", size);
-         ret = false;
-         goto end;
-      }
-   }
-
-end:
-   if (src)
-      filestream_close(src);
-
-   if (dst)
-      filestream_close(dst);
-
-   return ret;
 }
 
 static int generic_action_ok(const char *path,
@@ -4586,90 +4510,39 @@ static int action_ok_update_installed_cores(const char *path,
 static int action_ok_sideload_core(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   char src_path[PATH_MAX_LENGTH];
-   char dst_path[PATH_MAX_LENGTH];
-   char msg[PATH_MAX_LENGTH];
+   char backup_path[PATH_MAX_LENGTH];
    const char *menu_path    = NULL;
    const char *core_file    = path;
-   int ret                  = -1;
+   bool core_loaded         = false;
    menu_handle_t *menu      = menu_driver_get_ptr();
    settings_t *settings     = config_get_ptr();
    const char *dir_libretro = settings->paths.directory_libretro;
 
-   src_path[0] = '\0';
-   dst_path[0] = '\0';
-   msg[0]      = '\0';
+   backup_path[0] = '\0';
 
-   /* Sanity check */
-   if (!menu)
+   if (string_is_empty(core_file) || !menu)
       return menu_cbs_exit();
 
-   if (string_is_empty(core_file))
-      goto end;
-
-   if (string_is_empty(dir_libretro))
-      goto end;
-
-   /* Get source core path */
+   /* Get path of source (core 'backup') file */
    menu_entries_get_last_stack(
          &menu_path, NULL, NULL, NULL, NULL);
 
    if (!string_is_empty(menu_path))
       fill_pathname_join(
-            src_path, menu_path, core_file, sizeof(src_path));
+            backup_path, menu_path, core_file, sizeof(backup_path));
    else
-      strlcpy(src_path, core_file, sizeof(src_path));
+      strlcpy(backup_path, core_file, sizeof(backup_path));
 
-   /* Get destination core path */
-   fill_pathname_join(
-         dst_path, dir_libretro,
-         core_file, sizeof(dst_path));
+   /* Push core 'restore' task */
+   task_push_core_restore(backup_path, dir_libretro, &core_loaded);
 
-   /* Copy core file from source to destination */
-   if (file_copy(src_path, dst_path, msg, sizeof(msg)))
-   {
-      /* Success */
-
-      /* Reload core info files */
-      command_event(CMD_EVENT_CORE_INFO_INIT, NULL);
-
-      /* Log result */
-      runloop_msg_queue_push(
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_SUCCESS),
-            1, 100, true,
-            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-
-      RARCH_LOG(
-            "[sideload] %s\n",
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_SUCCESS));
-   }
-   else
-   {
-      /* Failure - just log result */
-      runloop_msg_queue_push(
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_ERROR),
-            1, 100, true,
-            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-
-      RARCH_LOG(
-            "[sideload] %s: %s\n",
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_ERROR), msg);
-   }
-
-   /* Regardless of file copy success/failure, function
-    * should return zero if we get this far (since a
-    * failure would correspond to a filesystem error,
-    * not a menu error...) */
-   ret = 0;
-
-end:
    /* Flush stack
     * > Since the 'sideload core' option is present
     *   in several locations, can't flush to a predefined
     *   level - just go to the top */
    menu_entries_flush_stack(NULL, 0);
 
-   return ret;
+   return 0;
 }
 
 default_action_ok_download(action_ok_core_content_thumbnails, MENU_ENUM_LABEL_CB_CORE_THUMBNAILS_DOWNLOAD)
@@ -5181,6 +5054,8 @@ default_action_ok_func(action_ok_push_video_output_settings_list, ACTION_OK_DL_V
 default_action_ok_func(action_ok_push_configuration_settings_list, ACTION_OK_DL_CONFIGURATION_SETTINGS_LIST)
 default_action_ok_func(action_ok_push_core_settings_list, ACTION_OK_DL_CORE_SETTINGS_LIST)
 default_action_ok_func(action_ok_push_core_information_list, ACTION_OK_DL_CORE_INFORMATION_LIST)
+default_action_ok_func(action_ok_push_core_restore_backup_list, ACTION_OK_DL_CORE_RESTORE_BACKUP_LIST)
+default_action_ok_func(action_ok_push_core_delete_backup_list, ACTION_OK_DL_CORE_DELETE_BACKUP_LIST)
 default_action_ok_func(action_ok_push_audio_settings_list, ACTION_OK_DL_AUDIO_SETTINGS_LIST)
 default_action_ok_func(action_ok_push_audio_output_settings_list, ACTION_OK_DL_AUDIO_OUTPUT_SETTINGS_LIST)
 default_action_ok_func(action_ok_push_audio_resampler_settings_list, ACTION_OK_DL_AUDIO_RESAMPLER_SETTINGS_LIST)
@@ -6477,13 +6352,73 @@ static int action_ok_netplay_disconnect(const char *path,
 #endif
 }
 
+static int action_ok_core_create_backup(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   const char *core_path       = label;
+   settings_t *settings        = config_get_ptr();
+   const char *dir_core_assets = settings->paths.directory_core_assets;
+
+   if (string_is_empty(core_path))
+      return -1;
+
+   task_push_core_backup(core_path, 0, CORE_BACKUP_MODE_MANUAL,
+         dir_core_assets, false);
+
+   return 0;
+}
+
+static int action_ok_core_restore_backup(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   const char *backup_path  = label;
+   bool core_loaded         = false;
+   settings_t *settings     = config_get_ptr();
+   const char *dir_libretro = settings->paths.directory_libretro;
+
+   if (string_is_empty(backup_path))
+      return -1;
+
+   /* If core to be restored is currently loaded, the task
+    * will unload it
+    * > In this case, must flush the menu stack
+    *   (otherwise user will be faced with 'no information
+    *   available' when popping the stack - this would be
+    *   confusing/ugly) */
+   if (task_push_core_restore(backup_path, dir_libretro, &core_loaded) &&
+       core_loaded)
+      menu_entries_flush_stack(NULL, 0);
+
+   return 0;
+}
+
+static int action_ok_core_delete_backup(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   const char *backup_path = label;
+   bool refresh            = false;
+
+   if (string_is_empty(backup_path))
+      return -1;
+
+   /* Delete backup file (if it exists) */
+   if (path_is_valid(backup_path))
+      filestream_delete(backup_path);
+
+   /* Refresh menu */
+   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+   menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
+
+   return 0;
+}
+
 static int action_ok_core_delete(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    const char *core_path         = label;
    const char *core              = NULL;
-   const char *running_core_path = NULL;
-   const char *running_core      = NULL;
+   const char *loaded_core_path = NULL;
+   const char *loaded_core      = NULL;
 
    if (string_is_empty(core_path))
       return -1;
@@ -6493,15 +6428,15 @@ static int action_ok_core_delete(const char *path,
    if (string_is_empty(core))
       return -1;
 
-   /* Get running core file name */
-   running_core_path = path_get(RARCH_PATH_CORE);
-   if (!string_is_empty(running_core_path))
-      running_core = path_basename(running_core_path);
+   /* Get loaded core file name */
+   loaded_core_path = path_get(RARCH_PATH_CORE);
+   if (!string_is_empty(loaded_core_path))
+      loaded_core = path_basename(loaded_core_path);
 
    /* Check if core to be deleted is currently
-    * running - if so, unload it */
-   if (!string_is_empty(running_core) &&
-       string_is_equal(core, running_core))
+    * loaded - if so, unload it */
+   if (!string_is_empty(loaded_core) &&
+       string_is_equal(core, loaded_core))
       generic_action_ok_command(CMD_EVENT_UNLOAD_CORE);
 
    /* Delete core file */
@@ -6867,6 +6802,7 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_NETPLAY_ENABLE_CLIENT,               action_ok_netplay_enable_client},
          {MENU_ENUM_LABEL_NETPLAY_DISCONNECT,                  action_ok_netplay_disconnect},
          {MENU_ENUM_LABEL_CORE_DELETE,                         action_ok_core_delete},
+         {MENU_ENUM_LABEL_CORE_CREATE_BACKUP,                  action_ok_core_create_backup},
          {MENU_ENUM_LABEL_DELETE_PLAYLIST,                     action_ok_delete_playlist},
          {MENU_ENUM_LABEL_ACHIEVEMENT_PAUSE,                   action_ok_cheevos_toggle_hardcore_mode}, 
          {MENU_ENUM_LABEL_ACHIEVEMENT_RESUME,                  action_ok_cheevos_toggle_hardcore_mode},
@@ -6876,6 +6812,8 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_LATENCY_SETTINGS,                    action_ok_push_latency_settings_list},
          {MENU_ENUM_LABEL_CORE_SETTINGS,                       action_ok_push_core_settings_list},
          {MENU_ENUM_LABEL_CORE_INFORMATION,                    action_ok_push_core_information_list},
+         {MENU_ENUM_LABEL_CORE_RESTORE_BACKUP_LIST,            action_ok_push_core_restore_backup_list},
+         {MENU_ENUM_LABEL_CORE_DELETE_BACKUP_LIST,             action_ok_push_core_delete_backup_list},
          {MENU_ENUM_LABEL_CONFIGURATION_SETTINGS,              action_ok_push_configuration_settings_list},
          {MENU_ENUM_LABEL_PLAYLIST_SETTINGS,                   action_ok_push_playlist_settings_list},
          {MENU_ENUM_LABEL_PLAYLIST_MANAGER_LIST,               action_ok_push_playlist_manager_list},
@@ -7512,6 +7450,12 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             break;
          case MENU_SETTINGS_CORE_OPTION_CREATE:
             BIND_ACTION_OK(cbs, action_ok_option_create);
+            break;
+         case MENU_SETTING_ITEM_CORE_RESTORE_BACKUP:
+            BIND_ACTION_OK(cbs, action_ok_core_restore_backup);
+            break;
+         case MENU_SETTING_ITEM_CORE_DELETE_BACKUP:
+            BIND_ACTION_OK(cbs, action_ok_core_delete_backup);
             break;
          default:
             return -1;

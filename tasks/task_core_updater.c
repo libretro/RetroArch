@@ -25,8 +25,8 @@
 #include <string/stdstring.h>
 #include <file/file_path.h>
 #include <net/net_http.h>
+#include <streams/interface_stream.h>
 #include <streams/file_stream.h>
-#include <encodings/crc32.h>
 
 #include "task_file_transfer.h"
 #include "tasks_internal.h"
@@ -130,21 +130,26 @@ static bool local_core_matches_remote_crc(
 
    if (path_is_valid(local_core_path))
    {
-      int64_t length   = 0;
-      uint8_t *ret_buf = NULL;
+      /* Open core file */
+      intfstream_t *local_core_file = intfstream_open_file(
+            local_core_path, RETRO_VFS_FILE_ACCESS_READ,
+            RETRO_VFS_FILE_ACCESS_HINT_NONE);
 
-      if (filestream_read_file(
-            local_core_path, (void**)&ret_buf, &length))
+      if (local_core_file)
       {
          uint32_t crc = 0;
+         bool success = false;
 
-         if (length >= 0)
-            crc = encoding_crc32(0, ret_buf, length);
+         /* Get crc value */
+         success = intfstream_get_crc(local_core_file, &crc);
 
-         if (ret_buf)
-            free(ret_buf);
+         /* Close core file */
+         intfstream_close(local_core_file);
+         free(local_core_file);
+         local_core_file = NULL;
 
-         if ((crc != 0) && (crc == remote_crc))
+         /* Check whether crc matches remote file */
+         if (success && (crc != 0) && (crc == remote_crc))
             return true;
       }
    }

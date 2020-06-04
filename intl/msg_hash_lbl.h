@@ -449,6 +449,26 @@ MSG_HASH(
    "core_information"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_CORE_CREATE_BACKUP,
+   "core_create_backup"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CORE_RESTORE_BACKUP_LIST,
+   "core_restore_backup_list"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_CORE_RESTORE_BACKUP_LIST,
+   "deferred_core_restore_backup_list"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CORE_DELETE_BACKUP_LIST,
+   "core_delete_backup_list"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_CORE_DELETE_BACKUP_LIST,
+   "deferred_core_delete_backup_list"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_DISC_INFORMATION,
    "disc_information"
    )
@@ -1789,6 +1809,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_NO_CORE_INFORMATION_AVAILABLE,
    "no_core_information_available"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_NO_CORE_BACKUPS_AVAILABLE,
+   "no_core_backups_available"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_NO_CORE_OPTIONS_AVAILABLE,

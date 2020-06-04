@@ -230,6 +230,12 @@ const char *file_path_str(enum file_path_enum enum_idx)
       case FILE_PATH_DISK_CONTROL_INDEX_EXTENSION:
          str = ".ldci";
          break;
+      case FILE_PATH_CORE_BACKUP_EXTENSION:
+         str = ".lcbk";
+         break;
+      case FILE_PATH_CORE_BACKUP_EXTENSION_NO_DOT:
+         str = "lcbk";
+         break;
       case FILE_PATH_UNKNOWN:
       default:
          break;

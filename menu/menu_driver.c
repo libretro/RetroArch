@@ -28,6 +28,7 @@
 #include <streams/file_stream.h>
 #include <string/stdstring.h>
 #include <encodings/utf.h>
+#include <time/rtime.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
@@ -2259,6 +2260,10 @@ static void strftime_am_pm(char* ptr, size_t maxsize, const char* format,
 {
    char *local = NULL;
 
+   /* Ensure correct locale is set
+    * > Required for localised AM/PM strings */
+   setlocale(LC_TIME, "");
+
 #if defined(__linux__) && !defined(ANDROID)
    strftime(ptr, maxsize, format, timeptr);
 #else
@@ -2276,7 +2281,6 @@ static void strftime_am_pm(char* ptr, size_t maxsize, const char* format,
 #endif
 }
 
-
 /* Display the date and time - time_mode will influence how
  * the time representation will look like.
  * */
@@ -2291,7 +2295,7 @@ void menu_display_timedate(gfx_display_ctx_datetime_t *datetime)
          DATETIME_CHECK_INTERVAL)
    {
       time_t time_;
-      const struct tm *tm_;
+      struct tm tm_;
       bool has_am_pm         = false;
       const char *format_str = "";
 
@@ -2299,10 +2303,7 @@ void menu_display_timedate(gfx_display_ctx_datetime_t *datetime)
 
       /* Get current time */
       time(&time_);
-
-      setlocale(LC_TIME, "");
-
-      tm_ = localtime(&time_);
+      rtime_localtime(&time_, &tm_);
 
       /* Format string representation */
       switch (datetime->time_mode)
@@ -2645,10 +2646,10 @@ void menu_display_timedate(gfx_display_ctx_datetime_t *datetime)
 
       if (has_am_pm)
          strftime_am_pm(menu_st->datetime_cache, sizeof(menu_st->datetime_cache),
-               format_str, tm_);
+               format_str, &tm_);
       else
          strftime(menu_st->datetime_cache, sizeof(menu_st->datetime_cache),
-               format_str, tm_);
+               format_str, &tm_);
    }
 
    /* Copy cached datetime string to input

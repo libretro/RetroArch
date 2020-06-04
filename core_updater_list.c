@@ -509,10 +509,8 @@ static bool core_updater_list_set_paths(
    last_underscore = (char*)strrchr(local_info_path, '_');
 
    if (!string_is_empty(last_underscore))
-   {
-      if (string_is_not_equal_fast(last_underscore, "_libretro", 9))
+      if (!string_is_equal(last_underscore, "_libretro"))
          *last_underscore = '\0';
-   }
 
    /* > Add proper file extension */
    strlcat(

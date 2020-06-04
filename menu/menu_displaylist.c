@@ -100,6 +100,7 @@
 #include "../dynamic.h"
 #include "../runtime_file.h"
 #include "../manual_content_scan.h"
+#include "../core_backup.h"
 
 #define menu_displaylist_parse_settings_enum(list, label, parse_type, add_empty_entry) menu_displaylist_parse_settings_internal_enum(list, parse_type, add_empty_entry, menu_setting_find_enum(label), label, true)
 
@@ -159,9 +160,8 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
       if (core_info_find(&core_info_finder, core_path))
          core_info = core_info_finder.inf;
    }
-   else
-      if (core_info_get_current_core(&core_info))
-         core_path = core_info->path;
+   else if (core_info_get_current_core(&core_info) && core_info)
+      core_path = core_info->path;
 
    if (!core_info || !core_info->config_data)
    {
@@ -172,18 +172,7 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
             0, 0, 0))
          count++;
 
-      if (menu_show_core_updater &&
-          !string_is_empty(core_path))
-      {
-         if (menu_entries_append_enum(info->list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_DELETE),
-               core_path,
-               MENU_ENUM_LABEL_CORE_DELETE,
-               MENU_SETTING_ACTION_CORE_DELETE, 0, 0))
-            count++;
-      }
-
-      return count;
+      goto end;
    }
 
    {
@@ -367,11 +356,38 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
       }
    }
 
+end:
+
 #if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
 #else
    if (menu_show_core_updater &&
        !string_is_empty(core_path))
    {
+      /* Backup core */
+      if (menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_CREATE_BACKUP),
+            core_path,
+            MENU_ENUM_LABEL_CORE_CREATE_BACKUP,
+            MENU_SETTING_ACTION_CORE_CREATE_BACKUP, 0, 0))
+         count++;
+
+      /* Restore core from backup */
+      if (menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_RESTORE_BACKUP_LIST),
+            core_path,
+            MENU_ENUM_LABEL_CORE_RESTORE_BACKUP_LIST,
+            MENU_SETTING_ACTION_CORE_RESTORE_BACKUP, 0, 0))
+         count++;
+
+      /* Delete core backup */
+      if (menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_DELETE_BACKUP_LIST),
+            core_path,
+            MENU_ENUM_LABEL_CORE_DELETE_BACKUP_LIST,
+            MENU_SETTING_ACTION_CORE_DELETE_BACKUP, 0, 0))
+         count++;
+
+      /* Delete core */
       if (menu_entries_append_enum(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_DELETE),
             core_path,
@@ -380,6 +396,95 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
          count++;
    }
 #endif
+
+   return count;
+}
+
+static unsigned menu_displaylist_parse_core_backup_list(
+      menu_displaylist_info_t *info, bool restore)
+{
+   enum msg_hash_enums enum_idx;
+   enum menu_settings_type settings_type;
+   unsigned count                  = 0;
+   const char *core_path           = info->path;
+   core_backup_list_t *backup_list = NULL;
+   settings_t *settings            = config_get_ptr();
+   const char *dir_core_assets     = settings->paths.directory_core_assets;
+   enum core_backup_date_separator_type
+         date_separator            = (enum core_backup_date_separator_type)
+               settings->uints.menu_timedate_date_separator;
+
+   if (restore)
+   {
+      enum_idx      = MENU_ENUM_LABEL_CORE_RESTORE_BACKUP_ENTRY;
+      settings_type = MENU_SETTING_ITEM_CORE_RESTORE_BACKUP;
+   }
+   else
+   {
+      /* If we're not restoring, we're deleting */
+      enum_idx      = MENU_ENUM_LABEL_CORE_DELETE_BACKUP_ENTRY;
+      settings_type = MENU_SETTING_ITEM_CORE_DELETE_BACKUP;
+   }
+
+   /* Get backup list */
+   backup_list = core_backup_list_init(core_path, dir_core_assets);
+
+   if (backup_list)
+   {
+      size_t i;
+      size_t menu_index = 0;
+
+      for (i = 0; i < core_backup_list_size(backup_list); i++)
+      {
+         const core_backup_list_entry_t *entry = NULL;
+
+         /* Ensure entry is valid */
+         if (core_backup_list_get_index(backup_list, i, &entry) &&
+             entry && !string_is_empty(entry->backup_path))
+         {
+            char timestamp[32];
+            char crc[16];
+
+            timestamp[0] = '\0';
+            crc[0]       = '\0';
+
+            /* Get timestamp and crc strings */
+            core_backup_list_get_entry_timestamp_str(
+                  entry, date_separator, timestamp, sizeof(timestamp));
+            core_backup_list_get_entry_crc_str(
+                  entry, crc, sizeof(crc));
+
+            /* Add menu entry */
+            if (menu_entries_append_enum(info->list,
+                  timestamp,
+                  entry->backup_path,
+                  enum_idx,
+                  settings_type, 0, 0))
+            {
+               /* We need to set backup path, timestamp and crc
+                * > Only have 2 useable fields as standard
+                *   ('path' and 'label'), so have to set the
+                *   crc as 'alt' text */
+               file_list_set_alt_at_offset(
+                     info->list, menu_index, crc);
+
+               menu_index++;
+               count++;
+            }
+         }
+      }
+
+      core_backup_list_free(backup_list);
+   }
+
+   /* Fallback, in case no backups are found */
+   if (count == 0)
+      if (menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE_BACKUPS_AVAILABLE),
+            msg_hash_to_str(MENU_ENUM_LABEL_NO_CORE_BACKUPS_AVAILABLE),
+            MENU_ENUM_LABEL_NO_CORE_BACKUPS_AVAILABLE,
+            0, 0, 0))
+         count++;
 
    return count;
 }
@@ -9400,9 +9505,41 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          }
          break;
       case DISPLAYLIST_CORE_INFO:
+         {
+            /* There is a (infinitesimally small) chance that
+             * the number of items in the core info menu will
+             * change after performing a core restore operation
+             * (i.e. the core info files are reloaded, and if
+             * an unknown error occurs then info entries may
+             * not be available upon popping the stack). We
+             * therefore have to cache the last set menu size,
+             * and reset the navigation pointer if the current
+             * size is different */
+            static size_t prev_count = 0;
+            menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+            count           = menu_displaylist_parse_core_info(info);
+
+            if (count != prev_count)
+            {
+               info->need_refresh          = true;
+               info->need_navigation_clear = true;
+               prev_count                  = count;
+            }
+            info->need_push = true;
+         }
+         break;
+      case DISPLAYLIST_CORE_RESTORE_BACKUP_LIST:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         count           = menu_displaylist_parse_core_info(info);
-         info->need_push = true;
+         count              = menu_displaylist_parse_core_backup_list(info, true);
+         info->need_refresh = true;
+         info->need_push    = true;
+         break;
+      case DISPLAYLIST_CORE_DELETE_BACKUP_LIST:
+         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+         count                       = menu_displaylist_parse_core_backup_list(info, false);
+         info->need_navigation_clear = true;
+         info->need_refresh          = true;
+         info->need_push             = true;
          break;
       case DISPLAYLIST_CORE_OPTIONS:
          {
@@ -10503,14 +10640,20 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                break;
             case DISPLAYLIST_FILE_BROWSER_SELECT_SIDELOAD_CORE:
                {
-                  char ext_name[PATH_MAX_LENGTH];
-                  ext_name[0] = '\0';
+                  char ext_names[255];
+                  ext_names[0] = '\0';
 
                   info->type_default = FILE_TYPE_SIDELOAD_CORE;
 
-                  if (frontend_driver_get_core_extension(
-                           ext_name, sizeof(ext_name)))
-                     info->exts      = strdup(ext_name);
+                  if (frontend_driver_get_core_extension(ext_names, sizeof(ext_names)))
+                  {
+                     strlcat(ext_names, "|", sizeof(ext_names));
+                     strlcat(ext_names, file_path_str(FILE_PATH_CORE_BACKUP_EXTENSION_NO_DOT), sizeof(ext_names));
+                  }
+                  else
+                     strlcpy(ext_names, file_path_str(FILE_PATH_CORE_BACKUP_EXTENSION_NO_DOT), sizeof(ext_names));
+
+                  info->exts      = strdup(ext_names);
                }
                break;
             default:
