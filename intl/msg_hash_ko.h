@@ -6,7 +6,7 @@
 #pragma warning(disable:4566)
 #endif
 
-/* Top-level Menu */
+/* Top-Level Menu */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MAIN_MENU,
@@ -187,10 +187,6 @@ MSG_HASH(
    "코어 다운로드..."
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_DOWNLOAD_CORE,
-   "온라인 업데이터를 통해 코어를 설치합니다."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST,
    "코어 설치 또는 복원"
    )
@@ -263,10 +259,6 @@ MSG_HASH(
 
 /* Main Menu > Online Updater */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST,
-   "코어 업데이터"
-   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS_UPDATER_LIST,
    "미리보기 업데이터"
@@ -459,10 +451,6 @@ MSG_HASH(
 MSG_HASH( /* FIXME Should be MENU_LABEL_VALUE */
    MSG_COMPILER,
    "컴파일러"
-   )
-MSG_HASH( /* FIXME Should be MENU_LABEL_VALUE */
-   MSG_UNKNOWN_COMPILER,
-   "알 수 없는 컴파일러"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_MODEL,
@@ -834,6 +822,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_COOP,
    "협동모드 지원"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SHA1,
+   "SHA1:"
+   )
 
 /* Main Menu > Configuration File */
 
@@ -1181,6 +1173,10 @@ MSG_HASH(
    "비디오 출력 설정을 변경합니다."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_MODE_SETTINGS,
+   "전체 화면 모드"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
    "오디오 싱크"
    )
@@ -1234,8 +1230,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FILTER,
-   "CPU가 처리하는 비디오 필터를 적용합니다.\n"
-   "참고: 성능에 큰 희생이 필요할 수 있습니다. 일부 필터는 32비트 또는 16비트 색상을 사용하는 코어에만 적용될 수 있습니다."
+   "CPU가 처리하는 비디오 필터를 적용합니다.\n참고: 성능에 큰 희생이 필요할 수 있습니다. 일부 필터는 32비트 또는 16비트 색상을 사용하는 코어에만 적용될 수 있습니다."
    )
 
 /* Settings > Video > CRT SwitchRes */
@@ -1497,8 +1492,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_ADAPTIVE_VSYNC,
-   "설정된 주사율보다 낮은 성능이 감지될 경우 수직 동기화가 자동으로 비활성화됩니다.\n"
-   "퍼포먼스가 떨어질 때 버벅임을 방지할 수 있습니다."
+   "설정된 주사율보다 낮은 성능이 감지될 경우 수직 동기화가 자동으로 비활성화됩니다.\n퍼포먼스가 떨어질 때 버벅임을 방지할 수 있습니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
@@ -2642,8 +2636,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REWIND_ENABLE,
-   "실수했나요? 뒤로 감아 다시 해보세요.\n"
-   "사용시 퍼포먼스 저하가 발생합니다."
+   "실수했나요? 뒤로 감아 다시 해보세요.\n사용시 퍼포먼스 저하가 발생합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REWIND_GRANULARITY,
@@ -2752,7 +2745,7 @@ MSG_HASH(
    "UDP 스트림 포트"
    )
 
-/* Settings > Onscreen Display */
+/* Settings > On-Screen Display */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONSCREEN_OVERLAY_SETTINGS,
@@ -2779,7 +2772,7 @@ MSG_HASH(
    "OSD 알림을 조정합니다"
    )
 
-/* Settings > Onscreen Display > Onscreen Overlay */
+/* Settings > On-Screen Display > On-Screen Overlay */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ENABLE,
@@ -2854,7 +2847,7 @@ MSG_HASH(
    "오버레이에 사용할 전체 UI 구성요소의 크기를 설정합니다."
    )
 
-/* Settings > Onscreen Display > Video Layout */
+/* Settings > On-Screen Display > Video Layout */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_ENABLE,
@@ -2881,7 +2874,7 @@ MSG_HASH( /* FIXME Unused */
    "불러온 레이아웃에서 보기를 선택하십시오."
    )
 
-/* Settings > Onscreen Display > Onscreen Notifications */
+/* Settings > On-Screen Display > On-Screen Notifications */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FONT_ENABLE,
@@ -3184,10 +3177,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_ONLINE_UPDATER,
    "온라인 업데이트 설정란을 표시/해제합니다."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SHOW_CORE_UPDATER,
-   "코어 업데이트 표시"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_CORE_UPDATER,
@@ -3851,8 +3840,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_ENABLE,
-   "고전 게임에서 도전과제를 획득하십시오.\n"
-   "자세한 정보는 http://retroachievements.org 에서 확인하세요."
+   "고전 게임에서 도전과제를 획득하십시오.\n자세한 정보는 http://retroachievements.org 에서 확인하세요."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_HARDCORE_MODE_ENABLE,
@@ -3860,9 +3848,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_HARDCORE_MODE_ENABLE,
-   "두 배의 포인트를 얻게 되며\n"
-   "모든 게임에 대한 상태저장, 치트, 뒤로 감기, 빨리 감기, 일시정지, 슬로우 모션 사용이 해제됩니다.\n"
-   "실행 후 설정을 변경하면 게임이 초기화됩니다."
+   "두 배의 포인트를 얻게 되며\n모든 게임에 대한 상태저장, 치트, 뒤로 감기, 빨리 감기, 일시정지, 슬로우 모션 사용이 해제됩니다.\n실행 후 설정을 변경하면 게임이 초기화됩니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_LEADERBOARDS_ENABLE,
@@ -3870,8 +3856,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_LEADERBOARDS_ENABLE,
-   "게임별 리더보드입니다.\n"
-   "하드코어 모드가 비활성 상태일 시 아무런 영향을 주지 않습니다."
+   "게임별 리더보드입니다.\n하드코어 모드가 비활성 상태일 시 아무런 영향을 주지 않습니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_BADGES_ENABLE,
@@ -4305,8 +4290,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISCORD_ALLOW,
-   "Discord 앱에서 실행 중인 컨텐츠에 대한 더 많은 정보를 표시하게 합니다.\n"
-   "참고: 클라이언트 버전이 아닌 브라우저 버전 Discord에는 적용되지 않을 수 있습니다."
+   "Discord 앱에서 실행 중인 컨텐츠에 대한 더 많은 정보를 표시하게 합니다.\n참고: 클라이언트 버전이 아닌 브라우저 버전 Discord에는 적용되지 않을 수 있습니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_ALLOW,
@@ -5084,8 +5068,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_BIG_ENDIAN,
-   "빅 엔디안일 때: 258 = 0x0102,\n"
-   "리틀 엔디안일 때: 258 = 0x0201"
+   "빅 엔디안일 때: 258 = 0x0102,\n리틀 엔디안일 때: 258 = 0x0201"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_EXACT,
@@ -5258,8 +5241,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_REPEAT_COUNT,
-   "치트가 적용되는 횟수입니다.\n"
-   "메모리의 많은 영역에 적용하려면 다른 두 반복 옵션과 함께 사용하십시오."
+   "치트가 적용되는 횟수입니다.\n메모리의 많은 영역에 적용하려면 다른 두 반복 옵션과 함께 사용하십시오."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_REPEAT_ADD_TO_ADDRESS,
@@ -5330,7 +5312,7 @@ MSG_HASH(
    "현재 치트 삭제"
    )
 
-/* Quick Menu > Disk Control */
+/* Quick Menu > Disc Control */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
@@ -5342,8 +5324,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_INDEX,
-   "디스크 인덱스를 변경합니다. 디스크 변경은 트레이를 연 다음 수행해야 합니다.\n"
-   "RetroArch가 메뉴 표시 중 컨텐츠를 일시정지하도록 설정되어 있는 경우, 일시정지를 해제할 때까지 트레이 열기/닫기 액션이 코어에 전달되지 않을 수도 있습니다. 그런 경우 디스크를 조작할 때마다 게임을 몇 프레임간 실행하는 것을 잊지 말아주세요."
+   "디스크 인덱스를 변경합니다. 디스크 변경은 트레이를 연 다음 수행해야 합니다.\nRetroArch가 메뉴 표시 중 컨텐츠를 일시정지하도록 설정되어 있는 경우, 일시정지를 해제할 때까지 트레이 열기/닫기 액션이 코어에 전달되지 않을 수도 있습니다. 그런 경우 디스크를 조작할 때마다 게임을 몇 프레임간 실행하는 것을 잊지 말아주세요."
    )
 
 /* Quick Menu > Shaders */
@@ -5660,9 +5641,9 @@ MSG_HASH(
 
 /* Settings Options */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_KOREAN,
-   "Korean - 한국어 (Restart)"
+MSG_HASH( /* FIXME Should be MENU_LABEL_VALUE */
+   MSG_UNKNOWN_COMPILER,
+   "알 수 없는 컴파일러"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_DIGITAL_OR,
@@ -6068,20 +6049,16 @@ MSG_HASH(
 /* RGUI: Settings > User Interface > Appearance */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_BACKGROUND_FILLER_THICKNESS_ENABLE,
+   "바탕화면 필터 굵기 설정"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_BORDER_FILLER_ENABLE,
    "창 테두리 채우기 설정"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_BORDER_FILLER_ENABLE,
    "메뉴 테두리를 보입니다."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_RGUI_BACKGROUND_FILLER_THICKNESS_ENABLE,
-   "바탕화면 필터 굵기 설정"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_RGUI_BACKGROUND_FILLER_THICKNESS_ENABLE,
-   "메뉴 배경 체크 무늬 패턴을 증가시킵니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_FULL_WIDTH_LAYOUT,
@@ -6511,8 +6488,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_SHADOWS_ENABLE,
-   "모든 아이콘에 그림자를 사용합니다.\n"
-   "퍼포먼스에 약간의 영향을 줄 수 있습니다."
+   "모든 아이콘에 그림자를 사용합니다.\n퍼포먼스에 약간의 영향을 줄 수 있습니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_RIBBON_ENABLE,
@@ -9097,10 +9073,6 @@ MSG_HASH(
    "디스크 설정 실패"
    )
 MSG_HASH(
-   MSG_CHEEVOS_HARDCORE_MODE_DISABLED,
-   "상태저장 값이 불려지면 하드코어 도전과제 모드는 현재 세션에서 해제됩니다. 하드코어 모드를 사용하려면 다시 시작하십시오."
-   )
-MSG_HASH(
    MSG_RESAMPLER_QUALITY_LOWEST,
    "매우 낮음"
    )
@@ -9384,6 +9356,7 @@ MSG_HASH(
 #ifdef GEKKO
 #endif
 #ifdef HAVE_ODROIDGO2
+#else
 #endif
 #if defined(_3DS)
 MSG_HASH(
@@ -9406,12 +9379,6 @@ MSG_HASH(
 #ifdef HAVE_QT
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_SCAN_FINISHED,
-   "스캔 완료.<br><br>\n"
-   "컨텐츠를 정확하게 스캔하려면:\n"
-   "<ul><li>맞는 코어를 미리 다운로드 하고</li>\n"
-   "<li>\"코어 정보 파일\"을 온라인 업데이터로 업데이트하며</li>\n"
-   "<li>\"데이터베이스\"도 온라인 업데이터로 업데이트하고</li>\n"
-   "<li>위의 사항을 적용한 후 RetroArch를 다시 시작하십시오</li></ul>\n"
-   "마지막으로 컨텐츠는 <a href=\"https://docs.libretro.com/guides/roms-playlists-thumbnails/#sources\">이 곳</a>의 데이터베이스에 일치해야 합니다. 그래도 동작하지 않는다면 <a href=\"https://www.github.com/libretro/RetroArch/issues\">버그 리포트를 해주세요</a>."
+   "스캔 완료.<br><br>\n컨텐츠를 정확하게 스캔하려면:\n<ul><li>맞는 코어를 미리 다운로드 하고</li>\n<li>\"코어 정보 파일\"을 온라인 업데이터로 업데이트하며</li>\n<li>\"데이터베이스\"도 온라인 업데이터로 업데이트하고</li>\n<li>위의 사항을 적용한 후 RetroArch를 다시 시작하십시오</li></ul>\n마지막으로 컨텐츠는 <a href=\"https://docs.libretro.com/guides/roms-playlists-thumbnails/#sources\">이 곳</a>의 데이터베이스에 일치해야 합니다. 그래도 동작하지 않는다면 <a href=\"https://www.github.com/libretro/RetroArch/issues\">버그 리포트를 해주세요</a>."
    )
 #endif

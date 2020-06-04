@@ -1,3 +1,4 @@
 *.json
 crowdin.yaml
 crowdin.yml
+crowdin-cli.jar

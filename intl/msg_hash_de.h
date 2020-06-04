@@ -6,7 +6,7 @@
 #pragma warning(disable:4566)
 #endif
 
-/* Top-level Menu */
+/* Top-Level Menu */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MAIN_MENU,
@@ -72,6 +72,26 @@ MSG_HASH(
    "Wähle, welcher Inhalt gestartet werden soll."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LOAD_DISC,
+   "Disk laden"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LOAD_DISC,
+   "Lädt eine physische Medien-Disk. Du solltest zuerst den Core auswählen (Core laden), den du mit der Disk zu nutzen beabsichtigst."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DUMP_DISC,
+   "Disk dumpen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DUMP_DISC,
+   "Dumpt die physische Medien-Disk auf den internen Speicher. Sie wird als Abbild gespeichert."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB,
+   "Wiedergabelisten"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLISTS_TAB,
    "Während der Suche gefundener Inhalt wird hier erscheinen."
    )
@@ -82,6 +102,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_CONTENT_LIST,
    "Sucht nach Inhalten und fügt diese zur Datenbank hinzu."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SHOW_WIMP,
+   "Desktop-Menü anzeigen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SHOW_WIMP,
+   "Öffnet das Desktop-Menü, wenn geschlossen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
@@ -112,6 +140,10 @@ MSG_HASH(
    "Einstellungen"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS,
+   "Programm konfigurieren."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INFORMATION_LIST,
    "Informationen"
    )
@@ -140,6 +172,10 @@ MSG_HASH(
    "RetroArch neustarten"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_RESTART_RETROARCH,
+   "Programm neu starten."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
    "RetroArch beenden"
    )
@@ -153,6 +189,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,
    "Core herunterladen..."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST,
+   "Core installieren oder wiederherstellen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SIDELOAD_CORE_LIST,
+   "Installiere oder stelle einen Core aus dem Download-Verzeichnis wieder her."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_START_VIDEO_PROCESSOR,
@@ -216,12 +260,24 @@ MSG_HASH(
 /* Main Menu > Online Updater */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST,
-   "Cores aktualisieren"
+   MENU_ENUM_LABEL_VALUE_UPDATE_INSTALLED_CORES,
+   "Installierte Kerne aktualisieren"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_UPDATE_INSTALLED_CORES,
+   "Aktualisiere alle installierten Cores auf die neueste verfügbare Version."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS_UPDATER_LIST,
    "Miniaturansichten aktualisieren"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_THUMBNAILS_UPDATER_LIST,
+   "Lade ein komplettes Miniaturansichtspaket für das ausgewählte System herunter."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PL_THUMBNAILS_UPDATER_LIST,
+   "Wiedergabelisten Miniaturansichten-Updater"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,
@@ -302,7 +358,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CURSOR_MANAGER,
    "Suchanfragen verwalten"
    )
-MSG_HASH( /* FIXME Maybe sloppy */
+MSG_HASH(
    MENU_ENUM_SUBLABEL_CURSOR_MANAGER,
    "Betrachte vorherige Suchanfragen."
    )
@@ -346,10 +402,6 @@ MSG_HASH(
    "Unterstützte Erweiterungen"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE,
-   "Firmware"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MISSING,
    "Fehlt"
    )
@@ -380,9 +432,9 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION,
    "Git-Version"
    )
-MSG_HASH( /* FIXME Should be MENU_LABEL_VALUE */
-   MSG_UNKNOWN_COMPILER,
-   "Unbekannter Compiler"
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_MODEL,
+   "Prozessor-Modell"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_FEATURES,
@@ -485,6 +537,10 @@ MSG_HASH(
    "Vulkan-Unterstützung"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_METAL_SUPPORT,
+   "Metal-Unterstützung"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OPENGL_SUPPORT,
    "OpenGL-Unterstützung"
    )
@@ -555,6 +611,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PULSEAUDIO_SUPPORT,
    "PulseAudio-Unterstützung"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COREAUDIO_SUPPORT,
+   "CoreAudio-Unterstützung"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COREAUDIO3_SUPPORT,
+   "CoreAudio V3-Unterstützung"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DSOUND_SUPPORT,
@@ -649,6 +713,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DESCRIPTION,
    "Beschreibung"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PUBLISHER,
+   "Herausgeber"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DEVELOPER,
@@ -819,6 +887,14 @@ MSG_HASH(
    "Einstellungen für Joypads, Tastaturen und Mäuse."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LATENCY_SETTINGS,
+   "Latenz"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LATENCY_SETTINGS,
+   "Einstellungen für Video-, Audio- und Eingangslatenz ändern."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_SETTINGS,
    "Cores"
    )
@@ -841,6 +917,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVING_SETTINGS,
    "Ändere die Einstellungen der Speicherfunktion."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
+   "Protokollierung"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOGGING_SETTINGS,
@@ -885,6 +965,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_USER_INTERFACE_SETTINGS,
    "Ändere die Einstellungen für die Benutzeroberläche."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AI_SERVICE_SETTINGS,
+   "KI-Dienst"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_POWER_MANAGEMENT_SETTINGS,
@@ -1012,6 +1096,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RECORD_DRIVER,
    "Zu verwendender Aufnahmetreiber."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MIDI_DRIVER,
+   "Zu verwendender MIDI-Treiber."
    )
 
 /* Settings > Video */
@@ -2237,7 +2325,7 @@ MSG_HASH(
    "Streamtitel"
    )
 
-/* Settings > Onscreen Display */
+/* Settings > On-Screen Display */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONSCREEN_OVERLAY_SETTINGS,
@@ -2248,7 +2336,7 @@ MSG_HASH(
    "Bildschirm-Benachrichtigungen"
    )
 
-/* Settings > Onscreen Display > Onscreen Overlay */
+/* Settings > On-Screen Display > On-Screen Overlay */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ENABLE,
@@ -2315,10 +2403,10 @@ MSG_HASH(
    "Skalierung aller Bedienelemente des Overlays."
    )
 
-/* Settings > Onscreen Display > Video Layout */
+/* Settings > On-Screen Display > Video Layout */
 
 
-/* Settings > Onscreen Display > Onscreen Notifications */
+/* Settings > On-Screen Display > On-Screen Notifications */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FONT_ENABLE,
@@ -2553,10 +2641,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_ONLINE_UPDATER,
    "Zeige/verberge die Option 'Online-Aktualisierungen'."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SHOW_CORE_UPDATER,
-   "Zeige Core-Aktualisierungen"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_CORE_UPDATER,
@@ -3792,7 +3876,7 @@ MSG_HASH(
    "Aktiviert"
    )
 
-/* Quick Menu > Disk Control */
+/* Quick Menu > Disc Control */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
@@ -3977,9 +4061,9 @@ MSG_HASH(
 
 /* Settings Options */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_GERMAN,
-   "German - Deutsch"
+MSG_HASH( /* FIXME Should be MENU_LABEL_VALUE */
+   MSG_UNKNOWN_COMPILER,
+   "Unbekannter Compiler"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_NONE,
@@ -4105,12 +4189,12 @@ MSG_HASH(
 /* RGUI: Settings > User Interface > Appearance */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_RGUI_BORDER_FILLER_ENABLE,
-   "Rahmenfüller aktivieren."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_BACKGROUND_FILLER_THICKNESS_ENABLE,
    "Hintergrundfüllerdicke aktivieren"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_BORDER_FILLER_ENABLE,
+   "Rahmenfüller aktivieren."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_LINEAR_FILTER,
@@ -4650,7 +4734,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y,
    "Rechter Analogstick Y"
    )
-MSG_HASH( /* FIXME Might be inaccurate */
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST,
    "Datenbank-Suchanfragen"
    )
@@ -4980,7 +5064,7 @@ MSG_HASH(
    MSG_BYTES,
    "Bytes"
    )
-MSG_HASH( /* FIXME Huh? */
+MSG_HASH(
    MSG_CANNOT_INFER_NEW_CONFIG_PATH,
    "Kann neuen Konfigurationspfad nicht ableiten. Verwende aktuelle Zeit."
    )
@@ -5672,7 +5756,7 @@ MSG_HASH(
    MSG_USING_LIBRETRO_DUMMY_CORE_RECORDING_SKIPPED,
    "Verwende libretro-Dumy-Core. Überspringe Aufzeichnung."
    )
-MSG_HASH( /* FIXME Sounds odd, maybe improper translation */
+MSG_HASH(
    MSG_VALUE_CONNECT_DEVICE_FROM_A_VALID_PORT,
    "Verbinde Gerät mit einem gültigen Anschluss."
    )
@@ -5932,6 +6016,7 @@ MSG_HASH(
 #ifdef GEKKO
 #endif
 #ifdef HAVE_ODROIDGO2
+#else
 #endif
 #if defined(_3DS)
 MSG_HASH(
