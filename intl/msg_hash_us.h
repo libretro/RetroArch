@@ -1298,8 +1298,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FILTER,
-   "Apply a CPU-powered video filter.\n"
-   "NOTE: Might come at a high performance cost. Some video filters might only work for cores that use 32bit or 16bit color."
+   "Apply a CPU-powered video filter.\nNOTE: Might come at a high performance cost. Some video filters might only work for cores that use 32bit or 16bit color."
    )
 
 /* Settings > Video > CRT SwitchRes */
@@ -1373,8 +1372,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
-   "Vertical refresh rate of your screen. Used to calculate a suitable audio input rate.\n"
-   "NOTE: This will be ignored if 'Threaded Video' is enabled."
+   "Vertical refresh rate of your screen. Used to calculate a suitable audio input rate.\nNOTE: This will be ignored if 'Threaded Video' is enabled."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
@@ -1566,8 +1564,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_ADAPTIVE_VSYNC,
-   "V-Sync is enabled until performance falls below the target refresh rate.\n"
-   "This can minimize stuttering when performance falls below realtime, and can be more energy efficient."
+   "V-Sync is enabled until performance falls below the target refresh rate.\nThis can minimize stuttering when performance falls below realtime, and can be more energy efficient."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
@@ -2718,8 +2715,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PERFCNT_ENABLE,
-   "Performance counters for RetroArch (and cores).\n"
-   "The counter data can help determine system bottlenecks and fine-tune system and application performance"
+   "Performance counters for RetroArch (and cores).\nThe counter data can help determine system bottlenecks and fine-tune system and application performance"
    )
 
 /* Settings > File Browser */
@@ -2800,8 +2796,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REWIND_ENABLE,
-   "Made a mistake? Rewind and try again.\n"
-   "Beware that this causes a performance hit when playing."
+   "Made a mistake? Rewind and try again.\nBeware that this causes a performance hit when playing."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REWIND_GRANULARITY,
@@ -4101,8 +4096,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_ENABLE,
-   "Compete to earn custom-made achievements in classic games.\n"
-   "For more information, visit http://retroachievements.org"
+   "Compete to earn custom-made achievements in classic games.\nFor more information, visit http://retroachievements.org"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_HARDCORE_MODE_ENABLE,
@@ -4110,9 +4104,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_HARDCORE_MODE_ENABLE,
-   "Double the amount of points earned.\n"
-   "Disables save states, cheats, rewind, pause, and slow-motion for all games.\n"
-   "Toggling this setting at runtime will restart your game."
+   "Double the amount of points earned.\nDisables save states, cheats, rewind, pause, and slow-motion for all games.\nToggling this setting at runtime will restart your game."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_LEADERBOARDS_ENABLE,
@@ -4120,8 +4112,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_LEADERBOARDS_ENABLE,
-   "Game specific leaderboards.\n"
-   "Has no effect if Hardcore Mode is disabled."
+   "Game specific leaderboards.\nHas no effect if Hardcore Mode is disabled."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_RICHPRESENCE_ENABLE,
@@ -4619,8 +4610,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISCORD_ALLOW,
-   "Allows the discord app to show more data about the content played.\n"
-   "NOTE: It will not work with the browser version, only with the native desktop client."
+   "Allows the discord app to show more data about the content played.\nNOTE: It will not work with the browser version, only with the native desktop client."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_ALLOW,
@@ -5522,8 +5512,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_BIG_ENDIAN,
-   "Big endian  : 258 = 0x0102,\n"
-   "Little endian : 258 = 0x0201"
+   "Big endian  : 258 = 0x0102,\nLittle endian : 258 = 0x0201"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_EXACT,
@@ -5728,8 +5717,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_REPEAT_COUNT,
-   "The number of times the cheat will be applied.\n"
-   "Use with the other two Iteration options to affect large areas of memory."
+   "The number of times the cheat will be applied.\nUse with the other two Iteration options to affect large areas of memory."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_REPEAT_ADD_TO_ADDRESS,
@@ -7556,8 +7544,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_SHADOWS_ENABLE,
-   "Draw drop shadows for all icons.\n"
-   "This will have a minor performance hit."
+   "Draw drop shadows for all icons.\nThis will have a minor performance hit."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_RIBBON_ENABLE,
@@ -10952,12 +10939,6 @@ MSG_HASH(
 #ifdef HAVE_QT
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_SCAN_FINISHED,
-   "Scan Finished.<br><br>\n"
-   "In order for content to be correctly scanned, you must:\n"
-   "<ul><li>have a compatible core already downloaded</li>\n"
-   "<li>have \"Core Info Files\" updated via Online Updater</li>\n"
-   "<li>have \"Databases\" updated via Online Updater</li>\n"
-   "<li>restart RetroArch if any of the above was just done</li></ul>\n"
-   "Finally, the content must match existing databases from <a href=\"https://docs.libretro.com/guides/roms-playlists-thumbnails/#sources\">here</a>. If it is still not working, consider <a href=\"https://www.github.com/libretro/RetroArch/issues\">submitting a bug report</a>."
+   "Scan Finished.<br><br>\nIn order for content to be correctly scanned, you must:\n<ul><li>have a compatible core already downloaded</li>\n<li>have \"Core Info Files\" updated via Online Updater</li>\n<li>have \"Databases\" updated via Online Updater</li>\n<li>restart RetroArch if any of the above was just done</li></ul>\nFinally, the content must match existing databases from <a href=\"https://docs.libretro.com/guides/roms-playlists-thumbnails/#sources\">here</a>. If it is still not working, consider <a href=\"https://www.github.com/libretro/RetroArch/issues\">submitting a bug report</a>."
    )
 #endif
