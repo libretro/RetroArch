@@ -38,13 +38,8 @@ extern "C" {
 
 #include "../ui_qt.h"
 
-static AppHandler *appHandler;
+static AppHandler *app_handler;
 static ui_application_qt_t ui_application;
-
-/* these must last for the lifetime of the QApplication */
-static int app_argc = 1;
-static char app_name[] = "retroarch";
-static char *app_argv[] = { app_name, NULL };
 
 /* ARGB 16x16 */
 static const unsigned retroarch_qt_icon_data[] = {
@@ -94,7 +89,12 @@ void AppHandler::onLastWindowClosed()
 
 static void* ui_application_qt_initialize(void)
 {
-   appHandler = new AppHandler();
+   /* These must last for the lifetime of the QApplication */
+   static int app_argc     = 1;
+   static char app_name[]  = "retroarch";
+   static char *app_argv[] = { app_name, NULL };
+
+   app_handler             = new AppHandler();
 
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 6, 0))
    /* HiDpi supported since Qt 5.6 */
@@ -107,7 +107,8 @@ static void* ui_application_qt_initialize(void)
    ui_application.app->setOrganizationName("libretro");
    ui_application.app->setApplicationName("RetroArch");
    ui_application.app->setApplicationVersion(PACKAGE_VERSION);
-   ui_application.app->connect(ui_application.app, SIGNAL(lastWindowClosed()), appHandler, SLOT(onLastWindowClosed()));
+   ui_application.app->connect(ui_application.app, SIGNAL(lastWindowClosed()),
+         app_handler, SLOT(onLastWindowClosed()));
 
 #ifdef Q_OS_UNIX
    setlocale(LC_NUMERIC, "C");
@@ -137,8 +138,8 @@ static void ui_application_qt_process_events(void)
 
 static void ui_application_qt_quit(void)
 {
-   if (appHandler)
-      appHandler->exit();
+   if (app_handler)
+      app_handler->exit();
 }
 
 #ifdef HAVE_MAIN

@@ -59,24 +59,22 @@
 #define SM_SERVERR2 89
 #endif
 
+/* static public global variable */
+VOID (WINAPI *DragAcceptFiles_func)(HWND, BOOL);
+
+/* static global variables */
+static bool dwm_composition_disabled = false;
+static bool console_needs_free       = false;
+static char win32_cpu_model_name[64] = {0};
+static bool pi_set                   = false;
+#ifdef HAVE_DYNAMIC
 /* We only load this library once, so we let it be
  * unloaded at application shutdown, since unloading
  * it early seems to cause issues on some systems.
  */
-
-#ifdef HAVE_DYNAMIC
 static dylib_t dwmlib;
 static dylib_t shell32lib;
 #endif
-
-static char win32_cpu_model_name[64] = {0};
-
-VOID (WINAPI *DragAcceptFiles_func)(HWND, BOOL);
-
-static bool dwm_composition_disabled = false;
-static bool console_needs_free       = false;
-
-static bool pi_set                   = false;
 
 #if defined(HAVE_LANGEXTRA) && !defined(_XBOX)
 #if (defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0500) || !defined(_MSC_VER)

@@ -105,16 +105,16 @@ extern "C" {
 
 static ui_window_qt_t ui_window = {0};
 
-enum CoreSelection
+enum core_selection
 {
-   CORE_SELECTION_CURRENT,
+   CORE_SELECTION_CURRENT = 0,
    CORE_SELECTION_PLAYLIST_SAVED,
    CORE_SELECTION_PLAYLIST_DEFAULT,
    CORE_SELECTION_ASK,
    CORE_SELECTION_LOAD_CORE
 };
 
-static const QPixmap getInvader()
+static const QPixmap getInvader(void)
 {
    QPixmap pix;
    pix.loadFromData(invader_png, invader_png_len, "PNG");
@@ -1179,7 +1179,7 @@ void MainWindow::onLaunchWithComboBoxIndexChanged(int)
    QVector<QHash<QString, QString> > infoList = getCoreInfo();
    QString coreInfoText;
    QVariantMap coreMap = m_launchWithComboBox->currentData(Qt::UserRole).value<QVariantMap>();
-   CoreSelection coreSelection = static_cast<CoreSelection>(coreMap.value("core_selection").toInt());
+   core_selection coreSelection = static_cast<core_selection>(coreMap.value("core_selection").toInt());
    int i = 0;
 
    if (infoList.count() == 0)
@@ -1795,7 +1795,7 @@ void MainWindow::onStartCoreClicked()
 QHash<QString, QString> MainWindow::getSelectedCore()
 {
    QVariantMap coreMap = m_launchWithComboBox->currentData(Qt::UserRole).value<QVariantMap>();
-   CoreSelection coreSelection = static_cast<CoreSelection>(coreMap.value("core_selection").toInt());
+   core_selection coreSelection = static_cast<core_selection>(coreMap.value("core_selection").toInt());
    QHash<QString, QString> coreHash;
    QHash<QString, QString> contentHash;
    ViewType viewType = getCurrentViewType();
@@ -1864,7 +1864,7 @@ void MainWindow::loadContent(const QHash<QString, QString> &contentHash)
    const char *contentDbName   = NULL;
    const char *contentCrc32    = NULL;
    QVariantMap coreMap         = m_launchWithComboBox->currentData(Qt::UserRole).value<QVariantMap>();
-   CoreSelection coreSelection = static_cast<CoreSelection>(coreMap.value("core_selection").toInt());
+   core_selection coreSelection = static_cast<core_selection>(coreMap.value("core_selection").toInt());
 
    contentDbNameFull[0] = '\0';
 
