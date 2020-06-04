@@ -1,23 +1,79 @@
-# Internationalization Workflow (Draft)
+# Internationalization Workflow
 
-## Steps
+## For Translators
 
-- Developers update strings in `msg_hash_us.h`.
-- Developers (can set a cron job) run `./h2json.py msg_hash_us.h` to generate `msg_hash_us.json`. It is just a convenient format that is supported by Weblate/Crowdin/Transifex and doesn't need to be in version control.
-- Developers (can set a cron job) upload `msg_hash_us.json` to Weblate/Crowdin/Transifex.
-- Translators translate strings on Weblate/Crowdin/Transifex.
-- Developers (can set a cron job) download `msg_hash_xx.json` files.
-- Developers (can set a cron job) run `./json2h.py msg_hash_xx.json` to generate `msg_hash_xx.h`.
+### Use Crowdin
 
-## Pros
+1. Register user account at https://crowdin.com/
+2. Join the project https://crowdin.com/project/retroarch/
+3. Select your language to translate
+4. Click the file name `msg_hash_us.json` and the editor should open
+5. Select an untranslated (red) string from the list
+6. Type translation and save
+7. Next string...
 
-- No new dependencies.
-- No performance impact.
-- Don't require translators to know how to use Git, how to read C code and how to create Pull Request.
-- Translators will be informed whenever a source string changes.
+Links:
+- [Video: How to use Crowdin](https://www.youtube.com/watch?v=kRMeCCr-D7s)
+- [Learn more about contributing](https://support.crowdin.com/for-volunteer-translators/)
+- [Learn more about the editor](https://support.crowdin.com/online-editor/)
+- [Learn more about conversations](https://support.crowdin.com/conversations/)
+- [Learn more about joining project](https://support.crowdin.com/joining-translation-project/)
 
-## Cron job setup
+### Request New Language
 
-1. [Install crowdin cli tool](https://support.crowdin.com/cli-tool/)
-2. Get the `intl/crowdin.yaml` file from someone who have crowdin admin accounts
-3. Add cron job `cd path/to/retroarch/intl && ./crowin_sync.sh`
+You can open a new issue and @guoyunhe to add new language.
+
+## For Maintainers
+
+### Set Up
+
+Install Java, Python3 and Git
+
+### Synchronize
+
+```
+cd intl
+python3 crowin_sync.py
+```
+
+### Manage Crowdin Project
+
+1. You need to be project admin. Please contact @guoyunhe or @twinaphex
+2. Go to https://crowdin.com/project/retroarch/settings
+3. You can manage languages, members etc. here
+
+Links:
+- [Learn more about project management](https://support.crowdin.com/advanced-project-setup/)
+- [Learn more about inviting project members](https://support.crowdin.com/inviting-participants/)
+- [Learn more about roles of members](https://support.crowdin.com/modifying-project-participants-roles/)
+
+### Message File Format
+
+1. Must **NOT** contain `#else`
+2. Must **NOT** have multiple-line string syntax
+   ```cpp
+   // bad
+   MSG_HASH(
+     MENU_ENUM_SUBLABEL_CHEEVOS_ENABLE,
+     "Compete to earn custom-made achievements in classic games.\n"
+     "For more information, visit http://retroachievements.org"
+     )
+   // good
+   MSG_HASH(
+     MENU_ENUM_SUBLABEL_CHEEVOS_ENABLE,
+     "Compete to earn custom-made achievements in classic games.\nFor more information, visit http://retroachievements.org"
+     )
+   ```
+3. Must **NOT** contain lowercase letters in key name
+   ```cpp
+   // bad (x)
+   MSG_HASH(
+     MENU_ENUM_LABEL_VALUE_CTR_VIDEO_MODE_2D_800x240,
+     "2D (High Resolution)"
+     )
+   // good (X)
+   MSG_HASH(
+     MENU_ENUM_LABEL_VALUE_CTR_VIDEO_MODE_2D_800X240,
+     "2D (High Resolution)"
+     )
+   ```

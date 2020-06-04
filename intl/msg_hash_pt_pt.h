@@ -6,7 +6,7 @@
 #pragma warning(disable:4566)
 #endif
 
-/* Top-level Menu */
+/* Top-Level Menu */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MAIN_MENU,
@@ -72,6 +72,22 @@ MSG_HASH(
    "Selecione o conteúdo que deseja executar."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LOAD_DISC,
+   "Carregar Disco"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LOAD_DISC,
+   "Carregar um disco de mídia física. Você deve primeiro selecionar o núcleo (Load Core) que você pretende usar com o disco."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DUMP_DISC,
+   "Despejo de disco"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DUMP_DISC,
+   "Despejar disco de mídia física no armazenamento interno. Ele será salvo como um arquivo de imagem."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB,
    "Selecionar de Listas de Reprodução"
    )
@@ -86,6 +102,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_CONTENT_LIST,
    "Procurar por conteúdo e adicionar à base de dados."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SHOW_WIMP,
+   "Mostrar Menu do Ambiente de trabalho"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SHOW_WIMP,
+   "Abre o menu da área de trabalho se estiver fechado."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
@@ -116,6 +140,10 @@ MSG_HASH(
    "Definições"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS,
+   "Configure o programa."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INFORMATION_LIST,
    "Informação"
    )
@@ -144,6 +172,10 @@ MSG_HASH(
    "Reiniciar RetroArch"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_RESTART_RETROARCH,
+   "Reinicie o programa."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
    "Sair do RetroArch"
    )
@@ -157,6 +189,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,
    "Transferir núcleo..."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST,
+   "Instalar ou Restaurar um núcleo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SIDELOAD_CORE_LIST,
+   "Instalar ou restaurar um núcleo a partir do diretório de transferências."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_START_VIDEO_PROCESSOR,
@@ -224,12 +264,28 @@ MSG_HASH(
 /* Main Menu > Online Updater */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST,
-   "Atualizador de núcleos"
+   MENU_ENUM_LABEL_VALUE_UPDATE_INSTALLED_CORES,
+   "Atualizar Núcleos Instalados"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_UPDATE_INSTALLED_CORES,
+   "Atualize todos os núcleos instalados para a última versão disponível."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS_UPDATER_LIST,
    "Atualizador de miniaturas"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_THUMBNAILS_UPDATER_LIST,
+   "Download completo de miniaturas para o sistema selecionado."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PL_THUMBNAILS_UPDATER_LIST,
+   "Atualizador Miniaturas das listas de reprodução"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PL_THUMBNAILS_UPDATER_LIST,
+   "Baixar miniaturas individuais para cada entrada da lista de reprodução selecionada."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,
@@ -281,6 +337,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_INFORMATION,
    "Visualizar informações pertinentes para a aplicação/núcleo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISC_INFORMATION,
+   "Informação de Disco"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DISC_INFORMATION,
+   "Exibir informações sobre discos de mídia inseridos."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETWORK_INFORMATION,
@@ -354,6 +418,10 @@ MSG_HASH(
    "Extensões suportadas"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_REQUIRED_HW_API,
+   "API Gráficos Necessária"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MISSING,
    "Em falta"
    )
@@ -392,9 +460,9 @@ MSG_HASH( /* FIXME Should be MENU_LABEL_VALUE */
    MSG_COMPILER,
    "Compilador"
    )
-MSG_HASH( /* FIXME Should be MENU_LABEL_VALUE */
-   MSG_UNKNOWN_COMPILER,
-   "Compilador desconhecido"
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_MODEL,
+   "Modelo de CPU"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_FEATURES,
@@ -569,8 +637,20 @@ MSG_HASH(
    "Suporte de PulseAudio"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COREAUDIO_SUPPORT,
+   "Suporte CoreAudio"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COREAUDIO3_SUPPORT,
+   "Suporte CoreAudio V3"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DSOUND_SUPPORT,
    "Suporte de DirectSound"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_WASAPI_SUPPORT,
+   "Suporte ao WASAPI"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_XAUDIO2_SUPPORT,
@@ -613,6 +693,10 @@ MSG_HASH(
    "Suporte de FFmpeg"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_MPV_SUPPORT,
+   "Suporte mpv"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CORETEXT_SUPPORT,
    "Suporte de CoreText"
    )
@@ -650,6 +734,10 @@ MSG_HASH(
 
 /* Main Menu > Information > Database Manager > Information */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_NAME,
+   "Nome"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DESCRIPTION,
    "Descrição"
@@ -750,6 +838,14 @@ MSG_HASH(
    "Carregar configuração"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
+   "Repor os valores padrão"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RESET_TO_DEFAULT_CONFIG,
+   "Repor todas as configurações para os valores padrão."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG,
    "Guardar configuração atual"
    )
@@ -835,6 +931,14 @@ MSG_HASH(
    "Alterar as definições de um comando, teclado ou rato."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LATENCY_SETTINGS,
+   "Latência"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LATENCY_SETTINGS,
+   "Alterar as configurações relacionadas a latência de vídeo, áudio e entrada."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_SETTINGS,
    "Núcleo"
    )
@@ -905,6 +1009,30 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_USER_INTERFACE_SETTINGS,
    "Modificar as configurações da interface do utilizador."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AI_SERVICE_SETTINGS,
+   "Serviço IA"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AI_SERVICE_SETTINGS,
+   "Alterar as configurações de Serviço IA (Tradução/TTS/Outros)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_SETTINGS,
+   "Acessibilidade"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACCESSIBILITY_SETTINGS,
+   "Altere as configurações para o narrador de Acessibilidade."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_POWER_MANAGEMENT_SETTINGS,
+   "Gestão de energia"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_POWER_MANAGEMENT_SETTINGS,
+   "Alterar configurações da gestão de energia."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RETRO_ACHIEVEMENTS_SETTINGS,
@@ -1029,16 +1157,60 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_RECORD_DRIVER,
    "Controlador de gravação."
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MIDI_DRIVER,
+   "Controlador MIDI para usar."
+   )
 
 /* Settings > Video */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CRT_SWITCHRES_SETTINGS,
+   "Interruptores de CRT"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CRT_SWITCHRES_SETTINGS,
+   "Sinais de saída nativos e de baixa resolução para uso com telas CRT."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_OUTPUT_SETTINGS,
+   "Saída"
+   )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_OUTPUT_SETTINGS,
    "Alterar as definições da saída de vídeo."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_MODE_SETTINGS,
+   "Modo Tela Cheia"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_MODE_SETTINGS,
+   "Alterar configurações do modo de tela cheia."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_MODE_SETTINGS,
+   "Modo Janela"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_MODE_SETTINGS,
+   "Alterar configurações do modo Janela."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALING_SETTINGS,
+   "Dimensionamento"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCALING_SETTINGS,
+   "Alterar configurações de dimensionamento de vídeo."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
    "Sincronizar som"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
+   "Alterar configurações de sincronização de vídeo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE,
@@ -1081,12 +1253,56 @@ MSG_HASH(
    "Adiciona um leve borrão à imagem para tirar a borda de pixeis rígidos. Esta opção tem pouco impacto no desempenho."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
+   "Atraso de Auto-Shader"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_DELAY,
+   "Atrasa o carregamento automático de shaders (em ms). Pode contornar falhas gráficas ao usar o software 'captura de tela'."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FILTER,
    "Filtro de vídeo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FILTER,
+   "Aplique um filtro de vídeo baseado em CPU.\nNOTA: Pode vir a um alto custo de desempenho. Alguns filtros de vídeo podem funcionar apenas para núcleos que usam cor 32bit ou 16bits."
    )
 
 /* Settings > Video > CRT SwitchRes */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION,
+   "Interruptores de CRT"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION,
+   "Só para telas CRT. Tentativas de usar a resolução de núcleo/jogo exata e a taxa de atualização."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_SUPER,
+   "Super Resolução CRT"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_SUPER,
+   "Alterne entre resoluções nativas e super-resoluções ultra-amplas."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_X_AXIS_CENTERING,
+   "Centralização do Eixo X"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CRT_SWITCH_X_AXIS_CENTERING,
+   "Alterne entre essas opções se a imagem não estiver centralizada corretamente na tela."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
+   "Usar Taxa de Atualização Personalizada"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
+   "Use uma taxa de atualização personalizada especificada no arquivo de configuração, se necessário."
+   )
 
 /* Settings > Video > Output */
 
@@ -1107,8 +1323,24 @@ MSG_HASH(
    "Força uma certa rotação do ecrã. A rotação é adicionada às rotações que o núcleo define."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCREEN_ORIENTATION,
+   "Orientação da tela"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCREEN_ORIENTATION,
+   "Força uma certa orientação da tela do sistema operacional."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_GPU_INDEX,
+   "Índice da GPU"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE,
    "Taxa de atualização"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
+   "Taxa de atualização vertical da tela. Usado para calcular uma taxa de entrada de áudio apropriada.\nNOTA: Isto será ignorado se 'Vídeo segmentado' estiver habilitado."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
@@ -1117,6 +1349,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_AUTO,
    "A taxa de atualização do ecrã estimada em Hz."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_POLLED,
+   "Definir taxa de atualização reportada para exibição"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_POLLED,
+   "A taxa de atualização como relatado pelo driver de exibição."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_SRGB_DISABLE,
@@ -1144,6 +1384,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
    "Em modo de ecrã completo, será utilizada uma janela para apresentar o contedo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
+   "Largura de tela cheia"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
+   "Defina o tamanho da largura personalizada para o modo de tela inteira sem janela. Se não estiver definido, a resolução da área de trabalho será usada."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
+   "Altura de Tela Cheia"
    )
 
 /* Settings > Video > Windowed Mode */
@@ -1186,6 +1438,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
    "Proporção do ecrã"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO,
+   "Dimensões personalizadas"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_X,
@@ -2101,7 +2357,7 @@ MSG_HASH(
    "Grava a saída da camada de shader gerada pela GPU, se estiver disponível."
    )
 
-/* Settings > Onscreen Display */
+/* Settings > On-Screen Display */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONSCREEN_OVERLAY_SETTINGS,
@@ -2112,7 +2368,7 @@ MSG_HASH(
    "Notificações no ecrã"
    )
 
-/* Settings > Onscreen Display > Onscreen Overlay */
+/* Settings > On-Screen Display > On-Screen Overlay */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ENABLE,
@@ -2163,10 +2419,10 @@ MSG_HASH(
    "Escala de todos os elementos da camada sobreposta."
    )
 
-/* Settings > Onscreen Display > Video Layout */
+/* Settings > On-Screen Display > Video Layout */
 
 
-/* Settings > Onscreen Display > Onscreen Notifications */
+/* Settings > On-Screen Display > On-Screen Notifications */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FONT_ENABLE,
@@ -2349,10 +2605,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_ONLINE_UPDATER,
    "Mostrar/esconder a opção 'Atualizador online'."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SHOW_CORE_UPDATER,
-   "Mostrar 'Atualizador de núcleos'"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_CORE_UPDATER,
@@ -3448,7 +3700,7 @@ MSG_HASH(
    "Ativado"
    )
 
-/* Quick Menu > Disk Control */
+/* Quick Menu > Disc Control */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
@@ -3641,9 +3893,9 @@ MSG_HASH(
 
 /* Settings Options */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LANG_PORTUGUESE_PORTUGAL,
-   "Portuguese (Portugal) - Português (Portugal)"
+MSG_HASH( /* FIXME Should be MENU_LABEL_VALUE */
+   MSG_UNKNOWN_COMPILER,
+   "Compilador desconhecido"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_NONE,
@@ -5704,6 +5956,7 @@ MSG_HASH(
 #ifdef GEKKO
 #endif
 #ifdef HAVE_ODROIDGO2
+#else
 #endif
 #if defined(_3DS)
 MSG_HASH(

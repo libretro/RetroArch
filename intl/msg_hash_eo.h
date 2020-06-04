@@ -6,7 +6,7 @@
 #pragma warning(disable:4566)
 #endif
 
-/* Top-level Menu */
+/* Top-Level Menu */
 
 
 /* Main Menu */
@@ -141,16 +141,16 @@
 /* Settings > Recording */
 
 
-/* Settings > Onscreen Display */
+/* Settings > On-Screen Display */
 
 
-/* Settings > Onscreen Display > Onscreen Overlay */
+/* Settings > On-Screen Display > On-Screen Overlay */
 
 
-/* Settings > Onscreen Display > Video Layout */
+/* Settings > On-Screen Display > Video Layout */
 
 
-/* Settings > Onscreen Display > Onscreen Notifications */
+/* Settings > On-Screen Display > On-Screen Notifications */
 
 
 /* Settings > User Interface */
@@ -268,7 +268,7 @@
 /* Quick Menu > Cheats > Cheat Details */
 
 
-/* Quick Menu > Disk Control */
+/* Quick Menu > Disc Control */
 
 
 /* Quick Menu > Shaders */
@@ -360,6 +360,7 @@ MSG_HASH(
 #ifdef GEKKO
 #endif
 #ifdef HAVE_ODROIDGO2
+#else
 #endif
 #if defined(_3DS)
 MSG_HASH(
