@@ -6190,6 +6190,10 @@ MSG_HASH(
    "Arabic - عربى (Restart)"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LANG_ASTURIAN,
+   "Asturian - Asturianu"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_AZERBAIJANI,
    "Azerbaijani"
    )
