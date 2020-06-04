@@ -642,6 +642,7 @@ static void ozone_set_layout(ozone_handle_t *ozone, bool is_threaded)
    switch (*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE))
    {
       case RETRO_LANGUAGE_ARABIC:
+      case RETRO_LANGUAGE_PERSIAN:
          fill_pathname_application_special(s1,
                PATH_MAX_LENGTH * sizeof(char),
                APPLICATION_SPECIAL_DIRECTORY_ASSETS_PKG);
@@ -671,6 +672,7 @@ static void ozone_set_layout(ozone_handle_t *ozone, bool is_threaded)
    switch (*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE))
    {
       case RETRO_LANGUAGE_ARABIC:
+      case RETRO_LANGUAGE_PERSIAN:
          fill_pathname_application_special(s1,
                PATH_MAX_LENGTH * sizeof(char),
                APPLICATION_SPECIAL_DIRECTORY_ASSETS_PKG);
