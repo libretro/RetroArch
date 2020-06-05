@@ -2495,9 +2495,9 @@ static const void *hid_driver_find_handle(int idx);
 #endif
 #ifdef HAVE_ACCESSIBILITY
 #ifdef HAVE_TRANSLATE
-static bool is_narrator_running(void);
+static bool is_narrator_running(struct rarch_state *p_rarch);
 #endif
-static bool accessibility_startup_message(void);
+static bool accessibility_startup_message(struct rarch_state *p_rarch);
 #endif
 
 static void retroarch_deinit_drivers(struct rarch_state *p_rarch);
@@ -2508,7 +2508,7 @@ static bool midi_driver_read(uint8_t *byte);
 static bool midi_driver_write(uint8_t byte, uint32_t delta_time);
 static bool midi_driver_output_enabled(void);
 static bool midi_driver_input_enabled(void);
-static bool midi_driver_set_all_sounds_off(void);
+static bool midi_driver_set_all_sounds_off(struct rarch_state *p_rarch);
 static const void *midi_driver_find_handle(int index);
 static bool midi_driver_flush(void);
 
@@ -2601,6 +2601,13 @@ static void driver_location_stop(void);
 static bool driver_location_start(void);
 static void driver_camera_stop(void);
 static bool driver_camera_start(void);
+
+#ifdef HAVE_ACCESSIBILITY
+static bool is_accessibility_enabled(struct rarch_state *p_rarch);
+static bool accessibility_speak_priority(
+      struct rarch_state *p_rarch,
+      const char* speak_text, int priority);
+#endif
 
 #ifdef HAVE_MENU
 static void menu_input_post_iterate(
@@ -2734,8 +2741,10 @@ static int generic_menu_iterate(
                current_time);
 
 #ifdef HAVE_ACCESSIBILITY
-         if (iterate_type != last_iterate_type && is_accessibility_enabled())
-            accessibility_speak_priority(menu->menu_state_msg, 10);
+         if (     (iterate_type != last_iterate_type)
+               && is_accessibility_enabled(p_rarch))
+            accessibility_speak_priority(p_rarch,
+                  menu->menu_state_msg, 10);
 #endif
 
          BIT64_SET(menu->state, MENU_STATE_RENDER_MESSAGEBOX);
@@ -2812,20 +2821,26 @@ static int generic_menu_iterate(
                         menu->menu_state_msg, sizeof(menu->menu_state_msg));
 
 #ifdef HAVE_ACCESSIBILITY
-               if (iterate_type != last_iterate_type && is_accessibility_enabled())
+               if (  (iterate_type != last_iterate_type) &&
+                     is_accessibility_enabled(p_rarch))
                {
-                  if (string_is_equal(menu->menu_state_msg, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE)))
+                  if (string_is_equal(menu->menu_state_msg,
+                           msg_hash_to_str(
+                              MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE)))
                   {
                      char current_sublabel[255];
                      get_current_menu_sublabel(p_rarch,
                            current_sublabel, sizeof(current_sublabel));
                      if (string_is_equal(current_sublabel, ""))
-                        accessibility_speak_priority(menu->menu_state_msg, 10);
+                        accessibility_speak_priority(p_rarch,
+                              menu->menu_state_msg, 10);
                      else
-                        accessibility_speak_priority(current_sublabel, 10);
+                        accessibility_speak_priority(p_rarch,
+                              current_sublabel, 10);
                   }
                   else
-                     accessibility_speak_priority(menu->menu_state_msg, 10);
+                     accessibility_speak_priority(p_rarch,
+                           menu->menu_state_msg, 10);
                }
 #endif
             }
@@ -2943,8 +2958,9 @@ static int generic_menu_iterate(
    }
 
 #ifdef HAVE_ACCESSIBILITY
-   if ((last_iterate_type == ITERATE_TYPE_HELP || last_iterate_type == ITERATE_TYPE_INFO) && last_iterate_type != iterate_type && is_accessibility_enabled())
-      accessibility_speak_priority("Closed dialog.", 10);
+   if ((last_iterate_type == ITERATE_TYPE_HELP || last_iterate_type == ITERATE_TYPE_INFO) && last_iterate_type != iterate_type && is_accessibility_enabled(p_rarch))
+      accessibility_speak_priority(p_rarch,
+            "Closed dialog.", 10);
 
    last_iterate_type = iterate_type;
 #endif
@@ -3054,7 +3070,7 @@ int generic_menu_entry_action(
 
 #ifdef HAVE_ACCESSIBILITY
    if (     action != 0
-         && is_accessibility_enabled()
+         && is_accessibility_enabled(p_rarch)
          && !is_input_keyboard_display_on())
    {
       char current_label[255];
@@ -3123,7 +3139,8 @@ int generic_menu_entry_action(
       }
 
       if (!string_is_equal(speak_string, ""))
-         accessibility_speak_priority(speak_string, 10);
+         accessibility_speak_priority(p_rarch,
+               speak_string, 10);
    }
 #endif
 
@@ -3232,7 +3249,6 @@ void menu_navigation_set_selection(size_t val)
    struct menu_state *menu_st  = &p_rarch->menu_driver_state;
    menu_st->selection_ptr      = val;
 }
-
 
 #define menu_list_get(list, idx) ((list) ? ((list)->menu_stack[(idx)]) : NULL)
 
@@ -7454,9 +7470,8 @@ void dir_check_defaults(void)
 }
 
 #ifdef HAVE_ACCESSIBILITY
-bool is_accessibility_enabled(void)
+static bool is_accessibility_enabled(struct rarch_state *p_rarch)
 {
-   struct rarch_state *p_rarch = &rarch_st;
    settings_t *settings        = p_rarch->configuration_settings;
    bool accessibility_enable   = settings->bools.accessibility_enable;
    bool accessibility_enabled  = p_rarch->accessibility_enabled;
@@ -7549,8 +7564,8 @@ bool menu_input_dialog_start_search(void)
    input_keyboard_ctl(RARCH_INPUT_KEYBOARD_CTL_LINE_FREE, NULL);
 
 #ifdef HAVE_ACCESSIBILITY
-   if (is_accessibility_enabled())
-      accessibility_speak_priority((char*)
+   if (is_accessibility_enabled(p_rarch))
+      accessibility_speak_priority(p_rarch, (char*)
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SEARCH), 10);
 #endif
 
@@ -7585,7 +7600,7 @@ bool menu_input_dialog_start(menu_input_ctx_line_t *line)
    input_keyboard_ctl(RARCH_INPUT_KEYBOARD_CTL_LINE_FREE, NULL);
 
 #ifdef HAVE_ACCESSIBILITY
-   accessibility_speak_priority("Keyboard input:", 10);
+   accessibility_speak_priority(p_rarch, "Keyboard input:", 10);
 #endif
 
    p_rarch->menu_input_dialog_keyboard_buffer =
@@ -8561,7 +8576,7 @@ static void task_auto_translate_handler(retro_task_t *task)
          break;
       case 2: /* Narrator Mode */
 #ifdef HAVE_ACCESSIBILITY
-         if (!is_narrator_running())
+         if (!is_narrator_running(p_rarch))
             goto task_finished;
 #endif
          break;
@@ -9109,8 +9124,8 @@ static void handle_translation_cb(
    }
 
 #ifdef HAVE_ACCESSIBILITY
-   if (text_string && is_accessibility_enabled())
-      accessibility_speak_priority(text_string, 10);
+   if (text_string && is_accessibility_enabled(p_rarch))
+      accessibility_speak_priority(p_rarch, text_string, 10);
 #endif
 
 finish:
@@ -11026,8 +11041,9 @@ bool command_event(enum event_command cmd, void *data)
             else
             {
 #ifdef HAVE_ACCESSIBILITY
-               if (is_accessibility_enabled())
-                   accessibility_speak_priority((char*) msg_hash_to_str(MSG_UNPAUSED), 10);
+               if (is_accessibility_enabled(p_rarch))
+                   accessibility_speak_priority(p_rarch,
+                         (char*) msg_hash_to_str(MSG_UNPAUSED), 10);
 #endif
                command_event(CMD_EVENT_UNPAUSE, NULL);
             }
@@ -11383,7 +11399,7 @@ bool command_event(enum event_command cmd, void *data)
 #endif
          break;
       case CMD_EVENT_AUDIO_STOP:
-         midi_driver_set_all_sounds_off();
+         midi_driver_set_all_sounds_off(p_rarch);
          if (!audio_driver_stop())
             return false;
          break;
@@ -11829,12 +11845,14 @@ bool command_event(enum event_command cmd, void *data)
          boolean        = !boolean;
 
 #ifdef HAVE_ACCESSIBILITY
-         if (is_accessibility_enabled())
+         if (is_accessibility_enabled(p_rarch))
          {
             if (boolean)
-               accessibility_speak_priority((char*) msg_hash_to_str(MSG_PAUSED), 10);
+               accessibility_speak_priority(p_rarch,
+                     (char*) msg_hash_to_str(MSG_PAUSED), 10);
             else
-               accessibility_speak_priority((char*) msg_hash_to_str(MSG_UNPAUSED), 10);
+               accessibility_speak_priority(p_rarch,
+                     (char*) msg_hash_to_str(MSG_UNPAUSED), 10);
          }
 #endif
 
@@ -12332,15 +12350,15 @@ bool command_event(enum event_command cmd, void *data)
          {
             ai_service_speech_stop();
 #ifdef HAVE_ACCESSIBILITY
-            if (is_accessibility_enabled())
-               accessibility_speak_priority("stopped.", 10);
+            if (is_accessibility_enabled(p_rarch))
+               accessibility_speak_priority(p_rarch, "stopped.", 10);
 #endif
          }
 #ifdef HAVE_ACCESSIBILITY
-         else if (is_accessibility_enabled() &&
+         else if (is_accessibility_enabled(p_rarch) &&
                   ai_service_mode == 2 &&
-                  is_narrator_running())
-            accessibility_speak_priority("stopped.", 10);
+                  is_narrator_running(p_rarch))
+            accessibility_speak_priority(p_rarch, "stopped.", 10);
 #endif
          else
          {
@@ -21696,7 +21714,7 @@ void input_keyboard_event(bool down, unsigned code,
 #ifdef HAVE_ACCESSIBILITY
 #ifdef HAVE_MENU
    if (menu_input_dialog_get_display_kb()
-         && down && is_accessibility_enabled())
+         && down && is_accessibility_enabled(p_rarch))
    {
       if (code != 303 && code != 0)
       {
@@ -21708,75 +21726,75 @@ void input_keyboard_event(bool down, unsigned code,
             *say_char = c;
 
             if (character == 127)
-               accessibility_speak_priority("backspace", 10);
+               accessibility_speak_priority(p_rarch, "backspace", 10);
             else if (c == '`')
-               accessibility_speak_priority("left quote", 10);
+               accessibility_speak_priority(p_rarch, "left quote", 10);
             else if (c == '`')
-               accessibility_speak_priority("tilde", 10);
+               accessibility_speak_priority(p_rarch, "tilde", 10);
             else if (c == '!')
-               accessibility_speak_priority("exclamation point", 10);
+               accessibility_speak_priority(p_rarch, "exclamation point", 10);
             else if (c == '@')
-               accessibility_speak_priority("at sign", 10);
+               accessibility_speak_priority(p_rarch, "at sign", 10);
             else if (c == '#')
-               accessibility_speak_priority("hash sign", 10);
+               accessibility_speak_priority(p_rarch, "hash sign", 10);
             else if (c == '$')
-               accessibility_speak_priority("dollar sign", 10);
+               accessibility_speak_priority(p_rarch, "dollar sign", 10);
             else if (c == '%')
-               accessibility_speak_priority("percent sign", 10);
+               accessibility_speak_priority(p_rarch, "percent sign", 10);
             else if (c == '^')
-               accessibility_speak_priority("carrot", 10);
+               accessibility_speak_priority(p_rarch, "carrot", 10);
             else if (c == '&')
-               accessibility_speak_priority("ampersand", 10);
+               accessibility_speak_priority(p_rarch, "ampersand", 10);
             else if (c == '*')
-               accessibility_speak_priority("asterisk", 10);
+               accessibility_speak_priority(p_rarch, "asterisk", 10);
             else if (c == '(')
-               accessibility_speak_priority("left bracket", 10);
+               accessibility_speak_priority(p_rarch, "left bracket", 10);
             else if (c == ')')
-               accessibility_speak_priority("right bracket", 10);
+               accessibility_speak_priority(p_rarch, "right bracket", 10);
             else if (c == '-')
-               accessibility_speak_priority("minus", 10);
+               accessibility_speak_priority(p_rarch, "minus", 10);
             else if (c == '_')
-               accessibility_speak_priority("underscore", 10);
+               accessibility_speak_priority(p_rarch, "underscore", 10);
             else if (c == '=')
-               accessibility_speak_priority("equals", 10);
+               accessibility_speak_priority(p_rarch, "equals", 10);
             else if (c == '+')
-               accessibility_speak_priority("plus", 10);
+               accessibility_speak_priority(p_rarch, "plus", 10);
             else if (c == '[')
-               accessibility_speak_priority("left square bracket", 10);
+               accessibility_speak_priority(p_rarch, "left square bracket", 10);
             else if (c == '{')
-               accessibility_speak_priority("left curl bracket", 10);
+               accessibility_speak_priority(p_rarch, "left curl bracket", 10);
             else if (c == ']')
-               accessibility_speak_priority("right square bracket", 10);
+               accessibility_speak_priority(p_rarch, "right square bracket", 10);
             else if (c == '}')
-               accessibility_speak_priority("right curl bracket", 10);
+               accessibility_speak_priority(p_rarch, "right curl bracket", 10);
             else if (c == '\\')
-               accessibility_speak_priority("back slash", 10);
+               accessibility_speak_priority(p_rarch, "back slash", 10);
             else if (c == '|')
-               accessibility_speak_priority("pipe", 10);
+               accessibility_speak_priority(p_rarch, "pipe", 10);
             else if (c == ';')
-               accessibility_speak_priority("semicolon", 10);
+               accessibility_speak_priority(p_rarch, "semicolon", 10);
             else if (c == ':')
-               accessibility_speak_priority("colon", 10);
+               accessibility_speak_priority(p_rarch, "colon", 10);
             else if (c == '\'')
-               accessibility_speak_priority("single quote", 10);
+               accessibility_speak_priority(p_rarch, "single quote", 10);
             else if (c  == '\"')
-               accessibility_speak_priority("double quote", 10);
+               accessibility_speak_priority(p_rarch, "double quote", 10);
             else if (c == ',')
-               accessibility_speak_priority("comma", 10);
+               accessibility_speak_priority(p_rarch, "comma", 10);
             else if (c == '<')
-               accessibility_speak_priority("left angle bracket", 10);
+               accessibility_speak_priority(p_rarch, "left angle bracket", 10);
             else if (c == '.')
-               accessibility_speak_priority("period", 10);
+               accessibility_speak_priority(p_rarch, "period", 10);
             else if (c == '>')
-               accessibility_speak_priority("right angle bracket", 10);
+               accessibility_speak_priority(p_rarch, "right angle bracket", 10);
             else if (c == '/')
-               accessibility_speak_priority("front slash", 10);
+               accessibility_speak_priority(p_rarch, "front slash", 10);
             else if (c == '?')
-               accessibility_speak_priority("question mark", 10);
+               accessibility_speak_priority(p_rarch, "question mark", 10);
             else if (c == ' ')
-               accessibility_speak_priority("space", 10);
+               accessibility_speak_priority(p_rarch, "space", 10);
             else if (character != 0)
-               accessibility_speak_priority(say_char, 10);
+               accessibility_speak_priority(p_rarch, say_char, 10);
             free(say_char);
          }
       }
@@ -22895,14 +22913,12 @@ struct string_list *midi_driver_get_avail_outputs(void)
    return p_rarch->midi_drv_outputs;
 }
 
-static bool midi_driver_set_all_sounds_off(void)
+static bool midi_driver_set_all_sounds_off(struct rarch_state *p_rarch)
 {
    midi_event_t event;
    uint8_t i;
    uint8_t data[3]     = { 0xB0, 120, 0 };
    bool result         = true;
-   struct rarch_state
-      *p_rarch         = &rarch_st;
 
    if (!p_rarch->midi_drv_data || !p_rarch->midi_drv_output_enabled)
       return false;
@@ -22958,11 +22974,10 @@ bool midi_driver_set_volume(unsigned volume)
    return true;
 }
 
-static bool midi_driver_init_io_buffers(void)
+static bool midi_driver_init_io_buffers(struct rarch_state *p_rarch)
 {
-   struct rarch_state     *p_rarch          = &rarch_st;
-   uint8_t *midi_drv_input_buffer           = (uint8_t*)malloc(MIDI_DRIVER_BUF_SIZE);
-   uint8_t *midi_drv_output_buffer          = (uint8_t*)malloc(MIDI_DRIVER_BUF_SIZE);
+   uint8_t *midi_drv_input_buffer  = (uint8_t*)malloc(MIDI_DRIVER_BUF_SIZE);
+   uint8_t *midi_drv_output_buffer = (uint8_t*)malloc(MIDI_DRIVER_BUF_SIZE);
 
    if (!midi_drv_input_buffer || !midi_drv_output_buffer)
       return false;
@@ -22979,10 +22994,8 @@ static bool midi_driver_init_io_buffers(void)
    return true;
 }
 
-static void midi_driver_free(void)
+static void midi_driver_free(struct rarch_state *p_rarch)
 {
-   struct rarch_state *p_rarch = &rarch_st;
-
    if (p_rarch->midi_drv_data)
    {
       midi_drv->free(p_rarch->midi_drv_data);
@@ -23017,9 +23030,8 @@ static void midi_driver_free(void)
    p_rarch->midi_drv_output_enabled = false;
 }
 
-static bool midi_driver_init(void)
+static bool midi_driver_init(struct rarch_state *p_rarch)
 {
-   struct rarch_state       *p_rarch = &rarch_st;
    settings_t *settings              = p_rarch->configuration_settings;
    union string_list_elem_attr attr  = {0};
    const char *err_str               = NULL;
@@ -23041,7 +23053,9 @@ static bool midi_driver_init(void)
       char * input  = NULL;
       char * output = NULL;
 
-      midi_drv = midi_driver_find_driver(settings->arrays.midi_driver);
+      midi_drv      = midi_driver_find_driver(
+            settings->arrays.midi_driver);
+
       if (strcmp(midi_drv->ident, settings->arrays.midi_driver))
       {
          configuration_set_string(settings,
@@ -23088,7 +23102,7 @@ static bool midi_driver_init(void)
             p_rarch->midi_drv_input_enabled  = (input  != NULL);
             p_rarch->midi_drv_output_enabled = (output != NULL);
 
-            if (!midi_driver_init_io_buffers())
+            if (!midi_driver_init_io_buffers(p_rarch))
                err_str = "out of memory";
             else
             {
@@ -23111,7 +23125,7 @@ static bool midi_driver_init(void)
 
    if (err_str)
    {
-      midi_driver_free();
+      midi_driver_free(p_rarch);
       RARCH_ERR("[MIDI]: Initialization failed (%s).\n", err_str);
    }
    else
@@ -23459,10 +23473,9 @@ const char *audio_driver_mixer_get_stream_name(unsigned i)
    return "N/A";
 }
 
-static void audio_driver_mixer_deinit(void)
+static void audio_driver_mixer_deinit(struct rarch_state *p_rarch)
 {
    unsigned i;
-   struct rarch_state *p_rarch = &rarch_st;
 
    p_rarch->audio_mixer_active = false;
 
@@ -23602,9 +23615,8 @@ static void audio_driver_deinit_resampler(void)
 }
 
 
-static bool audio_driver_deinit_internal(void)
+static bool audio_driver_deinit_internal(struct rarch_state *p_rarch)
 {
-   struct rarch_state *p_rarch = &rarch_st;
    settings_t *settings        = p_rarch->configuration_settings;
    bool audio_enable           = settings->bools.audio_enable;
 
@@ -23650,9 +23662,8 @@ static bool audio_driver_deinit_internal(void)
    return true;
 }
 
-static bool audio_driver_free_devices_list(void)
+static bool audio_driver_free_devices_list(struct rarch_state *p_rarch)
 {
-   struct rarch_state *p_rarch = &rarch_st;
    if (!p_rarch->current_audio || !p_rarch->current_audio->device_list_free
          || !p_rarch->audio_driver_context_audio_data)
       return false;
@@ -23663,16 +23674,14 @@ static bool audio_driver_free_devices_list(void)
    return true;
 }
 
-static bool audio_driver_deinit(void)
+static bool audio_driver_deinit(struct rarch_state *p_rarch)
 {
 #ifdef HAVE_AUDIOMIXER
-   audio_driver_mixer_deinit();
+   audio_driver_mixer_deinit(p_rarch);
 #endif
-   audio_driver_free_devices_list();
+   audio_driver_free_devices_list(p_rarch);
 
-   if (!audio_driver_deinit_internal())
-      return false;
-   return true;
+   return audio_driver_deinit_internal(p_rarch);
 }
 
 static bool audio_driver_find_driver(struct rarch_state *p_rarch)
@@ -23915,7 +23924,7 @@ static bool audio_driver_init_internal(
    return true;
 
 error:
-   return audio_driver_deinit();
+   return audio_driver_deinit(p_rarch);
 }
 
 /**
@@ -24144,7 +24153,8 @@ static void audio_driver_menu_sample(void)
          ffemu_data.data                    = samples_buf;
          ffemu_data.frames                  = 1024 / 2;
 
-         p_rarch->recording_driver->push_audio(p_rarch->recording_data, &ffemu_data);
+         p_rarch->recording_driver->push_audio(
+               p_rarch->recording_data, &ffemu_data);
       }
       if (check_flush)
          audio_driver_flush(
@@ -24164,7 +24174,8 @@ static void audio_driver_menu_sample(void)
       ffemu_data.data                    = samples_buf;
       ffemu_data.frames                  = sample_count / 2;
 
-      p_rarch->recording_driver->push_audio(p_rarch->recording_data, &ffemu_data);
+      p_rarch->recording_driver->push_audio(
+            p_rarch->recording_data, &ffemu_data);
    }
    if (check_flush)
       audio_driver_flush(
@@ -24204,7 +24215,8 @@ static size_t audio_driver_sample_batch(const int16_t *data, size_t frames)
       ffemu_data.data                    = data;
       ffemu_data.frames                  = (frames << 1) / 2;
 
-      p_rarch->recording_driver->push_audio(p_rarch->recording_data, &ffemu_data);
+      p_rarch->recording_driver->push_audio(
+            p_rarch->recording_data, &ffemu_data);
    }
 
    if (!(
@@ -24318,10 +24330,10 @@ void audio_driver_set_buffer_size(size_t bufsize)
    p_rarch->audio_driver_buffer_size = bufsize;
 }
 
-static void audio_driver_monitor_adjust_system_rates(void)
+static void audio_driver_monitor_adjust_system_rates(
+      struct rarch_state *p_rarch)
 {
    float timing_skew;
-   struct rarch_state            *p_rarch = &rarch_st;
    settings_t *settings                   = p_rarch->configuration_settings;
    bool vrr_runloop_enable                = settings->bools.vrr_runloop_enable;
    const float target_video_sync_rate     =
@@ -26467,9 +26479,9 @@ void video_driver_cached_frame(void)
    p_rarch->recording_data      = recording;
 }
 
-static void video_driver_monitor_adjust_system_rates(void)
+static void video_driver_monitor_adjust_system_rates(
+      struct rarch_state *p_rarch)
 {
-   struct rarch_state            *p_rarch = &rarch_st;
    float timing_skew                      = 0.0f;
    settings_t *settings                   = p_rarch->configuration_settings;
    const struct retro_system_timing *info = (const struct retro_system_timing*)
@@ -28917,13 +28929,13 @@ static bool driver_find_next(const char *label, char *s, size_t len)
 
 static void driver_adjust_system_rates(struct rarch_state *p_rarch)
 {
-   settings_t *settings        = p_rarch->configuration_settings;
+   settings_t *settings            = p_rarch->configuration_settings;
 
-   audio_driver_monitor_adjust_system_rates();
+   audio_driver_monitor_adjust_system_rates(p_rarch);
 
    p_rarch->runloop_force_nonblock = false;
 
-   video_driver_monitor_adjust_system_rates();
+   video_driver_monitor_adjust_system_rates(p_rarch);
 
    if (!video_driver_get_ptr_internal(false))
       return;
@@ -29150,7 +29162,7 @@ static void drivers_init(struct rarch_state *p_rarch, int flags)
 
    /* Initialize MIDI  driver */
    if (flags & DRIVER_MIDI_MASK)
-      midi_driver_init();
+      midi_driver_init(p_rarch);
 }
 
 /**
@@ -29219,7 +29231,7 @@ static void driver_uninit(struct rarch_state *p_rarch, int flags)
    }
 
    if (flags & DRIVER_AUDIO_MASK)
-      audio_driver_deinit();
+      audio_driver_deinit(p_rarch);
 
    if ((flags & DRIVER_VIDEO_MASK))
       p_rarch->video_driver_data = NULL;
@@ -29231,7 +29243,7 @@ static void driver_uninit(struct rarch_state *p_rarch, int flags)
       p_rarch->audio_driver_context_audio_data = NULL;
 
    if (flags & DRIVER_MIDI_MASK)
-      midi_driver_free();
+      midi_driver_free(p_rarch);
 }
 
 static void retroarch_deinit_drivers(struct rarch_state *p_rarch)
@@ -29717,10 +29729,10 @@ static void runahead_save_state_free(void *data)
    free(savestate);
 }
 
-static void runahead_save_state_list_init(size_t save_state_size)
+static void runahead_save_state_list_init(
+      struct rarch_state *p_rarch,
+      size_t save_state_size)
 {
-   struct rarch_state             *p_rarch = &rarch_st;
-
    p_rarch->runahead_save_state_size       = save_state_size;
    p_rarch->runahead_save_state_size_known = true;
 
@@ -29822,7 +29834,7 @@ static bool runahead_create(struct rarch_state *p_rarch)
    core_serialize_size(&info);
    p_rarch->request_fast_savestate = false;
 
-   runahead_save_state_list_init(info.size);
+   runahead_save_state_list_init(p_rarch, info.size);
    runahead_video_driver_is_active = p_rarch->video_driver_active;
 
    if (  (p_rarch->runahead_save_state_size == 0) ||
@@ -30357,13 +30369,14 @@ static void retroarch_print_help(const char *arg0)
  * with command line options overriding the config file.
  *
  **/
-static void retroarch_parse_input_and_config(int argc, char *argv[])
+static void retroarch_parse_input_and_config(
+      struct rarch_state *p_rarch,
+      int argc, char *argv[])
 {
    unsigned i;
    static bool           first_run = true;
    const char           *optstring = NULL;
    bool           explicit_menu    = false;
-   struct rarch_state     *p_rarch = &rarch_st;
    global_t            *global     = &p_rarch->g_extern;
 
    const struct option opts[] = {
@@ -31106,11 +31119,11 @@ bool retroarch_main_init(int argc, char *argv[])
    /* Have to initialise non-file logging once at the start... */
    retro_main_log_file_init(NULL, false);
 
-   retroarch_parse_input_and_config(argc, argv);
+   retroarch_parse_input_and_config(p_rarch, argc, argv);
 
 #ifdef HAVE_ACCESSIBILITY
-   if (is_accessibility_enabled())
-      accessibility_startup_message();
+   if (is_accessibility_enabled(p_rarch))
+      accessibility_startup_message(p_rarch);
 #endif
 
    if (verbosity_is_enabled())
@@ -31564,8 +31577,8 @@ static void runloop_task_msg_queue_push(
       ui_companion_driver_msg_queue_push(p_rarch, msg,
             prio, task ? duration : duration * 60 / 1000, flush);
 #ifdef HAVE_ACCESSIBILITY
-      if (is_accessibility_enabled())
-         accessibility_speak_priority((char*)msg, 0);
+      if (is_accessibility_enabled(p_rarch))
+         accessibility_speak_priority(p_rarch, (char*)msg, 0);
 #endif
       gfx_widgets_msg_queue_push(task, msg, duration, NULL, (enum message_queue_icon)MESSAGE_QUEUE_CATEGORY_INFO, (enum message_queue_category)MESSAGE_QUEUE_ICON_DEFAULT, prio, flush,
 #ifdef HAVE_MENU
@@ -32543,8 +32556,8 @@ void runloop_msg_queue_push(const char *msg,
 
    runloop_msg_queue_lock();
 #ifdef HAVE_ACCESSIBILITY
-   if (is_accessibility_enabled())
-      accessibility_speak_priority((char*) msg, 0);
+   if (is_accessibility_enabled(p_rarch))
+      accessibility_speak_priority(p_rarch, (char*) msg, 0);
 #endif
 #if defined(HAVE_GFX_WIDGETS)
    if (gfx_widgets_active())
@@ -34572,14 +34585,15 @@ bool is_input_keyboard_display_on(void)
 }
 
 #ifdef HAVE_ACCESSIBILITY
-bool accessibility_speak_priority(const char* speak_text, int priority)
+static bool accessibility_speak_priority(
+      struct rarch_state *p_rarch,
+      const char* speak_text, int priority)
 {
-   struct rarch_state *p_rarch = &rarch_st;
    settings_t *settings        = p_rarch->configuration_settings;
 
    RARCH_LOG("Spoke: %s\n", speak_text);
 
-   if (is_accessibility_enabled())
+   if (is_accessibility_enabled(p_rarch))
    {
       frontend_ctx_driver_t *frontend = frontend_get_ptr();
       if (frontend && frontend->accessibility_speak)
@@ -34607,9 +34621,9 @@ bool accessibility_speak_priority(const char* speak_text, int priority)
 }
 
 #ifdef HAVE_TRANSLATE
-static bool is_narrator_running(void)
+static bool is_narrator_running(struct rarch_state *p_rarch)
 {
-   if (is_accessibility_enabled())
+   if (is_accessibility_enabled(p_rarch))
    {
       frontend_ctx_driver_t *frontend = frontend_get_ptr();
       if (frontend && frontend->is_narrator_running)
@@ -34619,11 +34633,11 @@ static bool is_narrator_running(void)
 }
 #endif
 
-static bool accessibility_startup_message(void)
+static bool accessibility_startup_message(struct rarch_state *p_rarch)
 {
    /* State that the narrator is on, and also include the first menu
       item we're on at startup. */
-   accessibility_speak_priority(
+   accessibility_speak_priority(p_rarch,
          "RetroArch accessibility on.  Main Menu Load Core.",
          10);
    return true;
