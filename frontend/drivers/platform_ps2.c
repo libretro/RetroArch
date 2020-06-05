@@ -22,15 +22,14 @@
 #include <sifrpc.h>
 #include <iopcontrol.h>
 #include <libpwroff.h>
-#include <libmc.h>
 #include <libmtap.h>
 #include <audsrv.h>
 #include <libpad.h>
 #include <ps2_devices.h>
 #include <ps2_irx_variables.h>
 
-char eboot_path[512];
-char user_path[512];
+static char eboot_path[512];
+static char user_path[512];
 
 static enum frontend_fork ps2_fork_mode = FRONTEND_FORK_NONE;
 
@@ -92,17 +91,6 @@ static void create_path_names(void)
 
 static void poweroffCallback(void *arg)
 {
-#if 0
-	/* Close all files and unmount all partitions. */
-	close(fd);
-
-	/* If you use PFS, close all files and unmount all partitions. */
-	fileXioDevctl("pfs:", PDIOC_CLOSEALL, NULL, 0, NULL, 0)
-
-	/* Shut down DEV9, if you used it. */
-	while(fileXioDevctl("dev9x:", DDIOC_OFF, NULL, 0, NULL, 0) < 0){};
-#endif
-
 	printf("Shutdown!");
 	poweroffShutdown();
 }
@@ -187,10 +175,6 @@ static void frontend_ps2_init(void *data)
 
    /* CDVD */
    SifExecModuleBuffer(&cdfs_irx, size_cdfs_irx, 0, NULL, NULL);
-
-   if (mcInit(MC_TYPE_XMC)) {
-      RARCH_ERR("mcInit library not initalizated\n");
-   }
 
    /* Initializes audsrv library */
    if (audsrv_init()) {
