@@ -401,24 +401,6 @@ typedef struct menu_ctx_bind
 } menu_ctx_bind_t;
 
 /**
- * menu_driver_find_handle:
- * @index              : index of driver to get handle to.
- *
- * Returns: handle to menu driver at index. Can be NULL
- * if nothing found.
- **/
-const void *menu_driver_find_handle(int index);
-
-/**
- * menu_driver_find_ident:
- * @index              : index of driver to get handle to.
- *
- * Returns: Human-readable identifier of menu driver at index. Can be NULL
- * if nothing found.
- **/
-const char *menu_driver_find_ident(int index);
-
-/**
  * config_get_menu_driver_options:
  *
  * Get an enumerated list of all menu driver names,
@@ -441,8 +423,6 @@ bool menu_driver_get_load_content_animation_data(
 bool menu_driver_iterate(menu_ctx_iterate_t *iterate,
       retro_time_t current_time);
 
-bool menu_driver_list_clear(file_list_t *list);
-
 bool menu_driver_list_cache(menu_ctx_list_t *list);
 
 void menu_driver_navigation_set(bool scroll);
@@ -458,10 +438,6 @@ void menu_driver_set_thumbnail_system(char *s, size_t len);
 void menu_driver_get_thumbnail_system(char *s, size_t len);
 
 void menu_driver_set_thumbnail_content(char *s, size_t len);
-
-bool menu_driver_list_insert(menu_ctx_list_t *list);
-
-bool menu_driver_list_set_selection(file_list_t *list);
 
 bool menu_driver_list_get_selection(menu_ctx_list_t *list);
 
@@ -494,9 +470,6 @@ void menu_display_powerstate(gfx_display_ctx_powerstate_t *powerstate);
 void menu_display_handle_wallpaper_upload(retro_task_t *task,
       void *task_data,
       void *user_data, const char *err);
-
-
-void menu_driver_destroy(void);
 
 menu_handle_t *menu_driver_get_ptr(void);
 

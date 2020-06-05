@@ -3854,8 +3854,12 @@ static int menu_list_flush_stack_type(const char *needle, const char *label,
    return needle ? !string_is_equal(needle, label) : (type != final_type);
 }
 
-static bool menu_list_pop_stack(menu_list_t *list,
-      size_t idx, size_t *directory_ptr, bool animate)
+static bool menu_list_pop_stack(
+      struct rarch_state *p_rarch,
+      menu_list_t *list,
+      size_t idx,
+      size_t *directory_ptr,
+      bool animate)
 {
    menu_ctx_list_t list_info;
    bool refresh           = false;
@@ -3882,7 +3886,10 @@ static bool menu_list_pop_stack(menu_list_t *list,
    }
 
    file_list_pop(menu_list, directory_ptr);
-   menu_driver_list_set_selection(menu_list);
+   if (  p_rarch->menu_driver_ctx &&
+         p_rarch->menu_driver_ctx->list_set_selection)
+      p_rarch->menu_driver_ctx->list_set_selection(p_rarch->menu_userdata,
+            menu_list);
    if (animate)
       menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
 
@@ -3911,7 +3918,8 @@ static void menu_list_flush_stack(
    {
       size_t new_selection_ptr = menu_st->selection_ptr;
 
-      if (!menu_list_pop_stack(list, idx, &new_selection_ptr, 1))
+      if (!menu_list_pop_stack(p_rarch,
+               list, idx, &new_selection_ptr, 1))
          break;
 
       menu_st->selection_ptr = new_selection_ptr;
@@ -4210,13 +4218,19 @@ void menu_entries_set_checked(file_list_t *list, size_t entry_idx,
       cbs->checked = checked;
 }
 
-void menu_entries_append(file_list_t *list, const char *path, const char *label,
-      unsigned type, size_t directory_ptr, size_t entry_idx)
+void menu_entries_append(
+      file_list_t *list,
+      const char *path,
+      const char *label,
+      unsigned type,
+      size_t directory_ptr,
+      size_t entry_idx)
 {
    menu_ctx_list_t list_info;
    size_t idx;
    const char *menu_path           = NULL;
    menu_file_list_cbs_t *cbs       = NULL;
+   struct rarch_state   *p_rarch   = &rarch_st;
    if (!list || !label)
       return;
 
@@ -4237,7 +4251,16 @@ void menu_entries_append(file_list_t *list, const char *path, const char *label,
    list_info.idx         = idx;
    list_info.entry_type  = type;
 
-   menu_driver_list_insert(&list_info);
+   if (  p_rarch->menu_driver_ctx && 
+         p_rarch->menu_driver_ctx->list_insert)
+      p_rarch->menu_driver_ctx->list_insert(
+            p_rarch->menu_userdata,
+            list_info.list,
+            list_info.path,
+            list_info.fullpath,
+            list_info.label,
+            list_info.idx,
+            list_info.entry_type);
 
    if (list_info.fullpath)
       free(list_info.fullpath);
@@ -4257,16 +4280,21 @@ void menu_entries_append(file_list_t *list, const char *path, const char *label,
    menu_cbs_init(list, cbs, path, label, type, idx);
 }
 
-bool menu_entries_append_enum(file_list_t *list, const char *path,
+bool menu_entries_append_enum(
+      file_list_t *list,
+      const char *path,
       const char *label,
       enum msg_hash_enums enum_idx,
-      unsigned type, size_t directory_ptr, size_t entry_idx)
+      unsigned type,
+      size_t directory_ptr,
+      size_t entry_idx)
 {
    menu_ctx_list_t list_info;
    size_t idx;
    const char *menu_path           = NULL;
    menu_file_list_cbs_t *cbs       = NULL;
    const char *menu_ident          = menu_driver_ident();
+   struct rarch_state   *p_rarch   = &rarch_st;
 
    if (!list || !label)
       return false;
@@ -4287,7 +4315,16 @@ bool menu_entries_append_enum(file_list_t *list, const char *path,
    list_info.idx         = idx;
    list_info.entry_type  = type;
 
-   menu_driver_list_insert(&list_info);
+   if (  p_rarch->menu_driver_ctx && 
+         p_rarch->menu_driver_ctx->list_insert)
+      p_rarch->menu_driver_ctx->list_insert(
+            p_rarch->menu_userdata,
+            list_info.list,
+            list_info.path,
+            list_info.fullpath,
+            list_info.label,
+            list_info.idx,
+            list_info.entry_type);
 
    if (list_info.fullpath)
       free(list_info.fullpath);
@@ -4320,6 +4357,7 @@ void menu_entries_prepend(file_list_t *list,
    size_t idx;
    const char *menu_path           = NULL;
    menu_file_list_cbs_t *cbs       = NULL;
+   struct rarch_state   *p_rarch   = &rarch_st;
    if (!list || !label)
       return;
 
@@ -4339,7 +4377,16 @@ void menu_entries_prepend(file_list_t *list,
    list_info.idx         = idx;
    list_info.entry_type  = type;
 
-   menu_driver_list_insert(&list_info);
+   if (  p_rarch->menu_driver_ctx && 
+         p_rarch->menu_driver_ctx->list_insert)
+      p_rarch->menu_driver_ctx->list_insert(
+            p_rarch->menu_userdata,
+            list_info.list,
+            list_info.path,
+            list_info.fullpath,
+            list_info.label,
+            list_info.idx,
+            list_info.entry_type);
 
    if (list_info.fullpath)
       free(list_info.fullpath);
@@ -4399,7 +4446,7 @@ void menu_entries_pop_stack(size_t *ptr, size_t idx, bool animate)
    struct menu_state    *menu_st  = &p_rarch->menu_driver_state;
    menu_list_t *menu_list         = menu_st->entries.list;
    if (menu_list)
-      menu_list_pop_stack(menu_list, idx, ptr, animate);
+      menu_list_pop_stack(p_rarch, menu_list, idx, ptr, animate);
 }
 
 size_t menu_entries_get_stack_size(size_t idx)
@@ -4501,7 +4548,9 @@ bool menu_entries_ctl(enum menu_entries_ctl_state state, void *data)
             if (!list)
                return false;
 
-            menu_driver_list_clear(list);
+            /* Clear all the menu lists. */
+            if (p_rarch->menu_driver_ctx->list_clear)
+               p_rarch->menu_driver_ctx->list_clear(list);
 
             for (i = 0; i < list->size; i++)
                file_list_free_actiondata(list, i);
@@ -4524,27 +4573,21 @@ bool menu_entries_ctl(enum menu_entries_ctl_state state, void *data)
    return true;
 }
 
-static bool menu_driver_load_image(menu_ctx_load_image_t *load_image_info)
-{
-   struct rarch_state   *p_rarch  = &rarch_st;
-   if (     p_rarch->menu_driver_ctx 
-         && p_rarch->menu_driver_ctx->load_image)
-      return p_rarch->menu_driver_ctx->load_image(p_rarch->menu_userdata,
-            load_image_info->data, load_image_info->type);
-   return false;
-}
-
 void menu_display_handle_thumbnail_upload(retro_task_t *task,
       void *task_data,
       void *user_data, const char *err)
 {
    menu_ctx_load_image_t load_image_info;
-   struct texture_image *img = (struct texture_image*)task_data;
+   struct rarch_state   *p_rarch  = &rarch_st;
+   struct texture_image      *img = (struct texture_image*)task_data;
 
    load_image_info.data = img;
    load_image_info.type = MENU_IMAGE_THUMBNAIL;
 
-   menu_driver_load_image(&load_image_info);
+   if (     p_rarch->menu_driver_ctx 
+         && p_rarch->menu_driver_ctx->load_image)
+      p_rarch->menu_driver_ctx->load_image(p_rarch->menu_userdata,
+            load_image_info.data, load_image_info.type);
 
    image_texture_free(img);
    free(img);
@@ -4557,12 +4600,16 @@ void menu_display_handle_left_thumbnail_upload(retro_task_t *task,
       void *user_data, const char *err)
 {
    menu_ctx_load_image_t load_image_info;
-   struct texture_image *img = (struct texture_image*)task_data;
+   struct rarch_state   *p_rarch  = &rarch_st;
+   struct texture_image      *img = (struct texture_image*)task_data;
 
-   load_image_info.data = img;
-   load_image_info.type = MENU_IMAGE_LEFT_THUMBNAIL;
+   load_image_info.data           = img;
+   load_image_info.type           = MENU_IMAGE_LEFT_THUMBNAIL;
 
-   menu_driver_load_image(&load_image_info);
+   if (     p_rarch->menu_driver_ctx 
+         && p_rarch->menu_driver_ctx->load_image)
+      p_rarch->menu_driver_ctx->load_image(p_rarch->menu_userdata,
+            load_image_info.data, load_image_info.type);
 
    image_texture_free(img);
    free(img);
@@ -4574,12 +4621,16 @@ void menu_display_handle_savestate_thumbnail_upload(retro_task_t *task,
       void *user_data, const char *err)
 {
    menu_ctx_load_image_t load_image_info;
-   struct texture_image *img = (struct texture_image*)task_data;
+   struct rarch_state   *p_rarch  = &rarch_st;
+   struct texture_image      *img = (struct texture_image*)task_data;
 
-   load_image_info.data = img;
-   load_image_info.type = MENU_IMAGE_SAVESTATE_THUMBNAIL;
+   load_image_info.data           = img;
+   load_image_info.type           = MENU_IMAGE_SAVESTATE_THUMBNAIL;
 
-   menu_driver_load_image(&load_image_info);
+   if (     p_rarch->menu_driver_ctx 
+         && p_rarch->menu_driver_ctx->load_image)
+      p_rarch->menu_driver_ctx->load_image(p_rarch->menu_userdata,
+            load_image_info.data, load_image_info.type);
 
    image_texture_free(img);
    free(img);
@@ -4594,45 +4645,20 @@ void menu_display_handle_wallpaper_upload(retro_task_t *task,
       void *user_data, const char *err)
 {
    menu_ctx_load_image_t load_image_info;
-   struct texture_image *img = (struct texture_image*)task_data;
+   struct rarch_state   *p_rarch  = &rarch_st;
+   struct texture_image      *img = (struct texture_image*)task_data;
 
-   load_image_info.data = img;
-   load_image_info.type = MENU_IMAGE_WALLPAPER;
+   load_image_info.data           = img;
+   load_image_info.type           = MENU_IMAGE_WALLPAPER;
 
-   menu_driver_load_image(&load_image_info);
+   if (     p_rarch->menu_driver_ctx 
+         && p_rarch->menu_driver_ctx->load_image)
+      p_rarch->menu_driver_ctx->load_image(p_rarch->menu_userdata,
+            load_image_info.data, load_image_info.type);
+
    image_texture_free(img);
    free(img);
    free(user_data);
-}
-
-/**
- * menu_driver_find_handle:
- * @idx              : index of driver to get handle to.
- *
- * Returns: handle to menu driver at index. Can be NULL
- * if nothing found.
- **/
-const void *menu_driver_find_handle(int idx)
-{
-   const void *drv = menu_ctx_drivers[idx];
-   if (!drv)
-      return NULL;
-   return drv;
-}
-
-/**
- * menu_driver_find_ident:
- * @idx              : index of driver to get handle to.
- *
- * Returns: Human-readable identifier of menu driver at index.
- * Can be NULL if nothing found.
- **/
-const char *menu_driver_find_ident(int idx)
-{
-   const menu_ctx_driver_t *drv = menu_ctx_drivers[idx];
-   if (!drv)
-      return NULL;
-   return drv->ident;
 }
 
 /**
@@ -5288,43 +5314,6 @@ bool menu_driver_list_cache(menu_ctx_list_t *list)
    return true;
 }
 
-/* Clear all the menu lists. */
-bool menu_driver_list_clear(file_list_t *list)
-{
-   struct rarch_state   *p_rarch  = &rarch_st;
-   if (!list)
-      return false;
-   if (p_rarch->menu_driver_ctx->list_clear)
-      p_rarch->menu_driver_ctx->list_clear(list);
-   return true;
-}
-
-bool menu_driver_list_insert(menu_ctx_list_t *list)
-{
-   struct rarch_state       *p_rarch = &rarch_st;
-   if (!list || !p_rarch->menu_driver_ctx || !p_rarch->menu_driver_ctx->list_insert)
-      return false;
-   p_rarch->menu_driver_ctx->list_insert(p_rarch->menu_userdata,
-         list->list, list->path, list->fullpath,
-         list->label, list->idx, list->entry_type);
-
-   return true;
-}
-
-bool menu_driver_list_set_selection(file_list_t *list)
-{
-   struct rarch_state       *p_rarch = &rarch_st;
-   if (!list)
-      return false;
-
-   if (  !p_rarch->menu_driver_ctx || 
-         !p_rarch->menu_driver_ctx->list_set_selection)
-      return false;
-
-   p_rarch->menu_driver_ctx->list_set_selection(p_rarch->menu_userdata, list);
-   return true;
-}
-
 static void menu_driver_set_id(struct rarch_state *p_rarch)
 {
    const char        *driver_name = NULL;
@@ -5502,9 +5491,8 @@ void menu_driver_set_thumbnail_content(char *s, size_t len)
 }
 
 /* Teardown function for the menu driver. */
-void menu_driver_destroy(void)
+static void menu_driver_destroy(struct rarch_state *p_rarch)
 {
-   struct rarch_state   *p_rarch  = &rarch_st;
    struct menu_state    *menu_st  = &p_rarch->menu_driver_state;
 
    menu_st->pending_quick_menu    = false;
@@ -5589,7 +5577,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
 
             if (i >= 0)
                p_rarch->menu_driver_ctx = (const menu_ctx_driver_t*)
-                  menu_driver_find_handle(i);
+                  menu_ctx_drivers[i];
             else
             {
                if (verbosity_is_enabled())
@@ -5598,13 +5586,18 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
                   RARCH_WARN("Couldn't find any menu driver named \"%s\"\n",
                         settings->arrays.menu_driver);
                   RARCH_LOG_OUTPUT("Available menu drivers are:\n");
-                  for (d = 0; menu_driver_find_handle(d); d++)
-                     RARCH_LOG_OUTPUT("\t%s\n", menu_driver_find_ident(d));
+                  for (d = 0; menu_ctx_drivers[d]; d++)
+                  {
+                     if (menu_ctx_drivers[d])
+                     {
+                        RARCH_LOG_OUTPUT("\t%s\n", menu_ctx_drivers[d]->ident);
+                     }
+                  }
                   RARCH_WARN("Going to default to first menu driver...\n");
                }
 
                p_rarch->menu_driver_ctx = (const menu_ctx_driver_t*)
-                  menu_driver_find_handle(0);
+                  menu_ctx_drivers[0];
 
                if (!p_rarch->menu_driver_ctx)
                   return false;
@@ -6250,12 +6243,15 @@ struct string_list *string_list_new_special(enum string_list_type type,
    {
       case STRING_LIST_MENU_DRIVERS:
 #ifdef HAVE_MENU
-         for (i = 0; menu_driver_find_handle(i); i++)
+         for (i = 0; menu_ctx_drivers[i]; i++)
          {
-            const char *opt  = menu_driver_find_ident(i);
-            *len            += strlen(opt) + 1;
+            if (menu_ctx_drivers[i])
+            {
+               const char *opt  = menu_ctx_drivers[i]->ident;
+               *len            += strlen(opt) + 1;
 
-            string_list_append(s, opt, attr);
+               string_list_append(s, opt, attr);
+            }
          }
          break;
 #endif
@@ -28746,10 +28742,10 @@ static const void *find_driver_nonempty(const char *label, int i,
 #ifdef HAVE_MENU
    else if (string_is_equal(label, "menu_driver"))
    {
-      if (menu_driver_find_handle(i))
+      if (menu_ctx_drivers[i])
       {
-         strlcpy(s, menu_driver_find_ident(i), len);
-         return menu_driver_find_handle(i);
+         strlcpy(s, menu_ctx_drivers[i]->ident, len);
+         return menu_ctx_drivers[i];
       }
    }
 #endif
@@ -29278,7 +29274,7 @@ static void retroarch_deinit_drivers(struct rarch_state *p_rarch)
    p_rarch->current_input                           = NULL;
 
 #ifdef HAVE_MENU
-   menu_driver_destroy();
+   menu_driver_destroy(p_rarch);
    p_rarch->menu_driver_alive                       = false;
 #endif
    p_rarch->location_driver_active                  = false;
