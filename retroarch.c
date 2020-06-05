@@ -4183,18 +4183,16 @@ file_list_t *menu_entries_get_selection_buf_ptr(size_t idx)
    return menu_list_get_selection(menu_list, (unsigned)idx);
 }
 
-static void menu_entries_list_deinit(void)
+static void menu_entries_list_deinit(struct rarch_state *p_rarch)
 {
-   struct rarch_state   *p_rarch  = &rarch_st;
    struct menu_state    *menu_st  = &p_rarch->menu_driver_state;
    if (menu_st->entries.list)
       menu_list_free(menu_st->entries.list);
    menu_st->entries.list          = NULL;
 }
 
-static void menu_entries_settings_deinit(void)
+static void menu_entries_settings_deinit(struct rarch_state *p_rarch)
 {
-   struct rarch_state   *p_rarch  = &rarch_st;
    struct menu_state    *menu_st  = &p_rarch->menu_driver_state;
    menu_setting_free(menu_st->entries.list_settings);
    if (menu_st->entries.list_settings)
@@ -4203,9 +4201,8 @@ static void menu_entries_settings_deinit(void)
 }
 
 
-static bool menu_entries_init(void)
+static bool menu_entries_init(struct rarch_state *p_rarch)
 {
-   struct rarch_state   *p_rarch  = &rarch_st;
    struct menu_state    *menu_st  = &p_rarch->menu_driver_state;
    if (!(menu_st->entries.list = (menu_list_t*)menu_list_new()))
       goto error;
@@ -4218,8 +4215,8 @@ static bool menu_entries_init(void)
    return true;
 
 error:
-   menu_entries_settings_deinit();
-   menu_entries_list_deinit();
+   menu_entries_settings_deinit(p_rarch);
+   menu_entries_list_deinit(p_rarch);
 
    return false;
 }
@@ -4745,7 +4742,7 @@ static bool menu_init(struct rarch_state *p_rarch)
     * initialised */
    menu_input_reset(p_rarch);
 
-   if (!menu_entries_init())
+   if (!menu_entries_init(p_rarch))
       return false;
 
 #ifdef HAVE_CONFIGFILE
@@ -5685,8 +5682,8 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
 
             gfx_display_free();
 
-            menu_entries_settings_deinit();
-            menu_entries_list_deinit();
+            menu_entries_settings_deinit(p_rarch);
+            menu_entries_list_deinit(p_rarch);
 
             if (p_rarch->menu_driver_data->core_buf)
                free(p_rarch->menu_driver_data->core_buf);
