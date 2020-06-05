@@ -2545,8 +2545,9 @@ static bool init_libretro_symbols(
 
 static void ui_companion_driver_deinit(struct rarch_state *p_rarch);
 
-static bool audio_driver_stop(void);
-static bool audio_driver_start(bool is_shutdown);
+static bool audio_driver_stop(struct rarch_state *p_rarch);
+static bool audio_driver_start(struct rarch_state *p_rarch,
+      bool is_shutdown);
 
 static bool recording_init(struct rarch_state *p_rarch);
 static bool recording_deinit(struct rarch_state *p_rarch);
@@ -11400,11 +11401,12 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_AUDIO_STOP:
          midi_driver_set_all_sounds_off(p_rarch);
-         if (!audio_driver_stop())
+         if (!audio_driver_stop(p_rarch))
             return false;
          break;
       case CMD_EVENT_AUDIO_START:
-         if (!audio_driver_start(p_rarch->runloop_shutdown_initiated))
+         if (!audio_driver_start(p_rarch,
+                  p_rarch->runloop_shutdown_initiated))
             return false;
          break;
       case CMD_EVENT_AUDIO_MUTE_TOGGLE:
@@ -13889,12 +13891,15 @@ static bool mmap_preprocess_descriptors(
    return true;
 }
 
-static bool rarch_clear_all_thread_waits(unsigned clear_threads, void *data)
+static bool rarch_clear_all_thread_waits(
+      unsigned clear_threads, void *data)
 {
+   struct rarch_state *p_rarch  = &rarch_st;
    if ( clear_threads > 0)
-      audio_driver_start(false);
+      audio_driver_start(p_rarch,
+            false);
    else
-      audio_driver_stop();
+      audio_driver_stop(p_rarch);
 
    return true;
 }
@@ -21515,11 +21520,12 @@ const hid_driver_t *input_hid_init_first(void)
 }
 #endif
 
-static void osk_update_last_codepoint(const char *word)
+static void osk_update_last_codepoint(
+      struct rarch_state *p_rarch,
+      const char *word)
 {
    const char *letter                    = word;
    const char    *pos                    = letter;
-   struct rarch_state           *p_rarch = &rarch_st;
 
    for (;;)
    {
@@ -21547,13 +21553,13 @@ static void osk_update_last_codepoint(const char *word)
  * Returns: true (1) on success, otherwise false (0).
  **/
 static bool input_keyboard_line_event(
+      struct rarch_state *p_rarch,
       input_keyboard_line_t *state, uint32_t character)
 {
    char array[2];
    bool            ret         = false;
    const char            *word = NULL;
-   struct rarch_state *p_rarch = &rarch_st;
-   char            c           = character >= 128 ? '?' : character;
+   char            c           = (character >= 128) ? '?' : character;
 
    /* Treat extended chars as ? as we cannot support
     * printable characters for unicode stuff. */
@@ -21619,7 +21625,7 @@ static bool input_keyboard_line_event(
          p_rarch->osk_last_codepoint_len = 0;
       }
       else
-         osk_update_last_codepoint(word);
+         osk_update_last_codepoint(p_rarch, word);
    }
 
    return ret;
@@ -21658,7 +21664,7 @@ bool input_keyboard_line_append(const char *word)
       p_rarch->osk_last_codepoint_len = 0;
    }
    else
-      osk_update_last_codepoint(word);
+      osk_update_last_codepoint(p_rarch, word);
 
    return false;
 }
@@ -21832,7 +21838,8 @@ void input_keyboard_event(bool down, unsigned code,
                character = (char)code;
             /* fall-through */
          default:
-            if (!input_keyboard_line_event(p_rarch->keyboard_line, character))
+            if (!input_keyboard_line_event(p_rarch,
+                     p_rarch->keyboard_line, character))
                return;
             break;
       }
@@ -21876,7 +21883,8 @@ bool input_keyboard_ctl(
          break;
       case RARCH_INPUT_KEYBOARD_CTL_START_WAIT_KEYS:
          {
-            input_keyboard_ctx_wait_t *keys      = (input_keyboard_ctx_wait_t*)data;
+            input_keyboard_ctx_wait_t *keys      = 
+               (input_keyboard_ctx_wait_t*)data;
 
             if (!keys)
                return false;
@@ -22244,10 +22252,10 @@ static void input_config_parse_mouse_button(
 }
 
 static void input_config_get_bind_string_joykey(
+      struct rarch_state *p_rarch,
       char *buf, const char *prefix,
       const struct retro_keybind *bind, size_t size)
 {
-   struct rarch_state *p_rarch = &rarch_st;
    settings_t  *settings       = p_rarch->configuration_settings;
    bool  label_show            = settings->bools.input_descriptor_label_show;
 
@@ -22295,10 +22303,11 @@ static void input_config_get_bind_string_joykey(
    }
 }
 
-static void input_config_get_bind_string_joyaxis(char *buf, const char *prefix,
+static void input_config_get_bind_string_joyaxis(
+      struct rarch_state *p_rarch,
+      char *buf, const char *prefix,
       const struct retro_keybind *bind, size_t size)
 {
-   struct rarch_state      *p_rarch = &rarch_st;
    settings_t *settings             = p_rarch->configuration_settings;
    bool input_descriptor_label_show = settings->bools.input_descriptor_label_show;
 
@@ -22329,18 +22338,19 @@ static void input_config_get_bind_string_joyaxis(char *buf, const char *prefix,
 void input_config_get_bind_string(char *buf, const struct retro_keybind *bind,
       const struct retro_keybind *auto_bind, size_t size)
 {
-   int delim = 0;
+   int delim                   = 0;
+   struct rarch_state *p_rarch = &rarch_st;
 
    *buf = '\0';
 
    if (bind->joykey != NO_BTN)
-      input_config_get_bind_string_joykey(buf, "", bind, size);
+      input_config_get_bind_string_joykey(p_rarch, buf, "", bind, size);
    else if (bind->joyaxis != AXIS_NONE)
-      input_config_get_bind_string_joyaxis(buf, "", bind, size);
+      input_config_get_bind_string_joyaxis(p_rarch, buf, "", bind, size);
    else if (auto_bind && auto_bind->joykey != NO_BTN)
-      input_config_get_bind_string_joykey(buf, "Auto: ", auto_bind, size);
+      input_config_get_bind_string_joykey(p_rarch, buf, "Auto: ", auto_bind, size);
    else if (auto_bind && auto_bind->joyaxis != AXIS_NONE)
-      input_config_get_bind_string_joyaxis(buf, "Auto: ", auto_bind, size);
+      input_config_get_bind_string_joyaxis(p_rarch, buf, "Auto: ", auto_bind, size);
 
    if (*buf)
       delim = 1;
@@ -23443,9 +23453,9 @@ size_t midi_driver_get_event_size(uint8_t status)
 
 /* AUDIO */
 
-static enum resampler_quality audio_driver_get_resampler_quality(void)
+static enum resampler_quality audio_driver_get_resampler_quality(
+      struct rarch_state *p_rarch)
 {
-   struct rarch_state *p_rarch = &rarch_st;
    settings_t     *settings    = p_rarch->configuration_settings;
 
    if (!settings)
@@ -23495,14 +23505,15 @@ static void audio_driver_mixer_deinit(struct rarch_state *p_rarch)
  * Computes audio buffer statistics.
  *
  **/
-static bool audio_compute_buffer_statistics(audio_statistics_t *stats)
+static bool audio_compute_buffer_statistics(
+      struct rarch_state *p_rarch,
+      audio_statistics_t *stats)
 {
    unsigned i, low_water_size, high_water_size, avg, stddev;
    uint64_t accum                = 0;
    uint64_t accum_var            = 0;
    unsigned low_water_count      = 0;
    unsigned high_water_count     = 0;
-   struct rarch_state   *p_rarch = &rarch_st;
    unsigned samples              = MIN(
          (unsigned)p_rarch->audio_driver_free_samples_count,
          AUDIO_BUFFER_FREE_SAMPLES_COUNT);
@@ -23560,10 +23571,10 @@ static bool audio_compute_buffer_statistics(audio_statistics_t *stats)
    return true;
 }
 
-static void report_audio_buffer_statistics(void)
+static void report_audio_buffer_statistics(struct rarch_state *p_rarch)
 {
    audio_statistics_t audio_stats = {0.0f};
-   if (!audio_compute_buffer_statistics(&audio_stats))
+   if (!audio_compute_buffer_statistics(p_rarch, &audio_stats))
       return;
 
 #ifdef DEBUG
@@ -23605,9 +23616,8 @@ const char *config_get_audio_driver_options(void)
    return char_list_new_special(STRING_LIST_AUDIO_DRIVERS, NULL);
 }
 
-static void audio_driver_deinit_resampler(void)
+static void audio_driver_deinit_resampler(struct rarch_state *p_rarch)
 {
-   struct rarch_state *p_rarch = &rarch_st;
    if (p_rarch->audio_driver_resampler && p_rarch->audio_driver_resampler_data)
       p_rarch->audio_driver_resampler->free(p_rarch->audio_driver_resampler_data);
    p_rarch->audio_driver_resampler      = NULL;
@@ -23646,7 +23656,7 @@ static bool audio_driver_deinit_internal(struct rarch_state *p_rarch)
       return false;
    }
 
-   audio_driver_deinit_resampler();
+   audio_driver_deinit_resampler(p_rarch);
 
    if (p_rarch->audio_driver_input_data)
       free(p_rarch->audio_driver_input_data);
@@ -23657,7 +23667,7 @@ static bool audio_driver_deinit_internal(struct rarch_state *p_rarch)
    p_rarch->audio_driver_output_samples_buf = NULL;
 
    audio_driver_dsp_filter_free();
-   report_audio_buffer_statistics();
+   report_audio_buffer_statistics(p_rarch);
 
    return true;
 }
@@ -23857,7 +23867,7 @@ static bool audio_driver_init_internal(
             &p_rarch->audio_driver_resampler_data,
             &p_rarch->audio_driver_resampler,
             settings->arrays.audio_resampler,
-            audio_driver_get_resampler_quality(),
+            audio_driver_get_resampler_quality(p_rarch),
             p_rarch->audio_source_ratio_original))
    {
       RARCH_ERR("Failed to initialize resampler \"%s\".\n",
@@ -23919,7 +23929,8 @@ static bool audio_driver_init_internal(
          p_rarch->audio_driver_active
          && audio_cb_inited
          )
-      audio_driver_start(false);
+      audio_driver_start(p_rarch,
+            false);
 
    return true;
 
@@ -25042,9 +25053,9 @@ static INLINE bool audio_driver_alive(struct rarch_state *p_rarch)
    return false;
 }
 
-static bool audio_driver_start(bool is_shutdown)
+static bool audio_driver_start(struct rarch_state *p_rarch,
+      bool is_shutdown)
 {
-   struct rarch_state *p_rarch = &rarch_st;
    if (!p_rarch->current_audio || !p_rarch->current_audio->start
          || !p_rarch->audio_driver_context_audio_data)
       goto error;
@@ -25061,13 +25072,13 @@ error:
    return false;
 }
 
-static bool audio_driver_stop(void)
+static bool audio_driver_stop(struct rarch_state *p_rarch)
 {
-   struct rarch_state *p_rarch = &rarch_st;
-   if (!p_rarch->current_audio || !p_rarch->current_audio->stop
-         || !p_rarch->audio_driver_context_audio_data)
-      return false;
-   if (!audio_driver_alive(p_rarch))
+   if (     !p_rarch->current_audio 
+         || !p_rarch->current_audio->stop
+         || !p_rarch->audio_driver_context_audio_data
+         || !audio_driver_alive(p_rarch)
+      )
       return false;
    return p_rarch->current_audio->stop(
          p_rarch->audio_driver_context_audio_data);
@@ -27491,7 +27502,7 @@ static void video_driver_frame(const void *data, unsigned width,
       video_info.osd_stat_params.color       = COLOR_ABGR(
             red, green, blue, alpha);
 
-      audio_compute_buffer_statistics(&audio_stats);
+      audio_compute_buffer_statistics(p_rarch, &audio_stats);
 
       snprintf(video_info.stat_text,
             sizeof(video_info.stat_text),
@@ -34457,7 +34468,7 @@ static bool core_unload_game(struct rarch_state *p_rarch)
       p_rarch->current_core.game_loaded = false;
    }
 
-   audio_driver_stop();
+   audio_driver_stop(p_rarch);
 
    return true;
 }
