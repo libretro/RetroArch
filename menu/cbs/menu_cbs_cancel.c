@@ -116,7 +116,6 @@ static int menu_cbs_init_bind_cancel_compare_type(
 
    switch (cbs->enum_idx)
    {
-
       case MENU_ENUM_LABEL_CHEAT_IDX:
       case MENU_ENUM_LABEL_CHEAT_STATE:
       case MENU_ENUM_LABEL_CHEAT_DESC:
@@ -142,14 +141,12 @@ static int menu_cbs_init_bind_cancel_compare_type(
       case MENU_ENUM_LABEL_CHEAT_COPY_AFTER:
       case MENU_ENUM_LABEL_CHEAT_COPY_BEFORE:
       case MENU_ENUM_LABEL_CHEAT_DELETE:
-      {
-         BIND_ACTION_CANCEL(cbs, action_cancel_cheat_details);
-         break ;
-      }
+         {
+            BIND_ACTION_CANCEL(cbs, action_cancel_cheat_details);
+            break ;
+         }
       default :
-      {
          break ;
-      }
    }
    return -1;
 }
