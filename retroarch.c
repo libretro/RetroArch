@@ -4692,7 +4692,7 @@ static void bundle_decompressed(retro_task_t *task,
  *
  * Returns: menu handle on success, otherwise NULL.
  **/
-static bool menu_init(menu_handle_t *menu_data)
+static bool menu_init(void)
 {
    settings_t *settings        = config_get_ptr();
 #ifdef HAVE_CONFIGFILE
@@ -5400,7 +5400,7 @@ static bool menu_driver_init_internal(
       p_rarch->menu_driver_data->driver_ctx   = p_rarch->menu_driver_ctx;
    }
 
-   if (!p_rarch->menu_driver_data || !menu_init(p_rarch->menu_driver_data))
+   if (!p_rarch->menu_driver_data || !menu_init())
       return false;
 
    {
@@ -7542,7 +7542,7 @@ unsigned menu_input_dialog_get_kb_idx(void)
 bool menu_input_dialog_start_search(void)
 {
    struct rarch_state *p_rarch = &rarch_st;
-   menu_handle_t         *menu = menu_driver_get_ptr();
+   menu_handle_t         *menu = p_rarch->menu_driver_data;
 
    if (!menu)
       return false;
@@ -7569,7 +7569,7 @@ bool menu_input_dialog_start_search(void)
 bool menu_input_dialog_start(menu_input_ctx_line_t *line)
 {
    struct rarch_state *p_rarch = &rarch_st;
-   menu_handle_t    *menu      = menu_driver_get_ptr();
+   menu_handle_t         *menu = p_rarch->menu_driver_data;
    if (!line || !menu)
       return false;
 
@@ -19342,11 +19342,11 @@ static void menu_input_get_mouse_hw_state(
    static bool last_select_pressed = false;
    static bool last_cancel_pressed = false;
    bool mouse_enabled              = settings->bools.menu_mouse_enable;
-   menu_handle_t *menu_data        = menu_driver_get_ptr();
+   menu_handle_t             *menu = p_rarch->menu_driver_data;
    bool menu_has_fb                =
-      (menu_data &&
-       menu_data->driver_ctx &&
-       menu_data->driver_ctx->set_texture);
+      (menu &&
+       menu->driver_ctx &&
+       menu->driver_ctx->set_texture);
 #ifdef HAVE_OVERLAY
    bool overlay_enable             = settings->bools.input_overlay_enable;
    /* Menu pointer controls are ignored when overlays are enabled. */
@@ -19456,13 +19456,13 @@ static void menu_input_get_touchscreen_hw_state(
    struct rarch_state *p_rarch                  = &rarch_st;
    settings_t *settings                         = p_rarch->configuration_settings;
    const struct retro_keybind *binds[MAX_USERS] = {NULL};
-   menu_handle_t *menu_data                     = menu_driver_get_ptr();
+   menu_handle_t             *menu              = p_rarch->menu_driver_data;
    /* Is a background texture set for the current menu driver?
     * Checks if the menu framebuffer is set.
     * This would usually only return true
     * for framebuffer-based menu drivers, like RGUI. */
    int pointer_device                           =
-         (menu_data && menu_data->driver_ctx && menu_data->driver_ctx->set_texture) ?
+         (menu && menu->driver_ctx && menu->driver_ctx->set_texture) ?
                RETRO_DEVICE_POINTER : RARCH_DEVICE_POINTER_SCREEN;
    static int16_t last_x                        = 0;
    static int16_t last_y                        = 0;
@@ -19619,11 +19619,11 @@ static unsigned menu_event(
    unsigned ok_current                             = BIT256_GET_PTR(p_input, menu_ok_btn);
    unsigned ok_trigger                             = ok_current & ~ok_old;
 #ifdef HAVE_RGUI
-   menu_handle_t *menu_data                        = menu_driver_get_ptr();
+   menu_handle_t             *menu                 = p_rarch->menu_driver_data;
    bool menu_has_fb                                =
-         (menu_data &&
-          menu_data->driver_ctx &&
-          menu_data->driver_ctx->set_texture);
+         (menu &&
+          menu->driver_ctx &&
+          menu->driver_ctx->set_texture);
 #else
    bool menu_has_fb                                = false;
 #endif
@@ -19969,13 +19969,13 @@ static float menu_input_get_dpi(void)
    static bool dpi_cached            = false;
    bool menu_has_fb                  = false;
    struct rarch_state       *p_rarch = &rarch_st;
-   menu_handle_t *menu_data          = menu_driver_get_ptr();
+   menu_handle_t             *menu   = p_rarch->menu_driver_data;
 
-   if (!menu_data)
+   if (!menu)
       return 0.0f;
 
-   menu_has_fb                       = menu_data->driver_ctx
-      && menu_data->driver_ctx->set_texture;
+   menu_has_fb                       = menu->driver_ctx
+      && menu->driver_ctx->set_texture;
 
    /* Regardless of menu driver, need 'actual' screen DPI
     * Note: DPI is a fixed hardware property. To minimise performance
@@ -20097,16 +20097,16 @@ static int menu_input_pointer_post_iterate(
    struct rarch_state *p_rarch                     = &rarch_st;
    menu_input_pointer_hw_state_t *pointer_hw_state = &p_rarch->menu_input_pointer_hw_state;
    menu_input_t *menu_input                        = &p_rarch->menu_input_state;
-   menu_handle_t *menu_data                        = menu_driver_get_ptr();
+   menu_handle_t *menu                             = p_rarch->menu_driver_data;
 
    /* Check whether a message box is currently
     * being shown
     * > Note: This ignores input bind dialogs,
     *   since input binding overrides normal input
     *   and must be handled separately... */
-   if (menu_data)
-      messagebox_active = BIT64_GET(menu_data->state, MENU_STATE_RENDER_MESSAGEBOX) &&
-            !string_is_empty(menu_data->menu_state_msg);
+   if (menu)
+      messagebox_active = BIT64_GET(menu->state, MENU_STATE_RENDER_MESSAGEBOX) &&
+            !string_is_empty(menu->menu_state_msg);
 
    /* If onscreen keyboard is shown and we currently have
     * active mouse input, highlight key under mouse cursor */
@@ -20414,11 +20414,10 @@ static int menu_input_pointer_post_iterate(
                menu_driver_ctl(RARCH_MENU_CTL_OSK_PTR_AT_POS, &point);
                if (point.retcode > -1)
                {
-                  menu_handle_t *menu_data      = menu_driver_get_ptr();
                   bool menu_has_fb              =
-                     (menu_data &&
-                      menu_data->driver_ctx &&
-                      menu_data->driver_ctx->set_texture);
+                     (menu &&
+                      menu->driver_ctx &&
+                      menu->driver_ctx->set_texture);
 
                   input_event_set_osk_ptr(point.retcode);
                   input_event_osk_append(point.retcode,
@@ -31383,13 +31382,13 @@ static void menu_driver_toggle(bool on)
 #endif
 #endif
    bool runloop_shutdown_initiated            = p_rarch->runloop_shutdown_initiated;
-   menu_handle_t *menu_data                   = menu_driver_get_ptr();
+   menu_handle_t *menu                        = p_rarch->menu_driver_data;
 
-   if (!menu_data)
+   if (!menu)
       return;
 
-   if (menu_data->driver_ctx && menu_data->driver_ctx->toggle)
-      menu_data->driver_ctx->toggle(menu_data->userdata, on);
+   if (menu->driver_ctx && menu->driver_ctx->toggle)
+      menu->driver_ctx->toggle(menu->userdata, on);
 
    p_rarch->menu_driver_alive                 = on;
 
@@ -32797,6 +32796,7 @@ static enum runloop_state runloop_check_state(
    float fastforward_ratio             = settings->floats.fastforward_ratio;
    bool pause_nonactive                = settings->bools.pause_nonactive;
 #ifdef HAVE_MENU
+   menu_handle_t *menu                 = p_rarch->menu_driver_data;
    unsigned menu_toggle_gamepad_combo  = settings->uints.input_menu_toggle_gamepad_combo;
    bool menu_driver_binding_state      = p_rarch->menu_driver_is_binding;
    bool menu_is_alive                  = p_rarch->menu_driver_alive;
@@ -33207,38 +33207,37 @@ static enum runloop_state runloop_check_state(
       if (focused || !p_rarch->runloop_idle)
       {
          bool libretro_running    = menu_display_libretro_running(p_rarch);
-         menu_handle_t *menu_data = menu_driver_get_ptr();
 
-         if (menu_data)
+         if (menu)
          {
-            if (BIT64_GET(menu_data->state, MENU_STATE_RENDER_FRAMEBUFFER)
-                  != BIT64_GET(menu_data->state, MENU_STATE_RENDER_MESSAGEBOX))
-               BIT64_SET(menu_data->state, MENU_STATE_RENDER_FRAMEBUFFER);
+            if (BIT64_GET(menu->state, MENU_STATE_RENDER_FRAMEBUFFER)
+                  != BIT64_GET(menu->state, MENU_STATE_RENDER_MESSAGEBOX))
+               BIT64_SET(menu->state, MENU_STATE_RENDER_FRAMEBUFFER);
 
-            if (BIT64_GET(menu_data->state, MENU_STATE_RENDER_FRAMEBUFFER))
+            if (BIT64_GET(menu->state, MENU_STATE_RENDER_FRAMEBUFFER))
                gfx_display_set_framebuffer_dirty_flag();
 
-            if (BIT64_GET(menu_data->state, MENU_STATE_RENDER_MESSAGEBOX)
-                  && !string_is_empty(menu_data->menu_state_msg))
+            if (BIT64_GET(menu->state, MENU_STATE_RENDER_MESSAGEBOX)
+                  && !string_is_empty(menu->menu_state_msg))
             {
-               if (menu_data->driver_ctx->render_messagebox)
-                  menu_data->driver_ctx->render_messagebox(
-                        menu_data->userdata,
-                        menu_data->menu_state_msg);
+               if (menu->driver_ctx->render_messagebox)
+                  menu->driver_ctx->render_messagebox(
+                        menu->userdata,
+                        menu->menu_state_msg);
 
                if (p_rarch->main_ui_companion_is_on_foreground)
                {
                   if (  p_rarch->ui_companion &&
                         p_rarch->ui_companion->render_messagebox)
-                     p_rarch->ui_companion->render_messagebox(menu_data->menu_state_msg);
+                     p_rarch->ui_companion->render_messagebox(menu->menu_state_msg);
                }
             }
 
-            if (BIT64_GET(menu_data->state, MENU_STATE_BLIT))
+            if (BIT64_GET(menu->state, MENU_STATE_BLIT))
             {
-               if (menu_data->driver_ctx->render)
-                  menu_data->driver_ctx->render(
-                        menu_data->userdata,
+               if (menu->driver_ctx->render)
+                  menu->driver_ctx->render(
+                        menu->userdata,
                         p_rarch->video_driver_width,
                         p_rarch->video_driver_height,
                         p_rarch->runloop_idle);
@@ -33247,10 +33246,10 @@ static enum runloop_state runloop_check_state(
             if (p_rarch->menu_driver_alive && !p_rarch->runloop_idle)
                menu_display_libretro(p_rarch, current_time);
 
-            if (menu_data->driver_ctx->set_texture)
-               menu_data->driver_ctx->set_texture();
+            if (menu->driver_ctx->set_texture)
+               menu->driver_ctx->set_texture();
 
-            menu_data->state               = 0;
+            menu->state               = 0;
          }
 
          if (settings->bools.audio_enable_menu &&
