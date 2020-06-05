@@ -829,8 +829,7 @@ ifeq ($(HAVE_SHADERS_COMMON), 1)
 endif
 
 ifeq ($(HAVE_MENU_COMMON), 1)
-   OBJ += menu/menu_driver.o \
-          menu/menu_setting.o \
+   OBJ += menu/menu_setting.o \
           menu/widgets/menu_filebrowser.o \
           menu/widgets/menu_dialog.o \
           menu/widgets/menu_input_bind_dialog.o \

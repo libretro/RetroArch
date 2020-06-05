@@ -1286,7 +1286,6 @@ MENU
 #include "../input/input_osk.c"
 
 #ifdef HAVE_MENU
-#include "../menu/menu_driver.c"
 #include "../menu/menu_setting.c"
 #include "../menu/menu_cbs.c"
 
