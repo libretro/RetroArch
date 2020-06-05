@@ -252,8 +252,6 @@ float menu_entry_num_min(uint32_t i);
 
 float menu_entry_num_max(uint32_t i);
 
-bool menu_entry_is_currently_selected(unsigned id);
-
 void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
       size_t i, void *userdata, bool use_representation);
 

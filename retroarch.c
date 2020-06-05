@@ -3718,13 +3718,6 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
    }
 }
 
-bool menu_entry_is_currently_selected(unsigned id)
-{
-   struct rarch_state *p_rarch = &rarch_st;
-   struct menu_state *menu_st  = &p_rarch->menu_driver_state;
-   return id == menu_st->selection_ptr;
-}
-
 /* Performs whatever actions are associated with menu entry 'i'.
  *
  * This is the most important function because it does all the work
@@ -19263,14 +19256,14 @@ static int16_t input_joypad_axis(const input_device_driver_t *drv,
  * Prevents phantom input when using an overlay to
  * toggle menu ON if overlays are disabled in-menu */
 
-static void menu_input_driver_toggle(bool on)
+static void menu_input_driver_toggle(
+      struct rarch_state *p_rarch,
+      bool on)
 {
 #ifdef HAVE_OVERLAY
-   struct rarch_state *p_rarch  = &rarch_st;
-   settings_t *settings         = p_rarch->configuration_settings;
-
    if (on)
    {
+      settings_t *settings      = p_rarch->configuration_settings;
       bool overlay_hide_in_menu = settings->bools.input_overlay_hide_in_menu;
       bool input_overlay_enable = settings->bools.input_overlay_enable;
       /* If an overlay was displayed before the toggle
@@ -31360,14 +31353,16 @@ static void menu_input_key_event(bool down, unsigned keycode,
  * If the menu is already running, it will be turned off.
  * If the menu is off, then the menu will be started.
  */
-static void menu_driver_toggle(bool on)
+static void menu_driver_toggle(
+      struct rarch_state *p_rarch,
+      menu_handle_t *menu,
+      bool on)
 {
    /* TODO/FIXME - retroarch_main_quit calls menu_driver_toggle -
     * we might have to redesign this to avoid EXXC_BAD_ACCESS errors
     * on OSX - for now we work around this by checking if the settings
     * struct is NULL
     */
-   struct rarch_state                *p_rarch = &rarch_st;
    retro_keyboard_event_t *key_event          = &p_rarch->runloop_key_event;
    retro_keyboard_event_t *frontend_key_event = &p_rarch->runloop_frontend_key_event;
    settings_t                 *settings       = p_rarch->configuration_settings;
@@ -31380,10 +31375,6 @@ static void menu_driver_toggle(bool on)
 #endif
 #endif
    bool runloop_shutdown_initiated            = p_rarch->runloop_shutdown_initiated;
-   menu_handle_t *menu                        = p_rarch->menu_driver_data;
-
-   if (!menu)
-      return;
 
    if (menu->driver_ctx && menu->driver_ctx->toggle)
       menu->driver_ctx->toggle(menu->userdata, on);
@@ -31393,7 +31384,7 @@ static void menu_driver_toggle(bool on)
    /* Apply any required menu pointer input inhibits
     * (i.e. prevent phantom input when using an overlay
     * to toggle the menu on) */
-   menu_input_driver_toggle(on);
+   menu_input_driver_toggle(p_rarch, on);
 
    if (p_rarch->menu_driver_alive)
    {
@@ -31477,7 +31468,9 @@ void retroarch_menu_running(void)
 #endif
 
 #ifdef HAVE_MENU
-   menu_driver_toggle(true);
+   menu_handle_t *menu             = p_rarch->menu_driver_data;
+   if (menu)
+      menu_driver_toggle(p_rarch, menu, true);
 
    /* Prevent stray input (for a single frame) */
    p_rarch->input_driver_flushing_input = 1;
@@ -31501,7 +31494,9 @@ void retroarch_menu_running_finished(bool quit)
    settings_t *settings                 = p_rarch->configuration_settings;
 #endif
 #ifdef HAVE_MENU
-   menu_driver_toggle(false);
+   menu_handle_t *menu                  = p_rarch->menu_driver_data;
+   if (menu)
+      menu_driver_toggle(p_rarch, menu, false);
 
    /* Prevent stray input
     * (for a single frame) */
@@ -31665,11 +31660,9 @@ static void rarch_init_core_options_path(
             strlcpy(global_options_path,
                   options_path, sizeof(global_options_path));
          else if (!path_is_empty(RARCH_PATH_CONFIG))
-         {
             fill_pathname_resolve_relative(
                   global_options_path, path_get(RARCH_PATH_CONFIG),
                   "retroarch-core-options.cfg", sizeof(global_options_path));
-         }
       }
 
       /* Allocate correct path/src_path strings */
@@ -32098,13 +32091,11 @@ static bool retroarch_load_shader_preset_internal(
 
       /* Concatenate strings into full paths */
       if (!string_is_empty(core_name))
-      {
          fill_pathname_join_special_ext(shader_path,
                shader_directory, core_name,
                special_name,
                video_shader_get_preset_extension(types[i]),
                PATH_MAX_LENGTH);
-      }
       else
       {
          if (string_is_empty(special_name))
@@ -32159,7 +32150,8 @@ static bool retroarch_load_shader_preset(struct rarch_state *p_rarch)
    settings_t *settings               = p_rarch->configuration_settings;
    const char *video_shader_directory = settings->paths.directory_video_shader;
    const char *menu_config_directory  = settings->paths.directory_menu_config;
-   const char *core_name              = p_rarch->runloop_system.info.library_name;
+   const char *core_name              = 
+      p_rarch->runloop_system.info.library_name;
    const char *rarch_path_basename    = path_get(RARCH_PATH_BASENAME);
 
    const char *game_name              = path_basename(rarch_path_basename);
@@ -32174,42 +32166,44 @@ static bool retroarch_load_shader_preset(struct rarch_state *p_rarch)
    if (!content_dir_name)
       return false;
 
-   config_file_directory = (char*)malloc(PATH_MAX_LENGTH);
+   config_file_directory              = (char*)malloc(PATH_MAX_LENGTH);
    if (!config_file_directory)
       goto end;
 
-   old_presets_directory = (char*)malloc(PATH_MAX_LENGTH);
+   old_presets_directory              = (char*)malloc(PATH_MAX_LENGTH);
    if (!old_presets_directory)
       goto end;
 
-   content_dir_name[0] = '\0';
+   content_dir_name[0]                = '\0';
 
    if (!string_is_empty(rarch_path_basename))
       fill_pathname_parent_dir_name(content_dir_name,
             rarch_path_basename, PATH_MAX_LENGTH);
 
-   config_file_directory[0] = '\0';
+   config_file_directory[0]           = '\0';
 
    if (!path_is_empty(RARCH_PATH_CONFIG))
       fill_pathname_basedir(config_file_directory,
             path_get(RARCH_PATH_CONFIG), PATH_MAX_LENGTH);
 
-   old_presets_directory[0] = '\0';
+   old_presets_directory[0]           = '\0';
 
    if (!string_is_empty(video_shader_directory))
       fill_pathname_join(old_presets_directory,
          video_shader_directory, "presets", PATH_MAX_LENGTH);
 
-   dirs[0] = menu_config_directory;
-   dirs[1] = config_file_directory;
-   dirs[2] = old_presets_directory;
+   dirs[0]                            = menu_config_directory;
+   dirs[1]                            = config_file_directory;
+   dirs[2]                            = old_presets_directory;
 
    for (i = 0; i < ARRAY_SIZE(dirs); i++)
    {
       if (string_is_empty(dirs[i]))
          continue;
 
+#ifdef DEBUG
       RARCH_LOG("[Shaders]: preset directory: %s\n", dirs[i]);
+#endif
 
       ret = retroarch_load_shader_preset_internal(p_rarch,
             dirs[i], core_name,
@@ -32217,7 +32211,9 @@ static bool retroarch_load_shader_preset(struct rarch_state *p_rarch)
 
       if (ret)
       {
+#ifdef DEBUG
          RARCH_LOG("[Shaders]: game-specific shader preset found.\n");
+#endif
          break;
       }
 
@@ -32227,7 +32223,9 @@ static bool retroarch_load_shader_preset(struct rarch_state *p_rarch)
 
       if (ret)
       {
+#ifdef DEBUG
          RARCH_LOG("[Shaders]: folder-specific shader preset found.\n");
+#endif
          break;
       }
 
@@ -32237,7 +32235,9 @@ static bool retroarch_load_shader_preset(struct rarch_state *p_rarch)
 
       if (ret)
       {
+#ifdef DEBUG
          RARCH_LOG("[Shaders]: core-specific shader preset found.\n");
+#endif
          break;
       }
 
@@ -32247,7 +32247,9 @@ static bool retroarch_load_shader_preset(struct rarch_state *p_rarch)
 
       if (ret)
       {
+#ifdef DEBUG
          RARCH_LOG("[Shaders]: global shader preset found.\n");
+#endif
          break;
       }
    }
@@ -32256,12 +32258,13 @@ end:
    free(content_dir_name);
    free(config_file_directory);
    free(old_presets_directory);
+
    return ret;
 }
 #endif
 
 /* get the name of the current shader preset */
-const char* retroarch_get_shader_preset(void)
+const char *retroarch_get_shader_preset(void)
 {
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    struct rarch_state *p_rarch = &rarch_st;
