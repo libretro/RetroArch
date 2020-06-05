@@ -2630,11 +2630,11 @@ static enum action_iterate_type action_iterate_type(const char *label)
 }
 
 #ifdef HAVE_ACCESSIBILITY
-static void get_current_menu_value(char* retstr, size_t max)
+static void get_current_menu_value(struct rarch_state *p_rarch,
+      char* retstr, size_t max)
 {
    menu_entry_t     entry;
    const char*      entry_label;
-   struct rarch_state *p_rarch = &rarch_st;
    struct menu_state  *menu_st = &p_rarch->menu_driver_state;
 
    menu_st->selection_ptr      = menu_navigation_get_selection();
@@ -2645,11 +2645,11 @@ static void get_current_menu_value(char* retstr, size_t max)
    strlcpy(retstr, entry_label, max);
 }
 
-static void get_current_menu_label(char* retstr, size_t max)
+static void get_current_menu_label(struct rarch_state *p_rarch,
+      char* retstr, size_t max)
 {
    menu_entry_t     entry;
    const char*      entry_label;
-   struct rarch_state *p_rarch = &rarch_st;
    struct menu_state *menu_st  = &p_rarch->menu_driver_state;
 
    menu_st->selection_ptr      = menu_navigation_get_selection();
@@ -2660,11 +2660,11 @@ static void get_current_menu_label(char* retstr, size_t max)
    strlcpy(retstr, entry_label, max);
 }
 
-static void get_current_menu_sublabel(char* retstr, size_t max)
+static void get_current_menu_sublabel(struct rarch_state *p_rarch,
+      char* retstr, size_t max)
 {
    menu_entry_t     entry;
    const char*      entry_sublabel;
-   struct rarch_state *p_rarch = &rarch_st;
    struct menu_state *menu_st  = &p_rarch->menu_driver_state;
 
    menu_st->selection_ptr      = menu_navigation_get_selection();
@@ -2688,7 +2688,9 @@ static void get_current_menu_sublabel(char* retstr, size_t max)
  *
  * Returns: 0 on success, -1 if we need to quit out of the loop.
  **/
-static int generic_menu_iterate(void *data,
+static int generic_menu_iterate(
+      struct rarch_state *p_rarch,
+      void *data,
       void *userdata, enum menu_action action,
       retro_time_t current_time)
 {
@@ -2810,7 +2812,8 @@ static int generic_menu_iterate(void *data,
                   if (string_is_equal(menu->menu_state_msg, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE)))
                   {
                      char current_sublabel[255];
-                     get_current_menu_sublabel(current_sublabel, sizeof(current_sublabel));
+                     get_current_menu_sublabel(p_rarch,
+                           current_sublabel, sizeof(current_sublabel));
                      if (string_is_equal(current_sublabel, ""))
                         accessibility_speak_priority(menu->menu_state_msg, 10);
                      else
@@ -2963,9 +2966,10 @@ end:
 int generic_menu_entry_action(
       void *userdata, menu_entry_t *entry, size_t i, enum menu_action action)
 {
-   int ret                    = 0;
-   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
-   menu_file_list_cbs_t *cbs  = selection_buf ?
+   int ret                     = 0;
+   struct rarch_state *p_rarch = &rarch_st;
+   file_list_t *selection_buf  = menu_entries_get_selection_buf_ptr(0);
+   menu_file_list_cbs_t *cbs   = selection_buf ?
       (menu_file_list_cbs_t*)selection_buf->list[i].actiondata : NULL;
 
    switch (action)
@@ -3055,7 +3059,7 @@ int generic_menu_entry_action(
 
       strlcpy(title_name, "", sizeof(title_name));
       strlcpy(current_label, "", sizeof(current_label));
-      get_current_menu_value(current_value, sizeof(current_value));
+      get_current_menu_value(p_rarch, current_value, sizeof(current_value));
 
       switch (action)
       {
@@ -3065,35 +3069,35 @@ int generic_menu_entry_action(
             menu_entries_get_title(title_name, sizeof(title_name));
             break;
          case MENU_ACTION_ACCESSIBILITY_SPEAK_LABEL:
-            get_current_menu_label(current_label, sizeof(current_label));
+            get_current_menu_label(p_rarch, current_label, sizeof(current_label));
             break;
          case MENU_ACTION_ACCESSIBILITY_SPEAK_TITLE_LABEL:
             menu_entries_get_title(title_name, sizeof(title_name));
-            get_current_menu_label(current_label, sizeof(current_label));
+            get_current_menu_label(p_rarch, current_label, sizeof(current_label));
             break;
          case MENU_ACTION_OK:
          case MENU_ACTION_LEFT:
          case MENU_ACTION_RIGHT:
          case MENU_ACTION_CANCEL:
             menu_entries_get_title(title_name, sizeof(title_name));
-            get_current_menu_label(current_label, sizeof(current_label));
+            get_current_menu_label(p_rarch, current_label, sizeof(current_label));
             break;
          case MENU_ACTION_UP:
          case MENU_ACTION_DOWN:
          case MENU_ACTION_SCROLL_UP:
          case MENU_ACTION_SCROLL_DOWN:
-            get_current_menu_label(current_label, sizeof(current_label));
+            get_current_menu_label(p_rarch, current_label, sizeof(current_label));
             break;
          case MENU_ACTION_START:
             if (!string_is_equal(current_value, "..."))
             {
                menu_entries_get_title(title_name, sizeof(title_name));
-               get_current_menu_label(current_label, sizeof(current_label));
+               get_current_menu_label(p_rarch, current_label, sizeof(current_label));
             }
             break;
          case MENU_ACTION_SELECT:
          case MENU_ACTION_SEARCH:
-            get_current_menu_label(current_label, sizeof(current_label));
+            get_current_menu_label(p_rarch, current_label, sizeof(current_label));
             break;
          case MENU_ACTION_SCAN:
          default:
@@ -3885,7 +3889,9 @@ static bool menu_list_pop_stack(menu_list_t *list,
    return true;
 }
 
-static void menu_list_flush_stack(menu_list_t *list,
+static void menu_list_flush_stack(
+      struct rarch_state *p_rarch,
+      menu_list_t *list,
       size_t idx, const char *needle, unsigned final_type)
 {
    bool refresh                = false;
@@ -3893,7 +3899,6 @@ static void menu_list_flush_stack(menu_list_t *list,
    const char *label           = NULL;
    unsigned type               = 0;
    size_t entry_idx            = 0;
-   struct rarch_state *p_rarch = &rarch_st;
    struct menu_state *menu_st  = &p_rarch->menu_driver_state;
    file_list_t *menu_list      = menu_list_get(list, (unsigned)idx);
 
@@ -3960,9 +3965,10 @@ static int menu_entries_elem_get_first_char(
    return ret;
 }
 
-static void menu_navigation_add_scroll_index(size_t sel)
+static void menu_navigation_add_scroll_index(
+      struct rarch_state *p_rarch,
+      size_t sel)
 {
-   struct rarch_state *p_rarch = &rarch_st;
    struct menu_state *menu_st  = &p_rarch->menu_driver_state;
    menu_st->scroll.index_list[menu_st->scroll.index_size]   = sel;
 
@@ -3970,10 +3976,11 @@ static void menu_navigation_add_scroll_index(size_t sel)
       menu_st->scroll.index_size++;
 }
 
-static void menu_entries_build_scroll_indices(file_list_t *list)
+static void menu_entries_build_scroll_indices(
+      struct rarch_state *p_rarch,
+      file_list_t *list)
 {
    int current;
-   struct rarch_state *p_rarch = &rarch_st;
    struct menu_state *menu_st  = &p_rarch->menu_driver_state;
    bool current_is_dir         = false;
    unsigned type               = 0;
@@ -3981,7 +3988,7 @@ static void menu_entries_build_scroll_indices(file_list_t *list)
 
    menu_st->scroll.index_size  = 0;
 
-   menu_navigation_add_scroll_index(0);
+   menu_navigation_add_scroll_index(p_rarch, 0);
 
    current                     = menu_entries_elem_get_first_char(list, 0);
    type                        = list->list[0].type;
@@ -4001,13 +4008,13 @@ static void menu_entries_build_scroll_indices(file_list_t *list)
          is_dir = true;
 
       if ((current_is_dir && !is_dir) || (first > current))
-         menu_navigation_add_scroll_index(i);
+         menu_navigation_add_scroll_index(p_rarch, i);
 
       current        = first;
       current_is_dir = is_dir;
    }
 
-   menu_navigation_add_scroll_index(list->size - 1);
+   menu_navigation_add_scroll_index(p_rarch, list->size - 1);
 }
 
 /**
@@ -4017,15 +4024,16 @@ static void menu_entries_build_scroll_indices(file_list_t *list)
  *
  * Ensure it doesn't overflow.
  **/
-static bool menu_entries_refresh(file_list_t *list)
+static bool menu_entries_refresh(
+      struct rarch_state *p_rarch,
+      file_list_t *list)
 {
    size_t list_size;
-   struct rarch_state *p_rarch = &rarch_st;
    struct menu_state *menu_st  = &p_rarch->menu_driver_state;
    size_t          selection   = menu_st->selection_ptr;
 
    if (list->size)
-      menu_entries_build_scroll_indices(list);
+      menu_entries_build_scroll_indices(p_rarch, list);
 
    list_size                    = menu_entries_get_size();
 
@@ -4381,7 +4389,8 @@ void menu_entries_flush_stack(const char *needle, unsigned final_type)
    struct menu_state    *menu_st  = &p_rarch->menu_driver_state;
    menu_list_t *menu_list         = menu_st->entries.list;
    if (menu_list)
-      menu_list_flush_stack(menu_list, 0, needle, final_type);
+      menu_list_flush_stack(p_rarch, 
+            menu_list, 0, needle, final_type);
 }
 
 void menu_entries_pop_stack(size_t *ptr, size_t idx, bool animate)
@@ -4482,7 +4491,8 @@ bool menu_entries_ctl(enum menu_entries_ctl_state state, void *data)
       case MENU_ENTRIES_CTL_REFRESH:
          if (!data)
             return false;
-         return menu_entries_refresh((file_list_t*)data);
+         return menu_entries_refresh(p_rarch,
+               (file_list_t*)data);
       case MENU_ENTRIES_CTL_CLEAR:
          {
             unsigned i;
@@ -4788,10 +4798,8 @@ static void strftime_am_pm(char* ptr, size_t maxsize, const char* format,
     * > Required for localised AM/PM strings */
    setlocale(LC_TIME, "");
 
-#if defined(__linux__) && !defined(ANDROID)
    strftime(ptr, maxsize, format, timeptr);
-#else
-   strftime(ptr, maxsize, format, timeptr);
+#if !(defined(__linux__) && !defined(ANDROID))
    local = local_to_utf8_string_alloc(ptr);
 
    if (!string_is_empty(local))
@@ -5182,7 +5190,6 @@ void menu_display_timedate(gfx_display_ctx_datetime_t *datetime)
    strlcpy(datetime->s, menu_st->datetime_cache, datetime->len);
 }
 
-
 /* Display current (battery) power state */
 void menu_display_powerstate(gfx_display_ctx_powerstate_t *powerstate)
 {
@@ -5221,7 +5228,6 @@ void menu_display_powerstate(gfx_display_ctx_powerstate_t *powerstate)
       powerstate->percent  = 0;
    }
 }
-
 
 /* Iterate the menu driver for one frame. */
 bool menu_driver_iterate(menu_ctx_iterate_t *iterate,
@@ -5262,6 +5268,7 @@ bool menu_driver_iterate(menu_ctx_iterate_t *iterate,
    }
    else
       if (generic_menu_iterate(
+               p_rarch,
                p_rarch->menu_driver_data,
                p_rarch->menu_userdata, iterate->action,
                current_time) != -1)
@@ -5318,10 +5325,9 @@ bool menu_driver_list_set_selection(file_list_t *list)
    return true;
 }
 
-static void menu_driver_set_id(void)
+static void menu_driver_set_id(struct rarch_state *p_rarch)
 {
    const char        *driver_name = NULL;
-   struct rarch_state   *p_rarch  = &rarch_st;
 
    gfx_display_set_driver_id(MENU_DRIVER_ID_UNKNOWN);
 
@@ -5375,15 +5381,15 @@ static bool generic_menu_init_list(void *data)
    return true;
 }
 
-static bool menu_driver_init_internal(bool video_is_threaded)
+static bool menu_driver_init_internal(
+      struct rarch_state *p_rarch,
+      bool video_is_threaded)
 {
-   struct rarch_state       *p_rarch = &rarch_st;
-
    /* ID must be set first, since it is required for
     * the proper determination of pixel/dpi scaling
     * parameters (and some menu drivers fetch the
     * current pixel/dpi scale during 'menu_driver_ctx->init()') */
-   menu_driver_set_id();
+   menu_driver_set_id(p_rarch);
 
    if (p_rarch->menu_driver_ctx->init)
    {
@@ -5423,7 +5429,7 @@ bool menu_driver_init(bool video_is_threaded)
    command_event(CMD_EVENT_LOAD_CORE_PERSIST, NULL);
 
    if (  p_rarch->menu_driver_data ||
-         menu_driver_init_internal(video_is_threaded))
+         menu_driver_init_internal(p_rarch, video_is_threaded))
    {
       if (p_rarch->menu_driver_ctx && p_rarch->menu_driver_ctx->context_reset)
       {
