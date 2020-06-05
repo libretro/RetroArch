@@ -1161,11 +1161,11 @@ static const camera_driver_t *camera_drivers[] = {
 #if HAVE_DYNAMIC
 #define runahead_run_secondary() \
    if (!secondary_core_run_use_last_input(p_rarch)) \
-      runahead_secondary_core_available = false
+      p_rarch->runahead_secondary_core_available = false
 #endif
 
 #define runahead_resume_video() \
-   if (runahead_video_driver_is_active) \
+   if (p_rarch->runahead_video_driver_is_active) \
       p_rarch->video_driver_active = true; \
    else \
       p_rarch->video_driver_active = false
@@ -1904,6 +1904,16 @@ struct rarch_state
 
    bool main_ui_companion_is_on_foreground;
 
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+   bool shader_presets_need_reload;
+#endif
+#ifdef HAVE_RUNAHEAD
+   bool runahead_video_driver_is_active;
+   bool runahead_available;
+   bool runahead_secondary_core_available;
+   bool runahead_force_input_dirty;
+#endif
+
 #ifdef HAVE_AUDIOMIXER
    bool audio_driver_mixer_mute_enable;
    bool audio_mixer_active;
@@ -2317,17 +2327,6 @@ static runloop_core_status_msg_t runloop_core_status_msg         =
    0.0f,
    false
 };
-
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-static bool shader_presets_need_reload                           = true;
-#endif
-#ifdef HAVE_RUNAHEAD
-static bool runahead_video_driver_is_active                      = true;
-static bool runahead_available                                   = true;
-static bool runahead_secondary_core_available                    = true;
-static bool runahead_force_input_dirty                           = true;
-#endif
-
 
 #ifdef HAVE_LIBNX
 /* TODO/FIXME - public global variable */
@@ -10381,7 +10380,7 @@ static bool command_event_init_core(
 
    /* Load auto-shaders on the next occasion */
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-   shader_presets_need_reload              = true;
+   p_rarch->shader_presets_need_reload     = true;
    p_rarch->shader_delay_timer.timer_begin = false; /* not initialized */
    p_rarch->shader_delay_timer.timer_end   = false; /* not expired */
 #endif
@@ -12674,6 +12673,15 @@ void main_exit(void *args)
 int rarch_main(int argc, char *argv[], void *data)
 {
    struct rarch_state *p_rarch  = &rarch_st;
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+   p_rarch->shader_presets_need_reload                           = true;
+#endif
+#ifdef HAVE_RUNAHEAD
+   p_rarch->runahead_video_driver_is_active                      = true;
+   p_rarch->runahead_available                                   = true;
+   p_rarch->runahead_secondary_core_available                    = true;
+   p_rarch->runahead_force_input_dirty                           = true;
+#endif
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
    if (FAILED(CoInitialize(NULL)))
    {
@@ -29769,10 +29777,10 @@ static void runahead_clear_variables(struct rarch_state *p_rarch)
 {
    p_rarch->runahead_save_state_size          = 0;
    p_rarch->runahead_save_state_size_known    = false;
-   runahead_video_driver_is_active            = true;
-   runahead_available                         = true;
-   runahead_secondary_core_available          = true;
-   runahead_force_input_dirty                 = true;
+   p_rarch->runahead_video_driver_is_active   = true;
+   p_rarch->runahead_available                = true;
+   p_rarch->runahead_secondary_core_available = true;
+   p_rarch->runahead_force_input_dirty        = true;
    p_rarch->runahead_last_frame_count         = 0;
 }
 
@@ -29826,7 +29834,7 @@ static void runahead_add_hooks(struct rarch_state *p_rarch)
 
 static void runahead_error(struct rarch_state *p_rarch)
 {
-   runahead_available                      = false;
+   p_rarch->runahead_available             = false;
    mylist_destroy(&p_rarch->runahead_save_state_list);
    runahead_remove_hooks(p_rarch);
    p_rarch->runahead_save_state_size       = 0;
@@ -29838,12 +29846,13 @@ static bool runahead_create(struct rarch_state *p_rarch)
    /* get savestate size and allocate buffer */
    retro_ctx_size_info_t info;
 
-   p_rarch->request_fast_savestate = true;
+   p_rarch->request_fast_savestate          = true;
    core_serialize_size(&info);
-   p_rarch->request_fast_savestate = false;
+   p_rarch->request_fast_savestate          = false;
 
    runahead_save_state_list_init(p_rarch, info.size);
-   runahead_video_driver_is_active = p_rarch->video_driver_active;
+   p_rarch->runahead_video_driver_is_active = 
+      p_rarch->video_driver_active;
 
    if (  (p_rarch->runahead_save_state_size == 0) ||
          !p_rarch->runahead_save_state_size_known)
@@ -29853,7 +29862,7 @@ static bool runahead_create(struct rarch_state *p_rarch)
    }
 
    runahead_add_hooks(p_rarch);
-   runahead_force_input_dirty = true;
+   p_rarch->runahead_force_input_dirty = true;
    mylist_resize(p_rarch->runahead_save_state_list, 1, true);
    return true;
 }
@@ -29918,7 +29927,7 @@ static bool runahead_load_state_secondary(struct rarch_state *p_rarch)
 
    if (!okay)
    {
-      runahead_secondary_core_available = false;
+      p_rarch->runahead_secondary_core_available = false;
       runahead_error(p_rarch);
       return false;
    }
@@ -29964,7 +29973,7 @@ static void do_runahead(
 #endif
    uint64_t frame_count    = p_rarch->video_driver_frame_count;
 
-   if (runahead_count <= 0 || !runahead_available)
+   if (runahead_count <= 0 || !p_rarch->runahead_available)
       goto force_input_dirty;
 
    if (!p_rarch->runahead_save_state_size_known)
@@ -29983,11 +29992,13 @@ static void do_runahead(
    /* Check for GUI */
    /* Hack: If we were in the GUI, force a resync. */
    if (frame_count != p_rarch->runahead_last_frame_count + 1)
-      runahead_force_input_dirty = true;
+      p_rarch->runahead_force_input_dirty = true;
 
-   p_rarch->runahead_last_frame_count = frame_count;
+   p_rarch->runahead_last_frame_count     = frame_count;
 
-   if (!use_secondary || !have_dynamic || !runahead_secondary_core_available)
+   if (     !use_secondary 
+         || !have_dynamic 
+         || !p_rarch->runahead_secondary_core_available)
    {
       /* TODO: multiple savestates for higher performance
        * when not using secondary core */
@@ -30038,7 +30049,7 @@ static void do_runahead(
       if (!secondary_core_ensure_exists(p_rarch))
       {
          secondary_core_destroy(p_rarch);
-         runahead_secondary_core_available = false;
+         p_rarch->runahead_secondary_core_available = false;
          runloop_msg_queue_push(msg_hash_to_str(MSG_RUNAHEAD_FAILED_TO_CREATE_SECONDARY_INSTANCE), 0, 3 * 60, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          goto force_input_dirty;
       }
@@ -30048,7 +30059,8 @@ static void do_runahead(
       core_run();
       runahead_resume_video();
 
-      if (p_rarch->input_is_dirty || runahead_force_input_dirty)
+      if (     p_rarch->input_is_dirty 
+            || p_rarch->runahead_force_input_dirty)
       {
          p_rarch->input_is_dirty       = false;
 
@@ -30082,12 +30094,12 @@ static void do_runahead(
       p_rarch->audio_suspended           = false;
 #endif
    }
-   runahead_force_input_dirty = false;
+   p_rarch->runahead_force_input_dirty   = false;
    return;
 
 force_input_dirty:
    core_run();
-   runahead_force_input_dirty = true;
+   p_rarch->runahead_force_input_dirty   = true;
 }
 #endif
 
@@ -32310,9 +32322,9 @@ const char *retroarch_get_shader_preset(void)
       return p_rarch->runtime_shader_preset;
 
    /* load auto-shader once, --set-shader works like a global auto-shader */
-   if (shader_presets_need_reload && !cli_shader_disable)
+   if (p_rarch->shader_presets_need_reload && !cli_shader_disable)
    {
-      shader_presets_need_reload = false;
+      p_rarch->shader_presets_need_reload = false;
       if (video_shader_is_supported(video_shader_parse_type(p_rarch->cli_shader)))
          strlcpy(p_rarch->runtime_shader_preset,
                p_rarch->cli_shader,
