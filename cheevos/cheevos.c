@@ -447,7 +447,37 @@ static void rcheevos_async_task_callback(retro_task_t* task, void* task_data, vo
 
    if (!error)
    {
-      CHEEVOS_LOG(RCHEEVOS_TAG "%s %u\n", request->success_message, request->id);
+      char buffer[224];
+      const http_transfer_data_t* data = (http_transfer_data_t*)task->task_data;
+      if (rcheevos_get_json_error(data->data, buffer, sizeof(buffer)) == RC_OK)
+      {
+         char errbuf[256];
+         snprintf(errbuf, sizeof(errbuf), "%s %u: %s", request->failure_message, request->id, buffer);
+         CHEEVOS_LOG(RCHEEVOS_TAG "%s\n", errbuf);
+
+         switch (request->type)
+         {
+            case CHEEVOS_ASYNC_RICHPRESENCE:
+               /* don't bother informing user when rich presence update fails */
+               break;
+
+            case CHEEVOS_ASYNC_AWARD_ACHIEVEMENT:
+               /* ignore already unlocked */
+               if (string_starts_with(buffer, "User already has "))
+                  break;
+               /* fallthrough to default */
+
+            default:
+               runloop_msg_queue_push(errbuf, 0, 5 * 60, false, NULL,
+                  MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
+               break;
+         }
+      }
+      else
+      {
+         CHEEVOS_LOG(RCHEEVOS_TAG "%s %u\n", request->success_message, request->id);
+      }
+
       free(request);
    }
    else
