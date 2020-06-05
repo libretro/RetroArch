@@ -2575,7 +2575,7 @@ static void audio_mixer_menu_stop_cb(
 static void video_driver_gpu_record_deinit(struct rarch_state *p_rarch);
 static retro_proc_address_t video_driver_get_proc_address(const char *sym);
 static uintptr_t video_driver_get_current_framebuffer(void);
-static bool video_driver_find_driver(void);
+static bool video_driver_find_driver(struct rarch_state *p_rarch);
 
 static void bsv_movie_deinit(struct rarch_state *p_rarch);
 static bool bsv_movie_init(struct rarch_state *p_rarch);
@@ -2603,6 +2603,11 @@ static void driver_camera_stop(void);
 static bool driver_camera_start(void);
 
 #ifdef HAVE_MENU
+static void menu_input_post_iterate(
+      struct rarch_state *p_rarch,
+      int *ret, unsigned action);
+static void menu_input_reset(struct rarch_state *p_rarch);
+
 static enum action_iterate_type action_iterate_type(const char *label)
 {
    if (string_is_equal(label, "info_screen"))
@@ -2955,7 +2960,7 @@ static int generic_menu_iterate(
    }
 
    if (BIT64_GET(menu->state, MENU_STATE_POST_ITERATE))
-      menu_input_post_iterate(&ret, action);
+      menu_input_post_iterate(p_rarch, &ret, action);
 
 end:
    if (ret)
@@ -4718,7 +4723,7 @@ static void bundle_decompressed(retro_task_t *task,
  *
  * Returns: menu handle on success, otherwise NULL.
  **/
-static bool menu_init(void)
+static bool menu_init(struct rarch_state *p_rarch)
 {
    settings_t *settings        = config_get_ptr();
 #ifdef HAVE_CONFIGFILE
@@ -4728,7 +4733,7 @@ static bool menu_init(void)
 
    /* Ensure that menu pointer input is correctly
     * initialised */
-   menu_input_reset();
+   menu_input_reset(p_rarch);
 
    if (!menu_entries_init())
       return false;
@@ -5389,7 +5394,7 @@ static bool menu_driver_init_internal(
       p_rarch->menu_driver_data->driver_ctx   = p_rarch->menu_driver_ctx;
    }
 
-   if (!p_rarch->menu_driver_data || !menu_init())
+   if (!p_rarch->menu_driver_data || !menu_init(p_rarch))
       return false;
 
    {
@@ -5647,7 +5652,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             for (i = 0; i < SCROLL_INDEX_SIZE; i++)
                menu_st->scroll.index_list[i] = 0;
 
-            menu_input_reset();
+            menu_input_reset(p_rarch);
 
             if (     p_rarch->menu_driver_ctx 
                   && p_rarch->menu_driver_ctx->free)
@@ -19838,21 +19843,6 @@ static unsigned menu_event(
    return ret;
 }
 
-bool menu_input_pointer_check_vector_inside_hitbox(menu_input_ctx_hitbox_t *hitbox)
-{
-   struct rarch_state                   *p_rarch   = &rarch_st;
-   menu_input_pointer_hw_state_t *pointer_hw_state = &p_rarch->menu_input_pointer_hw_state;
-   int16_t x                                       = pointer_hw_state->x;
-   int16_t y                                       = pointer_hw_state->y;
-   bool inside_hitbox                              =
-         (x >= hitbox->x1) &&
-         (x <= hitbox->x2) &&
-         (y >= hitbox->y1) &&
-         (y <= hitbox->y2);
-
-   return inside_hitbox;
-}
-
 void menu_input_get_pointer_state(menu_input_pointer_t *pointer)
 {
    struct rarch_state  *p_rarch   = &rarch_st;
@@ -19899,9 +19889,8 @@ void menu_input_set_pointer_inhibit(bool inhibit)
    menu_input->cancel_inhibit     = inhibit;
 }
 
-void menu_input_reset(void)
+static void menu_input_reset(struct rarch_state *p_rarch)
 {
-   struct rarch_state                   *p_rarch   = &rarch_st;
    menu_input_t *menu_input                        = &p_rarch->menu_input_state;
    menu_input_pointer_hw_state_t *pointer_hw_state = &p_rarch->menu_input_pointer_hw_state;
 
@@ -19921,7 +19910,8 @@ static void menu_input_set_pointer_visibility(retro_time_t current_time)
    menu_input_pointer_hw_state_t *pointer_hw_state = &p_rarch->menu_input_pointer_hw_state;
 
    /* Ensure that mouse cursor is hidden when not in use */
-   if ((menu_input->pointer.type == MENU_POINTER_MOUSE) && pointer_hw_state->active)
+   if ((menu_input->pointer.type == MENU_POINTER_MOUSE) 
+         && pointer_hw_state->active)
    {
       if ((current_time > end_time) && !cursor_shown)
          show_cursor = true;
@@ -20066,6 +20056,7 @@ static void menu_input_pointer_close_messagebox(void)
 }
 
 static int menu_input_pointer_post_iterate(
+      struct rarch_state *p_rarch,
       retro_time_t current_time,
       menu_file_list_cbs_t *cbs,
       menu_entry_t *entry, unsigned action)
@@ -20090,7 +20081,6 @@ static int menu_input_pointer_post_iterate(
    bool osk_active                                 = menu_input_dialog_get_display_kb();
    bool messagebox_active                          = false;
    int ret                                         = 0;
-   struct rarch_state *p_rarch                     = &rarch_st;
    menu_input_pointer_hw_state_t *pointer_hw_state = &p_rarch->menu_input_pointer_hw_state;
    menu_input_t *menu_input                        = &p_rarch->menu_input_state;
    menu_handle_t *menu                             = p_rarch->menu_driver_data;
@@ -20620,9 +20610,10 @@ static int menu_input_pointer_post_iterate(
    return ret;
 }
 
-void menu_input_post_iterate(int *ret, unsigned action)
+static void menu_input_post_iterate(
+      struct rarch_state *p_rarch,
+      int *ret, unsigned action)
 {
-   struct rarch_state *p_rarch   = &rarch_st;
    menu_input_t     *menu_input  = &p_rarch->menu_input_state;
    retro_time_t     current_time = cpu_features_get_time_usec();
 
@@ -20656,7 +20647,8 @@ void menu_input_post_iterate(int *ret, unsigned action)
       entry.sublabel_enabled     = false;
       menu_entry_get(&entry, 0, selection, NULL, false);
 
-      *ret = menu_input_pointer_post_iterate(current_time, cbs, &entry, action);
+      *ret = menu_input_pointer_post_iterate(p_rarch,
+            current_time, cbs, &entry, action);
    }
 }
 
@@ -20696,17 +20688,20 @@ static void input_menu_keys_pressed(
       const struct retro_keybind *binds_norm = &input_config_binds[port][RARCH_ENABLE_HOTKEY];
       const struct retro_keybind *binds_auto = &input_autoconf_binds[port][RARCH_ENABLE_HOTKEY];
 
-      joypad_info->joy_idx                    = settings->uints.input_joypad_map[port];
-      joypad_info->auto_binds                 = input_autoconf_binds[joypad_info->joy_idx];
-      joypad_info->axis_threshold             = p_rarch->input_driver_axis_threshold;
+      joypad_info->joy_idx                   = settings->uints.input_joypad_map[port];
+      joypad_info->auto_binds                = input_autoconf_binds[joypad_info->joy_idx];
+      joypad_info->axis_threshold            = p_rarch->input_driver_axis_threshold;
 
       if (check_input_driver_block_hotkey(binds_norm, binds_auto))
       {
-         const struct retro_keybind *htkey = &input_config_binds[port][RARCH_ENABLE_HOTKEY];
+         const struct retro_keybind *htkey = 
+            &input_config_binds[port][RARCH_ENABLE_HOTKEY];
 
          if (htkey->valid
-               && p_rarch->current_input->input_state(p_rarch->current_input_data, joypad_info,
-                  &binds[0], port, RETRO_DEVICE_JOYPAD, 0, RARCH_ENABLE_HOTKEY))
+               && p_rarch->current_input->input_state(
+                  p_rarch->current_input_data, joypad_info,
+                  &binds[0], port, RETRO_DEVICE_JOYPAD, 0,
+                  RARCH_ENABLE_HOTKEY))
          {
             p_rarch->input_driver_block_libretro_input = true;
             break;
@@ -20727,10 +20722,11 @@ static void input_menu_keys_pressed(
          joypad_info->joy_idx              = settings->uints.input_joypad_map[port];
          joypad_info->auto_binds           = input_autoconf_binds[joypad_info->joy_idx];
          joypad_info->axis_threshold       = p_rarch->input_driver_axis_threshold;
-         ret[port]                         = p_rarch->current_input->input_state(
-               p_rarch->current_input_data,
-               joypad_info, &binds[0], port, RETRO_DEVICE_JOYPAD, 0,
-               RETRO_DEVICE_ID_JOYPAD_MASK);
+         ret[port]                         = 
+            p_rarch->current_input->input_state(
+                  p_rarch->current_input_data,
+                  joypad_info, &binds[0], port, RETRO_DEVICE_JOYPAD, 0,
+                  RETRO_DEVICE_ID_JOYPAD_MASK);
       }
 
       for (i = 0; i < RARCH_FIRST_META_KEY; i++)
@@ -20782,7 +20778,9 @@ static void input_menu_keys_pressed(
             }
          }
 
-         if (bit_pressed || BIT64_GET(lifecycle_state, i) || input_keys_pressed_other_sources(p_rarch, i, p_new_state))
+         if (     bit_pressed 
+               || BIT64_GET(lifecycle_state, i)
+               || input_keys_pressed_other_sources(p_rarch, i, p_new_state))
          {
             BIT256_SET_PTR(p_new_state, i);
          }
@@ -20806,11 +20804,12 @@ static void input_menu_keys_pressed(
  *
  * Returns: Input sample containing a mask of all pressed keys.
  */
-static void input_keys_pressed(input_bits_t *p_new_state,
+static void input_keys_pressed(
+      struct rarch_state *p_rarch,
+      input_bits_t *p_new_state,
       rarch_joypad_info_t *joypad_info)
 {
    unsigned i, port                       = 0;
-   struct rarch_state            *p_rarch = &rarch_st;
    settings_t              *settings      = p_rarch->configuration_settings;
    const struct retro_keybind *binds      = input_config_binds[0];
    const struct retro_keybind *binds_norm = &input_config_binds[port][RARCH_ENABLE_HOTKEY];
@@ -20895,9 +20894,8 @@ void *input_driver_get_data(void)
    return p_rarch->current_input_data;
 }
 
-static bool input_driver_init(void)
+static bool input_driver_init(struct rarch_state *p_rarch)
 {
-   struct rarch_state  *p_rarch   = &rarch_st;
    if (p_rarch->current_input)
    {
       settings_t *settings        = p_rarch->configuration_settings;
@@ -20905,16 +20903,13 @@ static bool input_driver_init(void)
             settings->arrays.input_joypad_driver);
    }
 
-   if (!p_rarch->current_input_data)
-      return false;
-   return true;
+   return (p_rarch->current_input_data != NULL);
 }
 
-static bool input_driver_find_driver(void)
+static bool input_driver_find_driver(struct rarch_state *p_rarch)
 {
    int i;
    driver_ctx_info_t drv;
-   struct rarch_state  *p_rarch   = &rarch_st;
    settings_t           *settings = p_rarch->configuration_settings;
 
    drv.label                      = "input_driver";
@@ -20975,10 +20970,9 @@ void input_driver_unset_nonblock_state(void)
    p_rarch->input_driver_nonblock_state = false;
 }
 
-static bool input_driver_init_command(void)
+static bool input_driver_init_command(struct rarch_state *p_rarch)
 {
 #ifdef HAVE_COMMAND
-   struct rarch_state   *p_rarch = &rarch_st;
    settings_t *settings          = p_rarch->configuration_settings;
    bool input_stdin_cmd_enable   = settings->bools.stdin_cmd_enable;
    bool input_network_cmd_enable = settings->bools.network_cmd_enable;
@@ -21011,20 +21005,18 @@ static bool input_driver_init_command(void)
    return false;
 }
 
-static void input_driver_deinit_command(void)
+static void input_driver_deinit_command(struct rarch_state *p_rarch)
 {
 #ifdef HAVE_COMMAND
-   struct rarch_state   *p_rarch = &rarch_st;
    if (p_rarch->input_driver_command)
       command_free(p_rarch->input_driver_command);
    p_rarch->input_driver_command = NULL;
 #endif
 }
 
-static void input_driver_deinit_remote(void)
+static void input_driver_deinit_remote(struct rarch_state *p_rarch)
 {
 #ifdef HAVE_NETWORKGAMEPAD
-   struct rarch_state       *p_rarch = &rarch_st;
    if (p_rarch->input_driver_remote)
       input_remote_free(p_rarch->input_driver_remote,
             p_rarch->input_driver_max_users);
@@ -21032,18 +21024,16 @@ static void input_driver_deinit_remote(void)
 #endif
 }
 
-static void input_driver_deinit_mapper(void)
+static void input_driver_deinit_mapper(struct rarch_state *p_rarch)
 {
-   struct rarch_state   *p_rarch = &rarch_st;
    if (p_rarch->input_driver_mapper)
       free(p_rarch->input_driver_mapper);
    p_rarch->input_driver_mapper = NULL;
 }
 
-static bool input_driver_init_remote(void)
+static bool input_driver_init_remote(struct rarch_state *p_rarch)
 {
 #ifdef HAVE_NETWORKGAMEPAD
-   struct rarch_state       *p_rarch = &rarch_st;
    settings_t *settings              = p_rarch->configuration_settings;
    bool network_remote_enable        = settings->bools.network_remote_enable;
    unsigned network_remote_base_port = settings->uints.network_remote_base_port;
@@ -21064,10 +21054,9 @@ static bool input_driver_init_remote(void)
    return false;
 }
 
-static bool input_driver_init_mapper(void)
+static bool input_driver_init_mapper(struct rarch_state *p_rarch)
 {
    input_mapper_t *handle        = NULL;
-   struct rarch_state   *p_rarch = &rarch_st;
    settings_t *settings          = p_rarch->configuration_settings;
    bool input_remap_binds_enable = settings->bools.input_remap_binds_enable;
 
@@ -23693,11 +23682,10 @@ static bool audio_driver_deinit(void)
    return true;
 }
 
-static bool audio_driver_find_driver(void)
+static bool audio_driver_find_driver(struct rarch_state *p_rarch)
 {
    int i;
    driver_ctx_info_t drv;
-   struct rarch_state *p_rarch = &rarch_st;
    settings_t     *settings    = p_rarch->configuration_settings;
 
    drv.label                   = "audio_driver";
@@ -23733,15 +23721,15 @@ static bool audio_driver_find_driver(void)
    return true;
 }
 
-static bool audio_driver_init_internal(bool audio_cb_inited)
+static bool audio_driver_init_internal(
+      struct rarch_state *p_rarch,
+      bool audio_cb_inited)
 {
    unsigned new_rate       = 0;
    float   *aud_inp_data   = NULL;
    float  *samples_buf     = NULL;
    int16_t *rewind_buf     = NULL;
    size_t max_bufsamples   = AUDIO_CHUNK_SIZE_NONBLOCKING * 2;
-   struct rarch_state
-      *p_rarch             = &rarch_st;
    settings_t *settings    = p_rarch->configuration_settings;
    bool audio_enable       = settings->bools.audio_enable;
    bool audio_sync         = settings->bools.audio_sync;
@@ -23784,7 +23772,7 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
       return false;
    }
 
-   audio_driver_find_driver();
+   audio_driver_find_driver(p_rarch);
 
    if (!p_rarch->current_audio || !p_rarch->current_audio->init)
    {
@@ -23945,11 +23933,12 @@ error:
  * Writes audio samples to audio driver. Will first
  * perform DSP processing (if enabled) and resampling.
  **/
-static void audio_driver_flush(const int16_t *data, size_t samples,
+static void audio_driver_flush(
+      struct rarch_state *p_rarch,
+      const int16_t *data, size_t samples,
       bool is_slowmotion, bool is_fastmotion)
 {
    struct resampler_data src_data;
-   struct rarch_state       *p_rarch = &rarch_st;
    settings_t       *settings        = p_rarch->configuration_settings;
    float slowmotion_ratio            = settings->floats.slowmotion_ratio;
    bool audio_fastforward_mute       = settings->bools.audio_fastforward_mute;
@@ -24127,6 +24116,7 @@ static void audio_driver_sample(int16_t left, int16_t right)
 		   !p_rarch->audio_driver_input_data ||
 		   !p_rarch->audio_driver_output_samples_buf))
       audio_driver_flush(
+            p_rarch,
             p_rarch->audio_driver_output_samples_conv_buf,
             p_rarch->audio_driver_data_ptr,
             p_rarch->runloop_slowmotion,
@@ -24164,7 +24154,10 @@ static void audio_driver_menu_sample(void)
          p_rarch->recording_driver->push_audio(p_rarch->recording_data, &ffemu_data);
       }
       if (check_flush)
-         audio_driver_flush(samples_buf, 1024,
+         audio_driver_flush(
+               p_rarch,
+               samples_buf,
+               1024,
                p_rarch->runloop_slowmotion,
                p_rarch->runloop_fastmotion);
       sample_count -= 1024;
@@ -24181,7 +24174,10 @@ static void audio_driver_menu_sample(void)
       p_rarch->recording_driver->push_audio(p_rarch->recording_data, &ffemu_data);
    }
    if (check_flush)
-      audio_driver_flush(samples_buf, sample_count,
+      audio_driver_flush(
+            p_rarch,
+            samples_buf,
+            sample_count,
             p_rarch->runloop_slowmotion,
             p_rarch->runloop_fastmotion);
 }
@@ -24223,7 +24219,10 @@ static size_t audio_driver_sample_batch(const int16_t *data, size_t frames)
          !p_rarch->audio_driver_active     ||
          !p_rarch->audio_driver_input_data ||
          !p_rarch->audio_driver_output_samples_buf))
-      audio_driver_flush(data, frames << 1,
+      audio_driver_flush(
+            p_rarch,
+            data,
+            frames << 1,
             p_rarch->runloop_slowmotion,
             p_rarch->runloop_fastmotion);
 
@@ -24428,10 +24427,11 @@ bool audio_driver_mixer_extension_supported(const char *ext)
    return ret;
 }
 
-static int audio_mixer_find_index(audio_mixer_sound_t *sound)
+static int audio_mixer_find_index(
+      struct rarch_state *p_rarch,
+      audio_mixer_sound_t *sound)
 {
    unsigned i;
-   struct rarch_state *p_rarch = &rarch_st;
 
    for (i = 0; i < AUDIO_MIXER_MAX_SYSTEM_STREAMS; i++)
    {
@@ -24445,8 +24445,8 @@ static int audio_mixer_find_index(audio_mixer_sound_t *sound)
 static void audio_mixer_play_stop_cb(
       audio_mixer_sound_t *sound, unsigned reason)
 {
-   int                     idx = audio_mixer_find_index(sound);
    struct rarch_state *p_rarch = &rarch_st;
+   int                     idx = audio_mixer_find_index(p_rarch, sound);
 
    switch (reason)
    {
@@ -24479,8 +24479,8 @@ static void audio_mixer_play_stop_cb(
 static void audio_mixer_menu_stop_cb(
       audio_mixer_sound_t *sound, unsigned reason)
 {
-   int                     idx = audio_mixer_find_index(sound);
    struct rarch_state *p_rarch = &rarch_st;
+   int                     idx = audio_mixer_find_index(p_rarch, sound);
 
    switch (reason)
    {
@@ -24502,8 +24502,8 @@ static void audio_mixer_menu_stop_cb(
 static void audio_mixer_play_stop_sequential_cb(
       audio_mixer_sound_t *sound, unsigned reason)
 {
-   int                     idx = audio_mixer_find_index(sound);
    struct rarch_state *p_rarch = &rarch_st;
+   int                     idx = audio_mixer_find_index(p_rarch, sound);
 
    switch (reason)
    {
@@ -24550,7 +24550,8 @@ static void audio_mixer_play_stop_sequential_cb(
    }
 }
 
-static bool audio_driver_mixer_get_free_stream_slot(unsigned *id, enum audio_mixer_stream_type type)
+static bool audio_driver_mixer_get_free_stream_slot(
+      unsigned *id, enum audio_mixer_stream_type type)
 {
    unsigned                  i = AUDIO_MIXER_MAX_STREAMS;
    unsigned              count = AUDIO_MIXER_MAX_SYSTEM_STREAMS;
@@ -24683,10 +24684,11 @@ enum audio_mixer_state audio_driver_mixer_get_stream_state(unsigned i)
    return p_rarch->audio_mixer_streams[i].state;
 }
 
-static void audio_driver_mixer_play_stream_internal(unsigned i, unsigned type)
+static void audio_driver_mixer_play_stream_internal(
+      struct rarch_state *p_rarch,
+      unsigned i, unsigned type)
 {
    bool set_state              = false;
-   struct rarch_state *p_rarch = &rarch_st;
 
    if (i >= AUDIO_MIXER_MAX_SYSTEM_STREAMS)
       return;
@@ -24828,35 +24830,40 @@ void audio_driver_mixer_play_stream(unsigned i)
 {
    struct rarch_state *p_rarch = &rarch_st;
    p_rarch->audio_mixer_streams[i].stop_cb = audio_mixer_play_stop_cb;
-   audio_driver_mixer_play_stream_internal(i, AUDIO_STREAM_STATE_PLAYING);
+   audio_driver_mixer_play_stream_internal(p_rarch,
+         i, AUDIO_STREAM_STATE_PLAYING);
 }
 
 void audio_driver_mixer_play_menu_sound_looped(unsigned i)
 {
    struct rarch_state *p_rarch = &rarch_st;
    p_rarch->audio_mixer_streams[i].stop_cb = audio_mixer_menu_stop_cb;
-   audio_driver_mixer_play_stream_internal(i, AUDIO_STREAM_STATE_PLAYING_LOOPED);
+   audio_driver_mixer_play_stream_internal(p_rarch,
+         i, AUDIO_STREAM_STATE_PLAYING_LOOPED);
 }
 
 void audio_driver_mixer_play_menu_sound(unsigned i)
 {
    struct rarch_state *p_rarch = &rarch_st;
    p_rarch->audio_mixer_streams[i].stop_cb = audio_mixer_menu_stop_cb;
-   audio_driver_mixer_play_stream_internal(i, AUDIO_STREAM_STATE_PLAYING);
+   audio_driver_mixer_play_stream_internal(p_rarch,
+         i, AUDIO_STREAM_STATE_PLAYING);
 }
 
 void audio_driver_mixer_play_stream_looped(unsigned i)
 {
    struct rarch_state *p_rarch = &rarch_st;
    p_rarch->audio_mixer_streams[i].stop_cb = audio_mixer_play_stop_cb;
-   audio_driver_mixer_play_stream_internal(i, AUDIO_STREAM_STATE_PLAYING_LOOPED);
+   audio_driver_mixer_play_stream_internal(p_rarch,
+         i, AUDIO_STREAM_STATE_PLAYING_LOOPED);
 }
 
 void audio_driver_mixer_play_stream_sequential(unsigned i)
 {
    struct rarch_state *p_rarch = &rarch_st;
    p_rarch->audio_mixer_streams[i].stop_cb = audio_mixer_play_stop_sequential_cb;
-   audio_driver_mixer_play_stream_internal(i, AUDIO_STREAM_STATE_PLAYING_SEQUENTIAL);
+   audio_driver_mixer_play_stream_internal(p_rarch,
+         i, AUDIO_STREAM_STATE_PLAYING_SEQUENTIAL);
 }
 
 float audio_driver_mixer_get_stream_volume(unsigned i)
@@ -24980,9 +24987,8 @@ bool audio_driver_disable_callback(void)
 }
 
 /* Sets audio monitor rate to new value. */
-static void audio_driver_monitor_set_rate(void)
+static void audio_driver_monitor_set_rate(struct rarch_state *p_rarch)
 {
-   struct rarch_state *p_rarch          = &rarch_st;
    settings_t *settings                 = p_rarch->configuration_settings;
    unsigned audio_out_rate              = settings->uints.audio_out_rate;
    double new_src_ratio                 = (double)audio_out_rate /
@@ -25022,9 +25028,8 @@ bool audio_driver_mixer_toggle_mute(void)
 }
 #endif
 
-static INLINE bool audio_driver_alive(void)
+static INLINE bool audio_driver_alive(struct rarch_state *p_rarch)
 {
-   struct rarch_state *p_rarch = &rarch_st;
    if (     p_rarch->current_audio
          && p_rarch->current_audio->alive
          && p_rarch->audio_driver_context_audio_data)
@@ -25057,7 +25062,7 @@ static bool audio_driver_stop(void)
    if (!p_rarch->current_audio || !p_rarch->current_audio->stop
          || !p_rarch->audio_driver_context_audio_data)
       return false;
-   if (!audio_driver_alive())
+   if (!audio_driver_alive(p_rarch))
       return false;
    return p_rarch->current_audio->stop(
          p_rarch->audio_driver_context_audio_data);
@@ -25087,6 +25092,7 @@ void audio_driver_frame_is_reverse(void)
          !p_rarch->audio_driver_input_data ||
          !p_rarch->audio_driver_output_samples_buf))
       audio_driver_flush(
+            p_rarch,
             p_rarch->audio_driver_rewind_buf  +
             p_rarch->audio_driver_rewind_ptr,
             p_rarch->audio_driver_rewind_size -
@@ -25634,12 +25640,12 @@ static void video_driver_init_input(input_driver_t *tmp)
    if (tmp)
       *input = tmp;
    else
-      input_driver_find_driver();
+      input_driver_find_driver(p_rarch);
 
    /* This should never really happen as tmp (driver.input) is always
     * found before this in find_driver_input(), or we have aborted
     * in a similar fashion anyways. */
-   if (!p_rarch->current_input || !input_driver_init())
+   if (!p_rarch->current_input || !input_driver_init(p_rarch))
    {
       RARCH_ERR("[Video]: Cannot initialize input driver. Exiting ...\n");
       retroarch_fail(1, "video_driver_init_input()");
@@ -26018,7 +26024,7 @@ static bool video_driver_init_internal(bool *video_is_threaded)
 
    tmp                               = p_rarch->current_input;
    /* Need to grab the "real" video driver interface on a reinit. */
-   video_driver_find_driver();
+   video_driver_find_driver(p_rarch);
 
 #ifdef HAVE_THREADS
    video.is_threaded                 = video_driver_is_threaded_internal();
@@ -26789,11 +26795,10 @@ void video_driver_hide_mouse(void)
       p_rarch->video_driver_poke->show_mouse(p_rarch->video_driver_data, false);
 }
 
-static bool video_driver_find_driver(void)
+static bool video_driver_find_driver(struct rarch_state *p_rarch)
 {
    int i;
    driver_ctx_info_t drv;
-   struct rarch_state *p_rarch             = &rarch_st;
    settings_t          *settings           = p_rarch->configuration_settings;
 
    if (video_driver_is_hw_context())
@@ -28668,11 +28673,10 @@ static void driver_camera_stop(void)
       p_rarch->camera_driver->stop(p_rarch->camera_data);
 }
 
-static void camera_driver_find_driver(void)
+static void camera_driver_find_driver(struct rarch_state *p_rarch)
 {
    int i;
    driver_ctx_info_t drv;
-   struct rarch_state  *p_rarch = &rarch_st;
    settings_t         *settings = p_rarch->configuration_settings;
 
    drv.label = "camera_driver";
@@ -29042,7 +29046,8 @@ static void drivers_init(struct rarch_state *p_rarch, int flags)
    /* Initialize audio driver */
    if (flags & DRIVER_AUDIO_MASK)
    {
-      audio_driver_init_internal(p_rarch->audio_callback.callback != NULL);
+      audio_driver_init_internal(p_rarch,
+            p_rarch->audio_callback.callback != NULL);
       if (  p_rarch->current_audio &&
             p_rarch->current_audio->device_list_new &&
             p_rarch->audio_driver_context_audio_data)
@@ -29059,7 +29064,7 @@ static void drivers_init(struct rarch_state *p_rarch, int flags)
          /* Resource leaks will follow if camera is initialized twice. */
          if (!p_rarch->camera_data)
          {
-            camera_driver_find_driver();
+            camera_driver_find_driver(p_rarch);
 
             if (p_rarch->camera_driver)
             {
@@ -29306,7 +29311,7 @@ bool driver_ctl(enum driver_ctl_state state, void *data)
          {
             float *hz = (float*)data;
             video_monitor_set_refresh_rate(*hz);
-            audio_driver_monitor_set_rate();
+            audio_driver_monitor_set_rate(p_rarch);
             driver_adjust_system_rates(p_rarch);
          }
          break;
@@ -31225,10 +31230,10 @@ bool retroarch_main_init(int argc, char *argv[])
     * Attempts to find a default driver for
     * all driver types.
     */
-   audio_driver_find_driver();
-   video_driver_find_driver();
-   input_driver_find_driver();
-   camera_driver_find_driver();
+   audio_driver_find_driver(p_rarch);
+   video_driver_find_driver(p_rarch);
+   input_driver_find_driver(p_rarch);
+   camera_driver_find_driver(p_rarch);
    wifi_driver_ctl(RARCH_WIFI_CTL_FIND_DRIVER, NULL);
    find_location_driver(p_rarch);
 #ifdef HAVE_MENU
@@ -31262,22 +31267,19 @@ bool retroarch_main_init(int argc, char *argv[])
          if (!command_event(CMD_EVENT_CORE_INIT, &p_rarch->current_core_type))
             goto error;
       }
-      else
-      {
-         /* Fall back to regular error handling */
+      else /* Fall back to regular error handling */
          goto error;
-      }
    }
 
    cheat_manager_state_free();
    command_event_init_cheats(p_rarch);
    drivers_init(p_rarch, DRIVERS_CMD_ALL);
-   input_driver_deinit_command();
-   input_driver_init_command();
-   input_driver_deinit_remote();
-   input_driver_init_remote();
-   input_driver_deinit_mapper();
-   input_driver_init_mapper();
+   input_driver_deinit_command(p_rarch);
+   input_driver_init_command(p_rarch);
+   input_driver_deinit_remote(p_rarch);
+   input_driver_init_remote(p_rarch);
+   input_driver_deinit_mapper(p_rarch);
+   input_driver_init_mapper(p_rarch);
    command_event(CMD_EVENT_REWIND_INIT, NULL);
    command_event_init_controllers(p_rarch);
    if (!string_is_empty(global->record.path))
@@ -31779,9 +31781,9 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          if (!p_rarch->rarch_is_inited)
             return false;
          command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
-         input_driver_deinit_command();
-         input_driver_deinit_remote();
-         input_driver_deinit_mapper();
+         input_driver_deinit_command(p_rarch);
+         input_driver_deinit_remote(p_rarch);
+         input_driver_deinit_mapper(p_rarch);
 
 #ifdef HAVE_THREADS
          retroarch_autosave_deinit(p_rarch);
@@ -32887,7 +32889,8 @@ static enum runloop_state runloop_check_state(
    else
 #endif
    {
-      input_keys_pressed(&current_bits, &joypad_info);
+      input_keys_pressed(p_rarch,
+            &current_bits, &joypad_info);
 #ifdef HAVE_ACCESSIBILITY
 #ifdef HAVE_TRANSLATE
       if (settings->bools.ai_service_enable)
