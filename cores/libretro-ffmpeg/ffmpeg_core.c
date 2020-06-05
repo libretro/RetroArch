@@ -710,6 +710,10 @@ void CORE_PREFIX(retro_run)(void)
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
             if (use_gl)
             {
+               const uint8_t *src;
+               int stride, width;
+               unsigned y;
+
 #ifndef HAVE_OPENGLES
                glBindBuffer(GL_PIXEL_UNPACK_BUFFER, frames[1].pbo);
 #ifdef __MACH__
@@ -719,11 +723,10 @@ void CORE_PREFIX(retro_run)(void)
                      0, media.width * media.height * sizeof(uint32_t), GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
 #endif
 #endif
-
-               const uint8_t *src = ctx->target->data[0];
-               int stride = ctx->target->linesize[0];
-               int width = media.width * sizeof(uint32_t);
-               for (unsigned y = 0; y < media.height; y++, src += stride, data += width/4)
+               src    = ctx->target->data[0];
+               stride = ctx->target->linesize[0];
+               width  = media.width * sizeof(uint32_t);
+               for (y = 0; y < media.height; y++, src += stride, data += width/4)
                   memcpy(data, src, width);
 
 #ifndef HAVE_OPENGLES
@@ -745,10 +748,11 @@ void CORE_PREFIX(retro_run)(void)
             else
 #endif
             {
+               unsigned y;
                const uint8_t *src = ctx->target->data[0];
-               int stride = ctx->target->linesize[0];
-               size_t width = media.width * sizeof(uint32_t);
-               for (unsigned y = 0; y < media.height; y++, src += stride, data += width/4)
+               int         stride = ctx->target->linesize[0];
+               size_t       width = media.width * sizeof(uint32_t);
+               for (y = 0; y < media.height; y++, src += stride, data += width/4)
                   memcpy(data, src, width);
 
                dupe = false;
