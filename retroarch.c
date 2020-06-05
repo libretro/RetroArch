@@ -2399,9 +2399,12 @@ struct retro_subsystem_info subsystem_data[SUBSYSTEM_MAX_SUBSYSTEMS];
 
 /* Forward declarations */
 static void retroarch_fail(int error_code, const char *error);
-static void retroarch_core_options_intl_init(const struct
+static void retroarch_core_options_intl_init(
+      struct rarch_state *p_rarch,
+      const struct
       retro_core_options_intl *core_options_intl);
-static void ui_companion_driver_toggle(bool force);
+static void ui_companion_driver_toggle(struct rarch_state *p_rarch,
+      bool force);
 
 static const void *location_driver_find_handle(int idx);
 static const void *audio_driver_find_handle(int idx);
@@ -2436,9 +2439,12 @@ static bool midi_driver_set_all_sounds_off(void);
 static const void *midi_driver_find_handle(int index);
 static bool midi_driver_flush(void);
 
-static void retroarch_deinit_core_options(void);
-static void retroarch_init_core_variables(const struct retro_variable *vars);
+static void retroarch_deinit_core_options(struct rarch_state *p_rarch);
+static void retroarch_init_core_variables(
+      struct rarch_state *p_rarch,
+      const struct retro_variable *vars);
 static void rarch_init_core_options(
+      struct rarch_state *p_rarch,
       const struct retro_core_option_definition *option_defs);
 #if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
 static bool secondary_core_create(struct rarch_state *p_rarch);
@@ -2456,24 +2462,31 @@ static void retro_frame_null(const void *data, unsigned width,
 static void retro_run_null(void);
 static void retro_input_poll_null(void);
 
-static void uninit_libretro_symbols(struct retro_core_t *current_core);
-static bool init_libretro_symbols(enum rarch_core_type type,
+static void uninit_libretro_symbols(
+      struct rarch_state *p_rarch,
+      struct retro_core_t *current_core);
+static bool init_libretro_symbols(
+      struct rarch_state *p_rarch,
+      enum rarch_core_type type,
       struct retro_core_t *current_core);
 
-static void ui_companion_driver_deinit(void);
+static void ui_companion_driver_deinit(struct rarch_state *p_rarch);
 
 static bool audio_driver_stop(void);
 static bool audio_driver_start(bool is_shutdown);
 
-static bool recording_init(void);
-static bool recording_deinit(void);
+static bool recording_init(struct rarch_state *p_rarch);
+static bool recording_deinit(struct rarch_state *p_rarch);
 
 #ifdef HAVE_OVERLAY
-static void retroarch_overlay_init(void);
-static void retroarch_overlay_deinit(void);
-static void input_overlay_set_alpha_mod(input_overlay_t *ol, float mod);
+static void retroarch_overlay_init(struct rarch_state *p_rarch);
+static void retroarch_overlay_deinit(struct rarch_state *p_rarch);
+static void input_overlay_set_alpha_mod(struct rarch_state *p_rarch,
+      input_overlay_t *ol, float mod);
 static void input_overlay_set_scale_factor(input_overlay_t *ol, float scale);
-static void input_overlay_load_active(input_overlay_t *ol, float opacity);
+static void input_overlay_load_active(
+      struct rarch_state *p_rarch,
+      input_overlay_t *ol, float opacity);
 static void input_overlay_auto_rotate_(input_overlay_t *ol);
 #endif
 
@@ -2486,14 +2499,14 @@ static void audio_mixer_menu_stop_cb(
       audio_mixer_sound_t *sound, unsigned reason);
 #endif
 
-static void video_driver_gpu_record_deinit(void);
+static void video_driver_gpu_record_deinit(struct rarch_state *p_rarch);
 static retro_proc_address_t video_driver_get_proc_address(const char *sym);
 static uintptr_t video_driver_get_current_framebuffer(void);
 static bool video_driver_find_driver(void);
 
-static void bsv_movie_deinit(void);
-static bool bsv_movie_init(void);
-static bool bsv_movie_check(void);
+static void bsv_movie_deinit(struct rarch_state *p_rarch);
+static bool bsv_movie_init(struct rarch_state *p_rarch);
+static bool bsv_movie_check(struct rarch_state *p_rarch);
 
 static void driver_uninit(struct rarch_state *p_rarch, int flags);
 static void drivers_init(struct rarch_state *p_rarch,  int flags);
@@ -2503,7 +2516,7 @@ static void core_free_retro_game_info(struct retro_game_info *dest);
 #endif
 static bool core_load(struct rarch_state *p_rarch,
       unsigned poll_type_behavior);
-static bool core_unload_game(void);
+static bool core_unload_game(struct rarch_state *p_rarch);
 
 static bool rarch_environment_cb(unsigned cmd, void *data);
 
@@ -2516,7 +2529,8 @@ static bool driver_location_start(void);
 static void driver_camera_stop(void);
 static bool driver_camera_start(void);
 
-static void log_counters(struct retro_perf_counter **counters, unsigned num)
+static void log_counters(
+      struct retro_perf_counter **counters, unsigned num)
 {
    unsigned i;
    for (i = 0; i < num; i++)
@@ -2532,9 +2546,8 @@ static void log_counters(struct retro_perf_counter **counters, unsigned num)
    }
 }
 
-static void rarch_perf_log(void)
+static void rarch_perf_log(struct rarch_state *p_rarch)
 {
-   struct rarch_state *p_rarch = &rarch_st;
    RARCH_LOG("[PERF]: Performance counters (RetroArch):\n");
    log_counters(p_rarch->perf_counters_rarch, p_rarch->perf_ptr_rarch);
 }
@@ -2545,7 +2558,6 @@ static void retro_perf_log(void)
    RARCH_LOG("[PERF]: Performance counters (libretro):\n");
    log_counters(p_rarch->perf_counters_libretro, p_rarch->perf_ptr_libretro);
 }
-
 
 struct retro_perf_counter **retro_get_perf_counter_rarch(void)
 {
@@ -2575,7 +2587,7 @@ void rarch_perf_register(struct retro_perf_counter *perf)
 {
    struct rarch_state *p_rarch = &rarch_st;
    if (
-            !rarch_ctl(RARCH_CTL_IS_PERFCNT_ENABLE, NULL)
+            !p_rarch->runloop_perfcnt_enable
          || perf->registered
          || p_rarch->perf_ptr_rarch >= MAX_COUNTERS
       )
@@ -2952,12 +2964,11 @@ const char *char_list_new_special(enum string_list_type type, void *data)
    return options;
 }
 
-static void path_set_redirect(void)
+static void path_set_redirect(struct rarch_state *p_rarch)
 {
    size_t path_size                            = PATH_MAX_LENGTH * sizeof(char);
    char *new_savefile_dir                      = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
    char *new_savestate_dir                     = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-   struct rarch_state *p_rarch                 = &rarch_st;
    global_t   *global                          = &p_rarch->g_extern;
    const char *old_savefile_dir                = p_rarch->dir_savefile;
    const char *old_savestate_dir               = p_rarch->dir_savestate;
@@ -3107,10 +3118,11 @@ static void path_set_redirect(void)
    free(new_savestate_dir);
 }
 
-static void path_set_basename(const char *path)
+static void path_set_basename(
+      struct rarch_state *p_rarch,
+      const char *path)
 {
    char *dst                   = NULL;
-   struct rarch_state *p_rarch = &rarch_st;
 
    path_set(RARCH_PATH_CONTENT,  path);
    path_set(RARCH_PATH_BASENAME, path);
@@ -3161,7 +3173,7 @@ void path_set_special(char **argv, unsigned num_content)
 
 
    /* First content file is the significant one. */
-   path_set_basename(argv[0]);
+   path_set_basename(p_rarch, argv[0]);
 
    subsystem_paths                     = string_list_new();
    p_rarch->subsystem_fullpaths        = string_list_new();
@@ -3203,11 +3215,10 @@ void path_set_special(char **argv, unsigned num_content)
       string_list_free(subsystem_paths);
 }
 
-static bool path_init_subsystem(void)
+static bool path_init_subsystem(struct rarch_state *p_rarch)
 {
    unsigned i, j;
    const struct retro_subsystem_info *info = NULL;
-   struct rarch_state             *p_rarch = &rarch_st;
    global_t   *global                      = &p_rarch->g_extern;
    rarch_system_info_t             *system = &p_rarch->runloop_system;
    bool subsystem_path_empty               = path_is_empty(RARCH_PATH_SUBSYSTEM);
@@ -3302,9 +3313,8 @@ static bool path_init_subsystem(void)
    return true;
 }
 
-static void path_init_savefile(void)
+static void path_init_savefile(struct rarch_state *p_rarch)
 {
-   struct rarch_state *p_rarch = &rarch_st;
    bool    should_sram_be_used = p_rarch->rarch_use_sram
       && !p_rarch->rarch_is_sram_save_disabled;
 
@@ -3325,7 +3335,7 @@ static void path_init_savefile_internal(struct rarch_state *p_rarch)
    path_deinit_savefile();
    path_init_savefile_new();
 
-   if (!path_init_subsystem())
+   if (!path_init_subsystem(p_rarch))
    {
       global_t   *global = &p_rarch->g_extern;
       path_init_savefile_rtc(global->name.savefile);
@@ -3474,16 +3484,18 @@ static void path_set_names(struct rarch_state *p_rarch, const char *path)
 {
    global_t            *global = &p_rarch->g_extern;
 
-   path_set_basename(path);
+   path_set_basename(p_rarch, path);
 
    if (global)
    {
-      if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL))
+      if (!retroarch_override_setting_is_set(
+               RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL))
          fill_pathname_noext(global->name.savefile,
                p_rarch->path_main_basename,
                ".srm", sizeof(global->name.savefile));
 
-      if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_STATE_PATH, NULL))
+      if (!retroarch_override_setting_is_set(
+               RARCH_OVERRIDE_SETTING_STATE_PATH, NULL))
          fill_pathname_noext(global->name.savestate,
                p_rarch->path_main_basename,
                ".state", sizeof(global->name.savestate));
@@ -3493,7 +3505,7 @@ static void path_set_names(struct rarch_state *p_rarch, const char *path)
             ".cht", sizeof(global->name.cheatfile));
    }
 
-   path_set_redirect();
+   path_set_redirect(p_rarch);
 }
 
 bool path_set(enum rarch_path_type type, const char *path)
@@ -3739,12 +3751,13 @@ static bool dir_free_shader(struct rarch_state *p_rarch)
 
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-static bool dir_init_shader(const char *path_dir_shader,
+static bool dir_init_shader(
+      struct rarch_state *p_rarch,
+      const char *path_dir_shader,
       bool show_hidden_files)
 {
    unsigned i;
    struct rarch_dir_list *dir_list = NULL;
-   struct rarch_state     *p_rarch = &rarch_st;
    struct string_list *new_list    = dir_list_new_special(path_dir_shader,
          DIR_LIST_SHADERS, NULL, show_hidden_files);
 
@@ -3784,11 +3797,13 @@ static bool dir_init_shader(const char *path_dir_shader,
  *
  * Will also immediately apply the shader.
  **/
-static void dir_check_shader(bool pressed_next, bool pressed_prev)
+static void dir_check_shader(
+      struct rarch_state *p_rarch,
+      bool pressed_next, bool pressed_prev)
 {
-   struct rarch_state     *p_rarch = &rarch_st;
-   struct rarch_dir_list *dir_list = (struct rarch_dir_list*)&p_rarch->dir_shader_list;
-   static bool change_triggered = false;
+   static bool change_triggered    = false;
+   struct rarch_dir_list *dir_list = (struct rarch_dir_list*)
+      &p_rarch->dir_shader_list;
 
    if (!dir_list || !dir_list->list)
       return;
@@ -4033,7 +4048,7 @@ void menu_input_dialog_end(void)
    p_rarch->menu_input_dialog_keyboard_label[0]          = '\0';
    p_rarch->menu_input_dialog_keyboard_label_setting[0]  = '\0';
 
-   /* Avoid triggering tates on pressing return. */
+   /* Avoid triggering states on pressing return. */
    input_driver_set_flushing_input();
 }
 
@@ -4196,15 +4211,16 @@ bool menu_driver_is_alive(void)
 
 void menu_driver_set_binding_state(bool on)
 {
-   struct rarch_state *p_rarch = &rarch_st;
+   struct rarch_state *p_rarch     = &rarch_st;
    p_rarch->menu_driver_is_binding = on;
 }
 #endif
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-static void retroarch_set_runtime_shader_preset(const char *arg)
+static void retroarch_set_runtime_shader_preset(
+      struct rarch_state *p_rarch,
+      const char *arg)
 {
-   struct rarch_state *p_rarch       = &rarch_st;
    if (!string_is_empty(arg))
       strlcpy(p_rarch->runtime_shader_preset,
             arg,
@@ -4213,9 +4229,9 @@ static void retroarch_set_runtime_shader_preset(const char *arg)
       p_rarch->runtime_shader_preset[0] = '\0';
 }
 
-static void retroarch_unset_runtime_shader_preset(void)
+static void retroarch_unset_runtime_shader_preset(
+      struct rarch_state *p_rarch)
 {
-   struct rarch_state *p_rarch       = &rarch_st;
    p_rarch->runtime_shader_preset[0] = '\0';
 }
 #endif
@@ -4293,10 +4309,8 @@ void *video_driver_get_ptr(bool force_nonthreaded_data)
 
 /* MESSAGE QUEUE */
 
-static void retroarch_msg_queue_deinit(void)
+static void retroarch_msg_queue_deinit(struct rarch_state *p_rarch)
 {
-   struct rarch_state *p_rarch = &rarch_st;
-
    runloop_msg_queue_lock();
 
    if (!p_rarch->runloop_msg_queue)
@@ -4314,11 +4328,9 @@ static void retroarch_msg_queue_deinit(void)
    p_rarch->runloop_msg_queue_size = 0;
 }
 
-static void retroarch_msg_queue_init(void)
+static void retroarch_msg_queue_init(struct rarch_state *p_rarch)
 {
-   struct rarch_state       *p_rarch = &rarch_st;
-
-   retroarch_msg_queue_deinit();
+   retroarch_msg_queue_deinit(p_rarch);
    p_rarch->runloop_msg_queue        = msg_queue_new(8);
 
 #ifdef HAVE_THREADS
@@ -4327,9 +4339,8 @@ static void retroarch_msg_queue_init(void)
 }
 
 #ifdef HAVE_THREADS
-static void retroarch_autosave_deinit(void)
+static void retroarch_autosave_deinit(struct rarch_state *p_rarch)
 {
-   struct rarch_state *p_rarch = &rarch_st;
    const bool rarch_use_sram   = p_rarch->rarch_use_sram;
    if (rarch_use_sram)
       autosave_deinit();
@@ -4340,9 +4351,10 @@ static void retroarch_autosave_deinit(void)
 
 #if defined(HAVE_COMMAND)
 #if (defined(HAVE_STDIN_CMD) || defined(HAVE_NETWORK_CMD))
-static void command_reply(const char * data, size_t len)
+static void command_reply(
+      struct rarch_state *p_rarch,
+      const char * data, size_t len)
 {
-   struct rarch_state            *p_rarch = &rarch_st;
    const enum cmd_source_t lastcmd_source = p_rarch->lastcmd_source;
 
    switch (lastcmd_source)
@@ -4368,11 +4380,14 @@ static void command_reply(const char * data, size_t len)
 #endif
 static bool command_version(const char* arg)
 {
-   char reply[256] = {0};
+   char reply[256]             = {0};
+#if (defined(HAVE_STDIN_CMD) || defined(HAVE_NETWORK_CMD))
+   struct rarch_state *p_rarch = &rarch_st;
+#endif
 
    snprintf(reply, sizeof(reply), "%s\n", PACKAGE_VERSION);
 #if (defined(HAVE_STDIN_CMD) || defined(HAVE_NETWORK_CMD))
-   command_reply(reply, strlen(reply));
+   command_reply(p_rarch, reply, strlen(reply));
 #endif
 
    return true;
@@ -4410,7 +4425,7 @@ static bool command_get_status(const char* arg)
        snprintf(reply, sizeof(reply), "GET_STATUS %s %s,%s,crc32=%x\n", status, system_id, content_name, content_crc32);
    }
 
-   command_reply(reply, strlen(reply));
+   command_reply(p_rarch, reply, strlen(reply));
 
    return true;
 }
@@ -4461,7 +4476,7 @@ static bool command_get_config_param(const char* arg)
    /* TODO: query any string */
 
    snprintf(reply, sizeof(reply), "GET_CONFIG_PARAM %s %s\n", arg, value);
-   command_reply(reply, strlen(reply));
+   command_reply(p_rarch, reply, strlen(reply));
    return true;
 }
 
@@ -4532,7 +4547,9 @@ static const struct cmd_map map[] = {
 };
 #endif
 
-bool retroarch_apply_shader(enum rarch_shader_type type, const char *preset_path, bool message)
+bool retroarch_apply_shader(
+      enum rarch_shader_type type,
+      const char *preset_path, bool message)
 {
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    char msg[256];
@@ -4556,7 +4573,7 @@ bool retroarch_apply_shader(enum rarch_shader_type type, const char *preset_path
    if (ret)
    {
       configuration_set_bool(settings, settings->bools.video_shader_enable, true);
-      retroarch_set_runtime_shader_preset(preset_path);
+      retroarch_set_runtime_shader_preset(p_rarch, preset_path);
 
 #ifdef HAVE_MENU
       /* reflect in shader manager */
@@ -4593,7 +4610,7 @@ bool retroarch_apply_shader(enum rarch_shader_type type, const char *preset_path
    }
    else
    {
-      retroarch_set_runtime_shader_preset(NULL);
+      retroarch_set_runtime_shader_preset(p_rarch, NULL);
 
 #ifdef HAVE_MENU
       /* reflect in shader manager */
@@ -4652,13 +4669,14 @@ static bool command_set_shader(const char *arg)
 static bool command_read_ram(const char *arg)
 {
    unsigned i;
-   char *reply             = NULL;
-   const uint8_t  *data    = NULL;
-   char *reply_at          = NULL;
-   unsigned int nbytes     = 0;
-   unsigned int alloc_size = 0;
-   unsigned int addr       = -1;
-   unsigned int len        = 0;
+   char *reply                  = NULL;
+   const uint8_t  *data         = NULL;
+   char *reply_at               = NULL;
+   unsigned int nbytes          = 0;
+   unsigned int alloc_size      = 0;
+   unsigned int addr            = -1;
+   unsigned int len             = 0;
+   struct rarch_state  *p_rarch = &rarch_st;
 
    if (sscanf(arg, "%x %u", &addr, &nbytes) != 2)
       return true;
@@ -4681,7 +4699,7 @@ static bool command_read_ram(const char *arg)
       strlcpy(reply_at, " -1\n", sizeof(reply) - strlen(reply));
       len                  = reply_at + STRLEN_CONST(" -1\n") - reply;
    }
-   command_reply(reply, len);
+   command_reply(p_rarch, reply, len);
    free(reply);
    return true;
 }
@@ -5030,9 +5048,8 @@ error:
 
 /* TRANSLATION */
 #ifdef HAVE_TRANSLATE
-static bool task_auto_translate_callback(void)
+static bool task_auto_translate_callback(struct rarch_state *p_rarch)
 {
-   struct rarch_state       *p_rarch = &rarch_st;
    bool was_paused                   = p_rarch->runloop_paused;
    command_event(CMD_EVENT_AI_SERVICE_CALL, &was_paused);
    return true;
@@ -5094,12 +5111,12 @@ task_finished:
    task_set_finished(task, true);
 
    if (*mode_ptr == 1 || *mode_ptr == 2)
-       task_auto_translate_callback();
+       task_auto_translate_callback(p_rarch);
    if (task->user_data)
        free(task->user_data);
 }
 
-static bool call_auto_translate_task(bool* was_paused)
+static bool call_auto_translate_task(bool *was_paused)
 {
    struct rarch_state *p_rarch = &rarch_st;
    settings_t        *settings = p_rarch->configuration_settings;
@@ -5123,16 +5140,17 @@ static bool call_auto_translate_task(bool* was_paused)
       if (!t)
          return false;
 
-      t->handler = task_auto_translate_handler;
+      t->handler   = task_auto_translate_handler;
       t->user_data = mode;
-      t->mute = true;
+      t->mute      = true;
       task_queue_push(t);
    }
    return true;
 }
 
 static void handle_translation_cb(
-      retro_task_t *task, void *task_data, void *user_data, const char *error)
+      retro_task_t *task, void *task_data,
+      void *user_data, const char *error)
 {
    size_t pitch;
    char curr;
@@ -5847,7 +5865,8 @@ static const char *ai_service_get_str(enum translation_lang id)
    the handle_translation_cb wipes the widgets, and pass that in here.
 */
 
-static bool run_translation_service(bool paused)
+static bool run_translation_service(struct rarch_state *p_rarch,
+      bool paused)
 {
    struct video_viewport vp;
    uint8_t header[54];
@@ -5856,7 +5875,6 @@ static bool run_translation_service(bool paused)
    const void *data                      = NULL;
    uint8_t *bit24_image                  = NULL;
    uint8_t *bit24_image_prev             = NULL;
-   struct rarch_state *p_rarch           = &rarch_st;
    settings_t *settings                  = p_rarch->configuration_settings;
    struct scaler_ctx *scaler             = (struct scaler_ctx*)
       calloc(1, sizeof(struct scaler_ctx));
@@ -6280,9 +6298,10 @@ finish:
  *
  * Appends disk image to disk image list.
  **/
-static bool command_event_disk_control_append_image(const char *path)
+static bool command_event_disk_control_append_image(
+      struct rarch_state *p_rarch,
+      const char *path)
 {
-   struct rarch_state *p_rarch   = &rarch_st;
    rarch_system_info_t *sys_info = &p_rarch->runloop_system;
 
    if (!sys_info)
@@ -6292,7 +6311,7 @@ static bool command_event_disk_control_append_image(const char *path)
       return false;
 
 #ifdef HAVE_THREADS
-   retroarch_autosave_deinit();
+   retroarch_autosave_deinit(p_rarch);
 #endif
 
    /* TODO: Need to figure out what to do with subsystems case. */
@@ -6318,10 +6337,9 @@ static bool command_event_disk_control_append_image(const char *path)
  * Adjusts the current audio volume level.
  *
  **/
-static void command_event_set_volume(float gain)
+static void command_event_set_volume(struct rarch_state *p_rarch, float gain)
 {
    char msg[128];
-   struct rarch_state *p_rarch = &rarch_st;
    settings_t *settings        = p_rarch->configuration_settings;
    float new_volume            = settings->floats.audio_volume + gain;
 
@@ -6354,10 +6372,11 @@ static void command_event_set_volume(float gain)
  * Adjusts the current audio volume level.
  *
  **/
-static void command_event_set_mixer_volume(float gain)
+static void command_event_set_mixer_volume(
+      struct rarch_state *p_rarch,
+      float gain)
 {
    char msg[128];
-   struct rarch_state *p_rarch = &rarch_st;
    settings_t *settings        = p_rarch->configuration_settings;
    float new_volume            = settings->floats.audio_mixer_volume + gain;
 
@@ -6380,10 +6399,9 @@ static void command_event_set_mixer_volume(float gain)
  *
  * Initialize libretro controllers.
  **/
-static void command_event_init_controllers(void)
+static void command_event_init_controllers(struct rarch_state *p_rarch)
 {
    unsigned i;
-   struct rarch_state *p_rarch   = &rarch_st;
    rarch_system_info_t *info     = &p_rarch->runloop_system;
 
    for (i = 0; i < MAX_USERS; i++)
@@ -6458,26 +6476,24 @@ static void command_event_init_controllers(void)
 }
 
 #ifdef HAVE_CONFIGFILE
-static void command_event_disable_overrides(void)
+static void command_event_disable_overrides(struct rarch_state *p_rarch)
 {
-   struct rarch_state       *p_rarch = &rarch_st;
-
    /* reload the original config */
    config_unload_override();
    p_rarch->runloop_overrides_active = false;
 }
 #endif
 
-static void command_event_deinit_core(bool reinit)
+static void command_event_deinit_core(
+      struct rarch_state *p_rarch,
+      bool reinit)
 {
-   struct rarch_state *p_rarch = &rarch_st;
-
 #ifdef HAVE_CHEEVOS
    rcheevos_unload();
 #endif
 
    RARCH_LOG("Unloading game..\n");
-   core_unload_game();
+   core_unload_game(p_rarch);
 
    RARCH_LOG("Unloading core..\n");
 
@@ -6487,7 +6503,7 @@ static void command_event_deinit_core(bool reinit)
       p_rarch->current_core.retro_deinit();
 
    RARCH_LOG("Unloading core symbols..\n");
-   uninit_libretro_symbols(&p_rarch->current_core);
+   uninit_libretro_symbols(p_rarch, &p_rarch->current_core);
    p_rarch->current_core.symbols_inited = false;
 
    if (reinit)
@@ -6495,10 +6511,10 @@ static void command_event_deinit_core(bool reinit)
 
 #ifdef HAVE_CONFIGFILE
    if (p_rarch->runloop_overrides_active)
-      command_event_disable_overrides();
+      command_event_disable_overrides(p_rarch);
 #endif
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-   retroarch_unset_runtime_shader_preset();
+   retroarch_unset_runtime_shader_preset(p_rarch);
 #endif
 
 #ifdef HAVE_CONFIGFILE
@@ -6510,9 +6526,8 @@ static void command_event_deinit_core(bool reinit)
 #endif
 }
 
-static void command_event_init_cheats(void)
+static void command_event_init_cheats(struct rarch_state *p_rarch)
 {
-   struct rarch_state *p_rarch   = &rarch_st;
    settings_t     *settings      = p_rarch->configuration_settings;
    bool        allow_cheats      = true;
    bool apply_cheats_after_load  = settings->bools.apply_cheats_after_load;
@@ -6533,12 +6548,11 @@ static void command_event_init_cheats(void)
       cheat_manager_apply_cheats();
 }
 
-static void command_event_load_auto_state(void)
+static void command_event_load_auto_state(struct rarch_state *p_rarch)
 {
    bool ret                        = false;
    char *savestate_name_auto       = NULL;
    size_t savestate_name_auto_size = PATH_MAX_LENGTH * sizeof(char);
-   struct rarch_state *p_rarch     = &rarch_st;
    settings_t *settings            = p_rarch->configuration_settings;
    global_t   *global              = &p_rarch->g_extern;
    bool savestate_auto_load        = settings->bools.savestate_auto_load;
@@ -6578,7 +6592,7 @@ static void command_event_load_auto_state(void)
    free(savestate_name_auto);
 }
 
-static void command_event_set_savestate_auto_index(void)
+static void command_event_set_savestate_auto_index(struct rarch_state *p_rarch)
 {
    size_t i;
    char *state_dir                   = NULL;
@@ -6587,7 +6601,6 @@ static void command_event_set_savestate_auto_index(void)
    size_t state_size                 = PATH_MAX_LENGTH * sizeof(char);
    struct string_list *dir_list      = NULL;
    unsigned max_idx                  = 0;
-   struct rarch_state *p_rarch       = &rarch_st;
    settings_t *settings              = p_rarch->configuration_settings;
    global_t   *global                = &p_rarch->g_extern;
    bool savestate_auto_index         = settings->bools.savestate_auto_index;
@@ -6651,11 +6664,10 @@ static void command_event_set_savestate_auto_index(void)
          max_idx);
 }
 
-static bool event_init_content(void)
+static bool event_init_content(struct rarch_state *p_rarch)
 {
    bool contentless                             = false;
    bool is_inited                               = false;
-   struct rarch_state *p_rarch                  = &rarch_st;
    const enum rarch_core_type current_core_type = p_rarch->current_core_type;
 
    content_get_status(&contentless, &is_inited);
@@ -6683,7 +6695,7 @@ static bool event_init_content(void)
       return false;
    }
 
-   command_event_set_savestate_auto_index();
+   command_event_set_savestate_auto_index(p_rarch);
 
    if (event_load_save_files(p_rarch->rarch_is_sram_load_disabled))
       RARCH_LOG("%s.\n",
@@ -6702,22 +6714,22 @@ static bool event_init_content(void)
       bool cheevos_enable               = settings->bools.cheevos_enable;
       bool cheevos_hardcore_mode_enable = settings->bools.cheevos_hardcore_mode_enable;
       if (!cheevos_enable || !cheevos_hardcore_mode_enable)
-         command_event_load_auto_state();
+         command_event_load_auto_state(p_rarch);
    }
 #else
-   command_event_load_auto_state();
+   command_event_load_auto_state(p_rarch);
 #endif
 
-   bsv_movie_deinit();
-   bsv_movie_init();
+   bsv_movie_deinit(p_rarch);
+   bsv_movie_init(p_rarch);
    command_event(CMD_EVENT_NETPLAY_INIT, NULL);
 
    return true;
 }
 
-static void update_runtime_log(bool log_per_core)
+static void update_runtime_log(struct rarch_state *p_rarch,
+      bool log_per_core)
 {
-   struct rarch_state  *p_rarch = &rarch_st;
    settings_t  *settings        = p_rarch->configuration_settings;
    const char  *dir_runtime_log = settings->paths.directory_runtime_log;
    const char  *dir_playlist    = settings->paths.directory_playlist;
@@ -6748,14 +6760,13 @@ static void update_runtime_log(bool log_per_core)
 }
 
 
-static void command_event_runtime_log_deinit(void)
+static void command_event_runtime_log_deinit(struct rarch_state *p_rarch)
 {
    char log[PATH_MAX_LENGTH]    = {0};
    unsigned hours               = 0;
    unsigned minutes             = 0;
    unsigned seconds             = 0;
    int n                        = 0;
-   struct rarch_state  *p_rarch = &rarch_st;
 
    runtime_log_convert_usec2hms(
          p_rarch->libretro_core_runtime_usec,
@@ -6777,11 +6788,11 @@ static void command_event_runtime_log_deinit(void)
 
       /* Per core logging */
       if (content_runtime_log)
-         update_runtime_log(true);
+         update_runtime_log(p_rarch, true);
 
       /* Aggregate logging */
       if (content_runtime_log_aggregate)
-         update_runtime_log(false);
+         update_runtime_log(p_rarch, false);
    }
 
    /* Reset runtime + content/core paths, to prevent any
@@ -6791,9 +6802,8 @@ static void command_event_runtime_log_deinit(void)
    memset(p_rarch->runtime_core_path, 0, sizeof(p_rarch->runtime_core_path));
 }
 
-static void command_event_runtime_log_init(void)
+static void command_event_runtime_log_init(struct rarch_state *p_rarch)
 {
-   struct rarch_state         *p_rarch = &rarch_st;
    const char *content_path            = path_get(RARCH_PATH_CONTENT);
    const char *core_path               = path_get(RARCH_PATH_CORE);
 
@@ -6825,9 +6835,10 @@ static void command_event_runtime_log_init(void)
             sizeof(p_rarch->runtime_core_path));
 }
 
-static void retroarch_set_frame_limit(float fastforward_ratio_orig)
+static void retroarch_set_frame_limit(
+      struct rarch_state *p_rarch,
+      float fastforward_ratio_orig)
 {
-   struct rarch_state          *p_rarch = &rarch_st;
    struct retro_system_av_info *av_info = &p_rarch->video_driver_av_info;
    float fastforward_ratio              = (fastforward_ratio_orig == 0.0f)
       ? 1.0f : fastforward_ratio_orig;
@@ -6837,9 +6848,10 @@ static void retroarch_set_frame_limit(float fastforward_ratio_orig)
          / (av_info->timing.fps * fastforward_ratio));
 }
 
-static bool command_event_init_core(enum rarch_core_type type)
+static bool command_event_init_core(
+      struct rarch_state *p_rarch,
+      enum rarch_core_type type)
 {
-   struct rarch_state *p_rarch     = &rarch_st;
    settings_t *settings            = p_rarch->configuration_settings;
 #ifdef HAVE_CONFIGFILE
    bool auto_overrides_enable      = settings->bools.auto_overrides_enable;
@@ -6850,7 +6862,8 @@ static bool command_event_init_core(enum rarch_core_type type)
    float fastforward_ratio         = settings->floats.fastforward_ratio;
    rarch_system_info_t *sys_info   = &p_rarch->runloop_system;
 
-   if (!init_libretro_symbols(type, &p_rarch->current_core))
+   if (!init_libretro_symbols(p_rarch,
+            type, &p_rarch->current_core))
       return false;
    if (!p_rarch->current_core.retro_run)
       p_rarch->current_core.retro_run   = retro_run_null;
@@ -6904,7 +6917,7 @@ static bool command_event_init_core(enum rarch_core_type type)
 #endif
 
    /* Per-core saves: reset redirection paths */
-   path_set_redirect();
+   path_set_redirect(p_rarch);
 
    video_driver_set_cached_frame_ptr(NULL);
 
@@ -6917,7 +6930,7 @@ static bool command_event_init_core(enum rarch_core_type type)
          path_get(RARCH_PATH_CONTENT),
          p_rarch->current_savefile_dir);
 
-   if (!event_init_content())
+   if (!event_init_content(p_rarch))
       return false;
 
    /* Verify that initial disk index was set correctly */
@@ -6926,18 +6939,17 @@ static bool command_event_init_core(enum rarch_core_type type)
    if (!core_load(p_rarch, poll_type_behavior))
       return false;
 
-   retroarch_set_frame_limit(fastforward_ratio);
-   command_event_runtime_log_init();
+   retroarch_set_frame_limit(p_rarch, fastforward_ratio);
+   command_event_runtime_log_init(p_rarch);
    return true;
 }
 
-static bool command_event_save_auto_state(void)
+static bool command_event_save_auto_state(struct rarch_state *p_rarch)
 {
    bool ret                    = false;
    char *savestate_name_auto   = NULL;
    size_t
       savestate_name_auto_size = PATH_MAX_LENGTH * sizeof(char);
-   struct rarch_state *p_rarch = &rarch_st;
    settings_t *settings        = p_rarch->configuration_settings;
    global_t   *global          = &p_rarch->g_extern;
    bool savestate_auto_save    = settings->bools.savestate_auto_save;
@@ -7017,7 +7029,9 @@ static bool command_event_save_config(
  *
  * Returns: true (1) on success, otherwise false (0).
  **/
-static bool command_event_save_core_config(const char *dir_menu_config)
+static bool command_event_save_core_config(
+      struct rarch_state *p_rarch,
+      const char *dir_menu_config)
 {
    char msg[128];
    bool found_path                 = false;
@@ -7027,7 +7041,6 @@ static bool command_event_save_core_config(const char *dir_menu_config)
    char *config_path               = NULL;
    char *config_dir                = NULL;
    size_t config_size              = PATH_MAX_LENGTH * sizeof(char);
-   struct rarch_state     *p_rarch = &rarch_st;
 
    msg[0]                          = '\0';
 
@@ -7128,10 +7141,11 @@ static bool command_event_save_core_config(const char *dir_menu_config)
  * Saves current configuration file to disk, and (optionally)
  * autosave state.
  **/
-static void command_event_save_current_config(enum override_type type)
+static void command_event_save_current_config(
+      struct rarch_state *p_rarch,
+      enum override_type type)
 {
    char msg[128];
-   struct rarch_state *p_rarch = &rarch_st;
 
    msg[0] = '\0';
 
@@ -7216,13 +7230,14 @@ static void command_event_undo_load_state(char *s, size_t len)
          msg_hash_to_str(MSG_UNDID_LOAD_STATE), len);
 }
 
-static bool command_event_main_state(unsigned cmd)
+static bool command_event_main_state(
+      struct rarch_state *p_rarch,
+      unsigned cmd)
 {
    retro_ctx_size_info_t info;
    char msg[128];
    size_t state_path_size      = 16384 * sizeof(char);
    char *state_path            = (char*)malloc(state_path_size);
-   struct rarch_state *p_rarch = &rarch_st;
    const global_t *global      = &p_rarch->g_extern;
    settings_t *settings        = p_rarch->configuration_settings;
    bool ret                    = false;
@@ -7304,10 +7319,9 @@ static bool command_event_main_state(unsigned cmd)
    return ret;
 }
 
-static bool command_event_resize_windowed_scale(void)
+static bool command_event_resize_windowed_scale(struct rarch_state *p_rarch)
 {
    unsigned                idx = 0;
-   struct rarch_state *p_rarch = &rarch_st;
    settings_t      *settings   = p_rarch->configuration_settings;
    unsigned      window_scale  = p_rarch->runloop_pending_windowed_scale;
    bool      video_fullscreen  = settings->bools.video_fullscreen;
@@ -7325,9 +7339,9 @@ static bool command_event_resize_windowed_scale(void)
    return true;
 }
 
-static void command_event_reinit(const int flags)
+static void command_event_reinit(struct rarch_state *p_rarch,
+      const int flags)
 {
-   struct rarch_state *p_rarch = &rarch_st;
    settings_t *settings        = p_rarch->configuration_settings;
 #ifdef HAVE_MENU
    bool video_fullscreen       = settings->bools.video_fullscreen;
@@ -7354,13 +7368,11 @@ static void command_event_reinit(const int flags)
 #endif
 }
 
-static void retroarch_pause_checks(void)
+static void retroarch_pause_checks(struct rarch_state *p_rarch)
 {
 #ifdef HAVE_DISCORD
    discord_userdata_t userdata;
 #endif
-   struct rarch_state
-      *p_rarch                    = &rarch_st;
    bool is_paused                 = p_rarch->runloop_paused;
    bool is_idle                   = p_rarch->runloop_idle;
 #if defined(HAVE_GFX_WIDGETS)
@@ -7401,19 +7413,16 @@ static void retroarch_pause_checks(void)
 #endif
 }
 
-static void retroarch_frame_time_free(void)
+static void retroarch_frame_time_free(struct rarch_state *p_rarch)
 {
-   struct rarch_state       *p_rarch = &rarch_st;
-
    memset(&p_rarch->runloop_frame_time, 0,
          sizeof(struct retro_frame_time_callback));
    p_rarch->runloop_frame_time_last  = 0;
    p_rarch->runloop_max_frames       = 0;
 }
 
-static void retroarch_system_info_free(void)
+static void retroarch_system_info_free(struct rarch_state *p_rarch)
 {
-   struct rarch_state            *p_rarch = &rarch_st;
    rarch_system_info_t        *sys_info   = &p_rarch->runloop_system;
 
    if (sys_info->subsystem.data)
@@ -7446,12 +7455,14 @@ static void retroarch_system_info_free(void)
    memset(&p_rarch->runloop_system, 0, sizeof(rarch_system_info_t));
 }
 
-static bool libretro_get_system_info(const char *path,
-      struct retro_system_info *info, bool *load_no_content);
+static bool libretro_get_system_info(
+      struct rarch_state *p_rarch,
+      const char *path,
+      struct retro_system_info *info,
+      bool *load_no_content);
 
-static bool input_driver_grab_mouse(void)
+static bool input_driver_grab_mouse(struct rarch_state *p_rarch)
 {
-   struct rarch_state            *p_rarch = &rarch_st;
    if (!p_rarch->current_input || !p_rarch->current_input->grab_mouse)
       return false;
 
@@ -7459,9 +7470,8 @@ static bool input_driver_grab_mouse(void)
    return true;
 }
 
-static bool input_driver_ungrab_mouse(void)
+static bool input_driver_ungrab_mouse(struct rarch_state *p_rarch)
 {
-   struct rarch_state            *p_rarch = &rarch_st;
    if (!p_rarch->current_input || !p_rarch->current_input->grab_mouse)
       return false;
 
@@ -7491,7 +7501,7 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_OVERLAY_DEINIT:
 #ifdef HAVE_OVERLAY
-         retroarch_overlay_deinit();
+         retroarch_overlay_deinit(p_rarch);
 #endif
 #if defined(HAVE_TRANSLATE) && defined(HAVE_GFX_WIDGETS)
          if (gfx_widgets_ai_service_overlay_get_state() != 0)
@@ -7505,7 +7515,7 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_OVERLAY_INIT:
 #ifdef HAVE_OVERLAY
-         retroarch_overlay_init();
+         retroarch_overlay_init(p_rarch);
 #endif
          break;
       case CMD_EVENT_CHEAT_INDEX_PLUS:
@@ -7518,17 +7528,17 @@ bool command_event(enum event_command cmd, void *data)
          cheat_manager_toggle();
          break;
       case CMD_EVENT_SHADER_NEXT:
-         dir_check_shader(true, false);
+         dir_check_shader(p_rarch, true, false);
          break;
       case CMD_EVENT_SHADER_PREV:
-         dir_check_shader(false, true);
+         dir_check_shader(p_rarch, false, true);
          break;
       case CMD_EVENT_BSV_RECORDING_TOGGLE:
          if (!recording_is_enabled())
             command_event(CMD_EVENT_RECORD_INIT, NULL);
          else
             command_event(CMD_EVENT_RECORD_DEINIT, NULL);
-         bsv_movie_check();
+         bsv_movie_check(p_rarch);
          break;
       case CMD_EVENT_AI_SERVICE_TOGGLE:
       {
@@ -7639,6 +7649,7 @@ bool command_event(enum event_command cmd, void *data)
 #endif
 
             if (!libretro_get_system_info(
+                     p_rarch,
                      core_path,
                      system,
                      &system_info->load_no_content))
@@ -7679,19 +7690,19 @@ bool command_event(enum event_command cmd, void *data)
          if (rcheevos_hardcore_active)
             return false;
 #endif
-         if (!command_event_main_state(cmd))
+         if (!command_event_main_state(p_rarch, cmd))
             return false;
          break;
       case CMD_EVENT_UNDO_LOAD_STATE:
-         if (!command_event_main_state(cmd))
+         if (!command_event_main_state(p_rarch, cmd))
             return false;
          break;
       case CMD_EVENT_UNDO_SAVE_STATE:
-         if (!command_event_main_state(cmd))
+         if (!command_event_main_state(p_rarch, cmd))
             return false;
          break;
       case CMD_EVENT_RESIZE_WINDOWED_SCALE:
-         if (!command_event_resize_windowed_scale())
+         if (!command_event_resize_windowed_scale(p_rarch))
             return false;
          break;
       case CMD_EVENT_MENU_TOGGLE:
@@ -7729,7 +7740,7 @@ bool command_event(enum event_command cmd, void *data)
                configuration_set_int(settings, settings->ints.state_slot, new_state_slot);
             }
          }
-         if (!command_event_main_state(cmd))
+         if (!command_event_main_state(p_rarch, cmd))
             return false;
          break;
       case CMD_EVENT_SAVE_STATE_DECREMENT:
@@ -7774,15 +7785,15 @@ bool command_event(enum event_command cmd, void *data)
             if (sys_info)
                disk_control_save_image_index(&sys_info->disk_control);
 
-            command_event_runtime_log_deinit();
-            command_event_save_auto_state();
+            command_event_runtime_log_deinit(p_rarch);
+            command_event_save_auto_state(p_rarch);
 
 #ifdef HAVE_CONFIGFILE
             if (p_rarch->runloop_overrides_active)
-               command_event_disable_overrides();
+               command_event_disable_overrides(p_rarch);
 #endif
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-            retroarch_unset_runtime_shader_preset();
+            retroarch_unset_runtime_shader_preset(p_rarch);
 #endif
 
             if (p_rarch->cached_video_driver[0])
@@ -7820,7 +7831,7 @@ bool command_event(enum event_command cmd, void *data)
 #endif
 #ifdef HAVE_DYNAMIC
             path_clear(RARCH_PATH_CORE);
-            retroarch_system_info_free();
+            retroarch_system_info_free(p_rarch);
 #endif
             if (is_inited)
             {
@@ -7843,7 +7854,8 @@ bool command_event(enum event_command cmd, void *data)
          /* this fallthrough is on purpose, it should do
             a CMD_EVENT_REINIT too */
       case CMD_EVENT_REINIT:
-         command_event_reinit(data ? *(const int*)data : DRIVERS_CMD_ALL);
+         command_event_reinit(p_rarch,
+               data ? *(const int*)data : DRIVERS_CMD_ALL);
          break;
       case CMD_EVENT_CHEATS_APPLY:
          cheat_manager_apply_cheats();
@@ -7888,7 +7900,7 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_AUTOSAVE_INIT:
 #ifdef HAVE_THREADS
-         retroarch_autosave_deinit();
+         retroarch_autosave_deinit(p_rarch);
          {
 #ifdef HAVE_NETWORKING
             unsigned autosave_interval =
@@ -7953,7 +7965,8 @@ bool command_event(enum event_command cmd, void *data)
             p_rarch->overlay_ptr->active   = &p_rarch->overlay_ptr->overlays[
                p_rarch->overlay_ptr->index];
 
-            input_overlay_load_active(p_rarch->overlay_ptr, input_overlay_opacity);
+            input_overlay_load_active(p_rarch,
+                  p_rarch->overlay_ptr, input_overlay_opacity);
 
             p_rarch->overlay_ptr->blocked    = true;
             p_rarch->overlay_ptr->next_index = (unsigned)((p_rarch->overlay_ptr->index + 1) % p_rarch->overlay_ptr->size);
@@ -7982,12 +7995,12 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_RECORD_DEINIT:
          p_rarch->recording_enable = false;
          streaming_set_state(false);
-         if (!recording_deinit())
+         if (!recording_deinit(p_rarch))
             return false;
          break;
       case CMD_EVENT_RECORD_INIT:
          p_rarch->recording_enable = true;
-         if (!recording_init())
+         if (!recording_init(p_rarch))
          {
             command_event(CMD_EVENT_RECORD_DEINIT, NULL);
             return false;
@@ -8135,10 +8148,10 @@ bool command_event(enum event_command cmd, void *data)
             if (sys_info)
                disk_control_save_image_index(&sys_info->disk_control);
 
-            command_event_runtime_log_deinit();
+            command_event_runtime_log_deinit(p_rarch);
             content_reset_savestate_backups();
             hwr = video_driver_get_hw_context_internal();
-            command_event_deinit_core(true);
+            command_event_deinit_core(p_rarch, true);
 
             if (hwr)
                memset(hwr, 0, sizeof(*hwr));
@@ -8149,7 +8162,7 @@ bool command_event(enum event_command cmd, void *data)
          content_reset_savestate_backups();
          {
             enum rarch_core_type *type = (enum rarch_core_type*)data;
-            if (!type || !command_event_init_core(*type))
+            if (!type || !command_event_init_core(p_rarch, *type))
                return false;
          }
          break;
@@ -8186,7 +8199,8 @@ bool command_event(enum event_command cmd, void *data)
 #ifdef HAVE_OVERLAY
          {
             float input_overlay_opacity = settings->floats.input_overlay_opacity;
-            input_overlay_set_alpha_mod(p_rarch->overlay_ptr, input_overlay_opacity);
+            input_overlay_set_alpha_mod(p_rarch,
+                  p_rarch->overlay_ptr, input_overlay_opacity);
          }
 #endif
          break;
@@ -8213,7 +8227,7 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_RESUME:
          retroarch_menu_running_finished(false);
          if (p_rarch->main_ui_companion_is_on_foreground)
-            ui_companion_driver_toggle(false);
+            ui_companion_driver_toggle(p_rarch, false);
          break;
       case CMD_EVENT_ADD_TO_FAVORITES:
          {
@@ -8304,27 +8318,27 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_MENU_SAVE_CURRENT_CONFIG:
 #ifdef HAVE_CONFIGFILE
-         command_event_save_current_config(OVERRIDE_NONE);
+         command_event_save_current_config(p_rarch, OVERRIDE_NONE);
 #endif
          break;
       case CMD_EVENT_MENU_SAVE_CURRENT_CONFIG_OVERRIDE_CORE:
 #ifdef HAVE_CONFIGFILE
-         command_event_save_current_config(OVERRIDE_CORE);
+         command_event_save_current_config(p_rarch, OVERRIDE_CORE);
 #endif
          break;
       case CMD_EVENT_MENU_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR:
 #ifdef HAVE_CONFIGFILE
-         command_event_save_current_config(OVERRIDE_CONTENT_DIR);
+         command_event_save_current_config(p_rarch, OVERRIDE_CONTENT_DIR);
 #endif
          break;
       case CMD_EVENT_MENU_SAVE_CURRENT_CONFIG_OVERRIDE_GAME:
 #ifdef HAVE_CONFIGFILE
-         command_event_save_current_config(OVERRIDE_GAME);
+         command_event_save_current_config(p_rarch, OVERRIDE_GAME);
 #endif
          break;
       case CMD_EVENT_MENU_SAVE_CONFIG:
 #ifdef HAVE_CONFIGFILE
-         if (!command_event_save_core_config(
+         if (!command_event_save_core_config(p_rarch,
                   settings->paths.directory_menu_config))
             return false;
 #endif
@@ -8358,17 +8372,17 @@ bool command_event(enum event_command cmd, void *data)
 #endif
 
          p_rarch->runloop_paused = boolean;
-         retroarch_pause_checks();
+         retroarch_pause_checks(p_rarch);
          break;
       case CMD_EVENT_UNPAUSE:
          boolean                 = false;
          p_rarch->runloop_paused = boolean;
-         retroarch_pause_checks();
+         retroarch_pause_checks(p_rarch);
          break;
       case CMD_EVENT_PAUSE:
          boolean                 = true;
          p_rarch->runloop_paused = boolean;
-         retroarch_pause_checks();
+         retroarch_pause_checks(p_rarch);
          break;
       case CMD_EVENT_MENU_PAUSE_LIBRETRO:
 #ifdef HAVE_MENU
@@ -8611,7 +8625,7 @@ bool command_event(enum event_command cmd, void *data)
             const char *path = (const char*)data;
             if (string_is_empty(path))
                return false;
-            if (!command_event_disk_control_append_image(path))
+            if (!command_event_disk_control_append_image(p_rarch, path))
                return false;
          }
          break;
@@ -8733,9 +8747,9 @@ bool command_event(enum event_command cmd, void *data)
             grab_mouse_state = !grab_mouse_state;
 
             if (grab_mouse_state)
-               ret = input_driver_grab_mouse();
+               ret = input_driver_grab_mouse(p_rarch);
             else
-               ret = input_driver_ungrab_mouse();
+               ret = input_driver_ungrab_mouse(p_rarch);
 
             if (!ret)
                return false;
@@ -8751,7 +8765,7 @@ bool command_event(enum event_command cmd, void *data)
          }
          break;
       case CMD_EVENT_UI_COMPANION_TOGGLE:
-         ui_companion_driver_toggle(true);
+         ui_companion_driver_toggle(p_rarch, true);
          break;
       case CMD_EVENT_GAME_FOCUS_TOGGLE:
          {
@@ -8773,7 +8787,7 @@ bool command_event(enum event_command cmd, void *data)
 
             if (game_focus_state)
             {
-               input_driver_grab_mouse();
+               input_driver_grab_mouse(p_rarch);
                video_driver_hide_mouse();
                p_rarch->input_driver_block_hotkey               = true;
                p_rarch->current_input->keyboard_mapping_blocked = true;
@@ -8784,7 +8798,7 @@ bool command_event(enum event_command cmd, void *data)
             }
             else
             {
-               input_driver_ungrab_mouse();
+               input_driver_ungrab_mouse(p_rarch);
                video_driver_show_mouse();
                p_rarch->input_driver_block_hotkey               = false;
                p_rarch->current_input->keyboard_mapping_blocked = false;
@@ -8797,19 +8811,19 @@ bool command_event(enum event_command cmd, void *data)
          }
          break;
       case CMD_EVENT_VOLUME_UP:
-         command_event_set_volume(0.5f);
+         command_event_set_volume(p_rarch, 0.5f);
          break;
       case CMD_EVENT_VOLUME_DOWN:
-         command_event_set_volume(-0.5f);
+         command_event_set_volume(p_rarch, -0.5f);
          break;
       case CMD_EVENT_MIXER_VOLUME_UP:
-         command_event_set_mixer_volume(0.5f);
+         command_event_set_mixer_volume(p_rarch, 0.5f);
          break;
       case CMD_EVENT_MIXER_VOLUME_DOWN:
-         command_event_set_mixer_volume(-0.5f);
+         command_event_set_mixer_volume(p_rarch, -0.5f);
          break;
       case CMD_EVENT_SET_FRAME_LIMIT:
-         retroarch_set_frame_limit(
+         retroarch_set_frame_limit(p_rarch,
                settings->floats.fastforward_ratio);
          break;
       case CMD_EVENT_DISCORD_INIT:
@@ -8871,7 +8885,7 @@ bool command_event(enum event_command cmd, void *data)
                p_rarch->ai_service_auto = 1;
             if (p_rarch->ai_service_auto != 2)
                RARCH_LOG("AI Service Called...\n");
-            run_translation_service(paused);
+            run_translation_service(p_rarch, paused);
          }
 #endif
          break;
@@ -8952,7 +8966,8 @@ void retroarch_override_setting_set(
    }
 }
 
-void retroarch_override_setting_unset(enum rarch_override_setting enum_idx, void *data)
+void retroarch_override_setting_unset(
+      enum rarch_override_setting enum_idx, void *data)
 {
    struct rarch_state            *p_rarch = &rarch_st;
 
@@ -9036,10 +9051,9 @@ static void retroarch_override_setting_free_state(void)
    }
 }
 
-static void global_free(void)
+static void global_free(struct rarch_state *p_rarch)
 {
-   global_t            *global = NULL;
-   struct rarch_state *p_rarch = &rarch_st;
+   global_t            *global           = NULL;
 
    content_deinit();
 
@@ -9116,7 +9130,7 @@ void main_exit(void *args)
    rarch_ctl(RARCH_CTL_MAIN_DEINIT, NULL);
 
    if (p_rarch->runloop_perfcnt_enable)
-      rarch_perf_log();
+      rarch_perf_log(p_rarch);
 
 #if defined(HAVE_LOGGER) && !defined(ANDROID)
    logger_shutdown();
@@ -9135,19 +9149,19 @@ void main_exit(void *args)
    p_rarch->rarch_block_config_read = false;
 #endif
 
-   retroarch_msg_queue_deinit();
+   retroarch_msg_queue_deinit(p_rarch);
    driver_uninit(p_rarch, DRIVERS_CMD_ALL);
    command_event(CMD_EVENT_LOG_FILE_DEINIT, NULL);
 
    rarch_ctl(RARCH_CTL_STATE_FREE,  NULL);
-   global_free();
+   global_free(p_rarch);
    task_queue_deinit();
 
    if (p_rarch->configuration_settings)
       free(p_rarch->configuration_settings);
    p_rarch->configuration_settings = NULL;
 
-   ui_companion_driver_deinit();
+   ui_companion_driver_deinit(p_rarch);
 
    frontend_driver_shutdown(false);
 
@@ -9194,7 +9208,7 @@ int rarch_main(int argc, char *argv[], void *data)
 
    retroarch_deinit_drivers(p_rarch);
    rarch_ctl(RARCH_CTL_STATE_FREE,  NULL);
-   global_free();
+   global_free(p_rarch);
 
    frontend_driver_init_first(data);
 
@@ -9213,7 +9227,7 @@ int rarch_main(int argc, char *argv[], void *data)
       for (i = 0; i < MAX_USERS; i++)
          input_config_set_device(i, RETRO_DEVICE_JOYPAD);
    }
-   retroarch_msg_queue_init();
+   retroarch_msg_queue_init(p_rarch);
 
    if (frontend_driver_is_inited())
    {
@@ -9234,7 +9248,7 @@ int rarch_main(int argc, char *argv[], void *data)
          return 1;
    }
 
-   ui_companion_driver_init_first();
+   ui_companion_driver_init_first(p_rarch);
 
 #if !defined(HAVE_MAIN) || defined(HAVE_QT)
    for (;;)
@@ -10185,10 +10199,11 @@ static bool dynamic_request_hw_context(enum retro_hw_context_type type,
    return true;
 }
 
-static bool dynamic_verify_hw_context(enum retro_hw_context_type type,
+static bool dynamic_verify_hw_context(
+      struct rarch_state *p_rarch,
+      enum retro_hw_context_type type,
       unsigned minor, unsigned major)
 {
-   struct rarch_state *p_rarch = &rarch_st;
    settings_t   *settings      = p_rarch->configuration_settings;
    const char   *video_ident   = settings->arrays.video_driver;
    bool   driver_switch_enable = settings->bools.driver_switch_enable;
@@ -10222,7 +10237,8 @@ static bool dynamic_verify_hw_context(enum retro_hw_context_type type,
    return true;
 }
 
-static void rarch_log_libretro(enum retro_log_level level,
+static void rarch_log_libretro(
+      enum retro_log_level level,
       const char *fmt, ...)
 {
    va_list vp;
@@ -10263,7 +10279,8 @@ static void rarch_log_libretro(enum retro_log_level level,
    va_end(vp);
 }
 
-static void core_performance_counter_start(struct retro_perf_counter *perf)
+static void core_performance_counter_start(
+      struct retro_perf_counter *perf)
 {
    struct rarch_state *p_rarch = &rarch_st;
    bool runloop_perfcnt_enable = p_rarch->runloop_perfcnt_enable;
@@ -10397,12 +10414,13 @@ static bool rarch_clear_all_thread_waits(unsigned clear_threads, void *data)
    return true;
 }
 
-static void runloop_core_msg_queue_push(const struct retro_message_ext *msg)
+static void runloop_core_msg_queue_push(
+      struct rarch_state *p_rarch,
+      const struct retro_message_ext *msg)
 {
    double fps;
    unsigned duration_frames;
    enum message_queue_category category;
-   struct rarch_state          *p_rarch = &rarch_st;
    struct retro_system_av_info *av_info = &p_rarch->video_driver_av_info;
 
    /* Assign category */
@@ -10533,17 +10551,18 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
          RARCH_LOG("[Environ]: SET_VARIABLES.\n");
 
          if (p_rarch->runloop_core_options)
-            retroarch_deinit_core_options();
-         retroarch_init_core_variables((const struct retro_variable *)data);
-
+            retroarch_deinit_core_options(p_rarch);
+         retroarch_init_core_variables(
+               p_rarch,
+               (const struct retro_variable *)data);
          break;
 
       case RETRO_ENVIRONMENT_SET_CORE_OPTIONS:
          RARCH_LOG("[Environ]: SET_CORE_OPTIONS.\n");
 
          if (p_rarch->runloop_core_options)
-            retroarch_deinit_core_options();
-         rarch_init_core_options(
+            retroarch_deinit_core_options(p_rarch);
+         rarch_init_core_options(p_rarch,
                (const struct retro_core_option_definition*)data);
 
          break;
@@ -10552,9 +10571,10 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
          RARCH_LOG("[Environ]: RETRO_ENVIRONMENT_SET_CORE_OPTIONS_INTL.\n");
 
          if (p_rarch->runloop_core_options)
-            retroarch_deinit_core_options();
-         retroarch_core_options_intl_init((const struct
-                  retro_core_options_intl *)data);
+            retroarch_deinit_core_options(p_rarch);
+         retroarch_core_options_intl_init(p_rarch,
+               (const struct
+                retro_core_options_intl *)data);
 
          break;
 
@@ -10677,7 +10697,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
                   if (gfx_widgets_active())
                      gfx_widget_set_libretro_message(msg->msg, msg->duration);
                   else
-                     runloop_core_msg_queue_push(msg);
+                     runloop_core_msg_queue_push(p_rarch, msg);
 
                   break;
 
@@ -10692,14 +10712,14 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
                   if (gfx_widgets_active())
                      gfx_widget_set_libretro_message(msg->msg, msg->duration);
                   else
-                     runloop_core_msg_queue_push(msg);
+                     runloop_core_msg_queue_push(p_rarch, msg);
 
                   break;
 #endif
                /* Handle standard (queued) notifications */
                case RETRO_MESSAGE_TYPE_NOTIFICATION:
                default:
-                  runloop_core_msg_queue_push(msg);
+                  runloop_core_msg_queue_push(p_rarch, msg);
                   break;
             }
          }
@@ -10732,7 +10752,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
           * since normal command.c CMD_EVENT_CORE_DEINIT event
           * will not occur until after the current content has
           * been cleared (causing log to be skipped) */
-         command_event_runtime_log_deinit();
+         command_event_runtime_log_deinit(p_rarch);
 
          p_rarch->runloop_shutdown_initiated      = true;
          p_rarch->runloop_core_shutdown_initiated = true;
@@ -11026,7 +11046,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
                   cb->context_type, cb->version_minor, cb->version_major))
             return false;
 
-         if (!dynamic_verify_hw_context(
+         if (!dynamic_verify_hw_context(p_rarch,
                   cb->context_type, cb->version_minor, cb->version_major))
             return false;
 
@@ -11716,7 +11736,8 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
  *
  * For statically linked cores, pass retro_set_environment as argument.
  */
-static void libretro_get_environment_info(void (*func)(retro_environment_t),
+static void libretro_get_environment_info(
+      void (*func)(retro_environment_t),
       bool *load_no_content)
 {
    struct rarch_state *p_rarch   = &rarch_st;
@@ -11737,10 +11758,10 @@ static void libretro_get_environment_info(void (*func)(retro_environment_t),
    p_rarch->ignore_environment_cb = false;
 }
 
-static bool load_dynamic_core(const char *path, char *buf, size_t size)
+static bool load_dynamic_core(
+      struct rarch_state *p_rarch,
+      const char *path, char *buf, size_t size)
 {
-   struct rarch_state *p_rarch   = &rarch_st;
-
    /* Can't lookup symbols in itself on UWP */
 #if !(defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP)
    if (dylib_proc(NULL, "retro_init"))
@@ -11812,14 +11833,16 @@ static dylib_t libretro_get_system_info_lib(const char *path,
  *
  * Returns: true (1) if successful, otherwise false (0).
  **/
-static bool libretro_get_system_info(const char *path,
-      struct retro_system_info *info, bool *load_no_content)
+static bool libretro_get_system_info(
+      struct rarch_state *p_rarch,
+      const char *path,
+      struct retro_system_info *info,
+      bool *load_no_content)
 {
    struct retro_system_info dummy_info;
 #ifdef HAVE_DYNAMIC
    dylib_t lib;
 #endif
-   struct rarch_state *p_rarch  = &rarch_st;
 
    dummy_info.library_name      = NULL;
    dummy_info.library_version   = NULL;
@@ -11896,13 +11919,16 @@ static bool libretro_get_system_info(const char *path,
  * Setup libretro callback symbols. Returns true on success,
  * or false if symbols could not be loaded.
  **/
-static bool init_libretro_symbols_custom(enum rarch_core_type type,
-      struct retro_core_t *current_core, const char *lib_path, void *_lib_handle_p)
+static bool init_libretro_symbols_custom(
+      struct rarch_state *p_rarch,
+      enum rarch_core_type type,
+      struct retro_core_t *current_core,
+      const char *lib_path,
+      void *_lib_handle_p)
 {
 #ifdef HAVE_DYNAMIC
    /* the library handle for use with the SYMBOL macro */
    dylib_t lib_handle_local;
-   struct rarch_state *p_rarch = &rarch_st;
 #endif
 
    switch (type)
@@ -11928,6 +11954,7 @@ static bool init_libretro_symbols_custom(enum rarch_core_type type,
                      path);
 
                if (!load_dynamic_core(
+                        p_rarch,
                         path,
                         path_get_ptr(RARCH_PATH_CORE),
                         path_get_realsize(RARCH_PATH_CORE)
@@ -12007,20 +12034,20 @@ static bool init_libretro_symbols_custom(enum rarch_core_type type,
  * setups environment callback functions. Returns true on success,
  * or false if symbols could not be loaded.
  **/
-static bool init_libretro_symbols(enum rarch_core_type type,
+static bool init_libretro_symbols(
+      struct rarch_state *p_rarch,
+      enum rarch_core_type type,
       struct retro_core_t *current_core)
 {
    /* Load symbols */
-   if (!init_libretro_symbols_custom(type, current_core, NULL, NULL))
+   if (!init_libretro_symbols_custom(p_rarch,
+            type, current_core, NULL, NULL))
       return false;
 
 #ifdef HAVE_RUNAHEAD
-   {
-      /* remember last core type created, so creating a
-       * secondary core will know what core type to use. */
-      struct rarch_state *p_rarch = &rarch_st;
-      p_rarch->last_core_type = type;
-   }
+   /* remember last core type created, so creating a
+    * secondary core will know what core type to use. */
+   p_rarch->last_core_type = type;
 #endif
    return true;
 }
@@ -12041,10 +12068,10 @@ bool libretro_get_shared_context(void)
  * associated state, and
  * unbind all libretro callback symbols.
  **/
-static void uninit_libretro_symbols(struct retro_core_t *current_core)
+static void uninit_libretro_symbols(
+      struct rarch_state *p_rarch,
+      struct retro_core_t *current_core)
 {
-   struct rarch_state *p_rarch = &rarch_st;
-
 #ifdef HAVE_DYNAMIC
    if (p_rarch->lib_handle)
       dylib_close(p_rarch->lib_handle);
@@ -12056,9 +12083,9 @@ static void uninit_libretro_symbols(struct retro_core_t *current_core)
    p_rarch->core_set_shared_context   = false;
 
    if (p_rarch->runloop_core_options)
-      retroarch_deinit_core_options();
-   retroarch_system_info_free();
-   retroarch_frame_time_free();
+      retroarch_deinit_core_options(p_rarch);
+   retroarch_system_info_free(p_rarch);
+   retroarch_frame_time_free(p_rarch);
    p_rarch->camera_driver_active      = false;
    p_rarch->location_driver_active    = false;
 
@@ -12135,10 +12162,10 @@ static struct retro_ctx_load_content_info
    return dest;
 }
 
-static void set_load_content_info(const retro_ctx_load_content_info_t *ctx)
+static void set_load_content_info(
+      struct rarch_state *p_rarch,
+      const retro_ctx_load_content_info_t *ctx)
 {
-   struct rarch_state *p_rarch = &rarch_st;
-
    free_retro_ctx_load_content_info(p_rarch->load_content_info);
    free(p_rarch->load_content_info);
    p_rarch->load_content_info = clone_retro_ctx_load_content_info(ctx);
@@ -12395,7 +12422,8 @@ end:
    return NULL;
 }
 
-static bool rarch_environment_secondary_core_hook(unsigned cmd, void *data)
+static bool rarch_environment_secondary_core_hook(
+      unsigned cmd, void *data)
 {
    struct rarch_state *p_rarch = &rarch_st;
    bool                 result = rarch_environment_cb(cmd, data);
@@ -12437,7 +12465,7 @@ static bool secondary_core_create(struct rarch_state *p_rarch)
       return false;
 
    /* Load Core */
-   if (!init_libretro_symbols_custom(
+   if (!init_libretro_symbols_custom(p_rarch,
             CORE_TYPE_PLAIN, &p_rarch->secondary_core,
             p_rarch->secondary_library_path, &p_rarch->secondary_module))
       return false;
@@ -12749,9 +12777,8 @@ void ui_companion_event_command(enum event_command action)
 #endif
 }
 
-static void ui_companion_driver_deinit(void)
+static void ui_companion_driver_deinit(struct rarch_state *p_rarch)
 {
-   struct rarch_state     *p_rarch = &rarch_st;
 #ifdef HAVE_QT
    bool qt_is_inited               = p_rarch->qt_is_inited;
 #endif
@@ -12772,9 +12799,9 @@ static void ui_companion_driver_deinit(void)
    p_rarch->ui_companion_data = NULL;
 }
 
-void ui_companion_driver_init_first(void)
+void ui_companion_driver_init_first(void *data)
 {
-   struct rarch_state     *p_rarch = &rarch_st;
+   struct rarch_state *p_rarch     = (struct rarch_state*)data;
    settings_t      *settings       = p_rarch->configuration_settings;
 #ifdef HAVE_QT
    bool desktop_menu_enable        = settings->bools.desktop_menu_enable;
@@ -12801,14 +12828,15 @@ void ui_companion_driver_init_first(void)
          if (p_rarch->ui_companion->init)
             p_rarch->ui_companion_data = p_rarch->ui_companion->init();
 
-         ui_companion_driver_toggle(false);
+         ui_companion_driver_toggle(p_rarch, false);
       }
    }
 }
 
-static void ui_companion_driver_toggle(bool force)
+static void ui_companion_driver_toggle(
+      struct rarch_state *p_rarch,
+      bool force)
 {
-   struct rarch_state *p_rarch  = &rarch_st;
 #ifdef HAVE_QT
    settings_t     *settings     = p_rarch->configuration_settings;
    bool     desktop_menu_enable = settings->bools.desktop_menu_enable;
@@ -12907,10 +12935,9 @@ const ui_browser_window_t *ui_companion_driver_get_browser_window_ptr(void)
 }
 
 static void ui_companion_driver_msg_queue_push(
+      struct rarch_state *p_rarch,
       const char *msg, unsigned priority, unsigned duration, bool flush)
 {
-   struct rarch_state
-      *p_rarch                     = &rarch_st;
    const ui_companion_driver_t *ui = p_rarch->ui_companion;
 
    if (ui && ui->msg_queue_push)
@@ -13095,11 +13122,12 @@ static bool record_driver_init_first(
    return false;
 }
 
-static void recording_dump_frame(const void *data, unsigned width,
+static void recording_dump_frame(
+      struct rarch_state *p_rarch,
+      const void *data, unsigned width,
       unsigned height, size_t pitch, bool is_idle)
 {
    struct record_video_data ffemu_data;
-   struct rarch_state *p_rarch = &rarch_st;
 
    ffemu_data.data     = data;
    ffemu_data.width    = width;
@@ -13124,8 +13152,9 @@ static void recording_dump_frame(const void *data, unsigned width,
       {
          RARCH_WARN("[recording] %s \n",
                msg_hash_to_str(MSG_VIEWPORT_SIZE_CALCULATION_FAILED));
-         video_driver_gpu_record_deinit();
-         recording_dump_frame(data, width, height, pitch, is_idle);
+         video_driver_gpu_record_deinit(p_rarch);
+         recording_dump_frame(p_rarch,
+               data, width, height, pitch, is_idle);
          return;
       }
 
@@ -13163,9 +13192,8 @@ static void recording_dump_frame(const void *data, unsigned width,
    p_rarch->recording_driver->push_video(p_rarch->recording_data, &ffemu_data);
 }
 
-static bool recording_deinit(void)
+static bool recording_deinit(struct rarch_state *p_rarch)
 {
-   struct rarch_state *p_rarch = &rarch_st;
    if (!p_rarch->recording_data || !p_rarch->recording_driver)
       return false;
 
@@ -13178,7 +13206,7 @@ static bool recording_deinit(void)
    p_rarch->recording_data            = NULL;
    p_rarch->recording_driver          = NULL;
 
-   video_driver_gpu_record_deinit();
+   video_driver_gpu_record_deinit(p_rarch);
 
    return true;
 }
@@ -13201,18 +13229,17 @@ void streaming_set_state(bool state)
    p_rarch->streaming_enable = state;
 }
 
-static bool video_driver_gpu_record_init(unsigned size)
+static bool video_driver_gpu_record_init(struct rarch_state *p_rarch,
+      unsigned size)
 {
-   struct rarch_state *p_rarch = &rarch_st;
    p_rarch->video_driver_record_gpu_buffer = (uint8_t*)malloc(size);
    if (!p_rarch->video_driver_record_gpu_buffer)
       return false;
    return true;
 }
 
-static void video_driver_gpu_record_deinit(void)
+static void video_driver_gpu_record_deinit(struct rarch_state *p_rarch)
 {
-   struct rarch_state *p_rarch = &rarch_st;
    if (p_rarch->video_driver_record_gpu_buffer)
       free(p_rarch->video_driver_record_gpu_buffer);
    p_rarch->video_driver_record_gpu_buffer = NULL;
@@ -13225,12 +13252,11 @@ static void video_driver_gpu_record_deinit(void)
  *
  * Returns: true (1) if successful, otherwise false (0).
  **/
-static bool recording_init(void)
+static bool recording_init(struct rarch_state *p_rarch)
 {
    char output[PATH_MAX_LENGTH];
    char buf[PATH_MAX_LENGTH];
    struct record_params params          = {0};
-   struct rarch_state *p_rarch          = &rarch_st;
    struct retro_system_av_info *av_info = &p_rarch->video_driver_av_info;
    settings_t *settings                 = p_rarch->configuration_settings;
    global_t *global                     = &p_rarch->g_extern;
@@ -13392,7 +13418,7 @@ static bool recording_init(void)
             vp.width, vp.height);
 
       gpu_size = vp.width * vp.height * 3;
-      if (!video_driver_gpu_record_init(gpu_size))
+      if (!video_driver_gpu_record_init(p_rarch, gpu_size))
          return false;
    }
    else
@@ -13438,8 +13464,9 @@ static bool recording_init(void)
    if (!record_driver_init_first(
             &p_rarch->recording_driver, &p_rarch->recording_data, &params))
    {
-      RARCH_ERR("[recording] %s\n", msg_hash_to_str(MSG_FAILED_TO_START_RECORDING));
-      video_driver_gpu_record_deinit();
+      RARCH_ERR("[recording] %s\n",
+            msg_hash_to_str(MSG_FAILED_TO_START_RECORDING));
+      video_driver_gpu_record_deinit(p_rarch);
 
       return false;
    }
@@ -13726,10 +13753,11 @@ void bsv_movie_frame_rewind(void)
    }
 }
 
-static bool bsv_movie_init_handle(const char *path,
+static bool bsv_movie_init_handle(
+      struct rarch_state *p_rarch,
+      const char *path,
       enum rarch_movie_type type)
 {
-   struct rarch_state     *p_rarch = &rarch_st;
    bsv_movie_t *state              = bsv_movie_init_internal(path, type);
    if (!state)
       return false;
@@ -13738,14 +13766,14 @@ static bool bsv_movie_init_handle(const char *path,
    return true;
 }
 
-static bool bsv_movie_init(void)
+static bool bsv_movie_init(struct rarch_state *p_rarch)
 {
-   bool        set_granularity = false;
-   struct rarch_state *p_rarch = &rarch_st;
+   bool set_granularity = false;
 
    if (p_rarch->bsv_movie_state.movie_start_playback)
    {
-      if (!bsv_movie_init_handle(p_rarch->bsv_movie_state.movie_start_path,
+      if (!bsv_movie_init_handle(p_rarch,
+               p_rarch->bsv_movie_state.movie_start_path,
                   RARCH_MOVIE_PLAYBACK))
       {
          RARCH_ERR("%s: \"%s\".\n",
@@ -13764,8 +13792,10 @@ static bool bsv_movie_init(void)
    }
    else if (p_rarch->bsv_movie_state.movie_start_recording)
    {
-      if (!bsv_movie_init_handle(p_rarch->bsv_movie_state.movie_start_path,
-                  RARCH_MOVIE_RECORD))
+      if (!bsv_movie_init_handle(
+               p_rarch,
+               p_rarch->bsv_movie_state.movie_start_path,
+               RARCH_MOVIE_RECORD))
       {
          runloop_msg_queue_push(
                msg_hash_to_str(MSG_FAILED_TO_START_MOVIE_RECORD),
@@ -13802,18 +13832,16 @@ static bool bsv_movie_init(void)
    return true;
 }
 
-static void bsv_movie_deinit(void)
+static void bsv_movie_deinit(struct rarch_state *p_rarch)
 {
-   struct rarch_state *p_rarch = &rarch_st;
    if (p_rarch->bsv_movie_state_handle)
       bsv_movie_free(p_rarch->bsv_movie_state_handle);
    p_rarch->bsv_movie_state_handle = NULL;
 }
 
-static bool runloop_check_movie_init(void)
+static bool runloop_check_movie_init(struct rarch_state *p_rarch)
 {
    char msg[16384], path[8192];
-   struct rarch_state *p_rarch = &rarch_st;
    settings_t *settings        = p_rarch->configuration_settings;
    int state_slot              = settings->ints.state_slot;
 
@@ -13836,7 +13864,9 @@ static bool runloop_check_movie_init(void)
          msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO),
          path);
 
-   bsv_movie_init_handle(path, RARCH_MOVIE_RECORD);
+   bsv_movie_init_handle(
+         p_rarch,
+         path, RARCH_MOVIE_RECORD);
 
    if (!p_rarch->bsv_movie_state_handle)
    {
@@ -13857,12 +13887,10 @@ static bool runloop_check_movie_init(void)
    return true;
 }
 
-static bool bsv_movie_check(void)
+static bool bsv_movie_check(struct rarch_state *p_rarch)
 {
-   struct rarch_state *p_rarch = &rarch_st;
-
    if (!p_rarch->bsv_movie_state_handle)
-      return runloop_check_movie_init();
+      return runloop_check_movie_init(p_rarch);
 
    if (p_rarch->bsv_movie_state.movie_playback)
    {
@@ -13874,7 +13902,7 @@ static bool bsv_movie_check(void)
             NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       RARCH_LOG("%s\n", msg_hash_to_str(MSG_MOVIE_PLAYBACK_ENDED));
 
-      bsv_movie_deinit();
+      bsv_movie_deinit(p_rarch);
 
       p_rarch->bsv_movie_state.movie_end      = false;
       p_rarch->bsv_movie_state.movie_playback = false;
@@ -13891,7 +13919,7 @@ static bool bsv_movie_check(void)
          NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    RARCH_LOG("%s\n", msg_hash_to_str(MSG_MOVIE_RECORD_STOPPED));
 
-   bsv_movie_deinit();
+   bsv_movie_deinit(p_rarch);
 
    return true;
 }
@@ -14126,9 +14154,10 @@ static void input_overlay_free_overlays(input_overlay_t *ol)
    ol->overlays = NULL;
 }
 
-static enum overlay_visibility input_overlay_get_visibility(int overlay_idx)
+static enum overlay_visibility input_overlay_get_visibility(
+      struct rarch_state *p_rarch,
+      int overlay_idx)
 {
-   struct rarch_state         *p_rarch = &rarch_st;
    enum overlay_visibility *visibility = p_rarch->overlay_visibility;;
 
     if (!visibility)
@@ -14139,9 +14168,11 @@ static enum overlay_visibility input_overlay_get_visibility(int overlay_idx)
 }
 
 
-static bool input_overlay_is_hidden(int overlay_idx)
+static bool input_overlay_is_hidden(
+      struct rarch_state *p_rarch,
+      int overlay_idx)
 {
-    return (input_overlay_get_visibility(overlay_idx)
+    return (input_overlay_get_visibility(p_rarch, overlay_idx)
           == OVERLAY_VISIBILITY_HIDDEN);
 }
 
@@ -14153,7 +14184,9 @@ static bool input_overlay_is_hidden(int overlay_idx)
  * Sets a modulating factor for alpha channel. Default is 1.0.
  * The alpha factor is applied for all overlays.
  **/
-static void input_overlay_set_alpha_mod(input_overlay_t *ol, float mod)
+static void input_overlay_set_alpha_mod(
+      struct rarch_state *p_rarch,
+      input_overlay_t *ol, float mod)
 {
    unsigned i;
 
@@ -14162,7 +14195,7 @@ static void input_overlay_set_alpha_mod(input_overlay_t *ol, float mod)
 
    for (i = 0; i < ol->active->load_images_size; i++)
    {
-      if (input_overlay_is_hidden(i))
+      if (input_overlay_is_hidden(p_rarch, i))
           ol->iface->set_alpha(ol->iface_data, i, 0.0);
       else
           ol->iface->set_alpha(ol->iface_data, i, mod);
@@ -14170,13 +14203,15 @@ static void input_overlay_set_alpha_mod(input_overlay_t *ol, float mod)
 }
 
 
-static void input_overlay_load_active(input_overlay_t *ol, float opacity)
+static void input_overlay_load_active(
+      struct rarch_state *p_rarch,
+      input_overlay_t *ol, float opacity)
 {
    if (ol->iface->load)
       ol->iface->load(ol->iface_data, ol->active->load_images,
             ol->active->load_images_size);
 
-   input_overlay_set_alpha_mod(ol, opacity);
+   input_overlay_set_alpha_mod(p_rarch, ol, opacity);
    input_overlay_set_vertex_geom(ol);
 
    if (ol->iface->full_screen)
@@ -14421,11 +14456,13 @@ static void input_overlay_update_desc_geom(input_overlay_t *ol,
  * update the range modifiers for pressed/unpressed regions
  * and alpha mods.
  **/
-static void input_overlay_post_poll(input_overlay_t *ol, float opacity)
+static void input_overlay_post_poll(
+      struct rarch_state *p_rarch,
+      input_overlay_t *ol, float opacity)
 {
    size_t i;
 
-   input_overlay_set_alpha_mod(ol, opacity);
+   input_overlay_set_alpha_mod(p_rarch, ol, opacity);
 
    for (i = 0; i < ol->active->size; i++)
    {
@@ -14460,13 +14497,15 @@ static void input_overlay_post_poll(input_overlay_t *ol, float opacity)
  * Call when there is nothing to poll. Allows overlay to
  * clear certain state.
  **/
-static void input_overlay_poll_clear(input_overlay_t *ol, float opacity)
+static void input_overlay_poll_clear(
+      struct rarch_state *p_rarch,
+      input_overlay_t *ol, float opacity)
 {
    size_t i;
 
    ol->blocked = false;
 
-   input_overlay_set_alpha_mod(ol, opacity);
+   input_overlay_set_alpha_mod(p_rarch, ol, opacity);
 
    for (i = 0; i < ol->active->size; i++)
    {
@@ -14543,7 +14582,7 @@ static void input_overlay_loaded(retro_task_t *task,
    ol->iface      = iface;
    ol->iface_data = video_driver_get_ptr_internal(true);
 
-   input_overlay_load_active(ol, data->overlay_opacity);
+   input_overlay_load_active(p_rarch, ol, data->overlay_opacity);
 
    /* Enable or disable the overlay. */
    ol->enable = data->overlay_enable;
@@ -14623,7 +14662,9 @@ bool input_overlay_key_pressed(input_overlay_t *ol, unsigned key)
  *
  * Poll pressed buttons/keys on currently active overlay.
  **/
-static void input_poll_overlay(input_overlay_t *ol, float opacity,
+static void input_poll_overlay(
+      struct rarch_state *p_rarch,
+      input_overlay_t *ol, float opacity,
       unsigned analog_dpad_mode,
       float axis_threshold)
 {
@@ -14633,7 +14674,6 @@ static void input_poll_overlay(input_overlay_t *ol, float opacity,
    uint16_t key_mod                                 = 0;
    bool polled                                      = false;
    bool button_pressed                              = false;
-   struct rarch_state *p_rarch                      = &rarch_st;
    void *input_data                                 = p_rarch->current_input_data;
    input_overlay_state_t *ol_state                  = &ol->overlay_state;
    input_driver_t *input_ptr                        = p_rarch->current_input;
@@ -14775,21 +14815,19 @@ static void input_poll_overlay(input_overlay_t *ol, float opacity,
             analog_dpad_mode);
 
    if (button_pressed || polled)
-      input_overlay_post_poll(ol, opacity);
+      input_overlay_post_poll(p_rarch, ol, opacity);
    else
-      input_overlay_poll_clear(ol, opacity);
+      input_overlay_poll_clear(p_rarch, ol, opacity);
 }
 
-static void retroarch_overlay_deinit(void)
+static void retroarch_overlay_deinit(struct rarch_state *p_rarch)
 {
-   struct rarch_state *p_rarch = &rarch_st;
    input_overlay_free(p_rarch->overlay_ptr);
    p_rarch->overlay_ptr = NULL;
 }
 
-static void retroarch_overlay_init(void)
+static void retroarch_overlay_init(struct rarch_state *p_rarch)
 {
-   struct rarch_state *p_rarch = &rarch_st;
    settings_t *settings        = p_rarch->configuration_settings;
    bool input_overlay_enable   = settings->bools.input_overlay_enable;
    const char *path_overlay    = settings->paths.path_overlay;
@@ -14808,7 +14846,7 @@ static void retroarch_overlay_init(void)
       return;
 #endif
 
-   retroarch_overlay_deinit();
+   retroarch_overlay_deinit(p_rarch);
 
 #ifdef HAVE_MENU
    /* Cancel load if 'hide_in_menu' is enabled and
@@ -14879,10 +14917,11 @@ static void input_remote_free(input_remote_t *handle, unsigned max_users)
    free(handle);
 }
 
-static input_remote_t *input_remote_new(uint16_t port, unsigned max_users)
+static input_remote_t *input_remote_new(
+      struct rarch_state *p_rarch,
+      uint16_t port, unsigned max_users)
 {
    unsigned user;
-   struct rarch_state *p_rarch = &rarch_st;
    settings_t        *settings = p_rarch->configuration_settings;
    input_remote_t      *handle = (input_remote_t*)
       calloc(1, sizeof(*handle));
@@ -14904,9 +14943,10 @@ static input_remote_t *input_remote_new(uint16_t port, unsigned max_users)
    return handle;
 }
 
-static void input_remote_parse_packet(struct remote_message *msg, unsigned user)
+static void input_remote_parse_packet(
+      struct rarch_state *p_rarch,
+      struct remote_message *msg, unsigned user)
 {
-   struct rarch_state *p_rarch        = &rarch_st;
    input_remote_state_t *input_state  = &p_rarch->remote_st_ptr;
 
    /* Parse message */
@@ -14933,9 +14973,9 @@ void set_connection_listener(pad_connection_listener_t *listener)
 }
 
 static void fire_connection_listener(
+      struct rarch_state *p_rarch,
       unsigned port, input_device_driver_t *driver)
 {
-   struct rarch_state *p_rarch      = &rarch_st;
    if (p_rarch->pad_connection_listener)
       p_rarch->pad_connection_listener->connected(port, driver);
 }
@@ -15089,7 +15129,7 @@ static void input_driver_poll(void)
 
 #ifdef HAVE_OVERLAY
    if (p_rarch->overlay_ptr && p_rarch->overlay_ptr->alive)
-      input_poll_overlay(
+      input_poll_overlay(p_rarch,
             p_rarch->overlay_ptr,
             input_overlay_opacity,
             settings->uints.input_analog_dpad_mode[0],
@@ -15223,7 +15263,7 @@ static void input_driver_poll(void)
                   sizeof(msg), 0, NULL, NULL);
 
             if (ret == sizeof(msg))
-               input_remote_parse_packet(&msg, user);
+               input_remote_parse_packet(p_rarch, &msg, user);
             else if ((ret != -1) || ((errno != EAGAIN) && (errno != ENOENT)))
 #endif
             {
@@ -15674,11 +15714,11 @@ static int16_t input_state(unsigned port, unsigned device,
    return result;
 }
 
-static INLINE bool input_keys_pressed_other_sources(unsigned i,
+static INLINE bool input_keys_pressed_other_sources(
+      struct rarch_state *p_rarch,
+      unsigned i,
       input_bits_t* p_new_state)
 {
-   struct rarch_state   *p_rarch = &rarch_st;
-
 #ifdef HAVE_OVERLAY
    if (p_rarch->overlay_ptr &&
          ((BIT256_GET(p_rarch->overlay_ptr->overlay_state.buttons, i))))
@@ -17160,12 +17200,13 @@ void menu_input_post_iterate(int *ret, unsigned action)
  *
  * Returns: Input sample containing a mask of all pressed keys.
  */
-static void input_menu_keys_pressed(input_bits_t *p_new_state,
+static void input_menu_keys_pressed(
+      struct rarch_state *p_rarch,
+      input_bits_t *p_new_state,
       const struct retro_keybind **binds,
       rarch_joypad_info_t *joypad_info)
 {
    unsigned i, port;
-   struct rarch_state                  *p_rarch = &rarch_st;
    settings_t     *settings                     = p_rarch->configuration_settings;
    bool input_all_users_control_menu            = settings->bools.input_all_users_control_menu;
    uint8_t max_users                            = (uint8_t)p_rarch->input_driver_max_users;
@@ -17240,7 +17281,8 @@ static void input_menu_keys_pressed(input_bits_t *p_new_state,
             }
          }
 
-         if (bit_pressed || input_keys_pressed_other_sources(i, p_new_state))
+         if (bit_pressed || input_keys_pressed_other_sources(
+                  p_rarch, i, p_new_state))
          {
             BIT256_SET_PTR(p_new_state, i);
          }
@@ -17272,7 +17314,7 @@ static void input_menu_keys_pressed(input_bits_t *p_new_state,
             }
          }
 
-         if (bit_pressed || BIT64_GET(lifecycle_state, i) || input_keys_pressed_other_sources(i, p_new_state))
+         if (bit_pressed || BIT64_GET(lifecycle_state, i) || input_keys_pressed_other_sources(p_rarch, i, p_new_state))
          {
             BIT256_SET_PTR(p_new_state, i);
          }
@@ -17356,7 +17398,8 @@ static void input_keys_pressed(input_bits_t *p_new_state,
       {
          bool bit_pressed = !p_rarch->input_driver_block_libretro_input
             && binds[i].valid && (ret & (UINT64_C(1) <<  i));
-         if (bit_pressed || input_keys_pressed_other_sources(i, p_new_state))
+         if (bit_pressed || input_keys_pressed_other_sources(p_rarch,
+                  i, p_new_state))
          {
             BIT256_SET_PTR(p_new_state, i);
          }
@@ -17371,7 +17414,7 @@ static void input_keys_pressed(input_bits_t *p_new_state,
                &binds, 0, RETRO_DEVICE_JOYPAD, 0, i);
       if (     bit_pressed
             || BIT64_GET(lifecycle_state, i)
-            || input_keys_pressed_other_sources(i, p_new_state))
+            || input_keys_pressed_other_sources(p_rarch, i, p_new_state))
       {
          BIT256_SET_PTR(p_new_state, i);
       }
@@ -17540,7 +17583,9 @@ static bool input_driver_init_remote(void)
    if (!network_remote_enable)
       return false;
 
-   p_rarch->input_driver_remote      = input_remote_new(network_remote_base_port,
+   p_rarch->input_driver_remote      = input_remote_new(
+         p_rarch,
+         network_remote_base_port,
          p_rarch->input_driver_max_users);
 
    if (p_rarch->input_driver_remote)
@@ -17924,13 +17969,14 @@ bool input_mouse_button_raw(unsigned port, unsigned id)
 
 void input_pad_connect(unsigned port, input_device_driver_t *driver)
 {
+   struct rarch_state *p_rarch = &rarch_st;
    if (port >= MAX_USERS || !driver)
    {
       RARCH_ERR("[input]: input_pad_connect: bad parameters\n");
       return;
    }
 
-   fire_connection_listener(port, driver);
+   fire_connection_listener(p_rarch, port, driver);
 
    input_autoconfigure_connect(driver->name(port), NULL, driver->ident,
           port, 0, 0);
@@ -22565,8 +22611,8 @@ static bool video_driver_init_internal(bool *video_is_threaded)
    video_driver_init_input(tmp);
 
 #ifdef HAVE_OVERLAY
-   retroarch_overlay_deinit();
-   retroarch_overlay_init();
+   retroarch_overlay_deinit(p_rarch);
+   retroarch_overlay_init(p_rarch);
 #endif
 
 #ifdef HAVE_VIDEO_LAYOUT
@@ -22604,12 +22650,14 @@ static bool video_driver_init_internal(bool *video_is_threaded)
 
       if (!string_is_empty(directory_video_shader))
          dir_list_is_free = !dir_init_shader(
+               p_rarch,
                directory_video_shader,
                show_hidden_files);
 
       if (dir_list_is_free &&
             !string_is_empty(directory_menu_config))
          dir_list_is_free = !dir_init_shader(
+               p_rarch,
                directory_menu_config,
                show_hidden_files);
 
@@ -22622,6 +22670,7 @@ static bool video_driver_init_internal(bool *video_is_threaded)
          if (config_file_directory)
          {
             dir_init_shader(
+                  p_rarch,
                   config_file_directory,
                   settings->bools.show_hidden_files);
             free(config_file_directory);
@@ -23852,7 +23901,8 @@ static void video_driver_frame(const void *data, unsigned width,
          ) && p_rarch->recording_data
            && p_rarch->recording_driver
            && p_rarch->recording_driver->push_video)
-      recording_dump_frame(data, width, height,
+      recording_dump_frame(p_rarch,
+            data, width, height,
             pitch, runloop_idle);
 
    if (data && p_rarch->video_driver_state_filter)
@@ -23874,7 +23924,8 @@ static void video_driver_frame(const void *data, unsigned width,
             && p_rarch->recording_data
             && p_rarch->recording_driver
             && p_rarch->recording_driver->push_video)
-         recording_dump_frame(p_rarch->video_driver_state_buffer,
+         recording_dump_frame(p_rarch,
+               p_rarch->video_driver_state_buffer,
                output_width, output_height, output_pitch,
                runloop_idle);
 
@@ -27751,7 +27802,7 @@ bool retroarch_main_init(int argc, char *argv[])
    }
 
    cheat_manager_state_free();
-   command_event_init_cheats();
+   command_event_init_cheats(p_rarch);
    drivers_init(p_rarch, DRIVERS_CMD_ALL);
    input_driver_deinit_command();
    input_driver_init_command();
@@ -27760,11 +27811,11 @@ bool retroarch_main_init(int argc, char *argv[])
    input_driver_deinit_mapper();
    input_driver_init_mapper();
    command_event(CMD_EVENT_REWIND_INIT, NULL);
-   command_event_init_controllers();
+   command_event_init_controllers(p_rarch);
    if (!string_is_empty(global->record.path))
       command_event(CMD_EVENT_RECORD_INIT, NULL);
 
-   path_init_savefile();
+   path_init_savefile(p_rarch);
 
    command_event(CMD_EVENT_SET_PER_GAME_RESOLUTION, NULL);
 
@@ -28001,7 +28052,7 @@ void retroarch_menu_running_finished(bool quit)
 #ifdef HAVE_OVERLAY
    if (!quit)
       if (settings && settings->bools.input_overlay_hide_in_menu)
-         retroarch_overlay_init();
+         retroarch_overlay_init(p_rarch);
 #endif
 }
 
@@ -28045,7 +28096,7 @@ static void runloop_task_msg_queue_push(
    if (gfx_widgets_active() && task->title && !task->mute)
    {
       runloop_msg_queue_lock();
-      ui_companion_driver_msg_queue_push(msg,
+      ui_companion_driver_msg_queue_push(p_rarch, msg,
             prio, task ? duration : duration * 60 / 1000, flush);
 #ifdef HAVE_ACCESSIBILITY
       if (is_accessibility_enabled())
@@ -28073,11 +28124,11 @@ static void runloop_task_msg_queue_push(
  *   options should be extracted
  *  */
 static void rarch_init_core_options_path(
+      struct rarch_state *p_rarch,
       char *path, size_t len,
       char *src_path, size_t src_len)
 {
    char *game_options_path        = NULL;
-   struct rarch_state    *p_rarch = &rarch_st;
    settings_t *settings           = p_rarch->configuration_settings;
    bool game_specific_options     = settings->bools.game_specific_options;
 
@@ -28169,17 +28220,17 @@ static void rarch_init_core_options_path(
 }
 
 static void rarch_init_core_options(
+      struct rarch_state *p_rarch,
       const struct retro_core_option_definition *option_defs)
 {
    char options_path[PATH_MAX_LENGTH];
    char src_options_path[PATH_MAX_LENGTH];
-   struct rarch_state    *p_rarch = &rarch_st;
 
    options_path[0]                = '\0';
    src_options_path[0]            = '\0';
 
    /* Get core options file path */
-   rarch_init_core_options_path(
+   rarch_init_core_options_path(p_rarch,
       options_path, sizeof(options_path),
       src_options_path, sizeof(src_options_path));
 
@@ -28202,7 +28253,9 @@ void retroarch_init_task_queue(void)
    task_queue_init(threaded_enable, runloop_task_msg_queue_push);
 }
 
-static void retroarch_core_options_intl_init(const struct
+static void retroarch_core_options_intl_init(
+      struct rarch_state *p_rarch,
+      const struct
       retro_core_options_intl *core_options_intl)
 {
    /* Parse core_options_intl to create option definitions array */
@@ -28212,7 +28265,7 @@ static void retroarch_core_options_intl_init(const struct
    if (option_defs)
    {
       /* Initialise core options */
-      rarch_init_core_options(option_defs);
+      rarch_init_core_options(p_rarch, option_defs);
 
       /* Clean up */
       free(option_defs);
@@ -28263,7 +28316,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          input_driver_deinit_mapper();
 
 #ifdef HAVE_THREADS
-         retroarch_autosave_deinit();
+         retroarch_autosave_deinit(p_rarch);
 #endif
 
          command_event(CMD_EVENT_RECORD_DEINIT, NULL);
@@ -28272,7 +28325,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
 
          command_event(CMD_EVENT_REWIND_DEINIT, NULL);
          cheat_manager_state_free();
-         bsv_movie_deinit();
+         bsv_movie_deinit(p_rarch);
 
          command_event(CMD_EVENT_CORE_DEINIT, NULL);
 
@@ -28387,7 +28440,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          p_rarch->runloop_overrides_active = false;
 #endif
          p_rarch->runloop_autosave         = false;
-         retroarch_frame_time_free();
+         retroarch_frame_time_free(p_rarch);
          break;
       case RARCH_CTL_IS_IDLE:
          return p_rarch->runloop_idle;
@@ -28467,10 +28520,8 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
    return true;
 }
 
-static void retroarch_deinit_core_options(void)
+static void retroarch_deinit_core_options(struct rarch_state *p_rarch)
 {
-   struct rarch_state    *p_rarch = &rarch_st;
-
    /* Check whether game-specific options file is being used */
    if (!path_is_empty(RARCH_PATH_CORE_OPTIONS))
    {
@@ -28520,17 +28571,18 @@ static void retroarch_deinit_core_options(void)
    p_rarch->runloop_core_options           = NULL;
 }
 
-static void retroarch_init_core_variables(const struct retro_variable *vars)
+static void retroarch_init_core_variables(
+      struct rarch_state *p_rarch,
+      const struct retro_variable *vars)
 {
    char options_path[PATH_MAX_LENGTH];
    char src_options_path[PATH_MAX_LENGTH];
-   struct rarch_state *p_rarch = &rarch_st;
 
    options_path[0]     = '\0';
    src_options_path[0] = '\0';
 
    /* Get core options file path */
-   rarch_init_core_options_path(
+   rarch_init_core_options_path(p_rarch,
          options_path, sizeof(options_path),
          src_options_path, sizeof(src_options_path));
 
@@ -28553,12 +28605,14 @@ bool retroarch_is_switching_display_mode(void)
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 static bool retroarch_load_shader_preset_internal(
+      struct rarch_state *p_rarch,
       const char *shader_directory,
       const char *core_name,
       const char *special_name)
 {
    unsigned i;
-   char *shader_path = (char*)malloc(PATH_MAX_LENGTH);
+   char               *shader_path       = (char*)
+      malloc(PATH_MAX_LENGTH);
 
    static enum rarch_shader_type types[] =
    {
@@ -28598,7 +28652,7 @@ static bool retroarch_load_shader_preset_internal(
       /* Shader preset exists, load it. */
       RARCH_LOG("[Shaders]: Specific shader preset found at %s.\n",
             shader_path);
-      retroarch_set_runtime_shader_preset(shader_path);
+      retroarch_set_runtime_shader_preset(p_rarch, shader_path);
 
       free(shader_path);
       return true;
@@ -28630,9 +28684,8 @@ static bool retroarch_load_shader_preset_internal(
  *
  * Returns: false if there was an error or no action was performed.
  */
-static bool retroarch_load_shader_preset(void)
+static bool retroarch_load_shader_preset(struct rarch_state *p_rarch)
 {
-   struct rarch_state *p_rarch        = &rarch_st;
    settings_t *settings               = p_rarch->configuration_settings;
    const char *video_shader_directory = settings->paths.directory_video_shader;
    const char *menu_config_directory  = settings->paths.directory_menu_config;
@@ -28688,8 +28741,9 @@ static bool retroarch_load_shader_preset(void)
 
       RARCH_LOG("[Shaders]: preset directory: %s\n", dirs[i]);
 
-      ret = retroarch_load_shader_preset_internal(dirs[i], core_name,
-         game_name);
+      ret = retroarch_load_shader_preset_internal(p_rarch,
+            dirs[i], core_name,
+            game_name);
 
       if (ret)
       {
@@ -28697,7 +28751,8 @@ static bool retroarch_load_shader_preset(void)
          break;
       }
 
-      ret = retroarch_load_shader_preset_internal(dirs[i], core_name,
+      ret = retroarch_load_shader_preset_internal(p_rarch,
+            dirs[i], core_name,
             content_dir_name);
 
       if (ret)
@@ -28706,8 +28761,9 @@ static bool retroarch_load_shader_preset(void)
          break;
       }
 
-      ret = retroarch_load_shader_preset_internal(dirs[i], core_name,
-         core_name);
+      ret = retroarch_load_shader_preset_internal(p_rarch,
+            dirs[i], core_name,
+            core_name);
 
       if (ret)
       {
@@ -28715,8 +28771,9 @@ static bool retroarch_load_shader_preset(void)
          break;
       }
 
-      ret = retroarch_load_shader_preset_internal(dirs[i], NULL,
-         "global");
+      ret = retroarch_load_shader_preset_internal(p_rarch,
+            dirs[i], NULL,
+            "global");
 
       if (ret)
       {
@@ -28767,8 +28824,8 @@ const char* retroarch_get_shader_preset(void)
                p_rarch->cli_shader,
                sizeof(p_rarch->runtime_shader_preset));
       else
-         if (auto_shaders_enable)
-            retroarch_load_shader_preset(); /* sets runtime_shader_preset */
+         if (auto_shaders_enable) /* sets runtime_shader_preset */
+            retroarch_load_shader_preset(p_rarch); 
       return p_rarch->runtime_shader_preset;
    }
 #endif
@@ -28776,7 +28833,8 @@ const char* retroarch_get_shader_preset(void)
    return NULL;
 }
 
-bool retroarch_override_setting_is_set(enum rarch_override_setting enum_idx, void *data)
+bool retroarch_override_setting_is_set(
+      enum rarch_override_setting enum_idx, void *data)
 {
    struct rarch_state            *p_rarch = &rarch_st;
 
@@ -28917,7 +28975,8 @@ int retroarch_get_capabilities(enum rarch_capabilities type,
    return 0;
 }
 
-void retroarch_set_current_core_type(enum rarch_core_type type, bool explicitly_set)
+void retroarch_set_current_core_type(
+      enum rarch_core_type type, bool explicitly_set)
 {
    struct rarch_state *p_rarch = &rarch_st;
 
@@ -28969,7 +29028,7 @@ bool retroarch_main_quit(void)
 
    if (!p_rarch->runloop_shutdown_initiated)
    {
-      command_event_save_auto_state();
+      command_event_save_auto_state(p_rarch);
 
       /* If any save states are in progress, wait
        * until all tasks are complete (otherwise
@@ -28979,10 +29038,10 @@ bool retroarch_main_quit(void)
 
 #ifdef HAVE_CONFIGFILE
       if (p_rarch->runloop_overrides_active)
-         command_event_disable_overrides();
+         command_event_disable_overrides(p_rarch);
 #endif
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-      retroarch_unset_runtime_shader_preset();
+      retroarch_unset_runtime_shader_preset(p_rarch);
 #endif
 
 #ifdef HAVE_CONFIGFILE
@@ -29042,7 +29101,8 @@ void runloop_msg_queue_push(const char *msg,
       p_rarch->runloop_msg_queue_size = msg_queue_size(p_rarch->runloop_msg_queue);
    }
 
-   ui_companion_driver_msg_queue_push(msg,
+   ui_companion_driver_msg_queue_push(p_rarch,
+         msg,
          prio, duration, flush);
 
    runloop_msg_queue_unlock();
@@ -29157,9 +29217,8 @@ static bool input_driver_toggle_button_combo(
 #endif
 
 #if defined(HAVE_MENU)
-static bool menu_display_libretro_running(void)
+static bool menu_display_libretro_running(struct rarch_state *p_rarch)
 {
-   struct rarch_state *p_rarch = &rarch_st;
    settings_t *settings        = p_rarch->configuration_settings;
    bool menu_pause_libretro    = settings->bools.menu_pause_libretro;
    bool rarch_is_inited        = p_rarch->rarch_is_inited;
@@ -29170,9 +29229,10 @@ static bool menu_display_libretro_running(void)
 }
 
 /* Display the libretro core's framebuffer onscreen. */
-static bool menu_display_libretro(retro_time_t current_time)
+static bool menu_display_libretro(
+      struct rarch_state *p_rarch,
+      retro_time_t current_time)
 {
-   struct rarch_state *p_rarch = &rarch_st;
    bool runloop_idle           = p_rarch->runloop_idle;
 
    if (  p_rarch->video_driver_poke &&
@@ -29181,7 +29241,7 @@ static bool menu_display_libretro(retro_time_t current_time)
             p_rarch->video_driver_data,
             true, false);
 
-   if (menu_display_libretro_running())
+   if (menu_display_libretro_running(p_rarch))
    {
       if (!p_rarch->input_driver_block_libretro_input)
          p_rarch->input_driver_block_libretro_input = true;
@@ -29302,7 +29362,8 @@ static enum runloop_state runloop_check_state(
    if (menu_is_alive && !(settings->bools.menu_unified_controls && !display_kb))
    {
       const struct retro_keybind *binds[MAX_USERS] = {NULL};
-      input_menu_keys_pressed(&current_bits, &binds[0], &joypad_info);
+      input_menu_keys_pressed(p_rarch,
+            &current_bits, &binds[0], &joypad_info);
 
       if (!display_kb)
       {
@@ -29456,7 +29517,7 @@ static enum runloop_state runloop_check_state(
       else if (prev_overlay_restore)
       {
          if (!input_overlay_hide_in_menu)
-            retroarch_overlay_init();
+            retroarch_overlay_init(p_rarch);
          prev_overlay_restore = false;
       }
 
@@ -29672,7 +29733,7 @@ static enum runloop_state runloop_check_state(
 
       if (focused || !p_rarch->runloop_idle)
       {
-         bool libretro_running    = menu_display_libretro_running();
+         bool libretro_running    = menu_display_libretro_running(p_rarch);
          menu_handle_t *menu_data = menu_driver_get_ptr();
 
          if (menu_data)
@@ -29711,7 +29772,7 @@ static enum runloop_state runloop_check_state(
             }
 
             if (p_rarch->menu_driver_alive && !p_rarch->runloop_idle)
-               menu_display_libretro(current_time);
+               menu_display_libretro(p_rarch, current_time);
 
             if (menu_data->driver_ctx->set_texture)
                menu_data->driver_ctx->set_texture();
@@ -30654,9 +30715,10 @@ static void core_input_state_poll_maybe(void)
  * Initializes libretro callbacks, and binds the libretro callbacks
  * to default callback functions.
  **/
-static bool core_init_libretro_cbs(struct retro_callbacks *cbs)
+static bool core_init_libretro_cbs(
+      struct rarch_state *p_rarch,
+      struct retro_callbacks *cbs)
 {
-   struct rarch_state *p_rarch  = &rarch_st;
    retro_input_state_t state_cb = core_input_state_poll_return_cb();
 
    p_rarch->current_core.retro_set_video_refresh(video_driver_frame);
@@ -30820,7 +30882,7 @@ bool core_load_game(retro_ctx_load_content_info_t *load_info)
    video_driver_set_cached_frame_ptr(NULL);
 
 #ifdef HAVE_RUNAHEAD
-   set_load_content_info(load_info);
+   set_load_content_info(p_rarch, load_info);
    clear_controller_port_map(p_rarch);
 #endif
 
@@ -30895,10 +30957,8 @@ bool core_reset(void)
    return true;
 }
 
-static bool core_unload_game(void)
+static bool core_unload_game(struct rarch_state *p_rarch)
 {
-   struct rarch_state *p_rarch = &rarch_st;
-
    video_driver_free_hw_context();
 
    video_driver_set_cached_frame_ptr(NULL);
@@ -30987,7 +31047,8 @@ static bool core_load(
 
    if (!core_verify_api_version(p_rarch))
       return false;
-   if (!core_init_libretro_cbs(&p_rarch->retro_ctx))
+   if (!core_init_libretro_cbs(p_rarch,
+            &p_rarch->retro_ctx))
       return false;
 
    p_rarch->current_core.retro_get_system_av_info(
