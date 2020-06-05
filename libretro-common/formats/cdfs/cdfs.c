@@ -418,7 +418,7 @@ static cdfs_track_t* cdfs_open_cue_track(
          const char *track = line + 5;
          cdfs_skip_spaces(&track);
 
-         sscanf(track, "%d", &track_number);
+         sscanf(track, "%d", (int*)&track_number);
          while (*track && *track != ' ' && *track != '\n')
             ++track;
 
