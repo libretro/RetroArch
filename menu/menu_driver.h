@@ -326,6 +326,10 @@ typedef struct
    } scratchpad;
    const menu_ctx_driver_t *driver_ctx;
    void *userdata;
+   enum msg_hash_enums new_type;
+   char new_path_entry[4096];
+   char new_lbl_entry[4096];
+   char new_entry[4096];
 } menu_handle_t;
 
 typedef struct menu_content_ctx_defer_info
