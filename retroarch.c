@@ -2549,7 +2549,8 @@ static void input_overlay_set_scale_factor(input_overlay_t *ol, float scale);
 static void input_overlay_load_active(
       struct rarch_state *p_rarch,
       input_overlay_t *ol, float opacity);
-static void input_overlay_auto_rotate_(input_overlay_t *ol);
+static void input_overlay_auto_rotate_(struct rarch_state *p_rarch,
+      input_overlay_t *ol);
 #endif
 
 #ifdef HAVE_AUDIOMIXER
@@ -5070,7 +5071,7 @@ static bool menu_init(struct rarch_state *p_rarch)
 const char *menu_driver_ident(void)
 {
    struct rarch_state   *p_rarch  = &rarch_st;
-   if (!menu_driver_is_alive())
+   if (!p_rarch->menu_driver_alive)
       return NULL;
    if (!p_rarch->menu_driver_ctx || !p_rarch->menu_driver_ctx->ident)
       return NULL;
@@ -11750,7 +11751,8 @@ bool command_event(enum event_command cmd, void *data)
             if (inp_overlay_auto_rotate)
                if (check_rotation)
                   if (*check_rotation)
-                     input_overlay_auto_rotate_(p_rarch->overlay_ptr);
+                     input_overlay_auto_rotate_(p_rarch,
+                           p_rarch->overlay_ptr);
          }
 #endif
          break;
@@ -17980,12 +17982,12 @@ static void input_overlay_load_active(
 /* Attempts to automatically rotate the specified overlay.
  * Depends upon proper naming conventions in overlay
  * config file. */
-static void input_overlay_auto_rotate_(input_overlay_t *ol)
+static void input_overlay_auto_rotate_(
+      struct rarch_state *p_rarch, input_overlay_t *ol)
 {
    size_t i;
    enum overlay_orientation screen_orientation         = OVERLAY_ORIENTATION_NONE;
    enum overlay_orientation active_overlay_orientation = OVERLAY_ORIENTATION_NONE;
-   struct rarch_state                         *p_rarch = &rarch_st;
    settings_t *settings                                = p_rarch->configuration_settings;
    bool input_overlay_enable                           = settings->bools.input_overlay_enable;
    bool next_overlay_found                             = false;
@@ -18372,7 +18374,8 @@ static void input_overlay_loaded(retro_task_t *task,
 
    /* Attempt to automatically rotate overlay, if required */
    if (inp_overlay_auto_rotate)
-      input_overlay_auto_rotate_(p_rarch->overlay_ptr);
+      input_overlay_auto_rotate_(p_rarch,
+            p_rarch->overlay_ptr);
 
    return;
 
@@ -33310,7 +33313,8 @@ static enum runloop_state runloop_check_state(
          if ((p_rarch->video_driver_width  != last_width) ||
              (p_rarch->video_driver_height != last_height))
          {
-            input_overlay_auto_rotate_(p_rarch->overlay_ptr);
+            input_overlay_auto_rotate_(p_rarch,
+                  p_rarch->overlay_ptr);
             last_width  = p_rarch->video_driver_width;
             last_height = p_rarch->video_driver_height;
          }
