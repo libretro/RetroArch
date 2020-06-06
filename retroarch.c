@@ -1765,6 +1765,7 @@ typedef struct input_mapper
    input_bits_t buttons[MAX_USERS];
 } input_mapper_t;
 
+#ifdef HAVE_DISCORD
 /* The Discord API specifies these variables:
 - userId --------- char[24]   - the userId of the player asking to join
 - username ------- char[344]  - the username of the player asking to join
@@ -1795,6 +1796,7 @@ struct discord_state
 };
 
 typedef struct discord_state discord_state_t;
+#endif
 
 struct rarch_state
 {
@@ -2261,7 +2263,9 @@ struct rarch_state
 #ifdef HAVE_MENU
    struct menu_state menu_driver_state;
 #endif
+#ifdef HAVE_DISCORD
    discord_state_t            discord_st;
+#endif
 
    struct retro_callbacks     retro_ctx;
    struct retro_core_t        current_core;
@@ -14978,7 +14982,9 @@ static void global_free(struct rarch_state *p_rarch)
 void main_exit(void *args)
 {
    struct rarch_state *p_rarch  = &rarch_st;
+#ifdef HAVE_MENU
    struct menu_state  *menu_st  = &p_rarch->menu_driver_state;
+#endif
    settings_t     *settings     = p_rarch->configuration_settings;
    bool     config_save_on_exit = settings->bools.config_save_on_exit;
 
@@ -31538,7 +31544,9 @@ void driver_set_nonblock_state(void)
  **/
 static void drivers_init(struct rarch_state *p_rarch, int flags)
 {
+#ifdef HAVE_MENU
    struct menu_state  *menu_st = &p_rarch->menu_driver_state;
+#endif
    bool video_is_threaded      = VIDEO_DRIVER_IS_THREADED_INTERNAL();
    settings_t *settings        = p_rarch->configuration_settings;
 #if defined(HAVE_GFX_WIDGETS)
