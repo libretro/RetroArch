@@ -5929,7 +5929,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
 
          playlist_free_cached();
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-         menu_shader_manager_free();
+         menu_shader_manager_free(p_rarch->menu_driver_data);
 #endif
 #ifdef HAVE_NETWORKING
          core_updater_list_free_cached();

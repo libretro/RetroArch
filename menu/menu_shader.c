@@ -57,9 +57,9 @@ struct video_shader *menu_shader_get(void)
    return NULL;
 }
 
-void menu_shader_manager_free(void)
+void menu_shader_manager_free(void *data)
 {
-   menu_handle_t *menu = menu_driver_get_ptr();
+   menu_handle_t *menu = (menu_handle_t*)data;
    if (menu->menu_driver_shader)
       free(menu->menu_driver_shader);
    menu->menu_driver_shader = NULL;
@@ -92,7 +92,7 @@ bool menu_shader_manager_init(void)
    else
       path_shader = retroarch_get_shader_preset();
 
-   menu_shader_manager_free();
+   menu_shader_manager_free(menu);
 
    menu_shader          = (struct video_shader*)
       calloc(1, sizeof(*menu_shader));
