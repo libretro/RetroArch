@@ -1287,7 +1287,6 @@ MENU
 
 #ifdef HAVE_MENU
 #include "../menu/menu_setting.c"
-#include "../menu/menu_cbs.c"
 
 #if defined(HAVE_NETWORKING)
 #include "../menu/menu_networking.c"
