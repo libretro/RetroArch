@@ -5999,14 +5999,6 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          break;
       case RARCH_MENU_CTL_IS_PREVENT_POPULATE:
          return menu_st->prevent_populate;
-      case RARCH_MENU_CTL_SET_OWN_DRIVER:
-         menu_st->data_own = true;
-         break;
-      case RARCH_MENU_CTL_UNSET_OWN_DRIVER:
-         menu_st->data_own = false;
-         break;
-      case RARCH_MENU_CTL_OWNS_DRIVER:
-         return menu_st->data_own;
       case RARCH_MENU_CTL_DEINIT:
          if (     p_rarch->menu_driver_ctx 
                && p_rarch->menu_driver_ctx->context_destroy)
@@ -6349,7 +6341,7 @@ bool discord_is_ready(void)
    return discord_st->ready;
 }
 
-char *discord_get_own_username(void)
+static char *discord_get_own_username(void)
 {
    struct rarch_state *p_rarch = &rarch_st;
    discord_state_t *discord_st = &p_rarch->discord_st;
@@ -6781,8 +6773,6 @@ static void discord_init(
    handlers.spectateGame  = handle_discord_spectate;
    handlers.joinRequest   = handle_discord_join_request;
 
-   RARCH_LOG("[DISCORD] initializing ..\n");
-
    Discord_Initialize(discord_app_id, &handlers, 0, NULL);
 
 #ifdef _WIN32
@@ -6797,18 +6787,9 @@ static void discord_init(
 #else
    snprintf(command, sizeof(command), "sh -c %s", args);
 #endif
-   RARCH_LOG("[DISCORD] registering startup command: %s\n", command);
+   RARCH_LOG("[DISCORD] Registering startup command: %s\n", command);
    Discord_Register(discord_app_id, command);
    discord_st->ready = true;
-}
-
-static void discord_shutdown(discord_state_t *discord_st)
-{
-   RARCH_LOG("[DISCORD] shutting down ..\n");
-
-   Discord_ClearPresence();
-   Discord_Shutdown();
-   discord_st->ready = false;
 }
 #endif
 
@@ -6823,10 +6804,9 @@ static void discord_shutdown(discord_state_t *discord_st)
  **/
 static bool netplay_is_alive(netplay_t *netplay)
 {
-   if (!netplay)
-      return false;
    return (netplay->is_server) ||
-          (!netplay->is_server && netplay->self_mode >= NETPLAY_CONNECTION_CONNECTED);
+          (!netplay->is_server && 
+           netplay->self_mode >= NETPLAY_CONNECTION_CONNECTED);
 }
 
 /**
@@ -6843,7 +6823,8 @@ static bool netplay_should_skip(netplay_t *netplay)
 {
    if (!netplay)
       return false;
-   return netplay->is_replay && (netplay->self_mode >= NETPLAY_CONNECTION_CONNECTED);
+   return netplay->is_replay 
+      && (netplay->self_mode >= NETPLAY_CONNECTION_CONNECTED);
 }
 
 /**
@@ -6874,7 +6855,7 @@ static bool get_self_input_state(netplay_t *netplay)
 
    for (devi = 0; devi < MAX_INPUT_DEVICES; devi++)
    {
-      if (!(devices & (1<<devi)))
+      if (!(devices & (1 << devi)))
          continue;
 
       /* Find an appropriate local device */
@@ -6882,7 +6863,7 @@ static bool get_self_input_state(netplay_t *netplay)
 
       for (local_device = 0; local_device < MAX_INPUT_DEVICES; local_device++)
       {
-         if (used_devices & (1<<local_device))
+         if (used_devices & (1 << local_device))
             continue;
          if ((netplay->config_devices[local_device]&RETRO_DEVICE_MASK) == dev_type)
             break;
@@ -6890,7 +6871,7 @@ static bool get_self_input_state(netplay_t *netplay)
 
       if (local_device == MAX_INPUT_DEVICES)
          local_device = 0;
-      used_devices |= (1<<local_device);
+      used_devices |= (1 << local_device);
 
       istate = netplay_input_state_for(&ptr->real_input[devi],
             /* If we're a slave, we write our own input to MAX_CLIENTS to keep it separate */
@@ -7184,7 +7165,7 @@ static bool netplay_poll(
             for (client = 1; client < MAX_CLIENTS; client++)
             {
                struct netplay_connection *connection;
-               if (!(netplay->connected_players & (1<<client)))
+               if (!(netplay->connected_players & (1 << client)))
                   continue;
                if (netplay->read_frame_count[client] > netplay->unread_frame_count)
                   continue;
@@ -7640,7 +7621,7 @@ static int16_t input_state_net(unsigned port, unsigned device,
 {
    struct rarch_state *p_rarch = &rarch_st;
    netplay_t          *netplay = p_rarch->netplay_data;
-   if (netplay_is_alive(netplay))
+   if (netplay && netplay_is_alive(netplay))
       return netplay_input_state(netplay, port, device, idx, id);
    return netplay->cbs.state_cb(port, device, idx, id);
 }
@@ -7865,7 +7846,7 @@ static void netplay_force_future(netplay_t *netplay)
       uint32_t client;
       for (client = 0; client < MAX_CLIENTS; client++)
       {
-         if (!(netplay->connected_players & (1<<client)))
+         if (!(netplay->connected_players & (1 << client)))
             continue;
 
          if (netplay->read_frame_count[client] < netplay->run_frame_count)
@@ -8197,7 +8178,9 @@ static bool init_netplay(
          &cbs,
          settings->bools.netplay_nat_traversal && !settings->bools.netplay_use_mitm_server,
 #ifdef HAVE_DISCORD
-         discord_get_own_username() ? discord_get_own_username() :
+         discord_get_own_username() 
+         ? discord_get_own_username() 
+         :
 #endif
          settings->paths.username,
          quirks);
@@ -14995,6 +14978,7 @@ static void global_free(struct rarch_state *p_rarch)
 void main_exit(void *args)
 {
    struct rarch_state *p_rarch  = &rarch_st;
+   struct menu_state  *menu_st  = &p_rarch->menu_driver_state;
    settings_t     *settings     = p_rarch->configuration_settings;
    bool     config_save_on_exit = settings->bools.config_save_on_exit;
 
@@ -15017,7 +15001,8 @@ void main_exit(void *args)
 #endif
 #ifdef HAVE_MENU
    /* Do not want menu context to live any more. */
-   menu_driver_ctl(RARCH_MENU_CTL_UNSET_OWN_DRIVER, NULL);
+   if (menu_st)
+      menu_st->data_own = false;
 #endif
    rarch_ctl(RARCH_CTL_MAIN_DEINIT, NULL);
 
@@ -21145,7 +21130,7 @@ static void input_driver_poll(void)
 
 #ifdef HAVE_ACCESSIBILITY
                   /* gamepad override */
-                  if (i==0 && p_rarch->gamepad_input_override & (1<<j))
+                  if (i == 0 && p_rarch->gamepad_input_override & (1 << j))
                   {
                      BIT256_SET(handle->buttons[i], j);
                   }
@@ -31553,6 +31538,7 @@ void driver_set_nonblock_state(void)
  **/
 static void drivers_init(struct rarch_state *p_rarch, int flags)
 {
+   struct menu_state  *menu_st = &p_rarch->menu_driver_state;
    bool video_is_threaded      = VIDEO_DRIVER_IS_THREADED_INTERNAL();
    settings_t *settings        = p_rarch->configuration_settings;
 #if defined(HAVE_GFX_WIDGETS)
@@ -31564,7 +31550,8 @@ static void drivers_init(struct rarch_state *p_rarch, int flags)
 
 #ifdef HAVE_MENU
    /* By default, we want the menu to persist through driver reinits. */
-   menu_driver_ctl(RARCH_MENU_CTL_SET_OWN_DRIVER, NULL);
+   if (menu_st)
+      menu_st->data_own = true;
 #endif
 
    if (flags & (DRIVER_VIDEO_MASK | DRIVER_AUDIO_MASK))
@@ -35061,7 +35048,11 @@ bool retroarch_main_quit(void)
       command_event(CMD_EVENT_DISCORD_UPDATE, &userdata);
    }
    if (discord_st->ready)
-      discord_shutdown(discord_st);
+   {
+      Discord_ClearPresence();
+      Discord_Shutdown();
+      discord_st->ready       = false;
+   }
    discord_is_inited          = false;
 #endif
 

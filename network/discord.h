@@ -52,8 +52,6 @@ void discord_avatar_set_ready(bool ready);
 
 bool discord_avatar_is_ready(void);
 
-char* discord_get_own_username(void);
-
 char* discord_get_own_avatar(void);
 
 #endif /* __RARCH_DISCORD_H */
