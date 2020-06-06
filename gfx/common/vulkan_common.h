@@ -102,6 +102,7 @@ typedef struct vulkan_context
    uint32_t graphics_queue_index;
    uint32_t num_swapchain_images;
    uint32_t current_swapchain_index;
+   uint32_t current_frame_index;
 
    VkInstance instance;
    VkPhysicalDevice gpu;
@@ -285,7 +286,6 @@ struct vk_descriptor_manager
 
 struct vk_per_frame
 {
-   struct vk_image backbuffer;
    struct vk_texture texture;
    struct vk_texture texture_optimal;
    struct vk_buffer_chain vbo;
@@ -344,7 +344,9 @@ typedef struct vk
    VkRenderPass render_pass;
    struct video_viewport vp;
    struct vk_per_frame *chain;
+   struct vk_image *backbuffer;
    struct vk_per_frame swapchain[VULKAN_MAX_SWAPCHAIN_IMAGES];
+   struct vk_image backbuffers[VULKAN_MAX_SWAPCHAIN_IMAGES];
    struct vk_texture default_texture;
 
    /* Currently active command buffer. */

@@ -2686,6 +2686,8 @@ static void vulkan_acquire_clear_fences(gfx_ctx_vulkan_data_t *vk)
       }
       vk->context.swapchain_fences_signalled[i] = false;
    }
+
+   vk->context.current_frame_index = 0;
 }
 
 static void vulkan_acquire_wait_fences(gfx_ctx_vulkan_data_t *vk)
@@ -2693,7 +2695,12 @@ static void vulkan_acquire_wait_fences(gfx_ctx_vulkan_data_t *vk)
    VkFenceCreateInfo fence_info =
    { VK_STRUCTURE_TYPE_FENCE_CREATE_INFO };
 
-   unsigned index      = vk->context.current_swapchain_index;
+   /* Decouples the frame fence index from swapchain index. */
+   vk->context.current_frame_index =
+       (vk->context.current_frame_index + 1) %
+       vk->context.num_swapchain_images;
+
+   unsigned index      = vk->context.current_frame_index;
    VkFence *next_fence = &vk->context.swapchain_fences[index];
 
    if (*next_fence != VK_NULL_HANDLE)
@@ -2719,6 +2726,8 @@ static void vulkan_create_wait_fences(gfx_ctx_vulkan_data_t *vk)
          vkCreateFence(vk->context.device, &fence_info, NULL,
                &vk->context.swapchain_fences[i]);
    }
+
+   vk->context.current_frame_index = 0;
 }
 
 void vulkan_acquire_next_image(gfx_ctx_vulkan_data_t *vk)
@@ -2772,15 +2781,17 @@ retry:
             vk->swapchain, UINT64_MAX,
             VK_NULL_HANDLE, fence, &vk->context.current_swapchain_index);
 
+#ifdef ANDROID
       /* VK_SUBOPTIMAL_KHR can be returned on Android 10 
        * when prerotate is not dealt with.
        * This is not an error we need to care about, and 
        * we'll treat it as SUCCESS. */
       if (err == VK_SUBOPTIMAL_KHR)
          err = VK_SUCCESS;
+#endif
    }
 
-   if (err == VK_SUCCESS)
+   if (err == VK_SUCCESS || err == VK_SUBOPTIMAL_KHR)
    {
       if (fence != VK_NULL_HANDLE)
          vkWaitForFences(vk->context.device, 1, &fence, true, UINT64_MAX);
@@ -2802,7 +2813,7 @@ retry:
       vk->context.current_swapchain_index =
          (vk->context.current_swapchain_index + 1) % vk->context.num_swapchain_images;
    }
-   else if (err == VK_ERROR_OUT_OF_DATE_KHR)
+   else if (err == VK_ERROR_OUT_OF_DATE_KHR || err == VK_SUBOPTIMAL_KHR)
    {
       /* Throw away the old swapchain and try again. */
       vulkan_destroy_swapchain(vk);

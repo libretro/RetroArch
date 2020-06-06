@@ -136,19 +136,19 @@ static void vulkan_init_framebuffers(
       VkFramebufferCreateInfo info =
       { VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO };
 
-      vk->swapchain[i].backbuffer.image = vk->context->swapchain_images[i];
+      vk->backbuffers[i].image = vk->context->swapchain_images[i];
 
       if (vk->context->swapchain_images[i] == VK_NULL_HANDLE)
       {
-         vk->swapchain[i].backbuffer.view        = VK_NULL_HANDLE;
-         vk->swapchain[i].backbuffer.framebuffer = VK_NULL_HANDLE;
+         vk->backbuffers[i].view        = VK_NULL_HANDLE;
+         vk->backbuffers[i].framebuffer = VK_NULL_HANDLE;
          continue;
       }
 
       /* Create an image view which we can render into. */
       view.viewType                        = VK_IMAGE_VIEW_TYPE_2D;
       view.format                          = vk->context->swapchain_format;
-      view.image                           = vk->swapchain[i].backbuffer.image;
+      view.image                           = vk->backbuffers[i].image;
       view.subresourceRange.baseMipLevel   = 0;
       view.subresourceRange.baseArrayLayer = 0;
       view.subresourceRange.levelCount     = 1;
@@ -160,18 +160,18 @@ static void vulkan_init_framebuffers(
       view.components.a                    = VK_COMPONENT_SWIZZLE_A;
 
       vkCreateImageView(vk->context->device,
-            &view, NULL, &vk->swapchain[i].backbuffer.view);
+            &view, NULL, &vk->backbuffers[i].view);
 
       /* Create the framebuffer */
       info.renderPass      = vk->render_pass;
       info.attachmentCount = 1;
-      info.pAttachments    = &vk->swapchain[i].backbuffer.view;
+      info.pAttachments    = &vk->backbuffers[i].view;
       info.width           = vk->context->swapchain_width;
       info.height          = vk->context->swapchain_height;
       info.layers          = 1;
 
       vkCreateFramebuffer(vk->context->device,
-            &info, NULL, &vk->swapchain[i].backbuffer.framebuffer);
+            &info, NULL, &vk->backbuffers[i].framebuffer);
    }
 }
 
@@ -739,16 +739,16 @@ static void vulkan_deinit_framebuffers(vk_t *vk)
    unsigned i;
    for (i = 0; i < vk->num_swapchain_images; i++)
    {
-      if (vk->swapchain[i].backbuffer.framebuffer)
+      if (vk->backbuffers[i].framebuffer)
       {
          vkDestroyFramebuffer(vk->context->device,
-               vk->swapchain[i].backbuffer.framebuffer, NULL);
+               vk->backbuffers[i].framebuffer, NULL);
       }
 
-      if (vk->swapchain[i].backbuffer.view)
+      if (vk->backbuffers[i].view)
       {
          vkDestroyImageView(vk->context->device,
-               vk->swapchain[i].backbuffer.view, NULL);
+               vk->backbuffers[i].view, NULL);
       }
    }
 
@@ -769,7 +769,7 @@ static bool vulkan_init_default_filter_chain(vk_t *vk)
    info.memory_properties     = &vk->context->memory_properties;
    info.pipeline_cache        = vk->pipelines.cache;
    info.queue                 = vk->context->queue;
-   info.command_pool          = vk->swapchain[vk->context->current_swapchain_index].cmd_pool;
+   info.command_pool          = vk->swapchain[vk->context->current_frame_index].cmd_pool;
    info.max_input_size.width  = vk->tex_w;
    info.max_input_size.height = vk->tex_h;
    info.swapchain.viewport    = vk->vk_vp;
@@ -803,7 +803,7 @@ static bool vulkan_init_filter_chain_preset(vk_t *vk, const char *shader_path)
    info.memory_properties     = &vk->context->memory_properties;
    info.pipeline_cache        = vk->pipelines.cache;
    info.queue                 = vk->context->queue;
-   info.command_pool          = vk->swapchain[vk->context->current_swapchain_index].cmd_pool;
+   info.command_pool          = vk->swapchain[vk->context->current_frame_index].cmd_pool;
    info.max_input_size.width  = vk->tex_w;
    info.max_input_size.height = vk->tex_h;
    info.swapchain.viewport    = vk->vk_vp;
@@ -982,7 +982,7 @@ static void vulkan_free(void *data)
 static uint32_t vulkan_get_sync_index(void *handle)
 {
    vk_t *vk = (vk_t*)handle;
-   return vk->context->current_swapchain_index;
+   return vk->context->current_frame_index;
 }
 
 static uint32_t vulkan_get_sync_index_mask(void *handle)
@@ -1585,14 +1585,14 @@ static void vulkan_readback(vk_t *vk)
    region.imageExtent.height          = vp.height;
    region.imageExtent.depth           = 1;
 
-   staging  = &vk->readback.staging[vk->context->current_swapchain_index];
+   staging  = &vk->readback.staging[vk->context->current_frame_index];
    *staging = vulkan_create_texture(vk,
          staging->memory != VK_NULL_HANDLE ? staging : NULL,
          vk->vp.width, vk->vp.height,
          VK_FORMAT_B8G8R8A8_UNORM, /* Formats don't matter for readback since it's a raw copy. */
          NULL, NULL, VULKAN_TEXTURE_READBACK);
 
-   vkCmdCopyImageToBuffer(vk->cmd, vk->chain->backbuffer.image,
+   vkCmdCopyImageToBuffer(vk->cmd, vk->backbuffer->image,
          VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
          staging->buffer,
          1, &region);
@@ -1616,24 +1616,26 @@ static void vulkan_inject_black_frame(vk_t *vk, video_frame_info_t *video_info,
 
    const VkClearColorValue clear_color = {{ 0.0f, 0.0f, 0.0f, 1.0f }};
    const VkImageSubresourceRange range = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
-   unsigned frame_index                = vk->context->current_swapchain_index;
+   unsigned frame_index                = vk->context->current_frame_index;
+   unsigned swapchain_index            = vk->context->current_swapchain_index;
    struct vk_per_frame *chain          = &vk->swapchain[frame_index];
+   struct vk_image *backbuffer         = &vk->backbuffers[swapchain_index];
    vk->chain                           = chain;
    vk->cmd                             = chain->cmd;
    begin_info.flags                    = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
    vkResetCommandBuffer(vk->cmd, 0);
    vkBeginCommandBuffer(vk->cmd, &begin_info);
 
-   vulkan_image_layout_transition(vk, vk->cmd, chain->backbuffer.image,
+   vulkan_image_layout_transition(vk, vk->cmd, backbuffer->image,
          VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
          0, VK_ACCESS_TRANSFER_WRITE_BIT,
          VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
          VK_PIPELINE_STAGE_TRANSFER_BIT);
 
-   vkCmdClearColorImage(vk->cmd, chain->backbuffer.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+   vkCmdClearColorImage(vk->cmd, backbuffer->image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
          &clear_color, 1, &range);
 
-   vulkan_image_layout_transition(vk, vk->cmd, chain->backbuffer.image,
+   vulkan_image_layout_transition(vk, vk->cmd, backbuffer->image,
          VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
          VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_MEMORY_READ_BIT,
          VK_PIPELINE_STAGE_TRANSFER_BIT,
@@ -1643,10 +1645,10 @@ static void vulkan_inject_black_frame(vk_t *vk, video_frame_info_t *video_info,
 
    submit_info.commandBufferCount   = 1;
    submit_info.pCommandBuffers      = &vk->cmd;
-   if (vk->context->swapchain_semaphores[frame_index] != VK_NULL_HANDLE)
+   if (vk->context->swapchain_semaphores[swapchain_index] != VK_NULL_HANDLE)
    {
       submit_info.signalSemaphoreCount = 1;
-      submit_info.pSignalSemaphores = &vk->context->swapchain_semaphores[frame_index];
+      submit_info.pSignalSemaphores = &vk->context->swapchain_semaphores[swapchain_index];
    }
 
 #ifdef HAVE_THREADS
@@ -1671,6 +1673,7 @@ static bool vulkan_frame(void *data, const void *frame,
    VkSemaphore signal_semaphores[2];
    vk_t *vk                                      = (vk_t*)data;
    struct vk_per_frame *chain                    = NULL;
+   struct vk_image *backbuffer                   = NULL;
    bool waits_for_semaphores                     = false;
    unsigned width                                = video_info->width;
    unsigned height                               = video_info->height;
@@ -1694,11 +1697,15 @@ static bool vulkan_frame(void *data, const void *frame,
    VkSubmitInfo submit_info                      = {
       VK_STRUCTURE_TYPE_SUBMIT_INFO };
    unsigned frame_index                          =
+      vk->context->current_frame_index;
+   unsigned swapchain_index                      =
       vk->context->current_swapchain_index;
 
    /* Bookkeeping on start of frame. */
-   chain     = &vk->swapchain[frame_index];
-   vk->chain = chain;
+   chain          = &vk->swapchain[frame_index];
+   backbuffer     = &vk->backbuffers[swapchain_index];
+   vk->chain      = chain;
+   vk->backbuffer = backbuffer;
 
    {
       struct vk_descriptor_manager *manager = &chain->descriptor_manager;
@@ -1901,10 +1908,10 @@ static bool vulkan_frame(void *data, const void *frame,
 #endif
 
    /* Render to backbuffer. */
-   if (chain->backbuffer.image != VK_NULL_HANDLE && vk->context->has_acquired_swapchain)
+   if (backbuffer->image != VK_NULL_HANDLE && vk->context->has_acquired_swapchain)
    {
       rp_info.renderPass               = vk->render_pass;
-      rp_info.framebuffer              = chain->backbuffer.framebuffer;
+      rp_info.framebuffer              = backbuffer->framebuffer;
       rp_info.renderArea.extent.width  = vk->context->swapchain_width;
       rp_info.renderArea.extent.height = vk->context->swapchain_height;
       rp_info.clearValueCount          = 1;
@@ -1916,7 +1923,7 @@ static bool vulkan_frame(void *data, const void *frame,
       clear_color.color.float32[3] = 0.0f;
 
       /* Prepare backbuffer for rendering. We don't use WSI semaphores here. */
-      vulkan_image_layout_transition(vk, vk->cmd, chain->backbuffer.image,
+      vulkan_image_layout_transition(vk, vk->cmd, backbuffer->image,
             VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
             0, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT,
             VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
@@ -2000,7 +2007,7 @@ static bool vulkan_frame(void *data, const void *frame,
     */
    vulkan_filter_chain_end_frame((vulkan_filter_chain_t*)vk->filter_chain, vk->cmd);
 
-   if (chain->backbuffer.image != VK_NULL_HANDLE &&
+   if (backbuffer->image != VK_NULL_HANDLE &&
          vk->context->has_acquired_swapchain &&
          (vk->readback.pending || vk->readback.streamed))
    {
@@ -2011,7 +2018,7 @@ static bool vulkan_frame(void *data, const void *frame,
        * If we're reading back, perform the readback before presenting.
        */
       vulkan_image_layout_transition(vk,
-            vk->cmd, chain->backbuffer.image,
+            vk->cmd, backbuffer->image,
             VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
             VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
             VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
@@ -2023,7 +2030,7 @@ static bool vulkan_frame(void *data, const void *frame,
 
       /* Prepare for presentation after transfers are complete. */
       vulkan_image_layout_transition(vk, vk->cmd,
-            chain->backbuffer.image,
+            backbuffer->image,
             VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
             VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
             0,
@@ -2033,12 +2040,12 @@ static bool vulkan_frame(void *data, const void *frame,
 
       vk->readback.pending = false;
    }
-   else if (chain->backbuffer.image != VK_NULL_HANDLE &&
+   else if (backbuffer->image != VK_NULL_HANDLE &&
          vk->context->has_acquired_swapchain)
    {
       /* Prepare backbuffer for presentation. */
       vulkan_image_layout_transition(vk, vk->cmd,
-            chain->backbuffer.image,
+            backbuffer->image,
             VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
             VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
             VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
@@ -2094,10 +2101,10 @@ static bool vulkan_frame(void *data, const void *frame,
 
    submit_info.signalSemaphoreCount = 0;
 
-   if (vk->context->swapchain_semaphores[frame_index] != VK_NULL_HANDLE &&
+   if (vk->context->swapchain_semaphores[swapchain_index] != VK_NULL_HANDLE &&
          vk->context->has_acquired_swapchain)
    {
-      signal_semaphores[submit_info.signalSemaphoreCount++] = vk->context->swapchain_semaphores[frame_index];
+      signal_semaphores[submit_info.signalSemaphoreCount++] = vk->context->swapchain_semaphores[swapchain_index];
    }
 
    if (vk->hw.signal_semaphore != VK_NULL_HANDLE)
@@ -2142,7 +2149,7 @@ static bool vulkan_frame(void *data, const void *frame,
    /* Disable BFI during fast forward, slow-motion,
     * and pause to prevent flicker. */
    if (
-         chain->backbuffer.image != VK_NULL_HANDLE
+         backbuffer->image != VK_NULL_HANDLE
          && vk->context->has_acquired_swapchain
          && black_frame_insertion
          && !input_driver_nonblock_state
@@ -2212,7 +2219,7 @@ static bool vulkan_get_current_sw_framebuffer(void *data,
    struct vk_per_frame *chain = NULL;
    vk_t *vk                   = (vk_t*)data;
    vk->chain                  =
-      &vk->swapchain[vk->context->current_swapchain_index];
+      &vk->swapchain[vk->context->current_frame_index];
    chain                      = vk->chain;
 
    if (chain->texture.width != framebuffer->width ||
@@ -2282,7 +2289,7 @@ static void vulkan_set_texture_frame(void *data,
    if (!vk)
       return;
 
-   index           = vk->context->current_swapchain_index;
+   index           = vk->context->current_frame_index;
    texture         = &vk->menu.textures[index];
    texture_optimal = &vk->menu.textures_optimal[index];
 
@@ -2486,7 +2493,7 @@ static bool vulkan_read_viewport(void *data, uint8_t *buffer, bool is_idle)
    if (!vk)
       return false;
 
-   staging = &vk->readback.staging[vk->context->current_swapchain_index];
+   staging = &vk->readback.staging[vk->context->current_frame_index];
 
    if (vk->readback.streamed)
    {
