@@ -314,276 +314,276 @@ enum midi_driver_enum
 };
 
 #if defined(HAVE_METAL)
-static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_METAL;
+static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_METAL;
 #elif defined(HAVE_VITA2D)
-static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_VITA2D;
+static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_VITA2D;
 #elif (defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) || defined(__CELLOS_LV2__)) && !defined(__WINRT__) && !defined(__HAIKU__)
-static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_GL;
+static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_GL;
 #elif defined(HAVE_OPENGL_CORE) && !defined(__HAIKU__)
-static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_GL_CORE;
+static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_GL_CORE;
 #elif defined(HAVE_OPENGL1)
-static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_GL1;
+static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_GL1;
 #elif defined(GEKKO)
-static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_WII;
+static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_WII;
 #elif defined(WIIU)
-static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_WIIU;
+static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_WIIU;
 #elif defined(XENON)
-static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_XENON360;
+static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_XENON360;
 #elif defined(HAVE_D3D11)
-static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_D3D11;
+static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_D3D11;
 #elif defined(HAVE_D3D12)
 /* FIXME/WARNING: DX12 performance on Xbox is horrible for
  * some reason. For now, we will default to D3D11 when possible. */
-static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_D3D12;
+static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_D3D12;
 #elif defined(HAVE_D3D10)
-static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_D3D10;
+static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_D3D10;
 #elif defined(HAVE_D3D9)
-static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_D3D9;
+static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_D3D9;
 #elif defined(HAVE_D3D8)
-static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_D3D8;
+static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_D3D8;
 #elif defined(HAVE_VG)
-static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_VG;
+static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_VG;
 #elif defined(PSP)
-static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_PSP1;
+static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_PSP1;
 #elif defined(PS2)
-static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_PS2;
+static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_PS2;
 #elif defined(_3DS)
-static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_CTR;
+static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_CTR;
 #elif defined(SWITCH)
-static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_SWITCH;
+static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_SWITCH;
 #elif defined(HAVE_XVIDEO)
-static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_XVIDEO;
+static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_XVIDEO;
 #elif defined(HAVE_SDL) && !defined(HAVE_SDL_DINGUX)
-static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_SDL;
+static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_SDL;
 #elif defined(HAVE_SDL2)
-static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_SDL2;
+static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_SDL2;
 #elif defined(HAVE_SDL_DINGUX)
-static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_SDL_DINGUX;
+static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_SDL_DINGUX;
 #elif defined(_WIN32) && !defined(_XBOX)
-static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_GDI;
+static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_GDI;
 #elif defined(DJGPP)
-static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_VGA;
+static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_VGA;
 #elif defined(HAVE_FPGA)
-static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_FPGA;
+static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_FPGA;
 #elif defined(HAVE_DYLIB) && !defined(ANDROID)
-static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_EXT;
+static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_EXT;
 #else
-static enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_NULL;
+static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_NULL;
 #endif
 
 #if defined(__CELLOS_LV2__)
-static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_PS3;
+static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_PS3;
 #elif defined(XENON)
-static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_XENON360;
+static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_XENON360;
 #elif defined(GEKKO)
-static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_WII;
+static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_WII;
 #elif defined(WIIU)
-static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_WIIU;
+static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_WIIU;
 #elif defined(PSP) || defined(VITA) || defined(ORBIS)
-static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_PSP;
+static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_PSP;
 #elif defined(PS2)
-static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_PS2;
+static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_PS2;
 #elif defined(_3DS)
-static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_CTR;
+static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_CTR;
 #elif defined(SWITCH)
-static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_SWITCH;
+static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_SWITCH;
 #elif defined(HAVE_PULSE)
-static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_PULSE;
+static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_PULSE;
 #elif defined(HAVE_ALSA) && defined(HAVE_VIDEOCORE)
-static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_ALSATHREAD;
+static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_ALSATHREAD;
 #elif defined(HAVE_ALSA)
-static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_ALSA;
+static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_ALSA;
 #elif defined(HAVE_TINYALSA)
-static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_TINYALSA;
+static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_TINYALSA;
 #elif defined(HAVE_AUDIOIO)
-static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_AUDIOIO;
+static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_AUDIOIO;
 #elif defined(HAVE_OSS)
-static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_OSS;
+static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_OSS;
 #elif defined(HAVE_JACK)
-static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_JACK;
+static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_JACK;
 #elif defined(HAVE_COREAUDIO) && !defined(HAVE_COCOA_METAL)
-static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_COREAUDIO;
+static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_COREAUDIO;
 #elif defined(HAVE_COREAUDIO3)
-static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_COREAUDIO3;
+static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_COREAUDIO3;
 #elif defined(HAVE_XAUDIO)
-static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_XAUDIO;
+static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_XAUDIO;
 #elif defined(HAVE_DSOUND)
-static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_DSOUND;
+static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_DSOUND;
 #elif defined(HAVE_WASAPI)
-static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_WASAPI;
+static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_WASAPI;
 #elif defined(HAVE_AL)
-static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_AL;
+static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_AL;
 #elif defined(HAVE_SL)
-static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_SL;
+static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_SL;
 #elif defined(EMSCRIPTEN)
-static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_RWEBAUDIO;
+static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_RWEBAUDIO;
 #elif defined(HAVE_SDL)
-static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_SDL;
+static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_SDL;
 #elif defined(HAVE_SDL2)
-static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_SDL2;
+static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_SDL2;
 #elif defined(HAVE_RSOUND)
-static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_RSOUND;
+static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_RSOUND;
 #elif defined(HAVE_ROAR)
-static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_ROAR;
+static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_ROAR;
 #elif defined(HAVE_DYLIB) && !defined(ANDROID)
-static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_EXT;
+static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_EXT;
 #else
-static enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_NULL;
+static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_NULL;
 #endif
 
 #if defined(PSP) || defined(EMSCRIPTEN)
-static enum audio_resampler_driver_enum AUDIO_DEFAULT_RESAMPLER_DRIVER = AUDIO_RESAMPLER_CC;
+static const enum audio_resampler_driver_enum AUDIO_DEFAULT_RESAMPLER_DRIVER = AUDIO_RESAMPLER_CC;
 #else
-static enum audio_resampler_driver_enum AUDIO_DEFAULT_RESAMPLER_DRIVER = AUDIO_RESAMPLER_SINC;
+static const enum audio_resampler_driver_enum AUDIO_DEFAULT_RESAMPLER_DRIVER = AUDIO_RESAMPLER_SINC;
 #endif
 
 #if defined(HAVE_FFMPEG)
-static enum record_driver_enum RECORD_DEFAULT_DRIVER = RECORD_FFMPEG;
+static const enum record_driver_enum RECORD_DEFAULT_DRIVER = RECORD_FFMPEG;
 #else
-static enum record_driver_enum RECORD_DEFAULT_DRIVER = RECORD_NULL;
+static const enum record_driver_enum RECORD_DEFAULT_DRIVER = RECORD_NULL;
 #endif
 
 #ifdef HAVE_WINMM
-static enum midi_driver_enum MIDI_DEFAULT_DRIVER = MIDI_WINMM;
+static const enum midi_driver_enum MIDI_DEFAULT_DRIVER = MIDI_WINMM;
 #elif defined(HAVE_ALSA) && !defined(HAVE_HAKCHI) && !defined(HAVE_SEGAM)
-static enum midi_driver_enum MIDI_DEFAULT_DRIVER = MIDI_ALSA;
+static const enum midi_driver_enum MIDI_DEFAULT_DRIVER = MIDI_ALSA;
 #else
-static enum midi_driver_enum MIDI_DEFAULT_DRIVER = MIDI_NULL;
+static const enum midi_driver_enum MIDI_DEFAULT_DRIVER = MIDI_NULL;
 #endif
 
 #if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
-static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_UWP;
+static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_UWP;
 #elif defined(XENON)
-static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_XENON360;
+static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_XENON360;
 #elif defined(_XBOX360) || defined(_XBOX) || defined(HAVE_XINPUT2) || defined(HAVE_XINPUT_XBOX1)
-static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_XINPUT;
+static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_XINPUT;
 #elif defined(ANDROID)
-static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_ANDROID;
+static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_ANDROID;
 #elif defined(EMSCRIPTEN) && defined(HAVE_SDL2)
-static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_SDL2;
+static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_SDL2;
 #elif defined(EMSCRIPTEN)
-static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_RWEBINPUT;
+static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_RWEBINPUT;
 #elif defined(_WIN32) && defined(HAVE_DINPUT)
-static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_DINPUT;
+static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_DINPUT;
 #elif defined(_WIN32) && !defined(HAVE_DINPUT) && _WIN32_WINNT >= 0x0501
-static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_WINRAW;
+static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_WINRAW;
 #elif defined(ORBIS)
-static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_PS4;
+static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_PS4;
 #elif defined(__CELLOS_LV2__)
-static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_PS3;
+static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_PS3;
 #elif defined(PSP) || defined(VITA)
-static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_PSP;
+static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_PSP;
 #elif defined(PS2)
-static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_PS2;
+static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_PS2;
 #elif defined(_3DS)
-static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_CTR;
+static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_CTR;
 #elif defined(SWITCH)
-static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_SWITCH;
+static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_SWITCH;
 #elif defined(GEKKO)
-static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_WII;
+static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_WII;
 #elif defined(WIIU)
-static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_WIIU;
+static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_WIIU;
 #elif defined(HAVE_X11)
-static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_X;
+static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_X;
 #elif defined(HAVE_UDEV)
-static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_UDEV;
+static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_UDEV;
 #elif defined(__linux__) && !defined(ANDROID)
-static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_LINUXRAW;
+static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_LINUXRAW;
 #elif defined(HAVE_WAYLAND)
-static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_WAYLAND;
+static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_WAYLAND;
 #elif defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH) || defined(HAVE_COCOA_METAL)
-static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_COCOA;
+static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_COCOA;
 #elif defined(__QNX__)
-static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_QNX;
+static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_QNX;
 #elif defined(HAVE_SDL)
-static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_SDL;
+static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_SDL;
 #elif defined(HAVE_SDL2)
-static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_SDL2;
+static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_SDL2;
 #elif defined(DJGPP)
-static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_DOS;
+static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_DOS;
 #else
-static enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_NULL;
+static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_NULL;
 #endif
 
 #if defined(__CELLOS_LV2__)
-static enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_PS3;
+static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_PS3;
 #elif defined(HAVE_XINPUT)
-static enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_XINPUT;
+static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_XINPUT;
 #elif defined(GEKKO)
-static enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_GX;
+static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_GX;
 #elif defined(WIIU)
-static enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_WIIU;
+static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_WIIU;
 #elif defined(_XBOX)
-static enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_XDK;
+static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_XDK;
 #elif defined(ORBIS)
-static enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_PS4;
+static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_PS4;
 #elif defined(PSP) || defined(VITA)
-static enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_PSP;
+static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_PSP;
 #elif defined(PS2)
-static enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_PS2;
+static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_PS2;
 #elif defined(_3DS)
-static enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_CTR;
+static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_CTR;
 #elif defined(SWITCH)
-static enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_SWITCH;
+static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_SWITCH;
 #elif defined(HAVE_DINPUT)
-static enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_DINPUT;
+static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_DINPUT;
 #elif defined(HAVE_UDEV)
-static enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_UDEV;
+static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_UDEV;
 #elif defined(__linux) && !defined(ANDROID)
-static enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_LINUXRAW;
+static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_LINUXRAW;
 #elif defined(ANDROID)
-static enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_ANDROID;
+static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_ANDROID;
 #elif defined(HAVE_SDL) || defined(HAVE_SDL2)
-static enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_SDL;
+static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_SDL;
 #elif defined(DJGPP)
-static enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_DOS;
+static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_DOS;
 #elif defined(IOS)
-static enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_MFI;
+static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_MFI;
 #elif defined(HAVE_HID)
-static enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_HID;
+static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_HID;
 #elif defined(__QNX__)
-static enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_QNX;
+static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_QNX;
 #elif defined(EMSCRIPTEN)
-static enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_RWEBPAD;
+static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_RWEBPAD;
 #else
-static enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_NULL;
+static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_NULL;
 #endif
 
 #if defined(HAVE_V4L2)
-static enum camera_driver_enum CAMERA_DEFAULT_DRIVER = CAMERA_V4L2;
+static const enum camera_driver_enum CAMERA_DEFAULT_DRIVER = CAMERA_V4L2;
 #elif defined(EMSCRIPTEN)
-static enum camera_driver_enum CAMERA_DEFAULT_DRIVER = CAMERA_RWEBCAM;
+static const enum camera_driver_enum CAMERA_DEFAULT_DRIVER = CAMERA_RWEBCAM;
 #elif defined(ANDROID)
-static enum camera_driver_enum CAMERA_DEFAULT_DRIVER = CAMERA_ANDROID;
+static const enum camera_driver_enum CAMERA_DEFAULT_DRIVER = CAMERA_ANDROID;
 #else
-static enum camera_driver_enum CAMERA_DEFAULT_DRIVER = CAMERA_NULL;
+static const enum camera_driver_enum CAMERA_DEFAULT_DRIVER = CAMERA_NULL;
 #endif
 
 #if defined(HAVE_LAKKA)
-static enum wifi_driver_enum WIFI_DEFAULT_DRIVER = WIFI_CONNMANCTL;
+static const enum wifi_driver_enum WIFI_DEFAULT_DRIVER = WIFI_CONNMANCTL;
 #else
-static enum wifi_driver_enum WIFI_DEFAULT_DRIVER = WIFI_NULL;
+static const enum wifi_driver_enum WIFI_DEFAULT_DRIVER = WIFI_NULL;
 #endif
 
 #if defined(ANDROID)
-static enum location_driver_enum LOCATION_DEFAULT_DRIVER = LOCATION_ANDROID;
+static const enum location_driver_enum LOCATION_DEFAULT_DRIVER = LOCATION_ANDROID;
 #else
-static enum location_driver_enum LOCATION_DEFAULT_DRIVER = LOCATION_NULL;
+static const enum location_driver_enum LOCATION_DEFAULT_DRIVER = LOCATION_NULL;
 #endif
 
 #if defined(_3DS) && defined(HAVE_RGUI)
-static enum menu_driver_enum MENU_DEFAULT_DRIVER = MENU_RGUI;
+static const enum menu_driver_enum MENU_DEFAULT_DRIVER = MENU_RGUI;
 #else
 #if defined(HAVE_MATERIALUI) && defined(RARCH_MOBILE)
-static enum menu_driver_enum MENU_DEFAULT_DRIVER = MENU_MATERIALUI;
+static const enum menu_driver_enum MENU_DEFAULT_DRIVER = MENU_MATERIALUI;
 #elif defined(HAVE_OZONE)
-static enum menu_driver_enum MENU_DEFAULT_DRIVER = MENU_OZONE;
+static const enum menu_driver_enum MENU_DEFAULT_DRIVER = MENU_OZONE;
 #elif defined(HAVE_XMB) && !defined(_XBOX)
-static enum menu_driver_enum MENU_DEFAULT_DRIVER = MENU_XMB;
+static const enum menu_driver_enum MENU_DEFAULT_DRIVER = MENU_XMB;
 #elif defined(HAVE_RGUI)
-static enum menu_driver_enum MENU_DEFAULT_DRIVER = MENU_RGUI;
+static const enum menu_driver_enum MENU_DEFAULT_DRIVER = MENU_RGUI;
 #else
-static enum menu_driver_enum MENU_DEFAULT_DRIVER = MENU_NULL;
+static const enum menu_driver_enum MENU_DEFAULT_DRIVER = MENU_NULL;
 #endif
 #endif
 
@@ -1180,7 +1180,8 @@ static struct config_array_setting *populate_settings_array(settings_t *settings
    return tmp;
 }
 
-static struct config_path_setting *populate_settings_path(settings_t *settings, int *size)
+static struct config_path_setting *populate_settings_path(
+      settings_t *settings, int *size)
 {
    unsigned count = 0;
    struct config_path_setting  *tmp    = (struct config_path_setting*)calloc(1, (*size + 1) * sizeof(struct config_path_setting));
@@ -1326,7 +1327,8 @@ static struct config_path_setting *populate_settings_path(settings_t *settings, 
    return tmp;
 }
 
-static struct config_bool_setting *populate_settings_bool(settings_t *settings, int *size)
+static struct config_bool_setting *populate_settings_bool(
+      settings_t *settings, int *size)
 {
    struct config_bool_setting  *tmp    = (struct config_bool_setting*)calloc(1, (*size + 1) * sizeof(struct config_bool_setting));
    unsigned count                      = 0;
@@ -1682,7 +1684,8 @@ static struct config_bool_setting *populate_settings_bool(settings_t *settings, 
    return tmp;
 }
 
-static struct config_float_setting *populate_settings_float(settings_t *settings, int *size)
+static struct config_float_setting *populate_settings_float(
+      settings_t *settings, int *size)
 {
    unsigned count = 0;
    struct config_float_setting  *tmp      = (struct config_float_setting*)calloc(1, (*size + 1) * sizeof(struct config_float_setting));
@@ -1732,7 +1735,8 @@ static struct config_float_setting *populate_settings_float(settings_t *settings
    return tmp;
 }
 
-static struct config_uint_setting *populate_settings_uint(settings_t *settings, int *size)
+static struct config_uint_setting *populate_settings_uint(
+      settings_t *settings, int *size)
 {
    unsigned count                     = 0;
    struct config_uint_setting  *tmp   = (struct config_uint_setting*)calloc(1, (*size + 1) * sizeof(struct config_uint_setting));
@@ -1913,7 +1917,8 @@ static struct config_uint_setting *populate_settings_uint(settings_t *settings, 
    return tmp;
 }
 
-static struct config_size_setting *populate_settings_size(settings_t *settings, int *size)
+static struct config_size_setting *populate_settings_size(
+      settings_t *settings, int *size)
 {
    unsigned count                     = 0;
    struct config_size_setting  *tmp   = (struct config_size_setting*)calloc((*size + 1), sizeof(struct config_size_setting));
@@ -1928,7 +1933,8 @@ static struct config_size_setting *populate_settings_size(settings_t *settings, 
    return tmp;
 }
 
-static struct config_int_setting *populate_settings_int(settings_t *settings, int *size)
+static struct config_int_setting *populate_settings_int(
+      settings_t *settings, int *size)
 {
    unsigned count                     = 0;
    struct config_int_setting  *tmp    = (struct config_int_setting*)calloc((*size + 1), sizeof(struct config_int_setting));
