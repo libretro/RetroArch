@@ -4790,14 +4790,6 @@ bool menu_entries_ctl(enum menu_entries_ctl_state state, void *data)
          if (!menu_st->entries.need_refresh)
             return false;
          break;
-      case MENU_ENTRIES_CTL_LIST_GET:
-         {
-            menu_list_t          **list = (menu_list_t**)data;
-            if (!list)
-               return false;
-            *list = menu_st->entries.list;
-         }
-         return true;
       case MENU_ENTRIES_CTL_SETTINGS_GET:
          {
             rarch_setting_t **settings  = (rarch_setting_t**)data;

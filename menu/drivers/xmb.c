@@ -1321,14 +1321,11 @@ static void xmb_selection_pointer_changed(
    menu_entry_t entry;
    size_t num                 = 0;
    int threshold              = 0;
-   menu_list_t     *menu_list = NULL;
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
    size_t selection           = menu_navigation_get_selection();
 
    if (!xmb)
       return;
-
-   menu_entries_ctl(MENU_ENTRIES_CTL_LIST_GET, &menu_list);
 
    menu_entry_init(&entry);
    entry.path_enabled       = false;
