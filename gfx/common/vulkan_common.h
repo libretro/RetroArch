@@ -118,6 +118,11 @@ typedef struct vulkan_context
    VkSemaphore swapchain_semaphores[VULKAN_MAX_SWAPCHAIN_IMAGES];
    VkFormat swapchain_format;
 
+   VkSemaphore swapchain_acquire_semaphore;
+   unsigned num_recycled_acquire_semaphores;
+   VkSemaphore swapchain_recycled_semaphores[VULKAN_MAX_SWAPCHAIN_IMAGES];
+   VkSemaphore swapchain_wait_semaphores[VULKAN_MAX_SWAPCHAIN_IMAGES];
+
    slock_t *queue_lock;
    retro_vulkan_destroy_device_t destroy_device;
 
@@ -154,6 +159,10 @@ typedef struct gfx_ctx_vulkan_data
    bool created_new_swapchain;
    bool emulate_mailbox;
    bool emulating_mailbox;
+   /* If set, prefer a path where we use
+    * semaphores instead of fences for vkAcquireNextImageKHR.
+    * Helps workaround certain performance issues on some drivers. */
+   bool use_wsi_semaphore;
    vulkan_context_t context;
    VkSurfaceKHR vk_surface;
    VkSwapchainKHR swapchain;
@@ -421,7 +430,7 @@ typedef struct vk
 
       struct retro_hw_render_interface_vulkan iface;
       const struct retro_vulkan_image *image;
-      const VkSemaphore *semaphores;
+      VkSemaphore *semaphores;
       VkSemaphore signal_semaphore;
       VkPipelineStageFlags *wait_dst_stages;
       VkCommandBuffer *cmd;

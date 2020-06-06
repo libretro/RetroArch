@@ -1746,6 +1746,22 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
    vk->emulate_mailbox = vk->fullscreen;
 #endif
 
+   /* If we're emulating mailbox, stick to using fences rather than semaphores.
+    * Avoids some really weird driver bugs. */
+   if (!vk->emulate_mailbox)
+   {
+      if (vk->context.gpu_properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU)
+      {
+         vk->use_wsi_semaphore = true;
+         RARCH_LOG("[Vulkan]: Using semaphores for WSI acquire.\n");
+      }
+      else
+      {
+         vk->use_wsi_semaphore = false;
+         RARCH_LOG("[Vulkan]: Using fences for WSI acquire.\n");
+      }
+   }
+
    RARCH_LOG("[Vulkan]: Using GPU: %s\n", vk->context.gpu_properties.deviceName);
 
    {
@@ -2555,10 +2571,28 @@ static void vulkan_destroy_swapchain(gfx_ctx_vulkan_data_t *vk)
       if (vk->context.swapchain_fences[i] != VK_NULL_HANDLE)
          vkDestroyFence(vk->context.device,
                vk->context.swapchain_fences[i], NULL);
+      if (vk->context.swapchain_recycled_semaphores[i] != VK_NULL_HANDLE)
+         vkDestroySemaphore(vk->context.device,
+               vk->context.swapchain_recycled_semaphores[i], NULL);
+      if (vk->context.swapchain_wait_semaphores[i] != VK_NULL_HANDLE)
+         vkDestroySemaphore(vk->context.device,
+               vk->context.swapchain_wait_semaphores[i], NULL);
    }
 
-   memset(vk->context.swapchain_semaphores, 0, sizeof(vk->context.swapchain_semaphores));
-   memset(vk->context.swapchain_fences, 0, sizeof(vk->context.swapchain_fences));
+   if (vk->context.swapchain_acquire_semaphore != VK_NULL_HANDLE)
+      vkDestroySemaphore(vk->context.device,
+            vk->context.swapchain_acquire_semaphore, NULL);
+   vk->context.swapchain_acquire_semaphore = VK_NULL_HANDLE;
+
+   memset(vk->context.swapchain_semaphores, 0,
+         sizeof(vk->context.swapchain_semaphores));
+   memset(vk->context.swapchain_recycled_semaphores, 0,
+         sizeof(vk->context.swapchain_recycled_semaphores));
+   memset(vk->context.swapchain_wait_semaphores, 0,
+         sizeof(vk->context.swapchain_wait_semaphores));
+   memset(vk->context.swapchain_fences, 0,
+         sizeof(vk->context.swapchain_fences));
+   vk->context.num_recycled_acquire_semaphores = 0;
 }
 
 void vulkan_present(gfx_ctx_vulkan_data_t *vk, unsigned index)
@@ -2673,6 +2707,12 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
    }
 }
 
+static void vulkan_recycle_acquire_semaphore(struct vulkan_context *ctx, VkSemaphore sem)
+{
+   assert(ctx->num_recycled_acquire_semaphores < VULKAN_MAX_SWAPCHAIN_IMAGES);
+   ctx->swapchain_recycled_semaphores[ctx->num_recycled_acquire_semaphores++] = sem;
+}
+
 static void vulkan_acquire_clear_fences(gfx_ctx_vulkan_data_t *vk)
 {
    unsigned i;
@@ -2685,9 +2725,29 @@ static void vulkan_acquire_clear_fences(gfx_ctx_vulkan_data_t *vk)
          vk->context.swapchain_fences[i] = VK_NULL_HANDLE;
       }
       vk->context.swapchain_fences_signalled[i] = false;
+
+      if (vk->context.swapchain_wait_semaphores[i])
+         vulkan_recycle_acquire_semaphore(&vk->context, vk->context.swapchain_wait_semaphores[i]);
+      vk->context.swapchain_wait_semaphores[i] = VK_NULL_HANDLE;
    }
 
    vk->context.current_frame_index = 0;
+}
+
+static VkSemaphore vulkan_get_wsi_acquire_semaphore(struct vulkan_context *ctx)
+{
+   if (ctx->num_recycled_acquire_semaphores == 0)
+   {
+      VkSemaphoreCreateInfo sem_info = { VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO };
+      vkCreateSemaphore(ctx->device, &sem_info, NULL,
+            &ctx->swapchain_recycled_semaphores[ctx->num_recycled_acquire_semaphores++]);
+   }
+
+   VkSemaphore sem =
+      ctx->swapchain_recycled_semaphores[--ctx->num_recycled_acquire_semaphores];
+   ctx->swapchain_recycled_semaphores[ctx->num_recycled_acquire_semaphores] =
+      VK_NULL_HANDLE;
+   return sem;
 }
 
 static void vulkan_acquire_wait_fences(gfx_ctx_vulkan_data_t *vk)
@@ -2712,6 +2772,10 @@ static void vulkan_acquire_wait_fences(gfx_ctx_vulkan_data_t *vk)
    else
       vkCreateFence(vk->context.device, &fence_info, NULL, next_fence);
    vk->context.swapchain_fences_signalled[index] = false;
+
+   if (vk->context.swapchain_wait_semaphores[index] != VK_NULL_HANDLE)
+       vulkan_recycle_acquire_semaphore(&vk->context, vk->context.swapchain_wait_semaphores[index]);
+   vk->context.swapchain_wait_semaphores[index] = VK_NULL_HANDLE;
 }
 
 static void vulkan_create_wait_fences(gfx_ctx_vulkan_data_t *vk)
@@ -2734,7 +2798,8 @@ void vulkan_acquire_next_image(gfx_ctx_vulkan_data_t *vk)
 {
    unsigned index;
    VkResult err;
-   VkFence fence;
+   VkFence fence = VK_NULL_HANDLE;
+   VkSemaphore semaphore = VK_NULL_HANDLE;
    VkFenceCreateInfo fence_info   =
    { VK_STRUCTURE_TYPE_FENCE_CREATE_INFO };
    VkSemaphoreCreateInfo sem_info =
@@ -2756,6 +2821,7 @@ retry:
       {
          /* We still don't have a swapchain, so just fake it ... */
          vk->context.current_swapchain_index = 0;
+         vk->context.current_frame_index = 0;
          vulkan_acquire_clear_fences(vk);
          vulkan_acquire_wait_fences(vk);
          vk->context.invalid_swapchain = true;
@@ -2772,14 +2838,17 @@ retry:
        * MAILBOX would do. */
       err   = vulkan_emulated_mailbox_acquire_next_image(
             &vk->mailbox, &vk->context.current_swapchain_index);
-      fence = VK_NULL_HANDLE;
    }
    else
    {
-      vkCreateFence(vk->context.device, &fence_info, NULL, &fence);
+      if (vk->use_wsi_semaphore)
+          semaphore = vulkan_get_wsi_acquire_semaphore(&vk->context);
+      else
+          vkCreateFence(vk->context.device, &fence_info, NULL, &fence);
+
       err = vkAcquireNextImageKHR(vk->context.device,
             vk->swapchain, UINT64_MAX,
-            VK_NULL_HANDLE, fence, &vk->context.current_swapchain_index);
+            semaphore, fence, &vk->context.current_swapchain_index);
 
 #ifdef ANDROID
       /* VK_SUBOPTIMAL_KHR can be returned on Android 10 
@@ -2796,9 +2865,27 @@ retry:
       if (fence != VK_NULL_HANDLE)
          vkWaitForFences(vk->context.device, 1, &fence, true, UINT64_MAX);
       vk->context.has_acquired_swapchain = true;
+
+      if (vk->context.swapchain_acquire_semaphore)
+      {
+#ifdef HAVE_THREADS
+         slock_lock(vk->context.queue_lock);
+#endif
+         RARCH_LOG("[Vulkan]: Destroying stale acquire semaphore.\n");
+         vkDeviceWaitIdle(vk->context.device);
+         vkDestroySemaphore(vk->context.device, vk->context.swapchain_acquire_semaphore, NULL);
+#ifdef HAVE_THREADS
+         slock_unlock(vk->context.queue_lock);
+#endif
+      }
+      vk->context.swapchain_acquire_semaphore = semaphore;
    }
    else
+   {
       vk->context.has_acquired_swapchain = false;
+      if (semaphore)
+         vulkan_recycle_acquire_semaphore(&vk->context, semaphore);
+   }
 
 #ifdef WSI_HARDENING_TEST
    trigger_spurious_error_vkresult(&err);
@@ -2809,9 +2896,7 @@ retry:
 
    if (err == VK_NOT_READY || err == VK_TIMEOUT)
    {
-      /* Just pretend we have a swapchain index, round-robin style. */
-      vk->context.current_swapchain_index =
-         (vk->context.current_swapchain_index + 1) % vk->context.num_swapchain_images;
+      /* Do nothing. */
    }
    else if (err == VK_ERROR_OUT_OF_DATE_KHR || err == VK_SUBOPTIMAL_KHR)
    {
