@@ -1989,9 +1989,7 @@ bool create_folder_and_core_options(void);
 
 /* Input overrides  */
 
-extern unsigned get_gamepad_input_override(void);
-extern void set_gamepad_input_override(unsigned i, bool val);
-extern void reset_gamepad_input_override(void);
+unsigned get_gamepad_input_override(void);
 
 RETRO_END_DECLS
 

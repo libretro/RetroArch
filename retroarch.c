@@ -2487,6 +2487,11 @@ static void retroarch_core_options_intl_init(
 static void ui_companion_driver_toggle(struct rarch_state *p_rarch,
       bool force);
 
+#ifdef HAVE_ACCESSIBILITY
+static void set_gamepad_input_override(struct rarch_state *p_rarch,
+      unsigned i, bool val);
+#endif
+
 #ifdef HAVE_LIBNX
 void libnx_apply_overclock(void);
 #endif
@@ -33188,12 +33193,13 @@ static enum runloop_state runloop_check_state(
       if (settings->bools.ai_service_enable)
       {
          unsigned i;
-         reset_gamepad_input_override();
+
+         p_rarch->gamepad_input_override = 0;
 
          for (i = 0; i < 16; i++)
          {
             if (p_rarch->ai_gamepad_state[i] == 2)
-               set_gamepad_input_override(i, true);
+               set_gamepad_input_override(p_rarch, i, true);
             p_rarch->ai_gamepad_state[i] = 0;
          }
       }
@@ -34937,20 +34943,13 @@ unsigned get_gamepad_input_override(void)
    return p_rarch->gamepad_input_override;
 }
 
-void set_gamepad_input_override(unsigned i, bool val)
+static void set_gamepad_input_override(struct rarch_state *p_rarch,
+      unsigned i, bool val)
 {
-   struct rarch_state *p_rarch        = &rarch_st;
-
    if (val)
       p_rarch->gamepad_input_override = p_rarch->gamepad_input_override | (1 << i);
    else
       p_rarch->gamepad_input_override = p_rarch->gamepad_input_override & ((1 << i) ^ (~0));
-}
-
-void reset_gamepad_input_override(void)
-{
-   struct rarch_state *p_rarch     = &rarch_st;
-   p_rarch->gamepad_input_override = 0;
 }
 #endif
 
