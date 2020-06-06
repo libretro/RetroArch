@@ -2598,6 +2598,9 @@ static bool accessibility_speak_priority(
 #endif
 
 #ifdef HAVE_MENU
+static void menu_driver_list_free(
+      struct rarch_state *p_rarch,
+      menu_ctx_list_t *list);
 static void menu_input_post_iterate(
       struct rarch_state *p_rarch,
       int *ret, unsigned action);
@@ -4044,7 +4047,9 @@ int menu_entry_action(
    return -1;
 }
 
-static void menu_list_free_list(file_list_t *list)
+static void menu_list_free_list(
+      struct rarch_state *p_rarch,
+      file_list_t *list)
 {
    unsigned i;
 
@@ -4056,13 +4061,15 @@ static void menu_list_free_list(file_list_t *list)
       list_info.idx       = i;
       list_info.list_size = list->size;
 
-      menu_driver_ctl(RARCH_MENU_CTL_LIST_FREE, &list_info);
+      menu_driver_list_free(p_rarch, &list_info);
    }
 
    file_list_free(list);
 }
 
-static void menu_list_free(menu_list_t *menu_list)
+static void menu_list_free(
+      struct rarch_state *p_rarch,
+      menu_list_t *menu_list)
 {
    if (!menu_list)
       return;
@@ -4076,7 +4083,8 @@ static void menu_list_free(menu_list_t *menu_list)
          if (!menu_list->menu_stack[i])
             continue;
 
-         menu_list_free_list(menu_list->menu_stack[i]);
+         menu_list_free_list(p_rarch,
+               menu_list->menu_stack[i]);
          menu_list->menu_stack[i]    = NULL;
       }
 
@@ -4092,7 +4100,8 @@ static void menu_list_free(menu_list_t *menu_list)
          if (!menu_list->selection_buf[i])
             continue;
 
-         menu_list_free_list(menu_list->selection_buf[i]);
+         menu_list_free_list(p_rarch,
+               menu_list->selection_buf[i]);
          menu_list->selection_buf[i] = NULL;
       }
 
@@ -4102,7 +4111,7 @@ static void menu_list_free(menu_list_t *menu_list)
    free(menu_list);
 }
 
-static menu_list_t *menu_list_new(void)
+static menu_list_t *menu_list_new(struct rarch_state *p_rarch)
 {
    unsigned i;
    menu_list_t           *list = (menu_list_t*)malloc(sizeof(*list));
@@ -4136,7 +4145,7 @@ static menu_list_t *menu_list_new(void)
    return list;
 
 error:
-   menu_list_free(list);
+   menu_list_free(p_rarch, list);
    return NULL;
 }
 
@@ -4174,7 +4183,7 @@ static bool menu_list_pop_stack(
       list_info.idx       = menu_list->size - 1;
       list_info.list_size = menu_list->size - 1;
 
-      menu_driver_ctl(RARCH_MENU_CTL_LIST_FREE, &list_info);
+      menu_driver_list_free(p_rarch, &list_info);
    }
 
    file_list_pop(menu_list, directory_ptr);
@@ -4464,7 +4473,7 @@ static void menu_entries_list_deinit(struct rarch_state *p_rarch)
 {
    struct menu_state    *menu_st  = &p_rarch->menu_driver_state;
    if (menu_st->entries.list)
-      menu_list_free(menu_st->entries.list);
+      menu_list_free(p_rarch, menu_st->entries.list);
    menu_st->entries.list          = NULL;
 }
 
@@ -4481,7 +4490,7 @@ static void menu_entries_settings_deinit(struct rarch_state *p_rarch)
 static bool menu_entries_init(struct rarch_state *p_rarch)
 {
    struct menu_state    *menu_st  = &p_rarch->menu_driver_state;
-   if (!(menu_st->entries.list = (menu_list_t*)menu_list_new()))
+   if (!(menu_st->entries.list = (menu_list_t*)menu_list_new(p_rarch)))
       goto error;
 
    menu_setting_ctl(MENU_SETTING_CTL_NEW, &menu_st->entries.list_settings);
@@ -5843,6 +5852,22 @@ retro_time_t menu_driver_get_current_time(void)
    return menu_st->current_time_us;
 }
 
+static void menu_driver_list_free(
+      struct rarch_state *p_rarch,
+      menu_ctx_list_t *list)
+{
+   if (p_rarch->menu_driver_ctx)
+      if (p_rarch->menu_driver_ctx->list_free)
+         p_rarch->menu_driver_ctx->list_free(
+               list->list, list->idx, list->list_size);
+
+   if (list->list)
+   {
+      file_list_free_userdata  (list->list, list->idx);
+      file_list_free_actiondata(list->list, list->idx);
+   }
+}
+
 bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
 {
    struct rarch_state   *p_rarch  = &rarch_st;
@@ -5981,22 +6006,6 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             free(p_rarch->menu_driver_data);
          }
          p_rarch->menu_driver_data = NULL;
-         break;
-      case RARCH_MENU_CTL_LIST_FREE:
-         {
-            menu_ctx_list_t *list = (menu_ctx_list_t*)data;
-
-            if (p_rarch->menu_driver_ctx)
-               if (p_rarch->menu_driver_ctx->list_free)
-                  p_rarch->menu_driver_ctx->list_free(
-                        list->list, list->idx, list->list_size);
-
-            if (list->list)
-            {
-               file_list_free_userdata  (list->list, list->idx);
-               file_list_free_actiondata(list->list, list->idx);
-            }
-         }
          break;
       case RARCH_MENU_CTL_ENVIRONMENT:
          {
@@ -6251,14 +6260,6 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             if (!sel)
                return false;
             *sel = menu_st->scroll.acceleration;
-         }
-         break;
-      case MENU_NAVIGATION_CTL_SET_SCROLL_ACCEL:
-         {
-            size_t *sel = (size_t*)data;
-            if (!sel)
-               return false;
-            menu_st->scroll.acceleration = (unsigned)(*sel);
          }
          break;
       default:
@@ -19896,6 +19897,7 @@ static unsigned menu_event(
    bool set_scroll                                 = false;
    size_t new_scroll_accel                         = 0;
    struct rarch_state                   *p_rarch   = &rarch_st;
+   struct menu_state                     *menu_st  = &p_rarch->menu_driver_state;
    menu_input_t *menu_input                        = &p_rarch->menu_input_state;
    menu_input_pointer_hw_state_t *pointer_hw_state = &p_rarch->menu_input_pointer_hw_state;
    settings_t *settings                            = p_rarch->configuration_settings;
@@ -19972,8 +19974,7 @@ static unsigned menu_event(
    }
 
    if (set_scroll)
-      menu_driver_ctl(MENU_NAVIGATION_CTL_SET_SCROLL_ACCEL,
-            &new_scroll_accel);
+      menu_st->scroll.acceleration = (unsigned)(new_scroll_accel);
 
    delay_count += gfx_animation_get_delta_time();
 
