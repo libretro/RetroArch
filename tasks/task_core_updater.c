@@ -138,10 +138,8 @@ static bool local_core_matches_remote_crc(
       if (local_core_file)
       {
          uint32_t crc = 0;
-         bool success = false;
-
          /* Get crc value */
-         success = intfstream_get_crc(local_core_file, &crc);
+         bool success = intfstream_get_crc(local_core_file, &crc);
 
          /* Close core file */
          intfstream_close(local_core_file);
