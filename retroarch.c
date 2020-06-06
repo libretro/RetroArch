@@ -2497,7 +2497,6 @@ static bool midi_driver_write(uint8_t byte, uint32_t delta_time);
 static bool midi_driver_output_enabled(void);
 static bool midi_driver_input_enabled(void);
 static bool midi_driver_set_all_sounds_off(struct rarch_state *p_rarch);
-static const void *midi_driver_find_handle(int index);
 static bool midi_driver_flush(void);
 
 static void retroarch_deinit_core_options(struct rarch_state *p_rarch);
@@ -6671,7 +6670,7 @@ struct string_list *string_list_new_special(enum string_list_type type,
          }
          break;
       case STRING_LIST_MIDI_DRIVERS:
-         for (i = 0; midi_driver_find_handle(i); i++)
+         for (i = 0; midi_drivers[i]; i++)
          {
             const char *opt  = midi_drivers[i]->ident;
             *len            += strlen(opt) + 1;
@@ -11711,7 +11710,10 @@ bool command_event(enum event_command cmd, void *data)
 #endif
          break;
       case CMD_EVENT_AUDIO_STOP:
-         midi_driver_set_all_sounds_off(p_rarch);
+         if (  p_rarch->midi_drv_data && 
+               p_rarch->midi_drv_output_enabled)
+            midi_driver_set_all_sounds_off(p_rarch);
+
          if (!audio_driver_stop(p_rarch))
             return false;
          break;
@@ -23155,14 +23157,6 @@ static midi_driver_t *midi_driver_find_driver(const char *ident)
    return &midi_null;
 }
 
-static const void *midi_driver_find_handle(int index)
-{
-   if (index < 0 || index >= ARRAY_SIZE(midi_drivers))
-      return NULL;
-
-   return midi_drivers[index];
-}
-
 struct string_list *midi_driver_get_avail_inputs(void)
 {
    struct rarch_state *p_rarch = &rarch_st;
@@ -23182,12 +23176,9 @@ static bool midi_driver_set_all_sounds_off(struct rarch_state *p_rarch)
    uint8_t data[3]     = { 0xB0, 120, 0 };
    bool result         = true;
 
-   if (!p_rarch->midi_drv_data || !p_rarch->midi_drv_output_enabled)
-      return false;
-
-   event.data       = data;
-   event.data_size  = sizeof(data);
-   event.delta_time = 0;
+   event.data          = data;
+   event.data_size     = sizeof(data);
+   event.delta_time    = 0;
 
    for (i = 0; i < 16; ++i)
    {
@@ -29071,7 +29062,9 @@ static const void *find_driver_nonempty(
    }
    else if (string_is_equal(label, "midi_driver"))
    {
-      if (midi_driver_find_handle(i))
+      bool no_handle = (i < 0 || i >= ARRAY_SIZE(midi_drivers));
+
+      if (!no_handle)
       {
          const char *ident = midi_drivers[i]->ident;
          if (!add_entry)
