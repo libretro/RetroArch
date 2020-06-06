@@ -12359,7 +12359,7 @@ bool command_event(enum event_command cmd, void *data)
          {
             bool *userdata            = (bool*)data;
             bool video_fullscreen     = settings->bools.video_fullscreen;
-            bool ra_is_forced_fs      = retroarch_is_forced_fullscreen();
+            bool ra_is_forced_fs      = p_rarch->rarch_force_fullscreen;
             bool new_fullscreen_state = !video_fullscreen && !ra_is_forced_fs;
 
             if (!video_driver_has_windowed())
@@ -26160,7 +26160,7 @@ static bool video_driver_init_internal(bool *video_is_threaded)
             aspectratio_lut[new_aspect_idx].value);
    }
 
-   if (settings->bools.video_fullscreen|| retroarch_is_forced_fullscreen())
+   if (settings->bools.video_fullscreen|| p_rarch->rarch_force_fullscreen)
    {
       width  = settings->uints.video_fullscreen_x;
       height = settings->uints.video_fullscreen_y;
@@ -26211,7 +26211,7 @@ static bool video_driver_init_internal(bool *video_is_threaded)
    video.width                       = width;
    video.height                      = height;
    video.fullscreen                  = settings->bools.video_fullscreen ||
-                                       retroarch_is_forced_fullscreen();
+                                       p_rarch->rarch_force_fullscreen;
    video.vsync                       = settings->bools.video_vsync &&
       !p_rarch->runloop_force_nonblock;
    video.force_aspect                = settings->bools.video_force_aspect;
@@ -27924,7 +27924,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->max_swapchain_images        = settings->uints.video_max_swapchain_images;
    video_info->windowed_fullscreen         = settings->bools.video_windowed_fullscreen;
    video_info->fullscreen                  = settings->bools.video_fullscreen
-      || retroarch_is_forced_fullscreen();
+      || p_rarch->rarch_force_fullscreen;
    video_info->menu_mouse_enable           = settings->bools.menu_mouse_enable;
    video_info->monitor_index               = settings->uints.video_monitor_index;
 
