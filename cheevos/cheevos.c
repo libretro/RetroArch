@@ -1078,7 +1078,8 @@ static retro_time_t rcheevos_async_send_rich_presence(rcheevos_async_io_request*
 #ifdef HAVE_DISCORD
    if (rcheevos_locals.richpresence.evaluation[0])
    {
-      if (settings->bools.discord_enable)
+      if (settings->bools.discord_enable
+            && discord_is_ready())
          discord_update(DISCORD_PRESENCE_RETROACHIEVEMENTS, false);
    }
 #endif
