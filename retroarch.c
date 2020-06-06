@@ -32990,20 +32990,10 @@ static bool input_driver_toggle_button_combo(
 #endif
 
 #if defined(HAVE_MENU)
-static bool menu_display_libretro_running(struct rarch_state *p_rarch)
-{
-   settings_t *settings        = p_rarch->configuration_settings;
-   bool menu_pause_libretro    = settings->bools.menu_pause_libretro;
-   bool rarch_is_inited        = p_rarch->rarch_is_inited;
-   bool check                  = !menu_pause_libretro
-      && rarch_is_inited
-      && (p_rarch->current_core_type != CORE_TYPE_DUMMY);
-   return check;
-}
-
 /* Display the libretro core's framebuffer onscreen. */
 static bool menu_display_libretro(
       struct rarch_state *p_rarch,
+      bool libretro_running,
       retro_time_t current_time)
 {
    bool runloop_idle           = p_rarch->runloop_idle;
@@ -33014,7 +33004,7 @@ static bool menu_display_libretro(
             p_rarch->video_driver_data,
             true, false);
 
-   if (menu_display_libretro_running(p_rarch))
+   if (libretro_running)
    {
       if (!p_rarch->input_driver_block_libretro_input)
          p_rarch->input_driver_block_libretro_input = true;
@@ -33024,7 +33014,7 @@ static bool menu_display_libretro(
          rarch_core_runtime_tick(p_rarch, current_time);
       p_rarch->input_driver_block_libretro_input  = false;
 
-      return true;
+      return false;
    }
 
    if (runloop_idle)
@@ -33035,10 +33025,9 @@ static bool menu_display_libretro(
 
       command_event(CMD_EVENT_DISCORD_UPDATE, &userdata);
 #endif
-      return false; /* Return false here for indication of idleness */
+      return false;
    }
 
-   video_driver_cached_frame();
    return true;
 }
 #endif
@@ -33513,7 +33502,11 @@ static enum runloop_state runloop_check_state(
 
       if (focused || !p_rarch->runloop_idle)
       {
-         bool libretro_running    = menu_display_libretro_running(p_rarch);
+         bool rarch_is_inited        = p_rarch->rarch_is_inited;
+         bool menu_pause_libretro    = settings->bools.menu_pause_libretro;
+         bool libretro_running       = !menu_pause_libretro
+            && rarch_is_inited
+            && (p_rarch->current_core_type != CORE_TYPE_DUMMY);
 
          if (menu)
          {
@@ -33551,7 +33544,9 @@ static enum runloop_state runloop_check_state(
             }
 
             if (p_rarch->menu_driver_alive && !p_rarch->runloop_idle)
-               menu_display_libretro(p_rarch, current_time);
+               if (menu_display_libretro(p_rarch,
+                        libretro_running, current_time))
+                  video_driver_cached_frame();
 
             if (menu->driver_ctx->set_texture)
                menu->driver_ctx->set_texture();
