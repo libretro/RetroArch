@@ -69,9 +69,6 @@ static bool is_mitm                           = false;
 extern bool discord_is_inited;
 #endif
 
-/* Forward declaration */
-static bool netplay_disconnect(netplay_t *netplay);
-
 /**
  * netplay_is_alive:
  * @netplay              : pointer to netplay object
@@ -982,6 +979,34 @@ static void netplay_frontend_paused(netplay_t *netplay, bool paused)
 }
 
 /**
+ * netplay_disconnect
+ * @netplay              : pointer to netplay object
+ *
+ * Disconnect netplay.
+ *
+ * Returns: true (1) if successful. At present, cannot fail.
+ **/
+static void netplay_disconnect(netplay_t *netplay)
+{
+   size_t i;
+
+   for (i = 0; i < netplay->connections_size; i++)
+      netplay_hangup(netplay, &netplay->connections[i]);
+
+   deinit_netplay();
+
+#ifdef HAVE_DISCORD
+   if (discord_is_inited)
+   {
+      discord_userdata_t userdata;
+      userdata.status = DISCORD_PRESENCE_NETPLAY_NETPLAY_STOPPED;
+      command_event(CMD_EVENT_DISCORD_UPDATE, &userdata);
+   }
+#endif
+}
+
+
+/**
  * netplay_pre_frame:
  * @netplay              : pointer to netplay object
  *
@@ -1348,46 +1373,16 @@ static void netplay_toggle_play_spectate(netplay_t *netplay)
    }
 }
 
-/**
- * netplay_disconnect
- * @netplay              : pointer to netplay object
- *
- * Disconnect netplay.
- *
- * Returns: true (1) if successful. At present, cannot fail.
- **/
-static bool netplay_disconnect(netplay_t *netplay)
-{
-   size_t i;
-
-   if (!netplay)
-      return true;
-   for (i = 0; i < netplay->connections_size; i++)
-      netplay_hangup(netplay, &netplay->connections[i]);
-
-   deinit_netplay();
-
-#ifdef HAVE_DISCORD
-   if (discord_is_inited)
-   {
-      discord_userdata_t userdata;
-      userdata.status = DISCORD_PRESENCE_NETPLAY_NETPLAY_STOPPED;
-      command_event(CMD_EVENT_DISCORD_UPDATE, &userdata);
-   }
-#endif
-   return true;
-}
-
 void deinit_netplay(void)
 {
    if (netplay_data)
    {
       netplay_free(netplay_data);
-      netplay_enabled = false;
+      netplay_enabled   = false;
       netplay_is_client = false;
-      is_mitm = false;
+      is_mitm           = false;
    }
-   netplay_data = NULL;
+   netplay_data         = NULL;
    core_unset_netplay_callbacks();
 }
 
@@ -1421,11 +1416,11 @@ bool init_netplay(void *direct_host, const char *server, unsigned port)
 
    /* Map the core's quirks to our quirks */
    serialization_quirks = core_serialization_quirks();
+
+   /* Quirks we don't support! Just disable everything. */
    if (serialization_quirks & ~((uint64_t) NETPLAY_QUIRK_MAP_UNDERSTOOD))
-   {
-      /* Quirks we don't support! Just disable everything. */
       quirks |= NETPLAY_QUIRK_NO_SAVESTATES;
-   }
+
    if (serialization_quirks & NETPLAY_QUIRK_MAP_NO_SAVESTATES)
       quirks |= NETPLAY_QUIRK_NO_SAVESTATES;
    if (serialization_quirks & NETPLAY_QUIRK_MAP_NO_TRANSMISSION)
@@ -1492,29 +1487,29 @@ bool init_netplay(void *direct_host, const char *server, unsigned port)
  */
 bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
 {
-   netplay_t *netplay = netplay_data;
-   bool ret           = true;
+   netplay_t *netplay          = netplay_data;
+   bool ret                    = true;
 
    if (in_netplay)
       return true;
-   in_netplay = true;
+   in_netplay                  = true;
 
    if (!netplay)
    {
       switch (state)
       {
          case RARCH_NETPLAY_CTL_ENABLE_SERVER:
-            netplay_enabled = true;
-            netplay_is_client = false;
+            netplay_enabled    = true;
+            netplay_is_client  = false;
             goto done;
 
          case RARCH_NETPLAY_CTL_ENABLE_CLIENT:
-            netplay_enabled = true;
-            netplay_is_client = true;
+            netplay_enabled    = true;
+            netplay_is_client  = true;
             break;
 
          case RARCH_NETPLAY_CTL_DISABLE:
-            netplay_enabled = false;
+            netplay_enabled    = false;
 #ifdef HAVE_DISCORD
             if (discord_is_inited)
             {
@@ -1589,7 +1584,9 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
          netplay_core_reset(netplay);
          break;
       case RARCH_NETPLAY_CTL_DISCONNECT:
-         ret = netplay_disconnect(netplay);
+         ret    = true;
+         if (netplay)
+            netplay_disconnect(netplay);
          goto done;
       case RARCH_NETPLAY_CTL_FINISHED_NAT_TRAVERSAL:
          netplay->nat_traversal_task_oustanding = false;
