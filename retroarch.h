@@ -1976,8 +1976,6 @@ const char* config_get_camera_driver_options(void);
 
 bool menu_driver_is_alive(void);
 
-void menu_driver_set_binding_state(bool on);
-
 bool gfx_widgets_ready(void);
 
 unsigned int retroarch_get_rotation(void);

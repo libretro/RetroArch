@@ -2994,21 +2994,21 @@ static int generic_menu_iterate(
       last_iterate_type           = ITERATE_TYPE_DEFAULT;
 #endif
    enum action_iterate_type iterate_type;
-   unsigned file_type             = 0;
-   int ret                        = 0;
-   const char *label              = NULL;
-   menu_handle_t *menu            = (menu_handle_t*)data;
+   unsigned file_type              = 0;
+   int ret                         = 0;
+   const char *label               = NULL;
+   menu_handle_t *menu             = (menu_handle_t*)data;
 
    if (!menu)
       return 0;
 
    menu_entries_get_last_stack(NULL, &label, &file_type, NULL, NULL);
 
-   menu->menu_state_msg[0]   = '\0';
+   menu->menu_state_msg[0]         = '\0';
 
-   iterate_type              = action_iterate_type(label);
+   iterate_type                    = action_iterate_type(label);
 
-   menu_driver_set_binding_state(iterate_type == ITERATE_TYPE_BIND);
+   p_rarch->menu_driver_is_binding = iterate_type == ITERATE_TYPE_BIND;
 
    if (     action != MENU_ACTION_NOOP
          || menu_entries_ctl(MENU_ENTRIES_CTL_NEEDS_REFRESH, NULL)
@@ -3533,13 +3533,13 @@ void menu_navigation_set_selection(size_t val)
    menu_st->selection_ptr      = val;
 }
 
-#define menu_list_get(list, idx) ((list) ? ((list)->menu_stack[(idx)]) : NULL)
+#define MENU_LIST_GET(list, idx) ((list) ? ((list)->menu_stack[(idx)]) : NULL)
 
-#define menu_list_get_selection(list, idx) ((list) ? ((list)->selection_buf[(idx)]) : NULL)
+#define MENU_LIST_GET_SELECTION(list, idx) ((list) ? ((list)->selection_buf[(idx)]) : NULL)
 
-#define menu_list_get_stack_size(list, idx) ((list)->menu_stack[(idx)]->size)
+#define MENU_LIST_GET_STACK_SIZE(list, idx) ((list)->menu_stack[(idx)]->size)
 
-#define menu_entries_get_selection_buf_ptr_internal(idx) ((menu_st->entries.list) ? menu_list_get_selection(menu_st->entries.list, (unsigned)idx) : NULL)
+#define menu_entries_get_selection_buf_ptr_internal(idx) ((menu_st->entries.list) ? MENU_LIST_GET_SELECTION(menu_st->entries.list, (unsigned)idx) : NULL)
 
 /* Menu entry interface -
  *
@@ -4166,13 +4166,13 @@ static bool menu_list_pop_stack(
 {
    menu_ctx_list_t list_info;
    bool refresh           = false;
-   file_list_t *menu_list = menu_list_get(list, (unsigned)idx);
+   file_list_t *menu_list = MENU_LIST_GET(list, (unsigned)idx);
 
-   if (menu_list_get_stack_size(list, idx) <= 1)
+   if (MENU_LIST_GET_STACK_SIZE(list, idx) <= 1)
       return false;
 
-   list_info.type   = MENU_LIST_PLAIN;
-   list_info.action = 0;
+   list_info.type         = MENU_LIST_PLAIN;
+   list_info.action       = 0;
 
    if (animate)
       menu_driver_list_cache(&list_info);
@@ -4210,7 +4210,7 @@ static void menu_list_flush_stack(
    unsigned type               = 0;
    size_t entry_idx            = 0;
    struct menu_state *menu_st  = &p_rarch->menu_driver_state;
-   file_list_t *menu_list      = menu_list_get(list, (unsigned)idx);
+   file_list_t *menu_list      = MENU_LIST_GET(list, (unsigned)idx);
 
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
    file_list_get_last(menu_list,
@@ -4227,7 +4227,7 @@ static void menu_list_flush_stack(
 
       menu_st->selection_ptr = new_selection_ptr;
 
-      menu_list = menu_list_get(list, (unsigned)idx);
+      menu_list              = MENU_LIST_GET(list, (unsigned)idx);
 
       file_list_get_last(menu_list,
             &path, &label, &type, &entry_idx);
@@ -4370,7 +4370,7 @@ menu_file_list_cbs_t *menu_entries_get_last_stack_actiondata(void)
    struct menu_state  *menu_st = &p_rarch->menu_driver_state;
    if (menu_st->entries.list)
    {
-      const file_list_t *list = menu_list_get(menu_st->entries.list, 0);
+      const file_list_t *list  = MENU_LIST_GET(menu_st->entries.list, 0);
       return (menu_file_list_cbs_t*)list->list[list->size - 1].actiondata;
    }
    return NULL;
@@ -4385,7 +4385,7 @@ int menu_entries_get_title(char *s, size_t len)
    struct rarch_state   *p_rarch = &rarch_st;
    struct menu_state    *menu_st = &p_rarch->menu_driver_state;
    const file_list_t *list       = menu_st->entries.list ?
-      menu_list_get(menu_st->entries.list, 0) : NULL;
+      MENU_LIST_GET(menu_st->entries.list, 0) : NULL;
    menu_file_list_cbs_t *cbs     = list
       ? (menu_file_list_cbs_t*)list->list[list->size - 1].actiondata
       : NULL;
@@ -4415,7 +4415,9 @@ int menu_entries_get_title(char *s, size_t len)
 int menu_entries_get_core_title(char *s, size_t len)
 {
    struct retro_system_info    *system = runloop_get_libretro_system_info();
-   const char *core_name               = (system && !string_is_empty(system->library_name)) ? system->library_name    : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE);
+   const char *core_name               = (system && !string_is_empty(system->library_name)) 
+      ? system->library_name    
+      : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE);
    const char *core_version            = (system && system->library_version) ? system->library_version : "";
 #if _MSC_VER == 1200
    strlcpy(s, PACKAGE_VERSION " msvc6" " - ", len);
@@ -4458,7 +4460,7 @@ file_list_t *menu_entries_get_menu_stack_ptr(size_t idx)
    menu_list_t *menu_list         = menu_st->entries.list;
    if (!menu_list)
       return NULL;
-   return menu_list_get(menu_list, (unsigned)idx);
+   return MENU_LIST_GET(menu_list, (unsigned)idx);
 }
 
 file_list_t *menu_entries_get_selection_buf_ptr(size_t idx)
@@ -4468,7 +4470,7 @@ file_list_t *menu_entries_get_selection_buf_ptr(size_t idx)
    menu_list_t *menu_list         = menu_st->entries.list;
    if (!menu_list)
       return NULL;
-   return menu_list_get_selection(menu_list, (unsigned)idx);
+   return MENU_LIST_GET_SELECTION(menu_list, (unsigned)idx);
 }
 
 static void menu_entries_list_deinit(struct rarch_state *p_rarch)
@@ -4718,7 +4720,7 @@ void menu_entries_get_last_stack(const char **path, const char **label,
    if (!menu_st->entries.list)
       return;
 
-   list = menu_list_get(menu_st->entries.list, 0);
+   list                           = MENU_LIST_GET(menu_st->entries.list, 0);
 
    file_list_get_last(list,
          path, label, file_type, entry_idx);
@@ -4759,7 +4761,7 @@ size_t menu_entries_get_stack_size(size_t idx)
    menu_list_t *menu_list         = menu_st->entries.list;
    if (!menu_list)
       return 0;
-   return menu_list_get_stack_size(menu_list, idx);
+   return MENU_LIST_GET_STACK_SIZE(menu_list, idx);
 }
 
 size_t menu_entries_get_size(void)
@@ -4770,7 +4772,7 @@ size_t menu_entries_get_size(void)
    menu_list_t *menu_list         = menu_st->entries.list;
    if (!menu_list)
       return 0;
-   list                           = menu_list_get_selection(menu_list, 0);
+   list                           = MENU_LIST_GET_SELECTION(menu_list, 0);
    return list->size;
 }
 
@@ -4867,7 +4869,7 @@ bool menu_entries_ctl(enum menu_entries_ctl_state state, void *data)
           * one level deep in the menu hierarchy). */
          if (!menu_st->entries.list)
             return false;
-         return (menu_list_get_stack_size(menu_st->entries.list, 0) > 1);
+         return (MENU_LIST_GET_STACK_SIZE(menu_st->entries.list, 0) > 1);
       case MENU_ENTRIES_CTL_NONE:
       default:
          break;
@@ -7504,9 +7506,8 @@ enum rarch_content_type path_is_media_type(const char *path)
    return RARCH_CONTENT_NONE;
 }
 
-void path_deinit_subsystem(void)
+static void path_deinit_subsystem(struct rarch_state *p_rarch)
 {
-   struct rarch_state     *p_rarch = &rarch_st;
    if (p_rarch->subsystem_fullpaths)
       string_list_free(p_rarch->subsystem_fullpaths);
    p_rarch->subsystem_fullpaths = NULL;
@@ -7981,12 +7982,6 @@ bool menu_driver_is_alive(void)
 {
    struct rarch_state *p_rarch = &rarch_st;
    return p_rarch->menu_driver_alive;
-}
-
-void menu_driver_set_binding_state(bool on)
-{
-   struct rarch_state *p_rarch     = &rarch_st;
-   p_rarch->menu_driver_is_binding = on;
 }
 #endif
 
@@ -12836,7 +12831,7 @@ static void global_free(struct rarch_state *p_rarch)
 
    content_deinit();
 
-   path_deinit_subsystem();
+   path_deinit_subsystem(p_rarch);
    command_event(CMD_EVENT_RECORD_DEINIT, NULL);
    command_event(CMD_EVENT_LOG_FILE_DEINIT, NULL);
 
@@ -32104,7 +32099,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
 
          content_deinit();
 
-         path_deinit_subsystem();
+         path_deinit_subsystem(p_rarch);
          path_deinit_savefile();
 
          p_rarch->rarch_is_inited         = false;

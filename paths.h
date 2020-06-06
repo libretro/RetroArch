@@ -67,8 +67,6 @@ void dir_set(enum rarch_dir_type type, const char *path);
 
 void dir_check_defaults(void);
 
-void path_deinit_subsystem(void);
-
 void path_deinit_savefile(void);
 
 bool path_set(enum rarch_path_type type, const char *path);
