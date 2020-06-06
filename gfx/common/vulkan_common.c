@@ -1675,10 +1675,6 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
       "VK_KHR_sampler_mirror_clamp_to_edge",
    };
 
-#ifdef VULKAN_DEBUG
-   static const char *device_layers[] = { "VK_LAYER_LUNARG_standard_validation" };
-#endif
-
    struct retro_hw_render_context_negotiation_interface_vulkan *iface =
       (struct retro_hw_render_context_negotiation_interface_vulkan*)video_driver_get_context_negotiation_interface();
 
@@ -1705,13 +1701,8 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
             vulkan_symbol_wrapper_instance_proc_addr(),
             device_extensions,
             ARRAY_SIZE(device_extensions),
-#ifdef VULKAN_DEBUG
-            device_layers,
-            ARRAY_SIZE(device_layers),
-#else
             NULL,
             0,
-#endif
             &features);
 
       if (!ret)
@@ -1861,10 +1852,6 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
       device_info.enabledExtensionCount   = enabled_device_extension_count;
       device_info.ppEnabledExtensionNames = enabled_device_extension_count ? enabled_device_extensions : NULL;
       device_info.pEnabledFeatures        = &features;
-#ifdef VULKAN_DEBUG
-      device_info.enabledLayerCount       = ARRAY_SIZE(device_layers);
-      device_info.ppEnabledLayerNames     = device_layers;
-#endif
 
       if (cached_device_vk)
       {
@@ -1917,7 +1904,7 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
 
 #ifdef VULKAN_DEBUG
    instance_extensions[ext_count++] = "VK_EXT_debug_report";
-   static const char *instance_layers[] = { "VK_LAYER_LUNARG_standard_validation" };
+   static const char *instance_layers[] = { "VK_LAYER_KHRONOS_validation" };
 #endif
 
    bool use_instance_ext;
