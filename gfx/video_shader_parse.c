@@ -555,14 +555,14 @@ bool video_shader_resolve_parameters(config_file_t *conf,
          param->desc[63] = '\0';
 
          if (ret == 5)
-            param->step = 0.1f * (param->maximum - param->minimum);
+            param->step  = 0.1f * (param->maximum - param->minimum);
 
-         param->pass = i;
+         param->pass     = i;
 
          RARCH_LOG("Found #pragma parameter %s (%s) %f %f %f %f in pass %d\n",
                param->desc,    param->id,      param->initial,
                param->minimum, param->maximum, param->step, param->pass);
-         param->current = param->initial;
+         param->current  = param->initial;
 
          shader->num_parameters++;
          param++;
@@ -624,8 +624,7 @@ bool video_shader_write_preset(const char *path,
    {
       /* write a reference preset */
       char buf[STRLEN_CONST("#reference \"") + PATH_MAX_LENGTH + 1] = "#reference \"";
-      size_t len = STRLEN_CONST("#reference \"");
-
+      size_t       len = STRLEN_CONST("#reference \"");
       char *preset_ref = buf + len;
 
       strlcpy(clean_path, path, PATH_MAX_LENGTH);
@@ -734,9 +733,7 @@ char *video_shader_read_reference_path(const char *path)
             p++;
 
          if (*p == '\"')
-         {
             *p = '\0';
-         }
          else
          {
             /* if there's no second ", remove whitespace at the end */
@@ -763,10 +760,8 @@ char *video_shader_read_reference_path(const char *path)
 
       /* rebase relative reference path */
       if (!path_is_absolute(ref_path))
-      {
          fill_pathname_resolve_relative(reference,
                path, ref_path, PATH_MAX_LENGTH);
-      }
       else
          strlcpy(reference, ref_path, PATH_MAX_LENGTH);
    }
@@ -889,10 +884,7 @@ bool video_shader_read_conf_preset(config_file_t *conf,
          string_list_free(file_list);
    }
 
-   if (!video_shader_parse_textures(conf, shader))
-      return false;
-
-   return true;
+   return video_shader_parse_textures(conf, shader);
 }
 
 /* CGP store */

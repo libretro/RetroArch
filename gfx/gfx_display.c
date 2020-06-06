@@ -69,10 +69,11 @@ struct gfx_display
 
 typedef struct gfx_display gfx_display_t;
 
-static gfx_display_t dispgfx;
-
 static gfx_display_t *disp_get_ptr(void)
 {
+   /* TODO/FIXME - global that gets referenced outside,
+    * needs to be refactored */
+   static gfx_display_t dispgfx;
    return &dispgfx;
 }
 

@@ -85,10 +85,6 @@ static const float ticker_pixel_period = (1.0f / 60.0f) * 1000.0f;
 
 static const char ticker_spacer_default[] = TICKER_SPACER_DEFAULT;
  
-/* TODO/FIXME - global that gets referenced outside,
- * needs to be refactored */
-static gfx_animation_t anim;
-
 /* Forward declarations */
 static void gfx_animation_update_time_default(
       float *dst,
@@ -100,6 +96,9 @@ static update_time_cb update_time_callback = gfx_animation_update_time_default;
 
 static gfx_animation_t *anim_get_ptr(void)
 {
+   /* TODO/FIXME - global that gets referenced outside,
+    * needs to be refactored */
+   static gfx_animation_t anim;
    return &anim;
 }
 
@@ -1062,6 +1061,7 @@ void gfx_animation_push_delayed(
 bool gfx_animation_push(gfx_animation_ctx_entry_t *entry)
 {
    struct tween t;
+   gfx_animation_t *p_anim = anim_get_ptr();
 
    t.duration           = entry->duration;
    t.running_since      = 0;
@@ -1191,17 +1191,17 @@ bool gfx_animation_push(gfx_animation_ctx_entry_t *entry)
    if (!t.easing || t.duration == 0 || t.initial_value == t.target_value)
       return false;
 
-   if (!anim.initialized)
+   if (!p_anim->initialized)
    {
-      da_init(anim.list);
-      da_init(anim.pending);
-      anim.initialized = true;
+      da_init(p_anim->list);
+      da_init(p_anim->pending);
+      p_anim->initialized = true;
    }
 
-   if (anim.in_update)
-      da_push(anim.pending, t);
+   if (p_anim->in_update)
+      da_push(p_anim->pending, t);
    else
-      da_push(anim.list, t);
+      da_push(p_anim->list, t);
 
    return true;
 }
@@ -2240,24 +2240,25 @@ bool gfx_animation_is_active(void)
 bool gfx_animation_kill_by_tag(gfx_animation_ctx_tag *tag)
 {
    unsigned i;
+   gfx_animation_t *p_anim = anim_get_ptr();
 
    if (!tag || *tag == (uintptr_t)-1)
       return false;
 
-   for (i = 0; i < da_count(anim.list); ++i)
+   for (i = 0; i < da_count(p_anim->list); ++i)
    {
-      struct tween *t = da_getptr(anim.list, i);
+      struct tween *t = da_getptr(p_anim->list, i);
       if (!t || t->tag != *tag)
          continue;
 
-      if (anim.in_update)
+      if (p_anim->in_update)
       {
-         t->deleted = true;
-         anim.pending_deletes = true;
+         t->deleted              = true;
+         p_anim->pending_deletes = true;
       }
       else
       {
-         da_delete(anim.list, i);
+         da_delete(p_anim->list, i);
          --i;
       }
    }
@@ -2267,12 +2268,13 @@ bool gfx_animation_kill_by_tag(gfx_animation_ctx_tag *tag)
 
 void gfx_animation_kill_by_subject(gfx_animation_ctx_subject_t *subject)
 {
-   unsigned i, j,  killed = 0;
-   float            **sub = (float**)subject->data;
+   unsigned i, j,   killed = 0;
+   float             **sub = (float**)subject->data;
+   gfx_animation_t *p_anim = anim_get_ptr();
 
-   for (i = 0; i < da_count(anim.list) && killed < subject->count; ++i)
+   for (i = 0; i < da_count(p_anim->list) && killed < subject->count; ++i)
    {
-      struct tween *t = da_getptr(anim.list, i);
+      struct tween *t = da_getptr(p_anim->list, i);
       if (!t)
          continue;
 
@@ -2281,14 +2283,14 @@ void gfx_animation_kill_by_subject(gfx_animation_ctx_subject_t *subject)
          if (t->subject != sub[j])
             continue;
 
-         if (anim.in_update)
+         if (p_anim->in_update)
          {
-            t->deleted = true;
-            anim.pending_deletes = true;
+            t->deleted              = true;
+            p_anim->pending_deletes = true;
          }
          else
          {
-            da_delete(anim.list, i);
+            da_delete(p_anim->list, i);
             --i;
          }
 
@@ -2314,9 +2316,9 @@ bool gfx_animation_ctl(enum gfx_animation_ctl_state state, void *data)
          {
             size_t i;
 
-            for (i = 0; i < da_count(anim.list); i++)
+            for (i = 0; i < da_count(p_anim->list); i++)
             {
-               struct tween *t = da_getptr(anim.list, i);
+               struct tween *t = da_getptr(p_anim->list, i);
                if (!t)
                   continue;
 
@@ -2324,10 +2326,10 @@ bool gfx_animation_ctl(enum gfx_animation_ctl_state state, void *data)
                   t->subject = NULL;
             }
 
-            da_free(anim.list);
-            da_free(anim.pending);
+            da_free(p_anim->list);
+            da_free(p_anim->pending);
 
-            memset(&anim, 0, sizeof(anim));
+            memset(&p_anim, 0, sizeof(p_anim));
          }
          p_anim->cur_time            = 0;
          p_anim->old_time            = 0;
