@@ -1075,6 +1075,8 @@ static const unsigned input_bind_timeout = 5;
 
 static const unsigned input_bind_hold = 2;
 
+static const unsigned input_hotkey_block_delay = 0;
+
 static const unsigned gfx_thumbnails_default = 3;
 
 static const unsigned menu_left_thumbnails_default = 0;
