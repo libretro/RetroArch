@@ -230,7 +230,6 @@ OBJ += \
        file_path_str.o \
        $(LIBRETRO_COMM_DIR)/hash/rhash.o \
        input/common/input_hid_common.o \
-       input/input_mapper.o \
        led/led_driver.o \
        gfx/video_coord_array.o \
        gfx/video_crt_switch.o \

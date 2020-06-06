@@ -4,6 +4,7 @@
  *  Copyright (C) 2012-2015 - Michael Lelli
  *  Copyright (C) 2014-2017 - Jean-André Santoni
  *  Copyright (C) 2016-2019 - Brad Parker
+ *  Copyright (C) 2016-2019 - Andrés Suárez (input mapper code)
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -152,7 +153,6 @@
 #include "gfx/gfx_widgets.h"
 #endif
 
-#include "input/input_mapper.h"
 #include "input/input_keymaps.h"
 #include "input/input_remapping.h"
 
@@ -1283,6 +1283,10 @@ static const camera_driver_t *camera_drivers[] = {
    } \
 }
 
+#define MAPPER_GET_KEY(state, key) (((state)->keys[(key) / 32] >> ((key) % 32)) & 1)
+#define MAPPER_SET_KEY(state, key) (state)->keys[(key) / 32] |= 1 << ((key) % 32)
+
+
 #ifdef HAVE_MENU
 #define MENU_LIST_GET(list, idx) ((list) ? ((list)->menu_stack[(idx)]) : NULL)
 
@@ -1744,6 +1748,16 @@ struct menu_state
    char datetime_cache[255];
 };
 #endif
+
+typedef struct input_mapper
+{
+   /* Left X, Left Y, Right X, Right Y */
+   int16_t analog_value[MAX_USERS][8];
+   /* the whole keyboard state */
+   uint32_t keys[RETROK_LAST / 32 + 1];
+   /* This is a bitmask of (1 << key_bind_id). */
+   input_bits_t buttons[MAX_USERS];
+} input_mapper_t;
 
 struct rarch_state
 {
@@ -18833,7 +18847,7 @@ float input_sensor_get_input(unsigned port, unsigned id)
  **/
 static void input_driver_poll(void)
 {
-   size_t i;
+   size_t i, j;
    rarch_joypad_info_t joypad_info[MAX_USERS];
    struct rarch_state    *p_rarch = &rarch_st;
    settings_t *settings           = p_rarch->configuration_settings;
@@ -18842,7 +18856,6 @@ static void input_driver_poll(void)
 #endif
    bool input_remap_binds_enable  = settings->bools.input_remap_binds_enable;
    uint8_t max_users              = (uint8_t)p_rarch->input_driver_max_users;
-   input_bits_t current_inputs[MAX_USERS];
 
    p_rarch->current_input->poll(p_rarch->current_input_data);
 
@@ -18881,30 +18894,45 @@ static void input_driver_poll(void)
 #endif
    if (input_remap_binds_enable && p_rarch->input_driver_mapper)
    {
+#ifdef HAVE_OVERLAY
+      input_overlay_t *overlay_pointer = (input_overlay_t*)p_rarch->overlay_ptr;
+#endif
+      bool poll_overlay                = (p_rarch->overlay_ptr && p_rarch->overlay_ptr->alive);
+      input_mapper_t *handle           = p_rarch->input_driver_mapper;
+      const input_device_driver_t *joypad_driver 
+                                       = input_driver_get_joypad_driver();
+
+      memset(handle->keys, 0, sizeof(handle->keys));
+
       for (i = 0; i < max_users; i++)
       {
-         unsigned device = settings->uints.input_libretro_device[i] & RETRO_DEVICE_MASK;
+         input_bits_t current_inputs;
+         unsigned device       
+            = settings->uints.input_libretro_device[i] 
+            & RETRO_DEVICE_MASK;
+         input_bits_t *p_new_state                  
+            = (input_bits_t*)&current_inputs;
 
          switch (device)
          {
             case RETRO_DEVICE_KEYBOARD:
             case RETRO_DEVICE_JOYPAD:
             case RETRO_DEVICE_ANALOG:
-               BIT256_CLEAR_ALL_PTR(&current_inputs[i]);
+               BIT256_CLEAR_ALL_PTR(&current_inputs);
                {
                   unsigned k, j;
-                  const input_device_driver_t *joypad_driver   = input_driver_get_joypad_driver();
-                  input_bits_t *p_new_state                    = (input_bits_t*)&current_inputs[i];
 
                   if (joypad_driver)
                   {
                      int16_t ret = 0;
-                     if (p_rarch->current_input && p_rarch->current_input->input_state)
+                     if (  p_rarch->current_input && 
+                           p_rarch->current_input->input_state)
                         ret = p_rarch->current_input->input_state(
                               p_rarch->current_input_data,
                               &joypad_info[i],
                               p_rarch->libretro_input_binds,
-                              (unsigned)i, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_MASK);
+                              (unsigned)i, RETRO_DEVICE_JOYPAD,
+                              0, RETRO_DEVICE_ID_JOYPAD_MASK);
 
                      for (k = 0; k < RARCH_FIRST_CUSTOM_BIND; k++)
                      {
@@ -18927,7 +18955,8 @@ static void input_driver_poll(void)
                         for (j = 0; j < 2; j++)
                         {
                            unsigned offset = 0 + (k * 4) + (j * 2);
-                           int16_t     val = input_joypad_analog(joypad_driver,
+                           int16_t     val = input_joypad_analog(
+                                 joypad_driver,
                                  &joypad_info[i], (unsigned)i, k, j,
                                  p_rarch->libretro_input_binds[i]);
 
@@ -18944,22 +18973,146 @@ static void input_driver_poll(void)
                break;
          }
 
+         /* mapper */
+         switch (device)
+         {
+            /* keyboard to gamepad remapping */
+            case RETRO_DEVICE_KEYBOARD:
+               for (j = 0; j < RARCH_CUSTOM_BIND_LIST_END; j++)
+               {
+                  unsigned remap_button         =
+                     settings->uints.input_keymapper_ids[i][j];
+                  bool remap_valid              = remap_button != RETROK_UNKNOWN;
+                  if (remap_valid)
+                  {
+                     unsigned current_button_value = BIT256_GET_PTR(p_new_state, j);
+#ifdef HAVE_OVERLAY
+                     if (poll_overlay && i == 0)
+                        current_button_value |= input_overlay_key_pressed(overlay_pointer, j);
+#endif
+                     if ((current_button_value == 1) && (j != remap_button))
+                     {
+                        MAPPER_SET_KEY (handle,
+                              remap_button);
+                        input_keyboard_event(true,
+                              remap_button,
+                              0, 0, RETRO_DEVICE_KEYBOARD);
+                        continue;
+                     }
+
+                     /* Release keyboard event*/
+                     input_keyboard_event(false,
+                           remap_button,
+                           0, 0, RETRO_DEVICE_KEYBOARD);
+                  }
+               }
+               break;
+
+               /* gamepad remapping */
+            case RETRO_DEVICE_JOYPAD:
+            case RETRO_DEVICE_ANALOG:
+               /* this loop iterates on all users and all buttons,
+                * and checks if a pressed button is assigned to any
+                * other button than the default one, then it sets
+                * the bit on the mapper input bitmap, later on the
+                * original input is cleared in input_state */
+               BIT256_CLEAR_ALL(handle->buttons[i]);
+
+               for (j = 0; j < 8; j++)
+                  handle->analog_value[i][j] = 0;
+
+               for (j = 0; j < RARCH_FIRST_CUSTOM_BIND; j++)
+               {
+                  bool remap_valid;
+                  unsigned remap_button         =
+                     settings->uints.input_remap_ids[i][j];
+                  unsigned current_button_value = BIT256_GET_PTR(p_new_state, j);
+#ifdef HAVE_OVERLAY
+                  if (poll_overlay && i == 0)
+                     current_button_value      |= 
+                        input_overlay_key_pressed(overlay_pointer, j);
+#endif
+                  remap_valid                   = 
+                     (current_button_value == 1) &&
+                     (j != remap_button)         &&
+                     (remap_button != RARCH_UNMAPPED);
+
+#ifdef HAVE_ACCESSIBILITY
+                  /* gamepad override */
+                  if (i==0 && p_rarch->gamepad_input_override & (1<<j))
+                  {
+                     BIT256_SET(handle->buttons[i], j);
+                  }
+#endif
+
+                  if (remap_valid)
+                  {
+                     if (remap_button < RARCH_FIRST_CUSTOM_BIND)
+                     {
+                        BIT256_SET(handle->buttons[i], remap_button);
+                     }
+                     else if (remap_button >= RARCH_FIRST_CUSTOM_BIND)
+                     {
+                        int invert = 1;
+
+                        if (remap_button % 2 != 0)
+                           invert = -1;
+
+                        handle->analog_value[i][
+                           remap_button - RARCH_FIRST_CUSTOM_BIND] =
+                              (p_new_state->analog_buttons[j] 
+                               ? p_new_state->analog_buttons[j] 
+                               : 32767) * invert;
+                     }
+                  }
+               }
+
+               for (j = 0; j < 8; j++)
+               {
+                  unsigned k                 = j + RARCH_FIRST_CUSTOM_BIND;
+                  int16_t current_axis_value = p_new_state->analogs[j];
+                  unsigned remap_axis        =
+                     settings->uints.input_remap_ids[i][k];
+
+                  if (
+                        (abs(current_axis_value) > 0 &&
+                         (k != remap_axis)            &&
+                         (remap_axis != RARCH_UNMAPPED)
+                        ))
+                  {
+                     if (remap_axis < RARCH_FIRST_CUSTOM_BIND &&
+                           abs(current_axis_value) > 
+                           p_rarch->input_driver_axis_threshold
+                            * 32767)
+                     {
+                        BIT256_SET(handle->buttons[i], remap_axis);
+                     }
+                     else
+                     {
+                        unsigned remap_axis_bind = 
+                           remap_axis - RARCH_FIRST_CUSTOM_BIND;
+
+                        if (remap_axis_bind < sizeof(handle->analog_value[i]))
+                        {
+                           int invert = 1;
+                           if (  (k % 2 == 0 && remap_axis % 2 != 0) ||
+                                 (k % 2 != 0 && remap_axis % 2 == 0)
+                              )
+                              invert = -1;
+
+                           handle->analog_value[i][
+                              remap_axis_bind] =
+                                 current_axis_value * invert;
+                        }
+                     }
+                  }
+
+               }
+               break;
+            default:
+               break;
+         }
       }
-      input_mapper_poll(p_rarch->input_driver_mapper,
-#ifdef HAVE_OVERLAY
-            p_rarch->overlay_ptr,
-#else
-            NULL,
-#endif
-            settings,
-            &current_inputs,
-            max_users,
-#ifdef HAVE_OVERLAY
-            (p_rarch->overlay_ptr && p_rarch->overlay_ptr->alive)
-#else
-            false
-#endif
-            );
    }
 
 #ifdef HAVE_COMMAND
@@ -18989,9 +19142,9 @@ static void input_driver_poll(void)
          if (settings->bools.network_remote_enable_user[user])
          {
 #if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
-            struct remote_message msg;
-            ssize_t ret;
             fd_set fds;
+            ssize_t ret;
+            struct remote_message msg;
 
             if (p_rarch->input_driver_remote->net_fd[user] < 0)
                return;
@@ -18999,7 +19152,8 @@ static void input_driver_poll(void)
             FD_ZERO(&fds);
             FD_SET(p_rarch->input_driver_remote->net_fd[user], &fds);
 
-            ret = recvfrom(p_rarch->input_driver_remote->net_fd[user], (char*)&msg,
+            ret = recvfrom(p_rarch->input_driver_remote->net_fd[user],
+                  (char*)&msg,
                   sizeof(msg), 0, NULL, NULL);
 
             if (ret == sizeof(msg))
@@ -34935,12 +35089,6 @@ static bool accessibility_startup_message(struct rarch_state *p_rarch)
          "RetroArch accessibility on.  Main Menu Load Core.",
          10);
    return true;
-}
-
-unsigned get_gamepad_input_override(void)
-{
-   struct rarch_state *p_rarch        = &rarch_st;
-   return p_rarch->gamepad_input_override;
 }
 
 static void set_gamepad_input_override(struct rarch_state *p_rarch,
