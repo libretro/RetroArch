@@ -574,8 +574,6 @@ border_iterate:
       menu_entry_init(&entry);
       entry.path_enabled  = false;
       entry.label_enabled = false;
-      menu_entry_get(&entry, 0, (unsigned)i, selection_buf, true);
-      menu_entry_get_value(&entry, &entry_value);
 
       if (!node)
          continue;
@@ -584,6 +582,9 @@ border_iterate:
          goto icons_iterate;
       else if (y + scroll_y - node->height - 20 * scale_factor > bottom_boundary)
          goto icons_iterate;
+
+      menu_entry_get(&entry, 0, (unsigned)i, selection_buf, true);
+      menu_entry_get_value(&entry, &entry_value);
 
       /* Prepare text */
       menu_entry_get_rich_label(&entry, &entry_rich_label);
