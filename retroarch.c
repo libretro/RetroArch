@@ -4875,16 +4875,17 @@ bool menu_entries_ctl(enum menu_entries_ctl_state state, void *data)
    return true;
 }
 
-void menu_display_handle_thumbnail_upload(retro_task_t *task,
+static void menu_display_common_image_upload(
       void *task_data,
-      void *user_data, const char *err)
+      void *user_data,
+      unsigned type)
 {
    menu_ctx_load_image_t load_image_info;
-   struct rarch_state   *p_rarch  = &rarch_st;
    struct texture_image      *img = (struct texture_image*)task_data;
+   struct rarch_state   *p_rarch  = &rarch_st;
 
-   load_image_info.data = img;
-   load_image_info.type = MENU_IMAGE_THUMBNAIL;
+   load_image_info.data           = img;
+   load_image_info.type           = type;
 
    if (     p_rarch->menu_driver_ctx 
          && p_rarch->menu_driver_ctx->load_image)
@@ -4896,71 +4897,48 @@ void menu_display_handle_thumbnail_upload(retro_task_t *task,
    free(user_data);
 }
 
-
-void menu_display_handle_left_thumbnail_upload(retro_task_t *task,
+/* TODO/FIXME - seems only RGUI uses this - can this be 
+ * refactored away or we can have one common function used
+ * across all menu drivers? */
+#ifdef HAVE_RGUI
+void menu_display_handle_thumbnail_upload(
+      retro_task_t *task,
       void *task_data,
       void *user_data, const char *err)
 {
-   menu_ctx_load_image_t load_image_info;
-   struct rarch_state   *p_rarch  = &rarch_st;
-   struct texture_image      *img = (struct texture_image*)task_data;
-
-   load_image_info.data           = img;
-   load_image_info.type           = MENU_IMAGE_LEFT_THUMBNAIL;
-
-   if (     p_rarch->menu_driver_ctx 
-         && p_rarch->menu_driver_ctx->load_image)
-      p_rarch->menu_driver_ctx->load_image(p_rarch->menu_userdata,
-            load_image_info.data, load_image_info.type);
-
-   image_texture_free(img);
-   free(img);
-   free(user_data);
+   menu_display_common_image_upload(task_data, user_data,
+         MENU_IMAGE_THUMBNAIL);
 }
 
-void menu_display_handle_savestate_thumbnail_upload(retro_task_t *task,
+void menu_display_handle_left_thumbnail_upload(
+      retro_task_t *task,
       void *task_data,
       void *user_data, const char *err)
 {
-   menu_ctx_load_image_t load_image_info;
-   struct rarch_state   *p_rarch  = &rarch_st;
-   struct texture_image      *img = (struct texture_image*)task_data;
+   menu_display_common_image_upload(task_data, user_data,
+         MENU_IMAGE_LEFT_THUMBNAIL);
+}
+#endif
 
-   load_image_info.data           = img;
-   load_image_info.type           = MENU_IMAGE_SAVESTATE_THUMBNAIL;
-
-   if (     p_rarch->menu_driver_ctx 
-         && p_rarch->menu_driver_ctx->load_image)
-      p_rarch->menu_driver_ctx->load_image(p_rarch->menu_userdata,
-            load_image_info.data, load_image_info.type);
-
-   image_texture_free(img);
-   free(img);
-   free(user_data);
+void menu_display_handle_savestate_thumbnail_upload(
+      retro_task_t *task,
+      void *task_data,
+      void *user_data, const char *err)
+{
+   menu_display_common_image_upload(task_data, user_data,
+         MENU_IMAGE_SAVESTATE_THUMBNAIL);
 }
 
 /* Function that gets called when we want to load in a
  * new menu wallpaper.
  */
-void menu_display_handle_wallpaper_upload(retro_task_t *task,
+void menu_display_handle_wallpaper_upload(
+      retro_task_t *task,
       void *task_data,
       void *user_data, const char *err)
 {
-   menu_ctx_load_image_t load_image_info;
-   struct rarch_state   *p_rarch  = &rarch_st;
-   struct texture_image      *img = (struct texture_image*)task_data;
-
-   load_image_info.data           = img;
-   load_image_info.type           = MENU_IMAGE_WALLPAPER;
-
-   if (     p_rarch->menu_driver_ctx 
-         && p_rarch->menu_driver_ctx->load_image)
-      p_rarch->menu_driver_ctx->load_image(p_rarch->menu_userdata,
-            load_image_info.data, load_image_info.type);
-
-   image_texture_free(img);
-   free(img);
-   free(user_data);
+   menu_display_common_image_upload(task_data, user_data,
+         MENU_IMAGE_WALLPAPER);
 }
 
 /**
