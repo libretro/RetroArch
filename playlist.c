@@ -2898,3 +2898,66 @@ void playlist_set_sort_mode(playlist_t *playlist, enum playlist_sort_mode sort_m
       playlist->modified  = true;
    }
 }
+
+/* Returns true if specified entry has a valid
+ * core association (i.e. a non-empty string
+ * other than DETECT) */
+bool playlist_entry_has_core(const struct playlist_entry *entry)
+{
+   if (!entry ||
+       string_is_empty(entry->core_path) ||
+       string_is_empty(entry->core_name) ||
+       string_is_equal(entry->core_path, "DETECT") ||
+       string_is_equal(entry->core_name, "DETECT"))
+      return false;
+
+   return true;
+}
+
+/* Fetches core info object corresponding to the
+ * currently associated core of the specified
+ * playlist entry.
+ * Returns NULL if entry does not have a valid
+ * core association */
+core_info_t *playlist_entry_get_core_info(const struct playlist_entry* entry)
+{
+   core_info_ctx_find_t core_info;
+
+   if (!playlist_entry_has_core(entry))
+      return NULL;
+
+   /* Search for associated core */
+   core_info.inf  = NULL;
+   core_info.path = entry->core_path;
+
+   if (core_info_find(&core_info))
+      return core_info.inf;
+
+   return NULL;
+}
+
+/* Fetches core info object corresponding to the
+ * currently associated default core of the
+ * specified playlist.
+ * Returns NULL if playlist does not have a valid
+ * default core association */
+core_info_t *playlist_get_default_core_info(playlist_t* playlist)
+{
+   core_info_ctx_find_t core_info;
+
+   if (!playlist ||
+       string_is_empty(playlist->default_core_path) ||
+       string_is_empty(playlist->default_core_name) ||
+       string_is_equal(playlist->default_core_path, "DETECT") ||
+       string_is_equal(playlist->default_core_name, "DETECT"))
+      return NULL;
+
+   /* Search for associated core */
+   core_info.inf  = NULL;
+   core_info.path = playlist->default_core_path;
+
+   if (core_info_find(&core_info))
+      return core_info.inf;
+
+   return NULL;
+}

@@ -72,7 +72,7 @@ static int menu_action_sublabel_file_browser_core(file_list_t *list, unsigned ty
    core_info.inf  = NULL;
    core_info.path = path;
 
-   if (core_info_find(&core_info, path) &&
+   if (core_info_find(&core_info) &&
        core_info.inf->licenses_list)
    {
       char tmp[MENU_SUBLABEL_MAX_LENGTH];

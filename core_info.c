@@ -207,6 +207,8 @@ static void core_info_list_free(core_info_list_t *core_info_list)
          free(info->firmware[j].desc);
       }
       free(info->firmware);
+
+      free(info->core_file_id.str);
    }
 
    free(core_info_list->all_ext);
@@ -504,11 +506,43 @@ static core_info_list_t *core_info_list_new(const char *path,
       }
 
       if (!string_is_empty(base_path))
+      {
+         const char *core_filename = path_basename(base_path);
+
+         /* Cache core path */
          core_info[i].path = strdup(base_path);
 
-      if (!core_info[i].display_name)
-         core_info[i].display_name =
-            strdup(path_basename(core_info[i].path));
+         /* Cache core file 'id'
+          * > Filename without extension or platform-specific suffix */
+         if (!string_is_empty(core_filename))
+         {
+            char *core_file_id = strdup(core_filename);
+            path_remove_extension(core_file_id);
+
+            if (!string_is_empty(core_file_id))
+            {
+#if defined(RARCH_MOBILE) || (defined(RARCH_CONSOLE) && !defined(PSP) && !defined(_3DS) && !defined(VITA) && !defined(HW_WUP))
+               char *last_underscore = strrchr(core_file_id, '_');
+               if (last_underscore)
+                  *last_underscore = '\0';
+#endif
+               core_info[i].core_file_id.str = core_file_id;
+               core_info[i].core_file_id.len = strlen(core_file_id);
+
+               core_file_id = NULL;
+            }
+
+            if (core_file_id)
+            {
+               free(core_file_id);
+               core_file_id = NULL;
+            }
+
+            /* Get fallback display name, if required */
+            if (!core_info[i].display_name)
+               core_info[i].display_name = strdup(core_filename);
+         }
+      }
    }
 
    if (core_info_list)
@@ -529,7 +563,13 @@ bool core_info_list_get_info(core_info_list_t *core_info_list,
       core_info_t *out_info, const char *path)
 {
    size_t i;
-   if (!core_info_list || !out_info)
+   const char *core_filename = NULL;
+
+   if (!core_info_list || !out_info || string_is_empty(path))
+      return false;
+
+   core_filename = path_basename(path);
+   if (string_is_empty(core_filename))
       return false;
 
    memset(out_info, 0, sizeof(*out_info));
@@ -538,8 +578,10 @@ bool core_info_list_get_info(core_info_list_t *core_info_list,
    {
       const core_info_t *info = &core_info_list->list[i];
 
-      if (string_is_equal(path_basename(info->path),
-               path_basename(path)))
+      if (!info || (info->core_file_id.len == 0))
+         continue;
+
+      if (!strncmp(info->core_file_id.str, core_filename, info->core_file_id.len))
       {
          *out_info = *info;
          return true;
@@ -605,15 +647,23 @@ static core_info_t *core_info_find_internal(
       const char *core)
 {
    size_t i;
-   const char *core_path_basename = path_basename(core);
+   const char *core_filename = NULL;
+
+   if (!list || string_is_empty(core))
+      return NULL;
+
+   core_filename = path_basename(core);
+   if (string_is_empty(core_filename))
+      return NULL;
 
    for (i = 0; i < list->count; i++)
    {
       core_info_t *info = core_info_get(list, i);
 
-      if (!info || !info->path)
+      if (!info || (info->core_file_id.len == 0))
          continue;
-      if (string_is_equal(path_basename(info->path), core_path_basename))
+
+      if (!strncmp(info->core_file_id.str, core_filename, info->core_file_id.len))
          return info;
    }
 
@@ -753,14 +803,18 @@ bool core_info_load(core_info_ctx_find_t *info)
    return true;
 }
 
-bool core_info_find(core_info_ctx_find_t *info, const char *core_path)
+bool core_info_find(core_info_ctx_find_t *info)
 {
    core_info_state_t *p_coreinfo = coreinfo_get_ptr();
+
    if (!info || !p_coreinfo->curr_list)
       return false;
-   info->inf = core_info_find_internal(p_coreinfo->curr_list, core_path);
+
+   info->inf = core_info_find_internal(p_coreinfo->curr_list, info->path);
+
    if (!info->inf)
       return false;
+
    return true;
 }
 
@@ -978,22 +1032,30 @@ bool core_info_list_get_display_name(core_info_list_t *core_info_list,
       const char *path, char *s, size_t len)
 {
    size_t i;
+   const char *core_filename = NULL;
 
-   if (!core_info_list)
+   if (!core_info_list || string_is_empty(path))
+      return false;
+
+   core_filename = path_basename(path);
+   if (string_is_empty(core_filename))
       return false;
 
    for (i = 0; i < core_info_list->count; i++)
    {
       const core_info_t *info = &core_info_list->list[i];
 
-      if (!string_is_equal(path_basename(info->path), path_basename(path)))
+      if (!info || (info->core_file_id.len == 0))
          continue;
 
-      if (!info->display_name)
-         continue;
+      if (!strncmp(info->core_file_id.str, core_filename, info->core_file_id.len))
+      {
+         if (string_is_empty(info->display_name))
+            break;
 
-      strlcpy(s, info->display_name, len);
-      return true;
+         strlcpy(s, info->display_name, len);
+         return true;
+      }
    }
 
    return false;

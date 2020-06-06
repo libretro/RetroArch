@@ -347,7 +347,7 @@ static int action_get_title_deferred_core_backup_list(
    core_info.path = core_path;
 
    /* If core is found, add display name */
-   if (core_info_find(&core_info, core_path) &&
+   if (core_info_find(&core_info) &&
        core_info.inf->display_name)
       strlcat(s, core_info.inf->display_name, len);
    else

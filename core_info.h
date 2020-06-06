@@ -35,6 +35,23 @@ typedef struct
    bool optional;
 } core_info_firmware_t;
 
+/* Simple container/convenience struct for
+ * holding the 'id' of a core file
+ * > 'id' is the filename without extension or
+ *   platform-specific suffix
+ * > 'id' is used for core info searches - enables
+ *   matching regardless of core file base path,
+ *   and is platform-independent (e.g. an Android
+ *   core file will be correctly identified on Linux)
+ * > 'len' is used to cache the length of 'str', for
+ *   improved performance when performing string
+ *   comparisons */
+typedef struct
+{
+   char *str;
+   size_t len;
+} core_file_id_t;
+
 typedef struct
 {
    bool supports_no_game;
@@ -67,6 +84,7 @@ typedef struct
    struct string_list *licenses_list;
    struct string_list *required_hw_api_list;
    core_info_firmware_t *firmware;
+   core_file_id_t core_file_id;
    void *userdata;
 } core_info_t;
 
@@ -152,7 +170,7 @@ bool core_info_get_list(core_info_list_t **core);
 bool core_info_list_update_missing_firmware(core_info_ctx_firmware_t *info,
       bool *set_missing_bios);
 
-bool core_info_find(core_info_ctx_find_t *info, const char *name);
+bool core_info_find(core_info_ctx_find_t *info);
 
 bool core_info_load(core_info_ctx_find_t *info);
 
