@@ -4888,7 +4888,7 @@ static void menu_display_common_image_upload(
    struct rarch_state   *p_rarch  = &rarch_st;
 
    load_image_info.data           = img;
-   load_image_info.type           = type;
+   load_image_info.type           = (enum menu_image_type)type;
 
    if (     p_rarch->menu_driver_ctx 
          && p_rarch->menu_driver_ctx->load_image)
@@ -33305,13 +33305,16 @@ static enum runloop_state runloop_check_state(
        * rotation (if required) */
       if (input_overlay_auto_rotate)
       {
-         if ((p_rarch->video_driver_width  != last_width) ||
-             (p_rarch->video_driver_height != last_height))
+         unsigned video_driver_width  = p_rarch->video_driver_width;
+         unsigned video_driver_height = p_rarch->video_driver_height;
+
+         if ((video_driver_width  != last_width) ||
+             (video_driver_height != last_height))
          {
             input_overlay_auto_rotate_(p_rarch,
                   p_rarch->overlay_ptr);
-            last_width  = p_rarch->video_driver_width;
-            last_height = p_rarch->video_driver_height;
+            last_width  = video_driver_width;
+            last_height = video_driver_height;
          }
       }
    }
@@ -33353,10 +33356,11 @@ static enum runloop_state runloop_check_state(
 
       if (TIME_TO_EXIT(trig_quit_key))
       {
-         bool quit_runloop = false;
+         bool quit_runloop           = false;
+         unsigned runloop_max_frames = p_rarch->runloop_max_frames;
 
-         if ((p_rarch->runloop_max_frames != 0)
-               && (frame_count >= p_rarch->runloop_max_frames)
+         if ((runloop_max_frames != 0)
+               && (frame_count >= runloop_max_frames)
                && p_rarch->runloop_max_frames_screenshot)
          {
             const char *screenshot_path = NULL;
@@ -33797,11 +33801,12 @@ static enum runloop_state runloop_check_state(
 
       /* Show the fast-forward OSD for 1 frame every frame if
        * display widgets are disabled */
+      if (
 #if defined(HAVE_GFX_WIDGETS)
-      if (!widgets_active && p_rarch->runloop_fastmotion)
-#else
-      if (p_rarch->runloop_fastmotion)
+            !widgets_active &&
 #endif
+            p_rarch->runloop_fastmotion
+         )
       {
          runloop_msg_queue_push(
                msg_hash_to_str(MSG_FAST_FORWARD), 1, 1, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
