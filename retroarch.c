@@ -1059,7 +1059,7 @@ static const camera_driver_t *camera_drivers[] = {
  *
  * Returns: voltage gain value.
  **/
-#define db_to_gain(db) (powf(10.0f, (db) / 20.0f))
+#define DB_TO_GAIN(db) (powf(10.0f, (db) / 20.0f))
 
 #define DEFAULT_NETWORK_GAMEPAD_PORT 55400
 #define UDP_FRAME_PACKETS 16
@@ -1078,65 +1078,65 @@ static const camera_driver_t *camera_drivers[] = {
 #define STDIN_BUF_SIZE           4096
 
 #ifdef HAVE_THREADS
-#define video_driver_is_threaded_internal() ((!video_driver_is_hw_context() && p_rarch->video_driver_threaded) ? true : false)
+#define VIDEO_DRIVER_IS_THREADED_INTERNAL() ((!video_driver_is_hw_context() && p_rarch->video_driver_threaded) ? true : false)
 #else
-#define video_driver_is_threaded_internal() (false)
+#define VIDEO_DRIVER_IS_THREADED_INTERNAL() (false)
 #endif
 
 #ifdef HAVE_THREADS
-#define video_driver_lock() \
+#define VIDEO_DRIVER_LOCK() \
    if (p_rarch->display_lock) \
       slock_lock(p_rarch->display_lock)
 
-#define video_driver_unlock() \
+#define VIDEO_DRIVER_UNLOCK() \
    if (p_rarch->display_lock) \
       slock_unlock(p_rarch->display_lock)
 
-#define video_driver_context_lock() \
+#define VIDEO_DRIVER_CONTEXT_LOCK() \
    if (p_rarch->context_lock) \
       slock_lock(p_rarch->context_lock)
 
-#define video_driver_context_unlock() \
+#define VIDEO_DRIVER_CONTEXT_UNLOCK() \
    if (p_rarch->context_lock) \
       slock_unlock(p_rarch->context_lock)
 
-#define video_driver_lock_free() \
+#define VIDEO_DRIVER_LOCK_FREE() \
    slock_free(p_rarch->display_lock); \
    slock_free(p_rarch->context_lock); \
    p_rarch->display_lock = NULL; \
    p_rarch->context_lock = NULL
 
-#define video_driver_threaded_lock(is_threaded) \
+#define VIDEO_DRIVER_THREADED_LOCK(is_threaded) \
    if (is_threaded) \
-      video_driver_lock()
+      VIDEO_DRIVER_LOCK()
 
-#define video_driver_threaded_unlock(is_threaded) \
+#define VIDEO_DRIVER_THREADED_UNLOCK(is_threaded) \
    if (is_threaded) \
-      video_driver_unlock()
+      VIDEO_DRIVER_UNLOCK()
 #else
-#define video_driver_lock()            ((void)0)
-#define video_driver_unlock()          ((void)0)
-#define video_driver_lock_free()       ((void)0)
-#define video_driver_threaded_lock(is_threaded)   ((void)0)
-#define video_driver_threaded_unlock(is_threaded) ((void)0)
-#define video_driver_context_lock()    ((void)0)
-#define video_driver_context_unlock()  ((void)0)
+#define VIDEO_DRIVER_LOCK()            ((void)0)
+#define VIDEO_DRIVER_UNLOCK()          ((void)0)
+#define VIDEO_DRIVER_LOCK_FREE()       ((void)0)
+#define VIDEO_DRIVER_THREADED_LOCK(is_threaded)   ((void)0)
+#define VIDEO_DRIVER_THREADED_UNLOCK(is_threaded) ((void)0)
+#define VIDEO_DRIVER_CONTEXT_LOCK()    ((void)0)
+#define VIDEO_DRIVER_CONTEXT_UNLOCK()  ((void)0)
 #endif
 
 #ifdef HAVE_THREADS
-#define video_driver_get_ptr_internal(force) ((video_driver_is_threaded_internal() && !force) ? video_thread_get_ptr(NULL) : p_rarch->video_driver_data)
+#define VIDEO_DRIVER_GET_PTR_INTERNAL(force) ((VIDEO_DRIVER_IS_THREADED_INTERNAL() && !force) ? video_thread_get_ptr(NULL) : p_rarch->video_driver_data)
 #else
-#define video_driver_get_ptr_internal(force) (p_rarch->video_driver_data)
+#define VIDEO_DRIVER_GET_PTR_INTERNAL(force) (p_rarch->video_driver_data)
 #endif
 
-#define video_driver_get_hw_context_internal() (&p_rarch->hw_render)
+#define VIDEO_DRIVER_GET_HW_CONTEXT_INTERNAL() (&p_rarch->hw_render)
 
 #ifdef HAVE_THREADS
-#define runloop_msg_queue_lock() slock_lock(p_rarch->runloop_msg_queue_lock)
-#define runloop_msg_queue_unlock() slock_unlock(p_rarch->runloop_msg_queue_lock)
+#define RUNLOOP_MSG_QUEUE_LOCK() slock_lock(p_rarch->runloop_msg_queue_lock)
+#define RUNLOOP_MSG_QUEUE_UNLOCK() slock_unlock(p_rarch->runloop_msg_queue_lock)
 #else
-#define runloop_msg_queue_lock()
-#define runloop_msg_queue_unlock()
+#define RUNLOOP_MSG_QUEUE_LOCK()
+#define RUNLOOP_MSG_QUEUE_UNLOCK()
 #endif
 
 #define BSV_MOVIE_IS_EOF() (p_rarch->bsv_movie_state.movie_end && p_rarch->bsv_movie_state.eof_exit)
@@ -1154,17 +1154,17 @@ static const camera_driver_t *camera_drivers[] = {
 /* Depends on ASCII character values */
 #define ISPRINT(c) (((int)(c) >= ' ' && (int)(c) <= '~') ? 1 : 0)
 
-#define input_config_bind_map_get(i) ((const struct input_bind_map*)&input_config_bind_map[(i)])
+#define INPUT_CONFIG_BIND_MAP_GET(i) ((const struct input_bind_map*)&input_config_bind_map[(i)])
 
-#define video_has_focus() (p_rarch->current_video_context.has_focus ? p_rarch->current_video_context.has_focus(p_rarch->video_context_data) : p_rarch->current_video->focus ? (p_rarch->current_video && p_rarch->current_video->focus && p_rarch->current_video->focus(p_rarch->video_driver_data)) : true)
+#define VIDEO_HAS_FOCUS() (p_rarch->current_video_context.has_focus ? p_rarch->current_video_context.has_focus(p_rarch->video_context_data) : p_rarch->current_video->focus ? (p_rarch->current_video && p_rarch->current_video->focus && p_rarch->current_video->focus(p_rarch->video_driver_data)) : true)
 
 #if HAVE_DYNAMIC
-#define runahead_run_secondary() \
+#define RUNAHEAD_RUN_SECONDARY() \
    if (!secondary_core_run_use_last_input(p_rarch)) \
       p_rarch->runahead_secondary_core_available = false
 #endif
 
-#define runahead_resume_video() \
+#define RUNAHEAD_RESUME_VIDEO() \
    if (p_rarch->runahead_video_driver_is_active) \
       p_rarch->video_driver_active = true; \
    else \
@@ -1208,7 +1208,7 @@ static const camera_driver_t *camera_drivers[] = {
    }
 
 #if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
-#define input_remote_key_pressed(key, port) (p_rarch->remote_st_ptr.buttons[(port)] & (UINT64_C(1) << (key)))
+#define INPUT_REMOTE_KEY_PRESSED(key, port) (p_rarch->remote_st_ptr.buttons[(port)] & (UINT64_C(1) << (key)))
 #endif
 
 /**
@@ -1222,7 +1222,7 @@ static const camera_driver_t *camera_drivers[] = {
  * If we hold ENABLE_HOTKEY button, block all libretro input to allow
  * hotkeys to be bound to same keys as RetroPad.
  **/
-#define check_input_driver_block_hotkey(normal_bind, autoconf_bind) \
+#define CHECK_INPUT_DRIVER_BLOCK_HOTKEY(normal_bind, autoconf_bind) \
 ( \
          (((normal_bind)->key      != RETROK_UNKNOWN) \
       || ((normal_bind)->mbutton   != NO_BTN) \
@@ -1233,16 +1233,15 @@ static const camera_driver_t *camera_drivers[] = {
       || ((autoconf_bind)->joyaxis != AXIS_NONE)) \
 )
 
-
-#define inherit_joyaxis(binds) (((binds)[x_plus].joyaxis == (binds)[x_minus].joyaxis) || (  (binds)[y_plus].joyaxis == (binds)[y_minus].joyaxis))
+#define INHERIT_JOYAXIS(binds) (((binds)[x_plus].joyaxis == (binds)[x_minus].joyaxis) || (  (binds)[y_plus].joyaxis == (binds)[y_minus].joyaxis))
 
 /**
  * input_pop_analog_dpad:
  * @binds                          : Binds to modify.
  *
- * Restores binds temporarily overridden by input_push_analog_dpad().
+ * Restores binds temporarily overridden by INPUT_PUSH_ANALOG_DPAD().
  **/
-#define input_pop_analog_dpad(binds) \
+#define INPUT_POP_ANALOG_DPAD(binds) \
 { \
    unsigned j; \
    for (j = RETRO_DEVICE_ID_JOYPAD_UP; j <= RETRO_DEVICE_ID_JOYPAD_RIGHT; j++) \
@@ -1259,7 +1258,7 @@ static const camera_driver_t *camera_drivers[] = {
  *
  * Push analog to D-Pad mappings to binds.
  **/
-#define input_push_analog_dpad(binds, mode) \
+#define INPUT_PUSH_ANALOG_DPAD(binds, mode) \
 { \
    unsigned k; \
    unsigned x_plus      =  RARCH_ANALOG_RIGHT_X_PLUS; \
@@ -1275,7 +1274,7 @@ static const camera_driver_t *camera_drivers[] = {
    } \
    for (k = RETRO_DEVICE_ID_JOYPAD_UP; k <= RETRO_DEVICE_ID_JOYPAD_RIGHT; k++) \
       (binds)[k].orig_joyaxis = (binds)[k].joyaxis; \
-   if (!inherit_joyaxis(binds)) \
+   if (!INHERIT_JOYAXIS(binds)) \
    { \
       unsigned j = x_plus + 3; \
       /* Inherit joyaxis from analogs. */ \
@@ -1283,6 +1282,16 @@ static const camera_driver_t *camera_drivers[] = {
          (binds)[k].joyaxis = (binds)[j--].joyaxis; \
    } \
 }
+
+#ifdef HAVE_MENU
+#define MENU_LIST_GET(list, idx) ((list) ? ((list)->menu_stack[(idx)]) : NULL)
+
+#define MENU_LIST_GET_SELECTION(list, idx) ((list) ? ((list)->selection_buf[(idx)]) : NULL)
+
+#define MENU_LIST_GET_STACK_SIZE(list, idx) ((list)->menu_stack[(idx)]->size)
+
+#define MENU_ENTRIES_GET_SELECTION_BUF_PTR_INTERNAL(idx) ((menu_st->entries.list) ? MENU_LIST_GET_SELECTION(menu_st->entries.list, (unsigned)idx) : NULL)
+#endif
 
 #ifdef HAVE_DYNAMIC
 #define SYMBOL(x) do { \
@@ -3533,14 +3542,6 @@ void menu_navigation_set_selection(size_t val)
    menu_st->selection_ptr      = val;
 }
 
-#define MENU_LIST_GET(list, idx) ((list) ? ((list)->menu_stack[(idx)]) : NULL)
-
-#define MENU_LIST_GET_SELECTION(list, idx) ((list) ? ((list)->selection_buf[(idx)]) : NULL)
-
-#define MENU_LIST_GET_STACK_SIZE(list, idx) ((list)->menu_stack[(idx)]->size)
-
-#define menu_entries_get_selection_buf_ptr_internal(idx) ((menu_st->entries.list) ? MENU_LIST_GET_SELECTION(menu_st->entries.list, (unsigned)idx) : NULL)
-
 /* Menu entry interface -
  *
  * This provides an abstraction of the currently displayed
@@ -3559,7 +3560,7 @@ enum menu_entry_type menu_entry_get_type(uint32_t i)
 {
    struct rarch_state *p_rarch = &rarch_st;
    struct menu_state *menu_st  = &p_rarch->menu_driver_state;
-   file_list_t *selection_buf  = menu_entries_get_selection_buf_ptr_internal(0);
+   file_list_t *selection_buf  = MENU_ENTRIES_GET_SELECTION_BUF_PTR_INTERNAL(0);
    menu_file_list_cbs_t *cbs   = NULL;
    rarch_setting_t *setting    = NULL;
 
@@ -3680,7 +3681,7 @@ uint32_t menu_entry_get_bool_value(uint32_t i)
 {
    struct rarch_state *p_rarch = &rarch_st;
    struct menu_state *menu_st  = &p_rarch->menu_driver_state;
-   file_list_t *selection_buf  = menu_entries_get_selection_buf_ptr_internal(0);
+   file_list_t *selection_buf  = MENU_ENTRIES_GET_SELECTION_BUF_PTR_INTERNAL(0);
    menu_file_list_cbs_t *cbs   = selection_buf ?
       (menu_file_list_cbs_t*)selection_buf->list[i].actiondata : NULL;
    rarch_setting_t *setting    = cbs ? cbs->setting : NULL;
@@ -3694,7 +3695,7 @@ struct string_list *menu_entry_enum_values(uint32_t i)
 {
    struct rarch_state *p_rarch = &rarch_st;
    struct menu_state *menu_st  = &p_rarch->menu_driver_state;
-   file_list_t *selection_buf  = menu_entries_get_selection_buf_ptr_internal(0);
+   file_list_t *selection_buf  = MENU_ENTRIES_GET_SELECTION_BUF_PTR_INTERNAL(0);
    menu_file_list_cbs_t *cbs   = selection_buf ?
       (menu_file_list_cbs_t*)selection_buf->list[i].actiondata : NULL;
    rarch_setting_t *setting    = cbs ? cbs->setting : NULL;
@@ -3709,7 +3710,7 @@ void menu_entry_enum_set_value_with_string(uint32_t i, const char *s)
 {
    struct rarch_state *p_rarch = &rarch_st;
    struct menu_state *menu_st  = &p_rarch->menu_driver_state;
-   file_list_t *selection_buf  = menu_entries_get_selection_buf_ptr_internal(0);
+   file_list_t *selection_buf  = MENU_ENTRIES_GET_SELECTION_BUF_PTR_INTERNAL(0);
    menu_file_list_cbs_t *cbs   = selection_buf ?
       (menu_file_list_cbs_t*)selection_buf->list[i].actiondata : NULL;
    rarch_setting_t *setting    = cbs ? cbs->setting : NULL;
@@ -3720,7 +3721,7 @@ int32_t menu_entry_bind_index(uint32_t i)
 {
    struct rarch_state *p_rarch = &rarch_st;
    struct menu_state *menu_st  = &p_rarch->menu_driver_state;
-   file_list_t *selection_buf  = menu_entries_get_selection_buf_ptr_internal(0);
+   file_list_t *selection_buf  = MENU_ENTRIES_GET_SELECTION_BUF_PTR_INTERNAL(0);
    menu_file_list_cbs_t *cbs   = selection_buf ?
       (menu_file_list_cbs_t*)selection_buf->list[i].actiondata : NULL;
    rarch_setting_t *setting    = cbs ? cbs->setting : NULL;
@@ -3734,7 +3735,7 @@ void menu_entry_bind_key_set(uint32_t i, int32_t value)
 {
    struct rarch_state *p_rarch   = &rarch_st;
    struct menu_state *menu_st    = &p_rarch->menu_driver_state;
-   file_list_t *selection_buf    = menu_entries_get_selection_buf_ptr_internal(0);
+   file_list_t *selection_buf    = MENU_ENTRIES_GET_SELECTION_BUF_PTR_INTERNAL(0);
    menu_file_list_cbs_t *cbs     = selection_buf ?
       (menu_file_list_cbs_t*)selection_buf->list[i].actiondata : NULL;
    rarch_setting_t *setting      = cbs ? cbs->setting : NULL;
@@ -3747,7 +3748,7 @@ void menu_entry_bind_joykey_set(uint32_t i, int32_t value)
 {
    struct rarch_state *p_rarch   = &rarch_st;
    struct menu_state *menu_st    = &p_rarch->menu_driver_state;
-   file_list_t *selection_buf    = menu_entries_get_selection_buf_ptr_internal(0);
+   file_list_t *selection_buf    = MENU_ENTRIES_GET_SELECTION_BUF_PTR_INTERNAL(0);
    menu_file_list_cbs_t *cbs     = selection_buf ?
       (menu_file_list_cbs_t*)selection_buf->list[i].actiondata : NULL;
    rarch_setting_t *setting      = cbs ? cbs->setting : NULL;
@@ -3760,7 +3761,7 @@ void menu_entry_bind_joyaxis_set(uint32_t i, int32_t value)
 {
    struct rarch_state *p_rarch   = &rarch_st;
    struct menu_state *menu_st    = &p_rarch->menu_driver_state;
-   file_list_t *selection_buf    = menu_entries_get_selection_buf_ptr_internal(0);
+   file_list_t *selection_buf    = MENU_ENTRIES_GET_SELECTION_BUF_PTR_INTERNAL(0);
    menu_file_list_cbs_t *cbs     = selection_buf ?
       (menu_file_list_cbs_t*)selection_buf->list[i].actiondata : NULL;
    rarch_setting_t *setting      = cbs ? cbs->setting : NULL;
@@ -3773,7 +3774,7 @@ void menu_entry_pathdir_selected(uint32_t i)
 {
    struct rarch_state *p_rarch   = &rarch_st;
    struct menu_state *menu_st    = &p_rarch->menu_driver_state;
-   file_list_t *selection_buf    = menu_entries_get_selection_buf_ptr_internal(0);
+   file_list_t *selection_buf    = MENU_ENTRIES_GET_SELECTION_BUF_PTR_INTERNAL(0);
    menu_file_list_cbs_t *cbs     = selection_buf ?
       (menu_file_list_cbs_t*)selection_buf->list[i].actiondata : NULL;
    rarch_setting_t *setting      = cbs ? cbs->setting : NULL;
@@ -3786,7 +3787,7 @@ bool menu_entry_pathdir_allow_empty(uint32_t i)
 {
    struct rarch_state *p_rarch   = &rarch_st;
    struct menu_state *menu_st    = &p_rarch->menu_driver_state;
-   file_list_t *selection_buf    = menu_entries_get_selection_buf_ptr_internal(0);
+   file_list_t *selection_buf    = MENU_ENTRIES_GET_SELECTION_BUF_PTR_INTERNAL(0);
    menu_file_list_cbs_t *cbs     = selection_buf ?
       (menu_file_list_cbs_t*)selection_buf->list[i].actiondata : NULL;
    rarch_setting_t *setting      = cbs ? cbs->setting : NULL;
@@ -3799,7 +3800,7 @@ uint32_t menu_entry_pathdir_for_directory(uint32_t i)
 {
    struct rarch_state *p_rarch   = &rarch_st;
    struct menu_state *menu_st    = &p_rarch->menu_driver_state;
-   file_list_t *selection_buf    = menu_entries_get_selection_buf_ptr_internal(0);
+   file_list_t *selection_buf    = MENU_ENTRIES_GET_SELECTION_BUF_PTR_INTERNAL(0);
    menu_file_list_cbs_t *cbs     = selection_buf ?
       (menu_file_list_cbs_t*)selection_buf->list[i].actiondata : NULL;
    rarch_setting_t *setting      = cbs ? cbs->setting : NULL;
@@ -3812,7 +3813,7 @@ void menu_entry_pathdir_extensions(uint32_t i, char *s, size_t len)
 {
    struct rarch_state *p_rarch   = &rarch_st;
    struct menu_state *menu_st    = &p_rarch->menu_driver_state;
-   file_list_t *selection_buf    = menu_entries_get_selection_buf_ptr_internal(0);
+   file_list_t *selection_buf    = MENU_ENTRIES_GET_SELECTION_BUF_PTR_INTERNAL(0);
    menu_file_list_cbs_t *cbs     = selection_buf ?
       (menu_file_list_cbs_t*)selection_buf->list[i].actiondata : NULL;
    rarch_setting_t *setting      = cbs ? cbs->setting : NULL;
@@ -3849,7 +3850,7 @@ void menu_entry_set_value(uint32_t i, const char *s)
 {
    struct rarch_state *p_rarch   = &rarch_st;
    struct menu_state *menu_st    = &p_rarch->menu_driver_state;
-   file_list_t *selection_buf    = menu_entries_get_selection_buf_ptr_internal(0);
+   file_list_t *selection_buf    = MENU_ENTRIES_GET_SELECTION_BUF_PTR_INTERNAL(0);
    menu_file_list_cbs_t *cbs     = selection_buf ?
       (menu_file_list_cbs_t*)selection_buf->list[i].actiondata : NULL;
    rarch_setting_t *setting      = cbs ? cbs->setting : NULL;
@@ -3865,7 +3866,7 @@ uint32_t menu_entry_num_has_range(uint32_t i)
 {
    struct rarch_state *p_rarch   = &rarch_st;
    struct menu_state *menu_st    = &p_rarch->menu_driver_state;
-   file_list_t *selection_buf    = menu_entries_get_selection_buf_ptr_internal(0);
+   file_list_t *selection_buf    = MENU_ENTRIES_GET_SELECTION_BUF_PTR_INTERNAL(0);
    menu_file_list_cbs_t *cbs     = selection_buf ?
       (menu_file_list_cbs_t*)selection_buf->list[i].actiondata : NULL;
    rarch_setting_t *setting      = cbs ? cbs->setting : NULL;
@@ -3878,7 +3879,7 @@ float menu_entry_num_min(uint32_t i)
 {
    struct rarch_state *p_rarch   = &rarch_st;
    struct menu_state *menu_st    = &p_rarch->menu_driver_state;
-   file_list_t *selection_buf    = menu_entries_get_selection_buf_ptr_internal(0);
+   file_list_t *selection_buf    = MENU_ENTRIES_GET_SELECTION_BUF_PTR_INTERNAL(0);
    menu_file_list_cbs_t *cbs     = selection_buf ?
       (menu_file_list_cbs_t*)selection_buf->list[i].actiondata : NULL;
    rarch_setting_t *setting      = cbs ? cbs->setting : NULL;
@@ -3890,7 +3891,7 @@ float menu_entry_num_max(uint32_t i)
 {
    struct rarch_state *p_rarch   = &rarch_st;
    struct menu_state *menu_st    = &p_rarch->menu_driver_state;
-   file_list_t *selection_buf    = menu_entries_get_selection_buf_ptr_internal(0);
+   file_list_t *selection_buf    = MENU_ENTRIES_GET_SELECTION_BUF_PTR_INTERNAL(0);
    menu_file_list_cbs_t *cbs     = selection_buf ?
       (menu_file_list_cbs_t*)selection_buf->list[i].actiondata : NULL;
    rarch_setting_t *setting      = cbs ? cbs->setting : NULL;
@@ -3907,7 +3908,7 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
    menu_file_list_cbs_t *cbs   = NULL;
    struct rarch_state *p_rarch = &rarch_st;
    struct menu_state *menu_st  = &p_rarch->menu_driver_state;
-   file_list_t *selection_buf  = menu_entries_get_selection_buf_ptr_internal(stack_idx);
+   file_list_t *selection_buf  = MENU_ENTRIES_GET_SELECTION_BUF_PTR_INTERNAL(stack_idx);
    file_list_t *list           = (userdata) ? (file_list_t*)userdata : selection_buf;
    bool path_enabled           = entry->path_enabled;
 
@@ -8035,7 +8036,7 @@ static char *strcpy_alloc_force(const char *src)
 struct retro_hw_render_callback *video_driver_get_hw_context(void)
 {
    struct rarch_state *p_rarch = &rarch_st;
-   return video_driver_get_hw_context_internal();
+   return VIDEO_DRIVER_GET_HW_CONTEXT_INTERNAL();
 }
 
 struct retro_system_av_info *video_viewport_get_system_av_info(void)
@@ -8073,21 +8074,21 @@ input_driver_t *input_get_ptr(void)
 void *video_driver_get_ptr(bool force_nonthreaded_data)
 {
    struct rarch_state *p_rarch = &rarch_st;
-   return video_driver_get_ptr_internal(force_nonthreaded_data);
+   return VIDEO_DRIVER_GET_PTR_INTERNAL(force_nonthreaded_data);
 }
 
 /* MESSAGE QUEUE */
 
 static void retroarch_msg_queue_deinit(struct rarch_state *p_rarch)
 {
-   runloop_msg_queue_lock();
+   RUNLOOP_MSG_QUEUE_LOCK();
 
    if (!p_rarch->runloop_msg_queue)
       return;
 
    msg_queue_free(p_rarch->runloop_msg_queue);
 
-   runloop_msg_queue_unlock();
+   RUNLOOP_MSG_QUEUE_UNLOCK();
 #ifdef HAVE_THREADS
    slock_free(p_rarch->runloop_msg_queue_lock);
    p_rarch->runloop_msg_queue_lock = NULL;
@@ -11922,7 +11923,7 @@ bool command_event(enum event_command cmd, void *data)
 
             command_event_runtime_log_deinit(p_rarch);
             content_reset_savestate_backups();
-            hwr = video_driver_get_hw_context_internal();
+            hwr = VIDEO_DRIVER_GET_HW_CONTEXT_INTERNAL();
             command_event_deinit_core(p_rarch, true);
 
             if (hwr)
@@ -14446,7 +14447,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
                    *   _runloop_msg_queue_lock is already available
                    * We therefore just call runloop_msg_queue_lock()/
                    * runloop_msg_queue_unlock() in this case */
-                  runloop_msg_queue_lock();
+                  RUNLOOP_MSG_QUEUE_LOCK();
 
                   /* If a message is already set, only overwrite
                    * it if the new message has the same or higher
@@ -14473,7 +14474,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
                      }
                   }
 
-                  runloop_msg_queue_unlock();
+                  RUNLOOP_MSG_QUEUE_UNLOCK();
                   break;
 
 #if defined(HAVE_GFX_WIDGETS)
@@ -14824,7 +14825,7 @@ static bool rarch_environment_cb(unsigned cmd, void *data)
          struct retro_hw_render_callback *cb =
             (struct retro_hw_render_callback*)data;
          struct retro_hw_render_callback *hwr =
-            video_driver_get_hw_context_internal();
+            VIDEO_DRIVER_GET_HW_CONTEXT_INTERNAL();
 
          RARCH_LOG("[Environ]: SET_HW_RENDER.\n");
 
@@ -18336,7 +18337,7 @@ static void input_overlay_loaded(retro_task_t *task,
    ol->size       = data->size;
    ol->active     = data->active;
    ol->iface      = iface;
-   ol->iface_data = video_driver_get_ptr_internal(true);
+   ol->iface_data = VIDEO_DRIVER_GET_PTR_INTERNAL(true);
 
    input_overlay_load_active(p_rarch, ol, data->overlay_opacity);
 
@@ -19043,7 +19044,7 @@ static int16_t input_state_device(
 #ifdef HAVE_NETWORKGAMEPAD
          if (p_rarch->input_driver_remote)
          {
-            if (input_remote_key_pressed(id, port))
+            if (INPUT_REMOTE_KEY_PRESSED(id, port))
             {
                res |= 1;
                remote_input = true;
@@ -19477,7 +19478,7 @@ static INLINE bool input_keys_pressed_other_sources(
    /* Only process key presses related to game input if using Remote RetroPad */
    if (i < RARCH_CUSTOM_BIND_LIST_END &&
          p_rarch->input_driver_remote &&
-            input_remote_key_pressed(i, 0))
+            INPUT_REMOTE_KEY_PRESSED(i, 0))
       return true;
 #endif
 
@@ -20947,8 +20948,8 @@ static void input_menu_keys_pressed(
       struct retro_keybind *general_binds       = input_config_binds[i];
       binds[i]                                  = input_config_binds[i];
 
-      input_push_analog_dpad(auto_binds, ANALOG_DPAD_LSTICK);
-      input_push_analog_dpad(general_binds, ANALOG_DPAD_LSTICK);
+      INPUT_PUSH_ANALOG_DPAD(auto_binds, ANALOG_DPAD_LSTICK);
+      INPUT_PUSH_ANALOG_DPAD(general_binds, ANALOG_DPAD_LSTICK);
    }
 
    for (port = 0; port < port_max; port++)
@@ -20960,7 +20961,7 @@ static void input_menu_keys_pressed(
       joypad_info->auto_binds                = input_autoconf_binds[joypad_info->joy_idx];
       joypad_info->axis_threshold            = p_rarch->input_driver_axis_threshold;
 
-      if (check_input_driver_block_hotkey(binds_norm, binds_auto))
+      if (CHECK_INPUT_DRIVER_BLOCK_HOTKEY(binds_norm, binds_auto))
       {
          const struct retro_keybind *htkey = 
             &input_config_binds[port][RARCH_ENABLE_HOTKEY];
@@ -21059,8 +21060,8 @@ static void input_menu_keys_pressed(
    {
       struct retro_keybind *auto_binds    = input_autoconf_binds[i];
       struct retro_keybind *general_binds = input_config_binds[i];
-      input_pop_analog_dpad(auto_binds);
-      input_pop_analog_dpad(general_binds);
+      INPUT_POP_ANALOG_DPAD(auto_binds);
+      INPUT_POP_ANALOG_DPAD(general_binds);
    }
 }
 #endif
@@ -21087,7 +21088,7 @@ static void input_keys_pressed(
    joypad_info->auto_binds                = input_autoconf_binds[joypad_info->joy_idx];
    joypad_info->axis_threshold            = p_rarch->input_driver_axis_threshold;
 
-   if (check_input_driver_block_hotkey(binds_norm, binds_auto))
+   if (CHECK_INPUT_DRIVER_BLOCK_HOTKEY(binds_norm, binds_auto))
    {
       const struct retro_keybind *enable_hotkey    =
          &input_config_binds[port][RARCH_ENABLE_HOTKEY];
@@ -21111,7 +21112,7 @@ static void input_keys_pressed(
 
       /* Allows rarch_focus_toggle hotkey to still work
        * even though every hotkey is blocked */
-      if (check_input_driver_block_hotkey(
+      if (CHECK_INPUT_DRIVER_BLOCK_HOTKEY(
                focus_normal, focus_binds_auto))
       {
          if (p_rarch->current_input->input_state(
@@ -22143,7 +22144,7 @@ bool input_keyboard_ctl(
 static bool input_config_bind_map_get_valid(unsigned i)
 {
    const struct input_bind_map *keybind =
-      (const struct input_bind_map*)input_config_bind_map_get(i);
+      (const struct input_bind_map*)INPUT_CONFIG_BIND_MAP_GET(i);
    if (!keybind)
       return false;
    return keybind->valid;
@@ -22152,7 +22153,7 @@ static bool input_config_bind_map_get_valid(unsigned i)
 unsigned input_config_bind_map_get_meta(unsigned i)
 {
    const struct input_bind_map *keybind =
-      (const struct input_bind_map*)input_config_bind_map_get(i);
+      (const struct input_bind_map*)INPUT_CONFIG_BIND_MAP_GET(i);
    if (!keybind)
       return 0;
    return keybind->meta;
@@ -22161,7 +22162,7 @@ unsigned input_config_bind_map_get_meta(unsigned i)
 const char *input_config_bind_map_get_base(unsigned i)
 {
    const struct input_bind_map *keybind =
-      (const struct input_bind_map*)input_config_bind_map_get(i);
+      (const struct input_bind_map*)INPUT_CONFIG_BIND_MAP_GET(i);
    if (!keybind)
       return NULL;
    return keybind->base;
@@ -22170,7 +22171,7 @@ const char *input_config_bind_map_get_base(unsigned i)
 const char *input_config_bind_map_get_desc(unsigned i)
 {
    const struct input_bind_map *keybind =
-      (const struct input_bind_map*)input_config_bind_map_get(i);
+      (const struct input_bind_map*)INPUT_CONFIG_BIND_MAP_GET(i);
    if (!keybind)
       return NULL;
    return msg_hash_to_str(keybind->desc);
@@ -25122,7 +25123,7 @@ void audio_driver_mixer_set_stream_volume(unsigned i, float vol)
       p_rarch->audio_mixer_streams[i].voice;
 
    if (voice)
-      audio_mixer_voice_set_volume(voice, db_to_gain(vol));
+      audio_mixer_voice_set_volume(voice, DB_TO_GAIN(vol));
 }
 
 void audio_driver_mixer_stop_stream(unsigned i)
@@ -25341,11 +25342,11 @@ void audio_set_float(enum audio_action action, float val)
    switch (action)
    {
       case AUDIO_ACTION_VOLUME_GAIN:
-         p_rarch->audio_driver_volume_gain        = db_to_gain(val);
+         p_rarch->audio_driver_volume_gain        = DB_TO_GAIN(val);
          break;
       case AUDIO_ACTION_MIXER_VOLUME_GAIN:
 #ifdef HAVE_AUDIOMIXER
-         p_rarch->audio_driver_mixer_volume_gain  = db_to_gain(val);
+         p_rarch->audio_driver_mixer_volume_gain  = DB_TO_GAIN(val);
 #endif
          break;
       case AUDIO_ACTION_RATE_CONTROL_DELTA:
@@ -25587,7 +25588,7 @@ bool video_driver_is_threaded(void)
 #ifdef HAVE_THREADS
    struct rarch_state *p_rarch = &rarch_st;
 #endif
-   return video_driver_is_threaded_internal();
+   return VIDEO_DRIVER_IS_THREADED_INTERNAL();
 }
 
 #ifdef HAVE_VULKAN
@@ -25646,7 +25647,7 @@ const char *video_driver_get_ident(void)
       return NULL;
 
 #ifdef HAVE_THREADS
-   if (video_driver_is_threaded_internal())
+   if (VIDEO_DRIVER_IS_THREADED_INTERNAL())
       return video_thread_get_ident();
 #endif
 
@@ -25923,14 +25924,14 @@ static void video_driver_free_hw_context(void)
 {
    struct rarch_state *p_rarch = &rarch_st;
 
-   video_driver_context_lock();
+   VIDEO_DRIVER_CONTEXT_LOCK();
 
    if (p_rarch->hw_render.context_destroy)
       p_rarch->hw_render.context_destroy();
 
    memset(&p_rarch->hw_render, 0, sizeof(p_rarch->hw_render));
 
-   video_driver_context_unlock();
+   VIDEO_DRIVER_CONTEXT_UNLOCK();
 
    p_rarch->hw_render_context_negotiation = NULL;
 }
@@ -25939,7 +25940,7 @@ static void video_driver_free_internal(void)
 {
    struct rarch_state *p_rarch = &rarch_st;
 #ifdef HAVE_THREADS
-   bool        is_threaded     = video_driver_is_threaded_internal();
+   bool        is_threaded     = VIDEO_DRIVER_IS_THREADED_INTERNAL();
 #endif
 
 #ifdef HAVE_VIDEO_LAYOUT
@@ -25982,7 +25983,7 @@ static bool video_driver_pixel_converter_init(
       unsigned size)
 {
    struct retro_hw_render_callback *hwr =
-      video_driver_get_hw_context_internal();
+      VIDEO_DRIVER_GET_HW_CONTEXT_INTERNAL();
    void *scalr_out                      = NULL;
    video_pixel_scaler_t          *scalr = NULL;
    struct scaler_ctx        *scalr_ctx  = NULL;
@@ -26245,7 +26246,7 @@ static bool video_driver_init_internal(bool *video_is_threaded)
    video_driver_find_driver(p_rarch);
 
 #ifdef HAVE_THREADS
-   video.is_threaded                 = video_driver_is_threaded_internal();
+   video.is_threaded                 = VIDEO_DRIVER_IS_THREADED_INTERNAL();
    *video_is_threaded                = video.is_threaded;
 
    if (video.is_threaded)
@@ -26531,16 +26532,16 @@ void video_driver_get_size(unsigned *width, unsigned *height)
 {
    struct rarch_state *p_rarch = &rarch_st;
 #ifdef HAVE_THREADS
-   bool            is_threaded = video_driver_is_threaded_internal();
+   bool            is_threaded = VIDEO_DRIVER_IS_THREADED_INTERNAL();
 
-   video_driver_threaded_lock(is_threaded);
+   VIDEO_DRIVER_THREADED_LOCK(is_threaded);
 #endif
    if (width)
       *width  = p_rarch->video_driver_width;
    if (height)
       *height = p_rarch->video_driver_height;
 #ifdef HAVE_THREADS
-   video_driver_threaded_unlock(is_threaded);
+   VIDEO_DRIVER_THREADED_UNLOCK(is_threaded);
 #endif
 }
 
@@ -26548,15 +26549,15 @@ void video_driver_set_size(unsigned width, unsigned height)
 {
    struct rarch_state *p_rarch   = &rarch_st;
 #ifdef HAVE_THREADS
-   bool            is_threaded   = video_driver_is_threaded_internal();
+   bool            is_threaded   = VIDEO_DRIVER_IS_THREADED_INTERNAL();
 
-   video_driver_threaded_lock(is_threaded);
+   VIDEO_DRIVER_THREADED_LOCK(is_threaded);
 #endif
    p_rarch->video_driver_width   = width;
    p_rarch->video_driver_height  = height;
 
 #ifdef HAVE_THREADS
-   video_driver_threaded_unlock(is_threaded);
+   VIDEO_DRIVER_THREADED_UNLOCK(is_threaded);
 #endif
 }
 
@@ -26609,7 +26610,7 @@ bool video_monitor_fps_statistics(double *refresh_rate,
    struct rarch_state *p_rarch = &rarch_st;
 
 #ifdef HAVE_THREADS
-   if (video_driver_is_threaded_internal())
+   if (VIDEO_DRIVER_IS_THREADED_INTERNAL())
       return false;
 #endif
 
@@ -26741,7 +26742,7 @@ static void video_driver_lock_new(void)
    struct rarch_state *p_rarch = &rarch_st;
 #endif
 
-   video_driver_lock_free();
+   VIDEO_DRIVER_LOCK_FREE();
 #ifdef HAVE_THREADS
    if (!p_rarch->display_lock)
       p_rarch->display_lock = slock_new();
@@ -26834,26 +26835,26 @@ void video_driver_reset_custom_viewport(void)
 void video_driver_set_rgba(void)
 {
    struct rarch_state *p_rarch    = &rarch_st;
-   video_driver_lock();
+   VIDEO_DRIVER_LOCK();
    p_rarch->video_driver_use_rgba = true;
-   video_driver_unlock();
+   VIDEO_DRIVER_UNLOCK();
 }
 
 void video_driver_unset_rgba(void)
 {
    struct rarch_state *p_rarch    = &rarch_st;
-   video_driver_lock();
+   VIDEO_DRIVER_LOCK();
    p_rarch->video_driver_use_rgba = false;
-   video_driver_unlock();
+   VIDEO_DRIVER_UNLOCK();
 }
 
 bool video_driver_supports_rgba(void)
 {
    bool tmp;
    struct rarch_state *p_rarch = &rarch_st;
-   video_driver_lock();
+   VIDEO_DRIVER_LOCK();
    tmp = p_rarch->video_driver_use_rgba;
-   video_driver_unlock();
+   VIDEO_DRIVER_UNLOCK();
    return tmp;
 }
 
@@ -27022,7 +27023,7 @@ static bool video_driver_find_driver(struct rarch_state *p_rarch)
    if (video_driver_is_hw_context())
    {
       struct retro_hw_render_callback *hwr =
-         video_driver_get_hw_context_internal();
+         VIDEO_DRIVER_GET_HW_CONTEXT_INTERNAL();
       p_rarch->current_video               = NULL;
 
       (void)hwr;
@@ -27216,7 +27217,7 @@ static void video_driver_reinit_context(struct rarch_state *p_rarch,
     * need to make sure to keep a copy */
    struct retro_hw_render_callback hwr_copy;
    struct retro_hw_render_callback *hwr =
-      video_driver_get_hw_context_internal();
+      VIDEO_DRIVER_GET_HW_CONTEXT_INTERNAL();
    const struct retro_hw_render_context_negotiation_interface *iface =
       video_driver_get_context_negotiation_interface();
    memcpy(&hwr_copy, hwr, sizeof(hwr_copy));
@@ -27233,7 +27234,7 @@ void video_driver_reinit(int flags)
 {
    struct rarch_state          *p_rarch    = &rarch_st;
    struct retro_hw_render_callback *hwr    =
-      video_driver_get_hw_context_internal();
+      VIDEO_DRIVER_GET_HW_CONTEXT_INTERNAL();
 
    p_rarch->video_driver_cache_context     = (hwr->cache_context != false);
    p_rarch->video_driver_cache_context_ack = false;
@@ -27246,10 +27247,10 @@ bool video_driver_is_hw_context(void)
    bool            is_hw_context = false;
    struct rarch_state   *p_rarch = &rarch_st;
 
-   video_driver_context_lock();
+   VIDEO_DRIVER_CONTEXT_LOCK();
    is_hw_context                 = (p_rarch->hw_render.context_type
          != RETRO_HW_CONTEXT_NONE);
-   video_driver_context_unlock();
+   VIDEO_DRIVER_CONTEXT_UNLOCK();
 
    return is_hw_context;
 }
@@ -27548,7 +27549,7 @@ static void video_driver_frame(const void *data, unsigned width,
        *   _runloop_msg_queue_lock is already available
        * We therefore just call runloop_msg_queue_lock()/
        * runloop_msg_queue_unlock() in this case */
-      runloop_msg_queue_lock();
+      RUNLOOP_MSG_QUEUE_LOCK();
 
       /* Check whether duration timer has elapsed */
       runloop_core_status_msg.duration -= gfx_animation_get_delta_time();
@@ -27576,7 +27577,7 @@ static void video_driver_frame(const void *data, unsigned width,
                   sizeof(fps_text));
       }
 
-      runloop_msg_queue_unlock();
+      RUNLOOP_MSG_QUEUE_UNLOCK();
    }
 
    /* Slightly messy code,
@@ -27640,12 +27641,12 @@ static void video_driver_frame(const void *data, unsigned width,
          bool msg_found = false;
          msg_queue_entry_t msg_entry;
 
-         runloop_msg_queue_lock();
+         RUNLOOP_MSG_QUEUE_LOCK();
          msg_found                       = msg_queue_extract(
                p_rarch->runloop_msg_queue, &msg_entry);
          p_rarch->runloop_msg_queue_size = msg_queue_size(
                p_rarch->runloop_msg_queue);
-         runloop_msg_queue_unlock();
+         RUNLOOP_MSG_QUEUE_UNLOCK();
 
          if (msg_found)
             gfx_widgets_msg_queue_push(
@@ -27672,12 +27673,12 @@ static void video_driver_frame(const void *data, unsigned width,
 #endif
       {
          const char *msg                 = NULL;
-         runloop_msg_queue_lock();
+         RUNLOOP_MSG_QUEUE_LOCK();
          msg                             = msg_queue_pull(p_rarch->runloop_msg_queue);
          p_rarch->runloop_msg_queue_size = msg_queue_size(p_rarch->runloop_msg_queue);
          if (msg)
             strlcpy(video_driver_msg, msg, sizeof(video_driver_msg));
-         runloop_msg_queue_unlock();
+         RUNLOOP_MSG_QUEUE_UNLOCK();
       }
    }
 
@@ -27855,9 +27856,11 @@ bool video_driver_texture_load(void *data,
 {
    struct rarch_state *p_rarch = &rarch_st;
 #ifdef HAVE_THREADS
-   bool            is_threaded = video_driver_is_threaded_internal();
+   bool            is_threaded = VIDEO_DRIVER_IS_THREADED_INTERNAL();
 #endif
-   if (!id || !p_rarch->video_driver_poke || !p_rarch->video_driver_poke->load_texture)
+   if (     !id 
+         || !p_rarch->video_driver_poke 
+         || !p_rarch->video_driver_poke->load_texture)
       return false;
 
 #ifdef HAVE_THREADS
@@ -27868,7 +27871,7 @@ bool video_driver_texture_load(void *data,
 
    *id = p_rarch->video_driver_poke->load_texture(
          p_rarch->video_driver_data, data,
-         video_driver_is_threaded_internal(),
+         VIDEO_DRIVER_IS_THREADED_INTERNAL(),
          filter_type);
 
    return true;
@@ -27878,7 +27881,7 @@ bool video_driver_texture_unload(uintptr_t *id)
 {
    struct rarch_state *p_rarch = &rarch_st;
 #ifdef HAVE_THREADS
-   bool            is_threaded = video_driver_is_threaded_internal();
+   bool            is_threaded = VIDEO_DRIVER_IS_THREADED_INTERNAL();
 #endif
    if (!p_rarch->video_driver_poke || !p_rarch->video_driver_poke->unload_texture)
       return false;
@@ -27901,9 +27904,9 @@ void video_driver_build_info(video_frame_info_t *video_info)
    settings_t *settings                    = p_rarch->configuration_settings;
 #ifdef HAVE_THREADS
    bool is_threaded                        =
-      video_driver_is_threaded_internal();
+      VIDEO_DRIVER_IS_THREADED_INTERNAL();
 
-   video_driver_threaded_lock(is_threaded);
+   VIDEO_DRIVER_THREADED_LOCK(is_threaded);
 #endif
    custom_vp                               = &settings->video_viewport_custom;
    video_info->refresh_rate                = settings->floats.video_refresh_rate;
@@ -28005,10 +28008,10 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->cb_swap_buffers             = p_rarch->current_video_context.swap_buffers;
    video_info->cb_set_resize               = p_rarch->current_video_context.set_resize;
 
-   video_info->userdata                    = video_driver_get_ptr_internal(false);
+   video_info->userdata                    = VIDEO_DRIVER_GET_PTR_INTERNAL(false);
 
 #ifdef HAVE_THREADS
-   video_driver_threaded_unlock(is_threaded);
+   VIDEO_DRIVER_THREADED_UNLOCK(is_threaded);
 #endif
 }
 
@@ -28083,7 +28086,7 @@ bool video_driver_translate_coord_viewport(
 bool video_driver_has_focus(void)
 {
    struct rarch_state *p_rarch = &rarch_st;
-   return video_has_focus();
+   return VIDEO_HAS_FOCUS();
 }
 
 void video_driver_get_window_title(char *buf, unsigned len)
@@ -28545,7 +28548,7 @@ bool video_driver_cached_frame_has_valid_framebuffer(void)
 bool video_shader_driver_get_current_shader(video_shader_ctx_t *shader)
 {
    struct rarch_state              *p_rarch = &rarch_st;
-   void *video_driver                       = video_driver_get_ptr_internal(true);
+   void *video_driver                       = VIDEO_DRIVER_GET_PTR_INTERNAL(true);
    const video_poke_interface_t *video_poke = p_rarch->video_driver_poke;
 
    shader->data = NULL;
@@ -29219,7 +29222,7 @@ static void driver_adjust_system_rates(struct rarch_state *p_rarch)
 
    video_driver_monitor_adjust_system_rates(p_rarch);
 
-   if (!video_driver_get_ptr_internal(false))
+   if (!VIDEO_DRIVER_GET_PTR_INTERNAL(false))
       return;
 
    if (p_rarch->runloop_force_nonblock)
@@ -29260,7 +29263,7 @@ void driver_set_nonblock_state(void)
    bool runloop_force_nonblock = p_rarch->runloop_force_nonblock;
 
    /* Only apply non-block-state for video if we're using vsync. */
-   if (video_driver_active && video_driver_get_ptr_internal(false))
+   if (video_driver_active && VIDEO_DRIVER_GET_PTR_INTERNAL(false))
    {
       if (p_rarch->current_video->set_nonblock_state)
       {
@@ -29293,7 +29296,7 @@ void driver_set_nonblock_state(void)
  **/
 static void drivers_init(struct rarch_state *p_rarch, int flags)
 {
-   bool video_is_threaded      = video_driver_is_threaded_internal();
+   bool video_is_threaded      = VIDEO_DRIVER_IS_THREADED_INTERNAL();
    settings_t *settings        = p_rarch->configuration_settings;
 #if defined(HAVE_GFX_WIDGETS)
    bool menu_enable_widgets    = settings->bools.menu_enable_widgets;
@@ -29314,7 +29317,7 @@ static void drivers_init(struct rarch_state *p_rarch, int flags)
    if (flags & DRIVER_VIDEO_MASK)
    {
       struct retro_hw_render_callback *hwr   =
-         video_driver_get_hw_context_internal();
+         VIDEO_DRIVER_GET_HW_CONTEXT_INTERNAL();
 
       p_rarch->video_driver_frame_time_count = 0;
 
@@ -29507,7 +29510,7 @@ static void driver_uninit(struct rarch_state *p_rarch, int flags)
    if (flags & DRIVERS_VIDEO_INPUT)
    {
       video_driver_free_internal();
-      video_driver_lock_free();
+      VIDEO_DRIVER_LOCK_FREE();
       p_rarch->video_driver_data = NULL;
       video_driver_set_cached_frame_ptr(NULL);
    }
@@ -30292,7 +30295,7 @@ static void do_runahead(
 
          if (suspended_frame)
          {
-            runahead_resume_video();
+            RUNAHEAD_RESUME_VIDEO();
             p_rarch->audio_suspended     = false;
          }
 
@@ -30329,7 +30332,7 @@ static void do_runahead(
       /* run main core with video suspended */
       p_rarch->video_driver_active     = false;
       core_run();
-      runahead_resume_video();
+      RUNAHEAD_RESUME_VIDEO();
 
       if (     p_rarch->input_is_dirty 
             || p_rarch->runahead_force_input_dirty)
@@ -30353,15 +30356,15 @@ static void do_runahead(
             p_rarch->video_driver_active = false;
             p_rarch->audio_suspended     = true;
             p_rarch->hard_disable_audio  = true;
-            runahead_run_secondary();
+            RUNAHEAD_RUN_SECONDARY();
             p_rarch->hard_disable_audio  = false;
             p_rarch->audio_suspended     = false;
-            runahead_resume_video();
+            RUNAHEAD_RESUME_VIDEO();
          }
       }
       p_rarch->audio_suspended           = true;
       p_rarch->hard_disable_audio        = true;
-      runahead_run_secondary();
+      RUNAHEAD_RUN_SECONDARY();
       p_rarch->hard_disable_audio        = false;
       p_rarch->audio_suspended           = false;
 #endif
@@ -31865,7 +31868,7 @@ static void runloop_task_msg_queue_push(
 
    if (gfx_widgets_active() && task->title && !task->mute)
    {
-      runloop_msg_queue_lock();
+      RUNLOOP_MSG_QUEUE_LOCK();
       ui_companion_driver_msg_queue_push(p_rarch, msg,
             prio, task ? duration : duration * 60 / 1000, flush);
 #ifdef HAVE_ACCESSIBILITY
@@ -31879,7 +31882,7 @@ static void runloop_task_msg_queue_push(
             false
 #endif
             );
-      runloop_msg_queue_unlock();
+      RUNLOOP_MSG_QUEUE_UNLOCK();
    }
    else
 #endif
@@ -32846,7 +32849,7 @@ void runloop_msg_queue_push(const char *msg,
 {
    struct rarch_state *p_rarch = &rarch_st;
 
-   runloop_msg_queue_lock();
+   RUNLOOP_MSG_QUEUE_LOCK();
 #ifdef HAVE_ACCESSIBILITY
    if (is_accessibility_enabled(p_rarch))
       accessibility_speak_priority(p_rarch, (char*) msg, 0);
@@ -32883,7 +32886,7 @@ void runloop_msg_queue_push(const char *msg,
          msg,
          prio, duration, flush);
 
-   runloop_msg_queue_unlock();
+   RUNLOOP_MSG_QUEUE_UNLOCK();
 }
 
 void runloop_get_status(bool *is_paused, bool *is_idle,
@@ -33243,7 +33246,7 @@ static enum runloop_state runloop_check_state(
       }
    }
 
-   if (!video_driver_is_threaded_internal())
+   if (!VIDEO_DRIVER_IS_THREADED_INTERNAL())
    {
       const ui_application_t *application = p_rarch->ui_companion
          ? p_rarch->ui_companion->application
@@ -33256,7 +33259,7 @@ static enum runloop_state runloop_check_state(
    is_alive    = p_rarch->current_video
       ? p_rarch->current_video->alive(p_rarch->video_driver_data)
       : true;
-   is_focused  = video_has_focus();
+   is_focused  = VIDEO_HAS_FOCUS();
 
 #ifdef HAVE_MENU
    if (menu_driver_binding_state)
@@ -33437,15 +33440,15 @@ static enum runloop_state runloop_check_state(
       bool video_is_fullscreen    = settings->bools.video_fullscreen ||
             rarch_force_fullscreen;
 
-      runloop_msg_queue_lock();
+      RUNLOOP_MSG_QUEUE_LOCK();
       gfx_widgets_iterate(
             p_rarch->video_driver_width,
             p_rarch->video_driver_height,
             video_is_fullscreen,
             settings->paths.directory_assets,
             settings->paths.path_font,
-            video_driver_is_threaded_internal());
-      runloop_msg_queue_unlock();
+            VIDEO_DRIVER_IS_THREADED_INTERNAL());
+      RUNLOOP_MSG_QUEUE_UNLOCK();
    }
 #endif
 
@@ -34145,8 +34148,8 @@ int runloop_iterate(void)
       {
          struct retro_keybind *general_binds = input_config_binds[i];
          struct retro_keybind *auto_binds    = input_autoconf_binds[i];
-         input_push_analog_dpad(general_binds, dpad_mode);
-         input_push_analog_dpad(auto_binds,    dpad_mode);
+         INPUT_PUSH_ANALOG_DPAD(general_binds, dpad_mode);
+         INPUT_PUSH_ANALOG_DPAD(auto_binds,    dpad_mode);
       }
    }
 
@@ -34197,8 +34200,8 @@ int runloop_iterate(void)
          struct retro_keybind *general_binds = input_config_binds[i];
          struct retro_keybind *auto_binds    = input_autoconf_binds[i];
 
-         input_pop_analog_dpad(general_binds);
-         input_pop_analog_dpad(auto_binds);
+         INPUT_POP_ANALOG_DPAD(general_binds);
+         INPUT_POP_ANALOG_DPAD(auto_binds);
       }
    }
 
