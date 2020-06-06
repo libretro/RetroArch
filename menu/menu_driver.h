@@ -32,6 +32,7 @@
 #include "menu_defines.h"
 #include "menu_input.h"
 #include "menu_entries.h"
+#include "menu_shader.h"
 #include "../gfx/gfx_display.h"
 
 #include "../gfx/font_driver.h"
@@ -326,6 +327,7 @@ typedef struct
    } scratchpad;
    const menu_ctx_driver_t *driver_ctx;
    void *userdata;
+   struct video_shader *menu_driver_shader;
 } menu_handle_t;
 
 typedef struct menu_content_ctx_defer_info

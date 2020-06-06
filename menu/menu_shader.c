@@ -26,6 +26,7 @@
 #include "../config.h"
 #endif
 
+#include "menu_driver.h"
 #include "menu_entries.h"
 #include "menu_shader.h"
 
@@ -42,11 +43,6 @@ enum auto_shader_operation
    AUTO_SHADER_OP_EXISTS
 };
 
-/* Menu shader */
-
-/* TODO/FIXME - static public global variables */
-static struct video_shader *menu_driver_shader = NULL;
-
 static enum rarch_shader_type shader_types[] =
 {
    RARCH_SHADER_GLSL, RARCH_SHADER_SLANG, RARCH_SHADER_CG
@@ -54,16 +50,19 @@ static enum rarch_shader_type shader_types[] =
 
 struct video_shader *menu_shader_get(void)
 {
+   menu_handle_t *menu = menu_driver_get_ptr();
    if (video_shader_any_supported())
-      return menu_driver_shader;
+      if (menu)
+         return menu->menu_driver_shader;
    return NULL;
 }
 
 void menu_shader_manager_free(void)
 {
-   if (menu_driver_shader)
-      free(menu_driver_shader);
-   menu_driver_shader = NULL;
+   menu_handle_t *menu = menu_driver_get_ptr();
+   if (menu->menu_driver_shader)
+      free(menu->menu_driver_shader);
+   menu->menu_driver_shader = NULL;
 }
 
 /**
@@ -73,6 +72,7 @@ void menu_shader_manager_free(void)
  **/
 bool menu_shader_manager_init(void)
 {
+   menu_handle_t *menu              = menu_driver_get_ptr();
    enum rarch_shader_type type      = RARCH_SHADER_NONE;
    bool ret                         = true;
    bool is_preset                   = false;
@@ -142,7 +142,7 @@ bool menu_shader_manager_init(void)
    }
 
 end:
-   menu_driver_shader = menu_shader;
+   menu->menu_driver_shader = menu_shader;
    command_event(CMD_EVENT_SHADER_PRESET_LOADED, NULL);
    return ret;
 }
