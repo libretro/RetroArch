@@ -4986,7 +4986,8 @@ static void bundle_decompressed(retro_task_t *task,
       void *task_data,
       void *user_data, const char *err)
 {
-   settings_t      *settings   = config_get_ptr();
+   struct rarch_state *p_rarch = &rarch_st;
+   settings_t        *settings = p_rarch->configuration_settings;
    decompress_task_data_t *dec = (decompress_task_data_t*)task_data;
 
    if (dec && !err)
@@ -5022,7 +5023,7 @@ static void bundle_decompressed(retro_task_t *task,
  **/
 static bool menu_init(struct rarch_state *p_rarch)
 {
-   settings_t *settings        = config_get_ptr();
+   settings_t        *settings = p_rarch->configuration_settings;
 #ifdef HAVE_CONFIGFILE
    bool menu_show_start_screen = settings->bools.menu_show_start_screen;
    bool config_save_on_exit    = settings->bools.config_save_on_exit;
@@ -5676,6 +5677,8 @@ static bool menu_driver_init_internal(
       struct rarch_state *p_rarch,
       bool video_is_threaded)
 {
+   settings_t        *settings = p_rarch->configuration_settings;
+
    /* ID must be set first, since it is required for
     * the proper determination of pixel/dpi scaling
     * parameters (and some menu drivers fetch the
@@ -5694,12 +5697,9 @@ static bool menu_driver_init_internal(
    if (!p_rarch->menu_driver_data || !menu_init(p_rarch))
       return false;
 
-   {
-      /* TODO/FIXME - can we get rid of this? Is this needed? */
-      settings_t *settings           = config_get_ptr();
-      configuration_set_string(settings,
-            settings->arrays.menu_driver, p_rarch->menu_driver_ctx->ident);
-   }
+   /* TODO/FIXME - can we get rid of this? Is this needed? */
+   configuration_set_string(settings,
+         settings->arrays.menu_driver, p_rarch->menu_driver_ctx->ident);
 
    if (p_rarch->menu_driver_ctx->lists_init)
    {
@@ -5884,7 +5884,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          {
             int i;
             driver_ctx_info_t drv;
-            settings_t *settings    = config_get_ptr();
+            settings_t        *settings = p_rarch->configuration_settings;
 
             drv.label = "menu_driver";
             drv.s     = settings->arrays.menu_driver;
@@ -6137,7 +6137,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          break;
       case MENU_NAVIGATION_CTL_INCREMENT:
          {
-            settings_t *settings   = config_get_ptr();
+            settings_t   *settings = p_rarch->configuration_settings;
             unsigned scroll_speed  = *((unsigned*)data);
             size_t  menu_list_size = menu_entries_get_size();
             bool wraparound_enable = settings->bools.menu_navigation_wraparound_enable;
@@ -6171,7 +6171,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
       case MENU_NAVIGATION_CTL_DECREMENT:
          {
             size_t idx             = 0;
-            settings_t *settings   = config_get_ptr();
+            settings_t   *settings = p_rarch->configuration_settings;
             unsigned scroll_speed  = *((unsigned*)data);
             size_t  menu_list_size = menu_entries_get_size();
             bool wraparound_enable = settings->bools.menu_navigation_wraparound_enable;
