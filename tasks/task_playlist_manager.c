@@ -463,35 +463,19 @@ static void pl_manager_validate_core_association(
       goto reset_core;
    else
    {
-      const char *core_path_basename = path_basename(core_path);
-      core_info_list_t *core_info    = NULL;
       char core_display_name[PATH_MAX_LENGTH];
-      size_t i;
+      core_info_ctx_find_t core_info;
       
       core_display_name[0] = '\0';
       
-      if (string_is_empty(core_path_basename))
-         goto reset_core;
+      /* Search core info */
+      core_info.inf  = NULL;
+      core_info.path = core_path;
       
-      /* Final check - search core info */
-      core_info_get_list(&core_info);
-      
-      if (core_info)
-      {
-         for (i = 0; i < core_info->count; i++)
-         {
-            const char *info_display_name = core_info->list[i].display_name;
-            
-            if (!string_is_equal(
-                  path_basename(core_info->list[i].path), core_path_basename))
-               continue;
-            
-            if (!string_is_empty(info_display_name))
-               strlcpy(core_display_name, info_display_name, sizeof(core_display_name));
-            
-            break;
-         }
-      }
+      if (core_info_find(&core_info) &&
+          !string_is_empty(core_info.inf->display_name))
+         strlcpy(core_display_name, core_info.inf->display_name,
+               sizeof(core_display_name));
       
       /* If core_display_name string is empty, it means the
        * core wasn't found -> reset association */

@@ -1992,8 +1992,6 @@ static bool task_load_content_callback(content_ctx_info_t *content_info,
 
       content_ctx.set_supports_no_game_enable = set_supports_no_game_enable;
 
-      if (!string_is_empty(path_dir_system))
-         content_ctx.directory_system         = strdup(path_dir_system);
       if (!string_is_empty(path_dir_cache))
          content_ctx.directory_cache          = strdup(path_dir_cache);
       if (!string_is_empty(system->valid_extensions))

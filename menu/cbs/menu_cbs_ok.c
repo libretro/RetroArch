@@ -1309,60 +1309,6 @@ int generic_action_ok_displaylist_push(const char *path,
 }
 
 /**
- * menu_content_load_from_playlist:
- * @playlist             : Playlist handle.
- * @idx                  : Index in playlist.
- *
- * Initializes core and loads content based on playlist entry.
- **/
-static bool menu_content_playlist_load(playlist_t *playlist, size_t idx)
-{
-   char path[PATH_MAX_LENGTH];
-   const struct playlist_entry *entry = NULL;
-
-   path[0] = '\0';
-
-   playlist_get_index(playlist, idx, &entry);
-
-   if (!entry || string_is_empty(entry->path))
-      return false;
-
-   strlcpy(path, entry->path, sizeof(path));
-   playlist_resolve_path(PLAYLIST_LOAD, path, sizeof(path));
-
-   if (!string_is_empty(path))
-   {
-      unsigned i;
-      bool valid_path     = false;
-      char *path_check    = NULL;
-      char *path_tolower  = strdup(path);
-
-      for (i = 0; i < strlen(path_tolower); ++i)
-         path_tolower[i] = tolower((unsigned char)path_tolower[i]);
-
-      if (strstr(path_tolower, ".zip"))
-         strstr(path_tolower, ".zip")[4] = '\0';
-      else if (strstr(path_tolower, ".7z"))
-         strstr(path_tolower, ".7z")[3] = '\0';
-
-      path_check = (char *)
-         calloc(strlen(path_tolower) + 1, sizeof(char));
-
-      strlcpy(path_check, path, strlen(path_tolower) + 1);
-
-      valid_path = path_is_valid(path_check);
-
-      free(path_tolower);
-      free(path_check);
-
-      if (valid_path)
-         return true;
-   }
-
-   return false;
-}
-
-/**
  * menu_content_find_first_core:
  * @core_info            : Core info list handle.
  * @dir                  : Directory. Gets joined with @path.
@@ -2034,17 +1980,66 @@ static int action_ok_file_load(const char *path,
          CORE_TYPE_PLAIN);
 }
 
+static bool playlist_entry_path_is_valid(const char *entry_path)
+{
+   char *archive_delim = NULL;
+   char *file_path     = NULL;
+
+   if (string_is_empty(entry_path))
+      goto error;
+
+   file_path = strdup(entry_path);
+
+   /* We need to check whether the file referenced by the
+    * entry path actually exists. If it is a normal file,
+    * we can do this directly. If the path contains an
+    * archive delimiter, then we have to trim everything
+    * after the archive extension
+    * > Note: Have to do a nasty cast here, since
+    *   path_get_archive_delim() returns a const char *
+    *   (this cast is safe, though, and is done in many
+    *   places throughout the codebase...) */
+   archive_delim = (char *)path_get_archive_delim(file_path);
+
+   if (archive_delim)
+   {
+      *archive_delim = '\0';
+      if (string_is_empty(file_path))
+         goto error;
+   }
+
+   /* Path is 'sanitised' - can now check if it exists */
+   if (!path_is_valid(file_path))
+      goto error;
+
+   /* File is valid */
+   free(file_path);
+   file_path = NULL;
+
+   return true;
+
+error:
+   if (file_path)
+   {
+      free(file_path);
+      file_path = NULL;
+   }
+
+   return false;
+}
+
 static int action_ok_playlist_entry_collection(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   char new_path[PATH_MAX_LENGTH];
-   char new_core_path[PATH_MAX_LENGTH];
-   size_t selection_ptr                   = 0;
+   char content_path[PATH_MAX_LENGTH];
+   char content_label[PATH_MAX_LENGTH];
+   char core_path[PATH_MAX_LENGTH];
+   size_t selection_ptr                   = entry_idx;
    bool playlist_initialized              = false;
    playlist_t *playlist                   = NULL;
    playlist_t *tmp_playlist               = NULL;
    const struct playlist_entry *entry     = NULL;
-   unsigned i                             = 0;
+   core_info_t* core_info                 = NULL;
    menu_handle_t *menu                    = menu_driver_get_ptr();
    settings_t *settings                   = config_get_ptr();
    bool playlist_use_old_format           = settings->bools.playlist_use_old_format;
@@ -2055,12 +2050,15 @@ static int action_ok_playlist_entry_collection(const char *path,
    const char *path_content_video_history = settings->paths.path_content_video_history;
    const char *path_content_image_history = settings->paths.path_content_image_history;
 
-   if (!menu)
-      return menu_cbs_exit();
+   content_path[0]  = '\0';
+   content_label[0] = '\0';
+   core_path[0]     = '\0';
 
-   new_path[0]                         = '\0';
-   new_core_path[0]                    = '\0';
-   tmp_playlist                        = playlist_get_cached();
+   if (!menu)
+      goto error;
+
+   /* Get playlist */
+   tmp_playlist = playlist_get_cached();
 
    if (!tmp_playlist)
    {
@@ -2076,11 +2074,10 @@ static int action_ok_playlist_entry_collection(const char *path,
                                 string_is_equal(menu->db_playlist_file, path_content_image_history);
       enum playlist_sort_mode current_sort_mode;
 
-      tmp_playlist = playlist_init(
-            menu->db_playlist_file, COLLECTION_SIZE);
+      tmp_playlist = playlist_init(menu->db_playlist_file, COLLECTION_SIZE);
 
       if (!tmp_playlist)
-         return menu_cbs_exit();
+         goto error;
 
       current_sort_mode = playlist_get_sort_mode(tmp_playlist);
 
@@ -2092,83 +2089,57 @@ static int action_ok_playlist_entry_collection(const char *path,
       playlist_initialized = true;
    }
 
-   playlist      = tmp_playlist;
-   selection_ptr = entry_idx;
+   playlist = tmp_playlist;
 
+   /* Get playlist entry */
    playlist_get_index(playlist, selection_ptr, &entry);
+   if (!entry)
+      goto error;
 
-   /* Subsystem codepath */
-   if (!string_is_empty(entry->subsystem_ident))
+   /* Cache entry path */
+   if (!string_is_empty(entry->path))
    {
-      content_ctx_info_t content_info = {0};
-
-      task_push_load_new_core(entry->core_path, NULL,
-            &content_info, CORE_TYPE_PLAIN, NULL, NULL);
-
-      content_clear_subsystem();
-
-      if (!content_set_subsystem_by_name(entry->subsystem_ident))
-      {
-         RARCH_LOG("[playlist] subsystem not found in implementation\n");
-         /* TODO: Add OSD message telling users that content can't be loaded */
-         if (playlist_initialized)
-            playlist_free(tmp_playlist);
-         return 0;
-      }
-
-      for (i = 0; i < entry->subsystem_roms->size; i++)
-         content_add_subsystem(entry->subsystem_roms->elems[i].data);
-
-      task_push_load_subsystem_with_core_from_menu(
-         NULL, &content_info,
-         CORE_TYPE_PLAIN, NULL, NULL);
-      /* TODO: update playlist entry? move to first position I guess? */
-      if (playlist_initialized)
-         playlist_free(tmp_playlist);
-      return 1;
+      strlcpy(content_path, entry->path, sizeof(content_path));
+      playlist_resolve_path(PLAYLIST_LOAD, content_path, sizeof(content_path));
    }
 
-   /* Check whether playlist already has core path/name
-    * assignments
-    * > Both core name and core path must be valid */
-   if (     string_is_empty(entry->core_path)
-         || string_is_empty(entry->core_name)
-         || string_is_equal(entry->core_path, "DETECT")
-         || string_is_equal(entry->core_name, "DETECT"))
+   /* Cache entry label */
+   if (!string_is_empty(entry->label))
+      strlcpy(content_label, entry->label, sizeof(content_label));
+
+   /* Get core path */
+   if (!playlist_entry_has_core(entry))
    {
-      core_info_ctx_find_t core_info;
-      const char *entry_path                 = NULL;
-      const char *default_core_path          =
-            playlist_get_default_core_path(playlist);
-      bool found_associated_core             = false;
-      struct playlist_entry update_entry     = {0};
+      struct playlist_entry update_entry = {0};
 
-      if (!string_is_empty(default_core_path))
+      /* Entry core is not set - attempt to use
+       * playlist default */
+      core_info = playlist_get_default_core_info(playlist);
+
+      /* If default core is not set, prompt user
+       * to select one */
+      if (!core_info)
       {
-         strlcpy(new_core_path, default_core_path, sizeof(new_core_path));
-         playlist_resolve_path(PLAYLIST_LOAD, new_core_path, sizeof(new_core_path));
-         found_associated_core = true;
-      }
-
-      core_info.inf       = NULL;
-      core_info.path      = new_core_path;
-
-      if (!core_info_find(&core_info, new_core_path))
-         found_associated_core = false;
-
-      if (!found_associated_core)
-      {
-         /* TODO: figure out if this should refer to the inner or outer entry_path */
-         /* TODO: make sure there's only one entry_path in this function */
-         int ret = action_ok_file_load_with_detect_core_collection(entry_path,
+         /* TODO: figure out if this should refer to the inner or outer content_path */
+         int ret = action_ok_file_load_with_detect_core_collection(content_path,
                label, type, selection_ptr, entry_idx);
-         if (playlist_initialized)
+
+         if (playlist_initialized && tmp_playlist)
+         {
             playlist_free(tmp_playlist);
+            tmp_playlist = NULL;
+            playlist     = NULL;
+         }
+
          return ret;
       }
 
-      update_entry.core_path = (char*)default_core_path;
-      update_entry.core_name = core_info.inf->display_name;
+      /* Cache core path */
+      strlcpy(core_path, core_info->path, sizeof(core_path));
+
+      /* Update playlist entry */
+      update_entry.core_path = core_info->path;
+      update_entry.core_name = core_info->display_name;
 
       command_playlist_update_write(
             playlist,
@@ -2179,208 +2150,90 @@ static int action_ok_playlist_entry_collection(const char *path,
    }
    else
    {
-      strlcpy(new_core_path, entry->core_path, sizeof(new_core_path));
-      playlist_resolve_path(PLAYLIST_LOAD, new_core_path, sizeof(new_core_path));
-   }
+      /* Entry does have a core assignment - ensure
+       * it has corresponding core info entry */
+      core_info = playlist_entry_get_core_info(entry);
 
-   if (!playlist || !menu_content_playlist_load(playlist, selection_ptr))
-   {
-      runloop_msg_queue_push(
-            "File could not be loaded from playlist.\n",
-            1, 100, true,
-            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-      if (playlist_initialized)
-         playlist_free(tmp_playlist);
-      return menu_cbs_exit();
-   }
-
-   playlist_get_index(playlist, selection_ptr, &entry);
-
-   strlcpy(new_path, entry->path, sizeof(new_path));
-   playlist_resolve_path(PLAYLIST_LOAD, new_path, sizeof(new_path));
-
-   if (playlist_initialized)
-      playlist_free(tmp_playlist);
-
-   return default_action_ok_load_content_from_playlist_from_menu(
-            new_core_path, new_path, entry->label);
-}
-
-static int action_ok_playlist_entry(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   char new_core_path[PATH_MAX_LENGTH];
-   size_t selection_ptr                = 0;
-   const struct playlist_entry *entry  = NULL;
-   const char *entry_label             = NULL;
-   settings_t *settings                = config_get_ptr();
-   playlist_t *playlist                = playlist_get_cached();
-   menu_handle_t *menu                 = menu_driver_get_ptr();
-   bool playlist_use_old_format        = settings->bools.playlist_use_old_format;
-   bool playlist_compression           = settings->bools.playlist_compression;
-
-   new_core_path[0] = '\0';
-
-   if (!playlist || !menu)
-      return menu_cbs_exit();
-
-   selection_ptr = entry_idx;
-
-   playlist_get_index(playlist, selection_ptr, &entry);
-
-   entry_label = entry->label;
-
-   /* Check whether playlist already has core path/name
-    * assignments
-    * > Both core name and core path must be valid */
-   if (     string_is_empty(entry->core_path)
-         || string_is_empty(entry->core_name)
-         || string_is_equal(entry->core_path, "DETECT")
-         || string_is_equal(entry->core_name, "DETECT"))
-   {
-      core_info_ctx_find_t core_info;
-      const char *default_core_path          =
-            playlist_get_default_core_path(playlist);
-      bool found_associated_core             = false;
-
-      if (!string_is_empty(default_core_path))
+      if (core_info && !string_is_empty(core_info->path))
+         strlcpy(core_path, core_info->path, sizeof(core_path));
+      else
       {
-         strlcpy(new_core_path, default_core_path, sizeof(new_core_path));
-         playlist_resolve_path(PLAYLIST_LOAD, new_core_path, sizeof(new_core_path));
-         found_associated_core = true;
-      }
-
-      core_info.inf                          = NULL;
-      core_info.path                         = new_core_path;
-
-      if (!core_info_find(&core_info, new_core_path))
-         found_associated_core = false;
-
-      if (!found_associated_core)
-         /* TODO: figure out if this should refer to the inner or outer entry_path */
-         /* TODO: make sure there's only one entry_path in this function */
-         return action_ok_file_load_with_detect_core(entry->path,
-               label, type, selection_ptr, entry_idx);
-
-      {
-         struct playlist_entry entry = {0};
-
-         entry.core_path = (char*)default_core_path;
-         entry.core_name = core_info.inf->display_name;
-
-         command_playlist_update_write(NULL,
-               selection_ptr,
-               &entry,
-               playlist_use_old_format,
-               playlist_compression);
-      }
-   }
-   else
-   {
-      strlcpy(new_core_path, entry->core_path, sizeof(new_core_path));
-      playlist_resolve_path(PLAYLIST_LOAD, new_core_path, sizeof(new_core_path));
-   }
-
-   if (!playlist || !menu_content_playlist_load(playlist, selection_ptr))
-   {
-      runloop_msg_queue_push(
-            "File could not be loaded from playlist.\n",
-            1, 100, true,
-            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-      return menu_cbs_exit();
-   }
-
-   playlist_get_index(playlist,
-         selection_ptr, &entry);
-
-   return default_action_ok_load_content_from_playlist_from_menu(
-         new_core_path, entry->path, entry_label);
-}
-
-static int action_ok_playlist_entry_start_content(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   size_t selection_ptr                = 0;
-   const struct playlist_entry *entry  = NULL;
-   settings_t *settings                = config_get_ptr();
-   playlist_t *playlist                = playlist_get_cached();
-   menu_handle_t *menu                 = menu_driver_get_ptr();
-   bool playlist_use_old_format        = settings->bools.playlist_use_old_format;
-   bool playlist_compression           = settings->bools.playlist_compression;
-
-   if (!playlist || !menu)
-      return menu_cbs_exit();
-
-   selection_ptr                       = menu->scratchpad.unsigned_var;
-
-   playlist_get_index(playlist, selection_ptr, &entry);
-
-   /* Check whether playlist already has core path/name
-    * assignments
-    * > Both core name and core path must be valid */
-   if (     string_is_empty(entry->core_path)
-         || string_is_empty(entry->core_name)
-         || string_is_equal(entry->core_path, "DETECT")
-         || string_is_equal(entry->core_name, "DETECT"))
-   {
-      core_info_ctx_find_t core_info;
-      char new_core_path[PATH_MAX_LENGTH];
-      const char *entry_path                 = NULL;
-      const char *default_core_path          =
-            playlist_get_default_core_path(playlist);
-      bool found_associated_core             = false;
-
-      new_core_path[0]                       = '\0';
-
-      if (!string_is_empty(default_core_path))
-      {
-         strlcpy(new_core_path, default_core_path, sizeof(new_core_path));
-         found_associated_core = true;
-      }
-
-      core_info.inf                          = NULL;
-      core_info.path                         = new_core_path;
-
-      if (!core_info_find(&core_info, new_core_path))
-         found_associated_core = false;
-
-      /* TODO: figure out if this should refer to
-       * the inner or outer entry_path. */
-      /* TODO: make sure there's only one entry_path
-       * in this function. */
-      if (!found_associated_core)
-         return action_ok_file_load_with_detect_core(entry_path,
-               label, type, selection_ptr, entry_idx);
-
-      {
-         struct playlist_entry entry = {0};
-
-         entry.core_path = new_core_path;
-         entry.core_name = core_info.inf->display_name;
-
-         command_playlist_update_write(
-               playlist,
-               selection_ptr,
-               &entry,
-               playlist_use_old_format,
-               playlist_compression);
+         /* Core path is invalid - just copy what we have
+          * and hope for the best... */
+         strlcpy(core_path, entry->core_path, sizeof(core_path));
+         playlist_resolve_path(PLAYLIST_LOAD, core_path, sizeof(core_path));
       }
    }
 
-   if (!menu_content_playlist_load(playlist, selection_ptr))
-   {
-      runloop_msg_queue_push("File could not be loaded from playlist.\n",
-            1, 100, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT,
-            MESSAGE_QUEUE_CATEGORY_INFO);
+   /* Ensure core path is valid */
+   if (string_is_empty(core_path) || !path_is_valid(core_path))
       goto error;
+
+   /* Subsystem codepath */
+   if (!string_is_empty(entry->subsystem_ident))
+   {
+      content_ctx_info_t content_info = {0};
+      size_t i;
+
+      task_push_load_new_core(core_path, NULL,
+            &content_info, CORE_TYPE_PLAIN, NULL, NULL);
+
+      content_clear_subsystem();
+
+      if (!content_set_subsystem_by_name(entry->subsystem_ident))
+      {
+         RARCH_LOG("[playlist] subsystem not found in implementation\n");
+         goto error;
+      }
+
+      for (i = 0; i < entry->subsystem_roms->size; i++)
+         content_add_subsystem(entry->subsystem_roms->elems[i].data);
+
+      task_push_load_subsystem_with_core_from_menu(
+            NULL, &content_info,
+            CORE_TYPE_PLAIN, NULL, NULL);
+
+      /* TODO: update playlist entry? move to first position I guess? */
+      if (playlist_initialized && tmp_playlist)
+      {
+         playlist_free(tmp_playlist);
+         tmp_playlist = NULL;
+         playlist     = NULL;
+      }
+      return 1;
    }
 
-   playlist_get_index(playlist, selection_ptr, &entry);
+   /* Ensure entry path is valid */
+   if (!playlist_entry_path_is_valid(content_path))
+      goto error;
 
+   /* Free temporary playlist, if required */
+   if (playlist_initialized && tmp_playlist)
+   {
+      playlist_free(tmp_playlist);
+      tmp_playlist = NULL;
+      playlist     = NULL;
+   }
+
+   /* Note: Have to use cached entry label, since entry
+    * may be free()'d by above playlist_free() - but need
+    * to pass NULL explicitly if label is empty */
    return default_action_ok_load_content_from_playlist_from_menu(
-         entry->core_path, entry->path, entry->label);
+         core_path, content_path, string_is_empty(content_label) ? NULL : content_label);
 
 error:
+   runloop_msg_queue_push(
+         "File could not be loaded from playlist.\n",
+         1, 100, true,
+         NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+
+   if (playlist_initialized && tmp_playlist)
+   {
+      playlist_free(tmp_playlist);
+      tmp_playlist = NULL;
+      playlist     = NULL;
+   }
+
    return menu_cbs_exit();
 }
 
@@ -4674,7 +4527,7 @@ static int action_ok_add_to_favorites(const char *path,
             core_info.inf  = NULL;
             core_info.path = core_path;
 
-            if (core_info_find(&core_info, core_path))
+            if (core_info_find(&core_info))
                if (!string_is_empty(core_info.inf->display_name))
                   strlcpy(core_name, core_info.inf->display_name, sizeof(core_name));
          }
@@ -4803,7 +4656,7 @@ static int action_ok_add_to_favorites_playlist(const char *path,
          core_info.inf  = NULL;
          core_info.path = entry->core_path;
 
-         if (core_info_find(&core_info, entry->core_path))
+         if (core_info_find(&core_info))
             if (!string_is_empty(core_info.inf->display_name))
                strlcpy(core_display_name, core_info.inf->display_name, sizeof(core_display_name));
 
@@ -7121,18 +6974,7 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             BIND_ACTION_OK(cbs, action_ok_push_default);
             break;
          case FILE_TYPE_PLAYLIST_ENTRY:
-            if (string_is_equal(label, "collection"))
-            {
-               BIND_ACTION_OK(cbs, action_ok_playlist_entry_collection);
-            }
-            else if (string_is_equal(label, "rdb_entry_start_content"))
-            {
-               BIND_ACTION_OK(cbs, action_ok_playlist_entry_start_content);
-            }
-            else
-            {
-               BIND_ACTION_OK(cbs, action_ok_playlist_entry);
-            }
+            BIND_ACTION_OK(cbs, action_ok_playlist_entry_collection);
             break;
 #ifdef HAVE_LAKKA_SWITCH
          case MENU_SET_SWITCH_GPU_PROFILE:

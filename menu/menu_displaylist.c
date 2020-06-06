@@ -157,7 +157,7 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
       core_info_finder.inf  = NULL;
       core_info_finder.path = core_path;
 
-      if (core_info_find(&core_info_finder, core_path))
+      if (core_info_find(&core_info_finder))
          core_info = core_info_finder.inf;
    }
    else if (core_info_get_current_core(&core_info) && core_info)
@@ -3282,7 +3282,7 @@ static unsigned menu_displaylist_parse_content_information(
       core_info.inf  = NULL;
       core_info.path = core_path;
 
-      if (core_info_find(&core_info, core_path))
+      if (core_info_find(&core_info))
          if (!string_is_empty(core_info.inf->display_name))
             strlcpy(core_name, core_info.inf->display_name, sizeof(core_name));
    }

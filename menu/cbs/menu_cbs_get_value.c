@@ -462,7 +462,7 @@ static void menu_action_setting_disp_set_label_core_updater_entry(
       core_info.inf  = NULL;
       core_info.path = entry->local_core_path;
 
-      if (core_info_find(&core_info, entry->local_core_path))
+      if (core_info_find(&core_info))
       {
          strlcpy(s, "[#]", len);
          *w = (unsigned)STRLEN_CONST("[#]");

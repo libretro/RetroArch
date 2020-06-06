@@ -24,6 +24,8 @@
 #include <boolean.h>
 #include <lists/string_list.h>
 
+#include "core_info.h"
+
 RETRO_BEGIN_DECLS
 
 /* Default maximum playlist size */
@@ -316,6 +318,25 @@ void playlist_set_label_display_mode(playlist_t *playlist, enum playlist_label_d
 void playlist_set_thumbnail_mode(
       playlist_t *playlist, enum playlist_thumbnail_id thumbnail_id, enum playlist_thumbnail_mode thumbnail_mode);
 void playlist_set_sort_mode(playlist_t *playlist, enum playlist_sort_mode sort_mode);
+
+/* Returns true if specified entry has a valid
+ * core association (i.e. a non-empty string
+ * other than DETECT) */
+bool playlist_entry_has_core(const struct playlist_entry *entry);
+
+/* Fetches core info object corresponding to the
+ * currently associated core of the specified
+ * playlist entry.
+ * Returns NULL if entry does not have a valid
+ * core association */
+core_info_t *playlist_entry_get_core_info(const struct playlist_entry* entry);
+
+/* Fetches core info object corresponding to the
+ * currently associated default core of the
+ * specified playlist.
+ * Returns NULL if playlist does not have a valid
+ * default core association */
+core_info_t *playlist_get_default_core_info(playlist_t* playlist);
 
 RETRO_END_DECLS
 

@@ -988,7 +988,7 @@ void MainWindow::onPlaylistWidgetContextMenuRequested(const QPoint&)
          coreInfo.inf  = NULL;
          coreInfo.path = corePath;
 
-         if (core_info_find(&coreInfo, corePath))
+         if (core_info_find(&coreInfo))
          {
             /* Set new core association */
             playlist_set_default_core_path(playlist, coreInfo.inf->path);
