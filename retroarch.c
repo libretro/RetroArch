@@ -2062,6 +2062,7 @@ struct rarch_state
    unsigned osk_last_codepoint_len;
    unsigned input_driver_flushing_input;
    unsigned input_driver_max_users;
+   unsigned input_hotkey_block_counter;
 #ifdef HAVE_ACCESSIBILITY
    unsigned gamepad_input_override;
 #endif
@@ -23186,6 +23187,7 @@ static void input_menu_keys_pressed(
    unsigned i, port;
    settings_t     *settings                     = p_rarch->configuration_settings;
    bool input_all_users_control_menu            = settings->bools.input_all_users_control_menu;
+   int input_hotkey_block_delay                 = settings->uints.input_hotkey_block_delay;
    uint8_t max_users                            = (uint8_t)p_rarch->input_driver_max_users;
    uint8_t port_max                             = input_all_users_control_menu
       ? max_users : 1;
@@ -23220,11 +23222,17 @@ static void input_menu_keys_pressed(
                   &binds[0], port, RETRO_DEVICE_JOYPAD, 0,
                   RARCH_ENABLE_HOTKEY))
          {
-            p_rarch->input_driver_block_libretro_input = true;
-            break;
+            if (p_rarch->input_hotkey_block_counter < input_hotkey_block_delay)
+               p_rarch->input_hotkey_block_counter++;
+            else
+            {
+               p_rarch->input_driver_block_libretro_input = true;
+               break;
+            }
          }
          else
          {
+            p_rarch->input_hotkey_block_counter = 0;
             p_rarch->input_driver_block_hotkey         = true;
             break;
          }
@@ -23328,6 +23336,7 @@ static void input_keys_pressed(
 {
    unsigned i, port                       = 0;
    settings_t              *settings      = p_rarch->configuration_settings;
+   int input_hotkey_block_delay           = settings->uints.input_hotkey_block_delay;
    const struct retro_keybind *binds      = input_config_binds[0];
    const struct retro_keybind *binds_norm = &input_config_binds[port][RARCH_ENABLE_HOTKEY];
    const struct retro_keybind *binds_auto = &input_autoconf_binds[port][RARCH_ENABLE_HOTKEY];
@@ -23342,13 +23351,21 @@ static void input_keys_pressed(
          &input_config_binds[port][RARCH_ENABLE_HOTKEY];
 
       if (     enable_hotkey && enable_hotkey->valid
-            && p_rarch->current_input->input_state(
-               p_rarch->current_input_data, joypad_info,
-               &binds, port,
-               RETRO_DEVICE_JOYPAD, 0, RARCH_ENABLE_HOTKEY))
-         p_rarch->input_driver_block_libretro_input = true;
+         && p_rarch->current_input->input_state(
+            p_rarch->current_input_data, joypad_info,
+            &binds, port,
+            RETRO_DEVICE_JOYPAD, 0, RARCH_ENABLE_HOTKEY))
+      {
+         if (p_rarch->input_hotkey_block_counter < input_hotkey_block_delay)
+            p_rarch->input_hotkey_block_counter++;
+         else
+            p_rarch->input_driver_block_libretro_input = true;         
+      }
       else
+      {
+         p_rarch->input_hotkey_block_counter = 0;
          p_rarch->input_driver_block_hotkey         = true;
+      }
    }
 
    if (binds[RARCH_GAME_FOCUS_TOGGLE].valid)
