@@ -2964,7 +2964,6 @@ static int xmb_draw_item(
       unsigned video_width,
       unsigned video_height,
       bool xmb_shadows_enable,
-      menu_entry_t *entry,
       math_matrix_4x4 *mymat,
       xmb_handle_t *xmb,
       xmb_node_t *core_node,
@@ -2976,6 +2975,7 @@ static int xmb_draw_item(
       unsigned height
       )
 {
+   menu_entry_t entry;
    float icon_x, icon_y, label_offset;
    gfx_animation_ctx_ticker_t ticker;
    gfx_animation_ctx_ticker_smooth_t ticker_smooth;
@@ -3036,23 +3036,27 @@ static int xmb_draw_item(
    if (icon_x < -half_size || icon_x > width)
       return 0;
 
-   entry_type = menu_entry_get_type_new(entry);
+   menu_entry_init(&entry);
+   entry.label_enabled      = false;
+   entry.sublabel_enabled   = (i == current);
+   menu_entry_get(&entry, 0, i, list, true);
+   entry_type = menu_entry_get_type_new(&entry);
 
    if (entry_type == FILE_TYPE_CONTENTLIST_ENTRY)
    {
       char entry_path[PATH_MAX_LENGTH] = {0};
-      strlcpy(entry_path, entry->path, sizeof(entry_path));
+      strlcpy(entry_path, entry.path, sizeof(entry_path));
 
       fill_short_pathname_representation(entry_path, entry_path,
             sizeof(entry_path));
 
       if (!string_is_empty(entry_path))
-         strlcpy(entry->path, entry_path, sizeof(entry->path));
+         strlcpy(entry.path, entry_path, sizeof(entry.path));
    }
 
-   if (string_is_equal(entry->value,
+   if (string_is_equal(entry.value,
             msg_hash_to_str(MENU_ENUM_LABEL_DISABLED)) ||
-         (string_is_equal(entry->value,
+         (string_is_equal(entry.value,
                           msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF))))
    {
       if (xmb->textures.list[XMB_TEXTURE_SWITCH_OFF])
@@ -3060,9 +3064,9 @@ static int xmb_draw_item(
       else
          do_draw_text = true;
    }
-   else if (string_is_equal(entry->value,
+   else if (string_is_equal(entry.value,
             msg_hash_to_str(MENU_ENUM_LABEL_ENABLED)) ||
-         (string_is_equal(entry->value,
+         (string_is_equal(entry.value,
                           msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON))))
    {
       if (xmb->textures.list[XMB_TEXTURE_SWITCH_ON])
@@ -3072,22 +3076,22 @@ static int xmb_draw_item(
    }
    else
    {
-      if (!string_is_empty(entry->value))
+      if (!string_is_empty(entry.value))
       {
          if (
-               string_is_equal(entry->value, "...")     ||
-               string_is_equal(entry->value, "(PRESET)")  ||
-               string_is_equal(entry->value, "(SHADER)")  ||
-               string_is_equal(entry->value, "(COMP)")  ||
-               string_is_equal(entry->value, "(CORE)")  ||
-               string_is_equal(entry->value, "(MOVIE)") ||
-               string_is_equal(entry->value, "(MUSIC)") ||
-               string_is_equal(entry->value, "(DIR)")   ||
-               string_is_equal(entry->value, "(RDB)")   ||
-               string_is_equal(entry->value, "(CURSOR)")||
-               string_is_equal(entry->value, "(CFILE)") ||
-               string_is_equal(entry->value, "(FILE)")  ||
-               string_is_equal(entry->value, "(IMAGE)")
+               string_is_equal(entry.value, "...")     ||
+               string_is_equal(entry.value, "(PRESET)")  ||
+               string_is_equal(entry.value, "(SHADER)")  ||
+               string_is_equal(entry.value, "(COMP)")  ||
+               string_is_equal(entry.value, "(CORE)")  ||
+               string_is_equal(entry.value, "(MOVIE)") ||
+               string_is_equal(entry.value, "(MUSIC)") ||
+               string_is_equal(entry.value, "(DIR)")   ||
+               string_is_equal(entry.value, "(RDB)")   ||
+               string_is_equal(entry.value, "(CURSOR)")||
+               string_is_equal(entry.value, "(CFILE)") ||
+               string_is_equal(entry.value, "(FILE)")  ||
+               string_is_equal(entry.value, "(IMAGE)")
             )
          {
          }
@@ -3099,7 +3103,7 @@ static int xmb_draw_item(
 
    }
 
-   if (string_is_empty(entry->value))
+   if (string_is_empty(entry.value))
    {
       if ((xmb->thumbnails.savestate.status == GFX_THUMBNAIL_STATUS_AVAILABLE) ||
             !xmb->use_ps3_layout ||
@@ -3135,7 +3139,7 @@ static int xmb_draw_item(
       }
    }
 
-   menu_entry_get_rich_label(entry, &ticker_str);
+   menu_entry_get_rich_label(&entry, &ticker_str);
 
    if (use_smooth_ticker)
    {
@@ -3164,7 +3168,7 @@ static int xmb_draw_item(
    if (menu_show_sublabels)
    {
       if (i == current && width > 320 && height > 240
-            && !string_is_empty(entry->sublabel))
+            && !string_is_empty(entry.sublabel))
       {
          char entry_sublabel[MENU_SUBLABEL_MAX_LENGTH];
          char entry_sublabel_top_fade[MENU_SUBLABEL_MAX_LENGTH >> 2];
@@ -3202,7 +3206,7 @@ static int xmb_draw_item(
                      (xmb->margins_label_top * 3.5f) -
                      xmb->under_item_offset); /* This last one is just a little extra padding (seems to help) */
 
-            line_ticker_smooth.src_str              = entry->sublabel;
+            line_ticker_smooth.src_str              = entry.sublabel;
             line_ticker_smooth.dst_str              = entry_sublabel;
             line_ticker_smooth.dst_str_len          = sizeof(entry_sublabel);
             line_ticker_smooth.y_offset             = &ticker_y_offset;
@@ -3233,7 +3237,7 @@ static int xmb_draw_item(
 
             line_ticker.s         = entry_sublabel;
             line_ticker.len       = sizeof(entry_sublabel);
-            line_ticker.str       = entry->sublabel;
+            line_ticker.str       = entry.sublabel;
 
             gfx_animation_line_ticker(&line_ticker);
          }
@@ -3279,11 +3283,11 @@ static int xmb_draw_item(
    {
       ticker_smooth.selected    = (i == current);
       ticker_smooth.field_width = xmb->font_size * 0.5f * 35 * scale_mod[7];
-      ticker_smooth.src_str     = entry->value;
+      ticker_smooth.src_str     = entry.value;
       ticker_smooth.dst_str     = tmp;
       ticker_smooth.dst_str_len = sizeof(tmp);
 
-      if (!string_is_empty(entry->value))
+      if (!string_is_empty(entry.value))
          gfx_animation_ticker_smooth(&ticker_smooth);
    }
    else
@@ -3291,9 +3295,9 @@ static int xmb_draw_item(
       ticker.s        = tmp;
       ticker.len      = 35 * scale_mod[7];
       ticker.selected = (i == current);
-      ticker.str      = entry->value;
+      ticker.str      = entry.value;
 
-      if (!string_is_empty(entry->value))
+      if (!string_is_empty(entry.value))
          gfx_animation_ticker(&ticker);
    }
 
@@ -3316,7 +3320,7 @@ static int xmb_draw_item(
          (!xmb->assets_missing) &&
          (color[3] != 0) &&
          (
-            (entry->checked) ||
+            (entry.checked) ||
             !((entry_type >= MENU_SETTING_DROPDOWN_ITEM) && (entry_type <= MENU_SETTING_DROPDOWN_SETTING_UINT_ITEM_SPECIAL))
          )
       )
@@ -3324,7 +3328,7 @@ static int xmb_draw_item(
       math_matrix_4x4 mymat_tmp;
       gfx_display_ctx_rotate_draw_t rotate_draw;
       uintptr_t texture        = xmb_icon_get_id(xmb, core_node, node,
-            entry->enum_idx, entry_type, (i == current), entry->checked);
+            entry.enum_idx, entry_type, (i == current), entry.checked);
       float x                  = icon_x;
       float y                  = icon_y;
       float rotation           = 0;
@@ -3434,30 +3438,23 @@ static void xmb_draw_items(
    first = (unsigned)i;
    last  = (unsigned)(end - 1);
 
-   xmb_calculate_visible_range(xmb, height, end, (unsigned)current, &first, &last);
+   xmb_calculate_visible_range(xmb, height,
+         end, (unsigned)current, &first, &last);
 
    gfx_display_blend_begin(userdata);
 
    for (i = first; i <= last; i++)
    {
-      int ret;
-      menu_entry_t entry;
-      menu_entry_init(&entry);
-      entry.label_enabled      = false;
-      entry.sublabel_enabled   = (i == current);
-      menu_entry_get(&entry, 0, i, list, true);
-      ret = xmb_draw_item(
+      if (xmb_draw_item(
             userdata,
             video_width,
             video_height,
             xmb_shadows_enable,
-            &entry,
             &mymat,
             xmb, core_node,
             list, color,
             i, current,
-            width, height);
-      if (ret == -1)
+            width, height) == -1)
          break;
    }
 
