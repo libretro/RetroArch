@@ -20,8 +20,6 @@
 #include "../../config.h"
 #endif
 
-#include <libpad.h>
-
 #include <boolean.h>
 #include <libretro.h>
 #include <retro_miscellaneous.h>

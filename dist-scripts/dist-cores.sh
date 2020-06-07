@@ -20,7 +20,7 @@ cd dist-scripts
 
 elif [ $PLATFORM = "ps2" ] ; then
 platform=ps2
-SALAMANDER=NO
+SALAMANDER=yes
 EXT=a
 
 mkdir -p ../pkg/${platform}/cores/
@@ -151,6 +151,9 @@ fi
 # Compile Salamander core
 if [ $SALAMANDER = "yes" ]; then
    make -C ../ -f Makefile.${platform}.salamander $OPTS || exit 1
+   if [ $PLATFORM = "ps2" ] ; then
+   mv -f ../raboot.elf ../pkg/${platform}/raboot.PBP
+   fi
    if [ $PLATFORM = "psp1" ] ; then
    mv -f ../EBOOT.PBP ../pkg/${platform}/EBOOT.PBP
    fi
@@ -287,7 +290,7 @@ for f in `ls -v *_${platform}.${EXT}`; do
          fi
       fi
    elif [ $PLATFORM = "ps2" ] ; then
-      mv -f ../retroarchps2-release.elf ../pkg/${platform}/cores/retroarchps2_${name}.elf
+      mv -f ../retroarchps2.elf ../pkg/${platform}/cores/${name}_libretro_${platform}.elf
    elif [ $PLATFORM = "psp1" ] ; then
       mv -f ../EBOOT.PBP ../pkg/${platform}/cores/${name}_libretro.PBP
    elif [ $PLATFORM = "vita" ] ; then
@@ -330,6 +333,7 @@ for f in `ls -v *_${platform}.${EXT}`; do
       rm -f ../retroarch_${platform}.elf ../retroarch_${platform}.self ../CORE.SELF
    elif [ $PLATFORM = "ps2" ] ; then
       rm -f ../retroarchps2.elf
+      rm -f ../retroarchps2-debug.elf
    elif [ $PLATFORM = "psp1" ] ; then
       rm -f ../retroarchpsp.elf
    elif [ $PLATFORM = "vita" ] ; then
