@@ -3040,9 +3040,8 @@ static void get_current_menu_value(struct rarch_state *p_rarch,
    const char*      entry_label;
    struct menu_state  *menu_st = &p_rarch->menu_driver_state;
 
-   menu_st->selection_ptr      = menu_navigation_get_selection();
    menu_entry_init(&entry);
-   menu_entry_get(&entry, 0, menu_navigation_get_selection(), NULL, true);
+   menu_entry_get(&entry, 0, menu_st->selection_ptr, NULL, true);
    menu_entry_get_value(&entry, &entry_label);
 
    strlcpy(retstr, entry_label, max);
@@ -3055,9 +3054,8 @@ static void get_current_menu_label(struct rarch_state *p_rarch,
    const char*      entry_label;
    struct menu_state *menu_st  = &p_rarch->menu_driver_state;
 
-   menu_st->selection_ptr      = menu_navigation_get_selection();
    menu_entry_init(&entry);
-   menu_entry_get(&entry, 0, menu_navigation_get_selection(), NULL, true);
+   menu_entry_get(&entry, 0, menu_st->selection_ptr, NULL, true);
    menu_entry_get_rich_label(&entry, &entry_label);
 
    strlcpy(retstr, entry_label, max);
@@ -3070,10 +3068,8 @@ static void get_current_menu_sublabel(struct rarch_state *p_rarch,
    const char*      entry_sublabel;
    struct menu_state *menu_st  = &p_rarch->menu_driver_state;
 
-   menu_st->selection_ptr      = menu_navigation_get_selection();
-
    menu_entry_init(&entry);
-   menu_entry_get(&entry, 0, menu_navigation_get_selection(), NULL, true);
+   menu_entry_get(&entry, 0, menu_st->selection_ptr, NULL, true);
 
    menu_entry_get_sublabel(&entry, &entry_sublabel);
    strlcpy(retstr, entry_sublabel, max);
@@ -3106,6 +3102,7 @@ static int generic_menu_iterate(
    int ret                         = 0;
    const char *label               = NULL;
    menu_handle_t *menu             = (menu_handle_t*)data;
+   struct menu_state *menu_st      = &p_rarch->menu_driver_state;
 
    if (!menu)
       return 0;
@@ -3162,7 +3159,7 @@ static int generic_menu_iterate(
 
             if (menu_input_key_bind_iterate(&bind, current_time))
             {
-               size_t selection = menu_navigation_get_selection();
+               size_t selection = menu_st->selection_ptr;
                menu_entries_pop_stack(&selection, 0, 0);
                menu_navigation_set_selection(selection);
             }
@@ -3173,7 +3170,7 @@ static int generic_menu_iterate(
       case ITERATE_TYPE_INFO:
          {
             file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
-            size_t selection           = menu_navigation_get_selection();
+            size_t selection           = menu_st->selection_ptr;
             menu_file_list_cbs_t *cbs  = selection_buf ?
                (menu_file_list_cbs_t*)
 			   file_list_get_actiondata_at_offset(selection_buf, selection)
@@ -3239,7 +3236,7 @@ static int generic_menu_iterate(
             {
                unsigned type = 0;
                enum msg_hash_enums enum_idx = MSG_UNKNOWN;
-               size_t selection             = menu_navigation_get_selection();
+               size_t selection             = menu_st->selection_ptr;
                menu_entries_get_at_offset(selection_buf, selection,
                      NULL, NULL, &type, NULL, NULL);
 
@@ -3319,7 +3316,7 @@ static int generic_menu_iterate(
       case ITERATE_TYPE_DEFAULT:
          {
             menu_entry_t entry;
-            size_t selection = menu_navigation_get_selection();
+            size_t selection = menu_st->selection_ptr;
             /* FIXME: Crappy hack, needed for mouse controls
              * to not be completely broken in case we press back.
              *
@@ -3349,7 +3346,10 @@ static int generic_menu_iterate(
    }
 
 #ifdef HAVE_ACCESSIBILITY
-   if ((last_iterate_type == ITERATE_TYPE_HELP || last_iterate_type == ITERATE_TYPE_INFO) && last_iterate_type != iterate_type && is_accessibility_enabled(p_rarch))
+   if ((last_iterate_type == ITERATE_TYPE_HELP 
+            || last_iterate_type == ITERATE_TYPE_INFO) 
+         && last_iterate_type != iterate_type 
+         && is_accessibility_enabled(p_rarch))
       accessibility_speak_priority(p_rarch,
             "Closed dialog.", 10);
 
@@ -3360,7 +3360,7 @@ static int generic_menu_iterate(
 
    if (BIT64_GET(menu->state, MENU_STATE_POP_STACK))
    {
-      size_t selection         = menu_navigation_get_selection();
+      size_t selection         = menu_st->selection_ptr;
       size_t new_selection_ptr = selection;
       menu_entries_pop_stack(&new_selection_ptr, 0, 0);
       menu_navigation_set_selection(selection);
@@ -22540,8 +22540,10 @@ static float menu_input_get_dpi(void)
  * behaviour... */
 static void menu_input_pointer_close_messagebox(void)
 {
-   const char *label = NULL;
-   bool pop_stack    = false;
+   const char *label            = NULL;
+   bool pop_stack               = false;
+   struct rarch_state  *p_rarch = &rarch_st;
+   struct menu_state *menu_st   = &p_rarch->menu_driver_state;
 
    /* Determine whether this is a help or info
     * message box */
@@ -22565,7 +22567,7 @@ static void menu_input_pointer_close_messagebox(void)
    /* Pop stack, if required */
    if (pop_stack)
    {
-      size_t selection     = menu_navigation_get_selection();
+      size_t selection     = menu_st->selection_ptr;
       size_t new_selection = selection;
 
       menu_entries_pop_stack(&new_selection, 0, 0);
@@ -22602,6 +22604,7 @@ static int menu_input_pointer_post_iterate(
    menu_input_pointer_hw_state_t *pointer_hw_state = &p_rarch->menu_input_pointer_hw_state;
    menu_input_t *menu_input                        = &p_rarch->menu_input_state;
    menu_handle_t *menu                             = p_rarch->menu_driver_data;
+   struct menu_state *menu_st                      = &p_rarch->menu_driver_state;
 
    /* Check whether a message box is currently
     * being shown
@@ -23052,7 +23055,7 @@ static int menu_input_pointer_post_iterate(
        * action */
       else
       {
-         size_t selection = menu_navigation_get_selection();
+         size_t selection = menu_st->selection_ptr;
          ret = menu_entry_action(entry, selection, MENU_ACTION_CANCEL);
       }
    }
@@ -23073,14 +23076,14 @@ static int menu_input_pointer_post_iterate(
    /* > Up */
    if (!messagebox_active && pointer_hw_state->up_pressed)
    {
-      size_t selection = menu_navigation_get_selection();
+      size_t selection = menu_st->selection_ptr;
       ret = menu_entry_action(entry, selection, MENU_ACTION_UP);
    }
 
    /* > Down */
    if (!messagebox_active && pointer_hw_state->down_pressed)
    {
-      size_t selection = menu_navigation_get_selection();
+      size_t selection = menu_st->selection_ptr;
       ret = menu_entry_action(entry, selection, MENU_ACTION_DOWN);
    }
 
@@ -23102,7 +23105,7 @@ static int menu_input_pointer_post_iterate(
    {
       if (current_time - last_left_action_time > MENU_INPUT_HORIZ_WHEEL_DELAY)
       {
-         size_t selection      = menu_navigation_get_selection();
+         size_t selection      = menu_st->selection_ptr;
          last_left_action_time = current_time;
          ret = menu_entry_action(entry, selection, MENU_ACTION_LEFT);
       }
@@ -23116,7 +23119,7 @@ static int menu_input_pointer_post_iterate(
    {
       if (current_time - last_right_action_time > MENU_INPUT_HORIZ_WHEEL_DELAY)
       {
-         size_t selection       = menu_navigation_get_selection();
+         size_t selection       = menu_st->selection_ptr;
          last_right_action_time = current_time;
          ret = menu_entry_action(entry, selection, MENU_ACTION_RIGHT);
       }
@@ -23133,6 +23136,7 @@ static void menu_input_post_iterate(
       int *ret, unsigned action)
 {
    menu_input_t     *menu_input  = &p_rarch->menu_input_state;
+   struct menu_state *menu_st    = &p_rarch->menu_driver_state;
    retro_time_t     current_time = cpu_features_get_time_usec();
 
    /* If pointer devices are disabled, just ensure mouse
@@ -23151,7 +23155,7 @@ static void menu_input_post_iterate(
    {
       menu_entry_t entry;
       file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
-      size_t selection           = menu_navigation_get_selection();
+      size_t selection           = menu_st->selection_ptr;
       menu_file_list_cbs_t *cbs  = selection_buf ?
          (menu_file_list_cbs_t*)selection_buf->list[selection].actiondata
          : NULL;
