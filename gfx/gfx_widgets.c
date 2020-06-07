@@ -1062,17 +1062,18 @@ void gfx_widgets_iterate(
    /* Start expiration timer of dead tasks */
    for (i = 0; i < current_msgs->size ; i++)
    {
-      menu_widget_msg_t *msg = (menu_widget_msg_t*)
+      menu_widget_msg_t *msg_widget = (menu_widget_msg_t*)
          current_msgs->list[i].userdata;
 
-      if (!msg)
+      if (!msg_widget)
          continue;
 
-      if (msg->task_ptr && (msg->task_finished || msg->task_cancelled))
+      if (msg_widget->task_ptr && (msg_widget->task_finished 
+               || msg_widget->task_cancelled))
          if (!msg_widget->expiration_timer_started)
-            gfx_widgets_start_msg_expiration_timer(msg, TASK_FINISHED_DURATION);
+            gfx_widgets_start_msg_expiration_timer(msg_widget, TASK_FINISHED_DURATION);
 
-      if (msg->expired && !widgets_moving)
+      if (msg_widget->expired && !widgets_moving)
       {
          gfx_widgets_msg_queue_kill((unsigned)i);
          break;
