@@ -37,25 +37,32 @@ void ctr_linear_free_pages(u32 pages);
 
 void ctr_free_pages(u32 pages)
 {
+   u32 linear_free_pages;
+   u32 stack_free, stack_usage, stack_free_pages;
+
    if(!pages)
       return;
 
-   u32 linear_free_pages = ctr_get_linear_free() >> 12;
+   linear_free_pages    = ctr_get_linear_free() >> 12;
 
-   if((ctr_get_linear_unused() >> 12) > pages + 0x100)
+   if ((ctr_get_linear_unused() >> 12) > pages + 0x100)
       return ctr_linear_free_pages(pages);
 
 #if 0
-   if(linear_free_pages > pages + 0x400)
+   if (linear_free_pages > pages + 0x400)
       return ctr_linear_free_pages(pages);
 #endif
 
-   u32 stack_free = ctr_get_stack_free();
-   u32 stack_usage = __stacksize__ > stack_free? __stacksize__ - stack_free: 0;
+   stack_free           = ctr_get_stack_free();
+   stack_usage          = __stacksize__ > stack_free 
+      ? __stacksize__ - stack_free
+      : 0;
 
-   stack_free = stack_free > __stack_size_extra ? __stack_size_extra : stack_free;
+   stack_free           = stack_free > __stack_size_extra 
+      ? __stack_size_extra 
+      : stack_free;
 
-   u32 stack_free_pages = stack_free >> 12;
+   stack_free_pages     = stack_free >> 12;
 
    if(linear_free_pages + (stack_free_pages - (stack_usage >> 12)) > pages)
    {
@@ -83,7 +90,8 @@ void ctr_free_pages(u32 pages)
       __stacksize__      -= stack_free_pages << 12;
 #if 0
       printf("s:0x%08X-->0x%08X(-0x%08X) \n", stack_free,
-            stack_free - (stack_free_pages << 12), stack_free_pages << 12);
+            stack_free - (stack_free_pages << 12),
+            stack_free_pages << 12);
       DEBUG_HOLD();
 #endif
    }
@@ -111,11 +119,12 @@ void* _sbrk_r(struct _reent *ptr, ptrdiff_t incr)
 {
    static u32 sbrk_top = 0;
    u32 tmp;
+   int diff;
 
    if (!sbrk_top)
       sbrk_top = __heapBase;
 
-   int diff = ((sbrk_top + incr + 0xFFF) & ~0xFFF)
+   diff = ((sbrk_top + incr + 0xFFF) & ~0xFFF)
       - (__heapBase + __heap_size);
 
    if (diff > 0)
