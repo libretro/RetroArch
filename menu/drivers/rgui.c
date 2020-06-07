@@ -3718,14 +3718,13 @@ static void rgui_render(void *data,
             {
                /* Resize fields according to actual length of value string */
                entry_value_len = (unsigned)strlen(entry_value);
-               entry_value_len = entry_value_len > rgui_term_layout.value_maxlen ?
-                     rgui_term_layout.value_maxlen : entry_value_len;
+               entry_value_len = (entry_value_len 
+                     > rgui_term_layout.value_maxlen) 
+                  ? rgui_term_layout.value_maxlen 
+                  : entry_value_len;
             }
-            else
-            {
-               /* Use classic fixed width layout */
-               entry_value_len = menu_entry_get_spacing(&entry);
-            }
+            else /* Use classic fixed width layout */
+               entry_value_len = entry.spacing;
 
             /* Update width of entry title field */
             entry_title_max_len -= entry_value_len + 2;

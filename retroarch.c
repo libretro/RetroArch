@@ -3052,8 +3052,16 @@ static void get_current_menu_value(struct rarch_state *p_rarch,
    struct menu_state  *menu_st = &p_rarch->menu_driver_state;
 
    menu_entry_init(&entry);
+   entry.path_enabled          = false;
+   entry.label_enabled         = false;
+   entry.rich_label_enabled    = false;
+   entry.sublabel_enabled      = false;
    menu_entry_get(&entry, 0, menu_st->selection_ptr, NULL, true);
-   menu_entry_get_value(&entry, &entry_label);
+
+   if (entry.enum_idx == MENU_ENUM_LABEL_CHEEVOS_PASSWORD)
+      entry_label              = entry.password_value;
+   else
+      entry_label              = entry.value;
 
    strlcpy(retstr, entry_label, max);
 }
@@ -3080,10 +3088,12 @@ static void get_current_menu_sublabel(struct rarch_state *p_rarch,
    struct menu_state *menu_st  = &p_rarch->menu_driver_state;
 
    menu_entry_init(&entry);
+   entry.path_enabled          = false;
+   entry.label_enabled         = false;
+   entry.rich_label_enabled    = false;
+   entry.value_enabled         = false;
    menu_entry_get(&entry, 0, menu_st->selection_ptr, NULL, true);
-
-   menu_entry_get_sublabel(&entry, &entry_sublabel);
-   strlcpy(retstr, entry_sublabel, max);
+   strlcpy(retstr, entry.sublabel, max);
 }
 #endif
 
@@ -3336,14 +3346,14 @@ static int generic_menu_iterate(
             selection = MAX(MIN(selection, (menu_entries_get_size() - 1)), 0);
 
             menu_entry_init(&entry);
-            /* Note: If menu_entry_action() is modified,
+            /* NOTE: If menu_entry_action() is modified,
              * will have to verify that these parameters
              * remain unused... */
             entry.rich_label_enabled = false;
             entry.value_enabled      = false;
             entry.sublabel_enabled   = false;
             menu_entry_get(&entry, 0, selection, NULL, false);
-            ret = menu_entry_action(&entry,
+            ret                      = menu_entry_action(&entry,
                   selection, (enum menu_action)action);
             if (ret)
                goto end;
@@ -3773,20 +3783,6 @@ void menu_entry_get_label(menu_entry_t *entry, const char **label)
    *label = entry->label;
 }
 
-unsigned menu_entry_get_spacing(menu_entry_t *entry)
-{
-   if (entry)
-      return entry->spacing;
-   return 0;
-}
-
-unsigned menu_entry_get_type_new(menu_entry_t *entry)
-{
-   if (!entry)
-      return 0;
-   return entry->type;
-}
-
 uint32_t menu_entry_get_bool_value(uint32_t i)
 {
    struct rarch_state *p_rarch = &rarch_st;
@@ -3950,7 +3946,7 @@ void menu_entry_get_value(menu_entry_t *entry, const char **value)
    if (!entry || !value)
       return;
 
-   if (menu_entry_is_password(entry))
+   if (entry->enum_idx == MENU_ENUM_LABEL_CHEEVOS_PASSWORD)
       *value = entry->password_value;
    else
       *value = entry->value;
@@ -4074,7 +4070,7 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
 
          if (!string_is_empty(entry->value))
          {
-            if (menu_entry_is_password(entry))
+            if (entry->enum_idx == MENU_ENUM_LABEL_CHEEVOS_PASSWORD)
             {
                size_t size, i;
                size = strlcpy(entry->password_value, entry->value,
@@ -23923,7 +23919,7 @@ static void menu_input_post_iterate(
       entry.sublabel_enabled     = false;
       menu_entry_get(&entry, 0, selection, NULL, false);
 
-      *ret = menu_input_pointer_post_iterate(p_rarch,
+      *ret                       = menu_input_pointer_post_iterate(p_rarch,
             current_time, cbs, &entry, action);
    }
 }

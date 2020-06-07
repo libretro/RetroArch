@@ -3471,10 +3471,11 @@ static void materialui_render_menu_entry_default(
    menu_entry_get_rich_label(entry, &entry_label);
    menu_entry_get_value(entry, &entry_value);
    menu_entry_get_sublabel(entry, &entry_sublabel);
-   entry_type = menu_entry_get_type_new(entry);
+   entry_type              = entry->type;
 
-   entry_file_type = msg_hash_to_file_type(msg_hash_calculate(entry_value));
-   entry_value_type = materialui_get_entry_value_type(
+   entry_file_type         = msg_hash_to_file_type(
+         msg_hash_calculate(entry_value));
+   entry_value_type        = materialui_get_entry_value_type(
          mui, entry_value, entry->checked, entry_type, entry_file_type);
 
    /* Draw entry icon
@@ -8657,9 +8658,10 @@ static int materialui_pointer_up_swipe_horz_default(
 
          /* Parse entry */
          menu_entry_get_value(&last_entry, &entry_value);
-         entry_type      = menu_entry_get_type_new(&last_entry);
-         entry_file_type = msg_hash_to_file_type(msg_hash_calculate(entry_value));
-         entry_value_type = materialui_get_entry_value_type(
+         entry_type                     = last_entry.type;
+         entry_file_type                = msg_hash_to_file_type(
+               msg_hash_calculate(entry_value));
+         entry_value_type               = materialui_get_entry_value_type(
                mui, entry_value, last_entry.checked, entry_type, entry_file_type);
 
          /* If entry has a 'settings' type, reset scroll position */

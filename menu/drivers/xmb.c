@@ -1394,7 +1394,7 @@ static void xmb_selection_pointer_changed(
                entry.value_enabled      = false;
                entry.sublabel_enabled   = false;
                menu_entry_get(&entry, 0, selection, NULL, true);
-               entry_type               = menu_entry_get_type_new(&entry);
+               entry_type               = entry.type;
 
                if (  (entry_type == FILE_TYPE_IMAGEVIEWER) ||
                      (entry_type == FILE_TYPE_IMAGE))
@@ -3044,7 +3044,7 @@ static int xmb_draw_item(
    entry.label_enabled      = false;
    entry.sublabel_enabled   = (i == current);
    menu_entry_get(&entry, 0, i, list, true);
-   entry_type = menu_entry_get_type_new(&entry);
+   entry_type               = entry.type;
 
    if (entry_type == FILE_TYPE_CONTENTLIST_ENTRY)
    {

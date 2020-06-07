@@ -903,7 +903,7 @@ static void stripes_update_thumbnail_path(void *data, unsigned i, char pos)
    menu_entry_init(&entry);
    menu_entry_get(&entry, 0, i, NULL, true);
 
-   entry_type = menu_entry_get_type_new(&entry);
+   entry_type = entry.type;
 
    if (entry_type == FILE_TYPE_IMAGEVIEWER || entry_type == FILE_TYPE_IMAGE)
    {
@@ -2401,7 +2401,7 @@ static int stripes_draw_item(
    if (icon_x < -half_size || icon_x > width)
       goto iterate;
 
-   entry_type = menu_entry_get_type_new(entry);
+   entry_type = entry.type;
 
    if (entry_type == FILE_TYPE_CONTENTLIST_ENTRY)
    {

@@ -206,10 +206,6 @@ void menu_entry_get_path(menu_entry_t *entry, const char **path);
 
 void menu_entry_get_label(menu_entry_t *entry, const char **label);
 
-unsigned menu_entry_get_spacing(menu_entry_t *entry);
-
-unsigned menu_entry_get_type_new(menu_entry_t *entry);
-
 uint32_t menu_entry_get_bool_value(uint32_t i);
 
 struct string_list *menu_entry_enum_values(uint32_t i);

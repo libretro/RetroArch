@@ -258,9 +258,7 @@ void ozone_compute_entries_position(ozone_handle_t *ozone)
          ozone->empty_playlist = tex == ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_CORE_INFO];
       }
       else
-      {
          ozone->empty_playlist = false;
-      }
 
       /* Cache node */
       node = (ozone_node_t*)file_list_get_userdata_at_offset(selection_buf, i);

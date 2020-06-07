@@ -2266,7 +2266,7 @@ static void ozone_selection_changed(ozone_handle_t *ozone, bool allow_animation)
       entry.sublabel_enabled       = false;
       menu_entry_get(&entry, 0, selection, NULL, true);
 
-      entry_type                   = menu_entry_get_type_new(&entry);
+      entry_type                   = entry.type;
 
       ozone->selection_old         = ozone->selection;
       ozone->selection             = new_selection;
