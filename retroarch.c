@@ -22026,6 +22026,7 @@ static void input_driver_poll(void)
 }
 
 static int16_t input_state_device(
+      struct rarch_state *p_rarch,
       int16_t ret,
       unsigned port, unsigned device,
       unsigned idx, unsigned id,
@@ -22035,7 +22036,6 @@ static int16_t input_state_device(
    bool remote_input             = false;
 #endif
    int16_t res                   = 0;
-   struct rarch_state   *p_rarch = &rarch_st;
    settings_t *settings          = p_rarch->configuration_settings;
    bool input_remap_binds_enable = settings->bools.input_remap_binds_enable;
 
@@ -22442,12 +22442,12 @@ static int16_t input_state(unsigned port, unsigned device,
 
          {
             for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
-               if (input_state_device(ret, port, device, idx, i, true))
+               if (input_state_device(p_rarch, ret, port, device, idx, i, true))
                   result |= (1 << i);
          }
       }
       else
-         result = input_state_device(ret, port, device, idx, id, false);
+         result = input_state_device(p_rarch, ret, port, device, idx, id, false);
    }
 
    if (BSV_MOVIE_IS_PLAYBACK_OFF())
@@ -22487,10 +22487,11 @@ static INLINE bool input_keys_pressed_other_sources(
    return false;
 }
 
-static int16_t input_joypad_axis(const input_device_driver_t *drv,
+static int16_t input_joypad_axis(
+      struct rarch_state *p_rarch,
+      const input_device_driver_t *drv,
       unsigned port, uint32_t joyaxis, float normal_mag)
 {
-   struct rarch_state  *p_rarch   = &rarch_st;
    settings_t *settings           = p_rarch->configuration_settings;
    float input_analog_deadzone    = settings->floats.input_analog_deadzone;
    float input_analog_sensitivity = settings->floats.input_analog_sensitivity;
@@ -22605,9 +22606,9 @@ int16_t menu_input_read_mouse_hw(enum menu_input_mouse_hw_id id)
 }
 
 static void menu_input_get_mouse_hw_state(
+      struct rarch_state *p_rarch,
       menu_input_pointer_hw_state_t *hw_state)
 {
-   struct rarch_state *p_rarch     = &rarch_st;
    settings_t *settings            = p_rarch->configuration_settings;
    static int16_t last_x           = 0;
    static int16_t last_y           = 0;
@@ -23071,7 +23072,7 @@ static unsigned menu_event(
 
       /* Read mouse */
       if (menu_mouse_enable)
-         menu_input_get_mouse_hw_state(&mouse_hw_state);
+         menu_input_get_mouse_hw_state(p_rarch, &mouse_hw_state);
 
       /* Read touchscreen
        * Note: Could forgo this if mouse is currently active,
@@ -23169,14 +23170,15 @@ static void menu_input_reset(struct rarch_state *p_rarch)
    memset(pointer_hw_state, 0, sizeof(menu_input_pointer_hw_state_t));
 }
 
-static void menu_input_set_pointer_visibility(retro_time_t current_time)
+static void menu_input_set_pointer_visibility(
+      struct rarch_state *p_rarch,
+      retro_time_t current_time)
 {
    bool show_cursor                                = false;
    static bool cursor_shown                        = false;
    bool hide_cursor                                = false;
    static bool cursor_hidden                       = false;
    static retro_time_t end_time                    = 0;
-   struct rarch_state                   *p_rarch   = &rarch_st;
    menu_input_t *menu_input                        = &p_rarch->menu_input_state;
    menu_input_pointer_hw_state_t *pointer_hw_state = &p_rarch->menu_input_pointer_hw_state;
 
@@ -23878,7 +23880,7 @@ static int menu_input_pointer_post_iterate(
    }
    last_right_pressed = pointer_hw_state->right_pressed;
 
-   menu_input_set_pointer_visibility(current_time);
+   menu_input_set_pointer_visibility(p_rarch, current_time);
 
    return ret;
 }
@@ -23900,7 +23902,7 @@ static void menu_input_post_iterate(
        * toggling mouse/touchscreen support...
        * It's a very light function, however, so there should
        * be no performance impact */
-      menu_input_set_pointer_visibility(current_time);
+      menu_input_set_pointer_visibility(p_rarch, current_time);
       *ret = 0;
    }
    else
@@ -24543,7 +24545,7 @@ int16_t input_joypad_analog(const input_device_driver_t *drv,
             if (input_analog_deadzone)
                normal_mag = fabs((1.0f / 0x7fff) * drv->axis(
                         joypad_info->joy_idx, axis));
-            res = abs(input_joypad_axis(drv,
+            res = abs(input_joypad_axis(p_rarch, drv,
                      joypad_info->joy_idx, axis, normal_mag));
          }
          /* If the result is zero, it's got a digital button
@@ -24640,10 +24642,12 @@ int16_t input_joypad_analog(const input_device_driver_t *drv,
          }
 
          pressed_minus = abs(
-               input_joypad_axis(drv, joypad_info->joy_idx,
+               input_joypad_axis(p_rarch,
+                  drv, joypad_info->joy_idx,
                   axis_minus, normal_mag));
          pressed_plus  = abs(
-               input_joypad_axis(drv, joypad_info->joy_idx,
+               input_joypad_axis(p_rarch,
+                  drv, joypad_info->joy_idx,
                   axis_plus, normal_mag));
          res           = pressed_plus - pressed_minus;
       }
