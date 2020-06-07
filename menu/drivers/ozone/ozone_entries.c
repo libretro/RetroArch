@@ -567,22 +567,31 @@ border_iterate:
          ticker.spacer               = ticker_spacer;
       }
 
-      entry_selected                 = selection == i;
       node                           = (ozone_node_t*)
          file_list_get_userdata_at_offset(selection_buf, i);
-
-      menu_entry_init(&entry);
-      entry.path_enabled  = false;
-      entry.label_enabled = false;
 
       if (!node)
          continue;
 
-      if (y + scroll_y + node->height + 20 * scale_factor < ozone->dimensions.header_height + ozone->dimensions.entry_padding_vertical)
-         goto icons_iterate;
-      else if (y + scroll_y - node->height - 20 * scale_factor > bottom_boundary)
-         goto icons_iterate;
+      if (y + scroll_y + node->height + 20 * scale_factor 
+            < ozone->dimensions.header_height 
+            + ozone->dimensions.entry_padding_vertical)
+      {
+         y += node->height;
+         continue;
+      }
+      else if (y + scroll_y - node->height - 20 * scale_factor 
+            > bottom_boundary)
+      {
+         y += node->height;
+         continue;
+      }
 
+      entry_selected                 = selection == i;
+
+      menu_entry_init(&entry);
+      entry.path_enabled             = false;
+      entry.label_enabled            = false;
       menu_entry_get(&entry, 0, (unsigned)i, selection_buf, true);
       menu_entry_get_value(&entry, &entry_value);
 
@@ -747,7 +756,6 @@ border_iterate:
             alpha_uint32,
             &entry);
 
-icons_iterate:
       y += node->height;
    }
 
