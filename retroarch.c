@@ -2275,6 +2275,7 @@ struct rarch_state
 #ifdef HAVE_DISCORD
    discord_state_t            discord_st;
 #endif
+   gfx_display_t              dispgfx;
 
    struct retro_callbacks     retro_ctx;
    struct retro_core_t        current_core;
@@ -3641,6 +3642,12 @@ static const menu_ctx_driver_t *menu_ctx_drivers[] = {
    &menu_ctx_null,
    NULL
 };
+
+gfx_display_t *disp_get_ptr(void)
+{
+   struct rarch_state   *p_rarch  = &rarch_st;
+   return &p_rarch->dispgfx;
+}
 
 menu_handle_t *menu_driver_get_ptr(void)
 {

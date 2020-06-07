@@ -48,35 +48,6 @@ static float osk_dark[16] =  {
  * needs to be refactored */
 uintptr_t gfx_display_white_texture;
 
-struct gfx_display
-{
-   bool has_windowed;
-   bool msg_force;
-   bool framebuf_dirty;
-   
-   /* Width, height and pitch of the display framebuffer */
-   unsigned framebuf_width;
-   unsigned framebuf_height;
-   size_t   framebuf_pitch;
-
-   /* Height of the display header */
-   unsigned header_height;
-
-   enum menu_driver_id_type menu_driver_id;
-
-   video_coord_array_t dispca;
-};
-
-typedef struct gfx_display gfx_display_t;
-
-static gfx_display_t *disp_get_ptr(void)
-{
-   /* TODO/FIXME - global that gets referenced outside,
-    * needs to be refactored */
-   static gfx_display_t dispgfx;
-   return &dispgfx;
-}
-
 static void *gfx_display_null_get_default_mvp(void *data) { return NULL; }
 static void gfx_display_null_blend_begin(void *data) { }
 static void gfx_display_null_blend_end(void *data) { }
@@ -182,8 +153,6 @@ static gfx_display_ctx_driver_t *gfx_display_ctx_drivers[] = {
    &gfx_display_ctx_null,
    NULL,
 };
-
-static gfx_display_ctx_driver_t *dispctx      = NULL;
 
 static INLINE float gfx_display_scalef(float val,
       float oldmin, float oldmax, float newmin, float newmax)
@@ -642,6 +611,8 @@ void gfx_display_coords_array_reset(void)
 /* Begin blending operation */
 void gfx_display_blend_begin(void *data)
 {
+   gfx_display_t            *p_disp  = disp_get_ptr();
+   gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
    if (dispctx && dispctx->blend_begin)
       dispctx->blend_begin(data);
 }
@@ -649,6 +620,8 @@ void gfx_display_blend_begin(void *data)
 /* End blending operation */
 void gfx_display_blend_end(void *data)
 {
+   gfx_display_t            *p_disp  = disp_get_ptr();
+   gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
    if (dispctx && dispctx->blend_end)
       dispctx->blend_end(data);
 }
@@ -659,6 +632,8 @@ void gfx_display_scissor_begin(void *userdata,
       unsigned video_height,
       int x, int y, unsigned width, unsigned height)
 {
+   gfx_display_t            *p_disp  = disp_get_ptr();
+   gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
    if (dispctx && dispctx->scissor_begin)
    {
       if (y < 0)
@@ -705,6 +680,8 @@ void gfx_display_scissor_end(
       unsigned video_height
       )
 {
+   gfx_display_t            *p_disp  = disp_get_ptr();
+   gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
    if (dispctx && dispctx->scissor_end)
       dispctx->scissor_end(userdata,
             video_width, video_height);
@@ -713,8 +690,10 @@ void gfx_display_scissor_end(
 font_data_t *gfx_display_font_file(
       char* fontpath, float menu_font_size, bool is_threaded)
 {
-   font_data_t *font_data = NULL;
-   float font_size        = menu_font_size;
+   font_data_t            *font_data = NULL;
+   float                  font_size  = menu_font_size;
+   gfx_display_t            *p_disp  = disp_get_ptr();
+   gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
 
    if (!dispctx)
       return NULL;
@@ -734,6 +713,8 @@ font_data_t *gfx_display_font_file(
 
 bool gfx_display_restore_clear_color(void)
 {
+   gfx_display_t            *p_disp  = disp_get_ptr();
+   gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
    if (!dispctx || !dispctx->restore_clear_color)
       return false;
    dispctx->restore_clear_color();
@@ -743,6 +724,8 @@ bool gfx_display_restore_clear_color(void)
 /* TODO/FIXME - this is no longer used - consider getting rid of it */
 void gfx_display_clear_color(gfx_display_ctx_clearcolor_t *color, void *data)
 {
+   gfx_display_t            *p_disp  = disp_get_ptr();
+   gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
    if (dispctx && dispctx->clear_color)
       dispctx->clear_color(color, data);
 }
@@ -752,6 +735,8 @@ void gfx_display_draw(gfx_display_ctx_draw_t *draw,
       unsigned video_width, 
       unsigned video_height)
 {
+   gfx_display_t            *p_disp  = disp_get_ptr();
+   gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
    if (!dispctx || !draw || !dispctx->draw)
       return;
 
@@ -768,6 +753,8 @@ void gfx_display_draw_blend(
       unsigned video_width,
       unsigned video_height)
 {
+   gfx_display_t            *p_disp  = disp_get_ptr();
+   gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
    if (!dispctx || !draw || !dispctx->draw)
       return;
 
@@ -786,6 +773,8 @@ void gfx_display_draw_pipeline(
       unsigned video_width,
       unsigned video_height)
 {
+   gfx_display_t            *p_disp  = disp_get_ptr();
+   gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
    if (dispctx && draw && dispctx->draw_pipeline)
       dispctx->draw_pipeline(draw, userdata,
             video_width, video_height);
@@ -796,8 +785,10 @@ void gfx_display_draw_bg(gfx_display_ctx_draw_t *draw,
       float override_opacity)
 {
    static struct video_coords coords;
-   const float *new_vertex       = NULL;
-   const float *new_tex_coord    = NULL;
+   const float           *new_vertex = NULL;
+   const float        *new_tex_coord = NULL;
+   gfx_display_t            *p_disp  = disp_get_ptr();
+   gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
    if (!dispctx || !draw)
       return;
 
@@ -861,6 +852,8 @@ void gfx_display_draw_quad(
 {
    gfx_display_ctx_draw_t draw;
    struct video_coords coords;
+   gfx_display_t            *p_disp  = disp_get_ptr();
+   gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
 
    coords.vertices      = 4;
    coords.vertex        = NULL;
@@ -901,10 +894,11 @@ void gfx_display_draw_polygon(
       unsigned width, unsigned height,
       float *color)
 {
+   float vertex[8];
    gfx_display_ctx_draw_t draw;
    struct video_coords coords;
-
-   float vertex[8];
+   gfx_display_t            *p_disp  = disp_get_ptr();
+   gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
 
    vertex[0]             = x1 / (float)width;
    vertex[1]             = y1 / (float)height;
@@ -1324,7 +1318,9 @@ void gfx_display_draw_texture_slice(
 void gfx_display_rotate_z(gfx_display_ctx_rotate_draw_t *draw, void *data)
 {
    math_matrix_4x4 matrix_rotated, matrix_scaled;
-   math_matrix_4x4 *b = NULL;
+   math_matrix_4x4                *b = NULL;
+   gfx_display_t            *p_disp  = disp_get_ptr();
+   gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
 
    if (
          !draw                       ||
@@ -1363,6 +1359,8 @@ void gfx_display_draw_cursor(
 {
    gfx_display_ctx_draw_t draw;
    struct video_coords coords;
+   gfx_display_t            *p_disp  = disp_get_ptr();
+   gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
 
    if (!cursor_visible)
       return;
@@ -1399,8 +1397,10 @@ void gfx_display_push_quad(
 {
    float vertex[8];
    video_coords_t coords;
-   const float *coord_draw_ptr   = NULL;
-   video_coord_array_t *p_dispca = gfx_display_get_coords_array();
+   const float       *coord_draw_ptr = NULL;
+   video_coord_array_t     *p_dispca = gfx_display_get_coords_array();
+   gfx_display_t            *p_disp  = disp_get_ptr();
+   gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
 
    vertex[0]             = x1 / (float)width;
    vertex[1]             = y1 / (float)height;
@@ -1512,6 +1512,8 @@ font_data_t *gfx_display_font(
       bool is_threaded)
 {
    char fontpath[PATH_MAX_LENGTH];
+   gfx_display_t            *p_disp  = disp_get_ptr();
+   gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
 
    if (!dispctx)
       return NULL;
@@ -1869,7 +1871,7 @@ void gfx_display_allocate_white_texture(void)
 
 void gfx_display_free(void)
 {
-   gfx_display_t *p_disp   = disp_get_ptr();
+   gfx_display_t           *p_disp   = disp_get_ptr();
    video_coord_array_free(&p_disp->dispca);
    gfx_animation_ctl(MENU_ANIMATION_CTL_DEINIT, NULL);
 
@@ -1879,7 +1881,7 @@ void gfx_display_free(void)
    p_disp->framebuf_height     = 0;
    p_disp->framebuf_pitch      = 0;
    p_disp->has_windowed        = false;
-   dispctx                     = NULL;
+   p_disp->dispctx             = NULL;
 }
 
 void gfx_display_init(void)
@@ -1906,6 +1908,7 @@ bool gfx_display_driver_exists(const char *s)
 bool gfx_display_init_first_driver(bool video_is_threaded)
 {
    unsigned i;
+   gfx_display_t            *p_disp  = disp_get_ptr();
 
    for (i = 0; gfx_display_ctx_drivers[i]; i++)
    {
@@ -1916,7 +1919,7 @@ bool gfx_display_init_first_driver(bool video_is_threaded)
 
       RARCH_LOG("[Menu]: Found menu display driver: \"%s\".\n",
             gfx_display_ctx_drivers[i]->ident);
-      dispctx = gfx_display_ctx_drivers[i];
+      p_disp->dispctx = gfx_display_ctx_drivers[i];
       return true;
    }
    return false;
