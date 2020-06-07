@@ -63,13 +63,10 @@ static void gfx_widget_libretro_message_fadeout(void *userdata)
 
 void gfx_widget_set_libretro_message(const char *msg, unsigned duration)
 {
+   gfx_timer_ctx_entry_t timer;
    gfx_widget_libretro_message_state_t* state = gfx_widget_libretro_message_get_state();
    gfx_animation_ctx_tag tag                  = (uintptr_t) &state->timer;
    gfx_widget_font_data_t* font_regular       = gfx_widgets_get_font_regular();
-   gfx_timer_ctx_entry_t timer;
-
-   if (!gfx_widgets_active())
-      return;
 
    strlcpy(state->message, msg, sizeof(state->message));
 

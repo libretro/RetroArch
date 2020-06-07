@@ -35,16 +35,17 @@ static gfx_widget_generic_message_state_t p_w_generic_message_st = {
    {'\0'}
 };
 
-static gfx_widget_generic_message_state_t* gfx_widget_generic_message_get_ptr()
+static gfx_widget_generic_message_state_t* gfx_widget_generic_message_get_ptr(void)
 {
    return &p_w_generic_message_st;
 }
 
 static void gfx_widget_generic_message_fadeout(void *userdata)
 {
-   gfx_widget_generic_message_state_t* state = gfx_widget_generic_message_get_ptr();
    gfx_animation_ctx_entry_t entry;
-   gfx_animation_ctx_tag tag = (uintptr_t) &state->timer;
+   gfx_widget_generic_message_state_t* state = 
+      gfx_widget_generic_message_get_ptr();
+   gfx_animation_ctx_tag                 tag = (uintptr_t) &state->timer;
 
    /* Start fade out animation */
    entry.cb             = NULL;
@@ -60,12 +61,10 @@ static void gfx_widget_generic_message_fadeout(void *userdata)
 
 void gfx_widget_set_message(char *msg)
 {
-   gfx_widget_generic_message_state_t* state = gfx_widget_generic_message_get_ptr();
    gfx_timer_ctx_entry_t timer;
-   gfx_animation_ctx_tag tag = (uintptr_t) &state->timer;
-
-   if (!gfx_widgets_active())
-      return;
+   gfx_widget_generic_message_state_t* state = 
+      gfx_widget_generic_message_get_ptr();
+   gfx_animation_ctx_tag                 tag = (uintptr_t) &state->timer;
 
    strlcpy(state->message, msg, sizeof(state->message));
 
@@ -84,7 +83,8 @@ void gfx_widget_set_message(char *msg)
 
 static void gfx_widget_generic_message_frame(void* data)
 {
-   gfx_widget_generic_message_state_t* state = gfx_widget_generic_message_get_ptr();
+   gfx_widget_generic_message_state_t* state = 
+      gfx_widget_generic_message_get_ptr();
 
    if (state->alpha > 0.0f)
    {

@@ -106,12 +106,7 @@ static void gfx_widgets_play_screenshot_flash(void)
 
 void gfx_widget_screenshot_taken(const char *shotname, const char *filename)
 {
-   gfx_widget_screenshot_state_t* state = NULL;
-
-   if (!gfx_widgets_active())
-      return;
-
-   state = gfx_widget_screenshot_get_ptr();
+   gfx_widget_screenshot_state_t* state = gfx_widget_screenshot_get_ptr();
    gfx_widgets_play_screenshot_flash();
    strlcpy(state->filename, filename, sizeof(state->filename));
    strlcpy(state->shotname, shotname, sizeof(state->shotname));
@@ -127,8 +122,8 @@ static void gfx_widget_screenshot_dispose(void *userdata)
 
 static void gfx_widget_screenshot_end(void *userdata)
 {
-   gfx_widget_screenshot_state_t* state = gfx_widget_screenshot_get_ptr();
    gfx_animation_ctx_entry_t entry;
+   gfx_widget_screenshot_state_t* state = gfx_widget_screenshot_get_ptr();
 
    entry.cb             = gfx_widget_screenshot_dispose;
    entry.duration       = MSG_QUEUE_ANIMATION_DURATION;
@@ -230,7 +225,8 @@ static void gfx_widget_screenshot_frame(void* data)
    }
 }
 
-static void gfx_widget_screenshot_iterate(unsigned width, unsigned height, bool fullscreen,
+static void gfx_widget_screenshot_iterate(unsigned width,
+      unsigned height, bool fullscreen,
       const char *dir_assets, char *font_path,
       bool is_threaded)
 {
