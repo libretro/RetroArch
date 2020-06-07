@@ -4261,21 +4261,9 @@ static bool menu_list_pop_stack(
       struct rarch_state *p_rarch,
       menu_list_t *list,
       size_t idx,
-      size_t *directory_ptr,
-      bool animate)
+      size_t *directory_ptr)
 {
-   menu_ctx_list_t list_info;
-   bool refresh           = false;
    file_list_t *menu_list = MENU_LIST_GET(list, (unsigned)idx);
-
-   if (MENU_LIST_GET_STACK_SIZE(list, idx) <= 1)
-      return false;
-
-   list_info.type         = MENU_LIST_PLAIN;
-   list_info.action       = 0;
-
-   if (animate)
-      menu_driver_list_cache(&list_info);
 
    if (menu_list->size != 0)
    {
@@ -4293,8 +4281,6 @@ static bool menu_list_pop_stack(
          p_rarch->menu_driver_ctx->list_set_selection)
       p_rarch->menu_driver_ctx->list_set_selection(p_rarch->menu_userdata,
             menu_list);
-   if (animate)
-      menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
 
    return true;
 }
@@ -4319,11 +4305,23 @@ static void menu_list_flush_stack(
    while (menu_list_flush_stack_type(
             needle, label, type, final_type) != 0)
    {
+      bool refresh             = false;
       size_t new_selection_ptr = menu_st->selection_ptr;
-
-      if (!menu_list_pop_stack(p_rarch,
-               list, idx, &new_selection_ptr, 1))
+      bool wont_pop_stack      = (MENU_LIST_GET_STACK_SIZE(list, idx) <= 1);
+      if (wont_pop_stack)
          break;
+      else
+      {
+         menu_ctx_list_t list_info;
+         list_info.type         = MENU_LIST_PLAIN;
+         list_info.action       = 0;
+         menu_driver_list_cache(&list_info);
+      }
+
+      menu_list_pop_stack(p_rarch,
+            list, idx, &new_selection_ptr);
+
+      menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
 
       menu_st->selection_ptr = new_selection_ptr;
 
@@ -4851,8 +4849,23 @@ void menu_entries_pop_stack(size_t *ptr, size_t idx, bool animate)
    struct rarch_state   *p_rarch  = &rarch_st;
    struct menu_state    *menu_st  = &p_rarch->menu_driver_state;
    menu_list_t *menu_list         = menu_st->entries.list;
-   if (menu_list)
-      menu_list_pop_stack(p_rarch, menu_list, idx, ptr, animate);
+   bool wont_pop_stack            = (MENU_LIST_GET_STACK_SIZE(menu_list, idx) <= 1);
+
+   if (menu_list && !wont_pop_stack)
+   {
+      bool refresh             = false;
+      if (animate)
+      {
+         menu_ctx_list_t list_info;
+         list_info.type         = MENU_LIST_PLAIN;
+         list_info.action       = 0;
+         menu_driver_list_cache(&list_info);
+      }
+      menu_list_pop_stack(p_rarch, menu_list, idx, ptr);
+
+      if (animate)
+         menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+   }
 }
 
 size_t menu_entries_get_stack_size(size_t idx)
