@@ -604,8 +604,10 @@ video_coord_array_t *gfx_display_get_coords_array(void)
  * NOTE: Not every display driver uses this. */
 void gfx_display_coords_array_reset(void)
 {
-   video_coord_array_t *p_dispca = gfx_display_get_coords_array();
-   p_dispca->coords.vertices = 0;
+   gfx_display_t            *p_disp  = disp_get_ptr();
+   video_coord_array_t *p_dispca     = &p_disp->dispca;
+
+   p_dispca->coords.vertices         = 0;
 }
 
 /* Begin blending operation */
@@ -1398,8 +1400,8 @@ void gfx_display_push_quad(
    float vertex[8];
    video_coords_t coords;
    const float       *coord_draw_ptr = NULL;
-   video_coord_array_t     *p_dispca = gfx_display_get_coords_array();
    gfx_display_t            *p_disp  = disp_get_ptr();
+   video_coord_array_t *p_dispca     = &p_disp->dispca;
    gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
 
    vertex[0]             = x1 / (float)width;
@@ -1887,7 +1889,7 @@ void gfx_display_free(void)
 void gfx_display_init(void)
 {
    gfx_display_t       *p_disp   = disp_get_ptr();
-   video_coord_array_t *p_dispca = gfx_display_get_coords_array();
+   video_coord_array_t *p_dispca = &p_disp->dispca;
 
    p_disp->has_windowed          = video_driver_has_windowed();
    p_dispca->allocated           =  0;
