@@ -3085,7 +3085,6 @@ static void get_current_menu_sublabel(struct rarch_state *p_rarch,
       char* retstr, size_t max)
 {
    menu_entry_t     entry;
-   const char*      entry_sublabel;
    struct menu_state *menu_st  = &p_rarch->menu_driver_state;
 
    menu_entry_init(&entry);
