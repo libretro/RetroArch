@@ -1166,35 +1166,28 @@ LRESULT CALLBACK WndProcGDI(HWND hwnd, UINT message,
 
          if (gdi && gdi->memDC)
          {
-            gdi->bmp_old = (HBITMAP)SelectObject(gdi->memDC, gdi->bmp);
+            gdi->bmp_old    = (HBITMAP)SelectObject(gdi->memDC, gdi->bmp);
 
-#ifdef HAVE_MENU
-            if (menu_driver_is_alive() && !gdi_has_menu_frame(gdi))
-            {
-               /* draw menu contents behind a gradient background */
-               if (gdi && gdi->memDC)
-                  StretchBlt(gdi->winDC,
-                        0, 0,
-                        gdi->screen_width, gdi->screen_height,
-                        gdi->memDC, 0, 0, gdi->video_width, gdi->video_height, SRCCOPY);
-           }
-           else
-#endif
-           {
-              /* draw video content */
-              gdi->bmp_old = (HBITMAP)SelectObject(gdi->memDC, gdi->bmp);
+            /* Draw video content */
+            StretchBlt(
+                  gdi->winDC,
+                  0,
+                  0,
+                  gdi->screen_width,
+                  gdi->screen_height,
+                  gdi->memDC,
+                  0,
+                  0,
+                  gdi->video_width,
+                  gdi->video_height,
+                  SRCCOPY);
 
-              StretchBlt(gdi->winDC,
-                    0, 0,
-                    gdi->screen_width, gdi->screen_height,
-                    gdi->memDC, 0, 0, gdi->video_width, gdi->video_height, SRCCOPY);
-           }
-
-           SelectObject(gdi->memDC, gdi->bmp_old);
-        }
+            SelectObject(gdi->memDC, gdi->bmp_old);
+         }
 
 #if _WIN32_WINNT >= 0x0500 /* 2K */
-         if (g_win32->taskbar_message && message == g_win32->taskbar_message)
+         if (     g_win32->taskbar_message 
+               && message == g_win32->taskbar_message)
             taskbar_is_created = true;
 #endif
         break;
