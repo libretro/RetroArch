@@ -2328,12 +2328,11 @@ bool gfx_animation_ctl(enum gfx_animation_ctl_state state, void *data)
 
             da_free(p_anim->list);
             da_free(p_anim->pending);
-
-            memset(&p_anim, 0, sizeof(p_anim));
          }
          p_anim->cur_time            = 0;
          p_anim->old_time            = 0;
          p_anim->delta_time          = 0.0f;
+         memset(&p_anim, 0, sizeof(p_anim));
          break;
       case MENU_ANIMATION_CTL_CLEAR_ACTIVE:
          p_anim->animation_is_active = false;
