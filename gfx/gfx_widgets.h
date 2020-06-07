@@ -103,16 +103,27 @@ typedef struct
 } gfx_widget_font_data_t;
 
 gfx_animation_ctx_tag gfx_widgets_get_generic_tag(void);
+
 float* gfx_widgets_get_pure_white(void);
+
 unsigned gfx_widgets_get_padding(void);
+
 unsigned gfx_widgets_get_height(void);
+
 gfx_widget_font_data_t* gfx_widgets_get_font_regular(void);
+
 gfx_widget_font_data_t* gfx_widgets_get_font_bold(void);
+
 gfx_widget_font_data_t* gfx_widgets_get_font_msg_queue(void);
+
 float* gfx_widgets_get_backdrop_orig(void);
+
 unsigned gfx_widgets_get_last_video_width(void);
+
 unsigned gfx_widgets_get_last_video_height(void);
+
 unsigned gfx_widgets_get_generic_message_height(void);
+
 /* Warning: not thread safe! */
 size_t gfx_widgets_get_msg_queue_size(void);
 
@@ -147,11 +158,6 @@ void gfx_widgets_flush_text(
 
 typedef struct gfx_widget gfx_widget_t;
 
-extern const gfx_widget_t gfx_widget_screenshot;
-extern const gfx_widget_t gfx_widget_volume;
-extern const gfx_widget_t gfx_widget_generic_message;
-extern const gfx_widget_t gfx_widget_libretro_message;
-
 bool gfx_widgets_active(void);
 void gfx_widgets_set_persistence(bool persist);
 
@@ -159,6 +165,7 @@ bool gfx_widgets_init(
       bool video_is_threaded,
       unsigned width, unsigned height, bool fullscreen,
       const char *dir_assets, char *font_path);
+
 void gfx_widgets_deinit(void);
 
 void gfx_widgets_msg_queue_push(
@@ -183,6 +190,7 @@ void gfx_widget_screenshot_taken(const char *shotname, const char *filename);
 /* AI Service functions */
 #ifdef HAVE_TRANSLATE
 int gfx_widgets_ai_service_overlay_get_state(void);
+
 bool gfx_widgets_ai_service_overlay_set_state(int state);
 
 bool gfx_widgets_ai_service_overlay_load(
@@ -211,5 +219,11 @@ void gfx_widget_set_libretro_message(const char *message, unsigned duration);
 void gfx_widgets_frame(void *data);
 
 bool gfx_widgets_set_fps_text(const char *new_fps_text);
+
+extern const gfx_widget_t gfx_widget_screenshot;
+extern const gfx_widget_t gfx_widget_volume;
+extern const gfx_widget_t gfx_widget_generic_message;
+extern const gfx_widget_t gfx_widget_libretro_message;
+
 
 #endif
