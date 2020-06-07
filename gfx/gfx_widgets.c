@@ -313,6 +313,19 @@ static const char
 static void gfx_widgets_start_achievement_notification(
      dispgfx_widget_t *p_dispwidget);
 #endif
+#ifdef HAVE_MENU
+bool menu_driver_get_load_content_animation_data(
+      uintptr_t *icon, char **playlist_name);
+#endif
+static void gfx_widgets_context_reset(
+      dispgfx_widget_t *p_dispwidget,
+      bool is_threaded,
+      unsigned width, unsigned height, bool fullscreen,
+      const char *dir_assets, char *font_path);
+static void gfx_widgets_context_destroy(dispgfx_widget_t *p_dispwidget);
+static void gfx_widgets_free(dispgfx_widget_t *p_dispwidget);
+static void gfx_widgets_layout(dispgfx_widget_t *p_dispwidget,
+      bool is_threaded, const char *dir_assets, char *font_path);
 
 bool gfx_widgets_active(void)
 {
@@ -998,21 +1011,6 @@ static void gfx_widgets_hourglass_tick(void *userdata)
 
    gfx_animation_push(&entry);
 }
-
-/* Forward declarations */
-static void gfx_widgets_context_reset(
-      dispgfx_widget_t *p_dispwidget,
-      bool is_threaded,
-      unsigned width, unsigned height, bool fullscreen,
-      const char *dir_assets, char *font_path);
-static void gfx_widgets_context_destroy(dispgfx_widget_t *p_dispwidget);
-static void gfx_widgets_free(dispgfx_widget_t *p_dispwidget);
-static void gfx_widgets_layout(dispgfx_widget_t *p_dispwidget,
-      bool is_threaded, const char *dir_assets, char *font_path);
-#ifdef HAVE_MENU
-bool menu_driver_get_load_content_animation_data(
-      uintptr_t *icon, char **playlist_name);
-#endif
 
 void gfx_widgets_iterate(
       unsigned width, unsigned height, bool fullscreen,
