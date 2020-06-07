@@ -822,11 +822,6 @@ ifeq ($(HAVE_LAKKA_SWITCH), 1)
    DEFINES += -DHAVE_LAKKA_SWITCH
 endif
 
-# Does not depend on HAVE_MENU
-ifeq ($(HAVE_SHADERS_COMMON), 1)
-   OBJ += menu/menu_shader.o
-endif
-
 ifeq ($(HAVE_MENU_COMMON), 1)
    OBJ += menu/menu_setting.o \
           menu/widgets/menu_filebrowser.o \

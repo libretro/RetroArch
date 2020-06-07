@@ -327,7 +327,6 @@ typedef struct
    } scratchpad;
    const menu_ctx_driver_t *driver_ctx;
    void *userdata;
-   struct video_shader *menu_driver_shader;
 } menu_handle_t;
 
 typedef struct menu_content_ctx_defer_info

@@ -1270,10 +1270,6 @@ PLAYLISTS
 /*============================================================
 MENU
 ============================================================ */
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL) || defined(HAVE_SLANG)
-#include "../menu/menu_shader.c"
-#endif
-
 #ifdef HAVE_GFX_WIDGETS
 #include "../gfx/gfx_widgets.c"
 #include "../gfx/widgets/gfx_widget_screenshot.c"
