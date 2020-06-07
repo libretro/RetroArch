@@ -1201,7 +1201,6 @@ static void xmb_unload_thumbnail_textures(void *data)
 
 static void xmb_set_thumbnail_content(void *data, const char *s)
 {
-   size_t selection  = menu_navigation_get_selection();
    xmb_handle_t *xmb = (xmb_handle_t*)data;
    if (!xmb)
       return;
@@ -1219,6 +1218,7 @@ static void xmb_set_thumbnail_content(void *data, const char *s)
       /* Playlist content */
       if (string_is_empty(s))
       {
+         size_t selection = menu_navigation_get_selection();
          gfx_thumbnail_set_content_playlist(xmb->thumbnail_path_data,
                playlist_get_cached(), selection);
          xmb->fullscreen_thumbnails_available = true;
@@ -1230,6 +1230,7 @@ static void xmb_set_thumbnail_content(void *data, const char *s)
       if (string_is_empty(s))
       {
          menu_entry_t entry;
+         size_t selection         = menu_navigation_get_selection();
 
          menu_entry_init(&entry);
          entry.label_enabled      = false;
@@ -1249,22 +1250,24 @@ static void xmb_set_thumbnail_content(void *data, const char *s)
    {
       /* Filebrowser image updates */
       menu_entry_t entry;
+      size_t selection           = menu_navigation_get_selection();
       file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
-      xmb_node_t *node = (xmb_node_t*)file_list_get_userdata_at_offset(selection_buf, selection);
+      xmb_node_t *node           = (xmb_node_t*)file_list_get_userdata_at_offset(selection_buf, selection);
 
-      menu_entry_init(&entry);
-      entry.label_enabled      = false;
-      entry.rich_label_enabled = false;
-      entry.value_enabled      = false;
-      entry.sublabel_enabled   = false;
-      menu_entry_get(&entry, 0, selection, NULL, true);
 
       if (node)
       {
+         menu_entry_init(&entry);
+         entry.label_enabled      = false;
+         entry.rich_label_enabled = false;
+         entry.value_enabled      = false;
+         entry.sublabel_enabled   = false;
+         menu_entry_get(&entry, 0, selection, NULL, true);
          if (  !string_is_empty(entry.path) && 
                !string_is_empty(node->fullpath))
          {
-            gfx_thumbnail_set_content_image(xmb->thumbnail_path_data, node->fullpath, entry.path);
+            gfx_thumbnail_set_content_image(xmb->thumbnail_path_data,
+                  node->fullpath, entry.path);
             xmb->fullscreen_thumbnails_available = true;
          }
       }
@@ -3590,8 +3593,42 @@ static void xmb_render(void *data,
       if ((pointer_y < margin_top) || (pointer_x > margin_right))
       {
          menu_entry_t entry;
+         bool get_entry = false;
 
-         if (pointer.press_direction != MENU_INPUT_PRESS_DIRECTION_NONE)
+         switch (pointer.press_direction)
+         {
+            case MENU_INPUT_PRESS_DIRECTION_UP:
+               if (pointer_x > margin_right)
+                  get_entry = true;
+               break;
+            case MENU_INPUT_PRESS_DIRECTION_DOWN:
+               /* Note: Direction is inverted, since 'down' should
+                * move list downwards */
+               if (pointer_x > margin_right)
+                  get_entry = true;
+               break;
+            case MENU_INPUT_PRESS_DIRECTION_LEFT:
+               /* Navigate left
+                * Note: At the top level, navigating left
+                * means switching to the 'next' horizontal list,
+                * which is actually a movement to the *right* */
+               if (pointer_y < margin_top)
+                  get_entry = true;
+               break;
+            case MENU_INPUT_PRESS_DIRECTION_RIGHT:
+               /* Navigate right
+                * Note: At the top level, navigating right
+                * means switching to the 'previous' horizontal list,
+                * which is actually a movement to the *left* */
+               if (pointer_y < margin_top)
+                  get_entry = true;
+               break;
+            case MENU_INPUT_PRESS_DIRECTION_NONE:
+            default:
+               break;
+         }
+
+         if (get_entry)
          {
             menu_entry_init(&entry);
             entry.path_enabled       = false;
