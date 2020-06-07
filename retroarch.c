@@ -3934,11 +3934,15 @@ void menu_entry_pathdir_extensions(uint32_t i, char *s, size_t len)
 void menu_entry_reset(uint32_t i)
 {
    menu_entry_t entry;
+   struct rarch_state *p_rarch   = &rarch_st;
 
    menu_entry_init(&entry);
    menu_entry_get(&entry, 0, i, NULL, true);
 
-   menu_entry_action(&entry, (size_t)i, MENU_ACTION_START);
+   if (     p_rarch->menu_driver_ctx 
+         && p_rarch->menu_driver_ctx->entry_action)
+      p_rarch->menu_driver_ctx->entry_action(
+            p_rarch->menu_userdata, &entry, (size_t)i, MENU_ACTION_START);
 }
 
 void menu_entry_get_value(menu_entry_t *entry, const char **value)
@@ -4142,7 +4146,11 @@ int menu_entry_select(uint32_t i)
    menu_entry_init(&entry);
    menu_entry_get(&entry, 0, i, NULL, false);
 
-   return menu_entry_action(&entry, (size_t)i, MENU_ACTION_SELECT);
+   if (     p_rarch->menu_driver_ctx 
+         && p_rarch->menu_driver_ctx->entry_action)
+      return p_rarch->menu_driver_ctx->entry_action(
+            p_rarch->menu_userdata, &entry, (size_t)i, MENU_ACTION_SELECT);
+   return -1;
 }
 
 int menu_entry_action(
