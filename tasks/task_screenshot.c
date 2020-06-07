@@ -273,7 +273,8 @@ static bool screenshot_dump(
    struct retro_system_info system_info;
    uint8_t *buf                   = NULL;
    settings_t *settings           = config_get_ptr();
-   screenshot_task_state_t *state = (screenshot_task_state_t*)calloc(1, sizeof(*state));
+   screenshot_task_state_t *state = (screenshot_task_state_t*)
+      calloc(1, sizeof(*state));
 
    state->shotname[0]             = '\0';
 
@@ -319,7 +320,10 @@ static bool screenshot_dump(
             if (path_is_empty(RARCH_PATH_CONTENT))
             {
                if (!core_get_system_info(&system_info))
+               {
+                  free(state);
                   return false;
+               }
 
                if (string_is_empty(system_info.library_name))
                   screenshot_name = "RetroArch";

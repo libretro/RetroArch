@@ -7095,16 +7095,24 @@ static void *materialui_init(void **userdata, bool video_is_threaded)
    unsigned width, height;
    settings_t *settings                   = config_get_ptr();
    materialui_handle_t *mui               = NULL;
-   menu_handle_t *menu                    = (menu_handle_t*)calloc(1, sizeof(*menu));
    static const char* const ticker_spacer = MUI_TICKER_SPACER;
+   menu_handle_t *menu                    = (menu_handle_t*)
+      calloc(1, sizeof(*menu));
 
-   if (!menu || !settings)
+   if (!menu)
       return NULL;
+
+   if (!settings)
+   {
+      free(menu);
+      return NULL;
+   }
 
    if (!gfx_display_init_first_driver(video_is_threaded))
       goto error;
 
-   mui = (materialui_handle_t*)calloc(1, sizeof(materialui_handle_t));
+   mui                                    = (materialui_handle_t*)
+      calloc(1, sizeof(materialui_handle_t));
 
    if (!mui)
       goto error;
@@ -7112,7 +7120,7 @@ static void *materialui_init(void **userdata, bool video_is_threaded)
    *userdata = mui;
 
    /* Initialise thumbnail path data */
-   mui->thumbnail_path_data = gfx_thumbnail_path_init();
+   mui->thumbnail_path_data               = gfx_thumbnail_path_init();
    if (!mui->thumbnail_path_data)
       goto error;
 
@@ -7120,54 +7128,56 @@ static void *materialui_init(void **userdata, bool video_is_threaded)
     * UI elements */
    video_driver_get_size(&width, &height);
 
-   mui->last_width               = width;
-   mui->last_height              = height;
-   mui->last_scale_factor        = gfx_display_get_dpi_scale(width, height);
-   mui->dip_base_unit_size       = mui->last_scale_factor 
+   mui->last_width                        = width;
+   mui->last_height                       = height;
+   mui->last_scale_factor                 = gfx_display_get_dpi_scale(
+         width, height);
+   mui->dip_base_unit_size                = mui->last_scale_factor 
       * MUI_DIP_BASE_UNIT_SIZE;
 
-   mui->last_show_nav_bar        = settings->bools.menu_materialui_show_nav_bar;
-   mui->last_auto_rotate_nav_bar = settings->bools.menu_materialui_auto_rotate_nav_bar;
+   mui->last_show_nav_bar                 = settings->bools.menu_materialui_show_nav_bar;
+   mui->last_auto_rotate_nav_bar          = settings->bools.menu_materialui_auto_rotate_nav_bar;
 
-   mui->need_compute         = false;
-   mui->is_playlist_tab      = false;
-   mui->is_playlist          = false;
-   mui->is_file_list         = false;
-   mui->is_dropdown_list     = false;
-   mui->is_core_updater_list = false;
-   mui->menu_stack_flushed   = false;
+   mui->need_compute                      = false;
+   mui->is_playlist_tab                   = false;
+   mui->is_playlist                       = false;
+   mui->is_file_list                      = false;
+   mui->is_dropdown_list                  = false;
+   mui->is_core_updater_list              = false;
+   mui->menu_stack_flushed                = false;
 
-   mui->first_onscreen_entry = 0;
-   mui->last_onscreen_entry  = 0;
+   mui->first_onscreen_entry              = 0;
+   mui->last_onscreen_entry               = 0;
 
-   mui->menu_title[0]        = '\0';
+   mui->menu_title[0]                     = '\0';
 
    /* Set initial theme colours */
-   mui->color_theme          = (enum materialui_color_theme)settings->uints.menu_materialui_color_theme;
+   mui->color_theme                       = (enum materialui_color_theme)
+      settings->uints.menu_materialui_color_theme;
    materialui_prepare_colors(mui, (enum materialui_color_theme)mui->color_theme);
 
    /* Initial ticker configuration */
-   mui->use_smooth_ticker           = settings->bools.menu_ticker_smooth;
-   mui->ticker_smooth.font_scale    = 1.0f;
-   mui->ticker_smooth.spacer        = ticker_spacer;
-   mui->ticker_smooth.x_offset      = &mui->ticker_x_offset;
-   mui->ticker_smooth.dst_str_width = &mui->ticker_str_width;
-   mui->ticker.spacer               = ticker_spacer;
+   mui->use_smooth_ticker                 = settings->bools.menu_ticker_smooth;
+   mui->ticker_smooth.font_scale          = 1.0f;
+   mui->ticker_smooth.spacer              = ticker_spacer;
+   mui->ticker_smooth.x_offset            = &mui->ticker_x_offset;
+   mui->ticker_smooth.dst_str_width       = &mui->ticker_str_width;
+   mui->ticker.spacer                     = ticker_spacer;
 
    /* Ensure menu animation parameters are properly
     * reset */
-   mui->touch_feedback_selection        = 0;
-   mui->touch_feedback_alpha            = 0.0f;
-   mui->touch_feedback_update_selection = false;
-   mui->transition_alpha                = 1.0f;
-   mui->transition_x_offset             = 0.0f;
-   mui->last_stack_size                 = 1;
+   mui->touch_feedback_selection          = 0;
+   mui->touch_feedback_alpha              = 0.0f;
+   mui->touch_feedback_update_selection   = false;
+   mui->transition_alpha                  = 1.0f;
+   mui->transition_x_offset               = 0.0f;
+   mui->last_stack_size                   = 1;
 
-   mui->scroll_animation_active         = false;
-   mui->scroll_animation_selection      = 0;
+   mui->scroll_animation_active           = false;
+   mui->scroll_animation_selection        = 0;
 
    /* Ensure message box string is empty */
-   mui->msgbox[0] = '\0';
+   mui->msgbox[0]                         = '\0';
 
    /* Initialise navigation bar */
    materialui_init_nav_bar(mui);
@@ -7183,10 +7193,10 @@ static void *materialui_init(void **userdata, bool video_is_threaded)
    gfx_thumbnail_set_fade_missing(true);
 
    /* Ensure that fullscreen thumbnails are inactive */
-   mui->show_fullscreen_thumbnails     = false;
-   mui->fullscreen_thumbnail_selection = 0;
-   mui->fullscreen_thumbnail_alpha     = 0.0f;
-   mui->fullscreen_thumbnail_label[0]  = '\0';
+   mui->show_fullscreen_thumbnails             = false;
+   mui->fullscreen_thumbnail_selection         = 0;
+   mui->fullscreen_thumbnail_alpha             = 0.0f;
+   mui->fullscreen_thumbnail_label[0]          = '\0';
 
    /* Ensure status bar has sane initial values */
    mui->status_bar.enabled                     = false;
@@ -7330,13 +7340,13 @@ static void materialui_animate_scroll(
    mui->scroll_animation_selection = menu_navigation_get_selection();
 
    /* Configure animation */
-   animation_entry.easing_enum  = EASING_IN_OUT_QUAD;
-   animation_entry.tag          = animation_tag;
-   animation_entry.duration     = duration;
-   animation_entry.target_value = scroll_pos;
-   animation_entry.subject      = &mui->scroll_y;
-   animation_entry.cb           = materialui_scroll_animation_end;
-   animation_entry.userdata     = mui;
+   animation_entry.easing_enum     = EASING_IN_OUT_QUAD;
+   animation_entry.tag             = animation_tag;
+   animation_entry.duration        = duration;
+   animation_entry.target_value    = scroll_pos;
+   animation_entry.subject         = &mui->scroll_y;
+   animation_entry.cb              = materialui_scroll_animation_end;
+   animation_entry.userdata        = mui;
 
    /* Push animation */
    gfx_animation_push(&animation_entry);

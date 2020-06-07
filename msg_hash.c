@@ -183,14 +183,16 @@ const char *get_user_language_iso639_1(bool limit)
          break;
       case RETRO_LANGUAGE_RUSSIAN:
          voice = "ru";
+         break;
       case RETRO_LANGUAGE_PERSIAN:
          voice = "fa";
+         break;
       case RETRO_LANGUAGE_HEBREW:
          voice = "he";
+         break;
       case RETRO_LANGUAGE_ASTURIAN:
          voice = "ast";
          break;
-
    }
    return voice;
 }

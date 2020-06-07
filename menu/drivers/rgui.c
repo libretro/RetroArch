@@ -1705,7 +1705,8 @@ static bool request_thumbnail(
    return false;
 }
 
-static bool downscale_thumbnail(rgui_t *rgui, unsigned max_width, unsigned max_height,
+static bool downscale_thumbnail(rgui_t *rgui,
+      unsigned max_width, unsigned max_height,
       struct texture_image *image_src, struct texture_image *image_dst)
 {
    /* Determine output dimensions */
@@ -1827,7 +1828,11 @@ static void process_thumbnail(rgui_t *rgui, thumbnail_t *thumbnail, uint32_t *qu
    if ((image_src->width > thumbnail->max_width) || (image_src->height > thumbnail->max_height))
    {
       if (!downscale_thumbnail(rgui, thumbnail->max_width, thumbnail->max_height, image_src, &image_resampled))
+      {
+         if (image_resampled.pixels)
+            free(image_resampled.pixels);
          return;
+      }
       image = &image_resampled;
    }
    else
