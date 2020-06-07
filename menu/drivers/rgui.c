@@ -584,8 +584,6 @@ typedef struct
    gfx_thumbnail_path_data_t *thumbnail_path_data;
 } rgui_t;
 
-static bool font_lut[RGUI_NUM_FONT_GLYPHS_EXTENDED][FONT_WIDTH * FONT_HEIGHT];
-
 /* A 'particle' is just 4 float variables that can
  * be used for any purpose - e.g.:
  * > a = x pos
@@ -603,6 +601,8 @@ typedef struct
    float d;
 } rgui_particle_t;
 
+/* TODO/FIXME - static global variables */
+static bool font_lut[RGUI_NUM_FONT_GLYPHS_EXTENDED][FONT_WIDTH * FONT_HEIGHT];
 static rgui_particle_t particles[RGUI_NUM_PARTICLES] = {{ 0.0f }};
 
 /* Particle effect animations update at a base rate
@@ -806,6 +806,14 @@ typedef struct
    uint16_t *data;
 } thumbnail_t;
 
+typedef struct
+{
+   unsigned width;
+   unsigned height;
+   uint16_t *data;
+} frame_buf_t;
+
+/* TODO/FIXME - static global variables */
 static thumbnail_t fs_thumbnail = {
    0,
    0,
@@ -815,7 +823,6 @@ static thumbnail_t fs_thumbnail = {
    {0},
    NULL
 };
-
 static thumbnail_t mini_thumbnail = {
    0,
    0,
@@ -825,7 +832,6 @@ static thumbnail_t mini_thumbnail = {
    {0},
    NULL
 };
-
 static thumbnail_t mini_left_thumbnail = {
    0,
    0,
@@ -836,25 +842,16 @@ static thumbnail_t mini_left_thumbnail = {
    NULL
 };
 
-typedef struct
-{
-   unsigned width;
-   unsigned height;
-   uint16_t *data;
-} frame_buf_t;
-
 static frame_buf_t rgui_frame_buf = {
    0,
    0,
    NULL
 };
-
 static frame_buf_t rgui_background_buf = {
    0,
    0,
    NULL
 };
-
 static frame_buf_t rgui_upscale_buf = {
    0,
    0,
@@ -1979,26 +1976,26 @@ static void rgui_render_fs_thumbnail(rgui_t *rgui)
       if (fs_thumbnail.width <= fb_width)
       {
          thumb_x_offset = 0;
-         fb_x_offset = (fb_width - fs_thumbnail.width) >> 1;
-         width = fs_thumbnail.width;
+         fb_x_offset    = (fb_width - fs_thumbnail.width) >> 1;
+         width          = fs_thumbnail.width;
       }
       else
       {
          thumb_x_offset = (fs_thumbnail.width - fb_width) >> 1;
-         fb_x_offset = 0;
-         width = fb_width;
+         fb_x_offset    = 0;
+         width          = fb_width;
       }
       if (fs_thumbnail.height <= fb_height)
       {
          thumb_y_offset = 0;
-         fb_y_offset = (fb_height - fs_thumbnail.height) >> 1;
-         height = fs_thumbnail.height;
+         fb_y_offset    = (fb_height - fs_thumbnail.height) >> 1;
+         height         = fs_thumbnail.height;
       }
       else
       {
          thumb_y_offset = (fs_thumbnail.height - fb_height) >> 1;
-         fb_y_offset = 0;
-         height = fb_height;
+         fb_y_offset    = 0;
+         height         = fb_height;
       }
 
       /* Copy thumbnail to framebuffer */
@@ -2021,12 +2018,12 @@ static void rgui_render_fs_thumbnail(rgui_t *rgui)
          /* Vertical component */
          if (fs_thumbnail.width < fb_width)
          {
-            shadow_width = fb_width - fs_thumbnail.width;
-            shadow_width = shadow_width > 2 ? 2 : shadow_width;
+            shadow_width  = fb_width - fs_thumbnail.width;
+            shadow_width  = shadow_width > 2 ? 2 : shadow_width;
             shadow_height = fs_thumbnail.height + 2 < fb_height ? fs_thumbnail.height : fb_height - 2;
 
-            shadow_x = fb_x_offset + fs_thumbnail.width;
-            shadow_y = fb_y_offset + 2;
+            shadow_x      = fb_x_offset + fs_thumbnail.width;
+            shadow_y      = fb_y_offset + 2;
 
             rgui_color_rect(rgui_frame_buf.data, fb_width, fb_height,
                   shadow_x, shadow_y, shadow_width, shadow_height, rgui->colors.shadow_color);
@@ -2037,10 +2034,10 @@ static void rgui_render_fs_thumbnail(rgui_t *rgui)
          {
             shadow_height = fb_height - fs_thumbnail.height;
             shadow_height = shadow_height > 2 ? 2 : shadow_height;
-            shadow_width = fs_thumbnail.width + 2 < fb_width ? fs_thumbnail.width : fb_width - 2;
+            shadow_width  = fs_thumbnail.width + 2 < fb_width ? fs_thumbnail.width : fb_width - 2;
 
-            shadow_x = fb_x_offset + 2;
-            shadow_y = fb_y_offset + fs_thumbnail.height;
+            shadow_x      = fb_x_offset + 2;
+            shadow_y      = fb_y_offset + fs_thumbnail.height;
 
             rgui_color_rect(rgui_frame_buf.data, fb_width, fb_height,
                   shadow_x, shadow_y, shadow_width, shadow_height, rgui->colors.shadow_color);
@@ -2051,7 +2048,7 @@ static void rgui_render_fs_thumbnail(rgui_t *rgui)
 
 static unsigned INLINE rgui_get_mini_thumbnail_fullwidth(void)
 {
-   unsigned width = mini_thumbnail.is_valid ? mini_thumbnail.width : 0;
+   unsigned width      = mini_thumbnail.is_valid ? mini_thumbnail.width : 0;
    unsigned left_width = mini_left_thumbnail.is_valid ? mini_left_thumbnail.width : 0;
    return width >= left_width ? width : left_width;
 }
@@ -2076,12 +2073,13 @@ static void rgui_render_mini_thumbnail(rgui_t *rgui, thumbnail_t *thumbnail, enu
 
       gfx_display_get_fb_size(&fb_width, &fb_height, &fb_pitch);
 
-      term_width = rgui_term_layout.width * FONT_WIDTH_STRIDE;
+      term_width  = rgui_term_layout.width * FONT_WIDTH_STRIDE;
       term_height = rgui_term_layout.height * FONT_HEIGHT_STRIDE;
 
       /* Sanity check (this can never, ever happen, so just return
        * instead of trying to crop the thumbnail image...) */
-      if ((thumbnail_fullwidth > term_width) || (thumbnail->height > term_height))
+      if (     (thumbnail_fullwidth > term_width) 
+            || (thumbnail->height   > term_height))
          return;
 
       fb_x_offset = (rgui_term_layout.start_x + term_width) -
@@ -2089,20 +2087,17 @@ static void rgui_render_mini_thumbnail(rgui_t *rgui, thumbnail_t *thumbnail, enu
       
       if (((thumbnail_id == GFX_THUMBNAIL_RIGHT) && !settings->bools.menu_rgui_swap_thumbnails) ||
           ((thumbnail_id == GFX_THUMBNAIL_LEFT)  && settings->bools.menu_rgui_swap_thumbnails))
-      {
          fb_y_offset = rgui_term_layout.start_y + ((thumbnail->max_height - thumbnail->height) >> 1);
-      }
       else
-      {
          fb_y_offset = (rgui_term_layout.start_y + term_height) -
                (thumbnail->height + ((thumbnail->max_height - thumbnail->height) >> 1));
-      }
 
       /* Copy thumbnail to framebuffer */
       for (y = 0; y < thumbnail->height; y++)
       {
          src = thumbnail->data + (y * thumbnail->width);
-         dst = rgui_frame_buf.data + (y + fb_y_offset) * (fb_pitch >> 1) + fb_x_offset;
+         dst = rgui_frame_buf.data + (y + fb_y_offset) * 
+            (fb_pitch >> 1) + fb_x_offset;
          
          memcpy(dst, src, thumbnail->width * sizeof(uint16_t));
       }
@@ -2111,9 +2106,11 @@ static void rgui_render_mini_thumbnail(rgui_t *rgui, thumbnail_t *thumbnail, enu
       if (rgui->shadow_enable)
       {
          rgui_color_rect(rgui_frame_buf.data, fb_width, fb_height,
-               fb_x_offset + thumbnail->width, fb_y_offset + 1, 1, thumbnail->height, rgui->colors.shadow_color);
+               fb_x_offset + thumbnail->width, fb_y_offset + 1,
+               1, thumbnail->height, rgui->colors.shadow_color);
          rgui_color_rect(rgui_frame_buf.data, fb_width, fb_height,
-               fb_x_offset + 1, fb_y_offset + thumbnail->height, thumbnail->width, 1, rgui->colors.shadow_color);
+               fb_x_offset + 1, fb_y_offset + thumbnail->height,
+               thumbnail->width, 1, rgui->colors.shadow_color);
       }
    }
 }
@@ -3925,22 +3922,22 @@ static void rgui_render(void *data,
 
 static void rgui_framebuffer_free(void)
 {
-   rgui_frame_buf.width = 0;
+   rgui_frame_buf.width  = 0;
    rgui_frame_buf.height = 0;
    
    if (rgui_frame_buf.data)
       free(rgui_frame_buf.data);
-   rgui_frame_buf.data = NULL;
+   rgui_frame_buf.data   = NULL;
 }
 
 static void rgui_background_free(void)
 {
-   rgui_background_buf.width = 0;
+   rgui_background_buf.width  = 0;
    rgui_background_buf.height = 0;
    
    if (rgui_background_buf.data)
       free(rgui_background_buf.data);
-   rgui_background_buf.data = NULL;
+   rgui_background_buf.data   = NULL;
 }
 
 static void rgui_thumbnail_free(thumbnail_t *thumbnail)
@@ -5070,21 +5067,21 @@ static int rgui_pointer_up(void *data,
    rgui_t *rgui           = (rgui_t*)data;
    unsigned header_height = gfx_display_get_header_height();
    size_t selection       = menu_navigation_get_selection();
-   bool show_fs_thumbnail = false;
 
    if (!rgui)
       return -1;
 
-   show_fs_thumbnail =
-         rgui->show_fs_thumbnail &&
-         rgui->entry_has_thumbnail &&
-         (fs_thumbnail.is_valid || (rgui->thumbnail_queue_size > 0));
 
    switch (gesture)
    {
       case MENU_INPUT_GESTURE_TAP:
       case MENU_INPUT_GESTURE_SHORT_PRESS:
          {
+            bool show_fs_thumbnail =
+               rgui->show_fs_thumbnail &&
+               rgui->entry_has_thumbnail &&
+               (fs_thumbnail.is_valid || (rgui->thumbnail_queue_size > 0));
+
             /* Normal pointer input */
             if (show_fs_thumbnail)
             {
