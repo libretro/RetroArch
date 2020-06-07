@@ -3967,11 +3967,6 @@ void menu_entry_set_value(uint32_t i, const char *s)
    setting_set_with_string_representation(setting, s);
 }
 
-bool menu_entry_is_password(menu_entry_t *entry)
-{
-   return entry->enum_idx == MENU_ENUM_LABEL_CHEEVOS_PASSWORD;
-}
-
 uint32_t menu_entry_num_has_range(uint32_t i)
 {
    struct rarch_state *p_rarch   = &rarch_st;
@@ -23367,7 +23362,8 @@ static int menu_input_pointer_post_iterate(
     *   since input binding overrides normal input
     *   and must be handled separately... */
    if (menu)
-      messagebox_active = BIT64_GET(menu->state, MENU_STATE_RENDER_MESSAGEBOX) &&
+      messagebox_active = BIT64_GET(
+            menu->state, MENU_STATE_RENDER_MESSAGEBOX) &&
             !string_is_empty(menu->menu_state_msg);
 
    /* If onscreen keyboard is shown and we currently have
@@ -23788,7 +23784,6 @@ static int menu_input_pointer_post_iterate(
          menu_input->pointer.dragged         = false;
       }
    }
-   last_select_pressed = pointer_hw_state->select_pressed;
 
    /* Adjust acceleration
     * > If acceleration has not been set on this frame,
@@ -23817,72 +23812,82 @@ static int menu_input_pointer_post_iterate(
          ret = menu_entry_action(entry, selection, MENU_ACTION_CANCEL);
       }
    }
-   last_cancel_pressed = pointer_hw_state->cancel_pressed;
 
    /* If cancel has been released, disable any existing
     * cancel inhibit */
    if (!pointer_hw_state->cancel_pressed)
       menu_input->cancel_inhibit = false;
 
-   /* Up/Down
-    * > Note 1: These always correspond to a mouse wheel, which
-    *   handles differently from other inputs - i.e. we don't
-    *   want a 'last pressed' check
-    * > Note 2: If a message box is currently shown, must
-    *   inhibit input */
-
-   /* > Up */
-   if (!messagebox_active && pointer_hw_state->up_pressed)
+   if (!messagebox_active)
    {
-      size_t selection = menu_st->selection_ptr;
-      ret = menu_entry_action(entry, selection, MENU_ACTION_UP);
-   }
+      /* Up/Down
+       * > Note 1: These always correspond to a mouse wheel, which
+       *   handles differently from other inputs - i.e. we don't
+       *   want a 'last pressed' check
+       * > Note 2: If a message box is currently shown, must
+       *   inhibit input */
 
-   /* > Down */
-   if (!messagebox_active && pointer_hw_state->down_pressed)
-   {
-      size_t selection = menu_st->selection_ptr;
-      ret = menu_entry_action(entry, selection, MENU_ACTION_DOWN);
-   }
-
-   /* Left/Right
-    * > Note 1: These also always correspond to a mouse wheel...
-    *   In this case, it's a mouse wheel *tilt* operation, which
-    *   is incredibly annoying because holding a tilt direction
-    *   rapidly toggles the input state. The repeat speed is so
-    *   high that any sort of useable control is impossible - so
-    *   we have to apply a 'low pass' filter by ignoring inputs
-    *   that occur below a certain frequency...
-    * > Note 2: If a message box is currently shown, must
-    *   inhibit input */
-
-   /* > Left */
-   if (!messagebox_active &&
-       pointer_hw_state->left_pressed &&
-       !last_left_pressed)
-   {
-      if (current_time - last_left_action_time > MENU_INPUT_HORIZ_WHEEL_DELAY)
+      /* > Up */
+      if (pointer_hw_state->up_pressed)
       {
-         size_t selection      = menu_st->selection_ptr;
-         last_left_action_time = current_time;
-         ret = menu_entry_action(entry, selection, MENU_ACTION_LEFT);
+         size_t selection = menu_st->selection_ptr;
+         ret              = menu_entry_action(
+               entry, selection, MENU_ACTION_UP);
+      }
+
+      /* > Down */
+      if (pointer_hw_state->down_pressed)
+      {
+         size_t selection = menu_st->selection_ptr;
+         ret              = menu_entry_action(
+               entry, selection, MENU_ACTION_DOWN);
+      }
+
+      /* Left/Right
+       * > Note 1: These also always correspond to a mouse wheel...
+       *   In this case, it's a mouse wheel *tilt* operation, which
+       *   is incredibly annoying because holding a tilt direction
+       *   rapidly toggles the input state. The repeat speed is so
+       *   high that any sort of useable control is impossible - so
+       *   we have to apply a 'low pass' filter by ignoring inputs
+       *   that occur below a certain frequency...
+       * > Note 2: If a message box is currently shown, must
+       *   inhibit input */
+
+      /* > Left */
+      if (pointer_hw_state->left_pressed &&
+            !last_left_pressed)
+      {
+         if (current_time - last_left_action_time 
+               > MENU_INPUT_HORIZ_WHEEL_DELAY)
+         {
+            size_t selection      = menu_st->selection_ptr;
+            last_left_action_time = current_time;
+            ret                   = menu_entry_action(
+                  entry, selection, MENU_ACTION_LEFT);
+         }
+      }
+
+      /* > Right */
+      if (
+            pointer_hw_state->right_pressed &&
+            !last_right_pressed)
+      {
+         if (current_time - last_right_action_time 
+               > MENU_INPUT_HORIZ_WHEEL_DELAY)
+         {
+            size_t selection       = menu_st->selection_ptr;
+            last_right_action_time = current_time;
+            ret                    = menu_entry_action(
+                  entry, selection, MENU_ACTION_RIGHT);
+         }
       }
    }
-   last_left_pressed = pointer_hw_state->left_pressed;
 
-   /* > Right */
-   if (!messagebox_active &&
-       pointer_hw_state->right_pressed &&
-       !last_right_pressed)
-   {
-      if (current_time - last_right_action_time > MENU_INPUT_HORIZ_WHEEL_DELAY)
-      {
-         size_t selection       = menu_st->selection_ptr;
-         last_right_action_time = current_time;
-         ret = menu_entry_action(entry, selection, MENU_ACTION_RIGHT);
-      }
-   }
-   last_right_pressed = pointer_hw_state->right_pressed;
+   last_select_pressed = pointer_hw_state->select_pressed;
+   last_cancel_pressed = pointer_hw_state->cancel_pressed;
+   last_left_pressed   = pointer_hw_state->left_pressed;
+   last_right_pressed  = pointer_hw_state->right_pressed;
 
    menu_input_set_pointer_visibility(p_rarch, current_time);
 

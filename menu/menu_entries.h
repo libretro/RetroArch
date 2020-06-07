@@ -238,8 +238,6 @@ void menu_entry_get_value(menu_entry_t *entry, const char **value);
 
 void menu_entry_set_value(uint32_t i, const char *s);
 
-bool menu_entry_is_password(menu_entry_t *entry);
-
 uint32_t menu_entry_num_has_range(uint32_t i);
 
 float menu_entry_num_min(uint32_t i);
