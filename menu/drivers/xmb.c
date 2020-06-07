@@ -1321,7 +1321,6 @@ static void xmb_selection_pointer_changed(
 {
    unsigned i, end, height;
    gfx_animation_ctx_tag tag;
-   menu_entry_t entry;
    size_t num                 = 0;
    int threshold              = 0;
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
@@ -1329,14 +1328,6 @@ static void xmb_selection_pointer_changed(
 
    if (!xmb)
       return;
-
-   menu_entry_init(&entry);
-   entry.path_enabled       = false;
-   entry.label_enabled      = false;
-   entry.rich_label_enabled = false;
-   entry.value_enabled      = false;
-   entry.sublabel_enabled   = false;
-   menu_entry_get(&entry, 0, selection, NULL, true);
 
    end       = (unsigned)menu_entries_get_size();
    threshold = xmb->icon_size * 10;
@@ -1366,7 +1357,6 @@ static void xmb_selection_pointer_changed(
       {
          unsigned     depth      = (unsigned)xmb_list_get_size(xmb, MENU_LIST_PLAIN);
          unsigned xmb_system_tab = xmb_get_system_tab(xmb, (unsigned)xmb->categories_selection_ptr);
-         unsigned entry_type     = menu_entry_get_type_new(&entry);
 
          ia                      = xmb->items_active_alpha;
          iz                      = xmb->items_active_zoom;
@@ -1395,8 +1385,19 @@ static void xmb_selection_pointer_changed(
             /* Filebrowser image updates */
             else if (xmb->is_file_list)
             {
-               if ((entry_type == FILE_TYPE_IMAGEVIEWER) ||
-                   (entry_type == FILE_TYPE_IMAGE))
+               menu_entry_t entry;
+               unsigned entry_type;
+               menu_entry_init(&entry);
+               entry.path_enabled       = false;
+               entry.label_enabled      = false;
+               entry.rich_label_enabled = false;
+               entry.value_enabled      = false;
+               entry.sublabel_enabled   = false;
+               menu_entry_get(&entry, 0, selection, NULL, true);
+               entry_type               = menu_entry_get_type_new(&entry);
+
+               if (  (entry_type == FILE_TYPE_IMAGEVIEWER) ||
+                     (entry_type == FILE_TYPE_IMAGE))
                {
                   xmb_set_thumbnail_content(xmb, "imageviewer");
                   update_thumbnails = true;
@@ -1428,8 +1429,8 @@ static void xmb_selection_pointer_changed(
                || real_iy > height+threshold))
       {
          node->alpha = node->label_alpha = ia;
-         node->y = iy;
-         node->zoom = iz;
+         node->y     = iy;
+         node->zoom  = iz;
       }
       else
       {
