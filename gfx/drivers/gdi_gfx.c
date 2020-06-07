@@ -601,12 +601,6 @@ static void gdi_gfx_set_viewport(void *data, unsigned viewport_width,
 {
 }
 
-bool gdi_has_menu_frame(void *data)
-{
-   gdi_t *gdi = (gdi_t*)data;
-   return (gdi->menu_frame != NULL);
-}
-
 video_driver_t video_gdi = {
    gdi_gfx_init,
    gdi_gfx_frame,
