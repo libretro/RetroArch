@@ -305,11 +305,9 @@ static void rcheevos_get_user_agent(char* buffer)
 #ifdef CHEEVOS_LOG_URLS
 static void rcheevos_filter_url_param(char* url, char* param)
 {
-   char* start;
-   char* next;
+   char *next;
    size_t param_len = strlen(param);
-
-   start = strchr(url, '?');
+   char      *start = strchr(url, '?');
    if (!start)
       start = url;
    else
@@ -357,7 +355,10 @@ static void rcheevos_log_url(const char* api, const char* url)
 #endif
 }
 
-static void rcheevos_log_post_url(const char* api, const char* url, const char* post)
+static void rcheevos_log_post_url(
+      const char* api,
+      const char* url,
+      const char* post)
 {
 #ifdef CHEEVOS_LOG_URLS
  #ifdef CHEEVOS_LOG_PASSWORD
@@ -418,7 +419,8 @@ static unsigned rcheevos_peek(unsigned address, unsigned num_bytes, void* ud)
 static void rcheevos_async_award_achievement(rcheevos_async_io_request* request);
 static void rcheevos_async_submit_lboard(rcheevos_async_io_request* request);
 
-static retro_time_t rcheevos_async_send_rich_presence(rcheevos_async_io_request* request)
+static retro_time_t rcheevos_async_send_rich_presence(
+      rcheevos_async_io_request* request)
 {
    settings_t *settings             = config_get_ptr();
    const char *cheevos_username     = settings->arrays.cheevos_username;
@@ -467,10 +469,10 @@ static retro_time_t rcheevos_async_send_rich_presence(rcheevos_async_io_request*
    return cpu_features_get_time_usec() + CHEEVOS_PING_FREQUENCY * 2;
 }
 
-
 static void rcheevos_async_task_handler(retro_task_t* task)
 {
-   rcheevos_async_io_request* request = (rcheevos_async_io_request*)task->user_data;
+   rcheevos_async_io_request* request = (rcheevos_async_io_request*)
+      task->user_data;
 
    switch (request->type)
    {
@@ -499,17 +501,19 @@ static void rcheevos_async_task_handler(retro_task_t* task)
    }
 }
 
-static void rcheevos_async_schedule(rcheevos_async_io_request* request, retro_time_t delay)
+static void rcheevos_async_schedule(
+      rcheevos_async_io_request* request, retro_time_t delay)
 {
    retro_task_t* task = task_init();
-   task->when = cpu_features_get_time_usec() + delay;
-   task->handler = rcheevos_async_task_handler;
-   task->user_data = request;
-   task->progress = -1;
+   task->when         = cpu_features_get_time_usec() + delay;
+   task->handler      = rcheevos_async_task_handler;
+   task->user_data    = request;
+   task->progress     = -1;
    task_queue_push(task);
 }
 
-static void rcheevos_async_task_callback(retro_task_t* task, void* task_data, void* user_data, const char* error)
+static void rcheevos_async_task_callback(
+      retro_task_t* task, void* task_data, void* user_data, const char* error)
 {
    rcheevos_async_io_request* request = (rcheevos_async_io_request*)user_data;
 
@@ -596,30 +600,38 @@ static int rcheevos_parse(const char* json)
        && rcheevos_locals.patchdata.unofficial_count == 0
        && rcheevos_locals.patchdata.lboard_count == 0)
    {
-      rcheevos_locals.core = NULL;
-      rcheevos_locals.unofficial = NULL;
-      rcheevos_locals.lboards = NULL;
+      rcheevos_locals.core                      = NULL;
+      rcheevos_locals.unofficial                = NULL;
+      rcheevos_locals.lboards                   = NULL;
       rcheevos_locals.richpresence.richpresence = NULL;
       rcheevos_free_patchdata(&rcheevos_locals.patchdata);
       return 0;
    }
 
-   /* Achievement memory accesses are 0-based, regardless of where the memory is accessed by the
-    * emulated code. As such, address 0 should always be accessible and serves as an indicator that
-    * other addresses will also be accessible. Individual achievements will be "Unsupported" if
-    * they contain addresses that cannot be resolved. This check gives the user immediate feedback
-    * if the core they're trying to use will disable all achievements as "Unsupported".
+   /* Achievement memory accesses are 0-based, regardless of 
+    * where the memory is accessed by the
+    * emulated code. As such, address 0 should always be 
+    * accessible and serves as an indicator that
+    * other addresses will also be accessible. 
+    * Individual achievements will be "Unsupported" if
+    * they contain addresses that cannot be resolved. 
+    * This check gives the user immediate feedback
+    * if the core they're trying to use will disable all 
+    * achievements as "Unsupported".
     */
    if (!rcheevos_patch_address(0, rcheevos_locals.patchdata.console_id))
    {
-      int delay_judgment = 0;
-
+      int delay_judgment          = 0;
       rarch_system_info_t* system = runloop_get_system_info();
+
       if (system->mmaps.num_descriptors == 0)
       {
-         /* Special case: the mupen64plus-nx core doesn't initialize the RAM immediately. To avoid a race
-          * condition - if the core says there's SYSTEM_RAM, but the pointer is NULL, proceed. If the memory
-          * isn't exposed when the achievements start processing, they'll be marked "Unsupported" individually.
+         /* Special case: the mupen64plus-nx core doesn't 
+          * initialize the RAM immediately. To avoid a race
+          * condition - if the core says there's SYSTEM_RAM, 
+          * but the pointer is NULL, proceed. If the memory
+          * isn't exposed when the achievements start processing, 
+          * they'll be marked "Unsupported" individually.
           */
          retro_ctx_memory_info_t meminfo;
          meminfo.id = RETRO_MEMORY_SYSTEM_RAM;
@@ -629,10 +641,14 @@ static int rcheevos_parse(const char* json)
       }
       else
       {
-         /* Special case: the sameboy core exposes the RAM at $8000, but not the ROM at $0000. NES and
-          * Gameboy achievements do attempt to map the entire bus, and it's unlikely that an achievement
-          * will reference the ROM data, so if the RAM is still present, allow the core to load. If any
-          * achievements do reference the ROM data, they'll be marked "Unsupported" individually.
+         /* Special case: the sameboy core exposes the RAM 
+          * at $8000, but not the ROM at $0000. NES and
+          * Gameboy achievements do attempt to map the 
+          * entire bus, and it's unlikely that an achievement
+          * will reference the ROM data, so if the RAM is 
+          * still present, allow the core to load. If any
+          * achievements do reference the ROM data, they'll 
+          * be marked "Unsupported" individually.
           */
          delay_judgment |= (rcheevos_patch_address(0x8000, rcheevos_locals.patchdata.console_id) != NULL);
       }
@@ -685,20 +701,21 @@ static int rcheevos_parse(const char* json)
       for (j = 0; j < count; j++, cheevo++, rac++)
       {
          cheevo->info = rac;
-         res = rc_trigger_size(cheevo->info->memaddr);
+         res          = rc_trigger_size(cheevo->info->memaddr);
 
          if (res < 0)
          {
-            snprintf(buffer, sizeof(buffer), "Error in achievement %d \"%s\": %s",
-               cheevo->info->id, cheevo->info->title, rc_error_str(res));
+            snprintf(buffer, sizeof(buffer),
+                  "Error in achievement %d \"%s\": %s",
+                  cheevo->info->id, cheevo->info->title, rc_error_str(res));
 
             if (settings->bools.cheevos_verbose_enable)
                runloop_msg_queue_push(buffer, 0, 4 * 60, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
             CHEEVOS_ERR(RCHEEVOS_TAG "%s: mem %s\n", buffer, cheevo->info->memaddr);
             cheevo->trigger = NULL;
-            cheevo->active = 0;
-            cheevo->last = 1;
+            cheevo->active  = 0;
+            cheevo->last    = 1;
             continue;
          }
 
@@ -712,7 +729,7 @@ static int rcheevos_parse(const char* json)
 
          rc_parse_trigger(cheevo->trigger, cheevo->info->memaddr, NULL, 0);
          cheevo->active = RCHEEVOS_ACTIVE_SOFTCORE | RCHEEVOS_ACTIVE_HARDCORE;
-         cheevo->last = 1;
+         cheevo->last   = 1;
       }
    }
 
@@ -722,12 +739,13 @@ static int rcheevos_parse(const char* json)
    for (j = 0; j < count; j++, lboard++)
    {
       lboard->info = rcheevos_locals.patchdata.lboards + j;
-      res = rc_lboard_size(lboard->info->mem);
+      res          = rc_lboard_size(lboard->info->mem);
 
       if (res < 0)
       {
-         snprintf(buffer, sizeof(buffer), "Error in leaderboard %d \"%s\": %s",
-            lboard->info->id, lboard->info->title, rc_error_str(res));
+         snprintf(buffer, sizeof(buffer),
+               "Error in leaderboard %d \"%s\": %s",
+               lboard->info->id, lboard->info->title, rc_error_str(res));
 
          if (settings->bools.cheevos_verbose_enable)
             runloop_msg_queue_push(buffer, 0, 4 * 60, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
@@ -747,9 +765,9 @@ static int rcheevos_parse(const char* json)
 
       rc_parse_lboard(lboard->lboard,
          lboard->info->mem, NULL, 0);
-      lboard->active = false;
+      lboard->active     = false;
       lboard->last_value = 0;
-      lboard->format = rc_parse_format(lboard->info->format);
+      lboard->format     = rc_parse_format(lboard->info->format);
    }
 
    if (rcheevos_locals.patchdata.richpresence_script && *rcheevos_locals.patchdata.richpresence_script)
@@ -757,7 +775,9 @@ static int rcheevos_parse(const char* json)
       int buffer_size = rc_richpresence_size(rcheevos_locals.patchdata.richpresence_script);
       if (buffer_size <= 0)
       {
-         snprintf(buffer, sizeof(buffer), "Error in rich presence: %s", rc_error_str(buffer_size));
+         snprintf(buffer, sizeof(buffer),
+               "Error in rich presence: %s",
+               rc_error_str(buffer_size));
 
          if (settings->bools.cheevos_verbose_enable)
             runloop_msg_queue_push(buffer, 0, 4 * 60, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
@@ -775,16 +795,16 @@ static int rcheevos_parse(const char* json)
    }
 
    if (!rcheevos_locals.richpresence.richpresence && rcheevos_locals.patchdata.title)
-   {
-      snprintf(rcheevos_locals.richpresence.evaluation, sizeof(rcheevos_locals.richpresence.evaluation),
+      snprintf(rcheevos_locals.richpresence.evaluation,
+            sizeof(rcheevos_locals.richpresence.evaluation),
          "Playing %s", rcheevos_locals.patchdata.title);
-   }
 
    /* schedule the first rich presence call in 30 seconds */
    {
-      rcheevos_async_io_request* request = (rcheevos_async_io_request*)calloc(1, sizeof(rcheevos_async_io_request));
-      request->id = rcheevos_locals.patchdata.game_id;
-      request->type = CHEEVOS_ASYNC_RICHPRESENCE;
+      rcheevos_async_io_request* request = (rcheevos_async_io_request*)
+         calloc(1, sizeof(rcheevos_async_io_request));
+      request->id                        = rcheevos_locals.patchdata.game_id;
+      request->type                      = CHEEVOS_ASYNC_RICHPRESENCE;
       rcheevos_async_schedule(request, CHEEVOS_PING_FREQUENCY / 4);
    }
 
@@ -852,10 +872,11 @@ static void rcheevos_award(rcheevos_cheevo_t* cheevo, int mode)
 
    /* Start the award task. */
    {
-      rcheevos_async_io_request* request = (rcheevos_async_io_request*)calloc(1, sizeof(rcheevos_async_io_request));
-      request->type = CHEEVOS_ASYNC_AWARD_ACHIEVEMENT;
-      request->id = cheevo->info->id;
-      request->hardcore = ((mode & RCHEEVOS_ACTIVE_HARDCORE) != 0) ? 1 : 0;
+      rcheevos_async_io_request *request = (rcheevos_async_io_request*)calloc(1, sizeof(rcheevos_async_io_request));
+      request->type            = CHEEVOS_ASYNC_AWARD_ACHIEVEMENT;
+      request->id              = cheevo->info->id;
+      request->hardcore        = ((mode & RCHEEVOS_ACTIVE_HARDCORE) != 0) 
+         ? 1 : 0;
       request->success_message = "Awarded achievement";
       request->failure_message = "Error awarding achievement";
       rcheevos_get_user_agent(request->user_agent);
@@ -885,7 +906,7 @@ static void rcheevos_award(rcheevos_cheevo_t* cheevo, int mode)
 static int rcheevos_has_indirect_memref(const rc_memref_value_t* memrefs)
 {
    const rc_memref_value_t* memref = memrefs;
-   while (memref != NULL)
+   while (memref)
    {
       if (memref->memref.is_indirect)
          return 1;
@@ -1417,7 +1438,7 @@ void rcheevos_set_support_cheevos(bool state)
 
 bool rcheevos_get_support_cheevos(void)
 {
-  return rcheevos_locals.core_supports;
+   return rcheevos_locals.core_supports;
 }
 
 int rcheevos_get_console(void)
@@ -1457,7 +1478,8 @@ static void rcheevos_unlock_cb(unsigned id, void* userdata)
             cheevo->active &= ~*(unsigned*)userdata;
 #endif
             CHEEVOS_LOG(RCHEEVOS_TAG "cheevo %u deactivated (%s): %s\n", id,
-               (*(unsigned*)userdata) == RCHEEVOS_ACTIVE_HARDCORE ? "hardcore" : "softcore",
+               (*(unsigned*)userdata) == RCHEEVOS_ACTIVE_HARDCORE 
+               ? "hardcore" : "softcore",
                cheevo->info->title);
             return;
          }
@@ -1639,7 +1661,7 @@ static int rcheevos_prepare_hash_psx(rcheevos_coro_t* coro)
          free(coro->data);
          coro->data = (uint8_t*)malloc(coro->count);
          memcpy(coro->data, exe_name_buffer, exe_name_size);
-         coro->len = exe_name_size;
+         coro->len  = exe_name_size;
 
          memcpy((uint8_t*)coro->data + coro->len, buffer, sizeof(buffer));
          coro->len += sizeof(buffer);
@@ -1650,7 +1672,8 @@ static int rcheevos_prepare_hash_psx(rcheevos_coro_t* coro)
             if (to_read > 2048)
                to_read = 2048;
 
-            cdfs_read_file(&coro->cdfp, (uint8_t*)coro->data + coro->len, to_read);
+            cdfs_read_file(&coro->cdfp,
+                  (uint8_t*)coro->data + coro->len, to_read);
 
             coro->len += to_read;
          }
@@ -1697,11 +1720,26 @@ static int rcheevos_prepare_hash_nintendo_ds(rcheevos_coro_t* coro)
            intfstream_read(stream, header, sizeof(header));
         }
 
-        arm9_addr = header[0x20] | (header[0x21] << 8) | (header[0x22] << 16) | (header[0x23] << 24);
-        arm9_size = header[0x2C] | (header[0x2D] << 8) | (header[0x2E] << 16) | (header[0x2F] << 24);
-        arm7_addr = header[0x30] | (header[0x31] << 8) | (header[0x32] << 16) | (header[0x33] << 24);
-        arm7_size = header[0x3C] | (header[0x3D] << 8) | (header[0x3E] << 16) | (header[0x3F] << 24);
-        icon_addr = header[0x68] | (header[0x69] << 8) | (header[0x6A] << 16) | (header[0x6B] << 24);
+        arm9_addr =  header[0x20]        | 
+                    (header[0x21] << 8)  |
+                    (header[0x22] << 16) |
+                    (header[0x23] << 24);
+        arm9_size =  header[0x2C]        |
+                    (header[0x2D] << 8)  |
+                    (header[0x2E] << 16) |
+                    (header[0x2F] << 24);
+        arm7_addr =  header[0x30]        |
+                    (header[0x31] << 8)  |
+                    (header[0x32] << 16) |
+                    (header[0x33] << 24);
+        arm7_size =  header[0x3C]        |
+                    (header[0x3D] << 8)  |
+                    (header[0x3E] << 16) |
+                    (header[0x3F] << 24);
+        icon_addr =  header[0x68]        |
+                    (header[0x69] << 8)  |
+                    (header[0x6A] << 16) |
+                    (header[0x6B] << 24);
 
         hash_size = 0x160 + arm9_size + arm7_size + 0xA00;
         if (hash_size > 16 * 1024 * 1024)
@@ -1727,19 +1765,22 @@ static int rcheevos_prepare_hash_nintendo_ds(rcheevos_coro_t* coro)
               memcpy(hash_ptr, header, 0x160);
               hash_ptr += 0x160;
 
-              intfstream_seek(stream, arm9_addr + offset, RETRO_VFS_SEEK_POSITION_START);
+              intfstream_seek(stream,
+                    arm9_addr + offset, RETRO_VFS_SEEK_POSITION_START);
               intfstream_read(stream, hash_ptr, arm9_size);
               hash_ptr += arm9_size;
 
-              intfstream_seek(stream, arm7_addr + offset, RETRO_VFS_SEEK_POSITION_START);
+              intfstream_seek(stream,
+                    arm7_addr + offset, RETRO_VFS_SEEK_POSITION_START);
               intfstream_read(stream, hash_ptr, arm7_size);
               hash_ptr += arm7_size;
 
-              intfstream_seek(stream, icon_addr + offset, RETRO_VFS_SEEK_POSITION_START);
+              intfstream_seek(stream,
+                    icon_addr + offset, RETRO_VFS_SEEK_POSITION_START);
               intfstream_read(stream, hash_ptr, 0xA00);
 
               coro->len = hash_size;
-              success = 1;
+              success   = 1;
            }
         }
      }
@@ -1870,6 +1911,7 @@ static int rcheevos_iterate(rcheevos_coro_t* coro)
       /* Use the extensions supported by the core as a hint to what method we should use. */
       core_get_system_info(&coro->sysinfo);
       CHEEVOS_LOG(RCHEEVOS_TAG "no method for file extension, trying core supported extensions: %s\n", coro->sysinfo.valid_extensions);
+
       for (coro->i = 0; coro->i < ARRAY_SIZE(finders); coro->i++)
       {
          if (finders[coro->i].ext_hashes)
@@ -2012,11 +2054,11 @@ found:
       if (coro->settings->bools.cheevos_verbose_enable && rcheevos_locals.patchdata.core_count > 0)
       {
          char msg[256];
-         int mode               = RCHEEVOS_ACTIVE_SOFTCORE;
+         int mode                        = RCHEEVOS_ACTIVE_SOFTCORE;
          const rcheevos_cheevo_t* cheevo = rcheevos_locals.core;
          const rcheevos_cheevo_t* end    = cheevo + rcheevos_locals.patchdata.core_count;
-         int number_of_unlocked = rcheevos_locals.patchdata.core_count;
-         int number_of_unsupported = 0;
+         int number_of_unlocked          = rcheevos_locals.patchdata.core_count;
+         int number_of_unsupported       = 0;
 
          if (coro->settings->bools.cheevos_hardcore_mode_enable && !rcheevos_hardcore_paused)
             mode = RCHEEVOS_ACTIVE_HARDCORE;
@@ -2254,7 +2296,7 @@ found:
             free(coro->data);
             coro->data = (uint8_t*)malloc(coro->count);
             cdfs_read_file(&coro->cdfp, coro->data, coro->count);
-            coro->len = coro->count;
+            coro->len  = coro->count;
 
             cdfs_close_file(&coro->cdfp);
 
@@ -2296,12 +2338,13 @@ found:
             cdfs_seek_sector(&coro->cdfp, 1);
             cdfs_read_file(&coro->cdfp, buffer, 128);
 
-            if (strncmp("PC Engine CD-ROM SYSTEM", (const char*)& buffer[32], 23) != 0)
+            if (strncmp("PC Engine CD-ROM SYSTEM",
+                     (const char*)& buffer[32], 23) != 0)
             {
                CHEEVOS_LOG(RCHEEVOS_TAG "not a PC Engine CD\n", coro->gameid);
 
                cdfs_close_track(coro->track);
-               coro->track = NULL;
+               coro->track  = NULL;
 
                coro->gameid = 0;
                CORO_RET();
