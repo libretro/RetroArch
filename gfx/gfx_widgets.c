@@ -701,10 +701,8 @@ static void gfx_widgets_msg_queue_kill_end(void *userdata)
    menu_widget_msg_t *msg = (menu_widget_msg_t*)
       current_msgs->list[msg_queue_kill].userdata;
 
-   if (!msg)
-      return;
-
-   gfx_widgets_msg_queue_free(msg, true);
+   if (msg)
+      gfx_widgets_msg_queue_free(msg, true);
 }
 
 static void gfx_widgets_msg_queue_kill(unsigned idx)
@@ -901,11 +899,10 @@ float gfx_widgets_get_thumbnail_scale_factor(
    return (dst_width / image_width);
 }
 
-static void gfx_widgets_start_msg_expiration_timer(menu_widget_msg_t *msg_widget, unsigned duration)
+static void gfx_widgets_start_msg_expiration_timer(
+      menu_widget_msg_t *msg_widget, unsigned duration)
 {
    gfx_timer_ctx_entry_t timer;
-   if (msg_widget->expiration_timer_started)
-      return;
 
    timer.cb       = gfx_widgets_msg_queue_expired;
    timer.duration = duration;
@@ -1045,9 +1042,10 @@ void gfx_widgets_iterate(
       /* Start expiration timer if not associated to a task */
       if (!msg_widget->task_ptr)
       {
-         gfx_widgets_start_msg_expiration_timer(
-               msg_widget, MSG_QUEUE_ANIMATION_DURATION * 2 
-               + msg_widget->duration);
+         if (!msg_widget->expiration_timer_started)
+            gfx_widgets_start_msg_expiration_timer(
+                  msg_widget, MSG_QUEUE_ANIMATION_DURATION * 2 
+                  + msg_widget->duration);
       }
       /* Else, start hourglass animation timer */
       else
@@ -1071,7 +1069,8 @@ void gfx_widgets_iterate(
          continue;
 
       if (msg->task_ptr && (msg->task_finished || msg->task_cancelled))
-         gfx_widgets_start_msg_expiration_timer(msg, TASK_FINISHED_DURATION);
+         if (!msg_widget->expiration_timer_started)
+            gfx_widgets_start_msg_expiration_timer(msg, TASK_FINISHED_DURATION);
 
       if (msg->expired && !widgets_moving)
       {
@@ -2316,14 +2315,14 @@ void gfx_widgets_cleanup_load_content_animation(void)
 }
 #endif
 
-void gfx_widgets_start_load_content_animation(const char *content_name, bool remove_extension)
+void gfx_widgets_start_load_content_animation(
+      const char *content_name, bool remove_extension)
 {
 #ifdef HAVE_MENU
    /* TODO: finish the animation based on design, correct all timings */
+   int i;
    gfx_animation_ctx_entry_t entry;
    gfx_timer_ctx_entry_t timer_entry;
-   int i;
-
    float icon_color[16] = COLOR_HEX_TO_FLOAT(0x0473C9, 1.0f); /* TODO: random color */
    unsigned timing      = 0;
 
