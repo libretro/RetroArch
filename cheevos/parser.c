@@ -349,12 +349,10 @@ static char* rcheevos_unescape_string(const char* string, size_t length)
                *buffer_it++ = escaped_char;
                string += 2;
                break;
-         };
+         }
       }
       else
-      {
          *buffer_it++ = *string++;
-      }
    }
    *buffer_it = '\0';
 
