@@ -47,6 +47,38 @@
 #include "../cheevos/badges.h"
 #endif
 
+#define BASE_FONT_SIZE 32.0f
+
+#define MSG_QUEUE_FONT_SIZE (BASE_FONT_SIZE * 0.69f)
+
+#ifdef HAVE_CHEEVOS
+#define CHEEVO_QUEUE_SIZE 8
+#endif
+
+#ifdef HAVE_MENU
+#define ANIMATION_LOAD_CONTENT_DURATION            333
+
+#define LOAD_CONTENT_ANIMATION_INITIAL_ICON_SIZE   320
+#define LOAD_CONTENT_ANIMATION_TARGET_ICON_SIZE    240
+#endif
+
+enum gfx_widgets_icon
+{
+   MENU_WIDGETS_ICON_PAUSED = 0,
+   MENU_WIDGETS_ICON_FAST_FORWARD,
+   MENU_WIDGETS_ICON_REWIND,
+   MENU_WIDGETS_ICON_SLOW_MOTION,
+
+   MENU_WIDGETS_ICON_HOURGLASS,
+   MENU_WIDGETS_ICON_CHECK,
+
+   MENU_WIDGETS_ICON_INFO,
+
+   MENU_WIDGETS_ICON_ACHIEVEMENT,
+
+   MENU_WIDGETS_ICON_LAST
+};
+
 /* Font data */
 typedef struct
 {
@@ -106,24 +138,6 @@ typedef struct menu_widget_msg
    gfx_timer_t hourglass_timer;
 } menu_widget_msg_t;
 
-enum gfx_widgets_icon
-{
-   MENU_WIDGETS_ICON_PAUSED = 0,
-   MENU_WIDGETS_ICON_FAST_FORWARD,
-   MENU_WIDGETS_ICON_REWIND,
-   MENU_WIDGETS_ICON_SLOW_MOTION,
-
-   MENU_WIDGETS_ICON_HOURGLASS,
-   MENU_WIDGETS_ICON_CHECK,
-
-   MENU_WIDGETS_ICON_INFO,
-
-   MENU_WIDGETS_ICON_ACHIEVEMENT,
-
-   MENU_WIDGETS_ICON_LAST
-};
-
-
 /* TODO/FIXME - global state - perhaps move outside this file */
 static bool widgets_inited                = false;
 static bool widgets_active                = false;
@@ -150,8 +164,6 @@ static gfx_widget_fonts_t gfx_widget_fonts;
 
 #ifdef HAVE_CHEEVOS
 /* Achievement notification */
-#define CHEEVO_QUEUE_SIZE 8
-
 static cheevo_popup cheevo_popup_queue[CHEEVO_QUEUE_SIZE];
 static int cheevo_popup_queue_read_index = -1;
 static int cheevo_popup_queue_write_index = 0;
@@ -167,64 +179,58 @@ static float cheevo_y           = 0.0f;
 static unsigned cheevo_width    = 0;
 static unsigned cheevo_height   = 0;
 
-static void gfx_widgets_start_achievement_notification(void);
 #endif
 
 #ifdef HAVE_MENU
 /* Load content animation */
-#define ANIMATION_LOAD_CONTENT_DURATION            333
+static bool load_content_animation_running               = false;
+static char *load_content_animation_content_name         = NULL;
+static char *load_content_animation_playlist_name        = NULL;
+static uintptr_t load_content_animation_icon             = 0;
 
-#define LOAD_CONTENT_ANIMATION_INITIAL_ICON_SIZE   320
-#define LOAD_CONTENT_ANIMATION_TARGET_ICON_SIZE    240
-
-static bool load_content_animation_running            = false;
-static char *load_content_animation_content_name      = NULL;
-static char *load_content_animation_playlist_name     = NULL;
-static uintptr_t load_content_animation_icon          = 0;
-
-static float load_content_animation_icon_color[16];
-static float load_content_animation_icon_size;
-static float load_content_animation_icon_alpha;
-static float load_content_animation_fade_alpha;
-static float load_content_animation_final_fade_alpha;
+static float load_content_animation_icon_color[16]       = {0.0f};
+static float load_content_animation_icon_size            = 0.0f;
+static float load_content_animation_icon_alpha           = 0.0f;
+static float load_content_animation_fade_alpha           = 0.0f;
+static float load_content_animation_final_fade_alpha     = 0.0f;
 
 static gfx_timer_t load_content_animation_end_timer;
 
-static unsigned load_content_animation_icon_size_initial;
-static unsigned load_content_animation_icon_size_target;
+static unsigned load_content_animation_icon_size_initial = 0;
+static unsigned load_content_animation_icon_size_target  = 0;
 #endif
 
-static float gfx_widgets_backdrop_orig[16] = {
+static float gfx_widgets_backdrop_orig[16]               = {
    0.00, 0.00, 0.00, 0.75,
    0.00, 0.00, 0.00, 0.75,
    0.00, 0.00, 0.00, 0.75,
    0.00, 0.00, 0.00, 0.75,
 };
 
-static float gfx_widgets_backdrop[16] = {
+static float gfx_widgets_backdrop[16]                    = {
       0.00, 0.00, 0.00, 0.75,
       0.00, 0.00, 0.00, 0.75,
       0.00, 0.00, 0.00, 0.75,
       0.00, 0.00, 0.00, 0.75,
 };
 
-static fifo_buffer_t *msg_queue                  = NULL;
-static file_list_t *current_msgs                 = NULL;
-static unsigned msg_queue_kill                   = 0;
+static fifo_buffer_t *msg_queue                          = NULL;
+static file_list_t *current_msgs                         = NULL;
+static unsigned msg_queue_kill                           = 0;
 
 /* Count of messages bound to a task in current_msgs */
-static unsigned msg_queue_tasks_count            = 0;
+static unsigned msg_queue_tasks_count                    = 0;
 
-static uintptr_t msg_queue_icon                  = 0;
-static uintptr_t msg_queue_icon_outline          = 0;
-static uintptr_t msg_queue_icon_rect             = 0;
-static bool msg_queue_has_icons                  = false;
+static uintptr_t msg_queue_icon                          = 0;
+static uintptr_t msg_queue_icon_outline                  = 0;
+static uintptr_t msg_queue_icon_rect                     = 0;
+static bool msg_queue_has_icons                          = false;
 
-static gfx_animation_ctx_tag gfx_widgets_generic_tag = (uintptr_t)&widgets_active;
+static gfx_animation_ctx_tag gfx_widgets_generic_tag     = (uintptr_t)&widgets_active;
 
 /* There can only be one message animation at a time to 
  * avoid confusing users */
-static bool widgets_moving                       = false;
+static bool widgets_moving                               = false;
 
 /* Icons */
 static const char *gfx_widgets_icons_names[MENU_WIDGETS_ICON_LAST] = {
@@ -242,24 +248,20 @@ static const char *gfx_widgets_icons_names[MENU_WIDGETS_ICON_LAST] = {
 };
 
 static uintptr_t gfx_widgets_icons_textures[
-   MENU_WIDGETS_ICON_LAST]                   = {0};
+   MENU_WIDGETS_ICON_LAST]                               = {0};
 
 #ifdef HAVE_TRANSLATE
 /* AI Service Overlay */
-static int ai_service_overlay_state               = 0;
-static unsigned ai_service_overlay_width          = 0;
-static unsigned ai_service_overlay_height         = 0;
-static uintptr_t ai_service_overlay_texture       = 0;
+static int ai_service_overlay_state                      = 0;
+static unsigned ai_service_overlay_width                 = 0;
+static unsigned ai_service_overlay_height                = 0;
+static uintptr_t ai_service_overlay_texture              = 0;
 #endif
 
-/* Metrics */
-#define BASE_FONT_SIZE 32.0f
-#define MSG_QUEUE_FONT_SIZE (BASE_FONT_SIZE * 0.69f)
+static float last_scale_factor                           = 0.0f;
 
-static float last_scale_factor            = 0.0f;
-
-static unsigned simple_widget_padding     = 0;
-static unsigned simple_widget_height      = 0;
+static unsigned simple_widget_padding                    = 0;
+static unsigned simple_widget_height                     = 0;
 
 static unsigned msg_queue_height;
 static unsigned msg_queue_icon_size_x;
@@ -285,6 +287,11 @@ static unsigned divider_width_1px            = 1;
 
 static unsigned last_video_width             = 0;
 static unsigned last_video_height            = 0;
+
+/* Forward declarations */
+#ifdef HAVE_CHEEVOS
+static void gfx_widgets_start_achievement_notification(void);
+#endif
 
 bool gfx_widgets_active(void)
 {
@@ -365,8 +372,6 @@ const static gfx_widget_t* const widgets[] = {
    &gfx_widget_generic_message,
    &gfx_widget_libretro_message
 };
-
-static const size_t widgets_len = sizeof(widgets) / sizeof(widgets[0]);
 
 static void msg_widget_msg_transition_animation_done(void *userdata)
 {
@@ -990,7 +995,7 @@ void gfx_widgets_iterate(
       video_driver_monitor_reset();
    }
 
-   for (i = 0; i < widgets_len; i++)
+   for (i = 0; i < ARRAY_SIZE(widgets); i++)
    {
       const gfx_widget_t* widget = widgets[i];
 
@@ -1780,7 +1785,7 @@ void gfx_widgets_frame(void *data)
             gfx_widgets_icons_textures[MENU_WIDGETS_ICON_SLOW_MOTION], (fps_show ? simple_widget_height : 0), top_right_x_advance,
             MSG_SLOW_MOTION);
 
-   for (i = 0; i < widgets_len; i++)
+   for (i = 0; i < ARRAY_SIZE(widgets); i++)
    {
       const gfx_widget_t* widget = widgets[i];
 
@@ -1839,7 +1844,7 @@ bool gfx_widgets_init(
 
       gfx_widgets_frame_count = 0;
 
-      for (i = 0; i < widgets_len; i++)
+      for (i = 0; i < ARRAY_SIZE(widgets); i++)
       {
          const gfx_widget_t* widget = widgets[i];
 
@@ -2011,7 +2016,7 @@ static void gfx_widgets_layout(
    if (last_scale_factor > 1.0f)
       divider_width_1px = (unsigned)(last_scale_factor + 0.5f);
 
-   for (i = 0; i < widgets_len; i++)
+   for (i = 0; i < ARRAY_SIZE(widgets); i++)
    {
       const gfx_widget_t* widget = widgets[i];
 
@@ -2079,7 +2084,7 @@ static void gfx_widgets_context_reset(bool is_threaded,
 
    msg_queue_has_icons = msg_queue_icon && msg_queue_icon_outline && msg_queue_icon_rect;
 
-   for (i = 0; i < widgets_len; i++)
+   for (i = 0; i < ARRAY_SIZE(widgets); i++)
    {
       const gfx_widget_t* widget = widgets[i];
 
@@ -2111,7 +2116,7 @@ static void gfx_widgets_context_destroy(void)
 {
    size_t i;
 
-   for (i = 0; i < widgets_len; i++)
+   for (i = 0; i < ARRAY_SIZE(widgets); i++)
    {
       const gfx_widget_t* widget = widgets[i];
 
@@ -2178,7 +2183,7 @@ static void gfx_widgets_free(void)
    widgets_inited = false;
    widgets_active = false;
 
-   for (i = 0; i < widgets_len; i++)
+   for (i = 0; i < ARRAY_SIZE(widgets); i++)
    {
       const gfx_widget_t* widget = widgets[i];
 
