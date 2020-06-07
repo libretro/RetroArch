@@ -2356,11 +2356,12 @@ static void materialui_compute_entries_box_default(
          (int)(mui->margin * 2) -
          (int)(mui->landscape_optimization.entry_margin * 2);
    float sum              = 0;
+   size_t entries_end     = menu_entries_get_size();
 
    if (!list)
       return;
 
-   for (i = 0; i < menu_entries_get_size(); i++)
+   for (i = 0; i < entries_end; i++)
    {
       unsigned num_sublabel_lines = 0;
       materialui_node_t *node     = (materialui_node_t*)
@@ -2412,6 +2413,7 @@ static void materialui_compute_entries_box_playlist_list(
    float node_x           = (float)mui->landscape_optimization.border_width;
    int usable_width       = node_entry_width - (int)(mui->margin * 2);
    float sum              = 0;
+   size_t entries_end     = menu_entries_get_size();
 
    if (!list)
       return;
@@ -2443,7 +2445,7 @@ static void materialui_compute_entries_box_playlist_list(
          usable_width -= mui->thumbnail_width_max + thumbnail_margin;
    }
 
-   for (i = 0; i < menu_entries_get_size(); i++)
+   for (i = 0; i < entries_end; i++)
    {
       unsigned num_sublabel_lines = 0;
       materialui_node_t *node     = (materialui_node_t*)
@@ -2503,11 +2505,12 @@ static void materialui_compute_entries_box_playlist_dual_icon(
          (float)mui->thumbnail_height_max +
          ((float)mui->dip_base_unit_size / 5.0f);
    float sum               = 0;
+   size_t entries_end      = menu_entries_get_size();
 
    if (!list)
       return;
 
-   for (i = 0; i < menu_entries_get_size(); i++)
+   for (i = 0; i < entries_end; i++)
    {
       materialui_node_t *node = (materialui_node_t*)
             file_list_get_userdata_at_offset(list, i);
@@ -2569,11 +2572,12 @@ static void materialui_compute_entries_box_playlist_desktop(
    float node_entry_height = node_text_height +
          ((float)mui->dip_base_unit_size / 7.0f);
    float sum               = 0;
+   size_t entries_end      = menu_entries_get_size();
 
    if (!list)
       return;
 
-   for (i = 0; i < menu_entries_get_size(); i++)
+   for (i = 0; i < entries_end; i++)
    {
       materialui_node_t *node = (materialui_node_t*)
             file_list_get_userdata_at_offset(list, i);
@@ -8801,12 +8805,12 @@ static int materialui_pointer_up(void *userdata,
       menu_file_list_cbs_t *cbs,
       menu_entry_t *entry, unsigned action)
 {
+   unsigned width;
+   unsigned height;
    unsigned header_height   = gfx_display_get_header_height();
    size_t selection         = menu_navigation_get_selection();
    size_t entries_end       = menu_entries_get_size();
    materialui_handle_t *mui = (materialui_handle_t*)userdata;
-   unsigned width;
-   unsigned height;
 
    if (!mui)
       return -1;
