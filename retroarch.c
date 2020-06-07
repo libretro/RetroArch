@@ -6476,7 +6476,8 @@ bool menu_shader_manager_set_preset(struct video_shader *shader,
     * Used when a preset is directly loaded.
     * No point in updating when the Preset was
     * created from the menu itself. */
-   if (!(conf = video_shader_read_preset(preset_path)))
+   if (  !shader ||
+         !(conf = video_shader_read_preset(preset_path)))
    {
       ret = false;
       goto end;
