@@ -617,9 +617,6 @@ static void gfx_widgets_msg_queue_move(void)
    /* there should always be one and only one unfolded message */
    menu_widget_msg_t *unfold  = NULL; 
 
-   if (current_msgs->size == 0)
-      return;
-
    for (i = (int)(current_msgs->size-1); i >= 0; i--)
    {
       menu_widget_msg_t *msg = (menu_widget_msg_t*)
@@ -743,7 +740,8 @@ static void gfx_widgets_msg_queue_kill(unsigned idx)
    gfx_animation_push(&entry);
 
    /* Move all messages back to their correct position */
-   gfx_widgets_msg_queue_move();
+   if (current_msgs->size != 0)
+      gfx_widgets_msg_queue_move();
 }
 
 void gfx_widgets_draw_icon(
@@ -1058,7 +1056,8 @@ void gfx_widgets_iterate(
          gfx_widgets_hourglass_end(msg_widget);
       }
 
-      gfx_widgets_msg_queue_move();
+      if (current_msgs->size != 0)
+         gfx_widgets_msg_queue_move();
    }
 
    /* Kill first expired message */
