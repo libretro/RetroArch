@@ -17,7 +17,7 @@ ifeq ($(DEBUG), 1)
    OPTIMIZE_LV	:= -O0 -g
 	RARCH_DEFINES += -DDEBUG
 else
-   OPTIMIZE_LV	:= -O2
+   OPTIMIZE_LV	:= -O3
 	LDFLAGS :=  -s
 endif
 
