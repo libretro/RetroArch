@@ -4869,7 +4869,6 @@ static void rgui_update_menu_sublabel(rgui_t *rgui)
    if (menu_show_sublabels && selection < menu_entries_get_size())
    {
       menu_entry_t entry;
-      const char *sublabel     = NULL;
       
       menu_entry_init(&entry);
       entry.path_enabled       = false;
@@ -4878,9 +4877,7 @@ static void rgui_update_menu_sublabel(rgui_t *rgui)
       entry.value_enabled      = false;
       menu_entry_get(&entry, 0, (unsigned)selection, NULL, true);
       
-      menu_entry_get_sublabel(&entry, &sublabel);
-      
-      if (!string_is_empty(sublabel))
+      if (!string_is_empty(entry.sublabel))
       {
          size_t line_index;
          static const char* const 
@@ -4889,7 +4886,7 @@ static void rgui_update_menu_sublabel(rgui_t *rgui)
          /* Sanitise sublabel
           * > Replace newline characters with standard delimiter
           * > Remove whitespace surrounding each sublabel line */
-         struct string_list *list = string_split(sublabel, "\n");
+         struct string_list *list = string_split(entry.sublabel, "\n");
 
          if (list)
          {

@@ -202,10 +202,6 @@ typedef struct menu_entry
 
 enum menu_entry_type menu_entry_get_type(uint32_t i);
 
-void menu_entry_get_path(menu_entry_t *entry, const char **path);
-
-void menu_entry_get_label(menu_entry_t *entry, const char **label);
-
 uint32_t menu_entry_get_bool_value(uint32_t i);
 
 struct string_list *menu_entry_enum_values(uint32_t i);
@@ -231,8 +227,6 @@ void menu_entry_pathdir_extensions(uint32_t i, char *s, size_t len);
 void menu_entry_reset(uint32_t i);
 
 void menu_entry_get_rich_label(menu_entry_t *entry, const char **rich_label);
-
-void menu_entry_get_sublabel(menu_entry_t *entry, const char **sublabel);
 
 void menu_entry_get_value(menu_entry_t *entry, const char **value);
 

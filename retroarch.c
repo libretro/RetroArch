@@ -3748,14 +3748,6 @@ void menu_entry_init(menu_entry_t *entry)
    entry->sublabel_enabled   = true;
 }
 
-void menu_entry_get_path(menu_entry_t *entry, const char **path)
-{
-   if (!entry || !path)
-      return;
-
-   *path = entry->path;
-}
-
 void menu_entry_get_rich_label(menu_entry_t *entry, const char **rich_label)
 {
    if (!entry || !rich_label)
@@ -3765,22 +3757,6 @@ void menu_entry_get_rich_label(menu_entry_t *entry, const char **rich_label)
       *rich_label = entry->rich_label;
    else
       *rich_label = entry->path;
-}
-
-void menu_entry_get_sublabel(menu_entry_t *entry, const char **sublabel)
-{
-   if (!entry || !sublabel)
-      return;
-
-   *sublabel = entry->sublabel;
-}
-
-void menu_entry_get_label(menu_entry_t *entry, const char **label)
-{
-   if (!entry || !label)
-      return;
-
-   *label = entry->label;
 }
 
 uint32_t menu_entry_get_bool_value(uint32_t i)
@@ -5189,11 +5165,10 @@ static bool menu_init(struct rarch_state *p_rarch)
 const char *menu_driver_ident(void)
 {
    struct rarch_state   *p_rarch  = &rarch_st;
-   if (!p_rarch->menu_driver_alive)
-      return NULL;
-   if (!p_rarch->menu_driver_ctx || !p_rarch->menu_driver_ctx->ident)
-      return NULL;
-  return p_rarch->menu_driver_ctx->ident;
+   if (p_rarch->menu_driver_alive)
+      if (p_rarch->menu_driver_ctx && p_rarch->menu_driver_ctx->ident)
+         return p_rarch->menu_driver_ctx->ident;
+   return NULL;
 }
 
 void menu_driver_frame(bool menu_is_alive, video_frame_info_t *video_info)

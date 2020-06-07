@@ -2308,7 +2308,6 @@ static unsigned materialui_count_sublabel_lines(
 {
    menu_entry_t entry;
    char wrapped_sublabel_str[MENU_SUBLABEL_MAX_LENGTH];
-   const char *sublabel_str = NULL;
    int sublabel_width_max   = 0;
 
    wrapped_sublabel_str[0] = '\0';
@@ -2321,10 +2320,8 @@ static unsigned materialui_count_sublabel_lines(
    entry.value_enabled      = false;
    menu_entry_get(&entry, 0, entry_idx, NULL, true);
 
-   menu_entry_get_sublabel(&entry, &sublabel_str);
-
    /* If sublabel is empty, return immediately */
-   if (string_is_empty(sublabel_str))
+   if (string_is_empty(entry.sublabel))
       return 0;
 
    /* Wrap sublabel string to fit available width */
@@ -2332,7 +2329,7 @@ static unsigned materialui_count_sublabel_lines(
          (has_icon ? (int)mui->icon_size : 0);
 
    word_wrap(
-         wrapped_sublabel_str, sublabel_str,
+         wrapped_sublabel_str, entry.sublabel,
          sublabel_width_max / (int)mui->font_data.hint.glyph_width,
          true, 0);
 
@@ -3441,7 +3438,6 @@ static void materialui_render_menu_entry_default(
 {
    const char *entry_value                           = NULL;
    const char *entry_label                           = NULL;
-   const char *entry_sublabel                        = NULL;
    unsigned entry_type                               = 0;
    enum materialui_entry_value_type entry_value_type = MUI_ENTRY_VALUE_NONE;
    unsigned entry_value_width                        = 0;
@@ -3470,7 +3466,6 @@ static void materialui_render_menu_entry_default(
    /* Read entry parameters */
    menu_entry_get_rich_label(entry, &entry_label);
    menu_entry_get_value(entry, &entry_value);
-   menu_entry_get_sublabel(entry, &entry_sublabel);
    entry_type              = entry->type;
 
    entry_file_type         = msg_hash_to_file_type(
@@ -3532,7 +3527,7 @@ static void materialui_render_menu_entry_default(
    /* Draw entry sublabel
     * > Must be done before label + value, since it
     *   affects y offset positions */
-   if (!string_is_empty(entry_sublabel))
+   if (!string_is_empty(entry->sublabel))
    {
       /* Note: Due to the way the selection highlight
        * marker is drawn (height is effectively 1px larger
@@ -3559,7 +3554,7 @@ static void materialui_render_menu_entry_default(
       sublabel_y   = entry_y + vertical_margin + mui->font_data.list.line_height + (int)mui->sublabel_gap + mui->font_data.hint.line_ascender;
 
       /* Wrap sublabel string */
-      word_wrap(wrapped_sublabel, entry_sublabel,
+      word_wrap(wrapped_sublabel, entry->sublabel,
             (int)((usable_width - (int)mui->sublabel_padding) / mui->font_data.hint.glyph_width),
             true, 0);
 
@@ -3765,7 +3760,6 @@ static void materialui_render_menu_entry_playlist_list(
       int x_offset)
 {
    const char *entry_label    = NULL;
-   const char *entry_sublabel = NULL;
    int entry_x                = x_offset + node->x;
    int entry_y                = header_height - mui->scroll_y + node->y;
    int divider_y              = entry_y + (int)node->entry_height;
@@ -3788,7 +3782,6 @@ static void materialui_render_menu_entry_playlist_list(
 
    /* Read entry parameters */
    menu_entry_get_rich_label(entry, &entry_label);
-   menu_entry_get_sublabel(entry, &entry_sublabel);
 
    /* If thumbnails are *not* enabled, increase entry
     * margin and decrease usable width by landscape
@@ -3859,7 +3852,7 @@ static void materialui_render_menu_entry_playlist_list(
    /* Draw entry sublabel
     * > Must be done before label, since it
     *   affects y offset positions */
-   if (!string_is_empty(entry_sublabel))
+   if (!string_is_empty(entry->sublabel))
    {
       /* Note: Due to the way the selection highlight
        * marker is drawn (height is effectively 1px larger
@@ -3880,7 +3873,7 @@ static void materialui_render_menu_entry_playlist_list(
       sublabel_y   = entry_y + vertical_margin + mui->font_data.list.line_height + (int)mui->sublabel_gap + mui->font_data.hint.line_ascender;
 
       /* Wrap sublabel string */
-      word_wrap(wrapped_sublabel, entry_sublabel,
+      word_wrap(wrapped_sublabel, entry->sublabel,
             (int)((usable_width - (int)mui->sublabel_padding) / mui->font_data.hint.glyph_width),
             true, 0);
 
