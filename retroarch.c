@@ -22478,21 +22478,13 @@ static void menu_input_set_pointer_visibility(retro_time_t current_time)
    }
 }
 
-static float menu_input_get_dpi(void)
+static float menu_input_get_dpi(struct rarch_state *p_rarch)
 {
    static unsigned last_video_width  = 0;
    static unsigned last_video_height = 0;
    static float dpi                  = 0.0f;
    static bool dpi_cached            = false;
-   bool menu_has_fb                  = false;
-   struct rarch_state       *p_rarch = &rarch_st;
    menu_handle_t             *menu   = p_rarch->menu_driver_data;
-
-   if (!menu)
-      return 0.0f;
-
-   menu_has_fb                       = menu->driver_ctx
-      && menu->driver_ctx->set_texture;
 
    /* Regardless of menu driver, need 'actual' screen DPI
     * Note: DPI is a fixed hardware property. To minimise performance
@@ -22502,16 +22494,14 @@ static float menu_input_get_dpi(void)
        (p_rarch->video_driver_width  != last_video_width) ||
        (p_rarch->video_driver_height != last_video_height))
    {
-      gfx_ctx_metrics_t metrics;
-
-      metrics.type  = DISPLAY_METRIC_DPI;
-      metrics.value = &dpi;
-
       /* Note: If video_context_driver_get_metrics() fails,
        * we don't know what happened to dpi - so ensure it
        * is reset to a sane value */
-      if (!video_context_driver_get_metrics(&metrics))
-         dpi = 0.0f;
+      if (!p_rarch->current_video_context.get_metrics(
+            p_rarch->video_context_data,
+            DISPLAY_METRIC_DPI,
+            &dpi))
+         dpi            = 0.0f;
 
       dpi_cached        = true;
       last_video_width  = p_rarch->video_driver_width;
@@ -22523,22 +22513,29 @@ static float menu_input_get_dpi(void)
     * DPI in a traditional sense is therefore meaningless,
     * so generate a substitute value based upon framebuffer
     * dimensions */
-   if ((dpi > 0.0f) && menu_has_fb)
+   if (dpi > 0.0f)
    {
-      size_t fb_pitch;
-      unsigned fb_width, fb_height;
+      bool menu_has_fb = 
+            menu->driver_ctx
+         && menu->driver_ctx->set_texture;
 
-      /* Read framebuffer info */
-      gfx_display_get_fb_size(&fb_width, &fb_height, &fb_pitch);
+      if (menu_has_fb)
+      {
+         size_t fb_pitch;
+         unsigned fb_width, fb_height;
 
-      /* Rationale for current 'DPI' determination method:
-       * - Divide screen height by DPI, to get number of vertical
-       *   '1 inch' squares
-       * - Divide RGUI framebuffer height by number of vertical
-       *   '1 inch' squares to get number of menu space pixels
-       *   per inch
-       * This is crude, but should be sufficient... */
-      return ((float)fb_height / (float)p_rarch->video_driver_height) * dpi;
+         /* Read framebuffer info */
+         gfx_display_get_fb_size(&fb_width, &fb_height, &fb_pitch);
+
+         /* Rationale for current 'DPI' determination method:
+          * - Divide screen height by DPI, to get number of vertical
+          *   '1 inch' squares
+          * - Divide RGUI framebuffer height by number of vertical
+          *   '1 inch' squares to get number of menu space pixels
+          *   per inch
+          * This is crude, but should be sufficient... */
+         return ((float)fb_height / (float)p_rarch->video_driver_height) * dpi;
+      }
    }
 
    return dpi;
@@ -22551,11 +22548,10 @@ static float menu_input_get_dpi(void)
  * I consider this current 'close_messagebox' a hack,
  * but at least it prevents undefined/dangerous
  * behaviour... */
-static void menu_input_pointer_close_messagebox(void)
+static void menu_input_pointer_close_messagebox(struct rarch_state *p_rarch)
 {
    const char *label            = NULL;
    bool pop_stack               = false;
-   struct rarch_state  *p_rarch = &rarch_st;
    struct menu_state *menu_st   = &p_rarch->menu_driver_state;
 
    /* Determine whether this is a help or info
@@ -22702,7 +22698,7 @@ static int menu_input_pointer_post_iterate(
          {
             /* Pointer is being held down
              * (i.e. for more than one frame) */
-            float dpi = menu_input_get_dpi();
+            float dpi = menu ? menu_input_get_dpi(p_rarch) : 0.0f;
 
             /* > Update deltas + acceleration & detect press direction
              *   Note: We only do this if the pointer has moved above
@@ -22949,7 +22945,7 @@ static int menu_input_pointer_post_iterate(
           * > If a message box is shown, any kind of pointer
           *   gesture should close it */
          else if (messagebox_active)
-            menu_input_pointer_close_messagebox();
+            menu_input_pointer_close_messagebox(p_rarch);
          /* Normal menu input */
          else
          {
@@ -22967,9 +22963,12 @@ static int menu_input_pointer_post_iterate(
             else
             {
                /* Pointer has moved - check if this is a swipe */
-               float dpi = menu_input_get_dpi();
+               float dpi = menu ? menu_input_get_dpi(p_rarch) : 0.0f;
 
-               if ((dpi > 0.0f) && (menu_input->pointer.press_duration < MENU_INPUT_SWIPE_TIMEOUT))
+               if ((dpi > 0.0f) 
+                     && 
+                     (menu_input->pointer.press_duration < 
+                      MENU_INPUT_SWIPE_TIMEOUT))
                {
                   uint16_t dpi_threshold_swipe         =
                         (uint16_t)((dpi * MENU_INPUT_DPI_THRESHOLD_SWIPE) + 0.5f);
@@ -23063,7 +23062,7 @@ static int menu_input_pointer_post_iterate(
    {
       /* If currently showing a message box, close it */
       if (messagebox_active)
-         menu_input_pointer_close_messagebox();
+         menu_input_pointer_close_messagebox(p_rarch);
       /* ...otherwise, invoke standard MENU_ACTION_CANCEL
        * action */
       else
@@ -30611,13 +30610,10 @@ bool video_context_driver_get_video_output_size(gfx_ctx_size_t *size_data)
 bool video_context_driver_get_metrics(gfx_ctx_metrics_t *metrics)
 {
    struct rarch_state *p_rarch   = &rarch_st;
-   if (
-         p_rarch->current_video_context.get_metrics(
-            p_rarch->video_context_data,
-            metrics->type,
-            metrics->value))
-      return true;
-   return false;
+   return p_rarch->current_video_context.get_metrics(
+         p_rarch->video_context_data,
+         metrics->type,
+         metrics->value);
 }
 
 bool video_context_driver_get_refresh_rate(float *refresh_rate)
