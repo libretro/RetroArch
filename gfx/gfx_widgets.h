@@ -362,6 +362,7 @@ bool gfx_widgets_init(
 bool gfx_widgets_deinit(bool widgets_persisting);
 
 void gfx_widgets_msg_queue_push(
+      void *data,
       retro_task_t *task, const char *msg,
       unsigned duration,
       char *title,
@@ -374,6 +375,7 @@ void gfx_widget_volume_update_and_show(float new_volume,
       bool mute);
 
 void gfx_widgets_iterate(
+      void *data,
       unsigned width, unsigned height, bool fullscreen,
       const char *dir_assets, char *font_path,
       bool is_threaded);
@@ -416,7 +418,9 @@ void gfx_widgets_frame(void *data);
 
 void *dispwidget_get_ptr(void);
 
-bool gfx_widgets_set_fps_text(const char *new_fps_text);
+bool gfx_widgets_set_fps_text(
+      void *data,
+      const char *new_fps_text);
 
 extern const gfx_widget_t gfx_widget_screenshot;
 extern const gfx_widget_t gfx_widget_volume;

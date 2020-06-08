@@ -30701,6 +30701,7 @@ static void video_driver_frame(const void *data, unsigned width,
 
          if (msg_found)
             gfx_widgets_msg_queue_push(
+                  &p_rarch->dispwidget_st,
                   NULL,
                   msg_entry.msg,
                   roundf((float)msg_entry.duration / 60.0f * 1000.0f),
@@ -30804,7 +30805,9 @@ static void video_driver_frame(const void *data, unsigned width,
    {
 #if defined(HAVE_GFX_WIDGETS)
       if (widgets_active)
-         gfx_widgets_set_fps_text(fps_text);
+         gfx_widgets_set_fps_text(
+               &p_rarch->dispwidget_st,
+               fps_text);
       else
 #endif
       {
@@ -34953,7 +34956,16 @@ static void runloop_task_msg_queue_push(
       if (is_accessibility_enabled(p_rarch))
          accessibility_speak_priority(p_rarch, (char*)msg, 0);
 #endif
-      gfx_widgets_msg_queue_push(task, msg, duration, NULL, (enum message_queue_icon)MESSAGE_QUEUE_CATEGORY_INFO, (enum message_queue_category)MESSAGE_QUEUE_ICON_DEFAULT, prio, flush,
+      gfx_widgets_msg_queue_push(
+            &p_rarch->dispwidget_st,
+            task,
+            msg,
+            duration,
+            NULL,
+            (enum message_queue_icon)MESSAGE_QUEUE_CATEGORY_INFO,
+            (enum message_queue_category)MESSAGE_QUEUE_ICON_DEFAULT,
+            prio,
+            flush,
 #ifdef HAVE_MENU
             p_rarch->menu_driver_alive
 #else
@@ -35943,9 +35955,16 @@ void runloop_msg_queue_push(const char *msg,
 #if defined(HAVE_GFX_WIDGETS)
    if (widgets_active)
    {
-      gfx_widgets_msg_queue_push(NULL, msg,
+      gfx_widgets_msg_queue_push(
+            &p_rarch->dispwidget_st,
+            NULL,
+            msg,
             roundf((float)duration / 60.0f * 1000.0f),
-            title, icon, category, prio, flush,
+            title,
+            icon,
+            category,
+            prio,
+            flush,
 #ifdef HAVE_MENU
             p_rarch->menu_driver_alive
 #else
@@ -36518,6 +36537,7 @@ static enum runloop_state runloop_check_state(
 
       RUNLOOP_MSG_QUEUE_LOCK();
       gfx_widgets_iterate(
+            &p_rarch->dispwidget_st,
             p_rarch->video_driver_width,
             p_rarch->video_driver_height,
             video_is_fullscreen,

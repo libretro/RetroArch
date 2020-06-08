@@ -226,7 +226,9 @@ static void msg_widget_msg_transition_animation_done(void *userdata)
 }
 
 void gfx_widgets_msg_queue_push(
-      retro_task_t *task, const char *msg,
+      void *data,
+      retro_task_t *task,
+      const char *msg,
       unsigned duration,
       char *title,
       enum message_queue_icon icon,
@@ -235,7 +237,7 @@ void gfx_widgets_msg_queue_push(
       bool menu_is_alive)
 {
    menu_widget_msg_t    *msg_widget = NULL;
-   dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)dispwidget_get_ptr();
+   dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)data;
 
    if (fifo_write_avail(p_dispwidget->msg_queue) > 0)
    {
@@ -802,12 +804,13 @@ static void gfx_widgets_hourglass_tick(void *userdata)
 }
 
 void gfx_widgets_iterate(
+      void *data,
       unsigned width, unsigned height, bool fullscreen,
       const char *dir_assets, char *font_path,
       bool is_threaded)
 {
    size_t i;
-   dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)dispwidget_get_ptr();
+   dispgfx_widget_t *p_dispwidget   = (dispgfx_widget_t*)data;
    /* Check whether screen dimensions or menu scale
     * factor have changed */
    float scale_factor               = (
@@ -2298,9 +2301,11 @@ static void gfx_widgets_free(dispgfx_widget_t *p_dispwidget)
    font_driver_bind_block(NULL, NULL);
 }
 
-bool gfx_widgets_set_fps_text(const char *new_fps_text)
+bool gfx_widgets_set_fps_text(
+      void *data,
+      const char *new_fps_text)
 {
-   dispgfx_widget_t *p_dispwidget = (dispgfx_widget_t*)dispwidget_get_ptr();
+   dispgfx_widget_t *p_dispwidget = (dispgfx_widget_t*)data;
 
    strlcpy(p_dispwidget->gfx_widgets_fps_text,
          new_fps_text, sizeof(p_dispwidget->gfx_widgets_fps_text));
