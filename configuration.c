@@ -3361,7 +3361,7 @@ bool config_load_override(void *data)
    /* Create a new config file from core_path */
    if (config_file_exists(core_path))
    {
-      RARCH_LOG("[Overrides] core-specific overrides found at %s.\n",
+      RARCH_LOG("[Overrides]: Core-specific overrides found at %s.\n",
             core_path);
 
       path_set(RARCH_PATH_CONFIG_APPEND, core_path);
@@ -3369,7 +3369,7 @@ bool config_load_override(void *data)
       should_append = true;
    }
    else
-      RARCH_LOG("[Overrides] no core-specific overrides found at %s.\n",
+      RARCH_LOG("[Overrides]: No core-specific overrides found at %s.\n",
             core_path);
 
    /* per-content-dir overrides */
@@ -3380,12 +3380,12 @@ bool config_load_override(void *data)
 
       temp_path[0]    = '\0';
 
-      RARCH_LOG("[Overrides] content-dir-specific overrides found at %s.\n",
+      RARCH_LOG("[Overrides]: Content dir-specific overrides found at %s.\n",
             game_path);
 
       if (should_append)
       {
-         RARCH_LOG("[Overrides] content-dir-specific overrides stacking on top of previous overrides.\n");
+         RARCH_LOG("[Overrides]: Content dir-specific overrides stacking on top of previous overrides.\n");
          strlcpy(temp_path, path_get(RARCH_PATH_CONFIG_APPEND), path_size);
          strlcat(temp_path, "|", path_size);
          strlcat(temp_path, content_path, path_size);
@@ -3400,7 +3400,7 @@ bool config_load_override(void *data)
       should_append = true;
    }
    else
-      RARCH_LOG("[Overrides] no content-dir-specific overrides found at %s.\n",
+      RARCH_LOG("[Overrides]: No content-dir-specific overrides found at %s.\n",
          content_path);
 
    /* per-game overrides */
@@ -3411,12 +3411,12 @@ bool config_load_override(void *data)
 
       temp_path[0]    = '\0';
 
-      RARCH_LOG("[Overrides] game-specific overrides found at %s.\n",
+      RARCH_LOG("[Overrides]: Game-specific overrides found at %s.\n",
             game_path);
 
       if (should_append)
       {
-         RARCH_LOG("[Overrides] game-specific overrides stacking on top of previous overrides\n");
+         RARCH_LOG("[Overrides]: game-specific overrides stacking on top of previous overrides\n");
          strlcpy(temp_path, path_get(RARCH_PATH_CONFIG_APPEND), path_size);
          strlcat(temp_path, "|", path_size);
          strlcat(temp_path, game_path, path_size);
@@ -3431,7 +3431,7 @@ bool config_load_override(void *data)
       should_append = true;
    }
    else
-      RARCH_LOG("[Overrides] no game-specific overrides found at %s.\n",
+      RARCH_LOG("[Overrides]: No game-specific overrides found at %s.\n",
             game_path);
 
    if (!should_append)
@@ -3500,7 +3500,7 @@ bool config_unload_override(void)
             path_get(RARCH_PATH_CONFIG), config_get_ptr()))
       return false;
 
-   RARCH_LOG("[Overrides] configuration overrides unloaded, original configuration restored.\n");
+   RARCH_LOG("[Overrides]: Configuration overrides unloaded, original configuration restored.\n");
 
    /* Reset save paths */
    retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_STATE_PATH, NULL);
@@ -4134,7 +4134,7 @@ bool config_save_overrides(enum override_type type, void *data)
    tmp_i               = sizeof(settings->paths)   / sizeof(settings->paths.placeholder);
    path_overrides      = populate_settings_path (overrides, &tmp_i);
 
-   RARCH_LOG("[Overrides] looking for changed settings... \n");
+   RARCH_LOG("[Overrides]: Looking for changed settings... \n");
 
    if (conf)
    {
@@ -4208,15 +4208,15 @@ bool config_save_overrides(enum override_type type, void *data)
       switch (type)
       {
          case OVERRIDE_CORE:
-            RARCH_LOG ("[Overrides] path %s\n", core_path);
+            RARCH_LOG ("[Overrides]: path %s\n", core_path);
             ret = config_file_write(conf, core_path, true);
             break;
          case OVERRIDE_GAME:
-            RARCH_LOG ("[Overrides] path %s\n", game_path);
+            RARCH_LOG ("[Overrides]: path %s\n", game_path);
             ret = config_file_write(conf, game_path, true);
             break;
          case OVERRIDE_CONTENT_DIR:
-            RARCH_LOG ("[Overrides] path %s\n", content_path);
+            RARCH_LOG ("[Overrides]: path %s\n", content_path);
             ret = config_file_write(conf, content_path, true);
             break;
          case OVERRIDE_NONE:

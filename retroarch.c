@@ -9688,7 +9688,7 @@ static void path_set_redirect(struct rarch_state *p_rarch)
                : "",
                file_path_str(FILE_PATH_SRM_EXTENSION),
                sizeof(global->name.savefile));
-         RARCH_LOG("%s \"%s\".\n",
+         RARCH_LOG("[Overrides]: %s \"%s\".\n",
                msg_hash_to_str(MSG_REDIRECTING_SAVEFILE_TO),
                global->name.savefile);
       }
@@ -9703,7 +9703,7 @@ static void path_set_redirect(struct rarch_state *p_rarch)
                : "",
                file_path_str(FILE_PATH_STATE_EXTENSION),
                sizeof(global->name.savestate));
-         RARCH_LOG("%s \"%s\".\n",
+         RARCH_LOG("[Overrides]: %s \"%s\".\n",
                msg_hash_to_str(MSG_REDIRECTING_SAVESTATE_TO),
                global->name.savestate);
       }
@@ -9717,7 +9717,7 @@ static void path_set_redirect(struct rarch_state *p_rarch)
                : "",
                file_path_str(FILE_PATH_CHT_EXTENSION),
                sizeof(global->name.cheatfile));
-         RARCH_LOG("%s \"%s\".\n",
+         RARCH_LOG("[Overrides]: %s \"%s\".\n",
                msg_hash_to_str(MSG_REDIRECTING_CHEATFILE_TO),
                global->name.cheatfile);
       }
@@ -9933,7 +9933,7 @@ static void path_init_savefile(struct rarch_state *p_rarch)
 
    if (!p_rarch->rarch_use_sram)
    {
-      RARCH_LOG("%s\n",
+      RARCH_LOG("[SRAM]: %s\n",
             msg_hash_to_str(MSG_SRAM_WILL_NOT_BE_SAVED));
       return;
    }
@@ -10382,7 +10382,7 @@ static bool dir_init_shader(
    dir_list_sort(new_list, false);
 
    for (i = 0; i < new_list->size; i++)
-      RARCH_LOG("%s \"%s\"\n",
+      RARCH_LOG("[Shaders]: %s \"%s\"\n",
             msg_hash_to_str(MSG_FOUND_SHADER),
             new_list->elems[i].data);
 
@@ -13316,7 +13316,7 @@ static bool event_init_content(struct rarch_state *p_rarch)
    command_event_set_savestate_auto_index(p_rarch);
 
    if (event_load_save_files(p_rarch->rarch_is_sram_load_disabled))
-      RARCH_LOG("%s.\n",
+      RARCH_LOG("[SRAM]: %s.\n",
             msg_hash_to_str(MSG_SKIPPING_SRAM_LOAD));
 
 /*
