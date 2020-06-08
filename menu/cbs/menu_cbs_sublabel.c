@@ -1028,7 +1028,8 @@ static int action_bind_sublabel_netplay_room(
    subsystem  = netplay_room_list[room_index].subsystem_name;
    na         = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE);
 
-   if (string_is_empty(subsystem) || string_is_equal(subsystem, "N/A"))
+   if (string_is_empty(subsystem) || string_is_equal(subsystem,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE)))
    {
       snprintf(s, len,
          "%s: %s (%s)\n%s: %s (%s)\nGame: %s (%08x)",
