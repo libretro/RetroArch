@@ -491,14 +491,12 @@ bool task_push_pl_thumbnail_download(
       goto error;
    
    /* Only parse supported playlist types */
-   if (string_is_equal(playlist_file, file_path_str(FILE_PATH_CONTENT_HISTORY)) ||
-       string_is_equal(playlist_file, file_path_str(FILE_PATH_CONTENT_FAVORITES)) ||
-       string_is_equal(playlist_file, file_path_str(FILE_PATH_CONTENT_MUSIC_HISTORY)) ||
-       string_is_equal(playlist_file, file_path_str(FILE_PATH_CONTENT_VIDEO_HISTORY)) ||
-       string_is_equal(playlist_file, file_path_str(FILE_PATH_CONTENT_IMAGE_HISTORY)) ||
-       string_is_equal(system, "history") ||
-       string_is_equal(system, "favorites") ||
-       string_is_equal(system, "images_history"))
+   if (
+            string_ends_with(playlist_path, "_history.lpl") 
+         || string_is_equal(playlist_file,
+            file_path_str(FILE_PATH_CONTENT_FAVORITES))
+         || string_is_equal(system, "history")
+         || string_is_equal(system, "favorites"))
       goto error;
    
    /* Concurrent download of thumbnails for the same
