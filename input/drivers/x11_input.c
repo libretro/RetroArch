@@ -416,7 +416,8 @@ static void x_input_free(void *data)
 
 extern bool g_x11_entered;
 
-static void x_input_poll_mouse(x11_input_t *x11)
+static void x_input_poll_mouse(x11_input_t *x11,
+      bool video_has_focus)
 {
    unsigned mask;
    int root_x, root_y, win_x, win_y;
@@ -441,7 +442,7 @@ static void x_input_poll_mouse(x11_input_t *x11)
       x11->mouse_r  = mask & Button3Mask;
 
       /* Somewhat hacky, but seem to do the job. */
-      if (x11->grab_mouse && video_driver_has_focus())
+      if (x11->grab_mouse && video_has_focus)
       {
          int mid_w, mid_h;
          struct video_viewport vp;
@@ -473,14 +474,15 @@ static void x_input_poll_mouse(x11_input_t *x11)
 
 static void x_input_poll(void *data)
 {
-   x11_input_t *x11 = (x11_input_t*)data;
+   x11_input_t *x11     = (x11_input_t*)data;
+   bool video_has_focus = video_driver_has_focus();
 
-   if (video_driver_has_focus())
+   if (video_has_focus)
       XQueryKeymap(x11->display, x11->state);
    else
       memset(x11->state, 0, sizeof(x11->state));
 
-   x_input_poll_mouse(x11);
+   x_input_poll_mouse(x11, video_has_focus);
 
    if (x11->joypad)
       x11->joypad->poll();
