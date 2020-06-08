@@ -10862,6 +10862,26 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_SHUTDOWN,
    "Show or hide the 'Shutdown' option."
    )
+MSG_HASH(
+   MSG_INTERNET,
+   "Internet"
+   )
+MSG_HASH(
+   MSG_INTERNET_RELAY,
+   "Internet (Relay)"
+   )
+MSG_HASH(
+   MSG_LOCAL,
+   "Local"
+   )
+MSG_HASH(
+   MSG_READ_WRITE,
+   "Read/Write"
+   )
+MSG_HASH(
+   MSG_READ_ONLY,
+   "Read-Only"
+   )
 
 #ifdef HAVE_LAKKA_SWITCH
 MSG_HASH(

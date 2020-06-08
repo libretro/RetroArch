@@ -537,7 +537,9 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
 
    snprintf(tmp, sizeof(tmp), "%s: %s",
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INTERNAL_STORAGE_STATUS),
-         perms ? "read-write" : "read-only");
+         perms 
+         ? msg_hash_to_str(MSG_READ_WRITE) 
+         : msg_hash_to_str(MSG_READ_ONLY));
    if (menu_entries_append_enum(list, tmp, "",
          MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
       count++;
@@ -555,7 +557,7 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
             sizeof(cpu_str));
 
       if (string_is_empty(model))
-         strlcat(cpu_str, "N/A", sizeof(cpu_str));
+         strlcat(cpu_str, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), sizeof(cpu_str));
       else
          strlcat(cpu_str, model, sizeof(cpu_str));
 
@@ -637,14 +639,16 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
          {
             snprintf(tmp, sizeof(tmp), " Device display name: %s",
                input_config_get_device_display_name(controller) ?
-               input_config_get_device_display_name(controller) : "N/A");
+               input_config_get_device_display_name(controller) : 
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
             if (menu_entries_append_enum(list, tmp, "",
                MENU_ENUM_LABEL_SYSTEM_INFO_CONTROLLER_ENTRY,
                MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
                count++;
             snprintf(tmp, sizeof(tmp), " Device config name: %s",
                input_config_get_device_display_name(controller) ?
-               input_config_get_device_config_name(controller) : "N/A");
+               input_config_get_device_config_name(controller)  : 
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
             if (menu_entries_append_enum(list, tmp, "",
                MENU_ENUM_LABEL_SYSTEM_INFO_CONTROLLER_ENTRY,
                MENU_SETTINGS_CORE_INFO_NONE, 0, 0))
@@ -1024,11 +1028,10 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
     * EDIT: For correct operation of the quick menu
     * 'download thumbnails' option, we must also extend
     * this to music_history and video_history */
-   if (string_is_equal(path_playlist, "history") ||
-       string_is_equal(path_playlist, "favorites") ||
-       string_is_equal(path_playlist, "images_history") ||
-       string_is_equal(path_playlist, "music_history") ||
-       string_is_equal(path_playlist, "video_history"))
+   if (
+         string_is_equal(path_playlist, "history")   ||
+         string_is_equal(path_playlist, "favorites") ||
+         string_ends_with(path_playlist, "_history"))
    {
       char system_name[15];
       system_name[0] = '\0';
@@ -2348,11 +2351,10 @@ static int menu_displaylist_parse_horizontal_content_actions(
                   menu_driver_get_thumbnail_system(system, sizeof(system));
 
                   if (!string_is_empty(system))
-                     remove_entry_enabled = string_is_equal(system, "history") ||
-                        string_is_equal(system, "favorites") ||
-                        string_is_equal(system, "images_history") ||
-                        string_is_equal(system, "music_history") ||
-                        string_is_equal(system, "video_history");
+                     remove_entry_enabled = 
+                        string_is_equal(system,  "history")   ||
+                        string_is_equal(system,  "favorites") ||
+                        string_ends_with(system, "_history");
 
                   /* An annoyance: if the user navigates to the information menu,
                    * then to the database entry, the thumbnail system will be changed.
@@ -2453,9 +2455,7 @@ static int menu_displaylist_parse_horizontal_content_actions(
          menu_driver_get_thumbnail_system(system, sizeof(system));
 
          if (!string_is_empty(system))
-            download_enabled = !string_is_equal(system, "images_history") &&
-                               !string_is_equal(system, "music_history") &&
-                               !string_is_equal(system, "video_history");
+            download_enabled = !string_ends_with(system, "_history");
       }
 
       if (settings->bools.network_on_demand_thumbnails)
@@ -7842,7 +7842,7 @@ unsigned menu_displaylist_netplay_refresh_rooms(file_list_t *list)
 
          /* Uncomment this to debug mismatched room parameters*/
 #if 0
-         RARCH_LOG("[lobby] room Data: %d\n"
+         RARCH_LOG("[Lobby]: Room Data: %d\n"
                "Nickname:         %s\n"
                "Address:          %s\n"
                "Port:             %d\n"
@@ -7862,9 +7862,11 @@ unsigned menu_displaylist_netplay_refresh_rooms(file_list_t *list)
 #endif
 
          snprintf(s, sizeof(s), "%s: %s%s",
-            netplay_room_list[i].lan ? "Local" :
-            (netplay_room_list[i].host_method == NETPLAY_HOST_METHOD_MITM ?
-            "Internet (Relay)" : "Internet"),
+            netplay_room_list[i].lan 
+            ? msg_hash_to_str(MSG_LOCAL) 
+            : (netplay_room_list[i].host_method == NETPLAY_HOST_METHOD_MITM 
+               ? msg_hash_to_str(MSG_INTERNET_RELAY) 
+               : msg_hash_to_str(MSG_INTERNET)),
             netplay_room_list[i].nickname, country);
 
          if (menu_entries_append_enum(list,
@@ -7907,9 +7909,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
    int ret                       = 0;
    menu_handle_t *menu           = menu_driver_get_ptr();
 
-
-   disp_list.info = info;
-   disp_list.type = type;
+   disp_list.info                = info;
+   disp_list.type                = type;
 
    if (menu_driver_push_list(&disp_list))
       return true;
