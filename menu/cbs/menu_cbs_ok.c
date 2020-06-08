@@ -2150,7 +2150,7 @@ static int action_ok_playlist_entry_collection(const char *path,
        *   then copy the path without modification
        * > If this is a standard core, ensure
        *   it has a corresponding core info entry */
-      if (string_is_equal(entry->core_path, "builtin"))
+      if (string_ends_with(entry->core_path, "builtin"))
       {
          strlcpy(core_path, entry->core_path, sizeof(core_path));
          core_is_builtin = true;
