@@ -268,7 +268,7 @@ static void gfx_widget_screenshot_iterate(
 
       timer.cb       = gfx_widget_screenshot_end;
       timer.duration = SCREENSHOT_NOTIFICATION_DURATION;
-      timer.userdata = user_data;
+      timer.userdata = NULL;
 
       gfx_timer_start(&state->timer, &timer);
 
