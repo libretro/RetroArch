@@ -165,26 +165,13 @@ static INLINE float gfx_display_randf(float min, float max)
    return (rand() * ((max - min) / RAND_MAX)) + min;
 }
 
-void gfx_display_set_driver_id(enum menu_driver_id_type type)
-{
-   gfx_display_t *p_disp  = disp_get_ptr();
-   p_disp->menu_driver_id = type;
-}
-
-enum menu_driver_id_type gfx_display_get_driver_id(void)
-{
-   gfx_display_t *p_disp  = disp_get_ptr();
-   return p_disp->menu_driver_id;
-}
-
 static float gfx_display_get_adjusted_scale_internal(
+      gfx_display_t *p_disp,
       float base_scale, float scale_factor, unsigned width)
 {
    /* Apply user-set scaling factor */
    float adjusted_scale   = base_scale * scale_factor;
 #ifdef HAVE_OZONE
-   gfx_display_t *p_disp  = disp_get_ptr();
-
    /* Ozone has a capped scale factor */
    if (p_disp->menu_driver_id == MENU_DRIVER_ID_OZONE)
    {
@@ -199,6 +186,96 @@ static float gfx_display_get_adjusted_scale_internal(
 
    /* Ensure final scale is 'sane' */
    return (adjusted_scale > 0.0001f) ? adjusted_scale : 1.0f;
+}
+
+/* Check if the current menu driver is compatible
+ * with your video driver. */
+static bool gfx_display_check_compatibility(
+      enum gfx_display_driver_type type,
+      bool video_is_threaded)
+{
+   const char *video_driver = video_driver_get_ident();
+
+   switch (type)
+   {
+      case GFX_VIDEO_DRIVER_GENERIC:
+         return true;
+      case GFX_VIDEO_DRIVER_OPENGL:
+         if (string_is_equal(video_driver, "gl"))
+            return true;
+         break;
+      case GFX_VIDEO_DRIVER_OPENGL1:
+         if (string_is_equal(video_driver, "gl1"))
+            return true;
+         break;
+      case GFX_VIDEO_DRIVER_OPENGL_CORE:
+         if (string_is_equal(video_driver, "glcore"))
+            return true;
+         break;
+      case GFX_VIDEO_DRIVER_VULKAN:
+         if (string_is_equal(video_driver, "vulkan"))
+            return true;
+         break;
+      case GFX_VIDEO_DRIVER_METAL:
+         if (string_is_equal(video_driver, "metal"))
+            return true;
+         break;
+      case GFX_VIDEO_DRIVER_DIRECT3D8:
+         if (string_is_equal(video_driver, "d3d8"))
+            return true;
+         break;
+      case GFX_VIDEO_DRIVER_DIRECT3D9:
+         if (string_is_equal(video_driver, "d3d9"))
+            return true;
+         break;
+      case GFX_VIDEO_DRIVER_DIRECT3D10:
+         if (string_is_equal(video_driver, "d3d10"))
+            return true;
+         break;
+      case GFX_VIDEO_DRIVER_DIRECT3D11:
+         if (string_is_equal(video_driver, "d3d11"))
+            return true;
+         break;
+      case GFX_VIDEO_DRIVER_DIRECT3D12:
+         if (string_is_equal(video_driver, "d3d12"))
+            return true;
+         break;
+      case GFX_VIDEO_DRIVER_VITA2D:
+         if (string_is_equal(video_driver, "vita2d"))
+            return true;
+         break;
+      case GFX_VIDEO_DRIVER_CTR:
+         if (string_is_equal(video_driver, "ctr"))
+            return true;
+         break;
+      case GFX_VIDEO_DRIVER_WIIU:
+         if (string_is_equal(video_driver, "gx2"))
+            return true;
+         break;
+      case GFX_VIDEO_DRIVER_GDI:
+         if (string_is_equal(video_driver, "gdi"))
+            return true;
+         break;
+      case GFX_VIDEO_DRIVER_SWITCH:
+         if (string_is_equal(video_driver, "switch"))
+            return true;
+         break;
+   }
+
+   return false;
+}
+
+
+void gfx_display_set_driver_id(enum menu_driver_id_type type)
+{
+   gfx_display_t *p_disp  = disp_get_ptr();
+   p_disp->menu_driver_id = type;
+}
+
+enum menu_driver_id_type gfx_display_get_driver_id(void)
+{
+   gfx_display_t *p_disp  = disp_get_ptr();
+   return p_disp->menu_driver_id;
 }
 
 float gfx_display_get_dpi_scale_internal(unsigned width, unsigned height)
@@ -376,6 +453,7 @@ float gfx_display_get_dpi_scale(unsigned width, unsigned height)
        (p_disp->menu_driver_id != last_menu_driver_id))
    {
       adjusted_scale         = gfx_display_get_adjusted_scale_internal(
+            p_disp,
             scale, menu_scale_factor, width);
       last_menu_scale_factor = menu_scale_factor;
       last_menu_driver_id    = p_disp->menu_driver_id;
@@ -440,6 +518,7 @@ float gfx_display_get_widget_dpi_scale(
        (p_disp->menu_driver_id != last_menu_driver_id))
    {
       adjusted_scale         = gfx_display_get_adjusted_scale_internal(
+            p_disp,
             scale, menu_scale_factor, width);
       last_menu_scale_factor = menu_scale_factor;
       last_menu_driver_id    = p_disp->menu_driver_id;
@@ -509,89 +588,13 @@ float gfx_display_get_widget_pixel_scale(
        (p_disp->menu_driver_id != last_menu_driver_id))
    {
       adjusted_scale         = gfx_display_get_adjusted_scale_internal(
+            p_disp,
             scale, menu_scale_factor, width);
       last_menu_scale_factor = menu_scale_factor;
       last_menu_driver_id    = p_disp->menu_driver_id;
    }
 
    return adjusted_scale;
-}
-
-/* Check if the current menu driver is compatible
- * with your video driver. */
-static bool gfx_display_check_compatibility(
-      enum gfx_display_driver_type type,
-      bool video_is_threaded)
-{
-   const char *video_driver = video_driver_get_ident();
-
-   switch (type)
-   {
-      case GFX_VIDEO_DRIVER_GENERIC:
-         return true;
-      case GFX_VIDEO_DRIVER_OPENGL:
-         if (string_is_equal(video_driver, "gl"))
-            return true;
-         break;
-      case GFX_VIDEO_DRIVER_OPENGL1:
-         if (string_is_equal(video_driver, "gl1"))
-            return true;
-         break;
-      case GFX_VIDEO_DRIVER_OPENGL_CORE:
-         if (string_is_equal(video_driver, "glcore"))
-            return true;
-         break;
-      case GFX_VIDEO_DRIVER_VULKAN:
-         if (string_is_equal(video_driver, "vulkan"))
-            return true;
-         break;
-      case GFX_VIDEO_DRIVER_METAL:
-         if (string_is_equal(video_driver, "metal"))
-            return true;
-         break;
-      case GFX_VIDEO_DRIVER_DIRECT3D8:
-         if (string_is_equal(video_driver, "d3d8"))
-            return true;
-         break;
-      case GFX_VIDEO_DRIVER_DIRECT3D9:
-         if (string_is_equal(video_driver, "d3d9"))
-            return true;
-         break;
-      case GFX_VIDEO_DRIVER_DIRECT3D10:
-         if (string_is_equal(video_driver, "d3d10"))
-            return true;
-         break;
-      case GFX_VIDEO_DRIVER_DIRECT3D11:
-         if (string_is_equal(video_driver, "d3d11"))
-            return true;
-         break;
-      case GFX_VIDEO_DRIVER_DIRECT3D12:
-         if (string_is_equal(video_driver, "d3d12"))
-            return true;
-         break;
-      case GFX_VIDEO_DRIVER_VITA2D:
-         if (string_is_equal(video_driver, "vita2d"))
-            return true;
-         break;
-      case GFX_VIDEO_DRIVER_CTR:
-         if (string_is_equal(video_driver, "ctr"))
-            return true;
-         break;
-      case GFX_VIDEO_DRIVER_WIIU:
-         if (string_is_equal(video_driver, "gx2"))
-            return true;
-         break;
-      case GFX_VIDEO_DRIVER_GDI:
-         if (string_is_equal(video_driver, "gdi"))
-            return true;
-         break;
-      case GFX_VIDEO_DRIVER_SWITCH:
-         if (string_is_equal(video_driver, "switch"))
-            return true;
-         break;
-   }
-
-   return false;
 }
 
 video_coord_array_t *gfx_display_get_coords_array(void)
@@ -1853,7 +1856,6 @@ void gfx_display_font_free(font_data_t *font)
    font_driver_free(font);
 }
 
-
 void gfx_display_allocate_white_texture(void)
 {
    struct texture_image ti;
@@ -1869,7 +1871,6 @@ void gfx_display_allocate_white_texture(void)
    video_driver_texture_load(&ti,
          TEXTURE_FILTER_NEAREST, &gfx_display_white_texture);
 }
-
 
 void gfx_display_free(void)
 {
