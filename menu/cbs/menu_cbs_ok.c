@@ -2034,6 +2034,7 @@ static int action_ok_playlist_entry_collection(const char *path,
    playlist_t *tmp_playlist               = NULL;
    const struct playlist_entry *entry     = NULL;
    core_info_t* core_info                 = NULL;
+   bool core_is_builtin                   = false;
    menu_handle_t *menu                    = menu_driver_get_ptr();
    settings_t *settings                   = config_get_ptr();
    bool playlist_use_old_format           = settings->bools.playlist_use_old_format;
@@ -2144,23 +2145,35 @@ static int action_ok_playlist_entry_collection(const char *path,
    }
    else
    {
-      /* Entry does have a core assignment - ensure
-       * it has corresponding core info entry */
-      core_info = playlist_entry_get_core_info(entry);
-
-      if (core_info && !string_is_empty(core_info->path))
-         strlcpy(core_path, core_info->path, sizeof(core_path));
+      /* Entry does have a core assignment
+       * > If core is 'built-in' (imageviewer, etc.),
+       *   then copy the path without modification
+       * > If this is a standard core, ensure
+       *   it has a corresponding core info entry */
+      if (string_is_equal(entry->core_path, "builtin"))
+      {
+         strlcpy(core_path, entry->core_path, sizeof(core_path));
+         core_is_builtin = true;
+      }
       else
       {
-         /* Core path is invalid - just copy what we have
-          * and hope for the best... */
-         strlcpy(core_path, entry->core_path, sizeof(core_path));
-         playlist_resolve_path(PLAYLIST_LOAD, core_path, sizeof(core_path));
+         core_info = playlist_entry_get_core_info(entry);
+
+         if (core_info && !string_is_empty(core_info->path))
+            strlcpy(core_path, core_info->path, sizeof(core_path));
+         else
+         {
+            /* Core path is invalid - just copy what we have
+             * and hope for the best... */
+            strlcpy(core_path, entry->core_path, sizeof(core_path));
+            playlist_resolve_path(PLAYLIST_LOAD, core_path, sizeof(core_path));
+         }
       }
    }
 
    /* Ensure core path is valid */
-   if (string_is_empty(core_path) || !path_is_valid(core_path))
+   if (string_is_empty(core_path) ||
+       (!core_is_builtin && !path_is_valid(core_path)))
       goto error;
 
    /* Subsystem codepath */
